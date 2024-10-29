@@ -21,37 +21,39 @@
 
 namespace {
 
-// Base item.
+// Base pair.
 class BaseItem {
  public:
-  BaseItem(size_t key, const char* name) : key_(key), name_(name) {}
+  explicit BaseItem(const char* name) : name_(name) {}
 
-  constexpr const size_t& key() const { return key_; }
   constexpr const char* name() const { return name_; }
   void set_name(const char* name) { name_ = name; }
 
  private:
-  size_t key_;
   const char* name_;
 };
 
-// A basic item that can be used in a map.
-struct TestItem : public ::pw::IntrusiveMap<size_t, TestItem>::Item,
-                  public BaseItem {
-  TestItem(size_t key, const char* name) : BaseItem(key, name) {}
+// A basic pair that can be used in a map.
+class TestPair : public ::pw::IntrusiveMap<size_t, TestPair>::Pair,
+                 public BaseItem {
+ private:
+  using Pair = ::pw::IntrusiveMap<size_t, TestPair>::Pair;
+
+ public:
+  TestPair(size_t key, const char* name) : Pair(key), BaseItem(name) {}
 };
 
 // Test fixture.
 class IntrusiveMapTest : public ::testing::Test {
  protected:
-  using IntrusiveMap = ::pw::IntrusiveMap<size_t, TestItem>;
-  static constexpr size_t kNumItems = 10;
+  using IntrusiveMap = ::pw::IntrusiveMap<size_t, TestPair>;
+  static constexpr size_t kNumPairs = 10;
 
-  void SetUp() override { map_.insert(items_.begin(), items_.end()); }
+  void SetUp() override { map_.insert(pairs_.begin(), pairs_.end()); }
 
   void TearDown() override { map_.clear(); }
 
-  std::array<TestItem, kNumItems> items_ = {{
+  std::array<TestPair, kNumPairs> pairs_ = {{
       {30, "a"},
       {50, "b"},
       {20, "c"},
@@ -81,20 +83,20 @@ TEST_F(IntrusiveMapTest, Construct_Default) {
 
 TEST_F(IntrusiveMapTest, Construct_ObjectIterators) {
   map_.clear();
-  IntrusiveMap map(items_.begin(), items_.end());
+  IntrusiveMap map(pairs_.begin(), pairs_.end());
   EXPECT_FALSE(map.empty());
-  EXPECT_EQ(map.size(), items_.size());
+  EXPECT_EQ(map.size(), pairs_.size());
   map.clear();
 }
 
 TEST_F(IntrusiveMapTest, Construct_ObjectIterators_Empty) {
-  IntrusiveMap map(items_.end(), items_.end());
+  IntrusiveMap map(pairs_.end(), pairs_.end());
   EXPECT_TRUE(map.empty());
   EXPECT_EQ(map.size(), 0U);
 }
 
 TEST_F(IntrusiveMapTest, Construct_PointerIterators) {
-  std::array<TestItem*, 3> ptrs = {&items_[0], &items_[1], &items_[2]};
+  std::array<TestPair*, 3> ptrs = {&pairs_[0], &pairs_[1], &pairs_[2]};
   map_.clear();
   IntrusiveMap map(ptrs.begin(), ptrs.end());
   EXPECT_FALSE(map.empty());
@@ -103,7 +105,7 @@ TEST_F(IntrusiveMapTest, Construct_PointerIterators) {
 }
 
 TEST_F(IntrusiveMapTest, Construct_PointerIterators_Empty) {
-  std::array<TestItem*, 0> ptrs;
+  std::array<TestPair*, 0> ptrs;
   IntrusiveMap map(ptrs.begin(), ptrs.end());
   EXPECT_TRUE(map.empty());
   EXPECT_EQ(map.size(), 0U);
@@ -112,9 +114,11 @@ TEST_F(IntrusiveMapTest, Construct_PointerIterators_Empty) {
 
 TEST_F(IntrusiveMapTest, Construct_InitializerList) {
   map_.clear();
-  IntrusiveMap map({&items_[0], &items_[2], &items_[4]});
-  EXPECT_FALSE(map.empty());
-  EXPECT_EQ(map.size(), 3U);
+  IntrusiveMap map({&pairs_[0], &pairs_[2], &pairs_[4]});
+  auto iter = map.begin();
+  EXPECT_EQ((iter++)->key(), 10U);
+  EXPECT_EQ((iter++)->key(), 20U);
+  EXPECT_EQ((iter++)->key(), 30U);
   map.clear();
 }
 
@@ -125,73 +129,111 @@ TEST_F(IntrusiveMapTest, Construct_InitializerList_Empty) {
 }
 
 TEST_F(IntrusiveMapTest, Construct_CustomCompare) {
+  auto greater_than = [](const size_t& lhs, const size_t& rhs) {
+    return lhs > rhs;
+  };
   map_.clear();
-  using Compare = std::greater<size_t>;
-  using CustomMapType = pw::IntrusiveMap<size_t, TestItem, Compare>;
-
-  CustomMapType map(items_.begin(), items_.end());
-  EXPECT_EQ(map.size(), items_.size());
-
+  IntrusiveMap map({&pairs_[0], &pairs_[2], &pairs_[4]},
+                   std::move(greater_than));
   auto iter = map.begin();
-  EXPECT_EQ((iter++)->key(), 55U);
-  EXPECT_EQ((iter++)->key(), 50U);
-  EXPECT_EQ((iter++)->key(), 45U);
-  EXPECT_EQ((iter++)->key(), 40U);
-  EXPECT_EQ((iter++)->key(), 35U);
   EXPECT_EQ((iter++)->key(), 30U);
-  EXPECT_EQ((iter++)->key(), 25U);
   EXPECT_EQ((iter++)->key(), 20U);
-  EXPECT_EQ((iter++)->key(), 15U);
   EXPECT_EQ((iter++)->key(), 10U);
   map.clear();
 }
 
-// Functor for comparing names.
-struct StrCmp {
-  bool operator()(const char* lhs, const char* rhs) {
-    return std::strcmp(lhs, rhs) < 0;
-  }
+// A map pair that includes a key accessor method.
+struct HalvedKey : public ::pw::IntrusiveMap<size_t, HalvedKey>::Item,
+                   public BaseItem {
+ public:
+  HalvedKey(size_t half_key, const char* name)
+      : BaseItem(name), half_key_(half_key) {}
+  size_t key() const { return half_key_ * 2; }
+
+ private:
+  const size_t half_key_;
 };
 
-// This functor is similar to `internal::GetKey<size_t, TestName>`, but uses
-// the first character of the name instead.
-struct GetName {
-  const char* operator()(
-      const ::pw::containers::internal::AATreeItem& item) const {
-    return static_cast<const TestItem&>(item).name();
+TEST_F(IntrusiveMapTest, Construct_CustomItem) {
+  std::array<HalvedKey, 3> items = {{
+      {50, "B"},
+      {40, "D"},
+      {60, "F"},
+  }};
+  pw::IntrusiveMap<size_t, HalvedKey> map(items.begin(), items.end());
+
+  auto iter = map.find(80);
+  ASSERT_NE(iter, map.end());
+  EXPECT_STREQ(iter->name(), "D");
+
+  iter = map.find(100);
+  ASSERT_NE(iter, map.end());
+  EXPECT_STREQ(iter->name(), "B");
+
+  iter = map.find(120);
+  ASSERT_NE(iter, map.end());
+  EXPECT_STREQ(iter->name(), "F");
+
+  map.clear();
+}
+
+// A map item that has no explicit key.
+struct NoKey : public ::pw::IntrusiveMap<size_t, NoKey>::Item, public BaseItem {
+ public:
+  explicit NoKey(const char* name) : BaseItem(name) {}
+};
+
+// A functor to get an implied key from a `NoKey` item.
+struct GetImpliedKey {
+  size_t operator()(const NoKey& item) const {
+    return std::strlen(item.name());
   }
 };
 
 TEST_F(IntrusiveMapTest, Construct_CustomGetKey) {
-  map_.clear();
-  using CustomMapType =
-      pw::IntrusiveMap<const char*, TestItem, StrCmp, GetName>;
-  CustomMapType map(items_.begin(), items_.end());
+  std::array<NoKey, 4> items = {
+      NoKey("CC"),
+      NoKey("AAA"),
+      NoKey("B"),
+      NoKey("DDDD"),
+  };
+  pw::IntrusiveMap<size_t, NoKey> map((std::less<>()), GetImpliedKey());
+  map.insert(items.begin(), items.end());
+
   auto iter = map.begin();
-  EXPECT_STREQ((iter++)->name(), "A");
   EXPECT_STREQ((iter++)->name(), "B");
-  EXPECT_STREQ((iter++)->name(), "C");
-  EXPECT_STREQ((iter++)->name(), "D");
-  EXPECT_STREQ((iter++)->name(), "E");
-  EXPECT_STREQ((iter++)->name(), "a");
-  EXPECT_STREQ((iter++)->name(), "b");
-  EXPECT_STREQ((iter++)->name(), "c");
-  EXPECT_STREQ((iter++)->name(), "d");
-  EXPECT_STREQ((iter++)->name(), "e");
-  EXPECT_EQ(iter, map.end());
+  EXPECT_STREQ((iter++)->name(), "CC");
+  EXPECT_STREQ((iter++)->name(), "AAA");
+  EXPECT_STREQ((iter++)->name(), "DDDD");
   map.clear();
 }
 
-//  A struct that is not a map item.
-struct NotAnItem : public BaseItem {
-  NotAnItem(size_t key, const char* name) : BaseItem(key, name) {}
+//  A struct that is not a map pair.
+class NotAnItem : public BaseItem {
+ public:
+  NotAnItem(const char* name, size_t key) : BaseItem(name), key_(key) {}
+  size_t key() const { return key_; }
+
+ private:
+  const size_t key_;
 };
 
 #if PW_NC_TEST(IncompatibleItem)
 PW_NC_EXPECT(
     "IntrusiveMap items must be derived from IntrusiveMap<Key, T>::Item");
 
-struct BadItem : public ::pw::IntrusiveMap<size_t, NotAnItem>::Item {};
+class BadItem : public ::pw::IntrusiveMap<size_t, NotAnItem>::Item {
+ public:
+  constexpr explicit BadItem(size_t key) : key_(key) {}
+  constexpr size_t key() const { return key_; }
+  constexpr bool operator<(const Pair& rhs) { return key_ < rhs.key(); }
+
+ private:
+  const size_t key_;
+};
+
+using Compare = Function<bool(Key, Key)>;
+using GetKey = Function<Key(const V&)>;
 
 [[maybe_unused]] ::pw::IntrusiveMap<size_t, BadItem> bad_map1;
 
@@ -207,8 +249,8 @@ PW_NC_EXPECT(
 
 TEST_F(IntrusiveMapTest, At) {
   const IntrusiveMap& map = map_;
-  for (const auto& item : items_) {
-    EXPECT_EQ(&(map.at(item.key())), &item);
+  for (const auto& pair : pairs_) {
+    EXPECT_EQ(&(map.at(pair.key())), &pair);
   }
 }
 
@@ -218,15 +260,15 @@ TEST_F(IntrusiveMapTest, Iterator) {
   const IntrusiveMap& map = map_;
   auto iter = map.begin();
   size_t key = 10;
-  for (size_t i = 0; i < kNumItems; ++i) {
-    auto& item = *iter++;
-    EXPECT_EQ(item.key(), key);
+  for (size_t i = 0; i < kNumPairs; ++i) {
+    auto& pair = *iter++;
+    EXPECT_EQ(pair.key(), key);
     key += 5;
   }
   EXPECT_EQ(key, 60U);
   EXPECT_EQ(iter, map.end());
   EXPECT_EQ(iter, map.cend());
-  for (size_t i = 0; i < kNumItems; ++i) {
+  for (size_t i = 0; i < kNumPairs; ++i) {
     key -= 5;
     EXPECT_EQ((--iter)->key(), key);
   }
@@ -239,15 +281,15 @@ TEST_F(IntrusiveMapTest, ReverseIterator) {
   const IntrusiveMap& map = map_;
   auto iter = map.rbegin();
   size_t key = 55;
-  for (size_t i = 0; i < kNumItems; ++i) {
-    auto& item = *iter++;
-    EXPECT_EQ(item.key(), key);
+  for (size_t i = 0; i < kNumPairs; ++i) {
+    auto& pair = *iter++;
+    EXPECT_EQ(pair.key(), key);
     key -= 5;
   }
   EXPECT_EQ(key, 5U);
   EXPECT_EQ(iter, map.rend());
   EXPECT_EQ(iter, map.crend());
-  for (size_t i = 0; i < kNumItems; ++i) {
+  for (size_t i = 0; i < kNumPairs; ++i) {
     key += 5;
     EXPECT_EQ((--iter)->key(), key);
   }
@@ -260,14 +302,18 @@ TEST_F(IntrusiveMapTest, ConstIterator_CompareNonConst) {
   EXPECT_EQ(map_.end(), map_.cend());
 }
 
-// A map item that is distinct from TestItem
-struct OtherItem : public ::pw::IntrusiveMap<size_t, OtherItem>::Item,
+// A map pair that is distinct from TestPair
+struct OtherPair : public ::pw::IntrusiveMap<size_t, OtherPair>::Pair,
                    public BaseItem {
-  OtherItem(size_t key, const char* name) : BaseItem(key, name) {}
+ private:
+  using Pair = ::pw::IntrusiveMap<size_t, OtherPair>::Pair;
+
+ public:
+  OtherPair(size_t key, const char* name) : Pair(key), BaseItem(name) {}
 };
 
 TEST_F(IntrusiveMapTest, ConstIterator_CompareNonConst_CompilationFails) {
-  ::pw::IntrusiveMap<size_t, OtherItem> map;
+  ::pw::IntrusiveMap<size_t, OtherPair> map;
 #if PW_NC_TEST(CannotCompareIncompatibleIteratorsEqual)
   PW_NC_EXPECT("map_\.end\(\) == map\.end\(\)");
   static_cast<void>(map_.end() == map.end());
@@ -299,7 +345,7 @@ TEST_F(IntrusiveMapTest, IsEmpty) {
 
 TEST_F(IntrusiveMapTest, GetSize) {
   const IntrusiveMap& map = map_;
-  EXPECT_EQ(map.size(), kNumItems);
+  EXPECT_EQ(map.size(), kNumPairs);
   map_.clear();
   EXPECT_EQ(map.size(), 0U);
 }
@@ -312,10 +358,10 @@ TEST_F(IntrusiveMapTest, GetMaxSize) {
 // Modifiers
 
 // This functions allows tests to use `std::is_sorted` without specializing
-// `std::less<TestItem>`. Since `std::less` is the default value for the
+// `std::less<TestPair>`. Since `std::less` is the default value for the
 // `Compare` template parameter, leaving it untouched avoids accidentally
 // masking type-handling errors.
-constexpr bool LessThan(const TestItem& lhs, const TestItem& rhs) {
+constexpr bool LessThan(const TestPair& lhs, const TestPair& rhs) {
   return lhs.key() < rhs.key();
 }
 
@@ -323,72 +369,72 @@ TEST_F(IntrusiveMapTest, Insert) {
   map_.clear();
   bool sorted = true;
   size_t prev_key = 0;
-  for (auto& item : items_) {
-    sorted &= prev_key < item.key();
+  for (auto& pair : pairs_) {
+    sorted &= prev_key < pair.key();
 
     // Use the "hinted" version of insert.
-    map_.insert(map_.end(), item);
-    prev_key = item.key();
+    map_.insert(map_.end(), pair);
+    prev_key = pair.key();
   }
   EXPECT_FALSE(sorted);
 
-  EXPECT_EQ(map_.size(), kNumItems);
+  EXPECT_EQ(map_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMapTest, Insert_Duplicate) {
-  TestItem item1(60, "1");
-  TestItem item2(60, "2");
+  TestPair pair1(60, "1");
+  TestPair pair2(60, "2");
 
-  auto result = map_.insert(item1);
+  auto result = map_.insert(pair1);
   EXPECT_STREQ(result.first->name(), "1");
   EXPECT_TRUE(result.second);
 
-  result = map_.insert(item2);
+  result = map_.insert(pair2);
   EXPECT_STREQ(result.first->name(), "1");
   EXPECT_FALSE(result.second);
 
-  EXPECT_EQ(map_.size(), kNumItems + 1);
+  EXPECT_EQ(map_.size(), kNumPairs + 1);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
 
-  // Explicitly clear the map before item 1 goes out of scope.
+  // Explicitly clear the map before pair 1 goes out of scope.
   map_.clear();
 }
 
 TEST_F(IntrusiveMapTest, Insert_ObjectIterators) {
   map_.clear();
-  map_.insert(items_.begin(), items_.end());
-  EXPECT_EQ(map_.size(), kNumItems);
+  map_.insert(pairs_.begin(), pairs_.end());
+  EXPECT_EQ(map_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMapTest, Insert_ObjectIterators_Empty) {
-  map_.insert(items_.end(), items_.end());
-  EXPECT_EQ(map_.size(), kNumItems);
+  map_.insert(pairs_.end(), pairs_.end());
+  EXPECT_EQ(map_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMapTest, Insert_ObjectIterators_WithDuplicates) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {50, "B"},
       {40, "D"},
       {60, "F"},
   }};
 
-  map_.insert(items.begin(), items.end());
-  EXPECT_EQ(map_.size(), kNumItems + 1);
+  map_.insert(pairs.begin(), pairs.end());
+  EXPECT_EQ(map_.size(), kNumPairs + 1);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
   EXPECT_STREQ(map_.at(40).name(), "d");
   EXPECT_STREQ(map_.at(50).name(), "b");
   EXPECT_STREQ(map_.at(60).name(), "F");
 
-  // Explicitly clear the map before items goes out of scope.
+  // Explicitly clear the map before pairs goes out of scope.
   map_.clear();
 }
 
 TEST_F(IntrusiveMapTest, Insert_PointerIterators) {
   map_.clear();
-  std::array<TestItem*, 3> ptrs = {&items_[0], &items_[1], &items_[2]};
+  std::array<TestPair*, 3> ptrs = {&pairs_[0], &pairs_[1], &pairs_[2]};
 
   map_.insert(ptrs.begin(), ptrs.end());
   EXPECT_EQ(map_.size(), 3U);
@@ -396,131 +442,131 @@ TEST_F(IntrusiveMapTest, Insert_PointerIterators) {
 }
 
 TEST_F(IntrusiveMapTest, Insert_PointerIterators_Empty) {
-  std::array<TestItem*, 0> ptrs;
+  std::array<TestPair*, 0> ptrs;
 
   map_.insert(ptrs.begin(), ptrs.end());
-  EXPECT_EQ(map_.size(), kNumItems);
+  EXPECT_EQ(map_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMapTest, Insert_PointerIterators_WithDuplicates) {
-  TestItem item1(50, "B");
-  TestItem item2(40, "D");
-  TestItem item3(60, "F");
-  std::array<TestItem*, 3> ptrs = {&item1, &item2, &item3};
+  TestPair pair1(50, "B");
+  TestPair pair2(40, "D");
+  TestPair pair3(60, "F");
+  std::array<TestPair*, 3> ptrs = {&pair1, &pair2, &pair3};
 
   map_.insert(ptrs.begin(), ptrs.end());
-  EXPECT_EQ(map_.size(), kNumItems + 1);
+  EXPECT_EQ(map_.size(), kNumPairs + 1);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
   EXPECT_STREQ(map_.at(40).name(), "d");
   EXPECT_STREQ(map_.at(50).name(), "b");
   EXPECT_STREQ(map_.at(60).name(), "F");
 
-  // Explicitly clear the map before items goes out of scope.
+  // Explicitly clear the map before pairs goes out of scope.
   map_.clear();
 }
 
 TEST_F(IntrusiveMapTest, Insert_InitializerList) {
   map_.clear();
-  map_.insert({&items_[0], &items_[2], &items_[4]});
+  map_.insert({&pairs_[0], &pairs_[2], &pairs_[4]});
   EXPECT_EQ(map_.size(), 3U);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMapTest, Insert_InitializerList_Empty) {
   map_.insert({});
-  EXPECT_EQ(map_.size(), kNumItems);
+  EXPECT_EQ(map_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMapTest, Insert_InitializerList_WithDuplicates) {
-  TestItem item1(50, "B");
-  TestItem item2(40, "D");
-  TestItem item3(60, "F");
+  TestPair pair1(50, "B");
+  TestPair pair2(40, "D");
+  TestPair pair3(60, "F");
 
-  map_.insert({&item1, &item2, &item3});
-  EXPECT_EQ(map_.size(), kNumItems + 1);
+  map_.insert({&pair1, &pair2, &pair3});
+  EXPECT_EQ(map_.size(), kNumPairs + 1);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
   EXPECT_STREQ(map_.at(40).name(), "d");
   EXPECT_STREQ(map_.at(50).name(), "b");
   EXPECT_STREQ(map_.at(60).name(), "F");
 
-  // Explicitly clear the map before items goes out of scope.
+  // Explicitly clear the map before pairs goes out of scope.
   map_.clear();
 }
 
-// An item derived from TestItem.
-struct DerivedItem : public TestItem {
-  DerivedItem(size_t n, const char* name) : TestItem(n * 10, name) {}
+// A pair derived from TestPair.
+struct DerivedPair : public TestPair {
+  DerivedPair(size_t n, const char* name) : TestPair(n * 10, name) {}
 };
 
-TEST_F(IntrusiveMapTest, Insert_DerivedItems) {
-  DerivedItem item1(6, "f");
-  map_.insert(item1);
+TEST_F(IntrusiveMapTest, Insert_DerivedPairs) {
+  DerivedPair pair1(6, "f");
+  map_.insert(pair1);
 
-  DerivedItem item2(7, "g");
-  map_.insert(item2);
+  DerivedPair pair2(7, "g");
+  map_.insert(pair2);
 
-  EXPECT_EQ(map_.size(), kNumItems + 2);
+  EXPECT_EQ(map_.size(), kNumPairs + 2);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
 
-  // Explicitly clear the map before items goes out of scope.
+  // Explicitly clear the map before pairs goes out of scope.
   map_.clear();
 }
 
-TEST_F(IntrusiveMapTest, Insert_DerivedItems_CompilationFails) {
-  ::pw::IntrusiveMap<size_t, DerivedItem> derived_from_compatible_item_type;
+TEST_F(IntrusiveMapTest, Insert_DerivedPairs_CompilationFails) {
+  ::pw::IntrusiveMap<size_t, DerivedPair> derived_from_compatible_pair_type;
 
-  DerivedItem item1(6, "f");
-  derived_from_compatible_item_type.insert(item1);
+  DerivedPair pair1(6, "f");
+  derived_from_compatible_pair_type.insert(pair1);
 
-  EXPECT_EQ(derived_from_compatible_item_type.size(), 1U);
+  EXPECT_EQ(derived_from_compatible_pair_type.size(), 1U);
 
 #if PW_NC_TEST(CannotAddBaseClassToDerivedClassMap)
-  PW_NC_EXPECT("derived_from_compatible_item_type\.insert\(item2\)");
+  PW_NC_EXPECT("derived_from_compatible_pair_type\.insert\(pair2\)");
 
-  TestItem item2(70, "g");
-  derived_from_compatible_item_type.insert(item2);
+  TestPair pair2(70, "g");
+  derived_from_compatible_pair_type.insert(pair2);
 #endif
-  derived_from_compatible_item_type.clear();
+  derived_from_compatible_pair_type.clear();
 }
 
 TEST_F(IntrusiveMapTest, Erase_One_ByItem) {
-  for (size_t i = 0; i < kNumItems; ++i) {
-    EXPECT_EQ(map_.size(), kNumItems);
-    auto iter = map_.erase(items_[i]);
+  for (size_t i = 0; i < kNumPairs; ++i) {
+    EXPECT_EQ(map_.size(), kNumPairs);
+    auto iter = map_.erase(pairs_[i]);
     if (iter != map_.end()) {
-      EXPECT_GT(iter->key(), items_[i].key());
+      EXPECT_GT(iter->key(), pairs_[i].key());
     }
-    EXPECT_EQ(map_.size(), kNumItems - 1);
-    EXPECT_EQ(map_.find(items_[i].key()), map_.end());
-    map_.insert(items_[i]);
+    EXPECT_EQ(map_.size(), kNumPairs - 1);
+    EXPECT_EQ(map_.find(pairs_[i].key()), map_.end());
+    map_.insert(pairs_[i]);
   }
 }
 
 TEST_F(IntrusiveMapTest, Erase_One_ByKey) {
-  for (size_t i = 0; i < kNumItems; ++i) {
-    EXPECT_EQ(map_.size(), kNumItems);
-    EXPECT_EQ(map_.erase(items_[i].key()), 1U);
-    EXPECT_EQ(map_.size(), kNumItems - 1);
-    auto iter = map_.find(items_[i].key());
+  for (size_t i = 0; i < kNumPairs; ++i) {
+    EXPECT_EQ(map_.size(), kNumPairs);
+    EXPECT_EQ(map_.erase(pairs_[i].key()), 1U);
+    EXPECT_EQ(map_.size(), kNumPairs - 1);
+    auto iter = map_.find(pairs_[i].key());
     EXPECT_EQ(iter, map_.end());
-    map_.insert(items_[i]);
+    map_.insert(pairs_[i]);
   }
 }
 
 TEST_F(IntrusiveMapTest, Erase_OnlyItem) {
   map_.clear();
-  map_.insert(items_[0]);
+  map_.insert(pairs_[0]);
   EXPECT_EQ(map_.size(), 1U);
 
-  EXPECT_EQ(map_.erase(items_[0].key()), 1U);
+  EXPECT_EQ(map_.erase(pairs_[0].key()), 1U);
   EXPECT_EQ(map_.size(), 0U);
 }
 
 TEST_F(IntrusiveMapTest, Erase_AllOnebyOne) {
   auto iter = map_.begin();
-  for (size_t n = kNumItems; n != 0; --n) {
+  for (size_t n = kNumPairs; n != 0; --n) {
     ASSERT_NE(iter, map_.end());
     iter = map_.erase(iter);
   }
@@ -542,44 +588,44 @@ TEST_F(IntrusiveMapTest, Erase_Range) {
 TEST_F(IntrusiveMapTest, Erase_MissingItem) { EXPECT_EQ(map_.erase(100), 0U); }
 
 TEST_F(IntrusiveMapTest, Erase_Reinsert) {
-  EXPECT_EQ(map_.size(), items_.size());
+  EXPECT_EQ(map_.size(), pairs_.size());
 
-  EXPECT_EQ(map_.erase(items_[0].key()), 1U);
-  EXPECT_EQ(map_.find(items_[0].key()), map_.end());
+  EXPECT_EQ(map_.erase(pairs_[0].key()), 1U);
+  EXPECT_EQ(map_.find(pairs_[0].key()), map_.end());
 
-  EXPECT_EQ(map_.erase(items_[2].key()), 1U);
-  EXPECT_EQ(map_.find(items_[2].key()), map_.end());
+  EXPECT_EQ(map_.erase(pairs_[2].key()), 1U);
+  EXPECT_EQ(map_.find(pairs_[2].key()), map_.end());
 
-  EXPECT_EQ(map_.erase(items_[4].key()), 1U);
-  EXPECT_EQ(map_.find(items_[4].key()), map_.end());
+  EXPECT_EQ(map_.erase(pairs_[4].key()), 1U);
+  EXPECT_EQ(map_.find(pairs_[4].key()), map_.end());
 
-  EXPECT_EQ(map_.size(), items_.size() - 3);
+  EXPECT_EQ(map_.size(), pairs_.size() - 3);
 
-  map_.insert(items_[4]);
-  auto iter = map_.find(items_[4].key());
+  map_.insert(pairs_[4]);
+  auto iter = map_.find(pairs_[4].key());
   EXPECT_NE(iter, map_.end());
 
-  map_.insert(items_[0]);
-  iter = map_.find(items_[0].key());
+  map_.insert(pairs_[0]);
+  iter = map_.find(pairs_[0].key());
   EXPECT_NE(iter, map_.end());
 
-  map_.insert(items_[2]);
-  iter = map_.find(items_[2].key());
+  map_.insert(pairs_[2]);
+  iter = map_.find(pairs_[2].key());
   EXPECT_NE(iter, map_.end());
 
-  EXPECT_EQ(map_.size(), items_.size());
+  EXPECT_EQ(map_.size(), pairs_.size());
 }
 
 TEST_F(IntrusiveMapTest, Swap) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {50, "B"},
       {40, "D"},
       {60, "F"},
   }};
-  IntrusiveMap map(items.begin(), items.end());
+  IntrusiveMap map(pairs.begin(), pairs.end());
 
   map_.swap(map);
-  EXPECT_EQ(map.size(), kNumItems);
+  EXPECT_EQ(map.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(map.begin(), map.end(), LessThan));
   EXPECT_EQ(map.at(30).name(), "a");
   EXPECT_EQ(map.at(50).name(), "b");
@@ -594,7 +640,7 @@ TEST_F(IntrusiveMapTest, Swap) {
   EXPECT_STREQ(map_.at(40).name(), "D");
   EXPECT_STREQ(map_.at(60).name(), "F");
 
-  // Explicitly clear the map before items goes out of scope.
+  // Explicitly clear the map before pairs goes out of scope.
   map_.clear();
 }
 
@@ -602,7 +648,7 @@ TEST_F(IntrusiveMapTest, Swap_Empty) {
   IntrusiveMap map;
 
   map_.swap(map);
-  EXPECT_EQ(map.size(), kNumItems);
+  EXPECT_EQ(map.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(map.begin(), map.end(), LessThan));
   EXPECT_EQ(map.at(30).name(), "a");
   EXPECT_EQ(map.at(50).name(), "b");
@@ -615,16 +661,16 @@ TEST_F(IntrusiveMapTest, Swap_Empty) {
 }
 
 TEST_F(IntrusiveMapTest, Merge) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {5, "f"},
       {75, "g"},
       {85, "h"},
   }};
-  IntrusiveMap map(items.begin(), items.end());
+  IntrusiveMap map(pairs.begin(), pairs.end());
 
   map_.merge(map);
   EXPECT_TRUE(map.empty());
-  EXPECT_EQ(map_.size(), kNumItems + 3);
+  EXPECT_EQ(map_.size(), kNumPairs + 3);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
   EXPECT_STREQ(map_.at(30).name(), "a");
   EXPECT_STREQ(map_.at(35).name(), "A");
@@ -640,7 +686,7 @@ TEST_F(IntrusiveMapTest, Merge) {
   EXPECT_STREQ(map_.at(75).name(), "g");
   EXPECT_STREQ(map_.at(85).name(), "h");
 
-  // Explicitly clear the map before items goes out of scope.
+  // Explicitly clear the map before pairs goes out of scope.
   map_.clear();
 }
 
@@ -648,28 +694,28 @@ TEST_F(IntrusiveMapTest, Merge_Empty) {
   IntrusiveMap map;
 
   map_.merge(map);
-  EXPECT_EQ(map_.size(), kNumItems);
+  EXPECT_EQ(map_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
 
   map.merge(map_);
   EXPECT_TRUE(map_.empty());
-  EXPECT_EQ(map.size(), kNumItems);
+  EXPECT_EQ(map.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(map.begin(), map.end(), LessThan));
 
   map.clear();
 }
 
 TEST_F(IntrusiveMapTest, Merge_WithDuplicates) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {50, "B"},
       {40, "D"},
       {60, "F"},
   }};
-  IntrusiveMap map(items.begin(), items.end());
+  IntrusiveMap map(pairs.begin(), pairs.end());
 
   map_.merge(map);
   EXPECT_TRUE(map.empty());
-  EXPECT_EQ(map_.size(), kNumItems + 1);
+  EXPECT_EQ(map_.size(), kNumPairs + 1);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
   EXPECT_STREQ(map_.at(30).name(), "a");
   EXPECT_STREQ(map_.at(50).name(), "b");
@@ -678,29 +724,22 @@ TEST_F(IntrusiveMapTest, Merge_WithDuplicates) {
   EXPECT_STREQ(map_.at(10).name(), "e");
   EXPECT_STREQ(map_.at(60).name(), "F");
 
-  // Explicitly clear the map before items goes out of scope.
+  // Explicitly clear the map before pairs goes out of scope.
   map_.clear();
 }
 
-// A struct for a multimap instead of a map.
-struct MultiMapItem
-    : public ::pw::IntrusiveMultiMap<size_t, MultiMapItem>::Item,
-      public BaseItem {
-  MultiMapItem(size_t key, const char* name) : BaseItem(key, name) {}
-};
-
 TEST_F(IntrusiveMapTest, Merge_MultiMap) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {50, "B"},
       {40, "D"},
       {60, "F"},
   }};
-  ::pw::IntrusiveMultiMap<size_t, MultiMapItem> multimap(items.begin(),
-                                                         items.end());
+  ::pw::IntrusiveMultiMap<size_t, TestPair> multimap(pairs.begin(),
+                                                     pairs.end());
 
   map_.merge(multimap);
   EXPECT_TRUE(multimap.empty());
-  EXPECT_EQ(map_.size(), kNumItems + 1);
+  EXPECT_EQ(map_.size(), kNumPairs + 1);
   EXPECT_TRUE(std::is_sorted(map_.begin(), map_.end(), LessThan));
   EXPECT_STREQ(map_.at(30).name(), "a");
   EXPECT_STREQ(map_.at(50).name(), "b");
@@ -709,7 +748,7 @@ TEST_F(IntrusiveMapTest, Merge_MultiMap) {
   EXPECT_STREQ(map_.at(10).name(), "e");
   EXPECT_STREQ(map_.at(60).name(), "F");
 
-  // Explicitly clear the map before items goes out of scope.
+  // Explicitly clear the map before pairs goes out of scope.
   map_.clear();
 }
 
@@ -730,7 +769,7 @@ TEST_F(IntrusiveMapTest, Count_NoSuchKey) {
 TEST_F(IntrusiveMapTest, Find) {
   const IntrusiveMap& map = map_;
   size_t key = 10;
-  for (size_t i = 0; i < kNumItems; ++i) {
+  for (size_t i = 0; i < kNumPairs; ++i) {
     auto iter = map.find(key);
     ASSERT_NE(iter, map.end());
     EXPECT_EQ(iter->key(), key);

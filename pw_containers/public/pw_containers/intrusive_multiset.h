@@ -18,78 +18,71 @@
 
 namespace pw {
 
-/// A `std::multimap<Key, T, Compare>`-like class that uses intrusive items.
+/// A `std::multiset<Key, Compare>`-like class that uses intrusive items.
 ///
-/// Since the map structure is stored in the items themselves, each item must
-/// outlive any map it is a part of and must be part of at most one map.
+/// Since the set structure is stored in the items themselves, each item must
+/// outlive any set it is a part of and must be part of at most one set.
 ///
-/// This map requires unique keys. Attempting to add an item with same key as an
-/// item already in the map will fail.
+/// This set does not require unique keys. Multiple equivalent items may be
+/// added.
 ///
 /// - Since items are not allocated by this class, the following methods have
 ///   no analogue:
-///   - std::multimap<T>::operator=
-///   - std::multimap<T>::get_allocator
-///   - std::multimap<T>::emplace
-///   - std::multimap<T>::emplace_hint
+///   - std::multiset<T>::operator=
+///   - std::multiset<T>::get_allocator
+///   - std::multiset<T>::emplace
+///   - std::multiset<T>::emplace_hint
 ///
 /// - Methods corresponding to the following take initializer lists of pointer
 ///   to items rather than the items themselves:
-///   - std::multimap<T>::(constructor)
-///   - std::multimap<T>::insert
+///   - std::multiset<T>::(constructor)
+///   - std::multiset<T>::insert
 ///
 /// - There are no overloads corresponding to the following methods that take
 ///   r-value references.:
-///   - std::multimap<T>::insert
-///   - std::multimap<T>::merge
+///   - std::multiset<T>::insert
+///   - std::multiset<T>::merge
 ///
-/// - Since modifying the map modifies the items themselves, methods
+/// - Since modifying the set modifies the items themselves, methods
 ///   corresponding to those below only take `iterator`s and not
 ///   `const_iterator`s:
-///   - std::multimap<T>::insert
-///   - std::multimap<T>::erase
-///
-/// - An additional overload of `erase` is provided that takes a direct
-///   reference to an item.
+///   - std::multiset<T>::insert
+///   - std::multiset<T>::erase
 ///
 /// - C++23 methods are not (yet) supported.
 ///
-/// @tparam   Key         Type to sort items on
-/// @tparam   T           Type of values stored in the map.
-template <typename Key, typename T>
-class IntrusiveMultiMap {
+/// @tparam   T           Type of items stored in the set.
+template <typename T>
+class IntrusiveMultiSet {
  private:
   using GenericIterator = containers::internal::GenericAATree::iterator;
-  using Tree = containers::internal::AATree<Key, T>;
+  using Tree = containers::internal::AATree<const T&, T>;
   using Compare = typename Tree::Compare;
   using GetKey = typename Tree::GetKey;
 
  public:
-  /// IntrusiveMultiMap items must derive from either `Item` or `Pair`.
-  /// Use `Pair` to automatically provide storage for a `Key`.
-  /// Use `Item` when the derived type has a `key()` accessor method or when the
-  /// map provides a custom `GetKey` function object.
+  /// IntrusiveMultiSet items must derive from `Item`.
   using Item = typename Tree::Item;
-  using Pair = typename Tree::Pair;
 
-  using key_type = Key;
-  using mapped_type = std::remove_cv_t<T>;
-  using value_type = Item;
+  using key_type = T;
+  using value_type = T;
   using size_type = std::size_t;
   using difference_type = std::ptrdiff_t;
   using key_compare = Compare;
+  using value_compare = Compare;
   using reference = value_type&;
   using const_reference = const value_type&;
   using pointer = value_type*;
   using const_pointer = const value_type*;
 
+ public:
   class iterator : public containers::internal::AATreeIterator<T> {
    public:
     constexpr iterator() = default;
 
    private:
     using Base = containers::internal::AATreeIterator<T>;
-    friend IntrusiveMultiMap;
+    friend IntrusiveMultiSet;
     constexpr explicit iterator(GenericIterator iter) : Base(iter) {}
   };
 
@@ -100,60 +93,46 @@ class IntrusiveMultiMap {
 
    private:
     using Base = containers::internal::AATreeIterator<std::add_const_t<T>>;
-    friend IntrusiveMultiMap;
+    friend IntrusiveMultiSet;
     constexpr explicit const_iterator(GenericIterator iter) : Base(iter) {}
   };
 
   using reverse_iterator = std::reverse_iterator<iterator>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  /// Constructs an empty map of items.
-  constexpr explicit IntrusiveMultiMap()
-      : IntrusiveMultiMap(std::less<Key>()) {}
+  /// Constructs an empty set of items.
+  constexpr explicit IntrusiveMultiSet() : IntrusiveMultiSet(std::less<>()) {}
 
-  /// Constructs an empty map of items.
+  /// Constructs an empty set of items.
   ///
   /// SFINAE is used to disambiguate between this constructor and the one that
   /// takes an initializer list.
   ///
-  /// @param  compare   Function with the signature `bool(Key, Key)` that is
-  ///                   used to order items.
-  /// @param  get_key   Function with signature `Key(const T&)` that returns the
-  ///                   value that items are sorted on.
+  /// @param    Compare   Function with the signature `bool(T, T)` that is
+  ///                     used to order items.
   template <typename Comparator>
-  constexpr explicit IntrusiveMultiMap(Comparator&& compare)
-      : IntrusiveMultiMap(std::forward<Comparator>(compare),
-                          [](const T& t) { return t.key(); }) {}
-
-  /// Constructs an empty map of items.
-  ///
-  /// @param  compare   Function with the signature `bool(Key, Key)` that is
-  ///                   used to order items.
-  /// @param  get_key   Function with signature `Key(const T&)` that returns the
-  ///                   value that items are sorted on.
-  template <typename Comparator, typename KeyRetriever>
-  constexpr IntrusiveMultiMap(Comparator&& compare, KeyRetriever&& get_key)
+  constexpr explicit IntrusiveMultiSet(Comparator&& compare)
       : tree_(false,
               std::forward<Comparator>(compare),
-              std::forward<KeyRetriever>(get_key)) {
+              [](const T& t) -> const T& { return t; }) {
     CheckItemType();
   }
 
-  /// Constructs an IntrusiveMultiMap from an iterator over Items.
+  /// Constructs an IntrusiveMultiSet from an iterator over Items.
   ///
   /// The iterator may dereference as either Item& (e.g. from std::array<Item>)
   /// or Item* (e.g. from std::initializer_list<Item*>).
   template <typename Iterator, typename... Functors>
-  IntrusiveMultiMap(Iterator first, Iterator last, Functors&&... functors)
-      : IntrusiveMultiMap(std::forward<Functors>(functors)...) {
+  IntrusiveMultiSet(Iterator first, Iterator last, Functors&&... functors)
+      : IntrusiveMultiSet(std::forward<Functors>(functors)...) {
     tree_.insert(first, last);
   }
 
-  /// Constructs an IntrusiveMultiMap from a std::initializer_list of pointers
+  /// Constructs an IntrusiveMultiSet from a std::initializer_list of pointers
   /// to items.
   template <typename... Functors>
-  IntrusiveMultiMap(std::initializer_list<T*> items, Functors&&... functors)
-      : IntrusiveMultiMap(
+  IntrusiveMultiSet(std::initializer_list<T*> items, Functors&&... functors)
+      : IntrusiveMultiSet(
             items.begin(), items.end(), std::forward<Functors>(functors)...) {}
 
   // Iterators
@@ -182,10 +161,10 @@ class IntrusiveMultiMap {
 
   // Capacity
 
-  /// Returns whether the multimap has zero items or not.
+  /// Returns whether the multiset has zero items or not.
   [[nodiscard]] bool empty() const noexcept { return tree_.empty(); }
 
-  /// Returns the number of items in the multimap.
+  /// Returns the number of items in the multiset.
   size_t size() const { return tree_.size(); }
 
   /// Returns how many items can be added.
@@ -195,12 +174,12 @@ class IntrusiveMultiMap {
 
   // Modifiers
 
-  /// Removes all items from the multimap and leaves it empty.
+  /// Removes all items from the multiset and leaves it empty.
   ///
   /// The items themselves are not destructed.
   void clear() { tree_.clear(); }
 
-  /// Adds the given item to the multimap.
+  /// Adds the given item to the multiset.
   iterator insert(T& item) { return iterator(tree_.insert(item).first); }
 
   iterator insert(iterator, T& item) {
@@ -217,49 +196,49 @@ class IntrusiveMultiMap {
     tree_.insert(ilist.begin(), ilist.end());
   }
 
-  /// Removes an item from the multimap and returns an iterator to the item
+  /// Removes an item from the multiset and returns an iterator to the item
   /// after the removed item.
   ///
   /// The items themselves are not destructed.
-  iterator erase(T& item) { return iterator(tree_.erase_one(item)); }
-
   iterator erase(iterator pos) { return iterator(tree_.erase_one(*pos)); }
 
   iterator erase(iterator first, iterator last) {
     return iterator(tree_.erase_range(*first, *last));
   }
 
-  size_t erase(const Key& key) { return tree_.erase_all(key); }
+  size_t erase(const T& item) { return tree_.erase_all(item); }
 
-  /// Exchanges this multimap's items with the `other` multimap's items.
-  void swap(IntrusiveMultiMap<Key, T>& other) { tree_.swap(other.tree_); }
+  /// Exchanges this multiset's items with the `other` multiset's items.
+  void swap(IntrusiveMultiSet<T>& other) { tree_.swap(other.tree_); }
 
-  /// Splices items from the `other` map into this one.
+  /// Splices items from the `other` set into this one.
+  ///
+  /// The receiving set's `Compare` function is used when inserting items.
   template <typename MapType>
   void merge(MapType& other) {
     tree_.merge(other.tree_);
   }
 
   /// Returns the number of items in the multimap with the given key.
-  size_t count(const Key& key) const { return tree_.count(key); }
+  size_t count(const T& item) const { return tree_.count(item); }
 
   /// Returns a pointer to an item with the given key, or null if the multimap
   /// does not contain such an item.
-  iterator find(const Key& key) { return iterator(tree_.find(key)); }
+  iterator find(const T& item) { return iterator(tree_.find(item)); }
 
-  const_iterator find(const Key& key) const {
-    return const_iterator(tree_.find(key));
+  const_iterator find(const T& item) const {
+    return const_iterator(tree_.find(item));
   }
 
   /// Returns a pair of iterators where the first points to the item with the
   /// smallest key that is not less than the given key, and the second points to
   /// the item with the smallest key that is greater than the given key.
-  std::pair<iterator, iterator> equal_range(const Key& key) {
-    auto result = tree_.equal_range(key);
+  std::pair<iterator, iterator> equal_range(const T& item) {
+    auto result = tree_.equal_range(item);
     return std::make_pair(iterator(result.first), iterator(result.second));
   }
-  std::pair<const_iterator, const_iterator> equal_range(const Key& key) const {
-    auto result = tree_.equal_range(key);
+  std::pair<const_iterator, const_iterator> equal_range(const T& item) const {
+    auto result = tree_.equal_range(item);
     return std::make_pair(const_iterator(result.first),
                           const_iterator(result.second));
   }
@@ -267,21 +246,21 @@ class IntrusiveMultiMap {
   /// Returns an iterator to the item in the multimap with the smallest key that
   /// is greater than or equal to the given key, or `end()` if the multimap is
   /// empty.
-  iterator lower_bound(const Key& key) {
-    return iterator(tree_.lower_bound(key));
+  iterator lower_bound(const T& item) {
+    return iterator(tree_.lower_bound(item));
   }
-  const_iterator lower_bound(const Key& key) const {
-    return const_iterator(tree_.lower_bound(key));
+  const_iterator lower_bound(const T& item) const {
+    return const_iterator(tree_.lower_bound(item));
   }
 
   /// Returns an iterator to the item in the multimap with the smallest key that
   /// is strictly greater than the given key, or `end()` if the multimap is
   /// empty.
-  iterator upper_bound(const Key& key) {
-    return iterator(tree_.upper_bound(key));
+  iterator upper_bound(const T& item) {
+    return iterator(tree_.upper_bound(item));
   }
-  const_iterator upper_bound(const Key& key) const {
-    return const_iterator(tree_.upper_bound(key));
+  const_iterator upper_bound(const T& item) const {
+    return const_iterator(tree_.upper_bound(item));
   }
 
  private:
@@ -293,16 +272,16 @@ class IntrusiveMultiMap {
         typename containers::internal::IntrusiveItem<ItemBase, T>::Type;
     static_assert(
         std::is_base_of<IntrusiveItemType, T>(),
-        "IntrusiveMultiMap items must be derived from "
-        "IntrusiveMultiMap<Key, T>::Item, where T is the item or one of its "
+        "IntrusiveMultiSet items must be derived from "
+        "IntrusiveMultiSet<T>::Item, where T is the item or one of its "
         "bases.");
   }
 
-  // Allow maps to access the tree for `merge`.
-  template <typename, typename>
-  friend class IntrusiveMap;
+  // Allow sets to access the tree for `merge`.
+  template <typename>
+  friend class IntrusiveSet;
 
-  // The AA tree that stores the map.
+  // The AA tree that stores the set.
   //
   // This field is mutable so that it doesn't need const overloads.
   mutable Tree tree_;

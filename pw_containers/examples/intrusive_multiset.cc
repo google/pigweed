@@ -12,51 +12,55 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_containers/intrusive_multimap.h"
+#include "pw_containers/intrusive_multiset.h"
 
 #include "pw_unit_test/framework.h"
 
 namespace examples {
 
-// DOCSTAG: [pw_containers-intrusive_multimap]
+// DOCSTAG: [pw_containers-intrusive_multiset]
 
-struct Book : public pw::IntrusiveMultiMap<uint32_t, Book>::Pair {
+class Book : public pw::IntrusiveMultiSet<Book>::Item {
  private:
-  using Pair = pw::IntrusiveMultiMap<uint32_t, Book>::Pair;
+  using Item = pw::IntrusiveMultiSet<Book>::Item;
 
  public:
-  Book(const char* name, uint32_t oclc) : Pair(oclc), name_(name) {}
+  explicit Book(const char* name) : name_(name) {}
   const char* name() const { return name_; }
+  bool operator<(const Book& rhs) const {
+    return strcmp(name_, rhs.name()) < 0;
+  }
 
  private:
   const char* name_;
 };
 
-std::array<Book, 12> books = {{
-    {"The Little Prince", 182537909u},
-    {"Harry Potter and the Philosopher's Stone", 44795766u},
-    {"Harry Potter and the Philosopher's Stone", 44795766u},
-    {"Harry Potter and the Philosopher's Stone", 44795766u},
-    {"Harry Potter and the Philosopher's Stone", 44795766u},
-    {"Harry Potter and the Philosopher's Stone", 44795766u},
-    {"The Hobbit", 1827184u},
-    {"The Hobbit", 1827184u},
-    {"The Hobbit", 1827184u},
-    {"The Hobbit", 1827184u},
-    {"Alice's Adventures in Wonderland", 5635965u},
-    {"Alice's Adventures in Wonderland", 5635965u},
-}};
-pw::IntrusiveMultiMap<uint32_t, Book> library(books.begin(), books.end());
+std::array<Book, 12> books = {
+    Book("The Little Prince"),
+    Book("Harry Potter and the Philosopher's Stone"),
+    Book("Harry Potter and the Philosopher's Stone"),
+    Book("Harry Potter and the Philosopher's Stone"),
+    Book("Harry Potter and the Philosopher's Stone"),
+    Book("Harry Potter and the Philosopher's Stone"),
+    Book("The Hobbit"),
+    Book("The Hobbit"),
+    Book("The Hobbit"),
+    Book("The Hobbit"),
+    Book("Alice's Adventures in Wonderland"),
+    Book("Alice's Adventures in Wonderland"),
+};
+pw::IntrusiveMultiSet<Book> library(books.begin(), books.end());
 
-void VisitLibrary(pw::IntrusiveMultiMap<uint32_t, Book>& book_bag) {
+void VisitLibrary(pw::IntrusiveMultiSet<Book>& book_bag) {
   // Pick out some new books to read to the kids, but only if they're available.
-  std::array<uint32_t, 3> oclcs = {
-      1827184u,    // The Hobbit
-      5635965u,    // Alice's Adventures in Wonderland
-      182537909u,  // The Little Prince
+  std::array<const char*, 3> titles = {
+      "The Hobbit",
+      "Alice's Adventures in Wonderland",
+      "The Little Prince",
   };
-  for (uint32_t oclc : oclcs) {
-    auto iter = library.find(oclc);
+  for (const char* title : titles) {
+    Book requested(title);
+    auto iter = library.find(requested);
     if (iter != library.end()) {
       Book& book = *iter;
       library.erase(iter);
@@ -65,27 +69,27 @@ void VisitLibrary(pw::IntrusiveMultiMap<uint32_t, Book>& book_bag) {
   }
 }
 
-// DOCSTAG: [pw_containers-intrusive_multimap]
+// DOCSTAG: [pw_containers-intrusive_multiset]
 
 }  // namespace examples
 
 namespace {
 
-TEST(IntrusiveMultiMapExampleTest, VisitLibrary) {
-  pw::IntrusiveMultiMap<uint32_t, examples::Book> book_bag1;
+TEST(IntrusiveMultiSetExampleTest, VisitLibrary) {
+  pw::IntrusiveMultiSet<examples::Book> book_bag1;
   examples::VisitLibrary(book_bag1);
 
-  pw::IntrusiveMultiMap<uint32_t, examples::Book> book_bag2;
+  pw::IntrusiveMultiSet<examples::Book> book_bag2;
   examples::VisitLibrary(book_bag2);
 
-  pw::IntrusiveMultiMap<uint32_t, examples::Book> book_bag3;
+  pw::IntrusiveMultiSet<examples::Book> book_bag3;
   examples::VisitLibrary(book_bag3);
 
   auto iter = book_bag1.begin();
   ASSERT_NE(iter, book_bag1.end());
-  EXPECT_STREQ((iter++)->name(), "The Hobbit");
-  ASSERT_NE(iter, book_bag1.end());
   EXPECT_STREQ((iter++)->name(), "Alice's Adventures in Wonderland");
+  ASSERT_NE(iter, book_bag1.end());
+  EXPECT_STREQ((iter++)->name(), "The Hobbit");
   ASSERT_NE(iter, book_bag1.end());
   EXPECT_STREQ((iter++)->name(), "The Little Prince");
   EXPECT_EQ(iter, book_bag1.end());
@@ -93,9 +97,9 @@ TEST(IntrusiveMultiMapExampleTest, VisitLibrary) {
 
   iter = book_bag2.begin();
   ASSERT_NE(iter, book_bag2.end());
-  EXPECT_STREQ((iter++)->name(), "The Hobbit");
-  ASSERT_NE(iter, book_bag2.end());
   EXPECT_STREQ((iter++)->name(), "Alice's Adventures in Wonderland");
+  ASSERT_NE(iter, book_bag2.end());
+  EXPECT_STREQ((iter++)->name(), "The Hobbit");
   EXPECT_EQ(iter, book_bag2.end());
   book_bag2.clear();
 

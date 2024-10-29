@@ -237,6 +237,55 @@ Size report
 ===========
 .. include:: intrusive_list_size_report
 
+.. _module-pw_containers-intrusive_set:
+
+----------------
+pw::IntrusiveSet
+----------------
+``pw::IntrusiveSet`` provides an embedded-friendly, tree-based, intrusive
+set implementation. The intrusive aspect of the set is very similar to that of
+:ref:`module-pw_containers-intrusive_list`.
+
+API Reference
+=============
+This class is similar to ``std::set<T>``. Items to be added must derive from
+``pw::IntrusiveSet<T>::Item`` or an equivalent type.
+
+.. doxygenclass:: pw::IntrusiveSet
+   :members:
+
+Example
+=======
+.. literalinclude:: examples/intrusive_set.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_containers-intrusive_set]
+   :end-before: [pw_containers-intrusive_set]
+
+---------------------
+pw::IntrusiveMultiSet
+---------------------
+``pw::IntrusiveMultiSet`` provides an embedded-friendly, tree-based, intrusive
+multiset implementation. This is very similar to
+:ref:`module-pw_containers-intrusive_set`, except that the tree may contain
+multiple items with equivalent keys.
+
+API Reference
+=============
+This class is similar to ``std::multiset<T>``. Items to be added must derive
+from ``pw::IntrusiveMultiSet<T>::Item`` or an equivalent type.
+
+.. doxygenclass:: pw::IntrusiveMultiSet
+   :members:
+
+Example
+=======
+.. literalinclude:: examples/intrusive_multiset.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_containers-intrusive_multiset]
+   :end-before: [pw_containers-intrusive_multiset]
+
 .. _module-pw_containers-intrusive_map:
 
 ----------------
@@ -249,7 +298,7 @@ map implementation. The intrusive aspect of the map is very similar to that of
 API Reference
 =============
 This class is similar to ``std::map<K, V>``. Items to be added must derive from
-``pw::IntrusiveMap<K, V>::Item``.
+``pw::IntrusiveMap<K, V>::Item`` or an equivalent type.
 
 .. doxygenclass:: pw::IntrusiveMap
    :members:
@@ -273,7 +322,7 @@ multiple items with equivalent keys.
 API Reference
 =============
 This class is similar to ``std::multimap<K, V>``. Items to be added must derive
-from ``pw::IntrusiveMultiMap<K, V>::Item``.
+from ``pw::IntrusiveMultiMap<K, V>::Item`` or an equivalent type.
 
 .. doxygenclass:: pw::IntrusiveMultiMap
    :members:
@@ -293,23 +342,14 @@ Intrusive items may be used with multiple containers, provided each of those
 containers is templated on a type that is not derived from any of the others.
 This can be achieved by multiply inheriting from distinct type:
 
-.. literalinclude:: examples/listed_and_mapped.cc
+.. literalinclude:: examples/multiple_containers.cc
    :language: cpp
    :linenos:
-   :start-after: [pw_containers-listed_and_mapped]
-   :end-before: [pw_containers-listed_and_mapped]
+   :start-after: [pw_containers-multiple_containers]
+   :end-before: [pw_containers-multiple_containers]
 
 If one or more types is derived from another, the compiler will fail to build
 with an error that ``ItemType`` is ambiguous or found in multiple base classes.
-
-Creating per-list types is fairly trivial, but per-map types are slightly more
-involved. To facilitate this, the module provides a helper class
-``pw::IntrusiveMapItemWithKey``, as seen in the example above.. This class
-handles defining a unique type for a map or multimap of items that include their
-keys.
-
-.. doxygenclass:: pw::IntrusiveMapItemWithKey
-   :members:
 
 -----------------------
 pw::containers::FlatMap

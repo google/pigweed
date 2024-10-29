@@ -51,14 +51,14 @@ pw_add_test(pw_containers.examples.intrusive_multimap
     intrusive_multimap.cc
 )
 
-pw_add_test(pw_containers.examples.listed_and_mapped
+pw_add_test(pw_containers.examples.multiple_containers
   PRIVATE_DEPS
     pw_containers.intrusive_list
     pw_containers.intrusive_map
     pw_result
     pw_status
   SOURCES
-    listed_and_mapped.cc
+    multiple_containers.cc
 )
 
 pw_add_test(pw_containers.examples.wrapped_iterator

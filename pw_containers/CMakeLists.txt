@@ -198,21 +198,30 @@ pw_add_library(pw_containers.legacy_intrusive_list INTERFACE
     pw_containers.intrusive_forward_list
 )
 
-pw_add_library(pw_containers.intrusive_map STATIC
+pw_add_library(pw_containers.aa_tree STATIC
   HEADERS
     public/pw_containers/internal/aa_tree.h
     public/pw_containers/internal/aa_tree_item.h
     public/pw_containers/internal/aa_tree_iterator.h
-    public/pw_containers/intrusive_map.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_assert
     pw_bytes.packed_ptr
     pw_containers.intrusive_item
+    pw_function
   SOURCES
     aa_tree.cc
     aa_tree_item.cc
+)
+
+pw_add_library(pw_containers.intrusive_map INTERFACE
+  HEADERS
+    public/pw_containers/intrusive_map.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.aa_tree
 )
 
 pw_add_library(pw_containers.intrusive_multimap INTERFACE
@@ -221,7 +230,25 @@ pw_add_library(pw_containers.intrusive_multimap INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_containers.intrusive_map
+    pw_containers.aa_tree
+)
+
+pw_add_library(pw_containers.intrusive_multiset INTERFACE
+  HEADERS
+    public/pw_containers/intrusive_multiset.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.aa_tree
+)
+
+pw_add_library(pw_containers.intrusive_set INTERFACE
+  HEADERS
+    public/pw_containers/intrusive_set.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.aa_tree
 )
 
 pw_add_test(pw_containers.algorithm_test
@@ -395,6 +422,32 @@ pw_add_test(pw_containers.intrusive_multimap_test
     pw_containers
 )
 
+pw_add_test(pw_containers.intrusive_set_test
+  SOURCES
+    intrusive_set_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_containers.intrusive_set
+    pw_containers.intrusive_multiset
+    pw_span
+  GROUPS
+    modules
+    pw_containers
+)
+
+pw_add_test(pw_containers.intrusive_multiset_test
+  SOURCES
+    intrusive_multiset_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_containers.intrusive_set
+    pw_containers.intrusive_multiset
+    pw_span
+  GROUPS
+    modules
+    pw_containers
+)
+
 pw_add_test(pw_containers.intrusive_item_test
   SOURCES
     intrusive_item_test.cc
@@ -404,6 +457,8 @@ pw_add_test(pw_containers.intrusive_item_test
     pw_containers.intrusive_list
     pw_containers.intrusive_map
     pw_containers.intrusive_multimap
+    pw_containers.intrusive_set
+    pw_containers.intrusive_multiset
   GROUPS
     modules
     pw_containers

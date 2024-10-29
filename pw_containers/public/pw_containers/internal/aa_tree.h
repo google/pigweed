@@ -22,12 +22,9 @@
 #include "pw_containers/internal/aa_tree_item.h"
 #include "pw_containers/internal/aa_tree_iterator.h"
 #include "pw_containers/internal/intrusive_item.h"
+#include "pw_function/function.h"
 
 namespace pw::containers::internal {
-
-// Forward declaration for friending.
-template <typename, typename>
-class AATree;
 
 /// Base type for an AA tree that is devoid of template parameters.
 ///
@@ -40,16 +37,15 @@ class GenericAATree {
 
   /// Constructs an empty AA tree.
   ///
-  /// @param  unique_keys   Indicates if this tree requires unique keys (as with
-  ///                       `std::map`) or allows duplicate keys (as with
-  ///                       `std::multimap`).
+  /// @param  unique_keys   Indicates if this tree requires unique keys or
+  ///                       allows duplicate keys.
   constexpr explicit GenericAATree(bool unique_keys)
       : unique_keys_(unique_keys) {}
 
   /// Destructor.
   ~GenericAATree() { CheckIntrusiveContainerIsEmpty(empty()); }
 
-  // Intrusive maps cannot be copied, since each Item can only be in one tree.
+  // Intrusive trees cannot be copied, since each Item can only be in one tree.
   GenericAATree(const GenericAATree&) = delete;
   GenericAATree& operator=(const GenericAATree&) = delete;
 
@@ -94,16 +90,16 @@ class GenericAATree {
   void clear();
 
   /// Removes an item from the tree and returns an iterator to the item after
-  /// the removed item..
+  /// the removed item.
   ///
   /// The items themselves are not destructed.
-  iterator erase(AATreeItem& item);
+  iterator erase_one(AATreeItem& item);
 
   /// Removes the items from first, inclusive, to last, exclusive from the tree
   /// and returns an iterator to the item after the last removed item.
   ///
   /// The items themselves are not destructed.
-  iterator erase(AATreeItem& first, AATreeItem& last);
+  iterator erase_range(AATreeItem& first, AATreeItem& last);
 
   /// Exchanges this tree's items with the `other` tree's items.
   void swap(GenericAATree& other);
@@ -139,22 +135,52 @@ class GenericAATree {
 /// implement ``pw::IntrusiveMap`` and ``pw::IntrusiveMultiMap``. Keys are
 /// retrieved and compared using the functions provided via template parameters.
 ///
-/// @tparam   GetKey      Function with signature `Key(const Item&)` that
-///                       returns the value that items are sorted on.
 /// @tparam   Compare     Function with the signature `bool(Key, Key) that is
 ///                       used to order items.
-template <typename GetKey, typename Compare>
+template <typename K, typename V>
 class AATree final : public GenericAATree {
  public:
+  using Key = K;
+  using Compare = Function<bool(Key, Key)>;
+  using GetKey = Function<Key(const V&)>;
   using GenericAATree::iterator;
-  using Key = std::invoke_result_t<GetKey, const AATreeItem&>;
+
+  /// Base item type for intrusive items stored in trees.
+  ///
+  /// Unlike `IntrusiveForwardList` and `IntrusiveList`, which define distinct
+  /// nested types for their items, maps and sets share the same base item type.
+  class Item : public AATreeItem {
+   public:
+    constexpr explicit Item() = default;
+
+   private:
+    // IntrusiveItem is used to ensure T inherits from this container's Item
+    // type. See also `CheckItemType`.
+    template <typename, typename, bool>
+    friend struct IntrusiveItem;
+    using ItemType = V;
+  };
+
+  /// An extension of `Item` that includes storage for a key.
+  class Pair : public Item {
+   public:
+    constexpr explicit Pair(Key key) : key_(key) {}
+    constexpr Key key() const { return key_; }
+
+    constexpr bool operator<(const Pair& rhs) { return key_ < rhs.key(); }
+
+   private:
+    const Key key_;
+  };
 
   /// Constructs an empty AA tree.
   ///
-  /// @param  unique_keys   Indicates if this tree requires unique keys (as with
-  ///                       `std::map`) or allows duplicate keys (as with
-  ///                       `std::multimap`).
-  constexpr explicit AATree(bool unique_keys) : GenericAATree(unique_keys) {}
+  /// @param  unique_keys   Indicates if this tree requires unique keys or
+  ///                       allows duplicate keys.
+  constexpr AATree(bool unique_keys, Compare&& compare, GetKey&& get_key)
+      : GenericAATree(unique_keys),
+        compare_(std::move(compare)),
+        get_key_(std::move(get_key)) {}
 
   // Modifiers
 
@@ -163,7 +189,7 @@ class AATree final : public GenericAATree {
   /// The item will be added if the tree does not already contain an item with
   /// the given item's key or if the tree does not require unique keys.
   ///
-  /// @pre      The item must not be a part of any map.
+  /// @pre      The item must not be a part of any tree.
   ///
   /// @returns  A pointer to the inserted item and `true`, or a pointer to the
   ///           existing item with same key and `false`.
@@ -175,49 +201,44 @@ class AATree final : public GenericAATree {
   template <class Iterator>
   void insert(Iterator first, Iterator last);
 
-  /// @copydoc GenericAATree::erase
-  using GenericAATree::erase;
+  using GenericAATree::erase_one;
+  using GenericAATree::erase_range;
 
-  /// Removes items that match the given `key`, and returns the number of items
-  /// removed.
-  size_t erase(const Key& key);
+  /// Removes items that match the given `key`, and returns an iterator to
+  /// the item after the removed items and the number of items removed.
+  size_t erase_all(Key key);
 
-  /// Splices items from the `other` map into this one.
+  /// Splices items from the `other` tree into this one.
   ///
-  /// The receiving map's `GetKey` and `Compare` functions are used when
+  /// The receiving tree's `Compare` and `GetKey` functions are used when
   /// inserting items.
-  template <typename OtherGetKey, typename OtherCompare>
-  void merge(AATree<OtherGetKey, OtherCompare>& other);
+  void merge(AATree<K, V>& other);
 
   // Lookup
 
-  /// Returns the number of items in the map with the given key.
+  /// Returns the number of items in the tree with the given key.
   ///
-  /// If the map requires unique keys, this simply 0 or 1.
-  size_t count(const Key& key);
+  /// If the tree requires unique keys, this simply 0 or 1.
+  size_t count(Key key);
 
   /// Returns a pointer to an item with the given key, or null if the tree does
   /// not contain such an item.
-  iterator find(const Key& key);
+  iterator find(Key key);
 
   /// Returns a pair of items where the first points to the item with the
   /// smallest key that is not less than the given key, and the second points to
   /// the item with the smallest key that is greater than the given key.
-  std::pair<iterator, iterator> equal_range(const Key& key);
+  std::pair<iterator, iterator> equal_range(Key key);
 
   /// Returns the item in the tree with the smallest key that is greater than or
   /// equal to the given key, or null if the tree is empty.
-  iterator lower_bound(const Key& key);
+  iterator lower_bound(Key key);
 
   /// Returns the item in the tree with the smallest key that is strictly
   /// greater than the given key, or null if the tree is empty.
-  iterator upper_bound(const Key& key);
+  iterator upper_bound(Key key);
 
  private:
-  // Concrete instantiation of functors, using function-name style.
-  GetKey get_key;
-  Compare key_compare;
-
   /// Inserts the given `child` in the subtree rooted by `parent` and returns
   /// the resulting tree. If the tree does not allow duplicates and an
   /// equivalent item is already in the tree, the tree is unchanged and the
@@ -229,18 +250,26 @@ class AATree final : public GenericAATree {
   /// Returns the item in the subtree rooted by the given `item` with the
   /// smallest key that is greater than or equal to the given `key`, or null if
   /// the subtree is empty.
-  AATreeItem* GetLowerBoundImpl(AATreeItem* item, const Key& key);
+  AATreeItem* GetLowerBoundImpl(AATreeItem* item, Key key);
 
   /// Returns the item in the subtree rooted by the given `item` with the
   /// smallest key that is strictly greater than the given `key`, or null if the
   /// subtree is empty.
-  AATreeItem* GetUpperBoundImpl(AATreeItem* item, const Key& key);
+  AATreeItem* GetUpperBoundImpl(AATreeItem* item, Key key);
+
+  /// Returns the key associated with a tree item.
+  constexpr Key DoGetKey(const AATreeItem& item) {
+    return get_key_(static_cast<const V&>(item));
+  }
+
+  Compare compare_;
+  GetKey get_key_;
 };
 
 // Template method implementations.
 
-template <typename GetKey, typename Compare>
-std::pair<GenericAATree::iterator, bool> AATree<GetKey, Compare>::insert(
+template <typename K, typename V>
+std::pair<GenericAATree::iterator, bool> AATree<K, V>::insert(
     AATreeItem& item) {
   CheckIntrusiveItemIsUncontained(!item.IsMapped());
   item.SetLevel(1);
@@ -257,16 +286,16 @@ std::pair<GenericAATree::iterator, bool> AATree<GetKey, Compare>::insert(
   return std::make_pair(iterator(&root_, duplicate), false);
 }
 
-template <typename GetKey, typename Compare>
-AATreeItem* AATree<GetKey, Compare>::InsertImpl(AATreeItem& parent,
-                                                AATreeItem& child,
-                                                AATreeItem*& duplicate) {
-  if (key_compare(get_key(child), get_key(parent))) {
+template <typename K, typename V>
+AATreeItem* AATree<K, V>::InsertImpl(AATreeItem& parent,
+                                     AATreeItem& child,
+                                     AATreeItem*& duplicate) {
+  if (compare_(DoGetKey(child), DoGetKey(parent))) {
     AATreeItem* left = parent.left_.get();
     left = left == nullptr ? &child : InsertImpl(*left, child, duplicate);
     parent.SetLeft(left);
 
-  } else if (key_compare(get_key(parent), get_key(child)) || !unique_keys()) {
+  } else if (compare_(DoGetKey(parent), DoGetKey(child)) || !unique_keys()) {
     AATreeItem* right = parent.right_.get();
     right = right == nullptr ? &child : InsertImpl(*right, child, duplicate);
     parent.SetRight(right);
@@ -279,9 +308,9 @@ AATreeItem* AATree<GetKey, Compare>::InsertImpl(AATreeItem& parent,
   return parent.Skew()->Split();
 }
 
-template <typename GetKey, typename Compare>
+template <typename K, typename V>
 template <class Iterator>
-void AATree<GetKey, Compare>::insert(Iterator first, Iterator last) {
+void AATree<K, V>::insert(Iterator first, Iterator last) {
   for (Iterator iter = first; iter != last; ++iter) {
     if constexpr (std::is_pointer_v<
                       typename std::iterator_traits<Iterator>::value_type>) {
@@ -292,65 +321,60 @@ void AATree<GetKey, Compare>::insert(Iterator first, Iterator last) {
   }
 }
 
-template <typename GetKey, typename Compare>
-size_t AATree<GetKey, Compare>::erase(const Key& key) {
+template <typename K, typename V>
+size_t AATree<K, V>::erase_all(Key key) {
   size_t removed = 0;
-  auto iter = begin();
-  while (iter != end()) {
-    auto& item = *iter++;
-    if (!key_compare(get_key(item), key) && !key_compare(key, get_key(item))) {
-      GenericAATree::erase(item);
-      ++removed;
-    }
+  iterator iter = lower_bound(key);
+  while (iter != end() && !compare_(key, DoGetKey(*iter))) {
+    iter = erase_one(*iter);
+    ++removed;
   }
   return removed;
 }
 
-template <typename GetKey, typename Compare>
-template <typename OtherGetKey, typename OtherCompare>
-void AATree<GetKey, Compare>::merge(AATree<OtherGetKey, OtherCompare>& other) {
+template <typename K, typename V>
+void AATree<K, V>::merge(AATree<K, V>& other) {
   auto iter = other.begin();
   while (!other.empty()) {
     AATreeItem& item = *iter;
-    iter = other.erase(item);
+    iter = other.erase_one(item);
     insert(item);
   }
 }
 
-template <typename GetKey, typename Compare>
-size_t AATree<GetKey, Compare>::count(const Key& key) {
+template <typename K, typename V>
+size_t AATree<K, V>::count(Key key) {
   return std::distance(lower_bound(key), upper_bound(key));
 }
 
-template <typename GetKey, typename Compare>
-GenericAATree::iterator AATree<GetKey, Compare>::find(const Key& key) {
+template <typename K, typename V>
+GenericAATree::iterator AATree<K, V>::find(Key key) {
   iterator iter = lower_bound(key);
-  if (iter == end() || key_compare(key, get_key(*iter))) {
+  if (iter == end() || compare_(key, DoGetKey(*iter))) {
     return end();
   }
   return iter;
 }
 
-template <typename GetKey, typename Compare>
+template <typename K, typename V>
 std::pair<GenericAATree::iterator, GenericAATree::iterator>
-AATree<GetKey, Compare>::equal_range(const Key& key) {
+AATree<K, V>::equal_range(Key key) {
   return std::make_pair(lower_bound(key), upper_bound(key));
 }
 
-template <typename GetKey, typename Compare>
-GenericAATree::iterator AATree<GetKey, Compare>::lower_bound(const Key& key) {
+template <typename K, typename V>
+GenericAATree::iterator AATree<K, V>::lower_bound(Key key) {
   AATreeItem* item = GetLowerBoundImpl(root_, key);
   return item == nullptr ? end() : iterator(&root_, item);
 }
 
-template <typename GetKey, typename Compare>
-AATreeItem* AATree<GetKey, Compare>::GetLowerBoundImpl(AATreeItem* item,
-                                                       const Key& key) {
+template <typename K, typename V>
+AATreeItem* AATree<K, V>::GetLowerBoundImpl(AATreeItem* item, Key key) {
   if (item == nullptr) {
     return nullptr;
   }
   // If the item's key is less than the key, go right.
-  if (key_compare(get_key(*item), key)) {
+  if (compare_(DoGetKey(*item), key)) {
     return GetLowerBoundImpl(item->right_.get(), key);
   }
   // Otherwise the item's key is greater than the key. Try to go left.
@@ -362,20 +386,19 @@ AATreeItem* AATree<GetKey, Compare>::GetLowerBoundImpl(AATreeItem* item,
   return next == nullptr ? item : next;
 }
 
-template <typename GetKey, typename Compare>
-GenericAATree::iterator AATree<GetKey, Compare>::upper_bound(const Key& key) {
+template <typename K, typename V>
+GenericAATree::iterator AATree<K, V>::upper_bound(Key key) {
   AATreeItem* item = GetUpperBoundImpl(root_, key);
   return item == nullptr ? end() : iterator(&root_, item);
 }
 
-template <typename GetKey, typename Compare>
-AATreeItem* AATree<GetKey, Compare>::GetUpperBoundImpl(AATreeItem* item,
-                                                       const Key& key) {
+template <typename K, typename V>
+AATreeItem* AATree<K, V>::GetUpperBoundImpl(AATreeItem* item, Key key) {
   if (item == nullptr) {
     return nullptr;
   }
   // If the item's key is less than or equal to the key, go right.
-  if (!key_compare(key, get_key(*item))) {
+  if (!compare_(key, DoGetKey(*item))) {
     return GetUpperBoundImpl(item->right_.get(), key);
   }
   // Otherwise the item's key is greater than the key. Try to go left.

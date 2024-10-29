@@ -35,8 +35,6 @@ class AATreeIterator {
   using reference = T&;
   using iterator_category = std::bidirectional_iterator_tag;
 
-  // constexpr AATreeIterator() = default;
-
   constexpr AATreeIterator(const AATreeIterator<AATreeItem>& other) {
     *this = other;
   }

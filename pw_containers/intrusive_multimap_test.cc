@@ -21,37 +21,39 @@
 
 namespace {
 
-// Base item.
+// Base pair.
 class BaseItem {
  public:
-  BaseItem(size_t key, const char* name) : key_(key), name_(name) {}
+  explicit BaseItem(const char* name) : name_(name) {}
 
-  constexpr const size_t& key() const { return key_; }
   constexpr const char* name() const { return name_; }
   void set_name(const char* name) { name_ = name; }
 
  private:
-  size_t key_;
   const char* name_;
 };
 
-// A basic item that can be used in a map.
-struct TestItem : public ::pw::IntrusiveMultiMap<size_t, TestItem>::Item,
-                  public BaseItem {
-  TestItem(size_t key, const char* name) : BaseItem(key, name) {}
+// A basic pair that can be used in a map.
+class TestPair : public ::pw::IntrusiveMultiMap<size_t, TestPair>::Pair,
+                 public BaseItem {
+ private:
+  using Pair = ::pw::IntrusiveMultiMap<size_t, TestPair>::Pair;
+
+ public:
+  TestPair(size_t key, const char* name) : Pair(key), BaseItem(name) {}
 };
 
 // Test fixture.
 class IntrusiveMultiMapTest : public ::testing::Test {
  protected:
-  using IntrusiveMultiMap = ::pw::IntrusiveMultiMap<size_t, TestItem>;
-  static constexpr size_t kNumItems = 10;
+  using IntrusiveMultiMap = ::pw::IntrusiveMultiMap<size_t, TestPair>;
+  static constexpr size_t kNumPairs = 10;
 
-  void SetUp() override { multimap_.insert(items_.begin(), items_.end()); }
+  void SetUp() override { multimap_.insert(pairs_.begin(), pairs_.end()); }
 
   void TearDown() override { multimap_.clear(); }
 
-  std::array<TestItem, kNumItems> items_ = {{
+  std::array<TestPair, kNumPairs> pairs_ = {{
       {30, "a"},
       {50, "b"},
       {20, "c"},
@@ -81,20 +83,20 @@ TEST_F(IntrusiveMultiMapTest, Construct_Default) {
 
 TEST_F(IntrusiveMultiMapTest, Construct_ObjectIterators) {
   multimap_.clear();
-  IntrusiveMultiMap multimap(items_.begin(), items_.end());
+  IntrusiveMultiMap multimap(pairs_.begin(), pairs_.end());
   EXPECT_FALSE(multimap.empty());
-  EXPECT_EQ(multimap.size(), items_.size());
+  EXPECT_EQ(multimap.size(), pairs_.size());
   multimap.clear();
 }
 
 TEST_F(IntrusiveMultiMapTest, Construct_ObjectIterators_Empty) {
-  IntrusiveMultiMap multimap(items_.end(), items_.end());
+  IntrusiveMultiMap multimap(pairs_.end(), pairs_.end());
   EXPECT_TRUE(multimap.empty());
   EXPECT_EQ(multimap.size(), 0U);
 }
 
 TEST_F(IntrusiveMultiMapTest, Construct_PointerIterators) {
-  std::array<TestItem*, 3> ptrs = {&items_[0], &items_[1], &items_[2]};
+  std::array<TestPair*, 3> ptrs = {&pairs_[0], &pairs_[1], &pairs_[2]};
   multimap_.clear();
   IntrusiveMultiMap multimap(ptrs.begin(), ptrs.end());
   EXPECT_FALSE(multimap.empty());
@@ -103,7 +105,7 @@ TEST_F(IntrusiveMultiMapTest, Construct_PointerIterators) {
 }
 
 TEST_F(IntrusiveMultiMapTest, Construct_PointerIterators_Empty) {
-  std::array<TestItem*, 0> ptrs;
+  std::array<TestPair*, 0> ptrs;
   IntrusiveMultiMap multimap(ptrs.begin(), ptrs.end());
   EXPECT_TRUE(multimap.empty());
   EXPECT_EQ(multimap.size(), 0U);
@@ -112,9 +114,12 @@ TEST_F(IntrusiveMultiMapTest, Construct_PointerIterators_Empty) {
 
 TEST_F(IntrusiveMultiMapTest, Construct_InitializerList) {
   multimap_.clear();
-  IntrusiveMultiMap multimap({&items_[0], &items_[2], &items_[4]});
-  EXPECT_FALSE(multimap.empty());
-  EXPECT_EQ(multimap.size(), 3U);
+  IntrusiveMultiMap multimap({&pairs_[0], &pairs_[2], &pairs_[4]});
+  auto iter = multimap.begin();
+  EXPECT_EQ((iter++)->key(), 10U);
+  EXPECT_EQ((iter++)->key(), 20U);
+  EXPECT_EQ((iter++)->key(), 30U);
+  EXPECT_EQ(iter, multimap.end());
   multimap.clear();
 }
 
@@ -126,64 +131,96 @@ TEST_F(IntrusiveMultiMapTest, Construct_InitializerList_Empty) {
 
 TEST_F(IntrusiveMultiMapTest, Construct_CustomCompare) {
   multimap_.clear();
-  using Compare = std::greater<size_t>;
-  using CustomMapType = pw::IntrusiveMultiMap<size_t, TestItem, Compare>;
-  CustomMapType multimap(items_.begin(), items_.end());
+  IntrusiveMultiMap multimap({&pairs_[0], &pairs_[2], &pairs_[4]},
+                             std::greater<>());
   auto iter = multimap.begin();
-  EXPECT_EQ((iter++)->key(), 50U);
-  EXPECT_EQ((iter++)->key(), 50U);
-  EXPECT_EQ((iter++)->key(), 40U);
-  EXPECT_EQ((iter++)->key(), 40U);
-  EXPECT_EQ((iter++)->key(), 30U);
   EXPECT_EQ((iter++)->key(), 30U);
   EXPECT_EQ((iter++)->key(), 20U);
-  EXPECT_EQ((iter++)->key(), 20U);
-  EXPECT_EQ((iter++)->key(), 10U);
   EXPECT_EQ((iter++)->key(), 10U);
   EXPECT_EQ(iter, multimap.end());
   multimap.clear();
 }
 
-// Functor for comparing names.
-struct StrCmp {
-  bool operator()(const char* lhs, const char* rhs) {
-    return std::strcmp(lhs, rhs) < 0;
-  }
+// A map pair that includes a key accessor method.
+struct HalvedKey : public ::pw::IntrusiveMultiMap<size_t, HalvedKey>::Item,
+                   public BaseItem {
+ private:
+  using MapItem = ::pw::IntrusiveMultiMap<size_t, HalvedKey>::Item;
+
+ public:
+  HalvedKey(size_t half_key, const char* name)
+      : BaseItem(name), half_key_(half_key) {}
+  size_t key() const { return half_key_ * 2; }
+
+ private:
+  const size_t half_key_;
 };
 
-// This functor is similar to `internal::GetKey<size_t, TestName>`, but uses
-// the first character of the name instead.
-struct GetName {
-  const char* operator()(
-      const ::pw::containers::internal::AATreeItem& item) const {
-    return static_cast<const TestItem&>(item).name();
+TEST_F(IntrusiveMultiMapTest, Construct_CustomItem) {
+  std::array<HalvedKey, 3> items = {{
+      {50, "B"},
+      {40, "D"},
+      {60, "F"},
+  }};
+  pw::IntrusiveMultiMap<size_t, HalvedKey> multimap(items.begin(), items.end());
+
+  auto iter = multimap.find(80);
+  ASSERT_NE(iter, multimap.end());
+  EXPECT_STREQ(iter->name(), "D");
+
+  iter = multimap.find(100);
+  ASSERT_NE(iter, multimap.end());
+  EXPECT_STREQ(iter->name(), "B");
+
+  iter = multimap.find(120);
+  ASSERT_NE(iter, multimap.end());
+  EXPECT_STREQ(iter->name(), "F");
+
+  multimap.clear();
+}
+
+// A map item that has no explicit key.
+struct NoKey : public ::pw::IntrusiveMultiMap<size_t, NoKey>::Item,
+               public BaseItem {
+ public:
+  explicit NoKey(const char* name) : BaseItem(name) {}
+};
+
+// A functor to get an implied key from a `NoKey` item.
+struct GetImpliedKey {
+  size_t operator()(const NoKey& item) const {
+    return std::strlen(item.name());
   }
 };
 
 TEST_F(IntrusiveMultiMapTest, Construct_CustomGetKey) {
-  multimap_.clear();
-  using CustomMapType =
-      pw::IntrusiveMultiMap<const char*, TestItem, StrCmp, GetName>;
-  CustomMapType multimap(items_.begin(), items_.end());
+  std::array<NoKey, 5> items = {
+      NoKey("CC"),
+      NoKey("AAA"),
+      NoKey("AAA"),
+      NoKey("B"),
+      NoKey("DDDD"),
+  };
+  pw::IntrusiveMultiMap<size_t, NoKey> multimap(
+      items.begin(), items.end(), std::less<>(), GetImpliedKey());
 
   auto iter = multimap.begin();
-  EXPECT_STREQ((iter++)->name(), "A");
   EXPECT_STREQ((iter++)->name(), "B");
-  EXPECT_STREQ((iter++)->name(), "C");
-  EXPECT_STREQ((iter++)->name(), "D");
-  EXPECT_STREQ((iter++)->name(), "E");
-  EXPECT_STREQ((iter++)->name(), "a");
-  EXPECT_STREQ((iter++)->name(), "b");
-  EXPECT_STREQ((iter++)->name(), "c");
-  EXPECT_STREQ((iter++)->name(), "d");
-  EXPECT_STREQ((iter++)->name(), "e");
-  EXPECT_EQ(iter, multimap.end());
+  EXPECT_STREQ((iter++)->name(), "CC");
+  EXPECT_STREQ((iter++)->name(), "AAA");
+  EXPECT_STREQ((iter++)->name(), "AAA");
+  EXPECT_STREQ((iter++)->name(), "DDDD");
   multimap.clear();
 }
 
-//  A struct that is not a multimap item.
-struct NotAnItem : public BaseItem {
-  NotAnItem(size_t key, const char* name) : BaseItem(key, name) {}
+//  A struct that is not a multimap pair.
+class NotAnItem : public BaseItem {
+ public:
+  NotAnItem(const char* name, size_t key) : BaseItem(name), key_(key) {}
+  size_t key() const { return key_; }
+
+ private:
+  const size_t key_;
 };
 
 #if PW_NC_TEST(IncompatibleItem)
@@ -191,7 +228,14 @@ PW_NC_EXPECT(
     "IntrusiveMultiMap items must be derived from IntrusiveMultiMap<Key, "
     "T>::Item");
 
-class BadItem : public ::pw::IntrusiveMultiMap<size_t, NotAnItem>::Item {};
+struct BadItem : public ::pw::IntrusiveMultiMap<size_t, NotAnItem>::Item {
+  constexpr explicit BadItem(size_t key) : key_(key) {}
+  constexpr size_t key() const { return key_; }
+  constexpr bool operator<(const Pair& rhs) { return key_ < rhs.key(); }
+
+ private:
+  const size_t key_;
+};
 
 [[maybe_unused]] ::pw::IntrusiveMultiMap<size_t, BadItem> bad_multimap1;
 
@@ -210,7 +254,7 @@ TEST_F(IntrusiveMultiMapTest, Iterator) {
   const IntrusiveMultiMap& multimap = multimap_;
   auto iter = multimap.begin();
   size_t key = 10;
-  for (size_t i = 0; i < kNumItems; i += 2) {
+  for (size_t i = 0; i < kNumPairs; i += 2) {
     EXPECT_EQ((*iter++).key(), key);
     EXPECT_EQ((*iter++).key(), key);
     key += 10;
@@ -218,7 +262,7 @@ TEST_F(IntrusiveMultiMapTest, Iterator) {
   EXPECT_EQ(key, 60U);
   EXPECT_EQ(iter, multimap.end());
   EXPECT_EQ(iter, multimap.cend());
-  for (size_t i = 0; i < kNumItems; i += 2) {
+  for (size_t i = 0; i < kNumPairs; i += 2) {
     key -= 10;
     EXPECT_EQ((--iter)->key(), key);
     EXPECT_EQ((--iter)->key(), key);
@@ -232,7 +276,7 @@ TEST_F(IntrusiveMultiMapTest, ReverseIterator) {
   const IntrusiveMultiMap& multimap = multimap_;
   auto iter = multimap.rbegin();
   size_t key = 50;
-  for (size_t i = 0; i < kNumItems; i += 2) {
+  for (size_t i = 0; i < kNumPairs; i += 2) {
     EXPECT_EQ((*iter++).key(), key);
     EXPECT_EQ((*iter++).key(), key);
     key -= 10;
@@ -240,7 +284,7 @@ TEST_F(IntrusiveMultiMapTest, ReverseIterator) {
   EXPECT_EQ(key, 0U);
   EXPECT_EQ(iter, multimap.rend());
   EXPECT_EQ(iter, multimap.crend());
-  for (size_t i = 0; i < kNumItems; i += 2) {
+  for (size_t i = 0; i < kNumPairs; i += 2) {
     key += 10;
     EXPECT_EQ((--iter)->key(), key);
     EXPECT_EQ((--iter)->key(), key);
@@ -254,14 +298,18 @@ TEST_F(IntrusiveMultiMapTest, ConstIterator_CompareNonConst) {
   EXPECT_EQ(multimap_.end(), multimap_.cend());
 }
 
-// A multimap item that is distinct from TestItem
-struct OtherItem : public ::pw::IntrusiveMultiMap<size_t, OtherItem>::Item,
-                   public BaseItem {
-  OtherItem(size_t key, const char* name) : BaseItem(key, name) {}
+// A multimap pair that is distinct from TestPair
+class OtherPair : public ::pw::IntrusiveMultiMap<size_t, OtherPair>::Pair,
+                  public BaseItem {
+ private:
+  using Pair = ::pw::IntrusiveMultiMap<size_t, OtherPair>::Pair;
+
+ public:
+  OtherPair(size_t key, const char* name) : Pair(key), BaseItem(name) {}
 };
 
 TEST_F(IntrusiveMultiMapTest, ConstIterator_CompareNonConst_CompilationFails) {
-  ::pw::IntrusiveMultiMap<size_t, OtherItem> multimap;
+  ::pw::IntrusiveMultiMap<size_t, OtherPair> multimap;
 #if PW_NC_TEST(CannotCompareIncompatibleIteratorsEqual)
   PW_NC_EXPECT("multimap_\.end\(\) == multimap\.end\(\)");
   static_cast<void>(multimap_.end() == multimap.end());
@@ -293,7 +341,7 @@ TEST_F(IntrusiveMultiMapTest, IsEmpty) {
 
 TEST_F(IntrusiveMultiMapTest, GetSize) {
   const IntrusiveMultiMap& multimap = multimap_;
-  EXPECT_EQ(multimap.size(), kNumItems);
+  EXPECT_EQ(multimap.size(), kNumPairs);
   multimap_.clear();
   EXPECT_EQ(multimap.size(), 0U);
 }
@@ -306,10 +354,10 @@ TEST_F(IntrusiveMultiMapTest, GetMaxSize) {
 // Modifiers
 
 // This functions allows tests to use `std::is_sorted` without specializing
-// `std::less<TestItem>`. Since `std::less` is the default value for the
+// `std::less<TestPair>`. Since `std::less` is the default value for the
 // `Compare` template parameter, leaving it untouched avoids accidentally
 // masking type-handling errors.
-constexpr bool LessThan(const TestItem& lhs, const TestItem& rhs) {
+constexpr bool LessThan(const TestPair& lhs, const TestPair& rhs) {
   return lhs.key() < rhs.key();
 }
 
@@ -317,58 +365,58 @@ TEST_F(IntrusiveMultiMapTest, Insert) {
   multimap_.clear();
   bool sorted = true;
   size_t prev_key = 0;
-  for (auto& item : items_) {
-    sorted &= prev_key < item.key();
+  for (auto& pair : pairs_) {
+    sorted &= prev_key < pair.key();
 
     // Use the "hinted" version of insert.
-    multimap_.insert(multimap_.end(), item);
-    prev_key = item.key();
+    multimap_.insert(multimap_.end(), pair);
+    prev_key = pair.key();
   }
   EXPECT_FALSE(sorted);
 
-  EXPECT_EQ(multimap_.size(), kNumItems);
+  EXPECT_EQ(multimap_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMultiMapTest, Insert_Duplicate) {
-  TestItem item1(60, "1");
-  TestItem item2(60, "2");
+  TestPair pair1(60, "1");
+  TestPair pair2(60, "2");
 
-  auto iter = multimap_.insert(item1);
+  auto iter = multimap_.insert(pair1);
   EXPECT_STREQ(iter->name(), "1");
 
-  iter = multimap_.insert(item2);
+  iter = multimap_.insert(pair2);
   EXPECT_STREQ(iter->name(), "2");
 
-  EXPECT_EQ(multimap_.size(), kNumItems + 2);
+  EXPECT_EQ(multimap_.size(), kNumPairs + 2);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 
-  // Explicitly clear the multimap before item 1 goes out of scope.
+  // Explicitly clear the multimap before pair 1 goes out of scope.
   multimap_.clear();
 }
 
 TEST_F(IntrusiveMultiMapTest, Insert_ObjectIterators) {
   multimap_.clear();
-  multimap_.insert(items_.begin(), items_.end());
-  EXPECT_EQ(multimap_.size(), kNumItems);
+  multimap_.insert(pairs_.begin(), pairs_.end());
+  EXPECT_EQ(multimap_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMultiMapTest, Insert_ObjectIterators_Empty) {
-  multimap_.insert(items_.end(), items_.end());
-  EXPECT_EQ(multimap_.size(), kNumItems);
+  multimap_.insert(pairs_.end(), pairs_.end());
+  EXPECT_EQ(multimap_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMultiMapTest, Insert_ObjectIterators_WithDuplicates) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {50, "B"},
       {40, "D"},
       {60, "F"},
   }};
 
-  multimap_.insert(items.begin(), items.end());
-  EXPECT_EQ(multimap_.size(), kNumItems + 3);
+  multimap_.insert(pairs.begin(), pairs.end());
+  EXPECT_EQ(multimap_.size(), kNumPairs + 3);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 
   auto iter = multimap_.find(40);
@@ -385,13 +433,13 @@ TEST_F(IntrusiveMultiMapTest, Insert_ObjectIterators_WithDuplicates) {
   ASSERT_NE(iter, multimap_.end());
   EXPECT_STREQ(iter->name(), "F");
 
-  // Explicitly clear the multimap before items goes out of scope.
+  // Explicitly clear the multimap before pairs goes out of scope.
   multimap_.clear();
 }
 
 TEST_F(IntrusiveMultiMapTest, Insert_PointerIterators) {
   multimap_.clear();
-  std::array<TestItem*, 3> ptrs = {&items_[0], &items_[1], &items_[2]};
+  std::array<TestPair*, 3> ptrs = {&pairs_[0], &pairs_[1], &pairs_[2]};
 
   multimap_.insert(ptrs.begin(), ptrs.end());
   EXPECT_EQ(multimap_.size(), 3U);
@@ -399,21 +447,21 @@ TEST_F(IntrusiveMultiMapTest, Insert_PointerIterators) {
 }
 
 TEST_F(IntrusiveMultiMapTest, Insert_PointerIterators_Empty) {
-  std::array<TestItem*, 0> ptrs;
+  std::array<TestPair*, 0> ptrs;
 
   multimap_.insert(ptrs.begin(), ptrs.end());
-  EXPECT_EQ(multimap_.size(), kNumItems);
+  EXPECT_EQ(multimap_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMultiMapTest, Insert_PointerIterators_WithDuplicates) {
-  TestItem item1(50, "B");
-  TestItem item2(40, "D");
-  TestItem item3(60, "F");
-  std::array<TestItem*, 3> ptrs = {&item1, &item2, &item3};
+  TestPair pair1(50, "B");
+  TestPair pair2(40, "D");
+  TestPair pair3(60, "F");
+  std::array<TestPair*, 3> ptrs = {&pair1, &pair2, &pair3};
 
   multimap_.insert(ptrs.begin(), ptrs.end());
-  EXPECT_EQ(multimap_.size(), kNumItems + 3);
+  EXPECT_EQ(multimap_.size(), kNumPairs + 3);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 
   auto iter = multimap_.find(40);
@@ -430,30 +478,30 @@ TEST_F(IntrusiveMultiMapTest, Insert_PointerIterators_WithDuplicates) {
   ASSERT_NE(iter, multimap_.end());
   EXPECT_STREQ(iter->name(), "F");
 
-  // Explicitly clear the multimap before items goes out of scope.
+  // Explicitly clear the multimap before pairs goes out of scope.
   multimap_.clear();
 }
 
 TEST_F(IntrusiveMultiMapTest, Insert_InitializerList) {
   multimap_.clear();
-  multimap_.insert({&items_[0], &items_[2], &items_[4]});
+  multimap_.insert({&pairs_[0], &pairs_[2], &pairs_[4]});
   EXPECT_EQ(multimap_.size(), 3U);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMultiMapTest, Insert_InitializerList_Empty) {
   multimap_.insert({});
-  EXPECT_EQ(multimap_.size(), kNumItems);
+  EXPECT_EQ(multimap_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 }
 
 TEST_F(IntrusiveMultiMapTest, Insert_InitializerList_WithDuplicates) {
-  TestItem item1(50, "B");
-  TestItem item2(40, "D");
-  TestItem item3(60, "F");
+  TestPair pair1(50, "B");
+  TestPair pair2(40, "D");
+  TestPair pair3(60, "F");
 
-  multimap_.insert({&item1, &item2, &item3});
-  EXPECT_EQ(multimap_.size(), kNumItems + 3);
+  multimap_.insert({&pair1, &pair2, &pair3});
+  EXPECT_EQ(multimap_.size(), kNumPairs + 3);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 
   auto iter = multimap_.find(40);
@@ -470,85 +518,85 @@ TEST_F(IntrusiveMultiMapTest, Insert_InitializerList_WithDuplicates) {
   ASSERT_NE(iter, multimap_.end());
   EXPECT_STREQ(iter->name(), "F");
 
-  // Explicitly clear the multimap before items goes out of scope.
+  // Explicitly clear the multimap before pairs goes out of scope.
   multimap_.clear();
 }
 
-// An item derived from TestItem.
-struct DerivedItem : public TestItem {
-  DerivedItem(size_t n, const char* name) : TestItem(n * 10, name) {}
+// A pair derived from TestPair.
+struct DerivedPair : public TestPair {
+  DerivedPair(size_t n, const char* name) : TestPair(n * 10, name) {}
 };
 
-TEST_F(IntrusiveMultiMapTest, Insert_DerivedItems) {
-  DerivedItem item1(6, "f");
-  multimap_.insert(item1);
+TEST_F(IntrusiveMultiMapTest, Insert_DerivedPairs) {
+  DerivedPair pair1(6, "f");
+  multimap_.insert(pair1);
 
-  DerivedItem item2(7, "g");
-  multimap_.insert(item2);
+  DerivedPair pair2(7, "g");
+  multimap_.insert(pair2);
 
-  EXPECT_EQ(multimap_.size(), kNumItems + 2);
+  EXPECT_EQ(multimap_.size(), kNumPairs + 2);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 
-  // Explicitly clear the multimap before items goes out of scope.
+  // Explicitly clear the multimap before pairs goes out of scope.
   multimap_.clear();
 }
 
-TEST_F(IntrusiveMultiMapTest, Insert_DerivedItems_CompilationFails) {
-  ::pw::IntrusiveMultiMap<size_t, DerivedItem>
-      derived_from_compatible_item_type;
+TEST_F(IntrusiveMultiMapTest, Insert_DerivedPairs_CompilationFails) {
+  ::pw::IntrusiveMultiMap<size_t, DerivedPair>
+      derived_from_compatible_pair_type;
 
-  DerivedItem item1(6, "f");
-  derived_from_compatible_item_type.insert(item1);
+  DerivedPair pair1(6, "f");
+  derived_from_compatible_pair_type.insert(pair1);
 
-  EXPECT_EQ(derived_from_compatible_item_type.size(), 1U);
+  EXPECT_EQ(derived_from_compatible_pair_type.size(), 1U);
 
 #if PW_NC_TEST(CannotAddBaseClassToDerivedClassMap)
-  PW_NC_EXPECT("derived_from_compatible_item_type\.insert\(item2\)");
+  PW_NC_EXPECT("derived_from_compatible_pair_type\.insert\(pair2\)");
 
-  TestItem item2(70, "g");
-  derived_from_compatible_item_type.insert(item2);
+  TestPair pair2(70, "g");
+  derived_from_compatible_pair_type.insert(pair2);
 #endif
-  derived_from_compatible_item_type.clear();
+  derived_from_compatible_pair_type.clear();
 }
 
 TEST_F(IntrusiveMultiMapTest, Erase_One_ByItem) {
-  for (size_t i = 0; i < kNumItems; ++i) {
-    EXPECT_EQ(multimap_.size(), kNumItems);
-    auto iter = multimap_.erase(items_[i]);
+  for (size_t i = 0; i < kNumPairs; ++i) {
+    EXPECT_EQ(multimap_.size(), kNumPairs);
+    auto iter = multimap_.erase(pairs_[i]);
     if (iter != multimap_.end()) {
-      EXPECT_GE(iter->key(), items_[i].key());
+      EXPECT_GE(iter->key(), pairs_[i].key());
     }
-    EXPECT_EQ(multimap_.size(), kNumItems - 1);
-    multimap_.insert(items_[i]);
+    EXPECT_EQ(multimap_.size(), kNumPairs - 1);
+    multimap_.insert(pairs_[i]);
   }
 }
 
 TEST_F(IntrusiveMultiMapTest, Erase_Two_ByKey) {
-  constexpr size_t kHalf = kNumItems / 2;
+  constexpr size_t kHalf = kNumPairs / 2;
   for (size_t i = 0; i < kHalf; ++i) {
-    ASSERT_EQ(items_[i].key(), items_[i + kHalf].key());
-    EXPECT_EQ(multimap_.size(), kNumItems);
-    EXPECT_EQ(multimap_.erase(items_[i].key()), 2U);
-    EXPECT_EQ(multimap_.size(), kNumItems - 2);
-    auto iter = multimap_.find(items_[i].key());
+    ASSERT_EQ(pairs_[i].key(), pairs_[i + kHalf].key());
+    EXPECT_EQ(multimap_.size(), kNumPairs);
+    EXPECT_EQ(multimap_.erase(pairs_[i].key()), 2U);
+    EXPECT_EQ(multimap_.size(), kNumPairs - 2);
+    auto iter = multimap_.find(pairs_[i].key());
     EXPECT_EQ(iter, multimap_.end());
-    multimap_.insert(items_[i]);
-    multimap_.insert(items_[i + kHalf]);
+    multimap_.insert(pairs_[i]);
+    multimap_.insert(pairs_[i + kHalf]);
   }
 }
 
 TEST_F(IntrusiveMultiMapTest, Erase_OnlyItem) {
   multimap_.clear();
-  multimap_.insert(items_[0]);
+  multimap_.insert(pairs_[0]);
   EXPECT_EQ(multimap_.size(), 1U);
 
-  EXPECT_EQ(multimap_.erase(items_[0].key()), 1U);
+  EXPECT_EQ(multimap_.erase(pairs_[0].key()), 1U);
   EXPECT_EQ(multimap_.size(), 0U);
 }
 
 TEST_F(IntrusiveMultiMapTest, Erase_AllOnebyOne) {
   auto iter = multimap_.begin();
-  for (size_t n = kNumItems; n != 0; --n) {
+  for (size_t n = kNumPairs; n != 0; --n) {
     ASSERT_NE(iter, multimap_.end());
     iter = multimap_.erase(iter);
   }
@@ -572,45 +620,45 @@ TEST_F(IntrusiveMultiMapTest, Erase_MissingItem) {
 }
 
 TEST_F(IntrusiveMultiMapTest, Erase_Reinsert) {
-  constexpr size_t kHalf = kNumItems / 2;
-  EXPECT_EQ(multimap_.size(), items_.size());
+  constexpr size_t kHalf = kNumPairs / 2;
+  EXPECT_EQ(multimap_.size(), pairs_.size());
 
-  ASSERT_EQ(items_[0].key(), items_[0 + kHalf].key());
-  EXPECT_EQ(multimap_.erase(items_[0].key()), 2U);
-  EXPECT_EQ(multimap_.find(items_[0].key()), multimap_.end());
+  ASSERT_EQ(pairs_[0].key(), pairs_[0 + kHalf].key());
+  EXPECT_EQ(multimap_.erase(pairs_[0].key()), 2U);
+  EXPECT_EQ(multimap_.find(pairs_[0].key()), multimap_.end());
 
-  ASSERT_EQ(items_[2].key(), items_[2 + kHalf].key());
-  EXPECT_EQ(multimap_.erase(items_[2].key()), 2U);
-  EXPECT_EQ(multimap_.find(items_[2].key()), multimap_.end());
+  ASSERT_EQ(pairs_[2].key(), pairs_[2 + kHalf].key());
+  EXPECT_EQ(multimap_.erase(pairs_[2].key()), 2U);
+  EXPECT_EQ(multimap_.find(pairs_[2].key()), multimap_.end());
 
-  ASSERT_EQ(items_[4].key(), items_[4 + kHalf].key());
-  EXPECT_EQ(multimap_.erase(items_[4].key()), 2U);
-  EXPECT_EQ(multimap_.find(items_[4].key()), multimap_.end());
+  ASSERT_EQ(pairs_[4].key(), pairs_[4 + kHalf].key());
+  EXPECT_EQ(multimap_.erase(pairs_[4].key()), 2U);
+  EXPECT_EQ(multimap_.find(pairs_[4].key()), multimap_.end());
 
-  EXPECT_EQ(multimap_.size(), items_.size() - 6);
+  EXPECT_EQ(multimap_.size(), pairs_.size() - 6);
 
-  multimap_.insert(items_[4]);
-  auto iter = multimap_.find(items_[4].key());
+  multimap_.insert(pairs_[4]);
+  auto iter = multimap_.find(pairs_[4].key());
   EXPECT_NE(iter, multimap_.end());
 
-  multimap_.insert(items_[0]);
-  iter = multimap_.find(items_[0].key());
+  multimap_.insert(pairs_[0]);
+  iter = multimap_.find(pairs_[0].key());
   EXPECT_NE(iter, multimap_.end());
 
-  multimap_.insert(items_[2]);
-  iter = multimap_.find(items_[2].key());
+  multimap_.insert(pairs_[2]);
+  iter = multimap_.find(pairs_[2].key());
   EXPECT_NE(iter, multimap_.end());
 
-  EXPECT_EQ(multimap_.size(), items_.size() - 3);
+  EXPECT_EQ(multimap_.size(), pairs_.size() - 3);
 }
 
 TEST_F(IntrusiveMultiMapTest, Erase_Duplicate) {
-  TestItem item1(32, "1");
-  TestItem item2(32, "2");
-  TestItem item3(32, "3");
-  multimap_.insert(item1);
-  multimap_.insert(item2);
-  multimap_.insert(item3);
+  TestPair pair1(32, "1");
+  TestPair pair2(32, "2");
+  TestPair pair3(32, "3");
+  multimap_.insert(pair1);
+  multimap_.insert(pair2);
+  multimap_.insert(pair3);
 
   auto iter = multimap_.find(32);
   ASSERT_NE(iter, multimap_.end());
@@ -629,15 +677,15 @@ TEST_F(IntrusiveMultiMapTest, Erase_Duplicate) {
 }
 
 TEST_F(IntrusiveMultiMapTest, Swap) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {50, "B"},
       {40, "D"},
       {60, "F"},
   }};
-  IntrusiveMultiMap multimap(items.begin(), items.end());
+  IntrusiveMultiMap multimap(pairs.begin(), pairs.end());
 
   multimap_.swap(multimap);
-  EXPECT_EQ(multimap.size(), kNumItems);
+  EXPECT_EQ(multimap.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(multimap.begin(), multimap.end(), LessThan));
   auto iter = multimap.begin();
   EXPECT_STREQ((iter++)->name(), "e");
@@ -661,7 +709,7 @@ TEST_F(IntrusiveMultiMapTest, Swap) {
   EXPECT_STREQ((iter++)->name(), "F");
   EXPECT_EQ(iter, multimap_.end());
 
-  // Explicitly clear the multimap before items goes out of scope.
+  // Explicitly clear the multimap before pairs goes out of scope.
   multimap_.clear();
 }
 
@@ -669,7 +717,7 @@ TEST_F(IntrusiveMultiMapTest, Swap_Empty) {
   IntrusiveMultiMap multimap;
 
   multimap_.swap(multimap);
-  EXPECT_EQ(multimap.size(), kNumItems);
+  EXPECT_EQ(multimap.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(multimap.begin(), multimap.end(), LessThan));
   auto iter = multimap.begin();
   EXPECT_STREQ((iter++)->name(), "e");
@@ -689,16 +737,16 @@ TEST_F(IntrusiveMultiMapTest, Swap_Empty) {
 }
 
 TEST_F(IntrusiveMultiMapTest, Merge) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {5, "f"},
       {75, "g"},
       {85, "h"},
   }};
-  IntrusiveMultiMap multimap(items.begin(), items.end());
+  IntrusiveMultiMap multimap(pairs.begin(), pairs.end());
 
   multimap_.merge(multimap);
   EXPECT_TRUE(multimap.empty());
-  EXPECT_EQ(multimap_.size(), kNumItems + 3);
+  EXPECT_EQ(multimap_.size(), kNumPairs + 3);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
   auto iter = multimap_.begin();
   EXPECT_STREQ((iter++)->name(), "f");
@@ -716,7 +764,7 @@ TEST_F(IntrusiveMultiMapTest, Merge) {
   EXPECT_STREQ((iter++)->name(), "h");
   EXPECT_EQ(iter, multimap_.end());
 
-  // Explicitly clear the multimap before items goes out of scope.
+  // Explicitly clear the multimap before pairs goes out of scope.
   multimap_.clear();
 }
 
@@ -724,28 +772,28 @@ TEST_F(IntrusiveMultiMapTest, Merge_Empty) {
   IntrusiveMultiMap multimap;
 
   multimap_.merge(multimap);
-  EXPECT_EQ(multimap_.size(), kNumItems);
+  EXPECT_EQ(multimap_.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
 
   multimap.merge(multimap_);
   EXPECT_TRUE(multimap_.empty());
-  EXPECT_EQ(multimap.size(), kNumItems);
+  EXPECT_EQ(multimap.size(), kNumPairs);
   EXPECT_TRUE(std::is_sorted(multimap.begin(), multimap.end(), LessThan));
 
   multimap.clear();
 }
 
 TEST_F(IntrusiveMultiMapTest, Merge_WithDuplicates) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {15, "f"},
       {45, "g"},
       {55, "h"},
   }};
-  IntrusiveMultiMap multimap(items.begin(), items.end());
+  IntrusiveMultiMap multimap(pairs.begin(), pairs.end());
 
   multimap_.merge(multimap);
   EXPECT_TRUE(multimap.empty());
-  EXPECT_EQ(multimap_.size(), kNumItems + 3);
+  EXPECT_EQ(multimap_.size(), kNumPairs + 3);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
   auto iter = multimap_.begin();
   EXPECT_STREQ((iter++)->name(), "e");
@@ -763,21 +811,21 @@ TEST_F(IntrusiveMultiMapTest, Merge_WithDuplicates) {
   EXPECT_STREQ((iter++)->name(), "h");
   EXPECT_EQ(iter, multimap_.end());
 
-  // Explicitly clear the multimap before items goes out of scope.
+  // Explicitly clear the multimap before pairs goes out of scope.
   multimap_.clear();
 }
 
 TEST_F(IntrusiveMultiMapTest, Merge_Map) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {15, "f"},
       {45, "g"},
       {55, "h"},
   }};
-  ::pw::IntrusiveMap<size_t, TestItem> map(items.begin(), items.end());
+  ::pw::IntrusiveMap<size_t, TestPair> map(pairs.begin(), pairs.end());
 
   multimap_.merge(map);
   EXPECT_TRUE(map.empty());
-  EXPECT_EQ(multimap_.size(), kNumItems + 3);
+  EXPECT_EQ(multimap_.size(), kNumPairs + 3);
   EXPECT_TRUE(std::is_sorted(multimap_.begin(), multimap_.end(), LessThan));
   auto iter = multimap_.begin();
   EXPECT_STREQ((iter++)->name(), "e");
@@ -795,17 +843,17 @@ TEST_F(IntrusiveMultiMapTest, Merge_Map) {
   EXPECT_STREQ((iter++)->name(), "h");
   EXPECT_EQ(iter, multimap_.end());
 
-  // Explicitly clear the multimap before items goes out of scope.
+  // Explicitly clear the multimap before pairs goes out of scope.
   multimap_.clear();
 }
 
 TEST_F(IntrusiveMultiMapTest, Count) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {50, "B"},
       {40, "D"},
       {60, "F"},
   }};
-  multimap_.insert(items.begin(), items.end());
+  multimap_.insert(pairs.begin(), pairs.end());
 
   const IntrusiveMultiMap& multimap = multimap_;
   EXPECT_EQ(multimap.count(10), 2U);
@@ -815,7 +863,7 @@ TEST_F(IntrusiveMultiMapTest, Count) {
   EXPECT_EQ(multimap.count(50), 3U);
   EXPECT_EQ(multimap.count(60), 1U);
 
-  // Explicitly clear the multimap before items goes out of scope.
+  // Explicitly clear the multimap before pairs goes out of scope.
   multimap_.clear();
 }
 
@@ -827,7 +875,7 @@ TEST_F(IntrusiveMultiMapTest, Count_NoSuchKey) {
 TEST_F(IntrusiveMultiMapTest, Find) {
   const IntrusiveMultiMap& multimap = multimap_;
   size_t key = 10;
-  for (size_t i = 0; i < kNumItems; i += 2) {
+  for (size_t i = 0; i < kNumPairs; i += 2) {
     auto iter = multimap.find(key);
     ASSERT_NE(iter, multimap.end());
     EXPECT_EQ(iter->key(), key);
@@ -842,12 +890,12 @@ TEST_F(IntrusiveMultiMapTest, Find_NoSuchKey) {
 }
 
 TEST_F(IntrusiveMultiMapTest, Find_WithDuplicates) {
-  std::array<TestItem, 3> items = {{
+  std::array<TestPair, 3> pairs = {{
       {50, "B"},
       {40, "D"},
       {60, "F"},
   }};
-  multimap_.insert(items.begin(), items.end());
+  multimap_.insert(pairs.begin(), pairs.end());
 
   auto iter = multimap_.find(40);
   ASSERT_NE(iter, multimap_.end());
@@ -863,7 +911,7 @@ TEST_F(IntrusiveMultiMapTest, Find_WithDuplicates) {
   EXPECT_EQ(iter->key(), 50U);
   EXPECT_EQ(iter->name(), "B");
 
-  // Explicitly clear the multimap before items goes out of scope.
+  // Explicitly clear the multimap before pairs goes out of scope.
   multimap_.clear();
 }
 

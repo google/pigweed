@@ -34,7 +34,7 @@ void GenericAATree::clear() {
   }
 }
 
-GenericAATree::iterator GenericAATree::erase(AATreeItem& item) {
+GenericAATree::iterator GenericAATree::erase_one(AATreeItem& item) {
   if (item.GetRoot() != root_) {
     return iterator(&root_);
   }
@@ -43,11 +43,11 @@ GenericAATree::iterator GenericAATree::erase(AATreeItem& item) {
   return iterator(&root_, next);
 }
 
-GenericAATree::iterator GenericAATree::erase(AATreeItem& first,
-                                             AATreeItem& last) {
+GenericAATree::iterator GenericAATree::erase_range(AATreeItem& first,
+                                                   AATreeItem& last) {
   iterator iter(&root_, &first);
   while (&(*iter) != &last) {
-    iter = erase(*iter);
+    iter = erase_one(*iter);
   }
   return iter;
 }

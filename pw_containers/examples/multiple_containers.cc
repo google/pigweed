@@ -20,19 +20,21 @@
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
-// DOCSTAG: [pw_containers-listed_and_mapped]
+// DOCSTAG: [pw_containers-multiple_containers]
 
 // The base type for lists can be trivially derived.
-class ListItem : public pw::containers::future::IntrusiveList<ListItem>::Item {
+struct ListItem : public pw::containers::future::IntrusiveList<ListItem>::Item {
 };
 
-// The base type for maps be a helper type that defines the constructor.
-using MapItem = pw::IntrusiveMapItemWithKey<uint32_t>;
+// The base type for maps needs a constructor.
+struct MapPair : public pw::IntrusiveMap<const uint32_t&, MapPair>::Pair {
+  constexpr MapPair(const uint32_t& id)
+      : pw::IntrusiveMap<const uint32_t&, MapPair>::Pair(id) {}
+};
 
-struct Task : public ListItem, public MapItem {
+struct Task : public ListItem, public MapPair {
   uint32_t id = 0;
-
-  constexpr Task() : MapItem(id) {}
+  constexpr explicit Task() : MapPair(id) {}
 };
 
 namespace examples {
@@ -81,11 +83,11 @@ class Scheduler {
   // NOTE! The containers must be templated on their specific item types, not
   // the composite `Task` type.
   pw::containers::future::IntrusiveList<ListItem> queue_;
-  pw::IntrusiveMap<uint32_t, MapItem> by_id_;
+  pw::IntrusiveMap<uint32_t, MapPair> by_id_;
   uint32_t num_ids_ = 0;
 };
 
-// DOCSTAG: [pw_containers-listed_and_mapped]
+// DOCSTAG: [pw_containers-multiple_containers]
 
 }  // namespace examples
 

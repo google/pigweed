@@ -51,8 +51,20 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "listed_and_mapped",
-    srcs = ["listed_and_mapped.cc"],
+    name = "intrusive_set",
+    srcs = ["intrusive_set.cc"],
+    deps = ["//pw_containers:intrusive_set"],
+)
+
+pw_cc_test(
+    name = "intrusive_multiset",
+    srcs = ["intrusive_multiset.cc"],
+    deps = ["//pw_containers:intrusive_multiset"],
+)
+
+pw_cc_test(
+    name = "multiple_containers",
+    srcs = ["multiple_containers.cc"],
     deps = [
         "//pw_containers:intrusive_list",
         "//pw_containers:intrusive_map",

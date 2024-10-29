@@ -101,12 +101,12 @@ cc_library(
     name = "legacy_intrusive_list",
     hdrs = ["public/pw_containers/internal/legacy_intrusive_list.h"],
     includes = ["public"],
-    visibility = ["//visibility:private"],
+    visibility = [":__subpackages__"],
     deps = [":intrusive_forward_list"],
 )
 
 cc_library(
-    name = "intrusive_map",
+    name = "aa_tree",
     srcs = [
         "aa_tree.cc",
         "aa_tree_item.cc",
@@ -115,21 +115,43 @@ cc_library(
         "public/pw_containers/internal/aa_tree.h",
         "public/pw_containers/internal/aa_tree_item.h",
         "public/pw_containers/internal/aa_tree_iterator.h",
-        "public/pw_containers/intrusive_map.h",
     ],
     includes = ["public"],
+    visibility = [":__subpackages__"],
     deps = [
         ":intrusive_item",
         "//pw_assert",
         "//pw_bytes:packed_ptr",
+        "//pw_function",
     ],
+)
+
+cc_library(
+    name = "intrusive_map",
+    hdrs = ["public/pw_containers/intrusive_map.h"],
+    includes = ["public"],
+    deps = [":aa_tree"],
 )
 
 cc_library(
     name = "intrusive_multimap",
     hdrs = ["public/pw_containers/intrusive_multimap.h"],
     includes = ["public"],
-    deps = [":intrusive_map"],
+    deps = [":aa_tree"],
+)
+
+cc_library(
+    name = "intrusive_set",
+    hdrs = ["public/pw_containers/intrusive_set.h"],
+    includes = ["public"],
+    deps = [":aa_tree"],
+)
+
+cc_library(
+    name = "intrusive_multiset",
+    hdrs = ["public/pw_containers/intrusive_multiset.h"],
+    includes = ["public"],
+    deps = [":aa_tree"],
 )
 
 cc_library(
@@ -392,6 +414,28 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "intrusive_set_test",
+    srcs = ["intrusive_set_test.cc"],
+    deps = [
+        ":intrusive_multiset",
+        ":intrusive_set",
+        "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_span",
+    ],
+)
+
+pw_cc_test(
+    name = "intrusive_multiset_test",
+    srcs = ["intrusive_multiset_test.cc"],
+    deps = [
+        ":intrusive_multiset",
+        ":intrusive_set",
+        "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_span",
+    ],
+)
+
+pw_cc_test(
     name = "intrusive_item_test",
     srcs = ["intrusive_item_test.cc"],
     deps = [
@@ -399,6 +443,8 @@ pw_cc_test(
         ":intrusive_list",
         ":intrusive_map",
         ":intrusive_multimap",
+        ":intrusive_multiset",
+        ":intrusive_set",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_unit_test",
     ],

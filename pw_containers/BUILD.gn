@@ -182,31 +182,51 @@ pw_source_set("legacy_intrusive_list") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_containers/internal/legacy_intrusive_list.h" ]
   public_deps = [ ":intrusive_forward_list" ]
+  visibility = [ "./*" ]
 }
 
-pw_source_set("intrusive_map") {
+pw_source_set("aa_tree") {
   public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_containers/internal/aa_tree.h",
     "public/pw_containers/internal/aa_tree_item.h",
     "public/pw_containers/internal/aa_tree_iterator.h",
-    "public/pw_containers/intrusive_map.h",
   ]
   public_deps = [
     ":intrusive_item",
     "$dir_pw_bytes:packed_ptr",
     dir_pw_assert,
+    dir_pw_function,
   ]
   sources = [
     "aa_tree.cc",
     "aa_tree_item.cc",
   ]
+  visibility = [ "./*" ]
+}
+
+pw_source_set("intrusive_map") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/intrusive_map.h" ]
+  public_deps = [ ":aa_tree" ]
 }
 
 pw_source_set("intrusive_multimap") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_containers/intrusive_multimap.h" ]
-  public_deps = [ ":intrusive_map" ]
+  public_deps = [ ":aa_tree" ]
+}
+
+pw_source_set("intrusive_set") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/intrusive_set.h" ]
+  public_deps = [ ":aa_tree" ]
+}
+
+pw_source_set("intrusive_multiset") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/intrusive_multiset.h" ]
+  public_deps = [ ":aa_tree" ]
 }
 
 pw_test_group("tests") {
@@ -221,6 +241,8 @@ pw_test_group("tests") {
     ":intrusive_list_test",
     ":intrusive_map_test",
     ":intrusive_multimap_test",
+    ":intrusive_set_test",
+    ":intrusive_multiset_test",
     ":raw_storage_test",
     ":to_array_test",
     ":inline_var_len_entry_queue_test",
@@ -394,6 +416,26 @@ pw_test("intrusive_multimap_test") {
   negative_compilation_tests = true
 }
 
+pw_test("intrusive_set_test") {
+  sources = [ "intrusive_set_test.cc" ]
+  deps = [
+    ":intrusive_multiset",
+    ":intrusive_set",
+    dir_pw_span,
+  ]
+  negative_compilation_tests = true
+}
+
+pw_test("intrusive_multiset_test") {
+  sources = [ "intrusive_multiset_test.cc" ]
+  deps = [
+    ":intrusive_multiset",
+    ":intrusive_set",
+    dir_pw_span,
+  ]
+  negative_compilation_tests = true
+}
+
 pw_test("intrusive_item_test") {
   sources = [ "intrusive_item_test.cc" ]
   deps = [
@@ -401,6 +443,8 @@ pw_test("intrusive_item_test") {
     ":intrusive_list",
     ":intrusive_map",
     ":intrusive_multimap",
+    ":intrusive_multiset",
+    ":intrusive_set",
   ]
   negative_compilation_tests = true
 }
@@ -412,7 +456,9 @@ pw_doc_group("docs") {
     "examples/intrusive_list.cc",
     "examples/intrusive_map.cc",
     "examples/intrusive_multimap.cc",
-    "examples/listed_and_mapped.cc",
+    "examples/intrusive_multiset.cc",
+    "examples/intrusive_set.cc",
+    "examples/multiple_containers.cc",
     "examples/wrapped_iterator.cc",
   ]
   sources = [ "docs.rst" ]

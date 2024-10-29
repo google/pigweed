@@ -43,14 +43,24 @@ pw_test("intrusive_multimap") {
   sources = [ "intrusive_multimap.cc" ]
 }
 
-pw_test("listed_and_mapped") {
+pw_test("intrusive_set") {
+  deps = [ "$dir_pw_containers:intrusive_set" ]
+  sources = [ "intrusive_set.cc" ]
+}
+
+pw_test("intrusive_multiset") {
+  deps = [ "$dir_pw_containers:intrusive_multiset" ]
+  sources = [ "intrusive_multiset.cc" ]
+}
+
+pw_test("multiple_containers") {
   deps = [
     "$dir_pw_containers:intrusive_list",
     "$dir_pw_containers:intrusive_map",
     dir_pw_result,
     dir_pw_status,
   ]
-  sources = [ "listed_and_mapped.cc" ]
+  sources = [ "multiple_containers.cc" ]
 }
 
 pw_test("wrapped_iterator") {
@@ -65,7 +75,9 @@ pw_test_group("examples") {
     ":intrusive_list",
     ":intrusive_map",
     ":intrusive_multimap",
-    ":listed_and_mapped",
+    ":intrusive_set",
+    ":intrusive_multiset",
+    ":multiple_containers",
     ":wrapped_iterator",
   ]
 }

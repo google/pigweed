@@ -19,10 +19,6 @@
 
 namespace pw::containers::internal {
 
-// Forward declaration for friending.
-template <typename>
-class AATreeIterator;
-
 /// Base type for items stored in an AA tree, as described by Arne Andersson in
 /// https://user.it.uu.se/~arneande/ps/simp.pdf. AA trees are simplified
 /// red-black which offer almost as much performance with much simpler and
@@ -141,14 +137,6 @@ class AATreeItem {
   PackedPtr<AATreeItem> parent_;
   mutable PackedPtr<AATreeItem> left_;
   mutable PackedPtr<AATreeItem> right_;
-};
-
-/// Functor that gets a key from an item with a dedicated accessor.
-template <typename Key, typename T>
-struct GetKey {
-  const Key& operator()(const AATreeItem& item) const {
-    return static_cast<const T&>(item).key();
-  }
 };
 
 }  // namespace pw::containers::internal
