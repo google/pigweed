@@ -34,11 +34,12 @@ class FakeIsoStream : public IsoStream {
       const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
       const std::optional<std::vector<uint8_t>>& codec_configuration,
       uint32_t controller_delay_usecs,
-      fit::function<void(IsoStream::SetupDataPathError)> cb) override {
-    cb(setup_data_path_status_);
+      SetupDataPathCallback&& on_complete_cb,
+      IncomingDataHandler&& on_incoming_data_available_cb) override {
+    on_complete_cb(setup_data_path_status_);
   }
 
-  void ReceiveInboundPacket() override {}
+  void ReceiveInboundPacket(const pw::span<const std::byte> packet) override {}
 
   hci_spec::ConnectionHandle cis_handle() const override { return 0; }
 

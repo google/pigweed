@@ -104,6 +104,13 @@ DynamicByteBuffer IoCapabilityResponsePacket(
     pw::bluetooth::emboss::IoCapability io_cap,
     pw::bluetooth::emboss::AuthenticationRequirements auth_req);
 
+// Create an ISO data packet containing a complete SDU with no timestamp and a
+// simple repeating pattern of 2, 4, 6, 8, 10, ... 254, 0, ...
+DynamicByteBuffer IsoDataPacket(
+    size_t frame_total_size,
+    hci_spec::ConnectionHandle connection_handle = 0x123,
+    uint16_t packet_sequence_number = 0x22);
+
 DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(
     hci_spec::ConnectionHandle conn, hci_spec::LESupportedFeatures le_features);
 DynamicByteBuffer LEReadRemoteFeaturesPacket(hci_spec::ConnectionHandle conn);

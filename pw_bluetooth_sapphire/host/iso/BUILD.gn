@@ -21,11 +21,13 @@ pw_source_set("iso") {
   public = [
     "$dir_public_iso/fake_iso_stream.h",
     "$dir_public_iso/iso_common.h",
+    "$dir_public_iso/iso_inbound_packet_assembler.h",
     "$dir_public_iso/iso_stream.h",
     "$dir_public_iso/iso_stream_manager.h",
   ]
 
   sources = [
+    "iso_inbound_packet_assembler.cc",
     "iso_stream.cc",
     "iso_stream_manager.cc",
   ]
@@ -40,6 +42,7 @@ pw_source_set("iso") {
 pw_test("tests") {
   sources = [
     "iso_common_test.cc",
+    "iso_inbound_packet_assembler_test.cc",
     "iso_stream_manager_test.cc",
     "iso_stream_test.cc",
   ]

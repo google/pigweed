@@ -75,6 +75,8 @@ class IsoStreamTest : public MockControllerTestBase {
                      iso::IsoStream::SetupDataPathError expected_cb_result,
                      bool generate_mismatched_cid = false);
 
+  bool HandleCompleteIncomingSDU(const pw::span<const std::byte>& complete_sdu);
+
   IsoStream* iso_stream() { return iso_stream_.get(); }
 
   std::optional<pw::bluetooth::emboss::StatusCode> establishment_status() {
@@ -91,6 +93,7 @@ class IsoStreamTest : public MockControllerTestBase {
   std::unique_ptr<IsoStream> iso_stream_;
   std::optional<pw::bluetooth::emboss::StatusCode> establishment_status_;
   std::optional<CisEstablishedParameters> established_parameters_;
+  std::queue<std::vector<std::byte>> complete_incoming_sdus_;
   bool closed_ = false;
 };
 
@@ -174,10 +177,19 @@ void IsoStreamTest::SetupDataPath(
       kControllerDelay,
       [&actual_cb_result](iso::IsoStream::SetupDataPathError result) {
         actual_cb_result = result;
-      });
+      },
+      fit::bind_member<&IsoStreamTest::HandleCompleteIncomingSDU>(this));
   RunUntilIdle();
   ASSERT_TRUE(actual_cb_result.has_value());
   EXPECT_EQ(expected_cb_result, *actual_cb_result);
+}
+
+bool IsoStreamTest::HandleCompleteIncomingSDU(
+    const pw::span<const std::byte>& sdu) {
+  std::vector<std::byte> new_sdu(sdu.size());
+  std::copy(sdu.begin(), sdu.end(), new_sdu.begin());
+  complete_incoming_sdus_.emplace(std::move(new_sdu));
+  return true;
 }
 
 TEST_F(IsoStreamTest, CisEstablishedSuccessfully) {

@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
 #include "pw_bluetooth/hci_common.emb.h"
+#include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
@@ -370,6 +371,37 @@ DynamicByteBuffer IoCapabilityResponsePacket(
       0x00,     // OOB_Data_Present (Not present)
       auth_req  // Authentication_Requirements
       ));
+}
+
+DynamicByteBuffer IsoDataPacket(size_t frame_total_size,
+                                hci_spec::ConnectionHandle connection_handle,
+                                uint16_t packet_sequence_number) {
+  DynamicByteBuffer packet(frame_total_size);
+  auto view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
+      packet.mutable_data(), frame_total_size);
+
+  const size_t data_total_length =
+      frame_total_size - view.header().IntrinsicSizeInBytes().Read();
+  view.header().connection_handle().Write(connection_handle);
+  view.header().pb_flag().Write(
+      pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU);
+  view.header().ts_flag().Write(
+      pw::bluetooth::emboss::TsFlag::TIMESTAMP_NOT_PRESENT);
+  view.header().data_total_length().Write(data_total_length);
+
+  const size_t iso_sdu_length =
+      frame_total_size - view.sdu_fragment_offset().Read();
+  view.packet_sequence_number().Write(packet_sequence_number);
+  view.iso_sdu_length().Write(iso_sdu_length);
+  view.packet_status_flag().Write(
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA);
+
+  // Write payload
+  for (size_t n = 0; n < iso_sdu_length; n++) {
+    view.iso_sdu_fragment()[n].Write(static_cast<uint8_t>(n * 2));
+  }
+
+  return packet;
 }
 
 DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(

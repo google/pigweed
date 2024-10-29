@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
 namespace bt::hci {
 
@@ -40,7 +41,13 @@ class IsoMockConnectionInterface : public IsoDataChannel::ConnectionInterface {
   IsoMockConnectionInterface() : weak_self_(this) {}
   ~IsoMockConnectionInterface() override = default;
 
-  void ReceiveInboundPacket() override {}
+  void ReceiveInboundPacket(pw::span<const std::byte> packet) override {
+    received_packets_.emplace(packet);
+  }
+
+  std::queue<pw::span<const std::byte>>* received_packets() {
+    return &received_packets_;
+  }
 
   using WeakPtr = WeakSelf<IsoMockConnectionInterface>::WeakPtr;
   IsoMockConnectionInterface::WeakPtr GetWeakPtr() {
@@ -49,6 +56,7 @@ class IsoMockConnectionInterface : public IsoDataChannel::ConnectionInterface {
 
  private:
   WeakSelf<IsoMockConnectionInterface> weak_self_;
+  std::queue<pw::span<const std::byte>> received_packets_;
 };
 
 // Verify that we can register and unregister connections
@@ -77,6 +85,68 @@ TEST_F(IsoDataChannelTests, RegisterConnections) {
   EXPECT_FALSE(iso_data_channel()->UnregisterConnection(kIsoHandle3));
   EXPECT_FALSE(iso_data_channel()->UnregisterConnection(kIsoHandle2));
   EXPECT_FALSE(iso_data_channel()->UnregisterConnection(kIsoHandle1));
+}
+
+// Verify that data gets directed to the correct connection
+TEST_F(IsoDataChannelTests, DataDemuxification) {
+  ASSERT_NE(iso_data_channel(), nullptr);
+
+  constexpr uint32_t kNumRegisteredInterfaces = 2;
+  constexpr uint32_t kNumUnregisteredInterfaces = 1;
+  constexpr uint32_t kNumTotalInterfaces =
+      kNumRegisteredInterfaces + kNumUnregisteredInterfaces;
+  constexpr hci_spec::ConnectionHandle connection_handles[kNumTotalInterfaces] =
+      {0x123, 0x456, 0x789};
+  IsoMockConnectionInterface interfaces[kNumTotalInterfaces];
+  size_t expected_packet_count[kNumTotalInterfaces] = {0};
+
+  // Register interfaces
+  for (uint32_t iface_num = 0; iface_num < kNumRegisteredInterfaces;
+       iface_num++) {
+    ASSERT_TRUE(iso_data_channel()->RegisterConnection(
+        connection_handles[iface_num], interfaces[iface_num].GetWeakPtr()));
+    ASSERT_EQ(interfaces[iface_num].received_packets()->size(), 0u);
+  }
+
+  constexpr size_t kNumTestPackets = 8;
+  struct {
+    size_t packet_size;
+    size_t connection_num;
+  } test_vector[kNumTestPackets] = {
+      {100, 0},
+      {120, 1},
+      {140, 2},
+      {160, 0},
+      {180, 0},
+      {200, 1},
+      {220, 1},
+      {240, 2},
+  };
+
+  // Send frames and verify that they are sent to the correct interfaces (or not
+  // sent at all if the connection handle is unregistered).
+  for (size_t test_num = 0; test_num < kNumTestPackets; test_num++) {
+    size_t packet_size = test_vector[test_num].packet_size;
+    size_t connection_num = test_vector[test_num].connection_num;
+    ASSERT_TRUE(connection_num < kNumTotalInterfaces);
+
+    DynamicByteBuffer frame =
+        testing::IsoDataPacket(packet_size, connection_handles[connection_num]);
+    pw::span<const std::byte> frame_as_span = frame.subspan();
+
+    if (connection_num < kNumRegisteredInterfaces) {
+      expected_packet_count[connection_num]++;
+    }
+    test_device()->SendIsoDataChannelPacket(frame_as_span);
+
+    // Check that each of the connection queues has the expected number of
+    // packets
+    for (size_t interface_num = 0; interface_num < kNumTotalInterfaces;
+         interface_num++) {
+      EXPECT_EQ(interfaces[interface_num].received_packets()->size(),
+                expected_packet_count[interface_num]);
+    }
+  }
 }
 
 }  // namespace bt::hci

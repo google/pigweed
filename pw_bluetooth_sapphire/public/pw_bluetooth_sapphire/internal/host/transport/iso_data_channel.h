@@ -36,8 +36,7 @@ class IsoDataChannel {
     virtual ~ConnectionInterface() = default;
 
     // This method will be called when a packet is received for this connection.
-    virtual void ReceiveInboundPacket(
-        /* std::unique_ptr<IsoDataPacket> packet */) = 0;
+    virtual void ReceiveInboundPacket(pw::span<const std::byte> packet) = 0;
   };
 
   static std::unique_ptr<IsoDataChannel> Create(
@@ -45,10 +44,11 @@ class IsoDataChannel {
       CommandChannel* command_channel,
       pw::bluetooth::Controller* hci);
 
-  // Register a new connection to receive all traffic destined for |handle|. If
-  // a connection already exists with this handle, it will not be registered and
-  // the previous connection will continue to receive all traffiic for that
-  // handle. Returns a value indicating success.
+  // Register a new connection to receive all traffic destined for |handle| and
+  // returns a value indicating success. If a connection already exists with
+  // this handle, it will not be registered and the previous connection will
+  // continue to receive all traffic for that handle. |connection| must be
+  // unregistered with |UnregisterConnection| before it is destroyed.
   virtual bool RegisterConnection(hci_spec::ConnectionHandle handle,
                                   WeakPtr<ConnectionInterface> connection) = 0;
 

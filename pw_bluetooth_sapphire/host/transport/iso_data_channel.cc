@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/iso_data_channel.h"
 
+#include <pw_bluetooth/hci_data.emb.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 
 namespace bt::hci {
@@ -54,7 +56,23 @@ IsoDataChannelImpl::IsoDataChannelImpl(const DataBufferInfo& buffer_info,
       fit::bind_member<&IsoDataChannelImpl::OnRxPacket>(this));
 }
 
-void IsoDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {}
+void IsoDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
+  const uint8_t* data = reinterpret_cast<const uint8_t*>(buffer.data());
+  auto header_view =
+      pw::bluetooth::emboss::MakeIsoDataFrameHeaderView(data, buffer.size());
+
+  hci_spec::ConnectionHandle handle = header_view.connection_handle().Read();
+  if (connections_.count(handle) == 0) {
+    bt_log(WARN,
+           "hci",
+           "ISO data packet received for unrecognized handle 0x%x",
+           handle);
+    return;
+  }
+  WeakPtr<ConnectionInterface> stream = connections_[handle];
+  BT_ASSERT(stream.is_alive());
+  stream->ReceiveInboundPacket(buffer);
+}
 
 bool IsoDataChannelImpl::RegisterConnection(
     hci_spec::ConnectionHandle handle,

@@ -21,6 +21,7 @@ exports_files(glob(["**/*"]))
 cc_library(
     name = "iso",
     srcs = [
+        "iso_inbound_packet_assembler.cc",
         "iso_stream.cc",
         "iso_stream_manager.cc",
     ],
@@ -36,6 +37,7 @@ pw_cc_test(
     name = "iso_test",
     srcs = [
         "iso_common_test.cc",
+        "iso_inbound_packet_assembler_test.cc",
         "iso_stream_manager_test.cc",
         "iso_stream_test.cc",
     ],

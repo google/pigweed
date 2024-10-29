@@ -50,6 +50,14 @@ class IsoStreamServer
   void Read(ReadCallback callback) override;
   void handle_unknown_method(uint64_t ordinal, bool has_response) override;
 
+  // Handler for new incoming data. Returns a value indicating if we were able
+  // to process the packet (on false, it should be queued by the caller for
+  // later retrieval). If we were able to process the frame, the caller should
+  // continue to send notifications as frames are received. Otherwise, the
+  // caller should not invoke this function until the next frame received after
+  // the caller's queue has been completely emptied.
+  bool OnIncomingDataAvailable(pw::span<const std::byte> packet);
+
   fit::callback<void()> on_closed_cb_;
 
   std::optional<bt::iso::IsoStream::WeakPtr> iso_stream_;

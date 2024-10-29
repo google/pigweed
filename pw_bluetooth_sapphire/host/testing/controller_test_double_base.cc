@@ -77,6 +77,16 @@ bool ControllerTestDoubleBase::SendScoDataChannelPacket(
   return true;
 }
 
+bool ControllerTestDoubleBase::SendIsoDataChannelPacket(
+    const pw::span<const std::byte>& packet) {
+  if (!iso_cb_) {
+    return false;
+  }
+
+  iso_cb_(packet);
+  return true;
+}
+
 void ControllerTestDoubleBase::Initialize(PwStatusCallback complete_callback,
                                           PwStatusCallback error_callback) {
   error_cb_ = std::move(error_callback);

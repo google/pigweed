@@ -65,7 +65,7 @@ class ControllerTestDoubleBase : public pw::bluetooth::Controller {
   // Sends the given packet over this ControllerTestDouble's ISO data channel
   // endpoint.
   // Returns the result of the write operation on the channel.
-  bool SendIsoDataChannelPacket(const ByteBuffer& packet);
+  bool SendIsoDataChannelPacket(const pw::span<const std::byte>& packet);
 
   // Wrapper around SignalError() to support old test code.
   void Stop() { SignalError(pw::Status::Aborted()); }
