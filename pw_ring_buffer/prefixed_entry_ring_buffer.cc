@@ -499,6 +499,35 @@ iterator& iterator::operator++() {
   return *this;
 }
 
+iterator& iterator::operator--() {
+  PW_DCHECK_OK(iteration_status_);
+  PW_DCHECK_INT_NE(entry_count_, 0);
+
+  Result<EntryInfo> info = ring_buffer_->RawFrontEntryInfo(read_idx_);
+  if (!info.status().ok()) {
+    SkipToEnd(info.status());
+    return *this;
+  }
+
+  // It is guaranteed that the buffer is deringed at this point.
+  read_idx_ -= info.value().preamble_bytes + info.value().data_bytes;
+  entry_count_++;
+
+  // If read_idx_ is larger that the total bytes, it's wrapped
+  // as the iterator has decremented past the last element.
+  if (read_idx_ > ring_buffer_->TotalSizeBytes()) {
+    SkipToEnd(Status::DataLoss());
+    return *this;
+  }
+
+  info = ring_buffer_->RawFrontEntryInfo(read_idx_);
+  if (!info.status().ok()) {
+    SkipToEnd(info.status());
+    return *this;
+  }
+  return *this;
+}
+
 const Entry& iterator::operator*() const {
   PW_DCHECK_OK(iteration_status_);
   PW_DCHECK_INT_NE(entry_count_, 0);

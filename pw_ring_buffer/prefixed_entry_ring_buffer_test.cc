@@ -545,6 +545,40 @@ TEST(PrefixedEntryRingBuffer, Iterator) {
   EXPECT_EQ(validated_entries, entry_count);
 }
 
+TEST(PrefixedEntryRingBuffer, IteratorDecrement) {
+  PrefixedEntryRingBuffer ring;
+  byte test_buffer[kTestBufferSize];
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
+
+  // Fill up the ring buffer with a constant value.
+  size_t entry_count = 0;
+  while (TryPushBack<size_t>(ring, entry_count).ok()) {
+    entry_count++;
+  }
+
+  // Move the iterator to the last element.
+  iterator begin_it = ring.begin();
+  iterator it = ring.begin();
+  for (size_t i = 0; i < entry_count - 1; ++i) {
+    it++;
+  }
+
+  // Decrement iterator to the beginning, checking each value
+  size_t validated_entries = entry_count - 1;
+  do {
+    EXPECT_TRUE(it.status().ok());
+    EXPECT_EQ(GetEntry<size_t>(it->buffer), validated_entries);
+    it--;
+    validated_entries--;
+  } while (it != begin_it);
+
+  EXPECT_EQ(validated_entries, static_cast<size_t>(0));
+
+  --it;
+  EXPECT_EQ(ring.end(), it);
+  EXPECT_EQ(Status::DataLoss(), it.status());
+}
+
 TEST(PrefixedEntryRingBuffer, EntriesSizeWhenBufferFull) {
   PrefixedEntryRingBuffer ring;
 

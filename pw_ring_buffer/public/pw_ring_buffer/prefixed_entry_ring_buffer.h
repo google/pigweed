@@ -208,6 +208,13 @@ class PrefixedEntryRingBufferMulti {
       return original;
     }
 
+    iterator& operator--();
+    iterator operator--(int) {
+      iterator original = *this;
+      --*this;
+      return original;
+    }
+
     // Returns entry at current position.
     const Entry& operator*() const;
     const Entry* operator->() const { return &operator*(); }
