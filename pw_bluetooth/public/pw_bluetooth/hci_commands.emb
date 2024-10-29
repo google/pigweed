@@ -1114,7 +1114,6 @@ struct SniffModeCommand:
     -- Mandatory Range for Controller: 0 to 0x0028
     [requires: 0x0000 <= this <= 0x7FFF]
 
-
 # ========== 7.3 Controller & Baseband Commands ==========
 
 

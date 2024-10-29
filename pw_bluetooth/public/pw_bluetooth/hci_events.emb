@@ -1027,6 +1027,16 @@ struct ReadLocalSupportedCommandsCommandCompleteEvent:
   $next [+supported_commands_size]  SupportedCommands         supported_commands
 
 
+struct ReadLocalSupportedFeaturesCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.4.3 Read Local Supported Features command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
+  $next [+1]         hci.StatusCode            status
+  $next [+8]         UInt                      lmp_features
+    -- Bit Mask List of LMP features.
+
+
 struct ReadBufferSizeCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.4.5 Read Buffer Size command)
 
