@@ -446,7 +446,7 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes,too
         log_after_shutdown: Callable[[], None] | None = None,
     ) -> None:
         self.restore_stdout_logging()
-        _LOG.warning('Abort signal recieved, stopping processes...')
+        _LOG.warning('Abort signal received, stopping processes...')
         if log_after_shutdown:
             log_after_shutdown()
         self.terminate_and_wait()
