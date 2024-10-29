@@ -442,15 +442,6 @@ constexpr OpCode kReadLocalSupportedCommands =
 constexpr OpCode kReadLocalSupportedFeatures =
     InformationalParamsOpCode(0x0003);
 
-struct ReadLocalSupportedFeaturesReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Bit Mask List of LMP features. See enum class LMPFeature in hci_constants.h
-  // for how to interpret this bitfield.
-  uint64_t lmp_features;
-} __attribute__((packed));
-
 // ====================================================
 // Read Local Extended Features Command (v1.2) (BR/EDR)
 constexpr OpCode kReadLocalExtendedFeatures = InformationalParamsOpCode(0x0004);

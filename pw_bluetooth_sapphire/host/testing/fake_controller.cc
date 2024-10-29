@@ -2198,12 +2198,13 @@ void FakeController::OnLESetRandomAddress(
 }
 
 void FakeController::OnReadLocalSupportedFeatures() {
-  hci_spec::ReadLocalSupportedFeaturesReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.lmp_features = pw::bytes::ConvertOrderTo(cpp20::endian::little,
-                                                  settings_.lmp_features_page0);
-  RespondWithCommandComplete(hci_spec::kReadLocalSupportedFeatures,
-                             BufferView(&params, sizeof(params)));
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::ReadLocalSupportedFeaturesCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.lmp_features().Write(settings_.lmp_features_page0);
+  RespondWithCommandComplete(hci_spec::kReadLocalSupportedFeatures, &packet);
 }
 
 void FakeController::OnReadLocalSupportedCommands() {

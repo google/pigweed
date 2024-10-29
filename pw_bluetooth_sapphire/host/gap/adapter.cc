@@ -16,6 +16,7 @@
 
 #include <pw_async/dispatcher.h>
 #include <pw_bluetooth/hci_commands.emb.h>
+#include <pw_bluetooth/hci_events.emb.h>
 #include <pw_bytes/endian.h>
 
 #include <cinttypes>
@@ -1656,19 +1657,17 @@ void AdapterImpl::InitQueueReadLMPFeatureMaskPage(uint8_t page) {
         hci::EmbossCommandPacket::New<
             pw::bluetooth::emboss::ReadLocalSupportedFeaturesCommandView>(
             hci_spec::kReadLocalSupportedFeatures),
-        [this, page](const hci::EventPacket& cmd_complete) {
+        [this, page](const hci::EmbossEventPacket& cmd_complete) {
           if (hci_is_error(cmd_complete,
                            WARN,
                            "gap",
                            "read local supported features failed")) {
             return;
           }
-          auto params = cmd_complete.return_params<
-              hci_spec::ReadLocalSupportedFeaturesReturnParams>();
-          state_.features.SetPage(
-              page,
-              pw::bytes::ConvertOrderFrom(cpp20::endian::little,
-                                          params->lmp_features));
+          auto view = cmd_complete.view<
+              pw::bluetooth::emboss::
+                  ReadLocalSupportedFeaturesCommandCompleteEventView>();
+          state_.features.SetPage(page, view.lmp_features().Read());
         });
     return;
   }
