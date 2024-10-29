@@ -1037,6 +1037,20 @@ struct ReadLocalSupportedFeaturesCommandCompleteEvent:
     -- Bit Mask List of LMP features.
 
 
+struct ReadLocalExtendedFeaturesCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.4.4 Read Local Extended Features command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
+  let header = command_complete.header
+  $next [+1]         hci.StatusCode            status
+  $next [+1]         UInt                      page_number
+  $next [+1]         UInt                      max_page_number
+    -- The highest features page number which contains non-zero bits for the local device.
+
+  $next [+8]         UInt                      extended_lmp_features
+    -- Bit map of requested page of LMP features.
+
+
 struct ReadBufferSizeCommandCompleteEvent:
   -- 7.7.14 Command Complete event (7.4.5 Read Buffer Size command)
 
