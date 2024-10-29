@@ -116,6 +116,9 @@ template("_pw_invoke_protoc") {
       if (pw_protobuf_compiler_NO_GENERIC_OPTIONS_FILES) {
         args += [ "--pwpb-no-generic-options-files" ]
       }
+      if (pw_protobuf_compiler_NO_ONEOF_CALLBACKS) {
+        args += [ "--pwpb-no-oneof-callbacks" ]
+      }
       if (pw_protobuf_compiler_PROTOC_TARGET != "") {
         assert(
             pw_protobuf_compiler_PROTOC_BINARY != "",
