@@ -102,6 +102,9 @@ class IntrusiveMapItemWithKey : public containers::internal::IntrusiveMapItem<
 ///   - std::map<T>::insert
 ///   - std::map<T>::erase
 ///
+/// - An additional overload of `erase` is provided that takes a direct
+///   reference to an item.
+///
 /// - C++23 methods are not (yet) supported.
 ///
 /// @tparam   Key         Type to sort items on
@@ -264,6 +267,8 @@ class IntrusiveMap {
   /// the removed item..
   ///
   /// The items themselves are not destructed.
+  iterator erase(T& item) { return iterator(tree_.erase(item)); }
+
   iterator erase(iterator pos) { return iterator(tree_.erase(*pos)); }
 
   iterator erase(iterator first, iterator last) {

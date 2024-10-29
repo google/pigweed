@@ -72,6 +72,9 @@ namespace containers::future {
 ///   - std::list<T>::erase
 ///   - std::list<T>::splice
 ///
+/// - An additional overload of `erase` is provided that takes a direct
+///   reference to an item.
+///
 /// - C++23 methods are not (yet) supported.
 ///
 /// @tparam   T           Type of intrusive items stored in the list.
@@ -214,7 +217,11 @@ class IntrusiveList {
     return insert(pos, items.begin(), items.end());
   }
 
-  /// Removes the item following pos from the list. The item is not destructed.
+  /// Removes the given `item` from the list. The item is not destructed.
+  iterator erase(T& item) { return erase(iterator(&item)); }
+
+  /// Removes the item following `pos` from the list. The item is not
+  /// destructed.
   iterator erase(iterator pos) {
     return iterator(list_.erase_after((--pos).item_));
   }

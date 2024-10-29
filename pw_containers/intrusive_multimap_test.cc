@@ -511,6 +511,18 @@ TEST_F(IntrusiveMultiMapTest, Insert_DerivedItems_CompilationFails) {
   derived_from_compatible_item_type.clear();
 }
 
+TEST_F(IntrusiveMultiMapTest, Erase_One_ByItem) {
+  for (size_t i = 0; i < kNumItems; ++i) {
+    EXPECT_EQ(multimap_.size(), kNumItems);
+    auto iter = multimap_.erase(items_[i]);
+    if (iter != multimap_.end()) {
+      EXPECT_GE(iter->key(), items_[i].key());
+    }
+    EXPECT_EQ(multimap_.size(), kNumItems - 1);
+    multimap_.insert(items_[i]);
+  }
+}
+
 TEST_F(IntrusiveMultiMapTest, Erase_Two_ByKey) {
   constexpr size_t kHalf = kNumItems / 2;
   for (size_t i = 0; i < kHalf; ++i) {

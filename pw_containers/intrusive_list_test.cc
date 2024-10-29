@@ -698,7 +698,7 @@ TEST(IntrusiveListTest, Insert_SameItemAfterEnd) {
 }
 #endif  // TESTING_CHECK_FAILURES_IS_SUPPORTED
 
-TEST(IntrusiveListTest, Erase_FirstItem) {
+TEST(IntrusiveListTest, Erase_First_ByIterator) {
   std::array<Item, 3> items{{{0}, {1}, {2}}};
   List list(items.begin(), items.end());
 
@@ -708,7 +708,33 @@ TEST(IntrusiveListTest, Erase_FirstItem) {
   list.clear();
 }
 
-TEST(IntrusiveListTest, Erase_LastItem) {
+TEST(IntrusiveListTest, Erase_First_ByItem) {
+  std::array<Item, 3> items{{{0}, {1}, {2}}};
+  List list(items.begin(), items.end());
+
+  auto erased = list.erase(items[0]);
+  auto iter = list.begin();
+  EXPECT_EQ(erased, iter);
+  EXPECT_EQ(&items[1], &(*iter++));
+  EXPECT_EQ(&items[2], &(*iter++));
+  EXPECT_EQ(list.end(), iter);
+  list.clear();
+}
+
+TEST(IntrusiveListTest, Erase_Middle_ByItem) {
+  std::array<Item, 3> items{{{0}, {1}, {2}}};
+  List list(items.begin(), items.end());
+
+  auto erased = list.erase(items[1]);
+  auto iter = list.begin();
+  EXPECT_EQ(&items[0], &(*iter++));
+  EXPECT_EQ(erased, iter);
+  EXPECT_EQ(&items[2], &(*iter++));
+  EXPECT_EQ(list.end(), iter);
+  list.clear();
+}
+
+TEST(IntrusiveListTest, Erase_Last_ByIterator) {
   std::array<Item, 3> items{{{0}, {1}, {2}}};
   List list(items.begin(), items.end());
 
@@ -722,6 +748,19 @@ TEST(IntrusiveListTest, Erase_LastItem) {
   ++it;
 
   EXPECT_EQ(&items[1], &(*it));
+  list.clear();
+}
+
+TEST(IntrusiveListTest, Erase_Last_ByItem) {
+  std::array<Item, 3> items{{{0}, {1}, {2}}};
+  List list(items.begin(), items.end());
+
+  auto erased = list.erase(items[2]);
+  auto iter = list.begin();
+  EXPECT_EQ(&items[0], &(*iter++));
+  EXPECT_EQ(&items[1], &(*iter++));
+  EXPECT_EQ(erased, iter);
+  EXPECT_EQ(list.end(), iter);
   list.clear();
 }
 

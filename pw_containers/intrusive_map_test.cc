@@ -485,7 +485,20 @@ TEST_F(IntrusiveMapTest, Insert_DerivedItems_CompilationFails) {
   derived_from_compatible_item_type.clear();
 }
 
-TEST_F(IntrusiveMapTest, Erase_OneItem) {
+TEST_F(IntrusiveMapTest, Erase_One_ByItem) {
+  for (size_t i = 0; i < kNumItems; ++i) {
+    EXPECT_EQ(map_.size(), kNumItems);
+    auto iter = map_.erase(items_[i]);
+    if (iter != map_.end()) {
+      EXPECT_GT(iter->key(), items_[i].key());
+    }
+    EXPECT_EQ(map_.size(), kNumItems - 1);
+    EXPECT_EQ(map_.find(items_[i].key()), map_.end());
+    map_.insert(items_[i]);
+  }
+}
+
+TEST_F(IntrusiveMapTest, Erase_One_ByKey) {
   for (size_t i = 0; i < kNumItems; ++i) {
     EXPECT_EQ(map_.size(), kNumItems);
     EXPECT_EQ(map_.erase(items_[i].key()), 1U);
