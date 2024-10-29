@@ -63,12 +63,27 @@ void LowEnergyAddressManager::EnablePrivacy(bool enabled) {
   TryRefreshRandomAddress();
 }
 
-void LowEnergyAddressManager::EnsureLocalAddress(AddressCallback callback) {
+void LowEnergyAddressManager::EnsureLocalAddress(
+    std::optional<DeviceAddress::Type> address_type, AddressCallback callback) {
   PW_DCHECK(callback);
+
+  if (!privacy_enabled_ && address_type.has_value() &&
+      address_type.value() == DeviceAddress::Type::kLERandom) {
+    bt_log(WARN,
+           "hci-le",
+           "Cannot advertise a random address while privacy is disabled");
+    callback(fit::error(HostError::kInvalidParameters));
+    return;
+  }
+
+  if (address_type == DeviceAddress::Type::kLEPublic || !privacy_enabled_) {
+    callback(fit::ok(public_address()));
+    return;
+  }
 
   // Report the address right away if it doesn't need refreshing.
   if (!needs_refresh_) {
-    callback(current_address());
+    callback(fit::ok(current_address()));
     return;
   }
 
@@ -174,7 +189,7 @@ void LowEnergyAddressManager::ResolveAddressRequests() {
   auto q = std::move(address_callbacks_);
   bt_log(DEBUG, "gap-le", "using local address %s", address.ToString().c_str());
   while (!q.empty()) {
-    q.front()(address);
+    q.front()(fit::ok(address));
     q.pop();
   }
 }
@@ -182,7 +197,7 @@ void LowEnergyAddressManager::ResolveAddressRequests() {
 void LowEnergyAddressManager::NotifyAddressUpdate() {
   auto address = current_address();
   for (auto& cb : address_changed_callbacks_) {
-    cb(address);
+    cb(fit::ok(address));
   }
 }
 

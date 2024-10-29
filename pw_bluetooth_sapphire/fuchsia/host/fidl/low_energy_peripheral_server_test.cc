@@ -58,7 +58,7 @@ class LowEnergyPeripheralServerTestFakeAdapter
 
     // Create a LowEnergyPeripheralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Peripheral> handle;
-    server_ = std::make_unique<LowEnergyPeripheralServer>(
+    peripheral_server_ = std::make_unique<LowEnergyPeripheralServer>(
         adapter()->AsWeakPtr(), fake_gatt_->GetWeakPtr(), handle.NewRequest());
     peripheral_client_.Bind(std::move(handle));
   }
@@ -67,11 +67,11 @@ class LowEnergyPeripheralServerTestFakeAdapter
     RunLoopUntilIdle();
 
     peripheral_client_ = nullptr;
-    server_ = nullptr;
+    peripheral_server_ = nullptr;
     bt::fidl::testing::FakeAdapterTestFixture::TearDown();
   }
 
-  LowEnergyPeripheralServer* server() const { return server_.get(); }
+  LowEnergyPeripheralServer* server() const { return peripheral_server_.get(); }
 
   void SetOnPeerConnectedCallback(
       fble::Peripheral::OnPeerConnectedCallback cb) {
@@ -79,11 +79,52 @@ class LowEnergyPeripheralServerTestFakeAdapter
   }
 
  private:
-  std::unique_ptr<LowEnergyPeripheralServer> server_;
+  std::unique_ptr<LowEnergyPeripheralServer> peripheral_server_;
   fble::PeripheralPtr peripheral_client_;
   std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(
       LowEnergyPeripheralServerTestFakeAdapter);
+};
+
+class LowEnergyPrivilegedPeripheralServerTestFakeAdapter
+    : public bt::fidl::testing::FakeAdapterTestFixture {
+ public:
+  LowEnergyPrivilegedPeripheralServerTestFakeAdapter() = default;
+  ~LowEnergyPrivilegedPeripheralServerTestFakeAdapter() override = default;
+
+  void SetUp() override {
+    bt::fidl::testing::FakeAdapterTestFixture::SetUp();
+
+    fake_gatt_ =
+        std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
+
+    // Create a LowEnergyPrivilegedPeripheralServer and bind it to a local
+    // client.
+    fidl::InterfaceHandle<fble::PrivilegedPeripheral> privileged_handle;
+    privileged_peripheral_server_ =
+        std::make_unique<LowEnergyPrivilegedPeripheralServer>(
+            adapter()->AsWeakPtr(),
+            fake_gatt_->GetWeakPtr(),
+            privileged_handle.NewRequest());
+  }
+
+  void TearDown() override {
+    RunLoopUntilIdle();
+
+    privileged_peripheral_server_ = nullptr;
+    bt::fidl::testing::FakeAdapterTestFixture::TearDown();
+  }
+
+  LowEnergyPrivilegedPeripheralServer* privileged_server() const {
+    return privileged_peripheral_server_.get();
+  }
+
+ private:
+  std::unique_ptr<LowEnergyPrivilegedPeripheralServer>
+      privileged_peripheral_server_;
+  std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(
+      LowEnergyPrivilegedPeripheralServerTestFakeAdapter);
 };
 
 class LowEnergyPeripheralServerTest
@@ -127,6 +168,49 @@ class LowEnergyPeripheralServerTest
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServerTest);
 };
 
+class LowEnergyPrivilegedPeripheralServerTest
+    : public bthost::testing::AdapterTestFixture {
+ public:
+  LowEnergyPrivilegedPeripheralServerTest() = default;
+  ~LowEnergyPrivilegedPeripheralServerTest() override = default;
+
+  void SetUp() override {
+    AdapterTestFixture::SetUp();
+
+    fake_gatt_ =
+        std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
+
+    // Create a LowEnergyPrivilegedPeripheralServer and bind it to a local
+    // client.
+    fidl::InterfaceHandle<fble::PrivilegedPeripheral> handle;
+    server_ = std::make_unique<LowEnergyPrivilegedPeripheralServer>(
+        adapter(), fake_gatt_->GetWeakPtr(), handle.NewRequest());
+    peripheral_client_.Bind(std::move(handle));
+  }
+
+  void TearDown() override {
+    RunLoopUntilIdle();
+
+    peripheral_client_ = nullptr;
+    server_ = nullptr;
+    AdapterTestFixture::TearDown();
+  }
+
+  LowEnergyPrivilegedPeripheralServer* server() const { return server_.get(); }
+
+  void SetOnPeerConnectedCallback(
+      fble::Peripheral::OnPeerConnectedCallback cb) {
+    peripheral_client_.events().OnPeerConnected = std::move(cb);
+  }
+
+ private:
+  std::unique_ptr<LowEnergyPrivilegedPeripheralServer> server_;
+  fble::PrivilegedPeripheralPtr peripheral_client_;
+  std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(
+      LowEnergyPrivilegedPeripheralServerTest);
+};
+
 class BoolParam : public LowEnergyPeripheralServerTest,
                   public ::testing::WithParamInterface<bool> {};
 
@@ -163,6 +247,52 @@ class FakeAdvertisedPeripheral : public ServerBase<fble::AdvertisedPeripheral> {
  private:
   std::vector<Connection> connections_;
 };
+
+// Tests that an unprivileged client's explicit request to advertise a random
+// address type fails since privacy is not enabled.
+TEST_F(LowEnergyPeripheralServerTest,
+       AdvertiseRandomAddressWithoutPrivacyEnabledFails) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  params.set_data(std::move(adv_data));
+  params.set_address_type(fuchsia::bluetooth::AddressType::RANDOM);
+
+  fble::AdvertisedPeripheralHandle adv_peripheral_handle;
+  FakeAdvertisedPeripheral adv_peripheral_server(
+      adv_peripheral_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
+  server()->Advertise(std::move(params),
+                      std::move(adv_peripheral_handle),
+                      [&](auto cb_result) { result = std::move(cb_result); });
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(result->is_error());
+  EXPECT_EQ(fble::PeripheralError::INVALID_PARAMETERS, result->error());
+}
+
+// Tests that a privileged client's explicit request to advertise a random
+// address type fails since privacy is not enabled.
+TEST_F(LowEnergyPrivilegedPeripheralServerTest,
+       AdvertiseRandomAddressWithoutPrivacyEnabledFails) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  params.set_data(std::move(adv_data));
+  params.set_address_type(fuchsia::bluetooth::AddressType::RANDOM);
+
+  fble::AdvertisedPeripheralHandle adv_peripheral_handle;
+  FakeAdvertisedPeripheral adv_peripheral_server(
+      adv_peripheral_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
+  server()->Advertise(std::move(params),
+                      std::move(adv_peripheral_handle),
+                      [&](auto cb_result) { result = std::move(cb_result); });
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(result->is_error());
+  EXPECT_EQ(fble::PeripheralError::INVALID_PARAMETERS, result->error());
+}
 
 // Tests that aborting a StartAdvertising command sequence does not cause a
 // crash in successive requests.
@@ -821,6 +951,252 @@ TEST_F(LowEnergyPeripheralServerTestFakeAdapter,
   ASSERT_TRUE(adv_result);
   EXPECT_TRUE(adv_result.value().is_error());
   EXPECT_EQ(adv_result->error(), fble::PeripheralError::INVALID_PARAMETERS);
+}
+
+// Tests that a privileged client's advertising request defaults to a random
+// address type since privacy is enabled.
+TEST_F(LowEnergyPrivilegedPeripheralServerTestFakeAdapter,
+       AdvertiseRandomAddressWithPrivacyEnabled) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  params.set_data(std::move(adv_data));
+
+  adapter()->fake_le()->EnablePrivacy(true);
+
+  fble::AdvertisedPeripheralHandle adv_peripheral_handle;
+  FakeAdvertisedPeripheral adv_peripheral_server(
+      adv_peripheral_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
+  privileged_server()->Advertise(
+      std::move(params), std::move(adv_peripheral_handle), [&](auto cb_result) {
+        result = std::move(cb_result);
+      });
+  RunLoopUntilIdle();
+  ASSERT_EQ(adapter()->fake_le()->registered_advertisements().size(), 1u);
+  ASSERT_EQ(adapter()
+                ->fake_le()
+                ->registered_advertisements()
+                .begin()
+                ->second.addr_type,
+            bt::DeviceAddress::Type::kLERandom);
+
+  adv_peripheral_server.Unbind();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result);
+  EXPECT_TRUE(result->is_ok());
+}
+
+// Tests that a privileged client's advertising request defaults to a public
+// address type since privacy is not enabled.
+TEST_F(LowEnergyPrivilegedPeripheralServerTestFakeAdapter,
+       AdvertisePublicAddressWithoutPrivacyEnabled) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  params.set_data(std::move(adv_data));
+
+  fble::AdvertisedPeripheralHandle adv_peripheral_handle;
+  FakeAdvertisedPeripheral adv_peripheral_server(
+      adv_peripheral_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
+  privileged_server()->Advertise(
+      std::move(params), std::move(adv_peripheral_handle), [&](auto cb_result) {
+        result = std::move(cb_result);
+      });
+  RunLoopUntilIdle();
+  ASSERT_EQ(adapter()->fake_le()->registered_advertisements().size(), 1u);
+  ASSERT_EQ(adapter()
+                ->fake_le()
+                ->registered_advertisements()
+                .begin()
+                ->second.addr_type,
+            bt::DeviceAddress::Type::kLEPublic);
+
+  adv_peripheral_server.Unbind();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result);
+  EXPECT_TRUE(result->is_ok());
+}
+
+// Tests that a privileged client's explicit request to advertise a public
+// address type does so, even when privacy is enabled.
+TEST_F(LowEnergyPrivilegedPeripheralServerTestFakeAdapter,
+       AdvertisePublicAddressWithPrivacyEnabled) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  params.set_data(std::move(adv_data));
+  params.set_address_type(fuchsia::bluetooth::AddressType::PUBLIC);
+
+  adapter()->fake_le()->EnablePrivacy(true);
+
+  fble::AdvertisedPeripheralHandle adv_peripheral_handle;
+  FakeAdvertisedPeripheral adv_peripheral_server(
+      adv_peripheral_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
+  privileged_server()->Advertise(
+      std::move(params), std::move(adv_peripheral_handle), [&](auto cb_result) {
+        result = std::move(cb_result);
+      });
+  RunLoopUntilIdle();
+  ASSERT_EQ(adapter()->fake_le()->registered_advertisements().size(), 1u);
+  ASSERT_EQ(adapter()
+                ->fake_le()
+                ->registered_advertisements()
+                .begin()
+                ->second.addr_type,
+            bt::DeviceAddress::Type::kLEPublic);
+
+  adv_peripheral_server.Unbind();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result);
+  EXPECT_TRUE(result->is_ok());
+}
+
+// Tests that a privileged client's explicit request to advertise a random
+// address type fails since privacy is not enabled.
+TEST_F(LowEnergyPrivilegedPeripheralServerTestFakeAdapter,
+       AdvertiseRandomAddressWithoutPrivacyEnabledFails) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  params.set_data(std::move(adv_data));
+  params.set_address_type(fuchsia::bluetooth::AddressType::RANDOM);
+
+  fble::AdvertisedPeripheralHandle adv_peripheral_handle;
+  FakeAdvertisedPeripheral adv_peripheral_server(
+      adv_peripheral_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
+  privileged_server()->Advertise(
+      std::move(params), std::move(adv_peripheral_handle), [&](auto cb_result) {
+        result = std::move(cb_result);
+      });
+  RunLoopUntilIdle();
+  ASSERT_EQ(adapter()->fake_le()->registered_advertisements().size(), 0u);
+
+  adv_peripheral_server.Unbind();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result.value().is_error());
+  EXPECT_EQ(result->error(), fble::PeripheralError::INVALID_PARAMETERS);
+}
+
+// Tests that an unprivileged client's advertising request defaults to a random
+// address type since privacy is enabled.
+TEST_F(LowEnergyPeripheralServerTestFakeAdapter,
+       AdvertiseRandomAddressWithPrivacyEnabled) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  params.set_data(std::move(adv_data));
+
+  adapter()->fake_le()->EnablePrivacy(true);
+
+  fble::AdvertisedPeripheralHandle adv_peripheral_handle;
+  FakeAdvertisedPeripheral adv_peripheral_server(
+      adv_peripheral_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
+  server()->Advertise(std::move(params),
+                      std::move(adv_peripheral_handle),
+                      [&](auto cb_result) { result = std::move(cb_result); });
+  RunLoopUntilIdle();
+  ASSERT_EQ(adapter()->fake_le()->registered_advertisements().size(), 1u);
+  ASSERT_EQ(adapter()
+                ->fake_le()
+                ->registered_advertisements()
+                .begin()
+                ->second.addr_type,
+            bt::DeviceAddress::Type::kLERandom);
+
+  adv_peripheral_server.Unbind();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result);
+  EXPECT_TRUE(result->is_ok());
+}
+
+// Tests that an unprivileged client's advertising request defaults to a public
+// address type since privacy is not enabled.
+TEST_F(LowEnergyPeripheralServerTestFakeAdapter,
+       AdvertisePublicAddressWithoutPrivacyEnabled) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  params.set_data(std::move(adv_data));
+
+  fble::AdvertisedPeripheralHandle adv_peripheral_handle;
+  FakeAdvertisedPeripheral adv_peripheral_server(
+      adv_peripheral_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
+  server()->Advertise(std::move(params),
+                      std::move(adv_peripheral_handle),
+                      [&](auto cb_result) { result = std::move(cb_result); });
+  RunLoopUntilIdle();
+  ASSERT_EQ(adapter()->fake_le()->registered_advertisements().size(), 1u);
+  ASSERT_EQ(adapter()
+                ->fake_le()
+                ->registered_advertisements()
+                .begin()
+                ->second.addr_type,
+            bt::DeviceAddress::Type::kLEPublic);
+
+  adv_peripheral_server.Unbind();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result);
+  EXPECT_TRUE(result->is_ok());
+}
+
+// Tests that an unprivileged client's explicit request to advertise a public
+// address type fails.
+TEST_F(LowEnergyPeripheralServerTestFakeAdapter,
+       AdvertisePublicAddressWithPrivacyEnabledFails) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  params.set_data(std::move(adv_data));
+  params.set_address_type(fuchsia::bluetooth::AddressType::PUBLIC);
+
+  adapter()->fake_le()->EnablePrivacy(true);
+
+  fble::AdvertisedPeripheralHandle adv_peripheral_handle;
+  FakeAdvertisedPeripheral adv_peripheral_server(
+      adv_peripheral_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
+  server()->Advertise(std::move(params),
+                      std::move(adv_peripheral_handle),
+                      [&](auto cb_result) { result = std::move(cb_result); });
+  RunLoopUntilIdle();
+  ASSERT_EQ(adapter()->fake_le()->registered_advertisements().size(), 0u);
+
+  adv_peripheral_server.Unbind();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result.value().is_error());
+  EXPECT_EQ(result->error(), fble::PeripheralError::INVALID_PARAMETERS);
+}
+
+// Tests that an unprivileged client's explicit request to advertise a random
+// address type fails since privacy is not enabled.
+TEST_F(LowEnergyPeripheralServerTestFakeAdapter,
+       AdvertiseRandomAddressWithoutPrivacyEnabledFails) {
+  fble::AdvertisingParameters params;
+  fble::AdvertisingData adv_data;
+  params.set_data(std::move(adv_data));
+  params.set_address_type(fuchsia::bluetooth::AddressType::RANDOM);
+
+  fble::AdvertisedPeripheralHandle adv_peripheral_handle;
+  FakeAdvertisedPeripheral adv_peripheral_server(
+      adv_peripheral_handle.NewRequest());
+
+  std::optional<fpromise::result<void, fble::PeripheralError>> result;
+  server()->Advertise(std::move(params),
+                      std::move(adv_peripheral_handle),
+                      [&](auto cb_result) { result = std::move(cb_result); });
+  RunLoopUntilIdle();
+  ASSERT_EQ(adapter()->fake_le()->registered_advertisements().size(), 0u);
+
+  adv_peripheral_server.Unbind();
+  RunLoopUntilIdle();
+  ASSERT_TRUE(result.value().is_error());
+  EXPECT_EQ(result->error(), fble::PeripheralError::INVALID_PARAMETERS);
 }
 
 TEST_F(LowEnergyPeripheralServerTest, AdvertiseAndReceiveTwoConnections) {

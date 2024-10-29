@@ -14,10 +14,12 @@
 
 #pragma once
 #include <lib/fit/function.h>
+#include <lib/fit/result.h>
 
 #include <optional>
 
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
+#include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uint128.h"
 
 namespace bt::hci {
@@ -48,8 +50,26 @@ class LocalAddressDelegate {
   //
   // This method runs |callback| when the procedure ends. |callback| may run
   // synchronously or asynchronously.
-  using AddressCallback = fit::function<void(const DeviceAddress&)>;
-  virtual void EnsureLocalAddress(AddressCallback callback) = 0;
+  //
+  // The address returned will be a public address in either of these two cases:
+  //  * |address_type| is public (i.e. public type was explicitly requested by
+  //    a privileged client)
+  //  * privacy is not enabled and |address_type| is unspecified (i.e. nullopt)
+  // Note that requesting a random address while privacy is not enabled is not
+  // allowed. If none of the above is true, then it can only mean that privacy
+  // is enabled and:
+  //  * |address_type| is random (i.e. random type was explicitly requested by
+  //    any client)
+  //  * |address_type| was unspecified (in which case, we still want to
+  //    advertise a random type)
+  //
+  // This method runs |callback| when the procedure ends. |callback| may run
+  // synchronously or asynchronously.
+  using AddressCallback =
+      fit::function<void(fit::result<HostError, const DeviceAddress>)>;
+  virtual void EnsureLocalAddress(
+      std::optional<DeviceAddress::Type> address_type,
+      AddressCallback callback) = 0;
 };
 
 // Interface to be implemented by all objects that are interested in and/or can

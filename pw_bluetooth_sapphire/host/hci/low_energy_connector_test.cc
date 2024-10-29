@@ -164,6 +164,8 @@ INSTANTIATE_TEST_SUITE_P(LowEnergyConnectorTest,
 TEST_P(LowEnergyConnectorTest, CreateConnection) {
   auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));
+  // Public address would be used if privacy was disabled
+  fake_address_delegate()->EnablePrivacy(true);
 
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_FALSE(connector()->pending_peer_address());
@@ -585,6 +587,7 @@ TEST_P(LowEnergyConnectorTest, ConnectUsingPublicAddress) {
 
 TEST_P(LowEnergyConnectorTest, ConnectUsingRandomAddress) {
   fake_address_delegate()->set_local_address(kRandomAddress);
+  fake_address_delegate()->EnablePrivacy(true);
 
   auto fake_peer = std::make_unique<FakePeer>(kTestAddress, dispatcher());
   test_device()->AddPeer(std::move(fake_peer));

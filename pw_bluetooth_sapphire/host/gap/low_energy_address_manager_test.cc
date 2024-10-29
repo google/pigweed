@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_address_manager.h"
 
+#include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
@@ -54,16 +55,25 @@ class LowEnergyAddressManagerTest : public TestingBase {
     TestingBase::TearDown();
   }
 
-  DeviceAddress EnsureLocalAddress() {
-    bool called = false;
-    DeviceAddress result;
-    addr_mgr()->EnsureLocalAddress([&](const auto& addr) {
-      result = addr;
-      called = true;
-    });
+  std::optional<DeviceAddress> EnsureLocalAddress(
+      std::optional<DeviceAddress::Type> address_type = std::nullopt,
+      LowEnergyAddressManager::AddressCallback callback = nullptr) {
+    std::optional<DeviceAddress> address = std::nullopt;
+    if (callback) {
+      addr_mgr()->EnsureLocalAddress(address_type, std::move(callback));
+    } else {
+      addr_mgr()->EnsureLocalAddress(
+          address_type,
+          [&](fit::result<HostError, const DeviceAddress> result) {
+            if (result.is_error()) {
+              return;
+            }
+
+            address = result.value();
+          });
+    }
     RunUntilIdle();
-    EXPECT_TRUE(called);
-    return result;
+    return address;
   }
 
   // Called by |addr_mgr_|.
@@ -251,7 +261,7 @@ TEST_F(LowEnergyAddressManagerTest, EnablePrivacyHciError) {
   // Requesting the address a third time while address update is allowed should
   // configure and return the new address.
   set_random_address_change_allowed(true);
-  EXPECT_TRUE(EnsureLocalAddress().IsNonResolvablePrivate());
+  EXPECT_TRUE(EnsureLocalAddress()->IsNonResolvablePrivate());
   EXPECT_EQ(1, hci_count);
   EXPECT_EQ(address_changed_cb_count(), 1u);
 }
@@ -287,7 +297,7 @@ TEST_F(LowEnergyAddressManagerTest,
   // Requesting the address while address change is allowed should configure and
   // return the new address.
   set_random_address_change_allowed(true);
-  EXPECT_TRUE(EnsureLocalAddress().IsNonResolvablePrivate());
+  EXPECT_TRUE(EnsureLocalAddress()->IsNonResolvablePrivate());
   EXPECT_EQ(1, hci_count);
   // Address has changed.
   EXPECT_EQ(address_changed_cb_count(), 1u);
@@ -309,7 +319,7 @@ TEST_F(LowEnergyAddressManagerTest, AddressExpiration) {
 
   addr_mgr()->EnablePrivacy(true);
   auto addr1 = EnsureLocalAddress();
-  EXPECT_TRUE(addr1.IsNonResolvablePrivate());
+  EXPECT_TRUE(addr1->IsNonResolvablePrivate());
   // Address has changed.
   EXPECT_EQ(address_changed_cb_count(), 1u);
 
@@ -335,7 +345,7 @@ TEST_F(LowEnergyAddressManagerTest, AddressExpiration) {
 
   // Requesting the address again should return the new address.
   auto addr2 = EnsureLocalAddress();
-  EXPECT_TRUE(addr2.IsNonResolvablePrivate());
+  EXPECT_TRUE(addr2->IsNonResolvablePrivate());
   EXPECT_NE(addr1, addr2);
   EXPECT_EQ(1, hci_count);
   // The new address was already reported after timeout so no other
@@ -360,7 +370,7 @@ TEST_F(LowEnergyAddressManagerTest,
 
   addr_mgr()->EnablePrivacy(true);
   auto addr1 = EnsureLocalAddress();
-  EXPECT_TRUE(addr1.IsNonResolvablePrivate());
+  EXPECT_TRUE(addr1->IsNonResolvablePrivate());
 
   // Requesting the address again should keep returning the same address without
   // sending any HCI commands.
@@ -384,7 +394,7 @@ TEST_F(LowEnergyAddressManagerTest,
   // and return the new address.
   set_random_address_change_allowed(true);
   auto addr2 = EnsureLocalAddress();
-  EXPECT_TRUE(addr2.IsNonResolvablePrivate());
+  EXPECT_TRUE(addr2->IsNonResolvablePrivate());
   EXPECT_NE(addr1, addr2);
   EXPECT_EQ(1, hci_count);
 }
@@ -403,7 +413,7 @@ TEST_F(LowEnergyAddressManagerTest, DisablePrivacy) {
       test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
-  EXPECT_TRUE(EnsureLocalAddress().IsNonResolvablePrivate());
+  EXPECT_TRUE(EnsureLocalAddress()->IsNonResolvablePrivate());
   // Address has changed to an NRPA.
   EXPECT_EQ(address_changed_cb_count(), 1u);
 
@@ -411,7 +421,7 @@ TEST_F(LowEnergyAddressManagerTest, DisablePrivacy) {
   addr_mgr()->EnablePrivacy(false);
 
   // The public address should be returned for the local address.
-  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress().type());
+  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress()->type());
   // Address has change to public since Privacy is disabled.
   EXPECT_EQ(address_changed_cb_count(), 2u);
 
@@ -420,7 +430,7 @@ TEST_F(LowEnergyAddressManagerTest, DisablePrivacy) {
   test_device()->SetTransactionCallback([&] { hci_count++; });
   RunFor(kPrivateAddressTimeout);
   EXPECT_EQ(0, hci_count);
-  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress().type());
+  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress()->type());
 }
 
 TEST_F(LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
@@ -442,13 +452,13 @@ TEST_F(LowEnergyAddressManagerTest, DisablePrivacyDuringAddressChange) {
   // local address shouldn't take effect.
   addr_mgr()->EnablePrivacy(true);
   addr_mgr()->EnablePrivacy(false);
-  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress().type());
+  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress()->type());
   EXPECT_EQ(1, hci_count);
 
   // No HCI commands should get sent after private address interval expires.
   RunFor(kPrivateAddressTimeout);
   EXPECT_EQ(1, hci_count);
-  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress().type());
+  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress()->type());
 }
 
 TEST_F(LowEnergyAddressManagerTest,
@@ -471,7 +481,7 @@ TEST_F(LowEnergyAddressManagerTest,
       test_device(), hci_spec::kLESetRandomAddress, &kSuccessResponse);
 
   addr_mgr()->EnablePrivacy(true);
-  EXPECT_TRUE(EnsureLocalAddress().IsNonResolvablePrivate());
+  EXPECT_TRUE(EnsureLocalAddress()->IsNonResolvablePrivate());
   // Address has changed to an NRPA. Both callbacks should be notified.
   EXPECT_EQ(address_changed_cb_count(), 1u);
   EXPECT_EQ(cb_count2, 1u);
@@ -485,11 +495,60 @@ TEST_F(LowEnergyAddressManagerTest,
   addr_mgr()->EnablePrivacy(false);
 
   // The public address should be returned for the local address.
-  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress().type());
+  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress()->type());
   // Address has changed - all callbacks should be notified.
   EXPECT_EQ(address_changed_cb_count(), 2u);
   EXPECT_EQ(cb_count2, 2u);
   EXPECT_EQ(cb_count3, 1u);
+}
+
+TEST_F(LowEnergyAddressManagerTest,
+       EnsureLocalAddressRandomAddressWithoutPrivacyEnabledFails) {
+  EXPECT_FALSE(addr_mgr()->PrivacyEnabled());
+
+  std::optional<HostError> res;
+  auto cb = [&](fit::result<HostError, const DeviceAddress> result) {
+    if (result.is_error()) {
+      res = result.error_value();
+    }
+  };
+
+  // Explicitly requesting a random address type while privacy is disabled will
+  // result in an error.
+  std::optional<DeviceAddress> local_address =
+      EnsureLocalAddress(DeviceAddress::Type::kLERandom, std::move(cb));
+  EXPECT_FALSE(local_address.has_value());
+  EXPECT_EQ(HostError::kInvalidParameters, res.value());
+
+  // Address hasn't changed so no notifications.
+  EXPECT_EQ(address_changed_cb_count(), 0u);
+}
+
+TEST_F(LowEnergyAddressManagerTest, EnsureLocalAddressReturnsPublic) {
+  EXPECT_FALSE(addr_mgr()->PrivacyEnabled());
+
+  // The public address should be returned for the local address by default when
+  // privacy is disabled.
+  EXPECT_EQ(DeviceAddress::Type::kLEPublic, EnsureLocalAddress()->type());
+
+  // Successfully enable privacy.
+  const StaticByteBuffer kResponse(0x0E,
+                                   4,  // Command Complete, 4 bytes,
+                                   1,  // 1 allowed packet
+                                   0x05,
+                                   0x20,  // opcode: HCI_LE_Set_Random_Address
+                                   0x00   // status: success
+  );
+  EXPECT_CMD_PACKET_OUT(
+      test_device(), hci_spec::kLESetRandomAddress, &kResponse);
+  addr_mgr()->EnablePrivacy(true);
+  RunUntilIdle();
+  EXPECT_EQ(address_changed_cb_count(), 1u);
+
+  // The public address should be returned for the local address when explicitly
+  // requesting the public address type, even if privacy is enabled.
+  EXPECT_EQ(DeviceAddress::Type::kLEPublic,
+            EnsureLocalAddress(DeviceAddress::Type::kLEPublic)->type());
 }
 
 }  // namespace

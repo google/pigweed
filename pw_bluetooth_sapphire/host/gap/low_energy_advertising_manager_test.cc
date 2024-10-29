@@ -40,6 +40,8 @@ constexpr size_t kDefaultMaxAdSize = 23;
 constexpr size_t kDefaultFakeAdSize = 20;
 constexpr AdvertisingInterval kTestInterval = AdvertisingInterval::FAST1;
 
+const DeviceAddress kPublicAddress(DeviceAddress::Type::kLEPublic,
+                                   {0x01, 0, 0, 0, 0, 0});
 const DeviceAddress kRandomAddress(DeviceAddress::Type::kLERandom,
                                    {0x55, 0x44, 0x33, 0x22, 0x11, 0x00});
 
@@ -217,6 +219,8 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
     TestingBase::SetUp();
     InitializeACLDataChannel();
 
+    fake_address_delegate_.EnablePrivacy(true);
+    fake_address_delegate_.set_identity_address(kPublicAddress);
     fake_address_delegate_.set_local_address(kRandomAddress);
     MakeFakeAdvertiser();
     MakeAdvertisingManager();
@@ -323,6 +327,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, Success) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
 
   RunUntilIdle();
@@ -343,6 +348,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, DataSize) {
                               /*extended_pdu=*/true,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
 
   RunUntilIdle();
@@ -357,6 +363,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, DataSize) {
                               /*extended_pdu=*/true,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetErrorCallback());
 
   RunUntilIdle();
@@ -365,8 +372,8 @@ TEST_F(LowEnergyAdvertisingManagerTest, DataSize) {
   EXPECT_EQ(1u, ad_store().size());
 }
 
-// TODO(fxbug.dev/42083437): Revise this test to use multiple advertising
-// instances when multi-advertising is supported.
+// TODO: https://fxbug.dev/42083437 - Revise this test to use multiple
+// advertising instances when multi-advertising is supported.
 //  - Stopping one that is registered stops it in the advertiser
 //    (and stops the right address)
 //  - Stopping an advertisement that isn't registered returns false
@@ -380,6 +387,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, RegisterUnregister) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
 
   RunUntilIdle();
@@ -409,6 +417,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, AdvertiserError) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetErrorCallback());
   RunUntilIdle();
 
@@ -433,6 +442,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
 
   RunUntilIdle();
@@ -467,6 +477,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectAdvertiseError) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/true,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetErrorCallback());
 
   EXPECT_TRUE(last_status());
@@ -481,6 +492,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, SendsCorrectData) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
 
   RunUntilIdle();
@@ -511,6 +523,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
   RunUntilIdle();
   ASSERT_TRUE(last_status());
@@ -526,6 +539,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
   RunUntilIdle();
   ASSERT_TRUE(last_status());
@@ -541,6 +555,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectableAdvertisingIntervals) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
   RunUntilIdle();
   ASSERT_TRUE(last_status());
@@ -564,6 +579,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
   RunUntilIdle();
   ASSERT_TRUE(last_status());
@@ -579,6 +595,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
   RunUntilIdle();
   ASSERT_TRUE(last_status());
@@ -594,6 +611,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               GetSuccessCallback());
   RunUntilIdle();
   ASSERT_TRUE(last_status());
@@ -601,6 +619,44 @@ TEST_F(LowEnergyAdvertisingManagerTest, NonConnectableAdvertisingIntervals) {
   EXPECT_EQ(kLEAdvertisingSlowIntervalMin, current_adv()->interval_min);
   EXPECT_EQ(kLEAdvertisingSlowIntervalMax, current_adv()->interval_max);
   ASSERT_TRUE(adv_mgr()->StopAdvertising(last_ad_id()));
+}
+
+TEST_F(LowEnergyAdvertisingManagerTest, AdvertisePublicAddress) {
+  adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
+                              CreateFakeAdvertisingData(/*packed_size=*/21),
+                              NopConnectCallback,
+                              AdvertisingInterval::FAST1,
+                              /*extended_pdu=*/false,
+                              /*anonymous=*/false,
+                              /*include_tx_power_level=*/false,
+                              DeviceAddress::Type::kLEPublic,
+                              GetSuccessCallback());
+  RunUntilIdle();
+  ASSERT_TRUE(last_status());
+  ASSERT_EQ(1u, ad_store().size());
+  EXPECT_TRUE(adv_mgr()->advertising());
+
+  // Verify that the advertiser uses the requested local address.
+  EXPECT_EQ(kPublicAddress, ad_store().begin()->first);
+}
+
+TEST_F(LowEnergyAdvertisingManagerTest, AdvertiseRandomAddress) {
+  adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
+                              CreateFakeAdvertisingData(/*packed_size=*/21),
+                              NopConnectCallback,
+                              AdvertisingInterval::FAST1,
+                              /*extended_pdu=*/false,
+                              /*anonymous=*/false,
+                              /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
+                              GetSuccessCallback());
+  RunUntilIdle();
+  ASSERT_TRUE(last_status());
+  ASSERT_EQ(1u, ad_store().size());
+  EXPECT_TRUE(adv_mgr()->advertising());
+
+  // Verify that the advertiser uses the requested local address.
+  EXPECT_EQ(kRandomAddress, ad_store().begin()->first);
 }
 
 TEST_F(LowEnergyAdvertisingManagerTest, DestroyingInstanceStopsAdvertisement) {
@@ -613,6 +669,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, DestroyingInstanceStopsAdvertisement) {
                                 /*extended_pdu=*/false,
                                 /*anonymous=*/false,
                                 /*include_tx_power_level=*/false,
+                                /*address_type=*/std::nullopt,
                                 [&](AdvertisementInstance i, auto status) {
                                   ASSERT_EQ(fit::ok(), status);
                                   instance = std::move(i);
@@ -636,6 +693,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, MovingIntoInstanceStopsAdvertisement) {
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               [&](AdvertisementInstance i, auto status) {
                                 ASSERT_EQ(fit::ok(), status);
                                 instance = std::move(i);
@@ -660,6 +718,7 @@ TEST_F(LowEnergyAdvertisingManagerTest,
                               /*extended_pdu=*/false,
                               /*anonymous=*/false,
                               /*include_tx_power_level=*/false,
+                              /*address_type=*/std::nullopt,
                               [&](AdvertisementInstance i, auto status) {
                                 ASSERT_EQ(fit::ok(), status);
                                 *instance = std::move(i);

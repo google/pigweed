@@ -25,9 +25,26 @@ class FakeLocalAddressDelegate : public LocalAddressDelegate {
       : heap_dispatcher_(pw_dispatcher) {}
   ~FakeLocalAddressDelegate() override = default;
 
+  void EnablePrivacy(bool enabled);
+
+  // Returns true if the privacy feature is currently enabled.
+  bool privacy_enabled() const { return privacy_enabled_; }
+
   std::optional<UInt128> irk() const override { return std::nullopt; }
   DeviceAddress identity_address() const override { return identity_address_; }
-  void EnsureLocalAddress(AddressCallback callback) override;
+  void EnsureLocalAddress(std::optional<DeviceAddress::Type> address_type,
+                          AddressCallback callback) override;
+
+  // Assign a callback to be notified any time the LE address changes.
+  void register_address_changed_callback(fit::closure callback) {
+    address_changed_callback_ = std::move(callback);
+  }
+
+  void UpdateRandomAddress(DeviceAddress& address);
+
+  const DeviceAddress current_address() const {
+    return (privacy_enabled_ && random_) ? random_.value() : identity_address_;
+  }
 
   // If set to true EnsureLocalAddress runs its callback asynchronously.
   void set_async(bool value) { async_ = value; }
@@ -38,11 +55,23 @@ class FakeLocalAddressDelegate : public LocalAddressDelegate {
   void set_local_address(const DeviceAddress& value) { local_address_ = value; }
 
  private:
+  fit::closure address_changed_callback_;
+
   bool async_ = false;
-  DeviceAddress local_address_ =
-      DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
+
+  bool privacy_enabled_ = false;
+
+  // The random device address assigned to the controller if privacy is enabled.
+  std::optional<DeviceAddress> random_;
+
+  // LE public address
   DeviceAddress identity_address_ =
       DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
+
+  // LE resolvable private address
+  DeviceAddress local_address_ =
+      DeviceAddress(DeviceAddress::Type::kLERandom, {0});
+
   pw::async::HeapDispatcher heap_dispatcher_;
 };
 

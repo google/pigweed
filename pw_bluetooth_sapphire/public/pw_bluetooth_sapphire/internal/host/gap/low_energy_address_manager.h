@@ -101,7 +101,8 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   // LocalAddressDelegate overrides:
   std::optional<UInt128> irk() const override { return irk_; }
   DeviceAddress identity_address() const override { return public_; }
-  void EnsureLocalAddress(AddressCallback callback) override;
+  void EnsureLocalAddress(std::optional<DeviceAddress::Type> address_type,
+                          AddressCallback callback) override;
 
   // Assign a callback to be notified any time the LE address changes.
   void register_address_changed_callback(AddressCallback callback) {
@@ -109,9 +110,11 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   }
 
   // Return the current address.
-  const DeviceAddress& current_address() const {
+  const DeviceAddress current_address() const {
     return (privacy_enabled_ && random_) ? *random_ : public_;
   }
+
+  const DeviceAddress public_address() const { return public_; }
 
  private:
   // Attempt to reconfigure the current random device address.

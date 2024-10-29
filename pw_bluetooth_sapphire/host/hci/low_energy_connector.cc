@@ -124,6 +124,7 @@ bool LowEnergyConnector::CreateConnection(
   }
 
   local_addr_delegate_->EnsureLocalAddress(
+      /*address_type=*/std::nullopt,
       [this,
        use_accept_list,
        peer_address,
@@ -131,9 +132,13 @@ bool LowEnergyConnector::CreateConnection(
        scan_window,
        initial_parameters,
        timeout,
-       callback =
-           std::move(status_callback)](const DeviceAddress& address) mutable {
-        CreateConnectionInternal(address,
+       callback = std::move(status_callback)](
+          fit::result<HostError, const DeviceAddress> result) mutable {
+        if (result.is_error()) {
+          callback(fit::error(result.error_value()), nullptr);
+          return;
+        }
+        CreateConnectionInternal(result.value(),
                                  use_accept_list,
                                  peer_address,
                                  scan_interval,

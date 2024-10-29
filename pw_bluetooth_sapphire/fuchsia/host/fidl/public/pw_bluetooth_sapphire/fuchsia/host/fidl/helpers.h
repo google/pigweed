@@ -330,6 +330,9 @@ pw::bluetooth::emboss::StatusCode FidlHciErrorToStatusCode(
 fuchsia::bluetooth::le::CisEstablishedParameters CisEstablishedParametersToFidl(
     const bt::iso::CisEstablishedParameters& params_in);
 
+bt::DeviceAddress::Type FidlToDeviceAddressType(
+    fuchsia::bluetooth::AddressType addr_type);
+
 }  // namespace bthost::fidl_helpers
 
 // fidl::TypeConverter specializations for ByteBuffer and friends.

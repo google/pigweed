@@ -2902,6 +2902,14 @@ fuchsia::bluetooth::le::CisEstablishedParameters CisEstablishedParametersToFidl(
   return params_out;
 }
 
+bt::DeviceAddress::Type FidlToDeviceAddressType(fbt::AddressType addr_type) {
+  switch (addr_type) {
+    case fbt::AddressType::PUBLIC:
+      return bt::DeviceAddress::Type::kLEPublic;
+    case fbt::AddressType::RANDOM:
+      return bt::DeviceAddress::Type::kLERandom;
+  }
+}
 }  // namespace bthost::fidl_helpers
 
 // static

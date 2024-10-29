@@ -87,6 +87,7 @@ cc_library(
     deps = [
         ":gap",
         "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/hci:testing",
         "//pw_bluetooth_sapphire/host/l2cap:testing",
         "@pigweed//pw_unit_test",
     ],

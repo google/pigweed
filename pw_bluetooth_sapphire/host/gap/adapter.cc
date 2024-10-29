@@ -140,6 +140,7 @@ class AdapterImpl final : public Adapter {
         bool anonymous,
         bool include_tx_power_level,
         std::optional<ConnectableAdvertisingParameters> connectable,
+        std::optional<DeviceAddress::Type> address_type,
         AdvertisingStatusCallback status_callback) override {
       LowEnergyAdvertisingManager::ConnectionCallback advertisement_connect_cb =
           nullptr;
@@ -174,6 +175,7 @@ class AdapterImpl final : public Adapter {
           extended_pdu,
           anonymous,
           include_tx_power_level,
+          address_type,
           std::move(status_callback));
       adapter_->metrics_.le.start_advertising_events.Add();
     }
@@ -197,7 +199,7 @@ class AdapterImpl final : public Adapter {
       return adapter_->le_address_manager_->PrivacyEnabled();
     }
 
-    const DeviceAddress& CurrentAddress() const override {
+    const DeviceAddress CurrentAddress() const override {
       return adapter_->le_address_manager_->current_address();
     }
 

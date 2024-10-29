@@ -124,6 +124,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(
     bool extended_pdu,
     bool anonymous,
     bool include_tx_power_level,
+    std::optional<DeviceAddress::Type> address_type,
     AdvertisingStatusCallback status_callback) {
   // Can't be anonymous and connectable
   if (anonymous && connect_callback) {
@@ -149,9 +150,9 @@ void LowEnergyAdvertisingManager::StartAdvertising(
 
   auto self = weak_self_.GetWeakPtr();
 
-  // TODO(fxbug.dev/42083437): The address used for legacy advertising must be
-  // coordinated via |local_addr_delegate_| however a unique address can be
-  // generated and assigned to each advertising set when the controller
+  // TODO: https://fxbug.dev/42083437 - The address used for legacy advertising
+  // must be coordinated via |local_addr_delegate_| however a unique address can
+  // be generated and assigned to each advertising set when the controller
   // supports 5.0 extended advertising. hci::LowEnergyAdvertiser needs to be
   // revised to not use device addresses to distinguish between advertising
   // instances especially since |local_addr_delegate_| is likely to return the
@@ -159,18 +160,25 @@ void LowEnergyAdvertisingManager::StartAdvertising(
   //
   // Revisit this logic when multi-advertising is supported.
   local_addr_delegate_->EnsureLocalAddress(
+      address_type,
       [self,
        advertising_data = std::move(data),
        scan_response = std::move(scan_rsp),
        options,
        connect_cb = std::move(connect_callback),
-       status_cb = std::move(status_callback)](const auto& address) mutable {
+       status_cb = std::move(status_callback)](
+          fit::result<HostError, const DeviceAddress> result) mutable {
         if (!self.is_alive()) {
           return;
         }
 
+        if (result.is_error()) {
+          status_cb(AdvertisementInstance(), fit::error(result.error_value()));
+          return;
+        }
+
         auto ad_ptr = std::make_unique<ActiveAdvertisement>(
-            address,
+            result.value(),
             AdvertisementId(self->next_advertisement_id_++),
             options.extended_pdu);
         hci::LowEnergyAdvertiser::ConnectionCallback adv_conn_cb;
@@ -208,7 +216,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(
             };
 
         // Call StartAdvertising, with the callback
-        self->advertiser_->StartAdvertising(address,
+        self->advertiser_->StartAdvertising(result.value(),
                                             advertising_data,
                                             scan_response,
                                             options,

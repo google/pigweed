@@ -141,8 +141,14 @@ bool LowEnergyScanner::StartScan(const ScanOptions& options,
 
   // Obtain the local address type.
   local_addr_delegate_->EnsureLocalAddress(
-      [this, options, cb = std::move(callback)](const auto& address) mutable {
-        StartScanInternal(address, options, std::move(cb));
+      /*address_type=*/std::nullopt,
+      [this, options, cb = std::move(callback)](
+          fit::result<HostError, const DeviceAddress> result) mutable {
+        if (result.is_error()) {
+          cb(ScanStatus::kFailed);
+          return;
+        }
+        StartScanInternal(result.value(), options, std::move(cb));
       });
 
   return true;

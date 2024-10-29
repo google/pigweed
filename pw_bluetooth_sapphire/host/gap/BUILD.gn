@@ -127,6 +127,7 @@ pw_source_set("testing") {
 
   public_deps = [
     ":gap",
+    "$dir_pw_bluetooth_sapphire/host/hci:testing",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
     "$dir_pw_unit_test",
   ]

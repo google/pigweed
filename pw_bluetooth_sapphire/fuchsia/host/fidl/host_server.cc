@@ -119,6 +119,12 @@ void HostServer::RequestProtocol(fhost::ProtocolRequest request) {
       BindServer<ProfileServer>(adapter()->AsWeakPtr(),
                                 std::move(request.profile()));
       break;
+    case fhost::ProtocolRequest::Tag::kPrivilegedPeripheral:
+      BindServer<LowEnergyPrivilegedPeripheralServer>(
+          adapter()->AsWeakPtr(),
+          gatt_,
+          std::move(request.privileged_peripheral()));
+      break;
     default:
       bt_log(WARN, "fidl", "received unknown protocol request");
       // The unknown protocol will be closed when `request` is destroyed.

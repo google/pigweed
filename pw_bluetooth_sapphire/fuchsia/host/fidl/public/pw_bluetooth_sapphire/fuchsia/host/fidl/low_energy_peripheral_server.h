@@ -38,7 +38,8 @@ class LowEnergyPeripheralServer
   LowEnergyPeripheralServer(
       bt::gap::Adapter::WeakPtr adapter,
       bt::gatt::GATT::WeakPtr gatt,
-      fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> request);
+      fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> request,
+      bool privileged = false);
   ~LowEnergyPeripheralServer() override;
 
   // fuchsia::bluetooth::le::Peripheral overrides:
@@ -195,8 +196,8 @@ class LowEnergyPeripheralServer
   // `Advertise`. bt::gap::AdvertisementId cannot be used as a map key because
   // it is received asynchronously, and we need an advertisement ID to refer to
   // before advertising starts.
-  // TODO(fxbug.dev/42157682): Support AdvertisedPeripheral protocols that
-  // outlive this Peripheral protocol. This may require passing
+  // TODO: https://fxbug.dev/42157682 - Support AdvertisedPeripheral protocols
+  // that outlive this Peripheral protocol. This may require passing
   // AdvertisementInstances to HostServer.
   AdvertisementInstanceId next_advertisement_instance_id_ = 0u;
   std::unordered_map<AdvertisementInstanceId, AdvertisementInstance>
@@ -212,11 +213,48 @@ class LowEnergyPeripheralServer
 
   bt::gatt::GATT::WeakPtr gatt_;
 
+  // True if PrivilegedPeripheral created this server. Defaults to false.
+  bool privileged_;
+
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
   WeakSelf<LowEnergyPeripheralServer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServer);
+};
+
+// Implements the fuchsia::bluetooth::le::PrivilegedPeripheral FIDL interface.
+class LowEnergyPrivilegedPeripheralServer
+    : public AdapterServerBase<fuchsia::bluetooth::le::PrivilegedPeripheral> {
+ public:
+  LowEnergyPrivilegedPeripheralServer(
+      const bt::gap::Adapter::WeakPtr& adapter,
+      bt::gatt::GATT::WeakPtr gatt,
+      fidl::InterfaceRequest<fuchsia::bluetooth::le::PrivilegedPeripheral>
+          request);
+
+  // fuchsia::bluetooth::le::Peripheral overrides:
+  void Advertise(
+      fuchsia::bluetooth::le::AdvertisingParameters parameters,
+      fidl::InterfaceHandle<fuchsia::bluetooth::le::AdvertisedPeripheral>
+          advertised_peripheral,
+      AdvertiseCallback callback) override;
+  void StartAdvertising(
+      fuchsia::bluetooth::le::AdvertisingParameters parameters,
+      ::fidl::InterfaceRequest<fuchsia::bluetooth::le::AdvertisingHandle> token,
+      StartAdvertisingCallback callback) override;
+
+  // fuchsia::bluetooth::le::ChannelListenerRegistry overrides:
+  void ListenL2cap(
+      fuchsia::bluetooth::le::ChannelListenerRegistryListenL2capRequest request,
+      ListenL2capCallback callback) override;
+
+ private:
+  std::unique_ptr<LowEnergyPeripheralServer> le_peripheral_server_;
+
+  WeakSelf<LowEnergyPrivilegedPeripheralServer> weak_self_;
+
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPrivilegedPeripheralServer);
 };
 
 }  // namespace bthost

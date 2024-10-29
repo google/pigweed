@@ -120,6 +120,7 @@ class LowEnergyAdvertisingManager {
                         bool extended_pdu,
                         bool anonymous,
                         bool include_tx_power_level,
+                        std::optional<DeviceAddress::Type> address_type,
                         AdvertisingStatusCallback status_callback);
 
   // Stop advertising the advertisement with the id |advertisement_id|
