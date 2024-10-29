@@ -1619,31 +1619,29 @@ void FakeController::OnLESetHostFeature(
 
 void FakeController::OnReadLocalExtendedFeatures(
     const pwemb::ReadLocalExtendedFeaturesCommandView& params) {
-  hci_spec::ReadLocalExtendedFeaturesReturnParams out_params;
-  out_params.status = pwemb::StatusCode::SUCCESS;
-  out_params.page_number = params.page_number().Read();
-  out_params.maximum_page_number = 2;
-  out_params.extended_lmp_features = 0;
-
+  auto packet = hci::EmbossEventPacket::New<
+      pwemb::ReadLocalExtendedFeaturesCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.page_number().Write(params.page_number().Read());
+  view.max_page_number().Write(2);
+  view.extended_lmp_features().Write(0);
   switch (params.page_number().Read()) {
     case 0:
-      out_params.extended_lmp_features = pw::bytes::ConvertOrderTo(
-          cpp20::endian::little, settings_.lmp_features_page0);
+      view.extended_lmp_features().Write(settings_.lmp_features_page0);
       break;
     case 1:
-      out_params.extended_lmp_features = pw::bytes::ConvertOrderTo(
-          cpp20::endian::little, settings_.lmp_features_page1);
+      view.extended_lmp_features().Write(settings_.lmp_features_page1);
       break;
     case 2:
-      out_params.extended_lmp_features = pw::bytes::ConvertOrderTo(
-          cpp20::endian::little, settings_.lmp_features_page2);
+      view.extended_lmp_features().Write(settings_.lmp_features_page2);
       break;
     default:
-      out_params.status = pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
+      view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
   }
 
-  RespondWithCommandComplete(hci_spec::kReadLocalExtendedFeatures,
-                             BufferView(&out_params, sizeof(out_params)));
+  RespondWithCommandComplete(hci_spec::kReadLocalExtendedFeatures, &packet);
 }
 
 void FakeController::OnSetEventMask(

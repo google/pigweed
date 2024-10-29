@@ -1689,20 +1689,18 @@ void AdapterImpl::InitQueueReadLMPFeatureMaskPage(uint8_t page) {
 
     init_seq_runner_->QueueCommand(
         std::move(cmd_packet),
-        [this, page](const hci::EventPacket& cmd_complete) {
+        [this, page](const hci::EmbossEventPacket& cmd_complete) {
           if (hci_is_error(cmd_complete,
                            WARN,
                            "gap",
                            "read local extended features failed")) {
             return;
           }
-          auto params = cmd_complete.return_params<
-              hci_spec::ReadLocalExtendedFeaturesReturnParams>();
-          state_.features.SetPage(
-              page,
-              pw::bytes::ConvertOrderFrom(cpp20::endian::little,
-                                          params->extended_lmp_features));
-          max_lmp_feature_page_index_ = params->maximum_page_number;
+          auto view = cmd_complete.view<
+              pw::bluetooth::emboss::
+                  ReadLocalExtendedFeaturesCommandCompleteEventView>();
+          state_.features.SetPage(page, view.extended_lmp_features().Read());
+          max_lmp_feature_page_index_ = view.max_page_number().Read();
         });
   }
 }

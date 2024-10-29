@@ -446,14 +446,6 @@ constexpr OpCode kReadLocalSupportedFeatures =
 // Read Local Extended Features Command (v1.2) (BR/EDR)
 constexpr OpCode kReadLocalExtendedFeatures = InformationalParamsOpCode(0x0004);
 
-struct ReadLocalExtendedFeaturesReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-  uint8_t page_number;
-  uint8_t maximum_page_number;
-  uint64_t extended_lmp_features;
-} __attribute__((packed));
-
 // ===============================
 // Read Buffer Size Command (v1.1)
 constexpr OpCode kReadBufferSize = InformationalParamsOpCode(0x0005);
