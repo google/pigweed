@@ -96,7 +96,12 @@ inline void LogBytes(int log_level, pw::ConstByteSpan bytes) {
   pw::dump::FormattedHexDumper hex_dumper(temp, flags);
   if (hex_dumper.BeginDump(bytes).ok()) {
     while (hex_dumper.DumpLine().ok()) {
-      PW_LOG(log_level, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "%s", temp.data());
+      PW_LOG(log_level,
+             PW_LOG_LEVEL,
+             PW_LOG_MODULE_NAME,
+             PW_LOG_FLAGS,
+             "%s",
+             temp.data());
     }
   }
 }

@@ -44,5 +44,6 @@ DLL_EXPORT void chreLog(enum chreLogLevel level,
   PW_ASSERT(status.ok());
   va_end(args);
 
-  PW_LOG(ToPigweedLogLevel(level), "CHRE", PW_LOG_FLAGS, "%s", log);
+  PW_LOG(
+      ToPigweedLogLevel(level), PW_LOG_LEVEL, "CHRE", PW_LOG_FLAGS, "%s", log);
 }

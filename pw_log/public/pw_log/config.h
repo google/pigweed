@@ -34,11 +34,11 @@
 #define PW_LOG_FLAGS_DEFAULT 0
 #endif  // PW_LOG_FLAGS_DEFAULT
 
-// PW_LOG_ENABLE_IF_DEFAULT controls the default value of PW_LOG_ENABLE_IF.
+// PW_LOG_ENABLE_IF controls what logs are enabled
 //
 // This expression determines whether or not the statement is enabled and
 // should be passed to the backend.
-#ifndef PW_LOG_ENABLE_IF_DEFAULT
-#define PW_LOG_ENABLE_IF_DEFAULT(level, module, flags) \
-  ((int32_t)(level) >= (int32_t)(PW_LOG_LEVEL))
-#endif  // PW_LOG_ENABLE_IF_DEFAULT
+#ifndef PW_LOG_ENABLE_IF
+#define PW_LOG_ENABLE_IF(level, verbosity, module, flags) \
+  ((int32_t)(level) >= (int32_t)(verbosity))
+#endif  // PW_LOG_ENABLE_IF

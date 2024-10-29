@@ -23,6 +23,7 @@
 //
 #pragma once
 
+#include "pw_log/config.h"
 #include "pw_log/levels.h"
 #include "pw_log/options.h"
 
@@ -40,9 +41,12 @@
 //
 // Outputs: Macros log_backend.h is expected to provide:
 //
-//   PW_LOG(level, flags, fmt, ...)
+//   PW_LOG(level, verbosity, module, flags, fmt, ...)
 //     - Required.
-//       Level - An integer level as defined by pw_log/levels.h
+//       Level - An integer level as defined by pw_log/levels.h for this log.
+//       Verbosity - An integer level as defined by pw_log/levels.h which is the
+//                   minimum level which is enabled.
+//       Module - A string literal for the module name.
 //       Flags - Arbitrary flags the backend can leverage; user-defined.
 //               Example: HAS_PII - A log has personally-identifying data
 //               Example: HAS_DII - A log has device-identifying data
@@ -64,53 +68,76 @@
 // The PW_LOG macro accepts the format string and its arguments in a variadic
 // macro. The format string is not listed as a separate argument to avoid adding
 // a comma after the format string when it has no arguments.
-#ifndef PW_LOG
-#define PW_LOG(level, module, flags, /* format string and arguments */...) \
+#define PW_LOG(                                                            \
+    level, verbosity, module, flags, /* format string and arguments */...) \
   do {                                                                     \
-    if (PW_LOG_ENABLE_IF(level, module, flags)) {                          \
+    if (PW_LOG_ENABLE_IF(level, verbosity, module, flags)) {               \
       PW_HANDLE_LOG(level, module, flags, __VA_ARGS__);                    \
     }                                                                      \
   } while (0)
-#endif  // PW_LOG
+
+// TODO(ewout): Remove this sentinel used to migrate downstream projects.
+#define _PW_LOG_REQUIRES_VERBOSITY 1
 
 // For backends that elect to only provide the general PW_LOG() macro and not
 // specialized versions, define the standard PW_LOG_<level>() macros in terms
 // of the general PW_LOG().
 #ifndef PW_LOG_DEBUG
-#define PW_LOG_DEBUG(...) \
-  PW_LOG(PW_LOG_LEVEL_DEBUG, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
+#define PW_LOG_DEBUG(...)    \
+  PW_LOG(PW_LOG_LEVEL_DEBUG, \
+         PW_LOG_LEVEL,       \
+         PW_LOG_MODULE_NAME, \
+         PW_LOG_FLAGS,       \
+         __VA_ARGS__)
 #endif  // PW_LOG_DEBUG
 
 #ifndef PW_LOG_INFO
-#define PW_LOG_INFO(...) \
-  PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
+#define PW_LOG_INFO(...)     \
+  PW_LOG(PW_LOG_LEVEL_INFO,  \
+         PW_LOG_LEVEL,       \
+         PW_LOG_MODULE_NAME, \
+         PW_LOG_FLAGS,       \
+         __VA_ARGS__)
 #endif  // PW_LOG_INFO
 
 #ifndef PW_LOG_WARN
-#define PW_LOG_WARN(...) \
-  PW_LOG(PW_LOG_LEVEL_WARN, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
+#define PW_LOG_WARN(...)     \
+  PW_LOG(PW_LOG_LEVEL_WARN,  \
+         PW_LOG_LEVEL,       \
+         PW_LOG_MODULE_NAME, \
+         PW_LOG_FLAGS,       \
+         __VA_ARGS__)
 #endif  // PW_LOG_WARN
 
 #ifndef PW_LOG_ERROR
-#define PW_LOG_ERROR(...) \
-  PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
+#define PW_LOG_ERROR(...)    \
+  PW_LOG(PW_LOG_LEVEL_ERROR, \
+         PW_LOG_LEVEL,       \
+         PW_LOG_MODULE_NAME, \
+         PW_LOG_FLAGS,       \
+         __VA_ARGS__)
 #endif  // PW_LOG_ERROR
 
 #ifndef PW_LOG_CRITICAL
-#define PW_LOG_CRITICAL(...) \
-  PW_LOG(PW_LOG_LEVEL_CRITICAL, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
+#define PW_LOG_CRITICAL(...)    \
+  PW_LOG(PW_LOG_LEVEL_CRITICAL, \
+         PW_LOG_LEVEL,          \
+         PW_LOG_MODULE_NAME,    \
+         PW_LOG_FLAGS,          \
+         __VA_ARGS__)
 #endif  // PW_LOG_CRITICAL
 
 #ifndef PW_LOG_EVERY_N
-#define PW_LOG_EVERY_N(level, rate, ...)                            \
-  do {                                                              \
-    static uint32_t _pw_log_suppressor##__LINE__ = 0;               \
-    if (_pw_log_suppressor##__LINE__ == 0) {                        \
-      PW_LOG(level, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__); \
-      _pw_log_suppressor##__LINE__ = rate;                          \
-    } else {                                                        \
-      _pw_log_suppressor##__LINE__--;                               \
-    }                                                               \
+#define PW_LOG_EVERY_N(level, rate, ...)                                       \
+  do {                                                                         \
+    static uint32_t _pw_log_suppressor##__LINE__ = 0;                          \
+    if (_pw_log_suppressor##__LINE__ == 0) {                                   \
+      PW_LOG(                                                                  \
+          level, PW_LOG_LEVEL, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__); \
+      _pw_log_suppressor##__LINE__ = rate;                                     \
+    } else {                                                                   \
+      _pw_log_suppressor##__LINE__--;                                          \
+    }                                                                          \
   } while (0)
 #endif  // PW_LOG_EVERY_N
 

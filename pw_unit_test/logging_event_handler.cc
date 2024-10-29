@@ -128,6 +128,7 @@ void LoggingEventHandler::TestCaseExpect(const TestCase& test_case,
   const char* result = expectation.success ? "Success" : "Failure";
   int32_t level = expectation.success ? PW_LOG_LEVEL_INFO : PW_LOG_LEVEL_ERROR;
   PW_LOG(level,
+         PW_LOG_LEVEL,
          PW_LOG_MODULE_NAME,
          PW_LOG_FLAGS,
          "%s:%d: %s",
@@ -135,11 +136,13 @@ void LoggingEventHandler::TestCaseExpect(const TestCase& test_case,
          expectation.line_number,
          result);
   PW_LOG(level,
+         PW_LOG_LEVEL,
          PW_LOG_MODULE_NAME,
          PW_LOG_FLAGS,
          "      Expected: %s",
          expectation.expression);
   PW_LOG(level,
+         PW_LOG_LEVEL,
          PW_LOG_MODULE_NAME,
          PW_LOG_FLAGS,
          "        Actual: %s",

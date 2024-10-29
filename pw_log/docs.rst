@@ -85,14 +85,16 @@ Logging macros
 These are the primary macros for logging information about the functioning of a
 system, intended to be used directly.
 
-.. c:macro:: PW_LOG(level, module, flags, fmt, ...)
+.. c:macro:: PW_LOG(level, verbosity, module, flags, fmt, ...)
 
    This is the primary mechanism for logging.
 
-   *level* - An integer level as defined by ``pw_log/levels.h``.
+   *level* - An integer level as defined by ``pw_log/levels.h`` for this log.
 
-   *module* - A string literal for the module name. Defaults to
-   :c:macro:`PW_LOG_MODULE_NAME`.
+   *verbosity* - An integer level as defined by ``pw_log/levels.h`` which is the
+   minimum level which is enabled.
+
+   *module* - A string literal for the module name.
 
    *flags* - Arbitrary flags the backend can leverage. The semantics of these
    flags are not defined in the facade, but are instead meant as a general
@@ -116,8 +118,8 @@ system, intended to be used directly.
 
    .. code-block:: cpp
 
-      PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Temp is %d degrees", temp);
-      PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_MODULE_NAME, UNRELIABLE_DELIVERY, "It didn't work!");
+      PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_LEVEL_DEBUG, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Temp is %d degrees", temp);
+      PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_LEVEL_DEBUG, PW_LOG_MODULE_NAME, UNRELIABLE_DELIVERY, "It didn't work!");
 
    .. note::
 
@@ -208,12 +210,18 @@ more details.
    ``PW_LOG_FLAGS_DEFAULT`` will change the behavior of all source files that
    have not explicitly set ``PW_LOG_FLAGS``. Defaults to ``0``.
 
-.. c:macro:: PW_LOG_ENABLE_IF_DEFAULT
+.. c:macro:: PW_LOG_ENABLE_IF(level, verbosity, flags)
 
-   Controls the default value of ``PW_LOG_ENABLE_IF``. Setting
-   ``PW_LOG_ENABLE_IF_DEFAULT`` will change the behavior of all source files that
-   have not explicitly set ``PW_LOG_ENABLE_IF``. Defaults to
-   ``((level) >= PW_LOG_LEVEL)``.
+   Filters logs by an arbitrary expression based on ``level``, ``verbosity``,
+   and ``flags``. Source files that define
+   ``PW_LOG_ENABLE_IF(level, verbosity, flags)`` will display if the given
+   expression evaluates true. Defaults to
+   ``((int32_t)(level) >= (int32_t)(verbosity))``.
+
+.. attention::
+
+   At this time, only compile time filtering is supported. In the future, we
+   plan to add support for runtime filtering.
 
 
 Per-source file configuration
@@ -277,49 +285,6 @@ source files, not headers. For example:
         PW_LOG_INFO("This is INFO level, and will display");
         PW_LOG_WARN("This is above INFO level, and will display");
       }
-
-.. c:macro:: PW_LOG_ENABLE_IF(level, flags)
-
-   Filters logs by an arbitrary expression based on ``level`` and ``flags``.
-   Source files that define ``PW_LOG_ENABLE_IF(level, flags)`` will display if
-   the given expression evaluates true. Defaults to
-   ``PW_LOG_ENABLE_IF_DEFAULT``.
-
-   Example:
-
-   .. code-block:: cpp
-
-      // Pigweed's log facade will call this macro to decide to log or not. In
-      // this case, it will drop logs with the PII flag set if display of PII is
-      // not enabled for the application.
-      #define PW_LOG_ENABLE_IF(level, flags) \
-          (level >= PW_LOG_LEVEL_INFO && \
-           !((flags & MY_PRODUCT_PII_MASK) && MY_PRODUCT_LOG_PII_ENABLED)
-
-      #include "pw_log/log.h"
-
-      // This define might be supplied by the build system.
-      #define MY_PRODUCT_LOG_PII_ENABLED false
-
-      // This is the PII mask bit selected by the application.
-      #define MY_PRODUCT_PII_MASK (1 << 5)
-
-      void DoSomethingWithSensitiveInfo() {
-        PW_LOG_DEBUG("This won't be logged at all");
-        PW_LOG_INFO("This is INFO level, and will display");
-
-        // In this example, this will not be logged since logging with PII
-        // is disabled by the above macros.
-        PW_LOG(PW_LOG_LEVEL_INFO,
-               MY_PRODUCT_PII_MASK,
-               "Sensitive: %d",
-               sensitive_info);
-      }
-
-.. attention::
-
-   At this time, only compile time filtering is supported. In the future, we
-   plan to add support for runtime filtering.
 
 .. _module-pw_log-logging_attributes:
 

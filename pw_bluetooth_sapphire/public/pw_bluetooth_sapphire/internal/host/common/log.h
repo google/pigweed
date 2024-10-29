@@ -139,6 +139,7 @@ constexpr void CheckFormat([[maybe_unused]] const char* fmt, ...) {}
 // specify any additional args.
 #define bt_log(level, tag, /*fmt*/...)             \
   PW_LOG(static_cast<int>(bt::LogSeverity::level), \
+         PW_LOG_LEVEL,                             \
          tag,                                      \
          GetPwLogFlags(bt::LogSeverity::level),    \
          __VA_ARGS__);                             \

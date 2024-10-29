@@ -65,12 +65,3 @@
 #ifndef PW_LOG_DEFAULT_FLAGS
 #define PW_LOG_DEFAULT_FLAGS PW_LOG_FLAGS
 #endif  // PW_LOG_DEFAULT_FLAGS
-
-// Default: Log enabled expression
-//
-// This expression determines whether or not the statement is enabled and
-// should be passed to the backend.
-#ifndef PW_LOG_ENABLE_IF
-#define PW_LOG_ENABLE_IF(level, module, flags) \
-  PW_LOG_ENABLE_IF_DEFAULT(level, module, flags)
-#endif  // PW_LOG_ENABLE_IF

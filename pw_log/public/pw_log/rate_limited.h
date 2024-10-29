@@ -83,6 +83,7 @@ class RateLimiter {
     if (auto result = rate_limiter.Poll(min_interval_between_logs);         \
         result.count == std::numeric_limits<uint16_t>::max()) {             \
       PW_LOG(level,                                                         \
+             PW_LOG_LEVEL,                                                  \
              PW_LOG_MODULE_NAME,                                            \
              PW_LOG_FLAGS,                                                  \
              msg " (skipped %d or more, %d/s)",                             \
@@ -91,6 +92,7 @@ class RateLimiter {
              static_cast<unsigned>(result.logs_per_s));                     \
     } else if (result.count != 0) {                                         \
       PW_LOG(level,                                                         \
+             PW_LOG_LEVEL,                                                  \
              PW_LOG_MODULE_NAME,                                            \
              PW_LOG_FLAGS,                                                  \
              msg " (skipped %d, %d/s)",                                     \
