@@ -3336,11 +3336,14 @@ void FakeController::OnLEReadMaximumAdvertisingDataLength() {
 }
 
 void FakeController::OnLEReadNumberOfSupportedAdvertisingSets() {
-  hci_spec::LEReadNumSupportedAdvertisingSetsReturnParams params;
-  params.status = pwemb::StatusCode::SUCCESS;
-  params.num_supported_adv_sets = num_supported_advertising_sets_;
+  auto event = hci::EmbossEventPacket::New<
+      pwemb::LEReadNumberOfSupportedAdvertisingSetsCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto view = event.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.num_supported_advertising_sets().Write(num_supported_advertising_sets_);
   RespondWithCommandComplete(hci_spec::kLEReadNumSupportedAdvertisingSets,
-                             BufferView(&params, sizeof(params)));
+                             &event);
 }
 
 void FakeController::OnLERemoveAdvertisingSet(

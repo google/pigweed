@@ -1029,13 +1029,6 @@ constexpr OpCode kLEReadMaximumAdvertisingDataLength =
 constexpr OpCode kLEReadNumSupportedAdvertisingSets =
     LEControllerCommandOpCode(0x003B);
 
-struct LEReadNumSupportedAdvertisingSetsReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  uint8_t num_supported_adv_sets;
-} __attribute__((packed));
-
 // =============================================
 // LE Remove Advertising Set Command (v5.0) (LE)
 constexpr OpCode kLERemoveAdvertisingSet = LEControllerCommandOpCode(0x003C);
