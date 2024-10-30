@@ -60,7 +60,7 @@ cc_library(
         "//pw_bytes",
         "//pw_function",
         "//pw_log",
-        "//pw_log:log_proto_cc.pwpb",
+        "//pw_log:log_proto_pwpb",
         "//pw_status",
     ],
 )

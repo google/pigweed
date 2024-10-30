@@ -15,7 +15,11 @@
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:compatibility.bzl", "host_backend_alias")
 load("//pw_build:pw_facade.bzl", "pw_facade")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pwpb_proto_library",
+    "raw_rpc_proto_library",
+)
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -175,11 +179,11 @@ cc_library(
         "//pw_span",
         "//pw_status",
         ":config",
-        ":thread_cc.pwpb",
+        ":thread_pwpb",
         ":thread_info",
         ":thread_iteration",
-        ":thread_snapshot_service_cc.pwpb",
-        ":thread_snapshot_service_cc.raw_rpc",
+        ":thread_snapshot_service_pwpb",
+        ":thread_snapshot_service_raw_rpc",
         # TODO(amontanez): This should depend on FreeRTOS but our third parties
         # currently do not have Bazel support.
     ],
@@ -242,7 +246,7 @@ cc_library(
     ],
     deps = [
         ":thread",
-        ":thread_cc.pwpb",
+        ":thread_pwpb",
         "//pw_bytes",
         "//pw_function",
         "//pw_log",
@@ -358,11 +362,11 @@ pw_cc_test(
     # TODO: https://pwbug.dev/342662853 - This test fails under ASAN.
     tags = ["noasan"],
     deps = [
-        ":thread_cc.pwpb",
         ":thread_info",
         ":thread_iteration",
+        ":thread_pwpb",
         ":thread_snapshot_service",
-        ":thread_snapshot_service_cc.pwpb",
+        ":thread_snapshot_service_pwpb",
         "//pw_protobuf",
         "//pw_span",
         "//pw_sync:thread_notification",
@@ -406,8 +410,13 @@ proto_library(
     ],
 )
 
-pw_proto_library(
-    name = "thread_snapshot_service_cc",
+pwpb_proto_library(
+    name = "thread_snapshot_service_pwpb",
+    deps = [":thread_snapshot_service_proto"],
+)
+
+raw_rpc_proto_library(
+    name = "thread_snapshot_service_raw_rpc",
     deps = [":thread_snapshot_service_proto"],
 )
 
@@ -416,7 +425,7 @@ py_proto_library(
     deps = [":thread_snapshot_service_proto"],
 )
 
-pw_proto_library(
-    name = "thread_cc",
+pwpb_proto_library(
+    name = "thread_pwpb",
     deps = [":thread_proto"],
 )

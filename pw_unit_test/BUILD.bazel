@@ -17,7 +17,11 @@ load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:compatibility.bzl", "boolean_constraint_value", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//pw_build:pw_facade.bzl", "pw_facade")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pwpb_proto_library",
+    "raw_rpc_proto_library",
+)
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -355,8 +359,13 @@ py_proto_library(
     deps = [":unit_test_proto"],
 )
 
-pw_proto_library(
-    name = "unit_test_cc",
+pwpb_proto_library(
+    name = "unit_test_pwpb",
+    deps = [":unit_test_proto"],
+)
+
+raw_rpc_proto_library(
+    name = "unit_test_raw_rpc",
     deps = [":unit_test_proto"],
 )
 
@@ -386,8 +395,8 @@ cc_library(
         ":config",
         ":event_handler",
         ":pw_unit_test",
-        ":unit_test_cc.pwpb",
-        ":unit_test_cc.raw_rpc",
+        ":unit_test_pwpb",
+        ":unit_test_raw_rpc",
         "//pw_log",
     ],
 )

@@ -15,7 +15,7 @@
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 load("//pw_build:python.bzl", "pw_py_binary")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "pwpb_proto_library")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -113,8 +113,8 @@ py_proto_library(
     deps = [":chrono_proto"],
 )
 
-pw_proto_library(
-    name = "chrono_proto_cc",
+pwpb_proto_library(
+    name = "chrono_proto_pwpb",
     deps = [":chrono_proto"],
 )
 

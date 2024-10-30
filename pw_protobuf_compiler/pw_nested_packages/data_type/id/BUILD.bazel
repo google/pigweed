@@ -13,7 +13,7 @@
 # the License.
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "pwpb_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,9 +27,7 @@ proto_library(
     strip_import_prefix = "/pw_protobuf_compiler/pw_nested_packages",
 )
 
-pw_proto_library(
-    name = "id_pw_proto",
-    deps = [
-        ":id",
-    ],
+pwpb_proto_library(
+    name = "id_pwpb",
+    deps = [":id"],
 )

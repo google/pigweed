@@ -13,7 +13,11 @@
 # the License.
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "nanopb_proto_library", "pw_proto_library")
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "nanopb_proto_library",
+    "pwpb_proto_library",
+)
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -35,7 +39,7 @@ pw_cc_test(
     name = "pwpb_test",
     srcs = ["pwpb_test.cc"],
     deps = [
-        "//pw_protobuf_compiler/pwpb_test_protos:pwpb_test_pw_proto.pwpb",
+        "//pw_protobuf_compiler/pwpb_test_protos:pwpb_test_pw_proto",
         "//pw_string",
         "//pw_unit_test",
     ],
@@ -50,7 +54,7 @@ proto_library(
     ],
 )
 
-pw_proto_library(
+pwpb_proto_library(
     name = "pwpb_test_pw_proto_no_prefix",
     deps = [
         ":pwpb_test_proto_no_prefix",
@@ -61,7 +65,7 @@ pw_cc_test(
     name = "pwpb_test_no_prefix",
     srcs = ["pwpb_test_no_prefix.cc"],
     deps = [
-        ":pwpb_test_pw_proto_no_prefix.pwpb",
+        ":pwpb_test_pw_proto_no_prefix",
         "//pw_string",
         "//pw_unit_test",
     ],
@@ -101,11 +105,11 @@ pw_cc_test(
     name = "nested_packages_test",
     srcs = ["nested_packages_test.cc"],
     deps = [
-        "//pw_protobuf_compiler/pw_nested_packages:aggregate_pw_proto.pwpb",
-        "//pw_protobuf_compiler/pw_nested_packages:aggregate_wrapper_pw_proto.pwpb",
-        "//pw_protobuf_compiler/pw_nested_packages/data_type/id:id_pw_proto.pwpb",
-        "//pw_protobuf_compiler/pw_nested_packages/data_type/thing:thing_pw_proto.pwpb",
-        "//pw_protobuf_compiler/pw_nested_packages/data_type/thing:type_of_thing_pw_proto.pwpb",
+        "//pw_protobuf_compiler/pw_nested_packages:aggregate_pwpb",
+        "//pw_protobuf_compiler/pw_nested_packages:aggregate_wrapper_pwpb",
+        "//pw_protobuf_compiler/pw_nested_packages/data_type/id:id_pwpb",
+        "//pw_protobuf_compiler/pw_nested_packages/data_type/thing:thing_pwpb",
+        "//pw_protobuf_compiler/pw_nested_packages/data_type/thing:type_of_thing_pwpb",
         "//pw_unit_test",
     ],
 )

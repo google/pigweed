@@ -12,6 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "raw_rpc_proto_library",
+)
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -32,7 +36,7 @@ cc_library(
     deps = [
         "//pw_bytes",
         "//pw_rpc",
-        "//pw_rpc:internal_packet_cc.pwpb",
+        "//pw_rpc:internal_packet_pwpb",
         "//pw_status",
     ],
 )
@@ -44,7 +48,7 @@ cc_library(
     deps = [
         "//pw_bytes",
         "//pw_rpc",
-        "//pw_rpc:internal_packet_cc.pwpb",
+        "//pw_rpc:internal_packet_pwpb",
     ],
 )
 
@@ -87,6 +91,11 @@ cc_library(
     ],
 )
 
+raw_rpc_proto_library(
+    name = "pw_rpc_test_raw_rpc",
+    deps = ["//pw_rpc:pw_rpc_test_proto"],
+)
+
 pw_cc_test(
     name = "client_test",
     srcs = [
@@ -105,7 +114,7 @@ pw_cc_test(
     deps = [
         ":client_api",
         ":client_testing",
-        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
+        "//pw_rpc:pw_rpc_test_raw_rpc",
     ],
 )
 
@@ -121,8 +130,8 @@ pw_cc_test(
         ":test_method_context",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
-        "//pw_rpc:pw_rpc_test_cc.pwpb",
-        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
+        "//pw_rpc:pw_rpc_test_raw_rpc",
+        "//pw_rpc/pwpb:pw_rpc_test_pwpb",
     ],
 )
 
@@ -136,7 +145,7 @@ pw_cc_test(
         "//pw_containers",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
-        "//pw_rpc:pw_rpc_test_cc.pwpb",
+        "//pw_rpc/pwpb:pw_rpc_test_pwpb",
     ],
 )
 
@@ -146,8 +155,8 @@ pw_cc_test(
         "method_info_test.cc",
     ],
     deps = [
+        ":pw_rpc_test_raw_rpc",
         "//pw_rpc:internal_test_utils",
-        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
     ],
 )
 
@@ -160,7 +169,7 @@ pw_cc_test(
         ":server_api",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
-        "//pw_rpc:pw_rpc_test_cc.pwpb",
+        "//pw_rpc/pwpb:pw_rpc_test_pwpb",
     ],
 )
 
@@ -168,10 +177,10 @@ pw_cc_test(
     name = "server_reader_writer_test",
     srcs = ["server_reader_writer_test.cc"],
     deps = [
+        ":pw_rpc_test_raw_rpc",
         ":test_method_context",
         "//pw_rpc:internal_test_utils",
-        "//pw_rpc:pw_rpc_test_cc.pwpb",
-        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
+        "//pw_rpc/pwpb:pw_rpc_test_pwpb",
     ],
 )
 
@@ -180,15 +189,15 @@ pw_cc_test(
 pw_cc_test(
     name = "service_nc_test",
     srcs = ["service_nc_test.cc"],
-    deps = ["//pw_rpc:pw_rpc_test_cc.raw_rpc"],
+    deps = [":pw_rpc_test_raw_rpc"],
 )
 
 pw_cc_test(
     name = "stub_generation_test",
     srcs = ["stub_generation_test.cc"],
     deps = [
-        "//pw_rpc:pw_rpc_test_cc.pwpb",
-        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
+        ":pw_rpc_test_raw_rpc",
+        "//pw_rpc/pwpb:pw_rpc_test_pwpb",
     ],
 )
 
@@ -196,8 +205,8 @@ pw_cc_test(
     name = "synchronous_call_test",
     srcs = ["synchronous_call_test.cc"],
     deps = [
+        ":pw_rpc_test_raw_rpc",
         ":test_method_context",
-        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
         "//pw_rpc:synchronous_client_api",
         "//pw_work_queue",
         "//pw_work_queue:stl_test_thread",

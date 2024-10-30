@@ -261,7 +261,7 @@ cc_library(
         "//pw_protobuf",
         "//pw_status",
         "//pw_thread:snapshot",
-        "//pw_thread:thread_cc.pwpb",
+        "//pw_thread:thread_pwpb",
     ],
 )
 

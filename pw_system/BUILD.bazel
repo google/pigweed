@@ -18,7 +18,8 @@ load("//pw_build:pw_facade.bzl", "pw_facade")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "pw_proto_filegroup",
-    "pw_proto_library",
+    "pwpb_proto_library",
+    "pwpb_rpc_proto_library",
 )
 load("//pw_system/py:console.bzl", "device_console", "device_simulator_console")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
@@ -201,7 +202,7 @@ pw_facade(
     backend = ":device_handler_backend",
     includes = ["public"],
     deps = [
-        "//pw_snapshot:snapshot_proto_cc.pwpb",
+        "//pw_snapshot:snapshot_proto_pwpb",
     ],
 )
 
@@ -416,7 +417,7 @@ cc_library(
         "//pw_cpu_exception:entry",
         "//pw_multisink:util",
         "//pw_persistent_ram",
-        "//pw_snapshot:snapshot_proto_cc.pwpb",
+        "//pw_snapshot:snapshot_proto_pwpb",
         "//pw_snapshot:uuid",
     ],
 )
@@ -433,8 +434,14 @@ proto_library(
     strip_import_prefix = "/pw_system",
 )
 
-pw_proto_library(
-    name = "device_service_cc",
+pwpb_proto_library(
+    name = "device_service_proto_pwpb",
+    deps = [":device_service_proto"],
+)
+
+pwpb_rpc_proto_library(
+    name = "device_service_pwpb_rpc",
+    pwpb_proto_library_deps = [":device_service_proto_pwpb"],
     deps = [":device_service_proto"],
 )
 
@@ -454,7 +461,7 @@ cc_library(
     includes = ["public"],
     deps = [
         ":device_handler",
-        ":device_service_cc.pwpb_rpc",
+        ":device_service_pwpb_rpc",
     ],
 )
 

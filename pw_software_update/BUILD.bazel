@@ -14,7 +14,7 @@
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "pwpb_proto_library")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -41,8 +41,8 @@ proto_library(
     ],
 )
 
-pw_proto_library(
-    name = "update_bundle_proto_cc",
+pwpb_proto_library(
+    name = "update_bundle_proto_pwpb",
     deps = [":update_bundle_proto"],
 )
 
@@ -125,7 +125,7 @@ cc_library(
         ":blob_store_openable_reader",
         ":config_override",
         ":openable_reader",
-        ":update_bundle_proto_cc.pwpb",
+        ":update_bundle_proto_pwpb",
         "//pw_blob_store",
         "//pw_crypto:ecdsa.facade",
         "//pw_crypto:sha256.facade",

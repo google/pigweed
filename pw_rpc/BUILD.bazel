@@ -14,7 +14,12 @@
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_filegroup", "pw_proto_library")
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pw_proto_filegroup",
+    "pwpb_proto_library",
+    "raw_rpc_proto_library",
+)
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -35,8 +40,13 @@ proto_library(
     srcs = [":benchmark_proto_and_options"],
 )
 
-pw_proto_library(
-    name = "benchmark_cc",
+pwpb_proto_library(
+    name = "benchmark_pwpb",
+    deps = [":benchmark_proto"],
+)
+
+raw_rpc_proto_library(
+    name = "benchmark_raw_rpc",
     deps = [":benchmark_proto"],
 )
 
@@ -46,8 +56,8 @@ cc_library(
     hdrs = ["public/pw_rpc/benchmark.h"],
     includes = ["public"],
     deps = [
-        ":benchmark_cc.pwpb",
-        ":benchmark_cc.raw_rpc",
+        ":benchmark_pwpb",
+        ":benchmark_raw_rpc",
     ],
 )
 
@@ -146,7 +156,7 @@ cc_library(
     includes = ["public"],
     deps = [
         ":config_override",
-        ":internal_packet_cc.pwpb",
+        ":internal_packet_pwpb",
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers:intrusive_list",
@@ -328,7 +338,7 @@ pw_cc_test(
     srcs = ["callback_test.cc"],
     deps = [
         ":pw_rpc",
-        ":pw_rpc_test_cc.raw_rpc",
+        ":pw_rpc_test_raw_rpc",
         "//pw_rpc/raw:client_testing",
         "//pw_sync:binary_semaphore",
         "//pw_thread:non_portable_test_thread_options",
@@ -455,8 +465,8 @@ py_proto_library(
     deps = [":internal_packet_proto"],
 )
 
-pw_proto_library(
-    name = "internal_packet_cc",
+pwpb_proto_library(
+    name = "internal_packet_pwpb",
     deps = [":internal_packet_proto"],
 )
 
@@ -469,8 +479,8 @@ proto_library(
     strip_import_prefix = "/pw_rpc",
 )
 
-pw_proto_library(
-    name = "pw_rpc_test_cc",
+raw_rpc_proto_library(
+    name = "pw_rpc_test_raw_rpc",
     deps = [":pw_rpc_test_proto"],
 )
 
@@ -490,10 +500,5 @@ proto_library(
 
 py_proto_library(
     name = "echo_py_pb2",
-    deps = [":echo_proto"],
-)
-
-pw_proto_library(
-    name = "echo_cc",
     deps = [":echo_proto"],
 )

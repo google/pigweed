@@ -13,7 +13,7 @@
 # the License.
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "pwpb_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,8 +29,8 @@ proto_library(
     ],
 )
 
-pw_proto_library(
-    name = "aggregate_pw_proto",
+pwpb_proto_library(
+    name = "aggregate_pwpb",
     deps = [
         ":aggregate",
     ],
@@ -48,8 +48,8 @@ proto_library(
     ],
 )
 
-pw_proto_library(
-    name = "aggregate_wrapper_pw_proto",
+pwpb_proto_library(
+    name = "aggregate_wrapper_pwpb",
     deps = [
         ":aggregate_wrapper",
     ],

@@ -15,7 +15,11 @@
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:compatibility.bzl", "host_backend_alias")
 load("//pw_build:pw_facade.bzl", "pw_facade")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pwpb_proto_library",
+    "raw_rpc_proto_library",
+)
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -125,7 +129,7 @@ cc_library(
         "public/pw_log/proto_utils.h",
     ],
     deps = [
-        ":log_proto_cc.pwpb",
+        ":log_proto_pwpb",
         ":pw_log.facade",
         "//pw_bytes",
         "//pw_log_tokenized:headers",
@@ -157,9 +161,26 @@ java_lite_proto_library(
     deps = [":log_proto"],
 )
 
-pw_proto_library(
-    name = "log_proto_cc",
+pwpb_proto_library(
+    name = "log_proto_pwpb",
     deps = [":log_proto"],
+)
+
+raw_rpc_proto_library(
+    name = "log_proto_raw_rpc",
+    deps = [":log_proto"],
+)
+
+# https://pwbug.dev/375207472 - Remove this alias after downstream migration.
+alias(
+    name = "log_proto_cc.pwpb",
+    actual = ":log_proto_pwpb",
+)
+
+# https://pwbug.dev/375207472 - Remove this alias after downstream migration.
+alias(
+    name = "log_proto_cc.raw_rpc",
+    actual = ":log_proto_raw_rpc",
 )
 
 pw_cc_test(
@@ -194,7 +215,7 @@ pw_cc_test(
         "proto_utils_test.cc",
     ],
     deps = [
-        ":log_proto_cc.pwpb",
+        ":log_proto_pwpb",
         ":proto_utils",
         ":pw_log.facade",
         "//pw_containers",

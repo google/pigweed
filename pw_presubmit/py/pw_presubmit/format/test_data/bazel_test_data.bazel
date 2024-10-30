@@ -12,31 +12,29 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-
+load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:pw_facade.bzl", "pw_cc_facade")
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pwpb_proto_library",
+)
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
-load("@rules_python//python:proto.bzl", "py_proto_library")
-
 package(
-    default_visibility= ["//visibility:public"]
-
+    default_visibility = ["//visibility:public"],
 )
 
-load("//pw_protobuf_compiler:pw_proto_library.bzl",
-    "pw_proto_library")
-
 cc_library(
-  name = "pw_my_module",
-  hdrs = [    "public/pw_my_module/standing_screeb.h"],
-  includes = [ "public" ],
+    name = "pw_my_module",
+    hdrs = ["public/pw_my_module/standing_screeb.h"],
+    includes = ["public"],
 )
 
 proto_library(
     name = "foo_proto",
     srcs = select({
         "//conditions:default": [
-            "foo.proto"
+            "foo.proto",
         ],
         "//mymodule:condition": [],
     }),
@@ -47,7 +45,7 @@ py_proto_library(
     deps = [":foo_proto"],
 )
 
-pw_proto_library(
-    name = "foo_proto_cc",
+pwpb_proto_library(
+    name = "foo_proto_pwpb",
     deps = [":foo_proto"],
 )

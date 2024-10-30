@@ -14,7 +14,11 @@
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_library")
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pwpb_proto_library",
+    "raw_rpc_proto_library",
+)
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -66,8 +70,8 @@ cc_library(
     includes = ["public"],
     deps = [
         ":config",
-        ":transfer_pwpb.pwpb",
-        ":transfer_pwpb.raw_rpc",
+        ":transfer_pwpb",
+        ":transfer_raw_rpc",
         "//pw_bytes",
         "//pw_chrono:system_clock",
         "//pw_containers:intrusive_list",
@@ -77,7 +81,7 @@ cc_library(
         "//pw_protobuf",
         "//pw_result",
         "//pw_rpc:client_server",
-        "//pw_rpc:internal_packet_cc.pwpb",
+        "//pw_rpc:internal_packet_pwpb",
         "//pw_rpc/raw:client_api",
         "//pw_rpc/raw:server_api",
         "//pw_status",
@@ -104,7 +108,7 @@ cc_library(
         "//pw_bytes",
         "//pw_log",
         "//pw_result",
-        "//pw_rpc:internal_packet_cc.pwpb",
+        "//pw_rpc:internal_packet_pwpb",
         "//pw_rpc/raw:server_api",
         "//pw_status",
         "//pw_stream",
@@ -253,8 +257,13 @@ proto_library(
     ],
 )
 
-pw_proto_library(
+pwpb_proto_library(
     name = "transfer_pwpb",
+    deps = [":transfer_proto"],
+)
+
+raw_rpc_proto_library(
+    name = "transfer_raw_rpc",
     deps = [":transfer_proto"],
 )
 

@@ -15,7 +15,8 @@
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
-    "pw_proto_library",
+    "pwpb_proto_library",
+    "pwpb_rpc_proto_library",
 )
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -56,8 +57,8 @@ cc_library(
     hdrs = ["public/pw_digital_io/digital_io_service.h"],
     includes = ["public"],
     deps = [
-        ":digital_io_proto_cc.pwpb",
-        ":digital_io_proto_cc.pwpb_rpc",
+        ":digital_io_proto_pwpb",
+        ":digital_io_proto_pwpb_rpc",
         ":pw_digital_io",
         "//pw_function",
         "//pw_rpc/pwpb:server_api",
@@ -70,8 +71,14 @@ proto_library(
     srcs = ["digital_io.proto"],
 )
 
-pw_proto_library(
-    name = "digital_io_proto_cc",
+pwpb_proto_library(
+    name = "digital_io_proto_pwpb",
+    deps = [":digital_io_proto"],
+)
+
+pwpb_rpc_proto_library(
+    name = "digital_io_proto_pwpb_rpc",
+    pwpb_proto_library_deps = [":digital_io_proto_pwpb"],
     deps = [":digital_io_proto"],
 )
 
