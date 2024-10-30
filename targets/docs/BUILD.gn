@@ -57,7 +57,7 @@ generate_toolchain("docs") {
     # Disable NC tests in case the base toolchain has them enabled.
     pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = false
 
-    pw_assert_BACKEND = dir_pw_assert_log
+    pw_assert_BACKEND = dir_pw_assert_tokenized
     pw_log_BACKEND = dir_pw_log_tokenized
     pw_log_tokenized_HANDLER_BACKEND =
         get_path_info(":tokenized_log_handler", "abspath")
