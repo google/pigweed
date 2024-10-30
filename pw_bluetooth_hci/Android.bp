@@ -47,6 +47,6 @@ cc_library_static {
     ],
     srcs: [
         "packet.cc",
-        "uart_transport.cc"
+        "uart_transport.cc",
     ],
 }

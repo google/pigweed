@@ -93,7 +93,7 @@ genrule {
         "--language pwpb " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
-        "--pwpb-no-oneof-callbacks "  +
+        "--pwpb-no-oneof-callbacks " +
         "--protoc=$(location aprotoc) && " +
         // TODO(b/308678575) - Avoid making an extra copy of the created file.
         "python3 -c \"import os; import shutil; " +
@@ -128,7 +128,7 @@ genrule {
         "--language pwpb_rpc " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
-        "--pwpb-no-oneof-callbacks "  +
+        "--pwpb-no-oneof-callbacks " +
         "--protoc=$(location aprotoc) && " +
         // TODO(b/308678575) - Avoid making an extra copy of the created file.
         "python3 -c \"import os; import shutil; " +
@@ -163,7 +163,7 @@ genrule {
         "--language raw_rpc " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
-        "--pwpb-no-oneof-callbacks "  +
+        "--pwpb-no-oneof-callbacks " +
         "--protoc=$(location aprotoc) && " +
         // TODO(b/308678575) - Avoid making an extra copy of the created file.
         "python3 -c \"import os; import shutil; " +

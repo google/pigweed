@@ -98,7 +98,7 @@ genrule {
         "--language nanopb " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
-        "--pwpb-no-oneof-callbacks "  +
+        "--pwpb-no-oneof-callbacks " +
         "--protoc=$(location aprotoc) ",
     out: [
         "pw_protobuf_protos/common.pb.h",
@@ -150,7 +150,7 @@ genrule {
         "--language pwpb " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
-        "--pwpb-no-oneof-callbacks "  +
+        "--pwpb-no-oneof-callbacks " +
         "--protoc=$(location aprotoc) ",
     out: [
         "pw_protobuf_protos/common.pwpb.h",
@@ -182,7 +182,7 @@ genrule {
         "--language pwpb " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
-        "--pwpb-no-oneof-callbacks "  +
+        "--pwpb-no-oneof-callbacks " +
         "--protoc=$(location aprotoc) ",
     out: [
         "google/protobuf/descriptor.pwpb.h",
