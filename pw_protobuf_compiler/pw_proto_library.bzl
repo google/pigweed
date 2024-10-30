@@ -51,7 +51,7 @@ ADDITIONAL_PWPB_DEPS = []
 
 # TODO: b/373693434 - The `oneof_callbacks` parameter is temporary to assist
 # with migration.
-def pwpb_proto_library(name, deps, tags = None, visibility = None, oneof_callbacks = False):
+def pwpb_proto_library(name, deps, tags = None, visibility = None, oneof_callbacks = True):
     """A C++ proto library generated using pw_protobuf.
 
     Attributes:

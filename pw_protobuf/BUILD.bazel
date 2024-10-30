@@ -353,8 +353,6 @@ pw_cc_test(
     srcs = [
         "codegen_message_test.cc",
     ],
-    # TODO: b/373693434 - Temporarily disabled pending the oneof migration.
-    tags = ["manual"],
     deps = [
         ":codegen_test_proto_pwpb",
         ":pw_protobuf",
