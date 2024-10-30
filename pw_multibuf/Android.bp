@@ -24,6 +24,7 @@ cc_library_static {
     name: "pw_multibuf",
     srcs: [
         "chunk.cc",
+        "from_span.cc",
         "multibuf.cc",
     ],
     cpp_std: "c++20",
@@ -34,12 +35,16 @@ cc_library_static {
         "pw_android_common_backends",
     ],
     header_libs: [
+        "pw_allocator",
         "pw_assert",
+        "pw_function",
         "pw_log",
         "pw_sync",
     ],
     export_header_lib_headers: [
+        "pw_allocator",
         "pw_assert",
+        "pw_function",
         "pw_log",
         "pw_sync",
     ],

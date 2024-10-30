@@ -183,6 +183,27 @@ pw_cc_test(
 )
 
 cc_library(
+    name = "from_span",
+    srcs = ["from_span.cc"],
+    hdrs = ["public/pw_multibuf/from_span.h"],
+    deps = [
+        ":pw_multibuf",
+        "//pw_allocator:allocator",
+        "//pw_function",
+    ],
+)
+
+pw_cc_test(
+    name = "from_span_test",
+    srcs = ["from_span_test.cc"],
+    deps = [
+        ":from_span",
+        "//pw_allocator:testing",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
     name = "testing",
     testonly = True,
     hdrs = ["public/pw_multibuf/simple_allocator_for_test.h"],
