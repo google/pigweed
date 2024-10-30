@@ -25,12 +25,12 @@ class MockTask : public Task {
   bool should_complete = false;
   int polled = 0;
   int destroyed = 0;
-  std::optional<Waker> last_waker = std::nullopt;
+  Waker last_waker;
 
  private:
   Poll<> DoPend(Context& cx) override {
     ++polled;
-    last_waker = cx.GetWaker(WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(cx, last_waker, "MockTask is waiting for last_waker");
     if (should_complete) {
       return Ready();
     } else {
@@ -86,7 +86,7 @@ TEST(Dispatcher, RunUntilStalledDoesNotPendSleepingTask) {
   EXPECT_EQ(task.polled, 1);
   EXPECT_EQ(task.destroyed, 0);
 
-  std::move(*task.last_waker).Wake();
+  std::move(task.last_waker).Wake();
   EXPECT_TRUE(dispatcher.RunUntilStalled(task).IsReady());
   EXPECT_EQ(task.polled, 2);
   EXPECT_EQ(task.destroyed, 1);
@@ -100,33 +100,42 @@ TEST(Dispatcher, RunUntilStalledWithNoTasksReturnsReady) {
 TEST(Dispatcher, RunToCompletionPendsMultipleTasks) {
   class CounterTask : public Task {
    public:
-    CounterTask(pw::Vector<Waker>* wakers, int* counter, int until)
-        : counter_(counter), until_(until), wakers_(wakers) {}
+    CounterTask(pw::span<Waker> wakers,
+                size_t this_waker_i,
+                int* counter,
+                int until)
+        : counter_(counter),
+          this_waker_i_(this_waker_i),
+          until_(until),
+          wakers_(wakers) {}
     int* counter_;
+    size_t this_waker_i_;
     int until_;
-    pw::Vector<Waker>* wakers_;
+    pw::span<Waker> wakers_;
 
    private:
     Poll<> DoPend(Context& cx) override {
       ++(*counter_);
       if (*counter_ >= until_) {
-        for (auto& waker : *wakers_) {
+        for (auto& waker : wakers_) {
           std::move(waker).Wake();
         }
         return Ready();
       } else {
-        wakers_->push_back(cx.GetWaker(WaitReason::Unspecified()));
+        PW_ASYNC_STORE_WAKER(cx,
+                             wakers_[this_waker_i_],
+                             "CounterTask is waiting for counter_ >= until_");
         return Pending();
       }
     }
   };
 
   int counter = 0;
-  constexpr const int num_tasks = 3;
-  pw::Vector<Waker, num_tasks> wakers;
-  CounterTask task_one(&wakers, &counter, num_tasks);
-  CounterTask task_two(&wakers, &counter, num_tasks);
-  CounterTask task_three(&wakers, &counter, num_tasks);
+  constexpr const int kNumTasks = 3;
+  std::array<Waker, kNumTasks> wakers;
+  CounterTask task_one(wakers, 0, &counter, kNumTasks);
+  CounterTask task_two(wakers, 1, &counter, kNumTasks);
+  CounterTask task_three(wakers, 2, &counter, kNumTasks);
   Dispatcher dispatcher;
   dispatcher.Post(task_one);
   dispatcher.Post(task_two);

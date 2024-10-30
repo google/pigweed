@@ -227,7 +227,8 @@ class TestByteReader : public ByteChannel<kReliable, kReadable> {
  private:
   Poll<pw::Result<MultiBuf>> DoPendRead(Context& cx) override {
     if (data_.empty()) {
-      read_waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+      PW_ASYNC_STORE_WAKER(
+          cx, read_waker_, "TestByteReader is waiting for a call to PushData");
       return Pending();
     }
     return std::move(data_);
@@ -272,7 +273,10 @@ class TestDatagramWriter : public DatagramWriter {
       return Ready(pw::OkStatus());
     }
 
-    waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(
+        cx,
+        waker_,
+        "TestDatagramWriter waiting for a call to MakeReadyToWrite");
     return Pending();
   }
 
@@ -292,7 +296,8 @@ class TestDatagramWriter : public DatagramWriter {
 
   Poll<pw::Result<pw::channel::WriteToken>> DoPendFlush(Context& cx) override {
     if (state_ != kReadyToFlush) {
-      waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+      PW_ASYNC_STORE_WAKER(
+          cx, waker_, "TestDatagramWriter is waiting for its Channel to flush");
       return Pending();
     }
     last_flush_ = last_write_;

@@ -86,7 +86,8 @@ class RpcServerThread final {
     if (ready_for_packet_) {
       return async2::Ready();
     }
-    ready_to_receive_packet_ = cx.GetWaker(async2::WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(
+        cx, ready_to_receive_packet_, "RpcServerThread waiting for RPC packet");
     return async2::Pending();
   }
 

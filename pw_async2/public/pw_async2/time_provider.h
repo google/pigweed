@@ -164,7 +164,7 @@ class [[nodiscard]] TimeFuture
     // NOTE: this is done under the lock in order to ensure that `provider_` is
     // not set to unlisted between it being initially read and `waker_` being
     // set.
-    waker_ = cx.GetWaker(WaitReason::Timeout());
+    PW_ASYNC_STORE_WAKER(cx, waker_, "TimeFuture is waiting for a time_point");
     return Pending();
   }
 

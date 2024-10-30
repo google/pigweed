@@ -36,7 +36,10 @@ RpcChannelOutputQueue::PendOutgoingDatagram(async2::Context& cx) {
   // The head pointer will not change until Pop is called.
   std::lock_guard lock(mutex_);
   if (queue_.empty()) {
-    packet_ready_ = cx.GetWaker(async2::WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(
+        cx,
+        packet_ready_,
+        "RpcChannel is waiting for outgoing RPC datagrams to be enqueued");
     return async2::Pending();
   }
   return async2::Ready(queue_.front());
@@ -233,7 +236,7 @@ async2::Poll<> PacketIO::PacketFlusher::DoPend(async2::Context& cx) {
     cx.ReEnqueue();  // didn't flush as far as expected, try again later
     return async2::Pending();
   }
-  waker_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+  PW_ASYNC_STORE_WAKER(cx, waker_, "PacketIO is waiting for packets to flush");
   return async2::Pending();  // Done
 }
 

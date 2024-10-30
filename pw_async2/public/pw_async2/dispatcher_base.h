@@ -37,7 +37,6 @@ inline pw::sync::InterruptSpinLock& dispatcher_lock() {
 
 class NativeDispatcherBase;
 class Waker;
-class WaitReason;
 
 // Forward-declare ``Dispatcher``.
 // This concrete type must be provided by a backend.
@@ -70,17 +69,51 @@ class Context {
   /// additional fairness by yielding to the dispatch loop rather than perform
   /// too much work in a single iteration.
   ///
-  /// This is semantically equivalent to calling ``GetWaker(...).Wake()``
+  /// This is semantically equivalent to calling:
+  ///
+  /// ```
+  /// Waker waker;
+  /// PW_ASYNC_STORE_WAKER(cx, waker, ...);
+  /// std::move(waker).Wake();
+  /// ```
   void ReEnqueue();
 
-  /// Returns a ``Waker`` which, when awoken, will cause the current task to be
-  /// ``Pend``'d by its dispatcher.
-  Waker GetWaker(WaitReason reason);
+  /// INTERNAL-ONLY: users should use the `PW_ASYNC_STORE_WAKER` macro instead.
+  ///
+  /// Saves a ``Waker`` into ``waker_out`` which, when awoken, will cause the
+  /// current task to be ``Pend``'d by its dispatcher.
+  void InternalStoreWaker(Waker& waker_out);
 
  private:
   Dispatcher* dispatcher_;
   Waker* waker_;
 };
+
+/// Stores a waker associated with the current context in ``waker_out``.
+/// When ``waker_out`` is later awoken with :cpp:func:`pw::async2::Waker::Wake`,
+/// the :cpp:class:`pw::async2::Task` associated with ``cx`` will be awoken and
+/// its ``DoPend`` method will be invoked again.
+///
+/// NOTE: wait_reason_string is currently unused, but will be used for debugging
+/// in the future.
+#define PW_ASYNC_STORE_WAKER(context, waker_out, wait_reason_string)           \
+  do {                                                                         \
+    [[maybe_unused]] constexpr const char* __MUST_BE_STR = wait_reason_string; \
+    context.InternalStoreWaker(waker_out);                                     \
+  } while (0)
+
+/// Stores a waker associated with ``waker_in`` in ``waker_out``.
+/// When ``waker_out`` is later awoken with :cpp:func:`pw::async2::Waker::Wake`,
+/// the :cpp:class:`pw::async2::Task` associated with ``waker_in`` will be
+/// awoken and its ``DoPend`` method will be invoked again.
+///
+/// NOTE: wait_reason_string is currently unused, but will be used for debugging
+/// in the future.
+#define PW_ASYNC_CLONE_WAKER(waker_in, waker_out, wait_reason_string)          \
+  do {                                                                         \
+    [[maybe_unused]] constexpr const char* __MUST_BE_STR = wait_reason_string; \
+    waker_in.InternalCloneInto(waker_out);                                     \
+  } while (0)
 
 template <typename T>
 using PendOutputOf = typename decltype(std::declval<T>().Pend(
@@ -269,21 +302,6 @@ class Task {
   Waker* wakers_ PW_GUARDED_BY(dispatcher_lock()) = nullptr;
 };
 
-/// An identifier indicating the kind of event a ``Waker`` is waiting for.
-///
-/// This identifier may be stored for debugging purposes.
-class WaitReason {
- public:
-  /// Indicates that the wait is happening for an unspecified reason.
-  static WaitReason Unspecified() { return WaitReason(); }
-
-  /// Indicates that the wait is happening until a timeout expires.
-  static WaitReason Timeout() { return WaitReason(); }
-
- private:
-  WaitReason() {}
-};
-
 /// An object which can respond to asynchronous events by queueing work to
 /// be done in response, such as placing a ``Task`` on a ``Dispatcher`` loop.
 ///
@@ -323,17 +341,16 @@ class Waker {
   /// This operation is guaranteed to be thread-safe.
   void Wake() && PW_LOCKS_EXCLUDED(dispatcher_lock());
 
+  /// INTERNAL-ONLY: users should use the `PW_ASYNC_CLONE_WAKER` macro.
+  ///
   /// Creates a second ``Waker`` from this ``Waker``.
   ///
   /// ``Clone`` is made explicit in order to allow for easier tracking of
   /// the different ``Waker``s that may wake up a ``Task``.
   ///
-  /// The ``WaitReason`` argument can be used to provide information about
-  /// what event the ``Waker`` is waiting on. This can be useful for
-  /// debugging purposes.
-  ///
   /// This operation is guaranteed to be thread-safe.
-  Waker Clone(WaitReason reason) & PW_LOCKS_EXCLUDED(dispatcher_lock());
+  void InternalCloneInto(Waker& waker_out) &
+      PW_LOCKS_EXCLUDED(dispatcher_lock());
 
   /// Returns whether this ``Waker`` is empty.
   ///

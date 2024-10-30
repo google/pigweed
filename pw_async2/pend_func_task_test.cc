@@ -27,7 +27,6 @@ using ::pw::async2::PendFuncTask;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
 using ::pw::async2::Ready;
-using ::pw::async2::WaitReason;
 using ::pw::async2::Waker;
 
 TEST(PendFuncTask, PendDelegatesToFunc) {
@@ -42,7 +41,7 @@ TEST(PendFuncTask, PendDelegatesToFunc) {
     if (allow_completion) {
       return Ready();
     }
-    waker = cx.GetWaker(WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(cx, waker, "func_task is waiting for waker");
     return Pending();
   });
 

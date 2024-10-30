@@ -72,7 +72,11 @@ class OnceReceiver final {
     } else if (!sender_) {
       return Ready(Status::Cancelled());
     }
-    waker_ = cx.GetWaker(WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(
+        cx,
+        waker_,
+        "OnceReceiver is waiting for a value to be sent into the "
+        "corresponding OnceSender");
     return Pending();
   }
 
@@ -223,7 +227,10 @@ class OnceRefReceiver final {
     if (sender_ == nullptr) {
       return Ready(Status::Cancelled());
     }
-    waker_ = cx.GetWaker(WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(
+        cx,
+        waker_,
+        "OnceRefReceiver is waiting for OnceRefSender to write a value");
     return Pending();
   }
 

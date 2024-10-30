@@ -74,9 +74,11 @@ async2::Poll<Result<multibuf::MultiBuf>> EpollChannel::DoPendRead(
     // EAGAIN on a non-blocking read indicates that there is no data available.
     // Put the task to sleep until the dispatcher is notified that the file
     // descriptor is active.
-    async2::Waker waker = cx.GetWaker(async2::WaitReason::Unspecified());
-    cx.dispatcher().native().NativeAddReadWakerForFileDescriptor(
-        channel_fd_, std::move(waker));
+    PW_ASYNC_STORE_WAKER(
+        cx,
+        cx.dispatcher().native().NativeAddReadWakerForFileDescriptor(
+            channel_fd_),
+        "EpollChannel is waiting on a file descriptor read");
     return async2::Pending();
   }
 
@@ -90,9 +92,11 @@ async2::Poll<Status> EpollChannel::DoPendReadyToWrite(async2::Context& cx) {
   // The previous write operation failed. Block the task until the dispatcher
   // receives a notification for the channel's file descriptor.
   ready_to_write_ = true;
-  async2::Waker waker = cx.GetWaker(async2::WaitReason::Unspecified());
-  cx.dispatcher().native().NativeAddWriteWakerForFileDescriptor(
-      channel_fd_, std::move(waker));
+  PW_ASYNC_STORE_WAKER(
+      cx,
+      cx.dispatcher().native().NativeAddWriteWakerForFileDescriptor(
+          channel_fd_),
+      "EpollChannel is waiting on a file descriptor write");
   return async2::Pending();
 }
 

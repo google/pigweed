@@ -256,7 +256,8 @@ TEST(ForwardingDatagramchannel, PendCloseAwakensAndClosesPeer) {
     pw::async2::Poll<> DoPend(Context& cx) final {
       Poll<Result<MultiBuf>> read = reader_.PendRead(cx);
       if (read.IsPending()) {
-        waker = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+        PW_ASYNC_STORE_WAKER(
+            cx, waker, "TryToReadUntilClosed is waiting for reader");
         return Pending();
       }
 
@@ -420,7 +421,8 @@ TEST(ForwardingByteChannel, PendCloseAwakensAndClosesPeer) {
     pw::async2::Poll<> DoPend(Context& cx) final {
       Poll<Result<MultiBuf>> read = reader_.PendRead(cx);
       if (read.IsPending()) {
-        waker = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+        PW_ASYNC_STORE_WAKER(
+            cx, waker, "TryToReadUntilClosed is waiting for reader");
         return Pending();
       }
 

@@ -63,9 +63,8 @@ Waking tasks
 When a task is unable to complete without waiting, the implementor of
 ``DoPend`` must return ``Pending`` and should arrange for the task to be reawoken
 once ``DoPend`` may be able to make more progress. This is done by calling
-:cpp:func:`pw::async2::Context::GetWaker` to get a
-:cpp:class:`pw::async2::Waker` for the current task. In order to wake the
-task up and put it back on the dispatcher's queue,
+:c:macro:`PW_ASYNC_STORE_WAKER` store a :cpp:class:`pw::async2::Waker` for the current
+task. In order to wake the task up and put it back on the dispatcher's queue,
 :cpp:func:`pw::async2::Waker::Wake` must be called.
 
 For example, one implementation of a delayed task might arrange for its ``Waker``

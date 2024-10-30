@@ -249,9 +249,9 @@ class AllocationWaiter {
   /// Un-registers the current ``Waker``.
   void ClearWaker() { waker_.Clear(); }
 
-  /// Sets a new ``Waker`` to receive wakeups when this ``AllocationWaiter`` is
-  /// awoken.
-  void SetWaker(async2::Waker&& waker) { waker_ = std::move(waker); }
+  /// Returns the ``Waker`` to be set to receive wakeups when this
+  /// ``AllocationWaiter`` is awoken.
+  async2::Waker& Waker() { return waker_; }
 
   /// Returns the ``allocator`` associated with this ``AllocationWaiter``.
   MultiBufAllocator& allocator() { return *allocator_; }

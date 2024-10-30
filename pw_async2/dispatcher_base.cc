@@ -21,9 +21,15 @@
 
 namespace pw::async2 {
 
-void Context::ReEnqueue() { waker_->Clone(WaitReason::Unspecified()).Wake(); }
+void Context::ReEnqueue() {
+  Waker waker;
+  waker_->InternalCloneInto(waker);
+  std::move(waker).Wake();
+}
 
-Waker Context::GetWaker(WaitReason reason) { return waker_->Clone(reason); }
+void Context::InternalStoreWaker(Waker& waker_out) {
+  waker_->InternalCloneInto(waker_out);
+}
 
 void Task::RemoveAllWakersLocked() {
   while (wakers_ != nullptr) {
@@ -137,16 +143,19 @@ void Waker::Wake() && {
   }
 }
 
-Waker Waker::Clone(WaitReason) & {
-  Waker waker;
-  {
-    std::lock_guard lock(dispatcher_lock());
-    if (task_ != nullptr) {
-      waker.task_ = task_;
-      task_->AddWakerLocked(waker);
-    }
+void Waker::InternalCloneInto(Waker& out) & {
+  std::lock_guard lock(dispatcher_lock());
+  // The `out` waker already points to this task, so no work is necessary.
+  if (out.task_ == task_) {
+    return;
   }
-  return waker;
+  // Remove the output waker from its existing task's list.
+  out.RemoveFromTaskWakerListLocked();
+  out.task_ = task_;
+  // Only add if the waker being cloned is actually associated with a task.
+  if (task_ != nullptr) {
+    task_->AddWakerLocked(out);
+  }
 }
 
 bool Waker::IsEmpty() const {

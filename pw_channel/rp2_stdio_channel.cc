@@ -27,7 +27,6 @@ namespace {
 using pw::async2::Context;
 using pw::async2::Pending;
 using pw::async2::Poll;
-using pw::async2::WaitReason;
 using pw::async2::Waker;
 using pw::multibuf::MultiBuf;
 
@@ -51,7 +50,10 @@ void WriteMultiBuf(const MultiBuf& buf) {
 Poll<std::byte> PollReadByte(Context& cx) {
   int c = getchar_timeout_us(0);
   if (c == PICO_ERROR_TIMEOUT) {
-    global_chars_available_waker = cx.GetWaker(WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(
+        cx,
+        global_chars_available_waker,
+        "RP2StdioChannel is waiting for stdio chars available");
     // Read again to ensure that no race occurred.
     //
     // The concern is an interleaving like this

@@ -54,7 +54,8 @@ class Pendable {
     if (status_ == nullptr) {
       return Pending();
     }
-    status_->last_waker = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(
+        cx, status_->last_waker, "Pendable is waiting for last_waker");
     ++status_->polled;
     if (status_->should_finish) {
       return Ready();

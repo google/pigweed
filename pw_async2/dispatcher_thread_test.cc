@@ -36,7 +36,7 @@ class MockTask : public Task {
  private:
   Poll<> DoPend(Context& cx) override {
     ++polled;
-    last_waker = cx.GetWaker(WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(cx, last_waker, "MockTask is waiting for last_waker");
     if (should_complete) {
       return Ready();
     } else {

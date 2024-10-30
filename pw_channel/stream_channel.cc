@@ -59,7 +59,8 @@ Poll<Result<MultiBuf>> StreamChannelReadState::PendFilledBuffer(Context& cx) {
   if (!status_.ok()) {
     return status_;
   }
-  on_buffer_filled_ = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+  PW_ASYNC_STORE_WAKER(
+      cx, on_buffer_filled_, "StreamChannel is waiting on a `Stream::Read`");
   return Pending();
 }
 

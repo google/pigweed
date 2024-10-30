@@ -34,6 +34,24 @@ C++ API reference
 .. doxygenclass:: pw::async2::Waker
   :members:
 
+.. c:macro:: PW_ASYNC_STORE_WAKER
+
+  Arguments: ``Context& cx, Waker& waker_out, StringLiteral wait_reason_string``
+
+  Stores a waker associated with the current context in ``waker_out``.
+  When ``waker_out`` is later awoken with :cpp:func:`pw::async2::Waker::Wake`,
+  the :cpp:class:`pw::async2::Task` associated with ``cx`` will be awoken and
+  its ``DoPend`` method will be invoked again.
+
+.. c:macro:: PW_ASYNC_CLONE_WAKER
+
+  Arguments: ``Waker& waker_in, Waker& waker_out, StringLiteral wait_reason_string``
+
+  Stores a waker associated with ``waker_in`` in ``waker_out``.
+  When ``waker_out`` is later awoken with :cpp:func:`pw::async2::Waker::Wake`,
+  the :cpp:class:`pw::async2::Task` associated with ``waker_in`` will be awoken
+  and its ``DoPend`` method will be invoked again.
+
 .. doxygenclass:: pw::async2::Dispatcher
   :members:
 

@@ -111,7 +111,8 @@ struct MockPendable {
 
   Poll<int> Pend(Context& cx) {
     ++poll_count;
-    last_waker = cx.GetWaker(pw::async2::WaitReason::Unspecified());
+    PW_ASYNC_STORE_WAKER(
+        cx, last_waker, "MockPendable is waiting for last_waker");
     return return_value;
   }
 

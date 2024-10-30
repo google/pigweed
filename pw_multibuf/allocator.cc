@@ -178,7 +178,10 @@ async2::Poll<std::optional<MultiBuf>> MultiBufAllocationFuture::Pend(
   // to allocate. If we wait to set until after attempting,
   // we'd have to re-attempt in order to ensure that no new memory
   // became available between our attempt and setting the waker.
-  waiter_.SetWaker(cx.GetWaker(async2::WaitReason::Unspecified()));
+  PW_ASYNC_STORE_WAKER(
+      cx,
+      waiter_.Waker(),
+      "MultiBufAllocationFuture is waiting for memory to become available");
   if (!should_attempt) {
     return async2::Pending();
   }

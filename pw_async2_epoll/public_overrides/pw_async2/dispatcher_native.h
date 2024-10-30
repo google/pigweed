@@ -35,12 +35,12 @@ class NativeDispatcher final : public NativeDispatcherBase {
   Status NativeRegisterFileDescriptor(int fd, FileDescriptorType type);
   Status NativeUnregisterFileDescriptor(int fd);
 
-  void NativeAddReadWakerForFileDescriptor(int fd, Waker&& waker) {
-    wakers_[fd].read = std::move(waker);
+  Waker& NativeAddReadWakerForFileDescriptor(int fd) {
+    return wakers_[fd].read;
   }
 
-  void NativeAddWriteWakerForFileDescriptor(int fd, Waker&& waker) {
-    wakers_[fd].write = std::move(waker);
+  Waker& NativeAddWriteWakerForFileDescriptor(int fd) {
+    return wakers_[fd].write;
   }
 
  private:
