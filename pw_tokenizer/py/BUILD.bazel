@@ -39,6 +39,16 @@ py_library(
 )
 
 pw_py_binary(
+    name = "database",
+    srcs = [
+        "pw_tokenizer/database.py",
+    ],
+    deps = [
+        ":pw_tokenizer",
+    ],
+)
+
+pw_py_binary(
     name = "detokenize",
     srcs = [
         "pw_tokenizer/__main__.py",
