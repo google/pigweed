@@ -250,7 +250,7 @@ class AnyChannel {
 
   /// Writes using a previously allocated MultiBuf. Returns a token that
   /// refers to this write. These tokens are monotonically increasing, and
-  /// PendFlush() returns the value of the latest token it has flushed.
+  /// PendWrite() returns the value of the latest token it has flushed.
   ///
   /// The ``MultiBuf`` argument to ``Write`` may consist of either:
   ///   (1) A single ``MultiBuf`` allocated by ``GetWriteAllocator()``
@@ -279,11 +279,11 @@ class AnyChannel {
   ///    FAILED_PRECONDITION: The channel is closed.
   ///
   /// @endrst
-  Result<WriteToken> Write(multibuf::MultiBuf&& data) {
+  Result<WriteToken> StageWrite(multibuf::MultiBuf&& data) {
     if (!is_write_open()) {
       return Status::FailedPrecondition();
     }
-    Result<WriteToken> result = DoWrite(std::move(data));
+    Result<WriteToken> result = DoStageWrite(std::move(data));
     if (result.status().IsFailedPrecondition()) {
       set_write_closed();
     }
@@ -299,11 +299,11 @@ class AnyChannel {
   /// * Ready(UNIMPLEMENTED) - The channel does not support writing.
   /// * Ready(FAILED_PRECONDITION) - The channel is closed.
   /// * Pending - Data remains to be flushed.
-  async2::Poll<Result<WriteToken>> PendFlush(async2::Context& cx) {
+  async2::Poll<Result<WriteToken>> PendWrite(async2::Context& cx) {
     if (!is_write_open()) {
       return Status::FailedPrecondition();
     }
-    async2::Poll<Result<WriteToken>> result = DoPendFlush(cx);
+    async2::Poll<Result<WriteToken>> result = DoPendWrite(cx);
     if (result.IsReady() && result->status().IsFailedPrecondition()) {
       set_write_closed();
     }
@@ -445,9 +445,9 @@ class AnyChannel {
 
   virtual pw::async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) = 0;
 
-  virtual Result<WriteToken> DoWrite(multibuf::MultiBuf&& buffer) = 0;
+  virtual Result<WriteToken> DoStageWrite(multibuf::MultiBuf&& buffer) = 0;
 
-  virtual pw::async2::Poll<Result<WriteToken>> DoPendFlush(
+  virtual pw::async2::Poll<Result<WriteToken>> DoPendWrite(
       async2::Context& cx) = 0;
 
   // Seek functions

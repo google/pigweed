@@ -141,9 +141,9 @@ class StreamChannel final : public channel::ByteReaderWriter {
     return *allocator_;
   }
 
-  Result<channel::WriteToken> DoWrite(multibuf::MultiBuf&& data) override;
+  Result<channel::WriteToken> DoStageWrite(multibuf::MultiBuf&& data) override;
 
-  async2::Poll<Result<channel::WriteToken>> DoPendFlush(
+  async2::Poll<Result<channel::WriteToken>> DoPendWrite(
       async2::Context&) override {
     return CreateWriteToken(write_token_);
   }

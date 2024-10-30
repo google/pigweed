@@ -100,7 +100,8 @@ async2::Poll<Status> EpollChannel::DoPendReadyToWrite(async2::Context& cx) {
   return async2::Pending();
 }
 
-Result<channel::WriteToken> EpollChannel::DoWrite(multibuf::MultiBuf&& data) {
+Result<channel::WriteToken> EpollChannel::DoStageWrite(
+    multibuf::MultiBuf&& data) {
   const uint32_t token = write_token_++;
 
   for (multibuf::Chunk& chunk : data.Chunks()) {

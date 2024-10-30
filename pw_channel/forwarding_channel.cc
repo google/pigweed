@@ -55,8 +55,9 @@ async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendReadyToWrite(
   return async2::Ready(OkStatus());
 }
 
-Result<channel::WriteToken> ForwardingChannel<DataType::kDatagram>::DoWrite(
-    multibuf::MultiBuf&& data) PW_NO_LOCK_SAFETY_ANALYSIS {
+Result<channel::WriteToken>
+ForwardingChannel<DataType::kDatagram>::DoStageWrite(multibuf::MultiBuf&& data)
+    PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
   PW_DASSERT(!sibling_.read_queue_.has_value());
   sibling_.read_queue_ = std::move(data);
@@ -66,7 +67,7 @@ Result<channel::WriteToken> ForwardingChannel<DataType::kDatagram>::DoWrite(
 }
 
 async2::Poll<Result<channel::WriteToken>>
-ForwardingChannel<DataType::kDatagram>::DoPendFlush(async2::Context&) {
+ForwardingChannel<DataType::kDatagram>::DoPendWrite(async2::Context&) {
   std::lock_guard lock(pair_.mutex_);
   return async2::Ready(CreateWriteToken(write_token_));
 }
@@ -103,7 +104,7 @@ ForwardingChannel<DataType::kByte>::DoPendRead(async2::Context& cx) {
   return read_data;
 }
 
-Result<channel::WriteToken> ForwardingChannel<DataType::kByte>::DoWrite(
+Result<channel::WriteToken> ForwardingChannel<DataType::kByte>::DoStageWrite(
     multibuf::MultiBuf&& data) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
   if (data.empty()) {
@@ -116,7 +117,7 @@ Result<channel::WriteToken> ForwardingChannel<DataType::kByte>::DoWrite(
 }
 
 async2::Poll<Result<channel::WriteToken>>
-ForwardingChannel<DataType::kByte>::DoPendFlush(async2::Context&) {
+ForwardingChannel<DataType::kByte>::DoPendWrite(async2::Context&) {
   std::lock_guard lock(pair_.mutex_);
   return async2::Ready(CreateWriteToken(write_token_));
 }

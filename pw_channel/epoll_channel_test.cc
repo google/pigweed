@@ -231,9 +231,9 @@ class WriterTask : public Task {
       std::copy(
           data_to_write_.begin(), data_to_write_.end(), multibuf->begin());
 
-      last_write_status = channel_.Write(std::move(*multibuf)).status();
+      last_write_status = channel_.StageWrite(std::move(*multibuf)).status();
 
-      auto token = channel_.PendFlush(cx);
+      auto token = channel_.PendWrite(cx);
       if (token.IsPending()) {
         return Pending();
       }

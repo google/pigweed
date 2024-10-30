@@ -94,7 +94,7 @@ TEST(StreamChannel, ReadsAndWritesData) {
     if (stream_channel->PendReadyToWrite(cx).IsPending()) {
       return Pending();
     }
-    EXPECT_EQ(stream_channel->Write(std::move(to_send)).status(),
+    EXPECT_EQ(stream_channel->StageWrite(std::move(to_send)).status(),
               pw::OkStatus());
     return Ready();
   });

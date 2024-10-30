@@ -78,7 +78,7 @@ TEST(LoopbackDatagramChannel, LoopsEmptyDatagrams) {
   EXPECT_EQ(read_task.read_count, 0);
   EXPECT_EQ(read_task.bytes_read_count, 0);
 
-  EXPECT_EQ(channel.Write(alloc.BufWith({})).status(), pw::OkStatus());
+  EXPECT_EQ(channel.StageWrite(alloc.BufWith({})).status(), pw::OkStatus());
 
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
   EXPECT_EQ(read_task.poll_count, 2);
@@ -98,7 +98,7 @@ TEST(LoopbackDatagramChannel, LoopsDatagrams) {
   EXPECT_EQ(read_task.read_count, 0);
   EXPECT_EQ(read_task.bytes_read_count, 0);
 
-  EXPECT_EQ(channel.Write(alloc.BufWith({1_b, 2_b, 3_b})).status(),
+  EXPECT_EQ(channel.StageWrite(alloc.BufWith({1_b, 2_b, 3_b})).status(),
             pw::OkStatus());
 
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
@@ -119,7 +119,7 @@ TEST(LoopbackByteChannel, IgnoresEmptyWrites) {
   EXPECT_EQ(read_task.read_count, 0);
   EXPECT_EQ(read_task.bytes_read_count, 0);
 
-  EXPECT_EQ(channel.Write(alloc.BufWith({})).status(), pw::OkStatus());
+  EXPECT_EQ(channel.StageWrite(alloc.BufWith({})).status(), pw::OkStatus());
 
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
   EXPECT_EQ(read_task.poll_count, 1);
@@ -139,7 +139,7 @@ TEST(LoopbackByteChannel, LoopsData) {
   EXPECT_EQ(read_task.read_count, 0);
   EXPECT_EQ(read_task.bytes_read_count, 0);
 
-  EXPECT_EQ(channel.Write(alloc.BufWith({1_b, 2_b, 3_b})).status(),
+  EXPECT_EQ(channel.StageWrite(alloc.BufWith({1_b, 2_b, 3_b})).status(),
             pw::OkStatus());
 
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());

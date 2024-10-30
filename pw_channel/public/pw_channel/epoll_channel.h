@@ -73,9 +73,9 @@ class EpollChannel : public ByteReaderWriter {
     return *allocator_;
   }
 
-  Result<channel::WriteToken> DoWrite(multibuf::MultiBuf&& data) final;
+  Result<channel::WriteToken> DoStageWrite(multibuf::MultiBuf&& data) final;
 
-  async2::Poll<Result<channel::WriteToken>> DoPendFlush(
+  async2::Poll<Result<channel::WriteToken>> DoPendWrite(
       async2::Context&) final {
     return CreateWriteToken(write_token_);
   }

@@ -200,7 +200,7 @@ Poll<Result<MultiBuf>> StreamChannel::DoPendRead(Context& cx) {
 
 Poll<Status> StreamChannel::DoPendReadyToWrite(Context&) { return OkStatus(); }
 
-pw::Result<pw::channel::WriteToken> StreamChannel::DoWrite(
+pw::Result<pw::channel::WriteToken> StreamChannel::DoStageWrite(
     pw::multibuf::MultiBuf&& data) {
   PW_TRY(write_state_.SendData(std::move(data)));
   const uint32_t token = write_token_++;

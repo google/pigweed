@@ -50,7 +50,7 @@ Poll<Status> LoopbackChannel<DataType::kDatagram>::DoPendReadyToWrite(
   return Ready(OkStatus());
 }
 
-Result<WriteToken> LoopbackChannel<DataType::kDatagram>::DoWrite(
+Result<WriteToken> LoopbackChannel<DataType::kDatagram>::DoStageWrite(
     MultiBuf&& data) {
   PW_DASSERT(!queue_.has_value());
   queue_ = std::move(data);
@@ -60,7 +60,7 @@ Result<WriteToken> LoopbackChannel<DataType::kDatagram>::DoWrite(
 }
 
 async2::Poll<Result<channel::WriteToken>>
-LoopbackChannel<DataType::kDatagram>::DoPendFlush(async2::Context&) {
+LoopbackChannel<DataType::kDatagram>::DoPendWrite(async2::Context&) {
   return async2::Ready(CreateWriteToken(write_token_));
 }
 
@@ -80,7 +80,8 @@ Poll<Result<MultiBuf>> LoopbackChannel<DataType::kByte>::DoPendRead(
   return std::move(queue_);
 }
 
-Result<WriteToken> LoopbackChannel<DataType::kByte>::DoWrite(MultiBuf&& data) {
+Result<WriteToken> LoopbackChannel<DataType::kByte>::DoStageWrite(
+    MultiBuf&& data) {
   const uint32_t token = ++write_token_;
   if (!data.empty()) {
     bool was_empty = queue_.empty();
@@ -93,7 +94,7 @@ Result<WriteToken> LoopbackChannel<DataType::kByte>::DoWrite(MultiBuf&& data) {
 }
 
 async2::Poll<Result<channel::WriteToken>>
-LoopbackChannel<DataType::kByte>::DoPendFlush(async2::Context&) {
+LoopbackChannel<DataType::kByte>::DoPendWrite(async2::Context&) {
   return async2::Ready(CreateWriteToken(write_token_));
 }
 

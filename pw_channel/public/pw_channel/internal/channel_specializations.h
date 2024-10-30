@@ -186,15 +186,15 @@ class Conversions {
   multibuf::MultiBufAllocator& DoGetWriteAllocator() final {              \
     PW_ASSERT(false); /* shouldn't be called on non-writeable channels */ \
   }                                                                       \
-  Result<channel::WriteToken> DoWrite(multibuf::MultiBuf&&) final {       \
+  Result<channel::WriteToken> DoStageWrite(multibuf::MultiBuf&&) final {  \
     return Status::Unimplemented();                                       \
   }                                                                       \
-  async2::Poll<Result<WriteToken>> DoPendFlush(async2::Context&) final {  \
+  async2::Poll<Result<WriteToken>> DoPendWrite(async2::Context&) final {  \
     return async2::Ready(Result<WriteToken>(Status::Unimplemented()));    \
   }                                                                       \
   using AnyChannel::PendReadyToWrite;                                     \
-  using AnyChannel::Write;                                                \
-  using AnyChannel::PendFlush
+  using AnyChannel::StageWrite;                                           \
+  using AnyChannel::PendWrite
 
 #define _PW_CHANNEL_SEEKABLE_SEEK static_assert(true)
 // TODO: b/323622630 - Implement DoSeek() and DoPosition()
