@@ -35,4 +35,18 @@ Status UnsafeDumpMultiSinkLogs(
   return sink.UnsafeForEachEntry(callback, max_num_entries);
 }
 
+Status UnsafeDumpMultiSinkLogsFromEnd(
+    MultiSink& sink,
+    pw::log::pwpb::LogEntries::StreamEncoder& encoder,
+    size_t max_size_bytes) {
+  auto callback = [&encoder](ConstByteSpan entry) {
+    encoder
+        .WriteBytes(
+            static_cast<uint32_t>(pw::log::pwpb::LogEntries::Fields::kEntries),
+            entry)
+        .IgnoreError();
+  };
+  return sink.UnsafeForEachEntryFromEnd(callback, max_size_bytes);
+}
+
 }  // namespace pw::multisink

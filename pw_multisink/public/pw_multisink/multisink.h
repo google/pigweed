@@ -274,6 +274,16 @@ class MultiSink {
       return original;
     }
 
+    iterator& operator--() {
+      it_--;
+      return *this;
+    }
+    iterator operator--(int) {
+      iterator original = *this;
+      --*this;
+      return original;
+    }
+
     ConstByteSpan& operator*() {
       entry_ = (*it_).buffer;
       return entry_;
@@ -410,6 +420,16 @@ class MultiSink {
   Status UnsafeForEachEntry(
       const Function<void(ConstByteSpan)>& callback,
       size_t max_num_entries = std::numeric_limits<size_t>::max());
+
+  // Uses MultiSink's unsafe iteration to dump the contents to a user-provided
+  // callback. UnsafeForEachEntryFromEnd dumps the latest entries, up to the
+  // aggregate element size of max_size_bytes.
+  //
+  // Returns:
+  //   OK - Successfully dumped entire multisink.
+  //   DATA_LOSS - Corruption detected, some entries may have been lost.
+  Status UnsafeForEachEntryFromEnd(
+      const Function<void(ConstByteSpan)>& callback, size_t max_size_bytes);
 
  protected:
   friend Drain;

@@ -150,7 +150,10 @@ iterator to be used even if no drains have been previously attached.
 As an alternative to using the ``UnsafeIterationWrapper``,
 ``MultiSink::UnsafeForEachEntry()`` may be used to run a callback for each
 entry in the buffer. This helper also provides a way to limit the iteration to
-the ``N`` most recent entries.
+the ``N`` most recent entries. In certain cases such as when there isn't
+enough space to copy the entire buffer, it is desirable to capture
+the latest entries rather than the first entries. In this case
+``MultiSink::UnsafeForEachEntryFromEnd`` can be used.
 
 Peek & Pop
 ==========

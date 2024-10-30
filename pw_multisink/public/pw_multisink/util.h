@@ -30,4 +30,12 @@ Status UnsafeDumpMultiSinkLogs(
     pw::log::pwpb::LogEntries::StreamEncoder& encoder,
     size_t max_num_entries = std::numeric_limits<size_t>::max());
 
+// Uses MultiSink's unsafe iteration to dump the contents as a series of log
+// entries. max_size_bytes is the total size of the captured log entries. This
+// can be used to dump proto-encoded logs to a pw.snapshot.Snapshot.
+Status UnsafeDumpMultiSinkLogsFromEnd(
+    MultiSink& sink,
+    pw::log::pwpb::LogEntries::StreamEncoder& encoder,
+    size_t max_size_bytes);
+
 }  // namespace pw::multisink

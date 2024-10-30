@@ -664,5 +664,66 @@ TEST(UnsafeIteration, Subset) {
   EXPECT_EQ(kExpectedEntriesMaxEntries, entry_count);
 }
 
+TEST(UnsafeIterationFromEnd, NoTruncation) {
+  constexpr std::array<std::string_view, 5> kExpectedEntries{
+      "one", "two", "three", "four", "five"};
+  constexpr size_t buffer_size = 32;
+  std::array<std::byte, buffer_size> buffer;
+  MultiSink multisink(buffer);
+
+  for (std::string_view entry : kExpectedEntries) {
+    multisink.HandleEntry(as_bytes(span<const char>(entry)));
+  }
+
+  size_t entry_count = 0;
+  struct {
+    size_t& entry_count;
+    span<const std::string_view> expected_results;
+  } ctx{entry_count, kExpectedEntries};
+  auto cb = [&ctx](ConstByteSpan data) {
+    std::string_view expected_entry = ctx.expected_results[ctx.entry_count];
+    EXPECT_EQ(data.size(), expected_entry.size());
+    const int result =
+        memcmp(data.data(), expected_entry.data(), expected_entry.size());
+    EXPECT_EQ(0, result);
+    ctx.entry_count++;
+  };
+
+  EXPECT_EQ(OkStatus(), multisink.UnsafeForEachEntryFromEnd(cb, buffer_size));
+  EXPECT_EQ(kExpectedEntries.size(), entry_count);
+}
+
+TEST(UnsafeIterationFromEnd, Truncation) {
+  constexpr std::array<std::string_view, 5> kEntries{
+      "one", "two", "three", "four", "five"};
+  constexpr std::array<std::string_view, 3> kExpectedEntries{
+      "three", "four", "five"};
+  constexpr size_t buffer_size = 32;
+  std::array<std::byte, buffer_size> buffer;
+  MultiSink multisink(buffer);
+
+  for (std::string_view entry : kEntries) {
+    multisink.HandleEntry(as_bytes(span<const char>(entry)));
+  }
+
+  size_t entry_count = 0;
+  struct {
+    size_t& entry_count;
+    span<const std::string_view> expected_results;
+  } ctx{entry_count, kExpectedEntries};
+  auto cb = [&ctx](ConstByteSpan data) {
+    std::string_view expected_entry = ctx.expected_results[ctx.entry_count];
+    EXPECT_EQ(data.size(), expected_entry.size());
+    const int result =
+        memcmp(data.data(), expected_entry.data(), expected_entry.size());
+    EXPECT_EQ(0, result);
+    ctx.entry_count++;
+  };
+
+  EXPECT_EQ(OkStatus(),
+            multisink.UnsafeForEachEntryFromEnd(cb, buffer_size / 2));
+  EXPECT_EQ(kExpectedEntries.size(), entry_count);
+}
+
 }  // namespace
 }  // namespace pw::multisink
