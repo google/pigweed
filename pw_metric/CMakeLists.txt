@@ -48,6 +48,7 @@ pw_proto_library(pw_metric.metric_service_proto
     pw_metric_proto/metric_service.proto
   INPUTS
     pw_metric_proto/metric_service.options
+    pw_metric_proto/metric_service.pwpb_options
 )
 
 pw_add_library(pw_metric.metric_walker INTERFACE

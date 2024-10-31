@@ -50,6 +50,30 @@ class GeneratorOptions:
     suppress_legacy_namespace: bool
 
 
+class CodegenError(Exception):
+    def __init__(
+        self,
+        error_message: str,
+        node: ProtoNode,
+        field: ProtoMessageField | None,
+    ):
+        super().__init__(f'pwpb codegen error: {error_message}')
+        self.error_message = error_message
+        self.node = node
+        self.field = field
+
+    def formatted_message(self) -> str:
+        lines = [
+            f'pwpb codegen error: {self.error_message}',
+            f'    at {self.node.proto_path()}',
+        ]
+
+        if self.field is not None:
+            lines.append(f'    in field {self.field.name()}')
+
+        return '\n'.join(lines)
+
+
 class ClassType(enum.Enum):
     """Type of class."""
 
@@ -686,6 +710,24 @@ class SubMessageFindMethod(FindMethod):
 
 class SubMessageProperty(MessageProperty):
     """Property which contains a sub-message."""
+
+    def __init__(
+        self,
+        codegen_options: GeneratorOptions,
+        field: ProtoMessageField,
+        scope: ProtoNode,
+        root: ProtoNode,
+    ):
+        super().__init__(codegen_options, field, scope, root)
+
+        if self._field.is_repeated() and (
+            self.max_size() != 0 or self.is_fixed_size()
+        ):
+            raise CodegenError(
+                'Repeated messages cannot set a max_count or fixed_count',
+                scope,
+                field,
+            )
 
     def _dependency_removed(self) -> bool:
         """Returns true if the message dependency was removed to break a cycle.
@@ -3459,7 +3501,7 @@ def process_proto_file(
     proto_file,
     proto_options,
     codegen_options: GeneratorOptions,
-) -> Iterable[OutputFile]:
+) -> Iterable[OutputFile] | None:
     """Generates code for a single .proto file."""
 
     # Two passes are made through the file. The first builds the tree of all
@@ -3470,11 +3512,16 @@ def process_proto_file(
 
     output_filename = _proto_filename_to_generated_header(proto_file.name)
     output_file = OutputFile(output_filename)
-    generate_code_for_package(
-        proto_file,
-        package_root,
-        output_file,
-        codegen_options,
-    )
+
+    try:
+        generate_code_for_package(
+            proto_file,
+            package_root,
+            output_file,
+            codegen_options,
+        )
+    except CodegenError as e:
+        print(e.formatted_message(), file=sys.stderr)
+        return None
 
     return [output_file]

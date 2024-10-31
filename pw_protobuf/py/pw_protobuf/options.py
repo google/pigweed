@@ -77,6 +77,7 @@ def load_options(
             and options_file.exists()
         ):
             load_options_from(options, options_file)
+            break  # .pwpb_options is always first; stop if it is found.
 
     # Then search specified search paths for options files.
     for include_path in include_paths:
@@ -86,6 +87,7 @@ def load_options(
             )
             if options_file_name.exists():
                 load_options_from(options, options_file_name)
+                break  # .pwpb_options is always first; stop if it is found.
 
     return options
 

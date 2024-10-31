@@ -96,7 +96,7 @@ def parse_parameter_options(parameter: str) -> Namespace:
 
 def process_proto_request(
     req: plugin_pb2.CodeGeneratorRequest, res: plugin_pb2.CodeGeneratorResponse
-) -> None:
+) -> bool:
     """Handles a protoc CodeGeneratorRequest message.
 
     Generates code for the files in the request and writes the output to the
@@ -106,6 +106,8 @@ def process_proto_request(
       req: A CodeGeneratorRequest for a proto compilation.
       res: A CodeGeneratorResponse to populate with the plugin's output.
     """
+
+    success = True
 
     args = parse_parameter_options(req.parameter)
     for proto_file in req.proto_file:
@@ -129,10 +131,16 @@ def process_proto_request(
             proto_options,
             codegen_options,
         )
-        for output_file in output_files:
-            fd = res.file.add()
-            fd.name = output_file.name()
-            fd.content = output_file.content()
+
+        if output_files is not None:
+            for output_file in output_files:
+                fd = res.file.add()
+                fd.name = output_file.name()
+                fd.content = output_file.content()
+        else:
+            success = False
+
+    return success
 
 
 def main() -> int:
@@ -144,7 +152,6 @@ def main() -> int:
     data = sys.stdin.buffer.read()
     request = plugin_pb2.CodeGeneratorRequest.FromString(data)
     response = plugin_pb2.CodeGeneratorResponse()
-    process_proto_request(request, response)
 
     # Declare that this plugin supports optional fields in proto3.
     response.supported_features |= (  # type: ignore[attr-defined]
@@ -152,6 +159,10 @@ def main() -> int:
     )  # type: ignore[attr-defined]
 
     response.supported_features |= edition_constants.FEATURE_SUPPORTS_EDITIONS
+
+    if not process_proto_request(request, response):
+        print('pwpb failed to generate protobuf code', file=sys.stderr)
+        return 1
 
     sys.stdout.buffer.write(response.SerializeToString())
     return 0

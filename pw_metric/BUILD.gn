@@ -109,7 +109,6 @@ if (dir_pw_third_party_nanopb != "") {
 pw_source_set("metric_service_pwpb") {
   public_configs = [ ":default_config" ]
   public_deps = [
-    ":metric_service_proto.pwpb_rpc",
     ":metric_service_proto.raw_rpc",
     ":metric_walker",
     ":pw_metric",
@@ -133,6 +132,7 @@ pw_source_set("metric_service_pwpb") {
 pw_test("metric_service_pwpb_test") {
   deps = [
     ":global",
+    ":metric_service_proto.pwpb",
     ":metric_service_pwpb",
     "$dir_pw_rpc/pwpb:test_method_context",
     "$dir_pw_rpc/raw:test_method_context",

@@ -19,7 +19,6 @@ load(
     "nanopb_rpc_proto_library",
     "pw_proto_filegroup",
     "pwpb_proto_library",
-    "pwpb_rpc_proto_library",
     "raw_rpc_proto_library",
 )
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
@@ -92,7 +91,6 @@ cc_library(
     deps = [
         ":metric",
         ":metric_proto_pwpb",
-        ":metric_proto_pwpb_rpc",
         ":metric_proto_raw_rpc",
         ":metric_walker",
         "//pw_assert",
@@ -110,7 +108,10 @@ pw_proto_filegroup(
     srcs = [
         "pw_metric_proto/metric_service.proto",
     ],
-    options_files = ["pw_metric_proto/metric_service.options"],
+    options_files = [
+        "pw_metric_proto/metric_service.options",
+        "pw_metric_proto/metric_service.pwpb_options",
+    ],
 )
 
 proto_library(
@@ -126,12 +127,6 @@ py_proto_library(
 
 pwpb_proto_library(
     name = "metric_proto_pwpb",
-    deps = [":metric_proto"],
-)
-
-pwpb_rpc_proto_library(
-    name = "metric_proto_pwpb_rpc",
-    pwpb_proto_library_deps = [":metric_proto_pwpb"],
     deps = [":metric_proto"],
 )
 
