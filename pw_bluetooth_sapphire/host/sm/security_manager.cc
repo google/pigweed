@@ -850,10 +850,11 @@ void SecurityManagerImpl::RequestPasskey(PasskeyResponseCallback respond) {
                              self = weak_self_.GetWeakPtr(),
                              cb = std::move(respond)](int64_t passkey) {
     if (!self.is_alive() || self->next_pairing_id_ != id) {
-      bt_log(TRACE,
-             "sm",
-             "ignoring passkey input response for expired pairing: id = %lu",
-             id);
+      bt_log(
+          TRACE,
+          "sm",
+          "ignoring passkey input response for expired pairing: id = %" PRIx64,
+          id);
       return;
     }
     cb(passkey);

@@ -40,8 +40,6 @@ TEST(RetireLogDeathTest, InitializationLimits) {
   ASSERT_DEATH_IF_SUPPORTED({ RetireLog retire_log(0, 100); }, "min_depth");
   ASSERT_DEATH_IF_SUPPORTED(
       { RetireLog retire_log(101, 100); }, "min_depth.*max_depth");
-  ASSERT_DEATH_IF_SUPPORTED(
-      { RetireLog retire_log(1, size_t{1} << 60); }, "max_depth");
 }
 
 TEST(RetireLogDeathTest, ComputeQuantileLimits) {

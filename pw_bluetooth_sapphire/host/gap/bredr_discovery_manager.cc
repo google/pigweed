@@ -535,7 +535,7 @@ void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
     pending_discoverable_.push(std::move(result_cb));
     bt_log(INFO,
            "gap-bredr",
-           "discoverable mode starting: %lu pending",
+           "discoverable mode starting: %zu pending",
            pending_discoverable_.size());
     return;
   }
@@ -554,7 +554,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
   bool enable = !discoverable_.empty() || !pending_discoverable_.empty();
   bt_log(INFO,
          "gap-bredr",
-         "%sabling inquiry scan: %lu sessions, %lu pending",
+         "%sabling inquiry scan: %zu sessions, %zu pending",
          (enable ? "en" : "dis"),
          discoverable_.size(),
          pending_discoverable_.size());
@@ -687,7 +687,7 @@ BrEdrDiscoveryManager::AddDiscoverySession() {
   discovering_.insert(session.get());
   bt_log(INFO,
          "gap-bredr",
-         "new discovery session: %lu sessions active",
+         "new discovery session: %zu sessions active",
          discovering_.size());
   UpdateInspectProperties();
   return session;
@@ -718,7 +718,7 @@ BrEdrDiscoveryManager::AddDiscoverableSession() {
   discoverable_.insert(session.get());
   bt_log(INFO,
          "gap-bredr",
-         "new discoverable session: %lu sessions active",
+         "new discoverable session: %zu sessions active",
          discoverable_.size());
   return session;
 }

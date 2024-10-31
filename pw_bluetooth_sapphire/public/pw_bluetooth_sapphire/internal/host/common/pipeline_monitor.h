@@ -145,7 +145,11 @@ class PipelineMonitor final {
   [[nodiscard]] int64_t tokens_issued() const { return tokens_issued_; }
   [[nodiscard]] size_t bytes_in_flight() const { return bytes_in_flight_; }
   [[nodiscard]] int64_t tokens_in_flight() const {
+    PW_MODIFY_DIAGNOSTICS_PUSH();
+    PW_MODIFY_DIAGNOSTIC(ignored,
+                         "-Wtautological-constant-out-of-range-compare");
     PW_CHECK(issued_tokens_.size() <= std::numeric_limits<int64_t>::max());
+    PW_MODIFY_DIAGNOSTICS_POP();
     return issued_tokens_.size();
   }
   [[nodiscard]] size_t bytes_retired() const {

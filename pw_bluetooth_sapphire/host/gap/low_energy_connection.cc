@@ -180,7 +180,7 @@ LowEnergyConnection::AddRef() {
 
   bt_log(DEBUG,
          "gap-le",
-         "added ref (peer: %s, handle %#.4x, count: %lu)",
+         "added ref (peer: %s, handle %#.4x, count: %zu)",
          bt_str(peer_id()),
          handle(),
          ref_count());
@@ -195,7 +195,7 @@ void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
   PW_CHECK(res == 1u, "DropRef called with wrong connection reference");
   bt_log(DEBUG,
          "gap-le",
-         "dropped ref (peer: %s, handle: %#.4x, count: %lu)",
+         "dropped ref (peer: %s, handle: %#.4x, count: %zu)",
          bt_str(peer_id()),
          handle(),
          ref_count());

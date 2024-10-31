@@ -79,7 +79,7 @@ size_t ChannelConfiguration::ReadNextOption(const ByteBuffer& options) {
     bt_log(WARN,
            "l2cap",
            "tried to decode channel configuration option from buffer with "
-           "invalid size (size: %lu)",
+           "invalid size (size: %zu)",
            options.size());
     return 0;
   }

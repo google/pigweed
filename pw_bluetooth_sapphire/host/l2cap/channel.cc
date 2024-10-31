@@ -183,7 +183,7 @@ ChannelImpl::~ChannelImpl() {
   if (removed_count > 0) {
     bt_log(TRACE,
            "hci",
-           "packets dropped (count: %lu) due to channel destruction (link: "
+           "packets dropped (count: %zu) due to channel destruction (link: "
            "%#.4x, id: %#.4x)",
            removed_count,
            link_handle(),

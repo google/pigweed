@@ -1648,7 +1648,8 @@ void AdapterImpl::InitQueueReadLMPFeatureMaskPage(uint8_t page) {
       page > max_lmp_feature_page_index_.value()) {
     bt_log(WARN,
            "gap",
-           "Maximum value of LMP features mask page is %lu. Received page %hu",
+           "Maximum value of LMP features mask page is %zu. Received page "
+           "%" PRIx8,
            max_lmp_feature_page_index_.value(),
            page);
     return;

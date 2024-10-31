@@ -165,7 +165,7 @@ std::string SecurityProperties::ToString() const {
   }
   // inclusive-language: disable
   return bt_lib_cpp_string::StringPrintf(
-      "[%s%s%skey size: %lu]",
+      "[%s%s%skey size: %zu]",
       encrypted() ? "encrypted " : "",
       authenticated() ? "authenticated (MITM) " : "",
       secure_connections() ? "secure connections " : "legacy authentication ",

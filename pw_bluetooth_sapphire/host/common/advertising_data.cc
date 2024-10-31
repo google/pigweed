@@ -145,7 +145,7 @@ std::string DecodeUri(const std::string& uri) {
         "gap-le",
         "Failed to decode URI - supplied UTF-8 encoding scheme codepoint %u "
         "must be in the "
-        "range 2-kUriSchemesSize + 1 (2-%lu) to correspond to a URI encoding",
+        "range 2-kUriSchemesSize + 1 (2-%zu) to correspond to a URI encoding",
         code_point,
         kUriSchemesSize + 1);
     return "";
