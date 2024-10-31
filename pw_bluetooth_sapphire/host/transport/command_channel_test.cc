@@ -107,22 +107,19 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
   CommandChannel::TransactionId id = cmd_channel()->SendCommand(
       std::move(reset),
       [&id, test_obj](CommandChannel::TransactionId callback_id,
-                      const EventPacket& event) {
+                      const EmbossEventPacket& event) {
+        auto view =
+            event.view<pw::bluetooth::emboss::SimpleCommandCompleteEventView>();
         EXPECT_EQ(id, callback_id);
-        EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
-        EXPECT_EQ(4, event.view().header().parameter_total_size);
-        EXPECT_EQ(1,
-                  event.view()
-                      .payload<hci_spec::CommandCompleteEventParams>()
-                      .num_hci_command_packets);
-        EXPECT_EQ(hci_spec::kReset,
-                  pw::bytes::ConvertOrderFrom(
-                      cpp20::endian::little,
-                      event.view()
-                          .payload<hci_spec::CommandCompleteEventParams>()
-                          .command_opcode));
+        EXPECT_EQ(pw::bluetooth::emboss::EventCode::COMMAND_COMPLETE,
+                  view.command_complete().header().event_code_enum().Read());
+        EXPECT_EQ(
+            4, view.command_complete().header().parameter_total_size().Read());
+        EXPECT_EQ(1, view.command_complete().num_hci_command_packets().Read());
+        EXPECT_EQ(pw::bluetooth::emboss::OpCode::RESET,
+                  view.command_complete().command_opcode_enum().Read());
         EXPECT_EQ(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE,
-                  event.return_params<hci_spec::SimpleReturnParams>()->status);
+                  view.status().Read());
       });
 
   test_obj = nullptr;

@@ -21,6 +21,7 @@
 
 #include "pw_bluetooth/hci_android.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"
+#include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/packet_view.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
@@ -275,25 +276,12 @@ uint8_t FakeController::NextL2CAPCommandId() {
 
 void FakeController::RespondWithCommandComplete(hci_spec::OpCode opcode,
                                                 pwemb::StatusCode status) {
-  hci_spec::SimpleReturnParams params;
-  params.status = status;
-  RespondWithCommandComplete(opcode, BufferView(&params, sizeof(params)));
-}
-
-void FakeController::RespondWithCommandComplete(hci_spec::OpCode opcode,
-                                                const ByteBuffer& params) {
-  DynamicByteBuffer buffer(sizeof(hci_spec::CommandCompleteEventParams) +
-                           params.size());
-  MutablePacketView<hci_spec::CommandCompleteEventParams> event(&buffer,
-                                                                params.size());
-
-  event.mutable_header()->num_hci_command_packets =
-      settings_.num_hci_command_packets;
-  event.mutable_header()->command_opcode =
-      pw::bytes::ConvertOrderTo(cpp20::endian::little, opcode);
-  event.mutable_payload_data().Write(params);
-
-  SendEvent(hci_spec::kCommandCompleteEventCode, buffer);
+  auto packet =
+      hci::EmbossEventPacket::New<pwemb::SimpleCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
+  auto view = packet.view_t();
+  view.status().Write(status);
+  RespondWithCommandComplete(opcode, &packet);
 }
 
 void FakeController::RespondWithCommandComplete(
