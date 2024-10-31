@@ -51,6 +51,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        ":config",
         ":deallocator",
         "//pw_assert",
         "//pw_result",

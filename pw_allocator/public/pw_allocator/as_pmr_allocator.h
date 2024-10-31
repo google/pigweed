@@ -13,6 +13,10 @@
 // the License.
 #pragma once
 
+#include "pw_allocator/config.h"
+
+#if PW_ALLOCATOR_ENABLE_PMR
+
 #if __has_include(<memory_resource>)
 #include <memory_resource>
 namespace pw {
@@ -92,3 +96,23 @@ class AsPmrAllocator final : public pw::pmr::polymorphic_allocator<std::byte> {
 
 }  // namespace allocator
 }  // namespace pw
+
+#else
+
+namespace pw::allocator {
+
+/// Disabled version of `AsPmrAllocator`.
+///
+/// This is used to disable the ability to use this allocator with the PMR
+/// versions of standard library containers.
+class AsPmrAllocator {
+ public:
+  template <typename Arg>
+  AsPmrAllocator(Arg&) {
+    static_assert(false, "Polymorphic allocators are disabled");
+  }
+};
+
+}  // namespace pw::allocator
+
+#endif  // PW_ALLOCATOR_ENABLE_PMR

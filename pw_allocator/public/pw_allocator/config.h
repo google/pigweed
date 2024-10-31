@@ -45,3 +45,12 @@
 /// memory corruptions while mitigating the performance impact.
 #define PW_ALLOCATOR_BLOCK_POISON_INTERVAL 0
 #endif  // PW_ALLOCATOR_BLOCK_POISON_INTERVAL
+
+#ifndef PW_ALLOCATOR_ENABLE_PMR
+/// Disables the ability to use this allocator with the PMR versions of
+/// standard library containers.
+///
+/// If set to 1, PMR allocators can be created using `as_pmr()`. If set to 0,
+/// this usage is disabled. This is enabled by default.
+#define PW_ALLOCATOR_ENABLE_PMR 1
+#endif  // PW_ALLOCATOR_ENABLE_PMR

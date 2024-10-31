@@ -60,6 +60,7 @@ pw_source_set("allocator") {
     "public/pw_allocator/as_pmr_allocator.h",
   ]
   public_deps = [
+    ":config",
     ":deallocator",
     "$dir_pw_assert:check",
     dir_pw_result,
