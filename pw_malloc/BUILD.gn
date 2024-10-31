@@ -94,10 +94,15 @@ pw_source_set("best_fit_block_allocator") {
   sources = [ "best_fit_block_allocator.cc" ]
 }
 
-pw_source_set("bucket_block_allocator") {
+pw_source_set("bucket_allocator") {
   public_deps = [ ":pw_malloc.facade" ]
-  deps = [ "$dir_pw_allocator:bucket_block_allocator" ]
-  sources = [ "bucket_block_allocator.cc" ]
+  deps = [ "$dir_pw_allocator:bucket_allocator" ]
+  sources = [ "bucket_allocator.cc" ]
+}
+
+# Deprecated; see b/376730645 for background and workarounds.
+pw_source_set("bucket_block_allocator") {
+  public_deps = [ ":bucket_allocator" ]
 }
 
 pw_source_set("dual_first_fit_block_allocator") {
@@ -142,10 +147,10 @@ pw_test("best_fit_block_allocator_test") {
   sources += [ "best_fit_block_allocator.cc" ]
 }
 
-pw_test("bucket_block_allocator_test") {
+pw_test("bucket_allocator_test") {
   forward_variables_from(_testing, "*")
-  deps += [ "$dir_pw_allocator:bucket_block_allocator" ]
-  sources += [ "bucket_block_allocator.cc" ]
+  deps += [ "$dir_pw_allocator:bucket_allocator" ]
+  sources += [ "bucket_allocator.cc" ]
 }
 
 pw_test("dual_first_fit_block_allocator_test") {
@@ -208,7 +213,7 @@ pw_test_group("tests") {
 
   tests = [
     ":best_fit_block_allocator_test",
-    ":bucket_block_allocator_test",
+    ":bucket_allocator_test",
     ":dual_first_fit_block_allocator_test",
     ":first_fit_block_allocator_test",
     ":last_fit_block_allocator_test",

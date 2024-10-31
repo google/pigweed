@@ -78,6 +78,12 @@ constraint_value(
 )
 
 constraint_value(
+    name = "bucket_allocator_backend",
+    constraint_setting = "//pw_malloc:backend_constraint_setting",
+)
+
+# TODO(b/376730645): Remove deprecated backends.
+constraint_value(
     name = "bucket_block_allocator_backend",
     constraint_setting = "//pw_malloc:backend_constraint_setting",
 )
@@ -107,16 +113,18 @@ constraint_value(
     constraint_setting = "//pw_malloc:backend_constraint_setting",
 )
 
+# TODO(b/376730645): Remove deprecated backends.
 alias(
     name = "backend_multiplexer",
     actual = select({
         "//pw_malloc:best_fit_block_allocator_backend": "//pw_malloc:best_fit_block_allocator",
-        "//pw_malloc:bucket_block_allocator_backend": "//pw_malloc:bucket_block_allocator",
+        "//pw_malloc:bucket_allocator_backend": "//pw_malloc:bucket_allocator",
+        "//pw_malloc:bucket_block_allocator_backend": "//pw_malloc:bucket_allocator",
         "//pw_malloc:dual_first_fit_block_allocator_backend": "//pw_malloc:dual_first_fit_block_allocator",
         "//pw_malloc:first_fit_block_allocator_backend": "//pw_malloc:first_fit_block_allocator",
         "//pw_malloc:last_fit_block_allocator_backend": "//pw_malloc:last_fit_block_allocator",
         "//pw_malloc:worst_fit_block_allocator_backend": "//pw_malloc:worst_fit_block_allocator",
-        "//pw_malloc_freelist:backend": "//pw_malloc:bucket_block_allocator",
+        "//pw_malloc_freelist:backend": "//pw_malloc:bucket_allocator",
         "//pw_malloc_freertos:backend": "//pw_malloc_freertos",
         "//conditions:default": "//pw_build:unspecified_backend",
     }),
@@ -133,12 +141,18 @@ cc_library(
 )
 
 cc_library(
-    name = "bucket_block_allocator",
-    srcs = ["bucket_block_allocator.cc"],
+    name = "bucket_allocator",
+    srcs = ["bucket_allocator.cc"],
     deps = [
-        "//pw_allocator:bucket_block_allocator",
+        "//pw_allocator:bucket_allocator",
         "//pw_malloc:facade",
     ],
+)
+
+# TODO(b/376730645): Remove deprecated backends.
+cc_library(
+    name = "bucket_block_allocator",
+    deps = [":bucket_allocator"],
 )
 
 cc_library(

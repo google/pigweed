@@ -98,9 +98,9 @@ void BlockAllocatorTestBase::AllocateAlignmentFailure() {
   // Allocate a two blocks with an unaligned region between them.
   constexpr size_t kAlignment = 128;
   ByteSpan bytes = GetBytes();
-  auto addr = reinterpret_cast<uintptr_t>(bytes.data());
-  uintptr_t outer_size =
-      AlignUp(addr + kDefaultBlockOverhead, kAlignment) - addr + 1;
+  size_t outer_size =
+      GetAlignedOffsetAfter(bytes.data(), kAlignment, kSmallInnerSize) +
+      kAlignment;
   Allocator& allocator = GetAllocator({
       {outer_size, Preallocation::kUsed},
       {kLargeOuterSize, Preallocation::kFree},

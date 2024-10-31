@@ -16,13 +16,13 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# pw_allocator:freelist has been replaced by pw_allocator:bucket_block_allocator
+# pw_allocator:freelist has been replaced by pw_allocator:bucket_allocator
 alias(
     name = "backend",
-    actual = "//pw_malloc:bucket_block_allocator_backend",
+    actual = "//pw_malloc:bucket_allocator_backend",
 )
 
 alias(
     name = "pw_malloc_freelist",
-    actual = "//pw_malloc:bucket_block_allocator",
+    actual = "//pw_malloc:bucket_allocator",
 )

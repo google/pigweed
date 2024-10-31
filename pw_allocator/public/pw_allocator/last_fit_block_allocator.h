@@ -28,12 +28,11 @@ namespace pw::allocator {
 /// corresponding "first-fit" strategy, since even with alignment it will result
 /// in at most one unused fragment before the allocated block.
 template <typename OffsetType = uintptr_t,
-          size_t kPoisonInterval = PW_ALLOCATOR_BLOCK_POISON_INTERVAL,
-          size_t kAlign = alignof(OffsetType)>
+          uint16_t kPoisonInterval = PW_ALLOCATOR_BLOCK_POISON_INTERVAL>
 class LastFitBlockAllocator
-    : public BlockAllocator<OffsetType, kPoisonInterval, kAlign> {
+    : public BlockAllocator<OffsetType, kPoisonInterval> {
  public:
-  using Base = BlockAllocator<OffsetType, kPoisonInterval, kAlign>;
+  using Base = BlockAllocator<OffsetType, kPoisonInterval>;
   using BlockType = typename Base::BlockType;
 
   /// Constexpr constructor. Callers must explicitly call `Init`.

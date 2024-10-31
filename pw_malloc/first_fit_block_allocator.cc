@@ -22,8 +22,7 @@ namespace {
 
 using FirstFitBlockAllocator =
     ::pw::allocator::FirstFitBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE,
-                                            PW_MALLOC_BLOCK_POISON_INTERVAL,
-                                            PW_MALLOC_BLOCK_ALIGNMENT>;
+                                            PW_MALLOC_BLOCK_POISON_INTERVAL>;
 
 FirstFitBlockAllocator& GetFirstFitBlockAllocator() {
   static FirstFitBlockAllocator allocator;

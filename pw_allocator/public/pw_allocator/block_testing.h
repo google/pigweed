@@ -92,15 +92,12 @@ struct Preallocation {
 
 template <typename BlockType>
 BlockType* Preallocate(ByteSpan bytes,
-                       std::initializer_list<Preallocation> preallocations) {
-  BlockType* first = nullptr;
-
+                       std::initializer_list<Preallocation> preallocs) {
   // First, look if any blocks use kSizeRemaining, and calculate how large
   // that will be.
-  Result<BlockType*> result = BlockType::Init(bytes);
-  BlockType* block = *result;
-  size_t remaining_outer_size = block->OuterSize();
-  for (auto& preallocation : preallocations) {
+  bytes = GetAlignedSubspan(bytes, BlockType::kAlignment);
+  size_t remaining_outer_size = bytes.size();
+  for (auto& preallocation : preallocs) {
     if (preallocation.outer_size != Preallocation::kSizeRemaining) {
       size_t outer_size =
           AlignUp(preallocation.outer_size, BlockType::kAlignment);
@@ -109,33 +106,30 @@ BlockType* Preallocate(ByteSpan bytes,
     }
   }
 
-  // Allocate each block.
-  for (auto& preallocation : preallocations) {
-    PW_ASSERT(block != nullptr);
+  // Now, construct objects in place.
+  BlockType* block = nullptr;
+  size_t roffset = bytes.size();
+  for (auto it = std::rbegin(preallocs); it != std::rend(preallocs); ++it) {
+    const Preallocation& preallocation = *it;
     size_t outer_size = preallocation.outer_size;
     if (outer_size == Preallocation::kSizeRemaining) {
       outer_size = remaining_outer_size;
       remaining_outer_size = 0;
+    } else {
+      outer_size = AlignUp(preallocation.outer_size, BlockType::kAlignment);
     }
-    PW_ASSERT(outer_size > BlockType::kBlockOverhead);
-    Layout layout(outer_size - BlockType::kBlockOverhead, 1);
-    PW_ASSERT(BlockType::AllocFirst(block, layout).ok());
-    if (first == nullptr) {
-      first = block;
+    PW_CHECK_SUB(roffset, outer_size, &roffset);
+    ByteSpan region = bytes.subspan(roffset, outer_size);
+    BlockType* next = block;
+    block = *(BlockType::Init(region, next));
+    if (preallocation.state != Preallocation::kFree) {
+      auto result = BlockType::AllocLast(block, Layout(block->InnerSize(), 1));
+      PW_CHECK_OK(result.status());
+      PW_CHECK_UINT_EQ(result.prev(), BlockResult::Prev::kUnchanged);
+      PW_CHECK_UINT_EQ(result.next(), BlockResult::Next::kUnchanged);
     }
-    block = block->Next();
   }
-
-  // Now free the appropriate blocks.
-  block = first;
-  for (auto& preallocation : preallocations) {
-    if (preallocation.state == Preallocation::kFree) {
-      BlockType::Free(block);
-    }
-    block = block->Next();
-  }
-
-  return first;
+  return block;
 }
 
 }  // namespace pw::allocator::test

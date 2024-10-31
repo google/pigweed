@@ -22,6 +22,7 @@
 #include "pw_allocator/first_fit_block_allocator.h"
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/tracking_allocator.h"
+#include "pw_assert/internal/check_impl.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
@@ -86,7 +87,13 @@ class AllocatorForTest : public Allocator {
   /// Allocates all the memory from this object.
   void Exhaust() {
     for (auto* block : allocator_->blocks()) {
-      block->MarkUsed();
+      if (block->IsFree()) {
+        auto result =
+            BlockType::AllocLast(block, Layout(block->InnerSize(), 1));
+        PW_CHECK_OK(result.status());
+        PW_CHECK_UINT_EQ(result.prev(), BlockResult::Prev::kUnchanged);
+        PW_CHECK_UINT_EQ(result.next(), BlockResult::Next::kUnchanged);
+      }
     }
   }
 

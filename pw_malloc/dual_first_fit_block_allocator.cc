@@ -20,10 +20,9 @@
 namespace pw::malloc {
 namespace {
 
-using DualFirstFitBlockAllocator =
-    ::pw::allocator::DualFirstFitBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE,
-                                                PW_MALLOC_BLOCK_POISON_INTERVAL,
-                                                PW_MALLOC_BLOCK_ALIGNMENT>;
+using DualFirstFitBlockAllocator = ::pw::allocator::DualFirstFitBlockAllocator<
+    PW_MALLOC_BLOCK_OFFSET_TYPE,
+    PW_MALLOC_BLOCK_POISON_INTERVAL>;
 
 DualFirstFitBlockAllocator& GetDualFirstFitBlockAllocator() {
   static DualFirstFitBlockAllocator system_allocator;

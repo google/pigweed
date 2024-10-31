@@ -75,13 +75,20 @@ pw_add_library(pw_malloc.best_fit_block_allocator STATIC
     best_fit_block_allocator.cc
 )
 
-pw_add_library(pw_malloc.bucket_block_allocator STATIC
+pw_add_library(pw_malloc.bucket_allocator STATIC
   PUBLIC_DEPS
     pw_malloc.facade
   PRIVATE_DEPS
-    pw_allocator.bucket_block_allocator
+    pw_allocator.bucket_allocator
   SOURCES
-    bucket_block_allocator.cc
+    bucket_allocator.cc
+)
+
+# TODO(b/376730645): Remove deprecated backends.
+pw_add_library(pw_malloc.bucket_block_allocator INTERFACE
+  PUBLIC_DEPS
+    pw_malloc.facade
+    pw_allocator.bucket_allocator
 )
 
 pw_add_library(pw_malloc.dual_first_fit_block_allocator STATIC

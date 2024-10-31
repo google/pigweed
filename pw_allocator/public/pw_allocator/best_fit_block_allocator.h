@@ -28,12 +28,11 @@ namespace pw::allocator {
 /// unused fragments, but may also lead to worse fragmentation as those
 /// fragments are more likely to be too small to be useful to other requests.
 template <typename OffsetType = uintptr_t,
-          size_t kPoisonInterval = PW_ALLOCATOR_BLOCK_POISON_INTERVAL,
-          size_t kAlign = alignof(OffsetType)>
+          uint16_t kPoisonInterval = PW_ALLOCATOR_BLOCK_POISON_INTERVAL>
 class BestFitBlockAllocator
-    : public BlockAllocator<OffsetType, kPoisonInterval, kAlign> {
+    : public BlockAllocator<OffsetType, kPoisonInterval> {
  public:
-  using Base = BlockAllocator<OffsetType, kPoisonInterval, kAlign>;
+  using Base = BlockAllocator<OffsetType, kPoisonInterval>;
   using BlockType = typename Base::BlockType;
 
   /// Constexpr constructor. Callers must explicitly call `Init`.
@@ -53,7 +52,7 @@ class BestFitBlockAllocator
     // Search backwards for the smallest block that can hold this allocation.
     BlockType* best = nullptr;
     for (auto* block : Base::rblocks()) {
-      if (!block->CanAllocLast(layout).ok()) {
+      if (!block->CanAlloc(layout).ok()) {
         continue;
       }
       if (best == nullptr || block->OuterSize() < best->OuterSize()) {

@@ -75,10 +75,10 @@ class GenericBlockAllocator : public Allocator {
 /// another allocator. If this is done, the `Query` method may incorrectly
 /// think pointers returned by that allocator were created by this one, and
 /// report that this allocator can de/reallocate them.
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
+template <typename OffsetType, uint16_t kPoisonInterval>
 class BlockAllocator : public internal::GenericBlockAllocator {
  public:
-  using BlockType = Block<OffsetType, kAlign, kPoisonInterval != 0>;
+  using BlockType = Block<OffsetType>;
   using Range = typename BlockType::Range;
 
   /// Constexpr constructor. Callers must explicitly call `Init`.
@@ -109,10 +109,11 @@ class BlockAllocator : public internal::GenericBlockAllocator {
 
   /// Sets the blocks to be used by this allocator.
   ///
-  /// This method will use the sequence blocks as-is, which must be valid. The
-  /// sequence extends to a block marked "last".
+  /// This method will use the sequence of blocks including and following
+  /// `begin`. These blocks which must be valid.
   ///
   /// @param[in]  begin               The first block for this allocator.
+  ///                                 The block must not have a previous block.
   void Init(BlockType* begin) { return Init(begin, nullptr); }
 
   /// Sets the blocks to be used by this allocator.
@@ -121,8 +122,9 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///
   /// @param[in]  begin   The first block for this allocator.
   /// @param[in]  end     The last block for this allocator. May be null, in
-  ///                     which case the sequence ends with the first block
-  ///                     marked "last".
+  ///                     which the sequence including and following `begin` is
+  ///                     used. If not null, the block must not have a next
+  ///                     block.
   virtual void Init(BlockType* begin, BlockType* end);
 
   /// Returns fragmentation information for the block allocator's memory region.
@@ -165,6 +167,7 @@ class BlockAllocator : public internal::GenericBlockAllocator {
                 BlockType*>>
   Result<BlockPtrType> FromUsableSpace(PtrType ptr) const;
 
+ private:
   /// Indicates that a block will no longer be free.
   ///
   /// Does nothing by default. Derived class may overload to do additional
@@ -210,13 +213,15 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   virtual BlockType* ChooseBlock(Layout layout) = 0;
 
   /// Returns if the previous block exists and is free.
-  bool PrevIsFree(const BlockType* block) const {
-    return block->Prev() != nullptr && !block->Prev()->Used();
+  static bool PrevIsFree(const BlockType* block) {
+    auto* prev = block->Prev();
+    return prev != nullptr && prev->IsFree();
   }
 
   /// Returns if the next block exists and is free.
-  bool NextIsFree(const BlockType* block) const {
-    return !block->Last() && !block->Next()->Used();
+  static bool NextIsFree(const BlockType* block) {
+    auto* next = block->Next();
+    return next != nullptr && next->IsFree();
   }
 
   /// Ensures the pointer to the last block is correct after the given block is
@@ -232,40 +237,38 @@ class BlockAllocator : public internal::GenericBlockAllocator {
 
 // Template method implementations
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-typename BlockAllocator<OffsetType, kPoisonInterval, kAlign>::Range
-BlockAllocator<OffsetType, kPoisonInterval, kAlign>::blocks() const {
+template <typename OffsetType, uint16_t kPoisonInterval>
+typename BlockAllocator<OffsetType, kPoisonInterval>::Range
+BlockAllocator<OffsetType, kPoisonInterval>::blocks() const {
   return Range(first_);
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-typename BlockAllocator<OffsetType, kPoisonInterval, kAlign>::ReverseRange
-BlockAllocator<OffsetType, kPoisonInterval, kAlign>::rblocks() {
-  while (last_ != nullptr && !last_->Last()) {
-    last_ = last_->Next();
-  }
+template <typename OffsetType, uint16_t kPoisonInterval>
+typename BlockAllocator<OffsetType, kPoisonInterval>::ReverseRange
+BlockAllocator<OffsetType, kPoisonInterval>::rblocks() {
+  PW_ASSERT(last_ == nullptr || last_->Next() == nullptr);
   return ReverseRange(last_);
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::Init(
-    ByteSpan region) {
+template <typename OffsetType, uint16_t kPoisonInterval>
+void BlockAllocator<OffsetType, kPoisonInterval>::Init(ByteSpan region) {
   Result<BlockType*> result = BlockType::Init(region);
   Init(*result, nullptr);
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::Init(BlockType* begin,
-                                                               BlockType* end) {
+template <typename OffsetType, uint16_t kPoisonInterval>
+void BlockAllocator<OffsetType, kPoisonInterval>::Init(BlockType* begin,
+                                                       BlockType* end) {
   PW_ASSERT(begin != nullptr);
+  PW_ASSERT(begin->Prev() == nullptr);
   if (end == nullptr) {
     end = begin;
-    while (!end->Last()) {
-      end = end->Next();
+    for (BlockType* next = end->Next(); next != nullptr; next = end->Next()) {
+      end = next;
     }
   } else {
-    PW_ASSERT(begin < end);
-    end->MarkLast();
+    PW_ASSERT(begin <= end);
+    PW_ASSERT(end->Next() == nullptr);
   }
   first_ = begin;
   last_ = end;
@@ -274,35 +277,35 @@ void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::Init(BlockType* begin,
   }
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::Reset() {
+template <typename OffsetType, uint16_t kPoisonInterval>
+void BlockAllocator<OffsetType, kPoisonInterval>::Reset() {
   for (auto* block : blocks()) {
-    if (block->Used()) {
+    if (!block->IsFree()) {
       CrashOnAllocated(block);
     }
   }
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-void* BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoAllocate(
-    Layout layout) {
+template <typename OffsetType, uint16_t kPoisonInterval>
+void* BlockAllocator<OffsetType, kPoisonInterval>::DoAllocate(Layout layout) {
+  PW_CHECK_PTR_EQ(last_->Next(), nullptr);
   BlockType* block = ChooseBlock(layout);
   if (block == nullptr) {
     return nullptr;
   }
   UpdateLast(block);
+  PW_CHECK_PTR_LE(block, last_);
   return block->UsableSpace();
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoDeallocate(
-    void* ptr) {
+template <typename OffsetType, uint16_t kPoisonInterval>
+void BlockAllocator<OffsetType, kPoisonInterval>::DoDeallocate(void* ptr) {
   auto result = FromUsableSpace(ptr);
   if (!result.ok()) {
     CrashOnInvalidFree(ptr);
   }
   BlockType* block = *result;
-  if (!block->Used()) {
+  if (block->IsFree()) {
     CrashOnDoubleFree(block);
   }
 
@@ -329,9 +332,9 @@ void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoDeallocate(
   RecycleBlock(block);
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-bool BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoResize(
-    void* ptr, size_t new_size) {
+template <typename OffsetType, uint16_t kPoisonInterval>
+bool BlockAllocator<OffsetType, kPoisonInterval>::DoResize(void* ptr,
+                                                           size_t new_size) {
   auto result = FromUsableSpace(ptr);
   if (!result.ok()) {
     return false;
@@ -355,12 +358,12 @@ bool BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoResize(
   return true;
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-Result<Layout> BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetInfo(
+template <typename OffsetType, uint16_t kPoisonInterval>
+Result<Layout> BlockAllocator<OffsetType, kPoisonInterval>::DoGetInfo(
     InfoType info_type, const void* ptr) const {
   // Handle types not related to a block first.
   if (info_type == InfoType::kCapacity) {
-    return Layout(capacity_, kAlign);
+    return Layout(capacity_);
   }
   // Get a block from the given pointer.
   auto result = FromUsableSpace(ptr);
@@ -368,7 +371,7 @@ Result<Layout> BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetInfo(
     return Status::NotFound();
   }
   const BlockType* block = result.value();
-  if (!block->Used()) {
+  if (block->IsFree()) {
     return Status::FailedPrecondition();
   }
   switch (info_type) {
@@ -386,39 +389,36 @@ Result<Layout> BlockAllocator<OffsetType, kPoisonInterval, kAlign>::DoGetInfo(
   }
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
+template <typename OffsetType, uint16_t kPoisonInterval>
 Fragmentation
-BlockAllocator<OffsetType, kPoisonInterval, kAlign>::MeasureFragmentation()
-    const {
+BlockAllocator<OffsetType, kPoisonInterval>::MeasureFragmentation() const {
   Fragmentation fragmentation;
   for (auto block : blocks()) {
-    if (!block->Used()) {
+    if (block->IsFree()) {
       fragmentation.AddFragment(block->InnerSize() / BlockType::kAlignment);
     }
   }
   return fragmentation;
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
+template <typename OffsetType, uint16_t kPoisonInterval>
 template <typename PtrType, typename BlockPtrType>
 Result<BlockPtrType>
-BlockAllocator<OffsetType, kPoisonInterval, kAlign>::FromUsableSpace(
+BlockAllocator<OffsetType, kPoisonInterval>::FromUsableSpace(
     PtrType ptr) const {
   if (ptr < first_->UsableSpace() || last_->UsableSpace() < ptr) {
     return Status::OutOfRange();
   }
-  BlockPtrType block = BlockType::FromUsableSpace(ptr);
-  block->CrashIfInvalid();
-  return block;
+  return BlockType::FromUsableSpace(ptr);
 }
 
-template <typename OffsetType, uint16_t kPoisonInterval, uint16_t kAlign>
-void BlockAllocator<OffsetType, kPoisonInterval, kAlign>::UpdateLast(
-    BlockType* block) {
-  if (block->Last()) {
+template <typename OffsetType, uint16_t kPoisonInterval>
+void BlockAllocator<OffsetType, kPoisonInterval>::UpdateLast(BlockType* block) {
+  BlockType* next = block->Next();
+  if (next == nullptr) {
     last_ = block;
-  } else if (block->Next()->Last()) {
-    last_ = block->Next();
+  } else if (next->Next() == nullptr) {
+    last_ = next;
   }
 }
 

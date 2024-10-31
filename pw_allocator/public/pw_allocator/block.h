@@ -22,6 +22,7 @@
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/buffer.h"
 #include "pw_assert/check.h"
+#include "pw_assert/internal/check_impl.h"
 #include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
 #include "pw_preprocessor/compiler.h"
@@ -30,6 +31,11 @@
 #include "pw_status/try.h"
 
 namespace pw::allocator {
+
+// Forward declaration for friending.
+template <typename, uint16_t>
+class BlockAllocator;
+
 namespace internal {
 
 // Types of corrupted blocks, and functions to crash with an error message
@@ -164,16 +170,13 @@ class _PW_STATUS_NO_DISCARD BlockResult {
 /// @tparam   kAlign      Sets the overall alignment for blocks. Minimum is
 ///                       `alignof(OffsetType)` (the default). Larger values can
 ///                       address more memory, but consume greater overhead.
-/// @tparam   kCanPoison  Indicates whether to enable poisoning free blocks.
-template <typename OffsetType_ = uintptr_t,
-          size_t kAlign = alignof(OffsetType_),
-          bool kCanPoison = false>
+template <typename OffsetType_ = uintptr_t>
 class Block {
  public:
   using OffsetType = OffsetType_;
   static_assert(std::is_unsigned_v<OffsetType>, "offset type must be unsigned");
 
-  static constexpr size_t kAlignment = std::max(kAlign, alignof(OffsetType));
+  static constexpr size_t kAlignment = alignof(OffsetType);
   static constexpr size_t kBlockOverhead = AlignUp(sizeof(Block), kAlignment);
 
   // No copy or move.
@@ -196,7 +199,7 @@ class Block {
   ///    ``OffsetType``.
   ///
   /// @endrst
-  static Result<Block*> Init(ByteSpan region);
+  static Result<Block*> Init(ByteSpan region, Block* next = nullptr);
 
   /// @returns  A pointer to a `Block`, given a pointer to the start of the
   ///           usable space inside the block.
@@ -288,7 +291,7 @@ class Block {
   ///    new block.
   ///
   /// @endrst
-  StatusWithSize CanAllocLast(Layout layout) const;
+  StatusWithSize CanAlloc(Layout layout) const;
 
   /// Splits an aligned block from the end of the block, and marks it as used.
   ///
@@ -350,66 +353,26 @@ class Block {
   /// @endrst
   static BlockResult Resize(Block*& block, size_t new_inner_size);
 
-  /// Fetches the block immediately after this one.
-  ///
-  /// For performance, this always returns a block pointer, even if the returned
-  /// pointer is invalid. The pointer is valid if and only if `Last()` is false.
-  ///
-  /// Typically, after calling `Init` callers may save a pointer past the end of
-  /// the list using `Next()`. This makes it easy to subsequently iterate over
-  /// the list:
-  /// @code{.cpp}
-  ///   auto result = Block<>::Init(byte_span);
-  ///   Block<>* begin = *result;
-  ///   Block<>* end = begin->Next();
-  ///   ...
-  ///   for (auto* block = begin; block != end; block = block->Next()) {
-  ///     // Do something which each block.
-  ///   }
-  /// @endcode
+  /// @returns The block immediately after this one, or a null pointer if this
+  /// is the last block.
   Block* Next() const;
-
-  /// @copydoc `Next`.
-  static Block* NextBlock(const Block* block) {
-    return block == nullptr ? nullptr : block->Next();
-  }
 
   /// @returns The block immediately before this one, or a null pointer if this
   /// is the first block.
   Block* Prev() const;
 
-  /// @copydoc `Prev`.
-  static Block* PrevBlock(const Block* block) {
-    return block == nullptr ? nullptr : block->Prev();
-  }
-
   /// Returns the current alignment of a block.
-  size_t Alignment() const { return Used() ? info_.alignment : kAlignment; }
+  size_t Alignment() const { return IsFree() ? kAlignment : info_.alignment; }
 
-  /// Indicates whether the block is in use.
+  /// Indicates whether the block is free or is in use.
   ///
-  /// @returns `true` if the block is in use or `false` if not.
+  /// @returns `true` if the block is free or `false` if it is in use.
+  bool IsFree() const { return !info_.used; }
+
+  /// Indicates whether the block is in use is free.
+  ///
+  /// This method will eventually be deprecated. Prefer `IsFree`.
   bool Used() const { return info_.used; }
-
-  /// Indicates whether this block is the last block or not (i.e. whether
-  /// `Next()` points to a valid block or not). This is needed because
-  /// `Next()` points to the end of this block, whether there is a valid
-  /// block there or not.
-  ///
-  /// @returns `true` is this is the last block or `false` if not.
-  bool Last() const { return info_.last; }
-
-  /// Marks this block as in use.
-  void MarkUsed() { info_.used = 1; }
-
-  /// Marks this block as free.
-  void MarkFree() { info_.used = 0; }
-
-  /// Marks this block as the last one in the chain.
-  void MarkLast() { info_.last = 1; }
-
-  /// Clears the last bit from this block.
-  void ClearLast() { info_.last = 0; }
 
   /// Poisons the block's usable space.
   ///
@@ -433,13 +396,13 @@ class Block {
     return CheckStatus() == internal::BlockStatus::kValid;
   }
 
+ private:
+  static constexpr uint8_t kPoisonByte = 0xf7;
+
   /// @brief Crashes with an informtaional message if a block is invalid.
   ///
   /// Does nothing if the block is valid.
   void CrashIfInvalid() const;
-
- private:
-  static constexpr uint8_t kPoisonByte = 0xf7;
 
   /// Consumes the block and returns as a span of bytes.
   static ByteSpan AsBytes(Block*&& block);
@@ -539,7 +502,9 @@ class Block {
    public:
     Iterator(Block* block) : block_(block) {}
     Iterator& operator++() {
-      block_ = Block::NextBlock(block_);
+      if (block_ != nullptr) {
+        block_ = block_->Next();
+      }
       return *this;
     }
     bool operator!=(const Iterator& other) { return block_ != other.block_; }
@@ -557,7 +522,9 @@ class Block {
    public:
     ReverseIterator(Block* block) : block_(block) {}
     ReverseIterator& operator++() {
-      block_ = Block::PrevBlock(block_);
+      if (block_ != nullptr) {
+        block_ = block_->Prev();
+      }
       return *this;
     }
     bool operator!=(const ReverseIterator& other) {
@@ -615,13 +582,13 @@ class Block {
     ReverseIterator begin_;
     ReverseIterator end_;
   };
-} __attribute__((packed, aligned(kAlign)));
+} __attribute__((packed));
 
 // Public template method implementations.
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-Result<Block<OffsetType, kAlign, kCanPoison>*>
-Block<OffsetType, kAlign, kCanPoison>::Init(ByteSpan region) {
+template <typename OffsetType>
+Result<Block<OffsetType>*> Block<OffsetType>::Init(ByteSpan region,
+                                                   Block* next) {
   Result<ByteSpan> result = GetAlignedSubspan(region, kAlignment);
   if (!result.ok()) {
     return result.status();
@@ -634,18 +601,24 @@ Block<OffsetType, kAlign, kCanPoison>::Init(ByteSpan region) {
     return Status::OutOfRange();
   }
   Block* block = AsBlock(0, region);
-  block->MarkLast();
+  if (next == nullptr) {
+    block->info_.last = 1;
+  } else {
+    block->info_.last = 0;
+    next->prev_ = block->OuterSize() / kAlignment;
+    PW_ASSERT(next == block->Next());
+    block->CrashIfInvalid();
+  }
   return block;
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-BlockResult Block<OffsetType, kAlign, kCanPoison>::AllocFirst(Block*& block,
-                                                              Layout layout) {
+template <typename OffsetType>
+BlockResult Block<OffsetType>::AllocFirst(Block*& block, Layout layout) {
   if (block == nullptr || layout.size() == 0) {
     return BlockResult::InvalidArgument();
   }
   block->CrashIfInvalid();
-  if (block->Used()) {
+  if (!block->IsFree()) {
     return BlockResult::FailedPrecondition();
   }
   Block* prev = block->Prev();
@@ -686,22 +659,21 @@ BlockResult Block<OffsetType, kAlign, kCanPoison>::AllocFirst(Block*& block,
     next_result = BlockResult::Next::kSplitNew;
   }
 
-  block->MarkUsed();
+  block->info_.used = 1;
   block->info_.alignment = alignment;
   block->padding_ = block->InnerSize() - layout.size();
   return BlockResult(prev_result, next_result);
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-StatusWithSize Block<OffsetType, kAlign, kCanPoison>::CanAllocLast(
-    Layout layout) const {
+template <typename OffsetType>
+StatusWithSize Block<OffsetType>::CanAlloc(Layout layout) const {
+  CrashIfInvalid();
+  if (!IsFree()) {
+    return StatusWithSize::FailedPrecondition();
+  }
   if (layout.size() == 0) {
     return StatusWithSize::InvalidArgument();
   }
-  if (Used()) {
-    return StatusWithSize::FailedPrecondition();
-  }
-  CrashIfInvalid();
   // Find the last address that is aligned and is followed by enough space for
   // block overhead and the requested size.
   if (InnerSize() < layout.size()) {
@@ -731,27 +703,26 @@ StatusWithSize Block<OffsetType, kAlign, kCanPoison>::CanAllocLast(
   return StatusWithSize::ResourceExhausted();
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-BlockResult Block<OffsetType, kAlign, kCanPoison>::AllocLast(Block*& block,
-                                                             Layout layout) {
-  if (block == nullptr) {
+template <typename OffsetType>
+BlockResult Block<OffsetType>::AllocLast(Block*& block, Layout layout) {
+  if (block == nullptr || layout.size() == 0) {
     return BlockResult::InvalidArgument();
   }
-  StatusWithSize pad = block->CanAllocLast(layout);
+  StatusWithSize pad = block->CanAlloc(layout);
   if (!pad.ok()) {
     return BlockResult(pad.status());
   }
   BlockResult::Prev prev_result = ShiftBlock(block, pad.size());
 
-  block->MarkUsed();
+  block->info_.used = 1;
   block->info_.alignment = layout.alignment();
   block->padding_ = block->InnerSize() - layout.size();
   return BlockResult(prev_result);
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-BlockResult::Prev Block<OffsetType, kAlign, kCanPoison>::ShiftBlock(
-    Block*& block, size_t pad_size) {
+template <typename OffsetType>
+BlockResult::Prev Block<OffsetType>::ShiftBlock(Block*& block,
+                                                size_t pad_size) {
   if (pad_size == 0) {
     return BlockResult::Prev::kUnchanged;
   }
@@ -775,19 +746,19 @@ BlockResult::Prev Block<OffsetType, kAlign, kCanPoison>::ShiftBlock(
   }
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-void Block<OffsetType, kAlign, kCanPoison>::Free(Block*& block) {
+template <typename OffsetType>
+void Block<OffsetType>::Free(Block*& block) {
   if (block == nullptr) {
     return;
   }
-  block->MarkFree();
+  block->info_.used = 0;
   MergeNext(block);
   Block* prev = block->Prev();
   if (prev == nullptr) {
     // First block, nothing prior to merge with.
     return;
   }
-  if (!prev->Used()) {
+  if (prev->IsFree()) {
     // Previous block is free; merge with it.
     MergeNext(prev);
     block = prev;
@@ -802,13 +773,12 @@ void Block<OffsetType, kAlign, kCanPoison>::Free(Block*& block) {
   }
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-BlockResult Block<OffsetType, kAlign, kCanPoison>::Resize(
-    Block*& block, size_t new_inner_size) {
+template <typename OffsetType>
+BlockResult Block<OffsetType>::Resize(Block*& block, size_t new_inner_size) {
   if (block == nullptr) {
     return BlockResult::InvalidArgument();
   }
-  if (!block->Used()) {
+  if (block->IsFree()) {
     return BlockResult::FailedPrecondition();
   }
   size_t requested_inner_size = new_inner_size;
@@ -828,7 +798,7 @@ BlockResult Block<OffsetType, kAlign, kCanPoison>::Resize(
 
   // Treat the block as free and try to combine it with the next block. At most
   // one free block is expected to follow this block.
-  block->MarkFree();
+  block->info_.used = 0;
   BlockResult::Next result = MergeNext(block) ? BlockResult::Next::kMerged
                                               : BlockResult::Next::kUnchanged;
 
@@ -854,24 +824,23 @@ BlockResult Block<OffsetType, kAlign, kCanPoison>::Resize(
     // Restore the original block on failure.
     Split(block, old_inner_size);
   }
-  block->MarkUsed();
+  block->info_.used = 1;
   block->info_.alignment = alignment;
   block->padding_ = padding;
   return status.ok() ? BlockResult(result) : BlockResult(status);
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-Block<OffsetType, kAlign, kCanPoison>*
-Block<OffsetType, kAlign, kCanPoison>::Split(Block*& block,
-                                             size_t new_inner_size) {
+template <typename OffsetType>
+Block<OffsetType>* Block<OffsetType>::Split(Block*& block,
+                                            size_t new_inner_size) {
   size_t prev_outer_size = block->prev_ * kAlignment;
   size_t outer_size1 = new_inner_size + kBlockOverhead;
-  bool is_last = block->Last();
+  bool is_last = block->info_.last;
   ByteSpan bytes = AsBytes(std::move(block));
   Block* block1 = AsBlock(prev_outer_size, bytes.subspan(0, outer_size1));
   Block* block2 = AsBlock(outer_size1, bytes.subspan(outer_size1));
   if (is_last) {
-    block2->MarkLast();
+    block2->info_.last = 1;
   } else {
     block2->Next()->prev_ = block2->next_;
   }
@@ -879,53 +848,54 @@ Block<OffsetType, kAlign, kCanPoison>::Split(Block*& block,
   return block2;
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-bool Block<OffsetType, kAlign, kCanPoison>::MergeNext(Block*& block) {
-  if (block->Last()) {
+template <typename OffsetType>
+bool Block<OffsetType>::MergeNext(Block*& block) {
+  if (block->info_.last) {
     return false;
   }
   Block* next = block->Next();
-  if (block->Used() || next->Used()) {
+  if (!block->IsFree() || !next->IsFree()) {
     return false;
   }
   size_t prev_outer_size = block->prev_ * kAlignment;
-  bool is_last = next->Last();
+  bool is_last = next->info_.last;
   ByteSpan prev_bytes = AsBytes(std::move(block));
   ByteSpan next_bytes = AsBytes(std::move(next));
   size_t outer_size = prev_bytes.size() + next_bytes.size();
   std::byte* merged = ::new (prev_bytes.data()) std::byte[outer_size];
   block = AsBlock(prev_outer_size, ByteSpan(merged, outer_size));
   if (is_last) {
-    block->MarkLast();
+    block->info_.last = 1;
   } else {
     block->Next()->prev_ = block->next_;
   }
   return true;
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-Block<OffsetType, kAlign, kCanPoison>*
-Block<OffsetType, kAlign, kCanPoison>::Next() const {
-  uintptr_t addr = Last() ? 0 : reinterpret_cast<uintptr_t>(this) + OuterSize();
+template <typename OffsetType>
+Block<OffsetType>* Block<OffsetType>::Next() const {
+  if (info_.last) {
+    return nullptr;
+  }
   // See the note in `FromUsableSpace` about memory laundering.
+  uintptr_t addr = reinterpret_cast<uintptr_t>(this) + OuterSize();
   return std::launder(reinterpret_cast<Block*>(addr));
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-Block<OffsetType, kAlign, kCanPoison>*
-Block<OffsetType, kAlign, kCanPoison>::Prev() const {
-  uintptr_t addr =
-      (prev_ == 0) ? 0
-                   : reinterpret_cast<uintptr_t>(this) - (prev_ * kAlignment);
+template <typename OffsetType>
+Block<OffsetType>* Block<OffsetType>::Prev() const {
+  if (prev_ == 0) {
+    return nullptr;
+  }
   // See the note in `FromUsableSpace` about memory laundering.
+  uintptr_t addr = reinterpret_cast<uintptr_t>(this) - (prev_ * kAlignment);
   return std::launder(reinterpret_cast<Block*>(addr));
 }
 
 // Private template method implementations.
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-Block<OffsetType, kAlign, kCanPoison>::Block(size_t prev_outer_size,
-                                             size_t outer_size) {
+template <typename OffsetType>
+Block<OffsetType>::Block(size_t prev_outer_size, size_t outer_size) {
   prev_ = prev_outer_size / kAlignment;
   next_ = outer_size / kAlignment;
   info_.used = 0;
@@ -934,65 +904,59 @@ Block<OffsetType, kAlign, kCanPoison>::Block(size_t prev_outer_size,
   info_.alignment = kAlignment;
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-ByteSpan Block<OffsetType, kAlign, kCanPoison>::AsBytes(Block*&& block) {
+template <typename OffsetType>
+ByteSpan Block<OffsetType>::AsBytes(Block*&& block) {
   size_t block_size = block->OuterSize();
   std::byte* bytes = ::new (std::move(block)) std::byte[block_size];
   return {bytes, block_size};
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-Block<OffsetType, kAlign, kCanPoison>*
-Block<OffsetType, kAlign, kCanPoison>::AsBlock(size_t prev_outer_size,
-                                               ByteSpan bytes) {
+template <typename OffsetType>
+Block<OffsetType>* Block<OffsetType>::AsBlock(size_t prev_outer_size,
+                                              ByteSpan bytes) {
   return ::new (bytes.data()) Block(prev_outer_size, bytes.size());
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-void Block<OffsetType, kAlign, kCanPoison>::Poison(bool should_poison) {
-  if constexpr (kCanPoison) {
-    if (!Used() && should_poison) {
-      std::memset(UsableSpace(), kPoisonByte, InnerSize());
-      info_.poisoned = true;
-    }
+template <typename OffsetType>
+void Block<OffsetType>::Poison(bool should_poison) {
+  if (IsFree() && should_poison) {
+    std::memset(UsableSpace(), kPoisonByte, InnerSize());
+    info_.poisoned = true;
   }
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-bool Block<OffsetType, kAlign, kCanPoison>::CheckPoison() const {
-  if constexpr (kCanPoison) {
-    if (!info_.poisoned) {
-      return true;
-    }
-    const std::byte* begin = UsableSpace();
-    return std::all_of(begin, begin + InnerSize(), [](std::byte b) {
-      return static_cast<uint8_t>(b) == kPoisonByte;
-    });
-  } else {
+template <typename OffsetType>
+bool Block<OffsetType>::CheckPoison() const {
+  if (!info_.poisoned) {
     return true;
   }
+  const std::byte* begin = UsableSpace();
+  return std::all_of(begin, begin + InnerSize(), [](std::byte b) {
+    return static_cast<uint8_t>(b) == kPoisonByte;
+  });
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-internal::BlockStatus Block<OffsetType, kAlign, kCanPoison>::CheckStatus()
-    const {
+template <typename OffsetType>
+internal::BlockStatus Block<OffsetType>::CheckStatus() const {
   if (reinterpret_cast<uintptr_t>(this) % kAlignment != 0) {
     return internal::BlockStatus::kMisaligned;
   }
-  if (!Last() && (this >= Next() || this != Next()->Prev())) {
+  Block* next = Next();
+  if (next != nullptr && (this >= next || this != next->Prev())) {
     return internal::BlockStatus::kNextMismatched;
   }
-  if (Prev() && (this <= Prev() || this != Prev()->Next())) {
+  Block* prev = Prev();
+  if (prev != nullptr && (this <= prev || this != prev->Next())) {
     return internal::BlockStatus::kPrevMismatched;
   }
-  if (!Used() && !CheckPoison()) {
+  if (IsFree() && !CheckPoison()) {
     return internal::BlockStatus::kPoisonCorrupted;
   }
   return internal::BlockStatus::kValid;
 }
 
-template <typename OffsetType, size_t kAlign, bool kCanPoison>
-void Block<OffsetType, kAlign, kCanPoison>::CrashIfInvalid() const {
+template <typename OffsetType>
+void Block<OffsetType>::CrashIfInvalid() const {
   uintptr_t addr = reinterpret_cast<uintptr_t>(this);
   switch (CheckStatus()) {
     case internal::BlockStatus::kValid:

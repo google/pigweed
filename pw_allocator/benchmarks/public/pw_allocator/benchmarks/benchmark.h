@@ -153,7 +153,7 @@ void BlockAllocatorBenchmark<AllocatorType>::IterateOverBlocks(
     internal::BenchmarkSample& data) const {
   data.largest = 0;
   for (const auto* block : allocator_.blocks()) {
-    if (!block->Used()) {
+    if (block->IsFree()) {
       data.largest = std::max(data.largest, block->InnerSize());
     }
   }

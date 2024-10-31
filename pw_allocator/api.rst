@@ -136,9 +136,9 @@ DualFirstFitBlockAllocator
 
 .. _module-pw_allocator-api-bucket_block_allocator:
 
-BucketBlockAllocator
-====================
-.. doxygenclass:: pw::allocator::BucketBlockAllocator
+BucketAllocator
+===============
+.. doxygenclass:: pw::allocator::BucketAllocator
    :members:
 
 .. _module-pw_allocator-api-buddy_allocator:

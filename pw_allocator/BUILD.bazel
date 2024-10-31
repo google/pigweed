@@ -136,9 +136,9 @@ cc_library(
 )
 
 cc_library(
-    name = "bucket_block_allocator",
+    name = "bucket_allocator",
     hdrs = [
-        "public/pw_allocator/bucket_block_allocator.h",
+        "public/pw_allocator/bucket_allocator.h",
     ],
     includes = ["public"],
     deps = [
@@ -146,6 +146,13 @@ cc_library(
         ":bucket",
         "//pw_status",
     ],
+)
+
+cc_library(
+    name = "bucket_block_allocator",
+    hdrs = ["public/pw_allocator/bucket_block_allocator.h"],
+    includes = ["public"],
+    deps = [":bucket_allocator"],
 )
 
 cc_library(
@@ -292,7 +299,7 @@ cc_library(
     includes = ["public"],
     deps = [
         ":block",
-        ":bucket_block_allocator",
+        ":bucket_allocator",
         "//pw_assert",
         "//pw_bytes",
         "//pw_preprocessor",
@@ -437,6 +444,7 @@ cc_library(
         "//pw_assert",
         "//pw_bytes:alignment",
         "//pw_status",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 
@@ -556,11 +564,11 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "bucket_block_allocator_test",
-    srcs = ["bucket_block_allocator_test.cc"],
+    name = "bucket_allocator_test",
+    srcs = ["bucket_allocator_test.cc"],
     deps = [
         ":block_allocator_testing",
-        ":bucket_block_allocator",
+        ":bucket_allocator",
         "//pw_unit_test",
     ],
 )

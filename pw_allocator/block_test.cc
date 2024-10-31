@@ -69,14 +69,6 @@ class SmallOffsetBlockTest : public BlockTest<SmallOffsetBlock> {
   using BlockType = SmallOffsetBlock;
 };
 
-// A block type with moderate overhead and support for poisoning.
-using PoisonedBlock = ::pw::allocator::Block<uint32_t, alignof(uint32_t), true>;
-
-class PoisonedBlockTest : public BlockTest<PoisonedBlock> {
- protected:
-  using BlockType = PoisonedBlock;
-};
-
 /// Returns the smallest offset into the given memory region which can be
 /// preceded by a valid block, and at which a block would have properly aligned
 /// usable space of the given size.
@@ -113,7 +105,7 @@ void CheckAllReachableBlock(BlockType* block) {
     block = prev;
   }
   for (; block != nullptr; block = block->Next()) {
-    block->CrashIfInvalid();
+    ASSERT_TRUE(block->IsValid());
   }
 }
 
@@ -125,17 +117,16 @@ void CheckAllReachableBlock(BlockType* block) {
 //
 // These macros are not supported by the light framework however, so this macro
 // provides a custom implementation that works just for these types.
-#define TEST_FOR_EACH_BLOCK_TYPE(TestCase)                                 \
-  template <typename BlockType>                                            \
-  void TestCase(pw::ByteSpan bytes_);                                      \
-  TEST_F(LargeOffsetBlockTest, TestCase) {                                 \
-    TestCase<LargeOffsetBlock>(bytes_);                                    \
-  }                                                                        \
-  TEST_F(SmallOffsetBlockTest, TestCase) {                                 \
-    TestCase<SmallOffsetBlock>(bytes_);                                    \
-  }                                                                        \
-  TEST_F(PoisonedBlockTest, TestCase) { TestCase<PoisonedBlock>(bytes_); } \
-  template <typename BlockType>                                            \
+#define TEST_FOR_EACH_BLOCK_TYPE(TestCase) \
+  template <typename BlockType>            \
+  void TestCase(pw::ByteSpan bytes_);      \
+  TEST_F(LargeOffsetBlockTest, TestCase) { \
+    TestCase<LargeOffsetBlock>(bytes_);    \
+  }                                        \
+  TEST_F(SmallOffsetBlockTest, TestCase) { \
+    TestCase<SmallOffsetBlock>(bytes_);    \
+  }                                        \
+  template <typename BlockType>            \
   void TestCase([[maybe_unused]] pw::ByteSpan bytes_)
 
 // Unit tests.
@@ -149,7 +140,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanCreateSingleAlignedBlock) {
   EXPECT_EQ(block->InnerSize(), kN - BlockType::kBlockOverhead);
   EXPECT_EQ(block->Prev(), nullptr);
   EXPECT_EQ(block->Next(), nullptr);
-  EXPECT_FALSE(block->Used());
+  EXPECT_TRUE(block->IsFree());
   EXPECT_EQ(block->Next(), nullptr);
   CheckAllReachableBlock(block);
 }
@@ -254,7 +245,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_Exact_FirstBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -285,7 +276,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_Exact_SubsequentBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -317,7 +308,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewNext_FirstBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -349,7 +340,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewNext_SubsequentBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -383,7 +374,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewPrev_FirstBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -417,7 +408,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewPrev_SubsequentBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -453,7 +444,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewPrevAndNewNext_FirstBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -486,7 +477,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewPrevAndNewNext_SubsequentBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -561,7 +552,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_ShiftToPrev_SubsequentBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
 
   // Verify that freeing the subsequent block does not reclaim bytes that were
   // resized.
@@ -632,7 +623,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_ShiftToPrevAndNewNext_SubsequentBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -656,7 +647,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLast_ZeroSize) {
       });
 
   // Check if we expect this to succeed.
-  auto can_alloc_last = block->CanAllocLast(kLayout);
+  auto can_alloc_last = block->CanAlloc(kLayout);
   EXPECT_EQ(can_alloc_last.status(), pw::Status::InvalidArgument());
 
   // Attempt and fail to allocate from the front of the block.
@@ -674,7 +665,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLast_Used) {
       });
 
   // Check if we expect this to succeed.
-  auto can_alloc_last = block->CanAllocLast(kLayout);
+  auto can_alloc_last = block->CanAlloc(kLayout);
   EXPECT_EQ(can_alloc_last.status(), pw::Status::FailedPrecondition());
 
   // Attempt and fail to allocate from the front of the block.
@@ -697,7 +688,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLast_TooSmall) {
       });
 
   // Check if we expect this to succeed.
-  auto can_alloc_last = block->CanAllocLast(kLayout);
+  auto can_alloc_last = block->CanAlloc(kLayout);
   EXPECT_EQ(can_alloc_last.status(), pw::Status::OutOfRange());
 
   // Attempt and fail to allocate from the front of the block.
@@ -724,7 +715,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_Exact_FirstBlock) {
       });
 
   // Check if we expect this to succeed.
-  auto can_alloc_last = block->CanAllocLast(kLayout);
+  auto can_alloc_last = block->CanAlloc(kLayout);
   ASSERT_EQ(can_alloc_last.status(), pw::OkStatus());
   EXPECT_EQ(can_alloc_last.size(), 0U);
 
@@ -737,7 +728,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_Exact_FirstBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -760,7 +751,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_Exact_SubsequentBlock) {
   block = block->Next();
 
   // Check if we expect this to succeed.
-  auto can_alloc_last = block->CanAllocLast(kLayout);
+  auto can_alloc_last = block->CanAlloc(kLayout);
   ASSERT_EQ(can_alloc_last.status(), pw::OkStatus());
   EXPECT_EQ(can_alloc_last.size(), 0U);
 
@@ -773,7 +764,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_Exact_SubsequentBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -799,7 +790,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_NewPrev_FirstBlock) {
       });
 
   // Check if we expect this to succeed.
-  auto can_alloc_last = block->CanAllocLast(kLayout);
+  auto can_alloc_last = block->CanAlloc(kLayout);
   ASSERT_EQ(can_alloc_last.status(), pw::OkStatus());
   EXPECT_EQ(can_alloc_last.size(), GetOuterSize<BlockType>(1));
 
@@ -812,7 +803,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_NewPrev_FirstBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -838,7 +829,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_NewPrev_SubsequentBlock) {
   block = block->Next();
 
   // Check if we expect this to succeed.
-  auto can_alloc_last = block->CanAllocLast(kLayout);
+  auto can_alloc_last = block->CanAlloc(kLayout);
   ASSERT_EQ(can_alloc_last.status(), pw::OkStatus());
   EXPECT_EQ(can_alloc_last.size(), GetOuterSize<BlockType>(1));
 
@@ -851,7 +842,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_NewPrev_SubsequentBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
 }
 
@@ -877,7 +868,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLast_ShiftToPrev_FirstBlock) {
       });
 
   // Check if we expect this to succeed.
-  auto can_alloc_last = block->CanAllocLast(kLayout);
+  auto can_alloc_last = block->CanAlloc(kLayout);
   EXPECT_EQ(can_alloc_last.status(), pw::Status::ResourceExhausted());
 
   // Attempt and fail to allocate from the back of the block.
@@ -908,7 +899,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_ShiftToPrev_SubsequentBlock) {
   block = block->Next();
 
   // Check if we expect this to succeed.
-  auto can_alloc_last = block->CanAllocLast(kLayout);
+  auto can_alloc_last = block->CanAlloc(kLayout);
   ASSERT_EQ(can_alloc_last.status(), pw::OkStatus());
   EXPECT_EQ(can_alloc_last.size(), BlockType::kAlignment);
 
@@ -921,8 +912,57 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_ShiftToPrev_SubsequentBlock) {
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
-  EXPECT_TRUE(block->Used());
+  EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
+}
+
+TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastIfTooSmallForAlignment) {
+  constexpr Layout kLayout(256, kAlign);
+  constexpr size_t kOuterSize = BlockType::kBlockOverhead + kLayout.size();
+
+  // Make sure the block's usable space is not aligned.
+  size_t outer_size = GetFirstAlignedOffset<BlockType>(bytes_, kLayout) + 1;
+  auto* block = Preallocate<BlockType>(
+      bytes_,
+      {
+          {outer_size, Preallocation::kUsed},
+          {kOuterSize, Preallocation::kFree},
+          {Preallocation::kSizeRemaining, Preallocation::kUsed},
+      });
+  block = block->Next();
+
+  // Cannot allocate without room to a split a block for alignment.
+  auto result = BlockType::AllocLast(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::ResourceExhausted());
+}
+
+TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastFromNull) {
+  BlockType* block = nullptr;
+  constexpr Layout kLayout(1, 1);
+  auto result = BlockType::AllocLast(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::InvalidArgument());
+}
+
+TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastZeroSize) {
+  auto* block = Preallocate<BlockType>(
+      bytes_,
+      {
+          {Preallocation::kSizeRemaining, Preallocation::kFree},
+      });
+  constexpr Layout kLayout(0, 1);
+  auto result = BlockType::AllocLast(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::InvalidArgument());
+}
+
+TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLastFromUsed) {
+  auto* block = Preallocate<BlockType>(
+      bytes_,
+      {
+          {Preallocation::kSizeRemaining, Preallocation::kUsed},
+      });
+  constexpr Layout kLayout(1, 1);
+  auto result = BlockType::AllocLast(block, kLayout);
+  EXPECT_EQ(result.status(), pw::Status::FailedPrecondition());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(FreeingNullDoesNothing) {
@@ -948,7 +988,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanFree) {
       });
 
   BlockType::Free(block);
-  EXPECT_FALSE(block->Used());
+  EXPECT_TRUE(block->IsFree());
   EXPECT_EQ(block->OuterSize(), kN);
   CheckAllReachableBlock(block);
 }
@@ -968,7 +1008,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanFreeBlockWithoutMerging) {
   BlockType* prev = block->Prev();
 
   BlockType::Free(block);
-  EXPECT_FALSE(block->Used());
+  EXPECT_TRUE(block->IsFree());
   EXPECT_EQ(next, block->Next());
   EXPECT_EQ(prev, block->Prev());
   CheckAllReachableBlock(block);
@@ -1005,9 +1045,9 @@ TEST_FOR_EACH_BLOCK_TYPE(CanFreeBlockAndMergeWithNext) {
   BlockType* block = first->Next();
   BlockType* prev = block->Prev();
   BlockType::Free(block);
-  EXPECT_FALSE(block->Used());
+  EXPECT_TRUE(block->IsFree());
   EXPECT_EQ(block->Prev(), prev);
-  EXPECT_TRUE(block->Last());
+  EXPECT_EQ(block->Next(), nullptr);
   CheckAllReachableBlock(block);
 }
 
@@ -1024,7 +1064,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanFreeBlockAndMergeWithBoth) {
   BlockType* block = first->Next();
   BlockType::Free(block);
   EXPECT_EQ(block->Prev(), nullptr);
-  EXPECT_TRUE(block->Last());
+  EXPECT_EQ(block->Next(), nullptr);
   CheckAllReachableBlock(block);
 }
 
@@ -1088,7 +1128,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanResizeBlockSmallerWithNextFree) {
   EXPECT_EQ(block->InnerSize(), new_inner_size);
 
   BlockType* next = block->Next();
-  EXPECT_FALSE(next->Used());
+  EXPECT_TRUE(next->IsFree());
   EXPECT_EQ(next->InnerSize(), next_inner_size + delta);
   CheckAllReachableBlock(block);
 }
@@ -1116,7 +1156,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanResizeBlockLargerWithNextFree) {
   EXPECT_EQ(block->InnerSize(), new_inner_size);
 
   BlockType* next = block->Next();
-  EXPECT_FALSE(next->Used());
+  EXPECT_TRUE(next->IsFree());
   EXPECT_EQ(next->InnerSize(), next_inner_size - delta);
   CheckAllReachableBlock(block);
 }
@@ -1158,7 +1198,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanResizeBlockSmallerWithNextUsed) {
   EXPECT_EQ(result.next(), BlockResult::Next::kSplitNew);
 
   BlockType* next = block->Next();
-  EXPECT_FALSE(next->Used());
+  EXPECT_TRUE(next->IsFree());
   EXPECT_EQ(next->OuterSize(), delta);
   CheckAllReachableBlock(block);
 }
@@ -1235,7 +1275,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanCheckInvalidBlock) {
   EXPECT_FALSE(block3->IsValid());
 }
 
-TEST_F(PoisonedBlockTest, CanCheckPoison) {
+TEST_FOR_EACH_BLOCK_TYPE(CanCheckPoison) {
   auto* block = Preallocate<BlockType>(
       bytes_,
       {
@@ -1244,7 +1284,7 @@ TEST_F(PoisonedBlockTest, CanCheckPoison) {
 
   // Modify a byte in the middle of a free block.
   // Without poisoning, the modification is undetected.
-  EXPECT_FALSE(block->Used());
+  EXPECT_TRUE(block->IsFree());
   bytes_[kN / 2] = std::byte(0x7f);
   EXPECT_TRUE(block->IsValid());
 

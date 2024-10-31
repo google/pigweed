@@ -52,11 +52,11 @@ pw_executable("best_fit_block_allocator") {
   ]
 }
 
-pw_executable("bucket_block_allocator") {
+pw_executable("bucket_allocator") {
   include_dirs = [ "../public" ]
-  sources = [ "bucket_block_allocator.cc" ]
+  sources = [ "bucket_allocator.cc" ]
   deps = [
-    "..:bucket_block_allocator",
+    "..:bucket_allocator",
     "..:size_reporter",
   ]
 }

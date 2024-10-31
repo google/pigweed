@@ -121,9 +121,15 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
 
  protected:
   // Test fixtures.
-  BlockAllocatorTest(BlockAllocatorType& allocator) : allocator_(allocator) {}
+  BlockAllocatorTest(BlockAllocatorType& allocator) : allocator_(allocator) {
+    bytes_ = ByteSpan(buffer_);
+  }
 
-  ByteSpan GetBytes() override { return ByteSpan(buffer_); }
+  // Trims bytes from the front of the buffer to ensure the first block will be
+  // aligned
+  void AlignBytes(size_t alignment);
+
+  ByteSpan GetBytes() override { return bytes_; }
 
   Allocator& GetAllocator() override;
 
@@ -143,9 +149,17 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
  private:
   BlockAllocatorType& allocator_;
   alignas(BlockType::kAlignment) std::array<std::byte, kCapacity> buffer_;
+  ByteSpan bytes_;
 };
 
 // Test fixture template method implementations.
+
+template <typename BlockAllocatorType>
+void BlockAllocatorTest<BlockAllocatorType>::AlignBytes(size_t alignment) {
+  size_t offset = GetAlignedOffsetAfter(
+      bytes_.data(), alignment, BlockType::kBlockOverhead);
+  bytes_.subspan(offset);
+}
 
 template <typename BlockAllocatorType>
 Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator() {
@@ -159,7 +173,7 @@ Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
   auto* first = Preallocate<BlockType>(GetBytes(), preallocations);
   size_t index = 0;
   for (BlockType* block = first; block != nullptr; block = block->Next()) {
-    Store(index, block->Used() ? block->UsableSpace() : nullptr);
+    Store(index, block->IsFree() ? nullptr : block->UsableSpace());
     ++index;
   }
   allocator_.Init(first);
@@ -174,13 +188,11 @@ void* BlockAllocatorTest<BlockAllocatorType>::NextAfter(size_t index) {
   }
 
   auto* block = BlockType::FromUsableSpace(ptr);
-  while (!block->Last()) {
+  block = block->Next();
+  while (block != nullptr && block->IsFree()) {
     block = block->Next();
-    if (block->Used()) {
-      return block->UsableSpace();
-    }
   }
-  return nullptr;
+  return block == nullptr ? nullptr : block->UsableSpace();
 }
 
 template <typename BlockAllocatorType>
@@ -228,11 +240,11 @@ void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
   size_t used_count = 0;
   auto& block_allocator = static_cast<BlockAllocatorType&>(allocator);
   for (auto* block : block_allocator.blocks()) {
-    if (block->Used()) {
+    if (block->IsFree()) {
+      ++free_count;
+    } else {
       EXPECT_EQ(block->OuterSize(), kLargeOuterSize);
       ++used_count;
-    } else {
-      ++free_count;
     }
   }
   EXPECT_EQ(used_count, 3U);
@@ -255,7 +267,7 @@ void BlockAllocatorTest<BlockAllocatorType>::CanMeasureFragmentation() {
   size_t sum_of_squares = 0;
   size_t sum = 0;
   for (const auto block : block_allocator.blocks()) {
-    if (!block->Used()) {
+    if (block->IsFree()) {
       size_t inner_size = block->InnerSize() / alignment;
       sum_of_squares += inner_size * inner_size;
       sum += inner_size;

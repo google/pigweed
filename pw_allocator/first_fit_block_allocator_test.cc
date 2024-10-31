@@ -123,7 +123,7 @@ TEST_F(FirstFitBlockAllocatorTest, DisablePoisoning) {
   auto* bytes = std::launder(reinterpret_cast<uint8_t*>(ptrs[1]));
   auto* block = BlockType::FromUsableSpace(bytes);
   allocator.Deallocate(bytes);
-  EXPECT_FALSE(block->Used());
+  EXPECT_TRUE(block->IsFree());
   EXPECT_TRUE(block->IsValid());
   bytes[0] = ~bytes[0];
   EXPECT_TRUE(block->IsValid());
@@ -154,7 +154,7 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonEveryFreeBlock) {
   auto* bytes = std::launder(reinterpret_cast<uint8_t*>(ptrs[1]));
   auto* block = BlockType::FromUsableSpace(bytes);
   allocator->Deallocate(bytes);
-  EXPECT_FALSE(block->Used());
+  EXPECT_TRUE(block->IsFree());
   EXPECT_TRUE(block->IsValid());
   bytes[0] = ~bytes[0];
   EXPECT_FALSE(block->IsValid());
@@ -186,7 +186,7 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonPeriodically) {
     auto* bytes = std::launder(reinterpret_cast<uint8_t*>(ptrs[i]));
     auto* block = BlockType::FromUsableSpace(bytes);
     allocator->Deallocate(bytes);
-    EXPECT_FALSE(block->Used());
+    EXPECT_TRUE(block->IsFree());
     EXPECT_TRUE(block->IsValid());
     bytes[0] = ~bytes[0];
 

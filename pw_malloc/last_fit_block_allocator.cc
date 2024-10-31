@@ -22,8 +22,7 @@ namespace {
 
 using LastFitBlockAllocator =
     ::pw::allocator::LastFitBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE,
-                                           PW_MALLOC_BLOCK_POISON_INTERVAL,
-                                           PW_MALLOC_BLOCK_ALIGNMENT>;
+                                           PW_MALLOC_BLOCK_POISON_INTERVAL>;
 
 LastFitBlockAllocator& GetLastFitBlockAllocator() {
   static LastFitBlockAllocator allocator;

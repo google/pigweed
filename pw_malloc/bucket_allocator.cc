@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/bucket_block_allocator.h"
+#include "pw_allocator/bucket_allocator.h"
 
 #include "pw_malloc/config.h"
 #include "pw_malloc/malloc.h"
@@ -20,26 +20,24 @@
 namespace pw::malloc {
 namespace {
 
-using BucketBlockAllocator =
-    ::pw::allocator::BucketBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE,
-                                          PW_MALLOC_MIN_BUCKET_SIZE,
-                                          PW_MALLOC_NUM_BUCKETS,
-                                          PW_MALLOC_BLOCK_ALIGNMENT>;
+using BucketAllocator =
+    ::pw::allocator::BucketAllocator<PW_MALLOC_MIN_BUCKET_SIZE,
+                                     PW_MALLOC_NUM_BUCKETS>;
 
-BucketBlockAllocator& GetBucketBlockAllocator() {
-  static BucketBlockAllocator allocator;
+BucketAllocator& GetBucketAllocator() {
+  static BucketAllocator allocator;
   return allocator;
 }
 
 }  // namespace
 
 Allocator* GetSystemAllocator() {
-  auto& system_allocator = GetBucketBlockAllocator();
+  auto& system_allocator = GetBucketAllocator();
   return &system_allocator;
 }
 
 void InitSystemAllocator(ByteSpan heap) {
-  auto& system_allocator = GetBucketBlockAllocator();
+  auto& system_allocator = GetBucketAllocator();
   system_allocator.Init(heap);
 }
 

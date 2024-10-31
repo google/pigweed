@@ -54,10 +54,10 @@ pw_cc_binary(
 )
 
 pw_cc_binary(
-    name = "bucket_block_allocator",
-    srcs = ["bucket_block_allocator.cc"],
+    name = "bucket_allocator",
+    srcs = ["bucket_allocator.cc"],
     deps = [
-        "//pw_allocator:bucket_block_allocator",
+        "//pw_allocator:bucket_allocator",
         "//pw_allocator:size_reporter",
     ],
 )

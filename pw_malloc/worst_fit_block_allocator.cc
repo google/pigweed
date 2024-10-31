@@ -22,8 +22,7 @@ namespace {
 
 using WorstFitBlockAllocator =
     ::pw::allocator::WorstFitBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE,
-                                            PW_MALLOC_BLOCK_POISON_INTERVAL,
-                                            PW_MALLOC_BLOCK_ALIGNMENT>;
+                                            PW_MALLOC_BLOCK_POISON_INTERVAL>;
 
 WorstFitBlockAllocator& GetWorstFitBlockAllocator() {
   static WorstFitBlockAllocator allocator;
