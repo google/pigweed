@@ -280,4 +280,22 @@ pw_add_test(pw_async2.enqueue_heap_func_test
     pw_async2
 )
 
+pw_add_library(pw_async2.join INTERFACE
+  HEADERS
+    public/pw_async2/join.h
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+)
+
+pw_add_test(pw_async2.join_test
+  SOURCES
+    join_test.cc
+  PRIVATE_DEPS
+    pw_async2.dispatcher
+    pw_async2.join
+  GROUPS
+    modules
+    pw_async2
+)
+
 add_subdirectory(examples)

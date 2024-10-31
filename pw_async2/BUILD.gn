@@ -288,12 +288,28 @@ pw_test("enqueue_heap_func_test") {
   ]
 }
 
+pw_source_set("join") {
+  public = [ "public/pw_async2/join.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ ":dispatcher" ]
+}
+
+pw_test("join_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  sources = [ "join_test.cc" ]
+  deps = [
+    ":dispatcher",
+    ":join",
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":allocate_task_test",
     ":dispatcher_test",
     ":dispatcher_thread_test",
     ":enqueue_heap_func_test",
+    ":join_test",
     ":poll_test",
     ":pend_func_task_test",
     ":pendable_as_task_test",

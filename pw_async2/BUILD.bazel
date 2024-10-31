@@ -361,6 +361,28 @@ pw_cc_test(
     ],
 )
 
+cc_library(
+    name = "join",
+    hdrs = [
+        "public/pw_async2/join.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":dispatcher",
+    ],
+)
+
+pw_cc_test(
+    name = "join_test",
+    srcs = [
+        "join_test.cc",
+    ],
+    deps = [
+        ":dispatcher",
+        ":join",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [

@@ -82,6 +82,9 @@ Utilities
 .. doxygenclass:: pw::async2::CoroOrElseTask
   :members:
 
+.. doxygenclass:: pw::async2::Join
+  :members:
+
 .. doxygenclass:: pw::async2::PendFuncTask
   :members:
 
