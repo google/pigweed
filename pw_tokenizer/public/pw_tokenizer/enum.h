@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include "pw_preprocessor/apply.h"
 #include "pw_tokenizer/internal/enum.h"
 #include "pw_tokenizer/tokenize.h"
 
@@ -46,6 +47,19 @@ constexpr const char* EnumToString(T value) {
 /// successfully.
 /// This macro should be in the same namespace as the enum declaration to use
 /// the `pw::tokenizer::EnumToString` function and avoid compilation errors.
-#define PW_TOKENIZE_ENUM(fully_qualified_name, ...) \
-  PW_DELEGATE_BY_ARG_COUNT(                         \
-      _PW_TOKENIZE_ENUM_, fully_qualified_name, __VA_ARGS__)
+#define PW_TOKENIZE_ENUM(fully_qualified_name, ...)               \
+  PW_APPLY(_PW_TOKENIZE_ENUMERATOR,                               \
+           _PW_SEMICOLON,                                         \
+           fully_qualified_name,                                  \
+           __VA_ARGS__);                                          \
+  [[maybe_unused]] constexpr const char* PwTokenizerEnumToString( \
+      fully_qualified_name _pw_enum_value) {                      \
+    switch (_pw_enum_value) {                                     \
+      PW_APPLY(_PW_TOKENIZE_TO_STRING_CASE,                       \
+               _PW_SEMICOLON,                                     \
+               fully_qualified_name,                              \
+               __VA_ARGS__);                                      \
+    }                                                             \
+    return "Unknown " #fully_qualified_name " value";             \
+  }                                                               \
+  static_assert(true)

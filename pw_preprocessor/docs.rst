@@ -16,6 +16,14 @@ Headers
 =======
 The preprocessor module provides several headers.
 
+pw_preprocessor/apply.h
+---------------------------------
+Defines general macro to support macro expansion. Includes the following macro:
+
+API Reference
+^^^^^^^^^^^^^
+.. doxygendefine:: PW_APPLY
+
 pw_preprocessor/arguments.h
 ---------------------------------
 Defines macros for handling variadic arguments to function-like macros. Macros

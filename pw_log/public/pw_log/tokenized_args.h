@@ -25,6 +25,7 @@
 // arguments behave as basic strings (const char*).
 #if __has_include("pw_log_backend/log_backend_uses_pw_tokenizer.h")
 
+#include "pw_tokenizer/enum.h"
 #include "pw_tokenizer/nested_tokenization.h"
 #include "pw_tokenizer/tokenize.h"
 

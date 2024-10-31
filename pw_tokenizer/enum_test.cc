@@ -23,16 +23,16 @@ namespace {
 // DOCSTAG: [pw_tokenizer-examples-enum]
 enum Thing : int { kAlpha, kBravo, kCharlie };
 
-PW_TOKENIZE_ENUM(::this_is_a_test::Thing, kAlpha, kBravo, kCharlie)
+PW_TOKENIZE_ENUM(::this_is_a_test::Thing, kAlpha, kBravo, kCharlie);
 // DOCSTAG: [pw_tokenizer-examples-enum]
 
 enum OneThing { kGolf };
 
-PW_TOKENIZE_ENUM(::this_is_a_test::OneThing, kGolf)
+PW_TOKENIZE_ENUM(::this_is_a_test::OneThing, kGolf);
 
 enum class ScopedThing { kKilo, kLima, kMike };
 
-PW_TOKENIZE_ENUM(::this_is_a_test::ScopedThing, kKilo, kLima, kMike)
+PW_TOKENIZE_ENUM(::this_is_a_test::ScopedThing, kKilo, kLima, kMike);
 
 enum NonTokenizedThing { kDelta, kEcho, kFoxtrot };
 
@@ -63,7 +63,7 @@ enum ManyThing { kNovember, kOscar, kPapa };
 #if PW_NC_TEST(MissAValue)
   PW_NC_EXPECT("is not allowed here");
 
-  PW_TOKENIZE_ENUM(::this_is_a_test::ManyThing, kNovember, kOscar)
+  PW_TOKENIZE_ENUM(::this_is_a_test::ManyThing, kNovember, kOscar);
 #endif  // PW_NC_TEST
 }
 
@@ -77,7 +77,7 @@ TEST(TokenizeEnums, BadEnumValue) {
 
 namespace this_is_also_a_test {
 
-PW_TOKENIZE_ENUM(::this_is_a_test::NamespaceThing, kHotel, kIndia, kJuliett)
+PW_TOKENIZE_ENUM(::this_is_a_test::NamespaceThing, kHotel, kIndia, kJuliett);
 
 [[maybe_unused]] void TokenizeInDifferentNamespace() {
 #if PW_NC_TEST(TokenizeInDifferentNamespace)

@@ -15,10 +15,9 @@
 // Many of these tests are static asserts. If these compile, they pass. The TEST
 // functions are used for organization only.
 
-#include "pw_preprocessor/arguments.h"
-
 #include <tuple>
 
+#include "pw_preprocessor/apply.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw {
@@ -407,6 +406,37 @@ TEST(DelegateByArgCount, WithoutAndWithoutArguments) {
   static_assert(PW_DELEGATE_BY_ARG_COUNT(TEST_SUM, 5) == 5);
   static_assert(PW_DELEGATE_BY_ARG_COUNT(TEST_SUM, 1, 2) == 3);
   static_assert(PW_DELEGATE_BY_ARG_COUNT(TEST_SUM, 1, 2, 3) == 6);
+}
+
+#define SEMICOLON(...) ;
+#define STRING_THING(index, name, arg) #arg
+
+#define TO_STRING_CASE(index, name, arg) \
+  case arg:                              \
+    return #arg;
+
+#define APPLY_STRING_THING(...) PW_APPLY(STRING_THING, SEMICOLON, , __VA_ARGS__)
+
+constexpr const char* ValueToStr(int value) {
+  switch (value) {
+    PW_APPLY(TO_STRING_CASE, SEMICOLON, , 100, 200, 300, 400, 500);
+  }
+  return "Unknown value";
+}
+
+TEST(ApplyMacroExpansion, OneStringValue) {
+  constexpr const char* test = APPLY_STRING_THING(100);
+  EXPECT_STREQ("100", test);
+}
+
+TEST(ApplyMacroExpansion, SwitchValue) {
+  constexpr const char* test = ValueToStr(300);
+  EXPECT_STREQ("300", test);
+}
+
+TEST(ApplyMacroExpansion, UnknownSwitchValue) {
+  constexpr const char* test = ValueToStr(600);
+  EXPECT_STREQ("Unknown value", test);
 }
 
 }  // namespace

@@ -26,8 +26,14 @@ constexpr bool ValidEnumerator(T) {
 
 }  // namespace pw::tokenizer
 
+#define _PW_SEMICOLON(...) ;
+
+#define _PW_TOKENIZE_TO_STRING_CASE(index, name, arg) \
+  case name::arg:                                     \
+    return #arg;
+
 // Declares an individual tokenized enum value.
-#define _PW_TOKENIZE_ENUMERATOR(name, enumerator)                          \
+#define _PW_TOKENIZE_ENUMERATOR(index, name, enumerator)                   \
   static_assert(                                                           \
       #name[0] == ':' && #name[1] == ':',                                  \
       "Enum names must be fully qualified and start with ::, but \"" #name \
@@ -37,48 +43,3 @@ constexpr bool ValidEnumerator(T) {
       static_cast<::pw::tokenizer::Token>(name::enumerator),               \
       #name,                                                               \
       #enumerator)
-
-#define _PW_TOKENIZE_ENUM_2(fully_qualified_name, arg1)           \
-  _PW_TOKENIZE_ENUMERATOR(fully_qualified_name, arg1);            \
-  [[maybe_unused]] constexpr const char* PwTokenizerEnumToString( \
-      fully_qualified_name _pw_enum_value) {                      \
-    switch (_pw_enum_value) {                                     \
-      case fully_qualified_name::arg1:                            \
-        return #arg1;                                             \
-    }                                                             \
-    return "Unknown " #fully_qualified_name " value";             \
-  }                                                               \
-  static_assert(true);
-
-#define _PW_TOKENIZE_ENUM_3(fully_qualified_name, arg1, arg2)     \
-  _PW_TOKENIZE_ENUMERATOR(fully_qualified_name, arg1);            \
-  _PW_TOKENIZE_ENUMERATOR(fully_qualified_name, arg2);            \
-  [[maybe_unused]] constexpr const char* PwTokenizerEnumToString( \
-      fully_qualified_name _pw_enum_value) {                      \
-    switch (_pw_enum_value) {                                     \
-      case fully_qualified_name::arg1:                            \
-        return #arg1;                                             \
-      case fully_qualified_name::arg2:                            \
-        return #arg2;                                             \
-    }                                                             \
-    return "Unknown " #fully_qualified_name " value";             \
-  }                                                               \
-  static_assert(true);
-
-#define _PW_TOKENIZE_ENUM_4(fully_qualified_name, arg1, arg2, arg3) \
-  _PW_TOKENIZE_ENUMERATOR(fully_qualified_name, arg1);              \
-  _PW_TOKENIZE_ENUMERATOR(fully_qualified_name, arg2);              \
-  _PW_TOKENIZE_ENUMERATOR(fully_qualified_name, arg3);              \
-  [[maybe_unused]] constexpr const char* PwTokenizerEnumToString(   \
-      fully_qualified_name _pw_enum_value) {                        \
-    switch (_pw_enum_value) {                                       \
-      case fully_qualified_name::arg1:                              \
-        return #arg1;                                               \
-      case fully_qualified_name::arg2:                              \
-        return #arg2;                                               \
-      case fully_qualified_name::arg3:                              \
-        return #arg3;                                               \
-    }                                                               \
-    return "Unknown " #fully_qualified_name " value";               \
-  }                                                                 \
-  static_assert(true);
