@@ -38,6 +38,7 @@ from pathlib import Path
 import sys
 from types import ModuleType
 from typing import (
+    Any,
     Callable,
     Collection,
     TYPE_CHECKING,
@@ -319,6 +320,7 @@ def console(
     device_connection: DeviceConnection | None = None,
     debugger_listen: bool = False,
     debugger_wait_for_client: bool = False,
+    extra_frame_handlers: dict[int, Callable[[bytes, Any], Any]] | None = None,
 ) -> int:
     """Starts an interactive RPC console for HDLC."""
 
@@ -409,6 +411,7 @@ def console(
             hdlc_encoding=hdlc_encoding,
             device_tracing=device_tracing,
             timestamp_decoder=timestamp_decoder,
+            extra_frame_handlers=extra_frame_handlers,
         )
 
     with device_connection as device_client:
@@ -433,6 +436,7 @@ def main(
     compiled_protos: list[ModuleType] | None = None,
     timestamp_decoder: Callable[[int], str] | None = None,
     device_connection: DeviceConnection | None = None,
+    extra_frame_handlers: dict[int, Callable[[bytes, Any], Any]] | None = None,
 ) -> int:
     """Startup the pw console UI for a pw_system device.
 
@@ -463,6 +467,7 @@ def main(
         compiled_protos=compiled_protos,
         timestamp_decoder=timestamp_decoder,
         device_connection=device_connection,
+        extra_frame_handlers=extra_frame_handlers,
     )
 
 

@@ -24,6 +24,7 @@ from typing import Any, Callable, Sequence
 
 from pw_file import file_pb2
 from pw_hdlc import rpc
+from pw_hdlc.decode import Frame
 from pw_log import log_decoder
 from pw_log_rpc import rpc_log_stream
 from pw_metric import metric_parser
@@ -70,6 +71,8 @@ class Device:
         use_rpc_logging: bool = True,
         use_hdlc_encoding: bool = True,
         logger: logging.Logger | logging.LoggerAdapter = DEFAULT_DEVICE_LOGGER,
+        extra_frame_handlers: dict[int, Callable[[bytes, Any], Any]]
+        | None = None,
     ):
         self.channel_id = channel_id
         self.protos = list(proto_library)
@@ -108,12 +111,29 @@ class Device:
             channels = [
                 pw_rpc.Channel(self.channel_id, rpc.channel_output(write))
             ]
+
+            def create_frame_handler_wrapper(
+                handler: Callable[[bytes, Any], Any]
+            ) -> Callable[[Frame], Any]:
+                def handler_wrapper(frame: Frame):
+                    handler(frame.data, self)
+
+                return handler_wrapper
+
+            extra_frame_handlers_wrapper: rpc.FrameHandlers = {}
+            if extra_frame_handlers is not None:
+                for address, handler in extra_frame_handlers.items():
+                    extra_frame_handlers_wrapper[
+                        address
+                    ] = create_frame_handler_wrapper(handler)
+
             self.client = rpc.HdlcRpcClient(
                 reader,
                 self.protos,
                 channels,
                 detokenize_and_log_output,
                 client_impl=callback_client_impl,
+                extra_frame_handlers=extra_frame_handlers_wrapper,
             )
         else:
             channel = pw_rpc.Channel(self.channel_id, write)

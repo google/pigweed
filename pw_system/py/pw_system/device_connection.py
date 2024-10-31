@@ -96,6 +96,7 @@ def create_device_serial_or_socket_connection(
     device_tracing_class: type[pw_device_tracing.DeviceWithTracing]
     | None = (pw_device_tracing.DeviceWithTracing),
     timestamp_decoder: Callable[[int], str] | None = None,
+    extra_frame_handlers: dict[int, Callable[[bytes, Any], Any]] | None = None,
 ) -> DeviceConnection:
     """Setup a pw_system.Device client connection.
 
@@ -259,6 +260,7 @@ def create_device_serial_or_socket_connection(
         'rpc_timeout_s': 5,
         'use_rpc_logging': rpc_logging,
         'use_hdlc_encoding': hdlc_encoding,
+        'extra_frame_handlers': extra_frame_handlers,
     }
 
     device_client: pw_device_tracing.DeviceWithTracing | pw_device.Device
