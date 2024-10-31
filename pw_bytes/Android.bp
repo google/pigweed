@@ -37,7 +37,7 @@ cc_library_static {
         // Updating libc++ will fix this.
         // "byte_builder.cc",
     ],
-    whole_static_libs: [
+    static_libs: [
         "pw_containers",
         "pw_polyfill",
         "pw_preprocessor",
