@@ -62,8 +62,7 @@ TEST(EmbossCommandPacketTest, EmbossCommandPacketDeathTest) {
 
   // Try and fail to request view for struct larger than TestCommandPacket.
   EXPECT_DEATH_IF_SUPPORTED(
-      packet.view<pw::bluetooth::emboss::InquiryCommandView>(),
-      "emboss packet buffer not large enough");
+      packet.view<pw::bluetooth::emboss::InquiryCommandView>(), "IsComplete");
   // Try and fail to allocate 0 length packet (needs at least 3 bytes for the
   // header).
   EXPECT_DEATH_IF_SUPPORTED(

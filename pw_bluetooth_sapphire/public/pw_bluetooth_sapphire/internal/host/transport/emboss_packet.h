@@ -74,14 +74,14 @@ class StaticPacket {
   template <typename... Args>
   T view(Args... args) {
     T view(args..., buffer_.mutable_data(), buffer_.size());
-    PW_CHECK(view.IsComplete());
+    PW_ASSERT(view.IsComplete());
     return view;
   }
 
   template <typename... Args>
   T view(Args... args) const {
     T view(args..., buffer_.data(), buffer_.size());
-    PW_CHECK(view.IsComplete());
+    PW_ASSERT(view.IsComplete());
     return view;
   }
 
@@ -121,16 +121,14 @@ class DynamicPacket {
   template <typename T, typename... Args>
   T view(Args... args) {
     T view(args..., buffer_.mutable_data(), size());
-    PW_CHECK(view.IsComplete(),
-             "emboss packet buffer not large enough to hold requested view");
+    PW_ASSERT(view.IsComplete());
     return view;
   }
 
   template <typename T, typename... Args>
   T view(Args... args) const {
     T view(args..., buffer_.data(), size());
-    PW_CHECK(view.IsComplete(),
-             "emboss packet buffer not large enough to hold requested view");
+    PW_ASSERT(view.IsComplete());
     return view;
   }
 
