@@ -64,6 +64,14 @@ struct AclDataFrameHeader:
     -- Length of data measured in octets.
 
 
+struct AclDataFrame:
+  -- HCI ACL Data packet frame
+  -- Core Spec v5.4, Vol 4, Part E, Section 5.4.2
+  0     [+AclDataFrameHeader.$size_in_bytes]  AclDataFrameHeader         header
+  let data_total_length = header.data_total_length
+  $next [+data_total_length]                  UInt:8[data_total_length]  payload
+
+
 enum TsFlag:
   -- Options for the ts_flag field in an Isochronous Data packet header.
   [maximum_bits: 1]
