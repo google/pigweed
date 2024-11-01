@@ -16,8 +16,11 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "nanopb_proto_library",
+    "nanopb_rpc_proto_library",
     "pw_proto_filegroup",
     "pwpb_proto_library",
+    "pwpb_rpc_proto_library",
     "raw_rpc_proto_library",
 )
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
@@ -479,6 +482,28 @@ proto_library(
     strip_import_prefix = "/pw_rpc",
 )
 
+nanopb_proto_library(
+    name = "pw_rpc_test_nanopb",
+    deps = [":pw_rpc_test_proto"],
+)
+
+nanopb_rpc_proto_library(
+    name = "pw_rpc_test_nanopb_rpc",
+    nanopb_proto_library_deps = [":pw_rpc_test_nanopb"],
+    deps = [":pw_rpc_test_proto"],
+)
+
+pwpb_proto_library(
+    name = "pw_rpc_test_pwpb",
+    deps = [":pw_rpc_test_proto"],
+)
+
+pwpb_rpc_proto_library(
+    name = "pw_rpc_test_pwpb_rpc",
+    pwpb_proto_library_deps = [":pw_rpc_test_pwpb"],
+    deps = [":pw_rpc_test_proto"],
+)
+
 raw_rpc_proto_library(
     name = "pw_rpc_test_raw_rpc",
     deps = [":pw_rpc_test_proto"],
@@ -500,5 +525,27 @@ proto_library(
 
 py_proto_library(
     name = "echo_py_pb2",
+    deps = [":echo_proto"],
+)
+
+nanopb_proto_library(
+    name = "echo_nanopb",
+    deps = [":echo_proto"],
+)
+
+nanopb_rpc_proto_library(
+    name = "echo_nanopb_rpc",
+    nanopb_proto_library_deps = [":echo_nanopb"],
+    deps = [":echo_proto"],
+)
+
+pwpb_proto_library(
+    name = "echo_pwpb",
+    deps = [":echo_proto"],
+)
+
+pwpb_rpc_proto_library(
+    name = "echo_pwpb_rpc",
+    pwpb_proto_library_deps = [":echo_pwpb"],
     deps = [":echo_proto"],
 )
