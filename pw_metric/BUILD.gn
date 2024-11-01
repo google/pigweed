@@ -59,7 +59,10 @@ pw_source_set("global") {
 # Service
 pw_proto_library("metric_service_proto") {
   sources = [ "pw_metric_proto/metric_service.proto" ]
-  inputs = [ "pw_metric_proto/metric_service.options" ]
+  inputs = [
+    "pw_metric_proto/metric_service.options",
+    "pw_metric_proto/metric_service.pwpb_options",
+  ]
 }
 
 # TODO(keir): Consider moving the nanopb service into the nanopb/ directory
