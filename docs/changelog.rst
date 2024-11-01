@@ -12,14 +12,388 @@ Talk to the team at Pigweed Live
 .. pigweed-live::
 
 .. _docs-changelog-latest:
+.. _docs-changelog-2024-10-31:
+
+------------
+Oct 31, 2024
+------------
+.. changelog_highlights_start
+
+Highlights (Oct 18, 2024 to Oct 31, 2024):
+
+* The new :c:macro:`PW_TEST_EXPECT_OK`, :c:macro:`PW_TEST_ASSERT_OK`,
+  and :c:macro:`PW_TEST_ASSERT_OK_AND_ASSIGN` macros provide test matchers
+  for :ref:`module-pw_status` and :ref:`module-pw_result` values.
+* The Sense tutorial has expanded guidance around :ref:`handling crashes
+  and viewing snapshots <showcase-sense-tutorial-crash-handler>`.
+* The new :cpp:class:`pw::LinkerSymbol` class represents a symbol
+  provided by a linker.
+* The new ``extra_frame_handlers`` parameter lets you add custom HDLC frame
+  handlers when using the Python-based :ref:`module-pw_system` console.
+
+.. changelog_highlights_end
+
+.. _docs-changelog-2024-10-31-Modules:
+
+Modules
+=======
+
+.. _docs-changelog-2024-10-31-Modules-pw_allocator:
+
+pw_allocator
+------------
+New features:
+
+.. 6fd4792308999b9c5949e9b778994d064a80a8b7
+
+* The new :c:macro:`PW_ALLOCATOR_ENABLE_PMR` macro lets you disable the
+  ability to use an allocator with the polymorphic versions of standard
+  library containers. Commit: `Make pw::Allocator::as_pmr optional
+  <https://pwrev.dev/245254>`__.
+
+Changes:
+
+.. c3c61885927ee9e8fac187a52b1ab139919fe5e7
+
+* Multiple methods were renamed or removed in preparation for upcoming
+  work to split up :cpp:class:`pw::allocator::Block`. Commit: `Streamline
+  Block API <https://pwrev.dev/232213>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_assert:
+
+pw_assert
+---------
+Changes:
+
+.. 673e56ac476a345a0f25319633d8ce0ad0c0cd93
+
+* ``pw_assert`` now verifies whether ``PW_CHECK`` message arguments are
+  valid, regardless of what ``pw_assert`` backend is being used. Commit:
+  `Verify PW_CHECK message arguments in the API
+  <https://pwrev.dev/244744>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_assert_tokenized:
+
+pw_assert_tokenized
+-------------------
+New features:
+
+.. ef5f6bf505343c0926532f53dc788b26c3640048
+
+* :c:macro:`pw_assert_HandleFailure` is now supported. Commit: `Support
+  pw_assert_HandleFailure <https://pwrev.dev/244793>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_async2:
+
+pw_async2
+---------
+New features:
+
+.. cec451dc5c2cb132717068d686e4e034b06762c9
+
+* :cpp:class:`pw::async2::Join` lets you join several separate pendable
+  values. Commit: `Add Join combinator <https://pwrev.dev/244612>`__.
+
+.. 0945ffb46234253d08467adebd8869ebb39234fa
+
+* The new :cpp:func:`pw::async2::TimeFuture::Reset` method resets a
+  ``TimeFuture`` instance to expire at a specified time. Commit: `Add
+  TimerFuture::Reset <https://pwrev.dev/243993>`__.
+
+Changes:
+
+.. 9528eac2b6c6243dc5fb6a4d72f33d8d7e0d573c
+
+* Waker storage has moved to a macro-based API. See
+  :c:macro:`PW_ASYNC_STORE_WAKER` and :c:macro:`PW_ASYNC_CLONE_WAKER`.
+  Commit: `Move to macro-based Waker API <https://pwrev.dev/245068>`__.
+  Bug: :bug:`376123061`.
+
+.. _docs-changelog-2024-10-31-Modules-pw_bluetooth_proxy:
+
+pw_bluetooth_proxy
+------------------
+New features:
+
+.. a8c756860ae104ef5e87439ef4f8cc4fbbb2fab7
+
+* Bazel builds are now supported. Commit: `Add bazel build support
+  <https://pwrev.dev/243874>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_build:
+
+pw_build
+--------
+New features:
+
+.. 170f745d98d101d73564fa61420f1a0836053033
+
+* The new :cpp:class:`pw::LinkerSymbol` class represents a symbol
+  provided by a linker. Commit: `Add LinkerSymbol
+  <https://pwrev.dev/242635>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_channel:
+
+pw_channel
+----------
+Changes:
+
+.. 5f2649a6e5afdecd7b5d59aab06f59bb4d73d9f3
+
+* ``pw::channel::AnyChannel::Write`` was renamed to
+  :cpp:func:`pw::channel::AnyChannel::StageWrite` and
+  ``pw::channel::AnyChannel::PendFlush`` was renamed to
+  :cpp:func:`pw::channel::AnyChannel::PendWrite`. Commit: `Rename
+  {Write->StageWrite, PendFlush->PendWrite} <https://pwrev.dev/245539>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_containers:
+
+pw_containers
+-------------
+New features:
+
+.. afb18a6ded0c43e91ce85e5ec97ae0206c4873ca
+
+* :cpp:class:`pw::IntrusiveSet` is a new class like ``std::set<Key,
+  Compare>`` that uses intrusive items as keys and
+  :cpp:class:`pw::IntrusiveMultiSet` is a new class like
+  ``std::multiset<Key, Compare>`` that uses intrusive items. Commit: `Add
+  IntrusiveSet and IntrusiveMultiSet <https://pwrev.dev/240053>`__.
+
+Changes:
+
+.. bde3f80e6e038cebe264283af625faf06a64d8d0
+
+* The ``erase`` methods of
+  :cpp:class:`pw::containers::future::IntrusiveList`,
+  :cpp:class:`pw::IntrusiveMap`, and :cpp:class:`pw::IntrusiveMultiMap`
+  have been overloaded to make them easier to use. Commit: `Add methods to
+  erase by item <https://pwrev.dev/243257>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_log:
+
+pw_log
+------
+Changes:
+
+.. 661bf47f06e604384a4c7eb7bf79d2f3da71ee74
+
+* The signature for :c:macro:`PW_LOG` macro changed. A ``verbosity``
+  level must now always be passed as the second argument when invoking
+  ``PW_LOG``. Commit: `Explicitly pass verbosity to PW_LOG
+  <https://pwrev.dev/239035>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_multibuf:
+
+pw_multibuf
+-----------
+New features:
+
+.. 9ab6e749821eddb8a82f7724c1af10ef6accc016
+
+* The new :cpp:func:`pw::multibuf::FromSpan` function creates a multibuf from
+  an existing span and a ``deleter`` callback. Commit: `Add FromSpan
+  <https://pwrev.dev/245132>`__. Bug: :bug:`373725545`.
+
+.. _docs-changelog-2024-10-31-Modules-pw_multisink:
+
+pw_multisink
+------------
+New features:
+
+.. 773331a904413e92d86c6e4cb658af77cf889d76
+
+* The new :cpp:func:`pw::multisink::UnsafeDumpMultiSinkLogsFromEnd`
+  utilitiy function dumps contents as a series of log entries. Commit:
+  `Add UnsafeForEachEntryFromEnd() <https://pwrev.dev/244556>`__. Bug:
+  :bug:`375653884`.
+
+.. _docs-changelog-2024-10-31-Modules-pw_polyfill:
+
+pw_polyfill
+-----------
+Changes:
+
+.. d3e10fad55171d8cdce399916acbf37b2dec732b
+
+* :c:macro:`PW_CONSTINIT` now fails when used without compiler support.
+  Commit: `Make PW_CONSTINIT support mandatory
+  <https://pwrev.dev/243892>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_protobuf:
+
+pw_protobuf
+-----------
+Bug fixes:
+
+.. 368cf8be3cb1909453c9c2cc67ec951517943086
+
+* ``pw_protobuf`` now fails when the ``max_count`` or ``fixed_count``
+  options of ``pwpb`` are used on unsupported field types. Commit: `Fail
+  when a max count is set with an unsupported type
+  <https://pwrev.dev/236816>`__.
+
+Changes:
+
+.. 9525d75843cede1c67f78de7c2f86bb30ac98efe
+
+* Code generator options can now be specified in files ending with
+  ``.pwpb_options``. This is useful for projects that wish to strictly
+  separate Nanopb and ``pw_protobuf`` options. Commit: `Allow
+  .pwpb_options as an options file extension
+  <https://pwrev.dev/241137>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_ring_buffer:
+
+pw_ring_buffer
+--------------
+New features:
+
+.. b90180561658453318c36b125fd8af37de713a3f
+
+* ``pw_ring_buffer`` readers now support the ``--`` decrement operator.
+  Commit: `Add a decrement operator <https://pwrev.dev/244555>`__. Bug:
+  :bug:`375653884`.
+
+.. _docs-changelog-2024-10-31-Modules-pw_system:
+
+pw_system
+---------
+New features:
+
+.. 1f2341cd64eaacb9de474510293397b50165b3b5
+
+* The new ``extra_frame_handlers`` parameter lets you add custom HDLC
+  frame handlers when using the Python-based ``pw_system`` console.
+  Commit: `Make console support extra hdlc frame handlers
+  <https://pwrev.dev/245192>`__.
+
+Bug fixes:
+
+.. 9b2dd9ccb35a49f57c053e88a55da35ad24fc93d
+
+* A bug was fixed where the latest logs were not being captured in crash
+  snapshots. Commit: `Ensure latest logs are captured in crash snapshot
+  <https://pwrev.dev/244557>`__. Bug: :bug:`375653884`.
+
+.. 0aa57cea2e06c48a24266b21d472155c2379189f
+
+* The ``pw_system`` crash dump now includes a main stack thread
+  backtrace. Commit: `Add main stack thread backtrace capture to crash
+  dump <https://pwrev.dev/242337>`__. Bug: :bug:`354767156`.
+
+.. ed55dbc3fa5eb05e2b557fad0eff2b1bf1f93751
+
+* The ``pw_system`` crash dump now includes FreeRTOS thread backtraces.
+  Commit: `Add freertos thread backtrace capture to crash dump
+  <https://pwrev.dev/234155>`__. Bug: :bug:`354767156`.
+
+.. _docs-changelog-2024-10-31-Modules-pw_thread:
+
+pw_thread
+---------
+Changes:
+
+.. e5db91d7df18444134ce4fede3a1a0c3a9f5c1fc
+
+* The legacy ``thread::Id`` alias has been migrated to
+  ``pw::Thread::id``. Commit: `Migrate to Thread::id
+  <https://pwrev.dev/238432>`__. Bug: :bug:`373524945`.
+
+.. _docs-changelog-2024-10-31-Modules-pw_tokenizer:
+
+pw_tokenizer
+------------
+New features:
+
+.. 4b7733f3f0c9e010ccd6bee3ff45d64b92e65fa7
+
+* :c:macro:`PW_APPLY` is a new general macro that supports macro
+  expansion and makes tokenizing enums easier. Commit: `Create generic
+  macro for tokenizing enums <https://pwrev.dev/242715>`__. Bug:
+  :bug:`3627557773`.
+
+.. _docs-changelog-2024-10-31-Modules-pw_toolchain:
+
+pw_toolchain
+------------
+New features:
+
+.. b40ecc98b47a37b187f40408ae0c3d89ef9b5f79
+
+* ``pw_toolchain`` now supports the Arm Cortex-M55F GCC toolchain.
+  Commit: `Add ARM Cortex-M55F GCC toolchain
+  <https://pwrev.dev/244672>`__. Bug: :bug:`375562597`.
+
+.. _docs-changelog-2024-10-31-Modules-pw_unit_test:
+
+pw_unit_test
+------------
+New features:
+
+.. ce0e3e2d1b7eec7cdf59fbb2ceed2b1cb3edd1ec
+
+* The new :c:macro:`PW_TEST_EXPECT_OK`, :c:macro:`PW_TEST_ASSERT_OK`,
+  and :c:macro:`PW_TEST_ASSERT_OK_AND_ASSIGN` macros provide test matchers
+  for :ref:`module-pw_status` and :ref:`module-pw_result` values. Commit:
+  `Define pw::Status matchers <https://pwrev.dev/243615>`__. Bugs:
+  :bug:`338094795`, :bug:`315370328`.
+
+Changes:
+
+.. 618eaa4f4c1ee0357bdfba85290a9a6e8c9aee71
+
+* :cpp:func:`RUN_ALL_TESTS` is now a function. Previously it was a
+  macro. Commit: `Use a function for RUN_ALL_TESTS()
+  <https://pwrev.dev/243889>`__.
+
+.. _docs-changelog-2024-10-31-Modules-pw_watch:
+
+pw_watch
+--------
+New features:
+
+.. 5e7d1a0fddab1204d94ff43cee833431eda75af8
+
+* ``pw_watch`` can now be invoked through ``bazelisk``. Commit: `Bazel
+  run support <https://pwrev.dev/242094>`__. Bug: :bug:`360140397`.
+
+.. _docs-changelog-2024-10-31-Docs:
+
+Docs
+====
+New features:
+
+.. c5e6cab3b190f4cdc32e3209582a7697f2992a85
+
+* The Sense tutorial has expanded guidance around :ref:`handling crashes
+  and viewing snapshots <showcase-sense-tutorial-crash-handler>`. Commit:
+  `Add crash handler section to sense tutorial
+  <https://pwrev.dev/242735>`__. Bug: :bug:`354767156`.
+
+.. _docs-changelog-2024-10-31-Targets:
+
+Targets
+=======
+
+.. _docs-changelog-2024-10-31-Targets-RP2350:
+
+RP2350
+------
+New features:
+
+.. 892394fe74db6decd3799873f910862cef6a182d
+
+* ``MemManage``, ``BusFault``, and ``UsageFault`` exception handlers are
+  now enabled on the RP2350 target. Commit: `Add MemManage, BusFault &
+  UsageFault exception handler <https://pwrev.dev/242336>`__. Bug:
+  :bug:`354767156`.
+
 .. _docs-changelog-2024-10-17:
 
 ------------
 Oct 17, 2024
 ------------
-
-.. changelog_highlights_start
-
 Highlights (Oct 04, 2024 to Oct 17, 2024):
 
 * **Math module**: The new :ref:`module-pw_numeric` module is a collection of
@@ -27,8 +401,6 @@ Highlights (Oct 04, 2024 to Oct 17, 2024):
 * **C++ Coroutines**: The new :ref:`docs-blog-05-coroutines` blog post
   discusses the nuances of using coroutines in embedded systems.
 * **New SEEDs**: SEEDs :ref:`seed-0103` and :ref:`seed-0128` were accepted.
-
-.. changelog_highlights_end
 
 .. _docs-changelog-2024-10-17-Modules:
 
