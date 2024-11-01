@@ -71,28 +71,3 @@
   _PW_UNIQUE_IDENTIFIER_EXPANDED_DETAIL(line)
 #define _PW_UNIQUE_IDENTIFIER_EXPANDED_DETAIL(line) \
   _assert_pw_test_assert_ok_and_assign_unique_name_##line
-
-// TODO: b/376321107 - Remove deprecated EXPECT_OK/ASSERT_OK macros when users
-// have migrated to PW_TEST_EXPECT_OK/PW_TEST_ASSERT_OK.
-#define EXPECT_OK(expr)                                 \
-  if (::pw::unit_test::internal::The_EXPECT_OK_macro()) \
-  PW_TEST_EXPECT_OK(expr)
-
-#define ASSERT_OK(expr)                                 \
-  if (::pw::unit_test::internal::The_ASSERT_OK_macro()) \
-  PW_TEST_ASSERT_OK(expr)
-
-namespace pw::unit_test::internal {
-
-[[deprecated(
-    "EXPECT_OK is deprecated; use PW_TEST_EXPECT_OK instead")]] constexpr bool
-The_EXPECT_OK_macro() {
-  return true;
-}
-[[deprecated(
-    "ASSERT_OK is deprecated; use PW_TEST_ASSERT_OK instead")]] constexpr bool
-The_ASSERT_OK_macro() {
-  return true;
-}
-
-}  // namespace pw::unit_test::internal
