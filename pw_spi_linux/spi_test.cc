@@ -129,6 +129,49 @@ TEST_F(LinuxSpiTest, ConfigureWorks) {
   EXPECT_EQ(ioctl_requests, expect);
 }
 
+TEST_F(LinuxSpiTest, NoReadOrWrite) {
+  EXPECT_EQ(initiator.WriteRead({}, {}), Status::InvalidArgument());
+
+  EXPECT_EQ(ioctl_requests.size(), 0u);
+  EXPECT_EQ(ioctl_transfers.size(), 0u);
+}
+
+TEST_F(LinuxSpiTest, WriteOnly) {
+  // Write only
+  constexpr size_t kNumBytes = 4;
+  const std::array<std::byte, kNumBytes> write_buf = {1_b, 2_b, 3_b, 4_b};
+
+  PW_TEST_EXPECT_OK(initiator.WriteRead(write_buf, {}));
+
+  EXPECT_EQ(ioctl_requests.size(), 1u);
+  EXPECT_EQ(ioctl_transfers.size(), 1u);
+
+  // Transfer 0: tx={1, 2, 3, 4}, rx==null
+  auto& xfer0 = ioctl_transfers[0];
+  EXPECT_EQ(xfer0.len, kNumBytes);
+  EXPECT_EQ(xfer0.rx_buf, 0u);
+  EXPECT_EQ(xfer0.tx_buf, reinterpret_cast<uintptr_t>(write_buf.data()));
+  ByteSpan xfer0_tx(reinterpret_cast<std::byte*>(xfer0.tx_buf), xfer0.len);
+  EXPECT_TRUE(SpanEq(xfer0_tx, write_buf));
+}
+
+TEST_F(LinuxSpiTest, ReadOnly) {
+  // Read only
+  constexpr size_t kNumBytes = 4;
+  std::array<std::byte, kNumBytes> read_buf;
+
+  PW_TEST_EXPECT_OK(initiator.WriteRead({}, read_buf));
+
+  EXPECT_EQ(ioctl_requests.size(), 1u);
+  EXPECT_EQ(ioctl_transfers.size(), 1u);
+
+  // Transfer 0: tx==null, rx!=null
+  auto& xfer0 = ioctl_transfers[0];
+  EXPECT_EQ(xfer0.len, kNumBytes);
+  EXPECT_EQ(xfer0.rx_buf, reinterpret_cast<uintptr_t>(read_buf.data()));
+  EXPECT_EQ(xfer0.tx_buf, 0u);
+}
+
 TEST_F(LinuxSpiTest, WriteReadEqualSize) {
   // Write = Read
   constexpr size_t kNumBytes = 4;
