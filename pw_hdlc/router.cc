@@ -180,8 +180,7 @@ Poll<> Router::PollDeliverIncomingFrame(Context& cx, const Frame& frame) {
     return Ready();
   }
   std::copy(frame.data().begin(), frame.data().end(), (**buffer).begin());
-  Status write_status =
-      channel->channel->StageWrite(std::move(**buffer)).status();
+  Status write_status = channel->channel->StageWrite(std::move(**buffer));
   if (!write_status.ok()) {
     PW_LOG_ERROR(
         "Failed to write a buffer of size %zu destined for incoming HDLC "
@@ -314,8 +313,7 @@ void Router::WriteOutgoingMessages(Context& cx) {
           encode_status.code());
       continue;
     }
-    Status write_status =
-        io_channel_.StageWrite(std::move(write_buffer)).status();
+    Status write_status = io_channel_.StageWrite(std::move(write_buffer));
     if (!write_status.ok()) {
       PW_LOG_ERROR(
           "Failed to write a buffer of size %zu destined for outgoing HDLC "

@@ -140,23 +140,6 @@ class PacketIO {
     std::optional<multibuf::MultiBufAllocationFuture> outbound_packet_multibuf_;
   };
 
-  class PacketFlusher : public async2::Task {
-   public:
-    constexpr PacketFlusher(PacketIO& io) : io_(io), flush_until_{} {}
-
-    void FlushUntil(channel::WriteToken write_token) {
-      flush_until_ = write_token;
-      std::move(waker_).Wake();
-    }
-
-   private:
-    async2::Poll<> DoPend(async2::Context& cx) override;
-
-    PacketIO& io_;
-    channel::WriteToken flush_until_;
-    async2::Waker waker_;
-  };
-
   channel::DatagramReaderWriter& channel() { return channels_.first(); }
 
   std::byte mb_allocator_buffer_[PW_SYSTEM_MAX_TRANSMISSION_UNIT * 2];
@@ -168,7 +151,6 @@ class PacketIO {
 
   PacketReader packet_reader_;
   PacketWriter packet_writer_;
-  PacketFlusher packet_flusher_;
 };
 
 }  // namespace pw::system::internal

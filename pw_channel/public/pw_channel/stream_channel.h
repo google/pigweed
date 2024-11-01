@@ -141,11 +141,10 @@ class StreamChannel final : public channel::ByteReaderWriter {
     return *allocator_;
   }
 
-  Result<channel::WriteToken> DoStageWrite(multibuf::MultiBuf&& data) override;
+  Status DoStageWrite(multibuf::MultiBuf&& data) override;
 
-  async2::Poll<Result<channel::WriteToken>> DoPendWrite(
-      async2::Context&) override {
-    return CreateWriteToken(write_token_);
+  async2::Poll<Status> DoPendWrite(async2::Context&) override {
+    return OkStatus();
   }
 
   async2::Poll<Status> DoPendClose(async2::Context&) override {
@@ -158,7 +157,6 @@ class StreamChannel final : public channel::ByteReaderWriter {
   internal::StreamChannelWriteState write_state_;
   std::optional<multibuf::MultiBufAllocationFuture> allocation_future_;
   multibuf::MultiBufAllocator* allocator_;
-  uint32_t write_token_;
 };
 
 /// @}

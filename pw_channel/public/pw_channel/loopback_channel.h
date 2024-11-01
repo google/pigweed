@@ -61,15 +61,15 @@ class LoopbackChannel<DataType::kDatagram>
     return *write_allocator_;
   }
 
-  Result<channel::WriteToken> DoStageWrite(multibuf::MultiBuf&& data) final;
+  Status DoStageWrite(multibuf::MultiBuf&& data) final;
 
-  async2::Poll<Result<channel::WriteToken>> DoPendWrite(async2::Context&) final;
+  async2::Poll<Status> DoPendWrite(async2::Context&) final;
 
   async2::Poll<Status> DoPendClose(async2::Context&) final;
 
   multibuf::MultiBufAllocator* write_allocator_;
   std::optional<multibuf::MultiBuf> queue_;
-  uint32_t write_token_;
+
   async2::Waker waker_;
 };
 
@@ -96,15 +96,15 @@ class LoopbackChannel<DataType::kByte> : public ReliableByteReaderWriter {
     return *write_allocator_;
   }
 
-  Result<channel::WriteToken> DoStageWrite(multibuf::MultiBuf&& data) final;
+  Status DoStageWrite(multibuf::MultiBuf&& data) final;
 
-  async2::Poll<Result<channel::WriteToken>> DoPendWrite(async2::Context&) final;
+  async2::Poll<Status> DoPendWrite(async2::Context&) final;
 
   async2::Poll<Status> DoPendClose(async2::Context&) final;
 
   multibuf::MultiBufAllocator* write_allocator_;
   multibuf::MultiBuf queue_;
-  uint32_t write_token_;
+
   async2::Waker read_waker_;
 };
 

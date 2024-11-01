@@ -107,7 +107,7 @@ class ForwardingChannel<DataType::kDatagram>
 
   constexpr ForwardingChannel(ForwardingChannelPair<DataType::kDatagram>& pair,
                               ForwardingChannel* sibling)
-      : pair_(pair), sibling_(*sibling), write_token_(0) {}
+      : pair_(pair), sibling_(*sibling) {}
 
   async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
@@ -118,10 +118,9 @@ class ForwardingChannel<DataType::kDatagram>
     return pair_.allocator_;
   }
 
-  Result<channel::WriteToken> DoStageWrite(multibuf::MultiBuf&& data) override;
+  Status DoStageWrite(multibuf::MultiBuf&& data) override;
 
-  async2::Poll<Result<channel::WriteToken>> DoPendWrite(
-      async2::Context&) override;
+  async2::Poll<Status> DoPendWrite(async2::Context&) override;
 
   async2::Poll<Status> DoPendClose(async2::Context&) override;
 
@@ -132,7 +131,7 @@ class ForwardingChannel<DataType::kDatagram>
 
   // Could use a queue here.
   std::optional<multibuf::MultiBuf> read_queue_ PW_GUARDED_BY(pair_.mutex_);
-  uint32_t write_token_ PW_GUARDED_BY(pair_.mutex_);
+
   async2::Waker waker_ PW_GUARDED_BY(pair_.mutex_);
 };
 
@@ -150,7 +149,7 @@ class ForwardingChannel<DataType::kByte> : public ReliableByteReaderWriter {
 
   constexpr ForwardingChannel(ForwardingChannelPair<DataType::kByte>& pair,
                               ForwardingChannel* sibling)
-      : pair_(pair), sibling_(*sibling), write_token_(0) {}
+      : pair_(pair), sibling_(*sibling) {}
 
   async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
@@ -163,10 +162,9 @@ class ForwardingChannel<DataType::kByte> : public ReliableByteReaderWriter {
     return pair_.allocator_;
   }
 
-  Result<channel::WriteToken> DoStageWrite(multibuf::MultiBuf&& data) override;
+  Status DoStageWrite(multibuf::MultiBuf&& data) override;
 
-  async2::Poll<Result<channel::WriteToken>> DoPendWrite(
-      async2::Context&) override;
+  async2::Poll<Status> DoPendWrite(async2::Context&) override;
 
   async2::Poll<Status> DoPendClose(async2::Context&) override;
 
@@ -174,7 +172,7 @@ class ForwardingChannel<DataType::kByte> : public ReliableByteReaderWriter {
   ForwardingChannel& sibling_;
 
   multibuf::MultiBuf read_queue_ PW_GUARDED_BY(pair_.mutex_);
-  uint32_t write_token_ PW_GUARDED_BY(pair_.mutex_);
+
   async2::Waker read_waker_ PW_GUARDED_BY(pair_.mutex_);
 };
 

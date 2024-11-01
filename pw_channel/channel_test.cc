@@ -73,15 +73,12 @@ class ReliableByteReaderWriterStub
     PW_CHECK(false);
   }
 
-  pw::Result<pw::channel::WriteToken> DoStageWrite(
-      pw::multibuf::MultiBuf&&) override {
+  pw::Status DoStageWrite(pw::multibuf::MultiBuf&&) override {
     return pw::Status::Unimplemented();
   }
 
-  pw::async2::Poll<pw::Result<pw::channel::WriteToken>> DoPendWrite(
-      pw::async2::Context&) override {
-    return pw::async2::Ready(
-        pw::Result<pw::channel::WriteToken>(pw::Status::Unimplemented()));
+  pw::async2::Poll<pw::Status> DoPendWrite(pw::async2::Context&) override {
+    return pw::async2::Ready(pw::Status::Unimplemented());
   }
 
   // Common functions
@@ -119,15 +116,12 @@ class WriteOnlyStub : public pw::channel::ByteWriter {
     PW_CHECK(false);
   }
 
-  pw::Result<pw::channel::WriteToken> DoStageWrite(
-      pw::multibuf::MultiBuf&&) override {
+  pw::Status DoStageWrite(pw::multibuf::MultiBuf&&) override {
     return pw::Status::Unimplemented();
   }
 
-  pw::async2::Poll<pw::Result<pw::channel::WriteToken>> DoPendWrite(
-      pw::async2::Context&) override {
-    return pw::async2::Ready(
-        pw::Result<pw::channel::WriteToken>(pw::Status::Unimplemented()));
+  pw::async2::Poll<pw::Status> DoPendWrite(pw::async2::Context&) override {
+    return pw::async2::Ready(pw::Status::Unimplemented());
   }
 
   // Common functions
@@ -155,8 +149,7 @@ TEST(Channel, MethodsShortCircuitAfterCloseReturnsReady) {
                 channel.PendRead(cx)->status());
       EXPECT_EQ(Ready(pw::Status::FailedPrecondition()),
                 channel.PendReadyToWrite(cx));
-      EXPECT_EQ(pw::Status::FailedPrecondition(),
-                channel.PendWrite(cx)->status());
+      EXPECT_EQ(Ready(pw::Status::FailedPrecondition()), channel.PendWrite(cx));
       EXPECT_EQ(pw::async2::Ready(pw::Status::FailedPrecondition()),
                 channel.PendClose(cx));
 
@@ -280,29 +273,28 @@ class TestDatagramWriter : public DatagramWriter {
     return Pending();
   }
 
-  pw::Result<pw::channel::WriteToken> DoStageWrite(MultiBuf&& buffer) override {
+  pw::Status DoStageWrite(MultiBuf&& buffer) override {
     if (state_ != kReadyToWrite) {
       return pw::Status::Unavailable();
     }
 
     state_ = kWritePending;
     last_dgram_ = std::move(buffer);
-    return CreateWriteToken(++last_write_);
+    return pw::OkStatus();
   }
 
   pw::multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
     return alloc_;
   }
 
-  Poll<pw::Result<pw::channel::WriteToken>> DoPendWrite(Context& cx) override {
+  Poll<pw::Status> DoPendWrite(Context& cx) override {
     if (state_ != kReadyToFlush) {
       PW_ASYNC_STORE_WAKER(
           cx, waker_, "TestDatagramWriter is waiting for its Channel to flush");
       return Pending();
     }
     last_flush_ = last_write_;
-    return Ready(
-        pw::Result<pw::channel::WriteToken>(CreateWriteToken(last_flush_)));
+    return pw::OkStatus();
   }
 
   Poll<pw::Status> DoPendClose(Context&) override {
@@ -414,15 +406,14 @@ TEST(Channel, TestDatagramWriter) {
           }
           pw::ConstByteSpan str(pw::as_bytes(pw::span(kWriteData)));
           std::copy(str.begin(), str.end(), (**buffer).begin());
-          auto token = channel_.StageWrite(std::move(**buffer));
-          PW_CHECK(token.ok());
-          write_token_ = *token;
+          pw::Status write_status = channel_.StageWrite(std::move(**buffer));
+          PW_CHECK_OK(write_status);
           state_ = kFlushPacket;
           [[fallthrough]];
         }
         case kFlushPacket: {
           auto result = channel_.PendWrite(cx);
-          if (result.IsPending() || **result < write_token_) {
+          if (result.IsPending()) {
             return Pending();
           }
           test_executed += 1;
@@ -442,7 +433,6 @@ TEST(Channel, TestDatagramWriter) {
     enum { kWaitUntilReady, kFlushPacket } state_ = kWaitUntilReady;
     std::optional<MultiBufAllocationFuture> allocation_future_;
     DatagramWriter& channel_;
-    pw::channel::WriteToken write_token_;
   };
 
   SendWriteDataAndFlush test_task(write_channel, 24601);

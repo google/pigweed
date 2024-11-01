@@ -186,11 +186,11 @@ class Conversions {
   multibuf::MultiBufAllocator& DoGetWriteAllocator() final {              \
     PW_ASSERT(false); /* shouldn't be called on non-writeable channels */ \
   }                                                                       \
-  Result<channel::WriteToken> DoStageWrite(multibuf::MultiBuf&&) final {  \
+  Status DoStageWrite(multibuf::MultiBuf&&) final {                       \
     return Status::Unimplemented();                                       \
   }                                                                       \
-  async2::Poll<Result<WriteToken>> DoPendWrite(async2::Context&) final {  \
-    return async2::Ready(Result<WriteToken>(Status::Unimplemented()));    \
+  async2::Poll<Status> DoPendWrite(async2::Context&) final {              \
+    return async2::Ready(Status::Unimplemented());                        \
   }                                                                       \
   using AnyChannel::PendReadyToWrite;                                     \
   using AnyChannel::StageWrite;                                           \

@@ -85,42 +85,6 @@ enum Whence : uint8_t {
   kEnd,
 };
 
-/// Represents a write operation. `WriteToken` can be used to track whether a
-/// particular write has been flushed.
-class [[nodiscard]] WriteToken {
- public:
-  constexpr WriteToken() : token_(0) {}
-
-  constexpr WriteToken(const WriteToken&) = default;
-  constexpr WriteToken& operator=(const WriteToken&) = default;
-
-  constexpr bool operator==(const WriteToken& other) const {
-    return token_ == other.token_;
-  }
-  constexpr bool operator!=(const WriteToken& other) const {
-    return token_ != other.token_;
-  }
-  constexpr bool operator<(const WriteToken& other) const {
-    return token_ < other.token_;
-  }
-  constexpr bool operator>(const WriteToken& other) const {
-    return token_ > other.token_;
-  }
-  constexpr bool operator<=(const WriteToken& other) const {
-    return token_ <= other.token_;
-  }
-  constexpr bool operator>=(const WriteToken& other) const {
-    return token_ >= other.token_;
-  }
-
- private:
-  friend class AnyChannel;
-
-  constexpr WriteToken(uint32_t value) : token_(value) {}
-
-  uint32_t token_;
-};
-
 /// A generic data channel that may support reading or writing bytes or
 /// datagrams.
 ///
@@ -279,15 +243,15 @@ class AnyChannel {
   ///    FAILED_PRECONDITION: The channel is closed.
   ///
   /// @endrst
-  Result<WriteToken> StageWrite(multibuf::MultiBuf&& data) {
+  Status StageWrite(multibuf::MultiBuf&& data) {
     if (!is_write_open()) {
       return Status::FailedPrecondition();
     }
-    Result<WriteToken> result = DoStageWrite(std::move(data));
-    if (result.status().IsFailedPrecondition()) {
+    Status status = DoStageWrite(std::move(data));
+    if (status.IsFailedPrecondition()) {
       set_write_closed();
     }
-    return result;
+    return status;
   }
 
   /// Flushes pending writes.
@@ -299,15 +263,15 @@ class AnyChannel {
   /// * Ready(UNIMPLEMENTED) - The channel does not support writing.
   /// * Ready(FAILED_PRECONDITION) - The channel is closed.
   /// * Pending - Data remains to be flushed.
-  async2::Poll<Result<WriteToken>> PendWrite(async2::Context& cx) {
+  async2::Poll<Status> PendWrite(async2::Context& cx) {
     if (!is_write_open()) {
       return Status::FailedPrecondition();
     }
-    async2::Poll<Result<WriteToken>> result = DoPendWrite(cx);
-    if (result.IsReady() && result->status().IsFailedPrecondition()) {
+    async2::Poll<Status> status = DoPendWrite(cx);
+    if (status.IsReady() && status->IsFailedPrecondition()) {
       set_write_closed();
     }
-    return result;
+    return status;
   }
 
   /// Seek changes the position in the stream.
@@ -371,10 +335,6 @@ class AnyChannel {
   }
 
  protected:
-  static constexpr WriteToken CreateWriteToken(uint32_t value) {
-    return WriteToken(value);
-  }
-
   // Marks the channel as closed for reading, but does nothing else.
   //
   // PendClose() always marks the channel closed when DoPendClose() returns
@@ -445,10 +405,9 @@ class AnyChannel {
 
   virtual pw::async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) = 0;
 
-  virtual Result<WriteToken> DoStageWrite(multibuf::MultiBuf&& buffer) = 0;
+  virtual Status DoStageWrite(multibuf::MultiBuf&& buffer) = 0;
 
-  virtual pw::async2::Poll<Result<WriteToken>> DoPendWrite(
-      async2::Context& cx) = 0;
+  virtual pw::async2::Poll<Status> DoPendWrite(async2::Context& cx) = 0;
 
   // Seek functions
   /// TODO: b/323622630 - `Seek` and `Position` are not yet implemented.

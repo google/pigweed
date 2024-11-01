@@ -70,8 +70,7 @@ class SendDatagrams : public Task {
       if (channel_.PendReadyToWrite(cx).IsPending()) {
         return Pending();
       }
-      EXPECT_EQ(channel_.StageWrite(std::move(to_send_.front())).status(),
-                pw::OkStatus());
+      PW_TEST_EXPECT_OK(channel_.StageWrite(std::move(to_send_.front())));
       to_send_.pop();
     }
     return Ready();

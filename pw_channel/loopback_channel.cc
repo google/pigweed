@@ -22,7 +22,6 @@ using ::pw::async2::Context;
 using ::pw::async2::Pending;
 using ::pw::async2::Poll;
 using ::pw::async2::Ready;
-using ::pw::channel::WriteToken;
 using ::pw::multibuf::MultiBuf;
 
 Poll<Result<MultiBuf>> LoopbackChannel<DataType::kDatagram>::DoPendRead(
@@ -50,18 +49,16 @@ Poll<Status> LoopbackChannel<DataType::kDatagram>::DoPendReadyToWrite(
   return Ready(OkStatus());
 }
 
-Result<WriteToken> LoopbackChannel<DataType::kDatagram>::DoStageWrite(
-    MultiBuf&& data) {
+Status LoopbackChannel<DataType::kDatagram>::DoStageWrite(MultiBuf&& data) {
   PW_DASSERT(!queue_.has_value());
   queue_ = std::move(data);
-  const uint32_t token = ++write_token_;
   std::move(waker_).Wake();
-  return CreateWriteToken(token);
+  return OkStatus();
 }
 
-async2::Poll<Result<channel::WriteToken>>
-LoopbackChannel<DataType::kDatagram>::DoPendWrite(async2::Context&) {
-  return async2::Ready(CreateWriteToken(write_token_));
+async2::Poll<Status> LoopbackChannel<DataType::kDatagram>::DoPendWrite(
+    async2::Context&) {
+  return OkStatus();
 }
 
 async2::Poll<Status> LoopbackChannel<DataType::kDatagram>::DoPendClose(
@@ -80,9 +77,7 @@ Poll<Result<MultiBuf>> LoopbackChannel<DataType::kByte>::DoPendRead(
   return std::move(queue_);
 }
 
-Result<WriteToken> LoopbackChannel<DataType::kByte>::DoStageWrite(
-    MultiBuf&& data) {
-  const uint32_t token = ++write_token_;
+Status LoopbackChannel<DataType::kByte>::DoStageWrite(MultiBuf&& data) {
   if (!data.empty()) {
     bool was_empty = queue_.empty();
     queue_.PushSuffix(std::move(data));
@@ -90,12 +85,12 @@ Result<WriteToken> LoopbackChannel<DataType::kByte>::DoStageWrite(
       std::move(read_waker_).Wake();
     }
   }
-  return CreateWriteToken(token);
+  return OkStatus();
 }
 
-async2::Poll<Result<channel::WriteToken>>
-LoopbackChannel<DataType::kByte>::DoPendWrite(async2::Context&) {
-  return async2::Ready(CreateWriteToken(write_token_));
+async2::Poll<Status> LoopbackChannel<DataType::kByte>::DoPendWrite(
+    async2::Context&) {
+  return OkStatus();
 }
 
 async2::Poll<Status> LoopbackChannel<DataType::kByte>::DoPendClose(

@@ -157,8 +157,7 @@ StreamChannel::StreamChannel(MultiBufAllocator& allocator,
       read_state_(),
       write_state_(),
       allocation_future_(std::nullopt),
-      allocator_(&allocator),
-      write_token_(0) {
+      allocator_(&allocator) {
   pw::thread::DetachedThread(read_thread_options,
                              [this]() { read_state_.ReadLoop(reader_); });
   pw::thread::DetachedThread(write_thread_options,
@@ -200,11 +199,9 @@ Poll<Result<MultiBuf>> StreamChannel::DoPendRead(Context& cx) {
 
 Poll<Status> StreamChannel::DoPendReadyToWrite(Context&) { return OkStatus(); }
 
-pw::Result<pw::channel::WriteToken> StreamChannel::DoStageWrite(
-    pw::multibuf::MultiBuf&& data) {
+pw::Status StreamChannel::DoStageWrite(pw::multibuf::MultiBuf&& data) {
   PW_TRY(write_state_.SendData(std::move(data)));
-  const uint32_t token = write_token_++;
-  return CreateWriteToken(token);
+  return OkStatus();
 }
 
 }  // namespace pw::channel

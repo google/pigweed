@@ -55,21 +55,20 @@ async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendReadyToWrite(
   return async2::Ready(OkStatus());
 }
 
-Result<channel::WriteToken>
-ForwardingChannel<DataType::kDatagram>::DoStageWrite(multibuf::MultiBuf&& data)
-    PW_NO_LOCK_SAFETY_ANALYSIS {
+Status ForwardingChannel<DataType::kDatagram>::DoStageWrite(
+    multibuf::MultiBuf&& data) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
   PW_DASSERT(!sibling_.read_queue_.has_value());
   sibling_.read_queue_ = std::move(data);
-  const uint32_t token = ++write_token_;
+
   std::move(sibling_.waker_).Wake();
-  return CreateWriteToken(token);
+  return OkStatus();
 }
 
-async2::Poll<Result<channel::WriteToken>>
-ForwardingChannel<DataType::kDatagram>::DoPendWrite(async2::Context&) {
+async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendWrite(
+    async2::Context&) {
   std::lock_guard lock(pair_.mutex_);
-  return async2::Ready(CreateWriteToken(write_token_));
+  return OkStatus();
 }
 
 async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendClose(
@@ -104,22 +103,21 @@ ForwardingChannel<DataType::kByte>::DoPendRead(async2::Context& cx) {
   return read_data;
 }
 
-Result<channel::WriteToken> ForwardingChannel<DataType::kByte>::DoStageWrite(
+Status ForwardingChannel<DataType::kByte>::DoStageWrite(
     multibuf::MultiBuf&& data) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
   if (data.empty()) {
-    return CreateWriteToken(write_token_);  // no data, nothing to do
+    return OkStatus();  // no data, nothing to do
   }
 
-  write_token_ += data.size();
   sibling_.read_queue_.PushSuffix(std::move(data));
-  return CreateWriteToken(write_token_);
+  return OkStatus();
 }
 
-async2::Poll<Result<channel::WriteToken>>
-ForwardingChannel<DataType::kByte>::DoPendWrite(async2::Context&) {
+async2::Poll<Status> ForwardingChannel<DataType::kByte>::DoPendWrite(
+    async2::Context&) {
   std::lock_guard lock(pair_.mutex_);
-  return async2::Ready(CreateWriteToken(write_token_));
+  return OkStatus();
 }
 
 async2::Poll<Status> ForwardingChannel<DataType::kByte>::DoPendClose(

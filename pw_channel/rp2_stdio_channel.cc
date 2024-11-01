@@ -77,8 +77,7 @@ Poll<std::byte> PollReadByte(Context& cx) {
 class Rp2StdioChannel final : public ByteReaderWriter {
  public:
   Rp2StdioChannel(multibuf::MultiBufAllocator& allocator)
-      : write_token_(0),
-        allocation_future_(std::nullopt),
+      : allocation_future_(std::nullopt),
         buffer_(std::nullopt),
         allocator_(&allocator) {}
 
@@ -104,18 +103,16 @@ class Rp2StdioChannel final : public ByteReaderWriter {
     return *allocator_;
   }
 
-  Result<channel::WriteToken> DoStageWrite(multibuf::MultiBuf&& data) override;
+  Status DoStageWrite(multibuf::MultiBuf&& data) override;
 
-  async2::Poll<Result<channel::WriteToken>> DoPendWrite(
-      async2::Context&) override {
-    return CreateWriteToken(write_token_);
+  async2::Poll<Status> DoPendWrite(async2::Context&) override {
+    return OkStatus();
   }
 
   async2::Poll<Status> DoPendClose(async2::Context&) override {
     return async2::Ready(OkStatus());
   }
 
-  uint32_t write_token_;
   std::optional<multibuf::MultiBufAllocationFuture> allocation_future_;
   std::optional<multibuf::MultiBuf> buffer_;
   multibuf::MultiBufAllocator* allocator_;
@@ -175,11 +172,10 @@ async2::Poll<Status> Rp2StdioChannel::DoPendReadyToWrite(async2::Context&) {
   return OkStatus();
 }
 
-Result<channel::WriteToken> Rp2StdioChannel::DoStageWrite(
-    multibuf::MultiBuf&& data) {
+Status Rp2StdioChannel::DoStageWrite(multibuf::MultiBuf&& data) {
   WriteMultiBuf(data);
-  const uint32_t token = write_token_++;
-  return CreateWriteToken(token);
+
+  return OkStatus();
 }
 
 }  // namespace

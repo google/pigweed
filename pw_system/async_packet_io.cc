@@ -107,8 +107,7 @@ PacketIO::PacketIO(channel::ByteReaderWriter& io_channel,
       router_(io_channel, buffer),
       rpc_server_thread_(allocator_, rpc_server),
       packet_reader_(*this),
-      packet_writer_(*this),
-      packet_flusher_(*this) {
+      packet_writer_(*this) {
   PW_CHECK_OK(router_.AddChannel(channels_.second(),
                                  PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS,
                                  PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS));
@@ -118,7 +117,6 @@ void PacketIO::Start(async2::Dispatcher& dispatcher,
                      const thread::Options& thread_options) {
   dispatcher.Post(packet_reader_);
   dispatcher.Post(packet_writer_);
-  dispatcher.Post(packet_flusher_);
 
   thread::DetachedThread(thread_options, [this] {
     while (true) {
@@ -154,6 +152,17 @@ async2::Poll<> PacketIO::PacketReader::DoPend(async2::Context& cx) {
 }
 
 async2::Poll<> PacketIO::PacketWriter::DoPend(async2::Context& cx) {
+  // Do the work of writing any existing packets.
+  // We ignore Pending because we want to continue trying to make
+  // progress sending new packets regardless of whether the write was
+  // able to complete.
+  async2::Poll<Status> write_status = io_.channel().PendWrite(cx);
+  if (write_status.IsReady() && !write_status->ok()) {
+    PW_LOG_ERROR("Channel::PendWrite() returned non-OK status %s",
+                 write_status->str());
+    return async2::Ready();
+  }
+
   // Get the next packet to send, if any.
   if (outbound_packet_.IsPending()) {
     outbound_packet_ = io_.rpc_server_thread_.PendOutgoingDatagram(cx);
@@ -208,8 +217,6 @@ async2::Poll<> PacketIO::PacketWriter::DoPend(async2::Context& cx) {
     return async2::Ready();  // Write failed, but should not have
   }
 
-  io_.packet_flusher_.FlushUntil(*write_result);
-
   // Write was accepted, so set up for the next packet
   outbound_packet_ = async2::Pending();
   outbound_packet_multibuf_.reset();
@@ -217,27 +224,6 @@ async2::Poll<> PacketIO::PacketWriter::DoPend(async2::Context& cx) {
   // Sent one packet, let other tasks run.
   cx.ReEnqueue();
   return async2::Pending();
-}
-
-async2::Poll<> PacketIO::PacketFlusher::DoPend(async2::Context& cx) {
-  // Flush pending writes
-  auto flush_result = io_.channel().PendWrite(cx);
-  if (flush_result.IsPending()) {
-    return async2::Pending();
-  }
-
-  if (!flush_result->ok()) {
-    PW_LOG_ERROR("Flushing failed with status %s",
-                 flush_result->status().str());
-    return async2::Ready();  // Flush failed, broken
-  }
-
-  if (flush_until_ > **flush_result) {
-    cx.ReEnqueue();  // didn't flush as far as expected, try again later
-    return async2::Pending();
-  }
-  PW_ASYNC_STORE_WAKER(cx, waker_, "PacketIO is waiting for packets to flush");
-  return async2::Pending();  // Done
 }
 
 }  // namespace pw::system::internal
