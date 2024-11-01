@@ -22,8 +22,8 @@
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth/hci_h4.emb.h"
-#include "pw_bluetooth_proxy/emboss_util.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
+#include "pw_bluetooth_proxy/internal/emboss_util.h"
 #include "pw_containers/flat_map.h"
 #include "pw_function/function.h"
 #include "pw_unit_test/framework.h"  // IWYU pragma: keep

@@ -25,10 +25,10 @@ endif()
 
 pw_add_library(pw_bluetooth_proxy STATIC
   HEADERS
-    public/pw_bluetooth_proxy/acl_data_channel.h
-    public/pw_bluetooth_proxy/emboss_util.h
-    public/pw_bluetooth_proxy/hci_transport.h
     public/pw_bluetooth_proxy/h4_packet.h
+    public/pw_bluetooth_proxy/internal/acl_data_channel.h
+    public/pw_bluetooth_proxy/internal/emboss_util.h
+    public/pw_bluetooth_proxy/internal/hci_transport.h
     public/pw_bluetooth_proxy/proxy_host.h
   PUBLIC_INCLUDES
     public

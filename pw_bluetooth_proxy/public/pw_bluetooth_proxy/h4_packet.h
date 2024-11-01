@@ -18,7 +18,7 @@
 
 #include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/hci_h4.emb.h"
-#include "pw_bluetooth_proxy/emboss_util.h"
+#include "pw_bluetooth_proxy/internal/emboss_util.h"
 #include "pw_function/function.h"
 #include "pw_span/span.h"
 

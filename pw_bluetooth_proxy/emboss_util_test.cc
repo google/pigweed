@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_proxy/emboss_util.h"
+#include "pw_bluetooth_proxy/internal/emboss_util.h"
 
 #include "pw_bluetooth/hci_test.emb.h"
 #include "pw_unit_test/framework.h"  // IWYU pragma: keep

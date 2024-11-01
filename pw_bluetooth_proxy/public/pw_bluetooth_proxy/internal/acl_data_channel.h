@@ -17,7 +17,7 @@
 #include <cstdint>
 
 #include "pw_bluetooth/hci_events.emb.h"
-#include "pw_bluetooth_proxy/hci_transport.h"
+#include "pw_bluetooth_proxy/internal/hci_transport.h"
 #include "pw_containers/vector.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
