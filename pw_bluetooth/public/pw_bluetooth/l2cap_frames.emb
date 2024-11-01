@@ -92,3 +92,82 @@ struct KFramePduHeader:
   -- A frame header for a K-Frame (credit based flow control) PDU.
   0     [+2]  UInt  pdu_length
   $next [+2]  UInt  channel_id
+
+# ====================== Signaling Packet Formats ==============================
+# Core Spec v6.0 Vol 3, Part A, Section 4
+
+
+enum L2capSignalingPacketCode:
+  -- Possible values for the Code field of an L2CAP C-frame. See Core Spec v5.4,
+  -- Vol 3, Part A, Table 4.2 for a list of the codes.
+  [maximum_bits: 8]
+  COMMAND_REJECT_RSP              = 0x01
+  CONNECTION_REQ                  = 0x02
+  CONNECTION_RSP                  = 0x03
+  CONFIGURATION_REQ               = 0x04
+  CONFIGURATION_RSP               = 0x05
+  DISCONNECTION_REQ               = 0x06
+  DISCONNECTION_RSP               = 0x07
+  ECHO_REQ                        = 0x08
+  ECHO_RSP                        = 0x09
+  INFORMATION_REQ                 = 0x0A
+  INFORMATION_RSP                 = 0x0B
+  CONNECTION_PARAMETER_UPDATE_REQ = 0x12
+  CONNECTION_PARAMETER_UPDATE_RSP = 0x13
+  LE_CREDIT_BASED_CONNECTION_REQ  = 0x14
+  LE_CREDIT_BASED_CONNECTION_RSP  = 0x15
+  FLOW_CONTROL_CREDIT_IND         = 0x16
+  CREDIT_BASED_CONNECTION_REQ     = 0x17
+  CREDIT_BASED_CONNECTION_RSP     = 0x18
+  CREDIT_BASED_RECONFIGURE_REQ    = 0x19
+  CREDIT_BASED_RECONFIGURE_RSP    = 0x1A
+
+
+struct CFrame:
+  -- A Control Frame (C-frame) contains L2CAP signaling commands exchanged
+  -- between peer L2CAP entities. C-frames are exclusively used on the L2CAP
+  -- signaling channels.
+  0     [+BasicL2capHeader.$size_in_bytes]  BasicL2capHeader    header
+  let pdu_length = header.pdu_length
+  let channel_id = header.channel_id
+  $next [+pdu_length]                       UInt:8[pdu_length]  payload
+
+
+struct L2capSignalingCommandHeader:
+  -- C-frame refers to an L2CAP PDU payload containing one or more signaling
+  -- commands.
+  0     [+1]  L2capSignalingPacketCode  code
+  $next [+1]  UInt                      identifier
+    -- Matches responses with requests.
+
+  $next [+2]  UInt                      data_length
+
+
+struct L2capLeCreditBasedConnectionReq:
+  -- Section 4.22
+  -- L2CAP_LE_CREDIT_BASED_CONNECTION_REQ packets are sent to create and
+  -- configure an L2CAP channel between two devices using LE Credit Based Flow
+  -- Control mode.
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
+    -- `code` is expected to be LE_CREDIT_BASED_CONNECTION_REQ
+
+  $next [+2]                                           UInt                         spsm
+    -- Simplified Protocol/Service Multiplexer.
+
+  $next [+2]                                           UInt                         source_cid
+    -- Channel endpoint on the device sending the request.
+
+  let min_mtu = 23
+  $next [+2]                                           UInt                         mtu
+    -- Maximum Transmission Unit
+    [requires: this >= L2capLeCreditBasedConnectionReq.min_mtu]
+
+  let min_mps = 23
+  let max_mps = 65533
+  $next [+2]                                           UInt                         mps
+    -- Maximum PDU Payload Size
+    [requires: L2capLeCreditBasedConnectionReq.min_mps <= this <= L2capLeCreditBasedConnectionReq.max_mps]
+
+  let max_credit_value = 65535
+  $next [+2]                                           UInt                         initial_credits
+    [requires: this <= L2capLeCreditBasedConnectionReq.max_credit_value]
