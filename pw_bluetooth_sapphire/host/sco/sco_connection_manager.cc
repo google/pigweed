@@ -129,37 +129,17 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::AcceptConnection(
 
 hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
     const hci_spec::EventCode& code,
-    hci::CommandChannel::EventCallbackVariant event_cb_variant) {
+    hci::CommandChannel::EmbossEventCallback event_cb) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   hci::CommandChannel::EventHandlerId event_id = 0;
-  event_id = std::visit(
-      [this, &self, code](
-          auto&& event_cb) -> hci::CommandChannel::EventHandlerId {
-        using T = std::decay_t<decltype(event_cb)>;
-        if constexpr (std::is_same_v<T, hci::CommandChannel::EventCallback>) {
-          return transport_->command_channel()->AddEventHandler(
-              code,
-              [self, cb = std::move(event_cb)](const hci::EventPacket& event) {
-                if (!self.is_alive()) {
-                  return hci::CommandChannel::EventCallbackResult::kRemove;
-                }
-                return cb(event);
-              });
-        } else if constexpr (std::is_same_v<
-                                 T,
-                                 hci::CommandChannel::EmbossEventCallback>) {
-          return transport_->command_channel()->AddEventHandler(
-              code,
-              [self,
-               cb = std::move(event_cb)](const hci::EmbossEventPacket& event) {
-                if (!self.is_alive()) {
-                  return hci::CommandChannel::EventCallbackResult::kRemove;
-                }
-                return cb(event);
-              });
+  event_id = transport_->command_channel()->AddEventHandler(
+      code,
+      [self, cb = std::move(event_cb)](const hci::EmbossEventPacket& event) {
+        if (!self.is_alive()) {
+          return hci::CommandChannel::EventCallbackResult::kRemove;
         }
-      },
-      std::move(event_cb_variant));
+        return cb(event);
+      });
   PW_CHECK(event_id);
   event_handler_ids_.push_back(event_id);
   return event_id;
