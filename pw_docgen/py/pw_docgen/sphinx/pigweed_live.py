@@ -41,7 +41,6 @@ class PigweedLiveDirective(Directive):
         '2024-08-26 13:00:00',
         '2024-09-23 13:00:00',
         '2024-10-21 13:00:00',
-        '2024-11-18 13:00:00',
         '2024-12-16 13:00:00',
     ]
     timezone = pytz.timezone('US/Pacific')
