@@ -34,3 +34,11 @@ pw_add_library(pw_log_basic STATIC
     pw_log.facade
     ${pw_log_basic_CONFIG}
 )
+
+pw_add_library(pw_log_basic.log_string_handler STATIC
+  SOURCES
+    log_string_handler.cc
+  PRIVATE_DEPS
+    pw_log_basic
+    pw_log_string.handler.facade
+)

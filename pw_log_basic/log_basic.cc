@@ -99,6 +99,27 @@ extern "C" void pw_Log(int level,
                        const char* function_name,
                        const char* message,
                        ...) {
+  va_list args;
+  va_start(args, message);
+  pw_Log_HandleMessageVaList(level,
+                             flags,
+                             module_name,
+                             file_name,
+                             line_number,
+                             function_name,
+                             message,
+                             args);
+  va_end(args);
+}
+
+extern "C" void pw_Log_HandleMessageVaList(int level,
+                                           unsigned int flags,
+                                           const char* module_name,
+                                           const char* file_name,
+                                           int line_number,
+                                           const char* function_name,
+                                           const char* message,
+                                           va_list args) {
   // Accumulate the log message in this buffer, then output it.
   pw::StringBuffer<PW_LOG_BASIC_ENTRY_SIZE> buffer;
 
@@ -146,10 +167,7 @@ extern "C" void pw_Log(int level,
   buffer << LogLevelToLogLevelName(level) << "  ";
 
   // Column: Message
-  va_list args;
-  va_start(args, message);
   buffer.FormatVaList(message, args);
-  va_end(args);
 
   // All done; flush the log.
   write_log(buffer);

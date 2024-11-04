@@ -73,6 +73,14 @@ pw_source_set("pw_log_basic.impl") {
   ]
 }
 
+pw_source_set("log_string_handler") {
+  sources = [ "log_string_handler.cc" ]
+  deps = [
+    ":pw_log_basic",
+    "$dir_pw_log_string:handler.facade",
+  ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }

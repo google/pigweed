@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <stdarg.h>
+
 #include "pw_preprocessor/arguments.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
@@ -28,6 +30,15 @@ void pw_Log(int level,
             const char* function_name,
             const char* message,
             ...) PW_PRINTF_FORMAT(7, 8);
+
+void pw_Log_HandleMessageVaList(int level,
+                                unsigned int flags,
+                                const char* module_name,
+                                const char* file_name,
+                                int line_number,
+                                const char* function_name,
+                                const char* message,
+                                va_list args);
 
 PW_EXTERN_C_END
 

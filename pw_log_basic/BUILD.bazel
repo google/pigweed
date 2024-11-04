@@ -56,3 +56,14 @@ label_flag(
 cc_library(
     name = "impl",
 )
+
+cc_library(
+    name = "log_string_handler",
+    srcs = [
+        "log_string_handler.cc",
+    ],
+    deps = [
+        ":pw_log_basic",
+        "//pw_log_string:handler.facade",
+    ],
+)
