@@ -43,10 +43,16 @@ pw_test_group("tests") {
 pw_source_set("pw_bluetooth_proxy") {
   public_configs = [ ":public_include_path" ]
   public = [
+    "public/pw_bluetooth_proxy/gatt_notify_channel.h",
     "public/pw_bluetooth_proxy/h4_packet.h",
     "public/pw_bluetooth_proxy/internal/acl_data_channel.h",
     "public/pw_bluetooth_proxy/internal/emboss_util.h",
+    "public/pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h",
+    "public/pw_bluetooth_proxy/internal/h4_storage.h",
     "public/pw_bluetooth_proxy/internal/hci_transport.h",
+    "public/pw_bluetooth_proxy/internal/l2cap_coc_internal.h",
+    "public/pw_bluetooth_proxy/internal/l2cap_write_channel.h",
+    "public/pw_bluetooth_proxy/l2cap_coc.h",
     "public/pw_bluetooth_proxy/proxy_host.h",
   ]
   public_deps = [
@@ -61,12 +67,17 @@ pw_source_set("pw_bluetooth_proxy") {
     dir_pw_containers,
     dir_pw_function,
     dir_pw_log,
+    dir_pw_result,
     dir_pw_span,
     dir_pw_status,
   ]
   deps = [ dir_pw_log ]
   sources = [
     "acl_data_channel.cc",
+    "gatt_notify_channel.cc",
+    "h4_storage.cc",
+    "l2cap_coc.cc",
+    "l2cap_write_channel.cc",
     "proxy_host.cc",
   ]
 }

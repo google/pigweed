@@ -25,10 +25,16 @@ endif()
 
 pw_add_library(pw_bluetooth_proxy STATIC
   HEADERS
+    public/pw_bluetooth_proxy/gatt_notify_channel.h
     public/pw_bluetooth_proxy/h4_packet.h
     public/pw_bluetooth_proxy/internal/acl_data_channel.h
     public/pw_bluetooth_proxy/internal/emboss_util.h
+    public/pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h
+    public/pw_bluetooth_proxy/internal/h4_storage.h
     public/pw_bluetooth_proxy/internal/hci_transport.h
+    public/pw_bluetooth_proxy/internal/l2cap_coc_internal.h
+    public/pw_bluetooth_proxy/internal/l2cap_write_channel.h
+    public/pw_bluetooth_proxy/l2cap_coc.h
     public/pw_bluetooth_proxy/proxy_host.h
   PUBLIC_INCLUDES
     public
@@ -42,12 +48,17 @@ pw_add_library(pw_bluetooth_proxy STATIC
     pw_containers
     pw_function
     pw_log
+    pw_result
     pw_span
     pw_status
     pw_sync.lock_annotations
     pw_sync.mutex
   SOURCES
     acl_data_channel.cc
+    gatt_notify_channel.cc
+    h4_storage.cc
+    l2cap_coc.cc
+    l2cap_write_channel.cc
     proxy_host.cc
 )
 

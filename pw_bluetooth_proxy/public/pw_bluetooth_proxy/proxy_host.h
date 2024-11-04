@@ -14,11 +14,11 @@
 
 #pragma once
 
-#include <optional>
-
-#include "pw_bluetooth/att.emb.h"
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
-#include "pw_containers/flat_map.h"
+#include "pw_bluetooth_proxy/internal/h4_storage.h"
+#include "pw_bluetooth_proxy/internal/hci_transport.h"
+#include "pw_bluetooth_proxy/l2cap_coc.h"
+#include "pw_result/result.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
@@ -62,13 +62,22 @@ class ProxyHost {
   /// the host. Some packets may be modified, added, or removed.
   ///
   /// To support all of its current functionality, the proxy host needs at least
-  /// the following from-controller events passed through it. It will pass on
+  /// the following from-controller packets passed through it. It will pass on
   /// all other packets, so containers can choose to just pass all
-  /// from-controller packets through it.
-  /// - 7.7.14 Command Complete event (7.8.2 LE Read Buffer Size [v1] command)
-  /// - 7.7.14 Command Complete event (7.8.2 LE Read Buffer Size [v2] command)
-  /// - 7.7.19 Number Of Completed Packets event (v1.1)
-  /// - 7.7.5 Disconnection Complete event (v1.1)
+  /// from-controller packets through the proxy host.
+  ///
+  /// All packets of this type:
+  /// - L2CAP over ACL packets (specifically those addressed to channels managed
+  ///   by the proxy host, including signaling packets)
+  ///
+  /// HCI_Command_Complete events (7.7.14) containing return parameters for
+  /// these commands:
+  /// - HCI_LE_Read_Buffer_Size [v1] command (7.8.2)
+  /// - HCI_LE_Read_Buffer_Size [v2] command (7.8.2)
+  ///
+  /// These HCI event packets:
+  /// - HCI_Number_Of_Completed_Packets event (7.7.19)
+  /// - HCI_Disconnection_Complete event (7.7.5)
   void HandleH4HciFromController(H4PacketWithHci&& h4_packet);
 
   /// Called by container to notify proxy that the Bluetooth system is being
@@ -80,12 +89,41 @@ class ProxyHost {
 
   // ##### Client APIs
 
+  /// Returns an L2CAP connection-oriented channel that supports writing to and
+  /// reading from a remote peer.
+  ///
+  /// @param[in] connection_handle The connection handle of the remote peer.
+  ///
+  /// @param[in] rx_config         Parameters applying to reading packets.
+  ///                              See `l2cap_coc.h` for details.
+  ///
+  /// @param[in] tx_config         Parameters applying to writing packets.
+  ///                              See `l2cap_coc.h` for details.
+  ///
+  /// @param[in] receive_fn        Read callback to be invoked on Rx SDUs.
+  ///
+  /// @param[in] event_fn          Handle asynchronous events such as errors
+  ///                              encountered by the channel.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
+  /// @endrst
+  pw::Result<L2capCoc> AcquireL2capCoc(
+      uint16_t connection_handle,
+      L2capCoc::CocConfig rx_config,
+      L2capCoc::CocConfig tx_config,
+      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      pw::Function<void(L2capCoc::Event event)>&& event_fn);
+
   /// Send a GATT Notify to the indicated connection.
   ///
-  /// @param[in] connection_handle The connection handle of the peer to notify
+  /// @param[in] connection_handle The connection handle of the peer to notify.
+  ///                              Maximum valid connection handle is 0x0EFF.
   ///
   /// @param[in] attribute_handle  The attribute handle the notify should be
-  ///                              sent on.
+  ///                              sent on. Cannot be 0.
   /// @param[in] attribute_value   The data to be sent. Data will be copied
   ///                              before function completes.
   ///
@@ -95,8 +133,7 @@ class ProxyHost {
   ///  OK: If notify was successfully queued for send.
   ///  UNAVAILABLE: If CHRE doesn't have resources to queue the send
   ///               at this time (transient error).
-  ///  UNIMPLEMENTED: If send is not supported by the current implementation.
-  ///  INVALID_ARGUMENT: If arguments are invalid.
+  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
   /// @endrst
   pw::Status SendGattNotify(uint16_t connection_handle,
                             uint16_t attribute_handle,
@@ -113,36 +150,18 @@ class ProxyHost {
 
   /// Returns the max number of LE ACL sends that can be in-flight at one time.
   /// That is, ACL packets that have been sent and not yet released.
-  // TODO: https://pwbug.dev/349700888 - Remove this getter once kNumH4Buffs is
-  // an externally configurable parameter?
   static constexpr size_t GetNumSimultaneousAclSendsSupported() {
-    return kNumH4Buffs;
+    return H4Storage::GetNumH4Buffs();
+  }
+
+  /// Returns the max LE ACL packet size supported to be sent.
+  static constexpr size_t GetMaxAclSendSize() {
+    return H4Storage::GetH4BuffSize() - sizeof(emboss::H4PacketType);
   }
 
  private:
-  // Populate the fields of the provided ATT_HANDLE_VALUE_NTF packet view.
-  void BuildAttNotify(emboss::AttNotifyOverAclWriter att_notify,
-                      uint16_t connection_handle,
-                      uint16_t attribute_handle,
-                      pw::span<const uint8_t> attribute_value);
-
   // Process a Command_Complete event.
   void HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet);
-
-  // TODO: https://pwbug.dev/349700888 - Make sizes configurable.
-  static constexpr size_t kNumH4Buffs = 2;
-  // Default of 14 bytes is the size of an H4 packet containing an ACL data
-  // packet with an ATT Notify PDU for a 2-byte characteristic.
-  static constexpr uint16_t kH4BuffSize = 14;
-
-  // Returns an initializer list for `h4_buff_occupied_` with each buffer
-  // address in `h4_buffs_` mapped to false.
-  std::array<containers::Pair<uint8_t*, bool>, kNumH4Buffs> InitOccupiedMap();
-
-  // Returns a free H4 buffer and marks it as occupied. If all H4 buffers are
-  // occupied, returns std::nullopt.
-  std::optional<pw::span<uint8_t>> ReserveH4Buff()
-      PW_EXCLUSIVE_LOCKS_REQUIRED(acl_send_mutex_);
 
   // For sending non-ACL data to the host and controller. ACL traffic shall be
   // sent through the `acl_data_channel_`.
@@ -151,21 +170,8 @@ class ProxyHost {
   // Owns management of the LE ACL data channel.
   AclDataChannel acl_data_channel_;
 
-  // Sending & releasing ACL packets happen on different threads. As such, we
-  // need a mutex to guard around all operations in the ACL-send pipeline,
-  // including building packets, credit allocation, and releasing packets.
-  sync::Mutex acl_send_mutex_;
-
-  // Each buffer is meant to hold one H4 packet containing an ACL PDU.
-  std::array<std::array<uint8_t, kH4BuffSize>, kNumH4Buffs> h4_buffs_
-      PW_GUARDED_BY(acl_send_mutex_);
-
-  // Maps each H4 buffer to a flag that is set when the buffer holds an H4
-  // packet being sent through `acl_data_channel_` and cleared in that H4
-  // packet's release function to indicate that the H4 buffer is safe to
-  // overwrite.
-  containers::FlatMap<uint8_t*, bool, kNumH4Buffs> h4_buff_occupied_
-      PW_GUARDED_BY(acl_send_mutex_);
+  // Owns H4 packet buffers.
+  H4Storage h4_storage_;
 };
 
 }  // namespace pw::bluetooth::proxy
