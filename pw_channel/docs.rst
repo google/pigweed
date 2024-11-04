@@ -54,5 +54,6 @@ flow control, backpressure, composability, and more.
 .. toctree::
    :hidden:
 
+   guides
    design
    reference

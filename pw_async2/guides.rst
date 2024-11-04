@@ -157,3 +157,9 @@ can be tested with simulated time using
 :cpp:class:`pw::async2::SimulatedTimeProvider`. Doing so helps avoid
 timing-dependent test flakes and helps ensure that tests are fast since they
 don't need to wait for real-world time to elapse.
+
+.. _module-pw_async2-guides-faqs:
+
+---------------------------------
+Frequently asked questions (FAQs)
+---------------------------------

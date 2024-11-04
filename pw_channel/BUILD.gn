@@ -162,6 +162,7 @@ pw_doc_group("docs") {
   sources = [
     "design.rst",
     "docs.rst",
+    "guides.rst",
     "reference.rst",
   ]
 }
