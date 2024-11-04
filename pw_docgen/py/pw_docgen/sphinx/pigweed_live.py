@@ -33,8 +33,8 @@ class PigweedLiveDirective(Directive):
     """Generates the up-to-date Pigweed Live info."""
 
     datetime_format = '%Y-%m-%d %H:%M:%S'
-    # TODO: b/303859828 - Update this data sometime between 2024-09-23
-    # and 2024-10-07.
+    # TODO: b/303859828 - Update this data sometime between 2025-09-22
+    # and 2025-10-20.
     meetings = [
         '2024-07-01 13:00:00',
         '2024-07-29 13:00:00',
@@ -42,6 +42,19 @@ class PigweedLiveDirective(Directive):
         '2024-09-23 13:00:00',
         '2024-10-21 13:00:00',
         '2024-12-16 13:00:00',
+        '2025-01-13 13:00:00',
+        '2025-02-10 13:00:00',
+        '2025-03-10 13:00:00',
+        '2025-04-07 13:00:00',
+        '2025-05-05 13:00:00',
+        '2025-06-02 13:00:00',
+        '2025-06-30 13:00:00',
+        '2025-07-28 13:00:00',
+        '2025-08-25 13:00:00',
+        '2025-09-22 13:00:00',
+        '2025-10-20 13:00:00',
+        '2025-11-17 13:00:00',
+        '2025-12-15 13:00:00',
     ]
     timezone = pytz.timezone('US/Pacific')
 
