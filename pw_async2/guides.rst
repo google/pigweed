@@ -42,7 +42,7 @@ of :cpp:class:`pw::async2::Task` objects and run them to completion. The
 dispatcher is essentially a scheduler for cooperatively-scheduled
 (non-preemptive) threads (tasks).
 
-While a dispatcher is running, it waits for one or more tasks to awaken and then
+While a dispatcher is running, it waits for one or more tasks to waken and then
 advances each task by invoking its :cpp:func:`pw::async2::Task::DoPend` method.
 The ``DoPend`` method is typically implemented manually by users, though it is
 automatically provided by coroutines.
@@ -52,25 +52,69 @@ the task is then deregistered from the dispatcher.
 
 If the task is unable to complete, ``DoPend`` must return ``Pending`` and arrange
 for the task to be woken up when it is able to make progress again. Once the
-task is reawoken, the task is re-added to the ``Dispatcher`` queue. The
+task is rewoken, the task is re-added to the ``Dispatcher`` queue. The
 dispatcher will then invoke ``DoPend`` once more, continuing the cycle until
 ``DoPend`` returns ``Ready`` and the task is completed.
 
-.. _module-pw_async2-guides-waking:
+.. _module-pw_async2-guides-pendables:
 
-Waking tasks
-============
-When a task is unable to complete without waiting, the implementor of
-``DoPend`` must return ``Pending`` and should arrange for the task to be reawoken
-once ``DoPend`` may be able to make more progress. This is done by calling
-:c:macro:`PW_ASYNC_STORE_WAKER` store a :cpp:class:`pw::async2::Waker` for the current
-task. In order to wake the task up and put it back on the dispatcher's queue,
-:cpp:func:`pw::async2::Waker::Wake` must be called.
+Implementing invariants for pendable functions
+==============================================
+.. _invariants: https://stackoverflow.com/a/112088
+
+Any ``Pend``-like function or method similar to
+:cpp:func:`pw::async2::Task::DoPend` that can pause when it's not able
+to make progress on its task is known as a **pendable function**. When
+implementing a pendable function, make sure that you always uphold the
+following `invariants`_:
+
+* :ref:`module-pw_async2-guides-pendables-incomplete`
+* :ref:`module-pw_async2-guides-pendables-complete`
+
+.. note:: Exactly which APIs are considered pendable?
+
+   If you see ``Pend`` in the function name, it's probably
+   pendable.
+
+.. _module-pw_async2-guides-pendables-incomplete:
+
+Arranging future completion of incomplete tasks
+-----------------------------------------------
+When your pendable function can't yet complete:
+
+#. Do one of the following to make sure the task rewakes when it's ready to
+   make more progress:
+
+   * Delegate waking to a subtask. Arrange for that subtask's
+     pendable function to wake this task when appropriate.
+
+   * Arrange an external wakeup. Use :c:macro:`PW_ASYNC_STORE_WAKER`
+     to store the task's waker somewhere, and then call
+     :cpp:func:`pw::async2::Waker::Wake` from an interrupt or another thread
+     once the event that the task is waiting for has completed.
+
+   * Re-enqueue the task with :cpp:func:`pw::async2::Context::ReEnqueue`.
+     This is a rare case. Usually, you should just create an immediately
+     invoked ``Waker``.
+
+#. Make sure to return :cpp:type:`pw::async2::Pending` to signal that the task
+   is incomplete.
+
+In other words, whenever your pendable function returns
+:cpp:type:`pw::async2::Pending`, you must guarantee that
+:cpp:func:`pw::async2::Context::Wake` is called once in the future.
 
 For example, one implementation of a delayed task might arrange for its ``Waker``
-to be awoken by a timer once some time has passed. Another case might be a
-messaging library which calls ``Wake`` on the receiving task once a sender has
+to be woken by a timer once some time has passed. Another case might be a
+messaging library which calls ``Wake()`` on the receiving task once a sender has
 placed a message in a queue.
+
+.. _module-pw_async2-guides-pendables-complete:
+
+Cleaning up complete tasks
+--------------------------
+When your pendable function has completed, make sure to return
+:cpp:type:`pw::async2::Ready` to signal that the task is complete.
 
 .. _module-pw_async2-guides-passing-data:
 
@@ -84,7 +128,7 @@ Unlike callback-based interfaces, tasks (and the libraries they use)
 are responsible for storage of the inputs and outputs of events. A common
 technique is for a task implementation to provide storage for outputs of an
 event. Then, upon completion of the event, the outputs will be stored in the
-task before it is awoken. The task will then be invoked again by the
+task before it is woken. The task will then be invoked again by the
 dispatcher and can then operate on the resulting values.
 
 This common pattern is implemented by the
