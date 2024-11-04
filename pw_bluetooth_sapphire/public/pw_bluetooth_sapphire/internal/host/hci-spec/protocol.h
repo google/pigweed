@@ -506,15 +506,6 @@ constexpr EventCode kEncryptionChangeEventCode = 0x08;
 // Change Connection Link Key Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kChangeConnectionLinkKeyCompleteEventCode = 0x09;
 
-struct ChangeConnectionLinkKeyCompleteEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
 // =============================================================
 // Read Remote Supported Features Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kReadRemoteSupportedFeaturesCompleteEventCode = 0x0B;
