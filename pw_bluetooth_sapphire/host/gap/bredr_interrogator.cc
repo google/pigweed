@@ -142,7 +142,7 @@ void BrEdrInterrogator::QueueReadRemoteFeatures() {
       hci_spec::kReadRemoteSupportedFeatures);
   packet.view_t().connection_handle().Write(handle_);
 
-  auto cmd_cb = [this](const hci::EventPacket& event) {
+  auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
     if (hci_is_error(event,
                      WARN,
                      "gap-bredr",
@@ -153,13 +153,9 @@ void BrEdrInterrogator::QueueReadRemoteFeatures() {
            "gap-bredr",
            "remote features request complete (peer id: %s)",
            bt_str(peer_id_));
-    const auto& params =
-        event.view()
-            .payload<
-                hci_spec::ReadRemoteSupportedFeaturesCompleteEventParams>();
-    peer_->SetFeaturePage(0,
-                          pw::bytes::ConvertOrderFrom(cpp20::endian::little,
-                                                      params.lmp_features));
+    auto view = event.view<
+        pw::bluetooth::emboss::ReadRemoteSupportedFeaturesCompleteEventView>();
+    peer_->SetFeaturePage(0, view.lmp_features().BackingStorage().ReadUInt());
 
     if (peer_->features().HasBit(/*page=*/0,
                                  hci_spec::LMPFeature::kExtendedFeatures)) {

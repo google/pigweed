@@ -510,19 +510,6 @@ constexpr EventCode kChangeConnectionLinkKeyCompleteEventCode = 0x09;
 // Read Remote Supported Features Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kReadRemoteSupportedFeaturesCompleteEventCode = 0x0B;
 
-struct ReadRemoteSupportedFeaturesCompleteEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // A connection handle for an ACL connection.
-  //  Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Bit Mask List of LMP features. See enum class LMPFeature in hci_constants.h
-  // for how to interpret this bitfield.
-  uint64_t lmp_features;
-} __attribute__((packed));
-
 // ===================================================================
 // Read Remote Version Information Complete Event (v1.1) (BR/EDR & LE)
 constexpr EventCode kReadRemoteVersionInfoCompleteEventCode = 0x0C;

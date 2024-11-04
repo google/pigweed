@@ -2249,13 +2249,14 @@ void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(
   RespondWithCommandStatus(hci_spec::kReadRemoteSupportedFeatures,
                            pwemb::StatusCode::SUCCESS);
 
-  hci_spec::ReadRemoteSupportedFeaturesCompleteEventParams response = {};
-  response.status = pwemb::StatusCode::SUCCESS;
-  response.connection_handle = pw::bytes::ConvertOrderTo(
-      cpp20::endian::little, params.connection_handle().Read());
-  response.lmp_features = settings_.lmp_features_page0;
-  SendEvent(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
-            BufferView(&response, sizeof(response)));
+  auto response = hci::EmbossEventPacket::New<
+      pwemb::ReadRemoteSupportedFeaturesCompleteEventWriter>(
+      hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode);
+  auto view = response.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.connection_handle().Write(params.connection_handle().Read());
+  view.lmp_features().BackingStorage().WriteUInt(settings_.lmp_features_page0);
+  SendCommandChannelPacket(response.data());
 }
 
 void FakeController::OnReadRemoteVersionInfoCommandReceived(
