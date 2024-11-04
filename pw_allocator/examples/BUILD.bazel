@@ -129,7 +129,7 @@ pw_cc_test(
     testonly = True,
     srcs = ["pmr.cc"],
     deps = [
-        "//pw_allocator:allocator",
+        "//pw_allocator:pmr_allocator",
         "//pw_allocator:testing",
     ],
 )

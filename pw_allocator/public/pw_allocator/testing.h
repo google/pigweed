@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstddef>
+#include <mutex>
 
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block.h"

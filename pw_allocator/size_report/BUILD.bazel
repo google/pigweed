@@ -26,25 +26,6 @@ pw_cc_binary(
 )
 
 pw_cc_binary(
-    name = "as_pmr_allocator_base",
-    srcs = ["as_pmr_allocator_base.cc"],
-    deps = [
-        "//pw_allocator:first_fit_block_allocator",
-        "//pw_allocator:size_reporter",
-    ],
-)
-
-pw_cc_binary(
-    name = "as_pmr_allocator",
-    srcs = ["as_pmr_allocator.cc"],
-    deps = [
-        "//pw_allocator:allocator",
-        "//pw_allocator:first_fit_block_allocator",
-        "//pw_allocator:size_reporter",
-    ],
-)
-
-pw_cc_binary(
     name = "best_fit_block_allocator",
     srcs = ["best_fit_block_allocator.cc"],
     deps = [
@@ -140,6 +121,25 @@ pw_cc_binary(
     srcs = ["null_allocator.cc"],
     deps = [
         "//pw_allocator:null_allocator",
+        "//pw_allocator:size_reporter",
+    ],
+)
+
+pw_cc_binary(
+    name = "pmr_allocator_base",
+    srcs = ["pmr_allocator_base.cc"],
+    deps = [
+        "//pw_allocator:first_fit_block_allocator",
+        "//pw_allocator:size_reporter",
+    ],
+)
+
+pw_cc_binary(
+    name = "pmr_allocator",
+    srcs = ["pmr_allocator.cc"],
+    deps = [
+        "//pw_allocator:first_fit_block_allocator",
+        "//pw_allocator:pmr_allocator",
         "//pw_allocator:size_reporter",
     ],
 )

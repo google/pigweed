@@ -17,7 +17,7 @@
 #include <string_view>
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/as_pmr_allocator.h"
+#include "pw_allocator/pmr_allocator.h"
 
 namespace examples {
 
@@ -39,7 +39,7 @@ class LibraryIndex {
   }
 
  private:
-  pw::allocator::AsPmrAllocator allocator_;
+  pw::allocator::PmrAllocator allocator_;
   MapType by_author_;
 };
 

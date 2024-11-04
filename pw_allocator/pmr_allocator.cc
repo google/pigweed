@@ -12,13 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/as_pmr_allocator.h"
+#include "pw_allocator/pmr_allocator.h"
 
-#include "pw_allocator/allocator.h"
 #include "pw_assert/check.h"
 
-namespace pw::allocator {
-namespace internal {
+namespace pw::allocator::internal {
 
 void* MemoryResource::do_allocate(size_t bytes, size_t alignment) {
   void* ptr = nullptr;
@@ -58,5 +56,4 @@ bool MemoryResource::do_is_equal(
   return false;
 }
 
-}  // namespace internal
-}  // namespace pw::allocator
+}  // namespace pw::allocator::internal

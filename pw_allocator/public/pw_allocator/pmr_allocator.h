@@ -13,9 +13,9 @@
 // the License.
 #pragma once
 
+#include "pw_allocator/allocator.h"
 #include "pw_allocator/config.h"
-
-#if PW_ALLOCATOR_ENABLE_PMR
+#include "pw_status/status_with_size.h"
 
 #if __has_include(<memory_resource>)
 #include <memory_resource>
@@ -33,17 +33,10 @@ namespace pmr = ::std::experimental::pmr;
 #error "<memory_resource> is required to use this header!"
 #endif  // __has_include(<memory_resource>)
 
-#include "pw_status/status_with_size.h"
-
-namespace pw {
+namespace pw::allocator {
 
 // Forward declaration
-class Allocator;
-
-namespace allocator {
-
-// Forward declaration
-class AsPmrAllocator;
+class PmrAllocator;
 
 namespace internal {
 
@@ -60,7 +53,7 @@ class MemoryResource final : public pw::pmr::memory_resource {
   Allocator& allocator() { return *allocator_; }
 
  private:
-  friend class ::pw::allocator::AsPmrAllocator;
+  friend class ::pw::allocator::PmrAllocator;
   void set_allocator(Allocator& allocator) { allocator_ = &allocator; }
 
   void* do_allocate(size_t bytes, size_t alignment) override;
@@ -80,11 +73,11 @@ class MemoryResource final : public pw::pmr::memory_resource {
 /// can be used in `pw::pmr` containers, such as `pw::pmr::vector`.
 ///
 /// See also https://en.cppreference.com/w/cpp/memory/polymorphic_allocator.
-class AsPmrAllocator final : public pw::pmr::polymorphic_allocator<std::byte> {
+class PmrAllocator final : public pw::pmr::polymorphic_allocator<std::byte> {
  public:
   using Base = pw::pmr::polymorphic_allocator<std::byte>;
 
-  AsPmrAllocator(Allocator& allocator) : Base(&memory_resource_) {
+  explicit PmrAllocator(Allocator& allocator) : Base(&memory_resource_) {
     memory_resource_.set_allocator(allocator);
   }
 
@@ -94,25 +87,4 @@ class AsPmrAllocator final : public pw::pmr::polymorphic_allocator<std::byte> {
   internal::MemoryResource memory_resource_;
 };
 
-}  // namespace allocator
-}  // namespace pw
-
-#else
-
-namespace pw::allocator {
-
-/// Disabled version of `AsPmrAllocator`.
-///
-/// This is used to disable the ability to use this allocator with the PMR
-/// versions of standard library containers.
-class AsPmrAllocator {
- public:
-  template <typename Arg>
-  AsPmrAllocator(Arg&) {
-    static_assert(false, "Polymorphic allocators are disabled");
-  }
-};
-
 }  // namespace pw::allocator
-
-#endif  // PW_ALLOCATOR_ENABLE_PMR

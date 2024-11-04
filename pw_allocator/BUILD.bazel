@@ -43,11 +43,9 @@ cc_library(
     name = "allocator",
     srcs = [
         "allocator.cc",
-        "as_pmr_allocator.cc",
     ],
     hdrs = [
         "public/pw_allocator/allocator.h",
-        "public/pw_allocator/as_pmr_allocator.h",
     ],
     includes = ["public"],
     deps = [
@@ -345,6 +343,17 @@ cc_library(
 )
 
 cc_library(
+    name = "pmr_allocator",
+    srcs = ["pmr_allocator.cc"],
+    hdrs = ["public/pw_allocator/pmr_allocator.h"],
+    includes = ["public"],
+    deps = [
+        ":allocator",
+        ":config",
+    ],
+)
+
+cc_library(
     name = "pool",
     hdrs = ["public/pw_allocator/pool.h"],
     includes = [":default_config"],
@@ -530,18 +539,6 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "as_pmr_allocator_test",
-    srcs = [
-        "as_pmr_allocator_test.cc",
-    ],
-    deps = [
-        ":allocator",
-        ":testing",
-        "//pw_unit_test",
-    ],
-)
-
-pw_cc_test(
     name = "best_fit_block_allocator_test",
     srcs = ["best_fit_block_allocator_test.cc"],
     deps = [
@@ -717,6 +714,18 @@ pw_cc_test(
     ],
     deps = [
         ":null_allocator",
+        ":testing",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "pmr_allocator_test",
+    srcs = [
+        "pmr_allocator_test.cc",
+    ],
+    deps = [
+        ":pmr_allocator",
         ":testing",
         "//pw_unit_test",
     ],

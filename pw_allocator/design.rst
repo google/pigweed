@@ -52,7 +52,7 @@ incorporating many of its ideas. :ref:`module-pw_allocator-api-allocator` in
 particular is similar to `std::pmr::memory_resource`_.
 
 This similarity is most evident in the PMR adapter class,
-:ref:`module-pw_allocator-api-as_pmr_allocator`. This adapter allows any
+:ref:`module-pw_allocator-api-pmr_allocator`. This adapter allows any
 :ref:`module-pw_allocator-api-allocator` to be used as a
 `std::pmr::polymorphic_allocator`_ with any standard library that
 `can use an allocator`_. Refer to the guides on how to

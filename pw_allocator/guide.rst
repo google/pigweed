@@ -193,7 +193,7 @@ While there are
 :ref:`module-pw_allocator-design-differences-with-polymorphic-allocators`, an
 :ref:`module-pw_allocator-api-allocator` can be used with these containers by
 wrapping them with a PMR adapter type,
-:ref:`module-pw_allocator-api-as_pmr_allocator`:
+:ref:`module-pw_allocator-api-pmr_allocator`:
 
 .. literalinclude:: examples/pmr.cc
    :language: cpp
@@ -211,7 +211,7 @@ wrapping them with a PMR adapter type,
 .. Warning::
    The standard library containers expect their allocators to throw an exception
    on allocation failure, and do not check for failure themselves. If
-   exceptions are disabled, :ref:`module-pw_allocator-api-as_pmr_allocator`
+   exceptions are disabled, :ref:`module-pw_allocator-api-pmr_allocator`
    instead **asserts** that allocation succeeded. Care must be taken in this
    case to ensure that memory is not exhausted.
 
@@ -282,7 +282,7 @@ Consult the :ref:`module-pw_allocator-api` for additional details.
 
 - :ref:`module-pw_allocator-api-fallback_allocator`: Dispatches first to a
   primary allocator, and, if that fails, to a secondary allocator.
-- :ref:`module-pw_allocator-api-as_pmr_allocator`: Adapts an allocator to be a
+- :ref:`module-pw_allocator-api-pmr_allocator`: Adapts an allocator to be a
   ``std::pmr::polymorphic_allocator``, which can be used with standard library
   containers that `use allocators`_, such as ``std::pmr::vector<T>``.
 - :ref:`module-pw_allocator-api-synchronized_allocator`: Synchronizes access to

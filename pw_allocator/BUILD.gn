@@ -55,20 +55,14 @@ config("test_config") {
 
 pw_source_set("allocator") {
   public_configs = [ ":public_include_path" ]
-  public = [
-    "public/pw_allocator/allocator.h",
-    "public/pw_allocator/as_pmr_allocator.h",
-  ]
+  public = [ "public/pw_allocator/allocator.h" ]
   public_deps = [
     ":config",
     ":deallocator",
     "$dir_pw_assert:check",
     dir_pw_result,
   ]
-  sources = [
-    "allocator.cc",
-    "as_pmr_allocator.cc",
-  ]
+  sources = [ "allocator.cc" ]
 }
 
 pw_source_set("allocator_as_pool") {
@@ -299,6 +293,16 @@ pw_source_set("null_allocator") {
   sources = [ "null_allocator.cc" ]
 }
 
+pw_source_set("pmr_allocator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/pmr_allocator.h" ]
+  public_deps = [
+    ":allocator",
+    ":config",
+  ]
+  sources = [ "pmr_allocator.cc" ]
+}
+
 pw_source_set("pool") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/pool.h" ]
@@ -440,14 +444,6 @@ pw_test("allocator_test") {
   sources = [ "allocator_test.cc" ]
 }
 
-pw_test("as_pmr_allocator_test") {
-  deps = [
-    ":allocator",
-    ":testing",
-  ]
-  sources = [ "as_pmr_allocator_test.cc" ]
-}
-
 pw_test("best_fit_block_allocator_test") {
   deps = [
     ":best_fit_block_allocator",
@@ -581,6 +577,14 @@ pw_test("null_allocator_test") {
   sources = [ "null_allocator_test.cc" ]
 }
 
+pw_test("pmr_allocator_test") {
+  deps = [
+    ":pmr_allocator",
+    ":testing",
+  ]
+  sources = [ "pmr_allocator_test.cc" ]
+}
+
 pw_test("synchronized_allocator_test") {
   enable_if =
       pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != "" &&
@@ -637,8 +641,9 @@ pw_test("worst_fit_block_allocator_test") {
 pw_test_group("tests") {
   tests = [
     ":allocator_as_pool_test",
+
+    # ":allocator_nc_test",
     ":allocator_test",
-    ":as_pmr_allocator_test",
     ":best_fit_block_allocator_test",
     ":block_test",
     ":bucket_allocator_test",
@@ -655,9 +660,10 @@ pw_test_group("tests") {
     ":layout_test",
     ":libc_allocator_test",
     ":null_allocator_test",
-    ":typed_pool_test",
+    ":pmr_allocator_test",
     ":synchronized_allocator_test",
     ":tracking_allocator_test",
+    ":typed_pool_test",
     ":unique_ptr_test",
     ":worst_fit_block_allocator_test",
   ]
@@ -740,14 +746,14 @@ pw_size_diff("forwarding_allocators_size_report") {
   title = "Sizes of various forwarding allocator implementations"
   binaries = [
     {
-      target = "size_report:as_pmr_allocator"
-      base = "size_report:as_pmr_allocator_base"
-      label = "AsPmrAllocator"
-    },
-    {
       target = "size_report:fallback_allocator"
       base = "size_report:fallback_allocator_base"
       label = "FallbackAllocator"
+    },
+    {
+      target = "size_report:pmr_allocator"
+      base = "size_report:pmr_allocator_base"
+      label = "AsPmrAllocator"
     },
     {
       target = "size_report:synchronized_allocator_isl"

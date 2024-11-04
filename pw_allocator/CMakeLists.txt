@@ -37,7 +37,6 @@ pw_add_library(pw_allocator.test_config INTERFACE
 pw_add_library(pw_allocator.allocator STATIC
   HEADERS
     public/pw_allocator/allocator.h
-    public/pw_allocator/as_pmr_allocator.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -46,7 +45,6 @@ pw_add_library(pw_allocator.allocator STATIC
     pw_result
   SOURCES
     allocator.cc
-    as_pmr_allocator.cc
 )
 
 pw_add_library(pw_allocator.allocator_as_pool STATIC
@@ -313,6 +311,17 @@ pw_add_library(pw_allocator.null_allocator STATIC
     pw_allocator.allocator
 )
 
+pw_add_library(pw_allocator.pmr_allocator STATIC
+  HEADERS
+    public/pw_allocator/pmr_allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+  SOURCES
+    pmr_allocator.cc
+)
+
 pw_add_library(pw_allocator.pool INTERFACE
   HEADERS
     public/pw_allocator/pool.h
@@ -470,18 +479,6 @@ pw_add_test(pw_allocator.allocator_test
   PRIVATE_DEPS
     pw_allocator.allocator
     pw_allocator.testing
-  GROUPS
-    modules
-    pw_allocator
-)
-
-pw_add_test(pw_allocator.as_pmr_allocator_test
-  SOURCES
-    as_pmr_allocator_test.cc
-  PRIVATE_DEPS
-    pw_allocator.allocator
-    pw_allocator.testing
-    pw_unit_test
   GROUPS
     modules
     pw_allocator
@@ -664,6 +661,18 @@ pw_add_test(pw_allocator.null_allocator_test
     null_allocator_test.cc
   PRIVATE_DEPS
     pw_allocator.null_allocator
+    pw_allocator.testing
+    pw_unit_test
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.pmr_allocator_test
+  SOURCES
+    pmr_allocator_test.cc
+  PRIVATE_DEPS
+    pw_allocator.pmr_allocator
     pw_allocator.testing
     pw_unit_test
   GROUPS

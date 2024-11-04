@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/as_pmr_allocator.h"
+#include "pw_allocator/pmr_allocator.h"
 
 #include <deque>
 #include <forward_list>
@@ -30,7 +30,7 @@ namespace {
 
 // Test fixtures.
 
-using ::pw::allocator::AsPmrAllocator;
+using ::pw::allocator::PmrAllocator;
 using ::pw::allocator::test::AllocatorForTest;
 
 struct Foo {
@@ -68,28 +68,29 @@ struct has_emplace_front : std::false_type {};
 template <typename T>
 struct has_emplace_front<
     T,
-    std::void_t<decltype(std::declval<T>().emplace_front())>> : std::true_type {
-};
+    std::void_t<decltype(std::declval<T>().emplace_front())> >
+    : std::true_type {};
 
 template <typename T, typename = void>
 struct has_emplace_back : std::false_type {};
 
 template <typename T>
-struct has_emplace_back<T,
-                        std::void_t<decltype(std::declval<T>().emplace_back())>>
-    : std::true_type {};
+struct has_emplace_back<
+    T,
+    std::void_t<decltype(std::declval<T>().emplace_back())> > : std::true_type {
+};
 
 template <typename T, typename = void>
 struct has_key_type : std::false_type {};
 
 template <typename T>
-struct has_key_type<T, std::void_t<typename T::key_type>> : std::true_type {};
+struct has_key_type<T, std::void_t<typename T::key_type> > : std::true_type {};
 
 template <typename T, typename = void>
 struct has_mapped_type : std::false_type {};
 
 template <typename T>
-struct has_mapped_type<T, std::void_t<typename T::mapped_type>>
+struct has_mapped_type<T, std::void_t<typename T::mapped_type> >
     : std::true_type {};
 
 template <typename Container, size_t kCapacity = 256>
@@ -98,7 +99,7 @@ void TestPmrAllocator() {
   auto& requested_bytes = underlying.metrics().requested_bytes;
   EXPECT_EQ(requested_bytes.value(), 0U);
 
-  AsPmrAllocator allocator = underlying.as_pmr();
+  PmrAllocator allocator(underlying);
   {
     Container container(allocator);
     size_t size = 0;
@@ -131,47 +132,47 @@ void TestPmrAllocator() {
 
 // Unit tests.
 
-TEST(AsPmrAllocatorTest, Vector) { TestPmrAllocator<pw::pmr::vector<Foo>>(); }
+TEST(PmrAllocatorTest, Vector) { TestPmrAllocator<pw::pmr::vector<Foo> >(); }
 
-TEST(AsPmrAllocatorTest, Deque) {
+TEST(PmrAllocatorTest, Deque) {
   // Some implementations preallocate a lot of memory.
   TestPmrAllocator<pw::pmr::deque<Foo>, 8192>();
 }
 
-TEST(AsPmrAllocatorTest, ForwardList) {
-  TestPmrAllocator<pw::pmr::forward_list<Foo>>();
+TEST(PmrAllocatorTest, ForwardList) {
+  TestPmrAllocator<pw::pmr::forward_list<Foo> >();
 }
 
-TEST(AsPmrAllocatorTest, List) { TestPmrAllocator<pw::pmr::list<Foo>>(); }
+TEST(PmrAllocatorTest, List) { TestPmrAllocator<pw::pmr::list<Foo> >(); }
 
-TEST(AsPmrAllocatorTest, Set) { TestPmrAllocator<pw::pmr::set<Foo>>(); }
+TEST(PmrAllocatorTest, Set) { TestPmrAllocator<pw::pmr::set<Foo> >(); }
 
-TEST(AsPmrAllocatorTest, Map) { TestPmrAllocator<pw::pmr::map<Foo, Bar>>(); }
+TEST(PmrAllocatorTest, Map) { TestPmrAllocator<pw::pmr::map<Foo, Bar> >(); }
 
-TEST(AsPmrAllocatorTest, MultiSet) {
-  TestPmrAllocator<pw::pmr::multiset<Foo>>();
+TEST(PmrAllocatorTest, MultiSet) {
+  TestPmrAllocator<pw::pmr::multiset<Foo> >();
 }
 
-TEST(AsPmrAllocatorTest, MultiMap) {
-  TestPmrAllocator<pw::pmr::multimap<Foo, Bar>>();
+TEST(PmrAllocatorTest, MultiMap) {
+  TestPmrAllocator<pw::pmr::multimap<Foo, Bar> >();
 }
 
-TEST(AsPmrAllocatorTest, UnorderedSet) {
+TEST(PmrAllocatorTest, UnorderedSet) {
   // Some implementations preallocate a lot of memory.
   TestPmrAllocator<pw::pmr::unordered_set<Foo>, 1024>();
 }
 
-TEST(AsPmrAllocatorTest, UnorderedMap) {
+TEST(PmrAllocatorTest, UnorderedMap) {
   // Some implementations preallocate a lot of memory.
   TestPmrAllocator<pw::pmr::unordered_map<Foo, Bar>, 1024>();
 }
 
-TEST(AsPmrAllocatorTest, UnorderedMultiSet) {
+TEST(PmrAllocatorTest, UnorderedMultiSet) {
   // Some implementations preallocate a lot of memory.
   TestPmrAllocator<pw::pmr::unordered_multiset<Foo>, 1024>();
 }
 
-TEST(AsPmrAllocatorTest, UnorderedMultiMap) {
+TEST(PmrAllocatorTest, UnorderedMultiMap) {
   // Some implementations preallocate a lot of memory.
   TestPmrAllocator<pw::pmr::unordered_multimap<Foo, Bar>, 1024>();
 }

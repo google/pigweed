@@ -120,7 +120,7 @@ pw_test("metrics") {
 
 pw_test("pmr") {
   deps = [
-    "$dir_pw_allocator:allocator",
+    "$dir_pw_allocator:pmr_allocator",
     "$dir_pw_allocator:testing",
   ]
   sources = [ "pmr.cc" ]
