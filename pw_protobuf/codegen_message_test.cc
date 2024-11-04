@@ -2147,11 +2147,11 @@ TEST(CodegenMessage, OneOf_Encode_MultipleTimes) {
       0);
 }
 
-TEST(CodegenMessage, OneOf_Encode_UnsetEncoderFails) {
+TEST(CodegenMessage, OneOf_Encode_UnsetEncoderIsIgnored) {
   OneOfTest::Message message;
   std::array<std::byte, 8> buffer;
   OneOfTest::MemoryEncoder oneof_test(buffer);
-  EXPECT_EQ(oneof_test.Write(message), Status::DataLoss());
+  EXPECT_EQ(oneof_test.Write(message), OkStatus());
 }
 
 TEST(CodegenMessage, OneOf_Decode) {
@@ -2208,7 +2208,7 @@ TEST(CodegenMessage, OneOf_Decode_MultipleOneOfFieldsFails) {
   EXPECT_EQ(stream_decoder.Read(message), Status::DataLoss());
 }
 
-TEST(CodegenMessage, OneOf_Decode_UnsetDecoderFails) {
+TEST(CodegenMessage, OneOf_Decode_UnsetDecoderIsIgnored) {
   // clang-format off
   constexpr uint8_t proto_data[] = {
     // type.an_int
@@ -2219,7 +2219,7 @@ TEST(CodegenMessage, OneOf_Decode_UnsetDecoderFails) {
   stream::MemoryReader reader(as_bytes(span(proto_data)));
   OneOfTest::StreamDecoder stream_decoder(reader);
   OneOfTest::Message message;
-  EXPECT_EQ(stream_decoder.Read(message), Status::DataLoss());
+  EXPECT_EQ(stream_decoder.Read(message), OkStatus());
 }
 
 }  // namespace

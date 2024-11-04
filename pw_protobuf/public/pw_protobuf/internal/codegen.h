@@ -300,7 +300,7 @@ struct OneOf {
       invoked_ = true;
       return encode_(encoder);
     }
-    return Status::DataLoss();
+    return OkStatus();
   }
 
   Status Decode(Fields field, StreamDecoder& decoder) const {
@@ -313,7 +313,7 @@ struct OneOf {
       invoked_ = true;
       return decode_(field, decoder);
     }
-    return Status::DataLoss();
+    return OkStatus();
   }
 
   mutable bool invoked_;
