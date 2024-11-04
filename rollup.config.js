@@ -22,54 +22,6 @@ import sourceMaps from 'rollup-plugin-sourcemaps';
 import terser from '@rollup/plugin-terser';
 
 export default [
-  // Bundle proto collection script
-  {
-    input: path.join('pw_protobuf_compiler', 'ts', 'build.ts'),
-    output: [
-      {
-        file: path.join('dist', 'bin', 'pw_protobuf_compiler.js'),
-        format: 'cjs',
-        banner: '#!/usr/bin/env node\n\nconst window = null;',
-      },
-    ],
-    plugins: [
-      pluginTypescript({
-        tsconfig: './tsconfig.json',
-        exclude: ['**/*_test.ts'],
-      }),
-      resolve(),
-      commonjs(),
-
-      // Resolve source maps to the original source
-      sourceMaps(),
-    ],
-  },
-  // bundle proto collection template used by the above script
-  {
-    input: path.join(
-      'pw_protobuf_compiler',
-      'ts',
-      'ts_proto_collection.template.ts',
-    ),
-    output: [
-      {
-        file: path.join('dist', 'bin', 'ts_proto_collection.template.js'),
-        format: 'esm',
-        banner: '/* eslint-disable */',
-      },
-    ],
-    plugins: [
-      pluginTypescript({
-        tsconfig: './tsconfig.json',
-        exclude: ['**/*_test.ts'],
-      }),
-      resolve(),
-      commonjs(),
-
-      // Resolve source maps to the original source
-      sourceMaps(),
-    ],
-  },
   // Bundle proto collection into one UMD file for consumption from browser
   {
     input: path.join('dist', 'protos', 'collection.ts'),

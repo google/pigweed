@@ -17,7 +17,7 @@
   "scripts": {
     "log-viewer-setup": "cd pw_web/log-viewer && npm install --quiet --no-progress --loglevel=error",
     "prebuild": "rimraf dist && npm run build-protos",
-    "build-protos": "ts-node -P tsconfig.json ts/buildprotos.ts",
+    "build-protos": "rollup -c rollup-protos.config.js && node dist/bin/build_default_protos.js",
     "build": "npm run rollup",
     "dev": "rollup -c -w",
     "rollup": "rollup -c && npm run postbuild",
@@ -38,7 +38,7 @@
     "@types/crc": "^3.4.0",
     "@types/google-protobuf": "^3.15.5",
     "@types/jest": "^28.1.4",
-    "@types/node": "^16.0.1",
+    "@types/node": "^16.18.115",
     "@types/react": "^17.0.14",
     "@types/react-dom": "^17.0.9",
     "@typescript-eslint/eslint-plugin": "^6.4.0",

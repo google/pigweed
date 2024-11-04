@@ -15,6 +15,35 @@
 import * as fs from 'fs';
 import { FileDescriptorSet } from 'google-protobuf/google/protobuf/descriptor_pb';
 
+// Keeping template here is not elegant but let's us avoid issues when bundling via rollup:
+// Previously, we had to keep a copy of this template file alongside this CLI script.
+const template = `
+import { ProtoCollection as Base } from 'pigweedjs/pw_protobuf_compiler';
+import { FileDescriptorSet } from 'google-protobuf/google/protobuf/descriptor_pb';
+import * as base64 from 'base64-js';
+
+// Generated proto imports added during build
+// TEMPLATE_proto_imports
+
+const MODULE_MAP = {
+  // TEMPLATE_module_map
+};
+
+const DESCRIPTOR_BASE64_BINARY = '{TEMPLATE_descriptor_binary}';
+
+/**
+ * A wrapper class of protocol buffer modules to provide convenience methods.
+ */
+export class ProtoCollection extends Base {
+  constructor() {
+    const fileDescriptorSet = FileDescriptorSet.deserializeBinary(
+      base64.toByteArray(DESCRIPTOR_BASE64_BINARY),
+    );
+    super(fileDescriptorSet, MODULE_MAP);
+  }
+}
+`;
+
 function buildModulePath(rootDir: string, fileName: string): string {
   const name = `${rootDir}/${fileName}`;
   return name.replace(/\.proto$/, '_pb');
@@ -23,11 +52,7 @@ function buildModulePath(rootDir: string, fileName: string): string {
 export default function generateTemplate(
   outputPath: string,
   descriptorDataPath: string,
-  templatePath: string,
-  protoRootDir: string,
 ) {
-  let template = fs.readFileSync(templatePath).toString();
-
   const descriptorSetBinary = fs.readFileSync(descriptorDataPath);
   const base64DescriptorSet = descriptorSetBinary.toString('base64');
   const fileDescriptorSet = FileDescriptorSet.deserializeBinary(
@@ -46,15 +71,18 @@ export default function generateTemplate(
     moduleDictionary.push(`'${key}': ${moduleName},`);
   }
 
-  template = template.replace(
+  let filledTemplate = template.replace(
     '{TEMPLATE_descriptor_binary}',
     base64DescriptorSet,
   );
-  template = template.replace('// TEMPLATE_proto_imports', imports.join('\n'));
-  template = template.replace(
+  filledTemplate = filledTemplate.replace(
+    '// TEMPLATE_proto_imports',
+    imports.join('\n'),
+  );
+  filledTemplate = filledTemplate.replace(
     '// TEMPLATE_module_map',
     moduleDictionary.join('\n'),
   );
 
-  fs.writeFileSync(outputPath, template);
+  fs.writeFileSync(outputPath, filledTemplate);
 }

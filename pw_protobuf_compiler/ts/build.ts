@@ -16,31 +16,18 @@ import { exec, ExecException } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import generateTemplate from './codegen/template_replacement';
-import * as argModule from 'arg';
-const arg = argModule.default;
-
 const googProtobufPath = require.resolve('google-protobuf');
 const googProtobufModule = fs.readFileSync(googProtobufPath, 'utf-8');
 
-const args = arg({
-  // Types
-  '--proto': [String],
-  '--out': String,
-
-  // Aliases
-  '-p': '--proto',
-});
-
-const protos = args['--proto'];
-const outDir = args['--out'] || 'protos';
-
-fs.mkdirSync(outDir, { recursive: true });
-
-const run = function (executable: string, args: string[]) {
+const run = function (
+  executable: string,
+  args: string[],
+  cwd: string = process.cwd(),
+) {
   return new Promise<void>((resolve) => {
     exec(
       `${executable} ${args.join(' ')}`,
-      { cwd: process.cwd() },
+      { cwd },
       (error: ExecException | null, stdout: string | Buffer) => {
         if (error) {
           throw error;
@@ -53,22 +40,42 @@ const run = function (executable: string, args: string[]) {
   });
 };
 
-const protoc = async function (protos: string[], outDir: string) {
-  const PROTOC_GEN_TS_PATH = path.resolve(
-    path.dirname(require.resolve('ts-protoc-gen/generate.js')),
-    '..',
-    '.bin',
-    'protoc-gen-ts',
+function getRealPathOfSymlink(path: string) {
+  const stats = fs.statSync(path);
+  if (stats.isSymbolicLink()) {
+    return fs.realpathSync(path);
+  } else {
+    return path;
+  }
+}
+
+const protoc = async function (
+  protos: string[],
+  outDir: string,
+  cwd: string = process.cwd(),
+) {
+  const PROTOC_GEN_TS_PATH = getRealPathOfSymlink(
+    path.resolve(
+      path.dirname(require.resolve('ts-protoc-gen/generate.js')),
+      'bin',
+      'protoc-gen-ts',
+    ),
   );
 
-  await run('protoc', [
-    `--plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}"`,
-    `--descriptor_set_out=${outDir}/descriptor.bin`,
-    `--js_out=import_style=commonjs,binary:${outDir}`,
-    `--ts_out=${outDir}`,
-    `--proto_path=${process.cwd()}`,
-    ...protos,
-  ]);
+  const protocBinary = require.resolve('@protobuf-ts/protoc/protoc.js');
+
+  await run(
+    protocBinary,
+    [
+      `--plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}"`,
+      `--descriptor_set_out=${path.join(outDir, 'descriptor.bin')}`,
+      `--js_out=import_style=commonjs,binary:${outDir}`,
+      `--ts_out=${outDir}`,
+      `--proto_path=${cwd}`,
+      ...protos,
+    ],
+    cwd,
+  );
 
   // ES6 workaround: Replace google-protobuf imports with entire library.
   protos.forEach((protoPath) => {
@@ -89,24 +96,22 @@ const protoc = async function (protos: string[], outDir: string) {
 const makeProtoCollection = function (
   descriptorBinPath: string,
   protoPath: string,
-  importPath: string,
+  outputCollectionName: string,
 ) {
-  const outputCollectionName =
-    path.extname(require.resolve('./ts_proto_collection.template')) === '.ts'
-      ? 'collection.ts'
-      : 'collection.js';
-  generateTemplate(
-    `${protoPath}/${outputCollectionName}`,
-    descriptorBinPath,
-    require.resolve('./ts_proto_collection.template'),
-    importPath,
-  );
+  generateTemplate(`${protoPath}/${outputCollectionName}`, descriptorBinPath);
 };
 
-protoc(protos, outDir).then(() => {
-  makeProtoCollection(
-    path.join(outDir, 'descriptor.bin'),
-    outDir,
-    'pigweedjs/protos',
-  );
-});
+export function buildProtos(
+  protos: string[],
+  outDir: string,
+  outputCollectionName: string = 'collection.js',
+  cwd: string = process.cwd(),
+) {
+  protoc(protos, outDir, cwd).then(() => {
+    makeProtoCollection(
+      path.join(outDir, 'descriptor.bin'),
+      outDir,
+      outputCollectionName,
+    );
+  });
+}
