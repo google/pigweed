@@ -32,7 +32,7 @@ class Emboss(pw_package.git_repo.GitRepo):
                 "https://pigweed.googlesource.com"
                 "/third_party/github/google/emboss"
             ),
-            tag="v2024.0809.170004",
+            tag="v2024.1017.203246",
             # LINT.ThenChange(/WORKSPACE:emboss)
             **kwargs,
         )
