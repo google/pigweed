@@ -48,20 +48,6 @@ class Packet<hci_spec::EventHeader>
     return view().payload<ParamsType>();
   }
 
-  // If this is a CommandComplete event packet, this method returns a pointer to
-  // the beginning of the return parameter structure. If the given template type
-  // would exceed the bounds of the packet or if this packet does not represent
-  // a CommandComplete event, this method returns nullptr.
-  template <typename ReturnParams>
-  const ReturnParams* return_params() const {
-    if (event_code() != hci_spec::kCommandCompleteEventCode ||
-        sizeof(ReturnParams) > view().payload_size() -
-                                   sizeof(hci_spec::CommandCompleteEventParams))
-      return nullptr;
-    return reinterpret_cast<const ReturnParams*>(
-        params<hci_spec::CommandCompleteEventParams>().return_parameters);
-  }
-
   // If this is a LE Meta Event packet, this method returns a pointer to the
   // beginning of the subevent parameter structure. If the given template type
   // would exceed the bounds of the packet or if this packet does not represent

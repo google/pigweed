@@ -83,20 +83,6 @@ bool StatusCodeFromSubevent(const EventPacket& event,
   return true;
 }
 
-// Specialization for the CommandComplete event.
-template <>
-bool StatusCodeFromEvent<hci_spec::CommandCompleteEventParams>(
-    const EventPacket& event, pw::bluetooth::emboss::StatusCode* out_code) {
-  PW_DCHECK(out_code);
-
-  const auto* params = event.return_params<hci_spec::SimpleReturnParams>();
-  if (!params)
-    return false;
-
-  *out_code = params->status;
-  return true;
-}
-
 }  // namespace
 
 namespace android_hci = bt::hci_spec::vendor::android;
@@ -127,13 +113,16 @@ bool EventPacket::ToStatusCode(
   switch (event_code()) {
     CASE_EMBOSS_EVENT_STATUS(AuthenticationComplete);
     CASE_EMBOSS_EVENT_STATUS(ChangeConnectionLinkKeyComplete);
-    CASE_EVENT_STATUS(CommandComplete);
     CASE_EVENT_STATUS(CommandStatus);
     CASE_EMBOSS_EVENT_STATUS(ConnectionComplete);
     CASE_EMBOSS_EVENT_STATUS(DisconnectionComplete);
     CASE_EMBOSS_EVENT_STATUS(RemoteNameRequestComplete);
     CASE_EMBOSS_EVENT_STATUS(ReadRemoteSupportedFeaturesComplete);
     CASE_EMBOSS_EVENT_STATUS(InquiryComplete);
+    case hci_spec::kCommandCompleteEventCode:
+      return StatusCodeFromEmbossEvent<
+          pw::bluetooth::emboss::SimpleCommandCompleteEventView>(*this,
+                                                                 out_code);
     case hci_spec::kEncryptionChangeEventCode:
       return StatusCodeFromEmbossEvent<
           pw::bluetooth::emboss::EncryptionChangeEventV1View>(*this, out_code);
