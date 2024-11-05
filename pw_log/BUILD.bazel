@@ -34,9 +34,6 @@ alias(
 
 pw_facade(
     name = "pw_log",
-    srcs = [
-        "public/pw_log/tokenized_args.h",
-    ],
     hdrs = [
         "public/pw_log/config.h",
         "public/pw_log/levels.h",
@@ -67,6 +64,15 @@ cc_library(
         ":pw_log",
         "//pw_chrono:system_clock",
     ],
+)
+
+cc_library(
+    name = "args",
+    hdrs = [
+        "public/pw_log/tokenized_args.h",
+    ],
+    includes = ["public"],
+    deps = ["//pw_tokenizer"],
 )
 
 label_flag(
@@ -232,6 +238,7 @@ pw_cc_test(
         "log_enum_test.cc",
     ],
     deps = [
+        ":args",
         "//pw_log",
         "//pw_tokenizer",
         "//pw_unit_test",

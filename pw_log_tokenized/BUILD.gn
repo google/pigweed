@@ -180,7 +180,7 @@ pw_test("tokenized_args_test") {
   enable_if = pw_log_BACKEND != "" &&
               (host_os != "win" || pw_log_tokenized_HANDLER_BACKEND != "")
   deps = [
-    dir_pw_log,
+    "$dir_pw_log:args",
     dir_pw_log_tokenized,
     dir_pw_tokenizer,
   ]

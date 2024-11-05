@@ -53,7 +53,6 @@ pw_facade("pw_log") {
     "public/pw_log/options.h",
     "public/pw_log/short.h",
     "public/pw_log/shorter.h",
-    "public/pw_log/tokenized_args.h",
   ]
   public_deps = [ ":config" ]
 
