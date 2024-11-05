@@ -267,19 +267,18 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
       [&transaction_count]() { transaction_count++; });
 
   auto cb = [&cb_event_count](CommandChannel::TransactionId,
-                              const EventPacket& event) {
+                              const EmbossEventPacket& event) {
     EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
-    hci_spec::OpCode expected_opcode;
+    pw::bluetooth::emboss::OpCode expected_opcode;
     if (cb_event_count == 0u) {
-      expected_opcode = hci_spec::kReset;
+      expected_opcode = pw::bluetooth::emboss::OpCode::RESET;
     } else {
-      expected_opcode = hci_spec::kInquiryCancel;
+      expected_opcode = pw::bluetooth::emboss::OpCode::INQUIRY_CANCEL;
     }
     EXPECT_EQ(expected_opcode,
-              pw::bytes::ConvertOrderFrom(
-                  cpp20::endian::little,
-                  event.params<hci_spec::CommandCompleteEventParams>()
-                      .command_opcode));
+              event.view<pw::bluetooth::emboss::CommandCompleteEventView>()
+                  .command_opcode_enum()
+                  .Read());
     cb_event_count++;
   };
 
@@ -355,14 +354,15 @@ TEST_F(CommandChannelTest, QueuedCommands) {
       [&transaction_count]() { transaction_count++; });
 
   auto cb = [&reset_count, &cancel_count](CommandChannel::TransactionId id,
-                                          const EventPacket& event) {
+                                          const EmbossEventPacket& event) {
     EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
-    uint16_t opcode = pw::bytes::ConvertOrderFrom(
-        cpp20::endian::little,
-        event.params<hci_spec::CommandCompleteEventParams>().command_opcode);
-    if (opcode == hci_spec::kReset) {
+    pw::bluetooth::emboss::OpCode opcode =
+        event.view<pw::bluetooth::emboss::CommandCompleteEventView>()
+            .command_opcode_enum()
+            .Read();
+    if (opcode == pw::bluetooth::emboss::OpCode::RESET) {
       reset_count++;
-    } else if (opcode == hci_spec::kInquiryCancel) {
+    } else if (opcode == pw::bluetooth::emboss::OpCode::INQUIRY_CANCEL) {
       cancel_count++;
     } else {
       EXPECT_TRUE(false) << "Unexpected opcode in command callback!";

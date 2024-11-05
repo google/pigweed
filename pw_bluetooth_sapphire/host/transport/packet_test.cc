@@ -131,7 +131,7 @@ TEST(PacketTest, CommandCompleteEventStatus) {
       // Event header
       0x0E, 0x04,  // (event code is CommandComplete)
 
-      // hci_spec::CommandCompleteEventParams
+      // pw::bluetooth::emboss::CommandCompleteEvent
       0x01, 0xFF, 0x07,
 
       // Return parameters (status: hardware failure)
