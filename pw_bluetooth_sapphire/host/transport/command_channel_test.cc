@@ -1680,7 +1680,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
   );
 
   CommandChannel::TransactionId id1, id2, id3;
-  CommandChannel::CommandCallback exclusive_cb;
+  CommandChannel::EmbossCommandCallback exclusive_cb;
   size_t exclusive_cb_count = 0u;
 
   size_t nonexclusive_cb_count = 0;
@@ -1701,7 +1701,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
                   kExclOneCompleteEvent,
                   kExclTwoCompleteEvent](
                      CommandChannel::TransactionId callback_id,
-                     const EventPacket& event) {
+                     const EmbossEventPacket& event) {
     // Expected event -> Action in response
     // 0. Status for kExclusiveOne -> Send a kExclusiveTwo
     // 1. Complete for kExclusiveOne -> Send Another kExclusiveOne and
@@ -1715,8 +1715,10 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
         // Status for kExclusiveOne -> Send kExclusiveTwo (queued)
         EXPECT_EQ(id1, callback_id);
         EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
-        auto params = event.params<hci_spec::CommandStatusEventParams>();
-        EXPECT_EQ(pw::bluetooth::emboss::StatusCode::SUCCESS, params.status);
+        EXPECT_EQ(pw::bluetooth::emboss::StatusCode::SUCCESS,
+                  event.view<pw::bluetooth::emboss::CommandStatusEventView>()
+                      .status()
+                      .Read());
         auto packet =
             EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
                 kExclusiveTwo);
@@ -1750,8 +1752,10 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
       case 2: {  // Status for kExclusiveTwo
         EXPECT_EQ(id2, callback_id);
         EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
-        auto params = event.params<hci_spec::CommandStatusEventParams>();
-        EXPECT_EQ(pw::bluetooth::emboss::StatusCode::SUCCESS, params.status);
+        EXPECT_EQ(pw::bluetooth::emboss::StatusCode::SUCCESS,
+                  event.view<pw::bluetooth::emboss::CommandStatusEventView>()
+                      .status()
+                      .Read());
         break;
       }
       case 3: {  // Complete for kExclusiveTwo
@@ -1762,8 +1766,10 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
       case 4: {  // Status for Second kExclusiveOne
         EXPECT_EQ(id3, callback_id);
         EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
-        auto params = event.params<hci_spec::CommandStatusEventParams>();
-        EXPECT_EQ(pw::bluetooth::emboss::StatusCode::SUCCESS, params.status);
+        EXPECT_EQ(pw::bluetooth::emboss::StatusCode::SUCCESS,
+                  event.view<pw::bluetooth::emboss::CommandStatusEventView>()
+                      .status()
+                      .Read());
         break;
       }
       case 5: {  // Complete for Second kExclusiveOne

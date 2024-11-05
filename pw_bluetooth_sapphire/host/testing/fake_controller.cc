@@ -301,16 +301,14 @@ void FakeController::RespondWithCommandComplete(
 
 void FakeController::RespondWithCommandStatus(hci_spec::OpCode opcode,
                                               pwemb::StatusCode status) {
-  StaticByteBuffer<sizeof(hci_spec::CommandStatusEventParams)> buffer;
-  MutablePacketView<hci_spec::CommandStatusEventParams> event(&buffer);
+  auto packet = hci::EmbossEventPacket::New<pwemb::CommandStatusEventWriter>(
+      hci_spec::kCommandStatusEventCode);
+  auto view = packet.view_t();
+  view.status().Write(status);
+  view.num_hci_command_packets().Write(settings_.num_hci_command_packets);
+  view.command_opcode_enum().Write(static_cast<pwemb::OpCode>(opcode));
 
-  event.mutable_header()->status = status;
-  event.mutable_header()->num_hci_command_packets =
-      settings_.num_hci_command_packets;
-  event.mutable_header()->command_opcode =
-      pw::bytes::ConvertOrderTo(cpp20::endian::little, opcode);
-
-  SendEvent(hci_spec::kCommandStatusEventCode, buffer);
+  SendEvent(hci_spec::kCommandStatusEventCode, &packet);
 }
 
 void FakeController::SendEvent(hci_spec::EventCode event_code,
