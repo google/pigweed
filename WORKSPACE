@@ -144,12 +144,3 @@ http_archive(
     strip_prefix = "mbedtls-2.28.8",
     url = "https://github.com/Mbed-TLS/mbedtls/releases/download/v2.28.8/mbedtls-2.28.8.tar.bz2",
 )
-
-# TODO: https://pwbug.dev/354747966 - Update the BCR version of Emboss.
-git_repository(
-    name = "com_google_emboss",
-    # LINT.IfChange(emboss)
-    remote = "https://pigweed.googlesource.com/third_party/github/google/emboss",
-    tag = "v2024.1017.203246",
-    # LINT.ThenChange(/pw_package/py/pw_package/packages/emboss.py:emboss)
-)

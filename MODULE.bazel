@@ -38,6 +38,10 @@ bazel_dep(name = "rules_proto", version = "6.0.2")
 bazel_dep(name = "rules_python", version = "0.36.0")
 bazel_dep(name = "rules_rust", version = "0.52.2")
 
+# LINT.IfChange(emboss)
+bazel_dep(name = "emboss", version = "2024.1017.203246", repo_name = "com_google_emboss")
+# LINT.ThenChange(/pw_package/py/pw_package/packages/emboss.py:emboss)
+
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
 
 # Repository overrides

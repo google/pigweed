@@ -33,7 +33,7 @@ class Emboss(pw_package.git_repo.GitRepo):
                 "/third_party/github/google/emboss"
             ),
             tag="v2024.1017.203246",
-            # LINT.ThenChange(/WORKSPACE:emboss)
+            # LINT.ThenChange(/MODULE.bazel:emboss)
             **kwargs,
         )
 

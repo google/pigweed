@@ -45,6 +45,8 @@
     "https://bcr.bazel.build/modules/boringssl/0.20240913.0/source.json": "540753d29c271a302442a3d3c6ccd4faace597e7bcf0f77049fe59535782ce9f",
     "https://bcr.bazel.build/modules/buildozer/7.1.2/MODULE.bazel": "2e8dd40ede9c454042645fd8d8d0cd1527966aa5c919de86661e62953cd73d84",
     "https://bcr.bazel.build/modules/buildozer/7.1.2/source.json": "c9028a501d2db85793a6996205c8de120944f50a0d570438fcae0457a5f9d1f8",
+    "https://bcr.bazel.build/modules/emboss/2024.1017.203246/MODULE.bazel": "e0c58f6ab1622089c414fd4192a5f8792599ca938d224506d60eae09ef68ca44",
+    "https://bcr.bazel.build/modules/emboss/2024.1017.203246/source.json": "b0cec0e38af36f1dff88ec402e5b464594e81f0c39172704f373a96440a53923",
     "https://bcr.bazel.build/modules/freertos/10.5.1.bcr.2/MODULE.bazel": "dcc13aef86495f5418f4cdd532eefe9a4319c44771ef57b8abda0c3560d8e6ed",
     "https://bcr.bazel.build/modules/freertos/10.5.1.bcr.2/source.json": "a35b2479d5ede2c414512e3e287fad3348eb1def5800e93cd85b1449002a4d12",
     "https://bcr.bazel.build/modules/gazelle/0.27.0/MODULE.bazel": "3446abd608295de6d90b4a8a118ed64a9ce11dcb3dda2dc3290a22056bd20996",
