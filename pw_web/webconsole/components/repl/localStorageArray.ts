@@ -15,7 +15,7 @@
 export default class LocalStorageArray {
   data: string[] = [];
   maxSize: number;
-  key: string = '__pw_repl_history';
+  key = '__pw_repl_history';
 
   constructor(maxSize = 4) {
     this.maxSize = maxSize;

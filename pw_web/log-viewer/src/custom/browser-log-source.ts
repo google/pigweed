@@ -25,7 +25,7 @@ export class BrowserLogSource extends LogSource {
     debug: console.debug,
   };
 
-  constructor(sourceName: string = 'Browser Console') {
+  constructor(sourceName = 'Browser Console') {
     super(sourceName);
   }
 

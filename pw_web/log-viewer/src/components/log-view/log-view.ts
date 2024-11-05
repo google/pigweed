@@ -102,7 +102,7 @@ export class LogView extends LitElement {
   private _debounceTimeout: NodeJS.Timeout | null = null;
 
   /** The number of elements in the `logs` array since last updated. */
-  private _lastKnownLogLength: number = 0;
+  private _lastKnownLogLength = 0;
 
   /** The amount of time, in ms, before the filter expression is executed. */
   private readonly FILTER_DELAY = 100;

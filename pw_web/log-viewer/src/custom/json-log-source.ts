@@ -24,8 +24,8 @@ interface LevelMap {
 
 export class JsonLogSource extends LogSource {
   private intervalId: NodeJS.Timeout | null = null;
-  private logIndex: number = 0;
-  private previousLogTime: number = 0;
+  private logIndex = 0;
+  private previousLogTime = 0;
 
   private logLevelMap: LevelMap = {
     10: Level.DEBUG,
@@ -47,7 +47,7 @@ export class JsonLogSource extends LogSource {
     'time',
   ];
 
-  constructor(sourceName: string = 'JSON Log Source') {
+  constructor(sourceName = 'JSON Log Source') {
     super(sourceName);
   }
 

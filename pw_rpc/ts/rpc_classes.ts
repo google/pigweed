@@ -65,7 +65,7 @@ export class Rpc {
 export class PendingCalls {
   pending: Map<string, Call> = new Map();
   // We skip callId zero to avoid LEGACY_OPEN_CALL_ID.
-  nextCallId: number = 1;
+  nextCallId = 1;
 
   /** Starts the provided RPC and returns the encoded packet to send. */
   request(rpc: Rpc, request: Message, call: Call): Uint8Array {

@@ -104,7 +104,7 @@ const makeProtoCollection = function (
 export function buildProtos(
   protos: string[],
   outDir: string,
-  outputCollectionName: string = 'collection.js',
+  outputCollectionName = 'collection.js',
   cwd: string = process.cwd(),
 ) {
   protoc(protos, outDir, cwd).then(() => {

@@ -24,7 +24,7 @@ import { titleCaseToKebabCase } from './strings';
 export function downloadTextLogs(
   logs: LogEntry[],
   headers: string[],
-  viewTitle: string = 'logs',
+  viewTitle = 'logs',
 ) {
   const maxWidths = headers.map((header) => header.length);
   const fileName = titleCaseToKebabCase(viewTitle);

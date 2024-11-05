@@ -47,7 +47,7 @@ export function setPathOnObject(
   obj: ObjectType,
   path: number | string | Array<number | string>,
   value: any,
-  doNotReplace: boolean = false,
+  doNotReplace = false,
 ) {
   if (typeof path === 'number') {
     path = [path];

@@ -84,10 +84,10 @@ export class LogList extends LitElement {
   private _autosizeLocked = false;
 
   /** The number of times the `logs` array has been updated. */
-  private logUpdateCount: number = 0;
+  private logUpdateCount = 0;
 
   /** The last known vertical scroll position of the table container. */
-  private lastScrollTop: number = 0;
+  private lastScrollTop = 0;
 
   /** The maximum number of log entries to render in the list. */
   private readonly MAX_ENTRIES = 100_000;

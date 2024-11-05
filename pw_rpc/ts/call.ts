@@ -50,7 +50,7 @@ class RpcTimeout extends Error {
 
 class Responses {
   private responses: Message[] = [];
-  private totalResponses: number = 0;
+  private totalResponses = 0;
   private readonly maxResponses: number;
 
   constructor(maxResponses: number) {

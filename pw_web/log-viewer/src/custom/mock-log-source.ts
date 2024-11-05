@@ -19,7 +19,7 @@ import { timeFormat } from '../shared/time-format';
 export class MockLogSource extends LogSource {
   private intervalId: NodeJS.Timeout | null = null;
 
-  constructor(sourceName: string = 'Mock Log Source') {
+  constructor(sourceName = 'Mock Log Source') {
     super(sourceName);
   }
 

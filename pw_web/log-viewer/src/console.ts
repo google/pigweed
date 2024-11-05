@@ -83,10 +83,7 @@ class PwConsoleLogSource extends LogSource {
   }
 }
 
-export async function renderPWConsole(
-  containerEl: HTMLElement,
-  wsUrl: string = '/ws',
-) {
+export async function renderPWConsole(containerEl: HTMLElement, wsUrl = '/ws') {
   const replContainerEl = document.createElement('div');
   replContainerEl.id = 'repl-container';
   const logsContainerEl = document.createElement('div');
@@ -137,7 +134,7 @@ export function createSplitPanel(
   startEl: HTMLElement,
   endEl: HTMLElement,
   containerEl: HTMLElement,
-  initialPosition: number = 50,
+  initialPosition = 50,
 ) {
   const splitPanel = document.createElement('sl-split-panel');
 

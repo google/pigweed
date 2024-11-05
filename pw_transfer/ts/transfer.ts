@@ -255,7 +255,7 @@ export class ReadTransfer extends Transfer {
   }
 
   /** Builds an updated transfer parameters chunk to send the server. */
-  private transferParameters(type: any, update: boolean = true): Chunk {
+  private transferParameters(type: any, update = true): Chunk {
     if (update) {
       this.pendingBytes = this.maxBytesToReceive;
       this.windowEndOffset = this.offset + this.maxBytesToReceive;

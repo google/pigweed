@@ -48,7 +48,7 @@ export class Repl extends LitElement {
 
   constructor(
     private replKernel: ReplKernel,
-    title: string = 'REPL',
+    title = 'REPL',
   ) {
     super();
     this.replTitle = title;

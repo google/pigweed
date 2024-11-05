@@ -68,7 +68,7 @@ export class LogViewer extends LitElement {
    * `LogViewer` and its subcomponents.
    */
   @property({ type: Boolean })
-  useShoelaceFeatures: boolean = true;
+  useShoelaceFeatures = true;
 
   @state()
   _rootNode: ViewNode;
