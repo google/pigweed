@@ -58,6 +58,17 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "emboss_util",
+    hdrs = [
+        "public/pw_bluetooth/emboss_util.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_span",
+    ],
+)
+
 pw_cc_test(
     name = "address_test",
     srcs = [
@@ -254,6 +265,17 @@ pw_cc_test(
         ":emboss_hci_test",
         ":emboss_l2cap_frames",
         "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+pw_cc_test(
+    name = "emboss_util_test",
+    srcs = [
+        "emboss_util_test.cc",
+    ],
+    deps = [
+        ":emboss_hci_test",
+        ":emboss_util",
     ],
 )
 

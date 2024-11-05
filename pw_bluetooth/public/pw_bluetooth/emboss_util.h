@@ -17,13 +17,7 @@
 
 #include "pw_span/span.h"
 
-namespace pw::bluetooth::proxy {
-
-/// Creates a pw::span on the HCI portion of an H4 buffer.
-template <typename C>
-constexpr inline auto H4HciSubspan(C&& container) {
-  return pw::span(container.data() + 1, container.size() - 1);
-}
+namespace pw::bluetooth {
 
 // Create an Emboss View or Writer from a pw::span value or reference. The
 // Emboss type is determined by the template's first parameter.
@@ -40,4 +34,4 @@ constexpr inline EmbossT MakeEmboss(ContainerT&& buffer) {
   return EmbossT(buffer.data(), buffer.size());
 }
 
-}  // namespace pw::bluetooth::proxy
+}  // namespace pw::bluetooth

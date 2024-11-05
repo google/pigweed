@@ -50,6 +50,15 @@ pw_add_library(pw_bluetooth INTERFACE
     pw_chrono.system_clock
 )
 
+pw_add_library(pw_bluetooth.emboss_util INTERFACE
+  HEADERS
+    public/pw_bluetooth/emboss_util.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_span
+)
+
 pw_add_test(pw_bluetooth.address_test
   SOURCES
     address_test.cc
@@ -200,6 +209,16 @@ pw_add_test(pw_bluetooth.emboss_test
     pw_bluetooth.emboss_hci_test
     pw_bluetooth.emboss_l2cap_frames
     pw_third_party.fuchsia.stdcompat
+  GROUPS
+    modules
+)
+
+pw_add_test(pw_bluetooth.emboss_util_test
+  SOURCES
+    emboss_util_test.cc
+  PRIVATE_DEPS
+    pw_bluetooth.emboss_hci_test
+    pw_bluetooth.emboss_util
   GROUPS
     modules
 )

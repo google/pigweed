@@ -15,9 +15,9 @@
 #include "pw_bluetooth_proxy/proxy_host.h"
 
 #include "pw_assert/check.h"  // IWYU pragma: keep
+#include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
-#include "pw_bluetooth_proxy/internal/emboss_util.h"
 #include "pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
 #include "pw_log/log.h"

@@ -18,7 +18,6 @@
 
 #include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/hci_h4.emb.h"
-#include "pw_bluetooth_proxy/internal/emboss_util.h"
 #include "pw_function/function.h"
 #include "pw_span/span.h"
 
@@ -153,7 +152,7 @@ class H4PacketWithH4 final : public H4PacketInterface {
     if (h4_span_.empty()) {
       return {};
     }
-    return H4HciSubspan(h4_span_);
+    return pw::span(h4_span_.data() + 1, h4_span_.size() - 1);
   }
 
   pw::span<uint8_t> GetH4Span() {

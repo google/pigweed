@@ -28,7 +28,6 @@ pw_add_library(pw_bluetooth_proxy STATIC
     public/pw_bluetooth_proxy/gatt_notify_channel.h
     public/pw_bluetooth_proxy/h4_packet.h
     public/pw_bluetooth_proxy/internal/acl_data_channel.h
-    public/pw_bluetooth_proxy/internal/emboss_util.h
     public/pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h
     public/pw_bluetooth_proxy/internal/h4_storage.h
     public/pw_bluetooth_proxy/internal/hci_transport.h
@@ -45,6 +44,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
     pw_bluetooth.emboss_l2cap_frames
+    pw_bluetooth.emboss_util
     pw_containers
     pw_function
     pw_log
@@ -60,17 +60,6 @@ pw_add_library(pw_bluetooth_proxy STATIC
     l2cap_coc.cc
     l2cap_write_channel.cc
     proxy_host.cc
-)
-
-pw_add_test(pw_bluetooth_proxy.emboss_util_test
-  SOURCES
-    emboss_util_test.cc
-  PRIVATE_DEPS
-    pw_bluetooth_proxy
-    pw_bluetooth.emboss_hci_test
-    pw_span
-  GROUPS
-    modules
 )
 
 pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test

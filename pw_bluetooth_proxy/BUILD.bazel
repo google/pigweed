@@ -32,7 +32,6 @@ cc_library(
         "public/pw_bluetooth_proxy/gatt_notify_channel.h",
         "public/pw_bluetooth_proxy/h4_packet.h",
         "public/pw_bluetooth_proxy/internal/acl_data_channel.h",
-        "public/pw_bluetooth_proxy/internal/emboss_util.h",
         "public/pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h",
         "public/pw_bluetooth_proxy/internal/h4_storage.h",
         "public/pw_bluetooth_proxy/internal/hci_transport.h",
@@ -49,6 +48,7 @@ cc_library(
         "//pw_bluetooth:emboss_hci_events",
         "//pw_bluetooth:emboss_hci_h4",
         "//pw_bluetooth:emboss_l2cap_frames",
+        "//pw_bluetooth:emboss_util",
         "//pw_containers",
         "//pw_function",
         "//pw_log",
@@ -57,18 +57,6 @@ cc_library(
         "//pw_status",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
-    ],
-)
-
-pw_cc_test(
-    name = "emboss_util_test",
-    srcs = [
-        "emboss_util_test.cc",
-    ],
-    deps = [
-        ":pw_bluetooth_proxy",
-        "//pw_bluetooth:emboss_hci_test",
-        "//pw_span",
     ],
 )
 
@@ -85,5 +73,6 @@ pw_cc_test(
         "//pw_bluetooth:emboss_hci_common",
         "//pw_bluetooth:emboss_hci_events",
         "//pw_bluetooth:emboss_hci_h4",
+        "//pw_bluetooth:emboss_util",
     ],
 )

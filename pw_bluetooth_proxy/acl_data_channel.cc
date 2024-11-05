@@ -17,6 +17,7 @@
 #include <mutex>
 
 #include "lib/stdcompat/utility.h"
+#include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_containers/algorithm.h"  // IWYU pragma: keep
 #include "pw_log/log.h"

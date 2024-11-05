@@ -12,21 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_proxy/internal/emboss_util.h"
+#include "pw_bluetooth/emboss_util.h"
 
 #include "pw_bluetooth/hci_test.emb.h"
 #include "pw_unit_test/framework.h"  // IWYU pragma: keep
 
 namespace pw::bluetooth::proxy {
 namespace {
-
-TEST(EmbossUtilTest, CreateH4Subspan) {
-  std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
-  auto span = H4HciSubspan(buffer);
-  EXPECT_EQ(span.front(), buffer[1]);
-  EXPECT_EQ(span.back(), buffer[3]);
-  EXPECT_EQ(span.size(), buffer.size() - 1);
-}
 
 TEST(EmbossUtilTest, MakeViewFromSpan) {
   std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
@@ -42,20 +34,6 @@ TEST(EmbossUtilTest, MakeWriterFromSpan) {
   auto view = MakeEmboss<emboss::TestCommandPacketWriter>(span);
   EXPECT_TRUE(view.IsComplete());
   EXPECT_EQ(view.payload().Read(), 0x03);
-}
-
-TEST(EmbossUtilTest, MakeViewFromSubspan) {
-  std::array<uint8_t, 5> buffer = {0x00, 0x01, 0x02, 0x03, 0x04};
-  auto view = MakeEmboss<emboss::TestCommandPacketView>(H4HciSubspan(buffer));
-  EXPECT_TRUE(view.IsComplete());
-  EXPECT_EQ(view.payload().Read(), 0x04);
-}
-
-TEST(EmbossUtilTest, MakeWriterFromSubspan) {
-  std::array<uint8_t, 5> buffer = {0x00, 0x01, 0x02, 0x03, 0x04};
-  auto view = MakeEmboss<emboss::TestCommandPacketWriter>(H4HciSubspan(buffer));
-  EXPECT_TRUE(view.IsComplete());
-  EXPECT_EQ(view.payload().Read(), 0x04);
 }
 
 }  // namespace

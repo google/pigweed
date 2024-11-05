@@ -76,6 +76,12 @@ pw_source_set("pw_bluetooth") {
   ]
 }
 
+pw_source_set("emboss_util") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bluetooth/emboss_util.h" ]
+  public_deps = [ dir_pw_span ]
+}
+
 if (dir_pw_third_party_emboss != "") {
   config("emboss_include_path") {
     include_dirs = [
@@ -199,6 +205,7 @@ pw_test_group("tests") {
     ":result_test",
     ":uuid_test",
     ":emboss_test",
+    ":emboss_util_test",
   ]
 }
 
@@ -210,6 +217,17 @@ pw_test("address_test") {
 pw_test("api_test") {
   sources = [ "api_test.cc" ]
   deps = [ ":pw_bluetooth" ]
+}
+
+pw_test("emboss_util_test") {
+  enable_if =
+      dir_pw_third_party_emboss != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "emboss_util_test.cc" ]
+  include_dirs = [ "." ]
+  deps = [
+    ":emboss_hci_test",
+    ":emboss_util",
+  ]
 }
 
 pw_test("result_test") {

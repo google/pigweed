@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_proxy/l2cap_coc.h"
 
+#include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
