@@ -116,7 +116,8 @@ template("_pw_invoke_protoc") {
       if (pw_protobuf_compiler_NO_GENERIC_OPTIONS_FILES) {
         args += [ "--pwpb-no-generic-options-files" ]
       }
-      if (pw_protobuf_compiler_NO_ONEOF_CALLBACKS) {
+      if (pw_protobuf_compiler_NO_ONEOF_CALLBACKS ||
+          invoker.use_legacy_oneof_interfaces) {
         args += [ "--pwpb-no-oneof-callbacks" ]
       }
       if (pw_protobuf_compiler_PROTOC_TARGET != "") {
@@ -583,6 +584,11 @@ template("pw_proto_library") {
     }
 
     package = _root_dir_name
+
+    use_legacy_oneof_interfaces = false
+    if (defined(invoker.use_legacy_oneof_interfaces)) {
+      use_legacy_oneof_interfaces = invoker.use_legacy_oneof_interfaces
+    }
   }
 
   # For each proto target, create a file which collects the base directories of
