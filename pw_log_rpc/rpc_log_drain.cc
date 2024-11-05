@@ -47,7 +47,7 @@ void TryEncodeDropMessage(
   if (!encoder.status().ok()) {
     return;
   }
-  // Add encoded drop messsage if fits in buffer.
+  // Add encoded drop message if fits in buffer.
   ConstByteSpan drop_message(encoder);
   if (drop_message.size() + RpcLogDrain::kLogEntriesEncodeFrameSize <
       entries_encoder.ConservativeWriteLimit()) {

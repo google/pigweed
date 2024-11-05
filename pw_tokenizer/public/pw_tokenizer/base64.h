@@ -18,7 +18,7 @@
 //
 // The format uses a prefix character ($), followed by the Base64 version of the
 // tokenized message. For example, consider a tokenized message with token
-// 0xfeb35a42 and encoded argument 0x13. This messsage would be encoded as
+// 0xfeb35a42 and encoded argument 0x13. This message would be encoded as
 // follows:
 //
 //            Binary: 42 5a b3 fe 13  [5 bytes]
