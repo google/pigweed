@@ -122,6 +122,14 @@ enum L2capSignalingPacketCode:
   CREDIT_BASED_RECONFIGURE_REQ    = 0x19
   CREDIT_BASED_RECONFIGURE_RSP    = 0x1A
 
+enum L2capFixedPsmCode:
+  -- Possible fixed values for PSM or SPSM as assigned by Bluetooth SIG. See
+  -- Core Spec v5.4, Vol 3, Part A, Section 4.2 and Assigned_Numbers Section 2.5
+  [maximum_bits: 16]
+  SDP     = 0x0001 # PSM
+  RFCOMM  = 0x0003 # PSM
+  ATT     = 0x001F # PSM
+  EATT    = 0x0027 # PSM or SPSM
 
 struct CFrame:
   -- A Control Frame (C-frame) contains L2CAP signaling commands exchanged
