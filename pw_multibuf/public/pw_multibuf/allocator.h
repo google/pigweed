@@ -16,17 +16,24 @@
 #include <optional>
 
 #include "pw_async2/dispatcher.h"
+#include "pw_containers/intrusive_forward_list.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
 #include "pw_sync/interrupt_spin_lock.h"
 
 namespace pw::multibuf {
 
-namespace internal {
-class AllocationWaiter;
-}  // namespace internal
-
 class MultiBufAllocationFuture;
+
+enum class ContiguityRequirement {
+  kAllowDiscontiguous,
+  kNeedsContiguous,
+};
+
+inline constexpr ContiguityRequirement kAllowDiscontiguous =
+    ContiguityRequirement::kAllowDiscontiguous;
+inline constexpr ContiguityRequirement kNeedsContiguous =
+    ContiguityRequirement::kNeedsContiguous;
 
 /// Interface for allocating ``MultiBuf`` objects.
 ///
@@ -171,7 +178,6 @@ class MultiBufAllocator {
 
  private:
   friend class MultiBufAllocationFuture;
-  friend class internal::AllocationWaiter;
 
   /// Attempts to allocate a ``MultiBuf`` of at least ``min_size`` bytes and at
   /// most ``desired_size`` bytes.
@@ -190,136 +196,81 @@ class MultiBufAllocator {
   ///    failing immediately on OOM).
   ///
   /// @endrst
-  virtual pw::Result<MultiBuf> DoAllocate(size_t min_size,
-                                          size_t desired_size,
-                                          bool needs_contiguous) = 0;
-
-  void AddWaiter(internal::AllocationWaiter*) PW_LOCKS_EXCLUDED(lock_);
-  void AddWaiterLocked(internal::AllocationWaiter*)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
-  void RemoveWaiter(internal::AllocationWaiter*) PW_LOCKS_EXCLUDED(lock_);
-  void RemoveWaiterLocked(internal::AllocationWaiter*)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+  virtual pw::Result<MultiBuf> DoAllocate(
+      size_t min_size,
+      size_t desired_size,
+      ContiguityRequirement contiguity_requirement) = 0;
 
   sync::InterruptSpinLock lock_;
-  internal::AllocationWaiter* first_waiter_ PW_GUARDED_BY(lock_) = nullptr;
+  IntrusiveForwardList<MultiBufAllocationFuture> waiting_futures_
+      PW_GUARDED_BY(lock_);
 };
-
-namespace internal {
-
-/// An object used to receive notifications once a certain amount of memory
-/// becomes available within a ``MultiBufAllocator``.
-///
-/// When attempting to allocate memory from a ``MultiBufAllocator``,
-/// allocations may fail due to currently-insufficient memory.
-/// If this happens, the caller may want to wait for the memory to become
-/// available in the future.
-///
-/// AllocationWaiter stores the requirements of the allocation along with
-/// a ``Waker`` object. When the associated ``MultiBufAllocator`` regains
-/// sufficient memory in order to allow the allocation to proceed
-/// (triggered by a call to ``MoreMemoryAvailable``) the ``MultiBufAllocator``
-/// will wake any ``AllocationWaiter`` that may now be able to succeed.
-class AllocationWaiter {
- public:
-  /// Creates a new ``AllocationWaiter`` which waits for ``min_size`` bytes to
-  /// come available in ``allocator``.
-  AllocationWaiter(MultiBufAllocator& allocator,
-                   size_t min_size,
-                   size_t desired_size,
-                   bool needs_contiguous)
-      : allocator_(&allocator),
-        waker_(),
-        next_(nullptr),
-        min_size_(min_size),
-        desired_size_(desired_size),
-        needs_contiguous_(needs_contiguous) {}
-
-  AllocationWaiter(AllocationWaiter&&);
-  AllocationWaiter& operator=(AllocationWaiter&&);
-  ~AllocationWaiter();
-
-  /// Returns whether or not an allocation should be attempted.
-  ///
-  /// Allocations should be attempted when the waiter is first created, then
-  /// once each time the ``AllocationWaiter`` is notified that sufficient
-  /// bytes have become available.
-  bool ShouldAttemptAllocate() const { return waker_.IsEmpty(); }
-
-  /// Un-registers the current ``Waker``.
-  void ClearWaker() { waker_.Clear(); }
-
-  /// Returns the ``Waker`` to be set to receive wakeups when this
-  /// ``AllocationWaiter`` is awoken.
-  async2::Waker& Waker() { return waker_; }
-
-  /// Returns the ``allocator`` associated with this ``AllocationWaiter``.
-  MultiBufAllocator& allocator() { return *allocator_; }
-
-  /// Returns the ``min_size`` this ``AllocationWaiter`` is waiting for.
-  size_t min_size() const { return min_size_; }
-
-  /// Returns the ``desired_size`` this ``AllocationWaiter`` is hoping for.
-  size_t desired_size() const { return desired_size_; }
-
-  /// Return whether this ``AllocationWaker`` is waiting for contiguous
-  /// sections of memory only.
-  size_t needs_contiguous() const { return needs_contiguous_; }
-
- private:
-  friend class ::pw::multibuf::MultiBufAllocator;
-
-  // The allocator this waiter is tied to.
-  //
-  // This must only be mutated in either the constructor, move constructor,
-  // or move assignment, and only after removing this waiter from the
-  // ``allocator_``'s list so that the ``allocator_`` does not try to access the
-  // waiter.
-  MultiBufAllocator* allocator_;
-
-  // The waker to wake when a suitably-sized allocation becomes available.
-  // The ``Waker`` class is thread-safe, so mutations to this value can occur
-  // without additional synchronization.
-  async2::Waker waker_;
-
-  // Pointer to the next ``AllocationWaiter`` waiting for an allocation from
-  // ``allocator_``.
-  AllocationWaiter* next_ PW_GUARDED_BY(allocator_->lock_);
-
-  // The properties of the kind of allocation being waited for.
-  //
-  // These values must only be mutated in either the constructor, move
-  // constructor, or move assignment, and only after removing this waiter from
-  // the ``allocator_``'s list so that the ``allocator_`` does not try to access
-  // them while they are being mutated.
-  size_t min_size_;
-  size_t desired_size_;
-  bool needs_contiguous_;
-};
-
-}  // namespace internal
 
 /// An object that asynchronously yields a ``MultiBuf`` when ``Pend``ed.
 ///
 /// See ``pw::async2`` for details on ``Pend`` and how it is used to build
 /// asynchronous tasks.
-class MultiBufAllocationFuture {
+class MultiBufAllocationFuture
+    : public IntrusiveForwardList<MultiBufAllocationFuture>::Item {
  public:
+  constexpr explicit MultiBufAllocationFuture(MultiBufAllocator& allocator)
+      : allocator_(&allocator),
+        min_size_(0),
+        desired_size_(0),
+        contiguity_requirement_(kAllowDiscontiguous) {}
   MultiBufAllocationFuture(MultiBufAllocator& allocator,
                            size_t min_size,
                            size_t desired_size,
-                           bool needs_contiguous)
-      : waiter_(allocator, min_size, desired_size, needs_contiguous) {}
+                           ContiguityRequirement contiguity_requirement)
+      : allocator_(&allocator),
+        min_size_(min_size),
+        desired_size_(desired_size),
+        contiguity_requirement_(contiguity_requirement) {}
+
+  MultiBufAllocationFuture(MultiBufAllocationFuture&&);
+  MultiBufAllocationFuture& operator=(MultiBufAllocationFuture&&);
+  ~MultiBufAllocationFuture();
+
+  void SetDesiredSize(size_t min_size) {
+    SetDesiredSizes(min_size, min_size, kAllowDiscontiguous);
+  }
+  void SetDesiredSizes(size_t min_size,
+                       size_t desired_size,
+                       ContiguityRequirement contiguity_requirement);
   async2::Poll<std::optional<MultiBuf>> Pend(async2::Context& cx);
-  size_t min_size() const { return waiter_.min_size(); }
-  size_t desired_size() const { return waiter_.desired_size(); }
-  bool needs_contiguous() const { return waiter_.needs_contiguous(); }
+
+  /// Returns the ``allocator`` associated with this future.
+  MultiBufAllocator& allocator() { return *allocator_; }
+  size_t min_size() const { return min_size_; }
+  size_t desired_size() const { return min_size_; }
+  bool needs_contiguous() const {
+    return contiguity_requirement_ == kNeedsContiguous;
+  }
 
  private:
   friend class MultiBufAllocator;
-  internal::AllocationWaiter waiter_;
 
+  /// Attempts to allocate with the stored parameters.
   async2::Poll<std::optional<MultiBuf>> TryAllocate();
+
+  // The allocator this future is tied to.
+  MultiBufAllocator* allocator_;
+
+  // The waker to wake when a suitably-sized allocation becomes available.
+  async2::Waker waker_;
+
+  // The properties of the kind of allocation being waited for.
+  //
+  // These properties can only be mutated by the owner of the
+  // MultiBufAllocationFuture while holding the allocator's lock,
+  // however the MultiBufAllocationFuture owner can freely read these values
+  // without needing to acquire the lock.
+  //
+  // The allocator may read these values so long as this value is listed and
+  // the allocator holds the lock.
+  size_t min_size_;
+  size_t desired_size_;
+  ContiguityRequirement contiguity_requirement_;
 };
 
 }  // namespace pw::multibuf

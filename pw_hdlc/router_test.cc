@@ -131,8 +131,8 @@ void ExpectSendAndReceive(
   SimpleAllocatorForTest alloc;
 
   LoopbackByteChannel io_loopback(*alloc);
-  ForwardingDatagramChannelPair outgoing_pair(*alloc);
-  ForwardingDatagramChannelPair incoming_pair(*alloc);
+  ForwardingDatagramChannelPair outgoing_pair(*alloc, *alloc);
+  ForwardingDatagramChannelPair incoming_pair(*alloc, *alloc);
 
   static constexpr size_t kMaxSendDatagrams = 16;
   ASSERT_LE(data.size(), kMaxSendDatagrams);
@@ -206,11 +206,11 @@ TEST(Router, PendOnClosedIoChannelReturnsReady) {
 
   SimpleAllocatorForTest alloc;
 
-  ForwardingByteChannelPair byte_pair(*alloc);
+  ForwardingByteChannelPair byte_pair(*alloc, *alloc);
   std::array<std::byte, kDecodeBufferSize> decode_buffer;
   Router router(byte_pair.first(), decode_buffer);
 
-  ForwardingDatagramChannelPair datagram_pair(*alloc);
+  ForwardingDatagramChannelPair datagram_pair(*alloc, *alloc);
   ReceiveDatagramsUntilClosed recv_task(datagram_pair.first());
   EXPECT_EQ(router.AddChannel(datagram_pair.second(),
                               /*arbitrary incoming address*/ 5017,

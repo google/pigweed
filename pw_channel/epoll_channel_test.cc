@@ -224,13 +224,14 @@ class WriterTask : public Task {
       }
       ++write_count;
 
-      std::optional<pw::multibuf::MultiBuf> multibuf =
-          channel_.GetWriteAllocator().Allocate(data_to_write_.size());
-      PW_CHECK(multibuf.has_value());
-      std::copy(
-          data_to_write_.begin(), data_to_write_.end(), multibuf->begin());
+      Poll<std::optional<MultiBuf>> multibuf_result =
+          channel_.PendAllocateWriteBuffer(cx, data_to_write_.size());
+      PW_CHECK(multibuf_result.IsReady());
+      PW_CHECK(multibuf_result->has_value());
+      MultiBuf& multibuf = **multibuf_result;
+      std::copy(data_to_write_.begin(), data_to_write_.end(), multibuf.begin());
 
-      last_write_status = channel_.StageWrite(std::move(*multibuf));
+      last_write_status = channel_.StageWrite(std::move(multibuf));
 
       Poll<pw::Status> write_status = channel_.PendWrite(cx);
       if (write_status.IsPending()) {

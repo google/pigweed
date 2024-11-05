@@ -121,6 +121,7 @@ pw_add_library(pw_multibuf.allocator STATIC
   PUBLIC_DEPS
     pw_async2.dispatcher
     pw_async2.poll
+    pw_containers.intrusive_forward_list
     pw_multibuf
     pw_result
   SOURCES

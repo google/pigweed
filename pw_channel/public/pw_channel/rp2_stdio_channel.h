@@ -31,6 +31,18 @@ namespace pw::channel {
 ///
 /// ***This must only be called at-most once.***
 ByteReaderWriter& Rp2StdioChannelInit(
+    pw::multibuf::MultiBufAllocator& read_allocator,
+    pw::multibuf::MultiBufAllocator& write_allocator);
+
+/// DEPRECATED: prefer the two-allocator version of this API to avoid
+/// deadlocks due to the read or write side of the API attempting to acquire
+/// more memory while the other holds it.
+///
+/// Initializes and returns a reference to a channel that speaks over rp2's
+/// stdio.
+///
+/// ***This must only be called at-most once.***
+[[deprecated]] ByteReaderWriter& Rp2StdioChannelInit(
     pw::multibuf::MultiBufAllocator& allocator);
 
 /// @}

@@ -27,11 +27,13 @@ using ::pw::async2::Pending;
 using ::pw::async2::Poll;
 using ::pw::async2::Ready;
 using ::pw::async2::Task;
+using ::pw::multibuf::ContiguityRequirement;
+using ::pw::multibuf::kAllowDiscontiguous;
 
 struct AllocateExpectation {
   size_t min_size;
   size_t desired_size;
-  bool contiguous;
+  ContiguityRequirement contiguous;
   pw::Result<MultiBuf> result;
 };
 
@@ -44,7 +46,7 @@ class MockMultiBufAllocator : public MultiBufAllocator {
 
   void ExpectAllocateAndReturn(size_t min_size,
                                size_t desired_size,
-                               bool contiguous,
+                               ContiguityRequirement contiguous,
                                pw::Result<MultiBuf> result) {
     // Multiple simultaneous expectations are not supported.
     ASSERT_FALSE(expected_allocate_.has_value());
@@ -57,7 +59,7 @@ class MockMultiBufAllocator : public MultiBufAllocator {
  private:
   pw::Result<MultiBuf> DoAllocate(size_t min_size,
                                   size_t desired_size,
-                                  bool contiguous) final {
+                                  ContiguityRequirement contiguous) final {
     EXPECT_NE(expected_allocate_, std::nullopt);
     if (!expected_allocate_.has_value()) {
       return Status::FailedPrecondition();
@@ -94,7 +96,7 @@ class AllocateTask : public Task {
 TEST(MultiBufAllocator, AllocateAsyncReturnsImmediatelyAvailableAllocation) {
   MockMultiBufAllocator alloc;
   AllocateTask task(alloc.AllocateAsync(44, 33));
-  alloc.ExpectAllocateAndReturn(44, 33, false, MultiBuf());
+  alloc.ExpectAllocateAndReturn(44, 33, kAllowDiscontiguous, MultiBuf());
 
   Dispatcher dispatcher;
   dispatcher.Post(task);
@@ -111,7 +113,8 @@ TEST(MultiBufAllocator, AllocateAsyncWillNotPollUntilMoreMemoryAvailable) {
   dispatcher.Post(task);
 
   // First attempt will return `ResourceExhausted` to signal temporary OOM.
-  alloc.ExpectAllocateAndReturn(44, 33, false, Status::ResourceExhausted());
+  alloc.ExpectAllocateAndReturn(
+      44, 33, kAllowDiscontiguous, Status::ResourceExhausted());
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsPending());
   EXPECT_TRUE(task.last_result_.IsPending());
 
@@ -125,7 +128,7 @@ TEST(MultiBufAllocator, AllocateAsyncWillNotPollUntilMoreMemoryAvailable) {
 
   // Sufficient memory will awaken and return the memory
   alloc.MoreMemoryAvailable(50, 50);
-  alloc.ExpectAllocateAndReturn(44, 33, false, MultiBuf());
+  alloc.ExpectAllocateAndReturn(44, 33, kAllowDiscontiguous, MultiBuf());
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
 }
 

@@ -137,14 +137,15 @@ class PacketIO {
 
     PacketIO& io_;
     async2::Poll<InlineVarLenEntryQueue<>::Entry> outbound_packet_;
-    std::optional<multibuf::MultiBufAllocationFuture> outbound_packet_multibuf_;
   };
 
   channel::DatagramReaderWriter& channel() { return channels_.first(); }
 
-  std::byte mb_allocator_buffer_[PW_SYSTEM_MAX_TRANSMISSION_UNIT * 2];
+  std::byte mb_allocator_buffer_1_[PW_SYSTEM_MAX_TRANSMISSION_UNIT];
+  std::byte mb_allocator_buffer_2_[PW_SYSTEM_MAX_TRANSMISSION_UNIT];
   Allocator& allocator_;
-  multibuf::SimpleAllocator mb_allocator_;
+  multibuf::SimpleAllocator mb_allocator_1_;
+  multibuf::SimpleAllocator mb_allocator_2_;
   channel::ForwardingDatagramChannelPair channels_;
   hdlc::Router router_;
   RpcServerThread rpc_server_thread_;

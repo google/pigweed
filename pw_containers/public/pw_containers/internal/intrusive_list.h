@@ -215,6 +215,8 @@ class GenericIntrusiveList {
   /// evaluates to true when passed that item.
   ///
   /// @tparam UnaryPredicate    Function with the signature `bool(const Item&)`
+  ///
+  /// @returns The number of items removed.
   template <typename UnaryPredicate>
   size_t remove_if(UnaryPredicate pred,
                    size_t max = std::numeric_limits<size_t>::max()) {

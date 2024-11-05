@@ -20,6 +20,7 @@
 #include "pw_async2/dispatcher.h"
 #include "pw_async2/poll.h"
 #include "pw_channel/channel.h"
+#include "pw_multibuf/allocator.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 
@@ -45,7 +46,8 @@ template <DataType kType>
 class ForwardingChannelPair {
  public:
   explicit constexpr ForwardingChannelPair(
-      multibuf::MultiBufAllocator& allocator);
+      multibuf::MultiBufAllocator& first_write_alloc,
+      multibuf::MultiBufAllocator& second_write_alloc);
 
   ForwardingChannelPair(const ForwardingChannelPair&) = delete;
   ForwardingChannelPair& operator=(const ForwardingChannelPair&) = delete;
@@ -74,8 +76,6 @@ class ForwardingChannelPair {
   friend class internal::ForwardingChannel;
 
   sync::Mutex mutex_;
-  multibuf::MultiBufAllocator& allocator_;
-
   // These channels refer to each other, so their lifetimes must match.
   internal::ForwardingChannel<kType> first_;
   internal::ForwardingChannel<kType> second_;
@@ -106,16 +106,19 @@ class ForwardingChannel<DataType::kDatagram>
   friend class ForwardingChannelPair<DataType::kDatagram>;
 
   constexpr ForwardingChannel(ForwardingChannelPair<DataType::kDatagram>& pair,
-                              ForwardingChannel* sibling)
-      : pair_(pair), sibling_(*sibling) {}
+                              ForwardingChannel* sibling,
+                              multibuf::MultiBufAllocator& write_alloc)
+      : pair_(pair), sibling_(*sibling), write_alloc_future_(write_alloc) {}
 
   async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
 
   async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) override;
 
-  multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
-    return pair_.allocator_;
+  async2::Poll<std::optional<multibuf::MultiBuf>> DoPendAllocateWriteBuffer(
+      async2::Context& cx, size_t min_bytes) override {
+    write_alloc_future_.SetDesiredSize(min_bytes);
+    return write_alloc_future_.Pend(cx);
   }
 
   Status DoStageWrite(multibuf::MultiBuf&& data) override;
@@ -131,8 +134,8 @@ class ForwardingChannel<DataType::kDatagram>
 
   // Could use a queue here.
   std::optional<multibuf::MultiBuf> read_queue_ PW_GUARDED_BY(pair_.mutex_);
-
   async2::Waker waker_ PW_GUARDED_BY(pair_.mutex_);
+  multibuf::MultiBufAllocationFuture write_alloc_future_;
 };
 
 template <>
@@ -148,8 +151,9 @@ class ForwardingChannel<DataType::kByte> : public ReliableByteReaderWriter {
   friend class ForwardingChannelPair<DataType::kByte>;
 
   constexpr ForwardingChannel(ForwardingChannelPair<DataType::kByte>& pair,
-                              ForwardingChannel* sibling)
-      : pair_(pair), sibling_(*sibling) {}
+                              ForwardingChannel* sibling,
+                              multibuf::MultiBufAllocator& write_alloc)
+      : pair_(pair), sibling_(*sibling), write_alloc_future_(write_alloc) {}
 
   async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
       async2::Context& cx) override;
@@ -158,8 +162,10 @@ class ForwardingChannel<DataType::kByte> : public ReliableByteReaderWriter {
     return async2::Ready(OkStatus());
   }
 
-  multibuf::MultiBufAllocator& DoGetWriteAllocator() override {
-    return pair_.allocator_;
+  async2::Poll<std::optional<multibuf::MultiBuf>> DoPendAllocateWriteBuffer(
+      async2::Context& cx, size_t min_bytes) override {
+    write_alloc_future_.SetDesiredSize(min_bytes);
+    return write_alloc_future_.Pend(cx);
   }
 
   Status DoStageWrite(multibuf::MultiBuf&& data) override;
@@ -172,8 +178,8 @@ class ForwardingChannel<DataType::kByte> : public ReliableByteReaderWriter {
   ForwardingChannel& sibling_;
 
   multibuf::MultiBuf read_queue_ PW_GUARDED_BY(pair_.mutex_);
-
   async2::Waker read_waker_ PW_GUARDED_BY(pair_.mutex_);
+  multibuf::MultiBufAllocationFuture write_alloc_future_;
 };
 
 }  // namespace internal
@@ -181,7 +187,9 @@ class ForwardingChannel<DataType::kByte> : public ReliableByteReaderWriter {
 // Define the constructor out-of-line, after ForwardingChannel is defined.
 template <DataType kType>
 constexpr ForwardingChannelPair<kType>::ForwardingChannelPair(
-    multibuf::MultiBufAllocator& allocator)
-    : allocator_(allocator), first_(*this, &second_), second_(*this, &first_) {}
+    multibuf::MultiBufAllocator& first_write_allocator,
+    multibuf::MultiBufAllocator& second_write_allocator)
+    : first_(*this, &second_, first_write_allocator),
+      second_(*this, &first_, second_write_allocator) {}
 
 }  // namespace pw::channel

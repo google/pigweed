@@ -71,9 +71,10 @@ class SimpleAllocator : public MultiBufAllocator {
       : metadata_alloc_(metadata_alloc), data_area_(data_area) {}
 
  private:
-  pw::Result<MultiBuf> DoAllocate(size_t min_size,
-                                  size_t desired_size,
-                                  bool needs_contiguous) final;
+  pw::Result<MultiBuf> DoAllocate(
+      size_t min_size,
+      size_t desired_size,
+      ContiguityRequirement contiguity_requirement) final;
 
   /// Allocates a contiguous buffer of exactly ``size`` bytes.
   pw::Result<MultiBuf> InternalAllocateContiguous(size_t size)

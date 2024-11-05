@@ -44,17 +44,13 @@ void EpollChannel::Register() {
 
 async2::Poll<Result<multibuf::MultiBuf>> EpollChannel::DoPendRead(
     async2::Context& cx) {
-  if (!allocation_future_.has_value()) {
-    allocation_future_ =
-        allocator_->AllocateContiguousAsync(kMinimumReadSize, kDesiredReadSize);
-  }
+  write_alloc_future_.SetDesiredSizes(
+      kMinimumReadSize, kDesiredReadSize, pw::multibuf::kNeedsContiguous);
   async2::Poll<std::optional<multibuf::MultiBuf>> maybe_multibuf =
-      allocation_future_->Pend(cx);
+      write_alloc_future_.Pend(cx);
   if (maybe_multibuf.IsPending()) {
     return async2::Pending();
   }
-
-  allocation_future_ = std::nullopt;
 
   if (!maybe_multibuf->has_value()) {
     PW_LOG_ERROR("Failed to allocate multibuf for reading");

@@ -33,7 +33,6 @@
 #include "pw_async2/dispatcher.h"
 #include "pw_async2/poll.h"
 #include "pw_bytes/span.h"
-#include "pw_multibuf/allocator.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
@@ -208,8 +207,30 @@ class AnyChannel {
   /// any other ``MultiBuf`` s or ``Chunk`` s.
   ///
   /// This method must not be called on channels which do not support writing.
-  multibuf::MultiBufAllocator& GetWriteAllocator() {
-    return DoGetWriteAllocator();
+
+  /// Attempts to allocate a write buffer of at least `min_bytes` bytes.
+  ///
+  /// On success, returns a `MultiBuf` of at least `min_bytes`.
+  /// This buffer should be filled with data and then passed back into
+  /// `StageWrite`. The user may shrink or fragment the `MultiBuf` during
+  /// its own usage of the buffer, but the `MultiBuf` should be restored
+  /// to its original shape before it is passed to `StageWrite`.
+  ///
+  /// Users should not wait on the result of `PendAllocateWriteBuffer` while
+  /// holding an existing `MultiBuf` from `PendAllocateWriteBuffer`, as this
+  /// can result in deadlocks.
+  ///
+  /// This method will return:
+  ///
+  /// * Ready(buffer) - A buffer of the requested size is provided.
+  /// * Ready(std::nullopt) - `min_bytes` is larger than the maximum buffer
+  ///   size this channel can allocate.
+  /// * Pending - No buffer of at least `min_bytes` is available. The task
+  ///   associated with the provided `pw::async2::Context` will be awoken
+  ///   when a sufficiently-sized buffer becomes available.
+  async2::Poll<std::optional<multibuf::MultiBuf>> PendAllocateWriteBuffer(
+      async2::Context& cx, size_t min_bytes) {
+    return DoPendAllocateWriteBuffer(cx, min_bytes);
   }
 
   /// Writes using a previously allocated MultiBuf. Returns a token that
@@ -217,15 +238,15 @@ class AnyChannel {
   /// PendWrite() returns the value of the latest token it has flushed.
   ///
   /// The ``MultiBuf`` argument to ``Write`` may consist of either:
-  ///   (1) A single ``MultiBuf`` allocated by ``GetWriteAllocator()``
+  ///   (1) A single ``MultiBuf`` allocated by ``PendAllocateWriteBuffer``
   ///       that has not been combined with any other ``MultiBuf`` s
   ///       or ``Chunk``s OR
   ///   (2) A ``MultiBuf`` containing any combination of buffers from sources
-  ///       other than ``GetWriteAllocator``.
+  ///       other than ``PendAllocateWriteBuffer``.
   ///
   /// This requirement allows for more efficient use of memory in case (1).
   /// For example, a ring-buffer implementation of a ``Channel`` may
-  /// specialize ``GetWriteAllocator`` to return the next section of the
+  /// specialize ``PendAllocateWriteBuffer`` to return the next section of the
   /// buffer available for writing.
   ///
   /// @returns @rst
@@ -401,7 +422,8 @@ class AnyChannel {
 
   // Write functions
 
-  virtual multibuf::MultiBufAllocator& DoGetWriteAllocator() = 0;
+  virtual async2::Poll<std::optional<multibuf::MultiBuf>>
+  DoPendAllocateWriteBuffer(async2::Context& cx, size_t min_bytes) = 0;
 
   virtual pw::async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) = 0;
 

@@ -31,7 +31,6 @@ using pw::async2::Pending;
 using pw::async2::Poll;
 using pw::channel::ByteReaderWriter;
 using pw::multibuf::MultiBuf;
-using pw::multibuf::MultiBufAllocationFuture;
 using pw::multibuf::MultiBufAllocator;
 using pw::multibuf::OwnedChunk;
 
@@ -147,17 +146,18 @@ void StreamChannelWriteState::WriteLoop(pw::stream::Writer& writer) {
 static constexpr size_t kMinimumReadSize = 64;
 static constexpr size_t kDesiredReadSize = 1024;
 
-StreamChannel::StreamChannel(MultiBufAllocator& allocator,
-                             pw::stream::Reader& reader,
-                             const pw::thread::Options& read_thread_options,
-                             pw::stream::Writer& writer,
-                             const pw::thread::Options& write_thread_options)
+StreamChannel::StreamChannel(stream::Reader& reader,
+                             const thread::Options& read_thread_options,
+                             MultiBufAllocator& read_allocator,
+                             stream::Writer& writer,
+                             const thread::Options& write_thread_options,
+                             MultiBufAllocator& write_allocator)
     : reader_(reader),
       writer_(writer),
       read_state_(),
       write_state_(),
-      allocation_future_(std::nullopt),
-      allocator_(&allocator) {
+      read_allocation_future_(read_allocator),
+      write_allocation_future_(write_allocator) {
   pw::thread::DetachedThread(read_thread_options,
                              [this]() { read_state_.ReadLoop(reader_); });
   pw::thread::DetachedThread(write_thread_options,
@@ -169,19 +169,16 @@ Status StreamChannel::ProvideBufferIfAvailable(Context& cx) {
     return OkStatus();
   }
 
-  if (!allocation_future_.has_value()) {
-    allocation_future_ =
-        allocator_->AllocateContiguousAsync(kMinimumReadSize, kDesiredReadSize);
-  }
-  Poll<std::optional<MultiBuf>> maybe_multibuf = allocation_future_->Pend(cx);
+  read_allocation_future_.SetDesiredSizes(
+      kMinimumReadSize, kDesiredReadSize, pw::multibuf::kNeedsContiguous);
+  Poll<std::optional<MultiBuf>> maybe_multibuf =
+      read_allocation_future_.Pend(cx);
 
   // If this is pending, we'll be awoken and this function will be re-run
   // when a buffer becomes available, allowing us to provide a buffer.
   if (maybe_multibuf.IsPending()) {
     return OkStatus();
   }
-
-  allocation_future_ = std::nullopt;
 
   if (!maybe_multibuf->has_value()) {
     PW_LOG_ERROR("Failed to allocate multibuf for reading");

@@ -148,7 +148,6 @@ Poll<> Router::PollDeliverIncomingFrame(Context& cx, const Frame& frame) {
     PW_LOG_ERROR("Received incoming HDLC packet with address %" PRIu64
                  ", but no channel with that incoming address is registered.",
                  address);
-    incoming_allocation_future_ = std::nullopt;
     return Ready();
   }
   Poll<Status> ready_to_write = channel->channel->PendReadyToWrite(cx);
@@ -162,15 +161,11 @@ Poll<> Router::PollDeliverIncomingFrame(Context& cx, const Frame& frame) {
                  ready_to_write->code());
     return Ready();
   }
-  if (!incoming_allocation_future_.has_value()) {
-    incoming_allocation_future_ =
-        channel->channel->GetWriteAllocator().AllocateAsync(data.size());
-  }
-  Poll<std::optional<MultiBuf>> buffer = incoming_allocation_future_->Pend(cx);
+  Poll<std::optional<MultiBuf>> buffer =
+      channel->channel->PendAllocateWriteBuffer(cx, data.size());
   if (buffer.IsPending()) {
     return Pending();
   }
-  incoming_allocation_future_ = std::nullopt;
   if (!buffer->has_value()) {
     PW_LOG_ERROR(
         "Unable to allocate a buffer of size %zu destined for incoming "
@@ -230,12 +225,12 @@ void Router::TryFillBufferToEncodeAndSend(Context& cx) {
   for (size_t i = 0; i < channel_datas_.size(); ++i) {
     ChannelData& cd =
         channel_datas_[(next_first_read_index_ + i) % channel_datas_.size()];
-    Poll<Result<MultiBuf>> buf = cd.channel->PendRead(cx);
-    if (buf.IsPending()) {
+    Poll<Result<MultiBuf>> buf_result = cd.channel->PendRead(cx);
+    if (buf_result.IsPending()) {
       continue;
     }
-    if (!buf->ok()) {
-      if (buf->status().IsUnimplemented()) {
+    if (!buf_result->ok()) {
+      if (buf_result->status().IsUnimplemented()) {
         PW_LOG_ERROR("Channel registered for outgoing HDLC address %" PRIu64
                      " is not readable.",
                      cd.send_address);
@@ -245,8 +240,22 @@ void Router::TryFillBufferToEncodeAndSend(Context& cx) {
       // action is needed because the channel may still be receiving data.
       continue;
     }
-    buffer_to_encode_and_send_ = std::move(**buf);
-    address_to_encode_and_send_to_ = cd.send_address;
+    MultiBuf& buf = **buf_result;
+    uint64_t target_address = cd.send_address;
+    Result<size_t> encoded_size = CalculateSizeOnceEncoded(target_address, buf);
+    if (!encoded_size.ok()) {
+      PW_LOG_ERROR(
+          "Unable to compute size of encoded packet for outgoing buffer of "
+          "size %zu destined for outgoing HDLC address %" PRIu64
+          ". Packet will be discarded.",
+          buf.size(),
+          target_address);
+      continue;
+    }
+    buffer_to_encode_and_send_ =
+        OutgoingBuffer{/*buffer=*/std::move(buf),
+                       /*hdlc_encoded_size=*/*encoded_size,
+                       /*target_address=*/target_address};
     // We received data, so ensure that we start by reading from a different
     // index next time.
     next_first_read_index_ =
@@ -263,53 +272,37 @@ void Router::WriteOutgoingMessages(Context& cx) {
       // No channels have new data to send.
       return;
     }
-    if (!outgoing_allocation_future_.has_value()) {
-      Result<size_t> encoded_size = CalculateSizeOnceEncoded(
-          address_to_encode_and_send_to_, *buffer_to_encode_and_send_);
-      if (!encoded_size.ok()) {
-        PW_LOG_ERROR(
-            "Unable to compute size of encoded packet for outgoing buffer of "
-            "size %zu destined for outgoing HDLC address %" PRIu64
-            ". Packet will be discarded.",
-            buffer_to_encode_and_send_->size(),
-            address_to_encode_and_send_to_);
-        buffer_to_encode_and_send_ = std::nullopt;
-        continue;
-      }
-      outgoing_allocation_future_ =
-          io_channel_.GetWriteAllocator().AllocateAsync(*encoded_size);
-    }
+    uint64_t target_address = buffer_to_encode_and_send_->target_address;
+    size_t hdlc_encoded_size = buffer_to_encode_and_send_->hdlc_encoded_size;
     Poll<std::optional<MultiBuf>> maybe_write_buffer =
-        outgoing_allocation_future_->Pend(cx);
+        io_channel_.PendAllocateWriteBuffer(cx, hdlc_encoded_size);
     if (maybe_write_buffer.IsPending()) {
       // Channel cannot write any further messages until we can allocate.
       return;
     }
     // We've gotten the allocation: discard the future.
-    size_t buffer_size = outgoing_allocation_future_->min_size();
-    outgoing_allocation_future_ = std::nullopt;
     if (!maybe_write_buffer->has_value()) {
       // We can't allocate a write buffer large enough for our encoded frame.
       // Sadly, we have to throw the frame away.
       PW_LOG_ERROR(
           "Unable to allocate a buffer of size %zu destined for outgoing "
           "HDLC address %" PRIu64 ". Packet will be discarded.",
-          buffer_size,
-          address_to_encode_and_send_to_);
+          hdlc_encoded_size,
+          target_address);
       buffer_to_encode_and_send_ = std::nullopt;
       continue;
     }
     MultiBuf write_buffer = std::move(**maybe_write_buffer);
     Status encode_status =
-        WriteMultiBufUIFrame(address_to_encode_and_send_to_,
-                             *buffer_to_encode_and_send_,
+        WriteMultiBufUIFrame(target_address,
+                             buffer_to_encode_and_send_->buffer,
                              pw::multibuf::Stream(write_buffer));
     buffer_to_encode_and_send_ = std::nullopt;
     if (!encode_status.ok()) {
       PW_LOG_ERROR(
           "Failed to encode a buffer destined for outgoing HDLC address "
           "%" PRIu64 ". Status: %d",
-          address_to_encode_and_send_to_,
+          target_address,
           encode_status.code());
       continue;
     }
@@ -318,8 +311,8 @@ void Router::WriteOutgoingMessages(Context& cx) {
       PW_LOG_ERROR(
           "Failed to write a buffer of size %zu destined for outgoing HDLC "
           "address %" PRIu64 ". Status: %d",
-          buffer_size,
-          address_to_encode_and_send_to_,
+          hdlc_encoded_size,
+          target_address,
           write_status.code());
     }
   }

@@ -27,12 +27,19 @@
 
 namespace pw::system::internal {
 
+using ::pw::async2::Context;
+using ::pw::async2::Dispatcher;
+using ::pw::async2::Pending;
+using ::pw::async2::Poll;
+using ::pw::async2::Ready;
+using ::pw::multibuf::MultiBuf;
+
 // With atomic head/tail reads/writes, this type of queue interaction could be
 // lockless in single producer, single consumer scenarios.
 
 // TODO: b/349398108 - MultiBuf directly out of (and into) the ring buffer.
-async2::Poll<InlineVarLenEntryQueue<>::Entry>
-RpcChannelOutputQueue::PendOutgoingDatagram(async2::Context& cx) {
+Poll<InlineVarLenEntryQueue<>::Entry>
+RpcChannelOutputQueue::PendOutgoingDatagram(Context& cx) {
   // The head pointer will not change until Pop is called.
   std::lock_guard lock(mutex_);
   if (queue_.empty()) {
@@ -40,9 +47,9 @@ RpcChannelOutputQueue::PendOutgoingDatagram(async2::Context& cx) {
         cx,
         packet_ready_,
         "RpcChannel is waiting for outgoing RPC datagrams to be enqueued");
-    return async2::Pending();
+    return Pending();
   }
-  return async2::Ready(queue_.front());
+  return Ready(queue_.front());
 }
 
 Status RpcChannelOutputQueue::Send(ConstByteSpan datagram) {
@@ -63,7 +70,7 @@ RpcServerThread::RpcServerThread(Allocator& allocator, rpc::Server& server)
   PW_CHECK_OK(rpc_server_.OpenChannel(1, rpc_packet_queue_));
 }
 
-void RpcServerThread::PushPacket(multibuf::MultiBuf&& packet) {
+void RpcServerThread::PushPacket(MultiBuf&& packet) {
   PACKET_IO_DEBUG_LOG("Received %zu B RPC packet", packet.size());
   std::lock_guard lock(mutex_);
   ready_for_packet_ = false;
@@ -102,8 +109,9 @@ PacketIO::PacketIO(channel::ByteReaderWriter& io_channel,
                    Allocator& allocator,
                    rpc::Server& rpc_server)
     : allocator_(allocator),
-      mb_allocator_(mb_allocator_buffer_, allocator_),
-      channels_(mb_allocator_),
+      mb_allocator_1_(mb_allocator_buffer_1_, allocator_),
+      mb_allocator_2_(mb_allocator_buffer_2_, allocator_),
+      channels_(mb_allocator_1_, mb_allocator_2_),
       router_(io_channel, buffer),
       rpc_server_thread_(allocator_, rpc_server),
       packet_reader_(*this),
@@ -113,7 +121,7 @@ PacketIO::PacketIO(channel::ByteReaderWriter& io_channel,
                                  PW_SYSTEM_DEFAULT_RPC_HDLC_ADDRESS));
 }
 
-void PacketIO::Start(async2::Dispatcher& dispatcher,
+void PacketIO::Start(Dispatcher& dispatcher,
                      const thread::Options& thread_options) {
   dispatcher.Post(packet_reader_);
   dispatcher.Post(packet_writer_);
@@ -125,42 +133,42 @@ void PacketIO::Start(async2::Dispatcher& dispatcher,
   });
 }
 
-async2::Poll<> PacketIO::PacketReader::DoPend(async2::Context& cx) {
+Poll<> PacketIO::PacketReader::DoPend(Context& cx) {
   // Let the router do its work.
   if (io_.router_.Pend(cx).IsReady()) {
-    return async2::Ready();  // channel is closed, we're done here
+    return Ready();  // channel is closed, we're done here
   }
 
   // If the dispatcher isn't ready for another packet, wait.
   if (io_.rpc_server_thread_.PendReadyForPacket(cx).IsPending()) {
-    return async2::Pending();  // Nothing else to do for now
+    return Pending();  // Nothing else to do for now
   }
 
   // Read a packet from the router and provide it to the RPC thread.
   auto read = io_.channel().PendRead(cx);
   if (read.IsPending()) {
-    return async2::Pending();  // Nothing else to do for now
+    return Pending();  // Nothing else to do for now
   }
   if (!read->ok()) {
     PW_LOG_ERROR("Channel::PendRead() returned status %s",
                  read->status().str());
-    return async2::Ready();  // Channel is broken
+    return Ready();  // Channel is broken
   }
   // Push the packet into the RPC thread.
   io_.rpc_server_thread_.PushPacket(*std::move(*read));
-  return async2::Pending();  // Nothing else to do for now
+  return Pending();  // Nothing else to do for now
 }
 
-async2::Poll<> PacketIO::PacketWriter::DoPend(async2::Context& cx) {
+Poll<> PacketIO::PacketWriter::DoPend(Context& cx) {
   // Do the work of writing any existing packets.
   // We ignore Pending because we want to continue trying to make
   // progress sending new packets regardless of whether the write was
   // able to complete.
-  async2::Poll<Status> write_status = io_.channel().PendWrite(cx);
+  Poll<Status> write_status = io_.channel().PendWrite(cx);
   if (write_status.IsReady() && !write_status->ok()) {
     PW_LOG_ERROR("Channel::PendWrite() returned non-OK status %s",
                  write_status->str());
-    return async2::Ready();
+    return Ready();
   }
 
   // Get the next packet to send, if any.
@@ -169,7 +177,7 @@ async2::Poll<> PacketIO::PacketWriter::DoPend(async2::Context& cx) {
   }
 
   if (outbound_packet_.IsPending()) {
-    return async2::Pending();
+    return Pending();
   }
 
   PACKET_IO_DEBUG_LOG("Sending %u B outbound packet",
@@ -178,31 +186,26 @@ async2::Poll<> PacketIO::PacketWriter::DoPend(async2::Context& cx) {
   // There is a packet -- check if we can write.
   auto writable = io_.channel().PendReadyToWrite(cx);
   if (writable.IsPending()) {
-    return async2::Pending();
+    return Pending();
   }
 
   if (!writable->ok()) {
     PW_LOG_ERROR("Channel::PendReadyToWrite() returned status %s",
                  writable->str());
-    return async2::Ready();
+    return Ready();
   }
 
   // Allocate a multibuf to send the packet.
   // TODO: b/349398108 - Instead, get a MultiBuf that refers to the queue entry.
-  if (!outbound_packet_multibuf_.has_value()) {
-    outbound_packet_multibuf_ = io_.channel().GetWriteAllocator().AllocateAsync(
-        outbound_packet_->size());
-  }
-
-  auto mb = outbound_packet_multibuf_->Pend(cx);
+  auto mb = io_.channel().PendAllocateWriteBuffer(cx, outbound_packet_->size());
   if (mb.IsPending()) {
-    return async2::Pending();
+    return Pending();
   }
 
   if (!mb->has_value()) {
     PW_LOG_ERROR("Async MultiBuf allocation of %u B failed",
                  static_cast<unsigned>(outbound_packet_->size()));
-    return async2::Ready();  // Could not allocate mb
+    return Ready();  // Could not allocate mb
   }
 
   // Copy the packet into the multibuf.
@@ -214,16 +217,15 @@ async2::Poll<> PacketIO::PacketWriter::DoPend(async2::Context& cx) {
   PACKET_IO_DEBUG_LOG("Writing %zu B outbound packet", (**mb).size());
   auto write_result = io_.channel().StageWrite(**std::move(mb));
   if (!write_result.ok()) {
-    return async2::Ready();  // Write failed, but should not have
+    return Ready();  // Write failed, but should not have
   }
 
   // Write was accepted, so set up for the next packet
-  outbound_packet_ = async2::Pending();
-  outbound_packet_multibuf_.reset();
+  outbound_packet_ = Pending();
 
   // Sent one packet, let other tasks run.
   cx.ReEnqueue();
-  return async2::Pending();
+  return Pending();
 }
 
 }  // namespace pw::system::internal

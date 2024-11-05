@@ -67,14 +67,18 @@ template <pw::channel::DataType kType,
 class TestChannelPair {
  public:
   TestChannelPair()
-      : simple_allocator_(data_area_, meta_alloc_), pair_(simple_allocator_) {}
+      : first_out_alloc_(first_out_data_area_, meta_alloc_),
+        second_out_alloc_(second_out_data_area_, meta_alloc_),
+        pair_(first_out_alloc_, second_out_alloc_) {}
 
   pw::channel::ForwardingChannelPair<kType>* operator->() { return &pair_; }
 
  private:
-  std::array<std::byte, kDataSize> data_area_;
+  std::array<std::byte, kDataSize> first_out_data_area_;
+  std::array<std::byte, kDataSize> second_out_data_area_;
   pw::allocator::test::AllocatorForTest<kMetaSize> meta_alloc_;
-  pw::multibuf::SimpleAllocator simple_allocator_;
+  pw::multibuf::SimpleAllocator first_out_alloc_;
+  pw::multibuf::SimpleAllocator second_out_alloc_;
 
   pw::channel::ForwardingChannelPair<kType> pair_;
 };

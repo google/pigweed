@@ -55,9 +55,10 @@ void LinkedRegionTracker::DeallocateChunkClass(void* ptr) {
 
 }  // namespace internal
 
-pw::Result<MultiBuf> SimpleAllocator::DoAllocate(size_t min_size,
-                                                 size_t desired_size,
-                                                 bool needs_contiguous) {
+pw::Result<MultiBuf> SimpleAllocator::DoAllocate(
+    size_t min_size,
+    size_t desired_size,
+    ContiguityRequirement contiguity_requirement) {
   if (min_size > data_area_.size()) {
     return Status::OutOfRange();
   }
@@ -65,14 +66,15 @@ pw::Result<MultiBuf> SimpleAllocator::DoAllocate(size_t min_size,
   // prior to destroying ``buf`` below.
   lock_.lock();
   auto available_memory_size = GetAvailableMemorySize();
-  size_t available = needs_contiguous ? available_memory_size.contiguous
-                                      : available_memory_size.total;
+  size_t available = (contiguity_requirement == kNeedsContiguous)
+                         ? available_memory_size.contiguous
+                         : available_memory_size.total;
   if (available < min_size) {
     lock_.unlock();
     return Status::ResourceExhausted();
   }
   size_t goal_size = std::min(desired_size, available);
-  if (needs_contiguous) {
+  if (contiguity_requirement == kNeedsContiguous) {
     auto out = InternalAllocateContiguous(goal_size);
     lock_.unlock();
     return out;

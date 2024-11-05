@@ -179,21 +179,22 @@ class Conversions {
   using AnyChannel::PendRead
 
 #define _PW_CHANNEL_WRITABLE_WRTE static_assert(true)
-#define _PW_CHANNEL_WRITABLE_SKIP                                         \
-  async2::Poll<Status> DoPendReadyToWrite(async2::Context&) final {       \
-    return Status::Unimplemented();                                       \
-  }                                                                       \
-  multibuf::MultiBufAllocator& DoGetWriteAllocator() final {              \
-    PW_ASSERT(false); /* shouldn't be called on non-writeable channels */ \
-  }                                                                       \
-  Status DoStageWrite(multibuf::MultiBuf&&) final {                       \
-    return Status::Unimplemented();                                       \
-  }                                                                       \
-  async2::Poll<Status> DoPendWrite(async2::Context&) final {              \
-    return async2::Ready(Status::Unimplemented());                        \
-  }                                                                       \
-  using AnyChannel::PendReadyToWrite;                                     \
-  using AnyChannel::StageWrite;                                           \
+#define _PW_CHANNEL_WRITABLE_SKIP                                            \
+  async2::Poll<Status> DoPendReadyToWrite(async2::Context&) final {          \
+    return Status::Unimplemented();                                          \
+  }                                                                          \
+  async2::Poll<std::optional<multibuf::MultiBuf>> DoPendAllocateWriteBuffer( \
+      async2::Context&, size_t) final {                                      \
+    PW_ASSERT(false); /* shouldn't be called on non-writeable channels */    \
+  }                                                                          \
+  Status DoStageWrite(multibuf::MultiBuf&&) final {                          \
+    return Status::Unimplemented();                                          \
+  }                                                                          \
+  async2::Poll<Status> DoPendWrite(async2::Context&) final {                 \
+    return async2::Ready(Status::Unimplemented());                           \
+  }                                                                          \
+  using AnyChannel::PendReadyToWrite;                                        \
+  using AnyChannel::StageWrite;                                              \
   using AnyChannel::PendWrite
 
 #define _PW_CHANNEL_SEEKABLE_SEEK static_assert(true)

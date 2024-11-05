@@ -43,10 +43,8 @@ class EpollChannel : public ByteReaderWriter {
                multibuf::MultiBufAllocator& allocator)
       : channel_fd_(channel_fd),
         ready_to_write_(false),
-
-        allocation_future_(std::nullopt),
         dispatcher_(&dispatcher),
-        allocator_(&allocator) {
+        write_alloc_future_(allocator) {
     Register();
   }
 
@@ -69,8 +67,10 @@ class EpollChannel : public ByteReaderWriter {
 
   async2::Poll<Status> DoPendReadyToWrite(async2::Context& cx) final;
 
-  multibuf::MultiBufAllocator& DoGetWriteAllocator() final {
-    return *allocator_;
+  async2::Poll<std::optional<multibuf::MultiBuf>> DoPendAllocateWriteBuffer(
+      async2::Context& cx, size_t min_bytes) final {
+    write_alloc_future_.SetDesiredSize(min_bytes);
+    return write_alloc_future_.Pend(cx);
   }
 
   Status DoStageWrite(multibuf::MultiBuf&& data) final;
@@ -94,9 +94,8 @@ class EpollChannel : public ByteReaderWriter {
   int channel_fd_;
   bool ready_to_write_;
 
-  std::optional<multibuf::MultiBufAllocationFuture> allocation_future_;
   async2::Dispatcher* dispatcher_;
-  multibuf::MultiBufAllocator* allocator_;
+  multibuf::MultiBufAllocationFuture write_alloc_future_;
   async2::Waker waker_;
 };
 

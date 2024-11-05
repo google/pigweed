@@ -29,7 +29,6 @@ cc_library(
         "//pw_async2:poll",
         "//pw_bytes",
         "//pw_multibuf",
-        "//pw_multibuf:allocator",
         "//pw_result",
         "//pw_span",
         "//pw_status",
@@ -144,6 +143,7 @@ cc_library(
     deps = [
         ":pw_channel",
         "//pw_log",
+        "//pw_multibuf:allocator",
         "//pw_stream",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:thread_notification",

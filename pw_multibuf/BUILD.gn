@@ -115,6 +115,7 @@ pw_source_set("allocator") {
   public_deps = [
     ":pw_multibuf",
     "$dir_pw_async2:dispatcher",
+    "$dir_pw_containers:intrusive_forward_list",
     "$dir_pw_result",
   ]
 }

@@ -20,13 +20,18 @@
 
 namespace pw::multibuf {
 
+using ::pw::async2::Context;
+using ::pw::async2::Poll;
+using ::pw::async2::Waker;
+
 std::optional<MultiBuf> MultiBufAllocator::Allocate(size_t size) {
   return Allocate(size, size);
 }
 
 std::optional<MultiBuf> MultiBufAllocator::Allocate(size_t min_size,
                                                     size_t desired_size) {
-  pw::Result<MultiBuf> result = DoAllocate(min_size, desired_size, false);
+  pw::Result<MultiBuf> result =
+      DoAllocate(min_size, desired_size, kAllowDiscontiguous);
   if (result.ok()) {
     return std::move(*result);
   }
@@ -39,7 +44,8 @@ std::optional<MultiBuf> MultiBufAllocator::AllocateContiguous(size_t size) {
 
 std::optional<MultiBuf> MultiBufAllocator::AllocateContiguous(
     size_t min_size, size_t desired_size) {
-  pw::Result<MultiBuf> result = DoAllocate(min_size, desired_size, true);
+  pw::Result<MultiBuf> result =
+      DoAllocate(min_size, desired_size, kNeedsContiguous);
   if (result.ok()) {
     return std::move(*result);
   }
@@ -47,19 +53,21 @@ std::optional<MultiBuf> MultiBufAllocator::AllocateContiguous(
 }
 
 MultiBufAllocationFuture MultiBufAllocator::AllocateAsync(size_t size) {
-  return MultiBufAllocationFuture(*this, size, size, false);
+  return MultiBufAllocationFuture(*this, size, size, kAllowDiscontiguous);
 }
 MultiBufAllocationFuture MultiBufAllocator::AllocateAsync(size_t min_size,
                                                           size_t desired_size) {
-  return MultiBufAllocationFuture(*this, min_size, desired_size, false);
+  return MultiBufAllocationFuture(
+      *this, min_size, desired_size, kAllowDiscontiguous);
 }
 MultiBufAllocationFuture MultiBufAllocator::AllocateContiguousAsync(
     size_t size) {
-  return MultiBufAllocationFuture(*this, size, size, true);
+  return MultiBufAllocationFuture(*this, size, size, kNeedsContiguous);
 }
 MultiBufAllocationFuture MultiBufAllocator::AllocateContiguousAsync(
     size_t min_size, size_t desired_size) {
-  return MultiBufAllocationFuture(*this, min_size, desired_size, true);
+  return MultiBufAllocationFuture(
+      *this, min_size, desired_size, kNeedsContiguous);
 }
 
 void MultiBufAllocator::MoreMemoryAvailable(size_t size_available,
@@ -69,132 +77,121 @@ void MultiBufAllocator::MoreMemoryAvailable(size_t size_available,
     // already hold.
     PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(lock_);
-  internal::AllocationWaiter* current = first_waiter_;
-  while (current != nullptr) {
-    PW_DCHECK(current->allocator_ == this);
-    if ((current->min_size_ <= contiguous_size_available) ||
-        (!current->needs_contiguous_ && current->min_size_ <= size_available)) {
-      std::move(current->waker_).Wake();
+  waiting_futures_.remove_if([this, size_available, contiguous_size_available](
+                                 const MultiBufAllocationFuture& future) {
+    PW_CHECK_PTR_EQ(future.allocator_, this);
+    bool should_wake_and_remove =
+        ((future.min_size_ <= contiguous_size_available) ||
+         (future.contiguity_requirement_ == kAllowDiscontiguous &&
+          future.min_size_ <= size_available));
+    if (should_wake_and_remove) {
+      std::move(const_cast<Waker&>(future.waker_)).Wake();
     }
-    current = current->next_;
-  }
+    return should_wake_and_remove;
+  });
 }
 
-void MultiBufAllocator::AddWaiter(internal::AllocationWaiter* waiter) {
-  std::lock_guard lock(lock_);
-  AddWaiterLocked(waiter);
-}
-
-void MultiBufAllocator::AddWaiterLocked(internal::AllocationWaiter* waiter)
-    // Disable lock safety analysis: the access to `next_` requires locking
-    // `waiter->allocator_->lock_`, but that's the same as `lock_` which we
-    // already hold.
-    PW_NO_LOCK_SAFETY_ANALYSIS {
-  PW_DCHECK(waiter->allocator_ == this);
-  PW_DCHECK(waiter->next_ == nullptr);
-  auto old_first = first_waiter_;
-  first_waiter_ = waiter;
-  waiter->next_ = old_first;
-}
-
-void MultiBufAllocator::RemoveWaiter(internal::AllocationWaiter* waiter)
-    // Disable lock safety analysis: the access to `next_` requires locking
-    // `waiter->allocator_->lock_`, but that's the same as `lock_` which we
-    // already hold.
-    PW_NO_LOCK_SAFETY_ANALYSIS {
-  std::lock_guard lock(lock_);
-  RemoveWaiterLocked(waiter);
-  PW_DCHECK(waiter->next_ == nullptr);
-}
-
-void MultiBufAllocator::RemoveWaiterLocked(internal::AllocationWaiter* waiter)
-    // Disable lock safety analysis: the access to `next_` requires locking
-    // `waiter->allocator_->lock_`, but that's the same as `lock_` which we
-    // already hold.
-    PW_NO_LOCK_SAFETY_ANALYSIS {
-  PW_DCHECK(waiter->allocator_ == this);
-  if (waiter == first_waiter_) {
-    first_waiter_ = first_waiter_->next_;
-    waiter->next_ = nullptr;
-    return;
-  }
-  auto current = first_waiter_;
-  while (current != nullptr) {
-    if (current->next_ == waiter) {
-      current->next_ = waiter->next_;
-      waiter->next_ = nullptr;
-      return;
-    }
-    current = current->next_;
-  }
-}
-
-namespace internal {
-
-AllocationWaiter::AllocationWaiter(AllocationWaiter&& other)
+MultiBufAllocationFuture::MultiBufAllocationFuture(
+    MultiBufAllocationFuture&& other)
     : allocator_(other.allocator_),
       waker_(),
-      next_(nullptr),
       min_size_(other.min_size_),
       desired_size_(other.desired_size_),
-      needs_contiguous_(other.needs_contiguous_) {
+      contiguity_requirement_(other.contiguity_requirement_) {
   std::lock_guard lock(allocator_->lock_);
-  allocator_->RemoveWaiterLocked(&other);
-  allocator_->AddWaiterLocked(this);
-  // We must move the waker under the lock in order to ensure that there is no
-  // race between swapping ``AllocationWaiter``s and the waker being awoken by
-  // the allocator.
-  waker_ = std::move(other.waker_);
+  if (!other.unlisted()) {
+    allocator_->waiting_futures_.remove(other);
+    allocator_->waiting_futures_.push_front(*this);
+    // We must move the waker under the lock in order to ensure that there is no
+    // race between swapping ``MultiBufAllocationFuture``s and the waker being
+    // awoken by the allocator.
+    waker_ = std::move(other.waker_);
+  }
 }
 
-AllocationWaiter& AllocationWaiter::operator=(AllocationWaiter&& other) {
-  allocator_->RemoveWaiter(this);
+MultiBufAllocationFuture& MultiBufAllocationFuture::operator=(
+    MultiBufAllocationFuture&& other) {
+  {
+    std::lock_guard lock(allocator_->lock_);
+    if (!this->unlisted()) {
+      allocator_->waiting_futures_.remove(*this);
+    }
+  }
 
   allocator_ = other.allocator_;
   min_size_ = other.min_size_;
   desired_size_ = other.desired_size_;
-  needs_contiguous_ = other.needs_contiguous_;
+  contiguity_requirement_ = other.contiguity_requirement_;
 
   std::lock_guard lock(allocator_->lock_);
-  allocator_->RemoveWaiterLocked(&other);
-  allocator_->AddWaiterLocked(this);
-  // We must move the waker under the lock in order to ensure that there is no
-  // race between swapping ``AllocationWaiter``s and the waker being awoken by
-  // the allocator.
-  waker_ = std::move(other.waker_);
+  if (!other.unlisted()) {
+    allocator_->waiting_futures_.remove(other);
+    allocator_->waiting_futures_.push_front(*this);
+    // We must move the waker under the lock in order to ensure that there is no
+    // race between swapping ``MultiBufAllocationFuture``s and the waker being
+    // awoken by the allocator.
+    waker_ = std::move(other.waker_);
+  }
 
   return *this;
 }
 
-AllocationWaiter::~AllocationWaiter() { allocator_->RemoveWaiter(this); }
-
-}  // namespace internal
-
-async2::Poll<std::optional<MultiBuf>> MultiBufAllocationFuture::Pend(
-    async2::Context& cx) {
-  bool should_attempt = waiter_.ShouldAttemptAllocate();
-  // We set the waker prior to attempting allocation because we want
-  // to receive notifications that may have raced with our attempt
-  // to allocate. If we wait to set until after attempting,
-  // we'd have to re-attempt in order to ensure that no new memory
-  // became available between our attempt and setting the waker.
-  PW_ASYNC_STORE_WAKER(
-      cx,
-      waiter_.Waker(),
-      "MultiBufAllocationFuture is waiting for memory to become available");
-  if (!should_attempt) {
-    return async2::Pending();
+MultiBufAllocationFuture::~MultiBufAllocationFuture() {
+  std::lock_guard lock(allocator_->lock_);
+  if (!this->unlisted()) {
+    allocator_->waiting_futures_.remove(*this);
   }
-  auto result = TryAllocate();
-  if (result.IsReady()) {
-    waiter_.ClearWaker();
-  }
-  return result;
 }
 
-async2::Poll<std::optional<MultiBuf>> MultiBufAllocationFuture::TryAllocate() {
-  pw::Result<MultiBuf> buf_opt = waiter_.allocator().DoAllocate(
-      waiter_.min_size(), waiter_.desired_size(), waiter_.needs_contiguous());
+void MultiBufAllocationFuture::SetDesiredSizes(
+    size_t new_min_size,
+    size_t new_desired_size,
+    ContiguityRequirement new_contiguity_requirement) {
+  // No-op if the sizes are unchanged.
+  if (new_min_size == min_size_ && new_desired_size == desired_size_ &&
+      new_contiguity_requirement == contiguity_requirement_) {
+    return;
+  }
+  // Acquire the lock so the allocator doesn't touch the sizes while we're
+  // modifying them.
+  std::lock_guard lock(allocator_->lock_);
+
+  // If our needs decreased, try allocating again next time rather than
+  // waiting for a wake.
+  if (new_min_size < min_size_ ||
+      ((new_contiguity_requirement == kAllowDiscontiguous) &&
+       (contiguity_requirement_ == kNeedsContiguous))) {
+    if (!this->unlisted()) {
+      allocator_->waiting_futures_.remove(*this);
+    }
+  }
+  min_size_ = new_min_size;
+  desired_size_ = new_desired_size;
+  contiguity_requirement_ = new_contiguity_requirement;
+}
+
+Poll<std::optional<MultiBuf>> MultiBufAllocationFuture::Pend(Context& cx) {
+  std::lock_guard lock(allocator_->lock_);
+  // If we're still listed waiting for a wakeup, don't bother to try again.
+  if (this->unlisted()) {
+    auto result = TryAllocate();
+    if (result.IsReady()) {
+      return result;
+    }
+    allocator_->waiting_futures_.push_front(*this);
+  }
+  // We set the waker while still holding the lock to ensure there is no gap
+  // between us checking TryAllocate above and the waker being reset here.
+  PW_ASYNC_STORE_WAKER(
+      cx,
+      waker_,
+      "MultiBufAllocationFuture is waiting for memory to become available");
+  return async2::Pending();
+}
+
+Poll<std::optional<MultiBuf>> MultiBufAllocationFuture::TryAllocate() {
+  Result<MultiBuf> buf_opt =
+      allocator_->DoAllocate(min_size_, desired_size_, contiguity_requirement_);
   if (buf_opt.ok()) {
     return async2::Ready<std::optional<MultiBuf>>(std::move(*buf_opt));
   }

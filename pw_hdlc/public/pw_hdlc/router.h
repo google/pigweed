@@ -206,30 +206,18 @@ class Router final {
   /// The most recent frame returned by ``decoder_``.
   std::optional<pw::hdlc::Frame> decoded_frame_;
 
-  /// Used by ``PollDeliverIncomingFrame`` to store an ongoing allocation.
-  std::optional<pw::multibuf::MultiBufAllocationFuture>
-      incoming_allocation_future_;
-
   ///////////////////////////////////////////////////////////
   /// State associated with the outgoing data being sent. ///
   ///////////////////////////////////////////////////////////
 
+  struct OutgoingBuffer {
+    pw::multibuf::MultiBuf buffer;
+    size_t hdlc_encoded_size;
+    uint64_t target_address;
+  };
   /// The last buffer read from one of ``channel_datas_`` but not yet encoded
   /// and sent to ``io_channel_`.
-  std::optional<pw::multibuf::MultiBuf> buffer_to_encode_and_send_;
-
-  /// The target address of the most recent ``buffer_to_encode_and_send_``.
-  uint64_t address_to_encode_and_send_to_;
-
-  /// A future waiting for a ``MultiBuf`` to use for sending data into
-  /// ``io_channel_``.
-  ///
-  /// This will contain an allocation future if and only if
-  /// ``io_channel->PendReadyToWrite`` returned true but
-  /// ``outgoing_allocation_future_`` did not immediately return an output
-  /// buffer to send.
-  std::optional<pw::multibuf::MultiBufAllocationFuture>
-      outgoing_allocation_future_;
+  std::optional<OutgoingBuffer> buffer_to_encode_and_send_;
 
   /// The next index of ``channel_datas_`` to read an outgoing packet from.
   ///
