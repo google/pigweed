@@ -104,7 +104,7 @@ class CommandChannel final {
   using CommandCallbackVariant =
       std::variant<CommandCallback, EmbossCommandCallback>;
   TransactionId SendCommand(EmbossCommandPacket command_packet,
-                            CommandCallbackVariant callback,
+                            EmbossCommandCallback callback,
                             hci_spec::EventCode complete_event_code =
                                 hci_spec::kCommandCompleteEventCode);
 

@@ -470,10 +470,10 @@ void ScoConnectionManager::CompleteRequest(ConnectionResult result) {
 
 void ScoConnectionManager::SendCommandWithStatusCallback(
     hci::EmbossCommandPacket command_packet, hci::ResultFunction<> result_cb) {
-  hci::CommandChannel::CommandCallback command_cb;
+  hci::CommandChannel::EmbossCommandCallback command_cb;
   if (result_cb) {
-    command_cb = [cb = std::move(result_cb)](auto,
-                                             const hci::EventPacket& event) {
+    command_cb = [cb = std::move(result_cb)](
+                     auto, const hci::EmbossEventPacket& event) {
       cb(event.ToResult());
     };
   }
@@ -504,7 +504,7 @@ void ScoConnectionManager::SendRejectConnectionCommand(
 
   transport_->command_channel()->SendCommand(
       std::move(reject),
-      hci::CommandChannel::CommandCallback(nullptr),
+      hci::CommandChannel::EmbossCommandCallback(nullptr),
       hci_spec::kCommandStatusEventCode);
 }
 

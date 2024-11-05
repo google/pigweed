@@ -51,7 +51,7 @@ TEST_F(TransportTest,
   size_t cb_count = 0;
   CommandChannel::TransactionId id1, id2;
   auto cb = [&cb_count](CommandChannel::TransactionId callback_id,
-                        const EventPacket& event) { cb_count++; };
+                        const EmbossEventPacket& event) { cb_count++; };
 
   auto packet =
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(

@@ -74,7 +74,7 @@ void BrEdrConnectionRequest::CreateConnection(
                       timeout,
                       peer_id = peer_id_,
                       on_command_fail_cb = std::move(on_command_fail)](
-                         auto, const EventPacket& event) {
+                         auto, const EmbossEventPacket& event) {
     PW_DCHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
 
     if (!self.is_alive())

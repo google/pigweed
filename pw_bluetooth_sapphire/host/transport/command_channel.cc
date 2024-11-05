@@ -191,7 +191,7 @@ CommandChannel::~CommandChannel() {
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
     EmbossCommandPacket command_packet,
-    CommandCallbackVariant callback,
+    EmbossCommandCallback callback,
     const hci_spec::EventCode complete_event_code) {
   return SendExclusiveCommand(
       std::move(command_packet), std::move(callback), complete_event_code);

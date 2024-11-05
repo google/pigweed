@@ -1288,10 +1288,11 @@ struct CommandStatusEvent:
   -- 7.7.15 Command Status event
   -- HCI_Command_Status
   let hdr_size = hci.EventHeader.$size_in_bytes
-  0     [+hdr_size]  hci.EventHeader  header
-  $next [+1]         hci.StatusCode   status
-  $next [+1]         UInt             num_hci_command_packets
-  $next [+2]         hci.OpCodeBits   command_opcode
+  0          [+hdr_size]  hci.EventHeader  header
+  hdr_size   [+1]         hci.StatusCode   status
+  hdr_size+1 [+1]         UInt             num_hci_command_packets
+  hdr_size+2 [+2]         hci.OpCode       command_opcode_enum
+  hdr_size+2 [+2]         hci.OpCodeBits   command_opcode
 
 # 7.7.16 Hardware Error event
 # HCI_Hardware_Error
