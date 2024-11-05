@@ -133,6 +133,13 @@ pw_add_library(pw_unit_test.event_handler INTERFACE
     public
 )
 
+pw_add_library(pw_unit_test.status_macros INTERFACE
+  HEADERS
+    public/pw_unit_test/status_macros.h
+  PUBLIC_INCLUDES
+    public
+)
+
 pw_add_library(pw_unit_test.googletest_style_event_handler STATIC
   HEADERS
     public/pw_unit_test/googletest_style_event_handler.h

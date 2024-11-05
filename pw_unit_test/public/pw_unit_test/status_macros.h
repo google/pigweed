@@ -13,11 +13,6 @@
 // the License.
 #pragma once
 
-#include "pw_result/result.h"
-#include "pw_status/status.h"
-#include "pw_status/status_with_size.h"
-
-/// PW_TEST_EXPECT_OK
 /// Verifies that `expr` is OkStatus()
 ///
 /// Converts `expr` to a Status value and checks that it is OkStatus().
@@ -26,13 +21,10 @@
 #define PW_TEST_EXPECT_OK(expr) \
   EXPECT_EQ(::pw::internal::ConvertToStatus(expr), pw::OkStatus())
 
-/// PW_TEST_ASSERT_OK
 /// See `PW_TEST_EXPECT_OK`.
 #define PW_TEST_ASSERT_OK(expr) \
   ASSERT_EQ(::pw::internal::ConvertToStatus(expr), pw::OkStatus())
 
-/// PW_TEST_ASSERT_OK_AND_ASSIGN
-///
 /// Executes an expression that returns a `pw::Result` or `pw::StatusWithSize`
 /// and assigns or moves that value to lhs if the error code is OK. If the
 /// status is non-OK, generates a test failure and returns from the current

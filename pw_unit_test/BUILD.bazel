@@ -51,12 +51,10 @@ label_flag(
 pw_facade(
     name = "pw_unit_test",
     testonly = True,
-    hdrs = [
-        "public/pw_unit_test/framework.h",
-        "public/pw_unit_test/status_test_matchers.h",
-    ],
+    hdrs = ["public/pw_unit_test/framework.h"],
     backend = ":backend",
     includes = ["public"],
+    deps = [":status_macros"],
 )
 
 label_flag(
@@ -89,7 +87,6 @@ cc_library(
         # public_overrides/gtest/gtest.h includes it. This avoids a circular
         # dependency in the build system.
         "public/pw_unit_test/framework.h",
-        "public/pw_unit_test/status_test_matchers.h",
         "public_overrides/gtest/gtest.h",
     ],
     includes = [
@@ -100,11 +97,11 @@ cc_library(
     deps = [
         ":config",
         ":event_handler",
+        ":status_macros",
         "//pw_assert",
         "//pw_bytes:alignment",
         "//pw_polyfill",
         "//pw_preprocessor",
-        "//pw_result",
         "//pw_span",
         "//pw_status",
         "//pw_string",
@@ -157,6 +154,13 @@ config_setting(
 cc_library(
     name = "event_handler",
     hdrs = ["public/pw_unit_test/event_handler.h"],
+    includes = ["public"],
+)
+
+cc_library(
+    name = "status_macros",
+    testonly = True,
+    hdrs = ["public/pw_unit_test/status_macros.h"],
     includes = ["public"],
 )
 

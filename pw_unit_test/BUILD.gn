@@ -67,12 +67,12 @@ pw_source_set("config") {
 # pw_unit_test facade. This provides a GoogleTest-compatible test framework.
 pw_source_set("pw_unit_test") {
   testonly = pw_unit_test_TESTONLY
-  public = [
-    "public/pw_unit_test/framework.h",
-    "public/pw_unit_test/status_test_matchers.h",
-  ]
+  public = [ "public/pw_unit_test/framework.h" ]
   public_configs = [ ":public_include_path" ]
-  public_deps = [ pw_unit_test_BACKEND ]
+  public_deps = [
+    ":status_macros",
+    pw_unit_test_BACKEND,
+  ]
 
   # Temporarily redirect deprecated googletest pointer to new pointer.
   if ("$pw_unit_test_GOOGLETEST_BACKEND" == "$dir_pw_third_party/googletest" &&
@@ -95,11 +95,11 @@ pw_source_set("light") {
   public_deps = [
     ":config",
     ":event_handler",
+    ":status_macros",
     "$dir_pw_bytes:alignment",
     "$dir_pw_string:builder",
     dir_pw_polyfill,
     dir_pw_preprocessor,
-    dir_pw_result,
     dir_pw_span,
     dir_pw_status,
   ]
@@ -112,7 +112,6 @@ pw_source_set("light") {
     # The facade header is included here since public_overrides/gtest/gtest.h
     # includes it. This avoids a circular dependency in the build system.
     "public/pw_unit_test/framework.h",
-    "public/pw_unit_test/status_test_matchers.h",
     "public_overrides/gtest/gtest.h",
   ]
   sources = [ "framework_light.cc" ]
@@ -135,6 +134,11 @@ if (pw_unit_test_BACKEND != "") {
 pw_source_set("event_handler") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_unit_test/event_handler.h" ]
+}
+
+pw_source_set("status_macros") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_unit_test/status_macros.h" ]
 }
 
 # Unit test event handler that provides GoogleTest-style output.

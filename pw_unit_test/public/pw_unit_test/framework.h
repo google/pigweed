@@ -14,7 +14,8 @@
 #pragma once
 
 #include "pw_unit_test/framework_backend.h"  // IWYU pragma: export
-#include "pw_unit_test/status_test_matchers.h"
+#include "pw_unit_test/status_macros.h"      // IWYU pragma: export
+
 // Check that the backend defined the following.
 
 #ifndef GTEST_TEST
