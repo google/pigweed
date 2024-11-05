@@ -43,38 +43,53 @@ config("colorize_output") {
 config("debugging") {
   # Enable debug symbol generation. This has no effect on final code size.
   cflags = [ "-g" ]
-  rustflags = cflags + [ "-Clink-arg=-g" ]
+  rustflags = [
+    "-Cdebuginfo=2",
+    "-Clink-arg=-g",
+  ]
 }
 
 config("extra_debugging") {
   # Include things like macro expansion in debug info.
   cflags = [ "-g3" ]
-  rustflags = cflags + [ "-Clink-arg=-g3" ]
+  rustflags = [
+    "-Cdebuginfo=2",
+    "-Clink-arg=-g3",
+  ]
 }
 
 # Optimization levels
 config("optimize_debugging") {
   cflags = [ "-Og" ]
   ldflags = cflags
-  rustflags = cflags + [ "-Clink-arg=-Og" ]
+  rustflags = [ "-Clink-arg=-Og" ]
 }
 
 config("optimize_speed") {
   cflags = [ "-O2" ]
   ldflags = cflags
-  rustflags = cflags + [ "-Clink-arg=-O2" ]
+  rustflags = [
+    "-Copt-level=2",
+    "-Clink-arg=-O2",
+  ]
 }
 
 config("optimize_more_speed") {
   cflags = [ "-O3" ]
   ldflags = cflags
-  rustflags = cflags + [ "-Clink-arg=-O3" ]
+  rustflags = [
+    "-Copt-level=3",
+    "-Clink-arg=-O3",
+  ]
 }
 
 config("optimize_size") {
   cflags = [ "-Os" ]
   ldflags = cflags
-  rustflags = cflags + [ "-Clink-arg=-Os" ]
+  rustflags = [
+    "-Copt-level=s",
+    "-Clink-arg=-Os",
+  ]
 }
 
 config("enable_clang_fixed_point_types") {
