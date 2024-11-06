@@ -312,8 +312,7 @@ bool CommandChannel::RemoveQueuedCommand(TransactionId transaction_id) {
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
-    hci_spec::EventCode event_code,
-    EventCallbackVariant event_callback_variant) {
+    hci_spec::EventCode event_code, EmbossEventCallback event_callback) {
   if (event_code == hci_spec::kCommandStatusEventCode ||
       event_code == hci_spec::kCommandCompleteEventCode ||
       event_code == hci_spec::kLEMetaEventCode) {
@@ -330,11 +329,10 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
     return 0u;
   }
 
-  EventHandlerId handler_id =
-      NewEventHandler(event_code,
-                      EventType::kHciEvent,
-                      hci_spec::kNoOp,
-                      std::move(event_callback_variant));
+  EventHandlerId handler_id = NewEventHandler(event_code,
+                                              EventType::kHciEvent,
+                                              hci_spec::kNoOp,
+                                              std::move(event_callback));
   event_code_handlers_.emplace(event_code, handler_id);
   return handler_id;
 }

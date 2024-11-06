@@ -496,7 +496,7 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
   // the asynchronous command.
   auto event_id0 = cmd_channel()->AddEventHandler(
       kTestEventCode0,
-      [](const EventPacket&) { return EventCallbackResult::kContinue; });
+      [](const EmbossEventPacket&) { return EventCallbackResult::kContinue; });
   EXPECT_EQ(0u, event_id0);
 
   // Finish out the commands.
@@ -587,7 +587,7 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
   // This returns invalid because an async command is registered.
   auto invalid_id = cmd_channel()->AddEventHandler(
       kTestEventCode0,
-      [](const EventPacket&) { return EventCallbackResult::kContinue; });
+      [](const EmbossEventPacket&) { return EventCallbackResult::kContinue; });
 
   RunUntilIdle();
 
@@ -617,21 +617,24 @@ TEST_F(CommandChannelTest, EventHandlerBasic) {
   auto event1 = StaticByteBuffer(kTestEventCode1, 0x00);
 
   int event_count0 = 0;
-  auto event_cb0 = [&event_count0, kTestEventCode0](const EventPacket& event) {
+  auto event_cb0 = [&event_count0,
+                    kTestEventCode0](const EmbossEventPacket& event) {
     event_count0++;
     EXPECT_EQ(kTestEventCode0, event.event_code());
     return EventCallbackResult::kContinue;
   };
 
   int event_count1 = 0;
-  auto event_cb1 = [&event_count1, kTestEventCode0](const EventPacket& event) {
+  auto event_cb1 = [&event_count1,
+                    kTestEventCode0](const EmbossEventPacket& event) {
     event_count1++;
     EXPECT_EQ(kTestEventCode0, event.event_code());
     return EventCallbackResult::kContinue;
   };
 
   int event_count2 = 0;
-  auto event_cb2 = [&event_count2, kTestEventCode1](const EventPacket& event) {
+  auto event_cb2 = [&event_count2,
+                    kTestEventCode1](const EmbossEventPacket& event) {
     event_count2++;
     EXPECT_EQ(kTestEventCode1, event.event_code());
     return EventCallbackResult::kContinue;
@@ -744,11 +747,16 @@ TEST_F(CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   EXPECT_CMD_PACKET_OUT(test_device(), req, &req_complete, &event, &event);
 
   int event_count = 0;
-  auto event_cb = [&event_count, kTestEventCode](const EventPacket& event) {
+  auto event_cb = [&event_count,
+                   kTestEventCode](const EmbossEventPacket& event) {
     event_count++;
     EXPECT_EQ(kTestEventCode, event.event_code());
-    EXPECT_EQ(1u, event.view().header().parameter_total_size);
-    EXPECT_EQ(1u, event.view().payload_size());
+    EXPECT_EQ(1u,
+              event.view<pw::bluetooth::emboss::EventHeaderView>()
+                  .parameter_total_size()
+                  .Read());
+    EXPECT_EQ(pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes() + 1u,
+              event.size());
     return EventCallbackResult::kContinue;
   };
 
@@ -1270,9 +1278,10 @@ TEST_F(CommandChannelTest, EventHandlerIdsDontCollide) {
                 }));
   EXPECT_EQ(
       2u,
-      cmd_channel()->AddEventHandler(
-          hci_spec::kDisconnectionCompleteEventCode,
-          [](const EventPacket&) { return EventCallbackResult::kContinue; }));
+      cmd_channel()->AddEventHandler(hci_spec::kDisconnectionCompleteEventCode,
+                                     [](const EmbossEventPacket&) {
+                                       return EventCallbackResult::kContinue;
+                                     }));
 }
 
 // Tests:
@@ -1280,11 +1289,11 @@ TEST_F(CommandChannelTest, EventHandlerIdsDontCollide) {
 TEST_F(CommandChannelTest, EventHandlerRestrictions) {
   auto id0 = cmd_channel()->AddEventHandler(
       hci_spec::kCommandStatusEventCode,
-      [](const EventPacket&) { return EventCallbackResult::kContinue; });
+      [](const EmbossEventPacket&) { return EventCallbackResult::kContinue; });
   EXPECT_EQ(0u, id0);
   id0 = cmd_channel()->AddEventHandler(
       hci_spec::kCommandCompleteEventCode,
-      [](const EventPacket&) { return EventCallbackResult::kContinue; });
+      [](const EmbossEventPacket&) { return EventCallbackResult::kContinue; });
   EXPECT_EQ(0u, id0);
 }
 
@@ -1849,8 +1858,9 @@ TEST_F(CommandChannelTest, SendCommandFailsIfEventHandlerInstalled) {
 
   // Register event handler for kTestEventCode0.
   auto id0 = cmd_channel()->AddEventHandler(
-      kTestEventCode0,
-      [](const EventPacket& event) { return EventCallbackResult::kContinue; });
+      kTestEventCode0, [](const EmbossEventPacket& event) {
+        return EventCallbackResult::kContinue;
+      });
   EXPECT_NE(0u, id0);
 
   // Try to send a command for kTestEventCode0. SendCommand should fail for a
@@ -1869,7 +1879,8 @@ TEST_F(CommandChannelTest, EventHandlerResults) {
   constexpr hci_spec::EventCode kTestEventCode0 = 0xFE;
 
   int event_count = 0;
-  auto event_cb = [&event_count, kTestEventCode0](const EventPacket& event) {
+  auto event_cb = [&event_count,
+                   kTestEventCode0](const EmbossEventPacket& event) {
     event_count++;
     EXPECT_EQ(kTestEventCode0, event.event_code());
 

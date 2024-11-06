@@ -205,7 +205,7 @@ class CommandChannel final {
   // - HCI_LE_Meta event code (use AddLEMetaEventHandler instead)
   // - HCI_Vendor_Debug event code (use AddVendorEventHandler instead)
   EventHandlerId AddEventHandler(hci_spec::EventCode event_code,
-                                 EventCallbackVariant event_callback_variant);
+                                 EmbossEventCallback event_callback);
 
   // Works just like AddEventHandler but the passed in event code is only valid
   // within the LE Meta Event sub-event code namespace. |event_callback| will
