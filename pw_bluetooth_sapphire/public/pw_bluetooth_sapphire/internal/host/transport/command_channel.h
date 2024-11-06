@@ -213,14 +213,14 @@ class CommandChannel final {
   // subevent code.
   EventHandlerId AddLEMetaEventHandler(
       hci_spec::EventCode le_meta_subevent_code,
-      EventCallbackVariant event_callback);
+      EmbossEventCallback event_callback);
 
   // Works just like AddEventHandler but the passed in event code is only valid
   // for vendor related debugging events. The event_callback will get invoked
   // whenever the controller sends one of these vendor debugging events with a
   // matching subevent code.
   EventHandlerId AddVendorEventHandler(hci_spec::EventCode vendor_subevent_code,
-                                       EventCallbackVariant event_callback);
+                                       EmbossEventCallback event_callback);
 
   // Removes a previously registered event handler. Does nothing if an event
   // handler with the given |id| could not be found.

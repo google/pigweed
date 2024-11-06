@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 
+#include <pw_bluetooth/hci_common.emb.h>
 #include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
@@ -76,7 +77,8 @@ bool StatusCodeFromSubevent(const EventPacket& event,
   PW_CHECK(out_code);
 
   if (event.view().payload_size() <
-      sizeof(hci_spec::LEMetaEventParams) + sizeof(T))
+      sizeof(pw::bluetooth::emboss::LEMetaEvent::IntrinsicSizeInBytes()) +
+          sizeof(T))
     return false;
 
   *out_code = event.subevent_params<T>()->status;
@@ -127,12 +129,11 @@ bool EventPacket::ToStatusCode(
       return StatusCodeFromEmbossEvent<
           pw::bluetooth::emboss::EncryptionChangeEventV1View>(*this, out_code);
     case hci_spec::kLEMetaEventCode: {
-      auto subevent_code = params<hci_spec::LEMetaEventParams>().subevent_code;
-      switch (subevent_code) {
-        default:
-          BT_PANIC("LE subevent (%#.2x) not implemented!", subevent_code);
-          break;
-      }
+      auto le_event_view = pw::bluetooth::emboss::MakeLEMetaEventView(
+          view().data().data(), view().data().size());
+      uint8_t subevent_code = le_event_view.subevent_code().Read();
+      BT_PANIC("LE events not implemented! (subcode: %#.2x)", subevent_code);
+      break;
     }
 
       // TODO(armansito): Complete this list.

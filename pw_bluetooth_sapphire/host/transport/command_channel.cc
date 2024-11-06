@@ -341,7 +341,7 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
 
 CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
     hci_spec::EventCode le_meta_subevent_code,
-    EventCallbackVariant event_callback) {
+    EmbossEventCallback event_callback) {
   EventHandlerData* handler = FindLEMetaEventHandler(le_meta_subevent_code);
   if (handler && handler->is_async()) {
     bt_log(ERROR,
@@ -363,7 +363,7 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
 
 CommandChannel::EventHandlerId CommandChannel::AddVendorEventHandler(
     hci_spec::EventCode vendor_subevent_code,
-    EventCallbackVariant event_callback) {
+    EmbossEventCallback event_callback) {
   CommandChannel::EventHandlerData* handler =
       FindVendorEventHandler(vendor_subevent_code);
   if (handler && handler->is_async()) {

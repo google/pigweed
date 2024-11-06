@@ -338,7 +338,7 @@ void FakeController::SendEvent(hci_spec::EventCode event_code,
 
 void FakeController::SendLEMetaEvent(hci_spec::EventCode subevent_code,
                                      const ByteBuffer& payload) {
-  DynamicByteBuffer buffer(sizeof(hci_spec::LEMetaEventParams) +
+  DynamicByteBuffer buffer(pwemb::LEMetaEvent::IntrinsicSizeInBytes() +
                            payload.size());
   buffer[0] = subevent_code;
   buffer.Write(payload, 1);

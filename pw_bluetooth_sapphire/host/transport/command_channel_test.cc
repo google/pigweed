@@ -1198,21 +1198,25 @@ TEST_F(CommandChannelTest, LEMetaEventHandler) {
 
   int event_count0 = 0;
   auto event_cb0 = [&event_count0,
-                    kTestSubeventCode0](const EventPacket& event) {
+                    kTestSubeventCode0](const EmbossEventPacket& event) {
     event_count0++;
     EXPECT_EQ(hci_spec::kLEMetaEventCode, event.event_code());
     EXPECT_EQ(kTestSubeventCode0,
-              event.params<hci_spec::LEMetaEventParams>().subevent_code);
+              event.view<pw::bluetooth::emboss::LEMetaEventView>()
+                  .subevent_code()
+                  .Read());
     return EventCallbackResult::kContinue;
   };
 
   int event_count1 = 0;
   auto event_cb1 = [&event_count1,
-                    kTestSubeventCode1](const EventPacket& event) {
+                    kTestSubeventCode1](const EmbossEventPacket& event) {
     event_count1++;
     EXPECT_EQ(hci_spec::kLEMetaEventCode, event.event_code());
     EXPECT_EQ(kTestSubeventCode1,
-              event.params<hci_spec::LEMetaEventParams>().subevent_code);
+              event.view<pw::bluetooth::emboss::LEMetaEventView>()
+                  .subevent_code()
+                  .Read());
     return EventCallbackResult::kContinue;
   };
 
@@ -1304,10 +1308,12 @@ TEST_F(CommandChannelTest,
 
   // Add LE event handler for kTestEventCode
   int le_event_count = 0;
-  auto le_event_cb = [&](const EventPacket& event) {
+  auto le_event_cb = [&](const EmbossEventPacket& event) {
     EXPECT_EQ(hci_spec::kLEMetaEventCode, event.event_code());
     EXPECT_EQ(kTestEventCode,
-              event.params<hci_spec::LEMetaEventParams>().subevent_code);
+              event.view<pw::bluetooth::emboss::LEMetaEventView>()
+                  .subevent_code()
+                  .Read());
     le_event_count++;
     return EventCallbackResult::kContinue;
   };
