@@ -1364,7 +1364,7 @@ void AdapterImpl::InitializeStep3() {
                                  kConnectedIsochronousStreamHostSupport));
     params.bit_value().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
     init_seq_runner_->QueueCommand(
-        std::move(cmd_packet), [](const hci::EventPacket& event) {
+        std::move(cmd_packet), [](const hci::EmbossEventPacket& event) {
           hci_is_error(
               event, WARN, "gap", "Set Host Feature (ISO support) failed");
         });

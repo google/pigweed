@@ -30,7 +30,7 @@ SequentialCommandRunner::SequentialCommandRunner(
 
 void SequentialCommandRunner::QueueCommand(
     EmbossCommandPacket command_packet,
-    CommandCompleteCallbackVariant callback,
+    EmbossCommandCompleteCallback callback,
     bool wait,
     hci_spec::EventCode complete_event_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
@@ -50,7 +50,7 @@ void SequentialCommandRunner::QueueCommand(
 void SequentialCommandRunner::QueueLeAsyncCommand(
     EmbossCommandPacket command_packet,
     hci_spec::EventCode le_meta_subevent_code,
-    CommandCompleteCallbackVariant callback,
+    EmbossCommandCompleteCallback callback,
     bool wait) {
   command_queue_.emplace(
       QueuedCommand{.packet = std::move(command_packet),
@@ -113,15 +113,10 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
     std::optional<EmbossEventPacket> emboss_packet;
     hci::Result<> event_result =
         bt::ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS);
-    using T = std::decay_t<decltype(cmd_cb)>;
-    if constexpr (std::is_same_v<T, CommandCompleteCallback>) {
-      event_result = event_packet.ToResult();
-    } else {
-      emboss_packet = EmbossEventPacket::New(event_packet.view().size());
-      MutableBufferView buffer = emboss_packet->mutable_data();
-      event_packet.view().data().Copy(&buffer);
-      event_result = emboss_packet->ToResult();
-    }
+    emboss_packet = EmbossEventPacket::New(event_packet.view().size());
+    MutableBufferView buffer = emboss_packet->mutable_data();
+    event_packet.view().data().Copy(&buffer);
+    event_result = emboss_packet->ToResult();
 
     if (self.is_alive() && seq_no != self->sequence_number_) {
       bt_log(TRACE,
@@ -146,21 +141,9 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
       return;
     }
 
-    std::visit(
-        [&event_packet, &emboss_packet](auto& cmd_cb_arg) {
-          using cmd_cb_t = std::decay_t<decltype(cmd_cb_arg)>;
-          if constexpr (std::is_same_v<cmd_cb_t, CommandCompleteCallback>) {
-            if (cmd_cb_arg) {
-              cmd_cb_arg(event_packet);
-            }
-          } else if constexpr (std::is_same_v<cmd_cb_t,
-                                              EmbossCommandCompleteCallback>) {
-            if (cmd_cb_arg) {
-              cmd_cb_arg(*emboss_packet);
-            }
-          }
-        },
-        cmd_cb);
+    if (cmd_cb) {
+      cmd_cb(*emboss_packet);
+    }
 
     // The callback could have destroyed, canceled, or restarted the command
     // runner.  While this check looks redundant to the above check, the state

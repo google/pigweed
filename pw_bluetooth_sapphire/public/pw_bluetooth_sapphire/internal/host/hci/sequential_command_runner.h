@@ -67,11 +67,9 @@ class SequentialCommandRunner final {
   using CommandCompleteCallback = fit::function<void(const EventPacket& event)>;
   using EmbossCommandCompleteCallback =
       fit::function<void(const EmbossEventPacket& event_packet)>;
-  using CommandCompleteCallbackVariant =
-      std::variant<CommandCompleteCallback, EmbossCommandCompleteCallback>;
   void QueueCommand(
       EmbossCommandPacket command_packet,
-      CommandCompleteCallbackVariant callback = CommandCompleteCallback(),
+      EmbossCommandCompleteCallback callback = EmbossCommandCompleteCallback(),
       bool wait = true,
       hci_spec::EventCode complete_event_code =
           hci_spec::kCommandCompleteEventCode,
@@ -82,7 +80,7 @@ class SequentialCommandRunner final {
   void QueueLeAsyncCommand(
       EmbossCommandPacket command_packet,
       hci_spec::EventCode le_meta_subevent_code,
-      CommandCompleteCallbackVariant callback = CommandCompleteCallback(),
+      EmbossCommandCompleteCallback callback = EmbossCommandCompleteCallback(),
       bool wait = true);
 
   // Runs all the queued commands. This method will return before queued
@@ -129,7 +127,7 @@ class SequentialCommandRunner final {
     EmbossCommandPacket packet;
     hci_spec::EventCode complete_event_code;
     bool is_le_async_command;
-    CommandCompleteCallbackVariant callback;
+    EmbossCommandCompleteCallback callback;
     bool wait;
     std::unordered_set<hci_spec::OpCode> exclusions;
   };
