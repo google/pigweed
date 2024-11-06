@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -14,6 +14,7 @@
 
 load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("@rules_python//sphinxdocs:sphinx.bzl", "sphinx_build_binary", "sphinx_docs")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,12 +25,112 @@ exports_files([
     "module_metadata_schema.json",
 ])
 
+sphinx_docs_library(
+    # TODO: https://pwbug.dev/377679855 - Rename this to "docs" after merging.
+    name = "not_prefixed",
+    srcs = [
+        "automated_analysis.rst",
+        "bazel_compatibility.rst",
+        "build_system.rst",
+        "changelog.rst",
+        "index.rst",
+        "layout/layout.html",
+        "module_metadata.json",
+        "module_metadata_schema.json",
+        "modules.rst",
+        "python_build.rst",
+        "targets.rst",
+        "third_party_support.rst",
+    ],
+    strip_prefix = "docs/",
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+# TODO: https://pwbug.dev/377679855 - Merge this into "not_prefixed"
+# (which will be renamed to "docs" after the merge).
+sphinx_docs_library(
+    name = "prefixed",
+    srcs = [
+        "_static/css/pigweed.css",
+        "_static/js/changelog.js",
+        "_static/js/pigweed.js",
+        "_static/pw_logo.ico",
+        "_static/pw_logo.svg",
+        "3p/index.rst",
+        "blog/01-kudzu.rst",
+        "blog/02-bazel-feature-flags.rst",
+        "blog/03-pigweed-sdk.rst",
+        "blog/04-fixed-point.rst",
+        "blog/05-coroutines.rst",
+        "blog/index.rst",
+        "blog/rss.xml",
+        "code_of_conduct.rst",
+        "code_reviews.rst",
+        "community/index.rst",
+        "concepts/index.rst",
+        "contributing/index.rst",
+        "contributing/docs/changelog.rst",
+        "contributing/docs/guides.rst",
+        "contributing/docs/index.rst",
+        "contributing/docs/modules.rst",
+        "embedded_cpp_guide.rst",
+        "facades.rst",
+        "faq.rst",
+        "get_started/bazel_integration.rst",
+        "get_started/bazel.rst",
+        "get_started/first_time_setup.rst",
+        "get_started/github_actions.rst",
+        "get_started/index.rst",
+        "get_started/install_bazel.rst",
+        "get_started/upstream.rst",
+        "get_started/zephyr.rst",
+        "glossary.rst",
+        "infra/ci_cq_intro.rst",
+        "infra/index.rst",
+        "infra/rollers.rst",
+        "mission.rst",
+        "module_structure.rst",
+        "os/index.rst",
+        "os/zephyr/index.rst",
+        # TODO: https://pwbug.dev/377683258 - Update the kconfig extension
+        # that this page relies on for Bazel-based docgen.
+        # "os/zephyr/kconfig.rst",
+        "overview.rst",
+        "showcases/sense/index.rst",
+        "showcases/sense/tutorial/automate.rst",
+        "showcases/sense/tutorial/bazel_cloud.rst",
+        "showcases/sense/tutorial/build.rst",
+        "showcases/sense/tutorial/code_intelligence.rst",
+        "showcases/sense/tutorial/crash_handler.rst",
+        "showcases/sense/tutorial/device_tests.rst",
+        "showcases/sense/tutorial/explore.rst",
+        "showcases/sense/tutorial/factory.rst",
+        "showcases/sense/tutorial/flash.rst",
+        "showcases/sense/tutorial/host_sim.rst",
+        "showcases/sense/tutorial/host_tests.rst",
+        "showcases/sense/tutorial/index.rst",
+        "showcases/sense/tutorial/outro.rst",
+        "showcases/sense/tutorial/production.rst",
+        "showcases/sense/tutorial/rpc.rst",
+        "showcases/sense/tutorial/setup.rst",
+        "showcases/sense/tutorial/web.rst",
+        "size_optimizations.rst",
+        "style/cli.rst",
+        "style/commit_message.rst",
+        "style/cpp.rst",
+        "style/doxygen.rst",
+        "style/protobuf.rst",
+        "style/rest.rst",
+        "style/writing.rst",
+        "style_guide.rst",
+    ],
+    # TODO: https://pwbug.dev/377679855 - Remove this URL prefix.
+    prefix = "docs/",
+    target_compatible_with = incompatible_with_mcu(),
+)
+
 sphinx_docs(
     name = "docs",
-    srcs = [
-        "index.rst",
-        "modules.rst",
-    ],
     config = "conf.py",
     formats = [
         "html",
@@ -38,6 +139,8 @@ sphinx_docs(
     strip_prefix = "docs/",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
+        ":not_prefixed",
+        ":prefixed",
         "//pw_async2:docs",
         "//pw_boot:docs",
     ],
