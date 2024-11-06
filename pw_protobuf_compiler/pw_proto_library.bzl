@@ -667,18 +667,15 @@ _pw_nanopb_rpc_proto_library = rule(
 
 def _pw_proto_filegroup_impl(ctx):
     source_files = list()
-    pwpb_options_files = list()
-    legacy_options_files = list()
+    options_files = list()
 
     for src in ctx.attr.srcs:
         source_files += src.files.to_list()
 
     for options_src in ctx.attr.options_files:
         for file in options_src.files.to_list():
-            if file.extension == "pwpb_options":
-                pwpb_options_files.append(file)
-            elif file.extension == "options":
-                legacy_options_files.append(file)
+            if file.extension == "options" or file.extension == "pwpb_options":
+                options_files.append(file)
             else:
                 fail((
                     "Files provided as `options_files` to a " +
@@ -686,10 +683,9 @@ def _pw_proto_filegroup_impl(ctx):
                     "`.pwpb_options` extensions; the file `{}` was provided."
                 ).format(file.basename))
 
-    # Ensure that .pwpb_options appear before regular .options.
     return [
         DefaultInfo(files = depset(source_files)),
-        PwProtoOptionsInfo(options_files = depset(pwpb_options_files + legacy_options_files)),
+        PwProtoOptionsInfo(options_files = depset(options_files)),
     ]
 
 pw_proto_filegroup = rule(
