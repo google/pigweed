@@ -89,7 +89,12 @@ enum Whence : uint8_t {
 ///
 /// Note that this channel should be used from only one ``pw::async::Task``
 /// at a time, as the ``Pend`` methods are only required to remember the
-/// latest ``pw::async2::Context`` that was provided.
+/// latest ``pw::async2::Context`` that was provided. Notably, this means
+/// that it is not possible to read from the channel in one task while
+/// writing to it from another task: a single task must own and operate
+/// the channel. In the future, a wrapper will be offered which will
+/// allow the channel to be split into a read half and a write half which
+/// can be used from independent tasks.
 class AnyChannel {
  public:
   virtual ~AnyChannel() = default;
