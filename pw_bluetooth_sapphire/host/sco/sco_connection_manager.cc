@@ -129,7 +129,7 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::AcceptConnection(
 
 hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
     const hci_spec::EventCode& code,
-    hci::CommandChannel::EmbossEventCallback event_cb) {
+    hci::CommandChannel::EventCallback event_cb) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   hci::CommandChannel::EventHandlerId event_id = 0;
   event_id = transport_->command_channel()->AddEventHandler(
@@ -470,7 +470,7 @@ void ScoConnectionManager::CompleteRequest(ConnectionResult result) {
 
 void ScoConnectionManager::SendCommandWithStatusCallback(
     hci::EmbossCommandPacket command_packet, hci::ResultFunction<> result_cb) {
-  hci::CommandChannel::EmbossCommandCallback command_cb;
+  hci::CommandChannel::CommandCallback command_cb;
   if (result_cb) {
     command_cb = [cb = std::move(result_cb)](
                      auto, const hci::EmbossEventPacket& event) {
@@ -504,7 +504,7 @@ void ScoConnectionManager::SendRejectConnectionCommand(
 
   transport_->command_channel()->SendCommand(
       std::move(reject),
-      hci::CommandChannel::EmbossCommandCallback(nullptr),
+      hci::CommandChannel::CommandCallback(nullptr),
       hci_spec::kCommandStatusEventCode);
 }
 

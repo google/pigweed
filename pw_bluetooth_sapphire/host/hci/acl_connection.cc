@@ -21,20 +21,8 @@ namespace bt::hci {
 namespace {
 
 template <CommandChannel::EventCallbackResult (
-    AclConnection::*EventHandlerMethod)(const EventPacket&)>
-CommandChannel::EventCallback BindEventHandler(
-    const WeakSelf<AclConnection>::WeakPtr& conn) {
-  return [conn](const EventPacket& event) {
-    if (conn.is_alive()) {
-      return (conn.get().*EventHandlerMethod)(event);
-    }
-    return CommandChannel::EventCallbackResult::kRemove;
-  };
-}
-
-template <CommandChannel::EventCallbackResult (
     AclConnection::*EventHandlerMethod)(const EmbossEventPacket&)>
-CommandChannel::EmbossEventCallback BindEventHandler(
+CommandChannel::EventCallback BindEventHandler(
     const WeakPtr<AclConnection>& conn) {
   return [conn](const EmbossEventPacket& event) {
     if (conn.is_alive()) {

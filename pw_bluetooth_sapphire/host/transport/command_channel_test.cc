@@ -765,17 +765,17 @@ TEST_F(CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   auto reset =
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(
           hci_spec::kReset);
-  CommandChannel::TransactionId id = cmd_channel()->SendCommand(
-      std::move(reset),
-      hci::CommandChannel::EmbossCommandCallback(nullptr),
-      kTestEventCode);
+  CommandChannel::TransactionId id =
+      cmd_channel()->SendCommand(std::move(reset),
+                                 hci::CommandChannel::CommandCallback(nullptr),
+                                 kTestEventCode);
   EXPECT_EQ(0u, id);
 
   reset =
       hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(
           hci_spec::kReset);
   id = cmd_channel()->SendCommand(
-      std::move(reset), hci::CommandChannel::EmbossCommandCallback(nullptr));
+      std::move(reset), hci::CommandChannel::CommandCallback(nullptr));
   EXPECT_NE(0u, id);
 
   RunUntilIdle();
@@ -1570,7 +1570,7 @@ TEST_F(CommandChannelTest, AsynchronousCommandChaining) {
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_resetstatus);
 
   CommandChannel::TransactionId id1, id2;
-  CommandChannel::EmbossCommandCallback cb;
+  CommandChannel::CommandCallback cb;
   size_t cb_count = 0u;
 
   cb = [&cb,
@@ -1695,11 +1695,11 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
   );
 
   CommandChannel::TransactionId id1, id2, id3;
-  CommandChannel::EmbossCommandCallback exclusive_cb;
+  CommandChannel::CommandCallback exclusive_cb;
   size_t exclusive_cb_count = 0u;
 
   size_t nonexclusive_cb_count = 0;
-  CommandChannel::EmbossCommandCallback nonexclusive_cb =
+  CommandChannel::CommandCallback nonexclusive_cb =
       [&nonexclusive_cb_count](auto callback_id,
                                const EmbossEventPacket& event) {
         EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
@@ -1935,7 +1935,7 @@ TEST_F(CommandChannelTest, SendCommandWithLEMetaEventSubeventRsp) {
           kOpCode);
 
   size_t event_count = 0;
-  auto event_cb = [&event_count](auto, const EventPacket& event) {
+  auto event_cb = [&event_count](auto, const EmbossEventPacket& event) {
     switch (event_count) {
       case 0: {
         EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
@@ -1988,7 +1988,7 @@ TEST_F(
       cmd_channel()->SendLeAsyncCommand(
           EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
               kOpCode),
-          [](auto, const auto&) {},
+          [](auto, const EmbossEventPacket&) {},
           kSubeventCode));
 
   auto cmd = StaticByteBuffer(LowerBits(kOpCode),
@@ -2001,7 +2001,7 @@ TEST_F(
       cmd_channel()->SendLeAsyncCommand(
           EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
               kOpCode),
-          [](auto, const auto&) {},
+          [](auto, const EmbossEventPacket&) {},
           kSubeventCode + 1));
   RunUntilIdle();
 }
@@ -2053,7 +2053,7 @@ TEST_F(CommandChannelTest,
   EXPECT_CMD_PACKET_OUT(test_device(), cmd0, &cmd0_status_event);
 
   size_t event_count_0 = 0;
-  auto event_cb_0 = [&event_count_0](auto, const EventPacket& event) {
+  auto event_cb_0 = [&event_count_0](auto, const EmbossEventPacket& event) {
     switch (event_count_0) {
       case 0: {
         EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
@@ -2080,7 +2080,7 @@ TEST_F(CommandChannelTest,
   EXPECT_EQ(1u, event_count_0);
 
   size_t event_count_1 = 0;
-  auto event_cb_1 = [&event_count_1](auto, const EventPacket& event) {
+  auto event_cb_1 = [&event_count_1](auto, const EmbossEventPacket& event) {
     switch (event_count_1) {
       case 0: {
         EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
@@ -2149,7 +2149,7 @@ TEST_F(
   EXPECT_CMD_PACKET_OUT(test_device(), cmd, &cmd_status_event);
 
   size_t event_count = 0;
-  auto event_cb = [&event_count](auto, const EventPacket& event) {
+  auto event_cb = [&event_count](auto, const EmbossEventPacket& event) {
     EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
     event_count++;
   };

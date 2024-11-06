@@ -138,8 +138,7 @@ void SetPageScanEnabled(bool enabled,
 }  // namespace
 
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
-    const hci_spec::EventCode& code,
-    hci::CommandChannel::EmbossEventCallback cb) {
+    const hci_spec::EventCode& code, hci::CommandChannel::EventCallback cb) {
   auto self = weak_self_.GetWeakPtr();
   hci::CommandChannel::EventHandlerId event_id = 0;
   event_id = hci_->command_channel()->AddEventHandler(
@@ -1998,7 +1997,7 @@ void BrEdrConnectionManager::SendAuthenticationRequested(
 
   // Complete on command status because Authentication Complete Event is already
   // registered.
-  hci::CommandChannel::EmbossCommandCallback command_cb;
+  hci::CommandChannel::CommandCallback command_cb;
   if (cb) {
     command_cb = [callback = std::move(cb)](
                      auto, const hci::EmbossEventPacket& event) {
@@ -2108,7 +2107,7 @@ void BrEdrConnectionManager::SendLinkKeyRequestReply(DeviceAddressBytes bd_addr,
 template <typename T>
 void BrEdrConnectionManager::SendCommandWithStatusCallback(
     T command_packet, hci::ResultFunction<> cb) {
-  hci::CommandChannel::EmbossCommandCallback command_cb;
+  hci::CommandChannel::CommandCallback command_cb;
   if (cb) {
     command_cb = [callback = std::move(cb)](
                      auto, const hci::EmbossEventPacket& event) {
@@ -2131,7 +2130,7 @@ void BrEdrConnectionManager::SendAcceptConnectionRequest(
   // Sec 3.1).
   accept_params.role().Write(pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
-  hci::CommandChannel::EmbossCommandCallback command_cb;
+  hci::CommandChannel::CommandCallback command_cb;
   if (cb) {
     command_cb = [callback = std::move(cb)](
                      auto, const hci::EmbossEventPacket& event) {
@@ -2155,7 +2154,7 @@ void BrEdrConnectionManager::SendRejectConnectionRequest(
   reject_params.bd_addr().CopyFrom(addr.value().view());
   reject_params.reason().Write(reason);
 
-  hci::CommandChannel::EmbossCommandCallback command_cb;
+  hci::CommandChannel::CommandCallback command_cb;
   if (cb) {
     command_cb = [callback = std::move(cb)](
                      auto, const hci::EmbossEventPacket& event) {
@@ -2179,7 +2178,7 @@ void BrEdrConnectionManager::SendRejectSynchronousRequest(
   reject_params.bd_addr().CopyFrom(addr.value().view());
   reject_params.reason().Write(reason);
 
-  hci::CommandChannel::EmbossCommandCallback command_cb;
+  hci::CommandChannel::CommandCallback command_cb;
   if (cb) {
     command_cb = [callback = std::move(cb)](
                      auto, const hci::EmbossEventPacket& event) {

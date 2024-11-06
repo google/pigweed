@@ -97,14 +97,10 @@ class CommandChannel final {
   //
   // See Bluetooth Core Spec v5.0, Volume 2, Part E, Section 4.4 "Command Flow
   // Control" for more information about the HCI command flow control.
-  using CommandCallback =
-      fit::function<void(TransactionId id, const EventPacket& event)>;
-  using EmbossCommandCallback = fit::function<void(
+  using CommandCallback = fit::function<void(
       TransactionId id, const EmbossEventPacket& event_packet)>;
-  using CommandCallbackVariant =
-      std::variant<CommandCallback, EmbossCommandCallback>;
   TransactionId SendCommand(EmbossCommandPacket command_packet,
-                            EmbossCommandCallback callback,
+                            CommandCallback callback,
                             hci_spec::EventCode complete_event_code =
                                 hci_spec::kCommandCompleteEventCode);
 
@@ -125,7 +121,7 @@ class CommandChannel final {
   // run simultaneously.
   TransactionId SendExclusiveCommand(
       EmbossCommandPacket command_packet,
-      CommandCallbackVariant callback,
+      CommandCallback callback,
       hci_spec::EventCode complete_event_code =
           hci_spec::kCommandCompleteEventCode,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
@@ -164,13 +160,9 @@ class CommandChannel final {
   // Callbacks invoked to report generic HCI events excluding CommandComplete
   // and CommandStatus events.
   //
-  // TODO(fxbug.dev/42167863): Finish migration away from EventCallback and
-  // replace with EmbossEventCallback (renamed to EventCallback).
+  // TODO(fxbug.dev/42167863): Rename to EventCallback
   using EventCallback =
-      fit::function<EventCallbackResult(const EventPacket& event_packet)>;
-  using EmbossEventCallback =
       fit::function<EventCallbackResult(const EmbossEventPacket& event_packet)>;
-  using EventCallbackVariant = std::variant<EventCallback, EmbossEventCallback>;
 
   // Registers an event handler for HCI events that match |event_code|. Incoming
   // HCI event packets that are not associated with a pending command sequence
@@ -205,22 +197,21 @@ class CommandChannel final {
   // - HCI_LE_Meta event code (use AddLEMetaEventHandler instead)
   // - HCI_Vendor_Debug event code (use AddVendorEventHandler instead)
   EventHandlerId AddEventHandler(hci_spec::EventCode event_code,
-                                 EmbossEventCallback event_callback);
+                                 EventCallback event_callback);
 
   // Works just like AddEventHandler but the passed in event code is only valid
   // within the LE Meta Event sub-event code namespace. |event_callback| will
   // get invoked whenever the controller sends a LE Meta Event with a matching
   // subevent code.
   EventHandlerId AddLEMetaEventHandler(
-      hci_spec::EventCode le_meta_subevent_code,
-      EmbossEventCallback event_callback);
+      hci_spec::EventCode le_meta_subevent_code, EventCallback event_callback);
 
   // Works just like AddEventHandler but the passed in event code is only valid
   // for vendor related debugging events. The event_callback will get invoked
   // whenever the controller sends one of these vendor debugging events with a
   // matching subevent code.
   EventHandlerId AddVendorEventHandler(hci_spec::EventCode vendor_subevent_code,
-                                       EmbossEventCallback event_callback);
+                                       EventCallback event_callback);
 
   // Removes a previously registered event handler. Does nothing if an event
   // handler with the given |id| could not be found.
@@ -243,7 +234,7 @@ class CommandChannel final {
  private:
   TransactionId SendExclusiveCommandInternal(
       EmbossCommandPacket command_packet,
-      CommandCallbackVariant callback,
+      CommandCallback callback,
       hci_spec::EventCode complete_event_code,
       std::optional<hci_spec::EventCode> le_meta_subevent_code = std::nullopt,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
@@ -272,7 +263,7 @@ class CommandChannel final {
                     hci_spec::EventCode complete_event_code,
                     std::optional<hci_spec::EventCode> le_meta_subevent_code,
                     std::unordered_set<hci_spec::OpCode> exclusions,
-                    CommandCallbackVariant callback);
+                    CommandCallback callback);
     ~TransactionData();
 
     // Starts the transaction timer, which will call
@@ -289,7 +280,7 @@ class CommandChannel final {
     void Cancel();
 
     // Makes an EventCallback that calls |callback_| correctly.
-    EventCallbackVariant MakeCallback();
+    EventCallback MakeCallback();
 
     hci_spec::EventCode complete_event_code() const {
       return complete_event_code_;
@@ -315,7 +306,7 @@ class CommandChannel final {
     hci_spec::EventCode complete_event_code_;
     std::optional<hci_spec::EventCode> le_meta_subevent_code_;
     std::unordered_set<hci_spec::OpCode> exclusions_;
-    CommandCallbackVariant callback_;
+    CommandCallback callback_;
     bt::SmartTask timeout_task_;
 
     // If non-zero, the id of the handler registered for this transaction.
@@ -356,7 +347,7 @@ class CommandChannel final {
     // kNoOp if this is a static event handler.
     hci_spec::OpCode pending_opcode;
 
-    EventCallbackVariant event_callback;
+    EventCallback event_callback;
 
     // Returns true if handler is for async command transaction, or false if
     // handler is a static event handler.
@@ -392,7 +383,7 @@ class CommandChannel final {
   EventHandlerId NewEventHandler(hci_spec::EventCode event_code,
                                  EventType event_type,
                                  hci_spec::OpCode pending_opcode,
-                                 EventCallbackVariant event_callback_variant);
+                                 EventCallback event_callback);
 
   // Notifies any matching event handler for |event|.
   void NotifyEventHandler(std::unique_ptr<EventPacket> event);

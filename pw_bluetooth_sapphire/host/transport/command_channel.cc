@@ -72,7 +72,7 @@ CommandChannel::TransactionData::TransactionData(
     hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions,
-    CommandCallbackVariant callback)
+    CommandCallback callback)
     : channel_(channel),
       transaction_id_(transaction_id),
       opcode_(opcode),
@@ -87,16 +87,12 @@ CommandChannel::TransactionData::TransactionData(
 }
 
 CommandChannel::TransactionData::~TransactionData() {
-  std::visit(
-      [this](auto& cb) {
-        if (cb) {
-          bt_log(DEBUG,
-                 "hci",
-                 "destroying unfinished transaction: %zu",
-                 transaction_id_);
-        }
-      },
-      callback_);
+  if (callback_) {
+    bt_log(DEBUG,
+           "hci",
+           "destroying unfinished transaction: %zu",
+           transaction_id_);
+  }
 }
 
 void CommandChannel::TransactionData::StartTimer() {
@@ -115,60 +111,36 @@ void CommandChannel::TransactionData::Complete(
     std::unique_ptr<EventPacket> event) {
   timeout_task_.Cancel();
 
-  std::visit(
-      [this, &event](auto& cb) {
-        using T = std::decay_t<decltype(cb)>;
+  if (!callback_) {
+    return;
+  }
 
-        if (!cb) {
-          return;
-        }
+  // Call callback_ synchronously to ensure that asynchronous status &
+  // complete events are not handled out of order if they are dispatched
+  // from the HCI API simultaneously.
+  EmbossEventPacket packet = EmbossEventPacket::New(event->view().size());
+  MutableBufferView view = packet.mutable_data();
+  event->view().data().Copy(&view);
+  callback_(transaction_id_, packet);
 
-        // Call callback_ synchronously to ensure that asynchronous status &
-        // complete events are not handled out of order if they are dispatched
-        // from the HCI API simultaneously.
-        if constexpr (std::is_same_v<T, CommandCallback>) {
-          cb(transaction_id_, *event);
-        } else {
-          EmbossEventPacket packet =
-              EmbossEventPacket::New(event->view().size());
-          MutableBufferView view = packet.mutable_data();
-          event->view().data().Copy(&view);
-          cb(transaction_id_, packet);
-        }
-
-        // Asynchronous commands will have an additional reference to callback_
-        // in the event map. Clear this reference to ensure that destruction or
-        // unexpected command complete events or status events do not call this
-        // reference to callback_ twice.
-        cb = nullptr;
-      },
-      callback_);
+  // Asynchronous commands will have an additional reference to callback_
+  // in the event map. Clear this reference to ensure that destruction or
+  // unexpected command complete events or status events do not call this
+  // reference to callback_ twice.
+  callback_ = nullptr;
 }
 
 void CommandChannel::TransactionData::Cancel() {
   timeout_task_.Cancel();
-  std::visit([](auto& cb) { cb = nullptr; }, callback_);
+  callback_ = nullptr;
 }
 
-CommandChannel::EventCallbackVariant
-CommandChannel::TransactionData::MakeCallback() {
-  return std::visit(
-      overloaded{
-          [this](CommandCallback& callback) -> EventCallbackVariant {
-            return [transaction_id = transaction_id_,
-                    cb = callback.share()](const EventPacket& event) {
-              cb(transaction_id, event);
-              return EventCallbackResult::kContinue;
-            };
-          },
-          [this](EmbossCommandCallback& callback) -> EventCallbackVariant {
-            return [transaction_id = transaction_id_,
-                    cb = callback.share()](const EmbossEventPacket& event) {
-              cb(transaction_id, event);
-              return EventCallbackResult::kContinue;
-            };
-          }},
-      callback_);
+CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
+  return [transaction_id = transaction_id_,
+          cb = callback_.share()](const EmbossEventPacket& event) {
+    cb(transaction_id, event);
+    return EventCallbackResult::kContinue;
+  };
 }
 
 CommandChannel::CommandChannel(pw::bluetooth::Controller* hci,
@@ -191,7 +163,7 @@ CommandChannel::~CommandChannel() {
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
     EmbossCommandPacket command_packet,
-    EmbossCommandCallback callback,
+    CommandCallback callback,
     const hci_spec::EventCode complete_event_code) {
   return SendExclusiveCommand(
       std::move(command_packet), std::move(callback), complete_event_code);
@@ -207,7 +179,7 @@ CommandChannel::TransactionId CommandChannel::SendLeAsyncCommand(
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
     EmbossCommandPacket command_packet,
-    CommandCallbackVariant callback,
+    CommandCallback callback,
     const hci_spec::EventCode complete_event_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
   return SendExclusiveCommandInternal(std::move(command_packet),
@@ -231,7 +203,7 @@ CommandChannel::TransactionId CommandChannel::SendLeAsyncExclusiveCommand(
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     EmbossCommandPacket command_packet,
-    CommandCallbackVariant callback,
+    CommandCallback callback,
     hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
@@ -312,7 +284,7 @@ bool CommandChannel::RemoveQueuedCommand(TransactionId transaction_id) {
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
-    hci_spec::EventCode event_code, EmbossEventCallback event_callback) {
+    hci_spec::EventCode event_code, EventCallback event_callback) {
   if (event_code == hci_spec::kCommandStatusEventCode ||
       event_code == hci_spec::kCommandCompleteEventCode ||
       event_code == hci_spec::kLEMetaEventCode) {
@@ -338,8 +310,7 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
-    hci_spec::EventCode le_meta_subevent_code,
-    EmbossEventCallback event_callback) {
+    hci_spec::EventCode le_meta_subevent_code, EventCallback event_callback) {
   EventHandlerData* handler = FindLEMetaEventHandler(le_meta_subevent_code);
   if (handler && handler->is_async()) {
     bt_log(ERROR,
@@ -360,8 +331,7 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddVendorEventHandler(
-    hci_spec::EventCode vendor_subevent_code,
-    EmbossEventCallback event_callback) {
+    hci_spec::EventCode vendor_subevent_code, EventCallback event_callback) {
   CommandChannel::EventHandlerData* handler =
       FindVendorEventHandler(vendor_subevent_code);
   if (handler && handler->is_async()) {
@@ -573,13 +543,8 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
     hci_spec::EventCode event_code,
     EventType event_type,
     hci_spec::OpCode pending_opcode,
-    EventCallbackVariant event_callback_variant) {
+    EventCallback event_callback) {
   PW_DCHECK(event_code);
-  PW_DCHECK(
-      (std::holds_alternative<EventCallback>(event_callback_variant) &&
-       std::get<EventCallback>(event_callback_variant)) ||
-      (std::holds_alternative<EmbossEventCallback>(event_callback_variant) &&
-       std::get<EmbossEventCallback>(event_callback_variant)));
 
   auto handler_id = next_event_handler_id_.value();
   next_event_handler_id_.Set(handler_id + 1);
@@ -588,7 +553,7 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
   data.event_code = event_code;
   data.event_type = event_type;
   data.pending_opcode = pending_opcode;
-  data.event_callback = std::move(event_callback_variant);
+  data.event_callback = std::move(event_callback);
 
   bt_log(TRACE,
          "hci",
@@ -680,7 +645,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
 
 void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   struct PendingCallback {
-    EventCallbackVariant callback_variant;
+    EventCallback callback;
     EventHandlerId handler_id;
   };
   std::vector<PendingCallback> pending_callbacks;
@@ -735,11 +700,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     EventHandlerData& handler = handler_iter->second;
     PW_DCHECK(handler.event_code == event_code);
 
-    std::visit(
-        [&pending_callbacks, event_id](auto& callback) {
-          pending_callbacks.push_back({callback.share(), event_id});
-        },
-        handler.event_callback);
+    pending_callbacks.push_back({handler.event_callback.share(), event_id});
 
     ++iter;  // Advance so we don't point to an invalid iterator.
     if (handler.is_async()) {
@@ -761,18 +722,10 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   for (auto it = pending_callbacks.begin(); it != pending_callbacks.end();
        ++it) {
     // Execute the event callback.
-    EventCallbackResult result = std::visit(
-        overloaded{[&event_packet](EventCallback& callback) {
-                     return callback(event_packet);
-                   },
-                   [&event_packet](EmbossEventCallback& callback) {
-                     auto emboss_packet =
-                         EmbossEventPacket::New(event_packet.view().size());
-                     bt::MutableBufferView dest = emboss_packet.mutable_data();
-                     event_packet.view().data().Copy(&dest);
-                     return callback(emboss_packet);
-                   }},
-        it->callback_variant);
+    auto emboss_packet = EmbossEventPacket::New(event_packet.view().size());
+    bt::MutableBufferView dest = emboss_packet.mutable_data();
+    event_packet.view().data().Copy(&dest);
+    EventCallbackResult result = it->callback(emboss_packet);
 
     if (result == EventCallbackResult::kRemove) {
       RemoveEventHandler(it->handler_id);

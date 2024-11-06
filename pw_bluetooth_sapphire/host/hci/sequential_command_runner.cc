@@ -109,21 +109,15 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
                            cmd_cb = std::move(next.callback),
                            complete_event_code = next.complete_event_code,
                            seq_no = sequence_number_](
-                              auto, const EventPacket& event_packet) {
-    std::optional<EmbossEventPacket> emboss_packet;
-    hci::Result<> event_result =
-        bt::ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS);
-    emboss_packet = EmbossEventPacket::New(event_packet.view().size());
-    MutableBufferView buffer = emboss_packet->mutable_data();
-    event_packet.view().data().Copy(&buffer);
-    event_result = emboss_packet->ToResult();
+                              auto, const EmbossEventPacket& event) {
+    hci::Result<> event_result = event.ToResult();
 
     if (self.is_alive() && seq_no != self->sequence_number_) {
       bt_log(TRACE,
              "hci",
              "Ignoring event for previous sequence (event code: %#.2x, status: "
              "%s)",
-             event_packet.event_code(),
+             event.event_code(),
              bt_str(event_result));
     }
 
@@ -136,13 +130,13 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
     }
 
     if (event_result.is_ok() &&
-        event_packet.event_code() == hci_spec::kCommandStatusEventCode &&
+        event.event_code() == hci_spec::kCommandStatusEventCode &&
         complete_event_code != hci_spec::kCommandStatusEventCode) {
       return;
     }
 
     if (cmd_cb) {
-      cmd_cb(*emboss_packet);
+      cmd_cb(event);
     }
 
     // The callback could have destroyed, canceled, or restarted the command
