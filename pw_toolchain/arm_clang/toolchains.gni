@@ -27,6 +27,11 @@ _arm_clang_toolchain = {
   static_analysis = {
     enabled = true
   }
+
+  # Rust macro compiles to code runs on host, and not included in device target.
+  # Always use speed optimized for less compilation time.
+  rustc_macro_toolchain_name =
+      "$dir_pigweed/targets/host:host_clang_speed_optimized"
 }
 
 # These are the defaults automatically applied to every pw_toolchain_arm_clang*

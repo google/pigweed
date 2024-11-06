@@ -49,17 +49,14 @@ template("pw_rust_proc_macro") {
       underlying_target_type = "rust_proc_macro"
     }
   } else {
-    # If not in this machine's host_toolchain, switch to it.
-    toolchain_name = pw_toolchain_SCOPE.name
-    splitted_toolchain_name = string_split(toolchain_name, "clang_")
+    assert(
+        defined(pw_toolchain_SCOPE.rustc_macro_toolchain_name),
+        "Rust macro crates are compiled with host toolchain. Please provided " +
+            "a `rustc_macro_toolchain_name` for this device toolchain.")
 
-    # `toolchain_suffix` is in the form of "_debug", "_size_optimized", or
-    # "_speed_optimized". It is used to the switched to the right host toolchain
-    # that matches the definition of the original target toolchain.
-    toolchain_suffix = splitted_toolchain_name[1]
+    toolchain_name = pw_toolchain_SCOPE.rustc_macro_toolchain_name
     group(target_name) {
-      public_deps =
-          [ ":$target_name(//targets/host:host_clang_$toolchain_suffix)" ]
+      public_deps = [ ":$target_name($toolchain_name)" ]
     }
     not_needed(invoker, "*")
   }

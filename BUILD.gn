@@ -322,7 +322,9 @@ if (pw_BUILD_BROKEN_GROUPS) {
     deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_size_optimized)" ]
 
     if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
+      deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_debug)" ]
       deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_size_optimized)" ]
+      deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_speed_optimized)" ]
     }
   }
   group("qemu_clang") {
@@ -512,6 +514,8 @@ group("host_tools") {
 
   if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
     deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/host:host_clang_debug)" ]
+    deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/host:host_clang_speed_optimized)" ]
+    deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/host:host_clang_size_optimized)" ]
     deps += [ "$dir_pw_rust/examples/bindgen:test_add($dir_pigweed/targets/host:host_clang_debug)" ]
   }
 }
