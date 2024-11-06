@@ -46,6 +46,8 @@ enum class DataType : uint8_t {
   kServiceData32Bit             = 0x20,
   kServiceData128Bit            = 0x21,
   kURI                          = 0x24,
+  kResolvableSetIdentifier      = 0x2E,
+  kBroadcastName                = 0x30,
   kManufacturerSpecificData     = 0xFF,
   // TODO(armansito): Complete this list.
 };

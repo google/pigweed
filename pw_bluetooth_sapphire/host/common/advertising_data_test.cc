@@ -522,7 +522,7 @@ TEST(AdvertisingDataTest, ToString) {
       "00000212-0000-1000-8000-00805f9b34fb, "
       "12345678-0000-1000-8000-00805f9b34fb, }, Service Data: { { "
       "UUID:00000212-0000-1000-8000-00805f9b34fb, Data: {01 02} }, }, "
-      "Manufacturer Data: { { Company ID: 0x0123, Data: {01 02 03} }, } }",
+      "Manufacturer Data: { { Company ID: 0x0123, Data: {01 02 03} }, }, }",
       data.ToString());
 }
 
@@ -1045,5 +1045,83 @@ TEST(AdvertisingDataTest, AddDuplicateServiceUuidsWhenFullSucceeds) {
   // Verify that we are notified of success when adding an existing UUID
   EXPECT_TRUE(data.AddServiceUuid(UUID(starting_16bit_uuid)));
 }
+
+TEST(AdvertisingDataTest, ResolvableSetIdentifierRoundTrip) {
+  AdvertisingData data;
+  std::array<uint8_t, 6> identifier = {0x01, 0x01, 0x4f, 0x96, 0x02, 0x03};
+
+  data.SetResolvableSetIdentifier(identifier);
+  data.SetAppearance(0x4567);
+
+  DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/true));
+  EXPECT_TRUE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
+
+  StaticByteBuffer expected_buf(0x02,
+                                0x01,
+                                0x02,  // flags: 2
+                                0x03,
+                                0x19,
+                                0x67,
+                                0x45,  // appearance_: 0x4567
+                                0x07,
+                                0x2E,
+                                0x01,
+                                0x01,
+                                0x4F,
+                                0x96,
+                                0x02,
+                                0x03);  // resolvable_set_identifier_
+  EXPECT_TRUE(ContainersEqual(expected_buf, write_buf));
+
+  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(write_buf);
+  EXPECT_TRUE(result.is_ok());
+  const AdvertisingData& parsed = result.value();
+  ASSERT_TRUE(parsed.appearance());
+  ASSERT_TRUE(parsed.resolvable_set_identifier());
+  EXPECT_TRUE(ContainersEqual(*parsed.resolvable_set_identifier(), identifier));
+}
+
+TEST(AdvertisingDataTest, BroadcastNameRoundTrip) {
+  AdvertisingData data;
+
+  std::string name = "Sapphire 💖";
+
+  data.SetBroadcastName(name);
+  data.SetAppearance(0x4567);
+
+  DynamicByteBuffer write_buf(data.CalculateBlockSize(/*include_flags=*/true));
+  EXPECT_TRUE(data.WriteBlock(&write_buf, AdvFlag::kLEGeneralDiscoverableMode));
+
+  StaticByteBuffer expected_buf(0x02,
+                                0x01,
+                                0x02,  // flags: 2
+                                0x03,
+                                0x19,
+                                0x67,
+                                0x45,  // appearance_: 0x4567
+                                0x0e,
+                                0x30,
+                                'S',
+                                'a',
+                                'p',
+                                'p',
+                                'h',
+                                'i',
+                                'r',
+                                'e',
+                                ' ',
+                                0xf0,
+                                0x9f,
+                                0x92,
+                                0x96);  // broadcast_name_
+  EXPECT_TRUE(ContainersEqual(expected_buf, write_buf));
+
+  AdvertisingData::ParseResult result = AdvertisingData::FromBytes(write_buf);
+  EXPECT_TRUE(result.is_ok());
+  const AdvertisingData& parsed = result.value();
+  ASSERT_TRUE(parsed.broadcast_name());
+  EXPECT_EQ(name, *parsed.broadcast_name());
+}
+
 }  // namespace
 }  // namespace bt

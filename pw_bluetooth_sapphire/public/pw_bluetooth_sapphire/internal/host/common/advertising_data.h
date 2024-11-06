@@ -58,6 +58,9 @@ constexpr size_t kTLVTxPowerLevelSize = 3;
 // The TLV size of the appearance data type
 constexpr size_t kTLVAppearanceSize = 4;
 
+// The TLV side of the resolvable set identifier data type
+constexpr size_t kTLVResolvableSetIdentifierSize = 8;
+
 // Constants for the expected size (in octets) of an
 // advertising/EIR/scan-response data field.
 //
@@ -69,6 +72,7 @@ constexpr size_t kTLVAppearanceSize = 4;
 constexpr size_t kAppearanceSize = 2;
 constexpr size_t kManufacturerIdSize = 2;
 constexpr size_t kTxPowerLevelSize = 1;
+constexpr size_t kResolvableSetIdentifierSize = 6;
 
 constexpr size_t kFlagsSizeMin = 1;
 constexpr size_t kManufacturerSpecificDataSizeMin = kManufacturerIdSize;
@@ -77,6 +81,13 @@ constexpr uint8_t kMaxUint8 = std::numeric_limits<uint8_t>::max();
 // The maximum length of a friendly name, derived from v5.2, Vol 4, Part
 // E, 7.3.11 and Vol 3, Part C, 12.1
 constexpr uint8_t kMaxNameLength = 248;
+
+// The minimum length of a Broadcast Name, as defined by Public Broadcast
+// Profile, in bytes.  Defined as 4 UTF-8 characters
+constexpr uint8_t kMinBroadcastNameBytes = 4;
+// The maximum length of a Broadcast Name, as defined by Public Broadcast
+// Profile, in bytes.  Defined as 32 UTF-8 characters
+constexpr uint8_t kMaxBroadcastNameBytes = 128;
 
 // The length of the entire manufacturer-specific data field must fit in a
 // uint8_t, so the maximum data length is uint8_t::MAX - 1 byte for type - 2
@@ -138,6 +149,12 @@ class AdvertisingData {
     kAppearanceMalformed,
     // Advertising Data missing
     kMissing,
+    // Resolvable Set Identifier is the wrong size
+    kResolvableSetIdentifierSize,
+    // Broadcast name is too short
+    kBroadcastNameTooShort,
+    // Broadcast name is too long
+    kBroadcastNameTooLong,
   };
 
   // Both complete and shortened forms of the local name can be advertised.
@@ -230,6 +247,19 @@ class AdvertisingData {
 
   // Gets the local name
   std::optional<LocalName> local_name() const;
+
+  // Sets the resolvable set identifier
+  void SetResolvableSetIdentifier(
+      std::array<uint8_t, kResolvableSetIdentifierSize> identifier);
+
+  // Gets the resolvable set identifier
+  const std::optional<std::array<uint8_t, kResolvableSetIdentifierSize>>&
+  resolvable_set_identifier() const;
+
+  // Sets the broadcast name
+  void SetBroadcastName(const std::string& name);
+  // Gets the broadcast name
+  const std::optional<std::string>& broadcast_name() const;
 
   // Adds a URI to the set of URIs advertised.
   // Does nothing if |uri| is empty or, when encoded, exceeds
@@ -328,6 +358,11 @@ class AdvertisingData {
   std::unordered_map<UUID, DynamicByteBuffer> service_data_;
 
   std::unordered_set<std::string> uris_;
+
+  std::optional<std::array<uint8_t, kResolvableSetIdentifierSize>>
+      resolvable_set_identifier_;
+
+  std::optional<std::string> broadcast_name_;
 
   // Flags, if they have been parsed or set.
   // Note: When using `WriteBlock`, the passed flags override these.

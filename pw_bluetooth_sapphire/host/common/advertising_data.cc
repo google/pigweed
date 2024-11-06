@@ -175,6 +175,9 @@ AdvertisingData& AdvertisingData::operator=(AdvertisingData&& other) noexcept {
   service_data_ = std::exchange(other.service_data_, {});
   uris_ = std::exchange(other.uris_, {});
   flags_ = std::exchange(other.flags_, {});
+  resolvable_set_identifier_ =
+      std::exchange(other.resolvable_set_identifier_, {});
+  broadcast_name_ = std::exchange(other.broadcast_name_, {});
   return *this;
 }
 
@@ -198,6 +201,12 @@ std::string AdvertisingData::ParseErrorToString(ParseError e) {
       return "malformed appearance field";
     case ParseError::kMissing:
       return "data missing";
+    case ParseError::kResolvableSetIdentifierSize:
+      return "resolvable set identifier is wrong size";
+    case ParseError::kBroadcastNameTooShort:
+      return "broadcast name is too short";
+    case ParseError::kBroadcastNameTooLong:
+      return "broadcast name is too long";
   }
 }
 
@@ -299,7 +308,20 @@ std::string AdvertisingData::ToString() const {
           company_id,
           data_buffer.ToString(/*as_hex*/ true).c_str());
     }
-    result += "} ";
+    result += "}, ";
+  }
+
+  if (resolvable_set_identifier_.has_value()) {
+    result += "Resolvable Set Idenfidier: { ";
+    BufferView view(resolvable_set_identifier_->data(),
+                    resolvable_set_identifier_->size());
+    result += view.ToString(/*as_hex=*/true);
+    result += "}, ";
+  }
+
+  if (broadcast_name_) {
+    bt_lib_cpp_string::StringAppendf(
+        &result, "Broadcast Name: %s, ", broadcast_name_->c_str());
   }
   result += "}";
   return result;
@@ -435,6 +457,26 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(
         }
         break;
       }
+      case DataType::kResolvableSetIdentifier: {
+        if (field.size() != kResolvableSetIdentifierSize) {
+          return fit::error(ParseError::kResolvableSetIdentifierSize);
+        }
+        std::array<uint8_t, kResolvableSetIdentifierSize> ident{
+            field[0], field[1], field[2], field[3], field[4], field[5]};
+        out_ad.SetResolvableSetIdentifier(ident);
+        break;
+      }
+      case DataType::kBroadcastName: {
+        if (field.size() < kMinBroadcastNameBytes) {
+          return fit::error(ParseError::kBroadcastNameTooShort);
+        }
+        if (field.size() > kMaxBroadcastNameBytes) {
+          return fit::error(ParseError::kBroadcastNameTooLong);
+        }
+        std::string name = field.ToString();
+        out_ad.SetBroadcastName(name);
+        break;
+      }
       default:
         bt_log(DEBUG,
                "gap",
@@ -464,6 +506,8 @@ void AdvertisingData::Copy(AdvertisingData* out) const {
   }
 
   out->service_uuids_ = service_uuids_;
+  out->resolvable_set_identifier_ = resolvable_set_identifier_;
+  out->broadcast_name_ = broadcast_name_;
 
   for (const auto& it : manufacturer_data_) {
     PW_CHECK(out->SetManufacturerData(it.first, it.second.view()));
@@ -578,6 +622,24 @@ std::optional<AdvertisingData::LocalName> AdvertisingData::local_name() const {
   return local_name_;
 }
 
+void AdvertisingData::SetResolvableSetIdentifier(
+    std::array<uint8_t, kResolvableSetIdentifierSize> identifier) {
+  resolvable_set_identifier_ = identifier;
+}
+
+const std::optional<std::array<uint8_t, kResolvableSetIdentifierSize>>&
+AdvertisingData::resolvable_set_identifier() const {
+  return resolvable_set_identifier_;
+}
+
+void AdvertisingData::SetBroadcastName(const std::string& name) {
+  broadcast_name_ = name;
+}
+
+const std::optional<std::string>& AdvertisingData::broadcast_name() const {
+  return broadcast_name_;
+}
+
 [[nodiscard]] bool AdvertisingData::AddUri(const std::string& uri) {
   if (EncodeUri(uri).size() > kMaxEncodedUriLength) {
     bt_log(WARN,
@@ -647,6 +709,14 @@ size_t AdvertisingData::CalculateBlockSize(bool include_flags) const {
     }
     len += 2;  // 1 byte for # of UUIDs and 1 for UUID type
     len += uuid_size * bounded_uuids.set().size();
+  }
+
+  if (resolvable_set_identifier_.has_value()) {
+    len += kTLVResolvableSetIdentifierSize;
+  }
+
+  if (broadcast_name_) {
+    len += 2 + broadcast_name_->size();
   }
 
   return len;
@@ -753,6 +823,27 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer,
     }
   }
 
+  if (resolvable_set_identifier_) {
+    (*buffer)[pos++] =
+        1 +
+        static_cast<uint8_t>(resolvable_set_identifier_->size());  // 1 for type
+    (*buffer)[pos++] = static_cast<uint8_t>(DataType::kResolvableSetIdentifier);
+    buffer->Write(resolvable_set_identifier_->data(),
+                  resolvable_set_identifier_->size(),
+                  pos);
+    pos += resolvable_set_identifier_->size();
+  }
+
+  if (broadcast_name_) {
+    (*buffer)[pos++] =
+        1 + static_cast<uint8_t>(broadcast_name_->size());  // 1 for type
+    (*buffer)[pos++] = static_cast<uint8_t>(DataType::kBroadcastName);
+    buffer->Write(reinterpret_cast<const uint8_t*>(broadcast_name_->c_str()),
+                  broadcast_name_->size(),
+                  pos);
+    pos += broadcast_name_->size();
+  }
+
   return true;
 }
 
@@ -760,7 +851,9 @@ bool AdvertisingData::operator==(const AdvertisingData& other) const {
   if ((local_name_ != other.local_name_) || (tx_power_ != other.tx_power_) ||
       (appearance_ != other.appearance_) ||
       (service_uuids_ != other.service_uuids_) || (uris_ != other.uris_) ||
-      (flags_ != other.flags_)) {
+      (flags_ != other.flags_) ||
+      (resolvable_set_identifier_ != other.resolvable_set_identifier_) ||
+      (broadcast_name_ != other.broadcast_name_)) {
     return false;
   }
 
