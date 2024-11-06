@@ -171,7 +171,12 @@ pw_test("seek_test") {
 
 pw_test("stream_test") {
   sources = [ "stream_test.cc" ]
-  deps = [ ":pw_stream" ]
+  deps = [
+    ":pw_stream",
+    "$dir_pw_bytes",
+    "$dir_pw_containers:to_array",
+    "$dir_pw_span",
+  ]
 }
 
 pw_test("interval_reader_test") {

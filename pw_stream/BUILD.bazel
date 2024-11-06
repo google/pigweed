@@ -154,6 +154,9 @@ pw_cc_test(
     srcs = ["stream_test.cc"],
     deps = [
         ":pw_stream",
+        "//pw_bytes",
+        "//pw_containers:to_array",
+        "//pw_span",
         "//pw_unit_test",
     ],
 )

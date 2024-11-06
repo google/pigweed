@@ -16,6 +16,11 @@
 
 #include <limits>
 
+#include "pw_assert/check.h"
+#include "pw_bytes/array.h"
+#include "pw_bytes/span.h"
+#include "pw_containers/to_array.h"
+#include "pw_span/span.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::stream {
@@ -191,6 +196,78 @@ TEST(Stream, RelativeSeekableReaderWriter) {
 
 TEST(Stream, SeekableReaderWriter) {
   TestStreamImpl<TestSeekableReaderWriter, kReadable, kWritable, kSeekable>();
+}
+
+class TestFragmentedReader : public NonSeekableReader {
+ public:
+  TestFragmentedReader(ConstByteSpan data, span<StatusWithSize> frags)
+      : data_(data), frags_(frags), current_frag_(frags.begin()) {
+    size_t frags_sum = 0;
+    for (const auto& frag : frags) {
+      frags_sum += frag.size();
+    }
+    PW_CHECK_UINT_LE(frags_sum, data.size());
+  }
+
+ private:
+  StatusWithSize DoRead(ByteSpan dest) override {
+    // Each fragment is consumed entirely on each read.
+    PW_CHECK_UINT_GE(dest.size(), current_frag_->size());
+    PW_CHECK(current_frag_ != frags_.end());
+
+    auto frag = current_frag_++;
+    auto source = data_.subspan(data_offset_, frag->size());
+    data_offset_ += frag->size();
+
+    std::copy(source.begin(), source.end(), dest.begin());
+    return *frag;
+  }
+
+  ConstByteSpan data_;
+  span<StatusWithSize> frags_;
+  decltype(frags_)::iterator current_frag_;
+  size_t data_offset_ = 0;
+};
+
+TEST(Stream, ReadExact_Works) {
+  constexpr auto kData = bytes::
+      Array<0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A>();
+
+  auto frags = containers::to_array<StatusWithSize>({
+      StatusWithSize(3),  // 0x00, 0x01, 0x02
+      StatusWithSize(5),  // 0x03, 0x04, 0x05, 0x06, 0x07
+      StatusWithSize(1),  // 0x08
+      StatusWithSize(2),  // 0x09, 0x0A
+  });
+
+  TestFragmentedReader reader(kData, frags);
+
+  std::array<std::byte, kData.size()> dest;
+  auto result = reader.ReadExact(dest);
+
+  PW_TEST_ASSERT_OK(result);
+  EXPECT_EQ(result->data(), dest.data());
+  EXPECT_EQ(result->size(), dest.size());
+  EXPECT_TRUE(std::equal(result->begin(), result->end(), kData.begin()));
+}
+
+TEST(Stream, ReadExact_HandlesError) {
+  constexpr auto kData = bytes::
+      Array<0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A>();
+
+  auto frags = containers::to_array<StatusWithSize>({
+      StatusWithSize(3),            // 0x00, 0x01, 0x02
+      StatusWithSize(5),            // 0x03, 0x04, 0x05, 0x06, 0x07
+      StatusWithSize::Internal(1),  // 0x08
+      StatusWithSize(2),            // 0x09, 0x0A
+  });
+
+  TestFragmentedReader reader(kData, frags);
+
+  std::array<std::byte, kData.size()> dest;
+  auto result = reader.ReadExact(dest);
+
+  EXPECT_EQ(result.status(), Status::Internal());
 }
 
 }  // namespace

@@ -131,6 +131,26 @@ class Stream {
     return Read(span(static_cast<std::byte*>(dest), size_bytes));
   }
 
+  /// Reads exactly the number of bytes requested into the provided buffer, if
+  /// supported. Internally, the stream is read as many times as necessary to
+  /// fill the destination buffer. If fewer bytes than requested are available,
+  /// `OUT_OF_RANGE` is returned.
+  ///
+  /// Other errors may be returned, as documented on Read().
+  Result<ByteSpan> ReadExact(ByteSpan const buffer) {
+    ByteSpan dest = buffer;
+    while (!dest.empty()) {
+      auto result = Read(dest);
+      if (!result.ok()) {
+        return result.status();
+      }
+      const size_t bytes_read = result->size();
+      PW_DASSERT(bytes_read != 0);  // Should never happen, according to API.
+      dest = dest.subspan(bytes_read);
+    }
+    return buffer;
+  }
+
   /// Writes data to this stream. Data is not guaranteed to be fully written out
   /// to final resting place on Write return.
   ///
