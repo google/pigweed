@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 
-#include <mutex>
+#include <cstdint>
 
 #include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/emboss_util.h"
@@ -25,17 +25,18 @@
 namespace pw::bluetooth::proxy {
 
 void AclDataChannel::Reset() {
-  std::lock_guard lock(credit_allocation_mutex_);
+  credit_allocation_mutex_.lock();
   initialized_ = false;
   proxy_max_le_acl_packets_ = 0;
   proxy_pending_le_acl_packets_ = 0;
   active_connections_.clear();
+  credit_allocation_mutex_.unlock();
 }
 
 template <class EventT>
 void AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
     EventT read_buffer_event) {
-  std::lock_guard lock(credit_allocation_mutex_);
+  credit_allocation_mutex_.lock();
   if (initialized_) {
     PW_LOG_WARN(
         "AclDataChannel is already initialized, but encountered another "
@@ -65,6 +66,7 @@ void AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
         le_acl_credits_to_reserve_,
         controller_max_le_acl_packets);
   }
+  credit_allocation_mutex_.unlock();
 }
 
 template void
@@ -89,8 +91,7 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
     hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
-
-  std::lock_guard lock(credit_allocation_mutex_);
+  credit_allocation_mutex_.lock();
   bool should_send_to_host = false;
   for (uint8_t i = 0; i < nocp_event.num_handles().Read(); ++i) {
     uint16_t handle = nocp_event.nocp_data()[i].connection_handle().Read();
@@ -124,7 +125,7 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
       should_send_to_host = true;
     }
   }
-
+  credit_allocation_mutex_.unlock();
   if (should_send_to_host) {
     hci_transport_.SendToHost(std::move(h4_packet));
   }
@@ -142,8 +143,8 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
     hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
+  credit_allocation_mutex_.lock();
 
-  std::lock_guard lock(credit_allocation_mutex_);
   uint16_t conn_handle = dc_event.connection_handle().Read();
   AclConnection* connection_ptr = FindConnection(conn_handle);
   if (connection_ptr && connection_ptr->num_pending_packets > 0) {
@@ -164,7 +165,7 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
           conn_handle);
     }
   }
-
+  credit_allocation_mutex_.unlock();
   hci_transport_.SendToHost(std::move(h4_packet));
 }
 
@@ -173,14 +174,18 @@ uint16_t AclDataChannel::GetLeAclCreditsToReserve() const {
 }
 
 uint16_t AclDataChannel::GetNumFreeLeAclPackets() const {
-  std::lock_guard lock(credit_allocation_mutex_);
-  return proxy_max_le_acl_packets_ - proxy_pending_le_acl_packets_;
+  credit_allocation_mutex_.lock();
+  uint16_t free_packets =
+      proxy_max_le_acl_packets_ - proxy_pending_le_acl_packets_;
+  credit_allocation_mutex_.unlock();
+  return free_packets;
 }
 
 bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
-  std::lock_guard lock(credit_allocation_mutex_);
+  credit_allocation_mutex_.lock();
   if (proxy_pending_le_acl_packets_ == proxy_max_le_acl_packets_) {
     PW_LOG_WARN("No ACL send credits available. So will not send.");
+    credit_allocation_mutex_.unlock();
     return false;
   }
   ++proxy_pending_le_acl_packets_;
@@ -189,6 +194,7 @@ bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
       MakeEmboss<emboss::AclDataFrameHeaderView>(h4_packet.GetHciSpan());
   if (!acl_view.Ok()) {
     PW_LOG_ERROR("Received invalid ACL packet. So will not send.");
+    credit_allocation_mutex_.unlock();
     return false;
   }
   uint16_t handle = acl_view.handle().Read();
@@ -201,6 +207,7 @@ bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
   }
 
   hci_transport_.SendToController(std::move(h4_packet));
+  credit_allocation_mutex_.unlock();
   return true;
 }
 
