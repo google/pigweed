@@ -25,12 +25,12 @@ custom_data_source: {
   }
   # Segment containing .static_init_ram section.
   rewrite: {
-    pattern: "LOAD #2"
+    pattern: "LOAD #3"
     replacement: "RAM"
   }
-  # Segment containing .zero_init_ram section.
+  # Segment containing .stack and .zero_init_ram section.
   rewrite: {
-    pattern: "LOAD #4"
+    pattern: "LOAD #5"
     replacement: "RAM"
   }
 }
