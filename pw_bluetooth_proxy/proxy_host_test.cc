@@ -39,6 +39,11 @@ namespace {
 
 using containers::FlatMap;
 
+// TODO: https://pwbug.dev/349700888 - Once size is configurable, switch to
+// specifying directly. Until then this should match
+// AclConnection::kMaxConnections.
+static constexpr size_t kMaxProxyActiveConnections = 10;
+
 // ########## Util functions
 
 // Populate passed H4 command buffer and return Emboss view on it.
@@ -1876,8 +1881,6 @@ TEST(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
 // connections size. This should succeed since we only track proxy-related
 // connections, not all host connections.
 TEST(MultiSendTest, CanSendOverManyDifferentConnections) {
-  // This should match AclConnection::kMaxConnections.
-  static constexpr size_t kMaxProxyActiveConnections = 10;
   constexpr uint16_t kSends = kMaxProxyActiveConnections * 2;
   std::array<uint8_t, 1> attribute_value = {0xF};
   struct {
@@ -1908,6 +1911,39 @@ TEST(MultiSendTest, CanSendOverManyDifferentConnections) {
                                          {conn_handle, 1},
                                      }})));
   }
+}
+
+TEST(MultiSendTest, AttemptToSendOverMaxConnectionsFails) {
+  constexpr uint16_t kSends = kMaxProxyActiveConnections + 1;
+  std::array<uint8_t, 1> attribute_value = {0xF};
+  struct {
+    uint16_t sends_called = 0;
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      [&capture]([[maybe_unused]] H4PacketWithH4&& packet) {
+        ++capture.sends_called;
+      });
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), kSends);
+  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, kSends));
+
+  for (uint16_t send = 1; send <= kMaxProxyActiveConnections; send++) {
+    // Use current send count as the connection handle.
+    uint16_t conn_handle = send;
+    EXPECT_TRUE(
+        proxy.SendGattNotify(conn_handle, 345, pw::span(attribute_value)).ok());
+    EXPECT_EQ(capture.sends_called, send);
+  }
+
+  // Last one should fail
+  uint16_t conn_handle = kSends;
+  EXPECT_FALSE(
+      proxy.SendGattNotify(conn_handle, 345, pw::span(attribute_value)).ok());
+  EXPECT_EQ(capture.sends_called, kMaxProxyActiveConnections);
 }
 
 TEST(MultiSendTest, ResetClearsBuffOccupiedFlags) {

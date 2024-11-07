@@ -200,6 +200,11 @@ bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
 
   AclConnection* connection_ptr = FindConnection(handle);
   if (!connection_ptr) {
+    if (active_connections_.full()) {
+      PW_LOG_ERROR("No space left in connections list.");
+      credit_allocation_mutex_.unlock();
+      return false;
+    }
     active_connections_.push_back({handle, /*num_pending_packets=*/1});
   } else {
     ++connection_ptr->num_pending_packets;
