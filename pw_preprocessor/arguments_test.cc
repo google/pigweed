@@ -413,7 +413,7 @@ TEST(DelegateByArgCount, WithoutAndWithoutArguments) {
 
 #define TO_STRING_CASE(index, name, arg) \
   case arg:                              \
-    return #arg;
+    return #arg
 
 #define APPLY_STRING_THING(...) PW_APPLY(STRING_THING, SEMICOLON, , __VA_ARGS__)
 
