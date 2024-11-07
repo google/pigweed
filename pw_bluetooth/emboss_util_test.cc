@@ -35,6 +35,11 @@ TEST(EmbossUtilTest, MakeEmbossViewFromSpan) {
       auto view, MakeEmbossView<emboss::TestCommandPacketView>(span));
   EXPECT_EQ(view.payload().Read(), 0x03);
 
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      view,
+      MakeEmbossView<emboss::TestCommandPacketView>(span.data(), span.size()));
+  EXPECT_EQ(view.payload().Read(), 0x03);
+
   auto failed_view =
       MakeEmbossView<emboss::TestCommandPacketView>(span.subspan(1));
   EXPECT_EQ(failed_view.status(), pw::Status::DataLoss());
@@ -55,8 +60,14 @@ TEST(EmbossUtilTest, MakeEmbossWriterFromSpan) {
       auto view, MakeEmbossWriter<emboss::TestCommandPacketWriter>(span));
   EXPECT_EQ(view.payload().Read(), 0x03);
 
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      view,
+      MakeEmbossWriter<emboss::TestCommandPacketWriter>(span.data(),
+                                                        span.size()));
+  EXPECT_EQ(view.payload().Read(), 0x03);
+
   auto failed_view =
-      MakeEmbossWriter<emboss::TestCommandPacketView>(span.subspan(1));
+      MakeEmbossWriter<emboss::TestCommandPacketWriter>(span.subspan(1));
   EXPECT_EQ(failed_view.status(), pw::Status::InvalidArgument());
 }
 

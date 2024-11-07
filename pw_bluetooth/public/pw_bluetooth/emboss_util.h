@@ -36,6 +36,20 @@ constexpr inline EmbossT MakeEmboss(ContainerT&& buffer) {
   return EmbossT(buffer.data(), buffer.size());
 }
 
+// Create an Emboss view and check that it is Ok().
+// Returns Status::DataLoss() if the view is not Ok().
+//
+// The emboss type is determined by the template's first parameter.
+template <typename EmbossT, typename... Params>
+constexpr inline Result<EmbossT> MakeEmbossView(Params&&... params) {
+  auto view = EmbossT(std::forward<Params>(params)...);
+  if (view.Ok()) {
+    return view;
+  } else {
+    return Status::DataLoss();
+  }
+}
+
 // Create an Emboss View from a pw::span value or reference and check that it is
 // Ok(). Returns Status::DataLoss() if the view is not Ok().
 //
@@ -48,16 +62,28 @@ template <typename EmbossT,
           typename = std::enable_if_t<
               std::is_convertible_v<ContainerT, pw::span<const uint8_t>>>>
 constexpr inline Result<EmbossT> MakeEmbossView(ContainerT&& buffer) {
-  auto view = EmbossT(buffer.data(), buffer.size());
-  if (view.Ok()) {
+  return MakeEmbossView<EmbossT>(buffer.data(), buffer.size());
+}
+
+// Create an Emboss Writer and check that and check that the
+// backing storage contains at least enough space for MinSizeInBytes().
+// Returns Status::InvalidArgument() if the buffer isn't large enough for
+// requested writer.
+//
+// The emboss type is determined by the template's first parameter.
+template <typename EmbossT, typename... Params>
+constexpr inline Result<EmbossT> MakeEmbossWriter(Params&&... params) {
+  auto view = EmbossT(std::forward<Params>(params)...);
+  if (view.BackingStorage().SizeInBytes() >=
+      static_cast<size_t>(EmbossT::MinSizeInBytes().Read())) {
     return view;
   } else {
-    return Status::DataLoss();
+    return Status::InvalidArgument();
   }
 }
 
 // Create an Emboss Writer from a pw::span value or reference and check that the
-// backing storage at least contains enough space for MinSizeInBytes(). Returns
+// backing storage contains at least enough space for MinSizeInBytes(). Returns
 // Status::InvalidArgument() if the buffer isn't large enough for requested
 // writer.
 //
@@ -70,13 +96,7 @@ template <typename EmbossT,
           typename = std::enable_if_t<
               std::is_convertible_v<ContainerT, pw::span<uint8_t>>>>
 constexpr inline Result<EmbossT> MakeEmbossWriter(ContainerT&& buffer) {
-  auto view = EmbossT(buffer.data(), buffer.size());
-  if (view.BackingStorage().SizeInBytes() >=
-      static_cast<size_t>(EmbossT::MinSizeInBytes().Read())) {
-    return view;
-  } else {
-    return Status::InvalidArgument();
-  }
+  return MakeEmbossWriter<EmbossT>(buffer.data(), buffer.size());
 }
 
 }  // namespace pw::bluetooth
