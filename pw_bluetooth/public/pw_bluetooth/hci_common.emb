@@ -1194,6 +1194,7 @@ struct CommandCompleteEvent:
   hdr_size   [+1]         UInt         num_hci_command_packets
   hdr_size+1 [+2]         OpCode       command_opcode_enum
   hdr_size+1 [+2]         OpCodeBits   command_opcode_bits
+  hdr_size+1 [+2]         UInt         command_opcode_uint
     # Note that this field overlaps command_opcode_enum field.
     -- Access opcode ogf or ocf sub-fields.
 

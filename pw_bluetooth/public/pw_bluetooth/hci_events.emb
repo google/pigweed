@@ -1293,6 +1293,7 @@ struct CommandStatusEvent:
   hdr_size+1 [+1]         UInt             num_hci_command_packets
   hdr_size+2 [+2]         hci.OpCode       command_opcode_enum
   hdr_size+2 [+2]         hci.OpCodeBits   command_opcode
+  hdr_size+2 [+2]         UInt             command_opcode_uint
 
 # 7.7.16 Hardware Error event
 # HCI_Hardware_Error
