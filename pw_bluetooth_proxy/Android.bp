@@ -48,6 +48,7 @@ cc_library_static {
     header_libs: [
         "emboss_runtime_headers",
         "fuchsia_sdk_lib_stdcompat",
+        "pw_bluetooth_emboss_util_include_dirs",
     ],
     generated_headers: [
         "pw_bluetooth_generate_emboss_att",
