@@ -236,9 +236,9 @@ redirects = {
     'pw_sys_io_pico/docs': '../pw_sys_io_rp2040/docs.html',
     'pw_tokenizer/cli': './docs.html',
     'pw_tokenizer/guides': './docs.html',
-    'seeds/index': './seed/0000-index.html',
-    'sense/index': './docs/showcases/sense/',
-    'tour/index': './docs/showcases/sense/',
+    'seeds/index': '../seed/0000-index.html',
+    'sense/index': '../docs/showcases/sense/',
+    'tour/index': '../docs/showcases/sense/',
 }
 
 # One entry per manual page. List of tuples
