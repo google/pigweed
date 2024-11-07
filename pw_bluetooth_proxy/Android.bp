@@ -23,6 +23,10 @@ cc_library_static {
     host_supported: true,
     srcs: [
         "acl_data_channel.cc",
+        "gatt_notify_channel.cc",
+        "h4_storage.cc",
+        "l2cap_coc.cc",
+        "l2cap_write_channel.cc",
         "proxy_host.cc",
     ],
     export_include_dirs: [
