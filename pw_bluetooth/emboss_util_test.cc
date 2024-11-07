@@ -28,12 +28,36 @@ TEST(EmbossUtilTest, MakeViewFromSpan) {
   EXPECT_EQ(view.payload().Read(), 0x03);
 }
 
+TEST(EmbossUtilTest, MakeEmbossViewFromSpan) {
+  std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
+  auto span = pw::span(buffer);
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      auto view, MakeEmbossView<emboss::TestCommandPacketView>(span));
+  EXPECT_EQ(view.payload().Read(), 0x03);
+
+  auto failed_view =
+      MakeEmbossView<emboss::TestCommandPacketView>(span.subspan(1));
+  EXPECT_EQ(failed_view.status(), pw::Status::DataLoss());
+}
+
 TEST(EmbossUtilTest, MakeWriterFromSpan) {
   std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
   auto span = pw::span(buffer);
   auto view = MakeEmboss<emboss::TestCommandPacketWriter>(span);
   EXPECT_TRUE(view.IsComplete());
   EXPECT_EQ(view.payload().Read(), 0x03);
+}
+
+TEST(EmbossUtilTest, MakeEmbossWriterFromSpan) {
+  std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
+  auto span = pw::span(buffer);
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      auto view, MakeEmbossWriter<emboss::TestCommandPacketWriter>(span));
+  EXPECT_EQ(view.payload().Read(), 0x03);
+
+  auto failed_view =
+      MakeEmbossWriter<emboss::TestCommandPacketView>(span.subspan(1));
+  EXPECT_EQ(failed_view.status(), pw::Status::InvalidArgument());
 }
 
 }  // namespace

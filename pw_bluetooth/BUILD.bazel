@@ -65,7 +65,9 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_result",
         "//pw_span",
+        "//pw_status",
     ],
 )
 

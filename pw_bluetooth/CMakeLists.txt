@@ -56,7 +56,9 @@ pw_add_library(pw_bluetooth.emboss_util INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_result
     pw_span
+    pw_status
 )
 
 pw_add_test(pw_bluetooth.address_test

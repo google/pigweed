@@ -79,7 +79,11 @@ pw_source_set("pw_bluetooth") {
 pw_source_set("emboss_util") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_bluetooth/emboss_util.h" ]
-  public_deps = [ dir_pw_span ]
+  public_deps = [
+    dir_pw_result,
+    dir_pw_span,
+    dir_pw_status,
+  ]
 }
 
 if (dir_pw_third_party_emboss != "") {
