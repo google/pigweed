@@ -582,19 +582,21 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   bool unregister_async_handler = false;
 
   if (event->event_code() == hci_spec::kCommandCompleteEventCode) {
-    const hci_spec::CommandCompleteEventParams& params =
-        event->params<hci_spec::CommandCompleteEventParams>();
-    matching_opcode = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
-                                                  params.command_opcode);
-    allowed_command_packets_.Set(params.num_hci_command_packets);
+    auto command_complete_view =
+        pw::bluetooth::emboss::MakeCommandCompleteEventView(
+            event->view().data().data(), event->view().data().size());
+    matching_opcode = command_complete_view.command_opcode_uint().Read();
+    allowed_command_packets_.Set(
+        command_complete_view.num_hci_command_packets().Read());
   } else {  //  hci_spec::kCommandStatusEventCode
-    const hci_spec::CommandStatusEventParams& params =
-        event->params<hci_spec::CommandStatusEventParams>();
-    matching_opcode = pw::bytes::ConvertOrderFrom(cpp20::endian::little,
-                                                  params.command_opcode);
-    allowed_command_packets_.Set(params.num_hci_command_packets);
-    unregister_async_handler =
-        params.status != pw::bluetooth::emboss::StatusCode::SUCCESS;
+    auto command_status_view =
+        pw::bluetooth::emboss::MakeCommandStatusEventView(
+            event->view().data().data(), event->view().data().size());
+    matching_opcode = command_status_view.command_opcode_uint().Read();
+    allowed_command_packets_.Set(
+        command_status_view.num_hci_command_packets().Read());
+    unregister_async_handler = command_status_view.status().Read() !=
+                               pw::bluetooth::emboss::StatusCode::SUCCESS;
   }
   bt_log(TRACE,
          "hci",
@@ -658,7 +660,10 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   switch (event->event_code()) {
     case hci_spec::kLEMetaEventCode:
       event_type = EventType::kLEMetaEvent;
-      event_code = event->params<hci_spec::LEMetaEventParams>().subevent_code;
+      event_code = pw::bluetooth::emboss::MakeLEMetaEventView(
+                       event->view().data().data(), event->view().data().size())
+                       .subevent_code()
+                       .Read();
       event_handlers = &le_meta_subevent_code_handlers_;
       break;
     case hci_spec::kVendorDebugEventCode:

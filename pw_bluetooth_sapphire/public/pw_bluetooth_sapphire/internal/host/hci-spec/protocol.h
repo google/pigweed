@@ -126,14 +126,6 @@ struct SynchronousDataHeader {
   uint8_t data_total_length;
 } __attribute__((packed));
 
-// Generic return parameter struct for commands that only return a status. This
-// can also be used to check the status of HCI commands with more complex return
-// parameters.
-struct SimpleReturnParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-} __attribute__((packed));
-
 // ============= HCI Command and Event (op)code and payloads =============
 
 // No-Op
@@ -518,43 +510,10 @@ constexpr EventCode kReadRemoteVersionInfoCompleteEventCode = 0x0C;
 // Command Complete Event (v1.1)
 constexpr EventCode kCommandCompleteEventCode = 0x0E;
 
-PW_MODIFY_DIAGNOSTICS_PUSH();
-PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
-struct CommandCompleteEventParams {
-  CommandCompleteEventParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(CommandCompleteEventParams);
-
-  // The Number of HCI command packets which are allowed to be sent to the
-  // Controller from the Host.
-  uint8_t num_hci_command_packets;
-
-  // OpCode of the command which caused this event.
-  uint16_t command_opcode;
-
-  // This is the return parameter(s) for the command specified in the
-  // |command_opcode| event parameter. Refer to the Bluetooth Core Specification
-  // v5.0, Vol 2, Part E for each command’s definition for the list of return
-  // parameters associated with that command.
-  uint8_t return_parameters[];
-} __attribute__((packed));
-PW_MODIFY_DIAGNOSTICS_POP();
-
 // ===========================
 // Command Status Event (v1.1)
 constexpr EventCode kCommandStatusEventCode = 0x0F;
 constexpr uint8_t kCommandStatusPending = 0x00;
-
-struct CommandStatusEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // The Number of HCI command packets which are allowed to be sent to the
-  // Controller from the Host.
-  uint8_t num_hci_command_packets;
-
-  // OpCode of the command which caused this event and is pending completion.
-  uint16_t command_opcode;
-} __attribute__((packed));
 
 // ===========================
 // Hardware Error Event (v1.1)
@@ -631,20 +590,6 @@ constexpr EventCode kUserPasskeyNotificationEventCode = 0x3B;
 // =========================
 // LE Meta Event (v4.0) (LE)
 constexpr EventCode kLEMetaEventCode = 0x3E;
-
-PW_MODIFY_DIAGNOSTICS_PUSH();
-PW_MODIFY_DIAGNOSTIC_CLANG(ignored, "-Wc99-extensions");
-struct LEMetaEventParams {
-  LEMetaEventParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEMetaEventParams);
-
-  // The event code for the LE subevent.
-  EventCode subevent_code;
-
-  // Beginning of parameters that are specific to the LE subevent.
-  uint8_t subevent_parameters[];
-} __attribute__((packed));
-PW_MODIFY_DIAGNOSTICS_POP();
 
 // LE Connection Complete Event (v4.0) (LE)
 constexpr EventCode kLEConnectionCompleteSubeventCode = 0x01;

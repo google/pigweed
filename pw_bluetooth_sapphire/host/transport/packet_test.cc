@@ -117,54 +117,6 @@ TEST(PacketTest, EventPacketMalformed) {
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), status);
 }
 
-TEST(PacketTest, LEEventParams) {
-  uint8_t subevent_payload = 0x7F;
-
-  // clang-format off
-  auto correct_size_bad_event_code = StaticByteBuffer(
-      // Event header
-      0xFE, 0x02,  // (event_code is not hci_spec::kLEMetaEventCode)
-
-      // Subevent code
-      0xFF,
-
-      subevent_payload);
-  auto payload_too_small = StaticByteBuffer(
-      0x3E, 0x01,
-
-      // Subevent code
-      0xFF);
-  auto valid = StaticByteBuffer(
-      // Event header
-      0x3E, 0x02,
-
-      // Subevent code
-      0xFF,
-
-      subevent_payload);
-  // clang-format on
-
-  auto packet = EventPacket::New(valid.size());
-
-  // If the event code or the payload size don't match, then we should return
-  // nullptr.
-  packet->mutable_view()->mutable_data().Write(correct_size_bad_event_code);
-  packet->InitializeFromBuffer();
-  EXPECT_EQ(nullptr, packet->subevent_params<TestPayload>());
-
-  packet->mutable_view()->mutable_data().Write(payload_too_small);
-  packet->InitializeFromBuffer();
-  EXPECT_EQ(nullptr, packet->subevent_params<TestPayload>());
-
-  // Valid case
-  packet->mutable_view()->Resize(valid.size());
-  packet->mutable_view()->mutable_data().Write(valid);
-  packet->InitializeFromBuffer();
-
-  EXPECT_NE(nullptr, packet->subevent_params<TestPayload>());
-  EXPECT_EQ(subevent_payload, packet->subevent_params<TestPayload>()->foo);
-}
-
 TEST(PacketTest, ACLDataPacketFromFields) {
   constexpr size_t kLargeDataLength = 10;
   constexpr size_t kSmallDataLength = 1;

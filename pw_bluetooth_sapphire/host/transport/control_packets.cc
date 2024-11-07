@@ -66,25 +66,6 @@ bool StatusCodeFromEmbossEvent(const EventPacket& event,
   return true;
 }
 
-// As pw::bluetooth::emboss::StatusCodeFromEvent, but for LEMetaEvent subevents.
-// Returns true and populates the |out_code| field with the subevent status
-// parameter. Returns false if |event|'s payload is too small to hold a
-// LEMetaEvent containing a T. T must have a |status| member of type
-// pw::bluetooth::emboss::StatusCode for this to compile.
-template <typename T>
-bool StatusCodeFromSubevent(const EventPacket& event,
-                            pw::bluetooth::emboss::StatusCode* out_code) {
-  PW_CHECK(out_code);
-
-  if (event.view().payload_size() <
-      sizeof(pw::bluetooth::emboss::LEMetaEvent::IntrinsicSizeInBytes()) +
-          sizeof(T))
-    return false;
-
-  *out_code = event.subevent_params<T>()->status;
-  return true;
-}
-
 }  // namespace
 
 namespace android_hci = bt::hci_spec::vendor::android;
@@ -97,25 +78,15 @@ std::unique_ptr<EventPacket> EventPacket::New(size_t payload_size) {
 
 bool EventPacket::ToStatusCode(
     pw::bluetooth::emboss::StatusCode* out_code) const {
-#define CASE_EVENT_STATUS(event_name)                                    \
-  case hci_spec::k##event_name##EventCode:                               \
-    return StatusCodeFromEvent<hci_spec::event_name##EventParams>(*this, \
-                                                                  out_code)
-
 #define CASE_EMBOSS_EVENT_STATUS(event_name) \
   case hci_spec::k##event_name##EventCode:   \
     return StatusCodeFromEmbossEvent<        \
         pw::bluetooth::emboss::event_name##EventView>(*this, out_code)
 
-#define CASE_SUBEVENT_STATUS(subevent_name)                                 \
-  case hci_spec::k##subevent_name##SubeventCode:                            \
-    return StatusCodeFromSubevent<hci_spec::subevent_name##SubeventParams>( \
-        *this, out_code)
-
   switch (event_code()) {
     CASE_EMBOSS_EVENT_STATUS(AuthenticationComplete);
     CASE_EMBOSS_EVENT_STATUS(ChangeConnectionLinkKeyComplete);
-    CASE_EVENT_STATUS(CommandStatus);
+    CASE_EMBOSS_EVENT_STATUS(CommandStatus);
     CASE_EMBOSS_EVENT_STATUS(ConnectionComplete);
     CASE_EMBOSS_EVENT_STATUS(DisconnectionComplete);
     CASE_EMBOSS_EVENT_STATUS(RemoteNameRequestComplete);
@@ -144,7 +115,7 @@ bool EventPacket::ToStatusCode(
   }
   return false;
 
-#undef CASE_EVENT_STATUS
+#undef CASE_EMBOSS_EVENT_STATUS
 }
 
 hci::Result<> EventPacket::ToResult() const {
