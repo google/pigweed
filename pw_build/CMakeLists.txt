@@ -170,3 +170,10 @@ pw_cc_blob_library(pw_build.test_blob
     SYMBOL_NAME kSecondBlob0123
     PATH test_blob_0123.bin
 )
+
+pw_add_library(pw_build.must_place INTERFACE
+  HEADERS
+    public/pw_build/must_place.ld.h
+  PUBLIC_INCLUDES
+    public
+)
