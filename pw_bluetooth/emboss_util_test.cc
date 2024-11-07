@@ -20,14 +20,6 @@
 namespace pw::bluetooth::proxy {
 namespace {
 
-TEST(EmbossUtilTest, MakeViewFromSpan) {
-  std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
-  auto span = pw::span(buffer);
-  auto view = MakeEmboss<emboss::TestCommandPacketView>(span);
-  EXPECT_TRUE(view.IsComplete());
-  EXPECT_EQ(view.payload().Read(), 0x03);
-}
-
 TEST(EmbossUtilTest, MakeEmbossViewFromSpan) {
   std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
   auto span = pw::span(buffer);
@@ -43,14 +35,6 @@ TEST(EmbossUtilTest, MakeEmbossViewFromSpan) {
   auto failed_view =
       MakeEmbossView<emboss::TestCommandPacketView>(span.subspan(1));
   EXPECT_EQ(failed_view.status(), pw::Status::DataLoss());
-}
-
-TEST(EmbossUtilTest, MakeWriterFromSpan) {
-  std::array<uint8_t, 4> buffer = {0x00, 0x01, 0x02, 0x03};
-  auto span = pw::span(buffer);
-  auto view = MakeEmboss<emboss::TestCommandPacketWriter>(span);
-  EXPECT_TRUE(view.IsComplete());
-  EXPECT_EQ(view.payload().Read(), 0x03);
 }
 
 TEST(EmbossUtilTest, MakeEmbossWriterFromSpan) {

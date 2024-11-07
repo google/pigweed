@@ -21,21 +21,6 @@
 
 namespace pw::bluetooth {
 
-// Create an Emboss View or Writer from a pw::span value or reference. The
-// Emboss type is determined by the template's first parameter.
-// Unlike the Emboss `Make*View` creation methods, this function accepts a
-// reference so it can be used with rvalues. This is ok to do with pw::span
-// since it doesn't own its underlying data. Another key difference is the
-// caller explicitly chooses if they want a View or a Writer using the first
-// template argument.
-template <typename EmbossT,
-          typename ContainerT,
-          typename = std::enable_if_t<
-              std::is_convertible_v<ContainerT, pw::span<uint8_t>>>>
-constexpr inline EmbossT MakeEmboss(ContainerT&& buffer) {
-  return EmbossT(buffer.data(), buffer.size());
-}
-
 // Create an Emboss view and check that it is Ok().
 // Returns Status::DataLoss() if the view is not Ok().
 //
