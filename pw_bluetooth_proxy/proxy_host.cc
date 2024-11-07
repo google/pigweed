@@ -38,8 +38,8 @@ void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
 
 void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
   pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
-  auto event = MakeEmboss<emboss::EventHeaderView>(hci_buffer);
-  if (!event.IsComplete()) {
+  auto event = MakeEmbossView<emboss::EventHeaderView>(hci_buffer);
+  if (!event.ok()) {
     PW_LOG_ERROR(
         "Buffer is too small for EventHeader. So will pass on to host without "
         "processing.");
@@ -49,7 +49,7 @@ void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
 
   PW_MODIFY_DIAGNOSTICS_PUSH();
   PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
-  switch (event.event_code_enum().Read()) {
+  switch (event->event_code_enum().Read()) {
     case emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS: {
       acl_data_channel_.HandleNumberOfCompletedPacketsEvent(
           std::move(h4_packet));
@@ -73,9 +73,9 @@ void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
 
 void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
   pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
-  emboss::CommandCompleteEventView command_complete_event =
-      MakeEmboss<emboss::CommandCompleteEventView>(hci_buffer);
-  if (!command_complete_event.IsComplete()) {
+  auto command_complete_event =
+      MakeEmbossView<emboss::CommandCompleteEventView>(hci_buffer);
+  if (!command_complete_event.ok()) {
     PW_LOG_ERROR(
         "Buffer is too small for COMMAND_COMPLETE event. So will not process.");
     hci_transport_.SendToHost(std::move(h4_packet));
@@ -84,31 +84,31 @@ void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
 
   PW_MODIFY_DIAGNOSTICS_PUSH();
   PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
-  switch (command_complete_event.command_opcode_enum().Read()) {
+  switch (command_complete_event->command_opcode_enum().Read()) {
     case emboss::OpCode::LE_READ_BUFFER_SIZE_V1: {
-      auto read_event =
-          MakeEmboss<emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
-              hci_buffer);
-      if (!read_event.IsComplete()) {
+      auto read_event = MakeEmbossWriter<
+          emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(hci_buffer);
+      if (!read_event.ok()) {
         PW_LOG_ERROR(
             "Buffer is too small for LE_READ_BUFFER_SIZE_V1 command complete "
             "event. So will not process.");
         return;
       }
-      acl_data_channel_.ProcessLEReadBufferSizeCommandCompleteEvent(read_event);
+      acl_data_channel_.ProcessLEReadBufferSizeCommandCompleteEvent(
+          *read_event);
       break;
     }
     case emboss::OpCode::LE_READ_BUFFER_SIZE_V2: {
-      auto read_event =
-          MakeEmboss<emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
-              hci_buffer);
-      if (!read_event.IsComplete()) {
+      auto read_event = MakeEmbossWriter<
+          emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(hci_buffer);
+      if (!read_event.ok()) {
         PW_LOG_ERROR(
             "Buffer is too small for LE_READ_BUFFER_SIZE_V2 command complete "
             "event. So will not process.");
         return;
       }
-      acl_data_channel_.ProcessLEReadBufferSizeCommandCompleteEvent(read_event);
+      acl_data_channel_.ProcessLEReadBufferSizeCommandCompleteEvent(
+          *read_event);
       break;
     }
     default:

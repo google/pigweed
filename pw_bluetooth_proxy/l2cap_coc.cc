@@ -19,6 +19,7 @@
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
 #include "pw_log/log.h"
+#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -66,12 +67,14 @@ pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
   }
   H4PacketWithH4 h4_packet = std::move(*h4_result);
 
-  emboss::AclDataFrameWriter acl =
-      MakeEmboss<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
+  PW_TRY_ASSIGN(
+      auto acl,
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan()));
   // Write payload.
-  emboss::FirstKFrameWriter kframe =
-      emboss::MakeFirstKFrameView(acl.payload().BackingStorage().data(),
-                                  acl.payload().BackingStorage().SizeInBytes());
+  PW_TRY_ASSIGN(auto kframe,
+                MakeEmbossWriter<emboss::FirstKFrameWriter>(
+                    acl.payload().BackingStorage().data(),
+                    acl.payload().BackingStorage().SizeInBytes()));
   kframe.sdu_length().Write(payload.size());
   std::memcpy(
       kframe.payload().BackingStorage().data(), payload.data(), payload.size());

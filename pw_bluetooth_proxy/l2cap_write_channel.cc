@@ -20,6 +20,7 @@
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
+#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -49,11 +50,11 @@ bool L2capWriteChannel::AreValidParameters(uint16_t connection_handle,
 
 pw::Result<H4PacketWithH4> L2capWriteChannel::PopulateTxL2capPacket(
     uint16_t data_length) {
-  size_t l2cap_packet_size =
+  const size_t l2cap_packet_size =
       emboss::BasicL2capHeader::IntrinsicSizeInBytes() + data_length;
-  size_t acl_packet_size =
+  const size_t acl_packet_size =
       emboss::AclDataFrameHeader::IntrinsicSizeInBytes() + l2cap_packet_size;
-  size_t h4_packet_size = sizeof(emboss::H4PacketType) + acl_packet_size;
+  const size_t h4_packet_size = sizeof(emboss::H4PacketType) + acl_packet_size;
 
   if (h4_packet_size > h4_storage_.GetH4BuffSize()) {
     PW_LOG_ERROR(
@@ -74,8 +75,9 @@ pw::Result<H4PacketWithH4> L2capWriteChannel::PopulateTxL2capPacket(
       });
   h4_packet.SetH4Type(emboss::H4PacketType::ACL_DATA);
 
-  emboss::AclDataFrameWriter acl =
-      MakeEmboss<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
+  PW_TRY_ASSIGN(
+      auto acl,
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan()));
   acl.header().handle().Write(connection_handle_);
   // TODO: https://pwbug.dev/360932103 - Support packet segmentation, so this
   // value will not always be FIRST_NON_FLUSHABLE.
@@ -85,10 +87,10 @@ pw::Result<H4PacketWithH4> L2capWriteChannel::PopulateTxL2capPacket(
       emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
   acl.data_total_length().Write(l2cap_packet_size);
 
-  emboss::BasicL2capHeaderWriter l2cap_header =
-      emboss::MakeBasicL2capHeaderView(
-          acl.payload().BackingStorage().data(),
-          emboss::BasicL2capHeader::IntrinsicSizeInBytes());
+  PW_TRY_ASSIGN(auto l2cap_header,
+                MakeEmbossWriter<emboss::BasicL2capHeaderWriter>(
+                    acl.payload().BackingStorage().data(),
+                    emboss::BasicL2capHeader::IntrinsicSizeInBytes()));
   l2cap_header.pdu_length().Write(data_length);
   l2cap_header.channel_id().Write(remote_cid_);
 

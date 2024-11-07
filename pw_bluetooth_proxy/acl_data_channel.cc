@@ -81,10 +81,10 @@ AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent<
 
 void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
     H4PacketWithHci&& h4_packet) {
-  emboss::NumberOfCompletedPacketsEventWriter nocp_event =
-      MakeEmboss<emboss::NumberOfCompletedPacketsEventWriter>(
+  auto nocp_event =
+      MakeEmbossWriter<emboss::NumberOfCompletedPacketsEventWriter>(
           h4_packet.GetHciSpan());
-  if (!nocp_event.IsComplete()) {
+  if (!nocp_event.ok()) {
     PW_LOG_ERROR(
         "Buffer is too small for NUMBER_OF_COMPLETED_PACKETS event. So "
         "will not process.");
@@ -93,10 +93,10 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
   }
   credit_allocation_mutex_.lock();
   bool should_send_to_host = false;
-  for (uint8_t i = 0; i < nocp_event.num_handles().Read(); ++i) {
-    uint16_t handle = nocp_event.nocp_data()[i].connection_handle().Read();
+  for (uint8_t i = 0; i < nocp_event->num_handles().Read(); ++i) {
+    uint16_t handle = nocp_event->nocp_data()[i].connection_handle().Read();
     uint16_t num_completed_packets =
-        nocp_event.nocp_data()[i].num_completed_packets().Read();
+        nocp_event->nocp_data()[i].num_completed_packets().Read();
 
     if (num_completed_packets == 0) {
       continue;
@@ -119,7 +119,7 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
       active_connections_.erase(connection_ptr);
     }
     uint16_t credits_remaining = num_completed_packets - num_reclaimed;
-    nocp_event.nocp_data()[i].num_completed_packets().Write(credits_remaining);
+    nocp_event->nocp_data()[i].num_completed_packets().Write(credits_remaining);
     if (credits_remaining > 0) {
       // Connection has credits remaining, so should past event on to host.
       should_send_to_host = true;
@@ -133,10 +133,9 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
 
 void AclDataChannel::HandleDisconnectionCompleteEvent(
     H4PacketWithHci&& h4_packet) {
-  emboss::DisconnectionCompleteEventWriter dc_event =
-      MakeEmboss<emboss::DisconnectionCompleteEventWriter>(
-          h4_packet.GetHciSpan());
-  if (!dc_event.IsComplete()) {
+  auto dc_event = MakeEmbossView<emboss::DisconnectionCompleteEventWriter>(
+      h4_packet.GetHciSpan());
+  if (!dc_event.ok()) {
     PW_LOG_ERROR(
         "Buffer is too small for DISCONNECTION_COMPLETE event. So will not "
         "process.");
@@ -145,15 +144,15 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
   }
   credit_allocation_mutex_.lock();
 
-  uint16_t conn_handle = dc_event.connection_handle().Read();
+  uint16_t conn_handle = dc_event->connection_handle().Read();
   AclConnection* connection_ptr = FindConnection(conn_handle);
   if (connection_ptr && connection_ptr->num_pending_packets > 0) {
-    emboss::StatusCode status = dc_event.status().Read();
+    emboss::StatusCode status = dc_event->status().Read();
     if (status == emboss::StatusCode::SUCCESS) {
       PW_LOG_WARN(
           "Proxy viewed disconnect (reason: %#.2hhx) for connection %#.4hx "
           "with packets in flight. Releasing associated credits",
-          cpp23::to_underlying(dc_event.reason().Read()),
+          cpp23::to_underlying(dc_event->reason().Read()),
           conn_handle);
       proxy_pending_le_acl_packets_ -= connection_ptr->num_pending_packets;
       active_connections_.erase(connection_ptr);
@@ -190,14 +189,14 @@ bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
   }
   ++proxy_pending_le_acl_packets_;
 
-  emboss::AclDataFrameHeaderView acl_view =
-      MakeEmboss<emboss::AclDataFrameHeaderView>(h4_packet.GetHciSpan());
-  if (!acl_view.Ok()) {
+  auto acl_view =
+      MakeEmbossView<emboss::AclDataFrameHeaderView>(h4_packet.GetHciSpan());
+  if (!acl_view.ok()) {
     PW_LOG_ERROR("Received invalid ACL packet. So will not send.");
     credit_allocation_mutex_.unlock();
     return false;
   }
-  uint16_t handle = acl_view.handle().Read();
+  uint16_t handle = acl_view->handle().Read();
 
   AclConnection* connection_ptr = FindConnection(handle);
   if (!connection_ptr) {

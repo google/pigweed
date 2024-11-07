@@ -18,9 +18,9 @@
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_log/log.h"
+#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
-
 pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
   constexpr uint16_t kMaxAttributeSize =
       H4Storage::GetH4BuffSize() - sizeof(emboss::H4PacketType) -
@@ -47,15 +47,18 @@ pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
   H4PacketWithH4 h4_packet = std::move(*h4_result);
 
   // Write ATT PDU.
-  emboss::AclDataFrameWriter acl =
-      MakeEmboss<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
-  emboss::BFrameWriter l2cap =
-      emboss::MakeBFrameView(acl.payload().BackingStorage().data(),
-                             acl.payload().BackingStorage().SizeInBytes());
-  emboss::AttHandleValueNtfWriter att_notify =
-      emboss::MakeAttHandleValueNtfView(attribute_value.size(),
-                                        l2cap.payload().BackingStorage().data(),
-                                        att_size);
+  PW_TRY_ASSIGN(
+      auto acl,
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan()));
+  PW_TRY_ASSIGN(auto l2cap,
+                MakeEmbossWriter<emboss::BFrameWriter>(
+                    acl.payload().BackingStorage().data(),
+                    acl.payload().BackingStorage().SizeInBytes()));
+  PW_TRY_ASSIGN(auto att_notify,
+                MakeEmbossWriter<emboss::AttHandleValueNtfWriter>(
+                    attribute_value.size(),
+                    l2cap.payload().BackingStorage().data(),
+                    att_size));
   att_notify.attribute_opcode().Write(emboss::AttOpcode::ATT_HANDLE_VALUE_NTF);
   att_notify.attribute_handle().Write(attribute_handle_);
   std::memcpy(att_notify.attribute_value().BackingStorage().data(),
