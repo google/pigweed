@@ -105,6 +105,8 @@ class RpcIngress : public RpcIngressHandler {
 
   const metric::Group& metrics() const { return metrics_; }
 
+  uint32_t num_total_packets() const { return total_packets_.value(); }
+
   uint32_t num_bad_packets() const { return bad_packets_.value(); }
 
   uint32_t num_overflow_channel_ids() const {
@@ -120,6 +122,7 @@ class RpcIngress : public RpcIngressHandler {
   Status ProcessIncomingData(ConstByteSpan buffer) override {
     return decoder_.Decode(buffer, [this](ConstByteSpan packet) {
       const auto packet_meta = rpc::PacketMeta::FromBuffer(packet);
+      total_packets_.Increment();
       if (!packet_meta.ok()) {
         bad_packets_.Increment();
         internal::LogBadPacket();
@@ -149,6 +152,7 @@ class RpcIngress : public RpcIngressHandler {
   std::array<RpcEgressHandler*, kMaxChannelId + 1> channel_egresses_{};
   Decoder decoder_;
   PW_METRIC_GROUP(metrics_, "pw_rpc_transport");
+  PW_METRIC(metrics_, total_packets_, "total_packets", 0u);
   PW_METRIC(metrics_, bad_packets_, "bad_packets", 0u);
   PW_METRIC(metrics_, overflow_channel_ids_, "overflow_channel_ids", 0u);
   PW_METRIC(metrics_, missing_egresses_, "missing_egresses", 0u);

@@ -285,6 +285,8 @@ TEST(RpcEgressIngressTest, HdlcFramingRoundtrip) {
             OkStatus());
   EXPECT_EQ(ingress_a.ProcessIncomingData(transport_b_to_a.buffer()),
             OkStatus());
+  EXPECT_EQ(ingress_a.num_total_packets(), 2u);
+  EXPECT_EQ(ingress_b.num_total_packets(), 2u);
 
   receiver1.done.acquire();
   receiver2.done.acquire();
@@ -308,6 +310,7 @@ TEST(RpcEgressIngressTest, MalformedRpcPacket) {
   EXPECT_EQ(egress.Send(kMalformedPacket), OkStatus());
   EXPECT_EQ(ingress.ProcessIncomingData(transport.buffer()), OkStatus());
 
+  EXPECT_EQ(ingress.num_total_packets(), 1u);
   EXPECT_EQ(ingress.num_bad_packets(), 1u);
   EXPECT_EQ(ingress.num_overflow_channel_ids(), 0u);
   EXPECT_EQ(ingress.num_missing_egresses(), 0u);
@@ -336,6 +339,7 @@ TEST(RpcEgressIngressTest, ChannelIdOverflow) {
 
   EXPECT_EQ(ingress.ProcessIncomingData(transport.buffer()), OkStatus());
 
+  EXPECT_EQ(ingress.num_total_packets(), 1u);
   EXPECT_EQ(ingress.num_bad_packets(), 0u);
   EXPECT_EQ(ingress.num_overflow_channel_ids(), 1u);
   EXPECT_EQ(ingress.num_missing_egresses(), 0u);
@@ -365,6 +369,7 @@ TEST(RpcEgressIngressTest, MissingEgressForIncomingPacket) {
 
   EXPECT_EQ(ingress.ProcessIncomingData(transport.buffer()), OkStatus());
 
+  EXPECT_EQ(ingress.num_total_packets(), 1u);
   EXPECT_EQ(ingress.num_bad_packets(), 0u);
   EXPECT_EQ(ingress.num_overflow_channel_ids(), 0u);
   EXPECT_EQ(ingress.num_missing_egresses(), 1u);
@@ -396,6 +401,7 @@ TEST(RpcEgressIngressTest, EgressSendFailureForIncomingPacket) {
 
   EXPECT_EQ(ingress.ProcessIncomingData(good_transport.buffer()), OkStatus());
 
+  EXPECT_EQ(ingress.num_total_packets(), 1u);
   EXPECT_EQ(ingress.num_bad_packets(), 0u);
   EXPECT_EQ(ingress.num_overflow_channel_ids(), 0u);
   EXPECT_EQ(ingress.num_missing_egresses(), 0u);
