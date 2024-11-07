@@ -135,8 +135,6 @@ class Initiator {
   ///
   /// @param[in] tx_buffer The transmit buffer.
   ///
-  /// @param[out] rx_buffer The receive buffer.
-  ///
   /// @param[in] timeout The maximum duration to block waiting for both
   /// exclusive bus access and the completion of the I2C transaction.
   ///
