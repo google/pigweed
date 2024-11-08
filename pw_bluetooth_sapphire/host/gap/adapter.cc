@@ -180,11 +180,6 @@ class AdapterImpl final : public Adapter {
       adapter_->metrics_.le.start_advertising_events.Add();
     }
 
-    void StopAdvertising(AdvertisementId advertisement_id) override {
-      adapter_->le_advertising_manager_->StopAdvertising(advertisement_id);
-      adapter_->metrics_.le.stop_advertising_events.Add();
-    }
-
     void StartDiscovery(bool active, SessionCallback callback) override {
       adapter_->le_discovery_manager_->StartDiscovery(active,
                                                       std::move(callback));

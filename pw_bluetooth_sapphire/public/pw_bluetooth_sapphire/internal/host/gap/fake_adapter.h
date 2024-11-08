@@ -115,8 +115,6 @@ class FakeAdapter final : public Adapter {
         std::optional<DeviceAddress::Type> address_type,
         AdvertisingStatusCallback status_callback) override;
 
-    void StopAdvertising(AdvertisementId advertisement_id) override {}
-
     void StartDiscovery(bool active, SessionCallback callback) override {}
 
     void EnablePrivacy(bool enabled) override;

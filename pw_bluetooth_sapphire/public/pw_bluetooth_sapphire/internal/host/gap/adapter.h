@@ -242,10 +242,6 @@ class Adapter {
         std::optional<DeviceAddress::Type> address_type,
         AdvertisingStatusCallback status_callback) = 0;
 
-    // Stop advertising the advertisement with the id |advertisement_id|
-    // Returns true if an advertisement was stopped, and false otherwise.
-    virtual void StopAdvertising(AdvertisementId advertisement_id) = 0;
-
     // Starts a new discovery session and reports the result via |callback|. If
     // a session has been successfully started the caller will receive a new
     // LowEnergyDiscoverySession instance via |callback| which it uniquely owns.
