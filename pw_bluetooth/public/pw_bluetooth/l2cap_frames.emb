@@ -122,6 +122,17 @@ enum L2capSignalingPacketCode:
   CREDIT_BASED_RECONFIGURE_REQ    = 0x19
   CREDIT_BASED_RECONFIGURE_RSP    = 0x1A
 
+enum L2capFixedCid:
+  -- Possible fixed values for L2CAP channel ID. See Core Spec v6.0, Vol 3,
+  -- Part A, Table 2.1
+  [maximum_bits: 16]
+  ACL_U_SIGNALING         = 0x0001
+  CONNECTIONLESS          = 0x0002 # Applicable to ACL-U and APB-U
+  ACL_U_SECURITY_MANAGER  = 0x0007
+  LE_U_ATTRIBUTE_PROTOCOL = 0x0004
+  LE_U_SIGNALING          = 0x0005
+  LE_U_SECURITY_MANAGER   = 0x0006
+
 enum L2capFixedPsmCode:
   -- Possible fixed values for PSM or SPSM as assigned by Bluetooth SIG. See
   -- Core Spec v5.4, Vol 3, Part A, Section 4.2 and Assigned_Numbers Section 2.5
