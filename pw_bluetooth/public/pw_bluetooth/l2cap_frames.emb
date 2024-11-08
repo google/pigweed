@@ -142,6 +142,15 @@ enum L2capFixedPsmCode:
   ATT     = 0x001F # PSM
   EATT    = 0x0027 # PSM or SPSM
 
+enum L2capCommandRejectReasonCode:
+  -- Reported in L2CAP_COMMAND_REJECT_RSP packets.
+  [maximum_bits: 16]
+  NOT_UNDERSTOOD   = 0x0000
+  SIG_MTU_EXCEEDED = 0x0001
+  INVALID_CID      = 0x0002
+    -- Typically a channel is invalid because it does not exist.
+
+
 struct CFrame:
   -- A Control Frame (C-frame) contains L2CAP signaling commands exchanged
   -- between peer L2CAP entities. C-frames are exclusively used on the L2CAP
@@ -162,11 +171,60 @@ struct L2capSignalingCommandHeader:
   $next [+2]  UInt                      data_length
 
 
+struct L2capSignalingCommand:
+  -- Generic L2CAP signaling command.
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
+  let data_length = command_header.data_length
+  $next [+data_length]                                 UInt:8[data_length]          payload
+
+
+struct L2capCommandRejectRsp:
+  -- Section 4.1
+  -- An L2CAP_COMMAND_REJECT_RSP packet shall be sent in response to a command
+  -- packet with an unknown command code or when sending the corresponding
+  -- response is inappropriate.
+
+  [requires: command_header.code == L2capSignalingPacketCode.COMMAND_REJECT_RSP]
+
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader   command_header
+
+  $next [+2]                                           L2capCommandRejectReasonCode  reason
+    -- Describes why the request packet was rejected.
+
+  if reason == L2capCommandRejectReasonCode.SIG_MTU_EXCEEDED:
+    6     [+2]                                         UInt                          actual_sig_mtu
+
+  if reason == L2capCommandRejectReasonCode.INVALID_CID:
+    # The local and remote endpoints of the disputed channel relative to the
+    # sender of this L2CAP_COMMAND_REJECT_RSP packet. If the rejected command
+    # contains only one of the channel endpoints, the other one shall be
+    # replaced by the null CID 0x0000.
+    6     [+2]                                         UInt                          local_endpoint
+      -- The destination CID from the rejected command.
+
+    8     [+2]                                         UInt                          remote_endpoint
+      -- The source CID from the rejected command.
+
+
+struct L2capDisconnectionRsp:
+  -- Section 4.7
+  -- L2CAP_DISCONNECTION_RSP packets shall be sent in response to each valid
+  -- L2CAP_DISCONNECTION_REQ packet.
+  [requires: command_header.code == L2capSignalingPacketCode.DISCONNECTION_RSP]
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
+  $next [+2]                                           UInt                         destination_cid
+    -- The channel endpoint on the device sending the packet.
+
+  $next [+2]                                           UInt                         source_cid
+    -- The channel endpoint on the device receiving the packet.
+
+
 struct L2capLeCreditBasedConnectionReq:
   -- Section 4.22
   -- L2CAP_LE_CREDIT_BASED_CONNECTION_REQ packets are sent to create and
   -- configure an L2CAP channel between two devices using LE Credit Based Flow
   -- Control mode.
+  [requires: command_header.code == L2capSignalingPacketCode.LE_CREDIT_BASED_CONNECTION_REQ]
   0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
     -- `code` is expected to be LE_CREDIT_BASED_CONNECTION_REQ
 
@@ -190,3 +248,20 @@ struct L2capLeCreditBasedConnectionReq:
   let max_credit_value = 65535
   $next [+2]                                           UInt                         initial_credits
     [requires: this <= L2capLeCreditBasedConnectionReq.max_credit_value]
+
+
+struct L2capFlowControlCreditInd:
+  -- Section 4.24
+  -- A device shall send an L2CAP_FLOW_CONTROL_CREDIT_IND packet when it is
+  -- capable of receiving additional K-frames (for example after it has
+  -- processed one or more K-frames) in LE Credit Based Flow Control mode and
+  -- Enhanced Credit Based Flow Control mode.
+  [requires: command_header.code == L2capSignalingPacketCode.FLOW_CONTROL_CREDIT_IND]
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
+  $next [+2]                                           UInt                         cid
+    -- The source channel endpoint of the device sending the packet.
+
+  $next [+2]                                           UInt                         credits
+    -- The credit value field represents number of credits the receiving device
+    -- can increment.
+    [requires: 1 <= this <= 65535]
