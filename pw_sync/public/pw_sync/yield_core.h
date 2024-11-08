@@ -22,6 +22,10 @@
 #elif defined(__aarch64__) || defined(__arm__)
 #define PW_SYNC_YIELD_CORE_FOR_SMT() asm volatile("yield" ::: "memory")
 
+#elif defined(__Fuchsia__)
+#include <zircon/syscalls.h>
+#define PW_SYNC_YIELD_CORE_FOR_SMT() zx_thread_legacy_yield(0)
+
 #else
 #error "No processor yield implementation for this architecture."
 
