@@ -205,6 +205,58 @@ struct L2capCommandRejectRsp:
     8     [+2]                                         UInt                          remote_endpoint
       -- The source CID from the rejected command.
 
+struct L2capConnectionReq:
+  -- Section 4.2
+  -- L2CAP_CONNECTION_REQ packets are sent to create an L2CAP channel between
+  -- two devices.
+
+  [requires: command_header.code == L2capSignalingPacketCode.CONNECTION_REQ]
+
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
+  $next [+2]                                           UInt                         psm
+    -- Protocol/Service Multiplexer.
+
+  $next [+2]                                           UInt                         source_cid
+    -- The channel endpoint on the device sending the request.
+
+enum L2capConnectionRspResultCode:
+  -- Reported in L2CAP_CONNECTION_RSP packets.
+  [maximum_bits: 16]
+  SUCCESSFUL                   = 0x0000
+  PENDING                      = 0x0001
+  PSM_NOT_SUPPORTED            = 0x0002
+  SECURITY_BLOCK               = 0x0003
+  NO_RESOURCES_AVAILABLE       = 0x0004
+  INVALID_SOURCE_CID           = 0x0005
+  SOURCE_CID_ALREADY_ALLOCATED = 0x0006
+
+enum L2capConnectionRspStatusCode:
+  -- Reported in L2CAP_CONNECTION_RSP packets if result is PENDING.
+  [maximum_bits: 16]
+  NO_INFORMATION               = 0x0000
+  AUTHENTICATION_PENDING       = 0x0001
+  AUTHORIZATION_PENDING        = 0x0002
+
+struct L2capConnectionRsp:
+  -- Section 4.3
+  -- L2CAP_CONNECTION_RSP packets are sent in response to a L2CAP_CONNECTION_REQ
+  -- packet.
+
+  [requires: command_header.code == L2capSignalingPacketCode.CONNECTION_RSP]
+
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
+  $next [+2]                                           UInt                         destination_cid
+    -- The channel endpoint on the device sending this response packet.
+
+  $next [+2]                                           UInt                         source_cid
+    -- The channel endpoint on the device receiving the packet.
+
+  $next [+2]                                           L2capConnectionRspResultCode result
+    -- The outcome of the connection request.
+
+  if result == L2capConnectionRspResultCode.PENDING:
+    $next [+2]                                         L2capConnectionRspStatusCode status
+      -- The status of the connection.
 
 struct L2capDisconnectionRsp:
   -- Section 4.7
