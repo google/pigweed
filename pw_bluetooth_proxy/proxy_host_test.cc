@@ -1521,6 +1521,23 @@ TEST(DisconnectionCompleteTest, DisconnectionReclaimsCredits) {
       SendDisconnectionCompleteEvent(proxy, capture.connection_handle));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 8);
 
+  // Use 1 credit and reclaim it on a bunch of random channels. Then send
+  // disconnect and ensure it was cleaned up in connections list. The send will
+  // fail if disconnect doesn't cleanup properly.
+  //
+  // We already have an active connection at this point in the test, so loop
+  // over the remaining slots + 1 which would otherwise fail if cleanup wasn't
+  // working right.
+  for (uint16_t i = 0; i < kMaxProxyActiveConnections; ++i) {
+    uint16_t handle = 0x234 + i;
+    EXPECT_TRUE(
+        proxy.SendGattNotify(handle, 1, pw::span(attribute_value)).ok());
+    PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
+        proxy, FlatMap<uint16_t, uint16_t, 1>({{{handle, 1}}})));
+    EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 8);
+    PW_TEST_EXPECT_OK(SendDisconnectionCompleteEvent(proxy, handle));
+  }
+
   // Send Number_of_Completed_Packets event that reports 10 packets, none of
   // which should be reclaimed because this Connection has disconnected. Checks
   // in send_to_host_fn will ensure we have not modified the NOCP event.
@@ -1529,7 +1546,7 @@ TEST(DisconnectionCompleteTest, DisconnectionReclaimsCredits) {
       FlatMap<uint16_t, uint16_t, 1>({{{capture.connection_handle, 10}}})));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 8);
   // NOCP has credits remaining so will be passed on to host.
-  EXPECT_EQ(capture.sends_called, 3);
+  EXPECT_EQ(capture.sends_called, 13);
 }
 
 TEST(DisconnectionCompleteTest, FailedDisconnectionHasNoEffect) {
