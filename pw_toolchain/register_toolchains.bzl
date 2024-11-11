@@ -96,4 +96,12 @@ def register_pigweed_cxx_toolchains(
         tag = "version:2@12.2.MPACBTI-Rel1.1" if not arm_gcc_tag else arm_gcc_tag,
     )
 
+    # TODO: https://pwbug.dev/346388161 - Temporary migration shim.
+    cipd_repository(
+        name = "legacy_gcc_arm_none_eabi_toolchain",
+        build_file = "@pw_toolchain//build_external:gcc_arm_none_eabi.BUILD",
+        path = "fuchsia/third_party/armgcc/${os}-${arch}",
+        tag = "version:2@12.2.MPACBTI-Rel1.1" if not arm_gcc_tag else arm_gcc_tag,
+    )
+
     native.register_toolchains(*toolchains)
