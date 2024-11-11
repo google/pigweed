@@ -15,10 +15,14 @@
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_connection_server.h"
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/adapter_test_fixture.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/types.h"
 
 namespace bthost {
 namespace {
 
+namespace fbt = fuchsia::bluetooth;
 namespace fble = fuchsia::bluetooth::le;
 namespace fbg = fuchsia::bluetooth::gatt2;
 
@@ -40,6 +44,10 @@ class LowEnergyConnectionServerTest
   bt::PeerId peer_id() const { return peer_id_; }
 
   bool server_closed_cb_called() const { return server_closed_cb_called_; }
+
+  bt::hci_spec::ConnectionHandle connection_handle() {
+    return connection_handle_;
+  }
 
  protected:
   void EstablishConnectionAndStartServer() {
@@ -77,6 +85,8 @@ class LowEnergyConnectionServerTest
     std::unique_ptr<bt::gap::LowEnergyConnectionHandle> connection =
         std::move(*conn_result).value();
 
+    connection_handle_ = connection->handle();
+
     // Start our FIDL connection server.
     fidl::InterfaceHandle<fuchsia::bluetooth::le::Connection> handle;
     server_ = std::make_unique<LowEnergyConnectionServer>(
@@ -96,6 +106,7 @@ class LowEnergyConnectionServerTest
   fble::ConnectionPtr client_;
   bool server_closed_cb_called_ = false;
   bt::PeerId peer_id_;
+  bt::hci_spec::ConnectionHandle connection_handle_;
 };
 
 // Tests that want to automatically allocate and start the client and server
@@ -379,6 +390,100 @@ TEST_F(LowEnergyConnectionServerAutoStartTest,
   UnbindClient();
   RunLoopUntilIdle();
   EXPECT_TRUE(server_closed_cb_called());
+}
+
+TEST_F(LowEnergyConnectionServerAutoStartTest, OpenL2capHappyDefault) {
+  constexpr bt::l2cap::Psm kPsm = 15;
+  constexpr bt::l2cap::ChannelParameters kExpectedChannelParameters{
+      .mode = bt::l2cap::CreditBasedFlowControlMode::kLeCreditBasedFlowControl,
+      .max_rx_sdu_size = std::nullopt,
+      .flush_timeout = std::nullopt,
+  };
+
+  l2cap()->ExpectOutboundL2capChannel(
+      connection_handle(), kPsm, 0x40, 0x41, kExpectedChannelParameters);
+
+  std::optional<zx_status_t> error;
+  fbt::ChannelPtr channel_client;
+  channel_client.set_error_handler([&](auto status) { error = status; });
+  auto request = std::move(fble::ConnectionConnectL2capRequest()
+                               .set_parameters(fbt::ChannelParameters())
+                               .set_psm(kPsm)
+                               .set_channel(channel_client.NewRequest()));
+
+  client()->ConnectL2cap(std::move(request));
+  RunLoopUntilIdle();
+  EXPECT_FALSE(error);
+  EXPECT_TRUE(channel_client);
+}
+
+TEST_F(LowEnergyConnectionServerAutoStartTest, OpenL2capHappyParams) {
+  constexpr bt::l2cap::Psm kPsm = 15;
+  constexpr bt::l2cap::ChannelParameters kChannelParameters{
+      .mode = bt::l2cap::CreditBasedFlowControlMode::kLeCreditBasedFlowControl,
+      .max_rx_sdu_size = 32,
+      .flush_timeout = std::nullopt,
+  };
+
+  l2cap()->ExpectOutboundL2capChannel(
+      connection_handle(), kPsm, 0x40, 0x41, kChannelParameters);
+
+  auto params = std::move(
+      fbt::ChannelParameters()
+          .set_channel_mode(fbt::ChannelMode::LE_CREDIT_BASED_FLOW_CONTROL)
+          .set_max_rx_packet_size(*kChannelParameters.max_rx_sdu_size));
+
+  std::optional<zx_status_t> error;
+  fbt::ChannelPtr channel_client;
+  channel_client.set_error_handler([&](auto status) { error = status; });
+  auto request = std::move(fble::ConnectionConnectL2capRequest()
+                               .set_parameters(std::move(params))
+                               .set_psm(kPsm)
+                               .set_channel(channel_client.NewRequest()));
+
+  client()->ConnectL2cap(std::move(request));
+  RunLoopUntilIdle();
+  EXPECT_FALSE(error);
+  EXPECT_TRUE(channel_client);
+}
+
+TEST_F(LowEnergyConnectionServerAutoStartTest, OpenL2capBadMode) {
+  constexpr bt::l2cap::Psm kPsm = 15;
+  auto params = std::move(
+      fbt::ChannelParameters().set_channel_mode(fbt::ChannelMode::BASIC));
+
+  std::optional<zx_status_t> error;
+  fbt::ChannelPtr channel_client;
+  channel_client.set_error_handler([&](auto status) { error = status; });
+  auto request = std::move(fble::ConnectionConnectL2capRequest()
+                               .set_parameters(std::move(params))
+                               .set_psm(kPsm)
+                               .set_channel(channel_client.NewRequest()));
+
+  client()->ConnectL2cap(std::move(request));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(error);
+  EXPECT_EQ(*error, ZX_ERR_INVALID_ARGS);
+  EXPECT_FALSE(channel_client);
+}
+
+TEST_F(LowEnergyConnectionServerAutoStartTest, OpenL2capFailFlushTimeout) {
+  constexpr bt::l2cap::Psm kPsm = 15;
+  auto params = std::move(fbt::ChannelParameters().set_flush_timeout(150));
+
+  std::optional<zx_status_t> error;
+  fbt::ChannelPtr channel_client;
+  channel_client.set_error_handler([&](auto status) { error = status; });
+  auto request = std::move(fble::ConnectionConnectL2capRequest()
+                               .set_parameters(std::move(params))
+                               .set_psm(kPsm)
+                               .set_channel(channel_client.NewRequest()));
+
+  client()->ConnectL2cap(std::move(request));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(error);
+  EXPECT_EQ(*error, ZX_ERR_INVALID_ARGS);
+  EXPECT_FALSE(channel_client);
 }
 
 }  // namespace

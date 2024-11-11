@@ -91,6 +91,7 @@ class FakeAdapter final : public Adapter {
     void OpenL2capChannel(PeerId peer_id,
                           l2cap::Psm,
                           l2cap::ChannelParameters,
+                          sm::SecurityLevel security_level,
                           l2cap::ChannelCallback) override;
 
     void Pair(PeerId peer_id,

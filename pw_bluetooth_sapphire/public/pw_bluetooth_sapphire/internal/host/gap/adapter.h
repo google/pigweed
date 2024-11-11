@@ -166,6 +166,7 @@ class Adapter {
     virtual void OpenL2capChannel(PeerId peer_id,
                                   l2cap::Psm psm,
                                   l2cap::ChannelParameters params,
+                                  sm::SecurityLevel security_level,
                                   l2cap::ChannelCallback cb) = 0;
 
     // Initiates the pairing process. Expected to only be called during

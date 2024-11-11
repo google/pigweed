@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include <fuchsia/bluetooth/bredr/cpp/fidl.h>
+#include <fuchsia/bluetooth/cpp/fidl.h>
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/server_base.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
@@ -22,24 +22,24 @@
 
 namespace bthost {
 
-// BrEdrConnectionServer relays packets and disconnections between the
+// ChannelServer relays packets and disconnections between the
 // Connection FIDL protocol and a corresponding L2CAP channel.
-class BrEdrConnectionServer : public ServerBase<fuchsia::bluetooth::Channel> {
+class ChannelServer : public ServerBase<fuchsia::bluetooth::Channel> {
  public:
   // The number of inbound packets to queue in this class.
   static constexpr size_t kDefaultReceiveQueueLimit = 20;
 
-  // `channel` is the Channel that this Connection corresponds to.
-  // BrEdrConnection server will activate and manage the lifetime of this
-  // chanel. `closed_callback` will be called when either the Connection
+  // `channel` is the Channel that this ChannelServer corresponds to. This
+  // server will activate and manage the lifetime of this channel.
+  // `closed_callback` will be called when either the fuchsia.bluetooth.Channel
   // protocol or the L2CAP channel closes. Returns nullptr on failure (failure
   // to activate the Channel).
-  static std::unique_ptr<BrEdrConnectionServer> Create(
+  static std::unique_ptr<ChannelServer> Create(
       fidl::InterfaceRequest<fuchsia::bluetooth::Channel> request,
       bt::l2cap::Channel::WeakPtr channel,
       fit::callback<void()> closed_callback);
 
-  ~BrEdrConnectionServer() override;
+  ~ChannelServer() override;
 
  private:
   enum class State {
@@ -49,10 +49,9 @@ class BrEdrConnectionServer : public ServerBase<fuchsia::bluetooth::Channel> {
     kDeactivated,
   };
 
-  BrEdrConnectionServer(
-      fidl::InterfaceRequest<fuchsia::bluetooth::Channel> request,
-      bt::l2cap::Channel::WeakPtr channel,
-      fit::callback<void()> closed_callback);
+  ChannelServer(fidl::InterfaceRequest<fuchsia::bluetooth::Channel> request,
+                bt::l2cap::Channel::WeakPtr channel,
+                fit::callback<void()> closed_callback);
 
   // fuchsia::bluetooth::Channel overrides:
   void Send(std::vector<::fuchsia::bluetooth::Packet> packets,
@@ -96,7 +95,7 @@ class BrEdrConnectionServer : public ServerBase<fuchsia::bluetooth::Channel> {
 
   State state_ = State::kActivating;
 
-  WeakSelf<BrEdrConnectionServer> weak_self_;  // Keep last.
+  WeakSelf<ChannelServer> weak_self_;  // Keep last.
 };
 
 }  // namespace bthost

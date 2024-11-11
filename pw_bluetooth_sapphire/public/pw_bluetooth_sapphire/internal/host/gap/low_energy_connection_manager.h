@@ -187,6 +187,7 @@ class LowEnergyConnectionManager final {
   void OpenL2capChannel(PeerId peer_id,
                         l2cap::Psm psm,
                         l2cap::ChannelParameters params,
+                        sm::SecurityLevel security_level,
                         l2cap::ChannelCallback cb);
 
   // TODO(armansito): Add a PeerCache::Observer interface and move these

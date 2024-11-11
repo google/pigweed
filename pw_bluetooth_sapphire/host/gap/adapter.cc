@@ -110,9 +110,10 @@ class AdapterImpl final : public Adapter {
     void OpenL2capChannel(PeerId peer_id,
                           l2cap::Psm psm,
                           l2cap::ChannelParameters params,
+                          sm::SecurityLevel security_level,
                           l2cap::ChannelCallback cb) override {
       adapter_->le_connection_manager_->OpenL2capChannel(
-          peer_id, psm, params, std::move(cb));
+          peer_id, psm, params, security_level, std::move(cb));
     }
 
     void Pair(PeerId peer_id,

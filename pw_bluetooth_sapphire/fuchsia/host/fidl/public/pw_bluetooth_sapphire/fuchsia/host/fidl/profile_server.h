@@ -17,7 +17,7 @@
 #include <fuchsia/bluetooth/bredr/cpp/fidl.h>
 
 #include "lib/fidl/cpp/binding.h"
-#include "pw_bluetooth_sapphire/fuchsia/host/fidl/bredr_connection_server.h"
+#include "pw_bluetooth_sapphire/fuchsia/host/fidl/channel_server.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/server_base.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/socket/socket_factory.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
@@ -282,8 +282,8 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   // Create an Connection server for the given channel and set up callbacks.
   // Returns the client end of the channel, or null on failure.
   std::optional<fidl::InterfaceHandle<fuchsia::bluetooth::Channel>>
-  BindBrEdrConnectionServer(bt::l2cap::Channel::WeakPtr channel,
-                            fit::callback<void()> closed_callback);
+  BindChannelServer(bt::l2cap::Channel::WeakPtr channel,
+                    fit::callback<void()> closed_callback);
 
   // Create a FIDL Channel from an l2cap::Channel. A Connection relay is created
   // from |channel| and returned in the FIDL Channel.
@@ -367,8 +367,8 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   bt::socket::SocketFactory<bt::l2cap::Channel> l2cap_socket_factory_;
 
   std::unordered_map<bt::l2cap::Channel::UniqueId,
-                     std::unique_ptr<BrEdrConnectionServer>>
-      bredr_connection_servers_;
+                     std::unique_ptr<ChannelServer>>
+      channel_servers_;
 
   std::unordered_map<ScoConnectionServer*, std::unique_ptr<ScoConnectionServer>>
       sco_connection_servers_;

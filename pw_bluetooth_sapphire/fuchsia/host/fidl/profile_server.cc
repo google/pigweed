@@ -1258,21 +1258,20 @@ ProfileServer::BindAudioOffloadExtServer(bt::l2cap::Channel::WeakPtr channel) {
 }
 
 std::optional<fidl::InterfaceHandle<fuchsia::bluetooth::Channel>>
-ProfileServer::BindBrEdrConnectionServer(
-    bt::l2cap::Channel::WeakPtr channel,
-    fit::callback<void()> closed_callback) {
+ProfileServer::BindChannelServer(bt::l2cap::Channel::WeakPtr channel,
+                                 fit::callback<void()> closed_callback) {
   fidl::InterfaceHandle<fbt::Channel> client;
 
   bt::l2cap::Channel::UniqueId unique_id = channel->unique_id();
 
-  std::unique_ptr<bthost::BrEdrConnectionServer> connection_server =
-      BrEdrConnectionServer::Create(
+  std::unique_ptr<bthost::ChannelServer> connection_server =
+      ChannelServer::Create(
           client.NewRequest(), std::move(channel), std::move(closed_callback));
   if (!connection_server) {
     return std::nullopt;
   }
 
-  bredr_connection_servers_[unique_id] = std::move(connection_server);
+  channel_servers_[unique_id] = std::move(connection_server);
   return client;
 }
 
@@ -1291,7 +1290,7 @@ std::optional<fuchsia::bluetooth::bredr::Channel> ProfileServer::ChannelToFidl(
            "fidl",
            "Channel closed_cb called, destroying servers (unique_id: %d)",
            unique_id);
-    bredr_connection_servers_.erase(unique_id);
+    channel_servers_.erase(unique_id);
     l2cap_parameters_ext_servers_.erase(unique_id);
     audio_direction_ext_servers_.erase(unique_id);
     audio_offload_ext_servers_.erase(unique_id);
@@ -1303,7 +1302,7 @@ std::optional<fuchsia::bluetooth::bredr::Channel> ProfileServer::ChannelToFidl(
     fidl_chan.set_socket(std::move(sock));
   } else {
     std::optional<fidl::InterfaceHandle<fuchsia::bluetooth::Channel>>
-        connection = BindBrEdrConnectionServer(channel, std::move(closed_cb));
+        connection = BindChannelServer(channel, std::move(closed_cb));
     if (!connection) {
       return std::nullopt;
     }

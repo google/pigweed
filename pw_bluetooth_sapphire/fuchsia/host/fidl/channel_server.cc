@@ -12,18 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_sapphire/fuchsia/host/fidl/bredr_connection_server.h"
+#include "pw_bluetooth_sapphire/fuchsia/host/fidl/channel_server.h"
 
 #include <algorithm>
-namespace fidlbredr = fuchsia::bluetooth::bredr;
 namespace fidlbt = fuchsia::bluetooth;
 
 namespace bthost {
 
-BrEdrConnectionServer::BrEdrConnectionServer(
-    fidl::InterfaceRequest<fidlbt::Channel> request,
-    bt::l2cap::Channel::WeakPtr channel,
-    fit::callback<void()> closed_callback)
+ChannelServer::ChannelServer(fidl::InterfaceRequest<fidlbt::Channel> request,
+                             bt::l2cap::Channel::WeakPtr channel,
+                             fit::callback<void()> closed_callback)
     : ServerBase(this, std::move(request)),
       channel_(std::move(channel)),
       closed_cb_(std::move(closed_callback)),
@@ -32,15 +30,15 @@ BrEdrConnectionServer::BrEdrConnectionServer(
       [this](zx_status_t /*status*/) { OnProtocolClosed(); });
 }
 
-BrEdrConnectionServer::~BrEdrConnectionServer() {
+ChannelServer::~ChannelServer() {
   if (state_ != State::kDeactivated) {
     bt_log(TRACE, "fidl", "Deactivating channel %u in dtor", channel_->id());
     Deactivate();
   }
 }
 
-void BrEdrConnectionServer::Send(
-    std::vector<::fuchsia::bluetooth::Packet> packets, SendCallback callback) {
+void ChannelServer::Send(std::vector<::fuchsia::bluetooth::Packet> packets,
+                         SendCallback callback) {
   for (auto& fidl_packet : packets) {
     std::vector<uint8_t>& packet = fidl_packet.packet;
     if (packet.size() > channel_->max_tx_sdu_size()) {
@@ -72,7 +70,7 @@ void BrEdrConnectionServer::Send(
   callback(fidlbt::Channel_Send_Result::WithResponse(std::move(response)));
 }
 
-void BrEdrConnectionServer::Receive(ReceiveCallback callback) {
+void ChannelServer::Receive(ReceiveCallback callback) {
   if (receive_cb_) {
     binding()->Close(ZX_ERR_BAD_STATE);
     OnProtocolClosed();
@@ -82,7 +80,7 @@ void BrEdrConnectionServer::Receive(ReceiveCallback callback) {
   ServiceReceiveQueue();
 }
 
-void BrEdrConnectionServer::WatchChannelParameters(
+void ChannelServer::WatchChannelParameters(
     WatchChannelParametersCallback callback) {
   PW_CHECK(
       !pending_watch_channel_parameters_.has_value(),
@@ -90,15 +88,15 @@ void BrEdrConnectionServer::WatchChannelParameters(
   pending_watch_channel_parameters_ = std::move(callback);
 }
 
-void BrEdrConnectionServer::handle_unknown_method(uint64_t ordinal,
-                                                  bool method_has_response) {
+void ChannelServer::handle_unknown_method(uint64_t ordinal,
+                                          bool method_has_response) {
   bt_log(WARN,
          "fidl",
-         "BrEdrConnectionServer: received unknown method (ordinal: %lu)",
+         "ChannelServer: received unknown method (ordinal: %lu)",
          ordinal);
 }
 
-bool BrEdrConnectionServer::Activate() {
+bool ChannelServer::Activate() {
   PW_CHECK(state_ == State::kActivating);
 
   WeakPtr self = weak_self_.GetWeakPtr();
@@ -135,7 +133,7 @@ bool BrEdrConnectionServer::Activate() {
   return true;
 }
 
-void BrEdrConnectionServer::Deactivate() {
+void ChannelServer::Deactivate() {
   PW_CHECK(state_ != State::kDeactivated);
   state_ = State::kDeactivating;
 
@@ -153,7 +151,7 @@ void BrEdrConnectionServer::Deactivate() {
   state_ = State::kDeactivated;
 }
 
-void BrEdrConnectionServer::OnChannelDataReceived(bt::ByteBufferPtr rx_data) {
+void ChannelServer::OnChannelDataReceived(bt::ByteBufferPtr rx_data) {
   // Note: kActivating is deliberately permitted, as ChannelImpl::Activate()
   // will synchronously deliver any queued frames.
   PW_CHECK(state_ != State::kDeactivated);
@@ -187,7 +185,7 @@ void BrEdrConnectionServer::OnChannelDataReceived(bt::ByteBufferPtr rx_data) {
   ServiceReceiveQueue();
 }
 
-void BrEdrConnectionServer::OnChannelClosed() {
+void ChannelServer::OnChannelClosed() {
   if (state_ == State::kDeactivating) {
     bt_log(DEBUG,
            "fidl",
@@ -200,18 +198,16 @@ void BrEdrConnectionServer::OnChannelClosed() {
   DeactivateAndRequestDestruction();
 }
 
-void BrEdrConnectionServer::OnProtocolClosed() {
-  DeactivateAndRequestDestruction();
-}
+void ChannelServer::OnProtocolClosed() { DeactivateAndRequestDestruction(); }
 
-void BrEdrConnectionServer::DeactivateAndRequestDestruction() {
+void ChannelServer::DeactivateAndRequestDestruction() {
   Deactivate();
   // closed_cb_ is expected to destroy `this`, so move the callback first.
   auto closed_cb = std::move(closed_cb_);
   closed_cb();
 }
 
-void BrEdrConnectionServer::ServiceReceiveQueue() {
+void ChannelServer::ServiceReceiveQueue() {
   if (!receive_cb_ || receive_queue_.empty()) {
     return;
   }
@@ -225,7 +221,7 @@ void BrEdrConnectionServer::ServiceReceiveQueue() {
   receive_cb_ = nullptr;
 }
 
-std::unique_ptr<BrEdrConnectionServer> BrEdrConnectionServer::Create(
+std::unique_ptr<ChannelServer> ChannelServer::Create(
     fidl::InterfaceRequest<fidlbt::Channel> request,
     bt::l2cap::Channel::WeakPtr channel,
     fit::callback<void()> closed_callback) {
@@ -233,7 +229,7 @@ std::unique_ptr<BrEdrConnectionServer> BrEdrConnectionServer::Create(
     return nullptr;
   }
 
-  std::unique_ptr<BrEdrConnectionServer> server(new BrEdrConnectionServer(
+  std::unique_ptr<ChannelServer> server(new ChannelServer(
       std::move(request), std::move(channel), std::move(closed_callback)));
 
   if (!server->Activate()) {

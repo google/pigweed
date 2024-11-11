@@ -14,13 +14,77 @@
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_connection_server.h"
 
+#include <fuchsia/bluetooth/cpp/fidl.h>
 #include <pw_status/status.h>
+#include <pw_status/try.h>
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
+
+namespace fbt = fuchsia::bluetooth;
+namespace fbg = fuchsia::bluetooth::gatt2;
 
 namespace bthost {
+namespace {
 
-namespace fbg = fuchsia::bluetooth::gatt2;
+pw::Result<bt::l2cap::CreditBasedFlowControlMode> ConvertModeFromFidl(
+    fbt::ChannelMode mode) {
+  switch (mode) {
+    case fbt::ChannelMode::LE_CREDIT_BASED_FLOW_CONTROL:
+      return bt::l2cap::CreditBasedFlowControlMode::kLeCreditBasedFlowControl;
+    case fbt::ChannelMode::ENHANCED_CREDIT_BASED_FLOW_CONTROL:
+      return bt::l2cap::CreditBasedFlowControlMode::
+          kEnhancedCreditBasedFlowControl;
+    default:
+      return pw::Status::Unimplemented();
+  }
+}
+
+pw::Result<bt::l2cap::ChannelParameters> ConvertParamsFromFidl(
+    const fbt::ChannelParameters& fidl) {
+  bt::l2cap::ChannelParameters params;
+
+  if (fidl.has_flush_timeout()) {
+    // Request included parameters that must not be set for an LE L2CAP channel.
+    return pw::Status::InvalidArgument();
+  }
+
+  if (fidl.has_channel_mode()) {
+    PW_TRY_ASSIGN(params.mode, ConvertModeFromFidl(fidl.channel_mode()));
+  } else {
+    params.mode =
+        bt::l2cap::CreditBasedFlowControlMode::kLeCreditBasedFlowControl;
+  }
+
+  if (fidl.has_max_rx_packet_size()) {
+    params.max_rx_sdu_size = fidl.max_rx_packet_size();
+  }
+
+  return params;
+}
+
+bt::sm::SecurityLevel ConvertSecurityRequirementsFromFidl(
+    const fbt::ChannelParameters& fidl) {
+  bt::sm::SecurityLevel security_level = bt::sm::SecurityLevel::kEncrypted;
+
+  if (!fidl.has_security_requirements()) {
+    return security_level;
+  }
+
+  auto& security_reqs = fidl.security_requirements();
+  if (security_reqs.has_authentication_required() &&
+      security_reqs.authentication_required()) {
+    security_level = bt::sm::SecurityLevel::kAuthenticated;
+  }
+  if (security_reqs.has_secure_connections_required() &&
+      security_reqs.secure_connections_required()) {
+    security_level = bt::sm::SecurityLevel::kSecureAuthenticated;
+  }
+  return security_level;
+}
+
+}  // namespace
 
 LowEnergyConnectionServer::LowEnergyConnectionServer(
     bt::gap::Adapter::WeakPtr adapter,
@@ -33,7 +97,8 @@ LowEnergyConnectionServer::LowEnergyConnectionServer(
       closed_handler_(std::move(closed_cb)),
       peer_id_(conn_->peer_identifier()),
       adapter_(std::move(adapter)),
-      gatt_(std::move(gatt)) {
+      gatt_(std::move(gatt)),
+      weak_self_(this) {
   PW_DCHECK(conn_);
 
   set_error_handler([this](zx_status_t) { OnClosed(); });
@@ -225,10 +290,88 @@ void LowEnergyConnectionServer::GetCodecLocalDelayRange(
 }
 
 void LowEnergyConnectionServer::ConnectL2cap(
-    fuchsia::bluetooth::le::ConnectionConnectL2capRequest parameters) {
-  // Temporarily log and close the binding until implemented.
-  bt_log(WARN, "fidl", "ConnectL2cap not implemented");
-  binding()->Close(ZX_ERR_NOT_SUPPORTED);
+    fuchsia::bluetooth::le::ConnectionConnectL2capRequest request) {
+  // Make available in callback below.
+  constexpr auto kFuncName = __FUNCTION__;
+
+  if (!request.has_channel()) {
+    bt_log(WARN,
+           "fidl",
+           "%s: No channel request, cannot fulfill call.",
+           kFuncName);
+    return;
+  }
+
+  if (!request.has_psm()) {
+    bt_log(ERROR, "fidl", "%s: missing psm.", kFuncName);
+    request.mutable_channel()->Close(ZX_ERR_INVALID_ARGS);
+    return;
+  }
+
+  if (!request.has_parameters()) {
+    bt_log(DEBUG,
+           "fidl",
+           "%s: No parameters provided, using default parameters.",
+           kFuncName);
+  }
+
+  auto parameters = ConvertParamsFromFidl(*request.mutable_parameters());
+  if (!parameters.ok()) {
+    bt_log(ERROR, "fidl", "%s: Parameters invalid.", kFuncName);
+    request.mutable_channel()->Close(ZX_ERR_INVALID_ARGS);
+    return;
+  }
+
+  bt::sm::SecurityLevel security_level =
+      ConvertSecurityRequirementsFromFidl(*request.mutable_parameters());
+  auto cb = [self = weak_self_.GetWeakPtr(),
+             request = std::move(*request.mutable_channel())](
+                bt::l2cap::Channel::WeakPtr channel) mutable {
+    if (!self.is_alive()) {
+      bt_log(
+          WARN,
+          "fidl",
+          "%s (cb): Connection server was destroyed before callback completed.",
+          kFuncName);
+      request.Close(ZX_ERR_INTERNAL);
+      return;
+    }
+    self->ServeChannel(std::move(channel), std::move(request));
+  };
+
+  PW_CHECK(adapter_.is_alive());
+  adapter_->le()->OpenL2capChannel(
+      peer_id_, request.psm(), *parameters, security_level, std::move(cb));
+}
+
+void LowEnergyConnectionServer::ServeChannel(
+    bt::l2cap::Channel::WeakPtr channel,
+    fidl::InterfaceRequest<fuchsia::bluetooth::Channel> request) {
+  if (!channel.is_alive()) {
+    bt_log(WARN,
+           "fidl",
+           "%s: Channel was destroyed before it could be served.",
+           __FUNCTION__);
+    request.Close(ZX_ERR_INTERNAL);
+  }
+
+  bt::l2cap::Channel::UniqueId unique_id = channel->unique_id();
+
+  auto on_close = [this, unique_id]() { channel_servers_.erase(unique_id); };
+
+  auto server = ChannelServer::Create(
+      std::move(request), std::move(channel), std::move(on_close));
+
+  if (!server) {
+    bt_log(ERROR,
+           "fidl",
+           "%s: Channel server could not be created.",
+           __FUNCTION__);
+    request.Close(ZX_ERR_INTERNAL);
+    return;
+  }
+
+  channel_servers_[unique_id] = std::move(server);
 }
 
 }  // namespace bthost

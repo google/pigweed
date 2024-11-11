@@ -35,6 +35,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/error.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/util.h"
@@ -468,6 +469,7 @@ void LowEnergyConnectionManager::OpenL2capChannel(
     PeerId peer_id,
     l2cap::Psm psm,
     l2cap::ChannelParameters params,
+    sm::SecurityLevel security_level,
     l2cap::ChannelCallback cb) {
   auto connection_iterator = connections_.find(peer_id);
   if (connection_iterator == connections_.end()) {
@@ -481,7 +483,38 @@ void LowEnergyConnectionManager::OpenL2capChannel(
 
   auto& connection = connection_iterator->second;
   PW_DCHECK(connection);
-  connection->OpenL2capChannel(psm, params, std::move(cb));
+
+  auto pairing_cb = [connection_weak = connection->GetWeakPtr(),
+                     open_l2cap_cb = std::move(cb),
+                     peer_id,
+                     psm,
+                     params](sm::Result<> result) mutable {
+    if (!connection_weak.is_alive()) {
+      bt_log(INFO,
+             "gap-le",
+             "can't open l2cap channel: connection destroyed before pairing "
+             "completed (peer: %s)",
+             bt_str(peer_id));
+      open_l2cap_cb(l2cap::Channel::WeakPtr());
+      return;
+    }
+
+    if (result.is_error()) {
+      bt_log(
+          WARN,
+          "gap-le",
+          "can't open l2cap channel: pairing failed with error: %s (peer: %s)",
+          bt_str(result.error_value()),
+          bt_str(peer_id));
+      open_l2cap_cb(l2cap::Channel::WeakPtr());
+      return;
+    }
+
+    connection_weak->OpenL2capChannel(psm, params, std::move(open_l2cap_cb));
+  };
+
+  connection->UpgradeSecurity(
+      security_level, connection->bondable_mode(), std::move(pairing_cb));
 }
 
 void LowEnergyConnectionManager::SetDisconnectCallbackForTesting(

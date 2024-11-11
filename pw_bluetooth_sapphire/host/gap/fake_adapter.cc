@@ -121,6 +121,7 @@ void FakeAdapter::FakeLowEnergy::OpenL2capChannel(
     PeerId peer_id,
     l2cap::Psm psm,
     l2cap::ChannelParameters params,
+    sm::SecurityLevel,
     l2cap::ChannelCallback cb) {
   l2cap::ChannelInfo info(
       params.mode.value_or(

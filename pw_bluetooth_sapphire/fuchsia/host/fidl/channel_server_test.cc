@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_sapphire/fuchsia/host/fidl/bredr_connection_server.h"
+#include "pw_bluetooth_sapphire/fuchsia/host/fidl/channel_server.h"
 
 #include <gmock/gmock.h>
 
@@ -29,9 +29,9 @@ namespace fbt = fuchsia::bluetooth;
 namespace bthost {
 namespace {
 
-class BrEdrConnectionServerTest : public bt::testing::TestLoopFixture {
+class ChannelServerTest : public bt::testing::TestLoopFixture {
  public:
-  BrEdrConnectionServerTest()
+  ChannelServerTest()
       : fake_chan_(
             /*id=*/1, /*remote_id=*/2, /*handle=*/3, bt::LinkType::kACL) {}
 
@@ -41,14 +41,13 @@ class BrEdrConnectionServerTest : public bt::testing::TestLoopFixture {
   FakeChannel fake_chan_;
 };
 
-class BrEdrConnectionServerChannelActivatedTest
-    : public BrEdrConnectionServerTest {
+class ChannelServerChannelActivatedTest : public ChannelServerTest {
  public:
   void SetUp() override {
-    BrEdrConnectionServerTest::SetUp();
+    ChannelServerTest::SetUp();
     fidl::InterfaceHandle<Channel> handle;
     auto closed_cb = [this]() { server_closed_ = true; };
-    server_ = BrEdrConnectionServer::Create(
+    server_ = ChannelServer::Create(
         handle.NewRequest(), fake_chan().AsWeakPtr(), std::move(closed_cb));
     ASSERT_TRUE(server_);
     ASSERT_TRUE(fake_chan().activated());
@@ -56,7 +55,7 @@ class BrEdrConnectionServerChannelActivatedTest
   }
 
   void TearDown() override {
-    BrEdrConnectionServerTest::TearDown();
+    ChannelServerTest::TearDown();
     if (client_.is_bound()) {
       client_.Unbind();
     }
@@ -72,11 +71,11 @@ class BrEdrConnectionServerChannelActivatedTest
 
  private:
   bool server_closed_ = false;
-  std::unique_ptr<BrEdrConnectionServer> server_;
+  std::unique_ptr<ChannelServer> server_;
   fidl::InterfacePtr<Channel> client_;
 };
 
-TEST_F(BrEdrConnectionServerChannelActivatedTest, SendTwoPackets) {
+TEST_F(ChannelServerChannelActivatedTest, SendTwoPackets) {
   std::vector<bt::ByteBufferPtr> sent_packets;
   auto chan_send_cb = [&](bt::ByteBufferPtr buffer) {
     sent_packets.push_back(std::move(buffer));
@@ -100,7 +99,7 @@ TEST_F(BrEdrConnectionServerChannelActivatedTest, SendTwoPackets) {
   EXPECT_THAT(*sent_packets[1], bt::BufferEq(packet_1));
 }
 
-TEST_F(BrEdrConnectionServerChannelActivatedTest, SendTwoPacketsSeparately) {
+TEST_F(ChannelServerChannelActivatedTest, SendTwoPacketsSeparately) {
   std::vector<bt::ByteBufferPtr> sent_packets;
   auto chan_send_cb = [&](bt::ByteBufferPtr buffer) {
     sent_packets.push_back(std::move(buffer));
@@ -133,8 +132,7 @@ TEST_F(BrEdrConnectionServerChannelActivatedTest, SendTwoPacketsSeparately) {
   EXPECT_THAT(*sent_packets[1], bt::BufferEq(packet_1));
 }
 
-TEST_F(BrEdrConnectionServerChannelActivatedTest,
-       SendTooLargePacketDropsPacket) {
+TEST_F(ChannelServerChannelActivatedTest, SendTooLargePacketDropsPacket) {
   std::vector<bt::ByteBufferPtr> sent_packets;
   auto chan_send_cb = [&](bt::ByteBufferPtr buffer) {
     sent_packets.push_back(std::move(buffer));
@@ -155,18 +153,15 @@ TEST_F(BrEdrConnectionServerChannelActivatedTest,
   ASSERT_EQ(sent_packets.size(), 0u);
 }
 
-TEST_F(BrEdrConnectionServerChannelActivatedTest,
-       ReceiveManyPacketsAndDropSome) {
-  for (uint8_t i = 0; i < 2 * BrEdrConnectionServer::kDefaultReceiveQueueLimit;
-       i++) {
+TEST_F(ChannelServerChannelActivatedTest, ReceiveManyPacketsAndDropSome) {
+  for (uint8_t i = 0; i < 2 * ChannelServer::kDefaultReceiveQueueLimit; i++) {
     bt::StaticByteBuffer packet(i, 0x01, 0x02);
     fake_chan().Receive(packet);
   }
   RunLoopUntilIdle();
 
   std::vector<std::vector<fbt::Packet>> packets;
-  for (uint8_t i = 0; i < BrEdrConnectionServer::kDefaultReceiveQueueLimit;
-       i++) {
+  for (uint8_t i = 0; i < ChannelServer::kDefaultReceiveQueueLimit; i++) {
     client()->Receive(
         [&packets](::fuchsia::bluetooth::Channel_Receive_Result result) {
           ASSERT_TRUE(result.is_response());
@@ -178,9 +173,8 @@ TEST_F(BrEdrConnectionServerChannelActivatedTest,
 
   // Some packets were dropped, so only the packets under the queue limit should
   // be received.
-  size_t first_packet_in_q = BrEdrConnectionServer::kDefaultReceiveQueueLimit;
-  for (size_t i = 0; i < BrEdrConnectionServer::kDefaultReceiveQueueLimit;
-       i++) {
+  size_t first_packet_in_q = ChannelServer::kDefaultReceiveQueueLimit;
+  for (size_t i = 0; i < ChannelServer::kDefaultReceiveQueueLimit; i++) {
     std::vector<uint8_t> packet{
         static_cast<uint8_t>(first_packet_in_q + i), 0x01, 0x02};
     ASSERT_EQ(packets[i].size(), 1u);
@@ -188,7 +182,7 @@ TEST_F(BrEdrConnectionServerChannelActivatedTest,
   }
 }
 
-TEST_F(BrEdrConnectionServerChannelActivatedTest,
+TEST_F(ChannelServerChannelActivatedTest,
        ReceiveTwiceWithoutResponseClosesConnection) {
   std::optional<zx_status_t> error;
   client().set_error_handler([&](zx_status_t status) { error = status; });
@@ -202,7 +196,7 @@ TEST_F(BrEdrConnectionServerChannelActivatedTest,
   client().set_error_handler([](zx_status_t status) {});
 }
 
-TEST_F(BrEdrConnectionServerChannelActivatedTest, ChannelCloses) {
+TEST_F(ChannelServerChannelActivatedTest, ChannelCloses) {
   std::optional<zx_status_t> error;
   client().set_error_handler([&](zx_status_t status) { error = status; });
   fake_chan().Close();
@@ -212,26 +206,25 @@ TEST_F(BrEdrConnectionServerChannelActivatedTest, ChannelCloses) {
   EXPECT_EQ(error.value(), ZX_ERR_CONNECTION_RESET);
 }
 
-TEST_F(BrEdrConnectionServerChannelActivatedTest, ClientCloses) {
+TEST_F(ChannelServerChannelActivatedTest, ClientCloses) {
   client().Unbind();
   RunLoopUntilIdle();
   EXPECT_TRUE(server_closed());
   EXPECT_FALSE(fake_chan().activated());
 }
 
-TEST_F(BrEdrConnectionServerTest, ActivateFails) {
+TEST_F(ChannelServerTest, ActivateFails) {
   fake_chan().set_activate_fails(true);
   fidl::InterfaceHandle<Channel> handle;
   bool server_closed = false;
   auto closed_cb = [&]() { server_closed = true; };
-  std::unique_ptr<BrEdrConnectionServer> server = BrEdrConnectionServer::Create(
+  std::unique_ptr<ChannelServer> server = ChannelServer::Create(
       handle.NewRequest(), fake_chan().AsWeakPtr(), std::move(closed_cb));
   EXPECT_FALSE(server);
   EXPECT_FALSE(server_closed);
 }
 
-TEST_F(BrEdrConnectionServerChannelActivatedTest,
-       DeactivateOnServerDestruction) {
+TEST_F(ChannelServerChannelActivatedTest, DeactivateOnServerDestruction) {
   EXPECT_TRUE(fake_chan().activated());
   DestroyServer();
   EXPECT_FALSE(fake_chan().activated());
