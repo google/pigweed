@@ -157,6 +157,11 @@ emboss_cc_library(pw_bluetooth.emboss_l2cap_frames
     public/pw_bluetooth/l2cap_frames.emb
 )
 
+emboss_cc_library(pw_bluetooth.emboss_rfcomm_frames
+  SOURCES
+    public/pw_bluetooth/rfcomm_frames.emb
+)
+
 emboss_cc_library(pw_bluetooth.emboss_att
   SOURCES
     public/pw_bluetooth/att.emb
@@ -197,6 +202,7 @@ pw_target_link_targets("pw_bluetooth._public_config"
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
     pw_bluetooth.emboss_l2cap_frames
+    pw_bluetooth.emboss_rfcomm_frames
 )
 
 pw_add_test(pw_bluetooth.emboss_test
@@ -210,6 +216,7 @@ pw_add_test(pw_bluetooth.emboss_test
     pw_bluetooth.emboss_hci_group
     pw_bluetooth.emboss_hci_test
     pw_bluetooth.emboss_l2cap_frames
+    pw_bluetooth.emboss_rfcomm_frames
     pw_third_party.fuchsia.stdcompat
   GROUPS
     modules

@@ -29,6 +29,7 @@
 #include "pw_bluetooth/hci_test.emb.h"
 #include "pw_bluetooth/hci_android.emb.h"    // IWYU pragma: keep
 #include "pw_bluetooth/l2cap_frames.emb.h"  // IWYU pragma: keep
+#include "pw_bluetooth/rfcomm_frames.emb.h"  // IWYU pragma: keep
 // clang-format on
 
 namespace pw::bluetooth {

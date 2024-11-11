@@ -167,6 +167,11 @@ if (dir_pw_third_party_emboss != "") {
     source = "public/pw_bluetooth/l2cap_frames.emb"
   }
 
+  emboss_cc_library("emboss_rfcomm_frames") {
+    public_configs = [ ":emboss_include_path" ]
+    source = "public/pw_bluetooth/rfcomm_frames.emb"
+  }
+
   group("emboss_hci_group") {
     public_configs = [ ":emboss_include_path" ]
     public_deps = [
@@ -198,6 +203,8 @@ if (dir_pw_third_party_emboss != "") {
   group("emboss_hci_group") {
   }
   group("emboss_l2cap_frames") {
+  }
+  group("emboss_rfcomm_frames") {
   }
 }
 
@@ -254,6 +261,7 @@ pw_test("emboss_test") {
     ":emboss_hci_group",
     ":emboss_hci_test",
     ":emboss_l2cap_frames",
+    ":emboss_rfcomm_frames",
     "$dir_pw_third_party/fuchsia:stdcompat",
   ]
 }
