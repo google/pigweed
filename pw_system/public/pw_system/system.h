@@ -14,7 +14,6 @@
 #pragma once
 
 #include <tuple>
-#include <type_traits>
 
 #include "pw_allocator/allocator.h"
 #include "pw_channel/channel.h"
@@ -36,15 +35,6 @@ system::AsyncCore& System();
 /// Starts running `pw_system:async` with the provided IO channel. This function
 /// never returns.
 [[noreturn]] void SystemStart(channel::ByteReaderWriter& io_channel);
-
-// TODO: b/378598104 - Remove this overload after updating users to call
-// `.channel()` as needed.
-template <typename ChannelImpl,
-          typename = std::enable_if_t<
-              std::is_base_of_v<channel::AnyChannel, ChannelImpl>>>
-[[noreturn]] void SystemStart(ChannelImpl& io_channel_impl) {
-  SystemStart(io_channel_impl.channel());
-}
 
 namespace system {
 
