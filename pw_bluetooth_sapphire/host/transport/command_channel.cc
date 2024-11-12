@@ -27,19 +27,6 @@
 
 namespace bt::hci {
 
-namespace {
-
-// Helper for std::variant
-template <class... Ts>
-struct overloaded : Ts... {
-  using Ts::operator()...;
-};
-// explicit deduction guide (not needed in C++20)
-template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
-
-}  // namespace
-
 static bool IsAsync(hci_spec::EventCode code) {
   return code != hci_spec::kCommandCompleteEventCode &&
          code != hci_spec::kCommandStatusEventCode;
