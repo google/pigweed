@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -16,22 +16,6 @@ load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = ["//visibility:public"])
-
-licenses(["notice"])
-
-cc_library(
-    name = "pre_init",
-    srcs = [
-        "boot.cc",
-        "vector_table.c",
-    ],
-    deps = [
-        "//pw_boot",
-        "//pw_boot_cortex_m",
-        "//pw_preprocessor",
-        "//pw_sys_io_baremetal_lm3s6965evb",
-    ],
-)
 
 sphinx_docs_library(
     name = "docs",

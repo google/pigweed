@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//pw_build:pw_copy_and_patch_file.bzl", "pw_copy_and_patch_file")
@@ -268,4 +270,13 @@ cc_library(
     deps = [
         "@pico-sdk//src/rp2_common/pico_standard_link:default_flash_region",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "target_docs.rst",
+        "upstream.rst",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
 )
