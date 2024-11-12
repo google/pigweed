@@ -16,7 +16,6 @@
 #include <optional>
 
 #include "pw_bluetooth/types.h"
-#include "pw_containers/vector.h"
 
 namespace pw::bluetooth {
 

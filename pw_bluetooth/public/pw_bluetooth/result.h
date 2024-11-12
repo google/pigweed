@@ -20,6 +20,7 @@
 
 namespace pw::bluetooth {
 
+// Deprecated. Use pw::expected instead.
 // A Result represents the result of an operation which can fail. If it
 // represents an error, it contains an error value. If it represents success, it
 // contains zero or one success value.
@@ -49,6 +50,7 @@ class [[nodiscard]] Result<E> {
   std::optional<E> error_;
 };
 
+// Deprecated. Use pw::expected instead.
 // Result specialization for returning some data (T) or an error (E).
 template <typename E, typename T>
 class [[nodiscard]] Result<E, T> {

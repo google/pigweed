@@ -16,6 +16,7 @@
 #include <cstdint>
 
 #include "pw_bluetooth/types.h"
+#include "pw_multibuf/multibuf.h"
 #include "pw_span/span.h"
 
 namespace pw::bluetooth::low_energy {

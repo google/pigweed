@@ -19,11 +19,17 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+label_flag(
+    name = "config",
+    build_setting_default = "//pw_build:default_module_config",
+)
+
 cc_library(
     name = "pw_bluetooth",
     hdrs = [
         "public/pw_bluetooth/address.h",
         "public/pw_bluetooth/assigned_uuids.h",
+        "public/pw_bluetooth/config.h",
         "public/pw_bluetooth/constants.h",
         "public/pw_bluetooth/controller.h",
         "public/pw_bluetooth/gatt/client.h",
@@ -52,7 +58,54 @@ cc_library(
         "//pw_chrono:system_clock",
         "//pw_containers",
         "//pw_function",
+        "//pw_multibuf",
         "//pw_result",
+        "//pw_status",
+        "//pw_string:string",
+    ],
+)
+
+cc_library(
+    name = "pw_bluetooth2",
+    hdrs = [
+        "public/pw_bluetooth/address.h",
+        "public/pw_bluetooth/assigned_uuids.h",
+        "public/pw_bluetooth/config.h",
+        "public/pw_bluetooth/constants.h",
+        "public/pw_bluetooth/controller2.h",
+        "public/pw_bluetooth/gatt/client2.h",
+        "public/pw_bluetooth/gatt/constants.h",
+        "public/pw_bluetooth/gatt/error.h",
+        "public/pw_bluetooth/gatt/server2.h",
+        "public/pw_bluetooth/gatt/types.h",
+        "public/pw_bluetooth/internal/hex.h",
+        "public/pw_bluetooth/internal/raii_ptr.h",
+        "public/pw_bluetooth/low_energy/advertising_data.h",
+        "public/pw_bluetooth/low_energy/bond_data2.h",
+        "public/pw_bluetooth/low_energy/central2.h",
+        "public/pw_bluetooth/low_energy/connection2.h",
+        "public/pw_bluetooth/low_energy/peripheral2.h",
+        "public/pw_bluetooth/low_energy/phy.h",
+        "public/pw_bluetooth/low_energy/security_mode.h",
+        "public/pw_bluetooth/pairing_delegate2.h",
+        "public/pw_bluetooth/peer.h",
+        "public/pw_bluetooth/types.h",
+        "public/pw_bluetooth/uuid.h",
+        "public/pw_bluetooth/vendor.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":config",
+        "//pw_async2:dispatcher",
+        "//pw_async2:once_sender",
+        "//pw_channel",
+        "//pw_chrono:system_clock",
+        "//pw_containers",
+        "//pw_function",
+        "//pw_multibuf",
+        "//pw_result",
+        "//pw_result:expected",
+        "//pw_span",
         "//pw_status",
         "//pw_string:string",
     ],
@@ -88,6 +141,16 @@ pw_cc_test(
     ],
     deps = [
         ":pw_bluetooth",
+    ],
+)
+
+pw_cc_test(
+    name = "api2_test",
+    srcs = [
+        "api2_test.cc",
+    ],
+    deps = [
+        ":pw_bluetooth2",
     ],
 )
 

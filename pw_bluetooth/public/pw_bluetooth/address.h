@@ -27,6 +27,12 @@ namespace pw::bluetooth {
 // See Core Spec v5.3 Volume 2, Part B, Section 1.2.
 class Address {
  public:
+  enum class Type : uint8_t {
+    kPublic,
+    kRandomStatic,
+    kRandomResolvablePrivate,
+    kRandomNonResolvablePrivate,
+  };
   // String size of a hexadecimal representation of an Address, not including
   // the null terminator.
   static constexpr size_t kHexStringSize = 17;

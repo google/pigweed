@@ -15,11 +15,26 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pigweed/third_party/emboss/build_defs.gni")
+import("$dir_pw_async2/backend.gni")
 import("$dir_pw_bloat/bloat.gni")
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
+
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_bluetooth_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
+
+pw_source_set("config") {
+  public = [ "public/pw_bluetooth/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ pw_bluetooth_CONFIG ]
+}
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -66,10 +81,56 @@ pw_source_set("pw_bluetooth") {
     "public/pw_bluetooth/vendor.h",
   ]
   public_deps = [
+    ":config",
     "$dir_pw_chrono:system_clock",
     "$dir_pw_string:string",
     dir_pw_containers,
     dir_pw_function,
+    dir_pw_multibuf,
+    dir_pw_result,
+    dir_pw_span,
+    dir_pw_status,
+  ]
+}
+
+pw_source_set("pw_bluetooth2") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_bluetooth/address.h",
+    "public/pw_bluetooth/assigned_uuids.h",
+    "public/pw_bluetooth/constants.h",
+    "public/pw_bluetooth/controller2.h",
+    "public/pw_bluetooth/gatt/client2.h",
+    "public/pw_bluetooth/gatt/constants.h",
+    "public/pw_bluetooth/gatt/error.h",
+    "public/pw_bluetooth/gatt/server2.h",
+    "public/pw_bluetooth/gatt/types.h",
+    "public/pw_bluetooth/internal/hex.h",
+    "public/pw_bluetooth/internal/raii_ptr.h",
+    "public/pw_bluetooth/low_energy/advertising_data.h",
+    "public/pw_bluetooth/low_energy/bond_data2.h",
+    "public/pw_bluetooth/low_energy/central2.h",
+    "public/pw_bluetooth/low_energy/connection2.h",
+    "public/pw_bluetooth/low_energy/peripheral2.h",
+    "public/pw_bluetooth/low_energy/phy.h",
+    "public/pw_bluetooth/low_energy/security_mode.h",
+    "public/pw_bluetooth/pairing_delegate2.h",
+    "public/pw_bluetooth/peer.h",
+    "public/pw_bluetooth/types.h",
+    "public/pw_bluetooth/uuid.h",
+    "public/pw_bluetooth/vendor.h",
+  ]
+  public_deps = [
+    ":config",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:once_sender",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_result:expected",
+    "$dir_pw_string:string",
+    dir_pw_channel,
+    dir_pw_containers,
+    dir_pw_function,
+    dir_pw_multibuf,
     dir_pw_result,
     dir_pw_span,
     dir_pw_status,
@@ -213,6 +274,7 @@ pw_test_group("tests") {
   tests = [
     ":address_test",
     ":api_test",
+    ":api2_test",
     ":result_test",
     ":uuid_test",
     ":emboss_test",
@@ -239,6 +301,12 @@ pw_test("emboss_util_test") {
     ":emboss_hci_test",
     ":emboss_util",
   ]
+}
+
+pw_test("api2_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  sources = [ "api2_test.cc" ]
+  deps = [ ":pw_bluetooth2" ]
 }
 
 pw_test("result_test") {

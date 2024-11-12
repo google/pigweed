@@ -16,13 +16,19 @@
 #include <cstdint>
 #include <optional>
 
+#include "pw_bluetooth/config.h"
 #include "pw_bluetooth/types.h"
+#include "pw_containers/vector.h"
 #include "pw_span/span.h"
 
 namespace pw::bluetooth::gatt {
 
-// A Handle uniquely identifies a service, characteristic, or descriptor.
+/// A Handle identifies a characteristic or descriptor. This is not expected to
+/// match the actual GATT database handle, although it may.
 enum class Handle : uint64_t {};
+
+/// A handle that uniquely identifies a service.
+enum class ServiceHandle : uint64_t {};
 
 // Possible values for the characteristic properties bitfield. These specify
 // the GATT procedures that are allowed for a particular characteristic.
@@ -135,6 +141,29 @@ struct Characteristic {
 
   // The descriptors of this characteristic.
   span<const Descriptor> descriptors;
+};
+
+/// Represents a local or remote GATT characteristic.
+struct Characteristic2 {
+  /// Uniquely identifies this characteristic within a service.
+  /// For local characteristics, the specified handle must be unique across
+  /// all characteristic and descriptor handles in this service.
+  Handle handle;
+
+  /// The UUID that identifies the type of this characteristic.
+  Uuid type;
+
+  /// The characteristic properties bitfield. This is a logic or of any number
+  /// of values from `CharacteristicPropertyBits` above.
+  CharacteristicPropertyBits properties;
+
+  /// The attribute permissions of this characteristic. For remote
+  /// characteristics, this value will be null until the permissions are
+  /// discovered via read and write requests.
+  std::optional<AttributePermissions> permissions;
+
+  /// The descriptors of this characteristic.
+  Vector<Descriptor, PW_BLUETOOTH_DESCRIPTOR_VEC_SIZE> descriptors;
 };
 
 }  // namespace pw::bluetooth::gatt

@@ -14,6 +14,17 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+pw_add_module_config(pw_bluetooth_CONFIG)
+
+pw_add_library(pw_bluetooth.config INTERFACE
+  HEADERS
+    public/pw_bluetooth/config.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    ${pw_bluetooth_CONFIG}
+)
+
 pw_add_library(pw_bluetooth INTERFACE
   HEADERS
     public/pw_bluetooth/address.h
@@ -45,10 +56,53 @@ pw_add_library(pw_bluetooth INTERFACE
   PUBLIC_DEPS
     pw_containers
     pw_function
+    pw_multibuf
     pw_status
     pw_string.string
     pw_chrono.system_clock
 )
+
+pw_add_library(pw_bluetooth.pw_bluetooth2 INTERFACE
+  HEADERS
+    public/pw_bluetooth/address.h
+    public/pw_bluetooth/assigned_uuids.h
+    public/pw_bluetooth/constants.h
+    public/pw_bluetooth/config.h
+    public/pw_bluetooth/controller2.h
+    public/pw_bluetooth/gatt/client2.h
+    public/pw_bluetooth/gatt/constants.h
+    public/pw_bluetooth/gatt/error.h
+    public/pw_bluetooth/gatt/server2.h
+    public/pw_bluetooth/gatt/types.h
+    public/pw_bluetooth/internal/hex.h
+    public/pw_bluetooth/internal/raii_ptr.h
+    public/pw_bluetooth/low_energy/advertising_data.h
+    public/pw_bluetooth/low_energy/bond_data2.h
+    public/pw_bluetooth/low_energy/central2.h
+    public/pw_bluetooth/low_energy/connection2.h
+    public/pw_bluetooth/low_energy/peripheral2.h
+    public/pw_bluetooth/low_energy/security_mode.h
+    public/pw_bluetooth/pairing_delegate2.h
+    public/pw_bluetooth/peer.h
+    public/pw_bluetooth/types.h
+    public/pw_bluetooth/uuid.h
+    public/pw_bluetooth/vendor.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_bluetooth.config
+    pw_async2.dispatcher
+    pw_async2.once_sender
+    pw_result.expected
+    pw_channel
+    pw_containers
+    pw_function
+    pw_multibuf
+    pw_result
+    pw_span
+    pw_status
+)
+
 
 pw_add_library(pw_bluetooth.emboss_util INTERFACE
   HEADERS
@@ -75,6 +129,15 @@ pw_add_test(pw_bluetooth.api_test
     api_test.cc
   PRIVATE_DEPS
     pw_bluetooth
+  GROUPS
+    modules
+)
+
+pw_add_test(pw_bluetooth.api2_test
+  SOURCES
+    api2_test.cc
+  PRIVATE_DEPS
+    pw_bluetooth.pw_bluetooth2
   GROUPS
     modules
 )

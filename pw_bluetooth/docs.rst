@@ -16,85 +16,70 @@ Host API
 
    This module is still under construction, the API is not yet stable.
 
-The headers in `public/pw_bluetooth` constitute a Bluetooth Host API. `host.h`
-is the entry point from which all other APIs are exposed. Currently, only Low
-Energy APIs exist.
+The headers in ``public/pw_bluetooth`` constitute generic interfaces and types
+for a Bluetooth Host API. Currently, only Low Energy APIs exist.
 
-Host
-====
-.. doxygenclass:: pw::bluetooth::Host
+low_energy::Central2
+====================
+.. doxygenclass:: pw::bluetooth::low_energy::Central2
    :members:
 
-low_energy::Central
+low_energy::Peripheral2
+=======================
+.. doxygenclass:: pw::bluetooth::low_energy::Peripheral2
+   :members:
+
+low_energy::AdvertisedPeripheral2
+=================================
+.. doxygenclass:: pw::bluetooth::low_energy::AdvertisedPeripheral2
+   :members:
+
+low_energy::Connection2
+=======================
+.. doxygenclass:: pw::bluetooth::low_energy::Connection2
+   :members:
+
+gatt::Server2
+=============
+.. doxygenclass:: pw::bluetooth::gatt::Server2
+   :members:
+
+gatt::LocalService2
 ===================
-.. doxygenclass:: pw::bluetooth::low_energy::Central
+.. doxygenclass:: pw::bluetooth::gatt::LocalService2
    :members:
 
-low_energy::Peripheral
-======================
-.. doxygenclass:: pw::bluetooth::low_energy::Peripheral
+gatt::LocalServiceDelegate2
+===========================
+.. doxygenclass:: pw::bluetooth::gatt::LocalServiceDelegate2
    :members:
 
-low_energy::AdvertisedPeripheral
-================================
-.. doxygenclass:: pw::bluetooth::low_energy::AdvertisedPeripheral
+gatt::Client2
+=============
+.. doxygenclass:: pw::bluetooth::gatt::Client2
    :members:
 
-low_energy::Connection
-======================
-.. doxygenclass:: pw::bluetooth::low_energy::Connection
+gatt::RemoteService2
+====================
+.. doxygenclass:: pw::bluetooth::gatt::RemoteService2
    :members:
 
-low_energy::ConnectionOptions
-=============================
-.. doxygenstruct:: pw::bluetooth::low_energy::ConnectionOptions
+Controller2
+===========
+.. doxygenclass:: pw::bluetooth::Controller2
    :members:
 
-low_energy::RequestedConnectionParameters
-=========================================
-.. doxygenstruct:: pw::bluetooth::low_energy::RequestedConnectionParameters
-   :members:
+----------------------------
+Module Configuration Options
+----------------------------
+The following configurations can be adjusted via compile-time configuration of
+this module, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
 
-low_energy::ConnectionParameters
-================================
-.. doxygenstruct:: pw::bluetooth::low_energy::ConnectionParameters
-   :members:
+.. c:macro:: PW_BLUETOOTH_DESCRIPTOR_VEC_SIZE
 
-gatt::Server
-============
-.. doxygenclass:: pw::bluetooth::gatt::Server
-   :members:
-
-gatt::LocalServiceInfo
-======================
-.. doxygenstruct:: pw::bluetooth::gatt::LocalServiceInfo
-   :members:
-
-gatt::LocalService
-==================
-.. doxygenclass:: pw::bluetooth::gatt::LocalService
-   :members:
-
-gatt::LocalServiceDelegate
-==========================
-.. doxygenclass:: pw::bluetooth::gatt::LocalServiceDelegate
-   :members:
-
-gatt::Client
-============
-.. doxygenclass:: pw::bluetooth::gatt::Client
-   :members:
-
-gatt::RemoteService
-===================
-.. doxygenclass:: pw::bluetooth::gatt::RemoteService
-   :members:
-
-Callbacks
-=========
-This module contains callback-heavy APIs. Callbacks must not call back into the
-``pw_bluetooth`` APIs unless otherwise noted. This includes calls made by
-destroying objects returned by the API. Additionally, callbacks must not block.
+  Controls the size of ``Vector<Descriptor>`` in the above APIs.
 
 -------------------------
 Emboss Packet Definitions
