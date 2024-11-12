@@ -1,0 +1,51 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+
+package(default_visibility = ["//visibility:public"])
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        # TODO: https://pwbug.dev/378559626 - Refactor this auto-generated
+        # page to support Bazel-based docgen.
+        "0000-index.rst",
+        "0001-the-seed-process.rst",
+        "0002-template.rst",
+        "0101-pigweed.json.rst",
+        "0102-module-docs.rst",
+        "0103-pw_protobuf-past-present-future.rst",
+        "0104-display-support.rst",
+        "0105-pw_tokenizer-pw_log-nested-tokens.rst",
+        "0107-communications.rst",
+        "0108-pw_emu-emulators-frontend.rst",
+        "0109-comms-buffers.rst",
+        "0110-memory-allocation-interfaces.rst",
+        "0111-build-systems.rst",
+        "0112-async-poll.rst",
+        "0113-bazel-cc-toolchain-api.rst",
+        "0114-channels.rst",
+        "0117-pw_i3c.rst",
+        "0119-pw-sensor.rst",
+        "0120-pw-sensor-config.rst",
+        "0122-code-samples.rst",
+        "0124-multisink-size-info.rst",
+        "0128-abstracting-thread-creation.rst",
+        "0130-update-sphinx-theme.rst",
+    ],
+    prefix = "seed/",
+    target_compatible_with = incompatible_with_mcu(),
+)
