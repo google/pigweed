@@ -18,7 +18,6 @@
 #include "pw_rpc_transport/rpc_transport.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
-#include "rpc_transport.h"
 
 namespace pw::rpc {
 

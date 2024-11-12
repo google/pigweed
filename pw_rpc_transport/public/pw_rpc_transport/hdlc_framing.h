@@ -24,7 +24,6 @@
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 #include "pw_stream/memory_stream.h"
-#include "rpc_transport.h"
 
 namespace pw::rpc {
 
