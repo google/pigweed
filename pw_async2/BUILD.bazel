@@ -29,6 +29,7 @@ cc_library(
     hdrs = [
         "public/pw_async2/internal/poll_internal.h",
         "public/pw_async2/poll.h",
+        "public/pw_async2/try.h",
     ],
     strip_include_prefix = "public",
     deps = [

@@ -22,7 +22,7 @@ progress, the ``Dispatcher`` will run it again. For example:
 
 .. tab-set::
 
-   .. tab-item:: Manual task state machine
+   .. tab-item:: Manual state machine
 
       .. literalinclude:: examples/basic.cc
          :language: cpp
@@ -30,7 +30,7 @@ progress, the ``Dispatcher`` will run it again. For example:
          :start-after: [pw_async2-examples-basic-manual]
          :end-before: [pw_async2-examples-basic-manual]
 
-   .. tab-item:: Coroutine function
+   .. tab-item:: Coroutine
 
       .. literalinclude:: examples/basic.cc
          :language: cpp

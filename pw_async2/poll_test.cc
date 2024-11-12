@@ -17,6 +17,7 @@
 #include <type_traits>
 
 #include "gtest/gtest.h"
+#include "pw_async2/try.h"
 #include "pw_result/result.h"
 
 namespace pw::async2 {
@@ -201,6 +202,72 @@ TEST(EndToEndTest, ReturnsPollStatus) {
   Poll<Result<int>> result = EndToEndTest(5);
   ASSERT_TRUE(result.IsReady());
   EXPECT_EQ(result->status(), Status::DataLoss());
+}
+
+enum TryReadyAction {
+  kDoPend,
+  kDoReady,
+};
+
+Poll<Status> TestTryReady(TryReadyAction action) {
+  Poll<Status> pending(Pending());
+  Poll<Status> ready(Ready(OkStatus()));
+  PW_TRY_READY(action == kDoPend ? pending : ready);
+  return ready;
+}
+
+TEST(TryReady, PollPending) {
+  ASSERT_TRUE(TestTryReady(kDoPend).IsPending());
+  ASSERT_TRUE(TestTryReady(kDoReady).IsReady());
+}
+
+Poll<Status> TestTryReadyAssignSimple(TryReadyAction action) {
+  Poll<Status> pending(Pending());
+  Poll<Status> ready(Ready(OkStatus()));
+  PW_TRY_READY_ASSIGN(auto poll, action == kDoPend ? pending : ready);
+  return poll;
+}
+
+TEST(TryReadyAssign, PollPending) {
+  ASSERT_TRUE(TestTryReadyAssignSimple(kDoPend).IsPending());
+  ASSERT_TRUE(TestTryReadyAssignSimple(kDoReady).IsReady());
+}
+
+Poll<Immovable> MakeImmovable(TryReadyAction action) {
+  return action == kDoReady ? Poll<Immovable>(5) : Pending();
+}
+
+Poll<int> TryReadyAssignImmovable(TryReadyAction action) {
+  PW_TRY_READY_ASSIGN(auto&& x, MakeImmovable(action));
+  return x.value();
+}
+
+TEST(TryReadyAssign, ImmovableIsReady) {
+  auto poll = TryReadyAssignImmovable(kDoReady);
+  ASSERT_TRUE(poll.IsReady());
+  ASSERT_EQ(poll.value(), 5);
+}
+
+TEST(TryReadyAssign, ImmovableIsPending) {
+  auto poll = TryReadyAssignImmovable(kDoPend);
+  ASSERT_TRUE(poll.IsPending());
+}
+
+Poll<int> TryReadyAssignMoveOnly(TryReadyAction action) {
+  PW_TRY_READY_ASSIGN(auto&& x,
+                      action == kDoReady ? Ready(MoveOnly(5)) : Pending());
+  return x.value();
+}
+
+TEST(TryReadyAssign, MoveOnlyIsReady) {
+  auto poll = TryReadyAssignMoveOnly(kDoReady);
+  ASSERT_TRUE(poll.IsReady());
+  ASSERT_EQ(poll.value(), 5);
+}
+
+TEST(TryReadyAssign, MoveOnlyIsPending) {
+  auto poll = TryReadyAssignMoveOnly(kDoPend);
+  ASSERT_TRUE(poll.IsPending());
 }
 
 }  // namespace

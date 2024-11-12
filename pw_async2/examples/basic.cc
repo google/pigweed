@@ -57,6 +57,7 @@ class MySender {
 // DOCSTAG: [pw_async2-examples-basic-manual]
 #include "pw_async2/dispatcher.h"
 #include "pw_async2/poll.h"
+#include "pw_async2/try.h"
 #include "pw_log/log.h"
 #include "pw_result/result.h"
 
@@ -71,53 +72,43 @@ using ::pw::async2::Task;
 class MyReceiver;
 class MySender;
 
+// Receive then send that data asynchronously. If the reader or writer aren't
+// ready, the task suspends when TRY_READY invokes ``return Pending()``.
 class ReceiveAndSend final : public Task {
  public:
   ReceiveAndSend(MyReceiver receiver, MySender sender)
-      : receiver_(receiver), sender_(sender) {}
+      : receiver_(receiver), sender_(sender), state_(kReceiving) {}
 
   Poll<> DoPend(Context& cx) final {
-    if (!send_future_) {
-      // ``PendReceive`` checks for available data or errors.
-      //
-      // If no data is available, it will grab a ``Waker`` from
-      // ``cx.Waker()`` and return ``Pending``. When data arrives,
-      // it will call ``waker.Wake()`` which tells the ``Dispatcher`` to
-      // ``Pend`` this ``Task`` again.
-      Poll<pw::Result<MyData>> new_data = receiver_.PendReceive(cx);
-      if (new_data.IsPending()) {
-        // The ``Task`` is still waiting on data. Return ``Pending``,
-        // yielding to the dispatcher. ``Pend`` will be called again when
-        // data becomes available.
-        return Pending();
+    switch (state_) {
+      case kReceiving: {
+        PW_TRY_READY_ASSIGN(auto new_data, receiver_.PendReceive(cx));
+        if (!new_data.ok()) {
+          PW_LOG_ERROR("Receiving failed: %s", new_data.status().str());
+          return Ready();  // Completes the task.
+        }
+        // Start transmitting and switch to transmitting state.
+        send_future_ = sender_.Send(std::move(*new_data));
+        state_ = kTransmitting;
       }
-      if (!new_data->ok()) {
-        PW_LOG_ERROR("Receiving failed: %s", new_data->status().str());
-        // The ``Task`` completed;
-        return Ready();
+        [[fallthrough]];
+      case kTransmitting: {
+        PW_TRY_READY_ASSIGN(auto sent, send_future_->Pend(cx));
+        if (!sent.ok()) {
+          PW_LOG_ERROR("Sending failed: %s", sent.str());
+        }
+        return Ready();  // Completes the task.
       }
-      MyData& data = **new_data;
-      send_future_ = sender_.Send(std::move(data));
     }
-    // ``Pend`` attempts to send ``data_``, returning ``Pending`` if
-    // ``sender_`` was not yet able to accept ``data_``.
-    Poll<pw::Status> sent = send_future_->Pend(cx);
-    if (sent.IsPending()) {
-      return Pending();
-    }
-    if (!sent->ok()) {
-      PW_LOG_ERROR("Sending failed: %s", sent->str());
-    }
-    return Ready();
   }
 
  private:
-  MyReceiver receiver_;
-  MySender sender_;
-
-  // ``SendFuture`` is some type returned by `Sender::Send` that offers a
-  // ``Pend`` method similar to the one on ``Task``.
+  MyReceiver receiver_;  // Can receive data async.
+  MySender sender_;      // Can send data async.
   std::optional<SendFuture> send_future_ = std::nullopt;
+
+  enum State { kTransmitting, kReceiving };
+  State state_;
 };
 
 }  // namespace
