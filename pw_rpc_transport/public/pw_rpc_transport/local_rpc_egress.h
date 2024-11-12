@@ -24,7 +24,6 @@
 #include "pw_status/status.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread_core.h"
-#include "rpc_transport.h"
 
 namespace pw::rpc {
 

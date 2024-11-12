@@ -27,7 +27,6 @@
 #include "pw_status/status.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
-#include "rpc_transport.h"
 
 namespace pw::rpc {
 namespace internal {
