@@ -1350,7 +1350,8 @@ def commit_message_format(ctx: PresubmitContext):
 
     # Check that the first line matches the expected pattern.
     match = re.match(
-        r'^(?P<prefix>[.\w*/]+(?:{[\w* ,]+})?[\w*/]*|SEED-\d+): (?P<desc>.+)$',
+        r'^(?P<prefix>[.\w*/]+(?:{[\w* ,]+})?[\w*/]*|SEED-\d+|clang-\w+): '
+        r'(?P<desc>.+)$',
         lines[0],
     )
     if not match:
