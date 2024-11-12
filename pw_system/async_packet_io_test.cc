@@ -34,7 +34,8 @@ TEST(AsyncPacketIo, Instantiate) {
   pw::rpc::Channel rpc_channel[1];
   pw::rpc::Server rpc_server(rpc_channel);
 
-  pw::system::internal::PacketIO packet_io(channel, buffer, alloc, rpc_server);
+  pw::system::internal::PacketIO packet_io(
+      channel.channel(), buffer, alloc, rpc_server);
 }
 
 }  // namespace

@@ -152,7 +152,7 @@ void ExpectSendAndReceive(
   static constexpr size_t kDecodeBufferSize = 256;
 
   std::array<std::byte, kDecodeBufferSize> decode_buffer;
-  Router router(io_loopback, decode_buffer);
+  Router router(io_loopback.channel(), decode_buffer);
   PendFuncTask router_task([&router](Context& cx) { return router.Pend(cx); });
 
   SendDatagrams send_task(datagrams_to_send, outgoing_pair.first());

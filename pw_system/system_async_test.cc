@@ -49,7 +49,7 @@ int main() {
 
   // When ready, start running the pw::System threads and dispatcher. This
   // function call never returns.
-  pw::SystemStart(channel);
+  pw::SystemStart(channel.channel());
 
   return 0;
 }

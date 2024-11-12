@@ -78,7 +78,7 @@ Poll<std::byte> PollReadByte(Context& cx) {
 // Channel implementation which writes to and reads from rp2040's stdio.
 //
 // NOTE: only one Rp2StdioChannel may be in existence.
-class Rp2StdioChannel final : public ByteReaderWriter {
+class Rp2StdioChannel final : public pw::channel::Implement<ByteReaderWriter> {
  public:
   Rp2StdioChannel(MultiBufAllocator& read_allocator,
                   MultiBufAllocator& write_allocator)
@@ -179,10 +179,11 @@ Status Rp2StdioChannel::DoStageWrite(MultiBuf&& data) {
 
 ByteReaderWriter& Rp2StdioChannelInit(MultiBufAllocator& read_allocator,
                                       MultiBufAllocator& write_allocator) {
-  static std::optional<Rp2StdioChannel> channel = std::nullopt;
-  PW_CHECK(!channel.has_value());
-  InitStdio();
-  return channel.emplace(read_allocator, write_allocator);
+  static Rp2StdioChannel channel = [&] {
+    InitStdio();
+    return Rp2StdioChannel(read_allocator, write_allocator);
+  }();
+  return channel.channel();
 }
 
 ByteReaderWriter& Rp2StdioChannelInit(MultiBufAllocator& allocator) {

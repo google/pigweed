@@ -28,7 +28,10 @@ config("public_include_path") {
 
 pw_source_set("pw_channel") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_channel/channel.h" ]
+  public = [
+    "public/pw_channel/channel.h",
+    "public/pw_channel/properties.h",
+  ]
   public_deps = [
     "$dir_pw_async2:dispatcher",
     "$dir_pw_async2:poll",

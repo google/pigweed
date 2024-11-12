@@ -41,7 +41,7 @@ using LoopbackByteChannel = LoopbackChannel<DataType::kByte>;
 
 template <>
 class LoopbackChannel<DataType::kDatagram>
-    : public ReliableDatagramReaderWriter {
+    : public Implement<ReliableDatagramReaderWriter> {
  public:
   LoopbackChannel(multibuf::MultiBufAllocator& write_allocator)
       : write_alloc_future_(write_allocator) {}
@@ -76,7 +76,8 @@ class LoopbackChannel<DataType::kDatagram>
 };
 
 template <>
-class LoopbackChannel<DataType::kByte> : public ReliableByteReaderWriter {
+class LoopbackChannel<DataType::kByte>
+    : public Implement<ReliableByteReaderWriter> {
  public:
   LoopbackChannel(multibuf::MultiBufAllocator& write_allocator)
       : write_alloc_future_(write_allocator) {}

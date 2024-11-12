@@ -29,59 +29,140 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <utility>
 
 #include "pw_async2/dispatcher.h"
 #include "pw_async2/poll.h"
 #include "pw_bytes/span.h"
+#include "pw_channel/properties.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 
 namespace pw::channel {
 
-/// @defgroup pw_channel
+/// @addtogroup pw_channel
 /// @{
 
-/// Basic properties of a `Channel`. A `Channel` type can convert to any other
-/// `Channel` for which it supports the required properties. For example, a
-/// `kReadable` and `kWritable` channel may be passed to an API that only
-/// requires `kReadable`.
-enum Property : uint8_t {
-  /// All data is guaranteed to be delivered in order. The channel is closed if
-  /// data is lost.
-  kReliable = 1 << 0,
+/// The basic `Channel` type. Unlike `AnyChannel`, the `Channel`'s properties
+/// are expressed in template parameters and thus reflected in the type.
+///
+/// Properties must be specified in order (`kDatagram`, `kReliable`,
+/// `kReadable`, `kWritable`, `kSeekable`) and without duplicates.
+///
+/// To implement a `Channel`, inherit from `ChannelImpl` with the specified
+/// properties.
+template <DataType kDataType, Property... kProperties>
+class Channel {
+ public:
+  /// Returns the data type of this channel.
+  [[nodiscard]] static constexpr DataType data_type() { return kDataType; }
 
-  /// The channel supports reading.
-  kReadable = 1 << 1,
+  /// Returns whether the channel type is reliable.
+  [[nodiscard]] static constexpr bool reliable() {
+    return ((kProperties == Property::kReliable) || ...);
+  }
+  /// Returns whether the channel type is seekable.
+  [[nodiscard]] static constexpr bool seekable() {
+    return ((kProperties == Property::kSeekable) || ...);
+  }
+  /// Returns whether the channel type is readable.
+  [[nodiscard]] static constexpr bool readable() {
+    return ((kProperties == Property::kReadable) || ...);
+  }
+  /// Returns whether the channel type is writable.
+  [[nodiscard]] static constexpr bool writable() {
+    return ((kProperties == Property::kWritable) || ...);
+  }
 
-  /// The channel supports writing.
-  kWritable = 1 << 2,
+  /// True if the channel type supports and is open for reading. Always false
+  /// for write-only channels.
+  [[nodiscard]] constexpr bool is_read_open() const;
 
-  /// The channel supports seeking (changing the read/write position).
-  kSeekable = 1 << 3,
-};
+  /// True if the channel type supports and is open for writing. Always false
+  /// for read-only channels.
+  [[nodiscard]] constexpr bool is_write_open() const;
 
-/// The type of data exchanged in `Channel` read and write calls. Unlike
-/// `Property`, `Channels` with different `DataType`s cannot be used
-/// interchangeably.
-enum class DataType : uint8_t { kByte = 0, kDatagram = 1 };
+  /// True if the channel is open for reading or writing.
+  [[nodiscard]] constexpr bool is_read_or_write_open() const {
+    return is_read_open() || is_write_open();
+  }
 
-/// Positions from which to seek.
-enum Whence : uint8_t {
-  /// Seek from the beginning of the channel. The offset is a direct offset
-  /// into the data.
-  kBeginning,
+  /// @copydoc AnyChannel::PendRead
+  async2::Poll<Result<multibuf::MultiBuf>> PendRead(async2::Context& cx);
+  /// @copydoc AnyChannel::PendReadyToWrite
+  async2::Poll<Status> PendReadyToWrite(pw::async2::Context& cx);
+  /// @copydoc AnyChannel::PendAllocateBuffer
+  async2::Poll<std::optional<multibuf::MultiBuf>> PendAllocateWriteBuffer(
+      async2::Context& cx, size_t min_bytes);
+  /// @copydoc AnyChannel::StageWrite
+  Status StageWrite(multibuf::MultiBuf&& data);
+  /// @copydoc AnyChannel::PendWrite
+  async2::Poll<Status> PendWrite(async2::Context& cx);
+  /// @copydoc AnyChannel::PendClose
+  async2::Poll<pw::Status> PendClose(async2::Context& cx);
 
-  /// Seek from the current position in the channel. The offset is added to
-  /// the current position. Use a negative offset to seek backwards.
-  ///
-  /// Implementations may only support seeking within a limited range from the
-  /// current position.
-  kCurrent,
+  // Conversions
 
-  /// Seek from the end of the channel. The offset is added to the end
-  /// position. Use a negative offset to seek backwards from the end.
-  kEnd,
+  /// Channels may be implicitly converted to other compatible channel types.
+  template <typename Sibling,
+            typename = internal::EnableIfConversionIsValid<Channel, Sibling>>
+  constexpr operator Sibling&() {
+    return as<Sibling>();
+  }
+  template <typename Sibling,
+            typename = internal::EnableIfConversionIsValid<Channel, Sibling>>
+  constexpr operator const Sibling&() const {
+    return as<Sibling>();
+  }
+
+  /// Returns a reference to this channel as another compatible channel type.
+  template <typename Sibling>
+  [[nodiscard]] Sibling& as() {
+    internal::CheckThatConversionIsValid<Channel, Sibling>();
+    return static_cast<Sibling&>(static_cast<AnyChannel&>(*this));
+  }
+  template <typename Sibling>
+  [[nodiscard]] const Sibling& as() const {
+    internal::CheckThatConversionIsValid<Channel, Sibling>();
+    return static_cast<const Sibling&>(static_cast<const AnyChannel&>(*this));
+  }
+
+  /// Returns a reference to this channel as another channel with the specified
+  /// properties, which must be compatible.
+  template <Property... kOtherChannelProperties>
+  [[nodiscard]] auto& as() {
+    return as<Channel<data_type(), kOtherChannelProperties...>>();
+  }
+  template <Property... kOtherChannelProperties>
+  [[nodiscard]] const auto& as() const {
+    return as<Channel<data_type(), kOtherChannelProperties...>>();
+  }
+
+  [[nodiscard]] Channel<DataType::kByte, kProperties...>&
+  IgnoreDatagramBoundaries() {
+    static_assert(kDataType == DataType::kDatagram,
+                  "IgnoreDatagramBoundaries() may only be called to use a "
+                  "datagram channel to a byte channel");
+    return static_cast<Channel<DataType::kByte, kProperties...>&>(
+        static_cast<AnyChannel&>(*this));
+  }
+
+  [[nodiscard]] const Channel<DataType::kByte, kProperties...>&
+  IgnoreDatagramBoundaries() const {
+    static_assert(kDataType == DataType::kDatagram,
+                  "IgnoreDatagramBoundaries() may only be called to use a "
+                  "datagram channel to a byte channel");
+    return static_cast<const Channel<DataType::kByte, kProperties...>&>(
+        static_cast<const AnyChannel&>(*this));
+  }
+
+ private:
+  static_assert(internal::PropertiesAreValid<kProperties...>());
+
+  friend class AnyChannel;
+
+  explicit constexpr Channel() = default;
 };
 
 /// A generic data channel that may support reading or writing bytes or
@@ -95,7 +176,22 @@ enum Whence : uint8_t {
 /// the channel. In the future, a wrapper will be offered which will
 /// allow the channel to be split into a read half and a write half which
 /// can be used from independent tasks.
-class AnyChannel {
+///
+/// To implement a `Channel`, inherit from `ChannelImpl` with the specified
+/// properties.
+class AnyChannel
+    : private Channel<DataType::kByte, kReadable>,
+      private Channel<DataType::kByte, kWritable>,
+      private Channel<DataType::kByte, kReadable, kWritable>,
+      private Channel<DataType::kByte, kReliable, kReadable>,
+      private Channel<DataType::kByte, kReliable, kWritable>,
+      private Channel<DataType::kByte, kReliable, kReadable, kWritable>,
+      private Channel<DataType::kDatagram, kReadable>,
+      private Channel<DataType::kDatagram, kWritable>,
+      private Channel<DataType::kDatagram, kReadable, kWritable>,
+      private Channel<DataType::kDatagram, kReliable, kReadable>,
+      private Channel<DataType::kDatagram, kReliable, kWritable>,
+      private Channel<DataType::kDatagram, kReliable, kReadable, kWritable> {
  public:
   virtual ~AnyChannel() = default;
 
@@ -106,20 +202,25 @@ class AnyChannel {
 
   // Channel properties
 
+  /// Returns the data type of the channel implementation.
   [[nodiscard]] constexpr DataType data_type() const { return data_type_; }
 
+  /// Returns whether the channel implementation is reliable.
   [[nodiscard]] constexpr bool reliable() const {
     return (properties_ & Property::kReliable) != 0;
   }
 
+  /// Returns whether the channel implementation is seekable.
   [[nodiscard]] constexpr bool seekable() const {
     return (properties_ & Property::kSeekable) != 0;
   }
 
+  /// Returns whether the channel implementation is readable.
   [[nodiscard]] constexpr bool readable() const {
     return (properties_ & Property::kReadable) != 0;
   }
 
+  /// Returns whether the channel implementation is writable.
   [[nodiscard]] constexpr bool writable() const {
     return (properties_ & Property::kWritable) != 0;
   }
@@ -132,11 +233,12 @@ class AnyChannel {
   /// channels.
   [[nodiscard]] constexpr bool is_write_open() const { return write_open_; }
 
+  /// True if the channel is open for either reading or writing.
   [[nodiscard]] constexpr bool is_read_or_write_open() const {
     return read_open_ || write_open_;
   }
 
-  /// Read API
+  // Read API
 
   /// Returns a `pw::multibuf::MultiBuf` with read data, if available. If data
   /// is not available, invokes `cx.waker()` when it becomes available.
@@ -174,7 +276,7 @@ class AnyChannel {
     return result;
   }
 
-  /// Write API
+  // Write API
 
   /// Checks whether a writeable channel is *currently* writeable.
   ///
@@ -202,16 +304,6 @@ class AnyChannel {
     }
     return result;
   }
-
-  /// Gives access to an allocator for write buffers. The MultiBufAllocator
-  /// provides an asynchronous API for obtaining a buffer.
-  ///
-  /// This allocator must *only* be used to allocate the next argument to
-  /// ``Write``. The allocator must be used at most once per call to
-  /// ``Write``, and the returned ``MultiBuf`` must not be combined with
-  /// any other ``MultiBuf`` s or ``Chunk`` s.
-  ///
-  /// This method must not be called on channels which do not support writing.
 
   /// Attempts to allocate a write buffer of at least `min_bytes` bytes.
   ///
@@ -280,15 +372,14 @@ class AnyChannel {
     return status;
   }
 
-  /// Flushes pending writes.
+  /// Completes pending writes.
   ///
-  /// Returns a ``async2::Poll`` indicating whether or not flushing has
-  /// completed.
+  /// Returns a ``async2::Poll`` indicating whether or the write has completed.
   ///
-  /// * Ready(OK) - All data has been successfully flushed.
+  /// * Ready(OK) - All data has been successfully written.
   /// * Ready(UNIMPLEMENTED) - The channel does not support writing.
   /// * Ready(FAILED_PRECONDITION) - The channel is closed.
-  /// * Pending - Data remains to be flushed.
+  /// * Pending - Writing is not complete.
   async2::Poll<Status> PendWrite(async2::Context& cx) {
     if (!is_write_open()) {
       return Status::FailedPrecondition();
@@ -375,43 +466,12 @@ class AnyChannel {
 
  private:
   template <DataType, Property...>
-  friend class Channel;
+  friend class Channel;  // Allow static_casts to AnyChannel
 
-  template <Property kLhs, Property kRhs, Property... kProperties>
-  static constexpr bool PropertiesAreInOrderWithoutDuplicates() {
-    return (kLhs < kRhs) &&
-           PropertiesAreInOrderWithoutDuplicates<kRhs, kProperties...>();
-  }
+  template <DataType, Property...>
+  friend class internal::BaseChannelImpl;  // Allow inheritance
 
-  template <Property>
-  static constexpr bool PropertiesAreInOrderWithoutDuplicates() {
-    return true;
-  }
-
-  template <Property... kProperties>
-  static constexpr uint8_t GetProperties() {
-    return (static_cast<uint8_t>(kProperties) | ...);
-  }
-
-  template <Property... kProperties>
-  static constexpr bool PropertiesAreValid() {
-    static_assert(((kProperties != kSeekable) && ...),
-                  "Seekable channels are not yet implemented; see b/323624921");
-
-    static_assert(((kProperties == kReadable) || ...) ||
-                      ((kProperties == kWritable) || ...),
-                  "At least one of kReadable or kWritable must be provided");
-    static_assert(sizeof...(kProperties) <= 4,
-                  "Too many properties given; no more than 4 may be specified "
-                  "(kReliable, kReadable, kWritable, kSeekable)");
-    static_assert(
-        PropertiesAreInOrderWithoutDuplicates<kProperties...>(),
-        "Properties must be specified in the following order, without "
-        "duplicates: kReliable, kReadable, kWritable, kSeekable");
-    return true;
-  }
-
-  // `AnyChannel` may only be constructed by deriving from `Channel`.
+  // `AnyChannel` may only be constructed by deriving from `ChannelImpl`.
   explicit constexpr AnyChannel(DataType type, uint8_t properties)
       : data_type_(type),
         properties_(properties),
@@ -452,16 +512,6 @@ class AnyChannel {
   bool write_open_;
 };
 
-/// The basic `Channel` type. Unlike `AnyChannel`, the `Channel`'s properties
-/// are expressed in template parameters and thus reflected in the type.
-///
-/// Properties must be specified in order (`kDatagram`, `kReliable`,
-/// `kReadable`, `kWritable`, `kSeekable`) and without duplicates.
-template <DataType kDataType, Property... kProperties>
-class Channel : public AnyChannel {
-  static_assert(PropertiesAreValid<kProperties...>());
-};
-
 /// A `ByteChannel` exchanges data as a stream of bytes.
 template <Property... kProperties>
 using ByteChannel = Channel<DataType::kByte, kProperties...>;
@@ -499,7 +549,47 @@ using ReliableDatagramWriter = DatagramChannel<kReliable, kWritable>;
 using ReliableDatagramReaderWriter =
     DatagramChannel<kReliable, kReadable, kWritable>;
 
+// Implementation extension classes.
+
+/// Extend `ChannelImpl` to implement a channel with the specified properties.
+/// Unavailable methods on the channel will be stubbed out.
+///
+/// Alternately, inherit from `pw::channel::Implement` with a channel
+/// reader/writer alias as the template parameter.
+///
+/// A `ChannelImpl` has a corresponding `Channel` type
+/// (`ChannelImpl<>::Channel`). Call the `channel()` method to convert the
+/// `ChannelImpl` to its corresponding `Channel`.
+template <DataType kDataType, Property... kProperties>
+class ChannelImpl {
+  static_assert(internal::PropertiesAreValid<kProperties...>());
+};
+
+/// Implement a byte-oriented `Channel` with the specified properties.
+template <Property... kProperties>
+using ByteChannelImpl = ChannelImpl<DataType::kByte, kProperties...>;
+
+/// Implement a datagram-oriented `Channel` with the specified properties.
+template <Property... kProperties>
+using DatagramChannelImpl = ChannelImpl<DataType::kDatagram, kProperties...>;
+
+/// Implement the specified `Channel` type. This is intended for use with the
+/// reader/writer aliases:
+///
+/// @code{.cpp}
+/// class MyChannel : public pw::channel::Implement<pw::channel::ByteReader> {};
+/// @endcode
+template <typename ChannelType>
+class Implement;
+
 /// @}
+
+template <DataType kDataType, Property... kProperties>
+class Implement<Channel<kDataType, kProperties...>>
+    : public ChannelImpl<kDataType, kProperties...> {
+ protected:
+  explicit constexpr Implement() = default;
+};
 
 }  // namespace pw::channel
 

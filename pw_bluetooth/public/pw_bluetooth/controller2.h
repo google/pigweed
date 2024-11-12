@@ -28,7 +28,8 @@ namespace pw::bluetooth {
 /// Controller. Controller is a `pw::Channel` used to send and receive HCI
 /// packets. The first byte of each datagram is a UART packet indicator
 /// (`H4PacketType` Emboss enum).
-class Controller2 : public pw::channel::ReliableDatagramReaderWriter {
+class Controller2
+    : public pw::channel::Implement<pw::channel::ReliableDatagramReaderWriter> {
  public:
   /// Bitmask of features the controller supports.
   enum class FeaturesBits : uint32_t {

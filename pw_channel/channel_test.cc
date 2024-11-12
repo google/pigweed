@@ -15,13 +15,13 @@
 
 #include <optional>
 
-#include "gtest/gtest.h"
 #include "pw_allocator/testing.h"
 #include "pw_assert/check.h"
 #include "pw_compilation_testing/negative_compilation.h"
 #include "pw_multibuf/allocator.h"
 #include "pw_multibuf/simple_allocator.h"
 #include "pw_preprocessor/compiler.h"
+#include "pw_unit_test/framework.h"
 
 namespace {
 
@@ -50,7 +50,7 @@ static_assert((kReliable < kReadable) && (kReadable < kWritable) &&
               (kWritable < kSeekable));
 
 class ReliableByteReaderWriterStub
-    : public pw::channel::ByteChannel<kReliable, kReadable, kWritable> {
+    : public pw::channel::ByteChannelImpl<kReliable, kReadable, kWritable> {
  private:
   // Read functions
 
@@ -83,7 +83,7 @@ class ReliableByteReaderWriterStub
   Poll<pw::Status> DoPendClose(Context&) override { return pw::OkStatus(); }
 };
 
-class ReadOnlyStub : public pw::channel::ByteReader {
+class ReadOnlyStub : public pw::channel::Implement<pw::channel::ByteReader> {
  public:
   constexpr ReadOnlyStub() = default;
 
@@ -96,7 +96,7 @@ class ReadOnlyStub : public pw::channel::ByteReader {
   Poll<pw::Status> DoPendClose(Context&) override { return pw::OkStatus(); }
 };
 
-class WriteOnlyStub : public pw::channel::ByteWriter {
+class WriteOnlyStub : public pw::channel::Implement<pw::channel::ByteWriter> {
  private:
   // Write functions
 
@@ -165,19 +165,30 @@ TEST(Channel, WriteOnlyChannelOnlyOpenForWrites) {
   EXPECT_TRUE(write_only.is_write_open());
 }
 
-#if PW_NC_TEST(InvalidOrdering)
+#if PW_NC_TEST(ChannelInvalidOrdering)
 PW_NC_EXPECT("Properties must be specified in the following order");
 bool Illegal(pw::channel::ByteChannel<kReadable, pw::channel::kReliable>& foo) {
   return foo.is_read_open();
 }
-#elif PW_NC_TEST(NoProperties)
+#elif PW_NC_TEST(ChannelImplInvalidOrdering)
+PW_NC_EXPECT("Properties must be specified in the following order");
+class BadChannel
+    : public pw::channel::ByteChannelImpl<kReadable, pw::channel::kReliable> {};
+#elif PW_NC_TEST(ChannelNoProperties)
 PW_NC_EXPECT("At least one of kReadable or kWritable must be provided");
 bool Illegal(pw::channel::ByteChannel<>& foo) { return foo.is_read_open(); }
-#elif PW_NC_TEST(NoReadOrWrite)
+#elif PW_NC_TEST(ChannelImplNoProperties)
+PW_NC_EXPECT("At least one of kReadable or kWritable must be provided");
+class NoChannel : public pw::channel::ByteChannelImpl<> {};
+#elif PW_NC_TEST(ChannelNoReadOrWrite)
 PW_NC_EXPECT("At least one of kReadable or kWritable must be provided");
 bool Illegal(pw::channel::ByteChannel<pw::channel::kReliable>& foo) {
   return foo.is_read_open();
 }
+#elif PW_NC_TEST(ChannelImplNoReadOrWrite)
+PW_NC_EXPECT("At least one of kReadable or kWritable must be provided");
+class BadChannel : public pw::channel::ByteChannelImpl<pw::channel::kReliable> {
+};
 #elif PW_NC_TEST(TooMany)
 PW_NC_EXPECT("Too many properties given");
 bool Illegal(
@@ -193,7 +204,8 @@ bool Illegal(pw::channel::ByteChannel<kReadable, kReadable>& foo) {
 }
 #endif  // PW_NC_TEST
 
-class TestByteReader : public ByteChannel<kReliable, kReadable> {
+class TestByteReader
+    : public pw::channel::ByteChannelImpl<kReliable, kReadable> {
  public:
   TestByteReader() {}
 
@@ -223,7 +235,7 @@ class TestByteReader : public ByteChannel<kReliable, kReadable> {
   MultiBuf data_;
 };
 
-class TestDatagramWriter : public DatagramWriter {
+class TestDatagramWriter : public pw::channel::Implement<DatagramWriter> {
  public:
   TestDatagramWriter(MultiBufAllocator& alloc) : alloc_fut_(alloc) {}
 
@@ -420,7 +432,7 @@ TEST(Channel, TestDatagramWriter) {
     DatagramWriter& channel_;
   };
 
-  SendWriteDataAndFlush test_task(write_channel, 24601);
+  SendWriteDataAndFlush test_task(write_channel.channel(), 24601);
   dispatcher.Post(test_task);
 
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
@@ -461,23 +473,42 @@ TEST(Channel, Conversions) {
   const TestByteReader byte_channel;
   const TestDatagramWriter datagram_channel(simple_allocator);
 
-  TakesAReadableByteChannel(byte_channel);
+  TakesAReadableByteChannel(byte_channel.channel());
+
   TakesAReadableByteChannel(byte_channel.as<kReadable>());
+  TakesAReadableByteChannel(byte_channel.channel().as<kReadable>());
+
   TakesAReadableByteChannel(byte_channel.as<pw::channel::ByteReader>());
   TakesAReadableByteChannel(
+      byte_channel.channel().as<pw::channel::ByteReader>());
+
+  TakesAReadableByteChannel(
       byte_channel.as<pw::channel::ByteChannel<kReliable, kReadable>>());
+  TakesAReadableByteChannel(
+      byte_channel.channel()
+          .as<pw::channel::ByteChannel<kReliable, kReadable>>());
+
   TakesAChannel(byte_channel);
+  TakesAChannel(byte_channel.as<pw::channel::AnyChannel>());
 
   TakesAWritableByteChannel(datagram_channel.IgnoreDatagramBoundaries());
+  TakesAWritableByteChannel(
+      datagram_channel.channel().IgnoreDatagramBoundaries());
 
   [[maybe_unused]] const pw::channel::AnyChannel& plain = byte_channel;
 
 #if PW_NC_TEST(CannotImplicitlyLoseWritability)
   PW_NC_EXPECT("no matching function for call");
-  TakesAWritableByteChannel(byte_channel);
+  TakesAWritableByteChannel(byte_channel.channel());
 #elif PW_NC_TEST(CannotExplicitlyLoseWritability)
   PW_NC_EXPECT("Cannot use a non-writable channel as a writable channel");
   TakesAWritableByteChannel(byte_channel.as<kWritable>());
+#elif PW_NC_TEST(CannotIgnoreDatagramBoundariesOnByteChannel)
+  PW_NC_EXPECT("only be called to use a datagram channel to a byte channel");
+  std::ignore = byte_channel.IgnoreDatagramBoundaries();
+#elif PW_NC_TEST(CannotIgnoreDatagramBoundariesOnByteChannelImpl)
+  PW_NC_EXPECT("only be called to use a datagram channel to a byte channel");
+  std::ignore = byte_channel.channel().IgnoreDatagramBoundaries();
 #endif  // PW_NC_TEST
 }
 
@@ -511,9 +542,32 @@ class Foo {
 TEST(Channel, SelectsCorrectOverloadWhenRelyingOnImplicitConversion) {
   TestByteReader byte_channel;
 
-  [[maybe_unused]] Foo selects_channel_ctor_not_copy_ctor(byte_channel);
+  [[maybe_unused]] Foo selects_channel_ctor_not_copy_ctor(
+      byte_channel.channel());
   EXPECT_EQ(&byte_channel.as<pw::channel::ByteChannel<kReadable>>(),
-            &TakesAReadableByteChannel(byte_channel));
+            &TakesAReadableByteChannel(byte_channel.channel()));
 }
+
+#if PW_NC_TEST(CannotCallUnsupportedWriteMethodsOnChannel)
+PW_NC_EXPECT("PendReadyToWrite may only be called on writable channels");
+[[maybe_unused]] void Bad(Context& cx, pw::channel::DatagramReader& c) {
+  std::ignore = c.PendReadyToWrite(cx);
+}
+#elif PW_NC_TEST(CannotCallUnsupportedWriteMethodsOnChannelImpl)
+PW_NC_EXPECT("PendReadyToWrite may only be called on writable channels");
+[[maybe_unused]] void Bad(Context& cx, pw::channel::ByteReaderImpl& c) {
+  std::ignore = c.PendReadyToWrite(cx);
+}
+#elif PW_NC_TEST(CannotCallUnsupportedReadMethodsOnChannel)
+PW_NC_EXPECT("PendRead may only be called on readable channels");
+[[maybe_unused]] void Bad(Context& cx, pw::channel::ByteWriter& c) {
+  std::ignore = c.PendRead(cx);
+}
+#elif PW_NC_TEST(CannotCallUnsupportedReadMethodsOnChannelImpl)
+PW_NC_EXPECT("PendRead may only be called on readable channels");
+[[maybe_unused]] void Bad(Context& cx, pw::channel::DatagramWriterImpl& c) {
+  std::ignore = c.PendRead(cx);
+}
+#endif  // PW_NC_TEST
 
 }  // namespace

@@ -142,7 +142,7 @@ TEST_F(EpollChannelTest, Read_ValidData_Succeeds) {
   ASSERT_TRUE(channel.is_read_open());
   ASSERT_TRUE(channel.is_write_open());
 
-  ReaderTask<ByteReader> read_task(channel, 1);
+  ReaderTask<ByteReader> read_task(channel.channel(), 1);
   dispatcher.Post(read_task);
 
   EXPECT_EQ(dispatcher.RunUntilStalled(), Pending());
@@ -184,7 +184,7 @@ TEST_F(EpollChannelTest, Read_Closed_ReturnsFailedPrecondition) {
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
   EXPECT_EQ(close_task.close_status, pw::OkStatus());
 
-  ReaderTask<ByteReader> read_task(channel, 1);
+  ReaderTask<ByteReader> read_task(channel.channel(), 1);
   dispatcher.Post(read_task);
 
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
@@ -257,7 +257,7 @@ TEST_F(EpollChannelTest, Write_ValidData_Succeeds) {
   ASSERT_TRUE(channel.is_write_open());
 
   constexpr auto kData = pw::bytes::Initialized<32>(0x3f);
-  WriterTask<ByteWriter> write_task(channel, 1, kData);
+  WriterTask<ByteWriter> write_task(channel.channel(), 1, kData);
   dispatcher.Post(write_task);
 
   dispatcher.RunToCompletion();
@@ -282,7 +282,7 @@ TEST_F(EpollChannelTest, Write_EmptyData_Succeeds) {
   ASSERT_TRUE(channel.is_read_open());
   ASSERT_TRUE(channel.is_write_open());
 
-  WriterTask<ByteWriter> write_task(channel, 1, {});
+  WriterTask<ByteWriter> write_task(channel.channel(), 1, {});
   dispatcher.Post(write_task);
 
   dispatcher.RunToCompletion();
@@ -307,7 +307,7 @@ TEST_F(EpollChannelTest, Write_Closed_ReturnsFailedPrecondition) {
   EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
   EXPECT_EQ(close_task.close_status, pw::OkStatus());
 
-  WriterTask<ByteWriter> write_task(channel, 1, {});
+  WriterTask<ByteWriter> write_task(channel.channel(), 1, {});
   dispatcher.Post(write_task);
 
   dispatcher.RunToCompletion();
@@ -339,7 +339,7 @@ TEST_F(EpollChannelTest, PendReadyToWrite_BlocksWhenUnavailable) {
   constexpr auto kData =
       pw::bytes::Initialized<decltype(alloc)::data_size_bytes()>('c');
   WriterTask<ByteWriter> write_task(
-      channel,
+      channel.channel(),
       100,  // Max writes set to some high number so the task fills the pipe.
       pw::ConstByteSpan(kData));
   dispatcher.Post(write_task);

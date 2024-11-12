@@ -111,7 +111,8 @@ class StreamChannelWriteState {
 /// `Stream::Write` are blocking. The stream reading and writing threaads
 /// may be blocked on `Read` or `Write` calls, and therefore cannot cleanly
 /// be shutdown.
-class StreamChannel final : public channel::ByteReaderWriter {
+class StreamChannel final
+    : public channel::Implement<channel::ByteReaderWriter> {
  public:
   StreamChannel(stream::Reader& reader,
                 const thread::Options& read_thread_options,

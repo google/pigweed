@@ -21,7 +21,10 @@ licenses(["notice"])
 cc_library(
     name = "pw_channel",
     srcs = ["public/pw_channel/internal/channel_specializations.h"],
-    hdrs = ["public/pw_channel/channel.h"],
+    hdrs = [
+        "public/pw_channel/channel.h",
+        "public/pw_channel/properties.h",
+    ],
     includes = ["public"],
     deps = [
         "//pw_assert",

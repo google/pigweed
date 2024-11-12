@@ -18,6 +18,7 @@ include($ENV{PW_ROOT}/pw_async2/backend.cmake)
 pw_add_library(pw_channel STATIC
   HEADERS
     public/pw_channel/channel.h
+    public/pw_channel/properties.h
   PUBLIC_DEPS
     pw_assert
     pw_async2.dispatcher

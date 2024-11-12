@@ -56,7 +56,9 @@ class ForwardingChannelPair {
   ForwardingChannelPair& operator=(ForwardingChannelPair&&) = delete;
 
   /// Returns the first channel in the pair.
-  Channel<kType, kReliable, kReadable, kWritable>& first() { return first_; }
+  Channel<kType, kReliable, kReadable, kWritable>& first() {
+    return first_.channel();
+  }
 
   /// Returns a const reference to the first channel in the pair.
   const Channel<kType, kReliable, kReadable, kWritable>& first() const {
@@ -64,7 +66,9 @@ class ForwardingChannelPair {
   }
 
   /// Returns the second channel in the pair.
-  Channel<kType, kReliable, kReadable, kWritable>& second() { return second_; }
+  Channel<kType, kReliable, kReadable, kWritable>& second() {
+    return second_.channel();
+  }
 
   /// Returns a const reference to the second channel in the pair.
   const Channel<kType, kReliable, kReadable, kWritable>& second() const {
@@ -94,7 +98,7 @@ namespace internal {
 
 template <>
 class ForwardingChannel<DataType::kDatagram>
-    : public ReliableDatagramReaderWriter {
+    : public Implement<ReliableDatagramReaderWriter> {
  public:
   ForwardingChannel(const ForwardingChannel&) = delete;
   ForwardingChannel& operator=(const ForwardingChannel&) = delete;
@@ -139,7 +143,8 @@ class ForwardingChannel<DataType::kDatagram>
 };
 
 template <>
-class ForwardingChannel<DataType::kByte> : public ReliableByteReaderWriter {
+class ForwardingChannel<DataType::kByte>
+    : public Implement<ReliableByteReaderWriter> {
  public:
   ForwardingChannel(const ForwardingChannel&) = delete;
   ForwardingChannel& operator=(const ForwardingChannel&) = delete;

@@ -69,7 +69,7 @@ class ReaderTask : public Task {
 TEST(LoopbackDatagramChannel, LoopsEmptyDatagrams) {
   SimpleAllocatorForTest alloc;
   LoopbackDatagramChannel channel(alloc);
-  ReaderTask<DatagramReader> read_task(channel);
+  ReaderTask<DatagramReader> read_task(channel.channel());
 
   Dispatcher dispatcher;
   dispatcher.Post(read_task);
@@ -89,7 +89,7 @@ TEST(LoopbackDatagramChannel, LoopsEmptyDatagrams) {
 TEST(LoopbackDatagramChannel, LoopsDatagrams) {
   SimpleAllocatorForTest alloc;
   LoopbackDatagramChannel channel(alloc);
-  ReaderTask<DatagramReader> read_task(channel);
+  ReaderTask<DatagramReader> read_task(channel.channel());
 
   Dispatcher dispatcher;
   dispatcher.Post(read_task);
@@ -109,7 +109,7 @@ TEST(LoopbackDatagramChannel, LoopsDatagrams) {
 TEST(LoopbackByteChannel, IgnoresEmptyWrites) {
   SimpleAllocatorForTest alloc;
   LoopbackByteChannel channel(alloc);
-  ReaderTask<ReliableByteReader> read_task(channel);
+  ReaderTask<ReliableByteReader> read_task(channel.channel());
 
   Dispatcher dispatcher;
   dispatcher.Post(read_task);
@@ -129,7 +129,7 @@ TEST(LoopbackByteChannel, IgnoresEmptyWrites) {
 TEST(LoopbackByteChannel, LoopsData) {
   SimpleAllocatorForTest alloc;
   LoopbackByteChannel channel(alloc);
-  ReaderTask<ReliableByteReader> read_task(channel);
+  ReaderTask<ReliableByteReader> read_task(channel.channel());
 
   Dispatcher dispatcher;
   dispatcher.Post(read_task);

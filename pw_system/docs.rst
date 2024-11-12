@@ -334,7 +334,7 @@ will automatically attach to the running python console.
 
 API reference
 =============
-.. doxygenfunction:: pw::SystemStart
+.. doxygenfunction:: pw::SystemStart(channel::ByteReaderWriter&)
 .. doxygenfunction:: pw::System
 .. doxygenclass:: pw::system::AsyncCore
    :members:

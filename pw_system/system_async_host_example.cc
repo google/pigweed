@@ -95,6 +95,6 @@ int main() {
       socket_fd, pw::System().dispatcher(), mb_alloc);
   PW_CHECK(channel.is_read_or_write_open());
 
-  pw::SystemStart(channel);
+  pw::SystemStart(channel.channel());
   return 0;
 }

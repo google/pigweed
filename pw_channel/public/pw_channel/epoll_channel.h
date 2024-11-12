@@ -36,7 +36,7 @@ namespace pw::channel {
 /// An instantiated EpollChannel takes ownership of the file descriptor it is
 /// given, and will close it if the channel is closed or destroyed. Users should
 /// not close a channel's file descriptor from outside.
-class EpollChannel : public ByteReaderWriter {
+class EpollChannel : public Implement<ByteReaderWriter> {
  public:
   EpollChannel(int channel_fd,
                async2::Dispatcher& dispatcher,
