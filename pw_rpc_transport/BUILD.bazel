@@ -29,7 +29,7 @@ licenses(["notice"])
 cc_library(
     name = "rpc_transport",
     hdrs = ["public/pw_rpc_transport/rpc_transport.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
         "//pw_function",
@@ -40,7 +40,7 @@ cc_library(
 cc_library(
     name = "service_registry",
     hdrs = ["public/pw_rpc_transport/service_registry.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":rpc_transport",
         "//pw_rpc:client_server",
@@ -52,7 +52,7 @@ cc_library(
 cc_library(
     name = "test_loopback_service_registry",
     hdrs = ["public/pw_rpc_transport/test_loopback_service_registry.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":egress_ingress",
         ":service_registry",
@@ -64,7 +64,7 @@ cc_library(
 cc_library(
     name = "packet_buffer_queue",
     hdrs = ["public/pw_rpc_transport/internal/packet_buffer_queue.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_bytes",
@@ -97,7 +97,7 @@ cc_library(
     name = "local_rpc_egress",
     srcs = ["local_rpc_egress.cc"],
     hdrs = ["public/pw_rpc_transport/local_rpc_egress.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":packet_buffer_queue",
         ":rpc_transport",
@@ -140,6 +140,7 @@ cc_library(
     hdrs = [
         "public/pw_rpc_transport/hdlc_framing.h",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":rpc_transport",
         "//pw_bytes",
@@ -169,6 +170,7 @@ cc_library(
         "simple_framing.cc",
     ],
     hdrs = ["public/pw_rpc_transport/simple_framing.h"],
+    strip_include_prefix = "public",
     deps = [
         ":rpc_transport",
         "//pw_assert",
@@ -195,6 +197,7 @@ cc_library(
         "egress_ingress.cc",
     ],
     hdrs = ["public/pw_rpc_transport/egress_ingress.h"],
+    strip_include_prefix = "public",
     deps = [
         ":hdlc_framing",
         ":rpc_transport",
@@ -226,6 +229,7 @@ cc_library(
     name = "socket_rpc_transport",
     srcs = ["socket_rpc_transport.cc"],
     hdrs = ["public/pw_rpc_transport/socket_rpc_transport.h"],
+    strip_include_prefix = "public",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":rpc_transport",
@@ -247,6 +251,7 @@ cc_library(
 cc_library(
     name = "stream_rpc_frame_sender",
     hdrs = ["public/pw_rpc_transport/stream_rpc_frame_sender.h"],
+    strip_include_prefix = "public",
     deps = [
         ":rpc_transport",
         "//pw_status",
@@ -257,6 +262,7 @@ cc_library(
 cc_library(
     name = "stream_rpc_dispatcher",
     hdrs = ["public/pw_rpc_transport/stream_rpc_dispatcher.h"],
+    strip_include_prefix = "public",
     deps = [
         ":egress_ingress",
         "//pw_metric:metric",

@@ -24,9 +24,11 @@ cc_library(
     name = "pw_boot_cortex_m",
     srcs = [
         "core_init.c",
+    ],
+    hdrs = [
         "public/pw_boot_cortex_m/boot.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = select({
         "@platforms//cpu:armv7-m": [],
         "@platforms//cpu:armv7e-m": [],

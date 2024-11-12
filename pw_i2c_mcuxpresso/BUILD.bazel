@@ -21,7 +21,7 @@ cc_library(
     name = "pw_i2c_mcuxpresso",
     srcs = ["initiator.cc"],
     hdrs = ["public/pw_i2c_mcuxpresso/initiator.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_chrono:system_clock",
         "//pw_i2c:address",
@@ -46,7 +46,7 @@ cc_library(
     hdrs = [
         "public/pw_i2c_mcuxpresso/i3c_ccc.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 cc_library(
@@ -55,7 +55,7 @@ cc_library(
     hdrs = [
         "public/pw_i2c_mcuxpresso/i3c_initiator.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":i3c_ccc",
         "//pw_bytes",

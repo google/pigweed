@@ -74,7 +74,7 @@ toolchain(
 cc_library(
     name = "no_destructor",
     hdrs = ["public/pw_toolchain/no_destructor.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 pw_cc_test(
@@ -90,7 +90,7 @@ pw_cc_test(
 cc_library(
     name = "sibling_cast",
     hdrs = ["public/pw_toolchain/internal/sibling_cast.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     visibility = ["//:__subpackages__"],  # Restrict to Pigweed
     deps = ["//pw_compilation_testing:negative_compilation_testing"],
 )

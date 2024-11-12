@@ -34,7 +34,7 @@ cc_library(
         "public/pw_metric/global.h",
         "public/pw_metric/metric.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_containers",
@@ -73,6 +73,7 @@ cc_library(
     name = "metric_service_nanopb",
     srcs = ["metric_service_nanopb.cc"],
     hdrs = ["public/pw_metric/metric_service_nanopb.h"],
+    strip_include_prefix = "public",
     deps = [
         ":metric",
         ":metric_proto_nanopb_rpc",
@@ -88,6 +89,7 @@ cc_library(
         "metric_proto_cc.pwpb.pb/pw_metric",
         "metric_proto_cc.raw_rpc.pb/pw_metric",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":metric",
         ":metric_proto_pwpb",

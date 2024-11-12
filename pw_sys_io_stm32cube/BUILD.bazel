@@ -24,7 +24,7 @@ cc_library(
     ],
     hdrs = ["public/pw_sys_io_stm32cube/init.h"],
     copts = ["-Wno-unused-parameter"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config_override",
         "//pw_preprocessor",

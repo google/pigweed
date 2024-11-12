@@ -119,7 +119,7 @@ cc_library(
         "public/pw_software_update/manifest_accessor.h",
         "public/pw_software_update/update_bundle_accessor.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     tags = ["manual"],  # TODO: b/236321905 - Depends on pw_crypto.
     deps = [
         ":blob_store_openable_reader",
@@ -149,7 +149,7 @@ cc_library(
     name = "bundled_update_service",
     srcs = ["bundled_update_service.cc"],
     hdrs = ["public/pw_software_update/bundled_update_service.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     tags = ["manual"],
     deps = [
         # ":bundled_update_proto_cc.nanopb_rpc",
@@ -174,7 +174,7 @@ cc_library(
     name = "bundled_update_service_pwpb",
     srcs = ["bundled_update_service_pwpb.cc"],
     hdrs = ["public/pw_software_update/bundled_update_service_pwpb.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     tags = ["manual"],
     deps = [
         # ":bundled_update_proto_cc.pwpb",

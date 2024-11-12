@@ -21,7 +21,7 @@ licenses(["notice"])
 cc_library(
     name = "config",
     hdrs = ["public/pw_assert_trap/config.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 # Note: to avoid circular dependencies, this target only includes the headers
@@ -56,9 +56,7 @@ cc_library(
     hdrs = [
         "public/pw_assert_trap/handler.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_preprocessor",
     ],
@@ -69,9 +67,7 @@ cc_library(
     hdrs = [
         "public/pw_assert_trap/message.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_string:string",
     ],

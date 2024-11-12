@@ -40,9 +40,7 @@ cc_library(
         "public/pw_assert/internal/check_impl.h",
         "public/pw_assert/short.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":assert_backend",
         ":check_backend",
@@ -76,9 +74,7 @@ pw_facade(
         "public/pw_assert/short.h",
     ],
     backend = ":check_backend",
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         "//pw_preprocessor",
@@ -111,9 +107,7 @@ pw_facade(
         "public/pw_assert/assert.h",
     ],
     backend = ":assert_backend",
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [":config"],
 )
 
@@ -140,7 +134,7 @@ label_flag(
 cc_library(
     name = "config",
     hdrs = ["public/pw_assert/config.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":config_override"],
 )
 
@@ -178,7 +172,7 @@ cc_library(
 cc_library(
     name = "print_and_abort",
     hdrs = ["public/pw_assert/internal/print_and_abort.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     visibility = ["//visibility:private"],
     deps = [":config"],
 )

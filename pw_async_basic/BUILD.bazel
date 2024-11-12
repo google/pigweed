@@ -65,7 +65,7 @@ cc_library(
     name = "dispatcher",
     srcs = ["dispatcher.cc"],
     hdrs = ["public/pw_async_basic/dispatcher.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_async:dispatcher",
         "//pw_async:task",

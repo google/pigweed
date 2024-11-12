@@ -30,7 +30,7 @@ cc_library(
         "public/pw_checksum/crc32.h",
         "public/pw_checksum/internal/config.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config_override",
         "//pw_bytes",

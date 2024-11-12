@@ -40,9 +40,7 @@ cc_library(
     hdrs = [
         "public/pw_trace_tokenized/config.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
 )
 
 cc_library(
@@ -82,9 +80,7 @@ cc_library(
     hdrs = [
         "public/pw_trace_tokenized/base_trace_service.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":buffer",
         ":pw_trace_tokenized",
@@ -101,9 +97,7 @@ cc_library(
     hdrs = [
         "public/pw_trace_tokenized/trace_service_pwpb.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":base_trace_service",
         ":protos_pwpb_rpc",
@@ -119,9 +113,7 @@ cc_library(
     hdrs = [
         "public/pw_trace_tokenized/trace_rpc_service_nanopb.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":buffer",
         ":protos_nanopb_rpc",
@@ -138,9 +130,7 @@ cc_library(
     hdrs = [
         "public/pw_trace_tokenized/trace_buffer.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":pw_trace_tokenized",
         "//pw_bytes",

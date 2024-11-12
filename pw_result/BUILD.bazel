@@ -20,9 +20,11 @@ licenses(["notice"])
 
 cc_library(
     name = "pw_result",
-    srcs = ["public/pw_result/internal/result_internal.h"],
-    hdrs = ["public/pw_result/result.h"],
-    includes = ["public"],
+    hdrs = [
+        "public/pw_result/internal/result_internal.h",
+        "public/pw_result/result.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_status",
@@ -31,9 +33,11 @@ cc_library(
 
 cc_library(
     name = "expected",
-    srcs = ["public/pw_result/internal/expected_impl.h"],
-    hdrs = ["public/pw_result/expected.h"],
-    includes = ["public"],
+    hdrs = [
+        "public/pw_result/expected.h",
+        "public/pw_result/internal/expected_impl.h",
+    ],
+    strip_include_prefix = "public",
 )
 
 pw_cc_test(

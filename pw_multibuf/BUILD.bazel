@@ -22,7 +22,7 @@ cc_library(
     name = "chunk",
     srcs = ["chunk.cc"],
     hdrs = ["public/pw_multibuf/chunk.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_bytes",
@@ -35,7 +35,7 @@ cc_library(
 cc_library(
     name = "header_chunk_region_tracker",
     hdrs = ["public/pw_multibuf/header_chunk_region_tracker.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":chunk",
         "//pw_allocator:allocator",
@@ -46,7 +46,7 @@ cc_library(
 cc_library(
     name = "single_chunk_region_tracker",
     hdrs = ["public/pw_multibuf/single_chunk_region_tracker.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":chunk",
         "//pw_assert",
@@ -94,6 +94,7 @@ cc_library(
     name = "pw_multibuf",
     srcs = ["multibuf.cc"],
     hdrs = ["public/pw_multibuf/multibuf.h"],
+    strip_include_prefix = "public",
     deps = [
         ":chunk",
         "//pw_preprocessor",
@@ -116,6 +117,7 @@ cc_library(
     name = "allocator",
     srcs = ["allocator.cc"],
     hdrs = ["public/pw_multibuf/allocator.h"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_multibuf",
         "//pw_async2:dispatcher",
@@ -140,6 +142,7 @@ cc_library(
     name = "simple_allocator",
     srcs = ["simple_allocator.cc"],
     hdrs = ["public/pw_multibuf/simple_allocator.h"],
+    strip_include_prefix = "public",
     deps = [
         ":allocator",
         ":pw_multibuf",
@@ -165,6 +168,7 @@ cc_library(
     name = "stream",
     srcs = ["stream.cc"],
     hdrs = ["public/pw_multibuf/stream.h"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_multibuf",
         "//pw_status",
@@ -187,6 +191,7 @@ cc_library(
     name = "from_span",
     srcs = ["from_span.cc"],
     hdrs = ["public/pw_multibuf/from_span.h"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_multibuf",
         "//pw_allocator:allocator",
@@ -208,7 +213,7 @@ cc_library(
     name = "testing",
     testonly = True,
     hdrs = ["public/pw_multibuf/simple_allocator_for_test.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":simple_allocator",
         "//pw_allocator:testing",

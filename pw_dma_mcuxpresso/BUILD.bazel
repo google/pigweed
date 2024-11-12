@@ -19,7 +19,7 @@ cc_library(
     hdrs = [
         "public/pw_dma_mcuxpresso/dma.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_status",

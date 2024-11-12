@@ -23,7 +23,7 @@ cc_library(
     name = "pw_sys_io_baremetal_stm32f429",
     srcs = ["sys_io_baremetal.cc"],
     hdrs = ["public/pw_sys_io_baremetal_stm32f429/init.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [":compatible"],
     deps = [
         "//pw_preprocessor",

@@ -23,7 +23,7 @@ pw_facade(
     name = "pw_sys_io",
     hdrs = ["public/pw_sys_io/sys_io.h"],
     backend = ":backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
         "//pw_status",

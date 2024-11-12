@@ -33,7 +33,7 @@ pw_facade(
         "public/pw_sync/binary_semaphore.h",
     ],
     backend = ":binary_semaphore_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
@@ -59,7 +59,7 @@ pw_facade(
         "public/pw_sync/counting_semaphore.h",
     ],
     backend = ":counting_semaphore_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
@@ -81,7 +81,7 @@ cc_library(
     hdrs = [
         "public/pw_sync/lock_annotations.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_preprocessor",
     ],
@@ -92,7 +92,7 @@ cc_library(
     hdrs = [
         "public/pw_sync/lock_traits.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 cc_library(
@@ -100,7 +100,7 @@ cc_library(
     hdrs = [
         "public/pw_sync/borrow.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":lock_annotations",
         ":lock_traits",
@@ -115,7 +115,7 @@ cc_library(
         "public/pw_sync/inline_borrowable.h",
         "public/pw_sync/internal/borrowable_storage.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":borrow",
         ":mutex",
@@ -128,7 +128,7 @@ cc_library(
     hdrs = [
         "public/pw_sync/virtual_basic_lockable.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":lock_annotations",
         "//pw_polyfill",
@@ -144,6 +144,7 @@ pw_facade(
         "public/pw_sync/mutex.h",
     ],
     backend = ":mutex_backend",
+    strip_include_prefix = "public",
     deps = [
         ":lock_annotations",
         ":virtual_basic_lockable",
@@ -170,6 +171,7 @@ pw_facade(
         "public/pw_sync/timed_mutex.h",
     ],
     backend = ":timed_mutex_backend",
+    strip_include_prefix = "public",
     deps = [
         ":lock_annotations",
         ":mutex",
@@ -194,7 +196,7 @@ pw_facade(
     srcs = ["recursive_mutex.cc"],
     hdrs = ["public/pw_sync/recursive_mutex.h"],
     backend = ":recursive_mutex_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":lock_annotations",
         "//pw_preprocessor",
@@ -220,6 +222,7 @@ pw_facade(
         "public/pw_sync/interrupt_spin_lock.h",
     ],
     backend = ":interrupt_spin_lock_backend",
+    strip_include_prefix = "public",
     deps = [
         ":lock_annotations",
         ":virtual_basic_lockable",
@@ -243,7 +246,7 @@ pw_facade(
         "public/pw_sync/thread_notification.h",
     ],
     backend = ":thread_notification_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_chrono:system_clock",
     ],
@@ -265,6 +268,7 @@ pw_facade(
         "public/pw_sync/timed_thread_notification.h",
     ],
     backend = ":timed_thread_notification_backend",
+    strip_include_prefix = "public",
     deps = [
         ":thread_notification",
         "//pw_chrono:system_clock",
@@ -323,7 +327,7 @@ cc_library(
     hdrs = [
         "public/pw_sync/yield_core.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 cc_library(
@@ -331,7 +335,7 @@ cc_library(
     hdrs = [
         "public/pw_sync/condition_variable.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_chrono:system_clock",
         "//pw_sync:mutex",
@@ -366,7 +370,7 @@ cc_library(
     name = "lock_testing",
     srcs = ["lock_testing.cc"],
     hdrs = ["public/pw_sync/lock_testing.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":virtual_basic_lockable",
         "//pw_assert",

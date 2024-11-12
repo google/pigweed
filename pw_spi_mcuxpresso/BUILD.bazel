@@ -26,7 +26,7 @@ cc_library(
     hdrs = [
         "public/pw_spi_mcuxpresso/spi.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
@@ -52,7 +52,7 @@ cc_library(
     hdrs = [
         "public/pw_spi_mcuxpresso/flexio_spi.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
@@ -75,7 +75,7 @@ cc_library(
     hdrs = [
         "public/pw_spi_mcuxpresso/responder.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/chipset:imxrt500",
     ],

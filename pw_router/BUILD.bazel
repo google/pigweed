@@ -22,7 +22,7 @@ cc_library(
     name = "static_router",
     srcs = ["static_router.cc"],
     hdrs = ["public/pw_router/static_router.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":egress",
         ":packet_parser",
@@ -34,6 +34,7 @@ cc_library(
 cc_library(
     name = "egress",
     hdrs = ["public/pw_router/egress.h"],
+    strip_include_prefix = "public",
     deps = [
         ":packet_parser",
         "//pw_bytes",
@@ -43,13 +44,14 @@ cc_library(
 cc_library(
     name = "packet_parser",
     hdrs = ["public/pw_router/packet_parser.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = ["//pw_bytes"],
 )
 
 cc_library(
     name = "egress_function",
     hdrs = ["public/pw_router/egress_function.h"],
+    strip_include_prefix = "public",
     deps = [
         ":egress",
         "//pw_function",

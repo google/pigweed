@@ -30,7 +30,7 @@ cc_library(
         "public/pw_build_info/build_id.h",
         "public/pw_build_info/util.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_span",
     ],

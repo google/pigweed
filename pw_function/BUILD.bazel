@@ -22,7 +22,7 @@ licenses(["notice"])
 cc_library(
     name = "config",
     hdrs = ["public/pw_function/config.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":config_override"],
 )
 
@@ -34,7 +34,7 @@ label_flag(
 cc_library(
     name = "pw_function",
     hdrs = ["public/pw_function/function.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         "//pw_assert",
@@ -54,9 +54,11 @@ pw_cc_test(
 
 cc_library(
     name = "pointer",
-    srcs = ["public/pw_function/internal/static_invoker.h"],
-    hdrs = ["public/pw_function/pointer.h"],
-    includes = ["public"],
+    hdrs = [
+        "public/pw_function/internal/static_invoker.h",
+        "public/pw_function/pointer.h",
+    ],
+    strip_include_prefix = "public",
 )
 
 pw_cc_test(
@@ -71,7 +73,7 @@ pw_cc_test(
 cc_library(
     name = "scope_guard",
     hdrs = ["public/pw_function/scope_guard.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 pw_cc_test(

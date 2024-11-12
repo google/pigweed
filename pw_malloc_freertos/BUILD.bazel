@@ -25,7 +25,7 @@ cc_library(
     name = "allocator",
     srcs = ["allocator.cc"],
     hdrs = ["public/pw_malloc_freertos/allocator.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_allocator:allocator",
         "@freertos",

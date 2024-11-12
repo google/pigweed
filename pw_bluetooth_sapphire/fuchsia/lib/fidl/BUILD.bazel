@@ -30,9 +30,7 @@ fuchsia_cc_library(
     hdrs = [
         "public/pw_bluetooth_sapphire/fuchsia/lib/fidl/hanging_getter.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_function",
     ],

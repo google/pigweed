@@ -35,7 +35,7 @@ cc_library(
     hdrs = [
         "public/pw_i2c/address.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
     ],
@@ -46,7 +46,7 @@ cc_library(
     hdrs = [
         "public/pw_i2c/initiator.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":address",
         "//pw_bytes",
@@ -60,7 +60,7 @@ cc_library(
     hdrs = [
         "public/pw_i2c/device.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":address",
         ":initiator",
@@ -76,7 +76,7 @@ cc_library(
     hdrs = [
         "public/pw_i2c/register_device.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":address",
         ":device",
@@ -104,7 +104,7 @@ cc_library(
     testonly = True,
     srcs = ["initiator_mock.cc"],
     hdrs = ["public/pw_i2c/initiator_mock.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":address",
         ":initiator",
@@ -121,7 +121,7 @@ cc_library(
     hdrs = [
         "public/pw_i2c/initiator_gmock.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     # TODO: b/310957361 - gtest not supported on device
     target_compatible_with = incompatible_with_mcu(),
     deps = [
@@ -198,7 +198,7 @@ cc_library(
     name = "i2c_service",
     srcs = ["i2c_service.cc"],
     hdrs = ["public/pw_i2c/i2c_service.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":address",
         ":i2c_pwpb_rpc",

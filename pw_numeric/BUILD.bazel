@@ -21,7 +21,7 @@ licenses(["notice"])
 cc_library(
     name = "integer_division",
     hdrs = ["public/pw_numeric/integer_division.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 pw_cc_test(

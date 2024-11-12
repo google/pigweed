@@ -28,7 +28,7 @@ cc_library(
         "public/pw_multisink/config.h",
         "public/pw_multisink/multisink.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config_override",
         "//pw_assert",
@@ -54,7 +54,7 @@ cc_library(
     name = "util",
     srcs = ["util.cc"],
     hdrs = ["public/pw_multisink/util.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_multisink",
         "//pw_bytes",
@@ -68,7 +68,7 @@ cc_library(
 cc_library(
     name = "test_thread",
     hdrs = ["public/pw_multisink/test_thread.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_thread:thread",
     ],

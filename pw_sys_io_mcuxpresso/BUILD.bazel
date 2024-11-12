@@ -20,7 +20,7 @@ cc_library(
     name = "pw_sys_io_mcuxpresso",
     srcs = ["sys_io.cc"],
     hdrs = ["public/pw_sys_io_mcuxpresso/init.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],

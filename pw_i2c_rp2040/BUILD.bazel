@@ -26,9 +26,7 @@ cc_library(
     hdrs = [
         "public/pw_i2c_rp2040/initiator.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_chrono:system_clock",
         "//pw_digital_io",

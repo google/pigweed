@@ -21,7 +21,7 @@ licenses(["notice"])
 cc_library(
     name = "pw_clock_tree_mcuxpresso",
     hdrs = ["public/pw_clock_tree_mcuxpresso/clock_tree.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],

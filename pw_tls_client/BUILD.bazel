@@ -27,7 +27,7 @@ pw_facade(
         "public/pw_tls_client/status.h",
     ],
     backend = ":pw_tls_client_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_bytes",
@@ -51,7 +51,7 @@ pw_facade(
         "public/pw_tls_client/entropy.h",
     ],
     backend = ":entropy_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
         "//pw_status",
@@ -71,7 +71,7 @@ cc_library(
     hdrs = [
         "public/pw_tls_client/entropy.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
         "//pw_log",
@@ -82,7 +82,7 @@ cc_library(
 cc_library(
     name = "crlset",
     hdrs = ["public/pw_tls_client/crlset.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
     ],
@@ -92,7 +92,7 @@ cc_library(
     name = "test_server",
     srcs = ["test_server.cc"],
     hdrs = ["public/pw_tls_client/test/test_server.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     # TODO: b/257527057 - Get this to build.
     tags = ["manual"],
     deps = [

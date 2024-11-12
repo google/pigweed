@@ -20,12 +20,12 @@ licenses(["notice"])
 
 cc_library(
     name = "pw_span",
-    srcs = [
+    hdrs = [
         "public/pw_span/internal/config.h",
         "public/pw_span/internal/span_impl.h",
+        "public/pw_span/span.h",
     ],
-    hdrs = ["public/pw_span/span.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         # TODO: b/243851191 - Depending on pw_assert causes a dependency cycle.
     ],

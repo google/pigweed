@@ -60,7 +60,7 @@ pw_facade(
     srcs = ["crash.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/crash.h"],
     backend = ":crash_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     # TODO: https://pwbug.dev/350758633 - add v6m support
     target_compatible_with = select({
         "@platforms//cpu:armv7-m": [],
@@ -80,7 +80,7 @@ pw_facade(
 cc_library(
     name = "cpu_state",
     hdrs = ["public/pw_cpu_exception_cortex_m/cpu_state.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_preprocessor",
         "//pw_preprocessor:cortex_m",
@@ -91,7 +91,7 @@ cc_library(
     name = "util",
     srcs = ["util.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/util.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = select({
         "@platforms//cpu:armv6-m": [],
         "@platforms//cpu:armv7-m": [],
@@ -129,7 +129,7 @@ cc_library(
     name = "proto_dump",
     srcs = ["proto_dump.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/proto_dump.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = select({
         "@platforms//cpu:armv6-m": [],
         "@platforms//cpu:armv7-m": [],
@@ -211,6 +211,7 @@ cc_library(
     name = "snapshot",
     srcs = ["snapshot.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/snapshot.h"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         ":cortex_m_constants",
@@ -237,6 +238,7 @@ cc_library(
     name = "cpu_exception_entry_test_util",
     srcs = ["exception_entry_test_util.cc"],
     hdrs = ["public/pw_cpu_exception_cortex_m/exception_entry_test_util.h"],
+    strip_include_prefix = "public",
     target_compatible_with = select({
         "@platforms//cpu:armv6-m": [],
         "@platforms//cpu:armv7-m": [],

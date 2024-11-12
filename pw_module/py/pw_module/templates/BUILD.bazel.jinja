@@ -36,7 +36,7 @@ cc_library(
     name = "{{ target.name }}",
     srcs = {{ bazel.file_list(build, target.sources) }}
     hdrs = {{ bazel.file_list(build, target.headers) }}
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 {% endfor %}
 

@@ -57,7 +57,7 @@ cc_library(
     name = "benchmark",
     srcs = ["benchmark.cc"],
     hdrs = ["public/pw_rpc/benchmark.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":benchmark_pwpb",
         ":benchmark_raw_rpc",
@@ -79,6 +79,7 @@ cc_library(
     name = "client_server",
     srcs = ["client_server.cc"],
     hdrs = ["public/pw_rpc/client_server.h"],
+    strip_include_prefix = "public",
     deps = [":pw_rpc"],
 )
 
@@ -114,22 +115,6 @@ cc_library(
         "endpoint.cc",
         "packet.cc",
         "packet_meta.cc",
-        "public/pw_rpc/internal/call.h",
-        "public/pw_rpc/internal/call_context.h",
-        "public/pw_rpc/internal/channel_list.h",
-        "public/pw_rpc/internal/client_call.h",
-        "public/pw_rpc/internal/encoding_buffer.h",
-        "public/pw_rpc/internal/endpoint.h",
-        "public/pw_rpc/internal/grpc.h",
-        "public/pw_rpc/internal/hash.h",
-        "public/pw_rpc/internal/lock.h",
-        "public/pw_rpc/internal/log_config.h",
-        "public/pw_rpc/internal/method.h",
-        "public/pw_rpc/internal/method_union.h",
-        "public/pw_rpc/internal/packet.h",
-        "public/pw_rpc/internal/server_call.h",
-        "public/pw_rpc/method_info.h",
-        "public/pw_rpc/writer.h",
         "server.cc",
         "server_call.cc",
         "service.cc",
@@ -137,9 +122,23 @@ cc_library(
     hdrs = [
         "public/pw_rpc/channel.h",
         "public/pw_rpc/client.h",
+        "public/pw_rpc/internal/call.h",
+        "public/pw_rpc/internal/call_context.h",
+        "public/pw_rpc/internal/channel_list.h",
+        "public/pw_rpc/internal/client_call.h",
         "public/pw_rpc/internal/config.h",
+        "public/pw_rpc/internal/encoding_buffer.h",
+        "public/pw_rpc/internal/endpoint.h",
+        "public/pw_rpc/internal/grpc.h",
+        "public/pw_rpc/internal/hash.h",
+        "public/pw_rpc/internal/lock.h",
+        "public/pw_rpc/internal/log_config.h",
+        "public/pw_rpc/internal/method.h",
         "public/pw_rpc/internal/method_info.h",
         "public/pw_rpc/internal/method_lookup.h",
+        "public/pw_rpc/internal/method_union.h",
+        "public/pw_rpc/internal/packet.h",
+        "public/pw_rpc/internal/server_call.h",
         "public/pw_rpc/internal/service_client.h",
         "public/pw_rpc/method_id.h",
         "public/pw_rpc/method_info.h",
@@ -148,6 +147,7 @@ cc_library(
         "public/pw_rpc/server.h",
         "public/pw_rpc/service.h",
         "public/pw_rpc/service_id.h",
+        "public/pw_rpc/writer.h",
     ],
     # LINT.IfChange
     defines = select({
@@ -156,7 +156,7 @@ cc_library(
         ":yield_mode_yield": ["PW_RPC_YIELD_MODE=PW_RPC_YIELD_MODE_YIELD"],
     }),
     # LINT.ThenChange(//pw_rpc/public/pw_rpc/internal/config.h)
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config_override",
         ":internal_packet_pwpb",
@@ -201,12 +201,12 @@ config_setting(
 
 cc_library(
     name = "synchronous_client_api",
-    srcs = ["public/pw_rpc/internal/synchronous_call_impl.h"],
     hdrs = [
+        "public/pw_rpc/internal/synchronous_call_impl.h",
         "public/pw_rpc/synchronous_call.h",
         "public/pw_rpc/synchronous_call_result.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_rpc",
         "//pw_chrono:system_clock",
@@ -217,7 +217,7 @@ cc_library(
 cc_library(
     name = "client_server_testing",
     hdrs = ["public/pw_rpc/internal/client_server_testing.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":client_server",
         ":internal_test_utils",
@@ -229,7 +229,7 @@ cc_library(
 cc_library(
     name = "client_server_testing_threaded",
     hdrs = ["public/pw_rpc/internal/client_server_testing_threaded.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":client_server_testing",
         "//pw_bytes",
@@ -244,7 +244,7 @@ cc_library(
 cc_library(
     name = "test_helpers",
     hdrs = ["public/pw_rpc/test_helpers.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":internal_test_utils",
         ":pw_rpc",
@@ -261,7 +261,7 @@ cc_library(
 cc_library(
     name = "thread_testing",
     hdrs = ["public/pw_rpc/thread_testing.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":test_helpers"],
 )
 
@@ -306,6 +306,7 @@ cc_library(
         "public/pw_rpc/integration_test_socket_client.h",
         "public/pw_rpc/integration_testing.h",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":pw_rpc",
         "//pw_assert",

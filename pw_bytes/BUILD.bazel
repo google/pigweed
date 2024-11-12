@@ -31,7 +31,7 @@ cc_library(
         "public/pw_bytes/suffix.h",
         "public/pw_bytes/units.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":bit",
         "//pw_containers:iterator",
@@ -48,7 +48,7 @@ cc_library(
         "alignment.cc",
     ],
     hdrs = ["public/pw_bytes/alignment.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_bytes",
@@ -59,14 +59,14 @@ cc_library(
 cc_library(
     name = "bit",
     hdrs = ["public/pw_bytes/bit.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = ["//third_party/fuchsia:stdcompat"],
 )
 
 cc_library(
     name = "packed_ptr",
     hdrs = ["public/pw_bytes/packed_ptr.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//third_party/fuchsia:stdcompat",

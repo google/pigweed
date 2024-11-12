@@ -30,7 +30,7 @@ cc_library(
         "public/pw_digital_io_linux/internal/owned_fd.h",
         "public/pw_digital_io_linux/notifier.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//pw_digital_io",

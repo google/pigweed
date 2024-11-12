@@ -26,7 +26,7 @@ licenses(["notice"])
 cc_library(
     name = "config",
     hdrs = ["public/pw_protobuf/config.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":config_override"],
 )
 
@@ -57,7 +57,7 @@ cc_library(
         "public/pw_protobuf/stream_decoder.h",
         "public/pw_protobuf/wire_format.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         "//pw_assert",
@@ -81,7 +81,7 @@ cc_library(
 cc_library(
     name = "bytes_utils",
     hdrs = ["public/pw_protobuf/bytes_utils.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_protobuf",
         "//pw_bytes",

@@ -27,7 +27,7 @@ cc_library(
     hdrs = [
         "public/pw_chrono/epoch.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 cc_library(
@@ -35,7 +35,7 @@ cc_library(
     hdrs = [
         "public/pw_chrono/virtual_clock.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 pw_facade(
@@ -48,7 +48,7 @@ pw_facade(
         "public/pw_chrono/system_clock.h",
     ],
     backend = ":system_clock_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":epoch",
         ":virtual_clock",
@@ -78,7 +78,7 @@ pw_facade(
         "public/pw_chrono/system_timer.h",
     ],
     backend = ":system_timer_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":system_clock",
     ],
@@ -123,6 +123,7 @@ cc_library(
     hdrs = [
         "public/pw_chrono/simulated_system_clock.h",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":system_clock",
         "//pw_sync:interrupt_spin_lock",

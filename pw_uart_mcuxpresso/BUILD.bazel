@@ -22,7 +22,7 @@ cc_library(
     name = "dma_uart",
     srcs = ["dma_uart.cc"],
     hdrs = ["public/pw_uart_mcuxpresso/dma_uart.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],

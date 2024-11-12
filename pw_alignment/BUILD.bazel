@@ -17,5 +17,5 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "pw_alignment",
     hdrs = ["public/pw_alignment/alignment.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )

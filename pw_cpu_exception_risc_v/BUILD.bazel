@@ -38,7 +38,7 @@ label_flag(
 cc_library(
     name = "cpu_state",
     hdrs = ["public/pw_cpu_exception_risc_v/cpu_state.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_preprocessor",
     ],
@@ -66,7 +66,7 @@ cc_library(
     name = "proto_dump",
     srcs = ["proto_dump.cc"],
     hdrs = ["public/pw_cpu_exception_risc_v/proto_dump.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         ":cpu_state",

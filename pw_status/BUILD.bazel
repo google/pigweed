@@ -21,15 +21,15 @@ licenses(["notice"])
 cc_library(
     name = "pw_status",
     srcs = [
-        "public/pw_status/internal/config.h",
         "status.cc",
     ],
     hdrs = [
+        "public/pw_status/internal/config.h",
         "public/pw_status/status.h",
         "public/pw_status/status_with_size.h",
         "public/pw_status/try.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":config_override"],
 )
 

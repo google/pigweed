@@ -23,7 +23,7 @@ cc_library(
     hdrs = [
         "public/pw_log_rpc/internal/config.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     visibility = ["//visibility:private"],
     deps = [
         ":config_override",
@@ -39,10 +39,12 @@ cc_library(
     name = "log_service",
     srcs = [
         "log_service.cc",
-        "public/pw_log_rpc/internal/log_config.h",
     ],
-    hdrs = ["public/pw_log_rpc/log_service.h"],
-    includes = ["public"],
+    hdrs = [
+        "public/pw_log_rpc/internal/log_config.h",
+        "public/pw_log_rpc/log_service.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         ":log_filter",
@@ -57,7 +59,7 @@ cc_library(
     name = "log_filter_service",
     srcs = ["log_filter_service.cc"],
     hdrs = ["public/pw_log_rpc/log_filter_service.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":log_filter",
         "//pw_log",
@@ -77,7 +79,7 @@ cc_library(
         "public/pw_log_rpc/log_filter.h",
         "public/pw_log_rpc/log_filter_map.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         "//pw_assert",
@@ -99,7 +101,7 @@ cc_library(
         "public/pw_log_rpc/rpc_log_drain.h",
         "public/pw_log_rpc/rpc_log_drain_map.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         ":log_filter",
@@ -120,7 +122,7 @@ cc_library(
 cc_library(
     name = "rpc_log_drain_thread",
     hdrs = ["public/pw_log_rpc/rpc_log_drain_thread.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":log_service",
         ":rpc_log_drain",

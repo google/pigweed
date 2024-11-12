@@ -34,7 +34,7 @@ pw_facade(
         "public/pw_trace/trace.h",
     ],
     backend = ":backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_preprocessor",
     ],

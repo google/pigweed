@@ -24,9 +24,7 @@ cc_library(
     hdrs = [
         "public/cpp-string/string_printf.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
 )
 
 pw_cc_test(

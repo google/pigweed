@@ -25,7 +25,7 @@ cc_library(
         "public/pw_display/colors_endesga64.h",
         "public/pw_display/colors_pico8.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 pw_cc_test(

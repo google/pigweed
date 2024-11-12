@@ -23,7 +23,7 @@ cc_library(
     hdrs = [
         "public/pw_uart/uart_base.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_status",
     ],
@@ -34,7 +34,7 @@ cc_library(
     hdrs = [
         "public/pw_uart/uart.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":uart_base",
         "//pw_assert",
@@ -50,7 +50,7 @@ cc_library(
     hdrs = [
         "public/pw_uart/uart_non_blocking.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":uart_base",
         "//pw_assert",
@@ -69,7 +69,7 @@ cc_library(
     hdrs = [
         "public/pw_uart/blocking_adapter.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":uart",
         ":uart_non_blocking",
@@ -85,7 +85,7 @@ cc_library(
     hdrs = [
         "public/pw_uart/stream.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":uart",
         "//pw_stream",

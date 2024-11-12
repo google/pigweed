@@ -49,7 +49,7 @@ cc_library(
     hdrs = [
         "public/pw_assert_tokenized/handler.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_preprocessor",
     ],

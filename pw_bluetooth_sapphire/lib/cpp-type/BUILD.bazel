@@ -22,9 +22,7 @@ cc_library(
         "public/cpp-type/member_pointer_traits.h",
         "public/cpp-type/to_std_array.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
 )
 
 pw_cc_test(

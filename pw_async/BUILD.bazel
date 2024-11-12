@@ -25,7 +25,7 @@ cc_library(
         "public/pw_async/dispatcher.h",
         "public/pw_async/function_dispatcher.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":types",
         "//pw_chrono:system_clock",
@@ -38,7 +38,7 @@ pw_facade(
     name = "task",
     hdrs = ["public/pw_async/task.h"],
     backend = ":task_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":types",
         "//pw_chrono:system_clock",
@@ -58,7 +58,7 @@ cc_library(
         "public/pw_async/context.h",
         "public/pw_async/task_function.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_function",
         "//pw_status",
@@ -69,7 +69,7 @@ pw_facade(
     name = "fake_dispatcher",
     hdrs = ["public/pw_async/fake_dispatcher.h"],
     backend = ":fake_dispatcher_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":dispatcher",
     ],
@@ -96,7 +96,7 @@ pw_cc_test(
 cc_library(
     name = "fake_dispatcher_fixture",
     hdrs = ["public/pw_async/fake_dispatcher_fixture.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":fake_dispatcher"],
 )
 
@@ -104,7 +104,7 @@ cc_library(
     name = "heap_dispatcher",
     srcs = ["heap_dispatcher.cc"],
     hdrs = ["public/pw_async/heap_dispatcher.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":dispatcher",
         ":task",

@@ -36,7 +36,7 @@ label_flag(
 cc_library(
     name = "config",
     hdrs = ["public/pw_unit_test/config.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config_override",
         "//pw_polyfill",
@@ -53,7 +53,7 @@ pw_facade(
     testonly = True,
     hdrs = ["public/pw_unit_test/framework.h"],
     backend = ":backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":status_macros"],
 )
 
@@ -154,20 +154,21 @@ config_setting(
 cc_library(
     name = "event_handler",
     hdrs = ["public/pw_unit_test/event_handler.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 cc_library(
     name = "status_macros",
     testonly = True,
     hdrs = ["public/pw_unit_test/status_macros.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 cc_library(
     name = "googletest_style_event_handler",
     srcs = ["googletest_style_event_handler.cc"],
     hdrs = ["public/pw_unit_test/googletest_style_event_handler.h"],
+    strip_include_prefix = "public",
     deps = [
         ":event_handler",
         "//pw_preprocessor",
@@ -179,7 +180,7 @@ cc_library(
     testonly = True,
     srcs = ["googletest_handler_adapter.cc"],
     hdrs = ["public/pw_unit_test/googletest_handler_adapter.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     # TODO: b/310957361 - gtest not supported on device
     target_compatible_with = incompatible_with_mcu(),
     deps = [
@@ -193,7 +194,7 @@ cc_library(
     name = "googletest_test_matchers",
     testonly = True,
     hdrs = ["public/pw_unit_test/googletest_test_matchers.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     # TODO: b/310957361 - gtest not supported on device
     target_compatible_with = incompatible_with_mcu(),
     deps = [
@@ -218,9 +219,7 @@ cc_library(
     hdrs = [
         "public/pw_unit_test/simple_printing_event_handler.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":googletest_style_event_handler",
         "//pw_preprocessor",
@@ -245,6 +244,7 @@ cc_library(
     name = "printf_event_handler",
     testonly = True,
     hdrs = ["public/pw_unit_test/printf_event_handler.h"],
+    strip_include_prefix = "public",
     deps = [
         ":googletest_style_event_handler",
         "//pw_preprocessor",
@@ -277,9 +277,7 @@ cc_library(
     hdrs = [
         "public/pw_unit_test/logging_event_handler.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":googletest_style_event_handler",
         "//pw_log",
@@ -309,9 +307,7 @@ cc_library(
     hdrs = [
         "public/pw_unit_test/multi_event_handler.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":event_handler",
     ],
@@ -329,13 +325,11 @@ pw_cc_test(
 cc_library(
     name = "test_record_event_handler",
     testonly = True,
-    srcs = ["public/pw_unit_test/internal/test_record_trie.h"],
     hdrs = [
+        "public/pw_unit_test/internal/test_record_trie.h",
         "public/pw_unit_test/test_record_event_handler.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":event_handler",
         "//pw_assert",
@@ -427,7 +421,7 @@ cc_library(
     testonly = True,
     srcs = ["static_library_support.cc"],
     hdrs = ["public/pw_unit_test/static_library_support.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     # This library only works with the light backend
     target_compatible_with = select({
         ":light_setting": [],

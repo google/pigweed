@@ -18,6 +18,6 @@ licenses(["notice"])
 cc_library(
     name = "negative_compilation_testing",
     hdrs = ["public/pw_compilation_testing/negative_compilation.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     visibility = ["//:__subpackages__"],  # Restrict to Pigweed
 )

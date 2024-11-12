@@ -29,12 +29,6 @@ cc_library(
         "flash_memory.cc",
         "format.cc",
         "key_value_store.cc",
-        "public/pw_kvs/internal/entry.h",
-        "public/pw_kvs/internal/entry_cache.h",
-        "public/pw_kvs/internal/hash.h",
-        "public/pw_kvs/internal/key_descriptor.h",
-        "public/pw_kvs/internal/sectors.h",
-        "public/pw_kvs/internal/span_traits.h",
         "pw_kvs_private/config.h",
         "sectors.cc",
     ],
@@ -44,10 +38,16 @@ cc_library(
         "public/pw_kvs/crc16_checksum.h",
         "public/pw_kvs/flash_memory.h",
         "public/pw_kvs/format.h",
+        "public/pw_kvs/internal/entry.h",
+        "public/pw_kvs/internal/entry_cache.h",
+        "public/pw_kvs/internal/hash.h",
+        "public/pw_kvs/internal/key_descriptor.h",
+        "public/pw_kvs/internal/sectors.h",
+        "public/pw_kvs/internal/span_traits.h",
         "public/pw_kvs/io.h",
         "public/pw_kvs/key_value_store.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config_override",
         "//pw_assert",
@@ -84,12 +84,14 @@ cc_library(
 cc_library(
     name = "flash_test_partition",
     hdrs = ["public/pw_kvs/flash_test_partition.h"],
+    strip_include_prefix = "public",
     deps = [":pw_kvs"],
 )
 
 cc_library(
     name = "test_key_value_store",
     hdrs = ["public/pw_kvs/test_key_value_store.h"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_kvs",
         "//pw_sync:borrow",
@@ -104,7 +106,7 @@ cc_library(
     hdrs = [
         "public/pw_kvs/fake_flash_memory.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_kvs",
         "//pw_containers",
@@ -120,7 +122,7 @@ cc_library(
     hdrs = [
         "public/pw_kvs/flash_partition_with_logical_sectors.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_kvs",
     ],
@@ -139,6 +141,7 @@ cc_library(
         "PW_FLASH_TEST_SECTOR_SIZE=4096U",
         "PW_FLASH_TEST_ALIGNMENT=1U",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -159,6 +162,7 @@ cc_library(
         "PW_FLASH_TEST_ALIGNMENT=1U",
         "PW_FLASH_TEST_SECTORS_PER_LOGICAL_SECTOR=4U",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":fake_flash",
         ":flash_partition_with_logical_sectors",
@@ -175,6 +179,7 @@ cc_library(
         "PW_FLASH_TEST_SECTOR_SIZE=4",
         "PW_FLASH_TEST_ALIGNMENT=4",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":fake_flash",
         ":flash_test_partition",
@@ -195,6 +200,7 @@ cc_library(
         "PW_FLASH_TEST_SECTOR_SIZE=4096U",
         "PW_FLASH_TEST_ALIGNMENT=16",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -214,6 +220,7 @@ cc_library(
         "PW_FLASH_TEST_SECTOR_SIZE=4096U",
         "PW_FLASH_TEST_ALIGNMENT=64U",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -233,6 +240,7 @@ cc_library(
         "PW_FLASH_TEST_SECTOR_SIZE=4096U",
         "PW_FLASH_TEST_ALIGNMENT=256U",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":fake_flash",
         ":pw_kvs",
@@ -247,6 +255,7 @@ cc_library(
     hdrs = [
         "public/pw_kvs/test_key_value_store.h",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":crc16",
         ":fake_flash",
@@ -263,7 +272,7 @@ cc_library(
     hdrs = [
         "public/pw_kvs/flash_partition_with_stats.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:private"],
     deps = [

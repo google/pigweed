@@ -24,7 +24,7 @@ cc_library(
     hdrs = [
         "public/pw_analog/analog_input.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_chrono:system_clock",
         "//pw_result",
@@ -36,7 +36,7 @@ cc_library(
     hdrs = [
         "public/pw_analog/microvolt_input.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":analog_input",
         "//pw_chrono:system_clock",
@@ -51,7 +51,7 @@ cc_library(
     hdrs = [
         "public/pw_analog/microvolt_input_gmock.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     # TODO: b/310957361 - gtest not supported on device
     target_compatible_with = incompatible_with_mcu(),
     deps = [
@@ -66,7 +66,7 @@ cc_library(
     hdrs = [
         "public/pw_analog/analog_input_gmock.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     # TODO: b/310957361 - gtest not supported on device
     target_compatible_with = incompatible_with_mcu(),
     deps = [

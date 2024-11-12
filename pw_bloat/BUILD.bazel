@@ -25,7 +25,7 @@ cc_library(
     name = "bloat_this_binary",
     srcs = ["bloat_this_binary.cc"],
     hdrs = ["public/pw_bloat/bloat_this_binary.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_assert",

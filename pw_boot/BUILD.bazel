@@ -32,7 +32,7 @@ pw_facade(
         "public/pw_boot/boot.h",
     ],
     backend = ":backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_preprocessor",
     ],

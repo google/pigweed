@@ -40,7 +40,7 @@ pw_facade(
         "public/pw_log_string/handler.h",
     ],
     backend = ":handler_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_preprocessor",
     ],

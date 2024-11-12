@@ -19,7 +19,7 @@ licenses(["notice"])
 cc_library(
     name = "facade",
     hdrs = ["public/pw_rpc_system_server/rpc_server.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_rpc",
         "//pw_span",
@@ -33,6 +33,7 @@ cc_library(
         "public/pw_rpc_system_server/rpc_server.h",
         "public/pw_rpc_system_server/socket.h",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":backend",
         ":facade",

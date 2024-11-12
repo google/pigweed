@@ -28,9 +28,7 @@ fuchsia_cc_library(
         "public/pw_bluetooth_sapphire/fuchsia/host/controllers/fidl_controller.h",
         "public/pw_bluetooth_sapphire/fuchsia/host/controllers/helpers.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
 )
 
 fuchsia_cc_library(

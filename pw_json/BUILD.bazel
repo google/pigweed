@@ -20,12 +20,12 @@ licenses(["notice"])
 
 cc_library(
     name = "builder",
-    srcs = [
+    hdrs = [
+        "public/pw_json/builder.h",
         "public/pw_json/internal/builder_impl.h",
         "public/pw_json/internal/nesting.h",
     ],
-    hdrs = ["public/pw_json/builder.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_status",

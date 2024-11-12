@@ -25,7 +25,7 @@ cc_library(
         "public/pw_blob_store/blob_store.h",
         "public/pw_blob_store/internal/metadata_format.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
         "//pw_checksum",
@@ -44,7 +44,7 @@ cc_library(
     name = "flat_file_system_entry",
     srcs = ["flat_file_system_entry.cc"],
     hdrs = ["public/pw_blob_store/flat_file_system_entry.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_blob_store",
         "//pw_bytes",

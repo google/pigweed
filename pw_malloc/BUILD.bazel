@@ -49,8 +49,8 @@ pw_facade(
         "public/pw_malloc/malloc.h",
     ],
     backend = ":backend",
-    includes = ["public"],
     linkopts = COMMON_LINKOPTS,
+    strip_include_prefix = "public",
     deps = [
         ":config_override",
         "//pw_allocator:allocator",

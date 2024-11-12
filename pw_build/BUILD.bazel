@@ -145,13 +145,13 @@ cc_library(
 cc_library(
     name = "must_place",
     hdrs = ["public/pw_build/must_place.ld.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 cc_library(
     name = "linker_symbol",
     hdrs = ["public/pw_build/linker_symbol.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//third_party/fuchsia:stdcompat",
     ],

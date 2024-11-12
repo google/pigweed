@@ -33,7 +33,7 @@ cc_library(
         "public/pw_perf_test/internal/test_info.h",
         "public/pw_perf_test/perf_test.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":event_handler",
         ":state",
@@ -50,7 +50,7 @@ cc_library(
     hdrs = [
         "public/pw_perf_test/state.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":event_handler",
         ":timer",
@@ -70,7 +70,7 @@ pw_cc_test(
 cc_library(
     name = "event_handler",
     hdrs = ["public/pw_perf_test/event_handler.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":timer"],
 )
 
@@ -81,9 +81,7 @@ cc_library(
         "public/pw_perf_test/googletest_style_event_handler.h",
         "public/pw_perf_test/logging_event_handler.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":event_handler",
         "//pw_log",
@@ -106,7 +104,7 @@ cc_library(
     hdrs = [
         "public/pw_perf_test/internal/duration_unit.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     visibility = ["//visibility:private"],
 )
 
@@ -116,7 +114,7 @@ pw_facade(
         "public/pw_perf_test/internal/timer.h",
     ],
     backend = ":test_timer_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":duration_unit",
     ],

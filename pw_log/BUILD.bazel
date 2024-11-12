@@ -43,7 +43,7 @@ pw_facade(
         "public/pw_log/shorter.h",
     ],
     backend = ":backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config_override",
         "//pw_preprocessor",
@@ -58,7 +58,7 @@ cc_library(
     hdrs = [
         "public/pw_log/rate_limited.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config_override",
         ":pw_log",
@@ -71,7 +71,7 @@ cc_library(
     hdrs = [
         "public/pw_log/tokenized_args.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = ["//pw_tokenizer"],
 )
 
@@ -111,7 +111,7 @@ cc_library(
         "public/pw_log/glog_adapter_config.h",
         "public/pw_log/internal/glog_adapter.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":glog_adapter_config_override",
         "//pw_assert",
@@ -134,6 +134,7 @@ cc_library(
     hdrs = [
         "public/pw_log/proto_utils.h",
     ],
+    strip_include_prefix = "public",
     deps = [
         ":log_proto_pwpb",
         ":pw_log.facade",

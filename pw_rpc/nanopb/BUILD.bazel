@@ -30,7 +30,7 @@ cc_library(
         "public/pw_rpc/nanopb/internal/method_union.h",
         "public/pw_rpc/nanopb/server_reader_writer.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":common",
         "//pw_rpc/raw:server_api",
@@ -40,7 +40,7 @@ cc_library(
 cc_library(
     name = "client_api",
     hdrs = ["public/pw_rpc/nanopb/client_reader_writer.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":common",
     ],
@@ -53,7 +53,7 @@ cc_library(
         "public/pw_rpc/nanopb/internal/common.h",
         "public/pw_rpc/nanopb/server_reader_writer.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_rpc",
         "@com_github_nanopb_nanopb//:nanopb",
@@ -66,7 +66,7 @@ cc_library(
         "public/pw_rpc/nanopb/fake_channel_output.h",
         "public/pw_rpc/nanopb/test_method_context.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_containers",
         "//pw_rpc:internal_test_utils",
@@ -78,7 +78,7 @@ cc_library(
     hdrs = [
         "public/pw_rpc/nanopb/client_testing.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":test_method_context",
         "//pw_rpc",
@@ -91,7 +91,7 @@ cc_library(
     hdrs = [
         "public/pw_rpc/nanopb/client_server_testing.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":test_method_context",
         "//pw_rpc:client_server_testing",
@@ -103,7 +103,7 @@ cc_library(
     hdrs = [
         "public/pw_rpc/nanopb/client_server_testing_threaded.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":test_method_context",
         "//pw_rpc:client_server_testing_threaded",
@@ -119,6 +119,7 @@ cc_library(
 cc_library(
     name = "echo_service",
     hdrs = ["public/pw_rpc/echo_service_nanopb.h"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_rpc:echo_nanopb_rpc",
     ],

@@ -36,6 +36,7 @@ cc_library(
     hdrs = [
         "public/pw_system/config.h",
     ],
+    strip_include_prefix = "public",
     visibility = ["//visibility:private"],
     deps = [":config_override"],
 )
@@ -96,7 +97,7 @@ cc_library(
     hdrs = [
         "public/pw_system/log.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         ":rpc_server",
@@ -148,7 +149,7 @@ cc_library(
     hdrs = [
         "public/pw_system/rpc_server.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         ":io",
@@ -170,7 +171,7 @@ cc_library(
     hdrs = [
         "public/pw_system/thread_snapshot_service.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_rpc",
         "//pw_thread:thread_snapshot_service",
@@ -183,7 +184,7 @@ pw_facade(
         "public/pw_system/io.h",
     ],
     backend = ":io_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_stream",
     ],
@@ -200,7 +201,7 @@ pw_facade(
         "public/pw_system/device_handler.h",
     ],
     backend = ":device_handler_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_snapshot:snapshot_proto_pwpb",
     ],
@@ -216,7 +217,7 @@ cc_library(
     srcs = [
         "unknown_device_handler.cc",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":device_handler.facade",
     ],
@@ -230,7 +231,7 @@ cc_library(
     hdrs = [
         "public/pw_system/init.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":device_service",
         ":file_manager",
@@ -263,7 +264,7 @@ cc_library(
     hdrs = [
         "public/pw_system/work_queue.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         "//pw_work_queue",
@@ -275,7 +276,7 @@ cc_library(
     srcs = [
         "sys_io_target_io.cc",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":io.facade",
         "//pw_stream",
@@ -288,7 +289,7 @@ cc_library(
     srcs = [
         "socket_target_io.cc",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         ":io.facade",
@@ -306,7 +307,7 @@ cc_library(
     hdrs = [
         "public/pw_system/transfer_handlers.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         "//pw_persistent_ram",
@@ -323,7 +324,7 @@ cc_library(
     hdrs = [
         "public/pw_system/file_manager.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         ":trace_service",
@@ -346,7 +347,7 @@ cc_library(
     hdrs = [
         "public/pw_system/transfer_service.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":file_manager",
         "//pw_transfer",
@@ -361,7 +362,7 @@ cc_library(
     hdrs = [
         "public/pw_system/file_service.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":file_manager",
     ],
@@ -375,7 +376,7 @@ cc_library(
     hdrs = [
         "public/pw_system/trace_service.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":transfer_handlers",
         "//pw_persistent_ram",
@@ -391,7 +392,7 @@ cc_library(
     hdrs = [
         "public/pw_system/crash_handler.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":crash_snapshot",
         ":device_handler",
@@ -409,7 +410,7 @@ cc_library(
     hdrs = [
         "public/pw_system/crash_snapshot.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":device_handler",
         ":log",
@@ -458,7 +459,7 @@ cc_library(
     hdrs = [
         "public/pw_system/device_service_pwpb.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":device_handler",
         ":device_service_pwpb_rpc",
@@ -473,7 +474,7 @@ cc_library(
     hdrs = [
         "public/pw_system/device_service.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":device_service_pwpb",
     ],
@@ -484,7 +485,7 @@ cc_library(
     hdrs = [
         "public/pw_system/target_hooks.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":target_hooks_backend",
         "//pw_thread:thread",
@@ -513,7 +514,7 @@ cc_library(
     srcs = [
         "stl_target_hooks.cc",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         "//pw_thread:thread",
@@ -529,7 +530,7 @@ cc_library(
     hdrs = [
         "public/pw_system/target_hooks.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],
@@ -591,7 +592,7 @@ cc_library(
         ],
         "//conditions:default": [],
     }),
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_allocator:allocator",
         "//pw_async2:dispatcher",
@@ -608,7 +609,7 @@ cc_library(
         "//pw_assert",
         "//pw_log",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     visibility = ["//visibility:private"],
     deps = [
         ":config",

@@ -25,7 +25,7 @@ cc_library(
         "public/pw_polyfill/standard.h",
         "public/pw_polyfill/static_assert.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 cc_library(

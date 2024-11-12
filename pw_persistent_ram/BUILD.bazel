@@ -25,7 +25,7 @@ cc_library(
         "public/pw_persistent_ram/persistent.h",
         "public/pw_persistent_ram/persistent_buffer.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_bytes",
@@ -39,7 +39,7 @@ cc_library(
     hdrs = [
         "public/pw_persistent_ram/flat_file_system_entry.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_file:flat_file_system",
         "//pw_persistent_ram",

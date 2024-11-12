@@ -224,7 +224,7 @@ cc_library(
     hdrs = [
         "public/pw_thread_freertos/util.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],

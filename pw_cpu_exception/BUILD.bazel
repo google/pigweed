@@ -53,7 +53,7 @@ pw_facade(
         "public/pw_cpu_exception/state.h",
     ],
     backend = ":entry_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_preprocessor",
     ],
@@ -67,7 +67,7 @@ pw_facade(
     implementation_deps = [
         "//pw_preprocessor",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":entry"],
 )
 
@@ -75,7 +75,7 @@ pw_facade(
     name = "support",
     hdrs = ["public/pw_cpu_exception/support.h"],
     backend = ":support_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":entry",
     ],

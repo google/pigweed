@@ -33,6 +33,6 @@ cc_library(
 cc_library(
     name = "pw_sys_io_arduino_header",
     hdrs = ["public/pw_sys_io_arduino/init.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     visibility = ["//visibility:public"],
 )

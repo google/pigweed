@@ -30,7 +30,7 @@ cc_library(
         "public/pw_digital_io_mcuxpresso/interrupt_controller.h",
         "public/pw_digital_io_mcuxpresso/interrupt_line.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_digital_io",
         "//pw_preprocessor",

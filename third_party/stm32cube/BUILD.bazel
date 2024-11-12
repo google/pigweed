@@ -25,7 +25,7 @@ cc_library(
         "public/stm32cube/init.h",
         "public/stm32cube/stm32cube.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":hal_driver",
     ],

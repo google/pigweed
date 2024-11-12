@@ -25,7 +25,7 @@ pw_facade(
         "public/pw_crypto/sha256.h",
     ],
     backend = ":sha256_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_bytes",
@@ -64,7 +64,10 @@ cc_library(
         "public/pw_crypto/sha256_mbedtls.h",
         "public_overrides/mbedtls/pw_crypto/sha256_backend.h",
     ],
-    includes = ["public_overrides/mbedtls"],
+    includes = [
+        "public",
+        "public_overrides/mbedtls",
+    ],
     deps = [
         ":sha256.facade",
         "@mbedtls",
@@ -109,7 +112,7 @@ pw_facade(
         "public/pw_crypto/ecdsa.h",
     ],
     backend = ":ecdsa_backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
         "//pw_status",

@@ -185,7 +185,7 @@ cc_library(
     srcs = [
         "device_handler.cc",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_cpu_exception_cortex_m:snapshot",
         "//pw_system:device_handler.facade",

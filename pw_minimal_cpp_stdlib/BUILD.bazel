@@ -65,7 +65,7 @@ cc_library(
         "public/utility",
     ],
     copts = ["-nostdinc++"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_polyfill:standard_library",
     ],

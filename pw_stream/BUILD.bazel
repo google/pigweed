@@ -30,7 +30,7 @@ cc_library(
         "public/pw_stream/seek.h",
         "public/pw_stream/stream.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_assert",
         "//pw_bytes",
@@ -48,6 +48,7 @@ cc_library(
     name = "socket_stream",
     srcs = ["socket_stream.cc"],
     hdrs = ["public/pw_stream/socket_stream.h"],
+    strip_include_prefix = "public",
     target_compatible_with = incompatible_with_mcu(unless_platform_has = ":socket_stream_compatible"),
     deps = [
         ":pw_stream",
@@ -61,6 +62,7 @@ cc_library(
 cc_library(
     name = "sys_io_stream",
     hdrs = ["public/pw_stream/sys_io_stream.h"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_stream",
         "//pw_sys_io",
@@ -71,6 +73,7 @@ cc_library(
     name = "std_file_stream",
     srcs = ["std_file_stream.cc"],
     hdrs = ["public/pw_stream/std_file_stream.h"],
+    strip_include_prefix = "public",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":pw_stream",
@@ -82,6 +85,7 @@ cc_library(
     name = "interval_reader",
     srcs = ["interval_reader.cc"],
     hdrs = ["public/pw_stream/interval_reader.h"],
+    strip_include_prefix = "public",
     deps = [":pw_stream"],
 )
 
@@ -89,6 +93,7 @@ cc_library(
     name = "mpsc_stream",
     srcs = ["mpsc_stream.cc"],
     hdrs = ["public/pw_stream/mpsc_stream.h"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_stream",
         "//pw_assert",

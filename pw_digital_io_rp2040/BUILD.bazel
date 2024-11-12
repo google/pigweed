@@ -26,9 +26,7 @@ cc_library(
     hdrs = [
         "public/pw_digital_io_rp2040/digital_io.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_digital_io",
         "//pw_status",

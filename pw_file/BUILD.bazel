@@ -61,7 +61,7 @@ cc_library(
     hdrs = [
         "public/pw_file/flat_file_system.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":file_proto_pwpb",
         ":file_proto_raw_rpc",

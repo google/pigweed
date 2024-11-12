@@ -28,9 +28,7 @@ fuchsia_cc_library(
         "public/pw_bluetooth_sapphire/fuchsia/host/socket/socket_channel_relay.h",
         "public/pw_bluetooth_sapphire/fuchsia/host/socket/socket_factory.h",
     ],
-    includes = [
-        "public",
-    ],
+    strip_include_prefix = "public",
 )
 
 fuchsia_cc_library(

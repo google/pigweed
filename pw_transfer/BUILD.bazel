@@ -34,7 +34,7 @@ hosts_lin_mac = {
 cc_library(
     name = "config",
     hdrs = ["public/pw_transfer/internal/config.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config_override",
         "//pw_chrono:system_clock",
@@ -52,22 +52,22 @@ cc_library(
         "chunk.cc",
         "client_context.cc",
         "context.cc",
-        "public/pw_transfer/internal/chunk.h",
-        "public/pw_transfer/internal/client_context.h",
-        "public/pw_transfer/internal/context.h",
-        "public/pw_transfer/internal/event.h",
-        "public/pw_transfer/internal/protocol.h",
-        "public/pw_transfer/internal/server_context.h",
         "rate_estimate.cc",
         "server_context.cc",
         "transfer_thread.cc",
     ],
     hdrs = [
         "public/pw_transfer/handler.h",
+        "public/pw_transfer/internal/chunk.h",
+        "public/pw_transfer/internal/client_context.h",
+        "public/pw_transfer/internal/context.h",
+        "public/pw_transfer/internal/event.h",
+        "public/pw_transfer/internal/protocol.h",
+        "public/pw_transfer/internal/server_context.h",
         "public/pw_transfer/rate_estimate.h",
         "public/pw_transfer/transfer_thread.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         ":transfer_pwpb",
@@ -101,7 +101,7 @@ cc_library(
     hdrs = [
         "public/pw_transfer/transfer.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":core",
         "//pw_assert",
@@ -123,7 +123,7 @@ cc_library(
     hdrs = [
         "public/pw_transfer/client.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":core",
         "//pw_assert",
@@ -139,7 +139,7 @@ cc_library(
     hdrs = [
         "public/pw_transfer/atomic_file_transfer_handler.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":atomic_file_transfer_handler_internal",
         ":core",

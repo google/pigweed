@@ -27,7 +27,7 @@ cc_library(
     hdrs = [
         "public/pw_varint/varint.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_preprocessor",
         "//pw_span",
@@ -43,7 +43,7 @@ cc_library(
     hdrs = [
         "public/pw_varint/stream.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":pw_varint",
         "//pw_span",

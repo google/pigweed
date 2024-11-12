@@ -20,19 +20,17 @@ licenses(["notice"])
 
 cc_library(
     name = "pw_preprocessor",
-    srcs = [
-        "public/pw_preprocessor/internal/apply_macros.h",
-        "public/pw_preprocessor/internal/arg_count_impl.h",
-    ],
     hdrs = [
         "public/pw_preprocessor/apply.h",
         "public/pw_preprocessor/arguments.h",
         "public/pw_preprocessor/boolean.h",
         "public/pw_preprocessor/compiler.h",
         "public/pw_preprocessor/concat.h",
+        "public/pw_preprocessor/internal/apply_macros.h",
+        "public/pw_preprocessor/internal/arg_count_impl.h",
         "public/pw_preprocessor/util.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = ["//pw_polyfill"],
 )
 
@@ -41,7 +39,7 @@ cc_library(
     hdrs = [
         "public/pw_preprocessor/arch.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":config_override"],
 )
 

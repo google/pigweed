@@ -26,7 +26,7 @@ cc_library(
     hdrs = [
         "public/pw_ring_buffer/prefixed_entry_ring_buffer.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_containers",
         "//pw_result",

@@ -28,7 +28,7 @@ cc_library(
         "public/pw_rpc/raw/internal/method_union.h",
         "public/pw_rpc/raw/server_reader_writer.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
         "//pw_rpc",
@@ -40,7 +40,7 @@ cc_library(
 cc_library(
     name = "client_api",
     hdrs = ["public/pw_rpc/raw/client_reader_writer.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
         "//pw_rpc",
@@ -51,7 +51,7 @@ cc_library(
 cc_library(
     name = "fake_channel_output",
     hdrs = ["public/pw_rpc/raw/fake_channel_output.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":server_api",
         "//pw_assert",
@@ -62,7 +62,7 @@ cc_library(
 cc_library(
     name = "test_method_context",
     hdrs = ["public/pw_rpc/raw/test_method_context.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":fake_channel_output",
         ":server_api",
@@ -78,6 +78,7 @@ cc_library(
     name = "client_testing",
     srcs = ["client_testing.cc"],
     hdrs = ["public/pw_rpc/raw/client_testing.h"],
+    strip_include_prefix = "public",
     deps = [
         ":test_method_context",
         "//pw_assert",

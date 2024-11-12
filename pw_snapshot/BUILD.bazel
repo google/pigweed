@@ -28,7 +28,7 @@ cc_library(
     hdrs = [
         "public/pw_snapshot/uuid.h",
     ],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":metadata_proto_pwpb",
         "//pw_bytes",

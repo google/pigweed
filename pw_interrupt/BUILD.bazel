@@ -28,7 +28,7 @@ pw_facade(
         "public/pw_interrupt/context.h",
     ],
     backend = ":backend",
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 label_flag(

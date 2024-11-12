@@ -22,7 +22,7 @@ cc_library(
     name = "pw_stream_uart_mcuxpresso",
     srcs = ["stream.cc"],
     hdrs = ["public/pw_stream_uart_mcuxpresso/stream.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
@@ -38,7 +38,7 @@ cc_library(
     name = "interrupt_safe_writer",
     srcs = ["interrupt_safe_writer.cc"],
     hdrs = ["public/pw_stream_uart_mcuxpresso/interrupt_safe_writer.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],

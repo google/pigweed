@@ -25,7 +25,7 @@ package(
 cc_library(
     name = "pw_my_module",
     hdrs = ["public/pw_my_module/standing_screeb.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
 )
 
 proto_library(

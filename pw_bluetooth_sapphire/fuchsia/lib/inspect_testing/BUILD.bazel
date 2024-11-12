@@ -18,7 +18,7 @@ cc_library(
     name = "inspect_testing",
     srcs = ["inspect.cc"],
     hdrs = ["public/lib/inspect/testing/cpp/inspect.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bluetooth_sapphire:config",
     ] + select({
