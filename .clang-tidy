@@ -74,6 +74,7 @@ Checks: >
     readability-string-compare,
 WarningsAsErrors: >
     *,
+    -clang-diagnostic-deprecated-declarations,
     -clang-diagnostic-unused-command-line-argument
 HeaderFilterRegex: '.*'
 ...
