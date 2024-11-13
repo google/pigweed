@@ -62,6 +62,7 @@ pw_display
 pw_dma_mcuxpresso
 pw_docgen
 pw_doctor
+pw_elf
 pw_emu
 pw_env_setup
 pw_env_setup_zephyr

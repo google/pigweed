@@ -53,6 +53,7 @@ Modules
    pw_dma_mcuxpresso/docs
    pw_docgen/docs
    pw_doctor/docs
+   pw_elf/docs
    pw_emu/docs
    pw_env_setup/docs
    pw_env_setup_zephyr/docs

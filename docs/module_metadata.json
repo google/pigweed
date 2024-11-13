@@ -276,6 +276,13 @@
       "GN"
     ]
   },
+  "pw_elf": {
+    "tagline": "ELF file support",
+    "status": "experimental",
+    "languages": [
+      "C++17"
+    ]
+  },
   "pw_emu": {
     "tagline": "Flexible emulators frontend",
     "status": "experimental",
