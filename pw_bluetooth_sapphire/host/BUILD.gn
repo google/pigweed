@@ -18,13 +18,10 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pigweed/third_party/emboss/emboss.gni")
 import("$dir_pw_assert/backend.gni")
 import("$dir_pw_async/backend.gni")
+import("$dir_pw_bluetooth_sapphire/sapphire.gni")
 import("$dir_pw_function/function.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
-
-declare_args() {
-  pw_bluetooth_sapphire_ENABLED = false
-}
 
 # LINT.IfChange(copts)
 # Common C++ flags used in bt-host to ensure it builds in Pigweed and downstreams.

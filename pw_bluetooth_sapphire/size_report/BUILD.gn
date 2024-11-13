@@ -1,0 +1,63 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+import("$dir_pw_bloat/bloat.gni")
+import("$dir_pw_bluetooth_sapphire/sapphire.gni")
+import("$dir_pw_build/target_types.gni")
+
+config("getentropy_wrap_config") {
+  ldflags = [ "-Wl,--wrap=getentropy" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("wrap_getentropy") {
+  all_dependent_configs = [ ":getentropy_wrap_config" ]
+  sources = [ "wrap_getentropy.cc" ]
+}
+
+pw_executable("host") {
+  sources = [ "host.cc" ]
+  deps = [
+    ":wrap_getentropy",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_bluetooth_sapphire/host",
+  ]
+}
+
+# We can only compute size when Sapphire is enabled, implying that all the
+# necessary GN args and dependencies (e.g. emboss, boringssl) are configured.
+if (pw_bluetooth_sapphire_ENABLED) {
+  pw_size_diff("host_size_diff") {
+    title = "Host Size Report"
+    base = "$dir_pw_bloat:bloat_base"
+    binaries = [
+      {
+        target = ":host"
+        label = "Create and initialize host"
+      },
+    ]
+  }
+} else {
+  pw_size_diff("host_size_diff") {
+    title = "Host Size Report"
+    base = "$dir_pw_bloat:bloat_base"
+    binaries = [
+      {
+        target = "$dir_pw_bloat:bloat_base"
+        label = "Packages not configured"
+      },
+    ]
+  }
+}
