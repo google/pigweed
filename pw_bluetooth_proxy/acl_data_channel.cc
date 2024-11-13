@@ -81,7 +81,7 @@ AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent<
 
 void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
     H4PacketWithHci&& h4_packet) {
-  auto nocp_event =
+  Result<emboss::NumberOfCompletedPacketsEventWriter> nocp_event =
       MakeEmbossWriter<emboss::NumberOfCompletedPacketsEventWriter>(
           h4_packet.GetHciSpan());
   if (!nocp_event.ok()) {
@@ -133,8 +133,9 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
 
 void AclDataChannel::HandleDisconnectionCompleteEvent(
     H4PacketWithHci&& h4_packet) {
-  auto dc_event = MakeEmbossView<emboss::DisconnectionCompleteEventWriter>(
-      h4_packet.GetHciSpan());
+  Result<emboss::DisconnectionCompleteEventWriter> dc_event =
+      MakeEmbossView<emboss::DisconnectionCompleteEventWriter>(
+          h4_packet.GetHciSpan());
   if (!dc_event.ok()) {
     PW_LOG_ERROR(
         "Buffer is too small for DISCONNECTION_COMPLETE event. So will not "
@@ -197,7 +198,7 @@ bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
   }
   ++proxy_pending_le_acl_packets_;
 
-  auto acl_view =
+  Result<emboss::AclDataFrameHeaderView> acl_view =
       MakeEmbossView<emboss::AclDataFrameHeaderView>(h4_packet.GetHciSpan());
   if (!acl_view.ok()) {
     PW_LOG_ERROR("Received invalid ACL packet. So will not send.");

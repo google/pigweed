@@ -38,7 +38,8 @@ void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
 
 void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
   pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
-  auto event = MakeEmbossView<emboss::EventHeaderView>(hci_buffer);
+  Result<emboss::EventHeaderView> event =
+      MakeEmbossView<emboss::EventHeaderView>(hci_buffer);
   if (!event.ok()) {
     PW_LOG_ERROR(
         "Buffer is too small for EventHeader. So will pass on to host without "
@@ -73,7 +74,7 @@ void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
 
 void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
   pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
-  auto command_complete_event =
+  Result<emboss::CommandCompleteEventView> command_complete_event =
       MakeEmbossView<emboss::CommandCompleteEventView>(hci_buffer);
   if (!command_complete_event.ok()) {
     PW_LOG_ERROR(
@@ -86,8 +87,9 @@ void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
   PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
   switch (command_complete_event->command_opcode_enum().Read()) {
     case emboss::OpCode::LE_READ_BUFFER_SIZE_V1: {
-      auto read_event = MakeEmbossWriter<
-          emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(hci_buffer);
+      Result<emboss::LEReadBufferSizeV1CommandCompleteEventWriter> read_event =
+          MakeEmbossWriter<
+              emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(hci_buffer);
       if (!read_event.ok()) {
         PW_LOG_ERROR(
             "Buffer is too small for LE_READ_BUFFER_SIZE_V1 command complete "
@@ -99,8 +101,9 @@ void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
       break;
     }
     case emboss::OpCode::LE_READ_BUFFER_SIZE_V2: {
-      auto read_event = MakeEmbossWriter<
-          emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(hci_buffer);
+      Result<emboss::LEReadBufferSizeV2CommandCompleteEventWriter> read_event =
+          MakeEmbossWriter<
+              emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(hci_buffer);
       if (!read_event.ok()) {
         PW_LOG_ERROR(
             "Buffer is too small for LE_READ_BUFFER_SIZE_V2 command complete "

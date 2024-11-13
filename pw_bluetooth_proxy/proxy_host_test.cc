@@ -915,13 +915,14 @@ TEST(GattNotifyTest, Send1ByteAttribute) {
         PW_TEST_ASSERT_OK_AND_ASSIGN(
             auto acl,
             MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
-        auto l2cap =
+        emboss::BFrameView l2cap =
             emboss::MakeBFrameView(acl.payload().BackingStorage().data(),
                                    acl.data_total_length().Read());
-        auto gatt_notify = emboss::MakeAttHandleValueNtfView(
-            capture.attribute_value.size(),
-            l2cap.payload().BackingStorage().data(),
-            l2cap.pdu_length().Read());
+        emboss::AttHandleValueNtfView gatt_notify =
+            emboss::MakeAttHandleValueNtfView(
+                capture.attribute_value.size(),
+                l2cap.payload().BackingStorage().data(),
+                l2cap.pdu_length().Read());
         EXPECT_EQ(acl.header().handle().Read(), capture.handle);
         EXPECT_EQ(acl.header().packet_boundary_flag().Read(),
                   emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
@@ -998,12 +999,13 @@ TEST(GattNotifyTest, Send2ByteAttribute) {
         PW_TEST_ASSERT_OK_AND_ASSIGN(
             auto acl,
             MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
-        auto l2cap = emboss::MakeBFrameView(
+        emboss::BFrameView l2cap = emboss::MakeBFrameView(
             acl.payload().BackingStorage().data(), acl.SizeInBytes());
-        auto gatt_notify = emboss::MakeAttHandleValueNtfView(
-            capture.attribute_value.size(),
-            l2cap.payload().BackingStorage().data(),
-            l2cap.pdu_length().Read());
+        emboss::AttHandleValueNtfView gatt_notify =
+            emboss::MakeAttHandleValueNtfView(
+                capture.attribute_value.size(),
+                l2cap.payload().BackingStorage().data(),
+                l2cap.pdu_length().Read());
         EXPECT_EQ(acl.header().handle().Read(), capture.handle);
         EXPECT_EQ(acl.header().packet_boundary_flag().Read(),
                   emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
