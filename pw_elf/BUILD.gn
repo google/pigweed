@@ -17,10 +17,53 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("reader") {
+  public_configs = [ ":public_include_path" ]
+  sources = [ "reader.cc" ]
+  public = [
+    "public/pw_elf/internal/elf.h",
+    "public/pw_elf/internal/reader_impl.h",
+    "public/pw_elf/internal/stream_utils.h",
+    "public/pw_elf/reader.h",
+  ]
+  public_deps = [
+    dir_pw_assert,
+    dir_pw_bytes,
+    dir_pw_log,
+    dir_pw_result,
+    dir_pw_status,
+    dir_pw_stream,
+  ]
+}
+
+pw_test("reader_test") {
+  enable_if = current_os == "linux"
+  sources = [ "reader_test.cc" ]
+  defines =
+      [ "TEST_ELF_FILE_PATH=\"" +
+        rebase_path("$dir_pw_tokenizer/py/elf_reader_test_binary.elf") + "\"" ]
+  inputs = [
+    # TODO(jrreinhart): Move this file to this module.
+    "$dir_pw_tokenizer/py/elf_reader_test_binary.elf",
+  ]
+  deps = [
+    ":reader",
+    "$dir_pw_bytes",
+    "$dir_pw_stream",
+    "$dir_pw_stream:std_file_stream",
+  ]
+}
+
 pw_test_group("tests") {
-  tests = []
+  tests = [ ":reader_test" ]
 }
 
 pw_doc_group("docs") {
+  inputs = [ "examples/reader.cc" ]
   sources = [ "docs.rst" ]
 }

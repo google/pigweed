@@ -12,9 +12,53 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+cc_library(
+    name = "reader",
+    srcs = [
+        "reader.cc",
+    ],
+    hdrs = [
+        "public/pw_elf/internal/elf.h",
+        "public/pw_elf/internal/reader_impl.h",
+        "public/pw_elf/internal/stream_utils.h",
+        "public/pw_elf/reader.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_result",
+        "//pw_status",
+        "//pw_stream",
+    ],
+)
+
+pw_cc_test(
+    name = "reader_test",
+    srcs = [
+        "reader_test.cc",
+    ],
+    data = [
+        # TODO(jrreinhart): Move this file to this module.
+        "//pw_tokenizer/py:elf_reader_test_binary.elf",
+    ],
+    local_defines = [
+        "TEST_ELF_FILE_PATH=\\\"$(location //pw_tokenizer/py:elf_reader_test_binary.elf)\\\"",
+    ],
+    deps = [
+        ":reader",
+        "//pw_bytes",
+        "//pw_stream",
+        "//pw_stream:std_file_stream",
+    ],
+)
 
 # Bazel does not yet support building docs.
 filegroup(

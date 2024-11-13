@@ -12,25 +12,19 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
-pw_add_library(pw_elf.reader STATIC
-  HEADERS
-    public/pw_elf/internal/elf.h
-    public/pw_elf/internal/reader_impl.h
-    public/pw_elf/internal/stream_utils.h
-    public/pw_elf/reader.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_assert
-    pw_bytes
-    pw_log
-    pw_result
-    pw_status
-    pw_stream
-  SOURCES
-    reader.cc
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+# Examples -- Compile-only tests
+
+pw_cc_test(
+    name = "reader",
+    srcs = ["reader.cc"],
+    deps = [
+        "//pw_elf:reader",
+        "//pw_stream:std_file_stream",
+    ],
 )
-
-# CMake does not yet support building docs.

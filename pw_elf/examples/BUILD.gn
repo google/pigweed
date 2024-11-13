@@ -12,25 +12,18 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+import("//build_overrides/pigweed.gni")
 
-pw_add_library(pw_elf.reader STATIC
-  HEADERS
-    public/pw_elf/internal/elf.h
-    public/pw_elf/internal/reader_impl.h
-    public/pw_elf/internal/stream_utils.h
-    public/pw_elf/reader.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_assert
-    pw_bytes
-    pw_log
-    pw_result
-    pw_status
-    pw_stream
-  SOURCES
-    reader.cc
-)
+import("$dir_pw_unit_test/test.gni")
 
-# CMake does not yet support building docs.
+# Examples -- Compile-only tests
+
+pw_test("reader") {
+  enable_if = current_os == "linux"
+  deps = [ "$dir_pw_elf:reader" ]
+  sources = [ "reader.cc" ]
+}
+
+pw_test_group("examples") {
+  tests = [ ":reader" ]
+}
