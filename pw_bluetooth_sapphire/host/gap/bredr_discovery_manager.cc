@@ -180,7 +180,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
             return;
           }
 
-          if (!hci_is_error(
+          if (!HCI_IS_ERROR(
                   event, ERROR, "gap-bredr", "write inquiry mode failed")) {
             self->current_inquiry_mode_ = mode;
           }
@@ -250,7 +250,7 @@ void BrEdrDiscoveryManager::StopInquiry() {
   cmd_->SendCommand(
       std::move(inq_cancel), [](int64_t, const hci::EmbossEventPacket& event) {
         // Warn if the command failed.
-        hci_is_error(event, WARN, "gap-bredr", "inquiry cancel failed");
+        HCI_IS_ERROR(event, WARN, "gap-bredr", "inquiry cancel failed");
       });
 }
 
@@ -331,7 +331,7 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(
       std::move(write_eir),
       [self, local_name = std::move(name), cb = std::move(callback)](
           auto, const hci::EmbossEventPacket& event) mutable {
-        if (!hci_is_error(event, WARN, "gap", "write EIR failed")) {
+        if (!HCI_IS_ERROR(event, WARN, "gap", "write EIR failed")) {
           self->local_name_ = std::move(local_name);
         }
         cb(event.ToResult());
@@ -358,7 +358,7 @@ void BrEdrDiscoveryManager::UpdateLocalName(std::string name,
       std::move(write_name),
       [self, name_as_str = std::move(name), cb = std::move(callback)](
           auto, const hci::EmbossEventPacket& event) mutable {
-        if (hci_is_error(event, WARN, "gap", "set local name failed")) {
+        if (HCI_IS_ERROR(event, WARN, "gap", "set local name failed")) {
           cb(event.ToResult());
           return;
         }
@@ -481,7 +481,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
     if (!self.is_alive()) {
       return;
     }
-    if (hci_is_error(event, TRACE, "gap-bredr", "remote name request failed")) {
+    if (HCI_IS_ERROR(event, TRACE, "gap-bredr", "remote name request failed")) {
       self->requesting_names_.erase(id);
       return;
     }
@@ -617,7 +617,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
           }
 
           // Warn if the command failed
-          hci_is_error(response, WARN, "gap-bredr", "write scan enable failed");
+          HCI_IS_ERROR(response, WARN, "gap-bredr", "write scan enable failed");
 
           while (!self->pending_discoverable_.empty()) {
             auto cb = std::move(self->pending_discoverable_.front());
@@ -647,7 +647,7 @@ void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval,
 
   cmd_->SendCommand(std::move(write_activity),
                     [](auto id, const hci::EmbossEventPacket& event) {
-                      if (hci_is_error(event,
+                      if (HCI_IS_ERROR(event,
                                        WARN,
                                        "gap-bredr",
                                        "write inquiry scan activity failed")) {
@@ -667,7 +667,7 @@ void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval,
 
   cmd_->SendCommand(
       std::move(write_type), [](auto id, const hci::EmbossEventPacket& event) {
-        if (hci_is_error(
+        if (HCI_IS_ERROR(
                 event, WARN, "gap-bredr", "write inquiry scan type failed")) {
           return;
         }

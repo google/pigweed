@@ -143,7 +143,7 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
       return;
     }
 
-    if (!hci_is_error(
+    if (!HCI_IS_ERROR(
             event, TRACE, "gap-le", "failed to update random address")) {
       needs_refresh_ = false;
       random_ = random_addr;

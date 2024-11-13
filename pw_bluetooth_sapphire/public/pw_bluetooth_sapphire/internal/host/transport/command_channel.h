@@ -34,7 +34,6 @@
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 
 namespace bt::hci {

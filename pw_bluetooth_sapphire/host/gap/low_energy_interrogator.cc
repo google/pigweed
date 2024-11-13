@@ -118,7 +118,7 @@ void LowEnergyInterrogator::QueueRequestPeerSca() {
   // |cmd_runner_| guarantees that |cmd_cb| won't be invoked if |cmd_runner_| is
   // destroyed, and |this| outlives |cmd_runner_|.
   auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
-    if (hci_is_error(event, WARN, "gap-le", "LE request peer SCA failed")) {
+    if (HCI_IS_ERROR(event, WARN, "gap-le", "LE request peer SCA failed")) {
       return;
     }
     auto view = event.view<
@@ -160,7 +160,7 @@ void LowEnergyInterrogator::QueueReadLERemoteFeatures() {
   // destroyed, and |this| outlives |cmd_runner_|.
   auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
     peer_->MutLe().SetFeatureInterrogationComplete();
-    if (hci_is_error(event, WARN, "gap-le", "LE read remote features failed")) {
+    if (HCI_IS_ERROR(event, WARN, "gap-le", "LE read remote features failed")) {
       return;
     }
     bt_log(DEBUG,
@@ -194,7 +194,7 @@ void LowEnergyInterrogator::QueueReadRemoteVersionInformation() {
   // |cmd_runner_| guarantees that |cmd_cb| won't be invoked if |cmd_runner_| is
   // destroyed, and |this| outlives |cmd_runner_|.
   auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
-    if (hci_is_error(
+    if (HCI_IS_ERROR(
             event, WARN, "gap-le", "read remote version info failed")) {
       return;
     }

@@ -22,7 +22,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 
 namespace bt::gap {

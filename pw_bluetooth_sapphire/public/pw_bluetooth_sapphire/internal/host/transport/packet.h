@@ -113,8 +113,8 @@ class PacketBase {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PacketBase);
 };
 
-// The basic Packet template. See control_packets.h and acl_data_packet.h for
-// specializations that add functionality beyond that of PacketBase.
+// The basic Packet template. See emboss_control_packets.h and acl_data_packet.h
+// for specializations that add functionality beyond that of PacketBase.
 template <typename HeaderType>
 class Packet : public PacketBase<HeaderType, Packet<HeaderType>> {
  protected:

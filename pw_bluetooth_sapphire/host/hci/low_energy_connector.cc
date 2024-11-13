@@ -373,7 +373,7 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
     bt_log(
         DEBUG, "hci-le", "telling controller to cancel LE connection attempt");
     auto complete_cb = [](auto id, const EmbossEventPacket& event) {
-      hci_is_error(
+      HCI_IS_ERROR(
           event, WARN, "hci-le", "failed to cancel connection request");
     };
     auto cancel = EmbossCommandPacket::New<LECreateConnectionCancelCommandView>(

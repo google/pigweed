@@ -604,7 +604,7 @@ void LowEnergyConnection::UpdateConnectionParams(
                                auto id,
                                const hci::EmbossEventPacket& event) mutable {
     PW_CHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
-    hci_is_error(event,
+    HCI_IS_ERROR(event,
                  TRACE,
                  "gap-le",
                  "controller rejected connection parameters (handle: %#.4x)",

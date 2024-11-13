@@ -26,7 +26,6 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 
 namespace bt::l2cap {

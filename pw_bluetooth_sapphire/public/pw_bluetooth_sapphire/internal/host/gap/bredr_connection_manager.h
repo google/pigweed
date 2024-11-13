@@ -32,7 +32,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/service_discoverer.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 

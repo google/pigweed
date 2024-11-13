@@ -149,7 +149,7 @@ LowEnergyConnection::OnLELongTermKeyRequestEvent(
   }
 
   auto status_cb = [](auto id, const EmbossEventPacket& status_event) {
-    hci_is_error(
+    HCI_IS_ERROR(
         status_event, TRACE, "hci-le", "failed to reply to LTK request");
   };
 

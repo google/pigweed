@@ -13,6 +13,8 @@
 // the License.
 
 #pragma once
+#include <pw_bluetooth/hci_android.emb.h>
+
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"

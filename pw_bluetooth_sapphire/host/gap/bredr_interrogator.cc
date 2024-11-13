@@ -106,7 +106,7 @@ void BrEdrInterrogator::QueueRemoteNameRequest() {
   }
 
   auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
-    if (hci_is_error(event, WARN, "gap-bredr", "remote name request failed")) {
+    if (HCI_IS_ERROR(event, WARN, "gap-bredr", "remote name request failed")) {
       return;
     }
     bt_log(TRACE,
@@ -143,7 +143,7 @@ void BrEdrInterrogator::QueueReadRemoteFeatures() {
   packet.view_t().connection_handle().Write(handle_);
 
   auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
-    if (hci_is_error(event,
+    if (HCI_IS_ERROR(event,
                      WARN,
                      "gap-bredr",
                      "read remote supported features failed")) {
@@ -184,7 +184,7 @@ void BrEdrInterrogator::QueueReadRemoteExtendedFeatures(uint8_t page) {
   params.page_number().Write(page);
 
   auto cmd_cb = [this, page](const hci::EmbossEventPacket& event) {
-    if (hci_is_error(event,
+    if (HCI_IS_ERROR(event,
                      WARN,
                      "gap-bredr",
                      "read remote extended features failed (peer id: %s)",
@@ -244,7 +244,7 @@ void BrEdrInterrogator::QueueReadRemoteVersionInformation() {
   packet.view_t().connection_handle().Write(handle_);
 
   auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
-    if (hci_is_error(event, WARN, "gap", "read remote version info failed")) {
+    if (HCI_IS_ERROR(event, WARN, "gap", "read remote version info failed")) {
       return;
     }
     PW_DCHECK(event.event_code() ==

@@ -23,6 +23,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_rx_engine.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_tx_engine.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/credit_based_flow_control_rx_engine.h"

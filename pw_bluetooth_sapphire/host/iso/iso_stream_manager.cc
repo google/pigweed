@@ -206,7 +206,7 @@ void IsoStreamManager::AcceptCisRequest(
     if (!self.is_alive()) {
       return;
     }
-    if (hci_is_error(event,
+    if (HCI_IS_ERROR(event,
                      WARN,
                      "bt-iso",
                      "accept CIS request failed for handle %#x",
@@ -237,7 +237,7 @@ void IsoStreamManager::RejectCisRequest(
   cmd_->SendCommand(std::move(command),
                     [cis_handle](auto id, const hci::EmbossEventPacket& event) {
                       bt_log(INFO, "iso", "LE_Reject_CIS_Request command sent");
-                      hci_is_error(event,
+                      HCI_IS_ERROR(event,
                                    ERROR,
                                    "bt-iso",
                                    "reject CIS request failed for handle %#x",

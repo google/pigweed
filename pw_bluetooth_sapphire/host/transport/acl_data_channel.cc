@@ -445,7 +445,7 @@ void AclDataChannelImpl::RequestAclPriority(
             std::move(packet),
             [cb = std::move(request_cb), priority](
                 auto id, const hci::EmbossEventPacket& event) mutable {
-              if (hci_is_error(event, WARN, "hci", "acl priority failed")) {
+              if (HCI_IS_ERROR(event, WARN, "hci", "acl priority failed")) {
                 cb(fit::failed());
                 return;
               }

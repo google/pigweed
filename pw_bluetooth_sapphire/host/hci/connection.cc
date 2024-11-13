@@ -126,7 +126,7 @@ void Connection::Disconnect(pw::bluetooth::emboss::StatusCode reason) {
   // Here we send a HCI_Disconnect command without waiting for it to complete.
   auto status_cb = [](auto id, const EmbossEventPacket& event) {
     PW_DCHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
-    hci_is_error(event, TRACE, "hci", "ignoring disconnection failure");
+    HCI_IS_ERROR(event, TRACE, "hci", "ignoring disconnection failure");
   };
 
   auto disconn =

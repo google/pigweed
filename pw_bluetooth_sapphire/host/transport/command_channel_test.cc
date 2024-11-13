@@ -25,7 +25,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 
 namespace bt::hci {
 namespace {

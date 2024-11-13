@@ -19,6 +19,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection_request.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_string/string_builder.h"

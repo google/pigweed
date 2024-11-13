@@ -23,7 +23,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::hci {

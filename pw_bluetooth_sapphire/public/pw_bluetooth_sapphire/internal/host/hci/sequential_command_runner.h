@@ -17,7 +17,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 
 namespace bt::hci {
@@ -64,7 +64,6 @@ class SequentialCommandRunner final {
   // If |wait| is true, then all previously queued commands must complete
   // successfully before this command is sent.
   // |exclusions| will be passed to CommandChannel::SendExclusiveCommand().
-  using CommandCompleteCallback = fit::function<void(const EventPacket& event)>;
   using EmbossCommandCompleteCallback =
       fit::function<void(const EmbossEventPacket& event_packet)>;
   void QueueCommand(

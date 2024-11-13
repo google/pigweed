@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"

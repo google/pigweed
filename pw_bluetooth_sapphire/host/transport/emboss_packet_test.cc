@@ -19,8 +19,12 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
 #include "pw_unit_test/framework.h"
+
+using bt::ContainersEqual;
 
 namespace bt::hci {
 namespace {
@@ -108,6 +112,108 @@ TEST(EmbossEventPacketTest, StatusCode) {
             hci_spec::StatusCode::OPERATION_CANCELLED_BY_HOST);
   EXPECT_EQ(packet.ToResult(),
             ToResult(hci_spec::StatusCode::OPERATION_CANCELLED_BY_HOST));
+}
+
+TEST(EmbossPacketTest, ACLDataPacketFromFields) {
+  constexpr size_t kLargeDataLength = 10;
+  constexpr size_t kSmallDataLength = 1;
+
+  auto packet =
+      ACLDataPacket::New(0x007F,
+                         hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
+                         hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast,
+                         kSmallDataLength);
+  packet->mutable_view()->mutable_payload_data().Fill(0);
+
+  // First 12-bits: 0x07F
+  // Upper 4-bits: 0b0101
+  EXPECT_TRUE(
+      ContainersEqual(packet->view().data(),
+                      std::array<uint8_t, 5>{{0x7F, 0x50, 0x01, 0x00, 0x00}}));
+
+  packet =
+      ACLDataPacket::New(0x0FFF,
+                         hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
+                         hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast,
+                         kSmallDataLength);
+  packet->mutable_view()->mutable_payload_data().Fill(0);
+
+  // First 12-bits: 0xFFF
+  // Upper 4-bits: 0b0111
+  EXPECT_TRUE(
+      ContainersEqual(packet->view().data(),
+                      std::array<uint8_t, 5>{{0xFF, 0x7F, 0x01, 0x00, 0x00}}));
+
+  packet =
+      ACLDataPacket::New(0x0FFF,
+                         hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint,
+                         kLargeDataLength);
+  packet->mutable_view()->mutable_payload_data().Fill(0);
+
+  // First 12-bits: 0xFFF
+  // Upper 4-bits: 0b0000
+  EXPECT_TRUE(ContainersEqual(packet->view().data(),
+                              std::array<uint8_t, 14>{{0xFF,
+                                                       0x0F,
+                                                       0x0A,
+                                                       0x00,
+                                                       0x00,
+                                                       0x00,
+                                                       0x00,
+                                                       0x00,
+                                                       0x00,
+                                                       0x00,
+                                                       0x00,
+                                                       0x00,
+                                                       0x00}}));
+}
+
+TEST(EmbossPacketTest, ACLDataPacketFromBuffer) {
+  constexpr size_t kLargeDataLength = 256;
+  constexpr size_t kSmallDataLength = 1;
+
+  // The same test cases as ACLDataPacketFromFields test above but in the
+  // opposite direction.
+
+  // First 12-bits: 0x07F
+  // Upper 4-bits: 0b0101
+  auto bytes = StaticByteBuffer(0x7F, 0x50, 0x01, 0x00, 0x00);
+  auto packet = ACLDataPacket::New(kSmallDataLength);
+  packet->mutable_view()->mutable_data().Write(bytes);
+  packet->InitializeFromBuffer();
+
+  EXPECT_EQ(0x007F, packet->connection_handle());
+  EXPECT_EQ(hci_spec::ACLPacketBoundaryFlag::kContinuingFragment,
+            packet->packet_boundary_flag());
+  EXPECT_EQ(hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast,
+            packet->broadcast_flag());
+  EXPECT_EQ(kSmallDataLength, packet->view().payload_size());
+
+  // First 12-bits: 0xFFF
+  // Upper 4-bits: 0b0111
+  bytes = StaticByteBuffer(0xFF, 0x7F, 0x01, 0x00, 0x00);
+  packet->mutable_view()->mutable_data().Write(bytes);
+  packet->InitializeFromBuffer();
+
+  EXPECT_EQ(0x0FFF, packet->connection_handle());
+  EXPECT_EQ(hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
+            packet->packet_boundary_flag());
+  EXPECT_EQ(hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast,
+            packet->broadcast_flag());
+  EXPECT_EQ(kSmallDataLength, packet->view().payload_size());
+
+  packet = ACLDataPacket::New(kLargeDataLength);
+  packet->mutable_view()->mutable_data().Write(
+      StaticByteBuffer(0xFF, 0x0F, 0x00, 0x01));
+  packet->InitializeFromBuffer();
+
+  EXPECT_EQ(0x0FFF, packet->connection_handle());
+  EXPECT_EQ(hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+            packet->packet_boundary_flag());
+  EXPECT_EQ(hci_spec::ACLBroadcastFlag::kPointToPoint,
+            packet->broadcast_flag());
+  EXPECT_EQ(kLargeDataLength, packet->view().payload_size());
 }
 
 }  // namespace

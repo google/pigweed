@@ -102,7 +102,7 @@ void SetPageScanEnabled(bool enabled,
   auto finish_enable_cb = [enabled, hci, finish_cb = std::move(cb)](
                               auto,
                               const hci::EmbossEventPacket& event) mutable {
-    if (hci_is_error(event, WARN, "gap-bredr", "read scan enable failed")) {
+    if (HCI_IS_ERROR(event, WARN, "gap-bredr", "read scan enable failed")) {
       finish_cb(event.ToResult());
       return;
     }
@@ -654,7 +654,7 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
       std::move(write_activity),
       [self, interval, window](const hci::EmbossEventPacket& event) {
         if (!self.is_alive() ||
-            hci_is_error(
+            HCI_IS_ERROR(
                 event, WARN, "gap-bredr", "write page scan activity failed")) {
           return;
         }
@@ -679,7 +679,7 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval,
       std::move(write_type),
       [self, scan_type](const hci::EmbossEventPacket& event) {
         if (!self.is_alive() ||
-            hci_is_error(
+            HCI_IS_ERROR(
                 event, WARN, "gap-bredr", "write page scan type failed")) {
           return;
         }
@@ -1700,7 +1700,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnRoleChange(
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  if (hci_is_error(event,
+  if (HCI_IS_ERROR(event,
                    WARN,
                    "gap-bredr",
                    "role change failed and remains %s (peer: %s)",
@@ -1983,7 +1983,7 @@ void BrEdrConnectionManager::SendCreateConnectionCancelCommand(
   params.bd_addr().CopyFrom(addr.value().view());
   hci_->command_channel()->SendCommand(
       std::move(cancel), [](auto, const hci::EmbossEventPacket& event) {
-        hci_is_error(
+        HCI_IS_ERROR(
             event, WARN, "hci-bredr", "failed to cancel connection request");
       });
 }

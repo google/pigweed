@@ -252,7 +252,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
         return;
       }
 
-      if (hci_is_error(event, WARN, "hci-le", "read TX power level failed")) {
+      if (HCI_IS_ERROR(event, WARN, "hci-le", "read TX power level failed")) {
         staged_params_.value().result_callback(event.ToResult());
         staged_params_ = {};
         local_address_ = DeviceAddress();
