@@ -20,17 +20,15 @@
 #include "pw_stream/std_file_stream.h"
 
 pw::Status ReaderExample() {
+  // Open a file stream for the ELF image.
   pw::stream::StdFileReader stream("/tmp/example.elf");
+
+  // Create an ElfReader from the file stream.
   PW_TRY_ASSIGN(auto reader, pw::elf::ElfReader::FromStream(stream));
 
-  pw::StatusWithSize section_size = reader.SeekToSection(".example");
-  if (!section_size.ok()) {
-    return pw::Status::NotFound();
-  }
-
-  std::vector<std::byte> section_data;
-  section_data.resize(section_size.size());
-  PW_TRY(stream.ReadExact(section_data));
+  // Read the .example section into a vector.
+  PW_TRY_ASSIGN(std::vector<std::byte> section_data,
+                reader.ReadSection(".example"));
 
   return pw::OkStatus();
 }
