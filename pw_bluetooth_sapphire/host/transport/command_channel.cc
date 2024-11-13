@@ -95,7 +95,7 @@ void CommandChannel::TransactionData::StartTimer() {
 }
 
 void CommandChannel::TransactionData::Complete(
-    std::unique_ptr<EventPacket> event) {
+    std::unique_ptr<EmbossEventPacket> event) {
   timeout_task_.Cancel();
 
   if (!callback_) {
@@ -105,10 +105,7 @@ void CommandChannel::TransactionData::Complete(
   // Call callback_ synchronously to ensure that asynchronous status &
   // complete events are not handled out of order if they are dispatched
   // from the HCI API simultaneously.
-  EmbossEventPacket packet = EmbossEventPacket::New(event->view().size());
-  MutableBufferView view = packet.mutable_data();
-  event->view().data().Copy(&view);
-  callback_(transaction_id_, packet);
+  callback_(transaction_id_, *event);
 
   // Asynchronous commands will have an additional reference to callback_
   // in the event map. Clear this reference to ensure that destruction or
@@ -555,7 +552,8 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
   return handler_id;
 }
 
-void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
+void CommandChannel::UpdateTransaction(
+    std::unique_ptr<EmbossEventPacket> event) {
   hci_spec::EventCode event_code = event->event_code();
 
   PW_DCHECK(event_code == hci_spec::kCommandStatusEventCode ||
@@ -570,15 +568,13 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
 
   if (event->event_code() == hci_spec::kCommandCompleteEventCode) {
     auto command_complete_view =
-        pw::bluetooth::emboss::MakeCommandCompleteEventView(
-            event->view().data().data(), event->view().data().size());
+        event->view<pw::bluetooth::emboss::CommandCompleteEventView>();
     matching_opcode = command_complete_view.command_opcode_uint().Read();
     allowed_command_packets_.Set(
         command_complete_view.num_hci_command_packets().Read());
   } else {  //  hci_spec::kCommandStatusEventCode
     auto command_status_view =
-        pw::bluetooth::emboss::MakeCommandStatusEventView(
-            event->view().data().data(), event->view().data().size());
+        event->view<pw::bluetooth::emboss::CommandStatusEventView>();
     matching_opcode = command_status_view.command_opcode_uint().Read();
     allowed_command_packets_.Set(
         command_status_view.num_hci_command_packets().Read());
@@ -632,7 +628,8 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   }
 }
 
-void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
+void CommandChannel::NotifyEventHandler(
+    std::unique_ptr<EmbossEventPacket> event) {
   struct PendingCallback {
     EventCallback callback;
     EventHandlerId handler_id;
@@ -647,16 +644,14 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   switch (event->event_code()) {
     case hci_spec::kLEMetaEventCode:
       event_type = EventType::kLEMetaEvent;
-      event_code = pw::bluetooth::emboss::MakeLEMetaEventView(
-                       event->view().data().data(), event->view().data().size())
+      event_code = event->view<pw::bluetooth::emboss::LEMetaEventView>()
                        .subevent_code()
                        .Read();
       event_handlers = &le_meta_subevent_code_handlers_;
       break;
     case hci_spec::kVendorDebugEventCode:
       event_type = EventType::kVendorEvent;
-      event_code = pw::bluetooth::emboss::MakeVendorDebugEventView(
-                       event->view().data().data(), event->view().size())
+      event_code = event->view<pw::bluetooth::emboss::VendorDebugEventView>()
                        .subevent_code()
                        .Read();
       event_handlers = &vendor_subevent_code_handlers_;
@@ -710,14 +705,11 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   // finishes on the same event.
   TrySendQueuedCommands();
 
-  EventPacket& event_packet = *event;
+  EmbossEventPacket& event_packet = *event;
   for (auto it = pending_callbacks.begin(); it != pending_callbacks.end();
        ++it) {
     // Execute the event callback.
-    auto emboss_packet = EmbossEventPacket::New(event_packet.view().size());
-    bt::MutableBufferView dest = emboss_packet.mutable_data();
-    event_packet.view().data().Copy(&dest);
-    EventCallbackResult result = it->callback(emboss_packet);
+    EventCallbackResult result = it->callback(event_packet);
 
     if (result == EventCallbackResult::kRemove) {
       RemoveEventHandler(it->handler_id);
@@ -731,33 +723,39 @@ void CommandChannel::OnEvent(pw::span<const std::byte> buffer) {
     return;
   }
 
-  if (buffer.size() < sizeof(hci_spec::EventHeader)) {
+  constexpr size_t kEventHeaderSize =
+      pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes();
+  if (buffer.size() < kEventHeaderSize) {
     // TODO(fxbug.dev/42179582): Handle these types of errors by signaling
     // Transport.
     bt_log(ERROR,
            "hci",
            "malformed packet - expected at least %zu bytes, got %zu",
-           sizeof(hci_spec::EventHeader),
+           kEventHeaderSize,
            buffer.size());
     return;
   }
 
-  const size_t payload_size = buffer.size() - sizeof(hci_spec::EventHeader);
+  std::unique_ptr<EmbossEventPacket> event =
+      std::make_unique<EmbossEventPacket>(
+          EmbossEventPacket::New(buffer.size()));
+  event->mutable_data().Write(reinterpret_cast<const uint8_t*>(buffer.data()),
+                              buffer.size());
 
-  std::unique_ptr<EventPacket> event = EventPacket::New(payload_size);
-  event->mutable_view()->mutable_data().Write(
-      reinterpret_cast<const uint8_t*>(buffer.data()), buffer.size());
-  event->InitializeFromBuffer();
-
-  if (event->view().header().parameter_total_size != payload_size) {
+  uint16_t header_payload_size =
+      event->view<pw::bluetooth::emboss::EventHeaderView>()
+          .parameter_total_size()
+          .Read();
+  const size_t received_payload_size = buffer.size() - kEventHeaderSize;
+  if (header_payload_size != received_payload_size) {
     // TODO(fxbug.dev/42179582): Handle these types of errors by signaling
     // Transport.
     bt_log(ERROR,
            "hci",
            "malformed packet - payload size from header (%hu) does not match"
            " received payload size: %zu",
-           event->view().header().parameter_total_size,
-           payload_size);
+           header_payload_size,
+           received_payload_size);
     return;
   }
 

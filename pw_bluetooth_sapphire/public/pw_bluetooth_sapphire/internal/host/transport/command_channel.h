@@ -159,8 +159,6 @@ class CommandChannel final {
 
   // Callbacks invoked to report generic HCI events excluding CommandComplete
   // and CommandStatus events.
-  //
-  // TODO(fxbug.dev/42167863): Rename to EventCallback
   using EventCallback =
       fit::function<EventCallbackResult(const EmbossEventPacket& event_packet)>;
 
@@ -273,7 +271,7 @@ class CommandChannel final {
     // Completes the transaction with |event|. For asynchronous commands, this
     // should be called with the status event (the complete event is handled
     // separately by the event handler).
-    void Complete(std::unique_ptr<EventPacket> event);
+    void Complete(std::unique_ptr<EmbossEventPacket> event);
 
     // Cancels the transaction timeout and erases the callback so it isn't
     // called upon destruction.
@@ -386,12 +384,12 @@ class CommandChannel final {
                                  EventCallback event_callback);
 
   // Notifies any matching event handler for |event|.
-  void NotifyEventHandler(std::unique_ptr<EventPacket> event);
+  void NotifyEventHandler(std::unique_ptr<EmbossEventPacket> event);
 
   // Notifies handlers for Command Status and Command Complete Events. This
   // function marks opcodes that have transactions pending as complete by
   // removing them and calling their callbacks.
-  void UpdateTransaction(std::unique_ptr<EventPacket> event);
+  void UpdateTransaction(std::unique_ptr<EmbossEventPacket> event);
 
   // Event handler.
   void OnEvent(pw::span<const std::byte> buffer);
