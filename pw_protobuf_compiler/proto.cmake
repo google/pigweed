@@ -177,6 +177,9 @@ function(pw_proto_library NAME)
   )
 endfunction(pw_proto_library)
 
+# Args for generate_protos.py
+set(pw_protobuf_compiler_GENERATE_PROTOS_ARGS "" CACHE STRING "Args to generate_protos.py")
+
 # Internal function that invokes protoc through generate_protos.py.
 function(_pw_generate_protos TARGET LANGUAGE)
   pw_parse_arguments(
@@ -220,6 +223,7 @@ function(_pw_generate_protos TARGET LANGUAGE)
       --compile-dir "${arg_OUT_DIR}/sources"
       --out-dir "${arg_OUT_DIR}/${LANGUAGE}"
       --sources ${arg_SOURCES}
+      "${pw_protobuf_compiler_GENERATE_PROTOS_ARGS}"
     DEPENDS
       ${script}
       ${arg_SOURCES}
