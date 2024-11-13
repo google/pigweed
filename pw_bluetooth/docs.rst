@@ -39,6 +39,22 @@ low_energy::Connection2
 .. doxygenclass:: pw::bluetooth::low_energy::Connection2
    :members:
 
+low_energy::Channel
+===================
+.. doxygenclass:: pw::bluetooth::low_energy::Channel
+   :members:
+
+
+low_energy::ChannelListenerRegistry
+===================================
+.. doxygenclass:: pw::bluetooth::low_energy::ChannelListenerRegistry
+   :members:
+
+low_energy::ChannelListener
+===================================
+.. doxygenclass:: pw::bluetooth::low_energy::ChannelListener
+   :members:
+
 gatt::Server2
 =============
 .. doxygenclass:: pw::bluetooth::gatt::Server2

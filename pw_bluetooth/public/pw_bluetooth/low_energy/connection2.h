@@ -16,6 +16,7 @@
 #include "pw_async2/dispatcher.h"
 #include "pw_bluetooth/gatt/client2.h"
 #include "pw_bluetooth/internal/raii_ptr.h"
+#include "pw_bluetooth/low_energy/channel.h"
 #include "pw_bluetooth/types.h"
 
 namespace pw::bluetooth::low_energy {
@@ -132,6 +133,17 @@ class Connection2 {
     std::optional<uint16_t> att_mtu;
   };
 
+  struct ConnectL2capParameters {
+    /// The identifier of the service to connect to.
+    Psm psm;
+    /// Maximum supported packet size for receiving.
+    uint16_t max_receive_packet_size;
+    /// The security requirements that must be met before data is exchanged on
+    /// the channel. If the requirements cannot be met, channel establishment
+    /// will fail.
+    SecurityRequirements security_requirements;
+  };
+
   /// If a disconnection has not occurred, destroying this object will result in
   /// disconnection.
   virtual ~Connection2() = default;
@@ -163,6 +175,14 @@ class Connection2 {
       RequestedConnectionParameters parameters,
       async2::OnceSender<pw::expected<void, ConnectionParameterUpdateError>>
           result_sender) = 0;
+
+  /// Connect to an L2CAP LE connection-oriented channel.
+  /// @param[in] parameters The parameters to configure the channel with.
+  /// @param[out] result_sender The result of the connection procedure. On
+  /// success, contains a `Channel` that can be used to exchange data.
+  virtual void ConnectL2cap(
+      ConnectL2capParameters parameters,
+      async2::OnceSender<pw::Result<Channel::Ptr>> result_sender) = 0;
 
  private:
   /// Request to disconnect this connection. This method is called by the

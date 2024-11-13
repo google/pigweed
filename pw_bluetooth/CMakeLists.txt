@@ -79,6 +79,7 @@ pw_add_library(pw_bluetooth.pw_bluetooth2 INTERFACE
     public/pw_bluetooth/low_energy/advertising_data.h
     public/pw_bluetooth/low_energy/bond_data2.h
     public/pw_bluetooth/low_energy/central2.h
+    public/pw_bluetooth/low_energy/channel.h
     public/pw_bluetooth/low_energy/connection2.h
     public/pw_bluetooth/low_energy/peripheral2.h
     public/pw_bluetooth/low_energy/security_mode.h

@@ -16,6 +16,7 @@
 #include "pw_bluetooth/gatt/client2.h"
 #include "pw_bluetooth/gatt/server2.h"
 #include "pw_bluetooth/low_energy/central2.h"
+#include "pw_bluetooth/low_energy/channel.h"
 #include "pw_bluetooth/low_energy/peripheral2.h"
 #include "pw_bluetooth/pairing_delegate2.h"
 #include "pw_unit_test/framework.h"
