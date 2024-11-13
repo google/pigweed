@@ -421,18 +421,31 @@ class PackedReadVectorMethod(ReadMethod):
 
 
 class FindMethod(ReadMethod):
+    """A method for finding a field within a serialized message."""
+
     def name(self) -> str:
         return 'Find{}'.format(self._field.name())
 
     def params(self) -> list[tuple[str, str]]:
         return [('::pw::ConstByteSpan', 'message')]
 
+    def return_type(self, from_root: bool = False) -> str:
+        if self._field.is_repeated():
+            return f'::pw::protobuf::{self._finder()}'
+        return '::pw::Result<{}>'.format(self._result_type())
+
     def body(self) -> list[str]:
         lines: list[str] = []
-        lines += [
-            f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
-            f'(message, {self.field_cast()});'
-        ]
+        if self._field.is_repeated():
+            lines.append(
+                f'return ::pw::protobuf::{self._finder()}'
+                f'(message, {self.field_cast()});'
+            )
+        else:
+            lines += [
+                f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
+                f'(message, {self.field_cast()});'
+            ]
         return lines
 
     def _find_fn(self) -> str:
@@ -444,6 +457,10 @@ class FindMethod(ReadMethod):
         """
         raise NotImplementedError()
 
+    def _finder(self) -> str:
+        """Type of the finder object for the field type."""
+        raise NotImplementedError(f'xdd {self.__class__}')
+
 
 class FindStreamMethod(FindMethod):
     def name(self) -> str:
@@ -454,10 +471,16 @@ class FindStreamMethod(FindMethod):
 
     def body(self) -> list[str]:
         lines: list[str] = []
-        lines += [
-            f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
-            f'(message_stream, {self.field_cast()});'
-        ]
+        if self._field.is_repeated():
+            lines.append(
+                f'return ::pw::protobuf::{self._finder()}'
+                f'(message_stream, {self.field_cast()});'
+            )
+        else:
+            lines += [
+                f'return {PROTOBUF_NAMESPACE}::{self._find_fn()}'
+                f'(message_stream, {self.field_cast()});'
+            ]
         return lines
 
 
@@ -707,6 +730,9 @@ class SubMessageFindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindBytes'
 
+    def _finder(self) -> str:
+        return 'BytesFinder'
+
 
 class SubMessageProperty(MessageProperty):
     """Property which contains a sub-message."""
@@ -871,6 +897,9 @@ class DoubleFindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindDouble'
 
+    def _finder(self) -> str:
+        return 'DoubleFinder'
+
 
 class DoubleFindStreamMethod(FindStreamMethod):
     """Method which reads a proto double value."""
@@ -880,6 +909,9 @@ class DoubleFindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindDouble'
+
+    def _finder(self) -> str:
+        return 'DoubleStreamFinder'
 
 
 class DoubleProperty(MessageProperty):
@@ -964,6 +996,9 @@ class FloatFindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindFloat'
 
+    def _finder(self) -> str:
+        return 'FloatFinder'
+
 
 class FloatFindStreamMethod(FindStreamMethod):
     """Method which reads a proto float value."""
@@ -973,6 +1008,9 @@ class FloatFindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindFloat'
+
+    def _finder(self) -> str:
+        return 'FloatStreamFinder'
 
 
 class FloatProperty(MessageProperty):
@@ -1057,6 +1095,9 @@ class Int32FindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindInt32'
 
+    def _finder(self) -> str:
+        return 'Int32Finder'
+
 
 class Int32FindStreamMethod(FindStreamMethod):
     """Method which reads a proto int32 value."""
@@ -1066,6 +1107,9 @@ class Int32FindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindInt32'
+
+    def _finder(self) -> str:
+        return 'Int32StreamFinder'
 
 
 class Int32Property(MessageProperty):
@@ -1153,6 +1197,9 @@ class Sint32FindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindSint32'
 
+    def _finder(self) -> str:
+        return 'Sint32Finder'
+
 
 class Sint32FindStreamMethod(FindStreamMethod):
     """Method which reads a proto sint32 value."""
@@ -1162,6 +1209,9 @@ class Sint32FindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindSint32'
+
+    def _finder(self) -> str:
+        return 'Sint32StreamFinder'
 
 
 class Sint32Property(MessageProperty):
@@ -1249,6 +1299,9 @@ class Sfixed32FindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindSfixed32'
 
+    def _finder(self) -> str:
+        return 'Sfixed32Finder'
+
 
 class Sfixed32FindStreamMethod(FindStreamMethod):
     """Method which reads a proto sfixed32 value."""
@@ -1258,6 +1311,9 @@ class Sfixed32FindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindSfixed32'
+
+    def _finder(self) -> str:
+        return 'Sfixed32StreamFinder'
 
 
 class Sfixed32Property(MessageProperty):
@@ -1342,6 +1398,9 @@ class Int64FindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindInt64'
 
+    def _finder(self) -> str:
+        return 'Int64Finder'
+
 
 class Int64FindStreamMethod(FindStreamMethod):
     """Method which reads a proto int64 value."""
@@ -1351,6 +1410,9 @@ class Int64FindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindInt64'
+
+    def _finder(self) -> str:
+        return 'Int64StreamFinder'
 
 
 class Int64Property(MessageProperty):
@@ -1627,6 +1689,9 @@ class Uint32FindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindUint32'
 
+    def _finder(self) -> str:
+        return 'Uint32Finder'
+
 
 class Uint32FindStreamMethod(FindStreamMethod):
     """Method which finds a proto uint32 value."""
@@ -1636,6 +1701,9 @@ class Uint32FindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindUint32'
+
+    def _finder(self) -> str:
+        return 'Uint32StreamFinder'
 
 
 class Uint32Property(MessageProperty):
@@ -1723,6 +1791,9 @@ class Fixed32FindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindFixed32'
 
+    def _finder(self) -> str:
+        return 'Fixed32Finder'
+
 
 class Fixed32FindStreamMethod(FindStreamMethod):
     """Method which finds a proto fixed32 value."""
@@ -1732,6 +1803,9 @@ class Fixed32FindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindFixed32'
+
+    def _finder(self) -> str:
+        return 'Fixed32StreamFinder'
 
 
 class Fixed32Property(MessageProperty):
@@ -1816,6 +1890,9 @@ class Uint64FindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindUint64'
 
+    def _finder(self) -> str:
+        return 'Uint64Finder'
+
 
 class Uint64FindStreamMethod(FindStreamMethod):
     """Method which finds a proto uint64 value."""
@@ -1825,6 +1902,9 @@ class Uint64FindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindUint64'
+
+    def _finder(self) -> str:
+        return 'Uint64StreamFinder'
 
 
 class Uint64Property(MessageProperty):
@@ -1912,6 +1992,9 @@ class Fixed64FindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindFixed64'
 
+    def _finder(self) -> str:
+        return 'Fixed64Finder'
+
 
 class Fixed64FindStreamMethod(FindStreamMethod):
     """Method which finds a proto fixed64 value."""
@@ -1921,6 +2004,9 @@ class Fixed64FindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindFixed64'
+
+    def _finder(self) -> str:
+        return 'Fixed64StreamFinder'
 
 
 class Fixed64Property(MessageProperty):
@@ -1995,6 +2081,9 @@ class BoolFindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindBool'
 
+    def _finder(self) -> str:
+        return 'BoolFinder'
+
 
 class BoolFindStreamMethod(FindStreamMethod):
     """Method which finds a proto bool value."""
@@ -2004,6 +2093,9 @@ class BoolFindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindBool'
+
+    def _finder(self) -> str:
+        return 'BoolStreamFinder'
 
 
 class BoolProperty(MessageProperty):
@@ -2053,6 +2145,9 @@ class BytesFindMethod(FindMethod):
 
     def _find_fn(self) -> str:
         return 'FindBytes'
+
+    def _finder(self) -> str:
+        return 'BytesFinder'
 
 
 class BytesFindStreamMethod(FindStreamMethod):
@@ -2160,6 +2255,9 @@ class StringFindMethod(FindMethod):
 
     def _find_fn(self) -> str:
         return 'FindString'
+
+    def _finder(self) -> str:
+        return 'StringFinder'
 
 
 class StringFindStreamMethod(FindStreamMethod):
@@ -2368,6 +2466,9 @@ class EnumFindMethod(FindMethod):
         return self._relative_type_namespace()
 
     def body(self) -> list[str]:
+        if self._field.is_repeated():
+            return super().body()
+
         lines: list[str] = []
         lines += [
             '::pw::Result<uint32_t> result = '
@@ -2383,6 +2484,9 @@ class EnumFindMethod(FindMethod):
     def _find_fn(self) -> str:
         return 'FindUint32'
 
+    def _finder(self) -> str:
+        return f'EnumFinder<{self._result_type()}>'
+
 
 class EnumFindStreamMethod(FindStreamMethod):
     """Method which finds a proto enum value."""
@@ -2391,6 +2495,9 @@ class EnumFindStreamMethod(FindStreamMethod):
         return self._relative_type_namespace()
 
     def body(self) -> list[str]:
+        if self._field.is_repeated():
+            return super().body()
+
         lines: list[str] = []
         lines += [
             '::pw::Result<uint32_t> result = '
@@ -2405,6 +2512,9 @@ class EnumFindStreamMethod(FindStreamMethod):
 
     def _find_fn(self) -> str:
         return 'FindUint32'
+
+    def _finder(self) -> str:
+        return f'EnumStreamFinder<{self._result_type()}>'
 
 
 class EnumProperty(MessageProperty):
@@ -3228,11 +3338,6 @@ def generate_find_functions_for_message(
     output.write_line(f'namespace {namespace} {{')
 
     for field in message.fields():
-        if field.is_repeated():
-            # Find methods don't account for repeated field semantics, so
-            # ignore them to avoid confusion.
-            continue
-
         try:
             methods = PROTO_FIELD_FIND_METHODS[field.type()]
         except KeyError:

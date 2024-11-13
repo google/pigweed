@@ -14,7 +14,10 @@
 
 #include "pw_protobuf/find.h"
 
+#include <string_view>
+
 #include "pw_bytes/array.h"
+#include "pw_status/status.h"
 #include "pw_stream/memory_stream.h"
 #include "pw_string/string.h"
 #include "pw_unit_test/framework.h"
@@ -182,6 +185,79 @@ TEST(FindRaw, PresentField) {
   ConstByteSpan field7 = FindRaw(kEncodedProto, Fields::kField7).value();
   EXPECT_EQ(field7.data(), kEncodedProto.data() + 35);
   EXPECT_EQ(field7.size(), 2u);
+}
+
+enum class Boolean {
+  kTrue = 0,
+  kFalse = 1,
+  kFileNotFound = 2,
+};
+
+constexpr auto kEncodedRepeatedProto = bytes::Array<  // clang-format off
+    // type=int32, k=1, v=42
+    0x08, 0x2a,
+    // type=int32, k=1, v=32
+    0x08, 0x20,
+    // type=int32, k=1, v=16
+    0x08, 0x10,
+    // type=int32, k=1, v=0
+    0x08, 0x00,
+    // type=uint32, k=2, v=1
+    0x10, 0x1,
+    // type=uint32, k=2, v=2
+    0x10, 0x2,
+    // type=string, k=6, v="Hello, "
+    0x32, 0x07, 'H', 'e', 'l', 'l', 'o', ',', ' ',
+    // type=string, k=6, v="world"
+    0x32, 0x05, 'w', 'o', 'r', 'l', 'd',
+    // type=string, k=6, v="!"
+    0x32, 0x01, '!'
+>();  // clang-format on
+
+TEST(Finder, RepeatedField) {
+  StringFinder finder(kEncodedRepeatedProto, 6);
+  Result<std::string_view> result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), std::string_view("Hello, "));
+  result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), std::string_view("world"));
+  result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), std::string_view("!"));
+  result = finder.Next();
+  EXPECT_EQ(result.status(), Status::NotFound());
+}
+
+TEST(StreamFinder, RepeatedField) {
+  stream::MemoryReader reader(kEncodedRepeatedProto);
+  Int32StreamFinder finder(reader, 1);
+  Result<int32_t> result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), 42);
+  result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), 32);
+  result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), 16);
+  result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), 0);
+  result = finder.Next();
+  EXPECT_EQ(result.status(), Status::NotFound());
+}
+
+TEST(EnumFinder, RepeatedField) {
+  EnumFinder<Boolean> finder(kEncodedRepeatedProto, 2);
+  Result<Boolean> result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), Boolean::kFalse);
+  result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), Boolean::kFileNotFound);
+  result = finder.Next();
+  EXPECT_EQ(result.status(), Status::NotFound());
 }
 
 }  // namespace

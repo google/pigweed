@@ -47,31 +47,94 @@
 #include "pw_string/string.h"
 
 namespace pw::protobuf {
+
 namespace internal {
 
 Status AdvanceToField(Decoder& decoder, uint32_t field_number);
 Status AdvanceToField(StreamDecoder& decoder, uint32_t field_number);
 
-template <typename T, auto ReadFn>
+}  // namespace internal
+
+template <typename T, auto kReadFn>
+class Finder {
+ public:
+  constexpr Finder(ConstByteSpan message, uint32_t field_number)
+      : decoder_(message), field_number_(field_number) {}
+
+  Result<T> Next() {
+    T output;
+    PW_TRY(internal::AdvanceToField(decoder_, field_number_));
+    PW_TRY((decoder_.*kReadFn)(&output));
+    return output;
+  }
+
+ private:
+  Decoder decoder_;
+  uint32_t field_number_;
+};
+
+template <typename T, auto kReadFn>
+class StreamFinder {
+ public:
+  constexpr StreamFinder(stream::Reader& reader, uint32_t field_number)
+      : decoder_(reader), field_number_(field_number) {}
+
+  Result<T> Next() {
+    PW_TRY(internal::AdvanceToField(decoder_, field_number_));
+    Result<T> result = (decoder_.*kReadFn)();
+
+    // The StreamDecoder returns a NOT_FOUND if trying to read the wrong type
+    // for a field. Remap this to FAILED_PRECONDITION for consistency with the
+    // non-stream Find.
+    return result.status().IsNotFound()
+               ? Result<T>(Status::FailedPrecondition())
+               : result;
+  }
+
+ private:
+  StreamDecoder decoder_;
+  uint32_t field_number_;
+};
+
+template <typename T>
+class EnumFinder : private Finder<uint32_t, &Decoder::ReadUint32> {
+ public:
+  using Finder::Finder;
+
+  Result<T> Next() {
+    Result<uint32_t> result = Finder::Next();
+    if (!result.ok()) {
+      return result.status();
+    }
+    return static_cast<T>(result.value());
+  }
+};
+
+template <typename T>
+class EnumStreamFinder : private StreamFinder<uint32_t, &Decoder::ReadUint32> {
+ public:
+  using StreamFinder::StreamFinder;
+
+  Result<T> Next() {
+    Result<uint32_t> result = StreamFinder::Next();
+    if (!result.ok()) {
+      return result.status();
+    }
+    return static_cast<T>(result.value());
+  }
+};
+
+namespace internal {
+template <typename T, auto kReadFn>
 Result<T> Find(ConstByteSpan message, uint32_t field_number) {
-  T output;
-  Decoder decoder(message);
-  PW_TRY(AdvanceToField(decoder, field_number));
-  PW_TRY((decoder.*ReadFn)(&output));
-  return output;
+  Finder<T, kReadFn> finder(message, field_number);
+  return finder.Next();
 }
 
-template <typename T, auto ReadFn>
+template <typename T, auto kReadFn>
 Result<T> Find(stream::Reader& reader, uint32_t field_number) {
-  StreamDecoder decoder(reader);
-  PW_TRY(AdvanceToField(decoder, field_number));
-  Result<T> result = (decoder.*ReadFn)();
-
-  // The StreamDecoder returns a NOT_FOUND if trying to read the wrong type for
-  // a field. Remap this to FAILED_PRECONDITION for consistency with the
-  // non-stream Find.
-  return result.status().IsNotFound() ? Result<T>(Status::FailedPrecondition())
-                                      : result;
+  StreamFinder<T, kReadFn> finder(reader, field_number);
+  return finder.Next();
 }
 
 }  // namespace internal
@@ -133,6 +196,9 @@ inline Result<uint32_t> FindUint32(stream::Reader& message_stream, T field) {
   return FindUint32(message_stream, static_cast<uint32_t>(field));
 }
 
+using Uint32Finder = Finder<uint32_t, &Decoder::ReadUint32>;
+using Uint32StreamFinder = StreamFinder<uint32_t, &StreamDecoder::ReadUint32>;
+
 /// @brief Scans a serialized protobuf message for an `int32` field.
 ///
 /// @param message The serialized message to search.
@@ -188,6 +254,9 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
 inline Result<int32_t> FindInt32(stream::Reader& message_stream, T field) {
   return FindInt32(message_stream, static_cast<uint32_t>(field));
 }
+
+using Int32Finder = Finder<int32_t, &Decoder::ReadInt32>;
+using Int32StreamFinder = StreamFinder<int32_t, &StreamDecoder::ReadInt32>;
 
 /// @brief Scans a serialized protobuf message for an `sint32` field.
 ///
@@ -246,6 +315,9 @@ inline Result<int32_t> FindSint32(stream::Reader& message_stream, T field) {
   return FindSint32(message_stream, static_cast<uint32_t>(field));
 }
 
+using Sint32Finder = Finder<int32_t, &Decoder::ReadSint32>;
+using Sint32StreamFinder = StreamFinder<int32_t, &StreamDecoder::ReadSint32>;
+
 /// @brief Scans a serialized protobuf message for a `uint64` field.
 ///
 /// @param message The serialized message to search.
@@ -303,6 +375,9 @@ inline Result<uint64_t> FindUint64(stream::Reader& message_stream, T field) {
   return FindUint64(message_stream, static_cast<uint32_t>(field));
 }
 
+using Uint64Finder = Finder<uint64_t, &Decoder::ReadUint64>;
+using Uint64StreamFinder = StreamFinder<uint64_t, &StreamDecoder::ReadUint64>;
+
 /// @brief Scans a serialized protobuf message for an `int64` field.
 ///
 /// @param message The serialized message to search.
@@ -358,6 +433,9 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
 inline Result<int64_t> FindInt64(stream::Reader& message_stream, T field) {
   return FindInt64(message_stream, static_cast<uint32_t>(field));
 }
+
+using Int64Finder = Finder<int64_t, &Decoder::ReadInt64>;
+using Int64StreamFinder = StreamFinder<int64_t, &StreamDecoder::ReadInt64>;
 
 /// @brief Scans a serialized protobuf message for an `sint64` field.
 ///
@@ -416,6 +494,9 @@ inline Result<int64_t> FindSint64(stream::Reader& message_stream, T field) {
   return FindSint64(message_stream, static_cast<uint32_t>(field));
 }
 
+using Sint64Finder = Finder<int64_t, &Decoder::ReadSint64>;
+using Sint64StreamFinder = StreamFinder<int64_t, &StreamDecoder::ReadSint64>;
+
 /// @brief Scans a serialized protobuf message for a `bool` field.
 ///
 /// @param message The serialized message to search.
@@ -471,6 +552,9 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
 inline Result<bool> FindBool(stream::Reader& message_stream, T field) {
   return FindBool(message_stream, static_cast<uint32_t>(field));
 }
+
+using BoolFinder = Finder<bool, &Decoder::ReadBool>;
+using BoolStreamFinder = StreamFinder<bool, &StreamDecoder::ReadBool>;
 
 /// @brief Scans a serialized protobuf message for a `fixed32` field.
 ///
@@ -529,6 +613,9 @@ inline Result<uint32_t> FindFixed32(stream::Reader& message_stream, T field) {
   return FindFixed32(message_stream, static_cast<uint32_t>(field));
 }
 
+using Fixed32Finder = Finder<uint32_t, &Decoder::ReadFixed32>;
+using Fixed32StreamFinder = StreamFinder<uint32_t, &StreamDecoder::ReadFixed32>;
+
 /// @brief Scans a serialized protobuf message for a `fixed64` field.
 ///
 /// @param message The serialized message to search.
@@ -585,6 +672,9 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
 inline Result<uint64_t> FindFixed64(stream::Reader& message_stream, T field) {
   return FindFixed64(message_stream, static_cast<uint32_t>(field));
 }
+
+using Fixed64Finder = Finder<uint64_t, &Decoder::ReadFixed64>;
+using Fixed64StreamFinder = StreamFinder<uint64_t, &StreamDecoder::ReadFixed64>;
 
 /// @brief Scans a serialized protobuf message for an `sfixed32` field.
 ///
@@ -643,6 +733,10 @@ inline Result<int32_t> FindSfixed32(stream::Reader& message_stream, T field) {
   return FindSfixed32(message_stream, static_cast<uint32_t>(field));
 }
 
+using Sfixed32Finder = Finder<int32_t, &Decoder::ReadSfixed32>;
+using Sfixed32StreamFinder =
+    StreamFinder<int32_t, &StreamDecoder::ReadSfixed32>;
+
 /// @brief Scans a serialized protobuf message for an `sfixed64` field.
 ///
 /// @param message The serialized message to search.
@@ -700,6 +794,10 @@ inline Result<int64_t> FindSfixed64(stream::Reader& message_stream, T field) {
   return FindSfixed64(message_stream, static_cast<uint32_t>(field));
 }
 
+using Sfixed64Finder = Finder<int64_t, &Decoder::ReadSfixed64>;
+using Sfixed64StreamFinder =
+    StreamFinder<int64_t, &StreamDecoder::ReadSfixed64>;
+
 /// @brief Scans a serialized protobuf message for a `float` field.
 ///
 /// @param message The serialized message to search.
@@ -755,6 +853,9 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
 inline Result<float> FindFloat(stream::Reader& message_stream, T field) {
   return FindFloat(message_stream, static_cast<uint32_t>(field));
 }
+
+using FloatFinder = Finder<float, &Decoder::ReadFloat>;
+using FloatStreamFinder = StreamFinder<float, &StreamDecoder::ReadFloat>;
 
 /// @brief Scans a serialized protobuf message for a `double` field.
 ///
@@ -812,6 +913,9 @@ template <typename T, typename = std::enable_if_t<std::is_enum_v<T>>>
 inline Result<double> FindDouble(stream::Reader& message_stream, T field) {
   return FindDouble(message_stream, static_cast<uint32_t>(field));
 }
+
+using DoubleFinder = Finder<double, &Decoder::ReadDouble>;
+using DoubleStreamFinder = StreamFinder<double, &StreamDecoder::ReadDouble>;
 
 /// @brief Scans a serialized protobuf message for a `string` field.
 ///
@@ -927,6 +1031,8 @@ inline StatusWithSize FindString(stream::Reader& message_stream,
   return FindString(message_stream, static_cast<uint32_t>(field), out);
 }
 
+using StringFinder = Finder<std::string_view, &Decoder::ReadString>;
+
 /// @brief Scans a serialized protobuf message for a `bytes` field.
 ///
 /// @param message The serialized message to search.
@@ -997,6 +1103,8 @@ inline StatusWithSize FindBytes(stream::Reader& message_stream,
                                 ByteSpan out) {
   return FindBytes(message_stream, static_cast<uint32_t>(field), out);
 }
+
+using BytesFinder = Finder<ConstByteSpan, &Decoder::ReadBytes>;
 
 /// @brief Scans a serialized protobuf message for a submessage.
 ///

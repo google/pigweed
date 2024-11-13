@@ -538,12 +538,32 @@ The ``Find`` APIs also work with streamed data, as shown below.
      return pw::OkStatus();
    }
 
+``Find`` APIs can also be used to iterate over occurrences of a repeated field.
+For example, given the protobuf definition:
+
+.. code-block:: proto
+
+   message Samples {
+     repeated uint32 raw_values = 1;
+   }
+
+The ``raw_values`` field can be iterated over as follows:
+
+.. code-block:: c++
+
+   pw::Status ReadSamples(pw::ConstByteSpan serialized_samples) {
+     pw::protobuf::Uint32Finder raw_values =
+         Samples::FindRawValues(serialized_samples);
+     for (Result<int32_t> val = finder.Next(); val.ok(); val = finder.Next()) {
+       ConsumeValue(*val);
+     }
+   }
+
 .. note::
 
    Each call to ``Find*()`` linearly scans through the message. If you have to
    read multiple fields, it is more efficient to instantiate your own decoder as
-   described above. Additionally, to avoid confusion, ``Find*()`` methods are
-   not generated for repeated fields.
+   described above.
 
 
 Direct Writers and Readers

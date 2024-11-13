@@ -12,11 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #include <array>
-#include <stdexcept>
 #include <string_view>
 
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
+#include "pw_protobuf/find.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -1269,6 +1269,81 @@ TEST(Codegen, FindStream) {
   reader = stream::MemoryReader(as_bytes(span(proto_data)));
   EXPECT_EQ(Pigweed::FindZiggy(reader).status(), OkStatus());
   EXPECT_EQ(Pigweed::FindMagicNumber(reader).status(), Status::NotFound());
+}
+
+TEST(CodegenRepeated, Find) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x08, 0x00,
+    0x08, 0x10,
+    0x08, 0x20,
+    0x08, 0x30,
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x35, 0x00, 0x00, 0x00, 0x00,
+    0x35, 0x10, 0x00, 0x00, 0x00,
+    0x35, 0x20, 0x00, 0x00, 0x00,
+    0x35, 0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  Uint32Finder uint32s_finder =
+      RepeatedTest::FindUint32s(as_bytes(span(proto_data)));
+
+  for (uint32_t i = 0; i < 4; ++i) {
+    Result<uint32_t> result = uint32s_finder.Next();
+    EXPECT_EQ(result.status(), OkStatus());
+    EXPECT_EQ(result.value(), i * 16u);
+  }
+  EXPECT_EQ(uint32s_finder.Next().status(), Status::NotFound());
+
+  Fixed32Finder fixed32s_finder =
+      RepeatedTest::FindFixed32s(as_bytes(span(proto_data)));
+
+  for (unsigned i = 0; i < 4; ++i) {
+    Result<uint32_t> result = fixed32s_finder.Next();
+    EXPECT_EQ(result.status(), OkStatus());
+    EXPECT_EQ(result.value(), i * 16u);
+  }
+  EXPECT_EQ(fixed32s_finder.Next().status(), Status::NotFound());
+}
+
+TEST(CodegenRepeated, FindStream) {
+  // clang-format off
+  constexpr uint8_t proto_data[] = {
+    // uint32s[], v={0, 16, 32, 48}
+    0x08, 0x00,
+    0x08, 0x10,
+    0x08, 0x20,
+    0x08, 0x30,
+    // fixed32s[]. v={0, 16, 32, 48}
+    0x35, 0x00, 0x00, 0x00, 0x00,
+    0x35, 0x10, 0x00, 0x00, 0x00,
+    0x35, 0x20, 0x00, 0x00, 0x00,
+    0x35, 0x30, 0x00, 0x00, 0x00,
+  };
+  // clang-format on
+
+  stream::MemoryReader reader(as_bytes(span(proto_data)));
+  Uint32StreamFinder uint32s_finder = RepeatedTest::FindUint32s(reader);
+
+  for (uint32_t i = 0; i < 4; ++i) {
+    Result<uint32_t> result = uint32s_finder.Next();
+    EXPECT_EQ(result.status(), OkStatus());
+    EXPECT_EQ(result.value(), i * 16u);
+  }
+  EXPECT_EQ(uint32s_finder.Next().status(), Status::NotFound());
+
+  ASSERT_EQ(reader.Seek(0), OkStatus());
+
+  Fixed32StreamFinder fixed32s_finder = RepeatedTest::FindFixed32s(reader);
+
+  for (unsigned i = 0; i < 4; ++i) {
+    Result<uint32_t> result = fixed32s_finder.Next();
+    EXPECT_EQ(result.status(), OkStatus());
+    EXPECT_EQ(result.value(), i * 16u);
+  }
+  EXPECT_EQ(fixed32s_finder.Next().status(), Status::NotFound());
 }
 
 }  // namespace
