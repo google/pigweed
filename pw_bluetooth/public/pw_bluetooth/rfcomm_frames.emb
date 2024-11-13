@@ -20,11 +20,12 @@
 [(cpp) namespace: "pw::bluetooth::emboss"]
 # ========================= RFCOMM Frame Format =================================
 # RFCOMM Spec v1.2
-# Also see: ETSI TS 07.10
+# Also see: ETSI TS 101 369 V7.1.0 (1999-11) and
+# GSM 07.10 version 7.1.0 Release 1998
 
 
 enum RfcommFrameType:
-  -- ETSI TS 07.10 section 5.2.1.3
+  -- ETSI TS section 5.2.1.3
   [maximum_bits: 8]
   SET_ASYNC_BALANCED_MODE                                 = 0x2f
   UNNUMBERED_ACK                                          = 0x63
@@ -37,71 +38,73 @@ enum RfcommFrameType:
 
 
 enum RfcommFixedChannel:
+  -- ETSI TS section 5.6
   [maximum_bits: 8]
   CONTROL = 0
 
 
-enum RfcommCommandResponse:
-  -- Commands from the initiator and responses from the responder
-  -- have C/R = 0. Commands from the responder and responses from
-  -- the initiator have C/R = 1.
-  [maximum_bits: 1]
-  COMMAND  = 0
-  RESPONSE = 1
-
-
-enum RfcommDirection:
-  [maximum_bits: 1]
-  RESPONDER = 0
-  INITIATOR = 1
+enum RfcommCommandResponseAndDirection:
+  -- RFCOMM Spec v1.2 Section 5.4
+  -- GSM 07.10 section 5.2.1.2
+  -- Commands and responses from the responder have C/R = 0. Commands and
+  -- responses from the initiator have C/R = 1.
+  -- For an RFCOMM session, the initiating device is given the direction bit D=1
+  -- (and conversely, D=0 in the other device)
+  [maximum_bits: 2]
+  COMMAND_FROM_INITIATOR  = 0b11
+  COMMAND_FROM_RESPONDER  = 0b00
+  RESPONSE_FROM_INITIATOR = 0b01
+  RESPONSE_FROM_RESPONDER = 0b10
 
 
 enum RfcommLengthExtended:
+  -- ETSI TS section 5.2.1.5
   [maximum_bits: 1]
   NORMAL   = 1
   EXTENDED = 0
 
 
 struct RfcommFrame:
-  -- RFCOMM ETSI TS 07.10 frame
+  -- RFCOMM adaptation of ETSI TS section 5.2 frame
   [requires: extended_address == true]
   0              [+1]  bits:
-    0              [+1]             Flag                    extended_address
-    1              [+1]             RfcommCommandResponse   command_response
-    2              [+1]             RfcommDirection         direction
-    3              [+5]             UInt                    channel
+    0              [+1]             Flag                               extended_address
+    1              [+2]             RfcommCommandResponseAndDirection  command_response_direction
+    3              [+5]             UInt                               channel
       -- ETSI TS 07.10 section 5.2.1.2
 
-  1              [+1]               RfcommFrameType         control
+  1              [+1]               RfcommFrameType                    control
     -- ETSI TS 07.10 section 5.2.1.3
 
   2              [+1]  bits:
-    0              [+1]             RfcommLengthExtended    length_extended_flag
-    1              [+7]             UInt                    length
+    0              [+1]             RfcommLengthExtended               length_extended_flag
+    1              [+7]             UInt                               length
       -- ETSI TS 07.10 section 5.2.1.4
 
   if length_extended_flag == RfcommLengthExtended.EXTENDED:
-    3              [+1]             UInt                    length_extended
-      -- ETSI TS 07.10 section 5.2.1.4
+    2              [+2]  bits:
+      1              [+15]          UInt                               length_extended
+        -- ETSI TS 07.10 section 5.2.1.4
+        -- Note: this is defined as overlapping field with first length byte.
 
-  let information_length = $present(length_extended) ? length*256+length_extended : length
-    -- Length of the '5.2.1.4 Information Field'. May include the RFCOMM credits
-    -- field which appears at start.
+  let information_length = $present(length_extended) ? length_extended : length
+    -- Length of the '5.2.1.4 Information Field'.
+    -- Includes RFCOMM credits field (if it is present).
 
   let credits_offset = $present(length_extended) ? 4 : 3
   if control == RfcommFrameType.UNNUMBERED_INFORMATION_WITH_HEADER_CHECK_AND_POLL_FINAL && channel != 0:
-    credits_offset [+1]             UInt                    credits
+    credits_offset [+1]             UInt                               credits
       -- Credits field can appears as first byte of information when Poll/Final
       -- bit is set on UIH frames and channel is not control (0).
 
   let payload_length = $present(credits) ? information_length-1 : information_length
   let payload_offset = $present(credits) ? credits_offset+1 : credits_offset
-  payload_offset [+payload_length]  UInt:8[payload_length]  payload
+  payload_offset [+payload_length]  UInt:8[payload_length]             payload
     -- Payload is the RFCOMM payload contained in the 'Information Field' which
     -- may start with credits.
 
   let fcs_offset = payload_offset+payload_length
-  fcs_offset     [+1]               UInt                    fcs
+  fcs_offset     [+1]               UInt                               fcs
     -- Frame checksum. See: GSM 07.10 TS 101 369 V6.3.0
     -- SABM, DISC, UA, DM frame types:
     --   FCS should be calculated over address, control and length fields.
