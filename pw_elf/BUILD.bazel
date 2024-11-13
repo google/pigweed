@@ -50,7 +50,7 @@ pw_cc_test(
         "//pw_tokenizer/py:elf_reader_test_binary.elf",
     ],
     local_defines = [
-        "TEST_ELF_FILE_PATH=\\\"$(location //pw_tokenizer/py:elf_reader_test_binary.elf)\\\"",
+        "TEST_ELF_FILE_PATH=\\\"$(execpath //pw_tokenizer/py:elf_reader_test_binary.elf)\\\"",
     ],
     deps = [
         ":reader",
