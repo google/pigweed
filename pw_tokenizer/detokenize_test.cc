@@ -17,6 +17,7 @@
 #include <string>
 #include <string_view>
 
+#include "pw_stream/memory_stream.h"
 #include "pw_tokenizer/example_binary_with_tokenized_strings.h"
 #include "pw_unit_test/framework.h"
 
@@ -88,6 +89,17 @@ TEST_F(Detokenize, FromElfSection) {
       Detokenizer::FromElfSection(tokenEntries);
   ASSERT_TRUE(detok_from_elf_.ok());
   EXPECT_EQ(detok_from_elf_->Detokenize("\xd6\x8c\x66\x2e").BestString(),
+            "Jello, world!");
+}
+
+TEST_F(Detokenize, FromElfFile) {
+  // Create a detokenizer from an ELF file with only the pw_tokenizer sections.
+  // See py/detokenize_test.py.
+  stream::MemoryReader stream(test::ns::kElfSection);
+
+  pw::Result<Detokenizer> detok = Detokenizer::FromElfFile(stream);
+  PW_TEST_ASSERT_OK(detok);
+  EXPECT_EQ(detok->Detokenize("\xd6\x8c\x66\x2e").BestString(),
             "Jello, world!");
 }
 

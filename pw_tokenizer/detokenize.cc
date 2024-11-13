@@ -22,7 +22,10 @@
 
 #include "pw_bytes/bit.h"
 #include "pw_bytes/endian.h"
+#include "pw_elf/reader.h"
+#include "pw_log/log.h"
 #include "pw_result/result.h"
+#include "pw_status/try.h"
 #include "pw_tokenizer/base64.h"
 #include "pw_tokenizer/internal/decode.h"
 #include "pw_tokenizer/nested_tokenization.h"
@@ -232,6 +235,16 @@ Result<Detokenizer> Detokenizer::FromElfSection(
     }
   }
   return Detokenizer(std::move(database));
+}
+
+Result<Detokenizer> Detokenizer::FromElfFile(stream::SeekableReader& stream) {
+  PW_TRY_ASSIGN(auto reader, pw::elf::ElfReader::FromStream(stream));
+
+  constexpr auto kTokenSectionName = ".pw_tokenizer.entries";
+  PW_TRY_ASSIGN(std::vector<std::byte> section_data,
+                reader.ReadSection(kTokenSectionName));
+
+  return Detokenizer::FromElfSection(section_data);
 }
 
 DetokenizedString Detokenizer::Detokenize(

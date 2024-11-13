@@ -96,6 +96,7 @@ pw_add_library(pw_tokenizer.decoder STATIC
     public
   PUBLIC_DEPS
     pw_span
+    pw_stream
     pw_tokenizer
     pw_tokenizer.base64
   SOURCES
@@ -106,6 +107,8 @@ pw_add_library(pw_tokenizer.decoder STATIC
   PRIVATE_DEPS
     pw_bytes
     pw_bytes.bit
+    pw_elf.reader
+    pw_log
     pw_varint
 )
 
@@ -170,6 +173,7 @@ pw_add_test(pw_tokenizer.detokenize_test
   PRIVATE_DEPS
     pw_tokenizer.decoder
     pw_build.detokenizer_elf_test_blob
+    pw_stream
   GROUPS
     modules
     pw_tokenizer

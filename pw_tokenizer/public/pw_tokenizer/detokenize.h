@@ -33,6 +33,7 @@
 
 #include "pw_result/result.h"
 #include "pw_span/span.h"
+#include "pw_stream/stream.h"
 #include "pw_tokenizer/internal/decode.h"
 #include "pw_tokenizer/token_database.h"
 
@@ -100,6 +101,10 @@ class Detokenizer {
   static Result<Detokenizer> FromElfSection(span<const uint8_t> elf_section) {
     return FromElfSection(as_bytes(elf_section));
   }
+
+  /// Constructs a detokenizer from the `.pw_tokenizer.entries` section of an
+  /// ELF binary.
+  static Result<Detokenizer> FromElfFile(stream::SeekableReader& stream);
 
   /// Decodes and detokenizes the binary encoded message. Returns a
   /// `DetokenizedString` that stores all possible detokenized string results.
