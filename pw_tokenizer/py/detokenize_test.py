@@ -1033,6 +1033,28 @@ class DetokenizeNestedDomains(unittest.TestCase):
             'This is all in domain1',
         )
 
+    def test_multiple_nested_args_in_one_sentence(self) -> None:
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(0xA, 'nested token 1', 'D1'),
+                    tokens.TokenizedStringEntry(
+                        2,
+                        'This is '
+                        + '${D1}#%08x'
+                        + ' and this is '
+                        + '${D1}#00000003',
+                        'D1',
+                    ),
+                    tokens.TokenizedStringEntry(3, 'nested token 2', 'D1'),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x14')),
+            'This is nested token 1 and this is nested token 2',
+        )
+
     def test_nested_hashed_arg_with_two_domain_match(self) -> None:
         detok = detokenize.Detokenizer(
             tokens.Database(
