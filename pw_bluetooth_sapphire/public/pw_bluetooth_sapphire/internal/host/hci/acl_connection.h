@@ -86,9 +86,9 @@ class AclConnection : public Connection {
 
   // HCI event handlers.
   CommandChannel::EventCallbackResult OnEncryptionChangeEvent(
-      const EmbossEventPacket& event);
+      const EventPacket& event);
   CommandChannel::EventCallbackResult OnEncryptionKeyRefreshCompleteEvent(
-      const EmbossEventPacket& event);
+      const EventPacket& event);
 
   // IDs for encryption related HCI event handlers.
   CommandChannel::EventHandlerId enc_change_id_;

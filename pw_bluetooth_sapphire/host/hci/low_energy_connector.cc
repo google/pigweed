@@ -63,7 +63,7 @@ LowEnergyConnector::LowEnergyConnector(
   CommandChannel::EventHandlerId id =
       hci_->command_channel()->AddLEMetaEventHandler(
           hci_spec::kLEConnectionCompleteSubeventCode,
-          [this](const EmbossEventPacket& event) {
+          [this](const EventPacket& event) {
             OnConnectionCompleteEvent<LEConnectionCompleteSubeventView>(event);
             return CommandChannel::EventCallbackResult::kContinue;
           });
@@ -71,7 +71,7 @@ LowEnergyConnector::LowEnergyConnector(
 
   id = hci_->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEEnhancedConnectionCompleteSubeventCode,
-      [this](const EmbossEventPacket& event) {
+      [this](const EventPacket& event) {
         OnConnectionCompleteEvent<LEEnhancedConnectionCompleteSubeventV1View>(
             event);
         return CommandChannel::EventCallbackResult::kContinue;
@@ -188,7 +188,7 @@ void LowEnergyConnector::CreateConnectionInternal(
 
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_self_.GetWeakPtr();
-  auto complete_cb = [self, timeout](auto id, const EmbossEventPacket& event) {
+  auto complete_cb = [self, timeout](auto id, const EventPacket& event) {
     PW_DCHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
 
     if (!self.is_alive()) {
@@ -208,7 +208,7 @@ void LowEnergyConnector::CreateConnectionInternal(
     self->request_timeout_task_.PostAfter(timeout);
   };
 
-  std::optional<EmbossCommandPacket> request;
+  std::optional<CommandPacket> request;
   if (use_extended_operations_) {
     request.emplace(BuildExtendedCreateConnectionPacket(local_address,
                                                         peer_address,
@@ -230,7 +230,7 @@ void LowEnergyConnector::CreateConnectionInternal(
                                        hci_spec::kCommandStatusEventCode);
 }
 
-EmbossCommandPacket LowEnergyConnector::BuildExtendedCreateConnectionPacket(
+CommandPacket LowEnergyConnector::BuildExtendedCreateConnectionPacket(
     const DeviceAddress& local_address,
     const DeviceAddress& peer_address,
     const hci_spec::LEPreferredConnectionParameters& initial_params,
@@ -245,9 +245,8 @@ EmbossCommandPacket LowEnergyConnector::BuildExtendedCreateConnectionPacket(
   size_t max_size = pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1::
       MaxSizeInBytes();
 
-  auto packet =
-      EmbossCommandPacket::New<LEExtendedCreateConnectionCommandV1Writer>(
-          hci_spec::kLEExtendedCreateConnection, max_size);
+  auto packet = CommandPacket::New<LEExtendedCreateConnectionCommandV1Writer>(
+      hci_spec::kLEExtendedCreateConnection, max_size);
   auto params = packet.view_t();
 
   if (use_accept_list) {
@@ -299,14 +298,14 @@ EmbossCommandPacket LowEnergyConnector::BuildExtendedCreateConnectionPacket(
   return packet;
 }
 
-EmbossCommandPacket LowEnergyConnector::BuildCreateConnectionPacket(
+CommandPacket LowEnergyConnector::BuildCreateConnectionPacket(
     const DeviceAddress& local_address,
     const DeviceAddress& peer_address,
     const hci_spec::LEPreferredConnectionParameters& initial_params,
     bool use_accept_list,
     uint16_t scan_interval,
     uint16_t scan_window) {
-  auto packet = EmbossCommandPacket::New<LECreateConnectionCommandWriter>(
+  auto packet = CommandPacket::New<LECreateConnectionCommandWriter>(
       hci_spec::kLECreateConnection);
   auto params = packet.view_t();
 
@@ -372,11 +371,11 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
   if (pending_request_->initiating && hci_.is_alive()) {
     bt_log(
         DEBUG, "hci-le", "telling controller to cancel LE connection attempt");
-    auto complete_cb = [](auto id, const EmbossEventPacket& event) {
+    auto complete_cb = [](auto id, const EventPacket& event) {
       HCI_IS_ERROR(
           event, WARN, "hci-le", "failed to cancel connection request");
     };
-    auto cancel = EmbossCommandPacket::New<LECreateConnectionCancelCommandView>(
+    auto cancel = CommandPacket::New<LECreateConnectionCancelCommandView>(
         hci_spec::kLECreateConnectionCancel);
     hci_->command_channel()->SendCommand(std::move(cancel), complete_cb);
 
@@ -390,8 +389,7 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
 }
 
 template <typename T>
-void LowEnergyConnector::OnConnectionCompleteEvent(
-    const EmbossEventPacket& event) {
+void LowEnergyConnector::OnConnectionCompleteEvent(const EventPacket& event) {
   auto params = event.view<T>();
 
   DeviceAddress::Type address_type =

@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 
 #include "pw_unit_test/framework.h"
 
@@ -29,7 +29,7 @@ TEST(EmbossControlPackets, TooSmallCommandCompleteEventWhenReadingStatus) {
       0x03  // command opcode
             // There should be a status field here, but there isn't
   );
-  EmbossEventPacket packet = EmbossEventPacket::New(buffer.size());
+  EventPacket packet = EventPacket::New(buffer.size());
   packet.mutable_data().Write(buffer);
   EXPECT_FALSE(packet.StatusCode().has_value());
 }
@@ -42,7 +42,7 @@ TEST(EmbossControlPackets, CommandCompleteEventWithStatus) {
                           0x03,  // command opcode
                           0x00   // status (success)
   );
-  EmbossEventPacket packet = EmbossEventPacket::New(buffer.size());
+  EventPacket packet = EventPacket::New(buffer.size());
   packet.mutable_data().Write(buffer);
   ASSERT_TRUE(packet.StatusCode().has_value());
   EXPECT_EQ(packet.StatusCode().value(),
@@ -62,7 +62,7 @@ TEST(EmbossControlPackets, ArrayFieldWithVariableLengthElements) {
       reports_size + pw::bluetooth::emboss::
                          LEExtendedAdvertisingReportSubevent::MinSizeInBytes();
 
-  auto packet = EmbossEventPacket::New<
+  auto packet = EventPacket::New<
       pw::bluetooth::emboss::LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
   auto view = packet.view_t(static_cast<int32_t>(reports_size));

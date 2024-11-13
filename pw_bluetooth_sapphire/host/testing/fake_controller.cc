@@ -276,21 +276,20 @@ uint8_t FakeController::NextL2CAPCommandId() {
 
 void FakeController::RespondWithCommandComplete(hci_spec::OpCode opcode,
                                                 pwemb::StatusCode status) {
-  auto packet =
-      hci::EmbossEventPacket::New<pwemb::SimpleCommandCompleteEventWriter>(
-          hci_spec::kCommandCompleteEventCode);
+  auto packet = hci::EventPacket::New<pwemb::SimpleCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.status().Write(status);
   RespondWithCommandComplete(opcode, &packet);
 }
 
-void FakeController::RespondWithCommandComplete(
-    hci_spec::OpCode opcode, hci::EmbossEventPacket* packet) {
+void FakeController::RespondWithCommandComplete(hci_spec::OpCode opcode,
+                                                hci::EventPacket* packet) {
   RespondWithCommandComplete(static_cast<pwemb::OpCode>(opcode), packet);
 }
 
-void FakeController::RespondWithCommandComplete(
-    pwemb::OpCode opcode, hci::EmbossEventPacket* packet) {
+void FakeController::RespondWithCommandComplete(pwemb::OpCode opcode,
+                                                hci::EventPacket* packet) {
   auto header = packet->template view<pwemb::CommandCompleteEventWriter>();
 
   header.num_hci_command_packets().Write(settings_.num_hci_command_packets);
@@ -301,7 +300,7 @@ void FakeController::RespondWithCommandComplete(
 
 void FakeController::RespondWithCommandStatus(hci_spec::OpCode opcode,
                                               pwemb::StatusCode status) {
-  auto packet = hci::EmbossEventPacket::New<pwemb::CommandStatusEventWriter>(
+  auto packet = hci::EventPacket::New<pwemb::CommandStatusEventWriter>(
       hci_spec::kCommandStatusEventCode);
   auto view = packet.view_t();
   view.status().Write(status);
@@ -325,7 +324,7 @@ void FakeController::SendEvent(hci_spec::EventCode event_code,
 }
 
 void FakeController::SendEvent(hci_spec::EventCode event_code,
-                               hci::EmbossEventPacket* packet) {
+                               hci::EventPacket* packet) {
   auto header = packet->template view<pwemb::EventHeaderWriter>();
   uint8_t parameter_total_size = static_cast<uint8_t>(
       packet->size() - pwemb::EventHeader::IntrinsicSizeInBytes());
@@ -404,7 +403,7 @@ void FakeController::SendNumberOfCompletedPacketsEvent(
       pwemb::NumberOfCompletedPacketsEvent::MinSizeInBytes() +
       pwemb::NumberOfCompletedPacketsEventData::IntrinsicSizeInBytes();
   auto event =
-      hci::EmbossEventPacket::New<pwemb::NumberOfCompletedPacketsEventWriter>(
+      hci::EventPacket::New<pwemb::NumberOfCompletedPacketsEventWriter>(
           hci_spec::kNumberOfCompletedPacketsEventCode, buffer_size);
   auto view = event.view_t();
 
@@ -451,7 +450,7 @@ void FakeController::ConnectLowEnergy(const DeviceAddress& addr,
             interval, 0, hci_spec::defaults::kLESupervisionTimeout);
         peer->set_le_params(conn_params);
 
-        auto packet = hci::EmbossEventPacket::New<
+        auto packet = hci::EventPacket::New<
             pwemb::LEEnhancedConnectionCompleteSubeventV1Writer>(
             hci_spec::kLEMetaEventCode);
         auto view = packet.view_t();
@@ -481,9 +480,8 @@ void FakeController::SendConnectionRequest(const DeviceAddress& addr,
          "sending connection request (addr: %s, link: %s)",
          bt_str(addr),
          hci_spec::LinkTypeToString(link_type));
-  auto packet =
-      hci::EmbossEventPacket::New<pwemb::ConnectionRequestEventWriter>(
-          hci_spec::kConnectionRequestEventCode);
+  auto packet = hci::EventPacket::New<pwemb::ConnectionRequestEventWriter>(
+      hci_spec::kConnectionRequestEventCode);
   packet.view_t().bd_addr().CopyFrom(addr.value().view());
   packet.view_t().link_type().Write(link_type);
   SendCommandChannelPacket(packet.data());
@@ -537,9 +535,9 @@ void FakeController::SendLEConnectionUpdateCompleteSubevent(
     hci_spec::ConnectionHandle handle,
     const hci_spec::LEConnectionParameters& params,
     pwemb::StatusCode status) {
-  auto packet = hci::EmbossEventPacket::New<
-      pwemb::LEConnectionUpdateCompleteSubeventWriter>(
-      hci_spec::kLEMetaEventCode);
+  auto packet =
+      hci::EventPacket::New<pwemb::LEConnectionUpdateCompleteSubeventWriter>(
+          hci_spec::kLEMetaEventCode);
   auto view = packet.view_t();
   view.le_meta_event().subevent_code().Write(
       hci_spec::kLEConnectionUpdateCompleteSubeventCode);
@@ -580,9 +578,8 @@ void FakeController::Disconnect(const DeviceAddress& addr,
 
 void FakeController::SendDisconnectionCompleteEvent(
     hci_spec::ConnectionHandle handle, pwemb::StatusCode reason) {
-  auto event =
-      hci::EmbossEventPacket::New<pwemb::DisconnectionCompleteEventWriter>(
-          hci_spec::kDisconnectionCompleteEventCode);
+  auto event = hci::EventPacket::New<pwemb::DisconnectionCompleteEventWriter>(
+      hci_spec::kDisconnectionCompleteEventCode);
   event.view_t().status().Write(pwemb::StatusCode::SUCCESS);
   event.view_t().connection_handle().Write(handle);
   event.view_t().reason().Write(reason);
@@ -593,9 +590,8 @@ void FakeController::SendEncryptionChangeEvent(
     hci_spec::ConnectionHandle handle,
     pwemb::StatusCode status,
     pwemb::EncryptionStatus encryption_enabled) {
-  auto response =
-      hci::EmbossEventPacket::New<pwemb::EncryptionChangeEventV1Writer>(
-          hci_spec::kEncryptionChangeEventCode);
+  auto response = hci::EventPacket::New<pwemb::EncryptionChangeEventV1Writer>(
+      hci_spec::kEncryptionChangeEventCode);
   response.view_t().status().Write(status);
   response.view_t().connection_handle().Write(handle);
   response.view_t().encryption_enabled().Write(encryption_enabled);
@@ -866,7 +862,7 @@ void FakeController::OnCreateConnectionCommandReceived(
           bredr_connect_pending_ = false;
 
           auto response =
-              hci::EmbossEventPacket::New<pwemb::ConnectionCompleteEventWriter>(
+              hci::EventPacket::New<pwemb::ConnectionCompleteEventWriter>(
                   hci_spec::kConnectionCompleteEventCode);
           response.view_t().status().Write(pwemb::StatusCode::PAGE_TIMEOUT);
           response.view_t().bd_addr().CopyFrom(peer_address.value().view());
@@ -888,9 +884,8 @@ void FakeController::OnCreateConnectionCommandReceived(
     status = peer->connect_response();
   }
 
-  auto response =
-      hci::EmbossEventPacket::New<pwemb::ConnectionCompleteEventWriter>(
-          hci_spec::kConnectionCompleteEventCode);
+  auto response = hci::EventPacket::New<pwemb::ConnectionCompleteEventWriter>(
+      hci_spec::kConnectionCompleteEventCode);
   response.view_t().status().Write(status);
   response.view_t().bd_addr().CopyFrom(params.bd_addr());
   response.view_t().link_type().Write(pwemb::LinkType::ACL);
@@ -1156,7 +1151,7 @@ void FakeController::SendEnhancedConnectionCompleteEvent(
   const DeviceAddress peer_address(addr_type,
                                    DeviceAddressBytes(params.peer_address()));
 
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::LEEnhancedConnectionCompleteSubeventV1Writer>(
       hci_spec::kLEMetaEventCode);
   auto view = packet.view_t();
@@ -1211,7 +1206,7 @@ void FakeController::SendConnectionCompleteEvent(
                                    DeviceAddressBytes(params.peer_address()));
 
   auto packet =
-      hci::EmbossEventPacket::New<pwemb::LEConnectionCompleteSubeventWriter>(
+      hci::EventPacket::New<pwemb::LEConnectionCompleteSubeventWriter>(
           hci_spec::kLEMetaEventCode);
   auto view = packet.view_t();
   view.le_meta_event().subevent_code().Write(
@@ -1287,9 +1282,9 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
       supv_timeout);
   peer->set_le_params(conn_params);
 
-  auto packet = hci::EmbossEventPacket::New<
-      pwemb::LEConnectionUpdateCompleteSubeventWriter>(
-      hci_spec::kLEMetaEventCode);
+  auto packet =
+      hci::EventPacket::New<pwemb::LEConnectionUpdateCompleteSubeventWriter>(
+          hci_spec::kLEMetaEventCode);
   auto view = packet.view_t();
   view.le_meta_event().subevent_code().Write(
       hci_spec::kLEConnectionUpdateCompleteSubeventCode);
@@ -1417,9 +1412,8 @@ void FakeController::OnInquiry(const pwemb::InquiryCommandView& params) {
         if (!status.ok()) {
           return;
         }
-        auto output =
-            hci::EmbossEventPacket::New<pwemb::InquiryCompleteEventWriter>(
-                hci_spec::kInquiryCompleteEventCode);
+        auto output = hci::EventPacket::New<pwemb::InquiryCompleteEventWriter>(
+            hci_spec::kInquiryCompleteEventCode);
         output.view_t().status().Write(pwemb::StatusCode::SUCCESS);
         SendCommandChannelPacket(output.data());
       },
@@ -1605,7 +1599,7 @@ void FakeController::OnLESetHostFeature(
 
 void FakeController::OnReadLocalExtendedFeatures(
     const pwemb::ReadLocalExtendedFeaturesCommandView& params) {
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::ReadLocalExtendedFeaturesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
@@ -1645,7 +1639,7 @@ void FakeController::OnLESetEventMask(
 }
 
 void FakeController::OnLEReadBufferSizeV1() {
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::LEReadBufferSizeV1CommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
@@ -1657,7 +1651,7 @@ void FakeController::OnLEReadBufferSizeV1() {
 }
 
 void FakeController::OnLEReadBufferSizeV2() {
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::LEReadBufferSizeV2CommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
@@ -1673,7 +1667,7 @@ void FakeController::OnLEReadBufferSizeV2() {
 }
 
 void FakeController::OnLEReadSupportedStates() {
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::LEReadSupportedStatesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
@@ -1684,7 +1678,7 @@ void FakeController::OnLEReadSupportedStates() {
 }
 
 void FakeController::OnLEReadLocalSupportedFeatures() {
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::LEReadLocalSupportedFeaturesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
@@ -1713,7 +1707,7 @@ void FakeController::OnLECreateConnectionCancel() {
   bool use_enhanced_connection_complete = settings_.is_event_unmasked(
       hci_spec::LEEventMask::kLEEnhancedConnectionComplete);
   if (use_enhanced_connection_complete) {
-    auto packet = hci::EmbossEventPacket::New<
+    auto packet = hci::EventPacket::New<
         pwemb::LEEnhancedConnectionCompleteSubeventV1Writer>(
         hci_spec::kLEMetaEventCode);
     auto params = packet.view_t();
@@ -1730,7 +1724,7 @@ void FakeController::OnLECreateConnectionCancel() {
     SendCommandChannelPacket(packet.data());
   } else {
     auto packet =
-        hci::EmbossEventPacket::New<pwemb::LEConnectionCompleteSubeventWriter>(
+        hci::EventPacket::New<pwemb::LEConnectionCompleteSubeventWriter>(
             hci_spec::kLEMetaEventCode);
     auto params = packet.view_t();
     params.le_meta_event().subevent_code().Write(
@@ -1778,7 +1772,7 @@ void FakeController::OnWriteSimplePairingMode(
 }
 
 void FakeController::OnReadSimplePairingMode() {
-  auto event_packet = hci::EmbossEventPacket::New<
+  auto event_packet = hci::EventPacket::New<
       pwemb::ReadSimplePairingModeCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = event_packet.view_t();
@@ -1802,9 +1796,9 @@ void FakeController::OnWritePageScanType(
 }
 
 void FakeController::OnReadPageScanType() {
-  auto event_packet = hci::EmbossEventPacket::New<
-      pwemb::ReadPageScanTypeCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto event_packet =
+      hci::EventPacket::New<pwemb::ReadPageScanTypeCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = event_packet.view_t();
   view.status().Write(pwemb::StatusCode::SUCCESS);
   view.page_scan_type().Write(page_scan_type_);
@@ -1819,9 +1813,9 @@ void FakeController::OnWriteInquiryMode(
 }
 
 void FakeController::OnReadInquiryMode() {
-  auto event_packet = hci::EmbossEventPacket::New<
-      pwemb::ReadInquiryModeCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto event_packet =
+      hci::EventPacket::New<pwemb::ReadInquiryModeCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = event_packet.view_t();
   view.status().Write(pwemb::StatusCode::SUCCESS);
   view.inquiry_mode().Write(inquiry_mode_);
@@ -1846,7 +1840,7 @@ void FakeController::OnWritePageScanActivity(
 }
 
 void FakeController::OnReadPageScanActivity() {
-  auto event_packet = hci::EmbossEventPacket::New<
+  auto event_packet = hci::EventPacket::New<
       pwemb::ReadPageScanActivityCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = event_packet.view_t();
@@ -1865,9 +1859,9 @@ void FakeController::OnWriteScanEnable(
 }
 
 void FakeController::OnReadScanEnable() {
-  auto event_packet = hci::EmbossEventPacket::New<
-      pwemb::ReadScanEnableCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto event_packet =
+      hci::EventPacket::New<pwemb::ReadScanEnableCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = event_packet.view_t();
   view.status().Write(pwemb::StatusCode::SUCCESS);
   view.scan_enable().BackingStorage().WriteUInt(bredr_scan_state_);
@@ -1875,9 +1869,9 @@ void FakeController::OnReadScanEnable() {
 }
 
 void FakeController::OnReadLocalName() {
-  auto event_packet = hci::EmbossEventPacket::New<
-      pwemb::ReadLocalNameCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto event_packet =
+      hci::EventPacket::New<pwemb::ReadLocalNameCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = event_packet.view_t();
   view.status().Write(pwemb::StatusCode::SUCCESS);
   unsigned char* name_from_event = view.local_name().BackingStorage().data();
@@ -1904,7 +1898,7 @@ void FakeController::OnWriteLocalName(
 }
 
 void FakeController::OnCreateConnectionCancel() {
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::CreateConnectionCancelCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
@@ -1926,9 +1920,8 @@ void FakeController::OnCreateConnectionCancel() {
 
   RespondWithCommandComplete(hci_spec::kCreateConnectionCancel, &packet);
 
-  auto response =
-      hci::EmbossEventPacket::New<pwemb::ConnectionCompleteEventWriter>(
-          hci_spec::kConnectionCompleteEventCode);
+  auto response = hci::EventPacket::New<pwemb::ConnectionCompleteEventWriter>(
+      hci_spec::kConnectionCompleteEventCode);
   response.view_t().status().Write(pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
   response.view_t().bd_addr().CopyFrom(
       pending_bredr_connect_addr_.value().view());
@@ -1936,9 +1929,9 @@ void FakeController::OnCreateConnectionCancel() {
 }
 
 void FakeController::OnReadBufferSize() {
-  auto packet = hci::EmbossEventPacket::New<
-      pwemb::ReadBufferSizeCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto packet =
+      hci::EventPacket::New<pwemb::ReadBufferSizeCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.acl_data_packet_length().Write(settings_.acl_data_packet_length);
   view.total_num_acl_data_packets().Write(settings_.total_num_acl_data_packets);
@@ -1951,7 +1944,7 @@ void FakeController::OnReadBufferSize() {
 
 void FakeController::OnReadBRADDR() {
   auto packet =
-      hci::EmbossEventPacket::New<pwemb::ReadBdAddrCommandCompleteEventWriter>(
+      hci::EventPacket::New<pwemb::ReadBdAddrCommandCompleteEventWriter>(
           hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.status().Write(pwemb::StatusCode::SUCCESS);
@@ -2182,7 +2175,7 @@ void FakeController::OnLESetRandomAddress(
 }
 
 void FakeController::OnReadLocalSupportedFeatures() {
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::ReadLocalSupportedFeaturesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
@@ -2192,7 +2185,7 @@ void FakeController::OnReadLocalSupportedFeatures() {
 }
 
 void FakeController::OnReadLocalSupportedCommands() {
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::ReadLocalSupportedCommandsCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
@@ -2204,7 +2197,7 @@ void FakeController::OnReadLocalSupportedCommands() {
 }
 
 void FakeController::OnReadLocalVersionInfo() {
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::ReadLocalVersionInfoCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   packet.view_t().hci_version().Write(settings_.hci_version);
@@ -2247,7 +2240,7 @@ void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(
   RespondWithCommandStatus(hci_spec::kReadRemoteSupportedFeatures,
                            pwemb::StatusCode::SUCCESS);
 
-  auto response = hci::EmbossEventPacket::New<
+  auto response = hci::EventPacket::New<
       pwemb::ReadRemoteSupportedFeaturesCompleteEventWriter>(
       hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode);
   auto view = response.view_t();
@@ -2261,9 +2254,9 @@ void FakeController::OnReadRemoteVersionInfoCommandReceived(
     const pwemb::ReadRemoteVersionInfoCommandView& params) {
   RespondWithCommandStatus(hci_spec::kReadRemoteVersionInfo,
                            pwemb::StatusCode::SUCCESS);
-  auto response = hci::EmbossEventPacket::New<
-      pwemb::ReadRemoteVersionInfoCompleteEventWriter>(
-      hci_spec::kReadRemoteVersionInfoCompleteEventCode);
+  auto response =
+      hci::EventPacket::New<pwemb::ReadRemoteVersionInfoCompleteEventWriter>(
+          hci_spec::kReadRemoteVersionInfoCompleteEventCode);
   auto view = response.view_t();
   view.status().Write(pwemb::StatusCode::SUCCESS);
   view.connection_handle().CopyFrom(params.connection_handle());
@@ -2275,7 +2268,7 @@ void FakeController::OnReadRemoteVersionInfoCommandReceived(
 
 void FakeController::OnReadRemoteExtendedFeaturesCommandReceived(
     const pwemb::ReadRemoteExtendedFeaturesCommandView& params) {
-  auto response = hci::EmbossEventPacket::New<
+  auto response = hci::EventPacket::New<
       pwemb::ReadRemoteExtendedFeaturesCompleteEventWriter>(
       hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode);
   auto view = response.view_t();
@@ -2321,7 +2314,7 @@ void FakeController::OnAuthenticationRequestedCommandReceived(
   RespondWithCommandStatus(hci_spec::kAuthenticationRequested,
                            pwemb::StatusCode::SUCCESS);
 
-  auto event = hci::EmbossEventPacket::New<pwemb::LinkKeyRequestEventWriter>(
+  auto event = hci::EventPacket::New<pwemb::LinkKeyRequestEventWriter>(
       hci_spec::kLinkKeyRequestEventCode);
   event.view_t().bd_addr().CopyFrom(peer->address_.value().view());
   SendCommandChannelPacket(event.data());
@@ -2346,7 +2339,7 @@ void FakeController::OnLinkKeyRequestReplyCommandReceived(
   PW_CHECK(!peer->logical_links().empty());
   for (auto& conn_handle : peer->logical_links()) {
     auto event =
-        hci::EmbossEventPacket::New<pwemb::AuthenticationCompleteEventWriter>(
+        hci::EventPacket::New<pwemb::AuthenticationCompleteEventWriter>(
             hci_spec::kAuthenticationCompleteEventCode);
     event.view_t().status().Write(pwemb::StatusCode::SUCCESS);
     event.view_t().connection_handle().Write(conn_handle);
@@ -2366,9 +2359,8 @@ void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
   RespondWithCommandStatus(hci_spec::kLinkKeyRequestNegativeReply,
                            pwemb::StatusCode::SUCCESS);
 
-  auto event =
-      hci::EmbossEventPacket::New<pwemb::IoCapabilityRequestEventWriter>(
-          hci_spec::kIOCapabilityRequestEventCode);
+  auto event = hci::EventPacket::New<pwemb::IoCapabilityRequestEventWriter>(
+      hci_spec::kIOCapabilityRequestEventCode);
   event.view_t().bd_addr().CopyFrom(params.bd_addr());
   SendCommandChannelPacket(event.data());
 }
@@ -2379,7 +2371,7 @@ void FakeController::OnIOCapabilityRequestReplyCommand(
                            pwemb::StatusCode::SUCCESS);
 
   auto io_response =
-      hci::EmbossEventPacket::New<pwemb::IoCapabilityResponseEventWriter>(
+      hci::EventPacket::New<pwemb::IoCapabilityResponseEventWriter>(
           hci_spec::kIOCapabilityResponseEventCode);
   io_response.view_t().bd_addr().CopyFrom(params.bd_addr());
   io_response.view_t().io_capability().Write(
@@ -2391,9 +2383,8 @@ void FakeController::OnIOCapabilityRequestReplyCommand(
   SendCommandChannelPacket(io_response.data());
 
   // Event type based on |params.io_capability| and |io_response.io_capability|.
-  auto event =
-      hci::EmbossEventPacket::New<pwemb::UserConfirmationRequestEventWriter>(
-          hci_spec::kUserConfirmationRequestEventCode);
+  auto event = hci::EventPacket::New<pwemb::UserConfirmationRequestEventWriter>(
+      hci_spec::kUserConfirmationRequestEventCode);
   event.view_t().bd_addr().CopyFrom(params.bd_addr());
   event.view_t().numeric_value().Write(0);
   SendCommandChannelPacket(event.data());
@@ -2413,14 +2404,14 @@ void FakeController::OnUserConfirmationRequestReplyCommand(
                            pwemb::StatusCode::SUCCESS);
 
   auto pairing_event =
-      hci::EmbossEventPacket::New<pwemb::SimplePairingCompleteEventWriter>(
+      hci::EventPacket::New<pwemb::SimplePairingCompleteEventWriter>(
           hci_spec::kSimplePairingCompleteEventCode);
   pairing_event.view_t().bd_addr().CopyFrom(params.bd_addr());
   pairing_event.view_t().status().Write(pwemb::StatusCode::SUCCESS);
   SendCommandChannelPacket(pairing_event.data());
 
   auto link_key_event =
-      hci::EmbossEventPacket::New<pwemb::LinkKeyNotificationEventWriter>(
+      hci::EventPacket::New<pwemb::LinkKeyNotificationEventWriter>(
           hci_spec::kLinkKeyNotificationEventCode);
   auto link_key_view = link_key_event.view_t();
   link_key_view.bd_addr().CopyFrom(params.bd_addr());
@@ -2450,7 +2441,7 @@ void FakeController::OnUserConfirmationRequestReplyCommand(
   PW_CHECK(!peer->logical_links().empty());
   for (auto& conn_handle : peer->logical_links()) {
     auto event =
-        hci::EmbossEventPacket::New<pwemb::AuthenticationCompleteEventWriter>(
+        hci::EventPacket::New<pwemb::AuthenticationCompleteEventWriter>(
             hci_spec::kAuthenticationCompleteEventCode);
     event.view_t().status().Write(pwemb::StatusCode::SUCCESS);
     event.view_t().connection_handle().Write(conn_handle);
@@ -2474,7 +2465,7 @@ void FakeController::OnUserConfirmationRequestNegativeReplyCommand(
                              pwemb::StatusCode::SUCCESS);
 
   auto pairing_event =
-      hci::EmbossEventPacket::New<pwemb::SimplePairingCompleteEventWriter>(
+      hci::EventPacket::New<pwemb::SimplePairingCompleteEventWriter>(
           hci_spec::kSimplePairingCompleteEventCode);
   pairing_event.view_t().bd_addr().CopyFrom(params.bd_addr());
   pairing_event.view_t().status().Write(
@@ -2494,7 +2485,7 @@ void FakeController::OnSetConnectionEncryptionCommand(
 
 void FakeController::OnReadEncryptionKeySizeCommand(
     const pwemb::ReadEncryptionKeySizeCommandView& params) {
-  auto response = hci::EmbossEventPacket::New<
+  auto response = hci::EventPacket::New<
       pwemb::ReadEncryptionKeySizeCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = response.view_t();
@@ -2525,9 +2516,9 @@ void FakeController::OnEnhancedAcceptSynchronousConnectionRequestCommand(
   hci_spec::ConnectionHandle sco_handle = ++next_conn_handle_;
   peer->AddLink(sco_handle);
 
-  auto packet = hci::EmbossEventPacket::New<
-      pwemb::SynchronousConnectionCompleteEventWriter>(
-      hci_spec::kSynchronousConnectionCompleteEventCode);
+  auto packet =
+      hci::EventPacket::New<pwemb::SynchronousConnectionCompleteEventWriter>(
+          hci_spec::kSynchronousConnectionCompleteEventCode);
   auto view = packet.view_t();
   view.status().Write(pwemb::StatusCode::SUCCESS);
   view.connection_handle().Write(sco_handle);
@@ -2561,9 +2552,9 @@ void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
   hci_spec::ConnectionHandle sco_handle = ++next_conn_handle_;
   peer->AddLink(sco_handle);
 
-  auto packet = hci::EmbossEventPacket::New<
-      pwemb::SynchronousConnectionCompleteEventWriter>(
-      hci_spec::kSynchronousConnectionCompleteEventCode);
+  auto packet =
+      hci::EventPacket::New<pwemb::SynchronousConnectionCompleteEventWriter>(
+          hci_spec::kSynchronousConnectionCompleteEventCode);
   auto view = packet.view_t();
   view.status().Write(pwemb::StatusCode::SUCCESS);
   view.connection_handle().Write(sco_handle);
@@ -2597,9 +2588,9 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
   RespondWithCommandStatus(hci_spec::kLEReadRemoteFeatures,
                            pwemb::StatusCode::SUCCESS);
 
-  auto response = hci::EmbossEventPacket::New<
-      pwemb::LEReadRemoteFeaturesCompleteSubeventWriter>(
-      hci_spec::kLEMetaEventCode);
+  auto response =
+      hci::EventPacket::New<pwemb::LEReadRemoteFeaturesCompleteSubeventWriter>(
+          hci_spec::kLEMetaEventCode);
   auto view = response.view_t();
   view.le_meta_event().subevent_code().Write(
       hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode);
@@ -2907,7 +2898,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
   // only want to write if there are no errors)
   extended_advertising_states_[handle] = state;
 
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::LESetExtendedAdvertisingParametersCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
@@ -3312,7 +3303,7 @@ void FakeController::OnLEReadMaximumAdvertisingDataLength() {
                                pwemb::StatusCode::UNKNOWN_COMMAND);
   }
 
-  auto response = hci::EmbossEventPacket::New<
+  auto response = hci::EventPacket::New<
       pwemb::LEReadMaximumAdvertisingDataLengthCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = response.view_t();
@@ -3323,7 +3314,7 @@ void FakeController::OnLEReadMaximumAdvertisingDataLength() {
 }
 
 void FakeController::OnLEReadNumberOfSupportedAdvertisingSets() {
-  auto event = hci::EmbossEventPacket::New<
+  auto event = hci::EventPacket::New<
       pwemb::LEReadNumberOfSupportedAdvertisingSetsCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = event.view_t();
@@ -3397,7 +3388,7 @@ void FakeController::OnLEReadAdvertisingChannelTxPower() {
   }
 
   // Send back arbitrary tx power.
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::LEReadAdvertisingChannelTxPowerCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
@@ -3410,9 +3401,9 @@ void FakeController::OnLEReadAdvertisingChannelTxPower() {
 void FakeController::SendLEAdvertisingSetTerminatedEvent(
     hci_spec::ConnectionHandle conn_handle,
     hci_spec::AdvertisingHandle adv_handle) {
-  auto packet = hci::EmbossEventPacket::New<
-      pwemb::LEAdvertisingSetTerminatedSubeventWriter>(
-      hci_spec::kLEMetaEventCode);
+  auto packet =
+      hci::EventPacket::New<pwemb::LEAdvertisingSetTerminatedSubeventWriter>(
+          hci_spec::kLEMetaEventCode);
   auto view = packet.view_t();
   view.le_meta_event().subevent_code().Write(
       hci_spec::kLEAdvertisingSetTerminatedSubeventCode);
@@ -3425,9 +3416,9 @@ void FakeController::SendLEAdvertisingSetTerminatedEvent(
 void FakeController::SendAndroidLEMultipleAdvertisingStateChangeSubevent(
     hci_spec::ConnectionHandle conn_handle,
     hci_spec::AdvertisingHandle adv_handle) {
-  auto packet = hci::EmbossEventPacket::New<
-      android_emb::LEMultiAdvtStateChangeSubeventWriter>(
-      hci_spec::kVendorDebugEventCode);
+  auto packet =
+      hci::EventPacket::New<android_emb::LEMultiAdvtStateChangeSubeventWriter>(
+          hci_spec::kVendorDebugEventCode);
   auto view = packet.view_t();
   view.vendor_event().subevent_code().Write(
       android_hci::kLEMultiAdvtStateChangeSubeventCode);
@@ -3439,7 +3430,7 @@ void FakeController::SendAndroidLEMultipleAdvertisingStateChangeSubevent(
 
 void FakeController::OnReadLocalSupportedControllerDelay(
     const pwemb::ReadLocalSupportedControllerDelayCommandView& params) {
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pwemb::ReadLocalSupportedControllerDelayCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto response_view = packet.view_t();
@@ -3487,10 +3478,10 @@ void FakeController::OnAndroidLEGetVendorCapabilities() {
   // android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter as
   // storage. This is the full HCI packet, including the header. Ensure we don't
   // accidentally send the header twice by using the overloaded
-  // RespondWithCommandComplete that takes in an EmbossEventPacket. The one that
+  // RespondWithCommandComplete that takes in an EventPacket. The one that
   // takes a BufferView allocates space for the header, assuming that it's been
   // sent only the payload.
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   MutableBufferView buffer = packet.mutable_data();
@@ -3500,9 +3491,9 @@ void FakeController::OnAndroidLEGetVendorCapabilities() {
 
 void FakeController::OnAndroidStartA2dpOffload(
     const android_emb::StartA2dpOffloadCommandView& params) {
-  auto packet = hci::EmbossEventPacket::New<
-      android_emb::A2dpOffloadCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto packet =
+      hci::EventPacket::New<android_emb::A2dpOffloadCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(android_emb::A2dpOffloadSubOpcode::START_LEGACY);
 
@@ -3603,9 +3594,9 @@ void FakeController::OnAndroidStartA2dpOffload(
 }
 
 void FakeController::OnAndroidStopA2dpOffload() {
-  auto packet = hci::EmbossEventPacket::New<
-      android_emb::A2dpOffloadCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto packet =
+      hci::EventPacket::New<android_emb::A2dpOffloadCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(android_emb::A2dpOffloadSubOpcode::STOP_LEGACY);
 
@@ -3648,9 +3639,9 @@ void FakeController::OnAndroidA2dpOffloadCommand(
 
 void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
     const android_emb::LEMultiAdvtSetAdvtParamCommandView& params) {
-  auto packet = hci::EmbossEventPacket::New<
-      android_emb::LEMultiAdvtCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto packet =
+      hci::EventPacket::New<android_emb::LEMultiAdvtCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
       android_emb::LEMultiAdvtSubOpcode::SET_ADVERTISING_PARAMETERS);
@@ -3755,9 +3746,9 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
 
 void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
     const android_emb::LEMultiAdvtSetAdvtDataCommandView& params) {
-  auto packet = hci::EmbossEventPacket::New<
-      android_emb::LEMultiAdvtCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto packet =
+      hci::EventPacket::New<android_emb::LEMultiAdvtCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
       android_emb::LEMultiAdvtSubOpcode::SET_ADVERTISING_DATA);
@@ -3829,9 +3820,9 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
 
 void FakeController::OnAndroidLEMultiAdvtSetScanResp(
     const android_emb::LEMultiAdvtSetScanRespDataCommandView& params) {
-  auto packet = hci::EmbossEventPacket::New<
-      android_emb::LEMultiAdvtCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto packet =
+      hci::EventPacket::New<android_emb::LEMultiAdvtCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
       android_emb::LEMultiAdvtSubOpcode::SET_SCAN_RESPONSE_DATA);
@@ -3906,9 +3897,9 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
 
 void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
     const android_emb::LEMultiAdvtSetRandomAddrCommandView& params) {
-  auto packet = hci::EmbossEventPacket::New<
-      android_emb::LEMultiAdvtCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto packet =
+      hci::EventPacket::New<android_emb::LEMultiAdvtCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(
       android_emb::LEMultiAdvtSubOpcode::SET_RANDOM_ADDRESS);
@@ -3955,9 +3946,9 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
 
 void FakeController::OnAndroidLEMultiAdvtEnable(
     const android_emb::LEMultiAdvtEnableCommandView& params) {
-  auto packet = hci::EmbossEventPacket::New<
-      android_emb::LEMultiAdvtCommandCompleteEventWriter>(
-      hci_spec::kCommandCompleteEventCode);
+  auto packet =
+      hci::EventPacket::New<android_emb::LEMultiAdvtCommandCompleteEventWriter>(
+          hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.sub_opcode().Write(android_emb::LEMultiAdvtSubOpcode::ENABLE);
 
@@ -4342,7 +4333,7 @@ void FakeController::HandleReceivedCommandPacket(
       // HciEmulator channel, so here we repackage and forward them as Emboss
       // packets.
       auto emboss_packet =
-          bt::hci::EmbossCommandPacket::New<pwemb::CommandHeaderView>(
+          bt::hci::CommandPacket::New<pwemb::CommandHeaderView>(
               opcode, command_packet.size());
       bt::MutableBufferView dest = emboss_packet.mutable_data();
       command_packet.data().view().Copy(&dest);
@@ -4361,7 +4352,7 @@ void FakeController::HandleReceivedCommandPacket(
 }
 
 void FakeController::HandleReceivedCommandPacket(
-    const hci::EmbossCommandPacket& command_packet) {
+    const hci::CommandPacket& command_packet) {
   hci_spec::OpCode opcode = command_packet.opcode();
 
   if (MaybeRespondWithDefaultCommandStatus(opcode)) {

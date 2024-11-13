@@ -63,8 +63,9 @@ TEST_F(FakeControllerTest, TestInquiryCommand) {
         }
       });
 
-  auto inquiry = hci::EmbossCommandPacket::New<
-      pw::bluetooth::emboss::InquiryCommandWriter>(hci_spec::kInquiry);
+  auto inquiry =
+      hci::CommandPacket::New<pw::bluetooth::emboss::InquiryCommandWriter>(
+          hci_spec::kInquiry);
   auto view = inquiry.view_t();
   view.lap().Write(pw::bluetooth::emboss::InquiryAccessCode::GIAC);
   view.inquiry_length().Write(8);

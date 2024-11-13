@@ -29,7 +29,7 @@ SequentialCommandRunner::SequentialCommandRunner(
 }
 
 void SequentialCommandRunner::QueueCommand(
-    EmbossCommandPacket command_packet,
+    CommandPacket command_packet,
     EmbossCommandCompleteCallback callback,
     bool wait,
     hci_spec::EventCode complete_event_code,
@@ -48,7 +48,7 @@ void SequentialCommandRunner::QueueCommand(
 }
 
 void SequentialCommandRunner::QueueLeAsyncCommand(
-    EmbossCommandPacket command_packet,
+    CommandPacket command_packet,
     hci_spec::EventCode le_meta_subevent_code,
     EmbossCommandCompleteCallback callback,
     bool wait) {
@@ -109,7 +109,7 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
                            cmd_cb = std::move(next.callback),
                            complete_event_code = next.complete_event_code,
                            seq_no = sequence_number_](
-                              auto, const EmbossEventPacket& event) {
+                              auto, const EventPacket& event) {
     hci::Result<> event_result = event.ToResult();
 
     if (self.is_alive() && seq_no != self->sequence_number_) {

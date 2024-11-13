@@ -23,7 +23,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::hci {
@@ -153,7 +153,7 @@ class LowEnergyConnector : public LocalAddressClient {
     StatusCallback status_callback;
   };
 
-  static EmbossCommandPacket BuildExtendedCreateConnectionPacket(
+  static CommandPacket BuildExtendedCreateConnectionPacket(
       const DeviceAddress& local_address,
       const DeviceAddress& peer_address,
       const hci_spec::LEPreferredConnectionParameters& initial_params,
@@ -161,7 +161,7 @@ class LowEnergyConnector : public LocalAddressClient {
       uint16_t scan_interval,
       uint16_t scan_window);
 
-  static EmbossCommandPacket BuildCreateConnectionPacket(
+  static CommandPacket BuildCreateConnectionPacket(
       const DeviceAddress& local_address,
       const DeviceAddress& peer_address,
       const hci_spec::LEPreferredConnectionParameters& initial_params,
@@ -172,7 +172,7 @@ class LowEnergyConnector : public LocalAddressClient {
   // Event handler for either the HCI LE Enhanced Connection Complete event or
   // HCI LE Connection Complete Event
   template <typename T>
-  void OnConnectionCompleteEvent(const EmbossEventPacket& event);
+  void OnConnectionCompleteEvent(const EventPacket& event);
 
   Transport::WeakPtr hci() const { return hci_; }
 

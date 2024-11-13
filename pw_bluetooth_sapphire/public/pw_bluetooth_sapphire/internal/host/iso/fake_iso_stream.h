@@ -25,9 +25,7 @@ class FakeIsoStream : public IsoStream {
  public:
   FakeIsoStream() : weak_self_(this) {}
 
-  bool OnCisEstablished(const hci::EmbossEventPacket& event) override {
-    return true;
-  }
+  bool OnCisEstablished(const hci::EventPacket& event) override { return true; }
 
   void SetupDataPath(
       pw::bluetooth::emboss::DataPathDirection direction,

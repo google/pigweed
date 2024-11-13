@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/android_vendor_capabilities.h"
 
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_unit_test/framework.h"
 
 namespace bt::gap {
@@ -26,7 +26,7 @@ namespace pwemb = pw::bluetooth::emboss;
 using android_emb::Capability;
 
 TEST(AndroidVendorCapabilitiesTest, NonSuccess) {
-  auto params = hci::EmbossEventPacket::New<
+  auto params = hci::EventPacket::New<
       android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
       android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
@@ -64,7 +64,7 @@ TEST(AndroidVendorCapabilitiesTest, NonSuccess) {
 }
 
 TEST(AndroidVendorCapabilitiesTest, Version055) {
-  auto params = hci::EmbossEventPacket::New<
+  auto params = hci::EventPacket::New<
       android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
       android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
@@ -102,7 +102,7 @@ TEST(AndroidVendorCapabilitiesTest, Version055) {
 }
 
 TEST(AndroidVendorCapabilitiesTest, Version095) {
-  auto params = hci::EmbossEventPacket::New<
+  auto params = hci::EventPacket::New<
       android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
       android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
@@ -151,7 +151,7 @@ TEST(AndroidVendorCapabilitiesTest, Version095) {
 }
 
 TEST(AndroidVendorCapabilitiesTest, Version096) {
-  auto params = hci::EmbossEventPacket::New<
+  auto params = hci::EventPacket::New<
       android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
       android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
@@ -204,7 +204,7 @@ TEST(AndroidVendorCapabilitiesTest, Version096) {
 }
 
 TEST(AndroidVendorCapabilitiesTest, Version098) {
-  auto params = hci::EmbossEventPacket::New<
+  auto params = hci::EventPacket::New<
       android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
       android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
@@ -263,7 +263,7 @@ TEST(AndroidVendorCapabilitiesTest, Version098) {
 }
 
 TEST(AndroidVendorCapabilitiesTest, Version103) {
-  auto params = hci::EmbossEventPacket::New<
+  auto params = hci::EventPacket::New<
       android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
       android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::
@@ -327,7 +327,7 @@ TEST(AndroidVendorCapabilitiesTest, Version103) {
 }
 
 TEST(AndroidVendorCapabilitiesTest, Version104) {
-  auto params = hci::EmbossEventPacket::New<
+  auto params = hci::EventPacket::New<
       android_emb::LEGetVendorCapabilitiesCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode,
       android_emb::LEGetVendorCapabilitiesCommandCompleteEvent::

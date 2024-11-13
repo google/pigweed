@@ -768,7 +768,7 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(
              hci_spec::kMaxAutomaticFlushTimeoutCommandParameterValue);
   }
 
-  auto write_timeout = hci::EmbossCommandPacket::New<
+  auto write_timeout = hci::CommandPacket::New<
       pw::bluetooth::emboss::WriteAutomaticFlushTimeoutCommandWriter>(
       hci_spec::kWriteAutomaticFlushTimeout);
   auto write_timeout_view = write_timeout.view_t();
@@ -778,7 +778,7 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(
   cmd_channel_->SendCommand(
       std::move(write_timeout),
       [cb = std::move(callback_wrapper), handle = handle_, flush_timeout](
-          auto, const hci::EmbossEventPacket& event) mutable {
+          auto, const hci::EventPacket& event) mutable {
         if (event.ToResult().is_error()) {
           bt_log(WARN,
                  "hci",

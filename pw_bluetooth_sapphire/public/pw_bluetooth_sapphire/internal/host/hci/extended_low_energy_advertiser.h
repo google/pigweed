@@ -85,58 +85,57 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     }
   };
 
-  EmbossCommandPacket BuildEnablePacket(
+  CommandPacket BuildEnablePacket(
       const DeviceAddress& address,
       pw::bluetooth::emboss::GenericEnableParam enable,
       bool extended_pdu) override;
 
-  std::optional<EmbossCommandPacket> BuildSetAdvertisingParams(
+  std::optional<CommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
       const AdvertisingEventProperties& properties,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
       const AdvertisingIntervalRange& interval,
       bool extended_pdu) override;
 
-  std::vector<EmbossCommandPacket> BuildSetAdvertisingData(
+  std::vector<CommandPacket> BuildSetAdvertisingData(
       const DeviceAddress& address,
       const AdvertisingData& data,
       AdvFlags flags,
       bool extended_pdu) override;
 
-  EmbossCommandPacket BuildUnsetAdvertisingData(const DeviceAddress& address,
-                                                bool extended_pdu) override;
+  CommandPacket BuildUnsetAdvertisingData(const DeviceAddress& address,
+                                          bool extended_pdu) override;
 
-  std::vector<EmbossCommandPacket> BuildSetScanResponse(
-      const DeviceAddress& address,
-      const AdvertisingData& data,
-      bool extended_pdu) override;
+  std::vector<CommandPacket> BuildSetScanResponse(const DeviceAddress& address,
+                                                  const AdvertisingData& data,
+                                                  bool extended_pdu) override;
 
-  EmbossCommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
-                                             bool extended_pdu) override;
+  CommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
+                                       bool extended_pdu) override;
 
-  EmbossCommandPacket BuildRemoveAdvertisingSet(const DeviceAddress& address,
-                                                bool extended_pdu) override;
+  CommandPacket BuildRemoveAdvertisingSet(const DeviceAddress& address,
+                                          bool extended_pdu) override;
 
-  EmbossCommandPacket BuildAdvertisingDataFragmentPacket(
+  CommandPacket BuildAdvertisingDataFragmentPacket(
       hci_spec::AdvertisingHandle handle,
       const BufferView& data,
       pw::bluetooth::emboss::LESetExtendedAdvDataOp operation,
       pw::bluetooth::emboss::LEExtendedAdvFragmentPreference
           fragment_preference);
 
-  EmbossCommandPacket BuildScanResponseDataFragmentPacket(
+  CommandPacket BuildScanResponseDataFragmentPacket(
       hci_spec::AdvertisingHandle handle,
       const BufferView& data,
       pw::bluetooth::emboss::LESetExtendedAdvDataOp operation,
       pw::bluetooth::emboss::LEExtendedAdvFragmentPreference
           fragment_preference);
 
-  void OnSetAdvertisingParamsComplete(const EmbossEventPacket& event) override;
+  void OnSetAdvertisingParamsComplete(const EventPacket& event) override;
 
   void OnCurrentOperationComplete() override;
 
   // Event handler for the HCI LE Advertising Set Terminated event
-  void OnAdvertisingSetTerminatedEvent(const EmbossEventPacket& event);
+  void OnAdvertisingSetTerminatedEvent(const EventPacket& event);
   CommandChannel::EventHandlerId event_handler_id_;
 
   AdvertisingHandleMap advertising_handle_map_;

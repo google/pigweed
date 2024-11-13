@@ -15,7 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h"
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 
 namespace bt::iso {
 
@@ -29,7 +29,7 @@ IsoStreamManager::IsoStreamManager(hci_spec::ConnectionHandle handle,
   auto weak_self = GetWeakPtr();
   cis_request_handler_ = cmd_->AddLEMetaEventHandler(
       hci_spec::kLECISRequestSubeventCode,
-      [self = weak_self](const hci::EmbossEventPacket& event) {
+      [self = weak_self](const hci::EventPacket& event) {
         if (!self.is_alive()) {
           return hci::CommandChannel::EventCallbackResult::kRemove;
         }
@@ -39,7 +39,7 @@ IsoStreamManager::IsoStreamManager(hci_spec::ConnectionHandle handle,
 
   disconnect_handler_ = cmd_->AddEventHandler(
       hci_spec::kDisconnectionCompleteEventCode,
-      [self = std::move(weak_self)](const hci::EmbossEventPacket& event) {
+      [self = std::move(weak_self)](const hci::EventPacket& event) {
         if (!self.is_alive()) {
           return hci::CommandChannel::EventCallbackResult::kRemove;
         }
@@ -89,7 +89,7 @@ AcceptCisStatus IsoStreamManager::AcceptCis(CigCisIdentifier id,
   return AcceptCisStatus::kSuccess;
 }
 
-void IsoStreamManager::OnCisRequest(const hci::EmbossEventPacket& event) {
+void IsoStreamManager::OnCisRequest(const hci::EventPacket& event) {
   PW_CHECK(event.event_code() == hci_spec::kLEMetaEventCode);
 
   auto event_view =
@@ -137,7 +137,7 @@ void IsoStreamManager::OnCisRequest(const hci::EmbossEventPacket& event) {
   AcceptCisRequest(event_view, std::move(cb));
 }
 
-void IsoStreamManager::OnDisconnect(const hci::EmbossEventPacket& event) {
+void IsoStreamManager::OnDisconnect(const hci::EventPacket& event) {
   PW_CHECK(event.event_code() == hci_spec::kDisconnectionCompleteEventCode);
   auto event_view =
       event.view<pw::bluetooth::emboss::DisconnectionCompleteEventView>();
@@ -193,15 +193,15 @@ void IsoStreamManager::AcceptCisRequest(
                                    cmd_->AsWeakPtr(),
                                    on_closed_cb);
 
-  auto command = hci::EmbossCommandPacket::New<
+  auto command = hci::CommandPacket::New<
       pw::bluetooth::emboss::LEAcceptCISRequestCommandWriter>(
       hci_spec::kLEAcceptCISRequest);
   auto cmd_view = command.view_t();
   cmd_view.connection_handle().Write(cis_handle);
 
   auto self = GetWeakPtr();
-  auto cmd_complete_cb = [cis_handle, id, self](
-                             auto cmd_id, const hci::EmbossEventPacket& event) {
+  auto cmd_complete_cb = [cis_handle, id, self](auto cmd_id,
+                                                const hci::EventPacket& event) {
     bt_log(INFO, "iso", "LE_Accept_CIS_Request command response received");
     if (!self.is_alive()) {
       return;
@@ -227,7 +227,7 @@ void IsoStreamManager::RejectCisRequest(
   hci_spec::ConnectionHandle cis_handle =
       event_view.cis_connection_handle().Read();
 
-  auto command = hci::EmbossCommandPacket::New<
+  auto command = hci::CommandPacket::New<
       pw::bluetooth::emboss::LERejectCISRequestCommandWriter>(
       hci_spec::kLERejectCISRequest);
   auto cmd_view = command.view_t();
@@ -235,7 +235,7 @@ void IsoStreamManager::RejectCisRequest(
   cmd_view.reason().Write(pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR);
 
   cmd_->SendCommand(std::move(command),
-                    [cis_handle](auto id, const hci::EmbossEventPacket& event) {
+                    [cis_handle](auto id, const hci::EventPacket& event) {
                       bt_log(INFO, "iso", "LE_Reject_CIS_Request command sent");
                       HCI_IS_ERROR(event,
                                    ERROR,

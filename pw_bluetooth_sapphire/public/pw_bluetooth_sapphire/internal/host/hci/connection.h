@@ -20,7 +20,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/link_type.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
@@ -112,7 +112,7 @@ class Connection {
   static CommandChannel::EventCallbackResult OnDisconnectionComplete(
       const WeakSelf<Connection>::WeakPtr& self,
       hci_spec::ConnectionHandle handle,
-      const EmbossEventPacket& event,
+      const EventPacket& event,
       fit::callback<void()> on_disconnection_complete);
 
   hci_spec::ConnectionHandle handle_;

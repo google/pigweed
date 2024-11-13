@@ -222,7 +222,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     hci::ResultFunction<> result_callback) {
   if (IsAdvertising(address, options.extended_pdu)) {
     // Temporarily disable advertising so we can tweak the parameters
-    EmbossCommandPacket packet = BuildEnablePacket(
+    CommandPacket packet = BuildEnablePacket(
         address, pwemb::GenericEnableParam::DISABLE, options.extended_pdu);
     hci_cmd_runner_->QueueCommand(packet);
   }
@@ -239,7 +239,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
 
   AdvertisingEventProperties properties =
       GetAdvertisingEventProperties(data, scan_rsp, options, connect_callback);
-  std::optional<EmbossCommandPacket> set_adv_params_packet =
+  std::optional<CommandPacket> set_adv_params_packet =
       BuildSetAdvertisingParams(address,
                                 properties,
                                 own_addr_type,
@@ -288,22 +288,19 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     hci::ResultFunction<> result_callback) {
-  std::vector<EmbossCommandPacket> set_adv_data_packets =
-      BuildSetAdvertisingData(address,
-                              staged_parameters_.data,
-                              options.flags,
-                              options.extended_pdu);
+  std::vector<CommandPacket> set_adv_data_packets = BuildSetAdvertisingData(
+      address, staged_parameters_.data, options.flags, options.extended_pdu);
   for (auto& packet : set_adv_data_packets) {
     hci_cmd_runner_->QueueCommand(std::move(packet));
   }
 
-  std::vector<EmbossCommandPacket> set_scan_rsp_packets = BuildSetScanResponse(
+  std::vector<CommandPacket> set_scan_rsp_packets = BuildSetScanResponse(
       address, staged_parameters_.scan_rsp, options.extended_pdu);
   for (auto& packet : set_scan_rsp_packets) {
     hci_cmd_runner_->QueueCommand(std::move(packet));
   }
 
-  EmbossCommandPacket enable_packet = BuildEnablePacket(
+  CommandPacket enable_packet = BuildEnablePacket(
       address, pwemb::GenericEnableParam::ENABLE, options.extended_pdu);
   hci_cmd_runner_->QueueCommand(enable_packet);
 
@@ -390,13 +387,13 @@ void LowEnergyAdvertiser::StopAdvertisingInternal(const DeviceAddress& address,
 
 bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(
     const DeviceAddress& address, bool extended_pdu) {
-  EmbossCommandPacket disable_packet = BuildEnablePacket(
+  CommandPacket disable_packet = BuildEnablePacket(
       address, pwemb::GenericEnableParam::DISABLE, extended_pdu);
-  EmbossCommandPacket unset_scan_rsp_packet =
+  CommandPacket unset_scan_rsp_packet =
       BuildUnsetScanResponse(address, extended_pdu);
-  EmbossCommandPacket unset_adv_data_packet =
+  CommandPacket unset_adv_data_packet =
       BuildUnsetAdvertisingData(address, extended_pdu);
-  EmbossCommandPacket remove_packet =
+  CommandPacket remove_packet =
       BuildRemoveAdvertisingSet(address, extended_pdu);
 
   hci_cmd_runner_->QueueCommand(disable_packet);

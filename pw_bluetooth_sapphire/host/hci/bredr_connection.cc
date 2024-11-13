@@ -46,7 +46,7 @@ bool BrEdrConnection::StartEncryption() {
     return false;
   }
 
-  auto cmd = EmbossCommandPacket::New<
+  auto cmd = CommandPacket::New<
       pw::bluetooth::emboss::SetConnectionEncryptionCommandWriter>(
       hci_spec::kSetConnectionEncryption);
   auto params = cmd.view_t();
@@ -55,8 +55,7 @@ bool BrEdrConnection::StartEncryption() {
       pw::bluetooth::emboss::GenericEnableParam::ENABLE);
 
   auto self = GetWeakPtr();
-  auto event_cb = [self, handle = handle()](auto id,
-                                            const EmbossEventPacket& event) {
+  auto event_cb = [self, handle = handle()](auto id, const EventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
@@ -121,14 +120,14 @@ void BrEdrConnection::ValidateEncryptionKeySize(
     hci::ResultFunction<> key_size_validity_cb) {
   PW_CHECK(state() == Connection::State::kConnected);
 
-  auto cmd = EmbossCommandPacket::New<
+  auto cmd = CommandPacket::New<
       pw::bluetooth::emboss::ReadEncryptionKeySizeCommandWriter>(
       hci_spec::kReadEncryptionKeySize);
   cmd.view_t().connection_handle().Write(handle());
 
   auto event_cb = [self = GetWeakPtr(),
                    valid_cb = std::move(key_size_validity_cb)](
-                      auto, const EmbossEventPacket& event) {
+                      auto, const EventPacket& event) {
     if (!self.is_alive()) {
       return;
     }

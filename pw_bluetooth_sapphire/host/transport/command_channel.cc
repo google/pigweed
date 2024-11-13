@@ -46,7 +46,7 @@ static std::string EventTypeToString(CommandChannel::EventType event_type) {
 }
 
 CommandChannel::QueuedCommand::QueuedCommand(
-    EmbossCommandPacket command_packet,
+    CommandPacket command_packet,
     std::unique_ptr<TransactionData> transaction_data)
     : packet(std::move(command_packet)), data(std::move(transaction_data)) {
   PW_DCHECK(data);
@@ -95,7 +95,7 @@ void CommandChannel::TransactionData::StartTimer() {
 }
 
 void CommandChannel::TransactionData::Complete(
-    std::unique_ptr<EmbossEventPacket> event) {
+    std::unique_ptr<EventPacket> event) {
   timeout_task_.Cancel();
 
   if (!callback_) {
@@ -121,7 +121,7 @@ void CommandChannel::TransactionData::Cancel() {
 
 CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
   return [transaction_id = transaction_id_,
-          cb = callback_.share()](const EmbossEventPacket& event) {
+          cb = callback_.share()](const EventPacket& event) {
     cb(transaction_id, event);
     return EventCallbackResult::kContinue;
   };
@@ -146,7 +146,7 @@ CommandChannel::~CommandChannel() {
 }
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
-    EmbossCommandPacket command_packet,
+    CommandPacket command_packet,
     CommandCallback callback,
     const hci_spec::EventCode complete_event_code) {
   return SendExclusiveCommand(
@@ -154,7 +154,7 @@ CommandChannel::TransactionId CommandChannel::SendCommand(
 }
 
 CommandChannel::TransactionId CommandChannel::SendLeAsyncCommand(
-    EmbossCommandPacket command_packet,
+    CommandPacket command_packet,
     CommandCallback callback,
     hci_spec::EventCode le_meta_subevent_code) {
   return SendLeAsyncExclusiveCommand(
@@ -162,7 +162,7 @@ CommandChannel::TransactionId CommandChannel::SendLeAsyncCommand(
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
-    EmbossCommandPacket command_packet,
+    CommandPacket command_packet,
     CommandCallback callback,
     const hci_spec::EventCode complete_event_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
@@ -174,7 +174,7 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
 }
 
 CommandChannel::TransactionId CommandChannel::SendLeAsyncExclusiveCommand(
-    EmbossCommandPacket command_packet,
+    CommandPacket command_packet,
     CommandCallback callback,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
@@ -186,7 +186,7 @@ CommandChannel::TransactionId CommandChannel::SendLeAsyncExclusiveCommand(
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
-    EmbossCommandPacket command_packet,
+    CommandPacket command_packet,
     CommandCallback callback,
     hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
@@ -552,8 +552,7 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
   return handler_id;
 }
 
-void CommandChannel::UpdateTransaction(
-    std::unique_ptr<EmbossEventPacket> event) {
+void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
   hci_spec::EventCode event_code = event->event_code();
 
   PW_DCHECK(event_code == hci_spec::kCommandStatusEventCode ||
@@ -628,8 +627,7 @@ void CommandChannel::UpdateTransaction(
   }
 }
 
-void CommandChannel::NotifyEventHandler(
-    std::unique_ptr<EmbossEventPacket> event) {
+void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   struct PendingCallback {
     EventCallback callback;
     EventHandlerId handler_id;
@@ -705,7 +703,7 @@ void CommandChannel::NotifyEventHandler(
   // finishes on the same event.
   TrySendQueuedCommands();
 
-  EmbossEventPacket& event_packet = *event;
+  EventPacket& event_packet = *event;
   for (auto it = pending_callbacks.begin(); it != pending_callbacks.end();
        ++it) {
     // Execute the event callback.
@@ -736,9 +734,8 @@ void CommandChannel::OnEvent(pw::span<const std::byte> buffer) {
     return;
   }
 
-  std::unique_ptr<EmbossEventPacket> event =
-      std::make_unique<EmbossEventPacket>(
-          EmbossEventPacket::New(buffer.size()));
+  std::unique_ptr<EventPacket> event =
+      std::make_unique<EventPacket>(EventPacket::New(buffer.size()));
   event->mutable_data().Write(reinterpret_cast<const uint8_t*>(buffer.data()),
                               buffer.size());
 

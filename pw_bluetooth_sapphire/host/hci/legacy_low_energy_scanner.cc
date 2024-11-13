@@ -31,7 +31,7 @@ LegacyLowEnergyScanner::LegacyLowEnergyScanner(
   auto self = weak_self_.GetWeakPtr();
   event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEAdvertisingReportSubeventCode,
-      [self](const EmbossEventPacket& event) {
+      [self](const EventPacket& event) {
         if (!self.is_alive()) {
           return hci::CommandChannel::EventCallbackResult::kRemove;
         }
@@ -61,9 +61,9 @@ bool LegacyLowEnergyScanner::StartScan(const ScanOptions& options,
   return LowEnergyScanner::StartScan(options, std::move(callback));
 }
 
-EmbossCommandPacket LegacyLowEnergyScanner::BuildSetScanParametersPacket(
+CommandPacket LegacyLowEnergyScanner::BuildSetScanParametersPacket(
     const DeviceAddress& local_address, const ScanOptions& options) {
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::LESetScanParametersCommandWriter>(
       hci_spec::kLESetScanParameters);
   auto params = packet.view_t();
@@ -88,12 +88,12 @@ EmbossCommandPacket LegacyLowEnergyScanner::BuildSetScanParametersPacket(
   return packet;
 }
 
-EmbossCommandPacket LegacyLowEnergyScanner::BuildEnablePacket(
+CommandPacket LegacyLowEnergyScanner::BuildEnablePacket(
     const ScanOptions& options,
     pw::bluetooth::emboss::GenericEnableParam enable) {
-  auto packet = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::LESetScanEnableCommandWriter>(
-      hci_spec::kLESetScanEnable);
+  auto packet =
+      CommandPacket::New<pw::bluetooth::emboss::LESetScanEnableCommandWriter>(
+          hci_spec::kLESetScanEnable);
   auto params = packet.view_t();
   params.le_scan_enable().Write(enable);
 
@@ -131,8 +131,7 @@ void LegacyLowEnergyScanner::HandleScanResponse(const DeviceAddress& address,
 
 // Extract all advertising reports from a given HCI LE Advertising Report event
 std::vector<pw::bluetooth::emboss::LEAdvertisingReportDataView>
-LegacyLowEnergyScanner::ParseAdvertisingReports(
-    const EmbossEventPacket& event) {
+LegacyLowEnergyScanner::ParseAdvertisingReports(const EventPacket& event) {
   PW_DCHECK(event.event_code() == hci_spec::kLEMetaEventCode);
   PW_DCHECK(event.view<pw::bluetooth::emboss::LEMetaEventView>()
                 .subevent_code()
@@ -203,7 +202,7 @@ static std::tuple<DeviceAddress, bool> BuildDeviceAddress(
 }
 
 void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
-    const EmbossEventPacket& event) {
+    const EventPacket& event) {
   if (!IsScanning()) {
     return;
   }

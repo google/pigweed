@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 
 #include <pw_bluetooth/hci_android.emb.h>
 
@@ -23,8 +23,7 @@ namespace bt::hci {
 namespace android_hci = hci_spec::vendor::android;
 namespace android_emb = pw::bluetooth::vendor::android_hci;
 
-EmbossCommandPacket::EmbossCommandPacket(hci_spec::OpCode opcode,
-                                         size_t packet_size)
+CommandPacket::CommandPacket(hci_spec::OpCode opcode, size_t packet_size)
     : DynamicPacket(packet_size) {
   PW_CHECK(packet_size >=
                pw::bluetooth::emboss::CommandHeader::IntrinsicSizeInBytes(),
@@ -36,37 +35,35 @@ EmbossCommandPacket::EmbossCommandPacket(hci_spec::OpCode opcode,
       pw::bluetooth::emboss::CommandHeader::IntrinsicSizeInBytes());
 }
 
-hci_spec::OpCode EmbossCommandPacket::opcode() const {
+hci_spec::OpCode CommandPacket::opcode() const {
   return header_view().opcode_bits().BackingStorage().ReadUInt();
 }
 
-uint8_t EmbossCommandPacket::ogf() const {
+uint8_t CommandPacket::ogf() const {
   return header_view().opcode_bits().ogf().Read();
 }
 
-uint16_t EmbossCommandPacket::ocf() const {
+uint16_t CommandPacket::ocf() const {
   return header_view().opcode_bits().ocf().Read();
 }
 
-pw::bluetooth::emboss::CommandHeaderView EmbossCommandPacket::header_view()
-    const {
+pw::bluetooth::emboss::CommandHeaderView CommandPacket::header_view() const {
   return view<pw::bluetooth::emboss::CommandHeaderView>();
 }
 
-EmbossEventPacket::EmbossEventPacket(size_t packet_size)
-    : DynamicPacket(packet_size) {
+EventPacket::EventPacket(size_t packet_size) : DynamicPacket(packet_size) {
   PW_CHECK(
       packet_size >= pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes(),
       "event packet size must be at least 2 bytes to accomodate header");
 }
 
-hci_spec::EventCode EmbossEventPacket::event_code() const {
+hci_spec::EventCode EventPacket::event_code() const {
   return view<pw::bluetooth::emboss::EventHeaderView>()
       .event_code_uint()
       .Read();
 }
 
-std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
+std::optional<pw::bluetooth::emboss::StatusCode> EventPacket::StatusCode()
     const {
   switch (event_code()) {
     case hci_spec::kAuthenticationCompleteEventCode:
@@ -200,7 +197,7 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
   return std::nullopt;
 }
 
-hci::Result<> EmbossEventPacket::ToResult() const {
+hci::Result<> EventPacket::ToResult() const {
   std::optional<pw::bluetooth::emboss::StatusCode> maybe_status_code =
       StatusCode();
   if (!maybe_status_code.has_value()) {

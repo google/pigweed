@@ -109,7 +109,7 @@ void LowEnergyInterrogator::Complete(hci::Result<> result) {
 }
 
 void LowEnergyInterrogator::QueueRequestPeerSca() {
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::LERequestPeerSCACommandWriter>(
       hci_spec::kLERequestPeerSCA);
   packet.view_t().connection_handle().Write(handle_);
@@ -117,7 +117,7 @@ void LowEnergyInterrogator::QueueRequestPeerSca() {
   // It's safe to capture |this| instead of a weak ptr to self because
   // |cmd_runner_| guarantees that |cmd_cb| won't be invoked if |cmd_runner_| is
   // destroyed, and |this| outlives |cmd_runner_|.
-  auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
+  auto cmd_cb = [this](const hci::EventPacket& event) {
     if (HCI_IS_ERROR(event, WARN, "gap-le", "LE request peer SCA failed")) {
       return;
     }
@@ -150,7 +150,7 @@ void LowEnergyInterrogator::QueueRequestPeerSca() {
 }
 
 void LowEnergyInterrogator::QueueReadLERemoteFeatures() {
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::LEReadRemoteFeaturesCommandWriter>(
       hci_spec::kLEReadRemoteFeatures);
   packet.view_t().connection_handle().Write(handle_);
@@ -158,7 +158,7 @@ void LowEnergyInterrogator::QueueReadLERemoteFeatures() {
   // It's safe to capture |this| instead of a weak ptr to self because
   // |cmd_runner_| guarantees that |cmd_cb| won't be invoked if |cmd_runner_| is
   // destroyed, and |this| outlives |cmd_runner_|.
-  auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
+  auto cmd_cb = [this](const hci::EventPacket& event) {
     peer_->MutLe().SetFeatureInterrogationComplete();
     if (HCI_IS_ERROR(event, WARN, "gap-le", "LE read remote features failed")) {
       return;
@@ -185,7 +185,7 @@ void LowEnergyInterrogator::QueueReadLERemoteFeatures() {
 }
 
 void LowEnergyInterrogator::QueueReadRemoteVersionInformation() {
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::ReadRemoteVersionInfoCommandWriter>(
       hci_spec::kReadRemoteVersionInfo);
   packet.view_t().connection_handle().Write(handle_);
@@ -193,7 +193,7 @@ void LowEnergyInterrogator::QueueReadRemoteVersionInformation() {
   // It's safe to capture |this| instead of a weak ptr to self because
   // |cmd_runner_| guarantees that |cmd_cb| won't be invoked if |cmd_runner_| is
   // destroyed, and |this| outlives |cmd_runner_|.
-  auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
+  auto cmd_cb = [this](const hci::EventPacket& event) {
     if (HCI_IS_ERROR(
             event, WARN, "gap-le", "read remote version info failed")) {
       return;

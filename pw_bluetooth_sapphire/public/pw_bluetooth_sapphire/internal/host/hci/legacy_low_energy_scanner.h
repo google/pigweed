@@ -48,12 +48,12 @@ class LegacyLowEnergyScanner final : public LowEnergyScanner {
  private:
   // Build the HCI command packet to set the scan parameters for the flavor of
   // low energy scanning being implemented.
-  EmbossCommandPacket BuildSetScanParametersPacket(
+  CommandPacket BuildSetScanParametersPacket(
       const DeviceAddress& local_address, const ScanOptions& options) override;
 
   // Build the HCI command packet to enable scanning for the flavor of low
   // energy scanning being implemented.
-  EmbossCommandPacket BuildEnablePacket(
+  CommandPacket BuildEnablePacket(
       const ScanOptions& options,
       pw::bluetooth::emboss::GenericEnableParam enable) override;
 
@@ -65,10 +65,10 @@ class LegacyLowEnergyScanner final : public LowEnergyScanner {
                           const ByteBuffer& data);
 
   std::vector<pw::bluetooth::emboss::LEAdvertisingReportDataView>
-  ParseAdvertisingReports(const EmbossEventPacket& event);
+  ParseAdvertisingReports(const EventPacket& event);
 
   // Event handler for HCI LE Advertising Report event.
-  void OnAdvertisingReportEvent(const EmbossEventPacket& event);
+  void OnAdvertisingReportEvent(const EventPacket& event);
 
   // Our event handler ID for the LE Advertising Report event.
   CommandChannel::EventHandlerId event_handler_id_;

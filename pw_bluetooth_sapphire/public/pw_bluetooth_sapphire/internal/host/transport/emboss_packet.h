@@ -110,8 +110,8 @@ class StaticPacket {
 // Instances of DynamicPacket should not be constructed directly. Instead,
 // packet type specialization classes should provide static factory functions.
 //
-// See EmbossCommandPacket in emboss_control_packets.h for an example of a
-// packet type specialization.
+// See CommandPacket in control_packets.h for an example of a packet type
+// specialization.
 class DynamicPacket {
  public:
   // Returns an Emboss view over the buffer. Unlike StaticPacket, which ensures

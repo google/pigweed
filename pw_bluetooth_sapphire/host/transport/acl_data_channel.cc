@@ -64,7 +64,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   // Handler for the HCI Number of Completed Packets Event, used for
   // packet-based data flow control.
   CommandChannel::EventCallbackResult NumberOfCompletedPacketsCallback(
-      const EmbossEventPacket& event);
+      const EventPacket& event);
 
   // Sends next queued packets over the ACL data channel while the controller
   // has free buffer slots. If controller buffers are free and some links have
@@ -111,7 +111,7 @@ class AclDataChannelImpl final : public AclDataChannel {
 
   // Handler for HCI_Buffer_Overflow_event.
   CommandChannel::EventCallbackResult DataBufferOverflowCallback(
-      const EmbossEventPacket& event);
+      const EventPacket& event);
 
   void ResetRoundRobinIterators();
 
@@ -435,16 +435,16 @@ void AclDataChannelImpl::RequestAclPriority(
         hci_spec::OpCode op_code = pw::bytes::ConvertOrderFrom(
             cpp20::endian::little,
             encoded.ReadMember<&hci_spec::CommandHeader::opcode>());
-        auto packet = EmbossCommandPacket::New<
-            pw::bluetooth::emboss::GenericHciCommandWriter>(op_code,
-                                                            encoded.size());
+        auto packet =
+            CommandPacket::New<pw::bluetooth::emboss::GenericHciCommandWriter>(
+                op_code, encoded.size());
         auto packet_data = packet.mutable_data();
         encoded.Copy(&packet_data);
 
         transport_->command_channel()->SendCommand(
             std::move(packet),
             [cb = std::move(request_cb), priority](
-                auto id, const hci::EmbossEventPacket& event) mutable {
+                auto id, const hci::EventPacket& event) mutable {
               if (HCI_IS_ERROR(event, WARN, "hci", "acl priority failed")) {
                 cb(fit::failed());
                 return;
@@ -460,8 +460,7 @@ void AclDataChannelImpl::RequestAclPriority(
 }
 
 CommandChannel::EventCallbackResult
-AclDataChannelImpl::NumberOfCompletedPacketsCallback(
-    const EmbossEventPacket& event) {
+AclDataChannelImpl::NumberOfCompletedPacketsCallback(const EventPacket& event) {
   if (event.size() <
       pw::bluetooth::emboss::NumberOfCompletedPacketsEvent::MinSizeInBytes()) {
     bt_log(ERROR,
@@ -618,7 +617,7 @@ void AclDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
 }
 
 CommandChannel::EventCallbackResult
-AclDataChannelImpl::DataBufferOverflowCallback(const EmbossEventPacket& event) {
+AclDataChannelImpl::DataBufferOverflowCallback(const EventPacket& event) {
   const auto params =
       event.view<pw::bluetooth::emboss::DataBufferOverflowEventView>();
 

@@ -93,7 +93,7 @@ void BrEdrInterrogator::QueueRemoteNameRequest() {
     mode = *peer_->bredr()->page_scan_repetition_mode();
   }
 
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::RemoteNameRequestCommandWriter>(
       hci_spec::kRemoteNameRequest);
   auto packet_view = packet.view_t();
@@ -105,7 +105,7 @@ void BrEdrInterrogator::QueueRemoteNameRequest() {
     packet_view.clock_offset().clock_offset().Write(offset);
   }
 
-  auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
+  auto cmd_cb = [this](const hci::EventPacket& event) {
     if (HCI_IS_ERROR(event, WARN, "gap-bredr", "remote name request failed")) {
       return;
     }
@@ -137,12 +137,12 @@ void BrEdrInterrogator::QueueRemoteNameRequest() {
 }
 
 void BrEdrInterrogator::QueueReadRemoteFeatures() {
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::ReadRemoteSupportedFeaturesCommandWriter>(
       hci_spec::kReadRemoteSupportedFeatures);
   packet.view_t().connection_handle().Write(handle_);
 
-  auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
+  auto cmd_cb = [this](const hci::EventPacket& event) {
     if (HCI_IS_ERROR(event,
                      WARN,
                      "gap-bredr",
@@ -176,14 +176,14 @@ void BrEdrInterrogator::QueueReadRemoteFeatures() {
 }
 
 void BrEdrInterrogator::QueueReadRemoteExtendedFeatures(uint8_t page) {
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::ReadRemoteExtendedFeaturesCommandWriter>(
       hci_spec::kReadRemoteExtendedFeatures);
   auto params = packet.view_t();
   params.connection_handle().Write(handle_);
   params.page_number().Write(page);
 
-  auto cmd_cb = [this, page](const hci::EmbossEventPacket& event) {
+  auto cmd_cb = [this, page](const hci::EventPacket& event) {
     if (HCI_IS_ERROR(event,
                      WARN,
                      "gap-bredr",
@@ -238,12 +238,12 @@ void BrEdrInterrogator::QueueReadRemoteExtendedFeatures(uint8_t page) {
 }
 
 void BrEdrInterrogator::QueueReadRemoteVersionInformation() {
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::ReadRemoteVersionInfoCommandWriter>(
       hci_spec::kReadRemoteVersionInfo);
   packet.view_t().connection_handle().Write(handle_);
 
-  auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
+  auto cmd_cb = [this](const hci::EventPacket& event) {
     if (HCI_IS_ERROR(event, WARN, "gap", "read remote version info failed")) {
       return;
     }

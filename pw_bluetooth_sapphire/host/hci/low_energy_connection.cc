@@ -63,7 +63,7 @@ bool LowEnergyConnection::StartEncryption() {
     return false;
   }
 
-  auto cmd = EmbossCommandPacket::New<
+  auto cmd = CommandPacket::New<
       pw::bluetooth::emboss::LEEnableEncryptionCommandWriter>(
       hci_spec::kLEStartEncryption);
   auto params = cmd.view_t();
@@ -74,7 +74,7 @@ bool LowEnergyConnection::StartEncryption() {
       pw::bluetooth::emboss::LinkKeyView(&ltk()->value()));
 
   auto event_cb = [self = GetWeakPtr(), handle = handle()](
-                      auto id, const EmbossEventPacket& event) {
+                      auto id, const EventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
@@ -119,8 +119,7 @@ void LowEnergyConnection::HandleEncryptionStatus(Result<bool> result,
 }
 
 CommandChannel::EventCallbackResult
-LowEnergyConnection::OnLELongTermKeyRequestEvent(
-    const EmbossEventPacket& event) {
+LowEnergyConnection::OnLELongTermKeyRequestEvent(const EventPacket& event) {
   auto view = event.unchecked_view<
       pw::bluetooth::emboss::LELongTermKeyRequestSubeventView>();
   if (!view.IsComplete()) {
@@ -148,13 +147,13 @@ LowEnergyConnection::OnLELongTermKeyRequestEvent(
     return CommandChannel::EventCallbackResult::kRemove;
   }
 
-  auto status_cb = [](auto id, const EmbossEventPacket& status_event) {
+  auto status_cb = [](auto id, const EventPacket& status_event) {
     HCI_IS_ERROR(
         status_event, TRACE, "hci-le", "failed to reply to LTK request");
   };
 
   if (ltk() && ltk()->rand() == rand && ltk()->ediv() == ediv) {
-    auto cmd = EmbossCommandPacket::New<
+    auto cmd = CommandPacket::New<
         pw::bluetooth::emboss::LELongTermKeyRequestReplyCommandWriter>(
         hci_spec::kLELongTermKeyRequestReply);
     auto cmd_view = cmd.view_t();
@@ -165,7 +164,7 @@ LowEnergyConnection::OnLELongTermKeyRequestEvent(
   } else {
     bt_log(DEBUG, "hci-le", "LTK request rejected");
 
-    auto cmd = EmbossCommandPacket::New<
+    auto cmd = CommandPacket::New<
         pw::bluetooth::emboss::LELongTermKeyRequestNegativeReplyCommandWriter>(
         hci_spec::kLELongTermKeyRequestNegativeReply);
     auto cmd_view = cmd.view_t();

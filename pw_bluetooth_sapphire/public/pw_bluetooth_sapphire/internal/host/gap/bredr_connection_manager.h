@@ -32,7 +32,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/service_discoverer.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
@@ -268,31 +268,31 @@ class BrEdrConnectionManager final {
 
   // Callbacks for registered events
   hci::CommandChannel::EventCallbackResult OnAuthenticationComplete(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnConnectionRequest(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnConnectionComplete(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnIoCapabilityRequest(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnIoCapabilityResponse(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnLinkKeyRequest(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnLinkKeyNotification(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnSimplePairingComplete(
-      const hci::EmbossEventPacket& event_packet);
+      const hci::EventPacket& event_packet);
   hci::CommandChannel::EventCallbackResult OnUserConfirmationRequest(
-      const hci::EmbossEventPacket& event_packet);
+      const hci::EventPacket& event_packet);
   hci::CommandChannel::EventCallbackResult OnUserPasskeyRequest(
-      const hci::EmbossEventPacket& event_packet);
+      const hci::EventPacket& event_packet);
   hci::CommandChannel::EventCallbackResult OnUserPasskeyNotification(
-      const hci::EmbossEventPacket& event_packet);
+      const hci::EventPacket& event_packet);
   hci::CommandChannel::EventCallbackResult OnRoleChange(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnPinCodeRequest(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
 
   void HandleNonAclConnectionRequest(const DeviceAddress& addr,
                                      pw::bluetooth::emboss::LinkType link_type);

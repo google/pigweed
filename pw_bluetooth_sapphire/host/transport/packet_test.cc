@@ -11,8 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_packet.h"
-
 #include <pw_bluetooth/hci_android.emb.h>
 #include <pw_bluetooth/hci_commands.emb.h>
 #include <pw_bluetooth/hci_test.emb.h>
@@ -21,7 +19,8 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/emboss_packet.h"
 #include "pw_unit_test/framework.h"
 
 using bt::ContainersEqual;
@@ -44,10 +43,9 @@ TEST(StaticPacketTest, StaticPacketBasic) {
   EXPECT_EQ(packet.data(), BufferView({0, 0, 0, 0}));
 }
 
-TEST(EmbossCommandPacketTest, EmbossCommandPacketBasic) {
+TEST(CommandPacketTest, CommandPacketBasic) {
   auto packet =
-      EmbossCommandPacket::New<pw::bluetooth::emboss::TestCommandPacketWriter>(
-          1234);
+      CommandPacket::New<pw::bluetooth::emboss::TestCommandPacketWriter>(1234);
   packet.view_t().payload().Write(13);
 
   EXPECT_EQ(packet.size(), 4u);
@@ -59,10 +57,9 @@ TEST(EmbossCommandPacketTest, EmbossCommandPacketBasic) {
   EXPECT_EQ(packet.view_t().payload().Read(), 13);
 }
 
-TEST(EmbossCommandPacketTest, EmbossCommandPacketDeathTest) {
-  EmbossCommandPacket packet =
-      EmbossCommandPacket::New<pw::bluetooth::emboss::TestCommandPacketView>(
-          1234);
+TEST(CommandPacketTest, CommandPacketDeathTest) {
+  CommandPacket packet =
+      CommandPacket::New<pw::bluetooth::emboss::TestCommandPacketView>(1234);
 
   // Try and fail to request view for struct larger than TestCommandPacket.
   EXPECT_DEATH_IF_SUPPORTED(
@@ -70,14 +67,13 @@ TEST(EmbossCommandPacketTest, EmbossCommandPacketDeathTest) {
   // Try and fail to allocate 0 length packet (needs at least 3 bytes for the
   // header).
   EXPECT_DEATH_IF_SUPPORTED(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(1234,
-                                                                         0),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(1234, 0),
       "command packet size must be at least 3 bytes");
 }
 
-TEST(EmbossEventPacketTest, EmbossEventPacketBasic) {
+TEST(EventPacketTest, EventPacketBasic) {
   auto packet =
-      EmbossEventPacket::New<pw::bluetooth::emboss::TestEventPacketWriter>(123);
+      EventPacket::New<pw::bluetooth::emboss::TestEventPacketWriter>(123);
   packet.view_t().payload().Write(13);
 
   EXPECT_EQ(packet.size(), 3u);
@@ -87,20 +83,20 @@ TEST(EmbossEventPacketTest, EmbossEventPacketBasic) {
   EXPECT_EQ(packet.view_t().payload().Read(), 13);
 }
 
-TEST(EmbossEventPacketTest, EmbossEventPacketDeathTest) {
-  EmbossEventPacket packet =
-      EmbossEventPacket::New<pw::bluetooth::emboss::TestEventPacketView>(123);
+TEST(EventPacketTest, EventPacketDeathTest) {
+  EventPacket packet =
+      EventPacket::New<pw::bluetooth::emboss::TestEventPacketView>(123);
 
   // Try and fail to allocate 0 length packet (needs at least 2 bytes for the
   // header).
-  EXPECT_DEATH_IF_SUPPORTED(EmbossEventPacket::New(0),
+  EXPECT_DEATH_IF_SUPPORTED(EventPacket::New(0),
                             "event packet size must be at least 2 bytes");
 }
 
-TEST(EmbossEventPacketTest, StatusCode) {
+TEST(EventPacketTest, StatusCode) {
   // Confirm status can be read from vendor subevent.
   auto packet =
-      EmbossEventPacket::New<android_emb::LEMultiAdvtStateChangeSubeventWriter>(
+      EventPacket::New<android_emb::LEMultiAdvtStateChangeSubeventWriter>(
           hci_spec::kVendorDebugEventCode);
   auto view = packet.view_t();
   view.status().Write(hci_spec::StatusCode::OPERATION_CANCELLED_BY_HOST);

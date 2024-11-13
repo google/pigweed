@@ -114,19 +114,17 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EmbossEventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket& event) { cb_called++; };
 
   // Sequence 1 (test)
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);  // <-- Should not run
 
   EXPECT_TRUE(cmd_runner.IsReady());
@@ -145,12 +143,10 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   // Sequence 2 (test)
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);  // <-- Should not run
 
   EXPECT_TRUE(cmd_runner.IsReady());
@@ -168,16 +164,13 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   // Sequence 3 (test)
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);  // <-- Should not run
 
   EXPECT_TRUE(cmd_runner.IsReady());
@@ -195,12 +188,10 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   // Sequence 4 (test)
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);
 
   EXPECT_TRUE(cmd_runner.IsReady());
@@ -219,10 +210,10 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   // Sequence 5 (test) (no callback passed to QueueCommand)
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           kTestOpCode));
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           kTestOpCode));
 
   EXPECT_TRUE(cmd_runner.IsReady());
@@ -283,17 +274,15 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EmbossEventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket& event) { cb_called++; };
 
   // Sequence 1: Sequence will be cancelled after the first command.
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_TRUE(cmd_runner.HasQueuedCommands());
@@ -319,17 +308,15 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   // Sequence 2: Sequence will be cancelled after first command. This tests
   // canceling a sequence from a CommandCompleteCallback.
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
-      [&](const EmbossEventPacket& event) {
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
+      [&](const EventPacket& event) {
         bt_log(TRACE, "hci-test", "callback called");
         cmd_runner.Cancel();
         EXPECT_TRUE(cmd_runner.IsReady());
         EXPECT_FALSE(cmd_runner.HasQueuedCommands());
       });
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);  // <-- Should not run
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_TRUE(cmd_runner.HasQueuedCommands());
@@ -353,9 +340,8 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   // followed by a second command which will fail. This tests canceling a
   // sequence and initiating a new one from a CommandCompleteCallback.
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
-      [&](const EmbossEventPacket& event) {
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
+      [&](const EventPacket& event) {
         cmd_runner.Cancel();
         EXPECT_TRUE(cmd_runner.IsReady());
         EXPECT_FALSE(cmd_runner.HasQueuedCommands());
@@ -366,18 +352,17 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
         // Queue multiple commands (only one will execute since MockController
         // will send back an error status).
         cmd_runner.QueueCommand(
-            EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+            CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
                 kTestOpCode),
             cb);
         cmd_runner.QueueCommand(
-            EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+            CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
                 kTestOpCode),
             cb);  // <-- Should not run
         cmd_runner.RunCommands(status_cb);
       });
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);  // <-- Should not run
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_TRUE(cmd_runner.HasQueuedCommands());
@@ -474,7 +459,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
       test_device(), command_bytes, &command_cmpl_success_bytes);
 
   int cb_called = 0;
-  auto cb = [&](const hci::EmbossEventPacket&) { cb_called++; };
+  auto cb = [&](const hci::EventPacket&) { cb_called++; };
 
   int status_cb_called = 0;
   Result<> status = ToResult(HostError::kFailed);
@@ -486,19 +471,17 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
 
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb,
       /*wait=*/false);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           kTestOpCode2),
       cb,
       /*wait=*/false);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
-      [&](const hci::EmbossEventPacket&) {
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
+      [&](const hci::EventPacket&) {
         EXPECT_EQ(2, cb_called);
         cb_called++;
       },
@@ -506,13 +489,11 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   // We can also queue to the end of the queue without the last one being a
   // wait.
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb,
       /*wait=*/false);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb,
       /*wait=*/false);
   cmd_runner.RunCommands(status_cb);
@@ -539,24 +520,22 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   EXPECT_CMD_PACKET_OUT(test_device(), command2_bytes, );
 
   int cb_0_called = 0;
-  auto cb_0 = [&](const hci::EmbossEventPacket&) { cb_0_called++; };
+  auto cb_0 = [&](const hci::EventPacket&) { cb_0_called++; };
   int cb_1_called = 0;
-  auto cb_1 = [&](const hci::EmbossEventPacket&) { cb_1_called++; };
+  auto cb_1 = [&](const hci::EventPacket&) { cb_1_called++; };
   int cb_2_called = 0;
-  auto cb_2 = [&](const hci::EmbossEventPacket&) { cb_2_called++; };
+  auto cb_2 = [&](const hci::EventPacket&) { cb_2_called++; };
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb_0,
       /*wait=*/false);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           kTestOpCode2),
       cb_1,
       /*wait=*/false);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb_2);  // shouldn't run
 
   cmd_runner.RunCommands(status_cb);
@@ -599,22 +578,21 @@ TEST_F(SequentialCommandRunnerTest, CommandCompletesOnStatusEvent) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EmbossEventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket& event) { cb_called++; };
 
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
   EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb,
       /*wait=*/false,
       hci_spec::kCommandStatusEventCode);
 
   EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_cmpl_event);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           kTestOpCode2),
       cb,
       /*wait=*/true);
@@ -663,14 +641,14 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EmbossEventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket& event) { cb_called++; };
 
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
   EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           hci_spec::kRemoteNameRequest),
       cb,
       /*wait=*/false,
@@ -678,14 +656,14 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
 
   EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_status_event);
   cmd_runner.QueueLeAsyncCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           hci_spec::kLEReadRemoteFeatures),
       hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
       cb,
       /*wait=*/false);
 
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           hci_spec::kReadRemoteVersionInfo),
       cb,
       /*wait=*/true,
@@ -738,14 +716,14 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EmbossEventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket& event) { cb_called++; };
 
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
   EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           hci_spec::kRemoteNameRequest),
       cb,
       /*wait=*/false,
@@ -754,7 +732,7 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
   // Even though command 1 is not waiting on command 0, it should remain queued
   // due to the exclusion list.
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           hci_spec::kReadRemoteVersionInfo),
       cb,
       /*wait=*/false,
@@ -809,7 +787,7 @@ TEST_F(SequentialCommandRunnerTest,
   };
 
   int cb_called = 0;
-  auto cb = [&](const EmbossEventPacket& event) {
+  auto cb = [&](const EventPacket& event) {
     if (cb_called == 0) {
       cmd_runner.reset();
     }
@@ -821,7 +799,7 @@ TEST_F(SequentialCommandRunnerTest,
   EXPECT_CMD_PACKET_OUT(
       test_device(), command, &command0_status_event, &command0_cmpl_event);
   cmd_runner->QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           hci_spec::kRemoteNameRequest),
       cb,
       /*wait=*/false,
@@ -829,7 +807,7 @@ TEST_F(SequentialCommandRunnerTest,
 
   EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_status_event);
   cmd_runner->QueueLeAsyncCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           hci_spec::kLEReadRemoteFeatures),
       hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
       cb,
@@ -861,12 +839,11 @@ TEST_F(SequentialCommandRunnerTest,
   };
 
   int cb_called = 0;
-  auto cb = [&](const EmbossEventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket& event) { cb_called++; };
 
   auto command = bt::testing::EmptyCommandPacket(kTestOpCode);
   cmd_runner->QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       cb);
   EXPECT_CMD_PACKET_OUT(test_device(), command);
   cmd_runner->RunCommands(status_cb);
@@ -913,10 +890,10 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EmbossEventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket& event) { cb_called++; };
 
   int name_cb_called = 0;
-  auto name_request_callback = [&](const EmbossEventPacket& event) {
+  auto name_request_callback = [&](const EventPacket& event) {
     name_cb_called++;
 
     EXPECT_FALSE(cmd_runner.IsReady());
@@ -925,7 +902,7 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
     EXPECT_CMD_PACKET_OUT(
         test_device(), command1, &command1_status_event, &command1_cmpl_event);
     cmd_runner.QueueLeAsyncCommand(
-        EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+        CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
             hci_spec::kLEReadRemoteFeatures),
         hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
         cb,
@@ -934,7 +911,7 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
     EXPECT_CMD_PACKET_OUT(
         test_device(), command2, &command2_status_event, &command2_cmpl_event);
     cmd_runner.QueueCommand(
-        EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+        CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
             hci_spec::kReadRemoteVersionInfo),
         cb,
         /*wait=*/false,
@@ -944,7 +921,7 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
   EXPECT_CMD_PACKET_OUT(
       test_device(), command, &command0_status_event, &command0_cmpl_event);
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
           hci_spec::kRemoteNameRequest),
       name_request_callback,
       /*wait=*/false,
@@ -987,14 +964,13 @@ TEST_F(SequentialCommandRunnerTest, EmbossEventHandler) {
 
   int cb_called = 0;
   SequentialCommandRunner::EmbossCommandCompleteCallback cb =
-      [&](const EmbossEventPacket& event) {
+      [&](const EventPacket& event) {
         cb_called++;
         EXPECT_THAT(event.data(), BufferEq(command_cmpl_success_bytes));
       };
 
   cmd_runner.QueueCommand(
-      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
-          kTestOpCode),
+      CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
       std::move(cb));
   EXPECT_TRUE(cmd_runner.IsReady());
   EXPECT_TRUE(cmd_runner.HasQueuedCommands());

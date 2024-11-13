@@ -34,31 +34,30 @@ LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
   StopAdvertising();
 }
 
-EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
+CommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address,
     pwemb::GenericEnableParam enable,
     bool /*extended_pdu*/) {
   auto packet =
-      hci::EmbossCommandPacket::New<pwemb::LESetAdvertisingEnableCommandWriter>(
+      hci::CommandPacket::New<pwemb::LESetAdvertisingEnableCommandWriter>(
           hci_spec::kLESetAdvertisingEnable);
   auto packet_view = packet.view_t();
   packet_view.advertising_enable().Write(enable);
   return packet;
 }
 
-std::vector<EmbossCommandPacket>
-LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(const DeviceAddress& address,
-                                                   const AdvertisingData& data,
-                                                   AdvFlags flags,
-                                                   bool /*extended_pdu*/) {
+std::vector<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
+    const DeviceAddress& address,
+    const AdvertisingData& data,
+    AdvFlags flags,
+    bool /*extended_pdu*/) {
   if (data.CalculateBlockSize() == 0) {
-    std::vector<EmbossCommandPacket> packets;
+    std::vector<CommandPacket> packets;
     return packets;
   }
 
-  auto packet =
-      EmbossCommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
-          hci_spec::kLESetAdvertisingData);
+  auto packet = CommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
+      hci_spec::kLESetAdvertisingData);
   auto params = packet.view_t();
   const uint8_t data_length =
       static_cast<uint8_t>(data.CalculateBlockSize(/*include_flags=*/true));
@@ -68,24 +67,23 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(const DeviceAddress& address,
                              data_length);
   data.WriteBlock(&adv_view, flags);
 
-  std::vector<EmbossCommandPacket> packets;
+  std::vector<CommandPacket> packets;
   packets.reserve(1);
   packets.emplace_back(std::move(packet));
   return packets;
 }
 
-std::vector<EmbossCommandPacket>
-LegacyLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
-                                                const AdvertisingData& scan_rsp,
-                                                bool /*extended_pdu*/) {
+std::vector<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetScanResponse(
+    const DeviceAddress& address,
+    const AdvertisingData& scan_rsp,
+    bool /*extended_pdu*/) {
   if (scan_rsp.CalculateBlockSize() == 0) {
-    std::vector<EmbossCommandPacket> packets;
+    std::vector<CommandPacket> packets;
     return packets;
   }
 
-  auto packet =
-      EmbossCommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
-          hci_spec::kLESetScanResponseData);
+  auto packet = CommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
+      hci_spec::kLESetScanResponseData);
   auto params = packet.view_t();
   const uint8_t data_length =
       static_cast<uint8_t>(scan_rsp.CalculateBlockSize());
@@ -95,13 +93,13 @@ LegacyLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
       params.scan_response_data().BackingStorage().data(), data_length);
   scan_rsp.WriteBlock(&scan_data_view, /*flags=*/std::nullopt);
 
-  std::vector<EmbossCommandPacket> packets;
+  std::vector<CommandPacket> packets;
   packets.reserve(1);
   packets.emplace_back(std::move(packet));
   return packets;
 }
 
-std::optional<EmbossCommandPacket>
+std::optional<CommandPacket>
 LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
     const AdvertisingEventProperties& properties,
@@ -109,7 +107,7 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const AdvertisingIntervalRange& interval,
     bool /*extended_pdu*/) {
   auto packet =
-      EmbossCommandPacket::New<pwemb::LESetAdvertisingParametersCommandWriter>(
+      CommandPacket::New<pwemb::LESetAdvertisingParametersCommandWriter>(
           hci_spec::kLESetAdvertisingParameters);
   auto params = packet.view_t();
   params.advertising_interval_min().Write(interval.min());
@@ -129,33 +127,31 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
   return packet;
 }
 
-EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildUnsetAdvertisingData(
+CommandPacket LegacyLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address, bool /*extended_pdu*/) {
-  return EmbossCommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
+  return CommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
       hci_spec::kLESetAdvertisingData);
 }
 
-EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
+CommandPacket LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address, bool /*extended_pdu*/) {
-  auto packet =
-      EmbossCommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
-          hci_spec::kLESetScanResponseData);
+  auto packet = CommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
+      hci_spec::kLESetScanResponseData);
   return packet;
 }
 
-EmbossCommandPacket LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
+CommandPacket LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address, bool /*extended_pdu*/) {
   auto packet =
-      hci::EmbossCommandPacket::New<pwemb::LESetAdvertisingEnableCommandWriter>(
+      hci::CommandPacket::New<pwemb::LESetAdvertisingEnableCommandWriter>(
           hci_spec::kLESetAdvertisingEnable);
   auto packet_view = packet.view_t();
   packet_view.advertising_enable().Write(pwemb::GenericEnableParam::DISABLE);
   return packet;
 }
 
-static EmbossCommandPacket BuildReadAdvertisingTxPower() {
-  return EmbossCommandPacket::New<
-      pwemb::LEReadAdvertisingChannelTxPowerCommandView>(
+static CommandPacket BuildReadAdvertisingTxPower() {
+  return CommandPacket::New<pwemb::LEReadAdvertisingChannelTxPowerCommandView>(
       hci_spec::kLEReadAdvertisingChannelTxPower);
 }
 
@@ -244,7 +240,7 @@ void LegacyLowEnergyAdvertiser::StartAdvertising(
   // If advertising was canceled during the TX power level read (either
   // |starting_| was reset or the |result_callback| was moved), return early.
   if (options.include_tx_power_level) {
-    auto power_cb = [this](auto, const hci::EmbossEventPacket& event) mutable {
+    auto power_cb = [this](auto, const hci::EventPacket& event) mutable {
       PW_CHECK(staged_params_.has_value());
       if (!starting_ || !staged_params_.value().result_callback) {
         bt_log(

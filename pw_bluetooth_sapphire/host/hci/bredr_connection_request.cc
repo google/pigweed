@@ -19,14 +19,14 @@
 
 namespace bt::hci {
 
-EmbossCommandPacket CreateConnectionPacket(
+CommandPacket CreateConnectionPacket(
     DeviceAddress address,
     std::optional<pw::bluetooth::emboss::PageScanRepetitionMode>
         page_scan_repetition_mode,
     std::optional<uint16_t> clock_offset) {
-  auto request = EmbossCommandPacket::New<
-      pw::bluetooth::emboss::CreateConnectionCommandWriter>(
-      hci_spec::kCreateConnection);
+  auto request =
+      CommandPacket::New<pw::bluetooth::emboss::CreateConnectionCommandWriter>(
+          hci_spec::kCreateConnection);
   auto params = request.view_t();
   params.bd_addr().CopyFrom(address.value().view());
   params.packet_type().BackingStorage().WriteUInt(kEnableAllPacketTypes);
@@ -74,7 +74,7 @@ void BrEdrConnectionRequest::CreateConnection(
                       timeout,
                       peer_id = peer_id_,
                       on_command_fail_cb = std::move(on_command_fail)](
-                         auto, const EmbossEventPacket& event) {
+                         auto, const EventPacket& event) {
     PW_DCHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
 
     if (!self.is_alive())

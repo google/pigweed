@@ -14,7 +14,7 @@
 
 #pragma once
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 
 namespace bt::hci {
 
@@ -25,7 +25,7 @@ class AdvertisingReportParser final {
   // |event| must represent a LE Meta Event containing a LE Advertising Report
   // sub-event. The buffer that backs |event| must remain valid for the duration
   // in which this parser instance will be used.
-  explicit AdvertisingReportParser(const EmbossEventPacket& event);
+  explicit AdvertisingReportParser(const EventPacket& event);
 
   // Populates the next LE Advertising report contained in this event in
   // |out_data| and the RSSI in |out_rssi|. Returns false if there were no

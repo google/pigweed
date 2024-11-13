@@ -22,7 +22,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 
 namespace bt::gap {
@@ -101,15 +101,15 @@ class BrEdrDiscoveryManager final {
 
   // Used to receive Inquiry Results.
   hci::CommandChannel::EventCallbackResult InquiryResult(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
 
   // Used to receive Inquiry Results.
   hci::CommandChannel::EventCallbackResult InquiryResultWithRssi(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
 
   // Used to receive Inquiry Results.
   hci::CommandChannel::EventCallbackResult ExtendedInquiryResult(
-      const hci::EmbossEventPacket& event);
+      const hci::EventPacket& event);
 
   // Creates and stores a new session object and returns it.
   std::unique_ptr<BrEdrDiscoverySession> AddDiscoverySession();

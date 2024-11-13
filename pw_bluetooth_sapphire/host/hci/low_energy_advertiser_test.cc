@@ -21,7 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 
 // LowEnergyAdvertiser has many potential subclasses (e.g.
 // LegacyLowEnergyAdvertiser, ExtendedLowEnergyAdvertiser,
@@ -248,7 +248,7 @@ class LowEnergyAdvertiserTest : public TestingBase {
 
   void SetRandomAddress(DeviceAddress random_address) {
     if (std::is_same_v<T, LegacyLowEnergyAdvertiser>) {
-      auto emboss_packet = EmbossCommandPacket::New<
+      auto emboss_packet = CommandPacket::New<
           pw::bluetooth::emboss::LESetRandomAddressCommandWriter>(
           hci_spec::kLESetRandomAddress);
       emboss_packet.view_t().random_address().CopyFrom(

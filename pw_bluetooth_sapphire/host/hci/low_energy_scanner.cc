@@ -174,9 +174,9 @@ void LowEnergyScanner::StartScanInternal(const DeviceAddress& local_address,
          options.interval,
          options.window);
 
-  EmbossCommandPacket scan_params_command =
+  CommandPacket scan_params_command =
       BuildSetScanParametersPacket(local_address, options);
-  EmbossCommandPacket scan_enable_command = BuildEnablePacket(
+  CommandPacket scan_enable_command = BuildEnablePacket(
       options, pw::bluetooth::emboss::GenericEnableParam::ENABLE);
 
   hci_cmd_runner_->QueueCommand(std::move(scan_params_command));
@@ -257,7 +257,7 @@ void LowEnergyScanner::StopScanInternal(bool stopped_by_user) {
 
   // Tell the controller to stop scanning.
   ScanOptions options;
-  EmbossCommandPacket command = BuildEnablePacket(
+  CommandPacket command = BuildEnablePacket(
       options, pw::bluetooth::emboss::GenericEnableParam::DISABLE);
 
   hci_cmd_runner_->QueueCommand(std::move(command));

@@ -30,7 +30,7 @@ class IsoStreamImpl final : public IsoStream {
                 pw::Callback<void()> on_closed_cb);
 
   // IsoStream overrides
-  bool OnCisEstablished(const hci::EmbossEventPacket& event) override;
+  bool OnCisEstablished(const hci::EventPacket& event) override;
   void SetupDataPath(
       pw::bluetooth::emboss::DataPathDirection direction,
       const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
@@ -114,7 +114,7 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
   auto weak_self = weak_self_.GetWeakPtr();
   cis_established_handler_ = cmd_->AddLEMetaEventHandler(
       hci_spec::kLECISEstablishedSubeventCode,
-      [self = std::move(weak_self)](const hci::EmbossEventPacket& event) {
+      [self = std::move(weak_self)](const hci::EventPacket& event) {
         if (!self.is_alive()) {
           return hci::CommandChannel::EventCallbackResult::kRemove;
         }
@@ -127,7 +127,7 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
   PW_CHECK(cis_established_handler_ != 0u);
 }
 
-bool IsoStreamImpl::OnCisEstablished(const hci::EmbossEventPacket& event) {
+bool IsoStreamImpl::OnCisEstablished(const hci::EventPacket& event) {
   PW_CHECK(event.event_code() == hci_spec::kLEMetaEventCode);
   PW_CHECK(event.view<pw::bluetooth::emboss::LEMetaEventView>()
                .subevent_code()
@@ -238,7 +238,7 @@ void IsoStreamImpl::SetupDataPath(
   size_t packet_size =
       pw::bluetooth::emboss::LESetupISODataPathCommand::MinSizeInBytes() +
       (codec_configuration.has_value() ? codec_configuration->size() : 0);
-  auto cmd_packet = hci::EmbossCommandPacket::New<
+  auto cmd_packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::LESetupISODataPathCommandWriter>(
       hci_spec::kLESetupISODataPath, packet_size);
   auto cmd_view = cmd_packet.view_t();
@@ -272,7 +272,7 @@ void IsoStreamImpl::SetupDataPath(
        direction,
        on_incoming_data_available_callback =
            std::move(on_incoming_data_available_cb)](
-          auto id, const hci::EmbossEventPacket& cmd_complete) mutable {
+          auto id, const hci::EventPacket& cmd_complete) mutable {
         if (!self.is_alive()) {
           on_complete_callback(kStreamClosed);
           return;

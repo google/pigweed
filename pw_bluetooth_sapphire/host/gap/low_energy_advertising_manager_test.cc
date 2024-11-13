@@ -25,7 +25,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 
 namespace bt {
@@ -136,16 +136,16 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   }
 
  private:
-  hci::EmbossCommandPacket BuildEnablePacket(
+  hci::CommandPacket BuildEnablePacket(
       const DeviceAddress& address,
       pw::bluetooth::emboss::GenericEnableParam enable,
       bool extended_pdu) override {
-    return hci::EmbossCommandPacket::New<
+    return hci::CommandPacket::New<
         pwemb::LESetExtendedAdvertisingEnableDataWriter>(
         hci_spec::kLESetExtendedAdvertisingEnable);
   }
 
-  std::optional<hci::EmbossCommandPacket> BuildSetAdvertisingParams(
+  std::optional<hci::CommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address,
       const AdvertisingEventProperties& properties,
       pwemb::LEOwnAddressType own_address_type,
@@ -154,51 +154,48 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return std::nullopt;
   }
 
-  std::vector<hci::EmbossCommandPacket> BuildSetAdvertisingData(
+  std::vector<hci::CommandPacket> BuildSetAdvertisingData(
       const DeviceAddress& address,
       const AdvertisingData& data,
       AdvFlags flags,
       bool extended_pdu) override {
-    hci::EmbossCommandPacket packet =
-        hci::EmbossCommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
+    hci::CommandPacket packet =
+        hci::CommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
             hci_spec::kLESetAdvertisingData);
 
-    std::vector<hci::EmbossCommandPacket> packets;
+    std::vector<hci::CommandPacket> packets;
     packets.push_back(std::move(packet));
     return packets;
   }
 
-  hci::EmbossCommandPacket BuildUnsetAdvertisingData(
-      const DeviceAddress& address, bool extended_pdu) override {
-    return hci::EmbossCommandPacket::New<
-        pwemb::LESetAdvertisingDataCommandWriter>(
+  hci::CommandPacket BuildUnsetAdvertisingData(const DeviceAddress& address,
+                                               bool extended_pdu) override {
+    return hci::CommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
         hci_spec::kLESetAdvertisingData);
   }
 
-  std::vector<hci::EmbossCommandPacket> BuildSetScanResponse(
+  std::vector<hci::CommandPacket> BuildSetScanResponse(
       const DeviceAddress& address,
       const AdvertisingData& scan_rsp,
       bool extended_pdu) override {
-    hci::EmbossCommandPacket packet = hci::EmbossCommandPacket::New<
-        pwemb::LESetScanResponseDataCommandWriter>(
-        hci_spec::kLESetScanResponseData);
+    hci::CommandPacket packet =
+        hci::CommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
+            hci_spec::kLESetScanResponseData);
 
-    std::vector<hci::EmbossCommandPacket> packets;
+    std::vector<hci::CommandPacket> packets;
     packets.push_back(std::move(packet));
     return packets;
   }
 
-  hci::EmbossCommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
-                                                  bool extended_pdu) override {
-    return hci::EmbossCommandPacket::New<
-        pwemb::LESetScanResponseDataCommandWriter>(
+  hci::CommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
+                                            bool extended_pdu) override {
+    return hci::CommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
         hci_spec::kLESetScanResponseData);
   }
 
-  hci::EmbossCommandPacket BuildRemoveAdvertisingSet(
-      const DeviceAddress& address, bool extended_pdu) override {
-    return hci::EmbossCommandPacket::New<
-        pwemb::LERemoveAdvertisingSetCommandWriter>(
+  hci::CommandPacket BuildRemoveAdvertisingSet(const DeviceAddress& address,
+                                               bool extended_pdu) override {
+    return hci::CommandPacket::New<pwemb::LERemoveAdvertisingSetCommandWriter>(
         hci_spec::kLERemoveAdvertisingSet);
   }
 

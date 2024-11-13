@@ -344,7 +344,7 @@ void LowEnergyConnection::RegisterEventHandlers() {
   auto self = GetWeakPtr();
   conn_update_cmpl_handler_id_ = cmd_->AddLEMetaEventHandler(
       hci_spec::kLEConnectionUpdateCompleteSubeventCode,
-      [self](const hci::EmbossEventPacket& event) {
+      [self](const hci::EventPacket& event) {
         if (self.is_alive()) {
           self->OnLEConnectionUpdateComplete(event);
           return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -586,7 +586,7 @@ void LowEnergyConnection::UpdateConnectionParams(
          "gap-le",
          "updating connection parameters (peer: %s)",
          bt_str(peer_id()));
-  auto command = hci::EmbossCommandPacket::New<
+  auto command = hci::CommandPacket::New<
       pw::bluetooth::emboss::LEConnectionUpdateCommandWriter>(
       hci_spec::kLEConnectionUpdate);
   auto view = command.view_t();
@@ -601,8 +601,7 @@ void LowEnergyConnection::UpdateConnectionParams(
   view.max_connection_event_length().Write(0x0000);
 
   auto status_cb_wrapper = [handle = handle(), cb = std::move(status_cb)](
-                               auto id,
-                               const hci::EmbossEventPacket& event) mutable {
+                               auto id, const hci::EventPacket& event) mutable {
     PW_CHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
     HCI_IS_ERROR(event,
                  TRACE,
@@ -620,7 +619,7 @@ void LowEnergyConnection::UpdateConnectionParams(
 }
 
 void LowEnergyConnection::OnLEConnectionUpdateComplete(
-    const hci::EmbossEventPacket& event) {
+    const hci::EventPacket& event) {
   PW_CHECK(event.event_code() == hci_spec::kLEMetaEventCode);
   auto view = event.view<pw::bluetooth::emboss::LEMetaEventView>();
   PW_CHECK(view.subevent_code().Read() ==

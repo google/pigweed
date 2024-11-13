@@ -74,7 +74,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   // Handler for the HCI Number of Completed Packets Event, used for
   // packet-based data flow control.
   CommandChannel::EventCallbackResult OnNumberOfCompletedPacketsEvent(
-      const EmbossEventPacket& event);
+      const EventPacket& event);
 
   bool IsActiveConnectionConfigured() {
     if (!active_connection_.is_alive()) {
@@ -215,8 +215,7 @@ void ScoDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
 }
 
 CommandChannel::EventCallbackResult
-ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent(
-    const EmbossEventPacket& event) {
+ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent(const EventPacket& event) {
   if (event.size() <
       pw::bluetooth::emboss::NumberOfCompletedPacketsEvent::MinSizeInBytes()) {
     bt_log(ERROR,

@@ -22,16 +22,16 @@
 namespace bt::hci {
 
 template <class ViewT>
-class EmbossCommandPacketT;
+class CommandPacketT;
 
-// EmbossCommandPacket is the HCI Command packet specialization of
+// CommandPacket is the HCI Command packet specialization of
 // DynamicPacket.
-class EmbossCommandPacket : public DynamicPacket {
+class CommandPacket : public DynamicPacket {
  public:
   // Construct an HCI Command packet from an Emboss view T and initialize its
   // header with the |opcode| and size.
   template <typename T>
-  static EmbossCommandPacketT<T> New(hci_spec::OpCode opcode) {
+  static CommandPacketT<T> New(hci_spec::OpCode opcode) {
     return New<T>(opcode, T::IntrinsicSizeInBytes().Read());
   }
 
@@ -40,9 +40,8 @@ class EmbossCommandPacket : public DynamicPacket {
   // and size. This constructor is meant for variable size packets, for which
   // clients must calculate packet size manually.
   template <typename T>
-  static EmbossCommandPacketT<T> New(hci_spec::OpCode opcode,
-                                     size_t packet_size) {
-    EmbossCommandPacketT<T> packet(opcode, packet_size);
+  static CommandPacketT<T> New(hci_spec::OpCode opcode, size_t packet_size) {
+    CommandPacketT<T> packet(opcode, packet_size);
     return packet;
   }
 
@@ -55,45 +54,44 @@ class EmbossCommandPacket : public DynamicPacket {
   uint16_t ocf() const;
 
  protected:
-  explicit EmbossCommandPacket(hci_spec::OpCode opcode, size_t packet_size);
+  explicit CommandPacket(hci_spec::OpCode opcode, size_t packet_size);
 
  private:
   pw::bluetooth::emboss::CommandHeaderView header_view() const;
 };
 
 // Helper subclass that remembers the view type it was constructed with. It is
-// safe to slice an EmbossCommandPacketT into an EmbossCommandPacket.
+// safe to slice a CommandPacketT into a CommandPacket.
 template <class ViewT>
-class EmbossCommandPacketT : public EmbossCommandPacket {
+class CommandPacketT : public CommandPacket {
  public:
   ViewT view_t() { return view<ViewT>(); }
 
  private:
-  friend class EmbossCommandPacket;
+  friend class CommandPacket;
 
-  EmbossCommandPacketT(hci_spec::OpCode opcode, size_t packet_size)
-      : EmbossCommandPacket(opcode, packet_size) {}
+  CommandPacketT(hci_spec::OpCode opcode, size_t packet_size)
+      : CommandPacket(opcode, packet_size) {}
 };
 
 template <class ViewT>
-class EmbossEventPacketT;
+class EventPacketT;
 
-// EmbossEventPacket is the HCI Event packet specialization of DynamicPacket.
-class EmbossEventPacket : public DynamicPacket {
+// EventPacket is the HCI Event packet specialization of DynamicPacket.
+class EventPacket : public DynamicPacket {
  public:
   // Construct an HCI Event packet of |packet_size| total bytes (header +
   // payload).
-  static EmbossEventPacket New(size_t packet_size) {
-    EmbossEventPacket packet(packet_size);
+  static EventPacket New(size_t packet_size) {
+    EventPacket packet(packet_size);
     return packet;
   }
 
   // Construct an HCI Event packet from an Emboss view T and initialize its
   // header with the |event_code| and size.
   template <typename T>
-  static EmbossEventPacketT<T> New(
-      pw::bluetooth::emboss::EventCode event_code) {
-    EmbossEventPacketT<T> packet(T::IntrinsicSizeInBytes().Read());
+  static EventPacketT<T> New(pw::bluetooth::emboss::EventCode event_code) {
+    EventPacketT<T> packet(T::IntrinsicSizeInBytes().Read());
     auto header =
         packet.template view<pw::bluetooth::emboss::EventHeaderWriter>();
     header.event_code().Write(event_code);
@@ -104,8 +102,8 @@ class EmbossEventPacket : public DynamicPacket {
   }
 
   template <typename T>
-  static EmbossEventPacketT<T> New(hci_spec::EventCode event_code) {
-    EmbossEventPacketT<T> packet(T::IntrinsicSizeInBytes().Read());
+  static EventPacketT<T> New(hci_spec::EventCode event_code) {
+    EventPacketT<T> packet(T::IntrinsicSizeInBytes().Read());
     auto header =
         packet.template view<pw::bluetooth::emboss::EventHeaderWriter>();
     header.event_code_uint().Write(event_code);
@@ -121,9 +119,9 @@ class EmbossEventPacket : public DynamicPacket {
   // clients must calculate packet size manually.
   template <typename T>
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-  static EmbossEventPacketT<T> New(hci_spec::EventCode event_code,
-                                   size_t packet_size) {
-    EmbossEventPacketT<T> packet(packet_size);
+  static EventPacketT<T> New(hci_spec::EventCode event_code,
+                             size_t packet_size) {
+    EventPacketT<T> packet(packet_size);
     auto header =
         packet.template view<pw::bluetooth::emboss::EventHeaderWriter>();
     header.event_code_uint().Write(event_code);
@@ -140,7 +138,7 @@ class EmbossEventPacket : public DynamicPacket {
   // are supported by this method. Returns std::nullopt for such events.
   //
   // NOTE: If you intend to use this with a new event code, make sure to add an
-  // entry to the implementation in emboss_control_packets.cc.
+  // entry to the implementation in control_packets.cc.
   std::optional<pw::bluetooth::emboss::StatusCode> StatusCode() const;
 
   // Returns a status if this event represents the result of an operation. See
@@ -150,7 +148,7 @@ class EmbossEventPacket : public DynamicPacket {
   hci::Result<> ToResult() const;
 
  protected:
-  explicit EmbossEventPacket(size_t packet_size);
+  explicit EventPacket(size_t packet_size);
 
  private:
   // From an Emboss view T containing a StatusCode field named "status", returns
@@ -167,9 +165,9 @@ class EmbossEventPacket : public DynamicPacket {
 };
 
 // Helper subclass that remembers the view type it was constructed with. It is
-// safe to slice an EmbossEventPacketT into an EmbossEventPacket.
+// safe to slice an EventPacketT into an EventPacket.
 template <class ViewT>
-class EmbossEventPacketT : public EmbossEventPacket {
+class EventPacketT : public EventPacket {
  public:
   template <typename... Args>
   ViewT view_t(Args... args) {
@@ -182,10 +180,9 @@ class EmbossEventPacketT : public EmbossEventPacket {
   }
 
  private:
-  friend class EmbossEventPacket;
+  friend class EventPacket;
 
-  explicit EmbossEventPacketT(size_t packet_size)
-      : EmbossEventPacket(packet_size) {}
+  explicit EventPacketT(size_t packet_size) : EventPacket(packet_size) {}
 };
 
 }  // namespace bt::hci

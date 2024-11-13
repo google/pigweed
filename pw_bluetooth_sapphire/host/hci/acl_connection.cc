@@ -21,10 +21,10 @@ namespace bt::hci {
 namespace {
 
 template <CommandChannel::EventCallbackResult (
-    AclConnection::*EventHandlerMethod)(const EmbossEventPacket&)>
+    AclConnection::*EventHandlerMethod)(const EventPacket&)>
 CommandChannel::EventCallback BindEventHandler(
     const WeakPtr<AclConnection>& conn) {
-  return [conn](const EmbossEventPacket& event) {
+  return [conn](const EventPacket& event) {
     if (conn.is_alive()) {
       return (conn.get().*EventHandlerMethod)(event);
     }
@@ -75,7 +75,7 @@ void AclConnection::OnDisconnectionComplete(hci_spec::ConnectionHandle handle,
 }
 
 CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
-    const EmbossEventPacket& event) {
+    const EventPacket& event) {
   PW_CHECK(event.event_code() == hci_spec::kEncryptionChangeEventCode);
 
   auto params =
@@ -132,8 +132,7 @@ CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
 }
 
 CommandChannel::EventCallbackResult
-AclConnection::OnEncryptionKeyRefreshCompleteEvent(
-    const EmbossEventPacket& event) {
+AclConnection::OnEncryptionKeyRefreshCompleteEvent(const EventPacket& event) {
   const auto params =
       event
           .view<pw::bluetooth::emboss::EncryptionKeyRefreshCompleteEventView>();

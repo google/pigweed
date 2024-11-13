@@ -3182,7 +3182,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   ASSERT_FALSE(fake_peer_0_ptr->logical_links().empty());
   auto handle_0 = *fake_peer_0_ptr->logical_links().begin();
 
-  auto response = hci::EmbossEventPacket::New<
+  auto response = hci::EventPacket::New<
       pw::bluetooth::emboss::LEReadRemoteFeaturesCompleteSubeventWriter>(
       hci_spec::kLEMetaEventCode);
   auto view = response.view_t();
@@ -3256,7 +3256,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   // Complete interrogation of peer_0. No asserts should fail.
   ASSERT_FALSE(fake_peer_0_ptr->logical_links().empty());
   auto handle_0 = *fake_peer_0_ptr->logical_links().begin();
-  auto response = hci::EmbossEventPacket::New<
+  auto response = hci::EventPacket::New<
       pw::bluetooth::emboss::LEReadRemoteFeaturesCompleteSubeventWriter>(
       hci_spec::kLEMetaEventCode);
   auto view = response.view_t();
@@ -3451,7 +3451,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   RunUntilIdle();
 
   // Complete interrogation so that callback gets called.
-  auto response = hci::EmbossEventPacket::New<
+  auto response = hci::EventPacket::New<
       pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventWriter>(
       hci_spec::kReadRemoteVersionInfoCompleteEventCode);
   auto view = response.view_t();
@@ -3503,7 +3503,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   RunUntilIdle();
 
   // Complete interrogation so that callback gets called.
-  auto response = hci::EmbossEventPacket::New<
+  auto response = hci::EventPacket::New<
       pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventWriter>(
       hci_spec::kReadRemoteVersionInfoCompleteEventCode);
   auto view = response.view_t();
@@ -3732,7 +3732,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   // Complete interrogation with an error that will be received after the
   // disconnect event. Event params other than status will be ignored because
   // status is an error.
-  auto response = hci::EmbossEventPacket::New<
+  auto response = hci::EventPacket::New<
       pw::bluetooth::emboss::ReadRemoteVersionInfoCompleteEventWriter>(
       hci_spec::kReadRemoteVersionInfoCompleteEventCode);
   auto view = response.view_t();

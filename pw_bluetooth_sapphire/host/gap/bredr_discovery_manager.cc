@@ -26,7 +26,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt::gap {
@@ -168,14 +168,14 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
   auto self = weak_self_.GetWeakPtr();
   if (desired_inquiry_mode_ != current_inquiry_mode_) {
-    auto packet = hci::EmbossCommandPacket::New<
+    auto packet = hci::CommandPacket::New<
         pw::bluetooth::emboss::WriteInquiryModeCommandWriter>(
         hci_spec::kWriteInquiryMode);
     packet.view_t().inquiry_mode().Write(desired_inquiry_mode_);
     cmd_->SendCommand(
         std::move(packet),
-        [self, mode = desired_inquiry_mode_](
-            auto /*unused*/, const hci::EmbossEventPacket& event) {
+        [self, mode = desired_inquiry_mode_](auto /*unused*/,
+                                             const hci::EventPacket& event) {
           if (!self.is_alive()) {
             return;
           }
@@ -187,8 +187,9 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         });
   }
 
-  auto inquiry = hci::EmbossCommandPacket::New<
-      pw::bluetooth::emboss::InquiryCommandWriter>(hci_spec::kInquiry);
+  auto inquiry =
+      hci::CommandPacket::New<pw::bluetooth::emboss::InquiryCommandWriter>(
+          hci_spec::kInquiry);
   auto view = inquiry.view_t();
   view.lap().Write(pw::bluetooth::emboss::InquiryAccessCode::GIAC);
   view.inquiry_length().Write(kInquiryLengthDefault);
@@ -196,7 +197,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
   cmd_->SendExclusiveCommand(
       std::move(inquiry),
-      [self](auto, const hci::EmbossEventPacket& event) {
+      [self](auto, const hci::EventPacket& event) {
         if (!self.is_alive()) {
           return;
         }
@@ -244,18 +245,18 @@ void BrEdrDiscoveryManager::StopInquiry() {
   PW_DCHECK(result_handler_id_);
   bt_log(TRACE, "gap-bredr", "cancelling inquiry");
 
-  const hci::EmbossCommandPacket inq_cancel = hci::EmbossCommandPacket::New<
-      pw::bluetooth::emboss::InquiryCancelCommandView>(
-      hci_spec::kInquiryCancel);
+  const hci::CommandPacket inq_cancel =
+      hci::CommandPacket::New<pw::bluetooth::emboss::InquiryCancelCommandView>(
+          hci_spec::kInquiryCancel);
   cmd_->SendCommand(
-      std::move(inq_cancel), [](int64_t, const hci::EmbossEventPacket& event) {
+      std::move(inq_cancel), [](int64_t, const hci::EventPacket& event) {
         // Warn if the command failed.
         HCI_IS_ERROR(event, WARN, "gap-bredr", "inquiry cancel failed");
       });
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
-    const hci::EmbossEventPacket& event) {
+    const hci::EventPacket& event) {
   PW_DCHECK(event.event_code() == hci_spec::kInquiryResultEventCode);
   std::unordered_set<Peer*> peers;
 
@@ -275,8 +276,7 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
 }
 
 hci::CommandChannel::EventCallbackResult
-BrEdrDiscoveryManager::InquiryResultWithRssi(
-    const hci::EmbossEventPacket& event) {
+BrEdrDiscoveryManager::InquiryResultWithRssi(const hci::EventPacket& event) {
   std::unordered_set<Peer*> peers = ProcessInquiryResultEvent(
       cache_,
       event.view<pw::bluetooth::emboss::InquiryResultWithRssiEventView>());
@@ -285,8 +285,7 @@ BrEdrDiscoveryManager::InquiryResultWithRssi(
 }
 
 hci::CommandChannel::EventCallbackResult
-BrEdrDiscoveryManager::ExtendedInquiryResult(
-    const hci::EmbossEventPacket& event) {
+BrEdrDiscoveryManager::ExtendedInquiryResult(const hci::EventPacket& event) {
   bt_log(TRACE, "gap-bredr", "ExtendedInquiryResult received");
   const auto result =
       event.view<pw::bluetooth::emboss::ExtendedInquiryResultEventView>();
@@ -310,7 +309,7 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(
   }
   auto self = weak_self_.GetWeakPtr();
 
-  auto write_eir = hci::EmbossCommandPacket::New<
+  auto write_eir = hci::CommandPacket::New<
       pw::bluetooth::emboss::WriteExtendedInquiryResponseCommandWriter>(
       hci_spec::kWriteExtendedInquiryResponse);
   auto write_eir_params = write_eir.view_t();
@@ -330,7 +329,7 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(
   self->cmd_->SendCommand(
       std::move(write_eir),
       [self, local_name = std::move(name), cb = std::move(callback)](
-          auto, const hci::EmbossEventPacket& event) mutable {
+          auto, const hci::EventPacket& event) mutable {
         if (!HCI_IS_ERROR(event, WARN, "gap", "write EIR failed")) {
           self->local_name_ = std::move(local_name);
         }
@@ -342,7 +341,7 @@ void BrEdrDiscoveryManager::UpdateLocalName(std::string name,
                                             hci::ResultFunction<> callback) {
   auto self = weak_self_.GetWeakPtr();
 
-  auto write_name = hci::EmbossCommandPacket::New<
+  auto write_name = hci::CommandPacket::New<
       pw::bluetooth::emboss::WriteLocalNameCommandWriter>(
       hci_spec::kWriteLocalName);
   auto write_name_view = write_name.view_t();
@@ -357,7 +356,7 @@ void BrEdrDiscoveryManager::UpdateLocalName(std::string name,
   cmd_->SendCommand(
       std::move(write_name),
       [self, name_as_str = std::move(name), cb = std::move(callback)](
-          auto, const hci::EmbossEventPacket& event) mutable {
+          auto, const hci::EventPacket& event) mutable {
         if (HCI_IS_ERROR(event, WARN, "gap", "set local name failed")) {
           cb(event.ToResult());
           return;
@@ -461,7 +460,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
         WARN, "gap-bredr", "cannot request name, unknown peer: %s", bt_str(id));
     return;
   }
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::RemoteNameRequestCommandWriter>(
       hci_spec::kRemoteNameRequest);
   auto params = packet.view_t();
@@ -477,7 +476,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
   }
 
   auto cb = [id, self = weak_self_.GetWeakPtr()](
-                auto, const hci::EmbossEventPacket& event) {
+                auto, const hci::EventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
@@ -560,7 +559,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
          pending_discoverable_.size());
 
   auto self = weak_self_.GetWeakPtr();
-  auto scan_enable_cb = [self](auto, const hci::EmbossEventPacket& event) {
+  auto scan_enable_cb = [self](auto, const hci::EventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
@@ -600,7 +599,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
       scan_type &= ~static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
     }
 
-    auto write_enable = hci::EmbossCommandPacket::New<
+    auto write_enable = hci::CommandPacket::New<
         pw::bluetooth::emboss::WriteScanEnableCommandWriter>(
         hci_spec::kWriteScanEnable);
     auto write_enable_view = write_enable.view_t();
@@ -611,7 +610,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
     resolve_pending.cancel();
     self->cmd_->SendCommand(
         std::move(write_enable),
-        [self](auto, const hci::EmbossEventPacket& response) {
+        [self](auto, const hci::EventPacket& response) {
           if (!self.is_alive()) {
             return;
           }
@@ -628,7 +627,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
         });
   };
 
-  auto read_enable = hci::EmbossCommandPacket::New<
+  auto read_enable = hci::CommandPacket::New<
       pw::bluetooth::emboss::ReadScanEnableCommandWriter>(
       hci_spec::kReadScanEnable);
   cmd_->SendCommand(std::move(read_enable), std::move(scan_enable_cb));
@@ -638,26 +637,25 @@ void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval,
                                                      uint16_t window,
                                                      bool interlaced) {
   // TODO(jamuraa): add a callback for success or failure?
-  auto write_activity = hci::EmbossCommandPacket::New<
+  auto write_activity = hci::CommandPacket::New<
       pw::bluetooth::emboss::WriteInquiryScanActivityCommandWriter>(
       hci_spec::kWriteInquiryScanActivity);
   auto activity_params = write_activity.view_t();
   activity_params.inquiry_scan_interval().Write(interval);
   activity_params.inquiry_scan_window().Write(window);
 
-  cmd_->SendCommand(std::move(write_activity),
-                    [](auto id, const hci::EmbossEventPacket& event) {
-                      if (HCI_IS_ERROR(event,
-                                       WARN,
-                                       "gap-bredr",
-                                       "write inquiry scan activity failed")) {
-                        return;
-                      }
-                      bt_log(
-                          TRACE, "gap-bredr", "inquiry scan activity updated");
-                    });
+  cmd_->SendCommand(
+      std::move(write_activity), [](auto id, const hci::EventPacket& event) {
+        if (HCI_IS_ERROR(event,
+                         WARN,
+                         "gap-bredr",
+                         "write inquiry scan activity failed")) {
+          return;
+        }
+        bt_log(TRACE, "gap-bredr", "inquiry scan activity updated");
+      });
 
-  auto write_type = hci::EmbossCommandPacket::New<
+  auto write_type = hci::CommandPacket::New<
       pw::bluetooth::emboss::WriteInquiryScanTypeCommandWriter>(
       hci_spec::kWriteInquiryScanType);
   auto type_params = write_type.view_t();
@@ -666,7 +664,7 @@ void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval,
                  : pw::bluetooth::emboss::InquiryScanType::STANDARD);
 
   cmd_->SendCommand(
-      std::move(write_type), [](auto id, const hci::EmbossEventPacket& event) {
+      std::move(write_type), [](auto id, const hci::EventPacket& event) {
         if (HCI_IS_ERROR(
                 event, WARN, "gap-bredr", "write inquiry scan type failed")) {
           return;

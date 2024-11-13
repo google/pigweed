@@ -53,10 +53,10 @@ class IsoStreamManager final {
 
  private:
   // Process an incoming CIS request. Currently rejects all requests.
-  void OnCisRequest(const hci::EmbossEventPacket& event);
+  void OnCisRequest(const hci::EventPacket& event);
 
   // Process a disconnection and shut down a CIS.
-  void OnDisconnect(const hci::EmbossEventPacket& event);
+  void OnDisconnect(const hci::EventPacket& event);
 
   void AcceptCisRequest(
       const pw::bluetooth::emboss::LECISRequestSubeventView& event_view,

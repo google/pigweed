@@ -20,7 +20,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/emboss_control_packets.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 
 namespace bt {
 
@@ -148,7 +148,7 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
 
   void SetRandomAddress(DeviceAddress random_address) {
     auto emboss_packet =
-        EmbossCommandPacket::New<pwemb::LESetRandomAddressCommandWriter>(
+        CommandPacket::New<pwemb::LESetRandomAddressCommandWriter>(
             hci_spec::kLESetRandomAddress);
     emboss_packet.view_t().random_address().CopyFrom(
         random_address.value().view());

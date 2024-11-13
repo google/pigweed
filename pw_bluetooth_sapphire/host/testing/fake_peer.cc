@@ -63,9 +63,9 @@ DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(
     size_t packet_size =
         pw::bluetooth::emboss::InquiryResultEvent::MinSizeInBytes() +
         pw::bluetooth::emboss::InquiryResult::IntrinsicSizeInBytes();
-    auto packet = hci::EmbossEventPacket::New<
-        pw::bluetooth::emboss::InquiryResultEventWriter>(
-        hci_spec::kInquiryResultEventCode, packet_size);
+    auto packet =
+        hci::EventPacket::New<pw::bluetooth::emboss::InquiryResultEventWriter>(
+            hci_spec::kInquiryResultEventCode, packet_size);
     auto view = packet.view_t();
     view.num_responses().Write(1);
     view.responses()[0].bd_addr().CopyFrom(address_.value().view());
@@ -79,7 +79,7 @@ DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(
   constexpr size_t packet_size =
       pw::bluetooth::emboss::InquiryResultWithRssiEvent::MinSizeInBytes() +
       pw::bluetooth::emboss::InquiryResultWithRssi::IntrinsicSizeInBytes();
-  auto packet = hci::EmbossEventPacket::New<
+  auto packet = hci::EventPacket::New<
       pw::bluetooth::emboss::InquiryResultWithRssiEventWriter>(
       hci_spec::kInquiryResultEventCode, packet_size);
   auto view = packet.view_t();
@@ -182,7 +182,7 @@ DynamicByteBuffer FakePeer::BuildLegacyAdvertisingReportEvent(
   size_t packet_size =
       reports_size +
       pw::bluetooth::emboss::LEAdvertisingReportSubevent::MinSizeInBytes();
-  auto event = hci::EmbossEventPacket::New<
+  auto event = hci::EventPacket::New<
       pw::bluetooth::emboss::LEAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
 
@@ -249,7 +249,7 @@ DynamicByteBuffer FakePeer::BuildLegacyScanResponseReportEvent() const {
   size_t packet_size =
       report_size +
       pw::bluetooth::emboss::LEAdvertisingReportSubevent::MinSizeInBytes();
-  auto event = hci::EmbossEventPacket::New<
+  auto event = hci::EventPacket::New<
       pw::bluetooth::emboss::LEAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
   auto view = event.view_t();
@@ -357,9 +357,8 @@ DynamicByteBuffer FakePeer::BuildExtendedAdvertisingReports(
           MinSizeInBytes() +
       reports_size;
 
-  auto event =
-      hci::EmbossEventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
-          hci_spec::kLEMetaEventCode, packet_size);
+  auto event = hci::EventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
+      hci_spec::kLEMetaEventCode, packet_size);
   auto packet = event.view<LEExtendedAdvertisingReportSubeventWriter>(
       static_cast<int32_t>(reports_size));
   packet.le_meta_event().subevent_code().Write(

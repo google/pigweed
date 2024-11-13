@@ -24,7 +24,7 @@ ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(
     : LowEnergyAdvertiser(std::move(hci_ptr), max_advertising_data_length) {
   event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEAdvertisingSetTerminatedSubeventCode,
-      [this](const EmbossEventPacket& event) {
+      [this](const EventPacket& event) {
         OnAdvertisingSetTerminatedEvent(event);
         return CommandChannel::EventCallbackResult::kContinue;
       });
@@ -45,7 +45,7 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
   StopAdvertising();
 }
 
-EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
+CommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address,
     pwemb::GenericEnableParam enable,
     bool extended_pdu) {
@@ -55,7 +55,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
   constexpr size_t kPacketSize =
       pwemb::LESetExtendedAdvertisingEnableCommand::MinSizeInBytes() +
       (1 * pwemb::LESetExtendedAdvertisingEnableData::IntrinsicSizeInBytes());
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pwemb::LESetExtendedAdvertisingEnableCommandWriter>(
       hci_spec::kLESetExtendedAdvertisingEnable, kPacketSize);
   auto view = packet.view_t();
@@ -92,14 +92,14 @@ static void WriteAdvertisingEventProperties(
       properties.include_tx_power);
 }
 
-std::optional<EmbossCommandPacket>
+std::optional<CommandPacket>
 ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address,
     const AdvertisingEventProperties& properties,
     pwemb::LEOwnAddressType own_address_type,
     const AdvertisingIntervalRange& interval,
     bool extended_pdu) {
-  auto packet = hci::EmbossCommandPacket::New<
+  auto packet = hci::CommandPacket::New<
       pwemb::LESetExtendedAdvertisingParametersV1CommandWriter>(
       hci_spec::kLESetExtendedAdvertisingParameters);
   auto view = packet.view_t();
@@ -168,8 +168,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
 // do an Emboss naming transition. Once Sapphire is back in the Pigweed
 // repository, we can do this in one fell swoop rather than going through the
 // Emboss naming transition.
-EmbossCommandPacket
-ExtendedLowEnergyAdvertiser::BuildAdvertisingDataFragmentPacket(
+CommandPacket ExtendedLowEnergyAdvertiser::BuildAdvertisingDataFragmentPacket(
     hci_spec::AdvertisingHandle handle,
     const BufferView& data,
     pwemb::LESetExtendedAdvDataOp operation,
@@ -177,9 +176,9 @@ ExtendedLowEnergyAdvertiser::BuildAdvertisingDataFragmentPacket(
   size_t kPayloadSize =
       pwemb::LESetExtendedAdvertisingDataCommandView::MinSizeInBytes().Read() +
       data.size();
-  auto packet = EmbossCommandPacket::New<
-      pwemb::LESetExtendedAdvertisingDataCommandWriter>(
-      hci_spec::kLESetExtendedAdvertisingData, kPayloadSize);
+  auto packet =
+      CommandPacket::New<pwemb::LESetExtendedAdvertisingDataCommandWriter>(
+          hci_spec::kLESetExtendedAdvertisingData, kPayloadSize);
   auto params = packet.view_t();
 
   params.advertising_handle().Write(handle);
@@ -194,8 +193,7 @@ ExtendedLowEnergyAdvertiser::BuildAdvertisingDataFragmentPacket(
   return packet;
 }
 
-EmbossCommandPacket
-ExtendedLowEnergyAdvertiser::BuildScanResponseDataFragmentPacket(
+CommandPacket ExtendedLowEnergyAdvertiser::BuildScanResponseDataFragmentPacket(
     hci_spec::AdvertisingHandle handle,
     const BufferView& data,
     pwemb::LESetExtendedAdvDataOp operation,
@@ -203,9 +201,9 @@ ExtendedLowEnergyAdvertiser::BuildScanResponseDataFragmentPacket(
   size_t kPayloadSize =
       pwemb::LESetExtendedScanResponseDataCommandView::MinSizeInBytes().Read() +
       data.size();
-  auto packet = EmbossCommandPacket::New<
-      pwemb::LESetExtendedScanResponseDataCommandWriter>(
-      hci_spec::kLESetExtendedScanResponseData, kPayloadSize);
+  auto packet =
+      CommandPacket::New<pwemb::LESetExtendedScanResponseDataCommandWriter>(
+          hci_spec::kLESetExtendedScanResponseData, kPayloadSize);
   auto params = packet.view_t();
 
   params.advertising_handle().Write(handle);
@@ -220,14 +218,13 @@ ExtendedLowEnergyAdvertiser::BuildScanResponseDataFragmentPacket(
   return packet;
 }
 
-std::vector<EmbossCommandPacket>
-ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
+std::vector<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address,
     const AdvertisingData& data,
     AdvFlags flags,
     bool extended_pdu) {
   if (data.CalculateBlockSize() == 0) {
-    std::vector<EmbossCommandPacket> packets;
+    std::vector<CommandPacket> packets;
     return packets;
   }
 
@@ -252,13 +249,13 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
   // fragmentation ourselves. The Controller may still perform fragmentation
   // over the air but we don't have to when sending the data to the Controller.
   if (block_size <= max_length) {
-    EmbossCommandPacket packet = BuildAdvertisingDataFragmentPacket(
+    CommandPacket packet = BuildAdvertisingDataFragmentPacket(
         handle.value(),
         buffer.view(),
         pwemb::LESetExtendedAdvDataOp::COMPLETE,
         pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
 
-    std::vector<EmbossCommandPacket> packets;
+    std::vector<CommandPacket> packets;
     packets.reserve(1);
     packets.emplace_back(std::move(packet));
     return packets;
@@ -272,7 +269,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     num_packets++;
   }
 
-  std::vector<EmbossCommandPacket> packets;
+  std::vector<CommandPacket> packets;
   packets.reserve(num_packets);
 
   for (size_t i = 0; i < num_packets; i++) {
@@ -293,7 +290,7 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     size_t offset = i * max_length;
     BufferView buffer_view(buffer.data() + offset, packet_size);
 
-    EmbossCommandPacket packet = BuildAdvertisingDataFragmentPacket(
+    CommandPacket packet = BuildAdvertisingDataFragmentPacket(
         handle.value(),
         buffer_view,
         operation,
@@ -304,13 +301,13 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
   return packets;
 }
 
-EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
+CommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address, bool extended_pdu) {
   constexpr size_t kPacketSize =
       pwemb::LESetExtendedAdvertisingDataCommandView::MinSizeInBytes().Read();
-  auto packet = EmbossCommandPacket::New<
-      pwemb::LESetExtendedAdvertisingDataCommandWriter>(
-      hci_spec::kLESetExtendedAdvertisingData, kPacketSize);
+  auto packet =
+      CommandPacket::New<pwemb::LESetExtendedAdvertisingDataCommandWriter>(
+          hci_spec::kLESetExtendedAdvertisingData, kPacketSize);
   auto payload = packet.view_t();
 
   // advertising handle
@@ -327,12 +324,12 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
   return packet;
 }
 
-std::vector<EmbossCommandPacket>
-ExtendedLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
-                                                  const AdvertisingData& data,
-                                                  bool extended_pdu) {
+std::vector<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
+    const DeviceAddress& address,
+    const AdvertisingData& data,
+    bool extended_pdu) {
   if (data.CalculateBlockSize() == 0) {
-    std::vector<EmbossCommandPacket> packets;
+    std::vector<CommandPacket> packets;
     return packets;
   }
 
@@ -357,13 +354,13 @@ ExtendedLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
   // fragmentation ourselves. The Controller may still perform fragmentation
   // over the air but we don't have to when sending the data to the Controller.
   if (block_size <= max_length) {
-    EmbossCommandPacket packet = BuildScanResponseDataFragmentPacket(
+    CommandPacket packet = BuildScanResponseDataFragmentPacket(
         handle.value(),
         buffer.view(),
         pwemb::LESetExtendedAdvDataOp::COMPLETE,
         pwemb::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
 
-    std::vector<EmbossCommandPacket> packets;
+    std::vector<CommandPacket> packets;
     packets.reserve(1);
     packets.emplace_back(std::move(packet));
     return packets;
@@ -377,7 +374,7 @@ ExtendedLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
     num_packets++;
   }
 
-  std::vector<EmbossCommandPacket> packets;
+  std::vector<CommandPacket> packets;
   packets.reserve(num_packets);
 
   for (size_t i = 0; i < num_packets; i++) {
@@ -398,7 +395,7 @@ ExtendedLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
     size_t offset = i * max_length;
     BufferView buffer_view(buffer.data() + offset, packet_size);
 
-    EmbossCommandPacket packet = BuildScanResponseDataFragmentPacket(
+    CommandPacket packet = BuildScanResponseDataFragmentPacket(
         handle.value(),
         buffer_view,
         operation,
@@ -409,13 +406,13 @@ ExtendedLowEnergyAdvertiser::BuildSetScanResponse(const DeviceAddress& address,
   return packets;
 }
 
-EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
+CommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address, bool extended_pdu) {
   constexpr size_t kPacketSize =
       pwemb::LESetExtendedScanResponseDataCommandView::MinSizeInBytes().Read();
-  auto packet = EmbossCommandPacket::New<
-      pwemb::LESetExtendedScanResponseDataCommandWriter>(
-      hci_spec::kLESetExtendedScanResponseData, kPacketSize);
+  auto packet =
+      CommandPacket::New<pwemb::LESetExtendedScanResponseDataCommandWriter>(
+          hci_spec::kLESetExtendedScanResponseData, kPacketSize);
   auto payload = packet.view_t();
 
   // advertising handle
@@ -432,13 +429,13 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
   return packet;
 }
 
-EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
+CommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address, bool extended_pdu) {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
   PW_CHECK(handle);
   auto packet =
-      hci::EmbossCommandPacket::New<pwemb::LERemoveAdvertisingSetCommandWriter>(
+      hci::CommandPacket::New<pwemb::LERemoveAdvertisingSetCommandWriter>(
           hci_spec::kLERemoveAdvertisingSet);
   auto view = packet.view_t();
   view.advertising_handle().Write(handle.value());
@@ -447,7 +444,7 @@ EmbossCommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
 }
 
 void ExtendedLowEnergyAdvertiser::OnSetAdvertisingParamsComplete(
-    const EmbossEventPacket& event) {
+    const EventPacket& event) {
   auto event_view = event.view<pw::bluetooth::emboss::EventHeaderView>();
   PW_CHECK(event_view.event_code_enum().Read() ==
            pw::bluetooth::emboss::EventCode::COMMAND_COMPLETE);
@@ -603,7 +600,7 @@ void ExtendedLowEnergyAdvertiser::OnIncomingConnection(
 // HCI_LE_Advertising_Set_Terminated event, we have all the information
 // necessary to create a connection object within the Host layer.
 void ExtendedLowEnergyAdvertiser::OnAdvertisingSetTerminatedEvent(
-    const EmbossEventPacket& event) {
+    const EventPacket& event) {
   Result<> result = event.ToResult();
   if (bt_is_error(result,
                   ERROR,

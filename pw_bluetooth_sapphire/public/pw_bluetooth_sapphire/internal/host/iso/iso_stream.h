@@ -30,7 +30,7 @@ class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
 
   // Handler for incoming HCI_LE_CIS_Established events. Returns a value
   // indicating whether the vent was handled.
-  virtual bool OnCisEstablished(const hci::EmbossEventPacket& event) = 0;
+  virtual bool OnCisEstablished(const hci::EventPacket& event) = 0;
 
   enum SetupDataPathError {
     kSuccess,
