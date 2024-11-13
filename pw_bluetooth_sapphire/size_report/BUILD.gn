@@ -36,16 +36,35 @@ pw_executable("host") {
   ]
 }
 
+pw_executable("boringssl_base") {
+  sources = [ "boringssl_base.cc" ]
+  deps = [
+    ":wrap_getentropy",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_third_party/boringssl",
+  ]
+}
+
 # We can only compute size when Sapphire is enabled, implying that all the
 # necessary GN args and dependencies (e.g. emboss, boringssl) are configured.
 if (pw_bluetooth_sapphire_ENABLED) {
   pw_size_diff("host_size_diff") {
     title = "Host Size Report"
-    base = "$dir_pw_bloat:bloat_base"
     binaries = [
       {
         target = ":host"
+        base = "$dir_pw_bloat:bloat_base"
         label = "Create and initialize host"
+      },
+      {
+        target = ":boringssl_base"
+        base = "$dir_pw_bloat:bloat_base"
+        label = "BoringSSL"
+      },
+      {
+        target = ":host"
+        base = ":boringssl_base"
+        label = "Create and initialize host (minus BoringSSL)"
       },
     ]
   }
