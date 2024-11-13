@@ -89,9 +89,7 @@ class Initiator {
   // bits-per-word.
   // Returns OkStatus() on success, and implementation-specific values on
   // failure.
-  // TODO: https://pwbug.dev/308479791 - Remove virtual when all implementors
-  // have moved to DoConfigure().
-  virtual Status Configure(const Config& config) { return DoConfigure(config); }
+  Status Configure(const Config& config) { return DoConfigure(config); }
 
   // Perform a synchronous read/write operation on the SPI bus.  Data from the
   // `write_buffer` object is written to the bus, while the `read_buffer` is
@@ -103,27 +101,15 @@ class Initiator {
   // remainder of the transfer.
   // Returns OkStatus() on success, and implementation-specific values on
   // failure.
-  // TODO: https://pwbug.dev/308479791 - Remove virtual when all implementors
-  // have moved to DoWriteRead().
-  virtual Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) {
+  Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) {
     return DoWriteRead(write_buffer, read_buffer);
   }
 
  private:
   // Subclass API:
-  virtual Status DoConfigure(const Config& /*config*/) {
-    // TODO: https://pwbug.dev/308479791 - Remove this definition,
-    // making this an abstract interface, when all implementors have
-    // moved to DoConfigure().
-    return pw::Status::Unimplemented();
-  }
-  virtual Status DoWriteRead(ConstByteSpan /*write_buffer*/,
-                             ByteSpan /*read_buffer*/) {
-    // TODO: https://pwbug.dev/308479791 - Remove this definition,
-    // making this an abstract interface, when all implementors have
-    // moved to DoWriteRead().
-    return pw::Status::Unimplemented();
-  }
+  virtual Status DoConfigure(const Config& config) = 0;
+  virtual Status DoWriteRead(ConstByteSpan write_buffer,
+                             ByteSpan read_buffer) = 0;
 };
 
 }  // namespace pw::spi
