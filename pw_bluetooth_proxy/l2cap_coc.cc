@@ -23,6 +23,17 @@
 
 namespace pw::bluetooth::proxy {
 
+L2capCoc::L2capCoc(L2capCoc&& other)
+    : L2capWriteChannel(std::move(static_cast<L2capWriteChannel&>(other))),
+      L2capReadChannel(std::move(static_cast<L2capReadChannel&>(other))),
+      state_(other.state_),
+      rx_mtu_(other.rx_mtu_),
+      rx_mps_(other.rx_mps_),
+      tx_mtu_(other.tx_mtu_),
+      tx_mps_(other.tx_mps_),
+      remaining_sdu_bytes_to_ignore_(other.remaining_sdu_bytes_to_ignore_),
+      event_fn_(std::move(other.event_fn_)) {}
+
 pw::Status L2capCoc::Stop() {
   if (state_ == CocState::kStopped) {
     return Status::InvalidArgument();
@@ -86,11 +97,13 @@ pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
 }
 
 pw::Result<L2capCoc> L2capCoc::Create(
+    IntrusiveForwardList<L2capReadChannel>& read_channels,
     AclDataChannel& acl_data_channel,
     H4Storage& h4_storage,
     uint16_t connection_handle,
     CocConfig rx_config,
     CocConfig tx_config,
+    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
     pw::Function<void(Event event)>&& event_fn) {
   if (!L2capWriteChannel::AreValidParameters(connection_handle,
                                              tx_config.cid)) {
@@ -106,25 +119,142 @@ pw::Result<L2capCoc> L2capCoc::Create(
     return pw::Status::InvalidArgument();
   }
 
-  return L2capCoc(acl_data_channel,
+  return L2capCoc(read_channels,
+                  acl_data_channel,
                   h4_storage,
                   connection_handle,
                   rx_config,
                   tx_config,
+                  std::move(receive_fn),
                   std::move(event_fn));
 }
 
-L2capCoc::L2capCoc(AclDataChannel& acl_data_channel,
+void L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
+  if (state_ == CocState::kStopped) {
+    StopChannelAndReportError(Event::kRxWhileStopped);
+    return;
+  }
+
+  rx_mutex_.lock();
+  // If `remaining_sdu_bytes_to_ignore_` is nonzero, we are in state where we
+  // are dropping continuing PDUs in a segmented SDU.
+  if (remaining_sdu_bytes_to_ignore_ > 0) {
+    Result<emboss::SubsequentKFrameView> subsequent_kframe_view =
+        MakeEmbossView<emboss::SubsequentKFrameView>(kframe);
+    if (!subsequent_kframe_view.ok()) {
+      PW_LOG_ERROR(
+          "(CID 0x%X) Buffer is too small for subsequent L2CAP K-frame. So "
+          "will drop.",
+          local_cid());
+      rx_mutex_.unlock();
+      return;
+    }
+    PW_LOG_INFO(
+        "(CID 0x%X) Dropping PDU that is part of current segmented SDU.",
+        local_cid());
+    if (subsequent_kframe_view->payload_size().Read() >
+        remaining_sdu_bytes_to_ignore_) {
+      // Core Spec v6.0 Vol 3, Part A, 3.4.3: "If the sum of the payload sizes
+      // for the K-frames exceeds the specified SDU length, the receiver shall
+      // disconnect the channel."
+      PW_LOG_ERROR(
+          "(CID 0x%X) Sum of K-frame payload sizes exceeds the specified SDU "
+          "length. So stopping channel & reporting it needs to be closed.",
+          local_cid());
+      StopChannelAndReportError(Event::kRxInvalid);
+    } else {
+      remaining_sdu_bytes_to_ignore_ -=
+          subsequent_kframe_view->payload_size().Read();
+    }
+    rx_mutex_.unlock();
+    return;
+  }
+
+  Result<emboss::FirstKFrameView> kframe_view =
+      MakeEmbossView<emboss::FirstKFrameView>(kframe);
+  if (!kframe_view.ok()) {
+    PW_LOG_ERROR(
+        "(CID 0x%X) Buffer is too small for L2CAP K-frame. So stopping channel "
+        "& reporting it needs to be closed.",
+        local_cid());
+    StopChannelAndReportError(Event::kRxInvalid);
+    rx_mutex_.unlock();
+    return;
+  }
+  uint16_t sdu_length = kframe_view->sdu_length().Read();
+  uint16_t payload_size = kframe_view->payload_size().Read();
+
+  // Core Spec v6.0 Vol 3, Part A, 3.4.3: "If the SDU length field value exceeds
+  // the receiver's MTU, the receiver shall disconnect the channel."
+  if (sdu_length > rx_mtu_) {
+    PW_LOG_ERROR(
+        "(CID 0x%X) Rx K-frame SDU exceeds MTU. So stopping channel & "
+        "reporting it needs to be closed.",
+        local_cid());
+    StopChannelAndReportError(Event::kRxInvalid);
+    rx_mutex_.unlock();
+    return;
+  }
+
+  // TODO: https://pwbug.dev/360932103 - Support SDU de-segmentation.
+  // We don't support SDU de-segmentation yet. If we see a SDU size larger than
+  // the current PDU size, we ignore that first PDU and all remaining PDUs for
+  // that SDU (which we track via remaining bytes expected for the SDU).
+  if (sdu_length > payload_size) {
+    PW_LOG_ERROR(
+        "(CID 0x%X) Encountered segmented L2CAP SDU (which is not yet "
+        "supported). So will drop all PDUs in SDU.",
+        local_cid());
+    remaining_sdu_bytes_to_ignore_ = sdu_length - payload_size;
+    rx_mutex_.unlock();
+    return;
+  }
+
+  // Core Spec v6.0 Vol 3, Part A, 3.4.3: "If the payload size of any K-frame
+  // exceeds the receiver's MPS, the receiver shall disconnect the channel."
+  if (payload_size > rx_mps_) {
+    PW_LOG_ERROR(
+        "(CID 0x%X) Rx K-frame payload exceeds MPU. So stopping channel & "
+        "reporting it needs to be closed.",
+        local_cid());
+    StopChannelAndReportError(Event::kRxInvalid);
+    rx_mutex_.unlock();
+    return;
+  }
+
+  CallReceiveFn(pw::span(
+      const_cast<uint8_t*>(kframe_view->payload().BackingStorage().data()),
+      kframe_view->payload_size().Read()));
+  rx_mutex_.unlock();
+}
+
+L2capCoc::L2capCoc(IntrusiveForwardList<L2capReadChannel>& read_channels,
+                   AclDataChannel& acl_data_channel,
                    H4Storage& h4_storage,
                    uint16_t connection_handle,
-                   [[maybe_unused]] CocConfig rx_config,
+                   CocConfig rx_config,
                    CocConfig tx_config,
+                   pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
                    pw::Function<void(Event event)>&& event_fn)
     : L2capWriteChannel(
           acl_data_channel, h4_storage, connection_handle, tx_config.cid),
+      L2capReadChannel(connection_handle,
+                       rx_config.cid,
+                       read_channels,
+                       std::move(receive_fn)),
       state_(CocState::kRunning),
+      rx_mtu_(rx_config.mtu),
+      rx_mps_(rx_config.mps),
       tx_mtu_(tx_config.mtu),
       tx_mps_(tx_config.mps),
+      remaining_sdu_bytes_to_ignore_(0),
       event_fn_(std::move(event_fn)) {}
+
+void L2capCoc::StopChannelAndReportError(Event error) {
+  Stop().IgnoreError();
+  if (event_fn_) {
+    event_fn_(error);
+  }
+}
 
 }  // namespace pw::bluetooth::proxy

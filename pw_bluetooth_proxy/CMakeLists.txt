@@ -32,6 +32,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     public/pw_bluetooth_proxy/internal/h4_storage.h
     public/pw_bluetooth_proxy/internal/hci_transport.h
     public/pw_bluetooth_proxy/internal/l2cap_coc_internal.h
+    public/pw_bluetooth_proxy/internal/l2cap_read_channel.h
     public/pw_bluetooth_proxy/internal/l2cap_write_channel.h
     public/pw_bluetooth_proxy/l2cap_coc.h
     public/pw_bluetooth_proxy/proxy_host.h
@@ -58,6 +59,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     gatt_notify_channel.cc
     h4_storage.cc
     l2cap_coc.cc
+    l2cap_read_channel.cc
     l2cap_write_channel.cc
     proxy_host.cc
 )

@@ -22,18 +22,26 @@ class L2capCocInternal final : public L2capCoc {
  public:
   // Should only be created by `ProxyHost` and tests.
   static pw::Result<L2capCoc> Create(
+      IntrusiveForwardList<L2capReadChannel>& read_channels,
       AclDataChannel& acl_data_channel,
       H4Storage& h4_storage,
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
+      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
       pw::Function<void(Event event)>&& event_fn) {
-    return L2capCoc::Create(acl_data_channel,
+    return L2capCoc::Create(read_channels,
+                            acl_data_channel,
                             h4_storage,
                             connection_handle,
                             rx_config,
                             tx_config,
+                            std::move(receive_fn),
                             std::move(event_fn));
+  }
+
+  void OnPduReceived(pw::span<uint8_t> kframe) override {
+    L2capCoc::OnPduReceived(kframe);
   }
 };
 

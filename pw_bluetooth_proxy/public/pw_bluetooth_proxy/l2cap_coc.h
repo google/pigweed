@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "pw_bluetooth_proxy/internal/l2cap_read_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
 
 namespace pw::bluetooth::proxy {
@@ -23,7 +24,7 @@ namespace pw::bluetooth::proxy {
 ///
 // TODO: https://pwbug.dev/360934030 - Support queuing + credit-based control
 // flow.
-class L2capCoc : public L2capWriteChannel {
+class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
  public:
   /// Parameters for a direction of packet flow in an `L2capCoc`.
   struct CocConfig {
@@ -53,8 +54,16 @@ class L2capCoc : public L2capWriteChannel {
     uint16_t credits;
   };
 
-  // TODO: saeedali@ - Add error codes here.
-  enum class Event {};
+  enum class Event {
+    /// An invalid packet was received. The ProxyChannel is now `kStopped` and
+    /// should be closed. See error logs for details.
+    kRxInvalid,
+    /// The channel has received a packet while in the `kStopped` state. The
+    /// channel should have been closed.
+    kRxWhileStopped,
+  };
+
+  L2capCoc(L2capCoc&& other);
 
   /// Enter `kStopped` state. This means
   ///   - Pending sends will not complete.
@@ -86,16 +95,20 @@ class L2capCoc : public L2capWriteChannel {
   /// @endrst
   pw::Status Write(pw::span<const uint8_t> payload);
 
-  // TODO: https://pwbug.dev/360934032 - Implement Read().
-
  protected:
   static pw::Result<L2capCoc> Create(
+      IntrusiveForwardList<L2capReadChannel>& read_channels,
       AclDataChannel& acl_data_channel,
       H4Storage& h4_storage,
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
+      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
       pw::Function<void(Event event)>&& event_fn);
+
+  // `CallReceiveFn` with the information payload contained in `kframe`. As
+  // packet desegmentation is not supported, segmented SDUs are discarded.
+  void OnPduReceived(pw::span<uint8_t> kframe) override;
 
  private:
   enum class CocState {
@@ -103,16 +116,25 @@ class L2capCoc : public L2capWriteChannel {
     kStopped,
   };
 
-  explicit L2capCoc(AclDataChannel& acl_data_channel,
+  explicit L2capCoc(IntrusiveForwardList<L2capReadChannel>& read_channels,
+                    AclDataChannel& acl_data_channel,
                     H4Storage& h4_storage,
                     uint16_t connection_handle,
                     CocConfig rx_config,
                     CocConfig tx_config,
+                    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
                     pw::Function<void(Event event)>&& event_fn);
 
+  // `Stop()` channel if `kRunning` & call `event_fn_(error)` if it exists.
+  void StopChannelAndReportError(Event error);
+
   CocState state_;
+  sync::Mutex rx_mutex_;
+  uint16_t rx_mtu_;
+  uint16_t rx_mps_;
   uint16_t tx_mtu_;
   uint16_t tx_mps_;
+  uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(rx_mutex_);
   pw::Function<void(Event event)> event_fn_;
 };
 

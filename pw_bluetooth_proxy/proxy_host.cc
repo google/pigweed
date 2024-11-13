@@ -17,9 +17,12 @@
 #include "pw_assert/check.h"  // IWYU pragma: keep
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_common.emb.h"
+#include "pw_bluetooth/hci_data.emb.h"
+#include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
+#include "pw_containers/algorithm.h"
 #include "pw_log/log.h"
 
 namespace pw::bluetooth::proxy {
@@ -37,6 +40,18 @@ void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
 }
 
 void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
+  if (h4_packet.GetH4Type() == emboss::H4PacketType::EVENT) {
+    HandleEventFromController(std::move(h4_packet));
+    return;
+  }
+  if (h4_packet.GetH4Type() == emboss::H4PacketType::ACL_DATA) {
+    HandleAclFromController(std::move(h4_packet));
+    return;
+  }
+  hci_transport_.SendToHost(std::move(h4_packet));
+}
+
+void ProxyHost::HandleEventFromController(H4PacketWithHci&& h4_packet) {
   pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
   Result<emboss::EventHeaderView> event =
       MakeEmbossView<emboss::EventHeaderView>(hci_buffer);
@@ -70,6 +85,34 @@ void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
     }
   }
   PW_MODIFY_DIAGNOSTICS_POP();
+}
+
+void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
+  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
+
+  Result<emboss::AclDataFrameView> acl =
+      MakeEmbossView<emboss::AclDataFrameView>(hci_buffer);
+
+  emboss::BasicL2capHeaderView l2cap_header = emboss::MakeBasicL2capHeaderView(
+      acl->payload().BackingStorage().data(),
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes());
+  if (!l2cap_header.IsComplete()) {
+    PW_LOG_ERROR("Buffer is too small for L2CAP header. So will pass on.");
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
+
+  if (L2capReadChannel* channel = FindReadChannel(
+          acl->header().handle().Read(), l2cap_header.channel_id().Read());
+      channel) {
+    // TODO: https://pwbug.dev/365179076 - Reject fragmentary ACL data for now,
+    // support defragmentation eventually.
+    channel->OnPduReceived(
+        hci_buffer.subspan(emboss::AclDataFrame::MinSizeInBytes()));
+    return;
+  }
+
+  hci_transport_.SendToHost(std::move(h4_packet));
 }
 
 void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
@@ -130,13 +173,15 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
     uint16_t connection_handle,
     L2capCoc::CocConfig rx_config,
     L2capCoc::CocConfig tx_config,
-    [[maybe_unused]] pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
     pw::Function<void(L2capCoc::Event event)>&& event_fn) {
-  return L2capCocInternal::Create(acl_data_channel_,
+  return L2capCocInternal::Create(read_channels_,
+                                  acl_data_channel_,
                                   h4_storage_,
                                   connection_handle,
                                   rx_config,
                                   tx_config,
+                                  std::move(receive_fn),
                                   std::move(event_fn));
 }
 
@@ -159,6 +204,17 @@ bool ProxyHost::HasSendAclCapability() const {
 
 uint16_t ProxyHost::GetNumFreeLeAclPackets() const {
   return acl_data_channel_.GetNumFreeLeAclPackets();
+}
+
+L2capReadChannel* ProxyHost::FindReadChannel(uint16_t connection_handle,
+                                             uint16_t local_cid) {
+  auto connection_it = containers::FindIf(
+      read_channels_,
+      [connection_handle, local_cid](const L2capReadChannel& channel) {
+        return channel.connection_handle() == connection_handle &&
+               channel.local_cid() == local_cid;
+      });
+  return connection_it == read_channels_.end() ? nullptr : &(*connection_it);
 }
 
 }  // namespace pw::bluetooth::proxy

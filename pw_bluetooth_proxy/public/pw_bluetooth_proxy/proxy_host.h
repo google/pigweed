@@ -160,8 +160,19 @@ class ProxyHost {
   }
 
  private:
+  // Handle HCI Event packet from the controller.
+  void HandleEventFromController(H4PacketWithHci&& h4_packet);
+
+  // Handle an HCI ACL data packet from the controller.
+  void HandleAclFromController(H4PacketWithHci&& h4_packet);
+
   // Process a Command_Complete event.
   void HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet);
+
+  // Returns a pointer to the L2CAP channel with given `connection_handle` &
+  // `local_cid` if found in `read_channels_`. Returns nullptr if not found.
+  L2capReadChannel* FindReadChannel(uint16_t connection_handle,
+                                    uint16_t local_cid);
 
   // For sending non-ACL data to the host and controller. ACL traffic shall be
   // sent through the `acl_data_channel_`.
@@ -172,6 +183,9 @@ class ProxyHost {
 
   // Owns H4 packet buffers.
   H4Storage h4_storage_;
+
+  // List of L2CAP channels managed by the proxy to which Rx packets are routed.
+  IntrusiveForwardList<L2capReadChannel> read_channels_;
 };
 
 }  // namespace pw::bluetooth::proxy
