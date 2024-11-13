@@ -122,25 +122,28 @@ enum L2capSignalingPacketCode:
   CREDIT_BASED_RECONFIGURE_REQ    = 0x19
   CREDIT_BASED_RECONFIGURE_RSP    = 0x1A
 
+
 enum L2capFixedCid:
   -- Possible fixed values for L2CAP channel ID. See Core Spec v6.0, Vol 3,
   -- Part A, Table 2.1
   [maximum_bits: 16]
   ACL_U_SIGNALING         = 0x0001
-  CONNECTIONLESS          = 0x0002 # Applicable to ACL-U and APB-U
+  CONNECTIONLESS          = 0x0002  # Applicable to ACL-U and APB-U
   ACL_U_SECURITY_MANAGER  = 0x0007
   LE_U_ATTRIBUTE_PROTOCOL = 0x0004
   LE_U_SIGNALING          = 0x0005
   LE_U_SECURITY_MANAGER   = 0x0006
 
+
 enum L2capFixedPsmCode:
   -- Possible fixed values for PSM or SPSM as assigned by Bluetooth SIG. See
   -- Core Spec v5.4, Vol 3, Part A, Section 4.2 and Assigned_Numbers Section 2.5
   [maximum_bits: 16]
-  SDP     = 0x0001 # PSM
-  RFCOMM  = 0x0003 # PSM
-  ATT     = 0x001F # PSM
-  EATT    = 0x0027 # PSM or SPSM
+  SDP    = 0x0001  # PSM
+  RFCOMM = 0x0003  # PSM
+  ATT    = 0x001F  # PSM
+  EATT   = 0x0027  # PSM or SPSM
+
 
 enum L2capCommandRejectReasonCode:
   -- Reported in L2CAP_COMMAND_REJECT_RSP packets.
@@ -205,19 +208,19 @@ struct L2capCommandRejectRsp:
     8     [+2]                                         UInt                          remote_endpoint
       -- The source CID from the rejected command.
 
+
 struct L2capConnectionReq:
   -- Section 4.2
   -- L2CAP_CONNECTION_REQ packets are sent to create an L2CAP channel between
   -- two devices.
-
   [requires: command_header.code == L2capSignalingPacketCode.CONNECTION_REQ]
-
   0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
   $next [+2]                                           UInt                         psm
     -- Protocol/Service Multiplexer.
 
   $next [+2]                                           UInt                         source_cid
     -- The channel endpoint on the device sending the request.
+
 
 enum L2capConnectionRspResultCode:
   -- Reported in L2CAP_CONNECTION_RSP packets.
@@ -230,33 +233,34 @@ enum L2capConnectionRspResultCode:
   INVALID_SOURCE_CID           = 0x0005
   SOURCE_CID_ALREADY_ALLOCATED = 0x0006
 
+
 enum L2capConnectionRspStatusCode:
   -- Reported in L2CAP_CONNECTION_RSP packets if result is PENDING.
   [maximum_bits: 16]
-  NO_INFORMATION               = 0x0000
-  AUTHENTICATION_PENDING       = 0x0001
-  AUTHORIZATION_PENDING        = 0x0002
+  NO_INFORMATION         = 0x0000
+  AUTHENTICATION_PENDING = 0x0001
+  AUTHORIZATION_PENDING  = 0x0002
+
 
 struct L2capConnectionRsp:
   -- Section 4.3
   -- L2CAP_CONNECTION_RSP packets are sent in response to a L2CAP_CONNECTION_REQ
   -- packet.
-
   [requires: command_header.code == L2capSignalingPacketCode.CONNECTION_RSP]
-
-  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
-  $next [+2]                                           UInt                         destination_cid
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader   command_header
+  $next [+2]                                           UInt                          destination_cid
     -- The channel endpoint on the device sending this response packet.
 
-  $next [+2]                                           UInt                         source_cid
+  $next [+2]                                           UInt                          source_cid
     -- The channel endpoint on the device receiving the packet.
 
-  $next [+2]                                           L2capConnectionRspResultCode result
+  $next [+2]                                           L2capConnectionRspResultCode  result
     -- The outcome of the connection request.
 
   if result == L2capConnectionRspResultCode.PENDING:
-    $next [+2]                                         L2capConnectionRspStatusCode status
+    $next [+2]                                         L2capConnectionRspStatusCode  status
       -- The status of the connection.
+
 
 struct L2capDisconnectionRsp:
   -- Section 4.7
