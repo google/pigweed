@@ -396,6 +396,17 @@ tokenizing the metric and group names.
       global scope. Putting these on an instance (member context) would lead to
       dangling pointers and misery. Metrics are never deleted or unregistered!
 
+.. cpp:function:: PW_METRIC_TOKEN(name)
+
+   Declare a ``pw::metric::Token`` (``pw::tokenizer::Token``) for a metric with
+   name ``name``. This token matches the ``.name()`` of a metric with the same
+   name.
+
+   This is a wrapper around ``PW_TOKENIZE_STRING_MASK`` and carries the same
+   semantics.
+
+   This is unlikely to be used by most pw_metric consumers.
+
 ----------------------
 Usage & Best Practices
 ----------------------

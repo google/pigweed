@@ -56,7 +56,7 @@ TEST(Metric, IntFromObject) {
   EXPECT_EQ(m.value(), 426u);
 }
 
-TEST(m, IntFromMacroLocal) {
+TEST(Metric, IntFromMacroLocal) {
   PW_METRIC(m, "some_metric", 14u);
   EXPECT_TRUE(m.is_int());
   EXPECT_EQ(m.value(), 14u);
@@ -66,6 +66,12 @@ TEST(Metric, FloatFromMacroLocal) {
   PW_METRIC(m, "some_metric", 3.14f);
   EXPECT_TRUE(m.is_float());
   EXPECT_EQ(m.value(), 3.14f);
+}
+
+TEST(Metric, ExposedToken) {
+  PW_METRIC(m, "some_metric", 0u);
+  static constexpr Token kToken = PW_METRIC_TOKEN("some_metric");
+  EXPECT_EQ(m.name(), kToken);
 }
 
 TEST(Metric, GroupMacroInFunctionContext) {

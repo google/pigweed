@@ -263,18 +263,25 @@ class Group : public IntrusiveList<Group>::Item {
                      float,                                       \
                      uint32_t>
 
+/// Get the token for a given metric name.
+///
+/// This is a wrapper around `PW_TOKENIZE_STRING_MASK` and carries the same
+/// semantics.
+#define PW_METRIC_TOKEN(metric_name) \
+  PW_TOKENIZE_STRING_MASK("metrics", _PW_METRIC_TOKEN_MASK, metric_name)
+
 // Case: PW_METRIC(name, initial_value)
-#define _PW_METRIC_4(static_def, variable_name, metric_name, init)            \
-  static constexpr uint32_t variable_name##_token =                           \
-      PW_TOKENIZE_STRING_MASK("metrics", _PW_METRIC_TOKEN_MASK, metric_name); \
-  static_def ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)>      \
+#define _PW_METRIC_4(static_def, variable_name, metric_name, init)       \
+  static constexpr uint32_t variable_name##_token =                      \
+      PW_METRIC_TOKEN(metric_name);                                      \
+  static_def ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)> \
       variable_name = {variable_name##_token, init}
 
 // Case: PW_METRIC(group, name, initial_value)
-#define _PW_METRIC_5(static_def, group, variable_name, metric_name, init)     \
-  static constexpr uint32_t variable_name##_token =                           \
-      PW_TOKENIZE_STRING_MASK("metrics", _PW_METRIC_TOKEN_MASK, metric_name); \
-  static_def ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)>      \
+#define _PW_METRIC_5(static_def, group, variable_name, metric_name, init) \
+  static constexpr uint32_t variable_name##_token =                       \
+      PW_METRIC_TOKEN(metric_name);                                       \
+  static_def ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)>  \
       variable_name = {variable_name##_token, init, group.metrics()}
 
 // Define a metric group. Works like PW_METRIC, and works in the same contexts.
