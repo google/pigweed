@@ -116,6 +116,7 @@ pw::Status I3cMcuxpressoInitiator::Initialize() {
     PW_LOG_ERROR("Cannot initialize the bus without dynamic address");
     return pw::Status::FailedPrecondition();
   }
+
   // Initialize I3C master with low I3C speed to match I3C timing requirement
   // (mipi_I3C-Basic_specification_v1-1-1 section 6.2 Table 86 I3C Open Drain
   // Timing Parameters)
@@ -256,11 +257,10 @@ pw::Status I3cMcuxpressoInitiator::DoWriteReadFor(
     transfer.subaddressSize = 0;
     transfer.data = rx_buffer.data();
     transfer.dataSize = rx_buffer.size();
-    transfer.dataSize = rx_buffer.size();
     transfer.ibiResponse = kI3C_IbiRespNack;
     status = I3C_MasterTransferBlocking(base_, &transfer);
   } else if (!tx_buffer.empty() && !rx_buffer.empty()) {  // write and read
-    transfer.flags = kI3C_TransferDefaultFlag;
+    transfer.flags = kI3C_TransferNoStopFlag;
     transfer.slaveAddress = address.GetSevenBit();
     transfer.direction = kI3C_Write;
     transfer.subaddress = 0;
@@ -273,7 +273,7 @@ pw::Status I3cMcuxpressoInitiator::DoWriteReadFor(
       return HalStatusToPwStatus(status);
     }
 
-    transfer.flags = kI3C_TransferDefaultFlag;
+    transfer.flags = kI3C_TransferRepeatedStartFlag;
     transfer.slaveAddress = address.GetSevenBit();
     transfer.direction = kI3C_Read;
     transfer.subaddress = 0;
