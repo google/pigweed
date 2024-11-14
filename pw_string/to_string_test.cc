@@ -331,5 +331,66 @@ TEST(ToString, ArrayOfStringsUsesIterableFormat) {
   EXPECT_EQ(15u, ToString(v, buffer).size());
   EXPECT_STREQ("[foo, bar, baz]", buffer);
 }
+
+TEST(ToString, TimeVerySmallEndsInNsOrUnrepresentable) {
+  size_t size =
+      ToString(std::chrono::system_clock::time_point::min(), buffer).size();
+  ASSERT_GE(size, 3u);
+  if (std::strcmp("ns", &buffer[size - 2]) != 0) {
+    EXPECT_STREQ("An unrepresentably long time ago (>292 years).", buffer);
+  }
+}
+
+TEST(ToString, TimeVeryBigEndsInNsOrUnrepresentable) {
+  size_t size =
+      ToString(std::chrono::system_clock::time_point::max(), buffer).size();
+  ASSERT_GE(size, 3u);
+  if (std::strcmp("ns", &buffer[size - 2]) != 0) {
+    EXPECT_STREQ("An unrepresentably long time in the future (>292 years).",
+                 buffer);
+  }
+}
+
+TEST(ToString, TimeJustRight) {
+  EXPECT_TRUE(ToString(std::chrono::system_clock::time_point(), buffer).ok());
+  EXPECT_STREQ("0ns", buffer);
+}
+
+int64_t sensor_clock_tick_count;
+
+struct SensorClock {
+  using rep = int64_t;
+  using period = std::ratio<1, 32768>;
+  using duration = std::chrono::duration<rep, period>;
+  using time_point = std::chrono::time_point<SensorClock>;
+  static time_point now() noexcept {
+    return time_point(duration(sensor_clock_tick_count));
+  }
+};
+
+TEST(ToString, TimeSensorClockZero) {
+  sensor_clock_tick_count = 0;
+  EXPECT_TRUE(ToString(SensorClock::now(), buffer).ok());
+  EXPECT_STREQ("0ns", buffer);
+}
+
+TEST(ToString, TimeSensorClockMax) {
+  sensor_clock_tick_count = std::numeric_limits<int64_t>::max();
+  EXPECT_TRUE(ToString(SensorClock::now(), buffer).ok());
+  EXPECT_STREQ("An unrepresentably long time in the future (>292 years).",
+               buffer);
+}
+
+TEST(ToString, TimeSensorClockMin) {
+  sensor_clock_tick_count = std::numeric_limits<int64_t>::min();
+  EXPECT_TRUE(ToString(SensorClock::now(), buffer).ok());
+  EXPECT_STREQ("An unrepresentably long time ago (>292 years).", buffer);
+}
+
+TEST(ToString, DurationEndsInNs) {
+  EXPECT_TRUE(ToString(std::chrono::nanoseconds::zero(), buffer).ok());
+  EXPECT_STREQ("0ns", buffer);
+}
+
 }  // namespace
 }  // namespace pw

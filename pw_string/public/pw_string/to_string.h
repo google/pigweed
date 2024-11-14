@@ -52,6 +52,7 @@
 // StringBuilder may be easier to work with. StringBuilder's operator<< may be
 // overloaded for custom types.
 
+#include <chrono>
 #include <optional>
 #include <string_view>
 #include <type_traits>
@@ -77,13 +78,16 @@ struct is_std_optional : std::false_type {};
 template <typename T>
 struct is_std_optional<std::optional<T>> : std::true_type {};
 
+template <typename T>
+constexpr bool is_std_optional_v = is_std_optional<T>::value;
+
 template <typename, typename = void>
-constexpr bool is_iterable = false;
+constexpr bool is_iterable_v = false;
 
 template <typename T>
-constexpr bool is_iterable<T,
-                           std::void_t<decltype(std::declval<T>().begin()),
-                                       decltype(std::declval<T>().end())>> =
+constexpr bool is_iterable_v<T,
+                             std::void_t<decltype(std::declval<T>().begin()),
+                                         decltype(std::declval<T>().end())>> =
     true;
 
 template <typename BeginType, typename EndType>
@@ -103,6 +107,59 @@ inline StatusWithSize IterableToString(BeginType begin,
     ++iter;
   }
   s.UpdateAndAdd(ToString("]", buffer.subspan(s.size())));
+  s.ZeroIfNotOk();
+  return s;
+}
+
+/// A shared duration type represented using int64_t nanoseconds.
+using UnifiedDuration = std::chrono::duration<int64_t, std::nano>;
+
+// Whether or not an std::chrono::duration<Rep, Period> type can be converted
+// to `std::chrono::duration<int64_t, std::nano>`.
+template <typename T, typename = void>
+constexpr bool is_unifyable_duration_v = false;
+
+template <typename T>
+constexpr bool is_unifyable_duration_v<
+    T,
+    std::void_t<decltype(std::chrono::round<UnifiedDuration>(
+        std::declval<T>()))>> = true;
+
+template <typename Rep,
+          typename Period,
+          typename = std::enable_if_t<internal::is_unifyable_duration_v<
+              std::chrono::duration<Rep, Period>>>>
+inline StatusWithSize DurationToString(
+    const std::chrono::duration<Rep, Period>& duration, span<char> buffer) {
+  // Cast to SourceDuration type before comparison, as naiive comparison
+  // may result in casts the other direction or from float -> int which
+  // cause undefined behavior.
+  using SourceDuration = std::chrono::duration<Rep, Period>;
+
+  // std::chrono::years is not available until C++20.
+  using Years = std::chrono::duration<int64_t, std::ratio<31556952>>;
+
+  // std::chrono specifies support for at least +/-292 years. Beyond that,
+  // the chrono and duration APIs do not take care to avoid overflow, so
+  // we must short-circuit.
+  if (duration < std::chrono::ceil<SourceDuration>(Years(-292))) {
+    return ToString("An unrepresentably long time ago (>292 years).", buffer);
+  }
+  if (duration > std::chrono::floor<SourceDuration>(Years(292))) {
+    return ToString("An unrepresentably long time in the future (>292 years).",
+                    buffer);
+  }
+
+  // This is an approximation which unfortunately can result in some errors
+  // reporting things like `21321839210 != 21321839210` (both values different,
+  // but rounded to the same). Unfortunately there isn't an "easy" alternative:
+  // duration_cast here can result in UB (even with only integer reps!) due to
+  // an unchecked multiplication by the ratio's numerator before the division
+  // by the denominator.
+  auto nanos = std::chrono::round<UnifiedDuration>(duration);
+  StatusWithSize s;
+  s.UpdateAndAdd(ToString(nanos.count(), buffer));
+  s.UpdateAndAdd(ToString("ns", buffer.subspan(s.size())));
   s.ZeroIfNotOk();
   return s;
 }
@@ -134,7 +191,7 @@ StatusWithSize ToString(const T& value, span<char> buffer) {
   } else if constexpr (std::is_pointer_v<std::remove_cv_t<T>> ||
                        std::is_null_pointer_v<T>) {
     return string::PointerToString(value, buffer);
-  } else if constexpr (internal::is_std_optional<std::remove_cv_t<T>>::value) {
+  } else if constexpr (internal::is_std_optional_v<std::remove_cv_t<T>>) {
     if (value.has_value()) {
       // NOTE: `*value`'s `ToString` is not wrapped for simplicity in the
       // output.
@@ -149,7 +206,7 @@ StatusWithSize ToString(const T& value, span<char> buffer) {
     }
   } else if constexpr (std::is_same_v<std::remove_cv_t<T>, std::nullopt_t>) {
     return string::CopyStringOrNull("std::nullopt", buffer);
-  } else if constexpr (internal::is_iterable<T>) {
+  } else if constexpr (internal::is_iterable_v<T>) {
     return internal::IterableToString(value.begin(), value.end(), buffer);
   } else {
     // By default, no definition of UnknownTypeToString is provided.
@@ -182,6 +239,25 @@ inline StatusWithSize ToString(const Result<T>& result, span<char> buffer) {
 
 inline StatusWithSize ToString(std::byte byte, span<char> buffer) {
   return string::IntToHexString(static_cast<unsigned>(byte), buffer, 2);
+}
+
+template <
+    typename Clock,
+    typename Duration,
+    typename = std::enable_if_t<internal::is_unifyable_duration_v<Duration>>>
+inline StatusWithSize ToString(
+    const std::chrono::time_point<Clock, Duration>& time_point,
+    span<char> buffer) {
+  return internal::DurationToString(time_point.time_since_epoch(), buffer);
+}
+
+template <typename Rep,
+          typename Period,
+          typename = std::enable_if_t<internal::is_unifyable_duration_v<
+              std::chrono::duration<Rep, Period>>>>
+inline StatusWithSize ToString(
+    const std::chrono::duration<Rep, Period>& duration, span<char> buffer) {
+  return internal::DurationToString(duration, buffer);
 }
 
 }  // namespace pw
