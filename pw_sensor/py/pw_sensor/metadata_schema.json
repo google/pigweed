@@ -107,6 +107,11 @@
         "type": "string",
         "description": "Trigger name"
       }
+    },
+    "extras": {
+      "type": "object",
+      "description": "Any extra data that is useful to the downstream user",
+      "additionalProperties": true
     }
   },
   "additionalProperties": false,

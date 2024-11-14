@@ -176,6 +176,22 @@ list:
    triggers:
       -  fifo_watermark
 
+Additional metadata
+===================
+It's common for applications to require additional metadata that's not
+supported or used by Pigweed. These additional values can be added to the
+``extras`` key of the sensor:
+
+.. code-block:: yaml
+
+   compatible: ...
+   channels: ...
+   extras:
+     doc-ref: "my-driver-rst-ref"
+     memory-req: 512
+
+Values added here can be read by generator scripts.
+
 -----------------------
 The ``Validator`` class
 -----------------------

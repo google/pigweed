@@ -143,6 +143,7 @@ class Validator:
             "attributes": attributes,
             "triggers": triggers,
             "description": metadata.get("description", ""),
+            "extras": metadata.get("extras", {}),
         }
 
         # Validate the final output before returning

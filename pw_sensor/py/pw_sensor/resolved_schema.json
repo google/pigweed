@@ -228,6 +228,11 @@
                 "type": "string",
                 "description": "Name of a supported trigger"
               }
+            },
+            "extras": {
+              "type": "object",
+              "description": "Any extra data that is useful to the downstream user",
+              "additionalProperties": true
             }
           }
         }

@@ -360,6 +360,7 @@ class SensorSpec:
     attributes: List[SensorAttributeSpec]
     channels: dict[str, List[ChannelSpec]]
     triggers: List[Any]
+    extras: dict[str, Any]
 
 
 class Sensor(Printable):
@@ -773,17 +774,19 @@ def create_dataclass_from_dict(cls, data, indent: int = 0):
         # dataclass. If it is, recurse.
         if is_list_type(field.type):
             item_type = typing.get_args(field.type)[0]
-            print((" " * indent) + str(item_type), file=sys.stderr)
             field_value = [
                 create_dataclass_from_dict(item_type, item, indent + 2)
                 for item in field_value
             ]
         elif dict in field.type.__mro__:
-            value_type = typing.get_args(field.type)[1]
-            field_value = {
-                key: create_dataclass_from_dict(value_type, val, indent + 2)
-                for key, val in field_value.items()
-            }
+            # We might not have types specified in the dataclass
+            value_types = typing.get_args(field.type)
+            if len(value_types) != 0:
+                value_type = value_types[1]
+                field_value = {
+                    key: create_dataclass_from_dict(value_type, val, indent + 2)
+                    for key, val in field_value.items()
+                }
         elif is_dataclass(field.type):
             field_value = create_dataclass_from_dict(
                 field.type, field_value, indent + 2
