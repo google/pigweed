@@ -40,7 +40,7 @@ _LOG = logging.getLogger(__package__)
 LEGACY_OPEN_CALL_ID: int = 0
 OPEN_CALL_ID: int = (2**32) - 1
 
-_MAX_CALL_ID: int = 1 << 14
+_MAX_CALL_ID: int = 1 << 21
 
 
 class Error(Exception):
