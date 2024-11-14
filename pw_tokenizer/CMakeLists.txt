@@ -108,7 +108,6 @@ pw_add_library(pw_tokenizer.decoder STATIC
     pw_bytes
     pw_bytes.bit
     pw_elf.reader
-    pw_log
     pw_varint
 )
 

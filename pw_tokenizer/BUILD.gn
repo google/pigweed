@@ -130,7 +130,6 @@ pw_source_set("decoder") {
     "$dir_pw_elf:reader",
     dir_pw_base64,
     dir_pw_bytes,
-    dir_pw_log,
     dir_pw_varint,
   ]
   public = [
