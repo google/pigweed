@@ -162,8 +162,8 @@ class BrEdrDiscoveryManager final {
     inspect::UintProperty last_discoverable_length_sec;
 
     inspect::UintProperty discovery_sessions;
-    inspect::UintProperty inquiry_sessions_count;
-    inspect::UintProperty last_inquiry_length_sec;
+    inspect::UintProperty discovery_sessions_count;
+    inspect::UintProperty last_discovery_length_sec;
 
     std::optional<pw::chrono::SystemClock::time_point>
         discoverable_started_time;

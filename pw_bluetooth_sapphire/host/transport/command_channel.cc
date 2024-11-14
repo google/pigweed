@@ -783,8 +783,6 @@ void CommandChannel::OnCommandTimeout(TransactionId transaction_id) {
 void CommandChannel::AttachInspect(inspect::Node& parent,
                                    const std::string& name) {
   command_channel_node_ = parent.CreateChild(name);
-  next_transaction_id_.AttachInspect(command_channel_node_,
-                                     "next_transaction_id");
   next_event_handler_id_.AttachInspect(command_channel_node_,
                                        "next_event_handler_id");
   allowed_command_packets_.AttachInspect(command_channel_node_,

@@ -2154,8 +2154,7 @@ TEST_F(CommandChannelTest, InspectHierarchy) {
   auto command_channel_matcher = AllOf(NodeMatches(AllOf(
       NameMatches("command_channel"),
       PropertyList(UnorderedElementsAre(UintIs("allowed_command_packets", 1),
-                                        UintIs("next_event_handler_id", 1),
-                                        UintIs("next_transaction_id", 1))))));
+                                        UintIs("next_event_handler_id", 1))))));
 
   EXPECT_THAT(inspect::ReadFromVmo(inspector_.DuplicateVmo()).value(),
               ChildrenMatch(ElementsAre(command_channel_matcher)));

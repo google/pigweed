@@ -299,13 +299,11 @@ class AdapterImpl final : public Adapter {
 
     void RequestDiscovery(DiscoveryCallback callback) override {
       adapter_->bredr_discovery_manager_->RequestDiscovery(std::move(callback));
-      adapter_->metrics_.bredr.request_discovery_events.Add();
     }
 
     void RequestDiscoverable(DiscoverableCallback callback) override {
       adapter_->bredr_discovery_manager_->RequestDiscoverable(
           std::move(callback));
-      adapter_->metrics_.bredr.request_discoverable_events.Add();
     }
 
     RegistrationHandle RegisterService(
@@ -522,8 +520,6 @@ class AdapterImpl final : public Adapter {
       UintMetricCounter pair_requests;
       UintMetricCounter set_connectable_true_events;
       UintMetricCounter set_connectable_false_events;
-      UintMetricCounter request_discovery_events;
-      UintMetricCounter request_discoverable_events;
       UintMetricCounter open_l2cap_channel_requests;
     } bredr;
   };
@@ -874,10 +870,6 @@ void AdapterImpl::AttachInspect(inspect::Node& parent, std::string name) {
       metrics_bredr_node_, "set_connectable_true_events");
   metrics_.bredr.set_connectable_false_events.AttachInspect(
       metrics_bredr_node_, "set_connectable_false_events");
-  metrics_.bredr.request_discovery_events.AttachInspect(
-      metrics_bredr_node_, "request_discovery_events");
-  metrics_.bredr.request_discoverable_events.AttachInspect(
-      metrics_bredr_node_, "request_discoverable_events");
   metrics_.bredr.open_l2cap_channel_requests.AttachInspect(
       metrics_bredr_node_, "open_l2cap_channel_requests");
 }

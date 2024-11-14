@@ -385,8 +385,9 @@ void BrEdrDiscoveryManager::InspectProperties::Initialize(
       new_node.CreateUint("last_discoverable_length_sec", 0);
 
   discovery_sessions = new_node.CreateUint("discovery_sessions", 0);
-  last_inquiry_length_sec = new_node.CreateUint("last_inquiry_length_sec", 0);
-  inquiry_sessions_count = new_node.CreateUint("inquiry_sessions_count", 0);
+  last_discovery_length_sec =
+      new_node.CreateUint("last_discovery_length_sec", 0);
+  discovery_sessions_count = new_node.CreateUint("discovery_sessions_count", 0);
 
   discoverable_started_time.reset();
   inquiry_started_time.reset();
@@ -417,10 +418,10 @@ void BrEdrDiscoveryManager::InspectProperties::Update(
   if (!inquiry_started_time.has_value() && discovery_count != 0) {
     inquiry_started_time.emplace(now);
   } else if (inquiry_started_time.has_value() && discovery_count == 0) {
-    inquiry_sessions_count.Add(1);
+    discovery_sessions_count.Add(1);
     pw::chrono::SystemClock::duration length =
         now - inquiry_started_time.value();
-    last_inquiry_length_sec.Set(
+    last_discovery_length_sec.Set(
         std::chrono::duration_cast<std::chrono::seconds>(length).count());
     inquiry_started_time.reset();
   }

@@ -1288,8 +1288,8 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
 
   auto discovery_session_counted_matcher =
       ::testing::IsSupersetOf({UintIs("discovery_sessions", 0),
-                               UintIs("inquiry_sessions_count", 1),
-                               UintIs("last_inquiry_length_sec", 7)});
+                               UintIs("discovery_sessions_count", 1),
+                               UintIs("last_discovery_length_sec", 7)});
 
   RunFor(std::chrono::seconds(7));
   discovery_session = nullptr;

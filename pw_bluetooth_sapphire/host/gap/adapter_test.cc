@@ -1168,8 +1168,6 @@ TEST_F(AdapterTest, InspectHierarchy) {
                                   UintIs("pair_requests", 0),
                                   UintIs("set_connectable_true_events", 0),
                                   UintIs("set_connectable_false_events", 0),
-                                  UintIs("request_discovery_events", 0),
-                                  UintIs("request_discoverable_events", 0),
                                   UintIs("open_l2cap_channel_requests", 0))))));
   auto metrics_node_matcher =
       AllOf(NodeMatches(NameMatches(Adapter::kMetricsInspectNodeName)),
