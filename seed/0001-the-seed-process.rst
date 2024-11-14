@@ -332,6 +332,14 @@ for comments.**
 - Has an assigned SEED number and exists in the index.
 - Not yet ready to receive feedback.
 
+:bdg-primary-line:`Intent Approved` **The idea behind the SEED has been approved
+for further investigation.**
+
+- The SEED exists in Gerrit as a Work-In-Progress (WIP) change.
+- Has an assigned SEED number and exists in the index.
+- The main proposal is not yet fully written out, but may start receiving
+  preliminary rounds of feedback.
+
 :bdg-primary:`Open for Comments` **The SEED is soliciting feedback.**
 
 - The SEED has sufficient substance to be reviewed, as determined by its
@@ -392,6 +400,13 @@ but significant portions were later overruled by a different SEED.**
 - A newer SEED proposal revisits the same topic and proposal and redesigns
   significant parts of the original.
 - The SEED is marked as superseded with a reference to the newer proposal.
+
+:bdg-secondary-line:`On Hold` **The SEED is temporarily on pause due to other
+priorities, without a decision being made on its acceptance.**
+
+- The SEED has an assigned number, and a Gerrit CL with previous rounds of
+  feedback. The CL is switched to WIP.
+- The SEED is closed to additional feedback during the hold period.
 
 ---------
 Rationale
