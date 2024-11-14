@@ -255,26 +255,56 @@ class CoroPromiseType final {
 
   // Allocate the space for both this `CoroPromiseType<T>` and the coroutine
   // state.
+  //
+  // This override does not accept alignment.
   template <typename... Args>
-  static void* operator new(std::size_t n,
+  static void* operator new(std::size_t size,
                             CoroContext& coro_cx,
                             const Args&...) noexcept {
-    auto ptr = coro_cx.alloc().Allocate(pw::allocator::Layout(n));
-    if (ptr == nullptr) {
-      internal::LogCoroAllocationFailure(n);
-    }
-    return ptr;
+    return SharedNew(coro_cx, size, alignof(std::max_align_t));
+  }
+
+  // Allocate the space for both this `CoroPromiseType<T>` and the coroutine
+  // state.
+  //
+  // This override accepts alignment.
+  template <typename... Args>
+  static void* operator new(std::size_t size,
+                            std::align_val_t align,
+                            CoroContext& coro_cx,
+                            const Args&...) noexcept {
+    return SharedNew(coro_cx, size, static_cast<size_t>(align));
   }
 
   // Method-receiver form.
+  //
+  // This override does not accept alignment.
   template <typename MethodReceiver, typename... Args>
-  static void* operator new(std::size_t n,
+  static void* operator new(std::size_t size,
                             const MethodReceiver&,
                             CoroContext& coro_cx,
                             const Args&...) noexcept {
-    auto ptr = coro_cx.alloc().Allocate(pw::allocator::Layout(n));
+    return SharedNew(coro_cx, size, alignof(std::max_align_t));
+  }
+
+  // Method-receiver form.
+  //
+  // This accepts alignment.
+  template <typename MethodReceiver, typename... Args>
+  static void* operator new(std::size_t size,
+                            std::align_val_t align,
+                            const MethodReceiver&,
+                            CoroContext& coro_cx,
+                            const Args&...) noexcept {
+    return SharedNew(coro_cx, size, static_cast<size_t>(align));
+  }
+
+  static void* SharedNew(CoroContext& coro_cx,
+                         std::size_t size,
+                         std::size_t align) noexcept {
+    auto ptr = coro_cx.alloc().Allocate(pw::allocator::Layout(size, align));
     if (ptr == nullptr) {
-      internal::LogCoroAllocationFailure(n);
+      internal::LogCoroAllocationFailure(size);
     }
     return ptr;
   }
