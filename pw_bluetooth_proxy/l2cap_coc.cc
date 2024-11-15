@@ -90,16 +90,11 @@ pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
   std::memcpy(
       kframe.payload().BackingStorage().data(), payload.data(), payload.size());
 
-  // H4 packet is hereby moved. Either ACL data channel will move packet to
-  // controller or will be unable to send packet. In either case, packet will be
-  // destructed, so its release function will be invoked.
   return SendL2capPacket(std::move(h4_packet));
 }
 
 pw::Result<L2capCoc> L2capCoc::Create(
-    IntrusiveForwardList<L2capReadChannel>& read_channels,
-    AclDataChannel& acl_data_channel,
-    H4Storage& h4_storage,
+    L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
     CocConfig rx_config,
     CocConfig tx_config,
@@ -119,9 +114,7 @@ pw::Result<L2capCoc> L2capCoc::Create(
     return pw::Status::InvalidArgument();
   }
 
-  return L2capCoc(read_channels,
-                  acl_data_channel,
-                  h4_storage,
+  return L2capCoc(l2cap_channel_manager,
                   connection_handle,
                   rx_config,
                   tx_config,
@@ -228,20 +221,18 @@ void L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
   rx_mutex_.unlock();
 }
 
-L2capCoc::L2capCoc(IntrusiveForwardList<L2capReadChannel>& read_channels,
-                   AclDataChannel& acl_data_channel,
-                   H4Storage& h4_storage,
+L2capCoc::L2capCoc(L2capChannelManager& l2cap_channel_manager,
                    uint16_t connection_handle,
                    CocConfig rx_config,
                    CocConfig tx_config,
                    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
                    pw::Function<void(Event event)>&& event_fn)
     : L2capWriteChannel(
-          acl_data_channel, h4_storage, connection_handle, tx_config.cid),
-      L2capReadChannel(connection_handle,
-                       rx_config.cid,
-                       read_channels,
-                       std::move(receive_fn)),
+          l2cap_channel_manager, connection_handle, tx_config.cid),
+      L2capReadChannel(l2cap_channel_manager,
+                       std::move(receive_fn),
+                       connection_handle,
+                       rx_config.cid),
       state_(CocState::kRunning),
       rx_mtu_(rx_config.mtu),
       rx_mps_(rx_config.mps),

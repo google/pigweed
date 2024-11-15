@@ -14,29 +14,33 @@
 
 #include "pw_bluetooth_proxy/internal/l2cap_read_channel.h"
 
+#include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
+
 namespace pw::bluetooth::proxy {
 
 L2capReadChannel::L2capReadChannel(L2capReadChannel&& other)
     : connection_handle_(other.connection_handle()),
       local_cid_(other.local_cid()),
-      read_channels_(other.read_channels_),
-      receive_fn_(std::move(other.receive_fn_)) {
-  read_channels_.remove(other);
-  read_channels_.push_front(*this);
+      receive_fn_(std::move(other.receive_fn_)),
+      l2cap_channel_manager_(other.l2cap_channel_manager_) {
+  l2cap_channel_manager_.ReleaseReadChannel(other);
+  l2cap_channel_manager_.RegisterReadChannel(*this);
 }
 
-L2capReadChannel::~L2capReadChannel() { read_channels_.remove(*this); }
+L2capReadChannel::~L2capReadChannel() {
+  l2cap_channel_manager_.ReleaseReadChannel(*this);
+}
 
 L2capReadChannel::L2capReadChannel(
+    L2capChannelManager& l2cap_channel_manager,
+    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
     uint16_t connection_handle,
-    uint16_t local_cid,
-    IntrusiveForwardList<L2capReadChannel>& read_channels,
-    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn)
+    uint16_t local_cid)
     : connection_handle_(connection_handle),
       local_cid_(local_cid),
-      read_channels_(read_channels),
-      receive_fn_(std::move(receive_fn)) {
-  read_channels_.push_front(*this);
+      receive_fn_(std::move(receive_fn)),
+      l2cap_channel_manager_(l2cap_channel_manager) {
+  l2cap_channel_manager_.RegisterReadChannel(*this);
 }
 
 }  // namespace pw::bluetooth::proxy

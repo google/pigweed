@@ -22,7 +22,6 @@
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
-#include "pw_containers/algorithm.h"
 #include "pw_log/log.h"
 
 namespace pw::bluetooth::proxy {
@@ -33,7 +32,8 @@ ProxyHost::ProxyHost(
     uint16_t le_acl_credits_to_reserve)
     : hci_transport_(std::move(send_to_host_fn),
                      std::move(send_to_controller_fn)),
-      acl_data_channel_(hci_transport_, le_acl_credits_to_reserve) {}
+      acl_data_channel_(hci_transport_, le_acl_credits_to_reserve),
+      l2cap_channel_manager_(acl_data_channel_) {}
 
 void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
   hci_transport_.SendToController(std::move(h4_packet));
@@ -92,7 +92,7 @@ void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
 
   Result<emboss::AclDataFrameWriter> acl =
       MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_buffer);
-  if (!acl->IsComplete()) {
+  if (!acl.ok()) {
     PW_LOG_ERROR(
         "Buffer is too small for ACL header. So will pass on to host.");
     hci_transport_.SendToHost(std::move(h4_packet));
@@ -139,8 +139,8 @@ void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
     return;
   }
 
-  L2capReadChannel* channel = FindReadChannel(acl->header().handle().Read(),
-                                              l2cap_header.channel_id().Read());
+  L2capReadChannel* channel = l2cap_channel_manager_.FindReadChannel(
+      acl->header().handle().Read(), l2cap_header.channel_id().Read());
   if (!channel) {
     hci_transport_.SendToHost(std::move(h4_packet));
     return;
@@ -217,7 +217,7 @@ void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
 
 void ProxyHost::Reset() {
   acl_data_channel_.Reset();
-  h4_storage_.Reset();
+  l2cap_channel_manager_.Reset();
 }
 
 pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
@@ -231,9 +231,7 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
     return pw::Status::Unavailable();
   }
   PW_CHECK(status.ok() || status.IsAlreadyExists());
-  return L2capCocInternal::Create(read_channels_,
-                                  acl_data_channel_,
-                                  h4_storage_,
+  return L2capCocInternal::Create(l2cap_channel_manager_,
                                   connection_handle,
                                   rx_config,
                                   tx_config,
@@ -247,7 +245,7 @@ pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
   // TODO: https://pwbug.dev/369709521 - Migrate clients to channel API.
   pw::Result<GattNotifyChannel> channel_result =
       GattNotifyChannelInternal::Create(
-          acl_data_channel_, h4_storage_, connection_handle, attribute_handle);
+          l2cap_channel_manager_, connection_handle, attribute_handle);
   if (!channel_result.ok()) {
     return channel_result.status();
   }
@@ -260,17 +258,6 @@ bool ProxyHost::HasSendAclCapability() const {
 
 uint16_t ProxyHost::GetNumFreeLeAclPackets() const {
   return acl_data_channel_.GetNumFreeLeAclPackets();
-}
-
-L2capReadChannel* ProxyHost::FindReadChannel(uint16_t connection_handle,
-                                             uint16_t local_cid) {
-  auto connection_it = containers::FindIf(
-      read_channels_,
-      [connection_handle, local_cid](const L2capReadChannel& channel) {
-        return channel.connection_handle() == connection_handle &&
-               channel.local_cid() == local_cid;
-      });
-  return connection_it == read_channels_.end() ? nullptr : &(*connection_it);
 }
 
 }  // namespace pw::bluetooth::proxy

@@ -21,6 +21,7 @@
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_containers/algorithm.h"  // IWYU pragma: keep
 #include "pw_log/log.h"
+#include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -186,21 +187,21 @@ uint16_t AclDataChannel::GetNumFreeLeAclPackets() const {
   return free_packets;
 }
 
-bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
+pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
   credit_allocation_mutex_.lock();
   if (proxy_pending_le_acl_packets_ == proxy_max_le_acl_packets_) {
     PW_LOG_WARN("No ACL send credits available. So will not send.");
     credit_allocation_mutex_.unlock();
-    return false;
+    return pw::Status::Unavailable();
   }
   ++proxy_pending_le_acl_packets_;
 
   Result<emboss::AclDataFrameHeaderView> acl_view =
       MakeEmbossView<emboss::AclDataFrameHeaderView>(h4_packet.GetHciSpan());
   if (!acl_view.ok()) {
-    PW_LOG_ERROR("Received invalid ACL packet. So will not send.");
+    PW_LOG_ERROR("An invalid ACL packet was provided. So will not send.");
     credit_allocation_mutex_.unlock();
-    return false;
+    return pw::Status::InvalidArgument();
   }
   uint16_t handle = acl_view->handle().Read();
 
@@ -209,7 +210,7 @@ bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
     if (active_connections_.full()) {
       PW_LOG_ERROR("No space left in connections list.");
       credit_allocation_mutex_.unlock();
-      return false;
+      return pw::Status::Unavailable();
     }
     active_connections_.push_back({handle, /*num_pending_packets=*/1});
   } else {
@@ -218,7 +219,7 @@ bool AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
 
   hci_transport_.SendToController(std::move(h4_packet));
   credit_allocation_mutex_.unlock();
-  return true;
+  return pw::OkStatus();
 }
 
 Status AclDataChannel::CreateLeAclConnection(uint16_t connection_handle) {

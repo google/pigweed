@@ -14,12 +14,13 @@
 
 #pragma once
 
-#include "pw_bluetooth_proxy/internal/acl_data_channel.h"
-#include "pw_bluetooth_proxy/internal/h4_storage.h"
+#include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
+
+class L2capChannelManager;
 
 // Base class for peer-to-peer L2CAP-based channels supporting writing.
 //
@@ -32,8 +33,7 @@ class L2capWriteChannel {
   virtual ~L2capWriteChannel() {}
 
  protected:
-  explicit L2capWriteChannel(AclDataChannel& acl_data_channel,
-                             H4Storage& h4_storage,
+  explicit L2capWriteChannel(L2capChannelManager& l2cap_channel_manager,
                              uint16_t connection_handle,
                              uint16_t remote_cid);
 
@@ -56,6 +56,9 @@ class L2capWriteChannel {
   // Returns PW_STATUS_UNAVAILABLE if credits were not available to send.
   pw::Status SendL2capPacket(H4PacketWithH4&& tx_packet);
 
+  // Returns the maximum size supported for Tx L2CAP PDU payloads.
+  uint16_t MaxL2capPayloadSize() const;
+
  private:
   static constexpr uint16_t kMaxValidConnectionHandle = 0x0EFF;
 
@@ -65,11 +68,8 @@ class L2capWriteChannel {
   // L2CAP channel ID on remote peer to which packets are sent.
   uint16_t remote_cid_;
 
-  // Provided by proxy, owns packet buffers.
-  H4Storage& h4_storage_;
-
-  // Provided by proxy, owns management of the ACL data channel.
-  AclDataChannel& acl_data_channel_;
+  L2capChannelManager& l2cap_channel_manager_;
+  // TODO: https://pwbug.dev/360934030 - Add Tx packet queue here.
 };
 
 }  // namespace pw::bluetooth::proxy

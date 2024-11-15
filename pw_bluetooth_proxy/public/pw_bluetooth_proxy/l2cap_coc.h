@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth_proxy/internal/l2cap_read_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
+#include "pw_sync/mutex.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -101,9 +102,7 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
 
  protected:
   static pw::Result<L2capCoc> Create(
-      IntrusiveForwardList<L2capReadChannel>& read_channels,
-      AclDataChannel& acl_data_channel,
-      H4Storage& h4_storage,
+      L2capChannelManager& l2cap_channel_manager,
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
@@ -120,9 +119,7 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
     kStopped,
   };
 
-  explicit L2capCoc(IntrusiveForwardList<L2capReadChannel>& read_channels,
-                    AclDataChannel& acl_data_channel,
-                    H4Storage& h4_storage,
+  explicit L2capCoc(L2capChannelManager& l2cap_channel_manager,
                     uint16_t connection_handle,
                     CocConfig rx_config,
                     CocConfig tx_config,

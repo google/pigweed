@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include <cstdint>
-
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
 #include "pw_containers/vector.h"
@@ -81,8 +79,10 @@ class AclDataChannel {
   uint16_t GetNumFreeLeAclPackets() const;
 
   // Send an ACL data packet contained in an H4 packet to the controller.
-  // Returns false if no LE ACL send credits were available to send the packet.
-  bool SendAcl(H4PacketWithH4&& h4_packet);
+  //
+  // Returns PW_STATUS_UNAVAILABLE if no LE ACL send credits were available.
+  // Returns PW_STATUS_INVALID_ARGUMENT if LE ACL packet was ill-formed.
+  pw::Status SendAcl(H4PacketWithH4&& h4_packet);
 
   // Register a new logical link on LE ACL logical transport.
   //

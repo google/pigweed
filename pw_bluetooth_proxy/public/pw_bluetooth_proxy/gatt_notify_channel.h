@@ -38,17 +38,16 @@ class GattNotifyChannel : public L2capWriteChannel {
   pw::Status Write(pw::span<const uint8_t> attribute_value);
 
  protected:
-  static pw::Result<GattNotifyChannel> Create(AclDataChannel& acl_data_channel,
-                                              H4Storage& h4_storage,
-                                              uint16_t connection_handle,
-                                              uint16_t attribute_handle);
+  static pw::Result<GattNotifyChannel> Create(
+      L2capChannelManager& l2cap_channel_manager,
+      uint16_t connection_handle,
+      uint16_t attribute_handle);
 
  private:
   // TODO: https://pwbug.dev/349602172 - Define ATT CID in pw_bluetooth.
   static constexpr uint16_t kAttributeProtocolCID = 0x0004;
 
-  explicit GattNotifyChannel(AclDataChannel& acl_data_channel,
-                             H4Storage& h4_storage,
+  explicit GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
                              uint16_t connection_handle,
                              uint16_t attribute_handle);
 

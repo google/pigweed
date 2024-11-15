@@ -26,8 +26,6 @@
 #include "pw_bluetooth/hci_h4.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
-#include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
-#include "pw_bluetooth_proxy/l2cap_coc.h"
 #include "pw_containers/flat_map.h"
 #include "pw_function/function.h"
 #include "pw_status/status.h"
@@ -2895,7 +2893,7 @@ TEST(L2capCocReadTest, ReadDropsSduSentOver2Segments) {
   H4PacketWithHci h4_2nd_segment{
       emboss::H4PacketType::ACL_DATA,
       pw::span<uint8_t>(hci_arr.data(),
-                        emboss::AclDataFrame::MinSizeInBytes() +
+                        emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
                             emboss::SubsequentKFrame::MinSizeInBytes() +
                             k2ndPayloadSize)};
 
@@ -2942,7 +2940,7 @@ TEST(L2capCocReadTest, ReadDropsSduSentOver4Segments) {
   constexpr uint16_t kSduLength = 4 * kPduLength - kSduLengthFieldSize;
 
   std::array<uint8_t,
-             emboss::AclDataFrame::MinSizeInBytes() +
+             emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
                  emboss::BasicL2capHeader::IntrinsicSizeInBytes() + kPduLength>
       hci_arr;
   hci_arr.fill(0);
@@ -3019,7 +3017,7 @@ TEST(L2capCocReadTest, NonCocAclPacketPassesThroughToHost) {
           }});
 
   std::array<uint8_t,
-             emboss::AclDataFrame::MinSizeInBytes() +
+             emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
                  emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
                  capture.expected_payload.size()>
       hci_arr;
@@ -3039,7 +3037,8 @@ TEST(L2capCocReadTest, NonCocAclPacketPassesThroughToHost) {
   bframe.channel_id().Write(111);
   std::copy(capture.expected_payload.begin(),
             capture.expected_payload.end(),
-            hci_arr.begin() + emboss::AclDataFrame::MinSizeInBytes() +
+            hci_arr.begin() +
+                emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
                 emboss::BasicL2capHeader::IntrinsicSizeInBytes());
 
   // Send ACL packet that should be forwarded to host.

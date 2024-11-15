@@ -22,15 +22,12 @@
 
 namespace pw::bluetooth::proxy {
 pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
-  constexpr uint16_t kMaxAttributeSize =
-      H4Storage::GetH4BuffSize() - sizeof(emboss::H4PacketType) -
-      emboss::AclDataFrameHeader::IntrinsicSizeInBytes() -
-      emboss::BasicL2capHeader::IntrinsicSizeInBytes() -
-      emboss::AttHandleValueNtf::MinSizeInBytes();
-  if (attribute_value.size() > kMaxAttributeSize) {
+  const uint16_t max_attribute_size =
+      MaxL2capPayloadSize() - emboss::AttHandleValueNtf::MinSizeInBytes();
+  if (attribute_value.size() > max_attribute_size) {
     PW_LOG_ERROR("Attribute too large (%zu > %d). So will not process.",
                  attribute_value.size(),
-                 kMaxAttributeSize);
+                 max_attribute_size);
     return pw::Status::InvalidArgument();
   }
 
@@ -65,15 +62,11 @@ pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
               attribute_value.data(),
               attribute_value.size());
 
-  // H4 packet is hereby moved. Either ACL data channel will move packet to
-  // controller or will be unable to send packet. In either case, packet will be
-  // destructed, so its release function will be invoked.
   return SendL2capPacket(std::move(h4_packet));
 }
 
 pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
-    AclDataChannel& acl_data_channel,
-    H4Storage& h4_storage,
+    L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
     uint16_t attribute_handle) {
   if (!L2capWriteChannel::AreValidParameters(connection_handle,
@@ -85,17 +78,14 @@ pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
     return pw::Status::InvalidArgument();
   }
   return GattNotifyChannel(
-      acl_data_channel, h4_storage, connection_handle, attribute_handle);
+      l2cap_channel_manager, connection_handle, attribute_handle);
 }
 
-GattNotifyChannel::GattNotifyChannel(AclDataChannel& acl_data_channel,
-                                     H4Storage& h4_storage,
+GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
                                      uint16_t connection_handle,
                                      uint16_t attribute_handle)
-    : L2capWriteChannel(acl_data_channel,
-                        h4_storage,
-                        connection_handle,
-                        kAttributeProtocolCID),
+    : L2capWriteChannel(
+          l2cap_channel_manager, connection_handle, kAttributeProtocolCID),
       attribute_handle_(attribute_handle) {}
 
 }  // namespace pw::bluetooth::proxy

@@ -21,12 +21,12 @@ namespace pw::bluetooth::proxy {
 class GattNotifyChannelInternal final : public GattNotifyChannel {
  public:
   // Should only be created by `ProxyHost` and tests.
-  static pw::Result<GattNotifyChannel> Create(AclDataChannel& acl_data_channel,
-                                              H4Storage& h4_storage,
-                                              uint16_t connection_handle,
-                                              uint16_t attribute_handle) {
+  static pw::Result<GattNotifyChannel> Create(
+      L2capChannelManager& l2cap_channel_manager,
+      uint16_t connection_handle,
+      uint16_t attribute_handle) {
     return GattNotifyChannel::Create(
-        acl_data_channel, h4_storage, connection_handle, attribute_handle);
+        l2cap_channel_manager, connection_handle, attribute_handle);
   }
 };
 

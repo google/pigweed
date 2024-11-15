@@ -18,20 +18,19 @@
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/hci_h4.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
+#include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
-L2capWriteChannel::L2capWriteChannel(AclDataChannel& acl_data_channel,
-                                     H4Storage& h4_storage,
+L2capWriteChannel::L2capWriteChannel(L2capChannelManager& l2cap_channel_manager,
                                      uint16_t connection_handle,
                                      uint16_t remote_cid)
     : connection_handle_(connection_handle),
       remote_cid_(remote_cid),
-      h4_storage_(h4_storage),
-      acl_data_channel_(acl_data_channel) {}
+      l2cap_channel_manager_(l2cap_channel_manager) {}
 
 bool L2capWriteChannel::AreValidParameters(uint16_t connection_handle,
                                            uint16_t remote_cid) {
@@ -56,23 +55,12 @@ pw::Result<H4PacketWithH4> L2capWriteChannel::PopulateTxL2capPacket(
       emboss::AclDataFrameHeader::IntrinsicSizeInBytes() + l2cap_packet_size;
   const size_t h4_packet_size = sizeof(emboss::H4PacketType) + acl_packet_size;
 
-  if (h4_packet_size > h4_storage_.GetH4BuffSize()) {
-    PW_LOG_ERROR(
-        "Requested packet is too large for H4 buffer. So will not send.");
-    return pw::Status::InvalidArgument();
+  pw::Result<H4PacketWithH4> h4_packet_res =
+      l2cap_channel_manager_.GetTxH4Packet(h4_packet_size);
+  if (!h4_packet_res.ok()) {
+    return h4_packet_res.status();
   }
-
-  std::optional<span<uint8_t>> h4_buff = h4_storage_.ReserveH4Buff();
-  if (!h4_buff) {
-    PW_LOG_WARN("No H4 buffers available. So will not send.");
-    return pw::Status::Unavailable();
-  }
-
-  H4PacketWithH4 h4_packet(
-      span(h4_buff->data(), h4_packet_size),
-      /*release_fn=*/[h4_storage = &h4_storage_](const uint8_t* buffer) {
-        h4_storage->ReleaseH4Buff(buffer);
-      });
+  H4PacketWithH4 h4_packet = std::move(h4_packet_res.value());
   h4_packet.SetH4Type(emboss::H4PacketType::ACL_DATA);
 
   PW_TRY_ASSIGN(
@@ -97,11 +85,14 @@ pw::Result<H4PacketWithH4> L2capWriteChannel::PopulateTxL2capPacket(
   return h4_packet;
 }
 
-pw::Status L2capWriteChannel::SendL2capPacket(H4PacketWithH4&& tx_packet) {
-  if (!acl_data_channel_.SendAcl(std::move(tx_packet))) {
-    return pw::Status::Unavailable();
-  }
-  return pw::OkStatus();
+pw::Status L2capWriteChannel::SendL2capPacket(H4PacketWithH4&& packet) {
+  return l2cap_channel_manager_.SendL2capPacket(std::move(packet));
+}
+
+uint16_t L2capWriteChannel::MaxL2capPayloadSize() const {
+  return l2cap_channel_manager_.GetH4BuffSize() - sizeof(emboss::H4PacketType) -
+         emboss::AclDataFrameHeader::IntrinsicSizeInBytes() -
+         emboss::BasicL2capHeader::IntrinsicSizeInBytes();
 }
 
 }  // namespace pw::bluetooth::proxy
