@@ -33,3 +33,13 @@ class FieldPresence(enum.Enum):
     EXPLICIT = 1
     IMPLICIT = 2
     LEGACY_REQUIRED = 3
+
+
+# Edition enum from the descriptor proto.
+# https://cs.opensource.google/protobuf/protobuf/+/main:src/google/protobuf/descriptor.proto;l=68;drc=9d7236b421634afcecc24b6fd63da0ff5b506394
+class Edition(enum.Enum):
+    EDITION_UNKNOWN = 0
+    EDITION_LEGACY = 900
+    EDITION_PROTO2 = 998
+    EDITION_PROTO3 = 999
+    EDITION_2023 = 1000

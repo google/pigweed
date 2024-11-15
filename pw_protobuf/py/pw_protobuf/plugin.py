@@ -160,6 +160,14 @@ def main() -> int:
 
     response.supported_features |= edition_constants.FEATURE_SUPPORTS_EDITIONS
 
+    if hasattr(response, 'minimum_edition'):
+        response.minimum_edition = (  # type: ignore[attr-defined]
+            edition_constants.Edition.EDITION_PROTO2.value
+        )
+        response.maximum_edition = (  # type: ignore[attr-defined]
+            edition_constants.Edition.EDITION_2023.value
+        )
+
     if not process_proto_request(request, response):
         print('pwpb failed to generate protobuf code', file=sys.stderr)
         return 1
