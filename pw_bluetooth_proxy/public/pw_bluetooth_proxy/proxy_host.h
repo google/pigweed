@@ -54,6 +54,9 @@ class ProxyHost {
   /// The proxy host currently does not require any from-host packets to support
   /// its current functionality. It will pass on all packets, so containers can
   /// choose to just pass all from-host packets through it.
+  ///
+  /// Container is required to call this function synchronously (one packet at a
+  /// time).
   void HandleH4HciFromHost(H4PacketWithH4&& h4_packet);
 
   /// Called by container to ask proxy to handle a H4 packet sent from the
@@ -78,6 +81,9 @@ class ProxyHost {
   /// These HCI event packets:
   /// - HCI_Number_Of_Completed_Packets event (7.7.19)
   /// - HCI_Disconnection_Complete event (7.7.5)
+  ///
+  /// Container is required to call this function synchronously (one packet at a
+  /// time).
   void HandleH4HciFromController(H4PacketWithHci&& h4_packet);
 
   /// Called by container to notify proxy that the Bluetooth system is being
@@ -157,6 +163,11 @@ class ProxyHost {
   /// Returns the max LE ACL packet size supported to be sent.
   static constexpr size_t GetMaxAclSendSize() {
     return H4Storage::GetH4BuffSize() - sizeof(emboss::H4PacketType);
+  }
+
+  /// Returns the max number of simultaneous LE ACL connections supported.
+  static constexpr size_t GetMaxNumLeAclConnections() {
+    return AclDataChannel::GetMaxNumLeAclConnections();
   }
 
  private:

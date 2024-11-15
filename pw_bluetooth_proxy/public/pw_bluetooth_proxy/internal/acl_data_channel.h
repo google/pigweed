@@ -19,6 +19,7 @@
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
 #include "pw_containers/vector.h"
+#include "pw_result/result.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 
@@ -43,6 +44,11 @@ class AclDataChannel {
   AclDataChannel& operator=(const AclDataChannel&) = delete;
   AclDataChannel(AclDataChannel&&) = delete;
   AclDataChannel& operator=(AclDataChannel&&) = delete;
+
+  // Returns the max number of simultaneous LE ACL connections supported.
+  static constexpr size_t GetMaxNumLeAclConnections() {
+    return kMaxConnections;
+  }
 
   // Revert to uninitialized state, clearing credit reservation and connections,
   // but not the number of credits to reserve nor HCI transport.
@@ -78,10 +84,38 @@ class AclDataChannel {
   // Returns false if no LE ACL send credits were available to send the packet.
   bool SendAcl(H4PacketWithH4&& h4_packet);
 
+  // Register a new logical link on LE ACL logical transport.
+  //
+  // Returns PW_STATUS_OK if a connection was added.
+  // Returns PW_STATUS_ALREADY EXISTS if a connection already exists.
+  // Returns PW_STATUS_RESOURCE_EXHAUSTED if no space for additional connection.
+  pw::Status CreateLeAclConnection(uint16_t connection_handle);
+
+  // Sets `is_receiving_fragmented_pdu` flag for connection.
+  //
+  // Returns PW_STATUS_NOT_FOUND if connection does not exist.
+  // Returns PW_STATUS_FAILED_PRECONDITION if already receiving fragmented PDU.
+  pw::Status FragmentedPduStarted(uint16_t connection_handle);
+
+  // Returns `is_receiving_fragmented_pdu` flag for connection.
+  //
+  // Returns PW_STATUS_NOT_FOUND if connection does not exist.
+  pw::Result<bool> IsReceivingFragmentedPdu(uint16_t connection_handle);
+
+  // Unsets `is_receiving_fragmented_pdu` flag for connection.
+  //
+  // Returns PW_STATUS_NOT_FOUND if connection does not exist.
+  // Returns PW_STATUS_FAILED_PRECONDITION if not receiving fragmented PDU.
+  pw::Status FragmentedPduFinished(uint16_t connection_handle);
+
  private:
   struct AclConnection {
     uint16_t handle = 0;
     uint16_t num_pending_packets = 0;
+    // Set when a fragmented PDU is received. Continuing fragments are dropped
+    // until the PDU has been consumed, then this is unset.
+    // TODO: https://pwbug.dev/365179076 - Support recombination.
+    bool is_receiving_fragmented_pdu = false;
   };
 
   // Returns iterator to AclConnection with provided `handle` in

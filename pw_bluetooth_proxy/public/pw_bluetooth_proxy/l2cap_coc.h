@@ -55,12 +55,16 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
   };
 
   enum class Event {
-    /// An invalid packet was received. The ProxyChannel is now `kStopped` and
-    /// should be closed. See error logs for details.
+    /// An invalid packet was received. The channel is now `kStopped` and should
+    /// be closed. See error logs for details.
     kRxInvalid,
     /// The channel has received a packet while in the `kStopped` state. The
     /// channel should have been closed.
     kRxWhileStopped,
+    /// PDU recombination is not yet supported, but a fragmented L2CAP frame has
+    /// been received. The channel is now `kStopped` and should be closed.
+    // TODO: https://pwbug.dev/365179076 - Support recombination.
+    kRxFragmented,
   };
 
   L2capCoc(L2capCoc&& other);
@@ -124,6 +128,9 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
                     CocConfig tx_config,
                     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
                     pw::Function<void(Event event)>&& event_fn);
+
+  // Stop channel & notify client.
+  void OnFragmentedPduReceived() override;
 
   // `Stop()` channel if `kRunning` & call `event_fn_(error)` if it exists.
   void StopChannelAndReportError(Event error);

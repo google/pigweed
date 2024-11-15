@@ -250,6 +250,14 @@ L2capCoc::L2capCoc(IntrusiveForwardList<L2capReadChannel>& read_channels,
       remaining_sdu_bytes_to_ignore_(0),
       event_fn_(std::move(event_fn)) {}
 
+void L2capCoc::OnFragmentedPduReceived() {
+  PW_LOG_ERROR(
+      "(CID 0x%X) Fragmented L2CAP frame received (which is not yet "
+      "supported). Stopping channel.",
+      local_cid());
+  StopChannelAndReportError(Event::kRxFragmented);
+}
+
 void L2capCoc::StopChannelAndReportError(Event error) {
   Stop().IgnoreError();
   if (event_fn_) {

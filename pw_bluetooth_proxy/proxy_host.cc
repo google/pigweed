@@ -90,29 +90,80 @@ void ProxyHost::HandleEventFromController(H4PacketWithHci&& h4_packet) {
 void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
   pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
 
-  Result<emboss::AclDataFrameView> acl =
-      MakeEmbossView<emboss::AclDataFrameView>(hci_buffer);
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_buffer);
+  if (!acl->IsComplete()) {
+    PW_LOG_ERROR(
+        "Buffer is too small for ACL header. So will pass on to host.");
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
+  uint16_t handle = acl->header().handle().Read();
 
-  emboss::BasicL2capHeaderView l2cap_header = emboss::MakeBasicL2capHeaderView(
-      acl->payload().BackingStorage().data(),
-      emboss::BasicL2capHeader::IntrinsicSizeInBytes());
-  if (!l2cap_header.IsComplete()) {
-    PW_LOG_ERROR("Buffer is too small for L2CAP header. So will pass on.");
+  pw::Result<bool> connection_is_receiving_fragmented_pdu =
+      acl_data_channel_.IsReceivingFragmentedPdu(handle);
+  if (connection_is_receiving_fragmented_pdu.status().IsNotFound()) {
+    // Channel on a connection not managed by proxy, so forward to host.
     hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
 
-  if (L2capReadChannel* channel = FindReadChannel(
-          acl->header().handle().Read(), l2cap_header.channel_id().Read());
-      channel) {
-    // TODO: https://pwbug.dev/365179076 - Reject fragmentary ACL data for now,
-    // support defragmentation eventually.
-    channel->OnPduReceived(
-        hci_buffer.subspan(emboss::AclDataFrame::MinSizeInBytes()));
+  emboss::AclDataPacketBoundaryFlag boundary_flag =
+      acl->header().packet_boundary_flag().Read();
+  if (*connection_is_receiving_fragmented_pdu) {
+    // We're in a state where this connection is dropping continuing fragments
+    // in a fragmented PDU.
+    if (boundary_flag !=
+        emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT) {
+      // The fragmented PDU has been fully received, so note that then proceed
+      // to process the new PDU as normal.
+      PW_CHECK(acl_data_channel_.FragmentedPduFinished(handle).ok());
+    } else {
+      PW_LOG_INFO("(Connection: 0x%X) Dropping continuing PDU fragment.",
+                  handle);
+      return;
+    }
+  }
+
+  emboss::BasicL2capHeaderView l2cap_header = emboss::MakeBasicL2capHeaderView(
+      acl->payload().BackingStorage().data(),
+      acl->payload().BackingStorage().SizeInBytes());
+  // TODO: https://pwbug.dev/365179076 - Technically, the first fragment of a
+  // fragmented PDU may include an incomplete L2CAP header.
+  if (!l2cap_header.Ok()) {
+    PW_LOG_ERROR(
+        "(Connection: 0x%X) ACL packet does not include a valid L2CAP header. "
+        "So will pass on to host.",
+        handle);
+    hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
 
-  hci_transport_.SendToHost(std::move(h4_packet));
+  L2capReadChannel* channel = FindReadChannel(acl->header().handle().Read(),
+                                              l2cap_header.channel_id().Read());
+  if (!channel) {
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
+
+  // TODO: https://pwbug.dev/365179076 - Support recombination.
+  if (boundary_flag == emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT) {
+    PW_LOG_INFO("(CID: 0x%X) Received unexpected continuing PDU fragment.",
+                handle);
+    channel->OnFragmentedPduReceived();
+    return;
+  }
+  const uint16_t l2cap_frame_length =
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+      l2cap_header.pdu_length().Read();
+  if (l2cap_frame_length > acl->data_total_length().Read()) {
+    pw::Status status = acl_data_channel_.FragmentedPduStarted(handle);
+    PW_CHECK(status.ok());
+    channel->OnFragmentedPduReceived();
+    return;
+  }
+  channel->OnPduReceived(pw::span(acl->payload().BackingStorage().data(),
+                                  acl->payload().SizeInBytes()));
 }
 
 void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
@@ -175,6 +226,11 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
     L2capCoc::CocConfig tx_config,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
     pw::Function<void(L2capCoc::Event event)>&& event_fn) {
+  Status status = acl_data_channel_.CreateLeAclConnection(connection_handle);
+  if (status.IsResourceExhausted()) {
+    return pw::Status::Unavailable();
+  }
+  PW_CHECK(status.ok() || status.IsAlreadyExists());
   return L2capCocInternal::Create(read_channels_,
                                   acl_data_channel_,
                                   h4_storage_,

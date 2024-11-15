@@ -27,6 +27,7 @@
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
+#include "pw_bluetooth_proxy/l2cap_coc.h"
 #include "pw_containers/flat_map.h"
 #include "pw_function/function.h"
 #include "pw_status/status.h"
@@ -1895,12 +1896,7 @@ TEST(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
   }
 }
 
-// Verify we can send packets over many different connections. Test sends a
-// packet and then NOCP one at a time over more connections than our max active
-// connections size. This should succeed since we only track proxy-related
-// connections, not all host connections.
 TEST(MultiSendTest, CanSendOverManyDifferentConnections) {
-  constexpr uint16_t kSends = kMaxProxyActiveConnections * 2;
   std::array<uint8_t, 1> attribute_value = {0xF};
   struct {
     uint16_t sends_called = 0;
@@ -1913,22 +1909,19 @@ TEST(MultiSendTest, CanSendOverManyDifferentConnections) {
         ++capture.sends_called;
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              ProxyHost::GetMaxNumLeAclConnections());
+  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(
+      proxy, ProxyHost::GetMaxNumLeAclConnections()));
 
-  for (uint16_t send = 1; send <= kSends; send++) {
+  for (uint16_t send = 1; send <= ProxyHost::GetMaxNumLeAclConnections();
+       send++) {
     // Use current send count as the connection handle.
     uint16_t conn_handle = send;
     EXPECT_TRUE(
         proxy.SendGattNotify(conn_handle, 345, pw::span(attribute_value)).ok());
     EXPECT_EQ(capture.sends_called, send);
-
-    PW_TEST_EXPECT_OK(
-        SendNumberOfCompletedPackets(proxy,
-                                     FlatMap<uint16_t, uint16_t, 1>({{
-                                         {conn_handle, 1},
-                                     }})));
   }
 }
 
@@ -3053,6 +3046,302 @@ TEST(L2capCocReadTest, NonCocAclPacketPassesThroughToHost) {
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
   EXPECT_EQ(capture.sends_called, 1);
+}
+
+TEST(L2capCocReadTest, FragmentedPduStopsChannelWithoutDisruptingOtherChannel) {
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+
+  int events_called = 0;
+  uint16_t handle = 123;
+  uint16_t local_cid = 234;
+  L2capCoc channel = BuildCoc(
+      proxy,
+      CocParameters{
+          .handle = handle,
+          .local_cid = local_cid,
+          .receive_fn =
+              []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
+          .event_fn =
+              [&events_called](L2capCoc::Event event) {
+                EXPECT_EQ(event, L2capCoc::Event::kRxFragmented);
+                ++events_called;
+              }});
+
+  constexpr uint8_t kPduLength = 19;
+  ASSERT_GT(kPduLength, kSduLengthFieldSize);
+  constexpr uint8_t kSduLength = kPduLength - kSduLengthFieldSize;
+
+  // Send first ACL fragment. Should stop channel with error.
+  std::array<uint8_t, emboss::AclDataFrame::MinSizeInBytes() + kSduLength>
+      hci_arr;
+  hci_arr.fill(0);
+  H4PacketWithHci h4_1st_fragment{
+      emboss::H4PacketType::ACL_DATA,
+      pw::span(hci_arr.data(), kFirstKFrameOverAclMinSize)};
+
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr);
+  acl->header().handle().Write(handle);
+  acl->data_total_length().Write(emboss::FirstKFrame::MinSizeInBytes());
+
+  emboss::FirstKFrameWriter kframe = emboss::MakeFirstKFrameView(
+      acl->payload().BackingStorage().data(), acl->data_total_length().Read());
+  kframe.pdu_length().Write(kPduLength);
+  kframe.channel_id().Write(local_cid);
+  kframe.sdu_length().Write(kSduLength);
+
+  proxy.HandleH4HciFromController(std::move(h4_1st_fragment));
+
+  // Ensure 2nd fragment is silently discarded.
+  acl->header().packet_boundary_flag().Write(
+      emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT);
+  acl->data_total_length().Write(kSduLength / 2);
+  H4PacketWithHci h4_2nd_fragment{
+      emboss::H4PacketType::ACL_DATA,
+      pw::span<uint8_t>(
+          hci_arr.data(),
+          emboss::AclDataFrame::MinSizeInBytes() + kSduLength / 2)};
+  proxy.HandleH4HciFromController(std::move(h4_2nd_fragment));
+
+  // Ensure 3rd fragment is silently discarded.
+  if (kSduLength % 2 == 1) {
+    acl->data_total_length().Write(kSduLength / 2 + 1);
+  }
+  H4PacketWithHci h4_3rd_fragment{
+      emboss::H4PacketType::ACL_DATA,
+      pw::span<uint8_t>(hci_arr.data(),
+                        emboss::AclDataFrame::MinSizeInBytes() +
+                            kSduLength / 2 + (kSduLength % 2))};
+  proxy.HandleH4HciFromController(std::move(h4_3rd_fragment));
+
+  EXPECT_EQ(events_called, 1);
+
+  int reads_called = 0;
+  uint16_t different_local_cid = 432;
+  L2capCoc different_channel = BuildCoc(
+      proxy,
+      CocParameters{
+          .handle = handle,
+          .local_cid = different_local_cid,
+          .receive_fn =
+              [&reads_called]([[maybe_unused]] pw::span<uint8_t> payload) {
+                ++reads_called;
+              },
+          .event_fn = []([[maybe_unused]] L2capCoc::Event event) { FAIL(); }});
+
+  // Ensure different channel can still receive valid payload.
+  std::array<uint8_t, kFirstKFrameOverAclMinSize> other_hci_arr;
+  other_hci_arr.fill(0);
+  H4PacketWithHci h4_packet{emboss::H4PacketType::ACL_DATA, other_hci_arr};
+
+  Result<emboss::AclDataFrameWriter> other_acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(other_hci_arr);
+  other_acl->header().handle().Write(handle);
+  other_acl->data_total_length().Write(emboss::FirstKFrame::MinSizeInBytes());
+
+  emboss::FirstKFrameWriter other_kframe =
+      emboss::MakeFirstKFrameView(other_acl->payload().BackingStorage().data(),
+                                  other_acl->data_total_length().Read());
+  other_kframe.pdu_length().Write(kSduLengthFieldSize);
+  other_kframe.channel_id().Write(different_local_cid);
+
+  proxy.HandleH4HciFromController(std::move(h4_packet));
+
+  EXPECT_EQ(reads_called, 1);
+}
+
+TEST(L2capCocReadTest, UnexpectedContinuingFragmentStopsChannel) {
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [](H4PacketWithH4&&) {});
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+
+  int events_received = 0;
+  uint16_t handle = 123;
+  uint16_t local_cid = 234;
+  L2capCoc channel = BuildCoc(
+      proxy,
+      CocParameters{.handle = handle,
+                    .local_cid = local_cid,
+                    .receive_fn = [](span<uint8_t>) { FAIL(); },
+                    .event_fn =
+                        [&events_received](L2capCoc::Event event) {
+                          ++events_received;
+                          EXPECT_EQ(event, L2capCoc::Event::kRxFragmented);
+                        }});
+
+  std::array<uint8_t, kFirstKFrameOverAclMinSize> hci_arr;
+  hci_arr.fill(0);
+  H4PacketWithHci h4_packet{emboss::H4PacketType::ACL_DATA, hci_arr};
+
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr);
+  acl->header().handle().Write(handle);
+  acl->data_total_length().Write(emboss::FirstKFrame::MinSizeInBytes());
+  acl->header().packet_boundary_flag().Write(
+      emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT);
+
+  emboss::FirstKFrameWriter kframe = emboss::MakeFirstKFrameView(
+      acl->payload().BackingStorage().data(), acl->payload().SizeInBytes());
+  kframe.pdu_length().Write(kSduLengthFieldSize);
+  kframe.channel_id().Write(local_cid);
+
+  proxy.HandleH4HciFromController(std::move(h4_packet));
+
+  EXPECT_EQ(events_received, 1);
+}
+
+TEST(L2capCocReadTest, AclFrameWithIncompleteL2capHeaderForwardedToHost) {
+  int sends_to_host_called = 0;
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [&sends_to_host_called]([[maybe_unused]] H4PacketWithHci&& packet) {
+        ++sends_to_host_called;
+      });
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+
+  uint16_t handle = 123;
+  L2capCoc channel = BuildCoc(proxy, CocParameters{.handle = handle});
+
+  std::array<uint8_t, emboss::AclDataFrameHeader::IntrinsicSizeInBytes()>
+      hci_arr;
+  hci_arr.fill(0);
+  H4PacketWithHci h4_packet{emboss::H4PacketType::ACL_DATA, hci_arr};
+
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr);
+  acl->header().handle().Write(handle);
+  acl->data_total_length().Write(0);
+
+  proxy.HandleH4HciFromController(std::move(h4_packet));
+
+  EXPECT_EQ(sends_to_host_called, 1);
+}
+
+TEST(L2capCocReadTest, FragmentedPduDoesNotInterfereWithOtherChannels) {
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+
+  uint16_t handle_frag = 0x123, handle_fine = 0x234;
+  uint16_t cid_frag = 0x345, cid_fine = 0x456;
+  int packets_received = 0;
+  auto receive_fn =
+      [&packets_received]([[maybe_unused]] pw::span<uint8_t> payload) {
+        ++packets_received;
+      };
+  L2capCoc frag_channel = BuildCoc(proxy,
+                                   CocParameters{
+                                       .handle = handle_frag,
+                                       .local_cid = cid_frag,
+                                       .receive_fn = receive_fn,
+                                   });
+  L2capCoc fine_channel = BuildCoc(proxy,
+                                   CocParameters{
+                                       .handle = handle_fine,
+                                       .local_cid = cid_fine,
+                                       .receive_fn = receive_fn,
+                                   });
+
+  // Order of receptions:
+  // 1. 1st of 3 fragments to frag_channel.
+  // 2. Non-fragmented PDU to fine_channel.
+  // 3. 2nd of 3 fragments to frag_channel.
+  // 4. Non-fragmented PDU to fine_channel.
+  // 5. 3rd of 3 fragments to frag_channel.
+  // 6. Non-fragmented PDU to fine_channel.
+
+  constexpr uint8_t kPduLength = 14;
+  ASSERT_GT(kPduLength, kSduLengthFieldSize);
+  constexpr uint8_t kSduLength = kPduLength - kSduLengthFieldSize;
+
+  // 1. 1st of 3 fragments to frag_channel.
+  std::array<uint8_t, emboss::AclDataFrame::MinSizeInBytes() + kSduLength>
+      frag_hci_arr;
+  frag_hci_arr.fill(0);
+  H4PacketWithHci h4_1st_fragment{
+      emboss::H4PacketType::ACL_DATA,
+      pw::span(frag_hci_arr.data(), kFirstKFrameOverAclMinSize)};
+
+  Result<emboss::AclDataFrameWriter> acl_frag =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(frag_hci_arr);
+  acl_frag->header().handle().Write(handle_frag);
+  acl_frag->data_total_length().Write(emboss::FirstKFrame::MinSizeInBytes());
+
+  emboss::FirstKFrameWriter kframe_frag =
+      emboss::MakeFirstKFrameView(acl_frag->payload().BackingStorage().data(),
+                                  acl_frag->data_total_length().Read());
+  kframe_frag.pdu_length().Write(kPduLength);
+  kframe_frag.channel_id().Write(cid_frag);
+  kframe_frag.sdu_length().Write(kSduLength);
+
+  proxy.HandleH4HciFromController(std::move(h4_1st_fragment));
+
+  // 2. Non-fragmented PDU to fine_channel.
+  std::array<uint8_t, kFirstKFrameOverAclMinSize> fine_hci_arr;
+  fine_hci_arr.fill(0);
+  H4PacketWithHci h4_packet{emboss::H4PacketType::ACL_DATA,
+                            pw::span(fine_hci_arr)};
+
+  Result<emboss::AclDataFrameWriter> acl_fine =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(fine_hci_arr);
+  acl_fine->header().handle().Write(handle_fine);
+  acl_fine->data_total_length().Write(emboss::FirstKFrame::MinSizeInBytes());
+
+  emboss::FirstKFrameWriter kframe_fine =
+      emboss::MakeFirstKFrameView(acl_fine->payload().BackingStorage().data(),
+                                  acl_fine->data_total_length().Read());
+  kframe_fine.pdu_length().Write(kSduLengthFieldSize);
+  kframe_fine.channel_id().Write(cid_fine);
+  kframe_fine.sdu_length().Write(0);
+
+  proxy.HandleH4HciFromController(std::move(h4_packet));
+
+  // 3. 2nd of 3 fragments to frag_channel.
+  acl_frag->header().packet_boundary_flag().Write(
+      emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT);
+  acl_frag->data_total_length().Write(kSduLength / 2);
+  H4PacketWithHci h4_2nd_fragment{
+      emboss::H4PacketType::ACL_DATA,
+      pw::span<uint8_t>(
+          frag_hci_arr.data(),
+          emboss::AclDataFrame::MinSizeInBytes() + kSduLength / 2)};
+  proxy.HandleH4HciFromController(std::move(h4_2nd_fragment));
+
+  // 4. Non-fragmented PDU to fine_channel.
+  H4PacketWithHci h4_packet_2{emboss::H4PacketType::ACL_DATA,
+                              pw::span(fine_hci_arr)};
+  proxy.HandleH4HciFromController(std::move(h4_packet_2));
+
+  // 5. 3rd of 3 fragments to frag_channel.
+  if (kSduLength % 2 == 1) {
+    acl_frag->data_total_length().Write(kSduLength / 2 + 1);
+  }
+  H4PacketWithHci h4_3rd_fragment{
+      emboss::H4PacketType::ACL_DATA,
+      pw::span<uint8_t>(frag_hci_arr.data(),
+                        emboss::AclDataFrame::MinSizeInBytes() +
+                            kSduLength / 2 + (kSduLength % 2))};
+  proxy.HandleH4HciFromController(std::move(h4_3rd_fragment));
+
+  // 6. Non-fragmented PDU to fine_channel.
+  H4PacketWithHci h4_packet_3{emboss::H4PacketType::ACL_DATA,
+                              pw::span(fine_hci_arr)};
+  proxy.HandleH4HciFromController(std::move(h4_packet_3));
+
+  EXPECT_EQ(packets_received, 3);
 }
 
 }  // namespace

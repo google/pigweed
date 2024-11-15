@@ -36,6 +36,10 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
   // the SDU (e.g. after updating channel state and screening out certain SDUs).
   virtual void OnPduReceived(pw::span<uint8_t> l2cap_pdu) = 0;
 
+  // Handle fragmented Rx L2CAP PDU.
+  // TODO: https://pwbug.dev/365179076 - Support recombination & delete this.
+  virtual void OnFragmentedPduReceived() = 0;
+
   // Get the source L2CAP channel ID.
   uint16_t local_cid() const { return local_cid_; }
 
