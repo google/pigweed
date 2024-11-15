@@ -25,9 +25,9 @@ template <typename T>
 class Property {
  public:
   explicit operator bool() const { return false; }
-  void Set(const T& value) {}
-  void Add(T value) {}
-  void Subtract(T value) {}
+  void Set(const T& /*value*/) {}
+  void Add(T /*value*/) {}
+  void Subtract(T /*value*/) {}
 };
 
 class StringProperty final : public Property<std::string> {};
@@ -42,34 +42,45 @@ class Node final {
 
   explicit operator bool() const { return false; }
 
-  Node CreateChild(std::string_view name) { return Node(); }
+  Node CreateChild(std::string_view /*name*/) { return Node(); }
 
-  std::string UniqueName(const std::string& prefix) { return ""; }
+  std::string UniqueName(const std::string& /*prefix*/) { return ""; }
 
-  StringProperty CreateString(std::string_view name, const std::string& value) {
+  StringProperty CreateString(std::string_view /*name*/,
+                              const std::string& /*value*/) {
     return {};
   }
 
   template <typename T>
-  void CreateString(std::string_view name, const std::string& value, T* list) {}
+  void CreateString(std::string_view /*name*/,
+                    const std::string& /*value*/,
+                    T* /*list*/) {}
 
-  void RecordString(std::string_view name, const std::string& value) {}
+  void RecordString(std::string_view /*name*/, const std::string& /*value*/) {}
 
-  BoolProperty CreateBool(std::string_view name, bool value) { return {}; }
+  BoolProperty CreateBool(std::string_view /*name*/, bool /*value*/) {
+    return {};
+  }
 
-  void RecordBool(std::string_view name, bool value) {}
+  void RecordBool(std::string_view /*name*/, bool /*value*/) {}
 
-  IntProperty CreateInt(std::string_view, int64_t value) { return {}; }
+  IntProperty CreateInt(std::string_view /*name*/, int64_t /*value*/) {
+    return {};
+  }
 
-  void RecordInt(std::string_view name, int64_t value) {}
+  void RecordInt(std::string_view /*name*/, int64_t /*value*/) {}
 
-  UintProperty CreateUint(std::string_view, uint64_t value) { return {}; }
+  UintProperty CreateUint(std::string_view /*name*/, uint64_t /*value*/) {
+    return {};
+  }
 
-  void RecordUint(std::string_view name, uint64_t value) {}
+  void RecordUint(std::string_view /*name*/, uint64_t /*value*/) {}
 
-  DoubleProperty CreateDouble(std::string_view, double value) { return {}; }
+  DoubleProperty CreateDouble(std::string_view /*name*/, double /*value*/) {
+    return {};
+  }
 
-  void RecordDouble(std::string_view name, double value) {}
+  void RecordDouble(std::string_view /*name*/, double /*value*/) {}
 };
 
 class Inspector final {

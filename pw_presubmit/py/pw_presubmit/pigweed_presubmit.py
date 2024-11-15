@@ -644,14 +644,32 @@ def docs_build(ctx: PresubmitContext) -> None:
         )
 
     build.install_package(ctx, 'emboss')
+    build.install_package(ctx, 'boringssl')
     build.install_package(ctx, 'freertos')
     build.install_package(ctx, 'nanopb')
     build.install_package(ctx, 'pico_sdk')
     build.install_package(ctx, 'pigweed_examples_repo')
     build.install_package(ctx, 'stm32cube_f4')
+    emboss_dir = ctx.package_root / 'emboss'
+    boringssl_dir = ctx.package_root / 'boringssl'
+    pico_sdk_dir = ctx.package_root / 'pico_sdk'
+    stm32cube_dir = ctx.package_root / 'stm32cube_f4'
+    freertos_dir = ctx.package_root / 'freertos'
+    nanopb_dir = ctx.package_root / 'nanopb'
+
+    enable_dynamic_allocation = (
+        ctx.root / 'pw_function:enable_dynamic_allocation'
+    )
 
     # Build main docs through GN/Ninja.
-    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
+    build.gn_gen(
+        ctx,
+        dir_pw_third_party_emboss=f'"{emboss_dir}"',
+        dir_pw_third_party_boringssl=f'"{boringssl_dir}"',
+        pw_bluetooth_sapphire_ENABLED=True,
+        pw_function_CONFIG=f'"{enable_dynamic_allocation}"',
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    )
     build.ninja(ctx, 'docs')
     build.gn_check(ctx)
 
@@ -697,10 +715,6 @@ def docs_build(ctx: PresubmitContext) -> None:
     )
 
     # Set required GN args.
-    pico_sdk_dir = ctx.package_root / 'pico_sdk'
-    stm32cube_dir = ctx.package_root / 'stm32cube_f4'
-    freertos_dir = ctx.package_root / 'freertos'
-    nanopb_dir = ctx.package_root / 'nanopb'
     build.gn_gen(
         examples_ctx,
         dir_pigweed='"//../../.."',

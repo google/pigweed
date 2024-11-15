@@ -134,7 +134,7 @@ class Inspectable {
     UpdateProperty();
   }
 
-  virtual void AttachInspect(inspect::Node& node, std::string name) {
+  virtual void AttachInspect(inspect::Node& /*node*/, std::string /*name*/) {
     PW_CHECK(false, "AttachInspect not implemented for PropertyT");
   }
 

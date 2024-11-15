@@ -85,7 +85,7 @@ class WindowedInspectNumericProperty {
   // Create an inspect property named "name" as a child of "node".
   //
   // AttachInspect is only supported for the convenience types declared below.
-  virtual void AttachInspect(::inspect::Node& node, std::string name) {
+  virtual void AttachInspect(::inspect::Node& /*node*/, std::string /*name*/) {
     PW_CHECK(false, "AttachInspect not implemented for NumericPropertyT");
   }
 
