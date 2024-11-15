@@ -47,6 +47,15 @@ Status OverwriteChannelId(ByteSpan rpc_packet, uint32_t channel_id_under_128) {
 }
 
 Status ChannelBase::Send(const Packet& packet) {
+  static constexpr bool kLogAllOutgoingPackets = false;
+  if constexpr (kLogAllOutgoingPackets) {
+    PW_LOG_INFO("pw_rpc channel sending RPC packet type %u for %u:%08x/%08x",
+                static_cast<unsigned>(packet.type()),
+                static_cast<unsigned>(packet.channel_id()),
+                static_cast<unsigned>(packet.service_id()),
+                static_cast<unsigned>(packet.method_id()));
+  }
+
   ByteSpan buffer = encoding_buffer.GetPacketBuffer(packet.payload().size());
   Result encoded = packet.Encode(buffer);
 

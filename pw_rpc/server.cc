@@ -42,12 +42,14 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
 Status Server::ProcessPacket(internal::Packet packet) {
   internal::rpc_lock().lock();
 
-  // Verbose log for debugging.
-  // PW_LOG_DEBUG("RPC server received packet type %u for %u:%08x/%08x",
-  //              static_cast<unsigned>(packet.type()),
-  //              static_cast<unsigned>(packet.channel_id()),
-  //              static_cast<unsigned>(packet.service_id()),
-  //              static_cast<unsigned>(packet.method_id()));
+  static constexpr bool kLogAllIncomingPackets = false;
+  if constexpr (kLogAllIncomingPackets) {
+    PW_LOG_INFO("RPC server received packet type %u for %u:%08x/%08x",
+                static_cast<unsigned>(packet.type()),
+                static_cast<unsigned>(packet.channel_id()),
+                static_cast<unsigned>(packet.service_id()),
+                static_cast<unsigned>(packet.method_id()));
+  }
 
   internal::ChannelBase* channel = GetInternalChannel(packet.channel_id());
   if (channel == nullptr) {
