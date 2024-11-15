@@ -66,45 +66,65 @@ enum RfcommLengthExtended:
 
 struct RfcommFrame:
   -- RFCOMM adaptation of ETSI TS section 5.2 frame
+
   [requires: extended_address == true]
-  0              [+1]  bits:
-    0              [+1]             Flag                               extended_address
-    1              [+2]             RfcommCommandResponseAndDirection  command_response_direction
-    3              [+5]             UInt                               channel
+
+  0                  [+1]  bits:
+
+    0                  [+1]                 Flag                               extended_address
+
+    1                  [+2]                 RfcommCommandResponseAndDirection  command_response_direction
+
+    3                  [+5]                 UInt                               channel
       -- ETSI TS 07.10 section 5.2.1.2
 
-  1              [+1]               RfcommFrameType                    control
+  1                  [+1]                   RfcommFrameType                    control
     -- ETSI TS 07.10 section 5.2.1.3
 
-  2              [+1]  bits:
-    0              [+1]             RfcommLengthExtended               length_extended_flag
-    1              [+7]             UInt                               length
+  let uih = control == RfcommFrameType.UNNUMBERED_INFORMATION_WITH_HEADER_CHECK || control == RfcommFrameType.UNNUMBERED_INFORMATION_WITH_HEADER_CHECK_AND_POLL_FINAL
+    -- Helper flag to check whether frame is UIH type, regardless of whether credits are in use.
+
+  2                  [+1]  bits:
+
+    0                  [+1]                 RfcommLengthExtended               length_extended_flag
+
+    1                  [+7]                 UInt                               length
       -- ETSI TS 07.10 section 5.2.1.4
 
   if length_extended_flag == RfcommLengthExtended.EXTENDED:
-    2              [+2]  bits:
-      1              [+15]          UInt                               length_extended
+    2                  [+2]  bits:
+
+      1                  [+15]              UInt                               length_extended
         -- ETSI TS 07.10 section 5.2.1.4
         -- Note: this is defined as overlapping field with first length byte.
 
   let information_length = $present(length_extended) ? length_extended : length
     -- Length of the '5.2.1.4 Information Field'.
-    -- Includes RFCOMM credits field (if it is present).
+    -- Special consideration when RFCOMM credit based flow control is active:
+    -- (RFCOMM spec v1.2 section 6.5.2)
+    -- The length indicator field (as always) indicates the number of
+    -- information octets in the following information field; however, the
+    -- maximum number of allowable information octets is decreased by one to
+    -- compensate for the credit field. (This is to keep the maximum L2CAP
+    -- payload size constant).
 
   let credits_offset = $present(length_extended) ? 4 : 3
+
   if control == RfcommFrameType.UNNUMBERED_INFORMATION_WITH_HEADER_CHECK_AND_POLL_FINAL && channel != 0:
-    credits_offset [+1]             UInt                               credits
+    credits_offset     [+1]                 UInt                               credits
       -- Credits field can appears as first byte of information when Poll/Final
       -- bit is set on UIH frames and channel is not control (0).
+      -- Credits field is _not_ counted as part of information_length.
 
-  let payload_length = $present(credits) ? information_length-1 : information_length
-  let payload_offset = $present(credits) ? credits_offset+1 : credits_offset
-  payload_offset [+payload_length]  UInt:8[payload_length]             payload
+  let information_offset = $present(credits) ? credits_offset+1 : credits_offset
+
+  information_offset [+information_length]  UInt:8[information_length]         information
     -- Payload is the RFCOMM payload contained in the 'Information Field' which
     -- may start with credits.
 
-  let fcs_offset = payload_offset+payload_length
-  fcs_offset     [+1]               UInt                               fcs
+  let fcs_offset = information_offset+information_length
+
+  fcs_offset         [+1]                   UInt                               fcs
     -- Frame checksum. See: GSM 07.10 TS 101 369 V6.3.0
     -- SABM, DISC, UA, DM frame types:
     --   FCS should be calculated over address, control and length fields.
