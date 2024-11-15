@@ -41,11 +41,13 @@ cc_library_static {
         "pw_result",
         "pw_span",
         "pw_status",
+        "pw_stream",
     ],
     export_static_lib_headers: [
         "pw_bytes",
         "pw_result",
         "pw_span",
         "pw_status",
+        "pw_stream",
     ],
 }
