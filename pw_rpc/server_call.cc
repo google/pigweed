@@ -14,7 +14,39 @@
 
 #include "pw_rpc/internal/server_call.h"
 
+#include "pw_log/log.h"
+
 namespace pw::rpc::internal {
+
+void ServerCall::HandleClientRequestedCompletion()
+    PW_UNLOCK_FUNCTION(rpc_lock()) {
+  MarkStreamCompleted();
+
+#if PW_RPC_COMPLETION_REQUEST_CALLBACK
+  auto on_client_requested_completion_local =
+      std::move(on_client_requested_completion_);
+  CallbackStarted();
+  rpc_lock().unlock();
+
+  if (on_client_requested_completion_local) {
+    on_client_requested_completion_local();
+  }
+
+  rpc_lock().lock();
+  CallbackFinished();
+#else
+  PW_LOG_WARN(
+      "Received completion request packet for %u:%08x/%08x, but completion "
+      "request callbacks are disabled (PW_RPC_COMPLETION_REQUEST_CALLBACK is "
+      "0). The client call may be waiting for an action that the server cannot "
+      "complete. The server should be compiled with completion callbacks to "
+      "support services that require them.",
+      static_cast<unsigned>(channel_id_locked()),
+      static_cast<unsigned>(service_id()),
+      static_cast<unsigned>(method_id()));
+#endif  // PW_RPC_COMPLETION_REQUEST_CALLBACK
+  rpc_lock().unlock();
+}
 
 void ServerCall::MoveServerCallFrom(ServerCall& other) {
   WaitUntilReadyForMove(*this, other);

@@ -23,24 +23,7 @@ namespace pw::rpc::internal {
 // A Call object, as used by an RPC server.
 class ServerCall : public Call {
  public:
-  void HandleClientRequestedCompletion() PW_UNLOCK_FUNCTION(rpc_lock()) {
-    MarkStreamCompleted();
-
-#if PW_RPC_COMPLETION_REQUEST_CALLBACK
-    auto on_client_requested_completion_local =
-        std::move(on_client_requested_completion_);
-    CallbackStarted();
-    rpc_lock().unlock();
-
-    if (on_client_requested_completion_local) {
-      on_client_requested_completion_local();
-    }
-
-    rpc_lock().lock();
-    CallbackFinished();
-#endif  // PW_RPC_COMPLETION_REQUEST_CALLBACK
-    rpc_lock().unlock();
-  }
+  void HandleClientRequestedCompletion() PW_UNLOCK_FUNCTION(rpc_lock());
 
  protected:
   constexpr ServerCall() = default;
