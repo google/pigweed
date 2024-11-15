@@ -77,6 +77,11 @@ file were first, the long path might take most of the hashed characters,
 increasing the odds of a collision with other strings in that file. In C++, all
 characters in the string are hashed, so the order is not important.
 
+The format string is created by the :c:macro:`PW_LOG_TOKENIZED_FORMAT_STRING`
+macro.
+
+.. doxygendefine:: PW_LOG_TOKENIZED_FORMAT_STRING
+
 Metadata in the tokenizer payload argument
 -------------------------------------------
 ``pw_log_tokenized`` packs runtime-accessible metadata into a 32-bit integer
@@ -98,36 +103,10 @@ The number of bits to use for each metadata field is configurable through macros
 in ``pw_log/config.h``. The field widths must sum to 32 bits. A field with zero
 bits allocated is excluded from the log metadata.
 
-.. c:macro:: PW_LOG_TOKENIZED_LEVEL_BITS
-
-  Bits to allocate for the log level. Defaults to :c:macro:`PW_LOG_LEVEL_BITS`
-  (3).
-
-.. c:macro:: PW_LOG_TOKENIZED_LINE_BITS
-
-  Bits to allocate for the line number. Defaults to 11 (up to line 2047). If the
-  line number is too large to be represented by this field, line is reported as
-  0.
-
-  Including the line number can slightly increase code size. Without the line
-  number, the log metadata argument is the same for all logs with the same level
-  and flags. With the line number, each metadata value is unique and must be
-  encoded as a separate word in the binary. Systems with extreme space
-  constraints may exclude line numbers by setting this macro to 0.
-
-  It is possible to include line numbers in tokenized log format strings, but
-  that is discouraged because line numbers change whenever a file is edited.
-  Passing the line number with the metadata is a lightweight way to include it.
-
-.. c:macro:: PW_LOG_TOKENIZED_FLAG_BITS
-
-  Bits to use for implementation-defined flags. Defaults to 2.
-
-.. c:macro:: PW_LOG_TOKENIZED_MODULE_BITS
-
-  Bits to use for the tokenized version of :c:macro:`PW_LOG_MODULE_NAME`.
-  Defaults to 16, which gives a ~1% probability of a collision with 37 module
-  names.
+.. doxygendefine:: PW_LOG_TOKENIZED_LEVEL_BITS
+.. doxygendefine:: PW_LOG_TOKENIZED_LINE_BITS
+.. doxygendefine:: PW_LOG_TOKENIZED_FLAG_BITS
+.. doxygendefine:: PW_LOG_TOKENIZED_MODULE_BITS
 
 Creating and reading Metadata payloads
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -39,9 +39,14 @@
 
 #define _PW_LOG_TOKENIZED_FIELD(name, contents) "■" name "♦" contents
 
-#define PW_LOG_TOKENIZED_FORMAT_STRING(string)          \
-  _PW_LOG_TOKENIZED_FIELD("msg", string)                \
-  _PW_LOG_TOKENIZED_FIELD("module", PW_LOG_MODULE_NAME) \
+/// This macro takes the `pw_log` module name and format string to produce a new
+/// string that will be tokenized. Any information can be packed into this
+/// string without affecting code size, since tokenization removes it from the
+/// binary. By default, `pw_log_tokenized` includes three fields as key-value
+/// pair: log module, message, and file path (`__FILE__`).
+#define PW_LOG_TOKENIZED_FORMAT_STRING(module, message) \
+  _PW_LOG_TOKENIZED_FIELD("msg", message)               \
+  _PW_LOG_TOKENIZED_FIELD("module", module)             \
   _PW_LOG_TOKENIZED_FIELD("file", __FILE__)
 
 #endif  // PW_LOG_TOKENIZED_FORMAT_STRING
@@ -51,31 +56,38 @@
 // specify the number of bits to use for each field. A field with zero bits is
 // excluded.
 
-// Bits to allocate for the log level.
+/// Bits to allocate for the log level. Defaults to @c_macro{PW_LOG_LEVEL_BITS}
+/// (3).
 #ifndef PW_LOG_TOKENIZED_LEVEL_BITS
 #define PW_LOG_TOKENIZED_LEVEL_BITS PW_LOG_LEVEL_BITS
 #endif  // PW_LOG_TOKENIZED_LEVEL_BITS
 
-// Including the line number can slightly increase code size. Without the line
-// number, the log metadata argument is the same for all logs with the same
-// level and flags. With the line number, each metadata value is unique and must
-// be encoded as a separate word in the binary. Systems with extreme space
-// constraints may exclude line numbers by setting this macro to 0.
-//
-// It is possible to include line numbers in tokenized log format strings, but
-// that is discouraged because line numbers change whenever a file is edited.
-// Passing the line number with the metadata is a lightweight way to include it.
+/// Bits to allocate for the line number. Defaults to 11 (up to line 2047). If
+/// the line number is too large to be represented by this field, line is
+/// reported as 0.
+///
+/// Including the line number can slightly increase code size. Without the line
+/// number, the log metadata argument is the same for all logs with the same
+/// level and flags. With the line number, each metadata value is unique and
+/// must be encoded as a separate word in the binary. Systems with extreme space
+/// constraints may exclude line numbers by setting this macro to 0.
+///
+/// It is possible to include line numbers in tokenized log format strings, but
+/// that is discouraged because line numbers change whenever a file is edited.
+/// Passing the line number with the metadata is a lightweight way to include
+/// it.
 #ifndef PW_LOG_TOKENIZED_LINE_BITS
 #define PW_LOG_TOKENIZED_LINE_BITS 11
 #endif  // PW_LOG_TOKENIZED_LINE_BITS
 
-// Bits to use for implementation-defined flags.
+/// Bits to use for implementation-defined flags. Defaults to 2.
 #ifndef PW_LOG_TOKENIZED_FLAG_BITS
 #define PW_LOG_TOKENIZED_FLAG_BITS 2
 #endif  // PW_LOG_TOKENIZED_FLAG_BITS
 
-// Bits to use for the tokenized version of PW_LOG_MODULE_NAME. Defaults to 16,
-// which gives a ~1% probability of a collision with 37 module names.
+/// Bits to use for the tokenized version of @c_macro{PW_LOG_MODULE_NAME}.
+/// Defaults to 16, which gives a ~1% probability of a collision with 37 module
+/// names.
 #ifndef PW_LOG_TOKENIZED_MODULE_BITS
 #define PW_LOG_TOKENIZED_MODULE_BITS 16
 #endif  // PW_LOG_TOKENIZED_MODULE_BITS

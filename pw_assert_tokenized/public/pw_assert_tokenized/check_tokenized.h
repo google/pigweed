@@ -20,7 +20,7 @@
 #define _PW_ASSERT_TOKENIZED_TO_HANDLER(str)                                   \
   do {                                                                         \
     const uint32_t _pw_assert_tokenized_to_handler_token = PW_TOKENIZE_STRING( \
-        PW_LOG_TOKENIZED_FORMAT_STRING("Check failure: " str));                \
+        PW_LOG_TOKENIZED_FORMAT_STRING("PW_ASSERT", "Check failure: " str));   \
     pw_assert_tokenized_HandleCheckFailure(                                    \
         _pw_assert_tokenized_to_handler_token, __LINE__);                      \
   } while (0)

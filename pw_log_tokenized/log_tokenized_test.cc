@@ -34,11 +34,21 @@
 namespace pw::log_tokenized {
 namespace {
 
-TEST(LogTokenized, FormatString) {
+TEST(LogTokenized, FormatString_LogModuleName) {
   PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
       63, PW_LOG_MODULE_NAME, 1023, "hello %d", 1);
   EXPECT_STREQ(last_log.format_string,
                "■msg♦hello %d■module♦log module name!■file♦" __FILE__);
+}
+
+TEST(LogTokenized, FormatString_OtherModuleNames) {
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(1, "", 1, "goodbye");
+  EXPECT_STREQ(last_log.format_string, "■msg♦goodbye■module♦■file♦" __FILE__);
+
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
+      63, "OTHER MODULE!", 123, "goodbye");
+  EXPECT_STREQ(last_log.format_string,
+               "■msg♦goodbye■module♦OTHER MODULE!■file♦" __FILE__);
 }
 
 constexpr uintptr_t kModuleToken =

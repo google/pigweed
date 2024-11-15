@@ -59,7 +59,7 @@
         (_PW_LOG_TOKENIZED_LEVEL(_pw_log_tokenized_level) |                  \
          _PW_LOG_TOKENIZED_MODULE(_pw_log_tokenized_module_token) |          \
          _PW_LOG_TOKENIZED_FLAGS(flags) | _PW_LOG_TOKENIZED_LINE(__LINE__)), \
-        PW_LOG_TOKENIZED_FORMAT_STRING(message),                             \
+        PW_LOG_TOKENIZED_FORMAT_STRING(module, message),                     \
         __VA_ARGS__);                                                        \
   } while (0)
 
