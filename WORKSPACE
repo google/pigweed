@@ -49,9 +49,9 @@ cipd_repository(
 git_repository(
     name = "fuchsia_infra",
     # ROLL: Warning: this entry is automatically updated.
-    # ROLL: Last updated 2024-11-09.
-    # ROLL: By https://cr-buildbucket.appspot.com/build/8731711036535919905.
-    commit = "c97cd7f67cde47b765865b15185232977aee0b21",
+    # ROLL: Last updated 2024-11-16.
+    # ROLL: By https://cr-buildbucket.appspot.com/build/8731076857971632145.
+    commit = "a627dc11a73d74754d9a66a3b80b6f352c94d723",
     remote = "https://fuchsia.googlesource.com/fuchsia-infra-bazel-rules",
 )
 
