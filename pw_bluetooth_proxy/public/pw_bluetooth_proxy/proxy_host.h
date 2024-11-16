@@ -37,11 +37,11 @@ class ProxyHost {
             uint16_t le_acl_credits_to_reserve);
 
   ProxyHost() = delete;
-  virtual ~ProxyHost() = default;
   ProxyHost(const ProxyHost&) = delete;
   ProxyHost& operator=(const ProxyHost&) = delete;
   ProxyHost(ProxyHost&&) = delete;
   ProxyHost& operator=(ProxyHost&&) = delete;
+  ~ProxyHost();
 
   // ##### Container API
   // Containers are expected to call these functions (in addition to ctor).
@@ -115,6 +115,8 @@ class ProxyHost {
   ///
   /// .. pw-status-codes::
   ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
+  ///  UNAVAILABLE:      If channel could not be created because no memory was
+  ///                    available to accommodate an additional ACL connection.
   /// @endrst
   pw::Result<L2capCoc> AcquireL2capCoc(
       uint16_t connection_handle,

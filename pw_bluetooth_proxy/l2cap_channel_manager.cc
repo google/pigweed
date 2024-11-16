@@ -21,7 +21,8 @@
 namespace pw::bluetooth::proxy {
 
 L2capChannelManager::L2capChannelManager(AclDataChannel& acl_data_channel)
-    : acl_data_channel_(acl_data_channel) {}
+    : acl_data_channel_(acl_data_channel),
+      lrd_write_channel_(write_channels_.end()) {}
 
 void L2capChannelManager::Reset() { h4_storage_.Reset(); }
 
@@ -31,6 +32,33 @@ void L2capChannelManager::RegisterReadChannel(L2capReadChannel& channel) {
 
 bool L2capChannelManager::ReleaseReadChannel(L2capReadChannel& channel) {
   return read_channels_.remove(channel);
+}
+
+void L2capChannelManager::RegisterWriteChannel(L2capWriteChannel& channel) {
+  write_channels_mutex_.lock();
+  write_channels_.push_front(channel);
+  if (lrd_write_channel_ == write_channels_.end()) {
+    lrd_write_channel_ = write_channels_.begin();
+  }
+  write_channels_mutex_.unlock();
+}
+
+bool L2capChannelManager::ReleaseWriteChannel(L2capWriteChannel& channel) {
+  write_channels_mutex_.lock();
+  if (&channel == &(*lrd_write_channel_)) {
+    Advance(lrd_write_channel_);
+  }
+
+  bool was_removed = write_channels_.remove(channel);
+
+  // If `channel` was the only element in `write_channels_`, advancing
+  // `lrd_write_channel_` just wrapped it back on itself, so we reset it here.
+  if (write_channels_.empty()) {
+    lrd_write_channel_ = write_channels_.end();
+  }
+
+  write_channels_mutex_.unlock();
+  return was_removed;
 }
 
 pw::Result<H4PacketWithH4> L2capChannelManager::GetTxH4Packet(uint16_t size) {
@@ -56,15 +84,54 @@ pw::Result<H4PacketWithH4> L2capChannelManager::GetTxH4Packet(uint16_t size) {
   return h4_packet;
 }
 
-pw::Status L2capChannelManager::SendL2capPacket(H4PacketWithH4&& tx_packet) {
-  // H4 packet is hereby moved. Either `AclDataChannel` will move the packet to
-  // the controller or drop the packet on error. In either case, packet will be
-  // destructed, so its release function will be invoked.
-  return acl_data_channel_.SendAcl(std::move(tx_packet));
-}
-
 uint16_t L2capChannelManager::GetH4BuffSize() const {
   return H4Storage::GetH4BuffSize();
+}
+
+void L2capChannelManager::DrainWriteChannelQueues() {
+  write_channels_mutex_.lock();
+
+  if (write_channels_.empty() ||
+      acl_data_channel_.GetNumFreeLeAclPackets() == 0) {
+    write_channels_mutex_.unlock();
+    return;
+  }
+
+  IntrusiveForwardList<L2capWriteChannel>::iterator round_robin_start =
+      lrd_write_channel_;
+  // Iterate around `write_channels_` in round robin fashion. For each channel,
+  // send as many queued packets as are available. Proceed until we run out of
+  // ACL send credits or finish visiting every channel.
+  // TODO: https://pwbug.dev/379337260 - Only drain one L2CAP PDU per channel
+  // before moving on. (This may require sending multiple ACL fragments.)
+  do {
+    std::optional<H4PacketWithH4> packet = lrd_write_channel_->DequeuePacket();
+    if (!packet) {
+      Advance(lrd_write_channel_);
+      if (lrd_write_channel_ == round_robin_start) {
+        write_channels_mutex_.unlock();
+        return;
+      }
+      continue;
+    }
+
+    PW_CHECK_OK(acl_data_channel_.SendAcl(std::move(*packet)));
+  } while (acl_data_channel_.GetNumFreeLeAclPackets());
+  write_channels_mutex_.unlock();
+}
+
+L2capWriteChannel* L2capChannelManager::FindWriteChannel(
+    uint16_t connection_handle, uint16_t remote_cid) {
+  write_channels_mutex_.lock();
+  auto connection_it = containers::FindIf(
+      write_channels_,
+      [connection_handle, remote_cid](const L2capWriteChannel& channel) {
+        return channel.connection_handle() == connection_handle &&
+               channel.remote_cid() == remote_cid;
+      });
+  bool was_found = connection_it != write_channels_.end();
+  write_channels_mutex_.unlock();
+  return was_found ? &(*connection_it) : nullptr;
 }
 
 L2capReadChannel* L2capChannelManager::FindReadChannel(
@@ -76,6 +143,13 @@ L2capReadChannel* L2capChannelManager::FindReadChannel(
                channel.local_cid() == local_cid;
       });
   return connection_it == read_channels_.end() ? nullptr : &(*connection_it);
+}
+
+void L2capChannelManager::Advance(
+    IntrusiveForwardList<L2capWriteChannel>::iterator& it) {
+  if (++it == write_channels_.end()) {
+    it = write_channels_.begin();
+  }
 }
 
 }  // namespace pw::bluetooth::proxy

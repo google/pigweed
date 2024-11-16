@@ -1156,12 +1156,6 @@ TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
                   .ok());
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
-  // At this point, proxy has used all 3 credits, 1 on each Connection, so send
-  // should fail.
-  EXPECT_EQ(proxy.SendGattNotify(
-                capture.connection_handles[0], 1, pw::span(attribute_value)),
-            PW_STATUS_UNAVAILABLE);
-
   // Send Number_of_Completed_Packets event that reports 1 packet on Connection
   // 0, 0 packets on Connection 1, and 1 packet on Connection 2. Checks in
   // send_to_host_fn will ensure we have reclaimed 2 of 3 credits.
@@ -1241,11 +1235,6 @@ TEST(NumberOfCompletedPacketsTest, ManyMorePacketsCompletedThanPacketsPending) {
                                   pw::span(attribute_value))
                   .ok());
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
-
-  // At this point proxy, has used both credits, so send should fail.
-  EXPECT_EQ(proxy.SendGattNotify(
-                capture.connection_handles[1], 1, pw::span(attribute_value)),
-            PW_STATUS_UNAVAILABLE);
 
   // Send Number_of_Completed_Packets event that reports 10 packets on
   // Connection 0 and 15 packets on Connection 1. Checks in send_to_host_fn
@@ -1736,10 +1725,6 @@ TEST(ResetTest, ResetClearsActiveConnections) {
   // Reset should not have cleared `le_acl_credits_to_reserve`, so proxy should
   // still indicate the capability.
   EXPECT_TRUE(proxy.HasSendAclCapability());
-  // Reset clears credit reservation, so send should fail.
-  EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
-            PW_STATUS_UNAVAILABLE);
-  EXPECT_EQ(controller_capture.sends_called, 1);
 
   // Re-initialize AclDataChannel with 2 credits.
   PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 2));
@@ -1779,10 +1764,9 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
   // Validate state after double reset.
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
   EXPECT_TRUE(proxy.HasSendAclCapability());
-  EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
-            PW_STATUS_UNAVAILABLE);
   PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
-  EXPECT_TRUE(proxy.SendGattNotify(1, 1, pw::span(attribute_value)).ok());
+  EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
+            PW_STATUS_OK);
   EXPECT_EQ(sends_called, 1);
 
   proxy.Reset();
@@ -1790,10 +1774,9 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
   // Validate state after third reset.
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
   EXPECT_TRUE(proxy.HasSendAclCapability());
-  EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
-            PW_STATUS_UNAVAILABLE);
   PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
-  EXPECT_TRUE(proxy.SendGattNotify(1, 1, pw::span(attribute_value)).ok());
+  EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
+            PW_STATUS_OK);
   EXPECT_EQ(sends_called, 2);
 }
 
@@ -2374,6 +2357,43 @@ TEST(L2capCocReadTest, ErrorOnRxToStoppedChannel) {
     proxy.HandleH4HciFromController(std::move(h4_packet));
   }
   EXPECT_EQ(events_received, num_invalid_rx);
+}
+
+TEST(L2capCocReadTest, TooShortAclPassedToHost) {
+  int sends_called = 0;
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [&sends_called]([[maybe_unused]] H4PacketWithHci&& packet) {
+        ++sends_called;
+      });
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+
+  uint16_t handle = 123;
+  uint16_t local_cid = 234;
+  L2capCoc channel = BuildCoc(
+      proxy,
+      CocParameters{
+          .handle = handle,
+          .local_cid = local_cid,
+          .receive_fn = []([[maybe_unused]] pw::span<uint8_t> payload) {
+            FAIL();
+          }});
+
+  std::array<uint8_t, kFirstKFrameOverAclMinSize> hci_arr;
+  hci_arr.fill(0);
+  H4PacketWithHci h4_packet{emboss::H4PacketType::ACL_DATA, hci_arr};
+
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr);
+  acl->header().handle().Write(handle);
+  // Write size larger than buffer size.
+  acl->data_total_length().Write(emboss::FirstKFrame::MinSizeInBytes() + 5);
+
+  proxy.HandleH4HciFromController(std::move(h4_packet));
+
+  EXPECT_EQ(sends_called, 1);
 }
 
 TEST(L2capCocReadTest, ChannelClosedWithErrorIfMtuExceeded) {
@@ -3342,6 +3362,331 @@ TEST(L2capCocReadTest, FragmentedPduDoesNotInterfereWithOtherChannels) {
 
   EXPECT_EQ(packets_received, 3);
 }
+// ########## L2capCocQueueTest
+
+TEST(L2capCocQueueTest, ReadBufferResponseDrainsQueue) {
+  size_t sends_called = 0;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&sends_called]([[maybe_unused]] H4PacketWithH4&& packet) {
+        ++sends_called;
+      });
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              L2capCoc::QueueCapacity());
+
+  L2capCoc channel =
+      BuildCoc(proxy, CocParameters{.tx_credits = L2capCoc::QueueCapacity()});
+
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
+  for (size_t i = 0; i < L2capCoc::QueueCapacity(); ++i) {
+    EXPECT_EQ(channel.Write({}), PW_STATUS_OK);
+  }
+  EXPECT_EQ(channel.Write({}), PW_STATUS_UNAVAILABLE);
+  EXPECT_EQ(sends_called, 0u);
+
+  PW_TEST_EXPECT_OK(
+      SendReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
+
+  EXPECT_EQ(sends_called, L2capCoc::QueueCapacity());
+}
+
+TEST(L2capCocQueueTest, NocpEventDrainsQueue) {
+  size_t sends_called = 0;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&sends_called]([[maybe_unused]] H4PacketWithH4&& packet) {
+        ++sends_called;
+      });
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              L2capCoc::QueueCapacity());
+  PW_TEST_EXPECT_OK(
+      SendReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
+
+  uint16_t handle = 123;
+  L2capCoc channel =
+      BuildCoc(proxy,
+               CocParameters{.handle = handle,
+                             .tx_credits = 2 * L2capCoc::QueueCapacity()});
+
+  for (size_t i = 0; i < L2capCoc::QueueCapacity(); ++i) {
+    EXPECT_EQ(channel.Write({}), PW_STATUS_OK);
+  }
+
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
+  for (size_t i = 0; i < L2capCoc::QueueCapacity(); ++i) {
+    EXPECT_EQ(channel.Write({}), PW_STATUS_OK);
+  }
+  EXPECT_EQ(channel.Write({}), PW_STATUS_UNAVAILABLE);
+  EXPECT_EQ(sends_called, L2capCoc::QueueCapacity());
+
+  PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
+      proxy,
+      FlatMap<uint16_t, uint16_t, 1>({{{handle, L2capCoc::QueueCapacity()}}})));
+
+  EXPECT_EQ(sends_called, 2 * L2capCoc::QueueCapacity());
+}
+
+TEST(L2capCocQueueTest, RemovingLrdWriteChannelDoesNotInvalidateRoundRobin) {
+  size_t sends_called = 0;
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&sends_called]([[maybe_unused]] H4PacketWithH4&& packet) {
+        ++sends_called;
+      });
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              L2capCoc::QueueCapacity());
+  PW_TEST_EXPECT_OK(
+      SendReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), L2capCoc::QueueCapacity());
+
+  uint16_t handle = 123;
+  std::array<uint16_t, 3> remote_cids = {1, 2, 3};
+  L2capCoc chan_left = BuildCoc(
+      proxy,
+      CocParameters{
+          .handle = handle, .remote_cid = remote_cids[0], .tx_credits = 1});
+  std::optional<L2capCoc> chan_middle =
+      BuildCoc(proxy,
+               CocParameters{.handle = handle,
+                             .remote_cid = remote_cids[1],
+                             .tx_credits = L2capCoc::QueueCapacity() + 1});
+  L2capCoc chan_right = BuildCoc(
+      proxy,
+      CocParameters{
+          .handle = handle, .remote_cid = remote_cids[2], .tx_credits = 1});
+
+  // We have 3 channels. Make it so LRD write channel iterator is on the
+  // middle channel, then release that channel and ensure the other two are
+  // still reached in the round robin.
+
+  // Queue a packet in middle channel.
+  for (size_t i = 0; i < L2capCoc::QueueCapacity() + 1; ++i) {
+    EXPECT_EQ(chan_middle->Write({}), PW_STATUS_OK);
+  }
+  EXPECT_EQ(sends_called, L2capCoc::QueueCapacity());
+
+  // Make middle channel the LRD write channel.
+  PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
+      proxy, FlatMap<uint16_t, uint16_t, 1>({{{handle, 1}}})));
+  EXPECT_EQ(sends_called, L2capCoc::QueueCapacity() + 1);
+
+  // Queue a packet each in left and right channels.
+  EXPECT_EQ(chan_left.Write({}), PW_STATUS_OK);
+  EXPECT_EQ(chan_right.Write({}), PW_STATUS_OK);
+  EXPECT_EQ(sends_called, L2capCoc::QueueCapacity() + 1);
+
+  // Drop middle channel. LRD write channel iterator should still be valid.
+  chan_middle.reset();
+
+  // Confirm packets in remaining two channels are sent in round robin.
+  PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
+      proxy, FlatMap<uint16_t, uint16_t, 1>({{{handle, 2}}})));
+  EXPECT_EQ(sends_called, L2capCoc::QueueCapacity() + 3);
+}
+
+// ########## L2capSignalingTest
+
+TEST(L2capSignalingTest, FlowControlCreditIndDrainsQueue) {
+  size_t sends_called = 0;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&sends_called]([[maybe_unused]] H4PacketWithH4&& packet) {
+        ++sends_called;
+      });
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              L2capCoc::QueueCapacity());
+  PW_TEST_EXPECT_OK(
+      SendReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), L2capCoc::QueueCapacity());
+
+  uint16_t handle = 123;
+  uint16_t remote_cid = 456;
+  L2capCoc channel = BuildCoc(
+      proxy,
+      CocParameters{
+          .handle = handle, .remote_cid = remote_cid, .tx_credits = 0});
+
+  for (size_t i = 0; i < L2capCoc::QueueCapacity(); ++i) {
+    EXPECT_EQ(channel.Write({}), PW_STATUS_OK);
+  }
+  EXPECT_EQ(channel.Write({}), PW_STATUS_UNAVAILABLE);
+  EXPECT_EQ(sends_called, 0u);
+
+  constexpr size_t kL2capLength =
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+      emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes();
+  constexpr size_t kHciLength =
+      emboss::AclDataFrame::MinSizeInBytes() + kL2capLength;
+  std::array<uint8_t, kHciLength> hci_arr;
+  hci_arr.fill(0);
+  H4PacketWithHci flow_control_credit_ind{emboss::H4PacketType::ACL_DATA,
+                                          pw::span(hci_arr.data(), kHciLength)};
+
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr);
+  acl->header().handle().Write(handle);
+  acl->data_total_length().Write(kL2capLength);
+
+  emboss::CFrameWriter l2cap = emboss::MakeCFrameView(
+      acl->payload().BackingStorage().data(), kL2capLength);
+  l2cap.pdu_length().Write(
+      emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+  // 0x0005 = LE-U fixed signaling channel ID.
+  l2cap.channel_id().Write(0x0005);
+
+  emboss::L2capFlowControlCreditIndWriter ind =
+      emboss::MakeL2capFlowControlCreditIndView(
+          l2cap.payload().BackingStorage().data(),
+          emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+  ind.command_header().code().Write(
+      emboss::L2capSignalingPacketCode::FLOW_CONTROL_CREDIT_IND);
+  ind.command_header().data_length().Write(
+      emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes() -
+      emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+  ind.cid().Write(remote_cid);
+  ind.credits().Write(L2capCoc::QueueCapacity());
+
+  proxy.HandleH4HciFromController(std::move(flow_control_credit_ind));
+
+  EXPECT_EQ(sends_called, L2capCoc::QueueCapacity());
+}
+
+TEST(L2capSignalingTest, ChannelClosedWithErrorIfCreditsExceeded) {
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              L2capCoc::QueueCapacity());
+
+  uint16_t handle = 123;
+  uint16_t remote_cid = 456;
+  int events_received = 0;
+  L2capCoc channel = BuildCoc(
+      proxy,
+      CocParameters{
+          .handle = handle,
+          .remote_cid = remote_cid,
+          // Initialize with max credit count.
+          .tx_credits =
+              emboss::L2capLeCreditBasedConnectionReq::max_credit_value(),
+          .event_fn = [&events_received](L2capCoc::Event event) {
+            EXPECT_EQ(event, L2capCoc::Event::kRxInvalid);
+            ++events_received;
+          }});
+
+  constexpr size_t kL2capLength =
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+      emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes();
+  constexpr size_t kHciLength =
+      emboss::AclDataFrame::MinSizeInBytes() + kL2capLength;
+  std::array<uint8_t, kHciLength> hci_arr;
+  hci_arr.fill(0);
+  H4PacketWithHci flow_control_credit_ind{emboss::H4PacketType::ACL_DATA,
+                                          pw::span(hci_arr.data(), kHciLength)};
+
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr);
+  acl->header().handle().Write(handle);
+  acl->data_total_length().Write(kL2capLength);
+
+  emboss::CFrameWriter l2cap =
+      emboss::MakeCFrameView(acl->payload().BackingStorage().data(),
+                             emboss::BasicL2capHeader::IntrinsicSizeInBytes());
+  l2cap.pdu_length().Write(
+      emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+  // 0x0005 = LE-U fixed signaling channel ID.
+  l2cap.channel_id().Write(0x0005);
+
+  emboss::L2capFlowControlCreditIndWriter ind =
+      emboss::MakeL2capFlowControlCreditIndView(
+          l2cap.payload().BackingStorage().data(),
+          emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+  ind.command_header().code().Write(
+      emboss::L2capSignalingPacketCode::FLOW_CONTROL_CREDIT_IND);
+  ind.command_header().data_length().Write(
+      emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes() -
+      emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+  ind.cid().Write(remote_cid);
+  // Exceed max credit count by 1.
+  ind.credits().Write(1);
+
+  proxy.HandleH4HciFromController(std::move(flow_control_credit_ind));
+
+  EXPECT_EQ(events_received, 1);
+}
+
+TEST(L2capSignalingTest, CreditIndAddressedToNonManagedChannelForwardedToHost) {
+  int forwards_to_host = 0;
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [&forwards_to_host](H4PacketWithHci&&) { ++forwards_to_host; });
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [](H4PacketWithH4&&) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              L2capCoc::QueueCapacity());
+
+  uint16_t handle = 123;
+  uint16_t remote_cid = 456;
+  L2capCoc channel = BuildCoc(
+      proxy, CocParameters{.handle = handle, .remote_cid = remote_cid});
+
+  constexpr size_t kL2capLength =
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+      emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes();
+  constexpr size_t kHciLength =
+      emboss::AclDataFrame::MinSizeInBytes() + kL2capLength;
+  std::array<uint8_t, kHciLength> hci_arr;
+  hci_arr.fill(0);
+  H4PacketWithHci flow_control_credit_ind{emboss::H4PacketType::ACL_DATA,
+                                          pw::span(hci_arr.data(), kHciLength)};
+
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr);
+  acl->header().handle().Write(handle);
+  acl->data_total_length().Write(kL2capLength);
+
+  emboss::CFrameWriter l2cap =
+      emboss::MakeCFrameView(acl->payload().BackingStorage().data(),
+                             emboss::BasicL2capHeader::IntrinsicSizeInBytes());
+  l2cap.pdu_length().Write(
+      emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+  // 0x0005 = LE-U fixed signaling channel ID.
+  l2cap.channel_id().Write(0x0005);
+
+  emboss::L2capFlowControlCreditIndWriter ind =
+      emboss::MakeL2capFlowControlCreditIndView(
+          l2cap.payload().BackingStorage().data(),
+          emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+  ind.command_header().code().Write(
+      emboss::L2capSignalingPacketCode::FLOW_CONTROL_CREDIT_IND);
+  ind.command_header().data_length().Write(
+      emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes() -
+      emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+  // Address packet to different CID on same connection.
+  ind.cid().Write(remote_cid + 1);
+
+  proxy.HandleH4HciFromController(std::move(flow_control_credit_ind));
+
+  EXPECT_EQ(forwards_to_host, 1);
+}
+
+// TODO: saeedali@ - Add many more tests exercising queueing + credit-based
+// control flow.
 
 }  // namespace
 }  // namespace pw::bluetooth::proxy

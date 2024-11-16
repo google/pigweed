@@ -32,11 +32,17 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
 
   virtual ~L2capReadChannel();
 
+  // Move assignment operator allows channels to be erased from pw::Vector.
+  L2capReadChannel& operator=(L2capReadChannel&& other);
+
   // Handle an Rx L2CAP PDU.
   //
   // Implementations should call `CallReceiveFn` after recombining/processing
   // the SDU (e.g. after updating channel state and screening out certain SDUs).
-  virtual void OnPduReceived(pw::span<uint8_t> l2cap_pdu) = 0;
+  //
+  // Return true if the PDU was consumed by the channel. Otherwise, return false
+  // and the PDU will be forwarded by `ProxyHost` on to the Bluetooth host.
+  [[nodiscard]] virtual bool OnPduReceived(pw::span<uint8_t> l2cap_pdu) = 0;
 
   // Handle fragmented Rx L2CAP PDU.
   // TODO: https://pwbug.dev/365179076 - Support recombination & delete this.

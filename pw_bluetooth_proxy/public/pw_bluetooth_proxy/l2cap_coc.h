@@ -22,9 +22,6 @@ namespace pw::bluetooth::proxy {
 
 /// L2CAP connection-oriented channel that supports writing to and reading
 /// from a remote peer.
-///
-// TODO: https://pwbug.dev/360934030 - Support queuing + credit-based control
-// flow.
 class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
  public:
   /// Parameters for a direction of packet flow in an `L2capCoc`.
@@ -56,6 +53,9 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
   };
 
   enum class Event {
+    // TODO: saeedali@ - Listen for L2CAP_DISCONNECTION_REQ/RSP packets and
+    // report this event accordingly.
+    kChannelClosedByOther,
     /// An invalid packet was received. The channel is now `kStopped` and should
     /// be closed. See error logs for details.
     kRxInvalid,
@@ -93,8 +93,7 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
   /// .. pw-status-codes::
   ///  OK:                  If packet was successfully queued for send.
   ///  UNAVAILABLE:         If channel could not acquire the resources to queue
-  ///  the
-  ///                       send at this time (transient error).
+  ///                       the send at this time (transient error).
   ///  INVALID_ARGUMENT:    If payload is too large.
   ///  FAILED_PRECONDITION: If channel is `kStopped`.
   /// @endrst
@@ -111,7 +110,11 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
 
   // `CallReceiveFn` with the information payload contained in `kframe`. As
   // packet desegmentation is not supported, segmented SDUs are discarded.
-  void OnPduReceived(pw::span<uint8_t> kframe) override;
+  bool OnPduReceived(pw::span<uint8_t> kframe) override
+      PW_LOCKS_EXCLUDED(mutex_);
+
+  // Increment `send_credits_` by `credits`.
+  void AddCredits(uint16_t credits) PW_LOCKS_EXCLUDED(mutex_);
 
  private:
   enum class CocState {
@@ -132,13 +135,18 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
   // `Stop()` channel if `kRunning` & call `event_fn_(error)` if it exists.
   void StopChannelAndReportError(Event error);
 
+  // Override: Dequeue a packet only if a credit is able to be subtracted.
+  std::optional<H4PacketWithH4> DequeuePacket() override
+      PW_LOCKS_EXCLUDED(mutex_);
+
   CocState state_;
-  sync::Mutex rx_mutex_;
+  sync::Mutex mutex_;
   uint16_t rx_mtu_;
   uint16_t rx_mps_;
   uint16_t tx_mtu_;
   uint16_t tx_mps_;
-  uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(rx_mutex_);
+  uint16_t tx_credits_ PW_GUARDED_BY(mutex_);
+  uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(mutex_);
   pw::Function<void(Event event)> event_fn_;
 };
 

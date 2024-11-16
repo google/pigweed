@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
+#include "pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h"
 #include "pw_containers/vector.h"
 #include "pw_result/result.h"
 #include "pw_sync/lock_annotations.h"
@@ -32,8 +33,10 @@ namespace pw::bluetooth::proxy {
 class AclDataChannel {
  public:
   AclDataChannel(HciTransport& hci_transport,
+                 L2capChannelManager& l2cap_channel_manager,
                  uint16_t le_acl_credits_to_reserve)
       : hci_transport_(hci_transport),
+        l2cap_channel_manager_(l2cap_channel_manager),
         le_acl_credits_to_reserve_(le_acl_credits_to_reserve),
         proxy_max_le_acl_packets_(0),
         proxy_pending_le_acl_packets_(0) {}
@@ -78,10 +81,13 @@ class AclDataChannel {
   // Can be zero if the controller has not yet been initialized by the host.
   uint16_t GetNumFreeLeAclPackets() const;
 
-  // Send an ACL data packet contained in an H4 packet to the controller.
+  // Send an ACL data packet contained in an H4 packet to the controller. This
+  // method should only be called in `L2capChannelManager`, where ACL sends are
+  // protected by mutex.
   //
   // Returns PW_STATUS_UNAVAILABLE if no LE ACL send credits were available.
   // Returns PW_STATUS_INVALID_ARGUMENT if LE ACL packet was ill-formed.
+  // Returns PW_NOT_FOUND if LE ACL connection does not exist.
   pw::Status SendAcl(H4PacketWithH4&& h4_packet);
 
   // Register a new logical link on LE ACL logical transport.
@@ -109,19 +115,50 @@ class AclDataChannel {
   pw::Status FragmentedPduFinished(uint16_t connection_handle);
 
  private:
-  struct AclConnection {
-    uint16_t handle = 0;
-    uint16_t num_pending_packets = 0;
+  // An active logical link on LE ACL logical transport.
+  // TODO: saeedali@ - Encapsulate all logic related to this within a new
+  // LogicalLinkManager class?
+  class LeAclConnection {
+   public:
+    LeAclConnection(uint16_t connection_handle,
+                    uint16_t num_pending_packets,
+                    L2capChannelManager& l2cap_channel_manager)
+        : connection_handle_(connection_handle),
+          num_pending_packets_(num_pending_packets),
+          signaling_channel_(l2cap_channel_manager, connection_handle),
+          is_receiving_fragmented_pdu_(false) {}
+
+    LeAclConnection& operator=(LeAclConnection&& other) = default;
+
+    uint16_t connection_handle() const { return connection_handle_; }
+
+    uint16_t num_pending_packets() const { return num_pending_packets_; }
+
+    void set_num_pending_packets(uint16_t new_val) {
+      num_pending_packets_ = new_val;
+    }
+
+    bool is_receiving_fragmented_pdu() const {
+      return is_receiving_fragmented_pdu_;
+    }
+
+    void set_is_receiving_fragmented_pdu(bool new_val) {
+      is_receiving_fragmented_pdu_ = new_val;
+    }
+
+   private:
+    uint16_t connection_handle_;
+    uint16_t num_pending_packets_;
+    L2capLeUSignalingChannel signaling_channel_;
     // Set when a fragmented PDU is received. Continuing fragments are dropped
     // until the PDU has been consumed, then this is unset.
     // TODO: https://pwbug.dev/365179076 - Support recombination.
-    bool is_receiving_fragmented_pdu = false;
+    bool is_receiving_fragmented_pdu_;
   };
 
-  // Returns iterator to AclConnection with provided `handle` in
-  // `active_connections_`. Returns active_connections_.end() if no such
-  // connection exists.
-  AclConnection* FindConnection(uint16_t handle)
+  // Returns iterator to LeAclConnection with provided `connection_handle` in
+  // `active_le_acl_connections_`. Returns nullptr if no such connection exists.
+  LeAclConnection* FindLeAclConnection(uint16_t connection_handle)
       PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
 
   // Maximum number of simultaneous credit-allocated LE connections supported.
@@ -134,11 +171,14 @@ class AclDataChannel {
   // Reference to the transport owned by the host.
   HciTransport& hci_transport_;
 
+  // TODO: https://pwbug.dev/360929142 - Remove this circular dependency.
+  L2capChannelManager& l2cap_channel_manager_;
+
   // The amount of credits this channel will try to reserve.
   const uint16_t le_acl_credits_to_reserve_;
 
   // Credit allocation will happen inside a mutex since it crosses thread
-  // boundaries.
+  // boundaries. The mutex also guards interactions with ACL connection objects.
   mutable pw::sync::Mutex credit_allocation_mutex_;
 
   // The local number of HCI ACL Data packets that we have reserved for this
@@ -150,8 +190,8 @@ class AclDataChannel {
   uint16_t proxy_pending_le_acl_packets_
       PW_GUARDED_BY(credit_allocation_mutex_);
 
-  // List of credit-allocated LE connection handles.
-  pw::Vector<AclConnection, kMaxConnections> active_connections_
+  // List of credit-allocated LE ACL connections.
+  pw::Vector<LeAclConnection, kMaxConnections> active_le_acl_connections_
       PW_GUARDED_BY(credit_allocation_mutex_);
 
   // Instantiated in acl_data_channel.cc for

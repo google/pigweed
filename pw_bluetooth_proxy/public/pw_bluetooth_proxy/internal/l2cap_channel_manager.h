@@ -17,6 +17,7 @@
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
 #include "pw_bluetooth_proxy/internal/l2cap_read_channel.h"
+#include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -28,7 +29,6 @@ namespace pw::bluetooth::proxy {
 // both of the lists managed by `L2capChannelManager`: `read_channels_`, for
 // channels to which Rx L2CAP packets are to be routed, and/or
 // `write_channels_`, for channels exposing packet Tx capabilities to clients.
-// TODO: https://pwbug.dev/360929142 - Support write channels.
 //
 // ACL packet transmission is subject to data control flow, managed by
 // `AclDataChannel`. `L2capChannelManager` handles queueing Tx packets when
@@ -51,6 +51,14 @@ class L2capChannelManager {
   // Returns false if `channel` is not found.
   bool ReleaseReadChannel(L2capReadChannel& channel);
 
+  // Allow `channel` to send & queue Tx L2CAP packets.
+  void RegisterWriteChannel(L2capWriteChannel& channel);
+
+  // Stop sending L2CAP packets queued in `channel` and clear its queue.
+  //
+  // Returns false if `channel` is not found.
+  bool ReleaseWriteChannel(L2capWriteChannel& channel);
+
   // Get an `H4PacketWithH4` backed by a buffer in `H4Storage` able to hold
   // `size` bytes of data.
   //
@@ -58,14 +66,18 @@ class L2capChannelManager {
   // Returns PW_STATUS_INVALID_ARGUMENT if `size` is too large for a buffer.
   pw::Result<H4PacketWithH4> GetTxH4Packet(uint16_t size);
 
-  // Send `tx_packet` over `AclDataChannel`.
-  //
-  // Returns PW_STATUS_UNAVAILABLE if credits were not available to send.
-  // Returns PW_STATUS_INVALID_ARGUMENT if `tx_packet` is ill-formed.
-  pw::Status SendL2capPacket(H4PacketWithH4&& tx_packet);
+  // Send L2CAP packets queued in registered write channels as long as ACL
+  // send credits are available.
+  void DrainWriteChannelQueues() PW_LOCKS_EXCLUDED(write_channels_mutex_);
 
   // Returns the size of an H4 buffer reserved for Tx packets.
   uint16_t GetH4BuffSize() const;
+
+  // Returns pointer to L2CAP channel with given `connection_handle` &
+  // `remote_cid` if contained in `write_channels_`. Returns nullptr if not
+  // found.
+  L2capWriteChannel* FindWriteChannel(uint16_t connection_handle,
+                                      uint16_t remote_cid);
 
   // Returns pointer to L2CAP channel with given `connection_handle` &
   // `local_cid` if contained in `read_channels_`. Returns nullptr if not
@@ -74,6 +86,10 @@ class L2capChannelManager {
                                     uint16_t local_cid);
 
  private:
+  // Circularly advance `it`, wrapping around to front if `it` reaches the end.
+  void Advance(IntrusiveForwardList<L2capWriteChannel>::iterator& it)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(write_channels_mutex_);
+
   // Reference to the ACL data channel owned by the proxy.
   AclDataChannel& acl_data_channel_;
 
@@ -82,6 +98,17 @@ class L2capChannelManager {
 
   // List of active L2CAP channels to which Rx packets are routed.
   IntrusiveForwardList<L2capReadChannel> read_channels_;
+
+  // Enforce mutual exclusion of all operations on write channels.
+  sync::Mutex write_channels_mutex_;
+
+  // List of active L2CAP channels with packet Tx capabilities.
+  IntrusiveForwardList<L2capWriteChannel> write_channels_
+      PW_GUARDED_BY(write_channels_mutex_);
+
+  // Iterator to "least recently drained" write channel.
+  IntrusiveForwardList<L2capWriteChannel>::iterator lrd_write_channel_
+      PW_GUARDED_BY(write_channels_mutex_);
 };
 
 }  // namespace pw::bluetooth::proxy

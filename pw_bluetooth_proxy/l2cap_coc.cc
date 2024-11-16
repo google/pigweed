@@ -31,6 +31,7 @@ L2capCoc::L2capCoc(L2capCoc&& other)
       rx_mps_(other.rx_mps_),
       tx_mtu_(other.tx_mtu_),
       tx_mps_(other.tx_mps_),
+      tx_credits_(other.tx_credits_),
       remaining_sdu_bytes_to_ignore_(other.remaining_sdu_bytes_to_ignore_),
       event_fn_(std::move(other.event_fn_)) {}
 
@@ -90,7 +91,7 @@ pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
   std::memcpy(
       kframe.payload().BackingStorage().data(), payload.data(), payload.size());
 
-  return SendL2capPacket(std::move(h4_packet));
+  return QueuePacket(std::move(h4_packet));
 }
 
 pw::Result<L2capCoc> L2capCoc::Create(
@@ -114,21 +115,22 @@ pw::Result<L2capCoc> L2capCoc::Create(
     return pw::Status::InvalidArgument();
   }
 
-  return L2capCoc(l2cap_channel_manager,
-                  connection_handle,
-                  rx_config,
-                  tx_config,
-                  std::move(receive_fn),
-                  std::move(event_fn));
+  return L2capCoc(/*l2cap_channel_manager=*/l2cap_channel_manager,
+                  /*connection_handle=*/connection_handle,
+                  /*rx_config=*/rx_config,
+                  /*tx_config=*/tx_config,
+                  /*receive_fn=*/std::move(receive_fn),
+                  /*event_fn=*/std::move(event_fn));
 }
 
-void L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
+bool L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
+  // TODO: https://pwbug.dev/360934030 - Track rx_credits.
   if (state_ == CocState::kStopped) {
     StopChannelAndReportError(Event::kRxWhileStopped);
-    return;
+    return true;
   }
 
-  rx_mutex_.lock();
+  mutex_.lock();
   // If `remaining_sdu_bytes_to_ignore_` is nonzero, we are in state where we
   // are dropping continuing PDUs in a segmented SDU.
   if (remaining_sdu_bytes_to_ignore_ > 0) {
@@ -139,8 +141,8 @@ void L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
           "(CID 0x%X) Buffer is too small for subsequent L2CAP K-frame. So "
           "will drop.",
           local_cid());
-      rx_mutex_.unlock();
-      return;
+      mutex_.unlock();
+      return true;
     }
     PW_LOG_INFO(
         "(CID 0x%X) Dropping PDU that is part of current segmented SDU.",
@@ -159,8 +161,8 @@ void L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
       remaining_sdu_bytes_to_ignore_ -=
           subsequent_kframe_view->payload_size().Read();
     }
-    rx_mutex_.unlock();
-    return;
+    mutex_.unlock();
+    return true;
   }
 
   Result<emboss::FirstKFrameView> kframe_view =
@@ -171,8 +173,8 @@ void L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
         "& reporting it needs to be closed.",
         local_cid());
     StopChannelAndReportError(Event::kRxInvalid);
-    rx_mutex_.unlock();
-    return;
+    mutex_.unlock();
+    return true;
   }
   uint16_t sdu_length = kframe_view->sdu_length().Read();
   uint16_t payload_size = kframe_view->payload_size().Read();
@@ -185,8 +187,8 @@ void L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
         "reporting it needs to be closed.",
         local_cid());
     StopChannelAndReportError(Event::kRxInvalid);
-    rx_mutex_.unlock();
-    return;
+    mutex_.unlock();
+    return true;
   }
 
   // TODO: https://pwbug.dev/360932103 - Support SDU de-segmentation.
@@ -199,8 +201,8 @@ void L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
         "supported). So will drop all PDUs in SDU.",
         local_cid());
     remaining_sdu_bytes_to_ignore_ = sdu_length - payload_size;
-    rx_mutex_.unlock();
-    return;
+    mutex_.unlock();
+    return true;
   }
 
   // Core Spec v6.0 Vol 3, Part A, 3.4.3: "If the payload size of any K-frame
@@ -211,14 +213,15 @@ void L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
         "reporting it needs to be closed.",
         local_cid());
     StopChannelAndReportError(Event::kRxInvalid);
-    rx_mutex_.unlock();
-    return;
+    mutex_.unlock();
+    return true;
   }
 
   CallReceiveFn(pw::span(
       const_cast<uint8_t*>(kframe_view->payload().BackingStorage().data()),
       kframe_view->payload_size().Read()));
-  rx_mutex_.unlock();
+  mutex_.unlock();
+  return true;
 }
 
 L2capCoc::L2capCoc(L2capChannelManager& l2cap_channel_manager,
@@ -238,6 +241,7 @@ L2capCoc::L2capCoc(L2capChannelManager& l2cap_channel_manager,
       rx_mps_(rx_config.mps),
       tx_mtu_(tx_config.mtu),
       tx_mps_(tx_config.mps),
+      tx_credits_(tx_config.credits),
       remaining_sdu_bytes_to_ignore_(0),
       event_fn_(std::move(event_fn)) {}
 
@@ -253,6 +257,57 @@ void L2capCoc::StopChannelAndReportError(Event error) {
   Stop().IgnoreError();
   if (event_fn_) {
     event_fn_(error);
+  }
+}
+
+std::optional<H4PacketWithH4> L2capCoc::DequeuePacket() {
+  if (state_ == CocState::kStopped) {
+    return std::nullopt;
+  }
+
+  mutex_.lock();
+  if (tx_credits_ == 0) {
+    mutex_.unlock();
+    return std::nullopt;
+  }
+
+  std::optional<H4PacketWithH4> maybe_packet =
+      L2capWriteChannel::DequeuePacket();
+  if (maybe_packet.has_value()) {
+    --tx_credits_;
+  }
+  mutex_.unlock();
+  return maybe_packet;
+}
+
+void L2capCoc::AddCredits(uint16_t credits) {
+  if (state_ == CocState::kStopped) {
+    PW_LOG_ERROR(
+        "(CID 0x%X) Received credits on stopped CoC. So will ignore signal.",
+        local_cid());
+    return;
+  }
+
+  bool credits_previously_zero;
+  {
+    mutex_.lock();
+
+    // Core Spec v6.0 Vol 3, Part A, 10.1: "The device receiving the credit
+    // packet shall disconnect the L2CAP channel if the credit count exceeds
+    // 65535."
+    if (credits > emboss::L2capLeCreditBasedConnectionReq::max_credit_value() -
+                      tx_credits_) {
+      StopChannelAndReportError(Event::kRxInvalid);
+      mutex_.unlock();
+      return;
+    }
+
+    credits_previously_zero = tx_credits_ == 0;
+    tx_credits_ += credits;
+    mutex_.unlock();
+  }
+  if (credits_previously_zero) {
+    ReportPacketsMayBeReadyToSend();
   }
 }
 

@@ -40,6 +40,7 @@ pw_test_group("tests") {
 pw_source_set("pw_bluetooth_proxy") {
   public_configs = [ ":public_include_path" ]
   public = [
+    "public/pw_bluetooth_proxy/basic_l2cap_channel.h",
     "public/pw_bluetooth_proxy/gatt_notify_channel.h",
     "public/pw_bluetooth_proxy/h4_packet.h",
     "public/pw_bluetooth_proxy/internal/acl_data_channel.h",
@@ -48,7 +49,9 @@ pw_source_set("pw_bluetooth_proxy") {
     "public/pw_bluetooth_proxy/internal/hci_transport.h",
     "public/pw_bluetooth_proxy/internal/l2cap_channel_manager.h",
     "public/pw_bluetooth_proxy/internal/l2cap_coc_internal.h",
+    "public/pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h",
     "public/pw_bluetooth_proxy/internal/l2cap_read_channel.h",
+    "public/pw_bluetooth_proxy/internal/l2cap_signaling_channel.h",
     "public/pw_bluetooth_proxy/internal/l2cap_write_channel.h",
     "public/pw_bluetooth_proxy/l2cap_coc.h",
     "public/pw_bluetooth_proxy/proxy_host.h",
@@ -73,11 +76,14 @@ pw_source_set("pw_bluetooth_proxy") {
   deps = [ dir_pw_log ]
   sources = [
     "acl_data_channel.cc",
+    "basic_l2cap_channel.cc",
     "gatt_notify_channel.cc",
     "h4_storage.cc",
     "l2cap_channel_manager.cc",
     "l2cap_coc.cc",
+    "l2cap_leu_signaling_channel.cc",
     "l2cap_read_channel.cc",
+    "l2cap_signaling_channel.cc",
     "l2cap_write_channel.cc",
     "proxy_host.cc",
   ]

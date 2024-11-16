@@ -32,8 +32,11 @@ ProxyHost::ProxyHost(
     uint16_t le_acl_credits_to_reserve)
     : hci_transport_(std::move(send_to_host_fn),
                      std::move(send_to_controller_fn)),
-      acl_data_channel_(hci_transport_, le_acl_credits_to_reserve),
+      acl_data_channel_(
+          hci_transport_, l2cap_channel_manager_, le_acl_credits_to_reserve),
       l2cap_channel_manager_(acl_data_channel_) {}
+
+ProxyHost::~ProxyHost() { acl_data_channel_.Reset(); }
 
 void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
   hci_transport_.SendToController(std::move(h4_packet));
@@ -162,8 +165,10 @@ void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
     channel->OnFragmentedPduReceived();
     return;
   }
-  channel->OnPduReceived(pw::span(acl->payload().BackingStorage().data(),
-                                  acl->payload().SizeInBytes()));
+  if (!channel->OnPduReceived(pw::span(acl->payload().BackingStorage().data(),
+                                       acl->payload().SizeInBytes()))) {
+    hci_transport_.SendToHost(std::move(h4_packet));
+  }
 }
 
 void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
@@ -243,6 +248,10 @@ pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
                                      uint16_t attribute_handle,
                                      pw::span<const uint8_t> attribute_value) {
   // TODO: https://pwbug.dev/369709521 - Migrate clients to channel API.
+  Status status = acl_data_channel_.CreateLeAclConnection(connection_handle);
+  if (status != OkStatus() && status != Status::AlreadyExists()) {
+    return pw::Status::Unavailable();
+  }
   pw::Result<GattNotifyChannel> channel_result =
       GattNotifyChannelInternal::Create(
           l2cap_channel_manager_, connection_handle, attribute_handle);

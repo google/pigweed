@@ -62,7 +62,7 @@ pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
               attribute_value.data(),
               attribute_value.size());
 
-  return SendL2capPacket(std::move(h4_packet));
+  return QueuePacket(std::move(h4_packet));
 }
 
 pw::Result<GattNotifyChannel> GattNotifyChannel::Create(

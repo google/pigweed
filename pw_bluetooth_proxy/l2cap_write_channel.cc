@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
 
+#include <mutex>
+
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/hci_h4.emb.h"
@@ -25,12 +27,57 @@
 
 namespace pw::bluetooth::proxy {
 
+Status L2capWriteChannel::QueuePacket(H4PacketWithH4&& packet) {
+  Status status;
+  {
+    std::lock_guard lock(send_queue_mutex_);
+    if (send_queue_.full()) {
+      status = Status::Unavailable();
+    } else {
+      send_queue_.push(std::move(packet));
+      status = OkStatus();
+    }
+  }
+  ReportPacketsMayBeReadyToSend();
+  return status;
+}
+
+std::optional<H4PacketWithH4> L2capWriteChannel::DequeuePacket() {
+  std::lock_guard lock(send_queue_mutex_);
+  if (send_queue_.empty()) {
+    return std::nullopt;
+  }
+  H4PacketWithH4 packet = std::move(send_queue_.front());
+  send_queue_.pop();
+  return packet;
+}
+
+void L2capWriteChannel::ClearQueue() {
+  std::lock_guard lock(send_queue_mutex_);
+  send_queue_.clear();
+}
+
+L2capWriteChannel::L2capWriteChannel(L2capWriteChannel&& other)
+    : connection_handle_(other.connection_handle_),
+      remote_cid_(other.remote_cid_),
+      l2cap_channel_manager_(other.l2cap_channel_manager_) {
+  l2cap_channel_manager_.ReleaseWriteChannel(other);
+  l2cap_channel_manager_.RegisterWriteChannel(*this);
+}
+
+L2capWriteChannel::~L2capWriteChannel() {
+  l2cap_channel_manager_.ReleaseWriteChannel(*this);
+  ClearQueue();
+}
+
 L2capWriteChannel::L2capWriteChannel(L2capChannelManager& l2cap_channel_manager,
                                      uint16_t connection_handle,
                                      uint16_t remote_cid)
     : connection_handle_(connection_handle),
       remote_cid_(remote_cid),
-      l2cap_channel_manager_(l2cap_channel_manager) {}
+      l2cap_channel_manager_(l2cap_channel_manager) {
+  l2cap_channel_manager_.RegisterWriteChannel(*this);
+}
 
 bool L2capWriteChannel::AreValidParameters(uint16_t connection_handle,
                                            uint16_t remote_cid) {
@@ -85,14 +132,14 @@ pw::Result<H4PacketWithH4> L2capWriteChannel::PopulateTxL2capPacket(
   return h4_packet;
 }
 
-pw::Status L2capWriteChannel::SendL2capPacket(H4PacketWithH4&& packet) {
-  return l2cap_channel_manager_.SendL2capPacket(std::move(packet));
-}
-
 uint16_t L2capWriteChannel::MaxL2capPayloadSize() const {
   return l2cap_channel_manager_.GetH4BuffSize() - sizeof(emboss::H4PacketType) -
          emboss::AclDataFrameHeader::IntrinsicSizeInBytes() -
          emboss::BasicL2capHeader::IntrinsicSizeInBytes();
+}
+
+void L2capWriteChannel::ReportPacketsMayBeReadyToSend() {
+  l2cap_channel_manager_.DrainWriteChannelQueues();
 }
 
 }  // namespace pw::bluetooth::proxy

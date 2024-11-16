@@ -48,7 +48,8 @@ class H4Storage {
 
  private:
   // TODO: https://pwbug.dev/353734827 - Allow container to specify constants.
-  static constexpr size_t kNumH4Buffs = 2;
+  // To pass the unit tests, kNumH4Buffs >= L2capCoc::QueueCapacity().
+  static constexpr size_t kNumH4Buffs = 10;
   // Default of 14 bytes is the size of an H4 packet containing an ACL data
   // packet with an ATT Notify PDU for a 2-byte characteristic.
   //
