@@ -50,14 +50,11 @@ class H4Storage {
   // TODO: https://pwbug.dev/353734827 - Allow container to specify constants.
   // To pass the unit tests, kNumH4Buffs >= L2capCoc::QueueCapacity().
   static constexpr size_t kNumH4Buffs = 10;
-  // Default of 14 bytes is the size of an H4 packet containing an ACL data
-  // packet with an ATT Notify PDU for a 2-byte characteristic.
-  //
+
+  // Max LE ACL payload (251 bytes) + ACL header (4 bytes) + H4 type (1 byte).
   // TODO: https://pwbug.dev/369849508 - Support variable size buffers with
   // an allocator & replace this constant with total memory pool size.
-  // TODO: saeedali@ - Increase size to 256 bytes: max LE ACL payload size (251
-  // bytes) + ACL header (4 bytes) + H4 type (1 byte).
-  static constexpr uint16_t kH4BuffSize = 20;
+  static constexpr uint16_t kH4BuffSize = 256;
 
   // Returns an initializer list for `h4_buff_occupied_` with each buffer
   // address in `h4_buffs_` mapped to false.
