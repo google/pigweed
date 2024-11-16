@@ -28,12 +28,13 @@ class L2capChannelManager;
 // the peer to the channel.
 class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
  public:
+  L2capReadChannel(const L2capReadChannel& other) = delete;
+  L2capReadChannel& operator=(const L2capReadChannel& other) = delete;
   L2capReadChannel(L2capReadChannel&& other);
-
-  virtual ~L2capReadChannel();
-
   // Move assignment operator allows channels to be erased from pw::Vector.
   L2capReadChannel& operator=(L2capReadChannel&& other);
+
+  virtual ~L2capReadChannel();
 
   // Handle an Rx L2CAP PDU.
   //

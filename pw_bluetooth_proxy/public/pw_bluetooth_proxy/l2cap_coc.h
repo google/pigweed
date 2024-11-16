@@ -68,7 +68,14 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
     kRxFragmented,
   };
 
+  L2capCoc(const L2capCoc& other) = delete;
+  L2capCoc& operator=(const L2capCoc& other) = delete;
+  /// Channel is moved on return from factory function, so client is responsible
+  /// for storing channel.
   L2capCoc(L2capCoc&& other);
+  // TODO: https://pwbug.dev/360929142 - Define move assignment operator so
+  // `L2capCoc` can be erased from pw containers.
+  L2capCoc& operator=(L2capCoc&& other) = delete;
 
   /// Enter `kStopped` state. This means
   ///   - Pending sends will not complete.

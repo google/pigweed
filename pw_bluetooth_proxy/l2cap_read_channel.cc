@@ -27,10 +27,6 @@ L2capReadChannel::L2capReadChannel(L2capReadChannel&& other)
   l2cap_channel_manager_.RegisterReadChannel(*this);
 }
 
-L2capReadChannel::~L2capReadChannel() {
-  l2cap_channel_manager_.ReleaseReadChannel(*this);
-}
-
 L2capReadChannel& L2capReadChannel::operator=(L2capReadChannel&& other) {
   if (this != &other) {
     PW_CHECK(!l2cap_channel_manager_.ReleaseReadChannel(*this),
@@ -43,6 +39,10 @@ L2capReadChannel& L2capReadChannel::operator=(L2capReadChannel&& other) {
     l2cap_channel_manager_.RegisterReadChannel(*this);
   }
   return *this;
+}
+
+L2capReadChannel::~L2capReadChannel() {
+  l2cap_channel_manager_.ReleaseReadChannel(*this);
 }
 
 L2capReadChannel::L2capReadChannel(
