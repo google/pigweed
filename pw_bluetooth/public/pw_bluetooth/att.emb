@@ -104,11 +104,3 @@ struct AttHandleValueNtf(attribute_size: UInt:16):
     [requires: this > 0]
 
   $next [+attribute_size]  UInt:8[attribute_size]  attribute_value
-
-
-struct AttNotifyOverAcl(attribute_size: UInt:16):
-  -- ATT_HANDLE_VALUE_NTF over L2CAP B-frame over ACL packet.
-  0     [+hci.AclDataFrameHeader.$size_in_bytes]  hci.AclDataFrameHeader             acl_header
-  $next [+l2cap.BFrameHeader.$size_in_bytes]      l2cap.BFrameHeader                 l2cap_header
-  let att_size = AttHandleValueNtf.$min_size_in_bytes+attribute_size
-  $next [+att_size]                               AttHandleValueNtf(attribute_size)  att_handle_value_ntf
