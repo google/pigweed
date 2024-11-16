@@ -14,7 +14,7 @@
 
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 
-#include <cstdint>
+#include <mutex>
 
 #include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/emboss_util.h"
@@ -26,12 +26,11 @@
 namespace pw::bluetooth::proxy {
 
 void AclDataChannel::Reset() {
-  credit_allocation_mutex_.lock();
+  std::lock_guard lock(credit_allocation_mutex_);
   initialized_ = false;
   proxy_max_le_acl_packets_ = 0;
   proxy_pending_le_acl_packets_ = 0;
   active_connections_.clear();
-  credit_allocation_mutex_.unlock();
 }
 
 template <class EventT>
