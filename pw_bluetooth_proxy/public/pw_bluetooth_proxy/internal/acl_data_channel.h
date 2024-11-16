@@ -116,8 +116,8 @@ class AclDataChannel {
 
  private:
   // An active logical link on LE ACL logical transport.
-  // TODO: saeedali@ - Encapsulate all logic related to this within a new
-  // LogicalLinkManager class?
+  // TODO: https://pwbug.dev/360929142 - Encapsulate all logic related to this
+  // within a new LogicalLinkManager class?
   class LeAclConnection {
    public:
     LeAclConnection(uint16_t connection_handle,

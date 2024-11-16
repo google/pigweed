@@ -48,10 +48,11 @@ bool L2capLeUSignalingChannel::OnPduReceived(pw::span<uint8_t> cframe) {
     return false;
   }
 
-  // TODO: saeedali@ -  "If a device receives a C-frame that exceeds its
-  // L2CAP_SIG_MTU_SIZE then it shall send an L2CAP_COMMAND_REJECT_RSP packet
-  // containing the supported L2CAP_SIG_MTU_SIZE." We should consider taking
-  // the signaling MTU in the ProxyHost constructor.
+  // TODO: https://pwbug.dev/360929142 - "If a device receives a C-frame that
+  // exceeds its L2CAP_SIG_MTU_SIZE then it shall send an
+  // L2CAP_COMMAND_REJECT_RSP packet containing the supported
+  // L2CAP_SIG_MTU_SIZE." We should consider taking the signaling MTU in the
+  // ProxyHost constructor.
 
   // Core Spec v5.4 Vol 3, Part A, 4: "Examples of signaling packets that are
   // not correctly formed include... A C-frame on fixed channel 0x0005 contains

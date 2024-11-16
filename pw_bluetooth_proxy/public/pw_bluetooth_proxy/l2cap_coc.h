@@ -53,8 +53,8 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
   };
 
   enum class Event {
-    // TODO: saeedali@ - Listen for L2CAP_DISCONNECTION_REQ/RSP packets and
-    // report this event accordingly.
+    // TODO: https://pwbug.dev/360929142 - Listen for
+    // L2CAP_DISCONNECTION_REQ/RSP packets and report this event accordingly.
     kChannelClosedByOther,
     /// An invalid packet was received. The channel is now `kStopped` and should
     /// be closed. See error logs for details.

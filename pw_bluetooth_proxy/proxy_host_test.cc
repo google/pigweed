@@ -3685,8 +3685,8 @@ TEST(L2capSignalingTest, CreditIndAddressedToNonManagedChannelForwardedToHost) {
   EXPECT_EQ(forwards_to_host, 1);
 }
 
-// TODO: saeedali@ - Add many more tests exercising queueing + credit-based
-// control flow.
+// TODO: https://pwbug.dev/360929142 - Add many more tests exercising queueing +
+// credit-based control flow.
 
 }  // namespace
 }  // namespace pw::bluetooth::proxy

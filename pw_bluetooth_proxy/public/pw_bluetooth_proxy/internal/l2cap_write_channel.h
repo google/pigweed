@@ -37,8 +37,8 @@ class L2capWriteChannel : public IntrusiveForwardList<L2capWriteChannel>::Item {
   L2capWriteChannel(const L2capWriteChannel& other) = delete;
   L2capWriteChannel& operator=(const L2capWriteChannel& other) = delete;
   L2capWriteChannel(L2capWriteChannel&& other);
-  // TODO: saeedali@ - Define move assignment operator so write channels can be
-  // erased from containers.
+  // TODO: https://pwbug.dev/360929142 - Define move assignment operator so
+  // write channels can be erased from containers.
   L2capWriteChannel& operator=(L2capWriteChannel&& other) = delete;
 
   virtual ~L2capWriteChannel();

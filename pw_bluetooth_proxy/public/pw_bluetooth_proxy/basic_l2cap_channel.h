@@ -18,7 +18,7 @@
 
 namespace pw::bluetooth::proxy {
 
-// TODO: saeedali@ - Also support ProxyAclWriteChannel.
+// TODO: https://pwbug.dev/360929142 - Also support L2capWriteChannel.
 class BasicL2capChannel : public L2capReadChannel {
  public:
   explicit BasicL2capChannel(
