@@ -481,6 +481,7 @@ complex than encoding or using the message structure.
 
    This support will be removed after downstream projects have been migrated.
 
+.. _module-pw_protobuf-read:
 
 Reading a single field
 ----------------------

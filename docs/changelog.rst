@@ -12,13 +12,306 @@ Talk to the team at Pigweed Live
 .. pigweed-live::
 
 .. _docs-changelog-latest:
+.. _docs-changelog-2024-11-14:
+
+------------
+Nov 14, 2024
+------------
+.. changelog_highlights_start
+
+Highlights (Nov 1, 2024 to Nov 14, 2024):
+
+* **ELF API**: The new :cpp:class:`pw::elf::ElfReader` class is a
+  basic reader for ELF files.
+* **Updated Bluetooth APIs**: There's a new low energy
+  connection-oriented channels API and the :ref:`module-pw_bluetooth`
+  API has been modernized.
+* **Updated SEED process**: "Intent Approved" and "On Hold" statuses
+  were added to the SEED lifecycle.
+
+.. changelog_highlights_end
+
+.. _docs-changelog-2024-11-14-Modules:
+
+Modules
+=======
+
+.. _docs-changelog-2024-11-14-Modules-pw_allocator:
+
+pw_allocator
+------------
+Changes:
+
+.. 1dcac6a863b8adfc930de769ec56fd44f1e4448f
+
+* ``pw::allocator::AsPmrAllocator`` was renamed to
+  :cpp:class:`pw::allocator::PmrAllocator`. Commit: `Separate PMR from
+  Allocator <https://pwrev.dev/246412>`__.
+
+.. _docs-changelog-2024-11-14-Modules-pw_async2:
+
+pw_async2
+---------
+New features:
+
+.. 21933c60384c25d73dba60c90e74cc44d2a446de
+
+* The ``new`` operator for coroutines now accepts an optional alignment
+  argument. Commit: `Accept alignment in CoroPromiseType::operator new
+  <https://pwrev.dev/248638>`__. Bug: :bug:`378929156`.
+
+.. d20009a8e35dfdb881f77b6d171c697b61dba5c3
+
+* The new :c:macro:`PW_TRY_READY` and :c:macro:`PW_TRY_READY_ASSIGN`
+  helper macros reduce boilerplate in non-coroutine async code. Commit:
+  `Add PW_TRY_READY_* control flow macros <https://pwrev.dev/243818>`__.
+
+.. _docs-changelog-2024-11-14-Modules-pw_bluetooth:
+
+pw_bluetooth
+------------
+New features:
+
+.. c9ad96cf7be8a05a7d1bf6ec933114c7cc39f012
+
+* The new :cpp:class:`pw::bluetooth::low_energy::Channel`,
+  :cpp:class:`pw::bluetooth::low_energy::ChannelListener`, and
+  :cpp:class:`pw::bluetooth::low_energy::ChannelListenerRegistry` classes
+  provide a low energy connection-oriented channels API. Commit: `Add LE
+  Connection-Oriented Channels API <https://pwrev.dev/227371>`__. Bug:
+  :bug:`357142749`.
+
+Changes:
+
+.. a615b8bf5234f48b8a33e6c837aa7521fa80d92a
+
+* The :ref:`module-pw_bluetooth` API has been modernized. Commit:
+  `Modernize APIs <https://pwrev.dev/219393>`__. Bug: :bug:`350994818`.
+
+.. _docs-changelog-2024-11-14-Modules-pw_bluetooth_proxy:
+
+pw_bluetooth_proxy
+------------------
+New features:
+
+.. b8ee89e76ff4e8c467ea35291b2a141175c737e9
+
+* :cpp:class:`pw::bluetooth::proxy::L2capCoc` now supports reading.
+  Commit: `L2CAP CoC supports reading <https://pwrev.dev/232172>`__. Bug:
+  :bug:`360934032`.
+
+.. _docs-changelog-2024-11-14-Modules-pw_channel:
+
+pw_channel
+----------
+New features:
+
+.. 0a4e6db6ad35d0bf062c22b471fef2a66948a90f
+
+* The new :cpp:func:`pw::Channel::PendAllocateWriteBuffer` method
+  simplifies the allocation of write buffers that need small
+  modifications. Commit: `Move to PendAllocateWriteBuffer
+  <https://pwrev.dev/246239>`__.
+
+Changes:
+
+.. bd17ed6971f608e2d66da8b2954bc13ad3e2c664
+
+* The ``pw::channel::WriteToken`` method was removed. Commit: `Remove
+  WriteToken <https://pwrev.dev/245932>`__.
+
+.. 0422de1761e52ad5d1fad821880025fc27facf1c
+
+* ``pw_channel`` inheritance has been refactored
+  to ensure that conversions between compatible variants are valid.
+  Commit: `Rework inheritance to avoid SiblingCast
+  <https://pwrev.dev/247732>`__.
+
+.. _docs-changelog-2024-11-14-Modules-pw_elf:
+
+pw_elf
+------
+New features:
+
+.. 8ee78791500354f85df94b228f63b3a42a882040
+
+* The new :cpp:class:`pw::elf::ElfReader` class is a basic reader for
+  ELF files. Commit: `Add ElfReader <https://pwrev.dev/244893>`__.
+
+.. _docs-changelog-2024-11-14-Modules-pw_i2c:
+
+pw_i2c
+------
+Bug fixes:
+
+.. 6165aa470b35106b79b2e57ecec9951cff30acdc
+
+* I2C flags are now correctly set for transactions that occur on an I3C
+  bus. Commit: `Set the i2c flags correctly for transactions on an i3c bus
+  <https://pwrev.dev/245754>`__. Bug: :bug:`373451623`.
+
+.. _docs-changelog-2024-11-14-Modules-pw_metric:
+
+pw_metric
+---------
+New features:
+
+.. a751fa9bd38a30f08a14c336e7bc77878a5d60c5
+
+* ``pwpb`` now prioritizes the ``.pwpb_options`` for protobuf codegen.
+  Commit: `Add metrics_service.pwpb_options to BUILD.gn
+  <https://pwrev.dev/246112>`__.
+
+.. aacf94efb59dac4a661e88e2ba95acda20c5ccb1
+
+* The new :cpp:func:`PW_METRIC_TOKEN` makes it easier for tests to
+  create tokens for metrics. Commit: `Expose metric token format via
+  PW_METRIC_TOKEN <https://pwrev.dev/244332>`__.
+
+.. _docs-changelog-2024-11-14-Modules-pw_protobuf:
+
+pw_protobuf
+-----------
+New features:
+
+.. acbeaab3d280f748d235a31025d7a35dd38fa516
+
+* The ``Find*()`` methods have been extended to support iterating over
+  repeated fields. See :ref:`module-pw_protobuf-read`. Commit:
+  `Extend Find() APIs to support repeated fields <https://pwrev.dev/248432>`__.
+
+Changes:
+
+.. 6a16fab34795f2976e04457d099a05c671b79b54
+
+* It's no longer necessary to set a callback for every possible field in
+  a message when you're only interested in a few fields. Commit: `Allow
+  unset oneof callbacks <https://pwrev.dev/246692>`__.
+
+.. _docs-changelog-2024-11-14-Modules-pw_protobuf_compiler:
+
+pw_protobuf_compiler
+--------------------
+Changes:
+
+.. cd0b4fb52d8fb2012fbd8483f66a48d593e83bb9
+
+* ``pwpb_options`` files are now explicitly processed first, followed by
+  regular ``.options`` files. Commit: `Don't rely on options file ordering
+  <https://pwrev.dev/247472>`__.
+
+.. _docs-changelog-2024-11-14-Modules-pw_rpc:
+
+pw_rpc
+------
+Changes:
+
+.. f0ba9b05187506d7526ca3585401c8df7b4e9d4d
+
+* The Python client previously reused call IDs after ``16384``. The limit
+  has been increased to ``2097152``. Commit: `Allocate more call IDs in
+  the Python client <https://pwrev.dev/245067>`__. Bug: :bug:`375658481`.
+
+.. _docs-changelog-2024-11-14-Modules-pw_rpc_transport:
+
+pw_rpc_transport
+----------------
+New features:
+
+.. 18d5fbfb289c8675dd683d62ab69b83147e9d70e
+
+* The new ``pw::rpc::RpcIngress::num_total_packets`` method tracks how
+  many packets an ingress RPC handler has received. Commit: `Track number
+  of RPC packets received <https://pwrev.dev/247194>`__. Bug:
+  :bug:`373449543`.
+
+.. _docs-changelog-2024-11-14-Modules-pw_sensor:
+
+pw_sensor
+---------
+New features:
+
+.. b7246bf88df6aa030dec7b9510e7015b5035616c
+
+* The new ``extras`` key lets applications specify additional metadata
+  that's not supported or used by Pigweed. Commit: `Add freeform extras
+  field to sensor.yaml <https://pwrev.dev/248195>`__.
+
+.. _docs-changelog-2024-11-14-Modules-pw_spi:
+
+pw_spi
+------
+Changes:
+
+.. 6aadd54afb308c09edb833985b387442df732fef
+
+* :cpp:class:`pw::spi::Initiator` is now a `non-virtual interface
+  <https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Non-Virtual_Interface>`__.
+  Commit: `Finalize non-Virtual interface on
+  Initiator <https://pwrev.dev/236236>`__. Bug: :bug:`308479791`.
+
+.. _docs-changelog-2024-11-14-Modules-pw_spi_linux:
+
+pw_spi_linux
+------------
+Bug fixes:
+
+.. d17b5acd42c6e983ce4b12a7ebc3184205a06d45
+
+* The ``pw::Spi::Initiator::DoWriteRead()`` method now correctly handles
+  transfers where either the write buffer or the read buffer is empty.
+  Commit: `Fix read/write-only transfers <https://pwrev.dev/246053>`__.
+
+.. _docs-changelog-2024-11-14-Modules-pw_stream:
+
+pw_stream
+---------
+New features:
+
+.. b2c1616caaff13d41e434cbcb8ae0530a20962ca
+
+* The new :cpp:func:`pw::stream::Stream::ReadExact` method reads exactly
+  the number of bytes requested into a provided buffer, if supported.
+  Commit: `Add ReadExact() wrapper <https://pwrev.dev/243552>`__.
+
+.. _docs-changelog-2024-11-14-Modules-pw_tokenizer:
+
+pw_tokenizer
+------------
+New features:
+
+.. 94e2314ddea1499a7868bd3d30621b709e25f7d4
+
+* The new :cpp:func:`pw::tokenizer::Detokenizer::FromElfFile` method
+  constructs a detokenizer from the ``.pw_tokenizer.entries`` section of
+  an ELF binary. Commit: `Add Detokenizer::FromElfFile
+  <https://pwrev.dev/243532>`__. Bug: :bug:`374367947`.
+
+Bug fixes:
+
+.. 7fb7bb1dc5d69c79de1b0b72316a34a800f2d5b0
+
+* The Python detokenizer now correctly handles multiple nested tokens in
+  one log string. Commit: `Update regex for nested args
+  <https://pwrev.dev/248232>`__.
+
+.. _docs-changelog-2024-11-14-SEEDs:
+
+SEEDs
+=====
+New features:
+
+.. a1acd00d02ebe42116a4982ad809264f3c673021
+
+* "Intent Approved" and "On Hold" statuses were added to the SEED
+  lifecycle. Commit: `(SEED-0001) Add "Intent Approved" and "On Hold"
+  states to lifecycle <https://pwrev.dev/248692>`__.
+
 .. _docs-changelog-2024-10-31:
 
 ------------
 Oct 31, 2024
 ------------
-.. changelog_highlights_start
-
 Highlights (Oct 18, 2024 to Oct 31, 2024):
 
 * The new :c:macro:`PW_TEST_EXPECT_OK`, :c:macro:`PW_TEST_ASSERT_OK`,
@@ -30,8 +323,6 @@ Highlights (Oct 18, 2024 to Oct 31, 2024):
   provided by a linker.
 * The new ``extra_frame_handlers`` parameter lets you add custom HDLC frame
   handlers when using the Python-based :ref:`module-pw_system` console.
-
-.. changelog_highlights_end
 
 .. _docs-changelog-2024-10-31-Modules:
 
