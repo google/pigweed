@@ -28,46 +28,80 @@ namespace pw::bluetooth::proxy {
 
 void AclDataChannel::Reset() {
   std::lock_guard lock(credit_allocation_mutex_);
-  initialized_ = false;
-  proxy_max_le_acl_packets_ = 0;
-  proxy_pending_le_acl_packets_ = 0;
+  le_credits_.Reset();
+  br_edr_credits_.Reset();
   active_le_acl_connections_.clear();
+}
+
+void AclDataChannel::Credits::Reset() {
+  proxy_max_ = 0;
+  proxy_pending_ = 0;
+}
+
+uint16_t AclDataChannel::Credits::Reserve(uint16_t controller_max) {
+  PW_CHECK(proxy_max_ == 0,
+           "AclDataChannel is already initialized, but encountered another "
+           "ReadBufferSizeCommandCompleteEvent.");
+
+  proxy_max_ = std::min(controller_max, to_reserve_);
+  const uint16_t host_max = controller_max - proxy_max_;
+
+  PW_LOG_INFO(
+      "Bluetooth Proxy reserved %d ACL data credits. Passed %d on to host.",
+      proxy_max_,
+      host_max);
+
+  if (proxy_max_ < to_reserve_) {
+    PW_LOG_ERROR(
+        "Only was able to reserve %d acl data credits rather than the "
+        "configured %d from the controller provided's data credits of %d. ",
+        proxy_max_,
+        to_reserve_,
+        controller_max);
+  }
+
+  return host_max;
+}
+
+Status AclDataChannel::Credits::MarkPending(uint16_t num_credits) {
+  if (num_credits > Available()) {
+    return Status::ResourceExhausted();
+  }
+
+  proxy_pending_ += num_credits;
+
+  return OkStatus();
+}
+
+void AclDataChannel::Credits::MarkCompleted(uint16_t num_credits) {
+  if (num_credits > proxy_pending_) {
+    PW_LOG_ERROR("Tried to mark completed more packets than were pending.");
+    proxy_pending_ = 0;
+  } else {
+    proxy_pending_ -= num_credits;
+  }
+}
+
+void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
+    emboss::ReadBufferSizeCommandCompleteEventWriter read_buffer_event) {
+  credit_allocation_mutex_.lock();
+  const uint16_t controller_max =
+      read_buffer_event.total_num_acl_data_packets().Read();
+  const uint16_t host_max = br_edr_credits_.Reserve(controller_max);
+  read_buffer_event.total_num_acl_data_packets().Write(host_max);
+  credit_allocation_mutex_.unlock();
+
+  l2cap_channel_manager_.DrainWriteChannelQueues();
 }
 
 template <class EventT>
 void AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
     EventT read_buffer_event) {
   credit_allocation_mutex_.lock();
-  if (initialized_) {
-    PW_LOG_WARN(
-        "AclDataChannel is already initialized, but encountered another "
-        "ReadBufferSizeCommandCompleteEvent.");
-  }
-
-  initialized_ = true;
-
-  uint16_t controller_max_le_acl_packets =
+  const uint16_t controller_max =
       read_buffer_event.total_num_le_acl_data_packets().Read();
-  proxy_max_le_acl_packets_ =
-      std::min(controller_max_le_acl_packets, le_acl_credits_to_reserve_);
-  uint16_t host_max_le_acl_packets =
-      controller_max_le_acl_packets - proxy_max_le_acl_packets_;
-  read_buffer_event.total_num_le_acl_data_packets().Write(
-      host_max_le_acl_packets);
-  PW_LOG_INFO(
-      "Bluetooth Proxy reserved %d ACL data credits. Passed %d on to host.",
-      proxy_max_le_acl_packets_,
-      host_max_le_acl_packets);
-
-  if (proxy_max_le_acl_packets_ < le_acl_credits_to_reserve_) {
-    PW_LOG_ERROR(
-        "Only was able to reserve %d acl data credits rather than the "
-        "configured %d from the controller provided's data credits of %d. ",
-        proxy_max_le_acl_packets_,
-        le_acl_credits_to_reserve_,
-        controller_max_le_acl_packets);
-  }
-
+  const uint16_t host_max = le_credits_.Reserve(controller_max);
+  read_buffer_event.total_num_le_acl_data_packets().Write(host_max);
   credit_allocation_mutex_.unlock();
 
   // Send packets that may have queued before we acquired any LE ACL credits.
@@ -120,10 +154,13 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
     uint16_t num_pending_packets = connection_ptr->num_pending_packets();
     uint16_t num_reclaimed =
         std::min(num_completed_packets, num_pending_packets);
+
     if (num_reclaimed > 0) {
       did_reclaim_credits = true;
     }
-    proxy_pending_le_acl_packets_ -= num_reclaimed;
+    // TODO: https://pwbug.dev/379172336 - Select correct Credits to decrement.
+    le_credits_.MarkCompleted(num_reclaimed);
+
     connection_ptr->set_num_pending_packets(num_pending_packets -
                                             num_reclaimed);
 
@@ -174,7 +211,9 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
           "with packets in flight. Releasing associated credits",
           cpp23::to_underlying(dc_event->reason().Read()),
           conn_handle);
-      proxy_pending_le_acl_packets_ -= connection_ptr->num_pending_packets();
+      // TODO: https://pwbug.dev/379172336 - Select correct Credits to
+      // decrement.
+      le_credits_.MarkCompleted(connection_ptr->num_pending_packets());
     }
     active_le_acl_connections_.erase(connection_ptr);
   } else {
@@ -190,26 +229,42 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
   hci_transport_.SendToHost(std::move(h4_packet));
 }
 
-uint16_t AclDataChannel::GetLeAclCreditsToReserve() const {
-  return le_acl_credits_to_reserve_;
+bool AclDataChannel::HasSendLeAclCapability() const {
+  credit_allocation_mutex_.lock();
+  bool has_send_capability = le_credits_.HasSendCapability();
+  credit_allocation_mutex_.unlock();
+  return has_send_capability;
+}
+
+bool AclDataChannel::HasSendBrEdrAclCapability() const {
+  credit_allocation_mutex_.lock();
+  bool has_send_capability = br_edr_credits_.HasSendCapability();
+  credit_allocation_mutex_.unlock();
+  return has_send_capability;
 }
 
 uint16_t AclDataChannel::GetNumFreeLeAclPackets() const {
   credit_allocation_mutex_.lock();
-  uint16_t free_packets =
-      proxy_max_le_acl_packets_ - proxy_pending_le_acl_packets_;
+  uint16_t free_packets = le_credits_.Remaining();
+  credit_allocation_mutex_.unlock();
+  return free_packets;
+}
+
+uint16_t AclDataChannel::GetNumFreeBrEdrAclPackets() const {
+  credit_allocation_mutex_.lock();
+  uint16_t free_packets = br_edr_credits_.Remaining();
   credit_allocation_mutex_.unlock();
   return free_packets;
 }
 
 pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
   credit_allocation_mutex_.lock();
-  if (proxy_pending_le_acl_packets_ == proxy_max_le_acl_packets_) {
+  // TODO: https://pwbug.dev/379172336 - Select correct Credits to increment.
+  if (const auto status = le_credits_.MarkPending(1); !status.ok()) {
     PW_LOG_WARN("No ACL send credits available. So will not send.");
     credit_allocation_mutex_.unlock();
     return pw::Status::Unavailable();
   }
-  ++proxy_pending_le_acl_packets_;
 
   Result<emboss::AclDataFrameHeaderView> acl_view =
       MakeEmbossView<emboss::AclDataFrameHeaderView>(h4_packet.GetHciSpan());

@@ -34,7 +34,8 @@ class ProxyHost {
   /// proxy wants to send HCI packet towards the controller.
   ProxyHost(pw::Function<void(H4PacketWithHci&& packet)>&& send_to_host_fn,
             pw::Function<void(H4PacketWithH4&& packet)>&& send_to_controller_fn,
-            uint16_t le_acl_credits_to_reserve);
+            uint16_t le_acl_credits_to_reserve,
+            uint16_t br_edr_acl_credits_to_reserve = 0);
 
   ProxyHost() = delete;
   ProxyHost(const ProxyHost&) = delete;
@@ -147,14 +148,26 @@ class ProxyHost {
                             uint16_t attribute_handle,
                             pw::span<const uint8_t> attribute_value);
 
-  /// Indicates whether the proxy has the capability of sending ACL packets.
+  /// Indicates whether the proxy has the capability of sending LE ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy
   /// has not yet or has been unable to reserve credits from the host.
-  bool HasSendAclCapability() const;
+  bool HasSendLeAclCapability() const;
+
+  /// @deprecated Use HasSendLeAclCapability
+  bool HasSendAclCapability() const { return HasSendLeAclCapability(); }
+
+  /// Indicates whether the proxy has the capability of sending BR/EDR ACL
+  /// packets. Note that this indicates intention, so it can be true even if the
+  /// proxy has not yet or has been unable to reserve credits from the host.
+  bool HasSendBrEdrAclCapability() const;
 
   /// Returns the number of available LE ACL send credits for the proxy.
   /// Can be zero if the controller has not yet been initialized by the host.
   uint16_t GetNumFreeLeAclPackets() const;
+
+  /// Returns the number of available BR/EDR ACL send credits for the proxy.
+  /// Can be zero if the controller has not yet been initialized by the host.
+  uint16_t GetNumFreeBrEdrAclPackets() const;
 
   /// Returns the max number of LE ACL sends that can be in-flight at one time.
   /// That is, ACL packets that have been sent and not yet released.

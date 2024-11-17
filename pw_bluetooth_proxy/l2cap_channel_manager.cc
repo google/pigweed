@@ -91,6 +91,7 @@ uint16_t L2capChannelManager::GetH4BuffSize() const {
 void L2capChannelManager::DrainWriteChannelQueues() {
   write_channels_mutex_.lock();
 
+  // TODO: https://pwbug.dev/379172336 - Select correct Credits to check.
   if (write_channels_.empty() ||
       acl_data_channel_.GetNumFreeLeAclPackets() == 0) {
     write_channels_mutex_.unlock();

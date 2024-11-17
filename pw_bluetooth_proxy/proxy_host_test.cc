@@ -627,6 +627,54 @@ TEST(BadPacketTest, TooShortCommandCompleteEventToHost) {
 
 // ########## ReserveLeAclCredits Tests
 
+// Proxy Host should reserve requested ACL credits from controller's ACL credits
+// when using ReadBufferSize command.
+TEST(ReserveBrEdrAclCredits, ProxyCreditsReserveCreditsWithReadBufferSize) {
+  std::array<uint8_t,
+             emboss::ReadBufferSizeCommandCompleteEventWriter::SizeInBytes()>
+      hci_arr;
+  hci_arr.fill(0);
+  H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      auto view,
+      CreateAndPopulateToHostEventView<
+          emboss::ReadBufferSizeCommandCompleteEventWriter>(
+          h4_packet, emboss::EventCode::COMMAND_COMPLETE));
+  view.command_complete().command_opcode_enum().Write(
+      emboss::OpCode::READ_BUFFER_SIZE);
+  view.total_num_acl_data_packets().Write(10);
+
+  uint8_t sends_called = 0;
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      [&sends_called](H4PacketWithHci&& received_packet) {
+        sends_called++;
+        PW_TEST_ASSERT_OK_AND_ASSIGN(
+            auto event_view,
+            MakeEmbossWriter<emboss::ReadBufferSizeCommandCompleteEventWriter>(
+                received_packet.GetHciSpan()));
+        // Should reserve 2 credits from original total of 10 (so 8 left for
+        // host).
+        EXPECT_EQ(event_view.total_num_acl_data_packets().Read(), 8);
+      });
+
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/2);
+
+  proxy.HandleH4HciFromController(std::move(h4_packet));
+
+  EXPECT_EQ(proxy.GetNumFreeBrEdrAclPackets(), 2);
+
+  EXPECT_TRUE(proxy.HasSendBrEdrAclCapability());
+
+  // Verify to controller callback was called.
+  EXPECT_EQ(sends_called, 1);
+}
+
 // Proxy Host should reserve requested ACL LE credits from controller's ACL LE
 // credits when using LEReadBufferSizeV1 command.
 TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV1) {
@@ -669,7 +717,7 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV1) {
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
 
-  EXPECT_TRUE(proxy.HasSendAclCapability());
+  EXPECT_TRUE(proxy.HasSendLeAclCapability());
 
   // Verify to controller callback was called.
   EXPECT_EQ(sends_called, 1);
@@ -716,7 +764,7 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV2) {
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
 
-  EXPECT_TRUE(proxy.HasSendAclCapability());
+  EXPECT_TRUE(proxy.HasSendLeAclCapability());
 
   // Verify to controller callback was called.
   EXPECT_EQ(sends_called, 1);
@@ -807,7 +855,7 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveZeroCredits) {
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
-  EXPECT_FALSE(proxy.HasSendAclCapability());
+  EXPECT_FALSE(proxy.HasSendLeAclCapability());
 
   // Verify to controller callback was called.
   EXPECT_EQ(sends_called, 1);
@@ -854,7 +902,7 @@ TEST(ReserveLeAclPackets, ProxyCreditsZeroWhenHostCreditsZero) {
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
-  EXPECT_TRUE(proxy.HasSendAclCapability());
+  EXPECT_TRUE(proxy.HasSendLeAclCapability());
 
   // Verify to controller callback was called.
   EXPECT_EQ(sends_called, 1);
@@ -872,7 +920,7 @@ TEST(ReserveLeAclPackets, ProxyCreditsZeroWhenNotInitialized) {
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
-  EXPECT_TRUE(proxy.HasSendAclCapability());
+  EXPECT_TRUE(proxy.HasSendLeAclCapability());
 }
 
 // ########## GattNotifyTest
@@ -1560,8 +1608,10 @@ TEST(DisconnectionCompleteTest, FailedDisconnectionHasNoEffect) {
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
   // Send failed Disconnection_Complete event, should not reclaim credit.
-  PW_TEST_EXPECT_OK(SendDisconnectionCompleteEvent(
-      proxy, connection_handle, /*successful=*/false));
+  PW_TEST_EXPECT_OK(
+      SendDisconnectionCompleteEvent(proxy,
+                                     connection_handle, /*successful=*/
+                                     false));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 }
 
@@ -1724,7 +1774,7 @@ TEST(ResetTest, ResetClearsActiveConnections) {
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
   // Reset should not have cleared `le_acl_credits_to_reserve`, so proxy should
   // still indicate the capability.
-  EXPECT_TRUE(proxy.HasSendAclCapability());
+  EXPECT_TRUE(proxy.HasSendLeAclCapability());
 
   // Re-initialize AclDataChannel with 2 credits.
   PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 2));
@@ -2280,8 +2330,10 @@ TEST(L2capCocReadTest, ChannelHandlesReadWithNullReceiveFn) {
       []([[maybe_unused]] H4PacketWithHci&& packet) { FAIL(); });
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t handle = 123;
   uint16_t local_cid = 234;
@@ -2316,8 +2368,10 @@ TEST(L2capCocReadTest, ErrorOnRxToStoppedChannel) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve*/ 0);
 
   int events_received = 0;
   uint16_t num_invalid_rx = 3;

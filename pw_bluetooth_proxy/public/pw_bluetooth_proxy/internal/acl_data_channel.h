@@ -34,12 +34,12 @@ class AclDataChannel {
  public:
   AclDataChannel(HciTransport& hci_transport,
                  L2capChannelManager& l2cap_channel_manager,
-                 uint16_t le_acl_credits_to_reserve)
+                 uint16_t le_acl_credits_to_reserve,
+                 uint16_t br_edr_acl_credits_to_reserve)
       : hci_transport_(hci_transport),
         l2cap_channel_manager_(l2cap_channel_manager),
-        le_acl_credits_to_reserve_(le_acl_credits_to_reserve),
-        proxy_max_le_acl_packets_(0),
-        proxy_pending_le_acl_packets_(0) {}
+        le_credits_(le_acl_credits_to_reserve),
+        br_edr_credits_(br_edr_acl_credits_to_reserve) {}
 
   AclDataChannel(const AclDataChannel&) = delete;
   AclDataChannel& operator=(const AclDataChannel&) = delete;
@@ -54,6 +54,9 @@ class AclDataChannel {
   // Revert to uninitialized state, clearing credit reservation and connections,
   // but not the number of credits to reserve nor HCI transport.
   void Reset();
+
+  void ProcessReadBufferSizeCommandCompleteEvent(
+      emboss::ReadBufferSizeCommandCompleteEventWriter read_buffer_event);
 
   // Acquires LE ACL credits for proxy host use by removing the amount needed
   // from the amount that is passed to the host.
@@ -74,16 +77,28 @@ class AclDataChannel {
   // Reclaim any credits we have associated with the removed connection.
   void HandleDisconnectionCompleteEvent(H4PacketWithHci&& h4_packet);
 
-  // Returns the number of LE ACL send credits reserved for the proxy.
-  uint16_t GetLeAclCreditsToReserve() const;
+  /// Indicates whether the proxy has the capability of sending LE ACL packets.
+  /// Note that this indicates intention, so it can be true even if the proxy
+  /// has not yet or has been unable to reserve credits from the host.
+  bool HasSendLeAclCapability() const;
+
+  /// @deprecated Use HasSendLeAclCapability instead.
+  bool HasSendAclCapability() const { return HasSendLeAclCapability(); }
+
+  /// Indicates whether the proxy has the capability of sending BR/EDR ACL
+  /// packets. Note that this indicates intention, so it can be true even if the
+  /// proxy has not yet or has been unable to reserve credits from the host.
+  bool HasSendBrEdrAclCapability() const;
 
   // Returns the number of available LE ACL send credits for the proxy.
   // Can be zero if the controller has not yet been initialized by the host.
   uint16_t GetNumFreeLeAclPackets() const;
 
-  // Send an ACL data packet contained in an H4 packet to the controller. This
-  // method should only be called in `L2capChannelManager`, where ACL sends are
-  // protected by mutex.
+  // Returns the number of available BR/EDR ACL send credits for the proxy.
+  // Can be zero if the controller has not yet been initialized by the host.
+  uint16_t GetNumFreeBrEdrAclPackets() const;
+
+  // Send an ACL data packet contained in an H4 packet to the controller.
   //
   // Returns PW_STATUS_UNAVAILABLE if no LE ACL send credits were available.
   // Returns PW_STATUS_INVALID_ARGUMENT if LE ACL packet was ill-formed.
@@ -156,6 +171,42 @@ class AclDataChannel {
     bool is_receiving_fragmented_pdu_;
   };
 
+  class Credits {
+   public:
+    explicit Credits(uint16_t to_reserve) : to_reserve_(to_reserve) {}
+
+    void Reset();
+
+    // Reserves credits from the controllers max and returns how many the host
+    // can use.
+    uint16_t Reserve(uint16_t controller_max);
+
+    // Mark `num_credits` as pending.
+    //
+    // Returns Status::ResourceExhausted() if there aren't enough available
+    // credits.
+    Status MarkPending(uint16_t num_credits);
+
+    // Return `num_credits` to available pool.
+    void MarkCompleted(uint16_t num_credits);
+
+    uint16_t Remaining() const { return proxy_max_ - proxy_pending_; }
+    bool Available() const { return Remaining() > 0; }
+
+    // If this class was initialized with some number of credits to reserve,
+    // return true.
+    bool HasSendCapability() const { return to_reserve_ > 0; }
+
+   private:
+    const uint16_t to_reserve_;
+    // The local number of HCI ACL Data packets that we have reserved for
+    // this proxy host to use.
+    uint16_t proxy_max_ = 0;
+    // The number of HCI ACL Data packets that we have sent to the controller
+    // and have not yet completed.
+    uint16_t proxy_pending_ = 0;
+  };
+
   // Returns iterator to LeAclConnection with provided `connection_handle` in
   // `active_le_acl_connections_`. Returns nullptr if no such connection exists.
   LeAclConnection* FindLeAclConnection(uint16_t connection_handle)
@@ -165,30 +216,18 @@ class AclDataChannel {
   // TODO: https://pwbug.dev/349700888 - Make size configurable.
   static constexpr size_t kMaxConnections = 10;
 
-  // Set to true if channel has been initialized by the host.
-  bool initialized_ = false;
-
   // Reference to the transport owned by the host.
   HciTransport& hci_transport_;
 
   // TODO: https://pwbug.dev/360929142 - Remove this circular dependency.
   L2capChannelManager& l2cap_channel_manager_;
 
-  // The amount of credits this channel will try to reserve.
-  const uint16_t le_acl_credits_to_reserve_;
-
   // Credit allocation will happen inside a mutex since it crosses thread
   // boundaries. The mutex also guards interactions with ACL connection objects.
   mutable pw::sync::Mutex credit_allocation_mutex_;
 
-  // The local number of HCI ACL Data packets that we have reserved for this
-  // proxy host to use.
-  uint16_t proxy_max_le_acl_packets_ PW_GUARDED_BY(credit_allocation_mutex_);
-
-  // The number of HCI ACL Data packets that we have sent to the controller and
-  // have not yet completed.
-  uint16_t proxy_pending_le_acl_packets_
-      PW_GUARDED_BY(credit_allocation_mutex_);
+  Credits le_credits_ PW_GUARDED_BY(credit_allocation_mutex_);
+  Credits br_edr_credits_ PW_GUARDED_BY(credit_allocation_mutex_);
 
   // List of credit-allocated LE ACL connections.
   pw::Vector<LeAclConnection, kMaxConnections> active_le_acl_connections_

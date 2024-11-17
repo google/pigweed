@@ -29,11 +29,14 @@ namespace pw::bluetooth::proxy {
 ProxyHost::ProxyHost(
     pw::Function<void(H4PacketWithHci&& packet)>&& send_to_host_fn,
     pw::Function<void(H4PacketWithH4&& packet)>&& send_to_controller_fn,
-    uint16_t le_acl_credits_to_reserve)
+    uint16_t le_acl_credits_to_reserve,
+    uint16_t br_edr_acl_credits_to_reserve)
     : hci_transport_(std::move(send_to_host_fn),
                      std::move(send_to_controller_fn)),
-      acl_data_channel_(
-          hci_transport_, l2cap_channel_manager_, le_acl_credits_to_reserve),
+      acl_data_channel_(hci_transport_,
+                        l2cap_channel_manager_,
+                        le_acl_credits_to_reserve,
+                        br_edr_acl_credits_to_reserve),
       l2cap_channel_manager_(acl_data_channel_) {}
 
 ProxyHost::~ProxyHost() { acl_data_channel_.Reset(); }
@@ -185,6 +188,19 @@ void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
   PW_MODIFY_DIAGNOSTICS_PUSH();
   PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
   switch (command_complete_event->command_opcode_enum().Read()) {
+    case emboss::OpCode::READ_BUFFER_SIZE: {
+      Result<emboss::ReadBufferSizeCommandCompleteEventWriter> read_event =
+          MakeEmbossWriter<emboss::ReadBufferSizeCommandCompleteEventWriter>(
+              hci_buffer);
+      if (!read_event.ok()) {
+        PW_LOG_ERROR(
+            "Buffer is too small for READ_BUFFER_SIZE command complete event. "
+            "Will not process.");
+        break;
+      }
+      acl_data_channel_.ProcessReadBufferSizeCommandCompleteEvent(*read_event);
+      break;
+    }
     case emboss::OpCode::LE_READ_BUFFER_SIZE_V1: {
       Result<emboss::LEReadBufferSizeV1CommandCompleteEventWriter> read_event =
           MakeEmbossWriter<
@@ -193,7 +209,7 @@ void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
         PW_LOG_ERROR(
             "Buffer is too small for LE_READ_BUFFER_SIZE_V1 command complete "
             "event. So will not process.");
-        return;
+        break;
       }
       acl_data_channel_.ProcessLEReadBufferSizeCommandCompleteEvent(
           *read_event);
@@ -207,7 +223,7 @@ void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
         PW_LOG_ERROR(
             "Buffer is too small for LE_READ_BUFFER_SIZE_V2 command complete "
             "event. So will not process.");
-        return;
+        break;
       }
       acl_data_channel_.ProcessLEReadBufferSizeCommandCompleteEvent(
           *read_event);
@@ -261,12 +277,20 @@ pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
   return channel_result->Write(attribute_value);
 }
 
-bool ProxyHost::HasSendAclCapability() const {
-  return acl_data_channel_.GetLeAclCreditsToReserve() > 0;
+bool ProxyHost::HasSendLeAclCapability() const {
+  return acl_data_channel_.HasSendLeAclCapability();
+}
+
+bool ProxyHost::HasSendBrEdrAclCapability() const {
+  return acl_data_channel_.HasSendBrEdrAclCapability();
 }
 
 uint16_t ProxyHost::GetNumFreeLeAclPackets() const {
   return acl_data_channel_.GetNumFreeLeAclPackets();
+}
+
+uint16_t ProxyHost::GetNumFreeBrEdrAclPackets() const {
+  return acl_data_channel_.GetNumFreeBrEdrAclPackets();
 }
 
 }  // namespace pw::bluetooth::proxy
