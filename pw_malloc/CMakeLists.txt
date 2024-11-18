@@ -65,13 +65,13 @@ pw_add_library(pw_malloc.common INTERFACE
 
 # Allocator-based backends.
 
-pw_add_library(pw_malloc.best_fit_block_allocator STATIC
+pw_add_library(pw_malloc.best_fit STATIC
   PUBLIC_DEPS
     pw_malloc.facade
   PRIVATE_DEPS
-    pw_allocator.best_fit_block_allocator
+    pw_allocator.best_fit
   SOURCES
-    best_fit_block_allocator.cc
+    best_fit.cc
 )
 
 pw_add_library(pw_malloc.bucket_allocator STATIC
@@ -99,13 +99,13 @@ pw_add_library(pw_malloc.first_fit STATIC
   first_fit.cc
 )
 
-pw_add_library(pw_malloc.worst_fit_block_allocator STATIC
+pw_add_library(pw_malloc.worst_fit STATIC
   PUBLIC_DEPS
     pw_malloc.facade
   PRIVATE_DEPS
-    pw_allocator.worst_fit_block_allocator
+    pw_allocator.worst_fit
   SOURCES
-    worst_fit_block_allocator.cc
+    worst_fit.cc
 )
 
 # TODO(b/343531095): Add unit tests to CMake build whenever the following

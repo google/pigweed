@@ -18,7 +18,7 @@
 
 #include <utility>
 
-#include "pw_allocator/best_fit_block_allocator.h"
+#include "pw_allocator/best_fit.h"
 #include "pw_allocator/synchronized_allocator.h"
 #include "pw_assert/check.h"
 #include "pw_async2/allocate_task.h"
@@ -53,7 +53,7 @@ void SystemStart(channel::ByteReaderWriter& io_channel) {
 namespace system {
 namespace {
 
-using pw::allocator::BestFitBlockAllocator;
+using pw::allocator::BestFitAllocator;
 using pw::allocator::SynchronizedAllocator;
 
 // TODO: b/349654108 - Standardize component declaration and initialization.
@@ -94,8 +94,8 @@ async2::Dispatcher& AsyncCore::dispatcher() {
 
 Allocator& AsyncCore::allocator() {
   alignas(uintptr_t) static std::byte buffer[8192];
-  static BestFitBlockAllocator block_allocator(buffer);
-  static SynchronizedAllocator<pw::sync::InterruptSpinLock> sync_allocator(
+  static BestFitAllocator<> block_allocator(buffer);
+  static SynchronizedAllocator<::pw::sync::InterruptSpinLock> sync_allocator(
       block_allocator);
   return sync_allocator;
 }

@@ -20,7 +20,7 @@
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block/detailed_block.h"
 #include "pw_allocator/first_fit.h"
-#include "pw_allocator/worst_fit_block_allocator.h"
+#include "pw_allocator/worst_fit.h"
 #include "pw_unit_test/framework.h"
 
 namespace examples {
@@ -56,7 +56,8 @@ NamedU32Factory sram_factory(sram_allocator);
 
 // Set up an object that allocates from PSRAM memory.
 PW_PLACE_IN_SECTION(".psram") std::array<std::byte, 0x2000> psram_buffer;
-pw::allocator::WorstFitBlockAllocator<uint32_t> psram_allocator(psram_buffer);
+using PsramBlock = ::pw::allocator::WorstFitBlock<uint32_t>;
+pw::allocator::WorstFitAllocator<PsramBlock> psram_allocator(psram_buffer);
 NamedU32Factory psram_factory(psram_allocator);
 // DOCSTAG: [pw_allocator-examples-linker_sections-placement]
 

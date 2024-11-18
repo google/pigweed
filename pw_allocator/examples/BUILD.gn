@@ -103,7 +103,7 @@ pw_test("linker_sections") {
     ":named_u32",
     "$dir_pw_allocator:allocator",
     "$dir_pw_allocator:first_fit",
-    "$dir_pw_allocator:worst_fit_block_allocator",
+    "$dir_pw_allocator:worst_fit",
   ]
   sources = [ "linker_sections.cc" ]
 }

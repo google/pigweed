@@ -109,7 +109,7 @@ pw_cc_test(
         ":named_u32",
         "//pw_allocator:allocator",
         "//pw_allocator:first_fit",
-        "//pw_allocator:worst_fit_block_allocator",
+        "//pw_allocator:worst_fit",
     ],
 )
 

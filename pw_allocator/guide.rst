@@ -250,11 +250,11 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
   - :ref:`module-pw_allocator-api-first_fit_allocator`: Chooses the first
     block that's large enough to satisfy a request. This strategy is very fast,
     but may increase fragmentation.
-  - :ref:`module-pw_allocator-api-best_fit_block_allocator`: Chooses the
+  - :ref:`module-pw_allocator-api-best_fit_allocator`: Chooses the
     smallest block that's large enough to satisfy a request. This strategy
     maximizes the avilable space for large allocations, but may increase
     fragmentation and is slower.
-  - :ref:`module-pw_allocator-api-worst_fit_block_allocator`: Chooses the
+  - :ref:`module-pw_allocator-api-worst_fit_allocator`: Chooses the
     largest block if it's large enough to satisfy a request. This strategy
     minimizes the amount of memory in unusably small blocks, but is slower.
   - :ref:`module-pw_allocator-api-bucket_block_allocator`: Sorts and stores

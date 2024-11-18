@@ -70,7 +70,7 @@ pw_executable("best_fit_benchmark") {
   sources = [ "best_fit_benchmark.cc" ]
   deps = [
     ":benchmark",
-    "$dir_pw_allocator:best_fit_block_allocator",
+    "$dir_pw_allocator:best_fit",
     "$dir_pw_random",
   ]
 }
@@ -106,7 +106,7 @@ pw_executable("worst_fit_benchmark") {
   sources = [ "worst_fit_benchmark.cc" ]
   deps = [
     ":benchmark",
-    "$dir_pw_allocator:worst_fit_block_allocator",
+    "$dir_pw_allocator:worst_fit",
     "$dir_pw_random",
   ]
 }

@@ -13,66 +13,16 @@
 // the License.
 #pragma once
 
-#include <cstddef>
-#include <limits>
+#include <cstdint>
 
-#include "pw_allocator/block/detailed_block.h"
-#include "pw_allocator/block_allocator.h"
+#include "pw_allocator/best_fit.h"
 #include "pw_allocator/config.h"
 
 namespace pw::allocator {
 
-/// Alias for a default block type that is compatible with
-/// `BestFitBlockAllocator`.
-template <typename OffsetType>
-using BestFitBlock = DetailedBlock<OffsetType>;
-
-/// Block allocator that uses a "best-fit" allocation strategy.
-///
-/// In this strategy, the allocator handles an allocation request by looking at
-/// all unused blocks and finding the smallest one which can satisfy the
-/// request.
-///
-/// This algorithm may make better use of available memory by wasting less on
-/// unused fragments, but may also lead to worse fragmentation as those
-/// fragments are more likely to be too small to be useful to other requests.
+/// Alias providing the legacy name for a best fit allocator.
 template <typename OffsetType = uintptr_t>
-class BestFitBlockAllocator : public BlockAllocator<BestFitBlock<OffsetType>> {
- public:
-  using BlockType = BestFitBlock<OffsetType>;
-
- private:
-  using Base = BlockAllocator<BlockType>;
-
- public:
-  /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr BestFitBlockAllocator() = default;
-
-  /// Non-constexpr constructor that automatically calls `Init`.
-  ///
-  /// @param[in]  region  Region of memory to use when satisfying allocation
-  ///                     requests. The region MUST be valid as an argument to
-  ///                     `BlockType::Init`.
-  explicit BestFitBlockAllocator(ByteSpan region) { Base::Init(region); }
-
- private:
-  /// @copydoc Allocator::Allocate
-  BlockResult<BlockType> ChooseBlock(Layout layout) override {
-    BlockType* best = nullptr;
-    size_t best_size = std::numeric_limits<size_t>::max();
-    for (auto* candidate : Base::blocks()) {
-      size_t inner_size = candidate->InnerSize();
-      if (candidate->IsFree() && inner_size < best_size &&
-          candidate->CanAlloc(layout).ok()) {
-        best = candidate;
-        best_size = inner_size;
-      }
-    }
-    if (best != nullptr) {
-      return BlockType::AllocFirst(std::move(best), layout);
-    }
-    return BlockResult<BlockType>(nullptr, Status::NotFound());
-  }
-};
+using BestFitBlockAllocator PW_ALLOCATOR_DEPRECATED =
+    BestFitAllocator<BestFitBlock<OffsetType>>;
 
 }  // namespace pw::allocator

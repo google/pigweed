@@ -12,22 +12,22 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/worst_fit_block_allocator.h"
+#include "pw_allocator/worst_fit.h"
 
 #include "pw_malloc/config.h"
 #include "pw_malloc/malloc.h"
 
 namespace pw::malloc {
 
-using WorstFitBlockAllocator =
-    ::pw::allocator::WorstFitBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE>;
+using BlockType = ::pw::allocator::WorstFitBlock<PW_MALLOC_BLOCK_OFFSET_TYPE>;
+using WorstFitAllocator = ::pw::allocator::WorstFitAllocator<BlockType>;
 
 void InitSystemAllocator(ByteSpan heap) {
-  InitSystemAllocator<WorstFitBlockAllocator>(heap);
+  InitSystemAllocator<WorstFitAllocator>(heap);
 }
 
 Allocator* GetSystemAllocator() {
-  static WorstFitBlockAllocator allocator;
+  static WorstFitAllocator allocator;
   return &allocator;
 }
 

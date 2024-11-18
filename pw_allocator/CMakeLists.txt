@@ -61,14 +61,26 @@ pw_add_library(pw_allocator.allocator_as_pool STATIC
     allocator_as_pool.cc
 )
 
+pw_add_library(pw_allocator.best_fit INTERFACE
+  HEADERS
+    public/pw_allocator/best_fit.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
+    pw_allocator.bucket.sorted
+    pw_allocator.bucket.fast_sorted
+    pw_allocator.config
+)
+
 pw_add_library(pw_allocator.best_fit_block_allocator INTERFACE
   HEADERS
     public/pw_allocator/best_fit_block_allocator.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block_allocator
-    pw_allocator.block.detailed_block
+    pw_allocator.best_fit
     pw_allocator.config
 )
 
@@ -355,16 +367,29 @@ pw_add_library(pw_allocator.typed_pool INTERFACE
     pw_result
 )
 
+pw_add_library(pw_allocator.worst_fit INTERFACE
+  HEADERS
+    public/pw_allocator/worst_fit.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
+    pw_allocator.bucket.sorted
+    pw_allocator.bucket.fast_sorted
+    pw_allocator.config
+)
+
 pw_add_library(pw_allocator.worst_fit_block_allocator INTERFACE
   HEADERS
     public/pw_allocator/worst_fit_block_allocator.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block_allocator
-    pw_allocator.block.detailed_block
+    pw_allocator.worst_fit
     pw_allocator.config
 )
+
 
 # Test support
 
@@ -459,12 +484,13 @@ pw_add_test(pw_allocator.allocator_test
     pw_allocator
 )
 
-pw_add_test(pw_allocator.best_fit_block_allocator_test
+pw_add_test(pw_allocator.best_fit_test
   SOURCES
-    best_fit_block_allocator_test.cc
+    best_fit_test.cc
   PRIVATE_DEPS
-    pw_allocator.block_allocator_testing
+    pw_allocator.best_fit
     pw_allocator.best_fit_block_allocator
+    pw_allocator.block_allocator_testing
   GROUPS
     modules
     pw_allocator
@@ -685,11 +711,12 @@ pw_add_test(pw_allocator.unique_ptr_test
     pw_allocator
 )
 
-pw_add_test(pw_allocator.worst_fit_block_allocator_test
+pw_add_test(pw_allocator.worst_fit_test
   SOURCES
-    worst_fit_block_allocator_test.cc
+    worst_fit_test.cc
   PRIVATE_DEPS
     pw_allocator.block_allocator_testing
+    pw_allocator.worst_fit
     pw_allocator.worst_fit_block_allocator
   GROUPS
     modules

@@ -18,7 +18,7 @@
 
 #include "pw_allocator/benchmarks/benchmark.h"
 #include "pw_allocator/benchmarks/config.h"
-#include "pw_allocator/worst_fit_block_allocator.h"
+#include "pw_allocator/worst_fit.h"
 
 namespace pw::allocator {
 
@@ -28,7 +28,7 @@ constexpr metric::Token kWorstFitBenchmark =
 std::array<std::byte, benchmarks::kCapacity> buffer;
 
 void DoWorstFitBenchmark() {
-  WorstFitBlockAllocator allocator(buffer);
+  WorstFitAllocator allocator(buffer);
   DefaultBlockAllocatorBenchmark benchmark(kWorstFitBenchmark, allocator);
   benchmark.set_prng_seed(1);
   benchmark.set_available(benchmarks::kCapacity);

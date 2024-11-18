@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/worst_fit_block_allocator.h"
+#include "pw_allocator/worst_fit.h"
 
 #include "pw_allocator/size_reporter.h"
 
@@ -20,7 +20,7 @@ int main() {
   pw::allocator::SizeReporter reporter;
   reporter.SetBaseline();
 
-  pw::allocator::WorstFitBlockAllocator<> allocator(reporter.buffer());
+  pw::allocator::WorstFitAllocator<> allocator(reporter.buffer());
   reporter.Measure(allocator);
 
   return 0;

@@ -26,11 +26,11 @@ pw_executable("base") {
   ]
 }
 
-pw_executable("best_fit_block_allocator") {
+pw_executable("best_fit") {
   include_dirs = [ "../public" ]
-  sources = [ "best_fit_block_allocator.cc" ]
+  sources = [ "best_fit.cc" ]
   deps = [
-    "..:best_fit_block_allocator",
+    "..:best_fit",
     "..:size_reporter",
   ]
 }
@@ -159,10 +159,10 @@ pw_executable("tracking_allocator_no_metrics") {
   ]
 }
 
-pw_executable("worst_fit_block_allocator") {
-  sources = [ "worst_fit_block_allocator.cc" ]
+pw_executable("worst_fit") {
+  sources = [ "worst_fit.cc" ]
   deps = [
     "..:size_reporter",
-    "..:worst_fit_block_allocator",
+    "..:worst_fit",
   ]
 }

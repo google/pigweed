@@ -26,10 +26,10 @@ pw_cc_binary(
 )
 
 pw_cc_binary(
-    name = "best_fit_block_allocator",
-    srcs = ["best_fit_block_allocator.cc"],
+    name = "best_fit",
+    srcs = ["best_fit.cc"],
     deps = [
-        "//pw_allocator:best_fit_block_allocator",
+        "//pw_allocator:best_fit",
         "//pw_allocator:size_reporter",
     ],
 )
@@ -169,10 +169,10 @@ pw_cc_binary(
 )
 
 pw_cc_binary(
-    name = "worst_fit_block_allocator",
-    srcs = ["worst_fit_block_allocator.cc"],
+    name = "worst_fit",
+    srcs = ["worst_fit.cc"],
     deps = [
         "//pw_allocator:size_reporter",
-        "//pw_allocator:worst_fit_block_allocator",
+        "//pw_allocator:worst_fit",
     ],
 )

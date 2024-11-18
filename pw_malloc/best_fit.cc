@@ -12,16 +12,23 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/best_fit_block_allocator.h"
+#include "pw_allocator/best_fit.h"
 
-#include "pw_allocator/size_reporter.h"
+#include "pw_malloc/config.h"
+#include "pw_malloc/malloc.h"
 
-int main() {
-  pw::allocator::SizeReporter reporter;
-  reporter.SetBaseline();
+namespace pw::malloc {
 
-  pw::allocator::BestFitBlockAllocator<> allocator(reporter.buffer());
-  reporter.Measure(allocator);
+using BlockType = ::pw::allocator::BestFitBlock<PW_MALLOC_BLOCK_OFFSET_TYPE>;
+using BestFitAllocator = ::pw::allocator::BestFitAllocator<BlockType>;
 
-  return 0;
+void InitSystemAllocator(ByteSpan heap) {
+  InitSystemAllocator<BestFitAllocator>(heap);
 }
+
+Allocator* GetSystemAllocator() {
+  static BestFitAllocator allocator;
+  return &allocator;
+}
+
+}  // namespace pw::malloc

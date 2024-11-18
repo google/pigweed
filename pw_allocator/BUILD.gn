@@ -79,14 +79,23 @@ pw_source_set("allocator_as_pool") {
   sources = [ "allocator_as_pool.cc" ]
 }
 
-pw_source_set("best_fit_block_allocator") {
+pw_source_set("best_fit") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_allocator/best_fit_block_allocator.h" ]
+  public = [ "public/pw_allocator/best_fit.h" ]
   public_deps = [
     ":block_allocator",
     ":config",
     "block:detailed_block",
+    "bucket:fast_sorted",
+    "bucket:sorted",
   ]
+}
+
+# TODO(b/376730645): Remove deprecated interfaces.
+pw_source_set("best_fit_block_allocator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/best_fit_block_allocator.h" ]
+  public_deps = [ ":best_fit" ]
 }
 
 pw_source_set("block_allocator") {
@@ -334,14 +343,23 @@ pw_source_set("typed_pool") {
   ]
 }
 
-pw_source_set("worst_fit_block_allocator") {
+pw_source_set("worst_fit") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_allocator/worst_fit_block_allocator.h" ]
+  public = [ "public/pw_allocator/worst_fit.h" ]
   public_deps = [
     ":block_allocator",
     ":config",
     "block:detailed_block",
+    "bucket:fast_sorted",
+    "bucket:sorted",
   ]
+}
+
+# TODO(b/376730645): Remove deprecated interfaces.
+pw_source_set("worst_fit_block_allocator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/worst_fit_block_allocator.h" ]
+  public_deps = [ ":worst_fit" ]
 }
 
 # Test support
@@ -421,12 +439,13 @@ pw_test("allocator_test") {
   sources = [ "allocator_test.cc" ]
 }
 
-pw_test("best_fit_block_allocator_test") {
+pw_test("best_fit_test") {
   deps = [
+    ":best_fit",
     ":best_fit_block_allocator",
     ":block_allocator_testing",
   ]
-  sources = [ "best_fit_block_allocator_test.cc" ]
+  sources = [ "best_fit_test.cc" ]
 }
 
 pw_test("bucket_allocator_test") {
@@ -591,12 +610,13 @@ pw_test("unique_ptr_test") {
   sources = [ "unique_ptr_test.cc" ]
 }
 
-pw_test("worst_fit_block_allocator_test") {
+pw_test("worst_fit_test") {
   deps = [
     ":block_allocator_testing",
+    ":worst_fit",
     ":worst_fit_block_allocator",
   ]
-  sources = [ "worst_fit_block_allocator_test.cc" ]
+  sources = [ "worst_fit_test.cc" ]
 }
 
 pw_test_group("tests") {
@@ -605,7 +625,7 @@ pw_test_group("tests") {
 
     # ":allocator_nc_test",
     ":allocator_test",
-    ":best_fit_block_allocator_test",
+    ":best_fit_test",
     ":bucket_allocator_test",
     ":buddy_allocator_test",
     ":buffer_test",
@@ -623,7 +643,7 @@ pw_test_group("tests") {
     ":tracking_allocator_test",
     ":typed_pool_test",
     ":unique_ptr_test",
-    ":worst_fit_block_allocator_test",
+    ":worst_fit_test",
   ]
   group_deps = [
     "benchmarks:tests",
@@ -660,9 +680,9 @@ pw_size_diff("concrete_allocators_size_report") {
   title = "Sizes of various concrete allocator implementations"
   binaries = [
     {
-      target = "size_report:best_fit_block_allocator"
+      target = "size_report:best_fit"
       base = "size_report:null_allocator"
-      label = "BestFitBlockAllocator"
+      label = "BestFitAllocator"
     },
     {
       target = "size_report:buddy_allocator"
@@ -677,7 +697,7 @@ pw_size_diff("concrete_allocators_size_report") {
     {
       target = "size_report:first_fit"
       base = "size_report:null_allocator"
-      label = "FirstFitBlockAllocator"
+      label = "FirstFitAllocator"
     },
     {
       target = "size_report:libc_allocator"
@@ -685,9 +705,9 @@ pw_size_diff("concrete_allocators_size_report") {
       label = "LibCAllocator"
     },
     {
-      target = "size_report:worst_fit_block_allocator"
+      target = "size_report:worst_fit"
       base = "size_report:null_allocator"
-      label = "WorstFitBlockAllocator"
+      label = "WorstFitAllocator"
     },
   ]
 }

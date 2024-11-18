@@ -106,18 +106,18 @@ FirstFitAllocator
 .. doxygenclass:: pw::allocator::FirstFitAllocator
    :members:
 
-.. _module-pw_allocator-api-best_fit_block_allocator:
+.. _module-pw_allocator-api-best_fit_allocator:
 
-BestFitBlockAllocator
----------------------
-.. doxygenclass:: pw::allocator::BestFitBlockAllocator
+BestFitAllocator
+----------------
+.. doxygenclass:: pw::allocator::BestFitAllocator
    :members:
 
-.. _module-pw_allocator-api-worst_fit_block_allocator:
+.. _module-pw_allocator-api-worst_fit_allocator:
 
-WorstFitBlockAllocator
-----------------------
-.. doxygenclass:: pw::allocator::WorstFitBlockAllocator
+WorstFitAllocator
+-----------------
+.. doxygenclass:: pw::allocator::WorstFitAllocator
    :members:
 
 .. _module-pw_allocator-api-bucket_block_allocator:

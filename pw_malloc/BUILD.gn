@@ -97,10 +97,15 @@ pw_facade("pw_malloc") {
 
 # Allocator-based backends.
 
-pw_source_set("best_fit_block_allocator") {
+pw_source_set("best_fit") {
   public_deps = [ ":pw_malloc.facade" ]
-  deps = [ "$dir_pw_allocator:best_fit_block_allocator" ]
-  sources = [ "best_fit_block_allocator.cc" ]
+  deps = [ "$dir_pw_allocator:best_fit" ]
+  sources = [ "best_fit.cc" ]
+}
+
+# TODO(b/376730645): Remove deprecated backends.
+pw_source_set("best_fit_block_allocator") {
+  public_deps = [ ":best_fit" ]
 }
 
 pw_source_set("bucket_allocator") {
@@ -135,10 +140,15 @@ pw_source_set("last_fit_block_allocator") {
   public_deps = [ ":first_fit" ]
 }
 
-pw_source_set("worst_fit_block_allocator") {
+pw_source_set("worst_fit") {
   public_deps = [ ":pw_malloc.facade" ]
-  deps = [ "$dir_pw_allocator:worst_fit_block_allocator" ]
-  sources = [ "worst_fit_block_allocator.cc" ]
+  deps = [ "$dir_pw_allocator:worst_fit" ]
+  sources = [ "worst_fit.cc" ]
+}
+
+# TODO(b/376730645): Remove deprecated backends.
+pw_source_set("worst_fit_block_allocator") {
+  public_deps = [ ":worst_fit" ]
 }
 
 # Backend unit tests.
@@ -161,12 +171,12 @@ pw_source_set("testing") {
   ]
 }
 
-pw_test("best_fit_block_allocator_test") {
+pw_test("best_fit_test") {
   deps = [
     ":testing",
-    "$dir_pw_allocator:best_fit_block_allocator",
+    "$dir_pw_allocator:best_fit",
   ]
-  sources = [ "best_fit_block_allocator.cc" ]
+  sources = [ "best_fit.cc" ]
 }
 
 pw_test("bucket_allocator_test") {
@@ -185,12 +195,12 @@ pw_test("first_fit_test") {
   sources = [ "first_fit.cc" ]
 }
 
-pw_test("worst_fit_block_allocator_test") {
+pw_test("worst_fit_test") {
   deps = [
     ":testing",
-    "$dir_pw_allocator:worst_fit_block_allocator",
+    "$dir_pw_allocator:worst_fit",
   ]
-  sources = [ "worst_fit_block_allocator.cc" ]
+  sources = [ "worst_fit.cc" ]
 }
 
 # Docs
@@ -231,9 +241,9 @@ pw_test_group("tests") {
               default_configs + conflicting - conflicting == default_configs
 
   tests = [
-    ":best_fit_block_allocator_test",
+    ":best_fit_test",
     ":bucket_allocator_test",
     ":first_fit_test",
-    ":worst_fit_block_allocator_test",
+    ":worst_fit_test",
   ]
 }

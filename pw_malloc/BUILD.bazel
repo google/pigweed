@@ -84,6 +84,12 @@ label_flag(
 )
 
 constraint_value(
+    name = "best_fit_backend",
+    constraint_setting = "//pw_malloc:backend_constraint_setting",
+)
+
+# TODO(b/376730645): Remove deprecated backends.
+constraint_value(
     name = "best_fit_block_allocator_backend",
     constraint_setting = "//pw_malloc:backend_constraint_setting",
 )
@@ -128,6 +134,12 @@ constraint_value(
 )
 
 constraint_value(
+    name = "worst_fit_backend",
+    constraint_setting = "//pw_malloc:backend_constraint_setting",
+)
+
+# TODO(b/376730645): Remove deprecated backends.
+constraint_value(
     name = "worst_fit_block_allocator_backend",
     constraint_setting = "//pw_malloc:backend_constraint_setting",
 )
@@ -136,13 +148,13 @@ constraint_value(
 alias(
     name = "backend_multiplexer",
     actual = select({
-        "//pw_malloc:best_fit_block_allocator_backend": "//pw_malloc:best_fit_block_allocator",
+        "//pw_malloc:best_fit_block_allocator_backend": "//pw_malloc:best_fit",
         "//pw_malloc:bucket_allocator_backend": "//pw_malloc:bucket_allocator",
         "//pw_malloc:bucket_block_allocator_backend": "//pw_malloc:bucket_allocator",
         "//pw_malloc:dual_first_fit_block_allocator_backend": "//pw_malloc:first_fit",
         "//pw_malloc:first_fit_block_allocator_backend": "//pw_malloc:first_fit",
         "//pw_malloc:last_fit_block_allocator_backend": "//pw_malloc:first_fit",
-        "//pw_malloc:worst_fit_block_allocator_backend": "//pw_malloc:worst_fit_block_allocator",
+        "//pw_malloc:worst_fit_block_allocator_backend": "//pw_malloc:worst_fit",
         "//pw_malloc_freelist:backend": "//pw_malloc:bucket_allocator",
         "//pw_malloc_freertos:backend": "//pw_malloc_freertos",
         "//conditions:default": "//pw_build:unspecified_backend",
@@ -151,12 +163,18 @@ alias(
 )
 
 cc_library(
-    name = "best_fit_block_allocator",
-    srcs = ["best_fit_block_allocator.cc"],
+    name = "best_fit",
+    srcs = ["best_fit.cc"],
     deps = [
         ":pw_malloc.facade",
-        "//pw_allocator:best_fit_block_allocator",
+        "//pw_allocator:best_fit",
     ],
+)
+
+# TODO(b/376730645): Remove deprecated backends.
+cc_library(
+    name = "best_fit_block_allocator",
+    deps = [":best_fit"],
 )
 
 cc_library(
@@ -202,10 +220,10 @@ cc_library(
 )
 
 cc_library(
-    name = "worst_fit_block_allocator",
-    srcs = ["worst_fit_block_allocator.cc"],
+    name = "worst_fit",
+    srcs = ["worst_fit.cc"],
     deps = [
-        "//pw_allocator:worst_fit_block_allocator",
+        "//pw_allocator:worst_fit",
         "//pw_malloc:facade",
     ],
 )
@@ -270,14 +288,14 @@ cc_library(
 )
 
 pw_cc_test(
-    name = "best_fit_block_allocator_test",
+    name = "best_fit_test",
     srcs = [
-        "best_fit_block_allocator.cc",
+        "best_fit.cc",
         "malloc_test.cc",
     ],
     deps = [
         ":testing",
-        "//pw_allocator:best_fit_block_allocator",
+        "//pw_allocator:best_fit",
     ],
 )
 
@@ -306,13 +324,13 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "worst_fit_block_allocator_test",
+    name = "worst_fit_test",
     srcs = [
         "malloc_test.cc",
-        "worst_fit_block_allocator.cc",
+        "worst_fit.cc",
     ],
     deps = [
         ":testing",
-        "//pw_allocator:worst_fit_block_allocator",
+        "//pw_allocator:worst_fit",
     ],
 )

@@ -77,13 +77,25 @@ cc_library(
 )
 
 cc_library(
-    name = "best_fit_block_allocator",
-    hdrs = ["public/pw_allocator/best_fit_block_allocator.h"],
+    name = "best_fit",
+    hdrs = ["public/pw_allocator/best_fit.h"],
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
         ":config",
         "//pw_allocator/block:detailed_block",
+        "//pw_allocator/bucket:fast_sorted",
+        "//pw_allocator/bucket:sorted",
+    ],
+)
+
+cc_library(
+    name = "best_fit_block_allocator",
+    hdrs = ["public/pw_allocator/best_fit_block_allocator.h"],
+    includes = ["public"],
+    deps = [
+        ":best_fit",
+        ":config",
     ],
 )
 
@@ -393,13 +405,25 @@ cc_library(
 )
 
 cc_library(
-    name = "worst_fit_block_allocator",
-    hdrs = ["public/pw_allocator/worst_fit_block_allocator.h"],
+    name = "worst_fit",
+    hdrs = ["public/pw_allocator/worst_fit.h"],
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
         ":config",
         "//pw_allocator/block:detailed_block",
+        "//pw_allocator/bucket:fast_sorted",
+        "//pw_allocator/bucket:sorted",
+    ],
+)
+
+cc_library(
+    name = "worst_fit_block_allocator",
+    hdrs = ["public/pw_allocator/worst_fit_block_allocator.h"],
+    includes = ["public"],
+    deps = [
+        ":config",
+        ":worst_fit",
     ],
 )
 
@@ -512,9 +536,10 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "best_fit_block_allocator_test",
-    srcs = ["best_fit_block_allocator_test.cc"],
+    name = "best_fit_test",
+    srcs = ["best_fit_test.cc"],
     deps = [
+        ":best_fit",
         ":best_fit_block_allocator",
         ":block_allocator_testing",
         "//pw_unit_test",
@@ -744,10 +769,11 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "worst_fit_block_allocator_test",
-    srcs = ["worst_fit_block_allocator_test.cc"],
+    name = "worst_fit_test",
+    srcs = ["worst_fit_test.cc"],
     deps = [
         ":block_allocator_testing",
+        ":worst_fit",
         ":worst_fit_block_allocator",
         "//pw_unit_test",
     ],
