@@ -51,8 +51,9 @@ class FirstFitBlockAllocator
   BlockType* ChooseBlock(Layout layout) override {
     // Search forwards for the first block that can hold this allocation.
     for (auto* block : Base::blocks()) {
-      if (BlockType::AllocFirst(block, layout).ok()) {
-        return block;
+      auto result = BlockType::AllocFirst(std::move(block), layout);
+      if (result.ok()) {
+        return result.block();
       }
     }
     return nullptr;

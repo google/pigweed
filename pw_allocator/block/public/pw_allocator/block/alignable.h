@@ -50,19 +50,23 @@ class AlignableBlock : public internal::AlignableBase {
   }
 
   /// @copydoc AllocatableBlock::CanAlloc
-  static StatusWithSize DoCanAlloc(const Derived* block, Layout layout);
+  StatusWithSize DoCanAlloc(Layout layout) const;
 
   /// @copydoc AllocatableBlock::AllocFirst
-  static BlockResult DoAllocFirst(Derived*& block, Layout layout);
+  static BlockResult<Derived> DoAllocFirst(Derived*&& block, Layout layout);
 
   /// @copydoc AllocatableBlock::AllocLast
-  static BlockResult DoAllocLast(Derived*& block, Layout layout);
+  static BlockResult<Derived> DoAllocLast(Derived*&& block, Layout layout);
 
  private:
+  constexpr const Derived* derived() const {
+    return static_cast<const Derived*>(this);
+  }
+
   /// Allocates a block of `new_inner_size` that starts after `leading` bytes.
-  static BlockResult DoAllocAligned(Derived*& block,
-                                    size_t leading,
-                                    size_t new_inner_size);
+  static BlockResult<Derived> DoAllocAligned(Derived*&& block,
+                                             size_t leading,
+                                             size_t new_inner_size);
 
   // BlockWithLayout calls DoAllocFirst
   template <typename>
@@ -80,12 +84,11 @@ inline constexpr bool is_alignable_v = is_alignable<BlockType>::value;
 // Template method implementations.
 
 template <typename Derived>
-StatusWithSize AlignableBlock<Derived>::DoCanAlloc(const Derived* block,
-                                                   Layout layout) {
+StatusWithSize AlignableBlock<Derived>::DoCanAlloc(Layout layout) const {
   // How much extra space is available?
-  auto result = AllocatableBlock<Derived>::DoCanAlloc(block, layout);
+  auto result = derived()->AllocatableBlock<Derived>::DoCanAlloc(layout);
   if (!result.ok()) {
-    return StatusWithSize(result.status(), 0);
+    return result;
   }
   size_t extra = result.size();
 
@@ -95,7 +98,7 @@ StatusWithSize AlignableBlock<Derived>::DoCanAlloc(const Derived* block,
   }
 
   // What is the last aligned address within the leading extra space?
-  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(derived()->UsableSpace());
   uintptr_t aligned_addr;
   PW_ASSERT(!PW_ADD_OVERFLOW(addr, extra, &aligned_addr));
   aligned_addr = AlignDown(aligned_addr, layout.alignment());
@@ -108,7 +111,7 @@ StatusWithSize AlignableBlock<Derived>::DoCanAlloc(const Derived* block,
   // If splitting the first block, is there enough extra for a valid block?
   size_t leading_outer_size = aligned_addr - addr;
   if (leading_outer_size != 0 && leading_outer_size < Derived::kMinOuterSize &&
-      block->Prev() == nullptr) {
+      derived()->Prev() == nullptr) {
     return StatusWithSize::ResourceExhausted();
   }
 
@@ -116,19 +119,19 @@ StatusWithSize AlignableBlock<Derived>::DoCanAlloc(const Derived* block,
 }
 
 template <typename Derived>
-BlockResult AlignableBlock<Derived>::DoAllocFirst(Derived*& block,
-                                                  Layout layout) {
+BlockResult<Derived> AlignableBlock<Derived>::DoAllocFirst(Derived*&& block,
+                                                           Layout layout) {
   // Is the default alignment sufficient?
   if (layout.alignment() <= Derived::kAlignment) {
-    return AllocatableBlock<Derived>::DoAllocFirst(block, layout);
+    return AllocatableBlock<Derived>::DoAllocFirst(std::move(block), layout);
   }
 
   // What is the first aligned address within the leading extra space?
   size_t size = AlignUp(layout.size(), Derived::kAlignment);
   layout = Layout(size, layout.alignment());
-  StatusWithSize can_alloc = Derived::DoCanAlloc(block, layout);
+  StatusWithSize can_alloc = block->DoCanAlloc(layout);
   if (!can_alloc.ok()) {
-    return BlockResult(can_alloc.status());
+    return BlockResult(block, can_alloc.status());
   }
   size_t extra = can_alloc.size();
   size_t leading_outer_size = extra - AlignDown(extra, layout.alignment());
@@ -140,54 +143,54 @@ BlockResult AlignableBlock<Derived>::DoAllocFirst(Derived*& block,
                                   layout.alignment());
   }
   if (leading_outer_size > extra) {
-    return BlockResult(Status::ResourceExhausted());
+    return BlockResult(block, Status::ResourceExhausted());
   }
 
   // Allocate the aligned block.
-  return DoAllocAligned(block, leading_outer_size, layout.size());
+  return DoAllocAligned(std::move(block), leading_outer_size, layout.size());
 }
 
 template <typename Derived>
-BlockResult AlignableBlock<Derived>::DoAllocLast(Derived*& block,
-                                                 Layout layout) {
+BlockResult<Derived> AlignableBlock<Derived>::DoAllocLast(Derived*&& block,
+                                                          Layout layout) {
   // Is the default alignment sufficient?
   if (layout.alignment() <= Derived::kAlignment) {
-    return AllocatableBlock<Derived>::DoAllocLast(block, layout);
+    return AllocatableBlock<Derived>::DoAllocLast(std::move(block), layout);
   }
 
   // What is the last aligned address within the leading extra space?
   size_t size = AlignUp(layout.size(), Derived::kAlignment);
   layout = Layout(size, layout.alignment());
-  StatusWithSize can_alloc = Derived::DoCanAlloc(block, layout);
+  StatusWithSize can_alloc = block->DoCanAlloc(layout);
   if (!can_alloc.ok()) {
-    return BlockResult(can_alloc.status());
+    return BlockResult(block, can_alloc.status());
   }
-  size_t extra = can_alloc.size();
+  size_t leading_outer_size = can_alloc.size();
 
   // Allocate the aligned block.
-  return DoAllocAligned(block, extra, layout.size());
+  return DoAllocAligned(std::move(block), leading_outer_size, layout.size());
 }
 
 template <typename Derived>
-BlockResult AlignableBlock<Derived>::DoAllocAligned(Derived*& block,
-                                                    size_t leading_outer_size,
-                                                    size_t new_inner_size) {
+BlockResult<Derived> AlignableBlock<Derived>::DoAllocAligned(
+    Derived*&& block, size_t leading_outer_size, size_t new_inner_size) {
   // Allocate everything after aligned address.
   Layout layout(block->InnerSize() - leading_outer_size, Derived::kAlignment);
-  BlockResult alloc_result =
-      AllocatableBlock<Derived>::DoAllocLast(block, layout);
+  auto alloc_result =
+      AllocatableBlock<Derived>::DoAllocLast(std::move(block), layout);
   if (!alloc_result.ok()) {
     return alloc_result;
   }
+  block = alloc_result.block();
 
   // Resize the allocation to the requested size.
-  BlockResult resize_result =
-      AllocatableBlock<Derived>::DoResize(block, new_inner_size);
+  auto resize_result = block->DoResize(new_inner_size);
   if (!resize_result.ok()) {
     return resize_result;
   }
 
-  return BlockResult(alloc_result.prev(), resize_result.next());
+  return BlockResult(
+      block, alloc_result.prev(), resize_result.next(), alloc_result.size());
 }
 
 }  // namespace pw::allocator

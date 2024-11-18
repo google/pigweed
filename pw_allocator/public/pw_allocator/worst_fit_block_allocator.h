@@ -61,11 +61,12 @@ class WorstFitBlockAllocator
         worst_size = inner_size;
       }
     }
-    if (worst != nullptr) {
-      BlockResult result = BlockType::AllocFirst(worst, layout);
-      PW_ASSERT(result.ok());
+    if (worst == nullptr) {
+      return nullptr;
     }
-    return worst;
+    auto result = BlockType::AllocFirst(std::move(worst), layout);
+    PW_ASSERT(result.ok());
+    return result.block();
   }
 };
 

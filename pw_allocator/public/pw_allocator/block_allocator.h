@@ -302,11 +302,11 @@ void* BlockAllocator<OffsetType, kPoisonInterval>::DoAllocate(Layout layout) {
 
 template <typename OffsetType, uint16_t kPoisonInterval>
 void BlockAllocator<OffsetType, kPoisonInterval>::DoDeallocate(void* ptr) {
-  auto result = FromUsableSpace(ptr);
-  if (!result.ok()) {
+  auto from_usable_space_result = FromUsableSpace(ptr);
+  if (!from_usable_space_result.ok()) {
     CrashOnInvalidFree(ptr);
   }
-  BlockType* block = *result;
+  BlockType* block = *from_usable_space_result;
   if (block->IsFree()) {
     CrashOnDoubleFree(block);
   }
@@ -320,7 +320,8 @@ void BlockAllocator<OffsetType, kPoisonInterval>::DoDeallocate(void* ptr) {
   }
 
   // Free the block and merge it with its neighbors, if possible.
-  BlockType::Free(block);
+  auto free_result = BlockType::Free(std::move(block));
+  block = free_result.block();
   UpdateLast(block);
 
   if constexpr (kPoisonInterval != 0) {
@@ -348,7 +349,7 @@ bool BlockAllocator<OffsetType, kPoisonInterval>::DoResize(void* ptr,
     ReserveBlock(block->Next());
   }
 
-  if (!BlockType::Resize(block, new_size).ok()) {
+  if (!block->Resize(new_size).ok()) {
     return false;
   }
   UpdateLast(block);

@@ -84,13 +84,13 @@ class PoisonableBlock : public internal::PoisonableBase {
   }
 
   /// @copydoc ContiguousBlock::DoSplitFirst
-  static Derived* DoSplitFirst(Derived*& block, size_t new_inner_size);
+  Derived* DoSplitFirst(size_t new_inner_size);
 
   /// @copydoc ContiguousBlock::DoSplitLast
-  static Derived* DoSplitLast(Derived*& block, size_t new_inner_size);
+  Derived* DoSplitLast(size_t new_inner_size);
 
   /// @copydoc ContiguousBlock::DoMergeNext
-  static void DoMergeNext(Derived*& block);
+  void DoMergeNext();
 
   /// @copydoc BasicBlock::CheckInvariants
   bool DoCheckInvariants(bool crash_on_failure) const;
@@ -161,12 +161,11 @@ void PoisonableBlock<Derived>::Poison() {
 }
 
 template <typename Derived>
-Derived* PoisonableBlock<Derived>::DoSplitFirst(Derived*& block,
-                                                size_t new_inner_size) {
-  bool should_poison = block->IsPoisoned();
-  block->SetPoisoned(false);
+Derived* PoisonableBlock<Derived>::DoSplitFirst(size_t new_inner_size) {
+  bool should_poison = derived()->IsPoisoned();
+  derived()->SetPoisoned(false);
   Derived* trailing =
-      ContiguousBlock<Derived>::DoSplitFirst(block, new_inner_size);
+      derived()->ContiguousBlock<Derived>::DoSplitFirst(new_inner_size);
   if (should_poison) {
     trailing->SetPoisoned(true);
   }
@@ -174,23 +173,22 @@ Derived* PoisonableBlock<Derived>::DoSplitFirst(Derived*& block,
 }
 
 template <typename Derived>
-Derived* PoisonableBlock<Derived>::DoSplitLast(Derived*& block,
-                                               size_t new_inner_size) {
-  bool should_poison = block->IsPoisoned();
-  block->SetPoisoned(false);
+Derived* PoisonableBlock<Derived>::DoSplitLast(size_t new_inner_size) {
+  bool should_poison = derived()->IsPoisoned();
+  derived()->SetPoisoned(false);
   Derived* trailing =
-      ContiguousBlock<Derived>::DoSplitLast(block, new_inner_size);
+      derived()->ContiguousBlock<Derived>::DoSplitLast(new_inner_size);
   if (should_poison) {
-    block->SetPoisoned(true);
+    derived()->SetPoisoned(true);
   }
   return trailing;
 }
 
 template <typename Derived>
-void PoisonableBlock<Derived>::DoMergeNext(Derived*& block) {
+void PoisonableBlock<Derived>::DoMergeNext() {
   // Repoisoning is handle by the `BlockAllocator::DoDeallocate`.
-  block->SetPoisoned(false);
-  ContiguousBlock<Derived>::DoMergeNext(block);
+  derived()->SetPoisoned(false);
+  derived()->ContiguousBlock<Derived>::DoMergeNext();
 }
 
 template <typename Derived>

@@ -75,7 +75,7 @@ class ContiguousBlock : public internal::ContiguousBase {
   ///    OUT_OF_RANGE: The region is larger than `kMaxAddressableSize`.
   ///
   /// @endrst
-  static Result<Derived*> Init(ByteSpan region, bool is_last = true);
+  static Result<Derived*> Init(ByteSpan region);
 
   /// @returns the block immediately before this one, or null if this is the
   /// first block.
@@ -89,42 +89,38 @@ class ContiguousBlock : public internal::ContiguousBase {
   /// Split a block into two smaller blocks and allocates the leading one.
   ///
   /// This method splits a block into a leading block of the given
-  /// `new_inner_size` and a trailing block. It marks the leading block as used.
-  /// It is static in order to consume and replace the given block pointer with
-  /// the pointer to the new leading block. The remaining trailing space is
-  /// returned as a new block.
+  /// `new_inner_size` and a trailing block, and returns the trailing space as a
+  /// new block.
   ///
   /// @pre The block must not be in use.
   /// @pre The block must have enough usable space for the requested size.
   /// @pre The space remaining after a split can hold a new block.
-  static Derived* DoSplitFirst(Derived*& block, size_t new_inner_size);
+  Derived* DoSplitFirst(size_t new_inner_size);
 
   /// Split a block into two smaller blocks and allocates the trailing one.
   ///
   /// This method splits a block into a leading block and a trailing block of
-  /// the given `new_inner_size`. It marks the trailing block as used. It is
-  /// static in order to consume and replace the given block pointer with the
-  /// pointer to the new trailing block. The remaining leading space is returned
-  /// as a new block.
+  /// the given `new_inner_size`, and returns the trailing space is returned as
+  /// a new block.
   ///
   /// @pre The block must not be in use.
   /// @pre The block must have enough usable space for the requested size.
   /// @pre The space remaining after a split can hold a new block.
-  static Derived* DoSplitLast(Derived*& block, size_t new_inner_size);
+  Derived* DoSplitLast(size_t new_inner_size);
 
   /// Merges this block with next block.
   ///
   /// This method is static in order to consume and replace the given block
   /// pointer with a pointer to the new, larger block.
   ///
-  /// @pre The block must not be the last block.
-  static void DoMergeNext(Derived*& block);
+  /// @pre The blocks must not be in use.
+  void DoMergeNext();
 
   /// Performs the ContiguousBlock invariant checks.
   bool DoCheckInvariants(bool crash_on_failure) const;
 
  private:
-  // constexpr Derived* derived() { return static_cast<Derived*>(this); }
+  constexpr Derived* derived() { return static_cast<Derived*>(this); }
   constexpr const Derived* derived() const {
     return static_cast<const Derived*>(this);
   }
@@ -181,7 +177,7 @@ void CrashPrevNextMismatched(uintptr_t addr,
 // Template method implementations.
 
 template <typename Derived>
-Result<Derived*> ContiguousBlock<Derived>::Init(ByteSpan region, bool is_last) {
+Result<Derived*> ContiguousBlock<Derived>::Init(ByteSpan region) {
   region = GetAlignedSubspan(region, Derived::kAlignment);
   if (region.size() <= Derived::kBlockOverhead) {
     return Status::ResourceExhausted();
@@ -189,12 +185,7 @@ Result<Derived*> ContiguousBlock<Derived>::Init(ByteSpan region, bool is_last) {
   if (region.size() > Derived::MaxAddressableSize()) {
     return Status::OutOfRange();
   }
-  Derived* next = nullptr;
-  if (!is_last) {
-    std::byte* data = region.data() + region.size() + Derived::kBlockOverhead;
-    next = Derived::FromUsableSpace(data);
-  }
-  auto* block = Derived::AsBlock(region, nullptr, next);
+  auto* block = Derived::AsBlock(region);
   block->CheckInvariantsIfStrict();
   return block;
 }
@@ -234,56 +225,30 @@ Derived* ContiguousBlock<Derived>::NextUnchecked() const {
 }
 
 template <typename Derived>
-Derived* ContiguousBlock<Derived>::DoSplitFirst(Derived*& block,
-                                                size_t new_inner_size) {
-  return Split(block, new_inner_size);
-}
-
-template <typename Derived>
-Derived* ContiguousBlock<Derived>::DoSplitLast(Derived*& block,
-                                               size_t new_inner_size) {
-  size_t inner_size = block->InnerSize();
+Derived* ContiguousBlock<Derived>::DoSplitFirst(size_t new_inner_size) {
+  Derived* next = derived()->Next();
   size_t new_outer_size = Derived::kBlockOverhead + new_inner_size;
-  Derived* trailing = Split(block, inner_size - new_outer_size);
-  Derived* leading = block;
-  block = trailing;
-  return leading;
+  ByteSpan bytes(derived()->UsableSpace(), derived()->InnerSize());
+  bytes = bytes.subspan(new_inner_size);
+  auto* trailing = Derived::AsBlock(bytes);
+  derived()->SetNext(new_outer_size, trailing);
+  trailing->SetNext(bytes.size(), next);
+  return trailing;
 }
 
 template <typename Derived>
-Derived* ContiguousBlock<Derived>::Split(Derived*& block,
-                                         size_t new_inner_size) {
+Derived* ContiguousBlock<Derived>::DoSplitLast(size_t new_inner_size) {
   size_t new_outer_size = Derived::kBlockOverhead + new_inner_size;
-  Derived* prev = block->Prev();
-  Derived* next = block->Next();
-  ByteSpan bytes = AsBytes(std::move(block));
-  ByteSpan leading = bytes.subspan(0, new_outer_size);
-  ByteSpan trailing = bytes.subspan(new_outer_size);
-  Derived* block2 = Derived::AsBlock(trailing, nullptr, next);
-  Derived* block1 = Derived::AsBlock(leading, prev, block2);
-  block1->CheckInvariantsIfStrict();
-  block2->CheckInvariantsIfStrict();
-  block = std::move(block1);
-  return block2;
+  return DoSplitFirst(derived()->InnerSize() - new_outer_size);
 }
 
 template <typename Derived>
-void ContiguousBlock<Derived>::DoMergeNext(Derived*& block) {
-  Derived* next = block->Next();
-  Derived* prev = block->Prev();
-  Derived* next_next = next->Next();
-  ByteSpan bytes = AsBytes(std::move(block));
-  ByteSpan next_bytes = AsBytes(std::move(next));
-  size_t outer_size = bytes.size() + next_bytes.size();
-  std::byte* merged = ::new (bytes.data()) std::byte[outer_size];
-  block = Derived::AsBlock(ByteSpan(merged, outer_size), prev, next_next);
-}
-
-template <typename Derived>
-ByteSpan ContiguousBlock<Derived>::AsBytes(Derived*&& block) {
-  size_t outer_size = block->OuterSize();
-  std::byte* bytes = ::new (std::move(block)) std::byte[outer_size];
-  return {bytes, outer_size};
+void ContiguousBlock<Derived>::DoMergeNext() {
+  Derived* next = derived()->Next();
+  if (next != nullptr) {
+    size_t outer_size = derived()->OuterSize() + next->OuterSize();
+    derived()->SetNext(outer_size, next->Next());
+  }
 }
 
 template <typename Derived>

@@ -177,10 +177,12 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonEveryFreeBlock) {
     ptr = allocator->Allocate(layout);
     ASSERT_NE(ptr, nullptr);
   }
+
   // Modify the contents of the block and check if it is still valid.
   auto* bytes = cpp20::bit_cast<std::byte*>(ptrs[1]);
   auto* block = BlockType::FromUsableSpace(bytes);
   allocator->Deallocate(bytes);
+
   EXPECT_TRUE(block->IsFree());
   EXPECT_TRUE(block->IsValid());
   bytes[0] = ~bytes[0];

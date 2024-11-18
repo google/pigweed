@@ -51,8 +51,9 @@ class LastFitBlockAllocator
   BlockType* ChooseBlock(Layout layout) override {
     // Search backwards for the last block that can hold this allocation.
     for (auto* block : Base::rblocks()) {
-      if (BlockType::AllocLast(block, layout).ok()) {
-        return block;
+      auto result = BlockType::AllocLast(std::move(block), layout);
+      if (result.ok()) {
+        return result.block();
       }
     }
     return nullptr;

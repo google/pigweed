@@ -58,7 +58,8 @@ void FreeAll(typename BlockType::Range range) {
   // Free and merge blocks.
   while (block != nullptr) {
     if (!block->IsFree()) {
-      BlockType::Free(block);
+      auto result = BlockType::Free(std::move(block));
+      block = result.block();
     }
     block = block->Next();
   }
@@ -111,11 +112,15 @@ class AllocatorForTest : public Allocator {
   void Exhaust() {
     for (auto* block : allocator_->blocks()) {
       if (block->IsFree()) {
-        auto result =
-            BlockType::AllocLast(block, Layout(block->InnerSize(), 1));
+        auto result = BlockType::AllocLast(std::move(block),
+                                           Layout(block->InnerSize(), 1));
         PW_ASSERT(result.status() == OkStatus());
-        PW_ASSERT(result.prev() == BlockResult::Prev::kUnchanged);
-        PW_ASSERT(result.next() == BlockResult::Next::kUnchanged);
+
+        using Prev = internal::GenericBlockResult::Prev;
+        PW_ASSERT(result.prev() == Prev::kUnchanged);
+
+        using Next = internal::GenericBlockResult::Next;
+        PW_ASSERT(result.next() == Next::kUnchanged);
       }
     }
   }

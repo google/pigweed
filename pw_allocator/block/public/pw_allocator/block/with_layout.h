@@ -16,6 +16,7 @@
 #include <cstddef>
 
 #include "pw_allocator/block/alignable.h"
+#include "pw_allocator/block/result.h"
 #include "pw_allocator/layout.h"
 #include "pw_assert/assert.h"
 
@@ -61,20 +62,21 @@ class BlockWithLayout : public internal::BaseWithLayout {
 
  protected:
   /// @copydoc AllocatableBlock::AllocFirst
-  static BlockResult DoAllocFirst(Derived*& block, Layout layout);
+  static BlockResult<Derived> DoAllocFirst(Derived*&& block, Layout layout);
 
   /// @copydoc AllocatableBlock::AllocLast
-  static BlockResult DoAllocLast(Derived*& block, Layout layout);
+  static BlockResult<Derived> DoAllocLast(Derived*&& block, Layout layout);
 
   /// @copydoc AllocatableBlock::Resize
-  static BlockResult DoResize(Derived*& block,
-                              size_t new_inner_size,
-                              bool shifted = false);
+  BlockResult<Derived> DoResize(size_t new_inner_size, bool shifted = false);
 
   /// @copydoc AllocatableBlock::Free
-  static void DoFree(Derived*& block);
+  static BlockResult<Derived> DoFree(Derived*&& block);
 
  private:
+  using BlockResultPrev = internal::GenericBlockResult::Prev;
+
+  constexpr Derived* derived() { return static_cast<Derived*>(this); }
   constexpr const Derived* derived() const {
     return static_cast<const Derived*>(this);
   }
@@ -101,57 +103,66 @@ Result<Layout> BlockWithLayout<Derived>::RequestedLayout() const {
 }
 
 template <typename Derived>
-BlockResult BlockWithLayout<Derived>::DoAllocFirst(Derived*& block,
-                                                   Layout layout) {
-  BlockResult result = AlignableBlock<Derived>::DoAllocFirst(block, layout);
-  if (result.ok()) {
-    block->SetRequestedSize(layout.size());
-    block->SetRequestedAlignment(layout.alignment());
+BlockResult<Derived> BlockWithLayout<Derived>::DoAllocFirst(Derived*&& block,
+                                                            Layout layout) {
+  auto result = AlignableBlock<Derived>::DoAllocFirst(std::move(block), layout);
+  if (!result.ok()) {
+    return result;
   }
+  block = result.block();
+  block->SetRequestedSize(layout.size());
+  block->SetRequestedAlignment(layout.alignment());
   return result;
 }
 
 template <typename Derived>
-BlockResult BlockWithLayout<Derived>::DoAllocLast(Derived*& block,
-                                                  Layout layout) {
-  BlockResult result = AlignableBlock<Derived>::DoAllocLast(block, layout);
-  if (result.ok()) {
-    block->SetRequestedSize(layout.size());
-    block->SetRequestedAlignment(layout.alignment());
+BlockResult<Derived> BlockWithLayout<Derived>::DoAllocLast(Derived*&& block,
+                                                           Layout layout) {
+  auto result = AlignableBlock<Derived>::DoAllocLast(std::move(block), layout);
+  if (!result.ok()) {
+    return result;
   }
+  block = result.block();
+  block->SetRequestedSize(layout.size());
+  block->SetRequestedAlignment(layout.alignment());
   return result;
 }
 
 template <typename Derived>
-BlockResult BlockWithLayout<Derived>::DoResize(Derived*& block,
-                                               size_t new_inner_size,
-                                               bool shifted) {
-  size_t old_size = block->RequestedSize();
-  BlockResult result =
-      AllocatableBlock<Derived>::DoResize(block, new_inner_size, shifted);
+BlockResult<Derived> BlockWithLayout<Derived>::DoResize(size_t new_inner_size,
+                                                        bool shifted) {
+  size_t old_size = derived()->RequestedSize();
+  auto result =
+      derived()->AllocatableBlock<Derived>::DoResize(new_inner_size, shifted);
   if (result.ok() && !shifted) {
-    block->SetRequestedSize(new_inner_size);
+    derived()->SetRequestedSize(new_inner_size);
   } else {
-    block->SetRequestedSize(old_size);
+    derived()->SetRequestedSize(old_size);
   }
   return result;
 }
 
 template <typename Derived>
-void BlockWithLayout<Derived>::DoFree(Derived*& block) {
-  AllocatableBlock<Derived>::DoFree(block);
+BlockResult<Derived> BlockWithLayout<Derived>::DoFree(Derived*&& block) {
+  auto result = AllocatableBlock<Derived>::DoFree(std::move(block));
+  if (!result.ok()) {
+    return result;
+  }
+  block = result.block();
   Derived* prev = block->Prev();
   if (prev == nullptr) {
-    return;
+    return result;
   }
   size_t prev_size = prev->RequestedSize();
   if (prev->InnerSize() - prev_size < Derived::kAlignment) {
-    return;
+    return result;
   }
   // Reclaim bytes that were shifted to prev when the block allocated.
-  AllocatableBlock<Derived>::DoResize(prev, prev_size, true)
-      .IgnoreUnlessStrict();
-  block = prev->Next();
+  size_t old_prev_size = prev->OuterSize();
+  prev->DoResize(prev_size, true).IgnoreUnlessStrict();
+  return BlockResult(prev->Next(),
+                     BlockResultPrev::kResizedSmaller,
+                     old_prev_size - prev->OuterSize());
 }
 
 }  // namespace pw::allocator

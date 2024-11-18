@@ -62,7 +62,8 @@ class BucketAllocator : public BlockAllocator<uintptr_t, 0> {
   ///
   /// @param[in]  region  Region of memory to use when satisfying allocation
   ///                     requests. The region MUST be large enough to fit an
-  ///                     aligned block with overhead.
+  ///                     aligned block with overhead. It MUST NOT be larger
+  ///                     than what is addressable by `OffsetType`.
   explicit BucketAllocator(ByteSpan region) : BucketAllocator() {
     Base::Init(region);
   }
@@ -104,16 +105,21 @@ class BucketAllocator : public BlockAllocator<uintptr_t, 0> {
         continue;
       }
       BlockType* block = BlockType::FromUsableSpace(chosen);
-      BlockResult result = BlockType::AllocLast(block, layout);
+      auto result = BlockType::AllocLast(std::move(block), layout);
       if (!result.ok()) {
         break;
       }
-      if (result.prev() == BlockResult::Prev::kSplitNew) {
+      block = result.block();
+
+      using Prev = internal::GenericBlockResult::Prev;
+      if (result.prev() == Prev::kSplitNew) {
         // The new free block needs to be added to a bucket.
         BlockType* prev = block->Prev();
         RecycleBlock(prev);
       }
-      if (result.next() == BlockResult::Next::kSplitNew) {
+
+      using Next = internal::GenericBlockResult::Next;
+      if (result.next() == Next::kSplitNew) {
         // The new free block needs to be added to a bucket.
         BlockType* next = block->Next();
         RecycleBlock(next);

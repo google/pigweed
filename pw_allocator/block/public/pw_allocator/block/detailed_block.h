@@ -101,7 +101,8 @@ class DetailedBlockImpl
       typename ReverseIterableBlock<BlockType>::ReverseIterator;
 
  private:
-  constexpr DetailedBlockImpl() : info_{} {
+  constexpr explicit DetailedBlockImpl(size_t outer_size) : info_{} {
+    next_ = outer_size / Basic::kAlignment;
     info_.last = 1;
     info_.alignment = Basic::kAlignment;
   }
@@ -118,7 +119,6 @@ class DetailedBlockImpl
     return Parameters::kLayoutWhenFree.size();
   }
   size_t OuterSizeUnchecked() const;
-  size_t PrevOuterSizeUnchecked() const;
 
   // `Basic` overrides.
   bool DoCheckInvariants(bool crash_on_failure) const;
@@ -136,16 +136,14 @@ class DetailedBlockImpl
   }
 
   constexpr bool IsLastUnchecked() const { return info_.last != 0; }
-  static inline BlockType* AsBlock(ByteSpan bytes,
-                                   BlockType* prev,
-                                   BlockType* next);
+  static inline BlockType* AsBlock(ByteSpan bytes);
+  void SetNext(size_t outer_size, BlockType* next);
+  size_t PrevOuterSizeUnchecked() const;
 
   // `Contiguous` overrides.
-  static inline BlockType* DoSplitFirst(BlockType*& block,
-                                        size_t new_inner_size);
-  static inline BlockType* DoSplitLast(BlockType*& block,
-                                       size_t new_inner_size);
-  static inline void DoMergeNext(BlockType*& block);
+  inline BlockType* DoSplitFirst(size_t new_inner_size);
+  inline BlockType* DoSplitLast(size_t new_inner_size);
+  inline void DoMergeNext();
 
   // `Allocatable` required methods.
   using Allocatable = AllocatableBlock<BlockType>;
@@ -156,14 +154,14 @@ class DetailedBlockImpl
   // `Alignable` overrides.
   using Alignable = AlignableBlock<BlockType>;
   friend Alignable;
-  static inline StatusWithSize DoCanAlloc(const BlockType* block,
-                                          Layout layout);
-  static inline BlockResult DoAllocFirst(BlockType*& block, Layout layout);
-  static inline BlockResult DoAllocLast(BlockType*& block, Layout layout);
-  static inline BlockResult DoResize(BlockType*& block,
-                                     size_t new_inner_size,
-                                     bool shifted);
-  static inline void DoFree(BlockType*& block);
+  inline StatusWithSize DoCanAlloc(Layout layout) const;
+  static inline BlockResult<BlockType> DoAllocFirst(BlockType*&& block,
+                                                    Layout layout);
+  static inline BlockResult<BlockType> DoAllocLast(BlockType*&& block,
+                                                   Layout layout);
+  inline BlockResult<BlockType> DoResize(size_t new_inner_size,
+                                         bool shifted = false);
+  static inline BlockResult<BlockType> DoFree(BlockType*&& block);
 
   // `WithLayout` required methods.
   using WithLayout = BlockWithLayout<BlockType>;
@@ -229,13 +227,6 @@ size_t DetailedBlockImpl<Parameters>::OuterSizeUnchecked() const {
 }
 
 template <typename Parameters>
-size_t DetailedBlockImpl<Parameters>::PrevOuterSizeUnchecked() const {
-  size_t outer_size;
-  PW_ASSERT(!PW_MUL_OVERFLOW(prev_, Basic::kAlignment, &outer_size));
-  return outer_size;
-}
-
-template <typename Parameters>
 bool DetailedBlockImpl<Parameters>::DoCheckInvariants(
     bool crash_on_failure) const {
   return Basic::DoCheckInvariants(crash_on_failure) &&
@@ -247,41 +238,47 @@ bool DetailedBlockImpl<Parameters>::DoCheckInvariants(
 
 template <typename Parameters>
 DetailedBlockImpl<Parameters>* DetailedBlockImpl<Parameters>::AsBlock(
-    ByteSpan bytes, BlockType* prev, BlockType* next) {
-  size_t prev_offset = 0;
-  if (prev != nullptr) {
-    prev_offset = prev->OuterSize();
-    prev->info_.last = 0;
+    ByteSpan bytes) {
+  return ::new (bytes.data()) DetailedBlockImpl(bytes.size());
+}
+
+template <typename Parameters>
+void DetailedBlockImpl<Parameters>::SetNext(size_t outer_size,
+                                            BlockType* next) {
+  next_ = outer_size / Basic::kAlignment;
+  if (next == nullptr) {
+    info_.last = 1;
+    return;
   }
-  size_t next_offset = bytes.size();
-  auto* block = ::new (bytes.data()) DetailedBlockImpl();
-  block->prev_ = prev_offset / Basic::kAlignment;
-  block->next_ = next_offset / Basic::kAlignment;
-  if (next != nullptr) {
-    block->info_.last = 0;
-    next->prev_ = block->next_;
-  }
-  return block;
+  info_.last = 0;
+  next->prev_ = next_;
+}
+
+template <typename Parameters>
+size_t DetailedBlockImpl<Parameters>::PrevOuterSizeUnchecked() const {
+  size_t outer_size;
+  PW_ASSERT(!PW_MUL_OVERFLOW(prev_, Basic::kAlignment, &outer_size));
+  return outer_size;
 }
 
 template <typename Parameters>
 DetailedBlockImpl<Parameters>* DetailedBlockImpl<Parameters>::DoSplitFirst(
-    DetailedBlockImpl*& block, size_t new_inner_size) {
-  return Poisonable::DoSplitFirst(block, new_inner_size);
+    size_t new_inner_size) {
+  return Poisonable::DoSplitFirst(new_inner_size);
 }
 
 template <typename Parameters>
 DetailedBlockImpl<Parameters>* DetailedBlockImpl<Parameters>::DoSplitLast(
-    DetailedBlockImpl*& block, size_t new_inner_size) {
-  return Poisonable::DoSplitLast(block, new_inner_size);
+    size_t new_inner_size) {
+  return Poisonable::DoSplitLast(new_inner_size);
 }
 
 template <typename Parameters>
-void DetailedBlockImpl<Parameters>::DoMergeNext(DetailedBlockImpl*& block) {
-  Poisonable::DoMergeNext(block);
+void DetailedBlockImpl<Parameters>::DoMergeNext() {
+  Poisonable::DoMergeNext();
 }
 
-// `Allocatable` methods.
+// `Alignable` methods.
 
 template <typename Parameters>
 void DetailedBlockImpl<Parameters>::SetFree(bool is_free) {
@@ -292,33 +289,34 @@ void DetailedBlockImpl<Parameters>::SetFree(bool is_free) {
 // `Alignable` methods.
 
 template <typename Parameters>
-StatusWithSize DetailedBlockImpl<Parameters>::DoCanAlloc(
-    const DetailedBlockImpl* block, Layout layout) {
-  return Alignable::DoCanAlloc(block, layout);
+StatusWithSize DetailedBlockImpl<Parameters>::DoCanAlloc(Layout layout) const {
+  return Alignable::DoCanAlloc(layout);
 }
 
 template <typename Parameters>
-BlockResult DetailedBlockImpl<Parameters>::DoAllocFirst(
-    DetailedBlockImpl*& block, Layout layout) {
-  return WithLayout::DoAllocFirst(block, layout);
+BlockResult<DetailedBlockImpl<Parameters>>
+DetailedBlockImpl<Parameters>::DoAllocFirst(DetailedBlockImpl*&& block,
+                                            Layout layout) {
+  return WithLayout::DoAllocFirst(std::move(block), layout);
 }
 
 template <typename Parameters>
-BlockResult DetailedBlockImpl<Parameters>::DoAllocLast(
-    DetailedBlockImpl*& block, Layout layout) {
-  return WithLayout::DoAllocLast(block, layout);
+BlockResult<DetailedBlockImpl<Parameters>>
+DetailedBlockImpl<Parameters>::DoAllocLast(DetailedBlockImpl*&& block,
+                                           Layout layout) {
+  return WithLayout::DoAllocLast(std::move(block), layout);
 }
 
 template <typename Parameters>
-BlockResult DetailedBlockImpl<Parameters>::DoResize(DetailedBlockImpl*& block,
-                                                    size_t new_inner_size,
-                                                    bool shifted) {
-  return WithLayout::DoResize(block, new_inner_size, shifted);
+BlockResult<DetailedBlockImpl<Parameters>>
+DetailedBlockImpl<Parameters>::DoResize(size_t new_inner_size, bool shifted) {
+  return WithLayout::DoResize(new_inner_size, shifted);
 }
 
 template <typename Parameters>
-void DetailedBlockImpl<Parameters>::DoFree(DetailedBlockImpl*& block) {
-  return WithLayout::DoFree(block);
+BlockResult<DetailedBlockImpl<Parameters>>
+DetailedBlockImpl<Parameters>::DoFree(DetailedBlockImpl*&& block) {
+  return WithLayout::DoFree(std::move(block));
 }
 
 // `WithLayout` methods.

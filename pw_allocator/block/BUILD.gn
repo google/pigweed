@@ -22,6 +22,16 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
+pw_source_set("result") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/block/result.h" ]
+  public_deps = [
+    "$dir_pw_allocator:config",
+    "$dir_pw_assert",
+    "$dir_pw_status",
+  ]
+}
+
 pw_source_set("alignable") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/block/alignable.h" ]
@@ -37,12 +47,10 @@ pw_source_set("alignable") {
 
 pw_source_set("allocatable") {
   public_configs = [ ":public_include_path" ]
-  public = [
-    "public/pw_allocator/block/allocatable.h",
-    "public/pw_allocator/block/result.h",
-  ]
+  public = [ "public/pw_allocator/block/allocatable.h" ]
   public_deps = [
     ":contiguous",
+    ":result",
     "$dir_pw_allocator:deallocator",
     "$dir_pw_assert",
     "$dir_pw_bytes:alignment",
@@ -134,6 +142,14 @@ pw_source_set("testing") {
   ]
 }
 
+pw_test("result_test") {
+  deps = [
+    ":basic",
+    ":result",
+  ]
+  sources = [ "result_test.cc" ]
+}
+
 pw_test("detailed_block_test") {
   deps = [
     ":testing",
@@ -144,5 +160,8 @@ pw_test("detailed_block_test") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":detailed_block_test" ]
+  tests = [
+    ":detailed_block_test",
+    ":result_test",
+  ]
 }

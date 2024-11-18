@@ -123,6 +123,7 @@ pw_source_set("bucket_allocator") {
   ]
 }
 
+# TODO(b/376730645): Remove deprecated interfaces.
 pw_source_set("bucket_block_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/bucket_block_allocator.h" ]

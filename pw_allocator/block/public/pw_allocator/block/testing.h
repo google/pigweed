@@ -18,6 +18,7 @@
 
 #include "lib/stdcompat/bit.h"
 #include "pw_allocator/block/result.h"
+#include "pw_allocator/layout.h"
 #include "pw_assert/assert.h"
 #include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
@@ -97,21 +98,25 @@ BlockType* Preallocate(ByteSpan bytes,
                        std::initializer_list<Preallocation> preallocs) {
   // First, look if any blocks use kSizeRemaining, and calculate how large
   // that will be.
-  bytes = GetAlignedSubspan(bytes, BlockType::kAlignment);
-  size_t remaining_outer_size = bytes.size();
+  auto init_result = BlockType::Init(bytes);
+  PW_ASSERT(init_result.ok());
+  BlockType* block = *init_result;
+  size_t remaining_outer_size = block->OuterSize();
   for (auto& preallocation : preallocs) {
     if (preallocation.outer_size != Preallocation::kSizeRemaining) {
       size_t outer_size =
           AlignUp(preallocation.outer_size, BlockType::kAlignment);
+      PW_ASSERT(outer_size > BlockType::kBlockOverhead);
       PW_ASSERT(remaining_outer_size >= outer_size);
       remaining_outer_size -= outer_size;
     }
   }
 
   // Now, construct objects in place.
-  BlockType* block = nullptr;
-  size_t roffset = bytes.size();
+  bool next_is_free = false;
+  BlockType* next = nullptr;
   for (auto it = std::rbegin(preallocs); it != std::rend(preallocs); ++it) {
+    PW_ASSERT(block != nullptr);
     const Preallocation& preallocation = *it;
     size_t outer_size = preallocation.outer_size;
     if (outer_size == Preallocation::kSizeRemaining) {
@@ -120,17 +125,30 @@ BlockType* Preallocate(ByteSpan bytes,
     } else {
       outer_size = AlignUp(preallocation.outer_size, BlockType::kAlignment);
     }
-    PW_ASSERT(!PW_SUB_OVERFLOW(roffset, outer_size, &roffset));
-    ByteSpan region = bytes.subspan(roffset, outer_size);
-    block = *(BlockType::Init(region, block == nullptr));
-    if (preallocation.state != Preallocation::kFree) {
-      auto result = BlockType::AllocLast(block, Layout(block->InnerSize(), 1));
-      PW_ASSERT(result.status() == OkStatus());
-      PW_ASSERT(result.prev() == BlockResult::Prev::kUnchanged);
-      PW_ASSERT(result.next() == BlockResult::Next::kUnchanged);
+    Layout layout(outer_size - BlockType::kBlockOverhead, 1);
+    auto alloc_result = BlockType::AllocLast(std::move(block), layout);
+    PW_ASSERT(alloc_result.ok());
+
+    using Next = internal::GenericBlockResult::Next;
+    PW_ASSERT(alloc_result.next() == Next::kUnchanged);
+
+    block = alloc_result.block();
+
+    if (next_is_free) {
+      BlockType::Free(std::move(next)).IgnoreUnlessStrict();
     }
+    next_is_free = preallocation.state == Preallocation::kFree;
+    next = block;
+    block = block->Prev();
   }
-  return block;
+
+  // Handle the edge case of the first block being free.
+  PW_ASSERT(block == nullptr);
+  if (next_is_free) {
+    auto free_result = BlockType::Free(std::move(next));
+    next = free_result.block();
+  }
+  return next;
 }
 
 }  // namespace pw::allocator::test

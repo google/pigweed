@@ -14,6 +14,17 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+pw_add_library(pw_allocator.block.result INTERFACE
+  HEADERS
+    public/pw_allocator/block/result.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.config
+    pw_assert
+    pw_status
+)
+
 pw_add_library(pw_allocator.block.alignable INTERFACE
   HEADERS
     public/pw_allocator/block/alignable.h
@@ -31,11 +42,11 @@ pw_add_library(pw_allocator.block.alignable INTERFACE
 pw_add_library(pw_allocator.block.allocatable INTERFACE
   HEADERS
     public/pw_allocator/block/allocatable.h
-    public/pw_allocator/block/result.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_allocator.block.contiguous
+    pw_allocator.block.result
     pw_allocator.deallocator
     pw_assert
     pw_bytes.alignment
@@ -138,6 +149,17 @@ pw_add_library(pw_allocator.block.testing INTERFACE
     pw_bytes
     pw_result
     pw_third_party.fuchsia.stdcompat
+)
+
+pw_add_test(pw_allocator.block.result_test
+  SOURCES
+    result_test.cc
+  PRIVATE_DEPS
+    pw_allocator.block.basic
+    pw_allocator.block.result
+  GROUPS
+    modules
+    pw_allocator
 )
 
 pw_add_test(pw_allocator.block.detailed_block_test

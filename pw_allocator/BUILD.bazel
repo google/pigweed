@@ -129,6 +129,7 @@ cc_library(
     ],
 )
 
+# TODO(b/376730645): Remove deprecated interfaces.
 cc_library(
     name = "bucket_block_allocator",
     hdrs = ["public/pw_allocator/bucket_block_allocator.h"],

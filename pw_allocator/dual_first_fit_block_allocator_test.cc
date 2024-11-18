@@ -135,8 +135,10 @@ TEST_F(DualFirstFitBlockAllocatorTest, ResizeSmallLargerFailure) {
 }
 
 TEST_F(DualFirstFitBlockAllocatorTest, ResizeLargeSmallerAcrossThreshold) {
-  auto& allocator =
-      GetAllocator({{kDualFitThreshold * 2, Preallocation::kUsed}});
+  auto& allocator = GetAllocator({
+      {kDualFitThreshold * 2, Preallocation::kUsed},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
   // Shrinking succeeds, and the pointer is unchanged even though it is now
   // below the threshold.
   size_t new_size = kDualFitThreshold / 2;

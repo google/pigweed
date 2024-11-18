@@ -17,6 +17,7 @@
 #include <cstdint>
 
 #include "pw_allocator/bucket_allocator.h"
+#include "pw_allocator/config.h"
 
 namespace pw::allocator {
 namespace internal {}
@@ -33,6 +34,7 @@ namespace internal {}
 template <typename = uintptr_t,
           size_t kMinBucketChunkSize = 32,
           size_t kNumBuckets = 5>
-using BucketBlockAllocator = BucketAllocator<kMinBucketChunkSize, kNumBuckets>;
+using BucketBlockAllocator PW_ALLOCATOR_DEPRECATED =
+    BucketAllocator<kMinBucketChunkSize, kNumBuckets>;
 
 }  // namespace pw::allocator

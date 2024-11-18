@@ -19,6 +19,17 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 cc_library(
+    name = "result",
+    hdrs = ["public/pw_allocator/block/result.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_allocator:config",
+        "//pw_assert",
+        "//pw_status",
+    ],
+)
+
+cc_library(
     name = "alignable",
     hdrs = ["public/pw_allocator/block/alignable.h"],
     includes = ["public"],
@@ -34,13 +45,11 @@ cc_library(
 
 cc_library(
     name = "allocatable",
-    hdrs = [
-        "public/pw_allocator/block/allocatable.h",
-        "public/pw_allocator/block/result.h",
-    ],
+    hdrs = ["public/pw_allocator/block/allocatable.h"],
     includes = ["public"],
     deps = [
         ":contiguous",
+        ":result",
         "//pw_allocator:deallocator",
         "//pw_assert",
         "//pw_bytes:alignment",
@@ -140,6 +149,16 @@ cc_library(
         "//pw_bytes:alignment",
         "//pw_status",
         "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+pw_cc_test(
+    name = "result_test",
+    srcs = ["result_test.cc"],
+    deps = [
+        ":basic",
+        ":result",
+        "//pw_unit_test",
     ],
 )
 

@@ -62,11 +62,12 @@ class BestFitBlockAllocator
         best_size = inner_size;
       }
     }
-    if (best != nullptr) {
-      BlockResult result = BlockType::AllocFirst(best, layout);
-      PW_ASSERT(result.ok());
+    if (best == nullptr) {
+      return nullptr;
     }
-    return best;
+    auto result = BlockType::AllocFirst(std::move(best), layout);
+    PW_ASSERT(result.ok());
+    return result.block();
   }
 };
 

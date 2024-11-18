@@ -100,7 +100,7 @@ pw_source_set("bucket_allocator") {
   sources = [ "bucket_allocator.cc" ]
 }
 
-# Deprecated; see b/376730645 for background and workarounds.
+# TODO(b/376730645): Remove deprecated backends.
 pw_source_set("bucket_block_allocator") {
   public_deps = [ ":bucket_allocator" ]
 }

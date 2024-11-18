@@ -95,10 +95,11 @@ class AllocatableBlock : public internal::AllocatableBase {
   /// size of at least `inner_size`, and whose starting address is aligned to an
   /// `alignment` boundary. If unsuccessful, `block` will be unmodified.
   ///
-  /// This method is static in order to consume and replace the given block
-  /// pointer with a pointer to the new, smaller block. In total, up to two
-  /// additional blocks may be created: one to pad the returned block to an
-  /// alignment boundary and one for the trailing space.
+  /// This method is static in order to consume the given block pointer.
+  /// On success, a pointer to the new, smaller block is returned. In total, up
+  /// to two additional blocks may be created: one to pad the returned block to
+  /// an alignment boundary and one for the trailing space. On error, the
+  /// original pointer is returned.
   ///
   /// For larger alignments, the `AllocLast` method is generally preferable to
   /// this method, as this method may create an additional fragments both before
@@ -121,7 +122,7 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///    leading block, and/or create a valid trailing block.
   ///
   /// @endrst
-  static BlockResult AllocFirst(Derived*& block, Layout layout);
+  static BlockResult<Derived> AllocFirst(Derived*&& block, Layout layout);
 
   /// Splits an aligned block from the end of the block, and marks it as used.
   ///
@@ -129,12 +130,11 @@ class AllocatableBlock : public internal::AllocatableBase {
   /// size of at least `inner_size`, and whose starting address is aligned to an
   /// `alignment` boundary. If unsuccessful, `block` will be unmodified.
   ///
-  /// This method is static in order to consume and replace the given block
-  /// pointer with a pointer to the new, smaller block. An additional block may
-  /// be created for the leading space.
-  ///
-  /// This method may create an additional fragment before the returned block
-  /// in order to align the usable space.
+  /// This method is static in order to consume the given block pointer.
+  /// On success, a pointer to the new, smaller block is returned. In total, up
+  /// to two additional blocks may be created: one to pad the returned block to
+  /// an alignment boundary and one for the trailing space. On error, the
+  /// original pointer is returned.
   ///
   /// @pre The block must not be in use.
   ///
@@ -153,7 +153,7 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///    leading block, and/or create a valid trailing block.
   ///
   /// @endrst
-  static BlockResult AllocLast(Derived*& block, Layout layout);
+  static BlockResult<Derived> AllocLast(Derived*&& block, Layout layout);
 
   /// Grows or shrinks the block.
   ///
@@ -161,8 +161,9 @@ class AllocatableBlock : public internal::AllocatableBase {
   /// provide additional memory (when growing) or to merge released memory (when
   /// shrinking). If unsuccessful, `block` will be unmodified.
   ///
-  /// This method is static in order to consume and replace the given block
-  /// pointer with a pointer to the new, smaller block.
+  /// Note: Resizing may modify the block following this one if it is free.
+  /// Allocators that track free blocks based on their size must be prepared to
+  /// handle this size change.
   ///
   /// @pre The block must be in use.
   ///
@@ -180,35 +181,39 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///    leading block, and/or create a valid trailing block.
   ///
   /// @endrst
-  static BlockResult Resize(Derived*& block, size_t new_inner_size);
+  BlockResult<Derived> Resize(size_t new_inner_size);
 
   /// Marks the block as free.
   ///
-  /// This method is static in order to consume and replace the given block
-  /// pointer. If neither member is free, the returned pointer will point to the
-  /// original block. Otherwise, it will point to the new, larger block created
-  /// by merging adjacent free blocks together.
-  static void Free(Derived*& block);
+  /// This method is static in order to consume the given block pointer. It
+  /// returns a pointer to a freed block that is the result of merging the given
+  /// block with either or both of its neighbors, if they were free.
+  ///
+  /// Note: Freeing may modify the adjacent blocks if they are free.
+  /// Allocators that track free blocks must be prepared to handle this merge.
+  static BlockResult<Derived> Free(Derived*&& block);
 
  protected:
   /// @copydoc CanAlloc
-  static StatusWithSize DoCanAlloc(const Derived* block, Layout layout);
+  StatusWithSize DoCanAlloc(Layout layout) const;
 
   /// @copydoc AllocFirst
-  static BlockResult DoAllocFirst(Derived*& block, Layout layout);
+  static BlockResult<Derived> DoAllocFirst(Derived*&& block, Layout layout);
 
   /// @copydoc AllocLast
-  static BlockResult DoAllocLast(Derived*& block, Layout layout);
+  static BlockResult<Derived> DoAllocLast(Derived*&& block, Layout layout);
 
   /// @copydoc Resize
-  static BlockResult DoResize(Derived*& block,
-                              size_t new_inner_size,
-                              bool shifted = false);
+  BlockResult<Derived> DoResize(size_t new_inner_size, bool shifted = false);
 
   /// @copydoc Free
-  static void DoFree(Derived*& block);
+  static BlockResult<Derived> DoFree(Derived*&& block);
 
  private:
+  using BlockResultPrev = internal::GenericBlockResult::Prev;
+  using BlockResultNext = internal::GenericBlockResult::Next;
+
+  constexpr Derived* derived() { return static_cast<Derived*>(this); }
   constexpr const Derived* derived() const {
     return static_cast<const Derived*>(this);
   }
@@ -243,13 +248,12 @@ bool AllocatableBlock<Derived>::IsFree() const {
 template <typename Derived>
 StatusWithSize AllocatableBlock<Derived>::CanAlloc(Layout layout) const {
   derived()->CheckInvariantsIfStrict();
-  return Derived::DoCanAlloc(derived(), layout);
+  return derived()->DoCanAlloc(layout);
 }
 
 template <typename Derived>
-StatusWithSize AllocatableBlock<Derived>::DoCanAlloc(const Derived* block,
-                                                     Layout layout) {
-  if (!block->IsFree()) {
+StatusWithSize AllocatableBlock<Derived>::DoCanAlloc(Layout layout) const {
+  if (!derived()->IsFree()) {
     return StatusWithSize::FailedPrecondition();
   }
   if (layout.size() == 0) {
@@ -257,171 +261,164 @@ StatusWithSize AllocatableBlock<Derived>::DoCanAlloc(const Derived* block,
   }
   size_t extra;
   size_t new_inner_size = AlignUp(layout.size(), Derived::kAlignment);
-  if (PW_SUB_OVERFLOW(block->InnerSize(), new_inner_size, &extra)) {
+  if (PW_SUB_OVERFLOW(derived()->InnerSize(), new_inner_size, &extra)) {
     return StatusWithSize::ResourceExhausted();
   }
   return StatusWithSize(extra);
 }
 
 template <typename Derived>
-BlockResult AllocatableBlock<Derived>::AllocFirst(Derived*& block,
-                                                  Layout layout) {
+BlockResult<Derived> AllocatableBlock<Derived>::AllocFirst(Derived*&& block,
+                                                           Layout layout) {
   if (block == nullptr || layout.size() == 0) {
-    return BlockResult(Status::InvalidArgument());
+    return BlockResult(block, Status::InvalidArgument());
   }
   block->CheckInvariants(/* crash_on_failure: */ true);
   if (!block->IsFree()) {
-    return BlockResult(Status::FailedPrecondition());
+    return BlockResult(block, Status::FailedPrecondition());
   }
-  BlockResult result = Derived::DoAllocFirst(block, layout);
-  block->CheckInvariantsIfStrict();
-  return BlockResult(result);
+  return Derived::DoAllocFirst(std::move(block), layout);
 }
 
 template <typename Derived>
-BlockResult AllocatableBlock<Derived>::DoAllocFirst(Derived*& block,
-                                                    Layout layout) {
+BlockResult<Derived> AllocatableBlock<Derived>::DoAllocFirst(Derived*&& block,
+                                                             Layout layout) {
   size_t size = AlignUp(layout.size(), Derived::kAlignment);
   layout = Layout(size, layout.alignment());
-  StatusWithSize can_alloc = Derived::DoCanAlloc(block, layout);
+  StatusWithSize can_alloc = block->DoCanAlloc(layout);
   if (!can_alloc.ok()) {
-    return BlockResult(can_alloc.status());
+    return BlockResult(block, can_alloc.status());
   }
   size_t extra = can_alloc.size();
-  BlockResult::Next result = BlockResult::Next::kUnchanged;
+  BlockResult result(block);
   if (extra >= Derived::kMinOuterSize) {
     // Split the large padding off the back.
-    Derived::DoSplitFirst(block, block->InnerSize() - extra);
-    result = BlockResult::Next::kSplitNew;
+    block->DoSplitFirst(block->InnerSize() - extra);
+    result = BlockResult(block, BlockResultNext::kSplitNew);
   }
   block->SetFree(false);
-  return BlockResult(result);
-}
-
-template <typename Derived>
-BlockResult AllocatableBlock<Derived>::AllocLast(Derived*& block,
-                                                 Layout layout) {
-  if (block == nullptr || layout.size() == 0) {
-    return BlockResult(Status::InvalidArgument());
-  }
-  block->CheckInvariants(/* crash_on_failure: */ true);
-  if (!block->IsFree()) {
-    return BlockResult(Status::FailedPrecondition());
-  }
-  BlockResult result = Derived::DoAllocLast(block, layout);
-  block->CheckInvariantsIfStrict();
   return result;
 }
 
 template <typename Derived>
-BlockResult AllocatableBlock<Derived>::DoAllocLast(Derived*& block,
-                                                   Layout layout) {
+BlockResult<Derived> AllocatableBlock<Derived>::AllocLast(Derived*&& block,
+                                                          Layout layout) {
+  if (block == nullptr || layout.size() == 0) {
+    return BlockResult(block, Status::InvalidArgument());
+  }
+  block->CheckInvariants(/* crash_on_failure: */ true);
+  if (!block->IsFree()) {
+    return BlockResult(block, Status::FailedPrecondition());
+  }
+  return Derived::DoAllocLast(std::move(block), layout);
+}
+
+template <typename Derived>
+BlockResult<Derived> AllocatableBlock<Derived>::DoAllocLast(Derived*&& block,
+                                                            Layout layout) {
   size_t size = AlignUp(layout.size(), Derived::kAlignment);
   layout = Layout(size, layout.alignment());
-  StatusWithSize can_alloc = Derived::DoCanAlloc(block, layout);
+  StatusWithSize can_alloc = block->DoCanAlloc(layout);
   if (!can_alloc.ok()) {
-    return BlockResult(can_alloc.status());
+    return BlockResult(block, can_alloc.status());
   }
   size_t extra = can_alloc.size();
-  BlockResult::Prev result = BlockResult::Prev::kUnchanged;
+  BlockResult result(block);
   Derived* prev = block->Prev();
   if (extra >= Derived::kMinOuterSize) {
     // Split the large padding off the front.
-    Derived::DoSplitLast(block, layout.size());
-    result = BlockResult::Prev::kSplitNew;
+    block = block->DoSplitLast(layout.size());
+    result = BlockResult(block, BlockResultPrev::kSplitNew);
 
   } else if (extra != 0 && prev != nullptr) {
     // The small amount of padding can be appended to the previous block.
-    Derived::DoResize(prev, prev->InnerSize() + extra, true)
-        .IgnoreUnlessStrict();
+    prev->DoResize(prev->InnerSize() + extra, true).IgnoreUnlessStrict();
     block = prev->Next();
-    result = BlockResult::Prev::kResized;
+    result = BlockResult(block, BlockResultPrev::kResizedLarger, extra);
   }
   block->SetFree(false);
-  return BlockResult(result);
-}
-
-template <typename Derived>
-BlockResult AllocatableBlock<Derived>::Resize(Derived*& block,
-                                              size_t new_inner_size) {
-  if (block == nullptr) {
-    return BlockResult(Status::InvalidArgument());
-  }
-  block->CheckInvariants(/* crash_on_failure: */ true);
-  if (block->IsFree()) {
-    return BlockResult(Status::FailedPrecondition());
-  }
-  BlockResult result =
-      Derived::DoResize(block, new_inner_size, /* shifted: */ false);
-  block->CheckInvariantsIfStrict();
   return result;
 }
 
 template <typename Derived>
-BlockResult AllocatableBlock<Derived>::DoResize(Derived*& block,
-                                                size_t new_inner_size,
-                                                bool) {
-  size_t old_inner_size = block->InnerSize();
+BlockResult<Derived> AllocatableBlock<Derived>::Resize(size_t new_inner_size) {
+  derived()->CheckInvariants(/* crash_on_failure: */ true);
+  if (derived()->IsFree()) {
+    return BlockResult(derived(), Status::FailedPrecondition());
+  }
+  return derived()->DoResize(new_inner_size, /* shifted: */ false);
+}
+
+template <typename Derived>
+BlockResult<Derived> AllocatableBlock<Derived>::DoResize(size_t new_inner_size,
+                                                         bool) {
+  size_t old_inner_size = derived()->InnerSize();
   new_inner_size = AlignUp(new_inner_size, Derived::kAlignment);
   if (old_inner_size == new_inner_size) {
-    return BlockResult();
+    return BlockResult(derived());
   }
 
   // Treat the block as free and try to combine it with the next block. At most
   // one free block is expected to follow this block.
-  BlockResult::Next result = BlockResult::Next::kUnchanged;
-  block->SetFree(true);
-  Derived* next = block->Next();
+  derived()->SetFree(true);
+  Derived* next = derived()->Next();
+  BlockResult result(derived());
   if (next != nullptr && next->IsFree()) {
-    Derived::DoMergeNext(block);
-    result = BlockResult::Next::kMerged;
+    derived()->DoMergeNext();
+    result = BlockResult(derived(), BlockResultNext::kMerged);
   }
-  if (block->InnerSize() < new_inner_size) {
+  size_t merged_inner_size = derived()->InnerSize();
+  if (merged_inner_size < new_inner_size) {
     // The merged block is too small for the resized block. Restore the original
     // blocks as needed.
-    if (block->InnerSize() != old_inner_size) {
-      Derived::DoSplitFirst(block, old_inner_size);
+    if (merged_inner_size != old_inner_size) {
+      derived()->DoSplitFirst(old_inner_size);
     }
-    block->SetFree(false);
-    return BlockResult(Status::ResourceExhausted());
+    derived()->SetFree(false);
+    return BlockResult(derived(), Status::ResourceExhausted());
   }
-  if (new_inner_size + Derived::kMinOuterSize <= block->InnerSize()) {
+  if (new_inner_size + Derived::kMinOuterSize <= merged_inner_size) {
     // There is enough room after the resized block for another trailing block.
-    Derived::DoSplitFirst(block, new_inner_size);
-    result = result == BlockResult::Next::kMerged
-                 ? BlockResult::Next::kResized
-                 : BlockResult::Next::kSplitNew;
+    derived()->DoSplitFirst(new_inner_size);
+    result = result.next() == BlockResultNext::kMerged
+                 ? BlockResult(derived(), BlockResultNext::kResized)
+                 : BlockResult(derived(), BlockResultNext::kSplitNew);
   }
-  block->SetFree(false);
-  return BlockResult(result);
+  derived()->SetFree(false);
+  return result;
 }
 
 template <typename Derived>
-void AllocatableBlock<Derived>::Free(Derived*& block) {
+BlockResult<Derived> AllocatableBlock<Derived>::Free(Derived*&& block) {
   if (block == nullptr) {
-    return;
+    return BlockResult(block, Status::InvalidArgument());
   }
   block->CheckInvariants(/* crash_on_failure: */ true);
-  Derived::DoFree(block);
-  block->CheckInvariantsIfStrict();
+  return Derived::DoFree(std::move(block));
 }
 
 template <typename Derived>
-void AllocatableBlock<Derived>::DoFree(Derived*& block) {
+BlockResult<Derived> AllocatableBlock<Derived>::DoFree(Derived*&& block) {
   block->SetFree(true);
+  BlockResult result(block);
 
   // Try to merge the previous block with this one.
   Derived* prev = block->Prev();
   if (prev != nullptr && prev->IsFree()) {
-    Derived::DoMergeNext(prev);
+    prev->DoMergeNext();
     block = prev;
+    result = BlockResult(block, BlockResultNext::kMerged);
   }
 
   // Try to merge this block with the next one.
   Derived* next = block->Next();
   if (next != nullptr && next->IsFree()) {
-    Derived::DoMergeNext(block);
+    block->DoMergeNext();
+    result = BlockResult(block, BlockResultNext::kMerged);
   }
+
+  block->CheckInvariantsIfStrict();
+  return result;
 }
 
 }  // namespace pw::allocator
