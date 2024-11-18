@@ -135,7 +135,8 @@ class AllocatorForTest : public Allocator {
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
     allocate_size_ = layout.size();
-    return tracker_.Allocate(layout);
+    void* ptr = tracker_.Allocate(layout);
+    return ptr;
   }
 
   /// @copydoc Allocator::Deallocate

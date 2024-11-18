@@ -312,7 +312,39 @@ uses the mix-ins above.
 
 Bucket
 ======
-.. doxygenclass:: pw::allocator::Bucket
+Several block allocator implementations improve performance by managing buckets,
+which are data structures that track free blocks. Several bucket implementations
+are provided that trade off between performance and per-block space needed when
+free.
+
+FastSortedBucket
+----------------
+.. doxygenclass:: pw::allocator::FastSortedBucket
+   :members:
+
+ForwardSortedBucket
+-------------------
+.. doxygenclass:: pw::allocator::ForwardSortedBucket
+   :members:
+
+ReverseFastSortedBucket
+-----------------------
+.. doxygenclass:: pw::allocator::ReverseFastSortedBucket
+   :members:
+
+ReverseSortedBucket
+-------------------
+.. doxygenclass:: pw::allocator::ReverseSortedBucket
+   :members:
+
+SequencedBucket
+---------------
+.. doxygenclass:: pw::allocator::SequencedBucket
+   :members:
+
+UnorderedBucket
+---------------
+.. doxygenclass:: pw::allocator::UnorderedBucket
    :members:
 
 .. _module-pw_allocator-api-metrics_adapter:

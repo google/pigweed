@@ -15,41 +15,83 @@
 #include "pw_allocator/buddy_allocator.h"
 
 #include <cstring>
+#include <utility>
 
 #include "lib/stdcompat/bit.h"
-#include "pw_allocator/buffer.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/alignment.h"
 
 namespace pw::allocator::internal {
 
-GenericBuddyAllocator::GenericBuddyAllocator(span<Bucket> buckets,
-                                             size_t min_chunk_size)
+BuddyBlock::BuddyBlock(size_t outer_size) {
+  outer_size_log2_ = cpp20::countr_zero(outer_size);
+}
+
+StatusWithSize BuddyBlock::CanAlloc(Layout layout) const {
+  return layout.size() > InnerSize() ? StatusWithSize::ResourceExhausted()
+                                     : StatusWithSize(0);
+}
+
+BuddyBlock* BuddyBlock::Split() {
+  outer_size_log2_--;
+  std::byte* ptr = UsableSpace() + InnerSize();
+  return new (ptr) BuddyBlock(OuterSize());
+}
+
+BuddyBlock* BuddyBlock::Merge(BuddyBlock*&& left, BuddyBlock*&& right) {
+  if (right < left) {
+    return BuddyBlock::Merge(std::move(right), std::move(left));
+  }
+  left->outer_size_log2_++;
+  return left;
+}
+
+GenericBuddyAllocator::GenericBuddyAllocator(span<BucketType> buckets,
+                                             size_t min_outer_size)
     : buckets_(buckets) {
-  Bucket::Init(buckets, min_chunk_size);
+  min_outer_size_ = min_outer_size;
+  for (BucketType& bucket : buckets) {
+    size_t max_inner_size = BuddyBlock::InnerSizeFromOuterSize(min_outer_size);
+    bucket.set_max_inner_size(max_inner_size);
+    min_outer_size <<= 1;
+  }
 }
 
 void GenericBuddyAllocator::Init(ByteSpan region) {
   CrashIfAllocated();
-  size_t min_chunk_size = buckets_[0].chunk_size();
-  region_ = GetAlignedSubspan(region, min_chunk_size);
-  PW_CHECK_INT_GE(region_.size(), min_chunk_size);
+
+  // Ensure there is a byte preceding the first `BuddyBlock`.
+  region = GetAlignedSubspan(region.subspan(1), min_outer_size_);
+  region = ByteSpan(region.data() - 1, region.size() + 1);
+  PW_CHECK_INT_GE(region.size(), min_outer_size_);
 
   // Build up the available memory by successively freeing (and thus merging)
-  // minimum sized chunks.
-  std::memset(region_.data(), 0, region_.size());
-  for (region = region_; region.size() >= min_chunk_size;
-       region = region.subspan(min_chunk_size)) {
-    Deallocate(region.data());
+  // minimum sized blocks.
+  std::byte* data = region.data();
+  size_t count = 0;
+  while (region.size() >= min_outer_size_) {
+    new (region.data()) BuddyBlock(min_outer_size_);
+    region = region.subspan(min_outer_size_);
+    ++count;
+  }
+  region_ = ByteSpan(data, min_outer_size_ * count);
+  data++;
+  for (size_t i = 0; i < count; ++i) {
+    Deallocate(data);
+    data += min_outer_size_;
   }
 }
 
 void GenericBuddyAllocator::CrashIfAllocated() {
   size_t total_free = 0;
+  // Drain all the buckets before destroying the list. Although O(n), this
+  // should be reasonably quick since all memory should have been freed and
+  // coalesced prior to calling this method.
   for (auto& bucket : buckets_) {
-    size_t bucket_size;
-    PW_CHECK_MUL(bucket.chunk_size(), bucket.count(), &bucket_size);
-    PW_CHECK_ADD(total_free, bucket_size, &total_free);
+    while (!bucket.empty()) {
+      BuddyBlock* block = bucket.RemoveAny();
+      total_free += block->OuterSize();
+    }
   }
   PW_CHECK_INT_EQ(region_.size(),
                   total_free,
@@ -61,108 +103,99 @@ void GenericBuddyAllocator::CrashIfAllocated() {
 }
 
 void* GenericBuddyAllocator::Allocate(Layout layout) {
-  if (layout.alignment() > buckets_[0].chunk_size()) {
+  if (layout.size() > buckets_.back().max_inner_size()) {
+    return nullptr;
+  }
+  if (layout.alignment() > min_outer_size_) {
     return nullptr;
   }
 
-  std::byte* chunk = nullptr;
-  size_t chunk_size = 0;
-  size_t index = 0;
   for (auto& bucket : buckets_) {
-    chunk_size = bucket.chunk_size();
-    if (chunk_size < layout.size()) {
-      ++index;
+    size_t inner_size = bucket.max_inner_size();
+    size_t outer_size = BuddyBlock::OuterSizeFromInnerSize(inner_size);
+    if (inner_size < layout.size()) {
       continue;
     }
-    layout = Layout(chunk_size, layout.alignment());
+    layout = Layout(inner_size, layout.alignment());
 
-    // Check if this bucket has chunks available.
-    chunk = bucket.Remove();
-    if (chunk != nullptr) {
-      break;
+    // Check if this bucket has a compatible free block available.
+    if (auto* block = bucket.RemoveCompatible(layout); block != nullptr) {
+      return block->UsableSpace();
     }
 
-    // No chunk available, allocate one from the next bucket and split it.
-    void* ptr = Allocate(layout.Extend(chunk_size));
+    // No compatible free blocks available, allocate one from the next bucket
+    // and split it.
+    void* ptr = Allocate(layout.Extend(outer_size));
     if (ptr == nullptr) {
       break;
     }
-    chunk = cpp20::bit_cast<std::byte*>(ptr);
-    bucket.Add(chunk + chunk_size);
-    break;
+
+    auto* block = BuddyBlock::FromUsableSpace(ptr);
+    BuddyBlock* buddy = block->Split();
+    std::ignore = bucket.Add(*buddy);
+    return ptr;
   }
-  if (chunk == nullptr) {
-    return nullptr;
-  }
-  // Store the bucket index in the byte *before* the usable space. Use the last
-  // byte for the first chunk.
-  if (chunk == region_.data()) {
-    region_[region_.size() - 1] = std::byte(index);
-  } else {
-    *(chunk - 1) = std::byte(index);
-  }
-  return chunk;
+  return nullptr;
 }
 
 void GenericBuddyAllocator::Deallocate(void* ptr) {
   if (ptr == nullptr) {
     return;
   }
-  auto* chunk = cpp20::bit_cast<std::byte*>(ptr);
-  auto layout = GetLayout(ptr);
-  PW_CHECK_OK(layout.status());
-  size_t chunk_size = layout->size();
 
-  Bucket* bucket = nullptr;
+  auto* block = BuddyBlock::FromUsableSpace(ptr);
+  BucketType* bucket = nullptr;
   PW_CHECK_INT_GT(buckets_.size(), 0);
   for (auto& current : span(buckets_.data(), buckets_.size() - 1)) {
-    if (current.chunk_size() < chunk_size) {
+    size_t outer_size =
+        BuddyBlock::OuterSizeFromInnerSize(current.max_inner_size());
+    if (outer_size < block->OuterSize()) {
       continue;
     }
     bucket = &current;
 
-    // Determine the expected address of this chunk's buddy by determining if
-    // it would be first or second in a merged chunk of the next larger size.
-    std::byte* buddy = chunk;
-    if ((chunk - region_.data()) % (chunk_size * 2) == 0) {
-      buddy += current.chunk_size();
+    // Determine the expected address of this free block's buddy by determining
+    // if it would be first or second in a merged block of the next larger size.
+    std::byte* item = block->UsableSpace();
+    if ((item - region_.data()) % (block->OuterSize() * 2) == 0) {
+      item += outer_size;
     } else {
-      buddy -= current.chunk_size();
+      item -= outer_size;
     }
-
-    // Look for the buddy chunk in the previous bucket. If found, remove it from
-    // that bucket, and repeat the whole process with the merged chunk.
-    void* match = current.RemoveIf(
-        [buddy](const std::byte* other) { return buddy == other; });
-    if (match == nullptr) {
+    // Blocks at the end of the range may not have a buddy.
+    if (item < region_.data() || region_.data() + region_.size() < item) {
       break;
     }
-    chunk = std::min(chunk, buddy);
-    chunk_size *= 2;
+
+    // Look for the buddy block in the previous bucket. If found, remove it from
+    // that bucket, and repeat the whole process with the merged block.
+    auto* buddy = BuddyBlock::FromUsableSpace(item);
+    if (!current.Remove(*buddy)) {
+      break;
+    }
+
+    block = BuddyBlock::Merge(std::move(block), std::move(buddy));
     bucket = nullptr;
   }
   if (bucket == nullptr) {
     bucket = &buckets_.back();
   }
 
-  // Add the (possibly merged) chunk to the correct bucket of free chunks.
-  bucket->Add(chunk);
+  // Add the (possibly merged) free block to the correct bucket.
+  std::ignore = bucket->Add(*block);
 }
 
 Result<Layout> GenericBuddyAllocator::GetLayout(const void* ptr) const {
   if (ptr < region_.data()) {
     return Status::OutOfRange();
   }
-  size_t min_chunk_size = buckets_.front().chunk_size();
   size_t offset = cpp20::bit_cast<uintptr_t>(ptr) -
                   cpp20::bit_cast<uintptr_t>(region_.data());
-  if (region_.size() <= offset || offset % min_chunk_size != 0) {
+  if (region_.size() <= offset || offset % min_outer_size_ != 0) {
     return Status::OutOfRange();
   }
-  const auto* chunk = cpp20::bit_cast<const std::byte*>(ptr);
-  std::byte index =
-      ptr == region_.data() ? region_[region_.size() - 1] : *(chunk - 1);
-  return Layout(buckets_[size_t(index)].chunk_size(), min_chunk_size);
+  const auto* block = BuddyBlock::FromUsableSpace(ptr);
+  return Layout(block->InnerSize(), min_outer_size_);
 }
 
 }  // namespace pw::allocator::internal

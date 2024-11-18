@@ -1,0 +1,124 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("base") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/bucket/base.h" ]
+  public_deps = [
+    "$dir_pw_allocator:config",
+    "$dir_pw_allocator:deallocator",
+    "$dir_pw_allocator/block:poisonable",
+  ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("fast_sorted") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/bucket/fast_sorted.h" ]
+  public_deps = [
+    ":base",
+    "$dir_pw_containers:intrusive_multimap",
+  ]
+}
+
+pw_source_set("sequenced") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/bucket/sequenced.h" ]
+  public_deps = [
+    ":base",
+    "$dir_pw_containers:intrusive_list",
+  ]
+}
+
+pw_source_set("sorted") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/bucket/sorted.h" ]
+  public_deps = [
+    ":base",
+    "$dir_pw_containers:intrusive_forward_list",
+  ]
+}
+
+pw_source_set("unordered") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/bucket/unordered.h" ]
+  public_deps = [
+    ":base",
+    "$dir_pw_containers:intrusive_forward_list",
+  ]
+}
+
+pw_source_set("testing") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/bucket/testing.h" ]
+  public_deps = [
+    "$dir_pw_allocator:buffer",
+    "$dir_pw_allocator:bump_allocator",
+  ]
+}
+
+pw_test("fast_sorted_test") {
+  sources = [ "fast_sorted_test.cc" ]
+  public_deps = [
+    ":fast_sorted",
+    ":testing",
+    "$dir_pw_allocator/block:detailed_block",
+  ]
+}
+
+pw_test("sequenced_test") {
+  sources = [ "sequenced_test.cc" ]
+  public_deps = [
+    ":sequenced",
+    ":testing",
+    "$dir_pw_allocator/block:detailed_block",
+  ]
+}
+
+pw_test("sorted_test") {
+  sources = [ "sorted_test.cc" ]
+  public_deps = [
+    ":sorted",
+    ":testing",
+    "$dir_pw_allocator/block:detailed_block",
+  ]
+}
+
+pw_test("unordered_test") {
+  sources = [ "unordered_test.cc" ]
+  public_deps = [
+    ":testing",
+    ":unordered",
+    "$dir_pw_allocator/block:detailed_block",
+  ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":sorted_test",
+    ":fast_sorted_test",
+    ":sequenced_test",
+    ":unordered_test",
+  ]
+}

@@ -15,10 +15,11 @@
 
 #include <array>
 #include <cstdint>
+#include <utility>
 
 #include "pw_allocator/block/detailed_block.h"
 #include "pw_allocator/block_allocator.h"
-#include "pw_allocator/bucket.h"
+#include "pw_allocator/bucket/unordered.h"
 #include "pw_assert/check.h"
 #include "pw_status/try.h"
 
@@ -27,7 +28,7 @@ namespace pw::allocator {
 /// Alias for a default block type that is compatible with
 /// `BucketAllocator`.
 template <typename OffsetType = uintptr_t>
-using BucketBlock = DetailedBlock<OffsetType, Bucket::Chunk>;
+using BucketBlock = DetailedBlock<OffsetType, UnorderedItem>;
 
 /// Block allocator that uses sized buckets of free blocks.
 ///
@@ -41,21 +42,19 @@ using BucketBlock = DetailedBlock<OffsetType, Bucket::Chunk>;
 ///
 /// The last bucket always has an unbounded size.
 ///
-/// As an example, assume that the allocator is configured with a minimum chunk
-/// size of 64 and 5 buckets. The internal state may look like the following:
+/// As an example, assume that the allocator is configured with a minimum block
+/// inner size of 64 and 5 buckets. The internal state may look like the
+/// following:
 ///
 /// @code{.unparsed}
-/// bucket[0] (64B) --> chunk[12B] --> chunk[42B] --> chunk[64B] --> NULL
-/// bucket[1] (128B) --> chunk[65B] --> chunk[72B] --> NULL
+/// bucket[0] (64B) --> block[12B] --> block[42B] --> block[64B] --> NULL
+/// bucket[1] (128B) --> block[65B] --> block[72B] --> NULL
 /// bucket[2] (256B) --> NULL
-/// bucket[3] (512B) --> chunk[312B] --> chunk[512B] --> chunk[416B] --> NULL
-/// bucket[4] (implicit) --> chunk[1024B] --> chunk[513B] --> NULL
+/// bucket[3] (512B) --> block[312B] --> block[512B] --> block[416B] --> NULL
+/// bucket[4] (implicit) --> block[1024B] --> block[513B] --> NULL
 /// @endcode
-///
-/// Note that since this allocator stores information in free chunks, it does
-/// not currently support poisoning.
 template <typename BlockType = BucketBlock<>,
-          size_t kMinBucketChunkSize = 32,
+          size_t kMinInnerSize = 32,
           size_t kNumBuckets = 5>
 class BucketAllocator : public BlockAllocator<BlockType> {
  private:
@@ -64,8 +63,11 @@ class BucketAllocator : public BlockAllocator<BlockType> {
  public:
   /// Constexpr constructor. Callers must explicitly call `Init`.
   constexpr BucketAllocator() {
-    Bucket::Init(span(buckets_.data(), buckets_.size() - 1),
-                 kMinBucketChunkSize);
+    size_t max_inner_size = kMinInnerSize;
+    for (auto& bucket : span(buckets_.data(), kNumBuckets - 1)) {
+      bucket.set_max_inner_size(max_inner_size);
+      max_inner_size <<= 1;
+    }
   }
 
   /// Non-constexpr constructor that automatically calls `Init`.
@@ -78,54 +80,47 @@ class BucketAllocator : public BlockAllocator<BlockType> {
     Base::Init(region);
   }
 
+  ~BucketAllocator() override {
+    for (auto& bucket : buckets_) {
+      bucket.Clear();
+    }
+  }
+
  private:
   /// @copydoc BlockAllocator::ChooseBlock
   BlockResult<BlockType> ChooseBlock(Layout layout) override {
-    layout = Layout(std::max(layout.size(), sizeof(Bucket::Chunk)),
-                    std::max(layout.alignment(), alignof(Bucket::Chunk)));
     for (auto& bucket : buckets_) {
-      if (bucket.chunk_size() < layout.size()) {
-        continue;
+      if (layout.size() <= bucket.max_inner_size()) {
+        BlockType* block = bucket.RemoveCompatible(layout);
+        if (block != nullptr) {
+          return BlockType::AllocFirst(std::move(block), layout);
+        }
       }
-      void* chosen = bucket.RemoveIf([&layout](const std::byte* chunk) {
-        const BlockType* block = BlockType::FromUsableSpace(chunk);
-        return block->CanAlloc(layout).ok();
-      });
-      if (chosen == nullptr) {
-        continue;
-      }
-      BlockType* block = BlockType::FromUsableSpace(chosen);
-      return BlockType::AllocLast(std::move(block), layout);
     }
     return BlockResult<BlockType>(nullptr, Status::NotFound());
   }
 
   /// @copydoc BlockAllocator::ReserveBlock
   void ReserveBlock(BlockType& block) override {
-    PW_ASSERT(block.IsFree());
-    size_t inner_size = block.InnerSize();
-    if (inner_size < sizeof(Bucket::Chunk)) {
-      return;
-    }
-    Bucket::Remove(block.UsableSpace());
-  }
-
-  /// @copydoc BlockAllocator::RecycleBlock
-  void RecycleBlock(BlockType& block) override {
-    PW_ASSERT(block.IsFree());
-    size_t inner_size = block.InnerSize();
-    if (inner_size < sizeof(Bucket::Chunk)) {
-      return;
-    }
     for (auto& bucket : buckets_) {
-      if (inner_size <= bucket.chunk_size()) {
-        bucket.Add(block.UsableSpace());
+      if (block.InnerSize() <= bucket.max_inner_size()) {
+        std::ignore = bucket.Remove(block);
         break;
       }
     }
   }
 
-  std::array<Bucket, kNumBuckets> buckets_;
+  /// @copydoc BlockAllocator::RecycleBlock
+  void RecycleBlock(BlockType& block) override {
+    for (auto& bucket : buckets_) {
+      if (block.InnerSize() <= bucket.max_inner_size()) {
+        std::ignore = bucket.Add(block);
+        break;
+      }
+    }
+  }
+
+  std::array<UnorderedBucket<BlockType>, kNumBuckets> buckets_;
 };
 
 }  // namespace pw::allocator

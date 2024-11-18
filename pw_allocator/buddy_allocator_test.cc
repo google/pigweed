@@ -23,34 +23,32 @@ namespace {
 
 // Test fixtures.
 
-using ::pw::allocator::BuddyAllocator;
+using BuddyAllocator = ::pw::allocator::BuddyAllocator<>;
 using ::pw::allocator::Layout;
 
 class BuddyAllocatorTest : public ::testing::Test {
  protected:
   static constexpr size_t kBufferSize = 0x400;
-  static constexpr size_t kMinChunkSize = 16;
-  static constexpr size_t kNumBuckets = 5;
-  alignas(kMinChunkSize) std::array<std::byte, kBufferSize> buffer_;
+  std::array<std::byte, kBufferSize> buffer_;
 };
 
 // Unit tests.
 
 TEST_F(BuddyAllocatorTest, ExplicitlyInit) {
-  BuddyAllocator<kMinChunkSize, kNumBuckets> allocator;
+  BuddyAllocator allocator;
   allocator.Init(buffer_);
 }
 
 TEST_F(BuddyAllocatorTest, AllocateSmall) {
-  BuddyAllocator<kMinChunkSize, kNumBuckets> allocator(buffer_);
-  void* ptr = allocator.Allocate(Layout(kMinChunkSize / 2, 1));
+  BuddyAllocator allocator(buffer_);
+  void* ptr = allocator.Allocate(Layout(BuddyAllocator::kMinOuterSize / 2, 1));
   ASSERT_NE(ptr, nullptr);
   allocator.Deallocate(ptr);
 }
 
-TEST_F(BuddyAllocatorTest, AllocateAllChunks) {
-  BuddyAllocator<kMinChunkSize, kNumBuckets> allocator(buffer_);
-  pw::Vector<void*, kBufferSize / kMinChunkSize> ptrs;
+TEST_F(BuddyAllocatorTest, AllocateAllBlocks) {
+  BuddyAllocator allocator(buffer_);
+  pw::Vector<void*, kBufferSize / BuddyAllocator::kMinOuterSize> ptrs;
   while (true) {
     void* ptr = allocator.Allocate(Layout(1, 1));
     if (ptr == nullptr) {
@@ -65,20 +63,20 @@ TEST_F(BuddyAllocatorTest, AllocateAllChunks) {
 }
 
 TEST_F(BuddyAllocatorTest, AllocateLarge) {
-  BuddyAllocator<kMinChunkSize, kNumBuckets> allocator(buffer_);
-  void* ptr = allocator.Allocate(Layout(48, 16));
+  BuddyAllocator allocator(buffer_);
+  void* ptr = allocator.Allocate(Layout(48, 1));
   ASSERT_NE(ptr, nullptr);
   allocator.Deallocate(ptr);
 }
 
 TEST_F(BuddyAllocatorTest, AllocateExcessiveSize) {
-  BuddyAllocator<kMinChunkSize, kNumBuckets> allocator(buffer_);
-  void* ptr = allocator.Allocate(Layout(384, 1));
+  BuddyAllocator allocator(buffer_);
+  void* ptr = allocator.Allocate(Layout(786, 1));
   EXPECT_EQ(ptr, nullptr);
 }
 
 TEST_F(BuddyAllocatorTest, AllocateExcessiveAlignment) {
-  BuddyAllocator<kMinChunkSize, kNumBuckets> allocator(buffer_);
+  BuddyAllocator allocator(buffer_);
   void* ptr = allocator.Allocate(Layout(48, 32));
   EXPECT_EQ(ptr, nullptr);
 }

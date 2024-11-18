@@ -23,11 +23,11 @@ namespace pw::allocator {
 /// allocator's memory region.
 ///
 /// Fragmentation can be measured as 1 minus the normalized root-sum-square of
-/// the unused chunk sizes, i.e.
+/// the free block inner sizes, i.e.
 ///
 ///   1 - (sqrt(sum(U[i]^2)) / sum(U[i])
 ///
-/// where `U[i]` is the inner size of the i-th unused chunk.
+/// where `U[i]` is the inner size of the i-th free block.
 ///
 /// This metric has been described by Adam Sawicki
 /// (https://asawicki.info/news_1757_a_metric_for_memory_fragmentation),

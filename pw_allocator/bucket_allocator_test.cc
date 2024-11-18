@@ -102,28 +102,28 @@ TEST_F(BucketAllocatorTest, AllocatesFromCompatibleBucket) {
   // Allocate in a different order. The correct bucket should be picked for each
   // allocation
 
-  // The allocation from bucket 2 splits a trailing block off the chunk.
+  // The allocation from bucket 2 splits off a leading block.
   Store(4, allocator.Allocate(Layout(129, 1)));
   auto* block2 = BlockType::FromUsableSpace(bucket2_ptr);
-  EXPECT_TRUE(block2->IsFree());
-  EXPECT_EQ(Fetch(4), block2->Next()->UsableSpace());
+  EXPECT_TRUE(block2->Next()->IsFree());
+  EXPECT_EQ(Fetch(4), block2->UsableSpace());
 
-  // This allocation exactly matches the chunk size of bucket 1.
+  // This allocation exactly matches the max inner size of bucket 1.
   Store(2, allocator.Allocate(Layout(128, 1)));
   EXPECT_EQ(Fetch(2), bucket1_ptr);
 
   // 129 should start with bucket 2, then use bucket 3 since 2 is empty.
-  // The allocation from bucket 3 splits a trailing block off the chunk.
+  // The allocation from bucket 3 splits off a leading block.
   auto* block3 = BlockType::FromUsableSpace(bucket3_ptr);
   Store(6, allocator.Allocate(Layout(129, 1)));
-  EXPECT_TRUE(block3->IsFree());
-  EXPECT_EQ(Fetch(6), block3->Next()->UsableSpace());
+  EXPECT_TRUE(block3->Next()->IsFree());
+  EXPECT_EQ(Fetch(6), block3->UsableSpace());
 
-  // The allocation from bucket 0 splits a trailing block off the chunk.
+  // The allocation from bucket 0 splits off a leading block.
   auto* block0 = BlockType::FromUsableSpace(bucket0_ptr);
   Store(0, allocator.Allocate(Layout(32, 1)));
-  EXPECT_TRUE(block0->IsFree());
-  EXPECT_EQ(Fetch(0), block0->Next()->UsableSpace());
+  EXPECT_TRUE(block0->Next()->IsFree());
+  EXPECT_EQ(Fetch(0), block0->UsableSpace());
 }
 
 TEST_F(BucketAllocatorTest, UnusedPortionIsRecycled) {
@@ -209,51 +209,6 @@ TEST_F(BucketAllocatorTest, CanMeasureFragmentation) {
   CanMeasureFragmentation();
 }
 
-TEST_F(BucketAllocatorTest, FirstSmallSplitIsRecycled) {
-  auto& allocator = GetAllocator({
-      {128 + (BlockType::kBlockOverhead * 2), Preallocation::kUsed},
-      {Preallocation::kSizeRemaining, Preallocation::kUsed},
-  });
-
-  // Deallocate to fill buckets.
-  allocator.Deallocate(Fetch(0));
-  Store(0, nullptr);
-
-  Store(2, allocator.Allocate(Layout(129, 1)));
-  ASSERT_NE(Fetch(2), nullptr);
-
-  auto& bucket_block_allocator = static_cast<BucketAllocator&>(allocator);
-  for (auto* block : bucket_block_allocator.blocks()) {
-    ASSERT_TRUE(block->IsValid());
-  }
-}
-
-TEST_F(BucketAllocatorTest, LaterSmallSplitNotIsRecycled) {
-  auto& allocator = GetAllocator({
-      {128 + BlockType::kBlockOverhead, Preallocation::kUsed},
-      {128 + (BlockType::kBlockOverhead * 2), Preallocation::kUsed},
-      {Preallocation::kSizeRemaining, Preallocation::kUsed},
-  });
-
-  // Deallocate to fill buckets.
-  allocator.Deallocate(Fetch(1));
-  Store(1, nullptr);
-
-  auto& bucket_block_allocator = static_cast<BucketAllocator&>(allocator);
-  size_t old_size = (*bucket_block_allocator.blocks().begin())->OuterSize();
-
-  // The leftover space is not larger than `kBlockOverhead`, and so should be
-  // merged with the previous block.
-  Store(3, allocator.Allocate(Layout(128, 1)));
-  ASSERT_NE(Fetch(3), nullptr);
-  size_t new_size = (*bucket_block_allocator.blocks().begin())->OuterSize();
-  EXPECT_NE(old_size, new_size);
-
-  for (auto* block : bucket_block_allocator.blocks()) {
-    ASSERT_TRUE(block->IsValid());
-  }
-}
-
 TEST_F(BucketAllocatorTest, PoisonPeriodically) { PoisonPeriodically(); }
 
 // TODO(b/376730645): Remove this test when the legacy alias is deprecated.
@@ -303,28 +258,28 @@ TEST_F(BucketBlockAllocatorTest, AllocatesFromCompatibleBucket) {
   // Allocate in a different order. The correct bucket should be picked for each
   // allocation
 
-  // The allocation from bucket 2 splits a trailing block off the chunk.
+  // The allocation from bucket 2 splits off a leading block.
   Store(4, allocator.Allocate(Layout(129, 1)));
   auto* block2 = BlockType::FromUsableSpace(bucket2_ptr);
-  EXPECT_TRUE(block2->IsFree());
-  EXPECT_EQ(Fetch(4), block2->Next()->UsableSpace());
+  EXPECT_TRUE(block2->Next()->IsFree());
+  EXPECT_EQ(Fetch(4), block2->UsableSpace());
 
-  // This allocation exactly matches the chunk size of bucket 1.
+  // This allocation exactly matches the max inner size of bucket 1.
   Store(2, allocator.Allocate(Layout(128, 1)));
   EXPECT_EQ(Fetch(2), bucket1_ptr);
 
   // 129 should start with bucket 2, then use bucket 3 since 2 is empty.
-  // The allocation from bucket 3 splits a trailing block off the chunk.
+  // The allocation from bucket 3 splits off a leading block.
   auto* block3 = BlockType::FromUsableSpace(bucket3_ptr);
   Store(6, allocator.Allocate(Layout(129, 1)));
-  EXPECT_TRUE(block3->IsFree());
-  EXPECT_EQ(Fetch(6), block3->Next()->UsableSpace());
+  EXPECT_TRUE(block3->Next()->IsFree());
+  EXPECT_EQ(Fetch(6), block3->UsableSpace());
 
-  // The allocation from bucket 0 splits a trailing block off the chunk.
+  // The allocation from bucket 0 splits off a leading block.
   auto* block0 = BlockType::FromUsableSpace(bucket0_ptr);
   Store(0, allocator.Allocate(Layout(32, 1)));
-  EXPECT_TRUE(block0->IsFree());
-  EXPECT_EQ(Fetch(0), block0->Next()->UsableSpace());
+  EXPECT_TRUE(block0->Next()->IsFree());
+  EXPECT_EQ(Fetch(0), block0->UsableSpace());
 }
 
 }  // namespace

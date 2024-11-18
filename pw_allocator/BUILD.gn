@@ -94,7 +94,6 @@ pw_source_set("block_allocator") {
   public = [ "public/pw_allocator/block_allocator.h" ]
   public_deps = [
     ":allocator",
-    ":bucket",
     ":fragmentation",
     "block:allocatable",
     "block:basic",
@@ -109,25 +108,13 @@ pw_source_set("block_allocator") {
   sources = [ "block_allocator.cc" ]
 }
 
-pw_source_set("bucket") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_allocator/bucket.h" ]
-  public_deps = [
-    "$dir_pw_third_party/fuchsia:stdcompat",
-    dir_pw_function,
-    dir_pw_span,
-  ]
-  deps = [ dir_pw_assert ]
-  sources = [ "bucket.cc" ]
-}
-
 pw_source_set("bucket_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/bucket_allocator.h" ]
   public_deps = [
     ":block_allocator",
-    ":bucket",
     "block:detailed_block",
+    "bucket:unordered",
     dir_pw_status,
   ]
 }
@@ -144,13 +131,13 @@ pw_source_set("buddy_allocator") {
   public = [ "public/pw_allocator/buddy_allocator.h" ]
   public_deps = [
     ":allocator",
-    ":bucket",
     "$dir_pw_containers:vector",
+    "block:basic",
+    "bucket:unordered",
     dir_pw_bytes,
     dir_pw_status,
   ]
   deps = [
-    ":buffer",
     "$dir_pw_bytes:alignment",
     "$dir_pw_third_party/fuchsia:stdcompat",
     dir_pw_assert,
@@ -655,6 +642,7 @@ pw_test_group("tests") {
   group_deps = [
     "benchmarks:tests",
     "block:tests",
+    "bucket:tests",
     "examples",
   ]
 }

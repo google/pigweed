@@ -43,7 +43,7 @@ TEST_F(FreeListHeapBufferTest, CanAllocate) {
   void* ptr = allocator.Allocate(kN / 4);
   ASSERT_NE(ptr, nullptr);
 
-  // The returned memory should be a chunk of the allocator's memory...
+  // The returned memory should be within the allocator's memory...
   EXPECT_GE(ptr, buffer_.data());
   EXPECT_LT(ptr, buffer_.data() + buffer_.size());
 
@@ -164,8 +164,7 @@ TEST_F(FreeListHeapBufferTest, ReallocHasSameContent) {
   ASSERT_NE(ptr2, nullptr);
   std::memcpy(&val2, ptr2, sizeof(size_t));
 
-  // Verify that data inside the allocated and reallocated chunks are the
-  // same.
+  // Verify that data inside the allocated and reallocated block are the same.
   EXPECT_EQ(val1, val2);
 
   // All pointers must be freed before the allocator goes out of scope.

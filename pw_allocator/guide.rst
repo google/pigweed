@@ -240,7 +240,7 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
   region of memory and only frees them all at once when the allocator is
   destroyed.
 - :ref:`module-pw_allocator-api-buddy_allocator`: Allocates objects out of a
-  chunks with sizes that are powers of two. Chunks are split evenly for smaller
+  blocks with sizes that are powers of two. Blocks are split evenly for smaller
   allocations and merged on free.
 - :ref:`module-pw_allocator-api-block_allocator`: Tracks memory using
   :ref:`module-pw_allocator-api-block`. Derived types use specific strategies
@@ -271,7 +271,7 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
     similar sizes.
   - :ref:`module-pw_allocator-api-bucket_block_allocator`: Sorts and stores
     each free blocks in a :ref:`module-pw_allocator-api-bucket` with a given
-    maximum chunk size.
+    maximum block inner size.
 
 - :ref:`module-pw_allocator-api-typed_pool`: Efficiently creates and
   destroys objects of a single given type.

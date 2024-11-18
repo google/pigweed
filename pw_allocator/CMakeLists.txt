@@ -101,21 +101,6 @@ pw_add_library(pw_allocator.block_allocator STATIC
     block_allocator.cc
 )
 
-pw_add_library(pw_allocator.bucket STATIC
-  HEADERS
-    public/pw_allocator/bucket.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_function
-    pw_span
-    pw_third_party.fuchsia.stdcompat
-  PRIVATE_DEPS
-    pw_assert
-  SOURCES
-    bucket.cc
-)
-
 pw_add_library(pw_allocator.bucket_allocator INTERFACE
   HEADERS
     public/pw_allocator/bucket_allocator.h
@@ -124,7 +109,7 @@ pw_add_library(pw_allocator.bucket_allocator INTERFACE
   PUBLIC_DEPS
     pw_allocator.block_allocator
     pw_allocator.block.detailed_block
-    pw_allocator.bucket
+    pw_allocator.bucket.unordered
     pw_status
 )
 
@@ -141,13 +126,12 @@ pw_add_library(pw_allocator.buddy_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.bucket
+    pw_allocator.block.basic
+    pw_allocator.bucket.unordered
     pw_bytes
     pw_containers.vector
     pw_status
   PRIVATE_DEPS
-    pw_allocator.buffer
-    pw_bytes.alignment
     pw_assert
     pw_third_party.fuchsia.stdcompat
   SOURCES
@@ -725,4 +709,5 @@ pw_add_test(pw_allocator.worst_fit_block_allocator_test
 
 add_subdirectory(benchmarks)
 add_subdirectory(block)
+add_subdirectory(bucket)
 add_subdirectory(examples)
