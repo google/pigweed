@@ -48,15 +48,15 @@ class LastFitBlockAllocator
 
  private:
   /// @copydoc Allocator::Allocate
-  BlockType* ChooseBlock(Layout layout) override {
+  BlockResult<BlockType> ChooseBlock(Layout layout) override {
     // Search backwards for the last block that can hold this allocation.
     for (auto* block : Base::rblocks()) {
       auto result = BlockType::AllocLast(std::move(block), layout);
       if (result.ok()) {
-        return result.block();
+        return result;
       }
     }
-    return nullptr;
+    return BlockResult<BlockType>(nullptr, Status::NotFound());
   }
 };
 

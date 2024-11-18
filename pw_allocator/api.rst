@@ -288,6 +288,15 @@ PoisonableBlock
 .. doxygenclass:: pw::allocator::PoisonableBlock
    :members:
 
+BlockResult
+-----------
+This type is not a block mix-in. It is used to communicate whether a method
+succeeded, what block was produced or modified, and what side-effects the call
+produced.
+
+.. doxygenclass:: pw::allocator::BlockResult
+   :members:
+
 DetailedBlock
 -------------
 This type is not a block mix-in. It is an example of a block implementation that

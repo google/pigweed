@@ -123,10 +123,6 @@ pw_add_library(pw_allocator.bucket_allocator INTERFACE
 
 # TODO(b/376730645): Remove deprecated interfaces.
 pw_add_library(pw_allocator.bucket_block_allocator INTERFACE
-  HEADERS
-    public/pw_allocator/bucket_block_allocator.h
-  PUBLIC_INCLUDES
-    public
   PUBLIC_DEPS
     pw_allocator.bucket_allocator
 )

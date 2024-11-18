@@ -50,7 +50,7 @@ class WorstFitBlockAllocator
 
  private:
   /// @copydoc Allocator::Allocate
-  BlockType* ChooseBlock(Layout layout) override {
+  BlockResult<BlockType> ChooseBlock(Layout layout) override {
     BlockType* worst = nullptr;
     size_t worst_size = layout.size() - 1;
     for (auto* block : Base::blocks()) {
@@ -61,12 +61,10 @@ class WorstFitBlockAllocator
         worst_size = inner_size;
       }
     }
-    if (worst == nullptr) {
-      return nullptr;
+    if (worst != nullptr) {
+      return BlockType::AllocFirst(std::move(worst), layout);
     }
-    auto result = BlockType::AllocFirst(std::move(worst), layout);
-    PW_ASSERT(result.ok());
-    return result.block();
+    return BlockResult<BlockType>(nullptr, Status::NotFound());
   }
 };
 

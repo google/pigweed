@@ -89,7 +89,7 @@ class BucketAllocator : public BlockAllocator<uintptr_t, 0> {
 
  private:
   /// @copydoc BlockAllocator::ChooseBlock
-  BlockType* ChooseBlock(Layout layout) override {
+  BlockResult<BlockType> ChooseBlock(Layout layout) override {
     layout =
         Layout(std::max(layout.size(), sizeof(internal::Bucket::Chunk)),
                std::max(layout.alignment(), alignof(internal::Bucket::Chunk)));
@@ -105,28 +105,9 @@ class BucketAllocator : public BlockAllocator<uintptr_t, 0> {
         continue;
       }
       BlockType* block = BlockType::FromUsableSpace(chosen);
-      auto result = BlockType::AllocLast(std::move(block), layout);
-      if (!result.ok()) {
-        break;
-      }
-      block = result.block();
-
-      using Prev = internal::GenericBlockResult::Prev;
-      if (result.prev() == Prev::kSplitNew) {
-        // The new free block needs to be added to a bucket.
-        BlockType* prev = block->Prev();
-        RecycleBlock(prev);
-      }
-
-      using Next = internal::GenericBlockResult::Next;
-      if (result.next() == Next::kSplitNew) {
-        // The new free block needs to be added to a bucket.
-        BlockType* next = block->Next();
-        RecycleBlock(next);
-      }
-      return block;
+      return BlockType::AllocLast(std::move(block), layout);
     }
-    return nullptr;
+    return BlockResult<BlockType>(nullptr, Status::NotFound());
   }
 
   /// @copydoc BlockAllocator::ReserveBlock

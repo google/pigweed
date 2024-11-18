@@ -171,6 +171,9 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   Result<BlockPtrType> FromUsableSpace(PtrType ptr) const;
 
  private:
+  using BlockResultPrev = internal::GenericBlockResult::Prev;
+  using BlockResultNext = internal::GenericBlockResult::Next;
+
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override;
 
@@ -189,14 +192,12 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   /// Selects a free block to allocate from.
   ///
   /// This method represents the allocator-specific strategy of choosing which
-  /// block should be used to satisfy allocation requests.
+  /// block should be used to satisfy allocation requests. If the returned
+  /// result indicates success, `block` will be replaced by the chosen block.
   ///
-  /// If derived classes override ``ReserveBlock`` and ``RecycleBlock`` to
-  /// provide additional bookkeeping, the implementation of this method should
-  /// invoke those methods as needed.
-  ///
+  /// @param  block   Used to return the chosen block.
   /// @param  layout  Same as ``Allocator::Allocate``.
-  virtual BlockType* ChooseBlock(Layout layout) = 0;
+  virtual BlockResult<BlockType> ChooseBlock(Layout layout) = 0;
 
   /// Indicates that a block will no longer be free.
   ///
@@ -290,11 +291,27 @@ void BlockAllocator<OffsetType, kPoisonInterval>::Reset() {
 
 template <typename OffsetType, uint16_t kPoisonInterval>
 void* BlockAllocator<OffsetType, kPoisonInterval>::DoAllocate(Layout layout) {
-  PW_ASSERT(last_->Next() == nullptr);
-  BlockType* block = ChooseBlock(layout);
-  if (block == nullptr) {
+  if (capacity_ == 0) {
+    // Not initialized.
     return nullptr;
   }
+
+  PW_ASSERT(last_->Next() == nullptr);
+  auto result = ChooseBlock(layout);
+  if (!result.ok()) {
+    // No valid block for request.
+    return nullptr;
+  }
+  BlockType* block = result.block();
+
+  // New free blocks may be created when allocating.
+  if (result.prev() == BlockResultPrev::kSplitNew) {
+    RecycleBlock(block->Prev());
+  }
+  if (result.next() == BlockResultNext::kSplitNew) {
+    RecycleBlock(block->Next());
+  }
+
   UpdateLast(block);
   PW_ASSERT(block <= last_);
   return block->UsableSpace();
@@ -312,11 +329,11 @@ void BlockAllocator<OffsetType, kPoisonInterval>::DoDeallocate(void* ptr) {
   }
 
   // Neighboring blocks may be merged when freeing.
-  if (PrevIsFree(block)) {
-    ReserveBlock(block->Prev());
+  if (auto* prev = block->Prev(); prev != nullptr && prev->IsFree()) {
+    ReserveBlock(prev);
   }
-  if (NextIsFree(block)) {
-    ReserveBlock(block->Next());
+  if (auto* next = block->Next(); next != nullptr && next->IsFree()) {
+    ReserveBlock(next);
   }
 
   // Free the block and merge it with its neighbors, if possible.
@@ -345,7 +362,7 @@ bool BlockAllocator<OffsetType, kPoisonInterval>::DoResize(void* ptr,
   BlockType* block = *result;
 
   // Neighboring blocks may be merged when resizing.
-  if (NextIsFree(block)) {
+  if (auto* next = block->Next(); next != nullptr && next->IsFree()) {
     ReserveBlock(block->Next());
   }
 
@@ -354,7 +371,7 @@ bool BlockAllocator<OffsetType, kPoisonInterval>::DoResize(void* ptr,
   }
   UpdateLast(block);
 
-  if (NextIsFree(block)) {
+  if (auto* next = block->Next(); next != nullptr && next->IsFree()) {
     RecycleBlock(block->Next());
   }
 

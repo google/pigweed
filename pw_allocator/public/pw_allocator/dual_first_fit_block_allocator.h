@@ -51,14 +51,14 @@ class DualFirstFitBlockAllocator
   void set_threshold(size_t threshold) { threshold_ = threshold; }
 
  private:
-  /// @copydoc Allocator::Allocate
-  BlockType* ChooseBlock(Layout layout) override {
+  /// @copydoc BlockAllocator::ChooseBlock
+  BlockResult<BlockType> ChooseBlock(Layout layout) override {
     if (layout.size() < threshold_) {
       // Search backwards for the last block that can hold this allocation.
       for (auto* block : Base::rblocks()) {
         auto result = BlockType::AllocLast(std::move(block), layout);
         if (result.ok()) {
-          return result.block();
+          return result;
         }
       }
     } else {
@@ -66,12 +66,12 @@ class DualFirstFitBlockAllocator
       for (auto* block : Base::blocks()) {
         auto result = BlockType::AllocFirst(std::move(block), layout);
         if (result.ok()) {
-          return result.block();
+          return result;
         }
       }
     }
     // No valid block found.
-    return nullptr;
+    return BlockResult<BlockType>(nullptr, Status::NotFound());
   }
 
   size_t threshold_ = 0;

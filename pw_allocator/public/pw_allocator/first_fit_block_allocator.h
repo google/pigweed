@@ -48,15 +48,15 @@ class FirstFitBlockAllocator
 
  private:
   /// @copydoc Allocator::Allocate
-  BlockType* ChooseBlock(Layout layout) override {
+  BlockResult<BlockType> ChooseBlock(Layout layout) override {
     // Search forwards for the first block that can hold this allocation.
     for (auto* block : Base::blocks()) {
       auto result = BlockType::AllocFirst(std::move(block), layout);
       if (result.ok()) {
-        return result.block();
+        return result;
       }
     }
-    return nullptr;
+    return BlockResult<BlockType>(nullptr, Status::NotFound());
   }
 };
 
