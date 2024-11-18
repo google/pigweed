@@ -17,24 +17,39 @@
 #include <cstdint>
 
 #include "pw_tokenizer/detokenize.h"
-#include "pw_unit_test/framework.h"
+#include "pw_unit_test/framework_backend.h"
 
 namespace {
 
 using namespace std::literals::string_view_literals;
 
-class MallocTest : public ::testing::Test {
- protected:
-  void SetUp() override { pw::malloc::InitSystemAllocator(heap_); }
+std::array<std::byte, 8192> system_heap;
 
- private:
-  std::array<std::byte, 8192> heap_;
+class MallocTest : public ::pw::unit_test::internal::Test {
+ public:
+  // NOTE! This tests should only be run WITHOUT a pw_malloc backend set.
+  // Otherwise, `InitSystemAllocator` may have already been called and may
+  // crash.
+  static void SetUpTestSuite() { pw::malloc::InitSystemAllocator(system_heap); }
+
+ protected:
+  // NOTE!! This tests ONLY run on host with the "light" framework. Other
+  // test frameworks may attempt and fail to de/allocate outside the test method
+  // outside the test body.
+  void SetUp() override {
+    auto& system_metrics = pw::malloc::GetSystemMetrics();
+    ASSERT_EQ(system_metrics.allocated_bytes.value(), 0U);
+  }
+
+  void TearDown() override {
+    auto& system_metrics = pw::malloc::GetSystemMetrics();
+    ASSERT_EQ(system_metrics.allocated_bytes.value(), 0U);
+  }
 };
 
 TEST_F(MallocTest, MallocFree) {
   constexpr size_t kSize = 256;
   auto& system_metrics = pw::malloc::GetSystemMetrics();
-  EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
 
   void* ptr = malloc(kSize);
   ASSERT_NE(ptr, nullptr);
@@ -47,7 +62,6 @@ TEST_F(MallocTest, MallocFree) {
 TEST_F(MallocTest, NewDelete) {
   constexpr size_t kSize = 256;
   auto& system_metrics = pw::malloc::GetSystemMetrics();
-  EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
 
   auto* ptr = new std::array<std::byte, kSize>();
   ASSERT_NE(ptr, nullptr);
@@ -61,7 +75,6 @@ TEST_F(MallocTest, CallocFree) {
   constexpr size_t kNum = 4;
   constexpr size_t kSize = 64;
   auto& system_metrics = pw::malloc::GetSystemMetrics();
-  EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
 
   void* ptr = calloc(kNum, kSize);
   ASSERT_NE(ptr, nullptr);
@@ -74,7 +87,6 @@ TEST_F(MallocTest, CallocFree) {
 TEST_F(MallocTest, ReallocFree) {
   constexpr size_t kSize = 256;
   auto& system_metrics = pw::malloc::GetSystemMetrics();
-  EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
 
   void* ptr = realloc(nullptr, kSize);
   ASSERT_NE(ptr, nullptr);
@@ -88,7 +100,6 @@ TEST_F(MallocTest, MallocReallocFree) {
   constexpr size_t kSize1 = 256;
   constexpr size_t kSize2 = 512;
   auto& system_metrics = pw::malloc::GetSystemMetrics();
-  EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
 
   void* ptr = malloc(kSize1);
   ASSERT_NE(ptr, nullptr);
@@ -112,7 +123,7 @@ TEST_F(MallocTest, MallocReallocFree) {
 // This test mimics pw_tokenizer//detokenize_test.cc in order to perform memory
 // allocations as a result of manipulating a std::unordered_map.
 // See also b/345526413 for the failure that motivated this test.
-TEST_F(MallocTest, Detokenizae) {
+TEST_F(MallocTest, Detokenize) {
   static constexpr char kTestDatabase[] =
       "TOKENS\0\0"
       "\x06\x00\x00\x00"  // Number of tokens in this database.

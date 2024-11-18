@@ -44,6 +44,31 @@ void InitSystemAllocator(ByteSpan heap);
 ///                         a heap. This MUST be less than `heap_high_addr`.
 void InitSystemAllocator(void* heap_low_addr, void* heap_high_addr);
 
+/// Sets the memory to be used by the system allocator.
+///
+/// This method is a generic version of `InitSystemAllocator` that works with
+/// allocator types that have an `Init(ByteSpan)` method. It can be used to
+/// implement `InitSystemAllocator` for specific pw_malloc backends.
+///
+/// This method enforces the requirement that it is only called once.
+template <typename AllocatorType>
+void InitSystemAllocator(ByteSpan heap);
+
+}  // namespace pw::malloc
+
+#if __cplusplus
+PW_EXTERN_C_START
+#endif
+
+/// Legacy name for `pw::malloc::InitSystemAllocator`.
+void pw_MallocInit(uint8_t* heap_low_addr, uint8_t* heap_high_addr);
+
+#if __cplusplus
+PW_EXTERN_C_END
+#endif
+
+namespace pw::malloc {
+
 /// Returns the system allocator.
 ///
 /// This function must be implemented to return a pointer to an allocator with a
@@ -62,15 +87,15 @@ Allocator* GetSystemAllocator();
 /// Returns the metrics for the system allocator using the configured type.
 const PW_MALLOC_METRICS_TYPE& GetSystemMetrics();
 
+// Tmplate method implementations.
+
+template <typename AllocatorType>
+void InitSystemAllocator(ByteSpan heap) {
+  static bool initialized = false;
+  PW_ASSERT(!initialized);
+  auto* allocator = static_cast<AllocatorType*>(GetSystemAllocator());
+  allocator->Init(heap);
+  initialized = true;
+}
+
 }  // namespace pw::malloc
-
-#if __cplusplus
-PW_EXTERN_C_START
-#endif
-
-/// Legacy name for `pw::malloc::InitSystemAllocator`.
-void pw_MallocInit(uint8_t* heap_low_addr, uint8_t* heap_high_addr);
-
-#if __cplusplus
-PW_EXTERN_C_END
-#endif

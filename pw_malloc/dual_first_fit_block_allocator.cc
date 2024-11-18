@@ -31,15 +31,15 @@ DualFirstFitBlockAllocator& GetDualFirstFitBlockAllocator() {
 
 }  // namespace
 
-Allocator* GetSystemAllocator() {
-  auto& system_allocator = GetDualFirstFitBlockAllocator();
-  return &system_allocator;
-}
-
 void InitSystemAllocator(ByteSpan heap) {
   auto& system_allocator = GetDualFirstFitBlockAllocator();
   system_allocator.set_threshold(PW_MALLOC_DUAL_FIRST_FIT_THRESHOLD);
   system_allocator.Init(heap);
+}
+
+Allocator* GetSystemAllocator() {
+  auto& system_allocator = GetDualFirstFitBlockAllocator();
+  return &system_allocator;
 }
 
 }  // namespace pw::malloc

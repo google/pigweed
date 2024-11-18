@@ -18,27 +18,18 @@
 #include "pw_malloc/malloc.h"
 
 namespace pw::malloc {
-namespace {
 
 using LastFitBlockAllocator =
     ::pw::allocator::LastFitBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE,
                                            PW_MALLOC_BLOCK_POISON_INTERVAL>;
 
-LastFitBlockAllocator& GetLastFitBlockAllocator() {
-  static LastFitBlockAllocator allocator;
-  return allocator;
+void InitSystemAllocator(ByteSpan heap) {
+  InitSystemAllocator<LastFitBlockAllocator>(heap);
 }
-
-}  // namespace
 
 Allocator* GetSystemAllocator() {
-  auto& system_allocator = GetLastFitBlockAllocator();
-  return &system_allocator;
-}
-
-void InitSystemAllocator(ByteSpan heap) {
-  auto& system_allocator = GetLastFitBlockAllocator();
-  system_allocator.Init(heap);
+  static LastFitBlockAllocator allocator;
+  return &allocator;
 }
 
 }  // namespace pw::malloc

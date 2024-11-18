@@ -18,27 +18,18 @@
 #include "pw_malloc/malloc.h"
 
 namespace pw::malloc {
-namespace {
 
 using BucketAllocator =
     ::pw::allocator::BucketAllocator<PW_MALLOC_MIN_BUCKET_SIZE,
                                      PW_MALLOC_NUM_BUCKETS>;
 
-BucketAllocator& GetBucketAllocator() {
-  static BucketAllocator allocator;
-  return allocator;
+void InitSystemAllocator(ByteSpan heap) {
+  InitSystemAllocator<BucketAllocator>(heap);
 }
-
-}  // namespace
 
 Allocator* GetSystemAllocator() {
-  auto& system_allocator = GetBucketAllocator();
-  return &system_allocator;
-}
-
-void InitSystemAllocator(ByteSpan heap) {
-  auto& system_allocator = GetBucketAllocator();
-  system_allocator.Init(heap);
+  static BucketAllocator allocator;
+  return &allocator;
 }
 
 }  // namespace pw::malloc

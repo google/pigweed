@@ -41,6 +41,10 @@ config("public_include_path") {
   include_dirs = [ "public" ]
 }
 
+config("private_include_path") {
+  include_dirs = [ "." ]
+}
+
 config("wrap_functions") {
   # Link options that provides replace dynamic memory operations in standard
   # library with the pigweed malloc.
@@ -65,12 +69,16 @@ config("pw_malloc_wrapper_config") {
   configs = [ ":wrap_functions" ]
 }
 
-_pw_malloc_facade = {
+_COMMON_SRCS = [ "malloc.cc" ]
+
+_COMMON_HDRS = [ "public/pw_malloc/malloc.h" ]
+
+group("common") {
+  visibility = [ ":*" ]
   public_configs = [
     ":public_include_path",
     ":wrap_functions",
   ]
-  public = [ "public/pw_malloc/malloc.h" ]
   public_deps = [
     ":config",
     "$dir_pw_allocator:allocator",
@@ -78,12 +86,13 @@ _pw_malloc_facade = {
     dir_pw_bytes,
     dir_pw_preprocessor,
   ]
-  sources = [ "malloc.cc" ]
 }
 
 pw_facade("pw_malloc") {
-  forward_variables_from(_pw_malloc_facade, "*")
   backend = pw_malloc_BACKEND
+  public = _COMMON_HDRS
+  sources = _COMMON_SRCS
+  public_deps = [ ":common" ]
 }
 
 # Allocator-based backends.
@@ -131,50 +140,70 @@ pw_source_set("worst_fit_block_allocator") {
 
 # Backend unit tests.
 
-_testing = {
-  forward_variables_from(_pw_malloc_facade, "*")
-  sources += [ "malloc_test.cc" ]
-  cflags = [
-    "-include",
-    rebase_path("pw_malloc_private/test_config_overrides.h", root_build_dir),
+pw_source_set("testing") {
+  configs = [ ":private_include_path" ]
+  defines = [
+    "PW_MALLOC_METRICS_INCLUDE=\"pw_malloc/internal/testing.h\"",
+    "PW_MALLOC_METRICS_TYPE=::pw::malloc::internal::TestMetrics",
+    "PW_MALLOC_BLOCK_OFFSET_TYPE=uint16_t",
+    "PW_MALLOC_MIN_BUCKET_SIZE=64",
+    "PW_MALLOC_NUM_BUCKETS=4",
   ]
-  deps = [ "$dir_pw_tokenizer:decoder" ]
+  public = _COMMON_HDRS + [ "public/pw_malloc/internal/testing.h" ]
+  sources = _COMMON_SRCS + [ "malloc_test.cc" ]
+  public_deps = [ ":common" ]
+  deps = [
+    "$dir_pw_tokenizer:decoder",
+    "$dir_pw_unit_test:light",
+  ]
 }
 
 pw_test("best_fit_block_allocator_test") {
-  forward_variables_from(_testing, "*")
-  deps += [ "$dir_pw_allocator:best_fit_block_allocator" ]
-  sources += [ "best_fit_block_allocator.cc" ]
+  deps = [
+    ":testing",
+    "$dir_pw_allocator:best_fit_block_allocator",
+  ]
+  sources = [ "best_fit_block_allocator.cc" ]
 }
 
 pw_test("bucket_allocator_test") {
-  forward_variables_from(_testing, "*")
-  deps += [ "$dir_pw_allocator:bucket_allocator" ]
-  sources += [ "bucket_allocator.cc" ]
+  deps = [
+    ":testing",
+    "$dir_pw_allocator:bucket_allocator",
+  ]
+  sources = [ "bucket_allocator.cc" ]
 }
 
 pw_test("dual_first_fit_block_allocator_test") {
-  forward_variables_from(_testing, "*")
-  deps += [ "$dir_pw_allocator:dual_first_fit_block_allocator" ]
-  sources += [ "dual_first_fit_block_allocator.cc" ]
+  deps = [
+    ":testing",
+    "$dir_pw_allocator:dual_first_fit_block_allocator",
+  ]
+  sources = [ "dual_first_fit_block_allocator.cc" ]
 }
 
 pw_test("first_fit_block_allocator_test") {
-  forward_variables_from(_testing, "*")
-  deps += [ "$dir_pw_allocator:first_fit_block_allocator" ]
-  sources += [ "first_fit_block_allocator.cc" ]
+  deps = [
+    ":testing",
+    "$dir_pw_allocator:first_fit_block_allocator",
+  ]
+  sources = [ "first_fit_block_allocator.cc" ]
 }
 
 pw_test("last_fit_block_allocator_test") {
-  forward_variables_from(_testing, "*")
-  deps += [ "$dir_pw_allocator:last_fit_block_allocator" ]
-  sources += [ "last_fit_block_allocator.cc" ]
+  deps = [
+    ":testing",
+    "$dir_pw_allocator:last_fit_block_allocator",
+  ]
+  sources = [ "last_fit_block_allocator.cc" ]
 }
 
 pw_test("worst_fit_block_allocator_test") {
-  forward_variables_from(_testing, "*")
-  deps += [ "$dir_pw_allocator:worst_fit_block_allocator" ]
-  sources += [ "worst_fit_block_allocator.cc" ]
+  deps = [
+    ":testing",
+    "$dir_pw_allocator:worst_fit_block_allocator",
+  ]
+  sources = [ "worst_fit_block_allocator.cc" ]
 }
 
 # Docs
@@ -187,16 +216,19 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
+  # Only run the test if no backend is set to ensure there is no system
+  # allocator.
   enable_if = pw_malloc_BACKEND == ""
 
   # Currently only supported for host unit tests on Linux.
   enable_if = enable_if && defined(pw_toolchain_SCOPE.is_host_toolchain) &&
               pw_toolchain_SCOPE.is_host_toolchain && host_os == "linux"
 
-  # gtest allocates objects before the test fixture initializes the heap.
+  # Only run using the light framework, since gtest allocates objects before the
+  # test fixture initializes the heap.
   enable_if = enable_if && pw_unit_test_BACKEND == "$dir_pw_unit_test:light"
 
-  # ASAN and TSAN wrap malloc.
+  # Don't run with ASAN and TSAN since they wrap malloc.
   default_configs = []
   if (defined(pw_toolchain_SCOPE.defaults)) {
     defaults = pw_toolchain_SCOPE.defaults

@@ -13,13 +13,9 @@
 // the License.
 #pragma once
 
-#include <cstdint>
-
 #include "pw_allocator/metrics.h"
-#include "pw_allocator/synchronized_allocator.h"
-#include "pw_allocator/tracking_allocator.h"
 
-namespace pw::malloc {
+namespace pw::malloc::internal {
 
 struct TestMetrics {
   PW_ALLOCATOR_METRICS_ENABLE(requested_bytes);
@@ -27,12 +23,4 @@ struct TestMetrics {
   PW_ALLOCATOR_METRICS_ENABLE(cumulative_allocated_bytes);
 };
 
-}  // namespace pw::malloc
-
-#define PW_MALLOC_METRICS_TYPE ::pw::malloc::TestMetrics
-
-#define PW_MALLOC_BLOCK_OFFSET_TYPE uint16_t
-
-#define PW_MALLOC_MIN_BUCKET_SIZE 64
-
-#define PW_MALLOC_NUM_BUCKETS 4
+}  // namespace pw::malloc::internal

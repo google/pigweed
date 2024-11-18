@@ -13,6 +13,7 @@
 # the License.
 
 load("//pw_build:pw_facade.bzl", "pw_facade")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -28,37 +29,47 @@ alias(
     actual = "pw_malloc.facade",
 )
 
-COMMON_LINKOPTS = [
-    # Link options that replace dynamic memory operations in standard
-    # library with the pigweed malloc.
-    "-Wl,--wrap=malloc",
-    "-Wl,--wrap=free",
-    "-Wl,--wrap=realloc",
-    "-Wl,--wrap=calloc",
-    "-Wl,--wrap=_malloc_r",
-    "-Wl,--wrap=_realloc_r",
-    "-Wl,--wrap=_free_r",
-    "-Wl,--wrap=_calloc_r",
+_COMMON_SRCS = ["malloc.cc"]
+
+_COMMON_HDRS = [
+    "public/pw_malloc/config.h",
+    "public/pw_malloc/malloc.h",
 ]
 
-pw_facade(
-    name = "pw_malloc",
-    srcs = ["malloc.cc"],
-    hdrs = [
-        "public/pw_malloc/config.h",
-        "public/pw_malloc/malloc.h",
+cc_library(
+    name = "common",
+    linkopts = [
+        # Link options that replace dynamic memory operations in standard
+        # library with the pigweed malloc.
+        "-Wl,--wrap=malloc",
+        "-Wl,--wrap=free",
+        "-Wl,--wrap=realloc",
+        "-Wl,--wrap=calloc",
+        "-Wl,--wrap=_malloc_r",
+        "-Wl,--wrap=_realloc_r",
+        "-Wl,--wrap=_free_r",
+        "-Wl,--wrap=_calloc_r",
     ],
-    backend = ":backend",
-    linkopts = COMMON_LINKOPTS,
-    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
-        ":config_override",
         "//pw_allocator:allocator",
         "//pw_allocator:synchronized_allocator",
         "//pw_allocator:tracking_allocator",
         "//pw_assert",
         "//pw_bytes",
         "//pw_preprocessor",
+    ],
+)
+
+pw_facade(
+    name = "pw_malloc",
+    srcs = _COMMON_SRCS,
+    hdrs = _COMMON_HDRS,
+    backend = ":backend",
+    strip_include_prefix = "public",
+    deps = [
+        ":common",
+        ":config_override",
     ],
 )
 
@@ -191,17 +202,133 @@ cc_library(
     ],
 )
 
-# TODO(b/343531095): Add unit tests to Bazel build whenever the following
-# conditions are met:
-# * The backend is not set.
-# * The host is not "mac", due to missing linker support.
-# * No sanitizer is configured, due to conflicts with interceptors.
-# * pico_malloc is not in use.
-# * gtest is not in use, since it dynamically allocates before calling SetUp().
-filegroup(
-    name = "malloc_test",
+cc_library(
+    name = "testing",
+    testonly = True,
+    srcs = _COMMON_SRCS,
+    hdrs = _COMMON_HDRS + ["public/pw_malloc/internal/testing.h"],
+    defines = [
+        "PW_MALLOC_METRICS_INCLUDE=\\\"pw_malloc/internal/testing.h\\\"",
+        "PW_MALLOC_METRICS_TYPE=::pw::malloc::internal::TestMetrics",
+        "PW_MALLOC_BLOCK_OFFSET_TYPE=uint16_t",
+        "PW_MALLOC_MIN_BUCKET_SIZE=64",
+        "PW_MALLOC_NUM_BUCKETS=4",
+    ],
+    implementation_deps = [
+        "//pw_tokenizer:decoder",
+    ],
+    strip_include_prefix = "public",
+
+    # Only run the test if no backend is set to ensure there is no system
+    # allocator.
+    target_compatible_with = select({
+                                 "//pw_malloc:best_fit_block_allocator_backend": ["@platforms//:incompatible"],
+                                 "//pw_malloc:bucket_allocator_backend": ["@platforms//:incompatible"],
+                                 "//pw_malloc:bucket_block_allocator_backend": ["@platforms//:incompatible"],
+                                 "//pw_malloc:dual_first_fit_block_allocator_backend": ["@platforms//:incompatible"],
+                                 "//pw_malloc:first_fit_block_allocator_backend": ["@platforms//:incompatible"],
+                                 "//pw_malloc:last_fit_block_allocator_backend": ["@platforms//:incompatible"],
+                                 "//pw_malloc:worst_fit_block_allocator_backend": ["@platforms//:incompatible"],
+                                 "//pw_malloc_freelist:backend": ["@platforms//:incompatible"],
+                                 "//pw_malloc_freertos:backend": ["@platforms//:incompatible"],
+                                 "//conditions:default": [],
+                             }) +
+
+                             # Currently only supported for host unit tests on Linux.
+                             select({
+                                 "@platforms//os:linux": [],
+                                 "//conditions:default": ["@platforms//:incompatible"],
+                             }) +
+
+                             # Only run using the light framework, since gtest allocates objects before
+                             # the test fixture initializes the heap.
+                             select({
+                                 "//pw_unit_test:light_setting": [],
+                                 "//conditions:default": ["@platforms//:incompatible"],
+                             }) +
+
+                             # Don't run with ASAN or TSAN, since they wrap malloc.
+                             select({
+                                 "//pw_toolchain/host_clang:asan_enabled": ["@platforms//:incompatible"],
+                                 "//pw_toolchain/host_clang:tsan_enabled": ["@platforms//:incompatible"],
+                                 "//conditions:default": [],
+                             }),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":common",
+        "//pw_tokenizer:decoder",
+        "//pw_unit_test:light",
+    ],
+)
+
+pw_cc_test(
+    name = "best_fit_block_allocator_test",
+    srcs = [
+        "best_fit_block_allocator.cc",
+        "malloc_test.cc",
+    ],
+    deps = [
+        ":testing",
+        "//pw_allocator:best_fit_block_allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "bucket_allocator_test",
+    srcs = [
+        "bucket_allocator.cc",
+        "malloc_test.cc",
+    ],
+    deps = [
+        ":testing",
+        "//pw_allocator:bucket_allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "dual_first_fit_block_allocator_test",
+    srcs = [
+        "dual_first_fit_block_allocator.cc",
+        "malloc_test.cc",
+    ],
+    deps = [
+        ":testing",
+        "//pw_allocator:dual_first_fit_block_allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "first_fit_block_allocator_test",
+    srcs = [
+        "first_fit_block_allocator.cc",
+        "malloc_test.cc",
+    ],
+    deps = [
+        ":testing",
+        "//pw_allocator:first_fit_block_allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "last_fit_block_allocator_test",
+    srcs = [
+        "last_fit_block_allocator.cc",
+        "malloc_test.cc",
+    ],
+    deps = [
+        ":testing",
+        "//pw_allocator:last_fit_block_allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "worst_fit_block_allocator_test",
     srcs = [
         "malloc_test.cc",
-        "pw_malloc_private/test_config_overrides.h",
+        "worst_fit_block_allocator.cc",
+    ],
+    deps = [
+        ":testing",
+        "//pw_allocator:worst_fit_block_allocator",
     ],
 )
