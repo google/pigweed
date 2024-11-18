@@ -79,7 +79,7 @@ pw_executable("dual_first_fit_benchmark") {
   sources = [ "dual_first_fit_benchmark.cc" ]
   deps = [
     ":benchmark",
-    "$dir_pw_allocator:dual_first_fit_block_allocator",
+    "$dir_pw_allocator:first_fit",
     "$dir_pw_random",
   ]
 }
@@ -88,7 +88,7 @@ pw_executable("first_fit_benchmark") {
   sources = [ "first_fit_benchmark.cc" ]
   deps = [
     ":benchmark",
-    "$dir_pw_allocator:first_fit_block_allocator",
+    "$dir_pw_allocator:first_fit",
     "$dir_pw_random",
   ]
 }
@@ -97,7 +97,7 @@ pw_executable("last_fit_benchmark") {
   sources = [ "last_fit_benchmark.cc" ]
   deps = [
     ":benchmark",
-    "$dir_pw_allocator:last_fit_block_allocator",
+    "$dir_pw_allocator:first_fit",
     "$dir_pw_random",
   ]
 }

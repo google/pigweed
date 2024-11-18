@@ -70,7 +70,7 @@ pw_test("basic") {
 pw_test("block_allocator") {
   deps = [
     ":named_u32",
-    "$dir_pw_allocator:last_fit_block_allocator",
+    "$dir_pw_allocator:first_fit",
   ]
   sources = [ "block_allocator.cc" ]
 }
@@ -102,7 +102,7 @@ pw_test("linker_sections") {
   deps = [
     ":named_u32",
     "$dir_pw_allocator:allocator",
-    "$dir_pw_allocator:first_fit_block_allocator",
+    "$dir_pw_allocator:first_fit",
     "$dir_pw_allocator:worst_fit_block_allocator",
   ]
   sources = [ "linker_sections.cc" ]
@@ -131,7 +131,7 @@ pw_executable("size_report") {
   sources = [ "size_report.cc" ]
   deps = [
     ":custom_allocator",
-    "$dir_pw_allocator:first_fit_block_allocator",
+    "$dir_pw_allocator:first_fit",
     "$dir_pw_allocator:size_reporter",
   ]
 }
@@ -170,7 +170,7 @@ pw_size_diff("custom_allocator_size_report") {
   binaries = [
     {
       target = ":size_report"
-      base = "$dir_pw_allocator/size_report:first_fit_block_allocator"
+      base = "$dir_pw_allocator/size_report:first_fit"
       label = "CustomAllocator"
     },
   ]

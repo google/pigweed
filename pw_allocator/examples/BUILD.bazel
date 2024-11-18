@@ -74,7 +74,7 @@ pw_cc_test(
     srcs = ["block_allocator.cc"],
     deps = [
         ":named_u32",
-        "//pw_allocator:last_fit_block_allocator",
+        "//pw_allocator:first_fit",
     ],
 )
 
@@ -108,7 +108,7 @@ pw_cc_test(
     deps = [
         ":named_u32",
         "//pw_allocator:allocator",
-        "//pw_allocator:first_fit_block_allocator",
+        "//pw_allocator:first_fit",
         "//pw_allocator:worst_fit_block_allocator",
     ],
 )
@@ -140,7 +140,7 @@ pw_cc_binary(
     srcs = ["size_report.cc"],
     deps = [
         ":custom_allocator",
-        "//pw_allocator:first_fit_block_allocator",
+        "//pw_allocator:first_fit",
         "//pw_allocator:size_reporter",
     ],
 )

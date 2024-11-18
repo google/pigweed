@@ -14,7 +14,7 @@
 
 #include <vector>
 
-#include "pw_allocator/first_fit_block_allocator.h"
+#include "pw_allocator/first_fit.h"
 #include "pw_allocator/size_reporter.h"
 #include "pw_assert/check.h"
 
@@ -24,7 +24,7 @@ int main() {
   pw::allocator::SizeReporter reporter;
   reporter.SetBaseline();
 
-  pw::allocator::FirstFitBlockAllocator<> base(reporter.buffer());
+  pw::allocator::FirstFitAllocator<> base(reporter.buffer());
   std::vector<Bar> vec;
   auto* bar = base.New<Bar>(1);
   vec.emplace_back(std::move(*bar));

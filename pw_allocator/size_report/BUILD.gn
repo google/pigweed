@@ -62,19 +62,11 @@ pw_executable("bump_allocator") {
   ]
 }
 
-pw_executable("dual_first_fit_block_allocator") {
-  sources = [ "dual_first_fit_block_allocator.cc" ]
-  deps = [
-    "..:dual_first_fit_block_allocator",
-    "..:size_reporter",
-  ]
-}
-
 pw_executable("fallback_allocator_base") {
   sources = [ "fallback_allocator_base.cc" ]
   deps = [
     "..:fallback_allocator",
-    "..:first_fit_block_allocator",
+    "..:first_fit",
     "..:size_reporter",
   ]
 }
@@ -83,23 +75,15 @@ pw_executable("fallback_allocator") {
   sources = [ "fallback_allocator.cc" ]
   deps = [
     "..:fallback_allocator",
-    "..:first_fit_block_allocator",
+    "..:first_fit",
     "..:size_reporter",
   ]
 }
 
-pw_executable("first_fit_block_allocator") {
-  sources = [ "first_fit_block_allocator.cc" ]
+pw_executable("first_fit") {
+  sources = [ "first_fit.cc" ]
   deps = [
-    "..:first_fit_block_allocator",
-    "..:size_reporter",
-  ]
-}
-
-pw_executable("last_fit_block_allocator") {
-  sources = [ "last_fit_block_allocator.cc" ]
-  deps = [
-    "..:last_fit_block_allocator",
+    "..:first_fit",
     "..:size_reporter",
   ]
 }
@@ -141,7 +125,7 @@ pw_executable("synchronized_allocator_isl") {
   sources = [ "synchronized_allocator_isl.cc" ]
   deps = [
     "$dir_pw_sync:interrupt_spin_lock",
-    "..:first_fit_block_allocator",
+    "..:first_fit",
     "..:size_reporter",
     "..:synchronized_allocator",
   ]
@@ -151,7 +135,7 @@ pw_executable("synchronized_allocator_mutex") {
   sources = [ "synchronized_allocator_mutex.cc" ]
   deps = [
     "$dir_pw_sync:mutex",
-    "..:first_fit_block_allocator",
+    "..:first_fit",
     "..:size_reporter",
     "..:synchronized_allocator",
   ]
@@ -160,7 +144,7 @@ pw_executable("synchronized_allocator_mutex") {
 pw_executable("tracking_allocator_all_metrics") {
   sources = [ "tracking_allocator_all_metrics.cc" ]
   deps = [
-    "..:first_fit_block_allocator",
+    "..:first_fit",
     "..:size_reporter",
     "..:tracking_allocator",
   ]
@@ -169,7 +153,7 @@ pw_executable("tracking_allocator_all_metrics") {
 pw_executable("tracking_allocator_no_metrics") {
   sources = [ "tracking_allocator_no_metrics.cc" ]
   deps = [
-    "..:first_fit_block_allocator",
+    "..:first_fit",
     "..:size_reporter",
     "..:tracking_allocator",
   ]

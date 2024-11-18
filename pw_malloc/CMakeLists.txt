@@ -13,7 +13,6 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
-include($ENV{PW_ROOT}/pw_malloc/backend.cmake)
 
 pw_add_module_config(pw_malloc_CONFIG)
 
@@ -91,31 +90,13 @@ pw_add_library(pw_malloc.bucket_block_allocator INTERFACE
     pw_allocator.bucket_allocator
 )
 
-pw_add_library(pw_malloc.dual_first_fit_block_allocator STATIC
+pw_add_library(pw_malloc.first_fit STATIC
   PUBLIC_DEPS
     pw_malloc.facade
   PRIVATE_DEPS
-    pw_allocator.dual_first_fit_block_allocator
+    pw_allocator.first_fit
   SOURCES
-    dual_first_fit_block_allocator.cc
-)
-
-pw_add_library(pw_malloc.first_fit_block_allocator STATIC
-  PUBLIC_DEPS
-    pw_malloc.facade
-  PRIVATE_DEPS
-    pw_allocator.first_fit_block_allocator
-  SOURCES
-    first_fit_block_allocator.cc
-)
-
-pw_add_library(pw_malloc.last_fit_block_allocator STATIC
-  PUBLIC_DEPS
-    pw_malloc.facade
-  PRIVATE_DEPS
-    pw_allocator.last_fit_block_allocator
-  SOURCES
-    last_fit_block_allocator.cc
+  first_fit.cc
 )
 
 pw_add_library(pw_malloc.worst_fit_block_allocator STATIC

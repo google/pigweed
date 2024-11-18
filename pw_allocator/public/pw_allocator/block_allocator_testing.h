@@ -146,10 +146,10 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
   void TearDown() override;
 
   // Unit tests.
-  static void CanAutomaticallyInit(BlockAllocatorType& allocator);
-  void CanExplicitlyInit(BlockAllocatorType& allocator);
+  static void AutomaticallyInit(BlockAllocatorType& allocator);
+  void ExplicitlyInit(BlockAllocatorType& allocator);
   void IterateOverBlocks();
-  void CanMeasureFragmentation();
+  void MeasureFragmentation();
   void PoisonPeriodically();
 
  private:
@@ -208,13 +208,13 @@ void BlockAllocatorTest<BlockAllocatorType>::TearDown() {
 // Unit tests template method implementations.
 
 template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::CanAutomaticallyInit(
+void BlockAllocatorTest<BlockAllocatorType>::AutomaticallyInit(
     BlockAllocatorType& allocator) {
   EXPECT_NE(*(allocator.blocks().begin()), nullptr);
 }
 
 template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::CanExplicitlyInit(
+void BlockAllocatorTest<BlockAllocatorType>::ExplicitlyInit(
     BlockAllocatorType& allocator) {
   EXPECT_EQ(*(allocator.blocks().begin()), nullptr);
   allocator.Init(GetBytes());
@@ -251,7 +251,7 @@ void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
 }
 
 template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::CanMeasureFragmentation() {
+void BlockAllocatorTest<BlockAllocatorType>::MeasureFragmentation() {
   Allocator& allocator = GetGenericAllocator({
       {0x020, Preallocation::kFree},
       {0x040, Preallocation::kUsed},

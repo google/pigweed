@@ -226,15 +226,12 @@ cc_library(
     ],
 )
 
+# TODO(b/376730645): Remove deprecated interfaces.
 cc_library(
     name = "dual_first_fit_block_allocator",
     hdrs = ["public/pw_allocator/dual_first_fit_block_allocator.h"],
     strip_include_prefix = "public",
-    deps = [
-        ":block_allocator",
-        ":config",
-        "//pw_allocator/block:detailed_block",
-    ],
+    deps = [":first_fit"],
 )
 
 cc_library(
@@ -256,14 +253,23 @@ cc_library(
 )
 
 cc_library(
-    name = "first_fit_block_allocator",
-    hdrs = ["public/pw_allocator/first_fit_block_allocator.h"],
+    name = "first_fit",
+    hdrs = ["public/pw_allocator/first_fit.h"],
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
         ":config",
         "//pw_allocator/block:detailed_block",
+        "//pw_allocator/bucket:sequenced",
     ],
+)
+
+# TODO(b/376730645): Remove deprecated interfaces.
+cc_library(
+    name = "first_fit_block_allocator",
+    hdrs = ["public/pw_allocator/first_fit_block_allocator.h"],
+    includes = ["public"],
+    deps = [":first_fit"],
 )
 
 cc_library(
@@ -287,15 +293,12 @@ cc_library(
     ],
 )
 
+# TODO(b/376730645): Remove deprecated interfaces.
 cc_library(
     name = "last_fit_block_allocator",
     hdrs = ["public/pw_allocator/last_fit_block_allocator.h"],
     strip_include_prefix = "public",
-    deps = [
-        ":block_allocator",
-        ":config",
-        "//pw_allocator/block:detailed_block",
-    ],
+    deps = [":first_fit"],
 )
 
 cc_library(
@@ -412,10 +415,9 @@ cc_library(
     deps = [
         ":allocator",
         ":buffer",
-        ":first_fit_block_allocator",
+        ":first_fit",
         ":test_config",
         ":tracking_allocator",
-        "//pw_allocator/block:detailed_block",
         "//pw_assert",
         "//pw_bytes",
         "//pw_result",
@@ -581,16 +583,6 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "dual_first_fit_block_allocator_test",
-    srcs = ["dual_first_fit_block_allocator_test.cc"],
-    deps = [
-        ":block_allocator_testing",
-        ":dual_first_fit_block_allocator",
-        "//pw_unit_test",
-    ],
-)
-
-pw_cc_test(
     name = "fallback_allocator_test",
     srcs = [
         "fallback_allocator_test.cc",
@@ -604,12 +596,15 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "first_fit_block_allocator_test",
-    srcs = ["first_fit_block_allocator_test.cc"],
+    name = "first_fit_test",
+    srcs = ["first_fit_test.cc"],
     deps = [
         ":block_allocator_testing",
         ":buffer",
+        ":dual_first_fit_block_allocator",
+        ":first_fit",
         ":first_fit_block_allocator",
+        ":last_fit_block_allocator",
         "//pw_unit_test",
         "//third_party/fuchsia:stdcompat",
     ],
@@ -636,16 +631,6 @@ pw_cc_test(
         "//pw_allocator/block:testing",
         "//pw_bytes:alignment",
         "//third_party/fuchsia:stdcompat",
-    ],
-)
-
-pw_cc_test(
-    name = "last_fit_block_allocator_test",
-    srcs = ["last_fit_block_allocator_test.cc"],
-    deps = [
-        ":block_allocator_testing",
-        ":last_fit_block_allocator",
-        "//pw_unit_test",
     ],
 )
 

@@ -43,14 +43,14 @@ class BucketAllocatorTest : public BlockAllocatorTest<BucketAllocator> {
 
 // Unit tests.
 
-TEST_F(BucketAllocatorTest, CanAutomaticallyInit) {
+TEST_F(BucketAllocatorTest, AutomaticallyInit) {
   BucketAllocator allocator(GetBytes());
-  CanAutomaticallyInit(allocator);
+  AutomaticallyInit(allocator);
 }
 
-TEST_F(BucketAllocatorTest, CanExplicitlyInit) {
+TEST_F(BucketAllocatorTest, ExplicitlyInit) {
   BucketAllocator allocator;
-  CanExplicitlyInit(allocator);
+  ExplicitlyInit(allocator);
 }
 
 TEST_F(BucketAllocatorTest, GetCapacity) { GetCapacity(); }
@@ -205,9 +205,7 @@ TEST_F(BucketAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
-TEST_F(BucketAllocatorTest, CanMeasureFragmentation) {
-  CanMeasureFragmentation();
-}
+TEST_F(BucketAllocatorTest, MeasureFragmentation) { MeasureFragmentation(); }
 
 TEST_F(BucketAllocatorTest, PoisonPeriodically) { PoisonPeriodically(); }
 

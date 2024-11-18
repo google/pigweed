@@ -17,10 +17,9 @@
 #include <mutex>
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/block/detailed_block.h"
 #include "pw_allocator/buffer.h"
 #include "pw_allocator/config.h"
-#include "pw_allocator/first_fit_block_allocator.h"
+#include "pw_allocator/first_fit.h"
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/tracking_allocator.h"
 #include "pw_assert/assert.h"
@@ -67,11 +66,17 @@ void FreeAll(typename BlockType::Range range) {
 }
 
 /// An `AllocatorForTest` that is automatically initialized on construction.
-template <size_t kBufferSize, typename MetricsType = internal::AllMetrics>
+template <size_t kBufferSize,
+          typename BlockType_ = FirstFitBlock<uint32_t>,
+          typename MetricsType = internal::AllMetrics>
 class AllocatorForTest : public Allocator {
  public:
-  using AllocatorType = FirstFitBlockAllocator<uint32_t>;
-  using BlockType = typename AllocatorType::BlockType;
+  using BlockType = BlockType_;
+  using AllocatorType = FirstFitAllocator<BlockType>;
+
+  // Since the unbderlying first-fit allocator uses an intrusive free list, all
+  // allocations will be at least this size.
+  static constexpr size_t kMinSize = BlockType::kAlignment;
 
   AllocatorForTest()
       : Allocator(AllocatorType::kCapabilities), tracker_(kToken, *allocator_) {
@@ -179,10 +184,13 @@ class AllocatorForTest : public Allocator {
 
 /// An `AllocatorForTest` that is thread and interrupt-safe and automatically
 /// initialized on construction.
-template <size_t kBufferSize, typename MetricsType = internal::AllMetrics>
+template <size_t kBufferSize,
+          typename BlockType_ = FirstFitBlock<uint32_t>,
+          typename MetricsType = internal::AllMetrics>
 class SynchronizedAllocatorForTest : public Allocator {
  private:
-  using Base = AllocatorForTest<kBufferSize, MetricsType>;
+  using BlockType = BlockType_;
+  using Base = AllocatorForTest<kBufferSize, BlockType, MetricsType>;
 
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {

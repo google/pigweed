@@ -34,9 +34,9 @@ using ::pw::allocator::PmrAllocator;
 using ::pw::allocator::test::AllocatorForTest;
 
 struct Foo {
-  uint32_t value;
+  uintptr_t value;
 
-  Foo(uint32_t value_) : value(value_) {}
+  Foo(uintptr_t value_) : value(value_) {}
 };
 
 bool operator==(const Foo& lhs, const Foo& rhs) {
@@ -50,7 +50,7 @@ bool operator<(const Foo& lhs, const Foo& rhs) { return lhs.value < rhs.value; }
 template <>
 struct std::hash<Foo> {
   size_t operator()(const Foo& foo) const {
-    return std::hash<uint32_t>()(foo.value);
+    return std::hash<uintptr_t>()(foo.value);
   }
 };
 
@@ -96,6 +96,7 @@ struct has_mapped_type<T, std::void_t<typename T::mapped_type> >
 template <typename Container, size_t kCapacity = 256>
 void TestPmrAllocator() {
   AllocatorForTest<kCapacity> underlying;
+  static_assert(sizeof(Foo) >= AllocatorForTest<kCapacity>::kMinSize);
   auto& requested_bytes = underlying.metrics().requested_bytes;
   EXPECT_EQ(requested_bytes.value(), 0U);
 

@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/first_fit_block_allocator.h"
+#include "pw_allocator/first_fit.h"
 #include "pw_allocator/size_reporter.h"
 
 int main() {
@@ -20,8 +20,8 @@ int main() {
   reporter.SetBaseline();
 
   std::array<std::byte, 0x1000> buffer;
-  pw::allocator::FirstFitBlockAllocator<> primary(reporter.buffer());
-  pw::allocator::FirstFitBlockAllocator<> secondary(buffer);
+  pw::allocator::FirstFitAllocator<> primary(reporter.buffer());
+  pw::allocator::FirstFitAllocator<> secondary(buffer);
   reporter.Measure(primary);
   reporter.Measure(secondary);
 

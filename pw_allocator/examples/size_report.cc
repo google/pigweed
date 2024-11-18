@@ -16,14 +16,14 @@
 #include <cstdint>
 
 #include "examples/custom_allocator.h"
-#include "pw_allocator/first_fit_block_allocator.h"
+#include "pw_allocator/first_fit.h"
 #include "pw_allocator/size_reporter.h"
 
 int main() {
   pw::allocator::SizeReporter reporter;
   reporter.SetBaseline();
 
-  pw::allocator::FirstFitBlockAllocator<> allocator(reporter.buffer());
+  pw::allocator::FirstFitAllocator<> allocator(reporter.buffer());
   examples::CustomAllocator custom(allocator, 128);
   reporter.Measure(custom);
 

@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/first_fit_block_allocator.h"
+#include "pw_allocator/first_fit.h"
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/size_reporter.h"
 #include "pw_allocator/tracking_allocator.h"
@@ -21,7 +21,7 @@ int main() {
   pw::allocator::SizeReporter reporter;
   reporter.SetBaseline();
 
-  pw::allocator::FirstFitBlockAllocator<> allocator(reporter.buffer());
+  pw::allocator::FirstFitAllocator<> allocator(reporter.buffer());
   pw::allocator::TrackingAllocator<pw::allocator::NoMetrics> tracker(1,
                                                                      allocator);
   reporter.Measure(tracker);

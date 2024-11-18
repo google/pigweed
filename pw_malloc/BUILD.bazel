@@ -100,22 +100,30 @@ constraint_value(
 )
 
 constraint_value(
+    name = "first_fit_backend",
+    constraint_setting = "//pw_malloc:backend_constraint_setting",
+)
+
+# TODO(b/376730645): Remove deprecated backends.
+constraint_value(
     name = "dual_first_fit_block_allocator_backend",
     constraint_setting = "//pw_malloc:backend_constraint_setting",
 )
 
+# TODO(b/376730645): Remove deprecated backends.
 constraint_value(
     name = "first_fit_block_allocator_backend",
     constraint_setting = "//pw_malloc:backend_constraint_setting",
 )
 
+# TODO(b/376730645): Remove deprecated backends.
 constraint_value(
-    name = "freelist_backend",
+    name = "last_fit_block_allocator_backend",
     constraint_setting = "//pw_malloc:backend_constraint_setting",
 )
 
 constraint_value(
-    name = "last_fit_block_allocator_backend",
+    name = "freelist_backend",
     constraint_setting = "//pw_malloc:backend_constraint_setting",
 )
 
@@ -131,9 +139,9 @@ alias(
         "//pw_malloc:best_fit_block_allocator_backend": "//pw_malloc:best_fit_block_allocator",
         "//pw_malloc:bucket_allocator_backend": "//pw_malloc:bucket_allocator",
         "//pw_malloc:bucket_block_allocator_backend": "//pw_malloc:bucket_allocator",
-        "//pw_malloc:dual_first_fit_block_allocator_backend": "//pw_malloc:dual_first_fit_block_allocator",
-        "//pw_malloc:first_fit_block_allocator_backend": "//pw_malloc:first_fit_block_allocator",
-        "//pw_malloc:last_fit_block_allocator_backend": "//pw_malloc:last_fit_block_allocator",
+        "//pw_malloc:dual_first_fit_block_allocator_backend": "//pw_malloc:first_fit",
+        "//pw_malloc:first_fit_block_allocator_backend": "//pw_malloc:first_fit",
+        "//pw_malloc:last_fit_block_allocator_backend": "//pw_malloc:first_fit",
         "//pw_malloc:worst_fit_block_allocator_backend": "//pw_malloc:worst_fit_block_allocator",
         "//pw_malloc_freelist:backend": "//pw_malloc:bucket_allocator",
         "//pw_malloc_freertos:backend": "//pw_malloc_freertos",
@@ -167,30 +175,30 @@ cc_library(
 )
 
 cc_library(
-    name = "dual_first_fit_block_allocator",
-    srcs = ["dual_first_fit_block_allocator.cc"],
+    name = "first_fit",
+    srcs = ["first_fit.cc"],
     deps = [
-        "//pw_allocator:dual_first_fit_block_allocator",
+        "//pw_allocator:first_fit",
         "//pw_malloc:facade",
     ],
 )
 
+# TODO(b/376730645): Remove deprecated backends.
+cc_library(
+    name = "dual_first_fit_block_allocator",
+    deps = [":first_fit"],
+)
+
+# TODO(b/376730645): Remove deprecated backends.
 cc_library(
     name = "first_fit_block_allocator",
-    srcs = ["first_fit_block_allocator.cc"],
-    deps = [
-        "//pw_allocator:first_fit_block_allocator",
-        "//pw_malloc:facade",
-    ],
+    deps = [":first_fit"],
 )
 
+# TODO(b/376730645): Remove deprecated backends.
 cc_library(
     name = "last_fit_block_allocator",
-    srcs = ["last_fit_block_allocator.cc"],
-    deps = [
-        "//pw_allocator:last_fit_block_allocator",
-        "//pw_malloc:facade",
-    ],
+    deps = [":first_fit"],
 )
 
 cc_library(
@@ -286,38 +294,14 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "dual_first_fit_block_allocator_test",
+    name = "first_fit_test",
     srcs = [
-        "dual_first_fit_block_allocator.cc",
+        "first_fit.cc",
         "malloc_test.cc",
     ],
     deps = [
         ":testing",
-        "//pw_allocator:dual_first_fit_block_allocator",
-    ],
-)
-
-pw_cc_test(
-    name = "first_fit_block_allocator_test",
-    srcs = [
-        "first_fit_block_allocator.cc",
-        "malloc_test.cc",
-    ],
-    deps = [
-        ":testing",
-        "//pw_allocator:first_fit_block_allocator",
-    ],
-)
-
-pw_cc_test(
-    name = "last_fit_block_allocator_test",
-    srcs = [
-        "last_fit_block_allocator.cc",
-        "malloc_test.cc",
-    ],
-    deps = [
-        ":testing",
-        "//pw_allocator:last_fit_block_allocator",
+        "//pw_allocator:first_fit",
     ],
 )
 

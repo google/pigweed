@@ -18,7 +18,7 @@
 
 #include "pw_allocator/benchmarks/benchmark.h"
 #include "pw_allocator/benchmarks/config.h"
-#include "pw_allocator/dual_first_fit_block_allocator.h"
+#include "pw_allocator/first_fit.h"
 
 namespace pw::allocator {
 
@@ -28,7 +28,8 @@ constexpr metric::Token kDualFirstFitBenchmark =
 std::array<std::byte, benchmarks::kCapacity> buffer;
 
 void DoDualFirstFitBenchmark() {
-  DualFirstFitBlockAllocator allocator(buffer, benchmarks::kMaxSize / 2);
+  FirstFitAllocator allocator(buffer);
+  allocator.set_threshold(benchmarks::kMaxSize / 2);
   DefaultBlockAllocatorBenchmark benchmark(kDualFirstFitBenchmark, allocator);
   benchmark.set_prng_seed(1);
   benchmark.set_available(benchmarks::kCapacity);

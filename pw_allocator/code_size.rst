@@ -36,7 +36,7 @@ Forwarding allocators implementations
 The following are code sizes for each of the provided "forwarding" allocators as
 described by :ref:`module-pw_allocator-design-forwarding`. These are measured
 by having the forwarding allocator wrap a
-:ref:`module-pw_allocator-api-first_fit_block_allocator`, and are measured
-relative to that implementation.
+:ref:`module-pw_allocator-api-first_fit_allocator`, and are measured relative to
+that implementation.
 
 .. include:: forwarding_allocators_size_report

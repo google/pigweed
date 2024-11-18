@@ -247,14 +247,9 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
   for how to choose a block to use to satisfy a request. See also
   :ref:`module-pw_allocator-design-block`. Derived types include:
 
-  - :ref:`module-pw_allocator-api-first_fit_block_allocator`: Chooses the first
+  - :ref:`module-pw_allocator-api-first_fit_allocator`: Chooses the first
     block that's large enough to satisfy a request. This strategy is very fast,
     but may increase fragmentation.
-  - :ref:`module-pw_allocator-api-last_fit_block_allocator`: Chooses the last
-    block that's large enough to satisfy a request. This strategy is fast, and
-    may fragment memory less than
-    :ref:`module-pw_allocator-api-first_fit_block_allocator` when satisfying
-    aligned memory requests.
   - :ref:`module-pw_allocator-api-best_fit_block_allocator`: Chooses the
     smallest block that's large enough to satisfy a request. This strategy
     maximizes the avilable space for large allocations, but may increase
@@ -262,13 +257,6 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
   - :ref:`module-pw_allocator-api-worst_fit_block_allocator`: Chooses the
     largest block if it's large enough to satisfy a request. This strategy
     minimizes the amount of memory in unusably small blocks, but is slower.
-  - :ref:`module-pw_allocator-api-dual_first_fit_block_allocator`: Acts like
-    :ref:`module-pw_allocator-api-first_fit_block_allocator` or
-    :ref:`module-pw_allocator-api-last_fit_block_allocator` depending on
-    whether a request is larger or smaller, respectively, than a given
-    threshold value. This strategy preserves the speed of the two other
-    strategies, while fragmenting memory less by co-locating allocations of
-    similar sizes.
   - :ref:`module-pw_allocator-api-bucket_block_allocator`: Sorts and stores
     each free blocks in a :ref:`module-pw_allocator-api-bucket` with a given
     maximum block inner size.
@@ -453,17 +441,6 @@ deallocation by writing a set pattern to the usable memory, and later check on
 allocation that the pattern is intact. If it's not, some routine has modified
 unallocated memory.
 
-The :ref:`module-pw_allocator-api-block_allocator` has a
-``kPoisonInterval`` template parameter to control how frequently blocks are
-poisoned on deallocation. This allows projects to stochiastically sample
-allocations for memory corruptions while mitigating the performance impact.
-
-.. literalinclude:: examples/block_allocator.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_allocator-examples-block_allocator-poison]
-   :end-before: [pw_allocator-examples-block_allocator-poison]
-
 ----------------------
 Test custom allocators
 ----------------------
@@ -525,8 +502,8 @@ For example, the C++ code for a size report binary might look like:
    :start-after: [pw_allocator-examples-size_report]
 
 The resulting binary could be compared with the binary produced from
-pw_allocator/size_report/first_fit_block_allocator.cc to identify just the code
-added in this case by ``CustomAllocator``.
+pw_allocator/size_report/first_fit.cc to identify just the code added in this
+case by ``CustomAllocator``.
 
 For example, the GN build rule to generate a size report might look liek:
 
@@ -537,7 +514,7 @@ For example, the GN build rule to generate a size report might look liek:
      binaries = [
        {
          target = ":size_report"
-         base = "$dir_pw_allocator/size_report:first_fit_block_allocator"
+         base = "$dir_pw_allocator/size_report:first_fit"
          label = "CustomAllocator"
        },
      ]

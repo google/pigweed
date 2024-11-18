@@ -15,10 +15,11 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 #include "pw_allocator/benchmarks/benchmark.h"
 #include "pw_allocator/benchmarks/config.h"
-#include "pw_allocator/last_fit_block_allocator.h"
+#include "pw_allocator/first_fit.h"
 
 namespace pw::allocator {
 
@@ -28,7 +29,8 @@ constexpr metric::Token kLastFitBenchmark =
 std::array<std::byte, benchmarks::kCapacity> buffer;
 
 void DoLastFitBenchmark() {
-  LastFitBlockAllocator allocator(buffer);
+  FirstFitAllocator allocator(buffer);
+  allocator.set_threshold(std::numeric_limits<size_t>::max());
   DefaultBlockAllocatorBenchmark benchmark(kLastFitBenchmark, allocator);
   benchmark.set_prng_seed(1);
   benchmark.set_available(benchmarks::kCapacity);

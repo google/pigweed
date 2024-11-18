@@ -204,14 +204,11 @@ pw_source_set("deallocator") {
   ]
 }
 
+# TODO(b/376730645): Remove deprecated interfaces.
 pw_source_set("dual_first_fit_block_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/dual_first_fit_block_allocator.h" ]
-  public_deps = [
-    ":block_allocator",
-    ":config",
-    "block:detailed_block",
-  ]
+  public_deps = [ ":first_fit" ]
 }
 
 pw_source_set("fallback_allocator") {
@@ -227,14 +224,22 @@ pw_source_set("fallback_allocator") {
   deps = [ "$dir_pw_assert:check" ]
 }
 
-pw_source_set("first_fit_block_allocator") {
+pw_source_set("first_fit") {
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_allocator/first_fit_block_allocator.h" ]
+  public = [ "public/pw_allocator/first_fit.h" ]
   public_deps = [
     ":block_allocator",
     ":config",
     "block:detailed_block",
+    "bucket:sequenced",
   ]
+}
+
+# TODO(b/376730645): Remove deprecated interfaces.
+pw_source_set("first_fit_block_allocator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/first_fit_block_allocator.h" ]
+  public_deps = [ ":first_fit" ]
 }
 
 pw_source_set("fragmentation") {
@@ -254,14 +259,11 @@ pw_source_set("freelist_heap") {
   ]
 }
 
+# TODO(b/376730645): Remove deprecated interfaces.
 pw_source_set("last_fit_block_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/last_fit_block_allocator.h" ]
-  public_deps = [
-    ":block_allocator",
-    ":config",
-    "block:detailed_block",
-  ]
+  public_deps = [ ":first_fit" ]
 }
 
 pw_source_set("libc_allocator") {
@@ -350,10 +352,9 @@ pw_source_set("testing") {
   public_deps = [
     ":allocator",
     ":buffer",
-    ":first_fit_block_allocator",
+    ":first_fit",
     ":tracking_allocator",
     "$dir_pw_sync:interrupt_spin_lock",
-    "block:detailed_block",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
@@ -473,14 +474,6 @@ pw_test("chunk_pool_test") {
   sources = [ "chunk_pool_test.cc" ]
 }
 
-pw_test("dual_first_fit_block_allocator_test") {
-  deps = [
-    ":block_allocator_testing",
-    ":dual_first_fit_block_allocator",
-  ]
-  sources = [ "dual_first_fit_block_allocator_test.cc" ]
-}
-
 pw_test("fallback_allocator_test") {
   deps = [
     ":fallback_allocator",
@@ -490,14 +483,17 @@ pw_test("fallback_allocator_test") {
   sources = [ "fallback_allocator_test.cc" ]
 }
 
-pw_test("first_fit_block_allocator_test") {
+pw_test("first_fit_test") {
   deps = [
     ":block_allocator_testing",
     ":buffer",
+    ":dual_first_fit_block_allocator",
+    ":first_fit",
     ":first_fit_block_allocator",
+    ":last_fit_block_allocator",
     "$dir_pw_third_party/fuchsia:stdcompat",
   ]
-  sources = [ "first_fit_block_allocator_test.cc" ]
+  sources = [ "first_fit_test.cc" ]
 }
 
 pw_test("fragmentation_test") {
@@ -516,14 +512,6 @@ pw_test("freelist_heap_test") {
     "block:testing",
   ]
   sources = [ "freelist_heap_test.cc" ]
-}
-
-pw_test("last_fit_block_allocator_test") {
-  deps = [
-    ":block_allocator_testing",
-    ":last_fit_block_allocator",
-  ]
-  sources = [ "last_fit_block_allocator_test.cc" ]
 }
 
 pw_test("layout_test") {
@@ -623,12 +611,10 @@ pw_test_group("tests") {
     ":buffer_test",
     ":bump_allocator_test",
     ":chunk_pool_test",
-    ":dual_first_fit_block_allocator_test",
     ":fallback_allocator_test",
-    ":first_fit_block_allocator_test",
+    ":first_fit_test",
     ":fragmentation_test",
     ":freelist_heap_test",
-    ":last_fit_block_allocator_test",
     ":layout_test",
     ":libc_allocator_test",
     ":null_allocator_test",
@@ -689,19 +675,9 @@ pw_size_diff("concrete_allocators_size_report") {
       label = "BumpAllocator"
     },
     {
-      target = "size_report:dual_first_fit_block_allocator"
-      base = "size_report:null_allocator"
-      label = "DualFirstFitBlockAllocator"
-    },
-    {
-      target = "size_report:first_fit_block_allocator"
+      target = "size_report:first_fit"
       base = "size_report:null_allocator"
       label = "FirstFitBlockAllocator"
-    },
-    {
-      target = "size_report:last_fit_block_allocator"
-      base = "size_report:null_allocator"
-      label = "LastFitBlockAllocator"
     },
     {
       target = "size_report:libc_allocator"
@@ -731,22 +707,22 @@ pw_size_diff("forwarding_allocators_size_report") {
     },
     {
       target = "size_report:synchronized_allocator_isl"
-      base = "size_report:first_fit_block_allocator"
+      base = "size_report:first_fit"
       label = "SynchronizedAllocator<sync::InterruptSpinLock>"
     },
     {
       target = "size_report:synchronized_allocator_mutex"
-      base = "size_report:first_fit_block_allocator"
+      base = "size_report:first_fit"
       label = "SynchronizedAllocator<sync::Mutex>"
     },
     {
       target = "size_report:tracking_allocator_all_metrics"
-      base = "size_report:first_fit_block_allocator"
+      base = "size_report:first_fit"
       label = "TrackingAllocator<AllMetrics>"
     },
     {
       target = "size_report:tracking_allocator_no_metrics"
-      base = "size_report:first_fit_block_allocator"
+      base = "size_report:first_fit"
       label = "TrackingAllocator<NoMetrics>"
     },
   ]
@@ -757,7 +733,7 @@ pw_size_diff("allocator_utilities_size_report") {
   binaries = [
     {
       target = "size_report:unique_ptr"
-      base = "size_report:first_fit_block_allocator"
+      base = "size_report:first_fit"
       label = "UniquePtr"
     },
   ]

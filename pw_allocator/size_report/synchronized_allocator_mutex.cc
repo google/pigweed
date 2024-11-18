@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/first_fit_block_allocator.h"
+#include "pw_allocator/first_fit.h"
 #include "pw_allocator/size_reporter.h"
 #include "pw_allocator/synchronized_allocator.h"
 #include "pw_sync/mutex.h"
@@ -21,7 +21,7 @@ int main() {
   pw::allocator::SizeReporter reporter;
   reporter.SetBaseline();
 
-  pw::allocator::FirstFitBlockAllocator<> allocator(reporter.buffer());
+  pw::allocator::FirstFitAllocator<> allocator(reporter.buffer());
   pw::allocator::SynchronizedAllocator<pw::sync::Mutex> synchronized(allocator);
   reporter.Measure(synchronized);
 

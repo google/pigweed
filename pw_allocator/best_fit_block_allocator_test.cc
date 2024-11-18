@@ -37,14 +37,14 @@ class BestFitBlockAllocatorTest : public BlockAllocatorTest {
 
 // Unit tests.
 
-TEST_F(BestFitBlockAllocatorTest, CanAutomaticallyInit) {
+TEST_F(BestFitBlockAllocatorTest, AutomaticallyInit) {
   BestFitBlockAllocator allocator(GetBytes());
-  CanAutomaticallyInit(allocator);
+  AutomaticallyInit(allocator);
 }
 
-TEST_F(BestFitBlockAllocatorTest, CanExplicitlyInit) {
+TEST_F(BestFitBlockAllocatorTest, ExplicitlyInit) {
   BestFitBlockAllocator allocator;
-  CanExplicitlyInit(allocator);
+  ExplicitlyInit(allocator);
 }
 
 TEST_F(BestFitBlockAllocatorTest, GetCapacity) { GetCapacity(); }
@@ -115,8 +115,8 @@ TEST_F(BestFitBlockAllocatorTest, ResizeSmallLargerFailure) {
   ResizeSmallLargerFailure();
 }
 
-TEST_F(BestFitBlockAllocatorTest, CanMeasureFragmentation) {
-  CanMeasureFragmentation();
+TEST_F(BestFitBlockAllocatorTest, MeasureFragmentation) {
+  MeasureFragmentation();
 }
 
 TEST_F(BestFitBlockAllocatorTest, PoisonPeriodically) { PoisonPeriodically(); }

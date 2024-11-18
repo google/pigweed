@@ -25,6 +25,8 @@ namespace {
 using ::pw::allocator::Capability;
 using ::pw::allocator::Layout;
 using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<256>;
+using BlockType = AllocatorForTest::BlockType;
+static_assert(sizeof(uintptr_t) == BlockType::kAlignment);
 
 TEST(AllocatorTest, HasFlags) {
   AllocatorForTest allocator;
@@ -35,12 +37,12 @@ TEST(AllocatorTest, HasFlags) {
 
 TEST(AllocatorTest, ResizeNull) {
   AllocatorForTest allocator;
-  EXPECT_FALSE(allocator.Resize(nullptr, sizeof(uint32_t)));
+  EXPECT_FALSE(allocator.Resize(nullptr, sizeof(uintptr_t)));
 }
 
 TEST(AllocatorTest, ResizeZero) {
   AllocatorForTest allocator;
-  constexpr Layout layout = Layout::Of<uint32_t>();
+  constexpr Layout layout = Layout::Of<uintptr_t>();
   void* ptr = allocator.Allocate(layout);
   ASSERT_NE(ptr, nullptr);
   EXPECT_FALSE(allocator.Resize(ptr, 0));
@@ -48,7 +50,7 @@ TEST(AllocatorTest, ResizeZero) {
 
 TEST(AllocatorTest, ResizeSame) {
   AllocatorForTest allocator;
-  constexpr Layout layout = Layout::Of<uint32_t>();
+  constexpr Layout layout = Layout::Of<uintptr_t>();
   void* ptr = allocator.Allocate(layout);
   ASSERT_NE(ptr, nullptr);
   EXPECT_TRUE(allocator.Resize(ptr, layout.size()));
@@ -59,7 +61,7 @@ TEST(AllocatorTest, ResizeSame) {
 
 TEST(AllocatorTest, ReallocateNull) {
   AllocatorForTest allocator;
-  constexpr Layout old_layout = Layout::Of<uint32_t>();
+  constexpr Layout old_layout = Layout::Of<uintptr_t>();
   constexpr Layout new_layout(old_layout.size(), old_layout.alignment());
   void* new_ptr = allocator.Reallocate(nullptr, new_layout);
 
@@ -76,7 +78,7 @@ TEST(AllocatorTest, ReallocateNull) {
 
 TEST(AllocatorTest, ReallocateZeroNewSize) {
   AllocatorForTest allocator;
-  constexpr Layout old_layout = Layout::Of<uint32_t[3]>();
+  constexpr Layout old_layout = Layout::Of<uintptr_t[3]>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_EQ(allocator.allocate_size(), old_layout.size());
   ASSERT_NE(ptr, nullptr);
@@ -99,7 +101,7 @@ TEST(AllocatorTest, ReallocateZeroNewSize) {
 
 TEST(AllocatorTest, ReallocateSame) {
   AllocatorForTest allocator;
-  constexpr Layout layout = Layout::Of<uint32_t[3]>();
+  constexpr Layout layout = Layout::Of<uintptr_t[3]>();
   void* ptr = allocator.Allocate(layout);
   ASSERT_EQ(allocator.allocate_size(), layout.size());
   ASSERT_NE(ptr, nullptr);
@@ -125,13 +127,13 @@ TEST(AllocatorTest, ReallocateSame) {
 
 TEST(AllocatorTest, ReallocateSmaller) {
   AllocatorForTest allocator;
-  constexpr Layout old_layout = Layout::Of<uint32_t[3]>();
+  constexpr Layout old_layout = Layout::Of<uintptr_t[3]>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_EQ(allocator.allocate_size(), old_layout.size());
   ASSERT_NE(ptr, nullptr);
   allocator.ResetParameters();
 
-  constexpr Layout new_layout(sizeof(uint32_t), old_layout.alignment());
+  constexpr Layout new_layout(sizeof(uintptr_t), old_layout.alignment());
   void* new_ptr = allocator.Reallocate(ptr, new_layout);
 
   // Reallocate should call Resize.
@@ -152,7 +154,7 @@ TEST(AllocatorTest, ReallocateSmaller) {
 
 TEST(AllocatorTest, ReallocateLarger) {
   AllocatorForTest allocator;
-  constexpr Layout old_layout = Layout::Of<uint32_t>();
+  constexpr Layout old_layout = Layout::Of<uintptr_t>();
   void* ptr = allocator.Allocate(old_layout);
   ASSERT_EQ(allocator.allocate_size(), old_layout.size());
   ASSERT_NE(ptr, nullptr);
@@ -166,7 +168,7 @@ TEST(AllocatorTest, ReallocateLarger) {
   ASSERT_NE(next, nullptr);
   allocator.ResetParameters();
 
-  constexpr Layout new_layout(sizeof(uint32_t[3]), old_layout.alignment());
+  constexpr Layout new_layout(sizeof(uintptr_t[3]), old_layout.alignment());
   void* new_ptr = allocator.Reallocate(ptr, new_layout);
 
   // Reallocate should call Resize.

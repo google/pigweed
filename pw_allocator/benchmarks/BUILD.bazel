@@ -89,7 +89,7 @@ cc_binary(
     ],
     deps = [
         ":benchmark",
-        "//pw_allocator:dual_first_fit_block_allocator",
+        "//pw_allocator:first_fit",
         "//pw_random",
     ],
 )
@@ -102,7 +102,7 @@ cc_binary(
     ],
     deps = [
         ":benchmark",
-        "//pw_allocator:first_fit_block_allocator",
+        "//pw_allocator:first_fit",
         "//pw_random",
     ],
 )
@@ -115,7 +115,7 @@ cc_binary(
     ],
     deps = [
         ":benchmark",
-        "//pw_allocator:last_fit_block_allocator",
+        "//pw_allocator:first_fit",
         "//pw_random",
     ],
 )

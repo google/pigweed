@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/dual_first_fit_block_allocator.h"
+#include "pw_allocator/first_fit.h"
 
 #include "pw_allocator/size_reporter.h"
 
@@ -21,8 +21,7 @@ int main() {
   reporter.SetBaseline();
 
   constexpr size_t kThreshold = 128;
-  pw::allocator::DualFirstFitBlockAllocator<> allocator(reporter.buffer(),
-                                                        kThreshold);
+  pw::allocator::FirstFitAllocator<> allocator(reporter.buffer(), kThreshold);
   reporter.Measure(allocator);
 
   return 0;
