@@ -160,6 +160,10 @@ class Allocator : public Deallocator {
     return DoReallocate(ptr, old_layout, new_size);
   }
 
+  /// Returns the total bytes that have been allocated by this allocator, or
+  /// `size_t(-1)` if this allocator does not track its total allocated bytes.
+  size_t GetAllocated() const { return DoGetAllocated(); }
+
  protected:
   /// TODO(b/326509341): Remove when downstream consumers migrate.
   constexpr Allocator() = default;
@@ -203,6 +207,12 @@ class Allocator : public Deallocator {
   /// Do not use this method. It will be removed.
   /// TODO(b/326509341): Remove when downstream consumers migrate.
   virtual void* DoReallocate(void* ptr, Layout old_layout, size_t new_size);
+
+  /// Virtual `GetAllocated` function that can be overridden by derived classes.
+  ///
+  /// The default implementation simply returns `size_t(-1)`, indicating that
+  /// tracking total allocated bytes is not supported.
+  virtual size_t DoGetAllocated() const { return size_t(-1); }
 };
 
 namespace allocator {

@@ -46,6 +46,10 @@ bool FallbackAllocator::DoResize(void* ptr, size_t new_size) {
                                    : secondary_.Resize(ptr, new_size);
 }
 
+size_t FallbackAllocator::DoGetAllocated() const {
+  return primary_.GetAllocated() + secondary_.GetAllocated();
+}
+
 Result<Layout> FallbackAllocator::DoGetInfo(InfoType info_type,
                                             const void* ptr) const {
   Result<Layout> primary = GetInfo(primary_, info_type, ptr);

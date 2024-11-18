@@ -382,4 +382,83 @@ TEST_F(TrackingAllocatorTest, ReallocateFailure) {
   EXPECT_METRICS_EQ(expected, metrics);
 }
 
+TEST_F(TrackingAllocatorTest, CorrectlyAccountsForShiftedBytes) {
+  const TestMetrics& metrics = tracker_.metrics();
+  ExpectedValues expected;
+
+  // Find an alignment greater than two block headers.
+  size_t alignment = 1;
+  while (alignment <= (BlockType::kBlockOverhead * 2)) {
+    alignment *= 2;
+  }
+
+  // Allocate one block to align the usable space of the following block.
+  Layout layout1(alignment - BlockType::kBlockOverhead, alignment);
+  void* ptr1 = tracker_.Allocate(layout1);
+  ASSERT_NE(ptr1, nullptr);
+  auto* block1 = BlockType::FromUsableSpace(ptr1);
+  size_t ptr1_allocated = block1->OuterSize();
+  expected.AddRequestedBytes(layout1.size());
+  expected.AddAllocatedBytes(ptr1_allocated);
+  expected.num_allocations += 1;
+  EXPECT_METRICS_EQ(expected, metrics);
+
+  // Allocate a second block that ends two block headers from an alignment
+  // boundary.
+  Layout layout2(alignment - (BlockType::kBlockOverhead * 2), alignment);
+  void* ptr2 = tracker_.Allocate(layout2);
+  ASSERT_NE(ptr2, nullptr);
+  auto* block2 = BlockType::FromUsableSpace(ptr2);
+  EXPECT_EQ(block2->InnerSize(), layout2.size());
+  size_t ptr2_allocated = block2->OuterSize();
+  expected.AddRequestedBytes(layout2.size());
+  expected.AddAllocatedBytes(ptr2_allocated);
+  expected.num_allocations += 1;
+  EXPECT_METRICS_EQ(expected, metrics);
+
+  // Allocate a third block to prevent the second block from being coalesced.
+  // The extra bytes should be appended to the second block.
+  Layout layout3(1, alignment);
+  void* ptr3 = tracker_.Allocate(layout3);
+  ASSERT_NE(ptr3, nullptr);
+  auto* block3 = BlockType::FromUsableSpace(ptr3);
+  size_t ptr3_allocated = block3->OuterSize();
+  size_t shifted = block2->OuterSize() - ptr2_allocated;
+  expected.AddRequestedBytes(layout3.size());
+  expected.AddAllocatedBytes(ptr3_allocated + shifted);
+  expected.num_allocations += 1;
+  EXPECT_METRICS_EQ(expected, metrics);
+
+  // Free the second block, which is larger than when it was allocated.
+  tracker_.Deallocate(ptr2);
+  expected.requested_bytes -= layout2.size();
+  expected.allocated_bytes -= ptr2_allocated + shifted;
+  expected.num_deallocations += 1;
+  EXPECT_METRICS_EQ(expected, metrics);
+
+  // Allocate the second block again. The trailing space should be appended.
+  ptr2 = tracker_.Allocate(layout2);
+  ASSERT_NE(ptr2, nullptr);
+  block2 = BlockType::FromUsableSpace(ptr2);
+  EXPECT_EQ(block2->OuterSize(), ptr2_allocated + shifted);
+  expected.AddRequestedBytes(layout2.size());
+  expected.AddAllocatedBytes(ptr2_allocated + shifted);
+  expected.num_allocations += 1;
+  EXPECT_METRICS_EQ(expected, metrics);
+
+  // Free the third block, which should reclaim space from the second block.
+  tracker_.Deallocate(ptr3);
+  expected.requested_bytes -= layout3.size();
+  expected.allocated_bytes -= ptr3_allocated + shifted;
+  expected.num_deallocations += 1;
+  EXPECT_METRICS_EQ(expected, metrics);
+
+  // Free the second block, which is now smaller than when it was allocated.
+  tracker_.Deallocate(ptr2);
+  expected.requested_bytes -= layout2.size();
+  expected.allocated_bytes -= ptr2_allocated;
+  expected.num_deallocations += 1;
+  EXPECT_METRICS_EQ(expected, metrics);
+}
+
 }  // namespace

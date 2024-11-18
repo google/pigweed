@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <cstddef>
+
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/capability.h"
 #include "pw_bytes/span.h"
@@ -130,9 +132,13 @@ class BumpAllocator : public Allocator {
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void*) override;
 
+  /// @copydoc Allocator::GetAllocated
+  size_t DoGetAllocated() const override { return allocated_; }
+
   /// Frees any owned objects and discards remaining memory.
   void Reset();
 
+  size_t allocated_ = 0;
   ByteSpan remaining_;
   internal::GenericOwned* owned_ = nullptr;
 };

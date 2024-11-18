@@ -157,6 +157,9 @@ class AllocatorForTest : public Allocator {
     return tracker_.Resize(ptr, new_size);
   }
 
+  /// @copydoc Allocator::GetAllocated
+  size_t DoGetAllocated() const override { return tracker_.GetAllocated(); }
+
   /// @copydoc Deallocator::GetInfo
   Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
     return GetInfo(tracker_, info_type, ptr);

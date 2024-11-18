@@ -64,6 +64,12 @@ class SynchronizedAllocator : public Allocator {
     return allocator->Reallocate(ptr, new_layout);
   }
 
+  /// @copydoc Allocator::GetAllocated
+  size_t DoGetAllocated() const override {
+    Pointer allocator = borrowable_.acquire();
+    return allocator->GetAllocated();
+  }
+
   /// @copydoc Deallocator::GetInfo
   Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
     Pointer allocator = borrowable_.acquire();

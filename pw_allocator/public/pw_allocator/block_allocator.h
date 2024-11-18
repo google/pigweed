@@ -17,6 +17,7 @@
 
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block/detailed_block.h"
+#include "pw_allocator/block/result.h"
 #include "pw_allocator/capability.h"
 #include "pw_allocator/fragmentation.h"
 #include "pw_assert/assert.h"
@@ -186,6 +187,9 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, size_t new_size) override;
 
+  /// @copydoc Allocator::GetAllocated
+  size_t DoGetAllocated() const override { return allocated_; }
+
   /// @copydoc Deallocator::GetInfo
   Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
 
@@ -233,6 +237,7 @@ class BlockAllocator : public internal::GenericBlockAllocator {
 
   // Represents the range of blocks for this allocator.
   size_t capacity_ = 0;
+  size_t allocated_ = 0;
   BlockType* first_ = nullptr;
   BlockType* last_ = nullptr;
   uint16_t unpoisoned_ = 0;
@@ -303,10 +308,19 @@ void* BlockAllocator<OffsetType, kPoisonInterval>::DoAllocate(Layout layout) {
     return nullptr;
   }
   BlockType* block = result.block();
-
-  // New free blocks may be created when allocating.
-  if (result.prev() == BlockResultPrev::kSplitNew) {
-    RecycleBlock(block->Prev());
+  allocated_ += block->OuterSize();
+  switch (result.prev()) {
+    case BlockResultPrev::kSplitNew:
+      // New free blocks may be created when allocating.
+      RecycleBlock(block->Prev());
+      break;
+    case BlockResultPrev::kResizedLarger:
+      // Extra bytes may be appended to the previous block.
+      allocated_ += result.size();
+      break;
+    case BlockResultPrev::kUnchanged:
+    case BlockResultPrev::kResizedSmaller:
+      break;
   }
   if (result.next() == BlockResultNext::kSplitNew) {
     RecycleBlock(block->Next());
@@ -337,9 +351,15 @@ void BlockAllocator<OffsetType, kPoisonInterval>::DoDeallocate(void* ptr) {
   }
 
   // Free the block and merge it with its neighbors, if possible.
+  allocated_ -= block->OuterSize();
   auto free_result = BlockType::Free(std::move(block));
   block = free_result.block();
   UpdateLast(block);
+
+  if (free_result.prev() == BlockResultPrev::kResizedSmaller) {
+    // Bytes were reclaimed from the previous block.
+    allocated_ -= free_result.size();
+  }
 
   if constexpr (kPoisonInterval != 0) {
     ++unpoisoned_;
@@ -366,9 +386,12 @@ bool BlockAllocator<OffsetType, kPoisonInterval>::DoResize(void* ptr,
     ReserveBlock(block->Next());
   }
 
+  size_t old_size = block->OuterSize();
   if (!block->Resize(new_size).ok()) {
     return false;
   }
+  allocated_ -= old_size;
+  allocated_ += block->OuterSize();
   UpdateLast(block);
 
   if (auto* next = block->Next(); next != nullptr && next->IsFree()) {

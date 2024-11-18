@@ -47,6 +47,9 @@ class FallbackAllocator : public Allocator {
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, size_t new_size) override;
 
+  /// @copydoc Allocator::GetAllocated
+  size_t DoGetAllocated() const override;
+
   /// @copydoc Deallocator::GetInfo
   Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
 

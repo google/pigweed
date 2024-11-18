@@ -25,11 +25,13 @@ void BumpAllocator::Init(ByteSpan region) {
 }
 
 void* BumpAllocator::DoAllocate(Layout layout) {
+  size_t remaining = remaining_.size();
   ByteSpan region = GetAlignedSubspan(remaining_, layout.alignment());
   if (region.size() < layout.size()) {
     return nullptr;
   }
   remaining_ = region.subspan(layout.size());
+  allocated_ += remaining - remaining_.size();
   return region.data();
 }
 
