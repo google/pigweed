@@ -889,11 +889,16 @@ void Context::HandleReceivedData(const Chunk& chunk) {
       // recovery cycle to avoid shrinking the window size and potentially
       // thrashing. The expected data may already be in-flight, so just allow
       // the transmitter to keep going with a CONTINUE parameters chunk.
+      //
+      // However, as a retried chunk indicates a potential issue with the
+      // underlying connection, shrink the transfer window.
+      //
       // Start ack confs do not come with an offset set, so it can get stuck
       // here if we are doing an offset transfer.
       PW_LOG_DEBUG("Transfer %u received duplicate chunk with offset %u",
                    id_for_log(),
                    static_cast<unsigned>(chunk.offset()));
+      UpdateTransferParameters(TransmitAction::kRetransmit);
       SendTransferParameters(TransmitAction::kExtend);
     } else {
       // Bad offset; reset window size to send another parameters chunk.
