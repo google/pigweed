@@ -14,10 +14,39 @@
 
 #include "pw_bytes/alignment.h"
 
+#include "lib/stdcompat/bit.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw {
 namespace {
+
+template <typename T>
+void TestIsAlignedAs() {
+  T t{};
+  auto* ptr = reinterpret_cast<const std::byte*>(&t);
+  EXPECT_TRUE(IsAlignedAs<T>(&t));
+  if constexpr (alignof(T) != 1U) {
+    EXPECT_FALSE(IsAlignedAs<T>(ptr + 1));
+    EXPECT_FALSE(IsAlignedAs<T>(ptr + alignof(T) - 1));
+  }
+  EXPECT_TRUE(IsAlignedAs<T>(ptr + alignof(T)));
+}
+
+TEST(IsAlignedAs, Scalar) {
+  TestIsAlignedAs<int8_t>();
+  TestIsAlignedAs<uint16_t>();
+  TestIsAlignedAs<int32_t>();
+  TestIsAlignedAs<size_t>();
+  TestIsAlignedAs<intptr_t>();
+}
+
+TEST(IsAlignedAs, Object) {
+  struct Foo {
+    uint8_t a;
+    uint16_t b;
+  };
+  TestIsAlignedAs<Foo>();
+}
 
 TEST(AlignUp, Zero) {
   EXPECT_EQ(0u, AlignUp(0, 1));

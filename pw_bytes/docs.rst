@@ -31,11 +31,15 @@ pw_bytes/alignment.h
 ====================
 Functions for aligning sizes and addresses to memory alignment boundaries.
 
- .. doxygenfunction:: pw::AlignDown(size_t value, size_t alignment)
+ .. doxygenfunction:: pw::IsAlignedAs(const void* ptr, size_t alignment)
+
+ .. doxygenfunction:: pw::IsAlignedAs(const void* ptr)
+
+ .. doxygenfunction:: pw::AlignDown(uintptr_t value, size_t alignment)
 
  .. doxygenfunction:: pw::AlignDown(T* value, size_t alignment)
 
- .. doxygenfunction:: pw::AlignUp(size_t value, size_t alignment)
+ .. doxygenfunction:: pw::AlignUp(uintptr_t value, size_t alignment)
 
  .. doxygenfunction:: pw::AlignUp(T* value, size_t alignment)
 

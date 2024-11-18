@@ -14,15 +14,29 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
+#include "lib/stdcompat/bit.h"
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_preprocessor/compiler.h"
 
 namespace pw {
 
+/// Returns whether the given pointer meets the given alignment requirement.
+inline bool IsAlignedAs(const void* ptr, size_t alignment) {
+  return (cpp20::bit_cast<uintptr_t>(ptr) % alignment) == 0;
+}
+
+/// Returns whether the given pointer meets the alignment requirement for the
+/// given type.
+template <typename T>
+bool IsAlignedAs(const void* ptr) {
+  return IsAlignedAs(ptr, alignof(T));
+}
+
 /// Returns the value rounded down to the nearest multiple of alignment.
-constexpr size_t AlignDown(size_t value, size_t alignment) {
+constexpr size_t AlignDown(uintptr_t value, size_t alignment) {
   PW_ASSERT(!PW_MUL_OVERFLOW((value / alignment), alignment, &value));
   return value;
 }
@@ -31,11 +45,11 @@ constexpr size_t AlignDown(size_t value, size_t alignment) {
 template <typename T>
 constexpr T* AlignDown(T* value, size_t alignment) {
   return reinterpret_cast<T*>(
-      AlignDown(reinterpret_cast<size_t>(value), alignment));
+      AlignDown(reinterpret_cast<uintptr_t>(value), alignment));
 }
 
 /// Returns the value rounded up to the nearest multiple of alignment.
-constexpr size_t AlignUp(size_t value, size_t alignment) {
+constexpr size_t AlignUp(uintptr_t value, size_t alignment) {
   PW_ASSERT(!PW_ADD_OVERFLOW(value, alignment - 1, &value));
   return AlignDown(value, alignment);
 }
@@ -44,7 +58,7 @@ constexpr size_t AlignUp(size_t value, size_t alignment) {
 template <typename T>
 constexpr T* AlignUp(T* value, size_t alignment) {
   return reinterpret_cast<T*>(
-      AlignUp(reinterpret_cast<size_t>(value), alignment));
+      AlignUp(reinterpret_cast<uintptr_t>(value), alignment));
 }
 
 /// Returns the number of padding bytes required to align the provided length.

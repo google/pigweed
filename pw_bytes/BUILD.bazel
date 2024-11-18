@@ -53,6 +53,7 @@ cc_library(
         "//pw_assert",
         "//pw_bytes",
         "//pw_preprocessor",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 
