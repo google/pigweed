@@ -542,6 +542,9 @@ void TransferThread::HandleSetStreamEvent(TransferStream stream) {
                          Status::Aborted());
       client_read_stream_ = std::move(staged_client_stream_);
       client_read_stream_.set_on_next(std::move(staged_client_on_next_));
+      client_read_stream_.set_on_error([](Status status) {
+        PW_LOG_WARN("Client read stream closed unexpectedly: %s", status.str());
+      });
       break;
     case TransferStream::kClientWrite:
       TerminateTransfers(client_transfers_,
@@ -550,6 +553,10 @@ void TransferThread::HandleSetStreamEvent(TransferStream stream) {
                          Status::Aborted());
       client_write_stream_ = std::move(staged_client_stream_);
       client_write_stream_.set_on_next(std::move(staged_client_on_next_));
+      client_write_stream_.set_on_error([](Status status) {
+        PW_LOG_WARN("Client write stream closed unexpectedly: %s",
+                    status.str());
+      });
       break;
     case TransferStream::kServerRead:
       TerminateTransfers(server_transfers_,
@@ -558,6 +565,9 @@ void TransferThread::HandleSetStreamEvent(TransferStream stream) {
                          Status::Aborted());
       server_read_stream_ = std::move(staged_server_stream_);
       server_read_stream_.set_on_next(std::move(staged_server_on_next_));
+      server_read_stream_.set_on_error([](Status status) {
+        PW_LOG_WARN("Server read stream closed unexpectedly: %s", status.str());
+      });
       break;
     case TransferStream::kServerWrite:
       TerminateTransfers(server_transfers_,
@@ -566,6 +576,10 @@ void TransferThread::HandleSetStreamEvent(TransferStream stream) {
                          Status::Aborted());
       server_write_stream_ = std::move(staged_server_stream_);
       server_write_stream_.set_on_next(std::move(staged_server_on_next_));
+      server_write_stream_.set_on_error([](Status status) {
+        PW_LOG_WARN("Server write stream closed unexpectedly: %s",
+                    status.str());
+      });
       break;
   }
 }
