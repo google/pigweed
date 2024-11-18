@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_proxy/l2cap_coc.h"
 
+#include <mutex>
+
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
@@ -130,7 +132,7 @@ bool L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
     return true;
   }
 
-  mutex_.lock();
+  std::lock_guard lock(mutex_);
   // If `remaining_sdu_bytes_to_ignore_` is nonzero, we are in state where we
   // are dropping continuing PDUs in a segmented SDU.
   if (remaining_sdu_bytes_to_ignore_ > 0) {
@@ -141,7 +143,6 @@ bool L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
           "(CID 0x%X) Buffer is too small for subsequent L2CAP K-frame. So "
           "will drop.",
           local_cid());
-      mutex_.unlock();
       return true;
     }
     PW_LOG_INFO(
@@ -161,7 +162,6 @@ bool L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
       remaining_sdu_bytes_to_ignore_ -=
           subsequent_kframe_view->payload_size().Read();
     }
-    mutex_.unlock();
     return true;
   }
 
@@ -173,7 +173,6 @@ bool L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
         "& reporting it needs to be closed.",
         local_cid());
     StopChannelAndReportError(Event::kRxInvalid);
-    mutex_.unlock();
     return true;
   }
   uint16_t sdu_length = kframe_view->sdu_length().Read();
@@ -187,7 +186,6 @@ bool L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
         "reporting it needs to be closed.",
         local_cid());
     StopChannelAndReportError(Event::kRxInvalid);
-    mutex_.unlock();
     return true;
   }
 
@@ -201,7 +199,6 @@ bool L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
         "supported). So will drop all PDUs in SDU.",
         local_cid());
     remaining_sdu_bytes_to_ignore_ = sdu_length - payload_size;
-    mutex_.unlock();
     return true;
   }
 
@@ -213,14 +210,12 @@ bool L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
         "reporting it needs to be closed.",
         local_cid());
     StopChannelAndReportError(Event::kRxInvalid);
-    mutex_.unlock();
     return true;
   }
 
   CallReceiveFn(pw::span(
       const_cast<uint8_t*>(kframe_view->payload().BackingStorage().data()),
       kframe_view->payload_size().Read()));
-  mutex_.unlock();
   return true;
 }
 
@@ -265,9 +260,8 @@ std::optional<H4PacketWithH4> L2capCoc::DequeuePacket() {
     return std::nullopt;
   }
 
-  mutex_.lock();
+  std::lock_guard lock(mutex_);
   if (tx_credits_ == 0) {
-    mutex_.unlock();
     return std::nullopt;
   }
 
@@ -276,7 +270,6 @@ std::optional<H4PacketWithH4> L2capCoc::DequeuePacket() {
   if (maybe_packet.has_value()) {
     --tx_credits_;
   }
-  mutex_.unlock();
   return maybe_packet;
 }
 
@@ -290,7 +283,7 @@ void L2capCoc::AddCredits(uint16_t credits) {
 
   bool credits_previously_zero;
   {
-    mutex_.lock();
+    std::lock_guard lock(mutex_);
 
     // Core Spec v6.0 Vol 3, Part A, 10.1: "The device receiving the credit
     // packet shall disconnect the L2CAP channel if the credit count exceeds
@@ -298,13 +291,11 @@ void L2capCoc::AddCredits(uint16_t credits) {
     if (credits > emboss::L2capLeCreditBasedConnectionReq::max_credit_value() -
                       tx_credits_) {
       StopChannelAndReportError(Event::kRxInvalid);
-      mutex_.unlock();
       return;
     }
 
     credits_previously_zero = tx_credits_ == 0;
     tx_credits_ += credits;
-    mutex_.unlock();
   }
   if (credits_previously_zero) {
     ReportPacketsMayBeReadyToSend();

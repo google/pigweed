@@ -84,12 +84,13 @@ void AclDataChannel::Credits::MarkCompleted(uint16_t num_credits) {
 
 void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
     emboss::ReadBufferSizeCommandCompleteEventWriter read_buffer_event) {
-  credit_allocation_mutex_.lock();
-  const uint16_t controller_max =
-      read_buffer_event.total_num_acl_data_packets().Read();
-  const uint16_t host_max = br_edr_credits_.Reserve(controller_max);
-  read_buffer_event.total_num_acl_data_packets().Write(host_max);
-  credit_allocation_mutex_.unlock();
+  {
+    std::lock_guard lock(credit_allocation_mutex_);
+    const uint16_t controller_max =
+        read_buffer_event.total_num_acl_data_packets().Read();
+    const uint16_t host_max = br_edr_credits_.Reserve(controller_max);
+    read_buffer_event.total_num_acl_data_packets().Write(host_max);
+  }
 
   l2cap_channel_manager_.DrainWriteChannelQueues();
 }
@@ -97,12 +98,13 @@ void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
 template <class EventT>
 void AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
     EventT read_buffer_event) {
-  credit_allocation_mutex_.lock();
-  const uint16_t controller_max =
-      read_buffer_event.total_num_le_acl_data_packets().Read();
-  const uint16_t host_max = le_credits_.Reserve(controller_max);
-  read_buffer_event.total_num_le_acl_data_packets().Write(host_max);
-  credit_allocation_mutex_.unlock();
+  {
+    std::lock_guard lock(credit_allocation_mutex_);
+    const uint16_t controller_max =
+        read_buffer_event.total_num_le_acl_data_packets().Read();
+    const uint16_t host_max = le_credits_.Reserve(controller_max);
+    read_buffer_event.total_num_le_acl_data_packets().Write(host_max);
+  }
 
   // Send packets that may have queued before we acquired any LE ACL credits.
   l2cap_channel_manager_.DrainWriteChannelQueues();
@@ -130,48 +132,52 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
     hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
-  credit_allocation_mutex_.lock();
+
   bool should_send_to_host = false;
   bool did_reclaim_credits = false;
-  for (uint8_t i = 0; i < nocp_event->num_handles().Read(); ++i) {
-    uint16_t handle = nocp_event->nocp_data()[i].connection_handle().Read();
-    uint16_t num_completed_packets =
-        nocp_event->nocp_data()[i].num_completed_packets().Read();
+  {
+    std::lock_guard lock(credit_allocation_mutex_);
+    for (uint8_t i = 0; i < nocp_event->num_handles().Read(); ++i) {
+      uint16_t handle = nocp_event->nocp_data()[i].connection_handle().Read();
+      uint16_t num_completed_packets =
+          nocp_event->nocp_data()[i].num_completed_packets().Read();
 
-    if (num_completed_packets == 0) {
-      continue;
-    }
+      if (num_completed_packets == 0) {
+        continue;
+      }
 
-    LeAclConnection* connection_ptr = FindLeAclConnection(handle);
-    if (!connection_ptr) {
-      // Credits for connection we are not tracking, so should pass event on
-      // to host.
-      should_send_to_host = true;
-      continue;
-    }
+      LeAclConnection* connection_ptr = FindLeAclConnection(handle);
+      if (!connection_ptr) {
+        // Credits for connection we are not tracking, so should pass event on
+        // to host.
+        should_send_to_host = true;
+        continue;
+      }
 
-    // Reclaim proxy's credits before event is forwarded to host
-    uint16_t num_pending_packets = connection_ptr->num_pending_packets();
-    uint16_t num_reclaimed =
-        std::min(num_completed_packets, num_pending_packets);
+      // Reclaim proxy's credits before event is forwarded to host
+      uint16_t num_pending_packets = connection_ptr->num_pending_packets();
+      uint16_t num_reclaimed =
+          std::min(num_completed_packets, num_pending_packets);
 
-    if (num_reclaimed > 0) {
-      did_reclaim_credits = true;
-    }
-    // TODO: https://pwbug.dev/379172336 - Select correct Credits to decrement.
-    le_credits_.MarkCompleted(num_reclaimed);
+      if (num_reclaimed > 0) {
+        did_reclaim_credits = true;
+      }
+      // TODO: https://pwbug.dev/379172336 - Select correct Credits to
+      // decrement.
+      le_credits_.MarkCompleted(num_reclaimed);
 
-    connection_ptr->set_num_pending_packets(num_pending_packets -
-                                            num_reclaimed);
+      connection_ptr->set_num_pending_packets(num_pending_packets -
+                                              num_reclaimed);
 
-    uint16_t credits_remaining = num_completed_packets - num_reclaimed;
-    nocp_event->nocp_data()[i].num_completed_packets().Write(credits_remaining);
-    if (credits_remaining > 0) {
-      // Connection has credits remaining, so should past event on to host.
-      should_send_to_host = true;
+      uint16_t credits_remaining = num_completed_packets - num_reclaimed;
+      nocp_event->nocp_data()[i].num_completed_packets().Write(
+          credits_remaining);
+      if (credits_remaining > 0) {
+        // Connection has credits remaining, so should past event on to host.
+        should_send_to_host = true;
+      }
     }
   }
-  credit_allocation_mutex_.unlock();
 
   if (did_reclaim_credits) {
     l2cap_channel_manager_.DrainWriteChannelQueues();
@@ -194,75 +200,67 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
     return;
   }
 
-  credit_allocation_mutex_.lock();
-  uint16_t conn_handle = dc_event->connection_handle().Read();
-  LeAclConnection* connection_ptr = FindLeAclConnection(conn_handle);
-  if (!connection_ptr) {
-    credit_allocation_mutex_.unlock();
-    hci_transport_.SendToHost(std::move(h4_packet));
-    return;
+  {
+    std::lock_guard lock(credit_allocation_mutex_);
+    uint16_t conn_handle = dc_event->connection_handle().Read();
+    LeAclConnection* connection_ptr = FindLeAclConnection(conn_handle);
+    if (!connection_ptr) {
+      hci_transport_.SendToHost(std::move(h4_packet));
+      return;
+    }
+
+    emboss::StatusCode status = dc_event->status().Read();
+    if (status == emboss::StatusCode::SUCCESS) {
+      if (connection_ptr->num_pending_packets() > 0) {
+        PW_LOG_WARN(
+            "Proxy viewed disconnect (reason: %#.2hhx) for connection %#.4hx "
+            "with packets in flight. Releasing associated credits",
+            cpp23::to_underlying(dc_event->reason().Read()),
+            conn_handle);
+        // TODO: https://pwbug.dev/379172336 - Select correct Credits to
+        // decrement.
+        le_credits_.MarkCompleted(connection_ptr->num_pending_packets());
+      }
+      active_le_acl_connections_.erase(connection_ptr);
+    } else {
+      if (connection_ptr->num_pending_packets() > 0) {
+        PW_LOG_WARN(
+            "Proxy viewed failed disconnect (status: %#.2hhx) for connection "
+            "%#.4hx with packets in flight. Not releasing associated credits.",
+            cpp23::to_underlying(status),
+            conn_handle);
+      }
+    }
   }
 
-  emboss::StatusCode status = dc_event->status().Read();
-  if (status == emboss::StatusCode::SUCCESS) {
-    if (connection_ptr->num_pending_packets() > 0) {
-      PW_LOG_WARN(
-          "Proxy viewed disconnect (reason: %#.2hhx) for connection %#.4hx "
-          "with packets in flight. Releasing associated credits",
-          cpp23::to_underlying(dc_event->reason().Read()),
-          conn_handle);
-      // TODO: https://pwbug.dev/379172336 - Select correct Credits to
-      // decrement.
-      le_credits_.MarkCompleted(connection_ptr->num_pending_packets());
-    }
-    active_le_acl_connections_.erase(connection_ptr);
-  } else {
-    if (connection_ptr->num_pending_packets() > 0) {
-      PW_LOG_WARN(
-          "Proxy viewed failed disconnect (status: %#.2hhx) for connection "
-          "%#.4hx with packets in flight. Not releasing associated credits.",
-          cpp23::to_underlying(status),
-          conn_handle);
-    }
-  }
-  credit_allocation_mutex_.unlock();
   hci_transport_.SendToHost(std::move(h4_packet));
 }
 
 bool AclDataChannel::HasSendLeAclCapability() const {
-  credit_allocation_mutex_.lock();
-  bool has_send_capability = le_credits_.HasSendCapability();
-  credit_allocation_mutex_.unlock();
-  return has_send_capability;
+  std::lock_guard lock(credit_allocation_mutex_);
+  return le_credits_.HasSendCapability();
 }
 
 bool AclDataChannel::HasSendBrEdrAclCapability() const {
-  credit_allocation_mutex_.lock();
-  bool has_send_capability = br_edr_credits_.HasSendCapability();
-  credit_allocation_mutex_.unlock();
-  return has_send_capability;
+  std::lock_guard lock(credit_allocation_mutex_);
+  return br_edr_credits_.HasSendCapability();
 }
 
 uint16_t AclDataChannel::GetNumFreeLeAclPackets() const {
-  credit_allocation_mutex_.lock();
-  uint16_t free_packets = le_credits_.Remaining();
-  credit_allocation_mutex_.unlock();
-  return free_packets;
+  std::lock_guard lock(credit_allocation_mutex_);
+  return le_credits_.Remaining();
 }
 
 uint16_t AclDataChannel::GetNumFreeBrEdrAclPackets() const {
-  credit_allocation_mutex_.lock();
-  uint16_t free_packets = br_edr_credits_.Remaining();
-  credit_allocation_mutex_.unlock();
-  return free_packets;
+  std::lock_guard lock(credit_allocation_mutex_);
+  return br_edr_credits_.Remaining();
 }
 
 pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
-  credit_allocation_mutex_.lock();
+  std::lock_guard lock(credit_allocation_mutex_);
   // TODO: https://pwbug.dev/379172336 - Select correct Credits to increment.
   if (const auto status = le_credits_.MarkPending(1); !status.ok()) {
     PW_LOG_WARN("No ACL send credits available. So will not send.");
-    credit_allocation_mutex_.unlock();
     return pw::Status::Unavailable();
   }
 
@@ -270,7 +268,6 @@ pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
       MakeEmbossView<emboss::AclDataFrameHeaderView>(h4_packet.GetHciSpan());
   if (!acl_view.ok()) {
     PW_LOG_ERROR("An invalid ACL packet was provided. So will not send.");
-    credit_allocation_mutex_.unlock();
     return pw::Status::InvalidArgument();
   }
   uint16_t handle = acl_view->handle().Read();
@@ -278,38 +275,32 @@ pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
   LeAclConnection* connection_ptr = FindLeAclConnection(handle);
   if (!connection_ptr) {
     PW_LOG_ERROR("Tried to send ACL packet on unregistered connection.");
-    credit_allocation_mutex_.unlock();
     return pw::Status::NotFound();
   }
   connection_ptr->set_num_pending_packets(
       connection_ptr->num_pending_packets() + 1);
 
   hci_transport_.SendToController(std::move(h4_packet));
-  credit_allocation_mutex_.unlock();
   return pw::OkStatus();
 }
 
 Status AclDataChannel::CreateLeAclConnection(uint16_t connection_handle) {
-  credit_allocation_mutex_.lock();
+  std::lock_guard lock(credit_allocation_mutex_);
   LeAclConnection* connection_it = FindLeAclConnection(connection_handle);
   if (connection_it) {
-    credit_allocation_mutex_.unlock();
     return Status::AlreadyExists();
   }
   if (active_le_acl_connections_.full()) {
-    credit_allocation_mutex_.unlock();
     return Status::ResourceExhausted();
   }
   active_le_acl_connections_.emplace_back(
       connection_handle, 0, l2cap_channel_manager_);
-  credit_allocation_mutex_.unlock();
   return OkStatus();
 }
 
 pw::Status AclDataChannel::FragmentedPduStarted(uint16_t connection_handle) {
-  credit_allocation_mutex_.lock();
+  std::lock_guard lock(credit_allocation_mutex_);
   LeAclConnection* connection_ptr = FindLeAclConnection(connection_handle);
-  credit_allocation_mutex_.unlock();
   if (!connection_ptr) {
     return Status::NotFound();
   }
@@ -322,9 +313,8 @@ pw::Status AclDataChannel::FragmentedPduStarted(uint16_t connection_handle) {
 
 pw::Result<bool> AclDataChannel::IsReceivingFragmentedPdu(
     uint16_t connection_handle) {
-  credit_allocation_mutex_.lock();
+  std::lock_guard lock(credit_allocation_mutex_);
   LeAclConnection* connection_ptr = FindLeAclConnection(connection_handle);
-  credit_allocation_mutex_.unlock();
   if (!connection_ptr) {
     return Status::NotFound();
   }
@@ -332,9 +322,8 @@ pw::Result<bool> AclDataChannel::IsReceivingFragmentedPdu(
 }
 
 pw::Status AclDataChannel::FragmentedPduFinished(uint16_t connection_handle) {
-  credit_allocation_mutex_.lock();
+  std::lock_guard lock(credit_allocation_mutex_);
   LeAclConnection* connection_ptr = FindLeAclConnection(connection_handle);
-  credit_allocation_mutex_.unlock();
   if (!connection_ptr) {
     return Status::NotFound();
   }

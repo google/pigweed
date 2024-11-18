@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 
+#include <mutex>
+
 #include "pw_containers/algorithm.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
@@ -35,16 +37,15 @@ bool L2capChannelManager::ReleaseReadChannel(L2capReadChannel& channel) {
 }
 
 void L2capChannelManager::RegisterWriteChannel(L2capWriteChannel& channel) {
-  write_channels_mutex_.lock();
+  std::lock_guard lock(write_channels_mutex_);
   write_channels_.push_front(channel);
   if (lrd_write_channel_ == write_channels_.end()) {
     lrd_write_channel_ = write_channels_.begin();
   }
-  write_channels_mutex_.unlock();
 }
 
 bool L2capChannelManager::ReleaseWriteChannel(L2capWriteChannel& channel) {
-  write_channels_mutex_.lock();
+  std::lock_guard lock(write_channels_mutex_);
   if (&channel == &(*lrd_write_channel_)) {
     Advance(lrd_write_channel_);
   }
@@ -57,7 +58,6 @@ bool L2capChannelManager::ReleaseWriteChannel(L2capWriteChannel& channel) {
     lrd_write_channel_ = write_channels_.end();
   }
 
-  write_channels_mutex_.unlock();
   return was_removed;
 }
 
@@ -89,12 +89,11 @@ uint16_t L2capChannelManager::GetH4BuffSize() const {
 }
 
 void L2capChannelManager::DrainWriteChannelQueues() {
-  write_channels_mutex_.lock();
+  std::lock_guard lock(write_channels_mutex_);
 
   // TODO: https://pwbug.dev/379172336 - Select correct Credits to check.
   if (write_channels_.empty() ||
       acl_data_channel_.GetNumFreeLeAclPackets() == 0) {
-    write_channels_mutex_.unlock();
     return;
   }
 
@@ -110,7 +109,6 @@ void L2capChannelManager::DrainWriteChannelQueues() {
     if (!packet) {
       Advance(lrd_write_channel_);
       if (lrd_write_channel_ == round_robin_start) {
-        write_channels_mutex_.unlock();
         return;
       }
       continue;
@@ -118,21 +116,18 @@ void L2capChannelManager::DrainWriteChannelQueues() {
 
     PW_CHECK_OK(acl_data_channel_.SendAcl(std::move(*packet)));
   } while (acl_data_channel_.GetNumFreeLeAclPackets());
-  write_channels_mutex_.unlock();
 }
 
 L2capWriteChannel* L2capChannelManager::FindWriteChannel(
     uint16_t connection_handle, uint16_t remote_cid) {
-  write_channels_mutex_.lock();
+  std::lock_guard lock(write_channels_mutex_);
   auto connection_it = containers::FindIf(
       write_channels_,
       [connection_handle, remote_cid](const L2capWriteChannel& channel) {
         return channel.connection_handle() == connection_handle &&
                channel.remote_cid() == remote_cid;
       });
-  bool was_found = connection_it != write_channels_.end();
-  write_channels_mutex_.unlock();
-  return was_found ? &(*connection_it) : nullptr;
+  return connection_it == write_channels_.end() ? nullptr : &(*connection_it);
 }
 
 L2capReadChannel* L2capChannelManager::FindReadChannel(

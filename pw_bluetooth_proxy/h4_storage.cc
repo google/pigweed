@@ -14,51 +14,48 @@
 
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
 
+#include <mutex>
+
 #include "pw_assert/check.h"  // IWYU pragma: keep
 
 namespace pw::bluetooth::proxy {
 
 std::array<containers::Pair<uint8_t*, bool>, H4Storage::kNumH4Buffs>
 H4Storage::InitOccupiedMap() {
-  storage_mutex_.lock();
+  std::lock_guard lock(storage_mutex_);
   std::array<containers::Pair<uint8_t*, bool>, kNumH4Buffs> arr;
   for (size_t i = 0; i < kNumH4Buffs; ++i) {
     arr[i] = {h4_buffs_[i].data(), false};
   }
-  storage_mutex_.unlock();
   return arr;
 }
 
 H4Storage::H4Storage() : h4_buff_occupied_(InitOccupiedMap()) {}
 
 std::optional<pw::span<uint8_t>> H4Storage::ReserveH4Buff() {
-  storage_mutex_.lock();
+  std::lock_guard lock(storage_mutex_);
   for (const auto& [buff, occupied] : h4_buff_occupied_) {
     if (!occupied) {
       h4_buff_occupied_.at(buff) = true;
-      storage_mutex_.unlock();
       return {{buff, kH4BuffSize}};
     }
   }
-  storage_mutex_.unlock();
   return std::nullopt;
 }
 
 void H4Storage::ReleaseH4Buff(const uint8_t* buffer) {
-  storage_mutex_.lock();
+  std::lock_guard lock(storage_mutex_);
   PW_CHECK(h4_buff_occupied_.contains(const_cast<uint8_t*>(buffer)),
            "Received release callback for invalid buffer address.");
 
   h4_buff_occupied_.at(const_cast<uint8_t*>(buffer)) = false;
-  storage_mutex_.unlock();
 }
 
 void H4Storage::Reset() {
-  storage_mutex_.lock();
+  std::lock_guard lock(storage_mutex_);
   for (const auto& [buff, _] : h4_buff_occupied_) {
     h4_buff_occupied_.at(buff) = false;
   }
-  storage_mutex_.unlock();
 }
 
 }  // namespace pw::bluetooth::proxy
