@@ -14,7 +14,8 @@
 
 #include "pw_allocator/freelist_heap.h"
 
-#include "pw_allocator/block_testing.h"
+#include "lib/stdcompat/bit.h"
+#include "pw_allocator/block/testing.h"
 #include "pw_bytes/alignment.h"
 #include "pw_unit_test/framework.h"
 
@@ -27,7 +28,7 @@ using ::pw::allocator::test::GetAlignedOffsetAfter;
 
 class FreeListHeapBufferTest : public ::testing::Test {
  protected:
-  using BlockType = ::pw::allocator::Block<>;
+  using BlockType = ::pw::allocator::DetailedBlock<>;
 
   static constexpr size_t kN = 2048;
 
@@ -58,12 +59,12 @@ TEST_F(FreeListHeapBufferTest, AllocationsDontOverlap) {
 
   void* ptr1 = allocator.Allocate(kN / 4);
   ASSERT_NE(ptr1, nullptr);
-  uintptr_t ptr1_start = reinterpret_cast<uintptr_t>(ptr1);
+  uintptr_t ptr1_start = cpp20::bit_cast<uintptr_t>(ptr1);
   uintptr_t ptr1_end = ptr1_start + (kN / 4);
 
   void* ptr2 = allocator.Allocate(kN / 4);
   ASSERT_NE(ptr2, nullptr);
-  uintptr_t ptr2_start = reinterpret_cast<uintptr_t>(ptr2);
+  uintptr_t ptr2_start = cpp20::bit_cast<uintptr_t>(ptr2);
   uintptr_t ptr2_end = ptr2_start + (kN / 4);
 
   if (ptr1 < ptr2) {
@@ -122,13 +123,13 @@ TEST_F(FreeListHeapBufferTest, ReturnedPointersAreAligned) {
   void* ptr1 = allocator.Allocate(1);
 
   // Should be aligned to native pointer alignment
-  uintptr_t ptr1_start = reinterpret_cast<uintptr_t>(ptr1);
+  uintptr_t ptr1_start = cpp20::bit_cast<uintptr_t>(ptr1);
   size_t alignment = alignof(void*);
 
   EXPECT_EQ(ptr1_start % alignment, static_cast<size_t>(0));
 
   void* ptr2 = allocator.Allocate(1);
-  uintptr_t ptr2_start = reinterpret_cast<uintptr_t>(ptr2);
+  uintptr_t ptr2_start = cpp20::bit_cast<uintptr_t>(ptr2);
 
   EXPECT_EQ(ptr2_start % alignment, static_cast<size_t>(0));
 

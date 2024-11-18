@@ -221,6 +221,8 @@ Choose the right allocator
 Once one or more routines are using allocators, you can consider how best to
 implement memory allocation for each particular scenario.
 
+.. TODO(b/378549332): Add a decision tree for selecting an allocator.
+
 Concrete allocator implementations
 ==================================
 This module provides several allocator implementations. The following is an

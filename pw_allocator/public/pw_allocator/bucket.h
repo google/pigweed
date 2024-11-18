@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <limits>
 
+#include "lib/stdcompat/bit.h"
 #include "pw_function/function.h"
 #include "pw_span/span.h"
 
@@ -36,12 +37,10 @@ class Bucket final {
     }
 
     const std::byte* AsBytes() const {
-      return std::launder(reinterpret_cast<const std::byte*>(this));
+      return cpp20::bit_cast<const std::byte*>(this);
     }
 
-    std::byte* AsBytes() {
-      return std::launder(reinterpret_cast<std::byte*>(this));
-    }
+    std::byte* AsBytes() { return cpp20::bit_cast<std::byte*>(this); }
 
     Chunk* prev;
     Chunk* next;

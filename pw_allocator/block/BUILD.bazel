@@ -1,0 +1,156 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+cc_library(
+    name = "alignable",
+    hdrs = ["public/pw_allocator/block/alignable.h"],
+    includes = ["public"],
+    deps = [
+        ":allocatable",
+        "//pw_allocator:deallocator",
+        "//pw_assert",
+        "//pw_bytes:alignment",
+        "//pw_status",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+cc_library(
+    name = "allocatable",
+    hdrs = [
+        "public/pw_allocator/block/allocatable.h",
+        "public/pw_allocator/block/result.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":contiguous",
+        "//pw_allocator:deallocator",
+        "//pw_assert",
+        "//pw_bytes:alignment",
+        "//pw_status",
+    ],
+)
+
+cc_library(
+    name = "basic",
+    srcs = ["basic.cc"],
+    hdrs = ["public/pw_allocator/block/basic.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_allocator:config",
+        "//pw_assert",
+        "//pw_bytes:alignment",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+cc_library(
+    name = "contiguous",
+    srcs = ["contiguous.cc"],
+    hdrs = ["public/pw_allocator/block/contiguous.h"],
+    includes = ["public"],
+    deps = [
+        ":basic",
+        "//pw_bytes",
+        "//pw_result",
+        "//pw_status",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+cc_library(
+    name = "iterable",
+    hdrs = ["public/pw_allocator/block/iterable.h"],
+    includes = ["public"],
+    deps = [
+        ":contiguous",
+    ],
+)
+
+cc_library(
+    name = "poisonable",
+    srcs = ["poisonable.cc"],
+    hdrs = ["public/pw_allocator/block/poisonable.h"],
+    includes = ["public"],
+    deps = [
+        ":contiguous",
+        "//pw_allocator:config",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+cc_library(
+    name = "with_layout",
+    hdrs = ["public/pw_allocator/block/with_layout.h"],
+    includes = ["public"],
+    deps = [
+        ":alignable",
+        "//pw_allocator:deallocator",
+        "//pw_assert",
+    ],
+)
+
+cc_library(
+    name = "detailed_block",
+    hdrs = ["public/pw_allocator/block/detailed_block.h"],
+    includes = ["public"],
+    deps = [
+        ":alignable",
+        ":allocatable",
+        ":basic",
+        ":contiguous",
+        ":iterable",
+        ":poisonable",
+        ":with_layout",
+        "//pw_allocator:config",
+        "//pw_allocator:deallocator",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_preprocessor",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
+cc_library(
+    name = "testing",
+    testonly = True,
+    hdrs = ["public/pw_allocator/block/testing.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_allocator:testing",
+        "//pw_assert",
+        "//pw_bytes:alignment",
+        "//pw_status",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+pw_cc_test(
+    name = "detailed_block_test",
+    srcs = ["detailed_block_test.cc"],
+    deps = [
+        ":detailed_block",
+        ":testing",
+        "//pw_span",
+        "//pw_unit_test",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)

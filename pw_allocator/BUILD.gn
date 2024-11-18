@@ -85,31 +85,14 @@ pw_source_set("best_fit_block_allocator") {
   ]
 }
 
-pw_source_set("block") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_allocator/block.h" ]
-  public_deps = [
-    ":allocator",
-    ":buffer",
-    ":config",
-    "$dir_pw_bytes:alignment",
-    dir_pw_assert,
-    dir_pw_bytes,
-    dir_pw_result,
-    dir_pw_status,
-  ]
-  deps = [ ":buffer" ]
-  sources = [ "block.cc" ]
-}
-
 pw_source_set("block_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/block_allocator.h" ]
   public_deps = [
     ":allocator",
-    ":block",
     ":bucket",
     ":fragmentation",
+    "block:detailed_block",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
@@ -122,6 +105,7 @@ pw_source_set("bucket") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/bucket.h" ]
   public_deps = [
+    "$dir_pw_third_party/fuchsia:stdcompat",
     dir_pw_function,
     dir_pw_span,
   ]
@@ -152,12 +136,13 @@ pw_source_set("buddy_allocator") {
     ":allocator",
     ":bucket",
     "$dir_pw_containers:vector",
-    dir_pw_alignment,
     dir_pw_bytes,
+    dir_pw_status,
   ]
   deps = [
     ":buffer",
     "$dir_pw_bytes:alignment",
+    "$dir_pw_third_party/fuchsia:stdcompat",
     dir_pw_assert,
   ]
   sources = [ "buddy_allocator.cc" ]
@@ -200,6 +185,7 @@ pw_source_set("chunk_pool") {
     ":buffer",
     "$dir_pw_assert:check",
     "$dir_pw_bytes:alignment",
+    "$dir_pw_third_party/fuchsia:stdcompat",
   ]
   sources = [ "chunk_pool.cc" ]
 }
@@ -262,8 +248,8 @@ pw_source_set("freelist_heap") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/freelist_heap.h" ]
   public_deps = [
-    ":block",
     ":bucket_allocator",
+    "block:detailed_block",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_preprocessor,
@@ -363,11 +349,11 @@ pw_source_set("testing") {
   public = [ "public/pw_allocator/testing.h" ]
   public_deps = [
     ":allocator",
-    ":block",
     ":buffer",
     ":first_fit_block_allocator",
     ":tracking_allocator",
     "$dir_pw_sync:interrupt_spin_lock",
+    "block:detailed_block",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
@@ -376,27 +362,16 @@ pw_source_set("testing") {
   deps = [ dir_pw_assert ]
 }
 
-pw_source_set("block_testing") {
-  public = [ "public/pw_allocator/block_testing.h" ]
-  public_deps = [
-    ":block",
-    ":testing",
-    "$dir_pw_bytes:alignment",
-    "$dir_pw_third_party/fuchsia:stdcompat",
-    dir_pw_assert,
-    dir_pw_status,
-  ]
-}
-
 pw_source_set("block_allocator_testing") {
   public = [ "public/pw_allocator/block_allocator_testing.h" ]
   public_deps = [
     ":block_allocator",
-    ":block_testing",
+    "block:testing",
     dir_pw_unit_test,
   ]
   deps = [
     "$dir_pw_bytes:alignment",
+    "$dir_pw_third_party/fuchsia:stdcompat",
     dir_pw_assert,
     dir_pw_status,
   ]
@@ -452,14 +427,6 @@ pw_test("best_fit_block_allocator_test") {
   sources = [ "best_fit_block_allocator_test.cc" ]
 }
 
-pw_test("block_test") {
-  deps = [
-    ":block_testing",
-    dir_pw_span,
-  ]
-  sources = [ "block_test.cc" ]
-}
-
 pw_test("bucket_allocator_test") {
   deps = [
     ":block_allocator_testing",
@@ -480,6 +447,7 @@ pw_test("buffer_test") {
   deps = [
     ":buffer",
     ":testing",
+    "$dir_pw_third_party/fuchsia:stdcompat",
     dir_pw_bytes,
     dir_pw_result,
   ]
@@ -490,6 +458,7 @@ pw_test("bump_allocator_test") {
   deps = [
     ":bump_allocator",
     ":testing",
+    "$dir_pw_third_party/fuchsia:stdcompat",
   ]
   sources = [ "bump_allocator_test.cc" ]
 }
@@ -524,6 +493,7 @@ pw_test("first_fit_block_allocator_test") {
     ":block_allocator_testing",
     ":buffer",
     ":first_fit_block_allocator",
+    "$dir_pw_third_party/fuchsia:stdcompat",
   ]
   sources = [ "first_fit_block_allocator_test.cc" ]
 }
@@ -538,9 +508,10 @@ pw_test("fragmentation_test") {
 
 pw_test("freelist_heap_test") {
   deps = [
-    ":block_testing",
     ":freelist_heap",
     "$dir_pw_bytes:alignment",
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    "block:testing",
   ]
   sources = [ "freelist_heap_test.cc" ]
 }
@@ -645,7 +616,6 @@ pw_test_group("tests") {
     # ":allocator_nc_test",
     ":allocator_test",
     ":best_fit_block_allocator_test",
-    ":block_test",
     ":bucket_allocator_test",
     ":buddy_allocator_test",
     ":buffer_test",
@@ -669,6 +639,7 @@ pw_test_group("tests") {
   ]
   group_deps = [
     "benchmarks:tests",
+    "block:tests",
     "examples",
   ]
 }

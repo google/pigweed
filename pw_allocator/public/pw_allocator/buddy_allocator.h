@@ -16,7 +16,6 @@
 #include <array>
 #include <cstddef>
 
-#include "pw_alignment/alignment.h"
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/bucket.h"
 #include "pw_bytes/span.h"

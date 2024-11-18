@@ -14,6 +14,9 @@
 
 #include "pw_allocator/first_fit_block_allocator.h"
 
+#include <cstdint>
+
+#include "lib/stdcompat/bit.h"
 #include "pw_allocator/block_allocator_testing.h"
 #include "pw_allocator/buffer.h"
 #include "pw_unit_test/framework.h"
@@ -53,6 +56,30 @@ TEST_F(FirstFitBlockAllocatorTest, AllocateSmall) { AllocateSmall(); }
 
 TEST_F(FirstFitBlockAllocatorTest, AllocateLargeAlignment) {
   AllocateLargeAlignment();
+
+  alignas(BlockType::kAlignment) std::array<std::byte, kCapacity> buffer;
+  pw::ByteSpan bytes(buffer);
+  auto addr = cpp20::bit_cast<uintptr_t>(bytes.data());
+  size_t offset = 64 - (addr % 64);
+  offset += 4 * 12;
+  offset %= 64;
+  bytes = bytes.subspan(offset);
+  FirstFitBlockAllocator allocator;
+  allocator.Init(bytes);
+
+  constexpr size_t kAlignment = 64;
+  void* ptr0 = allocator.Allocate(Layout(kLargeInnerSize, kAlignment));
+  ASSERT_NE(ptr0, nullptr);
+  EXPECT_EQ(cpp20::bit_cast<uintptr_t>(ptr0) % kAlignment, 0U);
+  UseMemory(ptr0, kLargeInnerSize);
+
+  void* ptr1 = allocator.Allocate(Layout(kLargeInnerSize, kAlignment));
+  ASSERT_NE(ptr1, nullptr);
+  EXPECT_EQ(cpp20::bit_cast<uintptr_t>(ptr1) % kAlignment, 0U);
+  UseMemory(ptr1, kLargeInnerSize);
+
+  allocator.Deallocate(ptr0);
+  allocator.Deallocate(ptr1);
 }
 
 TEST_F(FirstFitBlockAllocatorTest, AllocateAlignmentFailure) {
@@ -120,7 +147,7 @@ TEST_F(FirstFitBlockAllocatorTest, DisablePoisoning) {
   }
 
   // Modify the contents of the block and check if it is still valid.
-  auto* bytes = std::launder(reinterpret_cast<uint8_t*>(ptrs[1]));
+  auto* bytes = cpp20::bit_cast<std::byte*>(ptrs[1]);
   auto* block = BlockType::FromUsableSpace(bytes);
   allocator.Deallocate(bytes);
   EXPECT_TRUE(block->IsFree());
@@ -151,7 +178,7 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonEveryFreeBlock) {
     ASSERT_NE(ptr, nullptr);
   }
   // Modify the contents of the block and check if it is still valid.
-  auto* bytes = std::launder(reinterpret_cast<uint8_t*>(ptrs[1]));
+  auto* bytes = cpp20::bit_cast<std::byte*>(ptrs[1]);
   auto* block = BlockType::FromUsableSpace(bytes);
   allocator->Deallocate(bytes);
   EXPECT_TRUE(block->IsFree());
@@ -159,6 +186,8 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonEveryFreeBlock) {
   bytes[0] = ~bytes[0];
   EXPECT_FALSE(block->IsValid());
 
+  // Fix the block to prevent crashing on teardown.
+  bytes[0] = ~bytes[0];
   allocator->Deallocate(ptrs[0]);
   allocator->Deallocate(ptrs[2]);
 }
@@ -183,7 +212,7 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonPeriodically) {
   }
 
   for (size_t i = 1; i < ptrs.size(); i += 2) {
-    auto* bytes = std::launder(reinterpret_cast<uint8_t*>(ptrs[i]));
+    auto* bytes = cpp20::bit_cast<std::byte*>(ptrs[i]);
     auto* block = BlockType::FromUsableSpace(bytes);
     allocator->Deallocate(bytes);
     EXPECT_TRUE(block->IsFree());
@@ -193,6 +222,7 @@ TEST(PoisonedFirstFitBlockAllocatorTest, PoisonPeriodically) {
     // Corruption is only detected on the fourth freed block.
     if (i == 7) {
       EXPECT_FALSE(block->IsValid());
+      bytes[0] = ~bytes[0];
     } else {
       EXPECT_TRUE(block->IsValid());
     }

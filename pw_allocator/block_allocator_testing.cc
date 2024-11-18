@@ -14,6 +14,10 @@
 
 #include "pw_allocator/block_allocator_testing.h"
 
+#include <cstdint>
+
+#include "lib/stdcompat/bit.h"
+#include "pw_allocator/layout.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/alignment.h"
 #include "pw_status/status.h"
@@ -82,15 +86,16 @@ void BlockAllocatorTestBase::AllocateTooLarge() {
 
 void BlockAllocatorTestBase::AllocateLargeAlignment() {
   Allocator& allocator = GetAllocator();
+
   constexpr size_t kAlignment = 64;
   Store(0, allocator.Allocate(Layout(kLargeInnerSize, kAlignment)));
   ASSERT_NE(Fetch(0), nullptr);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(Fetch(0)) % kAlignment, 0U);
+  EXPECT_TRUE(IsAlignedAs(Fetch(0), kAlignment));
   UseMemory(Fetch(0), kLargeInnerSize);
 
   Store(1, allocator.Allocate(Layout(kLargeInnerSize, kAlignment)));
   ASSERT_NE(Fetch(1), nullptr);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(Fetch(1)) % kAlignment, 0U);
+  EXPECT_TRUE(IsAlignedAs(Fetch(1), kAlignment));
   UseMemory(Fetch(1), kLargeInnerSize);
 }
 

@@ -67,16 +67,24 @@ TEST_F(BestFitBlockAllocatorTest, AllocatesBestCompatible) {
       {kSmallerOuterSize, Preallocation::kUsed},
       {kSmallOuterSize, Preallocation::kFree},
       {kSmallerOuterSize, Preallocation::kUsed},
-      {kSmallerOuterSize, Preallocation::kFree},
-      {kSmallerOuterSize, Preallocation::kUsed},
       {kLargerOuterSize, Preallocation::kFree},
       {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
-  Store(2, allocator.Allocate(Layout(kSmallInnerSize, 1)));
-  EXPECT_EQ(NextAfter(1), Fetch(2));
-  EXPECT_EQ(NextAfter(2), Fetch(3));
-  Store(0, allocator.Allocate(Layout(kLargeInnerSize, 1)));
-  EXPECT_EQ(NextAfter(0), Fetch(1));
+
+  void* ptr1 = allocator.Allocate(Layout(kSmallInnerSize, 1));
+  EXPECT_LT(Fetch(1), ptr1);
+  EXPECT_LT(ptr1, Fetch(3));
+
+  void* ptr2 = allocator.Allocate(Layout(kSmallInnerSize, 1));
+  EXPECT_LT(ptr2, Fetch(1));
+
+  // A second small block fits in the leftovers of the first "Large" block.
+  void* ptr3 = allocator.Allocate(Layout(kSmallInnerSize, 1));
+  EXPECT_LT(ptr3, Fetch(1));
+
+  allocator.Deallocate(ptr1);
+  allocator.Deallocate(ptr2);
+  allocator.Deallocate(ptr3);
 }
 
 TEST_F(BestFitBlockAllocatorTest, DeallocateNull) { DeallocateNull(); }

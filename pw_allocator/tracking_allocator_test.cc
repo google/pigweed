@@ -27,7 +27,7 @@ namespace {
 // Test fixtures.
 
 using ::pw::allocator::Layout;
-using ::pw::allocator::NoMetrics;
+// using ::pw::allocator::NoMetrics;
 using ::pw::allocator::TrackingAllocator;
 using TestMetrics = ::pw::allocator::internal::AllMetrics;
 
@@ -55,9 +55,7 @@ class TrackingAllocatorTest : public ::testing::Test {
   void SetUp() override { allocator_->Init(allocator_.as_bytes()); }
 
   void TearDown() override {
-    for (auto* block : allocator_->blocks()) {
-      BlockType::Free(block);
-    }
+    pw::allocator::test::FreeAll<BlockType>(allocator_->blocks());
     allocator_->Reset();
   }
 
@@ -131,7 +129,7 @@ TEST_F(TrackingAllocatorTest, GetCapacity) {
 
 TEST_F(TrackingAllocatorTest, AddTrackingAllocatorAsChild) {
   constexpr static pw::metric::Token kChildToken = 2U;
-  TrackingAllocator<NoMetrics> child(
+  TrackingAllocator<::pw::allocator::NoMetrics> child(
       kChildToken, tracker_, pw::allocator::kAddTrackingAllocatorAsChild);
   pw::IntrusiveList<pw::metric::Group>& children =
       tracker_.metric_group().children();

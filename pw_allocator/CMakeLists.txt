@@ -70,24 +70,11 @@ pw_add_library(pw_allocator.best_fit_block_allocator INTERFACE
     pw_allocator.config
 )
 
-pw_add_library(pw_allocator.block STATIC
-  HEADERS
-    public/pw_allocator/block.h
-  PUBLIC_INCLUDES
-    public
+# TODO(b/376730645): Deprecated; use pw_allocator.block.detailed_block or
+# similar instead.
+pw_add_library(pw_allocator.block INTERFACE
   PUBLIC_DEPS
-    pw_allocator.allocator
-    pw_allocator.buffer
-    pw_allocator.config
-    pw_assert
-    pw_bytes
-    pw_bytes.alignment
-    pw_result
-    pw_status
-  PRIVATE_DEPS
-    pw_allocator.buffer
-  SOURCES
-    block.cc
+    pw_allocator.block.detailed_block
 )
 
 pw_add_library(pw_allocator.block_allocator STATIC
@@ -97,7 +84,7 @@ pw_add_library(pw_allocator.block_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.block
+    pw_allocator.block.detailed_block
     pw_allocator.fragmentation
     pw_bytes.alignment
     pw_result
@@ -116,6 +103,7 @@ pw_add_library(pw_allocator.bucket STATIC
   PUBLIC_DEPS
     pw_function
     pw_span
+    pw_third_party.fuchsia.stdcompat
   PRIVATE_DEPS
     pw_assert
   SOURCES
@@ -148,16 +136,16 @@ pw_add_library(pw_allocator.buddy_allocator STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_alignment
     pw_allocator.allocator
     pw_allocator.bucket
-    pw_allocator.buffer
     pw_bytes
     pw_containers.vector
+    pw_status
   PRIVATE_DEPS
     pw_allocator.buffer
     pw_bytes.alignment
     pw_assert
+    pw_third_party.fuchsia.stdcompat
   SOURCES
     buddy_allocator.cc
 )
@@ -200,6 +188,7 @@ pw_add_library(pw_allocator.chunk_pool STATIC
     pw_allocator.buffer
     pw_bytes.alignment
     pw_assert.check
+    pw_third_party.fuchsia.stdcompat
   SOURCES
     chunk_pool.cc
 )
@@ -272,7 +261,7 @@ pw_add_library(pw_allocator.freelist_heap INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block
+    pw_allocator.block.detailed_block
     pw_allocator.bucket_allocator
     pw_assert
     pw_bytes
@@ -386,8 +375,8 @@ pw_add_library(pw_allocator.testing INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.block
     pw_allocator.buffer
+    pw_allocator.block.detailed_block
     pw_allocator.first_fit_block_allocator
     pw_allocator.test_config
     pw_allocator.tracking_allocator
@@ -400,34 +389,20 @@ pw_add_library(pw_allocator.testing INTERFACE
     pw_assert
 )
 
-pw_add_library(pw_allocator.block_testing INTERFACE
-  HEADERS
-    public/pw_allocator/block_testing.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_allocator.block
-    pw_allocator.testing
-    pw_assert
-    pw_bytes.alignment
-    pw_bytes
-    pw_result
-    pw_third_party.fuchsia.stdcompat
-)
-
 pw_add_library(pw_allocator.block_allocator_testing STATIC
   HEADERS
     public/pw_allocator/block_allocator_testing.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block_testing
+    pw_allocator.block.testing
     pw_allocator.block_allocator
     pw_unit_test
   PRIVATE_DEPS
     pw_assert
     pw_bytes.alignment
     pw_status
+    pw_third_party.fuchsia.stdcompat
   SOURCES
     block_allocator_testing.cc
 )
@@ -495,17 +470,6 @@ pw_add_test(pw_allocator.best_fit_block_allocator_test
     pw_allocator
 )
 
-pw_add_test(pw_allocator.block_test
-  SOURCES
-    block_test.cc
-  PRIVATE_DEPS
-    pw_allocator.block_testing
-    pw_span
-  GROUPS
-    modules
-    pw_allocator
-)
-
 pw_add_test(pw_allocator.bucket_allocator_test
   SOURCES
     bucket_allocator_test.cc
@@ -536,6 +500,7 @@ pw_add_test(pw_allocator.buffer_test
     pw_allocator.testing
     pw_bytes
     pw_result
+    pw_third_party.fuchsia.stdcompat
   GROUPS
     modules
     pw_allocator
@@ -547,6 +512,7 @@ pw_add_test(pw_allocator.bump_allocator_test
   PRIVATE_DEPS
     pw_allocator.bump_allocator
     pw_allocator.testing
+    pw_third_party.fuchsia.stdcompat
   GROUPS
     modules
     pw_allocator
@@ -593,6 +559,7 @@ pw_add_test(pw_allocator.first_fit_block_allocator_test
     pw_allocator.block_allocator_testing
     pw_allocator.buffer
     pw_allocator.first_fit_block_allocator
+    pw_third_party.fuchsia.stdcompat
   GROUPS
     modules
     pw_allocator
@@ -613,10 +580,11 @@ pw_add_test(pw_allocator.freelist_heap_test
   SOURCES
     freelist_heap_test.cc
   PRIVATE_DEPS
-    pw_allocator.block_testing
+    pw_allocator.block.testing
     pw_allocator.freelist_heap
     pw_allocator.testing
     pw_bytes.alignment
+    pw_third_party.fuchsia.stdcompat
   GROUPS
     modules
     pw_allocator
@@ -747,4 +715,5 @@ pw_add_test(pw_allocator.worst_fit_block_allocator_test
 )
 
 add_subdirectory(benchmarks)
+add_subdirectory(block)
 add_subdirectory(examples)

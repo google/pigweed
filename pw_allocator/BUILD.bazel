@@ -84,32 +84,14 @@ cc_library(
 )
 
 cc_library(
-    name = "block",
-    srcs = ["block.cc"],
-    hdrs = [
-        "public/pw_allocator/block.h",
-    ],
-    strip_include_prefix = "public",
-    deps = [
-        ":allocator",
-        ":buffer",
-        "//pw_assert",
-        "//pw_bytes",
-        "//pw_bytes:alignment",
-        "//pw_result",
-        "//pw_status",
-    ],
-)
-
-cc_library(
     name = "block_allocator",
     srcs = ["block_allocator.cc"],
     hdrs = ["public/pw_allocator/block_allocator.h"],
     strip_include_prefix = "public",
     deps = [
         ":allocator",
-        ":block",
         ":fragmentation",
+        "//pw_allocator/block:detailed_block",
         "//pw_assert",
         "//pw_bytes:alignment",
         "//pw_result",
@@ -130,6 +112,7 @@ cc_library(
         "//pw_assert",
         "//pw_function",
         "//pw_span",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 
@@ -161,16 +144,19 @@ cc_library(
     hdrs = [
         "public/pw_allocator/buddy_allocator.h",
     ],
+    implementation_deps = [
+        ":buffer",
+        "//pw_assert",
+        "//pw_bytes:alignment",
+        "//third_party/fuchsia:stdcompat",
+    ],
     strip_include_prefix = "public",
     deps = [
         ":allocator",
         ":bucket",
-        ":buffer",
-        "//pw_alignment",
-        "//pw_assert",
         "//pw_bytes",
-        "//pw_bytes:alignment",
         "//pw_containers:vector",
+        "//pw_status",
     ],
 )
 
@@ -213,13 +199,16 @@ cc_library(
     hdrs = [
         "public/pw_allocator/chunk_pool.h",
     ],
+    implementation_deps = [
+        ":buffer",
+        "//pw_assert",
+        "//pw_bytes:alignment",
+        "//third_party/fuchsia:stdcompat",
+    ],
     strip_include_prefix = "public",
     deps = [
-        ":buffer",
         ":pool",
-        "//pw_assert",
         "//pw_bytes",
-        "//pw_bytes:alignment",
         "//pw_result",
     ],
 )
@@ -296,8 +285,8 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        ":block",
         ":bucket_allocator",
+        "//pw_allocator/block:detailed_block",
         "//pw_assert",
         "//pw_bytes",
         "//pw_preprocessor",
@@ -356,7 +345,6 @@ cc_library(
 cc_library(
     name = "pool",
     hdrs = ["public/pw_allocator/pool.h"],
-    includes = [":default_config"],
     strip_include_prefix = "public",
     deps = [
         ":deallocator",
@@ -427,34 +415,17 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":allocator",
-        ":block",
         ":buffer",
         ":first_fit_block_allocator",
         ":test_config",
         ":tracking_allocator",
+        "//pw_allocator/block:detailed_block",
         "//pw_assert",
         "//pw_bytes",
         "//pw_result",
         "//pw_status",
         "//pw_sync:interrupt_spin_lock",
         "//pw_unit_test",
-    ],
-)
-
-cc_library(
-    name = "block_testing",
-    testonly = True,
-    hdrs = [
-        "public/pw_allocator/block_testing.h",
-    ],
-    strip_include_prefix = "public",
-    deps = [
-        ":block",
-        ":testing",
-        "//pw_assert",
-        "//pw_bytes:alignment",
-        "//pw_status",
-        "//third_party/fuchsia:stdcompat",
     ],
 )
 
@@ -467,13 +438,16 @@ cc_library(
     hdrs = [
         "public/pw_allocator/block_allocator_testing.h",
     ],
-    strip_include_prefix = "public",
-    deps = [
-        ":block_allocator",
-        ":block_testing",
+    implementation_deps = [
         "//pw_assert",
         "//pw_bytes:alignment",
         "//pw_status",
+        "//third_party/fuchsia:stdcompat",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":block_allocator",
+        "//pw_allocator/block:testing",
         "//pw_unit_test",
     ],
 )
@@ -550,18 +524,6 @@ pw_cc_test(
 )
 
 pw_cc_test(
-    name = "block_test",
-    srcs = [
-        "block_test.cc",
-    ],
-    deps = [
-        ":block_testing",
-        "//pw_span",
-        "//pw_unit_test",
-    ],
-)
-
-pw_cc_test(
     name = "bucket_allocator_test",
     srcs = ["bucket_allocator_test.cc"],
     deps = [
@@ -593,6 +555,7 @@ pw_cc_test(
         ":testing",
         "//pw_bytes",
         "//pw_result",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 
@@ -605,6 +568,7 @@ pw_cc_test(
         ":bump_allocator",
         ":testing",
         "//pw_unit_test",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 
@@ -650,6 +614,7 @@ pw_cc_test(
         ":buffer",
         ":first_fit_block_allocator",
         "//pw_unit_test",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 
@@ -669,10 +634,11 @@ pw_cc_test(
         "freelist_heap_test.cc",
     ],
     deps = [
-        ":block_testing",
         ":freelist_heap",
         ":testing",
+        "//pw_allocator/block:testing",
         "//pw_bytes:alignment",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 

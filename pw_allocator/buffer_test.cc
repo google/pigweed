@@ -17,6 +17,7 @@
 #include <array>
 #include <cstdint>
 
+#include "lib/stdcompat/bit.h"
 #include "pw_bytes/span.h"
 #include "pw_unit_test/framework.h"
 
@@ -30,8 +31,8 @@ TEST(WithBuffer, AlignedBytesAreAvailable) {
   WithBuffer<int, kBufferSize, kAlignment> int_with_buffer;
   EXPECT_EQ(int_with_buffer.size(), kBufferSize);
   EXPECT_EQ(int_with_buffer.as_bytes().size(), kBufferSize);
-  size_t buffer_data_ptr =
-      reinterpret_cast<size_t>(int_with_buffer.as_bytes().data());
+  auto buffer_data_ptr =
+      cpp20::bit_cast<uintptr_t>(int_with_buffer.as_bytes().data());
   EXPECT_EQ(buffer_data_ptr % kAlignment, 0u);
 }
 

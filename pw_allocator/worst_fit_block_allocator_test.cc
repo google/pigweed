@@ -14,6 +14,8 @@
 
 #include "pw_allocator/worst_fit_block_allocator.h"
 
+#include <cstdint>
+
 #include "pw_allocator/block_allocator_testing.h"
 #include "pw_unit_test/framework.h"
 
@@ -64,21 +66,28 @@ TEST_F(WorstFitBlockAllocatorTest, AllocateAlignmentFailure) {
 
 TEST_F(WorstFitBlockAllocatorTest, AllocatesWorstCompatible) {
   auto& allocator = GetAllocator({
-      {kLargeOuterSize, Preallocation::kFree},
-      {kSmallerOuterSize, Preallocation::kUsed},
-      {kSmallOuterSize, Preallocation::kFree},
-      {kSmallerOuterSize, Preallocation::kUsed},
-      {kSmallerOuterSize, Preallocation::kFree},
-      {kSmallerOuterSize, Preallocation::kUsed},
-      {kLargerOuterSize, Preallocation::kFree},
+      {kLargeOuterSize, Preallocation::kFree},    // 0
+      {kSmallerOuterSize, Preallocation::kUsed},  // 1
+      {kSmallOuterSize, Preallocation::kFree},    // 2
+      {kSmallerOuterSize, Preallocation::kUsed},  // 3
+      {kLargeOuterSize, Preallocation::kFree},    // 4
       {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
 
-  Store(6, allocator.Allocate(Layout(kLargeInnerSize, 1)));
-  EXPECT_EQ(NextAfter(5), Fetch(6));
-  EXPECT_EQ(NextAfter(6), Fetch(7));
-  Store(0, allocator.Allocate(Layout(kSmallInnerSize, 1)));
-  EXPECT_EQ(NextAfter(0), Fetch(1));
+  void* ptr1 = allocator.Allocate(Layout(kSmallInnerSize, 1));
+  EXPECT_LT(ptr1, Fetch(1));
+
+  void* ptr2 = allocator.Allocate(Layout(kSmallInnerSize, 1));
+  EXPECT_LT(Fetch(3), ptr2);
+  EXPECT_LT(ptr2, Fetch(5));
+
+  // A second small block fits in the leftovers of the first "Large" block.
+  void* ptr3 = allocator.Allocate(Layout(kSmallInnerSize, 1));
+  EXPECT_LT(ptr3, Fetch(1));
+
+  allocator.Deallocate(ptr1);
+  allocator.Deallocate(ptr2);
+  allocator.Deallocate(ptr3);
 }
 
 TEST_F(WorstFitBlockAllocatorTest, DeallocateNull) { DeallocateNull(); }

@@ -14,6 +14,7 @@
 
 #include "pw_allocator/chunk_pool.h"
 
+#include "lib/stdcompat/bit.h"
 #include "pw_allocator/buffer.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/alignment.h"
@@ -31,7 +32,7 @@ ChunkPool::ChunkPool(ByteSpan region, const Layout& layout)
   Result<ByteSpan> result =
       GetAlignedSubspan(region, allocated_layout_.alignment());
   PW_CHECK_OK(result.status());
-  start_ = reinterpret_cast<uintptr_t>(region.data());
+  start_ = cpp20::bit_cast<uintptr_t>(region.data());
   end_ = start_ + region.size() - (region.size() % allocated_layout_.size());
   region = result.value();
   next_ = region.data();
@@ -61,14 +62,14 @@ void ChunkPool::DoDeallocate(void* ptr) {
   }
   std::byte** next = std::launder(reinterpret_cast<std::byte**>(ptr));
   *next = next_;
-  next_ = reinterpret_cast<std::byte*>(ptr);
+  next_ = cpp20::bit_cast<std::byte*>(ptr);
 }
 
 Result<Layout> ChunkPool::DoGetInfo(InfoType info_type, const void* ptr) const {
   if (info_type == InfoType::kCapacity) {
     return Layout(end_ - start_, allocated_layout_.alignment());
   }
-  auto addr = reinterpret_cast<uintptr_t>(ptr);
+  auto addr = cpp20::bit_cast<uintptr_t>(ptr);
   if (addr < start_ || end_ <= addr) {
     return Status::OutOfRange();
   }

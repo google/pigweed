@@ -15,7 +15,6 @@
 
 #include <cstddef>
 
-#include "pw_allocator/block.h"
 #include "pw_allocator/bucket_allocator.h"
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"

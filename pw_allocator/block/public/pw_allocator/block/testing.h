@@ -16,11 +16,13 @@
 #include <cstddef>
 #include <limits>
 
-#include "pw_allocator/block.h"
+#include "lib/stdcompat/bit.h"
+#include "pw_allocator/block/result.h"
 #include "pw_assert/assert.h"
 #include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
+#include "pw_status/status.h"
 
 namespace pw::allocator::test {
 
@@ -37,14 +39,14 @@ namespace pw::allocator::test {
 inline size_t GetAlignedOffsetAfter(const void* ptr,
                                     size_t alignment,
                                     size_t after) {
-  auto addr = reinterpret_cast<uintptr_t>(ptr) + after;
+  auto addr = cpp20::bit_cast<uintptr_t>(ptr) + after;
   return pw::AlignUp(addr, alignment) - addr;
 }
 
 /// Returns the minimum outer size for a block allocated from a layout with the
 /// given `min_inner_size`.
 template <typename BlockType>
-size_t GetOuterSize(size_t min_inner_size) {
+constexpr size_t GetOuterSize(size_t min_inner_size) {
   return BlockType::kBlockOverhead +
          pw::AlignUp(min_inner_size, BlockType::kAlignment);
 }
@@ -118,15 +120,14 @@ BlockType* Preallocate(ByteSpan bytes,
     } else {
       outer_size = AlignUp(preallocation.outer_size, BlockType::kAlignment);
     }
-    PW_CHECK_SUB(roffset, outer_size, &roffset);
+    PW_ASSERT(!PW_SUB_OVERFLOW(roffset, outer_size, &roffset));
     ByteSpan region = bytes.subspan(roffset, outer_size);
-    BlockType* next = block;
-    block = *(BlockType::Init(region, next));
+    block = *(BlockType::Init(region, block == nullptr));
     if (preallocation.state != Preallocation::kFree) {
       auto result = BlockType::AllocLast(block, Layout(block->InnerSize(), 1));
-      PW_CHECK_OK(result.status());
-      PW_CHECK_UINT_EQ(result.prev(), BlockResult::Prev::kUnchanged);
-      PW_CHECK_UINT_EQ(result.next(), BlockResult::Next::kUnchanged);
+      PW_ASSERT(result.status() == OkStatus());
+      PW_ASSERT(result.prev() == BlockResult::Prev::kUnchanged);
+      PW_ASSERT(result.next() == BlockResult::Next::kUnchanged);
     }
   }
   return block;

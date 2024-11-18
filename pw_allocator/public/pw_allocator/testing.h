@@ -17,12 +17,12 @@
 #include <mutex>
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/block.h"
 #include "pw_allocator/buffer.h"
 #include "pw_allocator/config.h"
 #include "pw_allocator/first_fit_block_allocator.h"
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/tracking_allocator.h"
+#include "pw_assert/assert.h"
 #include "pw_assert/internal/check_impl.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
@@ -40,6 +40,30 @@ static_assert(PW_ALLOCATOR_STRICT_VALIDATION,
 // A token that can be used in tests.
 constexpr pw::tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
 
+/// Free all the blocks reachable by the given block. Useful for test cleanup.
+template <typename BlockType>
+void FreeAll(typename BlockType::Range range) {
+  BlockType* block = *(range.begin());
+  if (block == nullptr) {
+    return;
+  }
+
+  // Rewind to the first block.
+  BlockType* prev = block->Prev();
+  while (prev != nullptr) {
+    block = prev;
+    prev = block->Prev();
+  }
+
+  // Free and merge blocks.
+  while (block != nullptr) {
+    if (!block->IsFree()) {
+      BlockType::Free(block);
+    }
+    block = block->Next();
+  }
+}
+
 /// An `AllocatorForTest` that is automatically initialized on construction.
 template <size_t kBufferSize, typename MetricsType = internal::AllMetrics>
 class AllocatorForTest : public Allocator {
@@ -54,9 +78,7 @@ class AllocatorForTest : public Allocator {
   }
 
   ~AllocatorForTest() override {
-    for (auto* block : allocator_->blocks()) {
-      BlockType::Free(block);
-    }
+    FreeAll<BlockType>(blocks());
     allocator_->Reset();
   }
 
@@ -91,9 +113,9 @@ class AllocatorForTest : public Allocator {
       if (block->IsFree()) {
         auto result =
             BlockType::AllocLast(block, Layout(block->InnerSize(), 1));
-        PW_CHECK_OK(result.status());
-        PW_CHECK_UINT_EQ(result.prev(), BlockResult::Prev::kUnchanged);
-        PW_CHECK_UINT_EQ(result.next(), BlockResult::Next::kUnchanged);
+        PW_ASSERT(result.status() == OkStatus());
+        PW_ASSERT(result.prev() == BlockResult::Prev::kUnchanged);
+        PW_ASSERT(result.next() == BlockResult::Next::kUnchanged);
       }
     }
   }

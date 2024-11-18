@@ -12,14 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/block.h"
+#include "pw_allocator/block/detailed_block.h"
 
 #include <array>
 #include <cstdint>
 #include <cstring>
 
-#include "pw_allocator/block.h"
-#include "pw_allocator/block_testing.h"
+#include "lib/stdcompat/bit.h"
+#include "pw_allocator/block/testing.h"
 #include "pw_assert/check.h"
 #include "pw_assert/internal/check_impl.h"
 #include "pw_bytes/alignment.h"
@@ -54,7 +54,7 @@ class BlockTest : public ::testing::Test {
 };
 
 // A block type with more overhead.
-using LargeOffsetBlock = ::pw::allocator::Block<uint64_t>;
+using LargeOffsetBlock = ::pw::allocator::DetailedBlock<uint64_t>;
 
 class LargeOffsetBlockTest : public BlockTest<LargeOffsetBlock> {
  protected:
@@ -62,7 +62,7 @@ class LargeOffsetBlockTest : public BlockTest<LargeOffsetBlock> {
 };
 
 // A block type with less overhead.
-using SmallOffsetBlock = ::pw::allocator::Block<uint16_t>;
+using SmallOffsetBlock = ::pw::allocator::DetailedBlock<uint16_t>;
 
 class SmallOffsetBlockTest : public BlockTest<SmallOffsetBlock> {
  protected:
@@ -160,7 +160,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotCreateTooSmallBlock) {
 
 TEST(BlockTest, CannotCreateTooLargeBlock) {
   std::array<std::byte, kN> bytes;
-  auto result = pw::allocator::Block<uint8_t>::Init(bytes);
+  auto result = pw::allocator::DetailedBlock<uint8_t>::Init(bytes);
   EXPECT_EQ(result.status(), pw::Status::OutOfRange());
 }
 
@@ -214,7 +214,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocFirst_TooSmall) {
           {Preallocation::kSizeRemaining, Preallocation::kFree},
       });
   auto result = BlockType::AllocFirst(block, kLayout);
-  EXPECT_EQ(result.status(), pw::Status::OutOfRange());
+  EXPECT_EQ(result.status(), pw::Status::ResourceExhausted());
   CheckAllReachableBlock(block);
 }
 
@@ -243,7 +243,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_Exact_FirstBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -274,7 +274,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_Exact_SubsequentBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -306,7 +306,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewNext_FirstBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kSplitNew);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -338,7 +338,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewNext_SubsequentBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kSplitNew);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -372,7 +372,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewPrev_FirstBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -406,7 +406,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewPrev_SubsequentBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -442,7 +442,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewPrevAndNewNext_FirstBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kSplitNew);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -475,7 +475,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_NewPrevAndNewNext_SubsequentBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kSplitNew);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -537,7 +537,8 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_ShiftToPrev_SubsequentBlock) {
 
   // Verify the previous block was padded.
   size_t old_requested_size = leading - BlockType::kBlockOverhead;
-  EXPECT_EQ(first->RequestedSize(), old_requested_size);
+  auto old_layout = first->RequestedLayout();
+  EXPECT_EQ(old_layout->size(), old_requested_size);
   EXPECT_GT(first->InnerSize(), old_requested_size);
 
   // Resize the first block, and verify the padding is updated.
@@ -546,18 +547,20 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_ShiftToPrev_SubsequentBlock) {
   ASSERT_EQ(result.status(), pw::OkStatus());
   EXPECT_EQ(result.prev(), BlockResult::Prev::kUnchanged);
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
-  EXPECT_EQ(first->RequestedSize(), new_requested_size);
+  auto new_layout = first->RequestedLayout();
+  EXPECT_EQ(new_layout->size(), new_requested_size);
   EXPECT_GT(first->InnerSize(), new_requested_size);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
 
   // Verify that freeing the subsequent block does not reclaim bytes that were
   // resized.
   BlockType::Free(block);
-  EXPECT_EQ(first->RequestedSize(), new_requested_size);
+  new_layout = first->RequestedLayout();
+  EXPECT_EQ(new_layout->size(), new_requested_size);
   EXPECT_GT(first->InnerSize(), new_requested_size);
   CheckAllReachableBlock(first);
 }
@@ -621,7 +624,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_ShiftToPrevAndNewNext_SubsequentBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kSplitNew);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -689,11 +692,11 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotAllocLast_TooSmall) {
 
   // Check if we expect this to succeed.
   auto can_alloc_last = block->CanAlloc(kLayout);
-  EXPECT_EQ(can_alloc_last.status(), pw::Status::OutOfRange());
+  EXPECT_EQ(can_alloc_last.status(), pw::Status::ResourceExhausted());
 
   // Attempt and fail to allocate from the front of the block.
   auto result = BlockType::AllocLast(block, kLayout);
-  EXPECT_EQ(result.status(), pw::Status::OutOfRange());
+  EXPECT_EQ(result.status(), pw::Status::ResourceExhausted());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_Exact_FirstBlock) {
@@ -726,7 +729,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_Exact_FirstBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -762,7 +765,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_Exact_SubsequentBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -801,7 +804,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_NewPrev_FirstBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -840,7 +843,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_NewPrev_SubsequentBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -910,7 +913,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocLast_ShiftToPrev_SubsequentBlock) {
   EXPECT_EQ(result.next(), BlockResult::Next::kUnchanged);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
-  auto addr = reinterpret_cast<uintptr_t>(block->UsableSpace());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
   EXPECT_EQ(addr % kAlign, 0U);
   EXPECT_FALSE(block->IsFree());
   CheckAllReachableBlock(block);
@@ -1174,7 +1177,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotResizeBlockMuchLargerWithNextFree) {
 
   size_t new_inner_size = block->InnerSize() + kOuterSize + 1;
   BlockResult result = BlockType::Resize(block, new_inner_size);
-  EXPECT_EQ(result.status(), pw::Status::OutOfRange());
+  EXPECT_EQ(result.status(), pw::Status::ResourceExhausted());
   CheckAllReachableBlock(block);
 }
 
@@ -1216,7 +1219,7 @@ TEST_FOR_EACH_BLOCK_TYPE(CannotResizeBlockLargerWithNextUsed) {
   size_t delta = BlockType::kBlockOverhead / 2;
   size_t new_inner_size = block->InnerSize() + delta;
   auto result = BlockType::Resize(block, new_inner_size);
-  EXPECT_EQ(result.status(), pw::Status::OutOfRange());
+  EXPECT_EQ(result.status(), pw::Status::ResourceExhausted());
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(CannotResizeFromNull) {
@@ -1263,12 +1266,16 @@ TEST_FOR_EACH_BLOCK_TYPE(CanCheckInvalidBlock) {
   // This must not touch memory outside the original region, or the test may
   // (correctly) abort when run with address sanitizer.
   // To remain as agostic to the internals of `Block` as possible, the test
-  // copies a smaller block's header to a larger block.
+  // copies a smaller block's header to a larger block, and ensure's the
+  // contents of blocks are blank.
+  std::memset(block1->UsableSpace(), 0, block1->InnerSize());
+  std::memset(block2->UsableSpace(), 0, block2->InnerSize());
+  std::memset(block3->UsableSpace(), 0, block3->InnerSize());
   EXPECT_TRUE(block1->IsValid());
   EXPECT_TRUE(block2->IsValid());
   EXPECT_TRUE(block3->IsValid());
-  auto* src = reinterpret_cast<std::byte*>(block1);
-  auto* dst = reinterpret_cast<std::byte*>(block2);
+  auto* src = cpp20::bit_cast<std::byte*>(block1);
+  auto* dst = cpp20::bit_cast<std::byte*>(block2);
   std::memcpy(dst, src, sizeof(BlockType));
   EXPECT_FALSE(block1->IsValid());
   EXPECT_FALSE(block2->IsValid());
@@ -1336,8 +1343,10 @@ TEST_FOR_EACH_BLOCK_TYPE(CanGetAlignmentFromUsedBlock) {
   result = BlockType::AllocLast(block2, kLayout2);
   ASSERT_EQ(result.status(), pw::OkStatus());
 
-  EXPECT_EQ(block1->Alignment(), kAlign);
-  EXPECT_EQ(block2->Alignment(), kAlign * 2);
+  auto block1_layout = block1->RequestedLayout();
+  auto block2_layout = block2->RequestedLayout();
+  EXPECT_EQ(block1_layout->alignment(), kAlign);
+  EXPECT_EQ(block2_layout->alignment(), kAlign * 2);
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(FreeBlocksHaveDefaultAlignment) {
@@ -1357,9 +1366,12 @@ TEST_FOR_EACH_BLOCK_TYPE(FreeBlocksHaveDefaultAlignment) {
   result = BlockType::AllocLast(block2, kLayout2);
   ASSERT_EQ(result.status(), pw::OkStatus());
 
-  EXPECT_EQ(block1->Alignment(), kAlign);
+  auto layout = block1->RequestedLayout();
+  ASSERT_EQ(layout.status(), pw::OkStatus());
+  EXPECT_EQ(layout->alignment(), kAlign);
   BlockType::Free(block1);
-  EXPECT_EQ(block1->Alignment(), BlockType::kAlignment);
+  layout = block1->RequestedLayout();
+  EXPECT_EQ(layout.status(), pw::Status::FailedPrecondition());
 }
 
 }  // namespace

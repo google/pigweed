@@ -16,6 +16,7 @@
 
 #include <cstring>
 
+#include "lib/stdcompat/bit.h"
 #include "pw_allocator/buffer.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/alignment.h"
@@ -86,7 +87,7 @@ void* GenericBuddyAllocator::Allocate(Layout layout) {
     if (ptr == nullptr) {
       break;
     }
-    chunk = std::launder(reinterpret_cast<std::byte*>(ptr));
+    chunk = cpp20::bit_cast<std::byte*>(ptr);
     bucket.Add(chunk + chunk_size);
     break;
   }
@@ -107,7 +108,7 @@ void GenericBuddyAllocator::Deallocate(void* ptr) {
   if (ptr == nullptr) {
     return;
   }
-  auto* chunk = std::launder(reinterpret_cast<std::byte*>(ptr));
+  auto* chunk = cpp20::bit_cast<std::byte*>(ptr);
   auto layout = GetLayout(ptr);
   PW_CHECK_OK(layout.status());
   size_t chunk_size = layout->size();
@@ -153,12 +154,12 @@ Result<Layout> GenericBuddyAllocator::GetLayout(const void* ptr) const {
     return Status::OutOfRange();
   }
   size_t min_chunk_size = buckets_.front().chunk_size();
-  size_t offset = reinterpret_cast<uintptr_t>(ptr) -
-                  reinterpret_cast<uintptr_t>(region_.data());
+  size_t offset = cpp20::bit_cast<uintptr_t>(ptr) -
+                  cpp20::bit_cast<uintptr_t>(region_.data());
   if (region_.size() <= offset || offset % min_chunk_size != 0) {
     return Status::OutOfRange();
   }
-  const auto* chunk = std::launder(reinterpret_cast<const std::byte*>(ptr));
+  const auto* chunk = cpp20::bit_cast<const std::byte*>(ptr);
   std::byte index =
       ptr == region_.data() ? region_[region_.size() - 1] : *(chunk - 1);
   return Layout(buckets_[size_t(index)].chunk_size(), min_chunk_size);

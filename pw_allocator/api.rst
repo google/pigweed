@@ -232,16 +232,72 @@ includes some utility classes.
 
 .. _module-pw_allocator-api-block:
 
-Block
-=====
-.. doxygenclass:: pw::allocator::Block
-   :members:
+Block interfaces
+================
+A block is an allocatable region of memory, and is the fundamental type managed
+by several of the concrete allocator implementations. Blocks are defined
+using several stateless "mix-in" interface types. These provide specific
+functionality, while deferring the detailed representation of a block to a
+derived type.
 
 .. tip::
    Avoid converting pointers to allocations into ``Block`` instances, even if
    you know your memory is coming from a ``BlockAllocator``. Breaking the
    abstraction in this manner will limit your flexibility to change to a
    different allocator in the future.
+
+.. TODO(b/378549332): Add a diagram of mix-in relationships.
+
+BasicBlock
+----------
+.. doxygenclass:: pw::allocator::BasicBlock
+   :members:
+
+ContiguousBlock
+---------------
+.. doxygenclass:: pw::allocator::ContiguousBlock
+   :members:
+
+AllocatableBlock
+----------------
+.. doxygenclass:: pw::allocator::AllocatableBlock
+   :members:
+
+AlignableBlock
+--------------
+.. doxygenclass:: pw::allocator::AlignableBlock
+   :members:
+
+BlockWithLayout
+---------------
+.. doxygenclass:: pw::allocator::BlockWithLayout
+   :members:
+
+ForwardIterableBlock
+--------------------
+.. doxygenclass:: pw::allocator::ForwardIterableBlock
+   :members:
+
+ReverseIterableBlock
+--------------------
+.. doxygenclass:: pw::allocator::ReverseIterableBlock
+   :members:
+
+PoisonableBlock
+---------------
+.. doxygenclass:: pw::allocator::PoisonableBlock
+   :members:
+
+DetailedBlock
+-------------
+This type is not a block mix-in. It is an example of a block implementation that
+uses the mix-ins above.
+
+.. doxygenstruct:: pw::allocator::DetailedBlockParameters
+   :members:
+
+.. doxygenclass:: pw::allocator::DetailedBlockImpl
+   :members:
 
 .. _module-pw_allocator-api-bucket:
 

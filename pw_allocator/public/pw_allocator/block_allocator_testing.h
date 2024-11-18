@@ -16,8 +16,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "pw_allocator/block/testing.h"
 #include "pw_allocator/block_allocator.h"
-#include "pw_allocator/block_testing.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
@@ -30,7 +30,8 @@ namespace pw::allocator::test {
 /// `Block` or `BlockAllocator` types.
 class BlockAllocatorTestBase : public ::testing::Test {
  public:
-  static constexpr size_t kDefaultBlockOverhead = Block<>::kBlockOverhead;
+  static constexpr size_t kDefaultBlockOverhead =
+      DetailedBlock<>::kBlockOverhead;
 
   // Size of the memory region to use in the tests below.
   // This must be large enough so that BlockType::Init does not fail.
@@ -125,10 +126,6 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
     bytes_ = ByteSpan(buffer_);
   }
 
-  // Trims bytes from the front of the buffer to ensure the first block will be
-  // aligned
-  void AlignBytes(size_t alignment);
-
   ByteSpan GetBytes() override { return bytes_; }
 
   Allocator& GetAllocator() override;
@@ -153,13 +150,6 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
 };
 
 // Test fixture template method implementations.
-
-template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::AlignBytes(size_t alignment) {
-  size_t offset = GetAlignedOffsetAfter(
-      bytes_.data(), alignment, BlockType::kBlockOverhead);
-  bytes_.subspan(offset);
-}
 
 template <typename BlockAllocatorType>
 Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator() {

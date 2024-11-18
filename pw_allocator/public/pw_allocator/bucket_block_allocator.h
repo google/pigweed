@@ -19,6 +19,7 @@
 #include "pw_allocator/bucket_allocator.h"
 
 namespace pw::allocator {
+namespace internal {}
 
 /// Legacy alias for `BucketAllocator`.
 ///

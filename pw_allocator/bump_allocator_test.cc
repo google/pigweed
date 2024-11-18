@@ -16,6 +16,7 @@
 
 #include <cstring>
 
+#include "lib/stdcompat/bit.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -58,7 +59,7 @@ TEST(BumpAllocatorTest, AllocateAligned) {
   // Last pointer was aligned, so next won't automatically be.
   ptr = allocator.Allocate(Layout(8, 32));
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(reinterpret_cast<uintptr_t>(ptr) % 32, 0U);
+  EXPECT_EQ(cpp20::bit_cast<uintptr_t>(ptr) % 32, 0U);
 }
 
 TEST(BumpAllocatorTest, AllocateFailsWhenExhausted) {
