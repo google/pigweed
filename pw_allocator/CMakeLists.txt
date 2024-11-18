@@ -30,6 +30,7 @@ pw_add_library(pw_allocator.config INTERFACE
 pw_add_library(pw_allocator.test_config INTERFACE
   PUBLIC_DEFINES
     PW_ALLOCATOR_STRICT_VALIDATION=1
+    PW_ALLOCATOR_BLOCK_POISON_INTERVAL=4
 )
 
 # Libraries
@@ -67,6 +68,7 @@ pw_add_library(pw_allocator.best_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
     pw_allocator.config
 )
 
@@ -84,7 +86,11 @@ pw_add_library(pw_allocator.block_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_allocator.block.detailed_block
+    pw_allocator.block.allocatable
+    pw_allocator.block.basic
+    pw_allocator.block.iterable
+    pw_allocator.block.poisonable
+    pw_allocator.block.with_layout
     pw_allocator.fragmentation
     pw_bytes.alignment
     pw_result
@@ -117,6 +123,7 @@ pw_add_library(pw_allocator.bucket_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
     pw_allocator.bucket
     pw_status
 )
@@ -214,6 +221,7 @@ pw_add_library(pw_allocator.dual_first_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
     pw_allocator.config
 )
 
@@ -240,6 +248,7 @@ pw_add_library(pw_allocator.first_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
     pw_allocator.config
 )
 
@@ -258,7 +267,6 @@ pw_add_library(pw_allocator.freelist_heap INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.block.detailed_block
     pw_allocator.bucket_allocator
     pw_assert
     pw_bytes
@@ -272,6 +280,7 @@ pw_add_library(pw_allocator.last_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
     pw_allocator.config
 )
 
@@ -360,6 +369,7 @@ pw_add_library(pw_allocator.worst_fit_block_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
     pw_allocator.config
 )
 
@@ -394,6 +404,7 @@ pw_add_library(pw_allocator.block_allocator_testing STATIC
   PUBLIC_DEPS
     pw_allocator.block.testing
     pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
     pw_unit_test
   PRIVATE_DEPS
     pw_assert
@@ -473,6 +484,7 @@ pw_add_test(pw_allocator.bucket_allocator_test
   PRIVATE_DEPS
     pw_allocator.block_allocator_testing
     pw_allocator.bucket_allocator
+    pw_allocator.bucket_block_allocator
   GROUPS
     modules
     pw_allocator

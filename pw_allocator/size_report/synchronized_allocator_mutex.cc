@@ -21,7 +21,7 @@ int main() {
   pw::allocator::SizeReporter reporter;
   reporter.SetBaseline();
 
-  pw::allocator::FirstFitBlockAllocator<uint16_t> allocator(reporter.buffer());
+  pw::allocator::FirstFitBlockAllocator<> allocator(reporter.buffer());
   pw::allocator::SynchronizedAllocator<pw::sync::Mutex> synchronized(allocator);
   reporter.Measure(synchronized);
 

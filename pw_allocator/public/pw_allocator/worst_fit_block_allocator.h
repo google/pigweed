@@ -13,13 +13,18 @@
 // the License.
 #pragma once
 
-#include "pw_allocator/block/allocatable.h"
+#include "pw_allocator/block/detailed_block.h"
 #include "pw_allocator/block_allocator.h"
 #include "pw_allocator/config.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_status/status.h"
 
 namespace pw::allocator {
+
+/// Alias for a default block type that is compatible with
+/// `WorstFitBlockAllocator`.
+template <typename OffsetType>
+using WorstFitBlock = DetailedBlock<OffsetType>;
 
 /// Block allocator that uses a "worst-fit" allocation strategy.
 ///
@@ -29,24 +34,25 @@ namespace pw::allocator {
 ///
 /// This algorithm may lead to less fragmentation as any unused fragments are
 /// more likely to be large enough to be useful to other requests.
-template <typename OffsetType = uintptr_t,
-          uint16_t kPoisonInterval = PW_ALLOCATOR_BLOCK_POISON_INTERVAL>
+template <typename OffsetType = uintptr_t>
 class WorstFitBlockAllocator
-    : public BlockAllocator<OffsetType, kPoisonInterval> {
+    : public BlockAllocator<WorstFitBlock<OffsetType>> {
  public:
-  using Base = BlockAllocator<OffsetType, kPoisonInterval>;
-  using BlockType = typename Base::BlockType;
+  using BlockType = WorstFitBlock<OffsetType>;
 
+ private:
+  using Base = BlockAllocator<BlockType>;
+
+ public:
   /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr WorstFitBlockAllocator() : Base() {}
+  constexpr WorstFitBlockAllocator() = default;
 
   /// Non-constexpr constructor that automatically calls `Init`.
   ///
   /// @param[in]  region  Region of memory to use when satisfying allocation
-  ///                     requests. The region MUST be large enough to fit an
-  ///                     aligned block with overhead. It MUST NOT be larger
-  ///                     than what is addressable by `OffsetType`.
-  explicit WorstFitBlockAllocator(ByteSpan region) : Base(region) {}
+  ///                     requests. The region MUST be valid as an argument to
+  ///                     `BlockType::Init`.
+  explicit WorstFitBlockAllocator(ByteSpan region) { Base::Init(region); }
 
  private:
   /// @copydoc Allocator::Allocate

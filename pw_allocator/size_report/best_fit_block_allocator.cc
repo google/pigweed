@@ -20,7 +20,7 @@ int main() {
   pw::allocator::SizeReporter reporter;
   reporter.SetBaseline();
 
-  pw::allocator::BestFitBlockAllocator<uint16_t> allocator(reporter.buffer());
+  pw::allocator::BestFitBlockAllocator<> allocator(reporter.buffer());
   reporter.Measure(allocator);
 
   return 0;

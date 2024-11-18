@@ -20,7 +20,7 @@
 #include "pw_function/function.h"
 #include "pw_span/span.h"
 
-namespace pw::allocator::internal {
+namespace pw::allocator {
 
 /// Doubly linked list of free memory regions, or "chunks", of a maximum size or
 /// less.
@@ -120,4 +120,4 @@ class Bucket final {
   size_t chunk_size_;
 };
 
-}  // namespace pw::allocator::internal
+}  // namespace pw::allocator

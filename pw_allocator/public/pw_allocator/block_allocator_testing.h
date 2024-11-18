@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "pw_allocator/block/detailed_block.h"
 #include "pw_allocator/block/testing.h"
 #include "pw_allocator/block_allocator.h"
 #include "pw_status/status.h"
@@ -61,13 +62,13 @@ class BlockAllocatorTestBase : public ::testing::Test {
   virtual ByteSpan GetBytes() = 0;
 
   /// Initialize the allocator with a region of memory and return it.
-  virtual Allocator& GetAllocator() = 0;
+  virtual Allocator& GetGenericAllocator() = 0;
 
   /// Initialize the allocator with a sequence of preallocated blocks and return
   /// it.
   ///
   /// See also ``Preallocation``.
-  virtual Allocator& GetAllocator(
+  virtual Allocator& GetGenericAllocator(
       std::initializer_list<Preallocation> preallocations) = 0;
 
   /// Gets the next allocation from an allocated pointer.
@@ -128,10 +129,17 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
 
   ByteSpan GetBytes() override { return bytes_; }
 
-  Allocator& GetAllocator() override;
+  Allocator& GetGenericAllocator() override { return GetAllocator(); }
 
-  Allocator& GetAllocator(
-      std::initializer_list<Preallocation> preallocations) override;
+  BlockAllocatorType& GetAllocator();
+
+  Allocator& GetGenericAllocator(
+      std::initializer_list<Preallocation> preallocations) override {
+    return GetAllocator(preallocations);
+  }
+
+  BlockAllocatorType& GetAllocator(
+      std::initializer_list<Preallocation> preallocations);
 
   void* NextAfter(size_t index) override;
 
@@ -142,6 +150,7 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
   void CanExplicitlyInit(BlockAllocatorType& allocator);
   void IterateOverBlocks();
   void CanMeasureFragmentation();
+  void PoisonPeriodically();
 
  private:
   BlockAllocatorType& allocator_;
@@ -152,13 +161,13 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
 // Test fixture template method implementations.
 
 template <typename BlockAllocatorType>
-Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator() {
+BlockAllocatorType& BlockAllocatorTest<BlockAllocatorType>::GetAllocator() {
   allocator_.Init(GetBytes());
   return allocator_;
 }
 
 template <typename BlockAllocatorType>
-Allocator& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
+BlockAllocatorType& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
     std::initializer_list<Preallocation> preallocations) {
   auto* first = Preallocate<BlockType>(GetBytes(), preallocations);
   size_t index = 0;
@@ -214,7 +223,7 @@ void BlockAllocatorTest<BlockAllocatorType>::CanExplicitlyInit(
 
 template <typename BlockAllocatorType>
 void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
-  Allocator& allocator = GetAllocator({
+  Allocator& allocator = GetGenericAllocator({
       {kSmallOuterSize, Preallocation::kFree},
       {kLargeOuterSize, Preallocation::kUsed},
       {kSmallOuterSize, Preallocation::kFree},
@@ -243,7 +252,7 @@ void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
 
 template <typename BlockAllocatorType>
 void BlockAllocatorTest<BlockAllocatorType>::CanMeasureFragmentation() {
-  Allocator& allocator = GetAllocator({
+  Allocator& allocator = GetGenericAllocator({
       {0x020, Preallocation::kFree},
       {0x040, Preallocation::kUsed},
       {0x080, Preallocation::kFree},
@@ -268,6 +277,46 @@ void BlockAllocatorTest<BlockAllocatorType>::CanMeasureFragmentation() {
   EXPECT_EQ(fragmentation.sum_of_squares.hi, 0U);
   EXPECT_EQ(fragmentation.sum_of_squares.lo, sum_of_squares);
   EXPECT_EQ(fragmentation.sum, sum);
+}
+
+template <typename BlockAllocatorType>
+void BlockAllocatorTest<BlockAllocatorType>::PoisonPeriodically() {
+  // Allocate 8 blocks to prevent every other from being merged when freed.
+  Allocator& allocator = GetGenericAllocator({
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {kSmallOuterSize, Preallocation::kUsed},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  ASSERT_LT(BlockType::kPoisonOffset, kSmallInnerSize);
+
+  // Since the test poisons blocks, it cannot iterate over the blocks without
+  // crashing. Use `Fetch` instead.
+  for (size_t i = 0; i < 8; ++i) {
+    if (i % 2 != 0) {
+      continue;
+    }
+    auto* bytes = cpp20::bit_cast<std::byte*>(Fetch(i));
+    auto* block = BlockType::FromUsableSpace(bytes);
+    allocator.Deallocate(bytes);
+    EXPECT_TRUE(block->IsFree());
+    EXPECT_TRUE(block->IsValid());
+    bytes[BlockType::kPoisonOffset] = ~bytes[BlockType::kPoisonOffset];
+
+    if (i == 6) {
+      // The test_config is defined to only detect corruption is on every fourth
+      // freed block. Fix up the block to avoid crashing on teardown.
+      EXPECT_FALSE(block->IsValid());
+      bytes[BlockType::kPoisonOffset] = ~bytes[BlockType::kPoisonOffset];
+    } else {
+      EXPECT_TRUE(block->IsValid());
+    }
+    Store(i, nullptr);
+  }
 }
 
 }  // namespace pw::allocator::test

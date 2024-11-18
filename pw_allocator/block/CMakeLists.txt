@@ -45,6 +45,7 @@ pw_add_library(pw_allocator.block.allocatable INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_allocator.config
     pw_allocator.block.contiguous
     pw_allocator.block.result
     pw_allocator.deallocator

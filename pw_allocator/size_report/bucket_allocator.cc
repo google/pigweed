@@ -17,10 +17,12 @@
 #include "pw_allocator/size_reporter.h"
 
 int main() {
+  using BlockType = ::pw::allocator::BucketBlock<uint16_t>;
+
   pw::allocator::SizeReporter reporter;
   reporter.SetBaseline();
 
-  pw::allocator::BucketAllocator<4, 8> allocator(reporter.buffer());
+  pw::allocator::BucketAllocator<BlockType, 4, 8> allocator(reporter.buffer());
   reporter.Measure(allocator);
 
   return 0;

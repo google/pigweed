@@ -20,8 +20,7 @@
 namespace pw::malloc {
 
 using BestFitBlockAllocator =
-    ::pw::allocator::BestFitBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE,
-                                           PW_MALLOC_BLOCK_POISON_INTERVAL>;
+    ::pw::allocator::BestFitBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE>;
 
 void InitSystemAllocator(ByteSpan heap) {
   InitSystemAllocator<BestFitBlockAllocator>(heap);

@@ -20,8 +20,7 @@
 namespace pw::malloc {
 
 using FirstFitBlockAllocator =
-    ::pw::allocator::FirstFitBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE,
-                                            PW_MALLOC_BLOCK_POISON_INTERVAL>;
+    ::pw::allocator::FirstFitBlockAllocator<PW_MALLOC_BLOCK_OFFSET_TYPE>;
 
 void InitSystemAllocator(ByteSpan heap) {
   InitSystemAllocator<FirstFitBlockAllocator>(heap);

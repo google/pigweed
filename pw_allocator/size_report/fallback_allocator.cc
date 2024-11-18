@@ -22,8 +22,8 @@ int main() {
   reporter.SetBaseline();
 
   std::array<std::byte, 0x1000> buffer;
-  pw::allocator::FirstFitBlockAllocator<uint16_t> primary(reporter.buffer());
-  pw::allocator::FirstFitBlockAllocator<uint16_t> secondary(buffer);
+  pw::allocator::FirstFitBlockAllocator<> primary(reporter.buffer());
+  pw::allocator::FirstFitBlockAllocator<> secondary(buffer);
   reporter.Measure(secondary);
   reporter.Measure(primary);
 

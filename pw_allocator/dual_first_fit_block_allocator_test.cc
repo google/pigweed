@@ -163,4 +163,8 @@ TEST_F(DualFirstFitBlockAllocatorTest, CanMeasureFragmentation) {
   CanMeasureFragmentation();
 }
 
+TEST_F(DualFirstFitBlockAllocatorTest, PoisonPeriodically) {
+  PoisonPeriodically();
+}
+
 }  // namespace

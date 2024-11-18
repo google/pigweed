@@ -20,7 +20,6 @@
 #include "pw_allocator/config.h"
 
 namespace pw::allocator {
-namespace internal {}
 
 /// Legacy alias for `BucketAllocator`.
 ///
@@ -31,10 +30,10 @@ namespace internal {}
 /// the `BlockAllocator`. Since the free blocks' usable space is interpreted as
 /// intrusive items, they must have a pointer-compatible alignment. As a result,
 /// the first template parameter is ignored.
-template <typename = uintptr_t,
+template <typename OffsetType = uintptr_t,
           size_t kMinBucketChunkSize = 32,
           size_t kNumBuckets = 5>
 using BucketBlockAllocator PW_ALLOCATOR_DEPRECATED =
-    BucketAllocator<kMinBucketChunkSize, kNumBuckets>;
+    BucketAllocator<BucketBlock<OffsetType>, kMinBucketChunkSize, kNumBuckets>;
 
 }  // namespace pw::allocator

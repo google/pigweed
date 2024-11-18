@@ -151,7 +151,7 @@ class BuddyAllocator : public Allocator {
     }
   }
 
-  std::array<internal::Bucket, kNumBuckets> buckets_;
+  std::array<Bucket, kNumBuckets> buckets_;
   internal::GenericBuddyAllocator impl_;
 };
 

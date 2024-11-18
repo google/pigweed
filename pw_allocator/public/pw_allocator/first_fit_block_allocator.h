@@ -13,10 +13,15 @@
 // the License.
 #pragma once
 
+#include "pw_allocator/block/detailed_block.h"
 #include "pw_allocator/block_allocator.h"
-#include "pw_allocator/config.h"
 
 namespace pw::allocator {
+
+/// Alias for a default block type that is compatible with
+/// `FirstFitBlockAllocator`.
+template <typename OffsetType>
+using FirstFitBlock = DetailedBlock<OffsetType>;
 
 /// Block allocator that uses a "first-fit" allocation strategy.
 ///
@@ -27,24 +32,25 @@ namespace pw::allocator {
 /// This strategy may result in slightly worse fragmentation than the
 /// corresponding "last-fit" strategy, since the alignment may result in unused
 /// fragments both before and after an allocated block.
-template <typename OffsetType = uintptr_t,
-          uint16_t kPoisonInterval = PW_ALLOCATOR_BLOCK_POISON_INTERVAL>
+template <typename OffsetType = uintptr_t>
 class FirstFitBlockAllocator
-    : public BlockAllocator<OffsetType, kPoisonInterval> {
+    : public BlockAllocator<FirstFitBlock<OffsetType>> {
  public:
-  using Base = BlockAllocator<OffsetType, kPoisonInterval>;
-  using BlockType = typename Base::BlockType;
+  using BlockType = FirstFitBlock<OffsetType>;
 
+ private:
+  using Base = BlockAllocator<BlockType>;
+
+ public:
   /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr FirstFitBlockAllocator() : Base() {}
+  constexpr FirstFitBlockAllocator() = default;
 
   /// Non-constexpr constructor that automatically calls `Init`.
   ///
   /// @param[in]  region  Region of memory to use when satisfying allocation
-  ///                     requests. The region MUST be large enough to fit an
-  ///                     aligned block with overhead. It MUST NOT be larger
-  ///                     than what is addressable by `OffsetType`.
-  explicit FirstFitBlockAllocator(ByteSpan region) : Base(region) {}
+  ///                     requests. The region MUST be valid as an argument to
+  ///                     `BlockType::Init`.
+  explicit FirstFitBlockAllocator(ByteSpan region) { Base::Init(region); }
 
  private:
   /// @copydoc Allocator::Allocate

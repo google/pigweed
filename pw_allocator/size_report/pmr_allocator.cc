@@ -26,7 +26,7 @@ int main() {
   pw::allocator::SizeReporter reporter;
   reporter.SetBaseline();
 
-  pw::allocator::FirstFitBlockAllocator<uint16_t> base(reporter.buffer());
+  pw::allocator::FirstFitBlockAllocator<> base(reporter.buffer());
   pw::allocator::PmrAllocator allocator(base);
   std::pmr::vector<Bar> vec(allocator);
   vec.emplace_back(1);

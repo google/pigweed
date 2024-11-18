@@ -16,7 +16,7 @@
 
 #include "pw_assert/check.h"
 
-namespace pw::allocator::internal {
+namespace pw::allocator {
 
 Bucket::Bucket() { Init(); }
 
@@ -94,4 +94,4 @@ std::byte* Bucket::Remove(Chunk* chunk) {
   return chunk->AsBytes();
 }
 
-}  // namespace pw::allocator::internal
+}  // namespace pw::allocator

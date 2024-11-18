@@ -16,6 +16,7 @@
 
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block_allocator_testing.h"
+#include "pw_allocator/bucket_block_allocator.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -26,13 +27,13 @@ constexpr size_t kMinChunkSize = 64;
 constexpr size_t kNumBuckets = 4;
 
 using ::pw::allocator::Layout;
+using ::pw::allocator::test::BlockAllocatorTest;
 using ::pw::allocator::test::Preallocation;
+using BlockType = ::pw::allocator::BucketBlock<uint16_t>;
 using BucketAllocator =
-    ::pw::allocator::BucketAllocator<kMinChunkSize, kNumBuckets>;
-using BlockAllocatorTest =
-    ::pw::allocator::test::BlockAllocatorTest<BucketAllocator>;
+    ::pw::allocator::BucketAllocator<BlockType, kMinChunkSize, kNumBuckets>;
 
-class BucketAllocatorTest : public BlockAllocatorTest {
+class BucketAllocatorTest : public BlockAllocatorTest<BucketAllocator> {
  public:
   BucketAllocatorTest() : BlockAllocatorTest(allocator_) {}
 
@@ -251,6 +252,79 @@ TEST_F(BucketAllocatorTest, LaterSmallSplitNotIsRecycled) {
   for (auto* block : bucket_block_allocator.blocks()) {
     ASSERT_TRUE(block->IsValid());
   }
+}
+
+TEST_F(BucketAllocatorTest, PoisonPeriodically) { PoisonPeriodically(); }
+
+// TODO(b/376730645): Remove this test when the legacy alias is deprecated.
+using BucketBlockAllocator = ::pw::allocator::BucketBlockAllocator<uint16_t>;
+
+class BucketBlockAllocatorTest
+    : public BlockAllocatorTest<BucketBlockAllocator> {
+ public:
+  BucketBlockAllocatorTest() : BlockAllocatorTest(allocator_) {}
+
+ private:
+  BucketBlockAllocator allocator_;
+};
+
+TEST_F(BucketBlockAllocatorTest, AllocatesFromCompatibleBucket) {
+  // Bucket sizes are: [ 64, 128, 256 ]
+  // Start with everything allocated in order to recycle blocks into buckets.
+  auto& allocator = GetAllocator({
+      {63 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {128 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {255 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {kSmallerOuterSize, Preallocation::kUsed},
+      {257 + BlockType::kBlockOverhead, Preallocation::kUsed},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+
+  // Deallocate to fill buckets.
+  void* bucket0_ptr = Fetch(0);
+  Store(0, nullptr);
+  allocator.Deallocate(bucket0_ptr);
+
+  void* bucket1_ptr = Fetch(2);
+  Store(2, nullptr);
+  allocator.Deallocate(bucket1_ptr);
+
+  void* bucket2_ptr = Fetch(4);
+  Store(4, nullptr);
+  allocator.Deallocate(bucket2_ptr);
+
+  // Bucket 3 is the implicit, unbounded bucket.
+  void* bucket3_ptr = Fetch(6);
+  Store(6, nullptr);
+  allocator.Deallocate(bucket3_ptr);
+
+  // Allocate in a different order. The correct bucket should be picked for each
+  // allocation
+
+  // The allocation from bucket 2 splits a trailing block off the chunk.
+  Store(4, allocator.Allocate(Layout(129, 1)));
+  auto* block2 = BlockType::FromUsableSpace(bucket2_ptr);
+  EXPECT_TRUE(block2->IsFree());
+  EXPECT_EQ(Fetch(4), block2->Next()->UsableSpace());
+
+  // This allocation exactly matches the chunk size of bucket 1.
+  Store(2, allocator.Allocate(Layout(128, 1)));
+  EXPECT_EQ(Fetch(2), bucket1_ptr);
+
+  // 129 should start with bucket 2, then use bucket 3 since 2 is empty.
+  // The allocation from bucket 3 splits a trailing block off the chunk.
+  auto* block3 = BlockType::FromUsableSpace(bucket3_ptr);
+  Store(6, allocator.Allocate(Layout(129, 1)));
+  EXPECT_TRUE(block3->IsFree());
+  EXPECT_EQ(Fetch(6), block3->Next()->UsableSpace());
+
+  // The allocation from bucket 0 splits a trailing block off the chunk.
+  auto* block0 = BlockType::FromUsableSpace(bucket0_ptr);
+  Store(0, allocator.Allocate(Layout(32, 1)));
+  EXPECT_TRUE(block0->IsFree());
+  EXPECT_EQ(Fetch(0), block0->Next()->UsableSpace());
 }
 
 }  // namespace

@@ -110,4 +110,6 @@ TEST_F(LastFitBlockAllocatorTest, CanMeasureFragmentation) {
   CanMeasureFragmentation();
 }
 
+TEST_F(LastFitBlockAllocatorTest, PoisonPeriodically) { PoisonPeriodically(); }
+
 }  // namespace

@@ -13,10 +13,15 @@
 // the License.
 #pragma once
 
+#include "pw_allocator/block/detailed_block.h"
 #include "pw_allocator/block_allocator.h"
-#include "pw_allocator/config.h"
 
 namespace pw::allocator {
+
+/// Alias for a default block type that is compatible with
+/// `DualFirstFitBlockAllocator`.
+template <typename OffsetType>
+using DualFirstFitBlock = DetailedBlock<OffsetType>;
 
 /// Block allocator that uses a "dual first-fit" allocation strategy split
 /// between large and small allocations.
@@ -27,25 +32,29 @@ namespace pw::allocator {
 ///
 /// This algorithm approaches the performance of `FirstFit` and `LastFit` while
 /// improving on those algorithms fragmentation.
-template <typename OffsetType = uintptr_t,
-          uint16_t kPoisonInterval = PW_ALLOCATOR_BLOCK_POISON_INTERVAL>
+template <typename OffsetType = uintptr_t>
 class DualFirstFitBlockAllocator
-    : public BlockAllocator<OffsetType, kPoisonInterval> {
+    : public BlockAllocator<DualFirstFitBlock<OffsetType>> {
  public:
-  using Base = BlockAllocator<OffsetType, kPoisonInterval>;
-  using BlockType = typename Base::BlockType;
+  using BlockType = DualFirstFitBlock<OffsetType>;
 
+ private:
+  using Base = BlockAllocator<BlockType>;
+
+ public:
   /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr DualFirstFitBlockAllocator() : Base() {}
+  constexpr DualFirstFitBlockAllocator() = default;
 
   /// Non-constexpr constructor that automatically calls `Init`.
   ///
-  /// @param[in]  region  Region of memory to use when satisfying allocation
-  ///                     requests. The region MUST be large enough to fit an
-  ///                     aligned block with overhead. It MUST NOT be larger
-  ///                     than what is addressable by `OffsetType`.
+  /// @param[in]  region      Region of memory to use when satisfying allocation
+  ///                         requests. The region MUST be valid as an argument
+  ///                         to `BlockType::Init`.
+  /// @param[in]  threshold   Value for which requests are considered "large".
   DualFirstFitBlockAllocator(ByteSpan region, size_t threshold)
-      : Base(region), threshold_(threshold) {}
+      : threshold_(threshold) {
+    Base::Init(region);
+  }
 
   /// Sets the threshold value for which requests are considered "large".
   void set_threshold(size_t threshold) { threshold_ = threshold; }

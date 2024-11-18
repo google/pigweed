@@ -51,30 +51,6 @@
 #define PW_MALLOC_BLOCK_OFFSET_TYPE uintptr_t
 #endif  // PW_MALLOC_BLOCK_OFFSET_TYPE
 
-#ifndef PW_MALLOC_BLOCK_POISON_INTERVAL
-/// Sets how frequently `pw::allocator::BlockAllocator`s poison free blocks.
-///
-/// Poisoned free blocks are checked on allocation to ensure nothing has
-/// modified their usable space while deallocated. Setting this value to a
-/// nonzero value N while poison every N-th free block.
-///
-/// Defaults to 0, which disables poisoning.
-#define PW_MALLOC_BLOCK_POISON_INTERVAL 0
-#endif  // PW_MALLOC_BLOCK_POISON_INTERVAL
-
-#ifndef PW_MALLOC_BLOCK_ALIGNMENT
-/// Sets the minimum alignment for a `pw::allocator::BlockAllocator`s memory.
-///
-/// Must be a power of two.
-///
-/// Defaults to the block offset type's alignment, which is the smallest value
-/// that has any effect on the block allocator.
-#define PW_MALLOC_BLOCK_ALIGNMENT alignof(PW_MALLOC_BLOCK_OFFSET_TYPE)
-#endif  // PW_MALLOC_BLOCK_ALIGNMENT
-static_assert(((PW_MALLOC_BLOCK_ALIGNMENT - 1) & PW_MALLOC_BLOCK_ALIGNMENT) ==
-                  0,
-              "PW_MALLOC_BLOCK_ALIGNMENT must be a power of two");
-
 #ifndef PW_MALLOC_MIN_BUCKET_SIZE
 /// Sets the size of the smallest ``pw::allocator::Bucket` used by an allocator.
 ///

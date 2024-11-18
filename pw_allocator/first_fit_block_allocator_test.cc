@@ -57,7 +57,9 @@ TEST_F(FirstFitBlockAllocatorTest, AllocateSmall) { AllocateSmall(); }
 TEST_F(FirstFitBlockAllocatorTest, AllocateLargeAlignment) {
   AllocateLargeAlignment();
 
-  alignas(BlockType::kAlignment) std::array<std::byte, kCapacity> buffer;
+  alignas(FirstFitBlockAllocator::BlockType::kAlignment)
+      std::array<std::byte, kCapacity>
+          buffer;
   pw::ByteSpan bytes(buffer);
   auto addr = cpp20::bit_cast<uintptr_t>(bytes.data());
   size_t offset = 64 - (addr % 64);
@@ -135,104 +137,6 @@ TEST_F(FirstFitBlockAllocatorTest, CanMeasureFragmentation) {
   CanMeasureFragmentation();
 }
 
-TEST_F(FirstFitBlockAllocatorTest, DisablePoisoning) {
-  auto& allocator = GetAllocator();
-  constexpr Layout layout = Layout::Of<std::byte[kSmallInnerSize]>();
-
-  // Allocate 3 blocks to prevent the middle one from being merged when freed.
-  std::array<void*, 3> ptrs;
-  for (auto& ptr : ptrs) {
-    ptr = allocator.Allocate(layout);
-    ASSERT_NE(ptr, nullptr);
-  }
-
-  // Modify the contents of the block and check if it is still valid.
-  auto* bytes = cpp20::bit_cast<std::byte*>(ptrs[1]);
-  auto* block = BlockType::FromUsableSpace(bytes);
-  allocator.Deallocate(bytes);
-  EXPECT_TRUE(block->IsFree());
-  EXPECT_TRUE(block->IsValid());
-  bytes[0] = ~bytes[0];
-  EXPECT_TRUE(block->IsValid());
-
-  allocator.Deallocate(ptrs[0]);
-  allocator.Deallocate(ptrs[2]);
-}
-
-TEST(PoisonedFirstFitBlockAllocatorTest, PoisonEveryFreeBlock) {
-  using PoisonedFirstFitBlockAllocator =
-      ::pw::allocator::FirstFitBlockAllocator<uintptr_t, 1>;
-  using BlockType = PoisonedFirstFitBlockAllocator::BlockType;
-
-  pw::allocator::WithBuffer<PoisonedFirstFitBlockAllocator,
-                            FirstFitBlockAllocatorTest::kCapacity>
-      allocator;
-  allocator->Init(allocator.as_bytes());
-  constexpr Layout layout =
-      Layout::Of<std::byte[FirstFitBlockAllocatorTest::kSmallInnerSize]>();
-
-  // Allocate 3 blocks to prevent the middle one from being merged when freed.
-  std::array<void*, 3> ptrs;
-  for (auto& ptr : ptrs) {
-    ptr = allocator->Allocate(layout);
-    ASSERT_NE(ptr, nullptr);
-  }
-
-  // Modify the contents of the block and check if it is still valid.
-  auto* bytes = cpp20::bit_cast<std::byte*>(ptrs[1]);
-  auto* block = BlockType::FromUsableSpace(bytes);
-  allocator->Deallocate(bytes);
-
-  EXPECT_TRUE(block->IsFree());
-  EXPECT_TRUE(block->IsValid());
-  bytes[0] = ~bytes[0];
-  EXPECT_FALSE(block->IsValid());
-
-  // Fix the block to prevent crashing on teardown.
-  bytes[0] = ~bytes[0];
-  allocator->Deallocate(ptrs[0]);
-  allocator->Deallocate(ptrs[2]);
-}
-
-TEST(PoisonedFirstFitBlockAllocatorTest, PoisonPeriodically) {
-  using PoisonedFirstFitBlockAllocator =
-      ::pw::allocator::FirstFitBlockAllocator<uintptr_t, 4>;
-  using BlockType = PoisonedFirstFitBlockAllocator::BlockType;
-
-  pw::allocator::WithBuffer<PoisonedFirstFitBlockAllocator,
-                            FirstFitBlockAllocatorTest::kCapacity>
-      allocator;
-  allocator->Init(allocator.as_bytes());
-  constexpr Layout layout =
-      Layout::Of<std::byte[FirstFitBlockAllocatorTest::kSmallInnerSize]>();
-
-  // Allocate 9 blocks to prevent every other from being merged when freed.
-  std::array<void*, 9> ptrs;
-  for (auto& ptr : ptrs) {
-    ptr = allocator->Allocate(layout);
-    ASSERT_NE(ptr, nullptr);
-  }
-
-  for (size_t i = 1; i < ptrs.size(); i += 2) {
-    auto* bytes = cpp20::bit_cast<std::byte*>(ptrs[i]);
-    auto* block = BlockType::FromUsableSpace(bytes);
-    allocator->Deallocate(bytes);
-    EXPECT_TRUE(block->IsFree());
-    EXPECT_TRUE(block->IsValid());
-    bytes[0] = ~bytes[0];
-
-    // Corruption is only detected on the fourth freed block.
-    if (i == 7) {
-      EXPECT_FALSE(block->IsValid());
-      bytes[0] = ~bytes[0];
-    } else {
-      EXPECT_TRUE(block->IsValid());
-    }
-  }
-
-  for (size_t i = 0; i < ptrs.size(); i += 2) {
-    allocator->Deallocate(ptrs[i]);
-  }
-}
+TEST_F(FirstFitBlockAllocatorTest, PoisonPeriodically) { PoisonPeriodically(); }
 
 }  // namespace

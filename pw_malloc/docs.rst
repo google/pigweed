@@ -52,8 +52,6 @@ This module has configuration options that globally affect the behavior of
 .. doxygendefine:: PW_MALLOC_LOCK_TYPE
 .. doxygendefine:: PW_MALLOC_METRICS_TYPE
 .. doxygendefine:: PW_MALLOC_BLOCK_OFFSET_TYPE
-.. doxygendefine:: PW_MALLOC_BLOCK_POISON_INTERVAL
-.. doxygendefine:: PW_MALLOC_BLOCK_ALIGNMENT
 .. doxygendefine:: PW_MALLOC_MIN_BUCKET_SIZE
 .. doxygendefine:: PW_MALLOC_NUM_BUCKETS
 .. doxygendefine:: PW_MALLOC_DUAL_FIRST_FIT_THRESHOLD

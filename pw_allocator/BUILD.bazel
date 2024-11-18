@@ -34,7 +34,10 @@ label_flag(
 
 cc_library(
     name = "test_config",
-    defines = ["PW_ALLOCATOR_STRICT_VALIDATION=1"],
+    defines = [
+        "PW_ALLOCATOR_STRICT_VALIDATION=1",
+        "PW_ALLOCATOR_BLOCK_POISON_INTERVAL=4",
+    ],
 )
 
 # Libraries
@@ -80,6 +83,7 @@ cc_library(
     deps = [
         ":block_allocator",
         ":config",
+        "//pw_allocator/block:detailed_block",
     ],
 )
 
@@ -91,7 +95,11 @@ cc_library(
     deps = [
         ":allocator",
         ":fragmentation",
-        "//pw_allocator/block:detailed_block",
+        "//pw_allocator/block:allocatable",
+        "//pw_allocator/block:basic",
+        "//pw_allocator/block:iterable",
+        "//pw_allocator/block:poisonable",
+        "//pw_allocator/block:with_layout",
         "//pw_assert",
         "//pw_bytes:alignment",
         "//pw_result",
@@ -125,6 +133,7 @@ cc_library(
     deps = [
         ":block_allocator",
         ":bucket",
+        "//pw_allocator/block:detailed_block",
         "//pw_status",
     ],
 )
@@ -241,6 +250,7 @@ cc_library(
     deps = [
         ":block_allocator",
         ":config",
+        "//pw_allocator/block:detailed_block",
     ],
 )
 
@@ -269,6 +279,7 @@ cc_library(
     deps = [
         ":block_allocator",
         ":config",
+        "//pw_allocator/block:detailed_block",
     ],
 )
 
@@ -287,7 +298,6 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":bucket_allocator",
-        "//pw_allocator/block:detailed_block",
         "//pw_assert",
         "//pw_bytes",
         "//pw_preprocessor",
@@ -301,6 +311,7 @@ cc_library(
     deps = [
         ":block_allocator",
         ":config",
+        "//pw_allocator/block:detailed_block",
     ],
 )
 
@@ -402,6 +413,7 @@ cc_library(
     deps = [
         ":block_allocator",
         ":config",
+        "//pw_allocator/block:detailed_block",
     ],
 )
 
@@ -530,6 +542,7 @@ pw_cc_test(
     deps = [
         ":block_allocator_testing",
         ":bucket_allocator",
+        ":bucket_block_allocator",
         "//pw_unit_test",
     ],
 )

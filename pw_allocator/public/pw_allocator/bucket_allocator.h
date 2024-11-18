@@ -24,6 +24,11 @@
 
 namespace pw::allocator {
 
+/// Alias for a default block type that is compatible with
+/// `BucketAllocator`.
+template <typename OffsetType = uintptr_t>
+using BucketBlock = DetailedBlock<OffsetType, Bucket::Chunk>;
+
 /// Block allocator that uses sized buckets of free blocks.
 ///
 /// In this strategy, the allocator handles an allocation request by starting
@@ -49,14 +54,19 @@ namespace pw::allocator {
 ///
 /// Note that since this allocator stores information in free chunks, it does
 /// not currently support poisoning.
-template <size_t kMinBucketChunkSize = 32, size_t kNumBuckets = 5>
-class BucketAllocator : public BlockAllocator<uintptr_t, 0> {
- public:
-  using Base = BlockAllocator<uintptr_t, 0>;
-  using BlockType = typename Base::BlockType;
+template <typename BlockType = BucketBlock<>,
+          size_t kMinBucketChunkSize = 32,
+          size_t kNumBuckets = 5>
+class BucketAllocator : public BlockAllocator<BlockType> {
+ private:
+  using Base = BlockAllocator<BlockType>;
 
+ public:
   /// Constexpr constructor. Callers must explicitly call `Init`.
-  constexpr BucketAllocator() : Base() {}
+  constexpr BucketAllocator() {
+    Bucket::Init(span(buckets_.data(), buckets_.size() - 1),
+                 kMinBucketChunkSize);
+  }
 
   /// Non-constexpr constructor that automatically calls `Init`.
   ///
@@ -68,31 +78,11 @@ class BucketAllocator : public BlockAllocator<uintptr_t, 0> {
     Base::Init(region);
   }
 
-  /// @copydoc BlockAllocator::Init
-  void Init(ByteSpan region) { Base::Init(region); }
-
-  /// @copydoc BlockAllocator::Init
-  void Init(BlockType* begin) { Base::Init(begin); }
-
-  /// @copydoc BlockAllocator::Init
-  void Init(BlockType* begin, BlockType* end) override {
-    Base::Init(begin, end);
-    internal::Bucket::Init(span(buckets_.data(), buckets_.size() - 1),
-                           kMinBucketChunkSize);
-    buckets_.back().Init();
-    for (auto* block : Base::blocks()) {
-      if (block->IsFree()) {
-        RecycleBlock(block);
-      }
-    }
-  }
-
  private:
   /// @copydoc BlockAllocator::ChooseBlock
   BlockResult<BlockType> ChooseBlock(Layout layout) override {
-    layout =
-        Layout(std::max(layout.size(), sizeof(internal::Bucket::Chunk)),
-               std::max(layout.alignment(), alignof(internal::Bucket::Chunk)));
+    layout = Layout(std::max(layout.size(), sizeof(Bucket::Chunk)),
+                    std::max(layout.alignment(), alignof(Bucket::Chunk)));
     for (auto& bucket : buckets_) {
       if (bucket.chunk_size() < layout.size()) {
         continue;
@@ -111,31 +101,31 @@ class BucketAllocator : public BlockAllocator<uintptr_t, 0> {
   }
 
   /// @copydoc BlockAllocator::ReserveBlock
-  void ReserveBlock(BlockType* block) override {
-    PW_ASSERT(block->IsFree());
-    size_t inner_size = block->InnerSize();
-    if (inner_size < sizeof(internal::Bucket::Chunk)) {
+  void ReserveBlock(BlockType& block) override {
+    PW_ASSERT(block.IsFree());
+    size_t inner_size = block.InnerSize();
+    if (inner_size < sizeof(Bucket::Chunk)) {
       return;
     }
-    internal::Bucket::Remove(block->UsableSpace());
+    Bucket::Remove(block.UsableSpace());
   }
 
   /// @copydoc BlockAllocator::RecycleBlock
-  void RecycleBlock(BlockType* block) override {
-    PW_ASSERT(block->IsFree());
-    size_t inner_size = block->InnerSize();
-    if (inner_size < sizeof(internal::Bucket::Chunk)) {
+  void RecycleBlock(BlockType& block) override {
+    PW_ASSERT(block.IsFree());
+    size_t inner_size = block.InnerSize();
+    if (inner_size < sizeof(Bucket::Chunk)) {
       return;
     }
     for (auto& bucket : buckets_) {
       if (inner_size <= bucket.chunk_size()) {
-        bucket.Add(block->UsableSpace());
+        bucket.Add(block.UsableSpace());
         break;
       }
     }
   }
 
-  std::array<internal::Bucket, kNumBuckets> buckets_;
+  std::array<Bucket, kNumBuckets> buckets_;
 };
 
 }  // namespace pw::allocator

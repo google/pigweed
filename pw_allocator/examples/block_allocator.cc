@@ -24,8 +24,7 @@ namespace examples {
 std::array<std::byte, 0x1000> buffer;
 
 // DOCSTAG: [pw_allocator-examples-block_allocator-poison]
-// Poisons every third deallocation.
-pw::allocator::LastFitBlockAllocator<uint16_t, 3> allocator(buffer);
+pw::allocator::LastFitBlockAllocator<uint16_t> allocator(buffer);
 // DOCSTAG: [pw_allocator-examples-block_allocator-poison]
 
 // DOCSTAG: [pw_allocator-examples-block_allocator-layout_of]

@@ -86,7 +86,7 @@ class ContiguousBlock : public internal::ContiguousBase {
   inline Derived* Next() const;
 
  protected:
-  /// Split a block into two smaller blocks and allocates the leading one.
+  /// Split a block into two smaller blocks.
   ///
   /// This method splits a block into a leading block of the given
   /// `new_inner_size` and a trailing block, and returns the trailing space as a
@@ -97,7 +97,7 @@ class ContiguousBlock : public internal::ContiguousBase {
   /// @pre The space remaining after a split can hold a new block.
   Derived* DoSplitFirst(size_t new_inner_size);
 
-  /// Split a block into two smaller blocks and allocates the trailing one.
+  /// Split a block into two smaller blocks.
   ///
   /// This method splits a block into a leading block and a trailing block of
   /// the given `new_inner_size`, and returns the trailing space is returned as

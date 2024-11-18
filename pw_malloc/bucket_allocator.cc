@@ -19,8 +19,10 @@
 
 namespace pw::malloc {
 
+using BlockType = ::pw::allocator::BucketBlock<PW_MALLOC_BLOCK_OFFSET_TYPE>;
 using BucketAllocator =
-    ::pw::allocator::BucketAllocator<PW_MALLOC_MIN_BUCKET_SIZE,
+    ::pw::allocator::BucketAllocator<BlockType,
+                                     PW_MALLOC_MIN_BUCKET_SIZE,
                                      PW_MALLOC_NUM_BUCKETS>;
 
 void InitSystemAllocator(ByteSpan heap) {

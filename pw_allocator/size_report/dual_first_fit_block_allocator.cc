@@ -21,8 +21,8 @@ int main() {
   reporter.SetBaseline();
 
   constexpr size_t kThreshold = 128;
-  pw::allocator::DualFirstFitBlockAllocator<uint16_t> allocator(
-      reporter.buffer(), kThreshold);
+  pw::allocator::DualFirstFitBlockAllocator<> allocator(reporter.buffer(),
+                                                        kThreshold);
   reporter.Measure(allocator);
 
   return 0;

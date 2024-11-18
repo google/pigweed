@@ -48,7 +48,10 @@ pw_source_set("config") {
 }
 
 config("test_config") {
-  defines = [ "PW_ALLOCATOR_STRICT_VALIDATION=1" ]
+  defines = [
+    "PW_ALLOCATOR_STRICT_VALIDATION=1",
+    "PW_ALLOCATOR_BLOCK_POISON_INTERVAL=4",
+  ]
 }
 
 # Libraries
@@ -82,6 +85,7 @@ pw_source_set("best_fit_block_allocator") {
   public_deps = [
     ":block_allocator",
     ":config",
+    "block:detailed_block",
   ]
 }
 
@@ -92,7 +96,11 @@ pw_source_set("block_allocator") {
     ":allocator",
     ":bucket",
     ":fragmentation",
-    "block:detailed_block",
+    "block:allocatable",
+    "block:basic",
+    "block:iterable",
+    "block:poisonable",
+    "block:with_layout",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
@@ -119,6 +127,7 @@ pw_source_set("bucket_allocator") {
   public_deps = [
     ":block_allocator",
     ":bucket",
+    "block:detailed_block",
     dir_pw_status,
   ]
 }
@@ -214,6 +223,7 @@ pw_source_set("dual_first_fit_block_allocator") {
   public_deps = [
     ":block_allocator",
     ":config",
+    "block:detailed_block",
   ]
 }
 
@@ -236,6 +246,7 @@ pw_source_set("first_fit_block_allocator") {
   public_deps = [
     ":block_allocator",
     ":config",
+    "block:detailed_block",
   ]
 }
 
@@ -250,7 +261,6 @@ pw_source_set("freelist_heap") {
   public = [ "public/pw_allocator/freelist_heap.h" ]
   public_deps = [
     ":bucket_allocator",
-    "block:detailed_block",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_preprocessor,
@@ -263,6 +273,7 @@ pw_source_set("last_fit_block_allocator") {
   public_deps = [
     ":block_allocator",
     ":config",
+    "block:detailed_block",
   ]
 }
 
@@ -340,6 +351,7 @@ pw_source_set("worst_fit_block_allocator") {
   public_deps = [
     ":block_allocator",
     ":config",
+    "block:detailed_block",
   ]
 }
 
@@ -373,6 +385,7 @@ pw_source_set("block_allocator_testing") {
   deps = [
     "$dir_pw_bytes:alignment",
     "$dir_pw_third_party/fuchsia:stdcompat",
+    "block:detailed_block",
     dir_pw_assert,
     dir_pw_status,
   ]
@@ -432,6 +445,7 @@ pw_test("bucket_allocator_test") {
   deps = [
     ":block_allocator_testing",
     ":bucket_allocator",
+    ":bucket_block_allocator",
   ]
   sources = [ "bucket_allocator_test.cc" ]
 }

@@ -45,7 +45,7 @@ class TrackingAllocatorForTest : public TrackingAllocator<TestMetrics> {
 class TrackingAllocatorTest : public ::testing::Test {
  protected:
   using AllocatorType = ::pw::allocator::FirstFitBlockAllocator<uint32_t>;
-  using BlockType = AllocatorType::BlockType;
+  using BlockType = typename AllocatorType::BlockType;
 
   constexpr static size_t kCapacity = 256;
   constexpr static pw::metric::Token kToken = 1U;

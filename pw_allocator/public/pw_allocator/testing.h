@@ -17,6 +17,7 @@
 #include <mutex>
 
 #include "pw_allocator/allocator.h"
+#include "pw_allocator/block/detailed_block.h"
 #include "pw_allocator/buffer.h"
 #include "pw_allocator/config.h"
 #include "pw_allocator/first_fit_block_allocator.h"
@@ -70,7 +71,7 @@ template <size_t kBufferSize, typename MetricsType = internal::AllMetrics>
 class AllocatorForTest : public Allocator {
  public:
   using AllocatorType = FirstFitBlockAllocator<uint32_t>;
-  using BlockType = AllocatorType::BlockType;
+  using BlockType = typename AllocatorType::BlockType;
 
   AllocatorForTest()
       : Allocator(AllocatorType::kCapabilities), tracker_(kToken, *allocator_) {
@@ -83,8 +84,8 @@ class AllocatorForTest : public Allocator {
     allocator_->Reset();
   }
 
-  AllocatorType::Range blocks() const { return allocator_->blocks(); }
-  AllocatorType::Range blocks() { return allocator_->blocks(); }
+  typename BlockType::Range blocks() const { return allocator_->blocks(); }
+  typename BlockType::Range blocks() { return allocator_->blocks(); }
 
   const metric::Group& metric_group() const { return tracker_.metric_group(); }
   metric::Group& metric_group() { return tracker_.metric_group(); }

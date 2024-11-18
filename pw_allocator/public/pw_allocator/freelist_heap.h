@@ -22,10 +22,10 @@
 
 namespace pw::allocator {
 
-/// Legacy interface to BucketBlockAllocator.
+/// Legacy interface to BucketAllocator.
 ///
 /// This interface is deprecated, and is only maintained for compatibility
-/// reasons. New projects should use ``BucketBlockAllocator``.
+/// reasons. New projects should use ``BucketAllocator``.
 template <size_t kNumBuckets = 6>
 class FreeListHeapBuffer {
  public:
@@ -50,8 +50,9 @@ class FreeListHeapBuffer {
   }
 
  private:
+  using BlockType = BucketBlock<>;
   static constexpr size_t kMinChunkSize = 16;
-  BucketAllocator<kMinChunkSize, kNumBuckets> allocator_;
+  BucketAllocator<BlockType, kMinChunkSize, kNumBuckets> allocator_;
 };
 
 }  // namespace pw::allocator
