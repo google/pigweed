@@ -3739,6 +3739,81 @@ TEST(L2capSignalingTest, CreditIndAddressedToNonManagedChannelForwardedToHost) {
   EXPECT_EQ(forwards_to_host, 1);
 }
 
+// ########## AcluSignalingChannelTest
+
+TEST(AcluSignalingChannelTest, HandlesMultipleCommands) {
+  std::optional<H4PacketWithHci> host_packet;
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [&host_packet](H4PacketWithHci&& packet) {
+        host_packet = std::move(packet);
+      });
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+
+  constexpr uint16_t kHandle = 123;
+
+  // Test that the proxy can parse a CFrame containing multiple commands and
+  // pass it through. We pack 3 CONNECTION_REQ commands into one CFrame.
+  constexpr size_t kNumCommands = 3;
+  constexpr size_t kCmdLen = emboss::L2capConnectionReq::IntrinsicSizeInBytes();
+  constexpr size_t kL2capLength =
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes() + kCmdLen * kNumCommands;
+  constexpr size_t kHciLength =
+      emboss::AclDataFrame::MinSizeInBytes() + kL2capLength;
+  std::array<uint8_t, kHciLength> hci_arr{};
+  H4PacketWithHci l2cap_cframe_packet{emboss::H4PacketType::ACL_DATA,
+                                      pw::span(hci_arr.data(), kHciLength)};
+
+  // ACL header
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      auto acl, MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr));
+  acl.header().handle().Write(kHandle);
+  acl.data_total_length().Write(kL2capLength);
+  EXPECT_EQ(kL2capLength, acl.payload().BackingStorage().SizeInBytes());
+
+  // L2CAP header
+  auto l2cap =
+      emboss::MakeCFrameView(acl.payload().BackingStorage().data(),
+                             acl.payload().BackingStorage().SizeInBytes());
+  l2cap.pdu_length().Write(kNumCommands * kCmdLen);
+  l2cap.channel_id().Write(
+      cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING));
+  EXPECT_TRUE(l2cap.Ok());
+
+  auto command_buffer =
+      pw::span(l2cap.payload().BackingStorage().data(),
+               l2cap.payload().BackingStorage().SizeInBytes());
+  EXPECT_EQ(l2cap.payload().BackingStorage().SizeInBytes(),
+            kCmdLen * kNumCommands);
+
+  do {
+    // CONNECTION_REQ
+    auto cmd_writer = emboss::MakeL2capConnectionReqView(command_buffer.data(),
+                                                         command_buffer.size());
+    cmd_writer.command_header().code().Write(
+        emboss::L2capSignalingPacketCode::CONNECTION_REQ);
+    // Note data_length doesn't include command header.
+    cmd_writer.command_header().data_length().Write(
+        kCmdLen - emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+    cmd_writer.psm().Write(1);
+    cmd_writer.source_cid().Write(1);
+    EXPECT_TRUE(cmd_writer.Ok());
+    EXPECT_EQ(cmd_writer.SizeInBytes(), kCmdLen);
+    command_buffer = command_buffer.subspan(cmd_writer.SizeInBytes());
+  } while (!command_buffer.empty());
+
+  proxy.HandleH4HciFromController(std::move(l2cap_cframe_packet));
+  // We should get back what we sent, since the proxy doesn't consume
+  // CONNECTION_REQ commands. It would be nice to also verify the individual
+  // commands were parsed out but hooks don't exist for that at the time of
+  // writing.
+  EXPECT_TRUE(host_packet.has_value());
+  EXPECT_EQ(host_packet->GetHciSpan().size(), kHciLength);
+}
+
 // TODO: https://pwbug.dev/360929142 - Add many more tests exercising queueing +
 // credit-based control flow.
 

@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
+#include "pw_bluetooth_proxy/internal/l2cap_aclu_signaling_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h"
 #include "pw_containers/vector.h"
 #include "pw_result/result.h"
@@ -140,7 +141,8 @@ class AclDataChannel {
                     L2capChannelManager& l2cap_channel_manager)
         : connection_handle_(connection_handle),
           num_pending_packets_(num_pending_packets),
-          signaling_channel_(l2cap_channel_manager, connection_handle),
+          leu_signaling_channel_(l2cap_channel_manager, connection_handle),
+          aclu_signaling_channel_(l2cap_channel_manager, connection_handle),
           is_receiving_fragmented_pdu_(false) {}
 
     LeAclConnection& operator=(LeAclConnection&& other) = default;
@@ -164,7 +166,10 @@ class AclDataChannel {
    private:
     uint16_t connection_handle_;
     uint16_t num_pending_packets_;
-    L2capLeUSignalingChannel signaling_channel_;
+    L2capLeUSignalingChannel leu_signaling_channel_;
+    // TODO: https://pwbug.dev/379172336 - Create correct signaling channel
+    // type based on link type.
+    L2capAclUSignalingChannel aclu_signaling_channel_;
     // Set when a fragmented PDU is received. Continuing fragments are dropped
     // until the PDU has been consumed, then this is unset.
     // TODO: https://pwbug.dev/365179076 - Support recombination.

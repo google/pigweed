@@ -18,11 +18,11 @@
 
 namespace pw::bluetooth::proxy {
 
-// Signaling channel for managing L2CAP channels over LE-U logical links.
-class L2capLeUSignalingChannel : public L2capSignalingChannel {
+// Signaling channel for managing L2CAP channels over ACL-U logical links.
+class L2capAclUSignalingChannel : public L2capSignalingChannel {
  public:
-  explicit L2capLeUSignalingChannel(L2capChannelManager& l2cap_channel_manager,
-                                    uint16_t connection_handle);
+  explicit L2capAclUSignalingChannel(L2capChannelManager& l2cap_channel_manager,
+                                     uint16_t connection_handle);
 
  private:
   bool OnCFramePayload(pw::span<const uint8_t> cframe_payload) override;

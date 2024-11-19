@@ -25,67 +25,45 @@ L2capLeUSignalingChannel::L2capLeUSignalingChannel(
     : L2capSignalingChannel(
           /*l2cap_channel_manager=*/l2cap_channel_manager,
           /*connection_handle=*/connection_handle,
-          /*local_cid=*/kLeUSignalingCid) {}
+          /*local_cid=*/
+          cpp23::to_underlying(emboss::L2capFixedCid::LE_U_SIGNALING)) {}
 
-bool L2capLeUSignalingChannel::OnPduReceived(pw::span<uint8_t> cframe) {
-  Result<emboss::CFrameView> cframe_view =
-      MakeEmbossView<emboss::CFrameView>(cframe);
-  if (!cframe_view.ok()) {
-    PW_LOG_ERROR(
-        "Buffer is too small for C-frame. So will forward to host without "
-        "processing.");
-    return false;
-  }
-
+bool L2capLeUSignalingChannel::OnCFramePayload(
+    pw::span<const uint8_t> cframe_payload) {
   emboss::L2capSignalingCommandHeaderView cmd_header =
-      emboss::MakeL2capSignalingCommandHeaderView(
-          cframe_view->payload().BackingStorage().data(),
-          emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
-  if (!cmd_header.IsComplete()) {
+      emboss::MakeL2capSignalingCommandHeaderView(cframe_payload.data(),
+                                                  cframe_payload.size());
+  if (!cmd_header.Ok()) {
     PW_LOG_ERROR(
-        "C-frame is not long enough to contain a valid command. So will "
-        "forward to host without processing.");
+        "C-frame does not contain a valid command. So will forward to host "
+        "without processing.");
     return false;
   }
-
-  // TODO: https://pwbug.dev/360929142 - "If a device receives a C-frame that
-  // exceeds its L2CAP_SIG_MTU_SIZE then it shall send an
-  // L2CAP_COMMAND_REJECT_RSP packet containing the supported
-  // L2CAP_SIG_MTU_SIZE." We should consider taking the signaling MTU in the
-  // ProxyHost constructor.
 
   // Core Spec v5.4 Vol 3, Part A, 4: "Examples of signaling packets that are
   // not correctly formed include... A C-frame on fixed channel 0x0005 contains
   // more than one signaling packet"
-  size_t cmd_length =
+  const size_t cmd_length =
       emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes() +
       cmd_header.data_length().Read();
-  if (cframe_view->pdu_length().Read() > cmd_length) {
+  if (cframe_payload.size() > cmd_length) {
     PW_LOG_ERROR(
         "Received C-frame on LE-U signaling channel with payload larger than "
         "its command. So will forward to host without processing.");
     return false;
   }
 
-  emboss::L2capSignalingCommandView view =
-      emboss::MakeL2capSignalingCommandView(
-          cframe_view->payload().BackingStorage().data(),
-          cframe_view->payload().BackingStorage().SizeInBytes());
-  if (!view.IsComplete()) {
+  emboss::L2capSignalingCommandView cmd = emboss::MakeL2capSignalingCommandView(
+      cframe_payload.data(), cframe_payload.size());
+
+  if (!cmd.Ok()) {
     PW_LOG_ERROR(
         "L2CAP PDU payload length not enough to accommodate signaling command. "
         "So will forward to host without processing.");
     return false;
   }
 
-  return HandleL2capSignalingCommand(view);
-}
-
-void L2capLeUSignalingChannel::OnFragmentedPduReceived() {
-  PW_LOG_ERROR(
-      "(Connection: 0x%X) Received fragmented L2CAP frame on LE-U signaling "
-      "channel.",
-      connection_handle());
+  return HandleL2capSignalingCommand(cmd);
 }
 
 }  // namespace pw::bluetooth::proxy

@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 
+#include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
@@ -35,6 +36,26 @@ L2capSignalingChannel& L2capSignalingChannel::operator=(
     L2capSignalingChannel&& other) {
   BasicL2capChannel::operator=(std::move(other));
   return *this;
+}
+
+bool L2capSignalingChannel::OnPduReceived(pw::span<uint8_t> cframe) {
+  Result<emboss::CFrameView> cframe_view =
+      MakeEmbossView<emboss::CFrameView>(cframe);
+  if (!cframe_view.ok()) {
+    PW_LOG_ERROR(
+        "Buffer is too small for C-frame. So will forward to host without "
+        "processing.");
+    return false;
+  }
+
+  // TODO: https://pwbug.dev/360929142 - "If a device receives a C-frame that
+  // exceeds its L2CAP_SIG_MTU_SIZE then it shall send an
+  // L2CAP_COMMAND_REJECT_RSP packet containing the supported
+  // L2CAP_SIG_MTU_SIZE." We should consider taking the signaling MTU in the
+  // ProxyHost constructor.
+  return OnCFramePayload(
+      pw::span(cframe_view->payload().BackingStorage().data(),
+               cframe_view->payload().BackingStorage().SizeInBytes()));
 }
 
 bool L2capSignalingChannel::HandleL2capSignalingCommand(
@@ -76,6 +97,12 @@ bool L2capSignalingChannel::HandleFlowControlCreditInd(
   }
 
   return false;
+}
+
+void L2capSignalingChannel::OnFragmentedPduReceived() {
+  PW_LOG_ERROR(
+      "(Connection: 0x%X) Received fragmentary ACL data on signaling channel.",
+      connection_handle());
 }
 
 }  // namespace pw::bluetooth::proxy

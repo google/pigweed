@@ -29,6 +29,12 @@ class L2capSignalingChannel : public BasicL2capChannel {
 
   L2capSignalingChannel& operator=(L2capSignalingChannel&& other);
 
+  // Process the payload of a CFrame. Implementations should return true if the
+  // CFrame was consumed by the channel. Otherwise, return false and the PDU
+  // containing this CFrame will be forwarded by `ProxyHost` on to the Bluetooth
+  // host.
+  virtual bool OnCFramePayload(pw::span<const uint8_t> cframe_payload) = 0;
+
   // Process an individual signaling command.
   //
   // Returns false if the command is not processed, either because it is not
@@ -43,6 +49,16 @@ class L2capSignalingChannel : public BasicL2capChannel {
   bool HandleFlowControlCreditInd(emboss::L2capFlowControlCreditIndView cmd);
 
  protected:
+  // Process a C-frame.
+  //
+  // Returns false if the C-frame is to be forwarded on to the Bluetooth host,
+  // either because the command is not directed towards a channel managed by
+  // `L2capChannelManager` or because the C-frame is invalid and should be
+  // handled by the Bluetooth host.
+  bool OnPduReceived(pw::span<uint8_t> cframe) override;
+
+  void OnFragmentedPduReceived() override;
+
   L2capChannelManager& l2cap_channel_manager_;
 };
 
