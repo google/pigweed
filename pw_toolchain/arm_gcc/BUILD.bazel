@@ -12,12 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load(
-    "@pw_toolchain//cc_toolchain:defs.bzl",
-    "pw_cc_feature",
-    "pw_cc_flag_set",
-    "pw_cc_toolchain",
-)
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
 
 licenses(["notice"])
 
@@ -49,13 +45,12 @@ cc_library(
 )
 
 # Additional arm_gcc specific warning flags
-pw_cc_flag_set(
+cc_args(
     name = "warnings",
     actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
-    flags = [
+    args = [
         # This can't be in common, because proto headers in host builds trigger
         "-Wundef",
         # Silence the really verbose ARM warnings.
@@ -63,29 +58,27 @@ pw_cc_flag_set(
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "thumb_abi",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mabi=aapcs",
         "-mthumb",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "unified_asm_syntax",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-masm-syntax-unified",
     ],
 )
@@ -94,34 +87,32 @@ pw_cc_flag_set(
 # which prevents compilation actions from being hermetic. See
 # https://github.com/bazelbuild/bazel/issues/21981 and
 # https://pwbug.dev/319665090.
-pw_cc_flag_set(
+cc_args(
     name = "no_canonical_system_headers",
     actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
-    flags = [
+    args = [
         "-fno-canonical-system-headers",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex_common",
     actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
-    flags = [
+    args = [
         "-ffreestanding",
         "-specs=nano.specs",
         "-specs=nosys.specs",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex_common_link",
-    actions = ["@pw_toolchain//actions:all_link_actions"],
-    flags = [
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = [
         "-Wl,--gc-sections",
         "-specs=nano.specs",
         "-specs=nosys.specs",
@@ -133,57 +124,53 @@ pw_cc_flag_set(
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m0",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m0",
         "-mfloat-abi=soft",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m0plus",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m0plus",
         "-mfloat-abi=soft",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m3",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m3",
         "-mfloat-abi=soft",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m4",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m4",
         "-mfloat-abi=hard",
         "-mfpu=fpv4-sp-d16",
@@ -193,29 +180,27 @@ pw_cc_flag_set(
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m4+nofp",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m4+nofp",
         "-mfloat-abi=soft",
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m7",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m7",
         "-mfloat-abi=hard",
         "-mfpu=fpv5-d16",
@@ -225,15 +210,14 @@ pw_cc_flag_set(
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m33",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m33",
         "-mfloat-abi=hard",
         "-mfpu=fpv5-sp-d16",
@@ -243,65 +227,31 @@ pw_cc_flag_set(
     ],
 )
 
-pw_cc_flag_set(
+cc_args(
     name = "cortex-m33+nofp",
     actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    flags = [
+    args = [
         "-mcpu=cortex-m33+nofp",
         "-mfloat-abi=soft",
     ],
 )
 
-pw_cc_feature(
-    name = "compiler_is_gcc",
-    enabled = True,
-    feature_name = "compiler_is_gcc",
-)
-
-pw_cc_feature(
-    name = "linker_is_gcc",
-    enabled = True,
-    feature_name = "linker_is_gcc",
-)
-
-pw_cc_toolchain(
+cc_toolchain(
     name = "arm_gcc_toolchain_cortex-m",
-    action_configs = [
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-ar",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-gcc",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-g++",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-gcov",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-ld",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-objcopy",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-objdump",
-        "@gcc_arm_none_eabi_toolchain//:arm-none-eabi-strip",
-    ],
-    builtin_sysroot = "external/gcc_arm_none_eabi_toolchain",
-    compiler = "gcc",
-    cxx_builtin_include_directories = [
-        "%sysroot%/arm-none-eabi/include/newlib-nano",
-        "%sysroot%/arm-none-eabi/include/c++/12.2.1",
-        "%sysroot%/arm-none-eabi/include/c++/12.2.1/arm-none-eabi",
-        "%sysroot%/arm-none-eabi/include/c++/12.2.1/backward",
-        "%sysroot%/lib/gcc/arm-none-eabi/12.2.1/include",
-        "%sysroot%/lib/gcc/arm-none-eabi/12.2.1/include-fixed",
-        "%sysroot%/arm-none-eabi/include",
-    ],
-    flag_sets = [
-        "@pw_toolchain//flag_sets:oz",
-        "@pw_toolchain//flag_sets:debugging",
-        "@pw_toolchain//flag_sets:reduced_size",
-        "@pw_toolchain//flag_sets:no_canonical_prefixes",
-        "@pw_toolchain//flag_sets:no_rtti",
-        "@pw_toolchain//flag_sets:wno_register",
-        "@pw_toolchain//flag_sets:wnon_virtual_dtor",
-        "//pw_toolchain/cc:common_warnings",
-        "//pw_toolchain/cc:color_diagnostics",
+    args = [
+        "//pw_toolchain/cc/args:oz",
+        "//pw_toolchain/cc/args:debugging",
+        "//pw_toolchain/cc/args:reduced_size",
+        "//pw_toolchain/cc/args:no_canonical_prefixes",
+        "//pw_toolchain/cc/args:no_rtti",
+        "//pw_toolchain/cc/args:wno_register",
+        "//pw_toolchain/cc/args:wnon_virtual_dtor",
+        "//pw_toolchain/cc/args:common_warnings",
+        "//pw_toolchain/cc/args:color_diagnostics",
     ] + select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [":cortex-m0"],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus": [":cortex-m0plus"],
@@ -321,6 +271,24 @@ pw_cc_toolchain(
         ":no_canonical_system_headers",
         ":warnings",
     ],
+    enabled_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//pw_toolchain/cc/capability:compiler_is_gcc",
+        "//pw_toolchain/cc/capability:linker_is_gcc",
+    ] + select({
+        "//pw_toolchain/cc:c++17_enabled": ["//pw_toolchain/cc/args:c++17_feature"],
+        "//conditions:default": [],
+    }) + select({
+        "//pw_toolchain/cc:c++20_enabled": ["//pw_toolchain/cc/args:c++20_feature"],
+        "//conditions:default": [],
+    }),
+    known_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//pw_toolchain/cc/args:c++17_feature",
+        "//pw_toolchain/cc/args:c++20_feature",
+        "//pw_toolchain/cc/capability:compiler_is_gcc",
+        "//pw_toolchain/cc/capability:linker_is_gcc",
+    ],
     target_compatible_with = select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus": [],
@@ -332,13 +300,7 @@ pw_cc_toolchain(
         "@pw_toolchain//constraints/arm_mcpu:cortex-m7": [],
         "@pw_toolchain//constraints/arm_mcpu:none": ["@platforms//:incompatible"],
     }),
-    toolchain_features = [
-        "//pw_toolchain/cc:c++17_feature",
-        "//pw_toolchain/cc:c++20_feature",
-        ":compiler_is_gcc",
-        ":linker_is_gcc",
-    ],
-    toolchain_identifier = "arm-gcc-toolchain",
+    tool_map = "@gcc_arm_none_eabi_toolchain//:all_tools",
     visibility = ["//pw_toolchain:__pkg__"],
 )
 
