@@ -56,6 +56,31 @@ task is rewoken, the task is re-added to the ``Dispatcher`` queue. The
 dispatcher will then invoke ``DoPend`` once more, continuing the cycle until
 ``DoPend`` returns ``Ready`` and the task is completed.
 
+The following sequence diagram summarizes the basic workflow:
+
+.. mermaid::
+
+   sequenceDiagram
+       participant e as External Event e.g. Interrupt
+       participant d as Dispatcher
+       participant t as Task
+       e->>t: Init Task
+       e->>d: Register task via Dispatcher::Post(Task)
+       d->>d: Add task to queue
+       d->>t: Run task via Task::DoPend()
+       t->>t: Task is waiting for data and can't yet complete
+       t->>e: Arrange for rewake via PW_ASYNC_STORE_WAKER
+       t->>d: Indicate that task is not complete via Pending()
+       d->>d: Remove task from queue
+       d->>d: Go to sleep because task queue is empty
+       e->>e: The data that the task needs has arrived
+       e->>d: Rewake via Waker::Wake()
+       d->>d: Re-add task to queue
+       d->>t: Run task via Task::DoPend()
+       t->>t: Task runs to completion
+       t->>d: Indicate that task is complete via Ready()
+       d->>d: Deregister the task
+
 .. _module-pw_async2-guides-pendables:
 
 Implementing invariants for pendable functions
@@ -73,8 +98,8 @@ following `invariants`_:
 
 .. note:: Exactly which APIs are considered pendable?
 
-   If you see ``Pend`` in the function name, it's probably
-   pendable.
+   If it has the signature ``(Context&, ...) -> Poll<T>``,
+   then it's a pendable function.
 
 .. _module-pw_async2-guides-pendables-incomplete:
 
