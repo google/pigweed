@@ -17,6 +17,8 @@ module(
     version = "0.0.1",
 )
 
+register_execution_platforms("@local_config_platform//:host", "//pw_build/platforms:all")
+
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "boringssl", version = "0.20240913.0")
 bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
@@ -185,6 +187,15 @@ register_toolchains(
     dev_dependency = True,
 )
 
+git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+# Vendored third party rust crates.
+git_repository(
+    name = "rust_crates",
+    commit = "ed1ec1bd240b9446b30af5331b960871a0503a6c",
+    remote = "https://pigweed.googlesource.com/third_party/rust_crates",
+)
+
 # Get probe-rs
 # ============
 
@@ -204,35 +215,6 @@ cipd_repository(
     build_file = "@pigweed//third_party/probe-rs:probe-rs.BUILD.bazel",
     path = "pigweed/third_party/probe-rs/${os}-${arch}",
     tag = "git_revision:37660106aba307cbab5cf6c2b0da57b72b6dc4e9",
-)
-
-# STM32 APIs
-# ==========
-#
-# TODO: https://github.com/bazelbuild/bazel/issues/23077 - Make these
-# bazel_deps dev_dependencies once archive_override has a build_file argument.
-http_archive(
-    name = "stm32f4xx_hal_driver",
-    build_file = "//third_party/stm32cube:stm32_hal_driver.BUILD.bazel",
-    sha256 = "d0427a3830f0c23dd4810952321b8209be7b3c50897d1fc2d79587435cc3a379",
-    strip_prefix = "stm32f4xx-hal-driver-1.8.0",
-    urls = ["https://github.com/STMicroelectronics/stm32f4xx-hal-driver/archive/refs/tags/v1.8.0.tar.gz"],
-)
-
-http_archive(
-    name = "cmsis_device_f4",
-    build_file = "//third_party/stm32cube:cmsis_device.BUILD.bazel",
-    sha256 = "1d9612ecaaab8708c88be2c9573927f2e5e9a911aa2c1427182b545ed5ed0fd6",
-    strip_prefix = "cmsis-device-f4-2.6.8",
-    urls = ["https://github.com/STMicroelectronics/cmsis-device-f4/archive/refs/tags/v2.6.8.tar.gz"],
-)
-
-http_archive(
-    name = "cmsis_core",
-    build_file = "//third_party/stm32cube:cmsis_core.BUILD.bazel",
-    sha256 = "32f226c31d7d1ff4a504404400603e047b99f405cd0c9a8f417f1f250251b829",
-    strip_prefix = "cmsis-core-5.4.0_cm4",
-    urls = ["https://github.com/STMicroelectronics/cmsis-core/archive/refs/tags/v5.4.0_cm4.tar.gz"],
 )
 
 # Configure Python toolchains and pip dependencies.
@@ -293,4 +275,75 @@ maven.install(
 use_repo(
     maven,
     "maven",
+)
+
+# Vendored libraries
+# ==================
+
+# TODO: https://pwbug.dev/378531541 - These are one-off external libraries that
+# are NOT in the BCR that downstream users may need to override/unify to their
+# expected version.
+
+new_git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
+
+# TODO: https://pwbug.dev/378531541 - Get micro_ecc from the BCR.
+new_git_repository(
+    name = "micro_ecc",
+    build_file = "//:third_party/micro_ecc/BUILD.micro_ecc",
+    commit = "b335ee812bfcca4cd3fb0e2a436aab39553a555a",
+    remote = "https://github.com/kmackay/micro-ecc.git",
+)
+
+# TODO: https://pwbug.dev/354749299 - Use the BCR version of mbedtls.
+http_archive(
+    name = "mbedtls",
+    build_file = "//:third_party/mbedtls/mbedtls.BUILD.bazel",
+    sha256 = "241c68402cef653e586be3ce28d57da24598eb0df13fcdea9d99bfce58717132",
+    strip_prefix = "mbedtls-2.28.8",
+    url = "https://github.com/Mbed-TLS/mbedtls/releases/download/v2.28.8/mbedtls-2.28.8.tar.bz2",
+)
+
+# TODO: https://github.com/bazelbuild/bazel/issues/23077 - Make these
+# bazel_deps dev_dependencies once archive_override has a build_file argument.
+http_archive(
+    name = "stm32f4xx_hal_driver",
+    build_file = "//third_party/stm32cube:stm32_hal_driver.BUILD.bazel",
+    sha256 = "d0427a3830f0c23dd4810952321b8209be7b3c50897d1fc2d79587435cc3a379",
+    strip_prefix = "stm32f4xx-hal-driver-1.8.0",
+    urls = ["https://github.com/STMicroelectronics/stm32f4xx-hal-driver/archive/refs/tags/v1.8.0.tar.gz"],
+)
+
+http_archive(
+    name = "cmsis_device_f4",
+    build_file = "//third_party/stm32cube:cmsis_device.BUILD.bazel",
+    sha256 = "1d9612ecaaab8708c88be2c9573927f2e5e9a911aa2c1427182b545ed5ed0fd6",
+    strip_prefix = "cmsis-device-f4-2.6.8",
+    urls = ["https://github.com/STMicroelectronics/cmsis-device-f4/archive/refs/tags/v2.6.8.tar.gz"],
+)
+
+http_archive(
+    name = "cmsis_core",
+    build_file = "//third_party/stm32cube:cmsis_core.BUILD.bazel",
+    sha256 = "32f226c31d7d1ff4a504404400603e047b99f405cd0c9a8f417f1f250251b829",
+    strip_prefix = "cmsis-core-5.4.0_cm4",
+    urls = ["https://github.com/STMicroelectronics/cmsis-core/archive/refs/tags/v5.4.0_cm4.tar.gz"],
+)
+
+# Other Pigweed-specific dependencies
+# ===================================
+cipd_repository(
+    name = "bloaty",
+    path = "fuchsia/third_party/bloaty/${os}-amd64",
+    tag = "git_revision:c057ba4f43db0506d4ba8c096925b054b02a8bd3",
+)
+
+# Set up legacy pw_transfer test binaries.
+# Required by: pigweed.
+# Used in modules: //pw_transfer.
+cipd_repository(
+    name = "pw_transfer_test_binaries",
+    # Only ever needed if you run the pw_transfer unit tests.
+    dev_dependency = True,
+    path = "pigweed/pw_transfer_test_binaries/${os=linux}-${arch=amd64}",
+    tag = "version:pw_transfer_test_binaries_528098d588f307881af83f769207b8e6e1b57520-linux-amd64-cipd.cipd",
 )
