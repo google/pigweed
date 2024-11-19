@@ -343,6 +343,7 @@ pw_cc_test(
     deps = [
         ":codegen_test_proto_pwpb",
         ":pw_protobuf",
+        "//pw_bytes",
         "//pw_span",
         "//pw_unit_test",
     ],

@@ -25,7 +25,12 @@ message RepeatedTest {
   repeated bool bools = 7;
   repeated uint64 uint64s = 8;
   repeated Enum enums = 9;
-};
+}
+
+// Like RepeatedTest but all fields have max_count set.
+message ConstrainedRepeatedTest {
+  repeated fixed32 fixed32s = 1;
+}
 
 message Struct {
   uint32 one = 1;

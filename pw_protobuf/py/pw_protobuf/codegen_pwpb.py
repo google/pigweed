@@ -655,6 +655,19 @@ class MessageProperty(ProtoMember):
             PROTOBUF_NAMESPACE, self._size_fn(), self.field_cast()
         )
 
+        if self.is_repeated():
+            # We have to assume the worst-case: a non-packed repeated field,
+            # which is encoded as one record per entry.
+            # https://protobuf.dev/programming-guides/encoding/#packed
+            if self.max_size():
+                size_call += f' * {self.max_size_constant_name()}'
+            else:
+                # TODO: https://pwbug.dev/379868242 - Change this to return
+                # None to indicate that we don't know the maximum encoded size,
+                # because the field is unconstrained.
+                msg = 'TODO: https://pwbug.dev/379868242 - Max size unknown!'
+                size_call += f' /* {msg} */'
+
         size_length: str | None = self._size_length()
         if size_length is None:
             return size_call

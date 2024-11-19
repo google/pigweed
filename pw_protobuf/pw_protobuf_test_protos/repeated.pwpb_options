@@ -17,3 +17,5 @@ pw.protobuf.test.RepeatedTest.fixed32s max_count:8
 pw.protobuf.test.RepeatedTest.doubles max_count:2 fixed_count:true
 pw.protobuf.test.RepeatedTest.uint64s max_count:4 fixed_count:true
 pw.protobuf.test.RepeatedTest.enums max_count:4
+
+pw.protobuf.test.ConstrainedRepeatedTest.fixed32s max_count:2

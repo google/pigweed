@@ -11,7 +11,10 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+#include "pw_bytes/array.h"
 #include "pw_protobuf/encoder.h"
+#include "pw_protobuf/wire_format.h"
 #include "pw_span/span.h"
 #include "pw_stream/memory_stream.h"
 #include "pw_unit_test/framework.h"
@@ -29,6 +32,9 @@
 #include "pw_protobuf_test_protos/proto2.pwpb.h"
 #include "pw_protobuf_test_protos/repeated.pwpb.h"
 
+#define EXPECT_SEQ_EQ(seq1, seq2) \
+  EXPECT_TRUE(std::equal(seq1.begin(), seq1.end(), seq2.begin(), seq2.end()))
+
 namespace pw::protobuf {
 namespace {
 
@@ -37,6 +43,7 @@ using test::pwpb::Enum;
 
 namespace Bar = test::pwpb::Bar;
 namespace BaseMessage = test::pwpb::BaseMessage;
+namespace ConstrainedRepeatedTest = test::pwpb::ConstrainedRepeatedTest;
 namespace Crate = test::pwpb::Crate;
 namespace DeviceInfo = test::pwpb::DeviceInfo;
 namespace Foo = test::pwpb::Foo;
@@ -51,6 +58,12 @@ namespace RepeatedTest = test::pwpb::RepeatedTest;
 namespace imported {
 namespace Timestamp = ::pw::protobuf::test::imported::pwpb::Timestamp;
 }  // namespace imported
+
+template <uint32_t val>
+constexpr std::byte ToByte() {
+  static_assert(val <= 0xff);
+  return static_cast<std::byte>(val);
+}
 
 TEST(Codegen, Codegen) {
   std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes +
@@ -250,6 +263,33 @@ TEST(Codegen, RecursiveSubmessage) {
   EXPECT_EQ(result.size(), sizeof(expected_proto));
   EXPECT_EQ(std::memcmp(result.data(), expected_proto, sizeof(expected_proto)),
             0);
+}
+
+TEST(CodegenRepeated, ConstrainedFull) {
+  // Write and expect non-packed since that's the worst-case size.
+
+  // clang-format off
+  constexpr auto expected_proto = bytes::Array<
+    // uint32s[], v={0xdeadbeef, 0x2b84f00d}
+    ToByte<FieldKey(1, WireType::kFixed32)>(), 0xef, 0xbe, 0xad, 0xde,
+    ToByte<FieldKey(1, WireType::kFixed32)>(), 0x0d, 0xf0, 0x84, 0x2b
+  >();
+  // clang-format on
+
+  std::byte encode_buffer[ConstrainedRepeatedTest::kMaxEncodedSizeBytes];
+
+  // In this test, we expect to exactly utilize the encoding buffer.
+  EXPECT_EQ(ConstrainedRepeatedTest::kMaxEncodedSizeBytes,
+            expected_proto.size());
+
+  stream::MemoryWriter writer(encode_buffer);
+  ConstrainedRepeatedTest::StreamEncoder encoder(writer, ByteSpan());
+
+  PW_TEST_ASSERT_OK(encoder.WriteFixed32s(0xdeadbeef));
+  PW_TEST_ASSERT_OK(encoder.WriteFixed32s(0x2b84f00d));
+
+  PW_TEST_ASSERT_OK(encoder.status());
+  EXPECT_SEQ_EQ(writer.WrittenData(), expected_proto);
 }
 
 TEST(CodegenRepeated, NonPackedScalar) {

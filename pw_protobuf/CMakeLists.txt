@@ -122,6 +122,7 @@ pw_add_test(pw_protobuf.codegen_encoder_test
   SOURCES
     codegen_encoder_test.cc
   PRIVATE_DEPS
+    pw_bytes
     pw_protobuf
     pw_protobuf.codegen_test_protos.pwpb
   GROUPS
