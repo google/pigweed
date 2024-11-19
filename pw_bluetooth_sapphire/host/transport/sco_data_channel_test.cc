@@ -703,9 +703,9 @@ TEST_F(ScoDataChannelTest,
        ConfigureCallbackCalledAfterTransportDestroyedDoesNotUseAfterFree) {
   fit::callback<void(pw::Status)> config_cb = nullptr;
   test_device()->set_configure_sco_cb(
-      [&](ScoCodingFormat format,
-          ScoEncoding encoding,
-          ScoSampleRate rate,
+      [&](ScoCodingFormat /*format*/,
+          ScoEncoding /*encoding*/,
+          ScoSampleRate /*rate*/,
           fit::callback<void(pw::Status)> callback) {
         config_cb = std::move(callback);
       });
@@ -829,9 +829,9 @@ TEST_F(ScoDataChannelSingleConnectionTest,
 TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndFirstConfigurationFails) {
   int config_count = 0;
   test_device()->set_configure_sco_cb(
-      [&](ScoCodingFormat format,
-          ScoEncoding encoding,
-          ScoSampleRate rate,
+      [&](ScoCodingFormat /*format*/,
+          ScoEncoding /*encoding*/,
+          ScoSampleRate /*rate*/,
           fit::callback<void(pw::Status)> callback) {
         config_count++;
         if (config_count == 1) {
@@ -896,8 +896,8 @@ TEST_F(ScoDataChannelTest, UnsupportedCodingFormatTreatedAsCvsd) {
   int config_count = 0;
   test_device()->set_configure_sco_cb(
       [&](ScoCodingFormat format,
-          ScoEncoding encoding,
-          ScoSampleRate rate,
+          ScoEncoding /*encoding*/,
+          ScoSampleRate /*rate*/,
           fit::callback<void(pw::Status)> callback) {
         config_count++;
         EXPECT_EQ(format, ScoCodingFormat::kCvsd);

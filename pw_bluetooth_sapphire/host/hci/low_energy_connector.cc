@@ -166,7 +166,7 @@ void LowEnergyConnector::CreateConnectionInternal(
     uint16_t scan_interval,
     uint16_t scan_window,
     const hci_spec::LEPreferredConnectionParameters& initial_params,
-    StatusCallback status_callback,
+    StatusCallback,
     pw::chrono::SystemClock::duration timeout) {
   if (!hci_.is_alive()) {
     return;
@@ -188,7 +188,7 @@ void LowEnergyConnector::CreateConnectionInternal(
 
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_self_.GetWeakPtr();
-  auto complete_cb = [self, timeout](auto id, const EventPacket& event) {
+  auto complete_cb = [self, timeout](auto, const EventPacket& event) {
     PW_DCHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
 
     if (!self.is_alive()) {
@@ -371,7 +371,7 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
   if (pending_request_->initiating && hci_.is_alive()) {
     bt_log(
         DEBUG, "hci-le", "telling controller to cancel LE connection attempt");
-    auto complete_cb = [](auto id, const EventPacket& event) {
+    auto complete_cb = [](auto, const EventPacket& event) {
       HCI_IS_ERROR(
           event, WARN, "hci-le", "failed to cancel connection request");
     };

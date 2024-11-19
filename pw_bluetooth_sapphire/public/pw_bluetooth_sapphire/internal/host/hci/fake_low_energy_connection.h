@@ -35,7 +35,7 @@ class FakeLowEnergyConnection final : public LowEnergyConnection {
   }
 
   // LowEnergyConnection overrides:
-  void Disconnect(pw::bluetooth::emboss::StatusCode reason) override {}
+  void Disconnect(pw::bluetooth::emboss::StatusCode) override {}
   bool StartEncryption() override;
 
   // Number of times StartEncryption() was called.

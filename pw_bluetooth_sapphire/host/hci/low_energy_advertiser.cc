@@ -107,7 +107,7 @@ fit::result<HostError> LowEnergyAdvertiser::CanStartAdvertising(
 
 static LowEnergyAdvertiser::AdvertisingEventProperties
 GetExtendedAdvertisingEventProperties(
-    const AdvertisingData& data,
+    const AdvertisingData&,
     const AdvertisingData& scan_rsp,
     const LowEnergyAdvertiser::AdvertisingOptions& options,
     const LowEnergyAdvertiser::ConnectionCallback& connect_callback) {
@@ -143,9 +143,9 @@ GetExtendedAdvertisingEventProperties(
 
 static LowEnergyAdvertiser::AdvertisingEventProperties
 GetLegacyAdvertisingEventProperties(
-    const AdvertisingData& data,
+    const AdvertisingData&,
     const AdvertisingData& scan_rsp,
-    const LowEnergyAdvertiser::AdvertisingOptions& options,
+    const LowEnergyAdvertiser::AdvertisingOptions&,
     const LowEnergyAdvertiser::ConnectionCallback& connect_callback) {
   LowEnergyAdvertiser::AdvertisingEventProperties properties;
   properties.use_legacy_pdus = true;

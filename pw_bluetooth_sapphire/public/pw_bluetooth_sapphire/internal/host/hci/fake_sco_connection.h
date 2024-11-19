@@ -31,7 +31,7 @@ class FakeScoConnection final : public ScoConnection {
   }
 
   // ScoConnection overrides:
-  void Disconnect(pw::bluetooth::emboss::StatusCode reason) override {}
+  void Disconnect(pw::bluetooth::emboss::StatusCode) override {}
 
  private:
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeScoConnection);

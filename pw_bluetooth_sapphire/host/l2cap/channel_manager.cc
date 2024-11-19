@@ -455,7 +455,7 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(
 }
 
 std::optional<ChannelManager::ServiceInfo> ChannelManagerImpl::QueryService(
-    hci_spec::ConnectionHandle handle, Psm psm) {
+    hci_spec::ConnectionHandle, Psm psm) {
   auto iter = services_.find(psm);
   if (iter == services_.end()) {
     return std::nullopt;

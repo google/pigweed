@@ -1600,7 +1600,7 @@ void AdapterImpl::InitializeStep4() {
 
   // Assign a default name and device class before notifying completion.
   auto self = weak_self_.GetWeakPtr();
-  SetLocalName(kDefaultLocalName, [self](auto status) mutable {
+  SetLocalName(kDefaultLocalName, [self](auto) mutable {
     // Set the default device class - a computer with audio.
     // TODO(fxbug.dev/42074312): set this from a platform configuration file
     DeviceClass dev_class(DeviceClass::MajorClass::kComputer);

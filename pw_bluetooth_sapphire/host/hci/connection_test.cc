@@ -204,7 +204,7 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
   auto connection = NewConnection();
 
   size_t disconn_cb_count = 0;
-  auto disconn_complete_cb = [&](const Connection& cb_conn, auto reason) {
+  auto disconn_complete_cb = [&](const Connection&, auto reason) {
     disconn_cb_count++;
     EXPECT_EQ(
         reason,
@@ -1237,7 +1237,7 @@ TEST_F(ConnectionTest, PeerDisconnectCallback) {
       NewACLConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle);
 
   size_t cb_count = 0;
-  auto disconn_complete_cb = [&](const Connection& cb_conn, auto /*reason*/) {
+  auto disconn_complete_cb = [&](const Connection&, auto /*reason*/) {
     cb_count++;
 
     // Should be safe to destroy connection from this callback, as a connection

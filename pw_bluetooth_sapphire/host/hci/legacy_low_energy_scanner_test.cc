@@ -77,7 +77,7 @@ class LegacyLowEnergyScannerTest : public TestingBase,
         .filter_duplicates = true,
         .period = period,
         .scan_response_timeout = kPwScanResponseTimeout};
-    return scanner()->StartScan(options, [](auto status) {});
+    return scanner()->StartScan(options, [](auto) {});
   }
 
   using PeerFoundCallback = fit::function<void(const LowEnergyScanResult&)>;
@@ -210,7 +210,7 @@ TEST_F(LegacyLowEnergyScannerTest, ParseAdvertisingReportsNotEnoughData) {
 
   // there wasn't enough data available so we shouldn't have parsed out any
   // advertising reports
-  set_peer_found_callback([&](const LowEnergyScanResult& result) { FAIL(); });
+  set_peer_found_callback([&](const LowEnergyScanResult&) { FAIL(); });
 
   RunUntilIdle();
 }

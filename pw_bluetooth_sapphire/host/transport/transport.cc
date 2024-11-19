@@ -69,7 +69,7 @@ void Transport::Initialize(
         });
   };
 
-  auto error_cb = [self](pw::Status status) {
+  auto error_cb = [self](pw::Status) {
     if (self.is_alive()) {
       self->OnChannelError();
     }

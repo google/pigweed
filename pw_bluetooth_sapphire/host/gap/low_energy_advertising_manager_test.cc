@@ -108,16 +108,14 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     result_callback(fit::ok());
   }
 
-  void StopAdvertising(const DeviceAddress& address,
-                       bool extended_pdu) override {
+  void StopAdvertising(const DeviceAddress& address, bool) override {
     ads_->erase(address);
   }
 
-  void OnIncomingConnection(
-      hci_spec::ConnectionHandle handle,
-      pwemb::ConnectionRole role,
-      const DeviceAddress& peer_address,
-      const hci_spec::LEConnectionParameters& conn_params) override {
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle,
+                            pwemb::ConnectionRole role,
+                            const DeviceAddress& peer_address,
+                            const hci_spec::LEConnectionParameters&) override {
     // Right now, we call the first callback, because we can't call any other
     // ones.
     // TODO(jamuraa): make this send it to the correct callback once we can
@@ -137,28 +135,25 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
  private:
   hci::CommandPacket BuildEnablePacket(
-      const DeviceAddress& address,
-      pw::bluetooth::emboss::GenericEnableParam enable,
-      bool extended_pdu) override {
+      const DeviceAddress&,
+      pw::bluetooth::emboss::GenericEnableParam,
+      bool) override {
     return hci::CommandPacket::New<
         pwemb::LESetExtendedAdvertisingEnableDataWriter>(
         hci_spec::kLESetExtendedAdvertisingEnable);
   }
 
   std::optional<hci::CommandPacket> BuildSetAdvertisingParams(
-      const DeviceAddress& address,
-      const AdvertisingEventProperties& properties,
-      pwemb::LEOwnAddressType own_address_type,
-      const hci::AdvertisingIntervalRange& interval,
-      bool extended_pdu) override {
+      const DeviceAddress&,
+      const AdvertisingEventProperties&,
+      pwemb::LEOwnAddressType,
+      const hci::AdvertisingIntervalRange&,
+      bool) override {
     return std::nullopt;
   }
 
   std::vector<hci::CommandPacket> BuildSetAdvertisingData(
-      const DeviceAddress& address,
-      const AdvertisingData& data,
-      AdvFlags flags,
-      bool extended_pdu) override {
+      const DeviceAddress&, const AdvertisingData&, AdvFlags, bool) override {
     hci::CommandPacket packet =
         hci::CommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
             hci_spec::kLESetAdvertisingData);
@@ -168,16 +163,15 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return packets;
   }
 
-  hci::CommandPacket BuildUnsetAdvertisingData(const DeviceAddress& address,
-                                               bool extended_pdu) override {
+  hci::CommandPacket BuildUnsetAdvertisingData(const DeviceAddress&,
+                                               bool) override {
     return hci::CommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
         hci_spec::kLESetAdvertisingData);
   }
 
-  std::vector<hci::CommandPacket> BuildSetScanResponse(
-      const DeviceAddress& address,
-      const AdvertisingData& scan_rsp,
-      bool extended_pdu) override {
+  std::vector<hci::CommandPacket> BuildSetScanResponse(const DeviceAddress&,
+                                                       const AdvertisingData&,
+                                                       bool) override {
     hci::CommandPacket packet =
         hci::CommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
             hci_spec::kLESetScanResponseData);
@@ -187,14 +181,14 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return packets;
   }
 
-  hci::CommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
-                                            bool extended_pdu) override {
+  hci::CommandPacket BuildUnsetScanResponse(const DeviceAddress&,
+                                            bool) override {
     return hci::CommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
         hci_spec::kLESetScanResponseData);
   }
 
-  hci::CommandPacket BuildRemoveAdvertisingSet(const DeviceAddress& address,
-                                               bool extended_pdu) override {
+  hci::CommandPacket BuildRemoveAdvertisingSet(const DeviceAddress&,
+                                               bool) override {
     return hci::CommandPacket::New<pwemb::LERemoveAdvertisingSetCommandWriter>(
         hci_spec::kLERemoveAdvertisingSet);
   }
@@ -464,8 +458,8 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
 
 //  - Error: Connectable and Anonymous at the same time
 TEST_F(LowEnergyAdvertisingManagerTest, ConnectAdvertiseError) {
-  auto connect_cb = [](AdvertisementId connected_id,
-                       std::unique_ptr<hci::LowEnergyConnection> conn) {};
+  auto connect_cb = [](AdvertisementId,
+                       std::unique_ptr<hci::LowEnergyConnection>) {};
 
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(),
                               AdvertisingData(),

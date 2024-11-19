@@ -444,7 +444,7 @@ void AclDataChannelImpl::RequestAclPriority(
         transport_->command_channel()->SendCommand(
             std::move(packet),
             [cb = std::move(request_cb), priority](
-                auto id, const hci::EventPacket& event) mutable {
+                auto, const hci::EventPacket& event) mutable {
               if (HCI_IS_ERROR(event, WARN, "hci", "acl priority failed")) {
                 cb(fit::failed());
                 return;

@@ -155,7 +155,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundConnReqRejNotEnoughBytesInRejection) {
 
   bool cb_called = false;
   auto on_conn_rsp =
-      [&cb_called](const BrEdrCommandHandler::ConnectionResponse& rsp) {
+      [&cb_called](const BrEdrCommandHandler::ConnectionResponse&) {
         cb_called = true;
         return BrEdrCommandHandler::ResponseHandlerAction::
             kCompleteOutboundTransaction;
@@ -741,7 +741,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspHeaderNotEnoughBytes) {
 
   bool cb_called = false;
   BrEdrCommandHandler::InformationResponseCallback on_info_cb =
-      [&cb_called](const BrEdrCommandHandler::InformationResponse& rsp) {
+      [&cb_called](const BrEdrCommandHandler::InformationResponse&) {
         cb_called = true;
       };
 
@@ -784,7 +784,7 @@ TEST_F(BrEdrCommandHandlerTest, OutboundInfoReqRspPayloadNotEnoughBytes) {
 
   bool cb_called = false;
   BrEdrCommandHandler::InformationResponseCallback on_info_cb =
-      [&cb_called](const BrEdrCommandHandler::InformationResponse& rsp) {
+      [&cb_called](const BrEdrCommandHandler::InformationResponse&) {
         cb_called = true;
       };
 
@@ -935,9 +935,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqBadPsm) {
   // Request callback shouldn't even be called for an invalid PSM.
   bool req_cb_called = false;
   BrEdrCommandHandler::ConnectionRequestCallback cb =
-      [&req_cb_called](Psm psm, ChannelId remote_cid, auto responder) {
-        req_cb_called = true;
-      };
+      [&req_cb_called](Psm, ChannelId, auto) { req_cb_called = true; };
   cmd_handler()->ServeConnectionRequest(std::move(cb));
 
   // Connection Request payload
@@ -977,9 +975,7 @@ TEST_F(BrEdrCommandHandlerTest, InboundConnReqNonDynamicSrcCId) {
   // Request callback shouldn't even be called for an invalid Source Channel ID.
   bool req_cb_called = false;
   BrEdrCommandHandler::ConnectionRequestCallback cb =
-      [&req_cb_called](Psm psm, ChannelId remote_cid, auto responder) {
-        req_cb_called = true;
-      };
+      [&req_cb_called](Psm, ChannelId, auto) { req_cb_called = true; };
   cmd_handler()->ServeConnectionRequest(std::move(cb));
 
   // Connection Request payload

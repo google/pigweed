@@ -87,19 +87,18 @@ void FakeLayer::RemovePeerService(PeerId peer_id, att::Handle handle) {
 }
 
 void FakeLayer::AddConnection(PeerId peer_id,
-                              std::unique_ptr<Client> client,
-                              Server::FactoryFunction server_factory) {
+                              std::unique_ptr<Client>,
+                              Server::FactoryFunction) {
   peers_.try_emplace(peer_id, pw_dispatcher_);
 }
 
 void FakeLayer::RemoveConnection(PeerId peer_id) { peers_.erase(peer_id); }
 
-GATT::PeerMtuListenerId FakeLayer::RegisterPeerMtuListener(
-    PeerMtuListener listener) {
+GATT::PeerMtuListenerId FakeLayer::RegisterPeerMtuListener(PeerMtuListener) {
   BT_PANIC("implement fake behavior if needed");
 }
 
-bool FakeLayer::UnregisterPeerMtuListener(PeerMtuListenerId listener_id) {
+bool FakeLayer::UnregisterPeerMtuListener(PeerMtuListenerId) {
   BT_PANIC("implement fake behavior if needed");
 }
 

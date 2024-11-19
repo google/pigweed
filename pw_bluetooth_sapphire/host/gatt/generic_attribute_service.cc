@@ -55,7 +55,7 @@ void GenericAttributeService::Register() {
       std::make_unique<Service>(true, types::kGenericAttributeService);
   service->AddCharacteristic(std::move(service_changed_chr));
 
-  ClientConfigCallback ccc_callback = [this](IdType service_id,
+  ClientConfigCallback ccc_callback = [this](IdType,
                                              IdType chrc_id,
                                              PeerId peer_id,
                                              bool notify,
@@ -85,20 +85,17 @@ void GenericAttributeService::Register() {
       kDisallowed);                                   // update
   service->AddCharacteristic(std::move(server_features_chr));
 
-  ReadHandler read_handler = [](PeerId,
-                                IdType service_id,
-                                IdType chrc_id,
-                                uint16_t offset,
-                                ReadResponder responder) {
-    // The stack shouldn't send us any read requests other than this id, none of
-    // the other characteristics or descriptors support it.
-    PW_DCHECK(chrc_id == kServerSupportedFeaturesChrcId);
+  ReadHandler read_handler =
+      [](PeerId, IdType, IdType chrc_id, uint16_t, ReadResponder responder) {
+        // The stack shouldn't send us any read requests other than this id,
+        // none of the other characteristics or descriptors support it.
+        PW_DCHECK(chrc_id == kServerSupportedFeaturesChrcId);
 
-    // The only octet is the first octet.  The only bit is the EATT supported
-    // bit.
-    // TODO(fxbug.dev/364660604): Support EATT, then flip this bit to 1.
-    responder(fit::ok(), StaticByteBuffer(0x00));
-  };
+        // The only octet is the first octet.  The only bit is the EATT
+        // supported bit.
+        // TODO(fxbug.dev/364660604): Support EATT, then flip this bit to 1.
+        responder(fit::ok(), StaticByteBuffer(0x00));
+      };
 
   service_id_ =
       local_service_manager_->RegisterService(std::move(service),

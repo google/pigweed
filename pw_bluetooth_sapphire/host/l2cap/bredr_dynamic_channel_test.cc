@@ -1360,7 +1360,7 @@ TEST_F(BrEdrDynamicChannelTest, OpenAndRemoteCloseChannel) {
       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
 
   int open_cb_count = 0;
-  auto open_cb = [&open_cb_count](auto chan) { open_cb_count++; };
+  auto open_cb = [&open_cb_count](auto) { open_cb_count++; };
 
   int close_cb_count = 0;
   set_channel_close_cb([&close_cb_count](auto chan) {
@@ -1712,7 +1712,7 @@ TEST_F(BrEdrDynamicChannelTest, InboundConnectionOk) {
   set_service_request_cb(std::move(service_request_cb));
 
   int close_cb_count = 0;
-  set_channel_close_cb([&close_cb_count](auto chan) { close_cb_count++; });
+  set_channel_close_cb([&close_cb_count](auto) { close_cb_count++; });
 
   RETURN_IF_FATAL(sig()->ReceiveExpect(
       kConnectionRequest, kInboundConnReq, kInboundOkConnRsp));
@@ -1737,7 +1737,7 @@ TEST_F(BrEdrDynamicChannelTest,
       *sig(), kConfigurationRequest, kOutboundConfigReq.view());
 
   int open_cb_count = 0;
-  DynamicChannelCallback open_cb = [&open_cb_count](auto chan) {
+  DynamicChannelCallback open_cb = [&open_cb_count](auto) {
     open_cb_count++;
     FAIL() << "Failed-to-open inbound channels shouldn't trip open callback";
   };

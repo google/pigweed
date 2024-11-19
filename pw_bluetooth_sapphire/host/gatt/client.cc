@@ -1109,22 +1109,22 @@ class Impl final : public Client {
         }
 
         if (status.is_error()) {
-          auto exec_write_cb =
-              [this,
-               callback = std::move(prep_write.callback),
-               prep_write_status = status](att::Result<> write_status) mutable {
-                // In this case return the original failure status. This
-                // effectively overrides the ExecuteWrite status.
-                callback(prep_write_status);
-                // Now that this request is complete, remove it from the overall
-                // queue.
-                PW_DCHECK(!long_write_queue_.empty());
-                long_write_queue_.pop();
+          auto exec_write_cb = [this,
+                                callback = std::move(prep_write.callback),
+                                prep_write_status =
+                                    status](att::Result<>) mutable {
+            // In this case return the original failure status. This
+            // effectively overrides the ExecuteWrite status.
+            callback(prep_write_status);
+            // Now that this request is complete, remove it from the overall
+            // queue.
+            PW_DCHECK(!long_write_queue_.empty());
+            long_write_queue_.pop();
 
-                if (long_write_queue_.size() > 0) {
-                  ProcessWriteQueue(std::move(long_write_queue_.front()));
-                }
-              };
+            if (long_write_queue_.size() > 0) {
+              ProcessWriteQueue(std::move(long_write_queue_.front()));
+            }
+          };
 
           ExecuteWriteRequest(att::ExecuteWriteFlag::kCancelAll,
                               std::move(exec_write_cb));

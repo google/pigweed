@@ -255,7 +255,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Called when the command packet created with BuildSetAdvertisingParams
   // returns with a result
-  virtual void OnSetAdvertisingParamsComplete(const EventPacket& event) {}
+  virtual void OnSetAdvertisingParamsComplete(const EventPacket&) {}
 
   // Called when a sequence of HCI commands that form a single operation (e.g.
   // start advertising, stop advertising) completes in its entirety. Subclasses

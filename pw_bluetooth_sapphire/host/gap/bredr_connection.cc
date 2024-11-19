@@ -54,7 +54,7 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer,
       dispatcher_(dispatcher) {
   link_->set_peer_disconnect_callback(
       [peer_disconnect_cb = std::move(on_peer_disconnect_cb)](
-          const auto& conn, auto /*reason*/) { peer_disconnect_cb(); });
+          const auto&, auto) { peer_disconnect_cb(); });
 
   std::unique_ptr<LegacyPairingState> legacy_pairing_state = nullptr;
   if (request_ && request_->legacy_pairing_state()) {
@@ -173,7 +173,7 @@ void BrEdrConnection::AttachInspect(inspect::Node& parent, std::string name) {
                                         kInspectPairingStateNodeName);
 }
 
-void BrEdrConnection::OnPairingStateStatus(hci_spec::ConnectionHandle handle,
+void BrEdrConnection::OnPairingStateStatus(hci_spec::ConnectionHandle,
                                            hci::Result<> status) {
   if (bt_is_error(
           status,

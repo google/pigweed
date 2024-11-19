@@ -35,7 +35,7 @@ LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
 }
 
 CommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
-    const DeviceAddress& address,
+    const DeviceAddress&,
     pwemb::GenericEnableParam enable,
     bool /*extended_pdu*/) {
   auto packet =
@@ -47,7 +47,7 @@ CommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
 }
 
 std::vector<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
-    const DeviceAddress& address,
+    const DeviceAddress&,
     const AdvertisingData& data,
     AdvFlags flags,
     bool /*extended_pdu*/) {
@@ -74,7 +74,7 @@ std::vector<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
 }
 
 std::vector<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetScanResponse(
-    const DeviceAddress& address,
+    const DeviceAddress&,
     const AdvertisingData& scan_rsp,
     bool /*extended_pdu*/) {
   if (scan_rsp.CalculateBlockSize() == 0) {
@@ -101,7 +101,7 @@ std::vector<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetScanResponse(
 
 std::optional<CommandPacket>
 LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
-    const DeviceAddress& address,
+    const DeviceAddress&,
     const AdvertisingEventProperties& properties,
     pwemb::LEOwnAddressType own_address_type,
     const AdvertisingIntervalRange& interval,
@@ -128,20 +128,20 @@ LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
 }
 
 CommandPacket LegacyLowEnergyAdvertiser::BuildUnsetAdvertisingData(
-    const DeviceAddress& address, bool /*extended_pdu*/) {
+    const DeviceAddress&, bool /*extended_pdu*/) {
   return CommandPacket::New<pwemb::LESetAdvertisingDataCommandWriter>(
       hci_spec::kLESetAdvertisingData);
 }
 
 CommandPacket LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
-    const DeviceAddress& address, bool /*extended_pdu*/) {
+    const DeviceAddress&, bool /*extended_pdu*/) {
   auto packet = CommandPacket::New<pwemb::LESetScanResponseDataCommandWriter>(
       hci_spec::kLESetScanResponseData);
   return packet;
 }
 
 CommandPacket LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
-    const DeviceAddress& address, bool /*extended_pdu*/) {
+    const DeviceAddress&, bool /*extended_pdu*/) {
   auto packet =
       hci::CommandPacket::New<pwemb::LESetAdvertisingEnableCommandWriter>(
           hci_spec::kLESetAdvertisingEnable);

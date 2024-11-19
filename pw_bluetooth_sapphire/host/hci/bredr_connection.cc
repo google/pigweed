@@ -55,7 +55,7 @@ bool BrEdrConnection::StartEncryption() {
       pw::bluetooth::emboss::GenericEnableParam::ENABLE);
 
   auto self = GetWeakPtr();
-  auto event_cb = [self, handle = handle()](auto id, const EventPacket& event) {
+  auto event_cb = [self, handle = handle()](auto, const EventPacket& event) {
     if (!self.is_alive()) {
       return;
     }

@@ -75,8 +75,7 @@ class FakeL2cap final {
   // l2cap::kLastACLDynamicChannelId.
   explicit FakeL2cap(
       SendFrameCallback send_frame_callback,
-      UnexpectedPduCallback unexpected_pdu_callback = [](auto handle,
-                                                         auto& pdu) {},
+      UnexpectedPduCallback unexpected_pdu_callback = [](auto, auto&) {},
       l2cap::ChannelId largest_channel_id = l2cap::kLastACLDynamicChannelId);
 
   // Public methods for services/clients that operate over L2CAP channels:

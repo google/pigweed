@@ -74,7 +74,7 @@ bool LowEnergyConnection::StartEncryption() {
       pw::bluetooth::emboss::LinkKeyView(&ltk()->value()));
 
   auto event_cb = [self = GetWeakPtr(), handle = handle()](
-                      auto id, const EventPacket& event) {
+                      auto, const EventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
@@ -147,7 +147,7 @@ LowEnergyConnection::OnLELongTermKeyRequestEvent(const EventPacket& event) {
     return CommandChannel::EventCallbackResult::kRemove;
   }
 
-  auto status_cb = [](auto id, const EventPacket& status_event) {
+  auto status_cb = [](auto, const EventPacket& status_event) {
     HCI_IS_ERROR(
         status_event, TRACE, "hci-le", "failed to reply to LTK request");
   };

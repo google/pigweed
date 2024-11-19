@@ -23,9 +23,9 @@
 namespace bt::sm::testing {
 
 TestSecurityManager::TestSecurityManager(hci::LowEnergyConnection::WeakPtr link,
-                                         l2cap::Channel::WeakPtr smp,
-                                         IOCapability io_capability,
-                                         Delegate::WeakPtr delegate,
+                                         l2cap::Channel::WeakPtr,
+                                         IOCapability,
+                                         Delegate::WeakPtr,
                                          BondableMode bondable_mode,
                                          gap::LESecurityMode security_mode)
     : SecurityManager(bondable_mode, security_mode),
@@ -50,8 +50,8 @@ void TestSecurityManager::UpgradeSecurity(SecurityLevel level,
   callback(fit::ok(), security());
 }
 
-void TestSecurityManager::Reset(IOCapability io_capability) {}
-void TestSecurityManager::Abort(ErrorCode ecode) {}
+void TestSecurityManager::Reset(IOCapability) {}
+void TestSecurityManager::Abort(ErrorCode) {}
 
 std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
     hci::LowEnergyConnection::WeakPtr link,

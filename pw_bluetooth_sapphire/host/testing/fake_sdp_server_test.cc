@@ -162,7 +162,7 @@ TEST_F(FakeSdpServerTest, ErrorIfTooSmall) {
 
 TEST_F(FakeSdpServerTest, RegisterWithL2cap) {
   std::unique_ptr<ByteBuffer> received_packet;
-  auto send_cb = [&received_packet](auto conn, auto cid, auto& buffer) {
+  auto send_cb = [&received_packet](auto /*conn*/, auto /*cid*/, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   auto fake_l2cap = FakeL2cap(send_cb);

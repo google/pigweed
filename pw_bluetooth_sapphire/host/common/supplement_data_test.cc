@@ -92,7 +92,7 @@ TEST(SupplementDataTest, ReaderParseFields) {
 // Helper for computing the size of a string literal at compile time. sizeof()
 // would have worked too but that counts the null character.
 template <std::size_t N>
-constexpr size_t StringSize(char const (&str)[N]) {
+constexpr size_t StringSize(char const (&)[N]) {
   return N - 1;
 }
 

@@ -34,13 +34,13 @@ l2cap::Psm kPsm = l2cap::kSDP;
 TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](
-                     auto kConnectionHandle, auto cid, auto& buffer) {
+                     auto /*kConnectionHandle*/, auto /*cid*/, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   auto fake_l2cap = FakeL2cap(send_cb);
   auto server = std::make_unique<FakeSignalingServer>();
   server->RegisterWithL2cap(&fake_l2cap);
-  auto channel_cb = [](auto fake_dynamic_channel) {};
+  auto channel_cb = [](auto /*fake_dynamic_channel*/) {};
   fake_l2cap.RegisterService(kPsm, channel_cb);
   l2cap::ChannelId src_id = l2cap::kFirstDynamicChannelId;
   l2cap::ChannelParameters params;
@@ -196,7 +196,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredService) {
   // Create a custom FakeL2cap with no registered services.
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](
-                     auto kConnectionHandle, auto cid, auto& buffer) {
+                     auto /*kConnectionHandle*/, auto /*cid*/, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   auto fake_l2cap_without_service = FakeL2cap(send_cb);
@@ -239,13 +239,13 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
   // Configure FakeSignalingServer to copy any received signaling packets.
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](
-                     auto kConnectionHandle, auto cid, auto& buffer) {
+                     auto /*kConnectionHandle*/, auto /*cid*/, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   auto fake_l2cap = FakeL2cap(send_cb);
   auto server = std::make_unique<FakeSignalingServer>();
   server->RegisterWithL2cap(&fake_l2cap);
-  auto channel_cb = [](auto fake_dynamic_channel) {};
+  auto channel_cb = [](auto /*fake_dynamic_channel*/) {};
   fake_l2cap.RegisterService(kPsm, channel_cb);
   l2cap::ChannelId src_id = l2cap::kInvalidChannelId;
 
@@ -280,13 +280,13 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
 TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](
-                     auto kConnectionHandle, auto cid, auto& buffer) {
+                     auto /*kConnectionHandle*/, auto /*cid*/, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   auto fake_l2cap = FakeL2cap(send_cb);
   auto server = std::make_unique<FakeSignalingServer>();
   server->RegisterWithL2cap(&fake_l2cap);
-  auto channel_cb = [](auto fake_dynamic_channel) {};
+  auto channel_cb = [](auto /*fake_dynamic_channel*/) {};
   fake_l2cap.RegisterService(kPsm, channel_cb);
   l2cap::ChannelId src_id = l2cap::kFirstDynamicChannelId;
   l2cap::ChannelParameters params;
@@ -430,17 +430,17 @@ TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
 }
 
 TEST(FakeDynamicChannelTest, FailWhenOutOfIds) {
-  auto unexpected_cb = [](auto handle, auto& pdu) {};
+  auto unexpected_cb = [](auto /*handle*/, auto& /*pdu*/) {};
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](
-                     auto kConnectionHandle, auto cid, auto& buffer) {
+                     auto /*kConnectionHandle*/, auto /*cid*/, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   auto fewer_ids_fake_l2cap_ =
       FakeL2cap(send_cb, unexpected_cb, l2cap::kFirstDynamicChannelId);
   auto server = std::make_unique<FakeSignalingServer>();
   server->RegisterWithL2cap(&fewer_ids_fake_l2cap_);
-  auto channel_cb = [](auto fake_dynamic_channel) {};
+  auto channel_cb = [](auto /*fake_dynamic_channel*/) {};
   fewer_ids_fake_l2cap_.RegisterService(kPsm, channel_cb);
   l2cap::ChannelId src_id = l2cap::kFirstDynamicChannelId;
 

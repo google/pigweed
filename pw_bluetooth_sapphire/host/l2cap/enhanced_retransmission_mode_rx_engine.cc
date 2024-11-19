@@ -72,7 +72,7 @@ template <typename T>
 constexpr bool kContainsEnhancedControlField =
     std::is_base_of_v<EnhancedControlField, T>;
 
-bool IsMpsValid(const PDU& pdu) {
+bool IsMpsValid(const PDU&) {
   // TODO(quiche): Check PDU's length against the MPS.
   return true;
 }
@@ -173,13 +173,12 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleInformationFrameHeader header,
   return sdu;
 }
 
-ByteBufferPtr Engine::ProcessFrame(const SimpleStartOfSduFrameHeader, PDU pdu) {
+ByteBufferPtr Engine::ProcessFrame(const SimpleStartOfSduFrameHeader, PDU) {
   // TODO(quiche): Implement validation and handling of Start-of-SDU frames.
   return nullptr;
 }
 
-ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe,
-                                   PDU pdu) {
+ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe, PDU) {
   // Core Spec v5, Vol 3, Part A, Sec 8.6.1.5: "S-Frames shall not be
   // transmitted with both the F-bit and the P-bit set to 1 at the same time."
   if (sframe.is_poll_request() && sframe.is_poll_response()) {
@@ -251,7 +250,7 @@ ByteBufferPtr Engine::ProcessFrame(const SimpleSupervisoryFrame sframe,
   return nullptr;
 }
 
-ByteBufferPtr Engine::ProcessFrame(std::monostate, PDU pdu) {
+ByteBufferPtr Engine::ProcessFrame(std::monostate, PDU) {
   // TODO(quiche): Close connection.
   return nullptr;
 }

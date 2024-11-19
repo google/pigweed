@@ -29,8 +29,7 @@ FakeAdapter::FakeAdapter(pw::async::Dispatcher& pw_dispatcher)
       peer_cache_(pw_dispatcher),
       weak_self_(this) {}
 
-bool FakeAdapter::Initialize(InitializeCallback callback,
-                             fit::closure transport_closed_callback) {
+bool FakeAdapter::Initialize(InitializeCallback callback, fit::closure) {
   init_state_ = InitState::kInitializing;
   (void)heap_dispatcher_.Post(
       [this, cb = std::move(callback)](pw::async::Context /*ctx*/,
@@ -51,12 +50,11 @@ FakeAdapter::FakeBrEdr::~FakeBrEdr() {
   }
 }
 
-void FakeAdapter::FakeBrEdr::OpenL2capChannel(
-    PeerId peer_id,
-    l2cap::Psm psm,
-    BrEdrSecurityRequirements security_requirements,
-    l2cap::ChannelParameters params,
-    l2cap::ChannelCallback cb) {
+void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId,
+                                              l2cap::Psm psm,
+                                              BrEdrSecurityRequirements,
+                                              l2cap::ChannelParameters params,
+                                              l2cap::ChannelCallback cb) {
   l2cap::ChannelInfo info(
       params.mode.value_or(l2cap::RetransmissionAndFlowControlMode::kBasic),
       params.max_rx_sdu_size.value_or(l2cap::kDefaultMTU),
@@ -118,7 +116,7 @@ bool FakeAdapter::FakeLowEnergy::Disconnect(PeerId peer_id) {
 }
 
 void FakeAdapter::FakeLowEnergy::OpenL2capChannel(
-    PeerId peer_id,
+    PeerId,
     l2cap::Psm psm,
     l2cap::ChannelParameters params,
     sm::SecurityLevel,
@@ -148,13 +146,13 @@ void FakeAdapter::FakeLowEnergy::OpenL2capChannel(
 }
 
 void FakeAdapter::FakeLowEnergy::StartAdvertising(
-    AdvertisingData data,
-    AdvertisingData scan_rsp,
-    AdvertisingInterval interval,
-    bool extended_pdu,
-    bool anonymous,
+    AdvertisingData,
+    AdvertisingData,
+    AdvertisingInterval,
+    bool,
+    bool,
     bool include_tx_power_level,
-    std::optional<ConnectableAdvertisingParameters> connectable,
+    std::optional<ConnectableAdvertisingParameters>,
     std::optional<DeviceAddress::Type> address_type,
     AdvertisingStatusCallback status_callback) {
   fake_address_delegate_.EnsureLocalAddress(
@@ -212,10 +210,10 @@ void FakeAdapter::SetDeviceClass(DeviceClass dev_class,
 }
 
 void FakeAdapter::GetSupportedDelayRange(
-    const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
-    pw::bluetooth::emboss::LogicalTransportType logical_transport_type,
-    pw::bluetooth::emboss::DataPathDirection direction,
-    const std::optional<std::vector<uint8_t>>& codec_configuration,
+    const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>&,
+    pw::bluetooth::emboss::LogicalTransportType,
+    pw::bluetooth::emboss::DataPathDirection,
+    const std::optional<std::vector<uint8_t>>&,
     GetSupportedDelayRangeCallback cb) {
   cb(PW_STATUS_OK,
      0,

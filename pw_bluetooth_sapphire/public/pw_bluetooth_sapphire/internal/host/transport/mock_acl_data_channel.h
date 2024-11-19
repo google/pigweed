@@ -58,7 +58,7 @@ class MockAclDataChannel final : public AclDataChannel {
   void RegisterConnection(WeakPtr<ConnectionInterface> connection) override;
   void UnregisterConnection(hci_spec::ConnectionHandle handle) override;
   void OnOutboundPacketAvailable() override;
-  void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override {}
+  void ClearControllerPacketCount(hci_spec::ConnectionHandle) override {}
   const DataBufferInfo& GetBufferInfo() const override;
   const DataBufferInfo& GetLeBufferInfo() const override;
   void RequestAclPriority(

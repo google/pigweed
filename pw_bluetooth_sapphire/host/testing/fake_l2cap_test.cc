@@ -49,7 +49,7 @@ class FakeL2capTest : public ::testing::Test {
 
 TEST_F(FakeL2capTest, RegisterHandler) {
   size_t n_pdus = 0;
-  auto cb = [&](auto kConnectionHandle, auto& buffer) {
+  auto cb = [&](auto /*kConnectionHandle*/, auto& buffer) {
     ++n_pdus;
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x23), buffer));
   };
@@ -71,7 +71,7 @@ TEST_F(FakeL2capTest, RegisterHandler) {
 
 TEST_F(FakeL2capTest, CallHandlerMultipleTimes) {
   size_t n_pdus = 0;
-  auto cb = [&](auto kConnectionHandle, auto& buffer) {
+  auto cb = [&](auto /*kConnectionHandle*/, auto& buffer) {
     ++n_pdus;
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x23), buffer));
   };
@@ -95,12 +95,13 @@ TEST_F(FakeL2capTest, CallHandlerMultipleTimes) {
 
 TEST_F(FakeL2capTest, CustomUnexpectedPacketHandler) {
   size_t n_pdus = 0;
-  auto unexpected_cb = [&](auto kConnectionHandle, auto& buffer) {
+  auto unexpected_cb = [&](auto /*kConnectionHandle*/, auto& buffer) {
     ++n_pdus;
     EXPECT_TRUE(ContainersEqual(StaticByteBuffer(0x01, 0x00, 0x01, 0x00, 0x23),
                                 buffer));
   };
-  auto send_cb = [](auto kConnectionHandle, auto cid, auto& buffer) {};
+  auto send_cb =
+      [](auto /*kConnectionHandle*/, auto /*cid*/, auto& /*buffer*/) {};
   auto fake_l2cap_custom_handler =
       FakeL2cap(send_cb, unexpected_cb, l2cap::kLastACLDynamicChannelId);
 
@@ -120,7 +121,7 @@ TEST_F(FakeL2capTest, CustomUnexpectedPacketHandler) {
 
 TEST_F(FakeL2capTest, DefaultUnexpectedPacketHandler) {
   size_t n_pdus = 0;
-  auto cb = [&](auto kConnectionHandle, auto& buffer) { ++n_pdus; };
+  auto cb = [&](auto /*kConnectionHandle*/, auto& /*buffer*/) { ++n_pdus; };
   fake_l2cap().RegisterHandler(l2cap::kConnectionlessChannelId, cb);
   StaticByteBuffer sample_packet = StaticByteBuffer(
       // L2CAP B-Frame header for signaling channel packet.
@@ -143,7 +144,7 @@ TEST_F(FakeL2capTest, DefaultUnexpectedPacketHandler) {
 TEST_F(FakeL2capTest, DefaultSendPacketOnCustomChannel) {
   std::unique_ptr<ByteBuffer> received_packet;
   auto send_cb = [&received_packet](
-                     auto kConnectionHandle, auto cid, auto& buffer) {
+                     auto /*kConnectionHandle*/, auto /*cid*/, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   set_send_frame_callback(send_cb);

@@ -78,14 +78,13 @@ class NoOpPairingDelegate final : public PairingDelegate {
   // PairingDelegate overrides that do nothing.
   ~NoOpPairingDelegate() override = default;
   sm::IOCapability io_capability() const override { return io_capability_; }
-  void CompletePairing(PeerId peer_id, sm::Result<> status) override {}
-  void ConfirmPairing(PeerId peer_id, ConfirmCallback confirm) override {}
-  void DisplayPasskey(PeerId peer_id,
-                      uint32_t passkey,
-                      DisplayMethod method,
-                      ConfirmCallback confirm) override {}
-  void RequestPasskey(PeerId peer_id,
-                      PasskeyResponseCallback respond) override {}
+  void CompletePairing(PeerId, sm::Result<>) override {}
+  void ConfirmPairing(PeerId, ConfirmCallback) override {}
+  void DisplayPasskey(PeerId,
+                      uint32_t,
+                      DisplayMethod,
+                      ConfirmCallback) override {}
+  void RequestPasskey(PeerId, PasskeyResponseCallback) override {}
 
  private:
   const sm::IOCapability io_capability_;
@@ -511,10 +510,9 @@ TEST_F(LegacyPairingStateTest, PairingInitiatorWithNoInputGeneratesRandomPin) {
   EXPECT_FALSE(pairing_state.initiator());
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [](PeerId peer_id,
-         uint32_t value,
-         PairingDelegate::DisplayMethod method,
-         auto cb) { cb(/*confirm=*/true); });
+      [](PeerId, uint32_t, PairingDelegate::DisplayMethod, auto cb) {
+        cb(/*confirm=*/true);
+      });
 
   pairing_state.InitiatePairing(NoOpStatusCallback);
   EXPECT_EQ(1, auth_request_count());
@@ -555,10 +553,9 @@ TEST_F(LegacyPairingStateTest,
   EXPECT_FALSE(pairing_state.initiator());
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [](PeerId peer_id,
-         uint32_t value,
-         PairingDelegate::DisplayMethod method,
-         auto cb) { cb(/*confirm=*/true); });
+      [](PeerId, uint32_t, PairingDelegate::DisplayMethod, auto cb) {
+        cb(/*confirm=*/true);
+      });
 
   pairing_state.InitiatePairing(NoOpStatusCallback);
   EXPECT_EQ(1, auth_request_count());
@@ -599,10 +596,9 @@ TEST_F(LegacyPairingStateTest,
   EXPECT_FALSE(pairing_state.initiator());
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [](PeerId peer_id,
-         uint32_t value,
-         PairingDelegate::DisplayMethod method,
-         auto cb) { cb(/*confirm=*/true); });
+      [](PeerId, uint32_t, PairingDelegate::DisplayMethod, auto cb) {
+        cb(/*confirm=*/true);
+      });
 
   pairing_state.InitiatePairing(NoOpStatusCallback);
   EXPECT_EQ(1, auth_request_count());
@@ -917,10 +913,9 @@ TEST_F(LegacyPairingStateTest,
   EXPECT_FALSE(pairing_state.initiator());
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [](PeerId peer_id,
-         uint32_t value,
-         PairingDelegate::DisplayMethod method,
-         auto cb) { cb(/*confirm=*/true); });
+      [](PeerId, uint32_t, PairingDelegate::DisplayMethod, auto cb) {
+        cb(/*confirm=*/true);
+      });
 
   EXPECT_FALSE(connection()->ltk().has_value());
 
@@ -1160,9 +1155,8 @@ TEST_F(LegacyPairingStateTest, StatusCallbackMayDestroyPairingState) {
 
   std::unique_ptr<LegacyPairingState> pairing_state;
   bool cb_called = false;
-  auto status_cb = [&pairing_state, &cb_called](
-                       hci_spec::ConnectionHandle handle,
-                       hci::Result<> status) {
+  auto status_cb = [&pairing_state, &cb_called](hci_spec::ConnectionHandle,
+                                                hci::Result<> status) {
     EXPECT_TRUE(status.is_error());
     cb_called = true;
 
@@ -1197,9 +1191,8 @@ TEST_F(LegacyPairingStateTest, PairingInitiatorCallbackMayDestroyPairingState) {
                                            MakeAuthRequestCallback(),
                                            NoOpStatusCallback);
   bool cb_called = false;
-  auto status_cb = [&pairing_state, &cb_called](
-                       hci_spec::ConnectionHandle handle,
-                       hci::Result<> status) {
+  auto status_cb = [&pairing_state, &cb_called](hci_spec::ConnectionHandle,
+                                                hci::Result<> status) {
     EXPECT_TRUE(status.is_error());
     cb_called = true;
 
@@ -1385,10 +1378,9 @@ TEST_P(HandlesLegacyEvent, InInitiatorWaitAuthCompleteAfterLegacyPairing) {
   pairing_state().SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
   pairing_delegate->SetDisplayPasskeyCallback(
-      [](PeerId peer_id,
-         uint32_t value,
-         PairingDelegate::DisplayMethod method,
-         auto cb) { cb(/*confirm=*/true); });
+      [](PeerId, uint32_t, PairingDelegate::DisplayMethod, auto cb) {
+        cb(/*confirm=*/true);
+      });
 
   // Advance state machine.
   pairing_state().InitiatePairing(NoOpStatusCallback);
@@ -1415,10 +1407,9 @@ TEST_P(HandlesLegacyEvent, InIdleStateAfterOnePairing) {
   pairing_state().SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
   pairing_delegate->SetDisplayPasskeyCallback(
-      [](PeerId peer_id,
-         uint32_t value,
-         PairingDelegate::DisplayMethod method,
-         auto cb) { cb(/*confirm=*/true); });
+      [](PeerId, uint32_t, PairingDelegate::DisplayMethod, auto cb) {
+        cb(/*confirm=*/true);
+      });
 
   if (event() == PinCodeRequest) {
     pairing_delegate->SetRequestPasskeyCallback(
@@ -1462,10 +1453,9 @@ TEST_P(HandlesLegacyEvent, InFailedStateAfterAuthenticationFailed) {
   pairing_state().SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
   pairing_delegate->SetDisplayPasskeyCallback(
-      [](PeerId peer_id,
-         uint32_t value,
-         PairingDelegate::DisplayMethod method,
-         auto cb) { cb(/*confirm=*/true); });
+      [](PeerId, uint32_t, PairingDelegate::DisplayMethod, auto cb) {
+        cb(/*confirm=*/true);
+      });
 
   // Advance state machine.
   pairing_state().InitiatePairing(NoOpStatusCallback);

@@ -378,7 +378,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, Destructor) {
 TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopInCallback) {
   // Start discovery but don't acquire ownership of the received session. This
   // should terminate the session when |session| goes out of scope.
-  discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) {});
+  discovery_manager()->StartDiscovery(/*active=*/true, [](auto) {});
 
   RunUntilIdle();
   ASSERT_EQ(2u, scan_states().size());
@@ -925,11 +925,11 @@ TEST_F(LowEnergyDiscoveryManagerTest, DirectedAdvertisingEventFromUnknownPeer) {
 
   auto active_session = StartDiscoverySession();
   int active_count = 0;
-  active_session->SetResultCallback([&](auto& peer) { active_count++; });
+  active_session->SetResultCallback([&](auto&) { active_count++; });
 
   auto passive_session = StartDiscoverySession(/*active=*/false);
   int passive_count = 0;
-  passive_session->SetResultCallback([&](auto& peer) { passive_count++; });
+  passive_session->SetResultCallback([&](auto&) { passive_count++; });
 
   RunUntilIdle();
   ASSERT_TRUE(active_session);
@@ -957,11 +957,11 @@ TEST_F(LowEnergyDiscoveryManagerTest,
 
   auto active_session = StartDiscoverySession();
   int active_count = 0;
-  active_session->SetResultCallback([&](auto& peer) { active_count++; });
+  active_session->SetResultCallback([&](auto&) { active_count++; });
 
   auto passive_session = StartDiscoverySession(/*active=*/false);
   int passive_count = 0;
-  passive_session->SetResultCallback([&](auto& peer) { passive_count++; });
+  passive_session->SetResultCallback([&](auto&) { passive_count++; });
 
   RunFor(kTestScanPeriod);
   ASSERT_TRUE(active_session);
@@ -993,11 +993,11 @@ TEST_F(LowEnergyDiscoveryManagerTest,
 
   auto active_session = StartDiscoverySession();
   int active_count = 0;
-  active_session->SetResultCallback([&](auto& peer) { active_count++; });
+  active_session->SetResultCallback([&](auto&) { active_count++; });
 
   auto passive_session = StartDiscoverySession(/*active=*/false);
   int passive_count = 0;
-  passive_session->SetResultCallback([&](auto& peer) { passive_count++; });
+  passive_session->SetResultCallback([&](auto&) { passive_count++; });
 
   RunFor(kTestScanPeriod);
   ASSERT_TRUE(active_session);
@@ -1477,7 +1477,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
 TEST_F(LowEnergyDiscoveryManagerTest,
        StopSessionInsideOfResultCallbackDoesNotCrash) {
   auto session = StartDiscoverySession(/*active=*/false);
-  auto result_cb = [&session](const auto& peer) { session->Stop(); };
+  auto result_cb = [&session](const auto&) { session->Stop(); };
   session->SetResultCallback(std::move(result_cb));
   RunUntilIdle();
 

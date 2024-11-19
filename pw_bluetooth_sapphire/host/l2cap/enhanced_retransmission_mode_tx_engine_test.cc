@@ -238,7 +238,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduDoesNotTransmitBeyondTxWindow) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -259,7 +259,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduDoesNotTransmitBeyondTxWindowEvenIfQueueWrapsSequenceNumbers) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -1292,7 +1292,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduDoesNotTransmitFramesWhenRemoteIsBusy) {
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -1311,7 +1311,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        UpdateAckSeqTransmitsQueuedDataWhenPossible) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -1335,7 +1335,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        UpdateAckSeqTransmissionOfQueuedDataRespectsTxWindow) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -1360,7 +1360,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        NonFinalUpdateAckSeqDoesNotTransmitQueuedFramesWhenRemoteIsBusy) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -1385,7 +1385,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        FinalUpdateAckSeqDoesNotTransmitQueuedFramesWhenRemoteIsBusy) {
   constexpr size_t kTxWindow = 1;
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -1410,7 +1410,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        MaybeSendQueuedDataTransmitsAllQueuedFramesWithinTxWindow) {
   constexpr size_t kTxWindow = 63;
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -1436,7 +1436,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
        MaybeSendQueuedDataDoesNotTransmitBeyondTxWindow) {
   constexpr size_t kTxWindow = 32;
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -1461,7 +1461,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        MaybeSendQueuedDataRespectsRemoteBusy) {
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -1496,7 +1496,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        QueueSduCanSendMoreFramesAfterClearingRemoteBusy) {
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   TxEngine tx_engine(kTestChannelId,
                      kDefaultMTU,
                      kDefaultMaxTransmissions,
@@ -1852,7 +1852,7 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
 TEST_F(EnhancedRetransmissionModeTxEngineTest,
        PollTaskLoopsEvenWhenRemoteIsBusy) {
   size_t n_pdus = 0;
-  channel().HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel().HandleSendFrame([&](auto) { ++n_pdus; });
   bool failure = false;
   auto connection_failure_callback = [&] { failure = true; };
   TxEngine tx_engine(

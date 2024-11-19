@@ -272,7 +272,7 @@ void IsoStreamImpl::SetupDataPath(
        direction,
        on_incoming_data_available_callback =
            std::move(on_incoming_data_available_cb)](
-          auto id, const hci::EventPacket& cmd_complete) mutable {
+          auto, const hci::EventPacket& cmd_complete) mutable {
         if (!self.is_alive()) {
           on_complete_callback(kStreamClosed);
           return;

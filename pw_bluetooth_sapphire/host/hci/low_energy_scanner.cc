@@ -156,7 +156,7 @@ bool LowEnergyScanner::StartScan(const ScanOptions& options,
 
 void LowEnergyScanner::StartScanInternal(const DeviceAddress& local_address,
                                          const ScanOptions& options,
-                                         ScanStatusCallback callback) {
+                                         ScanStatusCallback) {
   // Check if the scan request was canceled by StopScan() while we were waiting
   // for the local address.
   if (state_ != State::kInitiating) {

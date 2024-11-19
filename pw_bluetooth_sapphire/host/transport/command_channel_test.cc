@@ -349,7 +349,7 @@ TEST_F(CommandChannelTest, QueuedCommands) {
   test_device()->SetTransactionCallback(
       [&transaction_count]() { transaction_count++; });
 
-  auto cb = [&reset_count, &cancel_count](CommandChannel::TransactionId id,
+  auto cb = [&reset_count, &cancel_count](CommandChannel::TransactionId /*id*/,
                                           const EventPacket& event) {
     EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
     pw::bluetooth::emboss::OpCode opcode =
@@ -845,7 +845,7 @@ TEST_F(CommandChannelTest, RemoveQueuedQueuedSyncCommand) {
   test_device()->SetTransactionCallback(
       [&transaction_count]() { transaction_count++; });
 
-  auto event_cb = [](CommandChannel::TransactionId id,
+  auto event_cb = [](CommandChannel::TransactionId /*id*/,
                      const EventPacket& event,
                      int* event_count) {
     EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
@@ -938,8 +938,8 @@ TEST_F(CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
   test_device()->SetTransactionCallback(
       [&transaction_count]() { transaction_count++; });
 
-  auto event_cb = [](CommandChannel::TransactionId id,
-                     const EventPacket& event,
+  auto event_cb = [](CommandChannel::TransactionId /*id*/,
+                     const EventPacket& /*event*/,
                      int* event_count) { (*event_count)++; };
 
   // Send two read commands so that the second one is queued up.
@@ -995,8 +995,10 @@ TEST_F(CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
       [&transaction_count] { transaction_count++; });
 
   int event_count = 0;
-  auto event_cb = [&event_count](CommandChannel::TransactionId id,
-                                 const EventPacket& event) { event_count++; };
+  auto event_cb = [&event_count](CommandChannel::TransactionId /*id*/,
+                                 const EventPacket& /*event*/) {
+    event_count++;
+  };
 
   auto packet = MakeReadRemoteSupportedFeatures(0x0001);
   auto id = cmd_channel()->SendCommand(
@@ -1318,7 +1320,7 @@ TEST_F(CommandChannelTest,
   // Initiate the async transaction with kTestEventCode as its completion code
   // (we use hci_spec::kInquiry as a test opcode).
   int async_cmd_cb_count = 0;
-  auto async_cmd_cb = [&](auto id, const EventPacket& event) {
+  auto async_cmd_cb = [&](auto /*id*/, const EventPacket& event) {
     if (async_cmd_cb_count == 0) {
       EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
     } else {
@@ -1683,7 +1685,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
 
   size_t nonexclusive_cb_count = 0;
   CommandChannel::CommandCallback nonexclusive_cb =
-      [&nonexclusive_cb_count](auto callback_id, const EventPacket& event) {
+      [&nonexclusive_cb_count](auto /*callback_id*/, const EventPacket& event) {
         EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
         nonexclusive_cb_count++;
       };
@@ -1839,8 +1841,9 @@ TEST_F(CommandChannelTest, SendCommandFailsIfEventHandlerInstalled) {
 
   // Register event handler for kTestEventCode0.
   auto id0 = cmd_channel()->AddEventHandler(
-      kTestEventCode0,
-      [](const EventPacket& event) { return EventCallbackResult::kContinue; });
+      kTestEventCode0, [](const EventPacket& /*event*/) {
+        return EventCallbackResult::kContinue;
+      });
   EXPECT_NE(0u, id0);
 
   // Try to send a command for kTestEventCode0. SendCommand should fail for a

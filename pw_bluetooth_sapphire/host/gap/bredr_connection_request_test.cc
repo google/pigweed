@@ -150,7 +150,7 @@ TEST_F(BrEdrConnectionRequestLoopTest, CreateHciConnectionRequest) {
                         &kCreateConnectionRsp);
 
   bool failure = false;
-  auto failure_cb = [&failure](hci::Result<> result, PeerId peer_id) {
+  auto failure_cb = [&failure](hci::Result<> result, PeerId) {
     if (result.is_error()) {
       failure = true;
     }
@@ -180,7 +180,7 @@ TEST_F(BrEdrConnectionRequestLoopTest,
                         &kCreateConnectionRsp);
 
   bool failure = false;
-  auto failure_cb = [&failure](hci::Result<> result, PeerId peer_id) {
+  auto failure_cb = [&failure](hci::Result<> result, PeerId) {
     if (result.is_error()) {
       failure = true;
     }
@@ -205,7 +205,7 @@ TEST_F(BrEdrConnectionRequestLoopTest, ShouldntRetryWithNonRetriableErrorCode) {
                         &kCreateConnectionRsp);
 
   bool failure = false;
-  auto failure_cb = [&failure](hci::Result<> result, PeerId peer_id) {
+  auto failure_cb = [&failure](hci::Result<> result, PeerId) {
     if (result.is_error()) {
       failure = true;
     }
@@ -230,7 +230,7 @@ TEST_F(BrEdrConnectionRequestLoopTest, ShouldntRetryAfterThirtySeconds) {
                         &kCreateConnectionRsp);
 
   bool failure = false;
-  auto failure_cb = [&failure](hci::Result<> result, PeerId peer_id) {
+  auto failure_cb = [&failure](hci::Result<> result, PeerId) {
     if (result.is_error()) {
       failure = true;
     }

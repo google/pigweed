@@ -721,7 +721,7 @@ class AttBasedServer final : public Server {
     }
   }
 
-  void OnWriteCommand(att::Bearer::TransactionId tid,
+  void OnWriteCommand(att::Bearer::TransactionId,
                       const att::PacketReader& packet) {
     PW_DCHECK(packet.opcode() == att::kWriteCommand);
 

@@ -1567,7 +1567,7 @@ TEST_F(PeerTest, SetEirDataUpdatesServiceUUIDs) {
 
 TEST_F(PeerTest, LowEnergyStoreBondCallsCallback) {
   int cb_count = 0;
-  set_store_le_bond_cb([&cb_count](const sm::PairingData& data) {
+  set_store_le_bond_cb([&cb_count](const sm::PairingData&) {
     cb_count++;
     return true;
   });

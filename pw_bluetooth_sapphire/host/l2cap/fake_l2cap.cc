@@ -120,7 +120,7 @@ ChannelManager::BrEdrFixedChannels FakeL2cap::AddACLConnection(
     hci_spec::ConnectionHandle handle,
     pw::bluetooth::emboss::ConnectionRole role,
     l2cap::LinkErrorCallback link_error_cb,
-    l2cap::SecurityUpgradeCallback security_cb) {
+    l2cap::SecurityUpgradeCallback) {
   LinkData* link = RegisterInternal(
       handle, role, bt::LinkType::kACL, std::move(link_error_cb));
   auto smp = OpenFakeFixedChannel(link, l2cap::kSMPChannelId);
@@ -132,7 +132,7 @@ ChannelManager::LEFixedChannels FakeL2cap::AddLEConnection(
     pw::bluetooth::emboss::ConnectionRole role,
     l2cap::LinkErrorCallback link_error_cb,
     l2cap::LEConnectionParameterUpdateCallback conn_param_cb,
-    l2cap::SecurityUpgradeCallback security_cb) {
+    l2cap::SecurityUpgradeCallback) {
   LinkData* data = RegisterInternal(
       handle, role, bt::LinkType::kLE, std::move(link_error_cb));
   data->le_conn_param_cb = std::move(conn_param_cb);
@@ -147,8 +147,8 @@ void FakeL2cap::RemoveConnection(hci_spec::ConnectionHandle handle) {
   links_.erase(handle);
 }
 
-void FakeL2cap::AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
-                                             sm::SecurityProperties security) {
+void FakeL2cap::AssignLinkSecurityProperties(hci_spec::ConnectionHandle,
+                                             sm::SecurityProperties) {
   // TODO(armansito): implement
 }
 

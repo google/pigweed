@@ -255,8 +255,8 @@ class LocalServiceManager::ServiceData final {
   // the characteristic identified by |chrc_id|.
   void OnReadCCC(IdType chrc_id,
                  PeerId peer_id,
-                 att::Handle handle,
-                 uint16_t offset,
+                 att::Handle,
+                 uint16_t,
                  att::Attribute::ReadResultCallback result_cb) {
     uint16_t value = 0;
     auto iter = chrc_configs_.find(chrc_id);
@@ -334,7 +334,7 @@ class LocalServiceManager::ServiceData final {
     auto self = weak_self_.GetWeakPtr();
 
     auto read_handler = [self, id, props](PeerId peer_id,
-                                          att::Handle handle,
+                                          att::Handle,
                                           uint16_t offset,
                                           auto result_cb) {
       if (!self.is_alive()) {
@@ -354,7 +354,7 @@ class LocalServiceManager::ServiceData final {
     };
 
     auto write_handler = [self, id, props](PeerId peer_id,
-                                           att::Handle handle,
+                                           att::Handle,
                                            uint16_t offset,
                                            const auto& value,
                                            auto result_cb) {
@@ -420,7 +420,7 @@ class LocalServiceManager::ServiceData final {
   void AddDescriptor(att::AttributeGrouping* grouping, DescriptorPtr desc) {
     auto self = weak_self_.GetWeakPtr();
     auto read_handler = [self, id = desc->id()](PeerId peer_id,
-                                                att::Handle handle,
+                                                att::Handle,
                                                 uint16_t offset,
                                                 auto result_cb) {
       if (!self.is_alive()) {
@@ -432,7 +432,7 @@ class LocalServiceManager::ServiceData final {
     };
 
     auto write_handler = [self, id = desc->id()](PeerId peer_id,
-                                                 att::Handle handle,
+                                                 att::Handle,
                                                  uint16_t offset,
                                                  const auto& value,
                                                  auto result_cb) {
@@ -474,7 +474,7 @@ class LocalServiceManager::ServiceData final {
     auto self = weak_self_.GetWeakPtr();
 
     auto read_handler = [self, id, chrc_handle](const auto& peer_id,
-                                                att::Handle handle,
+                                                att::Handle,
                                                 uint16_t offset,
                                                 auto result_cb) {
       if (!self.is_alive()) {
@@ -487,7 +487,7 @@ class LocalServiceManager::ServiceData final {
 
     auto write_handler = [self, id, chrc_handle, props = chrc.properties()](
                              const auto& peer_id,
-                             att::Handle handle,
+                             att::Handle,
                              uint16_t offset,
                              const auto& value,
                              auto result_cb) {

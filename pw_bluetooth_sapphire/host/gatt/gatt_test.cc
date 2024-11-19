@@ -145,7 +145,7 @@ TEST_F(GattTest, RemoteServiceWatcherNotifiesAddedModifiedAndRemovedService) {
   // descriptor write is performed.
   int write_request_count = 0;
   fake_client()->set_write_request_callback(
-      [&](att::Handle handle, const auto& value, auto status_callback) {
+      [&](att::Handle handle, const auto&, auto status_callback) {
         write_request_count++;
         EXPECT_EQ(kCCCDescriptorHandle, handle);
         status_callback(fit::ok());
@@ -301,7 +301,7 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
   // Return success when a Service Changed Client Characteristic Config
   // descriptor write is performed.
   client_1->set_write_request_callback(
-      [&](att::Handle handle, const auto& value, auto status_callback) {
+      [&](att::Handle, const auto&, auto status_callback) {
         status_callback(fit::ok());
       });
 
@@ -395,7 +395,7 @@ TEST_F(GattTest, ServiceDiscoveryFailureShutsDownConnection) {
     mock_server = unique_mock_server->AsMockWeakPtr();
     return unique_mock_server;
   };
-  fake_client()->set_discover_services_callback([](ServiceKind kind) {
+  fake_client()->set_discover_services_callback([](ServiceKind) {
     return ToResult(att::ErrorCode::kRequestNotSupported);
   });
   gatt()->AddConnection(kPeerId, take_client(), std::move(mock_server_factory));

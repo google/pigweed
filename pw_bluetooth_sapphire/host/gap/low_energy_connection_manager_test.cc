@@ -1589,7 +1589,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   std::optional<hci_spec::LEConnectionParameters> actual;
 
-  auto conn_params_updated_cb = [&](const auto& addr, const auto& params) {
+  auto conn_params_updated_cb = [&](const auto&, const auto& params) {
     actual = params;
   };
   test_device()->set_le_connection_parameters_callback(conn_params_updated_cb);
@@ -1834,7 +1834,7 @@ TEST_F(LowEnergyConnectionManagerTest, PairWithBondableModes) {
   conn_mgr()->Pair(peer->identifier(),
                    sm::SecurityLevel::kEncrypted,
                    sm::BondableMode::Bondable,
-                   [](sm::Result<> cb_status) {});
+                   [](sm::Result<>) {});
   RunUntilIdle();
 
   EXPECT_EQ(BondableMode::Bondable, mock_sm->bondable_mode());
@@ -1843,7 +1843,7 @@ TEST_F(LowEnergyConnectionManagerTest, PairWithBondableModes) {
   conn_mgr()->Pair(peer->identifier(),
                    sm::SecurityLevel::kAuthenticated,
                    sm::BondableMode::NonBondable,
-                   [](sm::Result<> cb_status) {});
+                   [](sm::Result<>) {});
   RunUntilIdle();
 
   EXPECT_EQ(BondableMode::NonBondable, mock_sm->bondable_mode());
@@ -1855,7 +1855,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceWithoutUUID) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
 
   bool cb_called = false;
-  auto expect_uuids = [&cb_called](PeerId peer_id, auto uuids) {
+  auto expect_uuids = [&cb_called](PeerId, auto uuids) {
     ASSERT_TRUE(uuids.empty());
     cb_called = true;
   };
@@ -1887,7 +1887,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndDiscoverByServiceUuid) {
   std::array<UUID, 2> expected_uuids = {kConnectUuid, kGenericAccessService};
 
   bool cb_called = false;
-  auto expect_uuid = [&cb_called, expected_uuids](PeerId peer_id, auto uuids) {
+  auto expect_uuid = [&cb_called, expected_uuids](PeerId, auto uuids) {
     EXPECT_THAT(uuids, ::testing::UnorderedElementsAreArray(expected_uuids));
     cb_called = true;
   };
@@ -2193,7 +2193,7 @@ TEST_F(
 
   std::optional<hci_spec::LEConnectionParameters> conn_params;
   test_device()->set_le_connection_parameters_callback(
-      [&](auto address, auto parameters) { conn_params = parameters; });
+      [&](auto, auto parameters) { conn_params = parameters; });
 
   RunFor(kLEConnectionPauseCentral);
   ASSERT_TRUE(conn_params.has_value());
@@ -2613,7 +2613,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   size_t l2cap_conn_param_update_count = 0;
   fake_l2cap()->set_connection_parameter_update_request_responder(
-      [&](auto handle, auto params) {
+      [&](auto, auto params) {
         EXPECT_EQ(kConnParams, params);
         l2cap_conn_param_update_count++;
         return true;
@@ -2621,7 +2621,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   size_t hci_update_conn_param_count = 0;
   test_device()->set_le_connection_parameters_callback(
-      [&](auto address, auto parameters) { hci_update_conn_param_count++; });
+      [&](auto, auto) { hci_update_conn_param_count++; });
 
   RunUntilIdle();
   ASSERT_TRUE(conn_handle);
@@ -2694,7 +2694,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   size_t hci_update_conn_param_count1 = 0;
 
   fake_l2cap()->set_connection_parameter_update_request_responder(
-      [&](auto handle, auto params) {
+      [&](auto handle, auto) {
         if (handle == conn_handle0->handle()) {
           l2cap_conn_param_update_count0++;
           // connection update commands should be sent before l2cap requests
@@ -2708,20 +2708,19 @@ TEST_F(LowEnergyConnectionManagerTest,
         return true;
       });
 
-  test_device()->set_le_connection_parameters_callback(
-      [&](auto address, auto params) {
-        if (address == kAddress0) {
-          hci_update_conn_param_count0++;
-          // l2cap requests should not be sent until after failed HCI connection
-          // update commands
-          EXPECT_EQ(l2cap_conn_param_update_count0, 0u);
-        } else if (address == kAddress1) {
-          hci_update_conn_param_count1++;
-          EXPECT_EQ(l2cap_conn_param_update_count1, 0u);
-        } else {
-          ADD_FAILURE();
-        }
-      });
+  test_device()->set_le_connection_parameters_callback([&](auto address, auto) {
+    if (address == kAddress0) {
+      hci_update_conn_param_count0++;
+      // l2cap requests should not be sent until after failed HCI connection
+      // update commands
+      EXPECT_EQ(l2cap_conn_param_update_count0, 0u);
+    } else if (address == kAddress1) {
+      hci_update_conn_param_count1++;
+      EXPECT_EQ(l2cap_conn_param_update_count1, 0u);
+    } else {
+      ADD_FAILURE();
+    }
+  });
 
   RunFor(kLEConnectionPausePeripheral);
   ASSERT_TRUE(conn_handle0);
@@ -2784,13 +2783,13 @@ TEST_F(
   size_t hci_update_conn_param_count = 0;
 
   fake_l2cap()->set_connection_parameter_update_request_responder(
-      [&](auto handle, auto params) {
+      [&](auto, auto) {
         l2cap_conn_param_update_count++;
         return true;
       });
 
   test_device()->set_le_connection_parameters_callback(
-      [&](auto address, auto params) { hci_update_conn_param_count++; });
+      [&](auto, auto) { hci_update_conn_param_count++; });
 
   test_device()->SetDefaultCommandStatus(
       hci_spec::kLEConnectionUpdate,
@@ -2847,13 +2846,13 @@ TEST_F(
   size_t hci_update_conn_param_count = 0;
 
   fake_l2cap()->set_connection_parameter_update_request_responder(
-      [&](auto handle, auto params) {
+      [&](auto, auto) {
         l2cap_conn_param_update_count++;
         return true;
       });
 
   test_device()->set_le_connection_parameters_callback(
-      [&](auto address, auto params) { hci_update_conn_param_count++; });
+      [&](auto, auto) { hci_update_conn_param_count++; });
 
   test_device()->SetDefaultCommandStatus(
       hci_spec::kLEConnectionUpdate,
@@ -2905,14 +2904,14 @@ TEST_F(LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation) {
 
   size_t l2cap_conn_param_update_count = 0;
   fake_l2cap()->set_connection_parameter_update_request_responder(
-      [&](auto handle, const auto params) {
+      [&](auto, const auto) {
         l2cap_conn_param_update_count++;
         return true;
       });
 
   size_t hci_update_conn_param_count = 0;
   test_device()->set_le_connection_parameters_callback(
-      [&](auto address, const hci_spec::LEConnectionParameters& params) {
+      [&](auto, const hci_spec::LEConnectionParameters& params) {
         // FakeController will pick an interval between min and max interval.
         EXPECT_TRUE(
             params.interval() >= hci_spec::defaults::kLEConnectionIntervalMin &&
@@ -2946,7 +2945,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   size_t hci_update_conn_param_count = 0;
   test_device()->set_le_connection_parameters_callback(
-      [&](auto address, const hci_spec::LEConnectionParameters& params) {
+      [&](auto, const hci_spec::LEConnectionParameters& params) {
         // FakeController will pick an interval between min and max interval.
         EXPECT_TRUE(
             params.interval() >= hci_spec::defaults::kLEConnectionIntervalMin &&
@@ -3321,7 +3320,7 @@ TEST_F(LowEnergyConnectionManagerTest, AutoConnectSkipsScanning) {
 
   size_t scan_cb_count = 0;
   test_device()->set_scan_state_callback(
-      [&scan_cb_count](bool enabled) { scan_cb_count++; });
+      [&scan_cb_count](bool) { scan_cb_count++; });
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
@@ -4123,7 +4122,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   size_t hci_update_conn_param_count = 0;
   test_device()->set_le_connection_parameters_callback(
-      [&](auto address, auto parameters) { hci_update_conn_param_count++; });
+      [&](auto, auto) { hci_update_conn_param_count++; });
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {

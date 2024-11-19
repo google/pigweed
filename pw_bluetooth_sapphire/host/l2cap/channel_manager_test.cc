@@ -1129,7 +1129,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeRegisteringLink) {
   // We use the ATT channel to control incoming packets and the SMP channel to
   // quit the message loop
   size_t packet_count = 0;
-  auto att_rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
+  auto att_rx_cb = [&packet_count](ByteBufferPtr) { packet_count++; };
 
   bool smp_cb_called = false;
   auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
@@ -1195,7 +1195,7 @@ TEST_F(ChannelManagerRealAclChannelTest,
   StaticByteBuffer<255> buffer;
 
   size_t packet_count = 0;
-  auto rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
+  auto rx_cb = [&packet_count](ByteBufferPtr) { packet_count++; };
   for (size_t i = 0u; i < kPacketCount; i++) {
     test_device()->SendACLDataChannelPacket(StaticByteBuffer(
         // ACL data header (starting fragment)
@@ -1232,7 +1232,7 @@ TEST_F(ChannelManagerRealAclChannelTest, ReceiveDataBeforeSettingRxHandler) {
   // We use the ATT channel to control incoming packets and the SMP channel to
   // quit the message loop
   size_t packet_count = 0;
-  auto att_rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
+  auto att_rx_cb = [&packet_count](ByteBufferPtr) { packet_count++; };
 
   bool smp_cb_called = false;
   auto smp_rx_cb = [&smp_cb_called](ByteBufferPtr sdu) {
@@ -2057,7 +2057,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
   bool channel_closed = false;
   auto closed_cb = [&channel_closed] { channel_closed = true; };
 
-  auto data_rx_cb = [](ByteBufferPtr sdu) {
+  auto data_rx_cb = [](ByteBufferPtr) {
     FAIL() << "Unexpected data reception";
   };
 
@@ -3270,7 +3270,7 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkFails) {
   auto channel = SetUpOutboundChannel();
 
   acl_data_channel()->set_request_acl_priority_cb(
-      [](auto priority, auto handle, auto cb) {
+      [](auto, auto handle, auto cb) {
         EXPECT_EQ(handle, kTestHandle1);
         cb(fit::failed());
       });
@@ -3428,19 +3428,17 @@ TEST_F(ChannelManagerMockAclChannelTest,
 
   std::vector<fit::callback<void(fit::result<fit::failed>)>> command_callbacks;
   acl_data_channel()->set_request_acl_priority_cb(
-      [&](auto priority, auto handle, auto cb) {
-        command_callbacks.push_back(std::move(cb));
-      });
+      [&](auto, auto, auto cb) { command_callbacks.push_back(std::move(cb)); });
 
   size_t result_cb_count_0 = 0;
   channel_0->RequestAclPriority(AclPriority::kSink,
-                                [&](auto res) { result_cb_count_0++; });
+                                [&](auto) { result_cb_count_0++; });
   EXPECT_EQ(command_callbacks.size(), 1u);
   EXPECT_EQ(result_cb_count_0, 0u);
 
   size_t result_cb_count_1 = 0;
   channel_1->RequestAclPriority(AclPriority::kSource,
-                                [&](auto res) { result_cb_count_1++; });
+                                [&](auto) { result_cb_count_1++; });
   EXPECT_EQ(result_cb_count_1, 0u);
   ASSERT_EQ(command_callbacks.size(), 1u);
 

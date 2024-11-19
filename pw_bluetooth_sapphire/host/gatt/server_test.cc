@@ -1085,7 +1085,7 @@ TEST_F(ServerTest, ReadByTypeDynamicValue) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 2, kTestValue1);
   auto* attr = grp->AddAttribute(kTestType16, AllowedNoSecurity());
   attr->set_read_handler(
-      [attr](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
+      [attr](PeerId, auto handle, uint16_t offset, auto result_cb) {
         EXPECT_EQ(attr->handle(), handle);
         EXPECT_EQ(0u, offset);
         result_cb(fit::ok(), StaticByteBuffer('f', 'o', 'r', 'k'));
@@ -1127,10 +1127,9 @@ TEST_F(ServerTest, ReadByTypeDynamicValueError) {
   auto* grp = db()->NewGrouping(types::kPrimaryService, 1, kTestValue);
   auto* attr = grp->AddAttribute(
       kTestType16, AllowedNoSecurity(), att::AccessRequirements());
-  attr->set_read_handler(
-      [](PeerId peer_id, auto handle, uint16_t offset, auto result_cb) {
-        result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
-      });
+  attr->set_read_handler([](PeerId, auto, uint16_t, auto result_cb) {
+    result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
+  });
   grp->set_active(true);
 
   // clang-format off
@@ -1673,7 +1672,7 @@ TEST_F(ServerTest, WriteCommandSuccess) {
                               att::Handle handle,
                               uint16_t offset,
                               const auto& value,
-                              const auto& result_cb) {
+                              const auto&) {
     EXPECT_EQ(kTestPeerId, peer_id);
     EXPECT_EQ(attr->handle(), handle);
     EXPECT_EQ(0u, offset);
@@ -2017,7 +2016,7 @@ TEST_F(ServerTest, ReadBlobDynamicRequestError) {
   auto* attr = grp->AddAttribute(
       kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   attr->set_read_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+      [&](PeerId peer_id, att::Handle handle, uint16_t, auto result_cb) {
         EXPECT_EQ(kTestPeerId, peer_id);
         EXPECT_EQ(attr->handle(), handle);
 
@@ -2259,7 +2258,7 @@ TEST_F(ServerTest, ReadBlobRequestNotPermitedError) {
                                                 /*authentication=*/false,
                                                 /*authorization=*/false));
   attr->set_read_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+      [&](PeerId peer_id, att::Handle handle, uint16_t, auto result_cb) {
         EXPECT_EQ(kTestPeerId, peer_id);
         EXPECT_EQ(attr->handle(), handle);
 
@@ -2337,7 +2336,7 @@ TEST_F(ServerTest, ReadBlobRequestInvalidOffsetError) {
   auto* attr = grp->AddAttribute(
       kTestType16, AllowedNoSecurity(), att::AccessRequirements());
   attr->set_read_handler(
-      [&](PeerId peer_id, att::Handle handle, uint16_t offset, auto result_cb) {
+      [&](PeerId peer_id, att::Handle handle, uint16_t, auto result_cb) {
         EXPECT_EQ(kTestPeerId, peer_id);
         EXPECT_EQ(attr->handle(), handle);
 
@@ -3028,16 +3027,14 @@ class ServerTestSecurity : public ServerTest {
                                                 /*authentication=*/false,
                                                 /*authorization=*/true);
 
-    auto write_handler = [this](const auto&,
-                                att::Handle,
-                                uint16_t,
-                                const auto& value,
-                                auto responder) {
-      write_count_++;
-      if (responder) {
-        responder(fit::ok());
-      }
-    };
+    auto write_handler =
+        [this](
+            const auto&, att::Handle, uint16_t, const auto&, auto responder) {
+          write_count_++;
+          if (responder) {
+            responder(fit::ok());
+          }
+        };
 
     not_permitted_attr_ = grp->AddAttribute(kTestType16);
     not_permitted_attr_->set_write_handler(write_handler);

@@ -773,7 +773,7 @@ TEST_F(ClientTest, DestroyClientInErrorResultCallbackDoesNotCrash) {
       };
 
   bool requested = false;
-  fake_chan()->SetSendCallback([&](auto packet) { requested = true; },
+  fake_chan()->SetSendCallback([&](auto /*packet*/) { requested = true; },
                                dispatcher());
 
   client->ServiceSearchAttributes(
@@ -806,7 +806,7 @@ TEST_F(ClientTest, DestroyClientInDisconnectedResultCallback) {
       };
 
   bool requested = false;
-  fake_chan()->SetSendCallback([&](auto packet) { requested = true; },
+  fake_chan()->SetSendCallback([&](auto /*packet*/) { requested = true; },
                                dispatcher());
 
   client->ServiceSearchAttributes(

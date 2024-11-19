@@ -39,7 +39,7 @@ class FakeSignalingServerTest : public ::testing::Test {
 TEST_F(FakeSignalingServerTest, ExtendedFeaturesInformationRequest) {
   // Copy the received packet to a local variable.
   std::unique_ptr<ByteBuffer> received_packet;
-  auto send_cb = [&received_packet](auto conn, auto cid, auto& buffer) {
+  auto send_cb = [&received_packet](auto /*conn*/, auto /*cid*/, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   auto fake_l2cap = FakeL2cap(send_cb);
@@ -72,7 +72,7 @@ TEST_F(FakeSignalingServerTest, ExtendedFeaturesInformationRequest) {
 TEST_F(FakeSignalingServerTest, FixedChannelInformationRequest) {
   // Copy the received packet to a local variable.
   std::unique_ptr<ByteBuffer> received_packet;
-  auto send_cb = [&received_packet](auto conn, auto cid, auto& buffer) {
+  auto send_cb = [&received_packet](auto /*conn*/, auto /*cid*/, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   auto fake_l2cap = FakeL2cap(send_cb);
@@ -103,7 +103,7 @@ TEST_F(FakeSignalingServerTest, FixedChannelInformationRequest) {
 
 TEST_F(FakeSignalingServerTest, RejectInvalidInformationRequest) {
   std::unique_ptr<ByteBuffer> received_packet;
-  auto send_cb = [&received_packet](auto conn, auto cid, auto& buffer) {
+  auto send_cb = [&received_packet](auto /*conn*/, auto /*cid*/, auto& buffer) {
     received_packet = std::make_unique<DynamicByteBuffer>(buffer);
   };
   auto fake_l2cap = FakeL2cap(send_cb);

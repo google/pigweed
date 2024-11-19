@@ -94,12 +94,12 @@ class FakeAdapter final : public Adapter {
                           sm::SecurityLevel security_level,
                           l2cap::ChannelCallback) override;
 
-    void Pair(PeerId peer_id,
-              sm::SecurityLevel pairing_level,
-              sm::BondableMode bondable_mode,
-              sm::ResultFunction<> cb) override {}
+    void Pair(PeerId,
+              sm::SecurityLevel,
+              sm::BondableMode,
+              sm::ResultFunction<>) override {}
 
-    void SetLESecurityMode(LESecurityMode mode) override {}
+    void SetLESecurityMode(LESecurityMode) override {}
 
     LESecurityMode security_mode() const override {
       return adapter_->le_security_mode_;
@@ -116,7 +116,7 @@ class FakeAdapter final : public Adapter {
         std::optional<DeviceAddress::Type> address_type,
         AdvertisingStatusCallback status_callback) override;
 
-    void StartDiscovery(bool active, SessionCallback callback) override {}
+    void StartDiscovery(bool, SessionCallback) override {}
 
     void EnablePrivacy(bool enabled) override;
 
@@ -134,15 +134,15 @@ class FakeAdapter final : public Adapter {
           std::move(callback));
     }
 
-    void set_irk(const std::optional<UInt128>& irk) override {}
+    void set_irk(const std::optional<UInt128>&) override {}
 
     std::optional<UInt128> irk() const override { return std::nullopt; }
 
     void set_request_timeout_for_testing(
-        pw::chrono::SystemClock::duration value) override {}
+        pw::chrono::SystemClock::duration) override {}
 
     void set_scan_period_for_testing(
-        pw::chrono::SystemClock::duration period) override {}
+        pw::chrono::SystemClock::duration) override {}
 
    private:
     FakeAdapter* adapter_;
@@ -209,14 +209,11 @@ class FakeAdapter final : public Adapter {
     }
 
     // BrEdr overrides:
-    [[nodiscard]] bool Connect(PeerId peer_id,
-                               ConnectResultCallback callback) override {
+    [[nodiscard]] bool Connect(PeerId, ConnectResultCallback) override {
       return false;
     }
 
-    bool Disconnect(PeerId peer_id, DisconnectReason reason) override {
-      return false;
-    }
+    bool Disconnect(PeerId, DisconnectReason) override { return false; }
 
     void OpenL2capChannel(PeerId peer_id,
                           l2cap::Psm psm,
@@ -224,7 +221,7 @@ class FakeAdapter final : public Adapter {
                           l2cap::ChannelParameters params,
                           l2cap::ChannelCallback cb) override;
 
-    PeerId GetPeerId(hci_spec::ConnectionHandle handle) const override {
+    PeerId GetPeerId(hci_spec::ConnectionHandle) const override {
       return PeerId();
     }
 
@@ -232,24 +229,23 @@ class FakeAdapter final : public Adapter {
                               std::unordered_set<sdp::AttributeId> attributes,
                               SearchCallback callback) override;
 
-    bool RemoveServiceSearch(SearchId id) override { return false; }
+    bool RemoveServiceSearch(SearchId) override { return false; }
 
-    void Pair(PeerId peer_id,
-              BrEdrSecurityRequirements security,
-              hci::ResultFunction<> callback) override {}
+    void Pair(PeerId,
+              BrEdrSecurityRequirements,
+              hci::ResultFunction<>) override {}
 
-    void SetBrEdrSecurityMode(BrEdrSecurityMode mode) override {}
+    void SetBrEdrSecurityMode(BrEdrSecurityMode) override {}
 
     BrEdrSecurityMode security_mode() const override {
       return BrEdrSecurityMode::Mode4;
     }
 
-    void SetConnectable(bool connectable,
-                        hci::ResultFunction<> status_cb) override {}
+    void SetConnectable(bool, hci::ResultFunction<>) override {}
 
-    void RequestDiscovery(DiscoveryCallback callback) override {}
+    void RequestDiscovery(DiscoveryCallback) override {}
 
-    void RequestDiscoverable(DiscoverableCallback callback) override {}
+    void RequestDiscoverable(DiscoverableCallback) override {}
 
     RegistrationHandle RegisterService(std::vector<sdp::ServiceRecord> records,
                                        l2cap::ChannelParameters chan_params,
@@ -258,25 +254,23 @@ class FakeAdapter final : public Adapter {
     bool UnregisterService(RegistrationHandle handle) override;
 
     std::vector<sdp::ServiceRecord> GetRegisteredServices(
-        RegistrationHandle handle) const override {
+        RegistrationHandle) const override {
       return {};
     }
 
     std::optional<ScoRequestHandle> OpenScoConnection(
-        PeerId peer_id,
+        PeerId,
         const bt::StaticPacket<
-            pw::bluetooth::emboss::SynchronousConnectionParametersWriter>&
-            parameters,
-        sco::ScoConnectionManager::OpenConnectionCallback callback) override {
+            pw::bluetooth::emboss::SynchronousConnectionParametersWriter>&,
+        sco::ScoConnectionManager::OpenConnectionCallback) override {
       return std::nullopt;
     }
 
     std::optional<ScoRequestHandle> AcceptScoConnection(
-        PeerId peer_id,
+        PeerId,
         std::vector<bt::StaticPacket<
-            pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
-            parameters,
-        sco::ScoConnectionManager::AcceptConnectionCallback callback) override {
+            pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>,
+        sco::ScoConnectionManager::AcceptConnectionCallback) override {
       return std::nullopt;
     }
 
@@ -299,9 +293,9 @@ class FakeAdapter final : public Adapter {
 
   PeerCache* peer_cache() override { return &peer_cache_; }
 
-  bool AddBondedPeer(BondingData bonding_data) override { return true; }
+  bool AddBondedPeer(BondingData) override { return true; }
 
-  void SetPairingDelegate(PairingDelegate::WeakPtr delegate) override {}
+  void SetPairingDelegate(PairingDelegate::WeakPtr) override {}
 
   bool IsDiscoverable() const override { return is_discoverable_; }
 
@@ -321,9 +315,9 @@ class FakeAdapter final : public Adapter {
       const std::optional<std::vector<uint8_t>>& codec_configuration,
       GetSupportedDelayRangeCallback cb) override;
 
-  void set_auto_connect_callback(AutoConnectCallback callback) override {}
+  void set_auto_connect_callback(AutoConnectCallback) override {}
 
-  void AttachInspect(inspect::Node& parent, std::string name) override {}
+  void AttachInspect(inspect::Node&, std::string) override {}
 
   Adapter::WeakPtr AsWeakPtr() override { return weak_self_.GetWeakPtr(); }
 

@@ -109,7 +109,7 @@ class FakeChannel : public Channel {
   void SetBrEdrAutomaticFlushTimeout(
       pw::chrono::SystemClock::duration flush_timeout,
       hci::ResultCallback<> callback) override;
-  void AttachInspect(inspect::Node& parent, std::string name) override {}
+  void AttachInspect(inspect::Node&, std::string) override {}
   void StartA2dpOffload(const A2dpOffloadManager::Configuration& config,
                         hci::ResultCallback<> callback) override;
   void StopA2dpOffload(hci::ResultCallback<> callback) override;

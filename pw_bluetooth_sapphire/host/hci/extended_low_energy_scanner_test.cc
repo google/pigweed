@@ -104,7 +104,7 @@ class ExtendedLowEnergyScannerTest : public TestingBase,
         .filter_duplicates = true,
         .period = period,
         .scan_response_timeout = kPwScanResponseTimeout};
-    return scanner_->StartScan(options, [](auto status) {});
+    return scanner_->StartScan(options, [](auto) {});
   }
 
   const std::unique_ptr<FakePeer>& peer(int i) const { return peers_[i]; }
@@ -239,7 +239,7 @@ TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsNotEnoughData) {
 
   // there wasn't enough data available so we shouldn't have parsed out any
   // advertising reports
-  set_peer_found_callback([&](const LowEnergyScanResult& result) { FAIL(); });
+  set_peer_found_callback([&](const LowEnergyScanResult&) { FAIL(); });
 
   RunUntilIdle();
 }
@@ -332,7 +332,7 @@ TEST_F(ExtendedLowEnergyScannerTest, Incomplete) {
 
   bool callback_called = false;
   set_peer_found_callback(
-      [&](const LowEnergyScanResult& result) { callback_called = true; });
+      [&](const LowEnergyScanResult&) { callback_called = true; });
 
   RunUntilIdle();
   EXPECT_FALSE(callback_called);
@@ -370,7 +370,7 @@ TEST_F(ExtendedLowEnergyScannerTest, IncompleteTruncated) {
 
   bool callback_called = false;
   set_peer_found_callback(
-      [&](const LowEnergyScanResult& result) { callback_called = true; });
+      [&](const LowEnergyScanResult&) { callback_called = true; });
 
   RunUntilIdle();
   EXPECT_FALSE(callback_called);
@@ -409,7 +409,7 @@ TEST_F(ExtendedLowEnergyScannerTest, IncompleteTruncatedNonScannable) {
 
   bool callback_called = false;
   set_peer_found_callback(
-      [&](const LowEnergyScanResult& result) { callback_called = true; });
+      [&](const LowEnergyScanResult&) { callback_called = true; });
 
   RunUntilIdle();
   EXPECT_TRUE(callback_called);

@@ -94,14 +94,13 @@ class NoOpPairingDelegate final : public PairingDelegate {
   // PairingDelegate overrides that do nothing.
   ~NoOpPairingDelegate() override = default;
   sm::IOCapability io_capability() const override { return io_capability_; }
-  void CompletePairing(PeerId peer_id, sm::Result<> status) override {}
-  void ConfirmPairing(PeerId peer_id, ConfirmCallback confirm) override {}
-  void DisplayPasskey(PeerId peer_id,
-                      uint32_t passkey,
-                      DisplayMethod method,
-                      ConfirmCallback confirm) override {}
-  void RequestPasskey(PeerId peer_id,
-                      PasskeyResponseCallback respond) override {}
+  void CompletePairing(PeerId, sm::Result<>) override {}
+  void ConfirmPairing(PeerId, ConfirmCallback) override {}
+  void DisplayPasskey(PeerId,
+                      uint32_t,
+                      DisplayMethod,
+                      ConfirmCallback) override {}
+  void RequestPasskey(PeerId, PasskeyResponseCallback) override {}
 
  private:
   const sm::IOCapability io_capability_;
@@ -251,9 +250,8 @@ TEST_F(PairingStateTest, StatusCallbackMayDestroyPairingState) {
 
   std::unique_ptr<SecureSimplePairingState> pairing_state;
   bool cb_called = false;
-  auto status_cb = [&pairing_state, &cb_called](
-                       hci_spec::ConnectionHandle handle,
-                       hci::Result<> status) {
+  auto status_cb = [&pairing_state, &cb_called](hci_spec::ConnectionHandle,
+                                                hci::Result<> status) {
     EXPECT_TRUE(status.is_error());
     cb_called = true;
 
@@ -288,9 +286,8 @@ TEST_F(PairingStateTest, InitiatorCallbackMayDestroyPairingState) {
                                                  MakeAuthRequestCallback(),
                                                  NoOpStatusCallback);
   bool cb_called = false;
-  auto status_cb = [&pairing_state, &cb_called](
-                       hci_spec::ConnectionHandle handle,
-                       hci::Result<> status) {
+  auto status_cb = [&pairing_state, &cb_called](hci_spec::ConnectionHandle,
+                                                hci::Result<> status) {
     EXPECT_TRUE(status.is_error());
     cb_called = true;
 
@@ -2881,14 +2878,11 @@ TEST_F(
   EXPECT_EQ(0, initiator_status_handler_1.call_count());
 
   pairing_delegate.SetDisplayPasskeyCallback(
-      [](PeerId peer_id,
-         uint32_t value,
-         PairingDelegate::DisplayMethod method,
-         auto cb) { cb(true); });
-  pairing_delegate.SetCompletePairingCallback(
-      [](PeerId peer_id, sm::Result<> status) {
-        EXPECT_EQ(fit::ok(), status);
+      [](PeerId, uint32_t, PairingDelegate::DisplayMethod, auto cb) {
+        cb(true);
       });
+  pairing_delegate.SetCompletePairingCallback(
+      [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   // Pairing for second request should start.
   EXPECT_EQ(2u, auth_request_count());

@@ -678,7 +678,7 @@ TEST_F(ServerTest, RegisterServiceMultipleRecordsSuccess) {
   records.emplace_back(std::move(record2));
 
   size_t cb_count = 0;
-  auto cb = [&](auto /*channel*/, auto& protocol_list) { cb_count++; };
+  auto cb = [&](auto /*channel*/, auto& /*protocol_list*/) { cb_count++; };
 
   auto handle = server()->RegisterService(
       std::move(records), kChannelParams, std::move(cb));
@@ -798,7 +798,7 @@ TEST_F(ServerTest, RegisterObexService) {
   records.emplace_back(std::move(record));
 
   size_t cb_count = 0;
-  auto cb = [&](auto /*channel*/, auto& protocol_list) { cb_count++; };
+  auto cb = [&](auto /*channel*/, auto& /*protocol_list*/) { cb_count++; };
 
   auto handle = server()->RegisterService(
       std::move(records), kChannelParams, std::move(cb));
@@ -857,7 +857,7 @@ TEST_F(ServerTest, RegisterObexServiceWithAttribute) {
   records.emplace_back(std::move(record));
 
   size_t cb_count = 0;
-  auto cb = [&](auto /*channel*/, auto& protocol_list) { cb_count++; };
+  auto cb = [&](auto /*channel*/, auto& /*protocol_list*/) { cb_count++; };
 
   auto handle = server()->RegisterService(
       std::move(records), kChannelParams, std::move(cb));
@@ -902,7 +902,7 @@ TEST_F(ServerTest, RegisterServiceWithMultipleDynamicPsms) {
   records.emplace_back(std::move(record));
 
   size_t cb_count = 0;
-  auto cb = [&](auto /*channel*/, auto& protocol_list) { cb_count++; };
+  auto cb = [&](auto /*channel*/, auto& /*protocol_list*/) { cb_count++; };
 
   auto handle = server()->RegisterService(
       std::move(records), kChannelParams, std::move(cb));
@@ -962,7 +962,7 @@ TEST_F(ServerTest, RegisterNonObexServiceWithAttributeIsIgnored) {
   records.emplace_back(std::move(record));
 
   size_t cb_count = 0;
-  auto cb = [&](auto /*channel*/, auto& protocol_list) { cb_count++; };
+  auto cb = [&](auto /*channel*/, auto& /*protocol_list*/) { cb_count++; };
 
   auto handle = server()->RegisterService(
       std::move(records), kChannelParams, std::move(cb));
@@ -1701,7 +1701,7 @@ TEST_F(ServerTest, ConnectionCallbacks) {
 
   // Register a service
   AddA2DPSink([&channels, &latest_handle](l2cap::Channel::WeakPtr chan,
-                                          const auto& protocol) {
+                                          const auto& /*protocol*/) {
     bt_log(TRACE, "test", "Got channel for the a2dp sink");
     latest_handle = chan->link_handle();
     channels.emplace_back(std::move(chan));

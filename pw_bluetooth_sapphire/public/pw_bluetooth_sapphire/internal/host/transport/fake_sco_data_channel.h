@@ -36,7 +36,7 @@ class FakeScoDataChannel final : public ScoDataChannel {
   void RegisterConnection(WeakPtr<ConnectionInterface> connection) override;
   void UnregisterConnection(hci_spec::ConnectionHandle handle) override;
   void OnOutboundPacketReadable() override;
-  void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override {}
+  void ClearControllerPacketCount(hci_spec::ConnectionHandle) override {}
   uint16_t max_data_length() const override { return max_data_length_; }
 
  private:

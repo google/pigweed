@@ -180,11 +180,9 @@ TEST_F(LowEnergyCommandHandlerTest, InboundConnParamsUpdateReqNotEnoughBytes) {
       UpperBits(kIntervalMin));
 
   bool cb_called = false;
-  auto cb = [&](uint16_t interval_min,
-                uint16_t interval_max,
-                uint16_t peripheral_latency,
-                uint16_t timeout_multiplier,
-                auto responder) { cb_called = true; };
+  auto cb = [&](uint16_t, uint16_t, uint16_t, uint16_t, auto) {
+    cb_called = true;
+  };
 
   cmd_handler()->ServeConnectionParameterUpdateRequest(std::move(cb));
 

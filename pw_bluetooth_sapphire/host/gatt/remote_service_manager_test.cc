@@ -86,7 +86,7 @@ class RemoteServiceManagerTest : public pw::async::test::FakeDispatcherFixture {
 
     ServiceList services;
     mgr()->ListServices(std::vector<UUID>(),
-                        [&services](auto status, ServiceList cb_services) {
+                        [&services](auto, ServiceList cb_services) {
                           services = std::move(cb_services);
                         });
 
@@ -197,7 +197,7 @@ TEST_F(RemoteServiceManagerTest, InitializeNoServices) {
   EXPECT_TRUE(services.empty());
 
   mgr()->ListServices(std::vector<UUID>(),
-                      [&services](auto status, ServiceList cb_services) {
+                      [&services](auto, ServiceList cb_services) {
                         services = std::move(cb_services);
                       });
   EXPECT_TRUE(services.empty());
@@ -254,7 +254,7 @@ TEST_F(RemoteServiceManagerTest, InitializeFailure) {
 
   ServiceList services;
   mgr()->ListServices(std::vector<UUID>(),
-                      [&services](auto status, ServiceList cb_services) {
+                      [&services](auto, ServiceList cb_services) {
                         services = std::move(cb_services);
                       });
   ASSERT_TRUE(services.empty());
@@ -339,7 +339,7 @@ TEST_F(RemoteServiceManagerTest, InitializeByUUIDNoServices) {
   EXPECT_TRUE(services.empty());
 
   mgr()->ListServices(std::vector<UUID>(),
-                      [&services](auto status, ServiceList cb_services) {
+                      [&services](auto, ServiceList cb_services) {
                         services = std::move(cb_services);
                       });
   EXPECT_TRUE(services.empty());
@@ -390,7 +390,7 @@ TEST_F(RemoteServiceManagerTest, InitializeByUUIDFailure) {
 
   ServiceList services;
   mgr()->ListServices(std::vector<UUID>(),
-                      [&services](auto status, ServiceList cb_services) {
+                      [&services](auto, ServiceList cb_services) {
                         services = std::move(cb_services);
                       });
   ASSERT_TRUE(services.empty());
@@ -568,7 +568,7 @@ TEST_F(RemoteServiceManagerTest, ListServicesBeforeInit) {
 
   ServiceList services;
   mgr()->ListServices(std::vector<UUID>(),
-                      [&services](auto status, ServiceList cb_services) {
+                      [&services](auto, ServiceList cb_services) {
                         services = std::move(cb_services);
                       });
   EXPECT_TRUE(services.empty());
@@ -600,7 +600,7 @@ TEST_F(RemoteServiceManagerTest, ListServicesAfterInit) {
 
   ServiceList services;
   mgr()->ListServices(std::vector<UUID>(),
-                      [&services](auto status, ServiceList cb_services) {
+                      [&services](auto, ServiceList cb_services) {
                         services = std::move(cb_services);
                       });
   ASSERT_EQ(1u, services.size());
@@ -1016,7 +1016,7 @@ TEST_F(RemoteServiceManagerTest, DiscoverDescriptorsExtendedPropertiesNotSet) {
 
   // Callback should not be executed.
   size_t read_cb_count = 0;
-  auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
+  auto extended_prop_read_cb = [&](att::Handle, auto callback) {
     callback(fit::ok(), kExtendedPropValue, /*maybe_truncated=*/false);
     read_cb_count++;
   };
@@ -1067,7 +1067,7 @@ TEST_F(RemoteServiceManagerTest,
   SetCharacteristicsAndDescriptors({fake_chrc}, {fake_desc1, fake_desc2});
 
   size_t read_cb_count = 0;
-  auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
+  auto extended_prop_read_cb = [&](att::Handle, auto callback) {
     callback(fit::ok(), kExtendedPropValue, /*maybe_truncated=*/false);
     read_cb_count++;
   };
@@ -1452,15 +1452,14 @@ TEST_F(RemoteServiceManagerTest,
   }
 
   int read_count = 0;
-  fake_client()->set_read_request_callback(
-      [&](att::Handle handle, auto callback) {
-        read_count++;
-        EXPECT_EQ(read_count, 1);
-        callback(fit::ok(), expected_value.view(), /*maybe_truncated=*/true);
-      });
+  fake_client()->set_read_request_callback([&](att::Handle, auto callback) {
+    read_count++;
+    EXPECT_EQ(read_count, 1);
+    callback(fit::ok(), expected_value.view(), /*maybe_truncated=*/true);
+  });
 
   fake_client()->set_read_blob_request_callback(
-      [&](att::Handle handle, uint16_t offset, auto callback) {
+      [&](att::Handle, uint16_t, auto callback) {
         read_count++;
         EXPECT_EQ(read_count, 2);
         callback(ToResult(att::ErrorCode::kAttributeNotLong),
@@ -1496,14 +1495,13 @@ TEST_F(RemoteServiceManagerTest,
       {ReadableChrc()});
 
   int read_count = 0;
-  fake_client()->set_read_request_callback(
-      [&](att::Handle handle, auto callback) {
-        read_count++;
-        EXPECT_EQ(read_count, 1);
-        callback(ToResult(att::ErrorCode::kAttributeNotLong),
-                 BufferView(),
-                 /*maybe_truncated=*/false);
-      });
+  fake_client()->set_read_request_callback([&](att::Handle, auto callback) {
+    read_count++;
+    EXPECT_EQ(read_count, 1);
+    callback(ToResult(att::ErrorCode::kAttributeNotLong),
+             BufferView(),
+             /*maybe_truncated=*/false);
+  });
   fake_client()->set_read_blob_request_callback(
       [&](auto, auto, auto) { FAIL(); });
 
@@ -1512,7 +1510,7 @@ TEST_F(RemoteServiceManagerTest,
       kDefaultCharacteristic,
       kOffset,
       kMaxBytes,
-      [&](att::Result<> cb_status, const auto& value, bool maybe_truncated) {
+      [&](att::Result<> cb_status, const auto&, bool maybe_truncated) {
         status = cb_status;
         EXPECT_FALSE(maybe_truncated);
       });
@@ -1767,7 +1765,7 @@ TEST_F(RemoteServiceManagerTest, ReadLongError) {
       });
 
   fake_client()->set_read_blob_request_callback(
-      [&](att::Handle handle, uint16_t offset, auto callback) {
+      [&](att::Handle handle, uint16_t, auto callback) {
         read_count++;
         EXPECT_EQ(read_count, 2);
         EXPECT_EQ(kDefaultChrcValueHandle, handle);
@@ -1813,7 +1811,7 @@ TEST_F(RemoteServiceManagerTest,
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
-      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
+      [&](const UUID&, att::Handle start, att::Handle, auto callback) {
         switch (read_count++) {
           case 0:
             EXPECT_EQ(kStartHandle, start);
@@ -1873,7 +1871,7 @@ TEST_F(RemoteServiceManagerTest,
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
-      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
+      [&](const UUID&, att::Handle start, att::Handle, auto callback) {
         EXPECT_EQ(kStartHandle, start);
         EXPECT_EQ(0u, read_count++);
         callback(fit::ok(kValues));
@@ -1910,7 +1908,7 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsReadErrorsWithResults) {
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
-      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
+      [&](const UUID&, att::Handle start, att::Handle, auto callback) {
         if (read_count < errors.size()) {
           EXPECT_EQ(kStartHandle + read_count, start);
           callback(fit::error(Client::ReadByTypeError{
@@ -1962,10 +1960,8 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeReturnsProtocolErrorAfterRead) {
     SCOPED_TRACE(bt_lib_cpp_string::StringPrintf("Error Code: %s", name));
     size_t read_count = 0;
     fake_client()->set_read_by_type_request_callback(
-        [&, err_code = code](const UUID& type,
-                             att::Handle start,
-                             att::Handle end,
-                             auto callback) {
+        [&, err_code = code](
+            const UUID&, att::Handle, att::Handle, auto callback) {
           ASSERT_EQ(0u, read_count++);
           switch (read_count++) {
             case 0:
@@ -2002,16 +1998,15 @@ TEST_F(RemoteServiceManagerTest, ReadByTypeHandlesReadErrorWithMissingHandle) {
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
-      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
+      [&](const UUID&, att::Handle, att::Handle, auto callback) {
         ASSERT_EQ(0u, read_count++);
         callback(fit::error(Client::ReadByTypeError{
             att::Error(att::ErrorCode::kReadNotPermitted), std::nullopt}));
       });
 
   std::optional<att::Result<>> status;
-  service->ReadByType(kCharUuid, [&](att::Result<> cb_status, auto values) {
-    status = cb_status;
-  });
+  service->ReadByType(
+      kCharUuid, [&](att::Result<> cb_status, auto) { status = cb_status; });
   RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(att::ErrorCode::kReadNotPermitted), *status);
@@ -2028,16 +2023,15 @@ TEST_F(RemoteServiceManagerTest,
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
-      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
+      [&](const UUID&, att::Handle, att::Handle, auto callback) {
         ASSERT_EQ(0u, read_count++);
         callback(fit::error(Client::ReadByTypeError{
             att::Error(att::ErrorCode::kReadNotPermitted), kEndHandle + 1}));
       });
 
   std::optional<att::Result<>> status;
-  service->ReadByType(kCharUuid, [&](att::Result<> cb_status, auto values) {
-    status = cb_status;
-  });
+  service->ReadByType(
+      kCharUuid, [&](att::Result<> cb_status, auto) { status = cb_status; });
   RunUntilIdle();
   ASSERT_TRUE(status.has_value());
   EXPECT_EQ(ToResult(HostError::kPacketMalformed), *status);
@@ -2289,7 +2283,7 @@ TEST_F(RemoteServiceManagerTest, WriteCharLongReliableWrite) {
 
   // The callback should be triggered once to read the value of the descriptor
   // containing the ExtendedProperties bitfield.
-  auto extended_prop_read_cb = [&](att::Handle handle, auto callback) {
+  auto extended_prop_read_cb = [&](att::Handle, auto callback) {
     callback(fit::ok(), kExtendedPropValue, /*maybe_truncated=*/false);
   };
   fake_client()->set_read_request_callback(std::move(extended_prop_read_cb));
@@ -3040,7 +3034,7 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsRequestManyError) {
 
   int cb_count = 0;
   att::Result<> status = fit::ok();
-  auto cb = [&](att::Result<> cb_status, IdType id) {
+  auto cb = [&](att::Result<> cb_status, IdType) {
     status = cb_status;
     cb_count++;
   };
@@ -3090,7 +3084,7 @@ TEST_F(RemoteServiceManagerTest, EnableNotificationsWithoutCCC) {
       [&](auto, auto&, auto) { write_requested = true; });
 
   int notify_count = 0;
-  auto notify_cb = [&](const auto& value, bool /*maybe_truncated*/) {
+  auto notify_cb = [&](const auto& /*value*/, bool /*maybe_truncated*/) {
     notify_count++;
   };
 
@@ -3367,7 +3361,7 @@ TEST_F(RemoteServiceManagerTest, DisableNotificationsManyHandlers) {
 
   int ccc_write_count = 0;
   fake_client()->set_write_request_callback(
-      [&](att::Handle handle, const auto& value, auto status_callback) {
+      [&](att::Handle, const auto&, auto status_callback) {
         ccc_write_count++;
         status_callback(fit::ok());
       });
@@ -3415,7 +3409,7 @@ TEST_F(RemoteServiceManagerTest,
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
-      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
+      [&](const UUID&, att::Handle start, att::Handle, auto callback) {
         ASSERT_EQ(0u, read_count++);
         EXPECT_EQ(kStartHandle, start);
         callback(fit::error(Client::ReadByTypeError{
@@ -3452,7 +3446,7 @@ TEST_F(RemoteServiceManagerTest,
 
   size_t read_count = 0;
   fake_client()->set_read_by_type_request_callback(
-      [&](const UUID& type, att::Handle start, att::Handle end, auto callback) {
+      [&](const UUID&, att::Handle start, att::Handle, auto callback) {
         ASSERT_EQ(0u, read_count++);
         EXPECT_EQ(kStartHandle, start);
         callback(fit::ok(kValues));
@@ -3690,7 +3684,7 @@ TEST_F(RemoteServiceManagerServiceChangedTest, AddModifyAndRemoveService) {
   svc_watcher_data()[0].added[0]->EnableNotifications(
       bt::gatt::CharacteristicHandle(kSvc1ChrcValueHandle),
       NopValueCallback,
-      [&](att::Result<> cb_status, IdType cb_id) {
+      [&](att::Result<> cb_status, IdType) {
         original_notification_status = cb_status;
       });
   RunUntilIdle();
@@ -3731,7 +3725,7 @@ TEST_F(RemoteServiceManagerServiceChangedTest, AddModifyAndRemoveService) {
   svc_watcher_data()[1].modified[0]->EnableNotifications(
       bt::gatt::CharacteristicHandle(kSvc1ChrcValueHandle),
       NopValueCallback,
-      [&](att::Result<> cb_status, IdType cb_id) {
+      [&](att::Result<> cb_status, IdType) {
         modified_notification_status = cb_status;
       });
   RunUntilIdle();
@@ -4246,7 +4240,7 @@ TEST_F(RemoteServiceManagerTest,
   // descriptor write is performed.
   int write_request_count = 0;
   fake_client()->set_write_request_callback(
-      [&](att::Handle handle, const auto& value, auto status_callback) {
+      [&](att::Handle handle, const auto&, auto status_callback) {
         write_request_count++;
         EXPECT_EQ(kCCCDescriptorHandle, handle);
         status_callback(ToResult(att::ErrorCode::kWriteNotPermitted));

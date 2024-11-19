@@ -286,10 +286,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, GetLegacyAdvertisingEventPropertiesAdvInd) {
                              /*anonymous=*/false,
                              /*include_tx_power_level=*/false);
   LowEnergyAdvertiser::AdvertisingEventProperties properties =
-      LowEnergyAdvertiser::GetAdvertisingEventProperties(this->GetExampleData(),
-                                                         this->GetExampleData(),
-                                                         options,
-                                                         [](auto value) {});
+      LowEnergyAdvertiser::GetAdvertisingEventProperties(
+          this->GetExampleData(), this->GetExampleData(), options, [](auto) {});
   EXPECT_TRUE(properties.connectable);
   EXPECT_TRUE(properties.scannable);
   EXPECT_FALSE(properties.directed);
@@ -402,7 +400,7 @@ TYPED_TEST(LowEnergyAdvertiserTest,
                              /*include_tx_power_level=*/false);
   LowEnergyAdvertiser::AdvertisingEventProperties properties =
       LowEnergyAdvertiser::GetAdvertisingEventProperties(
-          empty, empty, options, [](auto value) {});
+          empty, empty, options, [](auto) {});
   EXPECT_TRUE(properties.connectable);
   EXPECT_FALSE(properties.scannable);
   EXPECT_FALSE(properties.directed);

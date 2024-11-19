@@ -601,7 +601,7 @@ void LowEnergyConnection::UpdateConnectionParams(
   view.max_connection_event_length().Write(0x0000);
 
   auto status_cb_wrapper = [handle = handle(), cb = std::move(status_cb)](
-                               auto id, const hci::EventPacket& event) mutable {
+                               auto, const hci::EventPacket& event) mutable {
     PW_CHECK(event.event_code() == hci_spec::kCommandStatusEventCode);
     HCI_IS_ERROR(event,
                  TRACE,

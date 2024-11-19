@@ -19,7 +19,7 @@
 namespace bt::gap {
 namespace {
 
-void AddFailure(const char* func_name, PeerId peer_id) {
+void AddFailure(const char*, PeerId peer_id) {
   return ADD_FAILURE() << "Unexpected call to " << __func__
                        << ", peer_id: " << peer_id.ToString();
 }

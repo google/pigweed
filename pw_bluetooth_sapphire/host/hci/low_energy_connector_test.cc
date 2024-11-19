@@ -127,11 +127,10 @@ class LowEnergyConnectorTest : public TestingBase,
   }
 
  private:
-  void OnIncomingConnectionCreated(
-      hci_spec::ConnectionHandle handle,
-      pw::bluetooth::emboss::ConnectionRole role,
-      const DeviceAddress& peer_address,
-      const hci_spec::LEConnectionParameters& conn_params) {
+  void OnIncomingConnectionCreated(hci_spec::ConnectionHandle handle,
+                                   pw::bluetooth::emboss::ConnectionRole role,
+                                   const DeviceAddress& peer_address,
+                                   const hci_spec::LEConnectionParameters&) {
     in_connections_.push_back(
         std::make_unique<testing::FakeLowEnergyConnection>(
             handle,
@@ -141,9 +140,9 @@ class LowEnergyConnectorTest : public TestingBase,
             transport()->GetWeakPtr()));
   }
 
-  void OnConnectionStateChanged(const DeviceAddress& address,
-                                hci_spec::ConnectionHandle handle,
-                                bool connected,
+  void OnConnectionStateChanged(const DeviceAddress&,
+                                hci_spec::ConnectionHandle,
+                                bool,
                                 bool canceled) {
     request_canceled_ = canceled;
   }

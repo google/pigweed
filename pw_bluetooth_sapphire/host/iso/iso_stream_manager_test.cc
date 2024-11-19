@@ -58,9 +58,9 @@ class IsoStreamManagerTest : public MockControllerTestBase {
     status = iso_stream_manager_->AcceptCis(
         id,
         [id, cb_invoked, this](
-            pw::bluetooth::emboss::StatusCode status,
+            pw::bluetooth::emboss::StatusCode,
             std::optional<WeakSelf<IsoStream>::WeakPtr> iso_weak_ptr,
-            const std::optional<CisEstablishedParameters>& cis_parameters) {
+            const std::optional<CisEstablishedParameters>&) {
           if (cb_invoked) {
             *cb_invoked = true;
           }

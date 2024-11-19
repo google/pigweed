@@ -114,7 +114,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket&) { cb_called++; };
 
   // Sequence 1 (test)
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
@@ -274,7 +274,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket&) { cb_called++; };
 
   // Sequence 1: Sequence will be cancelled after the first command.
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
@@ -309,7 +309,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   // canceling a sequence from a CommandCompleteCallback.
   cmd_runner.QueueCommand(
       CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
-      [&](const EventPacket& event) {
+      [&](const EventPacket&) {
         bt_log(TRACE, "hci-test", "callback called");
         cmd_runner.Cancel();
         EXPECT_TRUE(cmd_runner.IsReady());
@@ -341,7 +341,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   // sequence and initiating a new one from a CommandCompleteCallback.
   cmd_runner.QueueCommand(
       CommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(kTestOpCode),
-      [&](const EventPacket& event) {
+      [&](const EventPacket&) {
         cmd_runner.Cancel();
         EXPECT_TRUE(cmd_runner.IsReady());
         EXPECT_FALSE(cmd_runner.HasQueuedCommands());
@@ -578,7 +578,7 @@ TEST_F(SequentialCommandRunnerTest, CommandCompletesOnStatusEvent) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket&) { cb_called++; };
 
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
@@ -641,7 +641,7 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket&) { cb_called++; };
 
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
@@ -716,7 +716,7 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket&) { cb_called++; };
 
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
@@ -787,7 +787,7 @@ TEST_F(SequentialCommandRunnerTest,
   };
 
   int cb_called = 0;
-  auto cb = [&](const EventPacket& event) {
+  auto cb = [&](const EventPacket&) {
     if (cb_called == 0) {
       cmd_runner.reset();
     }
@@ -839,7 +839,7 @@ TEST_F(SequentialCommandRunnerTest,
   };
 
   int cb_called = 0;
-  auto cb = [&](const EventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket&) { cb_called++; };
 
   auto command = bt::testing::EmptyCommandPacket(kTestOpCode);
   cmd_runner->QueueCommand(
@@ -890,10 +890,10 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
   };
 
   int cb_called = 0;
-  auto cb = [&](const EventPacket& event) { cb_called++; };
+  auto cb = [&](const EventPacket&) { cb_called++; };
 
   int name_cb_called = 0;
-  auto name_request_callback = [&](const EventPacket& event) {
+  auto name_request_callback = [&](const EventPacket&) {
     name_cb_called++;
 
     EXPECT_FALSE(cmd_runner.IsReady());

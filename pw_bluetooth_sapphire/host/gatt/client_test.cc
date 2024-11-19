@@ -2483,7 +2483,7 @@ TEST_F(ClientTest, PrepareWriteRequestExceedsMtu) {
   att()->set_mtu(kMtu);
 
   att::Result<> status = fit::ok();
-  auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) {
+  auto cb = [&status](att::Result<> cb_status, const ByteBuffer&) {
     status = cb_status;
   };
 
@@ -2515,7 +2515,7 @@ TEST_F(ClientTest, PrepareWriteRequestError) {
                                    0x06   // error: Request Not Supported
   );
   std::optional<att::Result<>> status;
-  auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) {
+  auto cb = [&status](att::Result<> cb_status, const ByteBuffer&) {
     status = cb_status;
   };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);
@@ -2550,7 +2550,7 @@ TEST_F(ClientTest, PrepareWriteRequestSuccess) {
                                    'o'  // value: "foo"
   );
   att::Result<> status = fit::ok();
-  auto cb = [&status](att::Result<> cb_status, const ByteBuffer& value) {
+  auto cb = [&status](att::Result<> cb_status, const ByteBuffer&) {
     status = cb_status;
   };
   EXPECT_PACKET_OUT(kExpectedRequest, &kResponse);

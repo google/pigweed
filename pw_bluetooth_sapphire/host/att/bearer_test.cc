@@ -853,7 +853,7 @@ TEST_F(BearerTest, RemoteTransactionNoHandler) {
 
 TEST_F(BearerTest, RemoteTransactionSeqProtocolError) {
   int request_count = 0;
-  auto handler = [&request_count](auto id, const PacketReader& packet) {
+  auto handler = [&request_count](auto, const PacketReader& packet) {
     EXPECT_EQ(kTestRequest, packet.opcode());
     EXPECT_EQ(0u, packet.payload_size());
 
@@ -881,7 +881,7 @@ TEST_F(BearerTest, RemoteTransactionSeqProtocolError) {
 
 TEST_F(BearerTest, RemoteIndicationSeqProtocolError) {
   int ind_count = 0;
-  auto handler = [&ind_count](auto id, const PacketReader& packet) {
+  auto handler = [&ind_count](auto, const PacketReader& packet) {
     EXPECT_EQ(kIndication, packet.opcode());
     EXPECT_EQ(0u, packet.payload_size());
 
@@ -1254,7 +1254,7 @@ class BearerTestSecurity : public BearerTest {
     BearerTest::SetUp();
 
     fake_chan()->SetSecurityCallback(
-        [this](hci_spec::ConnectionHandle handle,
+        [this](hci_spec::ConnectionHandle,
                sm::SecurityLevel level,
                sm::ResultFunction<> callback) {
           security_request_count_++;
@@ -1271,7 +1271,7 @@ class BearerTestSecurity : public BearerTest {
   // receives.
   void SetUpErrorResponder(ErrorCode ecode, Handle handle = 1) {
     fake_chan()->SetSendCallback(
-        [this, ecode, handle](auto packet) {
+        [this, ecode, handle](auto) {
           att_request_count_++;
           fake_chan()->Receive(StaticByteBuffer(
               kErrorResponse,  // opcode (Error Response)
@@ -1289,7 +1289,7 @@ class BearerTestSecurity : public BearerTest {
   // not needed for this test fixture.
   void SetUpResponder() {
     fake_chan()->SetSendCallback(
-        [this](auto packet) {
+        [this](auto) {
           att_request_count_++;
           fake_chan()->Receive(StaticByteBuffer(kTestResponse));
         },

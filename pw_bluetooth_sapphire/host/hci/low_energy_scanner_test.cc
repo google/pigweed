@@ -785,7 +785,7 @@ TYPED_TEST(LowEnergyScannerTest, CallbackStopsScanning) {
   // crashing, it will likely be due to a use-after-free type bug. Such a bug
   // may or may not manifest itself in a non-asan build.
   this->set_peer_found_callback(
-      [&](const LowEnergyScanResult& result) { this->scanner()->StopScan(); });
+      [&](const LowEnergyScanResult&) { this->scanner()->StopScan(); });
 
   EXPECT_TRUE(this->StartScan(true, kPwScanPeriod));
   this->RunFor(kScanPeriod);

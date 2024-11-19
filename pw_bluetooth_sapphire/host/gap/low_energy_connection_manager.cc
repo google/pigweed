@@ -782,8 +782,7 @@ Peer* LowEnergyConnectionManager::UpdatePeerWithLink(
 }
 
 void LowEnergyConnectionManager::OnPeerDisconnect(
-    const hci::Connection* connection,
-    pw::bluetooth::emboss::StatusCode reason) {
+    const hci::Connection* connection, pw::bluetooth::emboss::StatusCode) {
   auto handle = connection->handle();
   if (test_disconn_cb_) {
     test_disconn_cb_(handle);

@@ -63,7 +63,7 @@ TEST(BasicModeTxEngineTest, ProcessSduTransmitsMaximalSizedSdu) {
 TEST(BasicModeTxEngineTest, ProcessSduDropsOversizedSdu) {
   FakeTxChannel channel;
   size_t n_pdus = 0;
-  channel.HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel.HandleSendFrame([&](auto) { ++n_pdus; });
 
   constexpr size_t kMtu = 1;
   channel.QueueSdu(std::make_unique<DynamicByteBuffer>(StaticByteBuffer(1, 2)));
@@ -74,7 +74,7 @@ TEST(BasicModeTxEngineTest, ProcessSduDropsOversizedSdu) {
 TEST(BasicModeTxEngineTest, ProcessSduSurvivesZeroByteSdu) {
   FakeTxChannel channel;
   size_t n_pdus = 0;
-  channel.HandleSendFrame([&](auto pdu) { ++n_pdus; });
+  channel.HandleSendFrame([&](auto) { ++n_pdus; });
   constexpr size_t kMtu = 1;
   channel.QueueSdu(std::make_unique<DynamicByteBuffer>());
   BasicModeTxEngine(kTestChannelId, kMtu, channel).NotifySduQueued();

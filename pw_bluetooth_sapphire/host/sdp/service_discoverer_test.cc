@@ -123,7 +123,7 @@ TEST_F(ServiceDiscovererTest, NoResults) {
 
   client->SetServiceSearchAttributesCallback(
       [dispatcher = heap_dispatcher(), &searches](
-          auto pattern, auto attributes, auto callback) mutable {
+          auto pattern, auto /*attributes*/, auto callback) mutable {
         searches.emplace_back(std::move(pattern));
         (void)dispatcher.Post(
             [cb = std::move(callback)](pw::async::Context /*ctx*/,
@@ -158,7 +158,7 @@ TEST_F(ServiceDiscovererTest, SynchronousErrorResult) {
   auto client = GetFakeClient();
   std::vector<std::unordered_set<UUID>> searches;
   client->SetServiceSearchAttributesCallback(
-      [&searches](auto pattern, auto attributes, auto callback) {
+      [&searches](auto pattern, auto /*attributes*/, auto callback) {
         searches.emplace_back(std::move(pattern));
         callback(fit::error(Error(HostError::kLinkDisconnected)));
       });
@@ -209,7 +209,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   client->SetServiceSearchAttributesCallback(
       [dispatcher = heap_dispatcher(), &searches](
-          auto pattern, auto attributes, auto callback) mutable {
+          auto pattern, auto /*attributes*/, auto callback) mutable {
         searches.emplace_back(std::move(pattern));
         (void)dispatcher.Post(
             [cb = std::move(callback)](pw::async::Context /*ctx*/,
@@ -234,7 +234,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   client->SetServiceSearchAttributesCallback(
       [cb_dispatcher = heap_dispatcher(), &searches](
-          auto pattern, auto attributes, auto callback) mutable {
+          auto pattern, auto /*attributes*/, auto callback) mutable {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kSerialPort)) {
           (void)cb_dispatcher.Post([cb = std::move(callback)](
@@ -299,7 +299,7 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
 
   client->SetServiceSearchAttributesCallback(
       [cb_dispatcher = heap_dispatcher(), &searches](
-          auto pattern, auto attributes, auto callback) mutable {
+          auto pattern, auto /*attributes*/, auto callback) mutable {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kAudioSink)) {
           (void)cb_dispatcher.Post([cb = std::move(callback)](
@@ -362,7 +362,7 @@ TEST_F(ServiceDiscovererTest, SingleSearchDifferentPeers) {
 
   auto search_attributes_cb =
       [cb_dispatcher = heap_dispatcher(), &searches](
-          auto pattern, auto attributes, auto callback) mutable {
+          auto pattern, auto /*attributes*/, auto callback) mutable {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kSerialPort)) {
           (void)cb_dispatcher.Post(
@@ -419,7 +419,7 @@ TEST_F(ServiceDiscovererTest, SingleSearchSamePeer) {
 
   auto search_attributes_cb =
       [cb_dispatcher = heap_dispatcher(), &searches](
-          auto pattern, auto attributes, auto callback) mutable {
+          auto pattern, auto /*attributes*/, auto callback) mutable {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kSerialPort)) {
           (void)cb_dispatcher.Post(
@@ -477,7 +477,7 @@ TEST_F(ServiceDiscovererTest, Disconnected) {
 
   client->SetServiceSearchAttributesCallback(
       [cb_dispatcher = heap_dispatcher(), &searches](
-          auto pattern, auto attributes, auto callback) mutable {
+          auto pattern, auto /*attributes*/, auto callback) mutable {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kSerialPort)) {
           (void)cb_dispatcher.Post(
@@ -540,7 +540,7 @@ TEST_F(ServiceDiscovererTest, UnregisterInProgress) {
 
   client->SetServiceSearchAttributesCallback(
       [cb_dispatcher = heap_dispatcher(), &searches](
-          auto pattern, auto attributes, auto callback) mutable {
+          auto pattern, auto /*attributes*/, auto callback) mutable {
         searches.emplace_back(pattern);
         if (pattern.count(profile::kAudioSink)) {
           (void)cb_dispatcher.Post([cb = std::move(callback)](

@@ -624,7 +624,7 @@ void BrEdrConnectionManager::WritePageTimeout(
 
   hci_->command_channel()->SendCommand(
       std::move(write_page_timeout_cmd),
-      [callback = std::move(cb)](auto id, const hci::EventPacket& event) {
+      [callback = std::move(cb)](auto, const hci::EventPacket& event) {
         callback(event.ToResult());
       });
 }
@@ -697,8 +697,7 @@ void BrEdrConnectionManager::WritePinType(
   params.pin_type().Write(pin_type);
 
   hci_->command_channel()->SendCommand(
-      std::move(write_pin_type_cmd),
-      [](auto id, const hci::EventPacket& event) {
+      std::move(write_pin_type_cmd), [](auto, const hci::EventPacket& event) {
         [[maybe_unused]] bool _ = bt_is_error(
             event.ToResult(), WARN, "gap-bredr", "Write PIN Type failed");
       });
@@ -913,7 +912,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(
   // TODO(fxbug.dev/42113313): Implement this callback as a call to
   // InitiatePairing().
   auto security_callback = [peer_id](hci_spec::ConnectionHandle conn_handle,
-                                     sm::SecurityLevel level,
+                                     sm::SecurityLevel,
                                      auto cb) {
     bt_log(INFO,
            "gap-bredr",

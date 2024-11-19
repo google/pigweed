@@ -131,14 +131,14 @@ class TestDynamicChannelRegistry final : public DynamicChannelRegistry {
   // DynamicChannelRegistry overrides
   DynamicChannelPtr MakeOutbound(Psm psm,
                                  ChannelId local_cid,
-                                 ChannelParameters params) override {
+                                 ChannelParameters) override {
     return MakeChannelInternal(psm, local_cid, kInvalidChannelId);
   }
 
   DynamicChannelPtr MakeInbound(Psm psm,
                                 ChannelId local_cid,
                                 ChannelId remote_cid,
-                                ChannelParameters params) override {
+                                ChannelParameters) override {
     auto channel = MakeChannelInternal(psm, local_cid, remote_cid);
     channel->DoConnect(remote_cid);
     return channel;
@@ -156,7 +156,7 @@ class TestDynamicChannelRegistry final : public DynamicChannelRegistry {
 };
 
 // DynamicChannelCallback static handler
-void DoNothing(const DynamicChannel* channel) {}
+void DoNothing(const DynamicChannel*) {}
 
 // ServiceRequestCallback static handler
 std::optional<DynamicChannelRegistry::ServiceInfo> RejectAllServices(
@@ -303,7 +303,7 @@ TEST(DynamicChannelRegistryTest, AcceptServiceRequestThenOpenOk) {
 TEST(DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
   bool open_result_cb_called = false;
   DynamicChannelRegistry::DynamicChannelCallback open_result_cb =
-      [&open_result_cb_called](const DynamicChannel* chan) {
+      [&open_result_cb_called](const DynamicChannel*) {
         open_result_cb_called = true;
       };
 
@@ -338,7 +338,7 @@ TEST(DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
 TEST(DynamicChannelRegistryTest,
      DestroyRegistryWithOpenChannelNoDisconnectionRequest) {
   bool close_cb_called = false;
-  auto close_cb = [&close_cb_called](const DynamicChannel* chan) {
+  auto close_cb = [&close_cb_called](const DynamicChannel*) {
     close_cb_called = true;
   };
 

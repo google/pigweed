@@ -210,11 +210,11 @@ class LowEnergyScanner : public LocalAddressClient {
     // Called when a peer is found. During a passive scan |data| contains the
     // advertising data. During an active scan |data| contains the combined
     // advertising and scan response data (if the peer is scannable).
-    virtual void OnPeerFound(const LowEnergyScanResult& result) {}
+    virtual void OnPeerFound(const LowEnergyScanResult&) {}
 
     // Called when a directed advertising report is received from the peer with
     // the given address.
-    virtual void OnDirectedAdvertisement(const LowEnergyScanResult& result) {}
+    virtual void OnDirectedAdvertisement(const LowEnergyScanResult&) {}
   };
 
   LowEnergyScanner(LocalAddressDelegate* local_addr_delegate,

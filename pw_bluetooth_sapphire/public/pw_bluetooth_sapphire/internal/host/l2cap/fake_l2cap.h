@@ -28,7 +28,7 @@ class FakeL2cap final : public ChannelManager {
       : heap_dispatcher_(pw_dispatcher) {}
   ~FakeL2cap() override;
 
-  void AttachInspect(inspect::Node& parent, std::string name) override {}
+  void AttachInspect(inspect::Node&, std::string) override {}
 
   // Returns true if and only if a link identified by |handle| has been added
   // and connected.
@@ -84,9 +84,8 @@ class FakeL2cap final : public ChannelManager {
       hci_spec::LEPreferredConnectionParameters params,
       ConnectionParameterUpdateRequestCallback request_cb) override;
 
-  Channel::WeakPtr OpenFixedChannel(
-      hci_spec::ConnectionHandle connection_handle,
-      ChannelId channel_id) override {
+  Channel::WeakPtr OpenFixedChannel(hci_spec::ConnectionHandle,
+                                    ChannelId) override {
     return Channel::WeakPtr();
   }
   void OpenL2capChannel(hci_spec::ConnectionHandle handle,
@@ -99,7 +98,7 @@ class FakeL2cap final : public ChannelManager {
   void UnregisterService(Psm psm) override;
 
   WeakSelf<internal::LogicalLink>::WeakPtr LogicalLinkForTesting(
-      hci_spec::ConnectionHandle handle) override {
+      hci_spec::ConnectionHandle) override {
     return WeakSelf<internal::LogicalLink>::WeakPtr();
   }
 

@@ -32,8 +32,7 @@ constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint16_t kTestMTU = 100;
 constexpr CommandId kMaxCommandId = std::numeric_limits<CommandId>::max();
 
-const auto kTestResponseHandler = [](Status status,
-                                     const ByteBuffer& rsp_payload) {
+const auto kTestResponseHandler = [](Status, const ByteBuffer&) {
   return SignalingChannel::ResponseHandlerAction::kCompleteOutboundTransaction;
 };
 
@@ -823,8 +822,8 @@ TEST_F(SignalingChannelTest, DoNotRejectRemoteResponseInvalidId) {
   EXPECT_TRUE(tx_success);
 
   bool reject_sent = false;
-  fake_chan()->SetSendCallback(
-      [&reject_sent](auto cb_packet) { reject_sent = true; }, dispatcher());
+  fake_chan()->SetSendCallback([&reject_sent](auto) { reject_sent = true; },
+                               dispatcher());
 
   fake_chan()->Receive(rsp_invalid_id);
 
