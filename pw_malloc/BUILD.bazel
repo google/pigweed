@@ -293,6 +293,8 @@ pw_cc_test(
         "best_fit.cc",
         "malloc_test.cc",
     ],
+    # TODO: b/379937425 - Enable when internal toolchains are sorted out.
+    tags = ["manual"],
     deps = [
         ":testing",
         "//pw_allocator:best_fit",
@@ -305,6 +307,8 @@ pw_cc_test(
         "bucket_allocator.cc",
         "malloc_test.cc",
     ],
+    # TODO: b/379937425 - Enable when internal toolchains are sorted out.
+    tags = ["manual"],
     deps = [
         ":testing",
         "//pw_allocator:bucket_allocator",
@@ -317,6 +321,8 @@ pw_cc_test(
         "first_fit.cc",
         "malloc_test.cc",
     ],
+    # TODO: b/379937425 - Enable when internal toolchains are sorted out.
+    tags = ["manual"],
     deps = [
         ":testing",
         "//pw_allocator:first_fit",
@@ -329,6 +335,8 @@ pw_cc_test(
         "malloc_test.cc",
         "worst_fit.cc",
     ],
+    # TODO: b/379937425 - Enable when internal toolchains are sorted out.
+    tags = ["manual"],
     deps = [
         ":testing",
         "//pw_allocator:worst_fit",
