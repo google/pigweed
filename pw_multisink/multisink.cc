@@ -96,6 +96,8 @@ Result<ConstByteSpan> MultiSink::PeekOrPopEntry(
   if (peek_status.IsOutOfRange()) {
     // If the drain has caught up, report the last handled sequence ID so that
     // it can still process any dropped entries.
+    // Negation overflow is by design.
+    /// -fsanitize-undefined-ignore-overflow-pattern=negated-unsigned-const
     entry_sequence_id_out = sequence_id_ - 1;
   } else if (!peek_status.ok()) {
     // Discard the entry if the result isn't OK or OUT_OF_RANGE and exit, as the
@@ -153,6 +155,8 @@ void MultiSink::AttachDrain(Drain& drain) {
 
   PW_CHECK_OK(ring_buffer_.AttachReader(drain.reader_));
   if (&drain == &oldest_entry_drain_) {
+    // Negation overflow is by design.
+    /// -fsanitize-undefined-ignore-overflow-pattern=negated-unsigned-const
     drain.last_handled_sequence_id_ = sequence_id_ - 1;
   } else {
     drain.last_handled_sequence_id_ =
