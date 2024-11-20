@@ -86,7 +86,10 @@ def main() -> NoReturn:
         analytics_state = cli_analytics.initialize()
         if analytics_state != cli_analytics.State.NEWLY_INITIALIZED:
             analytics = cli_analytics.Analytics(argv_copy, args)
-            analytics.begin()
+            try:
+                analytics.begin()
+            except Exception:  # pylint: disable=broad-except
+                analytics = None
 
     status = -1
     try:
@@ -96,9 +99,12 @@ def main() -> NoReturn:
         _LOG.critical('%s', err)
         status = 2
     finally:
-        if analytics:
-            analytics.end(status=status)
-        cli_analytics.finalize()
+        try:
+            if analytics:
+                analytics.end(status=status)
+            cli_analytics.finalize()
+        except Exception:  # pylint: disable=broad-except
+            pass
 
     sys.exit(status)
 
