@@ -52,11 +52,8 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        ":config",
         ":deallocator",
-        "//pw_assert",
         "//pw_result",
-        "//pw_status",
     ],
 )
 

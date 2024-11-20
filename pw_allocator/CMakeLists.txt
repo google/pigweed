@@ -42,7 +42,6 @@ pw_add_library(pw_allocator.allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.deallocator
-    pw_assert.check
     pw_result
   SOURCES
     allocator.cc

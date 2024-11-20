@@ -20,18 +20,24 @@ cc_library {
     name: "pw_allocator",
     cpp_std: "c++20",
     vendor_available: true,
-    export_include_dirs: ["public"],
+    export_include_dirs: [
+        "public",
+        "block/public",
+    ],
     defaults: [
         "pw_android_common_backends",
     ],
     header_libs: [
         "pw_assert",
-        "pw_log",
+        "fuchsia_sdk_lib_stdcompat",
     ],
     export_header_lib_headers: [
         "pw_assert",
+        "fuchsia_sdk_lib_stdcompat",
     ],
     export_static_lib_headers: [
+        "pw_bytes",
+        "pw_containers",
         "pw_metric",
         "pw_preprocessor",
         "pw_result",
@@ -43,13 +49,13 @@ cc_library {
     srcs: [
         "allocator.cc",
         "allocator_as_pool.cc",
-        "block.cc",
+        "block/contiguous.cc",
+        "block/poisonable.cc",
         "chunk_pool.cc",
         "libc_allocator.cc",
         "unique_ptr.cc",
     ],
     static_libs: [
-        "pw_base64",
         "pw_bytes",
         "pw_containers",
         "pw_metric",
@@ -58,6 +64,5 @@ cc_library {
         "pw_span",
         "pw_status",
         "pw_tokenizer",
-        "pw_tokenizer_base64",
     ],
 }

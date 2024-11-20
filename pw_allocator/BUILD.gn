@@ -60,9 +60,7 @@ pw_source_set("allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/allocator.h" ]
   public_deps = [
-    ":config",
     ":deallocator",
-    "$dir_pw_assert:check",
     dir_pw_result,
   ]
   sources = [ "allocator.cc" ]
