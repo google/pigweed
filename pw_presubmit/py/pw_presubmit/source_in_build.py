@@ -14,6 +14,7 @@
 """Checks that source files are listed in build files, such as BUILD.bazel."""
 
 import logging
+from pathlib import Path
 from typing import Callable, Sequence
 
 from pw_cli.file_filter import FileFilter
@@ -169,3 +170,57 @@ def cmake(
             raise PresubmitFailure
 
     return source_is_in_cmake_build
+
+
+_DEFAULT_SOONG_EXTENSIONS = (*format_code.CPP_SOURCE_EXTS, '.proto')
+
+
+def soong(  # pylint: disable=invalid-name
+    source_filter: FileFilter,
+    files_and_extensions_to_check: Sequence[str] = _DEFAULT_SOONG_EXTENSIONS,
+) -> Check:
+    """Create a presubmit check that ensures sources are in Android.bp files.
+
+    Args:
+        source_filter: filter that selects files that must be in the Soong files
+        files_and_extensions_to_check: files and extensions to look for (the
+            source_filter might match build files that won't be in the build but
+            this should only match source files)
+    """
+
+    @filter_paths(file_filter=source_filter)
+    def source_is_in_soong_build(ctx: PresubmitContext):
+        """Checks that source files are in the Soong build."""
+
+        paths = source_filter.filter(ctx.all_paths)
+        paths = presubmit_context.apply_exclusions(ctx, paths)
+
+        # For now, only check modules where there is an Android.bp file.
+        relevant_paths: list[Path] = []
+        for path in paths:
+            # For now, don't require tests be included in Android.bp files.
+            split = path.stem.split('_')
+            if 'test' in split or 'mock' in split:
+                continue
+
+            if (path.parent / 'Android.bp').is_file():
+                relevant_paths.append(path)
+
+        missing = build.check_soong_build_for_files(
+            files_and_extensions_to_check,
+            relevant_paths,
+            soong_build_files=git_repo.list_files(
+                pathspecs=['Android.bp', '*Android.bp'], repo_path=ctx.root
+            ),
+        )
+
+        if missing:
+            with ctx.failure_summary_log.open('w') as outs:
+                print('Missing files:', file=outs)
+                for miss in missing:
+                    print(miss, file=outs)
+
+            _LOG.warning('All source files must appear in Android.bp files')
+            raise PresubmitFailure
+
+    return source_is_in_soong_build

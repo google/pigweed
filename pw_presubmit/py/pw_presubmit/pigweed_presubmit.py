@@ -1546,6 +1546,7 @@ OTHER_CHECKS = (
     # TODO(hepler): Many files are missing from the CMake build. Add this check
     # to lintformat when the missing files are fixed.
     source_in_build.cmake(SOURCE_FILES_FILTER, _run_cmake),
+    source_in_build.soong(SOURCE_FILES_FILTER),
     static_analysis,
     stm32f429i,
     todo_check.create(todo_check.BUGS_OR_USERNAMES),

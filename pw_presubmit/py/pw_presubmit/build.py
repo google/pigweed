@@ -568,6 +568,42 @@ def check_gn_build_for_files(
     return missing
 
 
+def check_soong_build_for_files(
+    soong_extensions_to_check: Container[str],
+    files: Iterable[Path],
+    soong_build_files: Iterable[Path] = (),
+) -> list[Path]:
+    """Checks that source files are in the Soong build.
+
+    Args:
+        bp_extensions_to_check: which file suffixes to look for in Soong files
+        files: the files that should be checked
+        bp_build_files: paths to Android.bp files to directly search for paths
+
+    Returns:
+        a list of missing files; will be empty if there were no missing files
+    """
+
+    # Collect all paths in Soong builds.
+    soong_builds = set(_search_files_for_paths(soong_build_files))
+
+    missing: list[Path] = []
+
+    if soong_build_files:
+        for path in (p for p in files if p.suffix in soong_extensions_to_check):
+            if path not in soong_builds:
+                missing.append(path)
+
+    if missing:
+        _LOG.warning(
+            '%s missing from the Soong build:\n%s',
+            plural(missing, 'file', are=True),
+            '\n'.join(str(x) for x in missing),
+        )
+
+    return missing
+
+
 def check_builds_for_files(
     bazel_extensions_to_check: Container[str],
     gn_extensions_to_check: Container[str],

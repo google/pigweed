@@ -396,7 +396,7 @@ included by adding ``json_check.presubmit_check()`` to a presubmit program.
 Source in Build
 ^^^^^^^^^^^^^^^
 Pigweed provides checks that source files are configured as part of the build
-for GN, Bazel, and CMake. These can be included by adding
+for GN, Bazel, CMake, and Soong. These can be included by adding
 ``source_in_build.gn(filter)`` and similar functions to a presubmit check. The
 CMake check additionally requires a callable that invokes CMake with appropriate
 options.
