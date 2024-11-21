@@ -262,6 +262,22 @@ struct L2capConnectionRsp:
       -- The status of the connection.
 
 
+struct L2capDisconnectionReq:
+  -- Section 4.6
+  -- Once an L2CAP_DISCONNECTION_REQ packet is issued, all incoming data in
+  -- transit on this L2CAP channel shall be discarded and any new additional
+  -- outgoing data shall be discarded.
+  [requires: command_header.code == L2capSignalingPacketCode.DISCONNECTION_REQ]
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
+  $next [+2]                                           UInt                         destination_cid
+    -- The endpoint of the channel to be disconnected on the device receiving
+    -- this request.
+
+  $next [+2]                                           UInt                         source_cid
+    -- The endpoint of the channel to be disconnected on the device sending this
+    -- request.
+
+
 struct L2capDisconnectionRsp:
   -- Section 4.7
   -- L2CAP_DISCONNECTION_RSP packets shall be sent in response to each valid
