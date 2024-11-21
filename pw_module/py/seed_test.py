@@ -26,8 +26,8 @@ import("//build_overrides/pigweed.gni")
 import("seed.gni")
 
 pw_seed("0001") {
-  sources = [ "0001-the-seed-process.rst" ]
-  inputs = [ "0001-the-seed-process/seed-index-gerrit.png" ]
+  sources = [ "0001.rst" ]
+  inputs = [ "0001/seed-index-gerrit.png" ]
   title = "The SEED Process"
   status = "Meta"
   author = "The Pigweed Authors"
@@ -35,7 +35,7 @@ pw_seed("0001") {
 }
 
 pw_seed("0002") {
-  sources = [ "0002-template.rst" ]
+  sources = [ "0002.rst" ]
   title = "SEED Template"
   status = "Meta"
   author = "The Pigweed Authors"
@@ -43,7 +43,7 @@ pw_seed("0002") {
 }
 
 pw_seed_index("seeds") {
-  index_file = "0000-index.rst"
+  index_file = "0000.rst"
   seeds = [
     ":0001",
     ":0002",
@@ -58,8 +58,8 @@ import("//build_overrides/pigweed.gni")
 import("seed.gni")
 
 pw_seed("0001") {
-  sources = [ "0001-the-seed-process.rst" ]
-  inputs = [ "0001-the-seed-process/seed-index-gerrit.png" ]
+  sources = [ "0001.rst" ]
+  inputs = [ "0001/seed-index-gerrit.png" ]
   title = "The SEED Process"
   status = "Meta"
   author = "The Pigweed Authors"
@@ -67,7 +67,7 @@ pw_seed("0001") {
 }
 
 pw_seed("0002") {
-  sources = [ "0002-template.rst" ]
+  sources = [ "0002.rst" ]
   title = "SEED Template"
   status = "Meta"
   author = "The Pigweed Authors"
@@ -82,7 +82,7 @@ pw_seed("0200") {
 }
 
 pw_seed_index("seeds") {
-  index_file = "0000-index.rst"
+  index_file = "0000.rst"
   seeds = [
     ":0001",
     ":0002",
@@ -102,7 +102,7 @@ class TestSeedMetadata(unittest.TestCase):
             authors='',
             status=seed.SeedStatus.DRAFT,
         )
-        self.assertEqual(meta.default_filename(), '0789-simple-title-2.rst')
+        self.assertEqual(meta.default_filename(), '0789.rst')
 
     def test_default_filename_special_characters(self):
         meta = seed.SeedMetadata(
@@ -113,7 +113,7 @@ class TestSeedMetadata(unittest.TestCase):
         )
         self.assertEqual(
             meta.default_filename(),
-            '9876-pw_some_module-pigweeds-newest-module.rst',
+            '9876.rst',
         )
 
 

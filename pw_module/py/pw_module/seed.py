@@ -97,10 +97,7 @@ class SeedMetadata:
     sources: Optional[List[str]] = None
 
     def default_filename(self) -> str:
-        normalized_title = self.title.lower().replace(' ', '-')
-        normalized_title = re.sub(r'[^a-zA-Z0-9_-]', '', normalized_title)
-
-        return f'{self.number:04d}-{normalized_title}.rst'
+        return f'{self.number:04d}.rst'
 
 
 class SeedRegistry:
