@@ -129,7 +129,7 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
    ``Pigweed-Auto-Submit`` to +1. This change will be approved promptly and
    lock in your assigned SEED number.
 
-   .. image:: 0001-the-seed-process/seed-index-gerrit.png
+   .. image:: 0001/seed-index-gerrit.png
 
 #. Fill out your proposal document, using the :ref:`SEED template<seed-0002>` as
    a guide.

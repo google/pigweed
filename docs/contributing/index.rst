@@ -431,7 +431,7 @@ See the warning about caching Python packages for multiple platforms in
    Code reviews (Gerrit) <https://pigweed-review.googlesource.com>
    ../code_reviews
    Issue tracker <https://issues.pigweed.dev/issues?q=status:open>
-   SEEDs <../../seed/0000-index>
+   SEEDs <../../seed/0000>
    ../infra/index
    ../embedded_cpp_guide
    ../style_guide

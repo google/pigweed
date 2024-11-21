@@ -118,4 +118,4 @@ Then run a binary like this!
    api
    config
    design
-   SEED-0108 <../seed/0108-pw_emu-emulators-frontend>
+   SEED-0108 <../seed/0108>

@@ -17,8 +17,8 @@ import("//build_overrides/pigweed.gni")
 import("seed.gni")
 
 pw_seed("0001") {
-  sources = [ "0001-the-seed-process.rst" ]
-  inputs = [ "0001-the-seed-process/seed-index-gerrit.png" ]
+  sources = [ "0001.rst" ]
+  inputs = [ "0001/seed-index-gerrit.png" ]
   title = "The SEED Process"
   status = "Meta"
   author = "The Pigweed Authors"
@@ -26,7 +26,7 @@ pw_seed("0001") {
 }
 
 pw_seed("0002") {
-  sources = [ "0002-template.rst" ]
+  sources = [ "0002.rst" ]
   title = "SEED Template"
   status = "Meta"
   author = "The Pigweed Authors"
@@ -34,7 +34,7 @@ pw_seed("0002") {
 }
 
 pw_seed("0101") {
-  sources = [ "0101-pigweed.json.rst" ]
+  sources = [ "0101.rst" ]
   title = "pigweed.json"
   status = "Accepted"
   author = "Rob Mohr"
@@ -42,7 +42,7 @@ pw_seed("0101") {
 }
 
 pw_seed("0102") {
-  sources = [ "0102-module-docs.rst" ]
+  sources = [ "0102.rst" ]
   title = "Consistent Module Documentation"
   status = "Accepted"
   author = "Chad Norvell"
@@ -50,7 +50,7 @@ pw_seed("0102") {
 }
 
 pw_seed("0103") {
-  sources = [ "0103-pw_protobuf-past-present-future.rst" ]
+  sources = [ "0103.rst" ]
   title = "pw_protobuf: Past, present, and future"
   status = "Accepted"
   author = "Alexei Frolov"
@@ -58,7 +58,7 @@ pw_seed("0103") {
 }
 
 pw_seed("0104") {
-  sources = [ "0104-display-support.rst" ]
+  sources = [ "0104.rst" ]
   title = "Display Support"
   status = "Accepted"
   author = "Chris Mumford"
@@ -66,7 +66,7 @@ pw_seed("0104") {
 }
 
 pw_seed("0105") {
-  sources = [ "0105-pw_tokenizer-pw_log-nested-tokens.rst" ]
+  sources = [ "0105.rst" ]
   title = "Nested Tokens and Tokenized Log Arguments"
   status = "Accepted"
   author = "Gwyneth Chen"
@@ -82,7 +82,7 @@ pw_seed("0106") {
 }
 
 pw_seed("0107") {
-  sources = [ "0107-communications.rst" ]
+  sources = [ "0107.rst" ]
   title = "Pigweed Communications"
   status = "Accepted"
   author = "Wyatt Hepler"
@@ -90,7 +90,7 @@ pw_seed("0107") {
 }
 
 pw_seed("0108") {
-  sources = [ "0108-pw_emu-emulators-frontend.rst" ]
+  sources = [ "0108.rst" ]
   title = "Emulators Frontend"
   status = "Accepted"
   author = "Octavian Purdila"
@@ -98,7 +98,7 @@ pw_seed("0108") {
 }
 
 pw_seed("0109") {
-  sources = [ "0109-comms-buffers.rst" ]
+  sources = [ "0109.rst" ]
   title = "Communication Buffers"
   status = "Accepted"
   author = "Taylor Cramer"
@@ -106,7 +106,7 @@ pw_seed("0109") {
 }
 
 pw_seed("0110") {
-  sources = [ "0110-memory-allocation-interfaces.rst" ]
+  sources = [ "0110.rst" ]
   title = "Memory Allocation Interfaces"
   status = "Accepted"
   author = "Alexei Frolov"
@@ -114,7 +114,7 @@ pw_seed("0110") {
 }
 
 pw_seed("0111") {
-  sources = [ "0111-build-systems.rst" ]
+  sources = [ "0111.rst" ]
   title = "Make Bazel Pigweed's Primary Build System"
   status = "Accepted"
   author = "Ted Pudlik"
@@ -122,7 +122,7 @@ pw_seed("0111") {
 }
 
 pw_seed("0112") {
-  sources = [ "0112-async-poll.rst" ]
+  sources = [ "0112.rst" ]
   title = "Async Poll Model"
   status = "Accepted"
   author = "Taylor Cramer"
@@ -130,7 +130,7 @@ pw_seed("0112") {
 }
 
 pw_seed("0113") {
-  sources = [ "0113-bazel-cc-toolchain-api.rst" ]
+  sources = [ "0113.rst" ]
   title = "Add modular Bazel C/C++ toolchain API"
   status = "Accepted"
   author = "Armando Montanez"
@@ -138,7 +138,7 @@ pw_seed("0113") {
 }
 
 pw_seed("0114") {
-  sources = [ "0114-channels.rst" ]
+  sources = [ "0114.rst" ]
   title = "Channels"
   status = "Accepted"
   author = "Wyatt Hepler"
@@ -162,7 +162,7 @@ pw_seed("0116") {
 }
 
 pw_seed("0117") {
-  sources = [ "0117-pw_i3c.rst" ]
+  sources = [ "0117.rst" ]
   title = "pw_i3c"
   status = "Accepted"
   author = "Jack Chen"
@@ -177,18 +177,18 @@ pw_seed("0118") {
 }
 
 pw_seed("0119") {
-  sources = [ "0119-pw-sensor.rst" ]
+  sources = [ "0119.rst" ]
   title = "pw_sensor A sensor framework"
   status = "Accepted"
   inputs = [
-    "0119-pw-sensor/high-level-view.svg",
-    "0119-pw-sensor/data-pipeline.svg",
+    "0119/high-level-view.svg",
+    "0119/data-pipeline.svg",
   ]
   author = "Yuval Peress"
 }
 
 pw_seed("0120") {
-  sources = [ "0120-pw-sensor-config.rst" ]
+  sources = [ "0120.rst" ]
   status = "Accepted"
   title = "pw_sensor Sensor configuration"
   author = "Yuval Peress"
@@ -202,7 +202,7 @@ pw_seed("0121") {
 }
 
 pw_seed("0122") {
-  sources = [ "0122-code-samples.rst" ]
+  sources = [ "0122.rst" ]
   title = "Organize Pigweed code samples"
   status = "Accepted"
   author = "Ted Pudlik"
@@ -218,7 +218,7 @@ pw_seed("0123") {
 }
 
 pw_seed("0124") {
-  sources = [ "0124-multisink-size-info.rst" ]
+  sources = [ "0124.rst" ]
   title = "Interfaces for Retrieving Size Information from Multisink"
   status = "Intent Approved"
   author = "Jiacheng Lu"
@@ -250,7 +250,7 @@ pw_seed("0128") {
   title = "Abstracting Thread Creation"
   author = "Wyatt Hepler"
   status = "Accepted"
-  sources = [ "0128-abstracting-thread-creation.rst" ]
+  sources = [ "0128.rst" ]
   facilitator = "Taylor Cramer"
 }
 
@@ -265,7 +265,7 @@ pw_seed("0130") {
   title = "Update Sphinx theme"
   author = "Kayce Basques"
   status = "Accepted"
-  sources = [ "0130-update-sphinx-theme.rst" ]
+  sources = [ "0130.rst" ]
 }
 
 pw_seed("0132") {
@@ -278,7 +278,7 @@ pw_seed("0132") {
 # This must be defined after all `pw_seed` targets, as it relies on information
 # exposed by them.
 pw_seed_index("seeds") {
-  index_file = "0000-index.rst"
+  index_file = "0000.rst"
   seeds = [
     ":0001",
     ":0002",
