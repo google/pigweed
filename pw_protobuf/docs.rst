@@ -285,10 +285,28 @@ Message structures are eventually intended to be replaced with an alternative
 object model. See `SEED-0103 <http://pwrev.dev/133971>`_ for additional
 information about how message structures came to be and our future plans.
 
+Protobuf versioning
+^^^^^^^^^^^^^^^^^^^
+Message structures are generated in accordance to ``proto3`` semantics only.
+Unset fields default to their zero values. Explicit field presence is supported
+through the use of the ``optional`` specifier. Proto2-only keywords such as
+``required`` have no effect.
+
+There is limited preliminary support for Protobuf editions, primarily to allow
+editions-based proto files to compile. At this time, the only editions feature
+supported by the code generator is ``field_presence``.
+
 ``oneof`` fields
 ^^^^^^^^^^^^^^^^
 ``oneof`` protobuf fields cannot be inlined within a message structure: they
 must be encoded and decoded using callbacks.
+
+``optional`` fields
+^^^^^^^^^^^^^^^^^^^
+Only scalar fields generate a ``std::optional`` wrapper in the resulting message
+structure. Optional submessages or variable-length fields
+(``string`` / ``bytes``) must be processed through callbacks, requiring manual
+tracking of presence depending on whether or not the callback is invoked.
 
 .. _pw_protobuf-per-field-apis:
 
