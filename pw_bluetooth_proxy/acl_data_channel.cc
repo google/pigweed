@@ -189,8 +189,8 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
 
 void AclDataChannel::HandleDisconnectionCompleteEvent(
     H4PacketWithHci&& h4_packet) {
-  Result<emboss::DisconnectionCompleteEventWriter> dc_event =
-      MakeEmbossView<emboss::DisconnectionCompleteEventWriter>(
+  Result<emboss::DisconnectionCompleteEventView> dc_event =
+      MakeEmbossView<emboss::DisconnectionCompleteEventView>(
           h4_packet.GetHciSpan());
   if (!dc_event.ok()) {
     PW_LOG_ERROR(
