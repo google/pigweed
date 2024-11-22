@@ -143,8 +143,8 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
 
       seed/
         ...
-        5309-pw_rpc-over-smoke-signals.rst
-        5309-pw_rpc-over-smoke-signals/
+        5309.rst
+        5309/
           state-diagram.svg
 
 #. When you feel you have enough substantive content in your proposal to be
@@ -209,7 +209,7 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
    .. code-block::
 
       pw_seed("5309") {
-        sources = [ "5309-pw_rpc-over-smoke-signals.rst" ]
+        sources = [ "5309.rst" ]
         title = "pw_rpc Over Smoke Signals"
         status = "Accepted"
         author = "Your Name"
