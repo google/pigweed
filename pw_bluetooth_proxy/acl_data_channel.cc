@@ -309,8 +309,10 @@ Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
   if (active_acl_connections_.full()) {
     return Status::ResourceExhausted();
   }
-  active_acl_connections_.emplace_back(
-      transport, connection_handle, 0, l2cap_channel_manager_);
+  active_acl_connections_.emplace_back(transport,
+                                       /*connection_handle=*/connection_handle,
+                                       /*num_pending_packets=*/0,
+                                       l2cap_channel_manager_);
   return OkStatus();
 }
 

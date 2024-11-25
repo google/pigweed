@@ -24,22 +24,22 @@ namespace pw::bluetooth::proxy {
 /// from a remote peer.
 /// TODO: https://pwbug.dev/378691959 - Switch to just containing a
 /// BasicL2capChannel instead of inheritance.
+///
+/// This implementation requires use of RFCOMM credit based flow control.
 class RfcommChannel final : public L2capWriteChannel, public L2capReadChannel {
  public:
-  // This implementation requires use of RFCOMM credit based flow control.
-
   /// Parameters for a direction of packet flow in an `RfcommChannel`.
   struct Config {
     /// Channel identifier of the endpoint.
     /// For Rx: Local CID.
     /// For Tx: Remote CID.
     uint16_t cid;
-    /// Maximum Frame Size.
+    /// Maximum Information Length.
     /// For Rx: Specified by local device. Indicates the maximum frame size
     ///         for an RFCOMM packet we are capable of accepting.
     /// For Tx: Specified by remote peer. Indicates the maximum frame size for
     ///         for an RFCOMM packet we are allowed to send.
-    uint16_t max_frame_size;
+    uint16_t max_information_length;
     /// For Rx: Tracks the number of RFCOMM credits we have currently
     ///         apportioned to the remote peer for sending us frames.
     /// For Tx: Currently available credits for sending frames in RFCOMM Credit

@@ -47,17 +47,18 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
   }
 
   // We always encode credits.
-  const size_t credits_size = 1;
+  const size_t kCreditsFieldSize = 1;
 
-  if (payload.size() > tx_config_.max_frame_size - credits_size) {
+  if (payload.size() > tx_config_.max_information_length - kCreditsFieldSize) {
     return Status::InvalidArgument();
   }
 
   constexpr size_t kMaxShortLength = 0x7f;
 
-  const size_t length_extended_size = payload.size() > kMaxShortLength ? 1 : 0;
+  const bool uses_extended_length = payload.size() > kMaxShortLength;
+  const size_t length_extended_size = uses_extended_length ? 1 : 0;
   const size_t frame_size = emboss::RfcommFrame::MinSizeInBytes() +
-                            length_extended_size + credits_size +
+                            length_extended_size + kCreditsFieldSize +
                             payload.size();
 
   pw::Result<H4PacketWithH4> h4_result = PopulateTxL2capPacket(frame_size);
@@ -87,8 +88,9 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
   rfcomm.control().Write(
       emboss::RfcommFrameType::
           UNNUMBERED_INFORMATION_WITH_HEADER_CHECK_AND_POLL_FINAL);
+  PW_CHECK(rfcomm.has_credits().ValueOrDefault());
 
-  if (payload.size() <= kMaxShortLength) {
+  if (!uses_extended_length) {
     rfcomm.length_extended_flag().Write(emboss::RfcommLengthExtended::NORMAL);
     rfcomm.length().Write(payload.size());
   } else {
@@ -96,7 +98,7 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
     rfcomm.length_extended().Write(payload.size());
   }
 
-  if (rfcomm.has_credits().ValueOrDefault()) {
+  {
     std::lock_guard lock(mutex_);
     // TODO: https://pwbug.dev/379184978 - Refill remote side with credits they
     // have sent. We assume our receiver can handle data without need for

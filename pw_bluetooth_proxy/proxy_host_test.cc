@@ -217,9 +217,9 @@ L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params) {
 struct RfcommParameters {
   uint16_t handle = 123;
   RfcommChannel::Config rx_config = {
-      .cid = 234, .max_frame_size = 900, .credits = 10};
+      .cid = 234, .max_information_length = 900, .credits = 10};
   RfcommChannel::Config tx_config = {
-      .cid = 456, .max_frame_size = 900, .credits = 10};
+      .cid = 456, .max_information_length = 900, .credits = 10};
   uint8_t rfcomm_channel = 3;
 };
 
@@ -4021,11 +4021,11 @@ TEST(RfcommWriteTest, BasicWrite) {
           capture.handle,
           /*rx_config=*/
           RfcommChannel::Config{.cid = capture.channel_id,
-                                .max_frame_size = kMaxFrameSize,
+                                .max_information_length = kMaxFrameSize,
                                 .credits = kMaxCredits},
           /*tx_config*/
           RfcommChannel::Config{.cid = capture.channel_id,
-                                .max_frame_size = kMaxFrameSize,
+                                .max_information_length = kMaxFrameSize,
                                 .credits = kMaxCredits},
           kRfcommChannel,
           nullptr));
@@ -4144,11 +4144,11 @@ TEST(RfcommWriteTest, ExtendedWrite) {
           capture.handle,
           /*rx_config=*/
           RfcommChannel::Config{.cid = capture.channel_id,
-                                .max_frame_size = kMaxFrameSize,
+                                .max_information_length = kMaxFrameSize,
                                 .credits = kMaxCredits},
           /*tx_config*/
           RfcommChannel::Config{.cid = capture.channel_id,
-                                .max_frame_size = kMaxFrameSize,
+                                .max_information_length = kMaxFrameSize,
                                 .credits = kMaxCredits},
           kRfcommChannel,
           nullptr));
@@ -4188,11 +4188,11 @@ TEST(RfcommReadTest, BasicRead) {
           kHandle,
           /*rx_config=*/
           RfcommChannel::Config{.cid = kCid,
-                                .max_frame_size = kMaxFrameSize,
+                                .max_information_length = kMaxFrameSize,
                                 .credits = kMaxCredits},
           /*tx_config*/
           RfcommChannel::Config{.cid = kCid,
-                                .max_frame_size = kMaxFrameSize,
+                                .max_information_length = kMaxFrameSize,
                                 .credits = kMaxCredits},
           kRfcommChannel,
           [&capture](pw::span<uint8_t> payload) {
@@ -4273,11 +4273,11 @@ TEST(RfcommReadTest, ExtendedRead) {
           kHandle,
           /*rx_config=*/
           RfcommChannel::Config{.cid = kCid,
-                                .max_frame_size = kMaxFrameSize,
+                                .max_information_length = kMaxFrameSize,
                                 .credits = kMaxCredits},
           /*tx_config*/
           RfcommChannel::Config{.cid = kCid,
-                                .max_frame_size = kMaxFrameSize,
+                                .max_information_length = kMaxFrameSize,
                                 .credits = kMaxCredits},
           kRfcommChannel,
           [&capture](pw::span<uint8_t> payload) {
@@ -4358,11 +4358,11 @@ TEST(RfcommReadTest, InvalidReads) {
           kHandle,
           /*rx_config=*/
           RfcommChannel::Config{.cid = kCid,
-                                .max_frame_size = kMaxFrameSize,
+                                .max_information_length = kMaxFrameSize,
                                 .credits = kMaxCredits},
           /*tx_config*/
           RfcommChannel::Config{.cid = kCid,
-                                .max_frame_size = kMaxFrameSize,
+                                .max_information_length = kMaxFrameSize,
                                 .credits = kMaxCredits},
           kRfcommChannel,
           [&capture](pw::span<uint8_t>) { ++capture.rx_called; }));
