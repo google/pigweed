@@ -1063,6 +1063,8 @@ BrEdrConnectionManager::OnConnectionRequest(const hci::EventPacket& event) {
          hci_spec::LinkTypeToString(link_type),
          bt_str(device_class));
 
+  peer->MutBrEdr().SetIncomingRequest(params);
+
   // Register that we're in the middle of an incoming request for this peer -
   // create a new request if one doesn't already exist
   auto [request, _] = connection_requests_.try_emplace(

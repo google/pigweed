@@ -119,9 +119,9 @@ DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address,
       addr[3],
       addr[4],
       addr[5],
-      0x00,      // Class_Of_Device (Unknown)
-      0x1F,      // Class_Of_Device (Unknown)
-      0x00,      // Class_Of_Device (Unknown)
+      0x5A,      // Class_Of_Device
+      0x42,      // (Smart Phone minor class)
+      0x0C,      // Networking, Capturing, Object Transfer, Telephony, LE Audio
       link_type  // Link_Type
       ));
 }

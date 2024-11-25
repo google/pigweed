@@ -335,6 +335,12 @@ void Peer::BrEdrData::SetInquiryData(
       response_view);
 }
 
+void Peer::BrEdrData::SetIncomingRequest(
+    const pw::bluetooth::emboss::ConnectionRequestEventView& view) {
+  device_class_ =
+      DeviceClass(view.class_of_device().BackingStorage().ReadUInt());
+}
+
 Peer::InitializingConnectionToken
 Peer::BrEdrData::RegisterInitializingConnection() {
   PW_CHECK(!connected());

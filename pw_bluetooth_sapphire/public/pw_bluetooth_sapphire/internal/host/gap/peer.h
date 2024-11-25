@@ -463,6 +463,10 @@ class Peer final {
     void SetInquiryData(
         const pw::bluetooth::emboss::ExtendedInquiryResultEventView& view);
 
+    // Sets the data from an incoming connection from this peer.
+    void SetIncomingRequest(
+        const pw::bluetooth::emboss::ConnectionRequestEventView& view);
+
     // Register a connection that is in the request/initializing state. A token
     // is returned that should be owned until the initialization is complete or
     // canceled. The connection state may be updated and listeners may be

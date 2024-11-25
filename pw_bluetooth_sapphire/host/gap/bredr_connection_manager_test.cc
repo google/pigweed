@@ -1521,6 +1521,10 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionSuccess) {
   EXPECT_EQ(kIncomingConnTransactions, transaction_count());
   // Confirm remote name request during interrogation sets proper name source.
   EXPECT_EQ(peer->name_source(), Peer::NameSource::kNameDiscoveryProcedure);
+  // We should have set the Class Of Device from the incoming connection request
+  ASSERT_TRUE(peer->bredr()->device_class().has_value());
+  // endianness so this magic number is backwards from the packet definition
+  EXPECT_EQ(*peer->bredr()->device_class(), DeviceClass(0x000C425A));
 
   // When we deallocate the connection manager during teardown, we should
   // disconnect.
