@@ -236,3 +236,18 @@ cc_library(
         "//pw_status",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_multibuf/allocator.h",
+        "public/pw_multibuf/chunk.h",
+        "public/pw_multibuf/from_span.h",
+        "public/pw_multibuf/header_chunk_region_tracker.h",
+        "public/pw_multibuf/multibuf.h",
+        "public/pw_multibuf/simple_allocator.h",
+        "public/pw_multibuf/simple_allocator_for_test.h",
+        "public/pw_multibuf/single_chunk_region_tracker.h",
+        "public/pw_multibuf/stream.h",
+    ],
+)

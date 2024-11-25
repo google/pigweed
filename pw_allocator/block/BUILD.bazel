@@ -173,3 +173,18 @@ pw_cc_test(
         "//third_party/fuchsia:stdcompat",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_allocator/block/alignable.h",
+        "public/pw_allocator/block/allocatable.h",
+        "public/pw_allocator/block/basic.h",
+        "public/pw_allocator/block/contiguous.h",
+        "public/pw_allocator/block/detailed_block.h",
+        "public/pw_allocator/block/iterable.h",
+        "public/pw_allocator/block/poisonable.h",
+        "public/pw_allocator/block/result.h",
+        "public/pw_allocator/block/with_layout.h",
+    ],
+)

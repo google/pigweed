@@ -88,3 +88,11 @@ pw_cc_test(
         "//pw_bluetooth:emboss_util",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_bluetooth_proxy/h4_packet.h",
+        "public/pw_bluetooth_proxy/proxy_host.h",
+    ],
+)

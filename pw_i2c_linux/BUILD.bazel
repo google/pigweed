@@ -51,3 +51,10 @@ pw_cc_test(
         "//pw_i2c:initiator",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_i2c_linux/initiator.h",
+    ],
+)

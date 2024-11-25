@@ -281,3 +281,10 @@ java_lite_proto_library(
     name = "transfer_proto_java_lite",
     deps = [":transfer_proto"],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_transfer/atomic_file_transfer_handler.h",
+    ],
+)

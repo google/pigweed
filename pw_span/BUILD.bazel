@@ -49,3 +49,10 @@ pw_cc_test(
         "//pw_polyfill",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_span/internal/config.h",
+    ],
+)

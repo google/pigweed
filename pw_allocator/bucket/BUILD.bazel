@@ -120,3 +120,13 @@ pw_cc_test(
         "//pw_allocator/block:detailed_block",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_allocator/bucket/fast_sorted.h",
+        "public/pw_allocator/bucket/sequenced.h",
+        "public/pw_allocator/bucket/sorted.h",
+        "public/pw_allocator/bucket/unordered.h",
+    ],
+)

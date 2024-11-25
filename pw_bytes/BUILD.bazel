@@ -147,3 +147,13 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_bytes/alignment.h",
+        "public/pw_bytes/bit.h",
+        "public/pw_bytes/byte_builder.h",
+        "public/pw_bytes/packed_ptr.h",
+    ],
+)

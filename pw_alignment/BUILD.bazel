@@ -19,3 +19,10 @@ cc_library(
     hdrs = ["public/pw_alignment/alignment.h"],
     strip_include_prefix = "public",
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_alignment/alignment.h",
+    ],
+)

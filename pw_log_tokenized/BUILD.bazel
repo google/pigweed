@@ -159,3 +159,13 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_log_tokenized/base64.h",
+        "public/pw_log_tokenized/config.h",
+        "public/pw_log_tokenized/handler.h",
+        "public/pw_log_tokenized/metadata.h",
+    ],
+)

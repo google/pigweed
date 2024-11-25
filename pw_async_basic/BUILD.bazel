@@ -96,3 +96,10 @@ pw_cc_test(
         "//pw_async:heap_dispatcher",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_async_basic/dispatcher.h",
+    ],
+)

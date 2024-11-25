@@ -75,3 +75,10 @@ cc_library(
     ],
     alwayslink = 1,
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_log_string/handler.h",
+    ],
+)

@@ -49,3 +49,10 @@ cc_library(
         "//pw_status",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_sys_io/sys_io.h",
+    ],
+)

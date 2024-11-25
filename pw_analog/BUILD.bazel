@@ -96,3 +96,11 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_analog/analog_input.h",
+        "public/pw_analog/microvolt_input.h",
+    ],
+)

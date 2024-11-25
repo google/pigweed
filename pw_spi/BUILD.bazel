@@ -128,3 +128,11 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_spi/chip_selector.h",
+        "public/pw_spi/chip_selector_digital_out.h",
+    ],
+)

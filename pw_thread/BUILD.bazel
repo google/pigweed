@@ -432,3 +432,12 @@ pwpb_proto_library(
     name = "thread_pwpb",
     deps = [":thread_proto"],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_thread/options.h",
+        "public/pw_thread/test_thread_context.h",
+        "public/pw_thread/thread.h",
+    ],
+)

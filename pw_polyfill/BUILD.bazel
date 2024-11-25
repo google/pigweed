@@ -49,3 +49,11 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_polyfill/language_feature_macros.h",
+        "public/pw_polyfill/standard.h",
+    ],
+)

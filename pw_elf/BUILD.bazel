@@ -65,3 +65,10 @@ filegroup(
     name = "docs",
     srcs = ["docs.rst"],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_elf/reader.h",
+    ],
+)

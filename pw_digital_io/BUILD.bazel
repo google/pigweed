@@ -112,3 +112,11 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_digital_io/digital_io.h",
+        "public/pw_digital_io/digital_io_mock.h",
+    ],
+)

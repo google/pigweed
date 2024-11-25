@@ -39,3 +39,10 @@ pw_cc_test(
         ":pw_clock_tree_mcuxpresso",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_clock_tree_mcuxpresso/clock_tree.h",
+    ],
+)

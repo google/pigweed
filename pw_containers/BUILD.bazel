@@ -449,3 +449,21 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_containers/filtered_view.h",
+        "public/pw_containers/inline_deque.h",
+        "public/pw_containers/inline_queue.h",
+        "public/pw_containers/inline_var_len_entry_queue.h",
+        "public/pw_containers/internal/aa_tree.h",
+        "public/pw_containers/internal/intrusive_list.h",
+        "public/pw_containers/intrusive_forward_list.h",
+        "public/pw_containers/intrusive_list.h",
+        "public/pw_containers/intrusive_map.h",
+        "public/pw_containers/intrusive_multimap.h",
+        "public/pw_containers/intrusive_multiset.h",
+        "public/pw_containers/intrusive_set.h",
+    ],
+)

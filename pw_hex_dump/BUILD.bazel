@@ -72,3 +72,11 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_hex_dump/hex_dump.h",
+        "public/pw_hex_dump/log_bytes.h",
+    ],
+)

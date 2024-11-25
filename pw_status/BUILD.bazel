@@ -72,3 +72,12 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_status/status.h",
+        "public/pw_status/status_with_size.h",
+        "public/pw_status/try.h",
+    ],
+)

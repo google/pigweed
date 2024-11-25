@@ -59,3 +59,11 @@ filegroup(
         "system_timer.cc",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_chre/chre.h",
+        "public/pw_chre/host_link.h",
+    ],
+)

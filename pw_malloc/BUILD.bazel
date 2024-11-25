@@ -342,3 +342,11 @@ pw_cc_test(
         "//pw_allocator:worst_fit",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_malloc/config.h",
+        "public/pw_malloc/malloc.h",
+    ],
+)

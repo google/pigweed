@@ -41,3 +41,10 @@ pw_cc_test(
         "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_json/builder.h",
+    ],
+)

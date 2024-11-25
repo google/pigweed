@@ -45,3 +45,10 @@ alias(
     }),
     visibility = ["//targets:__pkg__"],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_interrupt/context.h",
+    ],
+)

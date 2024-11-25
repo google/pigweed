@@ -198,3 +198,13 @@ cc_library(
     deps = [":system_clock"],
     alwayslink = 1,
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_chrono/simulated_system_clock.h",
+        "public/pw_chrono/system_clock.h",
+        "public/pw_chrono/system_timer.h",
+        "public/pw_chrono/virtual_clock.h",
+    ],
+)

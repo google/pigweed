@@ -204,3 +204,11 @@ filegroup(
     name = "docs",
     srcs = ["docs.rst"],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_perf_test/event_handler.h",
+        "public/pw_perf_test/perf_test.h",
+    ],
+)

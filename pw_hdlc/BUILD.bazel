@@ -188,3 +188,12 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_hdlc/decoder.h",
+        "public/pw_hdlc/encoder.h",
+        "public/pw_hdlc/router.h",
+    ],
+)

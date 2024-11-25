@@ -32,3 +32,10 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_numeric/integer_division.h",
+    ],
+)

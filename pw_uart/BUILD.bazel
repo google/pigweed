@@ -149,3 +149,14 @@ filegroup(
     name = "docs",
     srcs = ["docs.rst"],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_uart/blocking_adapter.h",
+        "public/pw_uart/stream.h",
+        "public/pw_uart/uart.h",
+        "public/pw_uart/uart_base.h",
+        "public/pw_uart/uart_non_blocking.h",
+    ],
+)

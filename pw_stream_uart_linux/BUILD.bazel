@@ -43,3 +43,10 @@ pw_cc_test(
         ":pw_stream_uart_linux",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_stream_uart_linux/stream.h",
+    ],
+)

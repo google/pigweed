@@ -46,3 +46,10 @@ pw_cc_test(
         ":pw_clock_tree",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_clock_tree/clock_tree.h",
+    ],
+)

@@ -79,3 +79,10 @@ pw_cc_test(
         ":work_queue_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_work_queue/work_queue.h",
+    ],
+)

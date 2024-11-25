@@ -193,3 +193,14 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_string/format.h",
+        "public/pw_string/string.h",
+        "public/pw_string/string_builder.h",
+        "public/pw_string/utf_codecs.h",
+        "public/pw_string/util.h",
+    ],
+)

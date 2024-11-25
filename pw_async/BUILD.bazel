@@ -112,3 +112,16 @@ cc_library(
         "//pw_result",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_async/context.h",
+        "public/pw_async/dispatcher.h",
+        "public/pw_async/fake_dispatcher_fixture.h",
+        "public/pw_async/function_dispatcher.h",
+        "public/pw_async/heap_dispatcher.h",
+        "public/pw_async/task.h",
+        "public/pw_async/task_function.h",
+    ],
+)

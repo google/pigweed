@@ -550,3 +550,12 @@ pwpb_rpc_proto_library(
     pwpb_proto_library_deps = [":echo_pwpb"],
     deps = [":echo_proto"],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_rpc/channel.h",
+        "public/pw_rpc/internal/config.h",
+        "public/pw_rpc/synchronous_call.h",
+    ],
+)

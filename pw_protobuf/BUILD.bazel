@@ -387,3 +387,10 @@ filegroup(
         "size_report/*.cc",
     ]),
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_protobuf/find.h",
+    ],
+)

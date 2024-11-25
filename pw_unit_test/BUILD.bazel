@@ -494,3 +494,21 @@ filegroup(
     #     "//pw_rpc/system_server",
     # ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "light_public_overrides/pw_unit_test/framework_backend.h",
+        "public/pw_unit_test/config.h",
+        "public/pw_unit_test/event_handler.h",
+        "public/pw_unit_test/googletest_handler_adapter.h",
+        "public/pw_unit_test/googletest_style_event_handler.h",
+        "public/pw_unit_test/logging_event_handler.h",
+        "public/pw_unit_test/multi_event_handler.h",
+        "public/pw_unit_test/printf_event_handler.h",
+        "public/pw_unit_test/simple_printing_event_handler.h",
+        "public/pw_unit_test/static_library_support.h",
+        "public/pw_unit_test/status_macros.h",
+        "public/pw_unit_test/test_record_event_handler.h",
+    ],
+)

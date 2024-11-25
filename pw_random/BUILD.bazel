@@ -54,3 +54,11 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_random/random.h",
+        "public/pw_random/xor_shift.h",
+    ],
+)

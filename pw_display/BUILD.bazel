@@ -33,3 +33,10 @@ pw_cc_test(
     srcs = ["color_test.cc"],
     deps = [":color"],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_display/color.h",
+    ],
+)

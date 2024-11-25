@@ -530,3 +530,20 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_sync/binary_semaphore.h",
+        "public/pw_sync/borrow.h",
+        "public/pw_sync/counting_semaphore.h",
+        "public/pw_sync/inline_borrowable.h",
+        "public/pw_sync/interrupt_spin_lock.h",
+        "public/pw_sync/lock_annotations.h",
+        "public/pw_sync/mutex.h",
+        "public/pw_sync/thread_notification.h",
+        "public/pw_sync/timed_mutex.h",
+        "public/pw_sync/timed_thread_notification.h",
+        "public/pw_sync/virtual_basic_lockable.h",
+    ],
+)

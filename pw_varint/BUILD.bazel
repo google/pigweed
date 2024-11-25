@@ -74,3 +74,11 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_varint/stream.h",
+        "public/pw_varint/varint.h",
+    ],
+)

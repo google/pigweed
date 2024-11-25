@@ -348,3 +348,16 @@ filegroup(
         "java/dev/pigweed/tokenizer/detokenizer.cc",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_tokenizer/config.h",
+        "public/pw_tokenizer/detokenize.h",
+        "public/pw_tokenizer/encode_args.h",
+        "public/pw_tokenizer/enum.h",
+        "public/pw_tokenizer/nested_tokenization.h",
+        "public/pw_tokenizer/token_database.h",
+        "public/pw_tokenizer/tokenize.h",
+    ],
+)

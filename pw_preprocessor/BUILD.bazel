@@ -67,3 +67,11 @@ TESTS = [
     )
     for t in TESTS
 ]
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_preprocessor/apply.h",
+        "public/pw_preprocessor/compiler.h",
+    ],
+)

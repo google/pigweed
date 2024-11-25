@@ -721,3 +721,10 @@ device_console(
     binary = ":rp2350_system_example",
     script = "//pw_system/py:pw_system_console",
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_system/system.h",
+    ],
+)

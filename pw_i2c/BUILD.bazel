@@ -220,3 +220,16 @@ pw_cc_test(
         "//pw_status",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_i2c/address.h",
+        "public/pw_i2c/device.h",
+        "public/pw_i2c/i2c_service.h",
+        "public/pw_i2c/initiator.h",
+        "public/pw_i2c/initiator_gmock.h",
+        "public/pw_i2c/initiator_mock.h",
+        "public/pw_i2c/register_device.h",
+    ],
+)

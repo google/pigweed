@@ -111,3 +111,10 @@ cc_library(
     deps = ["//pw_assert"],
     alwayslink = 1,
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_toolchain/no_destructor.h",
+    ],
+)

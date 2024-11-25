@@ -268,3 +268,11 @@ pw_copy_and_patch_file_test(
     expected = "test_data/pw_copy_and_patch_file/basic.expected",
     patch_file = "test_data/pw_copy_and_patch_file/basic.patch",
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_build/linker_symbol.h",
+        "public/pw_build/must_place.ld.h",
+    ],
+)

@@ -824,3 +824,11 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_kvs/key_value_store.h",
+        "pw_kvs_private/config.h",
+    ],
+)
