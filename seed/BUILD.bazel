@@ -17,6 +17,11 @@ load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files([
+    "seed_metadata.json",
+    "seed_metadata_schema.json",
+])
+
 sphinx_docs_library(
     name = "docs",
     srcs = [

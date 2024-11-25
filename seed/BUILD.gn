@@ -14,304 +14,35 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("seed.gni")
+import("$dir_pw_docgen/docs.gni")
 
-pw_seed("0001") {
-  sources = [ "0001.rst" ]
-  inputs = [ "0001/seed-index-gerrit.png" ]
-  title = "The SEED Process"
-  status = "Meta"
-  author = "The Pigweed Authors"
-  facilitator = "N/A"
-}
-
-pw_seed("0002") {
-  sources = [ "0002.rst" ]
-  title = "SEED Template"
-  status = "Meta"
-  author = "The Pigweed Authors"
-  facilitator = "N/A"
-}
-
-pw_seed("0101") {
-  sources = [ "0101.rst" ]
-  title = "pigweed.json"
-  status = "Accepted"
-  author = "Rob Mohr"
-  facilitator = "Ted Pudlik"
-}
-
-pw_seed("0102") {
-  sources = [ "0102.rst" ]
-  title = "Consistent Module Documentation"
-  status = "Accepted"
-  author = "Chad Norvell"
-  facilitator = "Kayce Basques"
-}
-
-pw_seed("0103") {
-  sources = [ "0103.rst" ]
-  title = "pw_protobuf: Past, present, and future"
-  status = "Accepted"
-  author = "Alexei Frolov"
-  facilitator = "Armando Montanez"
-}
-
-pw_seed("0104") {
-  sources = [ "0104.rst" ]
-  title = "Display Support"
-  status = "Accepted"
-  author = "Chris Mumford"
-  facilitator = "Anthony DiGirolamo"
-}
-
-pw_seed("0105") {
-  sources = [ "0105.rst" ]
-  title = "Nested Tokens and Tokenized Log Arguments"
-  status = "Accepted"
-  author = "Gwyneth Chen"
-  facilitator = "Wyatt Hepler"
-}
-
-pw_seed("0106") {
-  changelist = 155430
-  title = "Project Template"
-  status = "On Hold"
-  author = "Armando Montanez"
-  facilitator = "Kayce Basques"
-}
-
-pw_seed("0107") {
-  sources = [ "0107.rst" ]
-  title = "Pigweed Communications"
-  status = "Accepted"
-  author = "Wyatt Hepler"
-  facilitator = "Carlos Chinchilla"
-}
-
-pw_seed("0108") {
-  sources = [ "0108.rst" ]
-  title = "Emulators Frontend"
-  status = "Accepted"
-  author = "Octavian Purdila"
-  facilitator = "Armando Montanez"
-}
-
-pw_seed("0109") {
-  sources = [ "0109.rst" ]
-  title = "Communication Buffers"
-  status = "Accepted"
-  author = "Taylor Cramer"
-  facilitator = "Erik Gilling"
-}
-
-pw_seed("0110") {
-  sources = [ "0110.rst" ]
-  title = "Memory Allocation Interfaces"
-  status = "Accepted"
-  author = "Alexei Frolov"
-  facilitator = "Taylor Cramer"
-}
-
-pw_seed("0111") {
-  sources = [ "0111.rst" ]
-  title = "Make Bazel Pigweed's Primary Build System"
-  status = "Accepted"
-  author = "Ted Pudlik"
-  facilitator = "Armando Montanez"
-}
-
-pw_seed("0112") {
-  sources = [ "0112.rst" ]
-  title = "Async Poll Model"
-  status = "Accepted"
-  author = "Taylor Cramer"
-  facilitator = "Wyatt Hepler"
-}
-
-pw_seed("0113") {
-  sources = [ "0113.rst" ]
-  title = "Add modular Bazel C/C++ toolchain API"
-  status = "Accepted"
-  author = "Armando Montanez"
-  facilitator = "Ted Pudlik"
-}
-
-pw_seed("0114") {
-  sources = [ "0114.rst" ]
-  title = "Channels"
-  status = "Accepted"
-  author = "Wyatt Hepler"
-  facilitator = "Carlos Chinchilla"
-}
-
-pw_seed("0115") {
-  changelist = 176760
-  title = "pw_sensor: Sensors"
-  status = "Rejected"
-  author = "Yuval Peress"
-  facilitator = "Taylor Cramer"
-}
-
-pw_seed("0116") {
-  changelist = 177696
-  title = "pw_net Sockets"
-  status = "On Hold"
-  author = "Wyatt Hepler"
-  facilitator = "Taylor Cramer"
-}
-
-pw_seed("0117") {
-  sources = [ "0117.rst" ]
-  title = "pw_i3c"
-  status = "Accepted"
-  author = "Jack Chen"
-  facilitator = "Alexei Frolov"
-}
-
-pw_seed("0118") {
-  changelist = 181836
-  title = "Sensor Read API"
-  status = "Draft"
-  author = "Taylor Cramer"
-}
-
-pw_seed("0119") {
-  sources = [ "0119.rst" ]
-  title = "pw_sensor A sensor framework"
-  status = "Accepted"
-  inputs = [
-    "0119/high-level-view.svg",
+pw_doc_group("docs") {
+  sources = [
+    "0000.rst",
+    "0001.rst",
+    "0001/seed-index-gerrit.png",
+    "0002.rst",
+    "0101.rst",
+    "0102.rst",
+    "0103.rst",
+    "0104.rst",
+    "0105.rst",
+    "0107.rst",
+    "0108.rst",
+    "0109.rst",
+    "0110.rst",
+    "0111.rst",
+    "0112.rst",
+    "0113.rst",
+    "0114.rst",
+    "0117.rst",
+    "0119.rst",
     "0119/data-pipeline.svg",
-  ]
-  author = "Yuval Peress"
-}
-
-pw_seed("0120") {
-  sources = [ "0120.rst" ]
-  status = "Accepted"
-  title = "pw_sensor Sensor configuration"
-  author = "Yuval Peress"
-}
-
-pw_seed("0121") {
-  changelist = 184224
-  title = "Pigweed Project Server"
-  status = "Draft"
-  author = "Chad Norvell"
-}
-
-pw_seed("0122") {
-  sources = [ "0122.rst" ]
-  title = "Organize Pigweed code samples"
-  status = "Accepted"
-  author = "Ted Pudlik"
-  facilitator = "Kayce Basques"
-}
-
-pw_seed("0123") {
-  changelist = 188141
-  title = "Sprout Bazel C++ toolchain API into a separate repository"
-  status = "Rejected"
-  author = "Ted Pudlik"
-  facilitator = "Armando Montanez"
-}
-
-pw_seed("0124") {
-  sources = [ "0124.rst" ]
-  title = "Interfaces for Retrieving Size Information from Multisink"
-  status = "Intent Approved"
-  author = "Jiacheng Lu"
-  facilitator = "Carlos Chinchilla"
-}
-
-pw_seed("0125") {
-  changelist = 192090
-  title = "Statistics Database"
-  status = "Draft"
-  author = "Erik Staats"
-}
-
-pw_seed("0126") {
-  changelist = 200910
-  title = "Key-Value Store Interfaces"
-  status = "Draft"
-  author = "Wenji Li"
-}
-
-pw_seed("0127") {
-  changelist = 198134
-  title = "pw_sensor Reading"
-  status = "Draft"
-  author = "Yuval Peress"
-}
-
-pw_seed("0128") {
-  title = "Abstracting Thread Creation"
-  author = "Wyatt Hepler"
-  status = "Accepted"
-  sources = [ "0128.rst" ]
-  facilitator = "Taylor Cramer"
-}
-
-pw_seed("0129") {
-  title = "pw_assert: Support PW_ASSERT with non-argument message"
-  author = "momoshen"
-  status = "Draft"
-  changelist = 207130
-}
-
-pw_seed("0130") {
-  title = "Update Sphinx theme"
-  author = "Kayce Basques"
-  status = "Accepted"
-  sources = [ "0130.rst" ]
-}
-
-pw_seed("0132") {
-  title = "pw_usb"
-  author = "Łukasz Kędziora"
-  status = "Draft"
-  changelist = 243132
-}
-
-# This must be defined after all `pw_seed` targets, as it relies on information
-# exposed by them.
-pw_seed_index("seeds") {
-  index_file = "0000.rst"
-  seeds = [
-    ":0001",
-    ":0002",
-    ":0101",
-    ":0102",
-    ":0103",
-    ":0104",
-    ":0105",
-    ":0106",
-    ":0107",
-    ":0108",
-    ":0109",
-    ":0110",
-    ":0111",
-    ":0112",
-    ":0113",
-    ":0114",
-    ":0115",
-    ":0116",
-    ":0117",
-    ":0118",
-    ":0119",
-    ":0120",
-    ":0121",
-    ":0122",
-    ":0123",
-    ":0124",
-    ":0125",
-    ":0126",
-    ":0127",
-    ":0128",
-    ":0129",
-    ":0130",
-    ":0132",
+    "0119/high-level-view.svg",
+    "0120.rst",
+    "0122.rst",
+    "0124.rst",
+    "0128.rst",
+    "0130.rst",
   ]
 }

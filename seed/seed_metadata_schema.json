@@ -1,0 +1,62 @@
+{
+  "description": "Schema for //seed/seed_metadata.json.",
+  "type": "object",
+  "patternProperties": {
+    "[0-9]{4}": {
+      "description": "The metadata for a single SEED. Each top-level key should be a 4-digit number associated to a SEED.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "description": "The title of the SEED.",
+          "type": "string"
+        },
+        "status": {
+          "description": "The status of the SEED.",
+          "type": "string",
+          "enum": [
+            "Draft",
+            "Intent Approved",
+            "Open For Comments",
+            "Last Call",
+            "Accepted",
+            "Rejected",
+            "Deprecated",
+            "Superseded",
+            "On Hold",
+            "Meta"
+          ]
+        },
+        "date": {
+          "description": "The date when the SEED was created, in YYYY-MM-DD format.",
+          "type": "string"
+        },
+        "cl": {
+          "description": "The change where the SEED is being drafted and discussed. E.g. 12345 (representing pwrev.dev/12345).",
+          "type": "string"
+        },
+        "authors": {
+          "description": "The names of the SEED author(s).",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "The first and last name of a SEED author."
+          }
+        },
+        "facilitator": {
+          "description": "The first and last name of the facilitator for this SEED.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "status",
+        "date",
+        "cl",
+        "authors",
+        "facilitator"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
