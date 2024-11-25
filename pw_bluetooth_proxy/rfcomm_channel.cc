@@ -250,8 +250,10 @@ RfcommChannel::RfcommChannel(
     Config tx_config,
     uint8_t channel_number,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn)
-    : L2capWriteChannel(
-          l2cap_channel_manager, connection_handle, tx_config.cid),
+    : L2capWriteChannel(l2cap_channel_manager,
+                        connection_handle,
+                        AclTransport::kBrEdr,
+                        tx_config.cid),
       L2capReadChannel(l2cap_channel_manager,
                        std::move(receive_fn),
                        connection_handle,

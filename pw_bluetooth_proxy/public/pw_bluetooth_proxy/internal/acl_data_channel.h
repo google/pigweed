@@ -18,6 +18,7 @@
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
 #include "pw_bluetooth_proxy/internal/l2cap_aclu_signaling_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h"
+#include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_containers/vector.h"
 #include "pw_result/result.h"
 #include "pw_sync/lock_annotations.h"
@@ -78,47 +79,34 @@ class AclDataChannel {
   // Reclaim any credits we have associated with the removed connection.
   void HandleDisconnectionCompleteEvent(H4PacketWithHci&& h4_packet);
 
-  /// Indicates whether the proxy has the capability of sending LE ACL packets.
+  /// Indicates whether the proxy has the capability of sending ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy
   /// has not yet or has been unable to reserve credits from the host.
-  bool HasSendLeAclCapability() const;
+  bool HasSendAclCapability(AclTransport transport) const;
 
-  /// @deprecated Use HasSendLeAclCapability instead.
-  bool HasSendAclCapability() const { return HasSendLeAclCapability(); }
+  /// @deprecated Use HasSendAclCapability with transport parameter instead.
+  bool HasSendAclCapability() const {
+    return HasSendAclCapability(AclTransport::kLe);
+  }
 
-  /// Indicates whether the proxy has the capability of sending BR/EDR ACL
-  /// packets. Note that this indicates intention, so it can be true even if the
-  /// proxy has not yet or has been unable to reserve credits from the host.
-  bool HasSendBrEdrAclCapability() const;
-
-  // Returns the number of available LE ACL send credits for the proxy.
+  // Returns the number of available ACL send credits for the proxy.
   // Can be zero if the controller has not yet been initialized by the host.
-  uint16_t GetNumFreeLeAclPackets() const;
-
-  // Returns the number of available BR/EDR ACL send credits for the proxy.
-  // Can be zero if the controller has not yet been initialized by the host.
-  uint16_t GetNumFreeBrEdrAclPackets() const;
+  uint16_t GetNumFreeAclPackets(AclTransport transport) const;
 
   // Send an ACL data packet contained in an H4 packet to the controller.
   //
-  // Returns PW_STATUS_UNAVAILABLE if no LE ACL send credits were available.
-  // Returns PW_STATUS_INVALID_ARGUMENT if LE ACL packet was ill-formed.
-  // Returns PW_NOT_FOUND if LE ACL connection does not exist.
+  // Returns PW_STATUS_UNAVAILABLE if no ACL send credits were available.
+  // Returns PW_STATUS_INVALID_ARGUMENT if ACL packet was ill-formed.
+  // Returns PW_NOT_FOUND if ACL connection does not exist.
   pw::Status SendAcl(H4PacketWithH4&& h4_packet);
 
-  // Register a new logical link on LE ACL logical transport.
+  // Register a new logical link on ACL logical transport.
   //
   // Returns PW_STATUS_OK if a connection was added.
   // Returns PW_STATUS_ALREADY EXISTS if a connection already exists.
   // Returns PW_STATUS_RESOURCE_EXHAUSTED if no space for additional connection.
-  pw::Status CreateLeAclConnection(uint16_t connection_handle);
-
-  // Register a new logical link on ACL-U logical transport.
-  //
-  // Returns PW_STATUS_OK if a connection was added.
-  // Returns PW_STATUS_ALREADY EXISTS if a connection already exists.
-  // Returns PW_STATUS_RESOURCE_EXHAUSTED if no space for additional connection.
-  pw::Status CreateAclConnection(uint16_t connection_handle);
+  pw::Status CreateAclConnection(uint16_t connection_handle,
+                                 AclTransport transport);
 
   // Sets `is_receiving_fragmented_pdu` flag for connection.
   //
@@ -138,25 +126,29 @@ class AclDataChannel {
   pw::Status FragmentedPduFinished(uint16_t connection_handle);
 
  private:
-  // An active logical link on LE ACL logical transport.
+  // An active logical link on ACL logical transport.
   // TODO: https://pwbug.dev/360929142 - Encapsulate all logic related to this
   // within a new LogicalLinkManager class?
-  class LeAclConnection {
+  class AclConnection {
    public:
-    LeAclConnection(uint16_t connection_handle,
-                    uint16_t num_pending_packets,
-                    L2capChannelManager& l2cap_channel_manager)
-        : connection_handle_(connection_handle),
+    AclConnection(AclTransport transport,
+                  uint16_t connection_handle,
+                  uint16_t num_pending_packets,
+                  L2capChannelManager& l2cap_channel_manager)
+        : transport_(transport),
+          connection_handle_(connection_handle),
           num_pending_packets_(num_pending_packets),
           leu_signaling_channel_(l2cap_channel_manager, connection_handle),
           aclu_signaling_channel_(l2cap_channel_manager, connection_handle),
           is_receiving_fragmented_pdu_(false) {}
 
-    LeAclConnection& operator=(LeAclConnection&& other) = default;
+    AclConnection& operator=(AclConnection&& other) = default;
 
     uint16_t connection_handle() const { return connection_handle_; }
 
     uint16_t num_pending_packets() const { return num_pending_packets_; }
+
+    AclTransport transport() const { return transport_; }
 
     void set_num_pending_packets(uint16_t new_val) {
       num_pending_packets_ = new_val;
@@ -171,6 +163,7 @@ class AclDataChannel {
     }
 
    private:
+    AclTransport transport_;
     uint16_t connection_handle_;
     uint16_t num_pending_packets_;
     L2capLeUSignalingChannel leu_signaling_channel_;
@@ -219,9 +212,15 @@ class AclDataChannel {
     uint16_t proxy_pending_ = 0;
   };
 
-  // Returns iterator to LeAclConnection with provided `connection_handle` in
-  // `active_le_acl_connections_`. Returns nullptr if no such connection exists.
-  LeAclConnection* FindLeAclConnection(uint16_t connection_handle)
+  // Returns pointer to AclConnection with provided `connection_handle` in
+  // `active_acl_connections_`. Returns nullptr if no such connection exists.
+  AclConnection* FindAclConnection(uint16_t connection_handle)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
+
+  Credits& LookupCredits(AclTransport transport)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
+
+  const Credits& LookupCredits(AclTransport transport) const
       PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
 
   // Maximum number of simultaneous credit-allocated LE connections supported.
@@ -241,8 +240,8 @@ class AclDataChannel {
   Credits le_credits_ PW_GUARDED_BY(credit_allocation_mutex_);
   Credits br_edr_credits_ PW_GUARDED_BY(credit_allocation_mutex_);
 
-  // List of credit-allocated LE ACL connections.
-  pw::Vector<LeAclConnection, kMaxConnections> active_le_acl_connections_
+  // List of credit-allocated ACL connections.
+  pw::Vector<AclConnection, kMaxConnections> active_acl_connections_
       PW_GUARDED_BY(credit_allocation_mutex_);
 
   // Instantiated in acl_data_channel.cc for

@@ -15,6 +15,7 @@
 #pragma once
 
 #include "pw_bluetooth_proxy/h4_packet.h"
+#include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_containers/inline_queue.h"
 #include "pw_containers/intrusive_forward_list.h"
 #include "pw_result/result.h"
@@ -60,9 +61,12 @@ class L2capWriteChannel : public IntrusiveForwardList<L2capWriteChannel>::Item {
   // Get the ACL connection handle.
   uint16_t connection_handle() const { return connection_handle_; }
 
+  AclTransport transport() const { return transport_; }
+
  protected:
   explicit L2capWriteChannel(L2capChannelManager& l2cap_channel_manager,
                              uint16_t connection_handle,
+                             AclTransport transport,
                              uint16_t remote_cid);
 
   // Returns whether or not ACL connection handle & destination L2CAP channel
@@ -94,6 +98,8 @@ class L2capWriteChannel : public IntrusiveForwardList<L2capWriteChannel>::Item {
 
   // TODO: https://pwbug.dev/349700888 - Make capacity configurable.
   static constexpr size_t kQueueCapacity = 5;
+
+  AclTransport transport_;
 
   // ACL connection handle on remote peer to which packets are sent.
   uint16_t connection_handle_;

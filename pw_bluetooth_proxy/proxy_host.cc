@@ -247,7 +247,8 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
     L2capCoc::CocConfig tx_config,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
     pw::Function<void(L2capCoc::Event event)>&& event_fn) {
-  Status status = acl_data_channel_.CreateLeAclConnection(connection_handle);
+  Status status = acl_data_channel_.CreateAclConnection(connection_handle,
+                                                        AclTransport::kLe);
   if (status.IsResourceExhausted()) {
     return pw::Status::Unavailable();
   }
@@ -264,7 +265,8 @@ pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
                                      uint16_t attribute_handle,
                                      pw::span<const uint8_t> attribute_value) {
   // TODO: https://pwbug.dev/369709521 - Migrate clients to channel API.
-  Status status = acl_data_channel_.CreateLeAclConnection(connection_handle);
+  Status status = acl_data_channel_.CreateAclConnection(connection_handle,
+                                                        AclTransport::kLe);
   if (status != OkStatus() && status != Status::AlreadyExists()) {
     return pw::Status::Unavailable();
   }
@@ -283,7 +285,8 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
     RfcommChannel::Config tx_config,
     uint8_t channel_number,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn) {
-  Status status = acl_data_channel_.CreateAclConnection(connection_handle);
+  Status status = acl_data_channel_.CreateAclConnection(connection_handle,
+                                                        AclTransport::kBrEdr);
   if (status != OkStatus() && status != Status::AlreadyExists()) {
     return pw::Status::Unavailable();
   }
@@ -296,19 +299,19 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
 }
 
 bool ProxyHost::HasSendLeAclCapability() const {
-  return acl_data_channel_.HasSendLeAclCapability();
+  return acl_data_channel_.HasSendAclCapability(AclTransport::kLe);
 }
 
 bool ProxyHost::HasSendBrEdrAclCapability() const {
-  return acl_data_channel_.HasSendBrEdrAclCapability();
+  return acl_data_channel_.HasSendAclCapability(AclTransport::kBrEdr);
 }
 
 uint16_t ProxyHost::GetNumFreeLeAclPackets() const {
-  return acl_data_channel_.GetNumFreeLeAclPackets();
+  return acl_data_channel_.GetNumFreeAclPackets(AclTransport::kLe);
 }
 
 uint16_t ProxyHost::GetNumFreeBrEdrAclPackets() const {
-  return acl_data_channel_.GetNumFreeBrEdrAclPackets();
+  return acl_data_channel_.GetNumFreeAclPackets(AclTransport::kBrEdr);
 }
 
 }  // namespace pw::bluetooth::proxy

@@ -91,12 +91,15 @@ uint16_t L2capChannelManager::GetH4BuffSize() const {
 void L2capChannelManager::DrainWriteChannelQueues() {
   std::lock_guard lock(write_channels_mutex_);
 
-  // TODO: https://pwbug.dev/379172336 - Select correct Credits to check.
-  if (write_channels_.empty() ||
-      acl_data_channel_.GetNumFreeLeAclPackets() == 0) {
+  if (write_channels_.empty()) {
     return;
   }
 
+  DrainWriteChannelQueues(AclTransport::kBrEdr);
+  DrainWriteChannelQueues(AclTransport::kLe);
+}
+
+void L2capChannelManager::DrainWriteChannelQueues(AclTransport transport) {
   IntrusiveForwardList<L2capWriteChannel>::iterator round_robin_start =
       lrd_write_channel_;
   // Iterate around `write_channels_` in round robin fashion. For each channel,
@@ -104,7 +107,15 @@ void L2capChannelManager::DrainWriteChannelQueues() {
   // ACL send credits or finish visiting every channel.
   // TODO: https://pwbug.dev/379337260 - Only drain one L2CAP PDU per channel
   // before moving on. (This may require sending multiple ACL fragments.)
-  do {
+  while (acl_data_channel_.GetNumFreeAclPackets(transport) > 0) {
+    if (lrd_write_channel_->transport() != transport) {
+      Advance(lrd_write_channel_);
+      if (lrd_write_channel_ == round_robin_start) {
+        return;
+      }
+      continue;
+    }
+
     std::optional<H4PacketWithH4> packet = lrd_write_channel_->DequeuePacket();
     if (!packet) {
       Advance(lrd_write_channel_);
@@ -115,7 +126,7 @@ void L2capChannelManager::DrainWriteChannelQueues() {
     }
 
     PW_CHECK_OK(acl_data_channel_.SendAcl(std::move(*packet)));
-  } while (acl_data_channel_.GetNumFreeLeAclPackets());
+  }
 }
 
 L2capWriteChannel* L2capChannelManager::FindWriteChannel(

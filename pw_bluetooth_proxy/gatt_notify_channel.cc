@@ -84,8 +84,10 @@ pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
 GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
                                      uint16_t connection_handle,
                                      uint16_t attribute_handle)
-    : L2capWriteChannel(
-          l2cap_channel_manager, connection_handle, kAttributeProtocolCID),
+    : L2capWriteChannel(l2cap_channel_manager,
+                        connection_handle,
+                        AclTransport::kLe,
+                        kAttributeProtocolCID),
       attribute_handle_(attribute_handle) {}
 
 }  // namespace pw::bluetooth::proxy

@@ -82,8 +82,8 @@ Result<EmbossT> CreateAndPopulateToHostEventView(H4PacketWithHci& h4_packet,
 
 // Send an LE_Read_Buffer_Size (V2) CommandComplete event to `proxy` to request
 // the reservation of a number of LE ACL send credits.
-Status SendReadBufferResponseFromController(ProxyHost& proxy,
-                                            uint8_t num_credits_to_reserve) {
+Status SendLeReadBufferResponseFromController(ProxyHost& proxy,
+                                              uint8_t num_credits_to_reserve) {
   std::array<
       uint8_t,
       emboss::LEReadBufferSizeV2CommandCompleteEventWriter::SizeInBytes()>
@@ -97,6 +97,25 @@ Status SendReadBufferResponseFromController(ProxyHost& proxy,
   view.command_complete().command_opcode_enum().Write(
       emboss::OpCode::LE_READ_BUFFER_SIZE_V2);
   view.total_num_le_acl_data_packets().Write(num_credits_to_reserve);
+
+  proxy.HandleH4HciFromController(std::move(h4_packet));
+  return OkStatus();
+}
+
+Status SendReadBufferResponseFromController(ProxyHost& proxy,
+                                            uint8_t num_credits_to_reserve) {
+  std::array<uint8_t,
+             emboss::ReadBufferSizeCommandCompleteEventWriter::SizeInBytes()>
+      hci_arr{};
+  H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
+  PW_TRY_ASSIGN(auto view,
+                CreateAndPopulateToHostEventView<
+                    emboss::ReadBufferSizeCommandCompleteEventWriter>(
+                    h4_packet, emboss::EventCode::COMMAND_COMPLETE));
+  view.command_complete().command_opcode_enum().Write(
+      emboss::OpCode::READ_BUFFER_SIZE);
+  view.total_num_acl_data_packets().Write(num_credits_to_reserve);
+  EXPECT_TRUE(view.Ok());
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
   return OkStatus();
@@ -193,6 +212,26 @@ L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params) {
                             std::move(params.receive_fn),
                             std::move(params.event_fn));
   return std::move(channel.value());
+}
+
+struct RfcommParameters {
+  uint16_t handle = 123;
+  RfcommChannel::Config rx_config = {
+      .cid = 234, .max_frame_size = 900, .credits = 10};
+  RfcommChannel::Config tx_config = {
+      .cid = 456, .max_frame_size = 900, .credits = 10};
+  uint8_t rfcomm_channel = 3;
+};
+
+RfcommChannel BuildRfcomm(ProxyHost& proxy, RfcommParameters params) {
+  pw::Result<RfcommChannel> channel =
+      proxy.AcquireRfcommChannel(params.handle,
+                                 params.rx_config,
+                                 params.tx_config,
+                                 params.rfcomm_channel,
+                                 nullptr);
+  PW_TEST_EXPECT_OK(channel);
+  return std::move((channel.value()));
 }
 
 // ########## Examples
@@ -992,7 +1031,7 @@ TEST(GattNotifyTest, Send1ByteAttribute) {
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
   // Allow proxy to reserve 1 credit.
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   PW_TEST_EXPECT_OK(proxy.SendGattNotify(capture.handle,
                                          capture.attribute_handle,
@@ -1077,7 +1116,7 @@ TEST(GattNotifyTest, Send2ByteAttribute) {
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
   // Allow proxy to reserve 1 credit.
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   PW_TEST_EXPECT_OK(proxy.SendGattNotify(capture.handle,
                                          capture.attribute_handle,
@@ -1172,7 +1211,7 @@ TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
                               std::move(send_to_controller_fn),
                               kNumConnections);
   PW_TEST_EXPECT_OK(
-      SendReadBufferResponseFromController(proxy, kNumConnections));
+      SendLeReadBufferResponseFromController(proxy, kNumConnections));
   EXPECT_EQ(capture.sends_called, 1);
 
   std::array<uint8_t, 1> attribute_value = {0};
@@ -1263,7 +1302,7 @@ TEST(NumberOfCompletedPacketsTest, ManyMorePacketsCompletedThanPacketsPending) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 2));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 2));
   EXPECT_EQ(capture.sends_called, 1);
 
   std::array<uint8_t, 1> attribute_value = {0};
@@ -1340,7 +1379,7 @@ TEST(NumberOfCompletedPacketsTest, ProxyReclaimsOnlyItsUsedCredits) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 4);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 4));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 4));
   EXPECT_EQ(capture.sends_called, 1);
 
   std::array<uint8_t, 1> attribute_value = {0};
@@ -1415,7 +1454,7 @@ TEST(NumberOfCompletedPacketsTest, EventUnmodifiedIfNoCreditsInUse) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 10);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 10));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 10));
   EXPECT_EQ(capture.sends_called, 1);
 
   // Send Number_of_Completed_Packets event that reports 10 packets on
@@ -1475,7 +1514,7 @@ TEST(NumberOfCompletedPacketsTest, HandlesUnusualEvents) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 10);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 10));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 10));
   EXPECT_EQ(capture.sends_called, 1);
 
   // Send Number_of_Completed_Packets event with no entries.
@@ -1496,6 +1535,63 @@ TEST(NumberOfCompletedPacketsTest, HandlesUnusualEvents) {
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 10);
   // Proxy host will not pass on a NOCP with no credits.
   EXPECT_EQ(capture.sends_called, 1);
+}
+
+TEST(NumberOfCompletedPacketsTest, MultipleChannelsDifferentTransports) {
+  static constexpr size_t kPayloadSize = 3;
+  struct {
+    int sends_called = 0;
+    std::array<uint8_t, kPayloadSize> payload = {
+        0xAB,
+        0xCD,
+        0xEF,
+    };
+  } capture;
+
+  pw::Function<void(H4PacketWithHci&&)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4&&)>&& send_to_controller_fn(
+      [&capture](H4PacketWithH4&&) { ++capture.sends_called; });
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/1);
+  // Allow proxy to reserve BR/EDR 1 credit.
+  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  // Allow proxy to reserve LE 1 credit.
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
+
+  // Test that sending on one type of transport doesn't get blocked if the other
+  // type of transport is out of credits.
+
+  L2capCoc le_channel =
+      BuildCoc(proxy, CocParameters{.handle = 0x123, .tx_credits = 2});
+  EXPECT_EQ(le_channel.Write(capture.payload), PW_STATUS_OK);
+  EXPECT_EQ(capture.sends_called, 1);
+
+  RfcommChannel bredr_channel =
+      BuildRfcomm(proxy, RfcommParameters{.handle = 0x456});
+  EXPECT_EQ(bredr_channel.Write(capture.payload), PW_STATUS_OK);
+  // Send should succeed even though no LE credits available
+  EXPECT_EQ(capture.sends_called, 2);
+
+  // Queue an LE write
+  EXPECT_EQ(le_channel.Write(capture.payload), PW_STATUS_OK);
+  EXPECT_EQ(capture.sends_called, 2);
+
+  // Complete previous LE write
+  PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
+      proxy, FlatMap<uint16_t, uint16_t, 1>({{{0x123, 1}}})));
+  EXPECT_EQ(capture.sends_called, 3);
+
+  // Complete BR/EDR write
+  PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
+      proxy, FlatMap<uint16_t, uint16_t, 1>({{{0x456, 1}}})));
+
+  // Write again
+  EXPECT_EQ(bredr_channel.Write(capture.payload), PW_STATUS_OK);
+  EXPECT_EQ(capture.sends_called, 4);
 }
 
 // ########## DisconnectionCompleteTest
@@ -1537,7 +1633,7 @@ TEST(DisconnectionCompleteTest, DisconnectionReclaimsCredits) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 10);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 10));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 10));
   EXPECT_EQ(capture.sends_called, 1);
 
   std::array<uint8_t, 1> attribute_value = {0};
@@ -1599,7 +1695,7 @@ TEST(DisconnectionCompleteTest, FailedDisconnectionHasNoEffect) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   std::array<uint8_t, 1> attribute_value = {0};
 
@@ -1627,7 +1723,7 @@ TEST(DisconnectionCompleteTest, DisconnectionOfUnusedConnectionHasNoEffect) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   std::array<uint8_t, 1> attribute_value = {0};
 
@@ -1680,7 +1776,7 @@ TEST(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
   EXPECT_EQ(capture.sends_called, 1);
 
   std::array<uint8_t, 1> attribute_value = {0};
@@ -1760,7 +1856,7 @@ TEST(ResetTest, ResetClearsActiveConnections) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 2));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 2));
   EXPECT_EQ(host_capture.sends_called, 1);
 
   std::array<uint8_t, 1> attribute_value = {0};
@@ -1779,7 +1875,7 @@ TEST(ResetTest, ResetClearsActiveConnections) {
   EXPECT_TRUE(proxy.HasSendLeAclCapability());
 
   // Re-initialize AclDataChannel with 2 credits.
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 2));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 2));
   EXPECT_EQ(host_capture.sends_called, 2);
 
   // Send ACL on random handle to expend one credit.
@@ -1807,7 +1903,7 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   proxy.Reset();
   proxy.Reset();
@@ -1816,7 +1912,7 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
   // Validate state after double reset.
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
   EXPECT_TRUE(proxy.HasSendAclCapability());
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
   EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
             PW_STATUS_OK);
   EXPECT_EQ(sends_called, 1);
@@ -1826,7 +1922,7 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
   // Validate state after third reset.
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
   EXPECT_TRUE(proxy.HasSendAclCapability());
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
   EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
             PW_STATUS_OK);
   EXPECT_EQ(sends_called, 2);
@@ -1854,7 +1950,8 @@ TEST(MultiSendTest, CanOccupyAllThenReuseEachBuffer) {
                               2 * kMaxSends);
   // Allow proxy to reserve enough credits to send twice the number of
   // simultaneous sends supported by proxy.
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 2 * kMaxSends));
+  PW_TEST_EXPECT_OK(
+      SendLeReadBufferResponseFromController(proxy, 2 * kMaxSends));
 
   std::array<uint8_t, 1> attribute_value = {0xF};
   // Occupy all send buffers.
@@ -1905,7 +2002,8 @@ TEST(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
                               2 * kMaxSends);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 2 * kMaxSends));
+  PW_TEST_EXPECT_OK(
+      SendLeReadBufferResponseFromController(proxy, 2 * kMaxSends));
 
   std::array<uint8_t, 1> attribute_value = {0xF};
   // Occupy all send buffers.
@@ -1945,7 +2043,7 @@ TEST(MultiSendTest, CanSendOverManyDifferentConnections) {
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
                               ProxyHost::GetMaxNumLeAclConnections());
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
       proxy, ProxyHost::GetMaxNumLeAclConnections()));
 
   for (uint16_t send = 1; send <= ProxyHost::GetMaxNumLeAclConnections();
@@ -1974,7 +2072,7 @@ TEST(MultiSendTest, AttemptToSendOverMaxConnectionsFails) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), kSends);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, kSends));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, kSends));
 
   for (uint16_t send = 1; send <= kMaxProxyActiveConnections; send++) {
     // Use current send count as the connection handle.
@@ -2008,7 +2106,7 @@ TEST(MultiSendTest, ResetClearsBuffOccupiedFlags) {
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), kMaxSends);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, kMaxSends));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, kMaxSends));
 
   std::array<uint8_t, 1> attribute_value = {0xF};
   // Occupy all send buffers.
@@ -2017,7 +2115,7 @@ TEST(MultiSendTest, ResetClearsBuffOccupiedFlags) {
   }
 
   proxy.Reset();
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, kMaxSends));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, kMaxSends));
 
   // Although sent packets have not been released, proxy.Reset() should have
   // marked all buffers as unoccupied.
@@ -2110,7 +2208,7 @@ TEST(L2capCocWriteTest, BasicWrite) {
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
   // Allow proxy to reserve 1 credit.
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   L2capCoc channel = BuildCoc(proxy,
                               CocParameters{.handle = capture.handle,
@@ -2127,7 +2225,7 @@ TEST(L2capCocWriteTest, ErrorOnWriteToStoppedChannel) {
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
   // Allow proxy to reserve 1 credit.
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   L2capCoc channel = BuildCoc(
       proxy,
@@ -2153,7 +2251,7 @@ TEST(L2capCocWriteTest, TooLargeWritesFail) {
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
   // Allow proxy to reserve 1 credit.
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   // Payload size exceeds MTU.
   L2capCoc small_mtu_channel = BuildCoc(proxy, CocParameters{.tx_mtu = 1});
@@ -2199,7 +2297,7 @@ TEST(L2capCocWriteTest, MultipleWritesSameChannel) {
   uint16_t num_writes = 5;
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn), std::move(send_to_controller_fn), num_writes);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
       proxy,
       /*num_credits_to_reserve=*/num_writes));
 
@@ -2239,7 +2337,7 @@ TEST(L2capCocWriteTest, MultipleWritesMultipleChannels) {
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
                               kNumChannels);
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
       proxy,
       /*num_credits_to_reserve=*/kNumChannels));
 
@@ -3444,7 +3542,7 @@ TEST(L2capCocQueueTest, ReadBufferResponseDrainsQueue) {
   EXPECT_EQ(sends_called, 0u);
 
   PW_TEST_EXPECT_OK(
-      SendReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
+      SendLeReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
 
   EXPECT_EQ(sends_called, L2capCoc::QueueCapacity());
 }
@@ -3462,7 +3560,7 @@ TEST(L2capCocQueueTest, NocpEventDrainsQueue) {
                               std::move(send_to_controller_fn),
                               L2capCoc::QueueCapacity());
   PW_TEST_EXPECT_OK(
-      SendReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
+      SendLeReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
 
   uint16_t handle = 123;
   L2capCoc channel =
@@ -3500,7 +3598,7 @@ TEST(L2capCocQueueTest, RemovingLrdWriteChannelDoesNotInvalidateRoundRobin) {
                               std::move(send_to_controller_fn),
                               L2capCoc::QueueCapacity());
   PW_TEST_EXPECT_OK(
-      SendReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
+      SendLeReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), L2capCoc::QueueCapacity());
 
   uint16_t handle = 123;
@@ -3563,7 +3661,7 @@ TEST(L2capSignalingTest, FlowControlCreditIndDrainsQueue) {
                               std::move(send_to_controller_fn),
                               L2capCoc::QueueCapacity());
   PW_TEST_EXPECT_OK(
-      SendReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
+      SendLeReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), L2capCoc::QueueCapacity());
 
   uint16_t handle = 123;
@@ -3906,8 +4004,10 @@ TEST(RfcommWriteTest, BasicWrite) {
         EXPECT_EQ(rfcomm.fcs().Read(), capture.rfcomm_fcs);
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/1);
   // Allow proxy to reserve 1 credit.
   PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
 
@@ -4027,8 +4127,10 @@ TEST(RfcommWriteTest, ExtendedWrite) {
         EXPECT_EQ(rfcomm.fcs().Read(), capture.rfcomm_fcs);
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/1);
   // Allow proxy to reserve 1 credit.
   PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
 

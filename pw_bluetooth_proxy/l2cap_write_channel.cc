@@ -58,7 +58,8 @@ void L2capWriteChannel::ClearQueue() {
 }
 
 L2capWriteChannel::L2capWriteChannel(L2capWriteChannel&& other)
-    : connection_handle_(other.connection_handle_),
+    : transport_(other.transport_),
+      connection_handle_(other.connection_handle_),
       remote_cid_(other.remote_cid_),
       l2cap_channel_manager_(other.l2cap_channel_manager_) {
   l2cap_channel_manager_.ReleaseWriteChannel(other);
@@ -72,8 +73,10 @@ L2capWriteChannel::~L2capWriteChannel() {
 
 L2capWriteChannel::L2capWriteChannel(L2capChannelManager& l2cap_channel_manager,
                                      uint16_t connection_handle,
+                                     AclTransport transport,
                                      uint16_t remote_cid)
-    : connection_handle_(connection_handle),
+    : transport_(transport),
+      connection_handle_(connection_handle),
       remote_cid_(remote_cid),
       l2cap_channel_manager_(l2cap_channel_manager) {
   l2cap_channel_manager_.RegisterWriteChannel(*this);

@@ -90,6 +90,11 @@ class L2capChannelManager {
   void Advance(IntrusiveForwardList<L2capWriteChannel>::iterator& it)
       PW_EXCLUSIVE_LOCKS_REQUIRED(write_channels_mutex_);
 
+  // Send L2CAP packets queued in registered write channels as long as ACL
+  // credits are available on the specified transport.
+  void DrainWriteChannelQueues(AclTransport transport)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(write_channels_mutex_);
+
   // Reference to the ACL data channel owned by the proxy.
   AclDataChannel& acl_data_channel_;
 
