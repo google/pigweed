@@ -277,6 +277,24 @@ pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
   return channel_result->Write(attribute_value);
 }
 
+pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
+    uint16_t connection_handle,
+    RfcommChannel::Config rx_config,
+    RfcommChannel::Config tx_config,
+    uint8_t channel_number,
+    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn) {
+  Status status = acl_data_channel_.CreateAclConnection(connection_handle);
+  if (status != OkStatus() && status != Status::AlreadyExists()) {
+    return pw::Status::Unavailable();
+  }
+  return RfcommChannel::Create(l2cap_channel_manager_,
+                               connection_handle,
+                               rx_config,
+                               tx_config,
+                               channel_number,
+                               std::move(receive_fn));
+}
+
 bool ProxyHost::HasSendLeAclCapability() const {
   return acl_data_channel_.HasSendLeAclCapability();
 }

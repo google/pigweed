@@ -298,6 +298,21 @@ Status AclDataChannel::CreateLeAclConnection(uint16_t connection_handle) {
   return OkStatus();
 }
 
+Status AclDataChannel::CreateAclConnection(uint16_t connection_handle) {
+  std::lock_guard lock(credit_allocation_mutex_);
+  // TODO: pwbug.dev/360929142 - Create ACL-U connection here.
+  LeAclConnection* connection_it = FindLeAclConnection(connection_handle);
+  if (connection_it) {
+    return Status::AlreadyExists();
+  }
+  if (active_le_acl_connections_.full()) {
+    return Status::ResourceExhausted();
+  }
+  active_le_acl_connections_.emplace_back(
+      connection_handle, 0, l2cap_channel_manager_);
+  return OkStatus();
+}
+
 pw::Status AclDataChannel::FragmentedPduStarted(uint16_t connection_handle) {
   std::lock_guard lock(credit_allocation_mutex_);
   LeAclConnection* connection_ptr = FindLeAclConnection(connection_handle);

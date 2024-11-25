@@ -33,6 +33,8 @@ cc_library(
         "l2cap_signaling_channel.cc",
         "l2cap_write_channel.cc",
         "proxy_host.cc",
+        "rfcomm_channel.cc",
+        "rfcomm_fcs.cc",
     ],
     hdrs = [
         "public/pw_bluetooth_proxy/basic_l2cap_channel.h",
@@ -49,8 +51,10 @@ cc_library(
         "public/pw_bluetooth_proxy/internal/l2cap_read_channel.h",
         "public/pw_bluetooth_proxy/internal/l2cap_signaling_channel.h",
         "public/pw_bluetooth_proxy/internal/l2cap_write_channel.h",
+        "public/pw_bluetooth_proxy/internal/rfcomm_fcs.h",
         "public/pw_bluetooth_proxy/l2cap_coc.h",
         "public/pw_bluetooth_proxy/proxy_host.h",
+        "public/pw_bluetooth_proxy/rfcomm_channel.h",
     ],
     strip_include_prefix = "public",
     deps = [
@@ -60,6 +64,7 @@ cc_library(
         "//pw_bluetooth:emboss_hci_events",
         "//pw_bluetooth:emboss_hci_h4",
         "//pw_bluetooth:emboss_l2cap_frames",
+        "//pw_bluetooth:emboss_rfcomm_frames",
         "//pw_bluetooth:emboss_util",
         "//pw_containers",
         "//pw_function",
@@ -77,6 +82,7 @@ pw_cc_test(
     srcs = [
         "h4_packet_test.cc",
         "proxy_host_test.cc",
+        "rfcomm_fcs_test.cc",
     ],
     deps = [
         ":pw_bluetooth_proxy",

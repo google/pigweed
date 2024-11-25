@@ -170,6 +170,19 @@ genrule {
     ],
 }
 
+genrule {
+    name: "pw_bluetooth_generate_emboss_rfcomm_frames",
+    defaults: [
+        "pw_bluetooth_generate_emboss_header",
+    ],
+    srcs: [
+        "public/pw_bluetooth/rfcomm_frames.emb",
+    ],
+    out: [
+        "pw_bluetooth/rfcomm_frames.emb.h",
+    ],
+}
+
 cc_library_headers {
     name: "pw_bluetooth_emboss_group",
     cpp_std: "c++20",
@@ -183,6 +196,7 @@ cc_library_headers {
         "pw_bluetooth_generate_emboss_hci_events",
         "pw_bluetooth_generate_emboss_hci_h4",
         "pw_bluetooth_generate_emboss_l2cap_frames",
+        "pw_bluetooth_generate_emboss_rfcomm_frames",
     ],
     generated_headers: [
         "pw_bluetooth_generate_emboss_att",
@@ -193,6 +207,7 @@ cc_library_headers {
         "pw_bluetooth_generate_emboss_hci_events",
         "pw_bluetooth_generate_emboss_hci_h4",
         "pw_bluetooth_generate_emboss_l2cap_frames",
+        "pw_bluetooth_generate_emboss_rfcomm_frames",
     ],
     host_supported: true,
 }

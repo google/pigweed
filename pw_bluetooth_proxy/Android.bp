@@ -34,6 +34,8 @@ cc_library_static {
         "l2cap_signaling_channel.cc",
         "l2cap_write_channel.cc",
         "proxy_host.cc",
+        "rfcomm_channel.cc",
+        "rfcomm_fcs.cc",
     ],
     export_include_dirs: [
         "public",
@@ -67,6 +69,7 @@ cc_library_static {
         "pw_bluetooth_generate_emboss_hci_events",
         "pw_bluetooth_generate_emboss_hci_h4",
         "pw_bluetooth_generate_emboss_l2cap_frames",
+        "pw_bluetooth_generate_emboss_rfcomm_frames",
     ],
     export_generated_headers: [
         "pw_bluetooth_generate_emboss_att",
@@ -75,5 +78,6 @@ cc_library_static {
         "pw_bluetooth_generate_emboss_hci_events",
         "pw_bluetooth_generate_emboss_hci_h4",
         "pw_bluetooth_generate_emboss_l2cap_frames",
+        "pw_bluetooth_generate_emboss_rfcomm_frames",
     ],
 }

@@ -39,8 +39,11 @@ pw_add_library(pw_bluetooth_proxy STATIC
     public/pw_bluetooth_proxy/internal/l2cap_signaling_channel.h
     public/pw_bluetooth_proxy/internal/l2cap_write_channel.h
     public/pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h
+    public/pw_bluetooth_proxy/internal/rfcomm_fcs.h
     public/pw_bluetooth_proxy/l2cap_coc.h
     public/pw_bluetooth_proxy/proxy_host.h
+    public/pw_bluetooth_proxy/rfcomm_channel.h
+
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -50,6 +53,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
     pw_bluetooth.emboss_l2cap_frames
+    pw_bluetooth.emboss_rfcomm_frames
     pw_bluetooth.emboss_util
     pw_containers
     pw_function
@@ -72,12 +76,15 @@ pw_add_library(pw_bluetooth_proxy STATIC
     l2cap_write_channel.cc
     l2cap_leu_signaling_channel.cc
     proxy_host.cc
+    rfcomm_channel.cc
+    rfcomm_fcs.cc
 )
 
 pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
   SOURCES
     proxy_host_test.cc
     h4_packet_test.cc
+    rfcomm_fcs_test.cc
   PRIVATE_DEPS
     pw_bluetooth_proxy
     pw_third_party.fuchsia.stdcompat

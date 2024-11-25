@@ -19,6 +19,7 @@
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 #include "pw_bluetooth_proxy/l2cap_coc.h"
+#include "pw_bluetooth_proxy/rfcomm_channel.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
@@ -147,6 +148,34 @@ class ProxyHost {
   pw::Status SendGattNotify(uint16_t connection_handle,
                             uint16_t attribute_handle,
                             pw::span<const uint8_t> attribute_value);
+
+  /// Returns an RFCOMM channel that supports writing to and reading from a
+  /// remote peer.
+  ///
+  /// @param[in] connection_handle The connection handle of the remote peer.
+  ///
+  /// @param[in] rx_config         Parameters applying to reading packets.
+  ///                              See `rfcomm_channel.h` for details.
+  ///
+  /// @param[in] tx_config         Parameters applying to writing packets.
+  ///                              See `rfcomm_channel.h` for details.
+  ///
+  /// @param[in] channel_number    RFCOMM channel number to use.
+  ///
+  /// @param[in] receive_fn        Read callback to be invoked on Rx frames.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
+  ///  UNAVAILABLE: If channel could not be created.
+  /// @endrst
+  pw::Result<RfcommChannel> AcquireRfcommChannel(
+      uint16_t connection_handle,
+      RfcommChannel::Config rx_config,
+      RfcommChannel::Config tx_config,
+      uint8_t channel_number,
+      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn);
 
   /// Indicates whether the proxy has the capability of sending LE ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy

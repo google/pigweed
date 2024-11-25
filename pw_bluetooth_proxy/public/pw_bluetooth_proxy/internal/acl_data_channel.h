@@ -113,6 +113,13 @@ class AclDataChannel {
   // Returns PW_STATUS_RESOURCE_EXHAUSTED if no space for additional connection.
   pw::Status CreateLeAclConnection(uint16_t connection_handle);
 
+  // Register a new logical link on ACL-U logical transport.
+  //
+  // Returns PW_STATUS_OK if a connection was added.
+  // Returns PW_STATUS_ALREADY EXISTS if a connection already exists.
+  // Returns PW_STATUS_RESOURCE_EXHAUSTED if no space for additional connection.
+  pw::Status CreateAclConnection(uint16_t connection_handle);
+
   // Sets `is_receiving_fragmented_pdu` flag for connection.
   //
   // Returns PW_STATUS_NOT_FOUND if connection does not exist.
