@@ -13,6 +13,8 @@
 # the License.
 
 load("@rules_python//python:proto.bzl", "py_proto_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 load(
@@ -727,4 +729,15 @@ filegroup(
     srcs = [
         "public/pw_system/system.h",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "Kconfig",
+        "cli.rst",
+        "docs.rst",
+    ],
+    prefix = "pw_system/",
+    target_compatible_with = incompatible_with_mcu(),
 )

@@ -13,6 +13,8 @@
 # the License.
 
 load("@rules_python//python:proto.bzl", "py_proto_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pwpb_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -110,4 +112,13 @@ cc_library(
         "//pw_thread:snapshot",
         "//pw_thread:thread_pwpb",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+    ],
+    prefix = "pw_cpu_exception_risc_v/",
+    target_compatible_with = incompatible_with_mcu(),
 )

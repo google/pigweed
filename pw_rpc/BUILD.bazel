@@ -14,6 +14,8 @@
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "nanopb_proto_library",
@@ -558,4 +560,23 @@ filegroup(
         "public/pw_rpc/internal/config.h",
         "public/pw_rpc/synchronous_call.h",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "Kconfig",
+        "cpp.rst",
+        "design.rst",
+        "docs.rst",
+        "guides.rst",
+        "libraries.rst",
+        "protocol.rst",
+        "ts/docs.rst",
+        "//pw_rpc/nanopb:docs",
+        "//pw_rpc/pwpb:docs",
+        "//pw_rpc/py:docs",
+    ],
+    prefix = "pw_rpc/",
+    target_compatible_with = incompatible_with_mcu(),
 )

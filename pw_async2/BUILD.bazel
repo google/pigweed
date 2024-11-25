@@ -373,6 +373,7 @@ sphinx_docs_library(
     srcs = [
         "backends.rst",
         "docs.rst",
+        "guides.rst",
     ],
     prefix = "pw_async2/",
     target_compatible_with = incompatible_with_mcu(),

@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -203,4 +205,18 @@ filegroup(
         "public/pw_string/utf_codecs.h",
         "public/pw_string/util.h",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "Kconfig",
+        "api.rst",
+        "code_size.rst",
+        "design.rst",
+        "docs.rst",
+        "guide.rst",
+    ],
+    prefix = "pw_string/",
+    target_compatible_with = incompatible_with_mcu(),
 )

@@ -13,6 +13,8 @@
 # the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -117,4 +119,15 @@ filegroup(
     srcs = [
         "public/pw_toolchain/no_destructor.h",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "bazel.rst",
+        "docs.rst",
+        "gn.rst",
+    ],
+    prefix = "pw_toolchain/",
+    target_compatible_with = incompatible_with_mcu(),
 )
