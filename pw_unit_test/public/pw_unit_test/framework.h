@@ -197,3 +197,14 @@ static_assert(std::is_same_v<decltype(RUN_ALL_TESTS()), int>,
     "The pw_unit_test framework backend must define " \
     "ASSERT_DEATH_IF_SUPPORTED(statement, regex)"
 #endif  // ASSERT_DEATH_IF_SUPPORTED
+
+namespace pw::test {
+
+/// An opaque black-box function to prevent the optimizer from removing values.
+/// See: https://youtu.be/nXaxk27zwlk?t=2441
+template <typename T>
+inline void DoNotOptimize(const T& value) {
+  asm volatile("" : : "r,m"(value) : "memory");
+}
+
+}  // namespace pw::test

@@ -17,7 +17,6 @@
 #include "pw_build/test_blob.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::build {
 namespace {
 
 static_assert(test::ns::kFirstBlob0123.size() == 4);
@@ -47,4 +46,3 @@ TEST(CcBlobLibraryTest, FirstBlobAlignedTo512) {
 }
 
 }  // namespace
-}  // namespace pw::build

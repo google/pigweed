@@ -17,7 +17,7 @@
 #include <cstdint>
 
 #include "pw_tokenizer/detokenize.h"
-#include "pw_unit_test/framework_backend.h"
+#include "pw_unit_test/framework.h"
 
 namespace {
 
@@ -64,6 +64,8 @@ TEST_F(MallocTest, NewDelete) {
   auto& system_metrics = pw::malloc::GetSystemMetrics();
 
   auto* ptr = new std::array<std::byte, kSize>();
+  // Prevent elision of the allocation.
+  pw::test::DoNotOptimize(ptr);
   ASSERT_NE(ptr, nullptr);
   EXPECT_GE(system_metrics.allocated_bytes.value(), kSize);
 

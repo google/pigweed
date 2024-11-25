@@ -82,7 +82,7 @@ TEST_F(Detokenize, FromElfSection) {
   constexpr size_t database_size_ = 0x000004C2;
 
   pw::span<const uint8_t> tokenEntries(
-      reinterpret_cast<const uint8_t*>(test::ns::kElfSection.data() +
+      reinterpret_cast<const uint8_t*>(::test::ns::kElfSection.data() +
                                        database_offset_),
       database_size_);
   pw::Result<Detokenizer> detok_from_elf_ =
@@ -95,7 +95,7 @@ TEST_F(Detokenize, FromElfSection) {
 TEST_F(Detokenize, FromElfFile) {
   // Create a detokenizer from an ELF file with only the pw_tokenizer sections.
   // See py/detokenize_test.py.
-  stream::MemoryReader stream(test::ns::kElfSection);
+  stream::MemoryReader stream(::test::ns::kElfSection);
 
   pw::Result<Detokenizer> detok = Detokenizer::FromElfFile(stream);
   PW_TEST_ASSERT_OK(detok);
