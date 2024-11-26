@@ -38,6 +38,7 @@ RfcommChannel::RfcommChannel(RfcommChannel&& other)
   std::lock_guard other_lock(other.mutex_);
   rx_credits_ = other.rx_credits_;
   tx_credits_ = other.tx_credits_;
+  state_ = other.state_;
   other.state_ = State::kStopped;
 }
 
