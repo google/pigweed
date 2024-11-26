@@ -355,6 +355,10 @@ pw_shared_library("detokenizer_jni") {
 }
 
 pw_doc_group("docs") {
+  inputs = [
+    "Kconfig",
+    "py/pw_tokenizer/encode.py",
+  ]
   sources = [
     "api.rst",
     "detokenization.rst",
@@ -363,7 +367,6 @@ pw_doc_group("docs") {
     "token_databases.rst",
     "tokenization.rst",
   ]
-  inputs = [ "py/pw_tokenizer/encode.py" ]
   report_deps = [ ":tokenizer_size_report" ]
 }
 

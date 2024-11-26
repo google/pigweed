@@ -67,5 +67,8 @@ pw_test("test") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
-  inputs = [ "c_test.c" ]
+  inputs = [
+    "Kconfig",
+    "c_test.c",
+  ]
 }

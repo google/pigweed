@@ -112,6 +112,7 @@ pw_source_set("mpsc_stream") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [
     "backends.rst",
     "docs.rst",

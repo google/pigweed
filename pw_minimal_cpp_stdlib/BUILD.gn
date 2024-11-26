@@ -119,5 +119,6 @@ pw_test("standard_library_test") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
 }

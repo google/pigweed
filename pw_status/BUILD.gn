@@ -82,6 +82,7 @@ pw_test("try_test") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [
     "docs.rst",
     "guide.rst",

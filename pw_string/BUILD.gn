@@ -220,6 +220,7 @@ pw_test("util_test") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [
     "api.rst",
     "code_size.rst",

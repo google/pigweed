@@ -64,6 +64,7 @@ pw_test("expected_test") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
   report_deps = [ ":result_size" ]
 }

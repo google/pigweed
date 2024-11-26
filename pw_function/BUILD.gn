@@ -69,6 +69,7 @@ pw_source_set("scope_guard") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
   report_deps = [
     ":callable_size",

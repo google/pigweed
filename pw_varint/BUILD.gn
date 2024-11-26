@@ -85,5 +85,6 @@ pw_test("stream_test") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
 }

@@ -274,6 +274,7 @@ pw_doc_group("docs") {
     "size.rst",
   ]
   inputs = [
+    "Kconfig",
     "py/pw_hdlc/decode.py",
     "py/pw_hdlc/encode.py",
   ]

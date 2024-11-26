@@ -451,6 +451,7 @@ pw_test("intrusive_item_test") {
 
 pw_doc_group("docs") {
   inputs = [
+    "Kconfig",
     "examples/flat_map.cc",
     "examples/intrusive_forward_list.cc",
     "examples/intrusive_list.cc",

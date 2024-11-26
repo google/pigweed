@@ -563,7 +563,10 @@ pw_doc_group("docs") {
     "cli.rst",
     "docs.rst",
   ]
-  inputs = [ "system_async_test.cc" ]
+  inputs = [
+    "Kconfig",
+    "system_async_test.cc",
+  ]
 }
 
 pw_test_group("tests") {

@@ -92,8 +92,8 @@ sphinx_docs_library(
         "module_structure.rst",
         "os/index.rst",
         "os/zephyr/index.rst",
-        # TODO: https://pwbug.dev/377683258 - Update the kconfig extension
-        # that this page relies on for Bazel-based docgen.
+        # TODO: https://pwbug.dev/377683258 - Enable this file after
+        # https://pwrev.dev/248014 merges.
         # "os/zephyr/kconfig.rst",
         "overview.rst",
         "showcases/sense/index.rst",

@@ -14,7 +14,6 @@
 """Auto-generate the Kconfig reference in //docs/os/zephyr/kconfig.rst"""
 
 
-import os
 import re
 from typing import Iterable
 
@@ -113,21 +112,25 @@ def process_node(
         node = node.next
 
 
-def generate_kconfig_reference(_, doctree: document, docname: str) -> None:
+def generate_kconfig_reference(
+    app: Sphinx, doctree: document, docname: str
+) -> None:
     """Parse the Kconfig and kick off the doc generation process."""
+    # Only run this logic on one specific page.
     if 'docs/os/zephyr/kconfig' not in docname:
         return
-    # Assume that the new content should be appended to the last section
-    # in the doctree.
+    # Get the last `section` node in the doc. This is where we'll append the
+    # auto-generated content.
     for child in doctree.children:
         if isinstance(child, docutils.nodes.section):
             root = child
-    pw_root = os.environ['PW_ROOT']
-    file_path = f'{pw_root}/Kconfig.zephyr'
+    file_path = f'{app.srcdir}/Kconfig.zephyr'
     kconfig = kconfiglib.Kconfig(file_path)
-    # There's no need to render kconfig.top_node (the main menu) or
-    # kconfig.top_node.list (ZEPHYR_PIGWEED_MODULE).
-    process_node(kconfig.top_node.list.next, root)
+    # There's no need to process kconfig.top_node (the main menu) or
+    # kconfig.top_node.list (ZEPHYR_PIGWEED_MODULE) because they don't
+    # contain data that should be documented.
+    first_data_node = kconfig.top_node.list.next
+    process_node(first_data_node, root)
 
 
 def setup(app: Sphinx) -> dict[str, bool]:

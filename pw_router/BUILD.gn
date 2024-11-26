@@ -66,6 +66,7 @@ pw_source_set("egress_function") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
   report_deps = [ ":static_router_size" ]
 }

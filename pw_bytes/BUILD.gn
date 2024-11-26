@@ -131,6 +131,7 @@ pw_test("units_test") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
   report_deps = [ ":byte_builder_size_report" ]
 }

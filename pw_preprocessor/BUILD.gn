@@ -54,6 +54,7 @@ pw_source_set("arch") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
 }
 

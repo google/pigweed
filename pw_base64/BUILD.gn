@@ -48,5 +48,6 @@ pw_test("base64_test") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
 }

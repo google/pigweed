@@ -104,6 +104,7 @@ pw_source_set("multisink_threaded_test") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
 }
 

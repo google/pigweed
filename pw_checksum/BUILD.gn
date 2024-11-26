@@ -153,6 +153,7 @@ pw_size_diff("size_report") {
 }
 
 pw_doc_group("docs") {
+  inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
   report_deps = [ ":size_report" ]
 }
