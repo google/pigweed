@@ -13,8 +13,6 @@
 # the License.
 
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pwpb_proto_library")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -112,17 +110,4 @@ pw_cc_test(
         "//pw_result",
         "//pw_status",
     ],
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "design_discussion.rst",
-        "docs.rst",
-        "module_usage.rst",
-        "proto_format.rst",
-        "setup.rst",
-    ],
-    prefix = "pw_snapshot/",
-    target_compatible_with = incompatible_with_mcu(),
 )

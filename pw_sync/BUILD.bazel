@@ -12,7 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load(
     "//pw_build:compatibility.bzl",
     "host_backend_alias",
@@ -547,14 +546,4 @@ filegroup(
         "public/pw_sync/timed_thread_notification.h",
         "public/pw_sync/virtual_basic_lockable.h",
     ],
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "backends.rst",
-        "docs.rst",
-    ],
-    prefix = "pw_sync/",
-    target_compatible_with = incompatible_with_mcu(),
 )

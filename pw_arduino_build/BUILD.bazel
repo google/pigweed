@@ -12,9 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -36,13 +33,4 @@ cc_library(
     hdrs = ["public/pw_arduino_build/init.h"],
     strip_include_prefix = "public",
     visibility = ["//visibility:public"],
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "docs.rst",
-    ],
-    prefix = "pw_arduino_build/",
-    target_compatible_with = incompatible_with_mcu(),
 )

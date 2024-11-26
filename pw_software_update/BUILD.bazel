@@ -14,8 +14,6 @@
 
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pwpb_proto_library")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -239,17 +237,4 @@ pw_cc_test(
         ":bundled_update_service_pwpb",
         "//pw_unit_test",
     ],
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "cli.rst",
-        "design.rst",
-        "docs.rst",
-        "get_started.rst",
-        "guides.rst",
-    ],
-    prefix = "pw_software_update/",
-    target_compatible_with = incompatible_with_mcu(),
 )

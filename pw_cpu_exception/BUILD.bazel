@@ -12,8 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "boolean_constraint_value", "incompatible_with_mcu")
+load("//pw_build:compatibility.bzl", "boolean_constraint_value")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 
 package(default_visibility = ["//visibility:public"])
@@ -124,14 +123,4 @@ label_flag(
 label_flag(
     name = "support_backend",
     build_setting_default = "//pw_build:unspecified_backend",
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "backends.rst",
-        "docs.rst",
-    ],
-    prefix = "pw_cpu_exception/",
-    target_compatible_with = incompatible_with_mcu(),
 )

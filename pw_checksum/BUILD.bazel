@@ -12,8 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_perf_test:pw_cc_perf_test.bzl", "pw_cc_perf_test")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -87,14 +85,4 @@ pw_cc_perf_test(
         ":pw_checksum",
         "//pw_bytes",
     ],
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "Kconfig",
-        "docs.rst",
-    ],
-    prefix = "pw_checksum/",
-    target_compatible_with = incompatible_with_mcu(),
 )

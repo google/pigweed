@@ -17,9 +17,7 @@ load(
     "fuchsia_cc_test",
     "fuchsia_unittest_package",
 )
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_bluetooth_sapphire/fuchsia:fuchsia_api_level.bzl", "FUCHSIA_API_LEVEL")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -121,11 +119,8 @@ fuchsia_unittest_package(
     unit_tests = [":pw_async_fuchsia_test"],
 )
 
-sphinx_docs_library(
+# Bazel does not yet support building docs.
+filegroup(
     name = "docs",
-    srcs = [
-        "docs.rst",
-    ],
-    prefix = "pw_async_fuchsia/",
-    target_compatible_with = incompatible_with_mcu(),
+    srcs = ["docs.rst"],
 )

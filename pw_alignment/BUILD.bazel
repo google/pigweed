@@ -12,9 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
-
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -28,13 +25,4 @@ filegroup(
     srcs = [
         "public/pw_alignment/alignment.h",
     ],
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "docs.rst",
-    ],
-    prefix = "pw_alignment/",
-    target_compatible_with = incompatible_with_mcu(),
 )

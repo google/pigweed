@@ -13,8 +13,7 @@
 # the License.
 
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "host_backend_alias", "incompatible_with_mcu")
+load("//pw_build:compatibility.bzl", "host_backend_alias")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
@@ -252,16 +251,4 @@ filegroup(
     srcs = [
         "public/pw_log/tokenized_args.h",
     ],
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "backends.rst",
-        "docs.rst",
-        "protobuf.rst",
-        "tokenized_args.rst",
-    ],
-    prefix = "pw_log/",
-    target_compatible_with = incompatible_with_mcu(),
 )

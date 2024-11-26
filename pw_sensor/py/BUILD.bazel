@@ -13,8 +13,6 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_library")
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -76,12 +74,4 @@ pw_py_test(
         "@python_packages//jsonschema",
         "@python_packages//pyyaml",
     ],
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "docs.rst",
-    ],
-    target_compatible_with = incompatible_with_mcu(),
 )

@@ -11,9 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
-load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "boolean_constraint_value", "incompatible_with_mcu")
+load("//pw_build:compatibility.bzl", "boolean_constraint_value")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -32,13 +30,4 @@ cc_library(
         "//pw_sys_io:default_putget_bytes",
         "//pw_sys_io:pw_sys_io.facade",
     ],
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "docs.rst",
-    ],
-    prefix = "pw_sys_io_baremetal_stm32f429/",
-    target_compatible_with = incompatible_with_mcu(),
 )
