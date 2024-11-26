@@ -19,6 +19,20 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw {
+
+/// A type which compares equal to itself and FAILs if stringified.
+struct ExplodingString {
+  friend bool operator==(const ExplodingString&, const ExplodingString&);
+};
+
+bool operator==(const ExplodingString&, const ExplodingString&) { return true; }
+
+template <>
+inline StatusWithSize ToString(const ExplodingString&, span<char>) {
+  ADD_FAILURE();
+  return StatusWithSize::Unimplemented();
+}
+
 namespace {
 
 TEST(UnknownTypeToString, SmallObject) {
@@ -64,6 +78,10 @@ TEST(UnknownTypeToString, TenByteObject) {
   actual << object;
   ASSERT_EQ(OkStatus(), actual.status());
   EXPECT_STREQ(expected.c_str(), actual.c_str());
+}
+
+TEST(ExpectEq, ObjectsAreNotStringifiedUnlessExpectationFails) {
+  EXPECT_EQ(ExplodingString{}, ExplodingString{});
 }
 
 }  // namespace

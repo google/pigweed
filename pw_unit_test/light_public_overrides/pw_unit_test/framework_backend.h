@@ -538,16 +538,18 @@ class Framework {
     [[maybe_unused]] constexpr size_t kExpectationBufferSizeBytes = 192;
 
     const bool success = expectation(lhs, rhs, epsilon);
-    CurrentTestExpectSimple(
-        expression,
-        MakeString<kExpectationBufferSizeBytes>(ConvertForPrint(lhs),
-                                                " within ",
-                                                ConvertForPrint(epsilon),
-                                                " of ",
-                                                ConvertForPrint(rhs))
-            .c_str(),
-        line,
-        success);
+    if (!success) {
+      CurrentTestExpectSimple(
+          expression,
+          MakeString<kExpectationBufferSizeBytes>(ConvertForPrint(lhs),
+                                                  " within ",
+                                                  ConvertForPrint(epsilon),
+                                                  " of ",
+                                                  ConvertForPrint(rhs))
+              .c_str(),
+          line,
+          success);
+    }
     return success;
   }
 
@@ -566,16 +568,18 @@ class Framework {
     [[maybe_unused]] constexpr size_t kExpectationBufferSizeBytes = 192;
 
     const bool success = expectation(lhs, rhs);
-    CurrentTestExpectSimple(
-        expression,
-        MakeString<kExpectationBufferSizeBytes>(ConvertForPrint(lhs),
-                                                ' ',
-                                                expectation_string,
-                                                ' ',
-                                                ConvertForPrint(rhs))
-            .c_str(),
-        line,
-        success);
+    if (!success) {
+      CurrentTestExpectSimple(
+          expression,
+          MakeString<kExpectationBufferSizeBytes>(ConvertForPrint(lhs),
+                                                  ' ',
+                                                  expectation_string,
+                                                  ' ',
+                                                  ConvertForPrint(rhs))
+              .c_str(),
+          line,
+          success);
+    }
     return success;
   }
 
