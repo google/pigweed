@@ -113,6 +113,9 @@ class AclDataChannel {
   enum class Direction {
     kFromController,
     kFromHost,
+
+    // Must be last member
+    kMaxDirections,
   };
 
   // Sets `is_receiving_fragmented_pdu` flag for connection in a given
@@ -183,10 +186,13 @@ class AclDataChannel {
     // TODO: https://pwbug.dev/379172336 - Create correct signaling channel
     // type based on link type.
     L2capAclUSignalingChannel aclu_signaling_channel_;
-    // Set when a fragmented PDU is received. Continuing fragments are dropped
-    // until the PDU has been consumed, then this is unset.
+
+    // Set when a fragmented PDU is received. Indexed by Direction. Continuing
+    // fragments are dropped until the PDU has been consumed, then this is
+    // unset.
     // TODO: https://pwbug.dev/365179076 - Support recombination.
-    std::array<bool, 2> is_receiving_fragmented_pdu_;
+    std::array<bool, cpp23::to_underlying(Direction::kMaxDirections)>
+        is_receiving_fragmented_pdu_;
   };
 
   class Credits {
