@@ -106,6 +106,11 @@ def bazel(
             # builders will be denied permission if they do so.
             remote_cache.append('--remote_upload_local_results=true')
 
+    symlink_prefix: list[str] = []
+    if cmd != 'query':
+        # bazel query doesn't support the --symlink_prefix flag.
+        symlink_prefix.append(f'--symlink_prefix={ctx.output_dir / "bazel-"}')
+
     ctx.output_dir.mkdir(exist_ok=True, parents=True)
     try:
         with contextlib.ExitStack() as stack:
@@ -128,9 +133,7 @@ def bazel(
             call(
                 BAZEL_EXECUTABLE,
                 cmd,
-                '--verbose_failures',
-                '--worker_verbose',
-                f'--symlink_prefix={ctx.output_dir / "bazel-"}',
+                *symlink_prefix,
                 *num_jobs,
                 *keep_going,
                 *strict_lockfile,
