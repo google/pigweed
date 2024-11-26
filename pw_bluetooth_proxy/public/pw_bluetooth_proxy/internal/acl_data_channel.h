@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
 #include "pw_bluetooth_proxy/internal/l2cap_aclu_signaling_channel.h"
@@ -108,22 +109,34 @@ class AclDataChannel {
   pw::Status CreateAclConnection(uint16_t connection_handle,
                                  AclTransport transport);
 
-  // Sets `is_receiving_fragmented_pdu` flag for connection.
+  // Direction a packet is traveling on ACL transport.
+  enum class Direction {
+    kFromController,
+    kFromHost,
+  };
+
+  // Sets `is_receiving_fragmented_pdu` flag for connection in a given
+  // direction.
   //
   // Returns PW_STATUS_NOT_FOUND if connection does not exist.
   // Returns PW_STATUS_FAILED_PRECONDITION if already receiving fragmented PDU.
-  pw::Status FragmentedPduStarted(uint16_t connection_handle);
+  pw::Status FragmentedPduStarted(Direction direction,
+                                  uint16_t connection_handle);
 
-  // Returns `is_receiving_fragmented_pdu` flag for connection.
+  // Returns `is_receiving_fragmented_pdu` flag for connection in a given
+  // direction.
   //
   // Returns PW_STATUS_NOT_FOUND if connection does not exist.
-  pw::Result<bool> IsReceivingFragmentedPdu(uint16_t connection_handle);
+  pw::Result<bool> IsReceivingFragmentedPdu(Direction direction,
+                                            uint16_t connection_handle);
 
-  // Unsets `is_receiving_fragmented_pdu` flag for connection.
+  // Unsets `is_receiving_fragmented_pdu` flag for connection in a given
+  // direction.
   //
   // Returns PW_STATUS_NOT_FOUND if connection does not exist.
   // Returns PW_STATUS_FAILED_PRECONDITION if not receiving fragmented PDU.
-  pw::Status FragmentedPduFinished(uint16_t connection_handle);
+  pw::Status FragmentedPduFinished(Direction direction,
+                                   uint16_t connection_handle);
 
  private:
   // An active logical link on ACL logical transport.
@@ -140,7 +153,7 @@ class AclDataChannel {
           num_pending_packets_(num_pending_packets),
           leu_signaling_channel_(l2cap_channel_manager, connection_handle),
           aclu_signaling_channel_(l2cap_channel_manager, connection_handle),
-          is_receiving_fragmented_pdu_(false) {}
+          is_receiving_fragmented_pdu_{} {}
 
     AclConnection& operator=(AclConnection&& other) = default;
 
@@ -154,12 +167,12 @@ class AclDataChannel {
       num_pending_packets_ = new_val;
     }
 
-    bool is_receiving_fragmented_pdu() const {
-      return is_receiving_fragmented_pdu_;
+    bool is_receiving_fragmented_pdu(Direction direction) const {
+      return is_receiving_fragmented_pdu_[cpp23::to_underlying(direction)];
     }
 
-    void set_is_receiving_fragmented_pdu(bool new_val) {
-      is_receiving_fragmented_pdu_ = new_val;
+    void set_is_receiving_fragmented_pdu(Direction direction, bool new_val) {
+      is_receiving_fragmented_pdu_[cpp23::to_underlying(direction)] = new_val;
     }
 
    private:
@@ -173,7 +186,7 @@ class AclDataChannel {
     // Set when a fragmented PDU is received. Continuing fragments are dropped
     // until the PDU has been consumed, then this is unset.
     // TODO: https://pwbug.dev/365179076 - Support recombination.
-    bool is_receiving_fragmented_pdu_;
+    std::array<bool, 2> is_receiving_fragmented_pdu_;
   };
 
   class Credits {

@@ -224,6 +224,18 @@ class ProxyHost {
   // Process a Command_Complete event.
   void HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet);
 
+  // If ACL frame is end of fragment, complete fragment and return false.
+  // Otherwise process frame as part of ongoing fragmented PDU and return true.
+  bool CheckForActiveFragmenting(AclDataChannel::Direction direction,
+                                 emboss::AclDataFrameWriter& acl);
+
+  // If ACL frame is start of fragment, return true. `channel` is notified and
+  // the connection is marked as having an active fragment.
+  bool CheckForFragmentedStart(AclDataChannel::Direction direction,
+                               emboss::AclDataFrameWriter& acl,
+                               emboss::BasicL2capHeaderView& l2cap_header,
+                               L2capReadChannel* channel);
+
   // For sending non-ACL data to the host and controller. ACL traffic shall be
   // sent through the `acl_data_channel_`.
   HciTransport hci_transport_;

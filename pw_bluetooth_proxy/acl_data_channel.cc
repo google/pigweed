@@ -316,39 +316,41 @@ Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
   return OkStatus();
 }
 
-pw::Status AclDataChannel::FragmentedPduStarted(uint16_t connection_handle) {
+pw::Status AclDataChannel::FragmentedPduStarted(Direction direction,
+                                                uint16_t connection_handle) {
   std::lock_guard lock(credit_allocation_mutex_);
   AclConnection* connection_ptr = FindAclConnection(connection_handle);
   if (!connection_ptr) {
     return Status::NotFound();
   }
-  if (connection_ptr->is_receiving_fragmented_pdu()) {
+  if (connection_ptr->is_receiving_fragmented_pdu(direction)) {
     return Status::FailedPrecondition();
   }
-  connection_ptr->set_is_receiving_fragmented_pdu(true);
+  connection_ptr->set_is_receiving_fragmented_pdu(direction, true);
   return OkStatus();
 }
 
 pw::Result<bool> AclDataChannel::IsReceivingFragmentedPdu(
-    uint16_t connection_handle) {
+    Direction direction, uint16_t connection_handle) {
   std::lock_guard lock(credit_allocation_mutex_);
   AclConnection* connection_ptr = FindAclConnection(connection_handle);
   if (!connection_ptr) {
     return Status::NotFound();
   }
-  return connection_ptr->is_receiving_fragmented_pdu();
+  return connection_ptr->is_receiving_fragmented_pdu(direction);
 }
 
-pw::Status AclDataChannel::FragmentedPduFinished(uint16_t connection_handle) {
+pw::Status AclDataChannel::FragmentedPduFinished(Direction direction,
+                                                 uint16_t connection_handle) {
   std::lock_guard lock(credit_allocation_mutex_);
   AclConnection* connection_ptr = FindAclConnection(connection_handle);
   if (!connection_ptr) {
     return Status::NotFound();
   }
-  if (!connection_ptr->is_receiving_fragmented_pdu()) {
+  if (!connection_ptr->is_receiving_fragmented_pdu(direction)) {
     return Status::FailedPrecondition();
   }
-  connection_ptr->set_is_receiving_fragmented_pdu(false);
+  connection_ptr->set_is_receiving_fragmented_pdu(direction, false);
   return OkStatus();
 }
 
