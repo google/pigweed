@@ -104,19 +104,14 @@ void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
     hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
-  uint16_t handle = acl->header().handle().Read();
+  const uint16_t handle = acl->header().handle().Read();
+  const emboss::AclDataPacketBoundaryFlag boundary_flag =
+      acl->header().packet_boundary_flag().Read();
 
   pw::Result<bool> connection_is_receiving_fragmented_pdu =
       acl_data_channel_.IsReceivingFragmentedPdu(handle);
-  if (connection_is_receiving_fragmented_pdu.status().IsNotFound()) {
-    // Channel on a connection not managed by proxy, so forward to host.
-    hci_transport_.SendToHost(std::move(h4_packet));
-    return;
-  }
-
-  emboss::AclDataPacketBoundaryFlag boundary_flag =
-      acl->header().packet_boundary_flag().Read();
-  if (*connection_is_receiving_fragmented_pdu) {
+  if (connection_is_receiving_fragmented_pdu.ok() &&
+      *connection_is_receiving_fragmented_pdu) {
     // We're in a state where this connection is dropping continuing fragments
     // in a fragmented PDU.
     if (boundary_flag !=
