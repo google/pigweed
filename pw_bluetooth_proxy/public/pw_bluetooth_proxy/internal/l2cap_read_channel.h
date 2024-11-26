@@ -62,6 +62,11 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
       uint16_t connection_handle,
       uint16_t local_cid);
 
+  // Returns whether or not ACL connection handle & local L2CAP channel
+  // identifier are valid parameters for a packet.
+  [[nodiscard]] static bool AreValidParameters(uint16_t connection_handle,
+                                               uint16_t local_cid);
+
   // Often the useful `payload` for clients is some subspan of the Rx SDU.
   void CallReceiveFn(pw::span<uint8_t> payload) {
     if (receive_fn_) {
@@ -70,6 +75,8 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
   }
 
  private:
+  static constexpr uint16_t kMaxValidConnectionHandle = 0x0EFF;
+
   // ACL connection handle of this channel.
   uint16_t connection_handle_;
   // L2CAP channel ID of this channel.

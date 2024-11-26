@@ -15,6 +15,7 @@
 #include "pw_bluetooth_proxy/internal/l2cap_read_channel.h"
 
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
+#include "pw_log/log.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -55,6 +56,21 @@ L2capReadChannel::L2capReadChannel(
       receive_fn_(std::move(receive_fn)),
       l2cap_channel_manager_(l2cap_channel_manager) {
   l2cap_channel_manager_.RegisterReadChannel(*this);
+}
+
+bool L2capReadChannel::AreValidParameters(uint16_t connection_handle,
+                                          uint16_t local_cid) {
+  if (connection_handle > kMaxValidConnectionHandle) {
+    PW_LOG_ERROR(
+        "Invalid connection handle 0x%X. Maximum connection handle is 0x0EFF.",
+        connection_handle);
+    return false;
+  }
+  if (local_cid == 0) {
+    PW_LOG_ERROR("L2CAP channel identifier 0 is not valid.");
+    return false;
+  }
+  return true;
 }
 
 }  // namespace pw::bluetooth::proxy

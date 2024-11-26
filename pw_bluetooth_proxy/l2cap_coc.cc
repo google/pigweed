@@ -103,7 +103,8 @@ pw::Result<L2capCoc> L2capCoc::Create(
     CocConfig tx_config,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
     pw::Function<void(Event event)>&& event_fn) {
-  if (!L2capWriteChannel::AreValidParameters(connection_handle,
+  if (!L2capReadChannel::AreValidParameters(connection_handle, rx_config.cid) ||
+      !L2capWriteChannel::AreValidParameters(connection_handle,
                                              tx_config.cid)) {
     return pw::Status::InvalidArgument();
   }

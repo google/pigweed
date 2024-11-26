@@ -2131,6 +2131,60 @@ TEST(MultiSendTest, ResetClearsBuffOccupiedFlags) {
   }
 }
 
+// ########## L2capCocTest
+
+TEST(L2capCocTest, CannotCreateChannelWithInvalidArgs) {
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [](H4PacketWithH4&&) {});
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+
+  // Connection handle too large by 1.
+  EXPECT_EQ(
+      proxy
+          .AcquireL2capCoc(
+              /*connection_handle=*/0x0FFF,
+              /*rx_config=*/
+              {.cid = 0x123, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
+              /*tx_config=*/
+              {.cid = 0x123, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
+              /*receive_fn=*/nullptr,
+              /*event_fn=*/nullptr)
+          .status(),
+      PW_STATUS_INVALID_ARGUMENT);
+
+  // Local CID invalid (0).
+  EXPECT_EQ(
+      proxy
+          .AcquireL2capCoc(
+              /*connection_handle=*/0x123,
+              /*rx_config=*/
+              {.cid = 0, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
+              /*tx_config=*/
+              {.cid = 0x123, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
+              /*receive_fn=*/nullptr,
+              /*event_fn=*/nullptr)
+          .status(),
+      PW_STATUS_INVALID_ARGUMENT);
+
+  // Remote CID invalid (0).
+  EXPECT_EQ(
+      proxy
+          .AcquireL2capCoc(
+              /*connection_handle=*/0x123,
+              /*rx_config=*/
+              {.cid = 0x123, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
+              /*tx_config=*/
+              {.cid = 0, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
+              /*receive_fn=*/nullptr,
+              /*event_fn=*/nullptr)
+          .status(),
+      PW_STATUS_INVALID_ARGUMENT);
+}
+
 // ########## L2capCocWriteTest
 
 // Size of sdu_length field in first K-frames.
