@@ -46,6 +46,12 @@ L2capReadChannel::~L2capReadChannel() {
   l2cap_channel_manager_.ReleaseReadChannel(*this);
 }
 
+void L2capReadChannel::OnFragmentedPduReceived() {
+  PW_LOG_ERROR(
+      "(CID 0x%X) Fragmented L2CAP frame received, which is not yet supported.",
+      local_cid());
+}
+
 L2capReadChannel::L2capReadChannel(
     L2capChannelManager& l2cap_channel_manager,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,

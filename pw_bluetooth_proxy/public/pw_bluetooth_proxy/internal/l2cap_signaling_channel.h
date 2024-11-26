@@ -57,8 +57,6 @@ class L2capSignalingChannel : public BasicL2capChannel {
   // handled by the Bluetooth host.
   bool OnPduReceived(pw::span<uint8_t> cframe) override;
 
-  void OnFragmentedPduReceived() override;
-
   L2capChannelManager& l2cap_channel_manager_;
 };
 

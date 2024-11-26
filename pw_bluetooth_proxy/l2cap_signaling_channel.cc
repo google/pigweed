@@ -99,10 +99,4 @@ bool L2capSignalingChannel::HandleFlowControlCreditInd(
   return false;
 }
 
-void L2capSignalingChannel::OnFragmentedPduReceived() {
-  PW_LOG_ERROR(
-      "(Connection: 0x%X) Received fragmentary ACL data on signaling channel.",
-      connection_handle());
-}
-
 }  // namespace pw::bluetooth::proxy

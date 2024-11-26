@@ -244,10 +244,7 @@ L2capCoc::L2capCoc(L2capChannelManager& l2cap_channel_manager,
       event_fn_(std::move(event_fn)) {}
 
 void L2capCoc::OnFragmentedPduReceived() {
-  PW_LOG_ERROR(
-      "(CID 0x%X) Fragmented L2CAP frame received (which is not yet "
-      "supported). Stopping channel.",
-      local_cid());
+  L2capReadChannel::OnFragmentedPduReceived();
   StopChannelAndReportError(Event::kRxFragmented);
 }
 
