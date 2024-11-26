@@ -3914,6 +3914,54 @@ TEST(AcluSignalingChannelTest, HandlesMultipleCommands) {
   EXPECT_EQ(host_packet->GetHciSpan().size(), kHciLength);
 }
 
+TEST(AcluSignalingChannelTest, InvalidPacketForwarded) {
+  std::optional<H4PacketWithHci> host_packet;
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [&host_packet](H4PacketWithHci&& packet) {
+        host_packet = std::move(packet);
+      });
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+
+  constexpr uint16_t kHandle = 123;
+
+  // Test that the proxy forwards on invalid L2cap B-frames destined for
+  // signaling channel.
+
+  constexpr size_t kL2capLength =
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes();
+  constexpr size_t kHciLength =
+      emboss::AclDataFrame::MinSizeInBytes() + kL2capLength;
+  std::array<uint8_t, kHciLength> hci_arr{};
+  H4PacketWithHci l2cap_cframe_packet{emboss::H4PacketType::ACL_DATA,
+                                      pw::span(hci_arr.data(), kHciLength)};
+
+  // ACL header
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      auto acl, MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr));
+  acl.header().handle().Write(kHandle);
+  acl.data_total_length().Write(kL2capLength);
+  EXPECT_EQ(kL2capLength, acl.payload().BackingStorage().SizeInBytes());
+
+  // L2CAP header
+  auto l2cap =
+      emboss::MakeCFrameView(acl.payload().BackingStorage().data(),
+                             acl.payload().BackingStorage().SizeInBytes());
+  // Invalid length, since we aren't encoding a payload.
+  l2cap.pdu_length().Write(1);
+  l2cap.channel_id().Write(
+      cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING));
+  EXPECT_FALSE(l2cap.Ok());
+
+  proxy.HandleH4HciFromController(std::move(l2cap_cframe_packet));
+  // We should get back what we sent.
+  EXPECT_TRUE(host_packet.has_value());
+  EXPECT_EQ(host_packet->GetHciSpan().size(), kHciLength);
+}
+
 // ########## RfcommWriteTest
 
 constexpr uint8_t kBFrameOverAclMinSize =

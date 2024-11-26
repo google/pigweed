@@ -32,6 +32,9 @@ BasicL2capChannel::BasicL2capChannel(
 bool BasicL2capChannel::OnPduReceived(pw::span<uint8_t> bframe) {
   Result<emboss::BFrameWriter> bframe_view =
       MakeEmbossWriter<emboss::BFrameWriter>(bframe);
+  if (!bframe_view.ok()) {
+    return false;
+  }
   CallReceiveFn(span(bframe_view->payload().BackingStorage().data(),
                      bframe_view->BackingStorage().SizeInBytes()));
   return true;
