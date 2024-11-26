@@ -22,6 +22,7 @@
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
+#include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_log/log.h"
 
 namespace pw::bluetooth::proxy {
@@ -285,6 +286,23 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
                                   tx_config,
                                   std::move(receive_fn),
                                   std::move(event_fn));
+}
+
+pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
+    uint16_t connection_handle,
+    uint16_t local_cid,
+    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn) {
+  Status status = acl_data_channel_.CreateAclConnection(connection_handle,
+                                                        AclTransport::kLe);
+  if (status.IsResourceExhausted()) {
+    return pw::Status::Unavailable();
+  }
+  PW_CHECK(status.ok() || status.IsAlreadyExists());
+  return BasicL2capChannel::Create(
+      /*l2cap_channel_manager=*/l2cap_channel_manager_,
+      /*connection_handle=*/connection_handle,
+      /*local_cid=*/local_cid,
+      /*receive_fn=*/std::move(receive_fn));
 }
 
 pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
