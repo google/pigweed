@@ -106,12 +106,11 @@ class ChannelListenerRegistry {
   /// the service or protocol, so it is the responsibility of the caller to
   /// update the GATT database or other service discovery mechanism.
   ///
-  /// @param[in] parameters Parameters for the local side of the channel.
-  /// @param[out] result_sender The result of starting the listener. On success,
-  /// contains a `ChannelListener` that can be used to receive new channels.
-  virtual void ListenL2cap(
-      ListenParameters parameters,
-      async2::OnceSender<pw::Result<ChannelListener::Ptr>> result_sender) = 0;
+  /// @param parameters Parameters for the local side of the channel.
+  /// @return The result of starting the listener. On success, contains a
+  /// `ChannelListener` that can be used to receive new channels.
+  virtual async2::OnceReceiver<pw::Result<ChannelListener::Ptr>> ListenL2cap(
+      ListenParameters parameters) = 0;
 };
 
 }  // namespace pw::bluetooth::low_energy

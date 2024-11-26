@@ -148,10 +148,10 @@ class Connection2 {
   /// disconnection.
   virtual ~Connection2() = default;
 
-  /// Returns Ready when the peer disconnects or there is a connection error
-  /// that causes a disconnection.
+  /// Returns Ready after the peer disconnects or there is a connection error
+  /// that caused a disconnection. Awakens `cx` on disconnect.
   virtual async2::Poll<DisconnectReason> PendDisconnect(
-      async2::Waker waker) = 0;
+      async2::Context& cx) = 0;
 
   /// Returns a GATT client to the connected peer that is valid for the lifetime
   /// of this `Connection2` object. `Connection2` is considered alive as long as
@@ -163,26 +163,26 @@ class Connection2 {
   /// calculated.
   virtual uint16_t AttMtu() = 0;
 
-  /// Returns Ready with the new ATT MTU whenever it is updated.
-  virtual async2::Poll<uint16_t> PendAttMtuChange(async2::Waker waker) = 0;
+  /// Returns Pending until the ATT MTU changes, at which point `cx` will be
+  /// awoken. Returns Ready with the new ATT MTU once the ATT MTU has been
+  /// changed. The ATT MTU can only be changed once.
+  virtual async2::Poll<uint16_t> PendAttMtuChange(async2::Context& cx) = 0;
 
   /// Returns the current connection parameters.
   virtual ConnectionParameters Parameters() = 0;
 
   /// Requests an update to the connection parameters.
-  /// @param result_sender will be set to the result of the request.
-  virtual void RequestParameterUpdate(
-      RequestedConnectionParameters parameters,
-      async2::OnceSender<pw::expected<void, ConnectionParameterUpdateError>>
-          result_sender) = 0;
+  /// @returns Asynchronously returns the result of the request.
+  virtual async2::OnceReceiver<
+      pw::expected<void, ConnectionParameterUpdateError>>
+  RequestParameterUpdate(RequestedConnectionParameters parameters) = 0;
 
   /// Connect to an L2CAP LE connection-oriented channel.
-  /// @param[in] parameters The parameters to configure the channel with.
-  /// @param[out] result_sender The result of the connection procedure. On
-  /// success, contains a `Channel` that can be used to exchange data.
-  virtual void ConnectL2cap(
-      ConnectL2capParameters parameters,
-      async2::OnceSender<pw::Result<Channel::Ptr>> result_sender) = 0;
+  /// @param parameters The parameters to configure the channel with.
+  /// @return The result of the connection procedure. On success, contains a
+  /// `Channel` that can be used to exchange data.
+  virtual async2::OnceReceiver<pw::Result<Channel::Ptr>> ConnectL2cap(
+      ConnectL2capParameters parameters) = 0;
 
  private:
   /// Request to disconnect this connection. This method is called by the

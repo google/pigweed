@@ -64,47 +64,45 @@ class Controller2
 
   /// Returns Ready when fatal errors occur after initialization. After a fatal
   /// error, this object is invalid.
-  virtual async2::Poll<Status> PendError(async2::Waker waker) = 0;
+  virtual async2::Poll<Status> PendError(async2::Context& cx) = 0;
 
   /// Initializes the controller interface and starts processing packets.
-  /// `result_sender` will be set to the result of initialization.
+  /// Asynchronously returns the result of initialization.
   ///
   /// On success, HCI packets may now be sent and received with this object.
-  virtual void Initialize(async2::OnceSender<pw::Status> result_sender) = 0;
+  virtual async2::OnceReceiver<Status> Initialize() = 0;
 
   /// Configure the HCI for a SCO connection with the indicated parameters.
-  /// @retval result_sender will be set to:
+  /// @returns
   /// * OK - success, packets can be sent/received.
   /// * UNIMPLEMENTED - the implementation/controller does not support SCO over
   ///     HCI
   /// * ALREADY_EXISTS - a SCO connection is already configured
   /// * INTERNAL - an internal error occurred
-  virtual void ConfigureSco(ScoCodingFormat coding_format,
-                            ScoEncoding encoding,
-                            ScoSampleRate sample_rate,
-                            async2::OnceSender<Status> result_sender) = 0;
+  virtual async2::OnceReceiver<Status> ConfigureSco(
+      ScoCodingFormat coding_format,
+      ScoEncoding encoding,
+      ScoSampleRate sample_rate) = 0;
 
   /// Releases the resources held by an active SCO connection. This should be
   /// called when a SCO connection is closed. No-op if no SCO connection is
   /// configured.
-  /// @retval result_sender will be set to:
+  /// @returns
   /// * OK - success, the SCO configuration was reset.
   /// * UNIMPLEMENTED - the implementation/controller does not support SCO over
   /// * HCI INTERNAL - an internal error occurred
-  virtual void ResetSco(async2::OnceSender<Status> result_sender) = 0;
+  virtual async2::OnceReceiver<Status> ResetSco() = 0;
 
-  /// `features_sender` will be sent a bitmask of features supported by the
-  /// controller.
-  virtual void GetFeatures(
-      async2::OnceSender<FeaturesBits> features_sender) = 0;
+  /// @returns A bitmask of features supported by the controller.
+  virtual async2::OnceReceiver<FeaturesBits> GetFeatures() = 0;
 
   /// Encode the vendor-specific HCI command for a generic type of vendor
   /// command, and return the encoded command in a buffer.
   /// @param parameters Vendor command to encode.
-  /// @retval result_sender will be set to the result of the encoding request.
-  virtual void EncodeVendorCommand(
-      VendorCommandParameters parameters,
-      async2::OnceSender<Result<multibuf::MultiBuf>> result_sender) = 0;
+  /// @returns Returns the result of the encoding request. On success, contains
+  /// the command buffer.
+  virtual async2::OnceReceiver<Result<multibuf::MultiBuf>> EncodeVendorCommand(
+      VendorCommandParameters parameters) = 0;
 };
 
 inline constexpr bool operator&(Controller2::FeaturesBits left,

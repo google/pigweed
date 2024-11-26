@@ -72,15 +72,10 @@ class LocalServiceDelegate2 {
   /// @param peer_id The PeerId of the GATT client making the read request.
   /// @param handle The handle of the requested descriptor/characteristic.
   /// @param offset The offset at which to start reading the requested value.
-  /// @param result_sender Set to the value of the characteristic on
-  /// success, or an Error on failure. The value will be truncated to fit in the
-  /// MTU if necessary.
-  virtual void ReadValue(
-      PeerId peer_id,
-      Handle handle,
-      uint32_t offset,
-      async2::OnceSender<pw::expected<multibuf::MultiBuf, Error>>
-          result_sender) = 0;
+  /// @return Returns the value of the characteristic on success, or an Error on
+  /// failure. The value will be truncated to fit in the MTU if necessary.
+  virtual async2::OnceReceiver<pw::expected<multibuf::MultiBuf, Error>>
+  ReadValue(PeerId peer_id, Handle handle, uint32_t offset) = 0;
 
   /// Called when a peer issues a request to write the value of a characteristic
   /// or descriptor. It is guaranteed that the peer satisfies the permissions
@@ -93,13 +88,12 @@ class LocalServiceDelegate2 {
   /// value. Otherwise, the existing value between `offset:(offset +
   /// len(value))` should be changed to `value`.
   /// @param value The new value for the descriptor/characteristic.
-  /// @param result_sender Set to the result of the write.
-  virtual void WriteValue(
+  /// @return The result of the write.
+  virtual async2::OnceReceiver<pw::expected<void, Error>> WriteValue(
       PeerId peer_id,
       Handle handle,
       uint32_t offset,
-      multibuf::MultiBuf value,
-      async2::OnceSender<pw::expected<void, Error>> result_sender) = 0;
+      multibuf::MultiBuf&& value) = 0;
 
   /// Called when the MTU of a peer is updated. Also called for peers that are
   /// already connected when the server is published.
@@ -153,16 +147,15 @@ class LocalService2 {
   ///
   /// @param parameters The parameters associated with the changed
   /// characteristic.
-  /// @param result_sender Set when the notification has been sent to
+  /// @return The result is returned when the notification has been sent to
   /// all peers or an error is produced when trying to send the notification to
   /// any of the peers. This value is only set only once when all associated
   /// work is done, if the implementation wishes to receive a call on a
   /// per-peer basis, they should send this event with a single PeerId in
   /// `parameters.peer_ids`. Additional values should not be notified until
   /// this notification completes.
-  virtual void NotifyValue(
-      ValueChangedParameters parameters,
-      async2::OnceSender<ValueChangedResult> result_sender) = 0;
+  virtual async2::OnceReceiver<ValueChangedResult> NotifyValue(
+      ValueChangedParameters&& parameters) = 0;
 
   /// Sends an indication to peers. Indications should be used instead of
   /// notifications when the service *does* require peer confirmation of the
@@ -185,15 +178,14 @@ class LocalService2 {
   ///
   /// @param parameters The parameters associated with the changed
   /// characteristic.
-  /// @param result_sender When all the peers listed in `parameters.peer_ids`
-  /// have confirmed the indication, `result_sender` is set. If the
+  /// @return When all the peers listed in `parameters.peer_ids`
+  /// have confirmed the indication, the result is returned. If the
   /// implementation wishes to receive indication confirmations on a per-peer
   /// basis, they should send this event with a single PeerId in
   /// `parameters.peer_ids`. Additional values should not be indicated until
   /// this procedure completes.
-  virtual void IndicateValue(
-      ValueChangedParameters parameters,
-      async2::OnceSender<ValueChangedResult> result_sender) = 0;
+  virtual async2::OnceReceiver<ValueChangedResult> IndicateValue(
+      ValueChangedParameters&& parameters) = 0;
 
  private:
   /// Unpublish the local service. This method is called by the
@@ -259,13 +251,13 @@ class Server2 {
   /// The caller must assign distinct handles to the characteristics and
   /// descriptors listed in `info` per call to `PublishService` (handles can be
   /// reused across calls). These identifiers will be used in requests sent to
-  /// `delegate`. On success, a `LocalService::Ptr` is returned via
+  /// `delegate`.
+  ///
+  /// @return On success, a `LocalService::Ptr` is returned via
   /// `result_sender`. When the `LocalService::Ptr` is destroyed or an error
   /// occurs (LocalServiceDelegate.OnError), the service will be unpublished.
-  virtual void PublishService(
-      const LocalServiceInfo& info,
-      LocalServiceDelegate2* delegate,
-      async2::OnceSender<PublishServiceResult> result_sender) = 0;
+  virtual async2::OnceReceiver<PublishServiceResult> PublishService(
+      const LocalServiceInfo& info, LocalServiceDelegate2& delegate) = 0;
 };
 
 }  // namespace pw::bluetooth::gatt

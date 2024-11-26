@@ -149,7 +149,7 @@ class Central2 {
     virtual ~ScanHandle() = 0;
 
     /// Returns the next `ScanResult` if available. Otherwise, invokes
-    /// `waker` when a `ScanResult` is available. Only one Waker is
+    /// `cx.waker()` when a `ScanResult` is available. Only one waker is
     /// supported at a time.
     /// @return @rst
     ///
@@ -161,7 +161,7 @@ class Central2 {
     ///
     /// @endrst
     virtual async2::Poll<pw::Result<ScanResult>> PendResult(
-        async2::Waker waker) = 0;
+        async2::Context& cx) = 0;
 
    private:
     /// Stop the current scan. This method is called by the ~ScanHandle::Ptr()
@@ -219,13 +219,12 @@ class Central2 {
   ///
   /// @param peer_id Identifier of the peer to initiate a connection to.
   /// @param options Options used to configure the connection.
-  /// @param result_sender  Set when a connection is successfully established,
-  /// or an error occurs.
+  /// @return Returns a result when a connection is successfully established, or
+  /// an error occurs.
   ///
   /// Possible errors are documented in `ConnectError`.
-  virtual void Connect(PeerId peer_id,
-                       Connection2::ConnectionOptions options,
-                       async2::OnceSender<ConnectResult> result_sender) = 0;
+  virtual async2::OnceReceiver<ConnectResult> Connect(
+      PeerId peer_id, Connection2::ConnectionOptions options) = 0;
 
   /// Scans for nearby LE peripherals and broadcasters. The lifetime of the scan
   /// session is tied to the returned `ScanHandle` object in `ScanStartResult`.
@@ -235,14 +234,13 @@ class Central2 {
   /// @param options Options used to configure the scan session. These options
   ///     are *suggestions* only, and the implementation may use different
   ///     parameters to meet power or radio requirements.
-  /// @param result_sender Set to a `ScanHandle` object if the scan successfully
+  /// @return Returns a `ScanHandle` object if the scan successfully
   /// starts, or a `ScanError` otherwise.
   /// `ScanHandle::PendResult` can be called to get `ScanResult`s for LE
   /// peers that satisfy the filters indicated in `options`. The initial results
   /// may report recently discovered peers. Subsequent results will be reported
   /// only when peers have been scanned or updated since the last call.
-  virtual void Scan(ScanOptions options,
-                    async2::OnceSender<ScanStartResult> result) = 0;
+  virtual async2::OnceReceiver<ScanStartResult> Scan(ScanOptions options) = 0;
 };
 
 }  // namespace pw::bluetooth::low_energy

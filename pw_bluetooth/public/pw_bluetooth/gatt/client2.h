@@ -109,13 +109,13 @@ class RemoteService2 {
 
   virtual ~RemoteService2() = default;
 
-  /// Poll for an Error status on this service, waking the waker or returning
+  /// Poll for an Error status on this service, waking `cx` and returning
   /// Ready when there is an error condition. When an error condition is
   /// present, any previous `RemoteService2` `Waker` and `OnceReceiver`
   /// instances may or may not be woken and all other methods will be no-ops.
   /// Only 1 waker can be set at a time (additional calls will replace the
   /// existing waker).
-  virtual async2::Poll<RemoteServiceError> PendError(async2::Waker waker) = 0;
+  virtual async2::Poll<RemoteServiceError> PendError(async2::Context& cx) = 0;
 
   /// Asynchronously sends the characteristics in this service, up to
   /// `Vector::.max_size()`. May perform service discovery if the
@@ -128,41 +128,38 @@ class RemoteService2 {
   /// is useful for reading values before discovery has completed, thereby
   /// reducing latency.
   /// @param uuid The UUID of the characteristics/descriptors to read.
-  /// @param result_sender Set with the result of the read. Results may
-  /// be empty if no matching values are read. If reading a value results in a
-  /// permission error, the handle and error will be included.
+  /// @return The result of the read. Results may be empty if no matching values
+  /// are read. If reading a value results in a permission error, the handle and
+  /// error will be included.
   ///
   /// This may fail with the following errors:
   /// - `kInvalidParameters`: if `uuid` refers to an internally reserved
   /// descriptor type (e.g. the Client Characteristic Configuration descriptor).
-  /// - `kTooManyResults`: More results were read than can fit in a Vector.
+  /// - `kTooManyResults`: More results were read than can fit in the Vector.
   /// Consider reading characteristics/descriptors individually after performing
   /// discovery.
   /// - `kFailure`: The server returned an error not specific to a single
   /// result.
-  virtual void ReadByType(
-      Uuid uuid,
-      async2::OnceSender<pw::expected<Vector<ReadByTypeResult, 5>, Error>>
-          result_sender) = 0;
+  virtual async2::OnceReceiver<pw::expected<Vector<ReadByTypeResult, 5>, Error>>
+  ReadByType(Uuid uuid) = 0;
 
   /// Reads the value of a characteristic.
   /// @param handle The handle of the characteristic to be read.
   /// @param options If null, a short read will be performed, which may be
   /// truncated to what fits in a single message (at least 22 bytes). If long
   /// read options are present, performs a long read with the indicated options.
-  /// @param result_sender Set to the result of the read and the value of the
-  /// characteristic if successful.
-  /// @retval kInvalidHandle `handle` is invalid.
-  /// @retval kInvalidParameters `options` is invalid.
-  /// @retval kReadNotPermitted The server rejected the request.
-  /// @retval kInsufficient* The server rejected the request.
-  /// @retval kApplicationError* An application error was returned by the GATT
+  /// @return The result of the read and the value of the characteristic if
+  /// successful.
+  /// Returns the following errors:
+  /// - kInvalidHandle `handle` is invalid.
+  /// - kInvalidParameters `options` is invalid.
+  /// - kReadNotPermitted The server rejected the request.
+  /// - kInsufficient* The server rejected the request.
+  /// - kApplicationError* An application error was returned by the GATT
   ///     profile.
-  /// @retval kFailure The server returned an error not covered by the above.
-  virtual void ReadCharacteristic(
-      Handle handle,
-      std::optional<LongReadOptions> options,
-      async2::OnceSender<pw::expected<ReadValue, Error>> result_sender) = 0;
+  /// - kFailure The server returned an error not covered by the above.
+  virtual async2::OnceReceiver<pw::expected<ReadValue, Error>>
+  ReadCharacteristic(Handle handle, std::optional<LongReadOptions> options) = 0;
 
   /// Writes `value` to the characteristic with `handle` using the provided
   /// `options`.
@@ -170,22 +167,20 @@ class RemoteService2 {
   /// @param handle Handle of the characteristic to be written to
   /// @param value The value to be written.
   /// @param options Options that apply to the write.
-  /// @param result_sender Set to a result when a response to the write is
+  /// @return A result is returned when a response to the write is
   ///     received. For WriteWithoutResponse, this is set as soon as the write
   ///     is sent.
-  /// @retval kInvalidHandle `handle` is invalid.
-  /// @retval kInvalidParameters`options is invalid.
-  /// @retval kWriteNotPermitted The server rejected the request.
-  /// @retval kInsufficient* The server rejected the request.
-  /// @retval kApplicationError* An application error was returned by the GATT
+  /// Returns the following errors:
+  /// - kInvalidHandle `handle` is invalid.
+  /// - kInvalidParameters`options is invalid.
+  /// - kWriteNotPermitted The server rejected the request.
+  /// - kInsufficient* The server rejected the request.
+  /// - kApplicationError* An application error was returned by the GATT
   ///     profile.
-  /// @retval kFailure The server returned an error not covered by the above
+  /// - kFailure The server returned an error not covered by the above
   /// errors.
-  virtual void WriteCharacteristic(
-      Handle handle,
-      pw::multibuf::MultiBuf value,
-      WriteOptions options,
-      async2::OnceSender<pw::expected<void, Error>> result_sender) = 0;
+  virtual async2::OnceReceiver<pw::expected<void, Error>> WriteCharacteristic(
+      Handle handle, pw::multibuf::MultiBuf&& value, WriteOptions options) = 0;
 
   /// Reads the value of the characteristic descriptor with `handle` and
   /// returns it in the reply.
@@ -201,10 +196,8 @@ class RemoteService2 {
   ///     profile.
   /// @retval kFailure The server returned an error not covered by the above
   /// errors.
-  virtual void ReadDescriptor(
-      Handle handle,
-      std::optional<LongReadOptions> options,
-      async2::OnceSender<pw::expected<ReadValue, Error>>& result_sender) = 0;
+  virtual async2::OnceReceiver<pw::expected<ReadValue, Error>> ReadDescriptor(
+      Handle handle, std::optional<LongReadOptions> options) = 0;
 
   /// Writes `value` to the descriptor with `handle` using the provided. It is
   /// not recommended to send additional writes while a write is already in
@@ -212,19 +205,18 @@ class RemoteService2 {
   ///
   /// @param handle Handle of the descriptor to be written to.
   /// @param value The value to be written.
-  /// @param result_sender Set to a result upon completion of the write.
-  /// @retval kInvalidHandle `handle` is invalid.
-  /// @retval kInvalidParameters `options is invalid.
-  /// @retval kWriteNotPermitted The server rejected the request.
-  /// @retval kInsufficient* The server rejected the request.
-  /// @retval kApplicationError* An application error was returned by the GATT
+  /// @return The result upon completion of the write.
+  /// Possible errors:
+  /// - kInvalidHandle `handle` is invalid.
+  /// - kInvalidParameters `options is invalid.
+  /// - kWriteNotPermitted The server rejected the request.
+  /// - kInsufficient* The server rejected the request.
+  /// - kApplicationError* An application error was returned by the GATT
   ///     profile.
-  /// @retval kFailure The server returned an error not covered by the above
+  /// - kFailure The server returned an error not covered by the above
   /// errors.
-  virtual void WriteDescriptor(
-      Handle handle,
-      pw::multibuf::MultiBuf value,
-      async2::OnceSender<pw::expected<void, Error>> result_sender) = 0;
+  virtual async2::OnceReceiver<pw::expected<void, Error>> WriteDescriptor(
+      Handle handle, pw::multibuf::MultiBuf&& value) = 0;
 
   /// Subscribe to notifications & indications from the characteristic with
   /// the given `handle`.
@@ -245,39 +237,36 @@ class RemoteService2 {
   /// Subscriptions can be canceled with `StopNotifications`.
   ///
   /// @param handle the handle of the characteristic to subscribe to.
-  /// @param result_sender will be set to the result of enabling
-  ///     notifications/indications.
-  /// @retval kFailure The characteristic does not support notifications or
+  /// @return The result of enabling notifications/indications.
+  /// - kFailure The characteristic does not support notifications or
   ///     indications.
-  /// @retval kInvalidHandle `handle` is invalid.
-  /// @retval kWriteNotPermitted CCC descriptor write error.
-  /// @retval kInsufficient*  Insufficient security properties to write to CCC
+  /// - kInvalidHandle `handle` is invalid.
+  /// - kWriteNotPermitted CCC descriptor write error.
+  /// - kInsufficient*  Insufficient security properties to write to CCC
   ///     descriptor.
-  virtual void EnableNotifications(
-      Handle handle,
-      async2::OnceSender<pw::expected<void, Error>> result_sender) = 0;
+  virtual async2::OnceReceiver<pw::expected<void, Error>> EnableNotifications(
+      Handle handle) = 0;
 
   /// After notifications have been enabled with `EnableNotifications`, this
   /// method can be used to check for notifications. This method will safely
   /// return Pending when notifications are disabled.
   /// @param handle The handle of the characteristic to await for notifications.
-  /// @param waker The Waker to awaken when a notification is available. Only
+  /// @param cx The Context to awaken when a notification is available. Only
   ///     one Waker per handle is supported at a time (subsequent calls will
   ///     overwrite the old Waker).
   virtual async2::Poll<ReadValue> PendNotification(Handle handle,
-                                                   async2::Waker waker) = 0;
+                                                   async2::Context& cx) = 0;
 
   /// Stops notifications for the characteristic with the given `handle`.
-  /// @param result_sender will be set to the result of disabling
-  /// notifications/indications.
-  /// @retval kFailure The characteristic does not support notifications or
+  /// @return The result of disabling notifications/indications.
+  /// Possible errors:
+  /// - kFailure The characteristic does not support notifications or
   /// indications.
-  /// @retval kInvalidHandle `handle` is invalid.
-  /// @retval kWriteNotPermitted CCC descriptor write error.
-  /// @retval Insufficient* CCC descriptor write error.
-  virtual void StopNotifications(
-      Handle handle,
-      async2::OnceSender<pw::expected<void, Error>> result_sender) = 0;
+  /// - kInvalidHandle `handle` is invalid.
+  /// - kWriteNotPermitted CCC descriptor write error.
+  /// - Insufficient* CCC descriptor write error.
+  virtual async2::OnceReceiver<pw::expected<void, Error>> StopNotifications(
+      Handle handle) = 0;
 
  private:
   /// Disconnect from the remote service. This method is called by the
@@ -318,13 +307,15 @@ class Client2 {
   /// services that are updated/modified. This can can be called repeatedly
   /// until `Pending` is returned to get all previously discovered services.
   virtual async2::Poll<RemoteServiceInfo> PendServiceUpdate(
-      async2::Waker waker);
+      async2::Context& cx);
 
   /// Returns the handles of services that have been removed. Note that handles
   /// may be reused, so it is recommended to check for removed services before
   /// calling `PendServiceUpdate`. This should be called repeatedly until
   /// `Pending` is returned.
-  virtual async2::Poll<ServiceHandle> PendServiceRemoved(async2::Waker waker);
+  ///
+  /// @param cx Awoken when a service is removed after Pending is returned.
+  virtual async2::Poll<ServiceHandle> PendServiceRemoved(async2::Context& cx);
 
   /// Connects to a `RemoteService2`. Only 1 connection per service is allowed.
   ///

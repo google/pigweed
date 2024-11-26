@@ -93,11 +93,11 @@ class PairingDelegate2 {
     virtual void Keypress(KeypressEvent keypress) = 0;
 
     /// When the pairing method is passkey_display, can be used to update the UI
-    /// to indicate reception of keypresses.
-    virtual async2::Poll<KeypressEvent> PendKeypress(async2::Waker waker) = 0;
+    /// to indicate reception of keypresses. Awakens `cx` on the next keypress.
+    virtual async2::Poll<KeypressEvent> PendKeypress(async2::Context& cx) = 0;
 
     /// Ready when the pairing is completed. The `Request` should be
-    /// destroyed once pairing is complete.
+    /// destroyed once pairing is complete. Awakens `cx` on pairing completion.
     ///
     /// @return @rst
     ///
@@ -113,7 +113,7 @@ class PairingDelegate2 {
     ///    INTERNAL: Pairing failed unexpectedly due to an internal error.
     ///
     /// @endrst
-    virtual async2::Poll<pw::Status> PendComplete(async2::Waker waker) = 0;
+    virtual async2::Poll<pw::Status> PendComplete(async2::Context& cx) = 0;
 
    private:
     /// Reject the request if it is not complete yet and release resources. This
@@ -135,7 +135,7 @@ class PairingDelegate2 {
   ///
   /// Multiple requests can be active at one time for different peers.
   /// Destroying `request` will automatically reject the pairing.
-  virtual void OnRequest(Request::Ptr request) = 0;
+  virtual void OnRequest(Request::Ptr&& request) = 0;
 };
 
 }  // namespace pw::bluetooth

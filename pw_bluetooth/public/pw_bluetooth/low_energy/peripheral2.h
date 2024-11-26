@@ -46,8 +46,10 @@ class AdvertisedPeripheral2 {
   /// After a connection is returned, advertising will be paused until
   /// `PendConnection()` is called again. This method may return multiple
   /// connections over the lifetime of an advertisement.
+  ///
+  /// @param cx Awoken when a connection is established.
   virtual async2::Poll<Connection2::Ptr> PendConnection(
-      async2::Waker&& waker) = 0;
+      async2::Context& cx) = 0;
 
   /// Requests that advertising be stopped. `PendStop()` can be used to wait for
   /// advertising to stop (e.g. before starting another advertisement).
@@ -56,7 +58,7 @@ class AdvertisedPeripheral2 {
   virtual void StopAdvertising() = 0;
 
   /// Returns Ready when advertising has stopped due to a call to
-  /// `StopAdvertising()` or due to error.
+  /// `StopAdvertising()` or due to error. Awakens `cx` on stopping.
   ///
   /// @return @rst
   ///
@@ -69,7 +71,7 @@ class AdvertisedPeripheral2 {
   ///    cancelled.
   ///
   /// @endrst
-  virtual async2::Poll<pw::Status> PendStop(async2::Waker&& waker) = 0;
+  virtual async2::Poll<pw::Status> PendStop(async2::Context& cx) = 0;
 
  private:
   /// Stop advertising and release memory. This method is called by the
@@ -217,11 +219,11 @@ class Peripheral2 {
   ///
   /// @param parameters Parameters used while configuring the advertising
   /// instance.
-  /// @param result_sender Set once advertising has started or failed. On
-  /// success, set to an `AdvertisedPeripheral2` that models the lifetime of
-  /// the advertisement. Destroying it will stop advertising.
-  virtual void Advertise(const AdvertisingParameters& parameters,
-                         async2::OnceSender<AdvertiseResult> result_sender) = 0;
+  /// @return Asynchronously returns a result once advertising has started or
+  /// failed. On success, returns an `AdvertisedPeripheral2` that models the
+  /// lifetime of the advertisement. Destroying it will stop advertising.
+  virtual async2::OnceReceiver<AdvertiseResult> Advertise(
+      const AdvertisingParameters& parameters) = 0;
 };
 
 }  // namespace pw::bluetooth::low_energy
