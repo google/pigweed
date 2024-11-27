@@ -24,7 +24,8 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
     uint16_t local_cid,
-    pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn) {
+    pw::Function<void(pw::span<uint8_t> payload)>&&
+        payload_from_controller_fn) {
   if (!L2capReadChannel::AreValidParameters(connection_handle, local_cid)) {
     return pw::Status::InvalidArgument();
   }
@@ -33,7 +34,7 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
       /*l2cap_channel_manager=*/l2cap_channel_manager,
       /*connection_handle=*/connection_handle,
       /*local_cid=*/local_cid,
-      /*controller_receive_fn=*/std::move(controller_receive_fn));
+      /*payload_from_controller_fn=*/std::move(payload_from_controller_fn));
 }
 
 BasicL2capChannel& BasicL2capChannel::operator=(BasicL2capChannel&& other) {
@@ -45,9 +46,9 @@ BasicL2capChannel::BasicL2capChannel(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
     uint16_t local_cid,
-    pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn)
+    pw::Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn)
     : L2capReadChannel(l2cap_channel_manager,
-                       std::move(controller_receive_fn),
+                       std::move(payload_from_controller_fn),
                        connection_handle,
                        local_cid) {}
 
@@ -60,8 +61,9 @@ bool BasicL2capChannel::HandlePduFromController(pw::span<uint8_t> bframe) {
     PW_LOG_ERROR("(CID: 0x%X) Received invalid B-frame. So will drop.",
                  local_cid());
   } else {
-    CallControllerReceiveFn(span(bframe_view->payload().BackingStorage().data(),
-                                 bframe_view->payload().SizeInBytes()));
+    SendPayloadFromControllerToClient(
+        span(bframe_view->payload().BackingStorage().data(),
+             bframe_view->payload().SizeInBytes()));
   }
   return true;
 }

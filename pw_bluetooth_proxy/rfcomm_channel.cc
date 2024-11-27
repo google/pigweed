@@ -222,7 +222,7 @@ bool RfcommChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
       const_cast<uint8_t*>(rfcomm_view->information().BackingStorage().data()),
       rfcomm_view->information().SizeInBytes());
 
-  CallControllerReceiveFn(information);
+  SendPayloadFromControllerToClient(information);
 
   bool rx_needs_refill = false;
   {

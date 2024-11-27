@@ -29,7 +29,7 @@ L2capSignalingChannel::L2capSignalingChannel(
     : BasicL2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
                         /*connection_handle=*/connection_handle,
                         /*local_cid=*/local_cid,
-                        /*controller_receive_fn=*/nullptr),
+                        /*payload_from_controller_fn=*/nullptr),
       l2cap_channel_manager_(l2cap_channel_manager) {}
 
 L2capSignalingChannel& L2capSignalingChannel::operator=(

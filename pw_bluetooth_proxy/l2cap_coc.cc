@@ -214,7 +214,7 @@ bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
     return true;
   }
 
-  CallControllerReceiveFn(pw::span(
+  SendPayloadFromControllerToClient(pw::span(
       const_cast<uint8_t*>(kframe_view->payload().BackingStorage().data()),
       kframe_view->payload_size().Read()));
   return true;

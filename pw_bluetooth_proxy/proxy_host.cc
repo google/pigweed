@@ -391,7 +391,8 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
     uint16_t connection_handle,
     uint16_t local_cid,
     AclTransportType transport,
-    pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn) {
+    pw::Function<void(pw::span<uint8_t> payload)>&&
+        payload_from_controller_fn) {
   Status status =
       acl_data_channel_.CreateAclConnection(connection_handle, transport);
   if (status.IsResourceExhausted()) {
@@ -402,7 +403,7 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
       /*l2cap_channel_manager=*/l2cap_channel_manager_,
       /*connection_handle=*/connection_handle,
       /*local_cid=*/local_cid,
-      /*controller_receive_fn=*/std::move(controller_receive_fn));
+      /*payload_from_controller_fn=*/std::move(payload_from_controller_fn));
 }
 
 pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,

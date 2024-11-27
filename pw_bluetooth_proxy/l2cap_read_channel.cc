@@ -22,7 +22,7 @@ namespace pw::bluetooth::proxy {
 L2capReadChannel::L2capReadChannel(L2capReadChannel&& other)
     : connection_handle_(other.connection_handle()),
       local_cid_(other.local_cid()),
-      controller_receive_fn_(std::move(other.controller_receive_fn_)),
+      payload_from_controller_fn_(std::move(other.payload_from_controller_fn_)),
       l2cap_channel_manager_(other.l2cap_channel_manager_) {
   l2cap_channel_manager_.ReleaseReadChannel(other);
   l2cap_channel_manager_.RegisterReadChannel(*this);
@@ -35,7 +35,7 @@ L2capReadChannel& L2capReadChannel::operator=(L2capReadChannel&& other) {
              "(still registered with L2capChannelManager).");
     connection_handle_ = other.connection_handle();
     local_cid_ = other.local_cid();
-    controller_receive_fn_ = std::move(other.controller_receive_fn_);
+    payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
     l2cap_channel_manager_.ReleaseReadChannel(other);
     l2cap_channel_manager_.RegisterReadChannel(*this);
   }
@@ -54,12 +54,12 @@ void L2capReadChannel::OnFragmentedPduReceived() {
 
 L2capReadChannel::L2capReadChannel(
     L2capChannelManager& l2cap_channel_manager,
-    pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn,
+    pw::Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     uint16_t connection_handle,
     uint16_t local_cid)
     : connection_handle_(connection_handle),
       local_cid_(local_cid),
-      controller_receive_fn_(std::move(controller_receive_fn)),
+      payload_from_controller_fn_(std::move(payload_from_controller_fn)),
       l2cap_channel_manager_(l2cap_channel_manager) {
   l2cap_channel_manager_.RegisterReadChannel(*this);
 }

@@ -136,7 +136,8 @@ class ProxyHost {
   ///
   /// @param[in] transport                  Logical link transport type.
   ///
-  /// @param[in] controller_receive_fn Read callback to be invoked on Rx SDUs.
+  /// @param[in] payload_from_controller_fn Read callback to be invoked on Rx
+  /// SDUs.
   ///
   /// @returns @rst
   ///
@@ -149,7 +150,8 @@ class ProxyHost {
       uint16_t connection_handle,
       uint16_t local_cid,
       AclTransportType transport,
-      pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn);
+      pw::Function<void(pw::span<uint8_t> payload)>&&
+          payload_from_controller_fn);
 
   /// Send a GATT Notify to the indicated connection.
   ///

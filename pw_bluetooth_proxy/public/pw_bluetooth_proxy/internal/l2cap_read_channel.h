@@ -38,7 +38,7 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
 
   // Handle an Rx L2CAP PDU.
   //
-  // Implementations should call `CallControllerReceiveFn` after
+  // Implementations should call `SendPayloadFromControllerToClient` after
   // recombining/processing the PDU (e.g. after updating channel state and
   // screening out certain PDUs).
   //
@@ -49,7 +49,7 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
 
   // Handle a Tx L2CAP PDU.
   //
-  // Implementations should call `CallHostReceiveFn` after
+  // Implementations should call `SendPayloadFromHostToClient` after
   // recombining/processing the PDU (e.g. after updating channel state and
   // screening out certain PDUs).
   //
@@ -69,21 +69,20 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
   uint16_t connection_handle() const { return connection_handle_; }
 
  protected:
-  explicit L2capReadChannel(
-      L2capChannelManager& l2cap_channel_manager,
-      pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn,
-      uint16_t connection_handle,
-      uint16_t local_cid);
+  explicit L2capReadChannel(L2capChannelManager& l2cap_channel_manager,
+                            pw::Function<void(pw::span<uint8_t> payload)>&&
+                                payload_from_controller_fn,
+                            uint16_t connection_handle,
+                            uint16_t local_cid);
 
   // Returns whether or not ACL connection handle & local L2CAP channel
   // identifier are valid parameters for a packet.
   [[nodiscard]] static bool AreValidParameters(uint16_t connection_handle,
                                                uint16_t local_cid);
 
-  // Often the useful `payload` for clients is some subspan of the Rx SDU.
-  void CallControllerReceiveFn(pw::span<uint8_t> payload) {
-    if (controller_receive_fn_) {
-      controller_receive_fn_(payload);
+  void SendPayloadFromControllerToClient(pw::span<uint8_t> payload) {
+    if (payload_from_controller_fn_) {
+      payload_from_controller_fn_(payload);
     }
   }
 
@@ -95,7 +94,7 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
   // L2CAP channel ID of this channel.
   uint16_t local_cid_;
   // Client-provided controller read callback.
-  pw::Function<void(pw::span<uint8_t> payload)> controller_receive_fn_;
+  pw::Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
 
   L2capChannelManager& l2cap_channel_manager_;
 };
