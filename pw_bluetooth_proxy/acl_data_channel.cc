@@ -354,6 +354,21 @@ pw::Status AclDataChannel::FragmentedPduFinished(Direction direction,
   return OkStatus();
 }
 
+L2capReadChannel* AclDataChannel::FindSignalingChannel(
+    uint16_t connection_handle, uint16_t local_cid) {
+  std::lock_guard lock(credit_allocation_mutex_);
+
+  AclConnection* connection_ptr = FindAclConnection(connection_handle);
+  if (!connection_ptr) {
+    return nullptr;
+  }
+
+  if (local_cid == connection_ptr->signaling_channel()->local_cid()) {
+    return connection_ptr->signaling_channel();
+  }
+  return nullptr;
+}
+
 AclDataChannel::AclConnection* AclDataChannel::FindAclConnection(
     uint16_t connection_handle) {
   AclConnection* connection_it = containers::FindIf(

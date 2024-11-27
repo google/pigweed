@@ -29,7 +29,7 @@ L2capSignalingChannel::L2capSignalingChannel(
     : BasicL2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
                         /*connection_handle=*/connection_handle,
                         /*local_cid=*/local_cid,
-                        /*receive_fn=*/nullptr),
+                        /*controller_receive_fn=*/nullptr),
       l2cap_channel_manager_(l2cap_channel_manager) {}
 
 L2capSignalingChannel& L2capSignalingChannel::operator=(
@@ -38,7 +38,7 @@ L2capSignalingChannel& L2capSignalingChannel::operator=(
   return *this;
 }
 
-bool L2capSignalingChannel::OnPduReceived(pw::span<uint8_t> cframe) {
+bool L2capSignalingChannel::HandlePduFromController(pw::span<uint8_t> cframe) {
   Result<emboss::CFrameView> cframe_view =
       MakeEmbossView<emboss::CFrameView>(cframe);
   if (!cframe_view.ok()) {
@@ -56,6 +56,11 @@ bool L2capSignalingChannel::OnPduReceived(pw::span<uint8_t> cframe) {
   return OnCFramePayload(
       pw::span(cframe_view->payload().BackingStorage().data(),
                cframe_view->payload().BackingStorage().SizeInBytes()));
+}
+
+bool L2capSignalingChannel::HandlePduFromHost(pw::span<uint8_t>) {
+  // Forward all to controller.
+  return false;
 }
 
 bool L2capSignalingChannel::HandleL2capSignalingCommand(

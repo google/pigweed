@@ -117,8 +117,10 @@ class RfcommChannel final : public L2capWriteChannel, public L2capReadChannel {
                 uint8_t channel_number,
                 Function<void(pw::span<uint8_t> payload)>&& receive_fn);
 
-  // Parses out RFCOMM payload from `l2cap_pdu` and calls `CallReceiveFn`.
-  bool OnPduReceived(pw::span<uint8_t> l2cap_pdu) override;
+  // Parses out RFCOMM payload from `l2cap_pdu` and calls
+  // `CallControllerReceiveFn`.
+  bool HandlePduFromController(pw::span<uint8_t> l2cap_pdu) override;
+  bool HandlePduFromHost(pw::span<uint8_t> l2cap_pdu) override;
 
   void OnFragmentedPduReceived() override;
 

@@ -141,6 +141,11 @@ class AclDataChannel {
   pw::Status FragmentedPduFinished(Direction direction,
                                    uint16_t connection_handle);
 
+  // Returns the signaling channel for this link if `connection_handle`
+  // references a tracked connection and `local_cid` matches its id.
+  L2capReadChannel* FindSignalingChannel(uint16_t connection_handle,
+                                         uint16_t local_cid);
+
  private:
   // An active logical link on ACL logical transport.
   // TODO: https://pwbug.dev/360929142 - Encapsulate all logic related to this
@@ -176,6 +181,14 @@ class AclDataChannel {
 
     void set_is_receiving_fragmented_pdu(Direction direction, bool new_val) {
       is_receiving_fragmented_pdu_[cpp23::to_underlying(direction)] = new_val;
+    }
+
+    L2capReadChannel* signaling_channel() {
+      if (transport_ == AclTransport::kLe) {
+        return &leu_signaling_channel_;
+      } else {
+        return &aclu_signaling_channel_;
+      }
     }
 
    private:

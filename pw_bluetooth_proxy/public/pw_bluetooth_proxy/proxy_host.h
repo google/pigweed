@@ -134,7 +134,9 @@ class ProxyHost {
   ///
   /// @param[in] local_cid             L2CAP channel ID of the local endpoint.
   ///
-  /// @param[in] receive_fn            Read callback to be invoked on Rx SDUs.
+  /// @param[in] transport                  Logical link transport type.
+  ///
+  /// @param[in] controller_receive_fn Read callback to be invoked on Rx SDUs.
   ///
   /// @returns @rst
   ///
@@ -146,7 +148,8 @@ class ProxyHost {
   pw::Result<BasicL2capChannel> AcquireBasicL2capChannel(
       uint16_t connection_handle,
       uint16_t local_cid,
-      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn);
+      AclTransport transport,
+      pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn);
 
   /// Send a GATT Notify to the indicated connection.
   ///
@@ -244,6 +247,9 @@ class ProxyHost {
 
   // Process a Command_Complete event.
   void HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet);
+
+  // Handle HCI ACL data packet from the host.
+  void HandleAclFromHost(H4PacketWithH4&& h4_packet);
 
   // If ACL frame is end of fragment, complete fragment and return false.
   // Otherwise process frame as part of ongoing fragmented PDU and return true.

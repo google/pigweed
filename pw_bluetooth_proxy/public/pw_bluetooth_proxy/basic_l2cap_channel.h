@@ -27,7 +27,7 @@ class BasicL2capChannel : public L2capReadChannel {
       L2capChannelManager& l2cap_channel_manager,
       uint16_t connection_handle,
       uint16_t local_cid,
-      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn);
+      pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn);
 
   BasicL2capChannel(const BasicL2capChannel& other) = delete;
   BasicL2capChannel& operator=(const BasicL2capChannel& other) = delete;
@@ -40,9 +40,11 @@ class BasicL2capChannel : public L2capReadChannel {
       L2capChannelManager& l2cap_channel_manager,
       uint16_t connection_handle,
       uint16_t local_cid,
-      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn);
+      pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn);
 
-  bool OnPduReceived(pw::span<uint8_t> bframe) override;
+ protected:
+  bool HandlePduFromController(pw::span<uint8_t> bframe) override;
+  bool HandlePduFromHost(pw::span<uint8_t> bframe) override;
 
   // TODO: https://pwbug.dev/360929142 - Stop channel on errors.
 };

@@ -115,9 +115,13 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
       pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
       pw::Function<void(Event event)>&& event_fn);
 
-  // `CallReceiveFn` with the information payload contained in `kframe`. As
-  // packet desegmentation is not supported, segmented SDUs are discarded.
-  bool OnPduReceived(pw::span<uint8_t> kframe) override
+  // `CallControllerReceiveFn` with the information payload contained in
+  // `kframe`. As packet desegmentation is not supported, segmented SDUs are
+  // discarded.
+  bool HandlePduFromController(pw::span<uint8_t> kframe) override
+      PW_LOCKS_EXCLUDED(mutex_);
+
+  bool HandlePduFromHost(pw::span<uint8_t> kframe) override
       PW_LOCKS_EXCLUDED(mutex_);
 
   // Increment `send_credits_` by `credits`.

@@ -160,8 +160,11 @@ Result<RfcommChannel> RfcommChannel::Create(
                        std::move(receive_fn));
 }
 
-bool RfcommChannel::OnPduReceived(pw::span<uint8_t> l2cap_pdu) {
-  PW_CHECK(state_ != State::kStopped, "Received data on stopped channel");
+bool RfcommChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
+  if (state_ == State::kStopped) {
+    PW_LOG_WARN("Received data on stopped channel, passing on to host.");
+    return false;
+  }
 
   Result<emboss::BFrameView> bframe_view =
       MakeEmbossView<emboss::BFrameView>(l2cap_pdu);
@@ -217,7 +220,7 @@ bool RfcommChannel::OnPduReceived(pw::span<uint8_t> l2cap_pdu) {
       const_cast<uint8_t*>(rfcomm_view->information().BackingStorage().data()),
       rfcomm_view->information().SizeInBytes());
 
-  CallReceiveFn(information);
+  CallControllerReceiveFn(information);
 
   bool rx_needs_refill = false;
   {
@@ -245,6 +248,8 @@ bool RfcommChannel::OnPduReceived(pw::span<uint8_t> l2cap_pdu) {
 
   return true;
 }
+
+bool RfcommChannel::HandlePduFromHost(pw::span<uint8_t>) { return false; }
 
 RfcommChannel::RfcommChannel(
     L2capChannelManager& l2cap_channel_manager,

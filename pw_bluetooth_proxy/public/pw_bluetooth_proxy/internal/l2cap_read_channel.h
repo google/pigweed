@@ -38,12 +38,25 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
 
   // Handle an Rx L2CAP PDU.
   //
-  // Implementations should call `CallReceiveFn` after recombining/processing
-  // the SDU (e.g. after updating channel state and screening out certain SDUs).
+  // Implementations should call `CallControllerReceiveFn` after
+  // recombining/processing the PDU (e.g. after updating channel state and
+  // screening out certain PDUs).
   //
   // Return true if the PDU was consumed by the channel. Otherwise, return false
   // and the PDU will be forwarded by `ProxyHost` on to the Bluetooth host.
-  [[nodiscard]] virtual bool OnPduReceived(pw::span<uint8_t> l2cap_pdu) = 0;
+  [[nodiscard]] virtual bool HandlePduFromController(
+      pw::span<uint8_t> l2cap_pdu) = 0;
+
+  // Handle a Tx L2CAP PDU.
+  //
+  // Implementations should call `CallHostReceiveFn` after
+  // recombining/processing the PDU (e.g. after updating channel state and
+  // screening out certain PDUs).
+  //
+  // Return true if the PDU was consumed by the channel. Otherwise, return false
+  // and the PDU will be forwarded by `ProxyHost` on to the Bluetooth
+  // controller.
+  [[nodiscard]] virtual bool HandlePduFromHost(pw::span<uint8_t> l2cap_pdu) = 0;
 
   // Handle fragmented Rx L2CAP PDU.
   // TODO: https://pwbug.dev/365179076 - Support recombination & delete this.
@@ -58,7 +71,7 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
  protected:
   explicit L2capReadChannel(
       L2capChannelManager& l2cap_channel_manager,
-      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn,
       uint16_t connection_handle,
       uint16_t local_cid);
 
@@ -68,9 +81,9 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
                                                uint16_t local_cid);
 
   // Often the useful `payload` for clients is some subspan of the Rx SDU.
-  void CallReceiveFn(pw::span<uint8_t> payload) {
-    if (receive_fn_) {
-      receive_fn_(payload);
+  void CallControllerReceiveFn(pw::span<uint8_t> payload) {
+    if (controller_receive_fn_) {
+      controller_receive_fn_(payload);
     }
   }
 
@@ -81,8 +94,8 @@ class L2capReadChannel : public IntrusiveForwardList<L2capReadChannel>::Item {
   uint16_t connection_handle_;
   // L2CAP channel ID of this channel.
   uint16_t local_cid_;
-  // Client-provided read callback.
-  pw::Function<void(pw::span<uint8_t> payload)> receive_fn_;
+  // Client-provided controller read callback.
+  pw::Function<void(pw::span<uint8_t> payload)> controller_receive_fn_;
 
   L2capChannelManager& l2cap_channel_manager_;
 };

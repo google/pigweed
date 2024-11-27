@@ -24,15 +24,16 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
     uint16_t local_cid,
-    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn) {
+    pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn) {
   if (!L2capReadChannel::AreValidParameters(connection_handle, local_cid)) {
     return pw::Status::InvalidArgument();
   }
 
-  return BasicL2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
-                           /*connection_handle=*/connection_handle,
-                           /*local_cid=*/local_cid,
-                           /*receive_fn=*/std::move(receive_fn));
+  return BasicL2capChannel(
+      /*l2cap_channel_manager=*/l2cap_channel_manager,
+      /*connection_handle=*/connection_handle,
+      /*local_cid=*/local_cid,
+      /*controller_receive_fn=*/std::move(controller_receive_fn));
 }
 
 BasicL2capChannel& BasicL2capChannel::operator=(BasicL2capChannel&& other) {
@@ -44,13 +45,13 @@ BasicL2capChannel::BasicL2capChannel(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
     uint16_t local_cid,
-    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn)
+    pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn)
     : L2capReadChannel(l2cap_channel_manager,
-                       std::move(receive_fn),
+                       std::move(controller_receive_fn),
                        connection_handle,
                        local_cid) {}
 
-bool BasicL2capChannel::OnPduReceived(pw::span<uint8_t> bframe) {
+bool BasicL2capChannel::HandlePduFromController(pw::span<uint8_t> bframe) {
   Result<emboss::BFrameWriter> bframe_view =
       MakeEmbossWriter<emboss::BFrameWriter>(bframe);
 
@@ -59,11 +60,15 @@ bool BasicL2capChannel::OnPduReceived(pw::span<uint8_t> bframe) {
     PW_LOG_ERROR("(CID: 0x%X) Received invalid B-frame. So will drop.",
                  local_cid());
   } else {
-    CallReceiveFn(span(bframe_view->payload().BackingStorage().data(),
-                       bframe_view->payload().SizeInBytes()));
+    CallControllerReceiveFn(span(bframe_view->payload().BackingStorage().data(),
+                                 bframe_view->payload().SizeInBytes()));
   }
-
   return true;
+}
+
+bool BasicL2capChannel::HandlePduFromHost(pw::span<uint8_t>) {
+  // Always forward to controller.
+  return false;
 }
 
 }  // namespace pw::bluetooth::proxy

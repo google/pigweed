@@ -126,7 +126,7 @@ pw::Result<L2capCoc> L2capCoc::Create(
                   /*event_fn=*/std::move(event_fn));
 }
 
-bool L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
+bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
   // TODO: https://pwbug.dev/360934030 - Track rx_credits.
   if (state_ == CocState::kStopped) {
     StopChannelAndReportError(Event::kRxWhileStopped);
@@ -214,10 +214,15 @@ bool L2capCoc::OnPduReceived(pw::span<uint8_t> kframe) {
     return true;
   }
 
-  CallReceiveFn(pw::span(
+  CallControllerReceiveFn(pw::span(
       const_cast<uint8_t*>(kframe_view->payload().BackingStorage().data()),
       kframe_view->payload_size().Read()));
   return true;
+}
+
+bool L2capCoc::HandlePduFromHost(pw::span<uint8_t>) PW_LOCKS_EXCLUDED(mutex_) {
+  // Always forward data from host to controller
+  return false;
 }
 
 L2capCoc::L2capCoc(L2capChannelManager& l2cap_channel_manager,
