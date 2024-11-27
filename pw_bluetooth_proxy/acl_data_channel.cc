@@ -211,6 +211,36 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
   }
 }
 
+// Create new tracked connection and pass on to host.
+void AclDataChannel::HandleConnectionCompleteEvent(
+    H4PacketWithHci&& h4_packet) {
+  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
+  Result<emboss::ConnectionCompleteEventView> connection_complete_event =
+      MakeEmbossView<emboss::ConnectionCompleteEventView>(hci_buffer);
+  if (!connection_complete_event.ok()) {
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
+
+  if (connection_complete_event->status().Read() !=
+      emboss::StatusCode::SUCCESS) {
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
+
+  const uint16_t conn_handle =
+      connection_complete_event->connection_handle().Read();
+
+  if (CreateAclConnection(conn_handle, AclTransportType::kBrEdr) ==
+      Status::ResourceExhausted()) {
+    PW_LOG_ERROR(
+        "Could not track connection like requested. Max connections "
+        "reached.");
+  }
+
+  hci_transport_.SendToHost(std::move(h4_packet));
+}
+
 void AclDataChannel::HandleDisconnectionCompleteEvent(
     H4PacketWithHci&& h4_packet) {
   Result<emboss::DisconnectionCompleteEventView> dc_event =
@@ -246,6 +276,7 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
         LookupCredits(connection_ptr->transport())
             .MarkCompleted(connection_ptr->num_pending_packets());
       }
+
       active_acl_connections_.erase(connection_ptr);
     } else {
       if (connection_ptr->num_pending_packets() > 0) {

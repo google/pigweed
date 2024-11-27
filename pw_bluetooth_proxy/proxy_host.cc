@@ -145,6 +145,10 @@ void ProxyHost::HandleEventFromController(H4PacketWithHci&& h4_packet) {
       HandleCommandCompleteEvent(std::move(h4_packet));
       break;
     }
+    case emboss::EventCode::CONNECTION_COMPLETE: {
+      acl_data_channel_.HandleConnectionCompleteEvent(std::move(h4_packet));
+      break;
+    }
     default: {
       hci_transport_.SendToHost(std::move(h4_packet));
       return;

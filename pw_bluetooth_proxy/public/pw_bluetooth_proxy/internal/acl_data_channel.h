@@ -80,6 +80,9 @@ class AclDataChannel {
   // Reclaim any credits we have associated with the removed connection.
   void HandleDisconnectionCompleteEvent(H4PacketWithHci&& h4_packet);
 
+  // Create new tracked connection and pass on to host.
+  void HandleConnectionCompleteEvent(H4PacketWithHci&& h4_packet);
+
   /// Indicates whether the proxy has the capability of sending ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy
   /// has not yet or has been unable to reserve credits from the host.
