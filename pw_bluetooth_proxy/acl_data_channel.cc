@@ -211,7 +211,6 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
   }
 }
 
-// Create new tracked connection and pass on to host.
 void AclDataChannel::HandleConnectionCompleteEvent(
     H4PacketWithHci&& h4_packet) {
   pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
@@ -237,6 +236,70 @@ void AclDataChannel::HandleConnectionCompleteEvent(
         "Could not track connection like requested. Max connections "
         "reached.");
   }
+
+  hci_transport_.SendToHost(std::move(h4_packet));
+}
+
+void AclDataChannel::HandleLeConnectionCompleteEvent(
+    uint16_t connection_handle, emboss::StatusCode status) {
+  if (status != emboss::StatusCode::SUCCESS) {
+    return;
+  }
+
+  if (CreateAclConnection(connection_handle, AclTransportType::kLe) ==
+      Status::ResourceExhausted()) {
+    PW_LOG_ERROR(
+        "Could not track connection like requested. Max connections "
+        "reached.");
+  }
+}
+
+void AclDataChannel::HandleLeConnectionCompleteEvent(
+    H4PacketWithHci&& h4_packet) {
+  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
+  Result<emboss::LEConnectionCompleteSubeventView> event =
+      MakeEmbossView<emboss::LEConnectionCompleteSubeventView>(hci_buffer);
+  if (!event.ok()) {
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
+
+  HandleLeConnectionCompleteEvent(event->connection_handle().Read(),
+                                  event->status().Read());
+
+  hci_transport_.SendToHost(std::move(h4_packet));
+}
+
+void AclDataChannel::HandleLeEnhancedConnectionCompleteV1Event(
+    H4PacketWithHci&& h4_packet) {
+  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
+  Result<emboss::LEEnhancedConnectionCompleteSubeventV1View> event =
+      MakeEmbossView<emboss::LEEnhancedConnectionCompleteSubeventV1View>(
+          hci_buffer);
+  if (!event.ok()) {
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
+
+  HandleLeConnectionCompleteEvent(event->connection_handle().Read(),
+                                  event->status().Read());
+
+  hci_transport_.SendToHost(std::move(h4_packet));
+}
+
+void AclDataChannel::HandleLeEnhancedConnectionCompleteV2Event(
+    H4PacketWithHci&& h4_packet) {
+  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
+  Result<emboss::LEEnhancedConnectionCompleteSubeventV2View> event =
+      MakeEmbossView<emboss::LEEnhancedConnectionCompleteSubeventV2View>(
+          hci_buffer);
+  if (!event.ok()) {
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
+
+  HandleLeConnectionCompleteEvent(event->connection_handle().Read(),
+                                  event->status().Read());
 
   hci_transport_.SendToHost(std::move(h4_packet));
 }

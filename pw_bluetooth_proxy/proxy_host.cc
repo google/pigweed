@@ -149,6 +149,10 @@ void ProxyHost::HandleEventFromController(H4PacketWithHci&& h4_packet) {
       acl_data_channel_.HandleConnectionCompleteEvent(std::move(h4_packet));
       break;
     }
+    case emboss::EventCode::LE_META_EVENT: {
+      HandleLeMetaEvent(std::move(h4_packet));
+      break;
+    }
     default: {
       hci_transport_.SendToHost(std::move(h4_packet));
       return;
@@ -208,6 +212,41 @@ void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
                    acl->payload().SizeInBytes()))) {
     hci_transport_.SendToHost(std::move(h4_packet));
   }
+}
+
+void ProxyHost::HandleLeMetaEvent(H4PacketWithHci&& h4_packet) {
+  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
+  Result<emboss::LEMetaEventView> le_meta_event_view =
+      MakeEmbossView<emboss::LEMetaEventView>(hci_buffer);
+  if (!le_meta_event_view.ok()) {
+    PW_LOG_ERROR(
+        "Buffer is too small for LE_META_EVENT event. So will not process.");
+    hci_transport_.SendToHost(std::move(h4_packet));
+    return;
+  }
+
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
+  switch (le_meta_event_view->subevent_code_enum().Read()) {
+    case emboss::LeSubEventCode::CONNECTION_COMPLETE: {
+      acl_data_channel_.HandleLeConnectionCompleteEvent(std::move(h4_packet));
+      return;
+    }
+    case emboss::LeSubEventCode::ENHANCED_CONNECTION_COMPLETE_V1: {
+      acl_data_channel_.HandleLeEnhancedConnectionCompleteV1Event(
+          std::move(h4_packet));
+      return;
+    }
+    case emboss::LeSubEventCode::ENHANCED_CONNECTION_COMPLETE_V2: {
+      acl_data_channel_.HandleLeEnhancedConnectionCompleteV2Event(
+          std::move(h4_packet));
+      return;
+    }
+    default:
+      break;
+  }
+  PW_MODIFY_DIAGNOSTICS_POP();
+  hci_transport_.SendToHost(std::move(h4_packet));
 }
 
 void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {

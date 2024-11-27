@@ -600,6 +600,36 @@ enum EventCode:
   VENDOR_DEBUG                                = 0xFF
 
 
+enum LeSubEventCode:
+  -- HCI LE Meta event SubEvent codes
+  -- Core Spec v6.0 Vol 4, Part E, Section 7.7.65
+  [maximum_bits: 8]
+  CONNECTION_COMPLETE                   = 0x01
+  ADVERTISING_REPORT                    = 0x02
+  CONNECTION_UPDATE_COMPLETE            = 0x03
+  READ_REMOTE_FEATURES_COMPLETE         = 0x04
+  LONG_TERM_KEY_REQUEST                 = 0x05
+  REMOTE_CONNECTION_PARAMETER_REQUEST   = 0x06
+  DATA_LENGTH_CHANGE                    = 0x07
+  READ_LOCAL_P256_PUBLIC_KEY_COMPLETE   = 0x08
+  GENERATE_DH_KEY_COMPLETE              = 0x09
+  ENHANCED_CONNECTION_COMPLETE_V1       = 0x0A
+  DIRECTED_ADVERTISING_REPORT           = 0x0B
+  PHY_UPDATE_COMPLETE                   = 0x0C
+  EXTENDED_ADVERTISING_REPORT           = 0x0D
+  PERIODIC_ADVERTISING_SYNC_ESTABLISHED = 0x0E
+  PERIODIC_ADVERTISING_REPORT           = 0x0F
+  PERIODIC_ADVERTISING_SYNC_LOST        = 0x10
+  SCAN_TIMEOUT                          = 0x11
+  ADVERTISING_SET_TERMINATED            = 0x12
+  SCAN_REQUEST_RECEIVED                 = 0x13
+  CHANNEL_SELECTION_ALGORITHM           = 0x14
+  CIS_ESTABLISHED                       = 0x19
+  REQUEST_PEER_SCA_COMPLETE             = 0x1F
+  CIS_REQUEST                           = 0x1A
+  ENHANCED_CONNECTION_COMPLETE_V2       = 0x29
+
+
 enum MajorDeviceClass:
   [maximum_bits: 5]
   MISCELLANEOUS = 0x00

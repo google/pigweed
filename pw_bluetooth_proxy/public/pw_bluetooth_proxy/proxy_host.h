@@ -245,6 +245,9 @@ class ProxyHost {
   // Handle HCI ACL data packet from the controller.
   void HandleAclFromController(H4PacketWithHci&& h4_packet);
 
+  // Process an LE_META_EVENT
+  void HandleLeMetaEvent(H4PacketWithHci&& h4_packet);
+
   // Process a Command_Complete event.
   void HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet);
 

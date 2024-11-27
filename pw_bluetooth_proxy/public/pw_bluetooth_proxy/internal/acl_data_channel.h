@@ -83,6 +83,15 @@ class AclDataChannel {
   // Create new tracked connection and pass on to host.
   void HandleConnectionCompleteEvent(H4PacketWithHci&& h4_packet);
 
+  // Create new tracked connection and pass on to host.
+  void HandleLeConnectionCompleteEvent(H4PacketWithHci&& h4_packet);
+
+  // Create new tracked connection and pass on to host.
+  void HandleLeEnhancedConnectionCompleteV1Event(H4PacketWithHci&& h4_packet);
+
+  // Create new tracked connection and pass on to host.
+  void HandleLeEnhancedConnectionCompleteV2Event(H4PacketWithHci&& h4_packet);
+
   /// Indicates whether the proxy has the capability of sending ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy
   /// has not yet or has been unable to reserve credits from the host.
@@ -257,6 +266,9 @@ class AclDataChannel {
 
   const Credits& LookupCredits(AclTransportType transport) const
       PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
+
+  void HandleLeConnectionCompleteEvent(uint16_t connection_handle,
+                                       emboss::StatusCode status);
 
   // Maximum number of simultaneous credit-allocated LE connections supported.
   // TODO: https://pwbug.dev/349700888 - Make size configurable.

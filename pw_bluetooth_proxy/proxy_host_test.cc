@@ -171,6 +171,28 @@ Status SendConnectionCompleteEvent(ProxyHost& proxy,
   return OkStatus();
 }
 
+// Send a LE_Connection_Complete event to `proxy` indicating the provided
+// `handle` has disconnected.
+Status SendLeConnectionCompleteEvent(ProxyHost& proxy,
+                                     uint16_t handle,
+                                     emboss::StatusCode status) {
+  std::array<uint8_t,
+             emboss::LEConnectionCompleteSubevent::IntrinsicSizeInBytes()>
+      hci_arr_dc{};
+  H4PacketWithHci dc_event{emboss::H4PacketType::EVENT, hci_arr_dc};
+  PW_TRY_ASSIGN(auto view,
+                MakeEmbossWriter<emboss::LEConnectionCompleteSubeventWriter>(
+                    dc_event.GetHciSpan()));
+  view.le_meta_event().header().event_code_enum().Write(
+      emboss::EventCode::LE_META_EVENT);
+  view.le_meta_event().subevent_code_enum().Write(
+      emboss::LeSubEventCode::CONNECTION_COMPLETE);
+  view.status().Write(status);
+  view.connection_handle().Write(handle);
+  proxy.HandleH4HciFromController(std::move(dc_event));
+  return OkStatus();
+}
+
 // Send a Disconnection_Complete event to `proxy` indicating the provided
 // `handle` has disconnected.
 Status SendDisconnectionCompleteEvent(ProxyHost& proxy,
@@ -4697,6 +4719,25 @@ TEST(ProxyHostConnectionEventTest,
 
   PW_TEST_EXPECT_OK(SendConnectionCompleteEvent(
       proxy, 1, emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED));
+  EXPECT_EQ(host_called, 1U);
+}
+
+TEST(ProxyHostConnectionEventTest, LeConnectionCompletePassthroughOk) {
+  size_t host_called = 0;
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      [&host_called]([[maybe_unused]] H4PacketWithHci&& packet) {
+        ++host_called;
+      });
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0);
+
+  PW_TEST_EXPECT_OK(
+      SendLeConnectionCompleteEvent(proxy, 1, emboss::StatusCode::SUCCESS));
   EXPECT_EQ(host_called, 1U);
 }
 
