@@ -360,6 +360,12 @@ and ``gn_python_check``. They assume there's a top-level ``python`` GN target.
 ``gn_pylint`` runs Pylint and Mypy checks and ``gn_python_check`` runs Pylint,
 Mypy, and all Python tests.
 
+Bazel Checks
+^^^^^^^^^^^^
+There is one Bazel-related check: the ``includes_presubmit_check`` verifies
+that ``cc_library`` Bazel targets don't use the ``includes`` attribute.  See
+:bug:`378564135` for a discussion of why this attribute should be avoided.
+
 Inclusive Language
 ^^^^^^^^^^^^^^^^^^
 .. inclusive-language: disable

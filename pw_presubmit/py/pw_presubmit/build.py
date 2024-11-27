@@ -16,6 +16,7 @@
 import base64
 import contextlib
 from dataclasses import dataclass
+import io
 import itertools
 import json
 import logging
@@ -38,7 +39,6 @@ from typing import (
     Mapping,
     Sequence,
     Set,
-    TextIO,
 )
 
 import pw_cli.color
@@ -78,7 +78,7 @@ def bazel(
     *args: str,
     strict_module_lockfile: bool = False,
     use_remote_cache: bool = False,
-    stdout: TextIO | None = None,
+    stdout: io.TextIOWrapper | None = None,
     **kwargs,
 ) -> None:
     """Invokes Bazel with some common flags set.

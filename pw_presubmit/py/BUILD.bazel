@@ -23,6 +23,7 @@ py_library(
     name = "pw_presubmit",
     srcs = [
         "pw_presubmit/__init__.py",
+        "pw_presubmit/bazel_checks.py",
         "pw_presubmit/bazel_parser.py",
         "pw_presubmit/build.py",
         "pw_presubmit/cli.py",
@@ -88,6 +89,12 @@ pw_py_test(
 py_library(
     name = "format_testing_utils",
     srcs = ["format_testing_utils.py"],
+)
+
+pw_py_test(
+    name = "bazel_checks_test",
+    srcs = ["bazel_checks_test.py"],
+    deps = [":pw_presubmit"],
 )
 
 pw_py_test(
