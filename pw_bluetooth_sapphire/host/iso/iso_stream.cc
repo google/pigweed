@@ -42,6 +42,7 @@ class IsoStreamImpl final : public IsoStream {
     return cis_hci_handle_;
   }
   void Close() override;
+  std::unique_ptr<IsoDataPacket> ReadNextQueuedIncomingPacket() override;
   IsoStream::WeakPtr GetWeakPtr() override { return weak_self_.GetWeakPtr(); }
 
   // IsoDataChannel::ConnectionInterface override
@@ -70,6 +71,12 @@ class IsoStreamImpl final : public IsoStream {
   IsoInboundPacketAssembler inbound_assembler_;
 
   IncomingDataHandler on_incoming_data_available_cb_;
+
+  // When true, we will send a notification to the client when the next packet
+  // arrives. Otherwise, we will just queue it up.
+  bool inbound_client_is_waiting_ = false;
+
+  std::queue<std::unique_ptr<std::vector<std::byte>>> incoming_data_queue_;
 
   // Called when stream is closed
   pw::Callback<void()> on_closed_cb_;
@@ -339,12 +346,35 @@ void IsoStreamImpl::HandleCompletePacket(
     return;
   }
 
-  if (on_incoming_data_available_cb_(packet)) {
-    // Packet was processed successfully - we're done here
-    return;
+  if (inbound_client_is_waiting_) {
+    inbound_client_is_waiting_ = false;
+    if (on_incoming_data_available_cb_(packet)) {
+      // Packet was processed successfully - we're done here
+      return;
+    }
+    // This is not a hard error, but it is a bit unusual and probably worth
+    // noting.
+    bt_log(INFO,
+           "iso",
+           "ISO incoming packet client previously requested packets, now not "
+           "accepting new ones");
   }
 
-  // TODO(fxbug.dev/311639690): queue the packet
+  // Client not ready to handle packet, queue it up until they ask for it
+  incoming_data_queue_.push(
+      std::make_unique<IsoDataPacket>(packet.begin(), packet.end()));
+}
+
+std::unique_ptr<IsoDataPacket> IsoStreamImpl::ReadNextQueuedIncomingPacket() {
+  if (incoming_data_queue_.empty()) {
+    inbound_client_is_waiting_ = true;
+    return nullptr;
+  }
+
+  std::unique_ptr<IsoDataPacket> packet =
+      std::move(incoming_data_queue_.front());
+  incoming_data_queue_.pop();
+  return packet;
 }
 
 void IsoStreamImpl::Close() { on_closed_cb_(); }

@@ -44,6 +44,7 @@ class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
   using SetupDataPathCallback = pw::Callback<void(SetupDataPathError)>;
   using IncomingDataHandler =
       pw::Function<bool(const pw::span<const std::byte>&)>;
+
   virtual void SetupDataPath(
       pw::bluetooth::emboss::DataPathDirection direction,
       const bt::StaticPacket<pw::bluetooth::emboss::CodecIdWriter>& codec_id,
@@ -64,6 +65,18 @@ class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
       CisEstablishedCallback on_established_cb,
       hci::CommandChannel::WeakPtr cmd,
       pw::Callback<void()> on_closed_cb);
+
+  // Used by the client to check for queued frames. If none are present the
+  // incoming data available callback will be called the next time a frame is
+  // available. This allows for a 'hanging get' style interface (request a frame
+  // whenever the client is ready to process one and then wait for a
+  // notification) or a client-buffered interface (every time the client wants
+  // more frames request them until it receives a nullptr, and then wait for a
+  // callback to indicate that the next frame(s) are available). It is important
+  // to note that the client cannot simply rely on notifications: until a read
+  // attempt is unfulfilled the stream will buffer frames waiting for a read
+  // from the client.
+  virtual std::unique_ptr<IsoDataPacket> ReadNextQueuedIncomingPacket() = 0;
 
   using WeakPtr = WeakSelf<IsoStream>::WeakPtr;
   virtual WeakPtr GetWeakPtr() = 0;

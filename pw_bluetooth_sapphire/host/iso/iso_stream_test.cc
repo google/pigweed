@@ -24,6 +24,10 @@ constexpr hci_spec::CigIdentifier kCigId = 0x22;
 constexpr hci_spec::CisIdentifier kCisId = 0x42;
 
 constexpr hci_spec::ConnectionHandle kCisHandleId = 0x59e;
+
+constexpr size_t kMaxControllerPacketSize = 100;
+constexpr size_t kMaxControllerPacketCount = 5;
+
 using MockControllerTestBase =
     bt::testing::FakeDispatcherControllerTest<bt::testing::MockController>;
 
@@ -35,8 +39,8 @@ class IsoStreamTest : public MockControllerTestBase {
   void SetUp() override {
     MockControllerTestBase::SetUp(
         pw::bluetooth::Controller::FeaturesBits::kHciIso);
-    hci::DataBufferInfo iso_buffer_info(/*max_data_length=*/100,
-                                        /*max_num_packets=*/5);
+    hci::DataBufferInfo iso_buffer_info(kMaxControllerPacketSize,
+                                        kMaxControllerPacketCount);
     transport()->InitializeIsoDataChannel(iso_buffer_info);
     iso_stream_ = IsoStream::Create(
         kCigId,
@@ -79,6 +83,10 @@ class IsoStreamTest : public MockControllerTestBase {
 
   IsoStream* iso_stream() { return iso_stream_.get(); }
 
+  std::queue<std::vector<std::byte>>* complete_incoming_sdus() {
+    return &complete_incoming_sdus_;
+  }
+
   std::optional<pw::bluetooth::emboss::StatusCode> establishment_status() {
     return establishment_status_;
   }
@@ -88,6 +96,9 @@ class IsoStreamTest : public MockControllerTestBase {
   }
 
   bool closed() { return closed_; }
+
+ protected:
+  bool accept_incoming_sdus_ = true;
 
  private:
   std::unique_ptr<IsoStream> iso_stream_;
@@ -186,6 +197,9 @@ void IsoStreamTest::SetupDataPath(
 
 bool IsoStreamTest::HandleCompleteIncomingSDU(
     const pw::span<const std::byte>& sdu) {
+  if (!accept_incoming_sdus_) {
+    return false;
+  }
   std::vector<std::byte> new_sdu(sdu.size());
   std::copy(sdu.begin(), sdu.end(), new_sdu.begin());
   complete_incoming_sdus_.emplace(std::move(new_sdu));
@@ -298,6 +312,102 @@ TEST_F(IsoStreamTest, SetupDataPathControllerError) {
       /*cmd_complete_status=*/
       pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS,
       iso::IsoStream::SetupDataPathError::kStreamRejectedByController);
+}
+
+// If the client asks for frames before any are ready it will receive
+// a notification when the next packet arrives.
+TEST_F(IsoStreamTest, PendingRead) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+  DynamicByteBuffer packet0 =
+      testing::IsoDataPacket(kMaxControllerPacketSize,
+                             iso_stream()->cis_handle(),
+                             /*packet_sequence_number=*/0);
+  pw::span<const std::byte> packet0_as_span = packet0.subspan();
+  ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
+  iso_stream()->ReceiveInboundPacket(packet0_as_span);
+  ASSERT_EQ(complete_incoming_sdus()->size(), 1u);
+  std::vector<std::byte>& received_frame = complete_incoming_sdus()->front();
+  ASSERT_EQ(packet0_as_span.size(), received_frame.size());
+  EXPECT_TRUE(std::equal(
+      packet0_as_span.begin(), packet0_as_span.end(), received_frame.begin()));
+}
+
+// If the client does not ask for frames it will not receive any notifications
+// and the IsoStream will just queue them up.
+TEST_F(IsoStreamTest, UnreadData) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+  const size_t kTotalFrameCount = 5;
+  DynamicByteBuffer packets[kTotalFrameCount];
+  pw::span<const std::byte> packets_as_span[kTotalFrameCount];
+  for (size_t i = 0; i < kTotalFrameCount; i++) {
+    packets[i] = testing::IsoDataPacket(kMaxControllerPacketSize - i,
+                                        iso_stream()->cis_handle(),
+                                        /*packet_sequence_number=*/i);
+    packets_as_span[i] = packets[i].subspan();
+    iso_stream()->ReceiveInboundPacket(packets_as_span[i]);
+  }
+  EXPECT_EQ(complete_incoming_sdus()->size(), 0u);
+}
+
+// This is the (somewhat unusual) case where the client asks for a frame but
+// then rejects it when the frame is ready. The frame should stay in the queue
+// and future frames should not receive notification, either.
+TEST_F(IsoStreamTest, ReadRequestedAndThenRejected) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+  DynamicByteBuffer packet0 =
+      testing::IsoDataPacket(kMaxControllerPacketSize,
+                             iso_stream()->cis_handle(),
+                             /*packet_sequence_number=*/0);
+  pw::span<const std::byte> packet0_as_span = packet0.subspan();
+  DynamicByteBuffer packet1 =
+      testing::IsoDataPacket(kMaxControllerPacketSize - 1,
+                             iso_stream()->cis_handle(),
+                             /*packet_sequence_number=*/1);
+  pw::span<const std::byte> packet1_as_span = packet1.subspan();
+
+  // Request a frame but then reject it when proffered by the stream
+  ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
+  accept_incoming_sdus_ = false;
+  iso_stream()->ReceiveInboundPacket(packet0_as_span);
+  EXPECT_EQ(complete_incoming_sdus()->size(), 0u);
+
+  // Accept future frames, but because no read request has been made that we
+  // couldn't fulfill, the stream should just queue them up.
+  accept_incoming_sdus_ = true;
+  iso_stream()->ReceiveInboundPacket(packet1_as_span);
+  EXPECT_EQ(complete_incoming_sdus()->size(), 0u);
+
+  // And finally, we should be able to read out the packets in the right order
+  std::unique_ptr<IsoDataPacket> rx_packet_0 =
+      iso_stream()->ReadNextQueuedIncomingPacket();
+  ASSERT_NE(rx_packet_0, nullptr);
+  ASSERT_EQ(rx_packet_0->size(), packet0_as_span.size());
+  ASSERT_TRUE(std::equal(
+      rx_packet_0->begin(), rx_packet_0->end(), packet0_as_span.begin()));
+  std::unique_ptr<IsoDataPacket> rx_packet_1 =
+      iso_stream()->ReadNextQueuedIncomingPacket();
+  ASSERT_NE(rx_packet_1, nullptr);
+  ASSERT_EQ(rx_packet_1->size(), packet1_as_span.size());
+  ASSERT_TRUE(std::equal(
+      rx_packet_1->begin(), rx_packet_1->end(), packet1_as_span.begin()));
+
+  // Stream's packet queue should be empty now
+  ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
 }
 
 }  // namespace bt::iso

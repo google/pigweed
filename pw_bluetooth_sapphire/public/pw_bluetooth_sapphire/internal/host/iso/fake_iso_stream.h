@@ -43,6 +43,10 @@ class FakeIsoStream : public IsoStream {
 
   void Close() override {}
 
+  std::unique_ptr<IsoDataPacket> ReadNextQueuedIncomingPacket() override {
+    return nullptr;
+  }
+
   IsoStream::WeakPtr GetWeakPtr() override { return weak_self_.GetWeakPtr(); }
 
   void SetSetupDataPathReturnStatus(IsoStream::SetupDataPathError status) {

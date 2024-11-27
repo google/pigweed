@@ -30,6 +30,8 @@ constexpr size_t kMaxIsochronousDataPacketSize =
     pw::bluetooth::emboss::IsoDataFrameHeader::MaxSizeInBytes() +
     hci_spec::kMaxIsochronousDataPacketPayloadSize;
 
+using IsoDataPacket = std::vector<std::byte>;
+
 // Possible outcomes from an AcceptCis call
 enum class AcceptCisStatus {
   // We're now waiting for an incoming CIS request with the specified attributes
