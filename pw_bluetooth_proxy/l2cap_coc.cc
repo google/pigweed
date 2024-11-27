@@ -233,7 +233,7 @@ L2capCoc::L2capCoc(L2capChannelManager& l2cap_channel_manager,
                    pw::Function<void(Event event)>&& event_fn)
     : L2capWriteChannel(l2cap_channel_manager,
                         connection_handle,
-                        AclTransport::kLe,
+                        AclTransportType::kLe,
                         tx_config.cid),
       L2capReadChannel(l2cap_channel_manager,
                        std::move(receive_fn),

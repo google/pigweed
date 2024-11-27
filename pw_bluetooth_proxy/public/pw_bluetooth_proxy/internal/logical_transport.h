@@ -16,7 +16,7 @@
 
 namespace pw::bluetooth::proxy {
 
-enum class AclTransport {
+enum class AclTransportType {
   kBrEdr,
   kLe,
 };

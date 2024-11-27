@@ -331,7 +331,7 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
     pw::Function<void(L2capCoc::Event event)>&& event_fn) {
   Status status = acl_data_channel_.CreateAclConnection(connection_handle,
-                                                        AclTransport::kLe);
+                                                        AclTransportType::kLe);
   if (status.IsResourceExhausted()) {
     return pw::Status::Unavailable();
   }
@@ -347,7 +347,7 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
 pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
     uint16_t connection_handle,
     uint16_t local_cid,
-    AclTransport transport,
+    AclTransportType transport,
     pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn) {
   Status status =
       acl_data_channel_.CreateAclConnection(connection_handle, transport);
@@ -367,7 +367,7 @@ pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
                                      pw::span<const uint8_t> attribute_value) {
   // TODO: https://pwbug.dev/369709521 - Migrate clients to channel API.
   Status status = acl_data_channel_.CreateAclConnection(connection_handle,
-                                                        AclTransport::kLe);
+                                                        AclTransportType::kLe);
   if (status != OkStatus() && status != Status::AlreadyExists()) {
     return pw::Status::Unavailable();
   }
@@ -386,8 +386,8 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
     RfcommChannel::Config tx_config,
     uint8_t channel_number,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn) {
-  Status status = acl_data_channel_.CreateAclConnection(connection_handle,
-                                                        AclTransport::kBrEdr);
+  Status status = acl_data_channel_.CreateAclConnection(
+      connection_handle, AclTransportType::kBrEdr);
   if (status != OkStatus() && status != Status::AlreadyExists()) {
     return pw::Status::Unavailable();
   }
@@ -400,19 +400,19 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
 }
 
 bool ProxyHost::HasSendLeAclCapability() const {
-  return acl_data_channel_.HasSendAclCapability(AclTransport::kLe);
+  return acl_data_channel_.HasSendAclCapability(AclTransportType::kLe);
 }
 
 bool ProxyHost::HasSendBrEdrAclCapability() const {
-  return acl_data_channel_.HasSendAclCapability(AclTransport::kBrEdr);
+  return acl_data_channel_.HasSendAclCapability(AclTransportType::kBrEdr);
 }
 
 uint16_t ProxyHost::GetNumFreeLeAclPackets() const {
-  return acl_data_channel_.GetNumFreeAclPackets(AclTransport::kLe);
+  return acl_data_channel_.GetNumFreeAclPackets(AclTransportType::kLe);
 }
 
 uint16_t ProxyHost::GetNumFreeBrEdrAclPackets() const {
-  return acl_data_channel_.GetNumFreeAclPackets(AclTransport::kBrEdr);
+  return acl_data_channel_.GetNumFreeAclPackets(AclTransportType::kBrEdr);
 }
 
 }  // namespace pw::bluetooth::proxy

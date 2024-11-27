@@ -148,7 +148,7 @@ class ProxyHost {
   pw::Result<BasicL2capChannel> AcquireBasicL2capChannel(
       uint16_t connection_handle,
       uint16_t local_cid,
-      AclTransport transport,
+      AclTransportType transport,
       pw::Function<void(pw::span<uint8_t> payload)>&& controller_receive_fn);
 
   /// Send a GATT Notify to the indicated connection.

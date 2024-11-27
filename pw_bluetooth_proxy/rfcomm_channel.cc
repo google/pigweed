@@ -260,7 +260,7 @@ RfcommChannel::RfcommChannel(
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn)
     : L2capWriteChannel(l2cap_channel_manager,
                         connection_handle,
-                        AclTransport::kBrEdr,
+                        AclTransportType::kBrEdr,
                         tx_config.cid),
       L2capReadChannel(l2cap_channel_manager,
                        std::move(receive_fn),

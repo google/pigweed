@@ -82,11 +82,12 @@ void AclDataChannel::Credits::MarkCompleted(uint16_t num_credits) {
   }
 }
 
-AclDataChannel::Credits& AclDataChannel::LookupCredits(AclTransport transport) {
+AclDataChannel::Credits& AclDataChannel::LookupCredits(
+    AclTransportType transport) {
   switch (transport) {
-    case AclTransport::kBrEdr:
+    case AclTransportType::kBrEdr:
       return br_edr_credits_;
-    case AclTransport::kLe:
+    case AclTransportType::kLe:
       return le_credits_;
     default:
       PW_CHECK(false, "Invalid transport type");
@@ -94,11 +95,11 @@ AclDataChannel::Credits& AclDataChannel::LookupCredits(AclTransport transport) {
 }
 
 const AclDataChannel::Credits& AclDataChannel::LookupCredits(
-    AclTransport transport) const {
+    AclTransportType transport) const {
   switch (transport) {
-    case AclTransport::kBrEdr:
+    case AclTransportType::kBrEdr:
       return br_edr_credits_;
-    case AclTransport::kLe:
+    case AclTransportType::kLe:
       return le_credits_;
     default:
       PW_CHECK(false, "Invalid transport type");
@@ -259,12 +260,13 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
   hci_transport_.SendToHost(std::move(h4_packet));
 }
 
-bool AclDataChannel::HasSendAclCapability(AclTransport transport) const {
+bool AclDataChannel::HasSendAclCapability(AclTransportType transport) const {
   std::lock_guard lock(credit_allocation_mutex_);
   return LookupCredits(transport).HasSendCapability();
 }
 
-uint16_t AclDataChannel::GetNumFreeAclPackets(AclTransport transport) const {
+uint16_t AclDataChannel::GetNumFreeAclPackets(
+    AclTransportType transport) const {
   std::lock_guard lock(credit_allocation_mutex_);
   return LookupCredits(transport).Remaining();
 }
@@ -300,7 +302,7 @@ pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
 }
 
 Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
-                                           AclTransport transport) {
+                                           AclTransportType transport) {
   std::lock_guard lock(credit_allocation_mutex_);
   AclConnection* connection_it = FindAclConnection(connection_handle);
   if (connection_it) {

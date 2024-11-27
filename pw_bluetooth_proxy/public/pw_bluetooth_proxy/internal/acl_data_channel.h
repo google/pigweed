@@ -83,16 +83,16 @@ class AclDataChannel {
   /// Indicates whether the proxy has the capability of sending ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy
   /// has not yet or has been unable to reserve credits from the host.
-  bool HasSendAclCapability(AclTransport transport) const;
+  bool HasSendAclCapability(AclTransportType transport) const;
 
   /// @deprecated Use HasSendAclCapability with transport parameter instead.
   bool HasSendAclCapability() const {
-    return HasSendAclCapability(AclTransport::kLe);
+    return HasSendAclCapability(AclTransportType::kLe);
   }
 
   // Returns the number of available ACL send credits for the proxy.
   // Can be zero if the controller has not yet been initialized by the host.
-  uint16_t GetNumFreeAclPackets(AclTransport transport) const;
+  uint16_t GetNumFreeAclPackets(AclTransportType transport) const;
 
   // Send an ACL data packet contained in an H4 packet to the controller.
   //
@@ -107,7 +107,7 @@ class AclDataChannel {
   // Returns PW_STATUS_ALREADY EXISTS if a connection already exists.
   // Returns PW_STATUS_RESOURCE_EXHAUSTED if no space for additional connection.
   pw::Status CreateAclConnection(uint16_t connection_handle,
-                                 AclTransport transport);
+                                 AclTransportType transport);
 
   // Direction a packet is traveling on ACL transport.
   enum class Direction {
@@ -152,7 +152,7 @@ class AclDataChannel {
   // within a new LogicalLinkManager class?
   class AclConnection {
    public:
-    AclConnection(AclTransport transport,
+    AclConnection(AclTransportType transport,
                   uint16_t connection_handle,
                   uint16_t num_pending_packets,
                   L2capChannelManager& l2cap_channel_manager)
@@ -169,7 +169,7 @@ class AclDataChannel {
 
     uint16_t num_pending_packets() const { return num_pending_packets_; }
 
-    AclTransport transport() const { return transport_; }
+    AclTransportType transport() const { return transport_; }
 
     void set_num_pending_packets(uint16_t new_val) {
       num_pending_packets_ = new_val;
@@ -184,7 +184,7 @@ class AclDataChannel {
     }
 
     L2capReadChannel* signaling_channel() {
-      if (transport_ == AclTransport::kLe) {
+      if (transport_ == AclTransportType::kLe) {
         return &leu_signaling_channel_;
       } else {
         return &aclu_signaling_channel_;
@@ -192,7 +192,7 @@ class AclDataChannel {
     }
 
    private:
-    AclTransport transport_;
+    AclTransportType transport_;
     uint16_t connection_handle_;
     uint16_t num_pending_packets_;
     L2capLeUSignalingChannel leu_signaling_channel_;
@@ -249,10 +249,10 @@ class AclDataChannel {
   AclConnection* FindAclConnection(uint16_t connection_handle)
       PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
 
-  Credits& LookupCredits(AclTransport transport)
+  Credits& LookupCredits(AclTransportType transport)
       PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
 
-  const Credits& LookupCredits(AclTransport transport) const
+  const Credits& LookupCredits(AclTransportType transport) const
       PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
 
   // Maximum number of simultaneous credit-allocated LE connections supported.

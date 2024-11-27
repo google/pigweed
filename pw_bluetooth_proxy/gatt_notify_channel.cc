@@ -86,7 +86,7 @@ GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
                                      uint16_t attribute_handle)
     : L2capWriteChannel(l2cap_channel_manager,
                         connection_handle,
-                        AclTransport::kLe,
+                        AclTransportType::kLe,
                         kAttributeProtocolCID),
       attribute_handle_(attribute_handle) {}
 

@@ -2146,7 +2146,7 @@ TEST(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
   EXPECT_EQ(proxy
                 .AcquireBasicL2capChannel(/*connection_handle=*/0x0FFF,
                                           /*local_cid=*/0x123,
-                                          /*type=*/AclTransport::kLe,
+                                          /*type=*/AclTransportType::kLe,
                                           /*controller_receive_fn=*/nullptr)
                 .status(),
             PW_STATUS_INVALID_ARGUMENT);
@@ -2155,7 +2155,7 @@ TEST(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
   EXPECT_EQ(proxy
                 .AcquireBasicL2capChannel(/*connection_handle=*/0x123,
                                           /*local_cid=*/0,
-                                          /*type=*/AclTransport::kLe,
+                                          /*type=*/AclTransportType::kLe,
                                           /*controller_receive_fn=*/nullptr)
                 .status(),
             PW_STATUS_INVALID_ARGUMENT);
@@ -2181,7 +2181,7 @@ TEST(BasicL2capChannelTest, BasicRead) {
       proxy.AcquireBasicL2capChannel(
           /*connection_handle=*/handle,
           /*local_cid=*/local_cid,
-          /*transport=*/AclTransport::kLe,
+          /*transport=*/AclTransportType::kLe,
           /*controller_receive_fn=*/
           [&capture](pw::span<uint8_t> payload) {
             ++capture.sends_called;

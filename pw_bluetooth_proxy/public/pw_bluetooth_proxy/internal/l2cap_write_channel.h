@@ -61,12 +61,12 @@ class L2capWriteChannel : public IntrusiveForwardList<L2capWriteChannel>::Item {
   // Get the ACL connection handle.
   uint16_t connection_handle() const { return connection_handle_; }
 
-  AclTransport transport() const { return transport_; }
+  AclTransportType transport() const { return transport_; }
 
  protected:
   explicit L2capWriteChannel(L2capChannelManager& l2cap_channel_manager,
                              uint16_t connection_handle,
-                             AclTransport transport,
+                             AclTransportType transport,
                              uint16_t remote_cid);
 
   // Returns whether or not ACL connection handle & destination L2CAP channel
@@ -99,7 +99,7 @@ class L2capWriteChannel : public IntrusiveForwardList<L2capWriteChannel>::Item {
   // TODO: https://pwbug.dev/349700888 - Make capacity configurable.
   static constexpr size_t kQueueCapacity = 5;
 
-  AclTransport transport_;
+  AclTransportType transport_;
 
   // ACL connection handle on remote peer to which packets are sent.
   uint16_t connection_handle_;

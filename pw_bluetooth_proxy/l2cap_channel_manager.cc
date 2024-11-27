@@ -95,11 +95,11 @@ void L2capChannelManager::DrainWriteChannelQueues() {
     return;
   }
 
-  DrainWriteChannelQueues(AclTransport::kBrEdr);
-  DrainWriteChannelQueues(AclTransport::kLe);
+  DrainWriteChannelQueues(AclTransportType::kBrEdr);
+  DrainWriteChannelQueues(AclTransportType::kLe);
 }
 
-void L2capChannelManager::DrainWriteChannelQueues(AclTransport transport) {
+void L2capChannelManager::DrainWriteChannelQueues(AclTransportType transport) {
   IntrusiveForwardList<L2capWriteChannel>::iterator round_robin_start =
       lrd_write_channel_;
   // Iterate around `write_channels_` in round robin fashion. For each channel,

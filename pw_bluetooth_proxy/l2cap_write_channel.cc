@@ -73,7 +73,7 @@ L2capWriteChannel::~L2capWriteChannel() {
 
 L2capWriteChannel::L2capWriteChannel(L2capChannelManager& l2cap_channel_manager,
                                      uint16_t connection_handle,
-                                     AclTransport transport,
+                                     AclTransportType transport,
                                      uint16_t remote_cid)
     : transport_(transport),
       connection_handle_(connection_handle),
