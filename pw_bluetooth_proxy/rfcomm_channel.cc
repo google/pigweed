@@ -62,6 +62,7 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
                             length_extended_size + kCreditsFieldSize +
                             payload.size();
 
+  // TODO: https://pwbug.dev/365179076 - Support fragmentation.
   pw::Result<H4PacketWithH4> h4_result = PopulateTxL2capPacket(frame_size);
   if (!h4_result.ok()) {
     return h4_result.status();
@@ -112,6 +113,7 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
   if (rfcomm.information().SizeInBytes() < payload.size()) {
     return Status::ResourceExhausted();
   }
+  PW_CHECK(rfcomm.information().SizeInBytes() == payload.size());
   std::memcpy(rfcomm.information().BackingStorage().data(),
               payload.data(),
               payload.size());
@@ -148,7 +150,8 @@ Result<RfcommChannel> RfcommChannel::Create(
     uint8_t channel_number,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn) {
   if (!L2capWriteChannel::AreValidParameters(connection_handle,
-                                             tx_config.cid)) {
+                                             tx_config.cid) ||
+      !L2capReadChannel::AreValidParameters(connection_handle, rx_config.cid)) {
     return Status::InvalidArgument();
   }
 
@@ -170,10 +173,9 @@ bool RfcommChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
       MakeEmbossView<emboss::BFrameView>(l2cap_pdu);
   if (!bframe_view.ok()) {
     PW_LOG_ERROR(
-        "(CID 0x%X) Buffer is too small for L2CAP B-frame. So stopping channel "
-        "& reporting it needs to be closed.",
+        "(CID 0x%X) Buffer is too small for L2CAP B-frame, passing on to host.",
         local_cid());
-    return true;
+    return false;
   }
 
   Result<emboss::RfcommFrameView> rfcomm_view =
@@ -232,7 +234,7 @@ bool RfcommChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
     } else {
       --rx_credits_;
     }
-    rx_needs_refill = rx_credits_ <= kMinRxCredits;
+    rx_needs_refill = rx_credits_ < kMinRxCredits;
   }
 
   if (rx_needs_refill) {
@@ -276,7 +278,7 @@ RfcommChannel::RfcommChannel(
 void RfcommChannel::OnFragmentedPduReceived() {
   PW_LOG_ERROR(
       "(CID 0x%X) Fragmented L2CAP frame received (which is not yet "
-      "supported). Stopping channel.",
+      "supported).",
       local_cid());
 }
 

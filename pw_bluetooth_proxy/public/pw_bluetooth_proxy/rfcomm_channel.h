@@ -108,7 +108,7 @@ class RfcommChannel final : public L2capWriteChannel, public L2capReadChannel {
   Config tx_config() const { return tx_config_; }
 
  private:
-  static constexpr uint8_t kMinRxCredits = 1;
+  static constexpr uint8_t kMinRxCredits = 2;
 
   RfcommChannel(L2capChannelManager& l2cap_channel_manager,
                 uint16_t connection_handle,
