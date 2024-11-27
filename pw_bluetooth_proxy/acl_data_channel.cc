@@ -27,7 +27,7 @@
 namespace pw::bluetooth::proxy {
 
 void AclDataChannel::Reset() {
-  std::lock_guard lock(credit_allocation_mutex_);
+  std::lock_guard lock(mutex_);
   le_credits_.Reset();
   br_edr_credits_.Reset();
   active_acl_connections_.clear();
@@ -109,7 +109,7 @@ const AclDataChannel::Credits& AclDataChannel::LookupCredits(
 void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
     emboss::ReadBufferSizeCommandCompleteEventWriter read_buffer_event) {
   {
-    std::lock_guard lock(credit_allocation_mutex_);
+    std::lock_guard lock(mutex_);
     const uint16_t controller_max =
         read_buffer_event.total_num_acl_data_packets().Read();
     const uint16_t host_max = br_edr_credits_.Reserve(controller_max);
@@ -123,7 +123,7 @@ template <class EventT>
 void AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
     EventT read_buffer_event) {
   {
-    std::lock_guard lock(credit_allocation_mutex_);
+    std::lock_guard lock(mutex_);
     const uint16_t controller_max =
         read_buffer_event.total_num_le_acl_data_packets().Read();
     // TODO: https://pwbug.dev/380316252 - Support shared buffers.
@@ -161,7 +161,7 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
   bool should_send_to_host = false;
   bool did_reclaim_credits = false;
   {
-    std::lock_guard lock(credit_allocation_mutex_);
+    std::lock_guard lock(mutex_);
     for (uint8_t i = 0; i < nocp_event->num_handles().Read(); ++i) {
       uint16_t handle = nocp_event->nocp_data()[i].connection_handle().Read();
       uint16_t num_completed_packets =
@@ -318,7 +318,7 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
   }
 
   {
-    std::lock_guard lock(credit_allocation_mutex_);
+    std::lock_guard lock(mutex_);
     uint16_t conn_handle = dc_event->connection_handle().Read();
 
     AclConnection* connection_ptr = FindAclConnection(conn_handle);
@@ -355,18 +355,18 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
 }
 
 bool AclDataChannel::HasSendAclCapability(AclTransportType transport) const {
-  std::lock_guard lock(credit_allocation_mutex_);
+  std::lock_guard lock(mutex_);
   return LookupCredits(transport).HasSendCapability();
 }
 
 uint16_t AclDataChannel::GetNumFreeAclPackets(
     AclTransportType transport) const {
-  std::lock_guard lock(credit_allocation_mutex_);
+  std::lock_guard lock(mutex_);
   return LookupCredits(transport).Remaining();
 }
 
 pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
-  std::lock_guard lock(credit_allocation_mutex_);
+  std::lock_guard lock(mutex_);
   Result<emboss::AclDataFrameHeaderView> acl_view =
       MakeEmbossView<emboss::AclDataFrameHeaderView>(h4_packet.GetHciSpan());
   if (!acl_view.ok()) {
@@ -397,7 +397,7 @@ pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
 
 Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
                                            AclTransportType transport) {
-  std::lock_guard lock(credit_allocation_mutex_);
+  std::lock_guard lock(mutex_);
   AclConnection* connection_it = FindAclConnection(connection_handle);
   if (connection_it) {
     return Status::AlreadyExists();
@@ -414,7 +414,7 @@ Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
 
 pw::Status AclDataChannel::FragmentedPduStarted(Direction direction,
                                                 uint16_t connection_handle) {
-  std::lock_guard lock(credit_allocation_mutex_);
+  std::lock_guard lock(mutex_);
   AclConnection* connection_ptr = FindAclConnection(connection_handle);
   if (!connection_ptr) {
     return Status::NotFound();
@@ -428,7 +428,7 @@ pw::Status AclDataChannel::FragmentedPduStarted(Direction direction,
 
 pw::Result<bool> AclDataChannel::IsReceivingFragmentedPdu(
     Direction direction, uint16_t connection_handle) {
-  std::lock_guard lock(credit_allocation_mutex_);
+  std::lock_guard lock(mutex_);
   AclConnection* connection_ptr = FindAclConnection(connection_handle);
   if (!connection_ptr) {
     return Status::NotFound();
@@ -438,7 +438,7 @@ pw::Result<bool> AclDataChannel::IsReceivingFragmentedPdu(
 
 pw::Status AclDataChannel::FragmentedPduFinished(Direction direction,
                                                  uint16_t connection_handle) {
-  std::lock_guard lock(credit_allocation_mutex_);
+  std::lock_guard lock(mutex_);
   AclConnection* connection_ptr = FindAclConnection(connection_handle);
   if (!connection_ptr) {
     return Status::NotFound();
@@ -452,7 +452,7 @@ pw::Status AclDataChannel::FragmentedPduFinished(Direction direction,
 
 L2capReadChannel* AclDataChannel::FindSignalingChannel(
     uint16_t connection_handle, uint16_t local_cid) {
-  std::lock_guard lock(credit_allocation_mutex_);
+  std::lock_guard lock(mutex_);
 
   AclConnection* connection_ptr = FindAclConnection(connection_handle);
   if (!connection_ptr) {

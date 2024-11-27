@@ -259,13 +259,13 @@ class AclDataChannel {
   // Returns pointer to AclConnection with provided `connection_handle` in
   // `active_acl_connections_`. Returns nullptr if no such connection exists.
   AclConnection* FindAclConnection(uint16_t connection_handle)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
+      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   Credits& LookupCredits(AclTransportType transport)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
+      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const Credits& LookupCredits(AclTransportType transport) const
-      PW_EXCLUSIVE_LOCKS_REQUIRED(credit_allocation_mutex_);
+      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   void HandleLeConnectionCompleteEvent(uint16_t connection_handle,
                                        emboss::StatusCode status);
@@ -282,14 +282,14 @@ class AclDataChannel {
 
   // Credit allocation will happen inside a mutex since it crosses thread
   // boundaries. The mutex also guards interactions with ACL connection objects.
-  mutable pw::sync::Mutex credit_allocation_mutex_;
+  mutable pw::sync::Mutex mutex_;
 
-  Credits le_credits_ PW_GUARDED_BY(credit_allocation_mutex_);
-  Credits br_edr_credits_ PW_GUARDED_BY(credit_allocation_mutex_);
+  Credits le_credits_ PW_GUARDED_BY(mutex_);
+  Credits br_edr_credits_ PW_GUARDED_BY(mutex_);
 
   // List of credit-allocated ACL connections.
   pw::Vector<AclConnection, kMaxConnections> active_acl_connections_
-      PW_GUARDED_BY(credit_allocation_mutex_);
+      PW_GUARDED_BY(mutex_);
 
   // Instantiated in acl_data_channel.cc for
   // `emboss::LEReadBufferSizeV1CommandCompleteEventWriter` and
