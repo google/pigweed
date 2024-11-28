@@ -1,0 +1,75 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# This file contains Emboss definitions of the protocol data units (PDUs)
+# associated with the Attribute Protocol (ATT) as defined in Vol 3 (Host), Part
+# F of the Bluetooth Core Specification. The Emboss compiler is used to generate
+# a C++ header from this file.
+
+[$default byte_order: "LittleEndian"]
+[(cpp) namespace: "pw::bluetooth::emboss"]
+# cf. AVDTP Spec v1.3
+
+
+enum AvdtpPacketType:
+  -- cf. 8.4.2 Packet Type
+  [maximum_bits: 2]
+  SINGLE_PACKET   = 0b00
+  START_PACKET    = 0b01
+  CONTINUE_PACKET = 0b10
+  END_PACKET      = 0b11
+
+
+enum AvdtpMessageType:
+  -- cf. 8.4.3 Message Type
+  [maximum_bits: 2]
+  COMMAND         = 0b00
+  GENERAL_REJECT  = 0b01
+  RESPONSE_ACCEPT = 0b10
+  RESPONSE_REJECT = 0b11
+
+
+enum AvdtpSignalIdentifierCode:
+  -- cf. 8.5 Signaling message Identifier
+  AVDTP_DISCOVER             = 0x01
+  AVDTP_GET_CAPABILITIES     = 0x02
+  AVDT_SET_CONFIGURATION     = 0x03
+  AVDTP_GET_CONFIGURATION    = 0x04
+  AVDTP_RECONFIGURE          = 0x05
+  AVDTP_OPEN                 = 0x06
+  AVDTP_START                = 0x07
+  AVDTP_CLOSE                = 0x08
+  AVDTP_SUSPEND              = 0x09
+  AVDTP_ABORT                = 0x0A
+  AVDTP_SECURITY_CONTROL     = 0x0B
+  AVDTP_GET_ALL_CAPABILITIES = 0x0C
+  AVDTP_DELAYREPORT          = 0x0D
+
+
+struct AvdtpSignalingHeader:
+  -- cf. 8.4 AVDTP Signaling header
+  0     [+1]  bits:
+    0     [+2]       AvdtpMessageType           message_type
+    $next [+2]       AvdtpPacketType            packet_type
+    $next [+4]       UInt                       transaction_label
+
+  1     [+1]  bits:
+    0     [+6]       AvdtpSignalIdentifierCode  signal_identifier
+    $next [+2]       UInt                       reserved_for_future_addition
+
+
+struct AvdtpStreamEndPointDiscoveryCommand:
+  -- cf. 8.6.1  AVDTP_DISCOVER_CMD
+  [requires: signaling_header.message_type == AvdtpMessageType.COMMAND && signaling_header.signal_identifier == AvdtpSignalIdentifierCode.AVDTP_DISCOVER]
+  0 [+2]  AvdtpSignalingHeader  signaling_header

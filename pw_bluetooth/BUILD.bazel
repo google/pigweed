@@ -176,6 +176,14 @@ pw_cc_test(
 )
 
 emboss_cc_library(
+    name = "_emboss_avdtp",
+    srcs = ["public/pw_bluetooth/avdtp.emb"],
+    enable_enum_traits = False,
+    import_dirs = ["public"],
+    visibility = ["//visibility:private"],
+)
+
+emboss_cc_library(
     name = "_emboss_att",
     srcs = ["public/pw_bluetooth/att.emb"],
     enable_enum_traits = False,
@@ -185,6 +193,12 @@ emboss_cc_library(
         ":_emboss_hci_data",
         ":_emboss_l2cap_frames",
     ],
+)
+
+cc_library(
+    name = "emboss_avdtp",
+    includes = ["public"],
+    deps = [":_emboss_avdtp"],
 )
 
 cc_library(
