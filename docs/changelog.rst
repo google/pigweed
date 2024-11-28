@@ -12,6 +12,152 @@ Talk to the team at Pigweed Live
 .. pigweed-live::
 
 .. _docs-changelog-latest:
+.. _docs-changelog-2024-11-27:
+
+------------
+Nov 27, 2024
+------------
+.. changelog_highlights_start
+
+Highlights (Nov 15, 2024 to Nov 27, 2024):
+
+* **pw_allocator updates**: The :ref:`module-pw_allocator-api-bucket` class
+  has been refactored to be more flexible and the :ref:`block API
+  <module-pw_allocator-api-block>` has been refactored to support static
+  polymorphism.
+
+.. changelog_highlights_end
+
+.. _docs-changelog-2024-11-27-Modules:
+
+Modules
+=======
+
+.. _docs-changelog-2024-11-27-Modules-pw_allocator:
+
+pw_allocator
+------------
+Changes:
+
+.. 0942b69025f2987ca9512141fe3cf3a7046f042c
+
+* ``BestFitBlockAllocator`` was renamed to ``BestFitAllocator`` and
+  ``WorstFitBlockAllocator`` was renamed to ``WorstFitAllocator``. These
+  classes have been refactored to use :ref:`buckets
+  <module-pw_allocator-api-bucket>`. Commit: `Refactor best- and worst-fit
+  allocators to use buckets <https://pwrev.dev/234817>`__.
+
+.. 0766dbaf5305202c6f67e18184bb165df8426713
+
+* ``FirstFitBlockAllocator``, ``LastFitBlockAllocator``, and
+  ``DualFirstFitBlockAllocator`` were merged into a single class:
+  :ref:`module-pw_allocator-api-first_fit_allocator`. Commit: `Refactor
+  first fit allocators <https://pwrev.dev/234816>`__.
+
+.. 3bfdac7a7826a4e2a1dc7a7174fd8d6276546c26
+
+* The :ref:`module-pw_allocator-api-bucket` class has been refactored to
+  be more flexible. Commit: `Refactor Bucket
+  <https://pwrev.dev/234815>`__.
+
+.. 65b5e336df018fbc9d124ca09d71a5dcccd1a8c0
+
+* Metric calculation for blocks that shift bytes has changed. Commit:
+  `Fix metrics for blocks that shift bytes <https://pwrev.dev/249372>`__.
+  Bug: :bug:`378743727`.
+
+.. 33d00a77472a6ff545032b213aa24dfe6a39d606
+
+* :cpp:class:`pw::allocator::BlockAllocator` now returns
+  :cpp:class:`pw::allocator::BlockResult`. Commit: `Use BlockResult in
+  BlockAllocator <https://pwrev.dev/234811>`__.
+
+.. 6417a523b06e03dce3453e96c3a1bec6ab511768
+
+* The :ref:`block API <module-pw_allocator-api-block>` has been
+  refactored to support static polymorphism. Commit: `Add static
+  polymorphism to Block <https://pwrev.dev/232214>`__.
+
+.. _docs-changelog-2024-11-27-Modules-pw_bytes:
+
+pw_bytes
+--------
+New features:
+
+.. a287811e5e99eab8d4ddfcaf9f1a505fd1e3eb17
+
+* The new :cpp:func:`pw::IsAlignedAs` utility functions make it easier
+  to check alignment. Commit: `Add utility for checking alignment
+  <https://pwrev.dev/248192>`__.
+
+.. _docs-changelog-2024-11-27-Modules-pw_presubmit:
+
+pw_presubmit
+------------
+New features:
+
+.. e278ead3bfe1361c3ff08e5329636a35abbcef6c
+
+* The new ``includes_presubmit_check`` verifies that ``cc_library``
+  Bazel targets don't use the ``includes`` attribute. Commit: `Add check
+  for cc_library includes <https://pwrev.dev/251172>`__. Bug:
+  :bug:`380934893`.
+
+.. _docs-changelog-2024-11-27-Modules-pw_protobuf:
+
+pw_protobuf
+-----------
+New features:
+
+.. f776679bbea5f4ae376ab924d80760bb2f1e69a0
+
+* :ref:`pw_protobuf-message-limitations` now has more guidance around
+  protobuf versioning and ``optional`` fields. Commit: `Expand message
+  structure limitations docs section <https://pwrev.dev/249072>`__.
+
+.. _docs-changelog-2024-11-27-Modules-pw_transfer:
+
+pw_transfer
+-----------
+Changes:
+
+.. 1c771e0fd88511ef3550108572572db1f036d0a5
+
+* Warnings logs are now emitted when client or server streams close
+  unexpectedly. Commit: `Log when streams close unexpectedly
+  <https://pwrev.dev/249912>`__.
+
+.. 48712ad0655654b4dcc9b62085a58445fe0af696
+
+* The window size on retried data now shrinks in an attempt to reduce
+  network congestion. Commit: `Shrink window size on retried data
+  <https://pwrev.dev/249532>`__.
+
+.. _docs-changelog-2024-11-27-Modules-pw_unit_test:
+
+pw_unit_test
+------------
+Changes:
+
+.. c4d59ce4d011e11781bcb6dc6660ad947a7ee8df
+
+* Successful expectations are no longer stringified by default. Commit:
+  `Stop stringifying successful expectations
+  <https://pwrev.dev/248693>`__.
+
+.. _docs-changelog-2024-11-27-Modules-pw_rpc:
+
+pw_rpc
+------
+Changes:
+
+.. 92e854a4d179f0b340a0f8b5a662012ea4b8635c
+
+* A warning log is now emitted when a server receives a completion
+  request but client completion callbacks have been disabled. Commit:
+  `Warn when client completion callback is disabled
+  <https://pwrev.dev/249414>`__.
+
 .. _docs-changelog-2024-11-14:
 
 ------------
