@@ -214,5 +214,36 @@ TEST(MetricService, NestedGroupsWithBatches) {
                 GetMetricsSum(ctx.responses()[3]));
 }
 
+TEST(MetricService, MaxDepth4) {
+  // MetricWalker internally uses: Vector<Token, /*capacity=*/4> path_;
+  // pw.metric.proto.Metric.token_path max_count:4
+
+  IntrusiveList<Group> global_groups;    // Simulate pw::metric::global_groups
+  IntrusiveList<Metric> global_metrics;  // Simulate pw::metric::global_metrics
+
+  PW_METRIC_GROUP(global_group_lvl1, "level1");
+  global_groups.push_back(global_group_lvl1);
+
+  PW_METRIC_GROUP(global_group_lvl1, group_lvl2, "level2");
+  PW_METRIC_GROUP(group_lvl2, group_lvl3, "level3");
+
+  // Note: kMaxNumPackedEntries = 3
+  PW_METRIC(group_lvl3, metric_a, "metric A", 1u);
+  PW_METRIC(group_lvl3, metric_b, "metric B", 2u);
+  PW_METRIC(group_lvl3, metric_c, "metric C", 3u);
+
+  // Run the RPC and ensure it completes.
+  PW_RAW_TEST_METHOD_CONTEXT(MetricService, Get)
+  ctx{global_metrics, global_groups};
+  ctx.call({});
+  EXPECT_TRUE(ctx.done());
+  EXPECT_EQ(OkStatus(), ctx.status());
+
+  // Verify the response
+  EXPECT_EQ(1u, ctx.responses().size());
+  EXPECT_EQ(3u, CountEncodedMetrics(ctx.responses()[0]));
+  EXPECT_EQ(6u, GetMetricsSum(ctx.responses()[0]));
+}
+
 }  // namespace
 }  // namespace pw::metric
