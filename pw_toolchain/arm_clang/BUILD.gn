@@ -16,6 +16,10 @@ import("//build_overrides/pigweed.gni")
 
 import("clang_config.gni")
 
+declare_args() {
+  pw_toolchain_USE_LLVM_PREBUILT_LIBRARIES = false
+}
+
 cortex_m_common_flags = [
   "-mabi=aapcs",
   "-mthumb",
@@ -49,12 +53,58 @@ config("enable_float_printf") {
   ldflags = [ "-Wl,-u_printf_float" ]
 }
 
-pw_clang_arm_config("cortex_m0plus") {
-  cflags = [ "-mcpu=cortex-m0plus" ]
-  cflags += cortex_m_common_flags
-  cflags += cortex_m_software_fpu_flags
-  asmflags = cflags
-  ldflags = cflags
+if (pw_toolchain_USE_LLVM_PREBUILT_LIBRARIES) {
+  cortex_m_common_link_flags = [
+    "-nostartfiles",
+    "-nostdlib++",
+  ]
+  cortex_m_common_defines = [
+    # This macro is used by libc++ headers and normally would expand to std::_libcpp_verbose_abort,
+    # but we don't define that since we don't build with libc++ at the moment. For now, we can
+    # have this lower to a trap instruction.
+    "_LIBCPP_VERBOSE_ABORT(...)=__builtin_trap()",
+  ]
+  config("cortex_m0plus") {
+    cflags = [
+      "-mcpu=cortex-m0plus",
+      "--target=armv6m-none-eabi",
+    ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_software_fpu_flags
+    asmflags = cflags
+    ldflags = cflags
+    ldflags += cortex_m_common_link_flags
+    defines = cortex_m_common_defines
+  }
+
+  config("cortex_m4") {
+    cflags = [
+      "-mcpu=cortex-m4",
+      "--target=armv7m-none-eabi",
+    ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_software_fpu_flags
+    asmflags = cflags
+    ldflags = cflags
+    ldflags += cortex_m_common_link_flags
+    defines = cortex_m_common_defines
+  }
+} else {
+  pw_clang_arm_config("cortex_m0plus") {
+    cflags = [ "-mcpu=cortex-m0plus" ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_software_fpu_flags
+    asmflags = cflags
+    ldflags = cflags
+  }
+
+  pw_clang_arm_config("cortex_m4") {
+    cflags = [ "-mcpu=cortex-m4" ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_software_fpu_flags
+    asmflags = cflags
+    ldflags = cflags
+  }
 }
 
 pw_clang_arm_config("cortex_m3") {
@@ -64,14 +114,6 @@ pw_clang_arm_config("cortex_m3") {
   asmflags = cflags
   ldflags = cflags
   rustflags = [ "--target=thumbv7m-none-eabi" ]
-}
-
-pw_clang_arm_config("cortex_m4") {
-  cflags = [ "-mcpu=cortex-m4" ]
-  cflags += cortex_m_common_flags
-  cflags += cortex_m_software_fpu_flags
-  asmflags = cflags
-  ldflags = cflags
 }
 
 pw_clang_arm_config("cortex_m4f") {
