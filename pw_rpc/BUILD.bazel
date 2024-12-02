@@ -451,7 +451,6 @@ pw_cc_test(
 proto_library(
     name = "internal_packet_proto",
     srcs = ["internal/packet.proto"],
-    visibility = [":__subpackages__"],
 )
 
 java_proto_library(
