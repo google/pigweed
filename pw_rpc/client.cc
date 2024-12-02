@@ -62,6 +62,12 @@ Status Client::ProcessPacket(ConstByteSpan data) {
 
   switch (packet.type()) {
     case PacketType::RESPONSE:
+      PW_LOG_DEBUG("Client call %u for %u:%08x/%08x completed with status %s",
+                   static_cast<unsigned>(packet.call_id()),
+                   static_cast<unsigned>(packet.channel_id()),
+                   static_cast<unsigned>(packet.service_id()),
+                   static_cast<unsigned>(packet.method_id()),
+                   packet.status().str());
       // RPCs without a server stream include a payload with the final packet.
       if (call->has_server_stream()) {
         static_cast<internal::StreamResponseClientCall&>(*call).HandleCompleted(
@@ -72,6 +78,12 @@ Status Client::ProcessPacket(ConstByteSpan data) {
       }
       break;
     case PacketType::SERVER_ERROR:
+      PW_LOG_DEBUG("Client call %u for %u:%08x/%08x terminated with error %s",
+                   static_cast<unsigned>(packet.call_id()),
+                   static_cast<unsigned>(packet.channel_id()),
+                   static_cast<unsigned>(packet.service_id()),
+                   static_cast<unsigned>(packet.method_id()),
+                   packet.status().str());
       call->HandleError(packet.status());
       break;
     case PacketType::SERVER_STREAM:

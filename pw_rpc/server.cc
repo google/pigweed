@@ -92,6 +92,12 @@ Status Server::ProcessPacket(internal::Packet packet) {
       break;
     case PacketType::CLIENT_ERROR:
       if (call != calls_end()) {
+        PW_LOG_DEBUG("Server call %u for %u:%08x/%08x terminated with error %s",
+                     static_cast<unsigned>(packet.call_id()),
+                     static_cast<unsigned>(packet.channel_id()),
+                     static_cast<unsigned>(packet.service_id()),
+                     static_cast<unsigned>(packet.method_id()),
+                     packet.status().str());
         call->HandleError(packet.status());
       } else {
         internal::rpc_lock().unlock();
