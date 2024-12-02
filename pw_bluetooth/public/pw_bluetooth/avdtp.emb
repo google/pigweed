@@ -18,11 +18,18 @@
 # a C++ header from this file.
 
 [$default byte_order: "LittleEndian"]
-[(cpp) namespace: "pw::bluetooth::emboss"]
+[(cpp) namespace: "pw::bluetooth::emboss::avdtp"]
 # cf. AVDTP Spec v1.3
 
+# Glossary
+# ACP: Acceptor
+# INT: Initiatior
+# RFA: Reserved for Future Addition
+# SEID: Stream End-point Identifier
+# SEP: Stream End Point
+# TSEP: Stream End Point Type
 
-enum AvdtpPacketType:
+enum PacketType:
   -- cf. 8.4.2 Packet Type
   [maximum_bits: 2]
   SINGLE_PACKET   = 0b00
@@ -31,7 +38,7 @@ enum AvdtpPacketType:
   END_PACKET      = 0b11
 
 
-enum AvdtpMessageType:
+enum MessageType:
   -- cf. 8.4.3 Message Type
   [maximum_bits: 2]
   COMMAND         = 0b00
@@ -40,7 +47,7 @@ enum AvdtpMessageType:
   RESPONSE_REJECT = 0b11
 
 
-enum AvdtpSignalIdentifierCode:
+enum SignalIdentifierCode:
   -- cf. 8.5 Signaling message Identifier
   AVDTP_DISCOVER             = 0x01
   AVDTP_GET_CAPABILITIES     = 0x02
@@ -57,19 +64,100 @@ enum AvdtpSignalIdentifierCode:
   AVDTP_DELAYREPORT          = 0x0D
 
 
-struct AvdtpSignalingHeader:
+enum Seid:
+  -- cf. 8.20.1 Stream End-point IDentifier(SEID, INT SEID, ACP SEID)
+  FORBIDDEN = 0x00
+  RFD       = 0x3F
+
+
+enum Tsep:
+  -- cf. 8.20.3 Stream End-point Type, Source or Sink
+  [maximum_bits: 1]
+  SRC = 0b0
+  SNK = 0b1
+
+
+enum InUse:
+  -- cf. 8.20.5 Stream End Point in Use
+  [maximum_bits: 1]
+  NOT_IN_USE = 0b0
+  IN_USE     = 0b1
+
+
+enum ErrorCode:
+  -- Cf. 8.20.6 Signaling Errors
+  -- Cf. 8.20.6.2 ERROR Code Tables
+  BAD_HEADER_FORMAT          = 0x01
+  BAD_LENGTH                 = 0x11
+  BAD_ACP_SEID               = 0x12
+  SEP_IN_USE                 = 0x13
+  SEP_NOT_IN_USE             = 0x14
+  BAD_SERV_CATEGORY          = 0x17
+  BAD_PAYLOAD_FORMAT         = 0x18
+  NOT_SUPPORTED_COMMAND      = 0x19
+  INVALID_CAPABILITIES       = 0x1A
+  BAD_RECOVERY_TYPE          = 0x22
+  BAD_MEDIA_TRANSPORT_FORMAT = 0x23
+  BAD_RECOVERY_FORMAT        = 0x25
+  BAD_ROHC_FORMAT            = 0x26
+  BAD_CP_FORMAT              = 0x27
+  BAD_MULTIPLEXING_FORMAT    = 0x28
+  UNSUPPORTED_CONFIGURATION  = 0x29
+  BAD_STATE                  = 0x31
+
+
+enum MediaType:
+  -- cf. Bluetooth SIG assigned numbers
+  AUDIO      = 0x00
+  VIDEO      = 0x01
+  MULTIMEDIA = 0x02
+
+
+struct Sep:
+  -- cf. 8.6.2 Stream End Point Discovery Response
+  0     [+1]  bits:
+    0     [+1]       UInt       reserved_for_future_addition
+    $next [+1]       InUse      in_use
+    $next [+6]       UInt       acp_seid
+
+  $next [+1]  bits:
+    0     [+3]       UInt       rfa
+    $next [+1]       Tsep       tsep
+    $next [+4]       MediaType  media_type
+
+# Cf 8. Signaling Messages
+
+
+struct SignalingHeader:
   -- cf. 8.4 AVDTP Signaling header
   0     [+1]  bits:
-    0     [+2]       AvdtpMessageType           message_type
-    $next [+2]       AvdtpPacketType            packet_type
-    $next [+4]       UInt                       transaction_label
+    0     [+2]       MessageType           message_type
+    $next [+2]       PacketType            packet_type
+    $next [+4]       UInt                  transaction_label
 
   1     [+1]  bits:
-    0     [+6]       AvdtpSignalIdentifierCode  signal_identifier
-    $next [+2]       UInt                       reserved_for_future_addition
+    0     [+6]       SignalIdentifierCode  signal_identifier
+    $next [+2]       UInt                  rfa
 
 
-struct AvdtpStreamEndPointDiscoveryCommand:
-  -- cf. 8.6.1  AVDTP_DISCOVER_CMD
-  [requires: signaling_header.message_type == AvdtpMessageType.COMMAND && signaling_header.signal_identifier == AvdtpSignalIdentifierCode.AVDTP_DISCOVER]
-  0 [+2]  AvdtpSignalingHeader  signaling_header
+struct StreamEndPointDiscoveryCommand:
+  -- cf. 8.6.1  Stream End Point Discovery Command
+  -- AVDTP_DISCOVER_CMD
+  [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
+  0 [+2]  SignalingHeader  signaling_header
+
+
+struct StreamEndPointDiscoveryResponse:
+  -- cf. 8.6.2 Stream End Point Discovery Response
+  -- AVDTP_DISCOVER_RSP
+  [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
+  0 [+2]  SignalingHeader  signaling_header
+  1 [+2]  Sep              acp_sep
+
+
+struct StreamEndPointDiscoveryReject:
+  -- cf. 8.6.3 Stream End Point Discovery Reject
+  -- AVDTP_DISCOVER_REJ
+  [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
+  0     [+2]  SignalingHeader  signaling_header
+  $next [+1]  ErrorCode        error_code
