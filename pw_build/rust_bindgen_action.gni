@@ -23,7 +23,12 @@ template("rust_bindgen_action") {
   pw_exec(target_name) {
     forward_variables_from(invoker,
                            [
+                             "cflags",
+                             "cflags_c",
+                             "configs",
+                             "defines",
                              "deps",
+                             "public_configs",
                              "public_deps",
                              "visibility",
                            ])

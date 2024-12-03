@@ -140,10 +140,15 @@ template("pw_exec") {
 
     forward_variables_from(invoker,
                            [
+                             "cflags",
+                             "cflags_c",
+                             "configs",
+                             "defines",
                              "depfile",
                              "deps",
                              "inputs",
                              "pool",
+                             "public_configs",
                              "public_deps",
                              "venv",
                              "visibility",
