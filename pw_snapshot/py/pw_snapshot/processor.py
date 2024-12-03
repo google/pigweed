@@ -62,6 +62,7 @@ def process_snapshot(
     elf_matcher: ElfMatcher | None = None,
     symbolizer_matcher: SymbolizerMatcher | None = None,
     llvm_symbolizer_binary: Path | None = None,
+    thread_processing_callback: Callable[[bytes], str] | None = None,
 ) -> str:
     """Processes a single snapshot."""
 
@@ -110,7 +111,7 @@ def process_snapshot(
             output.append(cortex_m_cpu_state)
 
     thread_info = thread_analyzer.process_snapshot(
-        serialized_snapshot, detokenizer, symbolizer
+        serialized_snapshot, detokenizer, symbolizer, thread_processing_callback
     )
 
     if thread_info:
@@ -139,13 +140,26 @@ def process_snapshots(
     elf_matcher: ElfMatcher | None = None,
     user_processing_callback: Callable[[bytes], str] | None = None,
     symbolizer_matcher: SymbolizerMatcher | None = None,
+    thread_processing_callback: Callable[[snapshot_pb2.Snapshot, bytes], str]
+    | None = None,
 ) -> str:
     """Processes a snapshot that may have multiple embedded snapshots."""
     output = []
     # Process the top-level snapshot.
+    snapshot = snapshot_pb2.Snapshot()
+    snapshot.ParseFromString(serialized_snapshot)
+
+    callback: Callable[[bytes], str] | None = None
+    if thread_processing_callback:
+        callback = functools.partial(thread_processing_callback, snapshot)
+
     output.append(
         process_snapshot(
-            serialized_snapshot, detokenizer, elf_matcher, symbolizer_matcher
+            serialized_snapshot=serialized_snapshot,
+            detokenizer=detokenizer,
+            elf_matcher=elf_matcher,
+            symbolizer_matcher=symbolizer_matcher,
+            thread_processing_callback=callback,
         )
     )
 
@@ -155,8 +169,6 @@ def process_snapshots(
         output.append(user_processing_callback(serialized_snapshot))
 
     # Process any related snapshots that were embedded in this one.
-    snapshot = snapshot_pb2.Snapshot()
-    snapshot.ParseFromString(serialized_snapshot)
     for nested_snapshot in snapshot.related_snapshots:
         output.append('\n[' + '=' * 78 + ']\n')
         output.append(
@@ -167,6 +179,7 @@ def process_snapshots(
                     elf_matcher,
                     user_processing_callback,
                     symbolizer_matcher,
+                    thread_processing_callback,
                 )
             )
         )

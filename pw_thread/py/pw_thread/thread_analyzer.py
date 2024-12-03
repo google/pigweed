@@ -14,7 +14,7 @@
 """Library to analyze and dump Thread protos and Thread snapshots into text."""
 
 import binascii
-from typing import Mapping
+from typing import Callable, Mapping
 import pw_tokenizer
 from pw_symbolizer import LlvmSymbolizer, Symbolizer
 from pw_tokenizer import proto as proto_detokenizer
@@ -35,6 +35,7 @@ def process_snapshot(
     serialized_snapshot: bytes,
     tokenizer_db: pw_tokenizer.Detokenizer | None = None,
     symbolizer: Symbolizer | None = None,
+    user_processing_callback: Callable[[bytes], str] | None = None,
 ) -> str:
     """Processes snapshot threads, producing a multi-line string."""
     captured_threads = thread_pb2.SnapshotThreadInfo()
@@ -43,7 +44,9 @@ def process_snapshot(
         symbolizer = LlvmSymbolizer()
 
     return str(
-        ThreadSnapshotAnalyzer(captured_threads, tokenizer_db, symbolizer)
+        ThreadSnapshotAnalyzer(
+            captured_threads, tokenizer_db, symbolizer, user_processing_callback
+        )
     )
 
 
@@ -200,6 +203,7 @@ class ThreadSnapshotAnalyzer:
         threads: thread_pb2.SnapshotThreadInfo,
         tokenizer_db: pw_tokenizer.Detokenizer | None = None,
         symbolizer: Symbolizer | None = None,
+        user_processing_callback: Callable[[bytes], str] | None = None,
     ):
         self._threads = threads.threads
         self._tokenizer_db = (
@@ -211,6 +215,7 @@ class ThreadSnapshotAnalyzer:
             self._symbolizer = symbolizer
         else:
             self._symbolizer = LlvmSymbolizer()
+        self._user_processing_callback = user_processing_callback
 
         for thread in self._threads:
             proto_detokenizer.detokenize_fields(self._tokenizer_db, thread)
@@ -288,6 +293,11 @@ class ThreadSnapshotAnalyzer:
                         'utf-8'
                     )
                 )
+            if self._user_processing_callback is not None:
+                output.append(
+                    self._user_processing_callback(thread.SerializeToString())
+                )
+
             # Blank line between threads for nicer formatting.
             output.append('')
 
