@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+
 package(default_visibility = ["//pw_bluetooth_sapphire:__subpackages__"])
 
 cc_library(
@@ -261,4 +263,26 @@ cc_library(
     ],
     strip_include_prefix = "public",
     tags = ["manual"],
+)
+
+cc_library(
+    name = "peripheral",
+    srcs = ["peripheral.cc"],
+    hdrs = ["public/pw_bluetooth_sapphire/peripheral.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_bluetooth:pw_bluetooth2",
+        "//pw_bluetooth_sapphire/host/gap",
+        "//pw_sync:mutex",
+    ],
+)
+
+pw_cc_test(
+    name = "peripheral_test",
+    srcs = ["peripheral_test.cc"],
+    deps = [
+        ":peripheral",
+        "//pw_async:fake_dispatcher",
+        "//pw_bluetooth_sapphire/host/gap:testing",
+    ],
 )

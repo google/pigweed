@@ -34,7 +34,29 @@ group("host") {
   public_configs = [ ":public_include_path" ]
 }
 
+pw_source_set("peripheral") {
+  public = [ "public/pw_bluetooth_sapphire/peripheral.h" ]
+  sources = [ "peripheral.cc" ]
+  public_deps = [
+    "$dir_pw_bluetooth:pw_bluetooth2",
+    "$dir_pw_sync:mutex",
+    "host/gap",
+  ]
+  public_configs = [ ":public_include_path" ]
+}
+
+pw_test("peripheral_test") {
+  enable_if = pw_bluetooth_sapphire_ENABLED
+  sources = [ "peripheral_test.cc" ]
+  deps = [
+    ":peripheral",
+    "$dir_pw_async:fake_dispatcher",
+    "host/gap:testing",
+  ]
+}
+
 pw_test_group("tests") {
+  tests = [ ":peripheral_test" ]
   group_deps = [
     "host:tests",
     "lib:tests",
@@ -52,6 +74,7 @@ pw_doc_group("docs") {
     "host/att/docs.rst",
     "host/gap/docs.rst",
     "host/l2cap/docs.rst",
+    "reference.rst",
     "size_report.rst",
   ]
   report_deps = [ "size_report:host_size_diff" ]

@@ -44,7 +44,9 @@ class AdvertisementInstance final {
  public:
   // The default constructor initializes an instance with an invalid ID.
   AdvertisementInstance();
-  ~AdvertisementInstance();
+
+  AdvertisementInstance(AdvertisementId advertisement_id,
+                        fit::function<void(AdvertisementId)> stop_advertising);
 
   AdvertisementInstance(AdvertisementInstance&& other) { Move(&other); }
   AdvertisementInstance& operator=(AdvertisementInstance&& other) {
@@ -52,18 +54,16 @@ class AdvertisementInstance final {
     return *this;
   }
 
+  ~AdvertisementInstance();
+
   AdvertisementId id() const { return id_; }
 
  private:
-  friend class LowEnergyAdvertisingManager;
-
-  AdvertisementInstance(AdvertisementId id,
-                        WeakSelf<LowEnergyAdvertisingManager>::WeakPtr owner);
   void Move(AdvertisementInstance* other);
   void Reset();
 
   AdvertisementId id_;
-  WeakSelf<LowEnergyAdvertisingManager>::WeakPtr owner_;
+  fit::function<void(AdvertisementId)> stop_advertising_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstance);
 };

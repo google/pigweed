@@ -49,10 +49,11 @@ hci::AdvertisingIntervalRange GetIntervalRange(AdvertisingInterval interval) {
 AdvertisementInstance::AdvertisementInstance() : id_(kInvalidAdvertisementId) {}
 
 AdvertisementInstance::AdvertisementInstance(
-    AdvertisementId id, WeakSelf<LowEnergyAdvertisingManager>::WeakPtr owner)
-    : id_(id), owner_(std::move(owner)) {
+    AdvertisementId advertisement_id,
+    fit::function<void(AdvertisementId)> stop_advertising)
+    : id_(advertisement_id), stop_advertising_(std::move(stop_advertising)) {
   PW_DCHECK(id_ != kInvalidAdvertisementId);
-  PW_DCHECK(owner_.is_alive());
+  PW_DCHECK(stop_advertising_ != nullptr);
 }
 
 AdvertisementInstance::~AdvertisementInstance() { Reset(); }
@@ -63,17 +64,17 @@ void AdvertisementInstance::Move(AdvertisementInstance* other) {
 
   // Transfer the old data over and clear |other| so that it no longer owns its
   // advertisement.
-  owner_ = std::move(other->owner_);
+  stop_advertising_ = std::move(other->stop_advertising_);
   id_ = other->id_;
   other->id_ = kInvalidAdvertisementId;
 }
 
 void AdvertisementInstance::Reset() {
-  if (owner_.is_alive() && id_ != kInvalidAdvertisementId) {
-    owner_->StopAdvertising(id_);
+  if (stop_advertising_ && id_ != kInvalidAdvertisementId) {
+    stop_advertising_(id_);
   }
 
-  owner_.reset();
+  stop_advertising_ = nullptr;
   id_ = kInvalidAdvertisementId;
 }
 
@@ -197,23 +198,29 @@ void LowEnergyAdvertisingManager::StartAdvertising(
             on_connect_cb(id, std::move(link));
           };
         }
-        auto status_cb_wrapper =
-            [self,
-             advertisement_ptr = std::move(ad_ptr),
-             result_cb = std::move(status_cb)](hci::Result<> status) mutable {
-              if (!self.is_alive()) {
-                return;
-              }
+        auto status_cb_wrapper = [self,
+                                  advertisement_ptr = std::move(ad_ptr),
+                                  result_cb = std::move(status_cb)](
+                                     hci::Result<> status) mutable {
+          if (!self.is_alive()) {
+            return;
+          }
 
-              if (status.is_error()) {
-                result_cb(AdvertisementInstance(), status);
-                return;
-              }
+          if (status.is_error()) {
+            result_cb(AdvertisementInstance(), status);
+            return;
+          }
 
-              auto id = advertisement_ptr->id();
-              self->advertisements_.emplace(id, std::move(advertisement_ptr));
-              result_cb(AdvertisementInstance(id, self), status);
-            };
+          auto id = advertisement_ptr->id();
+          self->advertisements_.emplace(id, std::move(advertisement_ptr));
+          auto stop_advertising_cb = [self](AdvertisementId stop_id) {
+            if (self.is_alive()) {
+              self->StopAdvertising(stop_id);
+            }
+          };
+          result_cb(AdvertisementInstance(id, std::move(stop_advertising_cb)),
+                    status);
+        };
 
         // Call StartAdvertising, with the callback
         self->advertiser_->StartAdvertising(result.value(),

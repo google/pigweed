@@ -53,8 +53,13 @@ class FakeAdapter final : public Adapter {
   class FakeLowEnergy final : public LowEnergy {
    public:
     struct RegisteredAdvertisement {
+      AdvertisingData data;
+      AdvertisingData scan_response;
       bool include_tx_power_level;
       DeviceAddress::Type addr_type;
+      bool extended_pdu;
+      bool anonymous;
+      std::optional<ConnectableAdvertisingParameters> connectable;
     };
 
     struct Connection {
@@ -77,6 +82,9 @@ class FakeAdapter final : public Adapter {
 
     // Update the LE random address of the adapter.
     void UpdateRandomAddress(DeviceAddress& address);
+
+    // Overrides the result returned to StartAdvertising() callback.
+    void set_advertising_result(hci::Result<> result);
 
     // LowEnergy overrides:
 
@@ -155,6 +163,7 @@ class FakeAdapter final : public Adapter {
     std::unordered_map<l2cap::ChannelId,
                        std::unique_ptr<l2cap::testing::FakeChannel>>
         channels_;
+    std::optional<hci::Result<>> advertising_result_override_;
   };
 
   LowEnergy* le() const override { return fake_le_.get(); }
