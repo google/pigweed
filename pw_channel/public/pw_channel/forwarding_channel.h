@@ -127,7 +127,9 @@ class ForwardingChannel<DataType::kDatagram>
 
   Status DoStageWrite(multibuf::MultiBuf&& data) override;
 
-  async2::Poll<Status> DoPendWrite(async2::Context&) override;
+  async2::Poll<Status> DoPendWrite(async2::Context&) override {
+    return OkStatus();
+  }
 
   async2::Poll<Status> DoPendClose(async2::Context&) override;
 
@@ -175,7 +177,9 @@ class ForwardingChannel<DataType::kByte>
 
   Status DoStageWrite(multibuf::MultiBuf&& data) override;
 
-  async2::Poll<Status> DoPendWrite(async2::Context&) override;
+  async2::Poll<Status> DoPendWrite(async2::Context&) override {
+    return OkStatus();
+  }
 
   async2::Poll<Status> DoPendClose(async2::Context&) override;
 

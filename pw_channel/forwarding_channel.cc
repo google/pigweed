@@ -65,12 +65,6 @@ Status ForwardingChannel<DataType::kDatagram>::DoStageWrite(
   return OkStatus();
 }
 
-async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendWrite(
-    async2::Context&) {
-  std::lock_guard lock(pair_.mutex_);
-  return OkStatus();
-}
-
 async2::Poll<Status> ForwardingChannel<DataType::kDatagram>::DoPendClose(
     async2::Context&) PW_NO_LOCK_SAFETY_ANALYSIS {
   std::lock_guard lock(pair_.mutex_);
@@ -111,12 +105,7 @@ Status ForwardingChannel<DataType::kByte>::DoStageWrite(
   }
 
   sibling_.read_queue_.PushSuffix(std::move(data));
-  return OkStatus();
-}
-
-async2::Poll<Status> ForwardingChannel<DataType::kByte>::DoPendWrite(
-    async2::Context&) {
-  std::lock_guard lock(pair_.mutex_);
+  std::move(sibling_.read_waker_).Wake();
   return OkStatus();
 }
 

@@ -72,6 +72,7 @@ class TestChannelPair {
         pair_(first_out_alloc_, second_out_alloc_) {}
 
   pw::channel::ForwardingChannelPair<kType>* operator->() { return &pair_; }
+  pw::channel::ForwardingChannelPair<kType>& operator*() { return pair_; }
 
  private:
   std::array<std::byte, kDataSize> first_out_data_area_;
@@ -353,6 +354,61 @@ TEST(ForwardingByteChannel, IgnoresEmptyWrites) {
 }
 
 TEST(ForwardingByteChannel, WriteData) {
+  class ReadTask : public pw::async2::Task {
+   public:
+    ReadTask(pw::channel::ForwardingByteChannelPair& pair) : pair_(pair) {}
+
+   private:
+    pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
+      EXPECT_EQ(pw::async2::Pending(), pair_.first().PendRead(cx));
+
+      auto hello_world_result = pair_.second().PendRead(cx);
+      if (hello_world_result.IsPending()) {
+        return pw::async2::Pending();
+      }
+
+      EXPECT_EQ(CopyToString(hello_world_result->value()), "hello world");
+
+      return pw::async2::Ready();
+    }
+
+    pw::channel::ForwardingByteChannelPair& pair_;
+  };
+
+  class WriteTask : public pw::async2::Task {
+   public:
+    WriteTask(pw::channel::ForwardingByteChannelPair& pair, MultiBuf&& data)
+        : pair_(pair), data_(std::move(data)) {}
+
+   private:
+    pw::async2::Poll<> DoPend(pw::async2::Context& cx) override {
+      EXPECT_EQ(pw::async2::Ready(pw::OkStatus()),
+                pair_.first().PendReadyToWrite(cx));
+      EXPECT_EQ(pw::OkStatus(), pair_.first().StageWrite(std::move(data_)));
+      return pw::async2::Ready();
+    }
+
+    pw::channel::ForwardingByteChannelPair& pair_;
+    MultiBuf data_;
+  };
+
+  InitializedMultiBuf data("hello world");
+
+  TestChannelPair<pw::channel::DataType::kByte> pair;
+  ReadTask read_task(*pair);
+  WriteTask write_task(*pair, data.Take());
+
+  pw::async2::Dispatcher dispatcher;
+
+  dispatcher.Post(read_task);
+  ASSERT_FALSE(dispatcher.RunUntilStalled().IsReady());
+  ASSERT_FALSE(dispatcher.RunUntilStalled().IsReady());
+
+  dispatcher.Post(write_task);
+  ASSERT_TRUE(dispatcher.RunUntilStalled().IsReady());
+}
+
+TEST(ForwardingByteChannel, WriteDataInMultiplePieces) {
   pw::async2::Dispatcher dispatcher;
 
   class : public pw::async2::Task {
