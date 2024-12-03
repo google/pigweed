@@ -1447,6 +1447,7 @@ _EXCLUDE_FROM_TODO_CHECK = (
     r'.gitignore$',
     r'.pylintrc$',
     r'.ruff.toml$',
+    r'MODULE.bazel.lock$',
     r'\bdocs/build_system.rst',
     r'\bdocs/code_reviews.rst',
     r'\bpw_assert_basic/basic_handler.cc',
