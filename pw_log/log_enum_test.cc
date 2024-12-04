@@ -27,6 +27,15 @@ enum Thing { kAlpha, kBravo, kCharlie };
 // Tokenize the enum! Adding a new entry above but not here is a compiler error.
 PW_TOKENIZE_ENUM(::this_is_a_test::Thing, kAlpha, kBravo, kCharlie);
 
+enum Thing2 { kDelta, kEcho, kFoxtrot };
+
+// Tokenize the enum with custom strings! Adding a new entry above but not here
+// is a compiler error.
+PW_TOKENIZE_ENUM_CUSTOM(::this_is_a_test::Thing2,
+                        (kDelta, "DELTA"),
+                        (kEcho, "ECHO"),
+                        (kFoxtrot, "FOXTROT"));
+
 // pw_log backends that use pw_tokenizer and want to support nested tokenization
 // define this file under their public_overrides/ directory to activate the
 // PW_LOG_TOKEN aliases. If this file does not exist in the log backend,

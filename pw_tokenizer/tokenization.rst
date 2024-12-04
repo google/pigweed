@@ -301,6 +301,19 @@ macro must be in the same namespace as the enum to be able to use the
    :start-after: [pw_tokenizer-examples-enum]
    :end-before: [pw_tokenizer-examples-enum]
 
+:c:macro:`PW_TOKENIZE_ENUM_CUSTOM` is an alternative version of
+:c:macro:`PW_TOKENIZE_ENUM` to tokenized a custom strings instead of a
+stringified form of the enum value name. It will take in a fully qualified enum
+name along with all the associated enum values and custom string for these
+values. This macro will create database entries that include the domain name
+(fully qualified enum name), enum value, and a tokenized form of the custom
+string for the enum value.
+
+.. literalinclude: enum_test.cc
+   :language: cpp
+   :start-after: [pw_tokenizer-examples-enum-custom]
+   :end-before: [pw_tokenizer-examples-enum-custom]
+
 Tokenize a message with arguments in a custom macro
 ===================================================
 Projects can leverage the tokenization machinery in whichever way best suits

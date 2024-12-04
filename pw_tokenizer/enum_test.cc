@@ -26,6 +26,15 @@ enum Thing : int { kAlpha, kBravo, kCharlie };
 PW_TOKENIZE_ENUM(::this_is_a_test::Thing, kAlpha, kBravo, kCharlie);
 // DOCSTAG: [pw_tokenizer-examples-enum]
 
+// DOCSTAG: [pw_tokenizer-examples-enum-custom]
+enum Thing2 { kDelta, kEcho, kFoxtrot };
+
+PW_TOKENIZE_ENUM_CUSTOM(::this_is_a_test::Thing2,
+                        (kDelta, "DELTA"),
+                        (kEcho, "ECHO"),
+                        (kFoxtrot, "FOXTROT"));
+// DOCSTAG: [pw_tokenizer-examples-enum-custom]
+
 enum OneThing { kGolf };
 
 PW_TOKENIZE_ENUM(::this_is_a_test::OneThing, kGolf);
@@ -34,7 +43,14 @@ enum class ScopedThing { kKilo, kLima, kMike };
 
 PW_TOKENIZE_ENUM(::this_is_a_test::ScopedThing, kKilo, kLima, kMike);
 
-enum NonTokenizedThing { kDelta, kEcho, kFoxtrot };
+enum class ScopedThing2 { kKilo, kLima, kMike };
+
+PW_TOKENIZE_ENUM_CUSTOM(::this_is_a_test::ScopedThing2,
+                        (kKilo, "KILO"),
+                        (kLima, "LIMA"),
+                        (kMike, "MIKE"));
+
+enum NonTokenizedThing { kNovember, kOscar, kPapa };
 
 enum NamespaceThing { kHotel, kIndia, kJuliett };
 
@@ -49,21 +65,27 @@ TEST(TokenizeEnums, KnownValues_2) {
   EXPECT_STREQ("kLima", log_value);
 }
 
+TEST(TokenizeEnums, KnownValues_3) {
+  constexpr const char* log_value =
+      ::pw::tokenizer::EnumToString(::this_is_a_test::ScopedThing2::kLima);
+  EXPECT_STREQ("LIMA", log_value);
+}
+
 [[maybe_unused]] void TokenizeUnknownValue() {
 #if PW_NC_TEST(TokenizeUnknownValue)
   PW_NC_EXPECT("no matching function for call");
 
-  ::pw::tokenizer::EnumToString(kEcho);
+  ::pw::tokenizer::EnumToString(kOscar);
 #endif  // PW_NC_TEST
 }
 
-enum ManyThing { kNovember, kOscar, kPapa };
+enum ManyThing { kQuebec, kRomeo, kSierra };
 
 [[maybe_unused]] void MissAValue() {
 #if PW_NC_TEST(MissAValue)
   PW_NC_EXPECT("is not allowed here");
 
-  PW_TOKENIZE_ENUM(::this_is_a_test::ManyThing, kNovember, kOscar);
+  PW_TOKENIZE_ENUM(::this_is_a_test::ManyThing, kQuebec, kRomeo);
 #endif  // PW_NC_TEST
 }
 

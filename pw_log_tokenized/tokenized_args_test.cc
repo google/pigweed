@@ -30,6 +30,15 @@ enum Thing { kAlpha, kBravo, kCharlie };
 // Tokenize the enum! Adding a new entry above but not here is a compiler error.
 PW_TOKENIZE_ENUM(::this_is_a_test::Thing, kAlpha, kBravo, kCharlie);
 
+enum Thing2 { kDelta, kEcho, kFoxtrot };
+
+// Tokenize the enum with custom strings! Adding a new entry above but not here
+// is a compiler error.
+PW_TOKENIZE_ENUM_CUSTOM(::this_is_a_test::Thing2,
+                        (kDelta, "DELTA"),
+                        (kEcho, "ECHO"),
+                        (kFoxtrot, "FOXTROT"));
+
 // pw_log backends that use pw_tokenizer and want to support nested tokenization
 // define this file under their public_overrides/ directory to activate the
 // PW_LOG_TOKEN aliases. If this file does not exist in the log backend,
@@ -59,6 +68,15 @@ TEST(TokenizedArgs, LogTokenOrString_TokenizingBackend) {
   EXPECT_EQ(static_cast<uint32_t>(kAlpha), PW_LOG_ENUM(kAlpha));
 }
 
+TEST(TokenizedArgs, LogTokenEnumFmt2_TokenizingBackend) {
+  constexpr char nested_token[] = PW_LOG_ENUM_FMT(::this_is_a_test::Thing2);
+  EXPECT_STREQ("${::this_is_a_test::Thing2}#%08" PRIx32, nested_token);
+}
+
+TEST(TokenizedArgs, LogTokenOrString2_TokenizingBackend) {
+  EXPECT_EQ(static_cast<uint32_t>(kDelta), PW_LOG_ENUM(kDelta));
+}
+
 #else
 
 TEST(TokenizedArgs, EmptyString_NonTokenizingBackend) {
@@ -86,6 +104,17 @@ TEST(TokenizedArgs, LogTokenEnumFmt_NonTokenizingBackend) {
 TEST(TokenizedArgs, LogTokenOrString_NonTokenizingBackend) {
   constexpr PW_LOG_TOKEN_TYPE nested_token = PW_LOG_ENUM(kAlpha);
   EXPECT_STREQ("kAlpha", nested_token);
+}
+
+TEST(TokenizedArgs, LogTokenEnumFmt2_NonTokenizingBackend) {
+  constexpr PW_LOG_TOKEN_TYPE nested_token =
+      PW_LOG_ENUM_FMT(::this_is_a_test::Thing2);
+  EXPECT_STREQ("%s", nested_token);
+}
+
+TEST(TokenizedArgs, LogTokenOrString2_NonTokenizingBackend) {
+  constexpr PW_LOG_TOKEN_TYPE nested_token = PW_LOG_ENUM(kDelta);
+  EXPECT_STREQ("DELTA", nested_token);
 }
 
 #endif  //__has_include("log_backend/log_backend_uses_pw_tokenizer.h")

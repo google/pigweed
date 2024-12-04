@@ -28,18 +28,37 @@ constexpr bool ValidEnumerator(T) {
 
 #define _PW_SEMICOLON(...) ;
 
-#define _PW_TOKENIZE_TO_STRING_CASE(index, name, arg) \
-  case name::arg:                                     \
-    return #arg;
+#define _PW_TOKENIZE_TO_STRING_CASE_IMPL(index, name, enumerator, str) \
+  case name::enumerator:                                               \
+    return str;
 
-// Declares an individual tokenized enum value.
-#define _PW_TOKENIZE_ENUMERATOR(index, name, enumerator)                   \
+#define _PW_TOKENIZE_ENUMERATOR_IMPL(index, name, enumerator, str)         \
   static_assert(                                                           \
       #name[0] == ':' && #name[1] == ':',                                  \
       "Enum names must be fully qualified and start with ::, but \"" #name \
       "\" does not");                                                      \
   static_assert(::pw::tokenizer::ValidEnumerator(name::enumerator));       \
   PW_TOKENIZER_DEFINE_TOKEN(                                               \
-      static_cast<::pw::tokenizer::Token>(name::enumerator),               \
-      #name,                                                               \
-      #enumerator)
+      static_cast<::pw::tokenizer::Token>(name::enumerator), #name, str)
+
+#define _PW_TOKENIZE_TO_STRING_CASE(index, name, enumerator) \
+  _PW_TOKENIZE_TO_STRING_CASE_IMPL(index, name, enumerator, #enumerator)
+
+// Declares an individual tokenized enum value.
+#define _PW_TOKENIZE_ENUMERATOR(index, name, enumerator) \
+  _PW_TOKENIZE_ENUMERATOR_IMPL(index, name, enumerator, #enumerator)
+
+// Strip parenthesis around (enumerator, "custom string") tuples
+#define _PW_CUSTOM_ENUMERATOR(enumerator, str) enumerator, str
+
+#define _PW_TOKENIZE_TO_STRING_CASE_CUSTOM(index, name, arg) \
+  _PW_TOKENIZE_TO_STRING_CASE_CUSTOM_EXPAND(                 \
+      index, name, _PW_CUSTOM_ENUMERATOR arg)
+#define _PW_TOKENIZE_TO_STRING_CASE_CUSTOM_EXPAND(index, name, ...) \
+  _PW_TOKENIZE_TO_STRING_CASE_IMPL(index, name, __VA_ARGS__)
+
+// Declares a tokenized custom string for an individual enum value.
+#define _PW_TOKENIZE_ENUMERATOR_CUSTOM(index, name, arg) \
+  _PW_TOKENIZE_ENUMERATOR_CUSTOM_EXPAND(index, name, _PW_CUSTOM_ENUMERATOR arg)
+#define _PW_TOKENIZE_ENUMERATOR_CUSTOM_EXPAND(index, name, ...) \
+  _PW_TOKENIZE_ENUMERATOR_IMPL(index, name, __VA_ARGS__)

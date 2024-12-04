@@ -37,6 +37,7 @@ Tokenization
       .. doxygenfunction:: pw::tokenizer::EnumToString
       .. doxygendefine:: PW_TOKEN_FMT
       .. doxygendefine:: PW_TOKENIZE_ENUM
+      .. doxygendefine:: PW_TOKENIZE_ENUM_CUSTOM
       .. doxygendefine:: PW_TOKENIZE_FORMAT_STRING
       .. doxygendefine:: PW_TOKENIZE_FORMAT_STRING_ANY_ARG_COUNT
       .. doxygendefine:: PW_TOKENIZE_STRING

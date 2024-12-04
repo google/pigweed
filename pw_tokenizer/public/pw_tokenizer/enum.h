@@ -63,3 +63,27 @@ constexpr const char* EnumToString(T value) {
     return "Unknown " #fully_qualified_name " value";             \
   }                                                               \
   static_assert(true)
+
+/// Tokenizes a custom string for each given values within an enumerator. All
+/// values of the enumerator must be followed by a custom string as a tuple
+/// (value, "string"). All values of the enumerator (and their associated
+/// custom string) must be present to compile and have the custom strings be
+/// tokenized successfully.
+/// This macro should be in the same namespace as the enum declaration to use
+/// the `pw::tokenizer::EnumToString` function and avoid compilation errors.
+#define PW_TOKENIZE_ENUM_CUSTOM(fully_qualified_name, ...)        \
+  PW_APPLY(_PW_TOKENIZE_ENUMERATOR_CUSTOM,                        \
+           _PW_SEMICOLON,                                         \
+           fully_qualified_name,                                  \
+           __VA_ARGS__);                                          \
+  [[maybe_unused]] constexpr const char* PwTokenizerEnumToString( \
+      fully_qualified_name _pw_enum_value) {                      \
+    switch (_pw_enum_value) {                                     \
+      PW_APPLY(_PW_TOKENIZE_TO_STRING_CASE_CUSTOM,                \
+               _PW_SEMICOLON,                                     \
+               fully_qualified_name,                              \
+               __VA_ARGS__);                                      \
+    }                                                             \
+    return "Unknown " #fully_qualified_name " value";             \
+  }                                                               \
+  static_assert(true)
