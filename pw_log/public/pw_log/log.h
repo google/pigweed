@@ -76,9 +76,6 @@
     }                                                                      \
   } while (0)
 
-// TODO(ewout): Remove this sentinel used to migrate downstream projects.
-#define _PW_LOG_REQUIRES_VERBOSITY 1
-
 // For backends that elect to only provide the general PW_LOG() macro and not
 // specialized versions, define the standard PW_LOG_<level>() macros in terms
 // of the general PW_LOG().
