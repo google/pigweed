@@ -12,7 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+load("//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -154,5 +155,15 @@ pw_cc_test(
         "//pw_bluetooth_sapphire/host/hci:testing",
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/transport:testing",
+    ],
+)
+
+pw_cc_fuzz_test(
+    name = "basic_mode_rx_engine_fuzzer",
+    testonly = True,
+    srcs = ["basic_mode_rx_engine_fuzztest.cc"],
+    deps = [
+        ":l2cap",
+        ":testing",
     ],
 )
