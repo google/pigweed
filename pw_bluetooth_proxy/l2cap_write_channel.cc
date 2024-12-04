@@ -30,7 +30,7 @@ namespace pw::bluetooth::proxy {
 Status L2capWriteChannel::QueuePacket(H4PacketWithH4&& packet) {
   Status status;
   {
-    std::lock_guard lock(send_queue_mutex_);
+    std::lock_guard lock(global_send_queue_mutex_);
     if (send_queue_.full()) {
       status = Status::Unavailable();
     } else {
@@ -43,7 +43,7 @@ Status L2capWriteChannel::QueuePacket(H4PacketWithH4&& packet) {
 }
 
 std::optional<H4PacketWithH4> L2capWriteChannel::DequeuePacket() {
-  std::lock_guard lock(send_queue_mutex_);
+  std::lock_guard lock(global_send_queue_mutex_);
   if (send_queue_.empty()) {
     return std::nullopt;
   }
@@ -53,7 +53,7 @@ std::optional<H4PacketWithH4> L2capWriteChannel::DequeuePacket() {
 }
 
 void L2capWriteChannel::ClearQueue() {
-  std::lock_guard lock(send_queue_mutex_);
+  std::lock_guard lock(global_send_queue_mutex_);
   send_queue_.clear();
 }
 

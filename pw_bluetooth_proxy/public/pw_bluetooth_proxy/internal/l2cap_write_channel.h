@@ -109,11 +109,20 @@ class L2capWriteChannel : public IntrusiveForwardList<L2capWriteChannel>::Item {
 
   // `L2capChannelManager` and channel may concurrently call functions that
   // access queue.
-  sync::Mutex send_queue_mutex_;
+  //
+  // TODO: https://pwbug.dev/381942905 - This mutex is static to avoid it being
+  // destroyed when an L2capWriteChannel is erased from a container. When an
+  // L2capWriteChannel is erased, it is std::destroyed then overwritten by the
+  // subsequent L2capWriteChannel in the container via the move assignment
+  // operator. After this, the previously destroyed L2capWriteChannel object is
+  // again in an operational state, so its mutex needs to remain valid. This is
+  // a bug in pw::Vector::erase(). Once this behavior is fixed, we can remove
+  // the static to avoid cross-channel contention.
+  inline static sync::Mutex global_send_queue_mutex_;
 
   // Stores Tx L2CAP packets.
   InlineQueue<H4PacketWithH4, kQueueCapacity> send_queue_
-      PW_GUARDED_BY(send_queue_mutex_);
+      PW_GUARDED_BY(global_send_queue_mutex_);
 
   L2capChannelManager& l2cap_channel_manager_;
 };

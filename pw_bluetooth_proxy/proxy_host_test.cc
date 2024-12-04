@@ -2187,7 +2187,7 @@ TEST(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
       proxy
           .AcquireBasicL2capChannel(/*connection_handle=*/0x0FFF,
                                     /*local_cid=*/0x123,
-                                    /*type=*/AclTransportType::kLe,
+                                    /*transport=*/AclTransportType::kLe,
                                     /*payload_from_controller_fn=*/nullptr)
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
@@ -2197,7 +2197,7 @@ TEST(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
       proxy
           .AcquireBasicL2capChannel(/*connection_handle=*/0x123,
                                     /*local_cid=*/0,
-                                    /*type=*/AclTransportType::kLe,
+                                    /*transport=*/AclTransportType::kLe,
                                     /*payload_from_controller_fn=*/nullptr)
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
