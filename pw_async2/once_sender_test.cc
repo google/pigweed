@@ -297,4 +297,38 @@ TEST(OnceSender, OnceRefSenderSetRValue) {
   EXPECT_EQ(task.value().value(), 2);
 }
 
+class AlreadyCompletedReceiverTask : public Task {
+ public:
+  AlreadyCompletedReceiverTask(OnceReceiver<MoveOnlyValue> receiver)
+      : receiver_(std::move(receiver)) {}
+
+  Poll<> DoPend(Context& cx) override {
+    Poll<pw::Result<MoveOnlyValue>> poll = receiver_.Pend(cx);
+    if (poll.IsReady()) {
+      ready_value_.emplace(std::move(poll.value()));
+      return Ready();
+    }
+    return Pending();
+  }
+
+  std::optional<pw::Result<MoveOnlyValue>>& ready_value() {
+    return ready_value_;
+  }
+
+ private:
+  std::optional<pw::Result<MoveOnlyValue>> ready_value_;
+  OnceReceiver<MoveOnlyValue> receiver_;
+};
+
+TEST(OnceSender, OnceReceiverAlreadyCompleted) {
+  Dispatcher dispatcher;
+  OnceReceiver<MoveOnlyValue> receiver(2);
+  AlreadyCompletedReceiverTask task(std::move(receiver));
+  dispatcher.Post(task);
+  EXPECT_TRUE(dispatcher.RunUntilStalled(task).IsReady());
+  ASSERT_TRUE(task.ready_value().has_value());
+  ASSERT_TRUE(task.ready_value()->ok());
+  EXPECT_EQ(task.ready_value()->value().value(), 2);
+}
+
 }  // namespace

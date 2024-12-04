@@ -42,6 +42,12 @@ class OnceReceiver final {
  public:
   OnceReceiver() = default;
 
+  /// Create an already completed OnceReceiver by constructing the value with
+  /// `value_args`.
+  template <typename... Args>
+  explicit OnceReceiver(Args&&... value_args)
+      : value_(std::forward<Args>(value_args)...) {}
+
   OnceReceiver(OnceReceiver&& other) {
     std::lock_guard lock(sender_receiver_lock());
     sender_ = other.sender_;

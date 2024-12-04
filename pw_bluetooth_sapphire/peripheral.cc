@@ -126,14 +126,11 @@ Peripheral::~Peripheral() {
 
 async2::OnceReceiver<Peripheral::AdvertiseResult> Peripheral::Advertise(
     const AdvertisingParameters& parameters) {
-  auto [result_sender, result_receiver] =
-      async2::MakeOnceSenderAndReceiver<Peripheral::AdvertiseResult>();
-
   pw::expected<bt::AdvertisingData, AdvertiseError> data_result =
       AdvertisingDataFrom(parameters.data);
   if (!data_result.has_value()) {
-    result_sender.emplace(pw::unexpected(data_result.error()));
-    return std::move(result_receiver);
+    return async2::OnceReceiver<Peripheral::AdvertiseResult>(
+        pw::unexpected(data_result.error()));
   }
   bt::AdvertisingData data = std::move(data_result.value());
   bt::AdvertisingData scan_response;
@@ -168,8 +165,8 @@ async2::OnceReceiver<Peripheral::AdvertiseResult> Peripheral::Advertise(
       pw::expected<bt::AdvertisingData, AdvertiseError> scan_response_result =
           AdvertisingDataFrom(legacy->scan_response.value());
       if (!scan_response_result.has_value()) {
-        result_sender.emplace(pw::unexpected(scan_response_result.error()));
-        return std::move(result_receiver);
+        return async2::OnceReceiver<Peripheral::AdvertiseResult>(
+            pw::unexpected(scan_response_result.error()));
       }
       scan_response = std::move(scan_response_result.value());
     }
@@ -194,8 +191,8 @@ async2::OnceReceiver<Peripheral::AdvertiseResult> Peripheral::Advertise(
       pw::expected<bt::AdvertisingData, AdvertiseError> scan_response_result =
           AdvertisingDataFrom(*scan_response_param);
       if (!scan_response_result.has_value()) {
-        result_sender.emplace(pw::unexpected(scan_response_result.error()));
-        return std::move(result_receiver);
+        return async2::OnceReceiver<Peripheral::AdvertiseResult>(
+            pw::unexpected(scan_response_result.error()));
       }
       scan_response = std::move(scan_response_result.value());
     } else if (const ConnectionOptions* connection_options =
@@ -212,10 +209,12 @@ async2::OnceReceiver<Peripheral::AdvertiseResult> Peripheral::Advertise(
     // This should never happen unless additional procedures are added in the
     // future.
     bt_log(WARN, "api", "Advertising procedure not supported");
-    result_sender.emplace(pw::unexpected(AdvertiseError::kNotSupported));
-    return std::move(result_receiver);
+    return async2::OnceReceiver<Peripheral::AdvertiseResult>(
+        pw::unexpected(AdvertiseError::kNotSupported));
   }
 
+  auto [result_sender, result_receiver] =
+      async2::MakeOnceSenderAndReceiver<Peripheral::AdvertiseResult>();
   auto callback = [self = self_, sender = std::move(result_sender)](
                       bt::gap::AdvertisementInstance instance,
                       bt::hci::Result<> status) mutable {
