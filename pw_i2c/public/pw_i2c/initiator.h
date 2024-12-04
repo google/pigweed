@@ -234,6 +234,11 @@ class Initiator {
   /// This is done by attempting to read a single byte from the specified
   /// device.
   ///
+  /// @warning This method is not compatible with all devices. For example, some
+  /// I2C devices require a device_address in W mode before they can ack the
+  /// device_address in R mode. In this case, use WriteReadFor to read a
+  /// register with known value.
+  ///
   /// @param[in] device_address The address of the I2C device.
   ///
   /// @param[in] timeout The maximum duration to block waiting for both
