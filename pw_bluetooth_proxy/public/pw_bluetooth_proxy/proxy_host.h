@@ -130,14 +130,19 @@ class ProxyHost {
   /// Returns an L2CAP channel operating in basic mode that supports writing to
   /// and reading from a remote peer.
   ///
-  /// @param[in] connection_handle     The connection handle of the remote peer.
+  /// @param[in] connection_handle          The connection handle of the remote
+  ///                                       peer.
   ///
-  /// @param[in] local_cid             L2CAP channel ID of the local endpoint.
+  /// @param[in] local_cid                  L2CAP channel ID of the local
+  ///                                       endpoint.
+  ///
+  /// @param[in] remote_cid                 L2CAP channel ID of the remote
+  ///                                       endpoint.
   ///
   /// @param[in] transport                  Logical link transport type.
   ///
   /// @param[in] payload_from_controller_fn Read callback to be invoked on Rx
-  /// SDUs.
+  ///                                       SDUs.
   ///
   /// @returns @rst
   ///
@@ -149,6 +154,7 @@ class ProxyHost {
   pw::Result<BasicL2capChannel> AcquireBasicL2capChannel(
       uint16_t connection_handle,
       uint16_t local_cid,
+      uint16_t remote_cid,
       AclTransportType transport,
       pw::Function<void(pw::span<uint8_t> payload)>&&
           payload_from_controller_fn);

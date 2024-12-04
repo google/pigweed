@@ -25,10 +25,11 @@ namespace pw::bluetooth::proxy {
 L2capSignalingChannel::L2capSignalingChannel(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
-    uint16_t local_cid)
+    uint16_t fixed_cid)
     : BasicL2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
                         /*connection_handle=*/connection_handle,
-                        /*local_cid=*/local_cid,
+                        /*local_cid=*/fixed_cid,
+                        /*remote_cid=*/fixed_cid,
                         /*payload_from_controller_fn=*/nullptr),
       l2cap_channel_manager_(l2cap_channel_manager) {}
 
@@ -90,7 +91,7 @@ bool L2capSignalingChannel::HandleFlowControlCreditInd(
   }
 
   L2capWriteChannel* found_channel = l2cap_channel_manager_.FindWriteChannel(
-      connection_handle(), cmd.cid().Read());
+      L2capReadChannel::connection_handle(), cmd.cid().Read());
   if (found_channel) {
     // If this L2CAP_FLOW_CONTROL_CREDIT_IND is addressed to a channel managed
     // by the proxy, it must be an L2CAP connection-oriented channel.

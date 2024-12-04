@@ -27,6 +27,7 @@
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth/rfcomm_frames.emb.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
+#include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_containers/flat_map.h"
 #include "pw_function/function.h"
 #include "pw_log/log.h"
@@ -2173,6 +2174,101 @@ TEST(MultiSendTest, ResetClearsBuffOccupiedFlags) {
 
 // ########## BasicL2capChannelTest
 
+TEST(BasicL2capChannelTest, BasicWrite) {
+  struct {
+    int sends_called = 0;
+    // First four bits 0x0 encode PB & BC flags
+    uint16_t handle = 0x0ACB;
+    // Length of L2CAP PDU
+    uint16_t acl_data_total_length = 0x0007;
+    // L2CAP header PDU length field
+    uint16_t pdu_length = 0x0003;
+    // Random CID
+    uint16_t channel_id = 0x1234;
+    // L2CAP information payload
+    std::array<uint8_t, 3> payload = {0xAB, 0xCD, 0xEF};
+
+    // Built from the preceding values in little endian order (except payload in
+    // big endian).
+    std::array<uint8_t, 11> expected_hci_packet = {
+        0xCB, 0x0A, 0x07, 0x00, 0x03, 0x00, 0x34, 0x12, 0xAB, 0xCD, 0xEF};
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        ++capture.sends_called;
+        EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::ACL_DATA);
+        EXPECT_EQ(packet.GetHciSpan().size(),
+                  capture.expected_hci_packet.size());
+        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
+                               packet.GetHciSpan().end(),
+                               capture.expected_hci_packet.begin(),
+                               capture.expected_hci_packet.end()));
+        PW_TEST_ASSERT_OK_AND_ASSIGN(
+            auto acl,
+            MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
+        EXPECT_EQ(acl.header().handle().Read(), capture.handle);
+        EXPECT_EQ(acl.header().packet_boundary_flag().Read(),
+                  emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
+        EXPECT_EQ(acl.header().broadcast_flag().Read(),
+                  emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
+        EXPECT_EQ(acl.data_total_length().Read(),
+                  capture.acl_data_total_length);
+        emboss::BFrameView bframe = emboss::MakeBFrameView(
+            acl.payload().BackingStorage().data(), acl.SizeInBytes());
+        EXPECT_EQ(bframe.pdu_length().Read(), capture.pdu_length);
+        EXPECT_EQ(bframe.channel_id().Read(), capture.channel_id);
+        for (size_t i = 0; i < 3; ++i) {
+          EXPECT_EQ(bframe.payload()[i].Read(), capture.payload[i]);
+        }
+      });
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  // Allow proxy to reserve 1 LE credit.
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
+
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      BasicL2capChannel channel,
+      proxy.AcquireBasicL2capChannel(/*connection_handle=*/capture.handle,
+                                     /*local_cid=*/0x123,
+                                     /*remote_cid=*/capture.channel_id,
+                                     /*transport=*/AclTransportType::kLe,
+                                     /*payload_from_controller_fn=*/nullptr));
+
+  EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
+  EXPECT_EQ(capture.sends_called, 1);
+}
+
+TEST(BasicL2capChannelTest, ErrorOnWriteTooLarge) {
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [](H4PacketWithH4&&) { FAIL(); });
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  // Allow proxy to reserve 1 credit.
+  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
+
+  std::array<uint8_t,
+             ProxyHost::GetMaxAclSendSize() -
+                 emboss::AclDataFrameHeader::IntrinsicSizeInBytes() -
+                 emboss::BasicL2capHeader::IntrinsicSizeInBytes() + 1>
+      hci_arr;
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      BasicL2capChannel channel,
+      proxy.AcquireBasicL2capChannel(/*connection_handle=*/0x123,
+                                     /*local_cid=*/0x123,
+                                     /*remote_cid=*/0x123,
+                                     /*transport=*/AclTransportType::kLe,
+                                     /*payload_from_controller_fn=*/nullptr));
+
+  EXPECT_EQ(channel.Write(span(hci_arr)), PW_STATUS_INVALID_ARGUMENT);
+}
+
 TEST(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       [](H4PacketWithHci&&) {});
@@ -2187,6 +2283,7 @@ TEST(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
       proxy
           .AcquireBasicL2capChannel(/*connection_handle=*/0x0FFF,
                                     /*local_cid=*/0x123,
+                                    /*remote_cid=*/0x123,
                                     /*transport=*/AclTransportType::kLe,
                                     /*payload_from_controller_fn=*/nullptr)
           .status(),
@@ -2197,6 +2294,7 @@ TEST(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
       proxy
           .AcquireBasicL2capChannel(/*connection_handle=*/0x123,
                                     /*local_cid=*/0,
+                                    /*remote_cid=*/0x123,
                                     /*transport=*/AclTransportType::kLe,
                                     /*payload_from_controller_fn=*/nullptr)
           .status(),
@@ -2223,6 +2321,7 @@ TEST(BasicL2capChannelTest, BasicRead) {
       proxy.AcquireBasicL2capChannel(
           /*connection_handle=*/handle,
           /*local_cid=*/local_cid,
+          /*remote_cid=*/0x123,
           /*transport=*/AclTransportType::kLe,
           /*payload_from_controller_fn=*/
           [&capture](pw::span<uint8_t> payload) {

@@ -25,7 +25,7 @@ class L2capSignalingChannel : public BasicL2capChannel {
  public:
   explicit L2capSignalingChannel(L2capChannelManager& l2cap_channel_manager,
                                  uint16_t connection_handle,
-                                 uint16_t local_cid);
+                                 uint16_t fixed_cid);
 
   L2capSignalingChannel& operator=(L2capSignalingChannel&& other);
 

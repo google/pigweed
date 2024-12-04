@@ -15,8 +15,10 @@
 #include "pw_bluetooth_proxy/basic_l2cap_channel.h"
 
 #include "pw_bluetooth/emboss_util.h"
+#include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_log/log.h"
+#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -24,9 +26,11 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
     uint16_t local_cid,
+    uint16_t remote_cid,
     pw::Function<void(pw::span<uint8_t> payload)>&&
         payload_from_controller_fn) {
-  if (!L2capReadChannel::AreValidParameters(connection_handle, local_cid)) {
+  if (!L2capReadChannel::AreValidParameters(connection_handle, local_cid) ||
+      !L2capWriteChannel::AreValidParameters(connection_handle, remote_cid)) {
     return pw::Status::InvalidArgument();
   }
 
@@ -34,23 +38,50 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
       /*l2cap_channel_manager=*/l2cap_channel_manager,
       /*connection_handle=*/connection_handle,
       /*local_cid=*/local_cid,
+      /*remote_cid=*/remote_cid,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn));
 }
 
-BasicL2capChannel& BasicL2capChannel::operator=(BasicL2capChannel&& other) {
-  L2capReadChannel::operator=(std::move(other));
-  return *this;
+pw::Status BasicL2capChannel::Write(pw::span<const uint8_t> payload) {
+  // TODO: https://pwbug.dev/360929142 - Reject payloads exceeding MTU.
+
+  pw::Result<H4PacketWithH4> h4_result = PopulateTxL2capPacket(payload.size());
+  if (!h4_result.ok()) {
+    // This can fail as a result of the L2CAP PDU not fitting in an H4 buffer
+    // or if all buffers are occupied.
+    // TODO: https://pwbug.dev/365179076 - Once we support ACL fragmentation,
+    // this function will not fail due to the L2CAP PDU size not fitting.
+    return h4_result.status();
+  }
+  H4PacketWithH4 h4_packet = std::move(*h4_result);
+
+  PW_TRY_ASSIGN(
+      auto acl,
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan()));
+  PW_TRY_ASSIGN(auto bframe,
+                MakeEmbossWriter<emboss::BFrameWriter>(
+                    acl.payload().BackingStorage().data(),
+                    acl.payload().BackingStorage().SizeInBytes()));
+  std::memcpy(
+      bframe.payload().BackingStorage().data(), payload.data(), payload.size());
+
+  return QueuePacket(std::move(h4_packet));
 }
 
 BasicL2capChannel::BasicL2capChannel(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
     uint16_t local_cid,
+    uint16_t remote_cid,
     pw::Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn)
     : L2capReadChannel(l2cap_channel_manager,
                        std::move(payload_from_controller_fn),
                        connection_handle,
-                       local_cid) {}
+                       local_cid),
+      L2capWriteChannel(l2cap_channel_manager,
+                        connection_handle,
+                        AclTransportType::kLe,
+                        remote_cid) {}
 
 bool BasicL2capChannel::HandlePduFromController(pw::span<uint8_t> bframe) {
   Result<emboss::BFrameWriter> bframe_view =

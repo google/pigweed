@@ -15,11 +15,11 @@
 #pragma once
 
 #include "pw_bluetooth_proxy/internal/l2cap_read_channel.h"
-#include "pw_result/result.h"
+#include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
 
 namespace pw::bluetooth::proxy {
 
-class BasicL2capChannel : public L2capReadChannel {
+class BasicL2capChannel : public L2capReadChannel, public L2capWriteChannel {
  public:
   // TODO: https://pwbug.dev/360929142 - Take the MTU. Signaling channels would
   // provide MTU_SIG.
@@ -27,6 +27,7 @@ class BasicL2capChannel : public L2capReadChannel {
       L2capChannelManager& l2cap_channel_manager,
       uint16_t connection_handle,
       uint16_t local_cid,
+      uint16_t remote_cid,
       pw::Function<void(pw::span<uint8_t> payload)>&&
           payload_from_controller_fn);
 
@@ -34,12 +35,28 @@ class BasicL2capChannel : public L2capReadChannel {
   BasicL2capChannel& operator=(const BasicL2capChannel& other) = delete;
   BasicL2capChannel(BasicL2capChannel&&) = default;
   // Move assignment operator allows channels to be erased from pw_containers.
-  BasicL2capChannel& operator=(BasicL2capChannel&& other);
+  BasicL2capChannel& operator=(BasicL2capChannel&& other) = default;
+
+  /// Send an L2CAP payload to the remote peer.
+  ///
+  /// @param[in] payload The L2CAP payload to be sent. Payload will be copied
+  ///                    before function completes.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///  OK:                  If packet was successfully queued for send.
+  ///  UNAVAILABLE:         If channel could not acquire the resources to queue
+  ///                       the send at this time (transient error).
+  ///  INVALID_ARGUMENT:    If payload is too large.
+  /// @endrst
+  pw::Status Write(pw::span<const uint8_t> payload);
 
  protected:
   explicit BasicL2capChannel(L2capChannelManager& l2cap_channel_manager,
                              uint16_t connection_handle,
                              uint16_t local_cid,
+                             uint16_t remote_cid,
                              pw::Function<void(pw::span<uint8_t> payload)>&&
                                  payload_from_controller_fn);
 

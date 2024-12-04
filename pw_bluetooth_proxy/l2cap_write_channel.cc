@@ -66,6 +66,25 @@ L2capWriteChannel::L2capWriteChannel(L2capWriteChannel&& other)
   l2cap_channel_manager_.RegisterWriteChannel(*this);
 }
 
+L2capWriteChannel& L2capWriteChannel::operator=(L2capWriteChannel&& other) {
+  if (this != &other) {
+    PW_CHECK(!l2cap_channel_manager_.ReleaseWriteChannel(*this),
+             "Move assignment operator called on channel that is still active "
+             "(still registered with L2capChannelManager).");
+    connection_handle_ = other.connection_handle();
+    remote_cid_ = other.remote_cid();
+    // All L2capWriteChannels share a static mutex, so only one lock needs to be
+    // acquired here.
+    // TODO: https://pwbug.dev/369849508 - Once mutex is no longer static,
+    // elide this operator or acquire a lock on both channels' mutexes.
+    std::lock_guard lock(global_send_queue_mutex_);
+    send_queue_ = std::move(other.send_queue_);
+    l2cap_channel_manager_.ReleaseWriteChannel(other);
+    l2cap_channel_manager_.RegisterWriteChannel(*this);
+  }
+  return *this;
+}
+
 L2capWriteChannel::~L2capWriteChannel() {
   l2cap_channel_manager_.ReleaseWriteChannel(*this);
   ClearQueue();

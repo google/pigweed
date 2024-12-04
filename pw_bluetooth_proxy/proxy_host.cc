@@ -390,6 +390,7 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
 pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
     uint16_t connection_handle,
     uint16_t local_cid,
+    uint16_t remote_cid,
     AclTransportType transport,
     pw::Function<void(pw::span<uint8_t> payload)>&&
         payload_from_controller_fn) {
@@ -403,6 +404,7 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
       /*l2cap_channel_manager=*/l2cap_channel_manager_,
       /*connection_handle=*/connection_handle,
       /*local_cid=*/local_cid,
+      /*remote_cid=*/remote_cid,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn));
 }
 

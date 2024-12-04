@@ -24,8 +24,9 @@ namespace pw::bluetooth::proxy {
 L2capAclUSignalingChannel::L2capAclUSignalingChannel(
     L2capChannelManager& l2cap_channel_manager, uint16_t connection_handle)
     : L2capSignalingChannel(
-          l2cap_channel_manager,
-          connection_handle,
+          /*l2cap_channel_manager=*/l2cap_channel_manager,
+          /*connection_handle=*/connection_handle,
+          /*fixed_cid=*/
           cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING)) {}
 
 bool L2capAclUSignalingChannel::OnCFramePayload(
