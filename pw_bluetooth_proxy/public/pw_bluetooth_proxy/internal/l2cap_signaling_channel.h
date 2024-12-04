@@ -48,6 +48,13 @@ class L2capSignalingChannel : public BasicL2capChannel {
   // by `L2capChannelManager`.
   bool HandleFlowControlCreditInd(emboss::L2capFlowControlCreditIndView cmd);
 
+  // Send L2CAP_FLOW_CONTROL_CREDIT_IND to indicate local endpoint `cid` is
+  // capable of receiving a number of additional K-frames (`credits`).
+  //
+  // Returns PW_STATUS_INVALID_ARGUMENT if CID is invalid.
+  // Returns PW_STATUS_UNAVAILABLE if send could not be queued.
+  Status SendFlowControlCreditInd(uint16_t cid, uint16_t credits);
+
  protected:
   // Process a C-frame.
   //

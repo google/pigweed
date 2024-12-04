@@ -450,7 +450,7 @@ pw::Status AclDataChannel::FragmentedPduFinished(Direction direction,
   return OkStatus();
 }
 
-L2capReadChannel* AclDataChannel::FindSignalingChannel(
+L2capSignalingChannel* AclDataChannel::FindSignalingChannel(
     uint16_t connection_handle, uint16_t local_cid) {
   std::lock_guard lock(mutex_);
 

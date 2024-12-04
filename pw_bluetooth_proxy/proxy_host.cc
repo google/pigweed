@@ -372,13 +372,26 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
     L2capCoc::CocConfig rx_config,
     L2capCoc::CocConfig tx_config,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-    pw::Function<void(L2capCoc::Event event)>&& event_fn) {
+    pw::Function<void(L2capCoc::Event event)>&& event_fn,
+    uint16_t rx_additional_credits) {
   Status status = acl_data_channel_.CreateAclConnection(connection_handle,
                                                         AclTransportType::kLe);
   if (status.IsResourceExhausted()) {
     return pw::Status::Unavailable();
   }
   PW_CHECK(status.ok() || status.IsAlreadyExists());
+  if (rx_additional_credits > 0) {
+    L2capSignalingChannel* signaling_channel =
+        acl_data_channel_.FindSignalingChannel(
+            connection_handle,
+            static_cast<uint16_t>(emboss::L2capFixedCid::LE_U_SIGNALING));
+    PW_CHECK(signaling_channel);
+    status = signaling_channel->SendFlowControlCreditInd(rx_config.cid,
+                                                         rx_additional_credits);
+    if (!status.ok()) {
+      return status;
+    }
+  }
   return L2capCocInternal::Create(l2cap_channel_manager_,
                                   connection_handle,
                                   rx_config,

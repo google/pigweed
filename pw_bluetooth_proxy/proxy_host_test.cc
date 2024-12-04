@@ -30,7 +30,6 @@
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_containers/flat_map.h"
 #include "pw_function/function.h"
-#include "pw_log/log.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 #include "pw_unit_test/framework.h"  // IWYU pragma: keep
@@ -236,6 +235,7 @@ struct CocParameters {
   uint16_t tx_credits = 1;
   pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr;
   pw::Function<void(L2capCoc::Event event)>&& event_fn = nullptr;
+  uint16_t rx_additional_credits = 0;
 };
 
 // Open and return an L2CAP connection-oriented channel managed by `proxy`.
@@ -251,7 +251,8 @@ L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params) {
                              .mps = params.tx_mps,
                              .credits = params.tx_credits},
                             std::move(params.receive_fn),
-                            std::move(params.event_fn));
+                            std::move(params.event_fn),
+                            params.rx_additional_credits);
   return std::move(channel.value());
 }
 
@@ -4123,6 +4124,55 @@ TEST(L2capSignalingTest, CreditIndAddressedToNonManagedChannelForwardedToHost) {
   proxy.HandleH4HciFromController(std::move(flow_control_credit_ind));
 
   EXPECT_EQ(forwards_to_host, 1);
+}
+
+TEST(L2capSignalingTest, RxAdditionalCreditsSentOnL2capCocAcquisition) {
+  struct {
+    uint16_t handle = 123;
+    uint16_t local_cid = 456;
+    uint16_t credits = 3;
+    int sends_called = 0;
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        ++capture.sends_called;
+        PW_TEST_ASSERT_OK_AND_ASSIGN(
+            auto acl,
+            MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
+        EXPECT_EQ(acl.header().handle().Read(), capture.handle);
+        EXPECT_EQ(
+            acl.data_total_length().Read(),
+            emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+                emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+        emboss::CFrameView cframe = emboss::MakeCFrameView(
+            acl.payload().BackingStorage().data(), acl.payload().SizeInBytes());
+        EXPECT_EQ(cframe.pdu_length().Read(),
+                  emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+        // 0x0005 = LE-U fixed signaling channel ID.
+        EXPECT_EQ(cframe.channel_id().Read(), 0x0005);
+        emboss::L2capFlowControlCreditIndView ind =
+            emboss::MakeL2capFlowControlCreditIndView(
+                cframe.payload().BackingStorage().data(),
+                cframe.payload().SizeInBytes());
+        EXPECT_EQ(ind.cid().Read(), capture.local_cid);
+        EXPECT_EQ(ind.credits().Read(), capture.credits);
+      });
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  // Allow proxy to reserve 1 LE credit.
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
+
+  L2capCoc channel =
+      BuildCoc(proxy,
+               CocParameters{.handle = capture.handle,
+                             .local_cid = capture.local_cid,
+                             .rx_additional_credits = capture.credits});
+
+  EXPECT_EQ(capture.sends_called, 1);
 }
 
 // ########## AcluSignalingChannelTest

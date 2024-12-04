@@ -19,6 +19,7 @@
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
 #include "pw_bluetooth_proxy/internal/l2cap_aclu_signaling_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h"
+#include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_containers/vector.h"
 #include "pw_result/result.h"
@@ -35,6 +36,15 @@ namespace pw::bluetooth::proxy {
 // buffers.
 class AclDataChannel {
  public:
+  // Direction a packet is traveling on ACL transport.
+  enum class Direction {
+    kFromController,
+    kFromHost,
+
+    // Must be last member
+    kMaxDirections,
+  };
+
   AclDataChannel(HciTransport& hci_transport,
                  L2capChannelManager& l2cap_channel_manager,
                  uint16_t le_acl_credits_to_reserve,
@@ -121,15 +131,6 @@ class AclDataChannel {
   pw::Status CreateAclConnection(uint16_t connection_handle,
                                  AclTransportType transport);
 
-  // Direction a packet is traveling on ACL transport.
-  enum class Direction {
-    kFromController,
-    kFromHost,
-
-    // Must be last member
-    kMaxDirections,
-  };
-
   // Sets `is_receiving_fragmented_pdu` flag for connection in a given
   // direction.
   //
@@ -155,8 +156,8 @@ class AclDataChannel {
 
   // Returns the signaling channel for this link if `connection_handle`
   // references a tracked connection and `local_cid` matches its id.
-  L2capReadChannel* FindSignalingChannel(uint16_t connection_handle,
-                                         uint16_t local_cid);
+  L2capSignalingChannel* FindSignalingChannel(uint16_t connection_handle,
+                                              uint16_t local_cid);
 
  private:
   // An active logical link on ACL logical transport.
@@ -195,7 +196,7 @@ class AclDataChannel {
       is_receiving_fragmented_pdu_[cpp23::to_underlying(direction)] = new_val;
     }
 
-    L2capReadChannel* signaling_channel() {
+    L2capSignalingChannel* signaling_channel() {
       if (transport_ == AclTransportType::kLe) {
         return &leu_signaling_channel_;
       } else {

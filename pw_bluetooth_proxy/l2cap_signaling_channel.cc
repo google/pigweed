@@ -15,10 +15,14 @@
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 
 #include "pw_bluetooth/emboss_util.h"
+#include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
+#include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
 #include "pw_log/log.h"
+#include "pw_status/status.h"
+#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -103,6 +107,36 @@ bool L2capSignalingChannel::HandleFlowControlCreditInd(
   }
 
   return false;
+}
+
+Status L2capSignalingChannel::SendFlowControlCreditInd(uint16_t cid,
+                                                       uint16_t credits) {
+  if (cid == 0) {
+    PW_LOG_ERROR("Tried to send signaling packet on invalid CID 0x0.");
+    return Status::InvalidArgument();
+  }
+
+  PW_TRY_ASSIGN(H4PacketWithH4 h4_packet,
+                PopulateTxL2capPacket(
+                    emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes()));
+  PW_TRY_ASSIGN(
+      auto acl,
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan()));
+  emboss::CFrameWriter cframe = emboss::MakeCFrameView(
+      acl.payload().BackingStorage().data(), acl.payload().SizeInBytes());
+  emboss::L2capFlowControlCreditIndWriter ind =
+      emboss::MakeL2capFlowControlCreditIndView(
+          cframe.payload().BackingStorage().data(),
+          cframe.payload().SizeInBytes());
+  ind.command_header().code().Write(
+      emboss::L2capSignalingPacketCode::FLOW_CONTROL_CREDIT_IND);
+  ind.command_header().data_length().Write(
+      emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes() -
+      emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+  ind.cid().Write(cid);
+  ind.credits().Write(credits);
+
+  return QueuePacket(std::move(h4_packet));
 }
 
 }  // namespace pw::bluetooth::proxy
