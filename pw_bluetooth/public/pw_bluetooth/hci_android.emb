@@ -374,6 +374,102 @@ struct StopA2dpOffloadCommand:
   let vendor_size = AndroidCommandHeader.$size_in_bytes
   0 [+vendor_size]  AndroidCommandHeader  vendor_command
 
+# ----------------------- Bluetooth Quality Report command ---------------------
+
+
+enum BqrReportAction:
+  ADD            = 0x00
+  DELETE         = 0x01
+  CLEAR          = 0x02
+  ONE_TIME_QUERY = 0x03
+
+
+bits BqrQualityEventMask:
+  0  [+1]  Flag  enable_quality_monitoring_mode
+  1  [+1]  Flag  enable_approaching_lsto_event
+  2  [+1]  Flag  enable_a2dp_audio_choppy_event
+  3  [+1]  Flag  enable_sco_voice_choppy_event
+  4  [+1]  Flag  enable_root_inflammation_event
+  5  [+1]  Flag  enable_energy_monitoring_mode
+  6  [+1]  Flag  enable_le_audio_choppy_event
+  7  [+1]  Flag  enable_connect_fail_event
+  8  [+1]  Flag  enable_advance_rf_stats_mode_event_trigger
+  9  [+1]  Flag  enable_advance_rf_stats_periodic_report
+  # 10 ~ 14 Reserved
+  15 [+1]  Flag  enable_vendor_specific_quality_events
+  16 [+1]  Flag  enable_lmp_ll_message_trace
+  17 [+1]  Flag  enable_bluetooth_multi_link_coex_scheduling_trace
+  18 [+1]  Flag  enable_controller_debug_information_mechanism
+  # 19 ~ 30 Reserved
+  31 [+1]  Flag  enable_vendor_specific_trace
+
+
+struct BluetoothQualityReportCommand:
+  0     [+hci.CommandHeader.$size_in_bytes]     hci.CommandHeader    header
+
+  $next [+1]                                    BqrReportAction      bqr_report_action
+    -- Action to add / delete reporting of quality event(s) set in
+    -- BQR_Quality_Event_Mask parameter, or clear all.
+    -- Delete will clear specific quality event(s) reporting.
+    -- Clear will clear all quality events reporting (BQR_Quality_Event_Mask
+    -- parameter can be ignored).
+
+  $next [+4]  bits:
+
+    0     [+BqrQualityEventMask.$size_in_bits]  BqrQualityEventMask  bqr_quality_event_mask
+
+  $next [+2]                                    UInt                 bqr_minimum_report_interval
+    -- Define the minimum time interval of quality event reporting for the
+    -- selected quality event(s). The controller Firmware should not report the
+    -- next event within the defined time interval. The interval setting shall
+    -- be respective and dedicated for the quality event(s) which are being
+    -- added.
+    --
+    -- Unit: ms
+    -- Default: 0 (No limitation for the interval.)
+    -- Range: 0 ~ 65535 ms
+    [requires: 0 <= this <= 65535]
+
+  $next [+4]                                    UInt                 bqr_vendor_specific_quality_event_mask
+    -- Bit masks for the selected vendor-specific quality event reporting.
+    -- This parameter is valid only when bit 15 of BQR_Quality_Event_Mask is
+    -- set.
+
+  $next [+4]                                    UInt                 bqr_vendor_specific_trace_mask
+    -- Bit masks for the selected vendor-specific trace reporting.
+    -- This parameter is valid only when bit 31 of BQR_Quality_Event_Mask is
+    -- set.
+
+  $next [+4]                                    UInt                 report_interval_multiple
+    -- The multiplier for BQR_Minimum_Report_Interval. When this value >= 1,
+    -- the BQR Report Interval follows the format BQR Report Interval =
+    -- BQR_Minimum_Report_Interval x Report_interval_multiple. The controller
+    -- Firmware must not report the next event within the defined time interval.
+    -- The interval setting is specifically dedicated for the added quality
+    -- event(s).
+    --
+    -- Unit: ms
+    -- Default: 1
+    -- Range: 0 ~ 4294967295 (0: is equal set to 1)
+    --
+    -- Note: if the setting of BQR_Report_Interval is larger than the ability
+    -- of the controller, the controller must return the maximum
+    -- BQR_Report_Interval time on the completion of the command.
+
+
+struct BluetoothQualityReportCommandCompleteEvent:
+  0     [+hci.CommandCompleteEvent.$size_in_bytes]  hci.CommandCompleteEvent  command_complete
+  $next [+1]                                        hci.StatusCode            status
+  $next [+4]  bits:
+    0     [+BqrQualityEventMask.$size_in_bits]      BqrQualityEventMask       current_quality_event_mask
+
+  $next [+4]                                        UInt                      current_vendor_specific_quality_event_mask
+  $next [+4]                                        UInt                      current_vendor_specific_trace_mask
+  $next [+4]                                        UInt                      bqr_report_interval
+    -- The setting of BQR_Report_interval. It must be the minimum value between
+    -- BQR_Minimum_Report_Interval * Report_interval_multiple or the maximum
+    -- support interval of the controller.
+
 # ----------------------- Multiple Advertising ---------------------------------
 
 
