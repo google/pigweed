@@ -141,18 +141,32 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_library(
+pw_facade(
     name = "rpc_server",
-    srcs = [
-        "hdlc_rpc_server.cc",
-    ],
     hdrs = [
         "public/pw_system/rpc_server.h",
     ],
+    backend = ":rpc_server_backend",
     strip_include_prefix = "public",
+    deps = [
+        "//pw_thread:thread_core",
+    ],
+)
+
+label_flag(
+    name = "rpc_server_backend",
+    build_setting_default = "//pw_system:hdlc_rpc_server",
+)
+
+cc_library(
+    name = "hdlc_rpc_server",
+    srcs = [
+        "hdlc_rpc_server.cc",
+    ],
     deps = [
         ":config",
         ":io",
+        ":rpc_server.facade",
         "//pw_assert",
         "//pw_hdlc",
         "//pw_hdlc:default_addresses",
