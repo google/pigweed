@@ -51,6 +51,7 @@ pw_test("peripheral_test") {
   deps = [
     ":peripheral",
     "$dir_pw_async:fake_dispatcher",
+    "$dir_pw_async2:pend_func_task",
     "host/gap:testing",
   ]
 }

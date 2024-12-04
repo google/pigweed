@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/peripheral.h"
 
 #include "pw_async/fake_dispatcher.h"
+#include "pw_async2/pend_func_task.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/fake_adapter.h"
 #include "pw_unit_test/framework.h"
 
@@ -98,7 +99,8 @@ class PeripheralTest : public ::testing::Test {
                                                  async_dispatcher_};
 };
 
-TEST_F(PeripheralTest, StartAdvertisingWithName) {
+TEST_F(PeripheralTest,
+       StartAdvertisingWithNameAndDestroyAdvertisedPeripheralStopsAdvertising) {
   Peripheral2::AdvertisingParameters parameters;
   parameters.data.name = "pigweed";
 
@@ -115,6 +117,10 @@ TEST_F(PeripheralTest, StartAdvertisingWithName) {
   EXPECT_FALSE(advertisement.include_tx_power_level);
   EXPECT_FALSE(advertisement.connectable);
   EXPECT_FALSE(advertisement.anonymous);
+
+  advertised_peripheral.reset();
+  dispatcher().RunUntilIdle();
+  ASSERT_EQ(adapter().fake_le()->registered_advertisements().size(), 0u);
 }
 
 TEST_F(PeripheralTest, StartAdvertisingWithTooLongName) {
@@ -401,4 +407,35 @@ TEST_F(PeripheralTest, StartAdvertisingFailureInternalError) {
   ASSERT_TRUE(result.has_value());
   ASSERT_FALSE(result.value().has_value());
   EXPECT_EQ(result.value().error(), AdvertiseError::kScanResponseDataTooLong);
+}
+
+TEST_F(PeripheralTest,
+       StartAdvertisingAndCallAdvertisedPeripheralStopAdvertising) {
+  Peripheral2::AdvertisingParameters parameters;
+
+  AdvertisedPeripheral2::Ptr advertised_peripheral =
+      AdvertiseExpectSuccess(parameters);
+  ASSERT_EQ(adapter().fake_le()->registered_advertisements().size(), 1u);
+
+  advertised_peripheral->StopAdvertising();
+
+  pw::async2::PendFuncTask stop_task(
+      [&advertised_peripheral](pw::async2::Context& cx) -> pw::async2::Poll<> {
+        pw::async2::Poll<pw::Status> pend = advertised_peripheral->PendStop(cx);
+        if (pend.IsReady()) {
+          EXPECT_TRUE(pend->ok());
+          return pw::async2::Ready();
+        }
+        return pw::async2::Pending();
+      });
+  dispatcher2().Post(stop_task);
+
+  EXPECT_EQ(dispatcher2().RunUntilStalled(stop_task), pw::async2::Pending());
+  ASSERT_EQ(adapter().fake_le()->registered_advertisements().size(), 1u);
+
+  // Process the stop request.
+  dispatcher().RunUntilIdle();
+  // Process the waker wake.
+  EXPECT_EQ(dispatcher2().RunUntilStalled(stop_task), pw::async2::Ready());
+  ASSERT_EQ(adapter().fake_le()->registered_advertisements().size(), 0u);
 }

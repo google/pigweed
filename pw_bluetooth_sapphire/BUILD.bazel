@@ -283,6 +283,7 @@ pw_cc_test(
     deps = [
         ":peripheral",
         "//pw_async:fake_dispatcher",
+        "//pw_async2:pend_func_task",
         "//pw_bluetooth_sapphire/host/gap:testing",
     ],
 )

@@ -33,40 +33,54 @@ class Peripheral final : public pw::bluetooth::low_energy::Peripheral2 {
   /// Thread safe.
   /// The AdvertisedPeripheral2 returned on success is thread safe.
   async2::OnceReceiver<AdvertiseResult> Advertise(
-      const AdvertisingParameters& parameters) override;
+      const AdvertisingParameters& parameters) override
+      PW_LOCKS_EXCLUDED(lock());
+
+  static pw::sync::Mutex& lock();
 
  private:
+  class Advertisement;
+
   // Thin client handle for an active advertisement.
   // Thread safe.
   class AdvertisedPeripheralImpl final
       : public pw::bluetooth::low_energy::AdvertisedPeripheral2 {
    public:
-    AdvertisedPeripheralImpl(bt::gap::AdvertisementId id) : id_(id) {}
+    AdvertisedPeripheralImpl(bt::gap::AdvertisementId id,
+                             Peripheral* peripheral)
+        : id_(id), peripheral_(peripheral) {}
     ~AdvertisedPeripheralImpl() override {
-      // TODO: https://pwbug.dev/377301546 - Implement advertisement stopping.
+      std::lock_guard lock(Peripheral::lock());
+      if (peripheral_) {
+        peripheral_->OnAdvertisedPeripheralDestroyedLocked(id_);
+      }
     }
 
-    void Release() override { delete this; }
-
-   private:
     // AdvertisedPeripheral2 overrides:
     async2::Poll<pw::bluetooth::low_energy::Connection2::Ptr> PendConnection(
         async2::Context& cx) override {
       // TODO: https://pwbug.dev/377301546 - Implement connection handling.
       return async2::Pending();
     }
-    void StopAdvertising() override {
-      // TODO: https://pwbug.dev/377301546 - Implement advertisement stopping.
-    }
-    async2::Poll<pw::Status> PendStop(async2::Context& cx) override {
-      // TODO: https://pwbug.dev/377301546 - Implement advertisement stopping.
-      return async2::Pending();
-    }
+    void StopAdvertising() override;
+    async2::Poll<pw::Status> PendStop(async2::Context& cx) override;
+    void Release() override { delete this; }
 
-    [[maybe_unused]] bt::gap::AdvertisementId id_;
+   private:
+    friend class Advertisement;
+
+    const bt::gap::AdvertisementId id_;
+
+    // Set to null if the advertisement is stopped or Peripheral is destroyed.
+    Peripheral* peripheral_ PW_GUARDED_BY(lock());
+
+    std::optional<pw::Status> stop_status_ PW_GUARDED_BY(lock());
+
+    // Waker shared by PendConnection() and PendStop().
+    async2::Waker waker_ PW_GUARDED_BY(lock());
   };
 
-  // Active advertisement state.
+  // Active advertisement state. Must only be destroyed on the Bluetooth thread.
   class Advertisement final {
    public:
     Advertisement(bt::gap::AdvertisementInstance&& instance,
@@ -74,10 +88,33 @@ class Peripheral final : public pw::bluetooth::low_energy::Peripheral2 {
         : advertised_peripheral_(advertised_peripheral),
           instance_(std::move(instance)) {}
 
+    // Must only be destroyed on Bluetooth thread.
+    ~Advertisement();
+
+    void OnAdvertisedPeripheralDestroyedLocked()
+        PW_EXCLUSIVE_LOCKS_REQUIRED(lock()) {
+      advertised_peripheral_ = nullptr;
+    }
+
+    void OnStopLocked(pw::Status status) PW_EXCLUSIVE_LOCKS_REQUIRED(lock());
+
    private:
-    [[maybe_unused]] AdvertisedPeripheralImpl* advertised_peripheral_;
+    friend class AdvertisedPeripheralImpl;
+
+    AdvertisedPeripheralImpl* advertised_peripheral_;
+
+    // Must only be modified/destroyed on the Bluetooth thread.
     bt::gap::AdvertisementInstance instance_;
   };
+
+  // Thread safe.
+  void OnAdvertisedPeripheralDestroyedLocked(
+      bt::gap::AdvertisementId advertisement_id)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(lock());
+
+  // Thread safe. The lock may be held when calling this function as the stop
+  // message is immediately posted to the Bluetooth thread.
+  void StopAdvertising(bt::gap::AdvertisementId advertisement_id);
 
   // Always called on Bluetooth thread.
   void OnAdvertiseResult(bt::gap::AdvertisementInstance instance,
@@ -88,14 +125,14 @@ class Peripheral final : public pw::bluetooth::low_energy::Peripheral2 {
   void OnConnection(bt::gap::AdvertisementId advertisement_id,
                     bt::gap::Adapter::LowEnergy::ConnectionResult result);
 
-  // Dispatcher for Bluetooth thread.
+  // Dispatcher for Bluetooth thread. Thread safe.
   pw::async::HeapDispatcher dispatcher_;
 
   // Must only be used on the Bluetooth thread.
   bt::gap::Adapter::WeakPtr adapter_;
 
-  // Must only be used on the Bluetooth thread.
-  std::unordered_map<bt::gap::AdvertisementId, Advertisement> advertisements_;
+  std::unordered_map<bt::gap::AdvertisementId, Advertisement> advertisements_
+      PW_GUARDED_BY(lock());
 
   // Must only be used on the Bluetooth thread.
   WeakSelf<Peripheral> weak_factory_{this};

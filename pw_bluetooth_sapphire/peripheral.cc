@@ -16,6 +16,8 @@
 
 namespace pw::bluetooth_sapphire {
 
+static pw::sync::Mutex g_peripheral_lock;
+
 using AdvertiseError = pw::bluetooth::low_energy::Peripheral2::AdvertiseError;
 using LegacyAdvertising =
     pw::bluetooth::low_energy::Peripheral2::LegacyAdvertising;
@@ -111,7 +113,16 @@ Peripheral::Peripheral(bt::gap::Adapter::WeakPtr adapter,
                        pw::async::Dispatcher& dispatcher)
     : dispatcher_(dispatcher), adapter_(std::move(adapter)) {}
 
-Peripheral::~Peripheral() {}
+Peripheral::~Peripheral() {
+  weak_factory_.InvalidatePtrs();
+  {
+    std::lock_guard guard(lock());
+    for (auto& [_, adv] : advertisements_) {
+      adv.OnStopLocked(pw::Status::Cancelled());
+    }
+    advertisements_.clear();
+  }
+}
 
 async2::OnceReceiver<Peripheral::AdvertiseResult> Peripheral::Advertise(
     const AdvertisingParameters& parameters) {
@@ -245,6 +256,69 @@ async2::OnceReceiver<Peripheral::AdvertiseResult> Peripheral::Advertise(
   return std::move(result_receiver);
 }
 
+pw::sync::Mutex& Peripheral::lock() { return g_peripheral_lock; }
+
+void Peripheral::AdvertisedPeripheralImpl::StopAdvertising() {
+  std::lock_guard guard(Peripheral::lock());
+  if (!peripheral_) {
+    return;
+  }
+
+  peripheral_->StopAdvertising(id_);
+}
+
+async2::Poll<pw::Status> Peripheral::AdvertisedPeripheralImpl::PendStop(
+    async2::Context& cx) {
+  std::lock_guard guard(Peripheral::lock());
+  if (stop_status_.has_value()) {
+    return async2::Ready(stop_status_.value());
+  }
+  PW_ASYNC_STORE_WAKER(cx, waker_, "AdvPeripheralPendStop");
+  return async2::Pending();
+}
+
+Peripheral::Advertisement::~Advertisement() { OnStopLocked(OkStatus()); }
+
+void Peripheral::Advertisement::OnStopLocked(pw::Status status) {
+  if (!advertised_peripheral_) {
+    return;
+  }
+
+  advertised_peripheral_->stop_status_ = status;
+  advertised_peripheral_->peripheral_ = nullptr;
+  std::move(advertised_peripheral_->waker_).Wake();
+  advertised_peripheral_ = nullptr;
+}
+
+void Peripheral::OnAdvertisedPeripheralDestroyedLocked(
+    bt::gap::AdvertisementId advertisement_id) {
+  auto iter = advertisements_.find(advertisement_id);
+  if (iter == advertisements_.end()) {
+    return;
+  }
+  iter->second.OnAdvertisedPeripheralDestroyedLocked();
+  StopAdvertising(advertisement_id);
+}
+
+void Peripheral::StopAdvertising(bt::gap::AdvertisementId advertisement_id) {
+  // Post to BT dispatcher for thread safety.
+  pw::Status post_status =
+      dispatcher_.Post([self = self_, id = advertisement_id](
+                           pw::async::Context&, pw::Status status) {
+        if (!self.is_alive() || !status.ok()) {
+          return;
+        }
+        std::lock_guard guard(Peripheral::lock());
+        // TODO: https://pwbug.dev/377301546 - Implement a callback for when
+        // advertising is actually stopped. This just destroys the
+        // AdvertisementInstance and does not wait for advertising to actually
+        // stop, so it does not properly implement
+        // AdvertisedPeripheral2::StopAdvertising().
+        self->advertisements_.erase(id);
+      });
+  PW_CHECK_OK(post_status);
+}
+
 void Peripheral::OnAdvertiseResult(
     bt::gap::AdvertisementInstance instance,
     bt::hci::Result<> result,
@@ -256,9 +330,10 @@ void Peripheral::OnAdvertiseResult(
 
   bt::gap::AdvertisementId id = instance.id();
 
-  AdvertisedPeripheralImpl* impl = new AdvertisedPeripheralImpl(id);
+  AdvertisedPeripheralImpl* impl = new AdvertisedPeripheralImpl(id, this);
   AdvertisedPeripheral2::Ptr advertised_peripheral(impl);
 
+  std::lock_guard guard(lock());
   auto [iter, inserted] =
       advertisements_.try_emplace(id, std::move(instance), impl);
   PW_CHECK(inserted);
