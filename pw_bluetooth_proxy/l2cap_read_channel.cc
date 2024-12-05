@@ -29,16 +29,15 @@ L2capReadChannel::L2capReadChannel(L2capReadChannel&& other)
 }
 
 L2capReadChannel& L2capReadChannel::operator=(L2capReadChannel&& other) {
-  if (this != &other) {
-    PW_CHECK(!l2cap_channel_manager_.ReleaseReadChannel(*this),
-             "Move assignment operator called on channel that is still active "
-             "(still registered with L2capChannelManager).");
-    connection_handle_ = other.connection_handle();
-    local_cid_ = other.local_cid();
-    payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
-    l2cap_channel_manager_.ReleaseReadChannel(other);
-    l2cap_channel_manager_.RegisterReadChannel(*this);
+  if (this == &other) {
+    return *this;
   }
+  l2cap_channel_manager_.ReleaseReadChannel(*this);
+  connection_handle_ = other.connection_handle();
+  local_cid_ = other.local_cid();
+  payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
+  l2cap_channel_manager_.ReleaseReadChannel(other);
+  l2cap_channel_manager_.RegisterReadChannel(*this);
   return *this;
 }
 
