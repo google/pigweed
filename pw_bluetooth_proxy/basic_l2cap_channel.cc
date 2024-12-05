@@ -29,8 +29,9 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
     uint16_t remote_cid,
     pw::Function<void(pw::span<uint8_t> payload)>&&
         payload_from_controller_fn) {
-  if (!L2capReadChannel::AreValidParameters(connection_handle, local_cid) ||
-      !L2capWriteChannel::AreValidParameters(connection_handle, remote_cid)) {
+  if (!AreValidParameters(/*connection_handle=*/connection_handle,
+                          /*local_cid=*/local_cid,
+                          /*remote_cid=*/remote_cid)) {
     return pw::Status::InvalidArgument();
   }
 
@@ -74,14 +75,13 @@ BasicL2capChannel::BasicL2capChannel(
     uint16_t local_cid,
     uint16_t remote_cid,
     pw::Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn)
-    : L2capReadChannel(l2cap_channel_manager,
-                       std::move(payload_from_controller_fn),
-                       connection_handle,
-                       local_cid),
-      L2capWriteChannel(l2cap_channel_manager,
-                        connection_handle,
-                        AclTransportType::kLe,
-                        remote_cid) {}
+    : L2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
+                   /*connection_handle=*/connection_handle,
+                   /*transport=*/AclTransportType::kLe,
+                   /*local_cid=*/local_cid,
+                   /*remote_cid=*/remote_cid,
+                   /*payload_from_controller_fn=*/
+                   std::move(payload_from_controller_fn)) {}
 
 bool BasicL2capChannel::HandlePduFromController(pw::span<uint8_t> bframe) {
   Result<emboss::BFrameWriter> bframe_view =

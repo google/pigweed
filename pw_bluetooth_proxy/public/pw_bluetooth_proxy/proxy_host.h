@@ -277,7 +277,7 @@ class ProxyHost {
   bool CheckForFragmentedStart(AclDataChannel::Direction direction,
                                emboss::AclDataFrameWriter& acl,
                                emboss::BasicL2capHeaderView& l2cap_header,
-                               L2capReadChannel* channel);
+                               L2capChannel* channel);
 
   // For sending non-ACL data to the host and controller. ACL traffic shall be
   // sent through the `acl_data_channel_`.

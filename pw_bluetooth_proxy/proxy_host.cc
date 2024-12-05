@@ -92,7 +92,7 @@ bool ProxyHost::CheckForFragmentedStart(
     AclDataChannel::Direction direction,
     emboss::AclDataFrameWriter& acl,
     emboss::BasicL2capHeaderView& l2cap_header,
-    L2capReadChannel* channel) {
+    L2capChannel* channel) {
   const uint16_t handle = acl.header().handle().Read();
   const emboss::AclDataPacketBoundaryFlag boundary_flag =
       acl.header().packet_boundary_flag().Read();
@@ -193,7 +193,7 @@ void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
     return;
   }
 
-  L2capReadChannel* channel = l2cap_channel_manager_.FindReadChannel(
+  L2capChannel* channel = l2cap_channel_manager_.FindChannelByLocalCid(
       acl->header().handle().Read(), l2cap_header.channel_id().Read());
   if (!channel) {
     hci_transport_.SendToHost(std::move(h4_packet));
@@ -342,7 +342,7 @@ void ProxyHost::HandleAclFromHost(H4PacketWithH4&& h4_packet) {
     return;
   }
 
-  L2capReadChannel* channel = acl_data_channel_.FindSignalingChannel(
+  L2capChannel* channel = acl_data_channel_.FindSignalingChannel(
       acl->header().handle().Read(), l2cap_header.channel_id().Read());
   if (!channel) {
     hci_transport_.SendToController(std::move(h4_packet));

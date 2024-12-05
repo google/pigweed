@@ -21,7 +21,7 @@
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth/rfcomm_frames.emb.h"
-#include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
+#include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_bluetooth_proxy/internal/rfcomm_fcs.h"
 #include "pw_log/log.h"
 #include "pw_status/try.h"
@@ -29,8 +29,7 @@
 namespace pw::bluetooth::proxy {
 
 RfcommChannel::RfcommChannel(RfcommChannel&& other)
-    : L2capWriteChannel(std::move(static_cast<L2capWriteChannel&>(other))),
-      L2capReadChannel(std::move(static_cast<L2capReadChannel&>(other))),
+    : L2capChannel(static_cast<RfcommChannel&&>(other)),
       rx_config_(other.rx_config_),
       tx_config_(other.tx_config_),
       channel_number_(other.channel_number_) {
@@ -134,8 +133,7 @@ std::optional<H4PacketWithH4> RfcommChannel::DequeuePacket() {
     return std::nullopt;
   }
 
-  std::optional<H4PacketWithH4> maybe_packet =
-      L2capWriteChannel::DequeuePacket();
+  std::optional<H4PacketWithH4> maybe_packet = L2capChannel::DequeuePacket();
   if (maybe_packet.has_value()) {
     --tx_credits_;
   }
@@ -149,9 +147,9 @@ Result<RfcommChannel> RfcommChannel::Create(
     Config tx_config,
     uint8_t channel_number,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn) {
-  if (!L2capWriteChannel::AreValidParameters(connection_handle,
-                                             tx_config.cid) ||
-      !L2capReadChannel::AreValidParameters(connection_handle, rx_config.cid)) {
+  if (!AreValidParameters(/*connection_handle=*/connection_handle,
+                          /*local_cid=*/rx_config.cid,
+                          /*remote_cid=*/tx_config.cid)) {
     return Status::InvalidArgument();
   }
 
@@ -260,14 +258,12 @@ RfcommChannel::RfcommChannel(
     Config tx_config,
     uint8_t channel_number,
     pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn)
-    : L2capWriteChannel(l2cap_channel_manager,
-                        connection_handle,
-                        AclTransportType::kBrEdr,
-                        tx_config.cid),
-      L2capReadChannel(l2cap_channel_manager,
-                       std::move(receive_fn),
-                       connection_handle,
-                       rx_config.cid),
+    : L2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
+                   /*connection_handle=*/connection_handle,
+                   /*transport=*/AclTransportType::kBrEdr,
+                   /*local_cid=*/rx_config.cid,
+                   /*remote_cid=*/tx_config.cid,
+                   /*payload_from_controller_fn=*/std::move(receive_fn)),
       rx_config_(rx_config),
       tx_config_(tx_config),
       channel_number_(channel_number),

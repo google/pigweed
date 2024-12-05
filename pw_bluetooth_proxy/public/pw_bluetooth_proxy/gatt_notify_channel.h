@@ -14,13 +14,13 @@
 
 #pragma once
 
-#include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
+#include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 
 namespace pw::bluetooth::proxy {
 
 /// `GattNotifyChannel` supports sending GATT characteristic notifications to a
 /// remote peer.
-class GattNotifyChannel : public L2capWriteChannel {
+class GattNotifyChannel : public L2capChannel {
  public:
   /// Send a GATT Notify to the remote peer.
   ///
@@ -42,6 +42,16 @@ class GattNotifyChannel : public L2capWriteChannel {
       L2capChannelManager& l2cap_channel_manager,
       uint16_t connection_handle,
       uint16_t attribute_handle);
+
+  bool HandlePduFromController(pw::span<uint8_t>) override {
+    // Forward all packets to host.
+    return false;
+  }
+
+  bool HandlePduFromHost(pw::span<uint8_t>) override {
+    // Forward all packets to controller.
+    return false;
+  }
 
  private:
   // TODO: https://pwbug.dev/349602172 - Define ATT CID in pw_bluetooth.

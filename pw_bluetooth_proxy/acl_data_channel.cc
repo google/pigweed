@@ -116,7 +116,7 @@ void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
     read_buffer_event.total_num_acl_data_packets().Write(host_max);
   }
 
-  l2cap_channel_manager_.DrainWriteChannelQueues();
+  l2cap_channel_manager_.DrainChannelQueues();
 }
 
 template <class EventT>
@@ -132,7 +132,7 @@ void AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
   }
 
   // Send packets that may have queued before we acquired any LE ACL credits.
-  l2cap_channel_manager_.DrainWriteChannelQueues();
+  l2cap_channel_manager_.DrainChannelQueues();
 }
 
 template void
@@ -204,7 +204,7 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
   }
 
   if (did_reclaim_credits) {
-    l2cap_channel_manager_.DrainWriteChannelQueues();
+    l2cap_channel_manager_.DrainChannelQueues();
   }
   if (should_send_to_host) {
     hci_transport_.SendToHost(std::move(h4_packet));

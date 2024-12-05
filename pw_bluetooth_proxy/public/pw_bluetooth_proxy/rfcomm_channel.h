@@ -14,8 +14,7 @@
 
 #pragma once
 
-#include "pw_bluetooth_proxy/internal/l2cap_read_channel.h"
-#include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
+#include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_sync/mutex.h"
 
 namespace pw::bluetooth::proxy {
@@ -26,7 +25,7 @@ namespace pw::bluetooth::proxy {
 /// BasicL2capChannel instead of inheritance.
 ///
 /// This implementation requires use of RFCOMM credit based flow control.
-class RfcommChannel final : public L2capWriteChannel, public L2capReadChannel {
+class RfcommChannel final : public L2capChannel {
  public:
   /// Parameters for a direction of packet flow in an `RfcommChannel`.
   struct Config {

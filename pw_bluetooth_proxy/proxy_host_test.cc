@@ -3873,7 +3873,7 @@ TEST(L2capCocQueueTest, NocpEventDrainsQueue) {
   EXPECT_EQ(sends_called, 2 * L2capCoc::QueueCapacity());
 }
 
-TEST(L2capCocQueueTest, RemovingLrdWriteChannelDoesNotInvalidateRoundRobin) {
+TEST(L2capCocQueueTest, RemovingLrdChannelDoesNotInvalidateRoundRobin) {
   size_t sends_called = 0;
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
@@ -3904,9 +3904,9 @@ TEST(L2capCocQueueTest, RemovingLrdWriteChannelDoesNotInvalidateRoundRobin) {
       CocParameters{
           .handle = handle, .remote_cid = remote_cids[2], .tx_credits = 1});
 
-  // We have 3 channels. Make it so LRD write channel iterator is on the
-  // middle channel, then release that channel and ensure the other two are
-  // still reached in the round robin.
+  // We have 3 channels. Make it so LRD channel iterator is on the middle
+  // channel, then release that channel and ensure the other two are still
+  // reached in the round robin.
 
   // Queue a packet in middle channel.
   for (size_t i = 0; i < L2capCoc::QueueCapacity() + 1; ++i) {
@@ -3914,7 +3914,7 @@ TEST(L2capCocQueueTest, RemovingLrdWriteChannelDoesNotInvalidateRoundRobin) {
   }
   EXPECT_EQ(sends_called, L2capCoc::QueueCapacity());
 
-  // Make middle channel the LRD write channel.
+  // Make middle channel the LRD channel.
   PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
       proxy, FlatMap<uint16_t, uint16_t, 1>({{{handle, 1}}})));
   EXPECT_EQ(sends_called, L2capCoc::QueueCapacity() + 1);
@@ -3924,7 +3924,7 @@ TEST(L2capCocQueueTest, RemovingLrdWriteChannelDoesNotInvalidateRoundRobin) {
   EXPECT_EQ(chan_right.Write({}), PW_STATUS_OK);
   EXPECT_EQ(sends_called, L2capCoc::QueueCapacity() + 1);
 
-  // Drop middle channel. LRD write channel iterator should still be valid.
+  // Drop middle channel. LRD write iterator should still be valid.
   chan_middle.reset();
 
   // Confirm packets in remaining two channels are sent in round robin.

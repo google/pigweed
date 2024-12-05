@@ -94,8 +94,8 @@ bool L2capSignalingChannel::HandleFlowControlCreditInd(
     return false;
   }
 
-  L2capWriteChannel* found_channel = l2cap_channel_manager_.FindWriteChannel(
-      L2capReadChannel::connection_handle(), cmd.cid().Read());
+  L2capChannel* found_channel = l2cap_channel_manager_.FindChannelByRemoteCid(
+      connection_handle(), cmd.cid().Read());
   if (found_channel) {
     // If this L2CAP_FLOW_CONTROL_CREDIT_IND is addressed to a channel managed
     // by the proxy, it must be an L2CAP connection-oriented channel.
@@ -105,7 +105,6 @@ bool L2capSignalingChannel::HandleFlowControlCreditInd(
     coc_ptr->AddCredits(cmd.credits().Read());
     return true;
   }
-
   return false;
 }
 

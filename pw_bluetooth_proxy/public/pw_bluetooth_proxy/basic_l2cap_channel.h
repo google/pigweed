@@ -14,12 +14,11 @@
 
 #pragma once
 
-#include "pw_bluetooth_proxy/internal/l2cap_read_channel.h"
-#include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
+#include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 
 namespace pw::bluetooth::proxy {
 
-class BasicL2capChannel : public L2capReadChannel, public L2capWriteChannel {
+class BasicL2capChannel : public L2capChannel {
  public:
   // TODO: https://pwbug.dev/360929142 - Take the MTU. Signaling channels would
   // provide MTU_SIG.

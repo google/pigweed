@@ -69,25 +69,29 @@ pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
     uint16_t attribute_handle) {
-  if (!L2capWriteChannel::AreValidParameters(connection_handle,
-                                             kAttributeProtocolCID)) {
+  if (!AreValidParameters(/*connection_handle=*/connection_handle,
+                          /*local_cid=*/kAttributeProtocolCID,
+                          /*remote_cid=*/kAttributeProtocolCID)) {
     return pw::Status::InvalidArgument();
   }
   if (attribute_handle == 0) {
     PW_LOG_ERROR("Attribute handle cannot be 0.");
     return pw::Status::InvalidArgument();
   }
-  return GattNotifyChannel(
-      l2cap_channel_manager, connection_handle, attribute_handle);
+  return GattNotifyChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
+                           /*connection_handle=*/connection_handle,
+                           /*attribute_handle=*/attribute_handle);
 }
 
 GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
                                      uint16_t connection_handle,
                                      uint16_t attribute_handle)
-    : L2capWriteChannel(l2cap_channel_manager,
-                        connection_handle,
-                        AclTransportType::kLe,
-                        kAttributeProtocolCID),
+    : L2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
+                   /*connection_handle=*/connection_handle,
+                   /*transport=*/AclTransportType::kLe,
+                   /*local_cid=*/kAttributeProtocolCID,
+                   /*remote_cid=*/kAttributeProtocolCID,
+                   /*payload_from_controller_fn=*/nullptr),
       attribute_handle_(attribute_handle) {}
 
 }  // namespace pw::bluetooth::proxy

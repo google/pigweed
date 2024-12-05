@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
+#include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 
 #include <mutex>
 
@@ -27,7 +27,51 @@
 
 namespace pw::bluetooth::proxy {
 
-Status L2capWriteChannel::QueuePacket(H4PacketWithH4&& packet) {
+L2capChannel::L2capChannel(L2capChannel&& other)
+    : l2cap_channel_manager_(other.l2cap_channel_manager_),
+      connection_handle_(other.connection_handle()),
+      transport_(other.transport()),
+      local_cid_(other.local_cid()),
+      remote_cid_(other.remote_cid()),
+      payload_from_controller_fn_(
+          std::move(other.payload_from_controller_fn_)) {
+  // All L2capChannels share a static mutex, so only one lock needs to be
+  // acquired here.
+  // TODO: https://pwbug.dev/381942905 - Once mutex no longer needs to be
+  // static, elide this operator or acquire a lock on both channels' mutexes.
+  std::lock_guard lock(global_send_queue_mutex_);
+  send_queue_ = std::move(other.send_queue_);
+  l2cap_channel_manager_.ReleaseChannel(other);
+  l2cap_channel_manager_.RegisterChannel(*this);
+}
+
+L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
+  if (this == &other) {
+    return *this;
+  }
+  l2cap_channel_manager_.ReleaseChannel(*this);
+  connection_handle_ = other.connection_handle();
+  transport_ = other.transport();
+  local_cid_ = other.local_cid();
+  remote_cid_ = other.remote_cid();
+  payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
+  // All L2capWriteChannels share a static mutex, so only one lock needs to be
+  // acquired here.
+  // TODO: https://pwbug.dev/369849508 - Once mutex is no longer static,
+  // elide this operator or acquire a lock on both channels' mutexes.
+  std::lock_guard lock(global_send_queue_mutex_);
+  send_queue_ = std::move(other.send_queue_);
+  l2cap_channel_manager_.ReleaseChannel(other);
+  l2cap_channel_manager_.RegisterChannel(*this);
+  return *this;
+}
+
+L2capChannel::~L2capChannel() {
+  l2cap_channel_manager_.ReleaseChannel(*this);
+  ClearQueue();
+}
+
+Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
   Status status;
   {
     std::lock_guard lock(global_send_queue_mutex_);
@@ -42,7 +86,7 @@ Status L2capWriteChannel::QueuePacket(H4PacketWithH4&& packet) {
   return status;
 }
 
-std::optional<H4PacketWithH4> L2capWriteChannel::DequeuePacket() {
+std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
   std::lock_guard lock(global_send_queue_mutex_);
   if (send_queue_.empty()) {
     return std::nullopt;
@@ -52,70 +96,45 @@ std::optional<H4PacketWithH4> L2capWriteChannel::DequeuePacket() {
   return packet;
 }
 
-void L2capWriteChannel::ClearQueue() {
-  std::lock_guard lock(global_send_queue_mutex_);
-  send_queue_.clear();
+void L2capChannel::OnFragmentedPduReceived() {
+  PW_LOG_ERROR(
+      "(CID 0x%X) Fragmented L2CAP frame received, which is not yet supported.",
+      local_cid());
 }
 
-L2capWriteChannel::L2capWriteChannel(L2capWriteChannel&& other)
-    : transport_(other.transport_),
-      connection_handle_(other.connection_handle_),
-      remote_cid_(other.remote_cid_),
-      l2cap_channel_manager_(other.l2cap_channel_manager_) {
-  l2cap_channel_manager_.ReleaseWriteChannel(other);
-  l2cap_channel_manager_.RegisterWriteChannel(*this);
-}
-
-L2capWriteChannel& L2capWriteChannel::operator=(L2capWriteChannel&& other) {
-  if (this == &other) {
-    return *this;
-  }
-  l2cap_channel_manager_.ReleaseWriteChannel(*this);
-  connection_handle_ = other.connection_handle();
-  remote_cid_ = other.remote_cid();
-  // All L2capWriteChannels share a static mutex, so only one lock needs to be
-  // acquired here.
-  // TODO: https://pwbug.dev/369849508 - Once mutex is no longer static,
-  // elide this operator or acquire a lock on both channels' mutexes.
-  std::lock_guard lock(global_send_queue_mutex_);
-  send_queue_ = std::move(other.send_queue_);
-  l2cap_channel_manager_.ReleaseWriteChannel(other);
-  l2cap_channel_manager_.RegisterWriteChannel(*this);
-  return *this;
-}
-
-L2capWriteChannel::~L2capWriteChannel() {
-  l2cap_channel_manager_.ReleaseWriteChannel(*this);
-  ClearQueue();
-}
-
-L2capWriteChannel::L2capWriteChannel(L2capChannelManager& l2cap_channel_manager,
-                                     uint16_t connection_handle,
-                                     AclTransportType transport,
-                                     uint16_t remote_cid)
-    : transport_(transport),
+L2capChannel::L2capChannel(
+    L2capChannelManager& l2cap_channel_manager,
+    uint16_t connection_handle,
+    AclTransportType transport,
+    uint16_t local_cid,
+    uint16_t remote_cid,
+    pw::Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn)
+    : l2cap_channel_manager_(l2cap_channel_manager),
       connection_handle_(connection_handle),
+      transport_(transport),
+      local_cid_(local_cid),
       remote_cid_(remote_cid),
-      l2cap_channel_manager_(l2cap_channel_manager) {
-  l2cap_channel_manager_.RegisterWriteChannel(*this);
+      payload_from_controller_fn_(std::move(payload_from_controller_fn)) {
+  l2cap_channel_manager_.RegisterChannel(*this);
 }
 
-bool L2capWriteChannel::AreValidParameters(uint16_t connection_handle,
-                                           uint16_t remote_cid) {
+bool L2capChannel::AreValidParameters(uint16_t connection_handle,
+                                      uint16_t local_cid,
+                                      uint16_t remote_cid) {
   if (connection_handle > kMaxValidConnectionHandle) {
     PW_LOG_ERROR(
         "Invalid connection handle 0x%X. Maximum connection handle is 0x0EFF.",
         connection_handle);
     return false;
   }
-  if (remote_cid == 0) {
+  if (local_cid == 0 || remote_cid == 0) {
     PW_LOG_ERROR("L2CAP channel identifier 0 is not valid.");
     return false;
   }
   return true;
 }
 
-pw::Result<H4PacketWithH4> L2capWriteChannel::PopulateTxL2capPacket(
+pw::Result<H4PacketWithH4> L2capChannel::PopulateTxL2capPacket(
     uint16_t data_length) {
   const size_t l2cap_packet_size =
       emboss::BasicL2capHeader::IntrinsicSizeInBytes() + data_length;
@@ -153,14 +172,19 @@ pw::Result<H4PacketWithH4> L2capWriteChannel::PopulateTxL2capPacket(
   return h4_packet;
 }
 
-uint16_t L2capWriteChannel::MaxL2capPayloadSize() const {
+uint16_t L2capChannel::MaxL2capPayloadSize() const {
   return l2cap_channel_manager_.GetH4BuffSize() - sizeof(emboss::H4PacketType) -
          emboss::AclDataFrameHeader::IntrinsicSizeInBytes() -
          emboss::BasicL2capHeader::IntrinsicSizeInBytes();
 }
 
-void L2capWriteChannel::ReportPacketsMayBeReadyToSend() {
-  l2cap_channel_manager_.DrainWriteChannelQueues();
+void L2capChannel::ReportPacketsMayBeReadyToSend() {
+  l2cap_channel_manager_.DrainChannelQueues();
+}
+
+void L2capChannel::ClearQueue() {
+  std::lock_guard lock(global_send_queue_mutex_);
+  send_queue_.clear();
 }
 
 }  // namespace pw::bluetooth::proxy

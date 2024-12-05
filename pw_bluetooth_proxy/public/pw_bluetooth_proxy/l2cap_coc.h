@@ -14,15 +14,14 @@
 
 #pragma once
 
-#include "pw_bluetooth_proxy/internal/l2cap_read_channel.h"
-#include "pw_bluetooth_proxy/internal/l2cap_write_channel.h"
+#include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_sync/mutex.h"
 
 namespace pw::bluetooth::proxy {
 
 /// L2CAP connection-oriented channel that supports writing to and reading
 /// from a remote peer.
-class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
+class L2capCoc : public L2capChannel {
  public:
   /// Parameters for a direction of packet flow in an `L2capCoc`.
   struct CocConfig {
@@ -112,7 +111,8 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
-      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      pw::Function<void(pw::span<uint8_t> payload)>&&
+          payload_from_controller_fn,
       pw::Function<void(Event event)>&& event_fn);
 
   // `SendPayloadFromControllerToClient` with the information payload contained
@@ -137,7 +137,8 @@ class L2capCoc : public L2capWriteChannel, public L2capReadChannel {
                     uint16_t connection_handle,
                     CocConfig rx_config,
                     CocConfig tx_config,
-                    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+                    pw::Function<void(pw::span<uint8_t> payload)>&&
+                        payload_from_controller_fn,
                     pw::Function<void(Event event)>&& event_fn);
 
   // Stop channel & notify client.
