@@ -21,6 +21,8 @@
 #include "pw_bytes/span.h"
 #include "pw_function/function.h"
 #include "pw_grpc/send_queue.h"
+#include "pw_multibuf/allocator.h"
+#include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
@@ -112,10 +114,17 @@ class Connection {
     virtual void OnCancel(StreamId id) = 0;
   };
 
-  Connection(stream::ReaderWriter& stream,
+  // TODO: https://pwbug.dev/382294674 - Remove after migration
+  Connection(stream::ReaderWriter& socket,
              SendQueue& send_queue,
              RequestCallbacks& callbacks,
-             allocator::Allocator* message_assembly_allocator = nullptr);
+             allocator::Allocator* message_assembly_allocator);
+
+  Connection(stream::ReaderWriter& socket,
+             SendQueue& send_queue,
+             RequestCallbacks& callbacks,
+             allocator::Allocator* message_assembly_allocator,
+             multibuf::MultiBufAllocator& multibuf_allocator);
 
   // Reads from stream and processes required connection preface frames. Should
   // be called before ProcessFrame(). Return OK if connection preface was found.
@@ -180,6 +189,9 @@ class Connection {
     bool started_response;
     int32_t send_window;
 
+    // Response messages that are waiting for window to send.
+    multibuf::MultiBuf response_queue;
+
     // Fragmented gRPC message assembly, nullptr if not assembling a message.
     std::byte* assembly_buffer;
     union {
@@ -202,6 +214,7 @@ class Connection {
       half_closed = false;
       started_response = false;
       send_window = 0;
+      response_queue = {};
 
       assembly_buffer = nullptr;
       message_length = 0;
@@ -213,15 +226,86 @@ class Connection {
   // Internal state is divided into what is needed for reading/writing/shared to
   // both.
 
-  struct SharedState {
-    pw::Result<std::reference_wrapper<Stream>> LookupStream(StreamId id);
+  class SharedState {
+   public:
+    SharedState(allocator::Allocator* message_assembly_allocator,
+                multibuf::MultiBufAllocator* multibuf_allocator,
+                SendQueue& send_queue)
+        : message_assembly_allocator_(message_assembly_allocator),
+          multibuf_allocator_(multibuf_allocator),
+          send_queue_(send_queue) {}
+
+    // Create stream if space available.
+    pw::Status CreateStream(StreamId id, int32_t initial_send_window);
+
+    // Update stream with `id` with new send window delta.
+    Status AddStreamSendWindow(StreamId id, int32_t delta);
+    // Update all stream with new send window delta.
+    Status AddAllStreamsSendWindow(int32_t delta);
+    // Update connection send window with new delta.
+    Status AddConnectionSendWindow(int32_t delta);
+
+    // Returns nullptr if stream not found. Note that a reference to locked
+    // SharedState should be retained while using the returned Stream*.
+    Stream* LookupStream(StreamId id);
+
+    void ForAllStreams(Function<void(Stream*)>&& callback);
+
+    // Queue response buffer for sending on `id` stream. Will send right away if
+    // window is available.
+    Status QueueStreamResponse(StreamId id, multibuf::MultiBuf&& buffer);
+
+    // Write raw bytes directly to send queue.
+    Status SendBytes(ConstByteSpan message);
+
+    // Construct and write header message directly to send queue.
+    Status SendHeaders(StreamId stream_id,
+                       ConstByteSpan payload1,
+                       ConstByteSpan payload2,
+                       bool end_stream);
+
+    // Frame send functions.
+    Status SendRstStream(StreamId stream_id, internal::Http2Error code);
+    Status SendWindowUpdates(StreamId stream_id, uint32_t increment);
+    Status SendSettingsAck();
+
+    allocator::Allocator* message_assembly_allocator() {
+      return message_assembly_allocator_;
+    }
+
+    multibuf::MultiBufAllocator* multibuf_allocator() {
+      return multibuf_allocator_;
+    }
+
+    int32_t connection_send_window() const { return connection_send_window_; }
+
+   private:
+    // Called whenever there is new data to send or a WINDOW_UPDATE message has
+    // increased a send window. Should attempt to drain any queued data across
+    // all active streams.
+    Status DrainResponseQueues();
+
+    Status DrainResponseQueue(Stream& stream);
+
+    Status SendQueued(Stream& stream, multibuf::OwnedChunk&& chunk);
+
+    // Write DATA frame to send queue. Chunk should already have prefix space
+    // for headers.
+    Status SendData(StreamId stream_id, multibuf::OwnedChunk&& chunk);
 
     // Stream state
-    std::array<Stream, internal::kMaxConcurrentStreams> streams{};
-    int32_t connection_send_window = kDefaultInitialWindowSize;
+    std::array<Stream, internal::kMaxConcurrentStreams> streams_{};
+    int32_t connection_send_window_ = kDefaultInitialWindowSize;
 
     // Allocator for fragmented grpc message reassembly
     allocator::Allocator* message_assembly_allocator_;
+
+    // Allocator for creating send buffers to queue.
+    // TODO: https://pwbug.dev/382294674 - Make non-optional reference after
+    // migration.
+    multibuf::MultiBufAllocator* multibuf_allocator_;
+
+    SendQueue& send_queue_;
   };
 
   class Writer {
@@ -244,8 +328,7 @@ class Connection {
     Status ProcessFrame();
 
    private:
-    pw::Status CreateStream(StreamId id);
-    void CloseStream(Stream& stream);
+    void CloseStream(Stream* stream);
 
     Status ProcessDataFrame(const internal::FrameHeader&);
     Status ProcessHeadersFrame(const internal::FrameHeader&);
@@ -258,7 +341,9 @@ class Connection {
 
     // Send GOAWAY frame and signal connection should be closed.
     void SendGoAway(internal::Http2Error code);
-    Status SendRstStreamAndClose(Stream& stream, internal::Http2Error code);
+    Status SendRstStreamAndClose(sync::BorrowedPointer<SharedState>& state,
+                                 Stream* stream,
+                                 internal::Http2Error code);
 
     Connection& connection_;
     RequestCallbacks& callbacks_;
@@ -280,7 +365,6 @@ class Connection {
 
   // Shared state that is thread-safe.
   stream::ReaderWriter& socket_;
-  SendQueue& send_queue_;
 
   sync::InlineBorrowable<SharedState> shared_state_;
   Reader reader_;
@@ -298,8 +382,13 @@ class ConnectionThread : public Connection, public thread::ThreadCore {
                    const thread::Options& send_thread_options,
                    RequestCallbacks& callbacks,
                    ConnectionCloseCallback&& connection_close_callback,
-                   allocator::Allocator* message_assembly_allocator = nullptr)
-      : Connection(stream, send_queue_, callbacks, message_assembly_allocator),
+                   allocator::Allocator* message_assembly_allocator,
+                   multibuf::MultiBufAllocator& multibuf_allocator)
+      : Connection(stream,
+                   send_queue_,
+                   callbacks,
+                   message_assembly_allocator,
+                   multibuf_allocator),
         send_queue_(stream),
         send_queue_thread_options_(send_thread_options),
         connection_close_callback_(std::move(connection_close_callback)) {}

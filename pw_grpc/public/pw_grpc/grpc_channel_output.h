@@ -29,6 +29,8 @@ class GrpcChannelOutput : public rpc::ChannelOutput {
 
   class StreamCallbacks {
    public:
+    virtual ~StreamCallbacks() = default;
+
     // Called when a stream is completed from the server. Called on the same
     // thread as Send is called on.
     virtual void OnClose(StreamId) = 0;

@@ -25,6 +25,11 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
+log_defines = [
+    "PW_LOG_MODULE_NAME=\\\"GRPC\\\"",
+    "PW_LOG_LEVEL=PW_LOG_LEVEL_INFO",
+]
+
 cc_library(
     name = "connection",
     srcs = [
@@ -33,7 +38,8 @@ cc_library(
     hdrs = [
         "public/pw_grpc/connection.h",
     ],
-    includes = ["public"],
+    local_defines = log_defines,
+    strip_include_prefix = "public",
     target_compatible_with = select({
         ":pw_rpc_config_setting": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -48,6 +54,8 @@ cc_library(
         "//pw_bytes",
         "//pw_function",
         "//pw_log",
+        "//pw_multibuf",
+        "//pw_multibuf:allocator",
         "//pw_result",
         "//pw_span",
         "//pw_status",
@@ -63,13 +71,16 @@ cc_library(
     name = "send_queue",
     srcs = ["send_queue.cc"],
     hdrs = ["public/pw_grpc/send_queue.h"],
-    includes = ["public"],
+    local_defines = log_defines,
+    strip_include_prefix = "public",
     deps = [
         "//pw_async:dispatcher",
         "//pw_async_basic:dispatcher",
         "//pw_bytes",
         "//pw_function",
         "//pw_log",
+        "//pw_multibuf",
+        "//pw_multibuf:allocator",
         "//pw_result",
         "//pw_span",
         "//pw_status",
@@ -85,7 +96,7 @@ cc_library(
 cc_library(
     name = "grpc_channel_output",
     hdrs = ["public/pw_grpc/grpc_channel_output.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":connection",
         "//pw_bytes",
@@ -97,7 +108,8 @@ cc_library(
     name = "pw_rpc_handler",
     srcs = ["pw_rpc_handler.cc"],
     hdrs = ["public/pw_grpc/pw_rpc_handler.h"],
-    includes = ["public"],
+    local_defines = log_defines,
+    strip_include_prefix = "public",
     target_compatible_with = select({
         ":pw_rpc_config_setting": [],
         "//conditions:default": ["@platforms//:incompatible"],
@@ -122,6 +134,7 @@ cc_library(
     hdrs = [
         "pw_grpc_private/hpack.h",
     ],
+    local_defines = log_defines,
     deps = [
         "//pw_assert",
         "//pw_bytes",
@@ -160,6 +173,7 @@ cc_binary(
         "//pw_bytes",
         "//pw_checksum",
         "//pw_log",
+        "//pw_multibuf:simple_allocator",
         "//pw_result",
         "//pw_rpc",
         "//pw_rpc_transport:service_registry",

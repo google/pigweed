@@ -14,57 +14,37 @@
 
 #include "pw_grpc/send_queue.h"
 
+#include "pw_log/log.h"
+#include "pw_status/try.h"
+
 namespace pw::grpc {
 
-std::optional<std::reference_wrapper<SendQueue::SendRequest>>
-SendQueue::NextSendRequest() {
-  std::lock_guard lock(send_mutex_);
-  if (send_requests_.empty()) {
-    return std::nullopt;
-  }
-  auto& front = send_requests_.front();
-  send_requests_.pop_front();
-  return front;
-}
-
-void SendQueue::ProcessSendQueue(async::Context&, Status status) {
-  if (!status.ok()) {
+void SendQueue::ProcessSendQueue(async::Context&, Status task_status) {
+  if (!task_status.ok()) {
     return;
   }
 
-  auto request = NextSendRequest();
-  while (request.has_value()) {
-    for (auto message : request->get().messages) {
-      request->get().status.Update(socket_.Write(message));
+  multibuf::MultiBuf buffer;
+  {
+    std::lock_guard lock(send_mutex_);
+    if (buffer_to_write_.empty()) {
+      return;
     }
-    request->get().notify.release();
-    request = NextSendRequest();
+    buffer = std::move(buffer_to_write_);
+  }
+  for (const auto& chunk : buffer.Chunks()) {
+    if (Status status = socket_.Write(chunk); !status.ok()) {
+      PW_LOG_ERROR("Failed to write to socket in SendQueue: %s", status.str());
+      return;
+    }
   }
 }
 
-void SendQueue::QueueSendRequest(SendRequest& request) {
+void SendQueue::QueueSend(multibuf::MultiBuf&& buffer) {
   std::lock_guard lock(send_mutex_);
-  send_requests_.push_back(request);
+  buffer_to_write_.PushSuffix(std::move(buffer));
   send_dispatcher_.Cancel(send_task_);
   send_dispatcher_.Post(send_task_);
-}
-
-void SendQueue::CancelSendRequest(SendRequest& request) {
-  std::lock_guard lock(send_mutex_);
-  send_requests_.remove(request);
-}
-
-Status SendQueue::SendBytes(ConstByteSpan message) {
-  std::array<ConstByteSpan, 1> messages = {message};
-  return SendBytesVector(messages);
-}
-
-Status SendQueue::SendBytesVector(span<ConstByteSpan> messages) {
-  SendRequest request(messages);
-  QueueSendRequest(request);
-  // TODO: b/345088816 - Add timeout error support to this blocking call.
-  request.notify.acquire();
-  return request.status;
 }
 
 }  // namespace pw::grpc
