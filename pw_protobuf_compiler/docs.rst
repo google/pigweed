@@ -392,13 +392,11 @@ compile them. e.g.
 .. code-block:: python
 
    # BUILD ...
+   load("@pigweed//pw_protobuf_compiler:nanopb_proto_library.bzl", "nanopb_proto_library")
+   load("@pigweed//pw_protobuf_compiler:nanopb_rpc_proto_library.bzl", "nanopb_rpc_proto_library")
+   load("@pigweed//pw_protobuf_compiler:pwpb_proto_library.bzl", "pwpb_proto_library")
+   load("@pigweed//pw_protobuf_compiler:raw_rpc_proto_library.bzl", "raw_rpc_proto_library")
    load("@rules_proto//proto:defs.bzl", "proto_library")
-   load("@pigweed//pw_protobuf_compiler:pw_proto_library.bzl",
-     "nanopb_proto_library",
-     "nanopb_rpc_proto_library",
-     "pwpb_proto_library",
-     "raw_rpc_proto_library",
-   )
 
    # Manages proto sources and dependencies.
    proto_library(
