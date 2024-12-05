@@ -29,6 +29,25 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
     sources = [ "basic.cc" ]
   }
 
+  # count-example-start
+  pw_executable("count") {
+    deps = [
+      "$dir_pw_allocator:libc_allocator",
+      "$dir_pw_async2:allocate_task",
+      "$dir_pw_async2:coro",
+      "$dir_pw_async2:coro_or_else_task",
+      "$dir_pw_async2:dispatcher",
+      "$dir_pw_async2:system_time_provider",
+      "$dir_pw_chrono:system_clock",
+      "$dir_pw_log",
+      "$dir_pw_result",
+      "$dir_pw_status",
+    ]
+    sources = [ "count.cc" ]
+  }
+
+  # count-example-end
+
   pw_test("coro_blinky_loop") {
     enable_if = pw_async2_DISPATCHER_BACKEND != ""
     sources = [ "coro_blinky_loop.cc" ]

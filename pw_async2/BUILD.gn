@@ -329,6 +329,8 @@ pw_test_group("tests") {
 
 pw_doc_group("docs") {
   inputs = [
+    "examples/BUILD.bazel",
+    "examples/BUILD.gn",
     "examples/basic.cc",
     "examples/once_send_recv.cc",
   ]
