@@ -114,12 +114,6 @@ class Connection {
     virtual void OnCancel(StreamId id) = 0;
   };
 
-  // TODO: https://pwbug.dev/382294674 - Remove after migration
-  Connection(stream::ReaderWriter& socket,
-             SendQueue& send_queue,
-             RequestCallbacks& callbacks,
-             allocator::Allocator* message_assembly_allocator);
-
   Connection(stream::ReaderWriter& socket,
              SendQueue& send_queue,
              RequestCallbacks& callbacks,
@@ -229,7 +223,7 @@ class Connection {
   class SharedState {
    public:
     SharedState(allocator::Allocator* message_assembly_allocator,
-                multibuf::MultiBufAllocator* multibuf_allocator,
+                multibuf::MultiBufAllocator& multibuf_allocator,
                 SendQueue& send_queue)
         : message_assembly_allocator_(message_assembly_allocator),
           multibuf_allocator_(multibuf_allocator),
@@ -273,7 +267,7 @@ class Connection {
       return message_assembly_allocator_;
     }
 
-    multibuf::MultiBufAllocator* multibuf_allocator() {
+    multibuf::MultiBufAllocator& multibuf_allocator() {
       return multibuf_allocator_;
     }
 
@@ -301,9 +295,7 @@ class Connection {
     allocator::Allocator* message_assembly_allocator_;
 
     // Allocator for creating send buffers to queue.
-    // TODO: https://pwbug.dev/382294674 - Make non-optional reference after
-    // migration.
-    multibuf::MultiBufAllocator* multibuf_allocator_;
+    multibuf::MultiBufAllocator& multibuf_allocator_;
 
     SendQueue& send_queue_;
   };

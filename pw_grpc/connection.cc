@@ -168,22 +168,12 @@ ConstByteSpan AsBytes(T& object) {
 Connection::Connection(stream::ReaderWriter& socket,
                        SendQueue& send_queue,
                        RequestCallbacks& callbacks,
-                       allocator::Allocator* message_assembly_allocator)
-    : socket_(socket),
-      shared_state_(
-          std::in_place, message_assembly_allocator, nullptr, send_queue),
-      reader_(*this, callbacks),
-      writer_(*this) {}
-
-Connection::Connection(stream::ReaderWriter& socket,
-                       SendQueue& send_queue,
-                       RequestCallbacks& callbacks,
                        allocator::Allocator* message_assembly_allocator,
                        multibuf::MultiBufAllocator& multibuf_allocator)
     : socket_(socket),
       shared_state_(std::in_place,
                     message_assembly_allocator,
-                    &multibuf_allocator,
+                    multibuf_allocator,
                     send_queue),
       reader_(*this, callbacks),
       writer_(*this) {}
@@ -298,7 +288,7 @@ Status Connection::SharedState::DrainResponseQueues() {
 
 Status Connection::SharedState::SendBytes(ConstByteSpan message) {
   std::optional<multibuf::MultiBuf> buffer =
-      multibuf_allocator_->Allocate(message.size());
+      multibuf_allocator_.Allocate(message.size());
   if (!buffer.has_value()) {
     return Status::ResourceExhausted();
   }
@@ -371,7 +361,7 @@ Status Connection::SharedState::SendHeaders(StreamId stream_id,
   }
 
   ConstByteSpan frame_span = AsBytes(frame);
-  std::optional<multibuf::MultiBuf> buffer = multibuf_allocator_->Allocate(
+  std::optional<multibuf::MultiBuf> buffer = multibuf_allocator_.Allocate(
       frame_span.size() + payload1.size() + payload2.size());
   if (!buffer.has_value()) {
     return Status::ResourceExhausted();
@@ -484,9 +474,9 @@ Status Connection::Writer::SendResponseMessage(StreamId stream_id,
   // Create contiguous buffer big enough to hold the response message plus
   // headers.
   std::optional<multibuf::MultiBuf> buffer =
-      state->multibuf_allocator()->Allocate(message.size() +
-                                            kLengthPrefixedMessageHdrSize +
-                                            sizeof(WireFrameHeader));
+      state->multibuf_allocator().Allocate(message.size() +
+                                           kLengthPrefixedMessageHdrSize +
+                                           sizeof(WireFrameHeader));
 
   if (!buffer.has_value()) {
     return Status::ResourceExhausted();
