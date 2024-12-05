@@ -58,7 +58,7 @@ class Peripheral final : public pw::bluetooth::low_energy::Peripheral2 {
 
     // AdvertisedPeripheral2 overrides:
     async2::Poll<pw::bluetooth::low_energy::Connection2::Ptr> PendConnection(
-        async2::Context& cx) override {
+        [[maybe_unused]] async2::Context& cx) override {
       // TODO: https://pwbug.dev/377301546 - Implement connection handling.
       return async2::Pending();
     }

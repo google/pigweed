@@ -2612,7 +2612,8 @@ void FakeController::OnLEStartEncryptionCommand(
 }
 
 void FakeController::OnWriteSynchronousFlowControlEnableCommand(
-    const pwemb::WriteSynchronousFlowControlEnableCommandView& params) {
+    [[maybe_unused]] const pwemb::WriteSynchronousFlowControlEnableCommandView&
+        params) {
   if (!settings_.SupportedCommandsView()
            .write_synchronous_flow_control_enable()
            .Read()) {
@@ -3429,7 +3430,8 @@ void FakeController::SendAndroidLEMultipleAdvertisingStateChangeSubevent(
 }
 
 void FakeController::OnReadLocalSupportedControllerDelay(
-    const pwemb::ReadLocalSupportedControllerDelayCommandView& params) {
+    [[maybe_unused]] const pwemb::ReadLocalSupportedControllerDelayCommandView&
+        params) {
   auto packet = hci::EventPacket::New<
       pwemb::ReadLocalSupportedControllerDelayCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);

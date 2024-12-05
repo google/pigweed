@@ -20,16 +20,17 @@
 namespace {
 class BloatRandomGenerator final : public pw::random::RandomGenerator {
  public:
-  void Get(pw::ByteSpan dest) override {}
+  void Get([[maybe_unused]] pw::ByteSpan dest) override {}
   void InjectEntropyBits(uint32_t /*data*/,
                          uint_fast8_t /*num_bits*/) override {}
 };
 
 class BloatDispatcher final : public pw::async::Dispatcher {
  public:
-  void PostAt(pw::async::Task& task,
-              pw::chrono::SystemClock::time_point time) override {}
-  bool Cancel(pw::async::Task& task) override { return true; }
+  void PostAt(
+      [[maybe_unused]] pw::async::Task& task,
+      [[maybe_unused]] pw::chrono::SystemClock::time_point time) override {}
+  bool Cancel([[maybe_unused]] pw::async::Task& task) override { return true; }
   pw::chrono::SystemClock::time_point now() override {
     return pw::chrono::SystemClock::time_point::min();
   }
@@ -48,7 +49,7 @@ int main() {
   bt::gap::Adapter::Config config{};
   std::unique_ptr<bt::gap::Adapter> adapter = bt::gap::Adapter::Create(
       dispatcher, transport->GetWeakPtr(), gatt->GetWeakPtr(), config);
-  auto gap_init_cb = [](bool success) {};
+  auto gap_init_cb = []([[maybe_unused]] bool success) {};
   auto transport_closed_cb = []() {};
   adapter->Initialize(std::move(gap_init_cb), std::move(transport_closed_cb));
   return 0;

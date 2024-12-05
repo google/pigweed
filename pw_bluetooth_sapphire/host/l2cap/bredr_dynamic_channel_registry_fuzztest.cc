@@ -60,11 +60,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       pw::bluetooth::emboss::ConnectionRole::CENTRAL,
       dispatcher);
 
-  auto open_cb = [](auto chan) {};
-  auto close_cb = [](auto chan) {};
-  auto service_chan_cb = [](auto chan) {};
+  auto open_cb = []([[maybe_unused]] auto chan) {};
+  auto close_cb = []([[maybe_unused]] auto chan) {};
+  auto service_chan_cb = []([[maybe_unused]] auto chan) {};
 
-  auto service_cb = [&](auto psm) {
+  auto service_cb = [&]([[maybe_unused]] auto psm) {
     // Reject some PSMs.
     if (provider.ConsumeBool()) {
       return std::optional<
