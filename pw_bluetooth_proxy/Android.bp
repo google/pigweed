@@ -32,6 +32,7 @@ cc_library_static {
         "l2cap_coc.cc",
         "l2cap_leu_signaling_channel.cc",
         "l2cap_signaling_channel.cc",
+        "l2cap_status_tracker.cc",
         "proxy_host.cc",
         "rfcomm_channel.cc",
         "rfcomm_fcs.cc",

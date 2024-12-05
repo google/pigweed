@@ -37,10 +37,12 @@ pw_add_library(pw_bluetooth_proxy STATIC
     public/pw_bluetooth_proxy/internal/l2cap_channel_manager.h
     public/pw_bluetooth_proxy/internal/l2cap_coc_internal.h
     public/pw_bluetooth_proxy/internal/l2cap_signaling_channel.h
+    public/pw_bluetooth_proxy/internal/l2cap_status_tracker.h
     public/pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h
     public/pw_bluetooth_proxy/internal/logical_transport.h
     public/pw_bluetooth_proxy/internal/rfcomm_fcs.h
     public/pw_bluetooth_proxy/l2cap_coc.h
+    public/pw_bluetooth_proxy/l2cap_status_delegate.h
     public/pw_bluetooth_proxy/proxy_host.h
     public/pw_bluetooth_proxy/rfcomm_channel.h
 
@@ -72,8 +74,9 @@ pw_add_library(pw_bluetooth_proxy STATIC
     l2cap_channel.cc
     l2cap_channel_manager.cc
     l2cap_coc.cc
-    l2cap_signaling_channel.cc
     l2cap_leu_signaling_channel.cc
+    l2cap_signaling_channel.cc
+    l2cap_status_tracker.cc
     proxy_host.cc
     rfcomm_channel.cc
     rfcomm_fcs.cc

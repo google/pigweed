@@ -17,6 +17,7 @@
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
+#include "pw_bluetooth_proxy/internal/l2cap_status_tracker.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -65,6 +66,20 @@ class L2capChannelManager {
   L2capChannel* FindChannelByRemoteCid(uint16_t connection_handle,
                                        uint16_t remote_cid);
 
+  // Register for notifications of connection and disconnection for a
+  // particular L2cap service identified by its PSM.
+  void RegisterStatusDelegate(L2capStatusDelegate& delegate);
+
+  // Unregister a service delegate.
+  void UnregisterStatusDelegate(L2capStatusDelegate& delegate);
+
+  // Called when a l2cap channel connection successfully made.
+  void HandleConnectionComplete(const L2capChannelConnectionInfo& info);
+
+  // Called when a l2cap channel connection is disconnected.
+  void HandleDisconnectionComplete(
+      const L2capStatusTracker::DisconnectParams& params);
+
  private:
   // Circularly advance `it`, wrapping around to front if `it` reaches the end.
   void Advance(IntrusiveForwardList<L2capChannel>::iterator& it)
@@ -90,6 +105,9 @@ class L2capChannelManager {
   // Iterator to "least recently drained" channel.
   IntrusiveForwardList<L2capChannel>::iterator lrd_channel_
       PW_GUARDED_BY(channels_mutex_);
+
+  // Channel connection status tracker and delegate holder.
+  L2capStatusTracker status_tracker_;
 };
 
 }  // namespace pw::bluetooth::proxy

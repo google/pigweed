@@ -19,6 +19,7 @@
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 #include "pw_bluetooth_proxy/l2cap_coc.h"
+#include "pw_bluetooth_proxy/l2cap_status_delegate.h"
 #include "pw_bluetooth_proxy/rfcomm_channel.h"
 #include "pw_status/status.h"
 
@@ -96,6 +97,20 @@ class ProxyHost {
   void Reset();
 
   // ##### Client APIs
+
+  /// Register for notifications of connection and disconnection for a
+  /// particular L2cap service identified by its PSM.
+  ///
+  /// @param[in] delegate   A delegate that will be notified when a successful
+  ///                       L2cap connection is made on its PSM. Note: This
+  ///                       must outlive the ProxyHost.
+  void RegisterL2capStatusDelegate(L2capStatusDelegate& delegate);
+
+  /// Unregister a service delegate.
+  ///
+  /// @param[in] delegate   The delegate to unregister. Must have been
+  ///                       previously registered.
+  void UnregisterL2capStatusDelegate(L2capStatusDelegate& delegate);
 
   /// Returns an L2CAP connection-oriented channel that supports writing to and
   /// reading from a remote peer.

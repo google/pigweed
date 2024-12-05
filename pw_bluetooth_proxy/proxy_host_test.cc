@@ -4892,6 +4892,256 @@ TEST(ProxyHostConnectionEventTest, LeConnectionCompletePassthroughOk) {
   EXPECT_EQ(host_called, 1U);
 }
 
+struct AclFrameWithStorage {
+  std::vector<uint8_t> storage;
+  emboss::AclDataFrameWriter writer;
+
+  pw::span<uint8_t> h4_span() { return storage; }
+  pw::span<uint8_t> hci_span() { return pw::span(storage).subspan(1); }
+};
+
+Result<AclFrameWithStorage> SetupAcl(uint16_t handle, uint16_t l2cap_length) {
+  AclFrameWithStorage frame;
+  frame.storage.resize(l2cap_length + emboss::AclDataFrame::MinSizeInBytes() +
+                       1);
+  std::fill(frame.storage.begin(), frame.storage.end(), 0);
+  PW_TRY_ASSIGN(frame.writer,
+                MakeEmbossWriter<emboss::AclDataFrameWriter>(
+                    pw::span(frame.storage).subspan(1)));
+  frame.writer.header().handle().Write(handle);
+  frame.writer.data_total_length().Write(l2cap_length);
+  EXPECT_EQ(l2cap_length,
+            frame.writer.payload().BackingStorage().SizeInBytes());
+  return frame;
+}
+
+struct CFrameWithStorage {
+  AclFrameWithStorage acl;
+  emboss::CFrameWriter writer;
+};
+
+Result<CFrameWithStorage> SetupCFrame(uint16_t handle,
+                                      uint16_t channel_id,
+                                      uint16_t cframe_len) {
+  CFrameWithStorage frame;
+  PW_TRY_ASSIGN(
+      frame.acl,
+      SetupAcl(handle,
+               cframe_len + emboss::BasicL2capHeader::IntrinsicSizeInBytes()));
+
+  PW_TRY_ASSIGN(frame.writer,
+                MakeEmbossWriter<emboss::CFrameWriter>(
+                    frame.acl.writer.payload().BackingStorage().data(),
+                    frame.acl.writer.payload().SizeInBytes()));
+  frame.writer.pdu_length().Write(cframe_len);
+  frame.writer.channel_id().Write(channel_id);
+  EXPECT_TRUE(frame.writer.Ok());
+  EXPECT_EQ(frame.writer.payload().SizeInBytes(), cframe_len);
+  return frame;
+}
+
+Status SendConnectionReq(ProxyHost& proxy,
+                         uint16_t handle,
+                         uint16_t source_cid,
+                         uint16_t psm) {
+  // First send CONNECTION_REQ to setup partial connection.
+  constexpr size_t kConnectionReqLen =
+      emboss::L2capConnectionReq::IntrinsicSizeInBytes();
+  PW_TRY_ASSIGN(
+      CFrameWithStorage cframe,
+      SetupCFrame(handle,
+                  cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING),
+                  kConnectionReqLen));
+
+  emboss::L2capConnectionReqWriter conn_req_writer =
+      emboss::MakeL2capConnectionReqView(
+          cframe.writer.payload().BackingStorage().data(),
+          cframe.writer.payload().SizeInBytes());
+  conn_req_writer.command_header().code().Write(
+      emboss::L2capSignalingPacketCode::CONNECTION_REQ);
+  // Note data_length doesn't include command header.
+  conn_req_writer.command_header().data_length().Write(
+      kConnectionReqLen -
+      emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+  conn_req_writer.psm().Write(psm);
+  conn_req_writer.source_cid().Write(source_cid);
+
+  H4PacketWithHci connection_req_packet{emboss::H4PacketType::ACL_DATA,
+                                        cframe.acl.hci_span()};
+  proxy.HandleH4HciFromController(std::move(connection_req_packet));
+  return OkStatus();
+}
+
+Status SendConnectionRsp(ProxyHost& proxy,
+                         uint16_t handle,
+                         uint16_t source_cid,
+                         uint16_t destination_cid,
+                         emboss::L2capConnectionRspResultCode result_code) {
+  constexpr size_t kConnectionRspLen =
+      emboss::L2capConnectionRsp::MinSizeInBytes();
+  PW_TRY_ASSIGN(
+      auto cframe,
+      SetupCFrame(handle,
+                  cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING),
+                  kConnectionRspLen));
+
+  emboss::L2capConnectionRspWriter conn_rsp_writer =
+      emboss::MakeL2capConnectionRspView(
+          cframe.writer.payload().BackingStorage().data(),
+          cframe.writer.payload().SizeInBytes());
+  conn_rsp_writer.command_header().code().Write(
+      emboss::L2capSignalingPacketCode::CONNECTION_RSP);
+
+  conn_rsp_writer.command_header().data_length().Write(
+      kConnectionRspLen -
+      emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+  conn_rsp_writer.source_cid().Write(source_cid);
+  conn_rsp_writer.destination_cid().Write(destination_cid);
+  conn_rsp_writer.result().Write(result_code);
+
+  H4PacketWithH4 connection_rsp_packet{emboss::H4PacketType::ACL_DATA,
+                                       cframe.acl.h4_span()};
+  proxy.HandleH4HciFromHost(std::move(connection_rsp_packet));
+  return OkStatus();
+}
+
+Status SendDisconnectRsp(ProxyHost& proxy,
+                         uint16_t handle,
+                         uint16_t source_cid,
+                         uint16_t destination_cid) {
+  constexpr size_t kDisconnectionRspLen =
+      emboss::L2capDisconnectionRsp::MinSizeInBytes();
+  PW_TRY_ASSIGN(
+      auto cframe,
+      SetupCFrame(handle,
+                  cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING),
+                  kDisconnectionRspLen));
+
+  emboss::L2capDisconnectionRspWriter disconn_rsp_writer =
+      emboss::MakeL2capDisconnectionRspView(
+          cframe.writer.payload().BackingStorage().data(),
+          cframe.writer.payload().SizeInBytes());
+  disconn_rsp_writer.command_header().code().Write(
+      emboss::L2capSignalingPacketCode::DISCONNECTION_RSP);
+
+  disconn_rsp_writer.command_header().data_length().Write(
+      kDisconnectionRspLen -
+      emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+  disconn_rsp_writer.source_cid().Write(source_cid);
+  disconn_rsp_writer.destination_cid().Write(destination_cid);
+
+  H4PacketWithH4 packet{emboss::H4PacketType::ACL_DATA, cframe.acl.h4_span()};
+  proxy.HandleH4HciFromHost(std::move(packet));
+  return OkStatus();
+}
+
+TEST(ProxyHostEventTest, L2capEventsCalled) {
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0);
+
+  constexpr uint16_t kPsm = 1;
+  constexpr uint16_t kSourceCid = 30;
+  constexpr uint16_t kDestinationCid = 31;
+  constexpr uint16_t kHandle = 123;
+
+  class TestStatusDelegate final : public L2capStatusDelegate {
+   public:
+    bool ShouldTrackPsm(uint16_t psm) override { return psm == kPsm; }
+    void HandleConnectionComplete(
+        const L2capChannelConnectionInfo& i) override {
+      EXPECT_FALSE(info.has_value());
+      info.emplace(i);
+    }
+    void HandleDisconnectionComplete(
+        const L2capChannelConnectionInfo& i) override {
+      ASSERT_TRUE(info.has_value());
+      EXPECT_EQ(info->direction, i.direction);
+      EXPECT_EQ(info->connection_handle, i.connection_handle);
+      EXPECT_EQ(info->source_cid, i.source_cid);
+      EXPECT_EQ(info->destination_cid, i.destination_cid);
+      info.reset();
+    }
+
+    std::optional<L2capChannelConnectionInfo> info;
+  };
+
+  TestStatusDelegate test_delegate;
+  proxy.RegisterL2capStatusDelegate(test_delegate);
+
+  PW_TEST_EXPECT_OK(
+      SendConnectionCompleteEvent(proxy, kHandle, emboss::StatusCode::SUCCESS));
+
+  // First send CONNECTION_REQ to setup partial connection
+  PW_TEST_EXPECT_OK(SendConnectionReq(proxy, kHandle, kSourceCid, kPsm));
+  EXPECT_FALSE(test_delegate.info.has_value());
+
+  // Send non-successful connection response.
+  PW_TEST_EXPECT_OK(SendConnectionRsp(
+      proxy,
+      kHandle,
+      kSourceCid,
+      kDestinationCid,
+      emboss::L2capConnectionRspResultCode::INVALID_SOURCE_CID));
+  EXPECT_FALSE(test_delegate.info.has_value());
+
+  // Send successful connection response, but expect that it will not have
+  // called listener since the connection was closed with error already.
+  PW_TEST_EXPECT_OK(
+      SendConnectionRsp(proxy,
+                        kHandle,
+                        kSourceCid,
+                        kDestinationCid,
+                        emboss::L2capConnectionRspResultCode::SUCCESSFUL));
+  EXPECT_FALSE(test_delegate.info.has_value());
+
+  // Send new connection req
+  PW_TEST_EXPECT_OK(SendConnectionReq(proxy, kHandle, kSourceCid, kPsm));
+  EXPECT_FALSE(test_delegate.info.has_value());
+
+  // Send rsp with PENDING set.
+  PW_TEST_EXPECT_OK(
+      SendConnectionRsp(proxy,
+                        kHandle,
+                        kSourceCid,
+                        kDestinationCid,
+                        emboss::L2capConnectionRspResultCode::PENDING));
+  EXPECT_FALSE(test_delegate.info.has_value());
+
+  // Send success rsp
+  PW_TEST_EXPECT_OK(
+      SendConnectionRsp(proxy,
+                        kHandle,
+                        kSourceCid,
+                        kDestinationCid,
+                        emboss::L2capConnectionRspResultCode::SUCCESSFUL));
+  EXPECT_TRUE(test_delegate.info.has_value());
+  EXPECT_EQ(test_delegate.info->destination_cid, kDestinationCid);
+
+  // Send disconnect
+  PW_TEST_EXPECT_OK(
+      SendDisconnectRsp(proxy, kHandle, kSourceCid, kDestinationCid));
+  EXPECT_FALSE(test_delegate.info.has_value());
+
+  proxy.UnregisterL2capStatusDelegate(test_delegate);
+
+  // Send successful connection sequence with no listeners.
+  PW_TEST_EXPECT_OK(SendConnectionReq(proxy, kHandle, kSourceCid, kPsm));
+  PW_TEST_EXPECT_OK(
+      SendConnectionRsp(proxy,
+                        kHandle,
+                        kSourceCid,
+                        kDestinationCid,
+                        emboss::L2capConnectionRspResultCode::SUCCESSFUL));
+  EXPECT_FALSE(test_delegate.info.has_value());
+}
+
 // TODO: https://pwbug.dev/360929142 - Add many more tests exercising queueing
 // credit-based control flow.
 

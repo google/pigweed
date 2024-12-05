@@ -28,14 +28,14 @@ L2capLeUSignalingChannel::L2capLeUSignalingChannel(
           cpp23::to_underlying(emboss::L2capFixedCid::LE_U_SIGNALING)) {}
 
 bool L2capLeUSignalingChannel::OnCFramePayload(
-    pw::span<const uint8_t> cframe_payload) {
+    Direction direction, pw::span<const uint8_t> cframe_payload) {
   emboss::L2capSignalingCommandHeaderView cmd_header =
       emboss::MakeL2capSignalingCommandHeaderView(cframe_payload.data(),
                                                   cframe_payload.size());
   if (!cmd_header.Ok()) {
     PW_LOG_ERROR(
-        "C-frame does not contain a valid command. So will forward to host "
-        "without processing.");
+        "C-frame does not contain a valid command. So will forward without "
+        "processing.");
     return false;
   }
 
@@ -48,7 +48,7 @@ bool L2capLeUSignalingChannel::OnCFramePayload(
   if (cframe_payload.size() > cmd_length) {
     PW_LOG_ERROR(
         "Received C-frame on LE-U signaling channel with payload larger than "
-        "its command. So will forward to host without processing.");
+        "its command. So will forward without processing.");
     return false;
   }
 
@@ -58,11 +58,11 @@ bool L2capLeUSignalingChannel::OnCFramePayload(
   if (!cmd.Ok()) {
     PW_LOG_ERROR(
         "L2CAP PDU payload length not enough to accommodate signaling command. "
-        "So will forward to host without processing.");
+        "So will forward without processing.");
     return false;
   }
 
-  return HandleL2capSignalingCommand(cmd);
+  return HandleL2capSignalingCommand(direction, cmd);
 }
 
 }  // namespace pw::bluetooth::proxy

@@ -30,7 +30,7 @@ L2capAclUSignalingChannel::L2capAclUSignalingChannel(
           cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING)) {}
 
 bool L2capAclUSignalingChannel::OnCFramePayload(
-    pw::span<const uint8_t> cframe_payload) {
+    Direction direction, pw::span<const uint8_t> cframe_payload) {
   bool all_consumed = false;
 
   do {
@@ -38,15 +38,15 @@ bool L2capAclUSignalingChannel::OnCFramePayload(
                                                      cframe_payload.size());
     if (!cmd.Ok()) {
       PW_LOG_ERROR(
-          "Remaining buffer is too small for L2CAP command. So will forward to "
-          "host without processing.");
+          "Remaining buffer is too small for L2CAP command. So will forward "
+          "without processing.");
 
       // TODO: https://pwbug.dev/379172336 - Handle partially consumed ACL-U
       // signaling command packets.
       PW_CHECK(!all_consumed, "Consumed some commands.");
       return false;
     }
-    bool current_consumed = HandleL2capSignalingCommand(cmd);
+    bool current_consumed = HandleL2capSignalingCommand(direction, cmd);
 
     // TODO: https://pwbug.dev/379172336 - Handle partially consumed ACL-U
     // signaling command packets.

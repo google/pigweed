@@ -25,7 +25,8 @@ class L2capAclUSignalingChannel : public L2capSignalingChannel {
                                      uint16_t connection_handle);
 
  private:
-  bool OnCFramePayload(pw::span<const uint8_t> cframe_payload) override;
+  bool OnCFramePayload(Direction direction,
+                       pw::span<const uint8_t> cframe_payload) override;
 };
 
 }  // namespace pw::bluetooth::proxy

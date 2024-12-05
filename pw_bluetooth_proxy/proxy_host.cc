@@ -474,4 +474,12 @@ uint16_t ProxyHost::GetNumFreeBrEdrAclPackets() const {
   return acl_data_channel_.GetNumFreeAclPackets(AclTransportType::kBrEdr);
 }
 
+void ProxyHost::RegisterL2capStatusDelegate(L2capStatusDelegate& delegate) {
+  l2cap_channel_manager_.RegisterStatusDelegate(delegate);
+}
+
+void ProxyHost::UnregisterL2capStatusDelegate(L2capStatusDelegate& delegate) {
+  l2cap_channel_manager_.UnregisterStatusDelegate(delegate);
+}
+
 }  // namespace pw::bluetooth::proxy

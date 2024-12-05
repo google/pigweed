@@ -148,4 +148,24 @@ void L2capChannelManager::Advance(
   }
 }
 
+void L2capChannelManager::RegisterStatusDelegate(
+    L2capStatusDelegate& delegate) {
+  status_tracker_.RegisterDelegate(delegate);
+}
+
+void L2capChannelManager::UnregisterStatusDelegate(
+    L2capStatusDelegate& delegate) {
+  status_tracker_.UnregisterDelegate(delegate);
+}
+
+void L2capChannelManager::HandleConnectionComplete(
+    const L2capChannelConnectionInfo& info) {
+  status_tracker_.HandleConnectionComplete(info);
+}
+
+void L2capChannelManager::HandleDisconnectionComplete(
+    const L2capStatusTracker::DisconnectParams& params) {
+  status_tracker_.HandleDisconnectionComplete(params);
+}
+
 }  // namespace pw::bluetooth::proxy
