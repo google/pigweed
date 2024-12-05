@@ -29,12 +29,6 @@ pw_add_library(pw_third_party.emboss.config_assert INTERFACE
     -include pw_assert/assert.h
 )
 
-pw_add_library(pw_third_party.emboss._disable_warnings INTERFACE
-  PUBLIC_COMPILE_OPTIONS
-    -Wno-unused-parameter
-    $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-copy>
-)
-
 set(dir_pw_third_party_emboss "" CACHE PATH "Path to the emboss installation.")
 
 if("${dir_pw_third_party_emboss}" STREQUAL "")
@@ -67,5 +61,4 @@ pw_add_library(pw_third_party.emboss.cpp_utils INTERFACE
     ${dir_pw_third_party_emboss}
   PUBLIC_DEPS
     pw_third_party.emboss.config_assert
-    pw_third_party.emboss._disable_warnings
 )

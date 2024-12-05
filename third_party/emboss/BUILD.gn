@@ -40,10 +40,6 @@ pw_source_set("default_overrides") {
   public_deps = [ "$dir_pw_assert" ]
 }
 
-config("disable_warnings") {
-  cflags_cc = [ "-Wno-unused-parameter" ]
-}
-
 pw_source_set("cpp_utils") {
   # emboss depends on a separate checkout not included in pigweed, so
   # ignore gn check for this module.
@@ -65,7 +61,6 @@ pw_source_set("cpp_utils") {
     "$dir_pw_third_party_emboss/runtime/cpp/emboss_text_util.h",
     "$dir_pw_third_party_emboss/runtime/cpp/emboss_view_parameters.h",
   ]
-  public_configs = [ ":disable_warnings" ]
   public_deps = [ pw_third_party_emboss_CONFIG ]
   visibility = [ "*" ]
 }
