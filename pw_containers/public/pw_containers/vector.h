@@ -588,12 +588,14 @@ typename Vector<T>::iterator Vector<T>::erase(Vector<T>::const_iterator first,
     return source;
   }
 
-  if constexpr (!std::is_trivially_destructible_v<T>) {
-    std::destroy(first, last);
-  }
-
+  // Move subsequent entries over the to-be-erased range.
   iterator destination = begin() + std::distance(cbegin(), first);
   iterator new_end = std::move(source, end(), destination);
+
+  // Destroy any leftover moved entries.
+  if constexpr (!std::is_trivially_destructible_v<T>) {
+    std::destroy(new_end, end());
+  }
 
   size_ = static_cast<size_type>(std::distance(begin(), new_end));
 
