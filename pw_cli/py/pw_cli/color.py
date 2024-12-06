@@ -16,6 +16,7 @@
 import ctypes
 import os
 import sys
+from typing import TextIO
 
 import pw_cli.env
 
@@ -60,7 +61,7 @@ class _NoColor:
         return str
 
 
-def is_enabled():
+def is_enabled(on_output: TextIO | None = None):
     env = pw_cli.env.pigweed_environment()
     # Checking if PW_USE_COLOR is in os.environ and not env since it's always
     # in env. If it's in os.environ then use the value retrieved in env.
@@ -73,6 +74,9 @@ def is_enabled():
         return False
     if 'CLICOLOR_FORCE' in os.environ:
         return os.environ['CLICOLOR_FORCE'] != '0'
+
+    if on_output is not None:
+        return on_output.isatty()
 
     return sys.stdout.isatty() and sys.stderr.isatty()
 
