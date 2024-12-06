@@ -454,6 +454,35 @@ dependency on the backend preventing circular include issues.  However, there
 are **no format messages, no captured line number, no captured file, no captured
 expression, or anything other than a binary indication of failure**.
 
+Since ``PW_ASSERT`` can be used in ``constexpr`` functions, assertions may fail
+during compilation. For example, the following code fails to compile due to a
+``PW_ASSERT`` in a constant expression:
+
+.. literalinclude:: assert_test.cc
+   :language: cpp
+   :linenos:
+   :start-after: pw_assert-constexpr-example
+   :end-before: pw_assert-constexpr-example
+
+The compiler reports the failed assertion as follows:
+
+.. code-block:: none
+
+   example.cc:6:15: error: constexpr variable 'kResult' must be initialized by a constant expression
+       6 | constexpr int kResult = DivideEvenNumberBy2(11);  // This fails the PW_ASSERT!
+         |               ^         ~~~~~~~~~~~~~~~~~~~~~~~
+   example.cc:2:3: note: non-constexpr function 'PW_ASSERT_failed_in_constant_expression_' cannot be used in a constant expression
+       2 |   PW_ASSERT(value % 2 == 0);  // value must be even!
+         |   ^
+   ../pw_assert/public/pw_assert/assert.h:33:7: note: expanded from macro 'PW_ASSERT'
+      33 |       PW_ASSERT_failed_in_constant_expression_(); \
+         |       ^
+   example.cc:6:25: note: in call to 'DivideEvenNumberBy2(11)'
+       6 | constexpr int kResult = DivideEvenNumberBy2(11);  // This fails the PW_ASSERT!
+         |                         ^~~~~~~~~~~~~~~~~~~~~~~
+   ../pw_assert/public/pw_assert/assert.h:88:20: note: declared here
+      88 | static inline void PW_ASSERT_failed_in_constant_expression_(void) {}
+
 Example
 =======
 

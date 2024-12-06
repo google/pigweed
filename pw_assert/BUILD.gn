@@ -203,6 +203,7 @@ pw_test("assert_test") {
     ":pw_assert",
     dir_pw_status,
   ]
+  negative_compilation_tests = true
 }
 
 pw_test_group("tests") {
@@ -255,4 +256,5 @@ pw_doc_group("docs") {
     "backends.rst",
     "docs.rst",
   ]
+  inputs = [ "assert_test.cc" ]
 }

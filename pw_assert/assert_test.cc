@@ -14,6 +14,7 @@
 
 #include "pw_assert/assert.h"
 
+#include "pw_compilation_testing/negative_compilation.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
@@ -62,5 +63,19 @@ TEST(Assert, DebugAssertFalse) {
     PW_DASSERT(false);
   }
 }
+
+#if PW_NC_TEST(ConstexprAssert)
+PW_NC_EXPECT("PW_ASSERT_failed_in_constant_expression");
+
+#line 1 "example.cc"  // DOCSTAG: [pw_assert-constexpr-example]
+constexpr int DivideEvenNumberBy2(int value) {
+  PW_ASSERT(value % 2 == 0);  // value must be even!
+  return value / 2;
+}
+
+constexpr int kResult = DivideEvenNumberBy2(11);  // This fails the PW_ASSERT!
+// DOCSTAG: [pw_assert-constexpr-example]
+
+#endif  // PW_NC_TEST
 
 }  // namespace

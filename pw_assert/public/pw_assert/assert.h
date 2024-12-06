@@ -27,11 +27,12 @@
 // absolutely necessary -- in headers, constexpr contexts, or in rare cases
 // where the call site overhead of a full PW_CHECK must be avoided. Use
 // PW_CHECK_*() whenever possible.
-#define PW_ASSERT(condition)                \
-  do {                                      \
-    if (!(condition)) {                     \
-      PW_ASSERT_HANDLE_FAILURE(#condition); \
-    }                                       \
+#define PW_ASSERT(condition)                      \
+  do {                                            \
+    if (!(condition)) {                           \
+      PW_ASSERT_failed_in_constant_expression_(); \
+      PW_ASSERT_HANDLE_FAILURE(#condition);       \
+    }                                             \
   } while (0)
 
 // A header- and constexpr-safe version of PW_DCHECK().
@@ -48,6 +49,7 @@
 #define PW_DASSERT(condition)                            \
   do {                                                   \
     if ((PW_ASSERT_ENABLE_DEBUG == 1) && !(condition)) { \
+      PW_ASSERT_failed_in_constant_expression_();        \
       PW_ASSERT_HANDLE_FAILURE(#condition);              \
     }                                                    \
   } while (0)
@@ -79,3 +81,8 @@
 #else
 #define _PW_ASSERT_OK_STATUS pw_Status
 #endif  // __cplusplus
+
+// This empty, non-constexpr function is invoked when a PW_ASSERT fails. It
+// doesn't produce any code, but improves error messages when PW_ASSERTs fail
+// during compilation.
+static inline void PW_ASSERT_failed_in_constant_expression_(void) {}
