@@ -300,8 +300,7 @@ L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params) {
                              .credits = params.tx_credits},
                             std::move(params.receive_fn),
                             std::move(params.event_fn),
-                            /*queue_space_available_fn=*/nullptr,
-                            params.rx_additional_credits);
+                            std::move(params.queue_space_available_fn));
   return std::move(channel.value());
 }
 

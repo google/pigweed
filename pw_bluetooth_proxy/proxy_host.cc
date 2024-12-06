@@ -399,26 +399,14 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
     L2capCoc::CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& receive_fn,
     Function<void(L2capCoc::Event event)>&& event_fn,
-    Function<void()>&& queue_space_available_fn,
-    uint16_t rx_additional_credits) {
+    Function<void()>&& queue_space_available_fn) {
   Status status = acl_data_channel_.CreateAclConnection(connection_handle,
                                                         AclTransportType::kLe);
   if (status.IsResourceExhausted()) {
     return pw::Status::Unavailable();
   }
   PW_CHECK(status.ok() || status.IsAlreadyExists());
-  if (rx_additional_credits > 0) {
-    L2capSignalingChannel* signaling_channel =
-        acl_data_channel_.FindSignalingChannel(
-            connection_handle,
-            static_cast<uint16_t>(emboss::L2capFixedCid::LE_U_SIGNALING));
-    PW_CHECK(signaling_channel);
-    status = signaling_channel->SendFlowControlCreditInd(rx_config.cid,
-                                                         rx_additional_credits);
-    if (!status.ok()) {
-      return status;
-    }
-  }
+
   return L2capCocInternal::Create(l2cap_channel_manager_,
                                   connection_handle,
                                   rx_config,
@@ -426,6 +414,20 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
                                   std::move(receive_fn),
                                   std::move(event_fn),
                                   std::move(queue_space_available_fn));
+}
+
+pw::Status ProxyHost::SendAdditionalRxCredits(uint16_t connection_handle,
+                                              uint16_t local_cid,
+                                              uint16_t additional_rx_credits) {
+  L2capSignalingChannel* signaling_channel =
+      acl_data_channel_.FindSignalingChannel(
+          connection_handle,
+          static_cast<uint16_t>(emboss::L2capFixedCid::LE_U_SIGNALING));
+  if (!signaling_channel) {
+    return Status::NotFound();
+  }
+  return signaling_channel->SendFlowControlCreditInd(local_cid,
+                                                     additional_rx_credits);
 }
 
 pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(

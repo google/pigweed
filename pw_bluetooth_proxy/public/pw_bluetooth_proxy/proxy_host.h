@@ -115,26 +115,22 @@ class ProxyHost {
   /// Returns an L2CAP connection-oriented channel that supports writing to and
   /// reading from a remote peer.
   ///
-  /// @param[in] connection_handle     The connection handle of the remote peer.
+  /// @param[in] connection_handle  The connection handle of the remote peer.
   ///
-  /// @param[in] rx_config             Parameters applying to reading packets.
-  ///                                  See `l2cap_coc.h` for details.
+  /// @param[in] rx_config          Parameters applying to reading packets. See
+  ///                               `l2cap_coc.h` for details.
   ///
-  /// @param[in] tx_config             Parameters applying to writing packets.
-  ///                                  See `l2cap_coc.h` for details.
+  /// @param[in] tx_config          Parameters applying to writing packets. See
+  ///                               `l2cap_coc.h` for details.
   ///
-  /// @param[in] receive_fn            Read callback to be invoked on Rx SDUs.
+  /// @param[in] receive_fn         Read callback to be invoked on Rx SDUs.
   ///
-  /// @param[in] event_fn              Handle asynchronous events such as errors
-  ///                                  encountered by the channel.
-  ///
-  /// @param[in] rx_additional_credits Send L2CAP_FLOW_CONTROL_CREDIT_IND to
-  ///                                  dispense remote peer additional credits
-  ///                                  for this channel.
+  /// @param[in] event_fn           Handle asynchronous events such as errors
+  ///                               encountered by the channel.
   ///
   /// @param[in] queue_space_available_fn
-  ///                              Callback to be invoked after resources become
-  ///                              available after an UNAVAILABLE Write.
+  ///                               Callback to be invoked after resources
+  ///                               become available after an UNAVAILABLE Write.
   ///
   /// @returns @rst
   ///
@@ -147,10 +143,31 @@ class ProxyHost {
       uint16_t connection_handle,
       L2capCoc::CocConfig rx_config,
       L2capCoc::CocConfig tx_config,
-      Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-      Function<void(L2capCoc::Event event)>&& event_fn,
-      Function<void()>&& queue_space_available_fn = nullptr,
-      uint16_t rx_additional_credits = 0);
+      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      pw::Function<void(L2capCoc::Event event)>&& event_fn,
+      Function<void()>&& queue_space_available_fn = nullptr);
+
+  /// Send an L2CAP_FLOW_CONTROL_CREDIT_IND signaling packet to dispense the
+  /// remote peer additional L2CAP connection-oriented channel credits for this
+  /// channel.
+  ///
+  /// @param[in] connection_handle     ACL connection over which this L2CAP
+  ///                                  connection-oriented channel exists.
+  ///
+  /// @param[in] local_cid             L2CAP channel ID of local endpoint.
+  ///
+  /// @param[in] additional_rx_credits Number of credits to dispense.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///  INVALID_ARGUMENT: CID invalid (check logs).
+  ///  NOT_FOUND:        Requested ACL connection does not exist.
+  ///  UNAVAILABLE:      Send could not be queued right now (transient error).
+  /// @endrst
+  pw::Status SendAdditionalRxCredits(uint16_t connection_handle,
+                                     uint16_t local_cid,
+                                     uint16_t additional_rx_credits);
 
   /// Returns an L2CAP channel operating in basic mode that supports writing to
   /// and reading from a remote peer.

@@ -182,7 +182,7 @@ struct CocParameters {
   uint16_t tx_credits = 1;
   pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr;
   pw::Function<void(L2capCoc::Event event)>&& event_fn = nullptr;
-  uint16_t rx_additional_credits = 0;
+  pw::Function<void()>&& queue_space_available_fn = nullptr;
 };
 
 // Open and return an L2CAP connection-oriented channel managed by `proxy`.

@@ -3965,7 +3965,7 @@ TEST(L2capSignalingTest, CreditIndAddressedToNonManagedChannelForwardedToHost) {
   EXPECT_EQ(forwards_to_host, 1);
 }
 
-TEST(L2capSignalingTest, RxAdditionalCreditsSentOnL2capCocAcquisition) {
+TEST(L2capSignalingTest, RxAdditionalCreditsSent) {
   struct {
     uint16_t handle = 123;
     uint16_t local_cid = 456;
@@ -4014,11 +4014,13 @@ TEST(L2capSignalingTest, RxAdditionalCreditsSentOnL2capCocAcquisition) {
   // Allow proxy to reserve 1 LE credit.
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
-  L2capCoc channel =
-      BuildCoc(proxy,
-               CocParameters{.handle = capture.handle,
-                             .local_cid = capture.local_cid,
-                             .rx_additional_credits = capture.credits});
+  // Build channel so ACL connection is registered.
+  L2capCoc channel = BuildCoc(
+      proxy,
+      CocParameters{.handle = capture.handle, .local_cid = capture.local_cid});
+
+  PW_TEST_EXPECT_OK(proxy.SendAdditionalRxCredits(
+      capture.handle, capture.local_cid, capture.credits));
 
   EXPECT_EQ(capture.sends_called, 1);
 }
