@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/basic_l2cap_channel.h"
 #include "pw_bluetooth_proxy/l2cap_status_delegate.h"
@@ -89,6 +88,10 @@ class L2capSignalingChannel : public BasicL2capChannel {
 
   bool HandlePduFromHost(pw::span<uint8_t> cframe) override;
 
+  // Get the next Identifier value that should be written to a signaling
+  // command and increment the Identifier.
+  uint8_t GetNextIdentifierAndIncrement();
+
   L2capChannelManager& l2cap_channel_manager_;
 
  private:
@@ -107,6 +110,16 @@ class L2capSignalingChannel : public BasicL2capChannel {
       PW_GUARDED_BY(mutex_){};
 
   sync::Mutex mutex_;
+
+  // Core Spec v6.0 Vol 3, Part A, Section 4: "The Identifier field is one octet
+  // long and matches responses with requests. The requesting device sets this
+  // field and the responding device uses the same value in its response. Within
+  // each signaling channel a different Identifier shall be used for each
+  // successive command. Following the original transmission of an Identifier in
+  // a command, the Identifier may be recycled if all other Identifiers have
+  // subsequently been used."
+  // TODO: https://pwbug.dev/382553099 - Synchronize this value with AP host.
+  uint8_t next_identifier_ = 1;
 };
 
 }  // namespace pw::bluetooth::proxy

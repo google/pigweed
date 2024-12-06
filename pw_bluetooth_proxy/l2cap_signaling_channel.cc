@@ -278,6 +278,7 @@ Status L2capSignalingChannel::SendFlowControlCreditInd(uint16_t cid,
           cframe.payload().SizeInBytes());
   ind.command_header().code().Write(
       emboss::L2capSignalingPacketCode::FLOW_CONTROL_CREDIT_IND);
+  ind.command_header().identifier().Write(GetNextIdentifierAndIncrement());
   ind.command_header().data_length().Write(
       emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes() -
       emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
@@ -285,6 +286,14 @@ Status L2capSignalingChannel::SendFlowControlCreditInd(uint16_t cid,
   ind.credits().Write(credits);
 
   return QueuePacket(std::move(h4_packet));
+}
+
+uint8_t L2capSignalingChannel::GetNextIdentifierAndIncrement() {
+  if (next_identifier_ == UINT8_MAX) {
+    next_identifier_ = 1;
+    return UINT8_MAX;
+  }
+  return next_identifier_++;
 }
 
 }  // namespace pw::bluetooth::proxy

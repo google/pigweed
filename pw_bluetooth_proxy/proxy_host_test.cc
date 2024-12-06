@@ -3996,6 +3996,15 @@ TEST(L2capSignalingTest, RxAdditionalCreditsSentOnL2capCocAcquisition) {
             emboss::MakeL2capFlowControlCreditIndView(
                 cframe.payload().BackingStorage().data(),
                 cframe.payload().SizeInBytes());
+        EXPECT_EQ(ind.command_header().code().Read(),
+                  emboss::L2capSignalingPacketCode::FLOW_CONTROL_CREDIT_IND);
+        // TODO: https://pwbug.dev/382553099 - Test to ensure we are properly
+        // incrementing Identifier when sending multiple signaling packets.
+        EXPECT_EQ(ind.command_header().identifier().Read(), 1);
+        EXPECT_EQ(
+            ind.command_header().data_length().Read(),
+            emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes() -
+                emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
         EXPECT_EQ(ind.cid().Read(), capture.local_cid);
         EXPECT_EQ(ind.credits().Read(), capture.credits);
       });
