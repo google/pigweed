@@ -83,13 +83,30 @@ pw_add_library(pw_bluetooth_proxy STATIC
     rfcomm_fcs.cc
 )
 
+pw_add_library(pw_bluetooth_proxy.test_utils STATIC
+  HEADERS
+    pw_bluetooth_proxy_private/test_utils.h
+  PUBLIC_DEPS
+    pw_bluetooth_proxy
+    pw_third_party.fuchsia.stdcompat
+    pw_bluetooth.emboss_hci_commands
+    pw_bluetooth.emboss_hci_common
+    pw_bluetooth.emboss_hci_events
+    pw_bluetooth.emboss_hci_h4
+    pw_unit_test
+  SOURCES
+    test_utils.cc
+)
+
 pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
   SOURCES
     proxy_host_test.cc
     h4_packet_test.cc
     rfcomm_fcs_test.cc
+    rfcomm_test.cc
   PRIVATE_DEPS
     pw_bluetooth_proxy
+    pw_bluetooth_proxy.test_utils
     pw_third_party.fuchsia.stdcompat
     pw_bluetooth.emboss_att
     pw_bluetooth.emboss_hci_commands

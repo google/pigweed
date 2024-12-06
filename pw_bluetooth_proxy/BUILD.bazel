@@ -80,15 +80,34 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "test_utils",
+    testonly = True,
+    srcs = ["test_utils.cc"],
+    hdrs = ["pw_bluetooth_proxy_private/test_utils.h"],
+    deps = [
+        ":pw_bluetooth_proxy",
+        "//pw_bluetooth:emboss_att",
+        "//pw_bluetooth:emboss_hci_commands",
+        "//pw_bluetooth:emboss_hci_common",
+        "//pw_bluetooth:emboss_hci_events",
+        "//pw_bluetooth:emboss_hci_h4",
+        "//pw_bluetooth:emboss_util",
+        "//pw_unit_test",
+    ],
+)
+
 pw_cc_test(
     name = "pw_bluetooth_proxy_test",
     srcs = [
         "h4_packet_test.cc",
         "proxy_host_test.cc",
         "rfcomm_fcs_test.cc",
+        "rfcomm_test.cc",
     ],
     deps = [
         ":pw_bluetooth_proxy",
+        ":test_utils",
         "//pw_bluetooth:emboss_att",
         "//pw_bluetooth:emboss_hci_commands",
         "//pw_bluetooth:emboss_hci_common",
