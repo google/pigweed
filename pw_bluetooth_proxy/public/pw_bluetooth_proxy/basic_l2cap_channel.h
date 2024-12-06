@@ -27,8 +27,8 @@ class BasicL2capChannel : public L2capChannel {
       uint16_t connection_handle,
       uint16_t local_cid,
       uint16_t remote_cid,
-      pw::Function<void(pw::span<uint8_t> payload)>&&
-          payload_from_controller_fn);
+      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<void()>&& queue_space_available_fn);
 
   BasicL2capChannel(const BasicL2capChannel& other) = delete;
   BasicL2capChannel& operator=(const BasicL2capChannel& other) = delete;
@@ -46,18 +46,21 @@ class BasicL2capChannel : public L2capChannel {
   /// .. pw-status-codes::
   ///  OK:                  If packet was successfully queued for send.
   ///  UNAVAILABLE:         If channel could not acquire the resources to queue
-  ///                       the send at this time (transient error).
+  ///                       the send at this time (transient error). If a
+  ///                       `queue_space_available_fn` has been provided it will
+  ///                       be called when there is queue space available again.
   ///  INVALID_ARGUMENT:    If payload is too large.
   /// @endrst
   pw::Status Write(pw::span<const uint8_t> payload);
 
  protected:
-  explicit BasicL2capChannel(L2capChannelManager& l2cap_channel_manager,
-                             uint16_t connection_handle,
-                             uint16_t local_cid,
-                             uint16_t remote_cid,
-                             pw::Function<void(pw::span<uint8_t> payload)>&&
-                                 payload_from_controller_fn);
+  explicit BasicL2capChannel(
+      L2capChannelManager& l2cap_channel_manager,
+      uint16_t connection_handle,
+      uint16_t local_cid,
+      uint16_t remote_cid,
+      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<void()>&& queue_space_available_fn);
 
  protected:
   bool HandlePduFromController(pw::span<uint8_t> bframe) override;

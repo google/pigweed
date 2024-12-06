@@ -99,7 +99,9 @@ class L2capCoc : public L2capChannel {
   /// .. pw-status-codes::
   ///  OK:                  If packet was successfully queued for send.
   ///  UNAVAILABLE:         If channel could not acquire the resources to queue
-  ///                       the send at this time (transient error).
+  ///                       the send at this time (transient error). If a
+  ///                       `queue_space_available_fn` has been provided it will
+  ///                       be called when there is queue space available again.
   ///  INVALID_ARGUMENT:    If payload is too large.
   ///  FAILED_PRECONDITION: If channel is `kStopped`.
   /// @endrst
@@ -111,9 +113,9 @@ class L2capCoc : public L2capChannel {
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
-      pw::Function<void(pw::span<uint8_t> payload)>&&
-          payload_from_controller_fn,
-      pw::Function<void(Event event)>&& event_fn);
+      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<void(Event event)>&& event_fn,
+      Function<void()>&& queue_space_available_fn);
 
   // `SendPayloadFromControllerToClient` with the information payload contained
   // in `kframe`. As packet desegmentation is not supported, segmented SDUs are
@@ -133,13 +135,14 @@ class L2capCoc : public L2capChannel {
     kStopped,
   };
 
-  explicit L2capCoc(L2capChannelManager& l2cap_channel_manager,
-                    uint16_t connection_handle,
-                    CocConfig rx_config,
-                    CocConfig tx_config,
-                    pw::Function<void(pw::span<uint8_t> payload)>&&
-                        payload_from_controller_fn,
-                    pw::Function<void(Event event)>&& event_fn);
+  explicit L2capCoc(
+      L2capChannelManager& l2cap_channel_manager,
+      uint16_t connection_handle,
+      CocConfig rx_config,
+      CocConfig tx_config,
+      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<void(Event event)>&& event_fn,
+      Function<void()>&& queue_space_available_fn);
 
   // Stop channel & notify client.
   void OnFragmentedPduReceived() override;

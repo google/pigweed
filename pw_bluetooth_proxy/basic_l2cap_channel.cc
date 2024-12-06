@@ -27,8 +27,8 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
     uint16_t connection_handle,
     uint16_t local_cid,
     uint16_t remote_cid,
-    pw::Function<void(pw::span<uint8_t> payload)>&&
-        payload_from_controller_fn) {
+    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<void()>&& queue_space_available_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/local_cid,
                           /*remote_cid=*/remote_cid)) {
@@ -40,7 +40,8 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
       /*connection_handle=*/connection_handle,
       /*local_cid=*/local_cid,
       /*remote_cid=*/remote_cid,
-      /*payload_from_controller_fn=*/std::move(payload_from_controller_fn));
+      /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
+      /*queue_space_available_fn=*/std::move(queue_space_available_fn));
 }
 
 pw::Status BasicL2capChannel::Write(pw::span<const uint8_t> payload) {
@@ -74,14 +75,16 @@ BasicL2capChannel::BasicL2capChannel(
     uint16_t connection_handle,
     uint16_t local_cid,
     uint16_t remote_cid,
-    pw::Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn)
+    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<void()>&& queue_space_available_fn)
     : L2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
                    /*connection_handle=*/connection_handle,
                    /*transport=*/AclTransportType::kLe,
                    /*local_cid=*/local_cid,
                    /*remote_cid=*/remote_cid,
                    /*payload_from_controller_fn=*/
-                   std::move(payload_from_controller_fn)) {}
+                   std::move(payload_from_controller_fn),
+                   std::move(queue_space_available_fn)) {}
 
 bool BasicL2capChannel::HandlePduFromController(pw::span<uint8_t> bframe) {
   Result<emboss::BFrameWriter> bframe_view =

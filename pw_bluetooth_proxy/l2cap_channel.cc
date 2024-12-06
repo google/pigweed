@@ -33,6 +33,7 @@ L2capChannel::L2capChannel(L2capChannel&& other)
       transport_(other.transport()),
       local_cid_(other.local_cid()),
       remote_cid_(other.remote_cid()),
+      queue_space_available_fn_(std::move(other.queue_space_available_fn_)),
       payload_from_controller_fn_(
           std::move(other.payload_from_controller_fn_)) {
   // All L2capChannels share a static mutex, so only one lock needs to be
@@ -41,6 +42,7 @@ L2capChannel::L2capChannel(L2capChannel&& other)
   // static, elide this operator or acquire a lock on both channels' mutexes.
   std::lock_guard lock(global_send_queue_mutex_);
   send_queue_ = std::move(other.send_queue_);
+  notify_on_dequeue_ = other.notify_on_dequeue_;
   l2cap_channel_manager_.ReleaseChannel(other);
   l2cap_channel_manager_.RegisterChannel(*this);
 }
@@ -55,12 +57,14 @@ L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
   local_cid_ = other.local_cid();
   remote_cid_ = other.remote_cid();
   payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
+  queue_space_available_fn_ = std::move(other.queue_space_available_fn_);
   // All L2capWriteChannels share a static mutex, so only one lock needs to be
   // acquired here.
   // TODO: https://pwbug.dev/369849508 - Once mutex is no longer static,
   // elide this operator or acquire a lock on both channels' mutexes.
   std::lock_guard lock(global_send_queue_mutex_);
   send_queue_ = std::move(other.send_queue_);
+  notify_on_dequeue_ = other.notify_on_dequeue_;
   l2cap_channel_manager_.ReleaseChannel(other);
   l2cap_channel_manager_.RegisterChannel(*this);
   return *this;
@@ -77,6 +81,7 @@ Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
     std::lock_guard lock(global_send_queue_mutex_);
     if (send_queue_.full()) {
       status = Status::Unavailable();
+      notify_on_dequeue_ = true;
     } else {
       send_queue_.push(std::move(packet));
       status = OkStatus();
@@ -87,12 +92,22 @@ Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
 }
 
 std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
-  std::lock_guard lock(global_send_queue_mutex_);
-  if (send_queue_.empty()) {
-    return std::nullopt;
+  std::optional<H4PacketWithH4> packet;
+  bool should_notify = false;
+  {
+    std::lock_guard lock(global_send_queue_mutex_);
+    if (!send_queue_.empty()) {
+      packet.emplace(std::move(send_queue_.front()));
+      send_queue_.pop();
+      should_notify = notify_on_dequeue_;
+      notify_on_dequeue_ = false;
+    }
   }
-  H4PacketWithH4 packet = std::move(send_queue_.front());
-  send_queue_.pop();
+
+  if (queue_space_available_fn_ && should_notify) {
+    queue_space_available_fn_();
+  }
+
   return packet;
 }
 
@@ -108,12 +123,14 @@ L2capChannel::L2capChannel(
     AclTransportType transport,
     uint16_t local_cid,
     uint16_t remote_cid,
-    pw::Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn)
+    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<void()>&& queue_space_available_fn)
     : l2cap_channel_manager_(l2cap_channel_manager),
       connection_handle_(connection_handle),
       transport_(transport),
       local_cid_(local_cid),
       remote_cid_(remote_cid),
+      queue_space_available_fn_(std::move(queue_space_available_fn)),
       payload_from_controller_fn_(std::move(payload_from_controller_fn)) {
   l2cap_channel_manager_.RegisterChannel(*this);
 }

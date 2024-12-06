@@ -102,8 +102,9 @@ pw::Result<L2capCoc> L2capCoc::Create(
     uint16_t connection_handle,
     CocConfig rx_config,
     CocConfig tx_config,
-    pw::Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    pw::Function<void(Event event)>&& event_fn) {
+    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<void(Event event)>&& event_fn,
+    Function<void()>&& queue_space_available_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/rx_config.cid,
                           /*remote_cid=*/tx_config.cid)) {
@@ -125,7 +126,8 @@ pw::Result<L2capCoc> L2capCoc::Create(
       /*rx_config=*/rx_config,
       /*tx_config=*/tx_config,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
-      /*event_fn=*/std::move(event_fn));
+      /*event_fn=*/std::move(event_fn),
+      /*queue_space_available_fn=*/std::move(queue_space_available_fn));
 }
 
 bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
@@ -232,14 +234,16 @@ L2capCoc::L2capCoc(
     uint16_t connection_handle,
     CocConfig rx_config,
     CocConfig tx_config,
-    pw::Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    pw::Function<void(Event event)>&& event_fn)
+    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<void(Event event)>&& event_fn,
+    Function<void()>&& queue_space_available_fn)
     : L2capChannel(l2cap_channel_manager,
                    connection_handle,
                    AclTransportType::kLe,
                    rx_config.cid,
                    tx_config.cid,
-                   std::move(payload_from_controller_fn)),
+                   std::move(payload_from_controller_fn),
+                   std::move(queue_space_available_fn)),
       state_(CocState::kRunning),
       rx_mtu_(rx_config.mtu),
       rx_mps_(rx_config.mps),

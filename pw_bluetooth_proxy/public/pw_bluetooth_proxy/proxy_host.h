@@ -132,6 +132,10 @@ class ProxyHost {
   ///                                  dispense remote peer additional credits
   ///                                  for this channel.
   ///
+  /// @param[in] queue_space_available_fn
+  ///                              Callback to be invoked after resources become
+  ///                              available after an UNAVAILABLE Write.
+  ///
   /// @returns @rst
   ///
   /// .. pw-status-codes::
@@ -143,8 +147,9 @@ class ProxyHost {
       uint16_t connection_handle,
       L2capCoc::CocConfig rx_config,
       L2capCoc::CocConfig tx_config,
-      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-      pw::Function<void(L2capCoc::Event event)>&& event_fn,
+      Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      Function<void(L2capCoc::Event event)>&& event_fn,
+      Function<void()>&& queue_space_available_fn = nullptr,
       uint16_t rx_additional_credits = 0);
 
   /// Returns an L2CAP channel operating in basic mode that supports writing to
@@ -164,6 +169,10 @@ class ProxyHost {
   /// @param[in] payload_from_controller_fn Read callback to be invoked on Rx
   ///                                       SDUs.
   ///
+  /// @param[in] queue_space_available_fn   Callback to be invoked after
+  ///                                       resources become available after an
+  ///                                       UNAVAILABLE Write.
+  ///
   /// @returns @rst
   ///
   /// .. pw-status-codes::
@@ -176,8 +185,8 @@ class ProxyHost {
       uint16_t local_cid,
       uint16_t remote_cid,
       AclTransportType transport,
-      pw::Function<void(pw::span<uint8_t> payload)>&&
-          payload_from_controller_fn);
+      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<void()>&& queue_space_available_fn = nullptr);
 
   /// Send a GATT Notify to the indicated connection.
   ///
@@ -216,6 +225,10 @@ class ProxyHost {
   ///
   /// @param[in] receive_fn        Read callback to be invoked on Rx frames.
   ///
+  /// @param[in] queue_space_available_fn
+  ///                              Callback to be invoked after resources become
+  ///                              available after an UNAVAILABLE Write.
+  ///
   /// @returns @rst
   ///
   /// .. pw-status-codes::
@@ -227,7 +240,8 @@ class ProxyHost {
       RfcommChannel::Config rx_config,
       RfcommChannel::Config tx_config,
       uint8_t channel_number,
-      pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn);
+      Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      Function<void()>&& queue_space_available_fn);
 
   /// Indicates whether the proxy has the capability of sending LE ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy

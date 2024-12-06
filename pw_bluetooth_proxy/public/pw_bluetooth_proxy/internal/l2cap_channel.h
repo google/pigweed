@@ -99,13 +99,14 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   AclTransportType transport() const { return transport_; }
 
  protected:
-  explicit L2capChannel(L2capChannelManager& l2cap_channel_manager,
-                        uint16_t connection_handle,
-                        AclTransportType transport,
-                        uint16_t local_cid,
-                        uint16_t remote_cid,
-                        pw::Function<void(pw::span<uint8_t> payload)>&&
-                            payload_from_controller_fn);
+  explicit L2capChannel(
+      L2capChannelManager& l2cap_channel_manager,
+      uint16_t connection_handle,
+      AclTransportType transport,
+      uint16_t local_cid,
+      uint16_t remote_cid,
+      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<void()>&& queue_space_available_fn);
 
   // Returns whether or not ACL connection handle & L2CAP channel identifiers
   // are valid parameters for a packet.
@@ -186,6 +187,13 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Stores Tx L2CAP packets.
   InlineQueue<H4PacketWithH4, kQueueCapacity> send_queue_
       PW_GUARDED_BY(global_send_queue_mutex_);
+
+  // Callback to notify writers after queue space opens up.
+  Function<void()> queue_space_available_fn_;
+
+  // True if the last queue attempt didn't have space. Will be cleared on
+  // successful dequeue.
+  bool notify_on_dequeue_ PW_GUARDED_BY(global_send_queue_mutex_) = false;
 
   //-------
   //  Rx:
