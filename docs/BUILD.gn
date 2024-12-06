@@ -103,6 +103,7 @@ pw_doc_group("core_docs") {
     "showcases/sense/tutorial/setup.rst",
     "showcases/sense/tutorial/web.rst",
     "size_optimizations.rst",
+    "style/bazel.rst",
     "style/cli.rst",
     "style/commit_message.rst",
     "style/cpp.rst",

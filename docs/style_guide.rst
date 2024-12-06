@@ -271,6 +271,7 @@ This plugin will, by default, act upon any file named "OWNERS".
 .. toctree::
    :hidden:
 
+   Bazel <style/bazel>
    C++ <style/cpp>
    Commit message <style/commit_message>
    CLI <style/cli>
