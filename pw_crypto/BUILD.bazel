@@ -181,6 +181,32 @@ pw_cc_test(
     ],
 )
 
+cc_library(
+    name = "aes",
+    hdrs = [
+        "public/pw_crypto/aes.h",
+        "public/pw_crypto/aes_backend.h",
+        "public/pw_crypto/aes_backend_defs.h",
+    ],
+    includes = ["public"],
+    deps = [
+        "//pw_bytes",
+        "//pw_status",
+    ],
+)
+
+pw_cc_test(
+    name = "aes_test",
+    srcs = [
+        "aes_test.cc",
+    ],
+    deps = [
+        ":aes",
+        "//pw_containers:vector",
+        "//pw_unit_test",
+    ],
+)
+
 filegroup(
     name = "doxygen",
     srcs = [

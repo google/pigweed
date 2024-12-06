@@ -85,6 +85,27 @@ ECDSA
        // Handle errors.
    }
 
+---
+AES
+---
+
+1. Encrypting a single AES 128-bit block.
+
+.. warning::
+  This is a low-level operation. Users should know exactly what they are doing
+  and must ensure that this operation does not violate any safety bounds that
+  more refined operations usually ensure.
+
+.. code-block:: cpp
+
+   #include "pw_crypto/aes.h"
+
+   std::byte encrypted[16];
+
+   if (!pw::crypto::unsafe::aes::EncryptBlock(key, message, encrypted).ok()) {
+       // Handle errors.
+   }
+
 -------------
 Configuration
 -------------

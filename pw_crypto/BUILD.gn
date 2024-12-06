@@ -81,6 +81,7 @@ pw_size_diff("size_report") {
 
 pw_test_group("tests") {
   tests = [
+    ":aes_test",
     ":sha256_test",
     ":sha256_mock_test",
     ":ecdsa_test",
@@ -218,4 +219,25 @@ pw_test("ecdsa_test") {
   enable_if = pw_crypto_ECDSA_BACKEND != ""
   deps = [ ":ecdsa" ]
   sources = [ "ecdsa_test.cc" ]
+}
+
+source_set("aes") {
+  public_configs = [ ":default_config" ]
+  public = [
+    "public/pw_crypto/aes.h",
+    "public/pw_crypto/aes_backend.h",
+    "public/pw_crypto/aes_backend_defs.h",
+  ]
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_status",
+  ]
+}
+
+pw_test("aes_test") {
+  deps = [
+    ":aes",
+    "$dir_pw_containers:vector",
+  ]
+  sources = [ "aes_test.cc" ]
 }
