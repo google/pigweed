@@ -444,6 +444,7 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
   return BasicL2capChannel::Create(
       /*l2cap_channel_manager=*/l2cap_channel_manager_,
       /*connection_handle=*/connection_handle,
+      /*transport=*/transport,
       /*local_cid=*/local_cid,
       /*remote_cid=*/remote_cid,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),

@@ -24,6 +24,7 @@ L2capLeUSignalingChannel::L2capLeUSignalingChannel(
     : L2capSignalingChannel(
           /*l2cap_channel_manager=*/l2cap_channel_manager,
           /*connection_handle=*/connection_handle,
+          /*transport=*/AclTransportType::kLe,
           /*fixed_cid=*/
           cpp23::to_underlying(emboss::L2capFixedCid::LE_U_SIGNALING)) {}
 

@@ -25,6 +25,7 @@ namespace pw::bluetooth::proxy {
 pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
+    AclTransportType transport,
     uint16_t local_cid,
     uint16_t remote_cid,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
@@ -38,6 +39,7 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
   return BasicL2capChannel(
       /*l2cap_channel_manager=*/l2cap_channel_manager,
       /*connection_handle=*/connection_handle,
+      /*transport=*/transport,
       /*local_cid=*/local_cid,
       /*remote_cid=*/remote_cid,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
@@ -73,13 +75,14 @@ pw::Status BasicL2capChannel::Write(pw::span<const uint8_t> payload) {
 BasicL2capChannel::BasicL2capChannel(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
+    AclTransportType transport,
     uint16_t local_cid,
     uint16_t remote_cid,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     Function<void()>&& queue_space_available_fn)
     : L2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
                    /*connection_handle=*/connection_handle,
-                   /*transport=*/AclTransportType::kLe,
+                   /*transport=*/transport,
                    /*local_cid=*/local_cid,
                    /*remote_cid=*/remote_cid,
                    /*payload_from_controller_fn=*/

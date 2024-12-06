@@ -26,6 +26,7 @@ L2capAclUSignalingChannel::L2capAclUSignalingChannel(
     : L2capSignalingChannel(
           /*l2cap_channel_manager=*/l2cap_channel_manager,
           /*connection_handle=*/connection_handle,
+          /*transport=*/AclTransportType::kBrEdr,
           /*fixed_cid=*/
           cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING)) {}
 

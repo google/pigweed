@@ -31,9 +31,11 @@ namespace pw::bluetooth::proxy {
 L2capSignalingChannel::L2capSignalingChannel(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
+    AclTransportType transport,
     uint16_t fixed_cid)
     : BasicL2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
                         /*connection_handle=*/connection_handle,
+                        /*transport*/ transport,
                         /*local_cid=*/fixed_cid,
                         /*remote_cid=*/fixed_cid,
                         /*payload_from_controller_fn=*/nullptr,

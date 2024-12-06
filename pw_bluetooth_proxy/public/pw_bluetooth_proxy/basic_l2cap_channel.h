@@ -25,6 +25,7 @@ class BasicL2capChannel : public L2capChannel {
   static pw::Result<BasicL2capChannel> Create(
       L2capChannelManager& l2cap_channel_manager,
       uint16_t connection_handle,
+      AclTransportType transport,
       uint16_t local_cid,
       uint16_t remote_cid,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
@@ -57,6 +58,7 @@ class BasicL2capChannel : public L2capChannel {
   explicit BasicL2capChannel(
       L2capChannelManager& l2cap_channel_manager,
       uint16_t connection_handle,
+      AclTransportType transport,
       uint16_t local_cid,
       uint16_t remote_cid,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
