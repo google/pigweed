@@ -260,5 +260,18 @@ TEST(EnumFinder, RepeatedField) {
   EXPECT_EQ(result.status(), Status::NotFound());
 }
 
+TEST(EnumStreamFinder, RepeatedField) {
+  stream::MemoryReader reader(kEncodedRepeatedProto);
+  EnumStreamFinder<Boolean> finder(reader, 2);
+  Result<Boolean> result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), Boolean::kFalse);
+  result = finder.Next();
+  EXPECT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.value(), Boolean::kFileNotFound);
+  result = finder.Next();
+  EXPECT_EQ(result.status(), Status::NotFound());
+}
+
 }  // namespace
 }  // namespace pw::protobuf

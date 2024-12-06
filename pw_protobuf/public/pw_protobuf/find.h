@@ -111,7 +111,8 @@ class EnumFinder : private Finder<uint32_t, &Decoder::ReadUint32> {
 };
 
 template <typename T>
-class EnumStreamFinder : private StreamFinder<uint32_t, &Decoder::ReadUint32> {
+class EnumStreamFinder
+    : private StreamFinder<uint32_t, &StreamDecoder::ReadUint32> {
  public:
   using StreamFinder::StreamFinder;
 
