@@ -279,6 +279,9 @@ class ProxyHost {
   // Process a Command_Complete event.
   void HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet);
 
+  // Handle HCI Command packet from the host.
+  void HandleCommandFromHost(H4PacketWithH4&& h4_packet);
+
   // Handle HCI ACL data packet from the host.
   void HandleAclFromHost(H4PacketWithH4&& h4_packet);
 

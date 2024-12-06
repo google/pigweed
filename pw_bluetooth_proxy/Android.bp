@@ -64,6 +64,7 @@ cc_library_static {
     ],
     generated_headers: [
         "pw_bluetooth_generate_emboss_att",
+        "pw_bluetooth_generate_emboss_hci_commands",
         "pw_bluetooth_generate_emboss_hci_common",
         "pw_bluetooth_generate_emboss_hci_data",
         "pw_bluetooth_generate_emboss_hci_events",
@@ -73,6 +74,7 @@ cc_library_static {
     ],
     export_generated_headers: [
         "pw_bluetooth_generate_emboss_att",
+        "pw_bluetooth_generate_emboss_hci_commands",
         "pw_bluetooth_generate_emboss_hci_common",
         "pw_bluetooth_generate_emboss_hci_data",
         "pw_bluetooth_generate_emboss_hci_events",

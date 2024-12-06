@@ -16,6 +16,7 @@
 
 #include "pw_assert/check.h"  // IWYU pragma: keep
 #include "pw_bluetooth/emboss_util.h"
+#include "pw_bluetooth/hci_commands.emb.h"
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
@@ -43,10 +44,16 @@ ProxyHost::ProxyHost(
 ProxyHost::~ProxyHost() { acl_data_channel_.Reset(); }
 
 void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
+  if (h4_packet.GetH4Type() == emboss::H4PacketType::COMMAND) {
+    HandleCommandFromHost(std::move(h4_packet));
+    return;
+  }
+
   if (h4_packet.GetH4Type() == emboss::H4PacketType::ACL_DATA) {
     HandleAclFromHost(std::move(h4_packet));
     return;
   }
+
   hci_transport_.SendToController(std::move(h4_packet));
 }
 
@@ -309,6 +316,25 @@ void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
   }
   PW_MODIFY_DIAGNOSTICS_POP();
   hci_transport_.SendToHost(std::move(h4_packet));
+}
+
+void ProxyHost::HandleCommandFromHost(H4PacketWithH4&& h4_packet) {
+  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
+  Result<emboss::GenericHciCommandView> command =
+      MakeEmbossView<emboss::GenericHciCommandView>(hci_buffer);
+  if (!command.ok()) {
+    hci_transport_.SendToController(std::move(h4_packet));
+    return;
+  }
+
+  // TODO: https://pwbug.dev/381902130 - Handle reset on command complete
+  // successful instead. Also event to container on reset.
+  if (command->header().opcode_enum().Read() == emboss::OpCode::RESET) {
+    PW_LOG_INFO("Resetting proxy on seeing RESET command.");
+    Reset();
+  }
+
+  hci_transport_.SendToController(std::move(h4_packet));
 }
 
 void ProxyHost::HandleAclFromHost(H4PacketWithH4&& h4_packet) {

@@ -50,11 +50,13 @@ static constexpr size_t kMaxProxyActiveConnections = 10;
 // Populate passed H4 command buffer and return Emboss view on it.
 template <typename EmbossT>
 Result<EmbossT> CreateAndPopulateToControllerView(H4PacketWithH4& h4_packet,
-                                                  emboss::OpCode opcode) {
+                                                  emboss::OpCode opcode,
+                                                  size_t parameter_total_size) {
   std::iota(h4_packet.GetHciSpan().begin(), h4_packet.GetHciSpan().end(), 100);
   h4_packet.SetH4Type(emboss::H4PacketType::COMMAND);
   PW_TRY_ASSIGN(auto view, MakeEmbossWriter<EmbossT>(h4_packet.GetHciSpan()));
   view.header().opcode_enum().Write(opcode);
+  view.header().parameter_total_size().Write(parameter_total_size);
   return view;
 }
 
@@ -62,7 +64,9 @@ Result<EmbossT> CreateAndPopulateToControllerView(H4PacketWithH4& h4_packet,
 // interact with.
 Status PopulateNoninteractingToControllerBuffer(H4PacketWithH4& h4_packet) {
   return CreateAndPopulateToControllerView<emboss::InquiryCommandWriter>(
-             h4_packet, emboss::OpCode::LINK_KEY_REQUEST_REPLY)
+             h4_packet,
+             emboss::OpCode::LINK_KEY_REQUEST_REPLY,
+             /*parameter_total_size=*/0)
       .status();
 }
 
@@ -1968,6 +1972,57 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
   EXPECT_EQ(proxy.SendGattNotify(1, 1, pw::span(attribute_value)),
             PW_STATUS_OK);
   EXPECT_EQ(sends_called, 2);
+}
+
+TEST(ResetTest, HandleHciReset) {
+  struct {
+    int sends_called = 0;
+    const uint16_t connection_handle = 0x123;
+  } host_capture;
+  struct {
+    int sends_called = 0;
+    const uint16_t connection_handle = 0x123;
+  } controller_capture;
+
+  pw::Function<void(H4PacketWithHci&&)> send_to_host_fn(
+      [&host_capture](H4PacketWithHci&&) { ++host_capture.sends_called; });
+  pw::Function<void(H4PacketWithH4&&)> send_to_controller_fn(
+      [&controller_capture](H4PacketWithH4&&) {
+        ++controller_capture.sends_called;
+      });
+
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 2));
+  EXPECT_EQ(host_capture.sends_called, 1);
+
+  // Use 1 credit.
+  std::array<uint8_t, 1> attribute_value = {0};
+  EXPECT_TRUE(proxy
+                  .SendGattNotify(controller_capture.connection_handle,
+                                  1,
+                                  pw::span(attribute_value))
+                  .ok());
+  EXPECT_EQ(controller_capture.sends_called, 1);
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 1);
+
+  // Send HCI_Reset. This should cause proxy to reset and our free credits as
+  // well.
+  std::array<uint8_t, emboss::ResetCommandView::SizeInBytes() + 1>
+      h4_array_from_host{};
+  H4PacketWithH4 h4_packet_from_host{emboss::H4PacketType::UNKNOWN,
+                                     h4_array_from_host};
+  PW_TEST_EXPECT_OK(
+      CreateAndPopulateToControllerView<emboss::ResetCommandWriter>(
+          h4_packet_from_host,
+          emboss::OpCode::RESET,
+          /*parameter_total_size=*/0));
+  proxy.HandleH4HciFromHost(std::move(h4_packet_from_host));
+
+  // Send new buffer response which shouldn't crash.
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 2));
+  EXPECT_EQ(host_capture.sends_called, 2);
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 2);
 }
 
 // ########## MultiSendTest

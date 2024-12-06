@@ -50,6 +50,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     public
   PUBLIC_DEPS
     pw_bluetooth.emboss_att
+    pw_bluetooth.emboss_hci_commands
     pw_bluetooth.emboss_hci_common
     pw_bluetooth.emboss_hci_data
     pw_bluetooth.emboss_hci_events

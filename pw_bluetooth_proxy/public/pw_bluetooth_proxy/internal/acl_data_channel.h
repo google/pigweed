@@ -247,6 +247,9 @@ class AclDataChannel {
     // return true.
     bool HasSendCapability() const { return to_reserve_ > 0; }
 
+    // If this class has already had credits reserved from the controller.
+    bool Initialized() const { return proxy_max_ > 0; }
+
    private:
     const uint16_t to_reserve_;
     // The local number of HCI ACL Data packets that we have reserved for
