@@ -132,8 +132,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Alert `L2capChannelManager` that queued packets may be ready to send.
   // When calling this method, ensure no locks are held that are also acquired
   // in `Dequeue()` overrides.
-  void ReportPacketsMayBeReadyToSend()
-      PW_LOCKS_EXCLUDED(global_send_queue_mutex_);
+  void ReportPacketsMayBeReadyToSend() PW_LOCKS_EXCLUDED(send_queue_mutex_);
 
   // Remove all packets from queue.
   void ClearQueue();
@@ -153,6 +152,10 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
 
   // TODO: https://pwbug.dev/349700888 - Make capacity configurable.
   static constexpr size_t kQueueCapacity = 5;
+
+  // Helper for move constructor and move assignment.
+  void MoveLockedFields(L2capChannel& other)
+      PW_LOCKS_EXCLUDED(send_queue_mutex_);
 
   L2capChannelManager& l2cap_channel_manager_;
 
@@ -174,26 +177,18 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // `L2capChannelManager` and channel may concurrently call functions that
   // access queue.
   //
-  // TODO: https://pwbug.dev/381942905 - This mutex is static to avoid it being
-  // destroyed when an L2capChannel is erased from a container. When an
-  // L2capChannel is erased, it is std::destroyed then overwritten by the
-  // subsequent L2capChannel in the container via the move assignment
-  // operator. After this, the previously destroyed L2capChannel object is
-  // again in an operational state, so its mutex needs to remain valid. This is
-  // a bug in pw::Vector::erase(). Once this behavior is fixed, we can remove
-  // the static to avoid cross-channel contention.
-  inline static sync::Mutex global_send_queue_mutex_;
+  sync::Mutex send_queue_mutex_;
 
   // Stores Tx L2CAP packets.
   InlineQueue<H4PacketWithH4, kQueueCapacity> send_queue_
-      PW_GUARDED_BY(global_send_queue_mutex_);
+      PW_GUARDED_BY(send_queue_mutex_);
 
   // Callback to notify writers after queue space opens up.
   Function<void()> queue_space_available_fn_;
 
   // True if the last queue attempt didn't have space. Will be cleared on
   // successful dequeue.
-  bool notify_on_dequeue_ PW_GUARDED_BY(global_send_queue_mutex_) = false;
+  bool notify_on_dequeue_ PW_GUARDED_BY(send_queue_mutex_) = false;
 
   //-------
   //  Rx:

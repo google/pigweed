@@ -27,6 +27,15 @@
 
 namespace pw::bluetooth::proxy {
 
+void L2capChannel::MoveLockedFields(L2capChannel& other) {
+  std::lock_guard lock(send_queue_mutex_);
+  std::lock_guard other_lock(other.send_queue_mutex_);
+  send_queue_ = std::move(other.send_queue_);
+  notify_on_dequeue_ = other.notify_on_dequeue_;
+  l2cap_channel_manager_.ReleaseChannel(other);
+  l2cap_channel_manager_.RegisterChannel(*this);
+}
+
 L2capChannel::L2capChannel(L2capChannel&& other)
     : l2cap_channel_manager_(other.l2cap_channel_manager_),
       connection_handle_(other.connection_handle()),
@@ -36,15 +45,7 @@ L2capChannel::L2capChannel(L2capChannel&& other)
       queue_space_available_fn_(std::move(other.queue_space_available_fn_)),
       payload_from_controller_fn_(
           std::move(other.payload_from_controller_fn_)) {
-  // All L2capChannels share a static mutex, so only one lock needs to be
-  // acquired here.
-  // TODO: https://pwbug.dev/381942905 - Once mutex no longer needs to be
-  // static, elide this operator or acquire a lock on both channels' mutexes.
-  std::lock_guard lock(global_send_queue_mutex_);
-  send_queue_ = std::move(other.send_queue_);
-  notify_on_dequeue_ = other.notify_on_dequeue_;
-  l2cap_channel_manager_.ReleaseChannel(other);
-  l2cap_channel_manager_.RegisterChannel(*this);
+  MoveLockedFields(other);
 }
 
 L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
@@ -56,17 +57,9 @@ L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
   transport_ = other.transport();
   local_cid_ = other.local_cid();
   remote_cid_ = other.remote_cid();
-  payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
   queue_space_available_fn_ = std::move(other.queue_space_available_fn_);
-  // All L2capWriteChannels share a static mutex, so only one lock needs to be
-  // acquired here.
-  // TODO: https://pwbug.dev/369849508 - Once mutex is no longer static,
-  // elide this operator or acquire a lock on both channels' mutexes.
-  std::lock_guard lock(global_send_queue_mutex_);
-  send_queue_ = std::move(other.send_queue_);
-  notify_on_dequeue_ = other.notify_on_dequeue_;
-  l2cap_channel_manager_.ReleaseChannel(other);
-  l2cap_channel_manager_.RegisterChannel(*this);
+  payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
+  MoveLockedFields(other);
   return *this;
 }
 
@@ -78,7 +71,7 @@ L2capChannel::~L2capChannel() {
 Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
   Status status;
   {
-    std::lock_guard lock(global_send_queue_mutex_);
+    std::lock_guard lock(send_queue_mutex_);
     if (send_queue_.full()) {
       status = Status::Unavailable();
       notify_on_dequeue_ = true;
@@ -95,7 +88,7 @@ std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
   std::optional<H4PacketWithH4> packet;
   bool should_notify = false;
   {
-    std::lock_guard lock(global_send_queue_mutex_);
+    std::lock_guard lock(send_queue_mutex_);
     if (!send_queue_.empty()) {
       packet.emplace(std::move(send_queue_.front()));
       send_queue_.pop();
@@ -200,7 +193,7 @@ void L2capChannel::ReportPacketsMayBeReadyToSend() {
 }
 
 void L2capChannel::ClearQueue() {
-  std::lock_guard lock(global_send_queue_mutex_);
+  std::lock_guard lock(send_queue_mutex_);
   send_queue_.clear();
 }
 
