@@ -223,6 +223,10 @@ def _proto_compiler_aspect_impl(target, ctx):
         executable = ctx.executable._protoc,
         arguments = [args],
         env = {
+            # This effectively pre-adopts
+            # https://github.com/nanopb/nanopb/pull/1038, silencing an annoying
+            # warning in nanopb 0.4.9.1.
+            "NANOPB_PB2_NO_REBUILD": "1",
             # The nanopb protobuf plugin likes to compile some temporary protos
             # next to source files. This forces them to be written to Bazel's
             # genfiles directory.
