@@ -12,10 +12,17 @@ microcontrollers.
 
 Wrapper rules
 -------------
-The common configuration for Bazel for all modules is in the ``pigweed.bzl``
-file. The built-in Bazel rules ``cc_binary``, ``cc_test``, ``py_binary`` and
-``py_test`` are wrapped with ``pw_cc_binary``, ``pw_cc_test`` ``pw_py_binary``
-and ``pw_py_test``, respectively.
+.. _pigweed.bzl: https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/pigweed.bzl
+
+The built-in Bazel rules ``cc_binary``, ``cc_test``, ``py_binary``, and
+``py_test`` are wrapped with :ref:`module-pw_build-bazel-pw_cc_binary`,
+``pw_cc_test``, ``pw_py_binary``, and ``pw_py_test``, respectively.
+To access a wrapper, load its individual ``.bzl`` file. For example, to
+access ``pw_cc_binary``:
+
+.. code-block:: python
+
+   load("@pigweed//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 
 .. _module-pw_build-bazel-pw_linker_script:
 
@@ -250,6 +257,44 @@ Example
    const std::array<std::byte, 50> kBarBlob = { ... };
 
    }  // namespace my::stuff
+
+.. _module-pw_build-bazel-pw_cc_binary:
+
+pw_cc_binary
+------------
+.. _cc_binary: https://bazel.build/reference/be/c-cpp#cc_binary
+.. _//pw_build/pw_cc_binary.bzl: https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/pw_cc_binary.bzl
+
+``pw_cc_binary`` is a wrapper of `cc_binary`_. It's implemented at
+`//pw_build/pw_cc_binary.bzl`_. Usage of this wrapper is optional;
+downstream Pigweed projects can instead use ``cc_binary`` if preferred.
+
+Basic usage:
+
+.. code-block:: python
+
+   load("@pigweed//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+
+   pw_cc_binary(
+       name = "…",
+       srcs = ["…"],
+       deps = [
+           "…",
+       ],
+   )
+
+Pros of using ``pw_cc_binary``:
+
+* It simplifies :ref:`link-time dependency
+  <docs-build_system-bazel_link-extra-lib>`. Projects using ``cc_binary``
+  must set up (and document) link-time dependency themselves.
+
+Cons of using ``pw_cc_binary``:
+
+.. _magical: https://en.wikipedia.org/wiki/Magic_(programming)
+
+* It makes the configuration of :ref:`module-pw_log` and
+  :ref:`module-pw_assert` a bit more `magical`_.
 
 .. _module-pw_build-bazel-pw_cc_binary_with_map:
 
