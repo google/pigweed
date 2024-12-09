@@ -129,6 +129,28 @@ TEST_F(FirstFitAllocatorTest, AllocatesUsingThreshold) {
   EXPECT_EQ(NextAfter(2), Fetch(3));
 }
 
+TEST_F(FirstFitAllocatorTest, AllocatesFromCorrectEnd) {
+  FirstFitAllocator allocator(GetBytes());
+  allocator.set_threshold(kThreshold);
+
+  void* ptr1 = allocator.Allocate(Layout(kSmallInnerSize, 1));
+  ASSERT_NE(ptr1, nullptr);
+
+  void* ptr2 = allocator.Allocate(Layout(kLargeInnerSize, 1));
+  ASSERT_NE(ptr2, nullptr);
+
+  auto* block_a = BlockType::FromUsableSpace(ptr2);
+  auto* block_b = block_a->Next();
+  auto* block_c = BlockType::FromUsableSpace(ptr1);
+
+  ASSERT_NE(block_b, nullptr);
+  EXPECT_TRUE(block_b->IsFree());
+  EXPECT_EQ(block_b->Next(), block_c);
+
+  allocator.Deallocate(ptr1);
+  allocator.Deallocate(ptr2);
+}
+
 TEST_F(FirstFitAllocatorTest, DeallocateNull) { DeallocateNull(); }
 
 TEST_F(FirstFitAllocatorTest, DeallocateShuffled) { DeallocateShuffled(); }

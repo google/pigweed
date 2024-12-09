@@ -50,6 +50,8 @@ class SequencedBucket : public internal::BucketBase<SequencedBucket<BlockType>,
  public:
   ~SequencedBucket() { Base::Clear(); }
 
+  constexpr size_t threshold() const { return threshold_; }
+
   /// Sets the threshold for which blocks are considered "large".
   ///
   /// This threshold can improve performance when blocks are partitioned based

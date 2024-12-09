@@ -67,10 +67,15 @@ class FirstFitAllocator : public BlockAllocator<BlockType> {
  private:
   /// @copydoc BlockAllocator::ChooseBlock
   BlockResult<BlockType> ChooseBlock(Layout layout) override {
-    if (BlockType* block = bucket_.RemoveCompatible(layout); block != nullptr) {
+    BlockType* block = bucket_.RemoveCompatible(layout);
+    if (block == nullptr) {
+      return BlockResult<BlockType>(nullptr, Status::NotFound());
+    }
+    if (layout.size() < bucket_.threshold()) {
+      return BlockType::AllocLast(std::move(block), layout);
+    } else {
       return BlockType::AllocFirst(std::move(block), layout);
     }
-    return BlockResult<BlockType>(nullptr, Status::NotFound());
   }
 
   /// @copydoc BlockAllocator::ReserveBlock
@@ -84,7 +89,6 @@ class FirstFitAllocator : public BlockAllocator<BlockType> {
   }
 
   SequencedBucket<BlockType> bucket_;
-  size_t threshold_ = 0;
 };
 
 }  // namespace pw::allocator
