@@ -537,7 +537,8 @@ class AutoUpdatingDetokenizer(Detokenizer):
         super().__init__(*(path.load() for path in self.paths), prefix=prefix)
 
     def __del__(self) -> None:
-        self._pool.shutdown(wait=False)
+        if hasattr(self, '_pool'):
+            self._pool.shutdown(wait=False)
 
     def _reload_paths(self) -> None:
         self._initialize_database([path.load() for path in self.paths])
