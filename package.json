@@ -91,7 +91,7 @@
     "eslint-plugin-n": "^15.7.0",
     "eslint-plugin-promise": "^6.1.1",
     "sinon": "^17.0.1",
-    "vite": "^5.2.8",
+    "vite": "^6.0.3",
     "postcss": "^8.4.24",
     "rollup-plugin-postcss": "^4.0.2"
   },
