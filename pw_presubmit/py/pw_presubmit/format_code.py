@@ -44,7 +44,7 @@ from typing import (
 import pw_cli.color
 from pw_cli.diff import colorize_diff
 import pw_cli.env
-from pw_cli.file_filter import FileFilter
+from pw_cli.file_filter import FileFilter, exclude_paths
 from pw_cli.plural import plural
 import pw_env_setup.config_file
 from pw_presubmit.presubmit import filter_paths
@@ -66,7 +66,6 @@ from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.gn import GnFormatter
 from pw_presubmit.format.python import BlackFormatter
 from pw_presubmit.tools import (
-    exclude_paths,
     file_summary,
     log_run,
     PresubmitToolRunner,

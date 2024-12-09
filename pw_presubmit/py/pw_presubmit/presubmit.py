@@ -71,7 +71,7 @@ from typing import (
 import pw_cli.color
 import pw_cli.env
 from pw_cli.plural import plural
-from pw_cli.file_filter import FileFilter
+from pw_cli.file_filter import FileFilter, exclude_paths
 from pw_package import package_manager
 from pw_presubmit import git_repo, tools
 from pw_presubmit.presubmit_context import (
@@ -576,16 +576,14 @@ def fetch_file_lists(
     modified_files: list[Path] = []
 
     all_files_repo = tuple(
-        tools.exclude_paths(
-            exclude, git_repo.list_files(None, pathspecs, repo), root
-        )
+        exclude_paths(exclude, git_repo.list_files(None, pathspecs, repo), root)
     )
     all_files += all_files_repo
 
     if base is None:
         modified_files += all_files_repo
     else:
-        modified_files += tools.exclude_paths(
+        modified_files += exclude_paths(
             exclude, git_repo.list_files(base, pathspecs, repo), root
         )
 

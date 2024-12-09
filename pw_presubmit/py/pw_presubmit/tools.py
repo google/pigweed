@@ -25,7 +25,6 @@ from typing import (
     Iterable,
     Iterator,
     Sequence,
-    Pattern,
 )
 
 from pw_cli.plural import plural
@@ -124,27 +123,6 @@ def relative_paths(paths: Iterable[Path], start: Path) -> Iterable[Path]:
     """Returns relative Paths calculated with os.path.relpath."""
     for path in paths:
         yield Path(os.path.relpath(path, start))
-
-
-def exclude_paths(
-    exclusions: Iterable[Pattern[str]],
-    paths: Iterable[Path],
-    relative_to: Path | None = None,
-) -> Iterable[Path]:
-    """Excludes paths based on a series of regular expressions."""
-    if relative_to:
-
-        def relpath(path):
-            return Path(os.path.relpath(path, relative_to))
-
-    else:
-
-        def relpath(path):
-            return path
-
-    for path in paths:
-        if not any(e.search(relpath(path).as_posix()) for e in exclusions):
-            yield path
 
 
 def _truncate(value, length: int = 60) -> str:

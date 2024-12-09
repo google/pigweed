@@ -13,6 +13,7 @@
 # the License.
 """Class for describing file filter patterns."""
 
+import os
 from pathlib import Path
 import re
 from typing import Pattern, Iterable, Sequence
@@ -79,3 +80,24 @@ class FileFilter:
 
     def filter(self, paths: Sequence[str | Path]) -> Sequence[Path]:
         return [Path(x) for x in paths if self.matches(x)]
+
+
+def exclude_paths(
+    exclusions: Iterable[Pattern[str]],
+    paths: Iterable[Path],
+    relative_to: Path | None = None,
+) -> Iterable[Path]:
+    """Excludes paths based on a series of regular expressions."""
+    if relative_to:
+
+        def relpath(path):
+            return Path(os.path.relpath(path, relative_to))
+
+    else:
+
+        def relpath(path):
+            return path
+
+    for path in paths:
+        if not any(e.search(relpath(path).as_posix()) for e in exclusions):
+            yield path
