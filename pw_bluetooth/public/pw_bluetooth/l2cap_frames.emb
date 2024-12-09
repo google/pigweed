@@ -141,6 +141,7 @@ enum L2capFixedPsmCode:
   [maximum_bits: 16]
   SDP    = 0x0001  # PSM
   RFCOMM = 0x0003  # PSM
+  AVDTP  = 0x0019  # PSM
   ATT    = 0x001F  # PSM
   EATT   = 0x0027  # PSM or SPSM
 
