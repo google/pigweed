@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 load(
     "sensor.bzl",
@@ -65,8 +67,12 @@ pw_cc_test(
     ],
 )
 
-# Bazel does not yet support building docs.
-filegroup(
+sphinx_docs_library(
     name = "docs",
-    srcs = ["docs.rst"],
+    srcs = [
+        "docs.rst",
+        "//pw_sensor/py:docs",
+    ],
+    prefix = "pw_sensor/",
+    target_compatible_with = incompatible_with_mcu(),
 )

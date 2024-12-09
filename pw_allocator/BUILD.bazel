@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -776,8 +778,6 @@ pw_cc_test(
     ],
 )
 
-# Docs
-
 cc_library(
     name = "size_reporter",
     hdrs = ["public/pw_allocator/size_reporter.h"],
@@ -788,6 +788,8 @@ cc_library(
         "//pw_bytes",
     ],
 )
+
+# Docs
 
 filegroup(
     name = "doxygen",
@@ -825,4 +827,17 @@ filegroup(
         "//pw_allocator/block:doxygen",
         "//pw_allocator/bucket:doxygen",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "api.rst",
+        "code_size.rst",
+        "design.rst",
+        "docs.rst",
+        "guide.rst",
+    ],
+    prefix = "pw_allocator/",
+    target_compatible_with = incompatible_with_mcu(),
 )

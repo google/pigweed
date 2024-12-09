@@ -13,6 +13,8 @@
 # the License.
 
 load("@com_google_emboss//:build_defs.bzl", "emboss_cc_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -394,4 +396,13 @@ filegroup(
         "public/pw_bluetooth/low_energy/connection2.h",
         "public/pw_bluetooth/low_energy/peripheral2.h",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+    ],
+    prefix = "pw_bluetooth/",
+    target_compatible_with = incompatible_with_mcu(),
 )

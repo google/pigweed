@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_build:selects.bzl",
@@ -146,4 +147,13 @@ cc_library(
         ":thread",
         "//pw_thread:test_thread_context.facade",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+    ],
+    prefix = "pw_thread_stl/",
+    target_compatible_with = incompatible_with_mcu(),
 )

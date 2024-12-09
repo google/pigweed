@@ -13,7 +13,8 @@
 # the License.
 
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("//pw_build:compatibility.bzl", "host_backend_alias")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "host_backend_alias", "incompatible_with_mcu")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
@@ -440,4 +441,14 @@ filegroup(
         "public/pw_thread/test_thread_context.h",
         "public/pw_thread/thread.h",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "backends.rst",
+        "docs.rst",
+    ],
+    prefix = "pw_thread/",
+    target_compatible_with = incompatible_with_mcu(),
 )

@@ -13,6 +13,8 @@
 # the License.
 
 load("@rules_python//python:proto.bzl", "py_proto_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 load("//pw_build:python.bzl", "pw_py_binary")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pwpb_proto_library")
@@ -207,4 +209,14 @@ filegroup(
         "public/pw_chrono/system_timer.h",
         "public/pw_chrono/virtual_clock.h",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "backends.rst",
+        "docs.rst",
+    ],
+    prefix = "pw_chrono/",
+    target_compatible_with = incompatible_with_mcu(),
 )

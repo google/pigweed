@@ -13,6 +13,8 @@
 # the License.
 
 load("@bazel_skylib//rules:run_binary.bzl", "run_binary")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -307,4 +309,13 @@ cc_library(
         ":thread",
         "//pw_thread:test_thread_context.facade",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+    ],
+    prefix = "pw_thread_freertos/",
+    target_compatible_with = incompatible_with_mcu(),
 )

@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -49,4 +51,13 @@ pw_cc_test(
     deps = [
         ":pw_tls_client_mbedtls",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+    ],
+    prefix = "pw_tls_client_mbedtls/",
+    target_compatible_with = incompatible_with_mcu(),
 )

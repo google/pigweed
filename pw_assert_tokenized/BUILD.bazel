@@ -12,6 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -94,4 +97,13 @@ cc_library(
         "//pw_log_tokenized",
         "//pw_tokenizer",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+    ],
+    prefix = "pw_assert_tokenized/",
+    target_compatible_with = incompatible_with_mcu(),
 )

@@ -12,6 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+
 licenses(["notice"])
 
 # Negative compilation testing is not yet supported in Bazel.
@@ -20,4 +23,14 @@ cc_library(
     hdrs = ["public/pw_compilation_testing/negative_compilation.h"],
     strip_include_prefix = "public",
     visibility = ["//:__subpackages__"],  # Restrict to Pigweed
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+    ],
+    prefix = "pw_compilation_testing/",
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
 )
