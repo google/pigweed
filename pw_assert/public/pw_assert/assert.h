@@ -85,4 +85,6 @@
 // This empty, non-constexpr function is invoked when a PW_ASSERT fails. It
 // doesn't produce any code, but improves error messages when PW_ASSERTs fail
 // during compilation.
+static void PW_ASSERT_failed_in_constant_expression_(void);
+
 static inline void PW_ASSERT_failed_in_constant_expression_(void) {}
