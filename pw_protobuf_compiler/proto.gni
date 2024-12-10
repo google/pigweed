@@ -36,6 +36,9 @@ declare_args() {
   # To override the protobuf compiler used set this to the GN target that builds
   # the protobuf compiler.
   pw_protobuf_compiler_PROTOC_TARGET = ""
+
+  # Optional Python package dependencies to include when running protoc.
+  pw_protobuf_compiler_PROTOC_PYTHON_DEPS = []
 }
 
 if (pw_protobuf_compiler_PROTOC_TARGET == "" &&
@@ -96,6 +99,14 @@ template("_pw_invoke_protoc") {
         python_deps += invoker.python_deps
       }
 
+      # Incude Python deps that should be added to PYTHONPATH for protoc to run.
+      if (pw_protobuf_compiler_PROTOC_PYTHON_DEPS != []) {
+        foreach(dep, pw_protobuf_compiler_PROTOC_PYTHON_DEPS) {
+          _dep_label = get_label_info(dep, "label_no_toolchain")
+          python_deps += [ "${_dep_label}($pw_build_PYTHON_TOOLCHAIN)" ]
+        }
+      }
+
       deps = [
         ":${invoker.base_target}._includes",
         ":${invoker.base_target}._sources",
@@ -110,6 +121,9 @@ template("_pw_invoke_protoc") {
       }
 
       args = []
+      if (!pw_protobuf_compiler_GENERATE_PYTHON_TYPE_HINTS) {
+        args += [ "--no-generate-type-hints" ]
+      }
       if (!pw_protobuf_compiler_GENERATE_LEGACY_ENUM_SNAKE_CASE_NAMES) {
         args += [ "--exclude-pwpb-legacy-snake-case-field-name-enums" ]
       }
@@ -762,10 +776,10 @@ template("pw_proto_library") {
 
     outputs = []
     foreach(name, _source_names) {
-      outputs += [
-        "$_python_prefix/${name}_pb2.py",
-        "$_python_prefix/${name}_pb2.pyi",
-      ]
+      outputs += [ "$_python_prefix/${name}_pb2.py" ]
+      if (pw_protobuf_compiler_GENERATE_PYTHON_TYPE_HINTS) {
+        outputs += [ "$_python_prefix/${name}_pb2.pyi" ]
+      }
     }
   }
 

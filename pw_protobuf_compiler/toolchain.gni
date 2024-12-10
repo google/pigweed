@@ -34,4 +34,8 @@ declare_args() {
   # If true, disables using callback interfaces for oneof fields, and keep the
   # legacy "oneof as struct member" interface.
   pw_protobuf_compiler_NO_ONEOF_CALLBACKS = false
+
+  # Generate .pyi files for Python type hinting. This requires 'protoc-gen-mypy'
+  # to be available on the PATH.
+  pw_protobuf_compiler_GENERATE_PYTHON_TYPE_HINTS = true
 }

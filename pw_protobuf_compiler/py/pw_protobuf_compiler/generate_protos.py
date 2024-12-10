@@ -17,6 +17,7 @@ import argparse
 import logging
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -223,7 +224,7 @@ def protoc_python_args(
         args.out_dir,
     )
 
-    if args.generate_type_hints:
+    if args.generate_type_hints and shutil.which('protoc-gen-mypy'):
         flags += (
             '--mypy_out',
             args.out_dir,
