@@ -71,27 +71,28 @@ class Context {
   bool thread_done() const { return thread_done_; }
   void set_thread_done(bool value = true) { thread_done_ = value; }
 
-#if PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
-  bool dynamically_allocated() const { return dynamically_allocated_; }
-  void set_dynamically_allocated() { dynamically_allocated_ = true; }
-#endif  // PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
-
-#if PW_THREAD_JOINING_ENABLED
-  StaticEventGroup_t& join_event_group() { return event_group_; }
-#endif  // PW_THREAD_JOINING_ENABLED
-
   static void ThreadEntryPoint(void* void_context_ptr);
   static void TerminateThread(Context& context);
 
   TaskHandle_t task_handle_ = nullptr;
   Function<void()> fn_;
+
 #if PW_THREAD_JOINING_ENABLED
+  StaticEventGroup_t& join_event_group() { return event_group_; }
+
   // Note that the FreeRTOS life cycle of this event group is managed together
   // with the task life cycle, not this object's life cycle.
   StaticEventGroup_t event_group_;
 #endif  // PW_THREAD_JOINING_ENABLED
-  bool detached_ = false;
+
+#if PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
+  bool dynamically_allocated() const { return dynamically_allocated_; }
+  void set_dynamically_allocated() { dynamically_allocated_ = true; }
+
   bool dynamically_allocated_ = false;
+#endif  // PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
+
+  bool detached_ = false;
   bool thread_done_ = false;
 };
 
