@@ -269,6 +269,7 @@ cc_library(
         "//pw_metric:metric",
         "//pw_status",
         "//pw_stream",
+        "//pw_thread:thread_core",
     ],
 )
 

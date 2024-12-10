@@ -31,7 +31,6 @@
 #include "pw_sync/thread_notification.h"
 #include "pw_system/config.h"
 #include "pw_thread/thread.h"
-#include "pw_thread/thread_core.h"
 
 namespace pw::system::internal {
 

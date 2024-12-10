@@ -123,17 +123,6 @@ class EpollChannelTest : public ::testing::Test {
   int write_fd_;
 };
 
-template <typename Func>
-class FunctionThread : public pw::thread::ThreadCore {
- public:
-  explicit FunctionThread(Func&& func) : func_(std::move(func)) {}
-
- private:
-  void Run() override { func_(); }
-
-  Func func_;
-};
-
 TEST_F(EpollChannelTest, Read_ValidData_Succeeds) {
   SimpleAllocatorForTest alloc;
   Dispatcher dispatcher;
@@ -150,13 +139,11 @@ TEST_F(EpollChannelTest, Read_ValidData_Succeeds) {
   EXPECT_EQ(read_task.read_count, 0);
   EXPECT_EQ(read_task.bytes_read, 0);
 
-  FunctionThread delayed_write([this]() {
+  pw::Thread work_thread(pw::thread::stl::Options(), [this] {
     pw::this_thread::sleep_for(500ms);
     const char* data = "hello world";
     PW_CHECK_INT_EQ(write(write_fd_, data, 11), 11);
   });
-
-  pw::Thread work_thread(pw::thread::stl::Options(), delayed_write);
   work_thread.join();
 
   dispatcher.RunToCompletion();
@@ -357,15 +344,15 @@ TEST_F(EpollChannelTest, PendReadyToWrite_BlocksWhenUnavailable) {
   write_task.max_writes = write_task.write_count + 1;
 
   // Drain the pipe to make it writable again after a delay.
-  FunctionThread delayed_read([this, writes_to_drain]() {
+  auto delayed_read = [this, writes_to_drain] {
     pw::this_thread::sleep_for(500ms);
     for (int i = 0; i < writes_to_drain; ++i) {
       std::array<std::byte, decltype(alloc)::data_size_bytes()> buffer;
       PW_CHECK_INT_GT(read(read_fd_, buffer.data(), buffer.size()), 0);
     }
-  });
-
-  pw::Thread work_thread(pw::thread::stl::Options(), delayed_read);
+  };
+  pw::Thread work_thread(pw::thread::stl::Options(),
+                         [&delayed_read] { delayed_read(); });
 
   dispatcher.RunToCompletion();
   work_thread.join();

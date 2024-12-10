@@ -21,6 +21,7 @@
 #include "pw_span/span.h"
 #include "pw_string/string_builder.h"
 #include "pw_thread/thread.h"
+#include "pw_thread/thread_core.h"
 #include "pw_thread/yield.h"
 #include "pw_unit_test/framework.h"
 

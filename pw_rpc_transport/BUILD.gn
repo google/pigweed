@@ -253,6 +253,8 @@ pw_source_set("stream_rpc_dispatcher") {
     ":egress_ingress",
     "$dir_pw_status",
     "$dir_pw_stream:pw_stream",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
   ]
 }
 

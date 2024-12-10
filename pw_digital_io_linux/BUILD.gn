@@ -35,6 +35,7 @@ pw_source_set("pw_digital_io_linux") {
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:mutex",
     "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
   ]
   deps = [ "$dir_pw_log" ]
   sources = [

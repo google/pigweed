@@ -42,6 +42,7 @@ cc_library(
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
         "//pw_thread:thread",
+        "//pw_thread:thread_core",
     ],
 )
 

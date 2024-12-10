@@ -135,6 +135,7 @@ cc_library(
         "//pw_status",
         "//pw_sync:timed_thread_notification",
         "//pw_thread:thread",
+        "//pw_thread:thread_core",
     ],
 )
 

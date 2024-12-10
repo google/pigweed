@@ -46,29 +46,17 @@ class MockTask : public Task {
   void DoDestroy() override { ++destroyed; }
 };
 
-class FunctionThread : public thread::ThreadCore {
- public:
-  explicit FunctionThread(Closure func) : func_(std::move(func)) {}
-
- private:
-  void Run() override { func_(); }
-
-  Closure func_;
-};
-
 TEST(Dispatcher, RunToCompletion_SleepsUntilWoken) {
   MockTask task;
   task.should_complete = false;
   Dispatcher dispatcher;
   dispatcher.Post(task);
 
-  FunctionThread delayed_wake([&task]() {
+  Thread work_thread(thread::stl::Options(), [&task]() {
     this_thread::sleep_for(100ms);
     task.should_complete = true;
     std::move(task.last_waker).Wake();
   });
-
-  Thread work_thread(thread::stl::Options(), delayed_wake);
 
   dispatcher.RunToCompletion(task);
 

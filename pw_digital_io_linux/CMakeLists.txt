@@ -26,6 +26,8 @@ pw_add_library(pw_digital_io_linux INTERFACE
   PUBLIC_DEPS
     pw_digital_io
     pw_status
+    pw_thread.thread
+    pw_thread.thread_core
 )
 
 # TODO(b/328262654): Move this to a more appropriate module.

@@ -87,6 +87,7 @@ pw_add_library(pw_multisink.multisink_threaded_test STATIC
     pw_multisink.test_thread
     pw_string
     pw_thread.thread
+    pw_thread.thread_core
     pw_thread.yield
     pw_unit_test
 )

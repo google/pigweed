@@ -22,6 +22,7 @@
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 #include "pw_thread/thread.h"
+#include "pw_thread/thread_core.h"
 
 namespace pw::rpc {
 

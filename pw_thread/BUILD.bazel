@@ -281,6 +281,7 @@ cc_library(
     deps = [
         ":non_portable_test_thread_options",
         ":thread",
+        ":thread_core",
         "//pw_chrono:system_clock",
         "//pw_sync:binary_semaphore",
         "//pw_unit_test",

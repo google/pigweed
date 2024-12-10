@@ -100,6 +100,7 @@ cc_library(
         ":test_thread",
         "//pw_string",
         "//pw_thread:thread",
+        "//pw_thread:thread_core",
         "//pw_thread:yield",
         "//pw_unit_test",
     ],

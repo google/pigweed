@@ -15,6 +15,7 @@
 #include "pw_sync/binary_semaphore.h"
 #include "pw_thread/non_portable_test_thread_options.h"
 #include "pw_thread/thread.h"
+#include "pw_thread/thread_core.h"
 #include "pw_unit_test/framework.h"
 
 namespace {

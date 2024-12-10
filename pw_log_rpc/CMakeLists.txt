@@ -129,6 +129,7 @@ pw_add_library(pw_log_rpc.rpc_log_drain_thread INTERFACE
     pw_status
     pw_sync.timed_thread_notification
     pw_thread.thread
+    pw_thread.thread_core
 )
 
 pw_add_library(pw_log_rpc.test_utils STATIC

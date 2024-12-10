@@ -22,7 +22,6 @@
 #include "pw_thread/non_portable_test_thread_options.h"
 #include "pw_thread/sleep.h"
 #include "pw_thread/thread.h"
-#include "pw_thread/thread_core.h"
 #include "pw_unit_test/framework.h"
 #include "task.h"
 
@@ -38,7 +37,7 @@ using pw::chrono::SystemClock;
 // the FreeRTOS optimized ThreadNotification backend.
 #if INCLUDE_vTaskSuspend == 1
 
-class NotificationAcquirer : public thread::ThreadCore {
+class NotificationAcquirer {
  public:
   void WaitUntilRunning() { started_notification_.acquire(); }
   void Release() { unblock_notification_.release(); }
@@ -48,8 +47,7 @@ class NotificationAcquirer : public thread::ThreadCore {
   }
   TaskHandle_t task_handle() const { return task_handle_; }
 
- private:
-  void Run() final {
+  void Run() {
     task_handle_ = xTaskGetCurrentTaskHandle();
     started_notification_.release();
     unblock_notification_.acquire();
@@ -68,7 +66,8 @@ TEST(ThreadNotification, AcquireWithoutSuspend) {
   NotificationAcquirer notification_acquirer;
   // TODO: b/290860904 - Replace TestOptionsThread0 with TestThreadContext.
   pw::Thread thread =
-      pw::Thread(thread::test::TestOptionsThread0(), notification_acquirer);
+      pw::Thread(thread::test::TestOptionsThread0(),
+                 [&notification_acquirer] { notification_acquirer.Run(); });
 
   notification_acquirer.WaitUntilRunning();
   // At this point the thread is blocked and waiting on the notification.
@@ -90,7 +89,8 @@ TEST(ThreadNotification, AcquireWithoutSuspend) {
 TEST(ThreadNotification, AcquireWithSuspend) {
   NotificationAcquirer notification_acquirer;
   pw::Thread thread =
-      pw::Thread(thread::test::TestOptionsThread0(), notification_acquirer);
+      pw::Thread(thread::test::TestOptionsThread0(),
+                 [&notification_acquirer] { notification_acquirer.Run(); });
 
   notification_acquirer.WaitUntilRunning();
 

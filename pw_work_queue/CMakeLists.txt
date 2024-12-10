@@ -25,6 +25,7 @@ pw_add_library(pw_work_queue STATIC
     pw_sync.lock_annotations
     pw_sync.thread_notification
     pw_thread.thread
+    pw_thread.thread_core
     pw_function
     pw_metric
     pw_span

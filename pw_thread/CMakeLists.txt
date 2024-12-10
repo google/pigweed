@@ -227,6 +227,7 @@ pw_add_library(pw_thread.thread_facade_test STATIC
     pw_thread.sleep
     pw_thread.non_portable_test_thread_options
     pw_thread.thread
+    pw_thread.thread_core
     pw_sync.binary_semaphore
     pw_unit_test
 )

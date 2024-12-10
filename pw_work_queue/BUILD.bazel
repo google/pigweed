@@ -36,6 +36,7 @@ cc_library(
         "//pw_sync:lock_annotations",
         "//pw_sync:thread_notification",
         "//pw_thread:thread",
+        "//pw_thread:thread_core",
     ],
 )
 

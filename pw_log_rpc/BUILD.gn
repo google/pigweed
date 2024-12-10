@@ -144,6 +144,7 @@ pw_source_set("rpc_log_drain_thread") {
     "$dir_pw_status",
     "$dir_pw_sync:timed_thread_notification",
     "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
   ]
   if (current_os == "win") {
     public_configs += [ ":disable_warning" ]

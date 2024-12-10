@@ -236,6 +236,7 @@ pw_source_set("thread_facade_test") {
     ":non_portable_test_thread_options",
     ":sleep",
     ":thread",
+    ":thread_core",
     "$dir_pw_sync:binary_semaphore",
     dir_pw_unit_test,
   ]
