@@ -51,10 +51,10 @@ class H4Storage {
   // To pass the unit tests, kNumH4Buffs >= L2capCoc::QueueCapacity().
   static constexpr size_t kNumH4Buffs = 10;
 
-  // Max LE ACL payload (251 bytes) + ACL header (4 bytes) + H4 type (1 byte).
+  // Max possible packet size (3-DH5).
   // TODO: https://pwbug.dev/369849508 - Support variable size buffers with
   // an allocator & replace this constant with total memory pool size.
-  static constexpr uint16_t kH4BuffSize = 256;
+  static constexpr uint16_t kH4BuffSize = 1021;
 
   // Returns an initializer list for `h4_buff_occupied_` with each buffer
   // address in `h4_buffs_` mapped to false.
