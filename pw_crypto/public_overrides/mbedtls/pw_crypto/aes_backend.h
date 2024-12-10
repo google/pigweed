@@ -14,14 +14,4 @@
 
 #pragma once
 
-#include "pw_crypto/aes_backend_defs.h"
-
-// Note: This is a fake backend, only used to ensure tests compile. This will be
-// removed once a backend is implemented.
-
-namespace pw::crypto::aes::backend {
-// The fake backend supports 128-bit and 256-bit keys.
-template <>
-inline constexpr SupportedKeySize supported<AesOperation::kUnsafeEncryptBlock> =
-    SupportedKeySize::k128 | SupportedKeySize::k192 | SupportedKeySize::k256;
-}  // namespace pw::crypto::aes::backend
+#include "pw_crypto/aes_mbedtls.h"

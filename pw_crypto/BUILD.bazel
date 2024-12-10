@@ -183,17 +183,54 @@ pw_cc_test(
     ],
 )
 
-cc_library(
+pw_facade(
     name = "aes",
     hdrs = [
         "public/pw_crypto/aes.h",
-        "public/pw_crypto/aes_backend.h",
         "public/pw_crypto/aes_backend_defs.h",
     ],
+    backend = ":aes_backend",
     includes = ["public"],
     deps = [
         "//pw_bytes",
         "//pw_status",
+    ],
+)
+
+label_flag(
+    name = "aes_backend",
+    build_setting_default = ":aes_backend_multiplexer",
+)
+
+constraint_setting(
+    name = "aes_backend_constraint_setting",
+)
+
+constraint_value(
+    name = "aes_mbedtls_backend",
+    constraint_setting = ":aes_backend_constraint_setting",
+)
+
+alias(
+    name = "aes_backend_multiplexer",
+    actual = select({
+        ":aes_mbedtls_backend": ":aes_mbedtls",
+        "//conditions:default": ":aes_mbedtls",
+    }),
+)
+
+cc_library(
+    name = "aes_mbedtls",
+    srcs = ["aes_mbedtls.cc"],
+    hdrs = [
+        "public/pw_crypto/aes_mbedtls.h",
+        "public_overrides/mbedtls/pw_crypto/aes_backend.h",
+    ],
+    includes = ["public_overrides/mbedtls"],
+    deps = [
+        ":aes.facade",
+        "//pw_assert",
+        "@mbedtls",
     ],
 )
 

@@ -221,11 +221,11 @@ pw_test("ecdsa_test") {
   sources = [ "ecdsa_test.cc" ]
 }
 
-source_set("aes") {
+pw_facade("aes") {
+  backend = pw_crypto_AES_BACKEND
   public_configs = [ ":default_config" ]
   public = [
     "public/pw_crypto/aes.h",
-    "public/pw_crypto/aes_backend.h",
     "public/pw_crypto/aes_backend_defs.h",
   ]
   public_deps = [
@@ -234,7 +234,24 @@ source_set("aes") {
   ]
 }
 
+pw_source_set("aes_mbedtls_v3") {
+  public_configs = [ ":mbedtls_config" ]
+  public = [
+    "public/pw_crypto/aes_mbedtls.h",
+    "public_overrides/mbedtls/pw_crypto/aes_backend.h",
+  ]
+  deps = [ "$dir_pw_assert" ]
+  sources = [ "aes_mbedtls.cc" ]
+  public_deps = [
+    ":aes.facade",
+    "$dir_pw_third_party/mbedtls:mbedtls_v3",
+  ]
+}
+
+# This test targets the specific backend pointed to by
+# pw_crypto_AES_BACKEND.
 pw_test("aes_test") {
+  enable_if = pw_crypto_AES_BACKEND != ""
   deps = [
     ":aes",
     "$dir_pw_containers:vector",

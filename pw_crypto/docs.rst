@@ -136,6 +136,7 @@ configured. If using GN, do,
        dir_pw_third_party_mbedtls=getenv("PW_PACKAGE_ROOT")+"/mbedtls"
        pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls_v3"
        pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls_v3"
+       pw_crypto_AES_BACKEND="//pw_crypto:aes_mbedtls_v3"
    '
 
    ninja -C out
@@ -151,6 +152,7 @@ appropriate backends by adding them to your project's `platform
       constraint_values = [
         "@pigweed//pw_crypto:sha256_mbedtls_backend",
         "@pigweed//pw_crypto:ecdsa_mbedtls_backend",
+        "@pigweed//pw_crypto:aes_mbedtls_backend",
         # ... other constraint_values
       ],
    )

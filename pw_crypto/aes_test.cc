@@ -26,15 +26,6 @@
 #define STR_TO_BYTES(str) (as_bytes(span(str).subspan<0, sizeof(str) - 1>()))
 
 namespace pw::crypto::aes {
-// Note: The contents of the `backend` namespace here is a placeholder as this
-// test currently only ensures that the facade compiles and can be used
-// correctly.
-namespace backend {
-Status DoEncryptBlock(ConstByteSpan, ConstBlockSpan, BlockSpan) {
-  return OkStatus();
-}
-}  // namespace backend
-
 namespace {
 
 using backend::AesOperation;
@@ -51,6 +42,23 @@ void ZeroOut(T& container) {
 template <typename T>
 span<const T> View(pw::Vector<T>& vector) {
   return span(vector.begin(), vector.end());
+}
+
+template <typename T, size_t N>
+std::array<typename std::remove_cv<T>::type, N> SpanToArray(
+    const span<T, N>& span) {
+  static_assert(N != dynamic_extent, "Must have statically-known size.");
+  static_assert(std::is_trivially_copyable<T>::value, "Must be memcpy-able.");
+
+  std::array<typename std::remove_cv<T>::type, N> result;
+  std::memcpy(result.data(), span.data(), sizeof(result));
+
+  return result;
+}
+
+template <typename T>
+auto ToArray(const T& container) {
+  return SpanToArray(span(container));
 }
 
 // Intentionally chosen to not be a valid AES key size, but larger than the
@@ -81,45 +89,63 @@ TEST(Aes, UnsafeEncryptApi) {
   if constexpr (BackendSupports<kRawEncryptBlockOp>(SupportedKeySize::k128)) {
     span<const std::byte, 16> key = STR_TO_BYTES(
         "\x13\xA2\x27\x93\x8D\x1D\x89\x46\x07\x4C\xA0\x71\xF2\xF7\x54\xC5");
+    Block expected = SpanToArray(STR_TO_BYTES(
+        "\xC0\x9A\x54\x34\xFD\xB8\xB4\x37\xAD\x84\x67\x60\x79\x8D\xCE\x40"));
 
     reset();
-
     EXPECT_OK(EncryptBlock(key, message_block, encrypted_carr));
+    EXPECT_EQ(ToArray(encrypted_carr), expected);
     EXPECT_OK(EncryptBlock(key, message_block, encrypted_arr));
+    EXPECT_EQ(encrypted_arr, expected);
     EXPECT_OK(EncryptBlock(key, message_block, encrypted_block));
+    EXPECT_EQ(encrypted_block, expected);
 
+    reset();
     std::copy(key.begin(), key.end(), std::back_inserter(dynamic_key));
     EXPECT_OK(EncryptBlock(View(dynamic_key), message_block, encrypted_block));
+    EXPECT_EQ(encrypted_block, expected);
   }
 
   if constexpr (BackendSupports<kRawEncryptBlockOp>(SupportedKeySize::k192)) {
     span<const std::byte, 24> key = STR_TO_BYTES(
         "\x2B\x43\x70\x51\xBF\x91\xF0\xFD\x4E\x9B\x89\xB7\x35\x40\xD4\x1B"
         "\x15\xBC\xD7\xC2\x22\xBC\x03\x76");
+    Block expected = SpanToArray(STR_TO_BYTES(
+        "\x35\x45\xC1\xA5\x89\x73\x1F\x28\x2E\x92\xAC\x24\x37\x85\xFC\xCA"));
 
     reset();
-
     EXPECT_OK(EncryptBlock(key, message_block, encrypted_carr));
+    EXPECT_EQ(ToArray(encrypted_carr), expected);
     EXPECT_OK(EncryptBlock(key, message_block, encrypted_arr));
+    EXPECT_EQ(encrypted_arr, expected);
     EXPECT_OK(EncryptBlock(key, message_block, encrypted_block));
+    EXPECT_EQ(encrypted_block, expected);
 
+    reset();
     std::copy(key.begin(), key.end(), std::back_inserter(dynamic_key));
     EXPECT_OK(EncryptBlock(View(dynamic_key), message_block, encrypted_block));
+    EXPECT_EQ(encrypted_block, expected);
   }
 
   if constexpr (BackendSupports<kRawEncryptBlockOp>(SupportedKeySize::k256)) {
     span<const std::byte, 32> key = STR_TO_BYTES(
         "\xA4\xB9\x15\x76\xF2\x16\x67\xB0\x33\x5E\xA6\x8D\xBD\x23\xDF\x29"
         "\x84\xBF\x8D\xBE\x56\x77\x13\x28\x14\x55\xD9\x75\xDD\xEE\x4E\x0B");
+    Block expected = SpanToArray(STR_TO_BYTES(
+        "\x9B\xC4\x12\x39\xB7\x2A\xA1\x14\xB3\x6E\x6C\xAE\x2C\x7f\xDD\xE7"));
 
     reset();
-
     EXPECT_OK(EncryptBlock(key, message_block, encrypted_carr));
+    EXPECT_EQ(ToArray(encrypted_carr), expected);
     EXPECT_OK(EncryptBlock(key, message_block, encrypted_arr));
+    EXPECT_EQ(encrypted_arr, expected);
     EXPECT_OK(EncryptBlock(key, message_block, encrypted_block));
+    EXPECT_EQ(encrypted_block, expected);
 
+    reset();
     std::copy(key.begin(), key.end(), std::back_inserter(dynamic_key));
     EXPECT_OK(EncryptBlock(View(dynamic_key), message_block, encrypted_block));
+    EXPECT_EQ(encrypted_block, expected);
   }
 }
 
