@@ -40,6 +40,7 @@ rust_docs(
         "//pw_base64/rust:pw_base64",
     ],
     target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
 )
 
 sphinx_docs_library(
