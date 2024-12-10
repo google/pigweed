@@ -19,6 +19,7 @@
 #include <fidl/fuchsia.hardware.bluetooth/cpp/fidl.h>
 #include <fuchsia/bluetooth/sys/cpp/fidl.h>
 #include <fuchsia/media/cpp/fidl.h>
+#include <pw_bluetooth/hci_data.emb.h>
 
 #include <charconv>
 #include <memory>
@@ -2922,6 +2923,19 @@ bt::DeviceAddress::Type FidlToDeviceAddressType(fbt::AddressType addr_type) {
       return bt::DeviceAddress::Type::kLERandom;
   }
 }
+
+fble::IsoPacketStatusFlag EmbossIsoPacketStatusFlagToFidl(
+    pw::bluetooth::emboss::IsoDataPacketStatus status_in) {
+  switch (status_in) {
+    case pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA:
+      return fble::IsoPacketStatusFlag::VALID_DATA;
+    case pw::bluetooth::emboss::IsoDataPacketStatus::POSSIBLY_INVALID_DATA:
+      return fble::IsoPacketStatusFlag::DATA_WITH_POSSIBLE_ERRORS;
+    case pw::bluetooth::emboss::IsoDataPacketStatus::LOST_DATA:
+      return fble::IsoPacketStatusFlag::LOST_DATA;
+  }
+}
+
 }  // namespace bthost::fidl_helpers
 
 // static

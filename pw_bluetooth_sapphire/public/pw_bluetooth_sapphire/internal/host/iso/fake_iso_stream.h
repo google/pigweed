@@ -25,6 +25,7 @@ class FakeIsoStream : public IsoStream {
  public:
   FakeIsoStream() : weak_self_(this) {}
 
+  // IsoStream overrides
   bool OnCisEstablished(const hci::EventPacket& event) override { return true; }
 
   void SetupDataPath(
@@ -34,6 +35,7 @@ class FakeIsoStream : public IsoStream {
       uint32_t controller_delay_usecs,
       SetupDataPathCallback&& on_complete_cb,
       IncomingDataHandler&& on_incoming_data_available_cb) override {
+    on_incoming_data_available_cb_ = std::move(on_incoming_data_available_cb);
     on_complete_cb(setup_data_path_status_);
   }
 
@@ -44,13 +46,31 @@ class FakeIsoStream : public IsoStream {
   void Close() override {}
 
   std::unique_ptr<IsoDataPacket> ReadNextQueuedIncomingPacket() override {
-    return nullptr;
+    if (incoming_packet_queue_.size() < 1) {
+      return nullptr;
+    }
+    std::unique_ptr<IsoDataPacket> next_frame =
+        std::move(incoming_packet_queue_.front());
+    incoming_packet_queue_.pop();
+    return next_frame;
   }
 
   IsoStream::WeakPtr GetWeakPtr() override { return weak_self_.GetWeakPtr(); }
 
+  // Testing functionality
   void SetSetupDataPathReturnStatus(IsoStream::SetupDataPathError status) {
     setup_data_path_status_ = status;
+  }
+
+  void QueueIncomingFrame(std::unique_ptr<IsoDataPacket> frame) {
+    incoming_packet_queue_.push(std::move(frame));
+  }
+
+  size_t incoming_packet_requests() { return incoming_packet_requests_; }
+
+  bool NotifyClientOfPacketReceived(pw::span<const std::byte> packet) {
+    BT_ASSERT(on_incoming_data_available_cb_.has_value());
+    return (*on_incoming_data_available_cb_)(packet);
   }
 
  protected:
@@ -58,6 +78,9 @@ class FakeIsoStream : public IsoStream {
       IsoStream::SetupDataPathError::kSuccess;
 
  private:
+  std::optional<IncomingDataHandler> on_incoming_data_available_cb_;
+  std::queue<std::unique_ptr<IsoDataPacket>> incoming_packet_queue_;
+  size_t incoming_packet_requests_ = 0;
   WeakSelf<FakeIsoStream> weak_self_;
 };
 

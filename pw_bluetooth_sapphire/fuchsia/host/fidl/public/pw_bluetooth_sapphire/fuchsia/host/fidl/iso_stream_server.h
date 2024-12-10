@@ -50,6 +50,11 @@ class IsoStreamServer
   void Read(ReadCallback callback) override;
   void handle_unknown_method(uint64_t ordinal, bool has_response) override;
 
+  // Complete a Read() operation by sending a complete packet to
+  // hanging_read_cb_, which must be set prior to calling this method. The
+  // packet's pb_flag must be COMPLETE_SDU.
+  void SendIncomingPacket(pw::span<const std::byte> packet);
+
   // Handler for new incoming data. Returns a value indicating if we were able
   // to process the packet (on false, it should be queued by the caller for
   // later retrieval). If we were able to process the frame, the caller should
@@ -58,6 +63,7 @@ class IsoStreamServer
   // the caller's queue has been completely emptied.
   bool OnIncomingDataAvailable(pw::span<const std::byte> packet);
 
+  ReadCallback hanging_read_cb_;
   fit::callback<void()> on_closed_cb_;
 
   std::optional<bt::iso::IsoStream::WeakPtr> iso_stream_;

@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/iso_stream_server.h"
 
 #include <lib/fidl/cpp/wire/channel.h>
+#include <pw_bluetooth/hci_data.emb.h>
 
 #include <cinttypes>
 
@@ -142,15 +143,73 @@ void IsoStreamServer::SetupDataPath(
           fit::bind_member<&IsoStreamServer::OnIncomingDataAvailable>(this));
 }
 
+void IsoStreamServer::SendIncomingPacket(pw::span<const std::byte> packet) {
+  auto view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(packet.data(),
+                                                                packet.size());
+  if (!view.Ok()) {
+    bt_log(ERROR, "fidl", "Failed to parse ISO data frame");
+    // Hanging get will remain unfulfilled
+    return;
+  }
+  BT_ASSERT_MSG(view.header().pb_flag().Read() ==
+                    pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+                "Incomplete SDU received from IsoStream");
+  fuchsia::bluetooth::le::IsochronousStream_Read_Response response;
+
+  size_t data_fragment_size = view.sdu_fragment_size().Read();
+  std::vector<std::uint8_t> data_as_vector(data_fragment_size);
+
+  std::memcpy(data_as_vector.data(),
+              view.iso_sdu_fragment().BackingStorage().data(),
+              data_fragment_size);
+  response.set_data(data_as_vector);
+  response.set_sequence_number(view.packet_sequence_number().Read());
+  response.set_status_flag(fidl_helpers::EmbossIsoPacketStatusFlagToFidl(
+      view.packet_status_flag().Read()));
+
+  BT_ASSERT(hanging_read_cb_);
+  hanging_read_cb_(
+      fuchsia::bluetooth::le::IsochronousStream_Read_Result::WithResponse(
+          std::move(response)));
+  hanging_read_cb_ = nullptr;
+}
+
 bool IsoStreamServer::OnIncomingDataAvailable(
     pw::span<const std::byte> packet) {
-  // TODO(b/311639690): Currently, just acknowledges the read but does nothing
-  // with the data. This will keep data from backing up in the caller until a
-  // complete data path has been implemented.
+  if (!hanging_read_cb_) {
+    // This is not a hard error, but it is a bit suspicious and worth noting. We
+    // should not receive a notification of incoming data unless we have a
+    // hanging Read() operation.
+    bt_log(WARN,
+           "fidl",
+           "Notification of incoming data received with no outstanding read "
+           "operation");
+    return false;
+  }
+  SendIncomingPacket(packet);
   return true;
 }
 
-void IsoStreamServer::Read(ReadCallback callback) {}
+void IsoStreamServer::Read(ReadCallback callback) {
+  // We should not have more than one outstanding Read()
+  if (hanging_read_cb_) {
+    Close(ZX_ERR_BAD_STATE);
+    return;
+  }
+
+  hanging_read_cb_ = std::move(callback);
+
+  if (iso_stream_.has_value() && iso_stream_->is_alive()) {
+    std::unique_ptr<bt::iso::IsoDataPacket> packet =
+        (*iso_stream_)->ReadNextQueuedIncomingPacket();
+    if (packet) {
+      pw::span<const std::byte> packet_as_span(
+          static_cast<std::byte*>(packet->data()), packet->size());
+      SendIncomingPacket(packet_as_span);
+      return;
+    }
+  }
+}
 
 void IsoStreamServer::OnClosed() {
   if (iso_stream_.has_value() && iso_stream_->is_alive()) {

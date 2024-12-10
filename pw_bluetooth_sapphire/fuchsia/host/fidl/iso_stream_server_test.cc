@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/iso/fake_iso_stream.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/loop_fixture.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
 namespace bthost {
 namespace {
@@ -81,6 +82,7 @@ class IsoStreamServerTest : public TestingBase {
   void OnClosed() { on_closed_called_times_++; }
   void CloseProxy() { client_ = nullptr; }
   IsoStreamServer* server() const { return server_.get(); }
+  fuchsia::bluetooth::le::IsochronousStreamPtr* client() { return &client_; }
   std::optional<zx_status_t> epitaph() const { return epitaph_; }
   bt::iso::testing::FakeIsoStream* fake_iso_stream() {
     return fake_iso_stream_.get();
@@ -89,14 +91,46 @@ class IsoStreamServerTest : public TestingBase {
   std::queue<::fuchsia::bluetooth::le::IsochronousStreamOnEstablishedRequest>
       on_established_events_;
   uint32_t on_closed_called_times_ = 0;
-  fuchsia::bluetooth::le::IsochronousStreamPtr client_;
 
  private:
   std::unique_ptr<IsoStreamServer> server_;
+  fuchsia::bluetooth::le::IsochronousStreamPtr client_;
   std::optional<zx_status_t> epitaph_;
   std::unique_ptr<bt::iso::testing::FakeIsoStream> fake_iso_stream_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(IsoStreamServerTest);
+};
+
+static fuchsia::bluetooth::CodecAttributes BuildCodecAttributes() {
+  fuchsia::bluetooth::CodecAttributes codec_attributes;
+  fuchsia::bluetooth::CodecId codec_id;
+  codec_id.set_assigned_format(fuchsia::bluetooth::AssignedCodingFormat::MSBC);
+  codec_attributes.set_codec_id(std::move(codec_id));
+  return codec_attributes;
+}
+
+// IsoStreamServerDataTest automatically perform the data stream setup
+class IsoStreamServerDataTest : public IsoStreamServerTest {
+ public:
+  void SetUp() override {
+    IsoStreamServerTest::SetUp();
+
+    // Establish stream
+    server()->OnStreamEstablished(fake_iso_stream()->GetWeakPtr(),
+                                  kCisParameters);
+    RunLoopUntilIdle();
+
+    // Set up data path
+    fuchsia::bluetooth::CodecAttributes codec_attributes =
+        BuildCodecAttributes();
+    fake_iso_stream()->SetSetupDataPathReturnStatus(
+        bt::iso::IsoStream::SetupDataPathError::kSuccess);
+    std::optional<zx_status_t> status1;
+    CallSetupDataPath(fuchsia::bluetooth::DataDirection::OUTPUT,
+                      std::move(codec_attributes),
+                      &status1);
+    EXPECT_FALSE(status1.has_value());
+  }
 };
 
 void IsoStreamServerTest::CallSetupDataPath(
@@ -207,14 +241,6 @@ TEST_F(IsoStreamServerTest, StreamNotEstablished) {
   on_established_events_.pop();
 }
 
-fuchsia::bluetooth::CodecAttributes BuildCodecAttributes() {
-  fuchsia::bluetooth::CodecAttributes codec_attributes;
-  fuchsia::bluetooth::CodecId codec_id;
-  codec_id.set_assigned_format(fuchsia::bluetooth::AssignedCodingFormat::MSBC);
-  codec_attributes.set_codec_id(std::move(codec_id));
-  return codec_attributes;
-}
-
 TEST_F(IsoStreamServerTest, SetupDataPathInvalidDirection) {
   fuchsia::bluetooth::CodecAttributes codec_attributes = BuildCodecAttributes();
   std::optional<zx_status_t> status;
@@ -281,6 +307,110 @@ TEST_F(IsoStreamServerTest, SetupDataPathStatusCodes) {
                     &status2);
   EXPECT_TRUE(status2.has_value());
   EXPECT_EQ(*status2, ZX_ERR_INVALID_ARGS);
+}
+
+TEST_F(IsoStreamServerDataTest, ReadBeforeDataReceived) {
+  std::optional<fuchsia::bluetooth::le::IsochronousStream_Read_Result> result;
+  fuchsia::bluetooth::le::IsochronousStream::ReadCallback read_cb =
+      [&result](fuchsia::bluetooth::le::IsochronousStream_Read_Result
+                    result_received) { result = std::move(result_received); };
+  (*client())->Read(std::move(read_cb));
+  RunLoopUntilIdle();
+  ASSERT_FALSE(result.has_value());
+
+  // Queue a frame
+  const size_t kTotalPacketSize = 255;
+  const uint16_t kConnectionHandle = fake_iso_stream()->cis_handle();
+  const uint16_t kSequenceNumber = 0x4321;
+  bt::DynamicByteBuffer raw_buffer = bt::testing::IsoDataPacket(
+      kTotalPacketSize, kConnectionHandle, kSequenceNumber);
+  pw::span<const std::byte> packet(
+      reinterpret_cast<const std::byte*>(raw_buffer.data()), raw_buffer.size());
+  fake_iso_stream()->NotifyClientOfPacketReceived(packet);
+  RunLoopUntilIdle();
+
+  // Validate callback response
+  ASSERT_TRUE(result.has_value());
+  ASSERT_TRUE(result->is_response());
+  const fuchsia::bluetooth::le::IsochronousStream_Read_Response& response =
+      result->response();
+  EXPECT_TRUE(response.has_sequence_number() &&
+              (response.sequence_number() == kSequenceNumber));
+  EXPECT_TRUE(response.has_status_flag() &&
+              (response.status_flag() ==
+               fuchsia::bluetooth::le::IsoPacketStatusFlag::VALID_DATA));
+  EXPECT_FALSE(response.has_timestamp());
+
+  // Validate data received
+  auto view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
+      raw_buffer.data(), raw_buffer.size());
+  size_t sdu_data_size = view.sdu_fragment_size().Read();
+  ASSERT_TRUE(response.has_data());
+  ASSERT_EQ(sdu_data_size, response.data().size());
+  EXPECT_EQ(0,
+            memcmp(view.iso_sdu_fragment().BackingStorage().data(),
+                   response.data().data(),
+                   sdu_data_size));
+}
+
+TEST_F(IsoStreamServerDataTest, DataReceivedBeforeRead) {
+  // Queue a frame
+  const size_t kTotalPacketSize = 255;
+  const uint16_t kConnectionHandle = fake_iso_stream()->cis_handle();
+  const uint16_t kSequenceNumber = 0x4321;
+  bt::DynamicByteBuffer raw_buffer = bt::testing::IsoDataPacket(
+      kTotalPacketSize, kConnectionHandle, kSequenceNumber);
+  std::unique_ptr<bt::iso::IsoDataPacket> frame =
+      std::make_unique<bt::iso::IsoDataPacket>(kTotalPacketSize);
+  std::memcpy(frame->data(), raw_buffer.data(), kTotalPacketSize);
+  fake_iso_stream()->QueueIncomingFrame(std::move(frame));
+
+  std::optional<fuchsia::bluetooth::le::IsochronousStream_Read_Result> result;
+  fuchsia::bluetooth::le::IsochronousStream::ReadCallback read_cb =
+      [&result](fuchsia::bluetooth::le::IsochronousStream_Read_Result
+                    result_received) { result = std::move(result_received); };
+  (*client())->Read(std::move(read_cb));
+  RunLoopUntilIdle();
+
+  // Validate callback response
+  ASSERT_TRUE(result.has_value());
+  ASSERT_TRUE(result->is_response());
+  const fuchsia::bluetooth::le::IsochronousStream_Read_Response& response =
+      result->response();
+  EXPECT_TRUE(response.has_sequence_number() &&
+              (response.sequence_number() == kSequenceNumber));
+  EXPECT_TRUE(response.has_status_flag() &&
+              (response.status_flag() ==
+               fuchsia::bluetooth::le::IsoPacketStatusFlag::VALID_DATA));
+  EXPECT_FALSE(response.has_timestamp());
+
+  // Validate data received
+  auto view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
+      raw_buffer.data(), raw_buffer.size());
+  size_t sdu_data_size = view.sdu_fragment_size().Read();
+  ASSERT_TRUE(response.has_data());
+  ASSERT_EQ(sdu_data_size, response.data().size());
+  EXPECT_EQ(0,
+            memcmp(view.iso_sdu_fragment().BackingStorage().data(),
+                   response.data().data(),
+                   sdu_data_size));
+}
+
+// Attempting to Read() twice from the FIDL interface without receiving any data
+// causes the connection to close
+TEST_F(IsoStreamServerDataTest, DoubleReadWithNoDataReceived) {
+  std::optional<fuchsia::bluetooth::le::IsochronousStream_Read_Result> result;
+  fuchsia::bluetooth::le::IsochronousStream::ReadCallback read_cb =
+      [&result](fuchsia::bluetooth::le::IsochronousStream_Read_Result
+                    result_received) { result = std::move(result_received); };
+  (*client())->Read(std::move(read_cb));
+  RunLoopUntilIdle();
+  (*client())->Read(std::move(read_cb));
+  RunLoopUntilIdle();
+  auto status = epitaph();
+  ASSERT_TRUE(status);
+  EXPECT_EQ(*status, ZX_ERR_BAD_STATE);
+  EXPECT_EQ(on_closed_called_times_, 1u);
 }
 
 }  // namespace

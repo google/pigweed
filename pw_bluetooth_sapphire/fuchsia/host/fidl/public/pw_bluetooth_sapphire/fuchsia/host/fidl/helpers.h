@@ -333,6 +333,8 @@ fuchsia::bluetooth::le::CisEstablishedParameters CisEstablishedParametersToFidl(
 bt::DeviceAddress::Type FidlToDeviceAddressType(
     fuchsia::bluetooth::AddressType addr_type);
 
+fuchsia::bluetooth::le::IsoPacketStatusFlag EmbossIsoPacketStatusFlagToFidl(
+    pw::bluetooth::emboss::IsoDataPacketStatus status_in);
 }  // namespace bthost::fidl_helpers
 
 // fidl::TypeConverter specializations for ByteBuffer and friends.
