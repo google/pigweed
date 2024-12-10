@@ -147,7 +147,10 @@ template("pw_python_venv") {
     ]
   }
 
-  if (defined(invoker.source_packages) &&
+  # If the venv includes source packages then their 3p install requirements
+  # (defined in setup.cfg files) are collected into a single requirements.txt
+  # file.
+  if (_source_packages != [] &&
       current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
     pw_python_action("${target_name}._generate_3p_requirements") {
       inputs = _requirements + _constraints
@@ -190,7 +193,10 @@ template("pw_python_venv") {
       outputs = [ _generated_requirements_file ]
       deps = [ ":${invoker.target_name}._create_virtualenv($pw_build_PYTHON_TOOLCHAIN)" ]
     }
+    # End _source_packages != [] check
   } else {
+    # No source packages specified for this venv. Skip collecting 3p install
+    # requirements.
     group("${target_name}._generate_3p_requirements") {
     }
   }
@@ -202,7 +208,9 @@ template("pw_python_venv") {
     not_needed([ "_pip_generate_hashes" ])
   }
 
-  if (defined(invoker.source_packages) || defined(invoker.requirements)) {
+  # Use pip-compile to generate a fully expanded requirements.txt file for all
+  # 3p Python packages.
+  if (_source_packages != [] || _requirements != []) {
     if (current_toolchain == pw_build_PYTHON_TOOLCHAIN) {
       # Compile requirements with hashes
       pw_python_action("${target_name}._compile_requirements") {
@@ -327,7 +335,9 @@ template("pw_python_venv") {
         pool = "$dir_pw_build/pool:pip($default_toolchain)"
       }
 
-      # Install all 3rd party Python dependencies.
+      # Install all 3rd party Python dependencies. Note the venv
+      # _install_3p_deps sub target is what all pw_python_action targets depend
+      # on by default.
       pw_python_action("${target_name}._install_3p_deps") {
         module = "pip"
 
@@ -439,6 +449,8 @@ template("pw_python_venv") {
 
       # End pw_build_PYTHON_TOOLCHAIN check
     } else {
+      # Outside the Python toolchain, add deps for the same targets under the
+      # correct toolchain.
       group("${target_name}._compile_requirements") {
         public_deps = [ ":${target_name}($pw_build_PYTHON_TOOLCHAIN)" ]
       }
@@ -449,10 +461,17 @@ template("pw_python_venv") {
         public_deps = [ ":${target_name}($pw_build_PYTHON_TOOLCHAIN)" ]
       }
     }
+    # End _source_packages != [] || _requirements != [] check
   } else {
     group("${target_name}._compile_requirements") {
     }
+
+    # Note the venv ._install_3p_deps sub target is what all pw_python_action
+    # targets depend on by default.
     group("${target_name}._install_3p_deps") {
+      # _install_3p_deps should still depend on _create_virtualenv when no
+      # requirements or source packages are provided.
+      public_deps = [ ":${invoker.target_name}._create_virtualenv($pw_build_PYTHON_TOOLCHAIN)" ]
     }
     group("${target_name}.vendor_wheels") {
     }
