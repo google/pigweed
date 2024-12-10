@@ -39,7 +39,8 @@ L2capSignalingChannel::L2capSignalingChannel(
                         /*local_cid=*/fixed_cid,
                         /*remote_cid=*/fixed_cid,
                         /*payload_from_controller_fn=*/nullptr,
-                        /*queue_space_available_fn=*/nullptr),
+                        /*queue_space_available_fn=*/nullptr,
+                        /*event_fn=*/nullptr),
       l2cap_channel_manager_(l2cap_channel_manager) {}
 
 L2capSignalingChannel& L2capSignalingChannel::operator=(

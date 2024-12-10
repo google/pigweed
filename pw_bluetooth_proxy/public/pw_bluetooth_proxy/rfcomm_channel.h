@@ -88,7 +88,8 @@ class RfcommChannel final : public L2capChannel {
       Config tx_config,
       uint8_t channel_number,
       Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-      Function<void()>&& queue_space_available_fn);
+      Function<void()>&& queue_space_available_fn,
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   /// Send an RFCOMM payload to the remote peer.
   ///
@@ -120,7 +121,8 @@ class RfcommChannel final : public L2capChannel {
                 Config tx_config,
                 uint8_t channel_number,
                 Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-                Function<void()>&& queue_space_available_fn);
+                Function<void()>&& queue_space_available_fn,
+                Function<void(L2capChannelEvent event)>&& event_fn);
 
   // Parses out RFCOMM payload from `l2cap_pdu` and calls
   // `SendPayloadFromControllerToClient`.

@@ -170,6 +170,7 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
                               uint16_t source_cid,
                               uint16_t destination_cid);
 
+// TODO: https://pwbug.dev/382783733 - Migrate to L2capChannelEvent callback.
 struct CocParameters {
   uint16_t handle = 123;
   uint16_t local_cid = 234;
@@ -200,7 +201,8 @@ struct RfcommParameters {
 RfcommChannel BuildRfcomm(
     ProxyHost& proxy,
     RfcommParameters params = {},
-    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr,
-    pw::Function<void()>&& queue_space_available_fn = nullptr);
+    Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr,
+    Function<void()>&& queue_space_available_fn = nullptr,
+    Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
 
 }  // namespace pw::bluetooth::proxy

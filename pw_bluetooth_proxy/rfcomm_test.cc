@@ -341,7 +341,8 @@ TEST(RfcommWriteTest, WriteFlowControl) {
       proxy,
       params,
       /*receive_fn=*/nullptr,
-      /*queue_space_available_fn=*/std::move(queue_space_available_fn));
+      /*queue_space_available_fn=*/std::move(queue_space_available_fn),
+      /*event_fn=*/nullptr);
 
   // Writes while queue has space will return Ok. No RFCOMM credits yet though
   // so no sends complete.

@@ -42,6 +42,7 @@ L2capChannel::L2capChannel(L2capChannel&& other)
       transport_(other.transport()),
       local_cid_(other.local_cid()),
       remote_cid_(other.remote_cid()),
+      event_fn_(std::move(other.event_fn_)),
       queue_space_available_fn_(std::move(other.queue_space_available_fn_)),
       payload_from_controller_fn_(
           std::move(other.payload_from_controller_fn_)) {
@@ -57,6 +58,7 @@ L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
   transport_ = other.transport();
   local_cid_ = other.local_cid();
   remote_cid_ = other.remote_cid();
+  event_fn_ = std::move(other.event_fn_);
   queue_space_available_fn_ = std::move(other.queue_space_available_fn_);
   payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
   MoveLockedFields(other);
@@ -117,12 +119,14 @@ L2capChannel::L2capChannel(
     uint16_t local_cid,
     uint16_t remote_cid,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void()>&& queue_space_available_fn)
+    Function<void()>&& queue_space_available_fn,
+    Function<void(L2capChannelEvent event)>&& event_fn)
     : l2cap_channel_manager_(l2cap_channel_manager),
       connection_handle_(connection_handle),
       transport_(transport),
       local_cid_(local_cid),
       remote_cid_(remote_cid),
+      event_fn_(std::move(event_fn)),
       queue_space_available_fn_(std::move(queue_space_available_fn)),
       payload_from_controller_fn_(std::move(payload_from_controller_fn)) {
   l2cap_channel_manager_.RegisterChannel(*this);

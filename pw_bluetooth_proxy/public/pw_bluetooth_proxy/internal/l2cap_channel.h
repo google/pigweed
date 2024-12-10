@@ -16,6 +16,7 @@
 
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
+#include "pw_bluetooth_proxy/l2cap_channel_event.h"
 #include "pw_containers/inline_queue.h"
 #include "pw_containers/intrusive_forward_list.h"
 #include "pw_result/result.h"
@@ -106,7 +107,8 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
       uint16_t local_cid,
       uint16_t remote_cid,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void()>&& queue_space_available_fn);
+      Function<void()>&& queue_space_available_fn,
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   // Returns whether or not ACL connection handle & L2CAP channel identifiers
   // are valid parameters for a packet.
@@ -169,6 +171,9 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
 
   // L2CAP channel ID of remote endpoint.
   uint16_t remote_cid_;
+
+  // Notify clients of asynchronous events encountered such as errors.
+  Function<void(L2capChannelEvent event)> event_fn_;
 
   //-------
   //  Tx:

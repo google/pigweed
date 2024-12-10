@@ -23,6 +23,8 @@ namespace pw::bluetooth::proxy {
 /// from a remote peer.
 class L2capCoc : public L2capChannel {
  public:
+  using Event = L2capChannelEvent;
+
   /// Parameters for a direction of packet flow in an `L2capCoc`.
   struct CocConfig {
     /// Channel identifier of the endpoint.
@@ -49,22 +51,6 @@ class L2capCoc : public L2capChannel {
     ///         value if the container has already sent K-frames and/or received
     ///         credits.
     uint16_t credits;
-  };
-
-  enum class Event {
-    // TODO: https://pwbug.dev/360929142 - Listen for
-    // L2CAP_DISCONNECTION_REQ/RSP packets and report this event accordingly.
-    kChannelClosedByOther,
-    /// An invalid packet was received. The channel is now `kStopped` and should
-    /// be closed. See error logs for details.
-    kRxInvalid,
-    /// The channel has received a packet while in the `kStopped` state. The
-    /// channel should have been closed.
-    kRxWhileStopped,
-    /// PDU recombination is not yet supported, but a fragmented L2CAP frame has
-    /// been received. The channel is now `kStopped` and should be closed.
-    // TODO: https://pwbug.dev/365179076 - Support recombination.
-    kRxFragmented,
   };
 
   L2capCoc(const L2capCoc& other) = delete;
@@ -114,8 +100,9 @@ class L2capCoc : public L2capChannel {
       CocConfig rx_config,
       CocConfig tx_config,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void(Event event)>&& event_fn,
-      Function<void()>&& queue_space_available_fn);
+      Function<void(Event event)>&& event_fn_deprecated,
+      Function<void()>&& queue_space_available_fn,
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   // `SendPayloadFromControllerToClient` with the information payload contained
   // in `kframe`. As packet desegmentation is not supported, segmented SDUs are
@@ -141,8 +128,9 @@ class L2capCoc : public L2capChannel {
       CocConfig rx_config,
       CocConfig tx_config,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void(Event event)>&& event_fn,
-      Function<void()>&& queue_space_available_fn);
+      Function<void(Event event)>&& event_fn_deprecated,
+      Function<void()>&& queue_space_available_fn,
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   // Stop channel & notify client.
   void OnFragmentedPduReceived() override;
@@ -162,7 +150,9 @@ class L2capCoc : public L2capChannel {
   uint16_t tx_mps_;
   uint16_t tx_credits_ PW_GUARDED_BY(mutex_);
   uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(mutex_);
-  pw::Function<void(Event event)> event_fn_;
+  // TODO: https://pwbug.dev/382783733 - Remove after implementing handling of
+  // L2capChannelEvent in L2capChannel.
+  pw::Function<void(Event event)> event_fn_deprecated_;
 };
 
 }  // namespace pw::bluetooth::proxy

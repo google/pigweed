@@ -2076,7 +2076,9 @@ TEST(BasicL2capChannelTest, BasicWrite) {
                                      /*local_cid=*/0x123,
                                      /*remote_cid=*/capture.channel_id,
                                      /*transport=*/AclTransportType::kLe,
-                                     /*payload_from_controller_fn=*/nullptr));
+                                     /*payload_from_controller_fn=*/nullptr,
+                                     /*queue_space_available_fn=*/nullptr,
+                                     /*event_fn=*/nullptr));
 
   EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
   EXPECT_EQ(capture.sends_called, 1);
@@ -2104,7 +2106,9 @@ TEST(BasicL2capChannelTest, ErrorOnWriteTooLarge) {
                                      /*local_cid=*/0x123,
                                      /*remote_cid=*/0x123,
                                      /*transport=*/AclTransportType::kLe,
-                                     /*payload_from_controller_fn=*/nullptr));
+                                     /*payload_from_controller_fn=*/nullptr,
+                                     /*queue_space_available_fn=*/nullptr,
+                                     /*event_fn=*/nullptr));
 
   EXPECT_EQ(channel.Write(span(hci_arr)), PW_STATUS_INVALID_ARGUMENT);
 }
@@ -2125,7 +2129,9 @@ TEST(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
                                     /*local_cid=*/0x123,
                                     /*remote_cid=*/0x123,
                                     /*transport=*/AclTransportType::kLe,
-                                    /*payload_from_controller_fn=*/nullptr)
+                                    /*payload_from_controller_fn=*/nullptr,
+                                    /*queue_space_available_fn=*/nullptr,
+                                    /*event_fn=*/nullptr)
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
 
@@ -2136,7 +2142,9 @@ TEST(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
                                     /*local_cid=*/0,
                                     /*remote_cid=*/0x123,
                                     /*transport=*/AclTransportType::kLe,
-                                    /*payload_from_controller_fn=*/nullptr)
+                                    /*payload_from_controller_fn=*/nullptr,
+                                    /*queue_space_available_fn=*/nullptr,
+                                    /*event_fn=*/nullptr)
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
 }
@@ -2170,7 +2178,9 @@ TEST(BasicL2capChannelTest, BasicRead) {
                                    payload.end(),
                                    capture.expected_payload.begin(),
                                    capture.expected_payload.end()));
-          }));
+          },
+          /*queue_space_available_fn=*/nullptr,
+          /*event_fn=*/nullptr));
 
   std::array<uint8_t,
              emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
@@ -2224,7 +2234,10 @@ TEST(L2capCocTest, CannotCreateChannelWithInvalidArgs) {
               /*tx_config=*/
               {.cid = 0x123, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
               /*receive_fn=*/nullptr,
-              /*event_fn=*/nullptr)
+              // TODO: https://pwbug.dev/382783733 - Remove cast after ambiguous
+              // Acquire method deleted.
+              /*event_fn=*/
+              static_cast<Function<void(L2capCoc::Event event)>>(nullptr))
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
 
@@ -2238,7 +2251,10 @@ TEST(L2capCocTest, CannotCreateChannelWithInvalidArgs) {
               /*tx_config=*/
               {.cid = 0x123, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
               /*receive_fn=*/nullptr,
-              /*event_fn=*/nullptr)
+              // TODO: https://pwbug.dev/382783733 - Remove cast after ambiguous
+              // Acquire method deleted.
+              /*event_fn=*/
+              static_cast<Function<void(L2capCoc::Event event)>>(nullptr))
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
 
@@ -2252,7 +2268,10 @@ TEST(L2capCocTest, CannotCreateChannelWithInvalidArgs) {
               /*tx_config=*/
               {.cid = 0, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
               /*receive_fn=*/nullptr,
-              /*event_fn=*/nullptr)
+              // TODO: https://pwbug.dev/382783733 - Remove cast after ambiguous
+              // Acquire method deleted.
+              /*event_fn=*/
+              static_cast<Function<void(L2capCoc::Event event)>>(nullptr))
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
 }

@@ -31,7 +31,7 @@ L2capCoc::L2capCoc(L2capCoc&& other)
       rx_mps_(other.rx_mps_),
       tx_mtu_(other.tx_mtu_),
       tx_mps_(other.tx_mps_),
-      event_fn_(std::move(other.event_fn_)) {
+      event_fn_deprecated_(std::move(other.event_fn_deprecated_)) {
   std::lock_guard lock(mutex_);
   std::lock_guard other_lock(other.mutex_);
   tx_credits_ = other.tx_credits_;
@@ -103,8 +103,9 @@ pw::Result<L2capCoc> L2capCoc::Create(
     CocConfig rx_config,
     CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void(Event event)>&& event_fn,
-    Function<void()>&& queue_space_available_fn) {
+    Function<void(Event event)>&& event_fn_deprecated,
+    Function<void()>&& queue_space_available_fn,
+    Function<void(L2capChannelEvent event)>&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/rx_config.cid,
                           /*remote_cid=*/tx_config.cid)) {
@@ -126,8 +127,9 @@ pw::Result<L2capCoc> L2capCoc::Create(
       /*rx_config=*/rx_config,
       /*tx_config=*/tx_config,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
-      /*event_fn=*/std::move(event_fn),
-      /*queue_space_available_fn=*/std::move(queue_space_available_fn));
+      /*event_fn_deprecated=*/std::move(event_fn_deprecated),
+      /*queue_space_available_fn=*/std::move(queue_space_available_fn),
+      /*event_fn=*/std::move(event_fn));
 }
 
 bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
@@ -235,15 +237,18 @@ L2capCoc::L2capCoc(
     CocConfig rx_config,
     CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void(Event event)>&& event_fn,
-    Function<void()>&& queue_space_available_fn)
-    : L2capChannel(l2cap_channel_manager,
-                   connection_handle,
-                   AclTransportType::kLe,
-                   rx_config.cid,
-                   tx_config.cid,
-                   std::move(payload_from_controller_fn),
-                   std::move(queue_space_available_fn)),
+    Function<void(Event event)>&& event_fn_deprecated,
+    Function<void()>&& queue_space_available_fn,
+    Function<void(L2capChannelEvent event)>&& event_fn)
+    : L2capChannel(
+          /*l2cap_channel_manager=*/l2cap_channel_manager,
+          /*connection_handle=*/connection_handle,
+          /*transport=*/AclTransportType::kLe,
+          /*local_cid=*/rx_config.cid,
+          /*remote_cid=*/tx_config.cid,
+          /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
+          /*queue_space_available_fn=*/std::move(queue_space_available_fn),
+          /*event_fn=*/std::move(event_fn)),
       state_(CocState::kRunning),
       rx_mtu_(rx_config.mtu),
       rx_mps_(rx_config.mps),
@@ -251,7 +256,7 @@ L2capCoc::L2capCoc(
       tx_mps_(tx_config.mps),
       tx_credits_(tx_config.credits),
       remaining_sdu_bytes_to_ignore_(0),
-      event_fn_(std::move(event_fn)) {}
+      event_fn_deprecated_(std::move(event_fn_deprecated)) {}
 
 void L2capCoc::OnFragmentedPduReceived() {
   L2capChannel::OnFragmentedPduReceived();
@@ -260,8 +265,8 @@ void L2capCoc::OnFragmentedPduReceived() {
 
 void L2capCoc::StopChannelAndReportError(Event error) {
   Stop().IgnoreError();
-  if (event_fn_) {
-    event_fn_(error);
+  if (event_fn_deprecated_) {
+    event_fn_deprecated_(error);
   }
 }
 

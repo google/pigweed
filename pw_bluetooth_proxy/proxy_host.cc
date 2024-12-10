@@ -398,7 +398,7 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
     L2capCoc::CocConfig rx_config,
     L2capCoc::CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-    Function<void(L2capCoc::Event event)>&& event_fn,
+    Function<void(L2capChannelEvent event)>&& event_fn,
     Function<void()>&& queue_space_available_fn) {
   Status status = acl_data_channel_.CreateAclConnection(connection_handle,
                                                         AclTransportType::kLe);
@@ -412,8 +412,9 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
                                   rx_config,
                                   tx_config,
                                   std::move(receive_fn),
-                                  std::move(event_fn),
-                                  std::move(queue_space_available_fn));
+                                  /*event_fn_deprecated=*/std::move(event_fn),
+                                  std::move(queue_space_available_fn),
+                                  /*event_fn=*/nullptr);
 }
 
 pw::Status ProxyHost::SendAdditionalRxCredits(uint16_t connection_handle,
@@ -436,7 +437,8 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
     uint16_t remote_cid,
     AclTransportType transport,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void()>&& queue_space_available_fn) {
+    Function<void()>&& queue_space_available_fn,
+    Function<void(L2capChannelEvent event)>&& event_fn) {
   Status status =
       acl_data_channel_.CreateAclConnection(connection_handle, transport);
   if (status.IsResourceExhausted()) {
@@ -450,7 +452,8 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
       /*local_cid=*/local_cid,
       /*remote_cid=*/remote_cid,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
-      /*queue_space_available_fn=*/std::move(queue_space_available_fn));
+      /*queue_space_available_fn=*/std::move(queue_space_available_fn),
+      /*event_fn=*/std::move(event_fn));
 }
 
 pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
@@ -477,7 +480,8 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
     RfcommChannel::Config tx_config,
     uint8_t channel_number,
     Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-    Function<void()>&& queue_space_available_fn) {
+    Function<void()>&& queue_space_available_fn,
+    Function<void(L2capChannelEvent event)>&& event_fn) {
   Status status = acl_data_channel_.CreateAclConnection(
       connection_handle, AclTransportType::kBrEdr);
   if (status != OkStatus() && status != Status::AlreadyExists()) {
@@ -489,7 +493,8 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
                                tx_config,
                                channel_number,
                                std::move(receive_fn),
-                               std::move(queue_space_available_fn));
+                               std::move(queue_space_available_fn),
+                               std::move(event_fn));
 }
 
 bool ProxyHost::HasSendLeAclCapability() const {

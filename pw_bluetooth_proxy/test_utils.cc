@@ -307,15 +307,17 @@ L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params) {
 RfcommChannel BuildRfcomm(
     ProxyHost& proxy,
     RfcommParameters params,
-    pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-    pw::Function<void()>&& queue_space_available_fn) {
+    Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+    Function<void()>&& queue_space_available_fn,
+    Function<void(L2capChannelEvent event)>&& event_fn) {
   pw::Result<RfcommChannel> channel =
       proxy.AcquireRfcommChannel(params.handle,
                                  params.rx_config,
                                  params.tx_config,
                                  params.rfcomm_channel,
                                  std::move(receive_fn),
-                                 std::move(queue_space_available_fn));
+                                 std::move(queue_space_available_fn),
+                                 std::move(event_fn));
   PW_TEST_EXPECT_OK(channel);
   return std::move((channel.value()));
 }
