@@ -52,7 +52,7 @@ bool L2capChannelManager::ReleaseChannel(L2capChannel& channel) {
   return was_removed;
 }
 
-pw::Result<H4PacketWithH4> L2capChannelManager::GetTxH4Packet(uint16_t size) {
+pw::Result<H4PacketWithH4> L2capChannelManager::GetAclH4Packet(uint16_t size) {
   if (size > GetH4BuffSize()) {
     PW_LOG_ERROR(
         "Requested packet is too large for H4 buffer. So will not send.");

@@ -158,7 +158,7 @@ pw::Result<H4PacketWithH4> L2capChannel::PopulateTxL2capPacket(
   const size_t h4_packet_size = sizeof(emboss::H4PacketType) + acl_packet_size;
 
   pw::Result<H4PacketWithH4> h4_packet_res =
-      l2cap_channel_manager_.GetTxH4Packet(h4_packet_size);
+      l2cap_channel_manager_.GetAclH4Packet(h4_packet_size);
   if (!h4_packet_res.ok()) {
     // If there were no buffers, they are all in the queue currently. This can
     // happen if queue size == buffer count. Mark that a writer is getting an
