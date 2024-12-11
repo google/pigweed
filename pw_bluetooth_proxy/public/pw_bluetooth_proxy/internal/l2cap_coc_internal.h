@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "pw_bluetooth_proxy/l2cap_channel_event.h"
 #include "pw_bluetooth_proxy/l2cap_coc.h"
 
 namespace pw::bluetooth::proxy {

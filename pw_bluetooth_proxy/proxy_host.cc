@@ -24,6 +24,7 @@
 #include "pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
+#include "pw_bluetooth_proxy/l2cap_channel_event.h"
 #include "pw_log/log.h"
 
 namespace pw::bluetooth::proxy {
