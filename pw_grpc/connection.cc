@@ -288,7 +288,7 @@ Status Connection::SharedState::DrainResponseQueues() {
 
 Status Connection::SharedState::SendBytes(ConstByteSpan message) {
   std::optional<multibuf::MultiBuf> buffer =
-      multibuf_allocator_.Allocate(message.size());
+      multibuf_allocator_.AllocateContiguous(message.size());
   if (!buffer.has_value()) {
     return Status::ResourceExhausted();
   }
@@ -361,8 +361,9 @@ Status Connection::SharedState::SendHeaders(StreamId stream_id,
   }
 
   ConstByteSpan frame_span = AsBytes(frame);
-  std::optional<multibuf::MultiBuf> buffer = multibuf_allocator_.Allocate(
-      frame_span.size() + payload1.size() + payload2.size());
+  std::optional<multibuf::MultiBuf> buffer =
+      multibuf_allocator_.AllocateContiguous(frame_span.size() +
+                                             payload1.size() + payload2.size());
   if (!buffer.has_value()) {
     return Status::ResourceExhausted();
   }
@@ -474,9 +475,9 @@ Status Connection::Writer::SendResponseMessage(StreamId stream_id,
   // Create contiguous buffer big enough to hold the response message plus
   // headers.
   std::optional<multibuf::MultiBuf> buffer =
-      state->multibuf_allocator().Allocate(message.size() +
-                                           kLengthPrefixedMessageHdrSize +
-                                           sizeof(WireFrameHeader));
+      state->multibuf_allocator().AllocateContiguous(
+          message.size() + kLengthPrefixedMessageHdrSize +
+          sizeof(WireFrameHeader));
 
   if (!buffer.has_value()) {
     return Status::ResourceExhausted();
