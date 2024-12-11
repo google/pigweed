@@ -40,10 +40,12 @@ What do I do?
 #. Upload your change to Gerrit.
 #. Use the "CHOOSE TRYJOBS" dialog to run the "pigweed-linux-bazel-lockfile" tryjob.
 #. If the job fails, the result will include the diff that you need to apply to
-   your CL (via ``git patch``) to update the Bazel lockfile for Linux. Apply
-   the patch and upload a new patchset to Gerrit. If the job passes, the
-   lockfile is already up to date on this host platform and no patching is
-   necessary!
+   your CL (via ``git apply``) to update the Bazel lockfile for Linux. (You can
+   find it under "lockfile_check" > "logs" > "git_diff.txt".) Apply the patch
+   and upload a new patchset to Gerrit. If the job passes, the lockfile is
+   already up to date on this host platform and no patching is necessary!
+
+   Here's an example tryjob: http://ci.chromium.org/b/8728814798922152993.
 #. Run the "pigweed-mac-arm-bazel-lockfile" tryjob, and apply the patch it
    generates.
 #. Run the "pigweed-mac-x86-bazel-lockfile" tryjob, and apply the patch it
