@@ -107,8 +107,8 @@ def bazel(
             remote_cache.append('--remote_upload_local_results=true')
 
     symlink_prefix: list[str] = []
-    if cmd != 'query':
-        # bazel query doesn't support the --symlink_prefix flag.
+    if cmd not in ('mod', 'query'):
+        # bazel query and bazel mod don't support the --symlink_prefix flag.
         symlink_prefix.append(f'--symlink_prefix={ctx.output_dir / "bazel-"}')
 
     ctx.output_dir.mkdir(exist_ok=True, parents=True)

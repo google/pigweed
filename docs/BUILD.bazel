@@ -86,6 +86,7 @@ sphinx_docs_library(
         "get_started/upstream.rst",
         "get_started/zephyr.rst",
         "glossary.rst",
+        "infra/bazel_lockfile.rst",
         "infra/ci_cq_intro.rst",
         "infra/index.rst",
         "infra/rollers.rst",

@@ -13,7 +13,7 @@
 # the License.
 """Bazel related checks."""
 
-from . import build, presubmit, presubmit_context
+from . import build, git_repo, presubmit, presubmit_context
 
 
 def includes_presubmit_check(
@@ -78,3 +78,30 @@ def includes_presubmit_check(
         )
 
     return includes_check
+
+
+def lockfile_check(ctx: presubmit_context.PresubmitContext) -> None:
+    """Verify that MODULE.bazel.lock is up to date.
+
+    Note: unlike most presubmit checks, this check intentionally modifies the
+    contents of the working directory. It is intended for producing
+    MODULE.bazel.lock updates for different host platforms on CI machines.
+    See https://pigweed.dev/docs/infra/bazel_lockfile.html.
+
+    Args:
+      ctx: A presubmit context.
+    """
+    build.bazel(ctx, 'mod', 'deps', '--lockfile_mode=update')
+
+    diff = git_repo.find_git_repo(ctx.root).diff('MODULE.bazel.lock')
+    if not diff:
+        return
+
+    ctx.output_dir.mkdir(exist_ok=True, parents=True)
+    diff_path = ctx.output_dir / 'git_diff.txt'
+    with open(diff_path, 'w') as stdout:
+        stdout.write(diff)
+
+    raise presubmit_context.PresubmitFailure(
+        f'git diff output is not empty; see {diff_path}'
+    )

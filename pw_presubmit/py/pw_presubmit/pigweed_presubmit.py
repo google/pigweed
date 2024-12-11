@@ -1731,6 +1731,7 @@ INCLUDE_CHECK_TARGET_PATTERN = "//... " + " ".join(
 
 OTHER_CHECKS = (
     # keep-sorted: start
+    bazel_checks.lockfile_check,
     bazel_test,
     bthost_package,
     build.gn_gen_check,
