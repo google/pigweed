@@ -99,26 +99,6 @@ class Thread {
   /// @post The thread get EITHER detached or joined.
   Thread(const Options& options, Function<void()>&& entry);
 
-  /// Creates a thread from a `ThreadCore` subclass. `ThreadCore` is not
-  /// recommended for new code; use the `pw::Function<void()>` constructor
-  /// instead.
-  ///
-  /// For example:
-  ///
-  /// @code{.cpp}
-  /// class Foo : public ThreadCore {
-  ///  private:
-  ///   void Run() override {}
-  /// };
-  /// Foo foo;
-  ///
-  /// // Now create the thread, using foo directly.
-  /// Thread(options, foo).detach();
-  /// @endcode
-  ///
-  /// @post The thread get EITHER detached or joined.
-  Thread(const Options& options, ThreadCore& thread_core);
-
   /// @post The other thread no longer represents a thread of execution.
   Thread& operator=(Thread&& other);
 

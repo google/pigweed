@@ -59,7 +59,6 @@ filegroup {
     name: "pw_thread_src_files",
     srcs: [
         "sleep.cc",
-        "thread.cc",
         "yield.cc",
     ],
 }

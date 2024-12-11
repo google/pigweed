@@ -71,7 +71,6 @@ pw_facade("thread") {
     ":thread_core",
     dir_pw_function,
   ]
-  sources = [ "thread.cc" ]
 }
 
 pw_source_set("options") {
@@ -88,6 +87,7 @@ pw_facade("test_thread_context") {
 pw_source_set("thread_core") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_thread/thread_core.h" ]
+  public_deps = [ dir_pw_function ]
 }
 
 pw_facade("thread_iteration") {

@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include "pw_function/function.h"
+
 namespace pw::thread {
 
 // An optional virtual interface which can be implemented by objects which are
@@ -32,6 +34,17 @@ class ThreadCore {
 
   // The public API to start a ThreadCore, note that this may return.
   void Start() { Run(); }
+
+  // Returns a pw::Function<void()> that runs this ThreadCore. This is used to
+  // run ThreadCores in a thread.
+  Function<void()> AsFunction() {
+    return [this] { Start(); };
+  }
+
+  // Implicitly convert a ThreadCore to a pw::Function that runs it. This is
+  // used to support existing uses of ThreadCore, without requiring pw::Thread
+  // to refer to it. This implicit conversion may be removed in the future.
+  operator Function<void()>() { return AsFunction(); }
 
  private:
   // This function may return.

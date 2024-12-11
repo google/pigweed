@@ -120,10 +120,7 @@ host_backend_alias(
 
 pw_facade(
     name = "thread",
-    srcs = [
-        "public/pw_thread/config.h",
-        "thread.cc",
-    ],
+    srcs = ["public/pw_thread/config.h"],
     hdrs = [
         "public/pw_thread/detached_thread.h",
         "public/pw_thread/thread.h",
@@ -160,10 +157,7 @@ cc_library(
         "public/pw_thread/thread_core.h",
     ],
     strip_include_prefix = "public",
-    deps = [
-        "//pw_log",
-        "//pw_status",
-    ],
+    deps = ["//pw_function"],
 )
 
 cc_library(

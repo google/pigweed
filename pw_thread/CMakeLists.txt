@@ -50,7 +50,7 @@ pw_add_facade(pw_thread.sleep STATIC
     sleep.cc
 )
 
-pw_add_facade(pw_thread.thread STATIC
+pw_add_facade(pw_thread.thread INTERFACE
   BACKEND
     pw_thread.thread_BACKEND
   HEADERS
@@ -63,8 +63,6 @@ pw_add_facade(pw_thread.thread STATIC
     pw_thread.thread_core
     pw_thread.id
     pw_thread.options
-  SOURCES
-    thread.cc
 )
 
 pw_add_library(pw_thread.options INTERFACE
@@ -79,6 +77,8 @@ pw_add_library(pw_thread.thread_core INTERFACE
     public/pw_thread/thread_core.h
   PUBLIC_INCLUDES
     public
+  PUBLIC_DEPS
+    pw_function
 )
 
 pw_add_library(pw_thread.thread_info INTERFACE
