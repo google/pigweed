@@ -160,6 +160,13 @@ pw::Result<H4PacketWithH4> L2capChannel::PopulateTxL2capPacket(
   pw::Result<H4PacketWithH4> h4_packet_res =
       l2cap_channel_manager_.GetTxH4Packet(h4_packet_size);
   if (!h4_packet_res.ok()) {
+    // If there were no buffers, they are all in the queue currently. This can
+    // happen if queue size == buffer count. Mark that a writer is getting an
+    // Unavailable status, and should be notified when queue space opens up.
+    if (h4_packet_res.status().IsUnavailable()) {
+      std::lock_guard lock(send_queue_mutex_);
+      notify_on_dequeue_ = true;
+    }
     return h4_packet_res.status();
   }
   H4PacketWithH4 h4_packet = std::move(h4_packet_res.value());

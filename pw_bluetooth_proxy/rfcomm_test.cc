@@ -325,12 +325,14 @@ TEST(RfcommWriteTest, WriteFlowControl) {
   pw::Function<void()> queue_space_available_fn(
       [&capture]() { ++capture.queue_unblocked; });
 
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0,
-                              /*br_edr_acl_credits_to_reserve=*/10);
+  ProxyHost proxy = ProxyHost(
+      std::move(send_to_host_fn),
+      std::move(send_to_controller_fn),
+      /*le_acl_credits_to_reserve=*/0,
+      /*br_edr_acl_credits_to_reserve=*/RfcommChannel::QueueCapacity() + 1);
   // Start with plenty of ACL credits to test RFCOMM logic.
-  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 10));
+  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(
+      proxy, RfcommChannel::QueueCapacity() + 1));
 
   RfcommParameters params = {.tx_config = {
                                  .cid = 123,
