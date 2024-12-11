@@ -11,6 +11,17 @@
     <pubDate>Mon, 7 Oct 2024 08:00:00 -0700</pubDate>
     <atom:link href="https://pigweed.dev/rss.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>Shaping a better future for Bazel C/C++ toolchains</title>
+      <link>https://pigweed.dev/docs/blog/06-better-cpp-toolchains.html</link>
+      <description>
+        It has been a long road, but Bazel C/C++ toolchains are getting better!
+        Today's blog post unpacks Pigweed's journey of improving C/C++
+        toolchains for the entire Bazel ecosystem.
+      </description>
+      <pubDate>Wed, 11 Dec 2024 08:00:00 -0700</pubDate>
+      <guid>https://pigweed.dev/docs/blog/06-better-cpp-toolchains.html</guid>
+    </item>
+    <item>
       <title>C++20 coroutines without heap allocation</title>
       <link>https://pigweed.dev/docs/blog/05-coroutines.html</link>
       <description>

@@ -62,6 +62,7 @@ sphinx_docs_library(
         "blog/03-pigweed-sdk.rst",
         "blog/04-fixed-point.rst",
         "blog/05-coroutines.rst",
+        "blog/06-better-cpp-toolchains.rst",
         "blog/index.rst",
         "blog/rss.xml",
         "code_of_conduct.rst",

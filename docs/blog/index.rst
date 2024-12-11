@@ -20,4 +20,5 @@ RSS feed: `https://pigweed.dev/rss.xml <https://pigweed.dev/rss.xml>`_
    #3: Pigweed SDK launch <03-pigweed-sdk>
    #4: Fixed Point Arithmetic as a Replacement for Soft Floats <04-fixed-point>
    #5: C++20 coroutines without heap allocation <05-coroutines>
+   #6: Shaping a better future for Bazel C/C++ toolchains <06-better-cpp-toolchains>
    RSS feed <https://pigweed.dev/rss.xml>
