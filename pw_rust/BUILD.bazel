@@ -42,6 +42,16 @@ rust_docs(
     target_compatible_with = incompatible_with_mcu(),
 )
 
+# Intermediary target that enables us to provide rustdoc files
+# as an input to rules_python/sphinx_docs_library.
+filegroup(
+    name = "docs_dir",
+    srcs = [":docs"],
+    output_group = "rustdoc_dir",
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
+)
+
 sphinx_docs_library(
     name = "sphinx",
     srcs = [

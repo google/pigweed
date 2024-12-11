@@ -12,9 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("@bazel_skylib//rules:copy_directory.bzl", "copy_directory")
 load("@rules_python//sphinxdocs:sphinx.bzl", "sphinx_build_binary", "sphinx_docs")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -131,6 +132,25 @@ sphinx_docs_library(
     target_compatible_with = incompatible_with_mcu(),
 )
 
+copy_directory(
+    name = "rust_files",
+    src = "//pw_rust:docs_dir",
+    out = "rustdoc",
+)
+
+sphinx_docs_library(
+    name = "rust",
+    srcs = [":rust_files"],
+    prefix = "rustdoc/",
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+# Use Sphinx to build the main pigweed.dev website.
+#
+# The main `docs` target must output a directory containing the fully
+# built pigweed.dev website. It must output a directory, not an archive,
+# because our deploy code expects a directory when it uploads the website
+# code and assets to our CDN.
 sphinx_docs(
     name = "docs",
     config = "conf.py",
@@ -143,6 +163,27 @@ sphinx_docs(
     deps = [
         ":not_prefixed",
         ":prefixed",
+        # TODO: https://pwbug.dev/383540117 - Move this comment to a dedicated
+        # contributor's guide on the Bazel docgen system.
+        #
+        # The fully built rustdoc subsite is provided as a dependency
+        # here. The `html_extra_path` config in `//docs/conf.py` instructs Sphinx
+        # to copy the rustdoc directory to its output.
+        #
+        # Having rustdoc be a dependency to Sphinx probably reduces parallelism of
+        # the docs site build but was the only solution that worked and has a few
+        # advantages:
+        #
+        # * When previewing the docs site locally, rustdoc links now work.
+        #   I.e. after running `bazelisk run //docs:docs.serve` you can browse
+        #   both the main Sphinx site and the rustdoc subsite.
+        #
+        # * Automation related to the rustdoc subsite is now easier. E.g. we
+        #   can now use Sphinx's built-in link checker to make sure that
+        #   there are no 404ing rustdoc links.
+        #
+        # * The main Sphinx site and rustdoc subsite can be deployed in 1 step.
+        ":rust",
         "//pw_alignment:docs",
         "//pw_allocator:docs",
         "//pw_analog:docs",

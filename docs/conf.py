@@ -19,6 +19,15 @@ from datetime import date
 from pw_console.pigweed_code_style import PigweedCodeStyle
 from pw_console.pigweed_code_style import PigweedCodeLightStyle
 
+
+# Determine whether the docs are being built with Bazel or GN.
+is_bazel_build = True
+try:
+    from python.runfiles import runfiles  # type: ignore
+except ImportError:
+    is_bazel_build = False
+
+
 # The suffix of source filenames.
 source_suffix = ['.rst']
 
@@ -153,6 +162,11 @@ html_extra_path = [
     # Sphinx build it's copied to the root of the website, https://pigweed.dev/rss.xml
     'docs/blog/rss.xml',
 ]
+if is_bazel_build:
+    # In the Bazel build, the fully built rustdoc site is present in the Sphinx
+    # site's sources directory. Specifying the rustdoc directory here instructs
+    # Sphinx to copy over the entire directory to its output.
+    html_extra_path.append('rustdoc')
 
 html_theme_options = {
     # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html#navigation-bar-dropdown-links

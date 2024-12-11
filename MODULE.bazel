@@ -82,6 +82,16 @@ single_version_override(
     ],
 )
 
+# Supports directory sources in sphinx_docs_library. Providing //pw_rust:docs
+# as an input to //docs:docs depends on this bug fix:
+# https://github.com/bazelbuild/rules_python/issues/2374
+# We can remove this override when we upgrade to rules_python >= 0.38.
+git_override(
+    module_name = "rules_python",
+    commit = "a0b1a40b9335ec1a8cae737e805f721cd6d2cd1f",
+    remote = "https://github.com/bazelbuild/rules_python.git",
+)
+
 # Transitive deps not in BCR
 # ==========================
 http_archive = use_repo_rule(
