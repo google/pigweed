@@ -291,6 +291,7 @@ proto_library(
 pw_proto_filegroup(
     name = "codegen_test_proto_and_options",
     srcs = [
+        "pw_protobuf_test_protos/edition.proto",
         "pw_protobuf_test_protos/full_test.proto",
         "pw_protobuf_test_protos/imported.proto",
         "pw_protobuf_test_protos/importer.proto",
@@ -301,6 +302,7 @@ pw_proto_filegroup(
         "pw_protobuf_test_protos/size_report.proto",
     ],
     options_files = [
+        "pw_protobuf_test_protos/edition.pwpb_options",
         "pw_protobuf_test_protos/full_test.pwpb_options",
         "pw_protobuf_test_protos/optional.pwpb_options",
         "pw_protobuf_test_protos/imported.pwpb_options",
@@ -364,13 +366,19 @@ pw_cc_test(
     ],
 )
 
-# TODO: https://pwbug.dev/366316523 - Bazel's protoc version does not support
-# editions, and extra compiler options cannot be passed to a proto_library
-# target, so `editions.proto` cannot be compiled until we upgrade Protobuf.
-filegroup(
+pw_cc_test(
     name = "codegen_editions_test",
     srcs = [
         "codegen_editions_test.cc",
+    ],
+    deps = [
+        ":codegen_test_proto_pwpb",
+        ":pw_protobuf",
+        "//pw_preprocessor",
+        "//pw_span",
+        "//pw_status",
+        "//pw_stream",
+        "//pw_unit_test",
     ],
 )
 

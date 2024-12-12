@@ -33,7 +33,7 @@ class Protobuf(pw_package.git_repo.GitRepo):
                     "/third_party/github/protocolbuffers/protobuf.git",
                 ]
             ),
-            commit='15c40c6cdac2f816a56640d24a5c4c3ec0f84b00',
+            commit='9fff46d7327c699ef970769d5c9fd0e44df08fc7',
             **kwargs,
         )
 

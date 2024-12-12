@@ -23,14 +23,11 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "boringssl", version = "0.20240913.0")
 bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
 bazel_dep(name = "gazelle", version = "0.36.0", repo_name = "bazel_gazelle")
-
-# Note: the nanopb version specification is a no-op for now, see
-# https://pwbug.dev/354274498#comment32.
 bazel_dep(name = "nanopb", version = "0.4.9.1", repo_name = "com_github_nanopb_nanopb")
 bazel_dep(name = "pico-sdk", version = "2.0.0")
 bazel_dep(name = "picotool", version = "2.0.0")
 bazel_dep(name = "platforms", version = "0.0.10")
-bazel_dep(name = "protobuf", version = "24.4", repo_name = "com_google_protobuf")
+bazel_dep(name = "protobuf", version = "28.2", repo_name = "com_google_protobuf")
 bazel_dep(name = "rules_cc", version = "0.0.10")
 bazel_dep(name = "rules_fuzzing", version = "0.5.2")
 bazel_dep(name = "rules_go", version = "0.49.0", repo_name = "io_bazel_rules_go")
@@ -58,13 +55,6 @@ archive_override(
     module_name = "hedron_compile_commands",
     strip_prefix = "bazel-compile-commands-extractor-163521345aa6366fd1ed801b989b668b5c806f69",
     urls = ["https://github.com/chadnorvell/bazel-compile-commands-extractor/archive/163521345aa6366fd1ed801b989b668b5c806f69.tar.gz"],
-)
-
-# TODO: https://pwbug.dev/354274498 - nanopb is not yet in the BCR.
-git_override(
-    module_name = "nanopb",
-    commit = "f9191cd0be4177abd0d04546d61d59a9b6c32de3",
-    remote = "https://github.com/nanopb/nanopb.git",
 )
 
 single_version_override(

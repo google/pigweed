@@ -33,8 +33,20 @@ if (dir_pw_third_party_nanopb != "") {
     include_dirs = [ dir_pw_third_party_nanopb ]
   }
 
+  config("disable_warnings") {
+    cflags = [
+      # Fixed in upstream (https://github.com/nanopb/nanopb/pull/1022), but that
+      # PR is not yet in any released version of nanopb (as of 0.4.9.1).
+      "-Wno-switch-enum",
+    ]
+    visibility = [ ":*" ]
+  }
+
   pw_source_set("nanopb") {
-    public_configs = [ ":includes" ]
+    public_configs = [
+      ":disable_warnings",
+      ":includes",
+    ]
     public = [
       "$dir_pw_third_party_nanopb/pb.h",
       "$dir_pw_third_party_nanopb/pb_common.h",

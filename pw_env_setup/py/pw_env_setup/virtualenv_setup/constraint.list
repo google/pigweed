@@ -21,8 +21,8 @@ decorator==5.1.1
 dill==0.3.6
 docutils==0.20.1
 executing==2.0.1
-google-api-core==2.12.0
-googleapis-common-protos==1.61.0
+google-api-core==2.19.2
+googleapis-common-protos==1.65.0
 google-auth==2.23.3
 google-cloud-core==2.3.3
 google-cloud-storage==2.12.0
@@ -55,7 +55,7 @@ pexpect==4.8.0
 pickleshare==0.7.5
 platformdirs==3.0.0
 prompt-toolkit==3.0.43
-protobuf==4.24.4
+protobuf==5.28.2
 psutil==5.9.4
 ptpython==3.0.25
 ptyprocess==0.7.0
@@ -92,7 +92,7 @@ tomli==2.0.1; python_version < "3.11"
 tomlkit==0.11.6
 traitlets==5.1.1
 types-docutils==0.20.0.3
-types-protobuf==4.24.0.2
+types-protobuf==5.28.3.20241030
 types-Pygments==2.18.0.20240506
 types-pyserial==3.5.0.7
 types-PyYAML==6.0.12.11

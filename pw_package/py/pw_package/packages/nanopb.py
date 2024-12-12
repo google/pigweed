@@ -29,7 +29,8 @@ class NanoPB(pw_package.git_repo.GitRepo):
             *args,
             name='nanopb',
             url='https://pigweed.googlesource.com/third_party/github/nanopb/nanopb',
-            commit='2b48a361786dfb1f63d229840217a93aae064667',
+            # 0.4.9.1 release
+            commit='cad3c18ef15a663e30e3e43e3a752b66378adec1',
             **kwargs,
         )
         # pylint: enable=line-too-long

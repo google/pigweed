@@ -716,7 +716,18 @@ def _add_message_fields(
         # TODO: pwbug.dev/366316523 - The generated protobuf types do not
         # include the "edition" property, so getattr is used. Fix this when
         # we upgrade protobuf and mypy-protobuf.
-        if getattr(proto_file, 'edition', None) == '2023':
+        edition = getattr(proto_file, 'edition', None)
+        if edition and (
+            # Before protobuf v25.0 (specifically,
+            # https://github.com/protocolbuffers/protobuf/commit/65419eef0d99446070dcff1e10f951383ceb42fe)
+            # edition was a string field, which cannot be compared with an int.
+            # Since then, it's been an enum.
+            edition == '2023'
+            or (
+                isinstance(edition, int)
+                and edition >= edition_constants.Edition.EDITION_2023.value
+            )
+        ):
             has_presence = not repeated and (
                 field.type is ProtoNode.Type.MESSAGE
                 or field.options.features.field_presence
