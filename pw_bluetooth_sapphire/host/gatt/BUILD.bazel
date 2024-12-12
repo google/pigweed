@@ -16,13 +16,15 @@ load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["**/*"]))
-
 cc_library(
     name = "definitions",
     srcs = [
         "gatt_defs.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/att:definitions",
@@ -43,6 +45,20 @@ cc_library(
         "server.cc",
         "types.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/gatt/client.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/connection.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/gatt.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/generic_attribute_service.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/persisted_data.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/remote_characteristic.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/remote_service.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/remote_service_manager.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/server.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/types.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         ":definitions",
         "//pw_bluetooth_sapphire:public",
@@ -59,13 +75,19 @@ cc_library(
         "fake_layer.cc",
         "mock_server.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/gatt/fake_client.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/fake_layer.h",
+        "public/pw_bluetooth_sapphire/internal/host/gatt/mock_server.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         ":gatt",
         "//pw_async:heap_dispatcher",
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/common:uuid_string_util",
-        "//pw_unit_test",
+        "//pw_unit_test:googletest",
     ],
 )
 

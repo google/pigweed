@@ -16,16 +16,18 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
-dir_public_sdp = "../../public/pw_bluetooth_sapphire/internal/host/sdp"
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
 
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 pw_source_set("definitions") {
   public = [
-    "$dir_public_sdp/data_element.h",
-    "$dir_public_sdp/error.h",
-    "$dir_public_sdp/sdp.h",
-    "$dir_public_sdp/service_record.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/data_element.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/error.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/sdp.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/service_record.h",
   ]
 
   sources = [
@@ -35,14 +37,16 @@ pw_source_set("definitions") {
   ]
 
   public_deps = [ "$dir_pw_bluetooth_sapphire/host/common" ]
+
+  public_configs = [ ":public_include_path" ]
 }
 
 pw_source_set("sdp") {
   public = [
-    "$dir_public_sdp/client.h",
-    "$dir_public_sdp/pdu.h",
-    "$dir_public_sdp/server.h",
-    "$dir_public_sdp/service_discoverer.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/client.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/pdu.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/server.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/service_discoverer.h",
   ]
 
   sources = [
@@ -58,7 +62,7 @@ pw_source_set("sdp") {
     "$dir_pw_third_party/fuchsia:stdcompat",
   ]
 
-  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
+  public_configs = [ ":public_include_path" ]
 }
 
 pw_test("sdp_tests") {
@@ -83,11 +87,13 @@ pw_test("sdp_tests") {
 
 pw_fuzzer("data_element_fuzzer") {
   sources = [ "data_element_fuzztest.cc" ]
+
   deps = [ ":definitions" ]
 }
 
 pw_fuzzer("pdu_fuzzer") {
   sources = [ "pdu_fuzztest.cc" ]
+
   deps = [ ":sdp" ]
 }
 

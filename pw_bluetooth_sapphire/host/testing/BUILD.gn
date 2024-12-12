@@ -15,27 +15,25 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_unit_test/test.gni")
 
-dir_public_testing = "../../public/pw_bluetooth_sapphire/internal/host/testing"
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
 
 pw_source_set("testing") {
   testonly = pw_unit_test_TESTONLY
-
   public = [
-    "$dir_public_testing/controller_test.h",
-    "$dir_public_testing/inspect.h",
-    "$dir_public_testing/inspect_util.h",
-    "$dir_public_testing/parse_args.h",
-    "$dir_public_testing/test_packets.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/controller_test.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/inspect.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/inspect_util.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/parse_args.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/test_packets.h",
   ]
-
   sources = [
     "inspect_util.cc",
     "parse_args.cc",
     "test_packets.cc",
   ]
-
   deps = [ "$dir_pw_unit_test" ]
-
   public_deps = [
     ":fake_controller",
     ":mock_controller",
@@ -43,13 +41,10 @@ pw_source_set("testing") {
     "$dir_pw_bluetooth_sapphire/host/transport",
     "$dir_pw_bluetooth_sapphire/host/transport:testing",
   ]
-
   if (current_os == "fuchsia") {
     public_deps += [ "//sdk/lib/inspect/testing/cpp" ]
   }
-
-  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
-
+  public_configs = [ ":public_include_path" ]
   remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
   configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
@@ -57,17 +52,14 @@ pw_source_set("testing") {
 # test_helpers is separate from :testing to fix dependency cycles.
 pw_source_set("test_helpers") {
   testonly = pw_unit_test_TESTONLY
-
-  public = [ "$dir_public_testing/test_helpers.h" ]
-
+  public =
+      [ "public/pw_bluetooth_sapphire/internal/host/testing/test_helpers.h" ]
   deps = [ "$dir_pw_bluetooth_sapphire/lib/cpp-string" ]
-
   public_deps = [
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_unit_test",
   ]
-
-  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
+  public_configs = [ ":public_include_path" ]
 }
 
 pw_test("tests") {
@@ -80,22 +72,17 @@ pw_test("tests") {
     "inspect_util_test.cc",
     "parse_args_test.cc",
   ]
-
   deps = [
     ":testing",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
   ]
-
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
 pw_source_set("controller_test_double_base") {
   testonly = pw_unit_test_TESTONLY
-
-  public = [ "$dir_public_testing/controller_test_double_base.h" ]
-
+  public = [ "public/pw_bluetooth_sapphire/internal/host/testing/controller_test_double_base.h" ]
   sources = [ "controller_test_double_base.cc" ]
-
   public_deps = [
     "$dir_pw_async:heap_dispatcher",
     "$dir_pw_bluetooth",
@@ -103,18 +90,16 @@ pw_source_set("controller_test_double_base") {
     "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_third_party/fuchsia:fit",
   ]
-
+  public_configs = [ ":public_include_path" ]
   remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
   configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
 
 pw_source_set("mock_controller") {
   testonly = pw_unit_test_TESTONLY
-
-  public = [ "$dir_public_testing/mock_controller.h" ]
-
+  public =
+      [ "public/pw_bluetooth_sapphire/internal/host/testing/mock_controller.h" ]
   sources = [ "mock_controller.cc" ]
-
   public_deps = [
     ":controller_test_double_base",
     ":test_helpers",
@@ -123,7 +108,7 @@ pw_source_set("mock_controller") {
     "$dir_pw_bluetooth_sapphire/host/transport:testing",
     "$dir_pw_unit_test",
   ]
-
+  public_configs = [ ":public_include_path" ]
   remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
   configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
@@ -132,17 +117,15 @@ pw_source_set("mock_controller") {
 # gtest.
 pw_source_set("fake_controller") {
   testonly = pw_unit_test_TESTONLY
-
   public = [
-    "$dir_public_testing/fake_controller.h",
-    "$dir_public_testing/fake_dynamic_channel.h",
-    "$dir_public_testing/fake_gatt_server.h",
-    "$dir_public_testing/fake_l2cap.h",
-    "$dir_public_testing/fake_peer.h",
-    "$dir_public_testing/fake_sdp_server.h",
-    "$dir_public_testing/fake_signaling_server.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_controller.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_dynamic_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_gatt_server.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_peer.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_sdp_server.h",
+    "public/pw_bluetooth_sapphire/internal/host/testing/fake_signaling_server.h",
   ]
-
   sources = [
     "fake_controller.cc",
     "fake_dynamic_channel.cc",
@@ -152,7 +135,6 @@ pw_source_set("fake_controller") {
     "fake_sdp_server.cc",
     "fake_signaling_server.cc",
   ]
-
   public_deps = [
     ":controller_test_double_base",
     ":test_helpers",
@@ -167,7 +149,7 @@ pw_source_set("fake_controller") {
     "$dir_pw_bluetooth_sapphire/host/sdp",
     "$dir_pw_third_party/fuchsia:fit",
   ]
-
+  public_configs = [ ":public_include_path" ]
   remove_configs = [ "$dir_pw_build:internal_strict_warnings" ]
   configs = [ "$dir_pw_build:internal_strict_warnings_core" ]
 }
@@ -175,20 +157,19 @@ pw_source_set("fake_controller") {
 # Main entry point for host library unittests.
 pw_source_set("gtest_main") {
   testonly = pw_unit_test_TESTONLY
-
   sources = [ "run_all_unittests.cc" ]
-
   deps = [
     ":testing",
     "$dir_pw_bluetooth_sapphire/host/common",
   ]
-
   public_deps = [ "$dir_pw_unit_test" ]
 }
 
 pw_source_set("fuzzing") {
-  public = [ "$dir_public_testing/peer_fuzzer.h" ]
+  public =
+      [ "public/pw_bluetooth_sapphire/internal/host/testing/peer_fuzzer.h" ]
   deps = [ "$dir_pw_bluetooth_sapphire/host/gap" ]
+  public_configs = [ ":public_include_path" ]
 }
 
 source_set("fuzztest_driver") {
@@ -203,9 +184,11 @@ source_set("fuzztest_driver") {
 # migrated to Bazel.
 source_set("loop_fixture") {
   testonly = true
-  public = [ "$dir_public_testing/loop_fixture.h" ]
+  public =
+      [ "public/pw_bluetooth_sapphire/internal/host/testing/loop_fixture.h" ]
   public_deps = [
     "$dir_pw_unit_test",
     "//zircon/system/ulib/async-testing",
   ]
+  public_configs = [ ":public_include_path" ]
 }

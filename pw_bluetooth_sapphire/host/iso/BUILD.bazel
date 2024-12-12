@@ -16,8 +16,6 @@ load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["**/*"]))
-
 cc_library(
     name = "iso",
     srcs = [
@@ -25,11 +23,30 @@ cc_library(
         "iso_stream.cc",
         "iso_stream_manager.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/iso/iso_common.h",
+        "public/pw_bluetooth_sapphire/internal/host/iso/iso_inbound_packet_assembler.h",
+        "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream.h",
+        "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/transport",
+    ],
+)
+
+cc_library(
+    name = "testing",
+    testonly = True,
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/iso/fake_iso_stream.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":iso",
     ],
 )
 

@@ -16,8 +16,6 @@ load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["**/*"]))
-
 cc_library(
     name = "hci",
     srcs = [
@@ -38,6 +36,27 @@ cc_library(
         "sco_connection.cc",
         "sequential_command_runner.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/hci/acl_connection.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/advertising_handle_map.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/advertising_report_parser.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/android_extended_low_energy_advertiser.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/bredr_connection_request.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/connection.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_scanner.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_advertiser.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_advertiser.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/sco_connection.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/transport",
@@ -55,6 +74,13 @@ cc_library(
         "fake_low_energy_connection.cc",
         "fake_sco_connection.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/hci/fake_bredr_connection.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/fake_low_energy_connection.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/fake_sco_connection.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         ":hci",
         "//pw_bluetooth_sapphire:public",

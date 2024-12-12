@@ -16,8 +16,6 @@ load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["**/*"]))
-
 cc_library(
     name = "definitions",
     srcs = [
@@ -25,6 +23,15 @@ cc_library(
         "packet.cc",
         "types.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/sm/delegate.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/error.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/packet.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/smp.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/types.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/util.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
@@ -48,6 +55,22 @@ cc_library(
         "security_request_phase.cc",
         "util.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/sm/ecdh_key.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/fake_phase_listener.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/pairing_channel.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/pairing_phase.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/phase_1.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/phase_2_legacy.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/phase_2_secure_connections.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/phase_3.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/sc_stage_1.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_just_works_numeric_comparison.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_passkey.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/security_manager.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/security_request_phase.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         ":definitions",
         "//pw_bluetooth_sapphire:public",
@@ -65,6 +88,10 @@ cc_library(
     srcs = [
         "test_security_manager.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/sm/test_security_manager.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         ":sm",
         "//pw_bluetooth_sapphire:public",

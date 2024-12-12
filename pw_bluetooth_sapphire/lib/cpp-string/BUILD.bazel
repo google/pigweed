@@ -37,6 +37,5 @@ pw_cc_test(
     ],
     deps = [
         ":cpp-string",
-        "//pw_unit_test",
     ],
 )

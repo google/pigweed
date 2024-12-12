@@ -16,8 +16,6 @@ load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["**/*"]))
-
 cc_library(
     name = "common",
     srcs = [
@@ -37,6 +35,41 @@ cc_library(
         "supplement_data.cc",
         "uuid.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/common/advertising_data.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/assert.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/bounded_inspect_list_node.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/byte_buffer.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/device_address.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/device_class.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/error.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/expiring_set.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/fake_inspect.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/host_error.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/identifier.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/inspect.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/inspectable.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/log.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/macros.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/manufacturer_names.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/metrics.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/packet_view.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/pipeline_monitor.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/random.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/retire_log.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/slab_allocator.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/slab_buffer.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/smart_task.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/supplement_data.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/to_string.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/trace.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/uint128.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/uint256.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/uuid.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/weak_self.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/windowed_inspect_numeric_property.h",
+    ],
+    strip_include_prefix = "public",
     # This library is not compatible with --config=rp2040.
     target_compatible_with = select({
         "@platforms//os:fuchsia": [],

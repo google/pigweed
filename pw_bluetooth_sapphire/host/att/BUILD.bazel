@@ -16,15 +16,17 @@ load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["**/*"]))
-
 cc_library(
     name = "definitions",
     srcs = [
         "packet.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/att/att.h",
+        "public/pw_bluetooth_sapphire/internal/host/att/packet.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
-        "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci-spec",
         "//pw_bluetooth_sapphire/host/l2cap:definitions",
@@ -41,11 +43,22 @@ cc_library(
         "permissions.cc",
         "write_queue.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/att/attribute.h",
+        "public/pw_bluetooth_sapphire/internal/host/att/bearer.h",
+        "public/pw_bluetooth_sapphire/internal/host/att/database.h",
+        "public/pw_bluetooth_sapphire/internal/host/att/error.h",
+        "public/pw_bluetooth_sapphire/internal/host/att/permissions.h",
+        "public/pw_bluetooth_sapphire/internal/host/att/write_queue.h",
+    ],
+    implementation_deps = [
+        "@pigweed//pw_string",
+    ],
+    strip_include_prefix = "public",
     deps = [
         ":definitions",
         "//pw_bluetooth_sapphire/host/l2cap",
         "//pw_bluetooth_sapphire/host/sm:definitions",
-        "@pigweed//pw_string",
         "@pigweed//third_party/fuchsia:fit",
     ],
 )

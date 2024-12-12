@@ -16,44 +16,45 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
-dir_public_common = "../../public/pw_bluetooth_sapphire/internal/host/common"
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
 
 pw_source_set("common") {
   public = [
-    "$dir_public_common/advertising_data.h",
-    "$dir_public_common/assert.h",
-    "$dir_public_common/bounded_inspect_list_node.h",
-    "$dir_public_common/byte_buffer.h",
-    "$dir_public_common/device_address.h",
-    "$dir_public_common/device_class.h",
-    "$dir_public_common/error.h",
-    "$dir_public_common/expiring_set.h",
-    "$dir_public_common/fake_inspect.h",
-    "$dir_public_common/host_error.h",
-    "$dir_public_common/identifier.h",
-    "$dir_public_common/inspect.h",
-    "$dir_public_common/inspectable.h",
-    "$dir_public_common/log.h",
-    "$dir_public_common/macros.h",
-    "$dir_public_common/manufacturer_names.h",
-    "$dir_public_common/metrics.h",
-    "$dir_public_common/packet_view.h",
-    "$dir_public_common/pipeline_monitor.h",
-    "$dir_public_common/random.h",
-    "$dir_public_common/retire_log.h",
-    "$dir_public_common/slab_allocator.h",
-    "$dir_public_common/slab_buffer.h",
-    "$dir_public_common/smart_task.h",
-    "$dir_public_common/supplement_data.h",
-    "$dir_public_common/to_string.h",
-    "$dir_public_common/trace.h",
-    "$dir_public_common/uint128.h",
-    "$dir_public_common/uint256.h",
-    "$dir_public_common/uuid.h",
-    "$dir_public_common/weak_self.h",
-    "$dir_public_common/windowed_inspect_numeric_property.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/advertising_data.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/assert.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/bounded_inspect_list_node.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/byte_buffer.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/device_address.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/device_class.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/error.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/expiring_set.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/fake_inspect.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/host_error.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/identifier.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/inspect.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/inspectable.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/log.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/macros.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/manufacturer_names.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/metrics.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/packet_view.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/pipeline_monitor.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/random.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/retire_log.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/slab_allocator.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/slab_buffer.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/smart_task.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/supplement_data.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/to_string.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/trace.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/uint128.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/uint256.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/uuid.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/weak_self.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/windowed_inspect_numeric_property.h",
   ]
-
   sources = [
     "advertising_data.cc",
     "bounded_inspect_list_node.cc",
@@ -71,7 +72,6 @@ pw_source_set("common") {
     "supplement_data.cc",
     "uuid.cc",
   ]
-
   public_deps = [
     "$dir_pw_assert",
     "$dir_pw_async:dispatcher",
@@ -88,14 +88,13 @@ pw_source_set("common") {
     "$dir_pw_string:utf_codecs",
     "$dir_pw_third_party/fuchsia:fit",
   ]
-
   if (current_os == "fuchsia") {
     public_deps += [
       "//sdk/lib/sys/inspect/cpp",
       "//zircon/system/ulib/trace",
     ]
   }
-
+  public_configs = [ ":public_include_path" ]
   deps = [ "$dir_pw_preprocessor" ]
 }
 
@@ -126,14 +125,12 @@ pw_test("common_tests") {
     "weak_self_test.cc",
     "windowed_inspect_numeric_property_test.cc",
   ]
-
   deps = [
     ":common",
     ":uuid_string_util",
     "$dir_pw_async:fake_dispatcher_fixture",
     "$dir_pw_bluetooth_sapphire/host/testing",
   ]
-
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 

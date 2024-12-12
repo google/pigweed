@@ -16,14 +16,18 @@ load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["**/*"]))
-
 cc_library(
     name = "sco",
     srcs = [
         "sco_connection.cc",
         "sco_connection_manager.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/sco/sco.h",
+        "public/pw_bluetooth_sapphire/internal/host/sco/sco_connection.h",
+        "public/pw_bluetooth_sapphire/internal/host/sco/sco_connection_manager.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",

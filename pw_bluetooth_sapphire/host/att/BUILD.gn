@@ -15,35 +15,35 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_unit_test/test.gni")
 
-dir_public_att = "../../public/pw_bluetooth_sapphire/internal/host/att"
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
 
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 pw_source_set("definitions") {
   public = [
-    "$dir_public_att/att.h",
-    "$dir_public_att/packet.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/att.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/packet.h",
   ]
-
   sources = [ "packet.cc" ]
-
   public_deps = [
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/hci-spec",
     "$dir_pw_bluetooth_sapphire/host/l2cap:definitions",
   ]
+  public_configs = [ ":public_include_path" ]
 }
 
 pw_source_set("att") {
   public = [
-    "$dir_public_att/attribute.h",
-    "$dir_public_att/bearer.h",
-    "$dir_public_att/database.h",
-    "$dir_public_att/error.h",
-    "$dir_public_att/permissions.h",
-    "$dir_public_att/write_queue.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/attribute.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/bearer.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/database.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/error.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/permissions.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/write_queue.h",
   ]
-
   sources = [
     "attribute.cc",
     "bearer.cc",
@@ -52,20 +52,17 @@ pw_source_set("att") {
     "permissions.cc",
     "write_queue.cc",
   ]
-
   public_deps = [
     ":definitions",
     "$dir_pw_bluetooth_sapphire/host/l2cap",
     "$dir_pw_bluetooth_sapphire/host/sm:definitions",
     "$dir_pw_third_party/fuchsia:fit",
   ]
-
   deps = [
     "$dir_pw_preprocessor",
     "$dir_pw_string",
   ]
-
-  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
+  public_configs = [ ":public_include_path" ]
 }
 
 pw_test("tests") {
@@ -76,11 +73,9 @@ pw_test("tests") {
     "error_test.cc",
     "permissions_test.cc",
   ]
-
   deps = [
     ":att",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
   ]
-
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }

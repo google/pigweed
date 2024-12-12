@@ -16,14 +16,17 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
-dir_public_sm = "../../public/pw_bluetooth_sapphire/internal/host/sm"
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
 
 pw_source_set("definitions") {
   public = [
-    "$dir_public_sm/error.h",
-    "$dir_public_sm/packet.h",
-    "$dir_public_sm/smp.h",
-    "$dir_public_sm/types.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/error.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/packet.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/smp.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/types.h",
   ]
 
   sources = [
@@ -37,24 +40,26 @@ pw_source_set("definitions") {
     "$dir_pw_bluetooth_sapphire/host/hci-spec",  # hci_spec::LinkKey
   ]
 
+  public_configs = [ ":public_include_path" ]
+
   deps = [ "$dir_pw_preprocessor" ]
 }
 
 pw_source_set("sm") {
   public = [
-    "$dir_public_sm/ecdh_key.h",
-    "$dir_public_sm/pairing_channel.h",
-    "$dir_public_sm/pairing_phase.h",
-    "$dir_public_sm/phase_1.h",
-    "$dir_public_sm/phase_2_legacy.h",
-    "$dir_public_sm/phase_2_secure_connections.h",
-    "$dir_public_sm/phase_3.h",
-    "$dir_public_sm/sc_stage_1.h",
-    "$dir_public_sm/sc_stage_1_just_works_numeric_comparison.h",
-    "$dir_public_sm/sc_stage_1_passkey.h",
-    "$dir_public_sm/security_manager.h",
-    "$dir_public_sm/security_request_phase.h",
-    "$dir_public_sm/util.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/ecdh_key.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/pairing_channel.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/pairing_phase.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/phase_1.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/phase_2_legacy.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/phase_2_secure_connections.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/phase_3.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/sc_stage_1.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_just_works_numeric_comparison.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_passkey.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/security_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/security_request_phase.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/util.h",
   ]
 
   sources = [
@@ -82,17 +87,21 @@ pw_source_set("sm") {
     "$dir_pw_third_party/boringssl",
     "$dir_pw_third_party/fuchsia:fit",
   ]
+
+  public_configs = [ ":public_include_path" ]
 }
 
 pw_source_set("testing") {
   public = [
-    "$dir_public_sm/fake_phase_listener.h",
-    "$dir_public_sm/test_security_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/fake_phase_listener.h",
+    "public/pw_bluetooth_sapphire/internal/host/sm/test_security_manager.h",
   ]
 
   sources = [ "test_security_manager.cc" ]
 
   deps = [ ":sm" ]
+
+  public_configs = [ ":public_include_path" ]
 }
 
 pw_test("sm_tests") {
@@ -127,6 +136,7 @@ pw_test("sm_tests") {
 
 pw_fuzzer("valid_packet_reader_fuzzer") {
   sources = [ "valid_packet_reader_parse_sdu_fuzztest.cc" ]
+
   deps = [ ":definitions" ]
 }
 

@@ -16,8 +16,6 @@ load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["**/*"]))
-
 cc_library(
     name = "testing",
     testonly = True,
@@ -26,9 +24,17 @@ cc_library(
         "parse_args.cc",
         "test_packets.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/testing/controller_test.h",
+        "public/pw_bluetooth_sapphire/internal/host/testing/inspect.h",
+        "public/pw_bluetooth_sapphire/internal/host/testing/inspect_util.h",
+        "public/pw_bluetooth_sapphire/internal/host/testing/parse_args.h",
+        "public/pw_bluetooth_sapphire/internal/host/testing/test_packets.h",
+    ],
     copts = [
         "-Wno-unused-parameter",
     ],
+    strip_include_prefix = "public",
     target_compatible_with = select({
         "//pw_unit_test:googletest_only": [],
         "@platforms//os:fuchsia": [],
@@ -43,27 +49,30 @@ cc_library(
         "//pw_bluetooth_sapphire/fuchsia/lib/inspect_testing",
         "//pw_bluetooth_sapphire/host/transport",
         "//pw_bluetooth_sapphire/host/transport:testing",
-        "//pw_unit_test",
+        "//pw_unit_test:googletest",
     ],
 )
 
 cc_library(
     name = "test_helpers",
     testonly = True,
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/testing/test_helpers.h",
+    ],
     copts = [
         "-Wno-unused-parameter",
     ],
+    strip_include_prefix = "public",
     target_compatible_with = select({
         "//pw_unit_test:googletest_only": [],
         "@platforms//os:fuchsia": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    # test_helpers.h is currently in bt-host:public, but its deps are here.
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/lib/cpp-string",
-        "//pw_unit_test",
+        "//pw_unit_test:googletest",
     ],
 )
 
@@ -71,9 +80,13 @@ cc_library(
     name = "controller_test_double_base",
     testonly = True,
     srcs = ["controller_test_double_base.cc"],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/testing/controller_test_double_base.h",
+    ],
     copts = [
         "-Wno-unused-parameter",
     ],
+    strip_include_prefix = "public",
     target_compatible_with = select({
         "//pw_unit_test:googletest_only": [],
         "@platforms//os:fuchsia": [],
@@ -83,7 +96,7 @@ cc_library(
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci",
-        "//pw_unit_test",
+        "//pw_unit_test:googletest",
         "@pigweed//pw_async:heap_dispatcher",
         "@pigweed//pw_bluetooth",
         "@pigweed//third_party/fuchsia:fit",
@@ -94,9 +107,13 @@ cc_library(
     name = "mock_controller",
     testonly = True,
     srcs = ["mock_controller.cc"],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/testing/mock_controller.h",
+    ],
     copts = [
         "-Wno-unused-parameter",
     ],
+    strip_include_prefix = "public",
     target_compatible_with = select({
         "//pw_unit_test:googletest_only": [],
         "@platforms//os:fuchsia": [],
@@ -108,7 +125,7 @@ cc_library(
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/transport",
         "//pw_bluetooth_sapphire/host/transport:testing",
-        "//pw_unit_test",
+        "//pw_unit_test:googletest",
         "@pigweed//pw_async:heap_dispatcher",
     ],
 )
@@ -125,9 +142,19 @@ cc_library(
         "fake_sdp_server.cc",
         "fake_signaling_server.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/testing/fake_controller.h",
+        "public/pw_bluetooth_sapphire/internal/host/testing/fake_dynamic_channel.h",
+        "public/pw_bluetooth_sapphire/internal/host/testing/fake_gatt_server.h",
+        "public/pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h",
+        "public/pw_bluetooth_sapphire/internal/host/testing/fake_peer.h",
+        "public/pw_bluetooth_sapphire/internal/host/testing/fake_sdp_server.h",
+        "public/pw_bluetooth_sapphire/internal/host/testing/fake_signaling_server.h",
+    ],
     copts = [
         "-Wno-unused-parameter",
     ],
+    strip_include_prefix = "public",
     target_compatible_with = select({
         "//pw_unit_test:googletest_only": [],
         "@platforms//os:fuchsia": [],
@@ -145,7 +172,7 @@ cc_library(
         "//pw_bluetooth_sapphire/host/l2cap:definitions",
         "//pw_bluetooth_sapphire/host/l2cap:testing",
         "//pw_bluetooth_sapphire/host/sdp",
-        "//pw_unit_test",
+        "//pw_unit_test:googletest",
         "@pigweed//pw_bluetooth:emboss_hci",
         "@pigweed//third_party/fuchsia:fit",
     ],
@@ -164,12 +191,15 @@ cc_library(
 cc_library(
     name = "loop_fixture",
     testonly = True,
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/testing/loop_fixture.h",
+    ],
+    strip_include_prefix = "public",
     target_compatible_with = select({
         "//pw_unit_test:googletest_only": [],
         "@platforms//os:fuchsia": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    # header is in bt-host:public
     deps = [
         "//pw_bluetooth_sapphire:public",
         "@com_google_googletest//:gtest",

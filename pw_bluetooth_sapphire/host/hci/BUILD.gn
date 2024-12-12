@@ -15,28 +15,31 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_unit_test/test.gni")
 
-dir_public_hci = "../../public/pw_bluetooth_sapphire/internal/host/hci"
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
 
 pw_source_set("hci") {
   public = [
-    "$dir_public_hci/acl_connection.h",
-    "$dir_public_hci/android_extended_low_energy_advertiser.h",
-    "$dir_public_hci/bredr_connection.h",
-    "$dir_public_hci/bredr_connection_request.h",
-    "$dir_public_hci/connection.h",
-    "$dir_public_hci/extended_low_energy_advertiser.h",
-    "$dir_public_hci/extended_low_energy_scanner.h",
-    "$dir_public_hci/legacy_low_energy_advertiser.h",
-    "$dir_public_hci/legacy_low_energy_scanner.h",
-    "$dir_public_hci/local_address_delegate.h",
-    "$dir_public_hci/low_energy_advertiser.h",
-    "$dir_public_hci/low_energy_connection.h",
-    "$dir_public_hci/low_energy_connector.h",
-    "$dir_public_hci/low_energy_scanner.h",
-    "$dir_public_hci/sco_connection.h",
-    "$dir_public_hci/sequential_command_runner.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/acl_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/advertising_handle_map.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/advertising_report_parser.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/android_extended_low_energy_advertiser.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/bredr_connection_request.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_scanner.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_advertiser.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_advertiser.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/sco_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h",
   ]
-
   sources = [
     "acl_connection.cc",
     "advertising_handle_map.cc",
@@ -55,37 +58,32 @@ pw_source_set("hci") {
     "sco_connection.cc",
     "sequential_command_runner.cc",
   ]
-
   public_deps = [
     "$dir_pw_async:heap_dispatcher",
     "$dir_pw_bluetooth:emboss_hci_group",
     "$dir_pw_bluetooth_sapphire/host/transport",
     "$dir_pw_third_party/fuchsia:fit",
   ]
-
-  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
-
+  public_configs = [ ":public_include_path" ]
   deps = [ "$dir_pw_preprocessor" ]
 }
 
 pw_source_set("testing") {
   public = [
-    "$dir_public_hci/fake_bredr_connection.h",
-    "$dir_public_hci/fake_local_address_delegate.h",
-    "$dir_public_hci/fake_low_energy_connection.h",
-    "$dir_public_hci/fake_sco_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_bredr_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_low_energy_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_sco_connection.h",
   ]
-
   sources = [
     "fake_bredr_connection.cc",
     "fake_local_address_delegate.cc",
     "fake_low_energy_connection.cc",
     "fake_sco_connection.cc",
   ]
-
-  deps = [ "$dir_pw_async:heap_dispatcher" ]
-
   public_deps = [ ":hci" ]
+  public_configs = [ ":public_include_path" ]
+  deps = [ "$dir_pw_async:heap_dispatcher" ]
 }
 
 pw_test("tests") {
@@ -102,12 +100,10 @@ pw_test("tests") {
     "low_energy_scanner_test.cc",
     "sequential_command_runner_test.cc",
   ]
-
   deps = [
     ":testing",
     "$dir_pw_bluetooth:emboss_hci_test",
     "$dir_pw_bluetooth_sapphire/host/testing",
   ]
-
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }

@@ -15,28 +15,29 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_unit_test/test.gni")
 
-dir_public_iso = "../../public/pw_bluetooth_sapphire/internal/host/iso"
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
 
 pw_source_set("iso") {
   public = [
-    "$dir_public_iso/fake_iso_stream.h",
-    "$dir_public_iso/iso_common.h",
-    "$dir_public_iso/iso_inbound_packet_assembler.h",
-    "$dir_public_iso/iso_stream.h",
-    "$dir_public_iso/iso_stream_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/iso/fake_iso_stream.h",
+    "public/pw_bluetooth_sapphire/internal/host/iso/iso_common.h",
+    "public/pw_bluetooth_sapphire/internal/host/iso/iso_inbound_packet_assembler.h",
+    "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream.h",
+    "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h",
   ]
-
   sources = [
     "iso_inbound_packet_assembler.cc",
     "iso_stream.cc",
     "iso_stream_manager.cc",
   ]
-
   public_deps = [
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_bluetooth_sapphire/host/transport",
   ]
+  public_configs = [ ":public_include_path" ]
 }
 
 pw_test("tests") {
@@ -46,11 +47,9 @@ pw_test("tests") {
     "iso_stream_manager_test.cc",
     "iso_stream_test.cc",
   ]
-
   deps = [
     ":iso",
     "$dir_pw_bluetooth_sapphire/host/testing",
   ]
-
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }

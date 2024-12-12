@@ -16,49 +16,51 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
-dir_public_gap = "../../public/pw_bluetooth_sapphire/internal/host/gap"
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
 
 pw_source_set("definitions") {
-  public = [ "$dir_public_gap/gap.h" ]
+  public = [ "public/pw_bluetooth_sapphire/internal/host/gap/gap.h" ]
   sources = [ "gap.cc" ]
+  public_configs = [ ":public_include_path" ]
   deps = [ "$dir_pw_bluetooth_sapphire/host/common" ]
 }
 
 pw_source_set("gap") {
   public = [
-    "$dir_public_gap/adapter.h",
-    "$dir_public_gap/adapter_state.h",
-    "$dir_public_gap/android_vendor_capabilities.h",
-    "$dir_public_gap/bonding_data.h",
-    "$dir_public_gap/bredr_connection.h",
-    "$dir_public_gap/bredr_connection_manager.h",
-    "$dir_public_gap/bredr_connection_request.h",
-    "$dir_public_gap/bredr_discovery_manager.h",
-    "$dir_public_gap/bredr_interrogator.h",
-    "$dir_public_gap/discovery_filter.h",
-    "$dir_public_gap/event_masks.h",
-    "$dir_public_gap/generic_access_client.h",
-    "$dir_public_gap/identity_resolving_list.h",
-    "$dir_public_gap/legacy_pairing_state.h",
-    "$dir_public_gap/low_energy_address_manager.h",
-    "$dir_public_gap/low_energy_advertising_manager.h",
-    "$dir_public_gap/low_energy_connection.h",
-    "$dir_public_gap/low_energy_connection_handle.h",
-    "$dir_public_gap/low_energy_connection_manager.h",
-    "$dir_public_gap/low_energy_connection_request.h",
-    "$dir_public_gap/low_energy_connector.h",
-    "$dir_public_gap/low_energy_discovery_manager.h",
-    "$dir_public_gap/low_energy_interrogator.h",
-    "$dir_public_gap/low_energy_state.h",
-    "$dir_public_gap/pairing_delegate.h",
-    "$dir_public_gap/pairing_state_manager.h",
-    "$dir_public_gap/peer.h",
-    "$dir_public_gap/peer_cache.h",
-    "$dir_public_gap/peer_metrics.h",
-    "$dir_public_gap/secure_simple_pairing_state.h",
-    "$dir_public_gap/types.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/adapter.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/adapter_state.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/android_vendor_capabilities.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bonding_data.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bredr_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bredr_connection_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bredr_connection_request.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bredr_discovery_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/bredr_interrogator.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/event_masks.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/generic_access_client.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/identity_resolving_list.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/legacy_pairing_state.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_address_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_advertising_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_handle.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_request.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_connector.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_discovery_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_interrogator.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_state.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/pairing_delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/pairing_state_manager.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/peer.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/peer_cache.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/peer_metrics.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/secure_simple_pairing_state.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/types.h",
   ]
-
   sources = [
     "adapter.cc",
     "android_vendor_capabilities.cc",
@@ -87,12 +89,6 @@ pw_source_set("gap") {
     "secure_simple_pairing_state.cc",
     "types.cc",
   ]
-
-  deps = [
-    "$dir_pw_bluetooth_sapphire/host/sm",
-    "$dir_pw_preprocessor",
-  ]
-
   public_deps = [
     ":definitions",
     "$dir_pw_async:heap_dispatcher",
@@ -108,29 +104,30 @@ pw_source_set("gap") {
     "$dir_pw_string:utf_codecs",
     "$dir_pw_third_party/fuchsia:fit",
   ]
-
-  public_configs = [ "$dir_pw_bluetooth_sapphire:public_include_path" ]
+  public_configs = [ ":public_include_path" ]
+  deps = [
+    "$dir_pw_bluetooth_sapphire/host/sm",
+    "$dir_pw_preprocessor",
+  ]
 }
 
 pw_source_set("testing") {
   testonly = pw_unit_test_TESTONLY
-
   public = [
-    "$dir_public_gap/fake_adapter.h",
-    "$dir_public_gap/fake_pairing_delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/fake_adapter.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/fake_pairing_delegate.h",
   ]
-
   sources = [
     "fake_adapter.cc",
     "fake_pairing_delegate.cc",
   ]
-
   public_deps = [
     ":gap",
     "$dir_pw_bluetooth_sapphire/host/hci:testing",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
     "$dir_pw_unit_test",
   ]
+  public_configs = [ ":public_include_path" ]
 }
 
 pw_test("gap_tests") {
@@ -155,7 +152,6 @@ pw_test("gap_tests") {
     "secure_simple_pairing_state_test.cc",
     "types_test.cc",
   ]
-
   deps = [
     ":gap",
     ":testing",
@@ -167,7 +163,6 @@ pw_test("gap_tests") {
     "$dir_pw_bluetooth_sapphire/host/sm:testing",
     "$dir_pw_bluetooth_sapphire/host/testing",
   ]
-
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 

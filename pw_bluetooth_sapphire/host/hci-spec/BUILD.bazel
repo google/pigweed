@@ -16,14 +16,23 @@ load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["**/*"]))
-
 cc_library(
     name = "hci-spec",
     srcs = [
         "le_connection_parameters.cc",
         "util.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/hci-spec/constants.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci-spec/defaults.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci-spec/link_key.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci-spec/lmp_feature_set.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci-spec/util.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bluetooth:emboss_hci",
         "//pw_bluetooth_sapphire:config",

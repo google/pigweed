@@ -16,8 +16,6 @@ load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["**/*"]))
-
 cc_library(
     name = "definitions",
     srcs = [
@@ -25,6 +23,13 @@ cc_library(
         "error.cc",
         "service_record.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/sdp/data_element.h",
+        "public/pw_bluetooth_sapphire/internal/host/sdp/error.h",
+        "public/pw_bluetooth_sapphire/internal/host/sdp/sdp.h",
+        "public/pw_bluetooth_sapphire/internal/host/sdp/service_record.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
@@ -39,6 +44,13 @@ cc_library(
         "server.cc",
         "service_discoverer.cc",
     ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/sdp/client.h",
+        "public/pw_bluetooth_sapphire/internal/host/sdp/pdu.h",
+        "public/pw_bluetooth_sapphire/internal/host/sdp/server.h",
+        "public/pw_bluetooth_sapphire/internal/host/sdp/service_discoverer.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
         ":definitions",
         "//pw_bluetooth_sapphire:public",
