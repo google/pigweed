@@ -1750,6 +1750,7 @@ OTHER_CHECKS = (
     module_owners.presubmit_check(),
     npm_presubmit.npm_test,
     pw_transfer_integration_test,
+    python_checks.diff_upstream_python_constraints,
     python_checks.update_upstream_python_constraints,
     python_checks.upload_pigweed_pypi_distribution,
     python_checks.vendor_python_wheels,

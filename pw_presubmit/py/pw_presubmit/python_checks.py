@@ -40,7 +40,7 @@ from pw_presubmit.presubmit_context import (
     PresubmitContext,
     PresubmitFailure,
 )
-from pw_presubmit import build
+from pw_presubmit import build, git_repo
 from pw_presubmit.tools import log_run
 
 _LOG = logging.getLogger(__name__)
@@ -450,6 +450,7 @@ def _generate_constraint_with_hashes(
 def _update_upstream_python_constraints(
     ctx: PresubmitContext,
     update_files: bool = False,
+    diff_in_place: bool = False,
 ) -> None:
     """Regenerate platform specific Python constraint files with hashes."""
     with TemporaryDirectory() as tmpdirname:
@@ -525,6 +526,25 @@ def _update_upstream_python_constraints(
                 upstream_requirements_lock_tmp_out.read_text()
             )
             _LOG.info('Updated: %s', upstream_requirements_lock_original)
+
+            if diff_in_place:
+                diff = git_repo.find_git_repo(ctx.root).diff(
+                    '--',
+                    constraint_hashes_original,
+                    upstream_requirements_lock_original,
+                )
+                if not diff:
+                    return
+
+                ctx.output_dir.mkdir(exist_ok=True, parents=True)
+                diff_path = ctx.output_dir / 'git_diff.txt'
+                with open(diff_path, 'w') as stdout:
+                    stdout.write(diff)
+
+                raise PresubmitFailure(
+                    f'git diff output is not empty; see {diff_path}'
+                )
+
             return
 
         # Make a diff of required changes
@@ -579,6 +599,12 @@ def check_upstream_python_constraints(ctx: PresubmitContext) -> None:
 @filter_paths(endswith=_PYTHON_PACKAGE_EXTENSIONS)
 def update_upstream_python_constraints(ctx: PresubmitContext) -> None:
     _update_upstream_python_constraints(ctx, update_files=True)
+
+
+def diff_upstream_python_constraints(ctx: PresubmitContext) -> None:
+    _update_upstream_python_constraints(
+        ctx, update_files=True, diff_in_place=True
+    )
 
 
 @filter_paths(endswith=_PYTHON_EXTENSIONS + ('.pylintrc',))

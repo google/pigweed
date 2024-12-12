@@ -418,10 +418,33 @@ to ensure that all of the hashes are updated:
    pw presubmit --step update_upstream_python_constraints --full
 
 For Python packages that have native extensions, the command needs to be run 3
-times: once on Linux, once on macOS, and once on Windows. Please run it on the
-OSes that are available to you; a core Pigweed teammate will run it on the rest.
-See the warning about caching Python packages for multiple platforms in
+times: once on Linux, once on macOS, and once on Windows.  See the warning
+about caching Python packages for multiple platforms in
 :ref:`docs-python-build-downloading-packages`.
+
+Fortunately, we have builders to help with this. The procedure is:
+
+#. Upload your change to Gerrit.
+#. Use the "CHOOSE TRYJOBS" dialog to run the following tryjobs:
+
+   * "pigweed-linux-python-constraints"
+   * "pigweed-mac-x86-python-constraints"
+   * "pigweed-windows-python-constraints"
+
+#. If any jobs fail, their results will include the diff that you need to apply
+   to your CL (via ``git apply``) to update the constraints and requirements
+   lockfiles. (You can find it under "diff_upstream_python_constraints" >
+   "logs" > "git_diff.txt".) Apply the patch, e.g. by running:
+
+   .. code-block:: console
+
+      curl https://logs.chromium.org/logs/pigweed/buildbucket/cr-buildbucket/${BBID}/+/u/diff_upstream_python_constraints/logs/git_diff.txt/git_diff.txt | git apply
+
+   where ``${BBID}`` is the BuildBucket ID of the build.  Then upload a new
+   patchset to Gerrit.
+
+#. If the job passes, the lockfile is already up to date on this host
+   platform and no patching is necessary!
 
 .. toctree::
    :maxdepth: 1
