@@ -151,6 +151,11 @@ bool L2capChannel::AreValidParameters(uint16_t connection_handle,
 
 pw::Result<H4PacketWithH4> L2capChannel::PopulateTxL2capPacket(
     uint16_t data_length) {
+  return PopulateL2capPacket(data_length);
+}
+
+pw::Result<H4PacketWithH4> L2capChannel::PopulateL2capPacket(
+    uint16_t data_length) {
   const size_t l2cap_packet_size =
       emboss::BasicL2capHeader::IntrinsicSizeInBytes() + data_length;
   const size_t acl_packet_size =

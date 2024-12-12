@@ -175,6 +175,9 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Notify clients of asynchronous events encountered such as errors.
   Function<void(L2capChannelEvent event)> event_fn_;
 
+  // Reserve an L2CAP packet over ACL over H4 packet.
+  pw::Result<H4PacketWithH4> PopulateL2capPacket(uint16_t data_length);
+
   //-------
   //  Tx:
   //-------
