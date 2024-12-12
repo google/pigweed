@@ -38,7 +38,6 @@ _cc_toolchain_feature_is_enabled = rule(
             mandatory = True,
             doc = "The feature name to match against",
         ),
-        "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
     },
     doc = """Extracts a matching, enabled feature from the current C/C++ toolchain.
 
