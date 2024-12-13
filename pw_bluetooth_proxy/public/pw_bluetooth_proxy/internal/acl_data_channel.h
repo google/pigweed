@@ -85,8 +85,10 @@ class AclDataChannel {
   // credits that are associated with our credit-allocated connections.
   void HandleNumberOfCompletedPacketsEvent(H4PacketWithHci&& h4_packet);
 
-  // Reclaim any credits we have associated with the removed connection.
-  void HandleDisconnectionCompleteEvent(H4PacketWithHci&& h4_packet);
+  // Reclaim any credits we have associated with the removed connection and
+  // notify `L2capChannelManager` of disconnection. This function just processes
+  // the event; it does not handle forwarding it on.
+  void ProcessDisconnectionCompleteEvent(pw::span<uint8_t> hci_span);
 
   // Create new tracked connection and pass on to host.
   void HandleConnectionCompleteEvent(H4PacketWithHci&& h4_packet);

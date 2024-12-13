@@ -26,6 +26,7 @@
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_bluetooth_proxy/l2cap_channel_event.h"
+#include "pw_bluetooth_proxy/l2cap_status_delegate.h"
 #include "pw_bluetooth_proxy/proxy_host.h"
 #include "pw_function/function.h"
 #include "pw_status/status.h"
@@ -175,21 +176,31 @@ Status SendLeConnectionCompleteEvent(ProxyHost& proxy,
 // `handle` has disconnected.
 Status SendDisconnectionCompleteEvent(ProxyHost& proxy,
                                       uint16_t handle,
+                                      Direction direction,
                                       bool successful) {
   std::array<uint8_t,
-             emboss::DisconnectionCompleteEvent::IntrinsicSizeInBytes()>
-      hci_arr_dc;
-  hci_arr_dc.fill(0);
-  H4PacketWithHci dc_event{emboss::H4PacketType::EVENT, hci_arr_dc};
+             sizeof(emboss::H4PacketType) +
+                 emboss::DisconnectionCompleteEvent::IntrinsicSizeInBytes()>
+      h4_arr_dc;
+  h4_arr_dc.fill(0);
+  H4PacketWithHci dc_event_from_controller{emboss::H4PacketType::EVENT,
+                                           pw::span(h4_arr_dc).subspan(1)};
+  H4PacketWithH4 dc_event_from_host{emboss::H4PacketType::EVENT, h4_arr_dc};
   PW_TRY_ASSIGN(auto view,
                 MakeEmbossWriter<emboss::DisconnectionCompleteEventWriter>(
-                    dc_event.GetHciSpan()));
+                    dc_event_from_controller.GetHciSpan()));
   view.header().event_code_enum().Write(
       emboss::EventCode::DISCONNECTION_COMPLETE);
   view.status().Write(successful ? emboss::StatusCode::SUCCESS
                                  : emboss::StatusCode::HARDWARE_FAILURE);
   view.connection_handle().Write(handle);
-  proxy.HandleH4HciFromController(std::move(dc_event));
+  if (direction == Direction::kFromController) {
+    proxy.HandleH4HciFromController(std::move(dc_event_from_controller));
+  } else if (direction == Direction::kFromHost) {
+    proxy.HandleH4HciFromHost(std::move(dc_event_from_host));
+  } else {
+    return Status::InvalidArgument();
+  }
   return OkStatus();
 }
 
@@ -263,7 +274,8 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
                               AclTransportType transport,
                               uint16_t handle,
                               uint16_t source_cid,
-                              uint16_t destination_cid) {
+                              uint16_t destination_cid,
+                              Direction direction) {
   constexpr size_t kDisconnectionRspLen =
       emboss::L2capDisconnectionRsp::MinSizeInBytes();
   PW_TRY_ASSIGN(
@@ -288,8 +300,16 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
   disconn_rsp_writer.source_cid().Write(source_cid);
   disconn_rsp_writer.destination_cid().Write(destination_cid);
 
-  H4PacketWithH4 packet{emboss::H4PacketType::ACL_DATA, cframe.acl.h4_span()};
-  proxy.HandleH4HciFromHost(std::move(packet));
+  if (direction == Direction::kFromHost) {
+    H4PacketWithH4 packet{emboss::H4PacketType::ACL_DATA, cframe.acl.h4_span()};
+    proxy.HandleH4HciFromHost(std::move(packet));
+  } else if (direction == Direction::kFromController) {
+    H4PacketWithHci packet{emboss::H4PacketType::ACL_DATA,
+                           cframe.acl.hci_span()};
+    proxy.HandleH4HciFromController(std::move(packet));
+  } else {
+    return Status::InvalidArgument();
+  }
   return OkStatus();
 }
 

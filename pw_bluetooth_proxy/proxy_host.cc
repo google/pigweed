@@ -19,6 +19,7 @@
 #include "pw_bluetooth/hci_commands.emb.h"
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"
+#include "pw_bluetooth/hci_h4.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h"
@@ -47,6 +48,11 @@ ProxyHost::~ProxyHost() { acl_data_channel_.Reset(); }
 void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
   if (h4_packet.GetH4Type() == emboss::H4PacketType::COMMAND) {
     HandleCommandFromHost(std::move(h4_packet));
+    return;
+  }
+
+  if (h4_packet.GetH4Type() == emboss::H4PacketType::EVENT) {
+    HandleEventFromHost(std::move(h4_packet));
     return;
   }
 
@@ -146,7 +152,9 @@ void ProxyHost::HandleEventFromController(H4PacketWithHci&& h4_packet) {
       break;
     }
     case emboss::EventCode::DISCONNECTION_COMPLETE: {
-      acl_data_channel_.HandleDisconnectionCompleteEvent(std::move(h4_packet));
+      acl_data_channel_.ProcessDisconnectionCompleteEvent(
+          h4_packet.GetHciSpan());
+      hci_transport_.SendToHost(std::move(h4_packet));
       break;
     }
     case emboss::EventCode::COMMAND_COMPLETE: {
@@ -163,6 +171,35 @@ void ProxyHost::HandleEventFromController(H4PacketWithHci&& h4_packet) {
     }
     default: {
       hci_transport_.SendToHost(std::move(h4_packet));
+      return;
+    }
+  }
+  PW_MODIFY_DIAGNOSTICS_POP();
+}
+
+void ProxyHost::HandleEventFromHost(H4PacketWithH4&& h4_packet) {
+  pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
+  Result<emboss::EventHeaderView> event =
+      MakeEmbossView<emboss::EventHeaderView>(hci_buffer);
+  if (!event.ok()) {
+    PW_LOG_ERROR(
+        "Buffer is too small for EventHeader. So will pass on to controller "
+        "without processing.");
+    hci_transport_.SendToController(std::move(h4_packet));
+    return;
+  }
+
+  PW_MODIFY_DIAGNOSTICS_PUSH();
+  PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
+  switch (event->event_code_enum().Read()) {
+    case emboss::EventCode::DISCONNECTION_COMPLETE: {
+      acl_data_channel_.ProcessDisconnectionCompleteEvent(
+          h4_packet.GetHciSpan());
+      hci_transport_.SendToController(std::move(h4_packet));
+      break;
+    }
+    default: {
+      hci_transport_.SendToController(std::move(h4_packet));
       return;
     }
   }

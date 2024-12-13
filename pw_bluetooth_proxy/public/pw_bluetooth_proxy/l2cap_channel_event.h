@@ -19,8 +19,6 @@ namespace pw::bluetooth::proxy {
 enum class L2capChannelEvent {
   /// The channel was closed by something other than `ProxyHost`. The channel is
   /// now `State::kClosed` and should be cleaned up. See logs for details.
-  // TODO: https://pwbug.dev/360929142 - Listen for AclConnection closures &
-  // L2CAP_DISCONNECTION_REQ/RSP packets and report this event accordingly.
   kChannelClosedByOther,
   /// An invalid packet was received. The channel is now `State::kStopped` and
   /// should be closed. See error logs for details.

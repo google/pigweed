@@ -304,16 +304,14 @@ void AclDataChannel::HandleLeEnhancedConnectionCompleteV2Event(
   hci_transport_.SendToHost(std::move(h4_packet));
 }
 
-void AclDataChannel::HandleDisconnectionCompleteEvent(
-    H4PacketWithHci&& h4_packet) {
+void AclDataChannel::ProcessDisconnectionCompleteEvent(
+    pw::span<uint8_t> hci_span) {
   Result<emboss::DisconnectionCompleteEventView> dc_event =
-      MakeEmbossView<emboss::DisconnectionCompleteEventView>(
-          h4_packet.GetHciSpan());
+      MakeEmbossView<emboss::DisconnectionCompleteEventView>(hci_span);
   if (!dc_event.ok()) {
     PW_LOG_ERROR(
         "Buffer is too small for DISCONNECTION_COMPLETE event. So will not "
         "process.");
-    hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
 
@@ -323,7 +321,6 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
 
     AclConnection* connection_ptr = FindAclConnection(conn_handle);
     if (!connection_ptr) {
-      hci_transport_.SendToHost(std::move(h4_packet));
       return;
     }
 
@@ -345,17 +342,16 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
       // contained objects like signaling channels.
       connection_ptr->Close();
       l2cap_channel_manager_.HandleDisconnectionComplete(conn_handle);
-    } else {
-      if (connection_ptr->num_pending_packets() > 0) {
-        PW_LOG_WARN(
-            "Proxy viewed failed disconnect (status: %#.2hhx) for connection "
-            "%#.4hx with packets in flight. Not releasing associated credits.",
-            cpp23::to_underlying(status),
-            conn_handle);
-      }
+      return;
+    }
+    if (connection_ptr->num_pending_packets() > 0) {
+      PW_LOG_WARN(
+          "Proxy viewed failed disconnect (status: %#.2hhx) for connection "
+          "%#.4hx with packets in flight. Not releasing associated credits.",
+          cpp23::to_underlying(status),
+          conn_handle);
     }
   }
-  hci_transport_.SendToHost(std::move(h4_packet));
 }
 
 bool AclDataChannel::HasSendAclCapability(AclTransportType transport) const {

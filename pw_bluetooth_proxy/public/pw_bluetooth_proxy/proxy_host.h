@@ -320,6 +320,9 @@ class ProxyHost {
   // Handle HCI Event packet from the controller.
   void HandleEventFromController(H4PacketWithHci&& h4_packet);
 
+  // Handle HCI Event packet from the host.
+  void HandleEventFromHost(H4PacketWithH4&& h4_packet);
+
   // Handle HCI ACL data packet from the controller.
   void HandleAclFromController(H4PacketWithHci&& h4_packet);
 

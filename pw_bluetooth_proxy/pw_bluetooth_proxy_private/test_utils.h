@@ -27,6 +27,7 @@
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_bluetooth_proxy/l2cap_channel_event.h"
+#include "pw_bluetooth_proxy/l2cap_status_delegate.h"
 #include "pw_bluetooth_proxy/proxy_host.h"
 #include "pw_containers/flat_map.h"
 #include "pw_function/function.h"
@@ -152,9 +153,11 @@ Status SendLeConnectionCompleteEvent(ProxyHost& proxy,
 
 // Send a Disconnection_Complete event to `proxy` indicating the provided
 // `handle` has disconnected.
-Status SendDisconnectionCompleteEvent(ProxyHost& proxy,
-                                      uint16_t handle,
-                                      bool successful = true);
+Status SendDisconnectionCompleteEvent(
+    ProxyHost& proxy,
+    uint16_t handle,
+    Direction direction = Direction::kFromController,
+    bool successful = true);
 
 Status SendL2capConnectionReq(ProxyHost& proxy,
                               uint16_t handle,
@@ -171,7 +174,8 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
                               AclTransportType transport,
                               uint16_t handle,
                               uint16_t source_cid,
-                              uint16_t destination_cid);
+                              uint16_t destination_cid,
+                              Direction direction = Direction::kFromHost);
 
 // TODO: https://pwbug.dev/382783733 - Migrate to L2capChannelEvent callback.
 struct CocParameters {
