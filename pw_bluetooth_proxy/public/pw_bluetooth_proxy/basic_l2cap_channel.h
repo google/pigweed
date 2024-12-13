@@ -53,6 +53,7 @@ class BasicL2capChannel : public L2capChannel {
   ///                       `queue_space_available_fn` has been provided it will
   ///                       be called when there is queue space available again.
   ///  INVALID_ARGUMENT:    If payload is too large.
+  ///  FAILED_PRECONDITION  If channel is not `State::kRunning`.
   /// @endrst
   pw::Status Write(pw::span<const uint8_t> payload);
 

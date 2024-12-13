@@ -18,24 +18,25 @@ namespace pw::bluetooth::proxy {
 
 enum class L2capChannelEvent {
   /// The channel was closed by something other than `ProxyHost`. The channel
-  /// is now `kStopped` and should be closed. See logs for details.
+  /// is now `State::kStopped` and should be closed. See logs for details.
   // TODO: https://pwbug.dev/360929142 - Listen for AclConnection closures &
   // L2CAP_DISCONNECTION_REQ/RSP packets and report this event accordingly.
   kChannelClosedByOther,
-  /// An invalid packet was received. The channel is now `kStopped` and should
-  /// be closed. See error logs for details.
+  /// An invalid packet was received. The channel is now `State::kStopped` and
+  /// should be closed. See error logs for details.
   kRxInvalid,
-  /// During Rx, the channel ran out of memory. The channel is now `kStopped`
-  /// and should be closed.
+  /// During Rx, the channel ran out of memory. The channel is now
+  /// `State::kStopped` and should be closed.
   kRxOutOfMemory,
-  /// The channel has received a packet while in the `kStopped` state. The
-  /// channel should have been closed.
+  /// The channel has received a packet while in the `State::kStopped` state.
+  /// The channel should have been closed.
   kRxWhileStopped,
-  /// `ProxyHost` has been reset. As a result, this channel is now 'kStopped'
-  /// and should be closed (all channels are `kStopped` on a reset).
+  /// `ProxyHost` has been reset. As a result, this channel is now
+  /// 'State::kStopped'
+  /// and should be closed (all channels are `State::kStopped` on a reset).
   kReset,
   /// PDU recombination is not yet supported, but a fragmented L2CAP frame has
-  /// been received. The channel is now `kStopped` and should be closed.
+  /// been received. The channel is now `State::kStopped` and should be closed.
   // TODO: https://pwbug.dev/365179076 - Support recombination.
   kRxFragmented,
 };

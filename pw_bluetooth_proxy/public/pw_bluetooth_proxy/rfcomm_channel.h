@@ -105,7 +105,7 @@ class RfcommChannel final : public L2capChannel {
   ///                       `queue_space_available_fn` has been provided it will
   ///                       be called when there is queue space available again.
   ///  INVALID_ARGUMENT:    If payload is too large.
-  ///  FAILED_PRECONDITION: If channel is `kStopped`.
+  ///  FAILED_PRECONDITION: If channel is `State::kStopped`.
   /// @endrst
   Status Write(pw::span<const uint8_t> payload);
 

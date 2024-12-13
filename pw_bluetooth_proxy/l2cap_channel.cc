@@ -28,33 +28,8 @@
 
 namespace pw::bluetooth::proxy {
 
-void L2capChannel::MoveLockedFields(L2capChannel& other) {
-  std::lock_guard lock(send_queue_mutex_);
-  std::lock_guard other_lock(other.send_queue_mutex_);
-  send_queue_ = std::move(other.send_queue_);
-  notify_on_dequeue_ = other.notify_on_dequeue_;
-  l2cap_channel_manager_.ReleaseChannel(other);
-  l2cap_channel_manager_.RegisterChannel(*this);
-}
-
-L2capChannel::L2capChannel(L2capChannel&& other)
-    : l2cap_channel_manager_(other.l2cap_channel_manager_),
-      connection_handle_(other.connection_handle()),
-      transport_(other.transport()),
-      local_cid_(other.local_cid()),
-      remote_cid_(other.remote_cid()),
-      event_fn_(std::move(other.event_fn_)),
-      queue_space_available_fn_(std::move(other.queue_space_available_fn_)),
-      payload_from_controller_fn_(
-          std::move(other.payload_from_controller_fn_)) {
-  MoveLockedFields(other);
-}
-
-L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
-  if (this == &other) {
-    return *this;
-  }
-  l2cap_channel_manager_.ReleaseChannel(*this);
+void L2capChannel::MoveFields(L2capChannel& other) {
+  state_ = other.state();
   connection_handle_ = other.connection_handle();
   transport_ = other.transport();
   local_cid_ = other.local_cid();
@@ -62,7 +37,27 @@ L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
   event_fn_ = std::move(other.event_fn_);
   queue_space_available_fn_ = std::move(other.queue_space_available_fn_);
   payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
-  MoveLockedFields(other);
+  {
+    std::lock_guard lock(send_queue_mutex_);
+    std::lock_guard other_lock(other.send_queue_mutex_);
+    send_queue_ = std::move(other.send_queue_);
+    notify_on_dequeue_ = other.notify_on_dequeue_;
+    l2cap_channel_manager_.ReleaseChannel(other);
+    l2cap_channel_manager_.RegisterChannel(*this);
+  }
+  other.Stop();
+}
+
+L2capChannel::L2capChannel(L2capChannel&& other)
+    : l2cap_channel_manager_(other.l2cap_channel_manager_) {
+  MoveFields(other);
+}
+
+L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
+  if (this != &other) {
+    l2cap_channel_manager_.ReleaseChannel(*this);
+    MoveFields(other);
+  }
   return *this;
 }
 
@@ -71,7 +66,16 @@ L2capChannel::~L2capChannel() {
   ClearQueue();
 }
 
+void L2capChannel::Stop() {
+  state_ = State::kStopped;
+  ClearQueue();
+}
+
 Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
+  if (state() != State::kRunning) {
+    return Status::FailedPrecondition();
+  }
+
   Status status;
   {
     std::lock_guard lock(send_queue_mutex_);
@@ -107,10 +111,25 @@ std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
   return packet;
 }
 
+bool L2capChannel::OnPduReceivedFromController(pw::span<uint8_t> l2cap_pdu) {
+  if (state() != State::kRunning) {
+    SendEvent(L2capChannelEvent::kRxWhileStopped);
+    return true;
+  }
+  return HandlePduFromController(l2cap_pdu);
+}
+
 void L2capChannel::OnFragmentedPduReceived() {
+  if (state() != State::kRunning) {
+    SendEvent(L2capChannelEvent::kRxWhileStopped);
+    return;
+  }
   PW_LOG_ERROR(
-      "(CID 0x%X) Fragmented L2CAP frame received, which is not yet supported.",
+      "(CID 0x%X) Fragmented L2CAP frame received, which is not yet supported. "
+      "Channel is now stopped.",
       local_cid());
+  SendEvent(L2capChannelEvent::kRxFragmented);
+  Stop();
 }
 
 L2capChannel::L2capChannel(
@@ -123,6 +142,7 @@ L2capChannel::L2capChannel(
     Function<void()>&& queue_space_available_fn,
     Function<void(L2capChannelEvent event)>&& event_fn)
     : l2cap_channel_manager_(l2cap_channel_manager),
+      state_(State::kRunning),
       connection_handle_(connection_handle),
       transport_(transport),
       local_cid_(local_cid),

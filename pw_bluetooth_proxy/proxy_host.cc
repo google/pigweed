@@ -215,7 +215,7 @@ void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
     return;
   }
 
-  if (!channel->HandlePduFromController(
+  if (!channel->OnPduReceivedFromController(
           pw::span(acl->payload().BackingStorage().data(),
                    acl->payload().SizeInBytes()))) {
     hci_transport_.SendToHost(std::move(h4_packet));

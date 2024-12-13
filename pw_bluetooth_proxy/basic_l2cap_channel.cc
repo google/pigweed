@@ -50,6 +50,10 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
 }
 
 pw::Status BasicL2capChannel::Write(pw::span<const uint8_t> payload) {
+  if (state() != State::kRunning) {
+    return Status::FailedPrecondition();
+  }
+
   // TODO: https://pwbug.dev/360929142 - Reject payloads exceeding MTU.
 
   pw::Result<H4PacketWithH4> h4_result = PopulateTxL2capPacket(payload.size());
