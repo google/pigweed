@@ -189,7 +189,7 @@ struct CocParameters {
   uint16_t tx_mps = 100;
   uint16_t tx_credits = 1;
   pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr;
-  pw::Function<void(L2capCoc::Event event)>&& event_fn = nullptr;
+  pw::Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
   pw::Function<void()>&& queue_space_available_fn = nullptr;
 };
 

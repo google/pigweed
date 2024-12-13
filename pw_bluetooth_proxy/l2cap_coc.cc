@@ -27,28 +27,18 @@ namespace pw::bluetooth::proxy {
 
 L2capCoc::L2capCoc(L2capCoc&& other)
     : L2capChannel(static_cast<L2capCoc&&>(other)),
-      state_(other.state_),
       rx_mtu_(other.rx_mtu_),
       rx_mps_(other.rx_mps_),
       tx_mtu_(other.tx_mtu_),
-      tx_mps_(other.tx_mps_),
-      event_fn_deprecated_(std::move(other.event_fn_deprecated_)) {
+      tx_mps_(other.tx_mps_) {
   std::lock_guard lock(mutex_);
   std::lock_guard other_lock(other.mutex_);
   tx_credits_ = other.tx_credits_;
   remaining_sdu_bytes_to_ignore_ = other.remaining_sdu_bytes_to_ignore_;
 }
 
-pw::Status L2capCoc::Stop() {
-  if (state_ == CocState::kStopped) {
-    return Status::InvalidArgument();
-  }
-  state_ = CocState::kStopped;
-  return OkStatus();
-}
-
 pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
-  if (state_ == CocState::kStopped) {
+  if (state() != State::kRunning) {
     return Status::FailedPrecondition();
   }
 
@@ -104,9 +94,8 @@ pw::Result<L2capCoc> L2capCoc::Create(
     CocConfig rx_config,
     CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void(Event event)>&& event_fn_deprecated,
-    Function<void()>&& queue_space_available_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
+    Function<void(L2capChannelEvent event)>&& event_fn,
+    Function<void()>&& queue_space_available_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/rx_config.cid,
                           /*remote_cid=*/tx_config.cid)) {
@@ -128,15 +117,14 @@ pw::Result<L2capCoc> L2capCoc::Create(
       /*rx_config=*/rx_config,
       /*tx_config=*/tx_config,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
-      /*event_fn_deprecated=*/std::move(event_fn_deprecated),
-      /*queue_space_available_fn=*/std::move(queue_space_available_fn),
-      /*event_fn=*/std::move(event_fn));
+      /*event_fn=*/std::move(event_fn),
+      /*queue_space_available_fn=*/std::move(queue_space_available_fn));
 }
 
 bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
   // TODO: https://pwbug.dev/360934030 - Track rx_credits.
-  if (state_ == CocState::kStopped) {
-    StopChannelAndReportError(Event::kRxWhileStopped);
+  if (state() != State::kRunning) {
+    StopAndSendEvent(L2capChannelEvent::kRxWhileStopped);
     return true;
   }
 
@@ -165,7 +153,7 @@ bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
           "(CID 0x%X) Sum of K-frame payload sizes exceeds the specified SDU "
           "length. So stopping channel & reporting it needs to be closed.",
           local_cid());
-      StopChannelAndReportError(Event::kRxInvalid);
+      StopAndSendEvent(L2capChannelEvent::kRxInvalid);
     } else {
       remaining_sdu_bytes_to_ignore_ -=
           subsequent_kframe_view->payload_size().Read();
@@ -180,7 +168,7 @@ bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
         "(CID 0x%X) Buffer is too small for L2CAP K-frame. So stopping channel "
         "& reporting it needs to be closed.",
         local_cid());
-    StopChannelAndReportError(Event::kRxInvalid);
+    StopAndSendEvent(L2capChannelEvent::kRxInvalid);
     return true;
   }
   uint16_t sdu_length = kframe_view->sdu_length().Read();
@@ -193,7 +181,7 @@ bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
         "(CID 0x%X) Rx K-frame SDU exceeds MTU. So stopping channel & "
         "reporting it needs to be closed.",
         local_cid());
-    StopChannelAndReportError(Event::kRxInvalid);
+    StopAndSendEvent(L2capChannelEvent::kRxInvalid);
     return true;
   }
 
@@ -217,7 +205,7 @@ bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
         "(CID 0x%X) Rx K-frame payload exceeds MPU. So stopping channel & "
         "reporting it needs to be closed.",
         local_cid());
-    StopChannelAndReportError(Event::kRxInvalid);
+    StopAndSendEvent(L2capChannelEvent::kRxInvalid);
     return true;
   }
 
@@ -238,9 +226,8 @@ L2capCoc::L2capCoc(
     CocConfig rx_config,
     CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void(Event event)>&& event_fn_deprecated,
-    Function<void()>&& queue_space_available_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn)
+    Function<void(L2capChannelEvent event)>&& event_fn,
+    Function<void()>&& queue_space_available_fn)
     : L2capChannel(
           /*l2cap_channel_manager=*/l2cap_channel_manager,
           /*connection_handle=*/connection_handle,
@@ -250,29 +237,15 @@ L2capCoc::L2capCoc(
           /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
           /*queue_space_available_fn=*/std::move(queue_space_available_fn),
           /*event_fn=*/std::move(event_fn)),
-      state_(CocState::kRunning),
       rx_mtu_(rx_config.mtu),
       rx_mps_(rx_config.mps),
       tx_mtu_(tx_config.mtu),
       tx_mps_(tx_config.mps),
       tx_credits_(tx_config.credits),
-      remaining_sdu_bytes_to_ignore_(0),
-      event_fn_deprecated_(std::move(event_fn_deprecated)) {}
-
-void L2capCoc::OnFragmentedPduReceived() {
-  L2capChannel::OnFragmentedPduReceived();
-  StopChannelAndReportError(Event::kRxFragmented);
-}
-
-void L2capCoc::StopChannelAndReportError(Event error) {
-  Stop().IgnoreError();
-  if (event_fn_deprecated_) {
-    event_fn_deprecated_(error);
-  }
-}
+      remaining_sdu_bytes_to_ignore_(0) {}
 
 std::optional<H4PacketWithH4> L2capCoc::DequeuePacket() {
-  if (state_ == CocState::kStopped) {
+  if (state() != State::kRunning) {
     return std::nullopt;
   }
 
@@ -289,7 +262,7 @@ std::optional<H4PacketWithH4> L2capCoc::DequeuePacket() {
 }
 
 void L2capCoc::AddCredits(uint16_t credits) {
-  if (state_ == CocState::kStopped) {
+  if (state() != State::kRunning) {
     PW_LOG_ERROR(
         "(CID 0x%X) Received credits on stopped CoC. So will ignore signal.",
         local_cid());
@@ -305,7 +278,7 @@ void L2capCoc::AddCredits(uint16_t credits) {
     // 65535."
     if (credits > emboss::L2capLeCreditBasedConnectionReq::max_credit_value() -
                       tx_credits_) {
-      StopChannelAndReportError(Event::kRxInvalid);
+      StopAndSendEvent(L2capChannelEvent::kRxInvalid);
       return;
     }
 

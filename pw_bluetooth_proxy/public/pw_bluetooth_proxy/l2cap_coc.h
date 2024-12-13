@@ -24,6 +24,8 @@ namespace pw::bluetooth::proxy {
 /// from a remote peer.
 class L2capCoc : public L2capChannel {
  public:
+  // TODO: https://pwbug.dev/382783733 - Move downstream client to
+  // `L2capChannelEvent` instead of `L2capCoc::Event` and delete this alias.
   using Event = L2capChannelEvent;
 
   /// Parameters for a direction of packet flow in an `L2capCoc`.
@@ -63,19 +65,6 @@ class L2capCoc : public L2capChannel {
   // `L2capCoc` can be erased from pw containers.
   L2capCoc& operator=(L2capCoc&& other) = delete;
 
-  /// Enter `kStopped` state. This means
-  ///   - Pending sends will not complete.
-  ///   - Calls to `Write()` will return PW_STATUS_FAILED_PRECONDITION.
-  ///   - Incoming packets will be dropped & trigger `kRxWhileStopped` events.
-  ///   - Container is responsible for closing L2CAP connection & destructing
-  ///     the channel object to free its resources.
-  ///
-  /// .. pw-status-codes::
-  ///  OK:               If channel entered `kStopped` state.
-  ///  INVALID_ARGUMENT: If channel was previously `kStopped`.
-  /// @endrst
-  pw::Status Stop();
-
   /// Send an L2CAP payload to the remote peer.
   ///
   /// @param[in] payload The L2CAP payload to be sent. Payload will be copied
@@ -90,7 +79,7 @@ class L2capCoc : public L2capChannel {
   ///                       `queue_space_available_fn` has been provided it will
   ///                       be called when there is queue space available again.
   ///  INVALID_ARGUMENT:    If payload is too large.
-  ///  FAILED_PRECONDITION: If channel is `kStopped`.
+  ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
   /// @endrst
   pw::Status Write(pw::span<const uint8_t> payload);
 
@@ -101,9 +90,8 @@ class L2capCoc : public L2capChannel {
       CocConfig rx_config,
       CocConfig tx_config,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void(Event event)>&& event_fn_deprecated,
-      Function<void()>&& queue_space_available_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn);
+      Function<void(L2capChannelEvent event)>&& event_fn,
+      Function<void()>&& queue_space_available_fn);
 
   // `SendPayloadFromControllerToClient` with the information payload contained
   // in `kframe`. As packet desegmentation is not supported, segmented SDUs are
@@ -118,32 +106,19 @@ class L2capCoc : public L2capChannel {
   void AddCredits(uint16_t credits) PW_LOCKS_EXCLUDED(mutex_);
 
  private:
-  enum class CocState {
-    kRunning,
-    kStopped,
-  };
-
   explicit L2capCoc(
       L2capChannelManager& l2cap_channel_manager,
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void(Event event)>&& event_fn_deprecated,
-      Function<void()>&& queue_space_available_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn);
-
-  // Stop channel & notify client.
-  void OnFragmentedPduReceived() override;
-
-  // `Stop()` channel if `kRunning` & call `event_fn_(error)` if it exists.
-  void StopChannelAndReportError(Event error);
+      Function<void(L2capChannelEvent event)>&& event_fn,
+      Function<void()>&& queue_space_available_fn);
 
   // Override: Dequeue a packet only if a credit is able to be subtracted.
   std::optional<H4PacketWithH4> DequeuePacket() override
       PW_LOCKS_EXCLUDED(mutex_);
 
-  CocState state_;
   sync::Mutex mutex_;
   uint16_t rx_mtu_;
   uint16_t rx_mps_;
@@ -151,9 +126,6 @@ class L2capCoc : public L2capChannel {
   uint16_t tx_mps_;
   uint16_t tx_credits_ PW_GUARDED_BY(mutex_);
   uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(mutex_);
-  // TODO: https://pwbug.dev/382783733 - Remove after implementing handling of
-  // L2capChannelEvent in L2capChannel.
-  pw::Function<void(Event event)> event_fn_deprecated_;
 };
 
 }  // namespace pw::bluetooth::proxy

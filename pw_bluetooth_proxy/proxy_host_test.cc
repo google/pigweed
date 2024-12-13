@@ -2235,7 +2235,7 @@ TEST(L2capCocTest, CannotCreateChannelWithInvalidArgs) {
               // TODO: https://pwbug.dev/382783733 - Remove cast after ambiguous
               // Acquire method deleted.
               /*event_fn=*/
-              static_cast<Function<void(L2capCoc::Event event)>>(nullptr))
+              static_cast<Function<void(L2capChannelEvent event)>>(nullptr))
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
 
@@ -2252,7 +2252,7 @@ TEST(L2capCocTest, CannotCreateChannelWithInvalidArgs) {
               // TODO: https://pwbug.dev/382783733 - Remove cast after ambiguous
               // Acquire method deleted.
               /*event_fn=*/
-              static_cast<Function<void(L2capCoc::Event event)>>(nullptr))
+              static_cast<Function<void(L2capChannelEvent event)>>(nullptr))
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
 
@@ -2269,7 +2269,7 @@ TEST(L2capCocTest, CannotCreateChannelWithInvalidArgs) {
               // TODO: https://pwbug.dev/382783733 - Remove cast after ambiguous
               // Acquire method deleted.
               /*event_fn=*/
-              static_cast<Function<void(L2capCoc::Event event)>>(nullptr))
+              static_cast<Function<void(L2capChannelEvent event)>>(nullptr))
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
 }
@@ -2372,12 +2372,13 @@ TEST(L2capCocWriteTest, ErrorOnWriteToStoppedChannel) {
 
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .handle = 123,
-          .tx_credits = 1,
-          .event_fn = []([[maybe_unused]] L2capCoc::Event event) { FAIL(); }});
+      CocParameters{.handle = 123,
+                    .tx_credits = 1,
+                    .event_fn = []([[maybe_unused]] L2capChannelEvent event) {
+                      FAIL();
+                    }});
 
-  EXPECT_EQ(channel.Stop(), PW_STATUS_OK);
+  channel.Stop();
   EXPECT_EQ(channel.Write({}), PW_STATUS_FAILED_PRECONDITION);
 }
 
@@ -2582,11 +2583,12 @@ TEST(L2capCocReadTest, ChannelHandlesReadWithNullReceiveFn) {
   uint16_t local_cid = 234;
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .handle = handle,
-          .local_cid = local_cid,
-          .rx_credits = 1,
-          .event_fn = []([[maybe_unused]] L2capCoc::Event event) { FAIL(); }});
+      CocParameters{.handle = handle,
+                    .local_cid = local_cid,
+                    .rx_credits = 1,
+                    .event_fn = []([[maybe_unused]] L2capChannelEvent event) {
+                      FAIL();
+                    }});
 
   std::array<uint8_t, kFirstKFrameOverAclMinSize> hci_arr;
   hci_arr.fill(0);
@@ -2629,9 +2631,9 @@ TEST(L2capCocReadTest, ErrorOnRxToStoppedChannel) {
           .receive_fn =
               []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
           .event_fn =
-              [&events_received](L2capCoc::Event event) {
+              [&events_received](L2capChannelEvent event) {
                 ++events_received;
-                EXPECT_EQ(event, L2capCoc::Event::kRxWhileStopped);
+                EXPECT_EQ(event, L2capChannelEvent::kRxWhileStopped);
               }});
 
   std::array<uint8_t, kFirstKFrameOverAclMinSize> hci_arr;
@@ -2648,7 +2650,7 @@ TEST(L2capCocReadTest, ErrorOnRxToStoppedChannel) {
   kframe.channel_id().Write(local_cid);
   kframe.sdu_length().Write(0);
 
-  EXPECT_EQ(channel.Stop(), PW_STATUS_OK);
+  channel.Stop();
   for (int i = 0; i < num_invalid_rx; ++i) {
     H4PacketWithHci h4_packet{emboss::H4PacketType::ACL_DATA, hci_arr};
     proxy.HandleH4HciFromController(std::move(h4_packet));
@@ -2714,9 +2716,9 @@ TEST(L2capCocReadTest, ChannelClosedWithErrorIfMtuExceeded) {
           .receive_fn =
               []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
           .event_fn =
-              [&events_received](L2capCoc::Event event) {
+              [&events_received](L2capChannelEvent event) {
                 ++events_received;
-                EXPECT_EQ(event, L2capCoc::Event::kRxInvalid);
+                EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
               }});
 
   constexpr uint16_t kPayloadSize = kRxMtu + 1;
@@ -2762,9 +2764,9 @@ TEST(L2capCocReadTest, ChannelClosedWithErrorIfMpsExceeded) {
           .receive_fn =
               []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
           .event_fn =
-              [&events_received](L2capCoc::Event event) {
+              [&events_received](L2capChannelEvent event) {
                 ++events_received;
-                EXPECT_EQ(event, L2capCoc::Event::kRxInvalid);
+                EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
               }});
 
   constexpr uint16_t kPayloadSize = kRxMps + 1;
@@ -2808,9 +2810,9 @@ TEST(L2capCocReadTest, ChannelClosedWithErrorIfPayloadsExceedSduLength) {
           .receive_fn =
               []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
           .event_fn =
-              [&events_received](L2capCoc::Event event) {
+              [&events_received](L2capChannelEvent event) {
                 ++events_received;
-                EXPECT_EQ(event, L2capCoc::Event::kRxInvalid);
+                EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
               }});
 
   constexpr uint16_t k1stPayloadSize = 1;
@@ -2892,7 +2894,7 @@ TEST(L2capCocReadTest, NoReadOnStoppedChannel) {
   kframe.pdu_length().Write(kSduLengthFieldSize);
   kframe.channel_id().Write(local_cid);
 
-  EXPECT_EQ(channel.Stop(), PW_STATUS_OK);
+  channel.Stop();
   proxy.HandleH4HciFromController(std::move(h4_packet));
 }
 
@@ -3116,8 +3118,8 @@ TEST(L2capCocReadTest, ChannelStoppageDoNotAffectOtherChannels) {
   };
 
   // Stop the 2nd and 4th of the 5 channels.
-  EXPECT_EQ(channels[1].Stop(), PW_STATUS_OK);
-  EXPECT_EQ(channels[3].Stop(), PW_STATUS_OK);
+  channels[1].Stop();
+  channels[3].Stop();
 
   std::array<uint8_t, kFirstKFrameOverAclMinSize + capture.payload.size()>
       hci_arr;
@@ -3383,8 +3385,8 @@ TEST(L2capCocReadTest, FragmentedPduStopsChannelWithoutDisruptingOtherChannel) {
           .receive_fn =
               []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
           .event_fn =
-              [&events_called](L2capCoc::Event event) {
-                EXPECT_EQ(event, L2capCoc::Event::kRxFragmented);
+              [&events_called](L2capChannelEvent event) {
+                EXPECT_EQ(event, L2capChannelEvent::kRxFragmented);
                 ++events_called;
               }});
 
@@ -3448,7 +3450,8 @@ TEST(L2capCocReadTest, FragmentedPduStopsChannelWithoutDisruptingOtherChannel) {
               [&reads_called]([[maybe_unused]] pw::span<uint8_t> payload) {
                 ++reads_called;
               },
-          .event_fn = []([[maybe_unused]] L2capCoc::Event event) { FAIL(); }});
+          .event_fn =
+              []([[maybe_unused]] L2capChannelEvent event) { FAIL(); }});
 
   // Ensure different channel can still receive valid payload.
   std::array<uint8_t, kFirstKFrameOverAclMinSize> other_hci_arr;
@@ -3488,9 +3491,9 @@ TEST(L2capCocReadTest, UnexpectedContinuingFragmentStopsChannel) {
                     .local_cid = local_cid,
                     .receive_fn = [](span<uint8_t>) { FAIL(); },
                     .event_fn =
-                        [&events_received](L2capCoc::Event event) {
+                        [&events_received](L2capChannelEvent event) {
                           ++events_received;
-                          EXPECT_EQ(event, L2capCoc::Event::kRxFragmented);
+                          EXPECT_EQ(event, L2capChannelEvent::kRxFragmented);
                         }});
 
   std::array<uint8_t, kFirstKFrameOverAclMinSize> hci_arr;
@@ -3880,8 +3883,8 @@ TEST(L2capSignalingTest, ChannelClosedWithErrorIfCreditsExceeded) {
           // Initialize with max credit count.
           .tx_credits =
               emboss::L2capLeCreditBasedConnectionReq::max_credit_value(),
-          .event_fn = [&events_received](L2capCoc::Event event) {
-            EXPECT_EQ(event, L2capCoc::Event::kRxInvalid);
+          .event_fn = [&events_received](L2capChannelEvent event) {
+            EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
             ++events_received;
           }});
 

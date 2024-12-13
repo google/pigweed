@@ -161,6 +161,12 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
     }
   }
 
+  // Helper since these operations should typically be coupled.
+  void StopAndSendEvent(L2capChannelEvent event) {
+    Stop();
+    SendEvent(event);
+  }
+
   //-------
   //  Tx:
   //-------

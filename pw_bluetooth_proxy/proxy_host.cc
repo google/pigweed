@@ -450,9 +450,8 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
                                   rx_config,
                                   tx_config,
                                   std::move(receive_fn),
-                                  /*event_fn_deprecated=*/std::move(event_fn),
-                                  std::move(queue_space_available_fn),
-                                  /*event_fn=*/nullptr);
+                                  std::move(event_fn),
+                                  std::move(queue_space_available_fn));
 }
 
 pw::Status ProxyHost::SendAdditionalRxCredits(uint16_t connection_handle,
