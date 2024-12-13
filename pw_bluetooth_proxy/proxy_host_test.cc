@@ -41,11 +41,6 @@ namespace {
 
 using containers::FlatMap;
 
-// TODO: https://pwbug.dev/349700888 - Once size is configurable, switch to
-// specifying directly. Until then this should match
-// AclConnection::kMaxConnections.
-static constexpr size_t kMaxProxyActiveConnections = 10;
-
 // Return a populated H4 command buffer of a type that proxy host doesn't
 // interact with.
 Status PopulateNoninteractingToControllerBuffer(H4PacketWithH4& h4_packet) {
@@ -1494,7 +1489,7 @@ TEST(DisconnectionCompleteTest, DisconnectionReclaimsCredits) {
   // We already have an active connection at this point in the test, so loop
   // over the remaining slots + 1 which would otherwise fail if cleanup wasn't
   // working right.
-  for (uint16_t i = 0; i < kMaxProxyActiveConnections; ++i) {
+  for (uint16_t i = 0; i < ProxyHost::GetMaxNumAclConnections() - 2; ++i) {
     uint16_t handle = 0x234 + i;
     EXPECT_TRUE(
         proxy.SendGattNotify(handle, 1, pw::span(attribute_value)).ok());
@@ -1512,7 +1507,7 @@ TEST(DisconnectionCompleteTest, DisconnectionReclaimsCredits) {
       FlatMap<uint16_t, uint16_t, 1>({{{capture.connection_handle, 10}}})));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 8);
   // NOCP has credits remaining so will be passed on to host.
-  EXPECT_EQ(capture.sends_called, 13);
+  EXPECT_EQ(capture.sends_called, 11);
 }
 
 TEST(DisconnectionCompleteTest, FailedDisconnectionHasNoEffect) {
@@ -1923,11 +1918,11 @@ TEST(MultiSendTest, CanSendOverManyDifferentConnections) {
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              ProxyHost::GetMaxNumLeAclConnections());
+                              ProxyHost::GetMaxNumAclConnections());
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
-      proxy, ProxyHost::GetMaxNumLeAclConnections()));
+      proxy, ProxyHost::GetMaxNumAclConnections()));
 
-  for (uint16_t send = 1; send <= ProxyHost::GetMaxNumLeAclConnections();
+  for (uint16_t send = 1; send <= ProxyHost::GetMaxNumAclConnections();
        send++) {
     // Use current send count as the connection handle.
     uint16_t conn_handle = send;
@@ -1938,7 +1933,7 @@ TEST(MultiSendTest, CanSendOverManyDifferentConnections) {
 }
 
 TEST(MultiSendTest, AttemptToSendOverMaxConnectionsFails) {
-  constexpr uint16_t kSends = kMaxProxyActiveConnections + 1;
+  constexpr uint16_t kSends = ProxyHost::GetMaxNumAclConnections() + 1;
   std::array<uint8_t, 1> attribute_value = {0xF};
   struct {
     uint16_t sends_called = 0;
@@ -1955,7 +1950,8 @@ TEST(MultiSendTest, AttemptToSendOverMaxConnectionsFails) {
       std::move(send_to_host_fn), std::move(send_to_controller_fn), kSends);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, kSends));
 
-  for (uint16_t send = 1; send <= kMaxProxyActiveConnections; send++) {
+  for (uint16_t send = 1; send <= ProxyHost::GetMaxNumAclConnections();
+       send++) {
     // Use current send count as the connection handle.
     uint16_t conn_handle = send;
     EXPECT_TRUE(
@@ -1967,7 +1963,7 @@ TEST(MultiSendTest, AttemptToSendOverMaxConnectionsFails) {
   uint16_t conn_handle = kSends;
   EXPECT_FALSE(
       proxy.SendGattNotify(conn_handle, 345, pw::span(attribute_value)).ok());
-  EXPECT_EQ(capture.sends_called, kMaxProxyActiveConnections);
+  EXPECT_EQ(capture.sends_called, ProxyHost::GetMaxNumAclConnections());
 }
 
 TEST(MultiSendTest, ResetClearsBuffOccupiedFlags) {

@@ -312,8 +312,8 @@ class ProxyHost {
   }
 
   /// Returns the max number of simultaneous LE ACL connections supported.
-  static constexpr size_t GetMaxNumLeAclConnections() {
-    return AclDataChannel::GetMaxNumLeAclConnections();
+  static constexpr size_t GetMaxNumAclConnections() {
+    return AclDataChannel::GetMaxNumAclConnections();
   }
 
  private:

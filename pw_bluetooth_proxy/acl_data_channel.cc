@@ -30,7 +30,7 @@ void AclDataChannel::Reset() {
   std::lock_guard lock(mutex_);
   le_credits_.Reset();
   br_edr_credits_.Reset();
-  active_acl_connections_.clear();
+  acl_connections_.clear();
 }
 
 void AclDataChannel::Credits::Reset() {
@@ -173,8 +173,8 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
 
       AclConnection* connection_ptr = FindAclConnection(handle);
       if (!connection_ptr) {
-        // Credits for connection we are not tracking, so should pass event on
-        // to host.
+        // Credits for connection we are not tracking or closed connection, so
+        // should pass event on to host.
         should_send_to_host = true;
         continue;
       }
@@ -340,7 +340,10 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
             .MarkCompleted(connection_ptr->num_pending_packets());
       }
 
-      active_acl_connections_.erase(connection_ptr);
+      // Close but do not erase connection until all channels on the connection
+      // are dtored, as the channels may still try to access their connection's
+      // contained objects like signaling channels.
+      connection_ptr->Close();
     } else {
       if (connection_ptr->num_pending_packets() > 0) {
         PW_LOG_WARN(
@@ -402,13 +405,13 @@ Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
   if (connection_it) {
     return Status::AlreadyExists();
   }
-  if (active_acl_connections_.full()) {
+  if (acl_connections_.full()) {
     return Status::ResourceExhausted();
   }
-  active_acl_connections_.emplace_back(transport,
-                                       /*connection_handle=*/connection_handle,
-                                       /*num_pending_packets=*/0,
-                                       l2cap_channel_manager_);
+  acl_connections_.emplace_back(transport,
+                                /*connection_handle=*/connection_handle,
+                                /*num_pending_packets=*/0,
+                                l2cap_channel_manager_);
   return OkStatus();
 }
 
@@ -466,14 +469,16 @@ L2capSignalingChannel* AclDataChannel::FindSignalingChannel(
 }
 
 AclDataChannel::AclConnection* AclDataChannel::FindAclConnection(
-    uint16_t connection_handle) {
+    uint16_t connection_handle, bool if_open) {
   AclConnection* connection_it = containers::FindIf(
-      active_acl_connections_,
-      [&connection_handle](const AclConnection& connection) {
-        return connection.connection_handle() == connection_handle;
+      acl_connections_,
+      [&connection_handle, if_open](const AclConnection& connection) {
+        if (connection.connection_handle() == connection_handle) {
+          return !if_open || connection.state() == AclConnection::State::kOpen;
+        }
+        return false;
       });
-  return connection_it == active_acl_connections_.end() ? nullptr
-                                                        : connection_it;
+  return connection_it == acl_connections_.end() ? nullptr : connection_it;
 }
 
 }  // namespace pw::bluetooth::proxy
