@@ -106,6 +106,7 @@ cc_library(
         "//pw_bluetooth_sapphire/host/sco",
         "//pw_bluetooth_sapphire/host/sdp",
         "//pw_bluetooth_sapphire/host/sm",
+        "//pw_bluetooth_sapphire/host/sm:definitions",
         "@pigweed//pw_async:heap_dispatcher",
         "@pigweed//pw_bluetooth",
         "@pigweed//pw_string:utf_codecs",

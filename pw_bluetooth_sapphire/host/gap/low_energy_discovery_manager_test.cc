@@ -872,6 +872,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   sessions[4]->SetResultCallback(std::move(result_cb));
 
   EXPECT_EQ(5u, sessions.size());
+  RunUntilIdle();
 
 #define EXPECT_CONTAINS(addr, dev_list) \
   EXPECT_TRUE(dev_list.find(addr) != dev_list.end())

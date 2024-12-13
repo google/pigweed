@@ -237,6 +237,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_bluetooth/public/pw_bluetooth/low_energy/peripheral2.h",
   "$dir_pw_bluetooth_proxy/public/pw_bluetooth_proxy/h4_packet.h",
   "$dir_pw_bluetooth_proxy/public/pw_bluetooth_proxy/proxy_host.h",
+  "$dir_pw_bluetooth_sapphire/public/pw_bluetooth_sapphire/central.h",
   "$dir_pw_bluetooth_sapphire/public/pw_bluetooth_sapphire/peripheral.h",
   "$dir_pw_build/public/pw_build/linker_symbol.h",
   "$dir_pw_build/public/pw_build/must_place.ld.h",

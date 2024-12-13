@@ -287,11 +287,13 @@ class LowEnergyDiscoveryManager final
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoveryManager);
 };
 
-class LowEnergyDiscoverySession final {
+class LowEnergyDiscoverySession final
+    : public WeakSelf<LowEnergyDiscoverySession> {
  public:
   explicit LowEnergyDiscoverySession(
       bool active,
       PeerCache& peer_cache,
+      pw::async::Dispatcher& dispatcher,
       fit::function<void(LowEnergyDiscoverySession*)> on_stop_cb,
       fit::function<const std::unordered_set<PeerId>&()>
           cached_scan_results_fn);
@@ -344,6 +346,7 @@ class LowEnergyDiscoverySession final {
   bool alive_{true};
   bool active_;
   PeerCache& peer_cache_;
+  pw::async::HeapDispatcher heap_dispatcher_;
   fit::callback<void()> error_cb_;
   PeerFoundFunction peer_found_fn_;
   DiscoveryFilter filter_;

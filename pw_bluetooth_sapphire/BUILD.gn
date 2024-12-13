@@ -45,6 +45,30 @@ pw_source_set("peripheral") {
   public_configs = [ ":public_include_path" ]
 }
 
+pw_source_set("central") {
+  public = [ "public/pw_bluetooth_sapphire/central.h" ]
+  sources = [ "central.cc" ]
+  public_deps = [
+    "$dir_pw_bluetooth:pw_bluetooth2",
+    "$dir_pw_multibuf:allocator",
+    "host/gap",
+  ]
+  public_configs = [ ":public_include_path" ]
+}
+
+pw_test("central_test") {
+  enable_if = pw_bluetooth_sapphire_ENABLED
+  sources = [ "central_test.cc" ]
+  deps = [
+    ":central",
+    "$dir_pw_async:fake_dispatcher",
+    "$dir_pw_async2:pend_func_task",
+    "$dir_pw_multibuf:testing",
+    "host/gap:testing",
+  ]
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
+}
+
 pw_test("peripheral_test") {
   enable_if = pw_bluetooth_sapphire_ENABLED
   sources = [ "peripheral_test.cc" ]
@@ -57,7 +81,10 @@ pw_test("peripheral_test") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":peripheral_test" ]
+  tests = [
+    ":peripheral_test",
+    ":central_test",
+  ]
   group_deps = [
     "host:tests",
     "lib:tests",

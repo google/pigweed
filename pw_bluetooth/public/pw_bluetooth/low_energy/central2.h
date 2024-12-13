@@ -71,7 +71,7 @@ class Central2 {
     /// obtained from advertising and scan response data during a scan
     /// procedure. It should NOT be confused with information for an active
     /// connection obtained using the "Path Loss Reporting" feature.
-    std::optional<uint8_t> max_path_loss;
+    std::optional<int8_t> max_path_loss;
   };
 
   enum class ScanType : uint8_t {
@@ -146,7 +146,8 @@ class Central2 {
   /// Represents an ongoing LE scan.
   class ScanHandle {
    public:
-    virtual ~ScanHandle() = 0;
+    /// Stops the scan.
+    virtual ~ScanHandle() = default;
 
     /// Returns the next `ScanResult` if available. Otherwise, invokes
     /// `cx.waker()` when a `ScanResult` is available. Only one waker is
@@ -166,12 +167,12 @@ class Central2 {
    private:
     /// Stop the current scan. This method is called by the ~ScanHandle::Ptr()
     /// when it goes out of scope, the API client should never call this method.
-    virtual void StopScan() = 0;
+    virtual void Release() = 0;
 
    public:
     /// Movable ScanHandle smart pointer. The controller will continue scanning
     /// until the ScanHandle::Ptr is destroyed.
-    using Ptr = internal::RaiiPtr<ScanHandle, &ScanHandle::StopScan>;
+    using Ptr = internal::RaiiPtr<ScanHandle, &ScanHandle::Release>;
   };
 
   /// Possible errors returned by `Connect`.

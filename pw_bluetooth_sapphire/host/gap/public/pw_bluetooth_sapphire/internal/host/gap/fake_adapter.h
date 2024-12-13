@@ -86,6 +86,21 @@ class FakeAdapter final : public Adapter {
     // Overrides the result returned to StartAdvertising() callback.
     void set_advertising_result(hci::Result<> result);
 
+    // Notify all discovery sessions of a scan result.
+    // Make sure to set the advertising data in Peer first!
+    void NotifyScanResult(const Peer& peer);
+
+    // Add scan result that discovery result callbacks will be notified of when
+    // the result callback is set.
+    void AddCachedScanResult(bt::PeerId peer_id) {
+      cached_scan_results_.insert(peer_id);
+    }
+
+    const std::unordered_set<LowEnergyDiscoverySession*>& discovery_sessions()
+        const {
+      return discovery_sessions_;
+    }
+
     // LowEnergy overrides:
 
     // If Connect is called multiple times, only the connection options of the
@@ -124,7 +139,7 @@ class FakeAdapter final : public Adapter {
         std::optional<DeviceAddress::Type> address_type,
         AdvertisingStatusCallback status_callback) override;
 
-    void StartDiscovery(bool, SessionCallback) override {}
+    void StartDiscovery(bool active, SessionCallback callback) override;
 
     void EnablePrivacy(bool enabled) override;
 
@@ -164,6 +179,8 @@ class FakeAdapter final : public Adapter {
                        std::unique_ptr<l2cap::testing::FakeChannel>>
         channels_;
     std::optional<hci::Result<>> advertising_result_override_;
+    std::unordered_set<LowEnergyDiscoverySession*> discovery_sessions_;
+    std::unordered_set<PeerId> cached_scan_results_;
   };
 
   LowEnergy* le() const override { return fake_le_.get(); }

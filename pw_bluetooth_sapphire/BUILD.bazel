@@ -40,6 +40,31 @@ cc_library(
 )
 
 cc_library(
+    name = "central",
+    srcs = ["central.cc"],
+    hdrs = ["public/pw_bluetooth_sapphire/central.h"],
+    strip_include_prefix = "public",
+    deps = [
+        "//pw_bluetooth:pw_bluetooth2",
+        "//pw_bluetooth_sapphire/host/gap",
+        "//pw_multibuf:allocator",
+    ],
+)
+
+pw_cc_test(
+    name = "central_test",
+    srcs = ["central_test.cc"],
+    test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
+    deps = [
+        ":central",
+        "//pw_async:fake_dispatcher",
+        "//pw_async2:pend_func_task",
+        "//pw_bluetooth_sapphire/host/gap:testing",
+        "//pw_multibuf:testing",
+    ],
+)
+
+cc_library(
     name = "peripheral",
     srcs = ["peripheral.cc"],
     hdrs = ["public/pw_bluetooth_sapphire/peripheral.h"],

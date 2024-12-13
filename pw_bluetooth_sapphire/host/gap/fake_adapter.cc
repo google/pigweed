@@ -88,6 +88,17 @@ void FakeAdapter::FakeLowEnergy::set_advertising_result(hci::Result<> result) {
   advertising_result_override_ = result;
 }
 
+void FakeAdapter::FakeLowEnergy::NotifyScanResult(const Peer& peer) {
+  for (auto iter = discovery_sessions_.begin();
+       iter != discovery_sessions_.end();) {
+    // Get next iterator before result handler possible invalidates this one by
+    // stopping session.
+    auto next = std::next(iter);
+    (*iter)->NotifyDiscoveryResult(peer);
+    iter = next;
+  }
+}
+
 void FakeAdapter::FakeLowEnergy::Connect(
     PeerId peer_id,
     ConnectionResultCallback callback,
@@ -204,6 +215,22 @@ void FakeAdapter::FakeLowEnergy::StartAdvertising(
             AdvertisementInstance(adv_id, std::move(stop_advertising)),
             fit::ok());
       });
+}
+
+void FakeAdapter::FakeLowEnergy::StartDiscovery(bool active,
+                                                SessionCallback callback) {
+  auto session = std::make_unique<LowEnergyDiscoverySession>(
+      active,
+      *adapter_->peer_cache(),
+      adapter_->pw_dispatcher_,
+      /*on_stop_cb=*/
+      [this](LowEnergyDiscoverySession* s) { discovery_sessions_.erase(s); },
+      /*cached_scan_results_fn=*/
+      [this]() -> const std::unordered_set<PeerId>& {
+        return cached_scan_results_;
+      });
+  discovery_sessions_.insert(session.get());
+  callback(std::move(session));
 }
 
 void FakeAdapter::FakeLowEnergy::EnablePrivacy(bool enabled) {

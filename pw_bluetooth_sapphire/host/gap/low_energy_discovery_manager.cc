@@ -37,10 +37,13 @@ const char* kInspectScanWindowPropertyName = "scan_window_ms";
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
     bool active,
     PeerCache& peer_cache,
+    pw::async::Dispatcher& dispatcher,
     fit::function<void(LowEnergyDiscoverySession*)> on_stop_cb,
     fit::function<const std::unordered_set<PeerId>&()> cached_scan_results_fn)
-    : active_(active),
+    : WeakSelf(this),
+      active_(active),
       peer_cache_(peer_cache),
+      heap_dispatcher_(dispatcher),
       on_stop_cb_(std::move(on_stop_cb)),
       cached_scan_results_fn_(std::move(cached_scan_results_fn)) {}
 
@@ -55,18 +58,30 @@ void LowEnergyDiscoverySession::SetResultCallback(PeerFoundFunction callback) {
     return;
   }
   peer_found_fn_ = std::move(callback);
-  for (PeerId cached_peer_id : cached_scan_results_fn_()) {
-    auto peer = peer_cache_.FindById(cached_peer_id);
-    // Ignore peers that have since been removed from the peer cache.
-    if (!peer) {
-      bt_log(TRACE,
-             "gap",
-             "Ignoring cached scan result for peer %s missing from peer cache",
-             bt_str(cached_peer_id));
-      continue;
+
+  // Post NotifyDiscoveryResult(), which calls peer_found_fn_, to avoid client
+  // bugs (e.g. deadlock) when peer_found_fn_ is called in SetResultCallback().
+  pw::Status post_status = heap_dispatcher_.Post([self = GetWeakPtr()](
+                                                     pw::async::Context,
+                                                     pw::Status status) {
+    if (!status.ok() || !self.is_alive()) {
+      return;
     }
-    NotifyDiscoveryResult(*peer);
-  }
+    for (PeerId cached_peer_id : self->cached_scan_results_fn_()) {
+      auto peer = self->peer_cache_.FindById(cached_peer_id);
+      // Ignore peers that have since been removed from the peer cache.
+      if (!peer) {
+        bt_log(
+            TRACE,
+            "gap",
+            "Ignoring cached scan result for peer %s missing from peer cache",
+            bt_str(cached_peer_id));
+        continue;
+      }
+      self->NotifyDiscoveryResult(*peer);
+    }
+  });
+  PW_CHECK(post_status.ok());
 }
 
 void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
@@ -239,6 +254,7 @@ LowEnergyDiscoveryManager::AddSession(bool active) {
   auto session = std::make_unique<LowEnergyDiscoverySession>(
       active,
       *peer_cache_,
+      dispatcher_,
       std::move(on_stop_cb),
       std::move(cached_scan_results_fn));
   sessions_.push_back(session.get());

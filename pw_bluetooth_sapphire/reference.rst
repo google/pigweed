@@ -14,3 +14,6 @@ C++ API reference
 
 .. doxygenclass:: pw::bluetooth_sapphire::Peripheral
   :members:
+
+.. doxygenclass:: pw::bluetooth_sapphire::Central
+  :members:
