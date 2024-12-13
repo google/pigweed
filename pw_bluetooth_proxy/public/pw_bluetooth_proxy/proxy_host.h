@@ -150,24 +150,9 @@ class ProxyHost {
       // TODO: https://pwbug.dev/383150263 - Delete & use event_fn instead.
       Function<void()>&& queue_space_available_fn = nullptr);
 
-  /// Send an L2CAP_FLOW_CONTROL_CREDIT_IND signaling packet to dispense the
-  /// remote peer additional L2CAP connection-oriented channel credits for this
-  /// channel.
-  ///
-  /// @param[in] connection_handle     ACL connection over which this L2CAP
-  ///                                  connection-oriented channel exists.
-  ///
-  /// @param[in] local_cid             L2CAP channel ID of local endpoint.
-  ///
-  /// @param[in] additional_rx_credits Number of credits to dispense.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  INVALID_ARGUMENT: CID invalid (check logs).
-  ///  NOT_FOUND:        Requested ACL connection does not exist.
-  ///  UNAVAILABLE:      Send could not be queued right now (transient error).
-  /// @endrst
+  /// TODO: https://pwbug.dev/380076024 - Delete after downstream client uses
+  /// this method on `L2capCoc`.
+  /// @deprecated Use L2capCoc::SendAdditionalRxCredits instead.
   pw::Status SendAdditionalRxCredits(uint16_t connection_handle,
                                      uint16_t local_cid,
                                      uint16_t additional_rx_credits);

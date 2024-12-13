@@ -445,7 +445,13 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
   }
   PW_CHECK(status.ok() || status.IsAlreadyExists());
 
+  L2capSignalingChannel* signaling_channel =
+      acl_data_channel_.FindSignalingChannel(
+          connection_handle,
+          static_cast<uint16_t>(emboss::L2capFixedCid::LE_U_SIGNALING));
+  PW_CHECK(signaling_channel);
   return L2capCocInternal::Create(l2cap_channel_manager_,
+                                  signaling_channel,
                                   connection_handle,
                                   rx_config,
                                   tx_config,
@@ -457,15 +463,11 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
 pw::Status ProxyHost::SendAdditionalRxCredits(uint16_t connection_handle,
                                               uint16_t local_cid,
                                               uint16_t additional_rx_credits) {
-  L2capSignalingChannel* signaling_channel =
-      acl_data_channel_.FindSignalingChannel(
-          connection_handle,
-          static_cast<uint16_t>(emboss::L2capFixedCid::LE_U_SIGNALING));
-  if (!signaling_channel) {
-    return Status::NotFound();
-  }
-  return signaling_channel->SendFlowControlCreditInd(local_cid,
-                                                     additional_rx_credits);
+  L2capChannel* channel = l2cap_channel_manager_.FindChannelByLocalCid(
+      connection_handle, local_cid);
+  PW_CHECK(channel);
+  return static_cast<L2capCoc*>(channel)->SendAdditionalRxCredits(
+      additional_rx_credits);
 }
 
 pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(

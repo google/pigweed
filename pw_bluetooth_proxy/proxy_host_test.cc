@@ -4039,8 +4039,7 @@ TEST(L2capSignalingTest, RxAdditionalCreditsSent) {
       proxy,
       CocParameters{.handle = capture.handle, .local_cid = capture.local_cid});
 
-  PW_TEST_EXPECT_OK(proxy.SendAdditionalRxCredits(
-      capture.handle, capture.local_cid, capture.credits));
+  PW_TEST_EXPECT_OK(channel.SendAdditionalRxCredits(capture.credits));
 
   EXPECT_EQ(capture.sends_called, 1);
 }

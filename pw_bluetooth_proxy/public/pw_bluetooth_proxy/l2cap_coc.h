@@ -15,6 +15,7 @@
 #pragma once
 
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
+#include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 #include "pw_bluetooth_proxy/l2cap_channel_event.h"
 #include "pw_sync/mutex.h"
 
@@ -83,9 +84,25 @@ class L2capCoc : public L2capChannel {
   /// @endrst
   pw::Status Write(pw::span<const uint8_t> payload);
 
+  /// Send an L2CAP_FLOW_CONTROL_CREDIT_IND signaling packet to dispense the
+  /// remote peer additional L2CAP connection-oriented channel credits for this
+  /// channel.
+  ///
+  /// @param[in] additional_rx_credits Number of credits to dispense.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///  UNAVAILABLE:         Send could not be queued right now
+  ///                       (transient error).
+  ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
+  /// @endrst
+  pw::Status SendAdditionalRxCredits(uint16_t additional_rx_credits);
+
  protected:
   static pw::Result<L2capCoc> Create(
       L2capChannelManager& l2cap_channel_manager,
+      L2capSignalingChannel* signaling_channel,
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
@@ -108,6 +125,7 @@ class L2capCoc : public L2capChannel {
  private:
   explicit L2capCoc(
       L2capChannelManager& l2cap_channel_manager,
+      L2capSignalingChannel* signaling_channel,
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
@@ -119,6 +137,7 @@ class L2capCoc : public L2capChannel {
   std::optional<H4PacketWithH4> DequeuePacket() override
       PW_LOCKS_EXCLUDED(mutex_);
 
+  L2capSignalingChannel* signaling_channel_;
   sync::Mutex mutex_;
   uint16_t rx_mtu_;
   uint16_t rx_mps_;

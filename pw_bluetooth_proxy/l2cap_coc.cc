@@ -16,9 +16,11 @@
 
 #include <mutex>
 
+#include "pw_assert/check.h"  // IWYU pragma: keep
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
+#include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 #include "pw_bluetooth_proxy/l2cap_channel_event.h"
 #include "pw_log/log.h"
 #include "pw_status/try.h"
@@ -27,6 +29,7 @@ namespace pw::bluetooth::proxy {
 
 L2capCoc::L2capCoc(L2capCoc&& other)
     : L2capChannel(static_cast<L2capCoc&&>(other)),
+      signaling_channel_(other.signaling_channel_),
       rx_mtu_(other.rx_mtu_),
       rx_mps_(other.rx_mps_),
       tx_mtu_(other.tx_mtu_),
@@ -90,6 +93,7 @@ pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
 
 pw::Result<L2capCoc> L2capCoc::Create(
     L2capChannelManager& l2cap_channel_manager,
+    L2capSignalingChannel* signaling_channel,
     uint16_t connection_handle,
     CocConfig rx_config,
     CocConfig tx_config,
@@ -113,12 +117,22 @@ pw::Result<L2capCoc> L2capCoc::Create(
 
   return L2capCoc(
       /*l2cap_channel_manager=*/l2cap_channel_manager,
+      /*signaling_channel=*/signaling_channel,
       /*connection_handle=*/connection_handle,
       /*rx_config=*/rx_config,
       /*tx_config=*/tx_config,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
       /*event_fn=*/std::move(event_fn),
       /*queue_space_available_fn=*/std::move(queue_space_available_fn));
+}
+
+pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
+  if (state() != State::kRunning) {
+    return Status::FailedPrecondition();
+  }
+  PW_CHECK(signaling_channel_);
+  return signaling_channel_->SendFlowControlCreditInd(local_cid(),
+                                                      additional_rx_credits);
 }
 
 bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
@@ -222,6 +236,7 @@ bool L2capCoc::HandlePduFromHost(pw::span<uint8_t>) PW_LOCKS_EXCLUDED(mutex_) {
 
 L2capCoc::L2capCoc(
     L2capChannelManager& l2cap_channel_manager,
+    L2capSignalingChannel* signaling_channel,
     uint16_t connection_handle,
     CocConfig rx_config,
     CocConfig tx_config,
@@ -237,6 +252,7 @@ L2capCoc::L2capCoc(
           /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
           /*queue_space_available_fn=*/std::move(queue_space_available_fn),
           /*event_fn=*/std::move(event_fn)),
+      signaling_channel_(signaling_channel),
       rx_mtu_(rx_config.mtu),
       rx_mps_(rx_config.mps),
       tx_mtu_(tx_config.mtu),
