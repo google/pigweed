@@ -38,12 +38,10 @@ RfcommChannel::RfcommChannel(RfcommChannel&& other)
   std::lock_guard other_lock(other.mutex_);
   rx_credits_ = other.rx_credits_;
   tx_credits_ = other.tx_credits_;
-  state_ = other.state_;
-  other.state_ = State::kStopped;
 }
 
 pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
-  if (state_ == State::kStopped) {
+  if (state() != State::kRunning) {
     return Status::FailedPrecondition();
   }
 
@@ -166,7 +164,7 @@ Result<RfcommChannel> RfcommChannel::Create(
 }
 
 bool RfcommChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
-  if (state_ == State::kStopped) {
+  if (state() != State::kRunning) {
     PW_LOG_WARN("Received data on stopped channel, passing on to host.");
     return false;
   }
@@ -277,8 +275,7 @@ RfcommChannel::RfcommChannel(
       tx_config_(tx_config),
       channel_number_(channel_number),
       rx_credits_(rx_config.credits),
-      tx_credits_(tx_config.credits),
-      state_(State::kStarted) {}
+      tx_credits_(tx_config.credits) {}
 
 void RfcommChannel::OnFragmentedPduReceived() {
   PW_LOG_ERROR(
