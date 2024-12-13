@@ -1279,7 +1279,13 @@ Status Connection::Reader::ProcessWindowUpdateFrame(const FrameHeader& frame) {
 
 // Advance past the payload.
 Status Connection::Reader::ProcessIgnoredFrame(const FrameHeader& frame) {
-  PW_TRY(ReadFramePayload(frame));
+  size_t to_read = frame.payload_length;
+  while (to_read > 0) {
+    auto chunk = span{payload_scratch_}.subspan(
+        0, std::min(payload_scratch_.size(), to_read));
+    PW_TRY(ReadExactly(connection_.socket_.as_reader(), chunk));
+    to_read -= chunk.size();
+  }
   return OkStatus();
 }
 
