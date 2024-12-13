@@ -81,7 +81,8 @@ Result<ConstByteSpan> MultiSink::PeekOrPopEntry(
     Request request,
     uint32_t& drain_drop_count_out,
     uint32_t& ingress_drop_count_out,
-    uint32_t& entry_sequence_id_out) {
+    uint32_t& entry_sequence_id_out)
+    PW_NO_SANITIZE("unsigned-integer-overflow") {
   size_t bytes_read = 0;
   entry_sequence_id_out = 0;
   drain_drop_count_out = 0;
@@ -96,8 +97,6 @@ Result<ConstByteSpan> MultiSink::PeekOrPopEntry(
   if (peek_status.IsOutOfRange()) {
     // If the drain has caught up, report the last handled sequence ID so that
     // it can still process any dropped entries.
-    // Negation overflow is by design.
-    /// -fsanitize-undefined-ignore-overflow-pattern=negated-unsigned-const
     entry_sequence_id_out = sequence_id_ - 1;
   } else if (!peek_status.ok()) {
     // Discard the entry if the result isn't OK or OUT_OF_RANGE and exit, as the
@@ -148,15 +147,14 @@ Result<ConstByteSpan> MultiSink::PeekOrPopEntry(
   return as_bytes(buffer.first(bytes_read));
 }
 
-void MultiSink::AttachDrain(Drain& drain) {
+void MultiSink::AttachDrain(Drain& drain)
+    PW_NO_SANITIZE("unsigned-integer-overflow") {
   std::lock_guard lock(lock_);
   PW_DCHECK_PTR_EQ(drain.multisink_, nullptr);
   drain.multisink_ = this;
 
   PW_CHECK_OK(ring_buffer_.AttachReader(drain.reader_));
   if (&drain == &oldest_entry_drain_) {
-    // Negation overflow is by design.
-    /// -fsanitize-undefined-ignore-overflow-pattern=negated-unsigned-const
     drain.last_handled_sequence_id_ = sequence_id_ - 1;
   } else {
     drain.last_handled_sequence_id_ =
