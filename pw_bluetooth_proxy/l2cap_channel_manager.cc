@@ -164,7 +164,39 @@ void L2capChannelManager::HandleConnectionComplete(
 }
 
 void L2capChannelManager::HandleDisconnectionComplete(
+    uint16_t connection_handle) {
+  for (;;) {
+    IntrusiveForwardList<L2capChannel>::iterator channel_it;
+    {
+      std::lock_guard lock(channels_mutex_);
+      channel_it = containers::FindIf(
+          channels_, [connection_handle](L2capChannel& channel) {
+            return channel.connection_handle() == connection_handle &&
+                   channel.state() == L2capChannel::State::kRunning;
+          });
+      if (channel_it == channels_.end()) {
+        break;
+      }
+
+      // We do not need to worry about `channel_it` invalidating after unlocking
+      // because an L2CAP_DISCONNECTION_RSP cannot be sent on this ACL
+      // connection which has already been closed, so this channel will not be
+      // closed elsewhere before we close it below.
+    }
+
+    channel_it->Close();
+  }
+
+  status_tracker_.HandleDisconnectionComplete(connection_handle);
+}
+
+void L2capChannelManager::HandleDisconnectionComplete(
     const L2capStatusTracker::DisconnectParams& params) {
+  L2capChannel* channel =
+      FindChannelByLocalCid(params.connection_handle, params.source_cid);
+  if (channel) {
+    channel->Close();
+  }
   status_tracker_.HandleDisconnectionComplete(params);
 }
 

@@ -45,6 +45,9 @@ class L2capStatusTracker {
     uint16_t destination_cid;
   };
 
+  void HandleDisconnectionComplete(uint16_t connection_handle)
+      PW_LOCKS_EXCLUDED(mutex_);
+
   void HandleDisconnectionComplete(const DisconnectParams& params)
       PW_LOCKS_EXCLUDED(mutex_);
 

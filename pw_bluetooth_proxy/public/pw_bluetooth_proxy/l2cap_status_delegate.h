@@ -49,6 +49,8 @@ class L2capStatusDelegate
       const L2capChannelConnectionInfo& info) = 0;
 
   /// Called when a l2cap channel connection is disconnected.
+  ///
+  /// Note you cannot Register or Unregister a delegate in this method.
   virtual void HandleDisconnectionComplete(
       const L2capChannelConnectionInfo& info) = 0;
 };

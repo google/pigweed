@@ -22,7 +22,9 @@
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth/hci_h4.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
+#include "pw_bluetooth_proxy/basic_l2cap_channel.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
+#include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_bluetooth_proxy/l2cap_channel_event.h"
 #include "pw_bluetooth_proxy/proxy_host.h"
 #include "pw_function/function.h"
@@ -258,6 +260,7 @@ Status SendL2capConnectionRsp(
 }
 
 Status SendL2capDisconnectRsp(ProxyHost& proxy,
+                              AclTransportType transport,
                               uint16_t handle,
                               uint16_t source_cid,
                               uint16_t destination_cid) {
@@ -265,9 +268,12 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
       emboss::L2capDisconnectionRsp::MinSizeInBytes();
   PW_TRY_ASSIGN(
       auto cframe,
-      SetupCFrame(handle,
-                  cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING),
-                  kDisconnectionRspLen));
+      SetupCFrame(
+          handle,
+          transport == AclTransportType::kBrEdr
+              ? cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING)
+              : cpp23::to_underlying(emboss::L2capFixedCid::LE_U_SIGNALING),
+          kDisconnectionRspLen));
 
   emboss::L2capDisconnectionRspWriter disconn_rsp_writer =
       emboss::MakeL2capDisconnectionRspView(
@@ -302,6 +308,19 @@ L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params) {
                             std::move(params.receive_fn),
                             std::move(params.event_fn),
                             std::move(params.queue_space_available_fn));
+  return std::move(channel.value());
+}
+
+BasicL2capChannel BuildBasicL2capChannel(ProxyHost& proxy,
+                                         BasicL2capParameters params) {
+  pw::Result<BasicL2capChannel> channel = proxy.AcquireBasicL2capChannel(
+      params.handle,
+      params.local_cid,
+      params.remote_cid,
+      params.transport,
+      std::move(params.payload_from_controller_fn),
+      std::move(params.queue_space_available_fn),
+      std::move(params.event_fn));
   return std::move(channel.value());
 }
 

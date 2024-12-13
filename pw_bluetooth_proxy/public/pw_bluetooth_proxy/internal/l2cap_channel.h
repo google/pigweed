@@ -38,6 +38,11 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
     kRunning,
     // Channel is stopped, but the L2CAP connection has not been closed.
     kStopped,
+    // L2CAP connection has been closed, either as the result of an
+    // HCI_Disconnection_Complete event or L2CAP_DISCONNECTION_RSP packet.
+    kClosed,
+    // Channel has been moved from and is no longer a valid object.
+    kUndefined,
   };
 
   L2capChannel(const L2capChannel& other) = delete;
@@ -57,6 +62,15 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //   - Container is responsible for closing L2CAP connection & destructing
   //     the channel object to free its resources.
   void Stop();
+
+  // Indicate that the L2CAP connection has been closed. This has all the same
+  // effects as stopping the channel & triggers a `kChannelClosedByOther` event.
+  //
+  // Returns false and has no effect if channel is already `State::kClosed`.
+  void Close();
+
+  // Indicate channel has been moved from and is no longer a valid object.
+  void Undefine();
 
   //-------
   //  Tx:

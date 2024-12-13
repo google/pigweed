@@ -16,6 +16,7 @@
 
 #include <mutex>
 
+#include "pw_containers/algorithm.h"
 #include "pw_log/log.h"
 
 namespace pw::bluetooth::proxy {
@@ -53,6 +54,27 @@ void L2capStatusTracker::HandleConnectionComplete(
       return;
     }
     connected_channel_infos_.push_back(info);
+  }
+}
+
+void L2capStatusTracker::HandleDisconnectionComplete(
+    uint16_t connection_handle) {
+  std::lock_guard lock(mutex_);
+  for (size_t i = 0; i < connected_channel_infos_.size();) {
+    L2capChannelConnectionInfo& info = connected_channel_infos_[i];
+
+    if (info.connection_handle == connection_handle) {
+      containers::ForEach(delegates_, [info](L2capStatusDelegate& delegate) {
+        if (delegate.ShouldTrackPsm(info.psm)) {
+          delegate.HandleDisconnectionComplete(info);
+        }
+      });
+      // Deleting this entry in Vector, so do not increment index.
+      connected_channel_infos_.erase(&info);
+    } else {
+      // Not deleting this entry in Vector, so increment index.
+      ++i;
+    }
   }
 }
 

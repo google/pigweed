@@ -29,6 +29,8 @@
 namespace pw::bluetooth::proxy {
 
 void L2capChannel::MoveFields(L2capChannel& other) {
+  // TODO: https://pwbug.dev/380504851 - Add tests for move operators, including
+  // confirmation that event is not sent on Close().
   state_ = other.state();
   connection_handle_ = other.connection_handle();
   transport_ = other.transport();
@@ -45,7 +47,7 @@ void L2capChannel::MoveFields(L2capChannel& other) {
     l2cap_channel_manager_.ReleaseChannel(other);
     l2cap_channel_manager_.RegisterChannel(*this);
   }
-  other.Stop();
+  other.Undefine();
 }
 
 L2capChannel::L2capChannel(L2capChannel&& other)
@@ -67,9 +69,27 @@ L2capChannel::~L2capChannel() {
 }
 
 void L2capChannel::Stop() {
+  PW_CHECK(state_ != State::kUndefined && state_ != State::kClosed);
+
   state_ = State::kStopped;
   ClearQueue();
 }
+
+void L2capChannel::Close() {
+  PW_CHECK(state_ != State::kUndefined);
+
+  // Channel can be closed twice: once for an L2CAP disconnection, then again
+  // for an HCI disconnection if client has not yet dtored channel object.
+  if (state_ == State::kClosed) {
+    return;
+  }
+
+  state_ = State::kClosed;
+  ClearQueue();
+  SendEvent(L2capChannelEvent::kChannelClosedByOther);
+}
+
+void L2capChannel::Undefine() { state_ = State::kUndefined; }
 
 Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
   if (state() != State::kRunning) {

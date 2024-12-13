@@ -344,6 +344,7 @@ void AclDataChannel::HandleDisconnectionCompleteEvent(
       // are dtored, as the channels may still try to access their connection's
       // contained objects like signaling channels.
       connection_ptr->Close();
+      l2cap_channel_manager_.HandleDisconnectionComplete(conn_handle);
     } else {
       if (connection_ptr->num_pending_packets() > 0) {
         PW_LOG_WARN(
