@@ -113,11 +113,7 @@ void Peer::LowEnergyData::SetAdvertisingData(
 
   peer_->SetRssiInternal(rssi);
 
-  // Update the advertising data
-  adv_data_buffer_ = DynamicByteBuffer(data.size());
-  data.Copy(&adv_data_buffer_);
-  AdvertisingData::ParseResult res =
-      AdvertisingData::FromBytes(adv_data_buffer_);
+  AdvertisingData::ParseResult res = AdvertisingData::FromBytes(data);
   if (!res.is_ok()) {
     int64_t current_failure_count = *adv_data_parse_failure_count_;
     adv_data_parse_failure_count_.Set(current_failure_count + 1);
@@ -141,9 +137,13 @@ void Peer::LowEnergyData::SetAdvertisingData(
       parsed_adv_data_ = std::move(res);
     }
   } else {
-    // Only update the adv_timestamp if the AdvertisingData parsed successfully
-    adv_timestamp_ = timestamp;
+    // Update the advertising data
+    adv_data_buffer_ = DynamicByteBuffer(data.size());
+    data.Copy(&adv_data_buffer_);
     parsed_adv_data_ = std::move(res);
+    // Only update the parsed_adv_timestamp if the AdvertisingData parsed
+    // successfully
+    parsed_adv_timestamp_ = timestamp;
 
     // Do not update the name of bonded peers because advertisements are
     // unauthenticated.

@@ -204,6 +204,9 @@ class Peer final {
       return bonded() && auto_conn_behavior_ == AutoConnectBehavior::kAlways;
     }
 
+    // Will return an empty view if there is no advertising data.
+    BufferView advertising_data() const { return adv_data_buffer_.view(); }
+
     // Note that it is possible for `advertising_data()` to return a non-empty
     // buffer while this method returns std::nullopt, as AdvertisingData is only
     // stored if it is parsed correctly.
@@ -220,7 +223,7 @@ class Peer final {
     // parsed AdvertisingData.
     std::optional<pw::chrono::SystemClock::time_point>
     parsed_advertising_data_timestamp() const {
-      return adv_timestamp_;
+      return parsed_adv_timestamp_;
     }
 
     // Returns the error, if any, encountered when parsing the advertising data
@@ -363,8 +366,9 @@ class Peer final {
     // that fields repeated in scan response data supersede those in the
     // original advertising data when processing fields in order.
     DynamicByteBuffer adv_data_buffer_;
+
     // Time when advertising data was last updated and successfully parsed.
-    std::optional<pw::chrono::SystemClock::time_point> adv_timestamp_;
+    std::optional<pw::chrono::SystemClock::time_point> parsed_adv_timestamp_;
     // AdvertisingData parsed from the peer's advertising data, if parsed
     // correctly.
     AdvertisingData::ParseResult parsed_adv_data_ =

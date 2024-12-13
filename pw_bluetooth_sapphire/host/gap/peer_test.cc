@@ -1099,6 +1099,7 @@ TEST_F(PeerTest, SetShortenedLocalName) {
   ASSERT_TRUE(peer().name().has_value());
   EXPECT_EQ(kLocalName, peer().name().value());
   EXPECT_EQ(Peer::NameSource::kAdvertisingDataShortened, peer().name_source());
+  EXPECT_EQ(peer().MutLe().advertising_data().size(), raw_data.size());
 }
 
 TEST_F(PeerTest, SetInvalidAdvertisingData) {
@@ -1111,6 +1112,8 @@ TEST_F(PeerTest, SetInvalidAdvertisingData) {
                 AdvertisingData::ParseError::kUuidsMalformed),
             InspectLastAdvertisingDataParseFailure());
 #endif  // NINSPECT
+
+  EXPECT_EQ(peer().MutLe().advertising_data().size(), 0u);
 }
 
 TEST_F(PeerDeathTest, RegisterTwoBrEdrConnectionsAsserts) {
