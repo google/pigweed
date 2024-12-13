@@ -84,6 +84,23 @@ struct RfcommFrame:
   let uih = control == RfcommFrameType.UNNUMBERED_INFORMATION_WITH_HEADER_CHECK || control == RfcommFrameType.UNNUMBERED_INFORMATION_WITH_HEADER_CHECK_AND_POLL_FINAL
     -- Helper flag to check whether frame is UIH type, regardless of whether credits are in use.
 
+  let flow_control = control == RfcommFrameType.UNNUMBERED_INFORMATION_WITH_HEADER_CHECK_AND_POLL_FINAL
+    -- Helper to check whether RFCOMM credits are allowed in this frame.
+
+  # Overlapping with control to split up frame_type and poll_final
+
+  1                  [+1]  bits:
+
+    0                  [+4]                 UInt                               frame_type_1
+
+    4                  [+1]                 UInt                               poll_final
+
+    5                  [+3]                 UInt                               frame_type_2
+      -- ETSI TS 07.10 section 5.2.1.3
+
+  let frame_type = frame_type_1+frame_type_2*32
+    -- Helper to extract frame type value without poll_final bit
+
   2                  [+1]  bits:
 
     0                  [+1]                 RfcommLengthExtended               length_extended_flag
@@ -110,7 +127,7 @@ struct RfcommFrame:
 
   let credits_offset = $present(length_extended) ? 4 : 3
 
-  if control == RfcommFrameType.UNNUMBERED_INFORMATION_WITH_HEADER_CHECK_AND_POLL_FINAL && channel != 0:
+  if flow_control && channel != 0:
     credits_offset     [+1]                 UInt                               credits
       -- Credits field can appears as first byte of information when Poll/Final
       -- bit is set on UIH frames and channel is not control (0).
