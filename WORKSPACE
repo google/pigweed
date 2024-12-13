@@ -18,9 +18,17 @@ workspace(
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# TODO: b/383856665 - rules_fuchsia requires host_platform. Once this is fixed
+# we can remove this entry.
+load("@platforms//host:extension.bzl", "host_platform_repo")
 load(
     "//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl",
     "cipd_repository",
+)
+
+host_platform_repo(
+    name = "host_platform",
 )
 
 # Setup Fuchsia SDK.
@@ -31,9 +39,9 @@ load(
 git_repository(
     name = "fuchsia_infra",
     # ROLL: Warning: this entry is automatically updated.
-    # ROLL: Last updated 2024-11-16.
+    # ROLL: Last updated 2024-12-12.
     # ROLL: By https://cr-buildbucket.appspot.com/build/8731076857971632145.
-    commit = "a627dc11a73d74754d9a66a3b80b6f352c94d723",
+    commit = "77dd35e70dfeaa2bf239cf05490d0906fe472fef",
     remote = "https://fuchsia.googlesource.com/fuchsia-infra-bazel-rules",
 )
 
@@ -41,7 +49,7 @@ load("@fuchsia_infra//:workspace.bzl", "fuchsia_infra_workspace")
 
 fuchsia_infra_workspace()
 
-FUCHSIA_SDK_VERSION = "version:25.20241025.4.1"
+FUCHSIA_SDK_VERSION = "version:26.20241210.7.1"
 
 cipd_repository(
     name = "fuchsia_sdk",
@@ -49,7 +57,13 @@ cipd_repository(
     tag = FUCHSIA_SDK_VERSION,
 )
 
-register_toolchains("@fuchsia_sdk//:fuchsia_toolchain_sdk")
+cipd_repository(
+    name = "rules_fuchsia",
+    path = "fuchsia/development/rules_fuchsia",
+    tag = FUCHSIA_SDK_VERSION,
+)
+
+register_toolchains("//pw_toolchain/fuchsia:fuchsia_sdk_toolchain")
 
 cipd_repository(
     name = "fuchsia_products_metadata",

@@ -17,8 +17,8 @@
 # `--config=fuchsia` is explicitly specified.
 # This allows non-fuchsia globs like //... and all non-fuchsia-specific builders
 # to ignore the problematic fuchsia-specific targets.
-common --@fuchsia_sdk//fuchsia:fuchsia_targets_enabled=false
-common:fuchsia --@fuchsia_sdk//fuchsia:fuchsia_targets_enabled
+common --@rules_fuchsia//fuchsia:fuchsia_targets_enabled=false
+common:fuchsia --@rules_fuchsia//fuchsia:fuchsia_targets_enabled
 
 common:fuchsia --@pigweed//pw_assert:backend=@pigweed//pw_assert_fuchsia
 common:fuchsia --@pigweed//pw_assert:assert_backend_impl=@pigweed//pw_build:empty_cc_library
