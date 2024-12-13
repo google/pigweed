@@ -320,8 +320,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStop) {
   ASSERT_TRUE(session);
   EXPECT_TRUE(session->alive());
 
-  session->Stop();
-  EXPECT_FALSE(session->alive());
+  session.reset();
 
   RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
@@ -622,7 +621,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveSession) {
     // At this point the fake controller has updated its state but the discovery
     // manager has not processed the restarted scan. We should be able to remove
     // the current session and the state should ultimately become disabled.
-    session->Stop();
+    session.reset();
   });
 
   RunUntilIdle();
@@ -653,7 +652,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRemoveSessionDuringRestart) {
 
     // Stop the session before the discovery manager processes the event. It
     // should detect this and discontinue the scan.
-    session->Stop();
+    session.reset();
   });
 
   RunUntilIdle();
@@ -685,7 +684,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartRemoveAndAddSession) {
     // manager has not processed the restarted scan. We should be able to remove
     // the current session and create a new one and the state should update
     // accordingly.
-    session->Stop();
+    session.reset();
     discovery_manager()->StartDiscovery(/*active=*/true, cb);
   });
 
@@ -713,7 +712,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
 
   // Session 0 is interested in performing general discovery.
   std::unordered_set<DeviceAddress> peers_session0;
-  LowEnergyDiscoverySession::PeerFoundCallback result_cb =
+  LowEnergyDiscoverySession::PeerFoundFunction result_cb =
       [&peers_session0](const auto& peer) {
         peers_session0.insert(peer.address());
       };
@@ -822,7 +821,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
 
   // Session 0 is interested in performing general discovery.
   std::unordered_set<DeviceAddress> peers_session0;
-  LowEnergyDiscoverySession::PeerFoundCallback result_cb =
+  LowEnergyDiscoverySession::PeerFoundFunction result_cb =
       [&peers_session0](const auto& peer) {
         peers_session0.insert(peer.address());
       };
@@ -1020,7 +1019,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   discovery_manager()->set_scan_period(kTestScanPeriod);
 
   std::unordered_set<DeviceAddress> addresses_found;
-  LowEnergyDiscoverySession::PeerFoundCallback result_cb =
+  LowEnergyDiscoverySession::PeerFoundFunction result_cb =
       [&addresses_found](const auto& peer) {
         addresses_found.insert(peer.address());
       };
@@ -1477,7 +1476,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
 TEST_F(LowEnergyDiscoveryManagerTest,
        StopSessionInsideOfResultCallbackDoesNotCrash) {
   auto session = StartDiscoverySession(/*active=*/false);
-  auto result_cb = [&session](const auto&) { session->Stop(); };
+  auto result_cb = [&session](const auto&) { session.reset(); };
   session->SetResultCallback(std::move(result_cb));
   RunUntilIdle();
 

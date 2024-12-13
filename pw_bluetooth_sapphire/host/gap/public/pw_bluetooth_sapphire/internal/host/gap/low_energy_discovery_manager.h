@@ -47,8 +47,6 @@ class PeerCache;
 // Adapter's scan state for other procedures that require it (e.g. connection
 // establishment, pairing procedures, and other scan and advertising
 // procedures).
-// TODO(armansito): The last sentence of this paragraph hasn't been implemented
-// yet.
 //
 // An instance of LowEnergyDiscoveryManager can be initialized in either
 // "legacy" or "extended" mode. The legacy mode is intended for Bluetooth
@@ -125,7 +123,7 @@ class LowEnergyDiscoveryManager final
   LowEnergyDiscoveryManager(hci::LowEnergyScanner* scanner,
                             PeerCache* peer_cache,
                             pw::async::Dispatcher& dispatcher);
-  virtual ~LowEnergyDiscoveryManager();
+  ~LowEnergyDiscoveryManager() override;
 
   // Starts a new discovery session and reports the result via |callback|. If a
   // session has been successfully started the caller will receive a new
@@ -170,8 +168,6 @@ class LowEnergyDiscoveryManager final
   void AttachInspect(inspect::Node& parent, std::string name);
 
  private:
-  friend class LowEnergyDiscoverySession;
-
   enum class State {
     kIdle,
     kStarting,
@@ -293,9 +289,14 @@ class LowEnergyDiscoveryManager final
 
 class LowEnergyDiscoverySession final {
  public:
-  // Destroying a session instance automatically ends the session. To terminate
-  // a session, a client may either explicitly call Stop() or simply destroy
-  // this instance.
+  explicit LowEnergyDiscoverySession(
+      bool active,
+      PeerCache& peer_cache,
+      fit::function<void(LowEnergyDiscoverySession*)> on_stop_cb,
+      fit::function<const std::unordered_set<PeerId>&()>
+          cached_scan_results_fn);
+
+  // Destroying a session instance automatically ends the session.
   ~LowEnergyDiscoverySession();
 
   // Sets a callback for receiving notifications on discovered peers.
@@ -310,14 +311,20 @@ class LowEnergyDiscoverySession final {
   // Passive discovery sessions will call this callback for both directed and
   // undirected advertisements from known peers, while active discovery sessions
   // will ignore directed advertisements (as they are not from new peers).
-  using PeerFoundCallback = fit::function<void(const Peer& peer)>;
-  void SetResultCallback(PeerFoundCallback callback);
+  using PeerFoundFunction = fit::function<void(const Peer& peer)>;
+  void SetResultCallback(PeerFoundFunction callback);
+
+  // Called to deliver scan results.
+  void NotifyDiscoveryResult(const Peer& peer) const;
 
   // Sets a callback to get notified when the session becomes inactive due to an
   // internal error.
   void set_error_callback(fit::closure callback) {
-    error_callback_ = std::move(callback);
+    error_cb_ = std::move(callback);
   }
+
+  // Marks this session as inactive and notifies the error handler.
+  void NotifyError();
 
   // Returns the filter that belongs to this session. The caller may modify the
   // filter as desired. By default no peers are filtered.
@@ -325,10 +332,6 @@ class LowEnergyDiscoverySession final {
   // NOTE: The client is responsible for setting up the filter's "flags" field
   // for discovery procedures.
   DiscoveryFilter* filter() { return &filter_; }
-
-  // Ends this session. This instance will stop receiving notifications for
-  // peers.
-  void Stop();
 
   // Returns true if this session has not been stopped and has not errored.
   bool alive() const { return alive_; }
@@ -338,24 +341,14 @@ class LowEnergyDiscoverySession final {
   bool active() const { return active_; }
 
  private:
-  friend class LowEnergyDiscoveryManager;
-
-  // Called by LowEnergyDiscoveryManager.
-  explicit LowEnergyDiscoverySession(
-      bool active, LowEnergyDiscoveryManager::WeakPtr manager);
-
-  // Called by LowEnergyDiscoveryManager on newly discovered scan results.
-  void NotifyDiscoveryResult(const Peer& peer) const;
-
-  // Marks this session as inactive and notifies the error handler.
-  void NotifyError();
-
-  bool alive_;
+  bool alive_{true};
   bool active_;
-  LowEnergyDiscoveryManager::WeakPtr manager_;
-  fit::closure error_callback_;
-  PeerFoundCallback peer_found_callback_;
+  PeerCache& peer_cache_;
+  fit::callback<void()> error_cb_;
+  PeerFoundFunction peer_found_fn_;
   DiscoveryFilter filter_;
+  fit::callback<void(LowEnergyDiscoverySession*)> on_stop_cb_;
+  fit::function<const std::unordered_set<PeerId>&()> cached_scan_results_fn_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoverySession);
 };
