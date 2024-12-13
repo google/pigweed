@@ -39,6 +39,11 @@ template("rust_bindgen_action") {
     program = _bindgen_exe_path
     header = rebase_path(invoker.header, root_build_dir)
 
+    if (invoker.libclang_path) {
+      # Note `-isysroot` may not work properly when `LIBCLANG_PATH` is set.
+      env = [ "LIBCLANG_PATH=" + invoker.libclang_path ]
+    }
+
     outputs = [ output_gen_rs ]
     depfile = "$target_out_dir/${target_name}.d"
     args = [
