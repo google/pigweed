@@ -386,8 +386,10 @@ TEST(RfcommReadTest, BasicRead) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   struct {
     int rx_called = 0;
@@ -421,8 +423,10 @@ TEST(RfcommReadTest, ExtendedRead) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr size_t kPayloadSize = 0x80;
   struct {
@@ -464,8 +468,10 @@ TEST(RfcommReadTest, InvalidReads) {
       });
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr uint8_t kExpectedFcs = 0xFA;
   constexpr uint8_t kInvalidFcs = 0xFF;

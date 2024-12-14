@@ -94,7 +94,8 @@ TEST(Example, ExampleUsage) {
   // Container creates ProxyHost .
   ProxyHost proxy = ProxyHost(std::move(container_send_to_host_fn),
                               std::move(container_send_to_controller_fn),
-                              2);
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   // Container passes H4 packets from host through proxy. Proxy will in turn
   // call the container-provided `container_send_to_controller_fn` to pass them
@@ -143,8 +144,10 @@ TEST(PassthroughTest, ToControllerPassesEqualBuffer) {
   pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromHost(std::move(h4_packet));
 
@@ -185,8 +188,10 @@ TEST(PassthroughTest, ToHostPassesEqualBuffer) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -236,8 +241,10 @@ TEST(PassthroughTest, ToHostPassesEqualCommandComplete) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -283,8 +290,10 @@ TEST(BadPacketTest, BadH4TypeToControllerIsPassedOn) {
   pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromHost(std::move(h4_packet));
 
@@ -327,8 +336,10 @@ TEST(BadPacketTest, BadH4TypeToHostIsPassedOn) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -354,8 +365,10 @@ TEST(BadPacketTest, EmptyBufferToControllerIsPassedOn) {
   pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromHost(std::move(h4_packet));
 
@@ -378,8 +391,10 @@ TEST(BadPacketTest, EmptyBufferToHostIsPassedOn) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -423,8 +438,10 @@ TEST(BadPacketTest, TooShortEventToHostIsPassOn) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -483,8 +500,10 @@ TEST(BadPacketTest, TooShortCommandCompleteEventToHost) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -577,8 +596,10 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV1) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -624,8 +645,10 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveCreditsWithLEReadBufferSizeV2) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -671,8 +694,10 @@ TEST(ReserveLeAclCredits, ProxyCreditsCappedByControllerCredits) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 7);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/7,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -715,8 +740,10 @@ TEST(ReserveLeAclCredits, ProxyCreditsReserveZeroCredits) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -762,8 +789,10 @@ TEST(ReserveLeAclPackets, ProxyCreditsZeroWhenHostCreditsZero) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
@@ -782,8 +811,10 @@ TEST(ReserveLeAclPackets, ProxyCreditsZeroWhenNotInitialized) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
 
@@ -854,8 +885,10 @@ TEST(GattNotifyTest, Send1ByteAttribute) {
                   capture.attribute_value[0]);
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   // Allow proxy to reserve 1 credit.
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
@@ -939,8 +972,10 @@ TEST(GattNotifyTest, Send2ByteAttribute) {
                   capture.attribute_value[1]);
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   // Allow proxy to reserve 1 credit.
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
@@ -956,8 +991,10 @@ TEST(GattNotifyTest, ReturnsErrorIfAttributeTooLarge) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4 packet) { FAIL(); });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   // attribute_value 1 byte too large
   std::array<uint8_t,
@@ -976,8 +1013,10 @@ TEST(GattNotifyTest, ChannelIsNotConstructedIfParametersInvalid) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4 packet) { FAIL(); });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   EXPECT_EQ(proxy.SendGattNotify(123, 0, {}), PW_STATUS_INVALID_ARGUMENT);
   // connection_handle too large
@@ -1035,7 +1074,8 @@ TEST(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              kNumConnections);
+                              /*le_acl_credits_to_reserve=*/kNumConnections,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(
       SendLeReadBufferResponseFromController(proxy, kNumConnections));
   EXPECT_EQ(capture.sends_called, 1);
@@ -1126,8 +1166,10 @@ TEST(NumberOfCompletedPacketsTest, ManyMorePacketsCompletedThanPacketsPending) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 2));
   EXPECT_EQ(capture.sends_called, 1);
 
@@ -1203,8 +1245,10 @@ TEST(NumberOfCompletedPacketsTest, ProxyReclaimsOnlyItsUsedCredits) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 4);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/4,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 4));
   EXPECT_EQ(capture.sends_called, 1);
 
@@ -1278,8 +1322,10 @@ TEST(NumberOfCompletedPacketsTest, EventUnmodifiedIfNoCreditsInUse) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 10);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/10,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 10));
   EXPECT_EQ(capture.sends_called, 1);
 
@@ -1338,8 +1384,10 @@ TEST(NumberOfCompletedPacketsTest, HandlesUnusualEvents) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 10);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/10,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 10));
   EXPECT_EQ(capture.sends_called, 1);
 
@@ -1457,8 +1505,10 @@ TEST(DisconnectionCompleteTest, DisconnectionReclaimsCredits) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 10);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/10,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 10));
   EXPECT_EQ(capture.sends_called, 1);
 
@@ -1519,8 +1569,10 @@ TEST(DisconnectionCompleteTest, FailedDisconnectionHasNoEffect) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   std::array<uint8_t, 1> attribute_value = {0};
@@ -1548,8 +1600,10 @@ TEST(DisconnectionCompleteTest, DisconnectionOfUnusedConnectionHasNoEffect) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   std::array<uint8_t, 1> attribute_value = {0};
@@ -1601,8 +1655,10 @@ TEST(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
   EXPECT_EQ(capture.sends_called, 1);
 
@@ -1681,8 +1737,10 @@ TEST(ResetTest, ResetClearsActiveConnections) {
         ++controller_capture.sends_called;
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 2));
   EXPECT_EQ(host_capture.sends_called, 1);
 
@@ -1728,8 +1786,10 @@ TEST(ResetTest, ProxyHandlesMultipleResets) {
         ++sends_called;
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
   proxy.Reset();
@@ -1772,8 +1832,10 @@ TEST(ResetTest, HandleHciReset) {
         ++controller_capture.sends_called;
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 2);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/2,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 2));
   EXPECT_EQ(host_capture.sends_called, 1);
 
@@ -1825,7 +1887,8 @@ TEST(MultiSendTest, CanOccupyAllThenReuseEachBuffer) {
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              2 * kMaxSends);
+                              /*le_acl_credits_to_reserve=*/2 * kMaxSends,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   // Allow proxy to reserve enough credits to send twice the number of
   // simultaneous sends supported by proxy.
   PW_TEST_EXPECT_OK(
@@ -1879,7 +1942,8 @@ TEST(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              2 * kMaxSends);
+                              /*le_acl_credits_to_reserve=*/2 * kMaxSends,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(
       SendLeReadBufferResponseFromController(proxy, 2 * kMaxSends));
 
@@ -1920,7 +1984,9 @@ TEST(MultiSendTest, CanSendOverManyDifferentConnections) {
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              ProxyHost::GetMaxNumAclConnections());
+                              ProxyHost::GetMaxNumAclConnections(),
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
       proxy, ProxyHost::GetMaxNumAclConnections()));
 
@@ -1948,8 +2014,11 @@ TEST(MultiSendTest, AttemptToSendOverMaxConnectionsFails) {
         ++capture.sends_called;
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), kSends);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/kSends,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, kSends));
 
   for (uint16_t send = 1; send <= ProxyHost::GetMaxNumAclConnections();
@@ -1983,8 +2052,11 @@ TEST(MultiSendTest, ResetClearsBuffOccupiedFlags) {
         capture.released_packets[capture.sends_called++] = std::move(packet);
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), kMaxSends);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/kMaxSends,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, kMaxSends));
 
   std::array<uint8_t, 1> attribute_value = {0xF};
@@ -2063,8 +2135,10 @@ TEST(BasicL2capChannelTest, BasicWrite) {
         }
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   // Allow proxy to reserve 1 LE credit.
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
@@ -2088,8 +2162,10 @@ TEST(BasicL2capChannelTest, ErrorOnWriteTooLarge) {
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       [](H4PacketWithH4&&) { FAIL(); });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   // Allow proxy to reserve 1 credit.
   PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 1));
 
@@ -2117,8 +2193,10 @@ TEST(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       [](H4PacketWithH4&&) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   // Connection handle too large by 1.
   EXPECT_EQ(
@@ -2152,8 +2230,10 @@ TEST(BasicL2capChannelTest, BasicRead) {
       [](H4PacketWithHci&&) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       [](H4PacketWithH4&&) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   struct {
     int sends_called = 0;
@@ -2219,8 +2299,10 @@ TEST(L2capCocTest, CannotCreateChannelWithInvalidArgs) {
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       [](H4PacketWithH4&&) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   // Connection handle too large by 1.
   EXPECT_EQ(
@@ -2348,8 +2430,10 @@ TEST(L2capCocWriteTest, BasicWrite) {
         }
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   // Allow proxy to reserve 1 credit.
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
@@ -2365,8 +2449,10 @@ TEST(L2capCocWriteTest, ErrorOnWriteToStoppedChannel) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   // Allow proxy to reserve 1 credit.
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
@@ -2392,8 +2478,10 @@ TEST(L2capCocWriteTest, TooLargeWritesFail) {
         ++sends_called;
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   // Allow proxy to reserve 1 credit.
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
@@ -2439,8 +2527,10 @@ TEST(L2capCocWriteTest, MultipleWritesSameChannel) {
       });
 
   uint16_t num_writes = 5;
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), num_writes);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/num_writes,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
       proxy,
       /*num_credits_to_reserve=*/num_writes));
@@ -2480,7 +2570,8 @@ TEST(L2capCocWriteTest, MultipleWritesMultipleChannels) {
   constexpr uint16_t kNumChannels = 5;
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              kNumChannels);
+                              /*le_acl_credits_to_reserve=*/kNumChannels,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
       proxy,
       /*num_credits_to_reserve=*/kNumChannels));
@@ -2519,8 +2610,10 @@ TEST(L2capCocReadTest, BasicRead) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   struct {
     int sends_called = 0;
@@ -2666,8 +2759,10 @@ TEST(L2capCocReadTest, TooShortAclPassedToHost) {
       });
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t handle = 123;
   uint16_t local_cid = 234;
@@ -2700,8 +2795,10 @@ TEST(L2capCocReadTest, ChannelClosedWithErrorIfMtuExceeded) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t handle = 123;
   uint16_t local_cid = 234;
@@ -2748,8 +2845,10 @@ TEST(L2capCocReadTest, ChannelClosedWithErrorIfMpsExceeded) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t handle = 123;
   uint16_t local_cid = 234;
@@ -2796,8 +2895,10 @@ TEST(L2capCocReadTest, ChannelClosedWithErrorIfPayloadsExceedSduLength) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t handle = 123;
   uint16_t local_cid = 234;
@@ -2866,8 +2967,10 @@ TEST(L2capCocReadTest, NoReadOnStoppedChannel) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t handle = 123;
   uint16_t local_cid = 234;
@@ -2903,8 +3006,10 @@ TEST(L2capCocReadTest, NoReadOnSameCidDifferentConnectionHandle) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t local_cid = 234;
   L2capCoc channel = BuildCoc(
@@ -2937,8 +3042,10 @@ TEST(L2capCocReadTest, MultipleReadsSameChannel) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   struct {
     int sends_called = 0;
@@ -2997,8 +3104,10 @@ TEST(L2capCocReadTest, MultipleReadsMultipleChannels) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   struct {
     int sends_called = 0;
@@ -3076,8 +3185,10 @@ TEST(L2capCocReadTest, ChannelStoppageDoNotAffectOtherChannels) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   struct {
     int sends_called = 0;
@@ -3161,8 +3272,10 @@ TEST(L2capCocReadTest, ReadDropsSduSentOver2Segments) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   int sends_called = 0;
   uint16_t local_cid = 234;
@@ -3236,8 +3349,10 @@ TEST(L2capCocReadTest, ReadDropsSduSentOver4Segments) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   int sends_called = 0;
   uint16_t handle = 123;
@@ -3323,8 +3438,10 @@ TEST(L2capCocReadTest, NonCocAclPacketPassesThroughToHost) {
       });
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   // Acquire unused CoC to validate that doing so does not interfere.
   L2capCoc channel = BuildCoc(
@@ -3371,8 +3488,10 @@ TEST(L2capCocReadTest, FragmentedPduStopsChannelWithoutDisruptingOtherChannel) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   int events_called = 0;
   uint16_t handle = 123;
@@ -3479,8 +3598,10 @@ TEST(L2capCocReadTest, UnexpectedContinuingFragmentStopsChannel) {
       [](H4PacketWithHci&&) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       [](H4PacketWithH4&&) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   int events_received = 0;
   uint16_t handle = 123;
@@ -3525,8 +3646,10 @@ TEST(L2capCocReadTest, AclFrameWithIncompleteL2capHeaderForwardedToHost) {
       });
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t handle = 123;
   L2capCoc channel = BuildCoc(proxy, CocParameters{.handle = handle});
@@ -3551,8 +3674,10 @@ TEST(L2capCocReadTest, FragmentedPduDoesNotInterfereWithOtherChannels) {
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 0);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t handle_frag = 0x123, handle_fine = 0x234;
   uint16_t cid_frag = 0x345, cid_fine = 0x456;
@@ -3673,9 +3798,11 @@ TEST(L2capCocQueueTest, ReadBufferResponseDrainsQueue) {
       [&sends_called]([[maybe_unused]] H4PacketWithH4&& packet) {
         ++sends_called;
       });
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              L2capCoc::QueueCapacity());
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn),
+                std::move(send_to_controller_fn),
+                /*le_acl_credits_to_reserve=*/L2capCoc::QueueCapacity(),
+                /*br_edr_acl_credits_to_reserve=*/0);
 
   L2capCoc channel =
       BuildCoc(proxy, CocParameters{.tx_credits = L2capCoc::QueueCapacity()});
@@ -3702,9 +3829,11 @@ TEST(L2capCocQueueTest, NocpEventDrainsQueue) {
       [&sends_called]([[maybe_unused]] H4PacketWithH4&& packet) {
         ++sends_called;
       });
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              L2capCoc::QueueCapacity());
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn),
+                std::move(send_to_controller_fn),
+                /*le_acl_credits_to_reserve=*/L2capCoc::QueueCapacity(),
+                /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(
       SendLeReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
 
@@ -3740,9 +3869,11 @@ TEST(L2capCocQueueTest, RemovingLrdChannelDoesNotInvalidateRoundRobin) {
       [&sends_called]([[maybe_unused]] H4PacketWithH4&& packet) {
         ++sends_called;
       });
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              L2capCoc::QueueCapacity());
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn),
+                std::move(send_to_controller_fn),
+                /*le_acl_credits_to_reserve=*/L2capCoc::QueueCapacity(),
+                /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(
       SendLeReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), L2capCoc::QueueCapacity());
@@ -3803,9 +3934,11 @@ TEST(L2capSignalingTest, FlowControlCreditIndDrainsQueue) {
       [&sends_called]([[maybe_unused]] H4PacketWithH4&& packet) {
         ++sends_called;
       });
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              L2capCoc::QueueCapacity());
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn),
+                std::move(send_to_controller_fn),
+                /*le_acl_credits_to_reserve=*/L2capCoc::QueueCapacity(),
+                /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(
       SendLeReadBufferResponseFromController(proxy, L2capCoc::QueueCapacity()));
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), L2capCoc::QueueCapacity());
@@ -3868,9 +4001,11 @@ TEST(L2capSignalingTest, ChannelClosedWithErrorIfCreditsExceeded) {
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              L2capCoc::QueueCapacity());
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn),
+                std::move(send_to_controller_fn),
+                /*le_acl_credits_to_reserve=*/L2capCoc::QueueCapacity(),
+                /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t handle = 123;
   uint16_t remote_cid = 456;
@@ -3936,9 +4071,11 @@ TEST(L2capSignalingTest, CreditIndAddressedToNonManagedChannelForwardedToHost) {
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       [](H4PacketWithH4&&) {});
 
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              L2capCoc::QueueCapacity());
+  ProxyHost proxy =
+      ProxyHost(std::move(send_to_host_fn),
+                std::move(send_to_controller_fn),
+                /*le_acl_credits_to_reserve=*/L2capCoc::QueueCapacity(),
+                /*br_edr_acl_credits_to_reserve=*/0);
 
   uint16_t handle = 123;
   uint16_t remote_cid = 456;
@@ -4029,8 +4166,10 @@ TEST(L2capSignalingTest, RxAdditionalCreditsSent) {
         EXPECT_EQ(ind.credits().Read(), capture.credits);
       });
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
   // Allow proxy to reserve 1 LE credit.
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
@@ -4055,8 +4194,10 @@ TEST(AcluSignalingChannelTest, HandlesMultipleCommands) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr uint16_t kHandle = 123;
 
@@ -4128,8 +4269,10 @@ TEST(AcluSignalingChannelTest, InvalidPacketForwarded) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
-  ProxyHost proxy = ProxyHost(
-      std::move(send_to_host_fn), std::move(send_to_controller_fn), 1);
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr uint16_t kHandle = 123;
 
@@ -4181,7 +4324,8 @@ TEST(ProxyHostConnectionEventTest, ConnectionCompletePassthroughOk) {
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0);
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   PW_TEST_EXPECT_OK(
       SendConnectionCompleteEvent(proxy, 1, emboss::StatusCode::SUCCESS));
@@ -4204,7 +4348,8 @@ TEST(ProxyHostConnectionEventTest,
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0);
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   PW_TEST_EXPECT_OK(SendConnectionCompleteEvent(
       proxy, 1, emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED));
@@ -4223,7 +4368,8 @@ TEST(ProxyHostConnectionEventTest, LeConnectionCompletePassthroughOk) {
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0);
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   PW_TEST_EXPECT_OK(
       SendLeConnectionCompleteEvent(proxy, 1, emboss::StatusCode::SUCCESS));
@@ -4239,7 +4385,8 @@ TEST(ProxyHostEventTest, L2capEventsCalled) {
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0);
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr uint16_t kPsm = 1;
   constexpr uint16_t kSourceCid = 30;
@@ -4344,7 +4491,8 @@ TEST(ProxyHostEventTest, HciDisconnectionAlertsListeners) {
       [](H4PacketWithHci&&) {});
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0);
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr uint16_t kPsm = 1;
 
@@ -4407,7 +4555,8 @@ TEST(ProxyHostEventTest, HciDisconnectionFromControllerClosesChannels) {
       [](H4PacketWithHci&&) {});
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0);
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr uint16_t kHandle = 0x123;
   constexpr uint16_t kStartingCid = 0x111;
@@ -4459,7 +4608,8 @@ TEST(ProxyHostEventTest, L2capDisconnectionRspFromHostClosesChannels) {
       [](H4PacketWithHci&&) {});
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0);
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr uint16_t kHandle = 0x123;
   constexpr uint16_t kStartingCid = 0x111;
@@ -4517,7 +4667,8 @@ TEST(ProxyHostEventTest, HciDisconnectionFromHostClosesChannels) {
       [](H4PacketWithHci&&) {});
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0);
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr uint16_t kHandle = 0x123;
   constexpr uint16_t kStartingCid = 0x111;
@@ -4564,7 +4715,8 @@ TEST(ProxyHostEventTest, L2capDisconnectionRspFromControllerClosesChannels) {
       [](H4PacketWithHci&&) {});
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0);
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr uint16_t kHandle = 0x123;
   constexpr uint16_t kStartingCid = 0x111;

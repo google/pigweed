@@ -42,7 +42,8 @@ void UsePassthroughProxy() {
 
   ProxyHost proxy = ProxyHost(std::move(container_send_to_host_fn),
                               std::move(container_send_to_controller_fn),
-                              0);
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
 
   proxy.HandleH4HciFromHost(std::move(h4_span_from_host));
 

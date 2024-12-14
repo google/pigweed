@@ -35,10 +35,14 @@ class ProxyHost {
   /// to send HCI packet towards the host.
   /// @param[in] send_to_controller_fn - Callback that will be called when
   /// proxy wants to send HCI packet towards the controller.
+  /// @param[in] le_acl_credits_to_reserve - How many buffers to reserve for the
+  /// proxy out of any LE ACL buffers received from controller.
+  /// @param[in] br_edr_acl_credits_to_reserve - How many buffers to reserve for
+  /// the proxy out of any BR/EDR ACL buffers received from controller.
   ProxyHost(pw::Function<void(H4PacketWithHci&& packet)>&& send_to_host_fn,
             pw::Function<void(H4PacketWithH4&& packet)>&& send_to_controller_fn,
             uint16_t le_acl_credits_to_reserve,
-            uint16_t br_edr_acl_credits_to_reserve = 0);
+            uint16_t br_edr_acl_credits_to_reserve);
 
   ProxyHost() = delete;
   ProxyHost(const ProxyHost&) = delete;
