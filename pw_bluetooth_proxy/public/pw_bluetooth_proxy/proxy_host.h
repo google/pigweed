@@ -273,9 +273,6 @@ class ProxyHost {
   /// has not yet or has been unable to reserve credits from the host.
   bool HasSendLeAclCapability() const;
 
-  /// @deprecated Use HasSendLeAclCapability
-  bool HasSendAclCapability() const { return HasSendLeAclCapability(); }
-
   /// Indicates whether the proxy has the capability of sending BR/EDR ACL
   /// packets. Note that this indicates intention, so it can be true even if the
   /// proxy has not yet or has been unable to reserve credits from the host.
