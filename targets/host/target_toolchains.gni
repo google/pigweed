@@ -86,6 +86,7 @@ _linux_config = {
   pw_bloat_BLOATY_CONFIG = get_path_info("linux.bloaty", "abspath")
   pw_unit_test_AUTOMATIC_RUNNER = get_path_info("run_test", "abspath")
   pw_async2_DISPATCHER_BACKEND = "$dir_pw_async2_epoll:dispatcher_backend"
+  pw_rust_ENABLE_EXPERIMENTAL_BUILD = true
 }
 
 # macOS-specific target configuration.
