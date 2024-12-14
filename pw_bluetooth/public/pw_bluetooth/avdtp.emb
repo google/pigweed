@@ -201,11 +201,12 @@ struct StreamEndPointDiscoveryCommand:
   0 [+2]  SignalingHeader  signaling_header
 
 
-struct StreamEndPointDiscoveryResponse:
+struct StreamEndPointDiscoveryResponse(length: UInt:32):
   -- Cf. 8.6.2 AVDTP_DISCOVER_RSP
   [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
-  0 [+2]  SignalingHeader  signaling_header
-  1 [+2]  Sep              acp_sep
+  let seps_size = length-SignalingHeader.$size_in_bytes
+  0     [+2]          SignalingHeader  signaling_header
+  $next [+seps_size]  Sep[]            others_acp_sep
 
 
 struct StreamEndPointDiscoveryReject:
