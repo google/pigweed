@@ -2305,55 +2305,16 @@ TEST(L2capCocTest, CannotCreateChannelWithInvalidArgs) {
                               /*br_edr_acl_credits_to_reserve=*/0);
 
   // Connection handle too large by 1.
-  EXPECT_EQ(
-      proxy
-          .AcquireL2capCoc(
-              /*connection_handle=*/0x0FFF,
-              /*rx_config=*/
-              {.cid = 0x123, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
-              /*tx_config=*/
-              {.cid = 0x123, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
-              /*receive_fn=*/nullptr,
-              // TODO: https://pwbug.dev/382783733 - Remove cast after ambiguous
-              // Acquire method deleted.
-              /*event_fn=*/
-              static_cast<Function<void(L2capChannelEvent event)>>(nullptr))
-          .status(),
-      PW_STATUS_INVALID_ARGUMENT);
+  EXPECT_EQ(BuildCocWithResult(proxy, CocParameters{.handle = 0x0FFF}).status(),
+            PW_STATUS_INVALID_ARGUMENT);
 
   // Local CID invalid (0).
-  EXPECT_EQ(
-      proxy
-          .AcquireL2capCoc(
-              /*connection_handle=*/0x123,
-              /*rx_config=*/
-              {.cid = 0, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
-              /*tx_config=*/
-              {.cid = 0x123, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
-              /*receive_fn=*/nullptr,
-              // TODO: https://pwbug.dev/382783733 - Remove cast after ambiguous
-              // Acquire method deleted.
-              /*event_fn=*/
-              static_cast<Function<void(L2capChannelEvent event)>>(nullptr))
-          .status(),
-      PW_STATUS_INVALID_ARGUMENT);
+  EXPECT_EQ(BuildCocWithResult(proxy, CocParameters{.local_cid = 0}).status(),
+            PW_STATUS_INVALID_ARGUMENT);
 
   // Remote CID invalid (0).
-  EXPECT_EQ(
-      proxy
-          .AcquireL2capCoc(
-              /*connection_handle=*/0x123,
-              /*rx_config=*/
-              {.cid = 0x123, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
-              /*tx_config=*/
-              {.cid = 0, .mtu = 0x123, .mps = 0x123, .credits = 0x123},
-              /*receive_fn=*/nullptr,
-              // TODO: https://pwbug.dev/382783733 - Remove cast after ambiguous
-              // Acquire method deleted.
-              /*event_fn=*/
-              static_cast<Function<void(L2capChannelEvent event)>>(nullptr))
-          .status(),
-      PW_STATUS_INVALID_ARGUMENT);
+  EXPECT_EQ(BuildCocWithResult(proxy, CocParameters{.remote_cid = 0}).status(),
+            PW_STATUS_INVALID_ARGUMENT);
 }
 
 // ########## L2capCocWriteTest

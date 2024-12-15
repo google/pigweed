@@ -313,21 +313,25 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
   return OkStatus();
 }
 
-// Open and return an L2CAP connection-oriented channel managed by `proxy`.
+pw::Result<L2capCoc> BuildCocWithResult(ProxyHost& proxy,
+                                        CocParameters params) {
+  return proxy.AcquireL2capCoc(params.handle,
+                               {.cid = params.local_cid,
+                                .mtu = params.rx_mtu,
+                                .mps = params.rx_mps,
+                                .credits = params.rx_credits},
+                               {.cid = params.remote_cid,
+                                .mtu = params.tx_mtu,
+                                .mps = params.tx_mps,
+                                .credits = params.tx_credits},
+                               std::move(params.receive_fn),
+                               std::move(params.event_fn),
+                               std::move(params.queue_space_available_fn));
+}
+
 L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params) {
-  pw::Result<L2capCoc> channel =
-      proxy.AcquireL2capCoc(params.handle,
-                            {.cid = params.local_cid,
-                             .mtu = params.rx_mtu,
-                             .mps = params.rx_mps,
-                             .credits = params.rx_credits},
-                            {.cid = params.remote_cid,
-                             .mtu = params.tx_mtu,
-                             .mps = params.tx_mps,
-                             .credits = params.tx_credits},
-                            std::move(params.receive_fn),
-                            std::move(params.event_fn),
-                            std::move(params.queue_space_available_fn));
+  pw::Result<L2capCoc> channel = BuildCocWithResult(proxy, std::move(params));
+  PW_TEST_EXPECT_OK(channel);
   return std::move(channel.value());
 }
 
@@ -341,6 +345,7 @@ BasicL2capChannel BuildBasicL2capChannel(ProxyHost& proxy,
       std::move(params.payload_from_controller_fn),
       std::move(params.queue_space_available_fn),
       std::move(params.event_fn));
+  PW_TEST_EXPECT_OK(channel);
   return std::move(channel.value());
 }
 

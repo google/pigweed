@@ -193,7 +193,10 @@ struct CocParameters {
   pw::Function<void()>&& queue_space_available_fn = nullptr;
 };
 
-// Open and return an L2CAP connection-oriented channel managed by `proxy`.
+// Attempt to AcquireL2capCoc and return result.
+pw::Result<L2capCoc> BuildCocWithResult(ProxyHost& proxy, CocParameters params);
+
+// Acquire L2capCoc and return result.
 L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params);
 
 struct BasicL2capParameters {
