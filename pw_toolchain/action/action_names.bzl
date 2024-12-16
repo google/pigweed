@@ -11,15 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Custom toolchain action names unique to Pigweed."""
 
-load("@rules_cc//cc/toolchains:actions.bzl", "cc_action_type")
-load(":action_names.bzl", "PW_ACTION_NAMES")
+PW_OBJDUMP_DISASSEMBLE = "objdump-disassemble"
 
-package(default_visibility = ["//visibility:public"])
-
-# TODO: https://pwbug.dev/367352331 - Rename and upstream this to Bazel
-# (rules_cc, bazeltools).
-cc_action_type(
-    name = "objdump_disassemble",
-    action_name = PW_ACTION_NAMES.objdump_disassemble,
+PW_ACTION_NAMES = struct(
+    objdump_disassemble = PW_OBJDUMP_DISASSEMBLE,
 )

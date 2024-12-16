@@ -58,7 +58,7 @@ COMMON_TOOLS = {
     "@rules_cc//cc/toolchains/actions:cpp_compile_actions": ":clang++",
     "@rules_cc//cc/toolchains/actions:link_actions": ":lld",
     "@rules_cc//cc/toolchains/actions:objcopy_embed_data": ":llvm-objcopy",
-    "@pigweed//pw_toolchain/action:objdump": ":llvm-objdump",
+    "@pigweed//pw_toolchain/action:objdump_disassemble": ":llvm-objdump",
     "@rules_cc//cc/toolchains/actions:strip": ":llvm-strip",
 }
 

@@ -13,6 +13,7 @@
 # the License.
 
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
+load("@pigweed//pw_toolchain/action:action_names.bzl", "PW_ACTION_NAMES")
 load("//actions:defs.bzl", "pw_cc_action_name", "pw_cc_action_name_set")
 
 package(default_visibility = ["//visibility:public"])
@@ -152,7 +153,7 @@ pw_cc_action_name(
 # This action name isn't yet a well-known action name.
 pw_cc_action_name(
     name = "objdump_embed_data",
-    action_name = "objdump_embed_data",
+    action_name = PW_ACTION_NAMES.objdump_disassemble,
 )
 
 pw_cc_action_name_set(

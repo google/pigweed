@@ -32,7 +32,7 @@ cc_tool_map(
         "@rules_cc//cc/toolchains/actions:cpp_compile_actions": ":arm-none-eabi-g++",
         "@rules_cc//cc/toolchains/actions:link_actions": ":arm-none-eabi-ld",
         "@rules_cc//cc/toolchains/actions:objcopy_embed_data": ":arm-none-eabi-objcopy",
-        "@pigweed//pw_toolchain/action:objdump": ":arm-none-eabi-objdump",
+        "@pigweed//pw_toolchain/action:objdump_disassemble": ":arm-none-eabi-objdump",
         "@rules_cc//cc/toolchains/actions:strip": ":arm-none-eabi-strip",
         "@rules_cc//cc/toolchains/actions:ar_actions": ":arm-none-eabi-ar"
     },

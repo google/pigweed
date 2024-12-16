@@ -13,8 +13,9 @@
 # the License.
 """Rules for processing binary executables."""
 
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "ACTION_NAMES")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
-load("@pw_toolchain//actions:providers.bzl", "ActionNameInfo")
+load("//pw_toolchain/action:action_names.bzl", "PW_ACTION_NAMES")
 
 def _run_action_on_executable(
         ctx,
@@ -62,7 +63,9 @@ def _run_action_on_executable(
 def _pw_elf_to_bin_impl(ctx):
     return _run_action_on_executable(
         ctx = ctx,
-        action_name = ctx.attr._objcopy[ActionNameInfo].name,
+        # TODO: https://github.com/bazelbuild/rules_cc/issues/292 - Add a helper
+        # to rules cc to make it possible to get this from ctx.attr._objcopy.
+        action_name = ACTION_NAMES.objcopy_embed_data,
         action_args = "{args} {input} {output}".format(
             args = "-Obinary",
             input = ctx.executable.elf_input.path,
@@ -84,8 +87,7 @@ pw_elf_to_bin = rule(
         "bin_out": attr.output(mandatory = True),
         "elf_input": attr.label(mandatory = True, executable = True, cfg = "target"),
         "_objcopy": attr.label(
-            default = "@pw_toolchain//actions:objcopy_embed_data",
-            providers = [ActionNameInfo],
+            default = "@rules_cc//cc/toolchains/actions:objcopy_embed_data",
         ),
     },
     executable = True,
@@ -96,7 +98,9 @@ pw_elf_to_bin = rule(
 def _pw_elf_to_dump_impl(ctx):
     return _run_action_on_executable(
         ctx = ctx,
-        action_name = ctx.attr._objdump[ActionNameInfo].name,
+        # TODO: https://github.com/bazelbuild/rules_cc/issues/292 - Add a helper
+        # to rules cc to make it possible to get this from ctx.attr._objdump.
+        action_name = PW_ACTION_NAMES.objdump_disassemble,
         action_args = "{args} {input} > {output}".format(
             args = "-dx",
             input = ctx.executable.elf_input.path,
@@ -116,8 +120,7 @@ pw_elf_to_dump = rule(
         "dump_out": attr.output(mandatory = True),
         "elf_input": attr.label(mandatory = True, executable = True, cfg = "target"),
         "_objdump": attr.label(
-            default = "@pw_toolchain//actions:objdump_embed_data",
-            providers = [ActionNameInfo],
+            default = "//pw_toolchain/action:objdump_disassemble",
         ),
     },
     toolchains = use_cpp_toolchain(),
