@@ -751,6 +751,7 @@ sphinx_docs_library(
         "Kconfig",
         "cli.rst",
         "docs.rst",
+        "system_async_test.cc",
     ],
     prefix = "pw_system/",
     target_compatible_with = incompatible_with_mcu(),

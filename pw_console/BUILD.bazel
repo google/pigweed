@@ -25,7 +25,7 @@ sphinx_docs_library(
         "internals.rst",
         "plugins.rst",
         "testing.rst",
-        "//pw_console/py:pw_console/docs/user_guide.rst",
+        "//pw_console/py:docs",
     ],
     prefix = "pw_console/",
     target_compatible_with = incompatible_with_mcu(),

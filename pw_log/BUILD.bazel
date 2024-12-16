@@ -259,6 +259,7 @@ sphinx_docs_library(
     srcs = [
         "backends.rst",
         "docs.rst",
+        "log.proto",
         "protobuf.rst",
         "tokenized_args.rst",
     ],

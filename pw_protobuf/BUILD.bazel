@@ -409,6 +409,8 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        "pw_protobuf_test_protos/size_report.proto",
+        "pw_protobuf_test_protos/size_report.pwpb_options",
         "size_report.rst",
     ],
     prefix = "pw_protobuf/",

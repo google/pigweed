@@ -62,18 +62,19 @@ pw_cc_test(
     ],
 )
 
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "docs.rst",
-    ],
-    prefix = "pw_elf/",
-    target_compatible_with = incompatible_with_mcu(),
-)
-
 filegroup(
     name = "doxygen",
     srcs = [
         "public/pw_elf/reader.h",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+        "//pw_elf/examples:docs",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
 )

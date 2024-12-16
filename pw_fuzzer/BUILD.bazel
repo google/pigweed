@@ -95,6 +95,7 @@ sphinx_docs_library(
         "guides/fuzztest.rst",
         "guides/libfuzzer.rst",
         "guides/reproducing_oss_fuzz_bugs.rst",
+        "//pw_fuzzer/examples/fuzztest:docs",
     ],
     prefix = "pw_fuzzer/",
     target_compatible_with = incompatible_with_mcu(),

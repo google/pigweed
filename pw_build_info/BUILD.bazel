@@ -142,6 +142,8 @@ pw_cc_test(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "add_build_id_to_default_linker_script.ld",
+        "build_id_linker_snippet.ld",
         "docs.rst",
     ],
     prefix = "pw_build_info/",

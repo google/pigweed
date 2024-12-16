@@ -153,6 +153,7 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        "public/pw_thread_stl/test_thread_context_native.h",
     ],
     prefix = "pw_thread_stl/",
     target_compatible_with = incompatible_with_mcu(),

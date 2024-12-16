@@ -64,6 +64,7 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "Kconfig",
+        "c_test.c",
         "docs.rst",
     ],
     prefix = "pw_polyfill/",

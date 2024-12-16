@@ -475,6 +475,7 @@ sphinx_docs_library(
     srcs = [
         "Kconfig",
         "docs.rst",
+        "//pw_containers/examples:docs",
     ],
     prefix = "pw_containers/",
     target_compatible_with = incompatible_with_mcu(),

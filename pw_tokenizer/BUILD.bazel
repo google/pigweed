@@ -370,6 +370,7 @@ sphinx_docs_library(
         "api.rst",
         "detokenization.rst",
         "docs.rst",
+        "enum_test.cc",
         "get_started.rst",
         "token_databases.rst",
         "tokenization.rst",

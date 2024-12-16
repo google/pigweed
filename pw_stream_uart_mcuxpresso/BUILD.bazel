@@ -83,6 +83,8 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        "interrupt_safe_writer_example.cc",
+        "stream_example.cc",
     ],
     prefix = "pw_stream_uart_mcuxpresso/",
     target_compatible_with = incompatible_with_mcu(),

@@ -132,6 +132,7 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        "proxy_host_test.cc",
     ],
     prefix = "pw_bluetooth_proxy/",
     target_compatible_with = incompatible_with_mcu(),

@@ -54,6 +54,7 @@ filegroup(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "builder_test.cc",
         "docs.rst",
     ],
     prefix = "pw_json/",

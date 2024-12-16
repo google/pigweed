@@ -13,6 +13,8 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -264,4 +266,16 @@ pw_py_test(
     deps = [
         ":pw_console",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "pw_console/docs/user_guide.rst",
+        "pw_console/plugins/calc_pane.py",
+        "pw_console/plugins/clock_pane.py",
+        "pw_console/plugins/twenty48_pane.py",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
 )

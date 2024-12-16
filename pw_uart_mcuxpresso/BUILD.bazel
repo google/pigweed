@@ -51,6 +51,7 @@ pw_cc_test(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "dma_uart_example.cc",
         "docs.rst",
     ],
     prefix = "pw_uart_mcuxpresso/",

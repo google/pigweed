@@ -242,6 +242,7 @@ pw_cc_test(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "assert_test.cc",
         "backends.rst",
         "docs.rst",
     ],

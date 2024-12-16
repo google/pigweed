@@ -61,6 +61,7 @@ sphinx_docs_library(
     srcs = [
         "api.rst",
         "docs.rst",
+        "examples.cc",
         "examples.rst",
         "implementations.rst",
     ],

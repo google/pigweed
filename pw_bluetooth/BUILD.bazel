@@ -402,6 +402,7 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        "emboss_test.cc",
     ],
     prefix = "pw_bluetooth/",
     target_compatible_with = incompatible_with_mcu(),

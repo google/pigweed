@@ -296,6 +296,7 @@ sphinx_docs_library(
     srcs = [
         "api.rst",
         "docs.rst",
+        "transfer.proto",
     ],
     prefix = "pw_transfer/",
     target_compatible_with = incompatible_with_mcu(),

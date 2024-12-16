@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -164,4 +166,23 @@ pw_cc_test(
         "//pw_thread:thread",
         "//pw_thread:thread_core",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "basic.cc",
+        "block_allocator.cc",
+        "custom_allocator.cc",
+        "custom_allocator.h",
+        "custom_allocator_perf_test.cc",
+        "custom_allocator_test.cc",
+        "custom_allocator_test_harness.h",
+        "linker_sections.cc",
+        "metrics.cc",
+        "pmr.cc",
+        "size_report.cc",
+        "spin_lock.cc",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
 )

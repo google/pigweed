@@ -565,10 +565,13 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "Kconfig",
+        "benchmark.proto",
         "cpp.rst",
         "design.rst",
         "docs.rst",
+        "echo.proto",
         "guides.rst",
+        "internal/packet.proto",
         "libraries.rst",
         "protocol.rst",
         "ts/docs.rst",

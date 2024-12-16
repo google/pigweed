@@ -13,6 +13,8 @@
 # the License.
 
 load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -235,4 +237,13 @@ pw_py_test(
         ":pw_project_builder",
         "@python_packages//parameterized",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "gn_tests/BUILD.gn",
+        "pw_build/generate_python_wheel_cache.py",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
 )

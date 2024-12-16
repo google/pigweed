@@ -374,13 +374,12 @@ sphinx_docs_library(
         "backends.rst",
         "docs.rst",
         "guides.rst",
+        "public/pw_async2/coro.h",
         "reference.rst",
+        "//pw_async2/examples:docs",
     ],
     prefix = "pw_async2/",
     target_compatible_with = incompatible_with_mcu(),
-    deps = [
-        "//pw_async2/examples:docs",
-    ],
 )
 
 filegroup(

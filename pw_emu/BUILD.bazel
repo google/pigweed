@@ -26,6 +26,8 @@ sphinx_docs_library(
         "design.rst",
         "docs.rst",
         "guide.rst",
+        "qemu-lm3s6965evb.json",
+        "renode-stm32f4_discovery.json",
     ],
     prefix = "pw_emu/",
     target_compatible_with = incompatible_with_mcu(),

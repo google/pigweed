@@ -116,6 +116,7 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        "//pw_digital_io_linux/examples:docs",
     ],
     prefix = "pw_digital_io_linux/",
     target_compatible_with = incompatible_with_mcu(),

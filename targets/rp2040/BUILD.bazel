@@ -275,6 +275,7 @@ cc_library(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "49-pico.rules",
         "target_docs.rst",
         "upstream.rst",
     ],

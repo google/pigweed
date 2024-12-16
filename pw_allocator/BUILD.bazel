@@ -837,6 +837,7 @@ sphinx_docs_library(
         "design.rst",
         "docs.rst",
         "guide.rst",
+        "//pw_allocator/examples:docs",
     ],
     prefix = "pw_allocator/",
     target_compatible_with = incompatible_with_mcu(),
