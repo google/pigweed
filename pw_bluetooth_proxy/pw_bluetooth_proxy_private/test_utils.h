@@ -27,6 +27,7 @@
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_bluetooth_proxy/l2cap_channel_event.h"
+#include "pw_bluetooth_proxy/l2cap_coc.h"
 #include "pw_bluetooth_proxy/l2cap_status_delegate.h"
 #include "pw_bluetooth_proxy/proxy_host.h"
 #include "pw_containers/flat_map.h"
@@ -228,5 +229,9 @@ RfcommChannel BuildRfcomm(
     Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr,
     Function<void()>&& queue_space_available_fn = nullptr,
     Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
+
+// ########## Test Suites
+
+class ProxyHostTest : public testing::Test {};
 
 }  // namespace pw::bluetooth::proxy
