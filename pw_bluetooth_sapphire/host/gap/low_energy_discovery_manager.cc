@@ -104,6 +104,12 @@ void LowEnergyDiscoverySession::NotifyError() {
   }
 }
 
+void LowEnergyDiscoverySession::Stop() {
+  PW_DCHECK(alive_);
+  on_stop_cb_(this);
+  alive_ = false;
+}
+
 LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(
     hci::LowEnergyScanner* scanner,
     PeerCache* peer_cache,

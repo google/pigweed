@@ -335,6 +335,10 @@ class LowEnergyDiscoverySession final
   // for discovery procedures.
   DiscoveryFilter* filter() { return &filter_; }
 
+  // Ends this session. This instance will stop receiving notifications for
+  // peers.
+  void Stop();
+
   // Returns true if this session has not been stopped and has not errored.
   bool alive() const { return alive_; }
 

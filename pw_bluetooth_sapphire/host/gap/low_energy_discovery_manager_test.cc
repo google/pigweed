@@ -320,7 +320,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStop) {
   ASSERT_TRUE(session);
   EXPECT_TRUE(session->alive());
 
-  session.reset();
+  session->Stop();
 
   RunUntilIdle();
   EXPECT_FALSE(scan_enabled());
@@ -1477,7 +1477,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
 TEST_F(LowEnergyDiscoveryManagerTest,
        StopSessionInsideOfResultCallbackDoesNotCrash) {
   auto session = StartDiscoverySession(/*active=*/false);
-  auto result_cb = [&session](const auto&) { session.reset(); };
+  auto result_cb = [&session](const auto&) { session->Stop(); };
   session->SetResultCallback(std::move(result_cb));
   RunUntilIdle();
 

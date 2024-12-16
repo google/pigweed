@@ -301,11 +301,9 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
            bt_str(self->peer_id_));
 
     self->scan_timeout_task_.reset();
+    self->discovery_session_->Stop();
 
     self->RequestCreateConnection();
-
-    // Invalidates captures.
-    self->discovery_session_.reset();
   });
 }
 
