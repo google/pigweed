@@ -16,7 +16,7 @@
 
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
-#include "pw_bluetooth_proxy/l2cap_channel_event.h"
+#include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_sync/mutex.h"
 
 namespace pw::bluetooth::proxy {

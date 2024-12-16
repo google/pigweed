@@ -16,7 +16,7 @@
 
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
-#include "pw_bluetooth_proxy/l2cap_channel_event.h"
+#include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_containers/inline_queue.h"
 #include "pw_containers/intrusive_forward_list.h"
 #include "pw_result/result.h"

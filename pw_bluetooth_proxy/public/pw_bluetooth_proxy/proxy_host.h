@@ -18,7 +18,7 @@
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
-#include "pw_bluetooth_proxy/l2cap_channel_event.h"
+#include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_bluetooth_proxy/l2cap_coc.h"
 #include "pw_bluetooth_proxy/l2cap_status_delegate.h"
 #include "pw_bluetooth_proxy/rfcomm_channel.h"
@@ -184,7 +184,7 @@ class ProxyHost {
   ///
   /// @param[in] event_fn                   Handle asynchronous events such as
   ///                                       errors encountered by the channel.
-  ///                                       See `l2cap_channel_event.h`.
+  ///                                       See `l2cap_channel_common.h`.
   ///
   /// @returns @rst
   ///
@@ -248,7 +248,7 @@ class ProxyHost {
   ///
   /// @param[in] event_fn          Handle asynchronous events such as errors
   ///                              encountered by the channel. See
-  ///                              `l2cap_channel_event.h`.
+  ///                              `l2cap_channel_common.h`.
   ///
   /// @returns @rst
   ///
