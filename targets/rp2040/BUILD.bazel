@@ -60,7 +60,7 @@ platform(
         "@pico-sdk//bazel/constraint:rp2040",
         # For toolchain selection.
         "@platforms//cpu:armv6-m",
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus",
+        "//pw_build/constraints/arm:cortex-m0plus",
     ],
     flags = flags_from_dict({
         "@pico-sdk//bazel/config:PICO_DEFAULT_LINKER_SCRIPT": ":rp2040_linker_script",
@@ -75,7 +75,7 @@ platform(
         "@pico-sdk//bazel/constraint:rp2350",
         # For toolchain selection.
         "@platforms//cpu:armv8-m",
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m33",
+        "//pw_build/constraints/arm:cortex-m33",
     ],
     flags = flags_from_dict({
         "@pico-sdk//bazel/config:PICO_DEFAULT_LINKER_SCRIPT": ":rp2350_linker_script",

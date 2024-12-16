@@ -49,7 +49,7 @@ alias(
 toolchain(
     name = "cc_toolchain_cortex-m0",
     target_compatible_with = [
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0",
+        "//pw_build/constraints/arm:cortex-m0",
     ],
     toolchain = ":cortex-m_cc_toolchain",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
@@ -58,7 +58,7 @@ toolchain(
 toolchain(
     name = "cc_toolchain_cortex-m0plus",
     target_compatible_with = [
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus",
+        "//pw_build/constraints/arm:cortex-m0plus",
     ],
     toolchain = ":cortex-m_cc_toolchain",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
@@ -67,7 +67,7 @@ toolchain(
 toolchain(
     name = "cc_toolchain_cortex-m33",
     target_compatible_with = [
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m33",
+        "//pw_build/constraints/arm:cortex-m33",
     ],
     toolchain = ":cortex-m_cc_toolchain",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
@@ -76,7 +76,7 @@ toolchain(
 toolchain(
     name = "cc_toolchain_cortex-m3",
     target_compatible_with = [
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m3",
+        "//pw_build/constraints/arm:cortex-m3",
     ],
     toolchain = ":cortex-m_cc_toolchain",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",

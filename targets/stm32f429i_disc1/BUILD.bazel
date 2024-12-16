@@ -29,7 +29,7 @@ platform(
         "//pw_sys_io_baremetal_stm32f429:compatible",
         "@platforms//cpu:armv7e-m",
         "@platforms//os:none",
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m4",
+        "//pw_build/constraints/arm:cortex-m4",
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict({

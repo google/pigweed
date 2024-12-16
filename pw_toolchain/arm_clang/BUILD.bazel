@@ -197,23 +197,23 @@ cc_toolchain(
         "//pw_toolchain/cc/args:common_warnings",
         "//pw_toolchain/cc/args:color_diagnostics",
     ] + select({
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [
+        "//pw_build/constraints/arm:cortex-m0": [
             ":cortex-m0",
             ":armv6m-none-eabi",
         ],
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus": [
+        "//pw_build/constraints/arm:cortex-m0plus": [
             ":cortex-m0plus",
             ":armv6m-none-eabi",
         ],
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m3": [
+        "//pw_build/constraints/arm:cortex-m3": [
             ":cortex-m3",
             ":armv7m-none-eabi",
         ],
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m33": [
+        "//pw_build/constraints/arm:cortex-m33": [
             ":cortex-m33",
             ":armv8m.main-none-eabi",
         ],
-        "@pw_toolchain//constraints/arm_mcpu:none": [],
+        "//pw_build/constraints/arm:none": [],
     }),
     enabled_features = [
         "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
@@ -228,11 +228,11 @@ cc_toolchain(
     }),
     tags = ["manual"],  # Don't try to build this in wildcard builds.
     target_compatible_with = select({
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [],
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus": [],
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m3": [],
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m33": [],
-        "@pw_toolchain//constraints/arm_mcpu:none": ["@platforms//:incompatible"],
+        "//pw_build/constraints/arm:cortex-m0": [],
+        "//pw_build/constraints/arm:cortex-m0plus": [],
+        "//pw_build/constraints/arm:cortex-m3": [],
+        "//pw_build/constraints/arm:cortex-m33": [],
+        "//pw_build/constraints/arm:none": ["@platforms//:incompatible"],
     }),
     tool_map = "@llvm_toolchain_device//:all_tools",
     visibility = ["//pw_toolchain:__pkg__"],
@@ -241,7 +241,7 @@ cc_toolchain(
 toolchain(
     name = "arm_clang_cc_toolchain_cortex-m0",
     target_compatible_with = [
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0",
+        "//pw_build/constraints/arm:cortex-m0",
     ],
     toolchain = ":arm_clang_toolchain_cortex-m",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
@@ -250,7 +250,7 @@ toolchain(
 toolchain(
     name = "arm_clang_cc_toolchain_cortex-m0plus",
     target_compatible_with = [
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus",
+        "//pw_build/constraints/arm:cortex-m0plus",
     ],
     toolchain = ":arm_clang_toolchain_cortex-m",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
@@ -259,7 +259,7 @@ toolchain(
 toolchain(
     name = "arm_clang_cc_toolchain_cortex-m33",
     target_compatible_with = [
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m33",
+        "//pw_build/constraints/arm:cortex-m33",
     ],
     toolchain = ":arm_clang_toolchain_cortex-m",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",

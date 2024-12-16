@@ -22,3 +22,8 @@ module(
 # rules_cc. For that reason, this primarily acts as a FYI. You'll still need
 # to explicitly list this dependency in your own project's MODULE.bazel file.
 bazel_dep(name = "rules_cc", version = "0.0.9")
+bazel_dep(name = "pigweed")
+local_path_override(
+    module_name = "pigweed",
+    path = "../",
+)

@@ -50,7 +50,7 @@ platform(
 platform(
     name = "lm3s6965evb",
     constraint_values = [
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m3",
+        "//pw_build/constraints/arm:cortex-m3",
         "//pw_build/constraints/chipset:lm3s6965evb",
         "@platforms//cpu:armv7-m",
         "@platforms//os:none",
@@ -65,7 +65,7 @@ platform(
 platform(
     name = "nrf52833",
     constraint_values = [
-        "@pw_toolchain//constraints/arm_mcpu:cortex-m0",
+        "//pw_build/constraints/arm:cortex-m0",
         "//pw_build/constraints/chipset:nrf52833",
         "@platforms//cpu:armv6-m",
         "@platforms//os:none",
