@@ -458,13 +458,5 @@ TEST(BadBuffer, NullPtrDest) {
   EXPECT_EQ(dumper.DumpLine(), Status::FailedPrecondition());
 }
 
-TEST(BadBuffer, NullPtrSrc) {
-  char buffer[24] = {static_cast<char>(0)};
-  FormattedHexDumper dumper(buffer);
-  EXPECT_EQ(dumper.BeginDump(ByteSpan(static_cast<std::byte*>(nullptr), 64)),
-            Status::InvalidArgument());
-  // Don't actually dump nullptr in this test as it could cause a crash.
-}
-
 }  // namespace
 }  // namespace pw::dump

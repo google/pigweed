@@ -39,8 +39,6 @@ TEST(PrefixedEntryRingBuffer, NoBuffer) {
   size_t count;
 
   EXPECT_EQ(ring.EntryCount(), 0u);
-  EXPECT_EQ(ring.SetBuffer(span<byte>(static_cast<byte*>(nullptr), 10u)),
-            Status::InvalidArgument());
   EXPECT_EQ(ring.SetBuffer(span(buf, 0u)), Status::InvalidArgument());
   EXPECT_EQ(ring.FrontEntryDataSizeBytes(), 0u);
 

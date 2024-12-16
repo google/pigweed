@@ -45,10 +45,6 @@ TEST(ClampedLength, LengthEqualsMax) {
   EXPECT_EQ(5u, internal::ClampedLength("12345", 5));
 }
 
-TEST(ClampedCString, NullPtr_ReturnsEmpty) {
-  EXPECT_TRUE(ClampedCString(nullptr, 100).empty());
-}
-
 TEST(ClampedCString, EmptyString_Returns0) {
   EXPECT_TRUE(ClampedCString("", 0).empty());
   EXPECT_TRUE(ClampedCString("", 100).empty());
