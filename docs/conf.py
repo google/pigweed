@@ -300,10 +300,13 @@ texinfo_documents = [
 templates_path = ['docs/layout']
 exclude_patterns = ['docs/templates/**']
 
+doxygen_xml_path = (
+    './doxygen/xml/' if is_bazel_build else './../../../doxygen/xml/'
+)
 breathe_projects = {
     # Assuming doxygen output is at out/docs/doxygen/
     # This dir should be relative to out/docs/gen/docs/pw_docgen_tree/
-    "Pigweed": "./../../../doxygen/xml/",
+    "Pigweed": doxygen_xml_path,
 }
 breathe_default_project = "Pigweed"
 breathe_debug_trace_directives = True

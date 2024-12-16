@@ -13,6 +13,7 @@
 # the License.
 
 load("@bazel_skylib//rules:copy_directory.bzl", "copy_directory")
+load("@doxygen//:doxygen.bzl", "doxygen")
 load("@rules_python//sphinxdocs:sphinx.bzl", "sphinx_build_binary", "sphinx_docs")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
@@ -145,6 +146,163 @@ sphinx_docs_library(
     target_compatible_with = incompatible_with_mcu(),
 )
 
+filegroup(
+    name = "doxygen_srcs",
+    srcs = [
+        "//pw_alignment:doxygen",
+        "//pw_allocator:doxygen",
+        "//pw_analog:doxygen",
+        "//pw_async:doxygen",
+        "//pw_async2:doxygen",
+        "//pw_async2_basic:doxygen",
+        "//pw_async_basic:doxygen",
+        "//pw_base64:doxygen",
+        "//pw_bluetooth:doxygen",
+        "//pw_bluetooth_proxy:doxygen",
+        "//pw_build:doxygen",
+        "//pw_bytes:doxygen",
+        "//pw_channel:doxygen",
+        "//pw_chre:doxygen",
+        "//pw_chrono:doxygen",
+        "//pw_clock_tree:doxygen",
+        "//pw_clock_tree_mcuxpresso:doxygen",
+        "//pw_containers:doxygen",
+        "//pw_crypto:doxygen",
+        "//pw_digital_io:doxygen",
+        "//pw_display:doxygen",
+        "//pw_elf:doxygen",
+        "//pw_function:doxygen",
+        "//pw_hdlc:doxygen",
+        "//pw_hex_dump:doxygen",
+        "//pw_i2c:doxygen",
+        "//pw_i2c_linux:doxygen",
+        "//pw_interrupt:doxygen",
+        "//pw_json:doxygen",
+        "//pw_kvs:doxygen",
+        "//pw_log:doxygen",
+        "//pw_log_string:doxygen",
+        "//pw_log_tokenized:doxygen",
+        "//pw_malloc:doxygen",
+        "//pw_multibuf:doxygen",
+        "//pw_numeric:doxygen",
+        "//pw_perf_test:doxygen",
+        "//pw_polyfill:doxygen",
+        "//pw_preprocessor:doxygen",
+        "//pw_protobuf:doxygen",
+        "//pw_random:doxygen",
+        "//pw_rpc:doxygen",
+        "//pw_span:doxygen",
+        "//pw_spi:doxygen",
+        "//pw_status:doxygen",
+        "//pw_stream:doxygen",
+        "//pw_stream_uart_linux:doxygen",
+        "//pw_string:doxygen",
+        "//pw_sync:doxygen",
+        "//pw_sys_io:doxygen",
+        "//pw_system:doxygen",
+        "//pw_thread:doxygen",
+        "//pw_tokenizer:doxygen",
+        "//pw_toolchain:doxygen",
+        "//pw_transfer:doxygen",
+        "//pw_uart:doxygen",
+        "//pw_unit_test:doxygen",
+        "//pw_varint:doxygen",
+        "//pw_work_queue:doxygen",
+    ],
+)
+
+# Run Doxygen on the gathered headers to generate XML.
+doxygen(
+    name = "doxygen_build",
+    srcs = [
+        ":doxygen_srcs",
+    ],
+    outs = [
+        "xml",
+    ],
+    # TODO: b/384047922 - Move configuration to a dedicated Doxyfile.
+    configurations = [
+        # Use `leading-asterisk` even though `leading-slashes` is more
+        # semantically accurate (all Doxygen comments in Pigweed codebase
+        # start with `///`). See the discussion about undocumented Doxygen
+        # behavior at the bottom of this section:
+        # https://breathe.readthedocs.io/en/latest/markups.html#aliases
+        "ALIASES = \"rst=^^@verbatim embed:rst:leading-asterisk^^\"",
+        "ALIASES += \"endrst=@endverbatim\"",
+        "ALIASES += \"rstref{1}=@verbatim embed:rst:inline :ref:`\\1` @endverbatim\"",
+        "ALIASES += \"crossref{3}=@verbatim embed:rst:inline :\\1:\\2:`\\3` @endverbatim\"",
+        "ALIASES += \"c_macro{1}=@crossref{c,macro,\\1}\"",
+        "ALIASES += \"cpp_class{1}=@crossref{cpp,class,\\1}\"",
+        "ALIASES += \"cpp_func{1}=@crossref{cpp,func,\\1}\"",
+        "ALIASES += \"cpp_type{1}=@crossref{cpp,type,\\1}\"",
+        "ALIASES += \"cpp_enum{1}=@crossref{cpp,type,\\1}\"",
+        "ALIASES += \"pw_status{1}=@crossref{c,enumerator,\\1}\"",
+        "CASE_SENSE_NAMES = NO",
+        "ENABLE_PREPROCESSING = YES",
+        "EXTRACT_PACKAGE = YES",
+        "EXTRACT_PRIV_VIRTUAL = YES",
+        "EXTRACT_STATIC = YES",
+        "GENERATE_HTML = NO",
+        "GENERATE_XML = YES",
+        "INCLUDE_GRAPH = NO",
+        "MACRO_EXPANSION = YES",
+        "PROJECT_NAME = Pigweed",
+        """PREDEFINED = __cplusplus=202002L \\
+                        PW_LOCKABLE= \\
+                        PW_PRINTF_FORMAT(...)= \\
+                        PW_CONSTEXPR_CPP20= \\
+                        PW_EXCLUSIVE_LOCK_FUNCTION(...)= \\
+                        PW_EXCLUSIVE_TRYLOCK_FUNCTION(...)= \\
+                        PW_UNLOCK_FUNCTION(...)= \\
+                        PW_NO_LOCK_SAFETY_ANALYSIS= \\
+                        PW_CXX_STANDARD_IS_SUPPORTED(...)=1 \\
+                        PW_EXTERN_C_START= \\
+                        PW_LOCKS_EXCLUDED(...)= \\
+                        PW_EXCLUSIVE_LOCKS_REQUIRED(...)= \\
+                        PW_GUARDED_BY(...)= \\
+                        PW_NO_SANITIZE(...)= \\
+                        PW_NODISCARD_STR(...)= \\
+                        configSUPPORT_STATIC_ALLOCATION=1 \\
+                        configUSE_TIMERS=1 \\
+                        configCHECK_FOR_STACK_OVERFLOW=1 \\
+                        PW_EXCLUDE_FROM_DOXYGEN=1""",
+        "RECURSIVE = YES",
+    ],
+    # Don't use rules_doxygen's `aliases` attribute. Define aliases within
+    # `configurations`. The `aliases` attribute doesn't render aliases with
+    # args correctly: https://github.com/TendTo/rules_doxygen/issues/12
+    # aliases = []
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+# Package up the Doxygen-generated XML in a way that's easy for
+# Breathe/Sphinx to consume.
+sphinx_docs_library(
+    name = "doxygen_xml",
+    srcs = [":doxygen_build"],
+    prefix = "doxygen/",
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+sphinx_build_binary(
+    name = "sphinx_build",
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        "//pw_console/py:pw_console",
+        "//pw_docgen/py:pw_docgen",
+        "@python_packages//breathe",
+        "@python_packages//pydata_sphinx_theme",
+        "@python_packages//sphinx",
+        "@python_packages//sphinx_argparse",
+        "@python_packages//sphinx_copybutton",
+        "@python_packages//sphinx_design",
+        "@python_packages//sphinx_reredirects",
+        "@python_packages//sphinx_sitemap",
+        "@python_packages//sphinxcontrib_mermaid",
+        "@rules_python//python/runfiles",
+    ],
+)
+
 # Use Sphinx to build the main pigweed.dev website.
 #
 # The main `docs` target must output a directory containing the fully
@@ -157,10 +315,11 @@ sphinx_docs(
     formats = [
         "html",
     ],
-    sphinx = ":sphinx-build",
+    sphinx = ":sphinx_build",
     strip_prefix = "docs/",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
+        ":doxygen_xml",
         ":not_prefixed",
         ":prefixed",
         # TODO: https://pwbug.dev/383540117 - Move this comment to a dedicated
@@ -234,8 +393,7 @@ sphinx_docs(
         "//pw_compilation_testing:docs",
         "//pw_config_loader:docs",
         "//pw_console:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_containers:docs",
+        "//pw_containers:docs",
         "//pw_cpu_exception:docs",
         "//pw_cpu_exception_cortex_m:docs",
         "//pw_cpu_exception_risc_v:docs",
@@ -248,13 +406,13 @@ sphinx_docs(
         "//pw_dma_mcuxpresso:docs",
         "//pw_docgen:docs",
         "//pw_doctor:docs",
+        "//pw_elf:docs",
         "//pw_emu:docs",
         "//pw_env_setup:docs",
         "//pw_env_setup_zephyr:docs",
         "//pw_file:docs",
         "//pw_format:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_function:docs",
+        "//pw_function:docs",
         "//pw_fuzzer:docs",
         "//pw_grpc:docs",
         "//pw_hdlc:docs",
@@ -269,8 +427,7 @@ sphinx_docs(
         "//pw_interrupt_xtensa:docs",
         "//pw_interrupt_zephyr:docs",
         "//pw_intrusive_ptr:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_json:docs",
+        "//pw_json:docs",
         "//pw_kvs:docs",
         "//pw_libc:docs",
         "//pw_libcxx:docs",
@@ -295,20 +452,17 @@ sphinx_docs(
         "//pw_package:docs",
         "//pw_perf_test:docs",
         "//pw_persistent_ram:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_polyfill:docs",
+        "//pw_polyfill:docs",
         "//pw_preprocessor:docs",
         "//pw_presubmit:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_protobuf:docs",
+        "//pw_protobuf:docs",
         "//pw_protobuf_compiler:docs",
         "//pw_random:docs",
         "//pw_random_fuchsia:docs",
         "//pw_result:docs",
         "//pw_ring_buffer:docs",
         "//pw_router:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_rpc:docs",
+        "//pw_rpc:docs",
         "//pw_rpc_transport:docs",
         "//pw_rust:sphinx",
         "//pw_sensor:docs",
@@ -325,11 +479,9 @@ sphinx_docs(
         "//pw_stream_shmem_mcuxpresso:docs",
         "//pw_stream_uart_linux:docs",
         "//pw_stream_uart_mcuxpresso:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_string:docs",
+        "//pw_string:docs",
         "//pw_symbolizer:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_sync:docs",
+        "//pw_sync:docs",
         "//pw_sync_baremetal:docs",
         "//pw_sync_embos:docs",
         "//pw_sync_freertos:docs",
@@ -348,8 +500,7 @@ sphinx_docs(
         "//pw_sys_io_stm32cube:docs",
         "//pw_sys_io_zephyr:docs",
         "//pw_system:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_target_runner:docs",
+        "//pw_target_runner:docs",
         "//pw_thread:docs",
         "//pw_thread_embos:docs",
         "//pw_thread_freertos:docs",
@@ -359,107 +510,21 @@ sphinx_docs(
         "//pw_tls_client:docs",
         "//pw_tls_client_boringssl:docs",
         "//pw_tls_client_mbedtls:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_tokenizer:docs",
+        "//pw_tokenizer:docs",
         "//pw_toolchain:docs",
         "//pw_trace:docs",
         "//pw_trace_tokenized:docs",
         "//pw_transfer:docs",
         "//pw_uart:docs",
         "//pw_uart_mcuxpresso:docs",
-        # TODO: https://pwbug.dev/378765499 - Update downstream projects.
-        # "//pw_unit_test:docs",
+        "//pw_unit_test:docs",
         "//pw_unit_test_zephyr:docs",
-        # TODO: https://pwbug.dev/378570156 - Enable after Doxygen lands.
-        # "//pw_varint:docs",
+        "//pw_varint:docs",
         "//pw_watch:docs",
         "//pw_web:docs",
         "//pw_work_queue:docs",
         "//seed:docs",
         "//targets:docs",
         "//:docs",
-    ],
-)
-
-sphinx_build_binary(
-    name = "sphinx-build",
-    target_compatible_with = incompatible_with_mcu(),
-    deps = [
-        "//pw_console/py:pw_console",
-        "//pw_docgen/py:pw_docgen",
-        "@python_packages//breathe",
-        "@python_packages//pydata_sphinx_theme",
-        "@python_packages//sphinx",
-        "@python_packages//sphinx_argparse",
-        "@python_packages//sphinx_copybutton",
-        "@python_packages//sphinx_design",
-        "@python_packages//sphinx_reredirects",
-        "@python_packages//sphinx_sitemap",
-        "@python_packages//sphinxcontrib_mermaid",
-    ],
-)
-
-filegroup(
-    name = "doxygen",
-    srcs = [
-        "//pw_alignment:doxygen",
-        "//pw_allocator:doxygen",
-        "//pw_analog:doxygen",
-        "//pw_async:doxygen",
-        "//pw_async2:doxygen",
-        "//pw_async2_basic:doxygen",
-        "//pw_async_basic:doxygen",
-        "//pw_base64:doxygen",
-        "//pw_bluetooth:doxygen",
-        "//pw_bluetooth_proxy:doxygen",
-        "//pw_build:doxygen",
-        "//pw_bytes:doxygen",
-        "//pw_channel:doxygen",
-        "//pw_chre:doxygen",
-        "//pw_chrono:doxygen",
-        "//pw_clock_tree:doxygen",
-        "//pw_clock_tree_mcuxpresso:doxygen",
-        "//pw_containers:doxygen",
-        "//pw_crypto:doxygen",
-        "//pw_digital_io:doxygen",
-        "//pw_display:doxygen",
-        "//pw_elf:doxygen",
-        "//pw_function:doxygen",
-        "//pw_hdlc:doxygen",
-        "//pw_hex_dump:doxygen",
-        "//pw_i2c:doxygen",
-        "//pw_i2c_linux:doxygen",
-        "//pw_interrupt:doxygen",
-        "//pw_json:doxygen",
-        "//pw_kvs:doxygen",
-        "//pw_log:doxygen",
-        "//pw_log_string:doxygen",
-        "//pw_log_tokenized:doxygen",
-        "//pw_malloc:doxygen",
-        "//pw_multibuf:doxygen",
-        "//pw_numeric:doxygen",
-        "//pw_perf_test:doxygen",
-        "//pw_polyfill:doxygen",
-        "//pw_preprocessor:doxygen",
-        "//pw_protobuf:doxygen",
-        "//pw_random:doxygen",
-        "//pw_rpc:doxygen",
-        "//pw_span:doxygen",
-        "//pw_spi:doxygen",
-        "//pw_status:doxygen",
-        "//pw_stream:doxygen",
-        "//pw_stream_uart_linux:doxygen",
-        "//pw_string:doxygen",
-        "//pw_sync:doxygen",
-        "//pw_sys_io:doxygen",
-        "//pw_system:doxygen",
-        "//pw_thread:doxygen",
-        "//pw_tokenizer:doxygen",
-        "//pw_toolchain:doxygen",
-        "//pw_transfer:doxygen",
-        "//pw_uart:doxygen",
-        "//pw_unit_test:doxygen",
-        "//pw_varint:doxygen",
-        "//pw_work_queue:doxygen",
     ],
 )

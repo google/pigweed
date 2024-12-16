@@ -98,19 +98,23 @@ pw_cc_test(
     ],
 )
 
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+        # These header files must be provided to Sphinx because
+        # some of their code is directly included in docs.rst.
+        "public/pw_analog/analog_input_gmock.h",
+        "public/pw_analog/microvolt_input_gmock.h",
+    ],
+    prefix = "pw_analog/",
+    target_compatible_with = incompatible_with_mcu(),
+)
+
 filegroup(
     name = "doxygen",
     srcs = [
         "public/pw_analog/analog_input.h",
         "public/pw_analog/microvolt_input.h",
     ],
-)
-
-sphinx_docs_library(
-    name = "docs",
-    srcs = [
-        "docs.rst",
-    ],
-    prefix = "pw_analog/",
-    target_compatible_with = incompatible_with_mcu(),
 )

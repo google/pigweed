@@ -14,9 +14,7 @@
 
 load("@local_config_platform//:constraints.bzl", "HOST_CONSTRAINTS")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-
-# TODO: https://pwbug.dev/378765499 - Update downstream projects.
-# load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "boolean_constraint_value", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//pw_build:pw_facade.bzl", "pw_facade")
@@ -516,12 +514,11 @@ filegroup(
     ],
 )
 
-# TODO: https://pwbug.dev/378765499 - Update downstream projects.
-# sphinx_docs_library(
-#     name = "docs",
-#     srcs = [
-#         "docs.rst",
-#     ],
-#     prefix = "pw_unit_test/",
-#     target_compatible_with = incompatible_with_mcu(),
-# )
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+    ],
+    prefix = "pw_unit_test/",
+    target_compatible_with = incompatible_with_mcu(),
+)

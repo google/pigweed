@@ -105,6 +105,8 @@
     "https://bcr.bazel.build/modules/rules_cc/0.0.6/MODULE.bazel": "abf360251023dfe3efcef65ab9d56beefa8394d4176dd29529750e1c57eaa33f",
     "https://bcr.bazel.build/modules/rules_cc/0.0.8/MODULE.bazel": "964c85c82cfeb6f3855e6a07054fdb159aced38e99a5eecf7bce9d53990afa3e",
     "https://bcr.bazel.build/modules/rules_cc/0.0.9/MODULE.bazel": "836e76439f354b89afe6a911a7adf59a6b2518fafb174483ad78a2a2fde7b1c5",
+    "https://bcr.bazel.build/modules/rules_doxygen/2.0.0/MODULE.bazel": "6a03ed1238e0b59a9a0fb5517ee76af5c2f184d86ca6211c0a4f58209d87e822",
+    "https://bcr.bazel.build/modules/rules_doxygen/2.0.0/source.json": "d51f0aa27a27a94c032ae29171128c54bb17d07e121ee14bef9540d779d278c4",
     "https://bcr.bazel.build/modules/rules_foreign_cc/0.9.0/MODULE.bazel": "c9e8c682bf75b0e7c704166d79b599f93b72cfca5ad7477df596947891feeef6",
     "https://bcr.bazel.build/modules/rules_fuzzing/0.5.2/MODULE.bazel": "40c97d1144356f52905566c55811f13b299453a14ac7769dfba2ac38192337a8",
     "https://bcr.bazel.build/modules/rules_fuzzing/0.5.2/source.json": "c8b1e2c717646f1702290959a3302a178fb639d987ab61d548105019f11e527e",
@@ -889,6 +891,63 @@
             "rules_buf+",
             "bazel_tools",
             "bazel_tools"
+          ]
+        ]
+      }
+    },
+    "@@rules_doxygen+//:extensions.bzl%doxygen_extension": {
+      "general": {
+        "bzlTransitiveDigest": "Jb4pRfRO631HXPSLw3DudBVW3VSgETeTY7bpkGrp4z4=",
+        "usagesDigest": "C+e2p5+sKndB4Cv6qFry+JfwVSfSeHhsDs1iYlwfQmI=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "doxygen": {
+            "bzlFile": "@@rules_doxygen+//:extensions.bzl",
+            "ruleClassName": "doxygen_repository",
+            "attributes": {
+              "versions": [
+                "",
+                "",
+                "",
+                "",
+                "1.12.0"
+              ],
+              "sha256s": [
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "3c42c3f3fb206732b503862d9c9c11978920a8214f223a3950bbf2520be5f647"
+              ],
+              "platforms": [
+                "linux",
+                "mac",
+                "mac-arm",
+                "windows",
+                "linux-arm"
+              ],
+              "executables": [
+                "'@@+_repo_rules+doxygen_linux_amd64//:bin/doxygen'",
+                "'@@+_repo_rules+doxygen_mac_amd64//:doxygen'",
+                "'@@+_repo_rules+doxygen_mac_arm64//:doxygen'",
+                "'@@+_repo_rules+doxygen_windows_amd64//:windows.exe'",
+                ""
+              ]
+            }
+          }
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "rules_doxygen+",
+            "bazel_tools",
+            "bazel_tools"
+          ],
+          [
+            "rules_doxygen+",
+            "rules_doxygen",
+            "rules_doxygen+"
           ]
         ]
       }

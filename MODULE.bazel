@@ -46,6 +46,7 @@ bazel_dep(name = "emboss", version = "2024.1017.203246", repo_name = "com_google
 # LINT.ThenChange(/pw_package/py/pw_package/packages/emboss.py:emboss)
 
 bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+bazel_dep(name = "rules_doxygen", version = "2.0.0", dev_dependency = True)
 
 # Repository overrides
 # ====================
@@ -351,3 +352,54 @@ cipd_repository(
     path = "pigweed/pw_transfer_test_binaries/${os=linux}-${arch=amd64}",
     tag = "version:pw_transfer_test_binaries_528098d588f307881af83f769207b8e6e1b57520-linux-amd64-cipd.cipd",
 )
+
+# Doxygen setup
+# =============
+
+# Get executables.
+cipd_repository(
+    name = "doxygen_linux_amd64",
+    path = "pigweed/third_party/doxygen/linux-amd64",
+    # TODO: b/384045900 - Update to a fresher executable.
+    tag = "version:1.9.6-1",
+)
+
+cipd_repository(
+    name = "doxygen_mac_amd64",
+    path = "pigweed/third_party/doxygen/mac-amd64",
+    # TODO: b/384045900 - Update to a fresher executable.
+    tag = "version:1.9.6-1",
+)
+
+cipd_repository(
+    name = "doxygen_mac_arm64",
+    path = "pigweed/third_party/doxygen/mac-arm64",
+    tag = "git_revision:401de7aa290e21f557e28515a5887fc40a092f62",
+)
+
+cipd_repository(
+    name = "doxygen_windows_amd64",
+    path = "pigweed/third_party/doxygen/windows-amd64",
+    # TODO: b/384045900 - Update to a fresher executable.
+    tag = "version:1.9.6-1",
+)
+
+# Configure rules_doxygen to use our executables.
+doxygen_extension = use_extension("@rules_doxygen//:extensions.bzl", "doxygen_extension", dev_dependency = True)
+doxygen_extension.configuration(
+    executable = "@doxygen_linux_amd64//:bin/doxygen",
+    platform = "linux",
+)
+doxygen_extension.configuration(
+    executable = "@doxygen_mac_amd64//:doxygen",
+    platform = "mac",
+)
+doxygen_extension.configuration(
+    executable = "@doxygen_mac_arm64//:doxygen",
+    platform = "mac-arm",
+)
+doxygen_extension.configuration(
+    executable = "@doxygen_windows_amd64//:windows.exe",
+    platform = "windows",
+)
+use_repo(doxygen_extension, "doxygen")
