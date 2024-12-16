@@ -213,7 +213,7 @@ accessible, and easy to make plugins for. Try it now:
          :sync: vsc
 
          Start up the simulated device again by going to **Bazel Build
-         Targets** right-clicking the **:simulator_blinky (native_binary)** target
+         Targets** right-clicking the **:simulator_blinky (host_device_simulator_binary)** target
          (under **//apps/blinky**) and then selecting **Run target**.
 
          .. caution::
