@@ -313,8 +313,8 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
   return OkStatus();
 }
 
-pw::Result<L2capCoc> BuildCocWithResult(ProxyHost& proxy,
-                                        CocParameters params) {
+pw::Result<L2capCoc> ProxyHostTest::BuildCocWithResult(ProxyHost& proxy,
+                                                       CocParameters params) {
   return proxy.AcquireL2capCoc(params.handle,
                                {.cid = params.local_cid,
                                 .mtu = params.rx_mtu,
@@ -329,7 +329,7 @@ pw::Result<L2capCoc> BuildCocWithResult(ProxyHost& proxy,
                                std::move(params.queue_space_available_fn));
 }
 
-L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params) {
+L2capCoc ProxyHostTest::BuildCoc(ProxyHost& proxy, CocParameters params) {
   pw::Result<L2capCoc> channel = BuildCocWithResult(proxy, std::move(params));
   PW_TEST_EXPECT_OK(channel);
   return std::move(channel.value());

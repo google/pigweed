@@ -232,6 +232,12 @@ RfcommChannel BuildRfcomm(
 
 // ########## Test Suites
 
-class ProxyHostTest : public testing::Test {};
+class ProxyHostTest : public testing::Test {
+ protected:
+  pw::Result<L2capCoc> BuildCocWithResult(ProxyHost& proxy,
+                                          CocParameters params);
+
+  L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params);
+};
 
 }  // namespace pw::bluetooth::proxy
