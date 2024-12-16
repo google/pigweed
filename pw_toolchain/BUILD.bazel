@@ -73,6 +73,15 @@ toolchain(
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
 
+toolchain(
+    name = "cc_toolchain_cortex-m3",
+    target_compatible_with = [
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m3",
+    ],
+    toolchain = ":cortex-m_cc_toolchain",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
 cc_library(
     name = "no_destructor",
     hdrs = ["public/pw_toolchain/no_destructor.h"],

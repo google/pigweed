@@ -63,6 +63,19 @@ cc_args(
 )
 
 cc_args(
+    name = "armv7m-none-eabi",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv7m-none-eabi",
+    ],
+)
+
+cc_args(
     name = "armv8m.main-none-eabi",
     actions = [
         "@rules_cc//cc/toolchains/actions:assembly_actions",
@@ -151,6 +164,20 @@ cc_args(
     ],
 )
 
+cc_args(
+    name = "cortex-m3",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m3",
+        "-mfloat-abi=soft",
+    ],
+)
+
 cc_toolchain(
     name = "arm_clang_toolchain_cortex-m",
     args = [
@@ -178,6 +205,10 @@ cc_toolchain(
             ":cortex-m0plus",
             ":armv6m-none-eabi",
         ],
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m3": [
+            ":cortex-m3",
+            ":armv7m-none-eabi",
+        ],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m33": [
             ":cortex-m33",
             ":armv8m.main-none-eabi",
@@ -199,6 +230,7 @@ cc_toolchain(
     target_compatible_with = select({
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0": [],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m0plus": [],
+        "@pw_toolchain//constraints/arm_mcpu:cortex-m3": [],
         "@pw_toolchain//constraints/arm_mcpu:cortex-m33": [],
         "@pw_toolchain//constraints/arm_mcpu:none": ["@platforms//:incompatible"],
     }),
