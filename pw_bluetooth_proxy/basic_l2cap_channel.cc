@@ -58,7 +58,7 @@ pw::Status BasicL2capChannel::Write(pw::span<const uint8_t> payload) {
   if (!h4_result.ok()) {
     // This can fail as a result of the L2CAP PDU not fitting in an H4 buffer
     // or if all buffers are occupied.
-    // TODO: https://pwbug.dev/365179076 - Once we support ACL fragmentation,
+    // TODO: https://pwbug.dev/379337260 - Once we support ACL fragmentation,
     // this function will not fail due to the L2CAP PDU size not fitting.
     return h4_result.status();
   }
