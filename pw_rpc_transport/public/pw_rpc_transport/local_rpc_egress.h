@@ -74,6 +74,8 @@ class LocalRpcEgress : public RpcEgressHandler,
 
  private:
   void Run() override;
+  virtual void PacketQueued() {}
+  virtual void PacketProcessed() {}
 
   sync::ThreadNotification process_queue_;
   RpcPacketProcessor* packet_processor_ = nullptr;
@@ -100,7 +102,7 @@ Status LocalRpcEgress<kPacketQueueSize, kMaxPacketSize>::SendRpcPacket(
   }
 
   // Grab a free packet from the egress' pool, copy incoming frame and
-  // push it the queue for processing.
+  // push it into the queue for processing.
   auto packet_buffer = packet_queue_.Pop();
   if (!packet_buffer.ok()) {
     internal::LogNoPacketAvailable(packet_buffer.status());
@@ -110,6 +112,7 @@ Status LocalRpcEgress<kPacketQueueSize, kMaxPacketSize>::SendRpcPacket(
   PW_TRY(packet_buffer.value()->CopyPacket(packet));
 
   transmit_queue_.Push(**packet_buffer);
+  PacketQueued();
 
   process_queue_.release();
 
@@ -142,6 +145,7 @@ void LocalRpcEgress<kPacketQueueSize, kMaxPacketSize>::Run() {
         internal::LogFailedToAccessPacket(packet.status());
       }
       packet_queue_.Push(**packet_buffer);
+      PacketProcessed();
     }
   }
 }

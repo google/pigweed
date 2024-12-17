@@ -185,7 +185,22 @@ that A is unaware of which transport and framing B is using when talking to C:
 
    SharedMemoryRpcTransport b_to_c_transport(/*...*/);
 
-   LocalRpcEgress<kLocalEgressQueueSize, kMaxPacketSize> local_egress;
+   // LocalRpcEgress that tracks how many packets get queued up and processed.
+   class LocalRpcEgressWithOverrides
+       : public LocalRpcEgress<kPacketQueueSize, kMaxPacketSize> {
+    public:
+     size_t GetPacketsQueued() { return packets_queued_; }
+     size_t GetPacketsProcessed() { return packets_processed_; }
+
+    private:
+     void PacketQueued() final { packets_queued_++; }
+
+     void PacketProcessed() final { packets_processed_++; }
+
+     size_t packets_queued_ = 0;
+     size_t packets_processed_ = 0;
+   };
+   LocalRpcEgressWithOverrides local_egress;
    HdlcRpcEgress<kMaxPacketSize> b_to_a_egress("b->a", b_to_a_transport);
    // SimpleRpcEgress applies a very simple length-prefixed framing to B->C
    // traffic (because HDLC adds unnecessary overhead over shared memory).

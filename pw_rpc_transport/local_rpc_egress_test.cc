@@ -40,6 +40,7 @@ class TestEchoService final
     : public pw_rpc_transport::testing::pw_rpc::pwpb::TestService::Service<
           TestEchoService> {
  public:
+  uint32_t msg_count = 0;
   Status Echo(
       const pw_rpc_transport::testing::pwpb::EchoMessage::Message& request,
       pw_rpc_transport::testing::pwpb::EchoMessage::Message& response) {
@@ -71,15 +72,12 @@ class ControlledTestEchoService final
   sync::ThreadNotification process_;
 };
 
-TEST(LocalRpcEgressTest, PacketsGetDeliveredToPacketProcessor) {
-  constexpr size_t kMaxPacketSize = 100;
-  constexpr size_t kNumRequests = 10;
-  // Size the queue so we don't exhaust it (we don't want this test to flake;
-  // exhaustion is tested separately).
-  constexpr size_t kPacketQueueSize = 2 * kNumRequests;
+template <size_t kPacketQueueSize, size_t kMaxPacketSize>
+void LocalRpcEgressTest(
+    LocalRpcEgress<kPacketQueueSize, kMaxPacketSize>& egress,
+    size_t kNumRequests) {
   constexpr uint32_t kChannelId = 1;
 
-  LocalRpcEgress<kPacketQueueSize, kMaxPacketSize> egress;
   std::array channels = {rpc::Channel::Create<kChannelId>(&egress)};
   ServiceRegistry registry(channels);
 
@@ -132,6 +130,46 @@ TEST(LocalRpcEgressTest, PacketsGetDeliveredToPacketProcessor) {
 
   egress.Stop();
   egress_thread.join();
+}
+
+TEST(LocalRpcEgressTest, PacketsGetDeliveredToPacketProcessor) {
+  constexpr size_t kMaxPacketSize = 100;
+  constexpr size_t kNumRequests = 10;
+  // Size the queue so we don't exhaust it (we don't want this test to flake;
+  // exhaustion is tested separately).
+  constexpr size_t kPacketQueueSize = 2 * kNumRequests;
+
+  LocalRpcEgress<kPacketQueueSize, kMaxPacketSize> egress;
+  LocalRpcEgressTest(egress, kNumRequests);
+}
+
+TEST(LocalRpcEgressTest, OverridePacketFunctions) {
+  constexpr size_t kMaxPacketSize = 100;
+  constexpr size_t kNumRequests = 10;
+  // Size the queue so we don't exhaust it (we don't want this test to flake;
+  // exhaustion is tested separately).
+  constexpr size_t kPacketQueueSize = 2 * kNumRequests;
+
+  class LocalRpcEgressWithOverrides
+      : public LocalRpcEgress<kPacketQueueSize, kMaxPacketSize> {
+   public:
+    size_t GetPacketsQueued() { return packets_queued_; }
+    size_t GetPacketsProcessed() { return packets_processed_; }
+
+   private:
+    void PacketQueued() final { packets_queued_++; }
+
+    void PacketProcessed() final { packets_processed_++; }
+
+    size_t packets_queued_ = 0;
+    size_t packets_processed_ = 0;
+  };
+  LocalRpcEgressWithOverrides egress;
+  LocalRpcEgressTest(egress, kNumRequests);
+  // Each request will create a response that will be queued up and processed as
+  // well.
+  EXPECT_EQ(egress.GetPacketsQueued(), kNumRequests * 2);
+  EXPECT_EQ(egress.GetPacketsProcessed(), kNumRequests * 2);
 }
 
 TEST(LocalRpcEgressTest, PacketQueueExhausted) {
