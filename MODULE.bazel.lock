@@ -180,6 +180,32 @@
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
+    "//pw_build:pw_rust_crates_extension.bzl%pw_rust_crates_extension": {
+      "general": {
+        "bzlTransitiveDigest": "sSk9NI/OYx4hCvWMS2Kgke1xz3AR/Ai81cfPYGN6XYY=",
+        "usagesDigest": "eCd4weYdUTExmnZpElN/4C0QDXLcrCOntxK8aJNMhSM=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "rust_crates": {
+            "bzlFile": "@@bazel_tools//tools/build_defs/repo:git.bzl",
+            "ruleClassName": "git_repository",
+            "attributes": {
+              "commit": "ed1ec1bd240b9446b30af5331b960871a0503a6c",
+              "remote": "https://pigweed.googlesource.com/third_party/rust_crates"
+            }
+          }
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "",
+            "bazel_tools",
+            "bazel_tools"
+          ]
+        ]
+      }
+    },
     "//pw_toolchain/rust:extensions.bzl%pw_rust": {
       "general": {
         "bzlTransitiveDigest": "Zqosl4Adcs3tmnzpLUSfqORMpEFcrX4GsxZTbuoG/Ps=",

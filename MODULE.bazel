@@ -192,14 +192,13 @@ register_toolchains(
     dev_dependency = True,
 )
 
-git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
 # Vendored third party rust crates.
-git_repository(
-    name = "rust_crates",
+pw_rust_crates = use_extension("@pigweed//pw_build:pw_rust_crates_extension.bzl", "pw_rust_crates_extension")
+pw_rust_crates.default_git_repository(
     commit = "ed1ec1bd240b9446b30af5331b960871a0503a6c",
     remote = "https://pigweed.googlesource.com/third_party/rust_crates",
 )
+use_repo(pw_rust_crates, "rust_crates")
 
 # Get probe-rs
 # ============
