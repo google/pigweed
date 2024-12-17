@@ -71,11 +71,7 @@ MultiBufAllocationFuture MultiBufAllocator::AllocateContiguousAsync(
 }
 
 void MultiBufAllocator::MoreMemoryAvailable(size_t size_available,
-                                            size_t contiguous_size_available)
-    // Disable lock safety analysis: the access to `next_` requires locking
-    // `waiter->allocator_->lock_`, but that's the same as `lock_` which we
-    // already hold.
-    PW_NO_LOCK_SAFETY_ANALYSIS {
+                                            size_t contiguous_size_available) {
   std::lock_guard lock(lock_);
   waiting_futures_.remove_if([this, size_available, contiguous_size_available](
                                  const MultiBufAllocationFuture& future) {
