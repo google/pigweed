@@ -29,7 +29,8 @@ def includes_presubmit_check(
         (https://bazel.build/run/build#specifying-build-targets).
     """
 
-    @presubmit.check(name='no_includes')
+    @presubmit.filter_paths(endswith=('.bazel', '.bzl'))
+    @presubmit.check(name='bazel_no_includes')
     def includes_check(
         ctx: presubmit_context.PresubmitContext,
     ):
