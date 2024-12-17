@@ -49,10 +49,10 @@ TEST(Entry, Size_RoundsUpToAlignment) {
     FlashPartition partition(&flash, 0, flash.sector_count(), alignment_bytes);
     const size_t align = AlignUp(alignment_bytes, Entry::kMinAlignmentBytes);
 
+    static constexpr byte value_bytes[4096 + Entry::kMinAlignmentBytes] = {};
     for (size_t value : {size_t(0), align - 1, align, align + 1, 2 * align}) {
-      const byte value_bytes = {};
-      Entry entry = Entry::Valid(
-          partition, 0, kFormat, "k", span(&value_bytes, value), 0);
+      Entry entry =
+          Entry::Valid(partition, 0, kFormat, "k", span(value_bytes, value), 0);
 
       ASSERT_EQ(AlignUp(sizeof(EntryHeader) + 1 /* key */ + value, align),
                 entry.size());
