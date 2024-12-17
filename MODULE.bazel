@@ -38,7 +38,7 @@ bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_platform", version = "0.1.0")
 bazel_dep(name = "rules_probe_rs", version = "0.0.2")
 bazel_dep(name = "rules_proto", version = "6.0.2")
-bazel_dep(name = "rules_python", version = "0.36.0")
+bazel_dep(name = "rules_python", version = "0.38.0")
 bazel_dep(name = "rules_rust", version = "0.54.1")
 
 # LINT.IfChange(emboss)
@@ -72,16 +72,6 @@ single_version_override(
         # https://github.com/konkers/rules_rust/tree/wip/rustdoc
         "//pw_rust/bazel_patches:0002-PROTOTYPE-Add-ability-to-document-multiple-crates-at.patch",
     ],
-)
-
-# Supports directory sources in sphinx_docs_library. Providing //pw_rust:docs
-# as an input to //docs:docs depends on this bug fix:
-# https://github.com/bazelbuild/rules_python/issues/2374
-# We can remove this override when we upgrade to rules_python >= 0.38.
-git_override(
-    module_name = "rules_python",
-    commit = "a0b1a40b9335ec1a8cae737e805f721cd6d2cd1f",
-    remote = "https://github.com/bazelbuild/rules_python.git",
 )
 
 # Transitive deps not in BCR

@@ -158,6 +158,17 @@
     "https://bcr.bazel.build/modules/rules_proto/6.0.2/source.json": "17a2e195f56cb28d6bbf763e49973d13890487c6945311ed141e196fb660426d",
     "https://bcr.bazel.build/modules/rules_proto_grpc/5.0.0/MODULE.bazel": "aad0151be788911f9736f413c423342d781a9dc19f35d3373c8581c828a387f4",
     "https://bcr.bazel.build/modules/rules_proto_grpc/5.0.0/source.json": "f35378dee74074450e6bb0755febb17879bddb705fe57270a213c8ee9c658a46",
+    "https://bcr.bazel.build/modules/rules_python/0.10.2/MODULE.bazel": "cc82bc96f2997baa545ab3ce73f196d040ffb8756fd2d66125a530031cd90e5f",
+    "https://bcr.bazel.build/modules/rules_python/0.22.1/MODULE.bazel": "26114f0c0b5e93018c0c066d6673f1a2c3737c7e90af95eff30cfee38d0bbac7",
+    "https://bcr.bazel.build/modules/rules_python/0.23.1/MODULE.bazel": "49ffccf0511cb8414de28321f5fcf2a31312b47c40cc21577144b7447f2bf300",
+    "https://bcr.bazel.build/modules/rules_python/0.25.0/MODULE.bazel": "72f1506841c920a1afec76975b35312410eea3aa7b63267436bfb1dd91d2d382",
+    "https://bcr.bazel.build/modules/rules_python/0.28.0/MODULE.bazel": "cba2573d870babc976664a912539b320cbaa7114cd3e8f053c720171cde331ed",
+    "https://bcr.bazel.build/modules/rules_python/0.31.0/MODULE.bazel": "93a43dc47ee570e6ec9f5779b2e64c1476a6ce921c48cc9a1678a91dd5f8fd58",
+    "https://bcr.bazel.build/modules/rules_python/0.33.2/MODULE.bazel": "3e036c4ad8d804a4dad897d333d8dce200d943df4827cb849840055be8d2e937",
+    "https://bcr.bazel.build/modules/rules_python/0.35.0/MODULE.bazel": "c3657951764cdcdb5a7370d5e885fad5e8c1583320aad18d46f9f110d2c22755",
+    "https://bcr.bazel.build/modules/rules_python/0.38.0/MODULE.bazel": "ee75c9510a481eb92c7c04e432f84023065bbc8dcf6e49b7399e7c660624acdd",
+    "https://bcr.bazel.build/modules/rules_python/0.38.0/source.json": "6772986f2989b639ecf8a59c8dc8c376fd10a7a7246fa84aa0a508d5d037230f",
+    "https://bcr.bazel.build/modules/rules_python/0.4.0/MODULE.bazel": "9208ee05fd48bf09ac60ed269791cf17fb343db56c8226a720fbb1cdf467166c",
     "https://bcr.bazel.build/modules/rules_rust/0.45.1/MODULE.bazel": "a69d0db3a958fab2c6520961e1b2287afcc8b36690fd31bbc4f6f7391397150d",
     "https://bcr.bazel.build/modules/rules_rust/0.54.1/MODULE.bazel": "388547bb0cd6a751437bb15c94c6725226f50100eec576e4354c3a8b48c754fb",
     "https://bcr.bazel.build/modules/rules_rust/0.54.1/source.json": "9c5481b1abe4943457e6b2a475592d2e504b6b4355df603f24f64cde0a7f0f2d",
@@ -1263,8 +1274,8 @@
     },
     "@@rules_python+//python/private/pypi:pip.bzl%pip_internal": {
       "general": {
-        "bzlTransitiveDigest": "Oa6/v9oSFg0af+I905gBZw7I0R06mfkkgMGc4lGkGzs=",
-        "usagesDigest": "VTYz1Sr8swh2alixDllC0XTWVicBDiGEqnPw5aNZgLQ=",
+        "bzlTransitiveDigest": "cYOV/KiQbAM6v1HSdKoZJFHBwTQuGj4SDP4NiCM2k14=",
+        "usagesDigest": "QxXrhi2MYoK4i9dAnv2HFnihTqctDfPGsHU04iUhUns=",
         "recordedFileInputs": {
           "@@rules_python+//tools/publish/requirements_linux.txt": "8175b4c8df50ae2f22d1706961884beeb54e7da27bd2447018314a175981997d",
           "@@rules_python+//tools/publish/requirements_darwin.txt": "2994136eab7e57b083c3de76faf46f70fad130bc8e7360a7fed2b288b69e79dc",
