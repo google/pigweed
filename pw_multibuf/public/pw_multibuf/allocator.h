@@ -65,14 +65,10 @@ class MultiBufAllocator {
 
   virtual ~MultiBufAllocator() {}
 
-  ////////////////
-  // -- Sync -- //
-  ////////////////
-
   /// Attempts to allocate a ``MultiBuf`` of exactly ``size`` bytes.
   ///
   /// Memory allocated by an arbitrary ``MultiBufAllocator`` does not provide
-  /// any alignment requirments, preferring instead to allow the allocator
+  /// any alignment requirements, preferring instead to allow the allocator
   /// maximum flexibility for placing regions (especially discontiguous
   /// regions).
   ///
@@ -84,7 +80,7 @@ class MultiBufAllocator {
   /// most ``desired_size`` bytes.
   ///
   /// Memory allocated by an arbitrary ``MultiBufAllocator`` does not provide
-  /// any alignment requirments, preferring instead to allow the allocator
+  /// any alignment requirements, preferring instead to allow the allocator
   /// maximum flexibility for placing regions (especially discontiguous
   /// regions).
   ///
@@ -96,7 +92,7 @@ class MultiBufAllocator {
   /// bytes.
   ///
   /// Memory allocated by an arbitrary ``MultiBufAllocator`` does not provide
-  /// any alignment requirments, preferring instead to allow the allocator
+  /// any alignment requirements, preferring instead to allow the allocator
   /// maximum flexibility for placing regions (especially discontiguous
   /// regions).
   ///
@@ -109,7 +105,7 @@ class MultiBufAllocator {
   /// bytes and at most ``desired_size`` bytes.
   ///
   /// Memory allocated by an arbitrary ``MultiBufAllocator`` does not provide
-  /// any alignment requirments, preferring instead to allow the allocator
+  /// any alignment requirements, preferring instead to allow the allocator
   /// maximum flexibility for placing regions (especially discontiguous
   /// regions).
   ///
@@ -118,53 +114,6 @@ class MultiBufAllocator {
   /// @retval ``nullopt_t`` if the memory is not currently available.
   std::optional<MultiBuf> AllocateContiguous(size_t min_size,
                                              size_t desired_size);
-
-  /////////////////
-  // -- Async -- //
-  /////////////////
-
-  /// Asynchronously allocates a ``MultiBuf`` of exactly ``size`` bytes.
-  ///
-  /// Memory allocated by an arbitrary ``MultiBufAllocator`` does not provide
-  /// any alignment requirments, preferring instead to allow the allocator
-  /// maximum flexibility for placing regions (especially discontiguous
-  /// regions).
-  ///
-  /// @retval A ``MultiBufAllocationFuture`` which will yield a ``MultiBuf``
-  /// when one is available.
-  MultiBufAllocationFuture AllocateAsync(size_t size);
-
-  /// Asynchronously allocates a ``MultiBuf`` of at least
-  /// ``min_size`` bytes and at most ``desired_size` bytes.
-  ///
-  /// Memory allocated by an arbitrary ``MultiBufAllocator`` does not provide
-  /// any alignment requirments, preferring instead to allow the allocator
-  /// maximum flexibility for placing regions (especially discontiguous
-  /// regions).
-  ///
-  /// @retval A ``MultiBufAllocationFuture`` which will yield a ``MultiBuf``
-  /// when one is available.
-  MultiBufAllocationFuture AllocateAsync(size_t min_size, size_t desired_size);
-
-  /// Asynchronously allocates a contiguous ``MultiBuf`` of exactly ``size``
-  /// bytes.
-  ///
-  /// Memory allocated by an arbitrary ``MultiBufAllocator`` does not provide
-  /// any alignment requirments, preferring instead to allow the allocator
-  /// maximum flexibility for placing regions (especially discontiguous
-  /// regions).
-  ///
-  /// @retval A ``MultiBufAllocationFuture`` which will yield an ``MultiBuf``
-  /// consisting of a single ``Chunk`` when one is available.
-  MultiBufAllocationFuture AllocateContiguousAsync(size_t size);
-
-  /// Asynchronously allocates an ``OwnedChunk`` of at least
-  /// ``min_size`` bytes and at most ``desired_size`` bytes.
-  ///
-  /// @retval A ``MultiBufAllocationFuture`` which will yield an ``MultiBuf``
-  /// consisting of a single ``Chunk`` when one is available.
-  MultiBufAllocationFuture AllocateContiguousAsync(size_t min_size,
-                                                   size_t desired_size);
 
  protected:
   /// Awakens callers asynchronously waiting for allocations of at most
@@ -234,6 +183,65 @@ class MultiBufAllocator {
   sync::InterruptSpinLock lock_;
   IntrusiveForwardList<MemoryAvailableDelegate> mem_delegates_
       PW_GUARDED_BY(lock_);
+};
+
+class MultiBufAllocatorAsync {
+  // : public MultiBufAllocator::MoreMemoryDelegate {
+ public:
+  MultiBufAllocatorAsync(MultiBufAllocator& mbuf_allocator)
+      : mbuf_allocator_(mbuf_allocator) {}
+
+  /// ```MultiBufAllocatorAsync`` is not copyable or movable.
+  MultiBufAllocatorAsync(MultiBufAllocatorAsync&) = delete;
+  MultiBufAllocatorAsync& operator=(MultiBufAllocatorAsync&) = delete;
+  MultiBufAllocatorAsync(MultiBufAllocatorAsync&&) = delete;
+  MultiBufAllocatorAsync& operator=(MultiBufAllocatorAsync&&) = delete;
+
+  /// Asynchronously allocates a ``MultiBuf`` of exactly ``size`` bytes.
+  ///
+  /// Memory allocated by an arbitrary ``MultiBufAllocator`` does not provide
+  /// any alignment requirements, preferring instead to allow the allocator
+  /// maximum flexibility for placing regions (especially discontiguous
+  /// regions).
+  ///
+  /// @retval A ``MultiBufAllocationFuture`` which will yield a ``MultiBuf``
+  /// when one is available.
+  MultiBufAllocationFuture AllocateAsync(size_t size);
+
+  /// Asynchronously allocates a ``MultiBuf`` of at least
+  /// ``min_size`` bytes and at most ``desired_size` bytes.
+  ///
+  /// Memory allocated by an arbitrary ``MultiBufAllocator`` does not provide
+  /// any alignment requirements, preferring instead to allow the allocator
+  /// maximum flexibility for placing regions (especially discontiguous
+  /// regions).
+  ///
+  /// @retval A ``MultiBufAllocationFuture`` which will yield a ``MultiBuf``
+  /// when one is available.
+  MultiBufAllocationFuture AllocateAsync(size_t min_size, size_t desired_size);
+
+  /// Asynchronously allocates a contiguous ``MultiBuf`` of exactly ``size``
+  /// bytes.
+  ///
+  /// Memory allocated by an arbitrary ``MultiBufAllocator`` does not provide
+  /// any alignment requirements, preferring instead to allow the allocator
+  /// maximum flexibility for placing regions (especially discontiguous
+  /// regions).
+  ///
+  /// @retval A ``MultiBufAllocationFuture`` which will yield an ``MultiBuf``
+  /// consisting of a single ``Chunk`` when one is available.
+  MultiBufAllocationFuture AllocateContiguousAsync(size_t size);
+
+  /// Asynchronously allocates an ``OwnedChunk`` of at least
+  /// ``min_size`` bytes and at most ``desired_size`` bytes.
+  ///
+  /// @retval A ``MultiBufAllocationFuture`` which will yield an ``MultiBuf``
+  /// consisting of a single ``Chunk`` when one is available.
+  MultiBufAllocationFuture AllocateContiguousAsync(size_t min_size,
+                                                   size_t desired_size);
+
+ private:
+  MultiBufAllocator& mbuf_allocator_;
 };
 
 /// An object that asynchronously yields a ``MultiBuf`` when ``Pend``ed.

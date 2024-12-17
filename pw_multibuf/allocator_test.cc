@@ -94,9 +94,11 @@ class AllocateTask : public Task {
 };
 
 TEST(MultiBufAllocator, AllocateAsyncReturnsImmediatelyAvailableAllocation) {
-  MockMultiBufAllocator alloc;
-  AllocateTask task(alloc.AllocateAsync(44, 33));
-  alloc.ExpectAllocateAndReturn(44, 33, kAllowDiscontiguous, MultiBuf());
+  MockMultiBufAllocator mbuf_alloc;
+  MultiBufAllocatorAsync async_alloc{mbuf_alloc};
+
+  AllocateTask task(async_alloc.AllocateAsync(44, 33));
+  mbuf_alloc.ExpectAllocateAndReturn(44, 33, kAllowDiscontiguous, MultiBuf());
 
   Dispatcher dispatcher;
   dispatcher.Post(task);
@@ -107,13 +109,15 @@ TEST(MultiBufAllocator, AllocateAsyncReturnsImmediatelyAvailableAllocation) {
 }
 
 TEST(MultiBufAllocator, AllocateAsyncWillNotPollUntilMoreMemoryAvailable) {
-  MockMultiBufAllocator alloc;
-  AllocateTask task(alloc.AllocateAsync(44, 33));
+  MockMultiBufAllocator mbuf_alloc;
+  MultiBufAllocatorAsync async_alloc{mbuf_alloc};
+
+  AllocateTask task(async_alloc.AllocateAsync(44, 33));
   Dispatcher dispatcher;
   dispatcher.Post(task);
 
   // First attempt will return `ResourceExhausted` to signal temporary OOM.
-  alloc.ExpectAllocateAndReturn(
+  mbuf_alloc.ExpectAllocateAndReturn(
       44, 33, kAllowDiscontiguous, Status::ResourceExhausted());
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsPending());
   EXPECT_TRUE(task.last_result_.IsPending());
@@ -123,12 +127,12 @@ TEST(MultiBufAllocator, AllocateAsyncWillNotPollUntilMoreMemoryAvailable) {
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsPending());
 
   // Insufficient memory should not awaken the task.
-  alloc.MoreMemoryAvailable(30, 30);
+  mbuf_alloc.MoreMemoryAvailable(30, 30);
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsPending());
 
   // Sufficient memory will awaken and return the memory
-  alloc.MoreMemoryAvailable(50, 50);
-  alloc.ExpectAllocateAndReturn(44, 33, kAllowDiscontiguous, MultiBuf());
+  mbuf_alloc.MoreMemoryAvailable(50, 50);
+  mbuf_alloc.ExpectAllocateAndReturn(44, 33, kAllowDiscontiguous, MultiBuf());
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
 }
 

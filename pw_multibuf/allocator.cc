@@ -24,6 +24,8 @@ using ::pw::async2::Context;
 using ::pw::async2::Poll;
 using ::pw::async2::Waker;
 
+// ########## MultiBufAllocator
+
 std::optional<MultiBuf> MultiBufAllocator::Allocate(size_t size) {
   return Allocate(size, size);
 }
@@ -52,24 +54,6 @@ std::optional<MultiBuf> MultiBufAllocator::AllocateContiguous(
   return std::nullopt;
 }
 
-MultiBufAllocationFuture MultiBufAllocator::AllocateAsync(size_t size) {
-  return MultiBufAllocationFuture(*this, size, size, kAllowDiscontiguous);
-}
-MultiBufAllocationFuture MultiBufAllocator::AllocateAsync(size_t min_size,
-                                                          size_t desired_size) {
-  return MultiBufAllocationFuture(
-      *this, min_size, desired_size, kAllowDiscontiguous);
-}
-MultiBufAllocationFuture MultiBufAllocator::AllocateContiguousAsync(
-    size_t size) {
-  return MultiBufAllocationFuture(*this, size, size, kNeedsContiguous);
-}
-MultiBufAllocationFuture MultiBufAllocator::AllocateContiguousAsync(
-    size_t min_size, size_t desired_size) {
-  return MultiBufAllocationFuture(
-      *this, min_size, desired_size, kNeedsContiguous);
-}
-
 void MultiBufAllocator::MoreMemoryAvailable(size_t size_available,
                                             size_t contiguous_size_available) {
   std::lock_guard lock(lock_);
@@ -79,6 +63,33 @@ void MultiBufAllocator::MoreMemoryAvailable(size_t size_available,
         *this, size_available, contiguous_size_available);
   });
 }
+
+// ########## MultiBufAllocatorAsync
+
+MultiBufAllocationFuture MultiBufAllocatorAsync::AllocateAsync(size_t size) {
+  return MultiBufAllocationFuture(
+      mbuf_allocator_, size, size, kAllowDiscontiguous);
+}
+
+MultiBufAllocationFuture MultiBufAllocatorAsync::AllocateAsync(
+    size_t min_size, size_t desired_size) {
+  return MultiBufAllocationFuture(
+      mbuf_allocator_, min_size, desired_size, kAllowDiscontiguous);
+}
+
+MultiBufAllocationFuture MultiBufAllocatorAsync::AllocateContiguousAsync(
+    size_t size) {
+  return MultiBufAllocationFuture(
+      mbuf_allocator_, size, size, kNeedsContiguous);
+}
+
+MultiBufAllocationFuture MultiBufAllocatorAsync::AllocateContiguousAsync(
+    size_t min_size, size_t desired_size) {
+  return MultiBufAllocationFuture(
+      mbuf_allocator_, min_size, desired_size, kNeedsContiguous);
+}
+
+// ########## MultiBufAllocationFuture
 
 bool MultiBufAllocationFuture::HandleMemoryAvailable(
     MultiBufAllocator& alloc,
