@@ -179,6 +179,36 @@ class MultiBufAllocator {
  private:
   friend class MultiBufAllocationFuture;
 
+  // Instances of this class are informed when more memory becomes available.
+  class MemoryAvailableDelegate
+      : public IntrusiveForwardList<MemoryAvailableDelegate>::Item {
+   public:
+    explicit MemoryAvailableDelegate() = default;
+    MemoryAvailableDelegate(MemoryAvailableDelegate&) = delete;
+    MemoryAvailableDelegate& operator=(MemoryAvailableDelegate&) = delete;
+    MemoryAvailableDelegate(MemoryAvailableDelegate&&) = delete;
+    MemoryAvailableDelegate& operator=(MemoryAvailableDelegate&&) = delete;
+    virtual ~MemoryAvailableDelegate() = default;
+
+    // Callback from allocator when new memory being available. Function should
+    // return true if object's need has been met which also indicates the object
+    // can be released by the allocator.
+    virtual bool HandleMemoryAvailable(
+        MultiBufAllocator& alloc,
+        size_t size_available,
+        size_t contiguous_size_available) const = 0;
+  };
+
+  void AddMemoryAvailableDelegate(MemoryAvailableDelegate& delegate)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(lock_) {
+    mem_delegates_.push_front(delegate);
+  }
+
+  void RemoveMemoryAvailableDelegate(MemoryAvailableDelegate& delegate)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(lock_) {
+    mem_delegates_.remove(delegate);
+  }
+
   /// Attempts to allocate a ``MultiBuf`` of at least ``min_size`` bytes and at
   /// most ``desired_size`` bytes.
   ///
@@ -202,7 +232,7 @@ class MultiBufAllocator {
       ContiguityRequirement contiguity_requirement) = 0;
 
   sync::InterruptSpinLock lock_;
-  IntrusiveForwardList<MultiBufAllocationFuture> waiting_futures_
+  IntrusiveForwardList<MemoryAvailableDelegate> mem_delegates_
       PW_GUARDED_BY(lock_);
 };
 
@@ -211,7 +241,7 @@ class MultiBufAllocator {
 /// See ``pw::async2`` for details on ``Pend`` and how it is used to build
 /// asynchronous tasks.
 class MultiBufAllocationFuture
-    : public IntrusiveForwardList<MultiBufAllocationFuture>::Item {
+    : public MultiBufAllocator::MemoryAvailableDelegate {
  public:
   constexpr explicit MultiBufAllocationFuture(MultiBufAllocator& allocator)
       : allocator_(&allocator),
@@ -229,7 +259,7 @@ class MultiBufAllocationFuture
 
   MultiBufAllocationFuture(MultiBufAllocationFuture&&);
   MultiBufAllocationFuture& operator=(MultiBufAllocationFuture&&);
-  ~MultiBufAllocationFuture();
+  ~MultiBufAllocationFuture() override;
 
   void SetDesiredSize(size_t min_size) {
     SetDesiredSizes(min_size, min_size, kAllowDiscontiguous);
@@ -250,11 +280,9 @@ class MultiBufAllocationFuture
  private:
   friend class MultiBufAllocator;
 
-  // Handle new memory being available. Return true if our need has been met (so
-  // we can be destroyed by owner).
   bool HandleMemoryAvailable(MultiBufAllocator& alloc,
                              size_t size_available,
-                             size_t contiguous_size_available) const;
+                             size_t contiguous_size_available) const override;
 
   /// Attempts to allocate with the stored parameters.
   async2::Poll<std::optional<MultiBuf>> TryAllocate();

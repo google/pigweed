@@ -73,8 +73,8 @@ MultiBufAllocationFuture MultiBufAllocator::AllocateContiguousAsync(
 void MultiBufAllocator::MoreMemoryAvailable(size_t size_available,
                                             size_t contiguous_size_available) {
   std::lock_guard lock(lock_);
-  waiting_futures_.remove_if([this, size_available, contiguous_size_available](
-                                 const MultiBufAllocationFuture& future) {
+  mem_delegates_.remove_if([this, size_available, contiguous_size_available](
+                               const MemoryAvailableDelegate& future) {
     return future.HandleMemoryAvailable(
         *this, size_available, contiguous_size_available);
   });
@@ -104,8 +104,8 @@ MultiBufAllocationFuture::MultiBufAllocationFuture(
       contiguity_requirement_(other.contiguity_requirement_) {
   std::lock_guard lock(allocator_->lock_);
   if (!other.unlisted()) {
-    allocator_->waiting_futures_.remove(other);
-    allocator_->waiting_futures_.push_front(*this);
+    allocator_->RemoveMemoryAvailableDelegate(other);
+    allocator_->AddMemoryAvailableDelegate(*this);
     // We must move the waker under the lock in order to ensure that there is no
     // race between swapping ``MultiBufAllocationFuture``s and the waker being
     // awoken by the allocator.
@@ -118,7 +118,7 @@ MultiBufAllocationFuture& MultiBufAllocationFuture::operator=(
   {
     std::lock_guard lock(allocator_->lock_);
     if (!this->unlisted()) {
-      allocator_->waiting_futures_.remove(*this);
+      allocator_->RemoveMemoryAvailableDelegate(*this);
     }
   }
 
@@ -129,8 +129,8 @@ MultiBufAllocationFuture& MultiBufAllocationFuture::operator=(
 
   std::lock_guard lock(allocator_->lock_);
   if (!other.unlisted()) {
-    allocator_->waiting_futures_.remove(other);
-    allocator_->waiting_futures_.push_front(*this);
+    allocator_->RemoveMemoryAvailableDelegate(other);
+    allocator_->AddMemoryAvailableDelegate(*this);
     // We must move the waker under the lock in order to ensure that there is no
     // race between swapping ``MultiBufAllocationFuture``s and the waker being
     // awoken by the allocator.
@@ -143,7 +143,7 @@ MultiBufAllocationFuture& MultiBufAllocationFuture::operator=(
 MultiBufAllocationFuture::~MultiBufAllocationFuture() {
   std::lock_guard lock(allocator_->lock_);
   if (!this->unlisted()) {
-    allocator_->waiting_futures_.remove(*this);
+    allocator_->RemoveMemoryAvailableDelegate(*this);
   }
 }
 
@@ -166,7 +166,7 @@ void MultiBufAllocationFuture::SetDesiredSizes(
       ((new_contiguity_requirement == kAllowDiscontiguous) &&
        (contiguity_requirement_ == kNeedsContiguous))) {
     if (!this->unlisted()) {
-      allocator_->waiting_futures_.remove(*this);
+      allocator_->RemoveMemoryAvailableDelegate(*this);
     }
   }
   min_size_ = new_min_size;
@@ -182,7 +182,7 @@ Poll<std::optional<MultiBuf>> MultiBufAllocationFuture::Pend(Context& cx) {
     if (result.IsReady()) {
       return result;
     }
-    allocator_->waiting_futures_.push_front(*this);
+    allocator_->AddMemoryAvailableDelegate(*this);
   }
   // We set the waker while still holding the lock to ensure there is no gap
   // between us checking TryAllocate above and the waker being reset here.
