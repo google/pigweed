@@ -139,10 +139,10 @@ class MultiBufAllocator {
     // Callback from allocator when new memory being available. Function should
     // return true if object's need has been met which also indicates the object
     // can be released by the allocator.
-    virtual bool HandleMemoryAvailable(
-        MultiBufAllocator& alloc,
-        size_t size_available,
-        size_t contiguous_size_available) const = 0;
+    virtual bool HandleMemoryAvailable(MultiBufAllocator& alloc,
+                                       size_t size_available,
+                                       size_t contiguous_size_available) const
+        PW_EXCLUSIVE_LOCKS_REQUIRED(lock_) = 0;
   };
 
   void AddMemoryAvailableDelegate(MemoryAvailableDelegate& delegate)

@@ -53,11 +53,16 @@ std::optional<MultiBuf> MultiBufAllocator::AllocateContiguous(
 void MultiBufAllocator::MoreMemoryAvailable(size_t size_available,
                                             size_t contiguous_size_available) {
   std::lock_guard lock(lock_);
-  mem_delegates_.remove_if([this, size_available, contiguous_size_available](
-                               const MemoryAvailableDelegate& future) {
-    return future.HandleMemoryAvailable(
-        *this, size_available, contiguous_size_available);
-  });
+  mem_delegates_.remove_if(
+      [this, size_available, contiguous_size_available](
+          const MemoryAvailableDelegate& future)
+      // We properly acquire lock_ as needed for HandleMemoryAvailable in outer
+      // scope, but still need PW_NO_LOCK_SAFETY_ANALYSIS because compiler can't
+      // be sure when this lambda is called within that outer scope.
+      PW_NO_LOCK_SAFETY_ANALYSIS {
+        return future.HandleMemoryAvailable(
+            *this, size_available, contiguous_size_available);
+      });
 }
 
 }  // namespace pw::multibuf

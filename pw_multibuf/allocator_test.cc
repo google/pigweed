@@ -160,5 +160,34 @@ TEST(MultiBufAllocatorAsync, AllocateAsyncWillNotPollUntilMoreMemoryAvailable) {
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
 }
 
+TEST(MultiBufAllocatorAsync, MoveMultiBufAllocationFuture) {
+  MockMultiBufAllocator mbuf_alloc;
+  MultiBufAllocatorAsync async_alloc{mbuf_alloc};
+  MultiBufAllocationFuture fut1 = async_alloc.AllocateAsync(44u, 33u);
+  EXPECT_EQ(44u, fut1.min_size());
+  EXPECT_EQ(33u, fut1.desired_size());
+
+  // Test move ctor
+  MultiBufAllocationFuture fut2{std::move(fut1)};
+  EXPECT_EQ(44u, fut2.min_size());
+  EXPECT_EQ(33u, fut2.desired_size());
+
+  // Test move assign
+  MultiBufAllocationFuture fut3{std::move(fut2)};
+  EXPECT_EQ(44u, fut3.min_size());
+  EXPECT_EQ(33u, fut3.desired_size());
+
+  // Test task behavior works after two moves
+  AllocateTask task(std::move(fut3));
+  mbuf_alloc.ExpectAllocateAndReturn(44, 33, kAllowDiscontiguous, MultiBuf());
+
+  Dispatcher dispatcher;
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+
+  ASSERT_TRUE(task.last_result_.IsReady());
+  ASSERT_TRUE(task.last_result_->has_value());
+}
+
 }  // namespace
 }  // namespace pw::multibuf
