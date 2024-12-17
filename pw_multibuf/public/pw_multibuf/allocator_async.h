@@ -118,7 +118,7 @@ class MultiBufAllocationFuture
   /// Returns the ``allocator`` associated with this future.
   MultiBufAllocator& allocator() { return *allocator_; }
   size_t min_size() const { return min_size_; }
-  size_t desired_size() const { return min_size_; }
+  size_t desired_size() const { return desired_size_; }
   bool needs_contiguous() const {
     return contiguity_requirement_ == kNeedsContiguous;
   }

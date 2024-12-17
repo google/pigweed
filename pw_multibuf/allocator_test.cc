@@ -76,6 +76,8 @@ class MockMultiBufAllocator : public MultiBufAllocator {
   std::optional<AllocateExpectation> expected_allocate_;
 };
 
+// ########## MultiBufAllocatorAsync
+
 class AllocateTask : public Task {
  public:
   AllocateTask(MultiBufAllocationFuture&& future)
@@ -94,7 +96,28 @@ class AllocateTask : public Task {
   }
 };
 
-TEST(MultiBufAllocator, AllocateAsyncReturnsImmediatelyAvailableAllocation) {
+TEST(MultiBufAllocatorAsync, MultiBufAllocationFutureCtor) {
+  MockMultiBufAllocator mbuf_alloc;
+  MultiBufAllocatorAsync async_alloc{mbuf_alloc};
+  {
+    MultiBufAllocationFuture fut = async_alloc.AllocateAsync(44u, 33u);
+    EXPECT_EQ(44u, fut.min_size());
+    EXPECT_EQ(33u, fut.desired_size());
+    EXPECT_FALSE(fut.needs_contiguous());
+    EXPECT_EQ(&mbuf_alloc, &fut.allocator());
+  }
+  {
+    MultiBufAllocationFuture fut =
+        async_alloc.AllocateContiguousAsync(66u, 55u);
+    EXPECT_EQ(66u, fut.min_size());
+    EXPECT_EQ(55u, fut.desired_size());
+    EXPECT_TRUE(fut.needs_contiguous());
+    EXPECT_EQ(&mbuf_alloc, &fut.allocator());
+  }
+}
+
+TEST(MultiBufAllocatorAsync,
+     AllocateAsyncReturnsImmediatelyAvailableAllocation) {
   MockMultiBufAllocator mbuf_alloc;
   MultiBufAllocatorAsync async_alloc{mbuf_alloc};
 
@@ -109,7 +132,7 @@ TEST(MultiBufAllocator, AllocateAsyncReturnsImmediatelyAvailableAllocation) {
   ASSERT_TRUE(task.last_result_->has_value());
 }
 
-TEST(MultiBufAllocator, AllocateAsyncWillNotPollUntilMoreMemoryAvailable) {
+TEST(MultiBufAllocatorAsync, AllocateAsyncWillNotPollUntilMoreMemoryAvailable) {
   MockMultiBufAllocator mbuf_alloc;
   MultiBufAllocatorAsync async_alloc{mbuf_alloc};
 
