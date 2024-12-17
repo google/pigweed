@@ -130,13 +130,9 @@ class ProxyHost {
   ///
   /// @param[in] receive_fn         Read callback to be invoked on Rx SDUs.
   ///
-  /// @param[in] queue_space_available_fn
-  ///                               Callback to be invoked after resources
-  ///                               become available after an UNAVAILABLE Write.
-  ///
-  /// @param[in] event_fn          Handle asynchronous events such as errors
-  ///                              encountered by the channel. See
-  ///                              `l2cap_channel_event.h`.
+  /// @param[in] event_fn          Handle asynchronous events such as errors and
+  ///                              flow control events encountered by the
+  ///                              channel. See `l2cap_channel_event.h`.
   ///
   /// @returns @rst
   ///
@@ -150,9 +146,7 @@ class ProxyHost {
       L2capCoc::CocConfig rx_config,
       L2capCoc::CocConfig tx_config,
       Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn,
-      // TODO: https://pwbug.dev/383150263 - Delete & use event_fn instead.
-      Function<void()>&& queue_space_available_fn = nullptr);
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   /// TODO: https://pwbug.dev/380076024 - Delete after downstream client uses
   /// this method on `L2capCoc`.
@@ -178,10 +172,6 @@ class ProxyHost {
   /// @param[in] payload_from_controller_fn Read callback to be invoked on Rx
   ///                                       SDUs.
   ///
-  /// @param[in] queue_space_available_fn   Callback to be invoked after
-  ///                                       resources become available after an
-  ///                                       UNAVAILABLE Write.
-  ///
   /// @param[in] event_fn                   Handle asynchronous events such as
   ///                                       errors encountered by the channel.
   ///                                       See `l2cap_channel_common.h`.
@@ -199,8 +189,6 @@ class ProxyHost {
       uint16_t remote_cid,
       AclTransportType transport,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      // TODO: https://pwbug.dev/383150263 - Delete & use event_fn instead.
-      Function<void()>&& queue_space_available_fn = nullptr,
       // TODO: https://pwbug.dev/383150263 - Delete nullptr after downstream
       // clients are providing event_fn.
       Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
@@ -242,10 +230,6 @@ class ProxyHost {
   ///
   /// @param[in] receive_fn        Read callback to be invoked on Rx frames.
   ///
-  /// @param[in] queue_space_available_fn
-  ///                              Callback to be invoked after resources become
-  ///                              available after an UNAVAILABLE Write.
-  ///
   /// @param[in] event_fn          Handle asynchronous events such as errors
   ///                              encountered by the channel. See
   ///                              `l2cap_channel_common.h`.
@@ -256,6 +240,17 @@ class ProxyHost {
   ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
   ///  UNAVAILABLE: If channel could not be created.
   /// @endrst
+  pw::Result<RfcommChannel> AcquireRfcommChannel(
+      uint16_t connection_handle,
+      RfcommChannel::Config rx_config,
+      RfcommChannel::Config tx_config,
+      uint8_t channel_number,
+      Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      // TODO: https://pwbug.dev/383150263 - Delete nullptr after downstream
+      // clients are providing event_fn.
+      Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
+
+  // TODO: https://pwbug.dev/383150263 - Delete after users are migrated.
   pw::Result<RfcommChannel> AcquireRfcommChannel(
       uint16_t connection_handle,
       RfcommChannel::Config rx_config,

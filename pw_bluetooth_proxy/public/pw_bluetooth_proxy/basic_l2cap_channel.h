@@ -30,7 +30,6 @@ class BasicL2capChannel : public L2capChannel {
       uint16_t local_cid,
       uint16_t remote_cid,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void()>&& queue_space_available_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   BasicL2capChannel(const BasicL2capChannel& other) = delete;
@@ -49,9 +48,10 @@ class BasicL2capChannel : public L2capChannel {
   /// .. pw-status-codes::
   ///  OK:                  If packet was successfully queued for send.
   ///  UNAVAILABLE:         If channel could not acquire the resources to queue
-  ///                       the send at this time (transient error). If a
-  ///                       `queue_space_available_fn` has been provided it will
-  ///                       be called when there is queue space available again.
+  ///                       the send at this time (transient error). If an
+  ///                       `event_fn` has been provided it will be called with
+  ///                       `L2capChannelEvent::kWriteAvailable` when there is
+  ///                       queue space available again.
   ///  INVALID_ARGUMENT:    If payload is too large.
   ///  FAILED_PRECONDITION  If channel is not `State::kRunning`.
   /// @endrst
@@ -65,7 +65,6 @@ class BasicL2capChannel : public L2capChannel {
       uint16_t local_cid,
       uint16_t remote_cid,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void()>&& queue_space_available_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
  protected:

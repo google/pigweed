@@ -191,7 +191,6 @@ struct CocParameters {
   uint16_t tx_credits = 1;
   pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr;
   pw::Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
-  pw::Function<void()>&& queue_space_available_fn = nullptr;
 };
 
 // Attempt to AcquireL2capCoc and return result.
@@ -207,7 +206,6 @@ struct BasicL2capParameters {
   AclTransportType transport = AclTransportType::kLe;
   Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn =
       nullptr;
-  Function<void()>&& queue_space_available_fn = nullptr;
   Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
 };
 
@@ -227,7 +225,6 @@ RfcommChannel BuildRfcomm(
     ProxyHost& proxy,
     RfcommParameters params = {},
     Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr,
-    Function<void()>&& queue_space_available_fn = nullptr,
     Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
 
 // ########## Test Suites

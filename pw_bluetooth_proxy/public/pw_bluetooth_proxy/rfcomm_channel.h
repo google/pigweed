@@ -71,10 +71,6 @@ class RfcommChannel final : public L2capChannel {
   ///
   /// @param[in] receive_fn        Read callback to be invoked on Rx frames.
   ///
-  /// @param[in] queue_space_available_fn
-  ///                              Callback to be invoked after resources become
-  ///                              available after an UNAVAILABLE Write.
-  ///
   /// @returns @rst
   ///
   /// .. pw-status-codes::
@@ -88,7 +84,6 @@ class RfcommChannel final : public L2capChannel {
       Config tx_config,
       uint8_t channel_number,
       Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-      Function<void()>&& queue_space_available_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   /// Send an RFCOMM payload to the remote peer.
@@ -101,9 +96,10 @@ class RfcommChannel final : public L2capChannel {
   /// .. pw-status-codes::
   ///  OK:                  If packet was successfully queued for send.
   ///  UNAVAILABLE:         If channel could not acquire the resources to queue
-  ///                       the send at this time (transient error). If a
-  ///                       `queue_space_available_fn` has been provided it will
-  ///                       be called when there is queue space available again.
+  ///                       the send at this time (transient error). If an
+  ///                       `event_fn` has been provided it will be called with
+  ///                       `L2capChannelEvent::kWriteAvailable` when there is
+  ///                       queue space available again.
   ///  INVALID_ARGUMENT:    If payload is too large.
   ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
   /// @endrst
@@ -121,7 +117,6 @@ class RfcommChannel final : public L2capChannel {
                 Config tx_config,
                 uint8_t channel_number,
                 Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-                Function<void()>&& queue_space_available_fn,
                 Function<void(L2capChannelEvent event)>&& event_fn);
 
   // Parses out RFCOMM payload from `l2cap_pdu` and calls

@@ -37,7 +37,6 @@ void L2capChannel::MoveFields(L2capChannel& other) {
   local_cid_ = other.local_cid();
   remote_cid_ = other.remote_cid();
   event_fn_ = std::move(other.event_fn_);
-  queue_space_available_fn_ = std::move(other.queue_space_available_fn_);
   payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
   {
     std::lock_guard lock(send_queue_mutex_);
@@ -124,8 +123,8 @@ std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
     }
   }
 
-  if (queue_space_available_fn_ && should_notify) {
-    queue_space_available_fn_();
+  if (should_notify) {
+    SendEvent(L2capChannelEvent::kWriteAvailable);
   }
 
   return packet;
@@ -159,7 +158,6 @@ L2capChannel::L2capChannel(
     uint16_t local_cid,
     uint16_t remote_cid,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void()>&& queue_space_available_fn,
     Function<void(L2capChannelEvent event)>&& event_fn)
     : l2cap_channel_manager_(l2cap_channel_manager),
       state_(State::kRunning),
@@ -168,7 +166,6 @@ L2capChannel::L2capChannel(
       local_cid_(local_cid),
       remote_cid_(remote_cid),
       event_fn_(std::move(event_fn)),
-      queue_space_available_fn_(std::move(queue_space_available_fn)),
       payload_from_controller_fn_(std::move(payload_from_controller_fn)) {
   l2cap_channel_manager_.RegisterChannel(*this);
 }

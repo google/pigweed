@@ -92,7 +92,6 @@ GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
                    /*local_cid=*/kAttributeProtocolCID,
                    /*remote_cid=*/kAttributeProtocolCID,
                    /*payload_from_controller_fn=*/nullptr,
-                   /*queue_space_available_fn=*/nullptr,
                    /*event_fn=*/nullptr),
       attribute_handle_(attribute_handle) {}
 

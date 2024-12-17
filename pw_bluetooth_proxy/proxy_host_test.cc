@@ -2167,7 +2167,6 @@ TEST_F(BasicL2capChannelTest, BasicWrite) {
                                      /*remote_cid=*/capture.channel_id,
                                      /*transport=*/AclTransportType::kLe,
                                      /*payload_from_controller_fn=*/nullptr,
-                                     /*queue_space_available_fn=*/nullptr,
                                      /*event_fn=*/nullptr));
 
   EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
@@ -2199,7 +2198,6 @@ TEST_F(BasicL2capChannelTest, ErrorOnWriteTooLarge) {
                                      /*remote_cid=*/0x123,
                                      /*transport=*/AclTransportType::kLe,
                                      /*payload_from_controller_fn=*/nullptr,
-                                     /*queue_space_available_fn=*/nullptr,
                                      /*event_fn=*/nullptr));
 
   EXPECT_EQ(channel.Write(span(hci_arr)), PW_STATUS_INVALID_ARGUMENT);
@@ -2224,7 +2222,6 @@ TEST_F(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
                                     /*remote_cid=*/0x123,
                                     /*transport=*/AclTransportType::kLe,
                                     /*payload_from_controller_fn=*/nullptr,
-                                    /*queue_space_available_fn=*/nullptr,
                                     /*event_fn=*/nullptr)
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
@@ -2237,7 +2234,6 @@ TEST_F(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
                                     /*remote_cid=*/0x123,
                                     /*transport=*/AclTransportType::kLe,
                                     /*payload_from_controller_fn=*/nullptr,
-                                    /*queue_space_available_fn=*/nullptr,
                                     /*event_fn=*/nullptr)
           .status(),
       PW_STATUS_INVALID_ARGUMENT);
@@ -2275,7 +2271,6 @@ TEST_F(BasicL2capChannelTest, BasicRead) {
                                    capture.expected_payload.begin(),
                                    capture.expected_payload.end()));
           },
-          /*queue_space_available_fn=*/nullptr,
           /*event_fn=*/nullptr));
 
   std::array<uint8_t,

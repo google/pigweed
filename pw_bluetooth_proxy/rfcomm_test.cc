@@ -314,12 +314,16 @@ TEST_F(RfcommWriteTest, WriteFlowControl) {
     std::array<uint8_t, 3> payload = {0xAB, 0xCD, 0xEF};
   } capture;
 
-  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
       [](H4PacketWithHci&&) {});
-  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       [&capture](H4PacketWithH4&&) { ++capture.sends_called; });
-  pw::Function<void()> queue_space_available_fn(
-      [&capture]() { ++capture.queue_unblocked; });
+  pw::Function<void(L2capChannelEvent event)> event_fn(
+      [&capture](L2capChannelEvent event) {
+        if (event == L2capChannelEvent::kWriteAvailable) {
+          ++capture.queue_unblocked;
+        }
+      });
 
   ProxyHost proxy = ProxyHost(
       std::move(send_to_host_fn),
@@ -335,12 +339,10 @@ TEST_F(RfcommWriteTest, WriteFlowControl) {
                                  .max_information_length = 900,
                                  .credits = 0,
                              }};
-  RfcommChannel channel = BuildRfcomm(
-      proxy,
-      params,
-      /*receive_fn=*/nullptr,
-      /*queue_space_available_fn=*/std::move(queue_space_available_fn),
-      /*event_fn=*/nullptr);
+  RfcommChannel channel = BuildRfcomm(proxy,
+                                      params,
+                                      /*receive_fn=*/nullptr,
+                                      /*event_fn=*/std::move(event_fn));
 
   // Writes while queue has space will return Ok. No RFCOMM credits yet though
   // so no sends complete.

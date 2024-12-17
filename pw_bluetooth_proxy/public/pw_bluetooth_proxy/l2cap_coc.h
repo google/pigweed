@@ -76,9 +76,10 @@ class L2capCoc : public L2capChannel {
   /// .. pw-status-codes::
   ///  OK:                  If packet was successfully queued for send.
   ///  UNAVAILABLE:         If channel could not acquire the resources to queue
-  ///                       the send at this time (transient error). If a
-  ///                       `queue_space_available_fn` has been provided it will
-  ///                       be called when there is queue space available again.
+  ///                       the send at this time (transient error). If an
+  ///                       `event_fn` has been provided it will be called with
+  ///                       `L2capChannelEvent::kWriteAvailable` when there is
+  ///                       queue space available again.
   ///  INVALID_ARGUMENT:    If payload is too large.
   ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
   /// @endrst
@@ -107,8 +108,7 @@ class L2capCoc : public L2capChannel {
       CocConfig rx_config,
       CocConfig tx_config,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn,
-      Function<void()>&& queue_space_available_fn);
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   // `SendPayloadFromControllerToClient` with the information payload contained
   // in `kframe`. As packet desegmentation is not supported, segmented SDUs are
@@ -130,8 +130,7 @@ class L2capCoc : public L2capChannel {
       CocConfig rx_config,
       CocConfig tx_config,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn,
-      Function<void()>&& queue_space_available_fn);
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   // Override: Dequeue a packet only if a credit is able to be subtracted.
   std::optional<H4PacketWithH4> DequeuePacket() override

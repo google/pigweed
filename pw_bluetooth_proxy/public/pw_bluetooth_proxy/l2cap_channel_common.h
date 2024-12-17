@@ -37,6 +37,9 @@ enum class L2capChannelEvent {
   /// been received. The channel is now `State::kStopped` and should be closed.
   // TODO: https://pwbug.dev/365179076 - Support recombination.
   kRxFragmented,
+  /// Write space is now available after a previous Write on this channel
+  /// returned UNAVAILABLE.
+  kWriteAvailable,
 };
 
 }  // namespace pw::bluetooth::proxy

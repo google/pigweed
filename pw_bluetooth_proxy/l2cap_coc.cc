@@ -98,8 +98,7 @@ pw::Result<L2capCoc> L2capCoc::Create(
     CocConfig rx_config,
     CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn,
-    Function<void()>&& queue_space_available_fn) {
+    Function<void(L2capChannelEvent event)>&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/rx_config.cid,
                           /*remote_cid=*/tx_config.cid)) {
@@ -122,8 +121,7 @@ pw::Result<L2capCoc> L2capCoc::Create(
       /*rx_config=*/rx_config,
       /*tx_config=*/tx_config,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
-      /*event_fn=*/std::move(event_fn),
-      /*queue_space_available_fn=*/std::move(queue_space_available_fn));
+      /*event_fn=*/std::move(event_fn));
 }
 
 pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
@@ -241,8 +239,7 @@ L2capCoc::L2capCoc(
     CocConfig rx_config,
     CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn,
-    Function<void()>&& queue_space_available_fn)
+    Function<void(L2capChannelEvent event)>&& event_fn)
     : L2capChannel(
           /*l2cap_channel_manager=*/l2cap_channel_manager,
           /*connection_handle=*/connection_handle,
@@ -250,7 +247,6 @@ L2capCoc::L2capCoc(
           /*local_cid=*/rx_config.cid,
           /*remote_cid=*/tx_config.cid,
           /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
-          /*queue_space_available_fn=*/std::move(queue_space_available_fn),
           /*event_fn=*/std::move(event_fn)),
       signaling_channel_(signaling_channel),
       rx_mtu_(rx_config.mtu),

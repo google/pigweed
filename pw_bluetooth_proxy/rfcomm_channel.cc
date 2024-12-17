@@ -145,7 +145,6 @@ Result<RfcommChannel> RfcommChannel::Create(
     Config tx_config,
     uint8_t channel_number,
     Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-    Function<void()>&& queue_space_available_fn,
     Function<void(L2capChannelEvent event)>&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/rx_config.cid,
@@ -159,7 +158,6 @@ Result<RfcommChannel> RfcommChannel::Create(
                        tx_config,
                        channel_number,
                        std::move(receive_fn),
-                       std::move(queue_space_available_fn),
                        std::move(event_fn));
 }
 
@@ -260,7 +258,6 @@ RfcommChannel::RfcommChannel(
     Config tx_config,
     uint8_t channel_number,
     Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-    Function<void()>&& queue_space_available_fn,
     Function<void(L2capChannelEvent event)>&& event_fn)
     : L2capChannel(
           /*l2cap_channel_manager=*/l2cap_channel_manager,
@@ -269,7 +266,6 @@ RfcommChannel::RfcommChannel(
           /*local_cid=*/rx_config.cid,
           /*remote_cid=*/tx_config.cid,
           /*payload_from_controller_fn=*/std::move(receive_fn),
-          /*queue_space_available_fn=*/std::move(queue_space_available_fn),
           /*event_fn=*/std::move(event_fn)),
       rx_config_(rx_config),
       tx_config_(tx_config),
