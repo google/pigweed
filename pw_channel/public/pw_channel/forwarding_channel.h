@@ -21,6 +21,7 @@
 #include "pw_async2/poll.h"
 #include "pw_channel/channel.h"
 #include "pw_multibuf/allocator.h"
+#include "pw_multibuf/allocator_async.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 

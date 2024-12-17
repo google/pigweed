@@ -114,16 +114,29 @@ pw_source_set("allocator") {
   sources = [ "allocator.cc" ]
   public_deps = [
     ":pw_multibuf",
-    "$dir_pw_async2:dispatcher",
     "$dir_pw_containers:intrusive_forward_list",
     "$dir_pw_result",
+    "$dir_pw_sync:interrupt_spin_lock",
   ]
 }
 
+pw_source_set("allocator_async") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_multibuf/allocator_async.h" ]
+  sources = [ "allocator_async.cc" ]
+  public_deps = [
+    ":allocator",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:poll",
+  ]
+}
+
+# TODO: https://pwbug.dev/384583239 - Split async into its own test.
 pw_test("allocator_test") {
   enable_if = pw_async2_DISPATCHER_BACKEND != ""
   deps = [
     ":allocator",
+    ":allocator_async",
     "$dir_pw_async2:dispatcher",
     "$dir_pw_async2:poll",
   ]

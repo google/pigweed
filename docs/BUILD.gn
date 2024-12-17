@@ -307,6 +307,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_malloc/public/pw_malloc/config.h",
   "$dir_pw_malloc/public/pw_malloc/malloc.h",
   "$dir_pw_multibuf/public/pw_multibuf/allocator.h",
+  "$dir_pw_multibuf/public/pw_multibuf/allocator_async.h",
   "$dir_pw_multibuf/public/pw_multibuf/chunk.h",
   "$dir_pw_multibuf/public/pw_multibuf/from_span.h",
   "$dir_pw_multibuf/public/pw_multibuf/header_chunk_region_tracker.h",

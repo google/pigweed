@@ -20,6 +20,7 @@
 #include "pw_async2/poll.h"
 #include "pw_channel/channel.h"
 #include "pw_multibuf/allocator.h"
+#include "pw_multibuf/allocator_async.h"
 #include "pw_multibuf/multibuf.h"
 
 namespace pw::channel {

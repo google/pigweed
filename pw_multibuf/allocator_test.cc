@@ -17,6 +17,7 @@
 #include "gtest/gtest.h"
 #include "pw_async2/dispatcher.h"
 #include "pw_async2/poll.h"
+#include "pw_multibuf/allocator_async.h"
 
 namespace pw::multibuf {
 namespace {

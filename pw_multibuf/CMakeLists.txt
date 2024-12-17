@@ -119,15 +119,28 @@ pw_add_library(pw_multibuf.allocator STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_async2.dispatcher
-    pw_async2.poll
     pw_containers.intrusive_forward_list
     pw_multibuf
     pw_result
+    pw_sync.interrupt_spin_lock
   SOURCES
     allocator.cc
 )
 
+pw_add_library(pw_multibuf.allocator_async STATIC
+  HEADERS
+    public/pw_multibuf/allocator_async.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_async2.dispatcher
+    pw_async2.poll
+    pw_multibuf.allocator
+  SOURCES
+    allocator_async.cc
+)
+
+# TODO: https://pwbug.dev/384583239 - Split async into its own test.
 pw_add_test(pw_multibuf.allocator_test
   SOURCES
     allocator_test.cc
@@ -135,6 +148,7 @@ pw_add_test(pw_multibuf.allocator_test
     pw_async2.dispatcher
     pw_async2.poll
     pw_multibuf.allocator
+    pw_multibuf.allocator_async
   GROUPS
     modules
     pw_multibuf

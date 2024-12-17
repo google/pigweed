@@ -19,6 +19,7 @@
 #include "pw_assert/check.h"
 #include "pw_compilation_testing/negative_compilation.h"
 #include "pw_multibuf/allocator.h"
+#include "pw_multibuf/allocator_async.h"
 #include "pw_multibuf/simple_allocator.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_unit_test/framework.h"

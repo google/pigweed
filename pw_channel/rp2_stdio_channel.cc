@@ -19,6 +19,7 @@
 #include "pw_async2/dispatcher_base.h"
 #include "pw_log/log.h"
 #include "pw_multibuf/allocator.h"
+#include "pw_multibuf/allocator_async.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_status/status.h"
 

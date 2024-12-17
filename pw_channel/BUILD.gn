@@ -36,6 +36,7 @@ pw_source_set("pw_channel") {
     "$dir_pw_async2:dispatcher",
     "$dir_pw_async2:poll",
     "$dir_pw_multibuf:allocator",
+    "$dir_pw_multibuf:allocator_async",
     "$dir_pw_toolchain:sibling_cast",
     dir_pw_assert,
     dir_pw_bytes,
@@ -54,6 +55,7 @@ pw_source_set("forwarding_channel") {
   public_deps = [
     ":pw_channel",
     "$dir_pw_multibuf:allocator",
+    "$dir_pw_multibuf:allocator_async",
     "$dir_pw_sync:mutex",
   ]
 }
@@ -77,6 +79,7 @@ pw_source_set("loopback_channel") {
   public_deps = [
     ":pw_channel",
     "$dir_pw_multibuf:allocator",
+    "$dir_pw_multibuf:allocator_async",
   ]
 }
 
@@ -84,6 +87,7 @@ pw_test("loopback_channel_test") {
   sources = [ "loopback_channel_test.cc" ]
   deps = [
     ":loopback_channel",
+    "$dir_pw_multibuf:allocator_async",
     "$dir_pw_multibuf:testing",
   ]
   enable_if = pw_async2_DISPATCHER_BACKEND != ""
@@ -96,6 +100,7 @@ pw_source_set("epoll_channel") {
   public_deps = [
     ":pw_channel",
     "$dir_pw_multibuf:allocator",
+    "$dir_pw_multibuf:allocator_async",
     "$dir_pw_sync:mutex",
   ]
   deps = [ dir_pw_log ]
@@ -105,6 +110,8 @@ pw_test("epoll_channel_test") {
   sources = [ "epoll_channel_test.cc" ]
   deps = [
     ":epoll_channel",
+    "$dir_pw_multibuf:allocator",
+    "$dir_pw_multibuf:allocator_async",
     "$dir_pw_multibuf:testing",
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",
@@ -122,6 +129,7 @@ if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
     public_deps = [
       ":pw_channel",
       "$dir_pw_multibuf:allocator",
+      "$dir_pw_multibuf:allocator_async",
     ]
     deps = [
       "$PICO_ROOT/src/common/pico_base",
@@ -150,6 +158,7 @@ pw_test("stream_channel_test") {
   deps = [
     ":stream_channel",
     "$dir_pw_async2:pend_func_task",
+    "$dir_pw_multibuf:allocator_async",
     "$dir_pw_multibuf:testing",
     "$dir_pw_stream:mpsc_stream",
     "$dir_pw_thread:test_thread_context",
@@ -185,6 +194,7 @@ pw_test("channel_test") {
   deps = [
     ":pw_channel",
     "$dir_pw_allocator:testing",
+    "$dir_pw_multibuf:allocator_async",
     "$dir_pw_multibuf:simple_allocator",
   ]
   enable_if = pw_async2_DISPATCHER_BACKEND != ""

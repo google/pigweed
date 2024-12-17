@@ -117,23 +117,44 @@ pw_cc_test(
 
 cc_library(
     name = "allocator",
-    srcs = ["allocator.cc"],
-    hdrs = ["public/pw_multibuf/allocator.h"],
+    srcs = [
+        "allocator.cc",
+    ],
+    hdrs = [
+        "public/pw_multibuf/allocator.h",
+    ],
     strip_include_prefix = "public",
     deps = [
         ":pw_multibuf",
-        "//pw_async2:dispatcher",
-        "//pw_async2:poll",
         "//pw_containers:intrusive_forward_list",
         "//pw_result",
+        "//pw_sync:interrupt_spin_lock",
     ],
 )
 
+cc_library(
+    name = "allocator_async",
+    srcs = [
+        "allocator_async.cc",
+    ],
+    hdrs = [
+        "public/pw_multibuf/allocator_async.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":allocator",
+        "//pw_async2:dispatcher",
+        "//pw_async2:poll",
+    ],
+)
+
+# TODO: https://pwbug.dev/384583239 - Split async into its own test.
 pw_cc_test(
     name = "allocator_test",
     srcs = ["allocator_test.cc"],
     deps = [
         ":allocator",
+        ":allocator_async",
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
         "//pw_unit_test",
