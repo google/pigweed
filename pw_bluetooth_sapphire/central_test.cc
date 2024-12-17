@@ -62,6 +62,11 @@ auto MakePendResultTask(
 
 class CentralTest : public ::testing::Test {
  public:
+  void SetUp() override {
+    central_.emplace(
+        adapter_.AsWeakPtr(), async_dispatcher_, multibuf_allocator_);
+  }
+
   ScanHandle::Ptr Scan(Central::ScanOptions& options) {
     pw::async2::OnceReceiver<ScanStartResult> scan_receiver =
         central().Scan(options);
@@ -99,9 +104,11 @@ class CentralTest : public ::testing::Test {
     return std::move(scan_start_result.value());
   }
 
+  void DestroyCentral() { central_.reset(); }
+
   bt::gap::testing::FakeAdapter& adapter() { return adapter_; }
   bt::gap::PeerCache& peer_cache() { return *adapter_.peer_cache(); }
-  pw::bluetooth_sapphire::Central& central() { return central_; }
+  pw::bluetooth_sapphire::Central& central() { return central_.value(); }
   pw::async::test::FakeDispatcher& async_dispatcher() {
     return async_dispatcher_;
   }
@@ -115,11 +122,10 @@ class CentralTest : public ::testing::Test {
   pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/2024,
                                              /*kMetaSizeBytes=*/2024>
       multibuf_allocator_;
-  Central central_{
-      adapter_.AsWeakPtr(), async_dispatcher_, multibuf_allocator_};
+  std::optional<Central> central_;
 };
 
-TEST_F(CentralTest, ScanOneResultSuccess) {
+TEST_F(CentralTest, ScanOneResultAndStopScanSuccess) {
   Central::ScanOptions options;
   options.scan_type = Central::ScanType::kActiveUsePublicAddress;
   // Don't filter results.
@@ -169,6 +175,13 @@ TEST_F(CentralTest, ScanOneResultSuccess) {
   EXPECT_TRUE(async2_dispatcher().RunUntilStalled().IsPending());
   EXPECT_FALSE(scan_result_result.has_value());
   scan_handle_task.Deregister();
+
+  // Stop scan
+  scan_handle.reset();
+  // The scan should stop asynchronously.
+  EXPECT_EQ(adapter().fake_le()->discovery_sessions().size(), 1u);
+  async_dispatcher().RunUntilIdle();
+  EXPECT_EQ(adapter().fake_le()->discovery_sessions().size(), 0u);
 }
 
 TEST_F(CentralTest, ScanResultDoesNotMatchFilter) {
@@ -393,6 +406,31 @@ TEST_F(CentralTest, QueueMoreThanMaxScanResultsInScanHandleDropsOldest) {
     ASSERT_TRUE(scan_result_results[i].ok());
     EXPECT_EQ(scan_result_results[i].value().rssi, i + 1);
   }
+}
+
+TEST_F(CentralTest, CentralDestroyedBeforeScanHandle) {
+  Central::ScanOptions options;
+  options.scan_type = Central::ScanType::kActiveUsePublicAddress;
+  std::array<Central::ScanFilter, 1> filters{Central::ScanFilter{}};
+  options.filters = filters;
+
+  ScanHandle::Ptr scan_handle = Scan(options);
+  ASSERT_TRUE(scan_handle);
+  ASSERT_EQ(adapter().fake_le()->discovery_sessions().size(), 1u);
+
+  std::optional<pw::Result<ScanResult>> scan_result_result;
+  PendFuncTask scan_handle_task =
+      MakePendResultTask(scan_handle, scan_result_result);
+  async2_dispatcher().Post(scan_handle_task);
+  EXPECT_TRUE(async2_dispatcher().RunUntilStalled().IsPending());
+
+  DestroyCentral();
+
+  EXPECT_TRUE(async2_dispatcher().RunUntilStalled().IsReady());
+  ASSERT_TRUE(scan_result_result.has_value());
+  EXPECT_TRUE(scan_result_result.value().status().IsCancelled());
+
+  scan_handle.reset();
 }
 
 }  // namespace

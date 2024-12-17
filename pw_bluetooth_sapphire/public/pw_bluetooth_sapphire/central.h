@@ -32,7 +32,7 @@ class Central final : public pw::bluetooth::low_energy::Central2 {
   Central(bt::gap::Adapter::WeakPtr adapter,
           pw::async::Dispatcher& dispatcher,
           pw::multibuf::MultiBufAllocator& allocator);
-  ~Central() override = default;
+  ~Central() override;
 
   async2::OnceReceiver<ConnectResult> Connect(
       pw::bluetooth::PeerId peer_id,
@@ -50,9 +50,9 @@ class Central final : public pw::bluetooth::low_energy::Central2 {
     explicit ScanHandleImpl(uint16_t scan_id, Central* central)
         : scan_id_(scan_id), central_(central) {}
 
-    ~ScanHandleImpl() override {
-      // TODO: https://pwbug.dev/377301546 - Stop scanning.
-    }
+    // Synchronously clears ScanState's pointer to this object and
+    // asynchronously stops the scan procedure.
+    ~ScanHandleImpl() override;
 
     void QueueScanResultLocked(ScanResult&& result)
         PW_EXCLUSIVE_LOCKS_REQUIRED(lock());
@@ -73,7 +73,7 @@ class Central final : public pw::bluetooth::low_energy::Central2 {
     // std::unique_ptr custom Deleter
     void Release() override { delete this; }
 
-    const uint16_t scan_id_ [[maybe_unused]];
+    const uint16_t scan_id_;
 
     // Set to null when Central is destroyed or scanning has stopped.
     Central* central_ PW_GUARDED_BY(lock());
@@ -94,6 +94,12 @@ class Central final : public pw::bluetooth::low_energy::Central2 {
         uint16_t scan_id,
         Central* central);
 
+    ~ScanState();
+
+    void OnScanHandleDestroyedLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(lock()) {
+      scan_handle_ = nullptr;
+    }
+
    private:
     // Must be run on Bluetooth thread. Not thread safe.
     void OnScanResult(const bt::gap::Peer& peer) PW_LOCKS_EXCLUDED(lock());
@@ -111,6 +117,10 @@ class Central final : public pw::bluetooth::low_energy::Central2 {
     std::unique_ptr<bt::gap::LowEnergyDiscoverySession> session_;
     const std::vector<bt::gap::DiscoveryFilter> filters_;
   };
+
+  // Asynchronously stops the scan corresponding to `scan_id` and synchronously
+  // clears `ScanState.scan_handle_`.
+  void StopScanLocked(uint16_t scan_id) PW_EXCLUSIVE_LOCKS_REQUIRED(lock());
 
   // Must only be used on the Bluetooth thread.
   uint16_t next_scan_id_ = 0;

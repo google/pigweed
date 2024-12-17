@@ -108,6 +108,11 @@ Central::Central(bt::gap::Adapter::WeakPtr adapter,
       weak_factory_(this),
       self_(weak_factory_.GetWeakPtr()) {}
 
+Central::~Central() {
+  std::lock_guard guard(lock());
+  scans_.clear();
+}
+
 async2::OnceReceiver<Central::ConnectResult> Central::Connect(
     pw::bluetooth::PeerId,
     bluetooth::low_energy::Connection2::ConnectionOptions) {
@@ -190,6 +195,13 @@ async2::OnceReceiver<Central::ScanStartResult> Central::Scan(
 
 pw::sync::Mutex& Central::lock() { return g_peripheral_lock; }
 
+Central::ScanHandleImpl::~ScanHandleImpl() {
+  std::lock_guard guard(lock());
+  if (central_) {
+    central_->StopScanLocked(scan_id_);
+  }
+}
+
 void Central::ScanHandleImpl::QueueScanResultLocked(ScanResult&& result) {
   if (results_.size() == kMaxScanResultsQueueSize) {
     results_.pop();
@@ -231,6 +243,14 @@ Central::ScanState::ScanState(
   session_->set_error_callback([this]() { OnError(); });
 }
 
+Central::ScanState::~ScanState() {
+  // lock() is expected to be held
+  if (scan_handle_) {
+    scan_handle_->OnScanErrorLocked();
+    scan_handle_ = nullptr;
+  }
+}
+
 void Central::ScanState::OnScanResult(const bt::gap::Peer& peer) {
   // TODO: https://pwbug.dev/377301546 - Getting only a Peer as a scan result is
   // awkward. Update LowEnergyDiscoverySession to give us the actual
@@ -263,6 +283,24 @@ void Central::ScanState::OnError() {
   }
   central_->scans_.erase(scan_id_);
   // This object has been destroyed.
+}
+
+void Central::StopScanLocked(uint16_t scan_id) {
+  auto iter = scans_.find(scan_id);
+  if (iter == scans_.end()) {
+    return;
+  }
+  iter->second.OnScanHandleDestroyedLocked();
+
+  pw::Status post_status = dispatcher_.Post(
+      [self = self_, scan_id](pw::async::Context, pw::Status status) {
+        if (!status.ok() || !self.is_alive()) {
+          return;
+        }
+        std::lock_guard guard(lock());
+        self->scans_.erase(scan_id);
+      });
+  PW_CHECK(post_status.ok());
 }
 
 }  // namespace pw::bluetooth_sapphire
