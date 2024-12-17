@@ -250,6 +250,12 @@ class MultiBufAllocationFuture
  private:
   friend class MultiBufAllocator;
 
+  // Handle new memory being available. Return true if our need has been met (so
+  // we can be destroyed by owner).
+  bool HandleMemoryAvailable(MultiBufAllocator& alloc,
+                             size_t size_available,
+                             size_t contiguous_size_available) const;
+
   /// Attempts to allocate with the stored parameters.
   async2::Poll<std::optional<MultiBuf>> TryAllocate();
 
@@ -261,13 +267,13 @@ class MultiBufAllocationFuture
 
   // The properties of the kind of allocation being waited for.
   //
-  // These properties can only be mutated by the owner of the
-  // MultiBufAllocationFuture while holding the allocator's lock,
+  // These properties can only be mutated while holding the allocator's lock,
   // however the MultiBufAllocationFuture owner can freely read these values
   // without needing to acquire the lock.
   //
   // The allocator may read these values so long as this value is listed and
   // the allocator holds the lock.
+  // The properties of the kind of allocation being waited for.
   size_t min_size_;
   size_t desired_size_;
   ContiguityRequirement contiguity_requirement_;

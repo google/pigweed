@@ -75,16 +75,24 @@ void MultiBufAllocator::MoreMemoryAvailable(size_t size_available,
   std::lock_guard lock(lock_);
   waiting_futures_.remove_if([this, size_available, contiguous_size_available](
                                  const MultiBufAllocationFuture& future) {
-    PW_CHECK_PTR_EQ(future.allocator_, this);
-    bool should_wake_and_remove =
-        ((future.min_size_ <= contiguous_size_available) ||
-         (future.contiguity_requirement_ == kAllowDiscontiguous &&
-          future.min_size_ <= size_available));
-    if (should_wake_and_remove) {
-      std::move(const_cast<Waker&>(future.waker_)).Wake();
-    }
-    return should_wake_and_remove;
+    return future.HandleMemoryAvailable(
+        *this, size_available, contiguous_size_available);
   });
+}
+
+bool MultiBufAllocationFuture::HandleMemoryAvailable(
+    MultiBufAllocator& alloc,
+    size_t size_available,
+    size_t contiguous_size_available) const {
+  PW_CHECK_PTR_EQ(allocator_, &alloc);
+  bool should_wake_and_remove =
+      ((min_size_ <= contiguous_size_available) ||
+       (contiguity_requirement_ == kAllowDiscontiguous &&
+        min_size_ <= size_available));
+  if (should_wake_and_remove) {
+    std::move(const_cast<Waker&>(waker_)).Wake();
+  }
+  return should_wake_and_remove;
 }
 
 MultiBufAllocationFuture::MultiBufAllocationFuture(
