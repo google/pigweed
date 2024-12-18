@@ -29,10 +29,6 @@ def pw_cc_binary(**kwargs):
     Args:
       **kwargs: Passed to cc_binary.
     """
-
-    # TODO: b/234877642 - Remove this implicit dependency once we have a better
-    # way to handle the facades without introducing a circular dependency into
-    # the build.
     kwargs["deps"] = kwargs.get("deps", []) + [str(Label("//pw_build:default_link_extra_lib"))]
     native.cc_binary(**kwargs)
 

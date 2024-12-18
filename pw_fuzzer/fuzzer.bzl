@@ -22,10 +22,6 @@ def pw_cc_fuzz_test(**kwargs):
         **kwargs: Arguments to be augmented.
     """
     kwargs["deps"].append("//pw_fuzzer:libfuzzer")
-
-    # TODO: b/234877642 - Remove this implicit dependency once we have a better
-    # way to handle the facades without introducing a circular dependency into
-    # the build.
     kwargs["deps"].append(str(Label("//pw_build:default_link_extra_lib")))
 
     # TODO: b/292628774 - Only linux is supported for now.
