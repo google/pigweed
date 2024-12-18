@@ -106,7 +106,9 @@ class DeviceAddress {
       Type type);
   static pw::bluetooth::emboss::LEPeerAddressTypeNoAnon
   DeviceAddrToLePeerAddrNoAnon(Type type);
-  static pw::bluetooth::emboss::LEOwnAddressType DeviceAddrToLEOwnAddr(
+  static pw::bluetooth::emboss::LEExtendedAddressType
+  DeviceAddrToLeExtendedAddr(Type type);
+  static pw::bluetooth::emboss::LEOwnAddressType DeviceAddrToLeOwnAddr(
       Type type);
 
   static Type LeAddrToDeviceAddr(pw::bluetooth::emboss::LEAddressType type);

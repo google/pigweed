@@ -87,7 +87,7 @@ CommandPacket ExtendedLowEnergyScanner::BuildSetScanParametersPacket(
 
   params.scanning_filter_policy().Write(options.filter_policy);
   params.own_address_type().Write(
-      DeviceAddress::DeviceAddrToLEOwnAddr(local_address.type()));
+      DeviceAddress::DeviceAddrToLeOwnAddr(local_address.type()));
 
   // For maximum compatibility, Sapphire scans on all available PHYs.
   params.scanning_phys().le_1m().Write(true);

@@ -1214,7 +1214,7 @@ void FakeController::SendConnectionCompleteEvent(
   view.status().Write(status);
   view.peer_address().CopyFrom(params.peer_address());
   view.peer_address_type().Write(
-      DeviceAddress::DeviceAddrToLePeerAddr(addr_type));
+      DeviceAddress::DeviceAddrToLePeerAddrNoAnon(addr_type));
 
   view.peripheral_latency().CopyFrom(params.max_latency());
   view.connection_interval().Write(interval);
@@ -1732,8 +1732,9 @@ void FakeController::OnLECreateConnectionCancel() {
     params.status().Write(pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     params.peer_address().CopyFrom(
         le_connect_params_->peer_address.value().view());
-    params.peer_address_type().Write(DeviceAddress::DeviceAddrToLePeerAddr(
-        le_connect_params_->peer_address.type()));
+    params.peer_address_type().Write(
+        DeviceAddress::DeviceAddrToLePeerAddrNoAnon(
+            le_connect_params_->peer_address.type()));
 
     RespondWithCommandComplete(hci_spec::kLECreateConnectionCancel,
                                pwemb::StatusCode::SUCCESS);

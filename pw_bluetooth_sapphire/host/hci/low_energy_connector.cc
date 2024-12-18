@@ -33,7 +33,7 @@ using pw::bluetooth::emboss::LEEnhancedConnectionCompleteSubeventV1View;
 using pw::bluetooth::emboss::LEExtendedCreateConnectionCommandV1Writer;
 using pw::bluetooth::emboss::LEMetaEventView;
 using pw::bluetooth::emboss::LEOwnAddressType;
-using pw::bluetooth::emboss::LEPeerAddressType;
+using pw::bluetooth::emboss::LEPeerAddressTypeNoAnon;
 using pw::bluetooth::emboss::StatusCode;
 
 LowEnergyConnector::PendingRequest::PendingRequest(
@@ -258,9 +258,9 @@ CommandPacket LowEnergyConnector::BuildExtendedCreateConnectionPacket(
   // TODO(b/328311582): Use the resolved address types for <5.0 LE
   // Privacy.
   if (peer_address.IsPublic()) {
-    params.peer_address_type().Write(LEPeerAddressType::PUBLIC);
+    params.peer_address_type().Write(LEPeerAddressTypeNoAnon::PUBLIC);
   } else {
-    params.peer_address_type().Write(LEPeerAddressType::RANDOM);
+    params.peer_address_type().Write(LEPeerAddressTypeNoAnon::RANDOM);
   }
 
   if (local_address.IsPublic()) {

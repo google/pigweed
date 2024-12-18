@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 
+#include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_string/format.h"
@@ -133,7 +134,46 @@ pw::bluetooth::emboss::LEPeerAddressType DeviceAddress::DeviceAddrToLePeerAddr(
   }
 }
 
-pw::bluetooth::emboss::LEOwnAddressType DeviceAddress::DeviceAddrToLEOwnAddr(
+pw::bluetooth::emboss::LEPeerAddressTypeNoAnon
+DeviceAddress::DeviceAddrToLePeerAddrNoAnon(Type type) {
+  switch (type) {
+    case DeviceAddress::Type::kBREDR: {
+      BT_PANIC("BR/EDR address not convertible to LE address");
+    }
+    case DeviceAddress::Type::kLEPublic: {
+      return pw::bluetooth::emboss::LEPeerAddressTypeNoAnon::PUBLIC;
+    }
+    case DeviceAddress::Type::kLERandom: {
+      return pw::bluetooth::emboss::LEPeerAddressTypeNoAnon::RANDOM;
+    }
+    case DeviceAddress::Type::kLEAnonymous: {
+      BT_PANIC("invalid DeviceAddressType; anonymous type unsupported");
+    }
+    default: {
+      BT_PANIC("invalid DeviceAddressType");
+    }
+  }
+}
+
+pw::bluetooth::emboss::LEExtendedAddressType
+DeviceAddress::DeviceAddrToLeExtendedAddr(Type type) {
+  switch (type) {
+    case DeviceAddress::Type::kBREDR: {
+      BT_PANIC("BR/EDR address not convertible to LE address");
+    }
+    case DeviceAddress::Type::kLEPublic: {
+      return pw::bluetooth::emboss::LEExtendedAddressType::PUBLIC;
+    }
+    case DeviceAddress::Type::kLERandom: {
+      return pw::bluetooth::emboss::LEExtendedAddressType::RANDOM;
+    }
+    case DeviceAddress::Type::kLEAnonymous: {
+      return pw::bluetooth::emboss::LEExtendedAddressType::ANONYMOUS;
+    }
+  }
+}
+
+pw::bluetooth::emboss::LEOwnAddressType DeviceAddress::DeviceAddrToLeOwnAddr(
     Type type) {
   switch (type) {
     case DeviceAddress::Type::kLERandom: {
@@ -235,8 +275,8 @@ bool DeviceAddress::IsNonResolvablePrivate() const {
 }
 
 bool DeviceAddress::IsStaticRandom() const {
-  // "The two most significant bits of [a static random address] shall be equal
-  // to 1". (Vol 6, Part B, 1.3.2.1).
+  // "The two most significant bits of [a static random address] shall be
+  // equal to 1". (Vol 6, Part B, 1.3.2.1).
   uint8_t msb = value_.bytes()[5];
   return type_ == Type::kLERandom && ((msb & 0b11000000) == 0b11000000);
 }
