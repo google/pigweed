@@ -13,12 +13,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_preprocessor/compiler.h"
-#include "pw_protobuf/internal/codegen.h"
+#include "pw_bytes/span.h"
 #include "pw_protobuf_test_protos/edition.pwpb.h"
-#include "pw_span/span.h"
+#include "pw_protobuf_test_protos/edition_file_options.pwpb.h"
 #include "pw_status/status.h"
-#include "pw_status/status_with_size.h"
 #include "pw_stream/memory_stream.h"
 #include "pw_unit_test/framework.h"
 
@@ -34,6 +32,19 @@ TEST(EditionsMessage, GeneratesCorrectTypes) {
       std::is_same_v<decltype(EditionsTest::Message::default_uint), uint32_t>);
   static_assert(std::is_same_v<decltype(EditionsTest::Message::packed_values),
                                pw::Vector<int32_t, 8>>);
+}
+
+TEST(EditionsFileOptionsMessage, GeneratesCorrectTypes) {
+  static_assert(std::is_same_v<decltype(EditionsFileOptionsTest::Message::name),
+                               InlineBasicString<char, 16>>);
+  static_assert(
+      std::is_same_v<decltype(EditionsFileOptionsTest::Message::value),
+                     uint32_t>);
+  static_assert(
+      std::is_same_v<decltype(EditionsFileOptionsTest::Message::active), bool>);
+  static_assert(
+      std::is_same_v<decltype(EditionsFileOptionsTest::Message::count),
+                     std::optional<int32_t>>);
 }
 
 TEST(EditionsMessage, Write) {

@@ -728,11 +728,40 @@ def _add_message_fields(
                 and edition >= edition_constants.Edition.EDITION_2023.value
             )
         ):
-            has_presence = not repeated and (
-                field.type is ProtoNode.Type.MESSAGE
-                or field.options.features.field_presence
-                != edition_constants.FieldPresence.IMPLICIT.value
-            )
+            # Set field presence based on both field and file-level options,
+            # following the rules explained by
+            # https://protobuf.dev/editions/implementation/#syntax_reflection.
+            file_default_presence = proto_file.options.features.field_presence
+            field_presence = field.options.features.field_presence
+
+            # Repeated fields can never have explicit presence.
+            if repeated:
+                has_presence = False
+            # Nested messages always have explicit presence.
+            elif field.type is ProtoNode.Type.MESSAGE:
+                has_presence = True
+            # If the field specifies its own presence value, use it.
+            elif (
+                field_presence
+                != edition_constants.FieldPresence.FIELD_PRESENCE_UNKNOWN.value
+            ):
+                has_presence = (
+                    field_presence
+                    != edition_constants.FieldPresence.IMPLICIT.value
+                )
+            # Fall back to a file-level presence default if set.
+            elif (
+                file_default_presence
+                != edition_constants.FieldPresence.FIELD_PRESENCE_UNKNOWN.value
+            ):
+                has_presence = (
+                    file_default_presence
+                    != edition_constants.FieldPresence.IMPLICIT.value
+                )
+            # If neither field nor file presence options exist, edition
+            # 2023 defaults to explicit presence.
+            else:
+                has_presence = True
         else:
             # If the file does not use editions, only consider explicit
             # proto3 optionality.
