@@ -314,16 +314,18 @@ enum LEExtendedAdvFragmentPreference:
     -- The Controller should not fragment or should minimize fragmentation of Host advertising data
 
 
-bits LEAdvertisingEventProperties:
+struct LEAdvertisingEventProperties:
+  -- 7.8.52 LE Set Advertising Set Random Address command (v5.0) (LE)
   -- The Advertising_Event_Properties bitfield values used in a HCI LE Set Extended Advertising
   -- Parameters command.
-  0     [+1]  Flag  connectable
-  $next [+1]  Flag  scannable
-  $next [+1]  Flag  directed
-  $next [+1]  Flag  high_duty_cycle_directed_connectable
-  $next [+1]  Flag  use_legacy_pdus
-  $next [+1]  Flag  anonymous_advertising
-  $next [+1]  Flag  include_tx_power
+  0     [+2]  bits:
+    0     [+1]       Flag  connectable
+    $next [+1]       Flag  scannable
+    $next [+1]       Flag  directed
+    $next [+1]       Flag  high_duty_cycle_directed_connectable
+    $next [+1]       Flag  use_legacy_pdus
+    $next [+1]       Flag  anonymous_advertising
+    $next [+1]       Flag  include_tx_power
 
 
 enum FlowControlMode:
@@ -2366,9 +2368,7 @@ struct LESetExtendedAdvertisingParametersV1Command:
   $next [+1]                          UInt                           advertising_handle
     -- Handle used to identify an advertising set.
 
-  $next [+2]  bits:
-
-    0     [+7]                        LEAdvertisingEventProperties   advertising_event_properties
+  $next [+2]                          LEAdvertisingEventProperties   advertising_event_properties
 
   $next [+3]                          UInt                           primary_advertising_interval_min
     -- Time = N * 0.625 s

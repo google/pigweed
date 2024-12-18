@@ -2764,8 +2764,11 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
     if (!adv_type) {
       bt_log(INFO,
              "fake-hci",
-             "invalid bit combination: %d",
-             params.advertising_event_properties().BackingStorage().ReadUInt());
+             "invalid bit combination: %s",
+             params.advertising_event_properties()
+                 .BackingStorage()
+                 .ToString<std::string>()
+                 .c_str());
       RespondWithCommandComplete(
           hci_spec::kLESetExtendedAdvertisingParameters,
           pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
