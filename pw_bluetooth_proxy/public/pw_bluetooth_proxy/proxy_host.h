@@ -191,9 +191,7 @@ class ProxyHost {
       uint16_t remote_cid,
       AclTransportType transport,
       Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      // TODO: https://pwbug.dev/383150263 - Delete nullptr after downstream
-      // clients are providing event_fn.
-      Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   /// Send a GATT Notify to the indicated connection.
   ///
@@ -249,22 +247,7 @@ class ProxyHost {
       RfcommChannel::Config tx_config,
       uint8_t channel_number,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      // TODO: https://pwbug.dev/383150263 - Delete nullptr after downstream
-      // clients are providing event_fn.
-      Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
-
-  // TODO: https://pwbug.dev/383150263 - Delete after users are migrated.
-  pw::Result<RfcommChannel> AcquireRfcommChannel(
-      uint16_t connection_handle,
-      RfcommChannel::Config rx_config,
-      RfcommChannel::Config tx_config,
-      uint8_t channel_number,
-      Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-      // TODO: https://pwbug.dev/383150263 - Delete & use event_fn instead.
-      Function<void()>&& queue_space_available_fn,
-      // TODO: https://pwbug.dev/383150263 - Delete nullptr after downstream
-      // clients are providing event_fn.
-      Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   /// Indicates whether the proxy has the capability of sending LE ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy
