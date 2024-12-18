@@ -170,7 +170,9 @@ class ProxyHost {
   /// @param[in] transport                  Logical link transport type.
   ///
   /// @param[in] payload_from_controller_fn Read callback to be invoked on Rx
-  ///                                       SDUs.
+  ///                                       SDUs. Return value of false
+  ///                                       indicates the packet should be
+  ///                                       forwarded on to host.
   ///
   /// @param[in] event_fn                   Handle asynchronous events such as
   ///                                       errors encountered by the channel.
@@ -188,7 +190,7 @@ class ProxyHost {
       uint16_t local_cid,
       uint16_t remote_cid,
       AclTransportType transport,
-      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       // TODO: https://pwbug.dev/383150263 - Delete nullptr after downstream
       // clients are providing event_fn.
       Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
@@ -228,7 +230,8 @@ class ProxyHost {
   ///
   /// @param[in] channel_number    RFCOMM channel number to use.
   ///
-  /// @param[in] receive_fn        Read callback to be invoked on Rx frames.
+  /// @param[in] payload_from_controller_fn
+  ///                              Read callback to be invoked on Rx frames.
   ///
   /// @param[in] event_fn          Handle asynchronous events such as errors
   ///                              encountered by the channel. See
@@ -245,7 +248,7 @@ class ProxyHost {
       RfcommChannel::Config rx_config,
       RfcommChannel::Config tx_config,
       uint8_t channel_number,
-      Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       // TODO: https://pwbug.dev/383150263 - Delete nullptr after downstream
       // clients are providing event_fn.
       Function<void(L2capChannelEvent event)>&& event_fn = nullptr);

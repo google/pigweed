@@ -83,7 +83,7 @@ class RfcommChannel final : public L2capChannel {
       Config rx_config,
       Config tx_config,
       uint8_t channel_number,
-      Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   /// Send an RFCOMM payload to the remote peer.
@@ -111,13 +111,14 @@ class RfcommChannel final : public L2capChannel {
  private:
   static constexpr uint8_t kMinRxCredits = 2;
 
-  RfcommChannel(L2capChannelManager& l2cap_channel_manager,
-                uint16_t connection_handle,
-                Config rx_config,
-                Config tx_config,
-                uint8_t channel_number,
-                Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-                Function<void(L2capChannelEvent event)>&& event_fn);
+  RfcommChannel(
+      L2capChannelManager& l2cap_channel_manager,
+      uint16_t connection_handle,
+      Config rx_config,
+      Config tx_config,
+      uint8_t channel_number,
+      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   // Parses out RFCOMM payload from `l2cap_pdu` and calls
   // `SendPayloadFromControllerToClient`.
@@ -130,12 +131,21 @@ class RfcommChannel final : public L2capChannel {
   std::optional<H4PacketWithH4> DequeuePacket() override
       PW_LOCKS_EXCLUDED(mutex_);
 
+  // Override: All traffic on this channel goes to client.
+  bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) override {
+    if (payload_from_controller_fn_) {
+      payload_from_controller_fn_(payload);
+    }
+    return true;
+  }
+
   const Config rx_config_;
   const Config tx_config_;
   const uint8_t channel_number_;
   uint8_t rx_credits_ PW_GUARDED_BY(mutex_);
   uint8_t tx_credits_ PW_GUARDED_BY(mutex_);
   sync::Mutex mutex_;
+  Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
 };
 
 }  // namespace pw::bluetooth::proxy

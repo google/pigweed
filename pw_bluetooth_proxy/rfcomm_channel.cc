@@ -33,7 +33,9 @@ RfcommChannel::RfcommChannel(RfcommChannel&& other)
     : L2capChannel(static_cast<RfcommChannel&&>(other)),
       rx_config_(other.rx_config_),
       tx_config_(other.tx_config_),
-      channel_number_(other.channel_number_) {
+      channel_number_(other.channel_number_),
+      payload_from_controller_fn_(
+          std::move(other.payload_from_controller_fn_)) {
   std::lock_guard lock(mutex_);
   std::lock_guard other_lock(other.mutex_);
   rx_credits_ = other.rx_credits_;
@@ -144,7 +146,7 @@ Result<RfcommChannel> RfcommChannel::Create(
     Config rx_config,
     Config tx_config,
     uint8_t channel_number,
-    Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     Function<void(L2capChannelEvent event)>&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/rx_config.cid,
@@ -157,7 +159,7 @@ Result<RfcommChannel> RfcommChannel::Create(
                        rx_config,
                        tx_config,
                        channel_number,
-                       std::move(receive_fn),
+                       std::move(payload_from_controller_fn),
                        std::move(event_fn));
 }
 
@@ -257,7 +259,7 @@ RfcommChannel::RfcommChannel(
     Config rx_config,
     Config tx_config,
     uint8_t channel_number,
-    Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     Function<void(L2capChannelEvent event)>&& event_fn)
     : L2capChannel(
           /*l2cap_channel_manager=*/l2cap_channel_manager,
@@ -265,13 +267,14 @@ RfcommChannel::RfcommChannel(
           /*transport=*/AclTransportType::kBrEdr,
           /*local_cid=*/rx_config.cid,
           /*remote_cid=*/tx_config.cid,
-          /*payload_from_controller_fn=*/std::move(receive_fn),
+          /*payload_from_controller_fn=*/nullptr,
           /*event_fn=*/std::move(event_fn)),
       rx_config_(rx_config),
       tx_config_(tx_config),
       channel_number_(channel_number),
       rx_credits_(rx_config.credits),
-      tx_credits_(tx_config.credits) {}
+      tx_credits_(tx_config.credits),
+      payload_from_controller_fn_(std::move(payload_from_controller_fn)) {}
 
 void RfcommChannel::OnFragmentedPduReceived() {
   PW_LOG_ERROR(

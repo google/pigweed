@@ -136,6 +136,14 @@ class L2capCoc : public L2capChannel {
   std::optional<H4PacketWithH4> DequeuePacket() override
       PW_LOCKS_EXCLUDED(mutex_);
 
+  // Override: All traffic on this channel goes to client.
+  bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) override {
+    if (payload_from_controller_fn_) {
+      payload_from_controller_fn_(payload);
+    }
+    return true;
+  }
+
   L2capSignalingChannel* signaling_channel_;
   sync::Mutex mutex_;
   uint16_t rx_mtu_;
@@ -144,6 +152,7 @@ class L2capCoc : public L2capChannel {
   uint16_t tx_mps_;
   uint16_t tx_credits_ PW_GUARDED_BY(mutex_);
   uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(mutex_);
+  Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
 };
 
 }  // namespace pw::bluetooth::proxy

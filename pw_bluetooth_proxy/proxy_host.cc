@@ -473,7 +473,7 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
     uint16_t local_cid,
     uint16_t remote_cid,
     AclTransportType transport,
-    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     Function<void(L2capChannelEvent event)>&& event_fn) {
   Status status =
       acl_data_channel_.CreateAclConnection(connection_handle, transport);
@@ -514,7 +514,7 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
     RfcommChannel::Config rx_config,
     RfcommChannel::Config tx_config,
     uint8_t channel_number,
-    Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     Function<void(L2capChannelEvent event)>&& event_fn) {
   Status status = acl_data_channel_.CreateAclConnection(
       connection_handle, AclTransportType::kBrEdr);
@@ -526,7 +526,7 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
                                rx_config,
                                tx_config,
                                channel_number,
-                               std::move(receive_fn),
+                               std::move(payload_from_controller_fn),
                                std::move(event_fn));
 }
 

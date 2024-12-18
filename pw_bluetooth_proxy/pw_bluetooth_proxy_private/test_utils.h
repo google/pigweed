@@ -204,7 +204,7 @@ struct BasicL2capParameters {
   uint16_t local_cid = 234;
   uint16_t remote_cid = 456;
   AclTransportType transport = AclTransportType::kLe;
-  Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn =
+  Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn =
       nullptr;
   Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
 };

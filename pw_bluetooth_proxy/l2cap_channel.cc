@@ -157,7 +157,7 @@ L2capChannel::L2capChannel(
     AclTransportType transport,
     uint16_t local_cid,
     uint16_t remote_cid,
-    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     Function<void(L2capChannelEvent event)>&& event_fn)
     : l2cap_channel_manager_(l2cap_channel_manager),
       state_(State::kRunning),

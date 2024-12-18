@@ -144,7 +144,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
       AclTransportType transport,
       uint16_t local_cid,
       uint16_t remote_cid,
-      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   // Returns whether or not ACL connection handle & L2CAP channel identifiers
@@ -193,10 +193,12 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //  Rx:
   //-------
 
-  void SendPayloadFromControllerToClient(pw::span<uint8_t> payload) {
+  // Returns false if payload should be forwarded to host instead.
+  virtual bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) {
     if (payload_from_controller_fn_) {
-      payload_from_controller_fn_(payload);
+      return payload_from_controller_fn_(payload);
     }
+    return false;
   }
 
  private:
@@ -250,7 +252,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //-------
 
   // Client-provided controller read callback.
-  pw::Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
+  pw::Function<bool(pw::span<uint8_t> payload)> payload_from_controller_fn_;
 };
 
 }  // namespace pw::bluetooth::proxy

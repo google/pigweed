@@ -2240,19 +2240,20 @@ TEST_F(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
 }
 
 TEST_F(BasicL2capChannelTest, BasicRead) {
+  struct {
+    int sends_called = 0;
+    int to_host_called = 0;
+    std::array<uint8_t, 3> expected_payload = {0xAB, 0xCD, 0xEF};
+  } capture;
+
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
-      [](H4PacketWithHci&&) {});
+      [&capture](H4PacketWithHci&&) { ++capture.to_host_called; });
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
       [](H4PacketWithH4&&) {});
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
                               /*le_acl_credits_to_reserve=*/0,
                               /*br_edr_acl_credits_to_reserve=*/0);
-
-  struct {
-    int sends_called = 0;
-    std::array<uint8_t, 3> expected_payload = {0xAB, 0xCD, 0xEF};
-  } capture;
 
   uint16_t handle = 334;
   uint16_t local_cid = 443;
@@ -2270,6 +2271,7 @@ TEST_F(BasicL2capChannelTest, BasicRead) {
                                    payload.end(),
                                    capture.expected_payload.begin(),
                                    capture.expected_payload.end()));
+            return true;
           },
           /*event_fn=*/nullptr));
 
@@ -2302,6 +2304,75 @@ TEST_F(BasicL2capChannelTest, BasicRead) {
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
   EXPECT_EQ(capture.sends_called, 1);
+  EXPECT_EQ(capture.to_host_called, 0);
+}
+
+TEST_F(BasicL2capChannelTest, BasicForward) {
+  struct {
+    int sends_called = 0;
+    int to_host_called = 0;
+    std::array<uint8_t, 3> expected_payload = {0xAB, 0xCD, 0xEF};
+    std::array<uint8_t,
+               emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
+                   emboss::BasicL2capHeader::IntrinsicSizeInBytes() + 3>
+        hci_arr{};
+  } capture;
+
+  H4PacketWithHci h4_packet{emboss::H4PacketType::ACL_DATA, capture.hci_arr};
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [&capture](H4PacketWithHci&& packet) {
+        ++capture.to_host_called;
+        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
+                               packet.GetHciSpan().end(),
+                               capture.hci_arr.begin(),
+                               capture.hci_arr.end()));
+      });
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [](H4PacketWithH4&&) {});
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
+  uint16_t handle = 334;
+  uint16_t local_cid = 443;
+  PW_TEST_ASSERT_OK_AND_ASSIGN(BasicL2capChannel channel,
+                               proxy.AcquireBasicL2capChannel(
+                                   /*connection_handle=*/handle,
+                                   /*local_cid=*/local_cid,
+                                   /*remote_cid=*/0x123,
+                                   /*transport=*/AclTransportType::kLe,
+                                   /*payload_from_controller_fn=*/
+                                   [&capture](pw::span<uint8_t>) {
+                                     ++capture.sends_called;
+                                     // Forward to host.
+                                     return false;
+                                   },
+                                   /*event_fn=*/nullptr));
+
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(capture.hci_arr);
+  acl->header().handle().Write(handle);
+  acl->data_total_length().Write(
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+      capture.expected_payload.size());
+
+  emboss::BFrameWriter bframe = emboss::MakeBFrameView(
+      acl->payload().BackingStorage().data(), acl->payload().SizeInBytes());
+  bframe.pdu_length().Write(capture.expected_payload.size());
+  bframe.channel_id().Write(local_cid);
+  std::copy(capture.expected_payload.begin(),
+            capture.expected_payload.end(),
+            capture.hci_arr.begin() +
+                emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
+                emboss::BasicL2capHeader::IntrinsicSizeInBytes());
+
+  // Send ACL data packet destined for the CoC we registered.
+  proxy.HandleH4HciFromController(std::move(h4_packet));
+
+  EXPECT_EQ(capture.sends_called, 1);
+  EXPECT_EQ(capture.to_host_called, 1);
 }
 
 // ########## L2capCocTest

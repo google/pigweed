@@ -33,7 +33,9 @@ L2capCoc::L2capCoc(L2capCoc&& other)
       rx_mtu_(other.rx_mtu_),
       rx_mps_(other.rx_mps_),
       tx_mtu_(other.tx_mtu_),
-      tx_mps_(other.tx_mps_) {
+      tx_mps_(other.tx_mps_),
+      payload_from_controller_fn_(
+          std::move(other.payload_from_controller_fn_)) {
   std::lock_guard lock(mutex_);
   std::lock_guard other_lock(other.mutex_);
   tx_credits_ = other.tx_credits_;
@@ -246,7 +248,7 @@ L2capCoc::L2capCoc(
           /*transport=*/AclTransportType::kLe,
           /*local_cid=*/rx_config.cid,
           /*remote_cid=*/tx_config.cid,
-          /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
+          /*payload_from_controller_fn=*/nullptr,
           /*event_fn=*/std::move(event_fn)),
       signaling_channel_(signaling_channel),
       rx_mtu_(rx_config.mtu),
@@ -254,7 +256,8 @@ L2capCoc::L2capCoc(
       tx_mtu_(tx_config.mtu),
       tx_mps_(tx_config.mps),
       tx_credits_(tx_config.credits),
-      remaining_sdu_bytes_to_ignore_(0) {}
+      remaining_sdu_bytes_to_ignore_(0),
+      payload_from_controller_fn_(std::move(payload_from_controller_fn)) {}
 
 std::optional<H4PacketWithH4> L2capCoc::DequeuePacket() {
   if (state() != State::kRunning) {

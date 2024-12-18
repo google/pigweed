@@ -29,7 +29,7 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
     AclTransportType transport,
     uint16_t local_cid,
     uint16_t remote_cid,
-    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     Function<void(L2capChannelEvent event)>&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/local_cid,
@@ -83,7 +83,7 @@ BasicL2capChannel::BasicL2capChannel(
     AclTransportType transport,
     uint16_t local_cid,
     uint16_t remote_cid,
-    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     Function<void(L2capChannelEvent event)>&& event_fn)
     : L2capChannel(
           /*l2cap_channel_manager=*/l2cap_channel_manager,
@@ -102,12 +102,12 @@ bool BasicL2capChannel::HandlePduFromController(pw::span<uint8_t> bframe) {
     // TODO: https://pwbug.dev/360929142 - Stop channel on error.
     PW_LOG_ERROR("(CID: 0x%X) Received invalid B-frame. So will drop.",
                  local_cid());
-  } else {
-    SendPayloadFromControllerToClient(
-        span(bframe_view->payload().BackingStorage().data(),
-             bframe_view->payload().SizeInBytes()));
+    return true;
   }
-  return true;
+
+  return SendPayloadFromControllerToClient(
+      span(bframe_view->payload().BackingStorage().data(),
+           bframe_view->payload().SizeInBytes()));
 }
 
 bool BasicL2capChannel::HandlePduFromHost(pw::span<uint8_t>) {

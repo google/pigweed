@@ -29,7 +29,7 @@ class BasicL2capChannel : public L2capChannel {
       AclTransportType transport,
       uint16_t local_cid,
       uint16_t remote_cid,
-      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   BasicL2capChannel(const BasicL2capChannel& other) = delete;
@@ -64,7 +64,7 @@ class BasicL2capChannel : public L2capChannel {
       AclTransportType transport,
       uint16_t local_cid,
       uint16_t remote_cid,
-      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
  protected:
