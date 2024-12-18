@@ -560,7 +560,7 @@ struct LEMultiAdvtSetScanRespDataCommand:
     -- kMaxLEAdvertisingDataLength bytes.
     [requires: 0 <= this <= 31]
 
-  $next [+scan_resp_length]  UInt:8[scan_resp_length]  adv_data
+  $next [+scan_resp_length]  UInt:8[scan_resp_length]  scan_resp_data
   $next [+1]                 UInt                      adv_handle
     -- Handle used to identify an advertising set.
 
@@ -568,7 +568,7 @@ struct LEMultiAdvtSetScanRespDataCommand:
 struct LEMultiAdvtSetRandomAddrCommand:
   let vendor_size = AndroidCommandHeader.$size_in_bytes
   0     [+vendor_size]                AndroidCommandHeader  vendor_command
-  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr            peer_address
+  $next [+hci.BdAddr.$size_in_bytes]  hci.BdAddr            random_address
   $next [+1]                          UInt                  adv_handle
 
 

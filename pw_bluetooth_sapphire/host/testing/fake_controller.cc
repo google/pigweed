@@ -3893,7 +3893,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
 
   state.scan_rsp_length = params.scan_resp_length().Read();
   std::memcpy(state.scan_rsp_data,
-              params.adv_data().BackingStorage().data(),
+              params.scan_resp_data().BackingStorage().data(),
               params.scan_resp_length().Read());
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
@@ -3944,7 +3944,7 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
 
   state.random_address =
       DeviceAddress(DeviceAddress::Type::kLERandom,
-                    DeviceAddressBytes(params.peer_address()));
+                    DeviceAddressBytes(params.random_address()));
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
   RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);

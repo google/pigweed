@@ -213,7 +213,7 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
   view.scan_resp_length().Write(scan_rsp_length);
   view.adv_handle().Write(handle.value());
 
-  MutableBufferView data_view(view.adv_data().BackingStorage().data(),
+  MutableBufferView data_view(view.scan_resp_data().BackingStorage().data(),
                               scan_rsp_length);
   data.WriteBlock(&data_view, std::nullopt);
 
