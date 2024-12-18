@@ -315,17 +315,19 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
 
 pw::Result<L2capCoc> ProxyHostTest::BuildCocWithResult(ProxyHost& proxy,
                                                        CocParameters params) {
-  return proxy.AcquireL2capCoc(params.handle,
-                               {.cid = params.local_cid,
-                                .mtu = params.rx_mtu,
-                                .mps = params.rx_mps,
-                                .credits = params.rx_credits},
-                               {.cid = params.remote_cid,
-                                .mtu = params.tx_mtu,
-                                .mps = params.tx_mps,
-                                .credits = params.tx_credits},
-                               std::move(params.receive_fn),
-                               std::move(params.event_fn));
+  return proxy.AcquireL2capCoc(
+      /*rx_multibuf_allocator=*/sut_multibuf_allocator_,
+      params.handle,
+      {.cid = params.local_cid,
+       .mtu = params.rx_mtu,
+       .mps = params.rx_mps,
+       .credits = params.rx_credits},
+      {.cid = params.remote_cid,
+       .mtu = params.tx_mtu,
+       .mps = params.tx_mps,
+       .credits = params.tx_credits},
+      std::move(params.receive_fn),
+      std::move(params.event_fn));
 }
 
 L2capCoc ProxyHostTest::BuildCoc(ProxyHost& proxy, CocParameters params) {

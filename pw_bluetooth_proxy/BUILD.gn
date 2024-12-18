@@ -63,6 +63,8 @@ pw_source_set("pw_bluetooth_proxy") {
     "public/pw_bluetooth_proxy/rfcomm_channel.h",
   ]
   public_deps = [
+    "//pw_allocator:best_fit",
+    "//pw_allocator:synchronized_allocator",
     "//pw_bluetooth:emboss_att",
     "//pw_bluetooth:emboss_hci_commands",
     "//pw_bluetooth:emboss_hci_common",
@@ -72,6 +74,7 @@ pw_source_set("pw_bluetooth_proxy") {
     "//pw_bluetooth:emboss_l2cap_frames",
     "//pw_bluetooth:emboss_rfcomm_frames",
     "//pw_bluetooth:emboss_util",
+    "//pw_multibuf:simple_allocator",
     "//pw_sync:lock_annotations",
     "//pw_sync:mutex",
     dir_pw_containers,
@@ -112,6 +115,7 @@ pw_source_set("test_utils") {
     "//pw_bluetooth:emboss_hci_events",
     "//pw_bluetooth:emboss_hci_h4",
     "//pw_bluetooth:emboss_util",
+    "//pw_multibuf:testing",
     "//pw_unit_test",
   ]
   public = [ "pw_bluetooth_proxy_private/test_utils.h" ]

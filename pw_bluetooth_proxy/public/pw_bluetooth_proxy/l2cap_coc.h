@@ -14,9 +14,11 @@
 
 #pragma once
 
+#include "pw_allocator/allocator.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
+#include "pw_multibuf/allocator.h"
 #include "pw_sync/mutex.h"
 
 namespace pw::bluetooth::proxy {
@@ -102,6 +104,7 @@ class L2capCoc : public L2capChannel {
 
  protected:
   static pw::Result<L2capCoc> Create(
+      pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
       L2capChannelManager& l2cap_channel_manager,
       L2capSignalingChannel* signaling_channel,
       uint16_t connection_handle,
@@ -124,6 +127,7 @@ class L2capCoc : public L2capChannel {
 
  private:
   explicit L2capCoc(
+      pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
       L2capChannelManager& l2cap_channel_manager,
       L2capSignalingChannel* signaling_channel,
       uint16_t connection_handle,
@@ -136,7 +140,6 @@ class L2capCoc : public L2capChannel {
   std::optional<H4PacketWithH4> DequeuePacket() override
       PW_LOCKS_EXCLUDED(mutex_);
 
-  // Override: All traffic on this channel goes to client.
   bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) override {
     if (payload_from_controller_fn_) {
       payload_from_controller_fn_(payload);
@@ -144,6 +147,7 @@ class L2capCoc : public L2capChannel {
     return true;
   }
 
+  pw::multibuf::MultiBufAllocator& rx_multibuf_allocator_;
   L2capSignalingChannel* signaling_channel_;
   sync::Mutex mutex_;
   uint16_t rx_mtu_;

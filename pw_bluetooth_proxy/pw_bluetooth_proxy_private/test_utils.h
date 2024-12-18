@@ -32,6 +32,7 @@
 #include "pw_bluetooth_proxy/proxy_host.h"
 #include "pw_containers/flat_map.h"
 #include "pw_function/function.h"
+#include "pw_multibuf/simple_allocator_for_test.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 #include "pw_unit_test/framework.h"  // IWYU pragma: keep
@@ -235,6 +236,25 @@ class ProxyHostTest : public testing::Test {
                                           CocParameters params);
 
   L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params);
+
+  // Returns MultiBuf allocator for creating objects to pass to the system under
+  // test (e.g. test packets from controller).
+  pw::multibuf::MultiBufAllocator& GetTestMultiBuffAllocator() {
+    return test_multibuf_allocator_;
+  }
+
+ private:
+  // MultiBuf allocator for creating objects to pass to the system under
+  // test (e.g. creating test packets to send to proxy host).
+  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/512,
+                                             /*kMetaSizeBytes=*/512>
+      test_multibuf_allocator_{};
+
+  // Default MultiBuf allocator to be passed to system under test (e.g.
+  // to pass to AcquireL2capCoc).
+  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/512,
+                                             /*kMetaSizeBytes=*/512>
+      sut_multibuf_allocator_{};
 };
 
 }  // namespace pw::bluetooth::proxy

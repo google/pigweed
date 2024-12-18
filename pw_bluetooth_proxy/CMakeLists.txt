@@ -50,6 +50,8 @@ pw_add_library(pw_bluetooth_proxy STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_allocator.best_fit
+    pw_allocator.synchronized_allocator
     pw_bluetooth.emboss_att
     pw_bluetooth.emboss_hci_commands
     pw_bluetooth.emboss_hci_common
@@ -62,6 +64,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     pw_containers
     pw_function
     pw_log
+    pw_multibuf.simple_allocator
     pw_result
     pw_span
     pw_status
@@ -94,6 +97,7 @@ pw_add_library(pw_bluetooth_proxy.test_utils STATIC
     pw_bluetooth.emboss_hci_common
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
+    pw_multibuf.testing
     pw_unit_test
   SOURCES
     test_utils.cc

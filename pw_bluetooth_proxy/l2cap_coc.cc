@@ -29,6 +29,7 @@ namespace pw::bluetooth::proxy {
 
 L2capCoc::L2capCoc(L2capCoc&& other)
     : L2capChannel(static_cast<L2capCoc&&>(other)),
+      rx_multibuf_allocator_(other.rx_multibuf_allocator_),
       signaling_channel_(other.signaling_channel_),
       rx_mtu_(other.rx_mtu_),
       rx_mps_(other.rx_mps_),
@@ -94,6 +95,7 @@ pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
 }
 
 pw::Result<L2capCoc> L2capCoc::Create(
+    pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
     L2capChannelManager& l2cap_channel_manager,
     L2capSignalingChannel* signaling_channel,
     uint16_t connection_handle,
@@ -117,6 +119,7 @@ pw::Result<L2capCoc> L2capCoc::Create(
   }
 
   return L2capCoc(
+      /*rx_multibuf_allocator=*/rx_multibuf_allocator,
       /*l2cap_channel_manager=*/l2cap_channel_manager,
       /*signaling_channel=*/signaling_channel,
       /*connection_handle=*/connection_handle,
@@ -235,6 +238,7 @@ bool L2capCoc::HandlePduFromHost(pw::span<uint8_t>) PW_LOCKS_EXCLUDED(mutex_) {
 }
 
 L2capCoc::L2capCoc(
+    pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
     L2capChannelManager& l2cap_channel_manager,
     L2capSignalingChannel* signaling_channel,
     uint16_t connection_handle,
@@ -250,6 +254,7 @@ L2capCoc::L2capCoc(
           /*remote_cid=*/tx_config.cid,
           /*payload_from_controller_fn=*/nullptr,
           /*event_fn=*/std::move(event_fn)),
+      rx_multibuf_allocator_(rx_multibuf_allocator),
       signaling_channel_(signaling_channel),
       rx_mtu_(rx_config.mtu),
       rx_mps_(rx_config.mps),

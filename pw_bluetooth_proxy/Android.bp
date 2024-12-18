@@ -44,8 +44,10 @@ cc_library_static {
         "pw_android_common_backends",
     ],
     static_libs: [
+        "pw_allocator",
         "pw_containers",
         "pw_function",
+        "pw_multibuf",
         "pw_result",
         "pw_span",
         "pw_status",

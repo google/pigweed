@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "pw_allocator/best_fit.h"
+#include "pw_allocator/synchronized_allocator.h"
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
@@ -22,6 +24,7 @@
 #include "pw_bluetooth_proxy/l2cap_coc.h"
 #include "pw_bluetooth_proxy/l2cap_status_delegate.h"
 #include "pw_bluetooth_proxy/rfcomm_channel.h"
+#include "pw_multibuf/simple_allocator.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
@@ -120,6 +123,11 @@ class ProxyHost {
   /// Returns an L2CAP connection-oriented channel that supports writing to and
   /// reading from a remote peer.
   ///
+  /// @param[in] rx_multibuf_allocator
+  ///                               Provides the allocator the channel will use
+  ///                               for its Rx buffers (for both queueing and
+  ///                               returning to the client).
+  ///
   /// @param[in] connection_handle  The connection handle of the remote peer.
   ///
   /// @param[in] rx_config          Parameters applying to reading packets. See
@@ -141,6 +149,16 @@ class ProxyHost {
   ///  UNAVAILABLE:      If channel could not be created because no memory was
   ///                    available to accommodate an additional ACL connection.
   /// @endrst
+  pw::Result<L2capCoc> AcquireL2capCoc(
+      pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
+      uint16_t connection_handle,
+      L2capCoc::CocConfig rx_config,
+      L2capCoc::CocConfig tx_config,
+      Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      Function<void(L2capChannelEvent event)>&& event_fn);
+
+  // TODO(drees) Remove once clients move to new signature with allocators.
+  /// @deprecated Use AcquireL2capCoc with allocator parameters instead.
   pw::Result<L2capCoc> AcquireL2capCoc(
       uint16_t connection_handle,
       L2capCoc::CocConfig rx_config,
@@ -326,6 +344,20 @@ class ProxyHost {
 
   // Keeps track of the L2CAP-based channels managed by the proxy.
   L2capChannelManager l2cap_channel_manager_;
+
+  // Multibuf allocator to be used if container/client didn't provide an
+  // allocator.  Being used during short transition to allocators being provided
+  // by downstreams. Only lsc_multibuf_allocator_ is used in code, the rest are
+  // just backing it.
+  // TODO: https://pwbug.dev/369849508 - Remove once all containers and clients
+  // provide allocators.
+  std::array<std::byte, 300> lsc_alloc_mem_;
+  pw::allocator::BestFitAllocator<> lsc_bf_allocator_{lsc_alloc_mem_};
+  pw::allocator::SynchronizedAllocator<pw::sync::Mutex> lsc_sync_allocator_{
+      lsc_bf_allocator_};
+  std::array<std::byte, 1000> lsc_multibuf_mem_;
+  pw::multibuf::SimpleAllocator lsc_multibuf_allocator_{lsc_multibuf_mem_,
+                                                        lsc_sync_allocator_};
 };
 
 }  // namespace pw::bluetooth::proxy

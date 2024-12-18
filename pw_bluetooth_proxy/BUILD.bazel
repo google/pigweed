@@ -63,6 +63,8 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
+        "//pw_allocator:best_fit",
+        "//pw_allocator:synchronized_allocator",
         "//pw_bluetooth:emboss_att",
         "//pw_bluetooth:emboss_hci_commands",
         "//pw_bluetooth:emboss_hci_common",
@@ -75,6 +77,7 @@ cc_library(
         "//pw_containers",
         "//pw_function",
         "//pw_log",
+        "//pw_multibuf:simple_allocator",
         "//pw_result",
         "//pw_span",
         "//pw_status",
@@ -96,6 +99,7 @@ cc_library(
         "//pw_bluetooth:emboss_hci_events",
         "//pw_bluetooth:emboss_hci_h4",
         "//pw_bluetooth:emboss_util",
+        "//pw_multibuf:testing",
         "//pw_unit_test",
     ],
 )
