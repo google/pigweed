@@ -942,6 +942,52 @@ TEST_F(HostServerTest, InitiateBrEdrPairingLePeerFails) {
   ASSERT_EQ(pair_result->err(), fsys::Error::PEER_NOT_FOUND);
 }
 
+TEST_F(HostServerTest, ConnectAndPairDualModePeerWithoutTechnologyUsesBrEdr) {
+  // Initialize the peer with data for both transport types.
+  bt::gap::Peer* peer = AddFakePeer(kBredrTestAddr);
+  peer->MutLe();
+  ASSERT_TRUE(peer->le());
+  peer->MutBrEdr();
+  ASSERT_TRUE(peer->bredr());
+  EXPECT_EQ(bt::gap::TechnologyType::kDualMode, peer->technology());
+
+  auto result = ConnectFakePeer(peer->identifier());
+  ASSERT_TRUE(result);
+  ASSERT_FALSE(result->is_err());
+  // BR/EDR connections are kInitializing until first pairing completes.
+  ASSERT_EQ(bt::gap::Peer::ConnectionState::kInitializing,
+            peer->bredr()->connection_state());
+  ASSERT_EQ(bt::gap::Peer::ConnectionState::kNotConnected,
+            peer->le()->connection_state());
+
+  auto fidl_pairing_delegate = SetMockFidlPairingDelegate(
+      fsys::InputCapability::NONE, fsys::OutputCapability::NONE);
+  fidl_pairing_delegate->set_pairing_complete_cb([](fbt::PeerId, bool) {});
+  fidl_pairing_delegate->set_pairing_request_cb(
+      [](fsys::Peer peer,
+         fsys::PairingMethod method,
+         uint32_t displayed_passkey,
+         fsys::PairingDelegate::OnPairingRequestCallback callback) {
+        callback(/*accept=*/true, /*entered_passkey=*/0u);
+      });
+
+  // No technology specified. Since BR/EDR is connected, pairing should happen
+  // over BR/EDR.
+  fsys::PairingOptions opts;
+  std::optional<fhost::Host_Pair_Result> pair_result;
+  auto pair_cb = [&](auto result) { pair_result = std::move(result); };
+  host_client()->Pair(fbt::PeerId{peer->identifier().value()},
+                      std::move(opts),
+                      std::move(pair_cb));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(pair_result);
+  ASSERT_TRUE(pair_result->is_response());
+  ASSERT_EQ(bt::gap::Peer::ConnectionState::kConnected,
+            peer->bredr()->connection_state());
+  ASSERT_EQ(bt::gap::Peer::ConnectionState::kNotConnected,
+            peer->le()->connection_state());
+}
+
 TEST_F(HostServerTest, PeerWatcherGetNextHangsOnFirstCallWithNoExistingPeers) {
   // By default the peer cache contains no entries when HostServer is first
   // constructed. The first call to GetNext should hang.
