@@ -107,6 +107,7 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
   SOURCES
     proxy_host_test.cc
     h4_packet_test.cc
+    l2cap_coc_test.cc
     rfcomm_fcs_test.cc
     rfcomm_test.cc
   PRIVATE_DEPS

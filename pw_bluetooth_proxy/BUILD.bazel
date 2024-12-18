@@ -108,6 +108,7 @@ pw_cc_test(
     name = "pw_bluetooth_proxy_test",
     srcs = [
         "h4_packet_test.cc",
+        "l2cap_coc_test.cc",
         "proxy_host_test.cc",
         "rfcomm_fcs_test.cc",
         "rfcomm_test.cc",
