@@ -32,6 +32,7 @@ pw_doc_group("static_assets") {
 # split out from the overall docgen target below.
 pw_doc_group("core_docs") {
   inputs = [
+    "$dir_pigweed/.bazelversion",
     "$dir_pigweed/Kconfig.zephyr",
     "$dir_pw_async2/examples/coro_blinky_loop.cc",
     "$dir_pw_async2/examples/count.cc",

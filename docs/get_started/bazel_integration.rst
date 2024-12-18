@@ -7,43 +7,115 @@ This guide explains how to start using a Pigweed module in your existing
 Bazel-based C or C++ project. We'll assume you're familiar with the build
 system at the level of the `Bazel tutorial <https://bazel.build/start/cpp>`__.
 
+------------------------
+Supported Bazel versions
+------------------------
+Pigweed uses Bazel 8 features like platform-based flags, and so not all of
+Pigweed works with Bazel 7. However, as of 2024 Dec 13 we are still working on
+getting Pigweed to build with the final, released 8.0.0 version
+(:bug:`372510795`).
+
+The upshot is that there's no released version of Bazel with which all of
+Pigweed is guaranteed to build. In our own testing, we use the following
+pre-release version of Bazel 8:
+
+.. literalinclude:: ../../.bazelversion
+   :language: text
+
 -------------------------------------
-Add Pigweed as a WORKSPACE dependency
+Add Pigweed as an external dependency
 -------------------------------------
-Add Pigweed as a `git_repository
-<https://bazel.build/rules/lib/repo/git#git_repository>`__ in your
-``WORKSPACE``:
+Pigweed can be used in both `bzlmod
+<https://bazel.build/external/overview#bzlmod>`__ and `WORKSPACE
+<https://bazel.build/external/overview#workspace-system>`__ based projects.
 
-.. code-block:: python
+We recommend using bzlmod (it's the future!), but note that Pigweed's FuzzTest
+and GoogleTest integration cannot yet be used in bzlmod-based projects
+(https://pwbug.dev/365103864).
 
-   git_repository(
-     name = "pigweed",
-     commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
-     remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
-   )
+.. tab-set::
 
-(You can find the latest tip-of-tree commit in the History tab in `CodeSearch
-<https://cs.opensource.google/pigweed/pigweed>`__.)
+   .. tab-item:: bzlmod
 
-If you manage your dependencies as submodules, you can add Pigweed as a
-submodule, too, and then add it to the ``WORKSPACE`` as a `local_repository
-<https://bazel.build/reference/be/workspace#local_repository>`__:
+      Use a ``git_override``:
 
-.. code-block:: python
+      .. code-block:: python
 
-   local_repository(
-     name = "pigweed",
-     path = "third_party/pigweed",
-   )
+         bazel_dep(name = "pigweed")
+         bazel_dep(name = "pw_toolchain")
 
-We don't yet publish releases that could be pulled in using `http_archive
-<https://bazel.build/rules/lib/repo/http#http_archive>`__.
+         git_override(
+             module_name = "pigweed",
+             commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
+             remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
+         )
 
-We don't support `bzlmod <https://bazel.build/external/overview#bzlmod>`__ yet.
-See :bug:`258836641`.
+         git_override(
+             module_name = "pw_toolchain",
+             commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
+             remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
+             strip_prefix = "pw_toolchain_bazel",
+         )
 
-If either of these limitations is important to you, please reach out to us on
-`chat <https://discord.gg/M9NSeTA>`__.
+      You can find the latest tip-of-tree commit in the **History** tab in
+      `CodeSearch <https://cs.opensource.google/pigweed/pigweed>`__.
+
+      If you manage your dependencies as submodules, you can add Pigweed as a
+      submodule, too, and then add it to your ``MODULE.bazel`` as a
+      `local_path_override
+      <https://bazel.build/rules/lib/globals/module#local_path_override>`__:
+
+      .. code-block:: python
+
+         local_path_override(
+             module_name = "pigweed",
+             path = "third_party/pigweed",
+         )
+
+         local_path_override(
+             module_name = "pw_toolchain",
+             path = "third_party/pigweed/pw_toolchain_bazel",
+         )
+
+      Pigweed is not yet published to the `Bazel Central Registry
+      <https://registry.bazel.build/>`__. If this is a pain point for you,
+      please reach out to us on `chat <https://discord.gg/M9NSeTA>`__.
+
+   .. tab-item:: WORKSPACE
+
+      Add Pigweed as a `git_repository
+      <https://bazel.build/rules/lib/repo/git#git_repository>`__ in your
+      ``WORKSPACE``:
+
+      .. code-block:: python
+
+         git_repository(
+             name = "pigweed",
+             commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
+             remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
+         )
+
+         git_repository(
+             name = "pw_toolchain",
+             commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
+             remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
+             strip_prefix = "pw_toolchain_bazel",
+         )
+
+      You can find the latest tip-of-tree commit in the **History** tab in
+      `CodeSearch <https://cs.opensource.google/pigweed/pigweed>`__.
+
+      If you manage your dependencies as submodules, you can add Pigweed as a
+      submodule, too, and then add it to your ``WORKSPACE`` as a
+      `local_repository
+      <https://bazel.build/reference/be/workspace#local_repository>`__:
+
+      .. code-block:: python
+
+         local_repository(
+             name = "pigweed",
+             path = "third_party/pigweed",
+         )
 
 ---------------------------
 Use Pigweed in your project
@@ -70,12 +142,12 @@ embedded-friendly replacement for ``std::vector``.
    .. code-block:: python
 
       cc_library(
-        name = "my_library",
-        srcs  = ["my_library.cc"],
-        hdrs = ["my_library.h"],
-        deps = [
-          "@pigweed//pw_containers:vector",  # <-- The new dependency
-        ],
+          name = "my_library",
+          srcs  = ["my_library.cc"],
+          hdrs = ["my_library.h"],
+          deps = [
+              "@pigweed//pw_containers:vector",  # <-- The new dependency
+          ],
       )
 
 #. Add a dependency on ``@pigweed//pw_build:default_link_extra_lib`` to your
@@ -85,12 +157,12 @@ embedded-friendly replacement for ``std::vector``.
    .. code-block:: python
 
       cc_binary(
-        name = "my_binary",
-        srcs  = ["my_binary.cc"],
-        deps = [
-          ":my_library",
-          "@pigweed//pw_build:default_link_extra_lib",  # <-- The new dependency
-        ],
+          name = "my_binary",
+          srcs  = ["my_binary.cc"],
+          deps = [
+              ":my_library",
+              "@pigweed//pw_build:default_link_extra_lib",  # <-- The new dependency
+          ],
       )
 
 ----------------------------

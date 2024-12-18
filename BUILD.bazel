@@ -128,6 +128,7 @@ refresh_compile_commands(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        ".bazelversion",
         "Kconfig.zephyr",
     ],
     target_compatible_with = incompatible_with_mcu(),
