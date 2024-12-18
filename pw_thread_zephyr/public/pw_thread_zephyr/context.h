@@ -118,7 +118,7 @@ class StaticContextWithStack final : public StaticContext {
       : StaticContext(stack_storage_, kStackSizeBytes) {}
 
  private:
-  K_THREAD_STACK_MEMBER(stack_storage_, kStackSizeBytes);
+  K_KERNEL_STACK_MEMBER(stack_storage_, kStackSizeBytes);
 };
 
 }  // namespace pw::thread::zephyr

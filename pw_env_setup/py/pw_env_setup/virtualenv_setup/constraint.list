@@ -2,6 +2,7 @@
 
 aiohttp==3.9.5
 alabaster==0.7.16
+anytree==2.12.1
 appdirs==1.4.4
 astroid==3.0.1
 asttokens==2.4.0
@@ -14,6 +15,7 @@ certifi==2021.10.8
 cffi==1.16.0
 charset-normalizer==3.2.0
 click==8.1.3
+colorama==0.4.6
 coloredlogs==15.0.1
 coverage==7.2.7
 cryptography==41.0.2
@@ -41,12 +43,14 @@ json5==0.9.11
 jsonschema==4.23.0
 lockfile==0.12.2
 kconfiglib==14.1.0
+natsort==8.4.0
 markupsafe==2.1.3
 matplotlib-inline==0.1.3
 mccabe==0.6.1
 mypy==1.6.1
 mypy-extensions==1.0.0
 mypy-protobuf==3.5.0
+packaging==24.2
 parameterized==0.9.0
 parso==0.8.3
 patch==1.16
@@ -54,6 +58,7 @@ pathspec==0.11.1
 pexpect==4.8.0
 pickleshare==0.7.5
 platformdirs==3.0.0
+ply==3.11
 prompt-toolkit==3.0.43
 protobuf==5.28.2
 psutil==5.9.4
@@ -63,11 +68,12 @@ pure-eval==0.2.2
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.21
-pyelftools==0.27
+pyelftools==0.31
 pygments==2.18.0
 pylint==3.0.1
 pyperclip==1.8.2
 pyserial==3.5
+pytest==8.3.4
 python-daemon==3.0.1
 pytz==2023.3
 pyyaml==6.0.1
