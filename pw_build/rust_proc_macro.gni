@@ -33,8 +33,14 @@ import("$dir_pw_toolchain/toolchain_args.gni")
 # For more information on the features provided by this template, see the full
 # docs at https://pigweed.dev/pw_build/?highlight=pw_rust_proc_macro.
 template("pw_rust_proc_macro") {
-  if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
-      pw_toolchain_SCOPE.is_host_toolchain) {
+  if (defined(pw_toolchain_SCOPE.rustc_macro_toolchain_name)) {
+    group(target_name) {
+      public_deps =
+          [ ":$target_name(${pw_toolchain_SCOPE.rustc_macro_toolchain_name})" ]
+    }
+    not_needed(invoker, "*")
+  } else if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+             pw_toolchain_SCOPE.is_host_toolchain) {
     pw_rust_library(target_name) {
       forward_variables_from(invoker, "*")
 
@@ -50,14 +56,9 @@ template("pw_rust_proc_macro") {
     }
   } else {
     assert(
-        defined(pw_toolchain_SCOPE.rustc_macro_toolchain_name),
-        "Rust macro crates are compiled with host toolchain. Please provided " +
-            "a `rustc_macro_toolchain_name` for this device toolchain.")
-
-    toolchain_name = pw_toolchain_SCOPE.rustc_macro_toolchain_name
-    group(target_name) {
-      public_deps = [ ":$target_name($toolchain_name)" ]
-    }
-    not_needed(invoker, "*")
+        false,
+        "proc_macro target ${target_name}(${pw_toolchain_SCOPE.name}) is not " +
+            "a host target, please specify a host toolchain through " +
+            "`rustc_macro_toolchain_name` for it to be compiled.")
   }
 }
