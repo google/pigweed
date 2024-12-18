@@ -32,7 +32,10 @@ try:
         load_packages,
         change_working_dir,
     )
-    from pw_build.generate_python_package import PYPROJECT_FILE
+    from pw_build.generate_python_package import (
+        DEFAULT_INIT_PY,
+        PYPROJECT_FILE,
+    )
 
 except ImportError:
     # Load from python_package from this directory if pw_build is not available.
@@ -41,7 +44,10 @@ except ImportError:
         load_packages,
         change_working_dir,
     )
-    from generate_python_package import PYPROJECT_FILE  # type: ignore
+    from generate_python_package import (  # type: ignore
+        DEFAULT_INIT_PY,
+        PYPROJECT_FILE,
+    )
 
 
 def _parse_args():
@@ -380,13 +386,73 @@ def build_python_tree(
         with tempfile.TemporaryDirectory() as build_base_name:
             build_base = Path(build_base_name)
 
+            # Note: This and other print statements in this file are
+            # intentional. setuptools_build_with_base() called next runs
+            # setuptools code which also makes print statements by default.
+            # This output is normally hidden by python_runner.py unless there is
+            # a failure.
+            print('Building pw_python_package:', pkg.gn_target_name)
             lib_dir_path = setuptools_build_with_base(
                 pkg, build_base, include_tests=include_tests
             )
 
+            pkg_sources = [
+                source_file.relative_to(pkg.setup_dir)
+                for source_file in pkg.sources
+                if pkg.setup_dir
+            ]
+
+            def _copy_file(source_path: Path, destination: Path) -> None:
+                """Copy a single file and make parent directories if needed."""
+                if not destination.parent.is_dir():
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(source_path, destination)
+
             # Move installed files from the temp build-base into
             # destination_path.
-            shutil.copytree(lib_dir_path, destination_path, dirs_exist_ok=True)
+            for source_path in lib_dir_path.glob('**/*'):
+                relative_path = source_path.relative_to(lib_dir_path)
+                destination = destination_path / relative_path
+
+                # Directories
+                if source_path.is_dir():
+                    destination.mkdir(parents=True, exist_ok=True)
+
+                # __init__.py file handling
+                elif (
+                    source_path.is_file() and source_path.name == '__init__.py'
+                ):
+                    perform_copy = False
+                    if destination.is_file():
+                        # File exists.
+
+                        # If this file is defined in the sources for this
+                        # package, overwrite the destination.
+                        if relative_path in pkg_sources:
+                            perform_copy = True
+
+                        # If the destination file is an auto-generated
+                        # __init__.py file it can be overwritten.
+                        if destination.read_text() == DEFAULT_INIT_PY:
+                            # Overwrite default __init__.py files.
+                            perform_copy = True
+                    else:
+                        # File does not exist.
+                        perform_copy = True
+
+                    if perform_copy:
+                        print('WRITE:', destination)
+                        _copy_file(source_path, destination)
+
+                else:
+                    if destination.is_file():
+                        print(
+                            '\x1B[33m\x1B[1mWARNING\x1B[0m OVERWRITING:',
+                            destination,
+                        )
+                    else:
+                        print('WRITE:', destination)
+                    _copy_file(source_path, destination)
 
             # Clean build base lib folder for next install
             shutil.rmtree(lib_dir_path, ignore_errors=True)

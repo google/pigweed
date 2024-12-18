@@ -122,13 +122,7 @@ def _collect_all_files(
         # Create an __init__.py file if it doesn't already exist.
         initpy = pkg / '__init__.py'
         if not initpy.exists():
-            # Use pkgutil.extend_path to treat this as a namespaced package.
-            # This allows imports with the same name to live in multiple
-            # separate PYTHONPATH locations.
-            initpy.write_text(
-                'from pkgutil import extend_path  # type: ignore\n'
-                '__path__ = extend_path(__path__, __name__)  # type: ignore\n'
-            )
+            initpy.write_text(DEFAULT_INIT_PY)
         files.append(initpy)
 
     pkg_data: dict[str, Set[str]] = defaultdict(set)
@@ -148,6 +142,14 @@ PYPROJECT_FILE = '''\
 [build-system]
 requires = ['setuptools', 'wheel']
 build-backend = 'setuptools.build_meta'
+'''
+
+# This __init__.py code uses pkgutil.extend_path to treat this Python module as
+# a namespaced package. This allows imports with the same name to live in
+# multiple separate PYTHONPATH locations.
+DEFAULT_INIT_PY = '''\
+from pkgutil import extend_path  # type: ignore
+__path__ = extend_path(__path__, __name__)  # type: ignore
 '''
 
 
