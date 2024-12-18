@@ -17,7 +17,7 @@ module(
     version = "0.0.1",
 )
 
-register_execution_platforms("@local_config_platform//:host", "//pw_build/platforms:all")
+register_execution_platforms("@local_config_platform//:host")
 
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "boringssl", version = "0.20240913.0")

@@ -1,0 +1,38 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+package(default_visibility = ["//:__subpackages__"])
+
+platform(
+    name = "nrf52833",
+    constraint_values = [
+        "//pw_build/constraints/arm:cortex-m0",
+        "//pw_build/constraints/chipset:nrf52833",
+        "@platforms//cpu:armv6-m",
+        "@platforms//os:none",
+    ],
+)
+
+# Primarily a QEMU supported m0 target for rust development, based on the
+# nRF51822.
+platform(
+    name = "microbit",
+    constraint_values = [
+        "//pw_build/constraints/board:microbit",
+        "@rust_crates//:no_std",
+        "@platforms//os:none",
+        # We have no pw_sys_io backend for this platform.
+    ],
+    parents = [":nrf52833"],
+)

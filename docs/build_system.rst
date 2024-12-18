@@ -600,11 +600,11 @@ platform (e.g. stm32f429i-discovery) a slight variation is required.
 .. code-block:: sh
 
    bazelisk build //your:target \
-     --platforms=@pigweed//pw_build/platforms:lm3s6965evb
+     --platforms=@pigweed//targets/lm3s6965evb
 
 For more information on how to create your own platforms refer to the official
 `Bazel platforms reference`_. You may also find helpful examples of constraints
-and platforms in the ``//pw_build/platforms`` and ``//pw_build/constraints``
+and platforms in the ``//targets`` and ``//pw_build/constraints``
 directories.
 
 .. _Bazel platforms reference: https://docs.bazel.build/versions/main/platforms.html
@@ -784,7 +784,7 @@ and the build will continue. e.g.
 
 .. code-block:: sh
 
-   bazelisk build //... --platforms=@pigweed//pw_build/platforms:lm3s6965evb
+   bazelisk build //... --platforms=@pigweed//targets/lm3s6965evb
 
 This allows for you to easily create compatibility matricies without adversely
 affecting your ability build your entire repo for a given Pigweed target.
