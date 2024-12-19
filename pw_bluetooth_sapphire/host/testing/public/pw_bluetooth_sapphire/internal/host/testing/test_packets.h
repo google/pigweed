@@ -109,6 +109,14 @@ DynamicByteBuffer IoCapabilityResponsePacket(
     pw::bluetooth::emboss::IoCapability io_cap,
     pw::bluetooth::emboss::AuthenticationRequirements auth_req);
 
+// Generate a set of fragments from SDU data and a vector of sizes.
+std::vector<DynamicByteBuffer> IsoDataFragments(
+    hci_spec::ConnectionHandle connection_handle,
+    std::optional<uint32_t> time_stamp,
+    uint16_t packet_sequence_number,
+    pw::bluetooth::emboss::IsoDataPacketStatus packet_status_flag,
+    const std::vector<uint8_t>& sdu_data,
+    const std::vector<size_t>& fragment_sizes);
 DynamicByteBuffer IsoDataPacket(
     hci_spec::ConnectionHandle connection_handle,
     pw::bluetooth::emboss::IsoDataPbFlag pb_flag,

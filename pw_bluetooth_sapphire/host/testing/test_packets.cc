@@ -438,6 +438,50 @@ DynamicByteBuffer IsoDataPacket(
   return packet;
 }
 
+std::vector<DynamicByteBuffer> IsoDataFragments(
+    hci_spec::ConnectionHandle connection_handle,
+    std::optional<uint32_t> time_stamp,
+    uint16_t packet_sequence_number,
+    pw::bluetooth::emboss::IsoDataPacketStatus packet_status_flag,
+    const std::vector<uint8_t>& sdu_data,
+    const std::vector<size_t>& fragment_sizes) {
+  std::vector<DynamicByteBuffer> fragments;
+  uint16_t sdu_total_size = sdu_data.size();
+
+  size_t fragment_start = 0;
+  size_t fragment_end;
+  for (size_t fragment_size : fragment_sizes) {
+    fragment_end = fragment_start + fragment_size;
+    bool is_first = (fragment_start == 0);
+    bool is_last = (fragment_end == sdu_total_size);
+    pw::bluetooth::emboss::IsoDataPbFlag pb_flag;
+    if (is_first) {
+      pb_flag = is_last ? pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU
+                        : pw::bluetooth::emboss::IsoDataPbFlag::FIRST_FRAGMENT;
+    } else {
+      pb_flag =
+          is_last ? pw::bluetooth::emboss::IsoDataPbFlag::LAST_FRAGMENT
+                  : pw::bluetooth::emboss::IsoDataPbFlag::INTERMEDIATE_FRAGMENT;
+    }
+    DynamicByteBuffer next_fragment = IsoDataPacket(
+        connection_handle,
+        pb_flag,
+        is_first ? time_stamp : std::nullopt,
+        is_first ? std::optional<uint16_t>(packet_sequence_number)
+                 : std::nullopt,
+        is_first ? std::optional<uint16_t>(sdu_total_size) : std::nullopt,
+        is_first ? std::optional<pw::bluetooth::emboss::IsoDataPacketStatus>(
+                       packet_status_flag)
+                 : std::nullopt,
+        pw::span<const uint8_t>(sdu_data.data() + fragment_start,
+                                fragment_size));
+    fragments.push_back(next_fragment);
+    fragment_start = fragment_end;
+  }
+
+  return fragments;
+}
+
 DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(
     hci_spec::ConnectionHandle conn,
     hci_spec::LESupportedFeatures le_features) {
