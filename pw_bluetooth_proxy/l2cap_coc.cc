@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_proxy/l2cap_coc.h"
 
+#include <cstdint>
 #include <mutex>
 
 #include "pw_assert/check.h"  // IWYU pragma: keep
@@ -23,6 +24,8 @@
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_log/log.h"
+#include "pw_multibuf/multibuf.h"
+#include "pw_status/status.h"
 #include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
@@ -92,6 +95,32 @@ pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
       kframe.payload().BackingStorage().data(), payload.data(), payload.size());
 
   return QueuePacket(std::move(h4_packet));
+}
+
+namespace {
+
+pw::span<const uint8_t> AsConstUint8Span(ConstByteSpan s) {
+  return {reinterpret_cast<const uint8_t*>(s.data()), s.size_bytes()};
+}
+
+}  // namespace
+
+StatusWithMultiBuf L2capCoc::Write(pw::multibuf::MultiBuf&& payload) {
+  if (!payload.IsContiguous()) {
+    return StatusWithMultiBuf{.status = Status::InvalidArgument()};
+  }
+
+  std::optional<ByteSpan> payload_span = payload.ContiguousSpan();
+  if (!payload_span) {
+    return StatusWithMultiBuf{.status = Status::InvalidArgument()};
+  }
+
+  Status status = Write(AsConstUint8Span(*payload_span));
+  if (!status.ok()) {
+    return StatusWithMultiBuf{.status = status, .buf = {std::move(payload)}};
+  }
+
+  return StatusWithMultiBuf{.status = pw::OkStatus()};
 }
 
 pw::Result<L2capCoc> L2capCoc::Create(

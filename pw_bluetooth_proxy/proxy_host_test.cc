@@ -2407,9 +2407,9 @@ TEST_F(L2capSignalingTest, FlowControlCreditIndDrainsQueue) {
           .handle = handle, .remote_cid = remote_cid, .tx_credits = 0});
 
   for (size_t i = 0; i < L2capCoc::QueueCapacity(); ++i) {
-    EXPECT_EQ(channel.Write({}), PW_STATUS_OK);
+    EXPECT_EQ(channel.Write(pw::span<const uint8_t>{}), PW_STATUS_OK);
   }
-  EXPECT_EQ(channel.Write({}), PW_STATUS_UNAVAILABLE);
+  EXPECT_EQ(channel.Write(pw::span<const uint8_t>{}), PW_STATUS_UNAVAILABLE);
   EXPECT_EQ(sends_called, 0u);
 
   constexpr size_t kL2capLength =

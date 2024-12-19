@@ -14,8 +14,15 @@
 
 #pragma once
 
+#include <optional>
+
+#include "pw_multibuf/multibuf.h"
+#include "pw_status/status.h"
+
 namespace pw::bluetooth::proxy {
 
+/// Events returned from all client-facing channel objects in their `event_fn`
+/// callback.
 enum class L2capChannelEvent {
   /// The channel was closed by something other than `ProxyHost`. The channel is
   /// now `State::kClosed` and should be cleaned up. See logs for details.
@@ -40,6 +47,16 @@ enum class L2capChannelEvent {
   /// Write space is now available after a previous Write on this channel
   /// returned UNAVAILABLE.
   kWriteAvailable,
+};
+
+/// Result object with status and optional MultiBuf that is only present if the
+/// status is NOT `ok()`.
+// `pw::Result` can't be used because it only has a value for `ok()` status.
+// `std::expected` can't be used because it only has a value OR a status.
+struct StatusWithMultiBuf {
+  pw::Status status;
+  // Only has value if pw::Status is UNAVAILABLE.
+  std::optional<pw::multibuf::MultiBuf> buf = std::nullopt;
 };
 
 }  // namespace pw::bluetooth::proxy

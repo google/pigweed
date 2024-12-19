@@ -77,6 +77,7 @@ cc_library(
         "//pw_containers",
         "//pw_function",
         "//pw_log",
+        "//pw_multibuf",
         "//pw_multibuf:simple_allocator",
         "//pw_result",
         "//pw_span",
@@ -123,6 +124,7 @@ pw_cc_test(
         "//pw_bluetooth:emboss_hci_events",
         "//pw_bluetooth:emboss_hci_h4",
         "//pw_bluetooth:emboss_util",
+        "//pw_multibuf",
     ],
 )
 

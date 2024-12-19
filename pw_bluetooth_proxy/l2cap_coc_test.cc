@@ -59,6 +59,95 @@ constexpr uint8_t kFirstKFrameOverAclMinSize =
     emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
     emboss::FirstKFrame::MinSizeInBytes();
 
+// TODO: https://pwbug.dev/379337272 - All write tests should be moved to
+// MultiBuf Write like this one.
+TEST_F(L2capCocWriteTest, BasicMultibufWrite) {
+  struct {
+    int sends_called = 0;
+    // First four bits 0x0 encode PB & BC flags
+    uint16_t handle = 0x0ACB;
+    // Length of L2CAP PDU
+    uint16_t acl_data_total_length = 0x0009;
+    // L2CAP header PDU length field
+    uint16_t pdu_length = 0x0005;
+    // Random CID
+    uint16_t channel_id = 0x1234;
+    // Length of L2CAP SDU
+    uint16_t sdu_length = 0x0003;
+    // L2CAP information payload
+    std::array<uint8_t, 3> payload = {0xAB, 0xCD, 0xEF};
+
+    // Built from the preceding values in little endian order (except payload in
+    // big endian).
+    std::array<uint8_t, 13> expected_hci_packet = {0xCB,
+                                                   0x0A,
+                                                   0x09,
+                                                   0x00,
+                                                   0x05,
+                                                   0x00,
+                                                   0x34,
+                                                   0x12,
+                                                   0x03,
+                                                   0x00,
+                                                   0xAB,
+                                                   0xCD,
+                                                   0xEF};
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        ++capture.sends_called;
+        EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::ACL_DATA);
+        EXPECT_EQ(packet.GetHciSpan().size(),
+                  capture.expected_hci_packet.size());
+        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
+                               packet.GetHciSpan().end(),
+                               capture.expected_hci_packet.begin(),
+                               capture.expected_hci_packet.end()));
+        PW_TEST_ASSERT_OK_AND_ASSIGN(
+            auto acl,
+            MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
+        EXPECT_EQ(acl.header().handle().Read(), capture.handle);
+        EXPECT_EQ(acl.header().packet_boundary_flag().Read(),
+                  emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
+        EXPECT_EQ(acl.header().broadcast_flag().Read(),
+                  emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
+        EXPECT_EQ(acl.data_total_length().Read(),
+                  capture.acl_data_total_length);
+        emboss::FirstKFrameView kframe = emboss::MakeFirstKFrameView(
+            acl.payload().BackingStorage().data(), acl.SizeInBytes());
+        EXPECT_EQ(kframe.pdu_length().Read(), capture.pdu_length);
+        EXPECT_EQ(kframe.channel_id().Read(), capture.channel_id);
+        EXPECT_EQ(kframe.sdu_length().Read(), capture.sdu_length);
+        for (size_t i = 0; i < 3; ++i) {
+          EXPECT_EQ(kframe.payload()[i].Read(), capture.payload[i]);
+        }
+      });
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+  // Allow proxy to reserve 1 credit.
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
+
+  L2capCoc channel = BuildCoc(proxy,
+                              CocParameters{.handle = capture.handle,
+                                            .remote_cid = capture.channel_id});
+  std::optional<pw::multibuf::MultiBuf> buf =
+      GetTestMultiBuffAllocator().AllocateContiguous(capture.payload.size());
+  EXPECT_TRUE(buf);
+  StatusWithSize status = buf->CopyFrom(
+      ByteSpan{reinterpret_cast<std::byte*>(capture.payload.data()),
+               capture.payload.size()});
+  EXPECT_EQ(status.status(), PW_STATUS_OK);
+
+  EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
+  EXPECT_EQ(capture.sends_called, 1);
+}
+
 TEST_F(L2capCocWriteTest, BasicWrite) {
   struct {
     int sends_called = 0;

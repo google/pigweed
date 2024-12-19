@@ -64,6 +64,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     pw_containers
     pw_function
     pw_log
+    pw_multibuf
     pw_multibuf.simple_allocator
     pw_result
     pw_span
@@ -120,6 +121,7 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
     pw_bluetooth.emboss_hci_common
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
+    pw_multibuf
   GROUPS
     modules
 )

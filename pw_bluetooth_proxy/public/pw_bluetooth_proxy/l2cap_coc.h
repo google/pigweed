@@ -74,7 +74,8 @@ class L2capCoc : public L2capChannel {
   /// @param[in] payload The L2CAP payload to be sent. Payload will be copied
   ///                    before function completes.
   ///
-  /// @returns @rst
+  /// @returns A StatusWithMultiBuf with one of the statuses below. If status is
+  ///          not OK then payload is returned in StatusWithMultiBuf as well.
   ///
   /// .. pw-status-codes::
   ///  OK:                  If packet was successfully queued for send.
@@ -83,9 +84,15 @@ class L2capCoc : public L2capChannel {
   ///                       `event_fn` has been provided it will be called with
   ///                       `L2capChannelEvent::kWriteAvailable` when there is
   ///                       queue space available again.
-  ///  INVALID_ARGUMENT:    If payload is too large.
+  ///  INVALID_ARGUMENT:    If payload is too large or if payload is not a
+  ///                       contiguous MultiBuf.
   ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
   /// @endrst
+  StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload);
+
+  /// @deprecated Use Write with MultiBuf parameter instead.
+  // TODO: https://pwbug.dev/382783733 - Delete once downstreams move to new
+  // Write.
   pw::Status Write(pw::span<const uint8_t> payload);
 
   /// Send an L2CAP_FLOW_CONTROL_CREDIT_IND signaling packet to dispense the

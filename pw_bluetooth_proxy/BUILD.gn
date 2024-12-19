@@ -74,6 +74,7 @@ pw_source_set("pw_bluetooth_proxy") {
     "//pw_bluetooth:emboss_l2cap_frames",
     "//pw_bluetooth:emboss_rfcomm_frames",
     "//pw_bluetooth:emboss_util",
+    "//pw_multibuf",
     "//pw_multibuf:simple_allocator",
     "//pw_sync:lock_annotations",
     "//pw_sync:mutex",
@@ -145,6 +146,7 @@ pw_test("pw_bluetooth_proxy_test") {
     "//pw_bluetooth:emboss_hci_events",
     "//pw_bluetooth:emboss_hci_h4",
     "//pw_bluetooth:emboss_util",
+    "//pw_multibuf",
   ]
 }
 
