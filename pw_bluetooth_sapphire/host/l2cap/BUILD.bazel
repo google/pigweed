@@ -99,6 +99,7 @@ cc_library(
     target_compatible_with = select({
         "@platforms//os:fuchsia": [],
         "@platforms//os:linux": [],
+        "@platforms//os:macos": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
