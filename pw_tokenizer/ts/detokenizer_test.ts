@@ -17,12 +17,20 @@
 import { Frame, Encoder, Decoder } from 'pigweedjs/pw_hdlc';
 import { Detokenizer } from './detokenizer';
 
-const CSV = `
+const CSV3Col = `
 64636261,          ,"regular token"
 86fc33f3,          ,"base64 token"
 0d6bd33c,          ,"Regular Token: %s and Nested Token: %s"
 97185e6f,          ,"(token: %s, string: %s, int: %d, float: %f)"
 451d86ed,          ,"Cat"
+`;
+
+const CSV4Col = `
+64636261,          ,"foo","regular token"
+86fc33f3,          ,"bar","base64 token"
+0d6bd33c,          ,"baz","Regular Token: %s and Nested Token: %s"
+97185e6f,          ,"","(token: %s, string: %s, int: %d, float: %f)"
+451d86ed,          ,"","Cat"
 `;
 
 function generateFrame(text: string): Frame {
@@ -32,49 +40,53 @@ function generateFrame(text: string): Frame {
   return decodedFrames[0];
 }
 
-describe('Detokenizer', () => {
-  let detokenizer: Detokenizer;
+const generateTests = (description: string, csv: string) =>
+  describe(description, () => {
+    let detokenizer: Detokenizer;
 
-  beforeEach(() => {
-    detokenizer = new Detokenizer(CSV);
-  });
+    beforeEach(() => {
+      detokenizer = new Detokenizer(csv);
+    });
 
-  it('parses a base64 correct frame properly', () => {
-    const frame = generateFrame('$8zP8hg==');
-    expect(detokenizer.detokenizeBase64(frame)).toEqual('base64 token');
-  });
-  it('parses a correct frame properly', () => {
-    const frame = generateFrame('abcde');
-    expect(detokenizer.detokenize(frame)).toEqual('regular token');
-  });
-  it('failure to detokenize returns original string', () => {
-    expect(detokenizer.detokenize(generateFrame('aabbcc'))).toEqual('aabbcc');
-    expect(detokenizer.detokenizeBase64(generateFrame('$8zP7hg=='))).toEqual(
-      '$8zP7hg==',
-    );
-  });
-  it('recursive detokenize all nested base64 tokens', () => {
-    expect(
-      detokenizer.detokenizeBase64(
-        generateFrame(
-          '$PNNrDQkkN1lZZFJRPT0lJGIxNFlsd2trTjFsWlpGSlJQVDBGUTJGdFpXeFlwSENkUHc9PQ==',
+    it('parses a base64 correct frame properly', () => {
+      const frame = generateFrame('$8zP8hg==');
+      expect(detokenizer.detokenizeBase64(frame)).toEqual('base64 token');
+    });
+    it('parses a correct frame properly', () => {
+      const frame = generateFrame('abcde');
+      expect(detokenizer.detokenize(frame)).toEqual('regular token');
+    });
+    it('failure to detokenize returns original string', () => {
+      expect(detokenizer.detokenize(generateFrame('aabbcc'))).toEqual('aabbcc');
+      expect(detokenizer.detokenizeBase64(generateFrame('$8zP7hg=='))).toEqual(
+        '$8zP7hg==',
+      );
+    });
+    it('recursive detokenize all nested base64 tokens', () => {
+      expect(
+        detokenizer.detokenizeBase64(
+          generateFrame(
+            '$PNNrDQkkN1lZZFJRPT0lJGIxNFlsd2trTjFsWlpGSlJQVDBGUTJGdFpXeFlwSENkUHc9PQ==',
+          ),
         ),
-      ),
-    ).toEqual(
-      'Regular Token: Cat and Nested Token: (token: Cat, string: Camel, int: 44, float: 1.2300000190734863)',
-    );
+      ).toEqual(
+        'Regular Token: Cat and Nested Token: (token: Cat, string: Camel, int: 44, float: 1.2300000190734863)',
+      );
+    });
+
+    it('recursion detokenize with limits on max recursion', () => {
+      expect(
+        detokenizer.detokenizeBase64(
+          generateFrame(
+            '$PNNrDQkkN1lZZFJRPT0lJGIxNFlsd2trTjFsWlpGSlJQVDBGUTJGdFpXeFlwSENkUHc9PQ==',
+          ),
+          1,
+        ),
+      ).toEqual(
+        'Regular Token: Cat and Nested Token: (token: $7YYdRQ==, string: Camel, int: 44, float: 1.2300000190734863)',
+      );
+    });
   });
 
-  it('recursion detokenize with limits on max recursion', () => {
-    expect(
-      detokenizer.detokenizeBase64(
-        generateFrame(
-          '$PNNrDQkkN1lZZFJRPT0lJGIxNFlsd2trTjFsWlpGSlJQVDBGUTJGdFpXeFlwSENkUHc9PQ==',
-        ),
-        1,
-      ),
-    ).toEqual(
-      'Regular Token: Cat and Nested Token: (token: $7YYdRQ==, string: Camel, int: 44, float: 1.2300000190734863)',
-    );
-  });
-});
+generateTests('Detokenize with 3 column database', CSV3Col);
+generateTests('Detokenize with 4 column database', CSV4Col);
