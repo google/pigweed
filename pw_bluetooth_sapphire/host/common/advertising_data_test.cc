@@ -84,8 +84,9 @@ TEST(AdvertisingDataTest, EncodeKnownURI) {
   StaticByteBuffer bytes(
       0x0B, 0x24, 0x17, '/', '/', 'a', 'b', 'c', '.', 'x', 'y', 'z');
 
-  EXPECT_EQ(bytes.size(), data.CalculateBlockSize());
-  DynamicByteBuffer block(data.CalculateBlockSize());
+  size_t block_size = data.CalculateBlockSize();
+  EXPECT_EQ(bytes.size(), block_size);
+  DynamicByteBuffer block(block_size);
   data.WriteBlock(&block, std::nullopt);
   EXPECT_TRUE(ContainersEqual(bytes, block));
 }

@@ -71,7 +71,7 @@ size_t EncodedServiceDataSize(const UUID& uuid, const BufferView data) {
 
 // clang-format off
 // https://www.bluetooth.com/specifications/assigned-numbers/uri-scheme-name-string-mapping
-const char* kUriSchemes[] = {"aaa:", "aaas:", "about:", "acap:", "acct:", "cap:", "cid:",
+constexpr const char* kUriSchemes[] = {"aaa:", "aaas:", "about:", "acap:", "acct:", "cap:", "cid:",
         "coap:", "coaps:", "crid:", "data:", "dav:", "dict:", "dns:", "file:", "ftp:", "geo:",
         "go:", "gopher:", "h323:", "http:", "https:", "iax:", "icap:", "im:", "imap:", "info:",
         "ipp:", "ipps:", "iris:", "iris.beep:", "iris.xpc:", "iris.xpcs:", "iris.lwz:", "jabber:",
@@ -102,7 +102,7 @@ std::string EncodeUri(const std::string& uri) {
   for (uint32_t i = 0; i < kUriSchemesSize; i++) {
     const char* scheme = kUriSchemes[i];
     size_t scheme_len = strlen(scheme);
-    if (std::equal(scheme, scheme + scheme_len, uri.begin())) {
+    if (std::strncmp(uri.c_str(), scheme, scheme_len) == 0) {
       const pw::Result<pw::utf8::EncodedCodePoint> encoded_scheme =
           pw::utf8::EncodeCodePoint(i + 2);
       PW_DCHECK(encoded_scheme.ok());
