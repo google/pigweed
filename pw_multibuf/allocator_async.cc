@@ -14,6 +14,8 @@
 
 #include "pw_multibuf/allocator_async.h"
 
+#include <mutex>
+
 #include "pw_assert/check.h"       // IWYU pragma: keep
 #include "pw_async2/dispatcher.h"  // IWYU pragma: keep
 #include "pw_multibuf/allocator.h"
