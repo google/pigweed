@@ -47,11 +47,21 @@ class IsoInboundPacketAssemblerTest : public ::testing::Test {
 // Verify that a complete packet is immediately passed to the handler
 TEST_F(IsoInboundPacketAssemblerTest, CompleteSdu) {
   const size_t kFramesToBeSent = 12;
-  size_t frame_size = 100;
+  size_t sdu_fragment_size = 100;
   const size_t kSubsequentSizeIncrement = 20;
 
   for (size_t frames_sent = 0; frames_sent < kFramesToBeSent; frames_sent++) {
-    DynamicByteBuffer incoming_packet = testing::IsoDataPacket(frame_size);
+    std::unique_ptr<std::vector<uint8_t>> sdu_data =
+        testing::GenDataBlob(sdu_fragment_size, /*starting_value=*/42);
+    DynamicByteBuffer incoming_packet = testing::IsoDataPacket(
+        /*connection_handle=*/123,
+        pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*time_stamp=*/std::nullopt,
+        /*packet_sequence_number=*/456,
+        /*iso_sdu_length=*/sdu_fragment_size,
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        *sdu_data);
+
     ASSERT_EQ(outgoing_packets()->size(), frames_sent);
     pw::span<const std::byte> frame_as_span = incoming_packet.subspan();
     assembler()->ProcessNext(frame_as_span);
@@ -60,7 +70,7 @@ TEST_F(IsoInboundPacketAssemblerTest, CompleteSdu) {
                            frame_as_span.end(),
                            outgoing_packets()->back().begin(),
                            outgoing_packets()->back().end()));
-    frame_size += kSubsequentSizeIncrement;
+    sdu_fragment_size += kSubsequentSizeIncrement;
   }
 }
 

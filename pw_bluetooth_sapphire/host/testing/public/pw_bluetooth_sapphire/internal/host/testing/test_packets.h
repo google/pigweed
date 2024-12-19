@@ -13,6 +13,7 @@
 // the License.
 
 #pragma once
+#include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
@@ -28,6 +29,10 @@ namespace bt::testing {
 // common behaviors with respect to expected devices and connections.
 // This allows easily defining expected packets to be sent or received for
 // given transactions such as connection establishment or discovery
+
+// Generates a blob of data that is unique to the size and starting value
+std::unique_ptr<std::vector<uint8_t>> GenDataBlob(size_t size,
+                                                  uint8_t starting_value);
 
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address);
 
@@ -104,12 +109,14 @@ DynamicByteBuffer IoCapabilityResponsePacket(
     pw::bluetooth::emboss::IoCapability io_cap,
     pw::bluetooth::emboss::AuthenticationRequirements auth_req);
 
-// Create an ISO data packet containing a complete SDU with no timestamp and a
-// simple repeating pattern of 2, 4, 6, 8, 10, ... 254, 0, ...
 DynamicByteBuffer IsoDataPacket(
-    size_t frame_total_size,
-    hci_spec::ConnectionHandle connection_handle = 0x123,
-    uint16_t packet_sequence_number = 0x22);
+    hci_spec::ConnectionHandle connection_handle,
+    pw::bluetooth::emboss::IsoDataPbFlag pb_flag,
+    std::optional<uint32_t> time_stamp,
+    std::optional<uint16_t> packet_sequence_number,
+    std::optional<uint16_t> iso_sdu_length,
+    std::optional<pw::bluetooth::emboss::IsoDataPacketStatus> status_flag,
+    pw::span<const uint8_t> sdu_data);
 
 DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(
     hci_spec::ConnectionHandle conn, hci_spec::LESupportedFeatures le_features);

@@ -25,7 +25,7 @@ constexpr hci_spec::CisIdentifier kCisId = 0x42;
 
 constexpr hci_spec::ConnectionHandle kCisHandleId = 0x59e;
 
-constexpr size_t kMaxControllerPacketSize = 100;
+constexpr size_t kMaxControllerSDUFragmentSize = 100;
 constexpr size_t kMaxControllerPacketCount = 5;
 
 using MockControllerTestBase =
@@ -39,7 +39,7 @@ class IsoStreamTest : public MockControllerTestBase {
   void SetUp() override {
     MockControllerTestBase::SetUp(
         pw::bluetooth::Controller::FeaturesBits::kHciIso);
-    hci::DataBufferInfo iso_buffer_info(kMaxControllerPacketSize,
+    hci::DataBufferInfo iso_buffer_info(kMaxControllerSDUFragmentSize,
                                         kMaxControllerPacketCount);
     transport()->InitializeIsoDataChannel(iso_buffer_info);
     iso_stream_ = IsoStream::Create(
@@ -323,10 +323,17 @@ TEST_F(IsoStreamTest, PendingRead) {
       /*codec_configuration=*/std::nullopt,
       /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
       iso::IsoStream::SetupDataPathError::kSuccess);
-  DynamicByteBuffer packet0 =
-      testing::IsoDataPacket(kMaxControllerPacketSize,
-                             iso_stream()->cis_handle(),
-                             /*packet_sequence_number=*/0);
+  const size_t kIsoSduLength = 212;
+  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+      testing::GenDataBlob(kIsoSduLength, /*starting_value=*/14);
+  DynamicByteBuffer packet0 = testing::IsoDataPacket(
+      /*connection_handle=*/iso_stream()->cis_handle(),
+      pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+      /*time_stamp=*/std::nullopt,
+      /*packet_sequence_number=*/0,
+      kIsoSduLength,
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+      *sdu_data);
   pw::span<const std::byte> packet0_as_span = packet0.subspan();
   ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
   iso_stream()->ReceiveInboundPacket(packet0_as_span);
@@ -350,9 +357,16 @@ TEST_F(IsoStreamTest, UnreadData) {
   DynamicByteBuffer packets[kTotalFrameCount];
   pw::span<const std::byte> packets_as_span[kTotalFrameCount];
   for (size_t i = 0; i < kTotalFrameCount; i++) {
-    packets[i] = testing::IsoDataPacket(kMaxControllerPacketSize - i,
-                                        iso_stream()->cis_handle(),
-                                        /*packet_sequence_number=*/i);
+    std::unique_ptr<std::vector<uint8_t>> sdu_data = testing::GenDataBlob(
+        /*size=*/kMaxControllerSDUFragmentSize - i, /*starting_value=*/i);
+    packets[i] = testing::IsoDataPacket(
+        /*connection_handle=*/iso_stream()->cis_handle(),
+        pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*time_stamp=*/std::nullopt,
+        /*packet_sequence_number=*/i,
+        /*iso_sdu_length=*/kMaxControllerSDUFragmentSize - i,
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        *sdu_data);
     packets_as_span[i] = packets[i].subspan();
     iso_stream()->ReceiveInboundPacket(packets_as_span[i]);
   }
@@ -369,15 +383,29 @@ TEST_F(IsoStreamTest, ReadRequestedAndThenRejected) {
       /*codec_configuration=*/std::nullopt,
       /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
       iso::IsoStream::SetupDataPathError::kSuccess);
-  DynamicByteBuffer packet0 =
-      testing::IsoDataPacket(kMaxControllerPacketSize,
-                             iso_stream()->cis_handle(),
-                             /*packet_sequence_number=*/0);
+  size_t packet0_sdu_fragment_size = kMaxControllerSDUFragmentSize;
+  std::unique_ptr<std::vector<uint8_t>> packet0_sdu_data =
+      testing::GenDataBlob(packet0_sdu_fragment_size, /*starting_value=*/11);
+  DynamicByteBuffer packet0 = testing::IsoDataPacket(
+      /*connection_handle=*/iso_stream()->cis_handle(),
+      pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+      /*time_stamp=*/std::nullopt,
+      /*packet_sequence_number=*/0,
+      /*iso_sdu_length=*/packet0_sdu_fragment_size,
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+      *packet0_sdu_data);
   pw::span<const std::byte> packet0_as_span = packet0.subspan();
-  DynamicByteBuffer packet1 =
-      testing::IsoDataPacket(kMaxControllerPacketSize - 1,
-                             iso_stream()->cis_handle(),
-                             /*packet_sequence_number=*/1);
+  size_t packet1_sdu_fragment_size = packet0_sdu_fragment_size - 1;
+  std::unique_ptr<std::vector<uint8_t>> packet1_sdu_data =
+      testing::GenDataBlob(packet1_sdu_fragment_size, /*starting_value=*/13);
+  DynamicByteBuffer packet1 = testing::IsoDataPacket(
+      /*connection_handle=*/iso_stream()->cis_handle(),
+      pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+      /*time_stamp=*/std::nullopt,
+      /*packet_sequence_number=*/1,
+      /*iso_sdu_length=*/packet1_sdu_fragment_size,
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+      *packet1_sdu_data);
   pw::span<const std::byte> packet1_as_span = packet1.subspan();
 
   // Request a frame but then reject it when proffered by the stream

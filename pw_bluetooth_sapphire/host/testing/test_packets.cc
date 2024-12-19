@@ -29,6 +29,19 @@ namespace bt::testing {
 namespace android_hci = bt::hci_spec::vendor::android;
 namespace android_emb = pw::bluetooth::vendor::android_hci;
 
+// Generates a blob of data that is unique to the size and starting value
+std::unique_ptr<std::vector<uint8_t>> GenDataBlob(size_t size,
+                                                  uint8_t starting_value) {
+  auto result = std::make_unique<std::vector<uint8_t>>(size);
+  result->resize(size);
+  uint8_t next_value = starting_value;
+  for (auto& elem : *result) {
+    elem = next_value;
+    next_value += 7;
+  }
+  return result;
+}
+
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address) {
   const auto addr = address.value().bytes();
   return DynamicByteBuffer(StaticByteBuffer(
@@ -374,33 +387,53 @@ DynamicByteBuffer IoCapabilityResponsePacket(
       ));
 }
 
-DynamicByteBuffer IsoDataPacket(size_t frame_total_size,
-                                hci_spec::ConnectionHandle connection_handle,
-                                uint16_t packet_sequence_number) {
+DynamicByteBuffer IsoDataPacket(
+    hci_spec::ConnectionHandle connection_handle,
+    pw::bluetooth::emboss::IsoDataPbFlag pb_flag,
+    std::optional<uint32_t> time_stamp,
+    std::optional<uint16_t> packet_sequence_number,
+    std::optional<uint16_t> iso_sdu_length,
+    std::optional<pw::bluetooth::emboss::IsoDataPacketStatus>
+        packet_status_flag,
+    pw::span<const uint8_t> sdu_data) {
+  size_t time_stamp_size = time_stamp.has_value() ? 4 : 0;
+  bool has_sdu_hdr =
+      (pb_flag == pw::bluetooth::emboss::IsoDataPbFlag::FIRST_FRAGMENT) ||
+      (pb_flag == pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU);
+  size_t sdu_hdr_size = has_sdu_hdr ? 4 : 0;
+  size_t data_total_length = time_stamp_size + sdu_hdr_size + sdu_data.size();
+  size_t frame_total_size =
+      pw::bluetooth::emboss::IsoDataFrameHeaderView::SizeInBytes() +
+      data_total_length;
   DynamicByteBuffer packet(frame_total_size);
   auto view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
       packet.mutable_data(), frame_total_size);
 
-  const size_t data_total_length =
-      frame_total_size - view.header().IntrinsicSizeInBytes().Read();
   view.header().connection_handle().Write(connection_handle);
-  view.header().pb_flag().Write(
-      pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU);
+  view.header().pb_flag().Write(pb_flag);
   view.header().ts_flag().Write(
-      pw::bluetooth::emboss::TsFlag::TIMESTAMP_NOT_PRESENT);
+      time_stamp.has_value()
+          ? pw::bluetooth::emboss::TsFlag::TIMESTAMP_PRESENT
+          : pw::bluetooth::emboss::TsFlag::TIMESTAMP_NOT_PRESENT);
   view.header().data_total_length().Write(data_total_length);
 
-  const size_t iso_sdu_length =
-      frame_total_size - view.sdu_fragment_offset().Read();
-  view.packet_sequence_number().Write(packet_sequence_number);
-  view.iso_sdu_length().Write(iso_sdu_length);
-  view.packet_status_flag().Write(
-      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA);
+  if (time_stamp.has_value()) {
+    view.time_stamp().Write(*time_stamp);
+  }
+
+  if (has_sdu_hdr) {
+    BT_ASSERT(packet_sequence_number.has_value());
+    BT_ASSERT(iso_sdu_length.has_value());
+    BT_ASSERT(packet_status_flag.has_value());
+    view.packet_sequence_number().Write(*packet_sequence_number);
+    view.iso_sdu_length().Write(*iso_sdu_length);
+    view.packet_status_flag().Write(*packet_status_flag);
+  }
 
   // Write payload
-  for (size_t n = 0; n < iso_sdu_length; n++) {
-    view.iso_sdu_fragment()[n].Write(static_cast<uint8_t>(n * 2));
-  }
+  memcpy(view.iso_sdu_fragment().BackingStorage().data(),
+         sdu_data.data(),
+         sdu_data.size());
 
   return packet;
 }

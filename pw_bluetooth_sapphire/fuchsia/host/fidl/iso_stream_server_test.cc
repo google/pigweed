@@ -319,11 +319,19 @@ TEST_F(IsoStreamServerDataTest, ReadBeforeDataReceived) {
   ASSERT_FALSE(result.has_value());
 
   // Queue a frame
-  const size_t kTotalPacketSize = 255;
+  const size_t kSduFragmentSize = 255;
   const uint16_t kConnectionHandle = fake_iso_stream()->cis_handle();
   const uint16_t kSequenceNumber = 0x4321;
+  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+      bt::testing::GenDataBlob(kSduFragmentSize, /*starting_value=*/111);
   bt::DynamicByteBuffer raw_buffer = bt::testing::IsoDataPacket(
-      kTotalPacketSize, kConnectionHandle, kSequenceNumber);
+      kConnectionHandle,
+      pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+      /*time_stamp=*/std::nullopt,
+      kSequenceNumber,
+      /*iso_sdu_length=*/kSduFragmentSize,
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+      *sdu_data);
   pw::span<const std::byte> packet(
       reinterpret_cast<const std::byte*>(raw_buffer.data()), raw_buffer.size());
   fake_iso_stream()->NotifyClientOfPacketReceived(packet);
@@ -345,6 +353,7 @@ TEST_F(IsoStreamServerDataTest, ReadBeforeDataReceived) {
   auto view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
       raw_buffer.data(), raw_buffer.size());
   size_t sdu_data_size = view.sdu_fragment_size().Read();
+  ASSERT_EQ(sdu_data_size, kSduFragmentSize);
   ASSERT_TRUE(response.has_data());
   ASSERT_EQ(sdu_data_size, response.data().size());
   EXPECT_EQ(0,
@@ -355,14 +364,22 @@ TEST_F(IsoStreamServerDataTest, ReadBeforeDataReceived) {
 
 TEST_F(IsoStreamServerDataTest, DataReceivedBeforeRead) {
   // Queue a frame
-  const size_t kTotalPacketSize = 255;
+  const size_t kSduFragmentSize = 255;
   const uint16_t kConnectionHandle = fake_iso_stream()->cis_handle();
   const uint16_t kSequenceNumber = 0x4321;
+  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+      bt::testing::GenDataBlob(kSduFragmentSize, /*starting_value=*/200);
   bt::DynamicByteBuffer raw_buffer = bt::testing::IsoDataPacket(
-      kTotalPacketSize, kConnectionHandle, kSequenceNumber);
+      kConnectionHandle,
+      pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+      /*time_stamp=*/std::nullopt,
+      kSequenceNumber,
+      /*iso_sdu_length=*/kSduFragmentSize,
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+      *sdu_data);
   std::unique_ptr<bt::iso::IsoDataPacket> frame =
-      std::make_unique<bt::iso::IsoDataPacket>(kTotalPacketSize);
-  std::memcpy(frame->data(), raw_buffer.data(), kTotalPacketSize);
+      std::make_unique<bt::iso::IsoDataPacket>(raw_buffer.size());
+  std::memcpy(frame->data(), raw_buffer.data(), raw_buffer.size());
   fake_iso_stream()->QueueIncomingFrame(std::move(frame));
 
   std::optional<fuchsia::bluetooth::le::IsochronousStream_Read_Result> result;
@@ -388,6 +405,7 @@ TEST_F(IsoStreamServerDataTest, DataReceivedBeforeRead) {
   auto view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
       raw_buffer.data(), raw_buffer.size());
   size_t sdu_data_size = view.sdu_fragment_size().Read();
+  ASSERT_EQ(sdu_data_size, kSduFragmentSize);
   ASSERT_TRUE(response.has_data());
   ASSERT_EQ(sdu_data_size, response.data().size());
   EXPECT_EQ(0,

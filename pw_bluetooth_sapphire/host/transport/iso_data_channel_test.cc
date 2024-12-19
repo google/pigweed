@@ -110,7 +110,7 @@ TEST_F(IsoDataChannelTests, DataDemuxification) {
 
   constexpr size_t kNumTestPackets = 8;
   struct {
-    size_t packet_size;
+    size_t sdu_fragment_size;
     size_t connection_num;
   } test_vector[kNumTestPackets] = {
       {100, 0},
@@ -126,12 +126,20 @@ TEST_F(IsoDataChannelTests, DataDemuxification) {
   // Send frames and verify that they are sent to the correct interfaces (or not
   // sent at all if the connection handle is unregistered).
   for (size_t test_num = 0; test_num < kNumTestPackets; test_num++) {
-    size_t packet_size = test_vector[test_num].packet_size;
+    size_t sdu_fragment_size = test_vector[test_num].sdu_fragment_size;
     size_t connection_num = test_vector[test_num].connection_num;
     ASSERT_TRUE(connection_num < kNumTotalInterfaces);
 
-    DynamicByteBuffer frame =
-        testing::IsoDataPacket(packet_size, connection_handles[connection_num]);
+    std::unique_ptr<std::vector<uint8_t>> sdu_data =
+        testing::GenDataBlob(sdu_fragment_size, /*starting_value=*/test_num);
+    DynamicByteBuffer frame = testing::IsoDataPacket(
+        /*connection_handle=*/connection_handles[connection_num],
+        pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*time_stamp=*/std::nullopt,
+        /*packet_sequence_number=*/123,
+        /*iso_sdu_length=*/sdu_fragment_size,
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        *sdu_data);
     pw::span<const std::byte> frame_as_span = frame.subspan();
 
     if (connection_num < kNumRegisteredInterfaces) {
