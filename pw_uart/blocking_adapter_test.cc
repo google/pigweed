@@ -27,6 +27,7 @@
 #include "pw_sync/mutex.h"
 #include "pw_sync/timed_thread_notification.h"
 #include "pw_thread/test_thread_context.h"
+#include "pw_thread/thread.h"
 #include "pw_unit_test/framework.h"
 #include "pw_work_queue/work_queue.h"
 
