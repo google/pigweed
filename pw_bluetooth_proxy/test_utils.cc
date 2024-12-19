@@ -16,6 +16,7 @@
 
 #include <cstdint>
 
+#include "pw_allocator/testing.h"
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"
@@ -89,6 +90,66 @@ Result<CFrameWithStorage> SetupCFrame(uint16_t handle,
   EXPECT_TRUE(frame.writer.Ok());
   EXPECT_EQ(frame.writer.payload().SizeInBytes(), cframe_len);
   return frame;
+}
+
+Result<KFrameWithStorage> SetupKFrame(uint16_t handle,
+                                      uint16_t channel_id,
+                                      uint16_t mps,
+                                      uint16_t segment_no,
+                                      span<const uint8_t> payload) {
+  uint16_t sdu_length_field_offset = segment_no == 0 ? kSduLengthFieldSize : 0;
+  // Requested segment encodes payload starting at `payload[payload_offset]`.
+  uint16_t payload_offset =
+      segment_no * mps - (segment_no == 0 ? 0 : kSduLengthFieldSize);
+  if (payload_offset >= payload.size()) {
+    return Status::OutOfRange();
+  }
+  uint16_t remaining_payload_length = payload.size() - payload_offset;
+  uint16_t segment_pdu_length =
+      remaining_payload_length + sdu_length_field_offset;
+  if (segment_pdu_length > mps) {
+    segment_pdu_length = mps;
+  }
+
+  KFrameWithStorage kframe;
+  PW_TRY_ASSIGN(kframe.acl,
+                SetupAcl(handle,
+                         segment_pdu_length +
+                             emboss::BasicL2capHeader::IntrinsicSizeInBytes()));
+
+  uint8_t* kframe_payload_start;
+  if (segment_no == 0) {
+    PW_TRY_ASSIGN(kframe.writer,
+                  MakeEmbossWriter<emboss::FirstKFrameWriter>(
+                      kframe.acl.writer.payload().BackingStorage().data(),
+                      kframe.acl.writer.payload().SizeInBytes()));
+    emboss::FirstKFrameWriter first_kframe_writer =
+        std::get<emboss::FirstKFrameWriter>(kframe.writer);
+    first_kframe_writer.pdu_length().Write(segment_pdu_length);
+    first_kframe_writer.channel_id().Write(channel_id);
+    first_kframe_writer.sdu_length().Write(payload.size());
+    EXPECT_TRUE(first_kframe_writer.Ok());
+    kframe_payload_start =
+        first_kframe_writer.payload().BackingStorage().data();
+  } else {
+    PW_TRY_ASSIGN(kframe.writer,
+                  MakeEmbossWriter<emboss::SubsequentKFrameWriter>(
+                      kframe.acl.writer.payload().BackingStorage().data(),
+                      kframe.acl.writer.payload().SizeInBytes()));
+    emboss::SubsequentKFrameWriter subsequent_kframe_writer =
+        std::get<emboss::SubsequentKFrameWriter>(kframe.writer);
+    subsequent_kframe_writer.pdu_length().Write(segment_pdu_length);
+    subsequent_kframe_writer.channel_id().Write(channel_id);
+    EXPECT_TRUE(subsequent_kframe_writer.Ok());
+    kframe_payload_start =
+        subsequent_kframe_writer.payload().BackingStorage().data();
+  }
+
+  std::memcpy(/*__dest=*/kframe_payload_start,
+              /*__src=*/payload.data() + payload_offset,
+              /*__n=*/segment_pdu_length - sdu_length_field_offset);
+
+  return kframe;
 }
 
 // Send an LE_Read_Buffer_Size (V2) CommandComplete event to `proxy` to request
@@ -315,6 +376,26 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
 
 pw::Result<L2capCoc> ProxyHostTest::BuildCocWithResult(ProxyHost& proxy,
                                                        CocParameters params) {
+  // TODO: https://pwbug.dev/369849508 - Once deprecated AcquireL2capCoc() fn
+  // is removed, use only new version.
+  if (params.receive_fn && params.receive_fn_multibuf) {
+    return Status::InvalidArgument();
+  }
+  if (params.receive_fn) {
+    return proxy.AcquireL2capCoc(
+        /*rx_multibuf_allocator=*/sut_multibuf_allocator_,
+        params.handle,
+        {.cid = params.local_cid,
+         .mtu = params.rx_mtu,
+         .mps = params.rx_mps,
+         .credits = params.rx_credits},
+        {.cid = params.remote_cid,
+         .mtu = params.tx_mtu,
+         .mps = params.tx_mps,
+         .credits = params.tx_credits},
+        std::move(params.receive_fn),
+        std::move(params.event_fn));
+  }
   return proxy.AcquireL2capCoc(
       /*rx_multibuf_allocator=*/sut_multibuf_allocator_,
       params.handle,
@@ -326,7 +407,7 @@ pw::Result<L2capCoc> ProxyHostTest::BuildCocWithResult(ProxyHost& proxy,
        .mtu = params.tx_mtu,
        .mps = params.tx_mps,
        .credits = params.tx_credits},
-      std::move(params.receive_fn),
+      std::move(params.receive_fn_multibuf),
       std::move(params.event_fn));
 }
 

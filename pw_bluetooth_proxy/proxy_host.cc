@@ -436,6 +436,39 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
     uint16_t connection_handle,
     L2capCoc::CocConfig rx_config,
     L2capCoc::CocConfig tx_config,
+    Function<void(multibuf::MultiBuf&& payload)>&& receive_fn,
+    Function<void(L2capChannelEvent event)>&& event_fn) {
+  Status status = acl_data_channel_.CreateAclConnection(connection_handle,
+                                                        AclTransportType::kLe);
+  if (status.IsResourceExhausted()) {
+    return pw::Status::Unavailable();
+  }
+  PW_CHECK(status.ok() || status.IsAlreadyExists());
+
+  L2capSignalingChannel* signaling_channel =
+      acl_data_channel_.FindSignalingChannel(
+          connection_handle,
+          static_cast<uint16_t>(emboss::L2capFixedCid::LE_U_SIGNALING));
+  PW_CHECK(signaling_channel);
+  return L2capCocInternal::Create(
+      rx_multibuf_allocator,
+      l2cap_channel_manager_,
+      signaling_channel,
+      connection_handle,
+      rx_config,
+      tx_config,
+      /*receive_fn=*/nullptr,
+      std::move(event_fn),
+      /*receive_fn_multibuf=*/std::move(receive_fn));
+}
+
+// TODO: https://pwbug.dev/379337272 - Remove once clients move to new signature
+// with allocators.
+pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
+    pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
+    uint16_t connection_handle,
+    L2capCoc::CocConfig rx_config,
+    L2capCoc::CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& receive_fn,
     Function<void(L2capChannelEvent event)>&& event_fn) {
   Status status = acl_data_channel_.CreateAclConnection(connection_handle,
@@ -450,31 +483,16 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
           connection_handle,
           static_cast<uint16_t>(emboss::L2capFixedCid::LE_U_SIGNALING));
   PW_CHECK(signaling_channel);
+  // Create config using the temporary shared allocators.
   return L2capCocInternal::Create(rx_multibuf_allocator,
                                   l2cap_channel_manager_,
                                   signaling_channel,
                                   connection_handle,
                                   rx_config,
                                   tx_config,
-                                  std::move(receive_fn),
-                                  std::move(event_fn));
-}
-
-// TODO: https://pwbug.dev/369849508 - Remove once clients move to new signature
-// with allocators.
-pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
-    uint16_t connection_handle,
-    L2capCoc::CocConfig rx_config,
-    L2capCoc::CocConfig tx_config,
-    Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
-  // Create config using the temporary shared allocators.
-  return AcquireL2capCoc(lsc_multibuf_allocator_,
-                         connection_handle,
-                         rx_config,
-                         tx_config,
-                         std::move(receive_fn),
-                         std::move(event_fn));
+                                  /*receive_fn=*/std::move(receive_fn),
+                                  std::move(event_fn),
+                                  /*receive_fn_multibuf=*/nullptr);
 }
 
 pw::Status ProxyHost::SendAdditionalRxCredits(uint16_t connection_handle,

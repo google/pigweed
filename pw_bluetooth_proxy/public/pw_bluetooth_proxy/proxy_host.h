@@ -154,12 +154,13 @@ class ProxyHost {
       uint16_t connection_handle,
       L2capCoc::CocConfig rx_config,
       L2capCoc::CocConfig tx_config,
-      Function<void(pw::span<uint8_t> payload)>&& receive_fn,
+      Function<void(multibuf::MultiBuf&& payload)>&& receive_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   // TODO(drees) Remove once clients move to new signature with allocators.
   /// @deprecated Use AcquireL2capCoc with allocator parameters instead.
   pw::Result<L2capCoc> AcquireL2capCoc(
+      pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
       uint16_t connection_handle,
       L2capCoc::CocConfig rx_config,
       L2capCoc::CocConfig tx_config,

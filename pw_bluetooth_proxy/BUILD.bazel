@@ -112,6 +112,7 @@ pw_cc_test(
         "proxy_host_test.cc",
         "rfcomm_fcs_test.cc",
         "rfcomm_test.cc",
+        "utils_test.cc",
     ],
     deps = [
         ":pw_bluetooth_proxy",

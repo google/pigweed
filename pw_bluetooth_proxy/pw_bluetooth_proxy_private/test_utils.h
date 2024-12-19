@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <numeric>
+#include <variant>
 #include <vector>
 
 #include "pw_bluetooth/emboss_util.h"
@@ -72,6 +73,29 @@ struct CFrameWithStorage {
 Result<CFrameWithStorage> SetupCFrame(uint16_t handle,
                                       uint16_t channel_id,
                                       uint16_t cframe_len);
+
+struct KFrameWithStorage {
+  AclFrameWithStorage acl;
+  std::variant<emboss::FirstKFrameWriter, emboss::SubsequentKFrameWriter>
+      writer;
+};
+
+// Size of sdu_length field in first K-frames.
+constexpr uint8_t kSduLengthFieldSize = 2;
+
+// Populate a KFrame that encodes a particular segment of `payload` based on the
+// `mps`, or maximum PDU payload size of a segment. `segment_no` is the nth
+// segment that would be generated based on the `mps`. The first segment is
+// `segment_no == 0` and returns the `FirstKFrameWriter` variant in
+// `KFrameWithStorage`.
+//
+// Returns PW_STATUS_OUT_OF_RANGE if a segment is requested beyond the last
+// segment that would be generated based on `mps`.
+Result<KFrameWithStorage> SetupKFrame(uint16_t handle,
+                                      uint16_t channel_id,
+                                      uint16_t mps,
+                                      uint16_t segment_no,
+                                      span<const uint8_t> payload);
 
 // Populate passed H4 command buffer and return Emboss view on it.
 template <typename EmbossT>
@@ -192,6 +216,7 @@ struct CocParameters {
   uint16_t tx_credits = 1;
   pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr;
   pw::Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
+  Function<void(multibuf::MultiBuf&& payload)>&& receive_fn_multibuf = nullptr;
 };
 
 // Attempt to AcquireL2capCoc and return result.

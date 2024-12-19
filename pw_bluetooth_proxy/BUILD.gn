@@ -132,6 +132,7 @@ pw_test("pw_bluetooth_proxy_test") {
     "proxy_host_test.cc",
     "rfcomm_fcs_test.cc",
     "rfcomm_test.cc",
+    "utils_test.cc",
   ]
   include_dirs = [ "." ]
   deps = [

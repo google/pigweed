@@ -110,6 +110,7 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
     l2cap_coc_test.cc
     rfcomm_fcs_test.cc
     rfcomm_test.cc
+    utils_test.cc
   PRIVATE_DEPS
     pw_bluetooth_proxy
     pw_bluetooth_proxy.test_utils

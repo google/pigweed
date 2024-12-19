@@ -35,8 +35,8 @@ L2capCoc::L2capCoc(L2capCoc&& other)
       rx_mps_(other.rx_mps_),
       tx_mtu_(other.tx_mtu_),
       tx_mps_(other.tx_mps_),
-      payload_from_controller_fn_(
-          std::move(other.payload_from_controller_fn_)) {
+      payload_from_controller_fn_(std::move(other.payload_from_controller_fn_)),
+      receive_fn_multibuf_(std::move(other.receive_fn_multibuf_)) {
   std::lock_guard lock(mutex_);
   std::lock_guard other_lock(other.mutex_);
   tx_credits_ = other.tx_credits_;
@@ -102,7 +102,10 @@ pw::Result<L2capCoc> L2capCoc::Create(
     CocConfig rx_config,
     CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
+    Function<void(L2capChannelEvent event)>&& event_fn,
+    Function<void(multibuf::MultiBuf&& payload)>&& receive_fn_multibuf) {
+  PW_CHECK(!receive_fn_multibuf || !payload_from_controller_fn);
+
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/rx_config.cid,
                           /*remote_cid=*/tx_config.cid)) {
@@ -126,7 +129,8 @@ pw::Result<L2capCoc> L2capCoc::Create(
       /*rx_config=*/rx_config,
       /*tx_config=*/tx_config,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
-      /*event_fn=*/std::move(event_fn));
+      /*event_fn=*/std::move(event_fn),
+      /*receive_fn_multibuf=*/std::move(receive_fn_multibuf));
 }
 
 pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
@@ -138,10 +142,87 @@ pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
                                                       additional_rx_credits);
 }
 
+void L2capCoc::ProcessPduFromControllerMultibuf(span<uint8_t> kframe) {
+  std::lock_guard lock(mutex_);
+  ConstByteSpan kframe_payload;
+  if (rx_sdu_bytes_remaining_ > 0) {
+    // Received PDU that is part of current SDU being assembled.
+    Result<emboss::SubsequentKFrameView> subsequent_kframe_view =
+        MakeEmbossView<emboss::SubsequentKFrameView>(kframe);
+    // Lower layers should not (and cannot) invoke this callback on a packet
+    // with an incomplete basic L2CAP header.
+    PW_CHECK_OK(subsequent_kframe_view);
+    kframe_payload =
+        as_bytes(span(subsequent_kframe_view->payload().BackingStorage().data(),
+                      subsequent_kframe_view->payload_size().Read()));
+  } else {
+    // Received first (or only) PDU of SDU.
+    Result<emboss::FirstKFrameView> first_kframe_view =
+        MakeEmbossView<emboss::FirstKFrameView>(kframe);
+    if (!first_kframe_view.ok()) {
+      PW_LOG_ERROR(
+          "(CID 0x%X) Buffer is too small for first K-frame. So stopping "
+          "channel and reporting it needs to be closed.",
+          local_cid());
+      StopAndSendEvent(L2capChannelEvent::kRxInvalid);
+      return;
+    }
+
+    rx_sdu_bytes_remaining_ = first_kframe_view->sdu_length().Read();
+    rx_sdu_ =
+        rx_multibuf_allocator_.AllocateContiguous(rx_sdu_bytes_remaining_);
+    if (!rx_sdu_) {
+      PW_LOG_ERROR(
+          "(CID 0x%X) Rx MultiBuf allocator out of memory. So stopping channel "
+          "and reporting it needs to be closed.",
+          local_cid());
+      StopAndSendEvent(L2capChannelEvent::kRxOutOfMemory);
+      return;
+    }
+
+    kframe_payload =
+        as_bytes(span(first_kframe_view->payload().BackingStorage().data(),
+                      first_kframe_view->payload_size().Read()));
+  }
+
+  // Copy segment into rx_sdu_.
+  StatusWithSize status = rx_sdu_->CopyFrom(/*source=*/kframe_payload,
+                                            /*position=*/rx_sdu_offset_);
+  if (status.IsResourceExhausted()) {
+    // Core Spec v6.0 Vol 3, Part A, 3.4.3: "If the sum of the payload sizes
+    // for the K-frames exceeds the specified SDU length, the receiver shall
+    // disconnect the channel."
+    PW_LOG_ERROR(
+        "(CID 0x%X) Sum of K-frame payload sizes exceeds the specified SDU "
+        "length. So stopping channel and reporting it needs to be closed.",
+        local_cid());
+    StopAndSendEvent(L2capChannelEvent::kRxInvalid);
+    return;
+  }
+  PW_CHECK_OK(status);
+
+  rx_sdu_bytes_remaining_ -= kframe_payload.size();
+  rx_sdu_offset_ += kframe_payload.size();
+
+  if (rx_sdu_bytes_remaining_ == 0) {
+    // We have a full SDU, so invoke client callback.
+    receive_fn_multibuf_(std::move(*rx_sdu_));
+    rx_sdu_ = std::nullopt;
+    rx_sdu_offset_ = 0;
+  }
+}
+
 bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
   // TODO: https://pwbug.dev/360934030 - Track rx_credits.
   if (state() != State::kRunning) {
     StopAndSendEvent(L2capChannelEvent::kRxWhileStopped);
+    return true;
+  }
+
+  // TODO: https://pwbug.dev/369849508 - Make this the only path once clients
+  // move to MultiBuf Write() API.
+  if (receive_fn_multibuf_) {
+    ProcessPduFromControllerMultibuf(kframe);
     return true;
   }
 
@@ -245,7 +326,8 @@ L2capCoc::L2capCoc(
     CocConfig rx_config,
     CocConfig tx_config,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn)
+    Function<void(L2capChannelEvent event)>&& event_fn,
+    Function<void(multibuf::MultiBuf&& payload)>&& receive_fn_multibuf)
     : L2capChannel(
           /*l2cap_channel_manager=*/l2cap_channel_manager,
           /*connection_handle=*/connection_handle,
@@ -262,7 +344,8 @@ L2capCoc::L2capCoc(
       tx_mps_(tx_config.mps),
       tx_credits_(tx_config.credits),
       remaining_sdu_bytes_to_ignore_(0),
-      payload_from_controller_fn_(std::move(payload_from_controller_fn)) {}
+      payload_from_controller_fn_(std::move(payload_from_controller_fn)),
+      receive_fn_multibuf_(std::move(receive_fn_multibuf)) {}
 
 std::optional<H4PacketWithH4> L2capCoc::DequeuePacket() {
   if (state() != State::kRunning) {

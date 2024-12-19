@@ -53,9 +53,11 @@ cc_library_static {
         "pw_status",
     ],
     export_static_lib_headers: [
+        "pw_allocator",
         "pw_containers",
         "pw_function",
         "pw_result",
+        "pw_multibuf",
         "pw_span",
         "pw_status",
     ],

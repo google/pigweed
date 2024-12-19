@@ -32,6 +32,7 @@
 #include "pw_function/function.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"  // IWYU pragma: keep
+#include "pw_unit_test/status_macros.h"
 
 namespace pw::bluetooth::proxy {
 

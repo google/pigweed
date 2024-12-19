@@ -30,7 +30,8 @@ class L2capCocInternal final : public L2capCoc {
       CocConfig rx_config,
       CocConfig tx_config,
       Function<void(pw::span<uint8_t> payload)>&& receive_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn) {
+      Function<void(L2capChannelEvent event)>&& event_fn,
+      Function<void(multibuf::MultiBuf&& payload)>&& receive_fn_multibuf) {
     return L2capCoc::Create(rx_multibuf_allocator,
                             l2cap_channel_manager,
                             signaling_channel,
@@ -38,7 +39,8 @@ class L2capCocInternal final : public L2capCoc {
                             rx_config,
                             tx_config,
                             std::move(receive_fn),
-                            std::move(event_fn));
+                            std::move(event_fn),
+                            std::move(receive_fn_multibuf));
   }
 
   // Increment L2CAP credits. This should be called by signaling channels in
