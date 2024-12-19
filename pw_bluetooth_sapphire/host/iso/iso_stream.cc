@@ -333,6 +333,30 @@ void IsoStreamImpl::SetupDataPath(
 }
 
 void IsoStreamImpl::ReceiveInboundPacket(pw::span<const std::byte> packet) {
+  size_t packet_size = packet.size();
+  auto packet_view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
+      packet.data(), packet.size());
+  if (!packet_view.Ok()) {
+    bt_log(ERROR,
+           "iso",
+           "Incoming ISO frame failed consistency checks - ignoring");
+    return;
+  }
+
+  size_t data_total_length = packet_view.header().data_total_length().Read();
+  size_t header_size =
+      pw::bluetooth::emboss::IsoDataFrameHeaderView::SizeInBytes();
+  size_t packet_actual_size = data_total_length + header_size;
+
+  // This condition should have been caught by Emboss
+  BT_ASSERT_MSG(packet_size >= packet_actual_size,
+                "Packet too short to hold data specified in header");
+
+  // Truncate any extra data at end of packet
+  if (packet_size > packet_actual_size) {
+    packet = packet.subspan(0, packet_actual_size);
+  }
+
   inbound_assembler_.ProcessNext(packet);
 }
 

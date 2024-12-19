@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "pw_bluetooth_sapphire/internal/host/iso/iso_common.h"
 #include "pw_function/function.h"
 #include "pw_span/span.h"
 
@@ -29,8 +30,14 @@ class IsoInboundPacketAssembler {
   // full SDU, pass it along to the complete packet handler.
   void ProcessNext(pw::span<const std::byte> packet);
 
+  // Add a fragment (either an INTERMEDIATE_FRAGMENT or a LAST_FRAGMENT) to
+  // assembly_buffer_ and update the buffer headers.
+  bool AppendFragment(pw::span<const std::byte> packet);
+
  private:
   PacketHandler complete_packet_handler_;
+
+  IsoDataPacket assembly_buffer_;
 };
 
 }  // namespace bt::iso

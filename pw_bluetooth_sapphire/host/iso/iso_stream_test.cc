@@ -438,4 +438,60 @@ TEST_F(IsoStreamTest, ReadRequestedAndThenRejected) {
   ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
 }
 
+// Bad packets will not be passed on
+TEST_F(IsoStreamTest, BadPacket) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+  const size_t kIsoSduLength = 212;
+  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+      testing::GenDataBlob(kIsoSduLength, /*starting_value=*/91);
+  DynamicByteBuffer packet0 = testing::IsoDataPacket(
+      /*connection_handle=*/iso_stream()->cis_handle(),
+      pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+      /*time_stamp=*/std::nullopt,
+      /*packet_sequence_number=*/0,
+      kIsoSduLength,
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+      *sdu_data);
+  // Improperly formatted packets are discarded. To test this, we'll remove the
+  // last byte of SDU data before we send it.
+  pw::span<const std::byte> packet0_as_span =
+      packet0.subspan(0, packet0.size() - 1);
+  ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
+  iso_stream()->ReceiveInboundPacket(packet0_as_span);
+  ASSERT_EQ(complete_incoming_sdus()->size(), 0u);
+}
+
+// Extra data at the end of the frame will be removed
+TEST_F(IsoStreamTest, ExcessDataIsTruncated) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+  const size_t kIsoSduLength = 212;
+  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+      testing::GenDataBlob(kIsoSduLength, /*starting_value=*/91);
+  DynamicByteBuffer packet0 = testing::IsoDataPacket(
+      /*connection_handle=*/iso_stream()->cis_handle(),
+      pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+      /*time_stamp=*/std::nullopt,
+      /*packet_sequence_number=*/0,
+      kIsoSduLength,
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+      *sdu_data);
+  size_t original_packet0_size = packet0.size();
+  packet0.expand(packet0.size() + 100);
+  pw::span<const std::byte> packet0_as_span = packet0.subspan();
+  ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
+  iso_stream()->ReceiveInboundPacket(packet0_as_span);
+  ASSERT_EQ(complete_incoming_sdus()->size(), 1u);
+  EXPECT_EQ(complete_incoming_sdus()->front().size(), original_packet0_size);
+}
+
 }  // namespace bt::iso

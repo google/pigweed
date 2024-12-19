@@ -23,12 +23,20 @@
 
 namespace bt::iso {
 
+constexpr uint16_t kDefaultConnectionHandle = 111;
+constexpr uint16_t kDefaultPacketSequenceNumber = 456;
+
 class IsoInboundPacketAssemblerTest : public ::testing::Test {
  public:
   IsoInboundPacketAssembler* assembler() { return &assembler_; }
   std::queue<std::vector<std::byte>>* outgoing_packets() {
     return &outgoing_packets_;
   }
+
+ protected:
+  bool TestFragmentedSdu(
+      const std::vector<size_t>& fragment_sizes,
+      std::optional<size_t> complete_sdu_size = std::nullopt);
 
  private:
   void HandleCompletePacket(const pw::span<const std::byte>& packet) {
@@ -54,10 +62,10 @@ TEST_F(IsoInboundPacketAssemblerTest, CompleteSdu) {
     std::unique_ptr<std::vector<uint8_t>> sdu_data =
         testing::GenDataBlob(sdu_fragment_size, /*starting_value=*/42);
     DynamicByteBuffer incoming_packet = testing::IsoDataPacket(
-        /*connection_handle=*/123,
+        kDefaultConnectionHandle,
         pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
         /*time_stamp=*/std::nullopt,
-        /*packet_sequence_number=*/456,
+        kDefaultPacketSequenceNumber,
         /*iso_sdu_length=*/sdu_fragment_size,
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
         *sdu_data);
@@ -72,6 +80,185 @@ TEST_F(IsoInboundPacketAssemblerTest, CompleteSdu) {
                            outgoing_packets()->back().end()));
     sdu_fragment_size += kSubsequentSizeIncrement;
   }
+}
+
+bool IsoInboundPacketAssemblerTest::TestFragmentedSdu(
+    const std::vector<size_t>& fragment_sizes,
+    std::optional<size_t> complete_sdu_size) {
+  size_t initial_frames_received = outgoing_packets()->size();
+
+  // By default the total SDU size will be the sum of all fragment sizes
+  if (!complete_sdu_size.has_value()) {
+    complete_sdu_size = 0;
+    for (size_t fragment_size : fragment_sizes) {
+      (*complete_sdu_size) += fragment_size;
+    }
+  }
+
+  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+      testing::GenDataBlob(*complete_sdu_size, /*starting_value=*/76);
+  std::vector<DynamicByteBuffer> iso_data_fragment_packets =
+      testing::IsoDataFragments(
+          kDefaultConnectionHandle,
+          /*time_stamp=*/std::nullopt,
+          kDefaultPacketSequenceNumber,
+          pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+          *sdu_data,
+          fragment_sizes);
+  for (size_t frames_sent = 0; frames_sent < fragment_sizes.size();
+       frames_sent++) {
+    // We should not receive any packets until all of the fragments have been
+    // sent
+    if (initial_frames_received != outgoing_packets()->size()) {
+      return false;
+    }
+    pw::span<const std::byte> frame_as_span =
+        iso_data_fragment_packets[frames_sent].subspan();
+    assembler()->ProcessNext(frame_as_span);
+  }
+  if (outgoing_packets()->size() != (initial_frames_received + 1)) {
+    return false;
+  }
+
+  // The output should look the same as if we had constructed a non-fragmented
+  // packet ourselves. Verify that.
+  DynamicByteBuffer expected_output = testing::IsoDataPacket(
+      kDefaultConnectionHandle,
+      pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+      /*time_stamp=*/std::nullopt,
+      kDefaultPacketSequenceNumber,
+      *complete_sdu_size,
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+      *sdu_data);
+  pw::span<const std::byte> expected_output_as_span = expected_output.subspan();
+  return std::equal(expected_output_as_span.begin(),
+                    expected_output_as_span.end(),
+                    outgoing_packets()->back().begin(),
+                    outgoing_packets()->back().end());
+}
+
+// FIRST_FRAGMENT + LAST_FRAGMENT
+TEST_F(IsoInboundPacketAssemblerTest, TwoSduFragments) {
+  std::vector<size_t> fragment_sizes = {100, 125};
+  ASSERT_TRUE(TestFragmentedSdu(fragment_sizes));
+}
+
+TEST_F(IsoInboundPacketAssemblerTest, OneIntermediateSduFragment) {
+  std::vector<size_t> fragment_sizes = {100, 125, 150};
+  ASSERT_TRUE(TestFragmentedSdu(fragment_sizes));
+}
+
+TEST_F(IsoInboundPacketAssemblerTest, MultipleIntermediateSduFragments) {
+  std::vector<size_t> fragment_sizes = {100, 125, 250, 500, 25};
+  ASSERT_TRUE(TestFragmentedSdu(fragment_sizes));
+}
+
+TEST_F(IsoInboundPacketAssemblerTest, MultipleTinySduFragments) {
+  std::vector<size_t> fragment_sizes = {1, 1, 1, 1, 1, 1, 1, 1};
+  ASSERT_TRUE(TestFragmentedSdu(fragment_sizes));
+}
+
+// LAST_FRAGMENT takes us over the total SDU size -- packet should be discarded
+TEST_F(IsoInboundPacketAssemblerTest, LastFragmentSduTooLong) {
+  std::vector<size_t> fragment_sizes = {100, 125, 250, 500, 26};
+  ASSERT_FALSE(TestFragmentedSdu(fragment_sizes, 1000));
+  EXPECT_EQ(outgoing_packets()->size(), 0u);
+}
+
+// INTERMEDIATE_FRAGMENT takes us over the total SDU size -- packet should be
+// discarded
+TEST_F(IsoInboundPacketAssemblerTest, IntermediateFragmentSduTooLong) {
+  std::vector<size_t> fragment_sizes = {100, 125, 250, 526, 100};
+  ASSERT_FALSE(TestFragmentedSdu(fragment_sizes, 1000));
+  EXPECT_EQ(outgoing_packets()->size(), 0u);
+}
+
+TEST_F(IsoInboundPacketAssemblerTest,
+       NextSduReceivedBeforePreviousOneComplete) {
+  constexpr uint16_t kCompleteSduSize = 375;
+  std::vector<size_t> fragment_sizes = {125, 125, 125};
+
+  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+      testing::GenDataBlob(kCompleteSduSize, /*starting_value=*/202);
+  std::vector<DynamicByteBuffer> iso_data_fragment_packets =
+      testing::IsoDataFragments(
+          kDefaultConnectionHandle,
+          /*time_stamp=*/std::nullopt,
+          kDefaultPacketSequenceNumber,
+          pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+          *sdu_data,
+          fragment_sizes);
+  // Send all but the last frame
+  for (size_t frames_sent = 0; frames_sent < (fragment_sizes.size() - 1);
+       frames_sent++) {
+    // We should not receive any packets until all of the fragments have been
+    // sent
+    ASSERT_EQ(outgoing_packets()->size(), 0u);
+
+    pw::span<const std::byte> frame_as_span =
+        iso_data_fragment_packets[frames_sent].subspan();
+    assembler()->ProcessNext(frame_as_span);
+  }
+  ASSERT_EQ(outgoing_packets()->size(), 0u);
+
+  // We should be able to send follow-up SDUs and the partially-received
+  // one will have been dropped.
+  std::vector<size_t> fragment_sizes_2 = {100, 125, 250, 500, 25};
+  ASSERT_TRUE(TestFragmentedSdu(fragment_sizes_2));
+  std::vector<size_t> fragment_sizes_3 = {443};
+  ASSERT_TRUE(TestFragmentedSdu(fragment_sizes_3));
+}
+
+TEST_F(IsoInboundPacketAssemblerTest, UnexpectedIntermediateFragmentReceived) {
+  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+      testing::GenDataBlob(/*size=*/100, /*starting_value=*/99);
+  DynamicByteBuffer incoming_packet = testing::IsoDataPacket(
+      kDefaultConnectionHandle,
+      pw::bluetooth::emboss::IsoDataPbFlag::INTERMEDIATE_FRAGMENT,
+      /*time_stamp=*/std::nullopt,
+      /*packet_sequence_number=*/std::nullopt,
+      /*iso_sdu_length=*/std::nullopt,
+      /*packet_status_flag=*/std::nullopt,
+      *sdu_data);
+  ASSERT_EQ(outgoing_packets()->size(), 0u);
+  pw::span<const std::byte> frame_as_span = incoming_packet.subspan();
+  assembler()->ProcessNext(frame_as_span);
+
+  // Nothing passed through
+  ASSERT_EQ(outgoing_packets()->size(), 0u);
+
+  // We should be able to send follow-up SDUs and the incomplete fragment will
+  // have been dropped.
+  std::vector<size_t> fragment_sizes_2 = {100, 125, 250, 500, 25};
+  ASSERT_TRUE(TestFragmentedSdu(fragment_sizes_2));
+  std::vector<size_t> fragment_sizes_3 = {443};
+  ASSERT_TRUE(TestFragmentedSdu(fragment_sizes_3));
+}
+
+TEST_F(IsoInboundPacketAssemblerTest, UnexpectedLastFragmentReceived) {
+  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+      testing::GenDataBlob(/*size=*/100, /*starting_value=*/99);
+  DynamicByteBuffer incoming_packet = testing::IsoDataPacket(
+      kDefaultConnectionHandle,
+      pw::bluetooth::emboss::IsoDataPbFlag::LAST_FRAGMENT,
+      /*time_stamp=*/std::nullopt,
+      /*packet_sequence_number=*/std::nullopt,
+      /*iso_sdu_length=*/std::nullopt,
+      /*packet_status_flag=*/std::nullopt,
+      *sdu_data);
+  ASSERT_EQ(outgoing_packets()->size(), 0u);
+  pw::span<const std::byte> frame_as_span = incoming_packet.subspan();
+  assembler()->ProcessNext(frame_as_span);
+
+  // Nothing passed through
+  ASSERT_EQ(outgoing_packets()->size(), 0u);
+
+  // We should be able to send follow-up SDUs and the incomplete fragment will
+  // have been dropped.
+  std::vector<size_t> fragment_sizes_2 = {100, 125, 250, 500, 25};
+  ASSERT_TRUE(TestFragmentedSdu(fragment_sizes_2));
+  std::vector<size_t> fragment_sizes_3 = {443};
+  ASSERT_TRUE(TestFragmentedSdu(fragment_sizes_3));
 }
 
 }  // namespace bt::iso
