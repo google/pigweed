@@ -169,7 +169,7 @@ async function initAsBazelProject(context: vscode.ExtensionContext) {
   }
 
   // Marshall all of our components and dependencies.
-  const refreshManager = disposer.add(RefreshManager.create());
+  const refreshManager = disposer.add(RefreshManager.create({ logger }));
   linkRefreshManagerToEvents(refreshManager);
 
   const { clangdActiveFilesCache, compileCommandsWatcher } = disposer.addMany({

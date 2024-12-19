@@ -40,7 +40,7 @@
  * in-progress refresh process.
  */
 
-import logger from './logging';
+import type { Logger } from './logging';
 
 /** Refresh statuses that broadly represent a refresh in progress. */
 export type RefreshStatusInProgress =
@@ -84,6 +84,9 @@ type NextState<State extends RefreshStatus> =
 
 /** Options for constructing a refresh manager. */
 interface RefreshManagerOptions {
+  /** A concrete logger instance to log to. */
+  logger?: Logger;
+
   /** The timeout period (in ms) between handling the reset signal. */
   refreshSignalHandlerTimeout: number;
 
@@ -101,6 +104,12 @@ const defaultRefreshManagerOptions: RefreshManagerOptions = {
  * be called at each status transition, and provide triggers for status change.
  */
 export class RefreshManager<State extends RefreshStatus> {
+  private _logger: Logger = {
+    info: (msg: string) => console.log(msg),
+    warn: (msg: string) => console.warn(msg),
+    error: (msg: string) => console.error(msg),
+  };
+
   /** The current refresh status. */
   private _state: RefreshStatus;
 
@@ -128,6 +137,10 @@ export class RefreshManager<State extends RefreshStatus> {
 
   constructor(state: RefreshStatus, options: RefreshManagerOptions) {
     this._state = state;
+
+    if (options.logger) {
+      this._logger = options.logger;
+    }
 
     if (options.useRefreshSignalHandler) {
       this.refreshSignalHandlerInterval = setInterval(
@@ -268,14 +281,14 @@ export class RefreshManager<State extends RefreshStatus> {
         // hoisted to here by `throw`ing them, we will also catch unexpected or
         // not-well-behaved errors as exceptions (`{ message: '...' }`-style).
         if (typeof err === 'string') {
-          logger.error(err);
+          this._logger.error(err);
         } else {
           const { message } = err as { message: string | undefined };
 
           if (message) {
-            logger.error(message);
+            this._logger.error(message);
           } else {
-            logger.error('Unknown error occurred');
+            this._logger.error('Unknown error occurred');
           }
         }
 
