@@ -126,8 +126,10 @@ Result<EmbossT> CreateAndPopulateToHostEventView(H4PacketWithHci& h4_packet,
 
 // Send an LE_Read_Buffer_Size (V2) CommandComplete event to `proxy` to request
 // the reservation of a number of LE ACL send credits.
-Status SendLeReadBufferResponseFromController(ProxyHost& proxy,
-                                              uint8_t num_credits_to_reserve);
+Status SendLeReadBufferResponseFromController(
+    ProxyHost& proxy,
+    uint8_t num_credits_to_reserve,
+    uint16_t le_acl_data_packet_length = 251);
 
 Status SendReadBufferResponseFromController(ProxyHost& proxy,
                                             uint8_t num_credits_to_reserve);

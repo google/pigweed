@@ -179,7 +179,10 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   pw::Result<H4PacketWithH4> PopulateTxL2capPacket(uint16_t data_length);
 
   // Returns the maximum size supported for Tx L2CAP PDU payloads.
-  uint16_t MaxL2capPayloadSize() const;
+  //
+  // Returns std::nullopt if LE_ACL_Data_Packet_Length was not yet provided in
+  // an LE_Read_Buffer_Size command complete event.
+  std::optional<uint16_t> MaxL2capPayloadSize() const;
 
   // Alert `L2capChannelManager` that queued packets may be ready to send.
   // When calling this method, ensure no locks are held that are also acquired

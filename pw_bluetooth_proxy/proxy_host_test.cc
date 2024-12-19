@@ -1003,6 +1003,7 @@ TEST_F(GattNotifyTest, ReturnsErrorIfAttributeTooLarge) {
                               std::move(send_to_controller_fn),
                               /*le_acl_credits_to_reserve=*/0,
                               /*br_edr_acl_credits_to_reserve=*/0);
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 0));
 
   // attribute_value 1 byte too large
   std::array<uint8_t,

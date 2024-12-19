@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <atomic>
+
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
@@ -83,6 +85,24 @@ class L2capChannelManager {
   void HandleDisconnectionComplete(
       const L2capStatusTracker::DisconnectParams& params);
 
+  // Core Spec v6.0 Vol 4, Part E, Section 7.8.2: "The LE_ACL_Data_Packet_Length
+  // parameter shall be used to determine the maximum size of the L2CAP PDU
+  // fragments that are contained in ACL data packets". A value of 0 means "No
+  // dedicated LE Buffer exists".
+  //
+  // Return std::nullopt if HCI_LE_Read_Buffer_Size command complete event has
+  // not yet been received.
+  //
+  // TODO: https://pwbug.dev/379339642 - Add tests to confirm this value caps
+  // the size of Tx L2capCoc segments when segmentation is implemented.
+  std::optional<uint16_t> le_acl_data_packet_length() const {
+    return le_acl_data_packet_length_;
+  }
+
+  void set_le_acl_data_packet_length(uint16_t le_acl_data_packet_length) {
+    le_acl_data_packet_length_ = le_acl_data_packet_length;
+  }
+
  private:
   // Circularly advance `it`, wrapping around to front if `it` reaches the end.
   void Advance(IntrusiveForwardList<L2capChannel>::iterator& it)
@@ -98,6 +118,8 @@ class L2capChannelManager {
 
   // Owns H4 packet buffers.
   H4Storage h4_storage_;
+
+  std::atomic<std::optional<uint16_t>> le_acl_data_packet_length_;
 
   // Enforce mutual exclusion of all operations on channels.
   sync::Mutex channels_mutex_;

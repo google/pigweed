@@ -236,10 +236,19 @@ pw::Result<H4PacketWithH4> L2capChannel::PopulateL2capPacket(
   return h4_packet;
 }
 
-uint16_t L2capChannel::MaxL2capPayloadSize() const {
-  return l2cap_channel_manager_.GetH4BuffSize() - sizeof(emboss::H4PacketType) -
-         emboss::AclDataFrameHeader::IntrinsicSizeInBytes() -
-         emboss::BasicL2capHeader::IntrinsicSizeInBytes();
+std::optional<uint16_t> L2capChannel::MaxL2capPayloadSize() const {
+  std::optional<uint16_t> le_acl_data_packet_length =
+      l2cap_channel_manager_.le_acl_data_packet_length();
+  if (!le_acl_data_packet_length) {
+    return std::nullopt;
+  }
+
+  uint16_t max_acl_data_size_based_on_h4_buffer =
+      l2cap_channel_manager_.GetH4BuffSize() - sizeof(emboss::H4PacketType) -
+      emboss::AclDataFrameHeader::IntrinsicSizeInBytes();
+  uint16_t max_acl_data_size = std::min(max_acl_data_size_based_on_h4_buffer,
+                                        *le_acl_data_packet_length);
+  return max_acl_data_size - emboss::BasicL2capHeader::IntrinsicSizeInBytes();
 }
 
 void L2capChannel::ReportPacketsMayBeReadyToSend() {

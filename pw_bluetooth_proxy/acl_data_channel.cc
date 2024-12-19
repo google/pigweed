@@ -131,6 +131,17 @@ void AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
     read_buffer_event.total_num_le_acl_data_packets().Write(host_max);
   }
 
+  const uint16_t le_acl_data_packet_length =
+      read_buffer_event.le_acl_data_packet_length().Read();
+  // TODO: https://pwbug.dev/380316252 - Support shared buffers.
+  if (le_acl_data_packet_length == 0) {
+    PW_LOG_ERROR(
+        "Controller shares data buffers between BR/EDR and LE transport, which "
+        "is not yet supported. So channels on LE transport will not be "
+        "functional.");
+  }
+  l2cap_channel_manager_.set_le_acl_data_packet_length(
+      le_acl_data_packet_length);
   // Send packets that may have queued before we acquired any LE ACL credits.
   l2cap_channel_manager_.DrainChannelQueues();
 }

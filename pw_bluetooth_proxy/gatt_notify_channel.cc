@@ -22,8 +22,17 @@
 
 namespace pw::bluetooth::proxy {
 pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
+  std::optional<uint16_t> max_l2cap_payload_size = MaxL2capPayloadSize();
+  if (!max_l2cap_payload_size) {
+    PW_LOG_ERROR("Tried to write before LE_Read_Buffer_Size processed.");
+    return Status::FailedPrecondition();
+  }
+  if (*max_l2cap_payload_size <= emboss::AttHandleValueNtf::MinSizeInBytes()) {
+    PW_LOG_ERROR("LE ACL data packet size limit does not support writing.");
+    return Status::FailedPrecondition();
+  }
   const uint16_t max_attribute_size =
-      MaxL2capPayloadSize() - emboss::AttHandleValueNtf::MinSizeInBytes();
+      *max_l2cap_payload_size - emboss::AttHandleValueNtf::MinSizeInBytes();
   if (attribute_value.size() > max_attribute_size) {
     PW_LOG_ERROR("Attribute too large (%zu > %d). So will not process.",
                  attribute_value.size(),

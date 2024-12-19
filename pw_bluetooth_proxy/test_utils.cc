@@ -154,8 +154,10 @@ Result<KFrameWithStorage> SetupKFrame(uint16_t handle,
 
 // Send an LE_Read_Buffer_Size (V2) CommandComplete event to `proxy` to request
 // the reservation of a number of LE ACL send credits.
-Status SendLeReadBufferResponseFromController(ProxyHost& proxy,
-                                              uint8_t num_credits_to_reserve) {
+Status SendLeReadBufferResponseFromController(
+    ProxyHost& proxy,
+    uint8_t num_credits_to_reserve,
+    uint16_t le_acl_data_packet_length) {
   std::array<
       uint8_t,
       emboss::LEReadBufferSizeV2CommandCompleteEventWriter::SizeInBytes()>
@@ -169,6 +171,7 @@ Status SendLeReadBufferResponseFromController(ProxyHost& proxy,
   view.command_complete().command_opcode_enum().Write(
       emboss::OpCode::LE_READ_BUFFER_SIZE_V2);
   view.total_num_le_acl_data_packets().Write(num_credits_to_reserve);
+  view.le_acl_data_packet_length().Write(le_acl_data_packet_length);
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
   return OkStatus();

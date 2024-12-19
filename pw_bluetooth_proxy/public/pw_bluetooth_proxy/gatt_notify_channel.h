@@ -34,7 +34,8 @@ class GattNotifyChannel : public L2capChannel {
   ///  UNAVAILABLE: If channel could not acquire the resources to queue the send
   ///               at this time (transient error).
   ///  INVALID_ARGUMENT: If `attribute_value` is too large.
-  ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
+  ///  FAILED_PRECONDITION: If channel is not `State::kRunning` or ACL data
+  ///  channel has not yet been initialized (see logs).
   /// @endrst
   pw::Status Write(pw::span<const uint8_t> attribute_value);
 
