@@ -16,12 +16,13 @@ import * as vscode from 'vscode';
 
 import { configureBazelisk, configureBazelSettings } from './bazel';
 import { BazelRefreshCompileCommandsWatcher } from './bazelWatcher';
+
 import {
   ClangdActiveFilesCache,
   initClangdPath,
   setCompileCommandsTargetOnSettingsChange,
-  setTarget,
 } from './clangd';
+
 import { registerBazelProjectCommands } from './commands/bazel';
 import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
 import { Disposer } from './disposables';

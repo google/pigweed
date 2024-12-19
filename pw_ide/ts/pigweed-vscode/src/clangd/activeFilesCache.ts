@@ -12,147 +12,23 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as fs_p from 'fs/promises';
 import * as path from 'path';
 import * as readline_p from 'readline/promises';
 
-import * as vscode from 'vscode';
 import { Uri } from 'vscode';
 
 import { createHash } from 'crypto';
-import { glob } from 'glob';
 import * as yaml from 'js-yaml';
 
-import { getReliableBazelExecutable } from './bazel';
-import { Disposable } from './disposables';
+import { availableTargets, targetCompileCommandsPath } from './paths';
 
-import {
-  didChangeClangdConfig,
-  didChangeTarget,
-  didInit,
-  didUpdateActiveFilesCache,
-} from './events';
-
-import { launchTroubleshootingLink } from './links';
-import logger from './logging';
-import { getPigweedProjectRoot } from './project';
-import { OK, RefreshCallback, RefreshManager } from './refreshManager';
-import { settingFor, settings, stringSettingFor, workingDir } from './settings';
-
-const CDB_FILE_NAME = 'compile_commands.json' as const;
-const CDB_FILE_DIR = '.compile_commands' as const;
-
-// Need this indirection to prevent `workingDir` being called before init.
-const CDB_DIR = () => path.join(workingDir.get(), CDB_FILE_DIR);
-
-const clangdPath = () => path.join(workingDir.get(), 'bazel-bin', 'clangd');
-
-const createClangdSymlinkTarget = ':copy_clangd' as const;
-
-/** Create the `clangd` symlink and add it to settings. */
-export async function initClangdPath(): Promise<void> {
-  logger.info('Ensuring presence of stable clangd symlink');
-  const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
-  const cmd = getReliableBazelExecutable();
-
-  if (!cmd) {
-    const message = "Couldn't find a Bazel or Bazelisk executable";
-    logger.error(message);
-    return;
-  }
-
-  const args = ['build', createClangdSymlinkTarget];
-  const spawnedProcess = child_process.spawn(cmd, args, { cwd });
-
-  const success = await new Promise<boolean>((resolve) => {
-    spawnedProcess.on('spawn', () => {
-      logger.info(`Running ${cmd} ${args.join(' ')}`);
-    });
-
-    spawnedProcess.stdout.on('data', (data) => logger.info(data.toString()));
-    spawnedProcess.stderr.on('data', (data) => logger.info(data.toString()));
-
-    spawnedProcess.on('error', (err) => {
-      const { name, message } = err;
-      logger.error(`[${name}] while creating clangd symlink: ${message}`);
-      resolve(false);
-    });
-
-    spawnedProcess.on('exit', (code) => {
-      if (code === 0) {
-        logger.info('Finished ensuring presence of stable clangd symlink');
-        resolve(true);
-      } else {
-        const message =
-          'Failed to ensure presence of stable clangd symlink ' +
-          `(error code: ${code})`;
-
-        logger.error(message);
-        resolve(false);
-      }
-    });
-  });
-
-  if (!success) return;
-
-  const { update: updatePath } = stringSettingFor('path', 'clangd');
-  await updatePath(clangdPath());
-}
-
-export const targetPath = (target: string) => path.join(`${CDB_DIR()}`, target);
-export const targetCompileCommandsPath = (target: string) =>
-  path.join(targetPath(target), CDB_FILE_NAME);
-
-export async function availableTargets(): Promise<string[]> {
-  // Get the name of every sub dir in the compile commands dir that contains
-  // a compile commands file.
-  return (
-    (await glob(`**/${CDB_FILE_NAME}`, { cwd: CDB_DIR() }))
-      .map((filePath) => path.basename(path.dirname(filePath)))
-      // Filter out a catch-all database in the root compile commands dir
-      .filter((name) => name.trim() !== '.')
-  );
-}
-
-export function getTarget(): string | undefined {
-  return settings.codeAnalysisTarget();
-}
-
-export async function setTarget(
-  target: string | undefined,
-  settingsFileWriter: (target: string) => Promise<void>,
-): Promise<void> {
-  target = target ?? getTarget();
-  if (!target) return;
-
-  if (!(await availableTargets()).includes(target)) {
-    throw new Error(`Target not among available targets: ${target}`);
-  }
-
-  await settings.codeAnalysisTarget(target);
-  didChangeTarget.fire(target);
-
-  const { update: updatePath } = stringSettingFor('path', 'clangd');
-  const { update: updateArgs } = settingFor<string[]>('arguments', 'clangd');
-
-  // These updates all happen asynchronously, and we want to make sure they're
-  // all done before we trigger a clangd restart.
-  Promise.all([
-    updatePath(clangdPath()),
-    updateArgs([
-      `--compile-commands-dir=${targetPath(target)}`,
-      '--query-driver=**',
-      '--header-insertion=never',
-      '--background-index',
-    ]),
-    settingsFileWriter(target),
-  ]).then(() =>
-    // Restart the clangd server so it picks up the new setting.
-    vscode.commands.executeCommand('clangd.restart'),
-  );
-}
+import { Disposable } from '../disposables';
+import { didInit, didUpdateActiveFilesCache } from '../events';
+import logger from '../logging';
+import { OK, RefreshCallback, RefreshManager } from '../refreshManager';
+import { settings, workingDir } from '../settings';
 
 /** Parse a compilation database and get the source files in the build. */
 async function parseForSourceFiles(target: string): Promise<Set<string>> {
@@ -295,66 +171,6 @@ export class ClangdActiveFilesCache extends Disposable {
   };
 }
 
-/** Show a checkmark next to the item if it's the current setting. */
-function markIfActive(active: boolean): vscode.ThemeIcon | undefined {
-  return active ? new vscode.ThemeIcon('check') : undefined;
-}
-
-export async function setCompileCommandsTarget(
-  activeFilesCache: ClangdActiveFilesCache,
-) {
-  const currentTarget = getTarget();
-
-  const targets = (await availableTargets()).sort().map((target) => ({
-    label: target,
-    iconPath: markIfActive(target === currentTarget),
-  }));
-
-  if (targets.length === 0) {
-    vscode.window
-      .showErrorMessage("Couldn't find any targets!", 'Get Help')
-      .then((selection) => {
-        switch (selection) {
-          case 'Get Help': {
-            launchTroubleshootingLink('bazel-no-targets');
-            break;
-          }
-        }
-      });
-
-    return;
-  }
-
-  vscode.window
-    .showQuickPick(targets, {
-      title: 'Select a target',
-      canPickMany: false,
-    })
-    .then(async (selection) => {
-      if (!selection) return;
-      const { label: target } = selection;
-      await setTarget(target, activeFilesCache.writeToSettings);
-    });
-}
-
-export const setCompileCommandsTargetOnSettingsChange =
-  (activeFilesCache: ClangdActiveFilesCache) =>
-  (e: vscode.ConfigurationChangeEvent) => {
-    if (e.affectsConfiguration('pigweed')) {
-      setTarget(undefined, activeFilesCache.writeToSettings);
-    }
-  };
-
-export async function refreshCompileCommandsAndSetTarget(
-  refresh: () => void,
-  refreshManager: RefreshManager<any>,
-  activeFilesCache: ClangdActiveFilesCache,
-) {
-  refresh();
-  await refreshManager.waitFor('didRefresh');
-  await setCompileCommandsTarget(activeFilesCache);
-}
-
 /**
  * Handle the case where inactive file code intelligence is enabled.
  *
@@ -396,24 +212,4 @@ async function handleInactiveFileCodeIntelligenceEnabled(
     // active settings file if it's present.
     await fs_p.unlink(settingsPath);
   }
-}
-
-export async function disableInactiveFileCodeIntelligence(
-  activeFilesCache: ClangdActiveFilesCache,
-) {
-  logger.info('Disabling inactive file code intelligence');
-  await settings.disableInactiveFileCodeIntelligence(true);
-  didChangeClangdConfig.fire();
-  await activeFilesCache.writeToSettings(settings.codeAnalysisTarget());
-  await vscode.commands.executeCommand('clangd.restart');
-}
-
-export async function enableInactiveFileCodeIntelligence(
-  activeFilesCache: ClangdActiveFilesCache,
-) {
-  logger.info('Enabling inactive file code intelligence');
-  await settings.disableInactiveFileCodeIntelligence(false);
-  didChangeClangdConfig.fire();
-  await activeFilesCache.writeToSettings();
-  await vscode.commands.executeCommand('clangd.restart');
 }
