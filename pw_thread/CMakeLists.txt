@@ -60,7 +60,6 @@ pw_add_facade(pw_thread.thread INTERFACE
     public
   PUBLIC_DEPS
     pw_function
-    pw_thread.thread_core
     pw_thread.id
     pw_thread.options
 )

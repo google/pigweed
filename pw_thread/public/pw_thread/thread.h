@@ -18,7 +18,6 @@
 #include "pw_function/function.h"
 #include "pw_thread/id.h"
 #include "pw_thread/options.h"
-#include "pw_thread/thread_core.h"
 
 // clang-format off
 // The backend's thread_native header must provide PW_THREAD_JOINING_ENABLED.

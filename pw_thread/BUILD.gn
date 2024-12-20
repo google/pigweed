@@ -68,7 +68,6 @@ pw_facade("thread") {
   public_deps = [
     ":id",
     ":options",
-    ":thread_core",
     dir_pw_function,
   ]
 }

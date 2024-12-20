@@ -130,7 +130,6 @@ pw_facade(
     deps = [
         ":id",
         ":options",
-        ":thread_core",
         "//pw_function",
     ],
 )
