@@ -1079,6 +1079,9 @@ TEST_F(
 // connection should succeed.
 TEST_F(BrEdrConnectionManagerLegacyPairingTest,
        RespondToLegacyPairingLinkKeyRequestBeforeAclConnection) {
+  FakePairingDelegate pairing_delegate(sm::IOCapability::kNoInputNoOutput);
+  connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
+
   ASSERT_TRUE(
       peer_cache()->AddBondedPeer(BondingData{.identifier = PeerId(999),
                                               .address = kTestDevAddr,
@@ -1109,6 +1112,9 @@ TEST_F(BrEdrConnectionManagerLegacyPairingTest,
   QueueSuccessfulInterrogationNoSsp(kTestDevAddr, kConnectionHandle);
   test_device()->SendCommandChannelPacket(kConnectionComplete);
   RunUntilIdle();
+
+  // Our pairing delegate should not have been invalidated at any point
+  EXPECT_TRUE(connmgr()->pairing_delegate().is_alive());
 
   QueueDisconnection(kConnectionHandle);
 }
@@ -1161,6 +1167,9 @@ TEST_F(
   RETURN_IF_FATAL(RunUntilIdle());
 
   EXPECT_TRUE(l2cap()->IsLinkConnected(kConnectionHandle));
+
+  // Our pairing delegate should not have been invalidated at any point
+  EXPECT_TRUE(connmgr()->pairing_delegate().is_alive());
 
   QueueDisconnection(kConnectionHandle);
 }
