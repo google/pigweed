@@ -692,13 +692,12 @@ API reference
 =============
 .. doxygendefine:: PW_CONSTEXPR_TEST
 
-.. c:macro:: SKIP_CONSTEXPR_TESTS_DO_NOT_SUBMIT
+.. c:macro:: SKIP_CONSTEXPR_TESTS_DONT_SUBMIT
 
-   Define the ``SKIP_CONSTEXPR_TESTS_DO_NOT_SUBMIT`` macro to temporarily
-   disable the ``constexpr`` portion of subsequent
-   :c:macro:`PW_CONSTEXPR_TEST`\s. Use this to view GoogleTest output, which is
-   usually more informative than the compiler's ``constexpr`` test failure
-   output.
+   Define the ``SKIP_CONSTEXPR_TESTS_DONT_SUBMIT`` macro to temporarily disable
+   the ``constexpr`` portion of subsequent :c:macro:`PW_CONSTEXPR_TEST`\s. Use
+   this to view GoogleTest output, which is usually more informative than the
+   compiler's ``constexpr`` test failure output.
 
    Defines of this macro should never be submitted. If a test shouldn't run at
    compile time, use a plain ``TEST()``.

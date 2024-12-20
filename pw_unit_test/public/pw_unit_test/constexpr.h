@@ -61,7 +61,7 @@
 ///   `std::is_constant_evaluated` or `if consteval` are used.
 /// - Error messages are much better at runtime. @c_macro{PW_CONSTEXPR_TEST}
 ///   makes it simple to temporarily disable compile-time tests and see the rich
-///   GoogleTest-like output (see @c_macro{SKIP_CONSTEXPR_TESTS_DO_NOT_SUBMIT}).
+///   GoogleTest-like output (see @c_macro{SKIP_CONSTEXPR_TESTS_DONT_SUBMIT}).
 /// - Tools like code coverage only work for code that is executed normally.
 ///
 /// @c_macro{PW_CONSTEXPR_TEST} uses `stdcompat`'s
@@ -160,11 +160,11 @@
     ASSERT_##macro(__VA_ARGS__)
 
 // Expands to the provided expression if constexpr tests are enabled.
-#define _PW_IF_CONSTEXPR_TEST(a)                    \
-  PW_CONCAT(_PW_IF_CONSTEXPR_TEST_,                 \
-            PW_AND(LIB_STDCOMPAT_CONSTEVAL_SUPPORT, \
-                   _PW_CONSTEXPR_TEST_ENABLED(      \
-                       SKIP_CONSTEXPR_TESTS_DO_NOT_SUBMIT)))(a)
+#define _PW_IF_CONSTEXPR_TEST(a)              \
+  PW_CONCAT(                                  \
+      _PW_IF_CONSTEXPR_TEST_,                 \
+      PW_AND(LIB_STDCOMPAT_CONSTEVAL_SUPPORT, \
+             _PW_CONSTEXPR_TEST_ENABLED(SKIP_CONSTEXPR_TESTS_DONT_SUBMIT)))(a)
 
 #define _PW_IF_CONSTEXPR_TEST_0(a)
 #define _PW_IF_CONSTEXPR_TEST_1(a) a
@@ -172,13 +172,13 @@
 #define _PW_CONSTEXPR_TEST_ENABLED(a) _PW_CONSTEXPR_TEST_ENABLED2(a)
 #define _PW_CONSTEXPR_TEST_ENABLED2(a) _PW_CONSTEXPR_TEST_##a
 
-// Check if the SKIP_CONSTEXPR_TESTS_DO_NOT_SUBMIT macro is defined, which can
+// Check if the SKIP_CONSTEXPR_TESTS_DONT_SUBMIT macro is defined, which can
 // be used to temporarily disable the constexpr part of tests.
-#define _PW_CONSTEXPR_TEST_SKIP_CONSTEXPR_TESTS_DO_NOT_SUBMIT 1
+#define _PW_CONSTEXPR_TEST_SKIP_CONSTEXPR_TESTS_DONT_SUBMIT 1
 #define _PW_CONSTEXPR_TEST_ 0
 #define _PW_CONSTEXPR_TEST_1 0
 #define _PW_CONSTEXPR_TEST_0 \
-  _Do_not_define_SKIP_CONSTEXPR_TESTS_DO_NOT_SUBMIT_to_0_remove_it_instead
+  _Do_not_define_SKIP_CONSTEXPR_TESTS_DONT_SUBMIT_to_0_remove_it_instead
 
 namespace pw::unit_test::internal {
 
