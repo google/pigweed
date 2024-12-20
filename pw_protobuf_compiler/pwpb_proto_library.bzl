@@ -14,7 +14,7 @@
 """Rule for generating C++ proto libraries using pw_protobuf."""
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
-load("@rules_proto//proto:defs.bzl", "ProtoInfo")
+load("@com_google_protobuf//bazel/common:proto_info.bzl", "ProtoInfo")
 load("//pw_protobuf_compiler/private:proto.bzl", "compile_proto", "proto_compiler_aspect")
 
 # For Copybara use only
