@@ -139,6 +139,10 @@ pw_source_set("event_handler") {
 pw_source_set("status_macros") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_unit_test/status_macros.h" ]
+  public_deps = [
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_status,
+  ]
 }
 
 # Unit test event handler that provides GoogleTest-style output.

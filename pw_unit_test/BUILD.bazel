@@ -164,6 +164,10 @@ cc_library(
     testonly = True,
     hdrs = ["public/pw_unit_test/status_macros.h"],
     strip_include_prefix = "public",
+    deps = [
+        "//pw_status",
+        "//third_party/fuchsia:stdcompat",
+    ],
 )
 
 cc_library(

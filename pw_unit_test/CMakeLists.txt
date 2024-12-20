@@ -138,6 +138,9 @@ pw_add_library(pw_unit_test.status_macros INTERFACE
     public/pw_unit_test/status_macros.h
   PUBLIC_INCLUDES
     public
+  PUBLIC_DEPS
+    pw_status
+    pw_third_party.fuchsia.stdcompat
 )
 
 pw_add_library(pw_unit_test.googletest_style_event_handler STATIC
