@@ -462,4 +462,11 @@ TEST(InlineVarLenEntryQueueClass, Entry) {
   EXPECT_TRUE(std::equal(front.begin(), front.end(), "ABCDE"));
 }
 
+TEST(InlineVarLenEntryQueueClass, Construct_Constexpr) {
+  constexpr pw::InlineVarLenEntryQueue<127> queue(pw::kConstexpr);
+  EXPECT_TRUE(queue.empty());
+  EXPECT_EQ(queue.max_size(), 128u);
+  EXPECT_EQ(queue.size(), 0u);
+}
+
 }  // namespace

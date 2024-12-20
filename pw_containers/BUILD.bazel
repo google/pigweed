@@ -169,6 +169,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
+        ":constexpr_tag",
         ":raw_storage",
         "//pw_assert",
         "//pw_preprocessor",
@@ -193,6 +194,7 @@ cc_library(
     hdrs = ["public/pw_containers/inline_var_len_entry_queue.h"],
     strip_include_prefix = "public",
     deps = [
+        ":constexpr_tag",
         ":raw_storage",
         "//pw_assert",
         "//pw_varint",
@@ -232,6 +234,15 @@ cc_library(
     name = "raw_storage",
     hdrs = [
         "public/pw_containers/internal/raw_storage.h",
+    ],
+    strip_include_prefix = "public",
+    visibility = [":__subpackages__"],
+)
+
+cc_library(
+    name = "constexpr_tag",
+    hdrs = [
+        "public/pw_containers/internal/constexpr_tag.h",
     ],
     strip_include_prefix = "public",
     visibility = [":__subpackages__"],

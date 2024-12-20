@@ -46,6 +46,13 @@ TEST(InlineDeque, Construct_GenericSized) {
   EXPECT_EQ(deque.max_size(), 3u);
 }
 
+TEST(InlineDeque, Construct_ConstexprSized) {
+  constexpr InlineDeque<int, 3> deque(pw::kConstexpr);
+  EXPECT_TRUE(deque.empty());
+  EXPECT_EQ(deque.size(), 0u);
+  EXPECT_EQ(deque.max_size(), 3u);
+}
+
 TEST(InlineDeque, Construct_CopySameCapacity) {
   InlineDeque<CopyOnly, 4> deque(4, CopyOnly(123));
   const auto& deque_ref = deque;

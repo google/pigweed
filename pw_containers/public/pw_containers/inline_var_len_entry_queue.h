@@ -18,6 +18,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "pw_containers/internal/constexpr_tag.h"
+
 #else
 
 #include <stdbool.h>
@@ -343,7 +345,13 @@ class BasicInlineVarLenEntryQueue
       BasicInlineVarLenEntryQueue<T, containers::internal::kGenericSized>;
 
  public:
-  constexpr BasicInlineVarLenEntryQueue() : Base(kMaxSizeBytes) {}
+  BasicInlineVarLenEntryQueue() : Base(kMaxSizeBytes) {}
+
+  // Explicit zero element constexpr constructor. Using this constructor will
+  // place the entire object in .data, which will increase ROM size. Use with
+  // caution if working with large capacity sizes.
+  constexpr BasicInlineVarLenEntryQueue(ConstexprTag /*constexpr_tag*/)
+      : Base(kMaxSizeBytes), data_{} {}
 
   // `BasicInlineVarLenEntryQueue` is trivially copyable.
   BasicInlineVarLenEntryQueue(const BasicInlineVarLenEntryQueue&) = default;

@@ -24,6 +24,7 @@
 #include <utility>
 
 #include "pw_assert/assert.h"
+#include "pw_containers/internal/constexpr_tag.h"
 #include "pw_containers/internal/raw_storage.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_span/span.h"
@@ -90,7 +91,12 @@ class BasicInlineDeque : public BasicInlineDequeStorage<
   using typename Base::value_type;
 
   /// Constructs with zero elements.
-  constexpr BasicInlineDeque() noexcept {}
+  BasicInlineDeque() noexcept {}
+
+  // Explicit zero element constexpr constructor. Using this constructor will
+  // place the entire object in .data, which will increase ROM size. Use with
+  // caution if working with large capacity sizes.
+  constexpr BasicInlineDeque(ConstexprTag /*constexpr_tag*/) noexcept {}
 
   /// Constructs with ``count`` copies of ``value``.
   BasicInlineDeque(size_type count, const_reference value) {
@@ -229,7 +235,7 @@ class BasicInlineDequeStorage<ValueType, SizeType, kCapacity, true>
                                 SizeType,
                                 containers::internal::kGenericSized>;
 
-  BasicInlineDequeStorage() : Base(kCapacity) {}
+  constexpr BasicInlineDequeStorage() : Base(kCapacity) {}
 
   // The data() function is defined differently for the generic-sized and
   // known-sized specializations. This data() implementation simply returns the
@@ -264,7 +270,7 @@ class BasicInlineDequeStorage<ValueType, SizeType, kCapacity, false>
                                 SizeType,
                                 containers::internal::kGenericSized>;
 
-  BasicInlineDequeStorage() : Base(kCapacity) {}
+  constexpr BasicInlineDequeStorage() : Base(kCapacity) {}
 
   // The data() function is defined differently for the generic-sized and
   // known-sized specializations. This data() implementation simply returns the

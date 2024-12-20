@@ -73,6 +73,7 @@ pw_add_library(pw_containers.inline_deque INTERFACE
     public
   PUBLIC_DEPS
     pw_assert.assert
+    pw_containers._constexpr_tag
     pw_containers._raw_storage
     pw_preprocessor
     pw_span
@@ -101,6 +102,13 @@ pw_add_library(pw_containers._raw_storage INTERFACE
     public
 )
 
+pw_add_library(pw_containers._constexpr_tag INTERFACE
+  HEADERS
+    public/pw_containers/internal/constexpr_tag.h
+  PUBLIC_INCLUDES
+    public
+)
+
 pw_add_library(pw_containers._test_helpers STATIC
   HEADERS
     pw_containers_private/test_helpers.h
@@ -121,6 +129,7 @@ pw_add_library(pw_containers.inline_var_len_entry_queue STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_containers._constexpr_tag
     pw_containers._raw_storage
     pw_varint
   PRIVATE_DEPS

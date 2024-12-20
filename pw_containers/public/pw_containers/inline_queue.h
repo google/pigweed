@@ -59,7 +59,13 @@ class BasicInlineQueue
 
   // Constructors
 
-  constexpr BasicInlineQueue() noexcept : deque_() {}
+  BasicInlineQueue() noexcept : deque_() {}
+
+  // Explicit zero element constexpr constructor. Using this constructor will
+  // place the entire object in .data, which will increase ROM size. Use with
+  // caution if working with large capacity sizes.
+  constexpr BasicInlineQueue(ConstexprTag constexpr_tag) noexcept
+      : deque_(constexpr_tag) {}
 
   BasicInlineQueue(size_type count, const_reference value)
       : deque_(count, value) {}

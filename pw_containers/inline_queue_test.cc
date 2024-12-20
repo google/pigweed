@@ -46,6 +46,13 @@ TEST(InlineQueue, Construct_GenericSized) {
   EXPECT_EQ(queue.max_size(), 3u);
 }
 
+TEST(InlineQueue, Construct_ConstexprSized) {
+  constexpr InlineQueue<int, 3> queue(pw::kConstexpr);
+  EXPECT_TRUE(queue.empty());
+  EXPECT_EQ(queue.size(), 0u);
+  EXPECT_EQ(queue.max_size(), 3u);
+}
+
 TEST(InlineQueue, Construct_CopySameCapacity) {
   InlineQueue<CopyOnly, 4> queue(4, CopyOnly(123));
   InlineQueue<CopyOnly, 4> copied(queue);
