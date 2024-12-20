@@ -275,6 +275,9 @@
 /// Returns true if the result of `a + b` overflows the type of `out`; otherwise
 /// stores the result in `out` and returns false.
 ///
+/// It's recommended to use @cpp_func{pw::CheckedAdd} or
+/// @cpp_func{pw::CheckedIncrement} instead.
+///
 /// See also `PW_CHECK_ADD`.
 #define PW_ADD_OVERFLOW(a, b, out) __builtin_add_overflow(a, b, out)
 
@@ -284,6 +287,9 @@
 /// Returns true if the result of `a - b` overflows the type of `out`; otherwise
 /// stores the result in `out` and returns false.
 ///
+/// It's recommended to use @cpp_func{pw::CheckedSub} or
+/// @cpp_func{pw::CheckedDecrement} instead.
+///
 /// See also `PW_CHECK_SUB`.
 #define PW_SUB_OVERFLOW(a, b, out) __builtin_sub_overflow(a, b, out)
 
@@ -291,6 +297,8 @@
 ///
 /// Returns true if the result of `a * b` overflows the type of `out`; otherwise
 /// stores the result in `out` and returns false.
+///
+/// It's recommended to use @cpp_func{pw::CheckedMul} instead.
 ///
 /// See also `PW_CHECK_MUL`.
 #define PW_MUL_OVERFLOW(a, b, out) __builtin_mul_overflow(a, b, out)

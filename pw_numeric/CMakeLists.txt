@@ -14,6 +14,24 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
+pw_add_library(pw_numeric.checked_arithmetic INTERFACE
+  HEADERS
+    public/pw_numeric/checked_arithmetic.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_preprocessor
+)
+
+pw_add_test(pw_numeric.checked_arithmetic_test
+  SOURCES
+    checked_arithmetic_test.cc
+  PRIVATE_DEPS
+    pw_numeric.checked_arithmetic
+  GROUPS
+    modules
+    pw_numeric
+)
 pw_add_library(pw_numeric.integer_division INTERFACE
   HEADERS
     public/pw_numeric/integer_division.h

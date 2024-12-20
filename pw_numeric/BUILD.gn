@@ -23,6 +23,17 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
+pw_source_set("checked_arithmetic") {
+  public = [ "public/pw_numeric/checked_arithmetic.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ dir_pw_preprocessor ]
+}
+
+pw_test("checked_arithmetic_test") {
+  sources = [ "checked_arithmetic_test.cc" ]
+  deps = [ ":checked_arithmetic" ]
+}
+
 pw_source_set("integer_division") {
   public = [ "public/pw_numeric/integer_division.h" ]
   public_configs = [ ":public_include_path" ]
@@ -34,7 +45,10 @@ pw_test("integer_division_test") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":integer_division_test" ]
+  tests = [
+    ":checked_arithmetic_test",
+    ":integer_division_test",
+  ]
 }
 
 pw_doc_group("docs") {

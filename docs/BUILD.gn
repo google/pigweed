@@ -317,6 +317,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_multibuf/public/pw_multibuf/simple_allocator_for_test.h",
   "$dir_pw_multibuf/public/pw_multibuf/single_chunk_region_tracker.h",
   "$dir_pw_multibuf/public/pw_multibuf/stream.h",
+  "$dir_pw_numeric/public/pw_numeric/checked_arithmetic.h",
   "$dir_pw_numeric/public/pw_numeric/integer_division.h",
   "$dir_pw_perf_test/public/pw_perf_test/event_handler.h",
   "$dir_pw_perf_test/public/pw_perf_test/perf_test.h",
