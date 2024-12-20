@@ -131,7 +131,7 @@ TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsSingleReport) {
 
   auto event = hci::EventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
-  auto packet = event.view_t(static_cast<int32_t>(reports_size));
+  auto packet = event.view_t();
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
   packet.num_reports().Write(1);
@@ -167,7 +167,7 @@ TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsMultipleReports) {
 
   auto event = hci::EventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
-  auto packet = event.view_t(static_cast<int32_t>(reports_size));
+  auto packet = event.view_t();
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
   packet.num_reports().Write(num_reports);
@@ -221,7 +221,7 @@ TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsNotEnoughData) {
 
   auto event = hci::EventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
-  auto packet = event.view_t(static_cast<int32_t>(reports_size));
+  auto packet = event.view_t();
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
   packet.num_reports().Write(1);
@@ -260,7 +260,7 @@ TEST_F(ExtendedLowEnergyScannerTest, TruncateToMax) {
     auto event =
         hci::EventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
             hci_spec::kLEMetaEventCode, packet_size);
-    auto packet = event.view_t(static_cast<int32_t>(reports_size));
+    auto packet = event.view_t();
     packet.le_meta_event().subevent_code().Write(
         hci_spec::kLEExtendedAdvertisingReportSubeventCode);
     packet.num_reports().Write(1);
@@ -283,7 +283,7 @@ TEST_F(ExtendedLowEnergyScannerTest, TruncateToMax) {
 
   auto event = hci::EventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
-  auto packet = event.view_t(static_cast<int32_t>(reports_size));
+  auto packet = event.view_t();
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
   packet.num_reports().Write(1);
@@ -317,7 +317,7 @@ TEST_F(ExtendedLowEnergyScannerTest, Incomplete) {
 
   auto event = hci::EventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
-  auto packet = event.view_t(static_cast<int32_t>(reports_size));
+  auto packet = event.view_t();
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
   packet.num_reports().Write(1);
@@ -353,7 +353,7 @@ TEST_F(ExtendedLowEnergyScannerTest, IncompleteTruncated) {
 
   auto event = hci::EventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
-  auto packet = event.view_t(static_cast<int32_t>(reports_size));
+  auto packet = event.view_t();
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
   packet.num_reports().Write(1);
@@ -392,7 +392,7 @@ TEST_F(ExtendedLowEnergyScannerTest, IncompleteTruncatedNonScannable) {
 
   auto event = hci::EventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
-  auto packet = event.view_t(static_cast<int32_t>(reports_size));
+  auto packet = event.view_t();
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
   packet.num_reports().Write(1);

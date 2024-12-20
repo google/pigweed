@@ -14,7 +14,6 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
@@ -359,8 +358,7 @@ DynamicByteBuffer FakePeer::BuildExtendedAdvertisingReports(
 
   auto event = hci::EventPacket::New<LEExtendedAdvertisingReportSubeventWriter>(
       hci_spec::kLEMetaEventCode, packet_size);
-  auto packet = event.view<LEExtendedAdvertisingReportSubeventWriter>(
-      static_cast<int32_t>(reports_size));
+  auto packet = event.view<LEExtendedAdvertisingReportSubeventWriter>();
   packet.le_meta_event().subevent_code().Write(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode);
 

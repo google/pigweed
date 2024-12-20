@@ -137,13 +137,7 @@ ExtendedLowEnergyScanner::ParseAdvertisingReports(const EventPacket& event) {
   PW_DCHECK(event.event_code() == hci_spec::kLEMetaEventCode);
   PW_DCHECK(event.view<LEMetaEventView>().subevent_code().Read() ==
             hci_spec::kLEExtendedAdvertisingReportSubeventCode);
-  size_t reports_size =
-      event.size() -
-      pw::bluetooth::emboss::LEExtendedAdvertisingReportSubeventView::
-          MinSizeInBytes()
-              .Read();
-  auto params = event.view<LEExtendedAdvertisingReportSubeventView>(
-      static_cast<int32_t>(reports_size));
+  auto params = event.view<LEExtendedAdvertisingReportSubeventView>();
 
   uint8_t num_reports = params.num_reports().Read();
   std::vector<LEExtendedAdvertisingReportDataView> reports;
