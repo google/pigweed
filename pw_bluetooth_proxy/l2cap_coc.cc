@@ -91,8 +91,11 @@ pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
                     acl.payload().BackingStorage().data(),
                     acl.payload().BackingStorage().SizeInBytes()));
   kframe.sdu_length().Write(payload.size());
-  std::memcpy(
-      kframe.payload().BackingStorage().data(), payload.data(), payload.size());
+  if (!payload.empty()) {
+    std::memcpy(kframe.payload().BackingStorage().data(),
+                payload.data(),
+                payload.size());
+  }
 
   return QueuePacket(std::move(h4_packet));
 }
