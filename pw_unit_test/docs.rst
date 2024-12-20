@@ -226,7 +226,7 @@ Create test suites and test cases:
      EXPECT_STREQ(expected.c_str(), actual.c_str());
    }
 
-   }
+   }  // namespace
 
 ``pw_unit_test`` provides a standard set of ``TEST``, ``EXPECT``, ``ASSERT``
 and ``FAIL`` macros. The default backend, ``pw_unit_test:light``, offers an
@@ -683,9 +683,34 @@ Helpers
 .. _module-pw_unit_test-py:
 
 --------------------
+Constexpr unit tests
+--------------------
+.. doxygenfile:: pw_unit_test/constexpr.h
+   :sections: detaileddescription
+
+API reference
+=============
+.. doxygendefine:: PW_CONSTEXPR_TEST
+
+.. c:macro:: SKIP_CONSTEXPR_TESTS_DO_NOT_SUBMIT
+
+   Define the ``SKIP_CONSTEXPR_TESTS_DO_NOT_SUBMIT`` macro to temporarily
+   disable the ``constexpr`` portion of subsequent
+   :c:macro:`PW_CONSTEXPR_TEST`\s. Use this to view GoogleTest output, which is
+   usually more informative than the compiler's ``constexpr`` test failure
+   output.
+
+   Defines of this macro should never be submitted. If a test shouldn't run at
+   compile time, use a plain ``TEST()``.
+
+   .. literalinclude:: constexpr_test.cc
+      :language: cpp
+      :start-after: [pw_unit_test-constexpr-skip]
+      :end-before: [pw_unit_test-constexpr-skip]
+
+--------------------
 Python API reference
 --------------------
-
 .. _module-pw_unit_test-py-serial_test_runner:
 
 ``pw_unit_test.serial_test_runner``

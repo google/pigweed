@@ -248,6 +248,21 @@ pw_source_set("logging_main") {
   sources = [ "logging_main.cc" ]
 }
 
+pw_source_set("constexpr") {
+  public = [ "public/pw_unit_test/constexpr.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_preprocessor,
+  ]
+}
+
+pw_test("constexpr_test") {
+  sources = [ "constexpr_test.cc" ]
+  deps = [ ":constexpr" ]
+  negative_compilation_tests = true
+}
+
 # Library providing an event handler adapter that allows for multiple
 # event handlers to be registered for a given test run
 pw_source_set("multi_event_handler") {
@@ -359,6 +374,7 @@ pw_proto_library("unit_test_proto") {
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
   other_deps = [ "py" ]
+  inputs = [ "constexpr_test.cc" ]
 }
 
 pw_test("metadata_only_test") {
@@ -431,6 +447,7 @@ pw_test("static_library_support_test") {
 
 pw_test_group("tests") {
   tests = [
+    ":constexpr_test",
     ":framework_test",
     ":framework_light_test",
     ":static_library_support_test",

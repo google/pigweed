@@ -378,6 +378,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_uart/public/pw_uart/uart_non_blocking.h",
   "$dir_pw_unit_test/light_public_overrides/pw_unit_test/framework_backend.h",
   "$dir_pw_unit_test/public/pw_unit_test/config.h",
+  "$dir_pw_unit_test/public/pw_unit_test/constexpr.h",
   "$dir_pw_unit_test/public/pw_unit_test/event_handler.h",
   "$dir_pw_unit_test/public/pw_unit_test/googletest_handler_adapter.h",
   "$dir_pw_unit_test/public/pw_unit_test/googletest_style_event_handler.h",

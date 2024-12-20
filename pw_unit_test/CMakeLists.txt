@@ -205,6 +205,26 @@ pw_add_library(pw_unit_test.logging_main STATIC
     pw_unit_test
 )
 
+pw_add_library(pw_unit_test.constexpr INTERFACE
+  HEADERS
+    public/pw_unit_test/constexpr.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_preprocessor
+    pw_third_party.fuchsia.stdcompat
+)
+
+pw_add_test(pw_unit_test.constexpr_test
+  SOURCES
+    constexpr_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_unit_test.constexpr
+  GROUPS
+    pw_unit_test
+)
+
 pw_add_library(pw_unit_test.multi_event_handler INTERFACE
   HEADERS
     public/pw_unit_test/multi_event_handler.h

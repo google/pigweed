@@ -303,6 +303,26 @@ pw_cc_binary(
 )
 
 cc_library(
+    name = "constexpr",
+    hdrs = ["public/pw_unit_test/constexpr.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_preprocessor",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+pw_cc_test(
+    name = "constexpr_test",
+    srcs = ["constexpr_test.cc"],
+    deps = [
+        ":constexpr",
+        ":pw_unit_test",
+        "//pw_compilation_testing:negative_compilation_testing",
+    ],
+)
+
+cc_library(
     name = "multi_event_handler",
     testonly = True,
     hdrs = [
