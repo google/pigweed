@@ -2983,15 +2983,16 @@ TEST_F(ProxyHostConnectionEventTest, HciDisconnectionAlertsListeners) {
 
   // Establish three connected_channels:
   // handle = 0x123, PSM = 1 | handle = 0x124, PSM = 1 | handle = 0x123, PSM = 1
-  constexpr uint16_t StartCid = 0x111;
+  constexpr uint16_t kStartSourceCid = 0x111;
+  constexpr uint16_t kStartDestinationCid = 0x211;
   for (size_t i = 0; i < 3; ++i) {
     PW_TEST_EXPECT_OK(SendL2capConnectionReq(
-        proxy, i == 1 ? Handle2 : Handle1, StartCid + i, kPsm));
+        proxy, i == 1 ? Handle2 : Handle1, kStartSourceCid + i, kPsm));
     PW_TEST_EXPECT_OK(SendL2capConnectionRsp(
         proxy,
         i == 1 ? Handle2 : Handle1,
-        StartCid + i,
-        StartCid + i,
+        kStartSourceCid + i,
+        kStartDestinationCid + i,
         emboss::L2capConnectionRspResultCode::SUCCESSFUL));
   }
 
@@ -3075,28 +3076,30 @@ TEST_F(ProxyHostConnectionEventTest,
                               /*br_edr_acl_credits_to_reserve=*/0);
 
   constexpr uint16_t kHandle = 0x123;
-  constexpr uint16_t kStartingCid = 0x111;
+  constexpr uint16_t kStartingSourceCid = 0x111;
+  constexpr uint16_t kStartingDestinationCid = 0x211;
   int events_received = 0;
   auto event_fn = [&events_received](L2capChannelEvent event) {
     ++events_received;
     EXPECT_EQ(event, L2capChannelEvent::kChannelClosedByOther);
   };
-  BasicL2capChannel chan1 = BuildBasicL2capChannel(proxy,
-                                                   {.handle = kHandle,
-                                                    .local_cid = kStartingCid,
-                                                    .remote_cid = kStartingCid,
-                                                    .event_fn = event_fn});
+  BasicL2capChannel chan1 =
+      BuildBasicL2capChannel(proxy,
+                             {.handle = kHandle,
+                              .local_cid = kStartingDestinationCid,
+                              .remote_cid = kStartingSourceCid,
+                              .event_fn = event_fn});
   BasicL2capChannel chan2 =
       BuildBasicL2capChannel(proxy,
                              {.handle = kHandle,
-                              .local_cid = kStartingCid + 1,
-                              .remote_cid = kStartingCid + 1,
+                              .local_cid = kStartingDestinationCid + 1,
+                              .remote_cid = kStartingSourceCid + 1,
                               .event_fn = event_fn});
   BasicL2capChannel chan3 =
       BuildBasicL2capChannel(proxy,
                              {.handle = kHandle,
-                              .local_cid = kStartingCid + 2,
-                              .remote_cid = kStartingCid + 2,
+                              .local_cid = kStartingDestinationCid + 2,
+                              .remote_cid = kStartingSourceCid + 2,
                               .event_fn = event_fn});
 
   EXPECT_EQ(chan1.state(), L2capChannel::State::kRunning);
@@ -3104,13 +3107,18 @@ TEST_F(ProxyHostConnectionEventTest,
   EXPECT_EQ(chan3.state(), L2capChannel::State::kRunning);
 
   // Close chan1's & chan2's underlying L2CAP connections.
-  PW_TEST_EXPECT_OK(SendL2capDisconnectRsp(
-      proxy, AclTransportType::kLe, kHandle, kStartingCid, kStartingCid));
-  PW_TEST_EXPECT_OK(SendL2capDisconnectRsp(proxy,
-                                           AclTransportType::kLe,
-                                           kHandle,
-                                           kStartingCid + 2,
-                                           kStartingCid + 2));
+  PW_TEST_EXPECT_OK(
+      SendL2capDisconnectRsp(proxy,
+                             AclTransportType::kLe,
+                             kHandle,
+                             /*source_cid=*/kStartingSourceCid,
+                             /*destination_cid=*/kStartingDestinationCid));
+  PW_TEST_EXPECT_OK(
+      SendL2capDisconnectRsp(proxy,
+                             AclTransportType::kLe,
+                             kHandle,
+                             /*source_cid=*/kStartingSourceCid + 2,
+                             /*destination_cid=*/kStartingDestinationCid + 2));
 
   EXPECT_EQ(events_received, 2);
   EXPECT_EQ(chan1.state(), L2capChannel::State::kClosed);
