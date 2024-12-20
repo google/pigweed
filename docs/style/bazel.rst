@@ -99,6 +99,14 @@ Reasoning: The ``glob()`` function in Bazel is quite expensive at scale, so
 it's best to avoid it. More background can be found in the Bazelcon talk
 `How Bazel handles globs <https://youtu.be/ZrevTeuU-gQ?si=RheUpWGHldLqvuZ3>`__.
 
+Do not use ``$(location :foo)``
+===============================
+The ``location`` keyword is error-prone. Use ``execpath`` for actions that are
+only relevant to the build (e.g. ``run_binary``). Use ``rlocationpath`` when
+exposing paths to tools that will be loaded via runfiles libraries. ``rootpath``
+should be used when exposing a file path to a binary via arguments or
+environment variable (particularly for ``native_binary`` and ``*_test`` rules).
+
 ---------------------
 Starlark files (.bzl)
 ---------------------

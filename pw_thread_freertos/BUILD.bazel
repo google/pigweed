@@ -286,8 +286,8 @@ run_binary(
     ],
     outs = [":thread_public_overrides/pw_thread_freertos_backend/freertos_tsktcb.h"],
     args = [
-        "--freertos-tasks-c=$(location @freertos//:tasks.c)",
-        "--output=$(location :thread_public_overrides/pw_thread_freertos_backend/freertos_tsktcb.h)",
+        "--freertos-tasks-c=$(execpath @freertos//:tasks.c)",
+        "--output=$(execpath :thread_public_overrides/pw_thread_freertos_backend/freertos_tsktcb.h)",
     ],
     tool = "//pw_thread_freertos/py:generate_freertos_tsktcb",
 )

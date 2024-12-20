@@ -116,7 +116,7 @@ pw_py_test(
         "@com_google_protobuf//:protoc",
     ],
     env = {
-        "PROTOC": "$(location @com_google_protobuf//:protoc)",
+        "PROTOC": "$(rootpath @com_google_protobuf//:protoc)",
     },
     deps = [
         ":pw_rpc",
@@ -136,7 +136,7 @@ pw_py_test(
         "@com_google_protobuf//:protoc",
     ],
     env = {
-        "PROTOC": "$(location @com_google_protobuf//:protoc)",
+        "PROTOC": "$(rootpath @com_google_protobuf//:protoc)",
     },
     deps = [
         ":pw_rpc",
@@ -155,7 +155,7 @@ pw_py_test(
         "@com_google_protobuf//:protoc",
     ],
     env = {
-        "PROTOC": "$(location @com_google_protobuf//:protoc)",
+        "PROTOC": "$(rootpath @com_google_protobuf//:protoc)",
     },
     deps = [
         ":pw_rpc",
@@ -200,7 +200,7 @@ pw_py_test(
         "@com_google_protobuf//:protoc",
     ],
     env = {
-        "PROTOC": "$(location @com_google_protobuf//:protoc)",
+        "PROTOC": "$(rootpath @com_google_protobuf//:protoc)",
     },
     deps = [
         ":pw_rpc",

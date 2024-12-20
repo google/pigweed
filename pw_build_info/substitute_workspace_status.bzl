@@ -21,7 +21,7 @@ def pw_substitute_workspace_status(name, src, out):
         outs = [out],
         # bazel-out/stable-status.txt and bazel-out/volatile-status.txt
         # are made available by setting stamp = True.
-        cmd = "$(location @pigweed//pw_build_info:substitute_workspace_status_tool)" +
+        cmd = "$(execpath @pigweed//pw_build_info:substitute_workspace_status_tool)" +
               " --status-file bazel-out/volatile-status.txt" +
               " --status-file bazel-out/stable-status.txt" +
               " $< $@",

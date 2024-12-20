@@ -94,7 +94,7 @@ cc_binary(
     additional_linker_inputs = [":linker_script_test"],
     copts = ["-Wno-unused-variable"],
     features = ["-pic"],
-    linkopts = ["-T $(location :linker_script_test)"],
+    linkopts = ["-T $(execpath :linker_script_test)"],
     # Only compatible with platforms that support linker scripts.
     target_compatible_with = select({
         "//pw_toolchain/host_clang:asan_enabled": ["@platforms//:incompatible"],

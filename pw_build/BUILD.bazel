@@ -163,7 +163,7 @@ pw_cc_test(
     name = "linker_symbol_test",
     srcs = ["linker_symbol_test.cc"],
     linkopts = [
-        "-T$(location linker_symbol_test.ld)",
+        "-T$(execpath linker_symbol_test.ld)",
     ],
     target_compatible_with = [
         "@platforms//os:linux",

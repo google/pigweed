@@ -70,7 +70,7 @@ rule for handling linker scripts with Bazel. e.g.
      name = "some_binary",
      srcs = ["some_source.cc"],
      additional_linker_inputs = [":some_linker_script"],
-     linkopts = ["-T $(location :some_linker_script)"],
+     linkopts = ["-T $(execpath :some_linker_script)"],
    )
 
 .. _module-pw_build-bazel-pw_facade:
