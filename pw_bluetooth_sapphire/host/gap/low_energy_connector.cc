@@ -52,7 +52,8 @@ LowEnergyConnector::LowEnergyConnector(
     l2cap::ChannelManager* l2cap,
     gatt::GATT::WeakPtr gatt,
     const AdapterState& adapter_state,
-    pw::async::Dispatcher& dispatcher)
+    pw::async::Dispatcher& dispatcher,
+    hci::LocalAddressDelegate* local_address_delegate)
     : dispatcher_(dispatcher),
       peer_id_(peer_id),
       peer_cache_(peer_cache),
@@ -61,7 +62,8 @@ LowEnergyConnector::LowEnergyConnector(
       adapter_state_(adapter_state),
       options_(options),
       hci_(std::move(hci)),
-      le_connection_manager_(std::move(conn_mgr)) {
+      le_connection_manager_(std::move(conn_mgr)),
+      local_address_delegate_(local_address_delegate) {
   PW_CHECK(peer_cache_);
   PW_CHECK(l2cap_);
   PW_CHECK(gatt_.is_alive());
@@ -116,11 +118,7 @@ void LowEnergyConnector::StartOutbound(
   result_cb_ = std::move(cb);
   set_is_outbound(true);
 
-  if (options_.auto_connect) {
-    RequestCreateConnection();
-  } else {
-    StartScanningForPeer();
-  }
+  EnsureLocalAddress();
 }
 
 void LowEnergyConnector::StartInbound(
@@ -156,13 +154,7 @@ void LowEnergyConnector::Cancel() {
       // There is nothing to do if cancel is called before the procedure has
       // started. There is no result callback to call yet.
       break;
-    case State::kStartingScanning:
-      discovery_session_.reset();
-      NotifyFailure(ToResult(HostError::kCanceled));
-      break;
-    case State::kScanning:
-      discovery_session_.reset();
-      scan_timeout_task_.reset();
+    case State::kEnsuringLocalAddress:
       NotifyFailure(ToResult(HostError::kCanceled));
       break;
     case State::kConnecting:
@@ -204,10 +196,8 @@ const char* LowEnergyConnector::StateToString(State state) {
   switch (state) {
     case State::kDefault:
       return "Default";
-    case State::kStartingScanning:
-      return "StartingScanning";
-    case State::kScanning:
-      return "Scanning";
+    case State::kEnsuringLocalAddress:
+      return "EnsuringLocalAddress";
     case State::kConnecting:
       return "Connecting";
     case State::kInterrogating:
@@ -223,94 +213,23 @@ const char* LowEnergyConnector::StateToString(State state) {
   }
 }
 
-void LowEnergyConnector::StartScanningForPeer() {
-  if (!discovery_manager_.is_alive()) {
-    return;
-  }
-  auto self = weak_self_.GetWeakPtr();
-
-  state_.Set(State::kStartingScanning);
-
-  discovery_manager_->StartDiscovery(/*active=*/false, [self](auto session) {
-    if (self.is_alive()) {
-      self->OnScanStart(std::move(session));
-    }
-  });
-}
-
-void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
-  if (*state_ == State::kFailed) {
-    return;
-  }
-  PW_CHECK(*state_ == State::kStartingScanning);
-
-  // Failed to start scan, abort connection procedure.
-  if (!session) {
-    bt_log(INFO, "gap-le", "failed to start scan (peer: %s)", bt_str(peer_id_));
-    NotifyFailure(ToResult(HostError::kFailed));
-    return;
-  }
-
-  bt_log(INFO,
-         "gap-le",
-         "started scanning for pending connection (peer: %s)",
-         bt_str(peer_id_));
-  state_.Set(State::kScanning);
-
-  auto self = weak_self_.GetWeakPtr();
-  scan_timeout_task_.emplace(
-      dispatcher_, [this](pw::async::Context& /*ctx*/, pw::Status status) {
-        if (!status.ok()) {
+void LowEnergyConnector::EnsureLocalAddress() {
+  PW_CHECK(*state_ == State::kDefault);
+  state_.Set(State::kEnsuringLocalAddress);
+  local_address_delegate_->EnsureLocalAddress(
+      /*address_type=*/std::nullopt, [self = weak_self_.GetWeakPtr()](auto) {
+        if (!self.is_alive() || *self->state_ == State::kFailed) {
           return;
         }
-        PW_CHECK(*state_ == State::kScanning);
-        bt_log(INFO,
-               "gap-le",
-               "scan for pending connection timed out (peer: %s)",
-               bt_str(peer_id_));
-        NotifyFailure(ToResult(HostError::kTimedOut));
+        self->RequestCreateConnection();
       });
-  // The scan timeout may include time during which scanning is paused.
-  scan_timeout_task_->PostAfter(kLEGeneralCepScanTimeout);
-
-  discovery_session_ = std::move(session);
-  discovery_session_->filter()->set_connectable(true);
-
-  // The error callback must be set before the result callback in case the
-  // result callback is called synchronously.
-  discovery_session_->set_error_callback([self] {
-    PW_CHECK(self->state_.value() == State::kScanning);
-    bt_log(INFO,
-           "gap-le",
-           "discovery error while scanning for peer (peer: %s)",
-           bt_str(self->peer_id_));
-    self->scan_timeout_task_.reset();
-    self->NotifyFailure(ToResult(HostError::kFailed));
-  });
-
-  discovery_session_->SetResultCallback([self](auto& peer) {
-    PW_CHECK(self->state_.value() == State::kScanning);
-
-    if (peer.identifier() != self->peer_id_) {
-      return;
-    }
-
-    bt_log(INFO,
-           "gap-le",
-           "discovered peer for pending connection (peer: %s)",
-           bt_str(self->peer_id_));
-
-    self->scan_timeout_task_.reset();
-    self->discovery_session_->Stop();
-
-    self->RequestCreateConnection();
-  });
 }
 
 void LowEnergyConnector::RequestCreateConnection() {
-  // Scanning may be skipped. When the peer disconnects during/after
-  // interrogation, a retry may be initiated by calling this method.
-  PW_CHECK(*state_ == State::kDefault || *state_ == State::kScanning ||
+  // When the peer disconnects during/after interrogation, a retry may be
+  // initiated by calling this method.
+  PW_CHECK(*state_ == State::kDefault ||
+           *state_ == State::kEnsuringLocalAddress ||
            *state_ == State::kPauseBeforeConnectionRetry);
 
   // Pause discovery until connection complete.
@@ -458,8 +377,8 @@ void LowEnergyConnector::OnInterrogationComplete(hci::Result<> status) {
 
 void LowEnergyConnector::OnPeerDisconnect(
     pw::bluetooth::emboss::StatusCode status_code) {
-  // The peer can't disconnect while scanning or connecting, and we unregister
-  // from disconnects after kFailed & kComplete.
+  // The peer can't disconnect while connecting, and we unregister from
+  // disconnects after kFailed & kComplete.
   PW_CHECK(
       *state_ == State::kInterrogating ||
           *state_ == State::kAwaitingConnectionFailedToBeEstablishedDisconnect,

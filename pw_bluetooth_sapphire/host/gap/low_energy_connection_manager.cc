@@ -436,7 +436,8 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
                                                      l2cap_,
                                                      gatt_,
                                                      adapter_state_,
-                                                     dispatcher_);
+                                                     dispatcher_,
+                                                     local_address_delegate_);
   auto [conn_iter, _] = remote_connectors_.emplace(
       peer_id, RequestAndConnector{std::move(request), std::move(connector)});
   // Wait until the connector is in the map to start in case the result callback
@@ -575,7 +576,8 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
               l2cap_,
               gatt_,
               adapter_state_,
-              dispatcher_);
+              dispatcher_,
+              local_address_delegate_);
       connector->AttachInspect(inspect_node_,
                                kInspectOutboundConnectorNodeName);
 

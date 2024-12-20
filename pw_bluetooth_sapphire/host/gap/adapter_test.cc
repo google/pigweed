@@ -866,9 +866,11 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 
-  // Create a new connection. The second attempt should use a random address.
-  // re-enabled.
+  // Disconnect
   conn_ref = nullptr;
+
+  // Create a new connection. The LowEnergyConnectionManager should try to
+  // update the local address before creating the connection.
   adapter()->le()->Connect(
       peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunUntilIdle();

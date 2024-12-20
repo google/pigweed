@@ -47,7 +47,8 @@ class LowEnergyConnector final {
                      l2cap::ChannelManager* l2cap,
                      gatt::GATT::WeakPtr gatt,
                      const AdapterState& adapter_state,
-                     pw::async::Dispatcher& dispatcher);
+                     pw::async::Dispatcher& dispatcher,
+                     hci::LocalAddressDelegate* local_address_delegate);
 
   // Instances should only be destroyed after the result callback is called
   // (except for stack tear down). Due to the asynchronous nature of cancelling
@@ -82,8 +83,7 @@ class LowEnergyConnector final {
  private:
   enum class State {
     kDefault,
-    kStartingScanning,                                   // Outbound only
-    kScanning,                                           // Outbound only
+    kEnsuringLocalAddress,                               // Outbound only
     kConnecting,                                         // Outbound only
     kInterrogating,                                      // Outbound & inbound
     kAwaitingConnectionFailedToBeEstablishedDisconnect,  // Outbound & inbound
@@ -94,9 +94,9 @@ class LowEnergyConnector final {
 
   static const char* StateToString(State);
 
-  // Initiate scanning for peer before connecting to ensure it is advertising.
-  void StartScanningForPeer();
-  void OnScanStart(LowEnergyDiscoverySessionPtr session);
+  // Ensure the local address is updated (e.g. if privacy mode was just
+  // changed).
+  void EnsureLocalAddress();
 
   // Initiate HCI connection procedure.
   void RequestCreateConnection();
@@ -183,8 +183,6 @@ class LowEnergyConnector final {
   // Task called after the scan attempt times out.
   std::optional<SmartTask> scan_timeout_task_;
 
-  std::unique_ptr<LowEnergyDiscoverySession> discovery_session_;
-
   // Sends HCI commands that request version and feature support information
   // from peer controllers. Initialized only during interrogation.
   std::optional<LowEnergyInterrogator> interrogator_;
@@ -197,6 +195,8 @@ class LowEnergyConnector final {
 
   // Only used to construct a LowEnergyConnection.
   WeakSelf<LowEnergyConnectionManager>::WeakPtr le_connection_manager_;
+
+  hci::LocalAddressDelegate* local_address_delegate_;
 
   struct InspectProperties {
     inspect::StringProperty peer_id;
