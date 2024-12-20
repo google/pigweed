@@ -1892,7 +1892,7 @@ TEST_F(MultiSendTest, CanOccupyAllThenReuseEachBuffer) {
   constexpr size_t kMaxSends = ProxyHost::GetNumSimultaneousAclSendsSupported();
   struct {
     size_t sends_called = 0;
-    std::array<H4PacketWithH4, 2 * kMaxSends> released_packets;
+    std::array<H4PacketWithH4, 2 * kMaxSends> released_packets{};
   } capture;
 
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
@@ -1941,7 +1941,7 @@ TEST_F(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
   constexpr size_t kMaxSends = ProxyHost::GetNumSimultaneousAclSendsSupported();
   struct {
     size_t sends_called = 0;
-    std::array<H4PacketWithH4, kMaxSends> released_packets;
+    std::array<H4PacketWithH4, kMaxSends> released_packets{};
   } capture;
 
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(

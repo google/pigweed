@@ -67,7 +67,7 @@ class H4Storage {
 
   // Each buffer is meant to hold one H4 packet containing an ACL PDU.
   std::array<std::array<uint8_t, kH4BuffSize>, kNumH4Buffs> h4_buffs_
-      PW_GUARDED_BY(storage_mutex_);
+      PW_GUARDED_BY(storage_mutex_){};
 
   // Maps each H4 buffer to a flag that is set when the buffer holds an H4
   // packet being sent through `acl_data_channel_` and cleared in that H4
