@@ -28,8 +28,11 @@ enum RfcommFrameType:
   -- ETSI TS section 5.2.1.3
   [maximum_bits: 8]
   SET_ASYNC_BALANCED_MODE                                 = 0x2f
+  SET_ASYNC_BALANCED_MODE_AND_POLL_FINAL                  = 0x3f
   UNNUMBERED_ACK                                          = 0x63
+  UNNUMBERED_ACK_AND_POLL_FINAL                           = 0x73
   DISCONNECT_MODE                                         = 0x0f
+  DISCONNECT_MODE_AND_POLL_FINAL                          = 0x1f
   DISCONNECT                                              = 0xc3
   UNNUMBERED_INFORMATION_WITH_HEADER_CHECK                = 0xef
   UNNUMBERED_INFORMATION_WITH_HEADER_CHECK_AND_POLL_FINAL = 0xff
