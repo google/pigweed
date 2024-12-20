@@ -32,7 +32,8 @@ class SocketClient:
     FILE_SOCKET_SERVER = 'file'
     DEFAULT_SOCKET_SERVER = 'localhost'
     DEFAULT_SOCKET_PORT = 33000
-    PW_RPC_MAX_PACKET_SIZE = 256
+    # Default maximum number of bytes to read with each call to `read()`.
+    DEFAULT_MAX_READ_SIZE = 256
     DEFAULT_TIMEOUT = 0.5
 
     _InitArgsType = tuple[
@@ -171,7 +172,7 @@ class SocketClient:
             else:
                 raise exc
 
-    def read(self, num_bytes: int = PW_RPC_MAX_PACKET_SIZE) -> bytes:
+    def read(self, num_bytes: int = DEFAULT_MAX_READ_SIZE) -> bytes:
         """Blocks until data is ready and reads up to num_bytes."""
         if not self._connected:
             raise Exception('Socket is not connected.')
@@ -213,7 +214,7 @@ class SocketClientWithLogging(SocketClient):
         self._bandwidth_tracker = SerialBandwidthTracker()
 
     def read(
-        self, num_bytes: int = SocketClient.PW_RPC_MAX_PACKET_SIZE
+        self, num_bytes: int = SocketClient.DEFAULT_MAX_READ_SIZE
     ) -> bytes:
         data = super().read(num_bytes)
         self._bandwidth_tracker.track_read_data(data)

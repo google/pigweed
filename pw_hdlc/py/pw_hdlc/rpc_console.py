@@ -20,9 +20,6 @@ This command is no longer supported. Please run pw_system.console instead.
 
 import sys
 
-# TODO(tonymd): Delete this when no longer needed.
-PW_RPC_MAX_PACKET_SIZE = 256
-
 
 def main() -> int:
     print(__doc__)

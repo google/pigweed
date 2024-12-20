@@ -42,7 +42,7 @@ from pw_trace_tokenized import trace_tokenized
 
 _LOG = logging.getLogger('pw_trace_tokenizer')
 
-PW_RPC_MAX_PACKET_SIZE = 256
+DEFAULT_MAX_READ_SIZE = 256
 SOCKET_SERVER = 'localhost'
 SOCKET_PORT = 33000
 MKFIFO_MODE = 0o666
@@ -65,7 +65,7 @@ class SocketClientImpl:
     def write(self, data: bytes):
         self.socket.sendall(data)
 
-    def read(self, num_bytes: int = PW_RPC_MAX_PACKET_SIZE):
+    def read(self, num_bytes: int = DEFAULT_MAX_READ_SIZE):
         return self.socket.recv(num_bytes)
 
 
@@ -112,7 +112,7 @@ def get_hdlc_rpc_client(
         try:
             socket_device = SocketClientImpl(socket_addr)
             reader = stream_readers.SocketReader(
-                socket_device.socket, PW_RPC_MAX_PACKET_SIZE
+                socket_device.socket, DEFAULT_MAX_READ_SIZE
             )
             write_function = socket_device.write
         except ValueError:
