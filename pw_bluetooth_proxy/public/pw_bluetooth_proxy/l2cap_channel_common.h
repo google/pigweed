@@ -55,7 +55,6 @@ enum class L2capChannelEvent {
 // `std::expected` can't be used because it only has a value OR a status.
 struct StatusWithMultiBuf {
   pw::Status status;
-  // Only has value if pw::Status is UNAVAILABLE.
   std::optional<pw::multibuf::MultiBuf> buf = std::nullopt;
 };
 
