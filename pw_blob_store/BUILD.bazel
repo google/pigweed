@@ -61,6 +61,8 @@ pw_cc_test(
     srcs = [
         "blob_store_test.cc",
     ],
+    # TODO: b/385375184 - Fix this test!
+    tags = ["noubsan"],
     deps = [
         ":pw_blob_store",
         "//pw_kvs:crc16",

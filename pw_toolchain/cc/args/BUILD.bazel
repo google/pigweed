@@ -203,6 +203,7 @@ cc_args(
     args = [
         "-fsanitize=address",
         "-DADDRESS_SANITIZER",
+        "-fno-sanitize-recover=all",
     ],
 )
 
@@ -217,6 +218,7 @@ cc_args(
     args = [
         "-fsanitize=undefined",
         "-DUNDEFINED_SANITIZER",
+        "-fno-sanitize-recover=all",
     ],
 )
 
@@ -231,6 +233,7 @@ cc_args(
     args = [
         "-fsanitize=thread",
         "-DTHREAD_SANITIZER",
+        "-fno-sanitize-recover=all",
     ],
 )
 

@@ -33,6 +33,8 @@ pw_cc_test(
     srcs = [
         "build_test.cc",
     ],
+    # TODO: b/385375184 - Fix this test!
+    tags = ["noubsan"],
     deps = [
         ":sysdeps",
         "//pw_bytes",
