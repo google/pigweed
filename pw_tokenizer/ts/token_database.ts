@@ -23,7 +23,10 @@ interface TokenData {
   template: string;
 }
 
-function parseTokenNumber(num: string, lineNumber?: number): number {
+function parseTokenNumber(
+  num: string,
+  lineNumber?: number,
+): number | undefined {
   if (!/^[a-fA-F0-9]+$/.test(num)) {
     // Malformed number
     console.error(
@@ -33,6 +36,7 @@ function parseTokenNumber(num: string, lineNumber?: number): number {
           : '' + `is not a valid hex number`,
       ),
     );
+    return undefined;
   }
 
   try {
@@ -45,13 +49,14 @@ function parseTokenNumber(num: string, lineNumber?: number): number {
           : '' + `could not be parsed`,
       ),
     );
+    return undefined;
   }
 }
 
 function parseRemovalDate(
   dateString: string,
   lineNumber?: number,
-): Date | null {
+): Date | null | undefined {
   const dateContent = dateString.trim();
   if (dateContent === '') return null;
 
@@ -65,6 +70,7 @@ function parseRemovalDate(
           : '' + `could not be parsed`,
       ),
     );
+    return undefined;
   }
 }
 
@@ -85,16 +91,20 @@ export function parseCsvEntry(
   }
 
   // Column 0: Token
-  const token = parseTokenNumber(data.shift(), lineNumber);
+  const token = parseTokenNumber(data.shift()!, lineNumber);
 
   // Column 1: Removal date
-  const removalDate = parseRemovalDate(data.shift(), lineNumber);
+  const removalDate = parseRemovalDate(data.shift()!, lineNumber);
+
+  if (token === undefined || removalDate === undefined) {
+    return undefined;
+  }
 
   // Modern 4-column databases will have the domain in this position.
-  const domain = data.length > 1 ? data.shift() : '';
+  const domain = data.length > 1 ? data.shift()! : '';
 
   // Last column: Template strings
-  const template = data.shift();
+  const template = data.shift() ?? '';
 
   return {
     token,
