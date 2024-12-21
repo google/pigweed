@@ -406,11 +406,10 @@ void ProxyHost::HandleAclFromHost(H4PacketWithH4&& h4_packet) {
     return;
   }
 
-  L2capChannel* channel = acl_data_channel_.FindSignalingChannel(
+  L2capChannel* channel = l2cap_channel_manager_.FindChannelByRemoteCid(
       acl->header().handle().Read(), l2cap_header.channel_id().Read());
   if (!channel) {
     hci_transport_.SendToController(std::move(h4_packet));
-
     return;
   }
 
