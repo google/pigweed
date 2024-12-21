@@ -84,8 +84,8 @@ void L2capStatusTracker::HandleDisconnectionComplete(
   for (L2capStatusDelegate& delegate : delegates_) {
     auto match = [&params](const L2capChannelConnectionInfo& i) {
       return params.connection_handle == i.connection_handle &&
-             params.source_cid == i.source_cid &&
-             params.destination_cid == i.destination_cid;
+             params.remote_cid == i.remote_cid &&
+             params.local_cid == i.local_cid;
     };
     auto connection_it = std::find_if(connected_channel_infos_.begin(),
                                       connected_channel_infos_.end(),

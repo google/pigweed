@@ -2867,8 +2867,8 @@ TEST_F(ProxyHostConnectionEventTest, L2capEventsCalled) {
       ASSERT_TRUE(info.has_value());
       EXPECT_EQ(info->direction, i.direction);
       EXPECT_EQ(info->connection_handle, i.connection_handle);
-      EXPECT_EQ(info->source_cid, i.source_cid);
-      EXPECT_EQ(info->destination_cid, i.destination_cid);
+      EXPECT_EQ(info->remote_cid, i.remote_cid);
+      EXPECT_EQ(info->local_cid, i.local_cid);
       info.reset();
     }
 
@@ -2925,7 +2925,7 @@ TEST_F(ProxyHostConnectionEventTest, L2capEventsCalled) {
                              kDestinationCid,
                              emboss::L2capConnectionRspResultCode::SUCCESSFUL));
   EXPECT_TRUE(test_delegate.info.has_value());
-  EXPECT_EQ(test_delegate.info->destination_cid, kDestinationCid);
+  EXPECT_EQ(test_delegate.info->local_cid, kDestinationCid);
 
   // Send disconnect
   PW_TEST_EXPECT_OK(SendL2capDisconnectRsp(

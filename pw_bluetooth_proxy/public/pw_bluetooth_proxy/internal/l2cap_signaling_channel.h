@@ -97,7 +97,7 @@ class L2capSignalingChannel : public BasicL2capChannel {
  private:
   struct PendingConnection {
     Direction direction;
-    uint16_t source_cid;
+    uint16_t remote_cid;
     uint16_t psm;
   };
 

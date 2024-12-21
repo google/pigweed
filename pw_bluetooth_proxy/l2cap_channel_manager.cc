@@ -193,7 +193,7 @@ void L2capChannelManager::HandleDisconnectionComplete(
 void L2capChannelManager::HandleDisconnectionComplete(
     const L2capStatusTracker::DisconnectParams& params) {
   L2capChannel* channel =
-      FindChannelByLocalCid(params.connection_handle, params.destination_cid);
+      FindChannelByLocalCid(params.connection_handle, params.local_cid);
   if (channel) {
     channel->Close();
   }

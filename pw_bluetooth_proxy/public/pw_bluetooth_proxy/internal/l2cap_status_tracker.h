@@ -41,8 +41,8 @@ class L2capStatusTracker {
 
   struct DisconnectParams {
     uint16_t connection_handle;
-    uint16_t source_cid;
-    uint16_t destination_cid;
+    uint16_t remote_cid;
+    uint16_t local_cid;
   };
 
   void HandleDisconnectionComplete(uint16_t connection_handle)
