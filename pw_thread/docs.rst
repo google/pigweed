@@ -159,6 +159,9 @@ API reference
 .. doxygenclass:: pw::thread::Options
    :members:
 
+.. doxygenclass:: pw::thread::internal::Priority
+   :members:
+
 Differences from ``std::thread``
 ================================
 The ``pw::thread:Thread`` API is similar to the C++11 STL `std::thread

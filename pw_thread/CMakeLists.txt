@@ -71,6 +71,18 @@ pw_add_library(pw_thread.options INTERFACE
     public
 )
 
+pw_add_library(pw_thread._generic_priority INTERFACE
+  HEADERS
+    public/pw_thread/internal/priority.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert
+    pw_numeric.integer_division
+    pw_polyfill
+    pw_third_party.fuchsia.stdcompat
+)
+
 pw_add_library(pw_thread.thread_core INTERFACE
   HEADERS
     public/pw_thread/thread_core.h
@@ -176,6 +188,18 @@ pw_proto_library(pw_thread.protos
     pw_thread_protos/thread.proto
   DEPS
     pw_tokenizer.proto
+)
+
+pw_add_test(pw_thread.priority_test
+  SOURCES
+    priority_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_thread._generic_priority
+    pw_unit_test.constexpr
+  GROUPS
+    modules
+    pw_thread
 )
 
 if(NOT "${pw_thread.id_BACKEND}" STREQUAL "")

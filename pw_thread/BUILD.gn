@@ -108,6 +108,27 @@ pw_facade("yield") {
   sources = [ "yield.cc" ]
 }
 
+pw_source_set("generic_priority") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_numeric:integer_division",
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_assert,
+    dir_pw_polyfill,
+  ]
+  sources = [ "public/pw_thread/internal/priority.h" ]
+  visibility = [ ":*" ]
+}
+
+pw_test("priority_test") {
+  sources = [ "priority_test.cc" ]
+  deps = [
+    ":generic_priority",
+    "$dir_pw_unit_test:constexpr",
+  ]
+  negative_compilation_tests = true
+}
+
 pw_source_set("snapshot") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
@@ -160,6 +181,7 @@ pw_source_set("thread_snapshot_service") {
 pw_test_group("tests") {
   tests = [
     ":id_facade_test",
+    ":priority_test",
     ":sleep_facade_test",
     ":thread_info_test",
     ":yield_facade_test",

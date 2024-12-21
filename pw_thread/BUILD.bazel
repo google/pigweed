@@ -232,6 +232,19 @@ host_backend_alias(
 )
 
 cc_library(
+    name = "generic_priority",
+    hdrs = ["public/pw_thread/internal/priority.h"],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pw_assert",
+        "//pw_numeric:integer_division",
+        "//pw_polyfill",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+cc_library(
     name = "snapshot",
     srcs = [
         "snapshot.cc",
@@ -369,6 +382,17 @@ pw_cc_test(
         "//pw_protobuf",
         "//pw_span",
         "//pw_sync:thread_notification",
+    ],
+)
+
+pw_cc_test(
+    name = "priority_test",
+    srcs = ["priority_test.cc"],
+    deps = [
+        ":generic_priority",
+        "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_unit_test",
+        "//pw_unit_test:constexpr",
     ],
 )
 
