@@ -168,7 +168,7 @@ Status SendLeReadBufferResponseFromController(
                 CreateAndPopulateToHostEventView<
                     emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
                     h4_packet, emboss::EventCode::COMMAND_COMPLETE));
-  view.command_complete().command_opcode_enum().Write(
+  view.command_complete().command_opcode().Write(
       emboss::OpCode::LE_READ_BUFFER_SIZE_V2);
   view.total_num_le_acl_data_packets().Write(num_credits_to_reserve);
   view.le_acl_data_packet_length().Write(le_acl_data_packet_length);
@@ -187,7 +187,7 @@ Status SendReadBufferResponseFromController(ProxyHost& proxy,
                 CreateAndPopulateToHostEventView<
                     emboss::ReadBufferSizeCommandCompleteEventWriter>(
                     h4_packet, emboss::EventCode::COMMAND_COMPLETE));
-  view.command_complete().command_opcode_enum().Write(
+  view.command_complete().command_opcode().Write(
       emboss::OpCode::READ_BUFFER_SIZE);
   view.total_num_acl_data_packets().Write(num_credits_to_reserve);
   EXPECT_TRUE(view.Ok());
@@ -207,7 +207,7 @@ Status SendConnectionCompleteEvent(ProxyHost& proxy,
   PW_TRY_ASSIGN(auto view,
                 MakeEmbossWriter<emboss::ConnectionCompleteEventWriter>(
                     dc_event.GetHciSpan()));
-  view.header().event_code_enum().Write(emboss::EventCode::CONNECTION_COMPLETE);
+  view.header().event_code().Write(emboss::EventCode::CONNECTION_COMPLETE);
   view.status().Write(status);
   view.connection_handle().Write(handle);
   proxy.HandleH4HciFromController(std::move(dc_event));
@@ -226,7 +226,7 @@ Status SendLeConnectionCompleteEvent(ProxyHost& proxy,
   PW_TRY_ASSIGN(auto view,
                 MakeEmbossWriter<emboss::LEConnectionCompleteSubeventWriter>(
                     dc_event.GetHciSpan()));
-  view.le_meta_event().header().event_code_enum().Write(
+  view.le_meta_event().header().event_code().Write(
       emboss::EventCode::LE_META_EVENT);
   view.le_meta_event().subevent_code_enum().Write(
       emboss::LeSubEventCode::CONNECTION_COMPLETE);
@@ -253,8 +253,7 @@ Status SendDisconnectionCompleteEvent(ProxyHost& proxy,
   PW_TRY_ASSIGN(auto view,
                 MakeEmbossWriter<emboss::DisconnectionCompleteEventWriter>(
                     dc_event_from_controller.GetHciSpan()));
-  view.header().event_code_enum().Write(
-      emboss::EventCode::DISCONNECTION_COMPLETE);
+  view.header().event_code().Write(emboss::EventCode::DISCONNECTION_COMPLETE);
   view.status().Write(successful ? emboss::StatusCode::SUCCESS
                                  : emboss::StatusCode::HARDWARE_FAILURE);
   view.connection_handle().Write(handle);

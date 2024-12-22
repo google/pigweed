@@ -111,12 +111,12 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
             event.view<pw::bluetooth::emboss::SimpleCommandCompleteEventView>();
         EXPECT_EQ(id, callback_id);
         EXPECT_EQ(pw::bluetooth::emboss::EventCode::COMMAND_COMPLETE,
-                  view.command_complete().header().event_code_enum().Read());
+                  view.command_complete().header().event_code().Read());
         EXPECT_EQ(
             4, view.command_complete().header().parameter_total_size().Read());
         EXPECT_EQ(1, view.command_complete().num_hci_command_packets().Read());
         EXPECT_EQ(pw::bluetooth::emboss::OpCode::RESET,
-                  view.command_complete().command_opcode_enum().Read());
+                  view.command_complete().command_opcode().Read());
         EXPECT_EQ(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE,
                   view.status().Read());
       });
@@ -273,7 +273,7 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
     }
     EXPECT_EQ(expected_opcode,
               event.view<pw::bluetooth::emboss::CommandCompleteEventView>()
-                  .command_opcode_enum()
+                  .command_opcode()
                   .Read());
     cb_event_count++;
   };
@@ -354,7 +354,7 @@ TEST_F(CommandChannelTest, QueuedCommands) {
     EXPECT_EQ(hci_spec::kCommandCompleteEventCode, event.event_code());
     pw::bluetooth::emboss::OpCode opcode =
         event.view<pw::bluetooth::emboss::CommandCompleteEventView>()
-            .command_opcode_enum()
+            .command_opcode()
             .Read();
     if (opcode == pw::bluetooth::emboss::OpCode::RESET) {
       reset_count++;

@@ -293,7 +293,7 @@ void FakeController::RespondWithCommandComplete(pwemb::OpCode opcode,
   auto header = packet->template view<pwemb::CommandCompleteEventWriter>();
 
   header.num_hci_command_packets().Write(settings_.num_hci_command_packets);
-  header.command_opcode_enum().Write(opcode);
+  header.command_opcode().Write(opcode);
 
   SendEvent(hci_spec::kCommandCompleteEventCode, packet);
 }

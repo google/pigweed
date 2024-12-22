@@ -156,26 +156,17 @@ TEST(EmbossTest, ReadOpcodesFromCommandHeader) {
   EXPECT_TRUE(view.IsComplete());
   auto header = view.header();
 
-  EXPECT_EQ(header.opcode_enum().Read(), emboss::OpCode::UNSPECIFIED);
-  EXPECT_EQ(header.opcode().BackingStorage().ReadUInt(), 0x0000);
+  EXPECT_EQ(header.opcode().Read(), emboss::OpCode::UNSPECIFIED);
+  EXPECT_EQ(header.opcode_bits().BackingStorage().ReadUInt(), 0x0000);
   EXPECT_EQ(header.opcode_bits().ogf().Read(), 0x00);
   EXPECT_EQ(header.opcode_bits().ocf().Read(), 0x00);
-  // TODO: https://pwbug.dev/338068316 - Delete these opcode type
-  // OpCodeBits cases once opcode has type OpCode.
-  EXPECT_EQ(header.opcode().ogf().Read(), 0x00);
-  EXPECT_EQ(header.opcode().ocf().Read(), 0x00);
 
   // LINK_KEY_REQUEST_REPLY is OGF 0x01 and OCF 0x0B.
-  header.opcode_enum().Write(emboss::OpCode::LINK_KEY_REQUEST_REPLY);
-  EXPECT_EQ(header.opcode_enum().Read(),
-            emboss::OpCode::LINK_KEY_REQUEST_REPLY);
-  EXPECT_EQ(header.opcode().BackingStorage().ReadUInt(), 0x040B);
+  header.opcode().Write(emboss::OpCode::LINK_KEY_REQUEST_REPLY);
+  EXPECT_EQ(header.opcode().Read(), emboss::OpCode::LINK_KEY_REQUEST_REPLY);
+  EXPECT_EQ(header.opcode_bits().BackingStorage().ReadUInt(), 0x040B);
   EXPECT_EQ(header.opcode_bits().ogf().Read(), 0x01);
   EXPECT_EQ(header.opcode_bits().ocf().Read(), 0x0B);
-  // TODO: https://pwbug.dev/338068316 - Delete these opcode type
-  // OpCodeBits cases once opcode has type OpCode.
-  EXPECT_EQ(header.opcode().ogf().Read(), 0x01);
-  EXPECT_EQ(header.opcode().ocf().Read(), 0x0B);
 }
 
 // Test and demonstrate various ways of writing opcodes.
@@ -186,17 +177,16 @@ TEST(EmbossTest, WriteOpcodesFromCommandHeader) {
   EXPECT_TRUE(view.IsComplete());
   auto header = view.header();
 
-  header.opcode_enum().Write(emboss::OpCode::UNSPECIFIED);
-  EXPECT_EQ(header.opcode().BackingStorage().ReadUInt(), 0x0000);
+  header.opcode().Write(emboss::OpCode::UNSPECIFIED);
+  EXPECT_EQ(header.opcode_bits().BackingStorage().ReadUInt(), 0x0000);
 
-  header.opcode().ocf().Write(0x0B);
-  EXPECT_EQ(header.opcode().BackingStorage().ReadUInt(), 0x000B);
+  header.opcode_bits().ocf().Write(0x0B);
+  EXPECT_EQ(header.opcode_bits().BackingStorage().ReadUInt(), 0x000B);
 
-  header.opcode().ogf().Write(0x01);
-  EXPECT_EQ(header.opcode().BackingStorage().ReadUInt(), 0x040B);
+  header.opcode_bits().ogf().Write(0x01);
+  EXPECT_EQ(header.opcode_bits().BackingStorage().ReadUInt(), 0x040B);
   // LINK_KEY_REQUEST_REPLY is OGF 0x01 and OCF 0x0B.
-  EXPECT_EQ(header.opcode_enum().Read(),
-            emboss::OpCode::LINK_KEY_REQUEST_REPLY);
+  EXPECT_EQ(header.opcode().Read(), emboss::OpCode::LINK_KEY_REQUEST_REPLY);
 }
 
 // Test and demonstrate using to_underlying with OpCodes enums
@@ -214,27 +204,19 @@ TEST(EmbossTest, ReadAndWriteOpcodesInCommandResponseHeader) {
   EXPECT_TRUE(view.IsComplete());
   auto header = view.command_complete();
 
-  header.command_opcode().BackingStorage().WriteUInt(0x0000);
-  EXPECT_EQ(header.command_opcode_enum().Read(), emboss::OpCode::UNSPECIFIED);
-  EXPECT_EQ(header.command_opcode().BackingStorage().ReadUInt(), 0x0000);
+  header.command_opcode_uint().Write(0x0000);
+  EXPECT_EQ(header.command_opcode().Read(), emboss::OpCode::UNSPECIFIED);
+  EXPECT_EQ(header.command_opcode_bits().BackingStorage().ReadUInt(), 0x0000);
   EXPECT_EQ(header.command_opcode_bits().ogf().Read(), 0x00);
   EXPECT_EQ(header.command_opcode_bits().ocf().Read(), 0x00);
-  // TODO: https://pwbug.dev/338068316 - Delete these command_opcode type
-  // OpCodeBits cases once command_opcode has type OpCode.
-  EXPECT_EQ(header.command_opcode().ogf().Read(), 0x00);
-  EXPECT_EQ(header.command_opcode().ocf().Read(), 0x00);
 
   // LINK_KEY_REQUEST_REPLY is OGF 0x01 and OCF 0x0B.
-  header.command_opcode_enum().Write(emboss::OpCode::LINK_KEY_REQUEST_REPLY);
-  EXPECT_EQ(header.command_opcode_enum().Read(),
+  header.command_opcode().Write(emboss::OpCode::LINK_KEY_REQUEST_REPLY);
+  EXPECT_EQ(header.command_opcode().Read(),
             emboss::OpCode::LINK_KEY_REQUEST_REPLY);
-  EXPECT_EQ(header.command_opcode().BackingStorage().ReadUInt(), 0x040B);
+  EXPECT_EQ(header.command_opcode_bits().BackingStorage().ReadUInt(), 0x040B);
   EXPECT_EQ(header.command_opcode_bits().ogf().Read(), 0x01);
   EXPECT_EQ(header.command_opcode_bits().ocf().Read(), 0x0B);
-  // TODO: https://pwbug.dev/338068316 - Delete these command_opcode type
-  // OpCodeBits cases once command_opcode has type OpCode.
-  EXPECT_EQ(header.command_opcode().ogf().Read(), 0x01);
-  EXPECT_EQ(header.command_opcode().ocf().Read(), 0x0B);
 }
 
 TEST(EmbossTest, ReadAndWriteEventCodesInEventHeader) {
@@ -245,20 +227,17 @@ TEST(EmbossTest, ReadAndWriteEventCodesInEventHeader) {
 
   header.event_code_uint().Write(
       cpp23::to_underlying(emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS));
-  EXPECT_EQ(header.event_code_enum().Read(),
+  EXPECT_EQ(header.event_code().Read(),
             emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
   EXPECT_EQ(
       header.event_code_uint().Read(),
       cpp23::to_underlying(emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS));
 
-  // TODO: https://pwbug.dev/338068316 - Delete these event_code type
-  // UInt cases once event_code has type EventCode.
   EXPECT_EQ(
-      header.event_code().Read(),
+      header.event_code_uint().Read(),
       cpp23::to_underlying(emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS));
 
-  header.event_code().Write(
-      cpp23::to_underlying(emboss::EventCode::CONNECTION_REQUEST));
+  header.event_code().Write(emboss::EventCode::CONNECTION_REQUEST);
   EXPECT_EQ(header.event_code_uint().Read(),
             cpp23::to_underlying(emboss::EventCode::CONNECTION_REQUEST));
 }
@@ -316,7 +295,7 @@ TEST(EmbossTest, WriteSniffMode) {
   std::array<uint8_t, emboss::SniffModeCommandWriter::SizeInBytes()> buffer{};
   emboss::SniffModeCommandWriter writer =
       emboss::MakeSniffModeCommandView(&buffer);
-  writer.header().opcode_enum().Write(emboss::OpCode::SNIFF_MODE);
+  writer.header().opcode().Write(emboss::OpCode::SNIFF_MODE);
   writer.header().parameter_total_size().Write(
       emboss::SniffModeCommandWriter::SizeInBytes() -
       emboss::CommandHeaderWriter::SizeInBytes());
@@ -372,7 +351,7 @@ TEST(EmbossTest, ReadSniffMode) {
       0x01,
       0x00};
   emboss::SniffModeCommandView view = emboss::MakeSniffModeCommandView(&buffer);
-  EXPECT_EQ(view.header().opcode_enum().Read(), emboss::OpCode::SNIFF_MODE);
+  EXPECT_EQ(view.header().opcode().Read(), emboss::OpCode::SNIFF_MODE);
   EXPECT_TRUE(view.header().IsComplete());
   EXPECT_EQ(view.connection_handle().Read(), 0x0004);
   EXPECT_EQ(view.sniff_max_interval().Read(), 0x0330);

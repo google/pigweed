@@ -225,7 +225,7 @@ ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent(const EventPacket& event) {
   }
   auto view = event.unchecked_view<
       pw::bluetooth::emboss::NumberOfCompletedPacketsEventView>();
-  PW_CHECK(view.header().event_code_enum().Read() ==
+  PW_CHECK(view.header().event_code().Read() ==
            pw::bluetooth::emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
   const size_t handles_in_packet =

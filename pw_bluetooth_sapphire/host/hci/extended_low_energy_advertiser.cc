@@ -446,13 +446,13 @@ CommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
 void ExtendedLowEnergyAdvertiser::OnSetAdvertisingParamsComplete(
     const EventPacket& event) {
   auto event_view = event.view<pw::bluetooth::emboss::EventHeaderView>();
-  PW_CHECK(event_view.event_code_enum().Read() ==
+  PW_CHECK(event_view.event_code().Read() ==
            pw::bluetooth::emboss::EventCode::COMMAND_COMPLETE);
 
   auto cmd_complete_view =
       event.view<pw::bluetooth::emboss::CommandCompleteEventView>();
   PW_CHECK(
-      cmd_complete_view.command_opcode_enum().Read() ==
+      cmd_complete_view.command_opcode().Read() ==
       pw::bluetooth::emboss::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1);
 
   Result<> result = event.ToResult();

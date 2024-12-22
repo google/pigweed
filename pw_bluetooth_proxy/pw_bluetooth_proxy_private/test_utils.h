@@ -105,7 +105,7 @@ Result<EmbossT> CreateAndPopulateToControllerView(H4PacketWithH4& h4_packet,
   std::iota(h4_packet.GetHciSpan().begin(), h4_packet.GetHciSpan().end(), 100);
   h4_packet.SetH4Type(emboss::H4PacketType::COMMAND);
   PW_TRY_ASSIGN(auto view, MakeEmbossWriter<EmbossT>(h4_packet.GetHciSpan()));
-  view.header().opcode_enum().Write(opcode);
+  view.header().opcode().Write(opcode);
   view.header().parameter_total_size().Write(parameter_total_size);
   return view;
 }
@@ -118,7 +118,7 @@ Result<EmbossT> CreateAndPopulateToHostEventView(H4PacketWithHci& h4_packet,
   h4_packet.SetH4Type(emboss::H4PacketType::EVENT);
 
   PW_TRY_ASSIGN(auto view, MakeEmbossWriter<EmbossT>(h4_packet.GetHciSpan()));
-  view.header().event_code_enum().Write(event_code);
+  view.header().event_code().Write(event_code);
   view.status().Write(emboss::StatusCode::SUCCESS);
   EXPECT_TRUE(view.Ok());
   return view;
@@ -152,7 +152,7 @@ Status SendNumberOfCompletedPackets(
   PW_TRY_ASSIGN(auto view,
                 MakeEmbossWriter<emboss::NumberOfCompletedPacketsEventWriter>(
                     nocp_event.GetHciSpan()));
-  view.header().event_code_enum().Write(
+  view.header().event_code().Write(
       emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
   view.num_handles().Write(kNumConnections);
 

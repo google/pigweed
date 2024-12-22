@@ -212,7 +212,7 @@ TEST_F(PassthroughTest, ToHostPassesEqualCommandComplete) {
       CreateAndPopulateToHostEventView<
           emboss::ReadLocalVersionInfoCommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
-  view.command_complete().command_opcode_enum().Write(
+  view.command_complete().command_opcode().Write(
       emboss::OpCode::READ_LOCAL_VERSION_INFO);
 
   // Struct for capturing because `pw::Function` can't fit multiple captures.
@@ -462,7 +462,7 @@ TEST_F(BadPacketTest, TooShortCommandCompleteEventToHost) {
       CreateAndPopulateToHostEventView<
           emboss::ReadLocalVersionInfoCommandCompleteEventWriter>(
           valid_packet, emboss::EventCode::COMMAND_COMPLETE));
-  view.command_complete().command_opcode_enum().Write(
+  view.command_complete().command_opcode().Write(
       emboss::OpCode::READ_LOCAL_VERSION_INFO);
 
   // Create packet for sending whose span size is one less than a valid command
@@ -530,7 +530,7 @@ TEST_F(ReserveLeAclCreditsTest, ProxyCreditsReserveCreditsWithReadBufferSize) {
       CreateAndPopulateToHostEventView<
           emboss::ReadBufferSizeCommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
-  view.command_complete().command_opcode_enum().Write(
+  view.command_complete().command_opcode().Write(
       emboss::OpCode::READ_BUFFER_SIZE);
   view.total_num_acl_data_packets().Write(10);
 
@@ -579,7 +579,7 @@ TEST_F(ReserveLeAclCreditsTest,
       CreateAndPopulateToHostEventView<
           emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
-  view.command_complete().command_opcode_enum().Write(
+  view.command_complete().command_opcode().Write(
       emboss::OpCode::LE_READ_BUFFER_SIZE_V1);
   view.total_num_le_acl_data_packets().Write(10);
 
@@ -630,7 +630,7 @@ TEST_F(ReserveLeAclCreditsTest,
       CreateAndPopulateToHostEventView<
           emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
-  view.command_complete().command_opcode_enum().Write(
+  view.command_complete().command_opcode().Write(
       emboss::OpCode::LE_READ_BUFFER_SIZE_V2);
   view.total_num_le_acl_data_packets().Write(10);
 
@@ -679,7 +679,7 @@ TEST_F(ReserveLeAclCreditsTest, ProxyCreditsCappedByControllerCredits) {
       CreateAndPopulateToHostEventView<
           emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
-  view.command_complete().command_opcode_enum().Write(
+  view.command_complete().command_opcode().Write(
       emboss::OpCode::LE_READ_BUFFER_SIZE_V1);
   view.total_num_le_acl_data_packets().Write(5);
 
@@ -725,7 +725,7 @@ TEST_F(ReserveLeAclCreditsTest, ProxyCreditsReserveZeroCredits) {
       CreateAndPopulateToHostEventView<
           emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
-  view.command_complete().command_opcode_enum().Write(
+  view.command_complete().command_opcode().Write(
       emboss::OpCode::LE_READ_BUFFER_SIZE_V1);
   view.total_num_le_acl_data_packets().Write(10);
 
@@ -774,7 +774,7 @@ TEST_F(ReserveLeAclCreditsTest, ProxyCreditsZeroWhenHostCreditsZero) {
       CreateAndPopulateToHostEventView<
           emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
-  view.command_complete().command_opcode_enum().Write(
+  view.command_complete().command_opcode().Write(
       emboss::OpCode::LE_READ_BUFFER_SIZE_V1);
   view.total_num_le_acl_data_packets().Write(0);
 
@@ -1051,7 +1051,7 @@ TEST_F(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
             MakeEmbossView<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
                 0, emboss::EventHeader::IntrinsicSizeInBytes())));
         capture.sends_called++;
-        if (event_header.event_code_enum().Read() !=
+        if (event_header.event_code().Read() !=
             emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
           return;
         }
@@ -1062,7 +1062,7 @@ TEST_F(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
                 packet.GetHciSpan()));
         EXPECT_EQ(packet.GetHciSpan().size(), 15ul);
         EXPECT_EQ(view.num_handles().Read(), capture.connection_handles.size());
-        EXPECT_EQ(view.header().event_code_enum().Read(),
+        EXPECT_EQ(view.header().event_code().Read(),
                   emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
         // Proxy should have reclaimed 1 credit from Connection 0 (leaving 0
@@ -1151,7 +1151,7 @@ TEST_F(NumberOfCompletedPacketsTest,
             MakeEmbossView<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
                 0, emboss::EventHeader::IntrinsicSizeInBytes())));
         capture.sends_called++;
-        if (event_header.event_code_enum().Read() !=
+        if (event_header.event_code().Read() !=
             emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
           return;
         }
@@ -1162,7 +1162,7 @@ TEST_F(NumberOfCompletedPacketsTest,
                 packet.GetHciSpan()));
         EXPECT_EQ(packet.GetHciSpan().size(), 11ul);
         EXPECT_EQ(view.num_handles().Read(), capture.connection_handles.size());
-        EXPECT_EQ(view.header().event_code_enum().Read(),
+        EXPECT_EQ(view.header().event_code().Read(),
                   emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
         // Proxy should have reclaimed 1 credit from Connection 0 (leaving
@@ -1231,7 +1231,7 @@ TEST_F(NumberOfCompletedPacketsTest, ProxyReclaimsOnlyItsUsedCredits) {
             MakeEmbossView<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
                 0, emboss::EventHeader::IntrinsicSizeInBytes())));
         capture.sends_called++;
-        if (event_header.event_code_enum().Read() !=
+        if (event_header.event_code().Read() !=
             emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
           return;
         }
@@ -1242,7 +1242,7 @@ TEST_F(NumberOfCompletedPacketsTest, ProxyReclaimsOnlyItsUsedCredits) {
                 packet.GetHciSpan()));
         EXPECT_EQ(packet.GetHciSpan().size(), 11ul);
         EXPECT_EQ(view.num_handles().Read(), 2);
-        EXPECT_EQ(view.header().event_code_enum().Read(),
+        EXPECT_EQ(view.header().event_code().Read(),
                   emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
         // Proxy has 4 credits it wants to reclaim, but it should have only
@@ -1309,7 +1309,7 @@ TEST_F(NumberOfCompletedPacketsTest, EventUnmodifiedIfNoCreditsInUse) {
             MakeEmbossView<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
                 0, emboss::EventHeader::IntrinsicSizeInBytes())));
         capture.sends_called++;
-        if (event_header.event_code_enum().Read() !=
+        if (event_header.event_code().Read() !=
             emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
           return;
         }
@@ -1320,7 +1320,7 @@ TEST_F(NumberOfCompletedPacketsTest, EventUnmodifiedIfNoCreditsInUse) {
                 packet.GetHciSpan()));
         EXPECT_EQ(packet.GetHciSpan().size(), 11ul);
         EXPECT_EQ(view.num_handles().Read(), 2);
-        EXPECT_EQ(view.header().event_code_enum().Read(),
+        EXPECT_EQ(view.header().event_code().Read(),
                   emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
         // Event should be unmodified.
@@ -1368,7 +1368,7 @@ TEST_F(NumberOfCompletedPacketsTest, HandlesUnusualEvents) {
             MakeEmbossView<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
                 0, emboss::EventHeader::IntrinsicSizeInBytes())));
         capture.sends_called++;
-        if (event_header.event_code_enum().Read() !=
+        if (event_header.event_code().Read() !=
             emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
           return;
         }
@@ -1383,7 +1383,7 @@ TEST_F(NumberOfCompletedPacketsTest, HandlesUnusualEvents) {
 
         EXPECT_EQ(packet.GetHciSpan().size(), 23ul);
         EXPECT_EQ(view.num_handles().Read(), 5);
-        EXPECT_EQ(view.header().event_code_enum().Read(),
+        EXPECT_EQ(view.header().event_code().Read(),
                   emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
         // Event should be unmodified.
@@ -1497,7 +1497,7 @@ TEST_F(DisconnectionCompleteTest, DisconnectionReclaimsCredits) {
             MakeEmbossView<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
                 0, emboss::EventHeader::IntrinsicSizeInBytes())));
         capture.sends_called++;
-        if (event_header.event_code_enum().Read() !=
+        if (event_header.event_code().Read() !=
             emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
           return;
         }
@@ -1508,7 +1508,7 @@ TEST_F(DisconnectionCompleteTest, DisconnectionReclaimsCredits) {
                 packet.GetHciSpan()));
         EXPECT_EQ(packet.GetHciSpan().size(), 7ul);
         EXPECT_EQ(view.num_handles().Read(), 1);
-        EXPECT_EQ(view.header().event_code_enum().Read(),
+        EXPECT_EQ(view.header().event_code().Read(),
                   emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
         // Event should be unmodified.
@@ -1647,7 +1647,7 @@ TEST_F(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
             MakeEmbossView<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
                 0, emboss::EventHeader::IntrinsicSizeInBytes())));
         capture.sends_called++;
-        if (event_header.event_code_enum().Read() !=
+        if (event_header.event_code().Read() !=
             emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
           return;
         }
@@ -1658,7 +1658,7 @@ TEST_F(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
                 packet.GetHciSpan()));
         EXPECT_EQ(packet.GetHciSpan().size(), 7ul);
         EXPECT_EQ(view.num_handles().Read(), 1);
-        EXPECT_EQ(view.header().event_code_enum().Read(),
+        EXPECT_EQ(view.header().event_code().Read(),
                   emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
         // Should have reclaimed the 1 packet.
@@ -1729,7 +1729,7 @@ TEST_F(ResetTest, ResetClearsActiveConnections) {
             MakeEmbossView<emboss::EventHeaderView>(packet.GetHciSpan().subspan(
                 0, emboss::EventHeader::IntrinsicSizeInBytes())));
         host_capture.sends_called++;
-        if (event_header.event_code_enum().Read() !=
+        if (event_header.event_code().Read() !=
             emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS) {
           return;
         }
@@ -1740,7 +1740,7 @@ TEST_F(ResetTest, ResetClearsActiveConnections) {
                 packet.GetHciSpan()));
         EXPECT_EQ(packet.GetHciSpan().size(), 7ul);
         EXPECT_EQ(view.num_handles().Read(), 1);
-        EXPECT_EQ(view.header().event_code_enum().Read(),
+        EXPECT_EQ(view.header().event_code().Read(),
                   emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
 
         // Should be unchanged.

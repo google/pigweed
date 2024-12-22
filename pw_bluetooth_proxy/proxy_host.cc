@@ -145,7 +145,7 @@ void ProxyHost::HandleEventFromController(H4PacketWithHci&& h4_packet) {
 
   PW_MODIFY_DIAGNOSTICS_PUSH();
   PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
-  switch (event->event_code_enum().Read()) {
+  switch (event->event_code().Read()) {
     case emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS: {
       acl_data_channel_.HandleNumberOfCompletedPacketsEvent(
           std::move(h4_packet));
@@ -191,7 +191,7 @@ void ProxyHost::HandleEventFromHost(H4PacketWithH4&& h4_packet) {
 
   PW_MODIFY_DIAGNOSTICS_PUSH();
   PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
-  switch (event->event_code_enum().Read()) {
+  switch (event->event_code().Read()) {
     case emboss::EventCode::DISCONNECTION_COMPLETE: {
       acl_data_channel_.ProcessDisconnectionCompleteEvent(
           h4_packet.GetHciSpan());
@@ -307,7 +307,7 @@ void ProxyHost::HandleCommandCompleteEvent(H4PacketWithHci&& h4_packet) {
 
   PW_MODIFY_DIAGNOSTICS_PUSH();
   PW_MODIFY_DIAGNOSTIC(ignored, "-Wswitch-enum");
-  switch (command_complete_event->command_opcode_enum().Read()) {
+  switch (command_complete_event->command_opcode().Read()) {
     case emboss::OpCode::READ_BUFFER_SIZE: {
       Result<emboss::ReadBufferSizeCommandCompleteEventWriter> read_event =
           MakeEmbossWriter<emboss::ReadBufferSizeCommandCompleteEventWriter>(
@@ -367,7 +367,7 @@ void ProxyHost::HandleCommandFromHost(H4PacketWithH4&& h4_packet) {
 
   // TODO: https://pwbug.dev/381902130 - Handle reset on command complete
   // successful instead. Also event to container on reset.
-  if (command->header().opcode_enum().Read() == emboss::OpCode::RESET) {
+  if (command->header().opcode().Read() == emboss::OpCode::RESET) {
     PW_LOG_INFO("Resetting proxy on seeing RESET command.");
     Reset();
   }
