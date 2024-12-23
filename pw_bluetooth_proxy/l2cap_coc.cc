@@ -44,6 +44,9 @@ L2capCoc::L2capCoc(L2capCoc&& other)
   std::lock_guard other_lock(other.mutex_);
   tx_credits_ = other.tx_credits_;
   remaining_sdu_bytes_to_ignore_ = other.remaining_sdu_bytes_to_ignore_;
+  rx_sdu_ = std::move(other.rx_sdu_);
+  rx_sdu_offset_ = other.rx_sdu_offset_;
+  rx_sdu_bytes_remaining_ = other.rx_sdu_bytes_remaining_;
 }
 
 pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
@@ -374,10 +377,9 @@ L2capCoc::L2capCoc(
       rx_mps_(rx_config.mps),
       tx_mtu_(tx_config.mtu),
       tx_mps_(tx_config.mps),
-      tx_credits_(tx_config.credits),
-      remaining_sdu_bytes_to_ignore_(0),
       payload_from_controller_fn_(std::move(payload_from_controller_fn)),
-      receive_fn_multibuf_(std::move(receive_fn_multibuf)) {}
+      receive_fn_multibuf_(std::move(receive_fn_multibuf)),
+      tx_credits_(tx_config.credits) {}
 
 std::optional<H4PacketWithH4> L2capCoc::DequeuePacket() {
   if (state() != State::kRunning) {

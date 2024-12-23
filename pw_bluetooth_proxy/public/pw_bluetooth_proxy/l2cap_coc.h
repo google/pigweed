@@ -161,16 +161,16 @@ class L2capCoc : public L2capChannel {
 
   multibuf::MultiBufAllocator& rx_multibuf_allocator_;
   L2capSignalingChannel* signaling_channel_;
-  sync::Mutex mutex_;
   uint16_t rx_mtu_;
   uint16_t rx_mps_;
   uint16_t tx_mtu_;
   uint16_t tx_mps_;
-  uint16_t tx_credits_ PW_GUARDED_BY(mutex_);
-  uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(mutex_);
   Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
-
   Function<void(multibuf::MultiBuf&& payload)> receive_fn_multibuf_;
+
+  sync::Mutex mutex_;
+  uint16_t tx_credits_ PW_GUARDED_BY(mutex_);
+  uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(mutex_) = 0;
   std::optional<multibuf::MultiBuf> rx_sdu_ PW_GUARDED_BY(mutex_);
   uint16_t rx_sdu_offset_ PW_GUARDED_BY(mutex_) = 0;
   uint16_t rx_sdu_bytes_remaining_ PW_GUARDED_BY(mutex_) = 0;
