@@ -22,7 +22,7 @@ from . import presubmit, presubmit_context
 # List borrowed from Android:
 # https://source.android.com/setup/contribute/respectful-code
 # inclusive-language: disable
-NON_INCLUSIVE_WORDS = [
+NON_INCLUSIVE_WORDS = (
     r'master',
     r'slave',
     r'red[-\s]?line',
@@ -40,18 +40,18 @@ NON_INCLUSIVE_WORDS = [
     r'm[ae]n[-\s]*in[-\s]*the[-\s]*middle',
     r'mitm',
     r'first[-\s]?class[-\s]?citizen',
-]
+)
 # inclusive-language: enable
 
 # Test: master  # inclusive-language: ignore
 # Test: master
 
 
-def _process_inclusive_language(*words):
+def _process_inclusive_language(*words: str) -> re.Pattern[str]:
     """Turn word list into one big regex with common inflections."""
 
     if not words:
-        words = tuple(NON_INCLUSIVE_WORDS)
+        words = NON_INCLUSIVE_WORDS
 
     all_words = []
     for entry in words:
@@ -60,7 +60,6 @@ def _process_inclusive_language(*words):
         elif isinstance(entry, (list, tuple)):
             all_words.extend(entry)
         all_words.extend(x for x in words)
-    all_words = tuple(all_words)
 
     # Confirm each individual word compiles as a valid regex.
     for word in all_words:
@@ -86,31 +85,39 @@ IGNORE = 'inclusive-language: ignore'
 DISABLE = 'inclusive-language: disable'
 ENABLE = 'inclusive-language: enable'
 
+ISSUE_TYPE = 'non-inclusive word'
 
-@dataclasses.dataclass
+
+@dataclasses.dataclass(frozen=True)
 class PathMatch:
+    issue_type: str
     word: str
 
     def __repr__(self):
-        return f'Found non-inclusive word "{self.word}" in file path'
+        return f'Found {self.issue_type} "{self.word}" in file path'
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class LineMatch:
+    issue_type: str
     line: int
     word: str
 
     def __repr__(self):
-        return f'Found non-inclusive word "{self.word}" on line {self.line}'
+        return f'Found {self.issue_type} "{self.word}" on line {self.line}'
 
 
 def check_file(
     path: Path,
     found_words: dict[Path, list[PathMatch | LineMatch]],
-    words_regex: re.Pattern = NON_INCLUSIVE_WORDS_REGEX,
+    words_regex: re.Pattern[str] = NON_INCLUSIVE_WORDS_REGEX,
+    disable_tag: str = DISABLE,
+    enable_tag: str = ENABLE,
+    ignore_tag: str = IGNORE,
+    issue_type: str = ISSUE_TYPE,
     check_path: bool = True,
     root: Path | None = None,
-):
+) -> None:
     """Check one file for non-inclusive language.
 
     Args:
@@ -125,7 +132,7 @@ def check_file(
         match = words_regex.search(str(path))
         if match:
             found_words.setdefault(path, [])
-            found_words[path].append(PathMatch(match.group(0)))
+            found_words[path].append(PathMatch(issue_type, match.group(0)))
 
     if path.is_symlink() or path.is_dir():
         return
@@ -138,21 +145,23 @@ def check_file(
             enabled = True
             prev = ''
             for i, line in enumerate(ins, start=1):
-                if DISABLE in line:
+                if disable_tag in line:
                     enabled = False
-                if ENABLE in line:
+                if enable_tag in line:
                     enabled = True
 
                 # If we see the ignore line on this or the previous line we
                 # ignore any bad words on this line.
-                ignored = IGNORE in prev or IGNORE in line
+                ignored = ignore_tag in prev or ignore_tag in line
 
                 if enabled and not ignored:
                     match = words_regex.search(line)
 
                     if match:
                         found_words.setdefault(path, [])
-                        found_words[path].append(LineMatch(i, match.group(0)))
+                        found_words[path].append(
+                            LineMatch(issue_type, i, match.group(0))
+                        )
 
                 # Not using 'continue' so this line always executes.
                 prev = line
@@ -162,11 +171,15 @@ def check_file(
         pass
 
 
-@presubmit.check(name='inclusive_language')
-def presubmit_check(
+def generic_presubmit_check(
     ctx: presubmit_context.PresubmitContext,
-    words_regex=NON_INCLUSIVE_WORDS_REGEX,
-):
+    words_regex: re.Pattern[str],
+    *,
+    disable_tag: str,
+    enable_tag: str,
+    ignore_tag: str,
+    issue_type: str,
+) -> None:
     """Presubmit check that ensures files do not contain banned words."""
 
     # No subprocesses are run for inclusive_language so don't perform this check
@@ -183,6 +196,10 @@ def presubmit_check(
             path.relative_to(ctx.root),
             found_words,
             words_regex,
+            disable_tag=disable_tag,
+            enable_tag=enable_tag,
+            ignore_tag=ignore_tag,
+            issue_type=issue_type,
             root=ctx.root,
         )
 
@@ -199,15 +216,25 @@ def presubmit_check(
 
         print()
         print(
-            """
-Individual lines can be ignored with "inclusive-language: ignore". Blocks can be
-ignored with "inclusive-language: disable" and reenabled with
-"inclusive-language: enable".
+            f"""
+Individual lines can be ignored with "{ignore_tag}". Blocks can be
+ignored with "{disable_tag}" and reenabled with
+"{enable_tag}".
 """.strip()
         )
-        # Re-enable just in case: inclusive-language: enable.
-
         raise presubmit_context.PresubmitFailure
+
+
+@presubmit.check(name='inclusive_language')
+def presubmit_check(ctx: presubmit_context.PresubmitContext) -> None:
+    generic_presubmit_check(
+        ctx,
+        words_regex=NON_INCLUSIVE_WORDS_REGEX,
+        disable_tag=DISABLE,
+        enable_tag=ENABLE,
+        ignore_tag=IGNORE,
+        issue_type=ISSUE_TYPE,
+    )
 
 
 def inclusive_language_checker(*words):

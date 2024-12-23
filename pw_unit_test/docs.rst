@@ -692,6 +692,7 @@ API reference
 =============
 .. doxygendefine:: PW_CONSTEXPR_TEST
 
+.. block-submission: disable
 .. c:macro:: SKIP_CONSTEXPR_TESTS_DONT_SUBMIT
 
    Define the ``SKIP_CONSTEXPR_TESTS_DONT_SUBMIT`` macro to temporarily disable
@@ -706,6 +707,7 @@ API reference
       :language: cpp
       :start-after: [pw_unit_test-constexpr-skip]
       :end-before: [pw_unit_test-constexpr-skip]
+.. block-submission: enable
 
 --------------------
 Python API reference

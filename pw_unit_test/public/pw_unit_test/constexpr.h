@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+// block-submission: disable
 /// @file pw_unit_test/constexpr.h
 ///
 /// The @c_macro{PW_CONSTEXPR_TEST} macro defines a test that is executed both
@@ -68,6 +69,7 @@
 /// `cpp20::is_constant_evaluated()`. If the compiler does not support
 /// `is_constant_evaluated`, only the regular GoogleTest version will run. Note
 /// that compiler support is independent of the C++ standard in use.
+// block-submission: enable
 
 #include <limits>
 
@@ -160,6 +162,7 @@
     ASSERT_##macro(__VA_ARGS__)
 
 // Expands to the provided expression if constexpr tests are enabled.
+// block-submission: disable
 #define _PW_IF_CONSTEXPR_TEST(a)              \
   PW_CONCAT(                                  \
       _PW_IF_CONSTEXPR_TEST_,                 \
@@ -179,6 +182,7 @@
 #define _PW_CONSTEXPR_TEST_1 0
 #define _PW_CONSTEXPR_TEST_0 \
   _Do_not_define_SKIP_CONSTEXPR_TESTS_DONT_SUBMIT_to_0_remove_it_instead
+// block-submission: enable
 
 namespace pw::unit_test::internal {
 

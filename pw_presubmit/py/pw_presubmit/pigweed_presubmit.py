@@ -32,6 +32,7 @@ from pw_cli.file_filter import FileFilter
 import pw_package.pigweed_packages
 from pw_presubmit import (
     bazel_checks,
+    block_submission,
     build,
     cli,
     cpp_checks,
@@ -1811,6 +1812,7 @@ _LINTFORMAT = (
             r'\byarn.lock$',
         )
     ),
+    block_submission.presubmit_check,
     cpp_checks.pragma_once,
     build.bazel_lint,
     owners_lint_checks,

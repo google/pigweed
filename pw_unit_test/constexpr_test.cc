@@ -81,6 +81,7 @@ PW_CONSTEXPR_TEST(PwConstexprTest, CommasOutsideMacrosExpandCorrectly, {
   PW_TEST_EXPECT_EQ(sum, c);
 });
 
+// block-submission: disable
 // DOCSTAG[pw_unit_test-constexpr-skip]
 // Subsequent PW_CONSTEXPR_TESTs will skip the constexpr portion of the test.
 // This allows you to use the richer GoogleTest-style output to debug failures.
@@ -98,6 +99,7 @@ PW_CONSTEXPR_TEST(PwConstexprTest, NotConstexprButDisabledByMacro, {
 // Now, constexpr tests will no longer be skipped, and the same test will fail.
 #undef SKIP_CONSTEXPR_TESTS_DONT_SUBMIT
 // DOCSTAG[pw_unit_test-constexpr-skip]
+// block-submission: enable
 
 #if PW_NC_TEST(NonConstexprFailsToCompile)
 PW_NC_EXPECT("NotConstexpr");
