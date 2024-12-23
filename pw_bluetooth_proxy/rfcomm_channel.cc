@@ -63,7 +63,8 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
                             payload.size();
 
   // TODO: https://pwbug.dev/379337260 - Support fragmentation.
-  pw::Result<H4PacketWithH4> h4_result = PopulateTxL2capPacket(frame_size);
+  pw::Result<H4PacketWithH4> h4_result =
+      PopulateTxL2capPacketDuringWrite(frame_size);
   if (!h4_result.ok()) {
     return h4_result.status();
   }

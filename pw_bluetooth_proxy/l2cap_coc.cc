@@ -21,6 +21,7 @@
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
+#include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_log/log.h"
@@ -55,9 +56,13 @@ L2capCoc::L2capCoc(L2capCoc&& other)
   }
 }
 
-pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
+StatusWithMultiBuf L2capCoc::Write(multibuf::MultiBuf&& payload) {
+  if (!payload.IsContiguous()) {
+    return {Status::InvalidArgument(), std::move(payload)};
+  }
+
   if (state() != State::kRunning) {
-    return Status::FailedPrecondition();
+    return {Status::FailedPrecondition(), std::move(payload)};
   }
 
   if (payload.size() > tx_mtu_) {
@@ -65,74 +70,10 @@ pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
         "Payload (%zu bytes) exceeds MTU (%d bytes). So will not process.",
         payload.size(),
         tx_mtu_);
-    return pw::Status::InvalidArgument();
-  }
-  // We do not currently support segmentation, so the payload is required to fit
-  // within the remote peer's Maximum PDU payload Size.
-  // TODO: https://pwbug.dev/360932103 - Support packet segmentation.
-  if (payload.size() > tx_mps_) {
-    PW_LOG_ERROR(
-        "Payload (%zu bytes) exceeds MPS (%d bytes). So will not process.",
-        payload.size(),
-        tx_mps_);
-    return pw::Status::InvalidArgument();
+    return {Status::InvalidArgument(), std::move(payload)};
   }
 
-  // 2 bytes for SDU length field
-  size_t l2cap_data_length = payload.size() + 2;
-  pw::Result<H4PacketWithH4> h4_result =
-      PopulateTxL2capPacket(l2cap_data_length);
-  if (!h4_result.ok()) {
-    // This can fail as a result of the L2CAP PDU not fitting in an H4 buffer
-    // or if all buffers are occupied.
-    // TODO: https://pwbug.dev/379337260 - Once we support ACL fragmentation,
-    // this function will not fail due to the L2CAP PDU size not fitting.
-    return h4_result.status();
-  }
-  H4PacketWithH4 h4_packet = std::move(*h4_result);
-
-  PW_TRY_ASSIGN(
-      auto acl,
-      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan()));
-  // Write payload.
-  PW_TRY_ASSIGN(auto kframe,
-                MakeEmbossWriter<emboss::FirstKFrameWriter>(
-                    acl.payload().BackingStorage().data(),
-                    acl.payload().BackingStorage().SizeInBytes()));
-  kframe.sdu_length().Write(payload.size());
-  if (!payload.empty()) {
-    std::memcpy(kframe.payload().BackingStorage().data(),
-                payload.data(),
-                payload.size());
-  }
-
-  return QueuePacket(std::move(h4_packet));
-}
-
-namespace {
-
-pw::span<const uint8_t> AsConstUint8Span(ConstByteSpan s) {
-  return {reinterpret_cast<const uint8_t*>(s.data()), s.size_bytes()};
-}
-
-}  // namespace
-
-StatusWithMultiBuf L2capCoc::Write(pw::multibuf::MultiBuf&& payload) {
-  if (!payload.IsContiguous()) {
-    return StatusWithMultiBuf{.status = Status::InvalidArgument()};
-  }
-
-  std::optional<ByteSpan> payload_span = payload.ContiguousSpan();
-  if (!payload_span) {
-    return StatusWithMultiBuf{.status = Status::InvalidArgument()};
-  }
-
-  Status status = Write(AsConstUint8Span(*payload_span));
-  if (!status.ok()) {
-    return StatusWithMultiBuf{.status = status, .buf = {std::move(payload)}};
-  }
-
-  return StatusWithMultiBuf{.status = pw::OkStatus()};
+  return QueuePayload(std::move(payload));
 }
 
 pw::Result<L2capCoc> L2capCoc::Create(
@@ -387,21 +328,90 @@ L2capCoc::L2capCoc(
       receive_fn_multibuf_(std::move(receive_fn_multibuf)),
       tx_credits_(tx_config.credits) {}
 
-std::optional<H4PacketWithH4> L2capCoc::DequeuePacket() {
-  if (state() != State::kRunning) {
+std::optional<uint16_t> L2capCoc::MaxL2capPayloadSize() const {
+  std::optional<uint16_t> max_l2cap_payload_size =
+      L2capChannel::MaxL2capPayloadSize();
+  if (!max_l2cap_payload_size) {
     return std::nullopt;
   }
+  return std::min(*max_l2cap_payload_size, tx_mps_);
+}
 
+std::optional<H4PacketWithH4> L2capCoc::GenerateNextTxPacket() {
   std::lock_guard lock(tx_mutex_);
-  if (tx_credits_ == 0) {
+  constexpr uint8_t kSduLengthFieldSize = 2;
+  std::optional<uint16_t> max_l2cap_payload_size = MaxL2capPayloadSize();
+  if (state() != State::kRunning || PayloadQueueEmpty() || tx_credits_ == 0 ||
+      !max_l2cap_payload_size ||
+      *max_l2cap_payload_size <= kSduLengthFieldSize) {
     return std::nullopt;
   }
 
-  std::optional<H4PacketWithH4> maybe_packet = L2capChannel::DequeuePacket();
-  if (maybe_packet.has_value()) {
-    --tx_credits_;
+  ConstByteSpan sdu_span = GetFrontPayloadSpan();
+  // Number of client SDU bytes to be encoded in this segment.
+  uint16_t sdu_bytes_in_segment;
+  // Size of PDU payload for this L2CAP frame.
+  uint16_t pdu_data_size;
+  if (!is_continuing_segment_) {
+    // Generating the first (or only) PDU of an SDU.
+    size_t sdu_bytes_max_allowable =
+        *max_l2cap_payload_size - kSduLengthFieldSize;
+    sdu_bytes_in_segment = std::min(sdu_span.size(), sdu_bytes_max_allowable);
+    pdu_data_size = sdu_bytes_in_segment + kSduLengthFieldSize;
+  } else {
+    // Generating a continuing PDU in an SDU.
+    size_t sdu_bytes_max_allowable = *max_l2cap_payload_size;
+    sdu_bytes_in_segment =
+        std::min(sdu_span.size() - tx_sdu_offset_, sdu_bytes_max_allowable);
+    pdu_data_size = sdu_bytes_in_segment;
   }
-  return maybe_packet;
+
+  pw::Result<H4PacketWithH4> h4_result = PopulateTxL2capPacket(pdu_data_size);
+  if (!h4_result.ok()) {
+    // This can fail if all H4 buffers are occupied.
+    return std::nullopt;
+  }
+  H4PacketWithH4 h4_packet = std::move(*h4_result);
+
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
+  PW_CHECK(acl.ok());
+
+  uint8_t* payload_start;
+  if (!is_continuing_segment_) {
+    Result<emboss::FirstKFrameWriter> first_kframe_writer =
+        MakeEmbossWriter<emboss::FirstKFrameWriter>(
+            acl->payload().BackingStorage().data(),
+            acl->payload().SizeInBytes());
+    PW_CHECK(first_kframe_writer.ok());
+    first_kframe_writer->sdu_length().Write(sdu_span.size());
+    PW_CHECK(first_kframe_writer->Ok());
+    payload_start = first_kframe_writer->payload().BackingStorage().data();
+  } else {
+    Result<emboss::SubsequentKFrameWriter> subsequent_kframe_writer =
+        MakeEmbossWriter<emboss::SubsequentKFrameWriter>(
+            acl->payload().BackingStorage().data(),
+            acl->payload().SizeInBytes());
+    PW_CHECK(subsequent_kframe_writer.ok());
+    payload_start = subsequent_kframe_writer->payload().BackingStorage().data();
+  }
+
+  std::memcpy(/*__dest=*/payload_start,
+              /*__src=*/sdu_span.subspan(tx_sdu_offset_).data(),
+              /*__n=*/sdu_bytes_in_segment);
+  tx_sdu_offset_ += sdu_bytes_in_segment;
+
+  if (tx_sdu_offset_ == sdu_span.size()) {
+    // This segment was the final (or only) PDU of the SDU.
+    PopFrontPayload();
+    tx_sdu_offset_ = 0;
+    is_continuing_segment_ = false;
+  } else {
+    is_continuing_segment_ = true;
+  }
+
+  --tx_credits_;
+  return h4_packet;
 }
 
 void L2capCoc::AddCredits(uint16_t credits) {

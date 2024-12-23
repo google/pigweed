@@ -29,7 +29,13 @@ void L2capChannelManager::Reset() { h4_storage_.Reset(); }
 
 void L2capChannelManager::RegisterChannel(L2capChannel& channel) {
   std::lock_guard lock(channels_mutex_);
-  channels_.push_front(channel);
+  // Insert new channels before `lrd_channel_`.
+  IntrusiveForwardList<L2capChannel>::iterator before_it =
+      channels_.before_begin();
+  for (auto it = channels_.begin(); it != lrd_channel_; ++it) {
+    ++before_it;
+  }
+  channels_.insert_after(before_it, channel);
   if (lrd_channel_ == channels_.end()) {
     lrd_channel_ = channels_.begin();
   }
@@ -65,11 +71,11 @@ pw::Result<H4PacketWithH4> L2capChannelManager::GetAclH4Packet(uint16_t size) {
     return pw::Status::Unavailable();
   }
 
-  H4PacketWithH4 h4_packet(
-      span(h4_buff->data(), size),
-      /*release_fn=*/[h4_storage = &h4_storage_](const uint8_t* buffer) {
-        h4_storage->ReleaseH4Buff(buffer);
-      });
+  H4PacketWithH4 h4_packet(span(h4_buff->data(), size),
+                           /*release_fn=*/[this](const uint8_t* buffer) {
+                             this->h4_storage_.ReleaseH4Buff(buffer);
+                             DrainChannelQueues();
+                           });
   h4_packet.SetH4Type(emboss::H4PacketType::ACL_DATA);
 
   return h4_packet;
@@ -80,42 +86,58 @@ uint16_t L2capChannelManager::GetH4BuffSize() const {
 }
 
 void L2capChannelManager::DrainChannelQueues() {
-  std::lock_guard lock(channels_mutex_);
-
-  if (channels_.empty()) {
-    return;
-  }
-
   DrainChannelQueues(AclTransportType::kBrEdr);
   DrainChannelQueues(AclTransportType::kLe);
 }
 
 void L2capChannelManager::DrainChannelQueues(AclTransportType transport) {
-  IntrusiveForwardList<L2capChannel>::iterator round_robin_start = lrd_channel_;
-  // Iterate around `channels_` in round robin fashion. For each channel, send
-  // as many queued packets as are available. Proceed until we run out of ACL
-  // send credits or finish visiting every channel.
-  // TODO: https://pwbug.dev/379337260 - Only drain one L2CAP PDU per channel
-  // before moving on. (This may require sending multiple ACL fragments.)
-  while (acl_data_channel_.GetNumFreeAclPackets(transport) > 0) {
-    if (lrd_channel_->transport() != transport) {
-      Advance(lrd_channel_);
-      if (lrd_channel_ == round_robin_start) {
+  // Establish an upper bound on the number of channels to visit on this round
+  // robin. We cannot simply store a pointer to the starting channel, because
+  // any channel can be released while unlocked to send a packet.
+  size_t visits_remaining = 0;
+  {
+    std::lock_guard lock(channels_mutex_);
+    containers::ForEach(
+        channels_, [&visits_remaining](L2capChannel&) { ++visits_remaining; });
+    if (visits_remaining == 0) {
+      return;
+    }
+  }
+
+  for (std::optional<AclDataChannel::SendCredit> credit =
+           acl_data_channel_.ReserveSendCredit(transport);
+       credit;
+       credit = acl_data_channel_.ReserveSendCredit(transport)) {
+    // In each iteration of this loop we have reserved one send credit.
+
+    std::optional<H4PacketWithH4> packet;
+    {
+      std::lock_guard lock(channels_mutex_);
+      // It is possible for channels to have been released before current lock
+      // was acquired.
+      if (lrd_channel_ == channels_.end()) {
         return;
       }
-      continue;
+      do {
+        if (lrd_channel_->transport() == transport) {
+          packet = lrd_channel_->DequeuePacket();
+        }
+        Advance(lrd_channel_);
+        --visits_remaining;
+      } while (!packet && visits_remaining > 0);
     }
 
-    std::optional<H4PacketWithH4> packet = lrd_channel_->DequeuePacket();
-    if (!packet) {
-      Advance(lrd_channel_);
-      if (lrd_channel_ == round_robin_start) {
-        return;
-      }
-      continue;
+    if (packet) {
+      // Send while unlocked. This can trigger a recursive round robin once
+      // `packet` is released, but this is fine because `lrd_channel_` has
+      // been adjusted so the recursive call will start where this one left off.
+      PW_CHECK_OK(
+          acl_data_channel_.SendAcl(std::move(*packet), std::move(*credit)));
     }
 
-    PW_CHECK_OK(acl_data_channel_.SendAcl(std::move(*packet)));
+    if (visits_remaining == 0) {
+      break;
+    }
   }
 }
 

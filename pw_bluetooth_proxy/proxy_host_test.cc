@@ -1453,7 +1453,7 @@ TEST_F(NumberOfCompletedPacketsTest, MultipleChannelsDifferentTransports) {
 
   L2capCoc le_channel =
       BuildCoc(proxy, CocParameters{.handle = 0x123, .tx_credits = 2});
-  EXPECT_EQ(le_channel.Write(capture.payload), PW_STATUS_OK);
+  PW_TEST_EXPECT_OK(le_channel.Write(multibuf::MultiBuf{}).status);
   EXPECT_EQ(capture.sends_called, 1);
 
   RfcommChannel bredr_channel =
@@ -1463,7 +1463,7 @@ TEST_F(NumberOfCompletedPacketsTest, MultipleChannelsDifferentTransports) {
   EXPECT_EQ(capture.sends_called, 2);
 
   // Queue an LE write
-  EXPECT_EQ(le_channel.Write(capture.payload), PW_STATUS_OK);
+  PW_TEST_EXPECT_OK(le_channel.Write(multibuf::MultiBuf{}).status);
   EXPECT_EQ(capture.sends_called, 2);
 
   // Complete previous LE write
@@ -2407,9 +2407,9 @@ TEST_F(L2capSignalingTest, FlowControlCreditIndDrainsQueue) {
           .handle = handle, .remote_cid = remote_cid, .tx_credits = 0});
 
   for (size_t i = 0; i < L2capCoc::QueueCapacity(); ++i) {
-    EXPECT_EQ(channel.Write(pw::span<const uint8_t>{}), PW_STATUS_OK);
+    PW_TEST_EXPECT_OK(channel.Write(multibuf::MultiBuf{}).status);
   }
-  EXPECT_EQ(channel.Write(pw::span<const uint8_t>{}), PW_STATUS_UNAVAILABLE);
+  EXPECT_EQ(channel.Write(multibuf::MultiBuf{}).status, Status::Unavailable());
   EXPECT_EQ(sends_called, 0u);
 
   constexpr size_t kL2capLength =

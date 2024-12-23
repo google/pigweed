@@ -19,6 +19,7 @@
 #include <variant>
 #include <vector>
 
+#include "pw_assert/check.h"
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"
@@ -264,10 +265,14 @@ class ProxyHostTest : public testing::Test {
 
   L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params);
 
-  // Returns MultiBuf allocator for creating objects to pass to the system under
-  // test (e.g. test packets from controller).
-  pw::multibuf::MultiBufAllocator& GetTestMultiBuffAllocator() {
-    return test_multibuf_allocator_;
+  pw::multibuf::MultiBuf MultiBufFromSpan(span<uint8_t> buf) {
+    std::optional<pw::multibuf::MultiBuf> multibuf =
+        test_multibuf_allocator_.AllocateContiguous(buf.size());
+    PW_ASSERT(multibuf.has_value());
+    std::optional<ConstByteSpan> multibuf_span = multibuf->ContiguousSpan();
+    PW_ASSERT(multibuf_span);
+    PW_TEST_EXPECT_OK(multibuf->CopyFrom(as_bytes(buf)));
+    return std::move(*multibuf);
   }
 
  private:

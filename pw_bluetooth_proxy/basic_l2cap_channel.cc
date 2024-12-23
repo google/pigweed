@@ -54,7 +54,8 @@ pw::Status BasicL2capChannel::Write(pw::span<const uint8_t> payload) {
 
   // TODO: https://pwbug.dev/360929142 - Reject payloads exceeding MTU.
 
-  pw::Result<H4PacketWithH4> h4_result = PopulateTxL2capPacket(payload.size());
+  pw::Result<H4PacketWithH4> h4_result =
+      PopulateTxL2capPacketDuringWrite(payload.size());
   if (!h4_result.ok()) {
     // This can fail as a result of the L2CAP PDU not fitting in an H4 buffer
     // or if all buffers are occupied.

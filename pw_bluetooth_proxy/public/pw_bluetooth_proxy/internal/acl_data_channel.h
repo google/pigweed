@@ -45,6 +45,33 @@ class AclDataChannel {
     kMaxDirections,
   };
 
+  // Used to `SendAcl` packets.
+  class SendCredit {
+   public:
+    friend class AclDataChannel;
+
+    SendCredit(const SendCredit&) = delete;
+    SendCredit& operator=(const SendCredit&) = delete;
+    // Move-only
+    SendCredit(SendCredit&& other);
+    SendCredit& operator=(SendCredit&& other);
+
+    ~SendCredit();
+
+   private:
+    // Dispensed via `AclDataChannel::ReserveSendCredit()`.
+    SendCredit(AclTransportType transport,
+               Function<void(AclTransportType transport)>&& relinquish_fn);
+
+    // Indicate that credits has been used for Tx.
+    void MarkUsed();
+
+    AclTransportType transport_;
+    // If `this` was not used or moved and is destructed, `relinquish_fn_` is
+    // called to replenish the credit that was subtracted from `AclDataChannel`.
+    Function<void(AclTransportType transport)> relinquish_fn_;
+  };
+
   AclDataChannel(HciTransport& hci_transport,
                  L2capChannelManager& l2cap_channel_manager,
                  uint16_t le_acl_credits_to_reserve,
@@ -116,12 +143,21 @@ class AclDataChannel {
   // Can be zero if the controller has not yet been initialized by the host.
   uint16_t GetNumFreeAclPackets(AclTransportType transport) const;
 
+  // In order to `SendAcl`, a `SendCredit` for the desired transport must be
+  // provided.
+  //
+  // Returns std::nullopt if no credits are available for the desired transport.
+  std::optional<SendCredit> ReserveSendCredit(AclTransportType transport);
+
   // Send an ACL data packet contained in an H4 packet to the controller.
+  // Requires a reserved `SendCredit` that matches the transport of the
+  // connection on which `h4_packet` is to be sent.
   //
   // Returns PW_STATUS_UNAVAILABLE if no ACL send credits were available.
-  // Returns PW_STATUS_INVALID_ARGUMENT if ACL packet was ill-formed.
+  // Returns PW_STATUS_INVALID_ARGUMENT if ACL packet was ill-formed or `credit`
+  // was provided for the wrong transport. See logs.
   // Returns PW_NOT_FOUND if ACL connection does not exist.
-  pw::Status SendAcl(H4PacketWithH4&& h4_packet);
+  pw::Status SendAcl(H4PacketWithH4&& h4_packet, SendCredit&& credit);
 
   // Register a new logical link on ACL logical transport.
   //

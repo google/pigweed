@@ -111,7 +111,7 @@ class L2capChannelManager {
   // Send L2CAP packets queued in registered channels as long as ACL credits are
   // available on the specified transport.
   void DrainChannelQueues(AclTransportType transport)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(channels_mutex_);
+      PW_LOCKS_EXCLUDED(channels_mutex_);
 
   // Reference to the ACL data channel owned by the proxy.
   AclDataChannel& acl_data_channel_;

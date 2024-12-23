@@ -19,6 +19,7 @@
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_containers/inline_queue.h"
 #include "pw_containers/intrusive_forward_list.h"
+#include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_sync/lock_annotations.h"
@@ -80,6 +81,11 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //
   // Returns PW_STATUS_UNAVAILABLE if queue is full (transient error).
   // Returns PW_STATUS_FAILED_PRECONDITION if channel is not `State::kRunning`.
+  //
+  // Channels other than `L2capCoc` use QueuePacket(), but plan is to move them
+  // all to using QueuePayload().
+  // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
+  // transitioned to QueuePayload.
   [[nodiscard]] virtual Status QueuePacket(H4PacketWithH4&& packet);
 
   // Dequeue a packet if one is available to send.
@@ -87,6 +93,23 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
 
   // Max number of Tx L2CAP packets that can be waiting to send.
   static constexpr size_t QueueCapacity() { return kQueueCapacity; }
+
+  // Queue a client `buf` for sending and `ReportPacketsMayBeReadyToSend()`.
+  // Must be a contiguous MultiBuf.
+  //
+  // Returns PW_STATUS_UNAVAILABLE if queue is full (transient error).
+  // Returns PW_STATUS_FAILED_PRECONDITION if channel is not `State::kRunning`.
+  StatusWithMultiBuf QueuePayload(multibuf::MultiBuf&& buf)
+      PW_LOCKS_EXCLUDED(send_queue_mutex_);
+
+  // Pop front buffer. Queue must be nonempty.
+  void PopFrontPayload() PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
+
+  // Returns span over front buffer. Queue must be nonempty.
+  ConstByteSpan GetFrontPayloadSpan() const
+      PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
+
+  bool PayloadQueueEmpty() const PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
 
   //-------
   //  Rx:
@@ -166,9 +189,27 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
     SendEvent(event);
   }
 
+  // For derived channels to use in lock annotations.
+  const sync::Mutex& send_queue_mutex() const
+      PW_LOCK_RETURNED(send_queue_mutex_) {
+    return send_queue_mutex_;
+  }
+
   //-------
   //  Tx:
   //-------
+
+  // Return the next Tx PDU based on the client's queued payloads. If the
+  // returned PDU will complete the transmission of a payload, that payload
+  // should be popped from the queue. If no payloads are queued, return
+  // std::nullopt.
+  //
+  // Note this is overrode by `L2capCoc` which uses `payload_queue_` rather than
+  // `send_queue_`. The plan is to move all channels to using `payload_queue_`.
+  // TODO: https://pwbug.dev/379337272 - Make pure virtual once all derived
+  // channels implement this method.
+  virtual std::optional<H4PacketWithH4> GenerateNextTxPacket()
+      PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
 
   // Reserve an L2CAP over ACL over H4 packet, with those three headers
   // populated for an L2CAP PDU payload of `data_length` bytes addressed to
@@ -177,6 +218,15 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Returns PW_STATUS_INVALID_ARGUMENT if payload is too large for a buffer.
   // Returns PW_STATUS_UNAVAILABLE if all buffers are currently occupied.
   pw::Result<H4PacketWithH4> PopulateTxL2capPacket(uint16_t data_length);
+
+  // If all H4 buffers are occupied, this variant primes the kWriteAvailable
+  // event to be sent once buffer space becomes available again.
+  //
+  // TODO: https://pwbug.dev/379337272 - Once derived channels migrate to
+  // queueing client payloads on Write() instead of populating Tx packets, then
+  // delete this variant.
+  pw::Result<H4PacketWithH4> PopulateTxL2capPacketDuringWrite(
+      uint16_t data_length) PW_LOCKS_EXCLUDED(send_queue_mutex_);
 
   // Returns the maximum size supported for Tx L2CAP PDU payloads.
   //
@@ -243,7 +293,16 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   sync::Mutex send_queue_mutex_;
 
   // Stores Tx L2CAP packets.
+  //
+  // This queue is used for channels other than `L2capCoc`, but we plan to
+  // transition all channels to using `payload_queue_` below.
+  // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
+  // transitioned to payload_queue_.
   InlineQueue<H4PacketWithH4, kQueueCapacity> send_queue_
+      PW_GUARDED_BY(send_queue_mutex_);
+
+  // Stores client Tx payload buffers.
+  InlineQueue<multibuf::MultiBuf, kQueueCapacity> payload_queue_
       PW_GUARDED_BY(send_queue_mutex_);
 
   // True if the last queue attempt didn't have space. Will be cleared on

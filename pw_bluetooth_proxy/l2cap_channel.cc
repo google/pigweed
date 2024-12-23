@@ -115,9 +115,8 @@ std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
   bool should_notify = false;
   {
     std::lock_guard lock(send_queue_mutex_);
-    if (!send_queue_.empty()) {
-      packet.emplace(std::move(send_queue_.front()));
-      send_queue_.pop();
+    packet = GenerateNextTxPacket();
+    if (packet) {
       should_notify = notify_on_dequeue_;
       notify_on_dequeue_ = false;
     }
@@ -129,6 +128,38 @@ std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
 
   return packet;
 }
+
+StatusWithMultiBuf L2capChannel::QueuePayload(multibuf::MultiBuf&& buf) {
+  PW_CHECK(state() == State::kRunning);
+  PW_CHECK(buf.IsContiguous());
+
+  {
+    std::lock_guard lock(send_queue_mutex_);
+    if (payload_queue_.full()) {
+      notify_on_dequeue_ = true;
+      return {Status::Unavailable(), std::move(buf)};
+    }
+    payload_queue_.push(std::move(buf));
+  }
+
+  ReportPacketsMayBeReadyToSend();
+  return {OkStatus(), std::nullopt};
+}
+
+void L2capChannel::PopFrontPayload() {
+  PW_CHECK(!payload_queue_.empty());
+  payload_queue_.pop();
+}
+
+ConstByteSpan L2capChannel::GetFrontPayloadSpan() const {
+  PW_CHECK(!payload_queue_.empty());
+  const multibuf::MultiBuf& buf = payload_queue_.front();
+  std::optional<ConstByteSpan> span = buf.ContiguousSpan();
+  PW_CHECK(span);
+  return *span;
+}
+
+bool L2capChannel::PayloadQueueEmpty() const { return payload_queue_.empty(); }
 
 bool L2capChannel::OnPduReceivedFromController(pw::span<uint8_t> l2cap_pdu) {
   if (state() != State::kRunning) {
@@ -186,9 +217,31 @@ bool L2capChannel::AreValidParameters(uint16_t connection_handle,
   return true;
 }
 
+std::optional<H4PacketWithH4> L2capChannel::GenerateNextTxPacket() {
+  if (send_queue_.empty()) {
+    return std::nullopt;
+  }
+  H4PacketWithH4 packet = std::move(send_queue_.front());
+  send_queue_.pop();
+  return packet;
+}
+
 pw::Result<H4PacketWithH4> L2capChannel::PopulateTxL2capPacket(
     uint16_t data_length) {
   return PopulateL2capPacket(data_length);
+}
+
+pw::Result<H4PacketWithH4> L2capChannel::PopulateTxL2capPacketDuringWrite(
+    uint16_t data_length) {
+  pw::Result<H4PacketWithH4> packet_result = PopulateL2capPacket(data_length);
+  if (packet_result.status().IsUnavailable()) {
+    std::lock_guard lock(send_queue_mutex_);
+    // If there were no buffers, they are all in the queue currently. This can
+    // happen if queue size == buffer count. Mark that a writer is getting an
+    // Unavailable status, and should be notified when queue space opens up.
+    notify_on_dequeue_ = true;
+  }
+  return packet_result;
 }
 
 pw::Result<H4PacketWithH4> L2capChannel::PopulateL2capPacket(
@@ -202,13 +255,6 @@ pw::Result<H4PacketWithH4> L2capChannel::PopulateL2capPacket(
   pw::Result<H4PacketWithH4> h4_packet_res =
       l2cap_channel_manager_.GetAclH4Packet(h4_packet_size);
   if (!h4_packet_res.ok()) {
-    // If there were no buffers, they are all in the queue currently. This can
-    // happen if queue size == buffer count. Mark that a writer is getting an
-    // Unavailable status, and should be notified when queue space opens up.
-    if (h4_packet_res.status().IsUnavailable()) {
-      std::lock_guard lock(send_queue_mutex_);
-      notify_on_dequeue_ = true;
-    }
     return h4_packet_res.status();
   }
   H4PacketWithH4 h4_packet = std::move(h4_packet_res.value());

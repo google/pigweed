@@ -268,7 +268,7 @@ Status L2capSignalingChannel::SendFlowControlCreditInd(uint16_t cid,
   }
 
   PW_TRY_ASSIGN(H4PacketWithH4 h4_packet,
-                PopulateTxL2capPacket(
+                PopulateTxL2capPacketDuringWrite(
                     emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes()));
   PW_TRY_ASSIGN(
       auto acl,

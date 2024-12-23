@@ -12,6 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <cstdint>
+
+#include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy_private/test_utils.h"
 #include "pw_containers/flat_map.h"
 
@@ -58,95 +61,6 @@ constexpr uint8_t kSduLengthFieldSize = 2;
 constexpr uint8_t kFirstKFrameOverAclMinSize =
     emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
     emboss::FirstKFrame::MinSizeInBytes();
-
-// TODO: https://pwbug.dev/379337272 - All write tests should be moved to
-// MultiBuf Write like this one.
-TEST_F(L2capCocWriteTest, BasicMultibufWrite) {
-  struct {
-    int sends_called = 0;
-    // First four bits 0x0 encode PB & BC flags
-    uint16_t handle = 0x0ACB;
-    // Length of L2CAP PDU
-    uint16_t acl_data_total_length = 0x0009;
-    // L2CAP header PDU length field
-    uint16_t pdu_length = 0x0005;
-    // Random CID
-    uint16_t channel_id = 0x1234;
-    // Length of L2CAP SDU
-    uint16_t sdu_length = 0x0003;
-    // L2CAP information payload
-    std::array<uint8_t, 3> payload = {0xAB, 0xCD, 0xEF};
-
-    // Built from the preceding values in little endian order (except payload in
-    // big endian).
-    std::array<uint8_t, 13> expected_hci_packet = {0xCB,
-                                                   0x0A,
-                                                   0x09,
-                                                   0x00,
-                                                   0x05,
-                                                   0x00,
-                                                   0x34,
-                                                   0x12,
-                                                   0x03,
-                                                   0x00,
-                                                   0xAB,
-                                                   0xCD,
-                                                   0xEF};
-  } capture;
-
-  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
-      []([[maybe_unused]] H4PacketWithHci&& packet) {});
-  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
-      [&capture](H4PacketWithH4&& packet) {
-        ++capture.sends_called;
-        EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::ACL_DATA);
-        EXPECT_EQ(packet.GetHciSpan().size(),
-                  capture.expected_hci_packet.size());
-        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
-                               packet.GetHciSpan().end(),
-                               capture.expected_hci_packet.begin(),
-                               capture.expected_hci_packet.end()));
-        PW_TEST_ASSERT_OK_AND_ASSIGN(
-            auto acl,
-            MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
-        EXPECT_EQ(acl.header().handle().Read(), capture.handle);
-        EXPECT_EQ(acl.header().packet_boundary_flag().Read(),
-                  emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
-        EXPECT_EQ(acl.header().broadcast_flag().Read(),
-                  emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
-        EXPECT_EQ(acl.data_total_length().Read(),
-                  capture.acl_data_total_length);
-        emboss::FirstKFrameView kframe = emboss::MakeFirstKFrameView(
-            acl.payload().BackingStorage().data(), acl.SizeInBytes());
-        EXPECT_EQ(kframe.pdu_length().Read(), capture.pdu_length);
-        EXPECT_EQ(kframe.channel_id().Read(), capture.channel_id);
-        EXPECT_EQ(kframe.sdu_length().Read(), capture.sdu_length);
-        for (size_t i = 0; i < 3; ++i) {
-          EXPECT_EQ(kframe.payload()[i].Read(), capture.payload[i]);
-        }
-      });
-
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/1,
-                              /*br_edr_acl_credits_to_reserve=*/0);
-  // Allow proxy to reserve 1 credit.
-  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
-
-  L2capCoc channel = BuildCoc(proxy,
-                              CocParameters{.handle = capture.handle,
-                                            .remote_cid = capture.channel_id});
-  std::optional<pw::multibuf::MultiBuf> buf =
-      GetTestMultiBuffAllocator().AllocateContiguous(capture.payload.size());
-  EXPECT_TRUE(buf);
-  StatusWithSize status = buf->CopyFrom(
-      ByteSpan{reinterpret_cast<std::byte*>(capture.payload.data()),
-               capture.payload.size()});
-  EXPECT_EQ(status.status(), PW_STATUS_OK);
-
-  EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
-  EXPECT_EQ(capture.sends_called, 1);
-}
 
 TEST_F(L2capCocWriteTest, BasicWrite) {
   struct {
@@ -223,7 +137,8 @@ TEST_F(L2capCocWriteTest, BasicWrite) {
   L2capCoc channel = BuildCoc(proxy,
                               CocParameters{.handle = capture.handle,
                                             .remote_cid = capture.channel_id});
-  EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
+  PW_TEST_EXPECT_OK(
+      channel.Write(MultiBufFromSpan(span(capture.payload))).status);
   EXPECT_EQ(capture.sends_called, 1);
 }
 
@@ -248,19 +163,15 @@ TEST_F(L2capCocWriteTest, ErrorOnWriteToStoppedChannel) {
                     }});
 
   channel.Stop();
-  EXPECT_EQ(channel.Write(span<const uint8_t>{}),
-            PW_STATUS_FAILED_PRECONDITION);
+  EXPECT_EQ(channel.Write(multibuf::MultiBuf{}).status,
+            Status::FailedPrecondition());
 }
 
-TEST_F(L2capCocWriteTest, TooLargeWritesFail) {
-  int sends_called = 0;
-
+TEST_F(L2capCocWriteTest, WriteExceedingMtuFails) {
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
-      [&sends_called]([[maybe_unused]] H4PacketWithH4&& packet) {
-        ++sends_called;
-      });
+      []([[maybe_unused]] H4PacketWithH4&& packet) { FAIL(); });
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
@@ -272,21 +183,8 @@ TEST_F(L2capCocWriteTest, TooLargeWritesFail) {
   // Payload size exceeds MTU.
   L2capCoc small_mtu_channel = BuildCoc(proxy, CocParameters{.tx_mtu = 1});
   std::array<uint8_t, 24> payload;
-  EXPECT_EQ(small_mtu_channel.Write(payload), PW_STATUS_INVALID_ARGUMENT);
-
-  // Payload size exceeds MPS.
-  L2capCoc small_mps_channel = BuildCoc(proxy, CocParameters{.tx_mps = 23});
-  EXPECT_EQ(small_mps_channel.Write(payload), PW_STATUS_INVALID_ARGUMENT);
-
-  // Payload size exceeds max allowable based on H4 buffer size.
-  std::array<uint8_t,
-             proxy.GetMaxAclSendSize() - kFirstKFrameOverAclMinSize + 1>
-      payload_one_byte_too_large;
-  L2capCoc channel = BuildCoc(proxy, {});
-  EXPECT_EQ(channel.Write(payload_one_byte_too_large),
-            PW_STATUS_INVALID_ARGUMENT);
-
-  EXPECT_EQ(sends_called, 0);
+  EXPECT_EQ(small_mtu_channel.Write(MultiBufFromSpan(span(payload))).status,
+            Status::InvalidArgument());
 }
 
 TEST_F(L2capCocWriteTest, MultipleWritesSameChannel) {
@@ -321,7 +219,8 @@ TEST_F(L2capCocWriteTest, MultipleWritesSameChannel) {
 
   L2capCoc channel = BuildCoc(proxy, CocParameters{.tx_credits = num_writes});
   for (int i = 0; i < num_writes; ++i) {
-    EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
+    PW_TEST_EXPECT_OK(
+        channel.Write(MultiBufFromSpan(span(capture.payload))).status);
     std::for_each(capture.payload.begin(),
                   capture.payload.end(),
                   [](uint8_t& byte) { ++byte; });
@@ -378,7 +277,8 @@ TEST_F(L2capCocWriteTest, MultipleWritesMultipleChannels) {
   };
 
   for (int i = 0; i < kNumChannels; ++i) {
-    EXPECT_EQ(channels[i].Write(capture.payload), PW_STATUS_OK);
+    PW_TEST_EXPECT_OK(
+        channels[i].Write(MultiBufFromSpan(span(capture.payload))).status);
     std::for_each(capture.payload.begin(),
                   capture.payload.end(),
                   [](uint8_t& byte) { ++byte; });
@@ -1599,9 +1499,9 @@ TEST_F(L2capCocQueueTest, ReadBufferResponseDrainsQueue) {
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
   for (size_t i = 0; i < L2capCoc::QueueCapacity(); ++i) {
-    EXPECT_EQ(channel.Write(span<const uint8_t>{}), PW_STATUS_OK);
+    PW_TEST_EXPECT_OK(channel.Write(multibuf::MultiBuf{}).status);
   }
-  EXPECT_EQ(channel.Write(span<const uint8_t>{}), PW_STATUS_UNAVAILABLE);
+  EXPECT_EQ(channel.Write(multibuf::MultiBuf{}).status, PW_STATUS_UNAVAILABLE);
   EXPECT_EQ(sends_called, 0u);
 
   PW_TEST_EXPECT_OK(
@@ -1634,14 +1534,14 @@ TEST_F(L2capCocQueueTest, NocpEventDrainsQueue) {
                              .tx_credits = 2 * L2capCoc::QueueCapacity()});
 
   for (size_t i = 0; i < L2capCoc::QueueCapacity(); ++i) {
-    EXPECT_EQ(channel.Write(span<const uint8_t>{}), PW_STATUS_OK);
+    PW_TEST_EXPECT_OK(channel.Write(multibuf::MultiBuf{}).status);
   }
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 0);
   for (size_t i = 0; i < L2capCoc::QueueCapacity(); ++i) {
-    EXPECT_EQ(channel.Write(span<const uint8_t>{}), PW_STATUS_OK);
+    PW_TEST_EXPECT_OK(channel.Write(multibuf::MultiBuf{}).status);
   }
-  EXPECT_EQ(channel.Write(span<const uint8_t>{}), PW_STATUS_UNAVAILABLE);
+  EXPECT_EQ(channel.Write(multibuf::MultiBuf{}).status, PW_STATUS_UNAVAILABLE);
   EXPECT_EQ(sends_called, L2capCoc::QueueCapacity());
 
   PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
@@ -1690,7 +1590,7 @@ TEST_F(L2capCocQueueTest, RemovingLrdChannelDoesNotInvalidateRoundRobin) {
 
   // Queue a packet in middle channel.
   for (size_t i = 0; i < L2capCoc::QueueCapacity() + 1; ++i) {
-    EXPECT_EQ(chan_middle->Write(span<const uint8_t>{}), PW_STATUS_OK);
+    PW_TEST_EXPECT_OK(chan_middle->Write(multibuf::MultiBuf{}).status);
   }
   EXPECT_EQ(sends_called, L2capCoc::QueueCapacity());
 
@@ -1700,8 +1600,8 @@ TEST_F(L2capCocQueueTest, RemovingLrdChannelDoesNotInvalidateRoundRobin) {
   EXPECT_EQ(sends_called, L2capCoc::QueueCapacity() + 1);
 
   // Queue a packet each in left and right channels.
-  EXPECT_EQ(chan_left.Write(span<const uint8_t>{}), PW_STATUS_OK);
-  EXPECT_EQ(chan_right.Write(span<const uint8_t>{}), PW_STATUS_OK);
+  PW_TEST_EXPECT_OK(chan_left.Write(multibuf::MultiBuf{}).status);
+  PW_TEST_EXPECT_OK(chan_right.Write(multibuf::MultiBuf{}).status);
   EXPECT_EQ(sends_called, L2capCoc::QueueCapacity() + 1);
 
   // Drop middle channel. LRD write iterator should still be valid.
@@ -1711,6 +1611,48 @@ TEST_F(L2capCocQueueTest, RemovingLrdChannelDoesNotInvalidateRoundRobin) {
   PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
       proxy, FlatMap<uint16_t, uint16_t, 1>({{{handle, 2}}})));
   EXPECT_EQ(sends_called, L2capCoc::QueueCapacity() + 3);
+}
+
+TEST_F(L2capCocQueueTest, H4BufferReleaseTriggersQueueDrain) {
+  constexpr size_t kNumSends =
+      ProxyHost::GetNumSimultaneousAclSendsSupported() + 1;
+
+  struct {
+    size_t sends_called = 0;
+    Vector<H4PacketWithH4, kNumSends> packet_store;
+  } capture;
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        ++capture.sends_called;
+        capture.packet_store.push_back(std::move(packet));
+      });
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/kNumSends,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, kNumSends));
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), kNumSends);
+
+  constexpr uint16_t kHandle = 0x123;
+  constexpr uint16_t kRemoteCid = 0x456;
+  L2capCoc channel = BuildCoc(proxy,
+                              CocParameters{.handle = kHandle,
+                                            .remote_cid = kRemoteCid,
+                                            .tx_credits = kNumSends});
+
+  // Occupy all buffers. Final Write should queue and not send.
+  for (size_t i = 0; i < kNumSends; ++i) {
+    PW_TEST_EXPECT_OK(channel.Write(multibuf::MultiBuf{}).status);
+  }
+  EXPECT_EQ(capture.sends_called, kNumSends - 1);
+
+  // Release a buffer. Queued packet should then send.
+  capture.packet_store.pop_back();
+  EXPECT_EQ(capture.sends_called, kNumSends);
+
+  capture.packet_store.clear();
 }
 
 // ########## L2capCocReassemblyTest
@@ -1915,6 +1857,95 @@ TEST_F(L2capCocReassemblyTest, ErrorIfRxBufferTooSmallForFirstKFrame) {
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
   EXPECT_EQ(events_received, 1);
+}
+
+// ########## L2capCocSegmentation
+
+class L2capCocSegmentationTest : public ProxyHostTest {};
+
+TEST_F(L2capCocSegmentationTest, SduSentWhenSegmentedOverFullRangeOfMps) {
+  constexpr size_t kPayloadSize = 312;
+  struct {
+    uint16_t handle = 0x123;
+    uint16_t remote_cid = 0x456;
+    uint16_t sdus_received = 0;
+    uint16_t mps;
+    std::array<uint8_t, kPayloadSize> expected_payload;
+  } capture;
+
+  for (size_t i = 0; i < capture.expected_payload.size(); ++i) {
+    capture.expected_payload[i] = i % UINT8_MAX;
+  }
+
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      [&capture](H4PacketWithH4&& tx_kframe) {
+        static uint16_t segment_no = 0;
+        static uint16_t pdu_bytes_received = 0;
+        PW_TEST_ASSERT_OK_AND_ASSIGN(
+            KFrameWithStorage expected_kframe,
+            SetupKFrame(capture.handle,
+                        capture.remote_cid,
+                        capture.mps,
+                        segment_no,
+                        span(capture.expected_payload)));
+
+        EXPECT_TRUE(std::equal(tx_kframe.GetHciSpan().begin(),
+                               tx_kframe.GetHciSpan().end(),
+                               expected_kframe.acl.hci_span().begin(),
+                               expected_kframe.acl.hci_span().end()));
+
+        pdu_bytes_received +=
+            expected_kframe.acl.writer.data_total_length().Read() -
+            emboss::BasicL2capHeader::IntrinsicSizeInBytes();
+
+        if (pdu_bytes_received ==
+            capture.expected_payload.size() + kSduLengthFieldSize) {
+          ++capture.sdus_received;
+          segment_no = 0;
+          pdu_bytes_received = 0;
+        } else {
+          ++segment_no;
+        }
+      });
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+
+                              /*le_acl_credits_to_reserve=*/UINT8_MAX,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
+      proxy,
+      /*num_credits_to_reserve=*/UINT8_MAX,
+      /*le_acl_data_packet_length=*/UINT16_MAX));
+
+  uint16_t sdus_sent = 0;
+
+  // Test sending payload segmented in every possible way, from MPS of 23 octets
+  // to MPS values 5 octets greater than the payload size. 23 bytes is the
+  // minimum MPS supported for L2CAP channels.
+  for (capture.mps = 23; capture.mps < kPayloadSize + 5; ++capture.mps) {
+    L2capCoc channel = BuildCoc(proxy,
+                                {.handle = capture.handle,
+                                 .remote_cid = capture.remote_cid,
+                                 .tx_mtu = capture.expected_payload.size(),
+                                 .tx_mps = capture.mps,
+                                 .tx_credits = UINT8_MAX});
+    PW_TEST_EXPECT_OK(
+        channel.Write(MultiBufFromSpan(span(capture.expected_payload))).status);
+    ++sdus_sent;
+
+    // Replenish proxy's LE ACL send credits, or else only UINT8_MAX PDUs could
+    // be sent in this test.
+    PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
+        proxy,
+        FlatMap<uint16_t, uint16_t, 1>(
+            {{{capture.handle,
+               static_cast<uint8_t>(UINT8_MAX -
+                                    proxy.GetNumFreeLeAclPackets())}}})));
+  }
+
+  EXPECT_EQ(capture.sdus_received, sdus_sent);
 }
 
 }  // namespace

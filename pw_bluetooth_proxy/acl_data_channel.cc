@@ -26,6 +26,36 @@
 
 namespace pw::bluetooth::proxy {
 
+AclDataChannel::SendCredit::SendCredit(SendCredit&& other) {
+  *this = std::move(other);
+}
+
+AclDataChannel::SendCredit& AclDataChannel::SendCredit::operator=(
+    SendCredit&& other) {
+  if (this != &other) {
+    transport_ = other.transport_;
+    relinquish_fn_ = std::move(other.relinquish_fn_);
+    other.relinquish_fn_ = nullptr;
+  }
+  return *this;
+}
+
+AclDataChannel::SendCredit::~SendCredit() {
+  if (relinquish_fn_) {
+    relinquish_fn_(transport_);
+  }
+}
+
+AclDataChannel::SendCredit::SendCredit(
+    AclTransportType transport,
+    Function<void(AclTransportType transport)>&& relinquish_fn)
+    : transport_(transport), relinquish_fn_(std::move(relinquish_fn)) {}
+
+void AclDataChannel::SendCredit::MarkUsed() {
+  PW_CHECK(relinquish_fn_);
+  relinquish_fn_ = nullptr;
+}
+
 void AclDataChannel::Reset() {
   std::lock_guard lock(mutex_);
   le_credits_.Reset();
@@ -376,7 +406,21 @@ uint16_t AclDataChannel::GetNumFreeAclPackets(
   return LookupCredits(transport).Remaining();
 }
 
-pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
+std::optional<AclDataChannel::SendCredit> AclDataChannel::ReserveSendCredit(
+    AclTransportType transport) {
+  std::lock_guard lock(mutex_);
+  if (const auto status = LookupCredits(transport).MarkPending(1);
+      !status.ok()) {
+    return std::nullopt;
+  }
+  return SendCredit(transport, [this](AclTransportType t) {
+    std::lock_guard fn_lock(mutex_);
+    LookupCredits(t).MarkCompleted(1);
+  });
+}
+
+pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet,
+                                   SendCredit&& credit) {
   std::lock_guard lock(mutex_);
   Result<emboss::AclDataFrameHeaderView> acl_view =
       MakeEmbossView<emboss::AclDataFrameHeaderView>(h4_packet.GetHciSpan());
@@ -392,12 +436,11 @@ pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet) {
     return pw::Status::NotFound();
   }
 
-  if (const auto status =
-          LookupCredits(connection_ptr->transport()).MarkPending(1);
-      !status.ok()) {
-    PW_LOG_WARN("No ACL send credits available. So will not send.");
-    return pw::Status::Unavailable();
+  if (connection_ptr->transport() != credit.transport_) {
+    PW_LOG_WARN("Provided credit for wrong transport. So will not send.");
+    return pw::Status::InvalidArgument();
   }
+  credit.MarkUsed();
 
   connection_ptr->set_num_pending_packets(
       connection_ptr->num_pending_packets() + 1);

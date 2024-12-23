@@ -42,7 +42,8 @@ pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
 
   size_t att_size =
       emboss::AttHandleValueNtf::MinSizeInBytes() + attribute_value.size();
-  pw::Result<H4PacketWithH4> h4_result = PopulateTxL2capPacket(att_size);
+  pw::Result<H4PacketWithH4> h4_result =
+      PopulateTxL2capPacketDuringWrite(att_size);
   if (!h4_result.ok()) {
     // This can fail as a result of the L2CAP PDU not fitting in an H4 buffer
     // or if all buffers are occupied.
