@@ -40,13 +40,19 @@ L2capCoc::L2capCoc(L2capCoc&& other)
       tx_mps_(other.tx_mps_),
       payload_from_controller_fn_(std::move(other.payload_from_controller_fn_)),
       receive_fn_multibuf_(std::move(other.receive_fn_multibuf_)) {
-  std::lock_guard lock(mutex_);
-  std::lock_guard other_lock(other.mutex_);
-  tx_credits_ = other.tx_credits_;
-  remaining_sdu_bytes_to_ignore_ = other.remaining_sdu_bytes_to_ignore_;
-  rx_sdu_ = std::move(other.rx_sdu_);
-  rx_sdu_offset_ = other.rx_sdu_offset_;
-  rx_sdu_bytes_remaining_ = other.rx_sdu_bytes_remaining_;
+  {
+    std::lock_guard lock(tx_mutex_);
+    std::lock_guard other_lock(other.tx_mutex_);
+    tx_credits_ = other.tx_credits_;
+  }
+  {
+    std::lock_guard lock(rx_mutex_);
+    std::lock_guard other_lock(other.rx_mutex_);
+    remaining_sdu_bytes_to_ignore_ = other.remaining_sdu_bytes_to_ignore_;
+    rx_sdu_ = std::move(other.rx_sdu_);
+    rx_sdu_offset_ = other.rx_sdu_offset_;
+    rx_sdu_bytes_remaining_ = other.rx_sdu_bytes_remaining_;
+  }
 }
 
 pw::Status L2capCoc::Write(pw::span<const uint8_t> payload) {
@@ -178,7 +184,7 @@ pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
 }
 
 void L2capCoc::ProcessPduFromControllerMultibuf(span<uint8_t> kframe) {
-  std::lock_guard lock(mutex_);
+  std::lock_guard lock(rx_mutex_);
   ConstByteSpan kframe_payload;
   if (rx_sdu_bytes_remaining_ > 0) {
     // Received PDU that is part of current SDU being assembled.
@@ -261,7 +267,7 @@ bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
     return true;
   }
 
-  std::lock_guard lock(mutex_);
+  std::lock_guard lock(rx_mutex_);
   // If `remaining_sdu_bytes_to_ignore_` is nonzero, we are in state where we
   // are dropping continuing PDUs in a segmented SDU.
   if (remaining_sdu_bytes_to_ignore_ > 0) {
@@ -348,7 +354,7 @@ bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
   return true;
 }
 
-bool L2capCoc::HandlePduFromHost(pw::span<uint8_t>) PW_LOCKS_EXCLUDED(mutex_) {
+bool L2capCoc::HandlePduFromHost(pw::span<uint8_t>) {
   // Always forward data from host to controller
   return false;
 }
@@ -386,7 +392,7 @@ std::optional<H4PacketWithH4> L2capCoc::DequeuePacket() {
     return std::nullopt;
   }
 
-  std::lock_guard lock(mutex_);
+  std::lock_guard lock(tx_mutex_);
   if (tx_credits_ == 0) {
     return std::nullopt;
   }
@@ -408,7 +414,7 @@ void L2capCoc::AddCredits(uint16_t credits) {
 
   bool credits_previously_zero;
   {
-    std::lock_guard lock(mutex_);
+    std::lock_guard lock(tx_mutex_);
 
     // Core Spec v6.0 Vol 3, Part A, 10.1: "The device receiving the credit
     // packet shall disconnect the L2CAP channel if the credit count exceeds

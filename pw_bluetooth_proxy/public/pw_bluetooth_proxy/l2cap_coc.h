@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "pw_allocator/allocator.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
@@ -125,13 +127,12 @@ class L2capCoc : public L2capChannel {
   // `SendPayloadFromControllerToClient` with the information payload contained
   // in `kframe`.
   bool HandlePduFromController(pw::span<uint8_t> kframe) override
-      PW_LOCKS_EXCLUDED(mutex_);
+      PW_LOCKS_EXCLUDED(rx_mutex_);
 
-  bool HandlePduFromHost(pw::span<uint8_t> kframe) override
-      PW_LOCKS_EXCLUDED(mutex_);
+  bool HandlePduFromHost(pw::span<uint8_t> kframe) override;
 
-  // Increment `send_credits_` by `credits`.
-  void AddCredits(uint16_t credits) PW_LOCKS_EXCLUDED(mutex_);
+  // Increment tx credits by `credits`.
+  void AddCredits(uint16_t credits) PW_LOCKS_EXCLUDED(tx_mutex_);
 
  private:
   explicit L2capCoc(
@@ -147,7 +148,7 @@ class L2capCoc : public L2capChannel {
 
   // Override: Dequeue a packet only if a credit is able to be subtracted.
   std::optional<H4PacketWithH4> DequeuePacket() override
-      PW_LOCKS_EXCLUDED(mutex_);
+      PW_LOCKS_EXCLUDED(tx_mutex_);
 
   bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) override {
     if (payload_from_controller_fn_) {
@@ -157,23 +158,28 @@ class L2capCoc : public L2capChannel {
   }
 
   void ProcessPduFromControllerMultibuf(span<uint8_t> kframe)
-      PW_LOCKS_EXCLUDED(mutex_);
+      PW_LOCKS_EXCLUDED(rx_mutex_);
 
   multibuf::MultiBufAllocator& rx_multibuf_allocator_;
   L2capSignalingChannel* signaling_channel_;
+
   uint16_t rx_mtu_;
   uint16_t rx_mps_;
   uint16_t tx_mtu_;
   uint16_t tx_mps_;
+
   Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
   Function<void(multibuf::MultiBuf&& payload)> receive_fn_multibuf_;
 
-  sync::Mutex mutex_;
-  uint16_t tx_credits_ PW_GUARDED_BY(mutex_);
-  uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(mutex_) = 0;
-  std::optional<multibuf::MultiBuf> rx_sdu_ PW_GUARDED_BY(mutex_);
-  uint16_t rx_sdu_offset_ PW_GUARDED_BY(mutex_) = 0;
-  uint16_t rx_sdu_bytes_remaining_ PW_GUARDED_BY(mutex_) = 0;
+  sync::Mutex rx_mutex_;
+  uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(rx_mutex_) = 0;
+  std::optional<multibuf::MultiBuf> rx_sdu_ PW_GUARDED_BY(rx_mutex_) =
+      std::nullopt;
+  uint16_t rx_sdu_offset_ PW_GUARDED_BY(rx_mutex_) = 0;
+  uint16_t rx_sdu_bytes_remaining_ PW_GUARDED_BY(rx_mutex_) = 0;
+
+  sync::Mutex tx_mutex_;
+  uint16_t tx_credits_ PW_GUARDED_BY(tx_mutex_);
 };
 
 }  // namespace pw::bluetooth::proxy
