@@ -345,20 +345,6 @@ class ProxyHost {
 
   // Keeps track of the L2CAP-based channels managed by the proxy.
   L2capChannelManager l2cap_channel_manager_;
-
-  // Multibuf allocator to be used if container/client didn't provide an
-  // allocator.  Being used during short transition to allocators being provided
-  // by downstreams. Only lsc_multibuf_allocator_ is used in code, the rest are
-  // just backing it.
-  // TODO: https://pwbug.dev/369849508 - Remove once all containers and clients
-  // provide allocators.
-  std::array<std::byte, 300> lsc_alloc_mem_;
-  pw::allocator::BestFitAllocator<> lsc_bf_allocator_{lsc_alloc_mem_};
-  pw::allocator::SynchronizedAllocator<pw::sync::Mutex> lsc_sync_allocator_{
-      lsc_bf_allocator_};
-  std::array<std::byte, 1000> lsc_multibuf_mem_;
-  pw::multibuf::SimpleAllocator lsc_multibuf_allocator_{lsc_multibuf_mem_,
-                                                        lsc_sync_allocator_};
 };
 
 }  // namespace pw::bluetooth::proxy
