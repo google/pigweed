@@ -27,9 +27,9 @@ class CustomAllocatorTestHarness : public pw::allocator::test::TestHarness {
   static constexpr size_t kCapacity = 0x1000;
   static constexpr size_t kThreshold = 0x800;
 
-  CustomAllocatorTestHarness() : custom_(allocator_, kThreshold) {}
-
-  pw::Allocator* Init() override { return &custom_; }
+  CustomAllocatorTestHarness() : custom_(allocator_, kThreshold) {
+    set_allocator(&custom_);
+  }
 
  private:
   pw::allocator::test::AllocatorForTest<kCapacity> allocator_;

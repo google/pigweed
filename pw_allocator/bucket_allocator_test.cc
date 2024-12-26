@@ -280,4 +280,21 @@ TEST_F(BucketBlockAllocatorTest, AllocatesFromCompatibleBucket) {
   EXPECT_EQ(Fetch(0), block0->UsableSpace());
 }
 
+// Fuzz tests.
+
+using ::pw::allocator::test::BlockAlignedBuffer;
+using ::pw::allocator::test::BlockAllocatorFuzzer;
+using ::pw::allocator::test::DefaultArbitraryRequests;
+using ::pw::allocator::test::Request;
+
+void DoesNotCorruptBlocks(const pw::Vector<Request>& requests) {
+  static BlockAlignedBuffer<BlockType> buffer;
+  static BucketBlockAllocator allocator(buffer.as_span());
+  static BlockAllocatorFuzzer fuzzer(allocator);
+  fuzzer.DoesNotCorruptBlocks(requests);
+}
+
+FUZZ_TEST(BucketBlockAllocatorFuzzTest, DoesNotCorruptBlocks)
+    .WithDomains(DefaultArbitraryRequests());
+
 }  // namespace

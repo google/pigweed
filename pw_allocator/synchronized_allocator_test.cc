@@ -48,6 +48,7 @@ static constexpr size_t kBackgroundRequests = 8;
 
 using ::pw::allocator::Layout;
 using ::pw::allocator::SynchronizedAllocator;
+using ::pw::allocator::test::TestHarness;
 using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<kCapacity>;
 
 struct Allocation {
@@ -104,11 +105,6 @@ class Background final {
   }
 
  private:
-  struct TestHarness : public pw::allocator::test::TestHarness {
-    pw::Allocator* allocator = nullptr;
-    pw::Allocator* Init() override { return allocator; }
-  };
-
   /// Thread body that uses a test harness to perform random sequences of
   /// allocations on a synchronous allocator.
   class BackgroundThreadCore : public pw::thread::ThreadCore {
@@ -117,7 +113,7 @@ class Background final {
                          uint64_t seed,
                          size_t iterations)
         : iterations_(iterations) {
-      test_harness_.allocator = &allocator;
+      test_harness_.set_allocator(&allocator);
       test_harness_.set_prng_seed(seed);
     }
 

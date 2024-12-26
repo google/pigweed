@@ -482,6 +482,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
+        ":fuzzing",
         "//pw_allocator/block:testing",
         "//pw_unit_test",
     ],
@@ -577,6 +578,7 @@ pw_cc_test(
     ],
     deps = [
         ":buddy_allocator",
+        ":fuzzing",
         ":testing",
         "//pw_unit_test",
     ],

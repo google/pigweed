@@ -16,6 +16,7 @@
 
 #include "pw_allocator/best_fit_block_allocator.h"
 #include "pw_allocator/block_allocator_testing.h"
+#include "pw_allocator/buffer.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -155,5 +156,22 @@ TEST_F(BestFitBlockAllocatorTest, AllocatesBestCompatible) {
   allocator.Deallocate(ptr2);
   allocator.Deallocate(ptr3);
 }
+
+// Fuzz tests.
+
+using ::pw::allocator::test::BlockAlignedBuffer;
+using ::pw::allocator::test::BlockAllocatorFuzzer;
+using ::pw::allocator::test::DefaultArbitraryRequests;
+using ::pw::allocator::test::Request;
+
+void DoesNotCorruptBlocks(const pw::Vector<Request>& requests) {
+  static BlockAlignedBuffer<BlockType> buffer;
+  static BestFitAllocator allocator(buffer.as_span());
+  static BlockAllocatorFuzzer fuzzer(allocator);
+  fuzzer.DoesNotCorruptBlocks(requests);
+}
+
+FUZZ_TEST(BestFitAllocatorFuzzTest, DoesNotCorruptBlocks)
+    .WithDomains(DefaultArbitraryRequests());
 
 }  // namespace

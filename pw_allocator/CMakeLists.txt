@@ -435,6 +435,7 @@ pw_add_library(pw_allocator.block_allocator_testing STATIC
     pw_allocator.block.testing
     pw_allocator.block_allocator
     pw_allocator.block.detailed_block
+    pw_allocator.fuzzing
     pw_unit_test
   PRIVATE_DEPS
     pw_assert
@@ -526,6 +527,7 @@ pw_add_test(pw_allocator.buddy_allocator_test
     buddy_allocator_test.cc
   PRIVATE_DEPS
     pw_allocator.buddy_allocator
+    pw_allocator.fuzzing
     pw_allocator.testing
   GROUPS
     modules

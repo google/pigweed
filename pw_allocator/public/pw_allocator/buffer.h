@@ -68,4 +68,12 @@ class WithBuffer {
   T obj_;
 };
 
+/// Convenience alias for creating aligned byte buffers.
+template <size_t kBufferSize, size_t kAlignment>
+struct AlignedBuffer {
+  constexpr ByteSpan as_span() { return ByteSpan(bytes_); }
+
+  alignas(kAlignment) std::array<std::byte, kBufferSize> bytes_;
+};
+
 }  // namespace pw::allocator

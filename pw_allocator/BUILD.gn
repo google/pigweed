@@ -396,6 +396,7 @@ pw_source_set("block_allocator_testing") {
   public = [ "public/pw_allocator/block_allocator_testing.h" ]
   public_deps = [
     ":block_allocator",
+    ":fuzzing",
     "block:testing",
     dir_pw_unit_test,
   ]
@@ -471,6 +472,7 @@ pw_test("bucket_allocator_test") {
 pw_test("buddy_allocator_test") {
   deps = [
     ":buddy_allocator",
+    ":fuzzing",
     ":testing",
   ]
   sources = [ "buddy_allocator_test.cc" ]

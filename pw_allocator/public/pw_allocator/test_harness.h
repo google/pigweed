@@ -60,23 +60,14 @@ size_t AlignmentFromLShift(size_t lshift, size_t size);
 /// For example, one can create a fuzzer for `MyAllocator` that verifies it
 /// never crashes by adding the following class, function, and macro:
 /// @code{.cpp}
-///   constexpr size_t kMaxRequests = 256;
-///   constexpr size_t kMaxAllocations = 128;
-///   constexpr size_t kMaxSize = 2048;
-///
-///   class MyAllocatorFuzzer : public TestHarness {
-///    private:
-///     Allocator* Init() override { return &allocator_; }
-///     MyAllocator allocator_;
-///   };
-///
 ///   void MyAllocatorNeverCrashes(const Vector<Request>& requests) {
-///     static MyAllocatorFuzzer fuzzer;
+///     static MyAllocator allocator;
+///     static TestHarness fuzzer(allocator);
 ///     fuzzer.HandleRequests(requests);
 ///   }
 ///
 ///   FUZZ_TEST(MyAllocator, MyAllocatorNeverCrashes)
-///     .WithDomains(ArbitraryRequests<kMaxRequests, kMaxSize>());
+///     .WithDomains(DefaultArbitraryRequests());
 /// @endcode
 class TestHarness {
  public:
@@ -87,11 +78,14 @@ class TestHarness {
     explicit Allocation(Layout layout_) : layout(layout_) {}
   };
 
+  TestHarness() = default;
+  explicit TestHarness(Allocator& allocator) : allocator_(&allocator) {}
   virtual ~TestHarness() = default;
 
   size_t num_allocations() const { return num_allocations_; }
   size_t allocated() const { return allocated_; }
 
+  void set_allocator(Allocator* allocator) { allocator_ = allocator; }
   void set_prng_seed(uint64_t seed) { prng_ = random::XorShiftStarRng64(seed); }
   void set_available(size_t available) { available_ = available; }
 
@@ -143,8 +137,6 @@ class TestHarness {
   void Reset();
 
  private:
-  virtual Allocator* Init() = 0;
-
   /// Generate requests. `set_prng_seed` must have been called first.
   AllocationRequest GenerateAllocationRequest(size_t max_size);
   DeallocationRequest GenerateDeallocationRequest();

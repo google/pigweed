@@ -15,6 +15,7 @@
 
 #include <cstddef>
 
+#include "pw_allocator/allocator.h"
 #include "pw_allocator/test_harness.h"
 #include "pw_fuzzer/fuzztest.h"
 
@@ -90,6 +91,13 @@ Request MakeRequest(Args... args) {
     return ReallocationRequest{static_cast<size_t>(args)...};
   }
   return Request();
+}
+
+constexpr size_t kMaxRequests = 256;
+constexpr size_t kMaxSize = 2048;
+
+inline auto DefaultArbitraryRequests() {
+  return pw::allocator::test::ArbitraryRequests<kMaxRequests, kMaxSize>();
 }
 
 }  // namespace pw::allocator::test

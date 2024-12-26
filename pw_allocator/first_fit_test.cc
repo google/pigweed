@@ -303,4 +303,32 @@ TEST_F(LastFitBlockAllocatorTest, AllocatesLastCompatible) {
   EXPECT_EQ(NextAfter(4), Fetch(5));
 }
 
+// Fuzz tests.
+
+using ::pw::allocator::test::BlockAlignedBuffer;
+using ::pw::allocator::test::BlockAllocatorFuzzer;
+using ::pw::allocator::test::DefaultArbitraryRequests;
+using ::pw::allocator::test::Request;
+
+void DoesNotCorruptBlocks(const pw::Vector<Request>& requests) {
+  static BlockAlignedBuffer<BlockType> buffer;
+  static FirstFitAllocator allocator(buffer.as_span());
+  static BlockAllocatorFuzzer fuzzer(allocator);
+  fuzzer.DoesNotCorruptBlocks(requests);
+}
+
+FUZZ_TEST(FirstFitAllocatorFuzzTest, DoesNotCorruptBlocks)
+    .WithDomains(DefaultArbitraryRequests());
+
+void WorksWithAnyThreshold(const pw::Vector<Request>& requests,
+                           size_t threshold) {
+  static BlockAlignedBuffer<BlockType> buffer;
+  FirstFitAllocator allocator(buffer.as_span(), threshold);
+  BlockAllocatorFuzzer fuzzer(allocator);
+  fuzzer.DoesNotCorruptBlocks(requests);
+}
+
+FUZZ_TEST(FirstFitAllocatorFuzzTest, WorksWithAnyThreshold)
+    .WithDomains(DefaultArbitraryRequests(), fuzztest::Arbitrary<size_t>());
+
 }  // namespace

@@ -119,10 +119,7 @@ void TestHarness::HandleRequests(const Vector<Request>& requests) {
 }
 
 bool TestHarness::HandleRequest(const Request& request) {
-  if (allocator_ == nullptr) {
-    allocator_ = Init();
-    PW_DCHECK_NOTNULL(allocator_);
-  }
+  PW_DCHECK_NOTNULL(allocator_);
   return std::visit(
       [this](auto&& r) {
         using T = std::decay_t<decltype(r)>;

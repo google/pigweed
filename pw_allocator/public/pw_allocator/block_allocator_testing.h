@@ -19,10 +19,22 @@
 #include "pw_allocator/block/detailed_block.h"
 #include "pw_allocator/block/testing.h"
 #include "pw_allocator/block_allocator.h"
+#include "pw_allocator/buffer.h"
+#include "pw_allocator/deallocator.h"
+#include "pw_allocator/fuzzing.h"
+#include "pw_allocator/test_harness.h"
+#include "pw_assert/assert.h"
+#include "pw_assert/check.h"
+#include "pw_bytes/alignment.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::allocator::test {
+
+static constexpr size_t kDefaultCapacity = 1024;
+
+template <typename BlockType, size_t kBufferSize = kDefaultCapacity>
+using BlockAlignedBuffer = AlignedBuffer<kBufferSize, BlockType::kAlignment>;
 
 /// Test fixture responsible for managing a memory region and an allocator that
 /// allocates block of memory from it.
@@ -36,7 +48,7 @@ class BlockAllocatorTestBase : public ::testing::Test {
 
   // Size of the memory region to use in the tests below.
   // This must be large enough so that BlockType::Init does not fail.
-  static constexpr size_t kCapacity = 1024;
+  static constexpr size_t kCapacity = kDefaultCapacity;
 
   // The number of allocated pointers cached by the test fixture.
   static constexpr size_t kNumPtrs = 16;
@@ -105,6 +117,9 @@ class BlockAllocatorTestBase : public ::testing::Test {
   void ResizeSmallLarger();
   void ResizeSmallLargerFailure();
 
+  // Fuzz tests.
+  void NoCorruptedBlocks();
+
  private:
   std::array<void*, kNumPtrs> ptrs_;
 };
@@ -123,11 +138,9 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
 
  protected:
   // Test fixtures.
-  BlockAllocatorTest(BlockAllocatorType& allocator) : allocator_(allocator) {
-    bytes_ = ByteSpan(buffer_);
-  }
+  BlockAllocatorTest(BlockAllocatorType& allocator) : allocator_(allocator) {}
 
-  ByteSpan GetBytes() override { return bytes_; }
+  ByteSpan GetBytes() override { return buffer_.as_span(); }
 
   Allocator& GetGenericAllocator() override { return GetAllocator(); }
 
@@ -154,8 +167,7 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
 
  private:
   BlockAllocatorType& allocator_;
-  alignas(BlockType::kAlignment) std::array<std::byte, kCapacity> buffer_;
-  ByteSpan bytes_;
+  BlockAlignedBuffer<BlockType, kCapacity> buffer_;
 };
 
 // Test fixture template method implementations.
@@ -318,5 +330,24 @@ void BlockAllocatorTest<BlockAllocatorType>::PoisonPeriodically() {
     Store(i, nullptr);
   }
 }
+
+// Fuzz test support.
+
+template <typename BlockAllocatorType>
+class BlockAllocatorFuzzer : public TestHarness {
+ public:
+  explicit BlockAllocatorFuzzer(BlockAllocatorType& allocator)
+      : TestHarness(allocator), allocator_(allocator) {}
+
+  void DoesNotCorruptBlocks(const pw::Vector<Request>& requests) {
+    HandleRequests(requests);
+    for (const auto& block : allocator_.blocks()) {
+      ASSERT_TRUE(block->IsValid());
+    }
+  }
+
+ private:
+  BlockAllocatorType& allocator_;
+};
 
 }  // namespace pw::allocator::test

@@ -17,6 +17,7 @@
 #include <array>
 #include <cstddef>
 
+#include "pw_allocator/fuzzing.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -26,28 +27,27 @@ namespace {
 using BuddyAllocator = ::pw::allocator::BuddyAllocator<>;
 using ::pw::allocator::Layout;
 
-class BuddyAllocatorTest : public ::testing::Test {
- protected:
-  static constexpr size_t kBufferSize = 0x400;
-  std::array<std::byte, kBufferSize> buffer_;
-};
+static constexpr size_t kBufferSize = 0x400;
 
 // Unit tests.
 
-TEST_F(BuddyAllocatorTest, ExplicitlyInit) {
+TEST(BuddyAllocatorTest, ExplicitlyInit) {
+  std::array<std::byte, kBufferSize> buffer;
   BuddyAllocator allocator;
-  allocator.Init(buffer_);
+  allocator.Init(buffer);
 }
 
-TEST_F(BuddyAllocatorTest, AllocateSmall) {
-  BuddyAllocator allocator(buffer_);
+TEST(BuddyAllocatorTest, AllocateSmall) {
+  std::array<std::byte, kBufferSize> buffer;
+  BuddyAllocator allocator(buffer);
   void* ptr = allocator.Allocate(Layout(BuddyAllocator::kMinOuterSize / 2, 1));
   ASSERT_NE(ptr, nullptr);
   allocator.Deallocate(ptr);
 }
 
-TEST_F(BuddyAllocatorTest, AllocateAllBlocks) {
-  BuddyAllocator allocator(buffer_);
+TEST(BuddyAllocatorTest, AllocateAllBlocks) {
+  std::array<std::byte, kBufferSize> buffer;
+  BuddyAllocator allocator(buffer);
   pw::Vector<void*, kBufferSize / BuddyAllocator::kMinOuterSize> ptrs;
   while (true) {
     void* ptr = allocator.Allocate(Layout(1, 1));
@@ -62,23 +62,42 @@ TEST_F(BuddyAllocatorTest, AllocateAllBlocks) {
   }
 }
 
-TEST_F(BuddyAllocatorTest, AllocateLarge) {
-  BuddyAllocator allocator(buffer_);
+TEST(BuddyAllocatorTest, AllocateLarge) {
+  std::array<std::byte, kBufferSize> buffer;
+  BuddyAllocator allocator(buffer);
   void* ptr = allocator.Allocate(Layout(48, 1));
   ASSERT_NE(ptr, nullptr);
   allocator.Deallocate(ptr);
 }
 
-TEST_F(BuddyAllocatorTest, AllocateExcessiveSize) {
-  BuddyAllocator allocator(buffer_);
+TEST(BuddyAllocatorTest, AllocateExcessiveSize) {
+  std::array<std::byte, kBufferSize> buffer;
+  BuddyAllocator allocator(buffer);
   void* ptr = allocator.Allocate(Layout(786, 1));
   EXPECT_EQ(ptr, nullptr);
 }
 
-TEST_F(BuddyAllocatorTest, AllocateExcessiveAlignment) {
-  BuddyAllocator allocator(buffer_);
+TEST(BuddyAllocatorTest, AllocateExcessiveAlignment) {
+  std::array<std::byte, kBufferSize> buffer;
+  BuddyAllocator allocator(buffer);
   void* ptr = allocator.Allocate(Layout(48, 32));
   EXPECT_EQ(ptr, nullptr);
 }
+
+// Fuzz tests.
+
+using ::pw::allocator::test::DefaultArbitraryRequests;
+using ::pw::allocator::test::Request;
+using ::pw::allocator::test::TestHarness;
+
+void NeverCrashes(const pw::Vector<Request>& requests) {
+  static std::array<std::byte, kBufferSize> buffer;
+  static BuddyAllocator allocator(buffer);
+  static TestHarness fuzzer(allocator);
+  fuzzer.HandleRequests(requests);
+}
+
+FUZZ_TEST(BucketBlockAllocatorFuzzTest, NeverCrashes)
+    .WithDomains(DefaultArbitraryRequests());
 
 }  // namespace

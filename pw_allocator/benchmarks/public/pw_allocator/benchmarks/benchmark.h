@@ -103,13 +103,12 @@ class BlockAllocatorBenchmark
  public:
   BlockAllocatorBenchmark(Measurements& measurements, AllocatorType& allocator)
       : internal::GenericBlockAllocatorBenchmark(measurements),
-        allocator_(allocator) {}
+        allocator_(allocator) {
+    set_allocator(&allocator);
+  }
 
  private:
   using BlockType = typename AllocatorType::BlockType;
-
-  /// @copydoc test::TestHarness::Init
-  Allocator* Init() override { return &allocator_; }
 
   /// @copydoc GenericBlockAllocatorBenchmark::GetBlockInnerSize
   size_t GetBlockInnerSize(const void* ptr) const override;
