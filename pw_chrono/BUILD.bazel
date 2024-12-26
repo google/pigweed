@@ -15,7 +15,7 @@
 load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:compatibility.bzl", "host_backend_alias", "incompatible_with_mcu")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 load("//pw_build:python.bzl", "pw_py_binary")
 load("//pw_protobuf_compiler:pw_proto_library.bzl", "pwpb_proto_library")
@@ -61,18 +61,12 @@ pw_facade(
 
 label_flag(
     name = "system_clock_backend",
-    build_setting_default = ":system_clock_backend_multiplexer",
+    build_setting_default = ":system_clock_unspecified_backend",
 )
 
-cc_library(
-    name = "system_clock_backend_multiplexer",
-    visibility = ["//targets:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/rtos:embos": ["//pw_chrono_embos:system_clock"],
-        "//pw_build/constraints/rtos:freertos": ["//pw_chrono_freertos:system_clock"],
-        "//pw_build/constraints/rtos:threadx": ["//pw_chrono_threadx:system_clock"],
-        "//conditions:default": ["//pw_chrono_stl:system_clock"],
-    }),
+host_backend_alias(
+    name = "system_clock_unspecified_backend",
+    backend = "//pw_chrono_stl:system_clock",
 )
 
 pw_facade(
@@ -89,17 +83,12 @@ pw_facade(
 
 label_flag(
     name = "system_timer_backend",
-    build_setting_default = ":system_timer_backend_multiplexer",
+    build_setting_default = ":system_timer_unspecified_backend",
 )
 
-cc_library(
-    name = "system_timer_backend_multiplexer",
-    visibility = ["//targets:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/rtos:embos": ["//pw_chrono_embos:system_timer"],
-        "//pw_build/constraints/rtos:freertos": ["//pw_chrono_freertos:system_timer"],
-        "//conditions:default": ["//pw_chrono_stl:system_timer"],
-    }),
+host_backend_alias(
+    name = "system_timer_unspecified_backend",
+    backend = "//pw_chrono_stl:system_timer",
 )
 
 proto_library(
