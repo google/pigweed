@@ -57,6 +57,7 @@ if (pw_toolchain_USE_LLVM_PREBUILT_LIBRARIES) {
   cortex_m_common_link_flags = [
     "-nostartfiles",
     "-nostdlib++",
+    "-unwindlib=none",
   ]
   cortex_m_common_defines = [
     # This macro is used by libc++ headers and normally would expand to std::_libcpp_verbose_abort,
