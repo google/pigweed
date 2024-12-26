@@ -73,6 +73,7 @@ pw_facade(
         ":common",
         ":config_override",
     ],
+    alwayslink = 1,
 )
 
 label_flag(
