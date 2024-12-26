@@ -14,7 +14,6 @@ The following crypto services are provided by this module.
 ------
 SHA256
 ------
-
 1. Obtaining a oneshot digest.
 
 .. code-block:: cpp
@@ -48,7 +47,6 @@ SHA256
 -----
 ECDSA
 -----
-
 1. Verifying a digital signature signed with ECDSA over the NIST P256 curve.
 
 .. code-block:: cpp
@@ -109,13 +107,11 @@ AES
 -------------
 Configuration
 -------------
-
 The crypto services offered by pw_crypto can be backed by different backend
 crypto libraries.
 
 Mbed TLS
 ========
-
 The `Mbed TLS project <https://www.trustedfirmware.org/projects/mbed-tls/>`_
 is a mature and full-featured crypto library that implements cryptographic
 primitives, X.509 certificate manipulation and the SSL/TLS and DTLS protocols.
@@ -149,11 +145,11 @@ appropriate backends by adding them to your project's `platform
 
    platform(
      name = "my_platform",
-      constraint_values = [
-        "@pigweed//pw_crypto:sha256_mbedtls_backend",
-        "@pigweed//pw_crypto:ecdsa_mbedtls_backend",
-        "@pigweed//pw_crypto:aes_mbedtls_backend",
-        # ... other constraint_values
+     flags = [
+        "@pigweed//pw_crypto:sha256_backend=@pigweed//pw_crypto:sha256_mbedtls_backend",
+        "@pigweed//pw_crypto:ecdsa_backend=@pigweed//pw_crypto:ecdsa_mbedtls_backend",
+        "@pigweed//pw_crypto:aes_backend=@pigweed//pw_crypto:aes_mbedtls_backend",
+        # ... other flags
       ],
    )
 
@@ -215,7 +211,6 @@ Note Micro-ECC does not implement any hashing functions, so you will need to use
 ------------
 Size Reports
 ------------
-
 Below are size reports for each crypto service. These vary across
 configurations.
 

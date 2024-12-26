@@ -13,7 +13,7 @@
 # the License.
 
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:compatibility.bzl", "host_backend_alias", "incompatible_with_mcu")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -39,24 +39,12 @@ pw_facade(
 
 label_flag(
     name = "sha256_backend",
-    build_setting_default = ":sha256_backend_multiplexer",
+    build_setting_default = ":unspecified_sha256_backend",
 )
 
-constraint_setting(
-    name = "sha256_backend_constraint_setting",
-)
-
-constraint_value(
-    name = "sha256_mbedtls_backend",
-    constraint_setting = ":sha256_backend_constraint_setting",
-)
-
-alias(
-    name = "sha256_backend_multiplexer",
-    actual = select({
-        ":sha256_mbedtls_backend": ":sha256_mbedtls",
-        "//conditions:default": ":sha256_mbedtls",
-    }),
+host_backend_alias(
+    name = "unspecified_sha256_backend",
+    backend = ":sha256_mbedtls",
 )
 
 cc_library(
@@ -123,30 +111,12 @@ pw_facade(
 
 label_flag(
     name = "ecdsa_backend",
-    build_setting_default = ":ecdsa_backend_multiplexer",
+    build_setting_default = ":unspecified_ecdsa_backend",
 )
 
-constraint_setting(
-    name = "ecdsa_backend_constraint_setting",
-)
-
-constraint_value(
-    name = "ecdsa_mbedtls_backend",
-    constraint_setting = ":ecdsa_backend_constraint_setting",
-)
-
-constraint_value(
-    name = "ecdsa_uecc_backend",
-    constraint_setting = ":ecdsa_backend_constraint_setting",
-)
-
-alias(
-    name = "ecdsa_backend_multiplexer",
-    actual = select({
-        ":ecdsa_mbedtls_backend": ":ecdsa_mbedtls",
-        ":ecdsa_uecc_backend": ":ecdsa_uecc",
-        "//conditions:default": ":ecdsa_mbedtls",
-    }),
+host_backend_alias(
+    name = "unspecified_ecdsa_backend",
+    backend = ":ecdsa_mbedtls",
 )
 
 cc_library(
@@ -199,24 +169,12 @@ pw_facade(
 
 label_flag(
     name = "aes_backend",
-    build_setting_default = ":aes_backend_multiplexer",
+    build_setting_default = ":unspecified_aes_backend",
 )
 
-constraint_setting(
-    name = "aes_backend_constraint_setting",
-)
-
-constraint_value(
-    name = "aes_mbedtls_backend",
-    constraint_setting = ":aes_backend_constraint_setting",
-)
-
-alias(
-    name = "aes_backend_multiplexer",
-    actual = select({
-        ":aes_mbedtls_backend": ":aes_mbedtls",
-        "//conditions:default": ":aes_mbedtls",
-    }),
+host_backend_alias(
+    name = "unspecified_aes_backend",
+    backend = ":aes_mbedtls",
 )
 
 cc_library(
