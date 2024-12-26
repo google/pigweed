@@ -43,6 +43,7 @@ ALLOCATORS = [
     'first_fit',
     'last_fit',
     'worst_fit',
+    'tlsf',
 ]
 
 BY_ALLOC_COUNT = 'by allocation count'

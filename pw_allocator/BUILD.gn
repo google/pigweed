@@ -316,6 +316,19 @@ pw_source_set("synchronized_allocator") {
   ]
 }
 
+pw_source_set("tlsf_allocator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/tlsf_allocator.h" ]
+  public_deps = [
+    ":block_allocator",
+    ":config",
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    "block:detailed_block",
+    "bucket:fast_sorted",
+    "bucket:sorted",
+  ]
+}
+
 pw_source_set("tracking_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [
@@ -586,6 +599,14 @@ pw_test("synchronized_allocator_test") {
   sources = [ "synchronized_allocator_test.cc" ]
 }
 
+pw_test("tlsf_allocator_test") {
+  deps = [
+    ":block_allocator_testing",
+    ":tlsf_allocator",
+  ]
+  sources = [ "tlsf_allocator_test.cc" ]
+}
+
 pw_test("tracking_allocator_test") {
   deps = [
     ":testing",
@@ -638,6 +659,7 @@ pw_test_group("tests") {
     ":null_allocator_test",
     ":pmr_allocator_test",
     ":synchronized_allocator_test",
+    ":tlsf_allocator_test",
     ":tracking_allocator_test",
     ":typed_pool_test",
     ":unique_ptr_test",
@@ -701,6 +723,11 @@ pw_size_diff("concrete_allocators_size_report") {
       target = "size_report:libc_allocator"
       base = "size_report:null_allocator"
       label = "LibCAllocator"
+    },
+    {
+      target = "size_report:tlsf_allocator"
+      base = "size_report:null_allocator"
+      label = "TlsfAllocator"
     },
     {
       target = "size_report:worst_fit"

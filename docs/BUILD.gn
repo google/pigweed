@@ -199,6 +199,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_allocator/public/pw_allocator/synchronized_allocator.h",
   "$dir_pw_allocator/public/pw_allocator/test_harness.h",
   "$dir_pw_allocator/public/pw_allocator/testing.h",
+  "$dir_pw_allocator/public/pw_allocator/tlsf_allocator.h",
   "$dir_pw_allocator/public/pw_allocator/tracking_allocator.h",
   "$dir_pw_allocator/public/pw_allocator/typed_pool.h",
   "$dir_pw_allocator/public/pw_allocator/unique_ptr.h",

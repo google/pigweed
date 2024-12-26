@@ -342,6 +342,20 @@ pw_add_library(pw_allocator.synchronized_allocator INTERFACE
     pw_sync.borrow
 )
 
+pw_add_library(pw_allocator.tlsf_allocator INTERFACE
+  HEADERS
+    public/pw_allocator/tlsf_allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
+    pw_allocator.bucket.sorted
+    pw_allocator.bucket.fast_sorted
+    pw_allocator.config
+    pw_third_party.fuchsia.stdcompat
+)
+
 pw_add_library(pw_allocator.tracking_allocator INTERFACE
   HEADERS
     public/pw_allocator/metrics.h
@@ -670,6 +684,17 @@ pw_add_test(pw_allocator.synchronized_allocator_test
     pw_thread.thread_core
     pw_thread.yield
     pw_random
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.tlsf_allocator_test
+  SOURCES
+  tlsf_allocator_test.cc
+  PRIVATE_DEPS
+    pw_allocator.block_allocator_testing
+    pw_allocator.tlsf_allocator
   GROUPS
     modules
     pw_allocator

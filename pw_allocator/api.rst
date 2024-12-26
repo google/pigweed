@@ -96,6 +96,9 @@ This module provides several concrete allocator implementations of the
 
 BlockAllocator
 ==============
+Several allocators use :ref:`module-pw_allocator-api-block` types to manage
+memory, and derive from this abstract base type.
+
 .. doxygenclass:: pw::allocator::BlockAllocator
    :members:
 
@@ -111,6 +114,13 @@ FirstFitAllocator
 BestFitAllocator
 ----------------
 .. doxygenclass:: pw::allocator::BestFitAllocator
+   :members:
+
+.. _module-pw_allocator-api-tlsf_allocator:
+
+TlsfAllocator
+-------------
+.. doxygenclass:: pw::allocator::TlsfAllocator
    :members:
 
 .. _module-pw_allocator-api-worst_fit_allocator:
@@ -218,8 +228,8 @@ includes some utility classes.
 
 .. _module-pw_allocator-api-block:
 
-Block interfaces
-================
+Block
+=====
 A block is an allocatable region of memory, and is the fundamental type managed
 by several of the concrete allocator implementations. Blocks are defined
 using several stateless "mix-in" interface types. These provide specific

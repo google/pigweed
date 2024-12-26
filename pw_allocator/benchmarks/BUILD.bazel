@@ -121,6 +121,19 @@ cc_binary(
 )
 
 cc_binary(
+    name = "tlsf_benchmark",
+    testonly = True,
+    srcs = [
+        "tlsf_benchmark.cc",
+    ],
+    deps = [
+        ":benchmark",
+        "//pw_allocator:tlsf_allocator",
+        "//pw_random",
+    ],
+)
+
+cc_binary(
     name = "worst_fit_benchmark",
     testonly = True,
     srcs = [

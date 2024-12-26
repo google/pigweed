@@ -102,6 +102,15 @@ pw_executable("last_fit_benchmark") {
   ]
 }
 
+pw_executable("tlsf_benchmark") {
+  sources = [ "tlsf_benchmark.cc" ]
+  deps = [
+    ":benchmark",
+    "$dir_pw_allocator:tlsf_allocator",
+    "$dir_pw_random",
+  ]
+}
+
 pw_executable("worst_fit_benchmark") {
   sources = [ "worst_fit_benchmark.cc" ]
   deps = [

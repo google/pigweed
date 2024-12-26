@@ -375,6 +375,20 @@ cc_library(
 )
 
 cc_library(
+    name = "tlsf_allocator",
+    hdrs = ["public/pw_allocator/tlsf_allocator.h"],
+    includes = ["public"],
+    deps = [
+        ":block_allocator",
+        ":config",
+        "//pw_allocator/block:detailed_block",
+        "//pw_allocator/bucket:fast_sorted",
+        "//pw_allocator/bucket:sorted",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
+cc_library(
     name = "tracking_allocator",
     hdrs = [
         "public/pw_allocator/metrics.h",
@@ -728,6 +742,16 @@ pw_cc_test(
         "//pw_thread:thread",
         "//pw_thread:thread_core",
         "//pw_thread:yield",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "tlsf_allocator_test",
+    srcs = ["tlsf_allocator_test.cc"],
+    deps = [
+        ":block_allocator_testing",
+        ":tlsf_allocator",
         "//pw_unit_test",
     ],
 )

@@ -159,6 +159,15 @@ pw_cc_binary(
 )
 
 pw_cc_binary(
+    name = "tlsf_allocator",
+    srcs = ["tlsf_allocator.cc"],
+    deps = [
+        "//pw_allocator:size_reporter",
+        "//pw_allocator:tlsf_allocator",
+    ],
+)
+
+pw_cc_binary(
     name = "tracking_allocator_no_metrics",
     srcs = ["tracking_allocator_no_metrics.cc"],
     deps = [

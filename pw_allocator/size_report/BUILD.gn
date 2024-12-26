@@ -141,6 +141,14 @@ pw_executable("synchronized_allocator_mutex") {
   ]
 }
 
+pw_executable("tlsf_allocator") {
+  sources = [ "tlsf_allocator.cc" ]
+  deps = [
+    "..:size_reporter",
+    "..:tlsf_allocator",
+  ]
+}
+
 pw_executable("tracking_allocator_all_metrics") {
   sources = [ "tracking_allocator_all_metrics.cc" ]
   deps = [
