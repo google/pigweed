@@ -254,7 +254,7 @@ bool L2capSignalingChannel::HandleFlowControlCreditInd(
     // TODO: https://pwbug.dev/360929142 - Validate type in case remote peer
     // sends indication addressed to wrong CID.
     L2capCocInternal* coc_ptr = static_cast<L2capCocInternal*>(found_channel);
-    coc_ptr->AddCredits(cmd.credits().Read());
+    coc_ptr->AddTxCredits(cmd.credits().Read());
     return true;
   }
   return false;

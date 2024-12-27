@@ -348,6 +348,117 @@ TEST_F(L2capCocReadTest, BasicRead) {
   EXPECT_EQ(capture.receives_called, 1);
 }
 
+TEST_F(L2capCocReadTest, RxCreditsAreReplenished) {
+  const uint16_t kRxCredits = 10;
+  // Corresponds to kRxCreditReplenishThreshold in l2cap_coc.cc times
+  // kRxCredits.
+  // TODO: b/353734827 - Update test once client can to determine this constant.
+  const uint16_t kRxThreshold = 3;
+  struct {
+    uint16_t handle = 123;
+    uint16_t local_cid = 234;
+    uint16_t tx_packets_sent = 0;
+    // We expect when we reach threshold to replenish exactly that amount.
+    uint16_t expected_additional_credits = kRxThreshold;
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&capture]([[maybe_unused]] H4PacketWithH4&& packet) {
+        capture.tx_packets_sent++;
+
+        // Verify packet is properly formed FLOW_CONTROL_CREDIT_IND with the
+        // expected credits.
+        PW_TEST_ASSERT_OK_AND_ASSIGN(
+            auto acl,
+            MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
+        EXPECT_EQ(acl.header().handle().Read(), capture.handle);
+        EXPECT_EQ(
+            acl.data_total_length().Read(),
+            emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+                emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+        emboss::CFrameView cframe = emboss::MakeCFrameView(
+            acl.payload().BackingStorage().data(), acl.payload().SizeInBytes());
+        EXPECT_EQ(cframe.pdu_length().Read(),
+                  emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+        // 0x0005 = LE-U fixed signaling channel ID.
+        EXPECT_EQ(cframe.channel_id().Read(), 0x0005);
+        emboss::L2capFlowControlCreditIndView ind =
+            emboss::MakeL2capFlowControlCreditIndView(
+                cframe.payload().BackingStorage().data(),
+                cframe.payload().SizeInBytes());
+        EXPECT_EQ(ind.command_header().code().Read(),
+                  emboss::L2capSignalingPacketCode::FLOW_CONTROL_CREDIT_IND);
+        EXPECT_EQ(
+            ind.command_header().data_length().Read(),
+            emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes() -
+                emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+        EXPECT_EQ(ind.cid().Read(), capture.local_cid);
+        EXPECT_EQ(ind.credits().Read(), capture.expected_additional_credits);
+      });
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/10,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 12));
+
+  L2capCoc channel = BuildCoc(proxy,
+                              CocParameters{.handle = capture.handle,
+                                            .local_cid = capture.local_cid,
+                                            .rx_credits = kRxCredits});
+
+  auto SendRxH4Packet = [&capture, &proxy]() {
+    std::array<uint8_t, 3> expected_payload = {0xAB, 0xCD, 0xEF};
+    std::array<uint8_t, kFirstKFrameOverAclMinSize + expected_payload.size()>
+        hci_arr;
+    hci_arr.fill(0);
+    H4PacketWithHci h4_packet{emboss::H4PacketType::ACL_DATA, hci_arr};
+
+    Result<emboss::AclDataFrameWriter> acl =
+        MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr);
+    acl->header().handle().Write(capture.handle);
+    acl->data_total_length().Write(emboss::FirstKFrame::MinSizeInBytes() +
+                                   expected_payload.size());
+
+    emboss::FirstKFrameWriter kframe =
+        emboss::MakeFirstKFrameView(acl->payload().BackingStorage().data(),
+                                    acl->data_total_length().Read());
+    kframe.pdu_length().Write(kSduLengthFieldSize + expected_payload.size());
+    kframe.channel_id().Write(capture.local_cid);
+    kframe.sdu_length().Write(expected_payload.size());
+    std::copy(expected_payload.begin(),
+              expected_payload.end(),
+              hci_arr.begin() + kFirstKFrameOverAclMinSize);
+
+    proxy.HandleH4HciFromController(std::move(h4_packet));
+  };
+
+  // Rx packets before threshold should not trigger a credit packet.
+  EXPECT_EQ(0, capture.tx_packets_sent);
+  for (int i = 0; i < kRxThreshold - 1; i++) {
+    // Send ACL data packet destined for the CoC we registered.
+    SendRxH4Packet();
+    EXPECT_EQ(0, capture.tx_packets_sent);
+  }
+
+  // RX packet at threshold should trigger exactly one credit packet with
+  // threshold credits.
+  SendRxH4Packet();
+  EXPECT_EQ(1, capture.tx_packets_sent);
+
+  // Send just up to threshold again.
+  for (int i = 0; i < kRxThreshold - 1; i++) {
+    SendRxH4Packet();
+    EXPECT_EQ(1, capture.tx_packets_sent);
+  }
+
+  // RX packet at threshold should once again trigger exactly one credit packet
+  // with threshold credits.
+  SendRxH4Packet();
+  EXPECT_EQ(2, capture.tx_packets_sent);
+}
+
 TEST_F(L2capCocReadTest, ChannelHandlesReadWithNullReceiveFn) {
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) { FAIL(); });

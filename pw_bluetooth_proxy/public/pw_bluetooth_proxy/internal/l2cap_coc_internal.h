@@ -45,7 +45,7 @@ class L2capCocInternal final : public L2capCoc {
 
   // Increment L2CAP credits. This should be called by signaling channels in
   // response to L2CAP_FLOW_CONTROL_CREDIT_IND packets.
-  void AddCredits(uint16_t credits) { L2capCoc::AddCredits(credits); }
+  void AddTxCredits(uint16_t credits) { L2capCoc::AddTxCredits(credits); }
 };
 
 }  // namespace pw::bluetooth::proxy

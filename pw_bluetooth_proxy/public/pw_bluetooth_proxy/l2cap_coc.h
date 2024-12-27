@@ -110,7 +110,8 @@ class L2capCoc : public L2capChannel {
   ///                       (transient error).
   ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
   /// @endrst
-  pw::Status SendAdditionalRxCredits(uint16_t additional_rx_credits);
+  pw::Status SendAdditionalRxCredits(uint16_t additional_rx_credits)
+      PW_LOCKS_EXCLUDED(rx_mutex_);
 
  protected:
   static pw::Result<L2capCoc> Create(
@@ -132,7 +133,7 @@ class L2capCoc : public L2capChannel {
   bool HandlePduFromHost(pw::span<uint8_t> kframe) override;
 
   // Increment tx credits by `credits`.
-  void AddCredits(uint16_t credits) PW_LOCKS_EXCLUDED(tx_mutex_);
+  void AddTxCredits(uint16_t credits) PW_LOCKS_EXCLUDED(tx_mutex_);
 
  private:
   explicit L2capCoc(
@@ -165,6 +166,9 @@ class L2capCoc : public L2capChannel {
   void ProcessPduFromControllerMultibuf(span<uint8_t> kframe)
       PW_LOCKS_EXCLUDED(rx_mutex_);
 
+  // Replenish some of the remote's credits.
+  pw::Status ReplenishRxCredits(uint16_t additional_rx_credits);
+
   multibuf::MultiBufAllocator& rx_multibuf_allocator_;
   L2capSignalingChannel* signaling_channel_;
 
@@ -182,6 +186,8 @@ class L2capCoc : public L2capChannel {
       std::nullopt;
   uint16_t rx_sdu_offset_ PW_GUARDED_BY(rx_mutex_) = 0;
   uint16_t rx_sdu_bytes_remaining_ PW_GUARDED_BY(rx_mutex_) = 0;
+  uint16_t rx_remaining_credits_ PW_GUARDED_BY(rx_mutex_);
+  uint16_t rx_total_credits_ PW_GUARDED_BY(rx_mutex_);
 
   sync::Mutex tx_mutex_;
   uint16_t tx_credits_ PW_GUARDED_BY(tx_mutex_);

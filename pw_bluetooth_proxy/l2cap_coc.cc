@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_proxy/l2cap_coc.h"
 
+#include <cmath>
 #include <cstdint>
 #include <mutex>
 
@@ -30,6 +31,13 @@
 #include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
+
+namespace {
+
+// TODO: b/353734827 - Allow client to determine this constant.
+const float kRxCreditReplenishThreshold = 0.30;
+
+}  // namespace
 
 L2capCoc::L2capCoc(L2capCoc&& other)
     : L2capChannel(static_cast<L2capCoc&&>(other)),
@@ -53,6 +61,8 @@ L2capCoc::L2capCoc(L2capCoc&& other)
     rx_sdu_ = std::move(other.rx_sdu_);
     rx_sdu_offset_ = other.rx_sdu_offset_;
     rx_sdu_bytes_remaining_ = other.rx_sdu_bytes_remaining_;
+    rx_remaining_credits_ = other.rx_remaining_credits_;
+    rx_total_credits_ = other.rx_total_credits_;
   }
 }
 
@@ -115,13 +125,26 @@ pw::Result<L2capCoc> L2capCoc::Create(
       /*receive_fn_multibuf=*/std::move(receive_fn_multibuf));
 }
 
+pw::Status L2capCoc::ReplenishRxCredits(uint16_t additional_rx_credits) {
+  PW_CHECK(signaling_channel_);
+  return signaling_channel_->SendFlowControlCreditInd(local_cid(),
+                                                      additional_rx_credits);
+}
+
 pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
   if (state() != State::kRunning) {
     return Status::FailedPrecondition();
   }
+  std::lock_guard lock(rx_mutex_);
   PW_CHECK(signaling_channel_);
-  return signaling_channel_->SendFlowControlCreditInd(local_cid(),
-                                                      additional_rx_credits);
+  Status status = ReplenishRxCredits(additional_rx_credits);
+  if (status.ok()) {
+    // We treat additional bumps from the client as bumping the total allowed
+    // credits.
+    rx_total_credits_ += additional_rx_credits;
+    rx_remaining_credits_ += additional_rx_credits;
+  }
+  return status;
 }
 
 void L2capCoc::ProcessPduFromControllerMultibuf(span<uint8_t> kframe) {
@@ -199,6 +222,31 @@ bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
   if (state() != State::kRunning) {
     StopAndSendEvent(L2capChannelEvent::kRxWhileStopped);
     return true;
+  }
+
+  {
+    std::lock_guard lock(rx_mutex_);
+    rx_remaining_credits_--;
+
+    uint16_t rx_credits_used = rx_total_credits_ - rx_remaining_credits_;
+    if (rx_credits_used >=
+        std::ceil(rx_total_credits_ * kRxCreditReplenishThreshold)) {
+      Status status = ReplenishRxCredits(rx_credits_used);
+      if (status.IsUnavailable()) {
+        PW_LOG_INFO(
+            "Unable to send %hu rx credits to remote (it has %hu credits "
+            "remaining). Will try on next PDU receive.",
+            rx_credits_used,
+            rx_total_credits_);
+      } else if (status.IsFailedPrecondition()) {
+        PW_LOG_WARN(
+            "Unable to send rx credits to remote, perhaps the connection has "
+            "been closed?");
+      } else {
+        PW_CHECK(status.ok());
+        rx_remaining_credits_ += rx_credits_used;
+      }
+    }
   }
 
   // TODO: https://pwbug.dev/369849508 - Make this the only path once clients
@@ -326,6 +374,8 @@ L2capCoc::L2capCoc(
       tx_mps_(tx_config.mps),
       payload_from_controller_fn_(std::move(payload_from_controller_fn)),
       receive_fn_multibuf_(std::move(receive_fn_multibuf)),
+      rx_remaining_credits_(rx_config.credits),
+      rx_total_credits_(rx_config.credits),
       tx_credits_(tx_config.credits) {}
 
 std::optional<uint16_t> L2capCoc::MaxL2capPayloadSize() const {
@@ -414,7 +464,7 @@ std::optional<H4PacketWithH4> L2capCoc::GenerateNextTxPacket() {
   return h4_packet;
 }
 
-void L2capCoc::AddCredits(uint16_t credits) {
+void L2capCoc::AddTxCredits(uint16_t credits) {
   if (state() != State::kRunning) {
     PW_LOG_ERROR(
         "(CID 0x%X) Received credits on stopped CoC. So will ignore signal.",
