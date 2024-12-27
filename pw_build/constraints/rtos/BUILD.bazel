@@ -26,23 +26,9 @@ constraint_value(
     constraint_setting = ":rtos",
 )
 
-config_setting(
-    name = "none_setting",
-    flag_values = {
-        "//targets:target_rtos": ":none",
-    },
-)
-
 constraint_value(
     name = "embos",
     constraint_setting = ":rtos",
-)
-
-config_setting(
-    name = "embos_setting",
-    flag_values = {
-        "//targets:target_rtos": ":embos",
-    },
 )
 
 constraint_value(
@@ -50,21 +36,7 @@ constraint_value(
     constraint_setting = ":rtos",
 )
 
-config_setting(
-    name = "freertos_setting",
-    flag_values = {
-        "//targets:target_rtos": ":freertos",
-    },
-)
-
 constraint_value(
     name = "threadx",
     constraint_setting = ":rtos",
-)
-
-config_setting(
-    name = "threadx_setting",
-    flag_values = {
-        "//targets:target_rtos": ":threadx",
-    },
 )
