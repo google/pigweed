@@ -189,12 +189,8 @@ Submission checklist
 All Pigweed changes must either:
 
 #. Include updates to documentation, or
-#. Include ``No-Docs-Update-Reason: <reason>`` in a Gerrit comment on the CL.
-   For example:
-
-   * ``No-Docs-Update-Reason: formatting tweaks``
-   * ``No-Docs-Update-Reason: internal cleanups``
-   * ``No-Docs-Update-Reason: bugfix``
+#. Assert no documentation is needed by voting +1 on the ``Docs-Not-Needed``
+   #label in Gerrit.
 
 It's acceptable to only document new changes in an otherwise underdocumented
 module, but it's not acceptable to not document new changes because the module
