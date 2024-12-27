@@ -23,11 +23,10 @@
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/tracking_allocator.h"
 #include "pw_assert/assert.h"
-#include "pw_assert/internal/check_impl.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
-#include "pw_sync/interrupt_spin_lock.h"
+#include "pw_sync/mutex.h"
 #include "pw_tokenizer/tokenize.h"
 #include "pw_unit_test/framework.h"
 
@@ -219,7 +218,7 @@ class SynchronizedAllocatorForTest : public Allocator {
     return GetInfo(base_, info_type, ptr);
   }
 
-  mutable pw::sync::InterruptSpinLock lock_;
+  mutable pw::sync::Mutex lock_;
   Base base_;
 };
 

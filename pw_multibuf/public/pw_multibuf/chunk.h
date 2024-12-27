@@ -18,7 +18,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
-#include "pw_sync/interrupt_spin_lock.h"
+#include "pw_sync/mutex.h"
 
 namespace pw::multibuf {
 
@@ -312,7 +312,7 @@ class ChunkRegionTracker {
   ///
   /// - know whether they can expand to fill neighboring regions of memory.
   /// - know when the last chunk has been destructed, triggering `Destroy`.
-  pw::sync::InterruptSpinLock lock_;
+  pw::sync::Mutex lock_;
   friend Chunk;
 };
 

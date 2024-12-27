@@ -383,7 +383,7 @@ pw_source_set("testing") {
     ":buffer",
     ":first_fit",
     ":tracking_allocator",
-    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:mutex",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,

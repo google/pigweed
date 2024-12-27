@@ -24,7 +24,7 @@ pw_add_library(pw_multibuf.chunk STATIC
     pw_bytes
     pw_preprocessor
     pw_span
-    pw_sync.interrupt_spin_lock
+    pw_sync.mutex
   PRIVATE_DEPS
     pw_assert.check
   SOURCES

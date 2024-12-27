@@ -18,7 +18,7 @@
 #include "pw_containers/intrusive_forward_list.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
-#include "pw_sync/interrupt_spin_lock.h"
+#include "pw_sync/mutex.h"
 
 namespace pw::multibuf {
 
@@ -177,7 +177,7 @@ class MultiBufAllocator {
       size_t desired_size,
       ContiguityRequirement contiguity_requirement) = 0;
 
-  sync::InterruptSpinLock lock_;
+  sync::Mutex lock_;
   IntrusiveForwardList<MemoryAvailableDelegate> mem_delegates_
       PW_GUARDED_BY(lock_);
 };

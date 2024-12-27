@@ -420,7 +420,7 @@ pw_add_library(pw_allocator.testing INTERFACE
     pw_bytes
     pw_result
     pw_status
-    pw_sync.interrupt_spin_lock
+    pw_sync.mutex
     pw_unit_test
   PRIVATE_DEPS
     pw_assert

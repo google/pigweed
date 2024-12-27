@@ -120,7 +120,7 @@ class CentralTest : public ::testing::Test {
   bt::gap::testing::FakeAdapter adapter_{async_dispatcher_};
 
   pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/2024,
-                                             /*kMetaSizeBytes=*/2024>
+                                             /*kMetaSizeBytes=*/3000>
       multibuf_allocator_;
   std::optional<Central> central_;
 };
