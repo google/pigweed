@@ -44,7 +44,7 @@ def nanopb_proto_library(*, name, deps, tags = [], options = None, **kwargs):
         name = name,
         protos = deps,
         deps = [
-            "@com_github_nanopb_nanopb//:nanopb",
+            Label("@com_github_nanopb_nanopb//:nanopb"),
             Label("//pw_assert"),
             Label("//pw_containers:vector"),
             Label("//pw_preprocessor"),
@@ -59,7 +59,7 @@ def nanopb_proto_library(*, name, deps, tags = [], options = None, **kwargs):
 
 _nanopb_proto_compiler_aspect = proto_compiler_aspect(
     ["pb.h", "pb.c"],
-    "@com_github_nanopb_nanopb//:protoc-gen-nanopb",
+    Label("@com_github_nanopb_nanopb//:protoc-gen-nanopb"),
     [],
     {
         "_pb_h": attr.label(
