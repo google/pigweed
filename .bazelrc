@@ -179,6 +179,14 @@ build:lm3s6965evb --platforms=//targets/lm3s6965evb
 # Config for the microbit platform, used to build pw_rust/examples.
 build:microbit --platforms=//targets/microbit
 
+# GoogleTest config
+# =================
+# This config can be used to build and run host tests using GoogleTest instead
+# of the default //pw_unit_test:light framework.
+common:googletest --//pw_unit_test:backend=//pw_unit_test:googletest
+common:googletest --//pw_unit_test:main=@com_google_googletest//:gtest_main
+common:googletest --platforms=//pw_unit_test:googletest_platform
+
 # Remote execution config definitions
 # ===================================
 # Use the remote cache. This will only work for users who have permission to access it.

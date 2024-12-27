@@ -319,7 +319,7 @@ To do more complex testing, such as on-device testing:
 2. Set the build argument that instructs your build system to use your custom
    ``main`` function:
 
-   * Bazel: :option:`pw_unit_test_main`
+   * Bazel: :option:`@pigweed//pw_unit_test:main`
    * GN: :option:`pw_unit_test_MAIN`
 
 .. _module-pw_unit_test-event-handlers:
@@ -776,25 +776,29 @@ all the arguments recognized by ``cc_test``.
 
 .. _module-pw_unit_test-bazel-args:
 
-Bazel build arguments
-=====================
-.. option:: pw_unit_test_backend <target>
+Label flags
+===========
+.. option:: @pigweed//pw_unit_test:backend
 
    The GoogleTest implementation to use for Pigweed unit tests. This library
    provides ``gtest/gtest.h`` and related headers. Defaults to
    ``@pigweed//pw_unit_test:light``, which implements a subset of GoogleTest.
 
-   Type: string (Bazel target label)
+   Type: Bazel target label
 
-   Usage: toolchain-controlled only
+   Usage: Typically specified as part of the platform definition, but can also
+   be set manually on the command line.
 
-.. option:: pw_unit_test_main <target>
+.. option:: @pigweed//pw_unit_test:main
 
-   Implementation of a main function for ``pw_cc_test`` unit test binaries.
+   Implementation of a main function for ``pw_cc_test`` unit test binaries. To
+   use upstream GoogleTest, set this to ``@com_google_googletest//:gtest_main``.
+   Note that this may not work on most embedded devices, see :bug:`310957361`.
 
-   Type: string (Bazel target label)
+   Type: Bazel target label
 
-   Usage: toolchain-controlled only
+   Usage: Typically specified as part of the platform definition, but can also
+   be set manually on the command line.
 
 .. _module-pw_unit_test-gn:
 
