@@ -302,7 +302,7 @@ TEST_F(L2capCocReadTest, BasicRead) {
                               /*br_edr_acl_credits_to_reserve=*/0);
 
   struct {
-    int sends_called = 0;
+    int receives_called = 0;
     std::array<uint8_t, 3> expected_payload = {0xAB, 0xCD, 0xEF};
   } capture;
 
@@ -313,7 +313,7 @@ TEST_F(L2capCocReadTest, BasicRead) {
       CocParameters{.handle = handle,
                     .local_cid = local_cid,
                     .receive_fn = [&capture](pw::span<uint8_t> payload) {
-                      ++capture.sends_called;
+                      ++capture.receives_called;
                       EXPECT_TRUE(std::equal(payload.begin(),
                                              payload.end(),
                                              capture.expected_payload.begin(),
@@ -345,7 +345,7 @@ TEST_F(L2capCocReadTest, BasicRead) {
   // Send ACL data packet destined for the CoC we registered.
   proxy.HandleH4HciFromController(std::move(h4_packet));
 
-  EXPECT_EQ(capture.sends_called, 1);
+  EXPECT_EQ(capture.receives_called, 1);
 }
 
 TEST_F(L2capCocReadTest, ChannelHandlesReadWithNullReceiveFn) {
