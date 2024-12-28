@@ -39,9 +39,9 @@ host_platform_repo(
 git_repository(
     name = "fuchsia_infra",
     # ROLL: Warning: this entry is automatically updated.
-    # ROLL: Last updated 2024-12-21.
-    # ROLL: By https://cr-buildbucket.appspot.com/build/8727905964320683201.
-    commit = "a6893c635fcdfcf7166f31eeaf10f32c93e9d120",
+    # ROLL: Last updated 2024-12-28.
+    # ROLL: By https://cr-buildbucket.appspot.com/build/8727271785208714481.
+    commit = "e8a4e9f256558bcef643514da80e163a4c723933",
     remote = "https://fuchsia.googlesource.com/fuchsia-infra-bazel-rules",
 )
 
