@@ -15,7 +15,7 @@
 # Client for the pw_transfer RPC service, which is used to send and receive data
 # over pw_rpc.
 
-load("@rules_android//android:library.bzl", "android_library")
+load("@rules_android//android:rules.bzl", "android_library")
 load("@rules_java//java:defs.bzl", "java_library")
 load("@rules_jvm_external//:defs.bzl", "artifact")
 
