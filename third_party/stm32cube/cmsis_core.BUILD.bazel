@@ -22,6 +22,9 @@ cc_library(
             "Include/*.h",
             "Include/DSP/Include/*.h",
         ],
+        # Some include patterns come up blank, but exist for forward/backwards
+        # compatibility.
+        allow_empty = True,
     ),
     includes = [
         "Include",

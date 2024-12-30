@@ -22,7 +22,11 @@ filegroup(
 
 filegroup(
     name = "rustc_lib",
-    srcs = glob(["lib/*.so"]),
+    srcs = glob(
+        ["lib/*.so"],
+        # For non-linux operating systems, this comes up empty.
+        allow_empty = True,
+    ),
     visibility = ["//visibility:public"],
 )
 
