@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_android//android:library.bzl", "android_library")
+
 android_library(
     name = "pw_log",
     srcs = ["Logger.java"],
