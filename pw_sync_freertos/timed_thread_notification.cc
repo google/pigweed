@@ -61,7 +61,7 @@ bool TimedThreadNotification::try_acquire_until(
   PW_DCHECK(xTaskNotifyStateClear(nullptr) == pdFALSE);
 
   {
-    auto handle = native_handle();
+    native_handle_type handle = native_handle();
     std::lock_guard lock(handle.shared_spin_lock);
     const bool notified = handle.notified;
     // Don't block if we've already reached the specified deadline time.
@@ -87,7 +87,7 @@ bool TimedThreadNotification::try_acquire_until(
     }
   }
 
-  auto handle = native_handle();
+  native_handle_type handle = native_handle();
   std::lock_guard lock(handle.shared_spin_lock);
   // We need to clear the thread notification state in case we were
   // notified after timing out but before entering this critical section.
