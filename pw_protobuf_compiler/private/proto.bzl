@@ -194,14 +194,6 @@ def _proto_compiler_aspect_impl(target, ctx):
             continue
         args.add("--custom_opt={}".format(plugin_option))
 
-    # In certain environments the path to pb.h must be defined, rather
-    # than relying on the default location.
-    # Use a format string rather than `quote`, to maintain support
-    # for nanopb 3.
-    if hasattr(ctx.attr, "_pb_h"):
-        plugin_options_arg = "--library-include-format=#include \"{}/%s\"".format(ctx.file._pb_h.dirname)
-        args.add("--custom_opt={}".format(plugin_options_arg))
-
     args.add("--custom_out={}".format(out_path))
     args.add_all(proto_info.direct_sources)
 
@@ -247,7 +239,7 @@ def _proto_compiler_aspect_impl(target, ctx):
         includes = transitive_includes,
     )]
 
-def proto_compiler_aspect(extensions, protoc_plugin, plugin_options = [], additional_attrs = {}):
+def proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
     """Returns an aspect that runs the proto compiler.
 
     The aspect propagates through the deps of proto_library targets, running
@@ -278,7 +270,7 @@ def proto_compiler_aspect(extensions, protoc_plugin, plugin_options = [], additi
                 executable = True,
                 cfg = "exec",
             ),
-        } | additional_attrs,
+        },
         implementation = _proto_compiler_aspect_impl,
         provides = [PwProtoInfo],
         toolchains = ["@rules_python//python:exec_tools_toolchain_type"],
