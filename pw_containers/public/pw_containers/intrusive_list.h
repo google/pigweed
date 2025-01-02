@@ -119,6 +119,20 @@ class IntrusiveList {
 
   constexpr IntrusiveList() { CheckItemType(); }
 
+  // Intrusive lists cannot be copied, since each Item can only be in one list.
+  IntrusiveList(const IntrusiveList&) = delete;
+  IntrusiveList& operator=(const IntrusiveList&) = delete;
+
+  /// Clears this list and moves the other list's contents into it.
+  ///
+  /// This is O(1).
+  IntrusiveList(IntrusiveList&&) = default;
+
+  /// Clears this list and moves the other list's contents into it.
+  ///
+  /// This is O(1).
+  IntrusiveList& operator=(IntrusiveList&&) = default;
+
   // Constructs an IntrusiveList from an iterator over Items. The iterator may
   // dereference as either Item& (e.g. from std::array<Item>) or Item* (e.g.
   // from std::initializer_list<Item*>).
@@ -243,7 +257,9 @@ class IntrusiveList {
   /// Removes the first item in the list. The list must not be empty.
   void pop_front() { remove(front()); }
 
-  /// @copydoc internal::GenericIntrusiveList<ItemBase>::swap
+  /// Exchanges this list's items with the `other` list's items.
+  ///
+  /// This is O(1).
   void swap(IntrusiveList<T>& other) noexcept { list_.swap(other.list_); }
 
   // Operations

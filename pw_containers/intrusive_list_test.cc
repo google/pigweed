@@ -172,6 +172,58 @@ TEST(IntrusiveListTest, Assign_ReplacesPriorContents) {
   list.clear();
 }
 
+TEST(IntrusiveListTest, Construct_Move) {
+  std::array<Item, 4> items1{{{0}, {1}, {2}, {3}}};
+  List list1(items1.begin(), items1.end());
+  List list2(std::move(list1));
+
+  auto it = list2.begin();
+  EXPECT_EQ(&items1[0], &(*it++));
+  EXPECT_EQ(&items1[1], &(*it++));
+  EXPECT_EQ(&items1[2], &(*it++));
+  EXPECT_EQ(&items1[3], &(*it++));
+  EXPECT_EQ(it, list2.end());
+
+  list2.clear();
+}
+
+TEST(IntrusiveListTest, Construct_Move_Empty) {
+  List list1;
+  List list2(std::move(list1));
+
+  EXPECT_TRUE(list1.empty());  // NOLINT(bugprone-use-after-move)
+  EXPECT_TRUE(list2.empty());
+}
+
+TEST(IntrusiveListTest, Assign_Move) {
+  std::array<Item, 4> items1{{{0}, {1}, {2}, {3}}};
+  std::array<Item, 2> items2{{{4}, {5}}};
+  List list1(items1.begin(), items1.end());
+  List list2(items2.begin(), items2.end());
+
+  list2 = std::move(list1);
+
+  auto it = list2.begin();
+  EXPECT_EQ(&items1[0], &(*it++));
+  EXPECT_EQ(&items1[1], &(*it++));
+  EXPECT_EQ(&items1[2], &(*it++));
+  EXPECT_EQ(&items1[3], &(*it++));
+  EXPECT_EQ(it, list2.end());
+
+  list2.clear();
+}
+
+TEST(IntrusiveListTest, Assign_Move_Empty) {
+  std::array<Item, 3> items1{{{0}, {1}, {2}}};
+  List list1(items1.begin(), items1.end());
+  List list2;
+
+  list1 = std::move(list2);
+
+  EXPECT_TRUE(list1.empty());
+  EXPECT_TRUE(list2.empty());  // NOLINT(bugprone-use-after-move)
+}
+
 TEST(IntrusiveListTest, Assign_EmptyRange) {
   std::array<Item, 3> array{{{0}, {100}, {200}}};
   List list(array.begin(), array.end());

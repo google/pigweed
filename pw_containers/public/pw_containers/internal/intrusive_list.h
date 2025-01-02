@@ -46,6 +46,18 @@ class GenericIntrusiveList {
   GenericIntrusiveList(const GenericIntrusiveList&) = delete;
   GenericIntrusiveList& operator=(const GenericIntrusiveList&) = delete;
 
+  // Moves the other list's contents into this list.
+  GenericIntrusiveList(GenericIntrusiveList&& other) {
+    head_.replace(other.head_);
+  }
+
+  // Clears this list and moves the other list's contents into it.
+  GenericIntrusiveList& operator=(GenericIntrusiveList&& other) {
+    clear();
+    head_.replace(other.head_);
+    return *this;
+  }
+
   ~GenericIntrusiveList() { CheckIntrusiveContainerIsEmpty(empty()); }
 
   template <typename Iterator>
@@ -141,7 +153,8 @@ class GenericIntrusiveList {
     return last;
   }
 
-  /// Exchanges this list's items with the `other` list's items.
+  // Exchanges this list's items with the `other` list's items. O(1) for
+  // IntrusiveList, O(n) for IntrusiveForwardList.
   void swap(GenericIntrusiveList<Item>& other) {
     Item tmp;
     tmp.replace(head_);
