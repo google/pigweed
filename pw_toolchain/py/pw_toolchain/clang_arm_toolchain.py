@@ -64,6 +64,10 @@ def _parse_args() -> argparse.Namespace:
         help=('Include necessary linker flags in the output'),
     )
     parser.add_argument(
+        '--gcc-exe-path',
+        help=('Path to gcc binary'),
+    )
+    parser.add_argument(
         'clang_flags',
         nargs=argparse.REMAINDER,
         help='Flags to pass to clang, which can affect library/include paths',
@@ -75,8 +79,14 @@ def _parse_args() -> argparse.Namespace:
     return parsed_args
 
 
-def _compiler_info_command(print_command: str, cflags: list[str]) -> str:
-    command = [_ARM_COMPILER_NAME]
+def _compiler_info_command(
+    gcc_exe_path: str | None, print_command: str, cflags: list[str]
+) -> str:
+    command = (
+        [_ARM_COMPILER_NAME]
+        if gcc_exe_path is None
+        else [str(Path(gcc_exe_path) / _ARM_COMPILER_NAME)]
+    )
     command.extend(cflags)
     command.append(print_command)
     result = subprocess.run(
@@ -88,23 +98,27 @@ def _compiler_info_command(print_command: str, cflags: list[str]) -> str:
     return result.stdout.decode().rstrip()
 
 
-def get_gcc_lib_dir(cflags: list[str]) -> Path:
+def get_gcc_lib_dir(gcc_exe_path: str | None, cflags: list[str]) -> Path:
     return Path(
-        _compiler_info_command('-print-libgcc-file-name', cflags)
+        _compiler_info_command(gcc_exe_path, '-print-libgcc-file-name', cflags)
     ).parent
 
 
-def get_compiler_info(cflags: list[str]) -> dict[str, str]:
+def get_compiler_info(
+    gcc_exe_path: str | None, cflags: list[str]
+) -> dict[str, str]:
     compiler_info: dict[str, str] = {}
     compiler_info['gcc_libs_dir'] = os.path.relpath(
-        str(get_gcc_lib_dir(cflags)), "."
+        str(get_gcc_lib_dir(gcc_exe_path, cflags)), "."
     )
     compiler_info['sysroot'] = os.path.relpath(
-        _compiler_info_command('-print-sysroot', cflags), "."
+        _compiler_info_command(gcc_exe_path, '-print-sysroot', cflags), "."
     )
-    compiler_info['version'] = _compiler_info_command('-dumpversion', cflags)
+    compiler_info['version'] = _compiler_info_command(
+        gcc_exe_path, '-dumpversion', cflags
+    )
     compiler_info['multi_dir'] = _compiler_info_command(
-        '-print-multi-directory', cflags
+        gcc_exe_path, '-print-multi-directory', cflags
     )
     return compiler_info
 
@@ -188,11 +202,12 @@ def get_ldflags(compiler_info: dict[str, str]) -> list[str]:
 def main(
     cflags: bool,
     ldflags: bool,
+    gcc_exe_path: str | None,
     gn_scope: bool,
     clang_flags: list[str],
 ) -> int:
     """Script entry point."""
-    compiler_info = get_compiler_info(clang_flags)
+    compiler_info = get_compiler_info(gcc_exe_path, clang_flags)
     if ldflags:
         ldflag_list = get_ldflags(compiler_info)
 
