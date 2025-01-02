@@ -75,16 +75,20 @@ cc_library_static {
         "pw_android_common_backends",
     ],
     header_libs: [
-        "pw_containers",
-        "pw_multibuf",
-        "pw_result",
         "pw_sync",
     ],
     export_header_lib_headers: [
+        "pw_sync",
+    ],
+    static_libs: [
         "pw_containers",
         "pw_multibuf",
         "pw_result",
-        "pw_sync",
+    ],
+    export_static_lib_headers: [
+        "pw_containers",
+        "pw_multibuf",
+        "pw_result",
     ],
     vendor_available: true,
     host_supported: true,
