@@ -16,6 +16,7 @@
 
 #include <mutex>
 
+#include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/hci_h4.emb.h"
@@ -63,11 +64,29 @@ L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
 }
 
 L2capChannel::~L2capChannel() {
+  PW_LOG_INFO(
+      "btproxy: L2capChannel dtor - transport_: %u, connection_handle_ : %u, "
+      "local_cid_: %u, remote_cid_: %u, state_: %u",
+      cpp23::to_underlying(transport_),
+      connection_handle_,
+      local_cid_,
+      remote_cid_,
+      cpp23::to_underlying(state_));
+
   l2cap_channel_manager_.ReleaseChannel(*this);
   ClearQueue();
 }
 
 void L2capChannel::Stop() {
+  PW_LOG_INFO(
+      "btproxy:  L2capChannel::Stop - transport_: %u, connection_handle_: %u, "
+      "local_cid_: %u, remote_cid_: %u, previous state_: %u",
+      cpp23::to_underlying(transport_),
+      connection_handle_,
+      local_cid_,
+      remote_cid_,
+      cpp23::to_underlying(state_));
+
   PW_CHECK(state_ != State::kUndefined && state_ != State::kClosed);
 
   state_ = State::kStopped;
@@ -75,6 +94,16 @@ void L2capChannel::Stop() {
 }
 
 void L2capChannel::Close() {
+  PW_LOG_INFO(
+      "btproxy:  L2capChannel::Close - transport_: %u, "
+      "connection_handle_: %u, local_cid_: %u, remote_cid_: %u, previous "
+      "state_: %u",
+      cpp23::to_underlying(transport_),
+      connection_handle_,
+      local_cid_,
+      remote_cid_,
+      cpp23::to_underlying(state_));
+
   PW_CHECK(state_ != State::kUndefined);
 
   // Channel can be closed twice: once for an L2CAP disconnection, then again
@@ -198,6 +227,14 @@ L2capChannel::L2capChannel(
       remote_cid_(remote_cid),
       event_fn_(std::move(event_fn)),
       payload_from_controller_fn_(std::move(payload_from_controller_fn)) {
+  PW_LOG_INFO(
+      "btproxy: L2capChannel ctor - transport_: %u, connection_handle_ : %u, "
+      "local_cid_ : %u, remote_cid_: %u",
+      cpp23::to_underlying(transport_),
+      connection_handle_,
+      local_cid_,
+      remote_cid_);
+
   l2cap_channel_manager_.RegisterChannel(*this);
 }
 

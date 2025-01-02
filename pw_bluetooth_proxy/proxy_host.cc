@@ -41,9 +41,18 @@ ProxyHost::ProxyHost(
                         l2cap_channel_manager_,
                         le_acl_credits_to_reserve,
                         br_edr_acl_credits_to_reserve),
-      l2cap_channel_manager_(acl_data_channel_) {}
+      l2cap_channel_manager_(acl_data_channel_) {
+  PW_LOG_INFO(
+      "btproxy:  ProxyHost ctor - le_acl_credits_to_reserve: %u, "
+      "br_edr_acl_credits_to_reserve: %u",
+      le_acl_credits_to_reserve,
+      br_edr_acl_credits_to_reserve);
+}
 
-ProxyHost::~ProxyHost() { acl_data_channel_.Reset(); }
+ProxyHost::~ProxyHost() {
+  PW_LOG_INFO("btproxy:  ProxyHost dtor");
+  acl_data_channel_.Reset();
+}
 
 void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
   if (h4_packet.GetH4Type() == emboss::H4PacketType::COMMAND) {

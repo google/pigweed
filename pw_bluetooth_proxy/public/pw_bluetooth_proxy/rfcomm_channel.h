@@ -52,6 +52,7 @@ class RfcommChannel final : public L2capChannel {
   RfcommChannel& operator=(const RfcommChannel& other) = delete;
   RfcommChannel(RfcommChannel&& other);
   RfcommChannel& operator=(RfcommChannel&& other) = delete;
+  ~RfcommChannel() override;
 
   /// Returns an RFCOMM channel that supports writing to and reading from a
   /// remote peer.

@@ -143,6 +143,14 @@ pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
     // credits.
     rx_total_credits_ += additional_rx_credits;
     rx_remaining_credits_ += additional_rx_credits;
+    PW_LOG_INFO(
+        "btproxy: L2capCoc::SendAdditionalRxCredits - status: %s, "
+        "additional_rx_credits: %u, rx_total_credits_: %u, "
+        "rx_remaining_credits_: %u",
+        status.str(),
+        additional_rx_credits,
+        rx_total_credits_,
+        rx_remaining_credits_);
   }
   return status;
 }
@@ -376,7 +384,16 @@ L2capCoc::L2capCoc(
       receive_fn_multibuf_(std::move(receive_fn_multibuf)),
       rx_remaining_credits_(rx_config.credits),
       rx_total_credits_(rx_config.credits),
-      tx_credits_(tx_config.credits) {}
+      tx_credits_(tx_config.credits) {
+  PW_LOG_INFO(
+      "btproxy: L2capCoc ctor - rx_remaining_credits_: %u, "
+      "rx_total_credits_: %u, tx_credits_: %u",
+      rx_remaining_credits_,
+      rx_total_credits_,
+      tx_credits_);
+}
+
+L2capCoc::~L2capCoc() { PW_LOG_INFO("btproxy: L2capCoc dtor"); }
 
 std::optional<uint16_t> L2capCoc::MaxL2capPayloadSize() const {
   std::optional<uint16_t> max_l2cap_payload_size =

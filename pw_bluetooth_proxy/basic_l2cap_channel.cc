@@ -93,7 +93,13 @@ BasicL2capChannel::BasicL2capChannel(
           /*local_cid=*/local_cid,
           /*remote_cid=*/remote_cid,
           /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
-          /*event_fn=*/std::move(event_fn)) {}
+          /*event_fn=*/std::move(event_fn)) {
+  PW_LOG_INFO("btproxy: BasicL2capChannel ctor");
+}
+
+BasicL2capChannel::~BasicL2capChannel() {
+  PW_LOG_INFO("btproxy: BasicL2capChannel dtor");
+}
 
 bool BasicL2capChannel::HandlePduFromController(pw::span<uint8_t> bframe) {
   Result<emboss::BFrameWriter> bframe_view =

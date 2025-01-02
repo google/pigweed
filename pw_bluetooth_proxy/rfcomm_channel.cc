@@ -275,7 +275,19 @@ RfcommChannel::RfcommChannel(
       channel_number_(channel_number),
       rx_credits_(rx_config.credits),
       tx_credits_(tx_config.credits),
-      payload_from_controller_fn_(std::move(payload_from_controller_fn)) {}
+      payload_from_controller_fn_(std::move(payload_from_controller_fn)) {
+  PW_LOG_INFO(
+      "btproxy: RfcommChannel ctor - channel_number_: %u, rx_credits_: %u, "
+      "tx_credits_: %u",
+      channel_number_,
+      rx_credits_,
+      tx_credits_);
+}
+
+RfcommChannel::~RfcommChannel() {
+  PW_LOG_INFO("btproxy: RfcommChannel dtor - channel_number_: %u",
+              channel_number_);
+}
 
 void RfcommChannel::OnFragmentedPduReceived() {
   PW_LOG_ERROR(

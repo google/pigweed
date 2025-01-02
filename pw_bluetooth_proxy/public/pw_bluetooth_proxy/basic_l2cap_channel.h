@@ -37,6 +37,7 @@ class BasicL2capChannel : public L2capChannel {
   BasicL2capChannel(BasicL2capChannel&&) = default;
   // Move assignment operator allows channels to be erased from pw_containers.
   BasicL2capChannel& operator=(BasicL2capChannel&& other) = default;
+  ~BasicL2capChannel() override;
 
   /// Send an L2CAP payload to the remote peer.
   ///

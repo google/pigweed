@@ -70,6 +70,7 @@ class L2capCoc : public L2capChannel {
   // TODO: https://pwbug.dev/360929142 - Define move assignment operator so
   // `L2capCoc` can be erased from pw containers.
   L2capCoc& operator=(L2capCoc&& other) = delete;
+  ~L2capCoc() override;
 
   /// Send an L2CAP payload to the remote peer.
   ///
