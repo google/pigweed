@@ -98,7 +98,10 @@ BasicL2capChannel::BasicL2capChannel(
 }
 
 BasicL2capChannel::~BasicL2capChannel() {
-  PW_LOG_INFO("btproxy: BasicL2capChannel dtor");
+  // Don't log dtor of moved-from channels.
+  if (state() != State::kUndefined) {
+    PW_LOG_INFO("btproxy: BasicL2capChannel dtor");
+  }
 }
 
 bool BasicL2capChannel::HandlePduFromController(pw::span<uint8_t> bframe) {

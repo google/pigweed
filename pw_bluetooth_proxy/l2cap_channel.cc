@@ -64,14 +64,17 @@ L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
 }
 
 L2capChannel::~L2capChannel() {
-  PW_LOG_INFO(
-      "btproxy: L2capChannel dtor - transport_: %u, connection_handle_ : %u, "
-      "local_cid_: %u, remote_cid_: %u, state_: %u",
-      cpp23::to_underlying(transport_),
-      connection_handle_,
-      local_cid_,
-      remote_cid_,
-      cpp23::to_underlying(state_));
+  // Don't log dtor of moved-from channels.
+  if (state_ != State::kUndefined) {
+    PW_LOG_INFO(
+        "btproxy: L2capChannel dtor - transport_: %u, connection_handle_ : %u, "
+        "local_cid_: %u, remote_cid_: %u, state_: %u",
+        cpp23::to_underlying(transport_),
+        connection_handle_,
+        local_cid_,
+        remote_cid_,
+        cpp23::to_underlying(state_));
+  }
 
   l2cap_channel_manager_.ReleaseChannel(*this);
   ClearQueue();

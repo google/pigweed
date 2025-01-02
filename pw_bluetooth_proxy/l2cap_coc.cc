@@ -393,7 +393,12 @@ L2capCoc::L2capCoc(
       tx_credits_);
 }
 
-L2capCoc::~L2capCoc() { PW_LOG_INFO("btproxy: L2capCoc dtor"); }
+L2capCoc::~L2capCoc() {
+  // Don't log dtor of moved-from channels.
+  if (state() != State::kUndefined) {
+    PW_LOG_INFO("btproxy: L2capCoc dtor");
+  }
+}
 
 std::optional<uint16_t> L2capCoc::MaxL2capPayloadSize() const {
   std::optional<uint16_t> max_l2cap_payload_size =

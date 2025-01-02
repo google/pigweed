@@ -285,8 +285,11 @@ RfcommChannel::RfcommChannel(
 }
 
 RfcommChannel::~RfcommChannel() {
-  PW_LOG_INFO("btproxy: RfcommChannel dtor - channel_number_: %u",
-              channel_number_);
+  // Don't log dtor of moved-from channels.
+  if (state() != State::kUndefined) {
+    PW_LOG_INFO("btproxy: RfcommChannel dtor - channel_number_: %u",
+                channel_number_);
+  }
 }
 
 void RfcommChannel::OnFragmentedPduReceived() {
