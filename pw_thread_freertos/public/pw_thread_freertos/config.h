@@ -51,17 +51,23 @@
 #define PW_THREAD_FREERTOS_CONFIG_DEFAULT_STACK_SIZE_WORDS \
   configMINIMAL_STACK_SIZE
 #endif  // PW_THREAD_FREERTOS_CONFIG_DEFAULT_STACK_SIZE_WORDS
+static_assert(PW_THREAD_FREERTOS_CONFIG_DEFAULT_STACK_SIZE_WORDS >=
+              configMINIMAL_STACK_SIZE);
 
 // The default thread priority. By default this uses the minimal FreeRTOS
 // priority level above the idle priority.
 #ifndef PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY
 #define PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY (tskIDLE_PRIORITY + 1)
 #endif  // PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY
+static_assert(PW_THREAD_FREERTOS_CONFIG_DEFAULT_PRIORITY >=
+              tskIDLE_PRIORITY + 1);
 
 // The maximum thread priority defined by the FreeRTOS configuration.
 #ifndef PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY
 #define PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY (configMAX_PRIORITIES - 1)
 #endif  // PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY
+static_assert(PW_THREAD_FREERTOS_CONFIG_MAXIMUM_PRIORITY <=
+              configMAX_PRIORITIES - 1);
 
 // The log level to use for this module. Logs below this level are omitted.
 #ifndef PW_THREAD_FREERTOS_CONFIG_LOG_LEVEL
