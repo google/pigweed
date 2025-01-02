@@ -42,6 +42,7 @@ in the examples:
 
    message Customer {
      enum Status {
+       UNKNOWN = 0;
        NEW = 1;
        ACTIVE = 2;
        INACTIVE = 3;
@@ -79,10 +80,12 @@ This results in the following generated structure:
 .. code-block:: c++
 
    enum class Customer::Status : uint32_t {
+     UNKNOWN = 0,
      NEW = 1,
      ACTIVE = 2,
      INACTIVE = 3,
 
+     kUnknown = UNKNOWN,
      kNew = NEW,
      kActive = ACTIVE,
      kInactive = INACTIVE,
@@ -467,9 +470,11 @@ complex than encoding or using the message structure.
 .. code-block:: c++
 
    pw::Status DecodeCustomer(Customer::StreamDecoder& decoder) {
-     uint32_t age;
-     char name[32];
-     Customer::Status status;
+     // Initialize variables to their default values as they will not be written
+     // if they don't appear in the serialized message.
+     uint32_t age = 0;
+     char name[32] = "";
+     Customer::Status status = Customer::Status::UNKNOWN;
 
      while ((status = decoder.Next()).ok()) {
        switch (decoder.Field().value()) {
