@@ -157,6 +157,10 @@ class L2capCoc : public L2capChannel {
       PW_LOCKS_EXCLUDED(tx_mutex_)
           PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex()) override;
 
+  // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
+  // transitioned to payload_queue_.
+  bool UsesPayloadQueue() override { return true; }
+
   bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) override {
     if (payload_from_controller_fn_) {
       payload_from_controller_fn_(payload);

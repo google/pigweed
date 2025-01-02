@@ -79,6 +79,24 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //  Tx:
   //-------
 
+  /// Determine if channel is ready to accept one or more Write payloads.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///    OK: Channel is ready to accept one or more Write payloads.
+  ///
+  ///    UNAVAILABLE: Channel does not yet have the resources to queue a Write
+  ///    at this time (transient error). If an `event_fn` has been provided it
+  ///    will be called with `L2capChannelEvent::kWriteAvailable` when there is
+  ///    queue space available again.
+  ///
+  ///    FAILED_PRECONDITION: If channel is not `State::kRunning`.
+  ///
+  /// @endrst
+  ///
+  Status IsWriteAvailable();
+
   // Queue L2CAP `packet` for sending and `ReportPacketsMayBeReadyToSend()`.
   //
   // Returns PW_STATUS_UNAVAILABLE if queue is full (transient error).
@@ -270,6 +288,11 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   }
 
  private:
+  // Return true if the current object uses payload_queue_.
+  // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
+  // transitioned to payload_queue_.
+  virtual bool UsesPayloadQueue() { return false; }
+
   static constexpr uint16_t kMaxValidConnectionHandle = 0x0EFF;
 
   // TODO: https://pwbug.dev/349700888 - Make capacity configurable.

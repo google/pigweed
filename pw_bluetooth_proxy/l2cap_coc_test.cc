@@ -15,6 +15,7 @@
 #include <cstdint>
 
 #include "pw_bluetooth_proxy/h4_packet.h"
+#include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_bluetooth_proxy_private/test_utils.h"
 #include "pw_containers/flat_map.h"
 
@@ -163,6 +164,7 @@ TEST_F(L2capCocWriteTest, ErrorOnWriteToStoppedChannel) {
                     }});
 
   channel.Stop();
+  EXPECT_EQ(channel.IsWriteAvailable(), PW_STATUS_FAILED_PRECONDITION);
   EXPECT_EQ(channel.Write(multibuf::MultiBuf{}).status,
             Status::FailedPrecondition());
 }
@@ -227,6 +229,135 @@ TEST_F(L2capCocWriteTest, MultipleWritesSameChannel) {
   }
 
   EXPECT_EQ(capture.sends_called, num_writes);
+}
+
+// Verify we get unavailable when send queue is full due to running out
+// of  ACL credits. And that it reports available again once send queue is no
+// longer full.
+// TODO: https://pwbug.dev/380299794 - Add equivalent test for other channel
+// types.
+TEST_F(L2capCocWriteTest, FlowControlDueToAclCredits) {
+  uint16_t kHandle = 123;
+  // Should align with L2capChannel::kQueueCapacity.
+  static constexpr size_t kL2capQueueCapacity = 5;
+  // We will send enough packets to use up ACL LE credits and to fill the
+  // queue. And then send one more to verify we get an unavailable.
+  const uint16_t kAclLeCredits = 2;
+  const uint16_t kExpectedSuccessfulWrites =
+      kAclLeCredits + kL2capQueueCapacity;
+  // Set plenty of kL2capTxCredits to ensure that isn't the bottleneck.
+  const uint16_t kL2capTxCredits = kExpectedSuccessfulWrites + 1;
+
+  struct {
+    int write_available_events = 0;
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/kAclLeCredits,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
+      proxy,
+      /*num_credits_to_reserve=*/kAclLeCredits));
+
+  pw::Function<void(L2capChannelEvent event)>&& kEventFn{
+      [&capture](L2capChannelEvent event) {
+        if (event == L2capChannelEvent::kWriteAvailable) {
+          capture.write_available_events++;
+        }
+      }};
+  L2capCoc channel = BuildCoc(proxy,
+                              CocParameters{.handle = kHandle,
+                                            .tx_credits = kL2capTxCredits,
+                                            .event_fn = std::move(kEventFn)});
+
+  // Use up the ACL credits and fill up the send queue.
+  for (int i = 0; i < kExpectedSuccessfulWrites; ++i) {
+    EXPECT_EQ(channel.IsWriteAvailable(), PW_STATUS_OK);
+    EXPECT_EQ(channel.Write(multibuf::MultiBuf{}).status, PW_STATUS_OK);
+  }
+  EXPECT_EQ(0, capture.write_available_events);
+
+  // Send queue is full, so Write should get unavailable.
+  EXPECT_EQ(channel.Write(multibuf::MultiBuf{}).status, PW_STATUS_UNAVAILABLE);
+
+  // Release a ACL credit, so even should trigger and write should be available
+  // again.
+  EXPECT_EQ(0, capture.write_available_events);
+  PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
+      proxy, FlatMap<uint16_t, uint16_t, 1>({{{kHandle, 1}}})));
+  EXPECT_EQ(1, capture.write_available_events);
+  EXPECT_EQ(channel.IsWriteAvailable(), PW_STATUS_OK);
+  EXPECT_EQ(channel.Write(multibuf::MultiBuf{}).status, PW_STATUS_OK);
+
+  // Verify event on just IsWriteAvailable
+  EXPECT_EQ(channel.IsWriteAvailable(), PW_STATUS_UNAVAILABLE);
+  PW_TEST_EXPECT_OK(SendNumberOfCompletedPackets(
+      proxy, FlatMap<uint16_t, uint16_t, 1>({{{kHandle, 1}}})));
+  EXPECT_EQ(2, capture.write_available_events);
+}
+
+// Verify we get unavailable when send queue is full due to running out of L2cap
+// CoC credit.
+// TODO: https://pwbug.dev/380299794 - Add equivalent test for other channel
+// types (where appropriate).
+TEST_F(L2capCocWriteTest, UnavailableWhenSendQueueIsFullDueToL2capCocCredits) {
+  // Should align with L2capChannel::kQueueCapacity.
+  static constexpr size_t kL2capQueueCapacity = 5;
+  // We will send enough packets to use up L2CAP CoC credits and to fill the
+  // queue. And then send one more to verify we get an unavailable.
+  const uint16_t kL2capTxCredits = 2;
+  const uint16_t kExpectedSuccessfulWrites =
+      kL2capTxCredits + kL2capQueueCapacity;
+  // Set plenty of kAclLeCredits to ensure that isn't the bottleneck.
+  const uint16_t kAclLeCredits = kExpectedSuccessfulWrites + 1;
+
+  struct {
+    int write_available_events = 0;
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/kAclLeCredits,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(
+      proxy,
+      /*num_credits_to_reserve=*/kAclLeCredits));
+
+  pw::Function<void(L2capChannelEvent event)>&& kEventFn{
+      [&capture](L2capChannelEvent event) {
+        if (event == L2capChannelEvent::kWriteAvailable) {
+          capture.write_available_events++;
+        }
+      }};
+  L2capCoc channel = BuildCoc(proxy,
+                              CocParameters{.tx_credits = kL2capTxCredits,
+                                            .event_fn = std::move(kEventFn)});
+
+  // Use up the CoC credits and fill up the send queue.
+  for (int i = 0; i < kExpectedSuccessfulWrites; ++i) {
+    EXPECT_EQ(channel.IsWriteAvailable(), PW_STATUS_OK);
+    EXPECT_EQ(channel.Write(multibuf::MultiBuf{}).status, PW_STATUS_OK);
+  }
+  EXPECT_EQ(0, capture.write_available_events);
+
+  // Send queue is full, so client should now get unavailable.
+  EXPECT_EQ(channel.IsWriteAvailable(), PW_STATUS_UNAVAILABLE);
+  EXPECT_EQ(channel.Write(multibuf::MultiBuf{}).status, PW_STATUS_UNAVAILABLE);
+  EXPECT_EQ(0, capture.write_available_events);
+
+  // TODO: https://pwbug.dev/380299794 - Verify we properly show available once
+  // Write is available again.
 }
 
 TEST_F(L2capCocWriteTest, MultipleWritesMultipleChannels) {

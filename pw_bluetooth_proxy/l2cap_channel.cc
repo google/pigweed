@@ -142,6 +142,26 @@ Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
   return status;
 }
 
+Status L2capChannel::IsWriteAvailable() {
+  if (state() != State::kRunning) {
+    return Status::FailedPrecondition();
+  }
+
+  std::lock_guard lock(send_queue_mutex_);
+
+  // TODO: https://pwbug.dev/379337272 - Only check payload_queue_ once all
+  // channels have transitioned to payload_queue_.
+  const bool queue_full =
+      UsesPayloadQueue() ? payload_queue_.full() : send_queue_.full();
+  if (queue_full) {
+    notify_on_dequeue_ = true;
+    return Status::Unavailable();
+  }
+
+  notify_on_dequeue_ = false;
+  return OkStatus();
+}
+
 std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
   std::optional<H4PacketWithH4> packet;
   bool should_notify = false;
