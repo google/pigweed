@@ -1646,6 +1646,138 @@ class TransferManagerTest(unittest.TestCase):
 
         self.assertEqual(self._received_data(), b'write v... NOPE')
 
+    def test_v2_write_transfer_continue_shrinks_window(self) -> None:
+        """Tests version 2 write where the receiver shrinks with CONTINUE."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            default_protocol_version=ProtocolVersion.VERSION_TWO,
+        )
+
+        self._enqueue_server_responses(
+            _Method.WRITE,
+            (
+                (
+                    transfer_pb2.Chunk(
+                        resource_id=72,
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.START_ACK,
+                        protocol_version=ProtocolVersion.VERSION_TWO.value,
+                    ),
+                ),
+                (
+                    transfer_pb2.Chunk(
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.PARAMETERS_RETRANSMIT,
+                        offset=0,
+                        window_end_offset=8,
+                        max_chunk_size_bytes=8,
+                    ),
+                ),
+                (
+                    transfer_pb2.Chunk(
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.PARAMETERS_CONTINUE,
+                        offset=8,
+                        window_end_offset=16,
+                        max_chunk_size_bytes=8,
+                    ),
+                ),
+                # Shrink the window end offset with a CONTINUE chunk.
+                (
+                    transfer_pb2.Chunk(
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.PARAMETERS_CONTINUE,
+                        offset=10,
+                        window_end_offset=14,
+                        max_chunk_size_bytes=14,
+                    ),
+                ),
+                # The last chunk should be ignored; the receiver times out
+                # and retries with a RETRANSMIT.
+                (
+                    transfer_pb2.Chunk(
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.PARAMETERS_RETRANSMIT,
+                        offset=10,
+                        window_end_offset=14,
+                        max_chunk_size_bytes=14,
+                    ),
+                ),
+                (
+                    transfer_pb2.Chunk(
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.PARAMETERS_CONTINUE,
+                        offset=14,
+                        window_end_offset=30,
+                        max_chunk_size_bytes=16,
+                    ),
+                ),
+                (
+                    transfer_pb2.Chunk(
+                        session_id=_FIRST_SESSION_ID,
+                        type=transfer_pb2.Chunk.Type.COMPLETION,
+                        status=Status.OK.value,
+                    ),
+                ),
+            ),
+        )
+
+        manager.write(72, b'pigweed data transfer')
+
+        self.assertEqual(
+            self._sent_chunks,
+            [
+                transfer_pb2.Chunk(
+                    transfer_id=72,
+                    resource_id=72,
+                    desired_session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.START,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value,
+                ),
+                transfer_pb2.Chunk(
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
+                    protocol_version=ProtocolVersion.VERSION_TWO.value,
+                ),
+                transfer_pb2.Chunk(
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.DATA,
+                    offset=0,
+                    data=b'pigweed ',
+                ),
+                transfer_pb2.Chunk(
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.DATA,
+                    offset=8,
+                    data=b'data tra',
+                ),
+                transfer_pb2.Chunk(
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.DATA,
+                    offset=8,
+                    data=b'data tra',
+                ),
+                transfer_pb2.Chunk(
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.DATA,
+                    offset=10,
+                    data=b'ta t',
+                ),
+                transfer_pb2.Chunk(
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.DATA,
+                    offset=14,
+                    data=b'ransfer',
+                    remaining_bytes=0,
+                ),
+                transfer_pb2.Chunk(
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.COMPLETION_ACK,
+                ),
+            ],
+        )
+
     def test_v2_server_error(self) -> None:
         """Tests a server error occurring during the opening handshake."""
 

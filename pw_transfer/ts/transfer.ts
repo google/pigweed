@@ -436,16 +436,16 @@ export class WriteTransfer extends Transfer {
       return;
     }
 
-    const bytesAknowledged = chunk.getOffset();
+    const bytesAcknowledged = chunk.getOffset();
 
     let writeChunk: Chunk;
     // eslint-disable-next-line no-constant-condition
     while (true) {
       writeChunk = this.nextChunk();
       this.offset += writeChunk.getData().length;
-      const sentRequestedBytes = this.offset === this.windowEndOffset;
+      const sentRequestedBytes = this.offset >= this.windowEndOffset;
 
-      this.updateProgress(this.offset, bytesAknowledged, this.data.length);
+      this.updateProgress(this.offset, bytesAcknowledged, this.data.length);
       this.sendChunk(writeChunk);
 
       if (sentRequestedBytes) {
@@ -507,6 +507,10 @@ export class WriteTransfer extends Transfer {
       );
       this.windowEndOffset = this.offset + maxBytesToSend;
     } else {
+      if (chunk.getWindowEndOffset() <= this.offset) {
+        return false;
+      }
+
       // Extend the window to the new end offset specified by the server.
       this.windowEndOffset = Math.min(
         chunk.getWindowEndOffset(),
@@ -533,7 +537,7 @@ export class WriteTransfer extends Transfer {
 
     const maxBytesInChunk = Math.min(
       this.maxChunkSize,
-      this.windowEndOffset - this.offset,
+      Math.max(this.windowEndOffset - this.offset, 0),
     );
 
     chunk.setData(this.data.slice(this.offset, this.offset + maxBytesInChunk));

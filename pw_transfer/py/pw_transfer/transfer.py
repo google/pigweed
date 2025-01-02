@@ -600,6 +600,15 @@ class WriteTransfer(Transfer):
                 )
 
             self._offset = chunk.offset
+        elif (
+            chunk.type is Chunk.Type.PARAMETERS_CONTINUE
+            and chunk.window_end_offset <= self._offset
+        ):
+            _LOG.debug(
+                'Write transfer %d ignoring old rolling window chunk',
+                self.id,
+            )
+            return False
 
         if chunk.max_chunk_size_bytes is not None:
             self._max_chunk_size = chunk.max_chunk_size_bytes

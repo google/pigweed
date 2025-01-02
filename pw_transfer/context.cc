@@ -651,6 +651,10 @@ void Context::HandleTransferParametersUpdate(const Chunk& chunk) {
     }
 
     offset_ = chunk.offset();
+  } else if (chunk.window_end_offset() <= offset_) {
+    PW_LOG_DEBUG("Transfer %u ignoring old rolling window chunk", id_for_log());
+    SetTimeout(chunk_timeout_);
+    return;
   }
 
   window_end_offset_ = chunk.window_end_offset();

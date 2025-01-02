@@ -682,4 +682,70 @@ describe('Transfer client', () => {
         expect(Status[error.status]).toEqual(Status[Status.INTERNAL]);
       });
   });
+
+  it('write transfer continue parameters with shrunk window', async () => {
+    const manager = new Manager(service, DEFAULT_TIMEOUT_S);
+
+    const chunk1 = new Chunk();
+    chunk1.setTransferId(4);
+    chunk1.setOffset(0);
+    chunk1.setPendingBytes(8);
+    chunk1.setMaxChunkSizeBytes(8);
+    chunk1.setType(Chunk.Type.PARAMETERS_RETRANSMIT);
+
+    const chunk2 = new Chunk();
+    chunk2.setTransferId(4);
+    chunk2.setOffset(8);
+    chunk2.setPendingBytes(8);
+    chunk2.setWindowEndOffset(16);
+    chunk2.setMaxChunkSizeBytes(8);
+    chunk2.setType(Chunk.Type.PARAMETERS_CONTINUE);
+
+    // The third chunk ends the window at offset 14 despite the transfer already
+    // being at offset 16. It should be ignored.
+    const chunk3 = new Chunk();
+    chunk3.setTransferId(4);
+    chunk3.setOffset(10);
+    chunk3.setPendingBytes(4);
+    chunk3.setWindowEndOffset(14);
+    chunk3.setMaxChunkSizeBytes(8);
+    chunk3.setType(Chunk.Type.PARAMETERS_CONTINUE);
+
+    // Following a timeout, the receiver retries, this time as a RETRANSMIT.
+    const chunk4 = new Chunk();
+    chunk3.setTransferId(4);
+    chunk3.setOffset(10);
+    chunk3.setPendingBytes(4);
+    chunk3.setWindowEndOffset(14);
+    chunk3.setMaxChunkSizeBytes(8);
+    chunk3.setType(Chunk.Type.PARAMETERS_RETRANSMIT);
+
+    const chunk5 = new Chunk();
+    chunk5.setTransferId(4);
+    chunk5.setOffset(14);
+    chunk5.setPendingBytes(16);
+    chunk5.setWindowEndOffset(30);
+    chunk5.setMaxChunkSizeBytes(16);
+    chunk5.setType(Chunk.Type.PARAMETERS_CONTINUE);
+
+    const completeChunk = new Chunk();
+    completeChunk.setTransferId(4);
+    completeChunk.setStatus(Status.OK);
+
+    enqueueServerResponses(service.method('Write')!, [
+      [chunk1],
+      [chunk2],
+      [chunk3, chunk4],
+      // [chunk4],
+      [chunk5],
+      [completeChunk],
+    ]);
+
+    await manager.write(4, textEncoder.encode('pigweed data transfer'));
+    expect(sentChunks).toHaveLength(5);
+    expect(sentChunks[1].getData()).toEqual(textEncoder.encode('pigweed '));
+    expect(sentChunks[2].getData()).toEqual(textEncoder.encode('data tra'));
+    expect(sentChunks[3].getData()).toEqual(textEncoder.encode('ta t'));
+    expect(sentChunks[4].getData()).toEqual(textEncoder.encode('ransfer'));
+  });
 });
