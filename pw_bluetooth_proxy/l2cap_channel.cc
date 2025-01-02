@@ -79,7 +79,7 @@ L2capChannel::~L2capChannel() {
 
 void L2capChannel::Stop() {
   PW_LOG_INFO(
-      "btproxy:  L2capChannel::Stop - transport_: %u, connection_handle_: %u, "
+      "btproxy: L2capChannel::Stop - transport_: %u, connection_handle_: %u, "
       "local_cid_: %u, remote_cid_: %u, previous state_: %u",
       cpp23::to_underlying(transport_),
       connection_handle_,
@@ -95,7 +95,7 @@ void L2capChannel::Stop() {
 
 void L2capChannel::Close() {
   PW_LOG_INFO(
-      "btproxy:  L2capChannel::Close - transport_: %u, "
+      "btproxy: L2capChannel::Close - transport_: %u, "
       "connection_handle_: %u, local_cid_: %u, remote_cid_: %u, previous "
       "state_: %u",
       cpp23::to_underlying(transport_),

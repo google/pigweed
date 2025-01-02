@@ -43,14 +43,14 @@ ProxyHost::ProxyHost(
                         br_edr_acl_credits_to_reserve),
       l2cap_channel_manager_(acl_data_channel_) {
   PW_LOG_INFO(
-      "btproxy:  ProxyHost ctor - le_acl_credits_to_reserve: %u, "
+      "btproxy: ProxyHost ctor - le_acl_credits_to_reserve: %u, "
       "br_edr_acl_credits_to_reserve: %u",
       le_acl_credits_to_reserve,
       br_edr_acl_credits_to_reserve);
 }
 
 ProxyHost::~ProxyHost() {
-  PW_LOG_INFO("btproxy:  ProxyHost dtor");
+  PW_LOG_INFO("btproxy: ProxyHost dtor");
   acl_data_channel_.Reset();
 }
 

@@ -188,7 +188,7 @@ void L2capChannelManager::HandleConnectionComplete(
 void L2capChannelManager::HandleDisconnectionComplete(
     uint16_t connection_handle) {
   PW_LOG_INFO(
-      "btproxy:  L2capChannelManager::HandleDisconnectionComplete - "
+      "btproxy: L2capChannelManager::HandleDisconnectionComplete - "
       "connection_handle: %u",
       connection_handle);
   for (;;) {
