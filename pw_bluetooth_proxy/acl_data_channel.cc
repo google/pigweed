@@ -212,7 +212,7 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
         continue;
       }
 
-      AclConnection* connection_ptr = FindAclConnection(handle);
+      AclConnection* connection_ptr = FindOpenAclConnection(handle);
       if (!connection_ptr) {
         // Credits for connection we are not tracking or closed connection, so
         // should pass event on to host.
@@ -360,7 +360,7 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
     std::lock_guard lock(mutex_);
     uint16_t conn_handle = dc_event->connection_handle().Read();
 
-    AclConnection* connection_ptr = FindAclConnection(conn_handle);
+    AclConnection* connection_ptr = FindOpenAclConnection(conn_handle);
     if (!connection_ptr) {
       return;
     }
@@ -430,7 +430,7 @@ pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet,
   }
   uint16_t handle = acl_view->handle().Read();
 
-  AclConnection* connection_ptr = FindAclConnection(handle);
+  AclConnection* connection_ptr = FindOpenAclConnection(handle);
   if (!connection_ptr) {
     PW_LOG_ERROR("Tried to send ACL packet on unregistered connection.");
     return pw::Status::NotFound();
@@ -452,7 +452,7 @@ pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet,
 Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
                                            AclTransportType transport) {
   std::lock_guard lock(mutex_);
-  AclConnection* connection_it = FindAclConnection(connection_handle);
+  AclConnection* connection_it = FindOpenAclConnection(connection_handle);
   if (connection_it) {
     return Status::AlreadyExists();
   }
@@ -469,7 +469,7 @@ Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
 pw::Status AclDataChannel::FragmentedPduStarted(Direction direction,
                                                 uint16_t connection_handle) {
   std::lock_guard lock(mutex_);
-  AclConnection* connection_ptr = FindAclConnection(connection_handle);
+  AclConnection* connection_ptr = FindOpenAclConnection(connection_handle);
   if (!connection_ptr) {
     return Status::NotFound();
   }
@@ -483,7 +483,7 @@ pw::Status AclDataChannel::FragmentedPduStarted(Direction direction,
 pw::Result<bool> AclDataChannel::IsReceivingFragmentedPdu(
     Direction direction, uint16_t connection_handle) {
   std::lock_guard lock(mutex_);
-  AclConnection* connection_ptr = FindAclConnection(connection_handle);
+  AclConnection* connection_ptr = FindOpenAclConnection(connection_handle);
   if (!connection_ptr) {
     return Status::NotFound();
   }
@@ -493,7 +493,7 @@ pw::Result<bool> AclDataChannel::IsReceivingFragmentedPdu(
 pw::Status AclDataChannel::FragmentedPduFinished(Direction direction,
                                                  uint16_t connection_handle) {
   std::lock_guard lock(mutex_);
-  AclConnection* connection_ptr = FindAclConnection(connection_handle);
+  AclConnection* connection_ptr = FindOpenAclConnection(connection_handle);
   if (!connection_ptr) {
     return Status::NotFound();
   }
@@ -508,7 +508,7 @@ L2capSignalingChannel* AclDataChannel::FindSignalingChannel(
     uint16_t connection_handle, uint16_t local_cid) {
   std::lock_guard lock(mutex_);
 
-  AclConnection* connection_ptr = FindAclConnection(connection_handle);
+  AclConnection* connection_ptr = FindOpenAclConnection(connection_handle);
   if (!connection_ptr) {
     return nullptr;
   }
@@ -519,15 +519,12 @@ L2capSignalingChannel* AclDataChannel::FindSignalingChannel(
   return nullptr;
 }
 
-AclDataChannel::AclConnection* AclDataChannel::FindAclConnection(
-    uint16_t connection_handle, bool if_open) {
+AclDataChannel::AclConnection* AclDataChannel::FindOpenAclConnection(
+    uint16_t connection_handle) {
   AclConnection* connection_it = containers::FindIf(
-      acl_connections_,
-      [&connection_handle, if_open](const AclConnection& connection) {
-        if (connection.connection_handle() == connection_handle) {
-          return !if_open || connection.state() == AclConnection::State::kOpen;
-        }
-        return false;
+      acl_connections_, [connection_handle](const AclConnection& connection) {
+        return connection.connection_handle() == connection_handle &&
+               connection.state() == AclConnection::State::kOpen;
       });
   return connection_it == acl_connections_.end() ? nullptr : connection_it;
 }

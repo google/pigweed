@@ -309,9 +309,7 @@ class AclDataChannel {
 
   // Returns pointer to `kOpen` AclConnection with provided `connection_handle`
   // in `acl_connections_`. Returns nullptr if no such connection exists.
-  // If `if_open` is false, a `State::kClosed` connection may also be returned.
-  AclConnection* FindAclConnection(uint16_t connection_handle,
-                                   bool if_open = true)
+  AclConnection* FindOpenAclConnection(uint16_t connection_handle)
       PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   Credits& LookupCredits(AclTransportType transport)
