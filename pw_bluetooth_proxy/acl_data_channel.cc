@@ -38,14 +38,14 @@ AclDataChannel::AclConnection::AclConnection(
       leu_signaling_channel_(l2cap_channel_manager, connection_handle),
       aclu_signaling_channel_(l2cap_channel_manager, connection_handle) {
   PW_LOG_INFO(
-      "btproxy: AclConnection ctor. transport_: %u, connection_handle_: %u",
+      "btproxy: AclConnection ctor. transport_: %u, connection_handle_: %#x",
       cpp23::to_underlying(transport_),
       connection_handle_);
 }
 
 void AclDataChannel::AclConnection::Close() {
   PW_LOG_INFO(
-      "btproxy: AclConnection::Close. transport_: %u, connection_handle_: %u, "
+      "btproxy: AclConnection::Close. transport_: %u, connection_handle_: %#x, "
       "previous state_: %u",
       cpp23::to_underlying(transport_),
       connection_handle_,
@@ -392,7 +392,7 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
 
     if (!connection_ptr) {
       PW_LOG_WARN(
-          "btproxy: Viewed disconnect (reason: %#.2hhx) for connection %#.4hx, "
+          "btproxy: Viewed disconnect (reason: %#.2hhx) for connection %#x, "
           "but was unable to find an existing open AclConnection.",
           cpp23::to_underlying(dc_event->reason().Read()),
           conn_handle);
@@ -403,7 +403,7 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
     if (status == emboss::StatusCode::SUCCESS) {
       if (connection_ptr->num_pending_packets() > 0) {
         PW_LOG_WARN(
-            "Proxy viewed disconnect (reason: %#.2hhx) for connection %#.4hx "
+            "Proxy viewed disconnect (reason: %#.2hhx) for connection %#x "
             "with packets in flight. Releasing associated credits.",
             cpp23::to_underlying(dc_event->reason().Read()),
             conn_handle);
@@ -422,7 +422,7 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
     if (connection_ptr->num_pending_packets() > 0) {
       PW_LOG_WARN(
           "Proxy viewed failed disconnect (status: %#.2hhx) for connection "
-          "%#.4hx with packets in flight. Not releasing associated credits.",
+          "%#x with packets in flight. Not releasing associated credits.",
           cpp23::to_underlying(status),
           conn_handle);
     }
@@ -490,14 +490,14 @@ Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
   if (connection_it) {
     PW_LOG_WARN(
         "btproxy: Attempt to create new AclConnection when existing one is "
-        "already open. connection_handle: %u",
+        "already open. connection_handle: %#x",
         connection_handle);
     return Status::AlreadyExists();
   }
   if (acl_connections_.full()) {
     PW_LOG_ERROR(
         "btproxy: Attempt to create new AclConnection when acl_connections_ is"
-        "already full. connection_handle: %u",
+        "already full. connection_handle: %#x",
         connection_handle);
     return Status::ResourceExhausted();
   }

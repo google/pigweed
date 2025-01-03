@@ -174,7 +174,7 @@ bool RfcommChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
       MakeEmbossView<emboss::BFrameView>(l2cap_pdu);
   if (!bframe_view.ok()) {
     PW_LOG_ERROR(
-        "(CID 0x%X) Buffer is too small for L2CAP B-frame, passing on to host.",
+        "(CID %u) Buffer is too small for L2CAP B-frame, passing on to host.",
         local_cid());
     return false;
   }
@@ -294,7 +294,7 @@ RfcommChannel::~RfcommChannel() {
 
 void RfcommChannel::OnFragmentedPduReceived() {
   PW_LOG_ERROR(
-      "(CID 0x%X) Fragmented L2CAP frame received (which is not yet "
+      "(CID %u) Fragmented L2CAP frame received (which is not yet "
       "supported).",
       local_cid());
 }

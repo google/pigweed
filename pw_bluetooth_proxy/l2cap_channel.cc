@@ -67,7 +67,8 @@ L2capChannel::~L2capChannel() {
   // Don't log dtor of moved-from channels.
   if (state_ != State::kUndefined) {
     PW_LOG_INFO(
-        "btproxy: L2capChannel dtor - transport_: %u, connection_handle_ : %u, "
+        "btproxy: L2capChannel dtor - transport_: %u, connection_handle_ : "
+        "%#x, "
         "local_cid_: %u, remote_cid_: %u, state_: %u",
         cpp23::to_underlying(transport_),
         connection_handle_,
@@ -82,7 +83,7 @@ L2capChannel::~L2capChannel() {
 
 void L2capChannel::Stop() {
   PW_LOG_INFO(
-      "btproxy: L2capChannel::Stop - transport_: %u, connection_handle_: %u, "
+      "btproxy: L2capChannel::Stop - transport_: %u, connection_handle_: %#x, "
       "local_cid_: %u, remote_cid_: %u, previous state_: %u",
       cpp23::to_underlying(transport_),
       connection_handle_,
@@ -99,7 +100,7 @@ void L2capChannel::Stop() {
 void L2capChannel::Close() {
   PW_LOG_INFO(
       "btproxy: L2capChannel::Close - transport_: %u, "
-      "connection_handle_: %u, local_cid_: %u, remote_cid_: %u, previous "
+      "connection_handle_: %#x, local_cid_: %u, remote_cid_: %u, previous "
       "state_: %u",
       cpp23::to_underlying(transport_),
       connection_handle_,
@@ -240,7 +241,7 @@ void L2capChannel::OnFragmentedPduReceived() {
     return;
   }
   PW_LOG_ERROR(
-      "(CID 0x%X) Fragmented L2CAP frame received, which is not yet supported. "
+      "(CID %u) Fragmented L2CAP frame received, which is not yet supported. "
       "Channel is now stopped.",
       local_cid());
   SendEvent(L2capChannelEvent::kRxFragmented);
@@ -281,7 +282,7 @@ void L2capChannel::SendEvent(L2capChannelEvent event) {
   if (event != L2capChannelEvent::kWriteAvailable) {
     PW_LOG_INFO(
         "btproxy: SendEvent - event: %u, transport_: %u, "
-        "connection_handle_: %u, local_cid_ : %u, remote_cid_: %u, "
+        "connection_handle_: %#x, local_cid_ : %u, remote_cid_: %u, "
         "state_: %u",
         cpp23::to_underlying(event),
         cpp23::to_underlying(transport_),
@@ -301,7 +302,7 @@ bool L2capChannel::AreValidParameters(uint16_t connection_handle,
                                       uint16_t remote_cid) {
   if (connection_handle > kMaxValidConnectionHandle) {
     PW_LOG_ERROR(
-        "Invalid connection handle 0x%X. Maximum connection handle is 0x0EFF.",
+        "Invalid connection handle %#x. Maximum connection handle is 0x0EFF.",
         connection_handle);
     return false;
   }
