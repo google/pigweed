@@ -115,6 +115,7 @@ void L2capChannel::Close() {
     return;
   }
 
+  l2cap_channel_manager_.ReleaseChannel(*this);
   state_ = State::kClosed;
   ClearQueue();
   SendEvent(L2capChannelEvent::kChannelClosedByOther);

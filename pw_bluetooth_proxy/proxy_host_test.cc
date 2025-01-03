@@ -2520,6 +2520,64 @@ TEST_F(L2capSignalingTest, ChannelClosedWithErrorIfCreditsExceeded) {
   EXPECT_EQ(events_received, 1);
 }
 
+TEST_F(L2capSignalingTest, SignalsArePassedOnToHost) {
+  int forwards_to_host = 0;
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [&forwards_to_host](H4PacketWithHci&&) { ++forwards_to_host; });
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [](H4PacketWithH4&&) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
+  EXPECT_EQ(forwards_to_host, 0);
+
+  PW_TEST_EXPECT_OK(SendL2capConnectionReq(proxy, 44, 55, 56));
+  EXPECT_EQ(forwards_to_host, 1);
+}
+
+TEST_F(L2capSignalingTest, SignalsArePassedOnToHostAfterAclDisconnect) {
+  uint16_t kConnHandle = 0x33;
+  int sends_to_host = 0;
+  int sends_to_controller = 0;
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [&sends_to_host](H4PacketWithHci&&) { ++sends_to_host; });
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&sends_to_controller](H4PacketWithH4&&) { ++sends_to_controller; });
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+  // Allow proxy to reserve 1 credit.
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
+  EXPECT_EQ(sends_to_host, 1);
+
+  // Send GATT Notify which should create ACL connection for kConnHandle.
+  std::array<uint8_t, 1> attribute_value = {0};
+  PW_TEST_EXPECT_OK(proxy.SendGattNotify(kConnHandle, 1, attribute_value));
+  EXPECT_EQ(sends_to_controller, 1);
+
+  // Disconnect that connection.
+  PW_TEST_EXPECT_OK(
+      SendDisconnectionCompleteEvent(proxy, /*handle=*/kConnHandle));
+  EXPECT_EQ(sends_to_host, 2);
+
+  // Send signal again using the same connection. Signal should be passed on to
+  // host.
+  PW_TEST_EXPECT_OK(
+      SendL2capConnectionReq(proxy, /*handle=*/kConnHandle, 55, 56));
+  EXPECT_EQ(sends_to_host, 3);
+
+  // Trigger credit send for L2capCoc to verify new signalling channel object
+  // is present and working.
+  L2capCoc channel = BuildCoc(proxy, CocParameters{.handle = kConnHandle});
+  PW_TEST_EXPECT_OK(channel.SendAdditionalRxCredits(7));
+  EXPECT_EQ(sends_to_controller, 2);
+}
+
 TEST_F(L2capSignalingTest,
        CreditIndAddressedToNonManagedChannelForwardedToHost) {
   int forwards_to_host = 0;
