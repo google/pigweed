@@ -111,6 +111,30 @@ Get started
 Guides
 ------
 
+``pw::span`` as a function parameter
+====================================
+``pw::span`` objects should be passed by value.
+
+.. admonition:: **Yes**: Accept ``pw::span`` object by value:
+   :class: checkmark
+
+   .. code-block:: cpp
+
+      bool ProcessBuffer(pw::span<uint8_t> buffer);
+
+.. admonition:: **No**: Accept ``pw::span`` object by reference:
+   :class: error
+
+   .. code-block:: cpp
+
+      bool ProcessBuffer(const pw::span<uint8_t>& buffer);
+
+
+Rationale: Since a ``pw::span`` object is essentially a pointer and a size,
+references to ``pw::span`` objects are almost always unnecessary indirection.
+
+See also: https://abseil.io/tips/93#as-function-parameters
+
 Operating on arrays of bytes
 ============================
 When operating on an array of bytes you typically need pointer and size
