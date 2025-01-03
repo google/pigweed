@@ -14,13 +14,11 @@
 
 #pragma once
 
-#include "lib/stdcompat/utility.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_containers/inline_queue.h"
 #include "pw_containers/intrusive_forward_list.h"
-#include "pw_log/log.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
@@ -197,24 +195,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
                                                uint16_t remote_cid);
 
   // Send `event` to client if an event callback was provided.
-  void SendEvent(L2capChannelEvent event) {
-    // We don't log kWriteAvailable since they happen often. Optimally we would
-    // just debug log them also, but one of our downstreams logs all levels.
-    if (event != L2capChannelEvent::kWriteAvailable) {
-      PW_LOG_INFO(
-          "btproxy: SendEvent - event: %u, transport_: %u, "
-          "connection_handle_: %u, local_cid_ : %u, remote_cid_: %u",
-          cpp23::to_underlying(transport_),
-          cpp23::to_underlying(event),
-          connection_handle_,
-          local_cid_,
-          remote_cid_);
-    }
-
-    if (event_fn_) {
-      event_fn_(event);
-    }
-  }
+  void SendEvent(L2capChannelEvent event);
 
   // Helper since these operations should typically be coupled.
   void StopAndSendEvent(L2capChannelEvent event) {

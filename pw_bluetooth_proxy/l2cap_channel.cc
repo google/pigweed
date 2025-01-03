@@ -261,6 +261,28 @@ L2capChannel::L2capChannel(
   l2cap_channel_manager_.RegisterChannel(*this);
 }
 
+// Send `event` to client if an event callback was provided.
+void L2capChannel::SendEvent(L2capChannelEvent event) {
+  // We don't log kWriteAvailable since they happen often. Optimally we would
+  // just debug log them also, but one of our downstreams logs all levels.
+  if (event != L2capChannelEvent::kWriteAvailable) {
+    PW_LOG_INFO(
+        "btproxy: SendEvent - event: %u, transport_: %u, "
+        "connection_handle_: %u, local_cid_ : %u, remote_cid_: %u, "
+        "state_: %u",
+        cpp23::to_underlying(event),
+        cpp23::to_underlying(transport_),
+        connection_handle_,
+        local_cid_,
+        remote_cid_,
+        cpp23::to_underlying(state_));
+  }
+
+  if (event_fn_) {
+    event_fn_(event);
+  }
+}
+
 bool L2capChannel::AreValidParameters(uint16_t connection_handle,
                                       uint16_t local_cid,
                                       uint16_t remote_cid) {
