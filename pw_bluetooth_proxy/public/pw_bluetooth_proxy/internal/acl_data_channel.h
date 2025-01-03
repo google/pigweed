@@ -209,18 +209,11 @@ class AclDataChannel {
     AclConnection(AclTransportType transport,
                   uint16_t connection_handle,
                   uint16_t num_pending_packets,
-                  L2capChannelManager& l2cap_channel_manager)
-        : transport_(transport),
-          state_(State::kOpen),
-          connection_handle_(connection_handle),
-          num_pending_packets_(num_pending_packets),
-          leu_signaling_channel_(l2cap_channel_manager, connection_handle),
-          aclu_signaling_channel_(l2cap_channel_manager, connection_handle),
-          is_receiving_fragmented_pdu_{} {}
+                  L2capChannelManager& l2cap_channel_manager);
 
     AclConnection& operator=(AclConnection&& other) = default;
 
-    void Close() { state_ = State::kClosed; }
+    void Close();
 
     State state() const { return state_; }
 
@@ -265,7 +258,7 @@ class AclDataChannel {
     // unset.
     // TODO: https://pwbug.dev/365179076 - Support recombination.
     std::array<bool, cpp23::to_underlying(Direction::kMaxDirections)>
-        is_receiving_fragmented_pdu_;
+        is_receiving_fragmented_pdu_{};
   };
 
   class Credits {

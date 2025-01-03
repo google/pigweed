@@ -28,7 +28,6 @@
 #include "pw_log/log.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_status/status.h"
-#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -226,8 +225,13 @@ void L2capCoc::ProcessPduFromControllerMultibuf(span<uint8_t> kframe) {
 }
 
 bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
-  // TODO: https://pwbug.dev/360934030 - Track rx_credits.
   if (state() != State::kRunning) {
+    PW_LOG_ERROR(
+        "btproxy: L2capCoc::HandlePduFromController on non-running "
+        "channel. local_cid: %u, remote_cid: %u, state: %u",
+        local_cid(),
+        remote_cid(),
+        cpp23::to_underlying(state()));
     StopAndSendEvent(L2capChannelEvent::kRxWhileStopped);
     return true;
   }
@@ -503,6 +507,15 @@ void L2capCoc::AddTxCredits(uint16_t credits) {
     // 65535."
     if (credits > emboss::L2capLeCreditBasedConnectionReq::max_credit_value() -
                       tx_credits_) {
+      PW_LOG_ERROR(
+          "btproxy: Received additional tx credits %u which put tx_credits_ %u "
+          "beyond max credit value of %ld. So stopping channel and reporting "
+          "it needs to be closed. local_cid: %u, remote_cid: %u",
+          credits,
+          tx_credits_,
+          long{emboss::L2capLeCreditBasedConnectionReq::max_credit_value()},
+          local_cid(),
+          remote_cid());
       StopAndSendEvent(L2capChannelEvent::kRxInvalid);
       return;
     }

@@ -215,6 +215,12 @@ bool L2capChannel::PayloadQueueEmpty() const { return payload_queue_.empty(); }
 
 bool L2capChannel::OnPduReceivedFromController(pw::span<uint8_t> l2cap_pdu) {
   if (state() != State::kRunning) {
+    PW_LOG_ERROR(
+        "btproxy: L2capChannel::OnPduReceivedFromController on non-running "
+        "channel. local_cid: %u, remote_cid: %u, state: %u",
+        local_cid(),
+        remote_cid(),
+        cpp23::to_underlying(state()));
     SendEvent(L2capChannelEvent::kRxWhileStopped);
     return true;
   }
@@ -223,6 +229,12 @@ bool L2capChannel::OnPduReceivedFromController(pw::span<uint8_t> l2cap_pdu) {
 
 void L2capChannel::OnFragmentedPduReceived() {
   if (state() != State::kRunning) {
+    PW_LOG_ERROR(
+        "btproxy: L2capChannel::OnFragmentedPduReceived on non-running "
+        "channel. local_cid: %u, remote_cid: %u, state: %u",
+        local_cid(),
+        remote_cid(),
+        cpp23::to_underlying(state()));
     SendEvent(L2capChannelEvent::kRxWhileStopped);
     return;
   }

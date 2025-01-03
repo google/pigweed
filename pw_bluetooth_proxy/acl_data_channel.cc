@@ -26,6 +26,34 @@
 
 namespace pw::bluetooth::proxy {
 
+AclDataChannel::AclConnection::AclConnection(
+    AclTransportType transport,
+    uint16_t connection_handle,
+    uint16_t num_pending_packets,
+    L2capChannelManager& l2cap_channel_manager)
+    : transport_(transport),
+      state_(State::kOpen),
+      connection_handle_(connection_handle),
+      num_pending_packets_(num_pending_packets),
+      leu_signaling_channel_(l2cap_channel_manager, connection_handle),
+      aclu_signaling_channel_(l2cap_channel_manager, connection_handle) {
+  PW_LOG_INFO(
+      "btproxy: AclConnection ctor. transport_: %u, connection_handle_: %u",
+      cpp23::to_underlying(transport_),
+      connection_handle_);
+}
+
+void AclDataChannel::AclConnection::Close() {
+  PW_LOG_INFO(
+      "btproxy: AclConnection::Close. transport_: %u, connection_handle_: %u, "
+      "previous state_: %u",
+      cpp23::to_underlying(transport_),
+      connection_handle_,
+      cpp23::to_underlying(state_));
+
+  state_ = State::kClosed;
+}
+
 AclDataChannel::SendCredit::SendCredit(SendCredit&& other) {
   *this = std::move(other);
 }
@@ -460,9 +488,17 @@ Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
   std::lock_guard lock(mutex_);
   AclConnection* connection_it = FindOpenAclConnection(connection_handle);
   if (connection_it) {
+    PW_LOG_WARN(
+        "btproxy: Attempt to create new AclConnection when existing one is "
+        "already open. connection_handle: %u",
+        connection_handle);
     return Status::AlreadyExists();
   }
   if (acl_connections_.full()) {
+    PW_LOG_ERROR(
+        "btproxy: Attempt to create new AclConnection when acl_connections_ is"
+        "already full. connection_handle: %u",
+        connection_handle);
     return Status::ResourceExhausted();
   }
   acl_connections_.emplace_back(transport,
