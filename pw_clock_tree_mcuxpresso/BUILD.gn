@@ -28,7 +28,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public_configs = [ ":default_config" ]
     public = [ "public/pw_clock_tree_mcuxpresso/clock_tree.h" ]
     public_deps = [
-      "//pw_clock_tree",
+      "$dir_pw_clock_tree",
       pw_third_party_mcuxpresso_SDK,
     ]
   }

@@ -77,10 +77,10 @@ generate_toolchain("docs") {
       "PW_BOOT_VECTOR_TABLE_SIZE=512",
     ]
 
-    pw_chrono_SYSTEM_CLOCK_BACKEND = "//pw_chrono_stl:system_clock"
-    pw_chrono_SYSTEM_TIMER_BACKEND = "//pw_chrono_stl:system_timer"
-    pw_async_TASK_BACKEND = "//pw_async_basic:task"
-    pw_async_FAKE_DISPATCHER_BACKEND = "//pw_async_basic:fake_dispatcher"
+    pw_chrono_SYSTEM_CLOCK_BACKEND = "$dir_pw_chrono_stl:system_clock"
+    pw_chrono_SYSTEM_TIMER_BACKEND = "$dir_pw_chrono_stl:system_timer"
+    pw_async_TASK_BACKEND = "$dir_pw_async_basic:task"
+    pw_async_FAKE_DISPATCHER_BACKEND = "$dir_pw_async_basic:fake_dispatcher"
   }
 }
 

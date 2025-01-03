@@ -309,7 +309,7 @@ armv7m_sources = arm_sources
 # not configured.
 pw_source_set("arm_builtins_armv7m") {
   configs = [ ":no-warnings" ]
-  remove_configs = [ "//pw_build:extra_strict_warnings" ]
+  remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
 
   sources = []
 
@@ -332,7 +332,7 @@ pw_source_set("arm_builtins_armv7m") {
 # not configured.
 pw_source_set("arm_builtins_armv6m") {
   configs = [ ":no-warnings" ]
-  remove_configs = [ "//pw_build:extra_strict_warnings" ]
+  remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
 
   sources = []
 
@@ -355,7 +355,7 @@ pw_source_set("arm_builtins_armv6m") {
 pw_static_library("llvm_builtins") {
   add_global_link_deps = false
   configs = [ ":no-warnings" ]
-  remove_configs = [ "//pw_build:extra_strict_warnings" ]
+  remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
   sources = []
 
   # Architecture specific pw_source_set created from LLVM builtins

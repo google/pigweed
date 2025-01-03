@@ -201,7 +201,7 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
     public_deps = [
       ":coro",
       ":dispatcher",
-      "//pw_function",
+      "$dir_pw_function",
     ]
   }
 
@@ -212,8 +212,8 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
       ":coro",
       ":coro_or_else_task",
       ":dispatcher",
-      "//pw_allocator:null_allocator",
-      "//pw_allocator:testing",
+      "$dir_pw_allocator:null_allocator",
+      "$dir_pw_allocator:testing",
     ]
   }
 }

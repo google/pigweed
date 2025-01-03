@@ -149,7 +149,7 @@ pw_system_target("emcraft_sf2_som") {
     pw_sys_io_BACKEND = dir_pw_sys_io_emcraft_sf2
 
     pw_boot_cortex_m_LINKER_SCRIPT =
-        "//targets/emcraft_sf2_som:mddr_production_linker_script"
+        "$dir_pigweed/targets/emcraft_sf2_som:mddr_production_linker_script"
   }
 }
 
@@ -171,7 +171,7 @@ pw_system_target("emcraft_sf2_som_debug") {
     # Override the default pw_boot_cortex_m linker script and set the memory
     # regions for the target.
     pw_boot_cortex_m_LINKER_SCRIPT =
-        "//targets/emcraft_sf2_som:mddr_debug_linker_script"
+        "$dir_pigweed/targets/emcraft_sf2_som:mddr_debug_linker_script"
     pw_third_party_smartfusion_mss_CONFIG = "debug"
   }
 }

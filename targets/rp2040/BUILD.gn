@@ -171,7 +171,7 @@ pw_system_target("rp2040") {
     # ONLY RELEVANT FOR UNIT TESTS.
     if (pw_targets_ENABLE_RP2040_TEST_RUNNER) {
       _test_runner_script =
-          "//targets/rp2040/py/rp2040_utils/unit_test_client.py"
+          "$dir_pigweed/targets/rp2040/py/rp2040_utils/unit_test_client.py"
       pw_unit_test_AUTOMATIC_RUNNER =
           get_path_info(_test_runner_script, "abspath")
     }

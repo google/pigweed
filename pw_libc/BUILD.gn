@@ -137,7 +137,7 @@ if (dir_pw_third_party_llvm_libc != "") {
     # This config includes -Wshadow. On gcc, this warns even for constructor
     # arguments which shadow members. This is too pedantic and shouldn't be
     # changed upstream.
-    remove_configs = [ "//pw_build:extra_strict_warnings" ]
+    remove_configs = [ "$dir_pw_build:extra_strict_warnings" ]
   }
 
   pw_libc_source_set("stdfix") {
