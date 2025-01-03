@@ -228,10 +228,12 @@ class AclDataChannel {
     }
 
     bool is_receiving_fragmented_pdu(Direction direction) const {
+      PW_CHECK(state_ == State::kOpen);
       return is_receiving_fragmented_pdu_[cpp23::to_underlying(direction)];
     }
 
     void set_is_receiving_fragmented_pdu(Direction direction, bool new_val) {
+      PW_CHECK(state_ == State::kOpen);
       is_receiving_fragmented_pdu_[cpp23::to_underlying(direction)] = new_val;
     }
 
