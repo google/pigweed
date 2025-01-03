@@ -404,7 +404,7 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
       if (connection_ptr->num_pending_packets() > 0) {
         PW_LOG_WARN(
             "Proxy viewed disconnect (reason: %#.2hhx) for connection %#.4hx "
-            "with packets in flight. Releasing associated credits",
+            "with packets in flight. Releasing associated credits.",
             cpp23::to_underlying(dc_event->reason().Read()),
             conn_handle);
 
