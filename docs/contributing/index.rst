@@ -332,7 +332,7 @@ This will be effectively the same as running the following command before every
    $ pw presubmit
 
 
-.. image:: ../../pw_presubmit/docs/pw_presubmit_demo.gif
+.. image:: https://storage.googleapis.com/pigweed-media/pw_presubmit/pw_presubmit_demo.gif
   :width: 800
   :alt: pw presubmit demo
 

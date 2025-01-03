@@ -163,7 +163,7 @@ logger. This logger can then be included as a log window pane in the
    # Then run the console with:
    console.embed()
 
-.. figure:: images/serial_debug.svg
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_console/serial_debug.svg
   :alt: Serial debug pw_console screenshot.
 
   Screenshot of issuing an Echo RPC with serial debug logging.

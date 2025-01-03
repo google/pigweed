@@ -29,7 +29,7 @@ failed assertions, bug detections by `sanitizers`_, unhandled signals, etc.
 When a loop terminates due to one of these errors, the fuzzer will typically
 create a `reproducer`_ that developers can use to reproduce the fault.
 
-.. image:: doc_resources/pw_fuzzer_coverage_guided.png
+.. image:: https://storage.googleapis.com/pigweed-media/pw_fuzzer/pw_fuzzer_coverage_guided.png
    :alt: Coverage Guided Fuzzing
    :align: left
 

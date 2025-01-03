@@ -95,6 +95,27 @@ This section discusses how to make frontend and backend website changes
 to ``pigweed.dev``, Pigweed's main documentation website, and how to
 customize `Sphinx`_, the website generator that powers ``pigweed.dev``.
 
+.. _contrib-docs-guides-site-images:
+
+Image hosting
+=============
+Images should not be checked into the Pigweed repository because
+it significantly slows down the repository cloning process.
+Images should instead be hosted on Pigweed's image CDN,
+``https://storage.googleapis.com/pigweed-media``.
+
+If you're adding an image to a ``pigweed.dev`` doc, here's the
+recommended workflow:
+
+#. When drafting a change, it's OK to temporarily check
+   in the image so that there is a record of it in Gerrit.
+
+#. When your change is almost ready to merge, a Pigweed teammate
+   will upload your image to Pigweed's image CDN, and then
+   leave a comment on your change asking you to delete the
+   checked-in image and replace the reference to it with the
+   URL to the CDN-hosted image.
+
 .. _contrib-docs-guides-site-redirects:
 
 Create redirects

@@ -56,8 +56,6 @@ sphinx_docs_library(
         "_static/css/pigweed.css",
         "_static/js/changelog.js",
         "_static/js/pigweed.js",
-        "_static/pw_logo.ico",
-        "_static/pw_logo.svg",
         "3p/index.rst",
         "blog/01-kudzu.rst",
         "blog/02-bazel-feature-flags.rst",

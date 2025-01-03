@@ -82,7 +82,7 @@ concepts:
   available, the sensor framework will demux the data and provide it to the
   various clients based on the live ``Connection``\s.
 
-.. image:: 0119/high-level-view.svg
+.. image:: https://storage.googleapis.com/pigweed-media/seed/0119/high-level-view.svg
 
 Actually reading the data is a 2 step process. The first is getting the data
 from the ``Sensor`` object. The second step is decoding it into something
@@ -90,7 +90,7 @@ that's usable. Data from the first step is generally still in register format
 and includes some headers from the driver which will allow the ``Decoder`` to
 convert the values to the appropriate representation (most likely ``float``).
 
-.. image:: 0119/data-pipeline.svg
+.. image:: https://storage.googleapis.com/pigweed-media/seed/0119/data-pipeline.svg
 
 -----------------
 The Sensor Driver

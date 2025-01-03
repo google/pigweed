@@ -10,7 +10,7 @@ Crash Handler Setup
 The Snapshot proto was designed first and foremost as a crash reporting format.
 This section covers how to set up a crash handler to capture Snapshots.
 
-.. image:: images/generic_crash_flow.svg
+.. image:: https://storage.googleapis.com/pigweed-media/pw_snapshot/generic_crash_flow.svg
   :width: 600
   :alt: Generic crash handler flow
 

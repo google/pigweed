@@ -23,8 +23,6 @@ pw_doc_group("static_assets") {
     "_static/css/pigweed.css",
     "_static/js/changelog.js",
     "_static/js/pigweed.js",
-    "_static/pw_logo.ico",
-    "_static/pw_logo.svg",
   ]
 }
 

@@ -20,7 +20,6 @@ pw_doc_group("docs") {
   sources = [
     "0000.rst",
     "0001.rst",
-    "0001/seed-index-gerrit.png",
     "0002.rst",
     "0101.rst",
     "0102.rst",
@@ -37,8 +36,6 @@ pw_doc_group("docs") {
     "0114.rst",
     "0117.rst",
     "0119.rst",
-    "0119/data-pipeline.svg",
-    "0119/high-level-view.svg",
     "0120.rst",
     "0122.rst",
     "0124.rst",

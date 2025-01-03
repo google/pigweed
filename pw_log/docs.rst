@@ -76,7 +76,7 @@ Below is an example diagram showing how the modules connect together for the
 turn outputs to the STM32F429 bare metal backend for ``pw_sys_io``, which is
 ``pw_sys_io_baremetal_stm32f429i``.
 
-.. image:: example_layer_diagram.svg
+.. image:: https://storage.googleapis.com/pigweed-media/pw_log/example_layer_diagram.svg
 
 .. _module-pw_log-macros:
 

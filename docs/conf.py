@@ -133,8 +133,8 @@ html_use_smartypants = True
 # If false, no module index is generated.
 html_domain_indices = True
 
-html_favicon = 'docs/_static/pw_logo.ico'
-html_logo = 'docs/_static/pw_logo.svg'
+html_favicon = 'https://storage.googleapis.com/pigweed-media/pw_logo.ico'
+html_logo = 'https://storage.googleapis.com/pigweed-media/pw_logo.svg'
 
 # If false, no index is generated.
 html_use_index = True
@@ -207,8 +207,8 @@ html_theme_options = {
     # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/branding.html
     'logo': {
         'text': 'Pigweed',
-        'image_light': '_static/pw_logo.svg',
-        'image_dark': '_static/pw_logo.svg',
+        'image_light': 'https://storage.googleapis.com/pigweed-media/pw_logo.svg',
+        'image_dark': 'https://storage.googleapis.com/pigweed-media/pw_logo.svg',
     },
     # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/layout.html#configure-the-navbar-center-alignment
     'navbar_align': 'right',

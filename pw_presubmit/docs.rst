@@ -24,7 +24,7 @@ existing tools like ``clang-format``, and it’s simple to add support for new
 languages. (Note: Bazel formatting requires ``buildifier`` to be present on your
 system. If it's not Bazel formatting passes without checking.)
 
-.. image:: docs/pw_presubmit_demo.gif
+.. image:: https://storage.googleapis.com/pigweed-media/pw_presubmit/pw_presubmit_demo.gif
    :alt: ``pw format`` demo
    :align: left
 

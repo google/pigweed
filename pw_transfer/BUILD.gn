@@ -252,11 +252,7 @@ pw_doc_group("docs") {
     "api.rst",
     "docs.rst",
   ]
-  inputs = [
-    "transfer.proto",
-    "read.svg",
-    "write.svg",
-  ]
+  inputs = [ "transfer.proto" ]
 }
 
 pw_executable("integration_test_server") {

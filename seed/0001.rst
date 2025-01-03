@@ -129,7 +129,7 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
    ``Pigweed-Auto-Submit`` to +1. This change will be approved promptly and
    lock in your assigned SEED number.
 
-   .. image:: 0001/seed-index-gerrit.png
+   .. image:: https://storage.googleapis.com/pigweed-media/seed/0001/seed-index-gerrit.png
 
 #. Fill out your proposal document, using the :ref:`SEED template<seed-0002>` as
    a guide.
@@ -146,6 +146,13 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
         5309.rst
         5309/
           state-diagram.svg
+
+   .. note::
+
+      When your change is ready to merge, a Pigweed teammate will upload your
+      images to the Pigweed image CDN and ask you to delete your local images
+      and link your docs to the versions of the images that are hosted on the
+      image CDN. See :ref:`contrib-docs-guides-site-images`.
 
 #. When you feel you have enough substantive content in your proposal to be
    reviewed, push it up to Gerrit and switch the change from WIP to Active.

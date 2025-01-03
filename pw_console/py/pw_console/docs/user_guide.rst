@@ -85,7 +85,7 @@ search box containing all main menu item actions.
 Words separated by spaces are used to narrow down the match results. The order
 each word is entered does not matter.
 
-.. figure:: /pw_console/images/command_runner_main_menu.svg
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_console/command_runner_main_menu.svg
   :alt: Main menu item search dialog.
 
 ============================================  =====================

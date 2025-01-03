@@ -23,7 +23,6 @@ pw_doc_group("docs") {
     "format.rst",
   ]
   inputs = [
-    "docs/pw_presubmit_demo.gif",
     "py/pw_presubmit/cli.py",
     "py/pw_presubmit/format/bazel.py",
     "py/pw_presubmit/format/core.py",

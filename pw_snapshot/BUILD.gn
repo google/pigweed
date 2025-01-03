@@ -72,7 +72,6 @@ pw_proto_library("snapshot_proto") {
 }
 
 pw_doc_group("docs") {
-  inputs = [ "images/generic_crash_flow.svg" ]
   sources = [
     "design_discussion.rst",
     "docs.rst",

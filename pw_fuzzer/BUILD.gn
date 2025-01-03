@@ -53,7 +53,6 @@ pw_doc_group("docs") {
     "guides/reproducing_oss_fuzz_bugs.rst",
   ]
   inputs = [
-    "doc_resources/pw_fuzzer_coverage_guided.png",
     "examples/fuzztest/BUILD.gn",
     "examples/fuzztest/BUILD.bazel",
     "examples/fuzztest/CMakeLists.txt",

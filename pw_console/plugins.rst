@@ -100,7 +100,7 @@ of the window.
 Both input and output fields are prompt_toolkit `TextArea`_ objects which can
 have their own options like syntax highlighting.
 
-.. figure:: images/calculator_plugin.svg
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_console/calculator_plugin.svg
   :alt: Screenshot of the CalcPane plugin showing some math calculations.
 
   Screenshot of the ``CalcPane`` plugin showing some math calculations.
@@ -113,7 +113,7 @@ Clock
 The ClockPane is another WindowPane based plugin that displays a clock and some
 formatted text examples. It inherits from both WindowPane and PluginMixin.
 
-.. figure:: images/clock_plugin1.svg
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_console/clock_plugin1.svg
   :alt: ClockPane plugin screenshot showing the clock text.
 
   ``ClockPane`` plugin screenshot showing the clock text.
@@ -124,7 +124,7 @@ triggers UI re-draws. There are also two toolbar buttons to toggle view mode
 :kbd:`v` key or mouse clicking on the :guilabel:`View Mode` button will toggle
 the view to show some formatted text samples:
 
-.. figure:: images/clock_plugin2.svg
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_console/clock_plugin2.svg
   :alt: ClockPane plugin screenshot showing formatted text examples.
 
   ``ClockPane`` plugin screenshot showing formatted text examples.
@@ -153,7 +153,7 @@ managing the game state as well as printing the game board. The
 ``Twenty48Game.__pt_formatted_text__()`` function is responsible for drawing the
 game board using prompt_toolkit style and text tuples.
 
-.. figure:: images/2048_plugin1.svg
+.. figure:: https://storage.googleapis.com/pigweed-media/pw_console/2048_plugin1.svg
   :alt: Twenty48Pane plugin screenshot showing the game board.
 
   ``Twenty48Pane`` plugin screenshot showing the game board.
