@@ -13,7 +13,11 @@
 # the License.
 """Pigweed's Sphinx configuration."""
 
+
 from datetime import date
+import os
+from pathlib import Path
+import sys
 
 
 from pw_console.pigweed_code_style import PigweedCodeStyle
@@ -68,6 +72,17 @@ def pygments_monkeypatch_style(mod_name, cls):
 pygments_monkeypatch_style('pigweed_code_style', PigweedCodeStyle)
 pygments_monkeypatch_style('pigweed_code_light_style', PigweedCodeLightStyle)
 
+
+# //docs/_extensions must be added to the system path so that Sphinx
+# knows where to find the Sphinx extensions that have been custom-built
+# for pigweed.dev. The path resolution changes depending on whether we're
+# building pigweed.dev with GN or Bazel.
+if is_bazel_build:
+    sys.path.append(str(Path('_extensions').resolve()))
+else:  # GN build
+    pw_root = os.environ['PW_ROOT']
+    sys.path.append(f'{pw_root}/docs/_extensions')
+
 extensions = [
     "pw_docgen.sphinx.bug",
     "pw_docgen.sphinx.google_analytics",  # Enables optional Google Analytics
@@ -77,6 +92,7 @@ extensions = [
     "pw_docgen.sphinx.pigweed_live",
     "pw_docgen.sphinx.pw_status_codes",
     "pw_docgen.sphinx.seed_metadata",
+    "sitemap",  # Custom extension to handle pigweed.dev sitemap nuances.
     "sphinx.ext.autodoc",  # Automatic documentation for Python code
     "sphinx.ext.napoleon",  # Parses Google-style docstrings
     "sphinxarg.ext",  # Automatic documentation of Python argparse
@@ -85,7 +101,6 @@ extensions = [
     "breathe",
     "sphinx_copybutton",  # Copy-to-clipboard button on code blocks
     "sphinx_reredirects",
-    "sphinx_sitemap",
 ]
 
 # When a user clicks the copy-to-clipboard button the `$ ` prompt should not be

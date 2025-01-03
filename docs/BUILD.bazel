@@ -31,6 +31,7 @@ sphinx_docs_library(
     # TODO: https://pwbug.dev/377679855 - Rename this to "docs" after merging.
     name = "not_prefixed",
     srcs = [
+        "_extensions/sitemap.py",
         "automated_analysis.rst",
         "bazel_compatibility.rst",
         "build_system.rst",
@@ -297,7 +298,6 @@ sphinx_build_binary(
         "@python_packages//sphinx_copybutton",
         "@python_packages//sphinx_design",
         "@python_packages//sphinx_reredirects",
-        "@python_packages//sphinx_sitemap",
         "@python_packages//sphinxcontrib_mermaid",
         "@rules_python//python/runfiles",
     ],
