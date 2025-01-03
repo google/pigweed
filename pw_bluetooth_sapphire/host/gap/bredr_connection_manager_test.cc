@@ -1109,7 +1109,7 @@ TEST_F(BrEdrConnectionManagerLegacyPairingTest,
   RunUntilIdle();
 
   // Complete connection and interrogation successfully.
-  QueueSuccessfulInterrogationNoSsp(kTestDevAddr, kConnectionHandle);
+  QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
   test_device()->SendCommandChannelPacket(kConnectionComplete);
   RunUntilIdle();
 
