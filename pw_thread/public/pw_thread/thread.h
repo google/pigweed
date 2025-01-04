@@ -139,9 +139,9 @@ class Thread {
   /// @post After calling detach `*this` no longer owns any thread.
   void join();
 #else
-  template <typename kUnusedType = void>
+  template <typename..., bool kJoiningEnabled = false>
   void join() {
-    static_assert(kJoiningEnabled<kUnusedType>,
+    static_assert(kJoiningEnabled,
                   "The selected pw_thread_THREAD backend does not have join() "
                   "enabled (AKA PW_THREAD_JOINING_ENABLED = 1)");
   }
@@ -164,10 +164,6 @@ class Thread {
   native_handle_type native_handle();
 
  private:
-  template <typename...>
-  static constexpr std::bool_constant<PW_THREAD_JOINING_ENABLED>
-      kJoiningEnabled = {};
-
   // Note that just like std::thread, this is effectively just a pointer or
   // reference to the native thread -- this does not contain any memory needed
   // for the thread to execute.
