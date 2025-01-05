@@ -81,7 +81,7 @@ class H4PacketWithHci final : public H4PacketInterface {
   emboss::H4PacketType h4_type_;
 };
 
-/// H4PacketWithHci is an H4Packet backed by an H4 buffer.
+/// H4PacketWithH4 is an H4Packet backed by an H4 buffer.
 class H4PacketWithH4 final : public H4PacketInterface {
  public:
   H4PacketWithH4() = default;
