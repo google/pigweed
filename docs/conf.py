@@ -222,7 +222,11 @@ html_theme_options = {
 html_baseurl = 'https://pigweed.dev/'
 
 # Hide "Section Navigation" on homepage and changelog.
-html_sidebars = {'index': [], 'changelog': []}
+html_sidebars = {
+    'index': [],
+    'changelog': [],
+    'toolchain': [],
+}
 
 html_context = {
     'default_mode': 'dark',

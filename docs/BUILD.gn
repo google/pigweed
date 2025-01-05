@@ -435,6 +435,7 @@ pw_doc_gen("docs") {
     "python_build.rst",
     "targets.rst",
     "third_party_support.rst",
+    "toolchain.rst",
   ]
   output_directory = target_gen_dir
   deps = [

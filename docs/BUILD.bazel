@@ -43,6 +43,7 @@ sphinx_docs_library(
         "python_build.rst",
         "targets.rst",
         "third_party_support.rst",
+        "toolchain.rst",
     ],
     strip_prefix = "docs/",
     target_compatible_with = incompatible_with_mcu(),

@@ -193,6 +193,7 @@ Talk to us
    Source code <https://cs.pigweed.dev/pigweed>
    docs/showcases/index
    docs/concepts/index
+   Toolchain <toolchain>
    docs/3p/index
    docs/community/index
    Developing & contributing <docs/contributing/index>
