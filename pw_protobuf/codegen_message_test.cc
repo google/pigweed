@@ -892,11 +892,10 @@ TEST(CodegenMessage, ReadMissingCallback) {
   stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
-  // Failing to set a callback will give a DataLoss error if that field is
-  // present in the decoded data.
+  // Fields with unset callbacks are ignored in the decode operation.
   RepeatedTest::Message message{};
   const auto status = repeated_test.Read(message);
-  ASSERT_EQ(status, Status::DataLoss());
+  ASSERT_EQ(status, OkStatus());
 }
 
 TEST(CodegenMessage, ReadFixedLength) {

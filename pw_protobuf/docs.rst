@@ -1856,13 +1856,10 @@ as a typed ``Fields`` enumeration member, while the lower-level API provides a
 
 Callbacks
 =========
-When using the ``Read()`` method with a ``struct Message``, certain fields may
-require a callback function be set, otherwise a ``DataLoss`` error will be
-returned should that field be encountered in the wire encoding.
-
-The callback is called with the cursor at the field in question, and passed
-a reference to the typed decoder that can examine the field and be used to
-decode it.
+When using the ``Read()`` method with a ``struct Message`` containing callback
+fields, the callback is called with the cursor at the field in question, and
+passed a reference to the typed decoder that can examine the field and be used
+to decode it.
 
 Callback implementations may use any level of API. For example a callback for a
 nested submessage (with a dependency cycle, or repeated) can be implemented by

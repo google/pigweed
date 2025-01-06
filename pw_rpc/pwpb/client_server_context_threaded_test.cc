@@ -18,6 +18,7 @@
 #include "pw_function/function.h"
 #include "pw_rpc/pwpb/client_server_testing_threaded.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
+#include "pw_status/status.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_thread/non_portable_test_thread_options.h"
 #include "pw_unit_test/framework.h"
@@ -209,11 +210,9 @@ TEST(PwpbClientServerTestContextThreaded, ResponseWithCallbacks) {
   ctx.server().RegisterService(service);
 
   RpcCaller caller;
-  // DataLoss expected on initial response, since pwpb provides no way to
-  // populate response callback. We setup callbacks on response packet below.
   EXPECT_EQ(caller.BlockOnResponse<test::GeneratedService::TestAnotherUnaryRpc>(
                 0, ctx.client(), ctx.channel().id()),
-            Status::DataLoss());
+            OkStatus());
 
   // To decode a response object that requires to set callbacks, pass it to the
   // response() method as a parameter.

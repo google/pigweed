@@ -235,12 +235,12 @@ union Callback {
   }
 
   // Called by StreamDecoder to decode the structure member when the field
-  // is present. Returns DataLoss() if this has not been set by the caller.
+  // is present. If the callback is unset, returns OkStatus to ignore the field.
   Status Decode(StreamDecoder& decoder) const {
     if (decode_) {
       return decode_(decoder);
     }
-    return Status::DataLoss();
+    return OkStatus();
   }
 
   Function<Status(StreamEncoder& encoder)> encode_;
