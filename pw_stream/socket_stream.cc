@@ -162,6 +162,11 @@ int SocketStream::SetSockOpt(int level,
   return setsockopt(ownership.fd(), level, optname, optval, optlen);
 }
 
+bool SocketStream::IsReady() {
+  std::lock_guard lock(connection_mutex_);
+  return ready_;
+}
+
 void SocketStream::Close() {
   ConnectionOwnership ownership(this);
   {

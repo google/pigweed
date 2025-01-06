@@ -55,6 +55,9 @@ class SocketStream : public NonSeekableReaderWriter {
                  const void* optval,
                  unsigned int optlen);
 
+  // Get the connection ready state (true if ready, false otherwise).
+  bool IsReady();
+
   // Close the socket stream and release all resources
   void Close();
 

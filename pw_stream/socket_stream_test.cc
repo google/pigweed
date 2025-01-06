@@ -70,6 +70,7 @@ TEST(SocketStreamTest, ConnectSpecificPort) {
 
   SocketStream client;
   EXPECT_EQ(client.Connect("localhost", server.port()), OkStatus());
+  EXPECT_TRUE(client.IsReady());
 
   accept_thread.join();
   EXPECT_EQ(server_stream.status(), OkStatus());
@@ -77,6 +78,7 @@ TEST(SocketStreamTest, ConnectSpecificPort) {
   server_stream.value().Close();
   server.Close();
   client.Close();
+  EXPECT_FALSE(client.IsReady());
 }
 
 // Helper function to test exchanging data on a pair of sockets.
