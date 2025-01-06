@@ -40,6 +40,7 @@ pw_doc_group("core_docs") {
     "$dir_pw_build/py/pw_build/generate_python_wheel_cache.py",
     "$dir_pw_build/python.gni",
     "$dir_pw_build/python_gn_args.gni",
+    "_extensions/bug.py",
     "_extensions/sitemap.py",
     "layout/layout.html",
     "run_doxygen.py",

@@ -31,6 +31,7 @@ sphinx_docs_library(
     # TODO: https://pwbug.dev/377679855 - Rename this to "docs" after merging.
     name = "not_prefixed",
     srcs = [
+        "_extensions/bug.py",
         "_extensions/sitemap.py",
         "automated_analysis.rst",
         "bazel_compatibility.rst",

@@ -84,7 +84,7 @@ else:  # GN build
     sys.path.append(f'{pw_root}/docs/_extensions')
 
 extensions = [
-    "pw_docgen.sphinx.bug",
+    "bug",  # Custom extension to normalize Pigweed bug links.
     "pw_docgen.sphinx.google_analytics",  # Enables optional Google Analytics
     "pw_docgen.sphinx.kconfig",
     "pw_docgen.sphinx.module_metadata",

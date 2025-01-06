@@ -22,7 +22,6 @@ py_library(
     srcs = [
         "pw_docgen/__init__.py",
         "pw_docgen/sphinx/__init__.py",
-        "pw_docgen/sphinx/bug.py",
         "pw_docgen/sphinx/google_analytics.py",
         "pw_docgen/sphinx/kconfig.py",
         "pw_docgen/sphinx/module_metadata.py",
