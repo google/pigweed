@@ -11,55 +11,102 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Library to analyze timestamp."""
+"""Library to analyze timestamps."""
 
-import datetime
+from datetime import datetime, timedelta, timezone
+import logging
+import pw_tokenizer
 from pw_chrono_protos import chrono_pb2
+from pw_chrono_protos.chrono_pb2 import EpochType
+from pw_tokenizer import proto as proto_detokenizer
 
-_UTC_EPOCH = datetime.datetime(1970, 1, 1, 00, 00, 00)
-
-_UNKNOWN = chrono_pb2.EpochType.Enum.UNKNOWN
-_TIME_SINCE_BOOT = chrono_pb2.EpochType.Enum.TIME_SINCE_BOOT
-_UTC_WALL_CLOCK = chrono_pb2.EpochType.Enum.UTC_WALL_CLOCK
+_LOG = logging.getLogger(__name__)
 
 
-def process_snapshot(serialized_snapshot: bytes):
-    captured_timestamps = chrono_pb2.SnapshotTimestamps()
-    captured_timestamps.ParseFromString(serialized_snapshot)
-    return timestamp_output(captured_timestamps)
+def process_snapshot(
+    serialized_snapshot: bytes,
+    detokenizer: pw_tokenizer.Detokenizer | None = None,
+):
+    snapshot = chrono_pb2.SnapshotTimestamps()
+    snapshot.ParseFromString(serialized_snapshot)
 
-
-def timestamp_output(timestamps: chrono_pb2.SnapshotTimestamps):
     output: list[str] = []
-    if not timestamps.timestamps:
+    for timestamp in snapshot.timestamps or []:
+        proto_detokenizer.detokenize_fields(
+            detokenizer, timestamp.clock_parameters
+        )
+        try:
+            time_info = TimePointInfo(timestamp)
+            output.append(f'  {time_info.name_str()}: {time_info}')
+        except ValueError:
+            _LOG.warning('Failed to decode timestamp:\n%s', str(timestamp))
+
+    if not output:
         return ''
-
-    plural = '' if len(timestamps.timestamps) == 1 else 's'
-    output.append(f'Snapshot capture timestamp{plural}')
-    for timepoint in timestamps.timestamps:
-        time = timestamp_snapshot_analyzer(timepoint)
-        clock_epoch_type = timepoint.clock_parameters.epoch_type
-        if clock_epoch_type == _TIME_SINCE_BOOT:
-            output.append(f'  Time since boot:   {time}')
-        elif clock_epoch_type == _UTC_WALL_CLOCK:
-            utc_time = time + _UTC_EPOCH
-            output.append(f'  UTC time:   {utc_time}')
-        else:
-            output.append(f'  Time since unknown epoch {_UNKNOWN}:   unknown')
-
+    plural = '' if len(output) == 1 else 's'
+    output.insert(0, f'Snapshot capture timestamp{plural}')
+    output.append('')
     return '\n'.join(output)
 
 
-def timestamp_snapshot_analyzer(
-    captured_timepoint: chrono_pb2.TimePoint,
-) -> datetime.timedelta:
-    ticks = captured_timepoint.timestamp
-    clock_period = (
-        captured_timepoint.clock_parameters.tick_period_seconds_numerator
-        / captured_timepoint.clock_parameters.tick_period_seconds_denominator
-    )
-    elapsed_seconds = ticks * clock_period
+class TimePointInfo:
+    """Decodes pw.chrono.TimePoint protos into various representations."""
 
-    time_delta = datetime.timedelta(seconds=elapsed_seconds)
+    def __init__(self, timepoint: chrono_pb2.TimePoint):
+        self._timepoint = timepoint
+        parameters = self._timepoint.clock_parameters
+        if (
+            parameters.tick_period_seconds_denominator == 0
+            or parameters.tick_period_seconds_numerator == 0
+        ):
+            raise ValueError('Invalid timepoint')
+        self._timepoint = timepoint
 
-    return time_delta
+    def ticks_per_sec(self) -> float:
+        parameters = self._timepoint.clock_parameters
+        return (
+            parameters.tick_period_seconds_denominator
+            / parameters.tick_period_seconds_numerator
+        )
+
+    def period_suffix(self) -> str:
+        return {
+            1.0: 's',
+            1000.0: 'ms',
+            1_000_000.0: 'us',
+            1_000_000_000.0: 'ns',
+        }.get(self.ticks_per_sec(), '')
+
+    def duration(self) -> timedelta:
+        return timedelta(
+            seconds=self._timepoint.timestamp / self.ticks_per_sec()
+        )
+
+    def as_unix_time(self, tz: timezone = timezone.utc) -> datetime:
+        return datetime.fromtimestamp(self.duration().total_seconds(), tz)
+
+    def tick_count_str(self) -> str:
+        return f'{self._timepoint.timestamp} {self.period_suffix()}'.rstrip()
+
+    def __str__(self) -> str:
+        epoch_type = self._timepoint.clock_parameters.epoch_type
+        if epoch_type == EpochType.Enum.TIME_SINCE_BOOT:
+            return f'{self.duration()} ({self.tick_count_str()})'
+        if epoch_type == EpochType.Enum.UTC_WALL_CLOCK:
+            return f'{self.as_unix_time()} ({self.tick_count_str()})'
+        return self.tick_count_str()
+
+    def name_str(self) -> str:
+        parameters = self._timepoint.clock_parameters
+        try:
+            epoch_str = EpochType.Enum.Name(parameters.epoch_type)
+        except ValueError:
+            epoch_str = str(parameters.epoch_type)
+
+        if parameters.name:
+            return f'{parameters.name.decode()} (epoch {epoch_str})'
+        if parameters.epoch_type == EpochType.Enum.TIME_SINCE_BOOT:
+            return 'Time since boot'
+        if parameters.epoch_type == EpochType.Enum.UTC_WALL_CLOCK:
+            return 'UTC time'
+        return f'Timestamp (epoch {epoch_str})'

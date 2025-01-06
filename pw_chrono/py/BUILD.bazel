@@ -26,6 +26,7 @@ py_library(
     imports = ["."],
     deps = [
         "//pw_chrono:chrono_proto_pb2",
+        "//pw_tokenizer/py:pw_tokenizer",
     ],
 )
 
@@ -37,5 +38,6 @@ pw_py_test(
     deps = [
         ":pw_chrono",
         "//pw_chrono:chrono_proto_pb2",
+        "//pw_tokenizer/py:pw_tokenizer",
     ],
 )

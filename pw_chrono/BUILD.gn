@@ -145,6 +145,7 @@ pw_source_set("wrap_time_system_clock") {
 pw_proto_library("protos") {
   sources = [ "chrono.proto" ]
   prefix = "pw_chrono_protos"
+  deps = [ "$dir_pw_tokenizer:proto" ]
 }
 
 pw_doc_group("docs") {

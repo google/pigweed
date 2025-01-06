@@ -75,6 +75,8 @@ pw_proto_library(pw_chrono.protos
     chrono.proto
   PREFIX
     pw_chrono_protos
+  DEPS
+    pw_tokenizer.proto
 )
 
 if((NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "") AND

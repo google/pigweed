@@ -16,6 +16,8 @@ syntax = "proto3";
 
 package pw.chrono;
 
+import "pw_tokenizer_proto/options.proto";
+
 option java_outer_classname = "Chrono";
 
 message EpochType {
@@ -77,6 +79,7 @@ message ClockParameters {
   int32 tick_period_seconds_numerator = 1;    // Required
   int32 tick_period_seconds_denominator = 2;  // Required
   optional EpochType.Enum epoch_type = 3;
+  optional bytes name = 4 [(tokenizer.format) = TOKENIZATION_OPTIONAL];
 }
 
 // A point in time relative to a clock's epoch.

@@ -117,7 +117,9 @@ def process_snapshot(
     if thread_info:
         output.append(thread_info)
 
-    timestamp_info = timestamp_analyzer.process_snapshot(serialized_snapshot)
+    timestamp_info = timestamp_analyzer.process_snapshot(
+        serialized_snapshot, detokenizer
+    )
 
     if timestamp_info:
         output.append(timestamp_info)
