@@ -101,6 +101,7 @@ if (pw_third_party_boringssl_ALIAS != "") {
     visibility = [
       ":*",
       "$dir_pw_bluetooth_sapphire/*",
+      "$dir_pw_crypto/*",
       "$dir_pw_tls_client:*",
       "$dir_pw_tls_client_boringssl:*",
     ]

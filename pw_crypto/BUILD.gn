@@ -234,6 +234,24 @@ pw_facade("aes") {
   ]
 }
 
+config("boringssl_config") {
+  visibility = [ ":*" ]
+  include_dirs = [ "public_overrides/boringssl" ]
+}
+
+pw_source_set("aes_boringssl") {
+  public_configs = [ ":boringssl_config" ]
+  sources = [ "aes_boringssl.cc" ]
+  public = [
+    "public/pw_crypto/aes_boringssl.h",
+    "public_overrides/boringssl/pw_crypto/aes_backend.h",
+  ]
+  public_deps = [
+    ":aes.facade",
+    "$dir_pw_third_party/boringssl",
+  ]
+}
+
 pw_source_set("aes_mbedtls_v3") {
   public_configs = [ ":mbedtls_config" ]
   public = [
