@@ -250,6 +250,7 @@ cc_args(
 cc_feature(
     name = "supports_pic_old",
     overrides = "@rules_cc//cc/toolchains/features:supports_pic",
+    tags = ["manual"],
     visibility = ["//visibility:private"],
 )
 
