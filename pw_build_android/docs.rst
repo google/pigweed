@@ -117,21 +117,21 @@ common Android backends via the ``pw_android_common_backends`` defaults.
            "pw_android_common_backends",
        ],
        header_libs: [
-           // Header library list for all the libraries in #include directives.
+           // List of cc_library_headers dependencies needed to support
+           // #include directives in the module's header files.
        ],
        export_header_lib_headers: [
-           // Header library list for all the libraries in #include directives
-           // in public header files only.
+           // List of cc_library_headers dependencies needed to support #include
+           // directives in the module's public header files.
            // These entries must also be present in header_libs.
        ],
        whole_static_libs: [
-           // Static library list for all static library dependencies, listed as
-           // whole libraries to avoid dropping symbols in transitive
-           // dependencies.
+           // List of cc_library_static dependencies, listed as whole libraries
+           // to avoid dropping symbols in transitive dependencies.
        ],
        export_static_lib_headers: [
-           // Static library list for static libraries in #include directives in
-           // public header files only.
+           // List of cc_library_static dependencies needed to support #include
+           // directives in the module's public header files.
            // These entries must also be present in whole_static_libs.
        ],
        srcs: [
