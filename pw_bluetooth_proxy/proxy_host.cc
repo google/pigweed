@@ -55,34 +55,41 @@ ProxyHost::~ProxyHost() {
 }
 
 void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
-  if (h4_packet.GetH4Type() == emboss::H4PacketType::COMMAND) {
-    HandleCommandFromHost(std::move(h4_packet));
-    return;
+  switch (h4_packet.GetH4Type()) {
+    case emboss::H4PacketType::COMMAND:
+      HandleCommandFromHost(std::move(h4_packet));
+      return;
+    case emboss::H4PacketType::EVENT:
+      HandleEventFromHost(std::move(h4_packet));
+      return;
+    case emboss::H4PacketType::ACL_DATA:
+      HandleAclFromHost(std::move(h4_packet));
+      return;
+    case emboss::H4PacketType::UNKNOWN:
+    case emboss::H4PacketType::SYNC_DATA:
+    case emboss::H4PacketType::ISO_DATA:
+    default:
+      hci_transport_.SendToController(std::move(h4_packet));
+      return;
   }
-
-  if (h4_packet.GetH4Type() == emboss::H4PacketType::EVENT) {
-    HandleEventFromHost(std::move(h4_packet));
-    return;
-  }
-
-  if (h4_packet.GetH4Type() == emboss::H4PacketType::ACL_DATA) {
-    HandleAclFromHost(std::move(h4_packet));
-    return;
-  }
-
-  hci_transport_.SendToController(std::move(h4_packet));
 }
 
 void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
-  if (h4_packet.GetH4Type() == emboss::H4PacketType::EVENT) {
-    HandleEventFromController(std::move(h4_packet));
-    return;
+  switch (h4_packet.GetH4Type()) {
+    case emboss::H4PacketType::EVENT:
+      HandleEventFromController(std::move(h4_packet));
+      return;
+    case emboss::H4PacketType::ACL_DATA:
+      HandleAclFromController(std::move(h4_packet));
+      return;
+    case emboss::H4PacketType::UNKNOWN:
+    case emboss::H4PacketType::COMMAND:
+    case emboss::H4PacketType::SYNC_DATA:
+    case emboss::H4PacketType::ISO_DATA:
+    default:
+      hci_transport_.SendToHost(std::move(h4_packet));
+      return;
   }
-  if (h4_packet.GetH4Type() == emboss::H4PacketType::ACL_DATA) {
-    HandleAclFromController(std::move(h4_packet));
-    return;
-  }
-  hci_transport_.SendToHost(std::move(h4_packet));
 }
 
 bool ProxyHost::CheckForActiveFragmenting(AclDataChannel::Direction direction,
