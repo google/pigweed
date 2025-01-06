@@ -27,19 +27,27 @@ namespace {
 constexpr uint16_t kPort = PW_SYSTEM_SOCKET_IO_PORT;
 
 stream::SocketStream& GetStream() {
-  static bool running = false;
+  static bool listening = false;
+  static bool client_connected = false;
   static std::mutex socket_open_lock;
   static stream::ServerSocket server_socket;
   static stream::SocketStream socket_stream;
   std::lock_guard guard(socket_open_lock);
-  if (!running) {
-    printf("Awaiting connection on port %d\n", static_cast<int>(kPort));
+  if (!listening) {
+    std::printf("Awaiting connection on port %d\n", static_cast<int>(kPort));
     PW_CHECK_OK(server_socket.Listen(kPort));
+    listening = true;
+  }
+  if (client_connected && !socket_stream.IsReady()) {
+    client_connected = false;
+    std::printf("Client disconnected\n");
+  }
+  if (!client_connected) {
     auto accept_result = server_socket.Accept();
     PW_CHECK_OK(accept_result.status());
     socket_stream = *std::move(accept_result);
-    printf("Client connected\n");
-    running = true;
+    client_connected = true;
+    std::printf("Client connected\n");
   }
   return socket_stream;
 }
