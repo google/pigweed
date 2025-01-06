@@ -36,6 +36,6 @@
 toolchain(
     name = "fuchsia_sdk_toolchain",
     toolchain = "@fuchsia_sdk//:fuchsia_toolchain_info",
-    toolchain_type = "@rules_fuchsia//fuchsia:toolchain",
+    toolchain_type = "@rules_fuchsia//fuchsia/toolchains:sdk",
     visibility = ["//visibility:public"],
 )
