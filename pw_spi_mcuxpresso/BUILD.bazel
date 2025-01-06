@@ -20,8 +20,6 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO: https://pwbug.dev/343487589 - Use this constraint value instead of
-# //pw_build/constraints/board:mimxrt595_evk for libraries in this package.
 boolean_constraint_value(
     name = "compatible",
 )
@@ -35,9 +33,7 @@ cc_library(
         "public/pw_spi_mcuxpresso/spi.h",
     ],
     strip_include_prefix = "public",
-    target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
-    ],
+    target_compatible_with = [":compatible"],
     deps = [
         "//pw_assert",
         "//pw_chrono:system_clock",
@@ -61,9 +57,7 @@ cc_library(
         "public/pw_spi_mcuxpresso/flexio_spi.h",
     ],
     strip_include_prefix = "public",
-    target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
-    ],
+    target_compatible_with = [":compatible"],
     deps = [
         "//pw_digital_io",
         "//pw_log",
@@ -84,9 +78,7 @@ cc_library(
         "public/pw_spi_mcuxpresso/responder.h",
     ],
     strip_include_prefix = "public",
-    target_compatible_with = [
-        "//pw_build/constraints/chipset:imxrt500",
-    ],
+    target_compatible_with = [":compatible"],
     deps = [
         "//pw_dma_mcuxpresso",
         "//pw_function",
@@ -102,9 +94,6 @@ cc_library(
 pw_cc_test(
     name = "spi_test",
     srcs = ["spi_test.cc"],
-    target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
-    ],
     deps = [
         ":spi",
         "//pw_spi:device",
@@ -114,9 +103,6 @@ pw_cc_test(
 pw_cc_test(
     name = "flexio_spi_test",
     srcs = ["flexio_spi_test.cc"],
-    target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
-    ],
     deps = [":flexio_spi"],
 )
 
