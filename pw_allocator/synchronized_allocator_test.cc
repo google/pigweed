@@ -89,7 +89,8 @@ class Background final {
 
   Background(pw::Allocator& allocator, uint64_t seed, size_t iterations)
       : background_(allocator, seed, iterations) {
-    background_thread_ = pw::Thread(context_.options(), background_);
+    background_thread_ =
+        pw::Thread(context_.options(), [this] { background_.Run(); });
   }
 
   ~Background() {
@@ -107,14 +108,20 @@ class Background final {
  private:
   /// Thread body that uses a test harness to perform random sequences of
   /// allocations on a synchronous allocator.
-  class BackgroundThreadCore : public pw::thread::ThreadCore {
+  class BackgroundThread {
    public:
-    BackgroundThreadCore(pw::Allocator& allocator,
-                         uint64_t seed,
-                         size_t iterations)
+    BackgroundThread(pw::Allocator& allocator, uint64_t seed, size_t iterations)
         : iterations_(iterations) {
       test_harness_.set_allocator(&allocator);
       test_harness_.set_prng_seed(seed);
+    }
+
+    void Run() {
+      for (size_t i = 0; i < iterations_ && !semaphore_.try_acquire(); ++i) {
+        test_harness_.GenerateRequests(kMaxSize, kBackgroundRequests);
+        pw::this_thread::yield();
+      }
+      semaphore_.release();
     }
 
     void Stop() { semaphore_.release(); }
@@ -125,14 +132,6 @@ class Background final {
     }
 
    private:
-    void Run() override {
-      for (size_t i = 0; i < iterations_ && !semaphore_.try_acquire(); ++i) {
-        test_harness_.GenerateRequests(kMaxSize, kBackgroundRequests);
-        pw::this_thread::yield();
-      }
-      semaphore_.release();
-    }
-
     TestHarness test_harness_;
     pw::sync::BinarySemaphore semaphore_;
     size_t iterations_;

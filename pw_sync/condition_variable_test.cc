@@ -75,18 +75,6 @@ struct ThreadInfo {
   }
 };
 
-// A `ThreadCore` implementation that delegates to an `std::function`.
-class LambdaThreadCore : public pw::thread::ThreadCore {
- public:
-  explicit LambdaThreadCore(std::function<void()> work)
-      : work_(std::move(work)) {}
-
- private:
-  void Run() override { work_(); }
-
-  std::function<void()> work_;
-};
-
 class LambdaThread {
  public:
   // Starts a new thread which runs `work`, joining the thread on destruction.
@@ -94,7 +82,7 @@ class LambdaThread {
       std::function<void()> work,
       // TODO: b/290860904 - Replace TestOptionsThread0 with TestThreadContext.
       pw::thread::Options options = pw::thread::test::TestOptionsThread0())
-      : thread_core_(std::move(work)), thread_(options, thread_core_) {}
+      : work_(std::move(work)), thread_(options, [this] { work_(); }) {}
   ~LambdaThread() { thread_.join(); }
   LambdaThread(const LambdaThread&) = delete;
   LambdaThread(LambdaThread&&) = delete;
@@ -102,7 +90,7 @@ class LambdaThread {
   LambdaThread&& operator=(LambdaThread&&) = delete;
 
  private:
-  LambdaThreadCore thread_core_;
+  std::function<void()> work_;
   pw::Thread thread_;
 };
 

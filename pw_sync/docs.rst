@@ -1168,25 +1168,26 @@ Examples in C++
    #include "pw_sync/thread_notification.h"
    #include "pw_thread/thread_core.h"
 
-   class FooHandler() : public pw::thread::ThreadCore {
-    // Public API invoked by other threads and/or interrupts.
-    void NewFooAvailable() {
-      new_foo_notification_.release();
-    }
-
-    private:
-     pw::sync::ThreadNotification new_foo_notification_;
+   class FooHandler() {
+    public:
+     // Public API invoked by other threads and/or interrupts.
+     void NewFooAvailable() {
+       new_foo_notification_.release();
+     }
 
      // Thread function.
-     void Run() override {
+     void Run() {
        while (true) {
          new_foo_notification_.acquire();
          HandleFoo();
        }
      }
 
+    private:
      void HandleFoo();
-   }
+
+     pw::sync::ThreadNotification new_foo_notification_;
+   };
 
 TimedThreadNotification
 =======================
@@ -1285,17 +1286,15 @@ Examples in C++
    #include "pw_sync/timed_thread_notification.h"
    #include "pw_thread/thread_core.h"
 
-   class FooHandler() : public pw::thread::ThreadCore {
-    // Public API invoked by other threads and/or interrupts.
-    void NewFooAvailable() {
-      new_foo_notification_.release();
-    }
-
-    private:
-     pw::sync::TimedThreadNotification new_foo_notification_;
+   class FooHandler() {
+    public:
+     // Public API invoked by other threads and/or interrupts.
+     void NewFooAvailable() {
+       new_foo_notification_.release();
+     }
 
      // Thread function.
-     void Run() override {
+     void Run() {
        while (true) {
          if (new_foo_notification_.try_acquire_for(kNotificationTimeout)) {
            HandleFoo();
@@ -1304,9 +1303,12 @@ Examples in C++
        }
      }
 
+    private:
      void HandleFoo();
      void DoOtherStuff();
-   }
+
+     pw::sync::TimedThreadNotification new_foo_notification_;
+   };
 
 CountingSemaphore
 =================
@@ -1544,17 +1546,15 @@ Examples in C++
    #include "pw_sync/binary_semaphore.h"
    #include "pw_thread/thread_core.h"
 
-   class FooHandler() : public pw::thread::ThreadCore {
-    // Public API invoked by other threads and/or interrupts.
-    void NewFooAvailable() {
-      new_foo_semaphore_.release();
-    }
-
-    private:
-     pw::sync::BinarySemaphore new_foo_semaphore_;
+   class FooHandler() {
+    public:
+     // Public API invoked by other threads and/or interrupts.
+     void NewFooAvailable() {
+       new_foo_semaphore_.release();
+     }
 
      // Thread function.
-     void Run() override {
+     void Run() {
        while (true) {
          if (new_foo_semaphore_.try_acquire_for(kNotificationTimeout)) {
            HandleFoo();
@@ -1563,9 +1563,12 @@ Examples in C++
        }
      }
 
+    private:
      void HandleFoo();
      void DoOtherStuff();
-   }
+
+     pw::sync::BinarySemaphore new_foo_semaphore_;
+   };
 
 .. _module-pw_sync-condition-variables:
 

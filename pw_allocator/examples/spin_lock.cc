@@ -34,36 +34,29 @@ class MyTask final {
   using Layout = pw::allocator::Layout;
 
   MyTask(pw::Allocator& allocator, const pw::thread::Options& options)
-      : thread_core_(allocator) {
-    thread_ = pw::Thread(options, thread_core_);
+      : allocator_(allocator) {
+    thread_ = pw::Thread(options, [this] { Run(); });
   }
 
   void join() { thread_.join(); }
 
  private:
-  class MyThreadCore : public pw::thread::ThreadCore {
-   public:
-    MyThreadCore(pw::Allocator& allocator) : allocator_(allocator) {}
-
-   private:
-    void Run() override {
-      std::array<NamedU32*, 10> values = {};
-      uint32_t counter = 0;
-      for (auto& value : values) {
-        void* ptr = allocator_.Allocate(Layout::Of<NamedU32>());
-        PW_CHECK_NOTNULL(ptr);
-        value = new (ptr) NamedU32("test", ++counter);
-      }
-      counter = 0;
-      for (auto& value : values) {
-        PW_CHECK_INT_EQ(value->value(), ++counter);
-        allocator_.Deallocate(value);
-      }
+  void Run() {
+    std::array<NamedU32*, 10> values = {};
+    uint32_t counter = 0;
+    for (auto& value : values) {
+      void* ptr = allocator_.Allocate(Layout::Of<NamedU32>());
+      PW_CHECK_NOTNULL(ptr);
+      value = new (ptr) NamedU32("test", ++counter);
     }
+    counter = 0;
+    for (auto& value : values) {
+      PW_CHECK_INT_EQ(value->value(), ++counter);
+      allocator_.Deallocate(value);
+    }
+  }
 
-    pw::Allocator& allocator_;
-  } thread_core_;
-
+  pw::Allocator& allocator_;
   pw::Thread thread_;
 };
 
