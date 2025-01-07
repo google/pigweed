@@ -39,7 +39,7 @@ class UartNonBlocking : public UartBase {
   /// This function calls `callback` after the entirety of `rx_buffer` is filled
   /// with data. This may be called from interrupt context.
   /// The callback may be called in ISR context.
-  /// It is safe to call `Read`/`Write` from the callback context.
+  /// It is not safe to call any Uart methods from the callback context.
   ///
   /// @param rx_buffer  The buffer to read data into.
   /// @param callback   A callback to invoke when the transaction is completed.
@@ -76,7 +76,7 @@ class UartNonBlocking : public UartBase {
   /// This function calls `callback` after `rx_buffer` is filled with at least
   /// `min_bytes` of data. This may be called from interrupt context.
   /// The callback may be called in ISR context.
-  /// It is safe to call `Read`/`Write` from the callback context.
+  /// It is not safe to call any Uart methods from the callback context.
   ///
   /// @param rx_buffer  The buffer to read data into.
   /// @param min_bytes  Minimum bytes to read.
@@ -128,7 +128,7 @@ class UartNonBlocking : public UartBase {
   /// This function calls `callback` after the entirety of `tx_buffer` is
   /// written to the UART. This may be called from interrupt context.
   /// The callback may be called in ISR context.
-  /// It is safe to call `Read`/`Write` from the callback context.
+  /// It is not safe to call any Uart methods from the callback context.
   ///
   /// @param tx_buffer  The buffer to write to the UART.
   /// @param callback   A callback to invoke when the transaction is completed.
@@ -227,9 +227,6 @@ class UartNonBlocking : public UartBase {
   /// occurs.
   /// Implementation Notes:
   /// * The callback may be called in ISR context.
-  /// * It is safe to call `DoRead`/`DoWrite` from the callback context.
-  /// * To prevent infinite recurssion the callback should never be called
-  ///   synchronously from `DoRead`.
   /// * The callback must be moved and stored prior to its invocation.
   /// * Do not hold a lock when invoking the callback.
   ///
@@ -285,9 +282,6 @@ class UartNonBlocking : public UartBase {
   /// when either the buffer fully written, or an error occurs.
   /// Implementation Notes:
   /// * The callback may be called in ISR context.
-  /// * It is safe to call `DoRead`/`DoWrite` from the callback context.
-  /// * To prevent infinite recurssion the callback should never be called
-  ///   synchronously from `DoRead`.
   /// * The callback must be moved and stored prior to its invocation.
   /// * Do not hold a lock when invoking the callback.
   ///
