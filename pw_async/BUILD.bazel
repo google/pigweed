@@ -69,12 +69,11 @@ cc_library(
 
 pw_facade(
     name = "fake_dispatcher",
+    testonly = True,
     hdrs = ["public/pw_async/fake_dispatcher.h"],
     backend = ":fake_dispatcher_backend",
     strip_include_prefix = "public",
-    deps = [
-        ":dispatcher",
-    ],
+    deps = [":dispatcher"],
 )
 
 label_flag(
@@ -97,9 +96,13 @@ pw_cc_test(
 
 cc_library(
     name = "fake_dispatcher_fixture",
+    testonly = True,
     hdrs = ["public/pw_async/fake_dispatcher_fixture.h"],
     strip_include_prefix = "public",
-    deps = [":fake_dispatcher"],
+    deps = [
+        ":fake_dispatcher",
+        "//pw_unit_test",
+    ],
 )
 
 cc_library(

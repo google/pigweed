@@ -40,6 +40,7 @@ cc_library(
 # Backend for //pw_async:fake_dispatcher
 cc_library(
     name = "fake_dispatcher",
+    testonly = True,
     srcs = ["fake_dispatcher.cc"],
     hdrs = [
         "public/pw_async_basic/fake_dispatcher.h",
