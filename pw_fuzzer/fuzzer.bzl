@@ -21,6 +21,7 @@ def pw_cc_fuzz_test(**kwargs):
     Args:
         **kwargs: Arguments to be augmented.
     """
+    kwargs["testonly"] = True
     kwargs["deps"].append("//pw_fuzzer:libfuzzer")
     kwargs["deps"].append(str(Label("//pw_build:default_link_extra_lib")))
 
