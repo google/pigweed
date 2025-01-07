@@ -23,6 +23,7 @@ cc_library {
     export_include_dirs: [
         "public",
         "block/public",
+        "bucket/public",
     ],
     defaults: [
         "pw_android_common_backends",
