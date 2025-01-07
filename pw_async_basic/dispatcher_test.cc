@@ -17,6 +17,7 @@
 
 #include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
+#include "pw_span/span.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
@@ -219,6 +220,81 @@ TEST(DispatcherBasic, TasksCancelledByRunFor) {
   Task task0(inc_count), task1(inc_count), task2(inc_count);
 
   BasicDispatcher dispatcher;
+  dispatcher.PostAfter(task0, 10s);
+  dispatcher.PostAfter(task1, 10s);
+  dispatcher.PostAfter(task2, 10s);
+
+  dispatcher.RequestStop();
+  dispatcher.RunFor(5s);
+  ASSERT_EQ(count, 3);
+}
+
+class BasicDispatcherExecuteTask final : public BasicDispatcher {
+ public:
+  BasicDispatcherExecuteTask(pw::span<Task*> expected_tasks,
+                             Status expected_status)
+      : expected_tasks_(expected_tasks), expected_status_(expected_status) {}
+
+ private:
+  void ExecuteTask(backend::NativeTask& task, Status status) final {
+    ASSERT_LT(executed_, expected_tasks_.size());
+    ASSERT_EQ(&task, &(expected_tasks_[executed_++]->native_type()));
+    ASSERT_EQ(status, expected_status_);
+    BasicDispatcher::ExecuteTask(task, status);
+  }
+
+  pw::span<Task*> expected_tasks_;
+  Status expected_status_;
+  uint32_t executed_ = 0;
+};
+
+TEST(DispatcherBasic, ExecuteTaskOk) {
+  TestPrimitives tp;
+  auto inc_count = [&tp]([[maybe_unused]] Context& c, Status status) {
+    PW_TEST_ASSERT_OK(status);
+    ++tp.count;
+  };
+
+  Task task0(inc_count);
+
+  Task task1(inc_count);
+
+  Task task2([&tp]([[maybe_unused]] Context& c, Status status) {
+    PW_TEST_ASSERT_OK(status);
+    ++tp.count;
+    tp.notification.release();
+  });
+
+  Task* tasks[] = {&task0, &task1, &task2};
+
+  BasicDispatcherExecuteTask dispatcher(tasks, OkStatus());
+  Thread work_thread(thread::stl::Options(), dispatcher);
+
+  dispatcher.Post(task0);
+  dispatcher.Post(task1);
+  dispatcher.Post(task2);
+
+  tp.notification.acquire();
+  dispatcher.RequestStop();
+  work_thread.join();
+  ASSERT_EQ(tp.count, 3);
+}
+
+TEST(DispatcherBasic, ExecuteTaskCancelled) {
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_CANCELLED(status);
+    ++count;
+  };
+
+  Task task0(inc_count);
+  Task task1(inc_count);
+  Task task2(inc_count);
+
+  Task* tasks[] = {&task0, &task1, &task2};
+
+  BasicDispatcherExecuteTask dispatcher(tasks, Status::Cancelled());
+
   dispatcher.PostAfter(task0, 10s);
   dispatcher.PostAfter(task1, 10s);
   dispatcher.PostAfter(task2, 10s);

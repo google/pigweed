@@ -83,6 +83,12 @@ void BasicDispatcher::MaybeSleep() {
   }
 }
 
+void BasicDispatcher::ExecuteTask(backend::NativeTask& task, Status status) {
+  Context ctx{this, &task.task_};
+  task(ctx, status);
+  // task object might be freed already (e.g. HeapDispatcher).
+}
+
 void BasicDispatcher::ExecuteDueTasks() {
   while (!task_queue_.empty() && task_queue_.front().due_time_ <= now() &&
          !stop_requested_) {
@@ -90,8 +96,7 @@ void BasicDispatcher::ExecuteDueTasks() {
     task_queue_.pop_front();
 
     lock_.unlock();
-    Context ctx{this, &task.task_};
-    task(ctx, OkStatus());
+    ExecuteTask(task, OkStatus());
     lock_.lock();
   }
 }
@@ -110,8 +115,7 @@ void BasicDispatcher::DrainTaskQueue() {
     task_queue_.pop_front();
 
     lock_.unlock();
-    Context ctx{this, &task.task_};
-    task(ctx, Status::Cancelled());
+    ExecuteTask(task, Status::Cancelled());
     lock_.lock();
   }
 }

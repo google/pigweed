@@ -86,6 +86,7 @@ pw_cc_test(
     deps = [
         ":dispatcher",
         "//pw_log",
+        "//pw_span",
         "//pw_thread:thread",
     ],
 )

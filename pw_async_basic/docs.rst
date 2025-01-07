@@ -12,6 +12,7 @@ API
 ---
 .. doxygenclass:: pw::async::BasicDispatcher
    :members:
+   :protected-members:
 
 -----
 Usage

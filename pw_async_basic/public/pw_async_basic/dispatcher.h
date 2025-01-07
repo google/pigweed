@@ -23,7 +23,7 @@
 namespace pw::async {
 
 /// BasicDispatcher is a generic implementation of Dispatcher.
-class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
+class BasicDispatcher : public Dispatcher, public thread::ThreadCore {
  public:
   explicit BasicDispatcher() = default;
   ~BasicDispatcher() override;
@@ -60,6 +60,14 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
   chrono::SystemClock::time_point now() override {
     return chrono::SystemClock::now();
   }
+
+ protected:
+  /// Execute the given task and provide the status to it.
+  ///
+  /// Note: Once `ExecuteTask` has finished executing, the task object might
+  /// have been freed already (e.g. HeapDispatcher).
+  virtual void ExecuteTask(backend::NativeTask& task, Status status)
+      PW_LOCKS_EXCLUDED(lock_);
 
  private:
   // Insert |task| into task_queue_ maintaining its min-heap property, keyed by
