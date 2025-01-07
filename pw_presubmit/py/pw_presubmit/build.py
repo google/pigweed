@@ -100,6 +100,9 @@ def bazel(
     ctx: PresubmitContext,
     cmd: str,
     *args: str,
+    # TODO: https://pwbug.dev/371043540 - Change the default to 'minimal' once
+    # all downstream projects that need different behavior are updated.
+    remote_download_outputs: str = 'toplevel',
     stdout: io.TextIOWrapper | None = None,
     strict_module_lockfile: bool = False,
     use_remote_cache: bool = False,
@@ -127,6 +130,9 @@ def bazel(
         remote_cache.append('--config=remote_cache')
         remote_cache.append('--remote_upload_local_results=true')
         remote_cache.append(_get_remote_instance_name_flag(ctx.luci))
+        remote_cache.append(
+            f'--remote_download_outputs={remote_download_outputs}'
+        )
 
     symlink_prefix: list[str] = []
     if cmd not in ('mod', 'query'):
