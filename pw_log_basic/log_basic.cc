@@ -137,7 +137,7 @@ extern "C" void pw_Log_HandleMessageVaList(int level,
 
   // Column: Function
 #if PW_LOG_SHOW_FUNCTION
-  buffer.Format(" %20s |", function_name);
+  buffer.Format(" %-30s |", function_name);
 #else
   static_cast<void>(function_name);
 #endif
