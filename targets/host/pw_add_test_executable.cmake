@@ -49,7 +49,7 @@ function(pw_add_test_executable_with_main NAME TEST_DEP TEST_MAIN)
       set(main pw_unit_test.logging_main)
     elseif("${test_backend}" STREQUAL "pw_unit_test.googletest")
       set(main pw_third_party.googletest.gmock_main)
-    elseif("${test_backend}" STREQUAL "pw_third_party.fuzztest")
+    elseif("${test_backend}" STREQUAL "pw_unit_test.fuzztest")
       set(main pw_third_party.fuzztest_gtest_main)
     else()
       message(FATAL_ERROR

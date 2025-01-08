@@ -26,7 +26,6 @@ See the following:
 * :ref:`module-pw_third_party_abseil_cpp-using_upstream`
 * :ref:`module-pw_third_party_fuzztest-using_upstream`
 * :ref:`module-pw_third_party_googletest-using_upstream`
-* :ref:`module-pw_third_party_re2-using_upstream`
 
 .. tab-set::
 
@@ -56,26 +55,26 @@ See the following:
       :sync: cmake
 
       FuzzTest is enabled by setting several CMake variables. The easiest way to
-      set these is to extend your ``toolchain.cmake`` file.
+      set these is to extend your ``toolchain.cmake`` file. You need to specify
+      where FuzzTest and its dependencies are, include FuzzTest's build flags,
+      and set the unit test backend to use FuzzTest.
 
       For example:
 
       .. code-block::
 
-         include(my_project_toolchain.cmake)
+         set(dir_pw_third_party_abseil_cpp "path/to/abseil" CACHE INTERNAL "" FORCE)
+         set(dir_pw_third_party_googletest "path/to/googletest" CACHE INTERNAL "" FORCE)
+         set(dir_pw_third_party_fuzztest "path/to/fuzztest" CACHE INTERNAL "" FORCE)
 
-         set(dir_pw_third_party_fuzztest
-             "path/to/fuzztest"
-           CACHE STRING "" FORCE
-         )
-         set(dir_pw_third_party_googletest
-             "path/to/googletest"
-           CACHE STRING "" FORCE
-         )
-         set(pw_unit_test_BACKEND
-             "pw_third_party.fuzztest"
-           CACHE STRING "" FORCE
-         )
+         pw_set_backend(pw_unit_test pw_unit_test.fuzztest)
+
+         # This line should come after adding the Pigweed subdirectory, but
+         # before any fuzz tests.
+         fuzztest_setup_fuzzing_flags()
+
+      You also must enable fuzzing when you build by passing the
+      ``-DFUZZTEST_FUZZING_MODE`` flag to ``cmake`` when building.
 
    .. tab-item:: Bazel
       :sync: bazel

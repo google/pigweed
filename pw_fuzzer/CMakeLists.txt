@@ -22,7 +22,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 # If a project configure `pw_unit_test_BACKEND` to use FuzzTest, this
 # target pulls in the "real" FuzzTest. Otherwise, it uses a "stub" which
 # converts invocations of `FUZZ_TEST` to disabled empty unit tests.
-if(pw_unit_test_BACKEND STREQUAL "pw_third_party.fuzztest")
+if(pw_unit_test_BACKEND STREQUAL "pw_unit_test.fuzztest")
   pw_add_library(pw_fuzzer.fuzztest INTERFACE
     HEADERS
       public/pw_fuzzer/fuzztest.h
@@ -36,6 +36,11 @@ if(pw_unit_test_BACKEND STREQUAL "pw_third_party.fuzztest")
     PUBLIC_INCLUDES
       public
       private
+    # TODO(b/370836939): Fix these in upstream and remove.
+    PUBLIC_COMPILE_OPTIONS
+      "-Wno-sign-compare"
+      "-Wno-unused-parameter"
+      "-Wno-missing-field-initializers"
   )
 else()
   pw_add_library(pw_fuzzer.fuzztest INTERFACE

@@ -73,4 +73,6 @@ else()  # dir_pw_thid_parrty_googletest is set
     PUBLIC_DEPS
       pw_third_party.googletest
   )
+
+  add_library(GTest::gtest ALIAS pw_third_party.googletest)
 endif()

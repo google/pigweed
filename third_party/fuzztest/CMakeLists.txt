@@ -14,7 +14,18 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-if(NOT dir_pw_third_party_fuzztest)
+set(dir_pw_third_party_fuzztest "" CACHE PATH
+    "Path to the FuzzTest installation.")
+option(dir_pw_third_party_fuzztest_ADD_SUBDIRECTORY
+    "Whether to add the dir_pw_third_party_fuzztest subdirectory" OFF)
+
+# FuzzTest references RE2, but it is not needed for fuzztest_core.
+# Keep this early in the file to get a better error message when
+# `dir_pw_third_party_fuzztest` is unset.
+add_library(pw_third_party.re2_stub INTERFACE)
+add_library(re2::re2 ALIAS pw_third_party.re2_stub)
+
+if("${dir_pw_third_party_fuzztest}" STREQUAL "")
   pw_add_error_target(pw_third_party.fuzztest
     MESSAGE
       "Attempted to build the pw_third_party.fuzztest without configuring it "
@@ -28,15 +39,22 @@ if(NOT dir_pw_third_party_fuzztest)
       "See https://pigweed.dev/third_party/fuzztest."
   )
   return()
-else()
-  add_subdirectory("${dir_pw_third_party_fuzztest}" third_party/fuzztest)
+endif()
+
+if (dir_pw_third_party_fuzztest_ADD_SUBDIRECTORY)
+  # Adapted from @fuzztest//CMakeLists.txt
+  include("${dir_pw_third_party_fuzztest}/cmake/FuzzTestFlagSetup.cmake")
+  include("${dir_pw_third_party_fuzztest}/cmake/FuzzTestHelpers.cmake")
+
+  add_subdirectory("${dir_pw_third_party_fuzztest}/tools" third_party/fuzztest/tools)
+  add_subdirectory("${dir_pw_third_party_fuzztest}/fuzztest" third_party/fuzztest/fuzztest)
 endif()
 
 # See also //pw_fuzzer:fuzztest.
 add_library(pw_third_party.fuzztest INTERFACE)
 target_link_libraries(pw_third_party.fuzztest
   INTERFACE
-    fuzztest_core
+    fuzztest::fuzztest_core
     pw_unit_test
     pw_unit_test.googletest
 )
@@ -49,5 +67,5 @@ target_include_directories(pw_third_party.fuzztest
 add_library(pw_third_party.fuzztest_gtest_main INTERFACE)
 target_link_libraries(pw_third_party.fuzztest_gtest_main
   INTERFACE
-    fuzztest_gtest_main
+    fuzztest::fuzztest_gtest_main
 )

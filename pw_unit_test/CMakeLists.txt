@@ -94,6 +94,12 @@ pw_add_library(pw_unit_test.googletest_handler_adapter STATIC
     public
 )
 
+pw_add_library(pw_unit_test.fuzztest INTERFACE
+  PUBLIC_DEPS
+    pw_fuzzer.fuzztest
+    pw_unit_test.googletest
+)
+
 pw_add_test(pw_unit_test.framework_test
     SOURCES
       framework_test.cc
