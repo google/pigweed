@@ -34,10 +34,6 @@ struct L2capChannelConnectionInfo {
   uint16_t remote_cid;
   // Otherwise known as destination_cid
   uint16_t local_cid;
-
-  // TODO: https://pwbug.dev/385360470 - Remove after migration.
-  uint16_t source_cid;
-  uint16_t destination_cid;
 };
 
 class L2capStatusDelegate

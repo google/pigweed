@@ -197,9 +197,6 @@ void L2capSignalingChannel::HandleConnectionRsp(
               .connection_handle = connection_handle(),
               .remote_cid = cmd.source_cid().Read(),
               .local_cid = cmd.destination_cid().Read(),
-
-              .source_cid = cmd.source_cid().Read(),
-              .destination_cid = cmd.destination_cid().Read(),
           });
       pending_connections_.erase(pending_it);
 
