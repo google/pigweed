@@ -121,6 +121,23 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "csv",
+    srcs = ["csv.cc"],
+    hdrs = ["pw_tokenizer_private/csv.h"],
+    implementation_deps = ["//pw_log"],
+    visibility = ["//visibility:private"],
+)
+
+pw_cc_test(
+    name = "csv_test",
+    srcs = ["csv_test.cc"],
+    deps = [
+        ":csv",
+        "//pw_unit_test",
+    ],
+)
+
 proto_library(
     name = "tokenizer_proto",
     srcs = [

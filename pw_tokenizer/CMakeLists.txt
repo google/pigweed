@@ -111,6 +111,25 @@ pw_add_library(pw_tokenizer.decoder STATIC
     pw_varint
 )
 
+pw_add_library(pw_tokenizer._csv STATIC
+  HEADERS
+    pw_tokenizer_private/csv.h
+  SOURCES
+    csv.cc
+  PRIVATE_DEPS
+    pw_log
+)
+
+pw_add_test(pw_tokenizer.csv_test
+  SOURCES
+    csv_test.cc
+  PRIVATE_DEPS
+    pw_tokenizer._csv
+  GROUPS
+    modules
+    pw_tokenizer
+)
+
 pw_proto_library(pw_tokenizer.proto
   SOURCES
     pw_tokenizer_proto/options.proto

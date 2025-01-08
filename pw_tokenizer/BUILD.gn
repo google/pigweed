@@ -145,6 +145,18 @@ pw_source_set("decoder") {
   friend = [ ":*" ]
 }
 
+pw_source_set("csv") {
+  public = [ "pw_tokenizer_private/csv.h" ]
+  sources = [ "csv.cc" ]
+  deps = [ dir_pw_log ]
+  visibility = [ ":*" ]
+}
+
+pw_test("csv_test") {
+  sources = [ "csv_test.cc" ]
+  deps = [ ":csv" ]
+}
+
 # Executable for generating test data for the C++ and Python detokenizers. This
 # target should only be built for the host.
 pw_executable("generate_decoding_test_data") {
@@ -170,6 +182,7 @@ pw_executable("elf_reader_test_binary") {
 pw_test_group("tests") {
   tests = [
     ":argument_types_test",
+    ":csv_test",
     ":base64_test",
     ":decode_test",
     ":detokenize_test",
