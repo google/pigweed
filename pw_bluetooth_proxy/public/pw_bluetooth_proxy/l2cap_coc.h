@@ -72,26 +72,7 @@ class L2capCoc : public L2capChannel {
   L2capCoc& operator=(L2capCoc&& other) = delete;
   ~L2capCoc() override;
 
-  /// Send an L2CAP payload to the remote peer.
-  ///
-  /// @param[in] payload The L2CAP payload to be sent. Payload will be copied
-  ///                    before function completes.
-  ///
-  /// @returns A StatusWithMultiBuf with one of the statuses below. If status is
-  ///          not OK then payload is returned in StatusWithMultiBuf as well.
-  ///
-  /// .. pw-status-codes::
-  ///  OK:                  If packet was successfully queued for send.
-  ///  UNAVAILABLE:         If channel could not acquire the resources to queue
-  ///                       the send at this time (transient error). If an
-  ///                       `event_fn` has been provided it will be called with
-  ///                       `L2capChannelEvent::kWriteAvailable` when there is
-  ///                       queue space available again.
-  ///  INVALID_ARGUMENT:    If payload is too large or if payload is not a
-  ///                       contiguous MultiBuf.
-  ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
-  /// @endrst
-  StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload);
+  StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload) override;
 
   /// Send an L2CAP_FLOW_CONTROL_CREDIT_IND signaling packet to dispense the
   /// remote peer additional L2CAP connection-oriented channel credits for this

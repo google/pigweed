@@ -39,24 +39,7 @@ class BasicL2capChannel : public L2capChannel {
   BasicL2capChannel& operator=(BasicL2capChannel&& other) = default;
   ~BasicL2capChannel() override;
 
-  /// Send an L2CAP payload to the remote peer.
-  ///
-  /// @param[in] payload The L2CAP payload to be sent. Payload will be copied
-  ///                    before function completes.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  OK:                  If packet was successfully queued for send.
-  ///  UNAVAILABLE:         If channel could not acquire the resources to queue
-  ///                       the send at this time (transient error). If an
-  ///                       `event_fn` has been provided it will be called with
-  ///                       `L2capChannelEvent::kWriteAvailable` when there is
-  ///                       queue space available again.
-  ///  INVALID_ARGUMENT:    If payload is too large.
-  ///  FAILED_PRECONDITION  If channel is not `State::kRunning`.
-  /// @endrst
-  pw::Status Write(pw::span<const uint8_t> payload);
+  pw::Status Write(pw::span<const uint8_t> payload) override;
 
  protected:
   explicit BasicL2capChannel(

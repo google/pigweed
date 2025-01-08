@@ -22,22 +22,7 @@ namespace pw::bluetooth::proxy {
 /// remote peer.
 class GattNotifyChannel : public L2capChannel {
  public:
-  /// Send a GATT Notify to the remote peer.
-  ///
-  /// @param[in] attribute_value The data to be sent. Data will be copied
-  ///                            before function completes.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  OK: If notify was successfully queued for send.
-  ///  UNAVAILABLE: If channel could not acquire the resources to queue the send
-  ///               at this time (transient error).
-  ///  INVALID_ARGUMENT: If `attribute_value` is too large.
-  ///  FAILED_PRECONDITION: If channel is not `State::kRunning` or ACL data
-  ///  channel has not yet been initialized (see logs).
-  /// @endrst
-  pw::Status Write(pw::span<const uint8_t> attribute_value);
+  pw::Status Write(pw::span<const uint8_t> attribute_value) override;
 
  protected:
   static pw::Result<GattNotifyChannel> Create(

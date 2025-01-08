@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "pw_assert/check.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
@@ -76,6 +77,58 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //-------------
   //  Tx (public)
   //-------------
+
+  // TODO: https://pwbug.dev/388082771 - Most of these APIs should be in a
+  // public header. Will probably do that as part of moving them to
+  // ClientChannel.
+
+  /// Send a payload to the remote peer.
+  ///
+  /// @param[in] payload The client payload to be sent. Payload will be
+  /// destroyed once its data has been used.
+  ///
+  /// @returns A StatusWithMultiBuf with one of the statuses below. If status is
+  /// not OK then payload is also returned in StatusWithMultiBuf.
+  ///
+  /// .. pw-status-codes::
+  ///  OK:                  If packet was successfully queued for send.
+  ///  UNAVAILABLE:         If channel could not acquire the resources to queue
+  ///                       the send at this time (transient error). If an
+  ///                       `event_fn` has been provided it will be called with
+  ///                       `L2capChannelEvent::kWriteAvailable` when there is
+  ///                       queue space available again.
+  ///  INVALID_ARGUMENT:    If payload is too large or if payload is not a
+  ///                       contiguous MultiBuf.
+  ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
+  ///  UNIMPLEMENTED:       If channel does not support Write(MultiBuf).
+  /// @endrst
+  // TODO: https://pwbug.dev/388082771 - Plan to eventually move this to
+  // ClientChannel.
+  virtual StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload);
+
+  /// Send an L2CAP payload to the remote peer.
+  ///
+  /// @param[in] payload The L2CAP payload to be sent. Payload will be copied
+  ///                    before function completes.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///  OK:                  If packet was successfully queued for send.
+  ///  UNAVAILABLE:         If channel could not acquire the resources to queue
+  ///                       the send at this time (transient error). If an
+  ///                       `event_fn` has been provided it will be called with
+  ///                       `L2capChannelEvent::kWriteAvailable` when there is
+  ///                       queue space available again.
+  ///  INVALID_ARGUMENT:    If payload is too large.
+  ///  FAILED_PRECONDITION  If channel is not `State::kRunning`.
+  ///  UNIMPLEMENTED:       If channel does not support Write(MultiBuf).
+  /// @endrst
+  // Channels other than `L2capCoc` use this Write, but plan is to move them
+  // all to using Write(MultiBuf).
+  // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
+  // transitioned to Write(MultiBuf).
+  virtual pw::Status Write(pw::span<const uint8_t> payload);
 
   /// Determine if channel is ready to accept one or more Write payloads.
   ///

@@ -23,6 +23,7 @@
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
+#include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_log/log.h"
@@ -66,14 +67,6 @@ L2capCoc::L2capCoc(L2capCoc&& other)
 }
 
 StatusWithMultiBuf L2capCoc::Write(multibuf::MultiBuf&& payload) {
-  if (!payload.IsContiguous()) {
-    return {Status::InvalidArgument(), std::move(payload)};
-  }
-
-  if (state() != State::kRunning) {
-    return {Status::FailedPrecondition(), std::move(payload)};
-  }
-
   if (payload.size() > tx_mtu_) {
     PW_LOG_ERROR(
         "Payload (%zu bytes) exceeds MTU (%d bytes). So will not process.",
@@ -82,7 +75,7 @@ StatusWithMultiBuf L2capCoc::Write(multibuf::MultiBuf&& payload) {
     return {Status::InvalidArgument(), std::move(payload)};
   }
 
-  return QueuePayload(std::move(payload));
+  return L2capChannel::Write(std::move(payload));
 }
 
 pw::Result<L2capCoc> L2capCoc::Create(

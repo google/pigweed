@@ -125,6 +125,8 @@ void L2capChannel::Close() {
 void L2capChannel::Undefine() { state_ = State::kUndefined; }
 
 Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
+  PW_CHECK(!UsesPayloadQueue());
+
   if (state() != State::kRunning) {
     return Status::FailedPrecondition();
   }
@@ -142,6 +144,33 @@ Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
   }
   ReportPacketsMayBeReadyToSend();
   return status;
+}
+
+StatusWithMultiBuf L2capChannel::Write(multibuf::MultiBuf&& payload) {
+  if (!UsesPayloadQueue()) {
+    PW_LOG_ERROR(
+        "btproxy: Write(MultiBuf) called on class that only supports "
+        "Write(span).");
+    return {Status::Unimplemented(), std::move(payload)};
+  }
+
+  if (!payload.IsContiguous()) {
+    return {Status::InvalidArgument(), std::move(payload)};
+  }
+
+  if (state() != State::kRunning) {
+    return {Status::FailedPrecondition(), std::move(payload)};
+  }
+
+  return QueuePayload(std::move(payload));
+}
+
+pw::Status L2capChannel::Write(
+    [[maybe_unused]] pw::span<const uint8_t> payload) {
+  PW_LOG_ERROR(
+      "btproxy: Write(span) called on class that only supports "
+      "Write(MultiBuf)");
+  return Status::Unimplemented();
 }
 
 Status L2capChannel::IsWriteAvailable() {
@@ -184,6 +213,8 @@ std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
 }
 
 StatusWithMultiBuf L2capChannel::QueuePayload(multibuf::MultiBuf&& buf) {
+  PW_CHECK(UsesPayloadQueue());
+
   PW_CHECK(state() == State::kRunning);
   PW_CHECK(buf.IsContiguous());
 

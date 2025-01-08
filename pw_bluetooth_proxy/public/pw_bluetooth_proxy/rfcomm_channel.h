@@ -87,24 +87,7 @@ class RfcommChannel final : public L2capChannel {
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
-  /// Send an RFCOMM payload to the remote peer.
-  ///
-  /// @param[in] payload The payload to be sent. Payload will be copied
-  ///                    before function completes.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  OK:                  If packet was successfully queued for send.
-  ///  UNAVAILABLE:         If channel could not acquire the resources to queue
-  ///                       the send at this time (transient error). If an
-  ///                       `event_fn` has been provided it will be called with
-  ///                       `L2capChannelEvent::kWriteAvailable` when there is
-  ///                       queue space available again.
-  ///  INVALID_ARGUMENT:    If payload is too large.
-  ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
-  /// @endrst
-  Status Write(pw::span<const uint8_t> payload);
+  Status Write(pw::span<const uint8_t> payload) override;
 
   Config rx_config() const { return rx_config_; }
   Config tx_config() const { return tx_config_; }
