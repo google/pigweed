@@ -22,7 +22,17 @@ namespace pw::bluetooth::proxy {
 /// remote peer.
 class GattNotifyChannel : public L2capChannel {
  public:
-  pw::Status Write(pw::span<const uint8_t> attribute_value) override;
+  // @deprecated
+  // TODO: https://pwbug.dev/379337272 - Delete this once all downstreams
+  // have transitioned to Write(MultiBuf) for this channel type.
+  Status Write(pw::span<const uint8_t> payload) override;
+
+  // Also allow Write(MultiBuf) during transition from Write(span).
+  // TODO: https://pwbug.dev/379337272 - Can delete once Write(span) above is
+  // deleted.
+  StatusWithMultiBuf Write(multibuf::MultiBuf&& payload) override {
+    return WriteMultiBufAsSpan(std::move(payload));
+  }
 
  protected:
   static pw::Result<GattNotifyChannel> Create(

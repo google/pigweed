@@ -265,7 +265,8 @@ class ProxyHostTest : public testing::Test {
 
   L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params);
 
-  pw::multibuf::MultiBuf MultiBufFromSpan(span<uint8_t> buf) {
+  template <typename T, size_t N>
+  pw::multibuf::MultiBuf MultiBufFromSpan(span<T, N> buf) {
     std::optional<pw::multibuf::MultiBuf> multibuf =
         test_multibuf_allocator_.AllocateContiguous(buf.size());
     PW_ASSERT(multibuf.has_value());
@@ -273,6 +274,11 @@ class ProxyHostTest : public testing::Test {
     PW_ASSERT(multibuf_span);
     PW_TEST_EXPECT_OK(multibuf->CopyFrom(as_bytes(buf)));
     return std::move(*multibuf);
+  }
+
+  template <typename T, size_t N>
+  pw::multibuf::MultiBuf MultiBufFromArray(const std::array<T, N>& arr) {
+    return MultiBufFromSpan(pw::span{arr});
   }
 
  private:

@@ -543,18 +543,47 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
       /*event_fn=*/std::move(event_fn));
 }
 
+namespace {
+
+pw::Result<GattNotifyChannel> CreateGattNotifyChannel(
+    AclDataChannel& acl_data_channel,
+    L2capChannelManager& l2cap_channel_manager,
+    uint16_t connection_handle,
+    uint16_t attribute_handle) {
+  Status status = acl_data_channel.CreateAclConnection(connection_handle,
+                                                       AclTransportType::kLe);
+  if (status != OkStatus() && status != Status::AlreadyExists()) {
+    return pw::Status::Unavailable();
+  }
+  return GattNotifyChannelInternal::Create(
+      l2cap_channel_manager, connection_handle, attribute_handle);
+}
+}  // namespace
+
+StatusWithMultiBuf ProxyHost::SendGattNotify(uint16_t connection_handle,
+                                             uint16_t attribute_handle,
+                                             pw::multibuf::MultiBuf&& payload) {
+  // TODO: https://pwbug.dev/369709521 - Migrate clients to channel API.
+  pw::Result<GattNotifyChannel> channel_result =
+      CreateGattNotifyChannel(acl_data_channel_,
+                              l2cap_channel_manager_,
+                              connection_handle,
+                              attribute_handle);
+  if (!channel_result.ok()) {
+    return {channel_result.status(), std::move(payload)};
+  }
+  return channel_result->Write(std::move(payload));
+}
+
 pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
                                      uint16_t attribute_handle,
                                      pw::span<const uint8_t> attribute_value) {
   // TODO: https://pwbug.dev/369709521 - Migrate clients to channel API.
-  Status status = acl_data_channel_.CreateAclConnection(connection_handle,
-                                                        AclTransportType::kLe);
-  if (status != OkStatus() && status != Status::AlreadyExists()) {
-    return pw::Status::Unavailable();
-  }
   pw::Result<GattNotifyChannel> channel_result =
-      GattNotifyChannelInternal::Create(
-          l2cap_channel_manager_, connection_handle, attribute_handle);
+      CreateGattNotifyChannel(acl_data_channel_,
+                              l2cap_channel_manager_,
+                              connection_handle,
+                              attribute_handle);
   if (!channel_result.ok()) {
     return channel_result.status();
   }
