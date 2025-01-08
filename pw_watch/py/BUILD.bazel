@@ -24,6 +24,7 @@ py_library(
     srcs = [
         "pw_watch/__init__.py",
         "pw_watch/argparser.py",
+        "pw_watch/common.py",
         "pw_watch/debounce.py",
         "pw_watch/watch.py",
         "pw_watch/watch_app.py",

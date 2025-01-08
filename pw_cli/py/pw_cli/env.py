@@ -122,7 +122,7 @@ _BAZEL_PROJECT_ROOT_ALLOW_LIST = [
     AllowedCaller(
         filename='pw_watch/py/pw_watch/watch.py',
         name='__main__',
-        function='get_common_excludes',
+        function='watch_setup',
     ),
 ]
 

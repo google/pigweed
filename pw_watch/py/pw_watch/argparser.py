@@ -18,41 +18,10 @@ import argparse
 from pathlib import Path
 
 from pw_build.project_builder_argparse import add_project_builder_arguments
+from pw_watch.common import WATCH_PATTERNS
 
 WATCH_PATTERN_DELIMITER = ','
-
-WATCH_PATTERNS = (
-    '*.bazel',
-    '*.bzl',
-    '*.bloaty',
-    '*.c',
-    '*.cc',
-    '*.css',
-    '*.cpp',
-    '*.cmake',
-    'CMakeLists.txt',
-    '*.dts',
-    '*.dtsi',
-    '*.emb',
-    '*.gn',
-    '*.gni',
-    '*.go',
-    '*.h',
-    '*.hpp',
-    '*.html',
-    '*.js',
-    '*.ld',
-    '*.md',
-    '*.options',
-    '*.proto',
-    '*.py',
-    '*.rs',
-    '*.rst',
-    '*.s',
-    '*.S',
-    '*.toml',
-    '*.ts',
-)
+WATCH_PATTERN_STRING = WATCH_PATTERN_DELIMITER.join(WATCH_PATTERNS)
 
 
 def add_parser_arguments(
@@ -66,7 +35,7 @@ def add_parser_arguments(
     watch_group.add_argument(
         '--patterns',
         help=('Comma delimited list of globs to watch to trigger recompile.'),
-        default=WATCH_PATTERN_DELIMITER.join(WATCH_PATTERNS),
+        default=WATCH_PATTERN_STRING,
     )
 
     watch_group.add_argument(

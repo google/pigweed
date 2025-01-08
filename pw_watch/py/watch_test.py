@@ -12,17 +12,17 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Tests for pw_watch.minimal_watch_directories."""
+"""Tests for pw_watch.common.minimal_watch_directories."""
 
 import unittest
 import tempfile
 from pathlib import Path
 
-from pw_watch import watch
+from pw_watch import common
 
 
 class TestMinimalWatchDirectories(unittest.TestCase):
-    """Tests for pw_watch.watch.minimal_watch_directories."""
+    """Tests for pw_watch.common.minimal_watch_directories."""
 
     def setUp(self):
         self._tempdir = tempfile.TemporaryDirectory()
@@ -38,7 +38,7 @@ class TestMinimalWatchDirectories(unittest.TestCase):
     def test_empty_directory(self):
         subdirectories_to_watch = []
         ans_subdirectories_to_watch = [(self._root, False)]
-        subdirectories_to_watch = watch.minimal_watch_directories(
+        subdirectories_to_watch = common.minimal_watch_directories(
             self._root, 'f1'
         )
 
@@ -55,7 +55,7 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root / 'f2', True),
             (self._root, False),
         ]
-        subdirectories_to_watch = watch.minimal_watch_directories(
+        subdirectories_to_watch = common.minimal_watch_directories(
             self._root, exclude_list
         )
 
@@ -75,7 +75,7 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root / 'f2', True),
             (self._root, False),
         ]
-        subdirectories_to_watch = watch.minimal_watch_directories(
+        subdirectories_to_watch = common.minimal_watch_directories(
             self._root, exclude_list
         )
 
@@ -97,7 +97,7 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root, False),
             (self._root / 'f1', False),
         ]
-        subdirectories_to_watch = watch.minimal_watch_directories(
+        subdirectories_to_watch = common.minimal_watch_directories(
             self._root, exclude_list
         )
 
@@ -118,7 +118,7 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root / 'f1', True),
             (self._root, False),
         ]
-        subdirectories_to_watch = watch.minimal_watch_directories(
+        subdirectories_to_watch = common.minimal_watch_directories(
             self._root, exclude_list
         )
 
@@ -150,7 +150,7 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root / 'f1', False),
             (self._root / 'f3', False),
         ]
-        subdirectories_to_watch = watch.minimal_watch_directories(
+        subdirectories_to_watch = common.minimal_watch_directories(
             self._root, exclude_list
         )
 
@@ -179,7 +179,7 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root / 'f1/f1/f1', False),
             (self._root / 'f1/f1/f1/f1', False),
         ]
-        subdirectories_to_watch = watch.minimal_watch_directories(
+        subdirectories_to_watch = common.minimal_watch_directories(
             self._root, exclude_list
         )
 
