@@ -12,6 +12,8 @@ monitoring and controlling your Pico over the web now.
 .. _NVM: https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating
 .. _those browsers don't support: https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API#browser_compatibility
 
+#. Open a terminal.
+
 #. Install `NVM`_. You'll need to close and re-open your terminal
    to get ``nvm`` on your command line path.
 
@@ -49,14 +51,17 @@ monitoring and controlling your Pico over the web now.
    ``> Local: http://127.0.0.1:8000/`` (your actual URL may be different).
    This is the URL you'll need in the next step.
 
-#. Open the web app in Google Chrome or Microsoft Edge. **This application does
-   not work in other browsers like Apple Safari or Mozilla Firefox** because
-   `those browsers don't support`_ the Web Serial API.
+#. Open the web app in Google Chrome or Microsoft Edge.
+
+   .. warning::
+
+      **This application does not work in other browsers like Apple Safari
+      or Mozilla Firefox** because `those browsers don't support`_ the Web
+      Serial API.
 
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webapp_splash.png
 
-#. Click **Connect** and select the **Pico** option (or the
-   **Debug Probe (CMSIS-DAP)** option if you're using a Debug Probe).
+#. Click **Connect** and select the **Pico** option.
 
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webapp_connect.png
 
@@ -69,18 +74,23 @@ monitoring and controlling your Pico over the web now.
    You should see a chart of the Pico's onboard temperature getting updated
    every second.
 
+   The **No Enviro+ Board Found!** warning is expected. Your Pico is currently
+   running the ``blinky`` bringup app. In :ref:`showcase-sense-tutorial-prod` you will
+   revisit this web app when your Pico is running the ``production`` app and you
+   will see more information on the web app.
+
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webapp_home.png
-
-   .. note::
-
-      We recently updated this web app to support the Pico application
-      described in :ref:`showcase-sense-tutorial-prod`. Check back next
-      week for updates.
 
 #. Close the browser tab running the web app.
 
 #. In the terminal where you launched the web app, press
    :kbd:`Control+C` to stop the web server.
+
+#. Set your working directory back to the root directory of your Sense repository:
+
+   .. code-block:: console
+
+      cd ..
 
 .. _showcase-sense-tutorial-webapp-summary:
 

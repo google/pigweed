@@ -1,12 +1,11 @@
 .. _showcase-sense-tutorial-build:
 
-================
-3. Build the app
-================
+===============
+3. Build an app
+===============
 You can start building right away. There's no need to manually
-install dependencies or toolchains; Sense takes full advantage of Bazel's
-ability to automate dependency and toolchain management.
-Try building an app now:
+install dependencies or toolchains. Bazel automates dependency and
+toolchain management. Try building the ``blinky`` bringup app now:
 
 .. _task: https://code.visualstudio.com/docs/editor/tasks
 
@@ -15,15 +14,17 @@ Try building an app now:
    .. tab-item:: VS Code
       :sync: vsc
 
-      #. In **Bazel Build Targets** right-click the **//apps/blinky** folder
-         and select **Build Package Recursively**. A `task`_ launches in a VS
-         Code terminal.
+      #. In **Bazel Targets** right-click the **//apps/blinky** folder
+         and select **Build Package Recursively**.
 
-         .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/build_package_recursively_v3.png
+         .. figure:: https://storage.googleapis.com/pigweed-media/sense/build_package_recursively_v4.png
 
+         A `task`_ launches in a VS Code terminal.
          Bazel builds all targets that it finds within the ``//apps/blinky``
          directory. If there were targets in subdirectories, those would
-         get built, too. A successful build looks similar to this:
+         get built, too.
+
+         A successful build looks like this:
 
          .. code-block:: console
 
@@ -50,13 +51,12 @@ Try building an app now:
 
       .. code-block:: console
 
-         $ bazelisk build //apps/blinky/...
+         bazelisk build //apps/blinky/...
 
       A successful build looks similar to this:
 
       .. code-block:: console
 
-         $ bazelisk build //apps/blinky/...
          INFO: Analyzed 17 targets (464 packages loaded, 28991 targets configured).
          INFO: From Linking external/rules_libusb~~libusb~libusb/libusb-1.0.so:
          # ...
@@ -78,8 +78,8 @@ Try building an app now:
    * **Warnings during the build**. As long as you see ``Build completed
      successfully`` you should be able to complete the rest of the
      tutorial. We generally work to remove all these warnings but they
-     pop up from time-to-time as we continue to iterate on the Sense
-     codebase.
+     pop up from time-to-time as the Sense codebase and its dependencies
+     evolve.
 
    * **Long build times**. Two minutes is typical for the first
      build. Pigweed builds a lot of things from source, such as
@@ -92,16 +92,6 @@ Summary
 -------
 You've now got some familiarity with how to build binaries in Bazel-based
 projects.
-
-.. _target: https://bazel.build/concepts/build-ref#targets
-
-One interesting thing about Bazel: it's not actually necessary to build an app
-before flashing it. Imagine you have a Bazel `target`_ that automates the
-process of flashing a binary to some hardware. You will see an example of this
-later in :ref:`showcase-sense-tutorial-flash`.  If that flashing target depends
-on another target for actually building the binary, Bazel figures out that it
-must do the "build the binary" target before it can do the "flash the hardware"
-target.
 
 Next, head over to :ref:`showcase-sense-tutorial-intel` to learn how to
 use the Pigweed extension for VS Code to navigate a codebase that

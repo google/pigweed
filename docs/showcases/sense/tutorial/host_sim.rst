@@ -6,10 +6,16 @@
 Teams creating projects on top of Pigweed often create host versions of
 their apps to speed up development. "Host" means that there's no physical
 embedded device in the loop; a simulated version of the app runs directly
-on a development host computer. :ref:`target-host-device-simulator` is the
+on your development host computer. :ref:`target-host-device-simulator` is the
 underlying library that makes it possible to simulate apps.
 :ref:`module-pw_console` makes it easy to connect to the simulated app. Try
 out a simulated version of the ``blinky`` bringup app now:
+
+.. _showcase-sense-tutorial-sim-comm:
+
+-----------------------------------
+Communicate with a simulated device
+-----------------------------------
 
 .. _REPL: https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop
 
@@ -20,9 +26,13 @@ out a simulated version of the ``blinky`` bringup app now:
       .. tab-item:: VS Code
          :sync: vsc
 
-         #. In **Bazel Build Targets** expand **//apps/blinky**, then
+         #. In **Bazel Targets** expand **//apps/blinky**, then
             right-click **:simulator_blinky (host_device_simulator_binary)**,
             then select **Run target**.
+
+            .. caution::
+
+               Make sure to click **Run target** not **Build target**.
 
             .. admonition:: Extra macOS setup
 
@@ -38,8 +48,26 @@ out a simulated version of the ``blinky`` bringup app now:
 
             .. code-block:: console
 
-               # ...
+               INFO: Analyzed target //apps/blinky:simulator_blinky (0 packages loaded, 0 targets configured).
+               INFO: Found 1 target...
+               Target //apps/blinky:simulator_blinky up-to-date:
+                 bazel-bin/apps/blinky/simulator_blinky
+               INFO: Elapsed time: 0.187s, Critical Path: 0.00s
+               INFO: 1 process: 1 internal.
+               INFO: Build completed successfully, 1 total action
                INFO: Running command line: bazel-bin/apps/blinky/simulator_blinky
+               =====================================
+               === Pigweed Sense: Host Simulator ===
+               =====================================
+               Simulator is now running. To connect with a console,
+               either run one in a new terminal:
+
+                  $ bazelisk run //<app>:simulator_console
+
+               where <app> is e.g. blinky, factory, or production, or launch
+               one from VSCode under the 'Bazel Targets' explorer tab.
+
+               Press Ctrl-C to exit
                Awaiting connection on port 33000
 
             (Your exact port may be different; that's OK.)
@@ -51,12 +79,16 @@ out a simulated version of the ``blinky`` bringup app now:
       .. tab-item:: CLI
          :sync: cli
 
-         #. Run the following command. You should see
-            ``Awaiting connection on port XXXXX``.
+         #. Start the simulated device:
 
             .. code-block:: console
 
-               $ bazelisk run //apps/blinky:simulator_blinky
+               bazelisk run //apps/blinky:simulator_blinky
+
+            You should see output like this:
+
+            .. code-block:: text
+
                INFO: Analyzed target //apps/blinky:simulator_blinky (0 packages loaded, 0 targets configured).
                INFO: Found 1 target...
                Target //apps/blinky:simulator_blinky up-to-date:
@@ -74,12 +106,10 @@ out a simulated version of the ``blinky`` bringup app now:
                   $ bazelisk run //<app>:simulator_console
 
                where <app> is e.g. blinky, factory, or production, or launch
-               one from VSCode under the 'Bazel Build Targets' explorer tab.
+               one from VSCode under the 'Bazel Targets' explorer tab.
 
                Press Ctrl-C to exit
                Awaiting connection on port 33000
-
-            The simulated device is now running on your development host.
 
          #. Keep this process running. This process is your simulated device.
             It's listening on a local port for connections. In the next step
@@ -93,24 +123,24 @@ out a simulated version of the ``blinky`` bringup app now:
       .. tab-item:: VS Code
          :sync: vsc
 
-         In **Bazel Build Targets** right-click the
+         In **Bazel Targets** right-click the
          **:simulator_console (native_binary)** (also under **//apps/blinky**)
          and then select **Run target**.
 
       .. tab-item:: CLI
          :sync: cli
 
-         Open another terminal window or tab and run the following command.
+         Open another terminal window or tab and run the following command:
 
          .. code-block:: console
 
-            $ bazelisk run //apps/blinky:simulator_console
+            bazelisk run //apps/blinky:simulator_console
 
-   You should see ``pw_console`` start up like this:
+   You should see ``pw_console`` start up within VS Code like this:
 
    .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/simulator_console.png
 
-#. Look at the **Device Logs** table. You should see the simulated device
+#. Look at the **Device Logs** table (top-right pane). You should see the simulated device
    sending ``LED blinking`` messages every second.
 
 #. Simulate polling the Pico's temperature by typing the following into
@@ -128,9 +158,9 @@ out a simulated version of the ``blinky`` bringup app now:
       of the execution back to your interactive shell, and then
       repeats the loop. The console in Chrome DevTools is an example
       of a REPL. Running ``python3`` by itself on a command line
-      opens the Python 3 REPL.
+      is another example of a REPL.
 
-   In the **Python Results** section you should see output like this:
+   In the **Python Results** section (top-left pane) you should see output like this:
 
    .. code-block:: pycon
 
@@ -142,7 +172,9 @@ out a simulated version of the ``blinky`` bringup app now:
    .. code-block:: pycon
 
       >>> device.rpcs.blinky.Blinky.ToggleLed()
-      (Status.OK, pw.protobuf.Empty())
+
+   You should see a ``Toggling LED`` message and the automatic
+   ``LED blinking`` messages stop.
 
    .. admonition:: Exercise
 
@@ -181,16 +213,8 @@ out a simulated version of the ``blinky`` bringup app now:
 
          Press :kbd:`Ctrl+C` to close the simulated device.
 
-   .. admonition:: Troubleshooting
-
-      * **Bazel run failed: Unknown error**. You can ignore this.
-        When you close the terminal with :kbd:`Control+C` it sets
-        exit code ``255``, which the Bazel extension interprets as
-        "something went wrong". We're working on closing the simulated
-        device in a cleaner way.
-
 Of course polling a simulated temperature and toggling a simulated LED
-is rather boring but hopefully you can see how much faster your team's
+is rather basic but hopefully you can see how much faster your team's
 development can be when you have a simulated version of your embedded
 system to work against.
 
@@ -212,9 +236,9 @@ accessible, and easy to make plugins for. Try it now:
       .. tab-item:: VS Code
          :sync: vsc
 
-         Start up the simulated device again by going to **Bazel Build
-         Targets** right-clicking the **:simulator_blinky (host_device_simulator_binary)** target
-         (under **//apps/blinky**) and then selecting **Run target**.
+         Start up the simulated device again by going to **Bazel Targets**,
+         right-clicking the **:simulator_blinky (host_device_simulator_binary)**
+         target (under **//apps/blinky**), and then selecting **Run target**.
 
          .. caution::
 
@@ -228,10 +252,7 @@ accessible, and easy to make plugins for. Try it now:
 
          .. code-block:: console
 
-            $ bazelisk run //apps/blinky:simulator_blinky
-            # ...
-            INFO: Running command line: bazel-bin/apps/blinky/simulator_blinky
-            Awaiting connection on port 33000
+            bazelisk run //apps/blinky:simulator_blinky
 
    .. note::
 
@@ -246,7 +267,7 @@ accessible, and easy to make plugins for. Try it now:
       .. tab-item:: VS Code
          :sync: vsc
 
-         In **Bazel Build Targets** right-click
+         In **Bazel Targets** right-click
          **:simulator_webconsole (native_binary)** (under **//apps/blinky**)
          then select **Run target**.
 
@@ -257,46 +278,51 @@ accessible, and easy to make plugins for. Try it now:
 
          .. code-block:: console
 
-            $ bazelisk run //apps/blinky:simulator_webconsole
+            bazelisk run //apps/blinky:simulator_webconsole
 
    You should see the console open in your web browser:
 
-   .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webconsole.png
+   .. figure:: https://storage.googleapis.com/pigweed-media/sense/webconsole_v2.png
 
-   In the logs table you should see simulated messages as before.
+   The top-right table named **Device Logs** shows you logs coming from the
+   simulated device. The bottom-right table named **Host Logs** shows you logs
+   coming from your development host.
 
-#. Send an RPC to poll the simulated device's temperature again:
+#. Send an RPC to poll the simulated device's temperature again by entering
+   the following in the bottom-left input box and then pressing :kbd:`Enter`:
 
-   .. code-block:: pycon
+   .. code-block:: python
 
-      >>> device.rpcs.board.Board.OnboardTemp()
-
-   .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webconsole_repl.png
-
-#. Type ``"00:00"`` (note the double quotes) into the search bar of either
-   of the two tables to only show logs that occurred in the first minute of
-   logging.
-
-   .. admonition:: Troubleshooting
-
-      **Don't see a search bar?** Click the magnifying glass icon. The
-      search bar is collapsed by default on narrow screens.
+      device.rpcs.board.Board.OnboardTemp()
 
    .. note::
 
-      Why two tables? To demonstrate that you can filter the logs in
-      each table by different criteria. You can close a table by
-      clicking the **X** button. You can add even more tables by
-      clicking the three dot button and then selecting **Split right**
-      or **Split down**.
+      This REPL executes Python code.
+
+   .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webconsole_repl.png
+
+#. Append ``"00:00"`` (note the double quotes) to the **Device Logs** search box so
+   that the complete query becomes ``log_source:device "00:00"``.
+
+   The table only shows logs that occurred in the first minute of logging.
+   Everything later than that is filtered out.
+
+   .. admonition:: Troubleshooting
+
+      **Don't see a search bar?** Click the magnifying glass icon to the
+      right of **Device Logs**. The search bar is collapsed by default on
+      narrow screens.
+
+      **Nothing is showing up?** Try ``"00:01"``, ``"00:02"``, etc.
 
    See :ref:`module-pw_web-log-viewer-filter` to learn more about filtering.
 
-   .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/webconsole_filter.png
+   .. figure:: https://storage.googleapis.com/pigweed-media/sense/webconsole_filter_v2.png
 
 #. Close the web-based console and simulated app. You're done
    with them for now. In the terminals where you launched these,
-   each can be closed by pressing :kbd:`Control+C`.
+   each can be closed by pressing :kbd:`Control+C`. To close the
+   web console you may need to press :kbd:`Control+C` twice.
 
 .. _showcase-sense-tutorial-sim-console-more:
 
@@ -323,8 +349,8 @@ just much faster to iterate on code running on your computer versus a
 separate embedded device. For two, if you're bringing a new product to
 market, the hardware for your new device might not even exist yet!
 
-Next, head over to :ref:`showcase-sense-tutorial-sim-summary` to
-get Sense running a real Raspberry Pi Pico.
+Next, head over to :ref:`showcase-sense-tutorial-flash` to
+start running Sense on real hardware.
 
 --------
 Appendix
@@ -335,7 +361,7 @@ Appendix
 Create a BlinkTwice RPC method
 ==============================
 Here's one possible solution to the RPC creation exercise in
-:ref:`showcase-sense-tutorial-sim`.
+:ref:`showcase-sense-tutorial-sim-comm`.
 
 .. tab-set::
 

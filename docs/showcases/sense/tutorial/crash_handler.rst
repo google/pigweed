@@ -18,16 +18,56 @@ then be downloaded onto a host system for analysis.
 ----------------
 Generate a crash
 ----------------
+#. If you're not already connected to your Pico via ``pw_console``, do so now:
+
+   .. tab-set::
+
+      .. tab-item:: VS Code
+         :sync: vsc
+
+         .. tab-set::
+
+            .. tab-item:: Pico 1 & 1W (RP2040)
+               :sync: rp2040
+
+               In **Bazel Targets** expand **//apps/production**, then right-click
+               **:rp2040_console (native binary)**, then select **Run target**.
+
+            .. tab-item:: Pico 2 & 2W (RP2350)
+               :sync: rp2350
+
+               In **Bazel Targets** expand **//apps/production**, then right-click
+               **:rp2350_console (native binary)**, then select **Run target**.
+
+      .. tab-item:: CLI
+         :sync: cli
+
+         Run the terminal-based console:
+
+         .. tab-set::
+
+            .. tab-item:: Pico 1 & 1W (RP2040)
+
+               .. code-block:: console
+
+                  bazelisk run //apps/production:rp2040_console
+
+            .. tab-item:: Pico 2 & 2W (RP2350)
+
+               .. code-block:: console
+
+                  bazelisk run //apps/production:rp2350_console
+
 ``pw_system`` provides an RPC to crash the system by triggering a
 `HardFault <https://developer.arm.com/documentation/107706/0100/System-exceptions/Fault-exceptions-and-their-causes>`_.
-To invoke this RPC, type the following into the **Python Repl**
+To invoke this RPC, type the following into the **Python Repl** (bottom-left pane) of ``pw_console``:
 
 .. code-block:: pycon
 
    >>> device.rpcs.pw.system.proto.DeviceService.Crash()
 
-If you're using the :ref:`full setup <showcase-sense-tutorial-full>`, on
-system restart, the presence of a crash snapshot will be detected, and
+If you're using the :ref:`full setup <showcase-sense-tutorial-hardware>`,
+on system restart the presence of a crash snapshot will be detected, and
 the following will be in the system logs:
 
 .. code-block:: text
@@ -41,8 +81,8 @@ the following will be in the system logs:
    INF  pw_system  RpcDevice  00:00:00.000  System init
 
 
-On a :ref:`basic setup <showcase-sense-tutorial-basic>`, the snapshot
-will still be generated, but logs won't be visible in the console. When
+On a :ref:`"Pico and Enviro+" or "Pico only" <showcase-sense-tutorial-hardware>`
+setup, the snapshot will still be generated, but logs won't be visible in the console. When
 the system restarts, the connection to the console is broken so logs
 will not be displayed. After invoking the ``Crash()`` RPC, exit the console
 and :ref:`start it again <showcase-sense-tutorial-pico-rpc-interact>` to

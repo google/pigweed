@@ -3,12 +3,19 @@
 =================
 5. Run host tests
 =================
-:ref:`module-pw_unit_test` provides an extensive GoogleTest-compatible
+.. _GoogleTest: https://google.github.io/googletest/
+
+:ref:`module-pw_unit_test` provides an extensive `GoogleTest`_-compatible
 unit testing framework. Before building and running the app, let's first
 verify that the app's logic is correct by exercising the app's unit
 tests:
 
 #. Open ``//modules/blinky/blinky_test.cc``.
+
+   Remember that ``//`` represents the root directory of your Sense repository.
+   E.g. if your Sense repo was located at ``/home/example/sense/`` then
+   ``//modules/blinky/blinky_test.cc`` would be located at
+   ``/home/examples/sense/modules/blinky/blinky_test.cc``.
 
 #. Make the ``Toggle`` test fail by changing one of the expected values.
    Example:
@@ -35,7 +42,11 @@ tests:
       .. tab-item:: VS Code
          :sync: vsc
 
-         In **Bazel Build Targets** expand **//modules/blinky**, then right-click
+         Make sure that your platform is set to **host_simulator**, as demonstrated
+         in :ref:`showcase-sense-tutorial-intel-nav`. If VS Code was displaying
+         red squiggly line warnings in ``blinky_test.cc``, those should go away.
+
+         In **Bazel Targets** expand **//modules/blinky**, then right-click
          **:blinky_test (cc_test)**, then select **Test target**.
 
          .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/test_target_v2.png
@@ -46,22 +57,41 @@ tests:
          A task launches a terminal. You should see ``blinky_test`` fail:
 
          .. code-block:: console
+            :emphasize-lines: 16
 
-            //modules/blinky:blinky_test         FAILED in 0.4s
+            INF  LED blinking: ON
+            INF  [*]
+            INF  [ ]
+            INF  Stopped blinking
+            [       OK ] BlinkyTest.BlinkSlow
+            [==========] Done running all tests.
+            [  PASSED  ] 3 test(s).
+            [  FAILED  ] 1 test(s).
+            ================================================================================
+            INFO: Found 1 test target...
+            Target //modules/blinky:blinky_test up-to-date:
+              bazel-bin/modules/blinky/blinky_test
+            INFO: Elapsed time: 2.060s, Critical Path: 1.75s
+            INFO: 27 processes: 15 internal, 12 linux-sandbox.
+            INFO: Build completed, 1 test FAILED, 27 total actions
+            //modules/blinky:blinky_test                   FAILED in 0.0s
+              /home/kayce/.cache/bazel/_bazel_kayce/e6adb4cdc44e1f72d34a105431e60eae/execroot/_main/bazel-out/k8-fastbuild/testlogs/modules/blinky/blinky_test/test.log
 
-         Press any key to close the terminal that the task launched.
+            Executed 1 out of 1 test: 1 fails locally.
+
+         Press any key to close the terminal that was launched.
 
          .. tip::
 
-            ``bazelisk test //...`` runs all unit tests. This command
-            needs to be run from a terminal with ``bazelisk`` on its path.
-            The Pigweed extension for VS Code automatically downloads
-            ``bazelisk`` for you and puts it on your VS Code terminal path
-            so that you can use ``bazelisk`` from VS Code terminal without
-            any manual setup.
+            When you want to run all unit tests, open a VS Code Terminal
+            and execute ``bazelisk test //...``. You don't need to manually
+            set up ``bazelisk``, the Pigweed extension for VS Code sets it
+            up for you.
 
       .. tab-item:: CLI
          :sync: cli
+
+         #. Run the tests with the following command:
 
          Run the following command. You should see output similar to what's
          shown after the command. The key line is
@@ -69,27 +99,79 @@ tests:
 
          .. code-block:: console
 
-            $ bazelisk test //modules/blinky:blinky_test
-            # ...
-            //modules/blinky:blinky_test         FAILED in 0.4s
-              /home/kayce/.cache/bazel/_bazel_kayce/27fcdd448f61589ce2692618b3237728/execroot/showcase-rp2/bazel-out/k8-fastbuild/testlogs/modules/blinky/blinky_test/test.log
+            bazelisk test //modules/blinky:blinky_test
+
+         You should see output similar to this:
+
+         .. code-block:: text
+
+            INF  LED blinking: ON
+            INF  [*]
+            INF  LED blinking: OFF
+            INF  [ ]
+            INF  LED blinking: ON
+            INF  [*]
+            INF  [ ]
+            INF  Stopped blinking
+            [       OK ] BlinkyTest.BlinkMany
+            [ RUN      ] BlinkyTest.BlinkSlow
+            INF  [ ]
+            INF  PWM: -
+            INF  [ ]
+            INF  [ ]
+            INF  PWM: +
+            INF  PWM: +
+            INF  PWM: +
+            INF  Blinking 1 times at a 320ms interval
+            INF  LED blinking: OFF
+            INF  [ ]
+            INF  LED blinking: ON
+            INF  [*]
+            INF  [ ]
+            INF  Stopped blinking
+            [       OK ] BlinkyTest.BlinkSlow
+            [==========] Done running all tests.
+            [  PASSED  ] 3 test(s).
+            [  FAILED  ] 1 test(s).
+            ================================================================================
+            INFO: Found 1 test target...
+            Target //modules/blinky:blinky_test up-to-date:
+              bazel-bin/modules/blinky/blinky_test
+            INFO: Elapsed time: 2.032s, Critical Path: 1.69s
+            INFO: 9 processes: 1 internal, 8 linux-sandbox.
+            INFO: Build completed, 1 test FAILED, 9 total actions
+            //modules/blinky:blinky_test                   FAILED in 0.0s
+              /home/kayce/.cache/bazel/_bazel_kayce/e6adb4cdc44e1f72d34a105431e60eae/execroot/_main/bazel-out/k8-fastbuild/testlogs/modules/blinky/blinky_test/test.log
 
             Executed 1 out of 1 test: 1 fails locally.
-            # ...
 
          .. tip::
 
-            To run all host tests, call ``bazelisk test //...``.
+            To run all host tests, run this command:
 
-#. Revert the test to its original state.
+            .. code-block:: console
+
+               bazelisk test //...
+
+#. Revert the test to its original state. Remember to save your change.
 
 #. Run the tests again and make sure they pass this time.
 
    You should see ``blinky_test`` pass this second time:
 
    .. code-block:: console
+      :emphasize-lines: 8
 
-      //modules/blinky:blinky_test         PASSED in 0.4s
+      INFO: Analyzed target //modules/blinky:blinky_test (0 packages loaded, 0 targets configured).
+      INFO: Found 1 test target...
+      Target //modules/blinky:blinky_test up-to-date:
+        bazel-bin/modules/blinky/blinky_test
+      INFO: Elapsed time: 1.861s, Critical Path: 1.65s
+      INFO: 4 processes: 4 linux-sandbox.
+      INFO: Build completed successfully, 4 total actions
+      //modules/blinky:blinky_test                   PASSED in 0.0s
+
+      Executed 1 out of 1 test: 1 test passes.
 
 .. note::
 
@@ -102,27 +184,31 @@ tests:
 -------
 Summary
 -------
-You might have found it a little strange (and boring) that we're showing you
-unit tests right now, rather than demo'ing apps. We're getting to the
-fun stuff soon, we promise! The reason we showed you testing now is
-because it's a very important part of Pigweed's :ref:`mission <docs-mission>`.
+We know that unit tests are a little boring, but they're an
+important part of Pigweed's :ref:`mission <docs-mission>`.
 When you're on a large embedded development team creating a new product, it's
-so much easier to iterate quickly when you have confidence that your code
-changes aren't introducing bugs in other parts of the codebase. The best way
-to build that confidence is to rigorously test every part of your codebase.
+much easier to iterate quickly when you have confidence that your code
+changes do not introduce bugs in other parts of the codebase. The best way
+to build that confidence is to rigorously test every part of your codebase
+and to make sure all these tests pass before allowing any new code to merge.
+
 Pigweed spends a lot of time making it easier for teams to test their
-codebases, such as making it possible to run unit tests on your development
+codebases, such as making it easy to run unit tests on your development
 host rather than on physical hardware. This is especially useful when
 your physical hardware doesn't exist yet because your hardware team
 hasn't finished designing it!
 
-Another reason why it's important to make host-portable code:
-security and robustness. This enables us to run modern code analysis
-tooling like ASAN, TSAN, MSAN, fuzzers, and more against Sense. These
-tools are unlikely to run correctly in on-device embedded contexts.
+.. _ASAN: https://clang.llvm.org/docs/AddressSanitizer.html
+.. _TSAN: https://clang.llvm.org/docs/ThreadSanitizer.html
+.. _MSAN: https://clang.llvm.org/docs/MemorySanitizer.html
+
+Another reason why it's important to make code that can be tested on your host:
+security and robustness. This enables you to run modern code analysis
+tooling like `ASAN`_, `TSAN`_, `MSAN`_, :ref:`fuzzers <module-pw_fuzzer>`, and
+more. These tools are unlikely to run correctly in on-device embedded contexts.
 Fun fact: We caught real bugs in Sense with this tooling during
 development!
 
-As promised, now it's time for the fun stuff. Head over to
-:ref:`showcase-sense-tutorial-sim` to start trying out the bringup
-app (``blinky``).
+Now it's time for the fun stuff. Head over to
+:ref:`showcase-sense-tutorial-sim` to try out the bringup
+app, ``blinky``.

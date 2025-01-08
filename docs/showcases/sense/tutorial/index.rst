@@ -1,12 +1,10 @@
 .. _showcase-sense-tutorial-intro:
 
-==============
-Sense tutorial
-==============
-.. _repo: https://pigweed.googlesource.com/pigweed/showcase/sense/
-
+================================
+Sense tutorial (Tour of Pigweed)
+================================
 Welcome to the :ref:`Sense <showcase-sense>` tutorial! If you want a hands-on,
-guided tour of the Sense `repo`_, you're in the right place.
+guided tour of Pigweed's key features, you're in the right place.
 
 .. _Bazel quickstart: https://cs.opensource.google/pigweed/quickstart/bazel
 
@@ -20,14 +18,16 @@ guided tour of the Sense `repo`_, you're in the right place.
 --------------
 What to expect
 --------------
-Here's a very high-level overview of what your tutorial experience
-will include:
+Here's an overview of what your tutorial experience will include:
 
 #. You set up your computer (the "development host" or "host" for short)
-   so that it's ready to build the repo, flash binaries, and so on.
+   so that it's ready to build the project's source code, flash your Pico,
+   and so on.
 #. You run a simulated version of unit tests and a basic bringup program
    on your host.
-#. You run gradually more and more complex programs on physical hardware.
+#. You run more complex programs on a physical Pico and perform more
+   complex tasks, e.g. communicating with the Pico through a web app and
+   debugging crash snapshots.
 
 .. _showcase-sense-tutorial-intro-prereqs:
 
@@ -37,23 +37,26 @@ Prerequisites
 Please read over these prerequisites and make sure the tutorial is a good
 fit for you:
 
-.. _MicroPython Pico SDK: https://www.raspberrypi.com/documentation/microcontrollers/micropython.html
-.. _C/C++ Pico SDK: https://www.raspberrypi.com/documentation/microcontrollers/c_sdk.html
+.. _Raspberry Pi Pico: https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html
 .. _Pimoroni Enviro+ Pack: https://shop.pimoroni.com/products/pico-enviro-pack
+.. _Debug Probe: https://www.raspberrypi.com/products/debug-probe/
+.. _Omnibus: https://shop.pimoroni.com/products/pico-omnibus
 
 * **macOS or Linux development host**: Windows isn't supported with this particular
   tutorial yet.
 
 * **Hardware setups** (all of the following setups are supported):
 
-  * (Recommended) Raspberry Pi Pico and `Pimoroni Enviro+ Pack`_: You'll be
-    able to complete the full tutorial.
+  * (Recommended) `Raspberry Pi Pico`_, `Pimoroni Enviro+ Pack`_, `Debug Probe`_,
+    and `Omnibus`_: You'll be able to complete 100% of the tutorial.
 
-  * Raspberry Pi Pico only: You'll be able to complete most of the tutorial
-    except the last parts that require an Enviro+ Pack.
+  * Raspberry Pi Pico and Enviro+: You'll be able to complete ~80% of the
+    tutorial.
 
-  * No hardware (development host only): You can actually still try
-    out some of the tutorial! Pigweed provides a way to emulate the app
+  * Raspberry Pi Pico only: You'll be able to complete ~60% of the tutorial.
+
+  * No hardware (development host only): You'll be able to complete ~40%
+    of the tutorial. Pigweed provides a way to emulate the app
     on your host. You'll need to stop at :ref:`showcase-sense-tutorial-flash`.
 
 * **Embedded development experience**: We assume that you're comfortable
@@ -61,16 +64,16 @@ fit for you:
   be able to complete the tutorial without this background knowledge but should
   expect the tutorial to be more challenging.
 
-You can use either the Pico 1 or Pico 2; we support both.
+.. _showcase-sense-tutorial-intro-pico:
 
-.. _Pico W: https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html#raspberry-pi-pico-w-and-pico-wh
+Supported Pico versions
+=======================
+You can use any version of the Pico. We support them all:
 
-.. caution::
-
-   **The Pico W is untested**. We are still in the process of verifying that
-   all parts of the tutorial work with the `Pico W`_. You are welcome to try
-   the tutorial with a Pico W, but please remember that some things may not
-   work yet.
+* Pico 1
+* Pico 1W
+* Pico 2
+* Pico 2W
 
 .. _showcase-sense-tutorial-intro-summary:
 

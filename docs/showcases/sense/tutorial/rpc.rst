@@ -25,9 +25,35 @@ Interact with the Pico
       .. tab-item:: CLI
          :sync: cli
 
-         .. code-block:: console
+         .. tab-set::
 
-            $ bazelisk run //apps/blinky:rp2040_console
+            .. tab-item:: Pico 1 & 1W (RP2040)
+               :sync: rp2040
+
+               .. code-block:: console
+
+                  bazelisk run //apps/blinky:rp2040_console
+
+            .. tab-item:: Pico 2 & 2W (RP2350)
+               :sync: rp2350
+
+               .. code-block:: console
+
+                  bazelisk run //apps/blinky:rp2350_console
+
+         If you see a selection prompt like the one below, select
+         **Debug Probe (CMSIS-DAP) - CDC-ACM UART Interface**.
+
+         .. code-block:: text
+
+            Please select a serial port device.
+            Available ports:
+              1 - /dev/ttyACM0 - Raspberry Pi - Debug Probe (CMSIS-DAP) - CDC-ACM UART Interface
+              2 - /dev/ttyACM1 - Raspberry Pi - Pico - Board CDC
+              3 - /dev/ttyS0 - None - n/a
+              4 - /dev/ttyS1 - None - n/a
+              5 - /dev/ttyS2 - None - n/a
+              6 - /dev/ttyS3 - None - n/a
 
 #. Toggle the Pico's LED by typing the following into **Python Repl** and then
    pressing :kbd:`Enter`:
@@ -40,7 +66,8 @@ Interact with the Pico
    off. If you run the command again you should see the LED switch
    to its opposite state.
 
-   (The next few commands should be executed the same way.)
+   (The next few commands should also be executed in the
+   **Python Repl**, just like the last one.)
 
 #. Blink the LED 10 times:
 
@@ -70,22 +97,22 @@ Interact with the Pico
       logic in a function and then invoking the function, as seen in
       ``my_blinky()``.
 
-#. View the RP2040's onboard temperature:
+#. View your board's onboard temperature:
 
    .. code-block:: pycon
 
       >>> device.rpcs.board.Board.OnboardTemp()
 
-   In **Python Results** you should see output like this:
+   In **Python Results** (top-left pane) you should see output like this:
 
    .. code-block:: pycon
 
       >>> device.rpcs.board.Board.OnboardTemp()
       (Status.OK, board.rpc.OnboardTempResponse(temp=23.861492156982422))
 
-   Put your finger on the RP2040 chip in the middle of your Raspberry Pi
-   Pico for a few seconds and then run the temperature command again and
-   you should see the temperature increase.
+   Put your finger on the microprocessor in the middle of your Pico (the black
+   square with a raspberry logo etched on it) for a few seconds and then run
+   the temperature command again and you should see the temperature increase.
 
    .. admonition:: Exercise
 
@@ -93,7 +120,7 @@ Interact with the Pico
       with a 1-second interval between readings, and then output
       the average temperature? See
       :ref:`showcase-sense-tutorial-appendix-temp-solution` for
-      one option.
+      one solution.
 
 #. Leave the console open and proceed to the next section.
 
@@ -104,23 +131,20 @@ Search and filter logs
 ----------------------
 You can search and filter your device's logs. Try it now:
 
-#. Click any row in the **Device Logs** table to focus that part of the UI.
+#. Click anywhere in the **Device Logs** table (top-right pane) to focus that part of the UI.
 #. Press :kbd:`/` to search the logs.
-#. Type ``Stopped blinking`` and press :kbd:`Enter`. A log that matches
+#. Type ``ON`` and press :kbd:`Enter`. A log that matches
    that string should be highlighted.
-
-   .. admonition:: Troubleshooting
-
-      **No logs are shown**. There probably has just not been any
-      logs that match the filter you entered. Try filtering by
-      other values, such as ``00:00`` to only show logs that occurred
-      during the first 60 seconds of logs.
-
 #. Press :kbd:`n` to go to next match and :kbd:`N` to go to previous match.
-   (If there are 0 matches or only 1 match then this naturally won't work.)
 #. Press :kbd:`Ctrl+Alt+F` to filter out logs that don't match your query.
 #. Press :kbd:`Ctrl+Alt+R` or click **Clear Filters** to clear your filter
    and return to the original table view.
+
+-----------------------
+Keep pw_console running
+-----------------------
+There's no need to close ``pw_console`` right now. You're going to use it
+on the next page.
 
 .. _showcase-sense-tutorial-pico-rpc-summary:
 

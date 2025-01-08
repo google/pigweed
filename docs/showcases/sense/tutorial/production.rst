@@ -3,13 +3,6 @@
 ===================================
 14. Run the air quality monitor app
 ===================================
-.. caution::
-
-   This section and the ones after it require a Pimoroni Enviro+ Pack. See
-   :ref:`showcase-sense-tutorial-hardware` for a review of the hardware
-   setup options. If you don't have an Enviro+, skip ahead to
-   :ref:`showcase-sense-tutorial-outro` to wrap up your tutorial experience.
-
 Your tour of Pigweed is almost done. Before you go, let's get you
 familiar with the application described at
 :ref:`showcase-sense-product-concept`. Within the Sense codebase this app
@@ -18,6 +11,11 @@ demonstrate what a medium-complexity application built on top of Pigweed's
 software abstractions looks like. We're still perfecting the codebase
 structure, but this application can begin to give you an idea of how the
 Pigweed team thinks Pigweed-based projects should be structured.
+
+.. important::
+
+   This section requires the :ref:`full hardware
+   setup <showcase-sense-tutorial-hardware>`.
 
 First, let's get the app running on your Pico. Then we'll provide
 an overview of the code.
@@ -33,7 +31,7 @@ an overview of the code.
 Set up your hardware
 --------------------
 This part of the tutorial requires the
-:ref:`full setup <showcase-sense-tutorial-full>`.
+:ref:`full setup <showcase-sense-tutorial-hardware>`.
 
 .. _showcase-sense-tutorial-prod-flash:
 
@@ -47,30 +45,36 @@ Flash the ``production`` app to your Pico:
    .. tab-item:: VS Code
       :sync: vsc
 
-      In **Bazel Build Targets** expand **//apps/production**, then
-      right-click **:flash (alias)**, then select **Run target**.
+      .. tab-set::
+
+         .. tab-item:: Pico 1 & 1W (RP2040)
+            :sync: rp2040
+
+            In **Bazel Targets** expand **//apps/production**, then right-click
+            **:flash_rp2040 (native binary)**, then select **Run target**.
+
+         .. tab-item:: Pico 2 & 2W (RP2350)
+            :sync: rp2350
+
+            In **Bazel Targets** expand **//apps/production**, then right-click
+            **:flash_rp2350 (native binary)**, then select **Run target**.
 
    .. tab-item:: CLI
       :sync: cli
 
-      .. code-block:: console
+      .. tab-set::
 
-         $ bazelisk run //apps/production:flash
+         .. tab-item:: Pico 1 & 1W (RP2040)
 
-You should see output like this:
+            .. code-block:: console
 
-.. code-block:: console
+               bazelisk run //apps/production:flash_rp2040
 
-   INFO: Analyzed target //apps/production:flash (2 packages loaded, 84 targets configured).
-   INFO: Found 1 target...
-   Target //apps/production:flash_rp2040 up-to-date:
-     bazel-bin/apps/production/flash_rp2040.exe
-   INFO: Elapsed time: 0.311s, Critical Path: 0.04s
-   INFO: 1 process: 1 internal.
-   INFO: Build completed successfully, 1 total action
-   INFO: Running command line: bazel-bin/apps/production/flash_rp2040.exe apps/production/rp2040.elf
-   20240805 18:35:58 INF Only one device detected.
-   20240805 18:35:58 INF Flashing bus 3 port 6
+         .. tab-item:: Pico 2 & 2W (RP2350)
+
+            .. code-block:: console
+
+               bazelisk run //apps/production:flash_rp2350
 
 .. _showcase-sense-tutorial-prod-logs:
 
@@ -85,25 +89,38 @@ help you grok how the app works. Fire up ``pw_console`` again now:
    .. tab-item:: VS Code
       :sync: vsc
 
-      In **Bazel Build Targets** expand **//apps/production**, then
-      right-click **:rp2040_console (native binary)** (if you want to run
-      the terminal-based console) or **:rp2040_webconsole (native_binary)**
-      (if you want to run the web-based console), then select **Run target**.
+      .. tab-set::
+
+         .. tab-item:: Pico 1 & 1W (RP2040)
+            :sync: rp2040
+
+            In **Bazel Targets** right-click the **:rp2040_console (native binary)**
+            target (under **//apps/production**) then select **Run target**.
+
+         .. tab-item:: Pico 2 & 2W (RP2350)
+            :sync: rp2350
+
+            In **Bazel Targets** right-click the **:rp2350_console (native binary)**
+            target (under **//apps/production**) then select **Run target**.
 
    .. tab-item:: CLI
       :sync: cli
 
       Run the terminal-based console:
 
-      .. code-block:: console
+      .. tab-set::
 
-         $ bazelisk run //apps/production:rp2040_console
+         .. tab-item:: Pico 1 & 1W (RP2040)
 
-      Or the web-based console:
+            .. code-block:: console
 
-      .. code-block:: console
+               bazelisk run //apps/production:rp2040_console
 
-         $ bazelisk run //apps/production:rp2040_webconsole
+         .. tab-item:: Pico 2 & 2W (RP2350)
+
+            .. code-block:: console
+
+               bazelisk run //apps/production:rp2350_console
 
 See :ref:`showcase-sense-tutorial-sim` if you need a refresher
 on how to use ``pw_console``.
@@ -189,6 +206,13 @@ Press the **Y** button to put the app in `Morse code`_ mode.
 In this mode, the LED on the Enviro+ prints out air quality
 messages like ``AQ EXCELLENT 872`` as Morse code messages,
 in addition to changing color as previously described.
+
+-------------------------------------------
+View more information in the custom web app
+-------------------------------------------
+Now that your Pico is running the full ``production`` app,
+the custom web app that was demonstrated in :ref:`showcase-sense-tutorial-webapp`
+will show you more information if you fire it up again.
 
 .. _showcase-sense-tutorial-prod-code:
 

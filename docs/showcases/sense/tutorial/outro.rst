@@ -3,7 +3,7 @@
 ===============
 16. Wrapping up
 ===============
-Thank you for trying out Sense! We hope you enjoyed the tutorial and
+Thank you for trying out the Tour of Pigweed! We hope you enjoyed the tutorial and
 are excited to build more stuff with Pigweed.
 
 ----------
@@ -15,7 +15,7 @@ Next steps
 Talk to us
 ==========
 If you've got any questions or comments about Sense or Pigweed in
-general, you can talk to the Pigweed team on our
+general, or just want to say "hi", you can talk to the Pigweed team on our
 `Discord <https://discord.gg/M9NSeTA>`_.
 
 Extend Sense with Pigweed's modules

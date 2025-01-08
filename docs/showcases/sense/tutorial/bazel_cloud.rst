@@ -3,11 +3,6 @@
 ==============================
 13. Use Bazel's cloud features
 ==============================
-.. caution::
-
-   This section is optional. Feel free to skip to the next one if you're
-   impatient to :ref:`try the air quality app <showcase-sense-tutorial-prod>`!
-
 One of Bazel's defining features is that it's a cloud build system. Team
 members can easily `share artifacts
 <https://app.buildbuddy.io/invocation/f8bc4845-a38d-4c62-b939-14238168ba46>`__
@@ -30,18 +25,29 @@ To use cloud features, you need to get set up with some cloud provider.
 
 #. Go to https://app.buildbuddy.io/ and log in via Google or GitHub.
 #. Click `Quickstart Guide <https://app.buildbuddy.io/docs/setup/>`__.
-#. In **1. Configure your .bazelrc** enable the following options:
+#. In step 1 (**Configure your .bazelrc**) enable the following options:
 
-   * API Key
-   * Enable cache
-   * Full cache
+   * **API Key**
+   * **Enable cache**
+   * **Full cache**
 
    .. caution::
 
       :bug:`364781685`: Sense does not support remote execution yet, so don't
       enable that option.
 
-#. Copy the provided snippet to your ``.bazelrc``.
+#. Copy the provided snippet to ``//.bazelrc`` (the ``.bazelrc`` file in the root
+   directory of your Sense repository).
+
+   .. figure:: https://storage.googleapis.com/pigweed-media/sense/buildbuddy_bazelrc_v1.png
+
+#. Try :ref:`building the blinky app <showcase-sense-tutorial-build>` again to verify your
+   BuildBuddy integration. While the build runs you should see an information log indicating
+   that the build is streaming to BuildBuddy, like this:
+
+   .. code-block:: text
+
+      INFO: Streaming build results to: https://app.buildbuddy.io/invocation/6d467374-ffad-44be-a6be-e4f7b53129dd
 
 ---------------------
 Review and share logs
@@ -105,13 +111,13 @@ Let's go back to what we learned in :ref:`showcase-sense-tutorial-hosttests` and
             Executed 1 out of 1 test: 1 fails locally.
             INFO: Streaming build results to: https://app.buildbuddy.io/invocation/f8bc4845-a38d-4c62-b939-14238168ba46
 
-#. Click the provided link. Some highlights to notice:
+#. Click the provided BuildBuddy link. Some highlights to notice:
 
-   * The full log of the failed test.
-   * The command line invocation used to generate it.
-   * A timing profile showing how long Bazel took to build and execute the test.
+   * The **LOGS** tab provides a full log of the failed test.
+   * The **DETAILS** tab shows the exact command line invocation for reproducing this result.
+   * The **TIMING** tab shows a granular breakdown of how long Bazel took to build and execute the test.
 
-#. Click "Share" (in the top-right corner) and broaden the permissions to make
+#. Click **Share** (top-right corner) and broaden the permissions to make
    the invocation link shareable. Then show it off to your friends and
    coworkers!
 
@@ -134,8 +140,8 @@ building it from scratch. Let's test it out.
    remote cache that your previous invocation populated!
 
    You can click the **CACHE** tab in the BuildBuddy invocation UI to see more
-   details on cache performance (how many hits there were, how much data was
-   uploaded and downloaded, etc).
+   details on cache performance: how many hits there were, how much data was
+   uploaded and downloaded, etc.
 
 -------
 Summary
@@ -145,4 +151,4 @@ generating easily shareable URLs for build and test invocations, and speeding
 up your builds by leveraging remote caching.
 
 Next, head over to :ref:`showcase-sense-tutorial-prod` to try
-out the air quality monitoring application.
+out the ``production`` app that exercises more of the Enviro+ Pack hardware.

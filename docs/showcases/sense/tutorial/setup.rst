@@ -6,12 +6,15 @@
 First things first: install prerequisite software and set up the
 Sense project.
 
-.. admonition:: Getting help
+.. _showcase-sense-tutorial-setup-help:
 
-   If you get stuck or confused at any point during the Sense tutorial, you're
-   welcome (and encouraged!) to talk to the Pigweed team in our
-   `Discord <https://discord.gg/M9NSeTA>`_ or
-   `issue tracker <https://pwbug.dev>`_.
+------------
+Getting help
+------------
+If you get stuck or confused at any point during the Sense tutorial, you're
+welcome (and encouraged!) to talk to the Pigweed team in our
+`Discord <https://discord.gg/M9NSeTA>`_ or
+`issue tracker <https://pwbug.dev>`_.
 
 .. _showcase-sense-tutorial-setup-prereqs:
 
@@ -21,8 +24,7 @@ Install prerequisite software
 Prepare your computer for working with Pigweed-based projects:
 
 #. Complete the instructions in :ref:`docs-first-time-setup-guide-express-setup`.
-   **You only need to complete the "express setup" instructions**; come back to
-   this page once you're done with the express setup.
+   **You only need to complete the "express setup" instructions**.
 
 .. _showcase-sense-tutorial-setup-sense:
 
@@ -61,7 +63,28 @@ to use VS Code.
             workspace-oriented workflow. This project doesn't play nicely
             with workspaces yet.
 
-      #. For the **Do you trust the authors of the files in this folder?** popup
+         .. admonition:: Important
+
+            The next few instructions show you how to deal with popups that
+            you **may or may not** see. If you use VS Code a lot, you may
+            already have the recommended tools and extensions installed, so
+            you won't see the popups. That's OK; you can just skip the
+            instructions for popups you didn't see.
+
+         .. admonition:: Troubleshooting
+
+            If you see a popup that says ``spawn bazel ENOENT``, try ignoring it
+            and proceeding with the rest of the tutorial. When the Bazel extension
+            for VS Code starts up, it tries to run queries right away, even though
+            the Bazel environment isn't completely ready yet. The Pigweed extension
+            for VS Code ensures that the Bazel environment sets up properly.
+
+            If the ``spawn bazel ENOENT`` popup seems like a legitimate error,
+            make sure that you have opened the correct folder i.e. directory.
+            If you're still seeing the issue after that, please
+            :ref:`ask the Pigweed team for help <showcase-sense-tutorial-setup-help>`.
+
+      #. If you see the **Do you trust the authors of the files in this folder?** popup
          click **Yes, I trust the authors**.
 
          If you want to try out the project's building and flashing workflows, you must
@@ -72,15 +95,7 @@ to use VS Code.
 
          .. figure:: https://storage.googleapis.com/pigweed-media/sense/trust.png
 
-         .. admonition:: Important
-
-            The next few instructions show you how to deal with popups that
-            you **may or may not** see. If you use VS Code a lot, you may
-            already have the recommended tools and extensions installed, so
-            you won't see the popups. That's OK; you can just skip the
-            instructions for popups you didn't see.
-
-      #. For the **Do you want to install the recommended 'Pigweed' extension
+      #. If you see the **Do you want to install the recommended 'Pigweed' extension
          from pigweed for this repository?** popup click **Install**.
 
          The Pigweed extension is basically the project's heart. Lots of
@@ -88,7 +103,7 @@ to use VS Code.
 
          .. figure:: https://storage.googleapis.com/pigweed-media/sense/install_pigweed_extension.png
 
-      #. For the popup that starts with **Pigweed recommends using Bazelisk to manage your
+      #. If you see the popup that starts with **Pigweed recommends using Bazelisk to manage your
          Bazel environment** click **Default**.
 
          .. figure:: https://storage.googleapis.com/pigweed-media/sense/recommended_bazelisk_settings.png
@@ -124,7 +139,7 @@ to use VS Code.
 
       #. Make sure you're running the latest version of the Pigweed extension
          by opening the `Extensions view`_, going to the page for the Pigweed
-         extension, and checking that your version is ``v1.3.0`` or later.
+         extension, and checking that your version is ``v1.3.3`` or later.
 
          .. figure:: https://storage.googleapis.com/pigweed-media/sense/20240802/pigweed_extension.png
 
@@ -137,15 +152,29 @@ to use VS Code.
    .. tab-item:: CLI
       :sync: cli
 
-      #. :ref:`Install Bazelisk <docs-install-bazel>`. **Come back to this page
-         once you can successfully run** ``bazelisk --version`` **from your
-         command line.** It should print out the version of Bazel that you're
-         using.
+      #. :ref:`Install Bazelisk <docs-install-bazel>`.
 
          .. note::
 
             See :ref:`docs-install-bazel-bazelisk` for an explanation of the
-            difference between Bazel and ``bazelisk``.
+            difference between Bazel and Bazelisk.
+
+      #. Run the following command to verify your Bazelisk installation:
+
+         .. code-block:: console
+
+            bazelisk version
+
+         You should see output similar to this:
+
+         .. code-block:: text
+
+            Bazelisk version: v1.25.0
+            Starting local Bazel server and connecting to it...
+            Build target: @@//src/main/java/com/google/devtools/build/lib/bazel:BazelServer
+            Build time: Thu Jan 01 00:00:00 1970 (0)
+            Build timestamp: Thu Jan 01 00:00:00 1970 (0)
+            Build timestamp as int: 0
 
       #. Clone the project:
 
@@ -163,15 +192,20 @@ to use VS Code.
 Summary
 -------
 .. _Bazelisk: https://bazel.build/install/bazelisk
+.. _MODULE.bazel: https://cs.opensource.google/pigweed/showcase/sense/+/main:MODULE.bazel
+.. _Bazel modules: https://bazel.build/external/module
 
 Later on, if you decide to build a product on top of Pigweed, you can
 expect new teammates to onboard onto your codebase using workflows
-similar to how you just set up Sense.
+like this.
 
-One interesting thing to note about Bazel-based projects like Sense:
-no need for ``--recursive`` when cloning the repo! I.e. no need for
-Git submodules. Check out ``MODULE.bazel`` in the root directory of
-the repo to discover more about how dependencies are managed.
+.. _--recursive: https://explainshell.com/explain?cmd=git+clone+--recursive
+
+When cloning Sense, did you notice that there was no need for the
+`--recursive`_ flag even though Sense has a few third-party dependencies?
+Most Bazel projects don't need Git submodules. Check out Sense's `MODULE.bazel`_
+file and read about `Bazel modules`_ to learn more about how dependencies
+are managed in Bazel projects.
 
 Next, head over to :ref:`showcase-sense-tutorial-explore` to build
 up your top-down intution about how the Sense project is structured.

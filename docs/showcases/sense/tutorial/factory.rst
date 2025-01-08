@@ -3,13 +3,6 @@
 ======================================
 12. Run factory workflows at your desk
 ======================================
-.. caution::
-
-   This section and the ones after it require a Pimoroni Enviro+ Pack. See
-   :ref:`showcase-sense-tutorial-hardware` for a review of the hardware
-   setup options. If you don't have an Enviro+, skip ahead to
-   :ref:`showcase-sense-tutorial-outro` to wrap up your tutorial experience.
-
 Bringing a consumer electronics product from concept to mass market
 requires a lot more than just good firmware. The new hardware also
 needs to be easy to test in factories. A lot of the Pigweed primitives
@@ -17,6 +10,11 @@ that you tried earlier such as :ref:`module-pw_rpc` also make
 manufacturing workflows easier. Try flashing a factory app to your
 Pico now and running through a Python script that exercises all of the
 Enviro+ sensors.
+
+.. important::
+
+   This section requires a Pimoroni Enviro+ Pack. If you don't have one,
+   skip ahead to :ref:`showcase-sense-tutorial-bazel_cloud`.
 
 .. _showcase-sense-tutorial-factory-flash:
 
@@ -36,11 +34,19 @@ Flash the factory app to your Pico
       .. tab-item:: CLI
          :sync: cli
 
-         Run the flashing command:
+         .. tab-set::
 
-         .. code-block:: console
+            .. tab-item:: Pico 1 & 1W (RP2040)
 
-            $ bazelisk run //apps/factory:flash
+               .. code-block:: console
+
+                  bazelisk run //apps/factory:flash
+
+            .. tab-item:: Pico 2 & 2W (RP2350)
+
+               .. code-block:: console
+
+                  bazelisk run //apps/factory:flash_rp2350
 
 .. _showcase-sense-tutorial-factory-tests:
 
@@ -95,13 +101,10 @@ Exercise the sensors
 -------
 Summary
 -------
-For low-volume products a workflow like what you just tried can sometimes
-be good enough for verifying that every newly manufactured product works
-as expected. For high-volume products you usually need to integrate into
-the manufacturer's workflows, so the script we demonstrated here won't
-suffice. But Pigweed's abstractions, primitives, and tools often make that
-easier high-volume production easier, too. These factory-at-your-desk
-scripts can also help development teams quickly prototype and iterate
+For low-volume products a verification workflow like this may be good enough.
+For high-volume products you usually need to integrate into
+the manufacturer's workflows. Pigweed's abstractions, primitives, and tools often make that
+easier, too. These factory-at-your-desk scripts can help you quickly prototype and iterate
 on the basic workflows that will be expanded upon during the real
 high-volume manufacturing process.
 

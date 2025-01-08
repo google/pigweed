@@ -8,12 +8,21 @@ for Bazel-based Pigweed projects.
 
 .. _docs-install-bazel-bazelisk:
 
------------------------------------
-CLI commands: bazelisk versus bazel
------------------------------------
-Pigweed recommends always running ``bazelisk`` rather than ``bazel`` because
-``bazelisk`` ensures that you always run the correct Bazel version defined in
-your project's ``.bazelversion`` file.
+---------------------
+Bazel versus Bazelisk
+---------------------
+On ``pigweed.dev`` you'll see references to both Bazel and Bazelisk.
+Bazel is an open-source, multi-language, multi-platform build and test
+tool similar to Make. Bazelisk is the official CLI launcher for Bazel.
+Here's a summary from the Bazelisk repository:
+
+  Bazelisk is a wrapper for Bazel written in Go. It automatically picks a
+  good version of Bazel given your current working directory, downloads it
+  from the official server (if required) and then transparently passes
+  through all command-line arguments to the real Bazel binary. You can
+  call it just like you would call Bazel.
+
+On the command line, you should always invoke ``bazelisk``, not ``bazel``.
 
 -----------------
 Recommended setup
