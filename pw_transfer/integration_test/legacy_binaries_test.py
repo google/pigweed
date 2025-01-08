@@ -30,6 +30,7 @@ Which tests to run can be specified as command-line arguments:
 """
 
 from parameterized import parameterized
+from pathlib import Path
 import random
 
 from pw_transfer.integration_test import config_pb2
@@ -253,9 +254,10 @@ class LegacyTransferIntegrationTest(test_fixture.TransferIntegrationTest):
 
 class LegacyClientTransferIntegrationTests(LegacyTransferIntegrationTest):
     r = runfiles.Create()
-    client_binary = r.Rlocation(
-        "+_repo_rules+pw_transfer_test_binaries/cpp_client_528098d5",
-    )
+    path = "pw_transfer_test_binaries/cpp_client_528098d5"
+    client_binary = r.Rlocation(path, r.CurrentRepository())
+    if not Path(client_binary).exists():
+        raise ValueError(f'Failed to load legacy transfer client from {path}')
     HARNESS_CONFIG = TransferIntegrationTestHarness.Config(
         cpp_client_binary=client_binary,
         server_port=_SERVER_PORT,
@@ -266,9 +268,10 @@ class LegacyClientTransferIntegrationTests(LegacyTransferIntegrationTest):
 
 class LegacyServerTransferIntegrationTests(LegacyTransferIntegrationTest):
     r = runfiles.Create()
-    server_binary = r.Rlocation(
-        "+_repo_rules+pw_transfer_test_binaries/server_528098d5",
-    )
+    path = "pw_transfer_test_binaries/server_528098d5"
+    server_binary = r.Rlocation(path, r.CurrentRepository())
+    if not Path(server_binary).exists():
+        raise ValueError(f'Failed to load legacy transfer server from {path}')
     HARNESS_CONFIG = TransferIntegrationTestHarness.Config(
         server_binary=server_binary,
         server_port=_SERVER_PORT,

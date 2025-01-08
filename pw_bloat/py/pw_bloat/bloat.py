@@ -107,7 +107,7 @@ def run_bloaty(
         from python.runfiles import runfiles  # type: ignore
 
         r = runfiles.Create()
-        bloaty_path = r.Rlocation("bloaty/bloaty")
+        bloaty_path = r.Rlocation("bloaty/bloaty", r.CurrentRepository())
     except ImportError:
         # Outside of Bazel, use Bloaty from the system path.
         default_bloaty = 'bloaty'

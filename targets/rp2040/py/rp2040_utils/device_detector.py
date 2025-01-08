@@ -131,7 +131,10 @@ def _custom_find_library(name: str) -> str | None:
 
         r = runfiles.Create()
         libusb_dir = os.path.dirname(
-            r.Rlocation(f'libusb/libusb-1.0{_LIB_SUFFIX}')
+            r.Rlocation(
+                f'libusb/libusb-1.0{_LIB_SUFFIX}',
+                r.CurrentRepository(),
+            )
         )
         search_paths.append(Path(libusb_dir))
     except ImportError:

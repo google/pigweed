@@ -28,6 +28,9 @@ bazel_dep(name = "pico-sdk", version = "2.0.0")
 bazel_dep(name = "picotool", version = "2.0.0")
 bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "protobuf", version = "28.2", repo_name = "com_google_protobuf")
+
+# A transitive dependency requires this.
+bazel_dep(name = "re2", version = "2024-07-02.bcr.1")
 bazel_dep(name = "rules_android", version = "0.1.1")
 bazel_dep(name = "rules_cc", version = "0.0.17")
 bazel_dep(name = "rules_fuzzing", version = "0.5.2")
@@ -57,6 +60,15 @@ archive_override(
     module_name = "hedron_compile_commands",
     strip_prefix = "bazel-compile-commands-extractor-163521345aa6366fd1ed801b989b668b5c806f69",
     urls = ["https://github.com/chadnorvell/bazel-compile-commands-extractor/archive/163521345aa6366fd1ed801b989b668b5c806f69.tar.gz"],
+)
+
+# TODO: https://pwbug.dev/372510795 - A `bazel_dep` on this version propagates
+# to downstream projects, which causes breakages since downstream is still
+# pre-Bazel 8.0.0. When all downstream projects are flipped to Bazel 8.0.0,
+# remove this and update the rules_android bazel_dep requirement.
+single_version_override(
+    module_name = "rules_android",
+    version = "0.6.0",
 )
 
 single_version_override(

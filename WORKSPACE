@@ -108,6 +108,14 @@ http_archive(
     url = "https://github.com/abseil/abseil-cpp/releases/download/20240116.0/abseil-cpp-20240116.0.tar.gz",
 )
 
+# Required by fuzztest
+http_archive(
+    name = "rules_proto",
+    sha256 = "14a225870ab4e91869652cfd69ef2028277fc1dc4910d65d353b62d6e0ae21f4",
+    strip_prefix = "rules_proto-7.1.0",
+    url = "https://github.com/bazelbuild/rules_proto/releases/download/7.1.0/rules_proto-7.1.0.tar.gz",
+)
+
 # TODO: https://pwbug.dev/365103864 - Fuzztest is not in the BCR yet (also see
 # https://github.com/google/fuzztest/issues/950).
 http_archive(
