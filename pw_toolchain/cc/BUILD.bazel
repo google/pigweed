@@ -13,82 +13,8 @@
 # the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
-load(
-    "@pw_toolchain//cc_toolchain:defs.bzl",
-    "pw_cc_feature",
-    "pw_cc_flag_set",
-)
 
 package(default_visibility = ["//visibility:public"])
-
-# The common set of warnings for clang and arm_gcc.
-pw_cc_flag_set(
-    name = "common_warnings",
-    actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-    ],
-    flags = [
-        "-Wall",
-        "-Wextra",
-        "-Wimplicit-fallthrough",
-        "-Wcast-qual",
-        "-Wpointer-arith",
-        "-Wshadow",
-        "-Wredundant-decls",
-        # TODO: b/259746255 - Enable implicit conversion warnings once fixed.
-        # "-Wconversion",
-        # Make all warnings errors, except for the exemptions below.
-        "-Werror",
-        "-Wno-error=cpp",  # preprocessor #warning statement
-        "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
-    ],
-)
-
-# Enables colors in compiler diagnostics. This uses the GCC spelling of the
-# flag, which Clang supports as an undocumented extension.
-pw_cc_flag_set(
-    name = "color_diagnostics",
-    actions = [
-        "@pw_toolchain//actions:all_asm_actions",
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-        "@pw_toolchain//actions:all_link_actions",
-    ],
-    flags = ["-fdiagnostics-color"],
-)
-
-# This config contains warnings that are enabled for upstream Pigweed.
-# This config MUST NOT be used downstream to allow for warnings to be
-# added in the future without breaking downstream.
-pw_cc_flag_set(
-    name = "internal_strict_warnings_flags",
-    actions = [
-        "@pw_toolchain//actions:all_c_compiler_actions",
-        "@pw_toolchain//actions:all_cpp_compiler_actions",
-    ],
-    flags = [
-        "-Wswitch-enum",
-        "-Wextra-semi",
-        # TODO: b/361229275 - Add -Wshadow-all, but for Clang only, since GCC
-        # does not support it.
-        # "-Wshadow-all",
-    ] + select({
-        "@platforms//os:windows": [],
-        # TODO: b/243069432 - Enable pedantic warnings on Windows once passing.
-        "//conditions:default": [":pedantic_warnings"],
-    }),
-    visibility = ["//:__subpackages__"],
-)
-
-# Add `--features=internal_strict_warnings` to your Bazel invocation to enable.
-pw_cc_feature(
-    name = "internal_strict_warnings",
-    enabled = False,
-    feature_name = "internal_strict_warnings",
-    flag_sets = [":internal_strict_warnings_flags"],
-    visibility = ["//:__subpackages__"],
-)
 
 string_flag(
     name = "cxx_standard",
@@ -106,29 +32,9 @@ config_setting(
     },
 )
 
-pw_cc_feature(
-    name = "c++17_feature",
-    enabled = select({
-        ":c++17_enabled": True,
-        "//conditions:default": False,
-    }),
-    feature_name = "c++17",
-    flag_sets = ["@pw_toolchain//flag_sets:c++17"],
-)
-
 config_setting(
     name = "c++20_enabled",
     flag_values = {
         ":cxx_standard": "20",
     },
-)
-
-pw_cc_feature(
-    name = "c++20_feature",
-    enabled = select({
-        ":c++20_enabled": True,
-        "//conditions:default": False,
-    }),
-    feature_name = "c++20",
-    flag_sets = ["@pw_toolchain//flag_sets:c++20"],
 )

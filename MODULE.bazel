@@ -110,16 +110,6 @@ libusb = use_extension("@rules_libusb//:extensions.bzl", "libusb")
 libusb.source_release(min_version = "1.0.27")
 use_repo(libusb, "libusb")
 
-# Configure C++ toolchains
-# ========================
-#
-# TODO: https://pwbug.dev/346388161 - Migrate to the rules_cc toolchain API.
-bazel_dep(name = "pw_toolchain")
-local_path_override(
-    module_name = "pw_toolchain",
-    path = "pw_toolchain_bazel",
-)
-
 xcode_sdk_repository = use_repo_rule("//pw_toolchain:xcode.bzl", "xcode_sdk_repository")
 
 xcode_sdk_repository(

@@ -234,6 +234,8 @@ about guiding the future of the underlying constructs.
 
 .. inclusive-language: enable
 
+.. _module-pw_toolchain_bazel-get-started:
+
 -----------
 Try it out!
 -----------
