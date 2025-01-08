@@ -17,7 +17,6 @@
 import unittest
 from pw_chrono.timestamp_analyzer import process_snapshot
 from pw_chrono_protos import chrono_pb2
-from pw_chrono_protos.chrono_pb2 import EpochType, TimePoint, ClockParameters
 from pw_tokenizer import detokenize, tokens
 
 
@@ -33,12 +32,12 @@ class TimestampTest(unittest.TestCase):
     def test_timestamp_unknown_epoch_type(self):
         snapshot = chrono_pb2.SnapshotTimestamps()
 
-        time_point = TimePoint(
+        time_point = chrono_pb2.TimePoint(
             timestamp=0,
-            clock_parameters=ClockParameters(
+            clock_parameters=chrono_pb2.ClockParameters(
                 tick_period_seconds_numerator=1,
                 tick_period_seconds_denominator=1,
-                epoch_type=EpochType.Enum.UNKNOWN,
+                epoch_type=chrono_pb2.EpochType.Enum.UNKNOWN,
             ),
         )
         snapshot.timestamps.append(time_point)
@@ -58,12 +57,12 @@ class TimestampTest(unittest.TestCase):
     def test_timestamp_with_time_since_boot(self):
         snapshot = chrono_pb2.SnapshotTimestamps()
 
-        time_point = TimePoint(
+        time_point = chrono_pb2.TimePoint(
             timestamp=8640015,
-            clock_parameters=ClockParameters(
+            clock_parameters=chrono_pb2.ClockParameters(
                 tick_period_seconds_numerator=1,
                 tick_period_seconds_denominator=1000,
-                epoch_type=EpochType.Enum.TIME_SINCE_BOOT,
+                epoch_type=chrono_pb2.EpochType.Enum.TIME_SINCE_BOOT,
             ),
         )
         snapshot.timestamps.append(time_point)
@@ -83,12 +82,12 @@ class TimestampTest(unittest.TestCase):
     def test_timestamp_with_utc_wall_clock(self):
         snapshot = chrono_pb2.SnapshotTimestamps()
 
-        time_point = TimePoint(
+        time_point = chrono_pb2.TimePoint(
             timestamp=8640015,
-            clock_parameters=ClockParameters(
+            clock_parameters=chrono_pb2.ClockParameters(
                 tick_period_seconds_numerator=1,
                 tick_period_seconds_denominator=1000,
-                epoch_type=EpochType.Enum.UTC_WALL_CLOCK,
+                epoch_type=chrono_pb2.EpochType.Enum.UTC_WALL_CLOCK,
             ),
         )
         snapshot.timestamps.append(time_point)
@@ -108,12 +107,12 @@ class TimestampTest(unittest.TestCase):
     def test_timestamp_with_name(self):
         snapshot = chrono_pb2.SnapshotTimestamps()
 
-        time_point = TimePoint(
+        time_point = chrono_pb2.TimePoint(
             timestamp=51140716,
-            clock_parameters=ClockParameters(
+            clock_parameters=chrono_pb2.ClockParameters(
                 tick_period_seconds_numerator=1,
                 tick_period_seconds_denominator=1000000,
-                epoch_type=EpochType.Enum.UNKNOWN,
+                epoch_type=chrono_pb2.EpochType.Enum.UNKNOWN,
                 name='High resolution clock'.encode('utf-8'),
             ),
         )
@@ -141,12 +140,12 @@ class TimestampTest(unittest.TestCase):
 
         snapshot = chrono_pb2.SnapshotTimestamps()
 
-        time_point = TimePoint(
+        time_point = chrono_pb2.TimePoint(
             timestamp=51140716,
-            clock_parameters=ClockParameters(
+            clock_parameters=chrono_pb2.ClockParameters(
                 tick_period_seconds_numerator=1,
                 tick_period_seconds_denominator=1000000,
-                epoch_type=EpochType.Enum.UNKNOWN,
+                epoch_type=chrono_pb2.EpochType.Enum.UNKNOWN,
                 name=b'\x01\x00\x00\x00',
             ),
         )
@@ -168,12 +167,12 @@ class TimestampTest(unittest.TestCase):
     def test_timestamp_with_tai_clock(self):
         snapshot = chrono_pb2.SnapshotTimestamps()
 
-        time_point = TimePoint(
+        time_point = chrono_pb2.TimePoint(
             timestamp=1733882018,
-            clock_parameters=ClockParameters(
+            clock_parameters=chrono_pb2.ClockParameters(
                 tick_period_seconds_numerator=1,
                 tick_period_seconds_denominator=1000,
-                epoch_type=EpochType.Enum.TAI_WALL_CLOCK,
+                epoch_type=chrono_pb2.EpochType.Enum.TAI_WALL_CLOCK,
             ),
         )
         snapshot.timestamps.append(time_point)
@@ -193,12 +192,12 @@ class TimestampTest(unittest.TestCase):
     def test_timestamp_with_unrecognized_epoch(self):
         snapshot = chrono_pb2.SnapshotTimestamps()
 
-        time_point = TimePoint(
+        time_point = chrono_pb2.TimePoint(
             timestamp=3424,
-            clock_parameters=ClockParameters(
+            clock_parameters=chrono_pb2.ClockParameters(
                 tick_period_seconds_numerator=1,
                 tick_period_seconds_denominator=1,
-                epoch_type=EpochType.Enum.ValueType(15),
+                epoch_type=chrono_pb2.EpochType.Enum.ValueType(15),
             ),
         )
         snapshot.timestamps.append(time_point)
@@ -218,9 +217,9 @@ class TimestampTest(unittest.TestCase):
     def test_invalid_timestamp(self):
         snapshot = chrono_pb2.SnapshotTimestamps()
 
-        time_point = TimePoint(
+        time_point = chrono_pb2.TimePoint(
             timestamp=1,
-            clock_parameters=ClockParameters(
+            clock_parameters=chrono_pb2.ClockParameters(
                 tick_period_seconds_numerator=1,
                 tick_period_seconds_denominator=0,
             ),
@@ -246,22 +245,22 @@ class TimestampTest(unittest.TestCase):
         """Test multiple timestamps."""
         snapshot = chrono_pb2.SnapshotTimestamps()
 
-        time_point = TimePoint(
+        time_point = chrono_pb2.TimePoint(
             timestamp=8640000,
-            clock_parameters=ClockParameters(
+            clock_parameters=chrono_pb2.ClockParameters(
                 tick_period_seconds_numerator=1,
                 tick_period_seconds_denominator=1000,
-                epoch_type=EpochType.Enum.TIME_SINCE_BOOT,
+                epoch_type=chrono_pb2.EpochType.Enum.TIME_SINCE_BOOT,
             ),
         )
         snapshot.timestamps.append(time_point)
 
-        time_point = TimePoint(
+        time_point = chrono_pb2.TimePoint(
             timestamp=8640000,
-            clock_parameters=ClockParameters(
+            clock_parameters=chrono_pb2.ClockParameters(
                 tick_period_seconds_numerator=1,
                 tick_period_seconds_denominator=1000,
-                epoch_type=EpochType.Enum.UTC_WALL_CLOCK,
+                epoch_type=chrono_pb2.EpochType.Enum.UTC_WALL_CLOCK,
             ),
         )
         snapshot.timestamps.append(time_point)

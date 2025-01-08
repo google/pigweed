@@ -17,7 +17,6 @@ from datetime import datetime, timedelta, timezone
 import logging
 import pw_tokenizer
 from pw_chrono_protos import chrono_pb2
-from pw_chrono_protos.chrono_pb2 import EpochType
 from pw_tokenizer import proto as proto_detokenizer
 
 _LOG = logging.getLogger(__name__)
@@ -90,23 +89,23 @@ class TimePointInfo:
 
     def __str__(self) -> str:
         epoch_type = self._timepoint.clock_parameters.epoch_type
-        if epoch_type == EpochType.Enum.TIME_SINCE_BOOT:
+        if epoch_type == chrono_pb2.EpochType.Enum.TIME_SINCE_BOOT:
             return f'{self.duration()} ({self.tick_count_str()})'
-        if epoch_type == EpochType.Enum.UTC_WALL_CLOCK:
+        if epoch_type == chrono_pb2.EpochType.Enum.UTC_WALL_CLOCK:
             return f'{self.as_unix_time()} ({self.tick_count_str()})'
         return self.tick_count_str()
 
     def name_str(self) -> str:
         parameters = self._timepoint.clock_parameters
         try:
-            epoch_str = EpochType.Enum.Name(parameters.epoch_type)
+            epoch_str = chrono_pb2.EpochType.Enum.Name(parameters.epoch_type)
         except ValueError:
             epoch_str = str(parameters.epoch_type)
 
         if parameters.name:
             return f'{parameters.name.decode()} (epoch {epoch_str})'
-        if parameters.epoch_type == EpochType.Enum.TIME_SINCE_BOOT:
+        if parameters.epoch_type == chrono_pb2.EpochType.Enum.TIME_SINCE_BOOT:
             return 'Time since boot'
-        if parameters.epoch_type == EpochType.Enum.UTC_WALL_CLOCK:
+        if parameters.epoch_type == chrono_pb2.EpochType.Enum.UTC_WALL_CLOCK:
             return 'UTC time'
         return f'Timestamp (epoch {epoch_str})'
