@@ -93,11 +93,6 @@ class L2capCoc : public L2capChannel {
   /// @endrst
   StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload);
 
-  /// @deprecated Use Write with MultiBuf parameter instead.
-  // TODO: https://pwbug.dev/382783733 - Delete once downstreams move to new
-  // Write.
-  pw::Status Write(pw::span<const uint8_t>) { return Status::Unimplemented(); }
-
   /// Send an L2CAP_FLOW_CONTROL_CREDIT_IND signaling packet to dispense the
   /// remote peer additional L2CAP connection-oriented channel credits for this
   /// channel.
