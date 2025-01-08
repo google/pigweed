@@ -258,7 +258,7 @@ cc_feature(
 # that will be removed shortly.
 bool_flag(
     name = "new_rules_cc",
-    build_setting_default = False,
+    build_setting_default = True,
 )
 
 config_setting(
