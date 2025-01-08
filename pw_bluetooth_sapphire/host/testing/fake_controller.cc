@@ -2597,8 +2597,7 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
       hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode);
   view.connection_handle().Write(handle);
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  view.le_features().BackingStorage().WriteUInt(
-      peer->le_features().le_features);
+  view.le_features().BackingStorage().WriteUInt(peer->le_features());
   SendCommandChannelPacket(response.data());
 }
 

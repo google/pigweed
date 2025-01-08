@@ -2512,7 +2512,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   EXPECT_TRUE(conn);
   EXPECT_TRUE(peer->version().has_value());
   EXPECT_TRUE(peer->le()->features().has_value());
-  EXPECT_EQ(kLEFeatures.le_features, peer->le()->features()->le_features);
+  EXPECT_EQ(kLEFeatures, peer->le()->features());
   EXPECT_FALSE(peer->temporary());
 }
 

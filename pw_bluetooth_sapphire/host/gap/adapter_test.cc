@@ -1525,7 +1525,7 @@ TEST_F(AdapterTest, LEConnectedIsochronousStreamSupported) {
   EXPECT_TRUE(success);
   const auto& le_features = test_device()->le_features();
   EXPECT_TRUE(
-      (le_features.le_features &
+      (le_features &
        static_cast<uint64_t>(hci_spec::LESupportedFeature::
                                  kConnectedIsochronousStreamHostSupport)) != 0);
 }

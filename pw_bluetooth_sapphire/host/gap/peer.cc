@@ -82,8 +82,7 @@ Peer::LowEnergyData::LowEnergyData(Peer* owner)
       auto_conn_behavior_(AutoConnectBehavior::kAlways),
       features_(std::nullopt,
                 [](const std::optional<hci_spec::LESupportedFeatures> f) {
-                  return f ? bt_lib_cpp_string::StringPrintf("%#.16" PRIx64,
-                                                             f->le_features)
+                  return f ? bt_lib_cpp_string::StringPrintf("%#.16" PRIx64, *f)
                            : "";
                 }),
       service_changed_gatt_data_({.notify = false, .indicate = false}) {

@@ -80,9 +80,9 @@ class LowEnergyInterrogatorTest : public TestingBase {
   }
 
  protected:
-  void QueueSuccessfulInterrogation(hci_spec::ConnectionHandle conn,
-                                    hci_spec::LESupportedFeatures features = {
-                                        0}) const {
+  void QueueSuccessfulInterrogation(
+      hci_spec::ConnectionHandle conn,
+      hci_spec::LESupportedFeatures features = 0) const {
     const auto remote_version_complete_packet =
         testing::ReadRemoteVersionInfoCompletePacket(conn);
 
@@ -99,7 +99,7 @@ class LowEnergyInterrogatorTest : public TestingBase {
                           &le_remote_features_complete_packet);
 
     // Expect a SCA request, if supported by the peer and the controller
-    if ((features.le_features &
+    if ((features &
          static_cast<uint64_t>(
              hci_spec::LESupportedFeature::kSleepClockAccuracyUpdates)) &&
         controller_supports_sca_) {
@@ -156,7 +156,7 @@ TEST_F(LowEnergyInterrogatorTest, SuccessfulInterrogation) {
   EXPECT_TRUE(peer()->version());
   ASSERT_TRUE(peer()->le()->feature_interrogation_complete());
   ASSERT_TRUE(peer()->le()->features());
-  EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
+  EXPECT_EQ(kFeatures, peer()->le()->features());
   ASSERT_TRUE(peer()->le()->sleep_clock_accuracy());
   EXPECT_EQ(*(peer()->le()->sleep_clock_accuracy()), kDefaultScaRange);
 }
@@ -194,7 +194,7 @@ TEST_F(LowEnergyInterrogatorTest,
   EXPECT_EQ(fit::ok(), *status);
   ASSERT_TRUE(peer()->le()->feature_interrogation_complete());
   ASSERT_TRUE(peer()->le()->features());
-  EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
+  EXPECT_EQ(kFeatures, peer()->le()->features());
   ASSERT_TRUE(peer()->le()->sleep_clock_accuracy());
   EXPECT_EQ(*(peer()->le()->sleep_clock_accuracy()), kScaRange);
 }
@@ -303,7 +303,7 @@ TEST_F(LowEnergyInterrogatorTest, ReadRemoteVersionErrorStatus) {
       pw::bluetooth::emboss::StatusCode::UNKNOWN_COMMAND);
   const auto le_remote_features_complete_packet =
       testing::LEReadRemoteFeaturesCompletePacket(kConnectionHandle,
-                                                  /*features=*/{0});
+                                                  /*features=*/0);
   EXPECT_CMD_PACKET_OUT(test_device(),
                         testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
                         &remote_version_error_status_packet);
@@ -418,7 +418,7 @@ TEST_F(LowEnergyInterrogatorTest, ScaUpdateNotSupportedOnController) {
   EXPECT_TRUE(peer()->version());
   ASSERT_TRUE(peer()->le()->feature_interrogation_complete());
   ASSERT_TRUE(peer()->le()->features());
-  EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
+  EXPECT_EQ(kFeatures, peer()->le()->features());
   ASSERT_FALSE(peer()->le()->sleep_clock_accuracy());
 }
 
@@ -438,7 +438,7 @@ TEST_F(LowEnergyInterrogatorTest, ScaUpdateNotSupportedOnPeer) {
   EXPECT_TRUE(peer()->version());
   ASSERT_TRUE(peer()->le()->feature_interrogation_complete());
   ASSERT_TRUE(peer()->le()->features());
-  EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
+  EXPECT_EQ(kFeatures, peer()->le()->features());
   ASSERT_FALSE(peer()->le()->sleep_clock_accuracy());
 }
 
@@ -457,7 +457,7 @@ TEST_F(LowEnergyInterrogatorTest, DestroyInterrogatorInCompleteCallback) {
   EXPECT_TRUE(status->is_ok());
   ASSERT_TRUE(peer()->le()->feature_interrogation_complete());
   ASSERT_TRUE(peer()->le()->features());
-  EXPECT_EQ(kFeatures.le_features, peer()->le()->features()->le_features);
+  EXPECT_EQ(kFeatures, peer()->le()->features());
   ASSERT_TRUE(peer()->le()->sleep_clock_accuracy());
   EXPECT_EQ(*(peer()->le()->sleep_clock_accuracy()), kDefaultScaRange);
 }

@@ -539,7 +539,7 @@ class FakeController final : public ControllerTestDoubleBase,
 
   // Gets a reference to the set of LE Host Features that were set
   hci_spec::LESupportedFeatures le_features() {
-    return hci_spec::LESupportedFeatures{.le_features = settings_.le_features};
+    return hci_spec::LESupportedFeatures{settings_.le_features};
   }
 
  private:

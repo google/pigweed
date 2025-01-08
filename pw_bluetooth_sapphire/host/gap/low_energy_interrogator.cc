@@ -73,7 +73,7 @@ void LowEnergyInterrogator::Start(ResultCallback callback) {
     }
 
     // Verify the peer supports SCA updates
-    if (!(peer_->le()->features()->le_features &
+    if (!(peer_->le()->features().value() &
           static_cast<uint64_t>(
               hci_spec::LESupportedFeature::kSleepClockAccuracyUpdates))) {
       bt_log(INFO, "gap-le", "peer %s does not support SCA", bt_str(peer_id_));
