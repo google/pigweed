@@ -87,7 +87,17 @@ class RfcommChannel final : public L2capChannel {
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
+  // @deprecated
+  // TODO: https://pwbug.dev/379337272 - Delete this once all downstreams
+  // have transitioned to Write(MultiBuf) for this channel type.
   Status Write(pw::span<const uint8_t> payload) override;
+
+  // Also allow Write(MultiBuf) during transition from Write(span).
+  // TODO: https://pwbug.dev/379337272 - Can delete once Write(span) above is
+  // deleted.
+  StatusWithMultiBuf Write(multibuf::MultiBuf&& payload) override {
+    return WriteMultiBufAsSpan(std::move(payload));
+  }
 
   Config rx_config() const { return rx_config_; }
   Config tx_config() const { return tx_config_; }

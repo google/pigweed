@@ -146,14 +146,15 @@ Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
   return status;
 }
 
-StatusWithMultiBuf L2capChannel::Write(multibuf::MultiBuf&& payload) {
-  if (!UsesPayloadQueue()) {
-    PW_LOG_ERROR(
-        "btproxy: Write(MultiBuf) called on class that only supports "
-        "Write(span).");
-    return {Status::Unimplemented(), std::move(payload)};
-  }
+namespace {
 
+pw::span<const uint8_t> AsConstUint8Span(ConstByteSpan s) {
+  return {reinterpret_cast<const uint8_t*>(s.data()), s.size_bytes()};
+}
+
+}  // namespace
+
+StatusWithMultiBuf L2capChannel::Write(multibuf::MultiBuf&& payload) {
   if (!payload.IsContiguous()) {
     return {Status::InvalidArgument(), std::move(payload)};
   }
@@ -162,7 +163,34 @@ StatusWithMultiBuf L2capChannel::Write(multibuf::MultiBuf&& payload) {
     return {Status::FailedPrecondition(), std::move(payload)};
   }
 
+  PW_CHECK(UsesPayloadQueue());
+
   return QueuePayload(std::move(payload));
+}
+
+// TODO: https://pwbug.dev/379337272 - Delete when all channels are
+// transitioned to using payload queues.
+StatusWithMultiBuf L2capChannel::WriteMultiBufAsSpan(
+    multibuf::MultiBuf&& payload) {
+  if (!payload.IsContiguous()) {
+    return {Status::InvalidArgument(), std::move(payload)};
+  }
+
+  if (state() != State::kRunning) {
+    return {Status::FailedPrecondition(), std::move(payload)};
+  }
+
+  PW_CHECK(!UsesPayloadQueue());
+
+  std::optional<ByteSpan> span = payload.ContiguousSpan();
+  PW_CHECK(span.has_value());
+  Status status = Write(AsConstUint8Span(span.value()));
+
+  if (!status.ok()) {
+    return {status, std::move(payload)};
+  }
+
+  return {OkStatus(), std::nullopt};
 }
 
 pw::Status L2capChannel::Write(

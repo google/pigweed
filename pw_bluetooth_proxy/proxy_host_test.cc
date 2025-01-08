@@ -1458,7 +1458,8 @@ TEST_F(NumberOfCompletedPacketsTest, MultipleChannelsDifferentTransports) {
 
   RfcommChannel bredr_channel =
       BuildRfcomm(proxy, RfcommParameters{.handle = 0x456});
-  EXPECT_EQ(bredr_channel.Write(capture.payload), PW_STATUS_OK);
+  PW_TEST_EXPECT_OK(
+      bredr_channel.Write(MultiBufFromSpan(pw::span(capture.payload))).status);
   // Send should succeed even though no LE credits available
   EXPECT_EQ(capture.sends_called, 2);
 
@@ -1476,7 +1477,8 @@ TEST_F(NumberOfCompletedPacketsTest, MultipleChannelsDifferentTransports) {
       proxy, FlatMap<uint16_t, uint16_t, 1>({{{0x456, 1}}})));
 
   // Write again
-  EXPECT_EQ(bredr_channel.Write(capture.payload), PW_STATUS_OK);
+  PW_TEST_EXPECT_OK(
+      bredr_channel.Write(MultiBufFromSpan(pw::span(capture.payload))).status);
   EXPECT_EQ(capture.sends_called, 4);
 }
 
@@ -2171,7 +2173,8 @@ TEST_F(BasicL2capChannelTest, BasicWrite) {
                                      /*payload_from_controller_fn=*/nullptr,
                                      /*event_fn=*/nullptr));
 
-  EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
+  PW_TEST_EXPECT_OK(
+      channel.Write(MultiBufFromSpan(pw::span(capture.payload))).status);
   EXPECT_EQ(capture.sends_called, 1);
 }
 
@@ -2202,7 +2205,8 @@ TEST_F(BasicL2capChannelTest, ErrorOnWriteTooLarge) {
                                      /*payload_from_controller_fn=*/nullptr,
                                      /*event_fn=*/nullptr));
 
-  EXPECT_EQ(channel.Write(span(hci_arr)), PW_STATUS_INVALID_ARGUMENT);
+  EXPECT_EQ(channel.Write(MultiBufFromSpan(pw::span(hci_arr))).status,
+            PW_STATUS_INVALID_ARGUMENT);
 }
 
 TEST_F(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {

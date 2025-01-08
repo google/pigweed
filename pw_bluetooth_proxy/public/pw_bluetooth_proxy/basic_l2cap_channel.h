@@ -39,7 +39,17 @@ class BasicL2capChannel : public L2capChannel {
   BasicL2capChannel& operator=(BasicL2capChannel&& other) = default;
   ~BasicL2capChannel() override;
 
-  pw::Status Write(pw::span<const uint8_t> payload) override;
+  // @deprecated
+  // TODO: https://pwbug.dev/379337272 - Delete this once all downstreams
+  // have transitioned to Write(MultiBuf) for this channel type.
+  Status Write(pw::span<const uint8_t> payload) override;
+
+  // Also allow Write(MultiBuf) during transition from Write(span).
+  // TODO: https://pwbug.dev/379337272 - Can delete once Write(span) above is
+  // deleted.
+  StatusWithMultiBuf Write(multibuf::MultiBuf&& payload) override {
+    return WriteMultiBufAsSpan(std::move(payload));
+  }
 
  protected:
   explicit BasicL2capChannel(

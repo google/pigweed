@@ -240,7 +240,8 @@ bool RfcommChannel::DoHandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
 
   if (rx_needs_refill) {
     // Send credit update with empty payload to refresh remote credit count.
-    if (const auto status = Write({}); !status.ok()) {
+    if (const auto status = Write(pw::multibuf::MultiBuf{}).status;
+        !status.ok()) {
       PW_LOG_ERROR("Failed to send RFCOMM credits");
     }
   }

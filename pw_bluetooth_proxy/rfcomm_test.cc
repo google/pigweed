@@ -190,7 +190,8 @@ TEST_F(RfcommWriteTest, BasicWrite) {
                                  .credits = 10,
                              }};
   RfcommChannel channel = BuildRfcomm(proxy, params);
-  EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
+  PW_TEST_EXPECT_OK(
+      channel.Write(MultiBufFromSpan(pw::span(capture.payload))).status);
   EXPECT_EQ(capture.sends_called, 1);
 }
 
@@ -302,7 +303,8 @@ TEST_F(RfcommWriteTest, ExtendedWrite) {
                                  .credits = 10,
                              }};
   RfcommChannel channel = BuildRfcomm(proxy, params);
-  EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
+  PW_TEST_EXPECT_OK(
+      channel.Write(MultiBufFromSpan(pw::span(capture.payload))).status);
   EXPECT_EQ(capture.sends_called, 1);
 }
 
@@ -346,7 +348,8 @@ TEST_F(RfcommWriteTest, WriteFlowControl) {
 
   // Writes while queue has space will return Ok. No RFCOMM credits yet though
   // so no sends complete.
-  EXPECT_EQ(channel.Write(capture.payload), PW_STATUS_OK);
+  PW_TEST_EXPECT_OK(
+      channel.Write(MultiBufFromSpan(pw::span(capture.payload))).status);
   EXPECT_EQ(capture.sends_called, 0);
   EXPECT_EQ(capture.queue_unblocked, 0);
 
@@ -360,7 +363,8 @@ TEST_F(RfcommWriteTest, WriteFlowControl) {
   // Now fill up queue
   uint16_t queued = 0;
   while (true) {
-    if (const auto status = channel.Write(capture.payload);
+    if (const auto status =
+            channel.Write(MultiBufFromSpan(pw::span(capture.payload))).status;
         status == Status::Unavailable()) {
       break;
     }

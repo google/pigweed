@@ -236,6 +236,17 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //  Tx (protected)
   //----------------
 
+  // Sends a MultiBuf payload to the remote peer using Write(span).
+  //
+  // The contents of the MultiBuf are copied during the call and the MultiBuf
+  // is destroyed.
+  //
+  // Used by subclasses during the transition from PDU send_queue_ rather to
+  // Write(MultiBuf) and payload queues.
+  // TODO: https://pwbug.dev/379337272 - Delete when all channels are
+  // transitioned to using payload queues.
+  StatusWithMultiBuf WriteMultiBufAsSpan(multibuf::MultiBuf&& payload);
+
   // Queue a client `buf` for sending and `ReportPacketsMayBeReadyToSend()`.
   // Must be a contiguous MultiBuf.
   //
