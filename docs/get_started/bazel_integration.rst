@@ -11,13 +11,8 @@ system at the level of the `Bazel tutorial <https://bazel.build/start/cpp>`__.
 Supported Bazel versions
 ------------------------
 Pigweed uses Bazel 8 features like platform-based flags, and so not all of
-Pigweed works with Bazel 7. However, as of 2024 Dec 13 we are still working on
-getting Pigweed to build with the final, released 8.0.0 version
-(:bug:`372510795`).
-
-The upshot is that there's no released version of Bazel with which all of
-Pigweed is guaranteed to build. In our own testing, we use the following
-pre-release version of Bazel 8:
+Pigweed works with Bazel 7. We strongly recommend mirroring Pigweed's current
+Bazel version pin:
 
 .. literalinclude:: ../../.bazelversion
    :language: text
