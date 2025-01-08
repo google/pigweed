@@ -130,7 +130,7 @@ bool ProxyHost::CheckForFragmentedStart(
   if (boundary_flag == emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT) {
     PW_LOG_INFO("(CID: 0x%X) Received unexpected continuing PDU fragment.",
                 handle);
-    channel->OnFragmentedPduReceived();
+    channel->HandleFragmentedPduFromController();
     return true;
   }
   const uint16_t l2cap_frame_length =
@@ -140,7 +140,7 @@ bool ProxyHost::CheckForFragmentedStart(
     pw::Status status =
         acl_data_channel_.FragmentedPduStarted(direction, handle);
     PW_CHECK(status.ok());
-    channel->OnFragmentedPduReceived();
+    channel->HandleFragmentedPduFromController();
     return true;
   }
 
@@ -268,7 +268,7 @@ void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
     return;
   }
 
-  if (!channel->OnPduReceivedFromController(
+  if (!channel->HandlePduFromController(
           pw::span(acl->payload().BackingStorage().data(),
                    acl->payload().SizeInBytes()))) {
     hci_transport_.SendToHost(std::move(h4_packet));

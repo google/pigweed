@@ -123,10 +123,10 @@ class RfcommChannel final : public L2capChannel {
 
   // Parses out RFCOMM payload from `l2cap_pdu` and calls
   // `SendPayloadFromControllerToClient`.
-  bool HandlePduFromController(pw::span<uint8_t> l2cap_pdu) override;
+  bool DoHandlePduFromController(pw::span<uint8_t> l2cap_pdu) override;
   bool HandlePduFromHost(pw::span<uint8_t> l2cap_pdu) override;
 
-  void OnFragmentedPduReceived() override;
+  void HandleFragmentedPduFromController() override;
 
   // Override: Dequeue a packet only if a credit is able to be subtracted.
   std::optional<H4PacketWithH4> DequeuePacket() override

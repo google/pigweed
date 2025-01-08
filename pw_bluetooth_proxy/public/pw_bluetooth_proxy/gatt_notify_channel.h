@@ -45,7 +45,7 @@ class GattNotifyChannel : public L2capChannel {
       uint16_t connection_handle,
       uint16_t attribute_handle);
 
-  bool HandlePduFromController(pw::span<uint8_t>) override {
+  bool DoHandlePduFromController(pw::span<uint8_t>) override {
     // Forward all packets to host.
     return false;
   }

@@ -52,7 +52,8 @@ L2capSignalingChannel& L2capSignalingChannel::operator=(
   return *this;
 }
 
-bool L2capSignalingChannel::HandlePduFromController(pw::span<uint8_t> cframe) {
+bool L2capSignalingChannel::DoHandlePduFromController(
+    pw::span<uint8_t> cframe) {
   Result<emboss::CFrameView> cframe_view =
       MakeEmbossView<emboss::CFrameView>(cframe);
   if (!cframe_view.ok()) {

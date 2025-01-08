@@ -69,7 +69,7 @@ class BasicL2capChannel : public L2capChannel {
       Function<void(L2capChannelEvent event)>&& event_fn);
 
  protected:
-  bool HandlePduFromController(pw::span<uint8_t> bframe) override;
+  bool DoHandlePduFromController(pw::span<uint8_t> bframe) override;
   bool HandlePduFromHost(pw::span<uint8_t> bframe) override;
 
   // TODO: https://pwbug.dev/360929142 - Stop channel on errors.

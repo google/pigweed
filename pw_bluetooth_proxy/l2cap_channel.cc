@@ -215,7 +215,7 @@ ConstByteSpan L2capChannel::GetFrontPayloadSpan() const {
 
 bool L2capChannel::PayloadQueueEmpty() const { return payload_queue_.empty(); }
 
-bool L2capChannel::OnPduReceivedFromController(pw::span<uint8_t> l2cap_pdu) {
+bool L2capChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
   if (state() != State::kRunning) {
     PW_LOG_ERROR(
         "btproxy: L2capChannel::OnPduReceivedFromController on non-running "
@@ -226,10 +226,10 @@ bool L2capChannel::OnPduReceivedFromController(pw::span<uint8_t> l2cap_pdu) {
     SendEvent(L2capChannelEvent::kRxWhileStopped);
     return true;
   }
-  return HandlePduFromController(l2cap_pdu);
+  return DoHandlePduFromController(l2cap_pdu);
 }
 
-void L2capChannel::OnFragmentedPduReceived() {
+void L2capChannel::HandleFragmentedPduFromController() {
   if (state() != State::kRunning) {
     PW_LOG_ERROR(
         "btproxy: L2capChannel::OnFragmentedPduReceived on non-running "

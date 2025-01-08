@@ -84,7 +84,7 @@ class L2capSignalingChannel : public BasicL2capChannel {
   // either because the command is not directed towards a channel managed by
   // `L2capChannelManager` or because the C-frame is invalid and should be
   // handled by the Bluetooth host.
-  bool HandlePduFromController(pw::span<uint8_t> cframe) override;
+  bool DoHandlePduFromController(pw::span<uint8_t> cframe) override;
 
   bool HandlePduFromHost(pw::span<uint8_t> cframe) override;
 

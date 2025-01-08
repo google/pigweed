@@ -164,7 +164,7 @@ Result<RfcommChannel> RfcommChannel::Create(
                        std::move(event_fn));
 }
 
-bool RfcommChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
+bool RfcommChannel::DoHandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
   if (state() != State::kRunning) {
     PW_LOG_WARN("Received data on stopped channel, passing on to host.");
     return false;
@@ -292,7 +292,7 @@ RfcommChannel::~RfcommChannel() {
   }
 }
 
-void RfcommChannel::OnFragmentedPduReceived() {
+void RfcommChannel::HandleFragmentedPduFromController() {
   PW_LOG_ERROR(
       "(CID %u) Fragmented L2CAP frame received (which is not yet "
       "supported).",

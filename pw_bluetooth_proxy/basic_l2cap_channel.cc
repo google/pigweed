@@ -104,7 +104,7 @@ BasicL2capChannel::~BasicL2capChannel() {
   }
 }
 
-bool BasicL2capChannel::HandlePduFromController(pw::span<uint8_t> bframe) {
+bool BasicL2capChannel::DoHandlePduFromController(pw::span<uint8_t> bframe) {
   Result<emboss::BFrameWriter> bframe_view =
       MakeEmbossWriter<emboss::BFrameWriter>(bframe);
 

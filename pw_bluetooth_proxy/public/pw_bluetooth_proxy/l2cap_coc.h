@@ -123,7 +123,7 @@ class L2capCoc : public L2capChannel {
 
   // `SendPayloadFromControllerToClient` with the information payload contained
   // in `kframe`.
-  bool HandlePduFromController(pw::span<uint8_t> kframe) override
+  bool DoHandlePduFromController(pw::span<uint8_t> kframe) override
       PW_LOCKS_EXCLUDED(rx_mutex_);
 
   bool HandlePduFromHost(pw::span<uint8_t> kframe) override;

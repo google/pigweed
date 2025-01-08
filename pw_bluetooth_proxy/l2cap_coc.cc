@@ -224,7 +224,7 @@ void L2capCoc::ProcessPduFromControllerMultibuf(span<uint8_t> kframe) {
   }
 }
 
-bool L2capCoc::HandlePduFromController(pw::span<uint8_t> kframe) {
+bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
   if (state() != State::kRunning) {
     PW_LOG_ERROR(
         "btproxy: L2capCoc::HandlePduFromController on non-running "

@@ -118,12 +118,13 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Called when an L2CAP PDU is received on this channel. If channel is
   // `kRunning`, returns `HandlePduFromController(l2cap_pdu)`. If channel is not
   // `State::kRunning`, sends `kRxWhileStopped` event to client and drops PDU.
-  [[nodiscard]] bool OnPduReceivedFromController(pw::span<uint8_t> l2cap_pdu);
+  // This function will call DoHandlePduFromController on its subclass.
+  [[nodiscard]] bool HandlePduFromController(pw::span<uint8_t> l2cap_pdu);
 
   // Handle fragmented Rx L2CAP PDU. Default implementation stops channel and
   // sends `kRxFragmented` event to client.
   // TODO: https://pwbug.dev/365179076 - Support recombination & delete this.
-  virtual void OnFragmentedPduReceived();
+  virtual void HandleFragmentedPduFromController();
 
   //--------------
   //  Accessors:
@@ -256,17 +257,6 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //  Rx (protected)
   //-------
 
-  // Handle an Rx L2CAP PDU.
-  //
-  // Implementations should call `SendPayloadFromControllerToClient` after
-  // recombining/processing the PDU (e.g. after updating channel state and
-  // screening out certain PDUs).
-  //
-  // Return true if the PDU was consumed by the channel. Otherwise, return false
-  // and the PDU will be forwarded by `ProxyHost` on to the Bluetooth host.
-  [[nodiscard]] virtual bool HandlePduFromController(
-      pw::span<uint8_t> l2cap_pdu) = 0;
-
   // Returns false if payload should be forwarded to host instead.
   virtual bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) {
     if (payload_from_controller_fn_) {
@@ -337,6 +327,21 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
 
   //--------------
   //  Rx (private)
+  //--------------
+
+  // Handle an Rx L2CAP PDU.
+  //
+  // Implementations should call `SendPayloadFromControllerToClient` after
+  // recombining/processing the PDU (e.g. after updating channel state and
+  // screening out certain PDUs).
+  //
+  // Return true if the PDU was consumed by the channel. Otherwise, return false
+  // and the PDU will be forwarded by `ProxyHost` on to the Bluetooth host.
+  [[nodiscard]] virtual bool DoHandlePduFromController(
+      pw::span<uint8_t> l2cap_pdu) = 0;
+
+  //--------------
+  //  Data members
   //--------------
 
   // Client-provided controller read callback.
