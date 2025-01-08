@@ -14,7 +14,7 @@
 
 /* eslint-env browser */
 
-import Papa from 'papaparse';
+import * as Papa from 'papaparse';
 import { parseCsvEntry } from './token_database';
 
 const CSV = `
