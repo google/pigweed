@@ -73,6 +73,18 @@ const bt::sm::LTK kSecureBrEdrKey(
                            /*secure_connections=*/true,
                            sm::kMaxEncryptionKeySize),
     hci_spec::LinkKey(UInt128{4}, 5, 6));
+const bt::sm::LTK kLessSecureBrEdrKey(
+    sm::SecurityProperties(/*encrypted=*/true,
+                           /*authenticated=*/true,
+                           /*secure_connections=*/false,
+                           sm::kMaxEncryptionKeySize),
+    hci_spec::LinkKey(UInt128{4}, 5, 6));
+const bt::sm::LTK kSecureBrEdrKey2(
+    sm::SecurityProperties(/*encrypted=*/true,
+                           /*authenticated=*/true,
+                           /*secure_connections=*/true,
+                           sm::kMaxEncryptionKeySize),
+    hci_spec::LinkKey(UInt128{5}, 6, 7));
 
 class PeerTest : public pw::async::test::FakeDispatcherFixture {
  public:
@@ -323,7 +335,7 @@ TEST_F(PeerTest, SetBrEdrBondDataUpdatesInspectProperties) {
   peer().MutLe().SetFeatures(hci_spec::LESupportedFeatures{0x0000000000000001});
 
   peer().MutBrEdr().AddService(UUID(uint16_t{0x110b}));
-  peer().MutBrEdr().SetBondData(kLTK);
+  EXPECT_TRUE(peer().MutBrEdr().SetBondData(kLTK));
 
   // clang-format off
   auto bredr_data_matcher = AllOf(
@@ -366,7 +378,7 @@ TEST_F(PeerTest, SetBrEdrBondDataUpdatesInspectProperties) {
   EXPECT_THAT(hierarchy,
               AllOf(ChildrenMatch(UnorderedElementsAre(peer_matcher))));
 
-  peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
+  EXPECT_TRUE(peer().MutBrEdr().SetBondData(kSecureBrEdrKey));
 
   const sm::SecurityProperties security_properties =
       peer().bredr()->link_key().value().security();
@@ -465,7 +477,7 @@ TEST_F(PeerTest, BrEdrDataAddServiceNotifiesListeners) {
 
 TEST_F(PeerTest, BrEdrDataAddServiceOnBondedPeerNotifiesListenersToUpdateBond) {
   // Initialize BrEdrData.
-  peer().MutBrEdr().SetBondData({});
+  EXPECT_TRUE(peer().MutBrEdr().SetBondData({}));
   ASSERT_TRUE(peer().bredr()->services().empty());
 
   bool listener_notified = false;
@@ -687,7 +699,7 @@ TEST_F(PeerTest, SettingBrEdrBondDataUpdatesLastUpdated) {
   });
 
   RunFor(pw::chrono::SystemClock::duration(2));
-  peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
+  EXPECT_TRUE(peer().MutBrEdr().SetBondData(kSecureBrEdrKey));
   EXPECT_EQ(peer().last_updated(),
             pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(2)));
   EXPECT_GE(notify_count, 1);
@@ -1208,7 +1220,7 @@ TEST_F(PeerTest, RegisterAndUnregisterBrEdrConnectionWithBonding) {
             Peer::ConnectionStateToString(Peer::ConnectionState::kConnected));
 #endif  // NINSPECT
 
-  peer().MutBrEdr().SetBondData(kSecureBrEdrKey);
+  EXPECT_TRUE(peer().MutBrEdr().SetBondData(kSecureBrEdrKey));
   EXPECT_EQ(update_expiry_count, 2);
   EXPECT_EQ(notify_count, 3);
 
@@ -1489,7 +1501,7 @@ TEST_F(PeerTest, SettingLeAdvertisingDataOfBondedPeerDoesNotUpdateName) {
 
 TEST_F(PeerTest, SettingInquiryDataOfBondedPeerDoesNotUpdateName) {
   peer().RegisterName("alice");
-  peer().MutBrEdr().SetBondData(kLTK);
+  EXPECT_TRUE(peer().MutBrEdr().SetBondData(kLTK));
 
   const StaticByteBuffer kEirData(0x08,  // Length
                                   0x09,  // AD type: Complete Local Name
@@ -1580,6 +1592,20 @@ TEST_F(PeerTest, LowEnergyStoreBondCallsCallback) {
   data.local_ltk = kLTK;
   EXPECT_TRUE(peer().MutLe().StoreBond(data));
   EXPECT_EQ(cb_count, 1);
+}
+
+TEST_F(PeerTest, DowngradingBrEdrBondFails) {
+  EXPECT_TRUE(peer().MutBrEdr().SetBondData(kSecureBrEdrKey));
+  EXPECT_FALSE(peer().MutBrEdr().SetBondData(kLessSecureBrEdrKey));
+  ASSERT_TRUE(peer().MutBrEdr().link_key().has_value());
+  EXPECT_EQ(peer().MutBrEdr().link_key().value(), kSecureBrEdrKey);
+}
+
+TEST_F(PeerTest, OverwritingBrEdrBondWithSameSecuritySucceeds) {
+  EXPECT_TRUE(peer().MutBrEdr().SetBondData(kSecureBrEdrKey));
+  EXPECT_TRUE(peer().MutBrEdr().SetBondData(kSecureBrEdrKey2));
+  ASSERT_TRUE(peer().MutBrEdr().link_key().has_value());
+  EXPECT_EQ(peer().MutBrEdr().link_key().value(), kSecureBrEdrKey2);
 }
 
 }  // namespace

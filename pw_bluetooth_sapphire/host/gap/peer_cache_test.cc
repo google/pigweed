@@ -929,21 +929,18 @@ TEST_F(PeerCacheTestBondingTest, StoreLowEnergyBondWithXTransportKeyNoBrEdr) {
 
   EXPECT_TRUE(cache()->StoreLowEnergyBond(peer()->identifier(), data));
   EXPECT_TRUE(peer()->le()->bonded());
-  // Storing an LE bond with a cross-transport BR/EDR key shouldn't
-  // automatically mark the peer as dual-mode.
-  EXPECT_FALSE(peer()->bredr().has_value());
-
-  // Make the peer dual-mode, and verify that the peer is already bonded over
-  // BR/EDR with the stored cross-transport key.
-  peer()->MutBrEdr();
+  // Storing an LE bond with a cross-transport BR/EDR key should mark the peer
+  // as dual-mode.
+  EXPECT_TRUE(peer()->bredr().has_value());
   EXPECT_TRUE(peer()->bredr()->bonded());
   EXPECT_EQ(kSecureBrEdrKey, peer()->bredr()->link_key().value());
+  EXPECT_EQ(bonded_callback_count(), 1);
 }
 
 TEST_F(PeerCacheTestBondingTest,
        StoreLowEnergyBondWithInsecureXTransportKeyExistingBrEdr) {
   // The peer is already dual-mode with a secure BR/EDR key.
-  peer()->MutBrEdr().SetBondData(kSecureBrEdrKey);
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(kSecureBrEdrKey));
   EXPECT_TRUE(peer()->bredr()->bonded());
 
   sm::PairingData data;
@@ -960,9 +957,9 @@ TEST_F(PeerCacheTestBondingTest,
 }
 
 TEST_F(PeerCacheTestBondingTest,
-       StoreLowEnergyBondWithXTransportKeyExistingBrEdr) {
+       StoreLowEnergyBondWithSameOrMoreSecureXTransportKeyExistingBrEdr) {
   // The peer is already dual-mode with an insecure BR/EDR key.
-  peer()->MutBrEdr().SetBondData(kInsecureBrEdrKey);
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(kInsecureBrEdrKey));
   EXPECT_TRUE(peer()->bredr()->bonded());
 
   sm::LTK kDifferentInsecureBrEdrKey(kInsecureBrEdrKey.security(),

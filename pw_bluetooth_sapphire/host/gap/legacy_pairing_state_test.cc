@@ -207,8 +207,8 @@ TEST_F(LegacyPairingStateTest, BuildEstablishedLink) {
   // |pairing_state|'s temporary |link_key_| is empty
   EXPECT_FALSE(pairing_state.link_key().has_value());
 
-  peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey));
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey)));
 
   std::optional<hci_spec::LinkKey> reply_key = pairing_state.OnLinkKeyRequest();
   ASSERT_TRUE(reply_key.has_value());
@@ -324,8 +324,8 @@ TEST_F(
                                    /*outgoing_connection=*/false);
   EXPECT_FALSE(pairing_state.initiator());
 
-  peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey));
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey)));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   std::optional<hci_spec::LinkKey> reply_key = pairing_state.OnLinkKeyRequest();
@@ -352,8 +352,8 @@ TEST_F(
                                    NoOpStatusCallback);
   EXPECT_FALSE(pairing_state.initiator());
 
-  peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey));
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey)));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   std::optional<hci_spec::LinkKey> reply_key = pairing_state.OnLinkKeyRequest();
@@ -379,8 +379,8 @@ TEST_F(
                                    NoOpStatusCallback);
   EXPECT_FALSE(pairing_state.initiator());
 
-  peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey));
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey)));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   pairing_state.InitiatePairing(NoOpStatusCallback);
@@ -1354,8 +1354,8 @@ TEST_P(HandlesLegacyEvent, InWaitLinkKeyState) {
 }
 
 TEST_P(HandlesLegacyEvent, InInitiatorWaitAuthCompleteSkippingLegacyPairing) {
-  peer()->MutBrEdr().SetBondData(
-      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey));
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestLegacyLinkKeyType), kTestLinkKey)));
 
   // Advance state machine
   pairing_state().InitiatePairing(NoOpStatusCallback);

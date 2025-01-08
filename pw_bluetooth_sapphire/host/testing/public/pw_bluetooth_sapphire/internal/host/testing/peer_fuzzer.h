@@ -76,7 +76,6 @@ class PeerFuzzer final {
         &PeerFuzzer::set_last_page_number,
         &PeerFuzzer::set_version,
         &PeerFuzzer::set_identity_known,
-        &PeerFuzzer::StoreBrEdrCrossTransportKey,
         &PeerFuzzer::set_connectable,
     };
     std::invoke(fdp().PickValueInArray(kFuzzFunctions), this);
@@ -238,7 +237,7 @@ class PeerFuzzer final {
     if (!peer_.identity_known() || !peer_.connectable()) {
       return;
     }
-    peer_.MutBrEdr().SetBondData(MakeLtk());
+    (void)peer_.MutBrEdr().SetBondData(MakeLtk());
   }
 
   void BrEdrDataClearBondData() {
@@ -279,16 +278,6 @@ class PeerFuzzer final {
   }
 
   void set_identity_known() { peer_.set_identity_known(fdp().ConsumeBool()); }
-
-  void StoreBrEdrCrossTransportKey() {
-    if (!peer_.identity_known()) {
-      return;
-    }
-    if (!peer_.connectable()) {
-      return;
-    }
-    peer_.StoreBrEdrCrossTransportKey(MakeLtk());
-  }
 
   void set_connectable() {
     // It doesn't make sense to make a peer unconnectable and it fires lots of

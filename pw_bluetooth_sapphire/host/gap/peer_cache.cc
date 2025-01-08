@@ -117,7 +117,7 @@ bool PeerCache::AddBondedPeer(BondingData bd) {
       peer->MutBrEdr().AddService(std::move(service));
     }
 
-    peer->MutBrEdr().SetBondData(*bd.bredr_link_key);
+    PW_CHECK(peer->MutBrEdr().SetBondData(*bd.bredr_link_key));
     PW_DCHECK(peer->bredr()->bonded());
   }
 
@@ -197,8 +197,26 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier,
     le_resolving_list_.Add(*bond_data.identity_address, bond_data.irk->value());
   }
 
-  if (bond_data.cross_transport_key) {
-    peer->StoreBrEdrCrossTransportKey(*bond_data.cross_transport_key);
+  log_bond_failure.cancel();
+  peer_metrics_.LogLeBondSuccessEvent();
+
+  if (bond_data.cross_transport_key.has_value()) {
+    if (peer->identity_known()) {
+      if (!peer->MutBrEdr().SetBondData(
+              bond_data.cross_transport_key.value())) {
+        bt_log(WARN,
+               "gap",
+               "failed to store BR/EDR cross transport key"
+               "(peer: %s)",
+               bt_str(peer->identifier()));
+      }
+    } else {
+      bt_log(WARN,
+             "gap",
+             "cannot use BR/EDR cross transport key without identity address "
+             "(peer: %s)",
+             bt_str(peer->identifier()));
+    }
   }
 
   // Report the bond for persisting only if the identity of the peer is known.
@@ -206,14 +224,12 @@ bool PeerCache::StoreLowEnergyBond(PeerId identifier,
     NotifyPeerBonded(*peer);
   }
 
-  log_bond_failure.cancel();
-  peer_metrics_.LogLeBondSuccessEvent();
   return true;
 }
 
 bool PeerCache::StoreBrEdrBond(const DeviceAddress& address,
                                const sm::LTK& link_key) {
-  PW_DCHECK(address.type() == DeviceAddress::Type::kBREDR);
+  PW_DCHECK(address.IsPublic());
   auto* peer = FindByAddress(address);
   if (!peer) {
     bt_log(WARN,
@@ -223,9 +239,9 @@ bool PeerCache::StoreBrEdrBond(const DeviceAddress& address,
     return false;
   }
 
-  // TODO(fxbug.dev/42072204): Check that we're not downgrading the security
-  // level before overwriting the bond.
-  peer->MutBrEdr().SetBondData(link_key);
+  if (!peer->MutBrEdr().SetBondData(link_key)) {
+    return false;
+  }
   PW_DCHECK(!peer->temporary());
   PW_DCHECK(peer->bredr()->bonded());
 

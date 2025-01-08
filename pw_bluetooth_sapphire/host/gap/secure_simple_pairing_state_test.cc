@@ -1576,9 +1576,9 @@ TEST_P(HandlesEvent, InInitiatorWaitIoCapRequest) {
 }
 
 TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteSkippingSimplePairing) {
-  peer()->MutBrEdr().SetBondData(
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
       sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
-              kTestLinkKey));
+              kTestLinkKey)));
 
   // Advance state machine.
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
@@ -1892,7 +1892,7 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponderForBonded) {
   // We are previously bonded.
   auto existing_link_key = sm::LTK(
       sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
-  peer()->MutBrEdr().SetBondData(existing_link_key);
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(existing_link_key));
 
   // Advance state machine.
   static_cast<void>(pairing_state().OnLinkKeyRequest());
@@ -2314,9 +2314,9 @@ TEST_F(
                                      .secure_connections = false};
   pairing_state.InitiatePairing(security, status_handler.MakeStatusCallback());
 
-  peer()->MutBrEdr().SetBondData(
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
       sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
-              kTestLinkKey));
+              kTestLinkKey)));
 
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(0, status_handler.call_count());
@@ -2338,9 +2338,9 @@ TEST_F(
 
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
 
-  peer()->MutBrEdr().SetBondData(
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
       sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
-              kTestLinkKey));
+              kTestLinkKey)));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   auto reply_key = pairing_state.OnLinkKeyRequest();
@@ -2383,9 +2383,9 @@ TEST_F(PairingStateTest,
                                          MakeAuthRequestCallback(),
                                          status_handler.MakeStatusCallback());
 
-  peer()->MutBrEdr().SetBondData(
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
       sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
-              kTestLinkKey));
+              kTestLinkKey)));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   auto reply_key = pairing_state.OnLinkKeyRequest();
@@ -2503,7 +2503,7 @@ TEST_F(
   auto existing_link_key = sm::LTK(
       sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
 
-  peer()->MutBrEdr().SetBondData(existing_link_key);
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(existing_link_key));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
@@ -2574,7 +2574,7 @@ TEST_F(PairingStateTest, ResponderSignalsCompletionOfPairing) {
   auto existing_link_key = sm::LTK(
       sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
 
-  peer()->MutBrEdr().SetBondData(existing_link_key);
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(existing_link_key));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   auto reply_key = pairing_state.OnLinkKeyRequest();
@@ -2621,7 +2621,7 @@ TEST_F(
   auto existing_link_key = sm::LTK(
       sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
 
-  peer()->MutBrEdr().SetBondData(existing_link_key);
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(existing_link_key));
   EXPECT_FALSE(connection()->ltk().has_value());
 
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
@@ -2845,9 +2845,9 @@ TEST_F(
                                          MakeAuthRequestCallback(),
                                          status_handler.MakeStatusCallback());
 
-  peer()->MutBrEdr().SetBondData(
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
       sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
-              kTestLinkKey));
+              kTestLinkKey)));
 
   TestStatusHandler initiator_status_handler_0;
   pairing_state.InitiatePairing(

@@ -488,8 +488,15 @@ bool Peer::BrEdrData::SetEirData(const ByteBuffer& eir) {
   return changed;
 }
 
-void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
+bool Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
   PW_DCHECK(peer_->connectable());
+
+  // Do not overwrite an existing key that has greater strength or
+  // authentication.
+  if (link_key_.has_value() &&
+      !link_key.security().IsAsSecureAs(link_key_->security())) {
+    return false;
+  }
 
   // Make sure the peer is non-temporary.
   peer_->TryMakeNonTemporary();
@@ -500,6 +507,7 @@ void Peer::BrEdrData::SetBondData(const sm::LTK& link_key) {
 
   // PeerCache notifies listeners of new bonds, so no need to request that here.
   peer_->UpdatePeerAndNotifyListeners(NotifyListenersChange::kBondNotUpdated);
+  return true;
 }
 
 void Peer::BrEdrData::ClearBondData() {
@@ -643,21 +651,6 @@ bool Peer::RegisterName(const std::string& name, Peer::NameSource source) {
   return false;
 }
 
-void Peer::StoreBrEdrCrossTransportKey(sm::LTK ct_key) {
-  if (!bredr_data_.has_value()) {
-    // If the peer is LE-only, store the CT key separately until the peer is
-    // otherwise marked as dual-mode.
-    bredr_cross_transport_key_ = ct_key;
-  } else if (!bredr_data_->link_key().has_value() ||
-             ct_key.security().IsAsSecureAs(
-                 bredr_data_->link_key()->security())) {
-    // "The devices shall not overwrite that existing key with a key that is
-    // inclusive-language: ignore
-    // weaker in either strength or MITM protection." (v5.2 Vol. 3 Part C 14.1).
-    bredr_data_->SetBondData(ct_key);
-  }
-}
-
 // Private methods below:
 
 bool Peer::SetRssiInternal(int8_t rssi) {
@@ -731,15 +724,6 @@ void Peer::NotifyListeners(NotifyListenersChange change) {
 
 void Peer::MakeDualMode() {
   technology_.Set(TechnologyType::kDualMode);
-  if (bredr_cross_transport_key_) {
-    PW_CHECK(
-        bredr_data_);  // Should only be hit after BR/EDR is already created.
-    bredr_data_->SetBondData(*bredr_cross_transport_key_);
-    bt_log(DEBUG,
-           "gap-bredr",
-           "restored cross-transport-generated br/edr link key");
-    bredr_cross_transport_key_ = std::nullopt;
-  }
   PW_DCHECK(dual_mode_callback_);
   dual_mode_callback_(*this);
 }

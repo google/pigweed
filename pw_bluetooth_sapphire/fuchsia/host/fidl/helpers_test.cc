@@ -1829,7 +1829,7 @@ TEST_F(HelpersAdapterTest, PeerToFidlBondingData_LeData) {
 TEST_F(HelpersAdapterTest, PeerToFidlBondingData_BredrData) {
   auto* peer =
       adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
-  peer->MutBrEdr().SetBondData(kTestLtk);
+  EXPECT_TRUE(peer->MutBrEdr().SetBondData(kTestLtk));
 
   fsys::BondingData data = PeerToFidlBondingData(adapter().get(), *peer);
   EXPECT_FALSE(data.has_le_bond());
@@ -1841,7 +1841,7 @@ TEST_F(HelpersAdapterTest, PeerToFidlBondingData_BredrData) {
 TEST_F(HelpersAdapterTest, PeerToFidlBondingData_IncludesBredrServices) {
   auto* peer =
       adapter()->peer_cache()->NewPeer(kTestPeerAddr, /*connectable=*/true);
-  peer->MutBrEdr().SetBondData(kTestLtk);
+  EXPECT_TRUE(peer->MutBrEdr().SetBondData(kTestLtk));
   peer->MutBrEdr().AddService(bt::sdp::profile::kAudioSink);
   peer->MutBrEdr().AddService(bt::sdp::profile::kAudioSource);
 

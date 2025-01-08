@@ -486,7 +486,9 @@ class Peer final {
     // Stores a link key resulting from Secure Simple Pairing and makes this
     // peer "bonded." Marks the peer as non-temporary if necessary. All
     // BR/EDR link keys are "long term" (reusable across sessions).
-    void SetBondData(const sm::LTK& link_key);
+    // Returns false and DOES NOT set the bond data if doing so would downgrade
+    // the security of an existing key.
+    [[nodiscard]] bool SetBondData(const sm::LTK& link_key);
 
     // Removes any stored link key. Does not make the device temporary, even if
     // it is disconnected. Does not notify listeners.
@@ -678,12 +680,6 @@ class Peer final {
   // with an identity address.
   void set_identity_known(bool value) { identity_known_ = value; }
 
-  // Stores the BR/EDR cross-transport key generated through LE pairing. This
-  // method will not mark the peer as dual-mode if it is not already dual-mode.
-  // It will also not overwrite existing BR/EDR link keys of stronger security
-  // than `ct_key`.
-  void StoreBrEdrCrossTransportKey(sm::LTK ct_key);
-
   // Update the connectable status of this peer. This is useful if the peer
   // sends both non-connectable and connectable advertisements (e.g. when it is
   // a beacon).
@@ -779,11 +775,6 @@ class Peer final {
   BoolInspectable<bool> connectable_;
   BoolInspectable<bool> temporary_;
   int8_t rssi_;
-
-  // The spec does not explicitly prohibit LE->BREDR cross-transport key
-  // generation for LE-only peers. This is used to store a CT-generated BR/EDR
-  // key for LE-only peers to avoid incorrectly marking a peer as dual-mode.
-  std::optional<sm::LTK> bredr_cross_transport_key_;
 
   // Data that only applies to the LE transport. This is present if this device
   // is known to support LE.
