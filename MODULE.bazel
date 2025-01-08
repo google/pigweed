@@ -280,16 +280,6 @@ use_repo(
 # are NOT in the BCR that downstream users may need to override/unify to their
 # expected version.
 
-new_git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
-
-# TODO: https://pwbug.dev/378531541 - Get micro_ecc from the BCR.
-new_git_repository(
-    name = "micro_ecc",
-    build_file = "//:third_party/micro_ecc/BUILD.micro_ecc",
-    commit = "b335ee812bfcca4cd3fb0e2a436aab39553a555a",
-    remote = "https://github.com/kmackay/micro-ecc.git",
-)
-
 # TODO: https://pwbug.dev/354749299 - Use the BCR version of mbedtls.
 http_archive(
     name = "mbedtls",

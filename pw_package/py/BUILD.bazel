@@ -37,7 +37,6 @@ py_library(
         "pw_package/packages/googletest.py",
         "pw_package/packages/mbedtls.py",
         "pw_package/packages/mcuxpresso.py",
-        "pw_package/packages/micro_ecc.py",
         "pw_package/packages/nanopb.py",
         "pw_package/packages/pico_sdk.py",
         "pw_package/packages/picotool.py",

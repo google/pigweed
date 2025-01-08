@@ -181,36 +181,8 @@ a code size of ~12KiB.
    #define MBEDTLS_ECP_NO_INTERNAL_RNG
    #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 
-Micro ECC
-=========
-
-.. Warning::
-  Micro ECC's upstream hasn't received any updates since April 2023.
-  Please investigate to make sure that it meets your product's security
-  requirements before use.
-
-To select Micro ECC, the library needs to be installed and configured.
-
-.. code-block:: sh
-
-   # Install and configure Micro ECC
-   pw package install micro-ecc
-   gn gen out --args='
-       dir_pw_third_party_micro_ecc=getenv("PW_PACKAGE_ROOT")+"/micro-ecc"
-       pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_uecc"
-   '
-
-The default micro-ecc backend uses big endian as is standard practice. It also
-has a little-endian configuration which can be used to slightly reduce call
-stack frame use and/or when non pw_crypto clients use the same micro-ecc
-with a little-endian configuration. The little-endian version of micro-ecc
-can be selected with ``pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_uecc_little_endian"``
-
-Note Micro-ECC does not implement any hashing functions, so you will need to use other backends for SHA256 functionality if needed.
-
 BoringSSL
 =========
-
 The BoringSSL project (`source
 <https://cs.opensource.google/boringssl/boringssl>`_, `GitHub mirror
 <https://github.com/google/boringssl>`_) is a fork of OpenSSL maintained by

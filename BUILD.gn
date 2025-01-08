@@ -116,7 +116,6 @@ group("default") {
 #   boringssl
 #   freertos
 #   mbedtls
-#   micro-ecc
 #   nanopb
 #   pico_sdk
 #   protobuf

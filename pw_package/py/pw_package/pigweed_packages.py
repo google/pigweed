@@ -30,7 +30,6 @@ from pw_package.packages import fuzztest
 from pw_package.packages import googletest
 from pw_package.packages import mbedtls
 from pw_package.packages import mcuxpresso
-from pw_package.packages import micro_ecc
 from pw_package.packages import nanopb
 from pw_package.packages import pico_sdk
 from pw_package.packages import picotool

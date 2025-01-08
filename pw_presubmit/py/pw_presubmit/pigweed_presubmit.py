@@ -334,26 +334,6 @@ gn_crypto_mbedtls_build = PigweedGnGenNinja(
     ),
 )
 
-gn_crypto_micro_ecc_build = PigweedGnGenNinja(
-    name='gn_crypto_micro_ecc_build',
-    path_filter=_BUILD_FILE_FILTER,
-    packages=('micro-ecc',),
-    gn_args={
-        'dir_pw_third_party_micro_ecc': lambda ctx: '"{}"'.format(
-            ctx.package_root / 'micro-ecc'
-        ),
-        'pw_crypto_ECDSA_BACKEND': lambda ctx: '"{}"'.format(
-            ctx.root / 'pw_crypto:ecdsa_uecc'
-        ),
-        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
-    },
-    ninja_targets=(
-        *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
-        # TODO: b/240982565 - SocketStream currently requires Linux.
-        *(('integration_tests',) if sys.platform.startswith('linux') else ()),
-    ),
-)
-
 gn_teensy_build = PigweedGnGenNinja(
     name='gn_teensy_build',
     path_filter=_BUILD_FILE_FILTER,
@@ -428,7 +408,7 @@ gn_mimxrt595_freertos_build = PigweedGnGenNinja(
 gn_software_update_build = PigweedGnGenNinja(
     name='gn_software_update_build',
     path_filter=_BUILD_FILE_FILTER,
-    packages=('nanopb', 'protobuf', 'mbedtls', 'micro-ecc'),
+    packages=('nanopb', 'protobuf', 'mbedtls'),
     gn_args={
         'dir_pw_third_party_protobuf': lambda ctx: '"{}"'.format(
             ctx.package_root / 'protobuf'
@@ -436,17 +416,14 @@ gn_software_update_build = PigweedGnGenNinja(
         'dir_pw_third_party_nanopb': lambda ctx: '"{}"'.format(
             ctx.package_root / 'nanopb'
         ),
-        'dir_pw_third_party_micro_ecc': lambda ctx: '"{}"'.format(
-            ctx.package_root / 'micro-ecc'
-        ),
-        'pw_crypto_ECDSA_BACKEND': lambda ctx: '"{}"'.format(
-            ctx.root / 'pw_crypto:ecdsa_uecc'
-        ),
         'dir_pw_third_party_mbedtls': lambda ctx: '"{}"'.format(
             ctx.package_root / 'mbedtls'
         ),
         'pw_crypto_SHA256_BACKEND': lambda ctx: '"{}"'.format(
             ctx.root / 'pw_crypto:sha256_mbedtls_v3'
+        ),
+        'pw_crypto_ECDSA_BACKEND': lambda ctx: '"{}"'.format(
+            ctx.root / 'pw_crypto:ecdsa_mbedtls_v3'
         ),
         'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
     },
@@ -1792,7 +1769,6 @@ SANITIZERS = (cpp_checks.all_sanitizers(),)
 SECURITY = (
     # keep-sorted: start
     gn_crypto_mbedtls_build,
-    gn_crypto_micro_ecc_build,
     gn_software_update_build,
     # keep-sorted: end
 )

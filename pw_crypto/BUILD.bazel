@@ -130,20 +130,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "ecdsa_uecc",
-    srcs = [
-        "ecdsa_uecc.cc",
-    ],
-    # TODO: b/261603269 - Get this to build.
-    tags = ["manual"],
-    deps = [
-        ":ecdsa.facade",
-        "//pw_log",
-        "@micro_ecc//:uecc",
-    ],
-)
-
 pw_cc_test(
     name = "ecdsa_test",
     srcs = ["ecdsa_test.cc"],
