@@ -22,6 +22,31 @@
 
 namespace pw::digital_io {
 
+// McuxpressoPintInterrupt
+
+McuxpressoPintInterrupt::McuxpressoPintInterrupt(
+    pw::sync::Borrowable<McuxpressoInterruptController>& controller,
+    pint_pin_int_t pin)
+    : controller_(controller), pin_(pin) {}
+
+pw::Status McuxpressoPintInterrupt::DoEnable(bool) {
+  // Can not enabled at individual line level. Only at controller level, which
+  // is always enabled.
+  return pw::OkStatus();
+}
+
+pw::Status McuxpressoPintInterrupt::DoSetInterruptHandler(
+    pw::digital_io::InterruptTrigger trigger,
+    pw::digital_io::InterruptHandler&& handler) {
+  return controller_.acquire()->Config(pin_, trigger, std::move(handler));
+}
+
+pw::Status McuxpressoPintInterrupt::DoEnableInterruptHandler(bool enable) {
+  return controller_.acquire()->EnableHandler(pin_, enable);
+}
+
+// McuxpressoDigitalInInterrupt (deprecated)
+
 McuxpressoDigitalInInterrupt::McuxpressoDigitalInInterrupt(
     pw::sync::Borrowable<McuxpressoInterruptController>& controller,
     pint_pin_int_t pin)
