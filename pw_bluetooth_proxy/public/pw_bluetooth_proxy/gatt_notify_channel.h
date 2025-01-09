@@ -25,7 +25,7 @@ class GattNotifyChannel : public L2capChannel {
   // @deprecated
   // TODO: https://pwbug.dev/379337272 - Delete this once all downstreams
   // have transitioned to Write(MultiBuf) for this channel type.
-  Status Write(pw::span<const uint8_t> payload) override;
+  Status Write(pw::span<const uint8_t> attribute_value) override;
 
   // Also allow Write(MultiBuf) during transition from Write(span).
   // TODO: https://pwbug.dev/379337272 - Can delete once Write(span) above is
