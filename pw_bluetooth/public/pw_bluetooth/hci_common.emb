@@ -162,6 +162,9 @@ enum OpCode:
   USER_CONFIRMATION_REQUEST_REPLY                              = 0x042C
     -- User Confirmation Request Reply Command (v2.1 + EDR) (BR/EDR)
 
+  USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY                     = 0x042D
+    -- User Confirmation Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
+
   USER_PASSKEY_REQUEST_REPLY                                   = 0x042E
     -- User Passkey Request Reply Command (v2.1 + EDR) (BR/EDR)
 
@@ -170,6 +173,33 @@ enum OpCode:
 
   IO_CAPABILITY_REQUEST_NEGATIVE_REPLY                         = 0x0434
     -- IO Capability Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
+
+  ENHANCED_SETUP_SYNCHRONOUS_CONNECTION                        = 0x043D
+    -- Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
+
+  ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION_REQUEST               = 0x043E
+    -- Enhanced Accept Synchronous Connection Request Command (CSA2) (BR/EDR)
+
+  TRUNCATED_PAGE                                               = 0x043F
+    -- Truncated Page Command (CSA4) (BR/EDR)
+
+  TRUNCATED_PAGE_CANCEL                                        = 0x0440
+    -- Truncated Page Cancel Command (CSA4) (BR/EDR)
+
+  SET_CONNECTIONLESS_PERIPHERAL_BROADCAST                      = 0x0441
+    -- Set Connectionless Peripheral Broadcast Command (CSA4) (BR/EDR)
+
+  SET_CONNECTIONLESS_PERIPHERAL_BROADCAST_RECEIVE              = 0x0442
+    -- Set Connectionless Peripheral Broadcast Receive Command (CSA4) (BR/EDR)
+
+  START_SYNCHRONIZATION_TRAIN                                  = 0x0443
+    -- Start Synchronization Train Command (CSA4) (BR/EDR)
+
+  RECEIVE_SYNCHRONIZATION_TRAIN                                = 0x0444
+    -- Receive Synchronization Train Command (CSA4) (BR/EDR)
+
+  REMOTE_OOB_EXTENDED_DATA_REQUEST_REPLY                       = 0x0445
+    -- Remote OOB Extended Data Request Reply Command (4.1) (BR/EDR)
 
   ### Link Policy Commands - Core Spec v5.4, Part E, Section 7.32 (OGF 0x02)
 
@@ -234,6 +264,12 @@ enum OpCode:
 
   WRITE_PAGE_SCAN_TYPE                                         = 0x0C47
     -- Write Page Scan Type (v1.2) (BR/EDR)
+
+  READ_EXTENDED_INQUIRY_RESPONSE                               = 0x0C51
+    -- Read Extended Inquiry Response (v2.1 + EDR) (BR/EDR)
+
+  WRITE_EXTENDED_INQUIRY_RESPONSE                              = 0x0C52
+    -- Write Extended Inquiry Response (v2.1 + EDR) (BR/EDR)
 
   READ_SIMPLE_PAIRING_MODE                                     = 0x0C55
     -- Read Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
@@ -442,6 +478,9 @@ enum OpCode:
   LE_SET_EXTENDED_SCAN_ENABLE                                  = 0x2042
     -- LE Set Extended Scan Enable Command (v5.0) (LE)
 
+  LE_EXTENDED_CREATE_CONNECTION_V1                             = 0x2043
+    -- LE Extended Create Connection Command [v1] (v5.0) (LE)
+
   LE_READ_TRANSMIT_POWER                                       = 0x204B
     -- LE Read Transmit Power Command (v5.0) (LE)
 
@@ -540,6 +579,9 @@ enum OpCode:
 
   LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V2                    = 0x207F
     -- LE Set Extended Advertising Parameters Command (v5.4) (LE)
+
+  LE_EXTENDED_CREATE_CONNECTION_V2                             = 0x2085
+    -- LE Extended Create Connection Command [v2] (v5.4) (LE)
 
 
 enum EventCode:
@@ -1184,7 +1226,6 @@ bits OpCodeBits:
 
 struct CommandHeader:
   -- HCI Command packet header.
-
   0     [+2]  OpCode      opcode
     -- Full HCI command opcode.
 
