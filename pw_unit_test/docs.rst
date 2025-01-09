@@ -369,8 +369,6 @@ output:
 
 Run a subset of test suites
 ===========================
-.. note:: This feature is only supported in C++17.
-
 .. _//pw_unit_test/light_public_overrides/pw_unit_test/framework_backend.h: https://cs.opensource.google/pigweed/pigweed/+/main:pw_unit_test/light_public_overrides/pw_unit_test/framework_backend.h
 
 To run only a subset of registered test suites, use the
@@ -671,8 +669,8 @@ Event handlers
 
 Configuration
 =============
-.. doxygendefine:: PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE
-.. doxygendefine:: PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE
+.. doxygenfile:: pw_unit_test/config.h
+   :sections: define
 
 .. _module-pw_unit_test-cpp-helpers:
 

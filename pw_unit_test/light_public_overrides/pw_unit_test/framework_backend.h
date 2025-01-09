@@ -11,8 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
-// The Pigweed unit test framework requires C++17 to use its full functionality.
 #pragma once
 
 // IWYU pragma: private, include "pw_unit_test/framework.h"
@@ -466,8 +464,7 @@ class Framework {
   int RunAllTests();
 
   // Only run test suites whose names are included in the provided list during
-  // the next test run. This is C++17 only; older versions of C++ will run all
-  // non-disabled tests.
+  // the next test run.
   void SetTestSuitesToRun(span<std::string_view> test_suites) {
     test_suites_to_run_ = test_suites;
   }
@@ -525,57 +522,45 @@ class Framework {
   }
 
   template <typename Expectation, typename Lhs, typename Rhs, typename Epsilon>
-  [[nodiscard]] bool CurrentTestExpect(Expectation expectation,
-                                       const Lhs& lhs,
-                                       const Rhs& rhs,
-                                       const Epsilon& epsilon,
-                                       const char* expression,
-                                       int line) {
-    // Size of the buffer into which to write the string with the evaluated
-    // version of the arguments. This buffer is allocated on the unit test's
-    // stack, so it shouldn't be too large.
-    // TODO(hepler): Make this configurable.
-    [[maybe_unused]] constexpr size_t kExpectationBufferSizeBytes = 192;
-
+  [[nodiscard]] bool CurrentTestExpectWithEpsilon(Expectation expectation,
+                                                  const Lhs& lhs,
+                                                  const Rhs& rhs,
+                                                  const Epsilon& epsilon,
+                                                  const char* expression,
+                                                  int line) {
     const bool success = expectation(lhs, rhs, epsilon);
     if (!success) {
-      CurrentTestExpectSimple(
-          expression,
-          MakeString<kExpectationBufferSizeBytes>(ConvertForPrint(lhs),
-                                                  " within ",
-                                                  ConvertForPrint(epsilon),
-                                                  " of ",
-                                                  ConvertForPrint(rhs))
-              .c_str(),
-          line,
-          success);
+      CurrentTestExpectSimple(expression,
+                              MakeString<config::kExpectationBufferSizeBytes>(
+                                  ConvertForPrint(lhs),
+                                  " within ",
+                                  ConvertForPrint(epsilon),
+                                  " of ",
+                                  ConvertForPrint(rhs))
+                                  .c_str(),
+                              line,
+                              success);
     }
     return success;
   }
 
   // Runs an expectation function for the currently active test case.
   template <typename Expectation, typename Lhs, typename Rhs>
-  bool CurrentTestExpect(Expectation expectation,
-                         const Lhs& lhs,
-                         const Rhs& rhs,
-                         [[maybe_unused]] const char* expectation_string,
-                         const char* expression,
-                         int line) {
-    // Size of the buffer into which to write the string with the evaluated
-    // version of the arguments. This buffer is allocated on the unit test's
-    // stack, so it shouldn't be too large.
-    // TODO(hepler): Make this configurable.
-    [[maybe_unused]] constexpr size_t kExpectationBufferSizeBytes = 192;
-
+  [[nodiscard]] bool CurrentTestExpect(Expectation expectation,
+                                       const Lhs& lhs,
+                                       const Rhs& rhs,
+                                       const char* expectation_string,
+                                       const char* expression,
+                                       int line) {
     const bool success = expectation(lhs, rhs);
     if (!success) {
       CurrentTestExpectSimple(
           expression,
-          MakeString<kExpectationBufferSizeBytes>(ConvertForPrint(lhs),
-                                                  ' ',
-                                                  expectation_string,
-                                                  ' ',
-                                                  ConvertForPrint(rhs))
+          MakeString<config::kExpectationBufferSizeBytes>(ConvertForPrint(lhs),
+                                                          ' ',
+                                                          expectation_string,
+                                                          ' ',
+                                                          ConvertForPrint(rhs))
               .c_str(),
           line,
           success);
@@ -845,7 +830,7 @@ inline int RUN_ALL_TESTS() {
       __LINE__)
 
 #define _PW_TEST_NEAR(lhs, rhs, epsilon)                                      \
-  ::pw::unit_test::internal::Framework::Get().CurrentTestExpect(              \
+  ::pw::unit_test::internal::Framework::Get().CurrentTestExpectWithEpsilon(   \
       [](const auto& _pw_lhs, const auto& _pw_rhs, const auto& _pw_epsilon) { \
         return std::abs(_pw_lhs - _pw_rhs) <= _pw_epsilon;                    \
       },                                                                      \

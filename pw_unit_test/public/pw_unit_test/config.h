@@ -30,15 +30,25 @@
 #define PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE 16384
 #endif  // PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE
 
-namespace pw {
-namespace unit_test {
-namespace config {
+#ifndef PW_UNIT_TEST_CONFIG_EXPECTATION_BUFFER_SIZE
+/// Size of the buffer into which to write the string with the evaluated
+/// version of the arguments. This buffer is allocated on the unit test's
+/// stack, so it shouldn't be too large.
+#define PW_UNIT_TEST_CONFIG_EXPECTATION_BUFFER_SIZE \
+  (sizeof(void*) > 4 ? 512 : 192)
+#endif  // PW_UNIT_TEST_CONFIG_EXPECTATION_BUFFER_SIZE
+
+namespace pw::unit_test::config {
 
 inline constexpr size_t kEventBufferSize =
     PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE;
+#undef PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE
 
 inline constexpr size_t kMemoryPoolSize = PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE;
+#undef PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE
 
-}  // namespace config
-}  // namespace unit_test
-}  // namespace pw
+inline constexpr size_t kExpectationBufferSizeBytes =
+    PW_UNIT_TEST_CONFIG_EXPECTATION_BUFFER_SIZE;
+#undef PW_UNIT_TEST_CONFIG_EXPECTATION_BUFFER_SIZE
+
+}  // namespace pw::unit_test::config
