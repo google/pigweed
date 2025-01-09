@@ -293,11 +293,4 @@ RfcommChannel::~RfcommChannel() {
   }
 }
 
-void RfcommChannel::HandleFragmentedPduFromController() {
-  PW_LOG_ERROR(
-      "(CID %u) Fragmented L2CAP frame received (which is not yet "
-      "supported).",
-      local_cid());
-}
-
 }  // namespace pw::bluetooth::proxy

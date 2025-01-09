@@ -177,7 +177,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Handle fragmented Rx L2CAP PDU. Default implementation stops channel and
   // sends `kRxFragmented` event to client.
   // TODO: https://pwbug.dev/365179076 - Support recombination & delete this.
-  virtual void HandleFragmentedPduFromController();
+  virtual void HandleFragmentedPdu();
 
   //--------------
   //  Accessors:

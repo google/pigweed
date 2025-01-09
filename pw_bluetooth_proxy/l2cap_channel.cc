@@ -288,10 +288,10 @@ bool L2capChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
   return DoHandlePduFromController(l2cap_pdu);
 }
 
-void L2capChannel::HandleFragmentedPduFromController() {
+void L2capChannel::HandleFragmentedPdu() {
   if (state() != State::kRunning) {
     PW_LOG_ERROR(
-        "btproxy: L2capChannel::OnFragmentedPduReceived on non-running "
+        "btproxy: L2capChannel::HandleFragmentedPdu on non-running "
         "channel. local_cid: %u, remote_cid: %u, state: %u",
         local_cid(),
         remote_cid(),

@@ -119,8 +119,6 @@ class RfcommChannel final : public L2capChannel {
   bool DoHandlePduFromController(pw::span<uint8_t> l2cap_pdu) override;
   bool HandlePduFromHost(pw::span<uint8_t> l2cap_pdu) override;
 
-  void HandleFragmentedPduFromController() override;
-
   // Override: Dequeue a packet only if a credit is able to be subtracted.
   std::optional<H4PacketWithH4> DequeuePacket() override
       PW_LOCKS_EXCLUDED(mutex_);
