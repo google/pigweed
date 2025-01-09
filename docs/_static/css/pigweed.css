@@ -49,6 +49,10 @@ div, li, p {
   font-family: var(--pw-font-body);
 }
 
+figcaption {
+  color: var(--pw-color-foreground-primary) !important;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--pw-font-headings);
   font-weight: bold;
