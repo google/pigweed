@@ -238,10 +238,10 @@ enum OpCode:
   READ_INQUIRY_SCAN_ACTIVITY                                   = 0x0C1D
     -- Read Inquiry Scan Activity Command (v1.1) (BR/EDR)
 
-  READ_CLASS_OFDEVICE                                          = 0x0C23
+  READ_CLASS_OF_DEVICE                                         = 0x0C23
     -- Read Class of Device Command (v1.1) (BR/EDR)
 
-  WRITE_CLASS_OFDEVICE                                         = 0x0C24
+  WRITE_CLASS_OF_DEVICE                                        = 0x0C24
     -- Write Class Of Device Command (v1.1) (BR/EDR)
 
   READ_TRANSMIT_POWER_LEVEL                                    = 0x0C2D
