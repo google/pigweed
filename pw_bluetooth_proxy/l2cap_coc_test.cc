@@ -1897,6 +1897,41 @@ TEST_F(L2capCocQueueTest, H4BufferReleaseTriggersQueueDrain) {
   capture.packet_store.clear();
 }
 
+TEST_F(L2capCocQueueTest, RoundRobinHandlesMultiplePasses) {
+  constexpr size_t kNumSends = L2capCoc::QueueCapacity();
+  struct {
+    size_t sends_called = 0;
+    Vector<H4PacketWithH4, kNumSends> packet_store;
+  } capture;
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        ++capture.sends_called;
+        // We prevent packets from being released in this test because each
+        // packet release triggers a round robin.
+        capture.packet_store.push_back(std::move(packet));
+      });
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/kNumSends,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
+  L2capCoc channel = BuildCoc(proxy, CocParameters{.tx_credits = kNumSends});
+
+  // Occupy all queue slots.
+  for (size_t i = 0; i < kNumSends; ++i) {
+    PW_TEST_EXPECT_OK(channel.Write(multibuf::MultiBuf{}).status);
+  }
+  EXPECT_EQ(capture.sends_called, 0ul);
+
+  // This will provide enough credits for all queued packets. So they all should
+  // be drained and sent.
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, kNumSends));
+  EXPECT_EQ(capture.sends_called, kNumSends);
+  capture.packet_store.clear();
+}
+
 // ########## L2capCocReassemblyTest
 
 class L2capCocReassemblyTest : public ProxyHostTest {};

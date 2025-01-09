@@ -23,7 +23,9 @@
 namespace pw::bluetooth::proxy {
 
 L2capChannelManager::L2capChannelManager(AclDataChannel& acl_data_channel)
-    : acl_data_channel_(acl_data_channel), lrd_channel_(channels_.end()) {}
+    : acl_data_channel_(acl_data_channel),
+      lrd_channel_(channels_.end()),
+      round_robin_terminus_(channels_.end()) {}
 
 void L2capChannelManager::Reset() { h4_storage_.Reset(); }
 
@@ -41,21 +43,25 @@ void L2capChannelManager::RegisterChannel(L2capChannel& channel) {
   }
 }
 
-bool L2capChannelManager::ReleaseChannel(L2capChannel& channel) {
+void L2capChannelManager::ReleaseChannel(L2capChannel& channel) {
   std::lock_guard lock(channels_mutex_);
   if (&channel == &(*lrd_channel_)) {
     Advance(lrd_channel_);
   }
-
-  bool was_removed = channels_.remove(channel);
-
-  // If `channel` was the only element in `channels_`, advancing `lrd_channel_`
-  // just wrapped it back on itself, so we reset it here.
-  if (channels_.empty()) {
-    lrd_channel_ = channels_.end();
+  if (&channel == &(*round_robin_terminus_)) {
+    Advance(round_robin_terminus_);
   }
 
-  return was_removed;
+  // Channel will only be removed once, but ReleaseChannel may be called
+  // multiple times on the same channel so it's ok for this to return false.
+  channels_.remove(channel);
+
+  // If `channel` was the only element in `channels_`, advancing channels just
+  // wrapped them back on itself, so we reset it here.
+  if (channels_.empty()) {
+    lrd_channel_ = channels_.end();
+    round_robin_terminus_ = channels_.end();
+  }
 }
 
 pw::Result<H4PacketWithH4> L2capChannelManager::GetAclH4Packet(uint16_t size) {
@@ -86,56 +92,43 @@ uint16_t L2capChannelManager::GetH4BuffSize() const {
 }
 
 void L2capChannelManager::DrainChannelQueues() {
-  DrainChannelQueues(AclTransportType::kBrEdr);
-  DrainChannelQueues(AclTransportType::kLe);
-}
-
-void L2capChannelManager::DrainChannelQueues(AclTransportType transport) {
-  // Establish an upper bound on the number of channels to visit on this round
-  // robin. We cannot simply store a pointer to the starting channel, because
-  // any channel can be released while unlocked to send a packet.
-  size_t visits_remaining = 0;
-  {
-    std::lock_guard lock(channels_mutex_);
-    containers::ForEach(
-        channels_, [&visits_remaining](L2capChannel&) { ++visits_remaining; });
-    if (visits_remaining == 0) {
-      return;
-    }
-  }
-
-  for (std::optional<AclDataChannel::SendCredit> credit =
-           acl_data_channel_.ReserveSendCredit(transport);
-       credit;
-       credit = acl_data_channel_.ReserveSendCredit(transport)) {
-    // In each iteration of this loop we have reserved one send credit.
-
+  for (;;) {
+    std::optional<AclDataChannel::SendCredit> credit;
     std::optional<H4PacketWithH4> packet;
     {
       std::lock_guard lock(channels_mutex_);
-      // It is possible for channels to have been released before current lock
-      // was acquired.
       if (lrd_channel_ == channels_.end()) {
+        // This means the container is empty.
         return;
       }
-      do {
-        if (lrd_channel_->transport() == transport) {
-          packet = lrd_channel_->DequeuePacket();
-        }
-        Advance(lrd_channel_);
-        --visits_remaining;
-      } while (!packet && visits_remaining > 0);
+      if (round_robin_terminus_ == channels_.end()) {
+        round_robin_terminus_ = lrd_channel_;
+      }
+      credit = acl_data_channel_.ReserveSendCredit(lrd_channel_->transport());
+      if (credit) {
+        packet = lrd_channel_->DequeuePacket();
+      }
+      Advance(lrd_channel_);
+      if (packet) {
+        // Round robin should continue until we have done a full loop with no
+        // packets dequeued.
+        round_robin_terminus_ = lrd_channel_;
+      }
     }
 
     if (packet) {
       // Send while unlocked. This can trigger a recursive round robin once
       // `packet` is released, but this is fine because `lrd_channel_` has
-      // been adjusted so the recursive call will start where this one left off.
+      // been adjusted so the recursive call will start where this one left off,
+      // and `round_robin_terminus_` will be updated to point to channels with
+      // dequeued packets.
       PW_CHECK_OK(
           acl_data_channel_.SendAcl(std::move(*packet), std::move(*credit)));
+      continue;
     }
 
-    if (visits_remaining == 0) {
+    std::lock_guard lock(channels_mutex_);
+    if (lrd_channel_ == round_robin_terminus_) {
       break;
     }
   }

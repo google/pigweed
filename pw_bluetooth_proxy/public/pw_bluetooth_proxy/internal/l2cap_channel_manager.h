@@ -43,11 +43,9 @@ class L2capChannelManager {
   // the controller and allow `channel` to send & queue Tx L2CAP packets.
   void RegisterChannel(L2capChannel& channel);
 
-  // Stop proxying L2CAP packets addressed to `channel`, stop sending L2CAP
-  // packets queued in `channel`, and clear its queue.
-  //
-  // Returns false if `channel` is not found.
-  bool ReleaseChannel(L2capChannel& channel);
+  // Stop proxying L2CAP packets addressed to `channel` and stop sending L2CAP
+  // packets queued in `channel`, if `channel` is currently registered.
+  void ReleaseChannel(L2capChannel& channel);
 
   // Get an `H4PacketWithH4` backed by a buffer in `H4Storage` able to hold
   // `size` bytes of data.
@@ -108,11 +106,6 @@ class L2capChannelManager {
   void Advance(IntrusiveForwardList<L2capChannel>::iterator& it)
       PW_EXCLUSIVE_LOCKS_REQUIRED(channels_mutex_);
 
-  // Send L2CAP packets queued in registered channels as long as ACL credits are
-  // available on the specified transport.
-  void DrainChannelQueues(AclTransportType transport)
-      PW_LOCKS_EXCLUDED(channels_mutex_);
-
   // Reference to the ACL data channel owned by the proxy.
   AclDataChannel& acl_data_channel_;
 
@@ -129,6 +122,10 @@ class L2capChannelManager {
 
   // Iterator to "least recently drained" channel.
   IntrusiveForwardList<L2capChannel>::iterator lrd_channel_
+      PW_GUARDED_BY(channels_mutex_);
+
+  // Iterator to final channel to be visited in ongoing round robin.
+  IntrusiveForwardList<L2capChannel>::iterator round_robin_terminus_
       PW_GUARDED_BY(channels_mutex_);
 
   // Channel connection status tracker and delegate holder.
