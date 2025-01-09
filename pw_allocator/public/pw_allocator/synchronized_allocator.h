@@ -14,9 +14,10 @@
 #pragma once
 
 #include <cstddef>
+#include <mutex>
 
 #include "pw_allocator/allocator.h"
-#include "pw_sync/borrow.h"
+#include "pw_sync/lock_annotations.h"
 
 namespace pw::allocator {
 
@@ -32,22 +33,20 @@ namespace pw::allocator {
 template <typename LockType>
 class SynchronizedAllocator : public Allocator {
  public:
-  constexpr SynchronizedAllocator(Allocator& allocator) noexcept
-      : Allocator(allocator.capabilities()), borrowable_(allocator, lock_) {}
+  SynchronizedAllocator(Allocator& allocator) noexcept
+      : Allocator(allocator.capabilities()), allocator_(allocator), lock_{} {}
 
  private:
-  using Pointer = sync::BorrowedPointer<Allocator, LockType>;
-
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override {
-    Pointer allocator = borrowable_.acquire();
-    return allocator->Allocate(layout);
+    std::lock_guard lock(lock_);
+    return allocator_.Allocate(layout);
   }
 
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr) override {
-    Pointer allocator = borrowable_.acquire();
-    return allocator->Deallocate(ptr);
+    std::lock_guard lock(lock_);
+    return allocator_.Deallocate(ptr);
   }
 
   /// @copydoc Allocator::Deallocate
@@ -55,29 +54,29 @@ class SynchronizedAllocator : public Allocator {
 
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, size_t new_size) override {
-    Pointer allocator = borrowable_.acquire();
-    return allocator->Resize(ptr, new_size);
+    std::lock_guard lock(lock_);
+    return allocator_.Resize(ptr, new_size);
   }
 
   void* DoReallocate(void* ptr, Layout new_layout) override {
-    Pointer allocator = borrowable_.acquire();
-    return allocator->Reallocate(ptr, new_layout);
+    std::lock_guard lock(lock_);
+    return allocator_.Reallocate(ptr, new_layout);
   }
 
   /// @copydoc Allocator::GetAllocated
   size_t DoGetAllocated() const override {
-    Pointer allocator = borrowable_.acquire();
-    return allocator->GetAllocated();
+    std::lock_guard lock(lock_);
+    return allocator_.GetAllocated();
   }
 
   /// @copydoc Deallocator::GetInfo
   Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
-    Pointer allocator = borrowable_.acquire();
-    return GetInfo(*allocator, info_type, ptr);
+    std::lock_guard lock(lock_);
+    return GetInfo(allocator_, info_type, ptr);
   }
 
-  LockType lock_;
-  sync::Borrowable<Allocator, LockType> borrowable_;
+  Allocator& allocator_ PW_GUARDED_BY(lock_);
+  mutable LockType lock_;
 };
 
 /// Tag type used to indicate synchronization is NOT desired.

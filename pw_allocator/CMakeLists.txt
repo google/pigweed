@@ -339,7 +339,7 @@ pw_add_library(pw_allocator.synchronized_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_sync.borrow
+    pw_sync.lock_annotations
 )
 
 pw_add_library(pw_allocator.tlsf_allocator INTERFACE
