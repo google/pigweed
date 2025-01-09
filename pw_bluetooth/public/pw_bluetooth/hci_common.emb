@@ -247,6 +247,39 @@ enum OpCode:
   READ_TRANSMIT_POWER_LEVEL                                    = 0x0C2D
     -- Read Transmit Transmit Power Level Command (v1.1) (BR/EDR & LE)
 
+  READ_SYNCHRONOUS_FLOW_CONTROL_ENABLE                         = 0x0C2E
+    -- Read Synchronous Flow Control Enable Command (v1.1) (BR/EDR)
+
+  WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE                        = 0x0C2F
+    -- Write Synchronous Flow Control Enable Command (v1.1) (BR/EDR)
+
+  SET_CONTROLLER_TO_HOST_FLOW_CONTROL                          = 0x0C31
+    -- Set Controller To Host Flow Control Command () ()
+
+  HOST_BUFFER_SIZE                                             = 0x0C33
+    -- Host Buffer Size Command () ()
+
+  HOST_NUMBER_OF_COMPLETED_PACKETS                             = 0x0C35
+    -- Host Number Of Completed Packets Command () ()
+
+  READ_LINK_SUPERVISION_TIMEOUT                                = 0x0C36
+    -- Read Link Supervision Timeout Command () ()
+
+  WRITE_LINK_SUPERVISION_TIMEOUT                               = 0x0C37
+    -- Write Link Supervision Timeout Command () ()
+
+  READ_NUMBER_OF_SUPPORTED_IAC                                 = 0x0C38
+    -- Read Number Of Supported IAC Command () ()
+
+  READ_CURRENT_IAC_LAP                                         = 0x0C39
+    -- Read Current IAC LAP Command () ()
+
+  WRITE_CURRENT_IAC_LAP                                        = 0x0C3A
+    -- Write Current IAC LAP Command () ()
+
+  SET_AFH_HOST_CHANNEL_CLASSIFICATION                          = 0x0C3F
+    -- Set AFH Host Channel Classification Command () ()
+
   READ_INQUIRY_SCAN_TYPE                                       = 0x0C42
     -- Read Inquiry Scan Type (v1.2) (BR/EDR)
 
@@ -291,6 +324,45 @@ enum OpCode:
 
   WRITE_LE_HOST_SUPPORT                                        = 0x0C6D
     -- Write LE Host Support Command (v4.0) (BR/EDR)
+
+  SET_MWS_CHANNEL_PARAMETERS                                   = 0x0C6E
+    -- Set MWS Channel Parameters Command (CSA3)
+
+  SET_EXTERNAL_FRAME_CONFIGURATION                             = 0x0C6F
+    -- Set External Frame Configuration Command (CSA3)
+
+  SET_MWS_SIGNALING                                            = 0x0C70
+    -- Set MWS Signaling Command (CSA)
+
+  SET_MWS_TRANSPORT_LAYER                                      = 0x0C71
+    -- Set MWS Transport Layer Command (CSA3)
+
+  SET_MWS_SCAN_FREQUENCY_TABLE                                 = 0x0C72
+    -- Set MWS Scan Frequency Table Command (CSA3)
+
+  SET_MWS_PATTERN_CONFIGURATION                                = 0x0C73
+    -- Set MWS_PATTERN Configuration Command (CSA3) (BR/EDR)
+
+  SET_RESERVED_LT_ADDR                                         = 0x0C74
+    -- Set Reserved LT_ADDR Command (CSA4) (BR/EDR)
+
+  DELETE_RESERVED_LT_ADDR                                      = 0x0C75
+    -- Delete Reserved LT_ADDR Command (CSA4) (BR/EDR)
+
+  SET_CONNECTIONLESS_PERIPHERAL_BROADCAST_DATA                 = 0x0C76
+    -- Set Connectionless Peripheral Broadcast Data Command (CSA4) (BR/EDR)
+
+  READ_SYNCHRONIZATION_TRAIN_PARAMETERS                        = 0x0C77
+    -- Read Synchronization Train Parameters Command (CSA4) (BR/EDR)
+
+  WRITE_SYNCHRONIZATION_TRAIN_PARAMETERS                       = 0x0C78
+    -- Write Synchronization Train Parameters Command (CSA4) (BR/EDR)
+
+  READ_SECURE_CONNECTIONS_HOST_SUPPORT                         = 0x0C79
+    -- Read Secure Connections Host Support Command (v4.1) (BR/EDR)
+
+  WRITE_SECURE_CONNECTIONS_HOST_SUPPORT                        = 0x0C7A
+    -- Write Secure Connections Host Support Command (v4.1) (BR/EDR)
 
   ### Informational Parameters - Core Spec v5.0 Vol 2, Part E, Section 7.4 (OGF 0x04)
 
@@ -475,6 +547,18 @@ enum OpCode:
   LE_CLEAR_ADVERTISING_SETS                                    = 0x203D
     -- LE Clear Advertising Sets Command (v5.0) (LE)
 
+  LE_SET_PERIODIC_ADVERTISING_PARAMETERS_V1                    = 0x203E
+    -- LE Set Periodic Advertising Parameters Command [v1] (v5.0) (LE)
+
+  LE_SET_PERIODIC_ADVERTISING_DATA                             = 0x203F
+    -- LE Set Periodic Advertising Data Command (v5.0) (LE)
+
+  LE_SET_PERIODIC_ADVERTISING_ENABLE                           = 0x2040
+    -- LE Set Periodic Advertising Enable Command (v5.0) (LE)
+
+  LE_SET_EXTENDED_SCAN_PARAMETERS                              = 0x2041
+    -- LE Set Extended Scan Parameters Command (v5.0) (LE)
+
   LE_SET_EXTENDED_SCAN_ENABLE                                  = 0x2042
     -- LE Set Extended Scan Enable Command (v5.0) (LE)
 
@@ -582,6 +666,44 @@ enum OpCode:
 
   LE_EXTENDED_CREATE_CONNECTION_V2                             = 0x2085
     -- LE Extended Create Connection Command [v2] (v5.4) (LE)
+
+  LE_SET_PERIODIC_ADVERTISING_PARAMETERS_V2                    = 0x2086
+    -- LE Set Periodic Advertising Parameters Command [v2] (v5.4) (LE)
+
+  ### Android Vendor Commands (OGF 0x3F)
+  ### See https://source.android.com/devices/bluetooth/hci_requirements
+
+  ANDROID_LE_GET_VENDOR_CAPABILITIES                           = 0xFD53
+    -- LE Get Vendor Capabilities Command
+
+  ANDROID_LE_MULTI_ADVT                                        = 0xFD54
+    -- Multi-Advertiser Command
+    -- Deprecated in Google feature spec v0.98 and higher.
+    -- Use the standard in the Bluetooth Core 5.0 Specification instead.
+
+  ANDROID_LE_BATCH_SCAN                                        = 0xFD56
+    -- LE Batch Scan Command
+
+  ANDROID_APCF                                                 = 0xFD57
+    -- LE APCF (Advertising Packet Content Filter) Command
+
+  ANDROID_LE_GET_CONTROLLER_ACTIVITY_ENERGY_INFO               = 0xFD59
+    -- LE Get Controller Activity Energy Info Command
+
+  ANDROID_LE_EXTENDED_SET_SCAN_PARAMETERS                      = 0xFD5A
+    -- LE Extended Set Scan Parameters Command
+
+  ANDROID_GET_CONTROLLER_DEBUG_INFO                            = 0xFD5B
+    -- Get Controller Debug Info Command
+
+  ANDROID_A2DP_HARDWARE_OFFLOAD                                = 0xFD5D
+    -- A2DP Hardware Offload Support
+
+  ANDROID_BLUETOOTH_QUALITY_REPORT                             = 0xFD5E
+    -- Bluetooth Quality Report Command
+
+  ANDROID_DYNAMIC_AUDIO_BUFFER                                 = 0xFD5F
+    -- Dynamic Audio Buffer Command
 
 
 enum EventCode:
