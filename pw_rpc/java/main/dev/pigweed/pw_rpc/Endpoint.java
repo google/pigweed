@@ -14,6 +14,7 @@
 
 package dev.pigweed.pw_rpc;
 
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import dev.pigweed.pw_log.Logger;
@@ -42,12 +43,24 @@ import javax.annotation.Nullable;
 class Endpoint {
   private static final Logger logger = Logger.forClass(Endpoint.class);
 
+  // Call IDs are varint encoded. Limit the varint size to 2 bytes (14 usable bits).
+  private static final int MAX_CALL_ID = 1 << 14;
+
   private final Map<Integer, Channel> channels;
   private final Map<PendingRpc, AbstractCall<?, ?>> pending = new HashMap<>();
   private final BlockingQueue<Runnable> callUpdates = new LinkedBlockingQueue<>();
+  private final int maxCallId;
+
+  @GuardedBy("this") private int nextCallId = 1;
 
   public Endpoint(List<Channel> channels) {
+    this(channels, MAX_CALL_ID);
+  }
+
+  /** Create endpoint with {@code maxCallId} possible call_ids for testing purposes */
+  Endpoint(List<Channel> channels, int maxCallId) {
     this.channels = channels.stream().collect(Collectors.toMap(Channel::id, c -> c));
+    this.maxCallId = maxCallId;
   }
 
   /**
@@ -99,15 +112,10 @@ class Endpoint {
       throw InvalidRpcChannelException.unknown(channelId);
     }
 
-    return createCall.apply(this, PendingRpc.create(channel, method));
+    return createCall.apply(this, PendingRpc.create(channel, method, getNewCallId()));
   }
 
   private void registerCall(AbstractCall<?, ?> call) {
-    // TODO(hepler): Use call_id to support simultaneous calls for the same RPC on one channel.
-    //
-    // Originally, only one call per service/method/channel was supported. With this restriction,
-    // the original call should have been aborted here, but was not. The client will be updated to
-    // support multiple simultaneous calls instead of aborting the call.
     pending.put(call.rpc(), call);
   }
 
@@ -254,7 +262,7 @@ class Endpoint {
         return true; // true since the packet was handled, even though it was invalid.
       }
 
-      PendingRpc rpc = PendingRpc.create(channel, method);
+      PendingRpc rpc = PendingRpc.create(channel, method, packet.getCallId());
       if (!updateCall(packet, rpc)) {
         logger.atFine().log("Ignoring packet for %s, which isn't pending", rpc);
         sendError(channel, packet, Status.FAILED_PRECONDITION);
@@ -307,5 +315,18 @@ class Endpoint {
       return Status.UNKNOWN;
     }
     return status;
+  }
+
+  /** Gets the next available call id and increments internal count for next call. */
+  private synchronized int getNewCallId() {
+    int callId = nextCallId;
+    nextCallId = (nextCallId + 1) % maxCallId;
+
+    // Skip call_id `0` to avoid confusion with legacy servers which use call_id `0` as
+    // an open call id or which do not provide call_id at all.
+    if (nextCallId == 0) {
+      nextCallId = 1;
+    }
+    return callId;
   }
 }

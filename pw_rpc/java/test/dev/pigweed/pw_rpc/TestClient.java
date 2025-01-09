@@ -160,6 +160,7 @@ public class TestClient {
   private static RpcPacket.Builder startPacket(String service, String method, PacketType type) {
     return RpcPacket.newBuilder()
         .setType(type)
+        .setCallId(PendingRpc.DEFAULT_CALL_ID)
         .setChannelId(CHANNEL_ID)
         .setServiceId(Ids.calculate(service))
         .setMethodId(Ids.calculate(method));

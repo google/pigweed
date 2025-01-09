@@ -25,11 +25,12 @@ public final class PacketsTest {
   private static final Service SERVICE = new Service(
       "Greetings", Service.unaryMethod("Hello", RpcPacket.parser(), RpcPacket.parser()));
 
-  private static final PendingRpc RPC =
-      PendingRpc.create(new Channel(123, null), SERVICE.method("Hello"));
+  private static final PendingRpc RPC = PendingRpc.create(
+      new Channel(123, null), SERVICE.method("Hello"), PendingRpc.DEFAULT_CALL_ID);
 
   private static final RpcPacket PACKET = RpcPacket.newBuilder()
                                               .setChannelId(123)
+                                              .setCallId(PendingRpc.DEFAULT_CALL_ID)
                                               .setServiceId(RPC.service().id())
                                               .setMethodId(RPC.method().id())
                                               .build();
@@ -62,6 +63,7 @@ public final class PacketsTest {
   private static RpcPacket.Builder packet() {
     return RpcPacket.newBuilder()
         .setChannelId(123)
+        .setCallId(PendingRpc.DEFAULT_CALL_ID)
         .setServiceId(Ids.calculate("Greetings"))
         .setMethodId(Ids.calculate("Hello"));
   }

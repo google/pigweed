@@ -57,6 +57,7 @@ public final class StreamObserverCallTest {
   private static RpcPacket.Builder packetBuilder() {
     return RpcPacket.newBuilder()
         .setChannelId(CHANNEL_ID)
+        .setCallId(PendingRpc.DEFAULT_CALL_ID)
         .setServiceId(SERVICE.id())
         .setMethodId(METHOD.id());
   }

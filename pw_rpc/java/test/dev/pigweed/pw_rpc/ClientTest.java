@@ -101,6 +101,7 @@ public final class ClientTest {
   private static RpcPacket.Builder packetBuilder(String service, String method) {
     return RpcPacket.newBuilder()
         .setChannelId(CHANNEL_ID)
+        .setCallId(PendingRpc.DEFAULT_CALL_ID)
         .setServiceId(Ids.calculate(service))
         .setMethodId(Ids.calculate(method));
   }

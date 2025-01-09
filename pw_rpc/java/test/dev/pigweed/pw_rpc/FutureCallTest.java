@@ -47,12 +47,13 @@ public final class FutureCallTest {
           "SomeBidirectional", SomeMessage.parser(), AnotherMessage.parser()));
   private static final Method METHOD = SERVICE.method("SomeUnary");
   private static final int CHANNEL_ID = 555;
+  private static final int DEFAULT_CALL_ID = 1;
 
   @Mock private Channel.Output mockOutput;
 
   private final Channel channel = new Channel(CHANNEL_ID, packet -> mockOutput.send(packet));
   private final Endpoint endpoint = new Endpoint(ImmutableList.of(channel));
-  private final PendingRpc rpc = PendingRpc.create(channel, METHOD);
+  private final PendingRpc rpc = PendingRpc.create(channel, METHOD, DEFAULT_CALL_ID);
 
   @Test
   public void unaryFuture_response_setsValue() throws Exception {

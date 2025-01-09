@@ -25,6 +25,7 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
   public static byte[] request(PendingRpc rpc, MessageLite payload) {
     RpcPacket.Builder builder = RpcPacket.newBuilder()
                                     .setType(PacketType.REQUEST)
+                                    .setCallId(rpc.callId())
                                     .setChannelId(rpc.channel().id())
                                     .setServiceId(rpc.service().id())
                                     .setMethodId(rpc.method().id());
@@ -37,6 +38,7 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
   public static byte[] cancel(PendingRpc rpc) {
     return RpcPacket.newBuilder()
         .setType(PacketType.CLIENT_ERROR)
+        .setCallId(rpc.callId())
         .setChannelId(rpc.channel().id())
         .setServiceId(rpc.service().id())
         .setMethodId(rpc.method().id())
@@ -48,6 +50,7 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
   public static byte[] error(RpcPacket packet, Status status) {
     return RpcPacket.newBuilder()
         .setType(PacketType.CLIENT_ERROR)
+        .setCallId(packet.getCallId())
         .setChannelId(packet.getChannelId())
         .setServiceId(packet.getServiceId())
         .setMethodId(packet.getMethodId())
@@ -59,6 +62,7 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
   public static byte[] clientStream(PendingRpc rpc, MessageLite payload) {
     return RpcPacket.newBuilder()
         .setType(PacketType.CLIENT_STREAM)
+        .setCallId(rpc.callId())
         .setChannelId(rpc.channel().id())
         .setServiceId(rpc.service().id())
         .setMethodId(rpc.method().id())
@@ -70,6 +74,7 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
   public static byte[] clientStreamEnd(PendingRpc rpc) {
     return RpcPacket.newBuilder()
         .setType(PacketType.CLIENT_REQUEST_COMPLETION)
+        .setCallId(rpc.callId())
         .setChannelId(rpc.channel().id())
         .setServiceId(rpc.service().id())
         .setMethodId(rpc.method().id())

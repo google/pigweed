@@ -55,6 +55,7 @@ java_library(
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/core",
         artifact("com.google.code.findbugs:jsr305"),
+        artifact("com.google.errorprone:error_prone_annotations"),
         artifact("com.google.guava:guava"),
     ],
 )
@@ -69,6 +70,7 @@ java_library(
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
         artifact("com.google.code.findbugs:jsr305"),
+        artifact("com.google.errorprone:error_prone_annotations"),
         artifact("com.google.guava:guava"),
     ],
 )
@@ -84,6 +86,7 @@ android_library(
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
         artifact("com.google.code.findbugs:jsr305"),
+        artifact("com.google.errorprone:error_prone_annotations"),
         artifact("com.google.guava:guava"),
     ],
 )
