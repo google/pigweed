@@ -53,7 +53,7 @@ enum SignalIdentifierCode:
   [maximum_bits: 8]
   AVDTP_DISCOVER             = 0x01
   AVDTP_GET_CAPABILITIES     = 0x02
-  AVDT_SET_CONFIGURATION     = 0x03
+  AVDTP_SET_CONFIGURATION    = 0x03
   AVDTP_GET_CONFIGURATION    = 0x04
   AVDTP_RECONFIGURE          = 0x05
   AVDTP_OPEN                 = 0x06
@@ -230,15 +230,47 @@ struct GetAllCapabilitiesCommand:
 struct GetAllCapabilitiesResponse(length: UInt:32):
   -- Cf 8.8.2 AVDTP_GET_ALL_CAPABILITIES_RSP
   [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
-  0     [+2]              SignalingHeader            signaling_header
+  0     [+2]              SignalingHeader                   signaling_header
   let services_size = length-SignalingHeader.$size_in_bytes
-  $next [+services_size]  ServiceCapability(length)  service_capabilities
+  $next [+services_size]  ServiceCapability(services_size)  service_capabilities
 
 
 struct GetAllCapabilitiesReject:
   -- Cf 8.8.3 AVDTP_GET_ALL_CAPABILITIES_REJ
   [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
   0     [+2]  SignalingHeader  signaling_header
+  $next [+1]  ErrorCode        error_code
+
+# Cf 8.9 Stream Configuration
+
+
+struct SetConfigurationCommand(length: UInt:32):
+  -- Cf 8.9.1 AVDTP_SET_CONFIGURATION_CMD
+  [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SET_CONFIGURATION]
+  let services_size = length-SignalingHeader.$size_in_bytes
+  0     [+2]              SignalingHeader                   signaling_header
+  $next [+1]  bits:
+    0     [+6]            Seid                              acp_seid
+    $next [+2]            UInt                              rfa
+
+  $next [+1]  bits:
+    0     [+6]            Seid                              int_seid
+    $next [+2]            UInt                              rfa2
+
+  $next [+services_size]  ServiceCapability(services_size)  service_capabilities
+
+
+struct SetConfigurationResponse:
+  -- Cf 8.9.2 AVDTP_SET_CONFIGURATION_RSP
+  [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SET_CONFIGURATION]
+  0 [+2]  SignalingHeader  signaling_header
+
+
+struct SetConfigurationReject:
+  -- Cf 8.9.3 AVDTP_SET_CONFIGURATION_REJ
+  [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SET_CONFIGURATION]
+  0     [+2]  SignalingHeader  signaling_header
+  $next [+1]  ServiceCategory  service_category
   $next [+1]  ErrorCode        error_code
 
 # Cf 8.14 Stream Release
