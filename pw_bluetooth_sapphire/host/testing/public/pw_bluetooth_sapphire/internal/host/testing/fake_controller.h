@@ -567,14 +567,8 @@ class FakeController final : public ControllerTestDoubleBase,
   // multiple fields in their return message. In those cases, it's better (and
   // clearer) to use the other RespondWithCommandComplete (ByteBuffer as
   // second parameter) instead.
-  void RespondWithCommandComplete(hci_spec::OpCode opcode,
+  void RespondWithCommandComplete(pw::bluetooth::emboss::OpCode opcode,
                                   pw::bluetooth::emboss::StatusCode status);
-
-  // Sends an HCI_Command_Complete event in response to the command with
-  // |opcode| and using the provided event packet, filling in the event header
-  // fields.
-  void RespondWithCommandComplete(hci_spec::OpCode opcode,
-                                  hci::EventPacket* packet);
 
   // Sends an HCI_Command_Complete event in response to the command with
   // |opcode| and using the provided event packet, filling in the event header

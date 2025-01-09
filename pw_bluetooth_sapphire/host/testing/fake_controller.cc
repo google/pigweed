@@ -274,18 +274,13 @@ uint8_t FakeController::NextL2CAPCommandId() {
   return next_le_sig_id_++;
 }
 
-void FakeController::RespondWithCommandComplete(hci_spec::OpCode opcode,
+void FakeController::RespondWithCommandComplete(pwemb::OpCode opcode,
                                                 pwemb::StatusCode status) {
   auto packet = hci::EventPacket::New<pwemb::SimpleCommandCompleteEventWriter>(
       hci_spec::kCommandCompleteEventCode);
   auto view = packet.view_t();
   view.status().Write(status);
   RespondWithCommandComplete(opcode, &packet);
-}
-
-void FakeController::RespondWithCommandComplete(hci_spec::OpCode opcode,
-                                                hci::EventPacket* packet) {
-  RespondWithCommandComplete(static_cast<pwemb::OpCode>(opcode), packet);
 }
 
 void FakeController::RespondWithCommandComplete(pwemb::OpCode opcode,
@@ -619,7 +614,7 @@ bool FakeController::MaybeRespondWithDefaultStatus(hci_spec::OpCode opcode) {
          "responding with error (command: %#.4x, status: %#.2hhx)",
          opcode,
          static_cast<unsigned char>(iter->second));
-  RespondWithCommandComplete(opcode, iter->second);
+  RespondWithCommandComplete(static_cast<pwemb::OpCode>(opcode), iter->second);
   return true;
 }
 
@@ -1341,7 +1336,7 @@ void FakeController::OnWriteLEHostSupportCommandReceived(
              hci_spec::LMPFeature::kLESupportedHost);
   }
 
-  RespondWithCommandComplete(hci_spec::kWriteLEHostSupport,
+  RespondWithCommandComplete(pwemb::OpCode::WRITE_LE_HOST_SUPPORT,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1360,8 +1355,9 @@ void FakeController::OnWriteSecureConnectionsHostSupport(
   }
   if (bredr_connect_pending_ || isBREDRPageScanEnabled() ||
       has_acl_connection) {
-    RespondWithCommandComplete(hci_spec::kWriteSecureConnectionsHostSupport,
-                               pwemb::StatusCode::COMMAND_DISALLOWED);
+    RespondWithCommandComplete(
+        pwemb::OpCode::WRITE_SECURE_CONNECTIONS_HOST_SUPPORT,
+        pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
 
@@ -1374,13 +1370,14 @@ void FakeController::OnWriteSecureConnectionsHostSupport(
              hci_spec::LMPFeature::kSecureConnectionsHostSupport);
   }
 
-  RespondWithCommandComplete(hci_spec::kWriteSecureConnectionsHostSupport,
-                             pwemb::StatusCode::SUCCESS);
+  RespondWithCommandComplete(
+      pwemb::OpCode::WRITE_SECURE_CONNECTIONS_HOST_SUPPORT,
+      pwemb::StatusCode::SUCCESS);
 }
 
 void FakeController::OnReset() {
   // TODO(fxbug.dev/42159137): actually do some resetting of stuff here
-  RespondWithCommandComplete(hci_spec::kReset, pwemb::StatusCode::SUCCESS);
+  RespondWithCommandComplete(pwemb::OpCode::RESET, pwemb::StatusCode::SUCCESS);
 }
 
 void FakeController::OnInquiry(const pwemb::InquiryCommandView& params) {
@@ -1451,7 +1448,7 @@ void FakeController::OnLESetScanEnable(
     scan_state_cb_(le_scan_state_.enabled);
   }
 
-  RespondWithCommandComplete(hci_spec::kLESetScanEnable,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_SCAN_ENABLE,
                              pwemb::StatusCode::SUCCESS);
 
   if (le_scan_state_.enabled) {
@@ -1492,7 +1489,7 @@ void FakeController::OnLESetExtendedScanEnable(
     scan_state_cb_(le_scan_state_.enabled);
   }
 
-  RespondWithCommandComplete(hci_spec::kLESetExtendedScanEnable,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_EXTENDED_SCAN_ENABLE,
                              pwemb::StatusCode::SUCCESS);
 
   if (le_scan_state_.enabled) {
@@ -1513,7 +1510,7 @@ void FakeController::OnLESetScanParameters(
   }
 
   if (le_scan_state_.enabled) {
-    RespondWithCommandComplete(hci_spec::kLESetScanParameters,
+    RespondWithCommandComplete(pwemb::OpCode::LE_SET_SCAN_PARAMETERS,
                                pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -1524,7 +1521,7 @@ void FakeController::OnLESetScanParameters(
   le_scan_state_.scan_interval = params.le_scan_interval().Read();
   le_scan_state_.scan_window = params.le_scan_window().Read();
 
-  RespondWithCommandComplete(hci_spec::kLESetScanParameters,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_SCAN_PARAMETERS,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1541,14 +1538,14 @@ void FakeController::OnLESetExtendedScanParameters(
   }
 
   if (le_scan_state_.enabled) {
-    RespondWithCommandComplete(hci_spec::kLESetScanParameters,
+    RespondWithCommandComplete(pwemb::OpCode::LE_SET_SCAN_PARAMETERS,
                                pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
 
   if (params.num_entries().Read() == 0) {
     RespondWithCommandComplete(
-        hci_spec::kLESetScanParameters,
+        pwemb::OpCode::LE_SET_SCAN_PARAMETERS,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -1561,7 +1558,7 @@ void FakeController::OnLESetExtendedScanParameters(
   // don't support using different parameters for different PHYs.
   if (!params.scanning_phys().le_1m().Read()) {
     RespondWithCommandComplete(
-        hci_spec::kLESetScanParameters,
+        pwemb::OpCode::LE_SET_SCAN_PARAMETERS,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -1569,7 +1566,7 @@ void FakeController::OnLESetExtendedScanParameters(
   le_scan_state_.scan_type = params.data()[0].scan_type().Read();
   le_scan_state_.scan_interval = params.data()[0].scan_interval().Read();
   le_scan_state_.scan_window = params.data()[0].scan_window().Read();
-  RespondWithCommandComplete(hci_spec::kLESetExtendedScanParameters,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_EXTENDED_SCAN_PARAMETERS,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1580,7 +1577,7 @@ void FakeController::OnLESetHostFeature(
       static_cast<uint8_t>(hci_spec::LESupportedFeatureBitPos::
                                kConnectedIsochronousStreamHostSupport)) {
     RespondWithCommandComplete(
-        hci_spec::kLESetHostFeature,
+        pwemb::OpCode::LE_SET_HOST_FEATURE,
         pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
     return;
   }
@@ -1595,7 +1592,7 @@ void FakeController::OnLESetHostFeature(
         hci_spec::LESupportedFeature::kConnectedIsochronousStreamHostSupport);
   }
 
-  RespondWithCommandComplete(hci_spec::kLESetHostFeature,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_HOST_FEATURE,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1623,20 +1620,21 @@ void FakeController::OnReadLocalExtendedFeatures(
       view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
   }
 
-  RespondWithCommandComplete(hci_spec::kReadLocalExtendedFeatures, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::READ_LOCAL_EXTENDED_FEATURES,
+                             &packet);
 }
 
 void FakeController::OnSetEventMask(
     const pwemb::SetEventMaskCommandView& params) {
   settings_.event_mask = params.event_mask().Read();
-  RespondWithCommandComplete(hci_spec::kSetEventMask,
+  RespondWithCommandComplete(pwemb::OpCode::SET_EVENT_MASK,
                              pwemb::StatusCode::SUCCESS);
 }
 
 void FakeController::OnLESetEventMask(
     const pwemb::LESetEventMaskCommandView& params) {
   settings_.le_event_mask = params.le_event_mask().BackingStorage().ReadUInt();
-  RespondWithCommandComplete(hci_spec::kLESetEventMask,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_EVENT_MASK,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1692,7 +1690,7 @@ void FakeController::OnLEReadLocalSupportedFeatures() {
 
 void FakeController::OnLECreateConnectionCancel() {
   if (!le_connect_pending_) {
-    RespondWithCommandComplete(hci_spec::kLECreateConnectionCancel,
+    RespondWithCommandComplete(pwemb::OpCode::LE_CREATE_CONNECTION_CANCEL,
                                pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -1721,7 +1719,7 @@ void FakeController::OnLECreateConnectionCancel() {
     params.peer_address_type().Write(DeviceAddress::DeviceAddrToLeAddr(
         le_connect_params_->peer_address.type()));
 
-    RespondWithCommandComplete(hci_spec::kLECreateConnectionCancel,
+    RespondWithCommandComplete(pwemb::OpCode::LE_CREATE_CONNECTION_CANCEL,
                                pwemb::StatusCode::SUCCESS);
     SendCommandChannelPacket(packet.data());
   } else {
@@ -1738,7 +1736,7 @@ void FakeController::OnLECreateConnectionCancel() {
         DeviceAddress::DeviceAddrToLePeerAddrNoAnon(
             le_connect_params_->peer_address.type()));
 
-    RespondWithCommandComplete(hci_spec::kLECreateConnectionCancel,
+    RespondWithCommandComplete(pwemb::OpCode::LE_CREATE_CONNECTION_CANCEL,
                                pwemb::StatusCode::SUCCESS);
     SendCommandChannelPacket(packet.data());
   }
@@ -1752,7 +1750,7 @@ void FakeController::OnWriteExtendedInquiryResponse(
                              pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
   }
 
-  RespondWithCommandComplete(hci_spec::kWriteExtendedInquiryResponse,
+  RespondWithCommandComplete(pwemb::OpCode::WRITE_EXTENDED_INQUIRY_RESPONSE,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1763,14 +1761,14 @@ void FakeController::OnWriteSimplePairingMode(
   if (params.simple_pairing_mode().Read() !=
       pwemb::GenericEnableParam::ENABLE) {
     RespondWithCommandComplete(
-        hci_spec::kWriteSimplePairingMode,
+        pwemb::OpCode::WRITE_SIMPLE_PAIRING_MODE,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
   SetBit(&settings_.lmp_features_page1,
          hci_spec::LMPFeature::kSecureSimplePairingHostSupport);
-  RespondWithCommandComplete(hci_spec::kWriteSimplePairingMode,
+  RespondWithCommandComplete(pwemb::OpCode::WRITE_SIMPLE_PAIRING_MODE,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1794,7 +1792,7 @@ void FakeController::OnReadSimplePairingMode() {
 void FakeController::OnWritePageScanType(
     const pwemb::WritePageScanTypeCommandView& params) {
   page_scan_type_ = params.page_scan_type().Read();
-  RespondWithCommandComplete(hci_spec::kWritePageScanType,
+  RespondWithCommandComplete(pwemb::OpCode::WRITE_PAGE_SCAN_TYPE,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1811,7 +1809,7 @@ void FakeController::OnReadPageScanType() {
 void FakeController::OnWriteInquiryMode(
     const pwemb::WriteInquiryModeCommandView& params) {
   inquiry_mode_ = params.inquiry_mode().Read();
-  RespondWithCommandComplete(hci_spec::kWriteInquiryMode,
+  RespondWithCommandComplete(pwemb::OpCode::WRITE_INQUIRY_MODE,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1830,7 +1828,7 @@ void FakeController::OnWriteClassOfDevice(
   device_class_ =
       DeviceClass(params.class_of_device().BackingStorage().ReadUInt());
   NotifyControllerParametersChanged();
-  RespondWithCommandComplete(hci_spec::kWriteClassOfDevice,
+  RespondWithCommandComplete(pwemb::OpCode::WRITE_CLASS_OF_DEVICE,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1838,7 +1836,7 @@ void FakeController::OnWritePageScanActivity(
     const pwemb::WritePageScanActivityCommandView& params) {
   page_scan_interval_ = params.page_scan_interval().Read();
   page_scan_window_ = params.page_scan_window().Read();
-  RespondWithCommandComplete(hci_spec::kWritePageScanActivity,
+  RespondWithCommandComplete(pwemb::OpCode::WRITE_PAGE_SCAN_ACTIVITY,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1857,7 +1855,7 @@ void FakeController::OnReadPageScanActivity() {
 void FakeController::OnWriteScanEnable(
     const pwemb::WriteScanEnableCommandView& params) {
   bredr_scan_state_ = params.scan_enable().BackingStorage().ReadUInt();
-  RespondWithCommandComplete(hci_spec::kWriteScanEnable,
+  RespondWithCommandComplete(pwemb::OpCode::WRITE_SCAN_ENABLE,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1896,7 +1894,7 @@ void FakeController::OnWriteLocalName(
   }
   local_name_ = std::string(local_name, local_name + name_len);
   NotifyControllerParametersChanged();
-  RespondWithCommandComplete(hci_spec::kWriteLocalName,
+  RespondWithCommandComplete(pwemb::OpCode::WRITE_LOCAL_NAME,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -1911,7 +1909,8 @@ void FakeController::OnCreateConnectionCancel() {
   if (!bredr_connect_pending_) {
     // No request is currently pending.
     view.status().Write(pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
-    RespondWithCommandComplete(hci_spec::kCreateConnectionCancel, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::CREATE_CONNECTION_CANCEL,
+                               &packet);
     return;
   }
 
@@ -1921,7 +1920,7 @@ void FakeController::OnCreateConnectionCancel() {
   NotifyConnectionState(
       pending_bredr_connect_addr_, 0, /*connected=*/false, /*canceled=*/true);
 
-  RespondWithCommandComplete(hci_spec::kCreateConnectionCancel, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::CREATE_CONNECTION_CANCEL, &packet);
 
   auto response = hci::EventPacket::New<pwemb::ConnectionCompleteEventWriter>(
       hci_spec::kConnectionCompleteEventCode);
@@ -1974,14 +1973,14 @@ void FakeController::OnLESetAdvertisingEnable(
            "fake-hci",
            "cannot enable, random address type requires a random address set");
     RespondWithCommandComplete(
-        hci_spec::kLESetAdvertisingEnable,
+        pwemb::OpCode::LE_SET_ADVERTISING_ENABLE,
         pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
   legacy_advertising_state_.enabled =
       params.advertising_enable().Read() == pwemb::GenericEnableParam::ENABLE;
-  RespondWithCommandComplete(hci_spec::kLESetAdvertisingEnable,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_ADVERTISING_ENABLE,
                              pwemb::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
@@ -2011,7 +2010,7 @@ void FakeController::OnLESetScanResponseData(
                 params.scan_response_data_length().Read());
   }
 
-  RespondWithCommandComplete(hci_spec::kLESetScanResponseData,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_SCAN_RESPONSE_DATA,
                              pwemb::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
@@ -2041,7 +2040,7 @@ void FakeController::OnLESetAdvertisingData(
                 params.advertising_data_length().Read());
   }
 
-  RespondWithCommandComplete(hci_spec::kLESetAdvertisingData,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_ADVERTISING_DATA,
                              pwemb::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
@@ -2062,7 +2061,7 @@ void FakeController::OnLESetAdvertisingParameters(
     bt_log(INFO,
            "fake-hci",
            "cannot set advertising parameters while advertising enabled");
-    RespondWithCommandComplete(hci_spec::kLESetAdvertisingParameters,
+    RespondWithCommandComplete(pwemb::OpCode::LE_SET_ADVERTISING_PARAMETERS,
                                pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -2082,7 +2081,7 @@ void FakeController::OnLESetAdvertisingParameters(
              interval_min,
              interval_max);
       RespondWithCommandComplete(
-          hci_spec::kLESetAdvertisingParameters,
+          pwemb::OpCode::LE_SET_ADVERTISING_PARAMETERS,
           pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
       return;
     }
@@ -2094,7 +2093,7 @@ void FakeController::OnLESetAdvertisingParameters(
              interval_min,
              hci_spec::kLEAdvertisingIntervalMin);
       RespondWithCommandComplete(
-          hci_spec::kLESetAdvertisingParameters,
+          pwemb::OpCode::LE_SET_ADVERTISING_PARAMETERS,
           pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
       return;
     }
@@ -2106,7 +2105,7 @@ void FakeController::OnLESetAdvertisingParameters(
              interval_max,
              hci_spec::kLEAdvertisingIntervalMax);
       RespondWithCommandComplete(
-          hci_spec::kLESetAdvertisingParameters,
+          pwemb::OpCode::LE_SET_ADVERTISING_PARAMETERS,
           pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
       return;
     }
@@ -2144,7 +2143,7 @@ void FakeController::OnLESetAdvertisingParameters(
          "start advertising using address type: %hhd",
          static_cast<char>(legacy_advertising_state_.own_address_type));
 
-  RespondWithCommandComplete(hci_spec::kLESetAdvertisingParameters,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_ADVERTISING_PARAMETERS,
                              pwemb::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
@@ -2165,7 +2164,7 @@ void FakeController::OnLESetRandomAddress(
     bt_log(INFO,
            "fake-hci",
            "cannot set LE random address while scanning or advertising");
-    RespondWithCommandComplete(hci_spec::kLESetRandomAddress,
+    RespondWithCommandComplete(pwemb::OpCode::LE_SET_RANDOM_ADDRESS,
                                pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -2173,7 +2172,7 @@ void FakeController::OnLESetRandomAddress(
   legacy_advertising_state_.random_address =
       DeviceAddress(DeviceAddress::Type::kLERandom,
                     DeviceAddressBytes(params.random_address()));
-  RespondWithCommandComplete(hci_spec::kLESetRandomAddress,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_RANDOM_ADDRESS,
                              pwemb::StatusCode::SUCCESS);
 }
 
@@ -2184,7 +2183,8 @@ void FakeController::OnReadLocalSupportedFeatures() {
   auto view = packet.view_t();
   view.status().Write(pwemb::StatusCode::SUCCESS);
   view.lmp_features().Write(settings_.lmp_features_page0);
-  RespondWithCommandComplete(hci_spec::kReadLocalSupportedFeatures, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::READ_LOCAL_SUPPORTED_FEATURES,
+                             &packet);
 }
 
 void FakeController::OnReadLocalSupportedCommands() {
@@ -2196,7 +2196,8 @@ void FakeController::OnReadLocalSupportedCommands() {
   std::memcpy(view.supported_commands().BackingStorage().begin(),
               settings_.supported_commands,
               sizeof(settings_.supported_commands));
-  RespondWithCommandComplete(hci_spec::kReadLocalSupportedCommands, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::READ_LOCAL_SUPPORTED_COMMANDS,
+                             &packet);
 }
 
 void FakeController::OnReadLocalVersionInfo() {
@@ -2336,7 +2337,7 @@ void FakeController::OnLinkKeyRequestReplyCommandReceived(
 
   RespondWithCommandStatus(pwemb::OpCode::LINK_KEY_REQUEST_REPLY,
                            pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(hci_spec::kLinkKeyRequestReply,
+  RespondWithCommandComplete(pwemb::OpCode::LINK_KEY_REQUEST_REPLY,
                              pwemb::StatusCode::SUCCESS);
 
   PW_CHECK(!peer->logical_links().empty());
@@ -2466,8 +2467,9 @@ void FakeController::OnUserConfirmationRequestNegativeReplyCommand(
   RespondWithCommandStatus(
       pwemb::OpCode::USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY,
       pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(hci_spec::kUserConfirmationRequestNegativeReply,
-                             pwemb::StatusCode::SUCCESS);
+  RespondWithCommandComplete(
+      pwemb::OpCode::USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY,
+      pwemb::StatusCode::SUCCESS);
 
   auto pairing_event =
       hci::EventPacket::New<pwemb::SimplePairingCompleteEventWriter>(
@@ -2622,12 +2624,14 @@ void FakeController::OnWriteSynchronousFlowControlEnableCommand(
   if (!settings_.SupportedCommandsView()
            .write_synchronous_flow_control_enable()
            .Read()) {
-    RespondWithCommandComplete(hci_spec::kWriteSynchronousFlowControlEnable,
-                               pwemb::StatusCode::UNKNOWN_COMMAND);
+    RespondWithCommandComplete(
+        pwemb::OpCode::WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
+        pwemb::StatusCode::UNKNOWN_COMMAND);
     return;
   }
-  RespondWithCommandComplete(hci_spec::kWriteSynchronousFlowControlEnable,
-                             pwemb::StatusCode::SUCCESS);
+  RespondWithCommandComplete(
+      pwemb::OpCode::WRITE_SYNCHRONOUS_FLOW_CONTROL_ENABLE,
+      pwemb::StatusCode::SUCCESS);
 }
 
 void FakeController::OnLESetAdvertisingSetRandomAddress(
@@ -2637,7 +2641,7 @@ void FakeController::OnLESetAdvertisingSetRandomAddress(
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
     RespondWithCommandComplete(
-        hci_spec::kLESetAdvertisingSetRandomAddress,
+        pwemb::OpCode::LE_SET_ADVERTISING_SET_RANDOM_ADDRESS,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -2648,8 +2652,9 @@ void FakeController::OnLESetAdvertisingSetRandomAddress(
            "unknown advertising handle (%d), "
            "use HCI_LE_Set_Extended_Advertising_Parameters to create one first",
            handle);
-    RespondWithCommandComplete(hci_spec::kLESetAdvertisingSetRandomAddress,
-                               pwemb::StatusCode::COMMAND_DISALLOWED);
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_SET_ADVERTISING_SET_RANDOM_ADDRESS,
+        pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
 
@@ -2659,16 +2664,18 @@ void FakeController::OnLESetAdvertisingSetRandomAddress(
         INFO,
         "fake-hci",
         "cannot set LE random address while connectable advertising enabled");
-    RespondWithCommandComplete(hci_spec::kLESetAdvertisingSetRandomAddress,
-                               pwemb::StatusCode::COMMAND_DISALLOWED);
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_SET_ADVERTISING_SET_RANDOM_ADDRESS,
+        pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
 
   state.random_address =
       DeviceAddress(DeviceAddress::Type::kLERandom,
                     DeviceAddressBytes(params.random_address()));
-  RespondWithCommandComplete(hci_spec::kLESetAdvertisingSetRandomAddress,
-                             pwemb::StatusCode::SUCCESS);
+  RespondWithCommandComplete(
+      pwemb::OpCode::LE_SET_ADVERTISING_SET_RANDOM_ADDRESS,
+      pwemb::StatusCode::SUCCESS);
 }
 
 void FakeController::OnLESetExtendedAdvertisingParameters(
@@ -2689,7 +2696,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingParameters,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -2700,8 +2707,9 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
       bt_log(INFO,
              "fake-hci",
              "cannot set parameters while advertising set is enabled");
-      RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
-                                 pwemb::StatusCode::COMMAND_DISALLOWED);
+      RespondWithCommandComplete(
+          pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
+          pwemb::StatusCode::COMMAND_DISALLOWED);
       return;
     }
   }
@@ -2714,8 +2722,9 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
            "fake-hci",
            "no available memory for new advertising set, handle: %d",
            handle);
-    RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
-                               pwemb::StatusCode::MEMORY_CAPACITY_EXCEEDED);
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
+        pwemb::StatusCode::MEMORY_CAPACITY_EXCEEDED);
     return;
   }
 
@@ -2775,7 +2784,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
                  .ToString<std::string>()
                  .c_str());
       RespondWithCommandComplete(
-          hci_spec::kLESetExtendedAdvertisingParameters,
+          pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
           pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
       return;
     }
@@ -2788,7 +2797,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
              "fake-hci",
              "only legacy pdus are supported, requires advertising on 1M PHY");
       RespondWithCommandComplete(
-          hci_spec::kLESetExtendedAdvertisingParameters,
+          pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
           pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
       return;
     }
@@ -2802,7 +2811,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
           "fake-hci",
           "extended advertising pdus can't be both connectable and scannable");
       RespondWithCommandComplete(
-          hci_spec::kLESetExtendedAdvertisingParameters,
+          pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
           pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
       return;
     }
@@ -2817,7 +2826,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
              "extended advertising pdus can't use the high duty cycle directed "
              "connectable type");
       RespondWithCommandComplete(
-          hci_spec::kLESetExtendedAdvertisingParameters,
+          pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
           pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
       return;
     }
@@ -2848,7 +2857,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
            state.interval_min,
            state.interval_max);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingParameters,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
         pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
     return;
   }
@@ -2860,7 +2869,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
            state.interval_min,
            hci_spec::kLEAdvertisingIntervalMin);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingParameters,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
         pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
     return;
   }
@@ -2872,7 +2881,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
            state.interval_max,
            hci_spec::kLEAdvertisingIntervalMax);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingParameters,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
         pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
     return;
   }
@@ -2884,7 +2893,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
            "fake-hci",
            "at least one bit must be set in primary advertising channel map");
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingParameters,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -2899,7 +2908,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
            "advertising tx power out of range: %d",
            advertising_tx_power);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingParameters,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -2936,7 +2945,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingData,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_DATA,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -2947,7 +2956,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
            "advertising handle (%d) maps to an unknown advertising set",
            handle);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingData,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_DATA,
         pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
     return;
   }
@@ -2960,7 +2969,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
   if (advertising_data_length == 0) {
     state.data_length = 0;
     std::memset(state.data, 0, sizeof(state.data));
-    RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingData,
+    RespondWithCommandComplete(pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_DATA,
                                pwemb::StatusCode::SUCCESS);
     NotifyAdvertisingState();
     return;
@@ -2972,14 +2981,14 @@ void FakeController::OnLESetExtendedAdvertisingData(
            "fake-hci",
            "cannot provide advertising data when using directed advertising");
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingData,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_DATA,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
   if (params.operation().Read() ==
       pwemb::LESetExtendedAdvDataOp::UNCHANGED_DATA) {
-    RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingData,
+    RespondWithCommandComplete(pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_DATA,
                                pwemb::StatusCode::SUCCESS);
     return;
   }
@@ -2993,7 +3002,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
            "data length (%zu bytes) larger than legacy PDU size limit",
            advertising_data_length);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingData,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_DATA,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -3007,7 +3016,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
            "limit",
            advertising_data_length);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingData,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_DATA,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -3020,7 +3029,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
            "data length (%zu bytes) larger than total extended PDU size limit",
            advertising_data_length);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingData,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_DATA,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -3040,7 +3049,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
     state.data_length += advertising_data_length;
   }
 
-  RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingData,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_DATA,
                              pwemb::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
@@ -3062,7 +3071,7 @@ void FakeController::OnLESetExtendedScanResponseData(
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedScanResponseData,
+        pwemb::OpCode::LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -3073,7 +3082,7 @@ void FakeController::OnLESetExtendedScanResponseData(
            "advertising handle (%d) maps to an unknown advertising set",
            handle);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedScanResponseData,
+        pwemb::OpCode::LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
         pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
     return;
   }
@@ -3086,8 +3095,9 @@ void FakeController::OnLESetExtendedScanResponseData(
   if (scan_response_data_length == 0) {
     state.scan_rsp_length = 0;
     std::memset(state.scan_rsp_data, 0, sizeof(state.scan_rsp_data));
-    RespondWithCommandComplete(hci_spec::kLESetExtendedScanResponseData,
-                               pwemb::StatusCode::SUCCESS);
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
+        pwemb::StatusCode::SUCCESS);
     NotifyAdvertisingState();
     return;
   }
@@ -3099,15 +3109,16 @@ void FakeController::OnLESetExtendedScanResponseData(
         "fake-hci",
         "cannot provide scan response data for unscannable advertising types");
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedScanResponseData,
+        pwemb::OpCode::LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
   if (params.operation().Read() ==
       pwemb::LESetExtendedAdvDataOp::UNCHANGED_DATA) {
-    RespondWithCommandComplete(hci_spec::kLESetExtendedScanResponseData,
-                               pwemb::StatusCode::SUCCESS);
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
+        pwemb::StatusCode::SUCCESS);
     return;
   }
 
@@ -3120,7 +3131,7 @@ void FakeController::OnLESetExtendedScanResponseData(
            "data length (%zu bytes) larger than legacy PDU size limit",
            scan_response_data_length);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedScanResponseData,
+        pwemb::OpCode::LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -3134,7 +3145,7 @@ void FakeController::OnLESetExtendedScanResponseData(
            "limit",
            scan_response_data_length);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedScanResponseData,
+        pwemb::OpCode::LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -3147,7 +3158,7 @@ void FakeController::OnLESetExtendedScanResponseData(
            "data length (%zu bytes) larger than total extended PDU size limit",
            scan_response_data_length);
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedScanResponseData,
+        pwemb::OpCode::LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -3167,7 +3178,7 @@ void FakeController::OnLESetExtendedScanResponseData(
     state.scan_rsp_length += scan_response_data_length;
   }
 
-  RespondWithCommandComplete(hci_spec::kLESetExtendedScanResponseData,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
                              pwemb::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
@@ -3198,7 +3209,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
         bt_log(
             ERROR, "fake-hci", "advertising handle outside range: %d", handle);
         RespondWithCommandComplete(
-            hci_spec::kLESetExtendedAdvertisingEnable,
+            pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_ENABLE,
             pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
         return;
       }
@@ -3210,7 +3221,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
                "cannot refer to handle more than once (handle: %d)",
                handle);
         RespondWithCommandComplete(
-            hci_spec::kLESetExtendedAdvertisingEnable,
+            pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_ENABLE,
             pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
         return;
       }
@@ -3223,7 +3234,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
                "cannot enable/disable an unknown handle (handle: %d)",
                handle);
         RespondWithCommandComplete(
-            hci_spec::kLESetExtendedAdvertisingEnable,
+            pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_ENABLE,
             pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
         return;
       }
@@ -3245,8 +3256,9 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
       }
     }
 
-    RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingEnable,
-                               pwemb::StatusCode::SUCCESS);
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_ENABLE,
+        pwemb::StatusCode::SUCCESS);
     NotifyAdvertisingState();
     return;
   }
@@ -3259,7 +3271,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
     bt_log(
         INFO, "fake-hci", "cannot enable with an empty advertising set list");
     RespondWithCommandComplete(
-        hci_spec::kLESetExtendedAdvertisingEnable,
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_ENABLE,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -3280,8 +3292,9 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
           INFO,
           "fake-hci",
           "cannot enable type requiring advertising data without setting it");
-      RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingEnable,
-                                 pwemb::StatusCode::COMMAND_DISALLOWED);
+      RespondWithCommandComplete(
+          pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_ENABLE,
+          pwemb::StatusCode::COMMAND_DISALLOWED);
       return;
     }
 
@@ -3289,8 +3302,9 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
       bt_log(INFO,
              "fake-hci",
              "cannot enable, requires scan response data but hasn't been set");
-      RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingEnable,
-                                 pwemb::StatusCode::COMMAND_DISALLOWED);
+      RespondWithCommandComplete(
+          pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_ENABLE,
+          pwemb::StatusCode::COMMAND_DISALLOWED);
       return;
     }
 
@@ -3300,7 +3314,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
     state.enabled = true;
   }
 
-  RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingEnable,
+  RespondWithCommandComplete(pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_ENABLE,
                              pwemb::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
@@ -3309,8 +3323,9 @@ void FakeController::OnLEReadMaximumAdvertisingDataLength() {
   if (!settings_.SupportedCommandsView()
            .le_read_maximum_advertising_data_length()
            .Read()) {
-    RespondWithCommandComplete(hci_spec::kLEReadMaximumAdvertisingDataLength,
-                               pwemb::StatusCode::UNKNOWN_COMMAND);
+    RespondWithCommandComplete(
+        pwemb::OpCode::LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH,
+        pwemb::StatusCode::UNKNOWN_COMMAND);
   }
 
   auto response = hci::EventPacket::New<
@@ -3330,8 +3345,8 @@ void FakeController::OnLEReadNumberOfSupportedAdvertisingSets() {
   auto view = event.view_t();
   view.status().Write(pwemb::StatusCode::SUCCESS);
   view.num_supported_advertising_sets().Write(num_supported_advertising_sets_);
-  RespondWithCommandComplete(hci_spec::kLEReadNumSupportedAdvertisingSets,
-                             &event);
+  RespondWithCommandComplete(
+      pwemb::OpCode::LE_READ_NUMBER_OF_SUPPORTED_ADVERTISING_SETS, &event);
 }
 
 void FakeController::OnLERemoveAdvertisingSet(
@@ -3341,7 +3356,7 @@ void FakeController::OnLERemoveAdvertisingSet(
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
     RespondWithCommandComplete(
-        hci_spec::kLERemoveAdvertisingSet,
+        pwemb::OpCode::LE_REMOVE_ADVERTISING_SET,
         pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -3352,7 +3367,7 @@ void FakeController::OnLERemoveAdvertisingSet(
            "advertising handle (%d) maps to an unknown advertising set",
            handle);
     RespondWithCommandComplete(
-        hci_spec::kLERemoveAdvertisingSet,
+        pwemb::OpCode::LE_REMOVE_ADVERTISING_SET,
         pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
     return;
   }
@@ -3362,13 +3377,13 @@ void FakeController::OnLERemoveAdvertisingSet(
            "fake-hci",
            "cannot remove enabled advertising set (handle: %d)",
            handle);
-    RespondWithCommandComplete(hci_spec::kLERemoveAdvertisingSet,
+    RespondWithCommandComplete(pwemb::OpCode::LE_REMOVE_ADVERTISING_SET,
                                pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
 
   extended_advertising_states_.erase(handle);
-  RespondWithCommandComplete(hci_spec::kLERemoveAdvertisingSet,
+  RespondWithCommandComplete(pwemb::OpCode::LE_REMOVE_ADVERTISING_SET,
                              pwemb::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
@@ -3380,14 +3395,14 @@ void FakeController::OnLEClearAdvertisingSets() {
              "fake-hci",
              "cannot remove currently enabled advertising set (handle: %d)",
              element.second.enabled);
-      RespondWithCommandComplete(hci_spec::kLEClearAdvertisingSets,
+      RespondWithCommandComplete(pwemb::OpCode::LE_CLEAR_ADVERTISING_SETS,
                                  pwemb::StatusCode::COMMAND_DISALLOWED);
       return;
     }
   }
 
   extended_advertising_states_.clear();
-  RespondWithCommandComplete(hci_spec::kLEClearAdvertisingSets,
+  RespondWithCommandComplete(pwemb::OpCode::LE_CLEAR_ADVERTISING_SETS,
                              pwemb::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
@@ -3497,7 +3512,8 @@ void FakeController::OnAndroidLEGetVendorCapabilities() {
       hci_spec::kCommandCompleteEventCode);
   MutableBufferView buffer = packet.mutable_data();
   settings_.android_extension_settings.data().Copy(&buffer);
-  RespondWithCommandComplete(android_hci::kLEGetVendorCapabilities, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_GET_VENDOR_CAPABILITIES,
+                             &packet);
 }
 
 void FakeController::OnAndroidStartA2dpOffload(
@@ -3511,7 +3527,8 @@ void FakeController::OnAndroidStartA2dpOffload(
   // return in case A2DP offload already started
   if (offloaded_a2dp_channel_state_) {
     view.status().Write(pwemb::StatusCode::CONNECTION_ALREADY_EXISTS);
-    RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                               &packet);
     return;
   }
 
@@ -3519,7 +3536,8 @@ void FakeController::OnAndroidStartA2dpOffload(
   if (params.scms_t_enable().enabled().Read() ==
       pwemb::GenericEnableParam::ENABLE) {
     view.status().Write(pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
-    RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                               &packet);
     return;
   }
 
@@ -3534,7 +3552,8 @@ void FakeController::OnAndroidStartA2dpOffload(
     case android_emb::A2dpCodecType::APTX_HD:
     case android_emb::A2dpCodecType::LDAC:
       break;
-      RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
+      RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                                 &packet);
       return;
   }
 
@@ -3547,7 +3566,8 @@ void FakeController::OnAndroidStartA2dpOffload(
     case android_emb::A2dpSamplingFrequency::HZ_96000:
       break;
     default:
-      RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
+      RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                                 &packet);
       return;
   }
 
@@ -3560,7 +3580,8 @@ void FakeController::OnAndroidStartA2dpOffload(
     case android_emb::A2dpBitsPerSample::BITS_PER_SAMPLE_32:
       break;
     default:
-      RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
+      RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                                 &packet);
       return;
   }
 
@@ -3571,7 +3592,8 @@ void FakeController::OnAndroidStartA2dpOffload(
     case android_emb::A2dpChannelMode::STEREO:
       break;
     default:
-      RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
+      RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                                 &packet);
       return;
   }
 
@@ -3579,7 +3601,8 @@ void FakeController::OnAndroidStartA2dpOffload(
       cpp20::endian::little, params.encoded_audio_bitrate().Read());
   // Bits 0x01000000 to 0xFFFFFFFF are reserved
   if (encoded_audio_bitrate >= 0x01000000) {
-    RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                               &packet);
     return;
   }
 
@@ -3601,7 +3624,8 @@ void FakeController::OnAndroidStartA2dpOffload(
   offloaded_a2dp_channel_state_ = state;
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                             &packet);
 }
 
 void FakeController::OnAndroidStopA2dpOffload() {
@@ -3613,14 +3637,16 @@ void FakeController::OnAndroidStopA2dpOffload() {
 
   if (!offloaded_a2dp_channel_state_) {
     view.status().Write(pwemb::StatusCode::REPEATED_ATTEMPTS);
-    RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                               &packet);
     return;
   }
 
   offloaded_a2dp_channel_state_ = std::nullopt;
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(android_hci::kA2dpOffloadCommand, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                             &packet);
 }
 
 void FakeController::OnAndroidA2dpOffloadCommand(
@@ -3643,7 +3669,8 @@ void FakeController::OnAndroidA2dpOffloadCommand(
              "fake-hci",
              "unhandled android A2DP offload command, subopcode: %#.4x",
              subopcode);
-      RespondWithCommandComplete(subopcode, pwemb::StatusCode::UNKNOWN_COMMAND);
+      RespondWithCommandComplete(pwemb::OpCode::ANDROID_A2DP_HARDWARE_OFFLOAD,
+                                 pwemb::StatusCode::UNKNOWN_COMMAND);
       break;
   }
 }
@@ -3662,7 +3689,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3676,7 +3703,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            handle);
 
     view.status().Write(pwemb::StatusCode::MEMORY_CAPACITY_EXCEEDED);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3720,7 +3747,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            state.interval_max);
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3731,7 +3758,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            state.interval_min,
            hci_spec::kLEAdvertisingIntervalMin);
     view.status().Write(pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3742,7 +3769,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
            state.interval_max,
            hci_spec::kLEAdvertisingIntervalMax);
     view.status().Write(pwemb::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3751,7 +3778,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtParam(
   extended_advertising_states_[handle] = state;
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
   NotifyAdvertisingState();
 }
 
@@ -3769,7 +3796,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3780,7 +3807,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
            handle);
 
     view.status().Write(pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3792,7 +3819,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
     state.data_length = 0;
     std::memset(state.data, 0, sizeof(state.data));
     view.status().Write(pwemb::StatusCode::SUCCESS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     NotifyAdvertisingState();
     return;
   }
@@ -3804,7 +3831,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
            "cannot provide advertising data when using directed advertising");
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3815,7 +3842,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
            params.adv_data_length().Read());
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3825,7 +3852,7 @@ void FakeController::OnAndroidLEMultiAdvtSetAdvtData(
               params.adv_data_length().Read());
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
   NotifyAdvertisingState();
 }
 
@@ -3843,7 +3870,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3854,7 +3881,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
            handle);
 
     view.status().Write(pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3867,7 +3894,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
     std::memset(state.scan_rsp_data, 0, sizeof(state.scan_rsp_data));
 
     view.status().Write(pwemb::StatusCode::SUCCESS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     NotifyAdvertisingState();
     return;
   }
@@ -3880,7 +3907,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
         "cannot provide scan response data for unscannable advertising types");
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3892,7 +3919,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
            params.scan_resp_length().Read());
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3902,7 +3929,7 @@ void FakeController::OnAndroidLEMultiAdvtSetScanResp(
               params.scan_resp_length().Read());
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
   NotifyAdvertisingState();
 }
 
@@ -3920,7 +3947,7 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
     view.status().Write(pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3931,7 +3958,7 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
            handle);
 
     view.status().Write(pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3943,7 +3970,7 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
         "cannot set LE random address while connectable advertising enabled");
 
     view.status().Write(pwemb::StatusCode::COMMAND_DISALLOWED);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3952,7 +3979,7 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
                     DeviceAddressBytes(params.random_address()));
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
 }
 
 void FakeController::OnAndroidLEMultiAdvtEnable(
@@ -3969,7 +3996,7 @@ void FakeController::OnAndroidLEMultiAdvtEnable(
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
 
     view.status().Write(pwemb::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER);
-    RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+    RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
     return;
   }
 
@@ -3981,7 +4008,7 @@ void FakeController::OnAndroidLEMultiAdvtEnable(
   extended_advertising_states_[handle].enabled = enabled;
 
   view.status().Write(pwemb::StatusCode::SUCCESS);
-  RespondWithCommandComplete(android_hci::kLEMultiAdvt, &packet);
+  RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT, &packet);
   NotifyAdvertisingState();
 }
 
@@ -4026,7 +4053,8 @@ void FakeController::OnAndroidLEMultiAdvt(
              "fake-hci",
              "unhandled android multiple advertising command, subopcode: %#.4x",
              subopcode);
-      RespondWithCommandComplete(subopcode, pwemb::StatusCode::UNKNOWN_COMMAND);
+      RespondWithCommandComplete(pwemb::OpCode::ANDROID_LE_MULTI_ADVT,
+                                 pwemb::StatusCode::UNKNOWN_COMMAND);
       break;
     }
   }
@@ -4052,7 +4080,8 @@ void FakeController::OnVendorCommand(
              "fake-hci",
              "received unhandled vendor command with opcode: %#.4x",
              opcode);
-      RespondWithCommandComplete(opcode, pwemb::StatusCode::UNKNOWN_COMMAND);
+      RespondWithCommandComplete(static_cast<pwemb::OpCode>(opcode),
+                                 pwemb::StatusCode::UNKNOWN_COMMAND);
       break;
   }
 }
@@ -4356,7 +4385,8 @@ void FakeController::HandleReceivedCommandPacket(
              "fake-hci",
              "received unhandled command with opcode: %#.4x",
              opcode);
-      RespondWithCommandComplete(opcode, pwemb::StatusCode::UNKNOWN_COMMAND);
+      RespondWithCommandComplete(static_cast<pwemb::OpCode>(opcode),
+                                 pwemb::StatusCode::UNKNOWN_COMMAND);
       break;
     }
   }
@@ -4382,7 +4412,8 @@ void FakeController::HandleReceivedCommandPacket(
            "command with "
            "opcode: %#.4x",
            opcode);
-    RespondWithCommandComplete(opcode, pwemb::StatusCode::UNKNOWN_COMMAND);
+    RespondWithCommandComplete(static_cast<pwemb::OpCode>(opcode),
+                               pwemb::StatusCode::UNKNOWN_COMMAND);
     return;
   }
 
