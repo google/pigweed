@@ -13,7 +13,7 @@
 # the License.
 
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:compatibility.bzl", "host_backend_alias", "incompatible_with_mcu")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 load("//pw_perf_test:pw_cc_perf_test.bzl", "pw_cc_perf_test")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
@@ -123,15 +123,12 @@ pw_facade(
 
 label_flag(
     name = "test_timer_backend",
-    build_setting_default = ":timer_multiplexer",
+    build_setting_default = ":unspecified_backend",
 )
 
-cc_library(
-    name = "timer_multiplexer",
-    visibility = ["//targets:__pkg__"],
-    deps = select({
-        "//conditions:default": [":chrono_timer"],
-    }),
+host_backend_alias(
+    name = "unspecified_backend",
+    backend = ":chrono_timer",
 )
 
 pw_cc_test(
