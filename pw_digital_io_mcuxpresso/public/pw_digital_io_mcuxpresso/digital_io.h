@@ -14,9 +14,12 @@
 #pragma once
 
 #include "fsl_gpio.h"
+#include "pw_containers/intrusive_forward_list.h"
 #include "pw_digital_io/digital_io.h"
 
 namespace pw::digital_io {
+
+PW_EXTERN_C void GPIO_INTA_DriverIRQHandler();
 
 class McuxpressoDigitalOut : public pw::digital_io::DigitalOut {
  public:
@@ -51,6 +54,36 @@ class McuxpressoDigitalIn : public pw::digital_io::DigitalIn {
   GPIO_Type* base_;
   const uint32_t port_;
   const uint32_t pin_;
+  bool enabled_ = false;
+};
+
+class McuxpressoDigitalInOutInterrupt
+    : public pw::digital_io::DigitalInOutInterrupt,
+      public pw::IntrusiveForwardList<McuxpressoDigitalInOutInterrupt>::Item {
+ public:
+  McuxpressoDigitalInOutInterrupt(GPIO_Type* base,
+                                  uint32_t port,
+                                  uint32_t pin,
+                                  bool output);
+
+  bool is_enabled() const { return enabled_; }
+
+ private:
+  friend void GPIO_INTA_DriverIRQHandler();
+  pw::Status DoEnable(bool enable) override;
+  pw::Result<pw::digital_io::State> DoGetState() override;
+  pw::Status DoSetState(pw::digital_io::State state) override;
+  pw::Status DoSetInterruptHandler(
+      pw::digital_io::InterruptTrigger trigger,
+      pw::digital_io::InterruptHandler&& handler) override;
+  pw::Status DoEnableInterruptHandler(bool enable) override;
+
+  GPIO_Type* base_;
+  const uint32_t port_;
+  const uint32_t pin_;
+  const bool output_;
+  pw::digital_io::InterruptTrigger trigger_;
+  pw::digital_io::InterruptHandler interrupt_handler_;
   bool enabled_ = false;
 };
 

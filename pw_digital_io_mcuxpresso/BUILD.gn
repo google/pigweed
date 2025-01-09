@@ -33,10 +33,12 @@ if (pw_third_party_mcuxpresso_SDK != "") {
       "public/pw_digital_io_mcuxpresso/interrupt_line.h",
     ]
     public_deps = [
+      "$dir_pw_containers:intrusive_forward_list",
       "$dir_pw_digital_io",
       "$dir_pw_result",
       "$dir_pw_status",
       "$dir_pw_sync:borrow",
+      "$dir_pw_sync:interrupt_spin_lock",
       "$pw_third_party_mcuxpresso_SDK",
     ]
     deps = [ "$dir_pw_assert" ]

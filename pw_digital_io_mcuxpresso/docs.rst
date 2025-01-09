@@ -51,12 +51,25 @@ Example code to use GPIO pins from an NXP SDK board definition:
 
 .. code-block:: text
 
+   // Using outputs
    McuxpressoDigitalOut out(BOARD_INITPINS_D8_GPIO,
                            BOARD_INITPINS_D8_PORT,
                            BOARD_INITPINS_D8_PIN,
                            pw::digital_io::State::kActive);
    out.SetState(pw::digital_io::State::kInactive);
 
+   // Using inputs
    McuxpressoDigitalIn in(
       BOARD_INITPINS_D9_GPIO, BOARD_INITPINS_D9_PORT, BOARD_INITPINS_D9_PIN);
    auto state = in.GetState();
+
+   // Using inputs with a falling edge interrupt
+   McuxpressoDigitalInOutInterrupt inoutinterrupt(BOARD_INITPINS_D9_GPIO,
+                                                  BOARD_INITPINS_D9_PORT,
+                                                  BOARD_INITPINS_D9_PIN,
+                                                  false);
+   inoutinterrupt.SetInterruptHandler(
+      pw::digital_io::InterruptTrigger::kDeactivatingEdge,
+      [handler]);
+   inoutinterrupt.EnableInterruptHandler();
+   auto state = inoutinterrupt.GetState();

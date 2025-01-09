@@ -34,9 +34,11 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
+        "//pw_containers:intrusive_forward_list",
         "//pw_digital_io",
         "//pw_preprocessor",
         "//pw_sync:borrow",
+        "//pw_sync:interrupt_spin_lock",
         "//targets:mcuxpresso_sdk",
     ],
 )
