@@ -20,7 +20,6 @@
 #include "fsl_pint.h"
 #include "pw_digital_io/digital_io.h"
 #include "pw_function/function.h"
-#include "pw_result/result.h"
 #include "pw_status/status.h"
 
 namespace pw::digital_io {
@@ -91,18 +90,6 @@ pw::Status McuxpressoInterruptController::EnableHandler(pint_pin_int_t pin,
     PINT_DisableCallbackByIndex(base_, pin);
   }
   return pw::OkStatus();
-}
-
-pw::Result<pw::digital_io::State> McuxpressoInterruptController::GetState(
-    pint_pin_int_t pin) {
-  switch (PINT_PinInterruptGetStatus(base_, pin)) {
-    case 0:
-      return State::kInactive;
-    case 1:
-      return State::kActive;
-    default:
-      return pw::Status::Unknown();
-  }
 }
 
 }  // namespace pw::digital_io

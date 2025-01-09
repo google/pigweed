@@ -15,7 +15,6 @@
 
 #include "fsl_pint.h"
 #include "pw_digital_io/digital_io.h"
-#include "pw_result/result.h"
 #include "pw_status/status.h"
 
 namespace pw::digital_io {
@@ -33,7 +32,6 @@ class McuxpressoInterruptController {
                     pw::digital_io::InterruptTrigger trigger,
                     pw::digital_io::InterruptHandler&& handler);
   pw::Status EnableHandler(pint_pin_int_t pin, bool enable);
-  pw::Result<pw::digital_io::State> GetState(pint_pin_int_t pin);
 
  private:
   PINT_Type* base_;

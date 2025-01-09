@@ -15,7 +15,6 @@
 
 #include "pw_digital_io/digital_io.h"
 #include "pw_digital_io_mcuxpresso/interrupt_controller.h"
-#include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_sync/borrow.h"
 
@@ -33,31 +32,6 @@ class McuxpressoPintInterrupt : public pw::digital_io::DigitalInterrupt {
  private:
   // pw::digital_io::DigitalInterrupt implementation
   pw::Status DoEnable(bool enable) override;
-  pw::Status DoSetInterruptHandler(
-      pw::digital_io::InterruptTrigger trigger,
-      pw::digital_io::InterruptHandler&& handler) override;
-  pw::Status DoEnableInterruptHandler(bool enable) override;
-
-  pw::sync::Borrowable<McuxpressoInterruptController>& controller_;
-  pint_pin_int_t pin_;
-};
-
-// Deprecated. Use McuxpressoPintInterrupt.
-// TODO: https://pwbug.dev/337927184 - Remove after downstreams have migrated.
-class McuxpressoDigitalInInterrupt : public pw::digital_io::DigitalInInterrupt {
- public:
-  McuxpressoDigitalInInterrupt(
-      pw::sync::Borrowable<McuxpressoInterruptController>& controller,
-      pint_pin_int_t pin);
-
-  McuxpressoDigitalInInterrupt(const McuxpressoDigitalInInterrupt&) = delete;
-  McuxpressoDigitalInInterrupt& operator=(const McuxpressoDigitalInInterrupt&) =
-      delete;
-
- private:
-  // pw::digital_io::DigitalInInterrupt implementation
-  pw::Status DoEnable(bool enable) override;
-  pw::Result<pw::digital_io::State> DoGetState() override;
   pw::Status DoSetInterruptHandler(
       pw::digital_io::InterruptTrigger trigger,
       pw::digital_io::InterruptHandler&& handler) override;

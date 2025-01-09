@@ -16,7 +16,6 @@
 
 #include "pw_digital_io/digital_io.h"
 #include "pw_digital_io_mcuxpresso/interrupt_controller.h"
-#include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_sync/borrow.h"
 
@@ -42,33 +41,6 @@ pw::Status McuxpressoPintInterrupt::DoSetInterruptHandler(
 }
 
 pw::Status McuxpressoPintInterrupt::DoEnableInterruptHandler(bool enable) {
-  return controller_.acquire()->EnableHandler(pin_, enable);
-}
-
-// McuxpressoDigitalInInterrupt (deprecated)
-
-McuxpressoDigitalInInterrupt::McuxpressoDigitalInInterrupt(
-    pw::sync::Borrowable<McuxpressoInterruptController>& controller,
-    pint_pin_int_t pin)
-    : controller_(controller), pin_(pin) {}
-
-pw::Status McuxpressoDigitalInInterrupt::DoEnable(bool) {
-  // Can not enabled at individual line level. Only at controller level, which
-  // is always enabled.
-  return pw::OkStatus();
-}
-
-pw::Result<pw::digital_io::State> McuxpressoDigitalInInterrupt::DoGetState() {
-  return controller_.acquire()->GetState(pin_);
-}
-
-pw::Status McuxpressoDigitalInInterrupt::DoSetInterruptHandler(
-    pw::digital_io::InterruptTrigger trigger,
-    pw::digital_io::InterruptHandler&& handler) {
-  return controller_.acquire()->Config(pin_, trigger, std::move(handler));
-}
-
-pw::Status McuxpressoDigitalInInterrupt::DoEnableInterruptHandler(bool enable) {
   return controller_.acquire()->EnableHandler(pin_, enable);
 }
 
