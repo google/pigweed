@@ -160,7 +160,7 @@ cc_args(
     ],
     args = [
         "-mcpu=cortex-m33",
-        "-mfloat-abi=soft",
+        "-mfloat-abi=softfp",
     ],
 )
 
