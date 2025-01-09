@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <cstring>
 #include <type_traits>
 
 #include "pw_result/result.h"
@@ -82,6 +83,36 @@ template <typename EmbossT,
               std::is_convertible_v<ContainerT, pw::span<uint8_t>>>>
 constexpr inline Result<EmbossT> MakeEmbossWriter(ContainerT&& buffer) {
   return MakeEmbossWriter<EmbossT>(buffer.data(), buffer.size());
+}
+
+/// Copy from a container to an Emboss object's backing storage.
+///
+/// Container needs to support `data()` and `size()` (in bytes) functions.
+template <typename EmbossT, typename ContainerT>
+constexpr void UncheckedCopyToEmbossStruct(EmbossT emboss_dest,
+                                           ContainerT&& src) {
+  // std::memcpy allows size zero, but ubsan will complain for some empty
+  // containers so just skip copy in those cases.
+  if (src.size() == 0) {
+    return;
+  }
+  std::memcpy(emboss_dest.BackingStorage().data(), src.data(), src.size());
+}
+
+/// Try to copy from a container to an Emboss object's backing storage.
+///
+/// Returns false if the Emboss object is not Ok and or can't fit the
+/// container's contents.
+///
+/// Container needs to support `data()` and `size()` (in bytes) functions.
+template <typename EmbossT, typename ContainerT>
+[[nodiscard]] constexpr bool TryToCopyToEmbossStruct(EmbossT emboss_dest,
+                                                     ContainerT&& src) {
+  if (!emboss_dest.IsComplete() || src.size() > emboss_dest.SizeInBytes()) {
+    return false;
+  }
+  UncheckedCopyToEmbossStruct(emboss_dest, src);
+  return true;
 }
 
 }  // namespace pw::bluetooth

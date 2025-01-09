@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_proxy/gatt_notify_channel.h"
 
+#include "pw_assert/check.h"  // IWYU pragma: keep
 #include "pw_bluetooth/att.emb.h"
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
@@ -68,9 +69,9 @@ pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
                     att_size));
   att_notify.attribute_opcode().Write(emboss::AttOpcode::ATT_HANDLE_VALUE_NTF);
   att_notify.attribute_handle().Write(attribute_handle_);
-  std::memcpy(att_notify.attribute_value().BackingStorage().data(),
-              attribute_value.data(),
-              attribute_value.size());
+
+  PW_CHECK(
+      TryToCopyToEmbossStruct(att_notify.attribute_value(), attribute_value));
 
   return QueuePacket(std::move(h4_packet));
 }

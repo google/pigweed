@@ -80,9 +80,8 @@ Status SendRfcommFromController(ProxyHost& proxy,
   }
 
   EXPECT_EQ(rfcomm.information().SizeInBytes(), payload.size());
-  std::memcpy(rfcomm.information().BackingStorage().data(),
-              payload.data(),
-              payload.size());
+  EXPECT_TRUE(TryToCopyToEmbossStruct(/*emboss_dest=*/rfcomm.information(),
+                                      /*src=*/payload));
   rfcomm.fcs().Write(fcs);
   auto hci_span = bframe.acl.hci_span();
   H4PacketWithHci packet{emboss::H4PacketType::ACL_DATA, hci_span};

@@ -115,9 +115,9 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
     return Status::ResourceExhausted();
   }
   PW_CHECK(rfcomm.information().SizeInBytes() == payload.size());
-  std::memcpy(rfcomm.information().BackingStorage().data(),
-              payload.data(),
-              payload.size());
+  PW_CHECK(TryToCopyToEmbossStruct(
+      /*emboss_dest=*/rfcomm.information(),
+      /*src=*/payload));
 
   // UIH frame type:
   //   FCS should be calculated over address and control fields.

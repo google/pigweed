@@ -115,8 +115,6 @@ pw_cc_test(
         "rfcomm_test.cc",
         "utils_test.cc",
     ],
-    # TODO: b/385375184 - Fix this test!
-    tags = ["noubsan"],
     deps = [
         ":pw_bluetooth_proxy",
         ":test_utils",

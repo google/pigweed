@@ -445,7 +445,6 @@ std::optional<H4PacketWithH4> L2capCoc::GenerateNextTxPacket() {
       MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
   PW_CHECK(acl.ok());
 
-  uint8_t* payload_start;
   if (!is_continuing_segment_) {
     Result<emboss::FirstKFrameWriter> first_kframe_writer =
         MakeEmbossWriter<emboss::FirstKFrameWriter>(
@@ -454,19 +453,20 @@ std::optional<H4PacketWithH4> L2capCoc::GenerateNextTxPacket() {
     PW_CHECK(first_kframe_writer.ok());
     first_kframe_writer->sdu_length().Write(sdu_span.size());
     PW_CHECK(first_kframe_writer->Ok());
-    payload_start = first_kframe_writer->payload().BackingStorage().data();
+    PW_CHECK(TryToCopyToEmbossStruct(
+        /*emboss_dest=*/first_kframe_writer->payload(),
+        /*src=*/sdu_span.subspan(tx_sdu_offset_, sdu_bytes_in_segment)));
   } else {
     Result<emboss::SubsequentKFrameWriter> subsequent_kframe_writer =
         MakeEmbossWriter<emboss::SubsequentKFrameWriter>(
             acl->payload().BackingStorage().data(),
             acl->payload().SizeInBytes());
     PW_CHECK(subsequent_kframe_writer.ok());
-    payload_start = subsequent_kframe_writer->payload().BackingStorage().data();
+    PW_CHECK(TryToCopyToEmbossStruct(
+        /*emboss_dest=*/subsequent_kframe_writer->payload(),
+        /*src=*/sdu_span.subspan(tx_sdu_offset_, sdu_bytes_in_segment)));
   }
 
-  std::memcpy(/*__dest=*/payload_start,
-              /*__src=*/sdu_span.subspan(tx_sdu_offset_).data(),
-              /*__n=*/sdu_bytes_in_segment);
   tx_sdu_offset_ += sdu_bytes_in_segment;
 
   if (tx_sdu_offset_ == sdu_span.size()) {

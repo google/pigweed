@@ -72,8 +72,7 @@ pw::Status BasicL2capChannel::Write(pw::span<const uint8_t> payload) {
                 MakeEmbossWriter<emboss::BFrameWriter>(
                     acl.payload().BackingStorage().data(),
                     acl.payload().BackingStorage().SizeInBytes()));
-  std::memcpy(
-      bframe.payload().BackingStorage().data(), payload.data(), payload.size());
+  PW_CHECK(TryToCopyToEmbossStruct(bframe.payload(), payload));
 
   return QueuePacket(std::move(h4_packet));
 }

@@ -55,5 +55,137 @@ TEST(EmbossUtilTest, MakeEmbossWriterFromSpan) {
   EXPECT_EQ(failed_view.status(), pw::Status::InvalidArgument());
 }
 
+TEST(CopyToEmbossTest, CopyArrayToEmboss) {
+  std::array<uint8_t, 7> e_array = {0x00, 0x01, 0x02, 0x03};
+  auto e_span = pw::span(e_array);
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      emboss::TestCommandPacketWithArrayPayloadWriter e_view,
+      MakeEmbossWriter<emboss::TestCommandPacketWithArrayPayloadWriter>(
+          e_span));
+
+  std::array<uint8_t, 4> t1_array = {33, 71, 24, 91};
+
+  UncheckedCopyToEmbossStruct(e_view.payload(), t1_array);
+  EXPECT_TRUE(std::equal(e_view.payload().BackingStorage().begin(),
+                         e_view.payload().BackingStorage().end(),
+                         t1_array.begin(),
+                         t1_array.end()));
+}
+
+TEST(CopyToEmbossTest, CopySpanToEmboss) {
+  std::array<uint8_t, 7> e_array = {0x00, 0x01, 0x02, 0x03};
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      emboss::TestCommandPacketWithArrayPayloadWriter e_view,
+      MakeEmbossWriter<emboss::TestCommandPacketWithArrayPayloadWriter>(
+          pw::span{e_array}));
+
+  std::array<uint8_t, 4> t1_array = {33, 71, 24, 91};
+
+  UncheckedCopyToEmbossStruct(e_view.payload(), pw::span(t1_array));
+  EXPECT_TRUE(std::equal(e_view.payload().BackingStorage().begin(),
+                         e_view.payload().BackingStorage().end(),
+                         t1_array.begin(),
+                         t1_array.end()));
+}
+
+TEST(CopyToEmbossTest, CopySmallerToEmboss) {
+  std::array<uint8_t, 7> e_array = {0x00, 0x01, 0x02, 0x03};
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      emboss::TestCommandPacketWithArrayPayloadWriter e_view,
+      MakeEmbossWriter<emboss::TestCommandPacketWithArrayPayloadWriter>(
+          pw::span{e_array}));
+
+  std::array<uint8_t, 2> t1_array = {33, 71};
+
+  UncheckedCopyToEmbossStruct(e_view.payload(), t1_array);
+  EXPECT_TRUE(
+      std::equal(e_view.payload().BackingStorage().begin(),
+                 e_view.payload().BackingStorage().begin() + t1_array.size(),
+                 t1_array.begin(),
+                 t1_array.end()));
+}
+
+TEST(CopyToEmbossTest, CopyEmptyToEmboss) {
+  std::array<uint8_t, 7> e_array = {0x00, 0x01, 0x02, 0x03};
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      emboss::TestCommandPacketWithArrayPayloadWriter e_view,
+      MakeEmbossWriter<emboss::TestCommandPacketWithArrayPayloadWriter>(
+          pw::span{e_array}));
+
+  std::array<uint8_t, 0> t1_array = {};
+
+  UncheckedCopyToEmbossStruct(e_view.payload(), t1_array);
+  // Emboss view's underlying array is unchanged.
+  EXPECT_TRUE(std::equal(e_view.BackingStorage().begin(),
+                         e_view.BackingStorage().end(),
+                         e_array.begin(),
+                         e_array.end()));
+}
+
+TEST(CopyToEmbossTest, TryToCopyEmptyToEmboss) {
+  std::array<uint8_t, 7> e_array = {0x00, 0x01, 0x02, 0x03};
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      emboss::TestCommandPacketWithArrayPayloadWriter e_view,
+      MakeEmbossWriter<emboss::TestCommandPacketWithArrayPayloadWriter>(
+          pw::span{e_array}));
+
+  std::array<uint8_t, 0> t1_array = {};
+
+  EXPECT_TRUE(TryToCopyToEmbossStruct(e_view.payload(), t1_array));
+  // Emboss view's underlying array is unchanged.
+  EXPECT_TRUE(std::equal(e_view.BackingStorage().begin(),
+                         e_view.BackingStorage().end(),
+                         e_array.begin(),
+                         e_array.end()));
+}
+
+TEST(CopyToEmbossTest, TryToCopyToEmboss) {
+  std::array<uint8_t, 7> e_array = {0x00, 0x01, 0x02, 0x03};
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      emboss::TestCommandPacketWithArrayPayloadWriter e_view,
+      MakeEmbossWriter<emboss::TestCommandPacketWithArrayPayloadWriter>(
+          pw::span{e_array}));
+
+  std::array<uint8_t, 4> t1_array = {33, 71, 24, 91};
+
+  EXPECT_TRUE(TryToCopyToEmbossStruct(e_view.payload(), t1_array));
+  EXPECT_TRUE(std::equal(e_view.payload().BackingStorage().begin(),
+                         e_view.payload().BackingStorage().end(),
+                         t1_array.begin(),
+                         t1_array.end()));
+}
+
+TEST(CopyToEmbossTest, TryToCopyTooLargeToEmboss) {
+  std::array<uint8_t, 7> e_array = {0x00, 0x01, 0x02, 0x03};
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      emboss::TestCommandPacketWithArrayPayloadWriter e_view,
+      MakeEmbossWriter<emboss::TestCommandPacketWithArrayPayloadWriter>(
+          pw::span{e_array}));
+
+  std::array<uint8_t, 5> t1_array = {33, 71, 24, 91, 99};
+
+  EXPECT_FALSE(TryToCopyToEmbossStruct(e_view.payload(), t1_array));
+  // Emboss view's underlying array is unchanged.
+  EXPECT_TRUE(std::equal(e_view.BackingStorage().begin(),
+                         e_view.BackingStorage().end(),
+                         e_array.begin(),
+                         e_array.end()));
+}
+
+TEST(CopyToEmbossTest, TryToCopyToIncompleteEmboss) {
+  std::array<uint8_t, 6> e_array = {0x00, 0x01, 0x02, 0x03};
+  emboss::TestCommandPacketWithArrayPayloadWriter e_view{e_array.data(),
+                                                         e_array.size()};
+
+  std::array<uint8_t, 5> t1_array = {33, 71, 24, 91, 99};
+
+  EXPECT_FALSE(TryToCopyToEmbossStruct(e_view.payload(), t1_array));
+  // Emboss view's underlying array is unchanged.
+  EXPECT_TRUE(std::equal(e_view.BackingStorage().begin(),
+                         e_view.BackingStorage().end(),
+                         e_array.begin(),
+                         e_array.end()));
+}
+
 }  // namespace
 }  // namespace pw::bluetooth::proxy

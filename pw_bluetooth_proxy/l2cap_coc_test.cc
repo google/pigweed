@@ -14,6 +14,7 @@
 
 #include <cstdint>
 
+#include "pw_assert/check.h"  // IWYU pragma: keep
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_bluetooth_proxy_private/test_utils.h"
@@ -1977,9 +1978,8 @@ TEST_F(L2capCocReassemblyTest, OneSegmentRx) {
       bframe->acl.writer.payload().BackingStorage().data(),
       bframe->acl.writer.payload().SizeInBytes());
   kframe.sdu_length().Write(capture.expected_payload.size());
-  std::memcpy(/*__dest=*/kframe.payload().BackingStorage().data(),
-              /*__src=*/capture.expected_payload.data(),
-              /*__n=*/capture.expected_payload.size());
+  PW_CHECK(TryToCopyToEmbossStruct(/*emboss_dest=*/kframe.payload(),
+                                   /*src=*/capture.expected_payload));
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
 

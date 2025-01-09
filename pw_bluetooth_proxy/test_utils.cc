@@ -117,7 +117,6 @@ Result<KFrameWithStorage> SetupKFrame(uint16_t handle,
                          segment_pdu_length +
                              emboss::BasicL2capHeader::IntrinsicSizeInBytes()));
 
-  uint8_t* kframe_payload_start;
   if (segment_no == 0) {
     PW_TRY_ASSIGN(kframe.writer,
                   MakeEmbossWriter<emboss::FirstKFrameWriter>(
@@ -129,8 +128,10 @@ Result<KFrameWithStorage> SetupKFrame(uint16_t handle,
     first_kframe_writer.channel_id().Write(channel_id);
     first_kframe_writer.sdu_length().Write(payload.size());
     EXPECT_TRUE(first_kframe_writer.Ok());
-    kframe_payload_start =
-        first_kframe_writer.payload().BackingStorage().data();
+    PW_CHECK(TryToCopyToEmbossStruct(
+        /*emboss_dest=*/first_kframe_writer.payload(),
+        /*src=*/payload.subspan(payload_offset,
+                                segment_pdu_length - sdu_length_field_offset)));
   } else {
     PW_TRY_ASSIGN(kframe.writer,
                   MakeEmbossWriter<emboss::SubsequentKFrameWriter>(
@@ -141,13 +142,11 @@ Result<KFrameWithStorage> SetupKFrame(uint16_t handle,
     subsequent_kframe_writer.pdu_length().Write(segment_pdu_length);
     subsequent_kframe_writer.channel_id().Write(channel_id);
     EXPECT_TRUE(subsequent_kframe_writer.Ok());
-    kframe_payload_start =
-        subsequent_kframe_writer.payload().BackingStorage().data();
+    PW_CHECK(TryToCopyToEmbossStruct(
+        /*emboss_dest=*/subsequent_kframe_writer.payload(),
+        /*src=*/payload.subspan(payload_offset,
+                                segment_pdu_length - sdu_length_field_offset)));
   }
-
-  std::memcpy(/*__dest=*/kframe_payload_start,
-              /*__src=*/payload.data() + payload_offset,
-              /*__n=*/segment_pdu_length - sdu_length_field_offset);
 
   return kframe;
 }
