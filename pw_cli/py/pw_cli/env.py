@@ -124,6 +124,11 @@ _BAZEL_PROJECT_ROOT_ALLOW_LIST = [
         name='__main__',
         function='watch_setup',
     ),
+    AllowedCaller(
+        filename='pw_watch/py/pw_watch/run.py',
+        name='__main__',
+        function='_parse_args',
+    ),
 ]
 
 

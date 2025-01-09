@@ -26,6 +26,7 @@ py_library(
         "pw_watch/argparser.py",
         "pw_watch/common.py",
         "pw_watch/debounce.py",
+        "pw_watch/run.py",
         "pw_watch/watch.py",
         "pw_watch/watch_app.py",
     ],
@@ -43,9 +44,26 @@ py_library(
 pw_py_binary(
     name = "watch",
     srcs = ["pw_watch/watch.py"],
-    deps = [
-        ":pw_watch",
+    deps = [":pw_watch"],
+)
+
+pw_py_binary(
+    name = "bazel",
+    srcs = ["pw_watch/run.py"],
+    args = [
+        "--keep-going",
+        "--prefix",
+        "bazelisk",
+        "--pw-watch-commands",
     ],
+    main = "pw_watch/run.py",
+    deps = [":pw_watch"],
+)
+
+pw_py_binary(
+    name = "run",
+    srcs = ["pw_watch/run.py"],
+    deps = [":pw_watch"],
 )
 
 pw_py_test(

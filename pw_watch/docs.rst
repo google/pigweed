@@ -53,6 +53,9 @@ takes to run tests.
 -----------
 Get started
 -----------
+
+GN
+==
 .. code-block:: bash
 
    cd ~/pigweed
@@ -66,6 +69,37 @@ To override this behavior, provide the ``-C`` argument to ``pw watch``.
 
 See :ref:`module-pw_watch-guide` for more examples and
 :ref:`module-pw_watch-cli` for detailed CLI usage information.
+
+Bazel
+=====
+The Bazel build provides a ``//pw_watch:bazel`` entrypoint, which executes
+commands with ``bazelisk``. Arguments are forwarded directly to ``bazel`` /
+``bazelisk``, so any ``bazel`` subcommands may be used.
+
+.. code-block:: sh
+
+   # Runs bazelisk build //... when files change.
+   bazelisk run //pw_watch:bazel build //...
+
+   # Runs an executable when files change.
+   bazelisk run //pw_watch:bazel -- run //important:script -a --value 52
+
+   # Builds //..., then runs the //foo:bar test.
+   bazelisk run //pw_watch:bazel build //... , test //foo:bar
+
+.. important::
+
+   ``bazelisk run`` interprets arguments that start with ``-``. Pass ``--``
+   before any other arguments to separate arguments to Bazel from command
+   arguments.
+
+   .. code-block:: sh
+
+      bazelisk run //pw_watch:bazel -- <commands to run>
+
+Custom commands
+===============
+.. automodule:: pw_watch.run
 
 .. toctree::
    :hidden:
