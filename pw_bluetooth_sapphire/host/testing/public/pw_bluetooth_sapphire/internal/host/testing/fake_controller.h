@@ -584,7 +584,7 @@ class FakeController final : public ControllerTestDoubleBase,
 
   // Sends a HCI_Command_Status event in response to the command with |opcode|
   // and using the given data as the parameter payload.
-  void RespondWithCommandStatus(hci_spec::OpCode opcode,
+  void RespondWithCommandStatus(pw::bluetooth::emboss::OpCode opcode,
                                 pw::bluetooth::emboss::StatusCode status);
 
   // If a default Command Status event status has been set for the given

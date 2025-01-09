@@ -298,14 +298,14 @@ void FakeController::RespondWithCommandComplete(pwemb::OpCode opcode,
   SendEvent(hci_spec::kCommandCompleteEventCode, packet);
 }
 
-void FakeController::RespondWithCommandStatus(hci_spec::OpCode opcode,
+void FakeController::RespondWithCommandStatus(pwemb::OpCode opcode,
                                               pwemb::StatusCode status) {
   auto packet = hci::EventPacket::New<pwemb::CommandStatusEventWriter>(
       hci_spec::kCommandStatusEventCode);
   auto view = packet.view_t();
   view.status().Write(status);
   view.num_hci_command_packets().Write(settings_.num_hci_command_packets);
-  view.command_opcode_enum().Write(static_cast<pwemb::OpCode>(opcode));
+  view.command_opcode_enum().Write(opcode);
 
   SendEvent(hci_spec::kCommandStatusEventCode, &packet);
 }
@@ -605,7 +605,7 @@ bool FakeController::MaybeRespondWithDefaultCommandStatus(
     return false;
   }
 
-  RespondWithCommandStatus(opcode, iter->second);
+  RespondWithCommandStatus(static_cast<pwemb::OpCode>(opcode), iter->second);
   return true;
 }
 
@@ -816,7 +816,7 @@ void FakeController::OnCreateConnectionCommandReceived(
 
   // Cannot issue this command while a request is already pending.
   if (bredr_connect_pending_) {
-    RespondWithCommandStatus(hci_spec::kCreateConnection,
+    RespondWithCommandStatus(pwemb::OpCode::CREATE_CONNECTION,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -836,7 +836,7 @@ void FakeController::OnCreateConnectionCommandReceived(
   }
 
   // First send the Command Status response.
-  RespondWithCommandStatus(hci_spec::kCreateConnection, status);
+  RespondWithCommandStatus(pwemb::OpCode::CREATE_CONNECTION, status);
 
   // If we just sent back an error status then the operation is complete.
   if (status != pwemb::StatusCode::SUCCESS)
@@ -933,7 +933,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
   le_create_connection_command_count_++;
 
   if (advertising_procedure() == AdvertisingProcedure::kExtended) {
-    RespondWithCommandStatus(hci_spec::kLECreateConnection,
+    RespondWithCommandStatus(pwemb::OpCode::LE_CREATE_CONNECTION,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -944,7 +944,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
 
   // Cannot issue this command while a request is already pending.
   if (le_connect_pending_) {
-    RespondWithCommandStatus(hci_spec::kLECreateConnection,
+    RespondWithCommandStatus(pwemb::OpCode::LE_CREATE_CONNECTION,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -954,7 +954,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
   // that time frame.
   if (params.max_connection_event_length().Read() >
       2 * params.connection_interval_max().Read()) {
-    RespondWithCommandStatus(hci_spec::kLECreateConnection,
+    RespondWithCommandStatus(pwemb::OpCode::LE_CREATE_CONNECTION,
                              pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -979,7 +979,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
   }
 
   // First send the Command Status response.
-  RespondWithCommandStatus(hci_spec::kLECreateConnection, status);
+  RespondWithCommandStatus(pwemb::OpCode::LE_CREATE_CONNECTION, status);
 
   // If we just sent back an error status then the operation is complete.
   if (status != pwemb::StatusCode::SUCCESS) {
@@ -1042,20 +1042,20 @@ void FakeController::OnLEExtendedCreateConnectionCommandReceived(
            "fake-hci",
            "extended create connection command rejected, legacy advertising is "
            "in use");
-    RespondWithCommandStatus(hci_spec::kLEExtendedCreateConnection,
+    RespondWithCommandStatus(pwemb::OpCode::LE_EXTENDED_CREATE_CONNECTION_V1,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
 
   if (const auto& phys = params.initiating_phys();
       !phys.le_1m().Read() && !phys.le_2m().Read() && phys.le_coded().Read()) {
-    RespondWithCommandStatus(hci_spec::kLEExtendedCreateConnection,
+    RespondWithCommandStatus(pwemb::OpCode::LE_EXTENDED_CREATE_CONNECTION_V1,
                              pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
   }
 
   // Cannot issue this command while a request is already pending.
   if (le_connect_pending_) {
-    RespondWithCommandStatus(hci_spec::kLEExtendedCreateConnection,
+    RespondWithCommandStatus(pwemb::OpCode::LE_EXTENDED_CREATE_CONNECTION_V1,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -1065,7 +1065,7 @@ void FakeController::OnLEExtendedCreateConnectionCommandReceived(
   // that time frame.
   if (params.data()[0].max_connection_event_length().Read() >
       2 * params.data()[0].connection_interval_max().Read()) {
-    RespondWithCommandStatus(hci_spec::kLEExtendedCreateConnection,
+    RespondWithCommandStatus(pwemb::OpCode::LE_EXTENDED_CREATE_CONNECTION_V1,
                              pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -1088,7 +1088,8 @@ void FakeController::OnLEExtendedCreateConnectionCommandReceived(
   }
 
   // First send the Command Status response.
-  RespondWithCommandStatus(hci_spec::kLEExtendedCreateConnection, status);
+  RespondWithCommandStatus(pwemb::OpCode::LE_EXTENDED_CREATE_CONNECTION_V1,
+                           status);
 
   // If we just sent back an error status then the operation is complete.
   if (status != pwemb::StatusCode::SUCCESS) {
@@ -1255,7 +1256,7 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
   hci_spec::ConnectionHandle handle = params.connection_handle().Read();
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
-    RespondWithCommandStatus(hci_spec::kLEConnectionUpdate,
+    RespondWithCommandStatus(pwemb::OpCode::LE_CONNECTION_UPDATE,
                              pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
@@ -1268,12 +1269,12 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
   uint16_t supv_timeout = params.supervision_timeout().UncheckedRead();
 
   if (min_interval > max_interval) {
-    RespondWithCommandStatus(hci_spec::kLEConnectionUpdate,
+    RespondWithCommandStatus(pwemb::OpCode::LE_CONNECTION_UPDATE,
                              pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
-  RespondWithCommandStatus(hci_spec::kLEConnectionUpdate,
+  RespondWithCommandStatus(pwemb::OpCode::LE_CONNECTION_UPDATE,
                            pwemb::StatusCode::SUCCESS);
 
   hci_spec::LEConnectionParameters conn_params(
@@ -1309,14 +1310,15 @@ void FakeController::OnDisconnectCommandReceived(
   // Find the peer that matches the disconnected handle.
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
-    RespondWithCommandStatus(hci_spec::kDisconnect,
+    RespondWithCommandStatus(pwemb::OpCode::DISCONNECT,
                              pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
 
   PW_DCHECK(peer->connected());
 
-  RespondWithCommandStatus(hci_spec::kDisconnect, pwemb::StatusCode::SUCCESS);
+  RespondWithCommandStatus(pwemb::OpCode::DISCONNECT,
+                           pwemb::StatusCode::SUCCESS);
 
   bool notify = peer->connected();
   peer->RemoveLink(handle);
@@ -1385,14 +1387,14 @@ void FakeController::OnInquiry(const pwemb::InquiryCommandView& params) {
   // Confirm that LAP array is equal to either kGIAC or kLIAC.
   if (params.lap().Read() != pwemb::InquiryAccessCode::GIAC &&
       params.lap().Read() != pwemb::InquiryAccessCode::LIAC) {
-    RespondWithCommandStatus(hci_spec::kInquiry,
+    RespondWithCommandStatus(pwemb::OpCode::INQUIRY,
                              pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
   if (params.inquiry_length().Read() == 0x00 ||
       params.inquiry_length().Read() > hci_spec::kInquiryLengthMax) {
-    RespondWithCommandStatus(hci_spec::kInquiry,
+    RespondWithCommandStatus(pwemb::OpCode::INQUIRY,
                              pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
@@ -1402,7 +1404,7 @@ void FakeController::OnInquiry(const pwemb::InquiryCommandView& params) {
     inquiry_num_responses_left_ = -1;
   }
 
-  RespondWithCommandStatus(hci_spec::kInquiry, pwemb::StatusCode::SUCCESS);
+  RespondWithCommandStatus(pwemb::OpCode::INQUIRY, pwemb::StatusCode::SUCCESS);
 
   bt_log(INFO, "fake-hci", "sending inquiry responses..");
   SendInquiryResponses();
@@ -1427,7 +1429,7 @@ void FakeController::OnLESetScanEnable(
         INFO,
         "fake-hci",
         "legacy advertising command rejected, extended advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetScanEnable,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_SCAN_ENABLE,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -1464,7 +1466,7 @@ void FakeController::OnLESetExtendedScanEnable(
         INFO,
         "fake-hci",
         "extended advertising command rejected, legacy advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetExtendedScanEnable,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_EXTENDED_SCAN_ENABLE,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -1505,7 +1507,7 @@ void FakeController::OnLESetScanParameters(
         INFO,
         "fake-hci",
         "legacy advertising command rejected, extended advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetScanParameters,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_SCAN_PARAMETERS,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -1533,7 +1535,7 @@ void FakeController::OnLESetExtendedScanParameters(
         INFO,
         "fake-hci",
         "extended advertising command rejected, legacy advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetScanParameters,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_SCAN_PARAMETERS,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -1746,7 +1748,7 @@ void FakeController::OnWriteExtendedInquiryResponse(
     const pwemb::WriteExtendedInquiryResponseCommandView& params) {
   // As of now, we don't support FEC encoding enabled.
   if (params.fec_required().Read() != 0x00) {
-    RespondWithCommandStatus(hci_spec::kWriteExtendedInquiryResponse,
+    RespondWithCommandStatus(pwemb::OpCode::WRITE_EXTENDED_INQUIRY_RESPONSE,
                              pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
   }
 
@@ -1960,7 +1962,7 @@ void FakeController::OnLESetAdvertisingEnable(
         INFO,
         "fake-hci",
         "legacy advertising command rejected, extended advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetAdvertisingEnable,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_ADVERTISING_ENABLE,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -1991,7 +1993,7 @@ void FakeController::OnLESetScanResponseData(
         INFO,
         "fake-hci",
         "legacy advertising command rejected, extended advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetScanResponseData,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_SCAN_RESPONSE_DATA,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -2021,7 +2023,7 @@ void FakeController::OnLESetAdvertisingData(
         INFO,
         "fake-hci",
         "legacy advertising command rejected, extended advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetAdvertisingData,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_ADVERTISING_DATA,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -2051,7 +2053,7 @@ void FakeController::OnLESetAdvertisingParameters(
         INFO,
         "fake-hci",
         "legacy advertising command rejected, extended advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetAdvertisingParameters,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_ADVERTISING_PARAMETERS,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -2154,7 +2156,7 @@ void FakeController::OnLESetRandomAddress(
         INFO,
         "fake-hci",
         "legacy advertising command rejected, extended advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetRandomAddress,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_RANDOM_ADDRESS,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -2213,12 +2215,12 @@ void FakeController::OnReadRemoteNameRequestCommandReceived(
   // Find the peer that matches the requested address.
   FakePeer* peer = FindPeer(peer_address);
   if (!peer) {
-    RespondWithCommandStatus(hci_spec::kRemoteNameRequest,
+    RespondWithCommandStatus(pwemb::OpCode::REMOTE_NAME_REQUEST,
                              pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
 
-  RespondWithCommandStatus(hci_spec::kRemoteNameRequest,
+  RespondWithCommandStatus(pwemb::OpCode::REMOTE_NAME_REQUEST,
                            pwemb::StatusCode::SUCCESS);
 
   struct RemoteNameRequestCompleteEventParams {
@@ -2238,7 +2240,7 @@ void FakeController::OnReadRemoteNameRequestCommandReceived(
 
 void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(
     const pwemb::ReadRemoteSupportedFeaturesCommandView& params) {
-  RespondWithCommandStatus(hci_spec::kReadRemoteSupportedFeatures,
+  RespondWithCommandStatus(pwemb::OpCode::READ_REMOTE_SUPPORTED_FEATURES,
                            pwemb::StatusCode::SUCCESS);
 
   auto response = hci::EventPacket::New<
@@ -2253,7 +2255,7 @@ void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(
 
 void FakeController::OnReadRemoteVersionInfoCommandReceived(
     const pwemb::ReadRemoteVersionInfoCommandView& params) {
-  RespondWithCommandStatus(hci_spec::kReadRemoteVersionInfo,
+  RespondWithCommandStatus(pwemb::OpCode::READ_REMOTE_VERSION_INFO,
                            pwemb::StatusCode::SUCCESS);
   auto response =
       hci::EventPacket::New<pwemb::ReadRemoteVersionInfoCompleteEventWriter>(
@@ -2287,13 +2289,13 @@ void FakeController::OnReadRemoteExtendedFeaturesCommandReceived(
     }
     default: {
       RespondWithCommandStatus(
-          hci_spec::kReadRemoteExtendedFeatures,
+          pwemb::OpCode::READ_REMOTE_EXTENDED_FEATURES,
           pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
       return;
     }
   }
 
-  RespondWithCommandStatus(hci_spec::kReadRemoteExtendedFeatures,
+  RespondWithCommandStatus(pwemb::OpCode::READ_REMOTE_EXTENDED_FEATURES,
                            pwemb::StatusCode::SUCCESS);
   view.page_number().CopyFrom(params.page_number());
   view.max_page_number().Write(3);
@@ -2307,12 +2309,12 @@ void FakeController::OnAuthenticationRequestedCommandReceived(
   hci_spec::ConnectionHandle handle = params.connection_handle().Read();
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
-    RespondWithCommandStatus(hci_spec::kAuthenticationRequested,
+    RespondWithCommandStatus(pwemb::OpCode::AUTHENTICATION_REQUESTED,
                              pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
 
-  RespondWithCommandStatus(hci_spec::kAuthenticationRequested,
+  RespondWithCommandStatus(pwemb::OpCode::AUTHENTICATION_REQUESTED,
                            pwemb::StatusCode::SUCCESS);
 
   auto event = hci::EventPacket::New<pwemb::LinkKeyRequestEventWriter>(
@@ -2327,12 +2329,12 @@ void FakeController::OnLinkKeyRequestReplyCommandReceived(
                              DeviceAddressBytes(params.bd_addr()));
   FakePeer* peer = FindPeer(peer_address);
   if (!peer) {
-    RespondWithCommandStatus(hci_spec::kLinkKeyRequestReply,
+    RespondWithCommandStatus(pwemb::OpCode::LINK_KEY_REQUEST_REPLY,
                              pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
 
-  RespondWithCommandStatus(hci_spec::kLinkKeyRequestReply,
+  RespondWithCommandStatus(pwemb::OpCode::LINK_KEY_REQUEST_REPLY,
                            pwemb::StatusCode::SUCCESS);
   RespondWithCommandComplete(hci_spec::kLinkKeyRequestReply,
                              pwemb::StatusCode::SUCCESS);
@@ -2353,11 +2355,11 @@ void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
   FakePeer* peer = FindPeer(DeviceAddress(
       DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr())));
   if (!peer) {
-    RespondWithCommandStatus(hci_spec::kLinkKeyRequestNegativeReply,
+    RespondWithCommandStatus(pwemb::OpCode::LINK_KEY_REQUEST_NEGATIVE_REPLY,
                              pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
-  RespondWithCommandStatus(hci_spec::kLinkKeyRequestNegativeReply,
+  RespondWithCommandStatus(pwemb::OpCode::LINK_KEY_REQUEST_NEGATIVE_REPLY,
                            pwemb::StatusCode::SUCCESS);
 
   auto event = hci::EventPacket::New<pwemb::IoCapabilityRequestEventWriter>(
@@ -2368,7 +2370,7 @@ void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
 
 void FakeController::OnIOCapabilityRequestReplyCommand(
     const pwemb::IoCapabilityRequestReplyCommandView& params) {
-  RespondWithCommandStatus(hci_spec::kIOCapabilityRequestReply,
+  RespondWithCommandStatus(pwemb::OpCode::IO_CAPABILITY_REQUEST_REPLY,
                            pwemb::StatusCode::SUCCESS);
 
   auto io_response =
@@ -2396,12 +2398,12 @@ void FakeController::OnUserConfirmationRequestReplyCommand(
   FakePeer* peer = FindPeer(DeviceAddress(
       DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr())));
   if (!peer) {
-    RespondWithCommandStatus(hci_spec::kUserConfirmationRequestReply,
+    RespondWithCommandStatus(pwemb::OpCode::USER_CONFIRMATION_REQUEST_REPLY,
                              pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
 
-  RespondWithCommandStatus(hci_spec::kUserConfirmationRequestReply,
+  RespondWithCommandStatus(pwemb::OpCode::USER_CONFIRMATION_REQUEST_REPLY,
                            pwemb::StatusCode::SUCCESS);
 
   auto pairing_event =
@@ -2455,13 +2457,15 @@ void FakeController::OnUserConfirmationRequestNegativeReplyCommand(
   FakePeer* peer = FindPeer(DeviceAddress(
       DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr())));
   if (!peer) {
-    RespondWithCommandStatus(hci_spec::kUserConfirmationRequestNegativeReply,
-                             pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
+    RespondWithCommandStatus(
+        pwemb::OpCode::USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY,
+        pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
 
-  RespondWithCommandStatus(hci_spec::kUserConfirmationRequestNegativeReply,
-                           pwemb::StatusCode::SUCCESS);
+  RespondWithCommandStatus(
+      pwemb::OpCode::USER_CONFIRMATION_REQUEST_NEGATIVE_REPLY,
+      pwemb::StatusCode::SUCCESS);
   RespondWithCommandComplete(hci_spec::kUserConfirmationRequestNegativeReply,
                              pwemb::StatusCode::SUCCESS);
 
@@ -2476,7 +2480,7 @@ void FakeController::OnUserConfirmationRequestNegativeReplyCommand(
 
 void FakeController::OnSetConnectionEncryptionCommand(
     const pwemb::SetConnectionEncryptionCommandView& params) {
-  RespondWithCommandStatus(hci_spec::kSetConnectionEncryption,
+  RespondWithCommandStatus(pwemb::OpCode::SET_CONNECTION_ENCRYPTION,
                            pwemb::StatusCode::SUCCESS);
   SendEncryptionChangeEvent(
       params.connection_handle().Read(),
@@ -2505,13 +2509,13 @@ void FakeController::OnEnhancedAcceptSynchronousConnectionRequestCommand(
   FakePeer* peer = FindPeer(peer_address);
   if (!peer || !peer->last_connection_request_link_type().has_value()) {
     RespondWithCommandStatus(
-        hci_spec::kEnhancedAcceptSynchronousConnectionRequest,
+        pwemb::OpCode::ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION_REQUEST,
         pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
 
   RespondWithCommandStatus(
-      hci_spec::kEnhancedAcceptSynchronousConnectionRequest,
+      pwemb::OpCode::ENHANCED_ACCEPT_SYNCHRONOUS_CONNECTION_REQUEST,
       pwemb::StatusCode::SUCCESS);
 
   hci_spec::ConnectionHandle sco_handle = ++next_conn_handle_;
@@ -2542,12 +2546,13 @@ void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
       params.connection_handle().Read();
   FakePeer* peer = FindByConnHandle(acl_handle);
   if (!peer) {
-    RespondWithCommandStatus(hci_spec::kEnhancedSetupSynchronousConnection,
-                             pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
+    RespondWithCommandStatus(
+        pwemb::OpCode::ENHANCED_SETUP_SYNCHRONOUS_CONNECTION,
+        pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
 
-  RespondWithCommandStatus(hci_spec::kEnhancedSetupSynchronousConnection,
+  RespondWithCommandStatus(pwemb::OpCode::ENHANCED_SETUP_SYNCHRONOUS_CONNECTION,
                            pwemb::StatusCode::SUCCESS);
 
   hci_spec::ConnectionHandle sco_handle = ++next_conn_handle_;
@@ -2581,12 +2586,12 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
   const hci_spec::ConnectionHandle handle = params.connection_handle().Read();
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
-    RespondWithCommandStatus(hci_spec::kLEReadRemoteFeatures,
+    RespondWithCommandStatus(pwemb::OpCode::LE_READ_REMOTE_FEATURES,
                              pwemb::StatusCode::UNKNOWN_CONNECTION_ID);
     return;
   }
 
-  RespondWithCommandStatus(hci_spec::kLEReadRemoteFeatures,
+  RespondWithCommandStatus(pwemb::OpCode::LE_READ_REMOTE_FEATURES,
                            pwemb::StatusCode::SUCCESS);
 
   auto response =
@@ -2603,7 +2608,7 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
 
 void FakeController::OnLEStartEncryptionCommand(
     const pwemb::LEEnableEncryptionCommandView& params) {
-  RespondWithCommandStatus(hci_spec::kLEStartEncryption,
+  RespondWithCommandStatus(pwemb::OpCode::LE_START_ENCRYPTION,
                            pwemb::StatusCode::SUCCESS);
   SendEncryptionChangeEvent(
       params.connection_handle().Read(),
@@ -2673,8 +2678,9 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
         INFO,
         "fake-hci",
         "extended advertising command rejected, legacy advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetExtendedAdvertisingParameters,
-                             pwemb::StatusCode::COMMAND_DISALLOWED);
+    RespondWithCommandStatus(
+        pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1,
+        pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
 
@@ -2920,7 +2926,7 @@ void FakeController::OnLESetExtendedAdvertisingData(
         INFO,
         "fake-hci",
         "extended advertising command rejected, legacy advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetExtendedAdvertisingData,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_DATA,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -3046,7 +3052,7 @@ void FakeController::OnLESetExtendedScanResponseData(
         INFO,
         "fake-hci",
         "extended advertising command rejected, legacy advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetExtendedScanResponseData,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_EXTENDED_SCAN_RESPONSE_DATA,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
@@ -3173,7 +3179,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
         INFO,
         "fake-hci",
         "extended advertising command rejected, legacy advertising is in use");
-    RespondWithCommandStatus(hci_spec::kLESetExtendedAdvertisingEnable,
+    RespondWithCommandStatus(pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_ENABLE,
                              pwemb::StatusCode::COMMAND_DISALLOWED);
     return;
   }
