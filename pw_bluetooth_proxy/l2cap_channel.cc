@@ -69,7 +69,7 @@ L2capChannel::~L2capChannel() {
     PW_LOG_INFO(
         "btproxy: L2capChannel dtor - transport_: %u, connection_handle_ : "
         "%#x, "
-        "local_cid_: %u, remote_cid_: %u, state_: %u",
+        "local_cid_: %#x, remote_cid_: %#x, state_: %u",
         cpp23::to_underlying(transport_),
         connection_handle_,
         local_cid_,
@@ -84,7 +84,7 @@ L2capChannel::~L2capChannel() {
 void L2capChannel::Stop() {
   PW_LOG_INFO(
       "btproxy: L2capChannel::Stop - transport_: %u, connection_handle_: %#x, "
-      "local_cid_: %u, remote_cid_: %u, previous state_: %u",
+      "local_cid_: %#x, remote_cid_: %#x, previous state_: %u",
       cpp23::to_underlying(transport_),
       connection_handle_,
       local_cid_,
@@ -100,7 +100,7 @@ void L2capChannel::Stop() {
 void L2capChannel::Close() {
   PW_LOG_INFO(
       "btproxy: L2capChannel::Close - transport_: %u, "
-      "connection_handle_: %#x, local_cid_: %u, remote_cid_: %u, previous "
+      "connection_handle_: %#x, local_cid_: %#x, remote_cid_: %#x, previous "
       "state_: %u",
       cpp23::to_underlying(transport_),
       connection_handle_,
@@ -278,7 +278,7 @@ bool L2capChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
   if (state() != State::kRunning) {
     PW_LOG_ERROR(
         "btproxy: L2capChannel::OnPduReceivedFromController on non-running "
-        "channel. local_cid: %u, remote_cid: %u, state: %u",
+        "channel. local_cid: %#x, remote_cid: %#x, state: %u",
         local_cid(),
         remote_cid(),
         cpp23::to_underlying(state()));
@@ -292,7 +292,7 @@ void L2capChannel::HandleFragmentedPdu() {
   if (state() != State::kRunning) {
     PW_LOG_ERROR(
         "btproxy: L2capChannel::HandleFragmentedPdu on non-running "
-        "channel. local_cid: %u, remote_cid: %u, state: %u",
+        "channel. local_cid: %#x, remote_cid: %#x, state: %u",
         local_cid(),
         remote_cid(),
         cpp23::to_underlying(state()));
@@ -325,7 +325,7 @@ L2capChannel::L2capChannel(
       payload_from_controller_fn_(std::move(payload_from_controller_fn)) {
   PW_LOG_INFO(
       "btproxy: L2capChannel ctor - transport_: %u, connection_handle_ : %u, "
-      "local_cid_ : %u, remote_cid_: %u",
+      "local_cid_ : %#x, remote_cid_: %#x",
       cpp23::to_underlying(transport_),
       connection_handle_,
       local_cid_,
@@ -341,7 +341,7 @@ void L2capChannel::SendEvent(L2capChannelEvent event) {
   if (event != L2capChannelEvent::kWriteAvailable) {
     PW_LOG_INFO(
         "btproxy: SendEvent - event: %u, transport_: %u, "
-        "connection_handle_: %#x, local_cid_ : %u, remote_cid_: %u, "
+        "connection_handle_: %#x, local_cid_ : %#x, remote_cid_: %#x, "
         "state_: %u",
         cpp23::to_underlying(event),
         cpp23::to_underlying(transport_),

@@ -166,7 +166,7 @@ void L2capCoc::ProcessPduFromControllerMultibuf(span<uint8_t> kframe) {
         MakeEmbossView<emboss::FirstKFrameView>(kframe);
     if (!first_kframe_view.ok()) {
       PW_LOG_ERROR(
-          "(CID %u) Buffer is too small for first K-frame. So stopping "
+          "(CID %#x) Buffer is too small for first K-frame. So stopping "
           "channel and reporting it needs to be closed.",
           local_cid());
       StopAndSendEvent(L2capChannelEvent::kRxInvalid);
@@ -178,7 +178,7 @@ void L2capCoc::ProcessPduFromControllerMultibuf(span<uint8_t> kframe) {
         rx_multibuf_allocator_.AllocateContiguous(rx_sdu_bytes_remaining_);
     if (!rx_sdu_) {
       PW_LOG_ERROR(
-          "(CID 0x%X) Rx MultiBuf allocator out of memory. So stopping channel "
+          "(CID %#x) Rx MultiBuf allocator out of memory. So stopping channel "
           "and reporting it needs to be closed.",
           local_cid());
       StopAndSendEvent(L2capChannelEvent::kRxOutOfMemory);
@@ -198,7 +198,7 @@ void L2capCoc::ProcessPduFromControllerMultibuf(span<uint8_t> kframe) {
     // for the K-frames exceeds the specified SDU length, the receiver shall
     // disconnect the channel."
     PW_LOG_ERROR(
-        "(CID %u) Sum of K-frame payload sizes exceeds the specified SDU "
+        "(CID %#x) Sum of K-frame payload sizes exceeds the specified SDU "
         "length. So stopping channel and reporting it needs to be closed.",
         local_cid());
     StopAndSendEvent(L2capChannelEvent::kRxInvalid);
@@ -269,12 +269,12 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
         MakeEmbossView<emboss::SubsequentKFrameView>(kframe);
     if (!subsequent_kframe_view.ok()) {
       PW_LOG_ERROR(
-          "(CID %u) Buffer is too small for subsequent L2CAP K-frame. So "
+          "(CID %#x) Buffer is too small for subsequent L2CAP K-frame. So "
           "will drop.",
           local_cid());
       return true;
     }
-    PW_LOG_INFO("(CID %u) Dropping PDU that is part of current segmented SDU.",
+    PW_LOG_INFO("(CID %#x) Dropping PDU that is part of current segmented SDU.",
                 local_cid());
     if (subsequent_kframe_view->payload_size().Read() >
         remaining_sdu_bytes_to_ignore_) {
@@ -282,7 +282,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
       // for the K-frames exceeds the specified SDU length, the receiver shall
       // disconnect the channel."
       PW_LOG_ERROR(
-          "(CID %u) Sum of K-frame payload sizes exceeds the specified SDU "
+          "(CID %#x) Sum of K-frame payload sizes exceeds the specified SDU "
           "length. So stopping channel & reporting it needs to be closed.",
           local_cid());
       StopAndSendEvent(L2capChannelEvent::kRxInvalid);
@@ -297,7 +297,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
       MakeEmbossView<emboss::FirstKFrameView>(kframe);
   if (!kframe_view.ok()) {
     PW_LOG_ERROR(
-        "(CID %u) Buffer is too small for L2CAP K-frame. So stopping channel "
+        "(CID %#x) Buffer is too small for L2CAP K-frame. So stopping channel "
         "& reporting it needs to be closed.",
         local_cid());
     StopAndSendEvent(L2capChannelEvent::kRxInvalid);
@@ -310,7 +310,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
   // the receiver's MTU, the receiver shall disconnect the channel."
   if (sdu_length > rx_mtu_) {
     PW_LOG_ERROR(
-        "(CID %u) Rx K-frame SDU exceeds MTU. So stopping channel & "
+        "(CID %#x) Rx K-frame SDU exceeds MTU. So stopping channel & "
         "reporting it needs to be closed.",
         local_cid());
     StopAndSendEvent(L2capChannelEvent::kRxInvalid);
@@ -323,7 +323,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
   // that SDU (which we track via remaining bytes expected for the SDU).
   if (sdu_length > payload_size) {
     PW_LOG_ERROR(
-        "(CID %u) Encountered segmented L2CAP SDU (which is not yet "
+        "(CID %#x) Encountered segmented L2CAP SDU (which is not yet "
         "supported). So will drop all PDUs in SDU.",
         local_cid());
     remaining_sdu_bytes_to_ignore_ = sdu_length - payload_size;
@@ -334,7 +334,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
   // exceeds the receiver's MPS, the receiver shall disconnect the channel."
   if (payload_size > rx_mps_) {
     PW_LOG_ERROR(
-        "(CID %u) Rx K-frame payload exceeds MPU. So stopping channel & "
+        "(CID %#x) Rx K-frame payload exceeds MPU. So stopping channel & "
         "reporting it needs to be closed.",
         local_cid());
     StopAndSendEvent(L2capChannelEvent::kRxInvalid);
@@ -485,7 +485,7 @@ std::optional<H4PacketWithH4> L2capCoc::GenerateNextTxPacket() {
 void L2capCoc::AddTxCredits(uint16_t credits) {
   if (state() != State::kRunning) {
     PW_LOG_ERROR(
-        "(CID %u) Received credits on stopped CoC. So will ignore signal.",
+        "(CID %#x) Received credits on stopped CoC. So will ignore signal.",
         local_cid());
     return;
   }

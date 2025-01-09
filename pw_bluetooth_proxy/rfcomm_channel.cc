@@ -174,7 +174,7 @@ bool RfcommChannel::DoHandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
       MakeEmbossView<emboss::BFrameView>(l2cap_pdu);
   if (!bframe_view.ok()) {
     PW_LOG_ERROR(
-        "(CID %u) Buffer is too small for L2CAP B-frame, passing on to host.",
+        "(CID %#x) Buffer is too small for L2CAP B-frame, passing on to host.",
         local_cid());
     return false;
   }
