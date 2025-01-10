@@ -26,7 +26,6 @@
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
-#include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
 namespace bt::gap {

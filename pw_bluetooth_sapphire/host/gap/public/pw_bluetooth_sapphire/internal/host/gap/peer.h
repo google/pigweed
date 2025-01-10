@@ -18,19 +18,21 @@
 #include <string>
 #include <unordered_set>
 
+#include "pw_async/dispatcher.h"
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
+#include "pw_bluetooth_sapphire/internal/host/common/device_class.h"
 #include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
+#include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_metrics.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/persisted_data.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/lmp_feature_set.h"
-#include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
 namespace bt::gap {

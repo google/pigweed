@@ -23,6 +23,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/manufacturer_names.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect_util.h"
+#include "pw_bluetooth_sapphire/internal/host/transport/emboss_packet.h"
 
 namespace bt::gap {
 namespace {

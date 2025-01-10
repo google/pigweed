@@ -31,6 +31,30 @@ pw_source_set("definitions") {
   ]
 }
 
+pw_source_set("peer") {
+  public = [
+    "public/pw_bluetooth_sapphire/internal/host/gap/peer.h",
+    "public/pw_bluetooth_sapphire/internal/host/gap/peer_metrics.h",
+  ]
+  sources = [
+    "peer.cc",
+    "peer_metrics.cc",
+  ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":definitions",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/gatt:persisted_data",
+    "$dir_pw_bluetooth_sapphire/host/hci-spec",
+    "$dir_pw_bluetooth_sapphire/host/sm:definitions",
+  ]
+  deps = [
+    "$dir_pw_bluetooth_sapphire/lib/cpp-string",
+    "$dir_pw_string:utf_codecs",
+    dir_pw_bytes,
+  ]
+}
+
 pw_source_set("gap") {
   sources = [
     "adapter.cc",
@@ -54,9 +78,7 @@ pw_source_set("gap") {
     "low_energy_discovery_manager.cc",
     "low_energy_interrogator.cc",
     "pairing_state_manager.cc",
-    "peer.cc",
     "peer_cache.cc",
-    "peer_metrics.cc",
     "secure_simple_pairing_state.cc",
     "types.cc",
   ]
@@ -87,15 +109,14 @@ pw_source_set("gap") {
     "public/pw_bluetooth_sapphire/internal/host/gap/low_energy_state.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/pairing_delegate.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/pairing_state_manager.h",
-    "public/pw_bluetooth_sapphire/internal/host/gap/peer.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/peer_cache.h",
-    "public/pw_bluetooth_sapphire/internal/host/gap/peer_metrics.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/secure_simple_pairing_state.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/types.h",
   ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":definitions",
+    ":peer",
     "$dir_pw_async:heap_dispatcher",
     "$dir_pw_bluetooth",
     "$dir_pw_bluetooth_sapphire/host/common",

@@ -33,6 +33,16 @@ pw_source_set("definitions") {
   ]
 }
 
+pw_source_set("persisted_data") {
+  public =
+      [ "public/pw_bluetooth_sapphire/internal/host/gatt/persisted_data.h" ]
+  public_deps = [
+    ":definitions",
+    "$dir_pw_third_party/fuchsia:fit",
+  ]
+  public_configs = [ ":public_include_path" ]
+}
+
 pw_source_set("gatt") {
   sources = [
     "client.cc",
@@ -52,7 +62,6 @@ pw_source_set("gatt") {
     "public/pw_bluetooth_sapphire/internal/host/gatt/gatt.h",
     "public/pw_bluetooth_sapphire/internal/host/gatt/generic_attribute_service.h",
     "public/pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h",
-    "public/pw_bluetooth_sapphire/internal/host/gatt/persisted_data.h",
     "public/pw_bluetooth_sapphire/internal/host/gatt/remote_characteristic.h",
     "public/pw_bluetooth_sapphire/internal/host/gatt/remote_service.h",
     "public/pw_bluetooth_sapphire/internal/host/gatt/remote_service_manager.h",
@@ -62,6 +71,8 @@ pw_source_set("gatt") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":definitions",
+    ":persisted_data",
+    "$dir_pw_bluetooth_sapphire:config",
     "$dir_pw_bluetooth_sapphire/host/att",
     "$dir_pw_third_party/fuchsia:fit",
   ]
