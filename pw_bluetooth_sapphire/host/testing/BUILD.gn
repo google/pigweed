@@ -62,6 +62,16 @@ pw_source_set("test_helpers") {
   public_deps = [
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/lib/cpp-string",
+  ]
+}
+
+pw_source_set("gtest_helpers") {
+  testonly = pw_unit_test_TESTONLY
+  public =
+      [ "public/pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_bluetooth_sapphire/host/common",
     dir_pw_unit_test,
   ]
 }
@@ -94,7 +104,10 @@ pw_source_set("mock_controller") {
     "$dir_pw_bluetooth_sapphire/host/hci-spec",
     "$dir_pw_third_party/fuchsia:fit",
   ]
-  deps = [ ":test_helpers" ]
+  deps = [
+    ":gtest_helpers",
+    ":test_helpers",
+  ]
 }
 
 # Target that includes Fake HCI emulation support. This should NOT depend on

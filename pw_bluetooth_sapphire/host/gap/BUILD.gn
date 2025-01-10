@@ -130,12 +130,13 @@ pw_source_set("testing") {
     ":gap",
     "$dir_pw_bluetooth_sapphire/host/hci:testing",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
-    "$dir_pw_unit_test",
+    dir_pw_unit_test,
   ]
   public_configs = [ ":public_include_path" ]
 }
 
 pw_test("gap_test") {
+  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "adapter_test.cc",
     "android_vendor_capabilities_test.cc",

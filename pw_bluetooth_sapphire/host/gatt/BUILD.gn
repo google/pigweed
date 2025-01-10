@@ -93,6 +93,7 @@ pw_source_set("testing") {
 }
 
 pw_test("gatt_test") {
+  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "client_test.cc",
     "gatt_test.cc",
@@ -108,7 +109,7 @@ pw_test("gatt_test") {
     "$dir_pw_bluetooth_sapphire/host/att",
     "$dir_pw_bluetooth_sapphire/host/common:uuid_string_util",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
-    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
+    "$dir_pw_bluetooth_sapphire/host/testing:gtest_helpers",
   ]
 }
 

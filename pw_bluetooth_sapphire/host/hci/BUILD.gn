@@ -94,6 +94,7 @@ pw_source_set("testing") {
 }
 
 pw_test("hci_test") {
+  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "advertising_handle_map_test.cc",
     "connection_test.cc",
@@ -113,6 +114,7 @@ pw_test("hci_test") {
     "$dir_pw_bluetooth:emboss_hci_test",
     "$dir_pw_bluetooth_sapphire/host/testing",
     "$dir_pw_bluetooth_sapphire/host/testing:fake_controller",
+    "$dir_pw_bluetooth_sapphire/host/testing:gtest_helpers",
     "$dir_pw_bluetooth_sapphire/host/testing:mock_controller",
     "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
     "$dir_pw_bluetooth_sapphire/host/transport:testing",

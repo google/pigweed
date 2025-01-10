@@ -128,7 +128,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/gap/fake_pairing_delegate.h",
     ],
     implementation_deps = [
-        "//pw_unit_test",
+        "//pw_unit_test:pw_unit_test.facade",
     ],
     strip_include_prefix = "public",
     deps = [

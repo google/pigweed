@@ -18,6 +18,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_signaling_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace bt::l2cap::internal {

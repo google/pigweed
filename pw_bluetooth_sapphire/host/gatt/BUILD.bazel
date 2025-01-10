@@ -87,15 +87,11 @@ cc_library(
         "//pw_unit_test:googletest",
     ],
     strip_include_prefix = "public",
-    target_compatible_with = select({
-        "//pw_unit_test:googletest_only": [],
-        "@platforms//os:fuchsia": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         ":gatt",
         "//pw_async:heap_dispatcher",
         "//pw_bluetooth_sapphire/host/att",
+        "//pw_bluetooth_sapphire/host/testing:gtest_helpers",
         "//third_party/fuchsia:fit",
     ],
 )
@@ -117,6 +113,7 @@ pw_cc_test(
         "//pw_bluetooth_sapphire/host/att",
         "//pw_bluetooth_sapphire/host/common:uuid_string_util",
         "//pw_bluetooth_sapphire/host/l2cap:testing",
+        "//pw_bluetooth_sapphire/host/testing:gtest_helpers",
         "//pw_bluetooth_sapphire/host/testing:test_helpers",
     ],
 )

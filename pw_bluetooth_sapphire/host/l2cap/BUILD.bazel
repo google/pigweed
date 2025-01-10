@@ -158,15 +158,10 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/l2cap/test_packets.h",
     ],
     implementation_deps = [
+        "//pw_bluetooth_sapphire/host/testing:gtest_helpers",
         "//pw_bluetooth_sapphire/host/testing:test_helpers",
-        "//pw_unit_test:googletest",
     ],
     strip_include_prefix = "public",
-    target_compatible_with = select({
-        "//pw_unit_test:googletest_only": [],
-        "@platforms//os:fuchsia": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         ":l2cap",
         "//pw_async:fake_dispatcher_fixture",
@@ -218,6 +213,7 @@ pw_cc_test(
         "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/hci:testing",
         "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:gtest_helpers",
         "//pw_bluetooth_sapphire/host/testing:test_helpers",
         "//pw_bluetooth_sapphire/host/transport:testing",
     ],
@@ -272,6 +268,11 @@ pw_cc_fuzz_test(
 pw_cc_fuzz_test(
     name = "l2cap_fuzzer",
     srcs = ["l2cap_fuzztest.cc"],
+    target_compatible_with = select({
+        "//pw_unit_test:googletest_only": [],
+        "@platforms//os:fuchsia": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":l2cap",
         "//pw_bluetooth_sapphire/host/testing",

@@ -16,7 +16,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
-#include "pw_unit_test/framework.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 
 namespace bt::gatt::testing {
 

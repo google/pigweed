@@ -141,6 +141,7 @@ pw_cc_test(
         ":uuid_string_util",
         "//pw_async:fake_dispatcher_fixture",
         "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:gtest_helpers",
         "//pw_bluetooth_sapphire/host/testing:test_helpers",
     ],
 )

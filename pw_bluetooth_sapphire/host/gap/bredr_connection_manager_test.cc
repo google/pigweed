@@ -30,6 +30,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/sdp.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"

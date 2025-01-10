@@ -16,8 +16,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
-#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
-#include "pw_unit_test/framework.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 
 namespace bt::sdp {
 namespace {

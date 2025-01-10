@@ -19,8 +19,8 @@
 #include <cstddef>
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/loop_fixture.h"
-#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 using FakeChannel = bt::l2cap::testing::FakeChannel;
 using Channel = fuchsia::bluetooth::Channel;

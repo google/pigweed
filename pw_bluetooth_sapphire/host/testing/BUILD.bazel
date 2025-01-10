@@ -58,8 +58,18 @@ cc_library(
     hdrs = [
         "public/pw_bluetooth_sapphire/internal/host/testing/test_helpers.h",
     ],
-    copts = [
-        "-Wno-unused-parameter",
+    strip_include_prefix = "public",
+    deps = [
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/lib/cpp-string",
+    ],
+)
+
+cc_library(
+    name = "gtest_helpers",
+    testonly = True,
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h",
     ],
     strip_include_prefix = "public",
     target_compatible_with = select({
@@ -69,7 +79,6 @@ cc_library(
     }),
     deps = [
         "//pw_bluetooth_sapphire/host/common",
-        "//pw_bluetooth_sapphire/lib/cpp-string",
         "//pw_unit_test:googletest",
     ],
 )
@@ -103,6 +112,7 @@ cc_library(
         "-Wno-unused-parameter",
     ],
     implementation_deps = [
+        ":gtest_helpers",
         ":test_helpers",
     ],
     strip_include_prefix = "public",

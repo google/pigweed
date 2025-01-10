@@ -13,8 +13,6 @@
 // the License.
 
 #pragma once
-#include <gmock/gmock.h>
-
 #include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
 

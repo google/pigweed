@@ -26,5 +26,6 @@ def pw_cc_fuzz_test(**kwargs):
     kwargs["deps"].append(str(Label("//pw_build:default_link_extra_lib")))
 
     # TODO: b/292628774 - Only linux is supported for now.
-    kwargs["target_compatible_with"] = ["@platforms//os:linux"]
+    if "target_compatible_with" not in kwargs:
+        kwargs["target_compatible_with"] = ["@platforms//os:linux"]
     cc_fuzz_test(**kwargs)

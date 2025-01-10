@@ -109,6 +109,7 @@ pw_source_set("testing") {
 }
 
 pw_test("sm_tests") {
+  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "ecdh_key_test.cc",
     "error_test.cc",

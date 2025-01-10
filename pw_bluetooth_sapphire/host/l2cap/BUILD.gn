@@ -164,6 +164,7 @@ pw_source_set("testing") {
 }
 
 pw_test("l2cap_tests") {
+  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "a2dp_offload_manager_test.cc",
     "basic_mode_rx_engine_test.cc",
@@ -203,6 +204,7 @@ pw_test("l2cap_tests") {
     "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_bluetooth_sapphire/host/hci:testing",
     "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:gtest_helpers",
     "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
     "$dir_pw_bluetooth_sapphire/host/transport:testing",
   ]

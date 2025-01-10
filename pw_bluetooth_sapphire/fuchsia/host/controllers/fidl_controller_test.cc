@@ -20,8 +20,8 @@
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/fake_vendor_server.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/loop_fixture.h"
-#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
 namespace fhbt = fuchsia_hardware_bluetooth;
 

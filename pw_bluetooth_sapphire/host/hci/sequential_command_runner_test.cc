@@ -17,8 +17,8 @@
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
-#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
 namespace bt::hci {

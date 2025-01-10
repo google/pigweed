@@ -25,10 +25,10 @@
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect_util.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
-#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 

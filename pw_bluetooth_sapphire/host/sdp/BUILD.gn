@@ -59,7 +59,8 @@ pw_source_set("sdp") {
   ]
 }
 
-pw_test("sdp_tests") {
+pw_test("sdp_test") {
+  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "client_test.cc",
     "data_element_test.cc",
@@ -75,6 +76,7 @@ pw_test("sdp_tests") {
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
     "$dir_pw_bluetooth_sapphire/host/testing",
     "$dir_pw_bluetooth_sapphire/host/testing:fake_controller",
+    "$dir_pw_bluetooth_sapphire/host/testing:gtest_helpers",
     "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
   ]
 }
@@ -93,7 +95,7 @@ pw_fuzzer("pdu_fuzzer") {
 
 pw_test_group("tests") {
   tests = [
-    ":sdp_tests",
+    ":sdp_test",
     ":data_element_fuzzer_test",
     ":pdu_fuzzer_test",
   ]

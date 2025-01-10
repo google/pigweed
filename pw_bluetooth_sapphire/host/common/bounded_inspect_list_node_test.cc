@@ -14,8 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/bounded_inspect_list_node.h"
 
-#include <gmock/gmock.h>
-
+#include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
 #include "pw_unit_test/framework.h"
 
