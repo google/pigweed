@@ -134,6 +134,8 @@ template("_pw_invoke_protoc") {
           invoker.use_legacy_oneof_interfaces) {
         args += [ "--pwpb-no-oneof-callbacks" ]
       }
+      args += [ "$pw_protobuf_compiler_GENERATE_PROTOS_ARGS" ]
+
       if (pw_protobuf_compiler_PROTOC_TARGET != "") {
         assert(
             pw_protobuf_compiler_PROTOC_BINARY != "",

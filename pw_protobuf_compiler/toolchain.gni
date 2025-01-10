@@ -38,4 +38,7 @@ declare_args() {
   # Generate .pyi files for Python type hinting. This requires 'protoc-gen-mypy'
   # to be available on the PATH.
   pw_protobuf_compiler_GENERATE_PYTHON_TYPE_HINTS = true
+
+  # Args for generate_protos.py
+  pw_protobuf_compiler_GENERATE_PROTOS_ARGS = ""
 }
