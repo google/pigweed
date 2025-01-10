@@ -52,29 +52,25 @@ into the documentation or code comments.
 
       During locking, run the deadlock detector if there are enough cycles.
 
-------------------
-Present imperative
-------------------
-Use present imperative style instead of passive descriptive.
+.. _docs-pw-style-commit-message-imperative:
 
-.. admonition:: **Yes**: Uses imperative style for subject and text.
-   :class: checkmark
+---------------
+Imperative mood
+---------------
+Use `imperative mood <https://en.wikipedia.org/wiki/Imperative_mood>`_
+in the commit message title. Do not use third-person singular present tense.
+In general, the commit message title should start with a verb, and that verb
+should not end in ``s``.
 
-   .. code-block:: none
+.. tab-set::
 
-      pw_something: Add foo and bar functions
+   .. tab-item:: Yes
 
-      This commit correctly uses imperative present-tense style.
+      pw_string: Update docs
 
-.. admonition:: **No**: Uses non-imperative style for subject and text.
-   :class: error
+   .. tab-item:: No
 
-   .. code-block:: none
-
-      pw_something: Adds more things
-
-      Use present tense imperative style for subjects and commit. The above
-      subject has a plural "Adds" which is incorrect; should be "Add".
+      pw_string: Updates docs
 
 ---------------------------------------
 Documentation instead of commit content
