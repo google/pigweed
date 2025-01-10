@@ -1772,5 +1772,27 @@ TEST_F(AdapterTest, ReadLocalSupportedControllerDelayWithCodecConfig) {
   GetSupportedDelayRangeHelper(true, codec_configuration);
 }
 
+TEST_F(AdapterTest, RemotePublicKeyValidationSupported) {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  settings.SupportedCommandsView().read_local_simple_pairing_options().Write(
+      true);
+  test_device()->set_settings(settings);
+  EXPECT_TRUE(EnsureInitialized());
+  EXPECT_TRUE(
+      adapter()->state().IsControllerRemotePublicKeyValidationSupported());
+}
+
+TEST_F(AdapterTest, RemotePublicKeyValidationNotSupported) {
+  FakeController::Settings settings;
+  settings.ApplyDualModeDefaults();
+  settings.SupportedCommandsView().read_local_simple_pairing_options().Write(
+      false);
+  test_device()->set_settings(settings);
+  EXPECT_TRUE(EnsureInitialized());
+  EXPECT_FALSE(
+      adapter()->state().IsControllerRemotePublicKeyValidationSupported());
+}
+
 }  // namespace
 }  // namespace bt::gap

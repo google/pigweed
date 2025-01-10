@@ -74,6 +74,13 @@ struct AdapterState final {
         supported_commands, sizeof(supported_commands));
   }
 
+  inline bool IsControllerRemotePublicKeyValidationSupported() const {
+    // We don't actually need to send the command:  "Note: If this command is
+    // supported, then the Controller must support remote public key validation"
+    // (v6.0, Vol 4, Part E, Sec. 7.4.9).
+    return SupportedCommands().read_local_simple_pairing_options().Read();
+  }
+
   // HCI version supported by the controller.
   pw::bluetooth::emboss::CoreSpecificationVersion hci_version;
 
