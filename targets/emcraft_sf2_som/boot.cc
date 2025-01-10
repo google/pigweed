@@ -32,8 +32,18 @@
 
 extern "C" void Reset_Handler(void);
 
-// uwTick is an uint32_t incremented each Systick interrupt 1ms. uwTick is used
-// to execute HAL_Delay function.
+// Functions needed when configGENERATE_RUN_TIME_STATS is on.
+extern "C" void configureTimerForRunTimeStats(void) {}
+extern "C" unsigned long getRunTimeCounterValue(void) {
+  // The AngleProcessingUnit (APU) IP has a clock counter register that is tied
+  // to the Cortex-M clock running at 142Mhz. The 32-bit APU 'TCNT' register is
+  // connected to the AHBlite bus at address 0x70000000 with offset 0.
+
+  volatile unsigned long* counter_register = (unsigned long*)0x70000000;
+
+  // Read the value from the counter register
+  return *counter_register;
+}
 
 extern "C" void pw_boot_PreStaticMemoryInit() {
 #if SF2_MSS_NO_BOOTLOADER
