@@ -138,14 +138,14 @@ McuxpressoDigitalIn::McuxpressoDigitalIn(GPIO_Type* base,
 }
 
 pw::Status McuxpressoDigitalIn::DoEnable(bool enable) {
-  if (!enable) {
-    enabled_ = enable;
+  if (enable) {
+    if (is_enabled()) {
+      return pw::OkStatus();
+    }
+  } else {
+    enabled_ = false;
     // Can't disable clock as other users on same port may be active.
     return pw::OkStatus();
-  }
-
-  if (is_enabled()) {
-    return pw::Status::FailedPrecondition();
   }
 
   CLOCK_EnableClock(kGpioClocks[port_]);
@@ -180,14 +180,14 @@ McuxpressoDigitalInOutInterrupt::McuxpressoDigitalInOutInterrupt(
 }
 
 pw::Status McuxpressoDigitalInOutInterrupt::DoEnable(bool enable) {
-  if (!enable) {
-    enabled_ = enable;
+  if (enable) {
+    if (is_enabled()) {
+      return pw::OkStatus();
+    }
+  } else {
+    enabled_ = false;
     // Can't disable clock as other users on same port may be active.
     return pw::OkStatus();
-  }
-
-  if (is_enabled()) {
-    return pw::Status::FailedPrecondition();
   }
 
   CLOCK_EnableClock(kGpioClocks[port_]);
