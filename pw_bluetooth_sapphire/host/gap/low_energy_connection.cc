@@ -432,7 +432,8 @@ bool LowEnergyConnection::OnL2capFixedChannelsOpened(
                                      weak_delegate_.GetWeakPtr(),
                                      connection_options.bondable_mode,
                                      security_mode,
-                                     dispatcher_);
+                                     dispatcher_,
+                                     peer_);
 
   // Provide SMP with the correct LTK from a previous pairing with the peer, if
   // it exists. This will start encryption if the local device is the link-layer

@@ -36,6 +36,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/error.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
@@ -43,17 +44,6 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
 
 namespace bt {
-
-namespace sm {
-using SecurityManagerFactory = std::function<std::unique_ptr<SecurityManager>(
-    hci::LowEnergyConnection::WeakPtr,
-    l2cap::Channel::WeakPtr,
-    IOCapability,
-    Delegate::WeakPtr,
-    BondableMode,
-    gap::LESecurityMode,
-    pw::async::Dispatcher&)>;
-}  // namespace sm
 
 namespace hci {
 class LocalAddressDelegate;

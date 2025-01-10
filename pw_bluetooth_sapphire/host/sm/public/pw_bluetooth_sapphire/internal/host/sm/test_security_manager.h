@@ -21,6 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/link_key.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/error.h"
@@ -94,7 +95,8 @@ class TestSecurityManagerFactory {
       Delegate::WeakPtr delegate,
       BondableMode bondable_mode,
       gap::LESecurityMode security_mode,
-      pw::async::Dispatcher& dispatcher);
+      pw::async::Dispatcher& dispatcher,
+      gap::Peer::WeakPtr peer);
 
   // Obtain a reference to the TestSecurityManager associated with
   // |conn_handle|'s connection for use in test code.

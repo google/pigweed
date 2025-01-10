@@ -16,6 +16,7 @@
 #include <memory>
 
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/delegate.h"
@@ -47,9 +48,12 @@ class SecurityManager {
   // |smp|: The L2CAP LE SMP fixed channel that operates over |link|.
   // |io_capability|: The initial I/O capability.
   // |delegate|: Delegate which handles SMP interactions with the rest of the
-  // Bluetooth stack. |bondable_mode|: the operating bondable mode of the device
-  // (see v5.2, Vol. 3, Part C 9.4). |security_mode|: the security mode of this
-  // SecurityManager (see v5.2, Vol. 3, Part C 10.2).
+  // Bluetooth stack.
+  // |bondable_mode|: the operating bondable mode of the device
+  // (see v5.2, Vol. 3, Part C 9.4).
+  // |security_mode|: the security mode of this SecurityManager (see v5.2, Vol.
+  // 3, Part C 10.2).
+  // |peer|: The peer that the SMP fixed channel corresponds to.
   static std::unique_ptr<SecurityManager> Create(
       hci::LowEnergyConnection::WeakPtr link,
       l2cap::Channel::WeakPtr smp,
@@ -57,7 +61,8 @@ class SecurityManager {
       Delegate::WeakPtr delegate,
       BondableMode bondable_mode,
       gap::LESecurityMode security_mode,
-      pw::async::Dispatcher& dispatcher);
+      pw::async::Dispatcher& dispatcher,
+      bt::gap::Peer::WeakPtr peer);
   virtual ~SecurityManager() = default;
   // Assigns the requested |ltk| to this connection, adopting the security
   // properties of |ltk|. If the local device is the central of the underlying

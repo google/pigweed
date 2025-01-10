@@ -60,7 +60,8 @@ std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
     Delegate::WeakPtr delegate,
     BondableMode bondable_mode,
     gap::LESecurityMode security_mode,
-    pw::async::Dispatcher& /*dispatcher*/) {
+    pw::async::Dispatcher& /*dispatcher*/,
+    gap::Peer::WeakPtr) {
   hci_spec::ConnectionHandle conn = link->handle();
   auto test_sm = std::unique_ptr<TestSecurityManager>(
       new TestSecurityManager(std::move(link),

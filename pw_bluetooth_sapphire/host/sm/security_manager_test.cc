@@ -19,6 +19,7 @@
 #include <chrono>
 #include <cstdlib>
 
+#include "pw_async/fake_dispatcher.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
@@ -46,6 +47,8 @@ const DeviceAddress kLocalAddr(DeviceAddress::Type::kLEPublic,
                                {0xA6, 0xA5, 0xA4, 0xA3, 0xA2, 0xA1});
 const DeviceAddress kPeerAddr(DeviceAddress::Type::kLERandom,
                               {0xB6, 0xB5, 0xB4, 0xB3, 0xB2, 0xB1});
+
+const PeerId kPeerId(2);
 
 const PairingRandomValue kHardCodedPairingRandom = {0x0,
                                                     0x1,
@@ -119,13 +122,33 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
         link_role,
         transport_->GetWeakPtr());
 
+    InitializePeer();
+
     pairing_ = SecurityManager::Create(fake_link_->GetWeakPtr(),
                                        fake_chan_->GetWeakPtr(),
                                        ioc,
                                        weak_delegate_.GetWeakPtr(),
                                        bondable_mode,
                                        gap::LESecurityMode::Mode1,
-                                       dispatcher());
+                                       dispatcher(),
+                                       peer_->GetWeakPtr());
+  }
+
+  void InitializePeer() {
+    auto listeners_cb = [](const gap::Peer&, gap::Peer::NotifyListenersChange) {
+    };
+    auto expiry_cb = [](const gap::Peer&) {};
+    auto dual_mode_cb = [](const gap::Peer&) {};
+    auto store_le_bond_cb = [](const sm::PairingData&) { return true; };
+    peer_.emplace(std::move(listeners_cb),
+                  std::move(expiry_cb),
+                  std::move(dual_mode_cb),
+                  std::move(store_le_bond_cb),
+                  kPeerId,
+                  kPeerAddr,
+                  /*connectable=*/true,
+                  &peer_metrics_,
+                  dispatcher_);
   }
 
   void DestroySecurityManager() { pairing_ = nullptr; }
@@ -534,6 +557,11 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
     transport_->InitializeACLDataChannel(hci::DataBufferInfo(1, 1),
                                          hci::DataBufferInfo(1, 1));
   }
+
+  pw::async::test::FakeDispatcher dispatcher_;
+
+  gap::PeerMetrics peer_metrics_;
+  std::optional<gap::Peer> peer_;
 
   testing::MockController::WeakPtr controller_;
   std::unique_ptr<hci::Transport> transport_;
