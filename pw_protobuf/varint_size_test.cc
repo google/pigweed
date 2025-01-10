@@ -14,6 +14,8 @@
 
 #include "pw_bytes/array.h"
 #include "pw_protobuf/encoder.h"
+#include "pw_protobuf_test_protos/full_test.pwpb.h"
+#include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::protobuf {
@@ -29,9 +31,11 @@ TEST(Encoder, NestedWriteSmallerThanVarintSize) {
   MemoryEncoder encoder(buffer);
 
   {
+    // Overhead of 1 byte key + 1 byte size for the nested message itself.
     StreamEncoder nested = encoder.GetNestedEncoder(1);
-    // 1 byte key + 1 byte size + 125 byte value = 127 byte nested length.
-    EXPECT_EQ(nested.WriteBytes(2, bytes::Initialized<125>(0xaa)), OkStatus());
+    EXPECT_EQ(nested.ConservativeWriteLimit(), 125u);
+    // 1 byte key + 1 byte size + 123 byte value = 125 byte nested length.
+    EXPECT_EQ(nested.WriteBytes(2, bytes::Initialized<123>(0xaa)), OkStatus());
   }
 
   EXPECT_EQ(encoder.status(), OkStatus());
@@ -44,9 +48,11 @@ TEST(Encoder, NestedWriteLargerThanVarintSizeReturnsResourceExhausted) {
 
   {
     // Try to write a larger nested message than the max nested varint value.
+    // Overhead of 1 byte key + 1 byte size for the nested message itself.
     StreamEncoder nested = encoder.GetNestedEncoder(1);
-    // 1 byte key + 1 byte size + 126 byte value = 128 byte nested length.
-    EXPECT_EQ(nested.WriteBytes(2, bytes::Initialized<126>(0xaa)),
+    EXPECT_EQ(nested.ConservativeWriteLimit(), 125u);
+    // 1 byte key + 1 byte size + 124 byte value = 126 byte nested length.
+    EXPECT_EQ(nested.WriteBytes(2, bytes::Initialized<124>(0xaa)),
               Status::ResourceExhausted());
     EXPECT_EQ(nested.WriteUint32(3, 42), Status::ResourceExhausted());
   }
@@ -70,6 +76,25 @@ TEST(Encoder, NestedMessageLargerThanVarintSizeReturnsResourceExhausted) {
   }
 
   EXPECT_EQ(encoder.status(), Status::ResourceExhausted());
+}
+
+TEST(Encoder, MessageWrite_NestedMessageLargerThanVarintSize) {
+  std::array<std::byte, 256> buffer;
+  test::pwpb::LargeNestedTest::MemoryEncoder encoder(buffer);
+
+  test::pwpb::LargeNestedTest::Message message = {};
+
+  message.large_nested.data.SetEncoder(
+      [](test::pwpb::LargeNestedTest::LargeNested::StreamEncoder&
+             large_nested_encoder) {
+        // 1 byte key + 1 byte size + 126 byte value = 128 byte nested length.
+        Status status =
+            large_nested_encoder.WriteData(bytes::Initialized<126>(0xaa));
+        EXPECT_EQ(status, Status::ResourceExhausted());
+        return status;
+      });
+
+  EXPECT_EQ(encoder.Write(message), Status::ResourceExhausted());
 }
 
 }  // namespace

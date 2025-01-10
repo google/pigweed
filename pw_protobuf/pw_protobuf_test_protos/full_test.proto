@@ -223,3 +223,11 @@ message OneOfTest {
     AMessage a_message = 3;
   }
 }
+
+message LargeNestedTest {
+  message LargeNested {
+    bytes data = 1;
+  }
+
+  LargeNested large_nested = 1;
+}

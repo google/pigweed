@@ -263,7 +263,10 @@ pw_facade_test("varint_size_test") {
   build_args = {
     pw_protobuf_CONFIG = ":varint_size_test_config"
   }
-  deps = [ ":pw_protobuf" ]
+  deps = [
+    ":codegen_test_protos.pwpb",
+    ":pw_protobuf",
+  ]
   sources = [ "varint_size_test.cc" ]
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
