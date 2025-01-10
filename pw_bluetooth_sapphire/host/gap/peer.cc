@@ -202,6 +202,39 @@ Peer::ConnectionToken Peer::LowEnergyData::RegisterConnection() {
   return ConnectionToken(std::move(unregister_cb));
 }
 
+Peer::PairingToken Peer::LowEnergyData::RegisterPairing() {
+  pairing_tokens_count_++;
+  auto unregister_cb = [self = peer_->GetWeakPtr(), this] {
+    if (!self.is_alive()) {
+      return;
+    }
+    pairing_tokens_count_--;
+    OnPairingMaybeComplete();
+  };
+  return PairingToken(std::move(unregister_cb));
+}
+
+bool Peer::LowEnergyData::is_pairing() const {
+  return pairing_tokens_count_ > 0;
+}
+
+void Peer::LowEnergyData::add_pairing_completion_callback(
+    fit::callback<void()>&& callback) {
+  pairing_complete_callbacks_.emplace_back(std::move(callback));
+  OnPairingMaybeComplete();
+}
+
+void Peer::LowEnergyData::OnPairingMaybeComplete() {
+  if (pairing_tokens_count_ > 0 || pairing_complete_callbacks_.empty()) {
+    return;
+  }
+  std::vector<fit::callback<void()>> callbacks;
+  std::swap(callbacks, pairing_complete_callbacks_);
+  for (auto& cb : callbacks) {
+    cb();
+  }
+}
+
 void Peer::LowEnergyData::SetConnectionParameters(
     const hci_spec::LEConnectionParameters& params) {
   PW_DCHECK(peer_->connectable());
@@ -378,6 +411,38 @@ Peer::ConnectionToken Peer::BrEdrData::RegisterConnection() {
     connection_tokens_count_--;
     OnConnectionStateMaybeChanged(conn_prev_state);
   });
+}
+
+Peer::PairingToken Peer::BrEdrData::RegisterPairing() {
+  PW_CHECK(!is_pairing());
+  pairing_tokens_count_++;
+  auto unregister_cb = [self = peer_->GetWeakPtr(), this] {
+    if (!self.is_alive()) {
+      return;
+    }
+    pairing_tokens_count_--;
+    OnPairingMaybeComplete();
+  };
+  return PairingToken(std::move(unregister_cb));
+}
+
+bool Peer::BrEdrData::is_pairing() const { return pairing_tokens_count_ > 0; }
+
+void Peer::BrEdrData::add_pairing_completion_callback(
+    fit::callback<void()>&& callback) {
+  pairing_complete_callbacks_.emplace_back(std::move(callback));
+  OnPairingMaybeComplete();
+}
+
+void Peer::BrEdrData::OnPairingMaybeComplete() {
+  if (pairing_tokens_count_ > 0 || pairing_complete_callbacks_.empty()) {
+    return;
+  }
+  std::vector<fit::callback<void()>> callbacks;
+  std::swap(callbacks, pairing_complete_callbacks_);
+  for (auto& cb : callbacks) {
+    cb();
+  }
 }
 
 void Peer::BrEdrData::OnConnectionStateMaybeChanged(ConnectionState previous) {

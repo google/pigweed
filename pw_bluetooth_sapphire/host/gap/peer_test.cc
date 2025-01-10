@@ -1608,5 +1608,39 @@ TEST_F(PeerTest, OverwritingBrEdrBondWithSameSecuritySucceeds) {
   EXPECT_EQ(peer().MutBrEdr().link_key().value(), kSecureBrEdrKey2);
 }
 
+TEST_F(PeerTest, LowEnergyPairingToken) {
+  EXPECT_FALSE(peer().MutLe().is_pairing());
+  int count_0 = 0;
+  peer().MutLe().add_pairing_completion_callback([&count_0](){count_0++;});
+  EXPECT_EQ(count_0, 1);
+  std::optional<Peer::PairingToken> token = peer().MutLe().RegisterPairing();
+  int count_1 = 0;
+  peer().MutLe().add_pairing_completion_callback([&count_1](){count_1++;});
+  int count_2 = 0;
+  peer().MutLe().add_pairing_completion_callback([&count_2](){count_2++;});
+  EXPECT_EQ(count_1, 0);
+  EXPECT_EQ(count_2, 0);
+  token.reset();
+  EXPECT_EQ(count_1, 1);
+  EXPECT_EQ(count_2, 1);
+}
+
+TEST_F(PeerTest, BrEdrPairingToken) {
+  EXPECT_FALSE(peer().MutBrEdr().is_pairing());
+  int count_0 = 0;
+  peer().MutBrEdr().add_pairing_completion_callback([&count_0]{count_0++;});
+  EXPECT_EQ(count_0, 1);
+  std::optional<Peer::PairingToken> token = peer().MutBrEdr().RegisterPairing();
+  int count_1 = 0;
+  peer().MutBrEdr().add_pairing_completion_callback([&count_1]{count_1++;});
+  int count_2 = 0;
+  peer().MutBrEdr().add_pairing_completion_callback([&count_2]{count_2++;});
+  EXPECT_EQ(count_1, 0);
+  EXPECT_EQ(count_2, 0);
+  token.reset();
+  EXPECT_EQ(count_1, 1);
+  EXPECT_EQ(count_2, 1);
+}
+
 }  // namespace
 }  // namespace bt::gap

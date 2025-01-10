@@ -144,9 +144,9 @@ class Peer final {
   // Attach peer as child node of |parent| with specified |name|.
   void AttachInspect(inspect::Node& parent, std::string name = "peer");
 
-  enum class TokenType { kInitializing, kConnection };
+  enum class TokenType { kInitializing, kConnection, kPairing };
   template <TokenType T>
-  class TokenWithCallback {
+  class [[nodiscard]] TokenWithCallback {
    public:
     explicit TokenWithCallback(fit::callback<void()> on_destruction)
         : on_destruction_(std::move(on_destruction)) {}
@@ -169,6 +169,8 @@ class Peer final {
   // connection object is destroyed, the specified callback will be called to
   // update the connection state.
   using ConnectionToken = TokenWithCallback<TokenType::kConnection>;
+
+  using PairingToken = TokenWithCallback<TokenType::kPairing>;
 
   // Contains Peer data that apply only to the LE transport.
   class LowEnergyData final {
@@ -275,13 +277,25 @@ class Peer final {
     // is returned that should be owned until the initialization is complete or
     // canceled. The connection state may be updated and listeners may be
     // notified. Multiple initializating connections may be registered.
-    [[nodiscard]] InitializingConnectionToken RegisterInitializingConnection();
+    InitializingConnectionToken RegisterInitializingConnection();
 
     // Register a connection that is in the connected state. A token is returned
     // that should be owned until the connection is disconnected. The connection
     // state may be updated and listeners may be notified. Multiple connections
     // may be registered.
-    [[nodiscard]] ConnectionToken RegisterConnection();
+    ConnectionToken RegisterConnection();
+
+    // Register a pairing procedure. A token is returned that should be owned
+    // until the pairing procedure is completed. Only one pairing may be
+    // registered at a time.
+    PairingToken RegisterPairing();
+
+    // Returns true if there are outstanding PairingTokens.
+    bool is_pairing() const;
+
+    // Add a callback that will be called when there are 0 outstanding
+    // PairingTokens (potentially immediately).
+    void add_pairing_completion_callback(fit::callback<void()>&& callback);
 
     // Modify the current or preferred connection parameters.
     // The device must be connectable.
@@ -349,6 +363,8 @@ class Peer final {
     // Called when the connection state changes.
     void OnConnectionStateMaybeChanged(ConnectionState previous);
 
+    void OnPairingMaybeComplete();
+
     Peer* peer_;  // weak
 
     inspect::Node node_;
@@ -395,6 +411,9 @@ class Peer final {
 
     std::optional<pw::bluetooth::emboss::LESleepClockAccuracyRange>
         sleep_clock_accuracy_;
+
+    uint8_t pairing_tokens_count_ = 0;
+    std::vector<fit::callback<void()>> pairing_complete_callbacks_;
   };
 
   // Contains Peer data that apply only to the BR/EDR transport.
@@ -475,13 +494,25 @@ class Peer final {
     // is returned that should be owned until the initialization is complete or
     // canceled. The connection state may be updated and listeners may be
     // notified. Multiple initializating connections may be registered.
-    [[nodiscard]] InitializingConnectionToken RegisterInitializingConnection();
+    InitializingConnectionToken RegisterInitializingConnection();
 
     // Register a connection that is in the connected state. A token is returned
     // that should be owned until the connection is disconnected. The connection
     // state may be updated and listeners may be notified. Only one connection
     // may be registered at a time (enforced by assertion).
-    [[nodiscard]] ConnectionToken RegisterConnection();
+    ConnectionToken RegisterConnection();
+
+    // Register a pairing procedure. A token is returned that should be owned
+    // until the pairing procedure is completed. Only one pairing may be
+    // registered at a time.
+    PairingToken RegisterPairing();
+
+    // Returns true if there are outstanding PairingTokens.
+    bool is_pairing() const;
+
+    // Add a callback that will be called when there are 0 outstanding
+    // PairingTokens (potentially immediately).
+    void add_pairing_completion_callback(fit::callback<void()>&& callback);
 
     // Stores a link key resulting from Secure Simple Pairing and makes this
     // peer "bonded." Marks the peer as non-temporary if necessary. All
@@ -508,6 +539,8 @@ class Peer final {
 
     // Called when the connection state changes.
     void OnConnectionStateMaybeChanged(ConnectionState previous);
+
+    void OnPairingMaybeComplete();
 
     // All multi-byte fields must be in little-endian byte order as they were
     // received from the controller.
@@ -537,6 +570,9 @@ class Peer final {
     std::optional<sm::LTK> link_key_;
 
     StringInspectable<std::unordered_set<UUID>> services_;
+
+    uint8_t pairing_tokens_count_ = 0;
+    std::vector<fit::callback<void()>> pairing_complete_callbacks_;
   };
 
   // Number that uniquely identifies this device with respect to the bt-host
