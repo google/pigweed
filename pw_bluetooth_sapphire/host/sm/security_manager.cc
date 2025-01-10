@@ -48,6 +48,8 @@ namespace bt::sm {
 
 namespace {
 
+using PairingToken = gap::Peer::PairingToken;
+
 SecurityProperties FeaturesToProperties(const PairingFeatures& features) {
   return SecurityProperties(features.method == PairingMethod::kJustWorks
                                 ? SecurityLevel::kEncrypted
@@ -231,6 +233,9 @@ class SecurityManagerImpl final : public SecurityManager,
 
   SmartTask timeout_task_{pw_dispatcher_};
 
+  // Set to a PairingToken when the current phase is not monostate (always null
+  // in monostate).
+  std::optional<PairingToken> pairing_token_;
   bt::gap::Peer::WeakPtr peer_;
 
   // The presence of a particular phase in this variant indicates that a
@@ -415,6 +420,10 @@ void SecurityManagerImpl::OnPairingRequest(
     required_level = SecurityLevel::kSecureAuthenticated;
   }
 
+  if (!pairing_token_) {
+    pairing_token_ = peer_->MutLe().RegisterPairing();
+  }
+
   current_phase_ = Phase1::CreatePhase1Responder(
       sm_chan_->GetWeakPtr(),
       weak_listener_.GetWeakPtr(),
@@ -450,6 +459,10 @@ fit::result<ErrorCode> SecurityManagerImpl::RequestSecurityUpgrade(
            "cannot fulfill authenticated security request as IOCapabilities "
            "are NoInputNoOutput");
     return fit::error(ErrorCode::kAuthenticationRequirements);
+  }
+
+  if (!pairing_token_) {
+    pairing_token_ = peer_->MutLe().RegisterPairing();
   }
 
   if (role_ == Role::kInitiator) {
@@ -751,6 +764,7 @@ void SecurityManagerImpl::ResetState() {
   StopTimer();
   features_.reset();
   sm_chan_->SetChannelHandler(weak_handler_.GetWeakPtr());
+  pairing_token_.reset();
   current_phase_ = std::monostate{};
 }
 
