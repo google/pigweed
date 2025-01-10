@@ -118,3 +118,38 @@ def rust_analyzer_toolchain_template(
         target_compatible_with = json.encode(target_compatible_with),
         target_settings = json.encode(target_settings),
     )
+
+_rustfmt_toolchain_template = """\
+rustfmt_toolchain(
+    name = "{name}_rustfmt_toolchain",
+    exec_compatible_with = {exec_compatible_with},
+    rustc = "{toolchain_repo}//:bin/rustc",
+    rustfmt = "{toolchain_repo}//:bin/rustfmt",
+    rustc_lib = "{toolchain_repo}//:rustc_lib",
+    target_compatible_with = {target_compatible_with},
+    visibility = ["//visibility:public"],
+)
+
+toolchain(
+    name = "{name}",
+    exec_compatible_with = {exec_compatible_with},
+    target_compatible_with = {target_compatible_with},
+    target_settings = {target_settings},
+    toolchain = ":{name}_rustfmt_toolchain",
+    toolchain_type = "@rules_rust//rust/rustfmt:toolchain_type",
+)
+"""
+
+def rustfmt_toolchain_template(
+        name,
+        toolchain_repo,
+        exec_compatible_with,
+        target_compatible_with,
+        target_settings):
+    return _rustfmt_toolchain_template.format(
+        name = name,
+        toolchain_repo = toolchain_repo,
+        exec_compatible_with = json.encode(exec_compatible_with),
+        target_compatible_with = json.encode(target_compatible_with),
+        target_settings = json.encode(target_settings),
+    )

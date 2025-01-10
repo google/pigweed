@@ -14,7 +14,7 @@
 """Extension for declaring Pigweed Rust toolchains."""
 
 load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "cipd_repository")
-load(":templates.bzl", "rust_analyzer_toolchain_template", "rust_toolchain_template", "toolchain_template")
+load(":templates.bzl", "rust_analyzer_toolchain_template", "rust_toolchain_template", "rustfmt_toolchain_template", "toolchain_template")
 load(":toolchains.bzl", "CHANNELS", "EXTRA_TARGETS", "HOSTS")
 
 def _module_cipd_tag(module):
@@ -145,7 +145,8 @@ def _pw_rust_toolchain(
         target_compatible_with,
         target_settings,
         extra_rustc_flags,
-        analyzer_toolchain_name = None):
+        analyzer_toolchain_name = None,
+        rustfmt_toolchain_name = None):
     build_file = rust_toolchain_template(
         name = name,
         exec_compatible_with = exec_compatible_with,
@@ -174,16 +175,26 @@ def _pw_rust_toolchain(
             target_settings = target_settings,
         )
 
+    if rustfmt_toolchain_name:
+        build_file += rustfmt_toolchain_template(
+            name = rustfmt_toolchain_name,
+            toolchain_repo = toolchain_repo,
+            exec_compatible_with = exec_compatible_with,
+            target_compatible_with = target_compatible_with,
+            target_settings = target_settings,
+        )
+
     return build_file
 
 def _BUILD_for_toolchain_repo():
     # Declare rust toolchains
-    build_file = """load("@rules_rust//rust:toolchain.bzl", "rust_analyzer_toolchain", "rust_toolchain")\n"""
+    build_file = """load("@rules_rust//rust:toolchain.bzl", "rust_analyzer_toolchain", "rustfmt_toolchain", "rust_toolchain")\n"""
     for channel in CHANNELS:
         for host in HOSTS:
             build_file += _pw_rust_toolchain(
                 name = "host_rust_toolchain_{}_{}_{}".format(host["os"], host["cpu"], channel["name"]),
                 analyzer_toolchain_name = "host_rust_analyzer_toolchain_{}_{}_{}".format(host["os"], host["cpu"], channel["name"]),
+                rustfmt_toolchain_name = "host_rustfmt_toolchain_{}_{}_{}".format(host["os"], host["cpu"], channel["name"]),
                 exec_compatible_with = [
                     "@platforms//cpu:{}".format(host["cpu"]),
                     "@platforms//os:{}".format(host["os"]),
