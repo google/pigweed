@@ -21,6 +21,18 @@ config("public_include_path") {
 }
 
 pw_source_set("transport") {
+  sources = [
+    "acl_data_channel.cc",
+    "acl_data_packet.cc",
+    "command_channel.cc",
+    "control_packets.cc",
+    "error.cc",
+    "iso_data_channel.cc",
+    "link_type.cc",
+    "sco_data_channel.cc",
+    "sco_data_packet.cc",
+    "transport.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h",
     "public/pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h",
@@ -37,46 +49,34 @@ pw_source_set("transport") {
     "public/pw_bluetooth_sapphire/internal/host/transport/slab_allocators.h",
     "public/pw_bluetooth_sapphire/internal/host/transport/transport.h",
   ]
-  sources = [
-    "acl_data_channel.cc",
-    "acl_data_packet.cc",
-    "command_channel.cc",
-    "control_packets.cc",
-    "error.cc",
-    "iso_data_channel.cc",
-    "link_type.cc",
-    "sco_data_channel.cc",
-    "sco_data_packet.cc",
-    "transport.cc",
-  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     "$dir_pw_async:dispatcher",
     "$dir_pw_async:task",
-    "$dir_pw_bluetooth",
     "$dir_pw_bluetooth:emboss_hci_group",
-    "$dir_pw_bluetooth:emboss_hci_test",
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/hci-spec",
     "$dir_pw_third_party/fuchsia:fit",
+    dir_pw_bluetooth,
   ]
-  public_configs = [ ":public_include_path" ]
 }
 
 pw_source_set("testing") {
+  testonly = pw_unit_test_TESTONLY
+  sources = [
+    "fake_sco_data_channel.cc",
+    "mock_acl_data_channel.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/transport/fake_acl_connection.h",
     "public/pw_bluetooth_sapphire/internal/host/transport/fake_sco_data_channel.h",
     "public/pw_bluetooth_sapphire/internal/host/transport/mock_acl_data_channel.h",
   ]
-  sources = [
-    "fake_sco_data_channel.cc",
-    "mock_acl_data_channel.cc",
-  ]
-  public_deps = [ ":transport" ]
   public_configs = [ ":public_include_path" ]
+  public_deps = [ ":transport" ]
 }
 
-pw_test("tests") {
+pw_test("transport_test") {
   sources = [
     "acl_data_channel_test.cc",
     "command_channel_test.cc",
@@ -88,9 +88,17 @@ pw_test("tests") {
     "slab_allocators_test.cc",
     "transport_test.cc",
   ]
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
   deps = [
+    ":testing",
     ":transport",
+    "$dir_pw_bluetooth:emboss_hci_test",
     "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:mock_controller",
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
   ]
-  public_configs = [ ":public_include_path" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":transport_test" ]
 }

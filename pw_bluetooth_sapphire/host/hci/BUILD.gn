@@ -20,6 +20,24 @@ config("public_include_path") {
 }
 
 pw_source_set("hci") {
+  sources = [
+    "acl_connection.cc",
+    "advertising_handle_map.cc",
+    "android_extended_low_energy_advertiser.cc",
+    "bredr_connection.cc",
+    "bredr_connection_request.cc",
+    "connection.cc",
+    "extended_low_energy_advertiser.cc",
+    "extended_low_energy_scanner.cc",
+    "legacy_low_energy_advertiser.cc",
+    "legacy_low_energy_scanner.cc",
+    "low_energy_advertiser.cc",
+    "low_energy_connection.cc",
+    "low_energy_connector.cc",
+    "low_energy_scanner.cc",
+    "sco_connection.cc",
+    "sequential_command_runner.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/hci/acl_connection.h",
     "public/pw_bluetooth_sapphire/internal/host/hci/advertising_handle_map.h",
@@ -40,53 +58,42 @@ pw_source_set("hci") {
     "public/pw_bluetooth_sapphire/internal/host/hci/sco_connection.h",
     "public/pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h",
   ]
-  sources = [
-    "acl_connection.cc",
-    "advertising_handle_map.cc",
-    "android_extended_low_energy_advertiser.cc",
-    "bredr_connection.cc",
-    "bredr_connection_request.cc",
-    "connection.cc",
-    "extended_low_energy_advertiser.cc",
-    "extended_low_energy_scanner.cc",
-    "legacy_low_energy_advertiser.cc",
-    "legacy_low_energy_scanner.cc",
-    "low_energy_advertiser.cc",
-    "low_energy_connection.cc",
-    "low_energy_connector.cc",
-    "low_energy_scanner.cc",
-    "sco_connection.cc",
-    "sequential_command_runner.cc",
-  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_async:heap_dispatcher",
-    "$dir_pw_bluetooth:emboss_hci_group",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/hci-spec",
     "$dir_pw_bluetooth_sapphire/host/transport",
     "$dir_pw_third_party/fuchsia:fit",
   ]
-  public_configs = [ ":public_include_path" ]
-  deps = [ "$dir_pw_preprocessor" ]
+  deps = [
+    "$dir_pw_async:heap_dispatcher",
+    "$dir_pw_bluetooth:emboss_hci_group",
+    dir_pw_preprocessor,
+  ]
 }
 
 pw_source_set("testing") {
-  public = [
-    "public/pw_bluetooth_sapphire/internal/host/hci/fake_bredr_connection.h",
-    "public/pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h",
-    "public/pw_bluetooth_sapphire/internal/host/hci/fake_low_energy_connection.h",
-    "public/pw_bluetooth_sapphire/internal/host/hci/fake_sco_connection.h",
-  ]
   sources = [
     "fake_bredr_connection.cc",
     "fake_local_address_delegate.cc",
     "fake_low_energy_connection.cc",
     "fake_sco_connection.cc",
   ]
-  public_deps = [ ":hci" ]
+  public = [
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_bredr_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_low_energy_connection.h",
+    "public/pw_bluetooth_sapphire/internal/host/hci/fake_sco_connection.h",
+  ]
   public_configs = [ ":public_include_path" ]
-  deps = [ "$dir_pw_async:heap_dispatcher" ]
+  public_deps = [
+    ":hci",
+    "$dir_pw_async:heap_dispatcher",
+    "$dir_pw_bluetooth_sapphire/host/common",
+  ]
 }
 
-pw_test("tests") {
+pw_test("hci_test") {
   sources = [
     "advertising_handle_map_test.cc",
     "connection_test.cc",
@@ -100,10 +107,18 @@ pw_test("tests") {
     "low_energy_scanner_test.cc",
     "sequential_command_runner_test.cc",
   ]
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
   deps = [
     ":testing",
     "$dir_pw_bluetooth:emboss_hci_test",
     "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:fake_controller",
+    "$dir_pw_bluetooth_sapphire/host/testing:mock_controller",
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
+    "$dir_pw_bluetooth_sapphire/host/transport:testing",
   ]
-  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
+}
+
+pw_test_group("tests") {
+  tests = [ ":hci_test" ]
 }

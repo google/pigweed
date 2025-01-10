@@ -15,10 +15,12 @@
 // Configuration macros for the pw_bluetooth_sapphire module.
 #pragma once
 
-// Disable Fuchsia inspect and tracing code by default.
+// Disable Fuchsia inspect code by default.
 #ifndef PW_BLUETOOTH_SAPPHIRE_INSPECT_ENABLED
 #define NINSPECT 1
 #endif  // PW_BLUETOOTH_SAPPHIRE_INSPECT_ENABLED
+
+// Disable Fuchsia tracing code by default.
 #ifndef PW_BLUETOOTH_SAPPHIRE_TRACE_ENABLED
 #define NTRACE 1
 #endif  // PW_BLUETOOTH_SAPPHIRE_TRACE_ENABLED

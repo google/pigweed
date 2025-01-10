@@ -139,6 +139,7 @@ fuchsia_cc_test(
     deps = [
         ":common",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
+        "//pw_unit_test",
         "@fuchsia_sdk//pkg/driver_testing_cpp",
     ],
 )

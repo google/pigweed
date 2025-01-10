@@ -21,6 +21,9 @@ package(default_visibility = ["//pw_bluetooth_sapphire:__subpackages__"])
 cc_library(
     name = "config",
     srcs = [],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/config.h",
+    ],
     defines = select({
         "@platforms//os:fuchsia": [
             "PW_BLUETOOTH_SAPPHIRE_INSPECT_ENABLED",
@@ -28,15 +31,7 @@ cc_library(
         ],
         "//conditions:default": [],
     }),
-)
-
-cc_library(
-    name = "public",
-    hdrs = [
-        "public/pw_bluetooth_sapphire/config.h",
-    ],
     strip_include_prefix = "public",
-    tags = ["manual"],
 )
 
 cc_library(

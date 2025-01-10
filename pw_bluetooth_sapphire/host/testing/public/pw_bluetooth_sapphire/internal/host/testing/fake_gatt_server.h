@@ -15,10 +15,10 @@
 #pragma once
 #include <map>
 
-#include "fake_l2cap.h"
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h"
 
 namespace bt::testing {
 

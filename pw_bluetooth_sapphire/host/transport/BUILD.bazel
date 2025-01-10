@@ -51,9 +51,7 @@ cc_library(
         "//pw_async:dispatcher",
         "//pw_async:task",
         "//pw_bluetooth",
-        "//pw_bluetooth:emboss_hci",
-        "//pw_bluetooth:emboss_hci_test",
-        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth:emboss_hci_common",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci-spec",
         "//third_party/fuchsia:fit",
@@ -75,7 +73,6 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":transport",
-        "//pw_bluetooth_sapphire:public",
     ],
 )
 
@@ -94,7 +91,11 @@ pw_cc_test(
     ],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
+        ":testing",
         ":transport",
+        "//pw_bluetooth:emboss_hci_test",
         "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:mock_controller",
+        "//pw_bluetooth_sapphire/host/testing:test_helpers",
     ],
 )

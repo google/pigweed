@@ -74,6 +74,7 @@ template("pw_fuzzer") {
     pw_executable(target_name) {
       configs = []
       deps = []
+      testonly = pw_unit_test_TESTONLY
       forward_variables_from(invoker,
                              "*",
                              [

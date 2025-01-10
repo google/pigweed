@@ -211,6 +211,7 @@ fuchsia_cc_test(
         "//pw_bluetooth_sapphire/host/testing:fake_controller",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
         "//pw_bluetooth_sapphire/host/testing:loop_fixture",
+        "//pw_bluetooth_sapphire/host/testing:test_helpers",
     ],
 )
 

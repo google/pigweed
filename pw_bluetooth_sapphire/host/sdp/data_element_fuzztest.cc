@@ -20,7 +20,9 @@ namespace bt::sdp {
 
 void fuzz(const uint8_t* data, size_t size) {
   DynamicByteBuffer buf(size);
-  memcpy(buf.mutable_data(), data, size);
+  if (buf.size() != 0) {
+    memcpy(buf.mutable_data(), data, size);
+  }
   DataElement elem;
   DataElement::Read(&elem, buf);
 }

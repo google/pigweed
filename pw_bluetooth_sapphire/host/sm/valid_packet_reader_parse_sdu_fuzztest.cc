@@ -21,7 +21,9 @@ namespace bt::sm {
 
 void fuzz(const uint8_t* data, size_t size) {
   DynamicByteBuffer buf(size);
-  memcpy(buf.mutable_data(), data, size);
+  if (buf.size() != 0) {
+    memcpy(buf.mutable_data(), data, size);
+  }
   ByteBufferPtr buf_ptr = std::make_unique<DynamicByteBuffer>(buf);
   [[maybe_unused]] fit::result<ErrorCode, ValidPacketReader> result =
       ValidPacketReader::ParseSdu(buf_ptr);

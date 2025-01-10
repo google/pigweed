@@ -17,6 +17,8 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
+# Basic target with protocol definitions and no logic, suitable for test
+# emulation.
 cc_library(
     name = "definitions",
     hdrs = [
@@ -25,9 +27,9 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_bluetooth_sapphire:public",
-        "//pw_bluetooth_sapphire/host/hci-spec",
-        "//pw_bluetooth_sapphire/host/sm:definitions",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bytes",
+        "//pw_chrono:system_clock",
     ],
 )
 
@@ -95,6 +97,10 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/l2cap/tx_engine.h",
         "public/pw_bluetooth_sapphire/internal/host/l2cap/types.h",
     ],
+    implementation_deps = [
+        "//pw_bluetooth:emboss_l2cap_frames",
+        "//pw_preprocessor",
+    ],
     strip_include_prefix = "public",
     target_compatible_with = select({
         "@platforms//os:fuchsia": [],
@@ -104,15 +110,18 @@ cc_library(
     }),
     deps = [
         ":definitions",
-        "//pw_bluetooth:emboss_l2cap_frames",
-        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth",
+        "//pw_bluetooth:emboss_hci_android",
+        "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci",
+        "//pw_bluetooth_sapphire/host/sm:definitions",
         "//pw_bluetooth_sapphire/host/transport",
         "//pw_string",
         "//third_party/fuchsia:fit",
     ],
 )
 
+# Separate from :testing to avoid a dependency cycle.
 cc_library(
     name = "channel_manager_mock_controller_test_fixture",
     testonly = True,
@@ -123,9 +132,8 @@ cc_library(
     deps = [
         ":l2cap",
         ":testing",
-        "//pw_bluetooth_sapphire:public",
-        "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:mock_controller",
     ],
 )
 
@@ -149,17 +157,23 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/l2cap/mock_channel_test.h",
         "public/pw_bluetooth_sapphire/internal/host/l2cap/test_packets.h",
     ],
+    implementation_deps = [
+        "//pw_bluetooth_sapphire/host/testing:test_helpers",
+        "//pw_unit_test:googletest",
+    ],
     strip_include_prefix = "public",
+    target_compatible_with = select({
+        "//pw_unit_test:googletest_only": [],
+        "@platforms//os:fuchsia": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":l2cap",
         "//pw_async:fake_dispatcher_fixture",
         "//pw_async:heap_dispatcher",
-        "//pw_bluetooth",
-        "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
-        "//pw_bluetooth_sapphire/host/hci",
-        "//pw_bluetooth_sapphire/host/testing:test_helpers",
-        "//pw_unit_test:googletest",
+        "//pw_bluetooth_sapphire/host/hci-spec",
+        "//third_party/fuchsia:fit",
     ],
 )
 
@@ -204,16 +218,64 @@ pw_cc_test(
         "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/hci:testing",
         "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:test_helpers",
         "//pw_bluetooth_sapphire/host/transport:testing",
     ],
 )
 
 pw_cc_fuzz_test(
     name = "basic_mode_rx_engine_fuzzer",
-    testonly = True,
     srcs = ["basic_mode_rx_engine_fuzztest.cc"],
     deps = [
         ":l2cap",
         ":testing",
+    ],
+)
+
+pw_cc_fuzz_test(
+    name = "enhanced_retransmission_mode_engines_fuzzer",
+    srcs = ["enhanced_retransmission_mode_engines_fuzztest.cc"],
+    deps = [
+        ":l2cap",
+        ":testing",
+    ],
+)
+
+pw_cc_fuzz_test(
+    name = "bredr_dynamic_channel_registry_fuzzer",
+    srcs = ["bredr_dynamic_channel_registry_fuzztest.cc"],
+    deps = [
+        ":l2cap",
+        ":testing",
+        "//pw_random:fuzzer_generator",
+    ],
+)
+
+pw_cc_fuzz_test(
+    name = "channel_configuration_fuzzer",
+    srcs = ["channel_configuration_fuzztest.cc"],
+    deps = [
+        ":l2cap",
+        ":testing",
+    ],
+)
+
+pw_cc_fuzz_test(
+    name = "common_handler_fuzzer",
+    srcs = ["common_handler_fuzztest.cc"],
+    deps = [
+        ":l2cap",
+        ":testing",
+    ],
+)
+
+pw_cc_fuzz_test(
+    name = "l2cap_fuzzer",
+    srcs = ["l2cap_fuzztest.cc"],
+    deps = [
+        ":l2cap",
+        "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:controller_test_double_base",
+        "//pw_random:fuzzer_generator",
     ],
 )

@@ -21,6 +21,11 @@ config("public_include_path") {
 }
 
 pw_source_set("definitions") {
+  sources = [
+    "error.cc",
+    "packet.cc",
+    "types.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/sm/delegate.h",
     "public/pw_bluetooth_sapphire/internal/host/sm/error.h",
@@ -28,24 +33,35 @@ pw_source_set("definitions") {
     "public/pw_bluetooth_sapphire/internal/host/sm/smp.h",
     "public/pw_bluetooth_sapphire/internal/host/sm/types.h",
   ]
-
-  sources = [
-    "error.cc",
-    "packet.cc",
-    "types.cc",
-  ]
-
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/hci-spec",  # hci_spec::LinkKey
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_third_party/fuchsia:fit",
   ]
-
-  public_configs = [ ":public_include_path" ]
-
-  deps = [ "$dir_pw_preprocessor" ]
+  deps = [
+    "$dir_pw_bluetooth_sapphire/lib/cpp-string",
+    dir_pw_preprocessor,
+    dir_pw_string,
+  ]
 }
 
 pw_source_set("sm") {
+  sources = [
+    "ecdh_key.cc",
+    "pairing_channel.cc",
+    "pairing_phase.cc",
+    "phase_1.cc",
+    "phase_2_legacy.cc",
+    "phase_2_secure_connections.cc",
+    "phase_3.cc",
+    "sc_stage_1_just_works_numeric_comparison.cc",
+    "sc_stage_1_passkey.cc",
+    "security_manager.cc",
+    "security_request_phase.cc",
+    "util.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/sm/ecdh_key.h",
     "public/pw_bluetooth_sapphire/internal/host/sm/pairing_channel.h",
@@ -61,47 +77,35 @@ pw_source_set("sm") {
     "public/pw_bluetooth_sapphire/internal/host/sm/security_request_phase.h",
     "public/pw_bluetooth_sapphire/internal/host/sm/util.h",
   ]
-
-  sources = [
-    "ecdh_key.cc",
-    "pairing_channel.cc",
-    "pairing_phase.cc",
-    "phase_1.cc",
-    "phase_2_legacy.cc",
-    "phase_2_secure_connections.cc",
-    "phase_3.cc",
-    "sc_stage_1_just_works_numeric_comparison.cc",
-    "sc_stage_1_passkey.cc",
-    "security_manager.cc",
-    "security_request_phase.cc",
-    "util.cc",
-  ]
-
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     ":definitions",
     "$dir_pw_bluetooth_sapphire:config",
     "$dir_pw_bluetooth_sapphire/host/gap:definitions",
     "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_bluetooth_sapphire/host/l2cap",
-    "$dir_pw_string",
     "$dir_pw_third_party/boringssl",
     "$dir_pw_third_party/fuchsia:fit",
+    dir_pw_string,
   ]
-
-  public_configs = [ ":public_include_path" ]
 }
 
 pw_source_set("testing") {
+  sources = [ "test_security_manager.cc" ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/sm/fake_phase_listener.h",
     "public/pw_bluetooth_sapphire/internal/host/sm/test_security_manager.h",
   ]
-
-  sources = [ "test_security_manager.cc" ]
-
-  deps = [ ":sm" ]
-
   public_configs = [ ":public_include_path" ]
+  deps = [
+    ":definitions",
+    ":sm",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/gap:definitions",
+    "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/hci-spec",
+    "$dir_pw_bluetooth_sapphire/host/l2cap",
+  ]
 }
 
 pw_test("sm_tests") {
@@ -122,21 +126,20 @@ pw_test("sm_tests") {
     "types_test.cc",
     "util_test.cc",
   ]
-
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
   deps = [
     ":sm",
     ":testing",
     "$dir_pw_bluetooth_sapphire/host/hci:testing",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
     "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:mock_controller",
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
   ]
-
-  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
 pw_fuzzer("valid_packet_reader_fuzzer") {
   sources = [ "valid_packet_reader_parse_sdu_fuzztest.cc" ]
-
   deps = [ ":definitions" ]
 }
 

@@ -21,6 +21,23 @@ config("public_include_path") {
 }
 
 pw_source_set("common") {
+  sources = [
+    "advertising_data.cc",
+    "bounded_inspect_list_node.cc",
+    "byte_buffer.cc",
+    "device_address.cc",
+    "device_class.cc",
+    "host_error.cc",
+    "identifier.cc",
+    "log.cc",
+    "manufacturer_names.cc",
+    "metrics.cc",
+    "random.cc",
+    "retire_log.cc",
+    "slab_allocator.cc",
+    "supplement_data.cc",
+    "uuid.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/common/advertising_data.h",
     "public/pw_bluetooth_sapphire/internal/host/common/assert.h",
@@ -55,38 +72,22 @@ pw_source_set("common") {
     "public/pw_bluetooth_sapphire/internal/host/common/weak_self.h",
     "public/pw_bluetooth_sapphire/internal/host/common/windowed_inspect_numeric_property.h",
   ]
-  sources = [
-    "advertising_data.cc",
-    "bounded_inspect_list_node.cc",
-    "byte_buffer.cc",
-    "device_address.cc",
-    "device_class.cc",
-    "host_error.cc",
-    "identifier.cc",
-    "log.cc",
-    "manufacturer_names.cc",
-    "metrics.cc",
-    "random.cc",
-    "retire_log.cc",
-    "slab_allocator.cc",
-    "supplement_data.cc",
-    "uuid.cc",
-  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_assert",
     "$dir_pw_async:dispatcher",
     "$dir_pw_async:task",
     "$dir_pw_bluetooth:emboss_hci_group",
     "$dir_pw_bluetooth_sapphire:config",
     "$dir_pw_bluetooth_sapphire/lib/cpp-string",
     "$dir_pw_bluetooth_sapphire/lib/cpp-type",
-    "$dir_pw_intrusive_ptr",
-    "$dir_pw_log",
-    "$dir_pw_random",
-    "$dir_pw_span",
-    "$dir_pw_string",
-    "$dir_pw_string:utf_codecs",
+    "$dir_pw_chrono:system_clock",
     "$dir_pw_third_party/fuchsia:fit",
+    dir_pw_assert,
+    dir_pw_intrusive_ptr,
+    dir_pw_log,
+    dir_pw_preprocessor,
+    dir_pw_random,
+    dir_pw_span,
   ]
   if (current_os == "fuchsia") {
     public_deps += [
@@ -94,16 +95,18 @@ pw_source_set("common") {
       "//zircon/system/ulib/trace",
     ]
   }
-  public_configs = [ ":public_include_path" ]
-  deps = [ "$dir_pw_preprocessor" ]
+  deps = [
+    "$dir_pw_string:utf_codecs",
+    dir_pw_preprocessor,
+  ]
 }
 
 pw_source_set("uuid_string_util") {
   sources = [ "uuid_string_util.cc" ]
-  public_deps = [ ":common" ]
+  deps = [ ":common" ]
 }
 
-pw_test("common_tests") {
+pw_test("common_test") {
   sources = [
     "advertising_data_test.cc",
     "bounded_inspect_list_node_test.cc",
@@ -125,13 +128,14 @@ pw_test("common_tests") {
     "weak_self_test.cc",
     "windowed_inspect_numeric_property_test.cc",
   ]
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
   deps = [
     ":common",
     ":uuid_string_util",
     "$dir_pw_async:fake_dispatcher_fixture",
     "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
   ]
-  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
 pw_fuzzer("advertising_data_fuzzer") {
@@ -141,7 +145,7 @@ pw_fuzzer("advertising_data_fuzzer") {
 
 pw_test_group("tests") {
   tests = [
-    ":common_tests",
+    ":common_test",
     ":advertising_data_fuzzer_test",
   ]
 }

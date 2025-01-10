@@ -23,13 +23,29 @@ config("public_include_path") {
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 pw_source_set("definitions") {
-  public = [ "public/pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h" ]
   sources = [ "gatt_defs.cc" ]
-  public_deps = [ "$dir_pw_bluetooth_sapphire/host/att:definitions" ]
+  public = [ "public/pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h" ]
   public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_bluetooth_sapphire/host/att:definitions",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_third_party/fuchsia:fit",
+  ]
 }
 
 pw_source_set("gatt") {
+  sources = [
+    "client.cc",
+    "connection.cc",
+    "gatt.cc",
+    "generic_attribute_service.cc",
+    "local_service_manager.cc",
+    "remote_characteristic.cc",
+    "remote_service.cc",
+    "remote_service_manager.cc",
+    "server.cc",
+    "types.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/gatt/client.h",
     "public/pw_bluetooth_sapphire/internal/host/gatt/connection.h",
@@ -43,50 +59,40 @@ pw_source_set("gatt") {
     "public/pw_bluetooth_sapphire/internal/host/gatt/server.h",
     "public/pw_bluetooth_sapphire/internal/host/gatt/types.h",
   ]
-  sources = [
-    "client.cc",
-    "connection.cc",
-    "gatt.cc",
-    "generic_attribute_service.cc",
-    "local_service_manager.cc",
-    "remote_characteristic.cc",
-    "remote_service.cc",
-    "remote_service_manager.cc",
-    "server.cc",
-    "types.cc",
-  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     ":definitions",
-    "$dir_pw_bluetooth_sapphire:config",
     "$dir_pw_bluetooth_sapphire/host/att",
     "$dir_pw_third_party/fuchsia:fit",
   ]
-  public_configs = [ ":public_include_path" ]
 }
 
 pw_source_set("testing") {
   testonly = pw_unit_test_TESTONLY
-  public = [
-    "public/pw_bluetooth_sapphire/internal/host/gatt/fake_client.h",
-    "public/pw_bluetooth_sapphire/internal/host/gatt/fake_layer.h",
-    "public/pw_bluetooth_sapphire/internal/host/gatt/mock_server.h",
-  ]
   sources = [
     "fake_client.cc",
     "fake_layer.cc",
     "mock_server.cc",
   ]
+  public = [
+    "public/pw_bluetooth_sapphire/internal/host/gatt/fake_client.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/fake_layer.h",
+    "public/pw_bluetooth_sapphire/internal/host/gatt/mock_server.h",
+  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     ":gatt",
     "$dir_pw_async:heap_dispatcher",
-    "$dir_pw_bluetooth_sapphire/host/common",
-    "$dir_pw_bluetooth_sapphire/host/common:uuid_string_util",
-    "$dir_pw_unit_test",
+    "$dir_pw_bluetooth_sapphire/host/att",
+    "$dir_pw_third_party/fuchsia:fit",
   ]
-  public_configs = [ ":public_include_path" ]
+  deps = [
+    "$dir_pw_bluetooth_sapphire/host/common",
+    dir_pw_unit_test,
+  ]
 }
 
-pw_test("tests") {
+pw_test("gatt_test") {
   sources = [
     "client_test.cc",
     "gatt_test.cc",
@@ -95,13 +101,17 @@ pw_test("tests") {
     "remote_service_manager_test.cc",
     "server_test.cc",
   ]
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
   deps = [
     ":gatt",
     ":testing",
     "$dir_pw_bluetooth_sapphire/host/att",
+    "$dir_pw_bluetooth_sapphire/host/common:uuid_string_util",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
-    "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
   ]
-  public_configs = [ ":public_include_path" ]
-  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
+}
+
+pw_test_group("tests") {
+  tests = [ ":gatt_test" ]
 }

@@ -21,13 +21,45 @@ config("public_include_path") {
 }
 
 pw_source_set("definitions") {
-  public = [ "public/pw_bluetooth_sapphire/internal/host/gap/gap.h" ]
   sources = [ "gap.cc" ]
+  public = [ "public/pw_bluetooth_sapphire/internal/host/gap/gap.h" ]
   public_configs = [ ":public_include_path" ]
-  deps = [ "$dir_pw_bluetooth_sapphire/host/common" ]
+  public_deps = [
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/sm:definitions",
+    "$dir_pw_third_party/fuchsia:fit",
+  ]
 }
 
 pw_source_set("gap") {
+  sources = [
+    "adapter.cc",
+    "android_vendor_capabilities.cc",
+    "bredr_connection.cc",
+    "bredr_connection_manager.cc",
+    "bredr_connection_request.cc",
+    "bredr_discovery_manager.cc",
+    "bredr_interrogator.cc",
+    "discovery_filter.cc",
+    "generic_access_client.cc",
+    "identity_resolving_list.cc",
+    "legacy_pairing_state.cc",
+    "low_energy_address_manager.cc",
+    "low_energy_advertising_manager.cc",
+    "low_energy_connection.cc",
+    "low_energy_connection_handle.cc",
+    "low_energy_connection_manager.cc",
+    "low_energy_connection_request.cc",
+    "low_energy_connector.cc",
+    "low_energy_discovery_manager.cc",
+    "low_energy_interrogator.cc",
+    "pairing_state_manager.cc",
+    "peer.cc",
+    "peer_cache.cc",
+    "peer_metrics.cc",
+    "secure_simple_pairing_state.cc",
+    "types.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/gap/adapter.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/adapter_state.h",
@@ -61,34 +93,7 @@ pw_source_set("gap") {
     "public/pw_bluetooth_sapphire/internal/host/gap/secure_simple_pairing_state.h",
     "public/pw_bluetooth_sapphire/internal/host/gap/types.h",
   ]
-  sources = [
-    "adapter.cc",
-    "android_vendor_capabilities.cc",
-    "bredr_connection.cc",
-    "bredr_connection_manager.cc",
-    "bredr_connection_request.cc",
-    "bredr_discovery_manager.cc",
-    "bredr_interrogator.cc",
-    "discovery_filter.cc",
-    "generic_access_client.cc",
-    "identity_resolving_list.cc",
-    "legacy_pairing_state.cc",
-    "low_energy_address_manager.cc",
-    "low_energy_advertising_manager.cc",
-    "low_energy_connection.cc",
-    "low_energy_connection_handle.cc",
-    "low_energy_connection_manager.cc",
-    "low_energy_connection_request.cc",
-    "low_energy_connector.cc",
-    "low_energy_discovery_manager.cc",
-    "low_energy_interrogator.cc",
-    "pairing_state_manager.cc",
-    "peer.cc",
-    "peer_cache.cc",
-    "peer_metrics.cc",
-    "secure_simple_pairing_state.cc",
-    "types.cc",
-  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     ":definitions",
     "$dir_pw_async:heap_dispatcher",
@@ -105,7 +110,6 @@ pw_source_set("gap") {
     "$dir_pw_string:utf_codecs",
     "$dir_pw_third_party/fuchsia:fit",
   ]
-  public_configs = [ ":public_include_path" ]
   deps = [
     "$dir_pw_bluetooth_sapphire/host/sm",
     "$dir_pw_preprocessor",
@@ -131,7 +135,7 @@ pw_source_set("testing") {
   public_configs = [ ":public_include_path" ]
 }
 
-pw_test("gap_tests") {
+pw_test("gap_test") {
   sources = [
     "adapter_test.cc",
     "android_vendor_capabilities_test.cc",
@@ -163,6 +167,10 @@ pw_test("gap_tests") {
     "$dir_pw_bluetooth_sapphire/host/sm",
     "$dir_pw_bluetooth_sapphire/host/sm:testing",
     "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:fake_controller",
+    "$dir_pw_bluetooth_sapphire/host/testing:mock_controller",
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
+    "$dir_pw_bluetooth_sapphire/host/transport:testing",
   ]
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
@@ -179,7 +187,7 @@ pw_fuzzer("peer_cache_fuzzer") {
 
 pw_test_group("tests") {
   tests = [
-    ":gap_tests",
+    ":gap_test",
     ":peer_cache_fuzzer_test",
   ]
 }

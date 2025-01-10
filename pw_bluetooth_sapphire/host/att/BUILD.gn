@@ -22,28 +22,20 @@ config("public_include_path") {
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 pw_source_set("definitions") {
+  sources = [ "packet.cc" ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/att/att.h",
     "public/pw_bluetooth_sapphire/internal/host/att/packet.h",
   ]
-  sources = [ "packet.cc" ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/hci-spec",
     "$dir_pw_bluetooth_sapphire/host/l2cap:definitions",
   ]
-  public_configs = [ ":public_include_path" ]
 }
 
 pw_source_set("att") {
-  public = [
-    "public/pw_bluetooth_sapphire/internal/host/att/attribute.h",
-    "public/pw_bluetooth_sapphire/internal/host/att/bearer.h",
-    "public/pw_bluetooth_sapphire/internal/host/att/database.h",
-    "public/pw_bluetooth_sapphire/internal/host/att/error.h",
-    "public/pw_bluetooth_sapphire/internal/host/att/permissions.h",
-    "public/pw_bluetooth_sapphire/internal/host/att/write_queue.h",
-  ]
   sources = [
     "attribute.cc",
     "bearer.cc",
@@ -52,20 +44,30 @@ pw_source_set("att") {
     "permissions.cc",
     "write_queue.cc",
   ]
+  public = [
+    "public/pw_bluetooth_sapphire/internal/host/att/attribute.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/bearer.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/database.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/error.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/permissions.h",
+    "public/pw_bluetooth_sapphire/internal/host/att/write_queue.h",
+  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     ":definitions",
+    "$dir_pw_async:dispatcher",
+    "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/l2cap",
     "$dir_pw_bluetooth_sapphire/host/sm:definitions",
     "$dir_pw_third_party/fuchsia:fit",
   ]
   deps = [
-    "$dir_pw_preprocessor",
-    "$dir_pw_string",
+    dir_pw_preprocessor,
+    dir_pw_string,
   ]
-  public_configs = [ ":public_include_path" ]
 }
 
-pw_test("tests") {
+pw_test("att_test") {
   sources = [
     "attribute_test.cc",
     "bearer_test.cc",
@@ -73,9 +75,14 @@ pw_test("tests") {
     "error_test.cc",
     "permissions_test.cc",
   ]
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
   deps = [
     ":att",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
   ]
-  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
+}
+
+pw_test_group("tests") {
+  tests = [ ":att_test" ]
 }

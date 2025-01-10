@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,12 +29,18 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream.h",
         "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h",
     ],
+    implementation_deps = [
+        "//pw_bluetooth_sapphire/host/hci",
+    ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth:emboss_hci_data",
+        "//pw_bluetooth:emboss_hci_events",
         "//pw_bluetooth_sapphire/host/common",
-        "//pw_bluetooth_sapphire/host/hci",
+        "//pw_bluetooth_sapphire/host/hci-spec",
         "//pw_bluetooth_sapphire/host/transport",
+        "//pw_function",
+        "//pw_span",
     ],
 )
 
@@ -62,5 +68,6 @@ pw_cc_test(
     deps = [
         ":iso",
         "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:mock_controller",
     ],
 )

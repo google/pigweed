@@ -12,10 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
+# Basic target with protocol definitions and no logic, suitable for test
+# emulation.
 cc_library(
     name = "definitions",
     srcs = [
@@ -52,14 +54,17 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/att/write_queue.h",
     ],
     implementation_deps = [
-        "@pigweed//pw_string",
+        "//pw_preprocessor",
+        "//pw_string",
     ],
     strip_include_prefix = "public",
     deps = [
         ":definitions",
+        "//pw_async:dispatcher",
+        "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/l2cap",
         "//pw_bluetooth_sapphire/host/sm:definitions",
-        "@pigweed//third_party/fuchsia:fit",
+        "//third_party/fuchsia:fit",
     ],
 )
 
@@ -76,5 +81,6 @@ pw_cc_test(
     deps = [
         ":att",
         "//pw_bluetooth_sapphire/host/l2cap:testing",
+        "//pw_bluetooth_sapphire/host/testing:test_helpers",
     ],
 )

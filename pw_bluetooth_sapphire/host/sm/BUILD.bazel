@@ -12,7 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+load("//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -24,18 +25,22 @@ cc_library(
         "types.cc",
     ],
     hdrs = [
-        "public/pw_bluetooth_sapphire/internal/host/sm/delegate.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/error.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/packet.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/smp.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/types.h",
-        "public/pw_bluetooth_sapphire/internal/host/sm/util.h",
+    ],
+    implementation_deps = [
+        "//pw_bluetooth_sapphire/lib/cpp-string",
+        "//pw_preprocessor",
+        "//pw_string",
     ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci-spec",
+        "//pw_chrono:system_clock",
+        "//third_party/fuchsia:fit",
     ],
 )
 
@@ -56,8 +61,8 @@ cc_library(
         "util.cc",
     ],
     hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/sm/delegate.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/ecdh_key.h",
-        "public/pw_bluetooth_sapphire/internal/host/sm/fake_phase_listener.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/pairing_channel.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/pairing_phase.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/phase_1.h",
@@ -69,17 +74,18 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_passkey.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/security_manager.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/security_request_phase.h",
+        "public/pw_bluetooth_sapphire/internal/host/sm/util.h",
     ],
     strip_include_prefix = "public",
     deps = [
         ":definitions",
-        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/gap:definitions",
         "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/l2cap",
+        "//pw_bluetooth_sapphire/lib/cpp-string",
+        "//third_party/fuchsia:fit",
         "@boringssl//:crypto",
-        "@pigweed//pw_string",
-        "@pigweed//third_party/fuchsia:fit",
     ],
 )
 
@@ -89,12 +95,18 @@ cc_library(
         "test_security_manager.cc",
     ],
     hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/sm/fake_phase_listener.h",
         "public/pw_bluetooth_sapphire/internal/host/sm/test_security_manager.h",
     ],
     strip_include_prefix = "public",
     deps = [
+        ":definitions",
         ":sm",
-        "//pw_bluetooth_sapphire:public",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/gap:definitions",
+        "//pw_bluetooth_sapphire/host/hci",
+        "//pw_bluetooth_sapphire/host/hci-spec",
+        "//pw_bluetooth_sapphire/host/l2cap",
     ],
 )
 
@@ -124,5 +136,13 @@ pw_cc_test(
         "//pw_bluetooth_sapphire/host/hci:testing",
         "//pw_bluetooth_sapphire/host/l2cap:testing",
         "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:mock_controller",
+        "//pw_bluetooth_sapphire/host/testing:test_helpers",
     ],
+)
+
+pw_cc_fuzz_test(
+    name = "valid_packet_reader_fuzzer",
+    srcs = ["valid_packet_reader_parse_sdu_fuzztest.cc"],
+    deps = [":definitions"],
 )

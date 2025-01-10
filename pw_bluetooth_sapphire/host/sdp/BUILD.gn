@@ -23,46 +23,40 @@ config("public_include_path") {
 # Basic target with protocol definitions and no logic, suitable for test
 # emulation.
 pw_source_set("definitions") {
+  sources = [
+    "data_element.cc",
+    "error.cc",
+    "service_record.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/sdp/data_element.h",
     "public/pw_bluetooth_sapphire/internal/host/sdp/error.h",
     "public/pw_bluetooth_sapphire/internal/host/sdp/sdp.h",
     "public/pw_bluetooth_sapphire/internal/host/sdp/service_record.h",
   ]
-
-  sources = [
-    "data_element.cc",
-    "error.cc",
-    "service_record.cc",
-  ]
-
-  public_deps = [ "$dir_pw_bluetooth_sapphire/host/common" ]
-
   public_configs = [ ":public_include_path" ]
+  public_deps = [ "$dir_pw_bluetooth_sapphire/host/common" ]
 }
 
 pw_source_set("sdp") {
-  public = [
-    "public/pw_bluetooth_sapphire/internal/host/sdp/client.h",
-    "public/pw_bluetooth_sapphire/internal/host/sdp/pdu.h",
-    "public/pw_bluetooth_sapphire/internal/host/sdp/server.h",
-    "public/pw_bluetooth_sapphire/internal/host/sdp/service_discoverer.h",
-  ]
-
   sources = [
     "client.cc",
     "pdu.cc",
     "server.cc",
     "service_discoverer.cc",
   ]
-
+  public = [
+    "public/pw_bluetooth_sapphire/internal/host/sdp/client.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/pdu.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/server.h",
+    "public/pw_bluetooth_sapphire/internal/host/sdp/service_discoverer.h",
+  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     ":definitions",
     "$dir_pw_bluetooth_sapphire/host/l2cap",
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$dir_pw_third_party/fuchsia:fit",
   ]
-
-  public_configs = [ ":public_include_path" ]
 }
 
 pw_test("sdp_tests") {
@@ -74,15 +68,15 @@ pw_test("sdp_tests") {
     "service_discoverer_test.cc",
     "service_record_test.cc",
   ]
-
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
   deps = [
     ":sdp",
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
     "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:fake_controller",
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
   ]
-
-  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
 pw_fuzzer("data_element_fuzzer") {

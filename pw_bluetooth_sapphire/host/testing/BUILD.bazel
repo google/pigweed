@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -34,22 +34,21 @@ cc_library(
     copts = [
         "-Wno-unused-parameter",
     ],
-    strip_include_prefix = "public",
-    target_compatible_with = select({
-        "//pw_unit_test:googletest_only": [],
-        "@platforms//os:fuchsia": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        ":fake_controller",
-        ":mock_controller",
+    implementation_deps = [
         ":test_helpers",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        "//pw_async:fake_dispatcher_fixture",
+        "//pw_async:heap_dispatcher",
+        "//pw_bluetooth",
         "//pw_bluetooth_sapphire:config",
-        "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/fuchsia/lib/inspect_testing",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/gap:definitions",
+        "//pw_bluetooth_sapphire/host/hci-spec",
+        "//pw_bluetooth_sapphire/host/l2cap",
         "//pw_bluetooth_sapphire/host/transport",
-        "//pw_bluetooth_sapphire/host/transport:testing",
-        "//pw_unit_test:googletest",
     ],
 )
 
@@ -69,7 +68,6 @@ cc_library(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/lib/cpp-string",
         "//pw_unit_test:googletest",
@@ -87,19 +85,10 @@ cc_library(
         "-Wno-unused-parameter",
     ],
     strip_include_prefix = "public",
-    target_compatible_with = select({
-        "//pw_unit_test:googletest_only": [],
-        "@platforms//os:fuchsia": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
-        "//pw_bluetooth_sapphire:public",
+        "//pw_async:heap_dispatcher",
+        "//pw_bluetooth",
         "//pw_bluetooth_sapphire/host/common",
-        "//pw_bluetooth_sapphire/host/hci",
-        "//pw_unit_test:googletest",
-        "@pigweed//pw_async:heap_dispatcher",
-        "@pigweed//pw_bluetooth",
-        "@pigweed//third_party/fuchsia:fit",
     ],
 )
 
@@ -113,23 +102,20 @@ cc_library(
     copts = [
         "-Wno-unused-parameter",
     ],
+    implementation_deps = [
+        ":test_helpers",
+    ],
     strip_include_prefix = "public",
-    target_compatible_with = select({
-        "//pw_unit_test:googletest_only": [],
-        "@platforms//os:fuchsia": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         ":controller_test_double_base",
-        ":test_helpers",
-        "//pw_bluetooth_sapphire:public",
-        "//pw_bluetooth_sapphire/host/transport",
-        "//pw_bluetooth_sapphire/host/transport:testing",
-        "//pw_unit_test:googletest",
-        "@pigweed//pw_async:heap_dispatcher",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/hci-spec",
+        "//third_party/fuchsia:fit",
     ],
 )
 
+# Target that includes Fake HCI emulation support. This should NOT depend on
+# gtest.
 cc_library(
     name = "fake_controller",
     testonly = True,
@@ -154,38 +140,52 @@ cc_library(
     copts = [
         "-Wno-unused-parameter",
     ],
+    implementation_deps = [
+        "//pw_bluetooth:emboss_hci_android",
+        "//pw_bluetooth:emboss_hci_data",
+        "//pw_bluetooth:emboss_hci_events",
+        "//pw_bluetooth_sapphire/host/gap",
+        "//pw_bluetooth_sapphire/host/gatt:definitions",
+        "//pw_bytes",
+    ],
     strip_include_prefix = "public",
+    deps = [
+        ":controller_test_double_base",
+        "//pw_bluetooth_sapphire/host/att:definitions",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/host/hci-spec",
+        "//pw_bluetooth_sapphire/host/l2cap:definitions",
+        "//pw_bluetooth_sapphire/host/l2cap:testing",
+        "//pw_bluetooth_sapphire/host/sdp",
+        "//third_party/fuchsia:fit",
+    ],
+)
+
+# Main entry point for host library unittests.
+cc_library(
+    name = "gtest_main",
+    testonly = True,
+    srcs = ["run_all_unittests.cc"],
+    implementation_deps = [
+        ":testing",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_unit_test:googletest",
+    ],
     target_compatible_with = select({
         "//pw_unit_test:googletest_only": [],
         "@platforms//os:fuchsia": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    deps = [
-        ":controller_test_double_base",
-        ":test_helpers",
-        "//pw_bluetooth_sapphire:public",
-        "//pw_bluetooth_sapphire/host/att:definitions",
-        "//pw_bluetooth_sapphire/host/common",
-        "//pw_bluetooth_sapphire/host/gap",
-        "//pw_bluetooth_sapphire/host/gatt:definitions",
-        "//pw_bluetooth_sapphire/host/hci",
-        "//pw_bluetooth_sapphire/host/l2cap:definitions",
-        "//pw_bluetooth_sapphire/host/l2cap:testing",
-        "//pw_bluetooth_sapphire/host/sdp",
-        "//pw_unit_test:googletest",
-        "@pigweed//pw_bluetooth:emboss_hci",
-        "@pigweed//third_party/fuchsia:fit",
-    ],
 )
 
 cc_library(
-    name = "gtest_main",
+    name = "fuzzing",
     testonly = True,
-    srcs = ["run_all_unittests.cc"],
-    deps = [
-        ":testing",
-        "//pw_bluetooth_sapphire/host/common",
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/host/testing/peer_fuzzer.h",
     ],
+    strip_include_prefix = "public",
+    deps = ["//pw_bluetooth_sapphire/host/gap"],
 )
 
 cc_library(
@@ -201,8 +201,7 @@ cc_library(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//pw_bluetooth_sapphire:public",
-        "@com_google_googletest//:gtest",
+        "//pw_unit_test:googletest",
         "@fuchsia_sdk//pkg/async-testing",
     ],
 )
@@ -220,6 +219,8 @@ pw_cc_test(
     ],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
+        ":fake_controller",
+        ":test_helpers",
         ":testing",
         "//pw_bluetooth_sapphire/host/l2cap:testing",
     ],

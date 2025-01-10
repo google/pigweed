@@ -20,36 +20,53 @@ config("public_include_path") {
 }
 
 pw_source_set("iso") {
-  public = [
-    "public/pw_bluetooth_sapphire/internal/host/iso/fake_iso_stream.h",
-    "public/pw_bluetooth_sapphire/internal/host/iso/iso_common.h",
-    "public/pw_bluetooth_sapphire/internal/host/iso/iso_inbound_packet_assembler.h",
-    "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream.h",
-    "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h",
-  ]
   sources = [
     "iso_inbound_packet_assembler.cc",
     "iso_stream.cc",
     "iso_stream_manager.cc",
   ]
-  public_deps = [
-    "$dir_pw_bluetooth_sapphire/host/common",
-    "$dir_pw_bluetooth_sapphire/host/hci",
-    "$dir_pw_bluetooth_sapphire/host/transport",
+  public = [
+    "public/pw_bluetooth_sapphire/internal/host/iso/iso_common.h",
+    "public/pw_bluetooth_sapphire/internal/host/iso/iso_inbound_packet_assembler.h",
+    "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream.h",
+    "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h",
   ]
   public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_bluetooth:emboss_hci_data",
+    "$dir_pw_bluetooth:emboss_hci_events",
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/host/hci-spec",
+    "$dir_pw_bluetooth_sapphire/host/transport",
+    dir_pw_function,
+    dir_pw_span,
+  ]
+  deps = [ "$dir_pw_bluetooth_sapphire/host/hci" ]
 }
 
-pw_test("tests") {
+pw_source_set("testing") {
+  testonly = pw_unit_test_TESTONLY
+  public =
+      [ "public/pw_bluetooth_sapphire/internal/host/iso/fake_iso_stream.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ ":iso" ]
+}
+
+pw_test("iso_test") {
   sources = [
     "iso_common_test.cc",
     "iso_inbound_packet_assembler_test.cc",
     "iso_stream_manager_test.cc",
     "iso_stream_test.cc",
   ]
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
   deps = [
     ":iso",
     "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:mock_controller",
   ]
-  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
+}
+
+pw_test_group("tests") {
+  tests = [ ":iso_test" ]
 }

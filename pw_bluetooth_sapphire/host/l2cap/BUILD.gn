@@ -27,14 +27,45 @@ pw_source_set("definitions") {
     "public/pw_bluetooth_sapphire/internal/host/l2cap/frame_headers.h",
     "public/pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h",
   ]
-  public_deps = [
-    "$dir_pw_bluetooth_sapphire/host/hci-spec",
-    "$dir_pw_bluetooth_sapphire/host/sm:definitions",
-  ]
   public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_chrono:system_clock",
+    dir_pw_bytes,
+  ]
 }
 
 pw_source_set("l2cap") {
+  sources = [
+    "a2dp_offload_manager.cc",
+    "basic_mode_rx_engine.cc",
+    "basic_mode_tx_engine.cc",
+    "bredr_command_handler.cc",
+    "bredr_dynamic_channel.cc",
+    "bredr_signaling_channel.cc",
+    "channel.cc",
+    "channel_configuration.cc",
+    "channel_manager.cc",
+    "command_handler.cc",
+    "credit_based_flow_control_rx_engine.cc",
+    "credit_based_flow_control_tx_engine.cc",
+    "dynamic_channel.cc",
+    "dynamic_channel_registry.cc",
+    "enhanced_retransmission_mode_engines.cc",
+    "enhanced_retransmission_mode_rx_engine.cc",
+    "enhanced_retransmission_mode_tx_engine.cc",
+    "fcs.cc",
+    "fragmenter.cc",
+    "le_dynamic_channel.cc",
+    "le_signaling_channel.cc",
+    "logical_link.cc",
+    "low_energy_command_handler.cc",
+    "pdu.cc",
+    "recombiner.cc",
+    "scoped_channel.cc",
+    "signaling_channel.cc",
+    "types.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/l2cap/a2dp_offload_manager.h",
     "public/pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_rx_engine.h",
@@ -67,48 +98,21 @@ pw_source_set("l2cap") {
     "public/pw_bluetooth_sapphire/internal/host/l2cap/tx_engine.h",
     "public/pw_bluetooth_sapphire/internal/host/l2cap/types.h",
   ]
-  sources = [
-    "a2dp_offload_manager.cc",
-    "basic_mode_rx_engine.cc",
-    "basic_mode_tx_engine.cc",
-    "bredr_command_handler.cc",
-    "bredr_dynamic_channel.cc",
-    "bredr_signaling_channel.cc",
-    "channel.cc",
-    "channel_configuration.cc",
-    "channel_manager.cc",
-    "command_handler.cc",
-    "credit_based_flow_control_rx_engine.cc",
-    "credit_based_flow_control_tx_engine.cc",
-    "dynamic_channel.cc",
-    "dynamic_channel_registry.cc",
-    "enhanced_retransmission_mode_engines.cc",
-    "enhanced_retransmission_mode_rx_engine.cc",
-    "enhanced_retransmission_mode_tx_engine.cc",
-    "fcs.cc",
-    "fragmenter.cc",
-    "le_dynamic_channel.cc",
-    "le_signaling_channel.cc",
-    "logical_link.cc",
-    "low_energy_command_handler.cc",
-    "pdu.cc",
-    "recombiner.cc",
-    "scoped_channel.cc",
-    "signaling_channel.cc",
-    "types.cc",
-  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     ":definitions",
-    "$dir_pw_bluetooth_sapphire:config",
+    "$dir_pw_bluetooth:emboss_hci_android",
+    "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/hci",
+    "$dir_pw_bluetooth_sapphire/host/sm:definitions",
     "$dir_pw_bluetooth_sapphire/host/transport",
-    "$dir_pw_string",
     "$dir_pw_third_party/fuchsia:fit",
+    dir_pw_bluetooth,
+    dir_pw_string,
   ]
-  public_configs = [ ":public_include_path" ]
   deps = [
     "$dir_pw_bluetooth:emboss_l2cap_frames",
-    "$dir_pw_preprocessor",
+    dir_pw_preprocessor,
   ]
 }
 
@@ -116,17 +120,25 @@ pw_source_set("l2cap") {
 pw_source_set("channel_manager_mock_controller_test_fixture") {
   testonly = pw_unit_test_TESTONLY
   public = [ "public/pw_bluetooth_sapphire/internal/host/l2cap/channel_manager_mock_controller_test_fixture.h" ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     ":l2cap",
     ":testing",
-    "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:mock_controller",
   ]
-  public_configs = [ ":public_include_path" ]
 }
 
 pw_source_set("testing") {
   testonly = pw_unit_test_TESTONLY
+  sources = [
+    "fake_channel.cc",
+    "fake_channel_test.cc",
+    "fake_l2cap.cc",
+    "fake_signaling_channel.cc",
+    "mock_channel_test.cc",
+    "test_packets.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h",
     "public/pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h",
@@ -136,25 +148,19 @@ pw_source_set("testing") {
     "public/pw_bluetooth_sapphire/internal/host/l2cap/mock_channel_test.h",
     "public/pw_bluetooth_sapphire/internal/host/l2cap/test_packets.h",
   ]
-  sources = [
-    "fake_channel.cc",
-    "fake_channel_test.cc",
-    "fake_l2cap.cc",
-    "fake_signaling_channel.cc",
-    "mock_channel_test.cc",
-    "test_packets.cc",
-  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     ":l2cap",
     "$dir_pw_async:fake_dispatcher_fixture",
     "$dir_pw_async:heap_dispatcher",
-    "$dir_pw_bluetooth",
     "$dir_pw_bluetooth_sapphire/host/common",
-    "$dir_pw_bluetooth_sapphire/host/hci",
-    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
-    "$dir_pw_unit_test",
+    "$dir_pw_bluetooth_sapphire/host/hci-spec",
+    "$dir_pw_third_party/fuchsia:fit",
   ]
-  public_configs = [ ":public_include_path" ]
+  deps = [
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
+    dir_pw_unit_test,
+  ]
 }
 
 pw_test("l2cap_tests") {
@@ -188,7 +194,7 @@ pw_test("l2cap_tests") {
     "signaling_channel_test.cc",
     "types_test.cc",
   ]
-  public_configs = [ ":public_include_path" ]
+  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
   deps = [
     ":channel_manager_mock_controller_test_fixture",
     ":l2cap",
@@ -197,9 +203,9 @@ pw_test("l2cap_tests") {
     "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_bluetooth_sapphire/host/hci:testing",
     "$dir_pw_bluetooth_sapphire/host/testing",
+    "$dir_pw_bluetooth_sapphire/host/testing:test_helpers",
     "$dir_pw_bluetooth_sapphire/host/transport:testing",
   ]
-  test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
 }
 
 pw_fuzzer("basic_mode_rx_engine_fuzzer") {

@@ -12,10 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
+# Basic target with protocol definitions and no logic, suitable for test
+# emulation.
 cc_library(
     name = "definitions",
     srcs = [
@@ -26,8 +28,9 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/att:definitions",
+        "//pw_bluetooth_sapphire/host/common",
+        "//third_party/fuchsia:fit",
     ],
 )
 
@@ -61,7 +64,6 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":definitions",
-        "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/att",
         "//third_party/fuchsia:fit",
     ],
@@ -80,14 +82,21 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/gatt/fake_layer.h",
         "public/pw_bluetooth_sapphire/internal/host/gatt/mock_server.h",
     ],
+    implementation_deps = [
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_unit_test:googletest",
+    ],
     strip_include_prefix = "public",
+    target_compatible_with = select({
+        "//pw_unit_test:googletest_only": [],
+        "@platforms//os:fuchsia": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":gatt",
         "//pw_async:heap_dispatcher",
-        "//pw_bluetooth_sapphire:public",
-        "//pw_bluetooth_sapphire/host/common",
-        "//pw_bluetooth_sapphire/host/common:uuid_string_util",
-        "//pw_unit_test:googletest",
+        "//pw_bluetooth_sapphire/host/att",
+        "//third_party/fuchsia:fit",
     ],
 )
 
@@ -106,7 +115,8 @@ pw_cc_test(
         ":gatt",
         ":testing",
         "//pw_bluetooth_sapphire/host/att",
+        "//pw_bluetooth_sapphire/host/common:uuid_string_util",
         "//pw_bluetooth_sapphire/host/l2cap:testing",
-        "//pw_bluetooth_sapphire/host/testing",
+        "//pw_bluetooth_sapphire/host/testing:test_helpers",
     ],
 )

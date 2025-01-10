@@ -46,6 +46,7 @@ fuchsia_cc_test(
     deps = [
         ":fidl",
         "//pw_bluetooth_sapphire/host/testing:gtest_main",
+        "//pw_unit_test",
         "@fuchsia_sdk//pkg/fidl_cpp",
     ],
 )

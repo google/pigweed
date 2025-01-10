@@ -21,6 +21,10 @@ config("public_include_path") {
 
 # Static library containing the HCI specification definitions
 pw_source_set("hci-spec") {
+  sources = [
+    "le_connection_parameters.cc",
+    "util.cc",
+  ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/hci-spec/constants.h",
     "public/pw_bluetooth_sapphire/internal/host/hci-spec/defaults.h",
@@ -31,21 +35,21 @@ pw_source_set("hci-spec") {
     "public/pw_bluetooth_sapphire/internal/host/hci-spec/util.h",
     "public/pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h",
   ]
-  sources = [
-    "le_connection_parameters.cc",
-    "util.cc",
-  ]
+  public_configs = [ ":public_include_path" ]
   public_deps = [
     "$dir_pw_bluetooth:emboss_hci_group",
-    "$dir_pw_bluetooth_sapphire:config",
     "$dir_pw_bluetooth_sapphire/host/common",
+    "$dir_pw_bluetooth_sapphire/lib/cpp-string",
     "$dir_pw_chrono:system_clock",
   ]
-  public_configs = [ ":public_include_path" ]
 }
 
-pw_test("tests") {
+pw_test("hci-spec_test") {
   sources = [ "util_test.cc" ]
-  deps = [ ":hci-spec" ]
   test_main = "$dir_pw_bluetooth_sapphire/host/testing:gtest_main"
+  deps = [ ":hci-spec" ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":hci-spec_test" ]
 }

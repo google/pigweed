@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -35,9 +35,8 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         "//pw_bluetooth:emboss_hci",
-        "//pw_bluetooth_sapphire:config",
-        "//pw_bluetooth_sapphire:public",
         "//pw_bluetooth_sapphire/host/common",
+        "//pw_bluetooth_sapphire/lib/cpp-string",
         "//pw_chrono:system_clock",
     ],
 )

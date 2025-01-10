@@ -13,7 +13,6 @@
 // the License.
 
 #pragma once
-#include "fake_l2cap.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/packet_view.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
@@ -21,6 +20,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/server.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_dynamic_channel.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h"
 
 namespace bt::testing {
 
