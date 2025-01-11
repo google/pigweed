@@ -182,7 +182,8 @@
     "glob": "^10.4.5",
     "hjson": "^3.2.2",
     "js-yaml": "^4.1.0",
-    "node_modules-path": "^2.0.8"
+    "node_modules-path": "^2.0.8",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
