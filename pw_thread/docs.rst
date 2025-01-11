@@ -576,4 +576,4 @@ currently running thread and produce symbolized thread dumps.
    :hidden:
    :maxdepth: 1
 
-   Backends <backends>
+   backends

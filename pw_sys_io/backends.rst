@@ -1,8 +1,8 @@
 .. _module-pw_sys_io-backends:
 
-==================
-pw_sys_io backends
-==================
+========
+Backends
+========
 .. TODO: b/323607687 - Add backend guidance here
 
 .. toctree::

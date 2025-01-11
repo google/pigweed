@@ -1,8 +1,8 @@
 .. _module-pw_interrupt-backends:
 
-=====================
-pw_interrupt backends
-=====================
+========
+Backends
+========
 .. TODO: b/323607687 - Add backend guidance here
 
 .. toctree::

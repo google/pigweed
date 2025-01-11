@@ -1,8 +1,8 @@
 .. _module-pw_trace-backends:
 
-=================
-pw_trace backends
-=================
+========
+Backends
+========
 .. TODO: b/323607687 - Add backend guidance here
 
 .. toctree::

@@ -79,4 +79,4 @@ If you configured a ``PW_MALLOC_METRICS_TYPE``, you can retrieve metrics using
    :maxdepth: 1
    :hidden:
 
-   Backends <backends>
+   backends

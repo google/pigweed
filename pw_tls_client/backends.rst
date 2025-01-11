@@ -1,8 +1,8 @@
 .. _module-pw_tls_client-backends:
 
-======================
-pw_tls_client backends
-======================
+========
+Backends
+========
 .. TODO: b/323607687 - Add backend guidance here
 
 .. toctree::

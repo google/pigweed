@@ -1,8 +1,8 @@
 .. _module-pw_malloc-backends:
 
-==================
-pw_malloc backends
-==================
+========
+Backends
+========
 .. pigweed-module-subpage::
    :name: pw_malloc
 

@@ -1,8 +1,8 @@
 .. _module-pw_protobuf-size_report:
 
-================================
-pw_protobuf extended size report
-================================
+====================
+Extended size report
+====================
 .. pigweed-module-subpage::
    :name: pw_protobuf
 

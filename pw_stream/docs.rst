@@ -440,7 +440,7 @@ as well as a basic ``Cursor`` implementation are provided by the
    :hidden:
    :maxdepth: 1
 
-   Backends <backends>
+   backends
 
 ------
 Python

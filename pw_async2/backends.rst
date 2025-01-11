@@ -1,8 +1,8 @@
 .. _module-pw_async2-backends:
 
-==================
-pw_async2 backends
-==================
+========
+Backends
+========
 The :ref:`pw_async2 interface <module-pw_async2-reference>` must be fulfilled
 by a concrete implementation. You can use one of the Pigweed-provided backends
 listed below or roll your own. If you roll your own, please consider

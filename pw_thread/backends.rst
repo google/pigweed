@@ -1,8 +1,8 @@
 .. _module-pw_thread-backends:
 
-==================
-pw_thread backends
-==================
+========
+Backends
+========
 .. TODO: b/323607687 - Add backend guidance here
 
 .. toctree::

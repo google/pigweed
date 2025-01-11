@@ -1,8 +1,8 @@
 .. _module-pw_software_update-cli:
 
----------------------------------
-pw_software_update: CLI reference
----------------------------------
+-------------
+CLI reference
+-------------
 .. pigweed-module-subpage::
    :name: pw_software_update
 

@@ -1,8 +1,8 @@
 .. _module-pw_fuzzer-guides-using_libfuzzer:
 
-=========================================
-pw_fuzzer: Adding Fuzzers Using LibFuzzer
-=========================================
+==============================
+Adding Fuzzers Using LibFuzzer
+==============================
 .. pigweed-module-subpage::
    :name: pw_fuzzer
 

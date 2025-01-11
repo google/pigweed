@@ -4,9 +4,9 @@
 
 .. _module-pw_fuzzer-guides:
 
-=================
-pw_fuzzer: Guides
-=================
+======
+Guides
+======
 .. pigweed-module-subpage::
    :name: pw_fuzzer
 

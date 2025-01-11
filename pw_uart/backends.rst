@@ -1,8 +1,8 @@
 .. _module-pw_uart-backends:
 
-================
-pw_uart backends
-================
+========
+Backends
+========
 
 .. toctree::
    :maxdepth: 1

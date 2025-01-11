@@ -1,8 +1,8 @@
 .. _module-pw_cpu_exception-backends:
 
-=========================
-pw_cpu_exception backends
-=========================
+========
+Backends
+========
 .. TODO: b/323607687 - Add backend guidance here
 
 .. toctree::

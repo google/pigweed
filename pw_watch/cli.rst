@@ -1,8 +1,8 @@
 .. _module-pw_watch-cli:
 
-=======================
-pw_watch CLI reference
-=======================
+=============
+CLI reference
+=============
 .. pigweed-module-subpage::
    :name: pw_watch
 

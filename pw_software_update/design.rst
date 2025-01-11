@@ -1,8 +1,8 @@
 .. _module-pw_software_update-design:
 
---------------------------
-pw_software_update: Design
---------------------------
+------
+Design
+------
 .. pigweed-module-subpage::
    :name: pw_software_update
 

@@ -16,11 +16,36 @@ the License.
 
 {% extends "pydata_sphinx_theme/layout.html" %}
 
+{# htmltitle controls the HTML title node. On some pages we customize
+   the title to make it more usable. #}
+{% block htmltitle %}
+  {# Override the title for some module pages. #}
+  {% if pagename.startswith('pw_') %}
+    {% set tokens = pagename.split('/') %}
+    {% set module_name = tokens[0] %}
+    {% set maybe_doc_name = tokens[1] %}
+    {% if maybe_doc_name == 'docs' %}
+      {# It's the homepage for a module. Use the normal title. #}
+      <title>{{ title|striptags|e }}{{ titlesuffix }}</title>
+    {% else %}
+      {# It's a subpage of the module's docs, e.g. the API reference.
+         Prepend the module's name so that it's easier to see what module
+         this doc is related to. E.g. before our change the default title
+         just says "API reference - Pigweed" and after our change it says
+         "pw_string: API reference - Pigweed". #}
+      <title>{{ module_name }}: {{ title|striptags|e }}{{ titlesuffix }}</title>
+    {% endif %}
+  {# It's a non-module page. Use the normal title. #}
+  {% else %}
+    <title>{{ title|striptags|e }}{{ titlesuffix }}</title>
+  {% endif %}
+{% endblock %}
+
 {% block extrahead %}
+  {{ super() }}
   <!-- Preconnect with Google Fonts to speed up font loading. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  {{ super() }}
   {% if pagename == 'search' %}
     {# Search tools are already loaded on search page. Don't load them twice. #}
   {% else %}

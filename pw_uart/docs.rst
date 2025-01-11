@@ -156,4 +156,4 @@ UartStream
    :hidden:
    :maxdepth: 1
 
-   Backends <backends>
+   backends

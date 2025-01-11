@@ -1,8 +1,8 @@
 .. _module-pw_software_update-guides:
 
--------------------------
-pw_software_update: Guide
--------------------------
+-----
+Guide
+-----
 .. pigweed-module-subpage::
    :name: pw_software_update
 

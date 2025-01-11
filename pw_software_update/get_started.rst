@@ -1,8 +1,8 @@
 .. _module-pw_software_update-get-started:
 
--------------------------------
-pw_software_update: Get started
--------------------------------
+-----------
+Get started
+-----------
 .. pigweed-module-subpage::
    :name: pw_software_update
 

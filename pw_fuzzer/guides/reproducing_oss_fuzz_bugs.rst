@@ -1,8 +1,8 @@
 .. _module-pw_fuzzer-guides-reproducing_oss_fuzz_bugs:
 
-=============================================
-pw_fuzzer: Using OSS-Fuzz
-=============================================
+==============
+Using OSS-Fuzz
+==============
 .. pigweed-module-subpage::
    :name: pw_fuzzer
 

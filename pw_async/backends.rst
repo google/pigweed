@@ -1,8 +1,8 @@
 .. _module-pw_async-backends:
 
-=================
-pw_async backends
-=================
+========
+Backends
+========
 .. pigweed-module-subpage::
    :name: pw_async
 

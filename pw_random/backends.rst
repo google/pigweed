@@ -1,8 +1,8 @@
 .. _module-pw_random-backends:
 
-==================
-pw_random backends
-==================
+========
+Backends
+========
 .. pigweed-module-subpage::
    :name: pw_random
 

@@ -1,8 +1,8 @@
 .. _module-pw_log-backends:
 
-===============
-pw_log backends
-===============
+========
+Backends
+========
 .. pigweed-module-subpage::
    :name: pw_log
 

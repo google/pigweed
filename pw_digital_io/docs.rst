@@ -333,4 +333,4 @@ the project's configuration.
    :hidden:
    :maxdepth: 1
 
-   Backends <backends>
+   backends

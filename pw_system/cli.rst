@@ -1,8 +1,8 @@
 .. _module-pw_system-cli:
 
-===============================
-pw_system console CLI reference
-===============================
+=====================
+Console CLI reference
+=====================
 These are the standard pw_system console command line arguments.
 
 .. argparse::

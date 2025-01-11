@@ -1,8 +1,8 @@
 .. _module-pw_assert-backends:
 
-==================
-pw_assert backends
-==================
+========
+Backends
+========
 .. pigweed-module-subpage::
    :name: pw_assert
 

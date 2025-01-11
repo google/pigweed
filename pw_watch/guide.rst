@@ -1,8 +1,8 @@
 .. _module-pw_watch-guide:
 
-=====================
-pw_watch how-to guide
-=====================
+============
+How-to guide
+============
 .. pigweed-module-subpage::
    :name: pw_watch
 

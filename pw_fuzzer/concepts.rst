@@ -1,8 +1,8 @@
 .. _module-pw_fuzzer-concepts:
 
-===================
-pw_fuzzer: Concepts
-===================
+========
+Concepts
+========
 .. pigweed-module-subpage::
    :name: pw_fuzzer
 

@@ -1,8 +1,8 @@
 .. _module-pw_sensor-py:
 
-========================
-pw_sensor Python package
-========================
+==============
+Python package
+==============
 .. pigweed-module::
    :name: pw_sensor
 

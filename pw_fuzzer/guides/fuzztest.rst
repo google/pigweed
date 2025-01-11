@@ -1,8 +1,8 @@
 .. _module-pw_fuzzer-guides-using_fuzztest:
 
-========================================
-pw_fuzzer: Adding Fuzzers Using FuzzTest
-========================================
+=============================
+Adding Fuzzers Using FuzzTest
+=============================
 .. pigweed-module-subpage::
    :name: pw_fuzzer
 

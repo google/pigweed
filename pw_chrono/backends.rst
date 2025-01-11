@@ -1,8 +1,8 @@
 .. _module-pw_chrono-backends:
 
-==================
-pw_chrono backends
-==================
+========
+Backends
+========
 .. pigweed-module-subpage::
    :name: pw_chrono
 
