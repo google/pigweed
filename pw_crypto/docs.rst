@@ -181,6 +181,8 @@ a code size of ~12KiB.
    #define MBEDTLS_ECP_NO_INTERNAL_RNG
    #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 
+.. _module-pw_crypto-boringssl:
+
 BoringSSL
 =========
 The BoringSSL project (`source

@@ -111,6 +111,8 @@ Get started
 Guides
 ------
 
+.. _module-pw_span-start-params:
+
 ``pw::span`` as a function parameter
 ====================================
 ``pw::span`` objects should be passed by value.

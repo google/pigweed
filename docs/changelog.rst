@@ -12,13 +12,409 @@ Talk to the team at Pigweed Live
 .. pigweed-live::
 
 .. _docs-changelog-latest:
+.. _docs-changelog-2025-01-09:
+
+-----------
+Jan 9, 2025
+-----------
+.. changelog_highlights_start
+
+Highlights (Dec 27, 2024 to Jan 9, 2025):
+
+* **Bazel 8**: Pigweed now :ref:`depends on Bazel 8
+  <docs-changelog-2025-01-09-Build-systems-Bazel>`.
+
+* **FuzzTest and CMake**: FuzzTest is now :ref:`supported in
+  CMake projects <docs-changelog-2025-01-09-Modules-pw_fuzzer>`.
+
+* **BoringSSL**: ``pw_crypto`` now :ref:`supports
+  BoringSLL <docs-changelog-2025-01-09-Modules-pw_crypto>`.
+
+* **pw_rpc Java improvements**: The ``pw_rpc`` Java client now
+  has better :ref:`concurrent RPC request support
+  <docs-changelog-2025-01-09-Modules-pw_rpc>`.
+
+.. changelog_highlights_end
+
+.. _docs-changelog-2025-01-09-Modules:
+
+Modules
+=======
+
+.. _docs-changelog-2025-01-09-Modules-pw_containers:
+
+pw_containers
+-------------
+New features:
+
+.. 68e18edf9f1b3913c73b1a4332bbce6521609916
+
+* Intrusive lists now support move operations. Commit: `Support moving
+  intrusive lists <https://pwrev.dev/255894>`__.
+
+.. _docs-changelog-2025-01-09-Modules-pw_chrono:
+
+pw_chrono
+---------
+New features:
+
+.. e88f3c4397c5cafafda8635ac93d42483059a9f9
+
+* ``pw_chrono`` snapshots now support optional clock names. Commit: `Add
+  support for clock names <https://pwrev.dev/253753>`__.
+
+.. _docs-changelog-2025-01-09-Modules-pw_crypto:
+
+pw_crypto
+---------
+New features:
+
+.. 462b37b0820e284069b8e42f6e61438177b60cb7
+
+* ``pw_crypto`` now supports :ref:`BoringSSL <module-pw_crypto-boringssl>`.
+  Commit: `Add BoringSSL backend for AES <https://pwrev.dev/231914>`__.
+
+Changes:
+
+.. 483a24a69950b8be7ae924e28a7504150378c8ee
+
+* ``micro_ecc`` support has been removed. Commit: `Remove micro_ecc
+  support <https://pwrev.dev/229672>`__. Bug: :bug:`359924206`.
+
+.. _docs-changelog-2025-01-09-Modules-pw_digital_io_mcuxpresso:
+
+pw_digital_io_mcuxpresso
+------------------------
+New features:
+
+.. 8a5fc59a80af2fb2b11c2cd16ecc21a210fe1065
+
+* The new ``pw::digital_io::McuxpressoDigitalInOutInterrupt`` class
+  supports interrupts on the GPIO interrupt block which enables using
+  interrupts on more pins. Commit: `Add McuxpressoDigitalInOutInterrupt
+  support <https://pwrev.dev/247972>`__.
+
+Changes:
+
+.. 34521ea9d72066a02d4b562eb6d2dd628e424e58
+
+* ``pw::digital_io::McuxpressoDigitalInInterrupt`` has been deprecated.
+  ``pw::digital_io::McuxpressoPintInterrupt`` should be used instead.
+  Commit: `Introduce McuxpressoPintInterrupt
+  <https://pwrev.dev/258994>`__. Bug: :bug:`337927184`.
+
+.. _docs-changelog-2025-01-09-Modules-pw_fuzzer:
+
+pw_fuzzer
+---------
+New features:
+
+.. 736d6a39f5cdde223bfcbaf6f8c8fec7d512379a
+
+* :ref:`FuzzTest <module-pw_fuzzer-guides-using_fuzztest>` can now be
+  used in CMake projects. Commit: `Make FuzzTest usable be external CMake
+  projects <https://pwrev.dev/239049>`__. Bug: :bug:`384978398`.
+
+.. _docs-changelog-2025-01-09-Modules-pw_log_basic:
+
+pw_log_basic
+------------
+Changes:
+
+.. a542e417c4367b3b6c4fed88a172b9c2bdd2a837
+
+* The maximum length for the function name field has increased from 20
+  to 30 characters and is now left-aligned. Commit: `Adjust field widths
+  <https://pwrev.dev/258174>`__.
+
+.. _docs-changelog-2025-01-09-Modules-pw_protobuf:
+
+pw_protobuf
+-----------
+Changes:
+
+.. 8706efb9847543d226c5cb17494faffcd034cfa0
+
+* Regular callbacks now ignore fields with unset decode callbacks.
+  Previously they caused ``DATA_LOSS`` errors. Commit: `Allow unset
+  callback fields in message structs <https://pwrev.dev/258392>`__.
+
+.. _docs-changelog-2025-01-09-Modules-pw_rpc:
+
+pw_rpc
+------
+New features:
+
+.. 15d4ae5ff36cd452023fdfc07835f5f1635f05ef
+
+* The Java client now supports making multiple concurrent RPC requests
+  to the same method. Commit: `Increment call_ids for java client
+  <https://pwrev.dev/258792>`__.
+
+.. _docs-changelog-2025-01-09-Modules-pw_span:
+
+pw_span
+-------
+New features:
+
+.. 031bf132386f7350cb86338928368f46c5b76d1c
+
+* The new docs section :ref:`module-pw_span-start-params` explains why
+  ``pw::span`` objects should be passed by value. Commit: `Recommend passing
+  pw::span objects by value <https://pwrev.dev/257072>`__. Bug:
+  :bug:`387107922`.
+
+.. _docs-changelog-2025-01-09-Modules-pw_stream:
+
+pw_stream
+---------
+New features:
+
+.. e7380e5da83527b80087e86b63224e052074d10f
+
+* The new ``pw::stream::SocketStream::IsReady()`` method indicates
+  whether the streaming socket connection is ready. Commit: `Add ready
+  method to socket stream <https://pwrev.dev/253772>`__.
+
+.. _docs-changelog-2025-01-09-Modules-pw_thread:
+
+pw_thread
+---------
+Changes:
+
+.. 717e4f58092e947eba23afb8be099d2ccf1247c3
+
+* It is now simpler to disable the ``join()`` function when it's not
+  supported. Commit: `Simplify disabling join() function when not
+  supported <https://pwrev.dev/257913>`__.
+
+.. _docs-changelog-2025-01-09-Modules-pw_toolchain:
+
+pw_toolchain
+------------
+Changes:
+
+.. 8adc4c3e84423554c5ad6549fefe3d0e035985c6
+
+* The float ABI configuration for Arm Cortex-M33 was changed from
+  ``soft`` to ``softfp``. Commit: `Update m33 float-abi
+  <https://pwrev.dev/259412>`__. Bug: :bug:`388354690`.
+
+.. _docs-changelog-2025-01-09-Modules-pw_toolchain_bazel:
+
+pw_toolchain_bazel
+------------------
+Changes:
+
+.. 413a81576837f344c55a8d64b5d1807769e513b0
+
+* Most of ``pw_toolchain_bazel`` has been removed because it has been
+  upstreamed to ``rules_cc``. Commit: `Remove contents
+  <https://pwrev.dev/252472>`__. Bug: :bug:`346388161`.
+
+.. _docs-changelog-2025-01-09-Modules-pw_uart:
+
+pw_uart
+-------
+Changes:
+
+.. 71c2d0d0e9eb7cc27111a20b3190af1593944676
+
+* It is no longer safe to call any ``pw_uart`` read or write methods
+  from a ``pw::uart::UartNonBlocking::DoRead()`` callback context. Commit:
+  `Restrict UartNonBlocking::DoRead() callback
+  <https://pwrev.dev/255732>`__. Bug: :bug:`384966926`.
+
+.. _docs-changelog-2025-01-09-Modules-pw_unit_test:
+
+pw_unit_test
+------------
+Bug fixes:
+
+.. 203c6c8fd11fbdf01b51e564de03150f38dab430
+
+* The buffer for expectation logs was increased in size to prevent
+  expectation logs from getting cut off. Commit: `Expectation buffer
+  cleanup <https://pwrev.dev/259055>`__. Bug: :bug:`387513166`.
+
+.. _docs-changelog-2025-01-09-Build-systems:
+
+Build systems
+=============
+
+.. _docs-changelog-2025-01-09-Build-systems-Bazel:
+
+Bazel
+-----
+Changes:
+
+.. b13f7bf334b239174e87d91fbfac8b8c1d209403
+
+* Pigweed now depends on Bazel 8.0.0. Commit: `Update to Bazel 8.0.0
+  <https://pwrev.dev/242033>`__. Bug: :bug:`372510795`.
+
+.. _docs-changelog-2025-01-09-Docs:
+
+Docs
+====
+New features:
+
+.. b977a3aeb1f4cf5a1b113396bbf9f9af6c1f1658
+
+* The :ref:`Sense tutorial <showcase-sense-tutorial-intro>` has been
+  updated to cover all variations on the Raspberry Pi Pico. Commit:
+  `Refresh Sense tutorial <https://pwrev.dev/254652>`__.
+
+.. 9337bf2516b4e0876d5308ec15939cb2dc9e6ab8
+
+* :ref:`Pigweed Toolchain <toolchain>` now has a homepage. Commit: `Add
+  toolchain homepage <https://pwrev.dev/247593>`__. Bug: :bug:`373454866`.
+
+.. _docs-changelog-2024-12-26:
+
+------------
+Dec 26, 2024
+------------
+Highlights (Dec 12, 2024 to Dec 26, 2024):
+
+* **TLSF allocator**: ``pw_allocator`` has a new :ref:`two-layer, segregated
+  fit allocator <docs-changelog-2024-12-26-Modules-pw_allocator>`.
+* **Checked arithmetic**: ``pw_numeric`` has :ref:`a suite of new arithmetic
+  operations <docs-changelog-2024-12-26-Modules-pw_numeric>` that check for
+  overflows.
+* **Constant expression unit tests**: ``pw_unit_test`` has a
+  :ref:`new constexpr unit test <docs-changelog-2024-12-26-Modules-pw_unit_test>`
+  that runs at both compile-time and runtime.
+* **Bazel module integration guidance**: :ref:`docs-bazel-integration` now provides
+  guidance on how to integrate Pigweed into projects that use Bazel modules.
+
+.. _docs-changelog-2024-12-26-Modules:
+
+Modules
+=======
+
+.. _docs-changelog-2024-12-26-Modules-pw_allocator:
+
+pw_allocator
+------------
+New features:
+
+.. f674d68203b26bf0207ab79099696e2b3b3cd9b3
+
+* The new :cpp:class:`pw::allocator::TlsfAllocator` is a two-layer,
+  segregated fit allocator. Its 2D array of buckets incurs overhead but it
+  can satisfy requests quickly and has much better fragmentation performance
+  than ``WorstFitAllocator``. Commit: `Add TLSF allocator
+  <https://pwrev.dev/234818>`__.
+
+.. _docs-changelog-2024-12-26-Modules-pw_build:
+
+pw_build
+--------
+New features:
+
+.. ee6f9976ba7e78737a1a74ae05f06da397b896c8
+
+* The new ``pw_rust_crates_extension`` Bazel extension lets a project
+  override the ``rust_crates`` repo when needed without requiring every
+  project to define one. Commit: `Add pw_rust_crates_extension
+  <https://pwrev.dev/254952>`__. Bug: :bug:`384536812`.
+
+.. _docs-changelog-2024-12-26-Modules-pw_containers:
+
+pw_containers
+-------------
+New features:
+
+.. 999adb191f8f512b524f0a65bd0662ac7854ef20
+
+* Queues and dequeues now have explicit ``constexpr`` constructors.
+  Commit: `Add explicit constexpr constructors for deques/queues
+  <https://pwrev.dev/250434>`__.
+
+.. _docs-changelog-2024-12-26-Modules-pw_multibuf:
+
+pw_multibuf
+-----------
+Changes:
+
+.. b439dd3e602e6c3568ff2ed68a12c2ecf90391a9
+
+* :cpp:class:`pw::multibuf::MultiBufAllocator` no longer supports async.
+  :cpp:class:`pw::multibuf::MultiBufAllocatorAsync` should be used
+  instead. Commit: `Move async to new MultiBufAllocatorAsync
+  <https://pwrev.dev/255015>`__. Bug: :bug:`384583239`.
+
+.. _docs-changelog-2024-12-26-Modules-pw_numeric:
+
+pw_numeric
+----------
+New features:
+
+.. d6827c16644efa06f524a702903397e3cc07ba4c
+
+.. TODO: https://pwbug.dev/389134105 - Fix these links.
+
+* :cpp:type:`pw::CheckedAdd`, :cpp:type:`pw::CheckedIncrement`,
+  :cpp:type:`pw::CheckedSub`, :cpp:type:`pw::CheckedDecrement`, and
+  :cpp:type:`pw::CheckedMul` are new arithmetic methods that check for
+  overflows. Commit: `Add checked_arithmetic.h
+  <https://pwrev.dev/253172>`__. Bug: :bug:`382262919`.
+
+.. _docs-changelog-2024-12-26-Modules-pw_thread:
+
+pw_thread
+---------
+New features:
+
+.. 4f536c6c1137a7282e7f800aa636c79c5c629191
+
+* The new :cpp:class:`pw::ThreadPriority` class is a generic priority
+  class that can be used by any ``pw_thread`` backend. Commit: `Thread
+  priority class <https://pwrev.dev/242214>`__.
+
+.. _docs-changelog-2024-12-26-Modules-pw_toolchain:
+
+pw_toolchain
+------------
+New features:
+
+.. 13446e506fb94bcf4345bbf74b7987cff0fe0e3a
+
+* ``pw_toolchain`` now supports Arm Cortex-M3. Commit: `Add Cortex M3
+  support <https://pwrev.dev/254474>`__.
+
+.. _docs-changelog-2024-12-26-Modules-pw_unit_test:
+
+pw_unit_test
+------------
+New features:
+
+.. c13d91eae61a50dfbe08023983337086509e7a8e
+
+* :c:macro:`PW_CONSTEXPR_TEST` is a new unit test that is executed both
+  at compile-time in a ``static_assert()`` and at runtime as a GoogleTest
+  ``TEST()``. Commit: `Test framework for constexpr unit tests
+  <https://pwrev.dev/242213>`__.
+
+.. _docs-changelog-2024-12-26-Docs:
+
+Docs
+====
+New features:
+
+.. 42962f4a909048bb7f9464af018515bb5c9ee94c
+
+* :ref:`docs-bazel-integration` has been updated to describe how to
+  integrate Pigweed into projects that use Bazel modules (``bzlmod``). Commit:
+  `Bazel integration: bzlmod, Bazel versions
+  <https://pwrev.dev/254413>`__.
+
 .. _docs-changelog-2024-12-11:
 
 ------------
 Dec 11, 2024
 ------------
-.. changelog_highlights_start
-
 Highlights (Nov 28, 2024 to Dec 11, 2024):
 
 * **New blog post**: :ref:`docs-blog-06-better-cpp-toolchains`
@@ -30,8 +426,6 @@ Highlights (Nov 28, 2024 to Dec 11, 2024):
 
 * **AES API in pw_crypto**: :ref:`module-pw_crypto` now has an
   Mbed-TLS backend for AES.
-
-.. changelog_highlights_end
 
 .. _docs-changelog-2024-12-11-Modules:
 
