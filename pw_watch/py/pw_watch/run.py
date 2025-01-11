@@ -28,7 +28,7 @@ Multiple commands may be specified, separated by ``,``:
 
 .. code-block:: sh
 
-   # Run a `cowsay`, then `cowthink`, when files change.
+   # Run `cowsay` then `cowthink` when watched files change.
    run.py cowsay "Hey, how are you?" , cowthink Not in moood to talk
 
 The Bazel build's ``//pw_watch/py:bazel`` watch entrypoint invokes
@@ -53,13 +53,24 @@ import pw_cli.color
 import pw_cli.env
 import pw_cli.log
 from pw_cli.plural import plural
-from pw_presubmit import presubmit
 
 from pw_watch import common
 from pw_watch.debounce import DebouncedFunction, Debouncer
 
 _LOG = logging.getLogger('pw_watch')
 _COLOR = pw_cli.color.colors()
+
+_WIDTH = 80
+_STEP_START = '━' * (_WIDTH - 1) + '┓'
+_STEP_FINISH = '━' * (_WIDTH - 1) + '┛'
+
+
+def _format_time(time_s: float) -> str:
+    minutes, seconds = divmod(time_s, 60)
+    if minutes < 60:
+        return f' {int(minutes)}:{seconds:04.1f}'
+    hours, minutes = divmod(minutes, 60)
+    return f'{int(hours):d}:{int(minutes):02}:{int(seconds):02}'
 
 
 class Watcher(FileSystemEventHandler, DebouncedFunction):
@@ -114,9 +125,9 @@ class Watcher(FileSystemEventHandler, DebouncedFunction):
         print('\033c', end='', flush=True)  # clear the screen
 
         for i, command in enumerate(self.commands, 1):
-            count = f'{i}/{len(self.commands)}'
+            count = f' {i}/{len(self.commands)}   '
             print(
-                presubmit.step_header(count, shlex.join(command), ''),
+                f'{_STEP_START}\n{count}{shlex.join(command)}\n',
                 flush=True,
             )
             start = time.time()
@@ -125,19 +136,17 @@ class Watcher(FileSystemEventHandler, DebouncedFunction):
 
             if code == 0:
                 result = _COLOR.bold_green('PASSED')
+                msg = ''
             else:
-                result = f'{_COLOR.bold_red("FAILED")} with exit code {code}'
+                result = _COLOR.bold_red('FAILED')
+                msg = f' with exit code {code}'
 
+            remaining_width = _WIDTH - len(count) - 6 - len(msg) - 2
+            timestamp = _format_time(total_time).rjust(remaining_width)
             print(
-                presubmit.step_footer(
-                    count,
-                    # Pad the result to account for the ANSI escape codes.
-                    result.ljust(presubmit.BOX_CENTER_WIDTH + 13),
-                    presubmit.format_time(total_time),
-                ),
+                f'\n{count}{result}{msg}{timestamp}\n{_STEP_FINISH}\n',
                 flush=True,
             )
-            print(flush=True)
 
             if code and not self.keep_going and i < len(self.commands):
                 _LOG.info(

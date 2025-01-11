@@ -89,6 +89,15 @@ _FULLSCREEN_STATUS_COLUMN_WIDTH = 10
 BUILDER_CONTEXT = get_project_builder_context()
 
 
+def _log_event(event_description: str) -> None:
+    if BUILDER_CONTEXT.using_progress_bars():
+        _LOG.warning('Event while running: %s', event_description)
+    else:
+        print('\n')
+        _LOG.warning('Event while running: %s', event_description)
+        print('')
+
+
 class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     """Process filesystem events and launch builds if necessary."""
 
@@ -125,7 +134,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         if self.parallel_workers > 1:
             self.separate_logfiles = True
 
-        self.debouncer = Debouncer(self)
+        self.debouncer = Debouncer(self, log_event=_log_event)
 
         # Track state of a build. These need to be members instead of locals
         # due to the split between dispatch(), run(), and on_complete().

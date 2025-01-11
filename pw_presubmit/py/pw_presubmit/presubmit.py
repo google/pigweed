@@ -96,7 +96,7 @@ WIDTH = 80
 
 _LEFT = 7
 _RIGHT = 11
-BOX_CENTER_WIDTH = WIDTH - _LEFT - _RIGHT - 4
+_CENTER = WIDTH - _LEFT - _RIGHT - 4
 
 
 def _title(msg, style=_SUMMARY_BOX) -> str:
@@ -120,7 +120,7 @@ def _box(
         section1=left + ('' if left.endswith(' ') else ' '),
         width1=_LEFT,
         section2=' ' + middle,
-        width2=BOX_CENTER_WIDTH,
+        width2=_CENTER,
         section3=right + ' ',
         width3=_RIGHT,
     )
@@ -147,12 +147,14 @@ class PresubmitResult(enum.Enum):
         return padding + color(self.value) + padding
 
 
-def step_header(left: str, middle: str, right: str) -> str:
-    return _box(_CHECK_UPPER, left, middle, right)
+def _step_header(count: int, total: int, name: str, num_paths: int) -> str:
+    return _box(
+        _CHECK_UPPER, f'{count}/{total}', name, plural(num_paths, "file")
+    )
 
 
-def step_footer(left: str, middle: str, right: str) -> str:
-    return _box(_CHECK_LOWER, left, middle, right)
+def _step_footer(result: PresubmitResult, name: str, timestamp: str) -> str:
+    return _box(_CHECK_LOWER, result.colorized(_LEFT), name, timestamp)
 
 
 class Program(collections.abc.Sequence):
@@ -921,13 +923,7 @@ class Check:
     ) -> PresubmitResult:
         """Runs the presubmit check on the provided paths."""
 
-        _print_ui(
-            step_header(
-                f'{count}/{total}',
-                self.name,
-                plural(ctx.paths, "file"),
-            )
-        )
+        _print_ui(_step_header(count, total, self.name, len(ctx.paths)))
 
         substep_part = f'.{substep}' if substep else ''
         _LOG.debug(
@@ -951,7 +947,7 @@ class Check:
         if ctx.dry_run:
             log_check_traces(ctx)
 
-        _print_ui(step_footer(result.colorized(_LEFT), self.name, time_str))
+        _print_ui(_step_footer(result, self.name, time_str))
         _LOG.debug('%s duration:%s', self.name, time_str)
 
         return result

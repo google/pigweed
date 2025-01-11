@@ -16,11 +16,8 @@
 import enum
 import logging
 import threading
+from typing import Any, Callable
 from abc import ABC, abstractmethod
-
-from pw_build.project_builder_context import get_project_builder_context
-
-BUILDER_CONTEXT = get_project_builder_context()
 
 _LOG = logging.getLogger('pw_build.watch')
 
@@ -60,12 +57,25 @@ class State(enum.Enum):
     RERUN = 6  # ------- Transistions to: IDLE (but triggers a press)
 
 
+def _flush_and_log(event_description: str) -> None:
+    # Surround the error message with newlines to make it stand out.
+    print('\n', flush=True)
+    _LOG.warning('Event while running: %s', event_description)
+    print('', flush=True)
+
+
 class Debouncer:
     """Run an interruptable, cancellable function with debouncing"""
 
-    def __init__(self, function: DebouncedFunction) -> None:
+    def __init__(
+        self,
+        function: DebouncedFunction,
+        *,
+        log_event: Callable[[str], Any] = _flush_and_log,
+    ) -> None:
         super().__init__()
         self.function = function
+        self._log_event = log_event
 
         self.state = State.IDLE
 
@@ -101,17 +111,7 @@ class Debouncer:
             # When the function is already running but we get an incoming
             # event, go into the INTERRUPTED state to signal that we should
             # re-try running afterwards.
-            error_message = ['Event while running: %s', event_description]
-            if BUILDER_CONTEXT.using_progress_bars():
-                _LOG.warning(*error_message)
-            else:
-                # Push an empty line to flush ongoing I/O in subprocess.
-                print('')
-
-                # Surround the error message with newlines to make it stand out.
-                print('')
-                _LOG.warning(*error_message)
-                print('')
+            self._log_event(event_description)
 
             self.function.cancel()
             self._transition(State.INTERRUPTED)

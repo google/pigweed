@@ -27,24 +27,27 @@ py_library(
         "pw_watch/common.py",
         "pw_watch/debounce.py",
         "pw_watch/run.py",
-        "pw_watch/watch.py",
-        "pw_watch/watch_app.py",
     ],
     imports = ["."],
     deps = [
-        "//pw_build/py:pw_project_builder",
         "//pw_cli/py:pw_cli",
-        "//pw_config_loader/py:pw_config_loader",
-        "//pw_console/py:pw_console",
-        "@python_packages//prompt_toolkit",
         "@python_packages//watchdog",
     ],
 )
 
 pw_py_binary(
     name = "watch",
-    srcs = ["pw_watch/watch.py"],
-    deps = [":pw_watch"],
+    srcs = [
+        "pw_watch/watch.py",
+        "pw_watch/watch_app.py",
+    ],
+    deps = [
+        ":pw_watch",
+        "//pw_build/py:pw_project_builder",
+        "//pw_config_loader/py:pw_config_loader",
+        "//pw_console/py:pw_console",
+        "@python_packages//prompt_toolkit",
+    ],
 )
 
 pw_py_binary(
