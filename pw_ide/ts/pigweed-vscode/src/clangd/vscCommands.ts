@@ -16,7 +16,12 @@ import * as vscode from 'vscode';
 
 import { ClangdActiveFilesCache } from './activeFilesCache';
 import { clangdPath } from './bazel';
-import { availableTargets, getTarget, targetPath } from './paths';
+import {
+  availableTargets,
+  getTarget,
+  setTarget as baseSetTarget,
+  Target,
+} from './paths';
 
 import { didChangeClangdConfig, didChangeTarget } from '../events';
 
@@ -26,18 +31,18 @@ import { RefreshManager } from '../refreshManager';
 import { settingFor, settings, stringSettingFor } from '../settings';
 
 export async function setTarget(
-  target: string | undefined,
+  target: Target | undefined,
   settingsFileWriter: (target: string) => Promise<void>,
 ): Promise<void> {
   target = target ?? getTarget();
   if (!target) return;
 
-  if (!(await availableTargets()).includes(target)) {
+  if (!(await availableTargets()).map((t) => t.name).includes(target.name)) {
     throw new Error(`Target not among available targets: ${target}`);
   }
 
-  await settings.codeAnalysisTarget(target);
-  didChangeTarget.fire(target);
+  await baseSetTarget(target);
+  didChangeTarget.fire(target.name);
 
   const { update: updatePath } = stringSettingFor('path', 'clangd');
   const { update: updateArgs } = settingFor<string[]>('arguments', 'clangd');
@@ -47,12 +52,12 @@ export async function setTarget(
   Promise.all([
     updatePath(clangdPath()),
     updateArgs([
-      `--compile-commands-dir=${targetPath(target)}`,
+      `--compile-commands-dir=${target.path}`,
       '--query-driver=**',
       '--header-insertion=never',
       '--background-index',
     ]),
-    settingsFileWriter(target),
+    settingsFileWriter(target.name),
   ]).then(() =>
     // Restart the clangd server so it picks up the new setting.
     vscode.commands.executeCommand('clangd.restart'),
@@ -68,13 +73,17 @@ export async function setCompileCommandsTarget(
   activeFilesCache: ClangdActiveFilesCache,
 ): Promise<void> {
   const currentTarget = getTarget();
+  const targets = await availableTargets();
+  const targetNameMap = Object.fromEntries(
+    targets.map((target) => [target.name, target]),
+  );
 
-  const targets = (await availableTargets()).sort().map((target) => ({
-    label: target,
+  const targetEntries = targets.map((target) => ({
+    label: target.name,
     iconPath: markIfActive(target === currentTarget),
   }));
 
-  if (targets.length === 0) {
+  if (targetEntries.length === 0) {
     vscode.window
       .showErrorMessage("Couldn't find any targets!", 'Get Help')
       .then((selection) => {
@@ -90,14 +99,17 @@ export async function setCompileCommandsTarget(
   }
 
   vscode.window
-    .showQuickPick(targets, {
+    .showQuickPick(targetEntries, {
       title: 'Select a target',
       canPickMany: false,
     })
     .then(async (selection) => {
       if (!selection) return;
-      const { label: target } = selection;
-      await setTarget(target, activeFilesCache.writeToSettings);
+      const { label: targetName } = selection;
+      await setTarget(
+        targetNameMap[targetName],
+        activeFilesCache.writeToSettings,
+      );
     });
 }
 

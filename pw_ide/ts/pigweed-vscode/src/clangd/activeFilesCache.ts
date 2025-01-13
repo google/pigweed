@@ -22,7 +22,7 @@ import { Uri } from 'vscode';
 import { createHash } from 'crypto';
 import * as yaml from 'js-yaml';
 
-import { availableTargets, targetCompileCommandsPath } from './paths';
+import { availableTargets, Target } from './paths';
 
 import { Disposable } from '../disposables';
 import { didInit, didUpdateActiveFilesCache } from '../events';
@@ -31,9 +31,9 @@ import { OK, RefreshCallback, RefreshManager } from '../refreshManager';
 import { settings, workingDir } from '../settings';
 
 /** Parse a compilation database and get the source files in the build. */
-async function parseForSourceFiles(target: string): Promise<Set<string>> {
+async function parseForSourceFiles(target: Target): Promise<Set<string>> {
   const rd = readline_p.createInterface({
-    input: fs.createReadStream(targetCompileCommandsPath(target)),
+    input: fs.createReadStream(target.path),
     crlfDelay: Infinity,
   });
 

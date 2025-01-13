@@ -27,6 +27,7 @@ type TerminalShell = 'bash' | 'zsh';
 export interface Settings {
   activateBazeliskInNewTerminals: Setting<boolean>;
   codeAnalysisTarget: Setting<string>;
+  codeAnalysisTargetDir: Setting<string>;
   disableBazelSettingsRecommendations: Setting<boolean>;
   disableBazeliskCheck: Setting<boolean>;
   disableCompileCommandsFileWatcher: Setting<boolean>;
@@ -134,6 +135,16 @@ function codeAnalysisTarget(
   value?: string,
 ): string | undefined | Thenable<void> {
   const { get, update } = stringSettingFor('codeAnalysisTarget');
+  if (value === undefined) return get();
+  return update(value);
+}
+
+function codeAnalysisTargetDir(): string | undefined;
+function codeAnalysisTargetDir(value: string | undefined): Thenable<void>;
+function codeAnalysisTargetDir(
+  value?: string,
+): string | undefined | Thenable<void> {
+  const { get, update } = stringSettingFor('codeAnalysisTargetDir');
   if (value === undefined) return get();
   return update(value);
 }
@@ -270,6 +281,7 @@ function terminalShell(
 export const settings: Settings = {
   activateBazeliskInNewTerminals,
   codeAnalysisTarget,
+  codeAnalysisTargetDir,
   disableBazelSettingsRecommendations,
   disableBazeliskCheck,
   disableCompileCommandsFileWatcher,

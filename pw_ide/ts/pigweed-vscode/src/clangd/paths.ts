@@ -19,26 +19,69 @@ import { glob } from 'glob';
 import { settings, workingDir } from '../settings';
 
 const CDB_FILE_NAME = 'compile_commands.json' as const;
-const CDB_FILE_DIR = '.compile_commands' as const;
+
+const CDB_FILE_DIRS = [
+  '.compile_commands',
+  '.pw_ide', // The legacy pw_ide directory
+];
 
 // Need this indirection to prevent `workingDir` being called before init.
-const CDB_DIR = () => path.join(workingDir.get(), CDB_FILE_DIR);
+const CDB_DIRS = () =>
+  CDB_FILE_DIRS.map((dir) => path.join(workingDir.get(), dir));
 
-export const targetPath = (target: string) => path.join(`${CDB_DIR()}`, target);
-export const targetCompileCommandsPath = (target: string) =>
-  path.join(targetPath(target), CDB_FILE_NAME);
+export class Target {
+  private _name: string;
+  private _dir: string;
 
-export async function availableTargets(): Promise<string[]> {
-  // Get the name of every sub dir in the compile commands dir that contains
-  // a compile commands file.
+  constructor(name: string, dir?: string) {
+    this._name = name;
+    this._dir = dir ?? CDB_FILE_DIRS[0];
+  }
+
+  get name() {
+    return this._name;
+  }
+
+  get dir() {
+    return this._dir;
+  }
+
+  get path() {
+    return path.join(this._dir, this._name);
+  }
+}
+
+export async function availableTargets(): Promise<Target[]> {
   return (
-    (await glob(`**/${CDB_FILE_NAME}`, { cwd: CDB_DIR() }))
-      .map((filePath) => path.basename(path.dirname(filePath)))
-      // Filter out a catch-all database in the root compile commands dir
-      .filter((name) => name.trim() !== '.')
+    (
+      await Promise.all(
+        CDB_DIRS().map(async (cwd) =>
+          // For each compile commands dir, get the name of every sub dir in the
+          // that contains a compile commands file.
+          (await glob(`**/${CDB_FILE_NAME}`, { cwd }))
+            .map(
+              (filePath) =>
+                new Target(path.basename(path.dirname(filePath)), cwd),
+            )
+            // Filter out a catch-all database in the root compile commands dir
+            .filter((target) => target.name.trim() !== '.'),
+        ),
+      )
+    )
+      .flat()
+      // Ensures the targets are returned in alphabetical order by name, which
+      // is useful for UI features but annoying to handle at that level.
+      .sort((a, b) => a.name.localeCompare(b.name))
   );
 }
 
-export function getTarget(): string | undefined {
-  return settings.codeAnalysisTarget();
+export function getTarget(): Target | undefined {
+  const targetName = settings.codeAnalysisTarget();
+  if (targetName === undefined) return undefined;
+  return new Target(targetName, settings.codeAnalysisTargetDir());
+}
+
+export async function setTarget(target: Target): Promise<void> {
+  await settings.codeAnalysisTarget(target.name);
+  await settings.codeAnalysisTargetDir(target.dir);
 }
