@@ -98,15 +98,33 @@ class ValidatorTest(unittest.TestCase):
             cause_substrings=[],
         )
 
+    def test_unique_bus_names(self) -> None:
+        """
+        Check that resulting bus names are unique and are converted to lowercase
+        """
         self._check_with_exception(
             metadata={
-                "compatible": {"org": "Google", "part": "Pigweed"},
-                "supported-buses": ["not-a-bus"],
+                "compatible": {"org": "google", "part": "foo"},
+                "supported-buses": ["i2c", "I2C", "SPI"],
+                "deps": [],
             },
             exception_string=(
-                "ERROR: Malformed sensor metadata YAML:\ncompatible:\n"
-                + "  org: Google\n  part: Pigweed\nsupported-buses:\n"
-                + "- not-a-bus"
+                "ERROR: bus list contains duplicates when converted to "
+                "lowercase and concatenated with '_': "
+                "['I2C', 'SPI', 'i2c'] -> ['i2c', 'spi']"
+            ),
+            cause_substrings=[],
+        )
+        self._check_with_exception(
+            metadata={
+                "compatible": {"org": "google", "part": "foo"},
+                "supported-buses": ["i 2 c", "i  2_c", "i\t2-c"],
+                "deps": [],
+            },
+            exception_string=(
+                "ERROR: bus list contains duplicates when converted to "
+                "lowercase and concatenated with '_': "
+                "['i\\t2-c', 'i  2_c', 'i 2 c'] -> ['i_2_c']"
             ),
             cause_substrings=[],
         )
@@ -375,7 +393,7 @@ class ValidatorTest(unittest.TestCase):
         with self.assertRaises(exception_type) as context:
             Validator().validate(metadata=metadata)
 
-        self.assertEqual(str(context.exception).rstrip(), exception_string)
+        self.assertEqual(str(context.exception).rstrip(), str(exception_string))
         for cause_substring in cause_substrings:
             self.assertTrue(
                 cause_substring in str(context.exception.__cause__),

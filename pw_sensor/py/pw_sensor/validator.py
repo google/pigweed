@@ -17,6 +17,7 @@ from collections.abc import Sequence
 import importlib.resources
 import logging
 from pathlib import Path
+import re
 
 import jsonschema  # type: ignore
 import jsonschema.exceptions  # type: ignore
@@ -136,9 +137,10 @@ class Validator:
         channels = metadata.pop("channels")
         attributes = metadata.pop("attributes")
         triggers = metadata.pop("triggers")
+
         result["sensors"][f"{compatible['org']},{compatible['part']}"] = {
             "compatible": compatible,
-            "supported-buses": supported_buses,
+            "supported-buses": self._normalize_supported_buses(supported_buses),
             "channels": channels,
             "attributes": attributes,
             "triggers": triggers,
@@ -156,6 +158,32 @@ class Validator:
             ) from e
 
         return result
+
+    @staticmethod
+    def _normalize_supported_buses(buses: list[str]) -> list[str]:
+        """Resolve a list of supported buses
+
+        Each bus string will be converted to lowercase and all sequential
+        whitespace & '-' characters will be replaced by a single '_'.
+
+        Args:
+            buses: A list of the supported sensor buses
+
+        Returns:
+            Normalized list of buses
+
+        """
+        filtered_list = list(
+            {re.sub(r"[\s\-]+", "_", s.lower()) for s in buses}
+        )
+        if len(buses) != len(filtered_list):
+            error = (
+                "ERROR: bus list contains duplicates when converted to "
+                f"lowercase and concatenated with '_': {sorted(buses)} -> "
+                f"{sorted(filtered_list)}"
+            )
+            raise RuntimeError(error)
+        return filtered_list
 
     def _resolve_dependencies(self, metadata: dict, out: dict) -> None:
         """

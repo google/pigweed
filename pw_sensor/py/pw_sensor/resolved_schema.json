@@ -153,10 +153,8 @@
               "description": "One or more buses which this sensor driver supports",
               "minItems": 1,
               "items": {
-                "enum": [
-                  "i2c",
-                  "spi"
-                ]
+                "type": "string",
+                "description": "The name of the bus. This value will be converted to all lower case."
               }
             },
             "channels": {
