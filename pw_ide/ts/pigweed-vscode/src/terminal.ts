@@ -84,47 +84,66 @@ async function getShellTypeFromTerminal(
 
   logger.info(`Searching for shell with pid=${pid}`);
 
-  let cmd: string;
-  let pidPos: number;
-  let namePos: number;
+  try {
+    const { stdout } = await exec(`ps -p ${pid} -o comm=`);
+    const processName = stdout.trim();
 
-  switch (process.platform) {
-    case 'linux': {
-      cmd = `ps -A`;
-      pidPos = 1;
-      namePos = 4;
-      break;
+    if (processName) {
+      logger.info(`Found shell process: ${processName}`);
+      return path.basename(processName);
     }
-    case 'darwin': {
-      cmd = `ps -ax`;
-      pidPos = 0;
-      namePos = 3;
-      break;
-    }
-    default: {
-      logger.error(`Platform not currently supported: ${process.platform}`);
-      return;
-    }
+  } catch (error) {
+    logger.info(`Could not get direct process info: ${error}`);
   }
 
-  const { stdout } = await exec(cmd);
+  try {
+    let cmd: string;
 
-  // Split the output into a list of processes, each of which is a tuple of
-  // data from each column of the process table.
-  const processes = stdout.split('\n').map((line) => line.split(/[ ]+/));
+    switch (process.platform) {
+      case 'linux': {
+        try {
+          await exec('which pgrep');
+          cmd = `pgrep -P ${pid} | xargs -r ps -o comm= -p`;
+        } catch {
+          cmd = `ps -e -o ppid=,comm= | grep "^[[:space:]]*${pid}"`;
+        }
+        break;
+      }
+      case 'darwin': {
+        cmd = `ps -A -o ppid=,pid=,comm= | grep "^[[:space:]]*${pid}"`;
+        break;
+      }
+      default: {
+        logger.error(`Platform not currently supported: ${process.platform}`);
+        return;
+      }
+    }
 
-  // Find the shell process by pid and extract the process name
-  const shellProcessName = processes
-    .filter((it) => pid === parseInt(it[pidPos]))
-    .at(0)
-    ?.at(namePos);
+    const { stdout } = await exec(cmd);
 
-  if (!shellProcessName) {
+    const processes = stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    // Find the shell process by pid and extract the process name
+    const shellProcesses = processes.filter((proc) =>
+      /(?:sh|dash|bash|ksh|ash|zsh|fish)$/.test(proc),
+    );
+
+    if (shellProcesses.length > 0) {
+      const shellName = path.basename(
+        shellProcesses[0].split(/\s+/).pop() || '',
+      );
+      logger.info(`Found shell process: ${shellName}`);
+      return shellName;
+    }
+
     logger.error(`Could not find process with pid=${pid}`);
-    return;
+    logger.info(`Process tree: ${processes.join(', ')}`);
+  } catch (error) {
+    logger.error(`Failed to inspect process tree: ${error}`);
   }
-
-  return path.basename(shellProcessName);
 }
 
 /** Prepend the path to Bazelisk into the active terminal's path. */
@@ -184,23 +203,13 @@ export async function patchBazeliskIntoTerminalPath(
   let cmd: string;
 
   switch (shellType) {
-    case 'bash':
-    case 'zsh': {
-      cmd = `export PATH="${path.dirname(bazeliskPath)}:$\{PATH}"`;
-      break;
-    }
     case 'fish': {
       cmd = `set -x --prepend PATH "${path.dirname(bazeliskPath)}"`;
       break;
     }
     default: {
-      const message = shellType
-        ? `This shell is not currently supported: ${shellType}`
-        : "Couldn't determine how to activate Bazelisk in your terminal. " +
-          'Check the Pigweed output panel for more information.';
-
-      vscode.window.showErrorMessage(message);
-      return;
+      cmd = `export PATH="${path.dirname(bazeliskPath)}:$\{PATH}"`;
+      break;
     }
   }
 
