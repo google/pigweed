@@ -101,6 +101,7 @@ sphinx_docs_library(
         # https://pwrev.dev/248014 merges.
         # "os/zephyr/kconfig.rst",
         "overview.rst",
+        "showcases/index.rst",
         "showcases/sense/index.rst",
         "showcases/sense/tutorial/automate.rst",
         "showcases/sense/tutorial/bazel_cloud.rst",
