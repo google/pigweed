@@ -12,7 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Standard Bazel configuration flags required for all Pigweed projects.
+# Standard Pigweed flags
+# ======================
+# All Pigweed projects are expected to set these flags. They mostly pre-adopt
+# future Bazel settings, and most are critical to working around known issues.
+#
+# The source of truth for these flags is @pigweed//pw_build:pigweed.bazelrc in
+# the main Pigweed repo.
 
 # Don't automatically create __init__.py files.
 #
@@ -29,7 +35,10 @@ common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 
 # Don't propagate flags or defines to the exec config. This will become the
 # default one day (https://github.com/bazelbuild/bazel/issues/22457) and will
-# improve cache hit rates between builds targeting different platforms.
+# improve cache hit rates between builds targeting different platforms. This is
+# especially impactful for large host tools like protoc, which will have its
+# cache invalidated when your host C++ config changes, causing many rebuilds
+# of protoc (https://pwbug.dev/315871648).
 common --experimental_exclude_defines_from_exec_config
 common --experimental_exclude_starlark_flags_from_exec_config
 
