@@ -11,7 +11,7 @@ Building
 To build for this Pigweed target, simply build the top-level "stm32f429i" Ninja
 target.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ ninja -C out stm32f429i
 
@@ -27,7 +27,7 @@ If using ``out`` as a build directory, tests will be located in
 on device, the stm32f429i-disc1 target provides a helper script that flashes the
 test to a device and then runs it.
 
-.. code-block:: sh
+.. code-block:: console
 
    # Setup pigweed environment.
    $ source activate.sh
@@ -43,13 +43,13 @@ tests, but it can be restricted it to specific ``pw_test_group`` targets using
 the ``--group`` argument. Alternatively, individual test binaries can be
 specified with the ``--test`` option.
 
-.. code-block:: sh
+.. code-block:: console
 
    # Setup Pigweed environment.
    $ source activate.sh
    # Run test.
    $ pw test --root out/stm32f429i_disc_debug/  \
-         --runner stm32f429i_disc1_unit_test_runner
+   > --runner stm32f429i_disc1_unit_test_runner
 
 Run tests affected by code changes
 ----------------------------------
@@ -76,7 +76,7 @@ with ``--server-config``.
   If you unplug or plug in any boards, you'll need to restart the test server
   for hardware changes to properly be detected.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ stm32f429i_disc1_test_server
 
@@ -86,7 +86,7 @@ By default, this hardware target has incremental testing via
 ``pw_target_runner`` disabled. Enabling the ``pw_use_test_server`` build arg
 tells GN to send requests to a running ``stm32f429i_disc1_test_server``.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ gn args out
    # Modify and save the args file to use pw_target_runner.
@@ -113,16 +113,16 @@ OpenOCD requires a few steps. Summary version of the steps:
 
 #. Connect OpenOCD to the device in terminal A. Leave this running
 
-   .. code-block:: sh
+   .. code-block:: console
 
       $ openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg
 
 #. Connect GDB to the running OpenOCD instance in terminal B
 
-   .. code-block:: sh
+   .. code-block:: console
 
       $ arm-none-eabi-gdb -ex "target remote :3333" \
-        out/stm32f429i_disc1_debug/obj/pw_assert/test/assert_facade_test.elf
+      > out/stm32f429i_disc1_debug/obj/pw_assert/test/assert_facade_test.elf
 
 #. Flash (``load``), run (``mon reset run; continue``), and debug
 
@@ -141,7 +141,7 @@ Step 1: Start an OpenOCD server and connect to the device
 OpenOCD is a persistent server that you run and leave running to bridge between
 GDB and the device. To run it for the Discovery board:
 
-.. code-block:: sh
+.. code-block:: console
 
    $ openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg
 
@@ -171,10 +171,10 @@ Step 2: Start GDB and connect to the OpenOCD server
 Start GDB pointing to the correct .elf file, and tell it to connect to the
 OpenOCD server (running on port 333 by default).
 
-.. code-block:: sh
+.. code-block:: console
 
    $ arm-none-eabi-gdb -ex "target remote :3333" \
-     out/stm32f429i_disc1_debug/obj/pw_assert/test/assert_facade_test.elf
+   > out/stm32f429i_disc1_debug/obj/pw_assert/test/assert_facade_test.elf
 
 In this case the assert facade test is debugged, but substitute your own ELF
 file. This should produce output similar to the following:

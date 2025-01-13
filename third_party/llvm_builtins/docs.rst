@@ -16,11 +16,11 @@ Submodule
 =========
 Add LLVM compiler-rt to your workspace with the following command.
 
-.. code-block:: sh
+.. code-block:: console
 
-   git submodule add git submodule add \
-     https://llvm.googlesource.com/llvm-project/compiler-rt \
-     third_party/llvm_builtins
+   $ git submodule add git submodule add \
+   > https://llvm.googlesource.com/llvm-project/compiler-rt \
+   > third_party/llvm_builtins
 
 .. admonition:: Note
 

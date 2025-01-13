@@ -182,9 +182,9 @@ Declare the implementation in ``BUILD.bazel``:
 
    #. Locate the generated RPC header in the build directory. For example:
 
-      .. code-block:: sh
+      .. code-block:: console
 
-         cd bazel-out && find . -name blinky.rpc.pb.h
+         $ cd bazel-out && find . -name blinky.rpc.pb.h
 
    #. Scroll to the bottom of the generated RPC header.
    #. Copy the stub class declaration to a header file.

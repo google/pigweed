@@ -48,9 +48,9 @@ which is part of the chorimum sources, needs to be downloaded in order for
 ``//third_party/chromium_verifier`` to build. It is recommended to use our
 support in pw_package for downloading compatible and tested version:
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw package install chromium_verifier
+   $ pw package install chromium_verifier
 
 Then follow instruction for setting ``dir_pw_third_party_chromium_verifier`` to
 the path of the downloaded repo.
@@ -88,9 +88,9 @@ block/revocation status. See ``pw_tls_client/crlset.h`` for more detail.
 Chromium maintains its own CRLSet that targets at the general Internet. To use it,
 run the following command to download the latest version:
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw package install crlset --force
+   $ pw package install crlset --force
 
 The `--force` option forces CRLSet to be always re-downloaded so that it is
 up-to-date. Project that are concerned about up-to-date CRLSet should always

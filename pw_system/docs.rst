@@ -275,16 +275,16 @@ pw_system:async Linux example
 running ``pw_system:async`` on a Linux host. Running the example requires two
 terminals. In the first terminal, start the ``pw_system:async`` instance:
 
-.. code-block:: sh
+.. code-block:: console
 
-   bazelisk run //pw_system/system_async_host_simulator_example
+   $ bazelisk run //pw_system/system_async_host_simulator_example
 
 That will wait for a TCP connection from the ``pw_system`` console. To connect
 to it from the console, run the following:
 
-.. code-block:: sh
+.. code-block:: console
 
-   bazelisk run //pw_system/py:pw_system_console -- -s 127.0.0.1:33000
+   $ bazelisk run //pw_system/py:pw_system_console -- -s 127.0.0.1:33000
 
 Debugging pw_system_console with VSCode
 ---------------------------------------
@@ -324,9 +324,9 @@ This file can be automatically opened by selecting ``Run -> Open Configurations`
 Next, run the console through bazel, adding the argument(s) ``--debugger-listen`` and optionally
 ``--debugger-wait-for-client`` to pause the console until the debugger attached.  For example:
 
-.. code-block:: sh
+.. code-block:: console
 
-   bazelisk run //pw_system/py:pw_system_console -- --debugger-listen
+   $ bazelisk run //pw_system/py:pw_system_console -- --debugger-listen
 
 Once the console has been started, simply select ``Run -> Start Debugging`` and the VS code debugger
 will automatically attach to the running python console.

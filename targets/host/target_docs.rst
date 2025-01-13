@@ -63,7 +63,7 @@ Building
 To build for the host with a default configuration, invoke Ninja with the
 top-level ``host`` group as the target to build.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ ninja -C out host
 
@@ -81,7 +81,7 @@ manually run tests, you may invoke them from a shell directly.
 
 Example:
 
-.. code-block:: sh
+.. code-block:: console
 
    $ ./out/host_[compiler]_debug/obj/pw_status/status_test
 

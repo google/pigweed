@@ -19,9 +19,9 @@ following:
 
 Add GoogleTest to your workspace with the following command.
 
-.. code-block:: sh
+.. code-block:: console
 
-   git submodule add https://github.com/google/googletest third_party/googletest
+   $ git submodule add https://github.com/google/googletest third_party/googletest
 
 Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
 
@@ -65,11 +65,11 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
 
       For example:
 
-      .. code-block:: sh
+      .. code-block:: console
 
-         bazel test //... \
-            --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest \
-            --@pigweed//pw_unit_test:main=@com_google_googletest//:gtest_main
+         $ bazel test //... \
+         > --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest \
+         > --@pigweed//pw_unit_test:main=@com_google_googletest//:gtest_main
 
 .. note::
 

@@ -17,10 +17,10 @@ Submodule
 =========
 Add Abseil C++ to your workspace with the following command.
 
-.. code-block:: sh
+.. code-block:: console
 
-   git submodule add https://github.com/abseil/abseil-cpp.git \
-     third_party/abseil-cpp/src
+   $ git submodule add https://github.com/abseil/abseil-cpp.git \
+   > third_party/abseil-cpp/src
 
 GN
 ==

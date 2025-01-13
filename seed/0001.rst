@@ -97,9 +97,9 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
 
 #. Check out a clean Git branch off of ``main`` for your SEED.
 
-   .. code-block:: sh
+   .. code-block:: console
 
-      git checkout -b seed-rpc-smoke-signals
+      $ git checkout -b seed-rpc-smoke-signals
 
 #. From an activated Pigweed environment, run the command ``pw seed create`` to
    interactively create a SEED.

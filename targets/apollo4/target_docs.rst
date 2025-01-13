@@ -15,7 +15,7 @@ Once the AmbiqSuite SDK package has been downloaded and extracted, the user
 needs to set ``dir_pw_third_party_ambiq_SDK`` build arg to the location of
 extracted directory:
 
-.. code-block:: sh
+.. code-block:: console
 
    $ gn args out
 
@@ -34,9 +34,9 @@ on-board J-Link Debug Probe (Virtual COM Port) at a baud rate of 115200.
 Once the AmbiqSuite SDK is configured, the unit tests for the Apollo4 board
 can be build with a command:
 
-.. code-block:: sh
+.. code-block:: console
 
-   ninja -C out apollo4
+   $ ninja -C out apollo4
 
 If using out as a build directory, tests will be located in out/apollo4/obj/[module name]/[test_name].elf.
 
@@ -47,7 +47,7 @@ a command line using ``JLinkExe`` program. The latter requires a script which
 describes the steps of programming. Here is an example bash script to flash
 an Apollo4 board using ``JLinkExe`` program:
 
-.. code-block:: sh
+.. code-block:: shell
 
    #!/bin/bash
    function flash_jlink()
@@ -71,9 +71,9 @@ an Apollo4 board using ``JLinkExe`` program:
 
 Then call this script:
 
-.. code-block:: sh
+.. code-block:: console
 
-   bash ./flash_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
+   $ bash ./flash_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
 
 In this case the basic log test is debugged, but substitute your own ELF file.
 
@@ -82,18 +82,18 @@ Debugging
 Debugging can be done using the on-board J-Link Debug Probe. First you need to
 start ``JLinkGDBServer`` and connect to the on-board J-Link Debug Probe.
 
-.. code-block:: sh
+.. code-block:: console
 
-   JLinkGDBServer -select USB      \
-             -device AMAP42KK-KBR  \
-             -endian little        \
-             -if SWD               \
-             -speed 4000           \
-             -noir -LocalhostOnly  \
-             -singlerun            \
-             -nogui                \
-             -excdbg               \
-             -rtos GDBServer/RTOSPlugin_FreeRTOS.dylib
+   $ JLinkGDBServer -select USB \
+   > -device AMAP42KK-KBR \
+   > -endian little \
+   > -if SWD \
+   > -speed 4000 \
+   > -noir -LocalhostOnly \
+   > -singlerun \
+   > -nogui \
+   > -excdbg \
+   > -rtos GDBServer/RTOSPlugin_FreeRTOS.dylib
 
 The ``-rtos`` option is for `Thread Aware Debugging`_.
 
@@ -102,13 +102,13 @@ The ``-rtos`` option is for `Thread Aware Debugging`_.
 Then on the second terminal window use ``arm-none-eabi-gdb`` to load an executable
 into the target, debug, and run it.
 
-.. code-block:: sh
+.. code-block:: console
 
-   arm-none-eabi-gdb -q out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
+   $ arm-none-eabi-gdb -q out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
 
 This can be combined with a simple bash script. Here is an example of one:
 
-.. code-block:: sh
+.. code-block:: shell
 
    #!/bin/bash
 
@@ -160,6 +160,6 @@ This can be combined with a simple bash script. Here is an example of one:
 
 Then call this script:
 
-.. code-block:: sh
+.. code-block:: console
 
-   bash ./debug_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf
+   $ bash ./debug_amap4.sh ./out/apollo4_debug/obj/pw_log/test/basic_log_test.elf

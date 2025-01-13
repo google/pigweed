@@ -14,7 +14,7 @@ Building
 To build for this target, invoke ninja with the top-level "docs" group as the
 target to build.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ gn gen out
    $ ninja -C out docs

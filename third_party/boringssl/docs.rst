@@ -22,10 +22,10 @@ Submodule
 The recommended way to include BoringSSL source code is to add it as a
 submodule:
 
-.. code-block:: sh
+.. code-block:: console
 
-   git submodule add https://boringssl.googlesource.com/boringssl/ \
-       third_party/boringssl/src
+   $ git submodule add https://boringssl.googlesource.com/boringssl/ \
+   > third_party/boringssl/src
 
 GN
 ==
@@ -33,10 +33,10 @@ The GN build file depends on a generated file called ``BUILD.generated.gni``
 with the list of the different types of source files for the selected BoringSSL
 version.
 
-.. code-block:: sh
+.. code-block:: console
 
-   cd third_party/boringssl
-   python src/util/generate_build_files.py gn
+   $ cd third_party/boringssl
+   $ python src/util/generate_build_files.py gn
 
 The GN variables needed are defined in
 ``$dir_pw_third_party/boringssl/boringssl.gni``:

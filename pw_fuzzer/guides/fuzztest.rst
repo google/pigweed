@@ -295,9 +295,9 @@ Step 5: Build the fuzzer
       tests. To build these tests as fuzz tests, specify the ``fuzztest``
       config. For example:
 
-      .. code-block:: sh
+      .. code-block:: console
 
-         bazel build //... --config=fuzztest
+         $ bazel build //... --config=fuzztest
 
 ----------------------------------
 Step 6: Running the fuzzer locally
@@ -319,19 +319,19 @@ Step 6: Running the fuzzer locally
       section, you can find available fuzzers using the generated JSON test
       metadata file:
 
-      .. code-block:: sh
+      .. code-block:: console
 
-         jq '.[] | select(contains({tags: ["fuzztest"]}))' \
-           out/host_clang_fuzz/obj/pw_module_tests.testinfo.json
+         $ jq '.[] | select(contains({tags: ["fuzztest"]}))' \
+         > out/host_clang_fuzz/obj/pw_module_tests.testinfo.json
 
       To run a fuzz with different options, you can pass additional flags to the
       fuzzer binary. This binary will be in a subdirectory related to the
       toolchain. For example:
 
-      .. code-block:: sh
+      .. code-block:: console
 
-         out/host_clang_fuzz/obj/my_module/test/metrics_test \
-           --fuzz=MetricsTest.Roundtrip
+         $ out/host_clang_fuzz/obj/my_module/test/metrics_test \
+         > --fuzz=MetricsTest.Roundtrip
 
       Additional `sanitizer flags`_ may be passed uisng environment variables.
 
@@ -346,9 +346,9 @@ Step 6: Running the fuzzer locally
 
       For example:
 
-      .. code-block:: sh
+      .. code-block:: console
 
-         build/my_module/metrics_test --fuzz=MetricsTest.Roundtrip
+         $ build/my_module/metrics_test --fuzz=MetricsTest.Roundtrip
 
    .. tab-item:: Bazel
       :sync: bazel
@@ -357,9 +357,9 @@ Step 6: Running the fuzzer locally
       unit tests. To build these tests as fuzz tests, specify the "fuzztest"
       config. For example:
 
-      .. code-block:: sh
+      .. code-block:: console
 
-         bazel test //... --config=fuzztest
+         $ bazel test //... --config=fuzztest
 
       This will build the tests as fuzz tests, but only run them for a limited
       time. This makes them suitable for automated testing as in CQ.
@@ -367,10 +367,10 @@ Step 6: Running the fuzzer locally
       To run a fuzz with different options, you can use ``run`` and pass
       additional flags to the fuzzer binary. For example:
 
-      .. code-block:: sh
+      .. code-block:: console
 
-         bazel run //my_module:metrics_test --config=fuzztest \
-           --fuzz=MetricsTest.Roundtrip
+         $ bazel run //my_module:metrics_test --config=fuzztest \
+         > --fuzz=MetricsTest.Roundtrip
 
 Running the fuzzer should produce output similar to the following:
 

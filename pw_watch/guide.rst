@@ -16,9 +16,9 @@ Set up your Pigweed environment
 -------------------------------
 See :ref:`activate-pigweed-environment` if you see an error like this:
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw watch
+   $ pw watch
    bash: pw: command not found
 
 -----
@@ -38,21 +38,21 @@ custom build directory.
 
 For example, before running this command:
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw watch -C out2
+   $ pw watch -C out2
 
 You need to run this command:
 
-.. code-block:: sh
+.. code-block:: console
 
-   gn gen out2
+   $ gn gen out2
 
 Build the default target and use the default build directory
 ------------------------------------------------------------
-.. code-block:: sh
+.. code-block:: console
 
-   pw watch
+   $ pw watch
 
 The default build directory is ``out``.
 
@@ -61,17 +61,17 @@ Customize the build directory
 This section assumes you have completed
 :ref:`module-pw_watch-guide-ninja-custom-dirs`.
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw watch -C out2
+   $ pw watch -C out2
 
 This builds the default target in ``out2``.
 
 Build two targets
 -----------------
-.. code-block:: sh
+.. code-block:: console
 
-   pw watch stm32f429i python.lint
+   $ pw watch stm32f429i python.lint
 
 The ``stm32f429i`` and ``python.lint`` targets are both built in the default
 build directory (``out``).
@@ -81,9 +81,9 @@ Build the same target in different build directories
 This section assumes you have completed
 :ref:`module-pw_watch-guide-ninja-custom-dirs`.
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw watch -C out1 -C out2
+   $ pw watch -C out1 -C out2
 
 This example builds the default target in both ``out1`` and ``out2``.
 
@@ -92,9 +92,9 @@ Build different targets in different build directories
 This section assumes you have completed
 :ref:`module-pw_watch-guide-ninja-custom-dirs`.
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw watch stm32f429i -C out2 python.lint
+   $ pw watch stm32f429i -C out2 python.lint
 
 The ``stm32f429i`` target is built in the default build directory (``out``).
 The ``python.lint`` target is built in the custom build directory (``out2``).

@@ -546,9 +546,9 @@ from all domains. The domain may be specified for ELF files by appending
 domain. For example, the following reads strings in ``some_domain`` from
 ``my_image.elf``.
 
-.. code-block:: sh
+.. code-block:: console
 
-   ./database.py create --database my_db.csv "path/to/my_image.elf#some_domain"
+   $ ./database.py create --database my_db.csv "path/to/my_image.elf#some_domain"
 
 See :ref:`module-pw_tokenizer-managing-token-databases` for information about
 the ``database.py`` command line tool.

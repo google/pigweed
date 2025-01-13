@@ -269,6 +269,67 @@ your code should match Google's style guide.
 
       // ...
 
+.. _docs-style-rest-code-blocks-shell:
+
+Code blocks for CLI interactions
+================================
+Use ``.. code-block:: shell`` for Bash scripts and
+``.. code-block:: fish`` for Fish scripts.
+
+.. _docs-style-rest-code-blocks-console:
+
+Code blocks for CLI interactions
+================================
+.. _console: https://pygments.org/docs/lexers/#pygments.lexers.shell.BashSessionLexer
+
+Use ``.. code-block:: console`` for UNIX CLI interactions and
+``.. code-block:: doscon`` for DOS CLI interactions.
+
+.. tab-set::
+
+   .. tab-item:: Linux and macOS
+
+      Use ``.. code-block:: console``.
+
+      Use the ``$`` starting prompt if the command can be run with
+      normal user privileges. Use ``#`` if the command requires root
+      privileges. These prompts are required because they help Pygments
+      parse the code correctly.
+
+      Continue a command on another line with ``\\``. Start the
+      continuation lines with ``>``.
+
+      .. code-block:: text
+
+         .. code-block:: console
+
+            $ ls -a
+            .  ..  a  b  c
+            $ echo \
+            > test
+            test
+            $ su
+            # ls -a
+            .  ..  a  b  c
+
+   .. tab-item:: Windows
+
+      Use ``.. code-block:: doscon``.
+
+      Use the ``>`` starting prompt. This prompt helps Pygments
+      parse the code correctly.
+
+      Continue a command on another line with ``^``. Start the
+      continuation lines with ``More?``.
+
+      .. code-block:: text
+
+         .. code-block:: doscon
+
+            > copy ^
+            More? source.txt ^
+            destination.txt
+
 .. _docs-style-rest-toc:
 
 -------------------------------------

@@ -24,26 +24,26 @@ for the STM32F4 series. The supported repositories can be downloaded via
 ``pw package``, and then the build must be manually configured to point to the
 locations the repositories were downloaded to.
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw package install nanopb
-   pw package install freertos
-   pw package install stm32cube_f4
+   $ pw package install nanopb
+   $ pw package install freertos
+   $ pw package install stm32cube_f4
 
-   gn gen out --export-compile-commands --args="
+   $ gn gen out --export-compile-commands --args="
      dir_pw_third_party_nanopb=\"$PW_PROJECT_ROOT/environment/packages/nanopb\"
      dir_pw_third_party_freertos=\"$PW_PROJECT_ROOT/environment/packages/freertos\"
      dir_pw_third_party_stm32cube_f4=\"$PW_PROJECT_ROOT/environment/packages/stm32cube_f4\"
-   "
+     "
 
 .. tip::
 
    Instead of the ``gn gen out`` with args set on the command line above you can
    run:
 
-   .. code-block:: sh
+   .. code-block:: console
 
-      gn args out
+      $ gn args out
 
    Then add the following lines to that text file:
 
@@ -59,24 +59,24 @@ Building and Running the Demo
 This target has an associated demo application that can be built and then
 flashed to a device with the following commands:
 
-.. code-block:: sh
+.. code-block:: console
 
-   ninja -C out pw_system_demo
+   $ ninja -C out pw_system_demo
 
-.. code-block:: sh
+.. code-block:: console
 
-   openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg \
-     -c "program out/stm32f429i_disc1_stm32cube.size_optimized/obj/pw_system/bin/system_example.elf reset exit"
+   $ openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg \
+   > -c "program out/stm32f429i_disc1_stm32cube.size_optimized/obj/pw_system/bin/system_example.elf reset exit"
 
 Once the board has been flashed, you can connect to it and send RPC commands
 via the Pigweed console:
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw-system-console -d /dev/{ttyX} -b 115200 \
-     --proto-globs pw_rpc/echo.proto \
-     --token-databases \
-       out/stm32f429i_disc1_stm32cube.size_optimized/obj/pw_system/bin/system_example.elf
+   $ pw-system-console -d /dev/{ttyX} -b 115200 \
+   > --proto-globs pw_rpc/echo.proto \
+   > --token-databases \
+   > out/stm32f429i_disc1_stm32cube.size_optimized/obj/pw_system/bin/system_example.elf
 
 Replace ``{ttyX}`` with the appropriate device on your machine. On Linux this
 may look like ``ttyACM0``, and on a Mac it may look like ``cu.usbmodem***``.

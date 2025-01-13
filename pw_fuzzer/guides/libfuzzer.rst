@@ -219,7 +219,7 @@ runtimes when building.
 
       Select a sanitizer runtime. See LLVM for `valid options`_.
 
-      .. code-block:: sh
+      .. code-block:: console
 
          $ gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
 
@@ -228,7 +228,7 @@ runtimes when building.
 
       Build the fuzzers using ``ninja`` directly.
 
-      .. code-block:: sh
+      .. code-block:: console
 
          $ ninja -C out fuzzers
 
@@ -243,7 +243,7 @@ runtimes when building.
 
       Specify the libFuzzer config and a sanitizer config when building fuzzers.
 
-      .. code-block:: sh
+      .. code-block:: console
 
          $ bazel build //my_module:my_fuzzer --config=asan --config=libfuzzer
 
@@ -259,7 +259,7 @@ Step 5: Running the fuzzer locally
       Additional `libFuzzer options`_ and `corpus`_ arguments can be passed on
       the command line. For example:
 
-      .. code-block:: sh
+      .. code-block:: console
 
          $ out/host_clang_fuzz/obj/my_module/bin/my_fuzzer -seed=1 path/to/corpus
 
@@ -278,10 +278,10 @@ Step 5: Running the fuzzer locally
       running fuzzers. For each fuzzer build rule with a given name,
       `rules_fuzzing`_ produces a ``<name>_run`` target. For example:
 
-      .. code-block:: sh
+      .. code-block:: console
 
          $ bazel run //my_module:my_fuzzer_run --config=asan --config=libfuzzer\
-             -- --timeout_secs=60
+         > -- --timeout_secs=60
 
 Running the fuzzer should produce output similar to the following:
 

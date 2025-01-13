@@ -15,10 +15,10 @@ Submodule
 =========
 Add LLVM libcxx to your workspace with the following command.
 
-.. code-block:: sh
+.. code-block:: console
 
-   git submodule add https://llvm.googlesource.com/llvm-project/libcxx \
-     third_party/llvm_libcxx/src
+   $ git submodule add https://llvm.googlesource.com/llvm-project/libcxx \
+   > third_party/llvm_libcxx/src
 
 Note, this git repository is maintained by Google and is a slice of upstream
 LLVM including only the libcxx subdirectory.

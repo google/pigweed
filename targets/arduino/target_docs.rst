@@ -51,32 +51,33 @@ Installing Arduino Cores
 The ``arduino_builder`` utility can install Arduino cores automatically. It's
 recommended to install them to into ``third_party/arduino/cores/``.
 
-.. code-block:: sh
+.. code-block:: console
 
    # Setup pigweed environment.
-   . ./activate.sh
+   $ . ./activate.sh
    # Install an arduino core, only teensy is supported
-   pw package install teensy
+   $ pw package install teensy
 
 Building
 ========
 To build for this Pigweed target, simply build the top-level "arduino" Ninja
 target. You can set Arduino build options using ``gn args out`` or by running:
 
-.. code-block:: sh
+.. code-block:: console
 
-   gn gen out --args='
-     pw_arduino_build_CORE_PATH = "//environment/packages"
-     pw_arduino_build_CORE_NAME = "teensy"
-     pw_arduino_build_PACKAGE_NAME = "avr/1.58.1"
-     pw_arduino_build_BOARD = "teensy40"
-     pw_arduino_build_MENU_OPTIONS=["menu.usb.serial", "menu.keys.en-us"]'
+   $ gn gen out --args="
+     pw_arduino_build_CORE_PATH = \"//environment/packages\"
+     pw_arduino_build_CORE_NAME = \"teensy\"
+     pw_arduino_build_PACKAGE_NAME = \"avr/1.58.1\"
+     pw_arduino_build_BOARD = \"teensy40\"
+     pw_arduino_build_MENU_OPTIONS=[\"menu.usb.serial\", \"menu.keys.en-us\"]
+     "
 
 On a Windows machine it's easier to run:
 
-.. code-block:: sh
+.. code-block:: console
 
-   gn args out
+   $ gn args out
 
 That will open a text file where you can paste the args in:
 
@@ -92,17 +93,17 @@ Save the file and close the text editor.
 
 Then build with:
 
-.. code-block:: sh
+.. code-block:: console
 
-   ninja -C out arduino
+   $ ninja -C out arduino
 
 To see supported boards and Arduino menu options for a given core:
 
-.. code-block:: sh
+.. code-block:: console
 
-   arduino_builder --arduino-package-path ./environment/packages/teensy \
-                   --arduino-package-name avr/1.58.1 \
-                   list-boards
+   $ arduino_builder --arduino-package-path ./environment/packages/teensy \
+   > --arduino-package-name avr/1.58.1 \
+   > list-boards
 
 .. code-block:: text
 
@@ -116,12 +117,12 @@ To see supported boards and Arduino menu options for a given core:
 You may wish to set different arduino build options in
 ``pw_arduino_build_MENU_OPTIONS``. Run this to see what's available for your core:
 
-.. code-block:: sh
+.. code-block:: console
 
-   arduino_builder --arduino-package-path ./environment/packages/teensy \
-                   --arduino-package-name avr/1.58.1 \
-                   list-menu-options \
-                   --board teensy40
+   $ arduino_builder --arduino-package-path ./environment/packages/teensy \
+   > --arduino-package-name avr/1.58.1 \
+   > list-menu-options \
+   > --board teensy40
 
 That will show all menu options that can be added to ``gn args out``.
 
@@ -160,7 +161,7 @@ If using ``out`` as a build directory, tests will be located in
 Tests can be flashed and run using the `arduino_unit_test_runner` tool. Here is
 a sample bash script to run all tests on a Linux machine.
 
-.. code-block:: sh
+.. code-block:: shell
 
    #!/bin/bash
    gn gen out --export-compile-commands \
@@ -185,10 +186,10 @@ Tests may also be run using the `pw_arduino_use_test_server = true` GN arg.
 The server must be run with an `arduino_builder` config file so it can locate
 the correct Arduino core, compiler path, and Arduino board used.
 
-.. code-block:: sh
+.. code-block:: console
 
-   arduino_test_server --verbose \
-       --config-file ./out/arduino_debug/gen/arduino_builder_config.json
+   $ arduino_test_server --verbose \
+   > --config-file ./out/arduino_debug/gen/arduino_builder_config.json
 
 .. TODO(tonymd): Flesh out this section similar to the stm32f429i target docs.
 

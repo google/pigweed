@@ -29,7 +29,7 @@ the manifest file within the unpacked SDK, and then setting the
 ``pw_third_party_mcuxpresso_SDK`` to the ``sample_sdk`` source set within the
 Pigweed target directory.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ gn args out
    # Modify and save the args file to use the sample SDK.
@@ -41,7 +41,7 @@ Building
 Once configured, to build for this Pigweed target, simply build the top-level
 "mimxrt595" Ninja target.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ ninja -C out mimxrt595
 
@@ -87,15 +87,15 @@ disconnect or reboot.
 
 3. Start the J-Link GDB Server and leave this running:
 
-   .. code-block:: sh
+   .. code-block:: console
 
-      JLinkGDBServer -select USB -device MIMXRT595S -endian little -if SWD -speed 4000 -noir
+      $ JLinkGDBServer -select USB -device MIMXRT595S -endian little -if SWD -speed 4000 -noir
 
 On Linux, you may need to install the `libncurses5` library to use the tools:
 
-.. code-block:: sh
+.. code-block:: console
 
-   sudo apt install libncurses5
+   $ sudo apt install libncurses5
 
 Running and Debugging
 ---------------------

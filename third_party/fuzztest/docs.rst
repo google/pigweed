@@ -17,10 +17,10 @@ Submodule
 =========
 Add FuzzTest to your workspace with the following command.
 
-.. code-block:: sh
+.. code-block:: console
 
-   git submodule add https://github.com/google/fuzztest.git \
-     third_party/fuzztest
+   $ git submodule add https://github.com/google/fuzztest.git \
+   > third_party/fuzztest
 
 .. tab-set::
 
@@ -73,10 +73,10 @@ Add FuzzTest to your workspace with the following command.
 
       For example:
 
-      .. code-block:: sh
+      .. code-block:: console
 
-         bazel test //... \
-            --@pigweed//targets:pw_fuzzer_fuzztest_backend=@com_google_fuzztest//fuzztest
+         $ bazel test //... \
+         > --@pigweed//targets:pw_fuzzer_fuzztest_backend=@com_google_fuzztest//fuzztest
 
 Updating
 ========
@@ -91,16 +91,16 @@ The script should be re-run whenever the submodule is updated or the JSON file
 is modified. Specify the location of the Bazel repository using ``gn args``,
 then run:
 
-.. code-block:: sh
+.. code-block:: console
 
-   python pw_build/py/pw_build/bazel_to_gn.py fuzztest
+   $ python pw_build/py/pw_build/bazel_to_gn.py fuzztest
 
 Additionally, the ``fuzztest.bazelrc`` file should regenerated. From this
 directory, run:
 
-.. code-block:: sh
+.. code-block:: console
 
-   bazel run @com_google_fuzztest//bazel:setup_configs > fuzztest.bazelrc
+   $ bazel run @com_google_fuzztest//bazel:setup_configs > fuzztest.bazelrc
 
 .. DO NOT EDIT BELOW THIS LINE. Generated section.
 

@@ -202,7 +202,7 @@ are surrounded by 'begin' and 'end' tags.
 Ex. Invoking PW_TRACE_INSTANT with 'test1' and 'test2', then calling this
 function would produce this in the output logs:
 
-.. code-block:: sh
+.. code-block:: text
 
    [TRACE] begin
    [TRACE] data: BWdDMRoABWj52YMB

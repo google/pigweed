@@ -15,7 +15,7 @@ Building
 To build for this Pigweed target, simply build the top-level "qemu_gcc" Ninja
 target.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ ninja -C out qemu_gcc
 
@@ -34,11 +34,11 @@ Running Without GDB
 When running without GDB, the firmware will execute normally without requiring
 further interaction.
 
-.. code-block:: sh
+.. code-block:: console
 
    $ qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb \
-     -nographic -no-reboot \
-     -kernel path/to/firmware.elf
+   > -nographic -no-reboot \
+   > -kernel path/to/firmware.elf
 
 Run With GDB
 ------------------
@@ -46,17 +46,17 @@ When running with GDB, execution of the binary will begin in a halted state. To
 begin running the code, you must connect using GDB, set any breakpoints you
 wish, and then continue execution.
 
-.. code-block:: sh
+.. code-block:: console
 
    # Start the VM and GDB server.
    $ qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb \
-     -gdb tcp::3333 -S
-     -nographic -no-reboot \
-     -kernel path/to/firmware.elf
+   > -gdb tcp::3333 -S
+   > -nographic -no-reboot \
+   > -kernel path/to/firmware.elf
 
 In another window
 
-.. code-block:: sh
+.. code-block:: console
 
    $ arm-none-eabi-gdb path/to/firmare.elf
    (gdb) target remote :3333

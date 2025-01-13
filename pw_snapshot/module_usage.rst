@@ -97,7 +97,7 @@ information. As some snapshot fields may optionally be tokenized, a
 pw_tokenizer database or ELF file with embedded pw_tokenizer tokens may
 optionally be passed to the tool to detokenize applicable fields.
 
-.. code-block:: sh
+.. code-block:: console
 
    # Example invocation, which dumps to stdout by default.
    $ python -m pw_snapshot.processor path/to/serialized_snapshot.bin

@@ -16,9 +16,9 @@ Configuring Emboss
 The recommended way to include the Emboss source code is to add it as a
 Git submodule:
 
-.. code-block:: sh
+.. code-block:: console
 
-   git submodule add https://github.com/google/emboss.git third_party/emboss/src
+   $ git submodule add https://github.com/google/emboss.git third_party/emboss/src
 
 .. tab-set::
 

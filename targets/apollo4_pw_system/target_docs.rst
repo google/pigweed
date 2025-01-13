@@ -29,7 +29,7 @@ Once the AmbiqSuite SDK package has been downloaded and extracted, the user
 needs to set ``dir_pw_third_party_ambiq_SDK`` build arg to the location of
 extracted directory:
 
-.. code-block:: sh
+.. code-block:: console
 
    $ gn args out
 
@@ -49,9 +49,9 @@ Building and Running the Demo
 This target has an associated demo application that can be built and then
 flashed to a device with the following commands:
 
-.. code-block:: sh
+.. code-block:: console
 
-   ninja -C out pw_system_demo
+   $ ninja -C out pw_system_demo
 
 .. seealso::
 
@@ -60,12 +60,12 @@ flashed to a device with the following commands:
 Once the board has been flashed, you can connect to it and send RPC commands
 via the Pigweed console:
 
-.. code-block:: sh
+.. code-block:: console
 
-   pw-system-console -d /dev/{ttyX} -b 115200 \
-     --proto-globs pw_rpc/echo.proto \
-     --token-databases \
-       out/apollo4_pw_system.size_optimized/obj/pw_system/bin/system_example.elf
+   $ pw-system-console -d /dev/{ttyX} -b 115200 \
+   > --proto-globs pw_rpc/echo.proto \
+   > --token-databases \
+   > out/apollo4_pw_system.size_optimized/obj/pw_system/bin/system_example.elf
 
 Replace ``{ttyX}`` with the appropriate device on your machine. On Linux this
 may look like ``ttyACM0``, and on a Mac it may look like ``cu.usbmodem***``.

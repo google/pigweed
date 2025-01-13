@@ -118,9 +118,9 @@ This will make the entire set of Pigweeds remote repositories available to your
 project. Though these repositories will only be donwloaded if you use them. To
 get a full list of the remote repositories that this configures, run:
 
-.. code-block:: sh
+.. code-block:: console
 
-   bazel query //external:all | grep cipd_
+   $ bazel query //external:all | grep cipd_
 
 All files and executables in each CIPD remote repository is exported and visible
 either directely (`@cipd_<dep>//:<file>`) or from 'all' filegroup
@@ -129,10 +129,10 @@ either directely (`@cipd_<dep>//:<file>`) or from 'all' filegroup
 From here it is possible to get access to the Bloaty binaries using the
 following command. For example;
 
-.. code-block:: sh
+.. code-block:: console
 
-   bazel run @cipd_pigweed_third_party_bloaty_embedded_linux_amd64//:bloaty \
-    -- --help
+   $ bazel run @cipd_pigweed_third_party_bloaty_embedded_linux_amd64//:bloaty \
+   > -- --help
 
 User-Friendliness
 -----------------
@@ -789,15 +789,15 @@ high-level commands to system-specific initialization files is shown below.
 
          .. grid-item::
 
-            .. code-block:: dosbatch
+            .. code-block:: doscon
 
-               echo Setup Complete!
+               > echo Setup Complete!
 
          .. grid-item::
 
-            .. code-block:: shell
+            .. code-block:: console
 
-               echo "Setup Complete!"
+               $ echo "Setup Complete!"
 
 
 .. _Requirements Files documentation: https://pip.pypa.io/en/stable/user_guide/#requirements-files

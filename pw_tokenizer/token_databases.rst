@@ -136,9 +136,9 @@ The ``create`` command makes a new token database from ELF files (.elf, .o, .so,
 etc.), archives (.a), existing token databases (CSV or binary), or a JSON file
 containing an array of strings.
 
-.. code-block:: sh
+.. code-block:: console
 
-   ./database.py create --database DATABASE_NAME ELF_OR_DATABASE_FILE...
+   $ ./database.py create --database DATABASE_NAME ELF_OR_DATABASE_FILE...
 
 Two database output formats are supported: CSV and binary. Provide
 ``--type binary`` to ``create`` to generate a binary database instead of the
@@ -153,9 +153,9 @@ Update a database
 As new tokenized strings are added, update the database with the ``add``
 command.
 
-.. code-block:: sh
+.. code-block:: console
 
-   ./database.py add --database DATABASE_NAME ELF_OR_DATABASE_FILE...
+   $ ./database.py add --database DATABASE_NAME ELF_OR_DATABASE_FILE...
 
 This command adds new tokens from ELF files or other databases to the database.
 Adding tokens already present in the database updates the date removed, if any,
@@ -273,9 +273,9 @@ If there are collisions, take the following steps to resolve them.
   artifacts to mark missing strings as removed. This deprioritizes them in
   collision resolution.
 
-  .. code-block:: sh
+  .. code-block:: console
 
-     python -m pw_tokenizer.database mark_removed --database <database> <ELF files>
+     $ python -m pw_tokenizer.database mark_removed --database <database> <ELF files>
 
   The ``purge`` command may be used to delete these tokens from the database.
 
