@@ -17,11 +17,6 @@ load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = ["//visibility:public"])
 
-alias(
-    name = "bazel",
-    actual = "//pw_watch/py:bazel",
-)
-
 sphinx_docs_library(
     name = "docs",
     srcs = [

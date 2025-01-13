@@ -72,20 +72,20 @@ See :ref:`module-pw_watch-guide` for more examples and
 
 Bazel
 =====
-The Bazel build provides a ``//pw_watch:bazel`` entrypoint, which executes
-commands with ``bazelisk``. Arguments are forwarded directly to ``bazel`` /
-``bazelisk``, so any ``bazel`` subcommands may be used.
+The Bazel build provides a ``//:watch`` entrypoint to ``pw_watch``, which
+executes commands with ``bazelisk``. Arguments are forwarded directly to
+``bazel`` / ``bazelisk``, so any ``bazel`` subcommands may be used.
 
 .. code-block:: sh
 
    # Runs bazelisk build //... when files change.
-   bazelisk run //pw_watch:bazel build //...
+   bazelisk run //:watch build //...
 
    # Runs an executable when files change.
-   bazelisk run //pw_watch:bazel -- run //important:script -a --value 52
+   bazelisk run //:watch -- run //important:script -a --value 52
 
    # Builds //..., then runs the //foo:bar test.
-   bazelisk run //pw_watch:bazel build //... , test //foo:bar
+   bazelisk run //:watch build //... , test //foo:bar
 
 .. important::
 
@@ -95,7 +95,11 @@ commands with ``bazelisk``. Arguments are forwarded directly to ``bazel`` /
 
    .. code-block:: sh
 
-      bazelisk run //pw_watch:bazel -- <commands to run>
+      bazelisk run //:watch -- <commands to run>
+
+``//:watch`` is an alias of ``//pw_watch/py:bazel``. External projects may run
+this tool directly as ``@pigweed//:watch``, or create their own ``//:watch``
+alias.
 
 Custom commands
 ===============

@@ -31,8 +31,8 @@ Multiple commands may be specified, separated by ``,``:
    # Run `cowsay` then `cowthink` when watched files change.
    run.py cowsay "Hey, how are you?" , cowthink Not in moood to talk
 
-The Bazel build's ``//pw_watch:bazel`` watch entrypoint invokes
-``//pw_watch/py:run`` with ``bazelisk`` as the command prefix.
+The Bazel build's ``//:watch`` watch entrypoint invokes ``//pw_watch/py:run``
+with ``bazelisk`` as the command prefix.
 """
 
 import argparse

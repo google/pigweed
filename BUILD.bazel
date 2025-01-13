@@ -33,6 +33,11 @@ exports_files(
     visibility = [":__subpackages__"],
 )
 
+alias(
+    name = "watch",
+    actual = "//pw_watch/py:bazel",
+)
+
 # Symlink to clangd, for user convenience.
 copy_file(
     name = "copy_clangd",
