@@ -1,8 +1,8 @@
 .. _docs-blog-02-bazel-feature-flags:
 
-==================================================
-Pigweed Eng Blog #2: Feature flags in Bazel builds
-==================================================
+==============================================
+Pigweed Blog #2: Feature flags in Bazel builds
+==============================================
 By Ted Pudlik
 
 Published 2024-05-31

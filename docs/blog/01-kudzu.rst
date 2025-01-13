@@ -1,8 +1,8 @@
 .. _docs-blog-01-kudzu:
 
-==========================
-Pigweed Eng Blog #1: Kudzu
-==========================
+======================
+Pigweed Blog #1: Kudzu
+======================
 .. raw:: html
 
    <script type="application/ld+json">

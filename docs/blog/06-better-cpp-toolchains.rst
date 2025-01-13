@@ -1,8 +1,8 @@
 .. _docs-blog-06-better-cpp-toolchains:
 
-=======================================================================
-Pigweed Eng Blog #6: Shaping a better future for Bazel C/C++ toolchains
-=======================================================================
+===================================================================
+Pigweed Blog #6: Shaping a better future for Bazel C/C++ toolchains
+===================================================================
 *Published on 2024-12-11 by Armando Montanez*
 
 ----------------

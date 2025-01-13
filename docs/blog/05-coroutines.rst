@@ -1,8 +1,8 @@
 .. _docs-blog-05-coroutines:
 
-=============================================================
-Pigweed Eng Blog #5: C++20 coroutines without heap allocation
-=============================================================
+=========================================================
+Pigweed Blog #5: C++20 coroutines without heap allocation
+=========================================================
 *Published on 2024-10-07 by Taylor Cramer*
 
 Pigweed now provides support for coroutines on embedded

@@ -1,6 +1,6 @@
 .. _docs-blog:
 
-Pigweed blog
+Pigweed Blog
 ============
 An informal blog where Pigweed teammates, contributors, and users can share
 ideas and projects related to Pigweed.
