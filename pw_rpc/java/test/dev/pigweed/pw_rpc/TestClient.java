@@ -73,7 +73,8 @@ public class TestClient {
     };
     // TODO: b/389777782 - Update to TestClient properly support call IDs. Since the ID cannot be
     // specified, TestClient can only be used for the first call.
-    client = Client.create(ImmutableList.of(new Channel(CHANNEL_ID, channelOutput)), services);
+    client = Client.createLegacySingleCall(
+        ImmutableList.of(new Channel(CHANNEL_ID, channelOutput)), services);
   }
 
   public Client client() {

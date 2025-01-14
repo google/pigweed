@@ -91,7 +91,7 @@ public class Client {
    * @param defaultObserverFactory function that creates a default observer for each RPC
    * @return the new pw.rpc.Client
    */
-  public static Client create(List<Channel> channels,
+  public static Client createLegacySingleCall(List<Channel> channels,
       List<Service> services,
       Function<RpcKey, StreamObserver<MessageLite>> defaultObserverFactory) {
     return new Client(CallIdMode.DISABLED, channels, services, defaultObserverFactory);
@@ -106,8 +106,26 @@ public class Client {
    * single call behavior.
    *
    */
-  public static Client create(List<Channel> channels, List<Service> services) {
+  public static Client createLegacySingleCall(List<Channel> channels, List<Service> services) {
     return create(channels, services, LOG_DEFAULT_OBSERVER_FACTORY);
+  }
+
+  /**
+   * @deprecated Migrate to createMultiCall or temporarily use createLegacySingleCall
+   */
+  @Deprecated
+  public static Client create(List<Channel> channels, List<Service> services) {
+    return createLegacySingleCall(channels, services);
+  }
+
+  /**
+   * @deprecated Migrate to createMultiCall or temporarily use createLegacySingleCall
+   */
+  @Deprecated
+  public static Client create(List<Channel> channels,
+      List<Service> services,
+      Function<RpcKey, StreamObserver<MessageLite>> defaultObserverFactory) {
+    return createLegacySingleCall(channels, services, defaultObserverFactory);
   }
 
   /**
