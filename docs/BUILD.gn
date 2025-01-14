@@ -356,6 +356,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_sync/public/pw_sync/lock_annotations.h",
   "$dir_pw_sync/public/pw_sync/mutex.h",
   "$dir_pw_sync/public/pw_sync/thread_notification.h",
+  "$dir_pw_sync/public/pw_sync/timed_borrow.h",
   "$dir_pw_sync/public/pw_sync/timed_mutex.h",
   "$dir_pw_sync/public/pw_sync/timed_thread_notification.h",
   "$dir_pw_sync/public/pw_sync/virtual_basic_lockable.h",

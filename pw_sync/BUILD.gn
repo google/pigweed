@@ -75,6 +75,18 @@ pw_source_set("borrow") {
   ]
 }
 
+pw_source_set("timed_borrow") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/timed_borrow.h" ]
+  public_deps = [
+    ":borrow",
+    ":lock_annotations",
+    ":lock_traits",
+    ":virtual_basic_lockable",
+    "$dir_pw_chrono:system_clock",
+  ]
+}
+
 pw_source_set("inline_borrowable") {
   public = [
     "public/pw_sync/inline_borrowable.h",
@@ -238,7 +250,10 @@ pw_source_set("lock_testing") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_sync/lock_testing.h" ]
   sources = [ "lock_testing.cc" ]
-  public_deps = [ ":virtual_basic_lockable" ]
+  public_deps = [
+    ":virtual_basic_lockable",
+    "$dir_pw_chrono:system_clock",
+  ]
   deps = [ dir_pw_assert ]
 }
 
@@ -251,7 +266,17 @@ pw_source_set("borrow_testing") {
   ]
 }
 
+pw_source_set("timed_borrow_testing") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_sync/timed_borrow_testing.h" ]
+  public_deps = [
+    ":borrow_testing",
+    ":timed_borrow",
+  ]
+}
+
 pw_test("lock_traits_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "lock_traits_test.cc" ]
   deps = [
     ":lock_testing",
@@ -260,11 +285,12 @@ pw_test("lock_traits_test") {
 }
 
 pw_test("borrow_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "borrow_test.cc" ]
   deps = [
     ":borrow",
-    ":borrow_testing",
     ":lock_testing",
+    ":timed_borrow_testing",
   ]
 }
 
@@ -325,7 +351,7 @@ pw_test("timed_mutex_facade_test") {
     "timed_mutex_facade_test_c.c",
   ]
   deps = [
-    ":borrow_testing",
+    ":timed_borrow_testing",
     ":timed_mutex",
     "$dir_pw_preprocessor",
     pw_sync_TIMED_MUTEX_BACKEND,

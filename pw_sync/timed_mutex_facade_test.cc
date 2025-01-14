@@ -15,7 +15,7 @@
 #include <chrono>
 
 #include "pw_chrono/system_clock.h"
-#include "pw_sync/borrow_testing.h"
+#include "pw_sync/timed_borrow_testing.h"
 #include "pw_sync/timed_mutex.h"
 #include "pw_unit_test/framework.h"
 
@@ -117,7 +117,7 @@ TEST(TimedMutex, TryLockUnlockUntil) {
 }
 
 // Unit tests for a `Borrowable`that uses a `TimedMutex` as its lock.
-using TimedMutexBorrowTest = BorrowTest<TimedMutex, chrono::SystemClock>;
+using TimedMutexBorrowTest = test::TimedBorrowTest<TimedMutex>;
 
 TEST_F(TimedMutexBorrowTest, Acquire) { TestAcquire(); }
 
@@ -136,19 +136,19 @@ TEST_F(TimedMutexBorrowTest, TryAcquireSuccess) { TestTryAcquireSuccess(); }
 TEST_F(TimedMutexBorrowTest, TryAcquireFailure) { TestTryAcquireFailure(); }
 
 TEST_F(TimedMutexBorrowTest, TryAcquireForSuccess) {
-  TestTryAcquireForSuccess();
+  TestTryAcquireForSuccess(kRoundedArbitraryDuration);
 }
 
 TEST_F(TimedMutexBorrowTest, TryAcquireForFailure) {
-  TestTryAcquireForFailure();
+  TestTryAcquireForFailure(kRoundedArbitraryDuration);
 }
 
 TEST_F(TimedMutexBorrowTest, TryAcquireUntilSuccess) {
-  TestTryAcquireUntilSuccess();
+  TestTryAcquireUntilSuccess(kRoundedArbitraryDuration);
 }
 
 TEST_F(TimedMutexBorrowTest, TryAcquireUntilFailure) {
-  TestTryAcquireUntilFailure();
+  TestTryAcquireUntilFailure(kRoundedArbitraryDuration);
 }
 
 TEST(VirtualTimedMutex, LockUnlock) {
@@ -179,8 +179,7 @@ TEST(VirtualMutex, LockUnlockExternal) {
 }
 
 // Unit tests for a `Borrowable`that uses a `VirtualTimedMutex` as its lock.
-using VirtualTimedMutexBorrowTest =
-    BorrowTest<VirtualTimedMutex, chrono::SystemClock>;
+using VirtualTimedMutexBorrowTest = test::TimedBorrowTest<VirtualTimedMutex>;
 
 TEST_F(VirtualTimedMutexBorrowTest, Acquire) { TestAcquire(); }
 
@@ -205,19 +204,19 @@ TEST_F(VirtualTimedMutexBorrowTest, TryAcquireFailure) {
 }
 
 TEST_F(VirtualTimedMutexBorrowTest, TryAcquireForSuccess) {
-  TestTryAcquireForSuccess();
+  TestTryAcquireForSuccess(kRoundedArbitraryDuration);
 }
 
 TEST_F(VirtualTimedMutexBorrowTest, TryAcquireForFailure) {
-  TestTryAcquireForFailure();
+  TestTryAcquireForFailure(kRoundedArbitraryDuration);
 }
 
 TEST_F(VirtualTimedMutexBorrowTest, TryAcquireUntilSuccess) {
-  TestTryAcquireUntilSuccess();
+  TestTryAcquireUntilSuccess(kRoundedArbitraryDuration);
 }
 
 TEST_F(VirtualTimedMutexBorrowTest, TryAcquireUntilFailure) {
-  TestTryAcquireUntilFailure();
+  TestTryAcquireUntilFailure(kRoundedArbitraryDuration);
 }
 
 TEST(TimedMutex, LockUnlockInC) {

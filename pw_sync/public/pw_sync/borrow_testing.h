@@ -13,28 +13,11 @@
 // the License.
 #pragma once
 
-/// This file contains tests that can be used to verify a lock type can be
-/// used in `pw::sync::Borrowable` to borrow types that use external locking.
-///
-/// Locks must at least meet C++'s \em BasicLockable named requirement. Tests
-/// should be added using the `ADD_BORROWABLE_...` macros from this file.
-///
-/// * If a lock is not \em TimedLockable, use `ADD_BORROWABLE_LOCK_TESTS`, e.g.
-///   `ADD_BORROWABLE_LOCK_TESTS(MyLock);`.
-///
-/// * If a lock is \em TimedLockable, use `ADD_BORROWABLE_TIMED_LOCK_TESTS` and
-///   provide the appropriate clock, e.g.
-///   `ADD_BORROWABLE_TIMED_LOCK_TESTS(MyLock, pw::chrono::SystemClock);`
-///
-/// * If the default test suite name is not suitable, use the `..._NAMED_TESTS`
-///   variants, e.g.
-///   `ADD_BORROWABLE_LOCK_NAMED_TESTS(MyTestSuite, pw::my_module::Lock);`.
-
 #include "pw_sync/borrow.h"
 #include "pw_sync/lock_traits.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::sync {
+namespace pw::sync::test {
 
 // Test fixtures.
 
@@ -96,19 +79,14 @@ struct NoClock {
 /// This type provides a set of unit tests for testing borrowing objects that
 /// are protected by a given lockable type.
 ///
-/// @tparam   LockType    The lock type to use to protect access to borrowed
-///                       objects.
-/// @tparam   ClockType   The clock to use for tests against types that are
-///                       `is_lockable_for` or `is_lockable_until`.
-template <typename LockType, typename ClockType = NoClock>
+/// @tparam   LockType        Lock type to use to protect access to borrowed
+///                           objects.
+/// @tparam   BorrowableType  pw::sync::Borrowable or a subtype.
+template <typename LockType,
+          typename BorrowableType = Borrowable<Derived, LockType>>
 class BorrowTest : public ::testing::Test {
- public:
-  using Duration = typename ClockType::duration;
-  using TimePoint = typename ClockType::time_point;
-
+ protected:
   BorrowTest() : ::testing::Test(), borrowable_(derived_, lock_) {}
-
-  // Unit tests.
 
   void TestAcquire() {
     {
@@ -218,59 +196,11 @@ class BorrowTest : public ::testing::Test {
     Unlock();
   }
 
-  void TestTryAcquireForSuccess() {
-    if constexpr (is_lockable_for_v<LockType, Duration>) {
-      std::optional<BorrowedPointer<Derived, LockType>> maybe_borrowed =
-          borrowable_.try_acquire_for(Duration(0));
-      ASSERT_TRUE(maybe_borrowed.has_value());
-      CheckLocked(true);  // Ensure the lock is held.
-      auto& borrowed = *maybe_borrowed;
-      EXPECT_EQ(borrowed->value(), Derived::kInitialValue);
-    } else {
-      static_assert(is_lockable_for_v<LockType, Duration>);
-    }
-    CheckLocked(false);  // Ensure the lock is released.
-  }
-
-  void TestTryAcquireForFailure() {
-    Lock();
-    if constexpr (is_lockable_for_v<LockType, Duration>) {
-      std::optional<BorrowedPointer<Derived, LockType>> maybe_borrowed =
-          borrowable_.try_acquire_for(Duration(0));
-      EXPECT_FALSE(maybe_borrowed.has_value());
-    } else {
-      static_assert(is_lockable_for_v<LockType, Duration>);
-    }
-    Unlock();
-  }
-
-  void TestTryAcquireUntilSuccess() {
-    if constexpr (is_lockable_until_v<LockType, TimePoint>) {
-      std::optional<BorrowedPointer<Derived, LockType>> maybe_borrowed =
-          borrowable_.try_acquire_until(TimePoint());
-      ASSERT_TRUE(maybe_borrowed.has_value());
-      CheckLocked(true);  // Ensure the lock is held.
-      auto& borrowed = *maybe_borrowed;
-      EXPECT_EQ(borrowed->value(), Derived::kInitialValue);
-    } else {
-      static_assert(is_lockable_until_v<LockType, TimePoint>);
-    }
-    CheckLocked(false);  // Ensure the lock is released.
-  }
-
-  void TestTryAcquireUntilFailure() {
-    Lock();
-    if constexpr (is_lockable_until_v<LockType, TimePoint>) {
-      std::optional<BorrowedPointer<Derived, LockType>> maybe_borrowed =
-          borrowable_.try_acquire_until(TimePoint());
-      EXPECT_FALSE(maybe_borrowed.has_value());
-    } else {
-      static_assert(is_lockable_until_v<LockType, TimePoint>);
-    }
-    Unlock();
-  }
-
  private:
+  // Allow the derived TimedBorrowTest access BorrowTest's internals.
+  template <typename>
+  friend class TimedBorrowTest;
+
   /// Checks if a lock's state matches the expected state.
   ///
   /// This method can check fake locks used for testing as well as locks that
@@ -316,7 +246,7 @@ class BorrowTest : public ::testing::Test {
 
   mutable LockType lock_;
   Derived derived_;
-  Borrowable<Derived, LockType> borrowable_;
+  BorrowableType borrowable_;
 };
 
-}  // namespace pw::sync
+}  // namespace pw::sync::test

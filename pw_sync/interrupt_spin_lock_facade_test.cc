@@ -61,7 +61,7 @@ TEST(InterruptSpinLock, TryLockUnlock) {
 }
 
 // Unit tests for a `Borrowable`that uses a `InterruptSpinLock` as its lock.
-using InterruptSpinLockBorrowTest = BorrowTest<InterruptSpinLock>;
+using InterruptSpinLockBorrowTest = test::BorrowTest<InterruptSpinLock>;
 
 TEST_F(InterruptSpinLockBorrowTest, Acquire) { TestAcquire(); }
 
@@ -103,7 +103,8 @@ TEST(VirtualInterruptSpinLock, LockUnlockStatic) {
 
 // Unit tests for a `Borrowable`that uses a `VirtualInterruptSpinLock` as its
 // lock.
-using VirtualInterruptSpinLockBorrowTest = BorrowTest<VirtualInterruptSpinLock>;
+using VirtualInterruptSpinLockBorrowTest =
+    test::BorrowTest<VirtualInterruptSpinLock>;
 
 TEST_F(VirtualInterruptSpinLockBorrowTest, Acquire) { TestAcquire(); }
 

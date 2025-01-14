@@ -16,9 +16,7 @@
 /// This file provides types that meet C++'s lock-related named requirements,
 /// but do no actual locking. They are only intended for use in tests.
 
-#include <chrono>
-#include <ratio>
-
+#include "pw_chrono/system_clock.h"
 #include "pw_sync/virtual_basic_lockable.h"
 
 namespace pw::sync::test {
@@ -45,10 +43,8 @@ class FakeLockable : public FakeBasicLockable {
 
 /// Fake clock that merely provides the expected dependent types.
 struct FakeClock {
-  using rep = int64_t;
-  using period = std::micro;
-  using duration = std::chrono::duration<rep, period>;
-  using time_point = std::chrono::time_point<FakeClock>;
+  using duration = chrono::SystemClock::duration;
+  using time_point = chrono::SystemClock::time_point;
 };
 
 /// Fake clock that provides invalid dependent types.
@@ -56,8 +52,6 @@ struct FakeClock {
 /// This clock is guaranteed to fail `is_lockable_until<Lock, NoClock>` for any
 /// `Lock`.
 struct NotAClock {
-  using rep = void;
-  using period = void;
   using duration = void;
   using time_point = void;
 };

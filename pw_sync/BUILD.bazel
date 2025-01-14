@@ -111,6 +111,21 @@ cc_library(
 )
 
 cc_library(
+    name = "timed_borrow",
+    hdrs = [
+        "public/pw_sync/timed_borrow.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":borrow",
+        ":lock_annotations",
+        ":lock_traits",
+        ":virtual_basic_lockable",
+        "//pw_chrono:system_clock",
+    ],
+)
+
+cc_library(
     name = "inline_borrowable",
     hdrs = [
         "public/pw_sync/inline_borrowable.h",
@@ -375,6 +390,7 @@ cc_library(
     deps = [
         ":virtual_basic_lockable",
         "//pw_assert",
+        "//pw_chrono:system_clock",
     ],
 )
 
@@ -385,6 +401,16 @@ cc_library(
     deps = [
         ":borrow",
         ":lock_traits",
+    ],
+)
+
+cc_library(
+    name = "timed_borrow_testing",
+    hdrs = ["public/pw_sync/timed_borrow_testing.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":borrow_testing",
+        ":timed_borrow",
     ],
 )
 
@@ -402,8 +428,8 @@ pw_cc_test(
     srcs = ["borrow_test.cc"],
     deps = [
         ":borrow",
-        ":borrow_testing",
         ":lock_testing",
+        ":timed_borrow_testing",
         "//pw_unit_test",
     ],
 )
@@ -469,7 +495,7 @@ pw_cc_test(
         "timed_mutex_facade_test_c.c",
     ],
     deps = [
-        ":borrow_testing",
+        ":timed_borrow_testing",
         ":timed_mutex",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
@@ -544,6 +570,7 @@ filegroup(
         "public/pw_sync/lock_annotations.h",
         "public/pw_sync/mutex.h",
         "public/pw_sync/thread_notification.h",
+        "public/pw_sync/timed_borrow.h",
         "public/pw_sync/timed_mutex.h",
         "public/pw_sync/timed_thread_notification.h",
         "public/pw_sync/virtual_basic_lockable.h",

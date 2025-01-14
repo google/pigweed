@@ -896,6 +896,9 @@ C++
 .. doxygenclass:: pw::sync::Borrowable
    :members:
 
+.. doxygenclass:: pw::sync::TimedBorrowable
+   :members:
+
 Example in C++
 ^^^^^^^^^^^^^^
 

@@ -60,7 +60,7 @@ TEST(Mutex, TryLockUnlock) {
 }
 
 // Unit tests for a `Borrowable`that uses a `Mutex` as its lock.
-using MutexBorrowTest = BorrowTest<Mutex>;
+using MutexBorrowTest = test::BorrowTest<Mutex>;
 
 TEST_F(MutexBorrowTest, Acquire) { TestAcquire(); }
 
@@ -104,7 +104,7 @@ TEST(VirtualMutex, LockUnlockExternal) {
 }
 
 // Unit tests for a `Borrowable`that uses a `VirtualMutex` as its lock.
-using VirtualMutexBorrowTest = BorrowTest<VirtualMutex>;
+using VirtualMutexBorrowTest = test::BorrowTest<VirtualMutex>;
 
 TEST_F(VirtualMutexBorrowTest, Acquire) { TestAcquire(); }
 

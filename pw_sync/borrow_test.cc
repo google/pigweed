@@ -14,12 +14,20 @@
 
 #include "pw_sync/borrow.h"
 
-#include "pw_sync/borrow_testing.h"
 #include "pw_sync/lock_testing.h"
+#include "pw_sync/timed_borrow_testing.h"
 #include "pw_unit_test/framework.h"
+
+using namespace std::chrono_literals;
 
 namespace pw::sync::test {
 namespace {
+
+// We can't control the SystemClock's period configuration, so just in case
+// duration cannot be accurately expressed in integer ticks, round the
+// duration up.
+constexpr chrono::SystemClock::duration kRoundedArbitraryDuration =
+    chrono::SystemClock::for_at_least(42ms);
 
 TEST(BorrowedPointerTest, MoveConstruct) {
   Derived derived(1);
@@ -75,7 +83,7 @@ TEST_F(FakeLockableBorrowTest, TryAcquireSuccess) { TestTryAcquireSuccess(); }
 TEST_F(FakeLockableBorrowTest, TryAcquireFailure) { TestTryAcquireFailure(); }
 
 // Unit tests for a `Borrowable`that uses a `FakeTimedLockable` as its lock.
-using FakeTimedLockableBorrowTest = BorrowTest<FakeTimedLockable, FakeClock>;
+using FakeTimedLockableBorrowTest = TimedBorrowTest<FakeTimedLockable>;
 
 TEST_F(FakeTimedLockableBorrowTest, Acquire) { TestAcquire(); }
 
@@ -100,19 +108,19 @@ TEST_F(FakeTimedLockableBorrowTest, TryAcquireFailure) {
 }
 
 TEST_F(FakeTimedLockableBorrowTest, TryAcquireForSuccess) {
-  TestTryAcquireForSuccess();
+  TestTryAcquireForSuccess(kRoundedArbitraryDuration);
 }
 
 TEST_F(FakeTimedLockableBorrowTest, TryAcquireForFailure) {
-  TestTryAcquireForFailure();
+  TestTryAcquireForFailure(kRoundedArbitraryDuration);
 }
 
 TEST_F(FakeTimedLockableBorrowTest, TryAcquireUntilSuccess) {
-  TestTryAcquireUntilSuccess();
+  TestTryAcquireUntilSuccess(kRoundedArbitraryDuration);
 }
 
 TEST_F(FakeTimedLockableBorrowTest, TryAcquireUntilFailure) {
-  TestTryAcquireUntilFailure();
+  TestTryAcquireUntilFailure(kRoundedArbitraryDuration);
 }
 
 }  // namespace

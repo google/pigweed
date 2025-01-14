@@ -27,7 +27,8 @@ namespace pw::sync {
 /// The `BorrowedPointer` is an RAII handle which wraps a pointer to a borrowed
 /// object along with a held lock which is guarding the object. When destroyed,
 /// the lock is released.
-template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable>
+template <typename GuardedType,
+          typename LockType = pw::sync::VirtualBasicLockable>
 class BorrowedPointer {
  public:
   /// Release the lock on destruction.
@@ -40,23 +41,23 @@ class BorrowedPointer {
   /// Move-constructs a ``BorrowedPointer<T>`` from a ``BorrowedPointer<U>``.
   ///
   /// This allows not only pure move construction where
-  /// ``GuardedType == OtherType`` and ``Lock == OtherLock``, but also
+  /// ``GuardedType == G`` and ``Lock == L``, but also
   /// converting construction where ``GuardedType`` is a base class of
   /// ``OtherType`` and ``Lock`` is a base class of ``OtherLock``, like
   /// ``BorrowedPointer<Base> base_ptr(derived_borrowable.acquire());`
   ///
   /// @b Postcondition: The other BorrowedPointer is no longer valid and will
   ///     assert if the GuardedType is accessed.
-  template <typename OtherType, typename OtherLock>
-  BorrowedPointer(BorrowedPointer<OtherType, OtherLock>&& other)
+  template <typename G, typename L>
+  BorrowedPointer(BorrowedPointer<G, L>&& other)
       : lock_(other.lock_), object_(other.object_) {
     static_assert(
-        std::is_assignable_v<GuardedType*&, OtherType*>,
+        std::is_assignable_v<GuardedType*&, G*>,
         "Attempted to construct a BorrowedPointer from another whose "
         "GuardedType* is not assignable to this object's GuardedType*.");
-    static_assert(std::is_assignable_v<Lock*&, OtherLock*>,
+    static_assert(std::is_assignable_v<LockType*&, L*>,
                   "Attempted to construct a BorrowedPointer from another whose "
-                  "Lock* is not assignable to this object's Lock*.");
+                  "LockType* is not assignable to this object's Lock*.");
     other.lock_ = nullptr;
     other.object_ = nullptr;
   }
@@ -71,15 +72,15 @@ class BorrowedPointer {
   ///
   /// @b Postcondition: The other BorrowedPointer is no longer valid and will
   ///     assert if the GuardedType is accessed.
-  template <typename OtherType, typename OtherLock>
-  BorrowedPointer& operator=(BorrowedPointer<OtherType, OtherLock>&& other) {
+  template <typename G, typename L>
+  BorrowedPointer& operator=(BorrowedPointer<G, L>&& other) {
     static_assert(
-        std::is_assignable_v<GuardedType*&, OtherType*>,
+        std::is_assignable_v<GuardedType*&, G*>,
         "Attempted to construct a BorrowedPointer from another whose "
         "GuardedType* is not assignable to this object's GuardedType*.");
-    static_assert(std::is_assignable_v<Lock*&, OtherLock*>,
+    static_assert(std::is_assignable_v<LockType*&, L*>,
                   "Attempted to construct a BorrowedPointer from another whose "
-                  "Lock* is not assignable to this object's Lock*.");
+                  "LockType* is not assignable to this object's Lock*.");
     lock_ = other.lock_;
     object_ = other.object_;
     other.lock_ = nullptr;
@@ -125,21 +126,18 @@ class BorrowedPointer {
 
  private:
   /// Allow BorrowedPointer creation inside of Borrowable's acquire methods.
-  template <typename G, typename L>
+  template <typename, typename>
   friend class Borrowable;
 
-  constexpr BorrowedPointer(Lock& lock, GuardedType& object)
+  constexpr BorrowedPointer(LockType& lock, GuardedType& object)
       : lock_(&lock), object_(&object) {}
 
-  Lock* lock_;
+  LockType* lock_;
   GuardedType* object_;
 
   /// Allow converting move constructor and assignment to access fields of
   /// this class.
-  ///
-  /// Without this, ``BorrowedPointer<OtherType, OtherLock>`` would not be able
-  /// to access fields of ``BorrowedPointer<GuardedType, Lock>``.
-  template <typename OtherType, typename OtherLock>
+  template <typename, typename>
   friend class BorrowedPointer;
 };
 
@@ -153,24 +151,27 @@ class BorrowedPointer {
 /// `BorrowedPointer`s it creates conditionally releases the lock. See also
 /// https://clang.llvm.org/docs/ThreadSafetyAnalysis.html#no-conditionally-held-locks
 ///
-/// This class is compatible with locks which comply with `BasicLockable`,
-/// `Lockable`, and `TimedLockable` C++ named requirements.
+/// This class is compatible with locks which comply with \em BasicLockable C++
+/// named requirement. A `try_acquire` method is conditionally available if the
+/// lock also meets the \em Lockable requirement. This class is further extended
+/// by `TimedBorrowable` for locks that meet the \em TimedLockable requirement.
 ///
 /// `Borrowable<T>` is covariant with respect to `T`, so that `Borrowable<U>`
 /// can be converted to `Borrowable<T>`, if `U` is a subclass of `T`.
 ///
 /// `Borrowable` has pointer-like semantics and should be passed by value.
-template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable>
+template <typename GuardedType,
+          typename LockType = pw::sync::VirtualBasicLockable>
 class Borrowable {
  public:
-  static_assert(is_basic_lockable_v<Lock>,
+  static_assert(is_basic_lockable_v<LockType>,
                 "lock type must satisfy BasicLockable");
 
-  constexpr Borrowable(GuardedType& object, Lock& lock) noexcept
+  constexpr Borrowable(GuardedType& object, LockType& lock) noexcept
       : lock_(&lock), object_(&object) {}
 
   template <typename U>
-  constexpr Borrowable(const Borrowable<U, Lock>& other)
+  constexpr Borrowable(const Borrowable<U, LockType>& other)
       : lock_(other.lock_), object_(other.object_) {}
 
   Borrowable(const Borrowable&) = default;
@@ -179,69 +180,39 @@ class Borrowable {
   Borrowable& operator=(Borrowable&& other) = default;
 
   /// Blocks indefinitely until the object can be borrowed. Failures are fatal.
-  BorrowedPointer<GuardedType, Lock> acquire() const
+  BorrowedPointer<GuardedType, LockType> acquire() const
       PW_NO_LOCK_SAFETY_ANALYSIS {
     lock_->lock();
-    return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
+    return Borrow();
   }
 
   /// Tries to borrow the object in a non-blocking manner. Returns a
   /// BorrowedPointer on success, otherwise `std::nullopt` (nothing).
   template <int&... ExplicitArgumentBarrier,
-            typename T = Lock,
+            typename T = LockType,
             typename = std::enable_if_t<is_lockable_v<T>>>
-  std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire() const
+  std::optional<BorrowedPointer<GuardedType, LockType>> try_acquire() const
       PW_NO_LOCK_SAFETY_ANALYSIS {
     if (!lock_->try_lock()) {
       return std::nullopt;
     }
-    return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
-  }
-
-  /// Tries to borrow the object. Blocks until the specified timeout has elapsed
-  /// or the object has been borrowed, whichever comes first. Returns a
-  /// `BorrowedPointer` on success, otherwise `std::nullopt` (nothing).
-  template <class Rep,
-            class Period,
-            int&... ExplicitArgumentBarrier,
-            typename T = Lock,
-            typename = std::enable_if_t<
-                is_lockable_for_v<T, std::chrono::duration<Rep, Period>>>>
-  std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire_for(
-      std::chrono::duration<Rep, Period> timeout) const
-      PW_NO_LOCK_SAFETY_ANALYSIS {
-    if (!lock_->try_lock_for(timeout)) {
-      return std::nullopt;
-    }
-    return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
-  }
-
-  /// Tries to borrow the object. Blocks until the specified deadline has passed
-  /// or the object has been borrowed, whichever comes first. Returns a
-  /// `BorrowedPointer` on success, otherwise `std::nullopt` (nothing).
-  template <
-      class Clock,
-      class Duration,
-      int&... ExplicitArgumentBarrier,
-      typename T = Lock,
-      typename = std::enable_if_t<
-          is_lockable_until_v<T, std::chrono::time_point<Clock, Duration>>>>
-  std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire_until(
-      std::chrono::time_point<Clock, Duration> deadline) const
-      PW_NO_LOCK_SAFETY_ANALYSIS {
-    if (!lock_->try_lock_until(deadline)) {
-      return std::nullopt;
-    }
-    return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
+    return Borrow();
   }
 
  private:
-  Lock* lock_;
-  GuardedType* object_;
-
-  // Befriend all template instantiations of this class.
+  // Befriend all template instantiations of this class and the Timed subtype.
   template <typename, typename>
   friend class Borrowable;
+
+  template <typename, typename>
+  friend class TimedBorrowable;
+
+  BorrowedPointer<GuardedType, LockType> Borrow() const {
+    return BorrowedPointer<GuardedType, LockType>(*lock_, *object_);
+  }
+
+  LockType* lock_;
+  GuardedType* object_;
 };
 
 }  // namespace pw::sync
