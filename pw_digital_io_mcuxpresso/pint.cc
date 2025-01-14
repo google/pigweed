@@ -12,15 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_digital_io_mcuxpresso/interrupt_controller.h"
+#include "pw_digital_io_mcuxpresso/pint.h"
 
 #include <array>
 #include <cstdint>
 
 #include "fsl_pint.h"
-#include "pw_digital_io/digital_io.h"
 #include "pw_function/function.h"
-#include "pw_status/status.h"
 
 namespace pw::digital_io {
 namespace {
@@ -45,16 +43,16 @@ void PintCallback(pint_pin_int_t pin, uint32_t) {
 
 }  // namespace
 
-McuxpressoInterruptController::McuxpressoInterruptController(PINT_Type* base)
+// McuxpressoPintController
+
+McuxpressoPintController::McuxpressoPintController(PINT_Type* base)
     : base_(base) {
   PINT_Init(base_);
 }
 
-McuxpressoInterruptController::~McuxpressoInterruptController() {
-  PINT_Deinit(base_);
-}
+McuxpressoPintController::~McuxpressoPintController() { PINT_Deinit(base_); }
 
-pw::Status McuxpressoInterruptController::Config(
+pw::Status McuxpressoPintController::Config(
     pint_pin_int_t pin,
     InterruptTrigger trigger,
     pw::digital_io::InterruptHandler&& handler) {
@@ -82,14 +80,37 @@ pw::Status McuxpressoInterruptController::Config(
   return pw::OkStatus();
 }
 
-pw::Status McuxpressoInterruptController::EnableHandler(pint_pin_int_t pin,
-                                                        bool enable) {
+pw::Status McuxpressoPintController::EnableHandler(pint_pin_int_t pin,
+                                                   bool enable) {
   if (enable) {
     PINT_EnableCallbackByIndex(base_, pin);
   } else {
     PINT_DisableCallbackByIndex(base_, pin);
   }
   return pw::OkStatus();
+}
+
+// McuxpressoPintInterrupt
+
+McuxpressoPintInterrupt::McuxpressoPintInterrupt(
+    pw::sync::Borrowable<McuxpressoPintController>& controller,
+    pint_pin_int_t pin)
+    : controller_(controller), pin_(pin) {}
+
+pw::Status McuxpressoPintInterrupt::DoEnable(bool) {
+  // Can not enabled at individual line level. Only at controller level, which
+  // is always enabled.
+  return pw::OkStatus();
+}
+
+pw::Status McuxpressoPintInterrupt::DoSetInterruptHandler(
+    pw::digital_io::InterruptTrigger trigger,
+    pw::digital_io::InterruptHandler&& handler) {
+  return controller_.acquire()->Config(pin_, trigger, std::move(handler));
+}
+
+pw::Status McuxpressoPintInterrupt::DoEnableInterruptHandler(bool enable) {
+  return controller_.acquire()->EnableHandler(pin_, enable);
 }
 
 }  // namespace pw::digital_io

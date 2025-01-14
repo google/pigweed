@@ -18,7 +18,7 @@ This module consists of these main classes:
 - `McuxpressoDigitalIn`_ - Provides only input support.
 - `McuxpressoDigitalOut`_ - Provides only output support.
 - `McuxpressoDigitalInOutInterrupt`_ - Provides support for input, output, and GPIO interrupts.
-- `McuxpressoInterruptController`_ - Controller class for use with ``McuxpressoPintInterrupt``.
+- `McuxpressoPintController`_ - Controller class for use with ``McuxpressoPintInterrupt``.
 - `McuxpressoPintInterrupt`_ - Provides only interrupt support for a PINT interrupt.
 
 -----
@@ -113,19 +113,18 @@ Example code to use GPIO pins from an NXP SDK board definition:
 PINT interrupt
 ==============
 `McuxpressoPintInterrupt`_ can also be used to handle interrupts, via the PINT
-module. It must be used with an instance of `McuxpressoInterruptController`_.
+module. It must be used with an instance of `McuxpressoPintController`_.
 
 .. code-block:: cpp
 
-   #include "pw_digital_io_mcuxpresso/interrupt_controller.h"
-   #include "pw_digital_io_mcuxpresso/interrupt_line.h"
+   #include "pw_digital_io_mcuxpresso/pint.h"
    #include "pw_sync/interrupt_spin_lock.h"
 
-   McuxpressoInterruptController raw_pint_controller(PINT);
+   McuxpressoPintController raw_pint_controller(PINT);
 
    pw::sync::VirtualInterruptSpinLock controller_lock;
 
-   pw::sync::Borrowable<McuxpressoInterruptController>
+   pw::sync::Borrowable<McuxpressoPintController>
        pint_controller(raw_pint_controller, controller_lock);
 
    McuxpressoPintInterrupt irq_line0(pint_controller, kPINT_PinInt0);
@@ -177,7 +176,7 @@ interrupts, via the PINT module, which supports other features:
 .. doxygenclass:: pw::digital_io::McuxpressoPintInterrupt
   :members:
 
-McuxpressoInterruptController
-=============================
-.. doxygenclass:: pw::digital_io::McuxpressoInterruptController
+McuxpressoPintController
+========================
+.. doxygenclass:: pw::digital_io::McuxpressoPintController
   :members:

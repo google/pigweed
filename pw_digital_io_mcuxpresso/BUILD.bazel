@@ -24,13 +24,13 @@ cc_library(
     name = "pw_digital_io_mcuxpresso",
     srcs = [
         "digital_io.cc",
-        "interrupt_controller.cc",
-        "interrupt_line.cc",
+        "pint.cc",
     ],
     hdrs = [
         "public/pw_digital_io_mcuxpresso/digital_io.h",
         "public/pw_digital_io_mcuxpresso/interrupt_controller.h",
         "public/pw_digital_io_mcuxpresso/interrupt_line.h",
+        "public/pw_digital_io_mcuxpresso/pint.h",
     ],
     strip_include_prefix = "public",
     deps = [
@@ -62,7 +62,6 @@ filegroup(
     name = "doxygen",
     srcs = [
         "public/pw_digital_io_mcuxpresso/digital_io.h",
-        "public/pw_digital_io_mcuxpresso/interrupt_controller.h",
-        "public/pw_digital_io_mcuxpresso/interrupt_line.h",
+        "public/pw_digital_io_mcuxpresso/pint.h",
     ],
 )

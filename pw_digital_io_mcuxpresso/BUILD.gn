@@ -31,6 +31,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
       "public/pw_digital_io_mcuxpresso/digital_io.h",
       "public/pw_digital_io_mcuxpresso/interrupt_controller.h",
       "public/pw_digital_io_mcuxpresso/interrupt_line.h",
+      "public/pw_digital_io_mcuxpresso/pint.h",
     ]
     public_deps = [
       "$dir_pw_containers:intrusive_forward_list",
@@ -44,8 +45,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     deps = [ "$dir_pw_assert" ]
     sources = [
       "digital_io.cc",
-      "interrupt_controller.cc",
-      "interrupt_line.cc",
+      "pint.cc",
     ]
   }
 }

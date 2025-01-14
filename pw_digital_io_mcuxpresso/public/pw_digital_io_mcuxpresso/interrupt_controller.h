@@ -13,37 +13,7 @@
 // the License.
 #pragma once
 
-#include "fsl_pint.h"
-#include "pw_digital_io/digital_io.h"
-#include "pw_status/status.h"
+#include "pw_digital_io_mcuxpresso/pint.h"
 
-namespace pw::digital_io {
-
-/// Abstracts the Pin Interrupt (PINT) module.
-///
-/// One instance of this class should be created to enable the creation of
-/// `McuxpressoPintInterrupt` lines; it is not intended to be otherwise used by
-/// end-users.
-class McuxpressoInterruptController {
- public:
-  /// Constructs a McuxpressoInterruptController for an instance of the PINT
-  /// module.
-  ///
-  /// @param[in] base The base address of the PINT module (e.g. `PINT`).
-  McuxpressoInterruptController(PINT_Type* base);
-  ~McuxpressoInterruptController();
-
-  McuxpressoInterruptController(const McuxpressoInterruptController&) = delete;
-  McuxpressoInterruptController& operator=(
-      const McuxpressoInterruptController&) = delete;
-
-  pw::Status Config(pint_pin_int_t pin,
-                    pw::digital_io::InterruptTrigger trigger,
-                    pw::digital_io::InterruptHandler&& handler);
-  pw::Status EnableHandler(pint_pin_int_t pin, bool enable);
-
- private:
-  PINT_Type* base_;
-};
-
-}  // namespace pw::digital_io
+// Deprecated compatibility header.
+// TODO: https://pwbug.dev/337927184 - Remove this after downstreams migrate.
