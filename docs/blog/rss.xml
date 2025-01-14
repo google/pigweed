@@ -11,6 +11,15 @@
     <pubDate>Mon, 7 Oct 2024 08:00:00 -0700</pubDate>
     <atom:link href="https://pigweed.dev/rss.xml" rel="self" type="application/rss+xml"/>
     <item>
+      <title>BazelCon 2024</title>
+      <link>https://pigweed.dev/docs/blog/07-bazelcon-2024.html</link>
+      <description>
+        Pigweed team members gave talks at BazelCon 2024.
+      </description>
+      <pubDate>Fri, 13 Dec 2024 08:00:00 -0700</pubDate>
+      <guid>https://pigweed.dev/docs/blog/07-bazelcon-2024.html</guid>
+    </item>
+    <item>
       <title>Shaping a better future for Bazel C/C++ toolchains</title>
       <link>https://pigweed.dev/docs/blog/06-better-cpp-toolchains.html</link>
       <description>

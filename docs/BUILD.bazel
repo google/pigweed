@@ -65,6 +65,7 @@ sphinx_docs_library(
         "blog/04-fixed-point.rst",
         "blog/05-coroutines.rst",
         "blog/06-better-cpp-toolchains.rst",
+        "blog/07-bazelcon-2024.rst",
         "blog/index.rst",
         "blog/rss.xml",
         "code_of_conduct.rst",
