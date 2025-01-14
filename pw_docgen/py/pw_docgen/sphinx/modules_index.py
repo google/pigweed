@@ -65,7 +65,7 @@ def build_row(module_name: str):
     ref = f':ref:`module-{module_name}`'
     if module_name not in metadata:
         return f'   "{ref}", "", "", ""\n'
-    tagline = metadata[module_name]['tagline']
+    tagline = metadata[module_name].get('tagline', '')
     status = build_status_badge(metadata[module_name]['status'])
     if 'languages' in metadata[module_name]:
         languages = ', '.join(metadata[module_name]['languages'])
