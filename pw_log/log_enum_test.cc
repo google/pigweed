@@ -65,6 +65,16 @@ TEST(TokenizedArgs, LogTokenOrString_TokenizingBackend) {
   EXPECT_EQ(static_cast<uint32_t>(kAlpha), PW_LOG_ENUM(kAlpha));
 }
 
+TEST(TokenizedArgs, NestedTokenFmt1_TokenizingBackend) {
+  constexpr char nested_token[] = PW_LOG_NESTED_TOKEN_FMT();
+  EXPECT_STREQ("${$%" PRIx32 "}#%08" PRIx32, nested_token);
+}
+
+TEST(TokenizedArgs, NestedTokenFmt2_TokenizingBackend) {
+  constexpr char nested_token[] = PW_LOG_NESTED_TOKEN_FMT("enum_domain");
+  EXPECT_STREQ("${${enum_domain}%" PRIx32 "}#%08" PRIx32, nested_token);
+}
+
 #else
 
 TEST(TokenizedArgs, EmptyString_NonTokenizingBackend) {
@@ -92,6 +102,16 @@ TEST(TokenizedArgs, LogTokenEnumFmt_NonTokenizingBackend) {
 TEST(TokenizedArgs, LogTokenOrString_NonTokenizingBackend) {
   constexpr PW_LOG_TOKEN_TYPE nested_token = PW_LOG_ENUM(kAlpha);
   EXPECT_STREQ("kAlpha", nested_token);
+}
+
+TEST(TokenizedArgs, NestedTokenFmt1_NonTokenizingBackend) {
+  constexpr char nested_token[] = PW_LOG_NESTED_TOKEN_FMT();
+  EXPECT_STREQ("%s::%s", nested_token);
+}
+
+TEST(TokenizedArgs, NestedTokenFmt2_NonTokenizingBackend) {
+  constexpr char nested_token[] = PW_LOG_NESTED_TOKEN_FMT(kAlpha);
+  EXPECT_STREQ("%s::%s", nested_token);
 }
 
 #endif  //__has_include("log_backend/log_backend_uses_pw_tokenizer.h")

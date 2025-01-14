@@ -31,10 +31,11 @@
 #include "pw_tokenizer/tokenize.h"
 
 #define PW_LOG_TOKEN_TYPE pw_tokenizer_Token
-#define PW_LOG_TOKEN PW_TOKENIZE_STRING
+#define PW_LOG_TOKEN PW_TOKENIZE_STRING_OPTIONAL_DOMAIN
 #define PW_LOG_TOKEN_EXPR PW_TOKENIZE_STRING_EXPR
 #define PW_LOG_TOKEN_FMT PW_TOKEN_FMT
 #define PW_LOG_ENUM(enumerator) ::pw::tokenizer::EnumToToken(enumerator)
+#define PW_LOG_NESTED_TOKEN_FMT PW_NESTED_TOKEN_FMT
 
 #else
 
@@ -46,7 +47,10 @@
 
 /// If nested tokenization is supported by the logging backend, this is an
 /// alias for `PW_TOKENIZE_STRING`. No-op otherwise.
-#define PW_LOG_TOKEN(string_literal) string_literal
+#define PW_LOG_TOKEN(...) \
+  PW_DELEGATE_BY_ARG_COUNT(_PW_STRING_OPTIONAL_DOMAIN_, __VA_ARGS__)
+#define _PW_STRING_OPTIONAL_DOMAIN_1(string_literal) string_literal
+#define _PW_STRING_OPTIONAL_DOMAIN_2(domain, string_literal) string_literal
 
 /// If nested tokenization is supported by the logging backend, this is an
 /// alias for `PW_TOKENIZE_STRING_EXPR`. No-op otherwise.
@@ -64,5 +68,11 @@
 /// For non-tokenizing backends, defaults to the string representation of the
 /// enum.
 #define PW_LOG_ENUM(enumerator) ::pw::tokenizer::EnumToString(enumerator)
+
+/// If nested tokenization is supported by the logging backend, this is an
+/// alias for `PW_NESTED_TOKEN_FMT`.
+///
+/// For non-tokenizing backends, defaults to the string specifier `%s`.
+#define PW_LOG_NESTED_TOKEN_FMT(...) "%s::%s"
 
 #endif  //__has_include("log_backend/log_backend_uses_pw_tokenizer.h")
