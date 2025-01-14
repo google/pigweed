@@ -53,6 +53,7 @@ WATCH_PATTERNS = (
     '*.h',
     '*.hpp',
     '*.html',
+    '*.java',
     '*.js',
     '*.ld',
     '*.md',
