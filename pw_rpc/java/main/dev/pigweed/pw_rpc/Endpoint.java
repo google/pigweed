@@ -46,19 +46,23 @@ class Endpoint {
   // Call IDs are varint encoded. Limit the varint size to 2 bytes (14 usable bits).
   private static final int MAX_CALL_ID = 1 << 14;
 
+  static final int FIRST_CALL_ID = 1;
+
+  private final Packets packets;
   private final Map<Integer, Channel> channels;
   private final Map<PendingRpc, AbstractCall<?, ?>> pending = new HashMap<>();
   private final BlockingQueue<Runnable> callUpdates = new LinkedBlockingQueue<>();
   private final int maxCallId;
 
-  @GuardedBy("this") private int nextCallId = 1;
+  @GuardedBy("this") private int nextCallId = FIRST_CALL_ID;
 
-  public Endpoint(List<Channel> channels) {
-    this(channels, MAX_CALL_ID);
+  Endpoint(CallIdMode callIdMode, List<Channel> channels) {
+    this(callIdMode, channels, MAX_CALL_ID);
   }
 
   /** Create endpoint with {@code maxCallId} possible call_ids for testing purposes */
-  Endpoint(List<Channel> channels, int maxCallId) {
+  Endpoint(CallIdMode callIdMode, List<Channel> channels, int maxCallId) {
+    this.packets = new Packets(callIdMode);
     this.channels = channels.stream().collect(Collectors.toMap(Channel::id, c -> c));
     this.maxCallId = maxCallId;
   }
@@ -83,7 +87,7 @@ class Endpoint {
 
     try {
       // If sending the packet fails, the RPC is never considered pending.
-      call.rpc().channel().send(Packets.request(call.rpc(), request));
+      call.rpc().channel().send(packets.request(call.rpc(), request));
     } catch (ChannelOutputException e) {
       call.handleExceptionOnInitialPacket(e);
     }
@@ -112,7 +116,9 @@ class Endpoint {
       throw InvalidRpcChannelException.unknown(channelId);
     }
 
-    return createCall.apply(this, PendingRpc.create(channel, method, getNewCallId()));
+    // Use 0 for call ID when IDs are disabled, which is equivalent to an unset ID in the packet.
+    int callId = packets.callIdsEnabled() ? getNewCallId() : 0;
+    return createCall.apply(this, PendingRpc.create(channel, method, callId));
   }
 
   private void registerCall(AbstractCall<?, ?> call) {
@@ -146,7 +152,7 @@ class Endpoint {
         }
 
         enqueueCallUpdate(() -> call.handleError(Status.CANCELLED));
-        call.sendPacket(Packets.cancel(call.rpc()));
+        call.sendPacket(packets.cancel(call.rpc()));
       }
     } finally {
       logger.atFiner().log("Cancelling %s", call);
@@ -170,12 +176,12 @@ class Endpoint {
 
   public synchronized boolean clientStream(AbstractCall<?, ?> call, MessageLite payload)
       throws ChannelOutputException {
-    return sendPacket(call, Packets.clientStream(call.rpc(), payload));
+    return sendPacket(call, packets.clientStream(call.rpc(), payload));
   }
 
   public synchronized boolean clientStreamEnd(AbstractCall<?, ?> call)
       throws ChannelOutputException {
-    return sendPacket(call, Packets.clientStreamEnd(call.rpc()));
+    return sendPacket(call, packets.clientStreamEnd(call.rpc()));
   }
 
   private boolean sendPacket(AbstractCall<?, ?> call, byte[] packet) throws ChannelOutputException {
@@ -299,9 +305,9 @@ class Endpoint {
     return true;
   }
 
-  private static void sendError(Channel channel, RpcPacket packet, Status status) {
+  private void sendError(Channel channel, RpcPacket packet, Status status) {
     try {
-      channel.send(Packets.error(packet, status));
+      channel.send(packets.error(packet, status));
     } catch (ChannelOutputException e) {
       logger.atWarning().withCause(e).log("Failed to send error packet");
     }
@@ -328,5 +334,10 @@ class Endpoint {
       nextCallId = 1;
     }
     return callId;
+  }
+
+  /** Expose the Packets object for internal use by TestClient. */
+  Packets getPackets() {
+    return packets;
   }
 }

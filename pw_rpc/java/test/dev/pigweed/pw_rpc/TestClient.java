@@ -71,6 +71,8 @@ public class TestClient {
         enqueuedPackets.remove().packets.forEach(this::processPacket);
       }
     };
+    // TODO: b/389777782 - Update to TestClient properly support call IDs. Since the ID cannot be
+    // specified, TestClient can only be used for the first call.
     client = Client.create(ImmutableList.of(new Channel(CHANNEL_ID, channelOutput)), services);
   }
 
@@ -95,9 +97,10 @@ public class TestClient {
 
   /** Simulates receiving SERVER_STREAM packets from the server. */
   public void receiveServerStream(String service, String method, MessageLiteOrBuilder... payloads) {
-    RpcPacket base = startPacket(service, method, PacketType.SERVER_STREAM).build();
+    RpcPacket.Builder base =
+        client.getPackets().startServerStream(CHANNEL_ID, service, method, Endpoint.FIRST_CALL_ID);
     for (MessageLiteOrBuilder payload : payloads) {
-      processPacket(RpcPacket.newBuilder(base).setPayload(getMessage(payload).toByteString()));
+      processPacket(base.setPayload(getMessage(payload).toByteString()).build().toByteArray());
     }
   }
 
@@ -117,16 +120,18 @@ public class TestClient {
       throw new IllegalArgumentException("afterPackets must be at least 1");
     }
 
-    RpcPacket base = startPacket(service, method, PacketType.SERVER_STREAM).build();
+    RpcPacket.Builder base =
+        client.getPackets().startServerStream(CHANNEL_ID, service, method, Endpoint.FIRST_CALL_ID);
     enqueuedPackets.add(new EnqueuedPackets(afterPackets,
         Arrays.stream(payloads)
-            .map(m -> RpcPacket.newBuilder(base).setPayload(getMessage(m).toByteString()).build())
+            .map(m -> base.setPayload(getMessage(m).toByteString()).build())
             .collect(Collectors.toList())));
   }
 
   /** Simulates receiving a SERVER_ERROR packet from the server. */
   public void receiveServerError(String service, String method, Status error) {
-    processPacket(startPacket(service, method, PacketType.SERVER_ERROR).setStatus(error.code()));
+    processPacket(client.getPackets().serverError(
+        CHANNEL_ID, service, method, Endpoint.FIRST_CALL_ID, error));
   }
 
   /** Parses sent payloads for the given type of packet. */
@@ -148,22 +153,13 @@ public class TestClient {
   }
 
   private void processPacket(RpcPacket packet) {
-    if (!client.processPacket(packet.toByteArray())) {
+    processPacket(packet.toByteArray());
+  }
+
+  private void processPacket(byte[] packet) {
+    if (!client.processPacket(packet)) {
       throw new AssertionError("TestClient failed to process a packet!");
     }
-  }
-
-  private void processPacket(RpcPacket.Builder packet) {
-    processPacket(packet.build());
-  }
-
-  private static RpcPacket.Builder startPacket(String service, String method, PacketType type) {
-    return RpcPacket.newBuilder()
-        .setType(type)
-        .setCallId(PendingRpc.DEFAULT_CALL_ID)
-        .setChannelId(CHANNEL_ID)
-        .setServiceId(Ids.calculate(service))
-        .setMethodId(Ids.calculate(method));
   }
 
   private static RpcPacket parsePacket(byte[] packet) {

@@ -20,9 +20,6 @@ import java.util.Locale;
 /** Represents an active RPC invocation: channel + service + method + call id. */
 @AutoValue
 abstract class PendingRpc {
-  // The default call id should always be 1 since it is the first id that is chosen by the endpoint.
-  static final int DEFAULT_CALL_ID = 1;
-
   static PendingRpc create(Channel channel, Method method, int callId) {
     return new AutoValue_PendingRpc(channel, method, callId);
   }

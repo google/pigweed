@@ -43,7 +43,7 @@ public final class StreamObserverCallTest {
   @Mock private Channel.Output mockOutput;
 
   private final Channel channel = new Channel(CHANNEL_ID, packet -> mockOutput.send(packet));
-  private final Endpoint endpoint = new Endpoint(ImmutableList.of(channel));
+  private final Endpoint endpoint = new Endpoint(CallIdMode.ENABLED, ImmutableList.of(channel));
   private StreamObserverCall<SomeMessage, AnotherMessage> streamObserverCall;
 
   private static byte[] cancel() {
@@ -57,7 +57,7 @@ public final class StreamObserverCallTest {
   private static RpcPacket.Builder packetBuilder() {
     return RpcPacket.newBuilder()
         .setChannelId(CHANNEL_ID)
-        .setCallId(PendingRpc.DEFAULT_CALL_ID)
+        .setCallId(Endpoint.FIRST_CALL_ID)
         .setServiceId(SERVICE.id())
         .setMethodId(METHOD.id());
   }

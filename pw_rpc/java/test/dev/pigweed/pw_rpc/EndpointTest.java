@@ -55,20 +55,19 @@ public final class EndpointTest {
   private static final AnotherMessage RESPONSE_PAYLOAD =
       AnotherMessage.newBuilder().setPayload("hello").build();
   private static final int CHANNEL_ID = 555;
-  private static final int DEFAULT_CALL_ID = 1;
   private static final int MAX_CALL_ID = 3;
 
   @Mock private Channel.Output mockOutput;
   @Mock private StreamObserver<MessageLite> callEvents;
 
   private final Channel channel = new Channel(CHANNEL_ID, bytes -> mockOutput.send(bytes));
-  private final Endpoint endpoint = new Endpoint(ImmutableList.of(channel));
+  private final Endpoint endpoint = new Endpoint(CallIdMode.ENABLED, ImmutableList.of(channel));
 
   private final List<byte[]> sentPackets = new ArrayList<>();
   private final Channel channelWithRecord =
       new Channel(CHANNEL_ID, bytes -> sentPackets.add(bytes));
   private final Endpoint endpointWithRecord =
-      new Endpoint(ImmutableList.of(channelWithRecord), MAX_CALL_ID);
+      new Endpoint(CallIdMode.ENABLED, ImmutableList.of(channelWithRecord), MAX_CALL_ID);
 
   private static byte[] request(MessageLite payload) {
     return packetBuilder()
@@ -89,7 +88,7 @@ public final class EndpointTest {
   private static RpcPacket.Builder packetBuilder() {
     return RpcPacket.newBuilder()
         .setChannelId(CHANNEL_ID)
-        .setCallId(PendingRpc.DEFAULT_CALL_ID)
+        .setCallId(Endpoint.FIRST_CALL_ID)
         .setServiceId(SERVICE.id())
         .setMethodId(METHOD.id());
   }
@@ -191,7 +190,7 @@ public final class EndpointTest {
   @Test
   public void ignoresActionsIfCallIsNotPending() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        createCall(endpoint, PendingRpc.create(channel, METHOD, DEFAULT_CALL_ID));
+        createCall(endpoint, PendingRpc.create(channel, METHOD, Endpoint.FIRST_CALL_ID));
 
     assertThat(endpoint.cancel(call)).isFalse();
     assertThat(endpoint.abandon(call)).isFalse();
@@ -202,7 +201,7 @@ public final class EndpointTest {
   @Test
   public void ignoresPacketsIfCallIsNotPending() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        createCall(endpoint, PendingRpc.create(channel, METHOD, DEFAULT_CALL_ID));
+        createCall(endpoint, PendingRpc.create(channel, METHOD, Endpoint.FIRST_CALL_ID));
 
     assertThat(endpoint.cancel(call)).isFalse();
     assertThat(endpoint.abandon(call)).isFalse();

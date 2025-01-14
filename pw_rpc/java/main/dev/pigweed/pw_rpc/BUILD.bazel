@@ -25,6 +25,7 @@ RPC_CLIENT_SOURCES = [
     "ChannelOutputException.java",
     "Client.java",
     "Endpoint.java",
+    "CallIdMode.java",
     "FutureCall.java",
     "Ids.java",
     "InvalidRpcChannelException.java",
