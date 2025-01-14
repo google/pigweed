@@ -57,3 +57,12 @@ sphinx_docs_library(
     prefix = "pw_digital_io_mcuxpresso/",
     target_compatible_with = incompatible_with_mcu(),
 )
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_digital_io_mcuxpresso/digital_io.h",
+        "public/pw_digital_io_mcuxpresso/interrupt_controller.h",
+        "public/pw_digital_io_mcuxpresso/interrupt_line.h",
+    ],
+)

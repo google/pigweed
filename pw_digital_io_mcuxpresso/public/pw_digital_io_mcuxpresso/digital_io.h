@@ -21,13 +21,25 @@ namespace pw::digital_io {
 
 PW_EXTERN_C void GPIO_INTA_DriverIRQHandler();
 
+/// Provides output-only support for an MCUXpresso GPIO pin.
+///
+/// Class-specific behaviors:
+/// * When `Disable` is called, the GPIO is configured as an input, which
+///   disables the output driver.
 class McuxpressoDigitalOut : public pw::digital_io::DigitalOut {
  public:
+  /// Constructs a McuxpressoDigitalOut for a specific GPIO module+port+pin.
+  ///
+  /// @param[in] base The base address of the GPIO module (e.g. `GPIO`).
+  /// @param[in] port The port number on the given GPIO module.
+  /// @param[in] pin The pin number on the given GPIO port.
+  /// @param[in] initial_state The state to be driven when the line is enabled.
   McuxpressoDigitalOut(GPIO_Type* base,
                        uint32_t port,
                        uint32_t pin,
                        pw::digital_io::State initial_state);
 
+  /// Returns true if the output is enabled.
   bool is_enabled() const { return enabled_; }
 
  private:
@@ -41,10 +53,23 @@ class McuxpressoDigitalOut : public pw::digital_io::DigitalOut {
   bool enabled_ = false;
 };
 
+/// Provides input-only support for an MCUXpresso GPIO pin.
+///
+/// Class-specific behaviors:
+/// * The input buffer for the pin must be enabled in the IO Pad Controller
+///   (`IOPCTL`) via the Input Buffer Enable (`IBENA`) bit.
+/// * The input polarity is affected by the Input Invert Enable (`IIENA`) bit
+///   on the corresponding IO Pad Controller (`IOPCTL`) register.
 class McuxpressoDigitalIn : public pw::digital_io::DigitalIn {
  public:
+  /// Constructs a McuxpressoDigitalIn for a specific GPIO module+port+pin.
+  ///
+  /// @param[in] base The base address of the GPIO module (e.g. `GPIO`).
+  /// @param[in] port The port number on the given GPIO module.
+  /// @param[in] pin The pin number on the given GPIO port.
   McuxpressoDigitalIn(GPIO_Type* base, uint32_t port, uint32_t pin);
 
+  /// Returns true if the input is enabled.
   bool is_enabled() const { return enabled_; }
 
  private:
@@ -57,15 +82,45 @@ class McuxpressoDigitalIn : public pw::digital_io::DigitalIn {
   bool enabled_ = false;
 };
 
+/// Provides input, output, and interrupt support for an MCUXpresso GPIO pin.
+///
+/// Interrupts are provided by IRQ "A" on the GPIO module.
+///
+/// Class-specific behaviors:
+/// * The direction of the pin cannot be changed after construction.
+/// * If configured as an output:
+///   * The default state on `Enable` is 0 (inactive).
+///   * `Disable` has no actual effect; unlike McuxpressoDigitalOut, the GPIO
+///     is not reverted to an input.
+/// * If configured as an input:
+///   * The input buffer for the pin must be enabled in the IO Pad Controller
+///     (`IOPCTL`) via the Input Buffer Enable (`IBENA`) bit.
+///   * The input polarity is affected by the Input Invert Enable (`IIENA`) bit
+///     on the corresponding IO Pad Controller (`IOPCTL`) register.
+/// * Only supports rising or falling edge detection: Calling
+///   `SetInterruptHandler()` with `InterruptTrigger::kBothEdges` will return
+///   `INVALID_ARGUMENT`.
 class McuxpressoDigitalInOutInterrupt
     : public pw::digital_io::DigitalInOutInterrupt,
       public pw::IntrusiveForwardList<McuxpressoDigitalInOutInterrupt>::Item {
  public:
+  /// Constructs a McuxpressoDigitalInOutInterrupt for a specific GPIO
+  /// module+port+pin.
+  ///
+  /// @param[in] base The base address of the GPIO module (e.g. `GPIO`).
+  ///
+  /// @param[in] port The port number on the given GPIO module.
+  ///
+  /// @param[in] pin The pin number on the given GPIO port.
+  ///
+  /// @param[in] output True if the line should be configured as an output on
+  /// enable; False if it should be an input.
   McuxpressoDigitalInOutInterrupt(GPIO_Type* base,
                                   uint32_t port,
                                   uint32_t pin,
                                   bool output);
 
+  /// Returns true if the line is enabled (in any state).
   bool is_enabled() const { return enabled_; }
 
  private:

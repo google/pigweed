@@ -20,8 +20,25 @@
 
 namespace pw::digital_io {
 
+/// Represents one interrupt on the PINT module.
+///
+/// Class-specific behaviors:
+/// * The pin must be attached to the PINT module via
+///   `INPUTMUX_AttachSignal()`.
+/// * `Enable` and `Disable` have no effect.
+/// * The input buffer for the pin must be enabled in the IO Pad Controller
+///   (`IOPCTL`) via the Input Buffer Enable (`IBENA`) bit.
+/// * The input polarity is affected by the Input Invert Enable (`IIENA`) bit
+///   on the corresponding IO Pad Controller (`IOPCTL`) register.
 class McuxpressoPintInterrupt : public pw::digital_io::DigitalInterrupt {
  public:
+  /// Constructs a McuxpressoPintInterrupt for a specific pin.
+  ///
+  /// @param[in] controller A `pw::sync::Borrowable` reference to the
+  /// `McuxpressoInterruptController` representing the PINT module.
+  ///
+  /// @param[in] pin The `pint_pin_int_t` enum member identifying the pin
+  /// interrupt on the PINT module.
   McuxpressoPintInterrupt(
       pw::sync::Borrowable<McuxpressoInterruptController>& controller,
       pint_pin_int_t pin);

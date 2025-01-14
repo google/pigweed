@@ -250,11 +250,25 @@
       "Python"
     ]
   },
+  "pw_digital_io": {
+    "tagline": "Digital I/O interface",
+    "status": "unstable",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_digital_io_linux": {
     "tagline": "Digital I/O interface for Linux userspace",
     "status": "unstable",
     "languages": [
       "C++17"
+    ]
+  },
+  "pw_digital_io_mcuxpresso": {
+    "tagline": "Digital I/O for NXP MCUXpresso",
+    "status": "unstable",
+    "languages": [
+      "C++"
     ]
   },
   "pw_display": {

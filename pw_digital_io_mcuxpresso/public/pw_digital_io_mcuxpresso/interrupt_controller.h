@@ -19,8 +19,17 @@
 
 namespace pw::digital_io {
 
+/// Abstracts the Pin Interrupt (PINT) module.
+///
+/// One instance of this class should be created to enable the creation of
+/// `McuxpressoPintInterrupt` lines; it is not intended to be otherwise used by
+/// end-users.
 class McuxpressoInterruptController {
  public:
+  /// Constructs a McuxpressoInterruptController for an instance of the PINT
+  /// module.
+  ///
+  /// @param[in] base The base address of the PINT module (e.g. `PINT`).
   McuxpressoInterruptController(PINT_Type* base);
   ~McuxpressoInterruptController();
 

@@ -172,6 +172,7 @@ filegroup(
         "//pw_containers:doxygen",
         "//pw_crypto:doxygen",
         "//pw_digital_io:doxygen",
+        "//pw_digital_io_mcuxpresso:doxygen",
         "//pw_display:doxygen",
         "//pw_elf:doxygen",
         "//pw_function:doxygen",
