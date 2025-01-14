@@ -343,8 +343,10 @@ struct StartA2dpOffloadCommand:
     [requires: 0x00000000 <= this <= 0x00FFFFFF]
 
   $next [+2]            UInt                   connection_handle
-    -- Connection handle of A2DP connection being configured (only the lower 12-bits are meaningful)
-    --   Range: 0x0000 to 0x0EFF
+    -- Connection handle of A2DP connection being configured (only the lower
+    -- 12-bits are meaningful)
+    --
+    -- Range: 0x0000 to 0x0EFF
     [requires: 0x0000 <= this <= 0x0EFF]
 
   $next [+2]            UInt                   l2cap_channel_id
@@ -611,7 +613,9 @@ enum ApcfSubOpcode:
   LOCAL_NAME               = 0x05
   MANUFACTURER_DATA        = 0x06
   SERVICE_DATA             = 0x07
+  TRANSPORT_DISCOVERY_DATA = 0x08
   AD_TYPE_FILTER           = 0x09
+  READ_EXTENDED_FEATURES   = 0xFF
 
 
 enum ApcfAction:
@@ -652,7 +656,8 @@ enum ApcfDeliveryMode:
   [maximum_bits: 8]
 
   IMMEDIATE = 0x00
-    -- Deliver a matching advertising packet immediately when the Controller sees
+    -- Deliver a matching advertising packet immediately when the Controller
+    -- sees
 
   ON_FOUND  = 0x01
     -- Linger up to a configurable timeout (via onfound_timeout and
@@ -671,7 +676,7 @@ enum ApcfApplicationAddressType:
     -- Random Device Address
 
   NOT_APPLICABLE = 0x02
-    -- Address type not applicable
+    -- Address type not applicable (ignore the address type)
 
 
 struct LEApcfCommandCompleteEvent:
@@ -686,7 +691,8 @@ struct LEApcfCommandCompleteEvent:
     -- Echo back of the action parameter provided in the original command
 
   $next [+1]         UInt                      available_spaces
-    -- Number of available entries in the Controller's filters table
+    -- Number of available entries in the Controller's filters table for the
+    -- filter type this command complete event is returned for
 
 
 struct LEApcfEnableCommand:
@@ -741,9 +747,9 @@ struct LEApcfSetFilteringParametersCommand:
       --    1: AND
       --
       -- NOTE: If AND logic is selected, an advertising packet will pass the
-      -- filter only if it contains all of the entries in the list. If OR logic is
-      -- selected, an advertising packet will pass the filter if it contains any
-      -- of the entries in the list.
+      -- filter only if it contains all of the entries in the list. If OR logic
+      -- is selected, an advertising packet will pass the filter if it contains
+      -- any of the entries in the list.
 
   $next [+1]  bits:
 
@@ -756,9 +762,9 @@ struct LEApcfSetFilteringParametersCommand:
       --    0: OR
       --    1: AND
       --
-      -- NOTE: The logic type for the first three fields of ApcfFeatureFilterLogic is always
-      -- AND. This bitmask is only applicable for bits 3 to 6 (four fields) of
-      -- ApcfFeatureFilterLogic.
+      -- NOTE: The logic type for the first three fields of
+      -- ApcfFeatureFilterLogic is always AND. This bitmask is only applicable
+      -- for bits 3 to 6 (four fields) of ApcfFeatureFilterLogic.
 
   $next [+1]                                       UInt                    rssi_high_threshold
     -- An advertiser is considered seen only if the signal is higher than the
@@ -818,6 +824,8 @@ struct LEApcfBroadcastAddressCommand:
     -- Device address to add to or delete from the broadcaster address list
 
   $next [+1]                          ApcfApplicationAddressType  peer_addr_type
+    -- To obtain advertising reports with identity address types, set this field
+    -- to NOT_APPLICABLE (ignore the address type).
 
 
 struct LEApcfServiceUUIDCommand(uuid_size: UInt:8):
