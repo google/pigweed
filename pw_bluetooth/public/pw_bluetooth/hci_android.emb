@@ -878,6 +878,8 @@ struct LEApcfSolicitationUUIDCommand(uuid_size: UInt:8):
 
 
 struct LEApcfLocalNameCommand(size: UInt:8):
+  [requires: 0 <= size <= 29]
+
   let vendor_size = AndroidCommandHeader.$size_in_bytes
 
   0     [+vendor_size]  AndroidCommandHeader  vendor_command
@@ -905,6 +907,8 @@ struct LEApcfLocalNameCommand(size: UInt:8):
 
 
 struct LEApcfManufacturerDataCommand(size: UInt:8):
+  [requires: 0 <= size <= 29]
+
   let vendor_size = AndroidCommandHeader.$size_in_bytes
 
   0     [+vendor_size]  AndroidCommandHeader  vendor_command
@@ -942,6 +946,8 @@ struct LEApcfManufacturerDataCommand(size: UInt:8):
 
 
 struct LEApcfServiceDataCommand(size: UInt:8):
+  [requires: 0 <= size <= 29]
+
   let vendor_size = AndroidCommandHeader.$size_in_bytes
 
   0     [+vendor_size]  AndroidCommandHeader  vendor_command
