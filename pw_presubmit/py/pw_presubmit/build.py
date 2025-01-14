@@ -53,6 +53,7 @@ from pw_presubmit.presubmit import (
     SubStep,
 )
 from pw_presubmit.presubmit_context import (
+    LuciContext,
     PresubmitContext,
     PresubmitFailure,
 )
@@ -72,13 +73,26 @@ _LOG = logging.getLogger(__name__)
 BAZEL_EXECUTABLE = 'bazel'
 
 
+def _get_remote_instance_name(ctx_luci: LuciContext) -> str:
+    instance_name = ''
+    if ctx_luci.project == 'pigweed':
+        instance_name = 'pigweed-rbe-open'
+    else:
+        instance_name = 'pigweed-rbe-private'
+    if ctx_luci.is_try:
+        instance_name += '-pre'
+
+    # pylint: disable-next=line-too-long
+    return f'--remote_instance_name=projects/{instance_name}/instances/default-instance'
+
+
 def bazel(
     ctx: PresubmitContext,
     cmd: str,
     *args: str,
+    stdout: io.TextIOWrapper | None = None,
     strict_module_lockfile: bool = False,
     use_remote_cache: bool = False,
-    stdout: io.TextIOWrapper | None = None,
     **kwargs,
 ) -> None:
     """Invokes Bazel with some common flags set.
@@ -101,10 +115,8 @@ def bazel(
     remote_cache: list[str] = []
     if use_remote_cache and ctx.luci:
         remote_cache.append('--config=remote_cache')
-        if ctx.luci.is_ci:
-            # Only CI builders should attempt to write to the cache. Try
-            # builders will be denied permission if they do so.
-            remote_cache.append('--remote_upload_local_results=true')
+        remote_cache.append('--remote_upload_local_results=true')
+        remote_cache.append(_get_remote_instance_name(ctx.luci))
 
     symlink_prefix: list[str] = []
     if cmd not in ('mod', 'query'):
