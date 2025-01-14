@@ -3657,7 +3657,7 @@ void FakeController::OnAndroidA2dpOffloadCommand(
   switch (subopcode) {
     case android_hci::kStartA2dpOffloadCommandSubopcode: {
       auto view = android_emb::MakeStartA2dpOffloadCommandView(
-          command_packet.data().data(), command_packet.data().size());
+          command_packet.data().data(), command_packet.size());
       OnAndroidStartA2dpOffload(view);
       break;
     }
@@ -4020,31 +4020,31 @@ void FakeController::OnAndroidLEMultiAdvt(
   switch (subopcode) {
     case android_hci::kLEMultiAdvtSetAdvtParamSubopcode: {
       auto params = android_emb::MakeLEMultiAdvtSetAdvtParamCommandView(
-          command_packet.data().data(), command_packet.data().size());
+          command_packet.data().data(), command_packet.size());
       OnAndroidLEMultiAdvtSetAdvtParam(params);
       break;
     }
     case android_hci::kLEMultiAdvtSetAdvtDataSubopcode: {
       auto params = android_emb::MakeLEMultiAdvtSetAdvtDataCommandView(
-          command_packet.data().data(), command_packet.data().size());
+          command_packet.data().data(), command_packet.size());
       OnAndroidLEMultiAdvtSetAdvtData(params);
       break;
     }
     case android_hci::kLEMultiAdvtSetScanRespSubopcode: {
       auto params = android_emb::MakeLEMultiAdvtSetScanRespDataCommandView(
-          command_packet.data().data(), command_packet.data().size());
+          command_packet.data().data(), command_packet.size());
       OnAndroidLEMultiAdvtSetScanResp(params);
       break;
     }
     case android_hci::kLEMultiAdvtSetRandomAddrSubopcode: {
       auto params = android_emb::MakeLEMultiAdvtSetRandomAddrCommandView(
-          command_packet.data().data(), command_packet.data().size());
+          command_packet.data().data(), command_packet.size());
       OnAndroidLEMultiAdvtSetRandomAddr(params);
       break;
     }
     case android_hci::kLEMultiAdvtEnableSubopcode: {
       auto view = android_emb::MakeLEMultiAdvtEnableCommandView(
-          command_packet.data().data(), command_packet.data().size());
+          command_packet.data().data(), command_packet.size());
       OnAndroidLEMultiAdvtEnable(view);
       break;
     }
