@@ -14,8 +14,8 @@
 
 #include <chrono>
 
+#include "pw_sync/borrow_testing.h"
 #include "pw_sync/mutex.h"
-#include "pw_sync_private/borrow_lockable_tests.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::sync {
@@ -59,7 +59,24 @@ TEST(Mutex, TryLockUnlock) {
   }
 }
 
-PW_SYNC_ADD_BORROWABLE_LOCK_NAMED_TESTS(BorrowableMutex, Mutex);
+// Unit tests for a `Borrowable`that uses a `Mutex` as its lock.
+using MutexBorrowTest = BorrowTest<Mutex>;
+
+TEST_F(MutexBorrowTest, Acquire) { TestAcquire(); }
+
+TEST_F(MutexBorrowTest, ConstAcquire) { TestConstAcquire(); }
+
+TEST_F(MutexBorrowTest, RepeatedAcquire) { TestRepeatedAcquire(); }
+
+TEST_F(MutexBorrowTest, Moveable) { TestMoveable(); }
+
+TEST_F(MutexBorrowTest, Copyable) { TestCopyable(); }
+
+TEST_F(MutexBorrowTest, CopyableCovariant) { TestCopyableCovariant(); }
+
+TEST_F(MutexBorrowTest, TryAcquireSuccess) { TestTryAcquireSuccess(); }
+
+TEST_F(MutexBorrowTest, TryAcquireFailure) { TestTryAcquireFailure(); }
 
 TEST(VirtualMutex, LockUnlock) {
   VirtualMutex mutex;
@@ -86,7 +103,24 @@ TEST(VirtualMutex, LockUnlockExternal) {
   mutex.unlock();
 }
 
-PW_SYNC_ADD_BORROWABLE_LOCK_NAMED_TESTS(BorrowableVirtualMutex, VirtualMutex);
+// Unit tests for a `Borrowable`that uses a `VirtualMutex` as its lock.
+using VirtualMutexBorrowTest = BorrowTest<VirtualMutex>;
+
+TEST_F(VirtualMutexBorrowTest, Acquire) { TestAcquire(); }
+
+TEST_F(VirtualMutexBorrowTest, ConstAcquire) { TestConstAcquire(); }
+
+TEST_F(VirtualMutexBorrowTest, RepeatedAcquire) { TestRepeatedAcquire(); }
+
+TEST_F(VirtualMutexBorrowTest, Moveable) { TestMoveable(); }
+
+TEST_F(VirtualMutexBorrowTest, Copyable) { TestCopyable(); }
+
+TEST_F(VirtualMutexBorrowTest, CopyableCovariant) { TestCopyableCovariant(); }
+
+TEST_F(VirtualMutexBorrowTest, TryAcquireSuccess) { TestTryAcquireSuccess(); }
+
+TEST_F(VirtualMutexBorrowTest, TryAcquireFailure) { TestTryAcquireFailure(); }
 
 TEST(Mutex, LockUnlockInC) {
   Mutex mutex;

@@ -81,8 +81,8 @@ class PW_LOCKABLE("pw::sync::InterruptSpinLock") InterruptSpinLock {
 };
 
 class PW_LOCKABLE("pw::sync::VirtualInterruptSpinLock")
-    VirtualInterruptSpinLock final
-    : public GenericBasicLockable<InterruptSpinLock> {};
+    VirtualInterruptSpinLock final : public GenericLockable<InterruptSpinLock> {
+};
 
 }  // namespace pw::sync
 

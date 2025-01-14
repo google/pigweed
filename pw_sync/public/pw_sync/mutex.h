@@ -86,7 +86,7 @@ class PW_LOCKABLE("pw::sync::Mutex") Mutex {
 };
 
 class PW_LOCKABLE("pw::sync::VirtualMutex") VirtualMutex final
-    : public GenericBasicLockable<Mutex> {
+    : public GenericLockable<Mutex> {
  public:
   Mutex& mutex() { return impl(); }
 };

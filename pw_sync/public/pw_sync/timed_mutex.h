@@ -71,9 +71,19 @@ class TimedMutex : public Mutex {
 };
 
 class PW_LOCKABLE("pw::sync::VirtualTimedMutex") VirtualTimedMutex final
-    : public GenericBasicLockable<TimedMutex> {
+    : public GenericLockable<TimedMutex> {
  public:
   TimedMutex& timed_mutex() { return impl(); }
+
+  [[nodiscard]] bool try_lock_for(chrono::SystemClock::duration timeout)
+      PW_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
+    return impl().try_lock_for(timeout);
+  }
+
+  [[nodiscard]] bool try_lock_until(chrono::SystemClock::time_point deadline)
+      PW_EXCLUSIVE_TRYLOCK_FUNCTION(true) {
+    return impl().try_lock_until(deadline);
+  }
 };
 
 }  // namespace pw::sync

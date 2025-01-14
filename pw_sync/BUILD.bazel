@@ -379,8 +379,9 @@ cc_library(
 )
 
 cc_library(
-    name = "borrow_lockable_tests",
-    hdrs = ["pw_sync_private/borrow_lockable_tests.h"],
+    name = "borrow_testing",
+    hdrs = ["public/pw_sync/borrow_testing.h"],
+    strip_include_prefix = "public",
     deps = [
         ":borrow",
         ":lock_traits",
@@ -401,7 +402,7 @@ pw_cc_test(
     srcs = ["borrow_test.cc"],
     deps = [
         ":borrow",
-        ":borrow_lockable_tests",
+        ":borrow_testing",
         ":lock_testing",
         "//pw_unit_test",
     ],
@@ -454,7 +455,7 @@ pw_cc_test(
         "mutex_facade_test_c.c",
     ],
     deps = [
-        ":borrow_lockable_tests",
+        ":borrow_testing",
         ":mutex",
         "//pw_preprocessor",
         "//pw_unit_test",
@@ -468,7 +469,7 @@ pw_cc_test(
         "timed_mutex_facade_test_c.c",
     ],
     deps = [
-        ":borrow_lockable_tests",
+        ":borrow_testing",
         ":timed_mutex",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
@@ -502,7 +503,7 @@ pw_cc_test(
         "//conditions:default": [],
     }),
     deps = [
-        ":borrow_lockable_tests",
+        ":borrow_testing",
         ":interrupt_spin_lock",
         "//pw_preprocessor",
         "//pw_unit_test",

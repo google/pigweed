@@ -15,8 +15,8 @@
 #include <chrono>
 
 #include "pw_chrono/system_clock.h"
+#include "pw_sync/borrow_testing.h"
 #include "pw_sync/timed_mutex.h"
-#include "pw_sync_private/borrow_lockable_tests.h"
 #include "pw_unit_test/framework.h"
 
 using pw::chrono::SystemClock;
@@ -116,9 +116,40 @@ TEST(TimedMutex, TryLockUnlockUntil) {
   // held by someone else and a timestamp in the past is used.
 }
 
-PW_SYNC_ADD_BORROWABLE_TIMED_LOCK_NAMED_TESTS(BorrowableTimedMutex,
-                                              TimedMutex,
-                                              chrono::SystemClock);
+// Unit tests for a `Borrowable`that uses a `TimedMutex` as its lock.
+using TimedMutexBorrowTest = BorrowTest<TimedMutex, chrono::SystemClock>;
+
+TEST_F(TimedMutexBorrowTest, Acquire) { TestAcquire(); }
+
+TEST_F(TimedMutexBorrowTest, ConstAcquire) { TestConstAcquire(); }
+
+TEST_F(TimedMutexBorrowTest, RepeatedAcquire) { TestRepeatedAcquire(); }
+
+TEST_F(TimedMutexBorrowTest, Moveable) { TestMoveable(); }
+
+TEST_F(TimedMutexBorrowTest, Copyable) { TestCopyable(); }
+
+TEST_F(TimedMutexBorrowTest, CopyableCovariant) { TestCopyableCovariant(); }
+
+TEST_F(TimedMutexBorrowTest, TryAcquireSuccess) { TestTryAcquireSuccess(); }
+
+TEST_F(TimedMutexBorrowTest, TryAcquireFailure) { TestTryAcquireFailure(); }
+
+TEST_F(TimedMutexBorrowTest, TryAcquireForSuccess) {
+  TestTryAcquireForSuccess();
+}
+
+TEST_F(TimedMutexBorrowTest, TryAcquireForFailure) {
+  TestTryAcquireForFailure();
+}
+
+TEST_F(TimedMutexBorrowTest, TryAcquireUntilSuccess) {
+  TestTryAcquireUntilSuccess();
+}
+
+TEST_F(TimedMutexBorrowTest, TryAcquireUntilFailure) {
+  TestTryAcquireUntilFailure();
+}
 
 TEST(VirtualTimedMutex, LockUnlock) {
   VirtualTimedMutex mutex;
@@ -147,9 +178,47 @@ TEST(VirtualMutex, LockUnlockExternal) {
   mutex.unlock();
 }
 
-PW_SYNC_ADD_BORROWABLE_TIMED_LOCK_NAMED_TESTS(BorrowableVirtualTimedMutex,
-                                              VirtualTimedMutex,
-                                              chrono::SystemClock);
+// Unit tests for a `Borrowable`that uses a `VirtualTimedMutex` as its lock.
+using VirtualTimedMutexBorrowTest =
+    BorrowTest<VirtualTimedMutex, chrono::SystemClock>;
+
+TEST_F(VirtualTimedMutexBorrowTest, Acquire) { TestAcquire(); }
+
+TEST_F(VirtualTimedMutexBorrowTest, ConstAcquire) { TestConstAcquire(); }
+
+TEST_F(VirtualTimedMutexBorrowTest, RepeatedAcquire) { TestRepeatedAcquire(); }
+
+TEST_F(VirtualTimedMutexBorrowTest, Moveable) { TestMoveable(); }
+
+TEST_F(VirtualTimedMutexBorrowTest, Copyable) { TestCopyable(); }
+
+TEST_F(VirtualTimedMutexBorrowTest, CopyableCovariant) {
+  TestCopyableCovariant();
+}
+
+TEST_F(VirtualTimedMutexBorrowTest, TryAcquireSuccess) {
+  TestTryAcquireSuccess();
+}
+
+TEST_F(VirtualTimedMutexBorrowTest, TryAcquireFailure) {
+  TestTryAcquireFailure();
+}
+
+TEST_F(VirtualTimedMutexBorrowTest, TryAcquireForSuccess) {
+  TestTryAcquireForSuccess();
+}
+
+TEST_F(VirtualTimedMutexBorrowTest, TryAcquireForFailure) {
+  TestTryAcquireForFailure();
+}
+
+TEST_F(VirtualTimedMutexBorrowTest, TryAcquireUntilSuccess) {
+  TestTryAcquireUntilSuccess();
+}
+
+TEST_F(VirtualTimedMutexBorrowTest, TryAcquireUntilFailure) {
+  TestTryAcquireUntilFailure();
+}
 
 TEST(TimedMutex, LockUnlockInC) {
   TimedMutex mutex;

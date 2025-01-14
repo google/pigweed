@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_sync/borrow_testing.h"
 #include "pw_sync/interrupt_spin_lock.h"
-#include "pw_sync_private/borrow_lockable_tests.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::sync {
@@ -60,8 +60,30 @@ TEST(InterruptSpinLock, TryLockUnlock) {
   }
 }
 
-PW_SYNC_ADD_BORROWABLE_LOCK_NAMED_TESTS(BorrowableInterruptSpinLock,
-                                        InterruptSpinLock);
+// Unit tests for a `Borrowable`that uses a `InterruptSpinLock` as its lock.
+using InterruptSpinLockBorrowTest = BorrowTest<InterruptSpinLock>;
+
+TEST_F(InterruptSpinLockBorrowTest, Acquire) { TestAcquire(); }
+
+TEST_F(InterruptSpinLockBorrowTest, ConstAcquire) { TestConstAcquire(); }
+
+TEST_F(InterruptSpinLockBorrowTest, RepeatedAcquire) { TestRepeatedAcquire(); }
+
+TEST_F(InterruptSpinLockBorrowTest, Moveable) { TestMoveable(); }
+
+TEST_F(InterruptSpinLockBorrowTest, Copyable) { TestCopyable(); }
+
+TEST_F(InterruptSpinLockBorrowTest, CopyableCovariant) {
+  TestCopyableCovariant();
+}
+
+TEST_F(InterruptSpinLockBorrowTest, TryAcquireSuccess) {
+  TestTryAcquireSuccess();
+}
+
+TEST_F(InterruptSpinLockBorrowTest, TryAcquireFailure) {
+  TestTryAcquireFailure();
+}
 
 TEST(VirtualInterruptSpinLock, LockUnlock) {
   pw::sync::VirtualInterruptSpinLock interrupt_spin_lock;
@@ -79,8 +101,33 @@ TEST(VirtualInterruptSpinLock, LockUnlockStatic) {
   static_virtual_interrupt_spin_lock.unlock();
 }
 
-PW_SYNC_ADD_BORROWABLE_LOCK_NAMED_TESTS(BorrowableVirtualInterruptSpinLock,
-                                        VirtualInterruptSpinLock);
+// Unit tests for a `Borrowable`that uses a `VirtualInterruptSpinLock` as its
+// lock.
+using VirtualInterruptSpinLockBorrowTest = BorrowTest<VirtualInterruptSpinLock>;
+
+TEST_F(VirtualInterruptSpinLockBorrowTest, Acquire) { TestAcquire(); }
+
+TEST_F(VirtualInterruptSpinLockBorrowTest, ConstAcquire) { TestConstAcquire(); }
+
+TEST_F(VirtualInterruptSpinLockBorrowTest, RepeatedAcquire) {
+  TestRepeatedAcquire();
+}
+
+TEST_F(VirtualInterruptSpinLockBorrowTest, Moveable) { TestMoveable(); }
+
+TEST_F(VirtualInterruptSpinLockBorrowTest, Copyable) { TestCopyable(); }
+
+TEST_F(VirtualInterruptSpinLockBorrowTest, CopyableCovariant) {
+  TestCopyableCovariant();
+}
+
+TEST_F(VirtualInterruptSpinLockBorrowTest, TryAcquireSuccess) {
+  TestTryAcquireSuccess();
+}
+
+TEST_F(VirtualInterruptSpinLockBorrowTest, TryAcquireFailure) {
+  TestTryAcquireFailure();
+}
 
 TEST(InterruptSpinLock, LockUnlockInC) {
   pw::sync::InterruptSpinLock interrupt_spin_lock;
