@@ -3,6 +3,8 @@
 ------------------
 pw_malloc_freertos
 ------------------
+.. pigweed-module::
+   :name: pw_malloc_freertos
 
 ``pw_malloc_freertos`` implements the ``pw_malloc`` facade using the FreeRTOS
 heap functions.

@@ -3,6 +3,9 @@
 ================
 pw_chrono_rp2040
 ================
+.. pigweed-module::
+   :name: pw_chrono_rp2040
+
 This module provides a pw_chrono backend suitable for use with an RP2040-based
 board (e.g. Raspberry Pi Pico). This backend works with baremetal operation of
 a Pi Pico, and may be suitable for RTOS contexts with some additional

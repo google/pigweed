@@ -3,6 +3,8 @@
 ===================
 pw_interrupt_zephyr
 ===================
+.. pigweed-module::
+   :name: pw_interrupt_zephyr
 
 --------
 Overview

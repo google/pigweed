@@ -3,6 +3,9 @@
 ==============
 pw_ring_buffer
 ==============
+.. pigweed-module::
+   :name: pw_ring_buffer
+
 The ``pw_ring_buffer`` module will eventually provide several ring buffer
 implementations, each with different tradeoffs.
 

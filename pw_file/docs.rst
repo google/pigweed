@@ -3,6 +3,8 @@
 =======
 pw_file
 =======
+.. pigweed-module::
+   :name: pw_file
 
 .. attention::
 

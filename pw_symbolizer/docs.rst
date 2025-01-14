@@ -3,6 +3,8 @@
 =============
 pw_symbolizer
 =============
+.. pigweed-module::
+   :name: pw_symbolizer
 
 .. warning::
   This module is under construction and may not be ready for use.

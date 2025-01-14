@@ -3,6 +3,9 @@
 -----------------------------
 pw_sys_io_baremetal_stm32f429
 -----------------------------
+.. pigweed-module::
+   :name: pw_sys_io_baremetal_stm32f429
+
 ``pw_sys_io_baremetal_stm32f429`` implements the ``pw_sys_io`` facade over
 UART.
 

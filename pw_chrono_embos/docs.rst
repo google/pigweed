@@ -3,6 +3,9 @@
 ---------------
 pw_chrono_embos
 ---------------
+.. pigweed-module::
+   :name: pw_chrono_embos
+
 ``pw_chrono_embos`` is a collection of ``pw_chrono`` backends that are
 implemented using embOS v4 for 32bit targets.
 

@@ -3,6 +3,8 @@
 ================
 pw_chrono_zephyr
 ================
+.. pigweed-module::
+   :name: pw_chrono_zephyr
 
 --------
 Overview

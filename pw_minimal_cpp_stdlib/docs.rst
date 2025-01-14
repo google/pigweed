@@ -3,6 +3,9 @@
 =====================
 pw_minimal_cpp_stdlib
 =====================
+.. pigweed-module::
+   :name: pw_minimal_cpp_stdlib
+
 .. admonition:: 🛑 Stop 🛑
 
    **Do not use this module** unless you have consulted with the Pigweed team.

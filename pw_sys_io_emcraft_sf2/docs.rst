@@ -3,6 +3,8 @@
 ---------------------
 pw_sys_io_emcraft_sf2
 ---------------------
+.. pigweed-module::
+   :name: pw_sys_io_emcraft_sf2
 
 ``pw_sys_io_emcraft_sf2`` implements the ``pw_sys_io`` facade over
 UART.

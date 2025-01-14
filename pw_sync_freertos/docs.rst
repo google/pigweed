@@ -3,6 +3,9 @@
 ================
 pw_sync_freertos
 ================
+.. pigweed-module::
+   :name: pw_sync_freertos
+
 This is a set of backends for pw_sync based on FreeRTOS.
 
 --------------------------------

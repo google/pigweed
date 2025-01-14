@@ -3,6 +3,9 @@
 =========================
 pw_stream_uart_mcuxpresso
 =========================
+.. pigweed-module::
+   :name: pw_stream_uart_mcuxpresso
+
 ``pw_stream_uart_mcuxpresso`` implements the ``pw_stream`` interface for reading
 and writing to a UART using the NXP MCUXpresso SDK. ``UartStreamMcuxpresso``
 version uses the CPU to read and write to the UART, while ``DmaUartMcuxpresso``

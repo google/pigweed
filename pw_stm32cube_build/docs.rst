@@ -3,6 +3,9 @@
 ==================
 pw_stm32cube_build
 ==================
+.. pigweed-module::
+   :name: pw_stm32cube_build
+
 The ``pw_stm32cube_build`` module provides helper utilities for building a
 target with the stm32cube HAL and/or the stm32cube initialization code.
 

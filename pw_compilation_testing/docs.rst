@@ -3,6 +3,9 @@
 ======================
 pw_compilation_testing
 ======================
+.. pigweed-module::
+   :name: pw_compilation_testing
+
 The pw_compilation_testing module provides for negative compilation (NC)
 testing. Negative compilation tests ensure that code that should not compile
 does not compile. Negative compilation testing is helpful in a variety of

@@ -3,6 +3,9 @@
 =============
 pw_thread_stl
 =============
+.. pigweed-module::
+   :name: pw_thread_stl
+
 This is a set of backends for pw_thread based on the C++ STL.
 
 -------------------

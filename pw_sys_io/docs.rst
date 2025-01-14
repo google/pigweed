@@ -3,6 +3,9 @@
 ---------
 pw_sys_io
 ---------
+.. pigweed-module::
+   :name: pw_sys_io
+
 This module defines a simple and unoptimized interface for byte-by-byte
 input/output. This can be done over a logging system, stdio, UART, via a
 photodiode and modulated kazoo, or basically any way to get data in and out

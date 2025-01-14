@@ -3,6 +3,8 @@
 =============
 pw_log_zephyr
 =============
+.. pigweed-module::
+   :name: pw_log_zephyr
 
 --------
 Overview

@@ -3,6 +3,9 @@
 ==================
 pw_trace_tokenized
 ==================
+.. pigweed-module::
+   :name: pw_trace_tokenized
+
 Pigweed's tracing module provides facilities for applications to trace
 information about the execution of their application. The module is split into
 two components:

@@ -3,6 +3,9 @@
 =======
 pw_rust
 =======
+.. pigweed-module::
+   :name: pw_rust
+
 Rust support in pigweed is **highly** experimental.  Currently functionality
 is split between Bazel and GN support.
 

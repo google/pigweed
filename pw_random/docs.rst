@@ -3,6 +3,9 @@
 =========
 pw_random
 =========
+.. pigweed-module::
+   :name: pw_random
+
 Pigweed's ``pw_random`` module provides a generic interface for random number
 generators, as well as some practical embedded-friendly implementations. While
 this module does not provide drivers for hardware random number generators, it

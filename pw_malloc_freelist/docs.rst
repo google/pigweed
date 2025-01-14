@@ -3,6 +3,8 @@
 ------------------
 pw_malloc_freelist
 ------------------
+.. pigweed-module::
+   :name: pw_malloc_freelist
 
 This module is deprecated. ``pw::allocator::FreeListHeap`` has been replaced by
 ``pw::allocator::BucketBlockAllocator``, which uses the same allocation

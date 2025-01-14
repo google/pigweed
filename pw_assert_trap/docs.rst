@@ -3,6 +3,8 @@
 ===============
 pw_assert_trap
 ===============
+.. pigweed-module::
+   :name: pw_assert_trap
 
 --------
 Overview

@@ -3,6 +3,8 @@
 -------------------
 pw_sys_io_stm32cube
 -------------------
+.. pigweed-module::
+   :name: pw_sys_io_stm32cube
 
 ``pw_sys_io_stm32cube`` implements the ``pw_sys_io`` facade over UART using
 the STM32Cube HAL to support an assortment of boards from STMicroelectronics.

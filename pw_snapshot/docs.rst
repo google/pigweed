@@ -3,6 +3,8 @@
 ===========
 pw_snapshot
 ===========
+.. pigweed-module::
+   :name: pw_snapshot
 
 .. warning::
 

@@ -3,6 +3,9 @@
 ==========
 pw_package
 ==========
+.. pigweed-module::
+   :name: pw_package
+
 The package module provides a mechanism to install additional tools used by
 Pigweed. Most Pigweed dependencies should be installed using
 :ref:`module-pw_env_setup`. Examples of reasons packages should be managed using

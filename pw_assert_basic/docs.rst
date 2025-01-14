@@ -3,6 +3,8 @@
 ===============
 pw_assert_basic
 ===============
+.. pigweed-module::
+   :name: pw_assert_basic
 
 --------
 Overview

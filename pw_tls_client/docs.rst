@@ -3,6 +3,8 @@
 --------------
 pw_tls_client
 --------------
+.. pigweed-module::
+   :name: pw_tls_client
 
 This module provides a facade that defines the public APIs for establishing TLS
 sessions over arbitrary transports. Two options of backends,

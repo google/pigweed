@@ -3,6 +3,9 @@
 ---------
 pw_module
 ---------
+.. pigweed-module::
+   :name: pw_module
+
 The ``pw_module`` module contains tools for managing Pigweed modules.
 For information on the structure of a Pigweed module, refer to
 :ref:`docs-module-guides`.

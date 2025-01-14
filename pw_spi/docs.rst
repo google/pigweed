@@ -3,6 +3,9 @@
 ======
 pw_spi
 ======
+.. pigweed-module::
+   :name: pw_spi
+
 Pigweed's SPI module provides a set of interfaces for communicating with SPI
 responders attached to a target. It also provides an interface for implementing
 SPI responders.

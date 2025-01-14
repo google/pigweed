@@ -1,8 +1,10 @@
 .. _module-pw_sync_zephyr:
 
-================
+==============
 pw_sync_zephyr
-================
+==============
+.. pigweed-module::
+   :name: pw_sync_zephyr
 
 --------
 Overview

@@ -3,6 +3,9 @@
 -------------
 pw_chrono_stl
 -------------
+.. pigweed-module::
+   :name: pw_chrono_stl
+
 ``pw_chrono_stl`` is a collection of ``pw_chrono`` backends that are implemented
 using STL's ``std::chrono`` library.
 

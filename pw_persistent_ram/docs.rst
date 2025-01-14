@@ -3,6 +3,9 @@
 =================
 pw_persistent_ram
 =================
+.. pigweed-module::
+   :name: pw_persistent_ram
+
 The ``pw_persistent_ram`` module contains utilities and containers for using
 persistent RAM. By persistent RAM we are referring to memory which is not
 initialized across reboots by the hardware nor bootloader(s). This memory may

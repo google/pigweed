@@ -3,6 +3,9 @@
 ----------------
 pw_cli_analytics
 ----------------
+.. pigweed-module::
+   :name: pw_cli_analytics
+
 This module collects and transmits analytics on usage of the ``pw`` command line
 interface. This will help the Pigweed team improve its command line utilities.
 By default this will be enabled, but it can be disabled on a per-project,

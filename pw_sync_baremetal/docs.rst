@@ -3,6 +3,9 @@
 =================
 pw_sync_baremetal
 =================
+.. pigweed-module::
+   :name: pw_sync_baremetal
+
 This is a set of backends for pw_sync that works on baremetal targets.
 
 .. note::

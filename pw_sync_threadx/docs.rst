@@ -3,6 +3,9 @@
 ===============
 pw_sync_threadx
 ===============
+.. pigweed-module::
+   :name: pw_sync_threadx
+
 This is a set of backends for pw_sync based on ThreadX.
 
 It is possible, if necessary, to use pw_sync_threadx without using the Pigweed

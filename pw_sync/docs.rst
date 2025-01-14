@@ -3,6 +3,9 @@
 =======
 pw_sync
 =======
+.. pigweed-module::
+   :name: pw_sync
+
 The ``pw_sync`` module contains utilities for synchronizing between threads
 and/or interrupts through signaling primitives and critical section lock
 primitives.

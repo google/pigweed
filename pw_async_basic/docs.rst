@@ -1,8 +1,10 @@
 .. _module-pw_async_basic:
 
-================
+==============
 pw_async_basic
-================
+==============
+.. pigweed-module::
+   :name: pw_async_basic
 
 This module includes basic implementations of pw_async's Dispatcher and
 FakeDispatcher.

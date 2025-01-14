@@ -1,8 +1,10 @@
 .. _module-pw_async2_basic:
 
-===================
+===============
 pw_async2_basic
-===================
+===============
+.. pigweed-module::
+   :name: pw_async2_basic
 
 --------
 Overview

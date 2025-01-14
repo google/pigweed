@@ -3,6 +3,9 @@
 =================
 pw_thread_threadx
 =================
+.. pigweed-module::
+   :name: pw_thread_threadx
+
 This is a set of backends for pw_thread based on ThreadX.
 
 -----------------------

@@ -3,6 +3,9 @@
 =============
 pw_sync_embos
 =============
+.. pigweed-module::
+   :name: pw_sync_embos
+
 This is a set of backends for pw_sync based on embOS v4.
 
 --------------------------------

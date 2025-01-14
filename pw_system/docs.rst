@@ -3,6 +3,9 @@
 =========
 pw_system
 =========
+.. pigweed-module::
+   :name: pw_system
+
 .. warning::
   This module is an early work-in-progress towards an opinionated framework for
   new projects built on Pigweed. It is under active development, so stay tuned!

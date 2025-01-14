@@ -3,6 +3,9 @@
 ====================
 pw_sys_io_mcuxpresso
 ====================
+.. pigweed-module::
+   :name: pw_sys_io_mcuxpresso
+
 ``pw_sys_io_mcuxpresso`` implements the ``pw_sys_io`` facade using the
 NXP MCUXpresso SDK.
 

@@ -3,6 +3,9 @@
 =============
 pw_containers
 =============
+.. pigweed-module::
+   :name: pw_containers
+
 The ``pw_containers`` module provides embedded-friendly container classes.
 
 ----------

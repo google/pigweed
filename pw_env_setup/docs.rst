@@ -3,6 +3,9 @@
 ------------
 pw_env_setup
 ------------
+.. pigweed-module::
+   :name: pw_env_setup
+
 A classic problem in the embedded space is reducing the time from git clone
 to having a binary executing on a device. The issue is that an entire suite
 of tools is needed for non-trivial production embedded projects. For example:

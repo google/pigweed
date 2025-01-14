@@ -3,6 +3,9 @@
 ====================
 pw_stream_uart_linux
 ====================
+.. pigweed-module::
+   :name: pw_stream_uart_linux
+
 ``pw_stream_uart_linux`` implements the
 :cpp:class:`pw::stream::NonSeekableReaderWriter` interface for reading from and
 writing to a UART using Linux TTY interfaces.

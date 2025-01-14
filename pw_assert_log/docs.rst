@@ -3,6 +3,8 @@
 =============
 pw_assert_log
 =============
+.. pigweed-module::
+   :name: pw_assert_log
 
 -----------------
 pw_assert_BACKEND

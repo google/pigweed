@@ -3,6 +3,9 @@
 ================
 pw_thread_zephyr
 ================
+.. pigweed-module::
+   :name: pw_thread_zephyr
+
 This is a set of backends for pw_thread based on the Zephyr RTOS.
 
 -----------------------

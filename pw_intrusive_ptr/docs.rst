@@ -3,6 +3,8 @@
 ----------------
 pw_intrusive_ptr
 ----------------
+.. pigweed-module::
+   :name: pw_intrusive_ptr
 
 IntrusivePtr
 ------------

@@ -5,6 +5,9 @@
 ==========
 pw_log_rpc
 ==========
+.. pigweed-module::
+   :name: pw_log_rpc
+
 An RPC-based logging solution for Pigweed with log filtering and log drops
 reporting.
 

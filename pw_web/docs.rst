@@ -1,8 +1,11 @@
 .. _module-pw_web:
 
----------
+------
 pw_web
----------
+------
+.. pigweed-module::
+   :name: pw_web
+
 Pigweed provides an NPM package with modules to build web apps for Pigweed
 devices.
 

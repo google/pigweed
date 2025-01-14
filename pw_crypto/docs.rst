@@ -3,6 +3,9 @@
 =========
 pw_crypto
 =========
+.. pigweed-module::
+   :name: pw_crypto
+
 A set of safe (read: easy to use, hard to misuse) crypto APIs.
 
 The following crypto services are provided by this module.

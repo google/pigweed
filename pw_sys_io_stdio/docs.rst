@@ -3,6 +3,9 @@
 ---------------
 pw_sys_io_stdio
 ---------------
+.. pigweed-module::
+   :name: pw_sys_io_stdio
+
 The ``pw_sys_io_stdio`` backend implements the ``pw_sys_io`` facade using
 stdio.
 

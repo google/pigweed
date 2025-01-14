@@ -3,6 +3,9 @@
 =================
 pw_spi_mcuxpresso
 =================
+.. pigweed-module::
+   :name: pw_spi_mcuxpresso
+
 ``pw_spi_mcuxpresso`` implements the :ref:`module-pw_spi` interfaces using the
 NXP MCUXpresso SDK.
 

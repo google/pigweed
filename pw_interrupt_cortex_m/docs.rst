@@ -3,5 +3,8 @@
 ---------------------
 pw_interrupt_cortex_m
 ---------------------
+.. pigweed-module::
+   :name: pw_interrupt_cortex_m
+
 Pigweed's interrupt Cortex-M module provides a set of architecture specific
 backends for ``pw_interrupt``.

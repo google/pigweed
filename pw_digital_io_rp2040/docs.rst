@@ -3,6 +3,9 @@
 --------------------
 pw_digital_io_rp2040
 --------------------
+.. pigweed-module::
+   :name: pw_digital_io_rp2040
+
 ``pw_digital_io_rp2040`` implements the :ref:`module-pw_digital_io` interface using
 the `Raspberry Pi Pico SDK <https://github.com/raspberrypi/pico-sdk/>`_.
 

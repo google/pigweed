@@ -44,6 +44,9 @@
       "C++"
     ]
   },
+  "pw_assert_basic": {
+    "status": "stable"
+  },
   "pw_assert_fuchsia": {
     "tagline": "pw_assert backend for Fuchsia",
     "status": "experimental",
@@ -51,6 +54,18 @@
       "C",
       "C++"
     ]
+  },
+  "pw_assert_log": {
+    "status": "stable"
+  },
+  "pw_assert_tokenized": {
+    "status": "stable"
+  },
+  "pw_assert_trap": {
+    "status": "stable"
+  },
+  "pw_assert_zephyr": {
+    "status": "stable"
   },
   "pw_async": {
     "tagline": "Portable APIs for asynchronous code",
@@ -65,6 +80,15 @@
     "languages": [
       "C++17"
     ]
+  },
+  "pw_async2_basic": {
+    "status": "unstable"
+  },
+  "pw_async2_epoll": {
+    "status": "unstable"
+  },
+  "pw_async_basic": {
+    "status": "unstable"
   },
   "pw_async_fuchsia": {
     "tagline": "Fuchsia backend for pw_async",
@@ -221,12 +245,33 @@
       "C++"
     ]
   },
+  "pw_chrono_embos": {
+    "status": "stable"
+  },
+  "pw_chrono_freertos": {
+    "status": "stable"
+  },
+  "pw_chrono_rp2040": {
+    "status": "stable"
+  },
+  "pw_chrono_stl": {
+    "status": "stable"
+  },
+  "pw_chrono_threadx": {
+    "status": "stable"
+  },
+  "pw_chrono_zephyr": {
+    "status": "stable"
+  },
   "pw_cli": {
     "tagline": "Enhance and accelerate custom command-line tooling",
     "status": "stable",
     "languages": [
       "Python"
     ]
+  },
+  "pw_cli_analytics": {
+    "status": "stable"
   },
   "pw_clock_tree": {
     "tagline": "Clock tree management for embedded devices",
@@ -242,6 +287,12 @@
       "C++17"
     ]
   },
+  "pw_compilation_testing": {
+    "status": "stable"
+  },
+  "pw_config_loader": {
+    "status": "stable"
+  },
   "pw_console": {
     "tagline": "Multi-purpose pluggable interactive console for dev & manufacturing",
     "status": "stable",
@@ -249,6 +300,21 @@
     "languages": [
       "Python"
     ]
+  },
+  "pw_containers": {
+    "status": "stable"
+  },
+  "pw_cpu_exception": {
+    "status": "stable"
+  },
+  "pw_cpu_exception_cortex_m": {
+    "status": "stable"
+  },
+  "pw_cpu_exception_risc_v": {
+    "status": "stable"
+  },
+  "pw_crypto": {
+    "status": "stable"
   },
   "pw_digital_io": {
     "tagline": "Digital I/O interface",
@@ -271,6 +337,9 @@
       "C++"
     ]
   },
+  "pw_digital_io_rp2040": {
+    "status": "stable"
+  },
   "pw_display": {
     "tagline": "Graphic display support and framebuffer management",
     "status": "experimental",
@@ -290,6 +359,9 @@
       "GN"
     ]
   },
+  "pw_doctor": {
+    "status": "stable"
+  },
   "pw_elf": {
     "tagline": "ELF file support",
     "status": "experimental",
@@ -305,9 +377,15 @@
       "CLI"
     ]
   },
+  "pw_env_setup": {
+    "status": "stable"
+  },
   "pw_env_setup_zephyr": {
     "tagline": "Zephyr utilities",
     "status": "experimental"
+  },
+  "pw_file": {
+    "status": "unstable"
   },
   "pw_format": {
     "tagline": "String formatting",
@@ -394,6 +472,21 @@
       "VS Code"
     ]
   },
+  "pw_interrupt": {
+    "status": "unstable"
+  },
+  "pw_interrupt_cortex_m": {
+    "status": "unstable"
+  },
+  "pw_interrupt_xtensa": {
+    "status": "unstable"
+  },
+  "pw_interrupt_zephyr": {
+    "status": "unstable"
+  },
+  "pw_intrusive_ptr": {
+    "status": "unstable"
+  },
   "pw_json": {
     "tagline": "Simple, efficient C++ JSON serialization",
     "status": "stable",
@@ -408,6 +501,12 @@
     "languages": [
       "C++17"
     ]
+  },
+  "pw_libc": {
+    "status": "unstable"
+  },
+  "pw_libcxx": {
+    "status": "unstable"
   },
   "pw_log": {
     "tagline": "Robust and portable logging for embedded projects",
@@ -426,6 +525,9 @@
       "C++"
     ]
   },
+  "pw_log_basic": {
+    "status": "stable"
+  },
   "pw_log_fuchsia": {
     "tagline": "Fuchsia logging backend",
     "status": "experimental",
@@ -433,6 +535,21 @@
       "C",
       "C++"
     ]
+  },
+  "pw_log_null": {
+    "status": "stable"
+  },
+  "pw_log_rpc": {
+    "status": "stable"
+  },
+  "pw_log_string": {
+    "status": "stable"
+  },
+  "pw_log_tokenized": {
+    "status": "stable"
+  },
+  "pw_log_zephyr": {
+    "status": "stable"
   },
   "pw_malloc": {
     "tagline": "Replacement interface for standard libc dynamic memory operations",
@@ -442,12 +559,30 @@
       "C++"
     ]
   },
+  "pw_malloc_freelist": {
+    "status": "stable"
+  },
+  "pw_malloc_freertos": {
+    "status": "stable"
+  },
+  "pw_metric": {
+    "status": "stable"
+  },
+  "pw_minimal_cpp_stdlib": {
+    "status": "stable"
+  },
+  "pw_module": {
+    "status": "stable"
+  },
   "pw_multibuf": {
     "tagline": "A buffer API optimized for zero-copy messaging",
     "status": "unstable",
     "languages": [
       "C++17"
     ]
+  },
+  "pw_multisink": {
+    "status": "stable"
   },
   "pw_numeric": {
     "tagline": "Efficient mathematical utilities for embedded",
@@ -456,12 +591,21 @@
       "C++"
     ]
   },
+  "pw_package": {
+    "status": "stable"
+  },
   "pw_perf_test": {
     "tagline": "Micro-benchmarks that are easy to write and run",
     "status": "unstable",
     "languages": [
       "C++17"
     ]
+  },
+  "pw_persistent_ram": {
+    "status": "stable"
+  },
+  "pw_polyfill": {
+    "status": "stable"
   },
   "pw_preprocessor": {
     "tagline": "Helpful preprocessor macros",
@@ -485,6 +629,12 @@
       "C++"
     ]
   },
+  "pw_protobuf_compiler": {
+    "status": "stable"
+  },
+  "pw_random": {
+    "status": "stable"
+  },
   "pw_random_fuchsia": {
     "tagline": "Fuchsia implementation of pw_random",
     "status": "experimental",
@@ -496,6 +646,9 @@
     "languages": [
       "C++17"
     ]
+  },
+  "pw_ring_buffer": {
+    "status": "stable"
   },
   "pw_router": {
     "tagline": "Transport-agnostic packet routing",
@@ -515,6 +668,12 @@
       "TypeScript"
     ]
   },
+  "pw_rpc_transport": {
+    "status": "unstable"
+  },
+  "pw_rust": {
+    "status": "experimental"
+  },
   "pw_sensor": {
     "tagline": "A modular way to see the world",
     "status": "experimental",
@@ -522,6 +681,9 @@
       "Python",
       "C++17"
     ]
+  },
+  "pw_snapshot": {
+    "status": "stable"
   },
   "pw_software_update": {
     "tagline": "Secure software delivery",
@@ -539,6 +701,9 @@
       "C++20"
     ]
   },
+  "pw_spi": {
+    "status": "stable"
+  },
   "pw_spi_linux": {
     "tagline": "SPI interface for Linux userspace",
     "status": "unstable",
@@ -546,6 +711,9 @@
       "C++17",
       "C++20"
     ]
+  },
+  "pw_spi_mcuxpresso": {
+    "status": "stable"
   },
   "pw_spi_rp2040": {
     "tagline": "Raspberry Pi RP2040 backend for pw_spi",
@@ -566,6 +734,9 @@
       "Rust"
     ]
   },
+  "pw_stm32cube_build": {
+    "status": "stable"
+  },
   "pw_stream": {
     "tagline": "A foundational interface for streaming data",
     "status": "stable",
@@ -573,6 +744,15 @@
       "C++",
       "Rust"
     ]
+  },
+  "pw_stream_shmem_mcuxpresso": {
+    "status": "stable"
+  },
+  "pw_stream_uart_linux": {
+    "status": "stable"
+  },
+  "pw_stream_uart_mcuxpresso": {
+    "status": "stable"
   },
   "pw_string": {
     "tagline": "Efficient, easy, and safe string manipulation",
@@ -582,12 +762,99 @@
       "C++17"
     ]
   },
+  "pw_symbolizer": {
+    "status": "stable"
+  },
+  "pw_sync": {
+    "status": "stable"
+  },
+  "pw_sync_baremetal": {
+    "status": "stable"
+  },
+  "pw_sync_embos": {
+    "status": "stable"
+  },
+  "pw_sync_freertos": {
+    "status": "stable"
+  },
+  "pw_sync_stl": {
+    "status": "stable"
+  },
+  "pw_sync_threadx": {
+    "status": "stable"
+  },
+  "pw_sync_zephyr": {
+    "status": "stable"
+  },
+  "pw_sys_io": {
+    "status": "stable"
+  },
+  "pw_sys_io_ambiq_sdk": {
+    "status": "stable"
+  },
+  "pw_sys_io_arduino": {
+    "status": "stable"
+  },
+  "pw_sys_io_baremetal_lm3s6965evb": {
+    "status": "stable"
+  },
+  "pw_sys_io_baremetal_stm32f429": {
+    "status": "stable"
+  },
+  "pw_sys_io_emcraft_sf2": {
+    "status": "stable"
+  },
+  "pw_sys_io_mcuxpresso": {
+    "status": "stable"
+  },
+  "pw_sys_io_rp2040": {
+    "status": "stable"
+  },
+  "pw_sys_io_stdio": {
+    "status": "stable"
+  },
+  "pw_sys_io_stm32cube": {
+    "status": "stable"
+  },
+  "pw_sys_io_zephyr": {
+    "status": "stable"
+  },
+  "pw_system": {
+    "status": "unstable"
+  },
   "pw_target_runner": {
     "tagline": "gRPC server for running executables in parallel",
     "status": "stable",
     "languages": [
       "Go"
     ]
+  },
+  "pw_thread": {
+    "status": "stable"
+  },
+  "pw_thread_embos": {
+    "status": "stable"
+  },
+  "pw_thread_freertos": {
+    "status": "stable"
+  },
+  "pw_thread_stl": {
+    "status": "stable"
+  },
+  "pw_thread_threadx": {
+    "status": "stable"
+  },
+  "pw_thread_zephyr": {
+    "status": "stable"
+  },
+  "pw_tls_client": {
+    "status": "stable"
+  },
+  "pw_tls_client_boringssl": {
+    "status": "stable"
+  },
+  "pw_tls_client_mbedtls": {
+    "status": "stable"
   },
   "pw_tokenizer": {
     "tagline": "Compress strings to shrink logs by +75%",
@@ -616,6 +883,15 @@
       "Starlark"
     ]
   },
+  "pw_trace": {
+    "status": "stable"
+  },
+  "pw_trace_tokenized": {
+    "status": "stable"
+  },
+  "pw_transfer": {
+    "status": "stable"
+  },
   "pw_uart": {
     "tagline": "Core interfaces for UART communication",
     "status": "unstable",
@@ -634,6 +910,9 @@
     "tagline": "GoogleTest for embedded",
     "status": "stable"
   },
+  "pw_unit_test_zephyr": {
+    "status": "stable"
+  },
   "pw_varint": {
     "tagline": "Functions for encoding and decoding variable length integers",
     "status": "stable",
@@ -645,6 +924,12 @@
   },
   "pw_watch": {
     "tagline": "Embedded development file system watcher",
+    "status": "stable"
+  },
+  "pw_web": {
+    "status": "stable"
+  },
+  "pw_work_queue": {
     "status": "stable"
   }
 }

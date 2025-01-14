@@ -3,6 +3,9 @@
 ===========
 pw_polyfill
 ===========
+.. pigweed-module::
+   :name: pw_polyfill
+
 The ``pw_polyfill`` module supports compiling code against different C++
 standards.
 

@@ -3,6 +3,8 @@
 ================
 pw_assert_zephyr
 ================
+.. pigweed-module::
+   :name: pw_assert_zephyr
 
 --------
 Overview

@@ -3,6 +3,9 @@
 ----------------
 pw_config_loader
 ----------------
+.. pigweed-module::
+   :name: pw_config_loader
+
 This directory contains the code to extract specific sections of user-specific
 configuration files for different parts of Pigweed.
 

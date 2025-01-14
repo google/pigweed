@@ -3,6 +3,9 @@
 =========================
 pw_cpu_exception_cortex_m
 =========================
+.. pigweed-module::
+   :name: pw_cpu_exception_cortex_m
+
 This module provides backend implementations for the CPU exception module frontend
 for the following Cortex-M architectures:
 

@@ -3,6 +3,9 @@
 ================
 pw_rpc_transport
 ================
+.. pigweed-module::
+   :name: pw_rpc_transport
+
 The ``pw_rpc_transport`` provides a transport layer for ``pw_rpc``.
 
 .. warning::

@@ -3,6 +3,9 @@
 ===============
 pw_thread_embos
 ===============
+.. pigweed-module::
+   :name: pw_thread_embos
+
 This is a set of backends for pw_thread based on embOS v4.
 
 -----------------------

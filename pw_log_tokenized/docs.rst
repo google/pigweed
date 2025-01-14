@@ -3,6 +3,9 @@
 ----------------
 pw_log_tokenized
 ----------------
+.. pigweed-module::
+   :name: pw_log_tokenized
+
 The ``pw_log_tokenized`` module contains utilities for tokenized logging. It
 connects ``pw_log`` to ``pw_tokenizer`` and supports
 :ref:`module-pw_log-tokenized-args`.

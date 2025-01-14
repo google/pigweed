@@ -3,6 +3,9 @@
 =======================
 pw_cpu_exception_risc_v
 =======================
+.. pigweed-module::
+   :name: pw_cpu_exception_risc_v
+
 This module lays the foundation for implementing a backend cpu exception
 for the RISCV architectures:
 

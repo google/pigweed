@@ -3,6 +3,8 @@
 ===================
 pw_assert_tokenized
 ===================
+.. pigweed-module::
+   :name: pw_assert_tokenized
 
 --------
 Overview

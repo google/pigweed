@@ -3,6 +3,9 @@
 ===================
 pw_sys_io_ambiq_sdk
 ===================
+.. pigweed-module::
+   :name: pw_sys_io_ambiq_sdk
+
 ``pw_sys_io_ambiq_sdk`` implements the ``pw_sys_io`` facade over UART using the
 Ambiq Suite SDK HAL.
 

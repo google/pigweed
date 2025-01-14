@@ -5,6 +5,9 @@
 =========
 pw_stream
 =========
+.. pigweed-module::
+   :name: pw_stream
+
 ``pw_stream`` provides a foundational interface for streaming data from one part
 of a system to another. In the simplest use cases, this is basically a memcpy
 behind a reusable interface that can be passed around the system. On the other

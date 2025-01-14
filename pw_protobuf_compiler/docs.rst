@@ -3,6 +3,9 @@
 ====================
 pw_protobuf_compiler
 ====================
+.. pigweed-module::
+   :name: pw_protobuf_compiler
+
 The Protobuf compiler module provides build system integration and wrapper
 scripts for generating source code for Protobuf definitions.
 

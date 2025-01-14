@@ -3,6 +3,9 @@
 ==========================
 pw_stream_shmem_mcuxpresso
 ==========================
+.. pigweed-module::
+   :name: pw_stream_shmem_mcuxpresso
+
 ``pw_stream_shmem_mcuxpresso`` implements the ``pw_stream`` interface for
 reading and writing between two different processor cores via shared memory
 using the NXP MCUXpresso SDK. It uses the messaging unit module (MU) to signal

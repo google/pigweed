@@ -3,6 +3,8 @@
 =========
 pw_metric
 =========
+.. pigweed-module::
+   :name: pw_metric
 
 .. attention::
    This module is **not yet production ready**; ask us if you are interested in

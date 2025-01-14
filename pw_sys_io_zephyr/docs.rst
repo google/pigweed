@@ -3,6 +3,8 @@
 ================
 pw_sys_io_zephyr
 ================
+.. pigweed-module::
+   :name: pw_sys_io_zephyr
 
 --------
 Overview
