@@ -5,9 +5,6 @@ pw_thread_threadx
 =================
 This is a set of backends for pw_thread based on ThreadX.
 
-.. Warning::
-   This module is still under construction, the API is not yet stable.
-
 -----------------------
 Thread Creation Backend
 -----------------------

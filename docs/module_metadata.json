@@ -161,7 +161,7 @@
   },
   "pw_build_android": {
     "tagline": "Utilities for using Pigweed in Android platform",
-    "status": "unstable",
+    "status": "stable",
     "languages": [
       "C++20"
     ]
@@ -252,21 +252,21 @@
   },
   "pw_digital_io": {
     "tagline": "Digital I/O interface",
-    "status": "unstable",
+    "status": "stable",
     "languages": [
       "C++"
     ]
   },
   "pw_digital_io_linux": {
     "tagline": "Digital I/O interface for Linux userspace",
-    "status": "unstable",
+    "status": "stable",
     "languages": [
       "C++17"
     ]
   },
   "pw_digital_io_mcuxpresso": {
     "tagline": "Digital I/O for NXP MCUXpresso",
-    "status": "unstable",
+    "status": "stable",
     "languages": [
       "C++"
     ]
@@ -421,7 +421,7 @@
   },
   "pw_log_android": {
     "tagline": "Android logging backend",
-    "status": "unstable",
+    "status": "stable",
     "languages": [
       "C++"
     ]

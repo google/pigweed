@@ -6,9 +6,6 @@ pw_chrono_embos
 ``pw_chrono_embos`` is a collection of ``pw_chrono`` backends that are
 implemented using embOS v4 for 32bit targets.
 
-.. warning::
-  This module is still under construction, the API is not yet stable.
-
 SystemClock backend
 -------------------
 The embOS based ``system_clock`` backend implements the

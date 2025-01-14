@@ -5,9 +5,6 @@ pw_thread_freertos
 ==================
 This is a set of backends for pw_thread based on FreeRTOS.
 
-.. Warning::
-  This module is still under construction, the API is not yet stable.
-
 -----------------------
 Thread Creation Backend
 -----------------------

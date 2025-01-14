@@ -5,10 +5,6 @@ pw_thread_zephyr
 ================
 This is a set of backends for pw_thread based on the Zephyr RTOS.
 
-.. Warning::
-  This module is still under construction, the API is not yet stable and
-  documentation is incomplete.
-
 -----------------------
 Thread Creation Backend
 -----------------------

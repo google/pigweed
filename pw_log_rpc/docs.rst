@@ -6,10 +6,7 @@
 pw_log_rpc
 ==========
 An RPC-based logging solution for Pigweed with log filtering and log drops
-reporting -- coming soon!
-
-.. warning::
-  This module is under construction and might change in the future.
+reporting.
 
 -----------
 RPC Logging

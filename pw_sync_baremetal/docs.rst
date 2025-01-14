@@ -3,8 +3,7 @@
 =================
 pw_sync_baremetal
 =================
-This is a set of backends for pw_sync that works on baremetal targets. It is not
-ready for use, and is under construction.
+This is a set of backends for pw_sync that works on baremetal targets.
 
 .. note::
   All constructs in this baremetal backend do not support hardware

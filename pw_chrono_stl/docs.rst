@@ -6,9 +6,6 @@ pw_chrono_stl
 ``pw_chrono_stl`` is a collection of ``pw_chrono`` backends that are implemented
 using STL's ``std::chrono`` library.
 
-.. warning::
-  This module is still under construction, the API is not yet stable.
-
 SystemClock backend
 -------------------
 The STL based ``pw_chrono_stl:system_clock`` backend target implements the
