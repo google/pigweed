@@ -1123,6 +1123,77 @@ class DetokenizeNestedDomains(unittest.TestCase):
             'This is domain2 and this is domain1',
         )
 
+    def test_double_nested_base64_arg_multiple_domains(self) -> None:
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(1, 'Ignore this', 'D1'),
+                    tokens.TokenizedStringEntry(
+                        2, 'This is a ${${D2}#00000004}#00000003', 'D1'
+                    ),
+                    tokens.TokenizedStringEntry(
+                        3, 'double nested base64 argument', 'D3'
+                    ),
+                    tokens.TokenizedStringEntry(4, 'D3', 'D2'),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x14')),  # token for 2
+            'This is a double nested base64 argument',
+        )
+
+    def test_empty_domain(self) -> None:
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(0xA, 'an empty domain!', ''),
+                    tokens.TokenizedStringEntry(
+                        2, 'This argument is in ' + '${}#%08x', 'D1'
+                    ),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x14')),  # token for 2
+            'This argument is in an empty domain!',
+        )
+
+    def test_whitespace_before_domain(self) -> None:
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(0xA, 'domain 2', 'D2'),
+                    tokens.TokenizedStringEntry(
+                        2, 'This argument is in ' + '${      D2}#%08x', 'D1'
+                    ),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x14')),  # token for 2
+            'This argument is in domain 2',
+        )
+
+    def test_nested_token_without_domain(self) -> None:
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(1, 'D3', ''),
+                    tokens.TokenizedStringEntry(
+                        2, '${$AQAAAA==}#00000003', 'D1'
+                    ),
+                    tokens.TokenizedStringEntry(
+                        3, 'This is a double-nested token :)', 'D3'
+                    ),
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\x02\0\0\0\x14')),  # token for 2
+            'This is a double-nested token :)',
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -102,9 +102,7 @@ def _token_regex(prefix: str) -> Pattern[bytes]:
         # Brackets ({}) specifies domain string
         + rb'(?P<domainspec>('
         + NESTED_DOMAIN_START_PREFIX
-        + rb'(?P<domain>[^'
-        + NESTED_DOMAIN_END_PREFIX
-        + rb']*)'
+        + rb'(?P<domain>\s*|\s*[a-zA-Z_:][a-zA-Z0-9_:\s]*)'
         + NESTED_DOMAIN_END_PREFIX
         + rb'))?'
         # Optional; no base specifier defaults to BASE64.
