@@ -17,6 +17,7 @@ _rust_toolchain_template = """\
 rust_toolchain(
     name = "{name}_rust_toolchain",
     binary_ext = "",
+    cargo = "{toolchain_repo}//:bin/cargo",
     clippy_driver = "{toolchain_repo}//:bin/clippy-driver",
     default_edition = "2021",
     dylib_ext = "{dylib_ext}",
