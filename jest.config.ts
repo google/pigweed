@@ -21,7 +21,7 @@ const paths = {
 };
 const config: InitialOptionsTsJest = {
   preset: 'ts-jest/presets/js-with-ts',
-  testRegex: '(/__tests__/.*|(\\_|/)(test|spec))\\.[jt]sx?$',
+  testRegex: '(/__tests__/.*|(\\_|/)(test|spec))\\.tsx?$',
   moduleNameMapper: pathsToModuleNameMapper(paths, { prefix: '<rootDir>/' }),
 };
 

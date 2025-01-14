@@ -81,7 +81,7 @@
     "requirejs": "^2.3.6",
     "rimraf": "^3.0.2",
     "rollup": "^2.52.8",
-    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-builtins": "^2.0.0",
     "rollup-plugin-node-globals": "^1.4.0",
     "rollup-plugin-node-polyfills": "^0.2.1",
     "rollup-plugin-postcss": "^4.0.2",
