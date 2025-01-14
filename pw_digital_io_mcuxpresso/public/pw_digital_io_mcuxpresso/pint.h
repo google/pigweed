@@ -46,9 +46,6 @@ class McuxpressoPintController {
   PINT_Type* base_;
 };
 
-// Deprecated alias.
-using McuxpressoInterruptController = McuxpressoPintController;
-
 /// Represents one interrupt on the PINT module.
 ///
 /// Class-specific behaviors:

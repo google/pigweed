@@ -280,8 +280,6 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_digital_io/public/pw_digital_io/digital_io.h",
   "$dir_pw_digital_io/public/pw_digital_io/digital_io_mock.h",
   "$dir_pw_digital_io_mcuxpresso/public/pw_digital_io_mcuxpresso/digital_io.h",
-  "$dir_pw_digital_io_mcuxpresso/public/pw_digital_io_mcuxpresso/interrupt_controller.h",
-  "$dir_pw_digital_io_mcuxpresso/public/pw_digital_io_mcuxpresso/interrupt_line.h",
   "$dir_pw_digital_io_mcuxpresso/public/pw_digital_io_mcuxpresso/pint.h",
   "$dir_pw_display/public/pw_display/color.h",
   "$dir_pw_elf/public/pw_elf/reader.h",

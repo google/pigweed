@@ -28,8 +28,6 @@ cc_library(
     ],
     hdrs = [
         "public/pw_digital_io_mcuxpresso/digital_io.h",
-        "public/pw_digital_io_mcuxpresso/interrupt_controller.h",
-        "public/pw_digital_io_mcuxpresso/interrupt_line.h",
         "public/pw_digital_io_mcuxpresso/pint.h",
     ],
     strip_include_prefix = "public",
