@@ -642,11 +642,11 @@ impl PrintfFormatStringFragment {
                 })
             }
             #[cfg(feature = "nightly_tait")]
-            Self::Expr { expr, format_trait } => Ok(quote! {
+            Self::Expr { arg, format_trait } => Ok(quote! {
               {
                 use #crate_name::#format_trait;
                 type T = impl #format_trait;
-                let _: &T = &(#expr);
+                let _: &T = &(#arg);
                 let arg = <T as #format_trait>::FORMAT_ARG;
                 arg
               }
