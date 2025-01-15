@@ -218,6 +218,7 @@ TEST_F(LegacyPairingStateTest, BuildEstablishedLink) {
   EXPECT_FALSE(connection()->ltk().has_value());
   EXPECT_TRUE(pairing_state.link_key().has_value());
   EXPECT_EQ(kTestLinkKey, pairing_state.link_key().value());
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
 
   // Authentication is done and connection gets made by BrEdrConnectionManager.
   // For testing, we manually set the link info using |connection()|
@@ -231,6 +232,7 @@ TEST_F(LegacyPairingStateTest, BuildEstablishedLink) {
   EXPECT_TRUE(connection()->ltk().has_value());
   EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
   EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(LegacyPairingStateTest, PairingStateStartsAsResponder) {
@@ -259,6 +261,7 @@ TEST_F(LegacyPairingStateTest,
   // |auth_cb| is only called if initiation was successful
   EXPECT_EQ(0, auth_request_count());
   EXPECT_FALSE(pairing_state.initiator());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(LegacyPairingStateTest, NeverInitiateLegacyPairingWhenPeerSupportsSSP) {
@@ -311,6 +314,7 @@ TEST_F(LegacyPairingStateTest,
   EXPECT_FALSE(pairing_state.initiator());
   ASSERT_EQ(1, initiator_status_handler.call_count());
   EXPECT_EQ(fit::ok(), *initiator_status_handler.status());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(
@@ -336,6 +340,7 @@ TEST_F(
   EXPECT_FALSE(connection()->ltk().has_value());
   EXPECT_TRUE(pairing_state.link_key().has_value());
   EXPECT_EQ(kTestLinkKey, pairing_state.link_key().value());
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(
@@ -493,6 +498,7 @@ TEST_F(LegacyPairingStateTest,
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
   EXPECT_EQ(ToResult(HostError::kFailed), *status_handler.status());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(LegacyPairingStateTest, PairingInitiatorWithNoInputGeneratesRandomPin) {
@@ -803,6 +809,7 @@ TEST_F(
   ASSERT_EQ(1, status_handler.call_count());
   EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE),
             status_handler.status().value());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(LegacyPairingStateTest,
@@ -1014,6 +1021,7 @@ TEST_F(LegacyPairingStateTest,
 
   // Advance state machine as pairing responder.
   pairing_state.OnPinCodeRequest(NoOpUserPinCodeCallback);
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
 
   // Try to initiate pairing while pairing is in progress.
   TestStatusHandler status_handler;
@@ -1037,6 +1045,7 @@ TEST_F(LegacyPairingStateTest,
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
   EXPECT_EQ(fit::ok(), *status_handler.status());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 
   // Errors for a new pairing shouldn't invoke the attempted initiator's
   // callback.

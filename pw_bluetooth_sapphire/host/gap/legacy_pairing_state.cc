@@ -255,7 +255,8 @@ std::optional<hci_spec::LinkKey> LegacyPairingState::OnLinkKeyRequest() {
   if (state_ == State::kIdle) {
     if (link_key.has_value()) {
       PW_CHECK(!is_pairing());
-      current_pairing_ = Pairing::MakeResponderForBonded();
+      current_pairing_ =
+          Pairing::MakeResponderForBonded(peer_->MutBrEdr().RegisterPairing());
       state_ = State::kWaitEncryption;
       return link_key->key();
     }
@@ -292,7 +293,8 @@ void LegacyPairingState::OnPinCodeRequest(UserPinCodeCallback cb) {
 
   if (state_ == State::kIdle) {
     PW_CHECK(!is_pairing());
-    current_pairing_ = Pairing::MakeResponder(outgoing_connection_);
+    current_pairing_ = Pairing::MakeResponder(
+        outgoing_connection_, peer_->MutBrEdr().RegisterPairing());
   }
 
   PW_CHECK(pairing_delegate_.is_alive());
@@ -538,9 +540,12 @@ void LegacyPairingState::OnEncryptionChange(hci::Result<bool> result) {
 
 std::unique_ptr<LegacyPairingState::Pairing>
 LegacyPairingState::Pairing::MakeInitiator(
-    BrEdrSecurityRequirements security_requirements, bool outgoing_connection) {
+    BrEdrSecurityRequirements security_requirements,
+    bool outgoing_connection,
+    Peer::PairingToken&& token) {
   // Private constructor is inaccessible to std::make_unique
-  std::unique_ptr<Pairing> pairing(new Pairing(outgoing_connection));
+  std::unique_ptr<Pairing> pairing(
+      new Pairing(outgoing_connection, std::move(token)));
   pairing->initiator = true;
   pairing->preferred_security = security_requirements;
   return pairing;
@@ -549,9 +554,11 @@ LegacyPairingState::Pairing::MakeInitiator(
 std::unique_ptr<LegacyPairingState::Pairing>
 LegacyPairingState::Pairing::MakeResponder(
     bool outgoing_connection,
+    Peer::PairingToken&& token,
     std::optional<pw::bluetooth::emboss::IoCapability> peer_iocap) {
   // Private constructor is inaccessible to std::make_unique
-  std::unique_ptr<Pairing> pairing(new Pairing(outgoing_connection));
+  std::unique_ptr<Pairing> pairing(
+      new Pairing(outgoing_connection, std::move(token)));
   pairing->initiator = false;
   if (peer_iocap.has_value()) {
     pairing->peer_iocap = peer_iocap.value();
@@ -562,8 +569,10 @@ LegacyPairingState::Pairing::MakeResponder(
 }
 
 std::unique_ptr<LegacyPairingState::Pairing>
-LegacyPairingState::Pairing::MakeResponderForBonded() {
-  std::unique_ptr<Pairing> pairing(new Pairing(/*outgoing_connection=*/false));
+LegacyPairingState::Pairing::MakeResponderForBonded(
+    Peer::PairingToken&& token) {
+  std::unique_ptr<Pairing> pairing(
+      new Pairing(/*outgoing_connection=*/false, std::move(token)));
   pairing->initiator = false;
   // Do not try to upgrade security as responder
   pairing->preferred_security = kNoSecurityRequirements;
@@ -645,8 +654,10 @@ void LegacyPairingState::InitiateNextPairingRequest() {
 
   PairingRequest& request = request_queue_.front();
 
-  current_pairing_ = Pairing::MakeInitiator(request.security_requirements,
-                                            outgoing_connection_);
+  current_pairing_ =
+      Pairing::MakeInitiator(request.security_requirements,
+                             outgoing_connection_,
+                             peer_->MutBrEdr().RegisterPairing());
   bt_log(DEBUG,
          "gap-bredr",
          "Initiating queued pairing on link %#.4x for peer id %s",

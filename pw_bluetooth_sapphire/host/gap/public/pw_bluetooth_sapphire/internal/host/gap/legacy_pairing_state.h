@@ -201,13 +201,16 @@ class LegacyPairingState final {
    public:
     static std::unique_ptr<Pairing> MakeInitiator(
         BrEdrSecurityRequirements security_requirements,
-        bool outgoing_connection);
+        bool outgoing_connection,
+        Peer::PairingToken&& token);
     static std::unique_ptr<Pairing> MakeResponder(
         bool outgoing_connection,
+        Peer::PairingToken&& token,
         std::optional<pw::bluetooth::emboss::IoCapability> peer_iocap =
             std::nullopt);
     // Make a responder for a peer that has initiated pairing.
-    static std::unique_ptr<Pairing> MakeResponderForBonded();
+    static std::unique_ptr<Pairing> MakeResponderForBonded(
+        Peer::PairingToken&& token);
 
     // Used to prevent PairingDelegate callbacks from using captured stale
     // pointers.
@@ -244,9 +247,13 @@ class LegacyPairingState final {
     // properties).
     BrEdrSecurityRequirements preferred_security;
 
+    Peer::PairingToken pairing_token;
+
    private:
-    explicit Pairing(bool automatic)
-        : allow_automatic(automatic), weak_self_(this) {}
+    explicit Pairing(bool automatic, Peer::PairingToken&& token)
+        : allow_automatic(automatic),
+          pairing_token(std::move(token)),
+          weak_self_(this) {}
 
     WeakSelf<Pairing> weak_self_;
   };
