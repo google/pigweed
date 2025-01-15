@@ -284,8 +284,8 @@ class ProxyHostTest : public testing::Test {
  private:
   // MultiBuf allocator for creating objects to pass to the system under
   // test (e.g. creating test packets to send to proxy host).
-  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/2048,
-                                             /*kMetaSizeBytes=*/512>
+  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/2 * 1024,
+                                             /*kMetaSizeBytes=*/2 * 1024>
       test_multibuf_allocator_{};
 
   // Default MultiBuf allocator to be passed to system under test (e.g.

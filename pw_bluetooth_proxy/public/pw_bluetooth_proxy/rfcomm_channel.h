@@ -87,14 +87,8 @@ class RfcommChannel final : public L2capChannel {
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
-  // @deprecated
-  // TODO: https://pwbug.dev/379337272 - Delete this once all downstreams
-  // have transitioned to Write(MultiBuf) for this channel type.
-  Status Write(pw::span<const uint8_t> payload) override;
-
-  // Also make visible Write(MultiBuf)
-  // TODO: https://pwbug.dev/379337272 - Can delete when Write(span) is deleted.
-  using L2capChannel::Write;
+  // Overridden here to do additional length checks.
+  StatusWithMultiBuf Write(multibuf::MultiBuf&& payload) override;
 
   Config rx_config() const { return rx_config_; }
   Config tx_config() const { return tx_config_; }
@@ -111,10 +105,12 @@ class RfcommChannel final : public L2capChannel {
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
-  // TODO: https://pwbug.dev/379337272 - Move to true once this channel uses
-  // payload queue. Delete once all downstreams have transitioned to
-  // Write(MultiBuf) for this channel type.
-  bool UsesPayloadQueue() override { return false; }
+  // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
+  // transitioned to payload_queue_.
+  bool UsesPayloadQueue() override { return true; }
+
+  [[nodiscard]] std::optional<H4PacketWithH4> GenerateNextTxPacket()
+      PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex()) override;
 
   // Parses out RFCOMM payload from `l2cap_pdu` and calls
   // `SendPayloadFromControllerToClient`.
@@ -123,7 +119,7 @@ class RfcommChannel final : public L2capChannel {
 
   // Override: Dequeue a packet only if a credit is able to be subtracted.
   std::optional<H4PacketWithH4> DequeuePacket() override
-      PW_LOCKS_EXCLUDED(mutex_);
+      PW_LOCKS_EXCLUDED(tx_mutex_);
 
   // Override: All traffic on this channel goes to client.
   bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) override {
@@ -136,9 +132,11 @@ class RfcommChannel final : public L2capChannel {
   const Config rx_config_;
   const Config tx_config_;
   const uint8_t channel_number_;
-  uint8_t rx_credits_ PW_GUARDED_BY(mutex_);
-  uint8_t tx_credits_ PW_GUARDED_BY(mutex_);
-  sync::Mutex mutex_;
+  sync::Mutex rx_mutex_;
+  uint8_t rx_credits_ PW_GUARDED_BY(rx_mutex_);
+
+  sync::Mutex tx_mutex_;
+  uint8_t tx_credits_ PW_GUARDED_BY(tx_mutex_);
   Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
 };
 

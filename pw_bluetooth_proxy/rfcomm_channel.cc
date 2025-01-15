@@ -25,7 +25,6 @@
 #include "pw_bluetooth_proxy/internal/rfcomm_fcs.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_log/log.h"
-#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -36,23 +35,41 @@ RfcommChannel::RfcommChannel(RfcommChannel&& other)
       channel_number_(other.channel_number_),
       payload_from_controller_fn_(
           std::move(other.payload_from_controller_fn_)) {
-  std::lock_guard lock(mutex_);
-  std::lock_guard other_lock(other.mutex_);
-  rx_credits_ = other.rx_credits_;
-  tx_credits_ = other.tx_credits_;
+  {
+    std::lock_guard lock(rx_mutex_);
+    std::lock_guard other_lock(other.rx_mutex_);
+    rx_credits_ = other.rx_credits_;
+  }
+  {
+    std::lock_guard lock(tx_mutex_);
+    std::lock_guard other_lock(other.tx_mutex_);
+    tx_credits_ = other.tx_credits_;
+  }
 }
 
-pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
-  if (state() != State::kRunning) {
-    return Status::FailedPrecondition();
-  }
+namespace {
 
-  // We always encode credits.
-  const size_t kCreditsFieldSize = 1;
+// We always encode credits.
+constexpr size_t kCreditsFieldSize = 1;
 
+}  // namespace
+
+StatusWithMultiBuf RfcommChannel::Write(multibuf::MultiBuf&& payload) {
   if (payload.size() > tx_config_.max_information_length - kCreditsFieldSize) {
-    return Status::InvalidArgument();
+    PW_LOG_WARN("Payload (%zu bytes) is too large. So will not process.",
+                payload.size());
+    return {Status::InvalidArgument(), std::move(payload)};
   }
+
+  return L2capChannel::Write(std::move(payload));
+}
+
+std::optional<H4PacketWithH4> RfcommChannel::GenerateNextTxPacket() {
+  if (state() != State::kRunning || PayloadQueueEmpty()) {
+    return std::nullopt;
+  }
+
+  ConstByteSpan payload = GetFrontPayloadSpan();
 
   constexpr size_t kMaxShortLength = 0x7f;
 
@@ -63,22 +80,27 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
                             payload.size();
 
   // TODO: https://pwbug.dev/379337260 - Support fragmentation.
-  pw::Result<H4PacketWithH4> h4_result =
-      PopulateTxL2capPacketDuringWrite(frame_size);
+  pw::Result<H4PacketWithH4> h4_result = PopulateTxL2capPacket(frame_size);
   if (!h4_result.ok()) {
-    return h4_result.status();
+    return std::nullopt;
   }
   H4PacketWithH4 h4_packet = std::move(*h4_result);
 
-  PW_TRY_ASSIGN(
-      auto acl,
-      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan()));
-  auto bframe = emboss::MakeBFrameView(acl.payload().BackingStorage().data(),
-                                       acl.payload().SizeInBytes());
-  PW_TRY_ASSIGN(auto rfcomm,
-                MakeEmbossWriter<emboss::RfcommFrameWriter>(
-                    bframe.payload().BackingStorage().data(),
-                    bframe.payload().SizeInBytes()));
+  Result<emboss::AclDataFrameWriter> result2 =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
+  PW_CHECK(result2.ok());
+  emboss::AclDataFrameWriter acl = result2.value();
+
+  // At this point we assume we can return a PDU with the payload.
+  PopFrontPayload();
+
+  emboss::BFrameWriter bframe = emboss::MakeBFrameView(
+      acl.payload().BackingStorage().data(), acl.payload().SizeInBytes());
+  PW_CHECK(bframe.IsComplete());
+
+  emboss::RfcommFrameWriter rfcomm = emboss::MakeRfcommFrameView(
+      bframe.payload().BackingStorage().data(), bframe.payload().SizeInBytes());
+  PW_CHECK(rfcomm.IsComplete());
 
   rfcomm.extended_address().Write(true);
   // TODO: https://pwbug.dev/378691959 - Sniff correct C/R/D from Multiplexer
@@ -102,7 +124,7 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
   }
 
   {
-    std::lock_guard lock(mutex_);
+    std::lock_guard lock(rx_mutex_);
     // TODO: https://pwbug.dev/379184978 - Refill remote side with credits they
     // have sent. We assume our receiver can handle data without need for
     // blocking. Revisit when adding downstream flow control to this API.
@@ -112,7 +134,7 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
   }
 
   if (rfcomm.information().SizeInBytes() < payload.size()) {
-    return Status::ResourceExhausted();
+    return std::nullopt;
   }
   PW_CHECK(rfcomm.information().SizeInBytes() == payload.size());
   PW_CHECK(TryToCopyToEmbossStruct(
@@ -123,13 +145,15 @@ pw::Status RfcommChannel::Write(pw::span<const uint8_t> payload) {
   //   FCS should be calculated over address and control fields.
   rfcomm.fcs().Write(RfcommFcs(rfcomm));
 
-  // TODO: https://pwbug.dev/379184978 - Support legacy non-credit based flow
-  // control.
-  return QueuePacket(std::move(h4_packet));
+  PW_CHECK(acl.Ok());
+  PW_CHECK(bframe.Ok());
+  PW_CHECK(rfcomm.Ok());
+
+  return h4_packet;
 }
 
 std::optional<H4PacketWithH4> RfcommChannel::DequeuePacket() {
-  std::lock_guard lock(mutex_);
+  std::lock_guard lock(tx_mutex_);
   if (tx_credits_ == 0) {
     return std::nullopt;
   }
@@ -212,7 +236,7 @@ bool RfcommChannel::DoHandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
 
   bool credits_previously_zero = false;
   {
-    std::lock_guard lock(mutex_);
+    std::lock_guard lock(tx_mutex_);
     credits_previously_zero = tx_credits_ == 0;
     if (rfcomm_view->has_credits().ValueOrDefault()) {
       tx_credits_ += rfcomm_view->credits().Read();
@@ -227,7 +251,7 @@ bool RfcommChannel::DoHandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
 
   bool rx_needs_refill = false;
   {
-    std::lock_guard lock(mutex_);
+    std::lock_guard lock(rx_mutex_);
     if (rx_credits_ == 0) {
       PW_LOG_ERROR("Received frame with no rx credits available.");
       // TODO: https://pwbug.dev/379184978 - Consider dropping channel since

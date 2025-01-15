@@ -81,8 +81,12 @@ std::optional<H4PacketWithH4> BasicL2capChannel::GenerateNextTxPacket() {
 
   emboss::BFrameWriter bframe = emboss::MakeBFrameView(
       acl.payload().BackingStorage().data(), acl.payload().SizeInBytes());
+  PW_CHECK(bframe.IsComplete());
 
   PW_CHECK(TryToCopyToEmbossStruct(bframe.payload(), payload));
+
+  PW_CHECK(acl.Ok());
+  PW_CHECK(bframe.Ok());
 
   return h4_packet;
 }
