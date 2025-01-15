@@ -639,4 +639,44 @@ std::optional<UInt128> LeLtkToBrEdrLinkKey(
   return H6(*intermediate_key, lebr_key_id);
 }
 
+std::optional<UInt128> BrEdrLinkKeyToLeLtk(
+    const UInt128& link_key, CrossTransportKeyAlgo hash_function) {
+  std::optional<UInt128> intermediate_ltk;
+  if (hash_function == CrossTransportKeyAlgo::kUseH6) {
+    // The string "tmp2" mapped into ASCII per spec v6.0 Vol. 3 Part
+    // H 2.4.2.5.
+    const uint32_t tmp2_key_id = 0x746D7032;
+    intermediate_ltk = H6(link_key, tmp2_key_id);
+  } else if (hash_function == CrossTransportKeyAlgo::kUseH7) {
+    const UInt128 salt = {0x32,
+                          0x70,
+                          0x6D,
+                          0x74,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00,
+                          0x00};
+    intermediate_ltk = H7(salt, link_key);
+  } else {
+    bt_log(ERROR,
+           "sm",
+           "unexpected CrossTransportKeyAlgo passed to link key generation!");
+  }
+  if (!intermediate_ltk.has_value()) {
+    return std::nullopt;
+  }
+  // The string "brle" mapped into ASCII per spec v6.0 Vol. 3 Part
+  // H 2.4.2.5.
+  const uint32_t brle_key_id = 0x62726C65;
+  return H6(*intermediate_ltk, brle_key_id);
+}
+
 }  // namespace bt::sm::util

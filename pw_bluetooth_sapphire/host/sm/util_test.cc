@@ -1243,5 +1243,88 @@ TEST(UtilTest, LtkToLinkKeyUsingH6) {
   ASSERT_TRUE(out_link_key.has_value());
   EXPECT_EQ(kExpectedLinkKeyBytes, *out_link_key);
 }
+
+// Using the sample data from v6.0, Vol. 3, Part H, Appendix D.12
+TEST(UtilTest, LinkKeyToLtkUsingH6) {
+  const UInt128 kLinkKeyBytes = {0x00,
+                                 0x01,
+                                 0x02,
+                                 0x03,
+                                 0x04,
+                                 0x05,
+                                 0x06,
+                                 0x07,
+                                 0x08,
+                                 0x09,
+                                 0x00,
+                                 0x01,
+                                 0x02,
+                                 0x03,
+                                 0x04,
+                                 0x05};
+  const UInt128 kExpectedLtkBytes = {0x30,
+                                     0x0a,
+                                     0x0d,
+                                     0xf1,
+                                     0x43,
+                                     0x9a,
+                                     0x2c,
+                                     0x8a,
+                                     0xa1,
+                                     0xdf,
+                                     0xa3,
+                                     0xf1,
+                                     0x72,
+                                     0xfb,
+                                     0x13,
+                                     0xa8};
+  std::optional<UInt128> out_ltk =
+      BrEdrLinkKeyToLeLtk(kLinkKeyBytes, CrossTransportKeyAlgo::kUseH6);
+  ASSERT_TRUE(out_ltk.has_value());
+  EXPECT_EQ(kExpectedLtkBytes, *out_ltk);
+}
+
+// Using the sample data from v6.0, Vol. 3, Part H, Appendix D.11
+TEST(UtilTest, LinkKeyToLtkUsingH7) {
+  const UInt128 kLinkKeyBytes = {0x00,
+                                 0x01,
+                                 0x02,
+                                 0x03,
+                                 0x04,
+                                 0x05,
+                                 0x06,
+                                 0x07,
+                                 0x08,
+                                 0x09,
+                                 0x00,
+                                 0x01,
+                                 0x02,
+                                 0x03,
+                                 0x04,
+                                 0x05};
+  const UInt128 kExpectedLtkBytes = {
+      0x79,
+      0xbc,
+      0x11,
+      0x32,
+      0x13,
+      0x8a,
+      0x41,
+      0x69,
+      0xe2,
+      0xb3,
+      0xcc,
+      0x5e,
+      0xeb,
+      0x09,
+      0x5e,
+      0xe8,
+  };
+  std::optional<UInt128> out_ltk =
+      BrEdrLinkKeyToLeLtk(kLinkKeyBytes, CrossTransportKeyAlgo::kUseH7);
+  ASSERT_TRUE(out_ltk.has_value());
+  EXPECT_EQ(kExpectedLtkBytes, *out_ltk);
+}
+
 }  // namespace
 }  // namespace bt::sm::util

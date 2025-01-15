@@ -243,4 +243,11 @@ std::optional<UInt128> H7(const UInt128& salt, const UInt128& w);
 std::optional<UInt128> LeLtkToBrEdrLinkKey(const UInt128& le_ltk,
                                            CrossTransportKeyAlgo hash_function);
 
+// Converts a BR/EDR link key to a LE LTK for Cross Transport Key Derivation as
+// defined in Core Spec v6.0 Vol. 3 Part H 2.4.2.5.
+//
+// A return value of std::nullopt indicates the conversion failed.
+std::optional<UInt128> BrEdrLinkKeyToLeLtk(const UInt128& link_key,
+                                           CrossTransportKeyAlgo hash_function);
+
 }  // namespace bt::sm::util
