@@ -15,18 +15,20 @@
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
+HOST_PLATFORMS = (
+    "@platforms//os:android",
+    "@platforms//os:chromiumos",
+    "@platforms//os:linux",
+    "@platforms//os:macos",
+    "@platforms//os:windows",
+)
+
 def host_backend_alias(name, backend):
     """An alias that resolves to the backend for host platforms."""
     native.alias(
         name = name,
         actual = selects.with_or({
-            (
-                "@platforms//os:android",
-                "@platforms//os:chromiumos",
-                "@platforms//os:linux",
-                "@platforms//os:macos",
-                "@platforms//os:windows",
-            ): backend,
+            HOST_PLATFORMS: backend,
             "//conditions:default": str(Label("//pw_build:unspecified_backend")),
         }),
     )
