@@ -119,8 +119,9 @@ pw::Result<L2capCoc> L2capCoc::Create(
 
 pw::Status L2capCoc::ReplenishRxCredits(uint16_t additional_rx_credits) {
   PW_CHECK(signaling_channel_);
-  return signaling_channel_->SendFlowControlCreditInd(local_cid(),
-                                                      additional_rx_credits);
+  // SendFlowControlCreditInd logs if status is not ok, so no need to log here.
+  return signaling_channel_->SendFlowControlCreditInd(
+      local_cid(), additional_rx_credits, rx_multibuf_allocator_);
 }
 
 pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
@@ -129,6 +130,7 @@ pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
   }
   std::lock_guard lock(rx_mutex_);
   PW_CHECK(signaling_channel_);
+  // SendFlowControlCreditInd logs if status is not ok, so no need to log here.
   Status status = ReplenishRxCredits(additional_rx_credits);
   if (status.ok()) {
     // We treat additional bumps from the client as bumping the total allowed

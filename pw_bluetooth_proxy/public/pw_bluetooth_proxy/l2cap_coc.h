@@ -83,8 +83,8 @@ class L2capCoc : public L2capChannel {
   /// @returns @rst
   ///
   /// .. pw-status-codes::
-  ///  UNAVAILABLE:         Send could not be queued right now
-  ///                       (transient error).
+  /// UNAVAILABLE:   Send could not be queued due to lack of memory in the
+  /// client-provided rx_multibuf_allocator (transient error).
   ///  FAILED_PRECONDITION: If channel is not `State::kRunning`.
   /// @endrst
   pw::Status SendAdditionalRxCredits(uint16_t additional_rx_credits)

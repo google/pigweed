@@ -18,6 +18,7 @@
 #include "pw_bluetooth_proxy/basic_l2cap_channel.h"
 #include "pw_bluetooth_proxy/l2cap_status_delegate.h"
 #include "pw_containers/vector.h"
+#include "pw_multibuf/allocator.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 
@@ -25,6 +26,8 @@ namespace pw::bluetooth::proxy {
 
 // Interface for L2CAP signaling channels, which can be either ACL-U signaling
 // channels or LE-U signaling channels.
+//
+// Write and Read payloads are L2CAP signal commands.
 class L2capSignalingChannel : public BasicL2capChannel {
  public:
   explicit L2capSignalingChannel(L2capChannelManager& l2cap_channel_manager,
@@ -73,9 +76,17 @@ class L2capSignalingChannel : public BasicL2capChannel {
   // Send L2CAP_FLOW_CONTROL_CREDIT_IND to indicate local endpoint `cid` is
   // capable of receiving a number of additional K-frames (`credits`).
   //
-  // Returns PW_STATUS_INVALID_ARGUMENT if CID is invalid.
-  // Returns PW_STATUS_UNAVAILABLE if send could not be queued.
-  Status SendFlowControlCreditInd(uint16_t cid, uint16_t credits);
+  // @returns @rst
+  //
+  // .. pw-status-codes::
+  // UNAVAILABLE:   Send could not be queued due to lack of memory in the
+  // client-provided rx_multibuf_allocator (transient error).
+  //  FAILED_PRECONDITION: If channel is not `State::kRunning`.
+  // @endrst
+  Status SendFlowControlCreditInd(
+      uint16_t cid,
+      uint16_t credits,
+      multibuf::MultiBufAllocator& multibuf_allocator);
 
  protected:
   // Process a C-frame.

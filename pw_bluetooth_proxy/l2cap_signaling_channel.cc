@@ -15,6 +15,7 @@
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 
 #include <mutex>
+#include <optional>
 
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
@@ -22,7 +23,9 @@
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
+#include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_log/log.h"
+#include "pw_multibuf/allocator.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
@@ -258,35 +261,56 @@ bool L2capSignalingChannel::HandleFlowControlCreditInd(
   return false;
 }
 
-Status L2capSignalingChannel::SendFlowControlCreditInd(uint16_t cid,
-                                                       uint16_t credits) {
+namespace {
+
+// TODO: https://pwbug.dev/389724307 - Move to pw utility function once created.
+pw::span<uint8_t> AsUint8Span(ByteSpan s) {
+  return {reinterpret_cast<uint8_t*>(s.data()), s.size_bytes()};
+}
+
+}  // namespace
+
+Status L2capSignalingChannel::SendFlowControlCreditInd(
+    uint16_t cid,
+    uint16_t credits,
+    multibuf::MultiBufAllocator& multibuf_allocator) {
   if (cid == 0) {
     PW_LOG_ERROR("Tried to send signaling packet on invalid CID 0x0.");
     return Status::InvalidArgument();
   }
 
-  PW_TRY_ASSIGN(H4PacketWithH4 h4_packet,
-                PopulateTxL2capPacketDuringWrite(
-                    emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes()));
-  PW_TRY_ASSIGN(
-      auto acl,
-      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan()));
-  emboss::CFrameWriter cframe = emboss::MakeCFrameView(
-      acl.payload().BackingStorage().data(), acl.payload().SizeInBytes());
-  emboss::L2capFlowControlCreditIndWriter ind =
-      emboss::MakeL2capFlowControlCreditIndView(
-          cframe.payload().BackingStorage().data(),
-          cframe.payload().SizeInBytes());
-  ind.command_header().code().Write(
+  std::optional<pw::multibuf::MultiBuf> command =
+      multibuf_allocator.AllocateContiguous(
+          emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes());
+  if (!command.has_value()) {
+    PW_LOG_ERROR(
+        "btproxy: SendFlowControlCreditInd unable to allocate command buffer "
+        "from provided multibuf_allocator. cid: %#x, credits: %#x",
+        cid,
+        credits);
+    return Status::Unavailable();
+  }
+  std::optional<ByteSpan> command_span = command->ContiguousSpan();
+
+  Result<emboss::L2capFlowControlCreditIndWriter> command_view =
+      MakeEmbossWriter<emboss::L2capFlowControlCreditIndWriter>(
+          AsUint8Span(command_span.value()));
+  PW_CHECK(command_view->IsComplete());
+
+  command_view->command_header().code().Write(
       emboss::L2capSignalingPacketCode::FLOW_CONTROL_CREDIT_IND);
-  ind.command_header().identifier().Write(GetNextIdentifierAndIncrement());
-  ind.command_header().data_length().Write(
+  command_view->command_header().identifier().Write(
+      GetNextIdentifierAndIncrement());
+  command_view->command_header().data_length().Write(
       emboss::L2capFlowControlCreditInd::IntrinsicSizeInBytes() -
       emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
-  ind.cid().Write(cid);
-  ind.credits().Write(credits);
+  command_view->cid().Write(cid);
+  command_view->credits().Write(credits);
+  PW_CHECK(command_view->Ok());
 
-  return QueuePacket(std::move(h4_packet));
+  StatusWithMultiBuf s = Write(*std::move(command));
+
+  return s.status;
 }
 
 uint8_t L2capSignalingChannel::GetNextIdentifierAndIncrement() {

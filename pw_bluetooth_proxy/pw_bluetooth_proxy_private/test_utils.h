@@ -290,8 +290,8 @@ class ProxyHostTest : public testing::Test {
 
   // Default MultiBuf allocator to be passed to system under test (e.g.
   // to pass to AcquireL2capCoc).
-  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/512,
-                                             /*kMetaSizeBytes=*/512>
+  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/1024,
+                                             /*kMetaSizeBytes=*/2 * 1024>
       sut_multibuf_allocator_{};
 };
 

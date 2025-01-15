@@ -270,6 +270,11 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Returns PW_STATUS_UNAVAILABLE if all buffers are currently occupied.
   pw::Result<H4PacketWithH4> PopulateTxL2capPacket(uint16_t data_length);
 
+  // Return if we can generally handle the provided data length.
+  // Note PopulateTxL2capPacket can still fail if buffers or memory are not
+  // available at that time.
+  bool IsOkL2capDataLength(uint16_t data_length);
+
   // If all H4 buffers are occupied, this variant primes the kWriteAvailable
   // event to be sent once buffer space becomes available again.
   //

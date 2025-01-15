@@ -148,6 +148,7 @@ Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
 
 namespace {
 
+// TODO: https://pwbug.dev/389724307 - Move to pw utility function once created.
 pw::span<const uint8_t> AsConstUint8Span(ConstByteSpan s) {
   return {reinterpret_cast<const uint8_t*>(s.data()), s.size_bytes()};
 }
@@ -399,13 +400,28 @@ pw::Result<H4PacketWithH4> L2capChannel::PopulateTxL2capPacketDuringWrite(
   return packet_result;
 }
 
-pw::Result<H4PacketWithH4> L2capChannel::PopulateL2capPacket(
-    uint16_t data_length) {
+namespace {
+
+constexpr size_t H4SizeForL2capData(uint16_t data_length) {
   const size_t l2cap_packet_size =
       emboss::BasicL2capHeader::IntrinsicSizeInBytes() + data_length;
   const size_t acl_packet_size =
       emboss::AclDataFrameHeader::IntrinsicSizeInBytes() + l2cap_packet_size;
-  const size_t h4_packet_size = sizeof(emboss::H4PacketType) + acl_packet_size;
+  return sizeof(emboss::H4PacketType) + acl_packet_size;
+}
+
+}  // namespace
+
+bool L2capChannel::IsOkL2capDataLength(uint16_t data_length) {
+  return H4SizeForL2capData(data_length) <=
+         l2cap_channel_manager_.GetH4BuffSize();
+}
+
+pw::Result<H4PacketWithH4> L2capChannel::PopulateL2capPacket(
+    uint16_t data_length) {
+  const size_t l2cap_packet_size =
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes() + data_length;
+  const size_t h4_packet_size = H4SizeForL2capData(data_length);
 
   pw::Result<H4PacketWithH4> h4_packet_res =
       l2cap_channel_manager_.GetAclH4Packet(h4_packet_size);

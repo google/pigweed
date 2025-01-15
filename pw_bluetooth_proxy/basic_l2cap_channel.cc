@@ -47,34 +47,44 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
       /*event_fn=*/std::move(event_fn));
 }
 
-pw::Status BasicL2capChannel::Write(pw::span<const uint8_t> payload) {
-  if (state() != State::kRunning) {
-    return Status::FailedPrecondition();
+StatusWithMultiBuf BasicL2capChannel::Write(multibuf::MultiBuf&& payload) {
+  if (!IsOkL2capDataLength(payload.size())) {
+    PW_LOG_WARN("Payload (%zu bytes) is too large. So will not process.",
+                payload.size());
+    return {Status::InvalidArgument(), std::move(payload)};
   }
 
-  // TODO: https://pwbug.dev/360929142 - Reject payloads exceeding MTU.
+  return L2capChannel::Write(std::move(payload));
+}
 
-  pw::Result<H4PacketWithH4> h4_result =
-      PopulateTxL2capPacketDuringWrite(payload.size());
-  if (!h4_result.ok()) {
-    // This can fail as a result of the L2CAP PDU not fitting in an H4 buffer
-    // or if all buffers are occupied.
-    // TODO: https://pwbug.dev/379337260 - Once we support ACL fragmentation,
-    // this function will not fail due to the L2CAP PDU size not fitting.
-    return h4_result.status();
+std::optional<H4PacketWithH4> BasicL2capChannel::GenerateNextTxPacket() {
+  if (state() != State::kRunning || PayloadQueueEmpty()) {
+    return std::nullopt;
   }
-  H4PacketWithH4 h4_packet = std::move(*h4_result);
 
-  PW_TRY_ASSIGN(
-      auto acl,
-      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan()));
-  PW_TRY_ASSIGN(auto bframe,
-                MakeEmbossWriter<emboss::BFrameWriter>(
-                    acl.payload().BackingStorage().data(),
-                    acl.payload().BackingStorage().SizeInBytes()));
+  ConstByteSpan payload = GetFrontPayloadSpan();
+
+  pw::Result<H4PacketWithH4> result =
+      PopulateTxL2capPacket(payload.size_bytes());
+  if (!result.ok()) {
+    return std::nullopt;
+  }
+  H4PacketWithH4 h4_packet = std::move(result.value());
+
+  Result<emboss::AclDataFrameWriter> result2 =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
+  PW_CHECK(result2.ok());
+  emboss::AclDataFrameWriter acl = result2.value();
+
+  // At this point we assume we can return a PDU with the payload.
+  PopFrontPayload();
+
+  emboss::BFrameWriter bframe = emboss::MakeBFrameView(
+      acl.payload().BackingStorage().data(), acl.payload().SizeInBytes());
+
   PW_CHECK(TryToCopyToEmbossStruct(bframe.payload(), payload));
 
-  return QueuePacket(std::move(h4_packet));
+  return h4_packet;
 }
 
 BasicL2capChannel::BasicL2capChannel(
