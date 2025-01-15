@@ -12,8 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "examples/named_u32.h"
 #include "pw_allocator/allocator.h"
+#include "pw_allocator/examples/named_u32.h"
 #include "pw_allocator/testing.h"
 #include "pw_unit_test/framework.h"
 

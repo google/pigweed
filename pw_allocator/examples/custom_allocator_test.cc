@@ -12,12 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "examples/custom_allocator.h"
+#include "pw_allocator/examples/custom_allocator.h"
 
 #include <cstdint>
 
-#include "examples/custom_allocator_test_harness.h"
-#include "examples/named_u32.h"
+#include "pw_allocator/examples/custom_allocator_test_harness.h"
+#include "pw_allocator/examples/named_u32.h"
 #include "pw_allocator/fuzzing.h"
 #include "pw_allocator/testing.h"
 #include "pw_containers/vector.h"

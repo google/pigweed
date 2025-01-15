@@ -15,7 +15,7 @@
 #include <array>
 #include <cstdint>
 
-#include "examples/named_u32.h"
+#include "pw_allocator/examples/named_u32.h"
 #include "pw_allocator/first_fit.h"
 #include "pw_unit_test/framework.h"
 

@@ -21,7 +21,7 @@ licenses(["notice"])
 cc_library(
     name = "result",
     hdrs = ["public/pw_allocator/block/result.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_allocator:config",
         "//pw_assert",
@@ -32,7 +32,7 @@ cc_library(
 cc_library(
     name = "alignable",
     hdrs = ["public/pw_allocator/block/alignable.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":allocatable",
         "//pw_allocator:deallocator",
@@ -46,7 +46,7 @@ cc_library(
 cc_library(
     name = "allocatable",
     hdrs = ["public/pw_allocator/block/allocatable.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":contiguous",
         ":result",
@@ -61,7 +61,7 @@ cc_library(
     name = "basic",
     srcs = ["basic.cc"],
     hdrs = ["public/pw_allocator/block/basic.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_allocator:config",
         "//pw_assert",
@@ -74,7 +74,7 @@ cc_library(
     name = "contiguous",
     srcs = ["contiguous.cc"],
     hdrs = ["public/pw_allocator/block/contiguous.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":basic",
         "//pw_bytes",
@@ -87,7 +87,7 @@ cc_library(
 cc_library(
     name = "iterable",
     hdrs = ["public/pw_allocator/block/iterable.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":contiguous",
     ],
@@ -97,7 +97,7 @@ cc_library(
     name = "poisonable",
     srcs = ["poisonable.cc"],
     hdrs = ["public/pw_allocator/block/poisonable.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":contiguous",
         "//pw_allocator:config",
@@ -108,7 +108,7 @@ cc_library(
 cc_library(
     name = "with_layout",
     hdrs = ["public/pw_allocator/block/with_layout.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":alignable",
         "//pw_allocator:deallocator",
@@ -119,7 +119,7 @@ cc_library(
 cc_library(
     name = "detailed_block",
     hdrs = ["public/pw_allocator/block/detailed_block.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":alignable",
         ":allocatable",
@@ -142,7 +142,7 @@ cc_library(
     name = "testing",
     testonly = True,
     hdrs = ["public/pw_allocator/block/testing.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_allocator:testing",
         "//pw_assert",

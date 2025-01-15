@@ -22,8 +22,6 @@ include("$ENV{PW_ROOT}/pw_thread/backend.cmake")
 pw_add_library(pw_allocator.examples.named_u32 INTERFACE
   HEADERS
     named_u32.h
-  PUBLIC_INCLUDES
-    public
   PUBLIC_DEPS
     pw_bytes
     pw_string
@@ -32,8 +30,6 @@ pw_add_library(pw_allocator.examples.named_u32 INTERFACE
 pw_add_library(pw_allocator.examples.custom_allocator STATIC
   HEADERS
     custom_allocator.h
-  PUBLIC_INCLUDES
-    public
   PUBLIC_DEPS
     pw_allocator.allocator
   SOURCES
@@ -46,8 +42,6 @@ pw_add_library(pw_allocator.examples.custom_allocator STATIC
 pw_add_library(pw_allocator.examples.custom_allocator_test_harness INTERFACE
   HEADERS
     custom_allocator_test_harness.h
-  PUBLIC_INCLUDES
-    public
   PUBLIC_DEPS
     pw_allocator.examples.custom_allocator
     pw_allocator.test_harness

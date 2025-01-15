@@ -15,7 +15,7 @@
 // DOCSTAG: [pw_allocator-examples-custom_allocator-perf_test]
 #include <cstdint>
 
-#include "examples/custom_allocator_test_harness.h"
+#include "pw_allocator/examples/custom_allocator_test_harness.h"
 #include "pw_perf_test/perf_test.h"
 #include "pw_perf_test/state.h"
 

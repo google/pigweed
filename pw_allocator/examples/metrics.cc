@@ -17,7 +17,7 @@
 #include <cstdint>
 #include <string_view>
 
-#include "examples/named_u32.h"
+#include "pw_allocator/examples/named_u32.h"
 #include "pw_allocator/testing.h"
 #include "pw_allocator/tracking_allocator.h"
 #include "pw_tokenizer/tokenize.h"

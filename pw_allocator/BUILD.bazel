@@ -91,7 +91,7 @@ cc_library(
 cc_library(
     name = "best_fit_block_allocator",
     hdrs = ["public/pw_allocator/best_fit_block_allocator.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":best_fit",
         ":config",
@@ -279,7 +279,7 @@ cc_library(
 cc_library(
     name = "first_fit_block_allocator",
     hdrs = ["public/pw_allocator/first_fit_block_allocator.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [":first_fit"],
 )
 
@@ -378,7 +378,7 @@ cc_library(
 cc_library(
     name = "tlsf_allocator",
     hdrs = ["public/pw_allocator/tlsf_allocator.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":block_allocator",
         ":config",
@@ -434,7 +434,7 @@ cc_library(
 cc_library(
     name = "worst_fit_block_allocator",
     hdrs = ["public/pw_allocator/worst_fit_block_allocator.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":config",
         ":worst_fit",

@@ -21,7 +21,7 @@ licenses(["notice"])
 cc_library(
     name = "base",
     hdrs = ["public/pw_allocator/bucket/base.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     visibility = ["//visibility:private"],
     deps = [
         "//pw_allocator:config",
@@ -33,7 +33,7 @@ cc_library(
 cc_library(
     name = "fast_sorted",
     hdrs = ["public/pw_allocator/bucket/fast_sorted.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":base",
         "//pw_containers:intrusive_multimap",
@@ -43,7 +43,7 @@ cc_library(
 cc_library(
     name = "sequenced",
     hdrs = ["public/pw_allocator/bucket/sequenced.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":base",
         "//pw_containers:intrusive_list",
@@ -53,7 +53,7 @@ cc_library(
 cc_library(
     name = "sorted",
     hdrs = ["public/pw_allocator/bucket/sorted.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":base",
         "//pw_containers:intrusive_forward_list",
@@ -63,7 +63,7 @@ cc_library(
 cc_library(
     name = "unordered",
     hdrs = ["public/pw_allocator/bucket/unordered.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         ":base",
         "//pw_containers:intrusive_forward_list",
@@ -74,7 +74,7 @@ cc_library(
     name = "testing",
     testonly = True,
     hdrs = ["public/pw_allocator/bucket/testing.h"],
-    includes = ["public"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_allocator:buffer",
         "//pw_allocator:bump_allocator",

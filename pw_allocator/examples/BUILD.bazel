@@ -27,7 +27,6 @@ cc_library(
     name = "named_u32",
     testonly = True,
     hdrs = ["named_u32.h"],
-    includes = [".."],
     deps = [
         "//pw_bytes",
         "//pw_string",
@@ -39,7 +38,6 @@ cc_library(
     testonly = True,
     srcs = ["custom_allocator.cc"],
     hdrs = ["custom_allocator.h"],
-    includes = [".."],
     deps = [
         "//pw_allocator:allocator",
         "//pw_log",
@@ -51,7 +49,6 @@ cc_library(
     name = "custom_allocator_test_harness",
     testonly = True,
     hdrs = ["custom_allocator_test_harness.h"],
-    includes = [".."],
     deps = [
         ":custom_allocator",
         "//pw_allocator:test_harness",
