@@ -44,12 +44,9 @@ class BasicL2capChannel : public L2capChannel {
   // have transitioned to Write(MultiBuf) for this channel type.
   Status Write(pw::span<const uint8_t> payload) override;
 
-  // Also allow Write(MultiBuf) during transition from Write(span).
-  // TODO: https://pwbug.dev/379337272 - Can delete once Write(span) above is
-  // deleted.
-  StatusWithMultiBuf Write(multibuf::MultiBuf&& payload) override {
-    return WriteMultiBufAsSpan(std::move(payload));
-  }
+  // Also make visible Write(MultiBuf)
+  // TODO: https://pwbug.dev/379337272 - Can delete when Write(span) is deleted.
+  using L2capChannel::Write;
 
  protected:
   explicit BasicL2capChannel(
@@ -61,11 +58,15 @@ class BasicL2capChannel : public L2capChannel {
       Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
- protected:
-  bool DoHandlePduFromController(pw::span<uint8_t> bframe) override;
   bool HandlePduFromHost(pw::span<uint8_t> bframe) override;
 
-  // TODO: https://pwbug.dev/360929142 - Stop channel on errors.
+ private:
+  bool DoHandlePduFromController(pw::span<uint8_t> bframe) override;
+
+  // TODO: https://pwbug.dev/379337272 - Move to true once this channel uses
+  // payload queue. Delete once all downstreams have transitioned to
+  // Write(MultiBuf) for this channel type.
+  bool UsesPayloadQueue() override { return false; }
 };
 
 }  // namespace pw::bluetooth::proxy

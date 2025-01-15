@@ -104,7 +104,13 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   /// @endrst
   // TODO: https://pwbug.dev/388082771 - Plan to eventually move this to
   // ClientChannel.
-  virtual StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload);
+  inline virtual StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload) {
+    if (UsesPayloadQueue()) {
+      return WriteToPayloadQueue(std::move(payload));
+    } else {
+      return WriteToPduQueue(std::move(payload));
+    }
+  }
 
   /// Send an L2CAP payload to the remote peer.
   ///
@@ -236,25 +242,6 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //  Tx (protected)
   //----------------
 
-  // Sends a MultiBuf payload to the remote peer using Write(span).
-  //
-  // The contents of the MultiBuf are copied during the call and the MultiBuf
-  // is destroyed.
-  //
-  // Used by subclasses during the transition from PDU send_queue_ rather to
-  // Write(MultiBuf) and payload queues.
-  // TODO: https://pwbug.dev/379337272 - Delete when all channels are
-  // transitioned to using payload queues.
-  StatusWithMultiBuf WriteMultiBufAsSpan(multibuf::MultiBuf&& payload);
-
-  // Queue a client `buf` for sending and `ReportPacketsMayBeReadyToSend()`.
-  // Must be a contiguous MultiBuf.
-  //
-  // Returns PW_STATUS_UNAVAILABLE if queue is full (transient error).
-  // Returns PW_STATUS_FAILED_PRECONDITION if channel is not `State::kRunning`.
-  StatusWithMultiBuf QueuePayload(multibuf::MultiBuf&& buf)
-      PW_LOCKS_EXCLUDED(send_queue_mutex_);
-
   // Queue L2CAP `packet` for sending and `ReportPacketsMayBeReadyToSend()`.
   //
   // Returns PW_STATUS_UNAVAILABLE if queue is full (transient error).
@@ -274,17 +261,6 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
       PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
 
   bool PayloadQueueEmpty() const PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
-  // Return the next Tx PDU based on the client's queued payloads. If the
-  // returned PDU will complete the transmission of a payload, that payload
-  // should be popped from the queue. If no payloads are queued, return
-  // std::nullopt.
-  //
-  // Note this is overrode by `L2capCoc` which uses `payload_queue_` rather than
-  // `send_queue_`. The plan is to move all channels to using `payload_queue_`.
-  // TODO: https://pwbug.dev/379337272 - Make pure virtual once all derived
-  // channels implement this method.
-  virtual std::optional<H4PacketWithH4> GenerateNextTxPacket()
-      PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
 
   // Reserve an L2CAP over ACL over H4 packet, with those three headers
   // populated for an L2CAP PDU payload of `data_length` bytes addressed to
@@ -333,7 +309,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Return true if the current object uses payload_queue_.
   // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
   // transitioned to payload_queue_.
-  virtual bool UsesPayloadQueue() { return false; }
+  virtual bool UsesPayloadQueue() = 0;
 
   static constexpr uint16_t kMaxValidConnectionHandle = 0x0EFF;
 
@@ -367,6 +343,45 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //--------------
   //  Tx (private)
   //--------------
+
+  // Queue a client `buf` for sending and `ReportPacketsMayBeReadyToSend()`.
+  // Must be a contiguous MultiBuf.
+  //
+  // Returns PW_STATUS_UNAVAILABLE if queue is full (transient error).
+  // Returns PW_STATUS_FAILED_PRECONDITION if channel is not `State::kRunning`.
+  StatusWithMultiBuf QueuePayload(multibuf::MultiBuf&& buf)
+      PW_LOCKS_EXCLUDED(send_queue_mutex_);
+
+  // Writes the contents of MultiBuf to the PDU queue (send_queue_).
+  //
+  // The contents of the MultiBuf are copied during the call and the MultiBuf
+  // is destroyed.
+  //
+  // Called for subclasses that don't do payload queueing (as determined by
+  // UsesPayloadQueue) during the transition.
+  // TODO: https://pwbug.dev/379337272 - Delete when all channels are
+  // transitioned to using payload queues.
+  StatusWithMultiBuf WriteToPduQueue(multibuf::MultiBuf&& payload);
+
+  // Writes the MultiBuf to the payload queue (payload_queue_).
+  //
+  // Called for subclasses that don't do payload queueing (as determined by
+  // UsesPayloadQueue) during the transition.
+  // TODO: https://pwbug.dev/379337272 - Delete when all channels are
+  // transitioned to using payload queues.
+  StatusWithMultiBuf WriteToPayloadQueue(multibuf::MultiBuf&& payload);
+
+  // Return the next Tx PDU based on the client's queued payloads. If the
+  // returned PDU will complete the transmission of a payload, that payload
+  // should be popped from the queue. If no payloads are queued, return
+  // std::nullopt.
+  //
+  // Note this is overrode by `L2capCoc` which uses `payload_queue_` rather than
+  // `send_queue_`. The plan is to move all channels to using `payload_queue_`.
+  // TODO: https://pwbug.dev/379337272 - Make pure virtual once all derived
+  // channels implement this method.
+  virtual std::optional<H4PacketWithH4> GenerateNextTxPacket()
+      PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
 
   // `L2capChannelManager` and channel may concurrently call functions that
   // access queue.

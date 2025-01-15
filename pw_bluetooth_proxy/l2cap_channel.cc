@@ -154,7 +154,8 @@ pw::span<const uint8_t> AsConstUint8Span(ConstByteSpan s) {
 
 }  // namespace
 
-StatusWithMultiBuf L2capChannel::Write(multibuf::MultiBuf&& payload) {
+StatusWithMultiBuf L2capChannel::WriteToPayloadQueue(
+    multibuf::MultiBuf&& payload) {
   if (!payload.IsContiguous()) {
     return {Status::InvalidArgument(), std::move(payload)};
   }
@@ -170,8 +171,7 @@ StatusWithMultiBuf L2capChannel::Write(multibuf::MultiBuf&& payload) {
 
 // TODO: https://pwbug.dev/379337272 - Delete when all channels are
 // transitioned to using payload queues.
-StatusWithMultiBuf L2capChannel::WriteMultiBufAsSpan(
-    multibuf::MultiBuf&& payload) {
+StatusWithMultiBuf L2capChannel::WriteToPduQueue(multibuf::MultiBuf&& payload) {
   if (!payload.IsContiguous()) {
     return {Status::InvalidArgument(), std::move(payload)};
   }
