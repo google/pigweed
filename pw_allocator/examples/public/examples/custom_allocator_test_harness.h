@@ -16,7 +16,7 @@
 // DOCSTAG: [pw_allocator-examples-custom_allocator-test_harness]
 #include <cstddef>
 
-#include "pw_allocator/examples/custom_allocator.h"
+#include "examples/custom_allocator.h"
 #include "pw_allocator/test_harness.h"
 #include "pw_allocator/testing.h"
 

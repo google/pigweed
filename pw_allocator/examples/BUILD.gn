@@ -23,12 +23,13 @@ import("$dir_pw_unit_test/test.gni")
 # Libraries
 
 config("default_config") {
-  include_dirs = [ dir_pigweed ]
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 pw_source_set("named_u32") {
   public_configs = [ ":default_config" ]
-  public = [ "named_u32.h" ]
+  public = [ "public/examples/named_u32.h" ]
   public_deps = [
     dir_pw_bytes,
     dir_pw_string,
@@ -37,7 +38,7 @@ pw_source_set("named_u32") {
 
 pw_source_set("custom_allocator") {
   public_configs = [ ":default_config" ]
-  public = [ "custom_allocator.h" ]
+  public = [ "public/examples/custom_allocator.h" ]
   public_deps = [ "$dir_pw_allocator:allocator" ]
   sources = [ "custom_allocator.cc" ]
   deps = [
@@ -48,7 +49,7 @@ pw_source_set("custom_allocator") {
 
 pw_source_set("custom_allocator_test_harness") {
   public_configs = [ ":default_config" ]
-  public = [ "custom_allocator_test_harness.h" ]
+  public = [ "public/examples/custom_allocator_test_harness.h" ]
   public_deps = [
     ":custom_allocator",
     "$dir_pw_allocator:test_harness",

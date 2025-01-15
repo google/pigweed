@@ -16,9 +16,9 @@
 #include <cstdint>
 #include <string_view>
 
+#include "examples/named_u32.h"
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block/detailed_block.h"
-#include "pw_allocator/examples/named_u32.h"
 #include "pw_allocator/first_fit.h"
 #include "pw_allocator/worst_fit.h"
 #include "pw_unit_test/framework.h"

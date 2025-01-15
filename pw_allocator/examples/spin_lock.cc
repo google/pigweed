@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/examples/named_u32.h"
+#include "examples/named_u32.h"
 #include "pw_allocator/synchronized_allocator.h"
 #include "pw_allocator/testing.h"
 #include "pw_assert/check.h"

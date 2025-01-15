@@ -13,7 +13,7 @@
 // the License.
 
 // DOCSTAG: [pw_allocator-examples-custom_allocator]
-#include "pw_allocator/examples/custom_allocator.h"
+#include "examples/custom_allocator.h"
 
 #include <cstdint>
 

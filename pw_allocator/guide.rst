@@ -295,7 +295,7 @@ and ``DoDeallocate`` methods.
 For example, the following is a forwarding allocator that simply writes to the
 log whenever a threshold is exceeded:
 
-.. literalinclude:: examples/custom_allocator.h
+.. literalinclude:: examples/public/examples/custom_allocator.h
    :language: cpp
    :linenos:
    :start-after: [pw_allocator-examples-custom_allocator]
@@ -464,7 +464,7 @@ You can also extend the :ref:`module-pw_allocator-api-test_harness` to perform
 pseudorandom sequences of allocations and deallocations, e.g. as part of a
 performance test:
 
-.. literalinclude:: examples/custom_allocator_test_harness.h
+.. literalinclude:: examples/public/examples/custom_allocator_test_harness.h
    :language: cpp
    :linenos:
    :start-after: [pw_allocator-examples-custom_allocator-test_harness]

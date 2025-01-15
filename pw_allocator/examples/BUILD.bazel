@@ -26,7 +26,8 @@ licenses(["notice"])
 cc_library(
     name = "named_u32",
     testonly = True,
-    hdrs = ["named_u32.h"],
+    hdrs = ["public/examples/named_u32.h"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
         "//pw_string",
@@ -37,7 +38,8 @@ cc_library(
     name = "custom_allocator",
     testonly = True,
     srcs = ["custom_allocator.cc"],
-    hdrs = ["custom_allocator.h"],
+    hdrs = ["public/examples/custom_allocator.h"],
+    strip_include_prefix = "public",
     deps = [
         "//pw_allocator:allocator",
         "//pw_log",
@@ -48,7 +50,8 @@ cc_library(
 cc_library(
     name = "custom_allocator_test_harness",
     testonly = True,
-    hdrs = ["custom_allocator_test_harness.h"],
+    hdrs = ["public/examples/custom_allocator_test_harness.h"],
+    strip_include_prefix = "public",
     deps = [
         ":custom_allocator",
         "//pw_allocator:test_harness",
@@ -171,13 +174,13 @@ sphinx_docs_library(
         "basic.cc",
         "block_allocator.cc",
         "custom_allocator.cc",
-        "custom_allocator.h",
         "custom_allocator_perf_test.cc",
         "custom_allocator_test.cc",
-        "custom_allocator_test_harness.h",
         "linker_sections.cc",
         "metrics.cc",
         "pmr.cc",
+        "public/examples/custom_allocator.h",
+        "public/examples/custom_allocator_test_harness.h",
         "size_report.cc",
         "spin_lock.cc",
     ],
