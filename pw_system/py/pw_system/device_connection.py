@@ -245,7 +245,7 @@ def create_device_serial_or_socket_connection(
             socket_device = socket_impl(
                 socket_addr, on_disconnect=disconnect_handler
             )
-            reader = stream_readers.SelectableReader(socket_device)
+            reader = stream_readers.SelectableReader(socket_device, 8192)
             write = socket_device.write
         except ValueError as error:
             raise ValueError(
