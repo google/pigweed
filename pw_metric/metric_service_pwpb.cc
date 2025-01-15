@@ -22,6 +22,7 @@
 #include "pw_metric_private/metric_walker.h"
 #include "pw_metric_proto/metric_service.pwpb.h"
 #include "pw_preprocessor/util.h"
+#include "pw_protobuf/serialized_size.h"
 #include "pw_rpc/raw/server_reader_writer.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
@@ -94,10 +95,18 @@ class PwpbMetricWriter : public virtual internal::MetricWriter {
 void MetricService::Get(ConstByteSpan /*request*/,
                         rpc::RawServerWriter& raw_response) {
   // For now, ignore the request and just stream all the metrics back.
-  // TODO(amontanez): Make this follow the metric_service.options configuration.
+
+  // The `string_path` field of Metric is not supported. The maximum size
+  // without values includes the maximum token path. Additionally, include the
+  // maximum size of the `as_int` field.
   constexpr size_t kSizeOfOneMetric =
-      pw::metric::proto::pwpb::MetricResponse::kMaxEncodedSizeBytes +
-      pw::metric::proto::pwpb::Metric::kMaxEncodedSizeBytes;
+      pw::metric::proto::pwpb::MetricResponse::
+          kMaxEncodedSizeBytesWithoutValues +
+      pw::metric::proto::pwpb::Metric::kMaxEncodedSizeBytesWithoutValues +
+      protobuf::SizeOfFieldUint32(
+          pw::metric::proto::pwpb::Metric::Fields::kAsInt);
+
+  // TODO(amontanez): Make this follow the metric_service.options configuration.
   constexpr size_t kEncodeBufferSize = kMaxNumPackedEntries * kSizeOfOneMetric;
 
   std::array<std::byte, kEncodeBufferSize> encode_buffer;

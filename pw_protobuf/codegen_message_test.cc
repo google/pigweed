@@ -1343,7 +1343,9 @@ TEST(CodegenMessage, Write) {
   message.proto.meta.pigweed_bin = Pigweed::Pigweed::Binary::ONE;
   std::memcpy(message.data.data(), pigweed_data, sizeof(pigweed_data));
 
-  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes];
+  // No callback fields are being written, so the max size without values is
+  // sufficient.
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytesWithoutValues];
   std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
@@ -1399,7 +1401,7 @@ TEST(CodegenMessage, Write) {
 TEST(CodegenMessage, WriteDefaults) {
   Pigweed::Message message{};
 
-  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytesWithoutValues];
   std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
@@ -1420,7 +1422,10 @@ TEST(CodegenMessage, WritePackedScalar) {
     message.fixed32s.push_back(i * 16u);
   }
 
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  // RepeatedTest has several different repeated fields, some of which have a
+  // static size while others don't. `uint32s`  and `fixed32` have maximum
+  // static sizes, so the max encoded size accounts for them.
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -1459,7 +1464,10 @@ TEST(CodegenMessage, WritePackedScalarFixedLength) {
   message.doubles[0] = 3.14159;
   message.doubles[1] = 2.71828;
 
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  // RepeatedTest has several different repeated fields, some of which have a
+  // static size while others don't. `doubles` has a fixed length, so the max
+  // encoded size accounts for it.
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -1491,7 +1499,7 @@ TEST(CodegenMessage, WritePackedScalarCallback) {
     return encoder.WriteSint32s(sint32s);
   });
 
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes +
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues +
                           varint::kMaxVarint32SizeBytes * 5];
 
   stream::MemoryWriter writer(encode_buffer);
@@ -1525,7 +1533,11 @@ TEST(CodegenMessage, WritePackedEnum) {
   message.enums.push_back(Enum::AMBER);
   message.enums.push_back(Enum::RED);
 
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  // RepeatedTest has several different repeated fields, some of which have a
+  // static size while others don't. `enums` is one of the fields which does
+  // specify a static size option, so the max encoded size accounts for its
+  // worst case length.
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -1556,7 +1568,7 @@ TEST(CodegenMessage, WriteStringCallback) {
         "libraries-or as we like to call them, modules");
   });
 
-  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes + 92];
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytesWithoutValues + 92];
   std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
@@ -1592,7 +1604,9 @@ TEST(CodegenMessage, WriteForcedCallback) {
     return encoder.WriteSpecialProperty(42u);
   });
 
-  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes];
+  // As the field is a scalar, it doesn't have an associated variable-length
+  // value, so the max size without values is sufficient.
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytesWithoutValues];
   std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes];
 
   stream::MemoryWriter writer(encode_buffer);
@@ -1663,7 +1677,7 @@ TEST(CodegenMessage, WriteNestedRepeated) {
     return OkStatus();
   });
 
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes +
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues +
                           Struct::kMaxEncodedSizeBytes * 2];
   std::byte temp_buffer[RepeatedTest::kScratchBufferSizeBytes +
                         Struct::kMaxEncodedSizeBytes];
@@ -1698,6 +1712,10 @@ TEST(CodegenMessage, WriteNestedRepeated) {
 }
 
 TEST(CodegenMessage, WriteNestedForcedCallback) {
+  // Manually add some additional buffer space for the values we know we want
+  // to encode to the message.
+  constexpr size_t kEncodedAttributesSize = 32;
+
   Pigweed::Message message{};
   // pigweed.device_info has use_callback=true to force the use of a callback.
   message.device_info.SetEncoder([](Pigweed::StreamEncoder& encoder) {
@@ -1725,10 +1743,12 @@ TEST(CodegenMessage, WriteNestedForcedCallback) {
     return encoder.GetDeviceInfoEncoder().Write(device_info);
   });
 
-  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes +
-                          DeviceInfo::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytesWithoutValues +
+                          DeviceInfo::kMaxEncodedSizeBytesWithoutValues +
+                          kEncodedAttributesSize];
   std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes +
-                        DeviceInfo::kMaxEncodedSizeBytes];
+                        DeviceInfo::kMaxEncodedSizeBytesWithoutValues +
+                        kEncodedAttributesSize];
 
   stream::MemoryWriter writer(encode_buffer);
   Pigweed::StreamEncoder pigweed(writer, temp_buffer);

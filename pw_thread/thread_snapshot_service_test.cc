@@ -77,7 +77,8 @@ ThreadInfo CreateThreadInfoObject(std::optional<ConstByteSpan> name,
 // Test creates a custom thread info object and proto encodes. Checks that the
 // custom object is encoded properly.
 TEST(ThreadSnapshotService, DecodeSingleThreadInfoObject) {
-  std::array<std::byte, RequiredServiceBufferSize(1)> encode_buffer;
+  std::array<std::byte, RequiredServiceBufferSizeWithoutVariableFields(1)>
+      encode_buffer;
 
   proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
@@ -95,7 +96,8 @@ TEST(ThreadSnapshotService, DecodeSingleThreadInfoObject) {
 }
 
 TEST(ThreadSnapshotService, DecodeMultipleThreadInfoObjects) {
-  std::array<std::byte, RequiredServiceBufferSize(3)> encode_buffer;
+  std::array<std::byte, RequiredServiceBufferSizeWithoutVariableFields(3)>
+      encode_buffer;
 
   proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
@@ -132,7 +134,8 @@ TEST(ThreadSnapshotService, DecodeMultipleThreadInfoObjects) {
 }
 
 TEST(ThreadSnapshotService, DefaultBufferSize) {
-  static std::array<std::byte, RequiredServiceBufferSize()> encode_buffer;
+  static std::array<std::byte, RequiredServiceBufferSizeWithoutVariableFields()>
+      encode_buffer;
 
   proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
@@ -151,7 +154,9 @@ TEST(ThreadSnapshotService, DefaultBufferSize) {
 }
 
 TEST(ThreadSnapshotService, FailedPrecondition) {
-  static std::array<std::byte, RequiredServiceBufferSize(1)> encode_buffer;
+  static std::array<std::byte,
+                    RequiredServiceBufferSizeWithoutVariableFields(1)>
+      encode_buffer;
 
   proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 
@@ -176,7 +181,9 @@ TEST(ThreadSnapshotService, FailedPrecondition) {
 }
 
 TEST(ThreadSnapshotService, Unimplemented) {
-  static std::array<std::byte, RequiredServiceBufferSize(1)> encode_buffer;
+  static std::array<std::byte,
+                    RequiredServiceBufferSizeWithoutVariableFields(1)>
+      encode_buffer;
 
   proto::pwpb::SnapshotThreadInfo::MemoryEncoder encoder(encode_buffer);
 

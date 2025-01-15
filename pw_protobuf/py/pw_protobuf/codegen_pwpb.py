@@ -642,17 +642,20 @@ class MessageProperty(ProtoMember):
         ]
 
     @abc.abstractmethod
-    def _size_fn(self) -> str:
-        """Returns the name of the field size function."""
+    def _size_fn(self) -> tuple[str, bool]:
+        """Returns the name of the field size function, and whether it requires
+        an additional value size to be added.
+        """
 
     def _size_length(self) -> str | None:  # pylint: disable=no-self-use
         """Returns the length to add to the maximum encoded size."""
         return None
 
-    def max_encoded_size(self) -> str:
+    def max_encoded_size(self, static: bool = True) -> str | None:
         """Returns a constant expression for field's maximum encoded size."""
+        size_fn, requires_value = self._size_fn()
         size_call = '{}::{}({})'.format(
-            PROTOBUF_NAMESPACE, self._size_fn(), self.field_cast()
+            PROTOBUF_NAMESPACE, size_fn, self.field_cast()
         )
 
         if self.is_repeated():
@@ -661,15 +664,15 @@ class MessageProperty(ProtoMember):
             # https://protobuf.dev/programming-guides/encoding/#packed
             if self.max_size():
                 size_call += f' * {self.max_size_constant_name()}'
-            else:
-                # TODO: https://pwbug.dev/379868242 - Change this to return
-                # None to indicate that we don't know the maximum encoded size,
-                # because the field is unconstrained.
-                msg = 'TODO: https://pwbug.dev/379868242 - Max size unknown!'
-                size_call += f' /* {msg} */'
+            elif static:
+                # The field is unconstrained, so its maximum encoded size cannot
+                # be known.
+                return None
 
         size_length: str | None = self._size_length()
         if size_length is None:
+            if static and requires_value:
+                return None
             return size_call
 
         return f'{size_call} + {size_length}'
@@ -803,18 +806,18 @@ class SubMessageProperty(MessageProperty):
 
         return '&{}::kMessageFields'.format(self._relative_type_namespace())
 
-    def _size_fn(self) -> str:
+    def _size_fn(self) -> tuple[str, bool]:
         # This uses the WithoutValue method to ensure that the maximum length
         # of the delimited field size varint is used. This is because the nested
         # message might include callbacks and be longer than we expect, and to
         # account for scratch overhead when used with MemoryEncoder.
-        return 'SizeOfDelimitedFieldWithoutValue'
+        return 'SizeOfDelimitedFieldWithoutValue', True
 
     def _size_length(self) -> str | None:
         if self.callback_type() is not _CallbackType.NONE:
             return None
 
-        return '{}::kMaxEncodedSizeBytes'.format(
+        return '{}::kMaxEncodedSizeBytesWithoutValues'.format(
             self._relative_type_namespace()
         )
 
@@ -936,8 +939,8 @@ class DoubleProperty(MessageProperty):
     def wire_type(self) -> str:
         return 'kFixed64'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldDouble'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldDouble', False
 
 
 class FloatWriteMethod(WriteMethod):
@@ -1035,8 +1038,8 @@ class FloatProperty(MessageProperty):
     def wire_type(self) -> str:
         return 'kFixed32'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldFloat'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldFloat', False
 
 
 class Int32WriteMethod(WriteMethod):
@@ -1137,8 +1140,8 @@ class Int32Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kNormal'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldInt32'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldInt32', False
 
 
 class Sint32WriteMethod(WriteMethod):
@@ -1239,8 +1242,8 @@ class Sint32Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kZigZag'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldSint32'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldSint32', False
 
 
 class Sfixed32WriteMethod(WriteMethod):
@@ -1338,8 +1341,8 @@ class Sfixed32Property(MessageProperty):
     def wire_type(self) -> str:
         return 'kFixed32'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldSfixed32'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldSfixed32', False
 
 
 class Int64WriteMethod(WriteMethod):
@@ -1440,8 +1443,8 @@ class Int64Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kNormal'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldInt64'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldInt64', False
 
 
 class Sint64WriteMethod(WriteMethod):
@@ -1536,8 +1539,8 @@ class Sint64Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kZigZag'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldSint64'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldSint64', False
 
 
 class Sfixed64WriteMethod(WriteMethod):
@@ -1629,8 +1632,8 @@ class Sfixed64Property(MessageProperty):
     def wire_type(self) -> str:
         return 'kFixed64'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldSfixed64'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldSfixed64', False
 
 
 class Uint32WriteMethod(WriteMethod):
@@ -1731,8 +1734,8 @@ class Uint32Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kUnsigned'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldUint32'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldUint32', False
 
 
 class Fixed32WriteMethod(WriteMethod):
@@ -1830,8 +1833,8 @@ class Fixed32Property(MessageProperty):
     def wire_type(self) -> str:
         return 'kFixed32'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldFixed32'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldFixed32', False
 
 
 class Uint64WriteMethod(WriteMethod):
@@ -1932,8 +1935,8 @@ class Uint64Property(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kUnsigned'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldUint64'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldUint64', False
 
 
 class Fixed64WriteMethod(WriteMethod):
@@ -2031,8 +2034,8 @@ class Fixed64Property(MessageProperty):
     def wire_type(self) -> str:
         return 'kFixed64'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldFixed64'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldFixed64', False
 
 
 class BoolWriteMethod(WriteMethod):
@@ -2123,8 +2126,8 @@ class BoolProperty(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kUnsigned'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldBool'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldBool', False
 
 
 class BytesWriteMethod(WriteMethod):
@@ -2215,11 +2218,11 @@ class BytesProperty(MessageProperty):
     def wire_type(self) -> str:
         return 'kDelimited'
 
-    def _size_fn(self) -> str:
+    def _size_fn(self) -> tuple[str, bool]:
         # This uses the WithoutValue method to ensure that the maximum length
         # of the delimited field size varint is used. This accounts for scratch
         # overhead when used with MemoryEncoder.
-        return 'SizeOfDelimitedFieldWithoutValue'
+        return 'SizeOfDelimitedFieldWithoutValue', True
 
     def _size_length(self) -> str | None:
         if self.callback_type() is not _CallbackType.NONE:
@@ -2351,11 +2354,11 @@ class StringProperty(MessageProperty):
     def repeated_field_container(type_name: str, max_size: str) -> str:
         return f'::pw::InlineBasicString<{type_name}, {max_size}>'
 
-    def _size_fn(self) -> str:
+    def _size_fn(self) -> tuple[str, bool]:
         # This uses the WithoutValue method to ensure that the maximum length
         # of the delimited field size varint is used. This accounts for scratch
         # overhead when used with MemoryEncoder.
-        return 'SizeOfDelimitedFieldWithoutValue'
+        return 'SizeOfDelimitedFieldWithoutValue', False
 
     def _size_length(self) -> str | None:
         if self.callback_type() is not _CallbackType.NONE:
@@ -2542,8 +2545,8 @@ class EnumProperty(MessageProperty):
     def varint_decode_type(self) -> str:
         return 'kUnsigned'
 
-    def _size_fn(self) -> str:
-        return 'SizeOfFieldEnum'
+    def _size_fn(self) -> tuple[str, bool]:
+        return 'SizeOfFieldEnum', False
 
 
 # Mapping of protobuf field types to their method definitions.
@@ -3306,23 +3309,56 @@ def generate_sizes_for_message(
     namespace = message.cpp_namespace(root=root)
     output.write_line(f'namespace {namespace} {{')
 
-    property_sizes: list[str] = []
+    statically_known_property_sizes: list[str] = []
+    all_property_sizes: list[str] = []
     scratch_sizes: list[str] = []
-    for prop in proto_message_field_props(codegen_options, message, root):
-        property_sizes.append(prop.max_encoded_size())
-        if prop.include_in_scratch_size():
-            scratch_sizes.append(prop.max_encoded_size())
 
-    output.write_line('inline constexpr size_t kMaxEncodedSizeBytes =')
-    with output.indent():
-        if len(property_sizes) == 0:
-            output.write_line('0;')
-        while len(property_sizes) > 0:
-            property_size = property_sizes.pop(0)
-            if len(property_sizes) > 0:
-                output.write_line(f'{property_size} +')
-            else:
-                output.write_line(f'{property_size};')
+    for prop in proto_message_field_props(codegen_options, message, root):
+        static_size = prop.max_encoded_size()
+        variable_size = cast(str, prop.max_encoded_size(static=False))
+
+        all_property_sizes.append(variable_size)
+        if static_size is not None:
+            statically_known_property_sizes.append(static_size)
+
+        if prop.include_in_scratch_size():
+            scratch_sizes.append(variable_size)
+
+    def sum_sizes(sizes: list[str]):
+        with output.indent():
+            if len(sizes) == 0:
+                output.write_line('0;')
+            for i, property_size in enumerate(sizes):
+                if i == len(sizes) - 1:
+                    output.write_line(f'{property_size};')
+                else:
+                    output.write_line(f'{property_size} +')
+
+    if len(statically_known_property_sizes) == len(all_property_sizes):
+        output.write_line('inline constexpr size_t kMaxEncodedSizeBytes =')
+        sum_sizes(all_property_sizes)
+    else:
+        # TODO: b/379868242 - Temporarily keep the old `kMaxEncodedSizeBytes`
+        # definition to allow projects to migrate to using
+        # `kMaxEncodedSizeBytesWithoutValues` where appropriate.
+        # This else block should be removed following migration.
+        output.write_line(
+            '// This size is misleading as this generated struct contains '
+            'callback-based'
+        )
+        output.write_line('// fields, whose value sizes are unconstrained.')
+        output.write_line(
+            '// Future versions of pw_protobuf will not generate this constant '
+            'for this struct.'
+        )
+        output.write_line('// Use `kMaxEncodedSizeBytesWithoutValues` instead.')
+        output.write_line('inline constexpr size_t kMaxEncodedSizeBytes =')
+        sum_sizes(all_property_sizes)
+
+    output.write_line(
+        'inline constexpr size_t kMaxEncodedSizeBytesWithoutValues ='
+    )
+    sum_sizes(all_property_sizes)
 
     output.write_line()
     output.write_line(

@@ -181,9 +181,30 @@ The ``Point`` message can be fully compared for equality, but ``Label`` cannot.
 Buffer Sizes
 ------------
 Initializing a ``MemoryEncoder`` requires that you specify the size of the
-buffer to encode to. The code generation includes a ``kMaxEncodedSizeBytes``
-constant that represents the maximum encoded size of the protobuf message,
-excluding the contents of any field values which require a callback.
+buffer to encode to. The code generation includes constants which assist with
+sizing your buffers, listed below:
+
+- ``kMaxEncodedSizeBytes``: In messages where the size of every field is known,
+  either due to them being scalar fields or having size/count limits specified
+  through an options file, this constant defines the maximum size of the message
+  if every field is set to its largest possible value.
+
+  If the size of the message cannot be statically determined, typically due to
+  callback fields within the message, this constant will not be generated.
+
+- ``kMaxEncodedSizeBytesWithoutValues``: The maximum size of the encoded message
+  excluding any dynamic variable-length fields such as those requiring
+  callbacks. If the message contains only statically known field sizes, meeting
+  the criteria to generate ``kMaxEncodedSizeBytes``, this value will be
+  identical to it.
+
+- Field-specific size constants (``k{FieldName}MaxSize``): String or bytes
+  fields specifying a maximum or fixed size option define those sizes as
+  constants.
+
+In the below example, because the ``name`` field has a ``max_size`` specified
+in the accompanying options file, ``kMaxEncodedSizeBytes`` includes the maximum
+length of the value for that field.
 
 .. code-block:: c++
 
@@ -202,18 +223,15 @@ excluding the contents of any field values which require a callback.
      PW_LOG_INFO("Failed to encode proto; %s", encoder.status().str());
    }
 
-In the above example, because the ``name`` field has a ``max_size`` specified
-in the accompanying options file, ``kMaxEncodedSizeBytes`` includes the maximum
-length of the value for that field.
-
 Where the maximum length of a field value is not known, indicated by the
-structure requiring a callback for that field, the constant includes
-all relevant overhead and only requires that you add the length of the field
-values.
+structure requiring a callback for that field, ``kMaxEncodedSizeBytes`` will
+not be defined to indicate that additional computation is required from the
+user.
 
 For example if a ``bytes`` field length is not specified in the options file,
 but is known to your code (``kMaxImageDataSize`` in this example being a
-constant in your own code), you can simply add it to the generated constant:
+constant in your own code), you can simply add it to the generated
+``kMaxEncodedSizeBytesWithoutValues`` constant:
 
 .. code-block:: c++
 
@@ -227,7 +245,7 @@ constant in your own code), you can simply add it to the generated constant:
      return encoder.WriteImageData(image_data);
    });
 
-   std::byte buffer[Store::kMaxEncodedSizeBytes + kMaxImageDataSize];
+   std::byte buffer[Store::kMaxEncodedSizeBytesWithoutValues + kMaxImageDataSize];
    Store::MemoryEncoder encoder(buffer);
    const auto status = encoder.Write(store);
 
@@ -254,7 +272,7 @@ from one message type to another:
      return pw::OkStatus();
    });
 
-   std::byte buffer[Person::kMaxEncodedSizeBytes +
+   std::byte buffer[Person::kMaxEncodedSizeBytesWithoutValues +
                     Grandparent::kMaxEncodedSizeBytes * 4];
    Person::MemoryEncoder encoder(buffer);
    const auto status = encoder.Write(grandchild);

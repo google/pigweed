@@ -66,10 +66,20 @@ constexpr std::byte ToByte() {
 }
 
 TEST(Codegen, Codegen) {
-  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes +
-                          DeviceInfo::kMaxEncodedSizeBytes];
+  // The encoded size constants don't account for variable length values, so
+  // add some additional space for the expected sizes of values we intend to
+  // encode.
+  constexpr size_t kPigweedMaxValuesSize = 64;
+  constexpr size_t kDeviceInfoMaxValuesSize = 32;
+
+  std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytesWithoutValues +
+                          kPigweedMaxValuesSize +
+                          DeviceInfo::kMaxEncodedSizeBytesWithoutValues +
+                          kDeviceInfoMaxValuesSize];
   std::byte temp_buffer[Pigweed::kScratchBufferSizeBytes +
-                        DeviceInfo::kMaxEncodedSizeBytes];
+                        kPigweedMaxValuesSize +
+                        DeviceInfo::kMaxEncodedSizeBytesWithoutValues +
+                        kDeviceInfoMaxValuesSize];
   stream::MemoryWriter writer(encode_buffer);
 
   Pigweed::StreamEncoder pigweed(writer, temp_buffer);
@@ -221,7 +231,7 @@ TEST(Codegen, Codegen) {
 TEST(Codegen, RecursiveSubmessage) {
   // 12 here represents the longest name. Note that all field structure is taken
   // care of, we just have to multiply by how many crates we're encoding, ie. 4.
-  std::byte encode_buffer[(Crate::kMaxEncodedSizeBytes + 12) * 4];
+  std::byte encode_buffer[(Crate::kMaxEncodedSizeBytesWithoutValues + 12) * 4];
 
   Crate::MemoryEncoder biggest_crate(encode_buffer);
   ASSERT_EQ(OkStatus(), biggest_crate.WriteName("Huge crate"));
@@ -293,7 +303,7 @@ TEST(CodegenRepeated, ConstrainedFull) {
 }
 
 TEST(CodegenRepeated, NonPackedScalar) {
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues + 32];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -328,7 +338,7 @@ TEST(CodegenRepeated, NonPackedScalar) {
 }
 
 TEST(CodegenRepeated, PackedScalar) {
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues + 32];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -361,7 +371,7 @@ TEST(CodegenRepeated, PackedScalar) {
 }
 
 TEST(CodegenRepeated, PackedBool) {
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues + 8];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -383,7 +393,7 @@ TEST(CodegenRepeated, PackedBool) {
 }
 
 TEST(CodegenRepeated, PackedScalarVector) {
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues + 32];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -416,7 +426,7 @@ TEST(CodegenRepeated, PackedScalarVector) {
 }
 
 TEST(CodegenRepeated, PackedEnum) {
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues + 8];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -438,7 +448,7 @@ TEST(CodegenRepeated, PackedEnum) {
 }
 
 TEST(CodegenRepeated, PackedEnumVector) {
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues + 8];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -461,7 +471,7 @@ TEST(CodegenRepeated, PackedEnumVector) {
 }
 
 TEST(CodegenRepeated, NonScalar) {
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues + 32];
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
@@ -481,10 +491,14 @@ TEST(CodegenRepeated, NonScalar) {
 }
 
 TEST(CodegenRepeated, Message) {
-  std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
+  constexpr size_t kNumStructs = 3;
+
+  std::byte
+      encode_buffer[RepeatedTest::kMaxEncodedSizeBytesWithoutValues +
+                    kNumStructs * test::pwpb::Struct::kMaxEncodedSizeBytes];
 
   RepeatedTest::MemoryEncoder repeated_test(encode_buffer);
-  for (uint32_t i = 0; i < 3; ++i) {
+  for (uint32_t i = 0; i < kNumStructs; ++i) {
     auto structs = repeated_test.GetStructsEncoder();
     ASSERT_EQ(OkStatus(), structs.WriteOne(i * 1));
     ASSERT_EQ(OkStatus(), structs.WriteTwo(i * 2));
@@ -504,7 +518,7 @@ TEST(CodegenRepeated, Message) {
 }
 
 TEST(Codegen, Proto2) {
-  std::byte encode_buffer[Foo::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[Foo::kMaxEncodedSizeBytesWithoutValues + 8];
 
   Foo::MemoryEncoder foo(encode_buffer);
   ASSERT_EQ(OkStatus(), foo.WriteInteger(3));
@@ -548,7 +562,7 @@ TEST(Codegen, Import) {
 TEST(Codegen, NonPigweedPackage) {
   namespace Packed = ::non::pigweed::package::name::pwpb::Packed;
 
-  std::byte encode_buffer[Packed::kMaxEncodedSizeBytes];
+  std::byte encode_buffer[Packed::kMaxEncodedSizeBytesWithoutValues + 8];
   std::array<const int64_t, 2> repeated = {0, 1};
   stream::MemoryWriter writer(encode_buffer);
   Packed::StreamEncoder packed(writer, ByteSpan());

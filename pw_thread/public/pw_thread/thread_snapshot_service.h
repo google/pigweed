@@ -28,11 +28,14 @@ Status ProtoEncodeThreadInfo(pwpb::SnapshotThreadInfo::StreamEncoder& encoder,
                              const ThreadInfo& thread_info);
 
 // Calculates encoded buffer size based on code gen constants.
-constexpr size_t RequiredServiceBufferSize(
+// This constant does not account for dynamic fields within each message, such
+// as its name, raw stack, and backtrace if present. Users must manually add
+// space for these if required.
+constexpr size_t RequiredServiceBufferSizeWithoutVariableFields(
     size_t num_threads = PW_THREAD_MAXIMUM_THREADS) {
   constexpr size_t kSizeOfResponse =
-      pwpb::SnapshotThreadInfo::kMaxEncodedSizeBytes +
-      pwpb::Thread::kMaxEncodedSizeBytes;
+      pwpb::SnapshotThreadInfo::kMaxEncodedSizeBytesWithoutValues +
+      pwpb::Thread::kMaxEncodedSizeBytesWithoutValues;
   return kSizeOfResponse * num_threads;
 }
 
@@ -76,7 +79,9 @@ class ThreadSnapshotServiceBuffer : public ThreadSnapshotService {
       : ThreadSnapshotService(encode_buffer_, thread_proto_indices_) {}
 
  private:
-  std::array<std::byte, RequiredServiceBufferSize(kNumThreads)> encode_buffer_;
+  std::array<std::byte,
+             RequiredServiceBufferSizeWithoutVariableFields(kNumThreads)>
+      encode_buffer_;
   // + 1 is needed to account for extra index that comes with the first
   // submessage start or the last submessage end.
   Vector<size_t, kNumThreads + 1> thread_proto_indices_;
