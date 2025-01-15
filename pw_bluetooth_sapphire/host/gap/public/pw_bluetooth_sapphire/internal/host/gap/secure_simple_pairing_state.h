@@ -344,12 +344,16 @@ class SecureSimplePairingState final {
    public:
     static std::unique_ptr<Pairing> MakeInitiator(
         BrEdrSecurityRequirements security_requirements,
-        bool outgoing_connection);
+        bool outgoing_connection,
+        Peer::PairingToken&& token);
     static std::unique_ptr<Pairing> MakeResponder(
-        pw::bluetooth::emboss::IoCapability peer_iocap, bool link_inititated);
+        pw::bluetooth::emboss::IoCapability peer_iocap,
+        bool link_inititated,
+        Peer::PairingToken&& token);
     // Make a responder for a peer that has initiated a pairing (asked for our
     // key while in idle)
-    static std::unique_ptr<Pairing> MakeResponderForBonded();
+    static std::unique_ptr<Pairing> MakeResponderForBonded(
+        Peer::PairingToken&& token);
 
     // For a Pairing whose |initiator|, |local_iocap|, and |peer_iocap| are
     // already set, compute and set |action|, |expected_event|, |authenticated|,
@@ -393,9 +397,13 @@ class SecureSimplePairingState final {
     // properties).
     BrEdrSecurityRequirements preferred_security;
 
+    Peer::PairingToken pairing_token;
+
    private:
-    explicit Pairing(bool automatic)
-        : allow_automatic(automatic), weak_self_(this) {}
+    explicit Pairing(bool automatic, Peer::PairingToken&& token)
+        : allow_automatic(automatic),
+          pairing_token(std::move(token)),
+          weak_self_(this) {}
 
     WeakSelf<Pairing> weak_self_;
   };

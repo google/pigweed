@@ -204,6 +204,7 @@ TEST_F(PairingStateTest,
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
   EXPECT_EQ(1u, auth_request_count());
   EXPECT_TRUE(pairing_state.initiator());
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(PairingStateTest,
@@ -238,6 +239,7 @@ TEST_F(
                                          MakeAuthRequestCallback(),
                                          NoOpStatusCallback);
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
   ASSERT_FALSE(pairing_state.initiator());
 
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
@@ -371,6 +373,7 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(kTestHandle, *link_status_handler.handle());
   ASSERT_TRUE(link_status_handler.status());
   EXPECT_EQ(ToResult(HostError::kNotSupported), *link_status_handler.status());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 
   // Try to initiate pairing again.
   TestStatusHandler pairing_status_handler;
@@ -384,6 +387,7 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(kTestHandle, *pairing_status_handler.handle());
   ASSERT_TRUE(pairing_status_handler.status());
   EXPECT_EQ(ToResult(HostError::kCanceled), *pairing_status_handler.status());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(PairingStateTest,
@@ -459,6 +463,7 @@ TEST_F(PairingStateTest, PeerMayChangeLinkKeyWhenInIdleState) {
   ASSERT_TRUE(connection()->ltk_type().has_value());
   EXPECT_EQ(kTestChangedLinkKeyType, connection()->ltk_type().value());
   EXPECT_EQ(0, status_handler.call_count());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 }
 
 // Inject events that occur during the course of a successful pairing as an
@@ -619,6 +624,7 @@ TEST_F(PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
   // Advance state machine as pairing responder.
   pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
   ASSERT_FALSE(pairing_state.initiator());
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
   pairing_state.OnUserConfirmationRequest(kTestPasskey,
                                           NoOpUserConfirmationCallback);
@@ -645,6 +651,7 @@ TEST_F(PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
   EXPECT_EQ(kTestHandle, *status_handler.handle());
   ASSERT_TRUE(status_handler.status());
   EXPECT_EQ(fit::ok(), *status_handler.status());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 
   // Errors for a new pairing shouldn't invoke the attempted initiator's
   // callback.
@@ -712,6 +719,7 @@ TEST_F(PairingStateTest,
   pairing_state.InitiatePairing(kNoSecurityRequirements,
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
   // We should permit the pairing state machine to continue even without a
   // PairingDelegate, as we may have an existing bond to restore, which can be
   // done without a PairingDelegate.
@@ -728,6 +736,7 @@ TEST_F(PairingStateTest,
   ASSERT_TRUE(initiator_status_handler.status());
   EXPECT_EQ(ToResult(HostError::kNotReady), *initiator_status_handler.status());
   EXPECT_EQ(initiator_status_handler.status(), owner_status_handler.status());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(PairingStateTest,
@@ -745,6 +754,7 @@ TEST_F(PairingStateTest,
       pw::bluetooth::emboss::IoCapability::DISPLAY_YES_NO);
   EXPECT_FALSE(pairing_state.initiator());
   EXPECT_EQ(0, status_handler.call_count());
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
 
   // We expect to be notified that there are no IOCapabilities, as there is no
   // PairingDelegate to provide them.
@@ -753,6 +763,7 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
   EXPECT_EQ(ToResult(HostError::kNotReady), *status_handler.status());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
@@ -880,11 +891,13 @@ TEST_F(PairingStateTest,
   // Advance state machine.
   pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
   pairing_state.OnUserConfirmationRequest(kTestPasskey,
                                           NoOpUserConfirmationCallback);
   pairing_state.OnSimplePairingComplete(
       pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
 
   // Ensure that P-256 authenticated link key was provided
   pairing_state.OnLinkKeyNotification(
@@ -896,6 +909,7 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
 
   EXPECT_EQ(0, status_handler.call_count());
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
 }
 
 TEST_F(PairingStateTest,
@@ -2570,6 +2584,7 @@ TEST_F(PairingStateTest, ResponderSignalsCompletionOfPairing) {
                                          MakeAuthRequestCallback(),
                                          status_handler.MakeStatusCallback());
   EXPECT_FALSE(pairing_state.initiator());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 
   auto existing_link_key = sm::LTK(
       sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192), kTestLinkKey);
@@ -2581,6 +2596,7 @@ TEST_F(PairingStateTest, ResponderSignalsCompletionOfPairing) {
   ASSERT_TRUE(reply_key.has_value());
   EXPECT_EQ(kTestLinkKey, reply_key.value());
   EXPECT_EQ(0, status_handler.call_count());
+  EXPECT_TRUE(peer()->MutBrEdr().is_pairing());
 
   // If a pairing request comes in after the peer has already asked for the key,
   // we add it's completion to the queue.
@@ -2594,6 +2610,7 @@ TEST_F(PairingStateTest, ResponderSignalsCompletionOfPairing) {
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status().has_value());
   EXPECT_EQ(ToResult(expected_status), status_handler.status().value());
+  EXPECT_FALSE(peer()->MutBrEdr().is_pairing());
 
   // and the new pairing handler gets called back too
   EXPECT_EQ(1, new_pairing_handler.call_count());
