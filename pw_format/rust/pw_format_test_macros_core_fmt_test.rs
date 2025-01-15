@@ -164,5 +164,11 @@ mod tests {
             core_fmt_format_core_fmt_generator_test_macro!("Test {:08} test", 0x42 as u32),
             ("Test {:08} test", expected_fragments.clone())
         );
+
+        // Alternate syntax.
+        assert_eq!(
+            core_fmt_format_core_fmt_generator_test_macro!("Test {:#08x} test", 0x42 as u32),
+            ("Test {:#08x} test", expected_fragments.clone())
+        );
     }
 }

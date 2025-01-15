@@ -89,6 +89,9 @@ pub struct FormatParams {
 
     /// Zero padding.  (i.e. the existence of `0` in `{:08x}`).
     pub zero_padding: bool,
+
+    /// Alternate syntax.  (i.e. the existence of `#` in `{:#08x}`).
+    pub alternate_syntax: bool,
 }
 
 impl FormatParams {
@@ -113,7 +116,9 @@ impl FormatParams {
             ),
         };
 
-        format!("{zero_pad}{min_field_width}")
+        let alternate_syntax = if self.alternate_syntax { "#" } else { "" };
+
+        format!("{alternate_syntax}{zero_pad}{min_field_width}")
     }
 
     fn core_fmt_specifier(&self) -> Result<String> {
@@ -158,6 +163,7 @@ impl TryFrom<&ConversionSpec> for FormatParams {
             style: spec.style,
             min_field_width,
             zero_padding: spec.flags.contains(&Flag::LeadingZeros),
+            alternate_syntax: spec.flags.contains(&Flag::AlternateSyntax),
         })
     }
 }
@@ -171,12 +177,14 @@ impl ToTokens for FormatParams {
             Some(val) => quote! {Some(#val)},
         };
         let zero_padding = self.zero_padding;
+        let alternate_syntax = self.alternate_syntax;
 
         quote! {
             pw_format::macros::FormatParams {
                 style: #style,
                 min_field_width: #min_field_width,
                 zero_padding: #zero_padding,
+                alternate_syntax: #alternate_syntax,
             }
         }
         .to_tokens(tokens)

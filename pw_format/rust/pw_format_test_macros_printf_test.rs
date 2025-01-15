@@ -71,6 +71,7 @@ mod tests {
                         style: Style::None,
                         min_field_width: None,
                         zero_padding: false,
+                        alternate_syntax: false,
                     },
                     signed: true,
                     type_width: 32,
@@ -91,8 +92,9 @@ mod tests {
     fn generate_printf_calls_generator_correctly() {
         assert_eq!(
             printf_format_printf_generator_test_macro!(
-                "test %ld %s %c %v %v",
+                "test %ld %#08x %s %c %v %v",
                 5,
+                0x42,
                 "test",
                 'c',
                 1 as i32,
@@ -102,12 +104,17 @@ mod tests {
                 // %ld gets converted to %d because they are equivalent for 32 bit
                 // systems.
                 // %v gets converted to %d since we pass in a signed integer.
-                "test %d %s %c %d %s",
+                "test %d %#08x %s %c %d %s",
                 vec![
                     PrintfTestGeneratorOps::StringFragment("test ".to_string()),
                     PrintfTestGeneratorOps::IntegerConversion {
                         ty: "i32".to_string(),
                         arg: "5".to_string(),
+                    },
+                    PrintfTestGeneratorOps::StringFragment(" ".to_string()),
+                    PrintfTestGeneratorOps::IntegerConversion {
+                        ty: "u32".to_string(),
+                        arg: "0x42".to_string(),
                     },
                     PrintfTestGeneratorOps::StringFragment(" ".to_string()),
                     PrintfTestGeneratorOps::StringConversion("\"test\"".to_string()),
