@@ -24,7 +24,7 @@ bazel_dep(name = "boringssl", version = "0.20240913.0")
 bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
 bazel_dep(name = "gazelle", version = "0.36.0", repo_name = "bazel_gazelle")
 bazel_dep(name = "nanopb", version = "0.4.9.1", repo_name = "com_github_nanopb_nanopb")
-bazel_dep(name = "pico-sdk", version = "2.0.0")
+bazel_dep(name = "pico-sdk", version = "2.1.1-develop.bcr.20250113-4b6e6475")
 bazel_dep(name = "picotool", version = "2.0.0")
 bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "protobuf", version = "28.2", repo_name = "com_google_protobuf")
@@ -128,6 +128,17 @@ cipd_repository(
     name = "llvm_toolchain",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
+    tag = "git_revision:9d3f9f47e6e630b8308562297757e0911be03a18",
+)
+
+# TODO: https://pwbug.dev/388593877 - macOS toolchain is behind because of a
+# breakage in C++ standard library headers. Remove this when the upstream LLVM
+# bug (https://github.com/llvm/llvm-project/issues/117630) is fixed and
+# rolled into Pigweed.
+cipd_repository(
+    name = "llvm_toolchain_macos",
+    build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
+    path = "fuchsia/third_party/clang/${os}-${arch}",
     tag = "git_revision:8280651ad57cb9fb24a404cec2401040c28dec98",
 )
 
@@ -137,7 +148,7 @@ cipd_repository(
     name = "llvm_toolchain_device",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:0dcada94bb1ae79f0edd91013038098c62a96b3b",
+    tag = "git_revision:9d3f9f47e6e630b8308562297757e0911be03a18",
 )
 
 # Fetch linux sysroot for host builds.

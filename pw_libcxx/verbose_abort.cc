@@ -16,8 +16,14 @@
 #include <cstdarg>
 #include <cstdlib>
 
+// Older LLVM distributions don't define this.
+#ifndef _LIBCPP_VERBOSE_ABORT_NOEXCEPT
+#define _LIBCPP_VERBOSE_ABORT_NOEXCEPT
+#endif  // _LIBCPP_VERBOSE_ABORT_NOEXCEPT
+
 // Inline functions in libc++ headers call this.
-[[noreturn]] void std::__libcpp_verbose_abort(const char* format, ...) {
+[[noreturn]] void std::__libcpp_verbose_abort(const char* format, ...)
+    _LIBCPP_VERBOSE_ABORT_NOEXCEPT {
   va_list list;
   va_start(list, format);
   // TODO: https://pwbug.dev/298822102 - Log the message, ideally using pw_log.

@@ -52,6 +52,7 @@ pw_executable("boot_stage2_elf") {
   ldflags += [
     "-T${_linker_script_path}",
     "-nostartfiles",
+    "-unwindlib=none",
   ]
 
   public_configs = [ ":public_include_dirs" ]

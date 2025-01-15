@@ -303,7 +303,9 @@ cc_args(
         ALL_CORTEX_M_CPUS: [
             "-nostdlib++",
             "-nostartfiles",
+            "-unwindlib=none",
             "-Wl,-lc++",
+            "-Wl,-lm",
         ],
         "//conditions:default": [],
     }),

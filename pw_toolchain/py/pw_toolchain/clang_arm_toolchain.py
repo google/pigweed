@@ -135,6 +135,7 @@ def get_cflags(compiler_info: dict[str, str]):
         "-nodefaultlibs",
         # Exclude start files from included in the link.
         "-nostartfiles",
+        "-unwindlib=none",
         '--target=arm-none-eabi',
     ]
 

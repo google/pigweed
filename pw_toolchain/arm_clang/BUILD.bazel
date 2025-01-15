@@ -99,6 +99,9 @@ cc_args(
         "-fno-use-cxa-atexit",
         "-fno-threadsafe-statics",
         "-D_LIBCPP_REMOVE_TRANSITIVE_INCLUDES",
+        # TODO: https://pwbug.dev/389170841 - Temporary workaround, this should
+        # be set by the toolchain's __config_site.
+        "-D_LIBCPP_HAS_NO_WIDE_CHARACTERS",
     ],
     data = [
         "//pw_libcxx:cxx_lib_configs",
