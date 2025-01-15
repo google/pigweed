@@ -42,7 +42,7 @@ void L2capChannel::MoveFields(L2capChannel& other) {
   {
     std::lock_guard lock(send_queue_mutex_);
     std::lock_guard other_lock(other.send_queue_mutex_);
-    send_queue_ = std::move(other.send_queue_);
+    payload_queue_ = std::move(other.payload_queue_);
     notify_on_dequeue_ = other.notify_on_dequeue_;
     l2cap_channel_manager_.ReleaseChannel(other);
     l2cap_channel_manager_.RegisterChannel(*this);
