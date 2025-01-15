@@ -247,7 +247,7 @@ cc_args(
     args = [
         "-DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION",
         "-UNDEBUG",
-        "-D_LIBCPP_ENABLE_ASSERTIONS=1",
+        "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG",
     ] + select({
         "@platforms//cpu:x86_64": ["-mcrc32"],
         "//conditions:default": [],
