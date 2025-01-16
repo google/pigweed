@@ -132,13 +132,15 @@ class Validator:
         # Resolve all trigger entries
         self._resolve_triggers(metadata=metadata, out=result)
 
-        compatible = metadata.pop("compatible")
+        compatible, compatible_str = Validator._get_compatible_string_and_dict(
+            metadata.pop("compatible")
+        )
         supported_buses = metadata.pop("supported-buses")
         channels = metadata.pop("channels")
         attributes = metadata.pop("attributes")
         triggers = metadata.pop("triggers")
 
-        result["sensors"][f"{compatible['org']},{compatible['part']}"] = {
+        result["sensors"][compatible_str] = {
             "compatible": compatible,
             "supported-buses": self._normalize_supported_buses(supported_buses),
             "channels": channels,
@@ -152,10 +154,11 @@ class Validator:
         try:
             jsonschema.validate(instance=result, schema=_RESOLVED_SCHEMA)
         except jsonschema.exceptions.ValidationError as e:
-            raise RuntimeError(
+            msg = (
                 "ERROR: Malformed output YAML: "
                 f"{yaml.safe_dump(result, indent=2)}"
-            ) from e
+            )
+            raise RuntimeError(msg) from e
 
         return result
 
@@ -184,6 +187,40 @@ class Validator:
             )
             raise RuntimeError(error)
         return filtered_list
+
+    @staticmethod
+    def _get_compatible_string_and_dict(
+        compatible: dict[str, str],
+    ) -> tuple[dict[str, str], str]:
+        """
+        Normalize compatible info
+
+        This function processes a 'compatible' dictionary with a 'part' key and
+        an optional 'org' key. It returns a new dictionary with the 'org' key
+        removed if it was empty or missing, and a formatted string based on the
+        'org' key's presence and value.
+
+        Args:
+            compatible (dict[str, str]): A dictionary with a 'part' key and an
+            optional 'org' key.
+
+        Returns:
+            Tuple[dict[str, str], str]: A tuple containing:
+            - A new dictionary with the 'org' key removed if it was empty or
+              missing.
+            - A formatted string:
+              - "{org},{part}" if 'org' exists and is not empty (after trimming)
+              - "part" otherwise.
+
+        """
+        part = compatible["part"].lower()
+        org = compatible.get("org", "").strip().lower()
+
+        new_compatible = {"part": part}
+        if org:
+            new_compatible["org"] = org
+            return new_compatible, f"{org},{part}"
+        return new_compatible, part
 
     def _resolve_dependencies(self, metadata: dict, out: dict) -> None:
         """

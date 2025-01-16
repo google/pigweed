@@ -121,7 +121,7 @@
       "type": "object",
       "description": "Set of sensors using their compatible string as a key in the format 'org','part'",
       "patternProperties": {
-        "^[a-zA-Z_][a-zA-Z0-9_\\-]*,[a-zA-Z_][a-zA-Z0-9_\\-]*$": {
+        "^[a-zA-Z0-9_\\-]*,?[a-zA-Z_][a-zA-Z0-9_\\-]*$": {
           "type": "object",
           "description": "A single sensor definition",
           "properties": {
@@ -140,7 +140,6 @@
               },
               "additionalProperties": false,
               "required": [
-                "org",
                 "part"
               ]
             },

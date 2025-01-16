@@ -42,7 +42,7 @@ class ValidatorTest(unittest.TestCase):
                 + "supported-buses:\n- i2c"
             ),
             cause_substrings=[
-                "'org' is a required property",
+                "'part' is a required property",
             ],
         )
 
@@ -71,6 +71,46 @@ class ValidatorTest(unittest.TestCase):
                 + "supported-buses:\n- i2c"
             ),
             cause_substrings=[" is not of type 'object'"],
+        )
+
+    def test_partial_compatible_string(self) -> None:
+        """
+        Check that missing 'org' generates correct keys and empty entries are
+        removed.
+        """
+        metadata: dict = {
+            "compatible": {"part": "pigweed"},
+            "supported-buses": ["i2c"],
+        }
+        result = Validator().validate(metadata=metadata)
+        self.assertIn("pigweed", result["sensors"])
+        self.assertDictEqual(
+            {"part": "pigweed"},
+            result["sensors"]["pigweed"]["compatible"],
+        )
+
+        metadata["compatible"]["org"] = " "
+        result = Validator().validate(metadata=metadata)
+        self.assertIn("pigweed", result["sensors"])
+        self.assertDictEqual(
+            {"part": "pigweed"},
+            result["sensors"]["pigweed"]["compatible"],
+        )
+
+    def test_compatible_string_to_lower(self) -> None:
+        """
+        Check that compatible components are converted to lowercase and
+        stripped.
+        """
+        metadata = {
+            "compatible": {"org": "Google", "part": "Pigweed"},
+            "supported-buses": ["i2c"],
+        }
+        result = Validator().validate(metadata=metadata)
+        self.assertIn("google,pigweed", result["sensors"])
+        self.assertDictEqual(
+            {"org": "google", "part": "pigweed"},
+            result["sensors"]["google,pigweed"]["compatible"],
         )
 
     def test_invalid_supported_buses(self) -> None:
