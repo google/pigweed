@@ -100,7 +100,7 @@ std::optional<H4PacketWithH4> RfcommChannel::GenerateNextTxPacket() {
 
   emboss::RfcommFrameWriter rfcomm = emboss::MakeRfcommFrameView(
       bframe.payload().BackingStorage().data(), bframe.payload().SizeInBytes());
-  PW_CHECK(rfcomm.IsComplete());
+  PW_CHECK(bframe.payload().SizeInBytes() >= frame_size);
 
   rfcomm.extended_address().Write(true);
   // TODO: https://pwbug.dev/378691959 - Sniff correct C/R/D from Multiplexer

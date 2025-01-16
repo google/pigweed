@@ -307,6 +307,50 @@ TEST_F(RfcommWriteTest, ExtendedWrite) {
   EXPECT_EQ(capture.sends_called, 1);
 }
 
+TEST_F(RfcommWriteTest, MixedLengthWrites) {
+  constexpr size_t kPayload1Size = 0x80;
+  constexpr size_t kPayload2Size = 0x3;
+  struct {
+    int sends_called = 0;
+    uint16_t handle = 0x0ACB;
+    // Random CID
+    uint16_t channel_id = 0x1234;
+    // RFCOMM information payload
+    std::array<uint8_t, kPayload1Size> payload = {
+        0xAB,
+        0xCD,
+        0xEF,
+    };
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&capture](H4PacketWithH4&&) { ++capture.sends_called; });
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/2);
+  // Allow proxy to reserve 2 credits.
+  PW_TEST_EXPECT_OK(SendReadBufferResponseFromController(proxy, 2));
+
+  RfcommParameters params = {.handle = capture.handle,
+                             .tx_config = {
+                                 .cid = capture.channel_id,
+                                 .max_information_length = 900,
+                                 .credits = 10,
+                             }};
+  RfcommChannel channel = BuildRfcomm(proxy, params);
+  PW_TEST_EXPECT_OK(
+      channel.Write(MultiBufFromSpan(pw::span(capture.payload))).status);
+  PW_TEST_EXPECT_OK(channel
+                        .Write(MultiBufFromSpan(
+                            pw::span(capture.payload).subspan(kPayload2Size)))
+                        .status);
+  EXPECT_EQ(capture.sends_called, 2);
+}
+
 TEST_F(RfcommWriteTest, WriteFlowControl) {
   struct {
     int sends_called = 0;
