@@ -209,8 +209,8 @@ def watch(
 ) -> None:
     """Watches files and runs commands when they change."""
     try:
-        wait = common.watch(watch_path, exclude_dirs, event_handler)
         event_handler.trigger_run('Triggering initial run...')
+        wait = common.watch(watch_path, exclude_dirs, event_handler)
         wait()
     # Ctrl-C on Unix generates KeyboardInterrupt
     # Ctrl-Z on Windows generates EOFError
