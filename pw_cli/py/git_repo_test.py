@@ -14,6 +14,7 @@
 # the License.
 """git repo module tests"""
 
+import os
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Dict
@@ -22,7 +23,8 @@ import unittest
 from unittest import mock
 
 from pw_cli.tool_runner import ToolRunner
-from pw_cli.git_repo import GitRepo
+from pw_cli.git_repo import GitRepo, GitRepoFinder
+from pyfakefs import fake_filesystem_unittest
 
 
 class FakeGitToolRunner(ToolRunner):
@@ -206,6 +208,268 @@ class TestGitRepo(unittest.TestCase):
         }
         repo = self.make_fake_git_repo(cmds)
         self.assertTrue(repo.has_uncommitted_changes())
+
+
+def _resolve(path: str) -> str:
+    """Needed to make Windows happy.
+
+    Since resolved paths start with drive letters, any literal string
+    paths in these tests need to be resolved so they are prefixed with `C:`.
+    """
+    # Avoid manipulation on other OSes since they don't strictly require it.
+    if os.name != 'nt':
+        return path
+    return str(Path(path).resolve())
+
+
+class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
+    """Tests for GitRepoFinder."""
+
+    FAKE_ROOT = _resolve('/dev/null/fake/root')
+    FAKE_NESTED_REPO = _resolve('/dev/null/fake/root/third_party/bogus')
+
+    def setUp(self):
+        self.setUpPyfakefs()
+        self.fs.create_dir(self.FAKE_ROOT)
+        os.chdir(self.FAKE_ROOT)
+
+    def test_cwd_is_root(self):
+        """Tests when cwd is the root of a repo."""
+        expected_repo_query = ' '.join(
+            (
+                '-C',
+                '.',
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {expected_repo_query: git_ok(expected_repo_query, self.FAKE_ROOT)}
+        )
+        finder = GitRepoFinder(runner)
+        path_to_search = '.'
+        maybe_repo = finder.find_git_repo(path_to_search)
+        self.assertNotEqual(
+            maybe_repo, None, f'Could not resolve {path_to_search}'
+        )
+        self.assertEqual(maybe_repo.root(), Path(self.FAKE_ROOT))
+
+    def test_cwd_is_not_repo(self):
+        """Tests when cwd is not tracked by a repo."""
+        expected_repo_query = ' '.join(
+            (
+                '-C',
+                '.',
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {expected_repo_query: git_err(expected_repo_query, self.FAKE_ROOT)}
+        )
+        finder = GitRepoFinder(runner)
+        self.assertEqual(finder.find_git_repo('.'), None)
+
+    def test_file(self):
+        """Tests a file at the root of a repo."""
+        expected_repo_query = ' '.join(
+            (
+                '-C',
+                '.',
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {expected_repo_query: git_ok(expected_repo_query, self.FAKE_ROOT)}
+        )
+        finder = GitRepoFinder(runner)
+        path_to_search = 'foo.txt'
+        self.fs.create_file(path_to_search)
+        maybe_repo = finder.find_git_repo(path_to_search)
+        self.assertNotEqual(
+            maybe_repo, None, f'Could not resolve {path_to_search}'
+        )
+        self.assertEqual(maybe_repo.root(), Path(self.FAKE_ROOT))
+
+    def test_parents_memoized(self):
+        """Tests multiple queries that are optimized via memoization."""
+        expected_repo_query = ' '.join(
+            (
+                '-C',
+                os.path.join('subdir', 'nested'),
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {expected_repo_query: git_ok(expected_repo_query, self.FAKE_ROOT)}
+        )
+        finder = GitRepoFinder(runner)
+
+        # Because of the ordering, only ONE call to git should be necessary.
+        paths = [
+            'subdir/nested/foo.txt',
+            'subdir/bar.txt',
+            'subdir/nested/baz.txt',
+            'bleh.txt',
+        ]
+        for file_to_find in paths:
+            self.fs.create_file(file_to_find)
+            maybe_repo = finder.find_git_repo(file_to_find)
+            self.assertNotEqual(
+                maybe_repo, None, f'Could not resolve {file_to_find}'
+            )
+            self.assertEqual(maybe_repo.root(), Path(self.FAKE_ROOT))
+
+    def test_absolute_path(self):
+        """Test that absolute paths hit memoized paths."""
+        expected_repo_query = ' '.join(
+            (
+                '-C',
+                os.path.join('subdir', 'nested'),
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {expected_repo_query: git_ok(expected_repo_query, self.FAKE_ROOT)}
+        )
+        finder = GitRepoFinder(runner)
+
+        # Because of the ordering, only ONE call to git should be necessary.
+        paths = [
+            'subdir/nested/foo.txt',
+            _resolve(f'{self.FAKE_ROOT}/subdir/bar.txt'),
+        ]
+        for file_to_find in paths:
+            self.fs.create_file(file_to_find)
+            maybe_repo = finder.find_git_repo(file_to_find)
+            self.assertNotEqual(
+                maybe_repo, None, f'Could not resolve {file_to_find}'
+            )
+            self.assertEqual(maybe_repo.root(), Path(self.FAKE_ROOT))
+
+    def test_subdir(self):
+        """Test that querying a dir properly memoizes things."""
+        expected_repo_query = ' '.join(
+            (
+                '-C',
+                'subdir',
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {expected_repo_query: git_ok(expected_repo_query, self.FAKE_ROOT)}
+        )
+        finder = GitRepoFinder(runner)
+
+        dir_to_check = 'subdir'
+        self.fs.create_dir(dir_to_check)
+        maybe_repo = finder.find_git_repo(dir_to_check)
+        self.assertNotEqual(
+            maybe_repo, None, f'Could not resolve {dir_to_check}'
+        )
+        self.assertEqual(maybe_repo.root(), Path(self.FAKE_ROOT))
+
+    def test_nested_repo(self):
+        """Test a nested repo works as expected."""
+        expected_inner_repo_query = ' '.join(
+            (
+                '-C',
+                os.path.join('third_party', 'bogus', 'test'),
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        expected_outer_repo_query = ' '.join(
+            (
+                '-C',
+                'test',
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {
+                expected_inner_repo_query: git_ok(
+                    expected_inner_repo_query, self.FAKE_NESTED_REPO
+                ),
+                expected_outer_repo_query: git_ok(
+                    expected_outer_repo_query, self.FAKE_ROOT
+                ),
+            }
+        )
+        finder = GitRepoFinder(runner)
+
+        inner_repo_file = "third_party/bogus/test/baz.txt"
+        self.fs.create_file(inner_repo_file)
+        maybe_repo = finder.find_git_repo(inner_repo_file)
+        self.assertNotEqual(
+            maybe_repo, None, f'Could not resolve {inner_repo_file}'
+        )
+        self.assertEqual(maybe_repo.root(), Path(self.FAKE_NESTED_REPO))
+
+        outer_repo_file = "test/baz.txt"
+        self.fs.create_file(outer_repo_file)
+        maybe_repo = finder.find_git_repo(outer_repo_file)
+        self.assertNotEqual(
+            maybe_repo, None, f'Could not resolve {outer_repo_file}'
+        )
+        self.assertEqual(maybe_repo.root(), Path(self.FAKE_ROOT))
+
+    def test_absolute_repo_not_under_cwd(self):
+        """Test an absolute path that isn't a subdir of cwd works."""
+        fake_parallel_repo = _resolve('/dev/null/fake/parallel')
+        expected_repo_query = ' '.join(
+            (
+                '-C',
+                _resolve('/dev/null/fake/parallel/yep'),
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {
+                expected_repo_query: git_ok(
+                    expected_repo_query, fake_parallel_repo
+                )
+            }
+        )
+        finder = GitRepoFinder(runner)
+        path_to_search = _resolve('/dev/null/fake/parallel/yep/foo.txt')
+        self.fs.create_file(path_to_search)
+        maybe_repo = finder.find_git_repo(path_to_search)
+        self.assertNotEqual(
+            maybe_repo, None, f'Could not resolve {path_to_search}'
+        )
+        self.assertEqual(maybe_repo.root(), Path(fake_parallel_repo))
+
+    def test_absolute_not_under_cwd(self):
+        """Test files not tracked by a repo."""
+        expected_repo_query = ' '.join(
+            (
+                '-C',
+                _resolve('/dev/null/fake/parallel/yep'),
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {expected_repo_query: git_err(expected_repo_query, '')}
+        )
+        finder = GitRepoFinder(runner)
+        # Because of the ordering, only ONE call to git should be necessary.
+        paths = [
+            _resolve('/dev/null/fake/parallel/yep/foo.txt'),
+            _resolve('/dev/null/fake/bar.txt'),
+            _resolve('/dev/null/fake/parallel/yep'),
+        ]
+        for file_to_find in paths:
+            if file_to_find.endswith('.txt'):
+                self.fs.create_file(file_to_find)
+            self.assertEqual(finder.find_git_repo(file_to_find), None)
 
 
 if __name__ == '__main__':

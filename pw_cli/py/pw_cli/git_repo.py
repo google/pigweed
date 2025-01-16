@@ -14,6 +14,7 @@
 """Helpful commands for working with a Git repository."""
 
 from datetime import datetime
+import itertools
 import logging
 from pathlib import Path
 import re
@@ -329,6 +330,95 @@ class GitRepo:
 
     def diff(self, *args) -> str:
         return self._git('diff', *args)
+
+
+class GitRepoFinder:
+    """An efficient way to map files to the repo that tracks them (if any).
+
+    This class is optimized to minimize subprocess calls to git so that many
+    file paths can efficiently be mapped to their parent repo.
+    """
+
+    def __init__(self, tool_runner: ToolRunner):
+        self.tool_runner = tool_runner
+        # A dictionary mapping an absolute path to a directory to the
+        # absolute path of the owning repo (if any).
+        self._known_repo_roots: dict[Path, Path | None] = {}
+        self.repos: dict[Path | None, GitRepo | None] = {None: None}
+
+    def _add_known_repo_path(
+        self, repo: Path | None, path_in_repo: Path
+    ) -> None:
+        path_to_add = (
+            path_in_repo.resolve()
+            if not repo
+            else repo.joinpath(path_in_repo).resolve()
+        )
+        self._known_repo_roots[path_to_add] = repo
+
+    def _repo_is_known(self, path: Path) -> bool:
+        return path.resolve() in self._known_repo_roots
+
+    def find_git_repo(self, path_in_repo: Path | str) -> GitRepo | None:
+        """Finds the git repo that contains this pathspec.
+
+        Returns:
+            A GitRepo if the file is enclosed by a Git repository, otherwise
+            returns None.
+        """
+        path = Path(path_in_repo)
+        search_from = path if path.is_dir() else path.parent
+        if not search_from.exists():
+            raise ValueError(
+                "Can't find parent repo of `{path_in_repo}`, "
+                "path does not exist"
+            )
+
+        if not self._repo_is_known(search_from):
+            try:
+                git_tool = _GitTool(
+                    self.tool_runner,
+                    search_from,
+                )
+                root = Path(
+                    git_tool(
+                        'rev-parse',
+                        '--show-toplevel',
+                    )
+                )
+                # Now that we found the absolute path root, we know every
+                # directory between the repo root and the query are owned
+                # by that repo. For example:
+                #   query: bar/baz_subrepo/my_dir/nested/b.txt
+                #   cwd: /dev/null/foo_repo/
+                #   root: /dev/null/foo_repo/bar/baz_subrepo
+                #   parents (relative to root):
+                #     my_dir/nested
+                #     my_dir
+                #   new known git paths:
+                #     /dev/null/foo_repo/bar/baz_subrepo/my_dir/nested
+                #     /dev/null/foo_repo/bar/baz_subrepo/my_dir
+                #     /dev/null/foo_repo/bar/baz_subrepo
+                subpath = search_from.resolve().relative_to(root)
+                for parent in itertools.chain([subpath], subpath.parents):
+                    if self._repo_is_known(root.joinpath(parent)):
+                        break
+                    self._add_known_repo_path(root, root.joinpath(parent))
+
+                if root not in self.repos:
+                    self.repos[root] = GitRepo(root, self.tool_runner)
+
+                return self.repos[root]
+
+            except GitError:
+                for parent in itertools.chain(
+                    [search_from], search_from.parents
+                ):
+                    self._add_known_repo_path(None, search_from)
+
+            return None
+
+        return self.repos[self._known_repo_roots[search_from.resolve()]]
 
 
 def find_git_repo(path_in_repo: Path, tool_runner: ToolRunner) -> GitRepo:

@@ -1114,6 +1114,10 @@ pyelftools==0.31 \
     --hash=sha256:c774416b10310156879443b81187d182d8d9ee499660380e645918b50bc88f99 \
     --hash=sha256:f52de7b3c7e8c64c8abc04a79a1cf37ac5fb0b8a49809827130b858944840607
     # via -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
+pyfakefs==5.7.4 \
+    --hash=sha256:3e763d700b91c54ade6388be2cfa4e521abc00e34f7defb84ee511c73031f45f \
+    --hash=sha256:4971e65cc80a93a1e6f1e3a4654909c0c493186539084dc9301da3d68c8878fe
+    # via -r \python\gen\pw_env_setup\pigweed_build_venv\compiled_requirements.txt
 pygments==2.18.0 \
     --hash=sha256:786ff802f32e91311bff3889f6e9a86e81505fe99f2735bb6d60ae0c5004f199 \
     --hash=sha256:b8e6aca0523f3ab76fee51799c488e38782ac06eafcf95e7ba832985c8e7b13a

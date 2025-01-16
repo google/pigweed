@@ -94,6 +94,7 @@ pw_py_test(
     ],
     deps = [
         ":pw_cli",
+        "@python_packages//pyfakefs",
     ],
 )
 
