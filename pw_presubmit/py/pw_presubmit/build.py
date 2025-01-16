@@ -54,6 +54,7 @@ from pw_presubmit.presubmit import (
 )
 from pw_presubmit.presubmit_context import (
     LuciContext,
+    LuciTrigger,
     PresubmitContext,
     PresubmitFailure,
 )
@@ -1030,13 +1031,29 @@ def _copy_to_gcs(ctx: PresubmitContext, filepath: Path, gcs_dst: str):
         call(*cmd, tee=outs)
 
 
+class NoPrimaryTriggerError(Exception):
+    pass
+
+
+def _get_primary_change(ctx: PresubmitContext) -> LuciTrigger:
+    assert ctx.luci is not None
+
+    if len(ctx.luci.triggers) == 1:
+        return ctx.luci.triggers[0]
+
+    for trigger in ctx.luci.triggers:
+        if trigger.primary:
+            return trigger
+
+    raise NoPrimaryTriggerError(repr(ctx.luci.triggers))
+
+
 def _write_coverage_metadata(
     ctx: PresubmitContext, options: CoverageOptions
 ) -> Sequence[Path]:
     """Write out Kalypsi coverage metadata file(s) and return their paths."""
     assert ctx.luci is not None
-    assert len(ctx.luci.triggers) == 1
-    change = ctx.luci.triggers[0]
+    change = _get_primary_change(ctx)
 
     metadata = {
         'trace_type': options.common.trace_type,

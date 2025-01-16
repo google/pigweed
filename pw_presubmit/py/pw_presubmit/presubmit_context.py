@@ -141,6 +141,8 @@ class LuciTrigger:
             patch for unsubmitted changes and the hash for submitted changes.
         gerrit_name: The name of the googlesource.com Gerrit host.
         submitted: Whether the change has been submitted or is still pending.
+        primary: Whether this change was the change that triggered a build or
+            if it was imported by that triggering change.
         gerrit_host: The scheme and hostname of the googlesource.com Gerrit
             host.
         gerrit_url: The full URL to this change on the Gerrit host.
@@ -155,6 +157,7 @@ class LuciTrigger:
     ref: str
     gerrit_name: str
     submitted: bool
+    primary: bool
 
     @property
     def gerrit_host(self):
@@ -174,6 +177,7 @@ class LuciTrigger:
     def create_from_environment(
         env: dict[str, str] | None = None,
     ) -> Sequence['LuciTrigger']:
+        """Create a LuciTrigger from the environment."""
         if not env:
             env = os.environ.copy()
         raw_path = env.get('TRIGGERING_CHANGES_JSON')
@@ -195,6 +199,7 @@ class LuciTrigger:
                     'ref',
                     'gerrit_name',
                     'submitted',
+                    'primary',
                 }
                 if keys <= trigger.keys():
                     result.append(LuciTrigger(**{x: trigger[x] for x in keys}))
@@ -203,6 +208,7 @@ class LuciTrigger:
 
     @staticmethod
     def create_for_testing(**kwargs):
+        """Create a LuciTrigger for testing."""
         change = {
             'number': 123456,
             'patchset': 1,
@@ -212,6 +218,7 @@ class LuciTrigger:
             'ref': 'refs/changes/56/123456/1',
             'gerrit_name': 'pigweed',
             'submitted': True,
+            'primary': True,
         }
         change.update(kwargs)
 
