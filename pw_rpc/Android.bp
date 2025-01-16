@@ -26,6 +26,7 @@ java_library {
     ],
     libs: [
         "auto_value_annotations",
+        "error_prone_annotations",
         "guava",
         "jsr305",
         "libprotobuf-java-lite",
