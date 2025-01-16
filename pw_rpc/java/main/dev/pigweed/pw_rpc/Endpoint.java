@@ -14,7 +14,6 @@
 
 package dev.pigweed.pw_rpc;
 
-import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import dev.pigweed.pw_log.Logger;
@@ -43,28 +42,12 @@ import javax.annotation.Nullable;
 class Endpoint {
   private static final Logger logger = Logger.forClass(Endpoint.class);
 
-  // Call IDs are varint encoded. Limit the varint size to 2 bytes (14 usable bits).
-  private static final int MAX_CALL_ID = 1 << 14;
-
-  static final int FIRST_CALL_ID = 1;
-
-  private final Packets packets;
   private final Map<Integer, Channel> channels;
   private final Map<PendingRpc, AbstractCall<?, ?>> pending = new HashMap<>();
   private final BlockingQueue<Runnable> callUpdates = new LinkedBlockingQueue<>();
-  private final int maxCallId;
 
-  @GuardedBy("this") private int nextCallId = FIRST_CALL_ID;
-
-  Endpoint(CallIdMode callIdMode, List<Channel> channels) {
-    this(callIdMode, channels, MAX_CALL_ID);
-  }
-
-  /** Create endpoint with {@code maxCallId} possible call_ids for testing purposes */
-  Endpoint(CallIdMode callIdMode, List<Channel> channels, int maxCallId) {
-    this.packets = new Packets(callIdMode);
+  public Endpoint(List<Channel> channels) {
     this.channels = channels.stream().collect(Collectors.toMap(Channel::id, c -> c));
-    this.maxCallId = maxCallId;
   }
 
   /**
@@ -87,7 +70,7 @@ class Endpoint {
 
     try {
       // If sending the packet fails, the RPC is never considered pending.
-      call.rpc().channel().send(packets.request(call.rpc(), request));
+      call.rpc().channel().send(Packets.request(call.rpc(), request));
     } catch (ChannelOutputException e) {
       call.handleExceptionOnInitialPacket(e);
     }
@@ -116,12 +99,15 @@ class Endpoint {
       throw InvalidRpcChannelException.unknown(channelId);
     }
 
-    // Use 0 for call ID when IDs are disabled, which is equivalent to an unset ID in the packet.
-    int callId = packets.callIdsEnabled() ? getNewCallId() : 0;
-    return createCall.apply(this, PendingRpc.create(channel, method, callId));
+    return createCall.apply(this, PendingRpc.create(channel, method));
   }
 
   private void registerCall(AbstractCall<?, ?> call) {
+    // TODO(hepler): Use call_id to support simultaneous calls for the same RPC on one channel.
+    //
+    // Originally, only one call per service/method/channel was supported. With this restriction,
+    // the original call should have been aborted here, but was not. The client will be updated to
+    // support multiple simultaneous calls instead of aborting the call.
     pending.put(call.rpc(), call);
   }
 
@@ -152,7 +138,7 @@ class Endpoint {
         }
 
         enqueueCallUpdate(() -> call.handleError(Status.CANCELLED));
-        call.sendPacket(packets.cancel(call.rpc()));
+        call.sendPacket(Packets.cancel(call.rpc()));
       }
     } finally {
       logger.atFiner().log("Cancelling %s", call);
@@ -176,12 +162,12 @@ class Endpoint {
 
   public synchronized boolean clientStream(AbstractCall<?, ?> call, MessageLite payload)
       throws ChannelOutputException {
-    return sendPacket(call, packets.clientStream(call.rpc(), payload));
+    return sendPacket(call, Packets.clientStream(call.rpc(), payload));
   }
 
   public synchronized boolean clientStreamEnd(AbstractCall<?, ?> call)
       throws ChannelOutputException {
-    return sendPacket(call, packets.clientStreamEnd(call.rpc()));
+    return sendPacket(call, Packets.clientStreamEnd(call.rpc()));
   }
 
   private boolean sendPacket(AbstractCall<?, ?> call, byte[] packet) throws ChannelOutputException {
@@ -268,7 +254,7 @@ class Endpoint {
         return true; // true since the packet was handled, even though it was invalid.
       }
 
-      PendingRpc rpc = PendingRpc.create(channel, method, packet.getCallId());
+      PendingRpc rpc = PendingRpc.create(channel, method);
       if (!updateCall(packet, rpc)) {
         logger.atFine().log("Ignoring packet for %s, which isn't pending", rpc);
         sendError(channel, packet, Status.FAILED_PRECONDITION);
@@ -305,9 +291,9 @@ class Endpoint {
     return true;
   }
 
-  private void sendError(Channel channel, RpcPacket packet, Status status) {
+  private static void sendError(Channel channel, RpcPacket packet, Status status) {
     try {
-      channel.send(packets.error(packet, status));
+      channel.send(Packets.error(packet, status));
     } catch (ChannelOutputException e) {
       logger.atWarning().withCause(e).log("Failed to send error packet");
     }
@@ -321,23 +307,5 @@ class Endpoint {
       return Status.UNKNOWN;
     }
     return status;
-  }
-
-  /** Gets the next available call id and increments internal count for next call. */
-  private synchronized int getNewCallId() {
-    int callId = nextCallId;
-    nextCallId = (nextCallId + 1) % maxCallId;
-
-    // Skip call_id `0` to avoid confusion with legacy servers which use call_id `0` as
-    // an open call id or which do not provide call_id at all.
-    if (nextCallId == 0) {
-      nextCallId = 1;
-    }
-    return callId;
-  }
-
-  /** Expose the Packets object for internal use by TestClient. */
-  Packets getPackets() {
-    return packets;
   }
 }

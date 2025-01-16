@@ -26,9 +26,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.protobuf.MessageLite;
 import dev.pigweed.pw_rpc.internal.Packet.PacketType;
 import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
-import dev.pigweed.pw_rpc.internal.Packet.RpcPacket.Builder;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -55,19 +52,12 @@ public final class EndpointTest {
   private static final AnotherMessage RESPONSE_PAYLOAD =
       AnotherMessage.newBuilder().setPayload("hello").build();
   private static final int CHANNEL_ID = 555;
-  private static final int MAX_CALL_ID = 3;
 
   @Mock private Channel.Output mockOutput;
   @Mock private StreamObserver<MessageLite> callEvents;
 
   private final Channel channel = new Channel(CHANNEL_ID, bytes -> mockOutput.send(bytes));
-  private final Endpoint endpoint = new Endpoint(CallIdMode.ENABLED, ImmutableList.of(channel));
-
-  private final List<byte[]> sentPackets = new ArrayList<>();
-  private final Channel channelWithRecord =
-      new Channel(CHANNEL_ID, bytes -> sentPackets.add(bytes));
-  private final Endpoint endpointWithRecord =
-      new Endpoint(CallIdMode.ENABLED, ImmutableList.of(channelWithRecord), MAX_CALL_ID);
+  private final Endpoint endpoint = new Endpoint(ImmutableList.of(channel));
 
   private static byte[] request(MessageLite payload) {
     return packetBuilder()
@@ -88,7 +78,6 @@ public final class EndpointTest {
   private static RpcPacket.Builder packetBuilder() {
     return RpcPacket.newBuilder()
         .setChannelId(CHANNEL_ID)
-        .setCallId(Endpoint.FIRST_CALL_ID)
         .setServiceId(SERVICE.id())
         .setMethodId(METHOD.id());
   }
@@ -104,30 +93,6 @@ public final class EndpointTest {
 
     verify(mockOutput).send(REQUEST);
     assertThat(endpoint.abandon(call)).isTrue();
-  }
-
-  @Test
-  public void start_succeeds_callIdIsIncreasing() throws Exception {
-    AbstractCall<MessageLite, MessageLite> call1 =
-        endpointWithRecord.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
-    AbstractCall<MessageLite, MessageLite> call2 =
-        endpointWithRecord.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
-    RpcPacket packet1 = RpcPacket.parseFrom(sentPackets.get(0));
-    RpcPacket packet2 = RpcPacket.parseFrom(sentPackets.get(1));
-
-    assertThat(packet1.getCallId()).isLessThan(packet2.getCallId());
-  }
-
-  @Test
-  public void start_succeeds_callIdWraps() throws Exception {
-    for (int i = 0; i < MAX_CALL_ID; i++) {
-      endpointWithRecord.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
-    }
-
-    RpcPacket firstPacket = RpcPacket.parseFrom(sentPackets.get(0));
-    RpcPacket lastPacket = RpcPacket.parseFrom(sentPackets.get(MAX_CALL_ID - 1));
-
-    assertThat(firstPacket.getCallId()).isEqualTo(lastPacket.getCallId());
   }
 
   @Test
@@ -190,7 +155,7 @@ public final class EndpointTest {
   @Test
   public void ignoresActionsIfCallIsNotPending() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        createCall(endpoint, PendingRpc.create(channel, METHOD, Endpoint.FIRST_CALL_ID));
+        createCall(endpoint, PendingRpc.create(channel, METHOD));
 
     assertThat(endpoint.cancel(call)).isFalse();
     assertThat(endpoint.abandon(call)).isFalse();
@@ -201,7 +166,7 @@ public final class EndpointTest {
   @Test
   public void ignoresPacketsIfCallIsNotPending() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        createCall(endpoint, PendingRpc.create(channel, METHOD, Endpoint.FIRST_CALL_ID));
+        createCall(endpoint, PendingRpc.create(channel, METHOD));
 
     assertThat(endpoint.cancel(call)).isFalse();
     assertThat(endpoint.abandon(call)).isFalse();

@@ -79,16 +79,6 @@ public final class ClientTest {
         PacketType.RESPONSE, service, method, status, SomeMessage.getDefaultInstance());
   }
 
-  private static byte[] responseNoCallId(String service, String method, Status status) {
-    return packetBuilder(service, method)
-        .clearCallId()
-        .setType(PacketType.RESPONSE)
-        .setStatus(status.code())
-        .setPayload(SomeMessage.getDefaultInstance().toByteString())
-        .build()
-        .toByteArray();
-  }
-
   private static byte[] response(
       String service, String method, Status status, MessageLite payload) {
     return serverReply(PacketType.RESPONSE, service, method, status, payload);
@@ -111,7 +101,6 @@ public final class ClientTest {
   private static RpcPacket.Builder packetBuilder(String service, String method) {
     return RpcPacket.newBuilder()
         .setChannelId(CHANNEL_ID)
-        .setCallId(Endpoint.FIRST_CALL_ID)
         .setServiceId(Ids.calculate(service))
         .setMethodId(Ids.calculate(method));
   }
@@ -126,7 +115,7 @@ public final class ClientTest {
   @Before
   public void setup() {
     packetsSent = new ArrayList<>();
-    client = Client.createMultiCall(ImmutableList.of(new Channel(1, (data) -> {
+    client = Client.create(ImmutableList.of(new Channel(1, (data) -> {
       try {
         packetsSent.add(RpcPacket.parseFrom(data, ExtensionRegistryLite.getEmptyRegistry()));
       } catch (InvalidProtocolBufferException e) {
@@ -363,37 +352,10 @@ public final class ClientTest {
   }
 
   @Test
-  public void processPacketNoCallId_responsePacket_completesRpc() throws Exception {
-    client = Client.create(ImmutableList.of(new Channel(1, (data) -> {
-      try {
-        packetsSent.add(RpcPacket.parseFrom(data, ExtensionRegistryLite.getEmptyRegistry()));
-      } catch (InvalidProtocolBufferException e) {
-        fail("The client sent an invalid packet: " + e);
-      }
-    })), ImmutableList.of(SERVICE));
-    MethodClient method =
-        client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeServerStreaming");
-
-    method.invokeServerStreaming(REQUEST_PAYLOAD, observer);
-
-    assertThat(client.processPacket(responseNoCallId(
-                   "pw.rpc.test1.TheTestService", "SomeServerStreaming", Status.OK)))
-        .isTrue();
-
-    verify(observer).onCompleted(Status.OK);
-
-    assertThat(client.processPacket(serverStream(
-                   "pw.rpc.test1.TheTestService", "SomeServerStreaming", RESPONSE_PAYLOAD)))
-        .isTrue();
-
-    verify(observer, never()).onNext(any());
-  }
-
-  @Test
   @SuppressWarnings("unchecked")
   public void streamObserverClient_create_invokeMethod() throws Exception {
     Channel.Output mockChannelOutput = Mockito.mock(Channel.Output.class);
-    Client client = Client.createMultiCall(ImmutableList.of(new Channel(1, mockChannelOutput)),
+    Client client = Client.create(ImmutableList.of(new Channel(1, mockChannelOutput)),
         ImmutableList.of(SERVICE),
         (rpc) -> Mockito.mock(StreamObserver.class));
 

@@ -35,24 +35,6 @@ import javax.annotation.Nullable;
 public class Client {
   private static final Logger logger = Logger.forClass(Client.class);
 
-  private static final Function<RpcKey, StreamObserver<MessageLite>> LOG_DEFAULT_OBSERVER_FACTORY =
-      (rpc) -> new StreamObserver<MessageLite>() {
-    @Override
-    public void onNext(MessageLite value) {
-      logger.atFine().log("%s received response: %s", rpc, value);
-    }
-
-    @Override
-    public void onCompleted(Status status) {
-      logger.atInfo().log("%s completed with status %s", rpc, status);
-    }
-
-    @Override
-    public void onError(Status status) {
-      logger.atWarning().log("%s terminated with error %s", rpc, status);
-    }
-  };
-
   private final Map<Integer, Service> services;
   private final Endpoint endpoint;
 
@@ -66,66 +48,13 @@ public class Client {
    * @param channels supported channels, which are used to send requests to the server
    * @param services which RPC services this client supports; used to handle encoding and decoding
    */
-  private Client(CallIdMode callIdMode,
-      List<Channel> channels,
+  private Client(List<Channel> channels,
       List<Service> services,
       Function<RpcKey, StreamObserver<MessageLite>> defaultObserverFactory) {
     this.services = services.stream().collect(Collectors.toMap(Service::id, s -> s));
-    this.endpoint = new Endpoint(callIdMode, channels);
+    this.endpoint = new Endpoint(channels);
 
     this.defaultObserverFactory = defaultObserverFactory;
-  }
-
-  /**
-   * Creates a new pw_rpc client that only supports one ongoing call per method.
-   *
-   * This creates a Client that does not use call IDs. Clients created with this function only
-   * support one ongoing call per channel / service / method.
-   *
-   * This function is deprecated and should not be used. New code should use createMultiCall.
-   * Migrate to createMultiCall, or use createLegacySingleCall to temporarily maintain the prior
-   * single call behavior.
-   *
-   * @param channels the set of channels for the client to send requests over
-   * @param services the services to support on this client
-   * @param defaultObserverFactory function that creates a default observer for each RPC
-   * @return the new pw.rpc.Client
-   */
-  public static Client createLegacySingleCall(List<Channel> channels,
-      List<Service> services,
-      Function<RpcKey, StreamObserver<MessageLite>> defaultObserverFactory) {
-    return new Client(CallIdMode.DISABLED, channels, services, defaultObserverFactory);
-  }
-
-  /**
-   * Creates a new single-call pw_rpc client that logs responses when no observer is provided to
-   * calls.
-   *
-   * This function is deprecated and should not be used. New code should use createMultiCall.
-   * Migrate to createMultiCall, or use createLegacySingleCall to temporarily maintain the prior
-   * single call behavior.
-   *
-   */
-  public static Client createLegacySingleCall(List<Channel> channels, List<Service> services) {
-    return create(channels, services, LOG_DEFAULT_OBSERVER_FACTORY);
-  }
-
-  /**
-   * @deprecated Migrate to createMultiCall or temporarily use createLegacySingleCall
-   */
-  @Deprecated
-  public static Client create(List<Channel> channels, List<Service> services) {
-    return createLegacySingleCall(channels, services);
-  }
-
-  /**
-   * @deprecated Migrate to createMultiCall or temporarily use createLegacySingleCall
-   */
-  @Deprecated
-  public static Client create(List<Channel> channels,
-      List<Service> services,
-      Function<RpcKey, StreamObserver<MessageLite>> defaultObserverFactory) {
-    return createLegacySingleCall(channels, services, defaultObserverFactory);
   }
 
   /**
@@ -136,17 +65,32 @@ public class Client {
    * @param defaultObserverFactory function that creates a default observer for each RPC
    * @return the new pw.rpc.Client
    */
-  public static Client createMultiCall(List<Channel> channels,
+  public static Client create(List<Channel> channels,
       List<Service> services,
       Function<RpcKey, StreamObserver<MessageLite>> defaultObserverFactory) {
-    return new Client(CallIdMode.ENABLED, channels, services, defaultObserverFactory);
+    return new Client(channels, services, defaultObserverFactory);
   }
 
   /**
    * Creates a new pw_rpc client that logs responses when no observer is provided to calls.
    */
-  public static Client createMultiCall(List<Channel> channels, List<Service> services) {
-    return new Client(CallIdMode.ENABLED, channels, services, LOG_DEFAULT_OBSERVER_FACTORY);
+  public static Client create(List<Channel> channels, List<Service> services) {
+    return create(channels, services, (rpc) -> new StreamObserver<MessageLite>() {
+      @Override
+      public void onNext(MessageLite value) {
+        logger.atFine().log("%s received response: %s", rpc, value);
+      }
+
+      @Override
+      public void onCompleted(Status status) {
+        logger.atInfo().log("%s completed with status %s", rpc, status);
+      }
+
+      @Override
+      public void onError(Status status) {
+        logger.atWarning().log("%s terminated with error %s", rpc, status);
+      }
+    });
   }
 
   /**
@@ -290,10 +234,5 @@ public class Client {
       method = null;
     }
     return endpoint.processClientPacket(method, packet);
-  }
-
-  /** Expose the Packets object for internal use by TestClient. */
-  Packets getPackets() {
-    return endpoint.getPackets();
   }
 }

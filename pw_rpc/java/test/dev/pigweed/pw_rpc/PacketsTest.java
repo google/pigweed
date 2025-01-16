@@ -26,22 +26,19 @@ public final class PacketsTest {
       "Greetings", Service.unaryMethod("Hello", RpcPacket.parser(), RpcPacket.parser()));
 
   private static final PendingRpc RPC =
-      PendingRpc.create(new Channel(123, null), SERVICE.method("Hello"), Endpoint.FIRST_CALL_ID);
+      PendingRpc.create(new Channel(123, null), SERVICE.method("Hello"));
 
   private static final RpcPacket PACKET = RpcPacket.newBuilder()
                                               .setChannelId(123)
-                                              .setCallId(Endpoint.FIRST_CALL_ID)
                                               .setServiceId(RPC.service().id())
                                               .setMethodId(RPC.method().id())
                                               .build();
-
-  private static final Packets PACKETS = new Packets(CallIdMode.ENABLED);
 
   @Test
   public void request() throws Exception {
     RpcPacket payload = RpcPacket.newBuilder().setType(PacketType.SERVER_STREAM).build();
     RpcPacket packet = RpcPacket.parseFrom(
-        PACKETS.request(RPC, payload), ExtensionRegistryLite.getEmptyRegistry());
+        Packets.request(RPC, payload), ExtensionRegistryLite.getEmptyRegistry());
     assertThat(packet).isEqualTo(
         packet().setType(PacketType.REQUEST).setPayload(payload.toByteString()).build());
   }
@@ -49,7 +46,7 @@ public final class PacketsTest {
   @Test
   public void cancel() throws Exception {
     RpcPacket packet =
-        RpcPacket.parseFrom(PACKETS.cancel(RPC), ExtensionRegistryLite.getEmptyRegistry());
+        RpcPacket.parseFrom(Packets.cancel(RPC), ExtensionRegistryLite.getEmptyRegistry());
     assertThat(packet).isEqualTo(
         packet().setType(PacketType.CLIENT_ERROR).setStatus(Status.CANCELLED.code()).build());
   }
@@ -57,7 +54,7 @@ public final class PacketsTest {
   @Test
   public void error() throws Exception {
     RpcPacket packet = RpcPacket.parseFrom(
-        PACKETS.error(PACKET, Status.ALREADY_EXISTS), ExtensionRegistryLite.getEmptyRegistry());
+        Packets.error(PACKET, Status.ALREADY_EXISTS), ExtensionRegistryLite.getEmptyRegistry());
     assertThat(packet).isEqualTo(
         packet().setType(PacketType.CLIENT_ERROR).setStatus(Status.ALREADY_EXISTS.code()).build());
   }
@@ -65,7 +62,6 @@ public final class PacketsTest {
   private static RpcPacket.Builder packet() {
     return RpcPacket.newBuilder()
         .setChannelId(123)
-        .setCallId(Endpoint.FIRST_CALL_ID)
         .setServiceId(Ids.calculate("Greetings"))
         .setMethodId(Ids.calculate("Hello"));
   }
