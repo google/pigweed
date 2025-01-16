@@ -57,8 +57,8 @@ PW_PACKED(class)
 Entry {
  public:
   constexpr Entry(uint32_t token,
-                  const char(&domain)[kDomainSize],
-                  const char(&string)[kStringSize])
+                  const char (&domain)[kDomainSize],
+                  const char (&string)[kStringSize])
       : header_{.magic = _PW_TOKENIZER_ENTRY_MAGIC,
                 .token = token,
                 .domain_length = kDomainSize,
