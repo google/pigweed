@@ -64,7 +64,11 @@ class UniquePtr : public allocator::internal::BaseUniquePtr {
   ///
   /// NOTE: Instances of this type are most commonly constructed using
   /// ``Deallocator::MakeUnique``.
-  constexpr UniquePtr() : value_(nullptr), deallocator_(nullptr) {}
+  constexpr UniquePtr() : value_(nullptr), deallocator_(nullptr) {
+    if constexpr (std::is_array_v<T>) {
+      size_ = 0;
+    }
+  }
 
   /// Creates an empty (``nullptr``) instance.
   ///
