@@ -254,7 +254,7 @@ LowEnergyDiscoveryManager::AddSession(bool active) {
     RemoveSession(session_to_remove);
   };
   auto cached_scan_results_fn =
-      [this]() -> const decltype(cached_scan_results_)& {
+      [this]() -> const decltype(cached_scan_results_) & {
     return this->cached_scan_results_;
   };
   auto session = std::make_unique<LowEnergyDiscoverySession>(

@@ -678,7 +678,7 @@ TEST(ByteBufferTest, MutableByteBufferAsMutableStruct) {
 
 TEST(ByteBufferTest, MutableByteBufferAsMutableArray) {
   StaticByteBuffer buf(10, 12);
-  uint8_t(&array)[2] = *buf.AsMutable<uint8_t[2]>();
+  uint8_t (&array)[2] = *buf.AsMutable<uint8_t[2]>();
   ++array[0];
   ++array[1];
 
