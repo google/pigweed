@@ -29,9 +29,11 @@ py_library(
     ],
     data = [
         ":base_schemas",
+        ":pw_sensor/templates/cpp_constants.jinja",
     ],
     imports = ["."],
     deps = [
+        "@python_packages//jinja2",
         "@python_packages//jsonschema",
         "@python_packages//pyyaml",
     ],
@@ -42,9 +44,13 @@ pw_py_binary(
     srcs = [
         "pw_sensor/constants_generator.py",
     ],
+    data = [
+        ":pw_sensor/templates/cpp_constants.jinja",
+    ],
     imports = ["."],
     deps = [
         ":pw_sensor",
+        "@python_packages//jinja2",
         "@python_packages//pyyaml",
     ],
 )

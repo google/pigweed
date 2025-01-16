@@ -38,6 +38,7 @@ pw_python_package("py") {
     "pw_sensor/dependency_schema.json",
     "pw_sensor/metadata_schema.json",
     "pw_sensor/resolved_schema.json",
+    "pw_sensor/templates/cpp_constants.jinja",
   ]
 }
 

@@ -1,0 +1,84 @@
+{#
+Copyright 2024 The Pigweed Authors
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+#}
+/* Auto-generated file, do not edit */
+#pragma once
+
+#include "pw_sensor/types.h"
+namespace {{ package_name }} {
+
+namespace units {
+
+{% for unit_id, unit in spec.units.items() %}
+/// @brief {{ unit.name }}
+///
+/// Measured in {{ unit.symbol }}
+PW_SENSOR_UNIT_TYPE(
+  {{ kid_from_name(unit_id) }},
+  "PW_SENSOR_UNITS_TYPE",
+  "{{ unit.name }}",
+  "{{ unit.symbol }}"
+);
+{% endfor %}
+
+}  // namespace units
+
+namespace channels {
+
+{% for channel_id, channel in spec.channels.items() %}
+/// @brief {{ channel.name }}
+///
+/// {{ channel.description }}
+PW_SENSOR_MEASUREMENT_TYPE(
+  {{ kid_from_name(channel_id) }},
+  "PW_SENSOR_MEASUREMENT_TYPE",
+  "{{ channel.name }}",
+  ::pw::sensor::units::{{ kid_from_name(channel.units) }}
+);
+{% endfor %}
+
+}  // namespace channels
+
+namespace attributes {
+
+{% for attribute_id, attribute in spec.attributes.items() %}
+/// @brief {{ attribute.name }}
+///
+/// {{ attribute.description }}
+PW_SENSOR_ATTRIBUTE_TYPE(
+  {{ kid_from_name(attribute_id) }},
+  "PW_SENSOR_ATTRIBUTE_TYPE",
+  "{{ attribute.name }}"
+);
+{% endfor %}
+
+}  // namespace attributes
+
+namespace triggers {
+
+{% for trigger_id, trigger in spec.triggers.items() %}
+/// @brief {{ trigger.name }}
+///
+/// {{ trigger.description }}
+PW_SENSOR_TRIGGER_TYPE(
+  {{ kid_from_name(trigger_id) }},
+  "PW_SENSOR_TRIGGER_TYPE",
+  "{{ trigger.name }}"
+);
+{% endfor %}
+
+}  // namespace triggers
+
+}  // namespace {{ package_name }}

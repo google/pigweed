@@ -79,6 +79,7 @@ function(pw_sensor_library NAME)
 
   if("${arg_GENERATOR}" STREQUAL "")
     set(arg_GENERATOR "$ENV{PW_ROOT}/pw_sensor/py/pw_sensor/constants_generator.py")
+    list(APPEND arg_INPUTS "$ENV{PW_ROOT}/pw_sensor/py/pw_sensor/templates/cpp_constants.jinja")
 
     if("${arg_GENERATOR_ARGS}" STREQUAL "")
       set(arg_GENERATOR_ARGS --package pw.sensor)
