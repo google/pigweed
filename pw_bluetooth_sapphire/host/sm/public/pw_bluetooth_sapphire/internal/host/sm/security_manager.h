@@ -17,12 +17,12 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/error.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
-#include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
 namespace bt::sm {
@@ -43,7 +43,7 @@ namespace bt::sm {
 /// See README.md for more overview of this library.
 class SecurityManager {
  public:
-  // Factory function which returns a production SecurityManager instance:
+  // Factory function which returns a production LE SecurityManager instance:
   // |link|: The LE logical link over which pairing procedures occur.
   // |smp|: The L2CAP LE SMP fixed channel that operates over |link|.
   // |io_capability|: The initial I/O capability.
@@ -54,7 +54,7 @@ class SecurityManager {
   // |security_mode|: the security mode of this SecurityManager (see v5.2, Vol.
   // 3, Part C 10.2).
   // |peer|: The peer that the SMP fixed channel corresponds to.
-  static std::unique_ptr<SecurityManager> Create(
+  static std::unique_ptr<SecurityManager> CreateLE(
       hci::LowEnergyConnection::WeakPtr link,
       l2cap::Channel::WeakPtr smp,
       IOCapability io_capability,
@@ -63,7 +63,25 @@ class SecurityManager {
       gap::LESecurityMode security_mode,
       pw::async::Dispatcher& dispatcher,
       bt::gap::Peer::WeakPtr peer);
+
+  // Factory function that returns a production BR/EDR SecurityManager object.
+  // |link|: The BR/EDR link over which the SMP channel operates.
+  // |smp|: The L2CAP BR/EDR SMP fixed channel.
+  // |delegate|: Delegate which handles SMP interactions with the rest of the
+  // Bluetooth stack.
+  // |is_controller_remote_public_key_validation_supported|: Indicates
+  // controller support for remote public key validation. |peer|: The peer that
+  // the link and SMP channel correspond to.
+  static std::unique_ptr<SecurityManager> CreateBrEdr(
+      hci::BrEdrConnection::WeakPtr link,
+      l2cap::Channel::WeakPtr smp,
+      Delegate::WeakPtr delegate,
+      bool is_controller_remote_public_key_validation_supported,
+      pw::async::Dispatcher& dispatcher,
+      bt::gap::Peer::WeakPtr peer);
+
   virtual ~SecurityManager() = default;
+
   // Assigns the requested |ltk| to this connection, adopting the security
   // properties of |ltk|. If the local device is the central of the underlying
   // link, then the link layer authentication procedure will be initiated.
@@ -77,9 +95,6 @@ class SecurityManager {
   // (e.g. from bonding data). This function overwrites any previously assigned
   // LTK.
   virtual bool AssignLongTermKey(const LTK& ltk) = 0;
-
-  // TODO(fxbug.dev/42130294): Add function to register a BR/EDR link and SMP
-  // channel.
 
   // Attempt to raise the security level of the connection to the desired
   // |level| and notify the result in |callback|.
@@ -103,6 +118,17 @@ class SecurityManager {
   virtual void UpgradeSecurity(SecurityLevel level,
                                PairingCallback callback) = 0;
 
+  // Attempt to perform the BR/EDR cross-transport key derivation procedure.
+  // |callback| will be called on completion or failure. On success, the LE LTK
+  // will be delivered to Delegate::OnNewPairingData() in
+  // PairingData::cross_transport_key. Only 1 CTKD procedure is allowed at a
+  // time. Additional calls will return an error. Only the Central can initiate
+  // CTKD.
+  using CrossTransportKeyDerivationResultCallback =
+      fit::callback<void(Result<> result)>;
+  virtual void InitiateBrEdrCrossTransportKeyDerivation(
+      CrossTransportKeyDerivationResultCallback callback) = 0;
+
   // Assign I/O capabilities. This aborts any ongoing pairing procedure and sets
   // up the I/O capabilities to use for future requests.
   virtual void Reset(IOCapability io_capability) = 0;
@@ -113,42 +139,50 @@ class SecurityManager {
   virtual void Abort(ErrorCode ecode) = 0;
 
   // Returns the current security properties of the LE link.
-  const SecurityProperties& security() const { return le_sec_; }
+  const SecurityProperties& security() const {
+    return low_energy_security_properties_;
+  }
 
   // Returns whether or not the SecurityManager is in bondable mode. Note that
   // being in bondable mode does not guarantee that pairing will necessarily
   // bond.
-  BondableMode bondable_mode() const { return bondable_mode_; }
+  BondableMode bondable_mode() const { return low_energy_bondable_mode_; }
 
   // Sets the bondable mode of the SecurityManager. Any in-progress pairings
   // will not be affected - if bondable mode needs to be reset during a pairing
   // Reset() or Abort() must be called first.
-  void set_bondable_mode(sm::BondableMode mode) { bondable_mode_ = mode; }
+  void set_bondable_mode(sm::BondableMode mode) {
+    low_energy_bondable_mode_ = mode;
+  }
 
   // Sets the LE Security mode of the SecurityManager - see enum definition for
   // details of each mode. If a security upgrade is in-progress, only takes
   // effect on the next security upgrade.
-  void set_security_mode(gap::LESecurityMode mode) { security_mode_ = mode; }
-  gap::LESecurityMode security_mode() { return security_mode_; }
+  void set_security_mode(gap::LESecurityMode mode) {
+    low_energy_security_mode_ = mode;
+  }
+  gap::LESecurityMode security_mode() { return low_energy_security_mode_; }
 
  protected:
   SecurityManager(BondableMode bondable_mode,
                   gap::LESecurityMode security_mode);
-  void set_security(SecurityProperties security) { le_sec_ = security; }
+  void set_security(SecurityProperties security) {
+    low_energy_security_properties_ = security;
+  }
 
  private:
   // The operating bondable mode of the device.
-  BondableMode bondable_mode_ = BondableMode::Bondable;
+  BondableMode low_energy_bondable_mode_ = BondableMode::Bondable;
 
   // The current GAP security mode of the device (v5.2 Vol. 3 Part C
   // Section 10.2)
-  gap::LESecurityMode security_mode_ = gap::LESecurityMode::Mode1;
+  gap::LESecurityMode low_energy_security_mode_ = gap::LESecurityMode::Mode1;
 
   // Current security properties of the LE-U link.
-  SecurityProperties le_sec_ = SecurityProperties();
+  SecurityProperties low_energy_security_properties_ = SecurityProperties();
 };
 
 using SecurityManagerFactory =
-    std::function<decltype(sm::SecurityManager::Create)>;
+    std::function<decltype(sm::SecurityManager::CreateLE)>;
 
 }  // namespace bt::sm

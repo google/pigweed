@@ -37,11 +37,13 @@ namespace bt::sm::testing {
 // implementations for others.
 class TestSecurityManager final : public SecurityManager {
  public:
-  ~TestSecurityManager() = default;
+  ~TestSecurityManager() override = default;
 
   // SecurityManager overrides:
   bool AssignLongTermKey(const LTK& ltk) override;
   void UpgradeSecurity(SecurityLevel level, PairingCallback callback) override;
+  void InitiateBrEdrCrossTransportKeyDerivation(
+      CrossTransportKeyDerivationResultCallback) override {}
   void Reset(IOCapability io_capability) override;
   void Abort(ErrorCode ecode) override;
 

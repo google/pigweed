@@ -84,16 +84,23 @@ struct PairingFeatures final {
   KeyDistGenField remote_key_distribution = 0;
 };
 
-constexpr KeyDistGenField DistributableKeys(KeyDistGenField keys) {
+constexpr KeyDistGenField DistributableKeys(KeyDistGenField keys,
+                                            bool is_bredr) {
   // The link key field never affects the distributed keys. It only has meaning
   // when the devices use LE Secure Connections, where it means the devices
   // should generate the BR/EDR Link Key locally.
-  return keys & ~KeyDistGen::kLinkKey;
+  keys &= ~KeyDistGen::kLinkKey;
+  if (is_bredr) {
+    // In BR/EDR, EncKey is repurposed to mean the devices should generate the
+    // LE LTK locally.
+    keys &= ~KeyDistGen::kEncKey;
+  }
+  return keys;
 }
 
 // Returns a bool indicating whether `features` calls for the devices to
 // exchange key information during the Key Distribution/Generation Phase 3.
-bool HasKeysToDistribute(PairingFeatures features);
+bool HasKeysToDistribute(PairingFeatures features, bool is_bredr);
 
 // Each enum variant corresponds to either:
 // 1) a LE security mode 1 level (Core Spec v5.4, Vol 3, Part C 10.2.1)

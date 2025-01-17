@@ -907,5 +907,86 @@ TEST_F(Phase3Test, UnexpectedOpCode) {
   EXPECT_EQ(Error(ErrorCode::kUnspecifiedReason), listener()->last_error());
 }
 
+TEST_F(Phase3Test, BrEdrInitiatorIdKeysExchangedSuccessfully) {
+  const Key kPeerIrk =
+      Key(kDefaultProperties, {1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+  Phase3Args args;
+  args.features.initiator = true;
+  args.features.local_key_distribution =
+      KeyDistGen::kIdKey | KeyDistGen::kEncKey;
+  args.features.remote_key_distribution =
+      KeyDistGen::kIdKey | KeyDistGen::kEncKey;
+  args.le_props = kDefaultProperties;
+  NewPhase3(args, LinkType::kACL);
+  std::optional<IRK> irk = std::nullopt;
+  std::optional<IdentityAddressInformationParams> identity_addr = std::nullopt;
+  fake_chan()->SetSendCallback(
+      [&](ByteBufferPtr sdu) {
+        ExpectIdentity(std::move(sdu), &irk, &identity_addr);
+      },
+      dispatcher());
+  IdentityInfo kLocalIdentity{.irk = Random<IRK>(),
+                              .address = kSampleDeviceAddress};
+  listener()->set_identity_info(kLocalIdentity);
+  phase_3()->Start();
+  Receive128BitCmd(kIdentityInformation, kPeerIrk.value());
+  ReceiveIdentityAddress(kSampleDeviceAddress);
+  RunUntilIdle();
+
+  EXPECT_EQ(1, phase_3_complete_count());
+  ASSERT_TRUE(irk.has_value());
+  ASSERT_EQ(kLocalIdentity.irk, *irk);
+  ASSERT_TRUE(identity_addr.has_value());
+  ASSERT_EQ(kLocalIdentity.address.value(), identity_addr->bd_addr);
+  ASSERT_TRUE(pairing_data().irk.has_value());
+  EXPECT_EQ(kPeerIrk, *pairing_data().irk);
+  ASSERT_TRUE(pairing_data().identity_address.has_value());
+  EXPECT_EQ(kSampleDeviceAddress, *pairing_data().identity_address);
+}
+
+TEST_F(Phase3Test, BrEdrResponderIdKeysExchangedSuccessfully) {
+  Phase3Args args;
+  args.features.initiator = false;
+  args.features.local_key_distribution =
+      KeyDistGen::kIdKey | KeyDistGen::kEncKey;
+  args.features.remote_key_distribution =
+      KeyDistGen::kIdKey | KeyDistGen::kEncKey;
+  args.le_props = kDefaultProperties;
+  NewPhase3(args, LinkType::kACL);
+  std::optional<IRK> irk = std::nullopt;
+  std::optional<IdentityAddressInformationParams> identity_addr = std::nullopt;
+  fake_chan()->SetSendCallback(
+      [&](ByteBufferPtr sdu) {
+        ExpectIdentity(std::move(sdu), &irk, &identity_addr);
+      },
+      dispatcher());
+  IdentityInfo kLocalIdentity{.irk = Random<IRK>(),
+                              .address = kSampleDeviceAddress};
+  listener()->set_identity_info(kLocalIdentity);
+  phase_3()->Start();
+  RunUntilIdle();
+
+  // Local ID Info should be sent to the peer & we should be waiting for the
+  // peer's ID info
+  ASSERT_TRUE(irk.has_value());
+  ASSERT_TRUE(identity_addr.has_value());
+  EXPECT_EQ(0, phase_3_complete_count());
+  EXPECT_EQ(kLocalIdentity.irk, *irk);
+  EXPECT_EQ(kLocalIdentity.address.value(), identity_addr->bd_addr);
+
+  const Key kIrk(kDefaultProperties, Random<UInt128>());
+  const DeviceAddress kPeerAddr(DeviceAddress::Type::kLEPublic, {2});
+  Receive128BitCmd(kIdentityInformation, kIrk.value());
+  ReceiveIdentityAddress(kPeerAddr);
+  RunUntilIdle();
+
+  // Pairing should be complete with the peer's identity information.
+  ASSERT_EQ(1, phase_3_complete_count());
+  ASSERT_TRUE(pairing_data().irk.has_value());
+  EXPECT_EQ(kIrk, *pairing_data().irk);
+  ASSERT_TRUE(pairing_data().identity_address.has_value());
+  EXPECT_EQ(kPeerAddr, *pairing_data().identity_address);
+}
+
 }  // namespace
 }  // namespace bt::sm

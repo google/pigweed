@@ -50,7 +50,8 @@ Phase3::Phase3(PairingChannel::WeakPtr chan,
              (ShouldSendLtk() || ShouldReceiveLtk())),
            "Phase 3 may not distribute the LTK in Secure Connections pairing");
 
-  PW_CHECK(HasKeysToDistribute(features_));
+  PW_CHECK(
+      HasKeysToDistribute(features_, sm_chan().link_type() == LinkType::kACL));
   // The link must be encrypted with at least an STK in order for Phase 3 to
   // take place.
   PW_CHECK(le_sec.level() != SecurityLevel::kNoSecurity);
@@ -393,7 +394,8 @@ bool Phase3::RequestedKeysObtained() const {
   // DistributableKeys masks key fields that don't correspond to keys exchanged
   // in Phase 3.
   const KeyDistGenField kMaskedRemoteKeys =
-      DistributableKeys(features_.remote_key_distribution);
+      DistributableKeys(features_.remote_key_distribution,
+                        sm_chan().link_type() == LinkType::kACL);
   // Return true if we expect no keys from the remote. We keep track of received
   // keys individually in `obtained_remote_keys` as they are received
   // asynchronously from the peer.
@@ -404,7 +406,8 @@ bool Phase3::LocalKeysSent() const {
   // DistributableKeys masks key fields that don't correspond to keys exchanged
   // in Phase 3.
   const KeyDistGenField kMaskedLocalKeys =
-      DistributableKeys(features_.local_key_distribution);
+      DistributableKeys(features_.local_key_distribution,
+                        sm_chan().link_type() == LinkType::kACL);
   // Return true if we didn't agree to send any keys. We need only store a
   // boolean to track whether we've sent the keys, as sending the keys to the
   // peer occurs sequentially.
@@ -412,7 +415,9 @@ bool Phase3::LocalKeysSent() const {
 }
 
 bool Phase3::ShouldReceiveLtk() const {
-  return (features_.remote_key_distribution & KeyDistGen::kEncKey);
+  return static_cast<bool>(features_.remote_key_distribution &
+                           KeyDistGen::kEncKey) &&
+         sm_chan().link_type() == bt::LinkType::kLE;
 }
 
 bool Phase3::ShouldReceiveIdentity() const {
@@ -420,7 +425,9 @@ bool Phase3::ShouldReceiveIdentity() const {
 }
 
 bool Phase3::ShouldSendLtk() const {
-  return (features_.local_key_distribution & KeyDistGen::kEncKey);
+  return static_cast<bool>(features_.local_key_distribution &
+                           KeyDistGen::kEncKey) &&
+         sm_chan().link_type() == bt::LinkType::kLE;
 }
 
 bool Phase3::ShouldSendIdentity() const {

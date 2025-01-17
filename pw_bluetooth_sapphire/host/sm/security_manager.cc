@@ -65,17 +65,21 @@ class SecurityManagerImpl final : public SecurityManager,
                                   public PairingChannel::Handler {
  public:
   ~SecurityManagerImpl() override;
-  SecurityManagerImpl(hci::LowEnergyConnection::WeakPtr link,
+  SecurityManagerImpl(hci::LowEnergyConnection::WeakPtr low_energy_link,
+                      hci::BrEdrConnection::WeakPtr bredr_link,
                       l2cap::Channel::WeakPtr smp,
                       IOCapability io_capability,
                       Delegate::WeakPtr delegate,
                       BondableMode bondable_mode,
                       gap::LESecurityMode security_mode,
+                      bool is_controller_remote_public_key_validation_supported,
                       pw::async::Dispatcher& dispatcher,
                       bt::gap::Peer::WeakPtr peer);
   // SecurityManager overrides:
   bool AssignLongTermKey(const LTK& ltk) override;
   void UpgradeSecurity(SecurityLevel level, PairingCallback callback) override;
+  void InitiateBrEdrCrossTransportKeyDerivation(
+      CrossTransportKeyDerivationResultCallback callback) override;
   void Reset(IOCapability io_capability) override;
   void Abort(ErrorCode ecode) override;
 
@@ -138,7 +142,10 @@ class SecurityManagerImpl final : public SecurityManager,
 
   // Cleans up pairing state, updates the current security level, and notifies
   // parties that requested security of the link's updated security properties.
-  void OnPairingComplete(PairingData data);
+  void OnLowEnergyPairingComplete(PairingData data);
+
+  // Derives LE LTK, notifies clients, and resets pairing state.
+  void OnBrEdrPairingComplete(PairingData pairing_data);
 
   // After a call to UpgradeSecurity results in an increase of the link security
   // level (through pairing completion or SMP Security Requested encryption),
@@ -184,6 +191,10 @@ class SecurityManagerImpl final : public SecurityManager,
   // Puts the class into a non-pairing state.
   void ResetState();
 
+  bool InPhase1() const {
+    return std::holds_alternative<std::unique_ptr<Phase1>>(current_phase_);
+  }
+
   // Returns true if the pairing state machine is currently in Phase 2 of
   // pairing.
   bool InPhase2() const {
@@ -200,6 +211,28 @@ class SecurityManagerImpl final : public SecurityManager,
   // when an LTK is expected to exist.
   Result<> ValidateExistingLocalLtk();
 
+  // Returns true only if all security conditions are met for BR/EDR CTKD.
+  bool IsBrEdrCrossTransportKeyDerivationAllowed();
+
+  // The role of the local device in pairing.
+  // LE roles are fixed for the lifetime of a connection, but BR/EDR roles can
+  // be changed after a connection is established, so we cannot cache it during
+  // construction.
+  Role role() {
+    pw::bluetooth::emboss::ConnectionRole conn_role =
+        pw::bluetooth::emboss::ConnectionRole::CENTRAL;
+    if (low_energy_link_.is_alive()) {
+      conn_role = low_energy_link_->role();
+    } else if (bredr_link_.is_alive()) {
+      conn_role = bredr_link_->role();
+    } else {
+      PW_CRASH("no active link");
+    }
+    return conn_role == pw::bluetooth::emboss::ConnectionRole::CENTRAL
+               ? Role::kInitiator
+               : Role::kResponder;
+  }
+
   pw::async::Dispatcher& pw_dispatcher_;
 
   // The ID that will be assigned to the next pairing operation.
@@ -209,10 +242,16 @@ class SecurityManagerImpl final : public SecurityManager,
   Delegate::WeakPtr delegate_;
 
   // Data for the currently registered LE-U link, if any.
-  hci::LowEnergyConnection::WeakPtr le_link_;
+  hci::LowEnergyConnection::WeakPtr low_energy_link_;
+
+  hci::BrEdrConnection::WeakPtr bredr_link_;
+
+  // Whether the controller performs remote public key validation for BR/EDR
+  // keys.
+  bool is_controller_remote_public_key_validation_supported_ = false;
 
   // The IO capabilities of the device
-  IOCapability io_cap_;
+  IOCapability low_energy_io_cap_;
 
   // The current LTK assigned to this connection. This can be assigned directly
   // by calling AssignLongTermKey() or as a result of a pairing procedure.
@@ -226,11 +265,11 @@ class SecurityManagerImpl final : public SecurityManager,
   // The pending security requests added via UpgradeSecurity().
   std::queue<PendingRequest> request_queue_;
 
+  CrossTransportKeyDerivationResultCallback
+      bredr_cross_transport_key_derivation_callback_ = nullptr;
+
   // Fixed SMP Channel used to send/receive packets
   std::unique_ptr<PairingChannel> sm_chan_;
-
-  // The role of the local device in pairing.
-  Role role_;
 
   SmartTask timeout_task_{pw_dispatcher_};
 
@@ -262,45 +301,40 @@ SecurityManagerImpl::PendingRequest::PendingRequest(SecurityLevel level_in,
     : level(level_in), callback(std::move(callback_in)) {}
 
 SecurityManagerImpl::~SecurityManagerImpl() {
-  if (le_link_.is_alive()) {
-    le_link_->set_encryption_change_callback({});
+  if (low_energy_link_.is_alive()) {
+    low_energy_link_->set_encryption_change_callback({});
   }
 }
 
-SecurityManagerImpl::SecurityManagerImpl(hci::LowEnergyConnection::WeakPtr link,
-                                         l2cap::Channel::WeakPtr smp,
-                                         IOCapability io_capability,
-                                         Delegate::WeakPtr delegate,
-                                         BondableMode bondable_mode,
-                                         gap::LESecurityMode security_mode,
-                                         pw::async::Dispatcher& dispatcher,
-                                         bt::gap::Peer::WeakPtr peer)
+SecurityManagerImpl::SecurityManagerImpl(
+    hci::LowEnergyConnection::WeakPtr low_energy_link,
+    hci::BrEdrConnection::WeakPtr bredr_link,
+    l2cap::Channel::WeakPtr smp,
+    IOCapability io_capability,
+    Delegate::WeakPtr delegate,
+    BondableMode bondable_mode,
+    gap::LESecurityMode security_mode,
+    bool is_controller_remote_public_key_validation_supported,
+    pw::async::Dispatcher& dispatcher,
+    bt::gap::Peer::WeakPtr peer)
     : SecurityManager(bondable_mode, security_mode),
       pw_dispatcher_(dispatcher),
       next_pairing_id_(0),
       delegate_(std::move(delegate)),
-      le_link_(std::move(link)),
-      io_cap_(io_capability),
+      low_energy_link_(std::move(low_energy_link)),
+      bredr_link_(std::move(bredr_link)),
+      is_controller_remote_public_key_validation_supported_(
+          is_controller_remote_public_key_validation_supported),
+      low_energy_io_cap_(io_capability),
       sm_chan_(std::make_unique<PairingChannel>(
           smp, fit::bind_member<&SecurityManagerImpl::StartNewTimer>(this))),
-      role_(le_link_->role() == pw::bluetooth::emboss::ConnectionRole::CENTRAL
-                ? Role::kInitiator
-                : Role::kResponder),
       peer_(std::move(peer)),
       weak_self_(this),
       weak_listener_(this),
       weak_handler_(this) {
   PW_CHECK(delegate_.is_alive());
-  PW_CHECK(le_link_.is_alive());
   PW_CHECK(smp.is_alive());
-  PW_CHECK(le_link_->handle() == smp->link_handle());
-  PW_CHECK(smp->id() == l2cap::kLESMPChannelId);
-  // `current_phase_` is default constructed into std::monostate in the
-  // initializer list as no security upgrade is in progress upon construction.
 
-  // Set up HCI encryption event.
-  le_link_->set_encryption_change_callback(
-      fit::bind_member<&SecurityManagerImpl::OnEncryptionChange>(this));
   sm_chan_->SetChannelHandler(weak_handler_.GetWeakPtr());
 
   timeout_task_.set_function(
@@ -309,12 +343,26 @@ SecurityManagerImpl::SecurityManagerImpl(hci::LowEnergyConnection::WeakPtr link,
           OnPairingTimeout();
         }
       });
+
+  if (smp->id() == l2cap::kLESMPChannelId) {
+    PW_CHECK(low_energy_link_.is_alive());
+    PW_CHECK(low_energy_link_->handle() == smp->link_handle());
+    // Set up HCI encryption event.
+    low_energy_link_->set_encryption_change_callback(
+        fit::bind_member<&SecurityManagerImpl::OnEncryptionChange>(this));
+  }
 }
 
 void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
+  if (bredr_link_.is_alive()) {
+    sm_chan_->SendMessageNoTimerReset(kPairingFailed,
+                                      ErrorCode::kCommandNotSupported);
+    return;
+  }
+
   PW_CHECK(!SecurityUpgradeInProgress());
 
-  if (role_ != Role::kInitiator) {
+  if (role() != Role::kInitiator) {
     bt_log(
         INFO,
         "sm",
@@ -344,7 +392,7 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
             "disconnecting link as it cannot be encrypted with LTK status")) {
       return;
     }
-    le_link_->StartEncryption();
+    low_energy_link_->StartEncryption();
     return;
   }
   // V5.1 Vol. 3 Part H Section 3.4: "Upon [...] reception of the Security
@@ -364,6 +412,8 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
 
 void SecurityManagerImpl::UpgradeSecurity(SecurityLevel level,
                                           PairingCallback callback) {
+  PW_CHECK(!bredr_link_.is_alive());
+
   if (SecurityUpgradeInProgress()) {
     bt_log(TRACE,
            "sm",
@@ -396,15 +446,12 @@ void SecurityManagerImpl::UpgradeSecurity(SecurityLevel level,
 void SecurityManagerImpl::OnPairingRequest(
     const PairingRequestParams& req_params) {
   // Only the initiator may send the Pairing Request (V5.0 Vol. 3 Part H 3.5.1).
-  if (role_ != Role::kResponder) {
+  if (role() != Role::kResponder) {
     bt_log(INFO, "sm", "rejecting \"Pairing Request\" as initiator");
     sm_chan_->SendMessageNoTimerReset(kPairingFailed,
                                       ErrorCode::kCommandNotSupported);
     return;
   }
-  // V5.1 Vol. 3 Part H Section 3.4: "Upon [...] reception of the Pairing
-  // Request command, the Security Manager Timer shall be reset and started."
-  StartNewTimer();
 
   // We only require authentication as Responder if there is a pending Security
   // Request for it.
@@ -421,15 +468,34 @@ void SecurityManagerImpl::OnPairingRequest(
     required_level = SecurityLevel::kSecureAuthenticated;
   }
 
-  if (!pairing_token_) {
-    pairing_token_ = peer_->MutLe().RegisterPairing();
+  if (bredr_link_.is_alive()) {
+    if (!IsBrEdrCrossTransportKeyDerivationAllowed()) {
+      bt_log(INFO,
+             "sm",
+             "BR/EDR: rejecting \"Pairing Request\" because CTKD not allowed");
+      sm_chan_->SendMessageNoTimerReset(
+          kPairingFailed, ErrorCode::kCrossTransportKeyDerivationNotAllowed);
+      return;
+    }
   }
+
+  if (!pairing_token_) {
+    if (low_energy_link_.is_alive()) {
+      pairing_token_ = peer_->MutLe().RegisterPairing();
+    } else {
+      pairing_token_ = peer_->MutBrEdr().RegisterPairing();
+    }
+  }
+
+  // V5.1 Vol. 3 Part H Section 3.4: "Upon [...] reception of the Pairing
+  // Request command, the Security Manager Timer shall be reset and started."
+  StartNewTimer();
 
   current_phase_ = Phase1::CreatePhase1Responder(
       sm_chan_->GetWeakPtr(),
       weak_listener_.GetWeakPtr(),
       req_params,
-      io_cap_,
+      low_energy_io_cap_,
       bondable_mode(),
       required_level,
       fit::bind_member<&SecurityManagerImpl::OnFeatureExchange>(this));
@@ -437,6 +503,7 @@ void SecurityManagerImpl::OnPairingRequest(
 }
 
 void SecurityManagerImpl::UpgradeSecurityInternal() {
+  PW_CHECK(!bredr_link_.is_alive());
   PW_CHECK(
       !SecurityUpgradeInProgress(),
       "cannot upgrade security while security upgrade already in progress!");
@@ -453,8 +520,9 @@ void SecurityManagerImpl::UpgradeSecurityInternal() {
 
 fit::result<ErrorCode> SecurityManagerImpl::RequestSecurityUpgrade(
     SecurityLevel level) {
+  PW_CHECK(!bredr_link_.is_alive());
   if (level >= SecurityLevel::kAuthenticated &&
-      io_cap_ == IOCapability::kNoInputNoOutput) {
+      low_energy_io_cap_ == IOCapability::kNoInputNoOutput) {
     bt_log(WARN,
            "sm",
            "cannot fulfill authenticated security request as IOCapabilities "
@@ -466,11 +534,11 @@ fit::result<ErrorCode> SecurityManagerImpl::RequestSecurityUpgrade(
     pairing_token_ = peer_->MutLe().RegisterPairing();
   }
 
-  if (role_ == Role::kInitiator) {
+  if (role() == Role::kInitiator) {
     current_phase_ = Phase1::CreatePhase1Initiator(
         sm_chan_->GetWeakPtr(),
         weak_listener_.GetWeakPtr(),
-        io_cap_,
+        low_energy_io_cap_,
         bondable_mode(),
         level,
         fit::bind_member<&SecurityManagerImpl::OnFeatureExchange>(this));
@@ -491,13 +559,52 @@ void SecurityManagerImpl::OnFeatureExchange(PairingFeatures features,
                                             PairingRequestParams preq,
                                             PairingResponseParams pres) {
   PW_CHECK(std::holds_alternative<std::unique_ptr<Phase1>>(current_phase_));
-  bt_log(TRACE, "sm", "obtained LE Pairing features");
+  bt_log(DEBUG, "sm", "SMP feature exchange complete");
   next_pairing_id_++;
   features_ = features;
 
-  const auto [initiator_addr, responder_addr] = LEPairingAddresses();
   auto self = weak_listener_.GetWeakPtr();
-  if (!features.secure_connections) {
+  if (bredr_link_.is_alive()) {
+    if (!features_->generate_ct_key.has_value()) {
+      Abort(ErrorCode::kCrossTransportKeyDerivationNotAllowed);
+      return;
+    }
+
+    // If there are no keys to distribute, skip Phase3
+    if (!HasKeysToDistribute(*features_, /*is_bredr=*/true)) {
+      OnBrEdrPairingComplete(PairingData());
+      return;
+    }
+
+    // We checked the ltk before Phase1.
+    PW_CHECK(bredr_link_->ltk().has_value());
+    // Phase3 needs to know the security properties.
+    SecurityProperties bredr_security_properties(
+        bredr_link_->ltk_type().value());
+
+    current_phase_.emplace<Phase3>(
+        sm_chan_->GetWeakPtr(),
+        self,
+        role(),
+        *features_,
+        bredr_security_properties,
+        fit::bind_member<&SecurityManagerImpl::OnBrEdrPairingComplete>(this));
+    std::get<Phase3>(current_phase_).Start();
+  } else if (features.secure_connections) {
+    const auto [initiator_addr, responder_addr] = LEPairingAddresses();
+    current_phase_.emplace<Phase2SecureConnections>(
+        sm_chan_->GetWeakPtr(),
+        self,
+        role(),
+        features,
+        preq,
+        pres,
+        initiator_addr,
+        responder_addr,
+        fit::bind_member<&SecurityManagerImpl::OnPhase2EncryptionKey>(this));
+    std::get<Phase2SecureConnections>(current_phase_).Start();
+  } else {
+    const auto [initiator_addr, responder_addr] = LEPairingAddresses();
     auto preq_pdu = util::NewPdu(sizeof(PairingRequestParams)),
          pres_pdu = util::NewPdu(sizeof(PairingResponseParams));
     PacketWriter preq_writer(kPairingRequest, preq_pdu.get()),
@@ -507,7 +614,7 @@ void SecurityManagerImpl::OnFeatureExchange(PairingFeatures features,
     current_phase_.emplace<Phase2Legacy>(
         sm_chan_->GetWeakPtr(),
         self,
-        role_,
+        role(),
         features,
         *preq_pdu,
         *pres_pdu,
@@ -515,23 +622,12 @@ void SecurityManagerImpl::OnFeatureExchange(PairingFeatures features,
         responder_addr,
         fit::bind_member<&SecurityManagerImpl::OnPhase2EncryptionKey>(this));
     std::get<Phase2Legacy>(current_phase_).Start();
-  } else {
-    current_phase_.emplace<Phase2SecureConnections>(
-        sm_chan_->GetWeakPtr(),
-        self,
-        role_,
-        features,
-        preq,
-        pres,
-        initiator_addr,
-        responder_addr,
-        fit::bind_member<&SecurityManagerImpl::OnPhase2EncryptionKey>(this));
-    std::get<Phase2SecureConnections>(current_phase_).Start();
   }
 }
 
 void SecurityManagerImpl::OnPhase2EncryptionKey(const UInt128& new_key) {
-  PW_CHECK(le_link_.is_alive());
+  PW_CHECK(!bredr_link_.is_alive());
+  PW_CHECK(low_energy_link_.is_alive());
   PW_CHECK(features_);
   PW_CHECK(InPhase2());
   // EDiv and Rand values are 0 for Phase 2 keys generated by Legacy or Secure
@@ -545,14 +641,14 @@ void SecurityManagerImpl::OnPhase2EncryptionKey(const UInt128& new_key) {
     // `set_le_ltk` sets the encryption key of the LE link (which is the STK for
     // Legacy), not the long-term key that results from pairing (which is
     // generated in Phase 3 for Legacy).
-    le_link_->set_ltk(new_link_key);
+    low_energy_link_->set_ltk(new_link_key);
   }
   // If we're the initiator, we encrypt the link. If we're the responder, we
   // wait for the initiator to encrypt the link with the new key.|le_link_| will
   // respond to the HCI "LTK request" event with the `new_link_key` assigned
   // above, which should trigger OnEncryptionChange.
-  if (role_ == Role::kInitiator) {
-    if (!le_link_->StartEncryption()) {
+  if (role() == Role::kInitiator) {
+    if (!low_energy_link_->StartEncryption()) {
       bt_log(ERROR, "sm", "failed to start encryption");
       Abort(ErrorCode::kUnspecifiedReason);
     }
@@ -573,6 +669,8 @@ bool SecurityManagerImpl::CurrentLtkInsufficientlySecureForEncryption(
 }
 
 void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
+  PW_CHECK(!bredr_link_.is_alive());
+
   // First notify the delegate in case of failure.
   if (bt_is_error(
           enabled_result, ERROR, "sm", "link layer authentication failed")) {
@@ -585,7 +683,7 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
     bt_log(WARN,
            "sm",
            "encryption of link (handle: %#.4x) %s%s!",
-           le_link_->handle(),
+           low_energy_link_->handle(),
            enabled_result.is_error()
                ? bt_lib_cpp_string::StringPrintf("failed with %s",
                                                  bt_str(enabled_result))
@@ -626,7 +724,7 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
     // function determine the security properties.
     SetSecurityProperties(ltk_->security());
     if (security_request_phase) {
-      PW_CHECK(role_ == Role::kResponder);
+      PW_CHECK(role() == Role::kResponder);
       PW_CHECK(!request_queue_.empty());
       NotifySecurityCallbacks();
     }
@@ -642,30 +740,31 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
 void SecurityManagerImpl::EndPhase2() {
   PW_CHECK(features_.has_value());
   PW_CHECK(InPhase2());
+  PW_CHECK(!bredr_link_.is_alive());
 
   SetSecurityProperties(FeaturesToProperties(*features_));
   // If there are no keys to distribute, don't bother creating Phase 3
-  if (!HasKeysToDistribute(*features_)) {
-    OnPairingComplete(PairingData());
+  if (!HasKeysToDistribute(*features_, bredr_link_.is_alive())) {
+    OnLowEnergyPairingComplete(PairingData());
     return;
   }
   auto self = weak_listener_.GetWeakPtr();
   current_phase_.emplace<Phase3>(
       sm_chan_->GetWeakPtr(),
       self,
-      role_,
+      role(),
       *features_,
       security(),
-      fit::bind_member<&SecurityManagerImpl::OnPairingComplete>(this));
+      fit::bind_member<&SecurityManagerImpl::OnLowEnergyPairingComplete>(this));
   std::get<Phase3>(current_phase_).Start();
 }
 
-void SecurityManagerImpl::OnPairingComplete(PairingData pairing_data) {
+void SecurityManagerImpl::OnLowEnergyPairingComplete(PairingData pairing_data) {
   // We must either be in Phase3 or Phase 2 with no keys to distribute if
   // pairing has completed.
   if (!std::holds_alternative<Phase3>(current_phase_)) {
     PW_CHECK(InPhase2());
-    PW_CHECK(!HasKeysToDistribute(*features_));
+    PW_CHECK(!HasKeysToDistribute(*features_, /*is_bredr=*/false));
   }
   PW_CHECK(delegate_.is_alive());
   PW_CHECK(features_.has_value());
@@ -681,7 +780,7 @@ void SecurityManagerImpl::OnPairingComplete(PairingData pairing_data) {
     // existing link. Encryption with LTKs generated by LE legacy pairing uses
     // the key received by the link-layer central - so as initiator, this is the
     // peer key, and as responder, this is the local key.
-    const std::optional<LTK>& new_ltk = role_ == Role::kInitiator
+    const std::optional<LTK>& new_ltk = role() == Role::kInitiator
                                             ? pairing_data.peer_ltk
                                             : pairing_data.local_ltk;
     if (new_ltk.has_value()) {
@@ -727,6 +826,47 @@ void SecurityManagerImpl::OnPairingComplete(PairingData pairing_data) {
   NotifySecurityCallbacks();
 }
 
+void SecurityManagerImpl::OnBrEdrPairingComplete(PairingData pairing_data) {
+  PW_CHECK(bredr_link_.is_alive());
+  // We must either be in Phase3 or Phase1 with no keys to distribute if pairing
+  // has completed.
+  if (!std::holds_alternative<Phase3>(current_phase_)) {
+    PW_CHECK(InPhase1());
+    PW_CHECK(!HasKeysToDistribute(*features_, /*is_bredr=*/true));
+  }
+  PW_CHECK(features_.has_value());
+  PW_CHECK(features_->generate_ct_key.has_value());
+  PW_CHECK(delegate_.is_alive());
+
+  bt_log(INFO, "sm", "BR/EDR cross-transport key derivation complete");
+  delegate_->OnPairingComplete(fit::ok());
+
+  std::optional<UInt128> ct_key_value = util::BrEdrLinkKeyToLeLtk(
+      bredr_link_->ltk()->value(), features_->generate_ct_key.value());
+  if (ct_key_value) {
+    // The LE LTK will have the same security properties as the BR/EDR key.
+    SecurityProperties bredr_properties(bredr_link_->ltk_type().value());
+    pairing_data.cross_transport_key =
+        sm::LTK(bredr_properties, hci_spec::LinkKey(*ct_key_value, 0, 0));
+  } else {
+    bt_log(ERROR, "sm", "BR/EDR CTKD key generation failed");
+    if (bredr_cross_transport_key_derivation_callback_) {
+      bredr_cross_transport_key_derivation_callback_(
+          ToResult(HostError::kFailed));
+    }
+    ResetState();
+    return;
+  }
+
+  delegate_->OnNewPairingData(pairing_data);
+
+  if (bredr_cross_transport_key_derivation_callback_) {
+    bredr_cross_transport_key_derivation_callback_(fit::ok());
+  }
+
+  ResetState();
+}
+
 void SecurityManagerImpl::NotifySecurityCallbacks() {
   // Separate out the requests that are satisfied by the current security level
   // from those that require a higher level. We'll retry pairing for the latter.
@@ -755,9 +895,40 @@ void SecurityManagerImpl::NotifySecurityCallbacks() {
   }
 }
 
+void SecurityManagerImpl::InitiateBrEdrCrossTransportKeyDerivation(
+    CrossTransportKeyDerivationResultCallback callback) {
+  PW_CHECK(bredr_link_.is_alive());
+  PW_CHECK(role() == Role::kInitiator);
+
+  if (bredr_cross_transport_key_derivation_callback_ ||
+      SecurityUpgradeInProgress()) {
+    callback(ToResult(HostError::kInProgress));
+    return;
+  }
+
+  if (!IsBrEdrCrossTransportKeyDerivationAllowed()) {
+    callback(ToResult(HostError::kInsufficientSecurity));
+    return;
+  }
+
+  bredr_cross_transport_key_derivation_callback_ = std::move(callback);
+
+  if (!pairing_token_) {
+    pairing_token_ = peer_->MutBrEdr().RegisterPairing();
+  }
+  current_phase_ = Phase1::CreatePhase1Initiator(
+      sm_chan_->GetWeakPtr(),
+      weak_listener_.GetWeakPtr(),
+      IOCapability::kDisplayOnly,  // arbitrary
+      BondableMode::Bondable,
+      SecurityLevel::kEncrypted,  // arbitrary
+      fit::bind_member<&SecurityManagerImpl::OnFeatureExchange>(this));
+  std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
+}
+
 void SecurityManagerImpl::Reset(IOCapability io_capability) {
   Abort(ErrorCode::kUnspecifiedReason);
-  io_cap_ = io_capability;
+  low_energy_io_cap_ = io_capability;
   ResetState();
 }
 
@@ -770,6 +941,8 @@ void SecurityManagerImpl::ResetState() {
 }
 
 bool SecurityManagerImpl::AssignLongTermKey(const LTK& ltk) {
+  PW_CHECK(!bredr_link_.is_alive());
+
   if (SecurityUpgradeInProgress()) {
     bt_log(
         DEBUG, "sm", "Cannot directly assign LTK while pairing is in progress");
@@ -779,7 +952,7 @@ bool SecurityManagerImpl::AssignLongTermKey(const LTK& ltk) {
   OnNewLongTermKey(ltk);
 
   // The initiatior starts encryption when it receives a new LTK from GAP.
-  if (role_ == Role::kInitiator && !le_link_->StartEncryption()) {
+  if (role() == Role::kInitiator && !low_energy_link_->StartEncryption()) {
     bt_log(ERROR, "sm", "Failed to initiate authentication procedure");
     return false;
   }
@@ -792,7 +965,7 @@ void SecurityManagerImpl::SetSecurityProperties(const SecurityProperties& sec) {
     bt_log(DEBUG,
            "sm",
            "security properties changed - handle: %#.4x, new: %s, old: %s",
-           le_link_->handle(),
+           low_energy_link_->handle(),
            bt_str(sec),
            bt_str(security()));
     set_security(sec);
@@ -826,6 +999,7 @@ std::optional<IdentityInfo> SecurityManagerImpl::OnIdentityRequest() {
 }
 
 void SecurityManagerImpl::ConfirmPairing(ConfirmCallback confirm) {
+  PW_CHECK(!bredr_link_.is_alive());
   PW_CHECK(delegate_.is_alive());
   delegate_->ConfirmPairing([id = next_pairing_id_,
                              self = weak_self_.GetWeakPtr(),
@@ -844,6 +1018,7 @@ void SecurityManagerImpl::ConfirmPairing(ConfirmCallback confirm) {
 void SecurityManagerImpl::DisplayPasskey(uint32_t passkey,
                                          Delegate::DisplayMethod method,
                                          ConfirmCallback confirm) {
+  PW_CHECK(!bredr_link_.is_alive());
   PW_CHECK(delegate_.is_alive());
   delegate_->DisplayPasskey(
       passkey,
@@ -865,6 +1040,7 @@ void SecurityManagerImpl::DisplayPasskey(uint32_t passkey,
 }
 
 void SecurityManagerImpl::RequestPasskey(PasskeyResponseCallback respond) {
+  PW_CHECK(!bredr_link_.is_alive());
   PW_CHECK(delegate_.is_alive());
   delegate_->RequestPasskey([id = next_pairing_id_,
                              self = weak_self_.GetWeakPtr(),
@@ -945,10 +1121,16 @@ void SecurityManagerImpl::OnPairingFailed(Error error) {
     requests.pop();
   }
 
-  if (SecurityUpgradeInProgress()) {
-    PW_CHECK(le_link_.is_alive());
-    le_link_->set_ltk(hci_spec::LinkKey());
+  if (SecurityUpgradeInProgress() && !bredr_link_.is_alive()) {
+    PW_CHECK(low_energy_link_.is_alive());
+    low_energy_link_->set_ltk(hci_spec::LinkKey());
   }
+
+  if (bredr_cross_transport_key_derivation_callback_) {
+    bredr_cross_transport_key_derivation_callback_(
+        ToResult(HostError::kFailed));
+  }
+
   ResetState();
   // Reset state before potentially disconnecting link to avoid causing pairing
   // phase to fail twice.
@@ -992,10 +1174,11 @@ void SecurityManagerImpl::OnPairingTimeout() {
 
 std::pair<DeviceAddress, DeviceAddress>
 SecurityManagerImpl::LEPairingAddresses() {
+  PW_CHECK(!bredr_link_.is_alive());
   PW_CHECK(SecurityUpgradeInProgress());
-  const DeviceAddress *initiator = &le_link_->local_address(),
-                      *responder = &le_link_->peer_address();
-  if (role_ == Role::kResponder) {
+  const DeviceAddress *initiator = &low_energy_link_->local_address(),
+                      *responder = &low_energy_link_->peer_address();
+  if (role() == Role::kResponder) {
     std::swap(initiator, responder);
   }
   return std::make_pair(*initiator, *responder);
@@ -1003,7 +1186,7 @@ SecurityManagerImpl::LEPairingAddresses() {
 
 void SecurityManagerImpl::OnNewLongTermKey(const LTK& ltk) {
   ltk_ = ltk;
-  le_link_->set_ltk(ltk.key());
+  low_energy_link_->set_ltk(ltk.key());
 }
 
 Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
@@ -1012,11 +1195,11 @@ Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
     // Should always be present when this method is called.
     bt_log(ERROR, "sm", "SM LTK not found");
     status = fit::error(Error(HostError::kNotFound));
-  } else if (!le_link_->ltk().has_value()) {
+  } else if (!low_energy_link_->ltk().has_value()) {
     // Should always be present when this method is called.
     bt_log(ERROR, "sm", "Link LTK not found");
     status = fit::error(Error(HostError::kNotFound));
-  } else if (le_link_->ltk().value() != ltk_->key()) {
+  } else if (low_energy_link_->ltk().value() != ltk_->key()) {
     // As only SM should ever change the LE Link encryption key, these two
     // values should always be in sync, i.e. something in the system is acting
     // unreliably if they get out of sync.
@@ -1034,7 +1217,50 @@ Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
   return status;
 }
 
-std::unique_ptr<SecurityManager> SecurityManager::Create(
+bool SecurityManagerImpl::IsBrEdrCrossTransportKeyDerivationAllowed() {
+  if (!is_controller_remote_public_key_validation_supported_) {
+    bt_log(DEBUG,
+           "sm",
+           "%s: remote public key validation not supported",
+           __FUNCTION__);
+    return false;
+  }
+
+  if (bredr_link_->encryption_status() !=
+      pw::bluetooth::emboss::EncryptionStatus::ON_WITH_AES_FOR_BREDR) {
+    bt_log(DEBUG, "sm", "%s: encryption status not AES", __FUNCTION__);
+    return false;
+  }
+
+  if (!bredr_link_->ltk().has_value() || !bredr_link_->ltk_type() ||
+      !(bredr_link_->ltk_type().value() ==
+            hci_spec::LinkKeyType::kUnauthenticatedCombination256 ||
+        bredr_link_->ltk_type().value() ==
+            hci_spec::LinkKeyType::kAuthenticatedCombination256)) {
+    bt_log(DEBUG, "sm", "%s: Link Key has insufficient security", __FUNCTION__);
+    return false;
+  }
+
+  // Do not derive LE LTK if existing LE LTK is stronger than current
+  // BR/EDR link key.
+  SecurityProperties bredr_security_props(bredr_link_->ltk_type().value());
+  bool has_le_ltk = peer_->le() && peer_->le()->bond_data() &&
+                    peer_->le()->bond_data()->local_ltk;
+  if (has_le_ltk && !bredr_security_props.IsAsSecureAs(
+                        peer_->le()->bond_data()->local_ltk->security())) {
+    bt_log(DEBUG,
+           "sm",
+           "%s: LE LTK stronger than current BR/EDR link key",
+           __FUNCTION__);
+    return false;
+  }
+
+  // TODO(fxbug.dev/388607971): check for LE pairing in progress
+
+  return true;
+}
+
+std::unique_ptr<SecurityManager> SecurityManager::CreateLE(
     hci::LowEnergyConnection::WeakPtr link,
     l2cap::Channel::WeakPtr smp,
     IOCapability io_capability,
@@ -1043,18 +1269,46 @@ std::unique_ptr<SecurityManager> SecurityManager::Create(
     gap::LESecurityMode security_mode,
     pw::async::Dispatcher& dispatcher,
     bt::gap::Peer::WeakPtr peer) {
-  return std::make_unique<SecurityManagerImpl>(std::move(link),
-                                               std::move(smp),
-                                               io_capability,
-                                               std::move(delegate),
-                                               bondable_mode,
-                                               security_mode,
-                                               dispatcher,
-                                               std::move(peer));
+  PW_CHECK(link.is_alive());
+  return std::make_unique<SecurityManagerImpl>(
+      std::move(link),
+      hci::BrEdrConnection::WeakPtr(),
+      std::move(smp),
+      io_capability,
+      std::move(delegate),
+      bondable_mode,
+      security_mode,
+      /*is_controller_remote_public_key_validation_supported=*/false,
+      dispatcher,
+      std::move(peer));
+}
+
+std::unique_ptr<SecurityManager> SecurityManager::CreateBrEdr(
+    hci::BrEdrConnection::WeakPtr link,
+    l2cap::Channel::WeakPtr smp,
+    Delegate::WeakPtr delegate,
+    bool is_controller_remote_public_key_validation_supported,
+    pw::async::Dispatcher& dispatcher,
+    bt::gap::Peer::WeakPtr peer) {
+  PW_CHECK(smp.is_alive());
+  PW_CHECK(smp->id() == l2cap::kSMPChannelId);
+  return std::make_unique<SecurityManagerImpl>(
+      hci::LowEnergyConnection::WeakPtr(),
+      std::move(link),
+      std::move(smp),
+      IOCapability::kNoInputNoOutput,  // arbitrary, RFU in BR/EDR
+      std::move(delegate),
+      BondableMode::Bondable,      // BR/EDR is always "bondable".
+      gap::LESecurityMode::Mode1,  // arbitrary, not used by
+                                   // BR/EDR
+      is_controller_remote_public_key_validation_supported,
+      dispatcher,
+      std::move(peer));
 }
 
 SecurityManager::SecurityManager(BondableMode bondable_mode,
                                  gap::LESecurityMode security_mode)
-    : bondable_mode_(bondable_mode), security_mode_(security_mode) {}
+    : low_energy_bondable_mode_(bondable_mode),
+      low_energy_security_mode_(security_mode) {}
 
 }  // namespace bt::sm

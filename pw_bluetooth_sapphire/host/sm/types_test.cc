@@ -176,19 +176,34 @@ TEST(TypesTest, HasKeysToDistribute) {
   PairingFeatures local_link_key_and_others;
   local_link_key_and_others.local_key_distribution =
       KeyDistGen::kLinkKey | KeyDistGen::kEncKey;
-  EXPECT_TRUE(HasKeysToDistribute(local_link_key_and_others));
+  EXPECT_TRUE(
+      HasKeysToDistribute(local_link_key_and_others, /*is_bredr=*/false));
 
   PairingFeatures remote_link_key_and_others;
   remote_link_key_and_others.remote_key_distribution =
       KeyDistGen::kLinkKey | KeyDistGen::kIdKey;
-  EXPECT_TRUE(HasKeysToDistribute(remote_link_key_and_others));
+  EXPECT_TRUE(
+      HasKeysToDistribute(remote_link_key_and_others, /*is_bredr=*/false));
 
   PairingFeatures remote_link_key_only;
   remote_link_key_only.remote_key_distribution = KeyDistGen::kLinkKey;
-  EXPECT_FALSE(HasKeysToDistribute(remote_link_key_only));
+  EXPECT_FALSE(HasKeysToDistribute(remote_link_key_only, /*is_bredr=*/false));
 
   // No keys set.
-  EXPECT_FALSE(HasKeysToDistribute(PairingFeatures{}));
+  EXPECT_FALSE(HasKeysToDistribute(PairingFeatures{}, /*is_bredr=*/false));
+}
+
+TEST(TypesTest, DistributableKeys) {
+  KeyDistGenField le_keys =
+      KeyDistGen::kIdKey | KeyDistGen::kLinkKey | KeyDistGen::kEncKey;
+  KeyDistGenField dist_le_keys = DistributableKeys(le_keys, /*is_bredr=*/false);
+  EXPECT_EQ(dist_le_keys, KeyDistGen::kIdKey | KeyDistGen::kEncKey);
+
+  KeyDistGenField bredr_keys =
+      KeyDistGen::kIdKey | KeyDistGen::kLinkKey | KeyDistGen::kEncKey;
+  KeyDistGenField dist_bredr_keys =
+      DistributableKeys(bredr_keys, /*is_bredr=*/true);
+  EXPECT_EQ(dist_bredr_keys, KeyDistGen::kIdKey);
 }
 
 TEST(TypesTest, SecurityPropertiesComparisonWorks) {

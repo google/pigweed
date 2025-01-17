@@ -34,6 +34,8 @@ class FakeBrEdrConnection final : public BrEdrConnection {
         pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   }
 
+  bool StartEncryption(pw::bluetooth::emboss::EncryptionStatus status);
+
   // BrEdrConnection overrides:
   void Disconnect(pw::bluetooth::emboss::StatusCode reason) override;
   bool StartEncryption() override;

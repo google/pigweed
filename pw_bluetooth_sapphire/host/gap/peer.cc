@@ -254,6 +254,9 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
   PW_DCHECK(peer_->connectable());
   PW_DCHECK(peer_->address().type() != DeviceAddress::Type::kLEAnonymous);
 
+  // TODO(fxbug.dev/42072204): Do not overwrite an existing key that has
+  // greater strength or authentication.
+
   // Make sure the peer is non-temporary.
   peer_->TryMakeNonTemporary();
 
@@ -413,7 +416,6 @@ Peer::ConnectionToken Peer::BrEdrData::RegisterConnection() {
 }
 
 Peer::PairingToken Peer::BrEdrData::RegisterPairing() {
-  PW_CHECK(!is_pairing());
   pairing_tokens_count_++;
   auto unregister_cb = [self = peer_->GetWeakPtr(), this] {
     if (!self.is_alive()) {

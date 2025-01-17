@@ -1533,7 +1533,7 @@ void AdapterImpl::InitializeStep4() {
       l2cap_.get(),
       gatt_,
       le_discovery_manager_->GetWeakPtr(),
-      sm::SecurityManager::Create,
+      sm::SecurityManager::CreateLE,
       state(),
       dispatcher_);
   le_connection_manager_->AttachInspect(
