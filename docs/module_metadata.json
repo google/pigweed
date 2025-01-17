@@ -98,6 +98,14 @@
       "C++"
     ]
   },
+  "pw_atomic": {
+    "tagline": "Software implementations of atomic operations",
+    "status": "experimental",
+    "languages": [
+      "C",
+      "C++"
+    ]
+  },
   "pw_base64": {
     "tagline": "Base64 encoding, decoding, and validating",
     "status": "stable",

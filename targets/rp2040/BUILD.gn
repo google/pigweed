@@ -163,6 +163,7 @@ pw_system_target("rp2040") {
     pw_build_LINK_DEPS += [
       "$dir_pigweed/targets/rp2040:pre_init",
       "$dir_pw_assert:impl",
+      "$dir_pw_atomic:atomic_cortex_m",
       "$dir_pw_cpu_exception:entry_impl",
       "$dir_pw_log:impl",
       get_path_info(":float_printf_adapter", "abspath"),

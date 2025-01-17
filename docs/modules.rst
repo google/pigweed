@@ -21,6 +21,7 @@ Modules
    pw_assert/docs
    pw_async/docs
    pw_async2/docs
+   pw_atomic/docs
    pw_base64/docs
    pw_bloat/docs
    pw_blob_store/docs
