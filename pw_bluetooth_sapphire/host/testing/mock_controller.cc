@@ -18,6 +18,7 @@
 
 #include <cstdint>
 
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_unit_test/framework.h"
@@ -123,6 +124,11 @@ void MockController::QueueScoTransaction(const ByteBuffer& expected,
   sco_transactions_.push(ScoTransaction(DynamicByteBuffer(expected), meta));
 }
 
+void MockController::QueueIsoTransaction(const ByteBuffer& expected,
+                                         ExpectationMetadata meta) {
+  iso_transactions_.push(IsoTransaction(DynamicByteBuffer(expected), meta));
+}
+
 bool MockController::AllExpectedScoPacketsSent() const {
   return sco_transactions_.empty();
 }
@@ -133,6 +139,10 @@ bool MockController::AllExpectedDataPacketsSent() const {
 
 bool MockController::AllExpectedCommandPacketsSent() const {
   return cmd_transactions_.empty();
+}
+
+bool MockController::AllExpectedIsoPacketsSent() const {
+  return iso_transactions_.empty();
 }
 
 void MockController::SetDataCallback(DataCallback callback) {
