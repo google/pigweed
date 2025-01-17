@@ -30,10 +30,8 @@ _ALL_TOOLCHAINS = [
     "//pw_toolchain:cc_toolchain_cortex-m33",
     "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m3",
     "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4+nofp",
     "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m7",
     "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m33",
-    "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m33+nofp",
     "//pw_toolchain/host_clang:host_cc_toolchain_linux",
     "//pw_toolchain/host_clang:host_cc_toolchain_macos",
 ]
