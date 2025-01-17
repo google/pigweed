@@ -38,3 +38,8 @@ config_setting(
         ":cxx_standard": "20",
     },
 )
+
+sh_binary(
+    name = "generate_module_map",
+    srcs = ["generate_module_map.sh"],
+)

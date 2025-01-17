@@ -253,3 +253,77 @@ cc_args(
         "//conditions:default": [],
     }),
 )
+
+cc_args(
+    name = "layering_check",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_header_parsing",
+        "@rules_cc//cc/toolchains/actions:cpp_module_compile",
+    ],
+    args = [
+        "-fmodules-strict-decluse",
+        "-Wprivate-header",
+    ],
+)
+
+cc_args(
+    name = "module_name",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_header_parsing",
+        "@rules_cc//cc/toolchains/actions:cpp_module_compile",
+    ],
+    args = select({
+        "@platforms//os:macos": [
+            "-Xclang",
+        ],
+        "//conditions:default": [],
+    }) + ["-fmodule-name={module_name}"],
+    format = {
+        "module_name": "@rules_cc//cc/toolchains/variables:module_name",
+    },
+    requires_not_none = "@rules_cc//cc/toolchains/variables:module_name",
+)
+
+cc_args(
+    name = "module_map_file",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_header_parsing",
+        "@rules_cc//cc/toolchains/actions:cpp_module_compile",
+    ],
+    args = select({
+        "@platforms//os:macos": [
+            "-Xclang",
+        ],
+        "//conditions:default": [],
+    }) + ["-fmodule-map-file={module_map_file}"],
+    format = {
+        "module_map_file": "@rules_cc//cc/toolchains/variables:module_map_file",
+    },
+    requires_not_none = "@rules_cc//cc/toolchains/variables:module_map_file",
+)
+
+cc_args(
+    name = "dependent_module_map_files",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_header_parsing",
+        "@rules_cc//cc/toolchains/actions:cpp_module_compile",
+    ],
+    args = select({
+        "@platforms//os:macos": ["-Xclang"],
+        "//conditions:default": [],
+    }) + [
+        "-fmodule-map-file={dependent_module_map_files}",
+    ],
+    format = {
+        "dependent_module_map_files": "@rules_cc//cc/toolchains/variables:dependent_module_map_files",
+    },
+    iterate_over = "@rules_cc//cc/toolchains/variables:dependent_module_map_files",
+)
