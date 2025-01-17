@@ -422,9 +422,9 @@ DynamicByteBuffer IsoDataPacket(
   }
 
   if (has_sdu_hdr) {
-    BT_ASSERT(packet_sequence_number.has_value());
-    BT_ASSERT(iso_sdu_length.has_value());
-    BT_ASSERT(packet_status_flag.has_value());
+    PW_CHECK(packet_sequence_number.has_value());
+    PW_CHECK(iso_sdu_length.has_value());
+    PW_CHECK(packet_status_flag.has_value());
     view.packet_sequence_number().Write(*packet_sequence_number);
     view.iso_sdu_length().Write(*iso_sdu_length);
     view.packet_status_flag().Write(*packet_status_flag);

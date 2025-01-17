@@ -83,7 +83,7 @@ void IsoDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
     return;
   }
   WeakPtr<ConnectionInterface> stream = connections_[handle];
-  BT_ASSERT(stream.is_alive());
+  PW_CHECK(stream.is_alive());
   stream->ReceiveInboundPacket(buffer);
 }
 

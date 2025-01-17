@@ -349,8 +349,8 @@ void IsoStreamImpl::ReceiveInboundPacket(pw::span<const std::byte> packet) {
   size_t packet_actual_size = data_total_length + header_size;
 
   // This condition should have been caught by Emboss
-  BT_ASSERT_MSG(packet_size >= packet_actual_size,
-                "Packet too short to hold data specified in header");
+  PW_CHECK(packet_size >= packet_actual_size,
+           "Packet too short to hold data specified in header");
 
   // Truncate any extra data at end of packet
   if (packet_size > packet_actual_size) {

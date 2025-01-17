@@ -151,9 +151,9 @@ void IsoStreamServer::SendIncomingPacket(pw::span<const std::byte> packet) {
     // Hanging get will remain unfulfilled
     return;
   }
-  BT_ASSERT_MSG(view.header().pb_flag().Read() ==
-                    pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
-                "Incomplete SDU received from IsoStream");
+  PW_CHECK(view.header().pb_flag().Read() ==
+               pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+           "Incomplete SDU received from IsoStream");
   fuchsia::bluetooth::le::IsochronousStream_Read_Response response;
 
   size_t data_fragment_size = view.sdu_fragment_size().Read();
@@ -167,7 +167,7 @@ void IsoStreamServer::SendIncomingPacket(pw::span<const std::byte> packet) {
   response.set_status_flag(fidl_helpers::EmbossIsoPacketStatusFlagToFidl(
       view.packet_status_flag().Read()));
 
-  BT_ASSERT(hanging_read_cb_);
+  PW_CHECK(hanging_read_cb_);
   hanging_read_cb_(
       fuchsia::bluetooth::le::IsochronousStream_Read_Result::WithResponse(
           std::move(response)));

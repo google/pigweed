@@ -126,8 +126,7 @@ void ValidatePdu(PDU pdu,
     ValidatePdu(__VA_ARGS__); \
   } while (false)
 
-// The following test exercises a BT_DEBUG_ASSERT and thus only works in DEBUG
-// builds.
+// The following test exercises a PW_DCHECK and thus only works in DEBUG builds.
 #ifdef DEBUG
 TEST(RecombinerTest, WrongHandle) {
   Recombiner recombiner(kTestHandle);

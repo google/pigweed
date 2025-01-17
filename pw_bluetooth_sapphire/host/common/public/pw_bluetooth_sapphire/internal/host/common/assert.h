@@ -17,7 +17,3 @@
 #include "pw_assert/check.h"
 
 #define BT_PANIC(msg, ...) PW_CRASH(msg, ##__VA_ARGS__)
-#define BT_ASSERT(x) PW_CHECK(x)
-#define BT_ASSERT_MSG(x, msg, ...) PW_CHECK(x, msg, ##__VA_ARGS__)
-#define BT_DEBUG_ASSERT(x) PW_DCHECK(x)
-#define BT_DEBUG_ASSERT_MSG(x, msg, ...) PW_DCHECK(x, msg, ##__VA_ARGS__)

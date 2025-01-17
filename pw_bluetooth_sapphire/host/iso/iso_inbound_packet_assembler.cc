@@ -27,7 +27,7 @@ void IsoInboundPacketAssembler::ProcessNext(pw::span<const std::byte> packet) {
       packet.data(), packet.size());
 
   // This should have been checked by the caller.
-  BT_ASSERT(packet_view.Ok());
+  PW_CHECK(packet_view.Ok());
 
   pw::bluetooth::emboss::IsoDataPbFlag pb_flag =
       packet_view.header().pb_flag().Read();
@@ -41,7 +41,7 @@ void IsoInboundPacketAssembler::ProcessNext(pw::span<const std::byte> packet) {
   }
 
   if (pb_flag == pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU) {
-    BT_ASSERT(complete_packet_handler_);
+    PW_CHECK(complete_packet_handler_);
     complete_packet_handler_(packet);
     return;
   }
@@ -62,9 +62,9 @@ void IsoInboundPacketAssembler::ProcessNext(pw::span<const std::byte> packet) {
     return;
   }
 
-  BT_ASSERT((pb_flag ==
-             pw::bluetooth::emboss::IsoDataPbFlag::INTERMEDIATE_FRAGMENT) ||
-            (pb_flag == pw::bluetooth::emboss::IsoDataPbFlag::LAST_FRAGMENT));
+  PW_CHECK((pb_flag ==
+            pw::bluetooth::emboss::IsoDataPbFlag::INTERMEDIATE_FRAGMENT) ||
+           (pb_flag == pw::bluetooth::emboss::IsoDataPbFlag::LAST_FRAGMENT));
   if (!AppendFragment(packet)) {
     return;
   }
@@ -87,17 +87,17 @@ bool IsoInboundPacketAssembler::AppendFragment(
 
   auto assembly_buffer_view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
       assembly_buffer_.data(), assembly_buffer_.size());
-  BT_DEBUG_ASSERT(assembly_buffer_view.Ok());
+  PW_DCHECK(assembly_buffer_view.Ok());
 
   auto fragment_view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
       packet.data(), packet.size());
-  BT_DEBUG_ASSERT(fragment_view.Ok());
+  PW_DCHECK(fragment_view.Ok());
 
   // A failure here would indicate that packets are being incorrectly routed to
   // the appropriate stream (since we should be using the connection handle to
   // figure out where to send the packet).
-  BT_ASSERT(assembly_buffer_view.header().connection_handle().Read() ==
-            fragment_view.header().connection_handle().Read());
+  PW_CHECK(assembly_buffer_view.header().connection_handle().Read() ==
+           fragment_view.header().connection_handle().Read());
 
   size_t total_sdu_bytes_received =
       assembly_buffer_view.sdu_fragment_size().Read() +
