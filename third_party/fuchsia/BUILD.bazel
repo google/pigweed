@@ -63,7 +63,7 @@ cc_library(
 cc_library(
     name = "stdcompat",
     srcs = [
-        "repo/sdk/lib/stdcompat/include/lib/stdcompat/bit.h",
+        "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/bit.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/constructors.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/exception.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/functional.h",
@@ -73,8 +73,8 @@ cc_library(
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/memory.h",
     ],
     hdrs = [
+        "repo/sdk/lib/stdcompat/include/lib/stdcompat/bit.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/functional.h",
-        "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/bit.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/optional.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/type_traits.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/utility.h",

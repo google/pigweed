@@ -44,7 +44,7 @@ cc_library(
         ":config_override",
         ":headers",
         "//pw_log:pw_log.facade",
-        "//pw_string",
+        "//pw_string:builder",
         "//pw_sys_io",
     ],
 )

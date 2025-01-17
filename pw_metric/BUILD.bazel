@@ -40,9 +40,11 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         "//pw_assert",
-        "//pw_containers",
+        "//pw_containers:intrusive_list",
         "//pw_log",
+        "//pw_preprocessor",
         "//pw_span",
+        "//pw_tokenizer",
         "//pw_tokenizer:base64",
     ],
 )

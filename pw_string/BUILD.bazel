@@ -53,6 +53,7 @@ cc_library(
         ":to_string",
         ":util",
         "//pw_preprocessor",
+        "//pw_span",
         "//pw_status",
     ],
 )
@@ -94,6 +95,7 @@ cc_library(
         ":format",
         ":util",
         "//pw_result",
+        "//pw_span",
         "//pw_status",
         "//third_party/fuchsia:stdcompat",
     ],

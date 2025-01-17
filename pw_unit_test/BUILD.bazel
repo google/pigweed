@@ -106,7 +106,7 @@ cc_library(
         "//pw_preprocessor",
         "//pw_span",
         "//pw_status",
-        "//pw_string",
+        "//pw_string:builder",
     ],
 )
 
@@ -227,6 +227,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
+        ":event_handler",
         ":googletest_style_event_handler",
         "//pw_preprocessor",
     ],
