@@ -126,7 +126,7 @@ class LinkTypeConnectionTest
       case bt::LinkType::kESCO:
         break;
     }
-    BT_PANIC("Invalid link type: %u", static_cast<unsigned>(ll_type));
+    PW_CRASH("Invalid link type: %u", static_cast<unsigned>(ll_type));
     return nullptr;
   }
 

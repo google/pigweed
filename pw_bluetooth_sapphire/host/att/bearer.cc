@@ -416,7 +416,7 @@ bool Bearer::SendInternal(ByteBufferPtr pdu, TransactionCallback callback) {
       tq = &indication_queue_;
       break;
     default:
-      BT_PANIC("unsupported opcode: %#.2x", reader.opcode());
+      PW_CRASH("unsupported opcode: %#.2x", reader.opcode());
   }
   PW_MODIFY_DIAGNOSTICS_POP();
 

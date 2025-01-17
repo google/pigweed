@@ -33,7 +33,7 @@ PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan,
   } else if (chan_->link_type() == bt::LinkType::kACL) {
     PW_CHECK(chan_->id() == l2cap::kSMPChannelId);
   } else {
-    BT_PANIC("unsupported link type for SMP!");
+    PW_CRASH("unsupported link type for SMP!");
   }
   auto self = weak_self_.GetWeakPtr();
   chan_->Activate(

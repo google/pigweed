@@ -41,7 +41,7 @@ static std::string EventTypeToString(CommandChannel::EventType event_type) {
     case CommandChannel::EventType::kVendorEvent:
       return "vendor_event";
   }
-  BT_PANIC("Unhandled event type %u", static_cast<unsigned int>(event_type));
+  PW_CRASH("Unhandled event type %u", static_cast<unsigned int>(event_type));
   return "(invalid)";
 }
 

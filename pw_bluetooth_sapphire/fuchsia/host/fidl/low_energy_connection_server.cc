@@ -203,7 +203,7 @@ void LowEnergyConnectionServer::AcceptCis(
       iso_streams_[id]->Close(ZX_ERR_INVALID_ARGS);
       return;
     default:
-      BT_PANIC("Invalid AcceptCisStatus value %d", static_cast<int>(result));
+      PW_CRASH("Invalid AcceptCisStatus value %d", static_cast<int>(result));
   }
 }
 

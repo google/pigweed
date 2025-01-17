@@ -573,7 +573,7 @@ void SocketChannelRelay<ChannelT>::ServiceSocketWriteQueue() {
         // here, as closure event will be handled by OnSocketClosed().
         break;
       default:
-        BT_PANIC("Unexpected zx_object_set_property() result: %s",
+        PW_CRASH("Unexpected zx_object_set_property() result: %s",
                  zx_status_get_string(prop_set_res));
         break;
     }

@@ -30,7 +30,7 @@ std::string LinkTypeToString(LinkType type) {
       return "LE";
   }
 
-  BT_PANIC("invalid link type: %u", static_cast<unsigned int>(type));
+  PW_CRASH("invalid link type: %u", static_cast<unsigned int>(type));
   return "(invalid)";
 }
 

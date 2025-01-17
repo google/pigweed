@@ -45,7 +45,7 @@ std::string Peer::ConnectionStateToString(Peer::ConnectionState state) {
       return "connected";
   }
 
-  BT_PANIC("invalid connection state %u", static_cast<unsigned int>(state));
+  PW_CRASH("invalid connection state %u", static_cast<unsigned int>(state));
   return "(unknown)";
 }
 
@@ -67,7 +67,7 @@ std::string Peer::NameSourceToString(Peer::NameSource name_source) {
       return "Unknown source";
   }
 
-  BT_PANIC("invalid peer name source %u",
+  PW_CRASH("invalid peer name source %u",
            static_cast<unsigned int>(name_source));
   return "(unknown)";
 }

@@ -58,11 +58,11 @@ class FakeVendorServer final
 
   // Not supported
   void OpenHci(OpenHciCompleter::Sync& completer) override {
-    BT_PANIC("OpenHci not supported");
+    PW_CRASH("OpenHci not supported");
   }
 
   void OpenSnoop(OpenSnoopCompleter::Sync& completer) override {
-    BT_PANIC("OpenSnoop not supported");
+    PW_CRASH("OpenSnoop not supported");
   }
 
   void OpenHciTransport(OpenHciTransportCompleter::Sync& completer) override {

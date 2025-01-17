@@ -919,7 +919,7 @@ void SecurityManagerImpl::OnPairingFailed(Error error) {
         } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
           s = arg.ToString();
         } else {
-          BT_PANIC(
+          PW_CRASH(
               "security upgrade cannot fail when current_phase_ is "
               "std::monostate!");
         }
@@ -983,7 +983,7 @@ void SecurityManagerImpl::OnPairingTimeout() {
         } else if constexpr (std::is_base_of_v<PairingPhase, T>) {
           arg.OnFailure(Error(HostError::kTimedOut));
         } else {
-          BT_PANIC("cannot timeout when current_phase_ is std::monostate!");
+          PW_CRASH("cannot timeout when current_phase_ is std::monostate!");
         }
       },
       current_phase_);

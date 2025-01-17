@@ -623,7 +623,7 @@ AclDataChannelImpl::DataBufferOverflowCallback(const EventPacket& event) {
 
   // Internal buffer state must be invalid and no further transmissions are
   // possible.
-  BT_PANIC("controller data buffer overflow event received (link type: %s)",
+  PW_CRASH("controller data buffer overflow event received (link type: %s)",
            hci_spec::LinkTypeToString(params.ll_type().Read()));
 
   return CommandChannel::EventCallbackResult::kContinue;

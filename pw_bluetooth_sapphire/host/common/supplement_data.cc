@@ -64,7 +64,7 @@ UUIDElemSize SizeForType(DataType type) {
   };
   PW_MODIFY_DIAGNOSTICS_POP();
 
-  BT_PANIC("called SizeForType with non-UUID DataType %du",
+  PW_CRASH("called SizeForType with non-UUID DataType %du",
            static_cast<uint8_t>(type));
   return UUIDElemSize::k16Bit;
 }

@@ -70,7 +70,7 @@ fhbt::ScoCodingFormat ScoCodingFormatToFidl(
     case pw::bluetooth::Controller::ScoCodingFormat::kMsbc:
       return fhbt::ScoCodingFormat::kMsbc;
     default:
-      BT_PANIC("invalid SCO coding format");
+      PW_CRASH("invalid SCO coding format");
   }
 }
 
@@ -82,7 +82,7 @@ fhbt::ScoEncoding ScoEncodingToFidl(
     case pw::bluetooth::Controller::ScoEncoding::k16Bits:
       return fhbt::ScoEncoding::kBits16;
     default:
-      BT_PANIC("invalid SCO encoding");
+      PW_CRASH("invalid SCO encoding");
   }
 }
 
@@ -94,7 +94,7 @@ fhbt::ScoSampleRate ScoSampleRateToFidl(
     case pw::bluetooth::Controller::ScoSampleRate::k16Khz:
       return fhbt::ScoSampleRate::kKhz16;
     default:
-      BT_PANIC("invalid SCO sample rate");
+      PW_CRASH("invalid SCO sample rate");
   }
 }
 

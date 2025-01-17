@@ -134,7 +134,7 @@ UUIDElemSize UUID::CompactSize(bool allow_32bit) const {
     case Type::k128Bit:
       return UUIDElemSize::k128Bit;
   };
-  BT_PANIC("uuid type of %du is invalid", static_cast<uint8_t>(type_));
+  PW_CRASH("uuid type of %du is invalid", static_cast<uint8_t>(type_));
 }
 
 size_t UUID::ToBytes(MutableByteBuffer* bytes, bool allow_32bit) const {

@@ -58,7 +58,7 @@ bt::l2cap::ChannelParameters FidlToChannelParameters(
             kEnhancedRetransmission;
         break;
       default:
-        BT_PANIC("FIDL channel parameter contains invalid mode");
+        PW_CRASH("FIDL channel parameter contains invalid mode");
     }
   }
   if (fidl.has_max_rx_packet_size()) {
@@ -85,7 +85,7 @@ fbt::ChannelMode ChannelModeToFidl(const bt::l2cap::AnyChannelMode& mode) {
         break;
     }
   }
-  BT_PANIC("Could not convert channel parameter mode to unsupported FIDL mode");
+  PW_CRASH("Could not convert channel parameter mode to unsupported FIDL mode");
 }
 
 fbt::ChannelParameters ChannelInfoToFidlChannelParameters(

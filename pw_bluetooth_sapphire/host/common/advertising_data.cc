@@ -44,7 +44,7 @@ DataType ServiceUuidTypeForUuidSize(UUIDElemSize size, bool complete) {
       return complete ? DataType::kComplete128BitServiceUuids
                       : DataType::kIncomplete128BitServiceUuids;
     default:
-      BT_PANIC(
+      PW_CRASH(
           "called ServiceUuidTypeForUuidSize with unknown UUIDElemSize %du",
           size);
   }
@@ -59,7 +59,7 @@ DataType ServiceDataTypeForUuidSize(UUIDElemSize size) {
     case UUIDElemSize::k128Bit:
       return DataType::kServiceData128Bit;
     default:
-      BT_PANIC(
+      PW_CRASH(
           "called ServiceDataTypeForUuidSize with unknown UUIDElemSize %du",
           size);
   };

@@ -56,7 +56,7 @@ DataElement::Size SizeToSizeType(size_t size) {
     case 16:
       return DataElement::Size::kSixteenBytes;
     default:
-      BT_PANIC("invalid data element size: %zu", size);
+      PW_CRASH("invalid data element size: %zu", size);
   }
   return DataElement::Size::kNextFour;
 }

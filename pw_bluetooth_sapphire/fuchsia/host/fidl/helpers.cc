@@ -1171,7 +1171,7 @@ fsys::TechnologyType TechnologyTypeToFidl(bt::gap::TechnologyType type) {
     case bt::gap::TechnologyType::kDualMode:
       return fsys::TechnologyType::DUAL_MODE;
     default:
-      BT_PANIC("invalid technology type: %u", static_cast<unsigned int>(type));
+      PW_CRASH("invalid technology type: %u", static_cast<unsigned int>(type));
       break;
   }
 
@@ -2628,7 +2628,7 @@ pw::bluetooth::emboss::DataPathDirection DataPathDirectionFromFidl(
     case fuchsia::bluetooth::DataDirection::OUTPUT:
       return pw::bluetooth::emboss::DataPathDirection::OUTPUT;
   }
-  BT_PANIC("Unrecognized value for data direction: %" PRIu8, fidl_direction);
+  PW_CRASH("Unrecognized value for data direction: %" PRIu8, fidl_direction);
 }
 
 // Both of these types use the spec representation, so we can just assign the
@@ -2653,7 +2653,7 @@ pw::bluetooth::emboss::CodingFormat CodingFormatFromFidl(
     case fuchsia::bluetooth::AssignedCodingFormat::G_729A:
       return pw::bluetooth::emboss::CodingFormat::G729A;
   }
-  BT_PANIC("Unrecognized value for coding format: %u",
+  PW_CRASH("Unrecognized value for coding format: %u",
            static_cast<unsigned>(fidl_format));
 }
 
@@ -2689,7 +2689,7 @@ pw::bluetooth::emboss::LogicalTransportType LogicalTransportTypeFromFidl(
     case fuchsia::bluetooth::LogicalTransportType::LE_BIS:
       return pw::bluetooth::emboss::LogicalTransportType::LE_BIS;
   }
-  BT_PANIC("Unrecognized value for logical transport type: %u",
+  PW_CRASH("Unrecognized value for logical transport type: %u",
            static_cast<unsigned>(fidl_transport_type));
 }
 

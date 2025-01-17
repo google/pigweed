@@ -95,11 +95,11 @@ void FakeLayer::AddConnection(PeerId peer_id,
 void FakeLayer::RemoveConnection(PeerId peer_id) { peers_.erase(peer_id); }
 
 GATT::PeerMtuListenerId FakeLayer::RegisterPeerMtuListener(PeerMtuListener) {
-  BT_PANIC("implement fake behavior if needed");
+  PW_CRASH("implement fake behavior if needed");
 }
 
 bool FakeLayer::UnregisterPeerMtuListener(PeerMtuListenerId) {
-  BT_PANIC("implement fake behavior if needed");
+  PW_CRASH("implement fake behavior if needed");
 }
 
 void FakeLayer::RegisterService(ServicePtr service,

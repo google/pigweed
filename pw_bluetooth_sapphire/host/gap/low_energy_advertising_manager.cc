@@ -40,7 +40,7 @@ hci::AdvertisingIntervalRange GetIntervalRange(AdvertisingInterval interval) {
       return {kLEAdvertisingSlowIntervalMin, kLEAdvertisingSlowIntervalMax};
   }
 
-  BT_PANIC("unexpected advertising interval value");
+  PW_CRASH("unexpected advertising interval value");
   return {kLEAdvertisingSlowIntervalMin, kLEAdvertisingSlowIntervalMax};
 }
 
