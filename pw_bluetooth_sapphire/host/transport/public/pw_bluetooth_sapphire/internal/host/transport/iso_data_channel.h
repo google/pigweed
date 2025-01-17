@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "pw_bluetooth/controller.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/data_buffer_info.h"
@@ -55,6 +56,13 @@ class IsoDataChannel {
   // Unregister a connection when it is disconnected. Returns a value indicating
   // if the connection was recognized and successfully unregistered.
   virtual bool UnregisterConnection(hci_spec::ConnectionHandle handle) = 0;
+
+  // Send data over the data channel. The packet must be fragmented to be no
+  // larger than `buffer_info().max_data_length()`.
+  virtual void SendData(DynamicByteBuffer packet) = 0;
+
+  // Get the buffer info for the data channel.
+  virtual const DataBufferInfo& buffer_info() const = 0;
 
   virtual ~IsoDataChannel() = default;
 };

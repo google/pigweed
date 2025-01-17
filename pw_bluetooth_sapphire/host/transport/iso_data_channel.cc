@@ -31,23 +31,36 @@ class IsoDataChannelImpl final : public IsoDataChannel {
       hci_spec::ConnectionHandle handle,
       WeakPtr<ConnectionInterface> connection) override;
   virtual bool UnregisterConnection(hci_spec::ConnectionHandle handle) override;
+  virtual void SendData(DynamicByteBuffer packet) override;
+  virtual const DataBufferInfo& buffer_info() const override {
+    return buffer_info_;
+  }
 
  private:
   void OnRxPacket(pw::span<const std::byte> buffer);
+  void TrySendPackets();
 
   CommandChannel* command_channel_ __attribute__((unused));
   pw::bluetooth::Controller* hci_;
   DataBufferInfo buffer_info_;
 
+  size_t available_buffers_;
+
   // Stores connections registered by RegisterConnection()
   std::unordered_map<hci_spec::ConnectionHandle, WeakPtr<ConnectionInterface>>
       connections_;
+
+  // Stores queued packets ready for sending
+  std::deque<DynamicByteBuffer> outbound_queue_;
 };
 
 IsoDataChannelImpl::IsoDataChannelImpl(const DataBufferInfo& buffer_info,
                                        CommandChannel* command_channel,
                                        pw::bluetooth::Controller* hci)
-    : command_channel_(command_channel), hci_(hci), buffer_info_(buffer_info) {
+    : command_channel_(command_channel),
+      hci_(hci),
+      buffer_info_(buffer_info),
+      available_buffers_(buffer_info.max_num_packets()) {
   // IsoDataChannel shouldn't be used if the buffer is unavailable (implying the
   // controller doesn't support isochronous channels).
   PW_CHECK(buffer_info_.IsAvailable());
@@ -101,6 +114,21 @@ bool IsoDataChannelImpl::UnregisterConnection(
   }
   connections_.erase(handle);
   return true;
+}
+
+void IsoDataChannelImpl::SendData(DynamicByteBuffer packet) {
+  PW_CHECK(packet.size() <= buffer_info_.max_data_length(),
+           "Unfragmented packet received, cannot send.");
+  outbound_queue_.push_back(std::move(packet));
+  TrySendPackets();
+}
+
+void IsoDataChannelImpl::TrySendPackets() {
+  while (available_buffers_ && !outbound_queue_.empty()) {
+    hci_->SendIsoData(outbound_queue_.front().view().subspan());
+    outbound_queue_.pop_front();
+    --available_buffers_;
+  }
 }
 
 std::unique_ptr<IsoDataChannel> IsoDataChannel::Create(

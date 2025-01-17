@@ -14,14 +14,22 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/iso_data_channel.h"
 
+#include <cstdint>
+#include <memory>
+
+#include "pw_bluetooth/hci_data.emb.h"
+#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
 namespace bt::hci {
 
-const DataBufferInfo kDefaultIsoBufferInfo(/*max_data_length=*/128,
-                                           /*max_num_packets=*/4);
+constexpr size_t kDefaultMaxDataLength = 128;
+constexpr size_t kDefaultMaxNumPackets = 4;
+
+const DataBufferInfo kDefaultIsoBufferInfo(kDefaultMaxDataLength,
+                                           kDefaultMaxNumPackets);
 
 using TestBase = testing::FakeDispatcherControllerTest<testing::MockController>;
 
@@ -155,6 +163,86 @@ TEST_F(IsoDataChannelTests, DataDemuxification) {
                 expected_packet_count[interface_num]);
     }
   }
+}
+
+TEST_F(IsoDataChannelTests, SendData) {
+  ASSERT_NE(iso_data_channel(), nullptr);
+
+  std::unique_ptr<std::vector<uint8_t>> blob = testing::GenDataBlob(9, 0);
+  pw::span blob_span(blob->data(), blob->size());
+
+  constexpr hci_spec::ConnectionHandle kIsoHandle = 0x123;
+  DynamicByteBuffer packet = testing::IsoDataPacket(
+      /*handle = */ kIsoHandle,
+      /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+      /*timestamp = */ 0x00000000,
+      /*sequence_number = */ 0x0000,
+      /*sdu_length = */ blob_span.size(),
+      /*status_flag = */
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+      /*sdu_data = */ blob_span);
+
+  EXPECT_ISO_PACKET_OUT(test_device(), packet);
+  iso_data_channel()->SendData(std::move(packet));
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+}
+
+TEST_F(IsoDataChannelTests, SendDataExhaustBuffers) {
+  ASSERT_NE(iso_data_channel(), nullptr);
+
+  constexpr hci_spec::ConnectionHandle kIsoHandle = 0x123;
+  for (size_t i = 0; i < kDefaultMaxNumPackets; ++i) {
+    std::unique_ptr<std::vector<uint8_t>> blob = testing::GenDataBlob(10, i);
+    DynamicByteBuffer packet = testing::IsoDataPacket(
+        /*handle = */ kIsoHandle,
+        /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*timestamp = */ 0x00000000,
+        /*sequence_number = */ i,
+        /*sdu_length = */ blob->size(),
+        /*status_flag = */
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    iso_data_channel()->SendData(std::move(packet));
+  }
+
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+}
+
+TEST_F(IsoDataChannelTests, SendDataExceedBuffers) {
+  constexpr size_t kNumPackets = kDefaultMaxNumPackets + 2;
+  constexpr size_t kSduSize = 15;
+  ASSERT_NE(iso_data_channel(), nullptr);
+
+  constexpr hci_spec::ConnectionHandle kIsoHandle = 0x123;
+  size_t num_sent = 0;
+  size_t num_expectations = 0;
+  for (; num_sent < kNumPackets; ++num_sent) {
+    std::unique_ptr<std::vector<uint8_t>> blob =
+        testing::GenDataBlob(kSduSize, num_sent);
+    DynamicByteBuffer packet = testing::IsoDataPacket(
+        /*handle = */ kIsoHandle,
+        /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*timestamp = */ 0x00000000,
+        /*sequence_number = */ num_sent,
+        /*sdu_length = */ blob->size(),
+        /*status_flag = */
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+    if (num_sent < kDefaultMaxNumPackets) {
+      ++num_expectations;
+      EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    }
+    iso_data_channel()->SendData(std::move(packet));
+  }
+
+  EXPECT_EQ(num_sent, kNumPackets);
+  EXPECT_EQ(num_expectations, kDefaultIsoBufferInfo.max_num_packets());
+
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
 }
 
 }  // namespace bt::hci
