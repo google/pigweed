@@ -343,6 +343,7 @@ pw_cc_test(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "Kconfig",
         "docs.rst",
     ],
     target_compatible_with = incompatible_with_mcu(),

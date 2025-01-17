@@ -13,6 +13,8 @@
 # the License.
 
 load("@rules_license//rules:license.bzl", "license")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(
     default_applicable_licenses = [":license_fuchsia"],
@@ -79,4 +81,12 @@ cc_library(
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/version.h",
     ],
     includes = ["repo/sdk/lib/stdcompat/include"],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
 )

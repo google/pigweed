@@ -218,6 +218,7 @@ sphinx_docs_library(
         "Kconfig",
         "backends.rst",
         "docs.rst",
+        "//pw_stream/py:docs",
     ],
     prefix = "pw_stream/",
     target_compatible_with = incompatible_with_mcu(),

@@ -83,6 +83,15 @@ pw_cc_test(
     ],
 )
 
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_bluetooth_sapphire/central.h",
+        "public/pw_bluetooth_sapphire/peripheral.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
@@ -90,6 +99,9 @@ sphinx_docs_library(
         "fuchsia.rst",
         "reference.rst",
         "size_report.rst",
+        "//pw_bluetooth_sapphire/host/att:docs",
+        "//pw_bluetooth_sapphire/host/gap:docs",
+        "//pw_bluetooth_sapphire/host/l2cap:docs",
     ],
     prefix = "pw_bluetooth_sapphire/",
     target_compatible_with = incompatible_with_mcu(),

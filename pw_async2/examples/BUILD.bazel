@@ -78,9 +78,12 @@ pw_cc_test(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "BUILD.bazel",
+        "BUILD.gn",
         "basic.cc",
+        "coro_blinky_loop.cc",
+        "count.cc",
         "once_send_recv.cc",
     ],
-    prefix = "pw_async2/",
     target_compatible_with = incompatible_with_mcu(),
 )

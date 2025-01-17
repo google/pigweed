@@ -56,6 +56,7 @@ pw_cc_test(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_numeric/checked_arithmetic.h",
         "public/pw_numeric/integer_division.h",
     ],
 )

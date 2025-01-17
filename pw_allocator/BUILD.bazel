@@ -847,6 +847,7 @@ filegroup(
         "public/pw_allocator/synchronized_allocator.h",
         "public/pw_allocator/test_harness.h",
         "public/pw_allocator/testing.h",
+        "public/pw_allocator/tlsf_allocator.h",
         "public/pw_allocator/tracking_allocator.h",
         "public/pw_allocator/typed_pool.h",
         "public/pw_allocator/unique_ptr.h",

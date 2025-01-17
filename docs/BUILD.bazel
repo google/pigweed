@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -55,10 +55,10 @@ sphinx_docs_library(
 sphinx_docs_library(
     name = "prefixed",
     srcs = [
+        "3p/index.rst",
         "_static/css/pigweed.css",
         "_static/js/changelog.js",
         "_static/js/pigweed.js",
-        "3p/index.rst",
         "blog/01-kudzu.rst",
         "blog/02-bazel-feature-flags.rst",
         "blog/03-pigweed-sdk.rst",
@@ -72,16 +72,16 @@ sphinx_docs_library(
         "code_reviews.rst",
         "community/index.rst",
         "concepts/index.rst",
-        "contributing/index.rst",
         "contributing/docs/changelog.rst",
         "contributing/docs/guides.rst",
         "contributing/docs/index.rst",
         "contributing/docs/modules.rst",
+        "contributing/index.rst",
         "embedded_cpp_guide.rst",
         "facades.rst",
         "faq.rst",
-        "get_started/bazel_integration.rst",
         "get_started/bazel.rst",
+        "get_started/bazel_integration.rst",
         "get_started/first_time_setup.rst",
         "get_started/github_actions.rst",
         "get_started/index.rst",
@@ -98,9 +98,7 @@ sphinx_docs_library(
         "module_structure.rst",
         "os/index.rst",
         "os/zephyr/index.rst",
-        # TODO: https://pwbug.dev/377683258 - Enable this file after
-        # https://pwrev.dev/248014 merges.
-        # "os/zephyr/kconfig.rst",
+        "os/zephyr/kconfig.rst",
         "overview.rst",
         "showcases/index.rst",
         "showcases/sense/index.rst",
@@ -122,6 +120,7 @@ sphinx_docs_library(
         "showcases/sense/tutorial/setup.rst",
         "showcases/sense/tutorial/web.rst",
         "size_optimizations.rst",
+        "style/bazel.rst",
         "style/cli.rst",
         "style/commit_message.rst",
         "style/cpp.rst",
@@ -162,6 +161,7 @@ filegroup(
         "//pw_base64:doxygen",
         "//pw_bluetooth:doxygen",
         "//pw_bluetooth_proxy:doxygen",
+        "//pw_bluetooth_sapphire:doxygen",
         "//pw_build:doxygen",
         "//pw_bytes:doxygen",
         "//pw_channel:doxygen",
@@ -212,6 +212,7 @@ filegroup(
         "//pw_unit_test:doxygen",
         "//pw_varint:doxygen",
         "//pw_work_queue:doxygen",
+        "//third_party/freertos:doxygen",
     ],
 )
 
@@ -292,8 +293,27 @@ sphinx_build_binary(
     name = "sphinx_build",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
+        # TODO: https://pwbug.dev/390456900 - Enable after pigweed_json label flag fix.
+        # "//pw_build/py:pw_build",
         "//pw_console/py:pw_console",
+        "//pw_containers/py:inline_var_len_entry_queue",
         "//pw_docgen/py:pw_docgen",
+        # TODO: https://pwbug.dev/390456900 - Enable after pigweed_json label flag fix.
+        # "//pw_emu/py:pw_emu",
+        "//pw_hdlc/py:pw_hdlc",
+        "//pw_ide/py:pw_ide",
+        "//pw_log/py:pw_log",
+        # TODO: https://pwbug.dev/390456900 - Enable after pigweed_json label flag fix.
+        # "//pw_presubmit/py:pw_presubmit",
+        "//pw_log_rpc/py:pw_log_rpc",
+        "//pw_protobuf_compiler/py:pw_protobuf_compiler",
+        "//pw_system/py:device_sim",
+        "//pw_system/py:pw_system_lib",
+        "//pw_system/py:pw_system_console",
+        "//pw_tokenizer/py:pw_tokenizer",
+        "//pw_transfer/py:pw_transfer",
+        "//pw_unit_test/py:pw_unit_test",
+        "//pw_watch/py:pw_watch",
         "@python_packages//breathe",
         "@python_packages//pydata_sphinx_theme",
         "@python_packages//sphinx",
@@ -346,6 +366,8 @@ sphinx_docs(
         #
         # * The main Sphinx site and rustdoc subsite can be deployed in 1 step.
         ":rust",
+        "//docker:docs",
+        "//kudzu:docs",
         "//pw_alignment:docs",
         "//pw_allocator:docs",
         "//pw_analog:docs",
@@ -528,6 +550,7 @@ sphinx_docs(
         "//pw_work_queue:docs",
         "//seed:docs",
         "//targets:docs",
+        "//third_party:docs",
         "//:docs",
     ],
 )

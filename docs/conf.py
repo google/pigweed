@@ -269,6 +269,7 @@ redirects = {
     'pw_sys_io_pico/docs': '../pw_sys_io_rp2040/docs.html',
     'pw_tokenizer/cli': './docs.html',
     'pw_tokenizer/guides': './docs.html',
+    'pw_toolchain_bazel/docs': 'https://github.com/bazelbuild/rules_cc/blob/main/docs/toolchain_api.md',
     'seed/0000-index': './0000.html',
     'seed/0001-the-seed-process': './0001.html',
     'seed/0002-template': './0002.html',

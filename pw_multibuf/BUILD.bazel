@@ -264,6 +264,7 @@ filegroup(
     name = "doxygen",
     srcs = [
         "public/pw_multibuf/allocator.h",
+        "public/pw_multibuf/allocator_async.h",
         "public/pw_multibuf/chunk.h",
         "public/pw_multibuf/from_span.h",
         "public/pw_multibuf/header_chunk_region_tracker.h",

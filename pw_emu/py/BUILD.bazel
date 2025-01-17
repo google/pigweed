@@ -27,6 +27,7 @@ py_library(
         "pw_emu/renode.py",
     ],
     imports = ["."],
+    visibility = ["//visibility:public"],
     deps = [
         "//pw_build/py:pw_build",
         "//pw_env_setup/py:pw_env_setup",

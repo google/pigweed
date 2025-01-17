@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -11,38 +11,11 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-#
 
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
-load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
-
-cc_library(
-    name = "sysdeps",
-    hdrs = ["sysdeps/sys/socket.h"],
-    copts = ["-Wno-unused-parameter"],
-    includes = ["sysdeps"],
-    target_compatible_with = incompatible_with_mcu(),
-    deps = [
-        "//pw_assert",
-        "@boringssl//:ssl",
-    ],
-)
-
-pw_cc_test(
-    name = "build_test",
-    srcs = [
-        "build_test.cc",
-    ],
-    # TODO: b/385375184 - Fix this test!
-    tags = ["noubsan"],
-    deps = [
-        ":sysdeps",
-        "//pw_bytes",
-    ],
-)
 
 sphinx_docs_library(
     name = "docs",

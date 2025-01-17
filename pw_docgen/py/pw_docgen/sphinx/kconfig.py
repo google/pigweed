@@ -31,6 +31,17 @@ except ImportError:
     KCONFIGLIB_AVAILABLE = False
 
 
+# Determine whether the docs are being built with Bazel or GN.
+is_bazel_build = True
+try:
+    # pylint: disable=unused-import
+    from python.runfiles import runfiles  # type: ignore
+
+    # pylint: enable=unused-import
+except ImportError:
+    is_bazel_build = False
+
+
 def rst_to_doctree(rst: str) -> Iterable[docutils.nodes.Node]:
     """Convert raw reStructuredText into doctree nodes."""
     # TODO: b/288127315 - Properly resolve references within the rst so that
@@ -45,6 +56,8 @@ def rst_to_doctree(rst: str) -> Iterable[docutils.nodes.Node]:
 
 def create_source_paragraph(name_and_loc: str) -> Iterable[docutils.nodes.Node]:
     """Convert kconfiglib's name and location string into a source code link."""
+    if not is_bazel_build:
+        name_and_loc = name_and_loc.replace('pw_docgen_tree/', '')
     start = name_and_loc.index('pw_')
     end = name_and_loc.index(':')
     file_path = name_and_loc[start:end]
@@ -124,7 +137,7 @@ def generate_kconfig_reference(
     for child in doctree.children:
         if isinstance(child, docutils.nodes.section):
             root = child
-    file_path = f'{app.srcdir}/Kconfig.zephyr'
+    file_path = f'{app.confdir}/Kconfig.zephyr'
     kconfig = kconfiglib.Kconfig(file_path)
     # There's no need to process kconfig.top_node (the main menu) or
     # kconfig.top_node.list (ZEPHYR_PIGWEED_MODULE) because they don't

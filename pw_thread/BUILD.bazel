@@ -456,6 +456,7 @@ pwpb_proto_library(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_thread/internal/priority.h",
         "public/pw_thread/options.h",
         "public/pw_thread/test_thread_context.h",
         "public/pw_thread/thread.h",
