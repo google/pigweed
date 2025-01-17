@@ -43,16 +43,6 @@ def pw_facade(name, srcs = None, backend = None, **kwargs):
 
     facade_kwargs = dict(**kwargs)
 
-    # This is a workaround for layering_check, which appears to only allow
-    # two libraries to export the same headers if one lists it as textual_hdrs
-    # for unclear reasons (b/142314377#comment11).
-    facade_kwargs["textual_hdrs"] = facade_kwargs.pop("hdrs", [])
-
-    # TODO: https://github.com/bazelbuild/bazel/issues/12424 - Unfortunately,
-    # strip_include_prefix does not work correctly with textual_hdrs.
-    if "strip_include_prefix" in facade_kwargs:
-        facade_kwargs["includes"] = [facade_kwargs["strip_include_prefix"]]
-
     # A facade has no srcs, so it can only have public deps. Don't specify any
     # implementation_deps on the facade target.
     facade_kwargs.pop("implementation_deps", [])
