@@ -27,7 +27,10 @@ bazel_dep(name = "nanopb", version = "0.4.9.1", repo_name = "com_github_nanopb_n
 bazel_dep(name = "pico-sdk", version = "2.1.1-develop.bcr.20250113-4b6e6475")
 bazel_dep(name = "picotool", version = "2.0.0")
 bazel_dep(name = "platforms", version = "0.0.10")
+
+# LINT.IfChange(protobuf)
 bazel_dep(name = "protobuf", version = "28.2", repo_name = "com_google_protobuf")
+# LINT.ThenChange(pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json,pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list:protobuf)
 
 # A transitive dependency requires this.
 bazel_dep(name = "re2", version = "2024-07-02.bcr.1")

@@ -60,7 +60,9 @@ pickleshare==0.7.5
 platformdirs==3.0.0
 ply==3.11
 prompt-toolkit==3.0.43
+# LINT.IfChange(protobuf)
 protobuf==5.28.2
+# LINT.ThenChange(MODULE.bazel:protobuf,pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json)
 psutil==5.9.4
 ptpython==3.0.25
 ptyprocess==0.7.0
