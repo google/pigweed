@@ -15,9 +15,9 @@
 
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_inbound_packet_assembler.h"
 
+#include <pw_assert/check.h>
 #include <pw_bluetooth/hci_data.emb.h>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt::iso {

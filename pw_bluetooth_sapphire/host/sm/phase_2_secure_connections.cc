@@ -14,11 +14,12 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/phase_2_secure_connections.h"
 
+#include <pw_assert/check.h>
+
 #include <memory>
 #include <optional>
 #include <type_traits>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uint256.h"

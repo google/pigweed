@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 
 #include <cpp-string/string_printf.h>
+#include <pw_assert/check.h>
 #include <pw_string/utf_codecs.h>
 
 #include <string>

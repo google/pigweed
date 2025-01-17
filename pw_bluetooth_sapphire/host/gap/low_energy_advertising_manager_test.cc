@@ -14,10 +14,11 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_advertising_manager.h"
 
+#include <pw_assert/check.h>
+
 #include <map>
 
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"

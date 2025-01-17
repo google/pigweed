@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/gatt2_client_server.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/helpers.h"
 
 namespace fb = fuchsia::bluetooth;

@@ -14,7 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h"
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h"

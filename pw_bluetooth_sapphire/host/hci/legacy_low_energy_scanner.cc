@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
 
+#include <pw_assert/check.h>
 #include <pw_preprocessor/compiler.h>
 
 #include "pw_bluetooth_sapphire/internal/host/hci/advertising_report_parser.h"

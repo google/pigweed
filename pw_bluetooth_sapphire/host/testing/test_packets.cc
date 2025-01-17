@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"

@@ -14,13 +14,13 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include <iterator>
 
 #include "lib/fit/function.h"
 #include "pw_bluetooth/vendor.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"

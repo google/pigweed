@@ -15,8 +15,8 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 
 #include <lib/fit/function.h>
+#include <pw_assert/check.h>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"

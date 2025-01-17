@@ -13,6 +13,7 @@
 // the License.
 
 #pragma once
+#include <pw_assert/check.h>
 #include <pw_chrono/system_clock.h>
 
 #include <algorithm>
@@ -21,8 +22,6 @@
 #include <optional>
 #include <utility>
 #include <vector>
-
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 
 namespace bt::internal {
 

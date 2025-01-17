@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sdp/pdu.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include <memory>

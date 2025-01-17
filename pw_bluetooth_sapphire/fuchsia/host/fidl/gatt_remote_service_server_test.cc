@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/gatt_remote_service_server.h"
 
+#include <pw_assert/check.h>
+
 #include "gtest/gtest.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/fake_gatt_fixture.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/helpers.h"

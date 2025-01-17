@@ -13,6 +13,7 @@
 // the License.
 #include "pw_bluetooth_sapphire/internal/host/sm/sc_stage_1_passkey.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include <cinttypes>

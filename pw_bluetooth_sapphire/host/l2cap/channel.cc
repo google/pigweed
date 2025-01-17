@@ -15,12 +15,12 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 
 #include <cpp-string/string_printf.h>
+#include <pw_assert/check.h>
 
 #include <memory>
 #include <utility>
 
 #include "lib/fit/result.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"

@@ -17,13 +17,13 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/default.h>
 #include <lib/fit/function.h>
+#include <pw_assert/check.h>
 #include <zircon/status.h>
 
 #include <deque>
 #include <utility>
 
 #include "lib/zx/socket.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"

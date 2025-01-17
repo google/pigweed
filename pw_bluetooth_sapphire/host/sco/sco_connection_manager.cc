@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sco/sco_connection_manager.h"
 
+#include <pw_assert/check.h>
+
 #include <cinttypes>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"

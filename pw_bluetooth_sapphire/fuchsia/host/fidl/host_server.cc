@@ -16,6 +16,7 @@
 
 #include <cpp-string/string_printf.h>
 #include <lib/fpromise/result.h>
+#include <pw_assert/check.h>
 #include <zircon/errors.h>
 
 #include <utility>
@@ -28,7 +29,6 @@
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_central_server.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_peripheral_server.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/profile_server.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"

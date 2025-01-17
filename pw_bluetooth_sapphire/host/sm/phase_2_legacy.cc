@@ -14,11 +14,11 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/phase_2_legacy.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include <optional>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uint128.h"

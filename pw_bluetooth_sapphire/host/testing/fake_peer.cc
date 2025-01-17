@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"

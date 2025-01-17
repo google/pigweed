@@ -24,6 +24,7 @@
 #include <fuchsia/bluetooth/sys/cpp/fidl.h>
 #include <lib/fidl/cpp/type_converter.h>
 #include <lib/fpromise/result.h>
+#include <pw_assert/check.h>
 
 #include <optional>
 

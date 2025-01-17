@@ -17,6 +17,7 @@
 #include <lib/async-loop/default.h>
 #include <lib/fidl/cpp/binding_set.h>
 #include <lib/sys/cpp/component_context.h>
+#include <pw_assert/check.h>
 #include <zircon/processargs.h>
 
 #include "fidl/fuchsia.bluetooth.host/cpp/fidl.h"

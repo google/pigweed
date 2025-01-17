@@ -16,12 +16,12 @@
 
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
+#include <pw_assert/check.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
 #include <memory>
 #include <type_traits>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"

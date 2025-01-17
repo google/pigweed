@@ -13,6 +13,8 @@
 // the License.
 
 #pragma once
+#include <pw_assert/assert.h>
+
 #include <memory>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"

@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/sdp/data_element.h"
 
 #include <cpp-string/string_printf.h>
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include <algorithm>

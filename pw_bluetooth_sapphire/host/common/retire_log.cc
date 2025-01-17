@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/retire_log.h"
 
+#include <pw_assert/check.h>
+
 #include <limits>
 
 namespace bt::internal {

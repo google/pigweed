@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 
+#include <pw_assert/check.h>
 #include <pw_bluetooth/hci_android.emb.h>
 
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"

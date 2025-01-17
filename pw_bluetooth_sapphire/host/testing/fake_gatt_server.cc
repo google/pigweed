@@ -15,10 +15,10 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_gatt_server.h"
 
 #include <lib/fit/function.h>
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/att/packet.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"

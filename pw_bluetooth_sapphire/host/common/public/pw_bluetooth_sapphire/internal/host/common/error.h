@@ -15,11 +15,12 @@
 #pragma once
 #include <cpp-string/string_printf.h>
 #include <lib/fit/result.h>
+#include <pw_assert/assert.h>
+#include <pw_assert/check.h>
 
 #include <type_traits>
 #include <variant>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"

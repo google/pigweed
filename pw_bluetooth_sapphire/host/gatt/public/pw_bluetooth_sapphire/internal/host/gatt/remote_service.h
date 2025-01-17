@@ -17,7 +17,6 @@
 #include <lib/fit/result.h>
 
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/client.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/remote_characteristic.h"

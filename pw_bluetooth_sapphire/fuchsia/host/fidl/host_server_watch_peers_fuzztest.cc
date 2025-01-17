@@ -13,6 +13,7 @@
 // the License.
 
 #include <fuzzer/FuzzedDataProvider.h>
+#include <pw_assert/check.h>
 #include <pw_random/fuzzer.h>
 
 #include "fuchsia/bluetooth/host/cpp/fidl.h"

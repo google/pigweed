@@ -14,10 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection_manager.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 #include <pw_string/string_builder.h>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/expiring_set.h"
 #include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"

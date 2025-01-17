@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_handle.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_manager.h"
 

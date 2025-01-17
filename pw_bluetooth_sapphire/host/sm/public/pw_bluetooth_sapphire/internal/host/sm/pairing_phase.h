@@ -14,6 +14,7 @@
 
 #pragma once
 #include <cpp-string/string_printf.h>
+#include <pw_assert/check.h>
 
 #include <string>
 

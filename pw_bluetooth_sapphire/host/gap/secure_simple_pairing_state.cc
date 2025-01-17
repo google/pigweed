@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/secure_simple_pairing_state.h"
 
 #include <inttypes.h>
+#include <pw_assert/check.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection_manager.h"

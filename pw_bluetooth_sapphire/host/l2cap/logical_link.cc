@@ -15,12 +15,12 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/logical_link.h"
 
 #include <cpp-string/string_printf.h>
+#include <pw_assert/check.h>
 
 #include <cinttypes>
 #include <functional>
 #include <memory>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/trace.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_dynamic_channel.h"

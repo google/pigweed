@@ -14,11 +14,11 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/credit_based_flow_control_tx_engine.h"
 
+#include <pw_assert/check.h>
 #include <pw_bluetooth/l2cap_frames.emb.h>
 
 #include <algorithm>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt::l2cap::internal {

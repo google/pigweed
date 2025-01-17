@@ -14,9 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gatt/connection.h"
 
+#include <pw_assert/check.h>
+
 #include <numeric>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/client.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/local_service_manager.h"

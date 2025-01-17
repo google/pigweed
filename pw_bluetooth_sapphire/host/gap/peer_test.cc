@@ -16,6 +16,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <pw_assert/check.h>
 #include <pw_async/fake_dispatcher_fixture.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"

@@ -15,6 +15,7 @@
 #pragma once
 #include <lib/fit/function.h>
 #include <lib/stdcompat/type_traits.h>
+#include <pw_assert/check.h>
 #include <pw_async/dispatcher.h>
 
 #include <functional>
@@ -25,7 +26,6 @@
 #include <utility>
 #include <variant>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/retire_log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 

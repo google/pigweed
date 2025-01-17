@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_central_server.h"
 
+#include <pw_assert/check.h>
 #include <zircon/types.h>
 
 #include <utility>
@@ -22,7 +23,6 @@
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/gatt_client_server.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/helpers.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/measure_tape/hlcpp_measure_tape_for_peer.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/error.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"

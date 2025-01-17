@@ -15,12 +15,12 @@
 #include "pw_bluetooth_sapphire/internal/host/gatt/server.h"
 
 #include <lib/fit/function.h>
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
 #include "pw_bluetooth_sapphire/internal/host/att/database.h"
 #include "pw_bluetooth_sapphire/internal/host/att/permissions.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"
 #include "pw_bluetooth_sapphire/internal/host/common/trace.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"

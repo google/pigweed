@@ -15,13 +15,13 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 
 #include <cpp-string/string_printf.h>
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 #include <pw_string/utf_codecs.h>
 
 #include <cinttypes>
 
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/manufacturer_names.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"

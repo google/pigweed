@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/mock_acl_data_channel.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/inspect.h"
 
 namespace bt::hci::testing {

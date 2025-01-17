@@ -15,6 +15,7 @@
 #pragma once
 
 #include <lib/async/dispatcher.h>
+#include <pw_assert/check.h>
 
 #include <cstdint>
 

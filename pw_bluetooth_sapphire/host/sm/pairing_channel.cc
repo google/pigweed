@@ -14,7 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/pairing_channel.h"
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/scoped_channel.h"

@@ -13,10 +13,9 @@
 // the License.
 
 #pragma once
+#include <pw_assert/check.h>
 #include <pw_async/dispatcher.h>
 #include <pw_async/task.h>
-
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 
 namespace bt {
 

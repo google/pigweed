@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/command_handler.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 namespace bt::l2cap::internal {

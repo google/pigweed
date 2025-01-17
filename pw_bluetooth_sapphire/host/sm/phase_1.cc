@@ -16,7 +16,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/phase_1.h"
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"

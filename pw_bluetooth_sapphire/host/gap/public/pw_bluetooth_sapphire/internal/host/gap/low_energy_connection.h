@@ -13,6 +13,8 @@
 // the License.
 
 #pragma once
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 #include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"

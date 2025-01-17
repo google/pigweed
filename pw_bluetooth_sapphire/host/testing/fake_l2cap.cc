@@ -14,9 +14,9 @@
 
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_l2cap.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_dynamic_channel.h"
 

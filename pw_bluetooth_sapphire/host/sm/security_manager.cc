@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 
+#include <pw_assert/check.h>
+
 #include <cinttypes>
 #include <memory>
 #include <optional>
@@ -22,7 +24,6 @@
 #include <variant>
 
 #include "lib/fit/function.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"

@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_connection_server.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/adapter_test_fixture.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"

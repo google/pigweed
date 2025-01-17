@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 
+#include <pw_assert/check.h>
+
 #include <memory>
 #include <type_traits>
 

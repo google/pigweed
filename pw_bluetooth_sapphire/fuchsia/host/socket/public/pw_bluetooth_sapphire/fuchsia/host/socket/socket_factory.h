@@ -16,12 +16,12 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/zx/socket.h>
+#include <pw_assert/check.h>
 #include <zircon/status.h>
 
 #include <memory>
 #include <unordered_map>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"

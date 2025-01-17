@@ -16,8 +16,6 @@
 
 #include <pw_bluetooth/l2cap_frames.emb.h>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
-
 namespace bt::l2cap::internal {
 
 namespace emboss = pw::bluetooth::emboss;

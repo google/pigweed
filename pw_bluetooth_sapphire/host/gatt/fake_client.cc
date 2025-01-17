@@ -16,7 +16,6 @@
 
 #include <unordered_set>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/client.h"
 
 namespace bt::gatt::testing {

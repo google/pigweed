@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_stream.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_inbound_packet_assembler.h"

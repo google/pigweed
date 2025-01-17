@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/att/attribute.h"
 
+#include <pw_assert/check.h>
+
 namespace bt::att {
 
 AccessRequirements::AccessRequirements() : value_(0u), min_enc_key_size_(0u) {}

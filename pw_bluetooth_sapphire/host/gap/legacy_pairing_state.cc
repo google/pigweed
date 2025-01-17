@@ -14,9 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/legacy_pairing_state.h"
 
+#include <pw_assert/check.h>
+
 #include <optional>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/types.h"

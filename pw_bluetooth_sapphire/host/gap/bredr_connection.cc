@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection.h"
 
+#include <pw_assert/check.h>
+
 #include <utility>
 
 namespace bt::gap {

@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sco/sco_connection.h"
 
+#include <pw_assert/check.h>
+
 namespace bt::sco {
 
 ScoConnection::ScoConnection(

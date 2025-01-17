@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/gatt2_server_server.h"
 
+#include <pw_assert/check.h>
+
 #include <functional>
 #include <utility>
 

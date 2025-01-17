@@ -14,10 +14,11 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/pairing_state_manager.h"
 
+#include <pw_assert/check.h>
+
 #include <memory>
 #include <utility>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/legacy_pairing_state.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"

@@ -19,6 +19,7 @@
 #include <fuchsia/bluetooth/sys/cpp/fidl_test_base.h>
 #include <gmock/gmock.h>
 #include <lib/zx/channel.h>
+#include <pw_assert/check.h>
 #include <zircon/errors.h>
 
 #include "fuchsia/bluetooth/host/cpp/fidl.h"

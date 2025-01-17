@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/profile_server.h"
 
+#include <pw_assert/check.h>
 #include <string.h>
 #include <zircon/status.h>
 #include <zircon/syscalls/clock.h>

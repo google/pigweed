@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/sco_data_packet.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"

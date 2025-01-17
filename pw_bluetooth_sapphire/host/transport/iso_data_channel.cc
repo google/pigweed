@@ -14,9 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/iso_data_channel.h"
 
+#include <pw_assert/check.h>
 #include <pw_bluetooth/hci_data.emb.h>
-
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 
 namespace bt::hci {
 

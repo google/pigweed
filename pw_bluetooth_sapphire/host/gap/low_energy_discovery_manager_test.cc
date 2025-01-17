@@ -15,12 +15,12 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_discovery_manager.h"
 
 #include <gmock/gmock.h>
+#include <pw_assert/check.h>
 
 #include <unordered_set>
 #include <vector>
 
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"

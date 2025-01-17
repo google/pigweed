@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/sm/ecdh_key.h"
 
 #include <openssl/ec_key.h>
+#include <pw_assert/check.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -25,7 +26,6 @@
 #include "openssl/ec.h"
 #include "openssl/ecdh.h"
 #include "openssl/nid.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uint256.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 

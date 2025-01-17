@@ -16,6 +16,7 @@
 
 #include <cpp-string/string_printf.h>
 #include <lib/fit/defer.h>
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 #include <pw_preprocessor/compiler.h>
 

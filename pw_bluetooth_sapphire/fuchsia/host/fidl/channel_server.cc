@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/channel_server.h"
 
+#include <pw_assert/check.h>
+
 #include <algorithm>
 namespace fidlbt = fuchsia::bluetooth;
 

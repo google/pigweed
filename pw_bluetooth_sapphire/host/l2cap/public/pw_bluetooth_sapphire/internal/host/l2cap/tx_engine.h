@@ -14,8 +14,8 @@
 
 #pragma once
 #include <lib/fit/function.h>
+#include <pw_assert/check.h>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 

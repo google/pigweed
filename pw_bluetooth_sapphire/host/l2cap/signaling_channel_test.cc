@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/signaling_channel.h"
 
+#include <pw_assert/check.h>
 #include <pw_async/dispatcher.h>
 
 #include <chrono>

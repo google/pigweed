@@ -14,11 +14,11 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gatt/remote_characteristic.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include <cinttypes>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/client.h"

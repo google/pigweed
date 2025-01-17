@@ -18,7 +18,6 @@
 #include <vector>
 
 #include "pw_bluetooth_sapphire/internal/host/att/error.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/remote_service.h"

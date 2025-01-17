@@ -14,6 +14,7 @@
 
 #pragma once
 #include <lib/fit/result.h>
+#include <pw_assert/check.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/error.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/sdp.h"

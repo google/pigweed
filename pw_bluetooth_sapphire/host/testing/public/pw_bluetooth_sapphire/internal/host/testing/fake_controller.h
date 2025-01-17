@@ -14,6 +14,7 @@
 
 #pragma once
 #include <lib/fit/function.h>
+#include <pw_assert/check.h>
 
 #include <memory>
 #include <unordered_map>

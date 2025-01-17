@@ -13,6 +13,8 @@
 // the License.
 
 #pragma once
+#include <pw_assert/assert.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 
 namespace bt {

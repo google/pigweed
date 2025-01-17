@@ -19,6 +19,7 @@
 #include <fidl/fuchsia.hardware.bluetooth/cpp/fidl.h>
 #include <fuchsia/bluetooth/sys/cpp/fidl.h>
 #include <fuchsia/media/cpp/fidl.h>
+#include <pw_assert/check.h>
 #include <pw_bluetooth/hci_data.emb.h>
 
 #include <charconv>

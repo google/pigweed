@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_command_handler.h"
 
+#include <pw_assert/check.h>
 #include <pw_async/fake_dispatcher_fixture.h>
 
 #include <memory>

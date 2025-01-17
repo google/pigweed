@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/types.h"
 
+#include <pw_assert/check.h>
+
 #include <cinttypes>
 
 namespace bt::l2cap {

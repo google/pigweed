@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/gatt_server_server.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"

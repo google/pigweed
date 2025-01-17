@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_scanner.h"
 
+#include <pw_assert/check.h>
 #include <pw_bluetooth/hci_common.emb.h>
 
 namespace bt::hci {

@@ -14,10 +14,11 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sdp/server.h"
 
+#include <pw_assert/check.h>
+
 #include <cstdint>
 #include <cstdio>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"

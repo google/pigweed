@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <pw_assert/check.h>
+
 #include <optional>
 
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_stream.h"

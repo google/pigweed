@@ -14,9 +14,9 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_dynamic_channel.h"
 
+#include <pw_assert/check.h>
 #include <pw_preprocessor/compiler.h>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_configuration.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"

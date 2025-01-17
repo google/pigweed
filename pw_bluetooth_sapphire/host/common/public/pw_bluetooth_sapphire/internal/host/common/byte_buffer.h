@@ -15,6 +15,8 @@
 #pragma once
 #include <cpp-type/member_pointer_traits.h>
 #include <cpp-type/to_std_array.h>
+#include <pw_assert/assert.h>
+#include <pw_assert/check.h>
 
 #include <array>
 #include <cstdint>
@@ -27,7 +29,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_span/span.h"
 

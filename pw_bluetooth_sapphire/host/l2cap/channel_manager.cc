@@ -14,7 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/a2dp_offload_manager.h"

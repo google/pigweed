@@ -16,13 +16,13 @@
 
 #include <gmock/gmock.h>
 #include <lib/fit/function.h>
+#include <pw_assert/check.h>
 
 #include <cstddef>
 #include <limits>
 #include <memory>
 #include <vector>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"

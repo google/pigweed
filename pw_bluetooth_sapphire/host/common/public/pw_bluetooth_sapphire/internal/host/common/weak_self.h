@@ -13,11 +13,10 @@
 // the License.
 
 #pragma once
+#include <pw_assert/check.h>
 #include <pw_intrusive_ptr/intrusive_ptr.h>
 
 #include <optional>
-
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 
 template <typename T>
 class DynamicWeakManager;

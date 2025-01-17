@@ -14,7 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/dynamic_channel_registry.h"
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 

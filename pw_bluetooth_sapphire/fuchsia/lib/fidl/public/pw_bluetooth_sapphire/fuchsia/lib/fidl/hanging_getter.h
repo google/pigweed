@@ -15,11 +15,11 @@
 #pragma once
 
 #include <lib/fidl/cpp/clone.h>
+#include <pw_assert/assert.h>
 
 #include <optional>
 #include <queue>
 
-#include "pw_assert/assert.h"
 #include "pw_function/function.h"
 
 namespace bt_lib_fidl {

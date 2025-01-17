@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_connection_server.h"
 
 #include <fuchsia/bluetooth/cpp/fidl.h>
+#include <pw_assert/check.h>
 #include <pw_status/status.h>
 #include <pw_status/try.h>
 

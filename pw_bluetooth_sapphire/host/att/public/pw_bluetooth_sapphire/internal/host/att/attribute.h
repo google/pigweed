@@ -15,12 +15,12 @@
 #pragma once
 #include <lib/fit/function.h>
 #include <lib/fit/result.h>
+#include <pw_assert/check.h>
 
 #include <memory>
 #include <vector>
 
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"

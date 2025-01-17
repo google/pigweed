@@ -14,13 +14,13 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/phase_3.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include <optional>
 #include <type_traits>
 
 #include "lib/fit/function.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"

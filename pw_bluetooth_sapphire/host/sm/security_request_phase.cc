@@ -14,9 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/security_request_phase.h"
 
+#include <pw_assert/check.h>
+
 #include <type_traits>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/packet.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"

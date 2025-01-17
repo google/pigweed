@@ -15,6 +15,7 @@
 #include "controller.h"
 
 #include <lib/driver/component/cpp/driver_export.h>
+#include <pw_assert/check.h>
 
 #include <memory>
 #include <string>

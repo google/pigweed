@@ -14,12 +14,11 @@
 
 #pragma once
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include <cstdint>
 #include <type_traits>
-
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 
 namespace bt::l2cap::internal {
 

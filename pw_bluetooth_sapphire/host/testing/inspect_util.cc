@@ -17,6 +17,7 @@
 #ifndef NINSPECT
 
 #include <lib/fpromise/single_threaded_executor.h>
+#include <pw_assert/check.h>
 
 namespace bt::testing {
 

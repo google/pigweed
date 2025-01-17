@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 

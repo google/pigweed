@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/transport/fake_sco_data_channel.h"
 
+#include <pw_assert/check.h>
+
 namespace bt::hci {
 
 void FakeScoDataChannel::RegisterConnection(

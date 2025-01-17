@@ -15,12 +15,12 @@
 #pragma once
 
 #include <lib/fit/function.h>
+#include <pw_assert/check.h>
 
 #include <utility>
 
 #include "lib/fidl/cpp/binding.h"
 #include "lib/fidl/cpp/interface_request.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
 

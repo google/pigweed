@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <pw_assert/check.h>
 #include <pw_async_fuchsia/dispatcher.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"

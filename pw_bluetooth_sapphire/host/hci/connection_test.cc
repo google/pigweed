@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h"

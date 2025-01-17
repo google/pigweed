@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/iso_stream_server.h"
 
 #include <lib/fidl/cpp/wire/channel.h>
+#include <pw_assert/check.h>
 #include <pw_bluetooth/hci_data.emb.h>
 
 #include <cinttypes>

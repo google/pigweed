@@ -13,10 +13,11 @@
 // the License.
 
 #pragma once
+#include <pw_assert/check.h>
+
 #include <cstddef>
 #include <queue>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/inspect.h"
 
 namespace bt {

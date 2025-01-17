@@ -14,12 +14,12 @@
 
 #pragma once
 #include <cpp-string/string_printf.h>
+#include <pw_assert/check.h>
 
 #include <cinttypes>
 #include <cstdint>
 #include <string>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 

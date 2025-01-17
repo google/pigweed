@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
 #include <cpp-string/string_printf.h>
+#include <pw_assert/check.h>
 #include <pw_preprocessor/compiler.h>
 
 #include <utility>

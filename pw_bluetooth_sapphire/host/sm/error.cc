@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/error.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_string/format.h"
 
 namespace bt {

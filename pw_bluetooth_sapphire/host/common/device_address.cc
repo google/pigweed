@@ -14,8 +14,9 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth/hci_common.emb.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_string/format.h"
 

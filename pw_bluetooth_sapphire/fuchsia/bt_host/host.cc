@@ -16,6 +16,7 @@
 
 #include <lib/fdio/directory.h>
 #include <lib/inspect/component/cpp/component.h>
+#include <pw_assert/check.h>
 
 #include "lib/async/default.h"
 #include "pw_bluetooth_sapphire/fuchsia/bt_host/bt_host_config.h"

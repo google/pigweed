@@ -14,11 +14,11 @@
 
 #pragma once
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include <list>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"

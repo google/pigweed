@@ -15,8 +15,8 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_advertising_manager.h"
 
 #include <cpp-string/string_printf.h>
+#include <pw_assert/check.h>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/common/slab_allocator.h"

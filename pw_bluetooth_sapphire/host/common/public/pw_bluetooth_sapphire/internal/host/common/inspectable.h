@@ -14,12 +14,12 @@
 
 #pragma once
 #include <lib/fit/function.h>
+#include <pw_assert/check.h>
 
 #include <iterator>
 #include <string>
 #include <type_traits>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/inspect.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 

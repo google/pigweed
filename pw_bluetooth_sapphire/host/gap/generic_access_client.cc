@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/generic_access_client.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"

@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sdp/service_discoverer.h"
 
+#include <pw_assert/check.h>
+
 #include <cinttypes>
 #include <functional>
 

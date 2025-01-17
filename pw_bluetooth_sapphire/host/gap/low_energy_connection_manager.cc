@@ -15,12 +15,12 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_manager.h"
 
 #include <cpp-string/string_printf.h>
+#include <pw_assert/check.h>
 #include <pw_preprocessor/compiler.h>
 
 #include <optional>
 #include <vector>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/generic_access_client.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection.h"

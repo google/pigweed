@@ -15,12 +15,12 @@
 #include "pw_bluetooth_sapphire/internal/host/att/database.h"
 
 #include <lib/fit/defer.h>
+#include <pw_assert/check.h>
 
 #include <algorithm>
 
 #include "pw_bluetooth_sapphire/internal/host/att/error.h"
 #include "pw_bluetooth_sapphire/internal/host/att/permissions.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt::att {

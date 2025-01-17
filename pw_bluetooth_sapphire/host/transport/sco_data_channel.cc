@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/sco_data_channel.h"
 
 #include <lib/fit/defer.h>
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 namespace bt::hci {

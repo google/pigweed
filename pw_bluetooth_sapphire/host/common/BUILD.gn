@@ -40,7 +40,6 @@ pw_source_set("common") {
   ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/common/advertising_data.h",
-    "public/pw_bluetooth_sapphire/internal/host/common/assert.h",
     "public/pw_bluetooth_sapphire/internal/host/common/bounded_inspect_list_node.h",
     "public/pw_bluetooth_sapphire/internal/host/common/byte_buffer.h",
     "public/pw_bluetooth_sapphire/internal/host/common/device_address.h",

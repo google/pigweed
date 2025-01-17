@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/att/error.h"
 
+#include <pw_assert/check.h>
+
 #include "pw_preprocessor/compiler.h"
 #include "pw_string/format.h"
 

@@ -16,13 +16,13 @@
 
 #include <openssl/aes.h>
 #include <openssl/cmac.h>
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 #include <pw_preprocessor/compiler.h>
 
 #include <algorithm>
 #include <optional>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"

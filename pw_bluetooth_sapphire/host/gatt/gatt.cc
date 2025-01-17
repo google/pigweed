@@ -15,10 +15,10 @@
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt.h"
 
 #include <lib/fit/defer.h>
+#include <pw_assert/check.h>
 
 #include <unordered_map>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/client.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/connection.h"

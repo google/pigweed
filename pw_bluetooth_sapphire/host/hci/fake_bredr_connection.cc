@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_bredr_connection.h"
 
+#include <pw_assert/check.h>
+
 namespace bt::hci::testing {
 
 FakeBrEdrConnection::FakeBrEdrConnection(

@@ -13,9 +13,10 @@
 // the License.
 #include "pw_bluetooth_sapphire/internal/host/sm/test_security_manager.h"
 
+#include <pw_assert/check.h>
+
 #include <memory>
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/smp.h"

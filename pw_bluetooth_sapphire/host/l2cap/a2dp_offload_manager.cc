@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/a2dp_offload_manager.h"
 
+#include <pw_assert/check.h>
 #include <pw_bluetooth/hci_android.emb.h>
 #include <pw_preprocessor/compiler.h>
 

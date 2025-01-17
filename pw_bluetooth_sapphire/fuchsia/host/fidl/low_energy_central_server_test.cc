@@ -16,6 +16,7 @@
 
 #include <cpp-string/string_printf.h>
 #include <gmock/gmock.h>
+#include <pw_assert/check.h>
 
 #include <cstddef>
 

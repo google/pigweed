@@ -13,6 +13,8 @@
 // the License.
 
 #pragma once
+#include <pw_assert/check.h>
+
 #include <vector>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"

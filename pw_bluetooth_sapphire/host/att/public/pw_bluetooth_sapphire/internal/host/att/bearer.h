@@ -14,6 +14,7 @@
 
 #pragma once
 #include <lib/fit/function.h>
+#include <pw_assert/check.h>
 #include <pw_async/dispatcher.h>
 
 #include <map>
@@ -23,7 +24,6 @@
 #include "pw_bluetooth_sapphire/internal/host/att/att.h"
 #include "pw_bluetooth_sapphire/internal/host/att/error.h"
 #include "pw_bluetooth_sapphire/internal/host/att/packet.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"

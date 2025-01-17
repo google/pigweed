@@ -15,11 +15,11 @@
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/low_energy_peripheral_server.h"
 
 #include <lib/async/default.h>
+#include <pw_assert/check.h>
 #include <zircon/status.h>
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/identifier.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_advertising_manager.h"

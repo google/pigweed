@@ -14,7 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_tx_engine.h"
 
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
+#include <pw_assert/check.h>
+
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt::l2cap::internal {

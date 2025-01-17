@@ -14,10 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/device_class.h"
 
+#include <pw_assert/check.h>
+
 #include <algorithm>
 #include <climits>
-
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 
 namespace bt {
 

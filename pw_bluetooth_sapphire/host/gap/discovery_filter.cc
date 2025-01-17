@@ -14,10 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
 
+#include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt::gap {

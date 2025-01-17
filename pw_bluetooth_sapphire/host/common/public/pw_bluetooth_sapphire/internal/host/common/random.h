@@ -13,9 +13,9 @@
 // the License.
 
 #pragma once
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
-#include "pw_random/random.h"
+#include <pw_assert/check.h>
 
+#include "pw_random/random.h"
 namespace bt {
 
 // Returns the global random number generator. This returns nullptr until it is

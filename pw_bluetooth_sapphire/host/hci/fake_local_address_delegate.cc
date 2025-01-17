@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h"
 
 #include <lib/fit/result.h>
+#include <pw_assert/check.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/host_error.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"

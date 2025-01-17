@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/phase_2_secure_connections.h"
 
+#include <pw_assert/check.h>
+
 #include <cstdint>
 #include <memory>
 

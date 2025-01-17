@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/packet.h"
 
+#include <pw_assert/check.h>
+
 #include <unordered_map>
 
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"

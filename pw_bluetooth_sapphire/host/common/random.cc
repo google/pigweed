@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 
+#include <pw_assert/check.h>
+
 namespace bt {
 namespace {
 

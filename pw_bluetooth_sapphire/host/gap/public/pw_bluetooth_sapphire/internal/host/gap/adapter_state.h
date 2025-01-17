@@ -16,7 +16,6 @@
 #include <cstdint>
 
 #include "pw_bluetooth/controller.h"
-#include "pw_bluetooth_sapphire/internal/host/common/assert.h"
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/android_vendor_capabilities.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
