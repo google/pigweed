@@ -197,6 +197,8 @@ DynamicByteBuffer LinkKeyRequestReplyResponse(DeviceAddress address);
 
 DynamicByteBuffer NumberOfCompletedPacketsPacket(
     hci_spec::ConnectionHandle conn, uint16_t num_packets);
+DynamicByteBuffer NumberOfCompletedPacketsPacketWithInvalidSize(
+    hci_spec::ConnectionHandle conn, uint16_t num_packets);
 
 DynamicByteBuffer PinCodeRequestPacket(DeviceAddress address);
 DynamicByteBuffer PinCodeRequestNegativeReplyPacket(DeviceAddress address);

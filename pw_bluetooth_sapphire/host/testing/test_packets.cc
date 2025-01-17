@@ -861,6 +861,19 @@ DynamicByteBuffer NumberOfCompletedPacketsPacket(
       ));
 }
 
+DynamicByteBuffer NumberOfCompletedPacketsPacketWithInvalidSize(
+    hci_spec::ConnectionHandle conn, uint16_t num_packets) {
+  return DynamicByteBuffer(StaticByteBuffer(
+      0x13,
+      0x05,  // Number Of Completed Packet HCI event header, parameters length
+      0x03,  // Num_Handles
+      LowerBits(conn),         // Connection_Handle
+      UpperBits(conn),         // Connection_Handle
+      LowerBits(num_packets),  // Num_Completed_Packets
+      UpperBits(num_packets)   // Num_Completed_Packets
+      ));
+}
+
 DynamicByteBuffer PinCodeRequestPacket(DeviceAddress address) {
   const auto addr = address.value().bytes();
   return DynamicByteBuffer(

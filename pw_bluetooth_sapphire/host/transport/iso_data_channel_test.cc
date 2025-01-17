@@ -212,13 +212,24 @@ TEST_F(IsoDataChannelTests, SendDataExhaustBuffers) {
 }
 
 TEST_F(IsoDataChannelTests, SendDataExceedBuffers) {
-  constexpr size_t kNumPackets = kDefaultMaxNumPackets + 2;
+  constexpr size_t kNumExtraPacketsWithValidCompletedEvent = 2;
+  constexpr size_t kNumExtraPacketsWithInvalidCompletedEvent = 2;
+  constexpr size_t kNumPackets = kDefaultMaxNumPackets +
+                                 kNumExtraPacketsWithValidCompletedEvent +
+                                 kNumExtraPacketsWithInvalidCompletedEvent;
   constexpr size_t kSduSize = 15;
   ASSERT_NE(iso_data_channel(), nullptr);
 
   constexpr hci_spec::ConnectionHandle kIsoHandle = 0x123;
+  constexpr hci_spec::ConnectionHandle kOtherHandle = 0x456;
+  // Mock interface is not used, only registered to make sure the data channel
+  // is aware that the connection is in fact an ISO connection.
+  IsoMockConnectionInterface mock_iface;
+  EXPECT_TRUE(iso_data_channel()->RegisterConnection(kIsoHandle,
+                                                     mock_iface.GetWeakPtr()));
   size_t num_sent = 0;
   size_t num_expectations = 0;
+
   for (; num_sent < kNumPackets; ++num_sent) {
     std::unique_ptr<std::vector<uint8_t>> blob =
         testing::GenDataBlob(kSduSize, num_sent);
@@ -240,6 +251,71 @@ TEST_F(IsoDataChannelTests, SendDataExceedBuffers) {
 
   EXPECT_EQ(num_sent, kNumPackets);
   EXPECT_EQ(num_expectations, kDefaultIsoBufferInfo.max_num_packets());
+  EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  for (size_t i = 0; i < kNumExtraPacketsWithValidCompletedEvent; ++i) {
+    std::unique_ptr<std::vector<uint8_t>> blob =
+        testing::GenDataBlob(kSduSize, num_expectations);
+    DynamicByteBuffer packet = testing::IsoDataPacket(
+        /*handle = */ kIsoHandle,
+        /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*timestamp = */ 0x00000000,
+        /*sequence_number = */ num_expectations,
+        /*sdu_length = */ blob->size(),
+        /*status_flag = */
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    ++num_expectations;
+  }
+
+  EXPECT_EQ(num_expectations,
+            kDefaultMaxNumPackets + kNumExtraPacketsWithValidCompletedEvent);
+  RunUntilIdle();
+  EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Send a Number_Of_Completed_Packets event for a different connection first.
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacket(kOtherHandle, 4));
+
+  // Ensure that did not affect available buffers in IsoDataChannel.
+  RunUntilIdle();
+  EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Send the event for the ISO connection.
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacket(
+          kIsoHandle, kNumExtraPacketsWithValidCompletedEvent));
+
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Repeat the above with a Number_Of_Completed_Packets event that has a count
+  // larger than expected, to ensure it isn't ignored.
+  for (; num_expectations < kNumPackets; ++num_expectations) {
+    std::unique_ptr<std::vector<uint8_t>> blob =
+        testing::GenDataBlob(kSduSize, num_expectations);
+    DynamicByteBuffer packet = testing::IsoDataPacket(
+        /*handle = */ kIsoHandle,
+        /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*timestamp = */ 0x00000000,
+        /*sequence_number = */ num_expectations,
+        /*sdu_length = */ blob->size(),
+        /*status_flag = */
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+  }
+
+  EXPECT_EQ(num_expectations, kNumPackets);
+
+  // Send the event for the ISO connection.
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacketWithInvalidSize(
+          kIsoHandle, kNumExtraPacketsWithInvalidCompletedEvent));
 
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
