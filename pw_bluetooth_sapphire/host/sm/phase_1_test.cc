@@ -1609,5 +1609,279 @@ TEST_F(Phase1Test, FeatureExchangeResponderReqNoBondWithKeys) {
   EXPECT_EQ(Error(ErrorCode::kInvalidParameters), listener()->last_error());
 }
 
+TEST_F(Phase1Test, BrEdrInitiatorLocalAndRemoteRequestEncKeyAndCT2Success) {
+  NewPhase1(Role::kInitiator, Phase1Args(), LinkType::kACL);
+  const auto kRequest = StaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kCT2,
+      0x10,                 // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+  );
+  const auto kResponse =
+      StaticByteBuffer(0x02,  // code: Pairing Response
+                       0x00,  // IO cap.: DisplayOnly
+                       0x00,  // OOB: not present
+                       AuthReq::kCT2,
+                       0x10,                 // encr. key size: 16 (default max)
+                       KeyDistGen::kEncKey,  // initiator keys
+                       KeyDistGen::kEncKey   // responder keys
+      );
+
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
+
+  fake_chan()->Receive(kResponse);
+  RunUntilIdle();
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_TRUE(features().initiator);
+  ASSERT_TRUE(features().generate_ct_key.has_value());
+  EXPECT_EQ(features().generate_ct_key.value(), CrossTransportKeyAlgo::kUseH7);
+}
+
+TEST_F(Phase1Test,
+       BrEdrInitiatorLocalAndRemoteRequestEncKeyAndNoRemoteCT2Success) {
+  NewPhase1(Role::kInitiator, Phase1Args(), LinkType::kACL);
+  const auto kRequest = StaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kCT2,
+      0x10,                 // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+  );
+  const auto kResponse =
+      StaticByteBuffer(0x02,                 // code: Pairing Response
+                       0x00,                 // IO cap.: DisplayOnly
+                       0x00,                 // OOB: not present
+                       0x00,                 // AuthReq, no CT2 bit set
+                       0x10,                 // encr. key size: 16 (default max)
+                       KeyDistGen::kEncKey,  // initiator keys
+                       KeyDistGen::kEncKey   // responder keys
+      );
+
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
+
+  fake_chan()->Receive(kResponse);
+  RunUntilIdle();
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_TRUE(features().initiator);
+  ASSERT_TRUE(features().generate_ct_key.has_value());
+  EXPECT_EQ(features().generate_ct_key.value(), CrossTransportKeyAlgo::kUseH6);
+}
+
+TEST_F(Phase1Test, BrEdrInitiatorRemoteDoesNotSupportEncKey) {
+  NewPhase1(Role::kInitiator, Phase1Args(), LinkType::kACL);
+  const auto kRequest = StaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kCT2,
+      0x10,                 // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+  );
+  const auto kResponse =
+      StaticByteBuffer(0x02,  // code: Pairing Response
+                       0x00,  // IO cap.: DisplayOnly
+                       0x00,  // OOB: not present
+                       AuthReq::kCT2,
+                       0x10,                 // encr. key size: 16 (default max)
+                       KeyDistGen::kEncKey,  // initiator keys
+                       0x00                  // responder keys
+      );
+
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
+
+  fake_chan()->Receive(kResponse);
+  RunUntilIdle();
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_TRUE(features().initiator);
+  ASSERT_FALSE(features().generate_ct_key.has_value());
+}
+
+TEST_F(Phase1Test, BrEdrResponderBothSupportEncKeyAndCT2) {
+  const auto kResponse =
+      StaticByteBuffer(0x02,  // code: Pairing Response
+                       0x03,  // IO cap.: NoInputNoOutput
+                       0x00,  // OOB: not present
+                       AuthReq::kCT2,
+                       0x10,                 // encr. key size: 16 (default max)
+                       KeyDistGen::kEncKey,  // initiator keys: none
+                       KeyDistGen::kEncKey   // responder keys
+      );
+
+  Phase1Args args;
+  args.preq =
+      PairingRequestParams{.io_capability = IOCapability::kNoInputNoOutput,
+                           .oob_data_flag = OOBDataFlag::kNotPresent,
+                           .auth_req = AuthReq::kCT2,
+                           .max_encryption_key_size = 0x10,  // 16, default max
+                           .initiator_key_dist_gen = KeyDistGen::kEncKey,
+                           .responder_key_dist_gen = KeyDistGen::kEncKey};
+  NewPhase1(Role::kResponder, args, LinkType::kACL);
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
+
+  RunUntilIdle();
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_FALSE(features().initiator);
+  ASSERT_TRUE(features().generate_ct_key.has_value());
+  EXPECT_EQ(features().generate_ct_key.value(), CrossTransportKeyAlgo::kUseH7);
+}
+
+TEST_F(Phase1Test, BrEdrResponderBothSupportEncKeyAndNotCT2) {
+  const auto kResponse =
+      StaticByteBuffer(0x02,                 // code: Pairing Response
+                       0x03,                 // IO cap.: NoInputNoOutput
+                       0x00,                 // OOB: not present
+                       AuthReq::kCT2,        // AuthReq
+                       0x10,                 // encr. key size: 16 (default max)
+                       KeyDistGen::kEncKey,  // initiator keys: none
+                       KeyDistGen::kEncKey   // responder keys
+      );
+
+  Phase1Args args;
+  args.preq =
+      PairingRequestParams{.io_capability = IOCapability::kNoInputNoOutput,
+                           .oob_data_flag = OOBDataFlag::kNotPresent,
+                           .auth_req = 0x00,
+                           .max_encryption_key_size = 0x10,  // 16, default max
+                           .initiator_key_dist_gen = KeyDistGen::kEncKey,
+                           .responder_key_dist_gen = KeyDistGen::kEncKey};
+  NewPhase1(Role::kResponder, args, LinkType::kACL);
+  EXPECT_PACKET_OUT(kResponse);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
+
+  RunUntilIdle();
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_FALSE(features().initiator);
+  ASSERT_TRUE(features().generate_ct_key.has_value());
+  EXPECT_EQ(features().generate_ct_key.value(), CrossTransportKeyAlgo::kUseH6);
+}
+
+TEST_F(Phase1Test, BrEdrInitiatorLocalAndRemoteRequestIdKeyAndEncKey) {
+  NewPhase1(Role::kInitiator, Phase1Args(), LinkType::kACL);
+  listener()->set_identity_info(IdentityInfo());
+
+  const auto kRequest = StaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kCT2,
+      0x10,  // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey   // responder keys
+  );
+  const auto kResponse = StaticByteBuffer(
+      0x02,  // code: Pairing Response
+      0x00,  // IO cap.: DisplayOnly
+      0x00,  // OOB: not present
+      AuthReq::kCT2,
+      0x10,  // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey   // responder keys
+  );
+
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  EXPECT_EQ(1, listener()->identity_info_count());
+  ASSERT_TRUE(AllExpectedPacketsSent());
+
+  fake_chan()->Receive(kResponse);
+  RunUntilIdle();
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_TRUE(features().initiator);
+  EXPECT_TRUE(features().local_key_distribution & KeyDistGen::kIdKey);
+  EXPECT_TRUE(features().remote_key_distribution & KeyDistGen::kIdKey);
+}
+
+TEST_F(Phase1Test, BrEdrInitiatorRemoteTooSmallKeySize) {
+  NewPhase1(Role::kInitiator, Phase1Args(), LinkType::kACL);
+  const auto kRequest = StaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kCT2,
+      0x10,                 // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+  );
+  const auto kResponse =
+      StaticByteBuffer(0x02,  // code: Pairing Response
+                       0x00,  // IO cap.: DisplayOnly
+                       0x00,  // OOB: not present
+                       AuthReq::kCT2,
+                       0x07,                 // encr. key size: 7 (default min)
+                       KeyDistGen::kEncKey,  // initiator keys
+                       KeyDistGen::kEncKey   // responder keys
+      );
+  const StaticByteBuffer kFailure(0x05,  // code: Pairing Failed
+                                  0x06   // reason: Encryption Key Size
+  );
+
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
+
+  EXPECT_PACKET_OUT(kFailure);
+  fake_chan()->Receive(kResponse);
+  RunUntilIdle();
+  EXPECT_EQ(1, listener()->pairing_error_count());
+  EXPECT_EQ(Error(ErrorCode::kEncryptionKeySize), listener()->last_error());
+  EXPECT_EQ(0, feature_exchange_count());
+}
+
+TEST_F(Phase1Test,
+       BrEdrInitiatorRemoteSetsRfuFieldsToWeirdValuesThatAreIgnored) {
+  NewPhase1(Role::kInitiator, Phase1Args(), LinkType::kACL);
+  const auto kRequest = StaticByteBuffer(
+      0x01,  // code: Pairing Request
+      0x03,  // IO cap.: NoInputNoOutput
+      0x00,  // OOB: not present
+      AuthReq::kCT2,
+      0x10,                 // encr. key size: 16 (default max)
+      KeyDistGen::kEncKey,  // initiator keys
+      KeyDistGen::kEncKey | KeyDistGen::kIdKey  // responder keys
+  );
+  const auto kResponse =
+      StaticByteBuffer(0x02,  // code: Pairing Response
+                       0x04,  // IO cap.: KeyboardDisplay
+                       0x01,  // OOB: present
+                       AuthReq::kBondingFlag | AuthReq::kMITM | AuthReq::kSC |
+                           AuthReq::kKeypress,
+                       0x10,                 // encr. key size: 16 (default max)
+                       KeyDistGen::kEncKey,  // initiator keys
+                       KeyDistGen::kEncKey   // responder keys
+      );
+
+  EXPECT_PACKET_OUT(kRequest);
+  phase_1()->Start();
+  ASSERT_TRUE(AllExpectedPacketsSent());
+
+  fake_chan()->Receive(kResponse);
+  RunUntilIdle();
+  EXPECT_EQ(0, listener()->pairing_error_count());
+  EXPECT_EQ(1, feature_exchange_count());
+  EXPECT_TRUE(features().initiator);
+  ASSERT_TRUE(features().generate_ct_key.has_value());
+}
+
 }  // namespace
 }  // namespace bt::sm

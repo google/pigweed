@@ -165,44 +165,68 @@ LocalPairingParams Phase1::BuildPairingParameters() {
   // We build `local_params` to reflect the capabilities of this device over the
   // LE transport.
   LocalPairingParams local_params;
-  if (sm_chan().SupportsSecureConnections()) {
+
+  // On LE, the SC flag is set if LE Secure Connections pairing is supported by
+  // the device.
+  // On BR/EDR, the SC bit is RFU.
+  if (sm_chan().link_type() == LinkType::kLE &&
+      sm_chan().SupportsSecureConnections()) {
     local_params.auth_req |= AuthReq::kSC;
   }
-  if (requested_level_ >= SecurityLevel::kAuthenticated) {
+
+  // On BR/EDR, MITM bit is RFU.
+  if (sm_chan().link_type() == LinkType::kLE &&
+      requested_level_ >= SecurityLevel::kAuthenticated) {
     local_params.auth_req |= AuthReq::kMITM;
   }
 
   // If we are in non-bondable mode there will be no key distribution per V5.1
   // Vol 3 Part C Section 9.4.2.2, so we use the default "no keys" value for
   // LocalPairingParams.
+  // BR/EDR CTKD is always "bondable".
   if (bondable_mode_ == BondableMode::Bondable) {
-    local_params.auth_req |= AuthReq::kBondingFlag;
+    // On BR/EDR, BondingFlag bit is RFU.
+    if (sm_chan().link_type() == LinkType::kLE) {
+      local_params.auth_req |= AuthReq::kBondingFlag;
+    }
+
     // We always request identity information from the remote.
+    // This applies to both LE and BR/EDR.
     local_params.remote_keys = KeyDistGen::kIdKey;
 
     PW_CHECK(listener().is_alive());
     if (listener()->OnIdentityRequest().has_value()) {
+      // IdKey applies to both LE and BR/EDR.
       local_params.local_keys |= KeyDistGen::kIdKey;
     }
 
-    // For the current connection, the responder-generated encryption keys (LTK)
-    // is always used. As device roles may change in future connections, Fuchsia
-    // supports distribution and generation of LTKs by both the local and remote
-    // device (V5.0 Vol. 3 Part H 2.4.2.3).
+    // LE: For the current connection, the responder-generated encryption keys
+    // (LTK) is always used. As device roles may change in future connections,
+    // Fuchsia supports distribution and generation of LTKs by both the local
+    // and remote device (V5.0 Vol. 3 Part H 2.4.2.3).
+    // BR/EDR: EncKey indicates the intent to derive the LE LTK, which is always
+    // the case for us.
     local_params.remote_keys |= KeyDistGen::kEncKey;
     local_params.local_keys |= KeyDistGen::kEncKey;
 
     // If we support SC over LE, we always try to generate the cross-transport
     // BR/EDR key by setting the link key bit (V5.0 Vol. 3 Part H 3.6.1).
+    // On BR/EDR, LinkKey is RFU.
     if (local_params.auth_req & AuthReq::kSC) {
       local_params.local_keys |= KeyDistGen::kLinkKey;
       local_params.remote_keys |= KeyDistGen::kLinkKey;
     }
   }
+
   // The CT2 bit indicates support for the 2nd Cross-Transport Key Derivation
   // hashing function, a.k.a. H7 (v5.2 Vol. 3 Part H 3.5.1 and 2.4.2.4).
+  // This is used for both LE and BR/EDR CTKD.
   local_params.auth_req |= AuthReq::kCT2;
+
+  // On BR/EDR, IO Capability is RFU.
   local_params.io_capability = io_capability_;
+
+  // On BR/EDR, OOB data flag is RFU.
   local_params.oob_data_flag =
       oob_available_ ? OOBDataFlag::kPresent : OOBDataFlag::kNotPresent;
   return local_params;
@@ -220,6 +244,11 @@ fit::result<ErrorCode, PairingFeatures> Phase1::ResolveFeatures(
       (requested_level_ == SecurityLevel::kSecureAuthenticated)
           ? kMaxEncryptionKeySize
           : kMinEncryptionKeySize;
+  // In BR/EDR CTKD, the LE LTK needs to be as strong as the BR/EDR link key,
+  // which has the max size.
+  if (sm_chan().link_type() == LinkType::kACL) {
+    min_allowed_enc_key_size = kMaxEncryptionKeySize;
+  }
   if (enc_key_size < min_allowed_enc_key_size) {
     bt_log(DEBUG, "sm", "encryption key size too small! (%u)", enc_key_size);
     return fit::error(ErrorCode::kEncryptionKeySize);
@@ -227,6 +256,10 @@ fit::result<ErrorCode, PairingFeatures> Phase1::ResolveFeatures(
 
   bool will_bond =
       (preq.auth_req & kBondingFlag) && (pres.auth_req & kBondingFlag);
+  // BR/EDR doesn't set the bonding flag, but it always will bond.
+  if (sm_chan().link_type() == LinkType::kACL) {
+    will_bond = true;
+  }
   if (!will_bond) {
     bt_log(
         INFO,
@@ -237,6 +270,10 @@ fit::result<ErrorCode, PairingFeatures> Phase1::ResolveFeatures(
   bool sc = (preq.auth_req & AuthReq::kSC) && (pres.auth_req & AuthReq::kSC);
   bool mitm =
       (preq.auth_req & AuthReq::kMITM) || (pres.auth_req & AuthReq::kMITM);
+  // On BR/EDR, the MITM bit is RFU, so we ignore it.
+  if (sm_chan().link_type() == LinkType::kACL) {
+    mitm = false;
+  }
   bool init_oob = preq.oob_data_flag == OOBDataFlag::kPresent;
   bool rsp_oob = pres.oob_data_flag == OOBDataFlag::kPresent;
 
@@ -296,11 +333,25 @@ fit::result<ErrorCode, PairingFeatures> Phase1::ResolveFeatures(
   // may optionally generate the BR/EDR key [..] as part of the LE pairing
   // procedure" (v5.2 Vol. 3 Part C 14.1).
   std::optional<CrossTransportKeyAlgo> generate_ct_key = std::nullopt;
-  if (sc) {
+  CrossTransportKeyAlgo ct_algo =
+      (preq.auth_req & AuthReq::kCT2) && (pres.auth_req & AuthReq::kCT2)
+          ? CrossTransportKeyAlgo::kUseH7
+          : CrossTransportKeyAlgo::kUseH6;
+  if (sm_chan().link_type() == bt::LinkType::kACL) {
+    // "When SMP is running on the BR/EDR transport, the EncKey field is set
+    // to one to indicate that the device would like to derive the LTK from
+    // the BR/EDR Link Key. When EncKey is set to 1 by both devices in the
+    // initiator and responder Key Distribution / Generation fields, the
+    // procedures for calculating the LTK from the BR/EDR Link Key shall be
+    // used." (v6.0 Vol. 3, Part H, 3.6.1).
+    if (local_keys & remote_keys & KeyDistGen::kEncKey) {
+      generate_ct_key = ct_algo;
+    }
+  } else if (sc) {
     // "In LE Secure Connections pairing, when SMP is running on the LE
-    // transport, then the EncKey field is ignored" (V5.0 Vol. 3 Part H 3.6.1).
-    // We ignore the Encryption Key bit here to allow for uniform handling of it
-    // later.
+    // transport, then the EncKey field is ignored" (V5.0 Vol. 3 Part
+    // H 3.6.1). We ignore the Encryption Key bit here to allow for uniform
+    // handling of it later.
     local_keys &= ~KeyDistGen::kEncKey;
     remote_keys &= ~KeyDistGen::kEncKey;
 
@@ -309,12 +360,8 @@ fit::result<ErrorCode, PairingFeatures> Phase1::ResolveFeatures(
     // link key from the LTK shall be used". The chosen procedure depends on the
     // CT2 bit of the AuthReq (v5.2 Vol. 3 Part H 3.5.1 and 3.6.1).
     if (local_keys & remote_keys & KeyDistGen::kLinkKey) {
-      generate_ct_key =
-          (preq.auth_req & AuthReq::kCT2) && (pres.auth_req & AuthReq::kCT2)
-              ? CrossTransportKeyAlgo::kUseH7
-              : CrossTransportKeyAlgo::kUseH6;
+      generate_ct_key = ct_algo;
     }
-
   } else if (requested_level_ == SecurityLevel::kSecureAuthenticated) {
     // SecureAuthenticated means Secure Connections is required, so if this
     // pairing would not use Secure Connections it does not meet the
