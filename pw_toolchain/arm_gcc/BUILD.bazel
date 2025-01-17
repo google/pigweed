@@ -214,19 +214,6 @@ cc_args(
     ],
 )
 
-cc_args(
-    name = "cortex-m33+nofp",
-    actions = [
-        "@rules_cc//cc/toolchains/actions:assembly_actions",
-        "@rules_cc//cc/toolchains/actions:compile_actions",
-        "@rules_cc//cc/toolchains/actions:link_actions",
-    ],
-    args = [
-        "-mcpu=cortex-m33+nofp",
-        "-mfloat-abi=soft",
-    ],
-)
-
 cc_toolchain(
     name = "arm_gcc_toolchain_cortex-m",
     args = [
