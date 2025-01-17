@@ -31,6 +31,16 @@ pw_cc_test(
     ],
 )
 
+pw_cc_test(
+    name = "logf_test",
+    srcs = [
+        "logf_test.cc",
+    ],
+    deps = [
+        "//pw_unit_test",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [

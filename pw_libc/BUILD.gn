@@ -27,6 +27,7 @@ config("default_config") {
 pw_test_group("tests") {
   tests = [
     ":llvm_libc_tests",
+    ":logf_test",
     ":memset_test",
   ]
 }
@@ -34,6 +35,10 @@ pw_test_group("tests") {
 pw_test("memset_test") {
   sources = [ "memset_test.cc" ]
   deps = [ "$dir_pw_containers" ]
+}
+
+pw_test("logf_test") {
+  sources = [ "logf_test.cc" ]
 }
 
 # Clang has __attribute__(("no-builtin")), but gcc doesn't support it so we
