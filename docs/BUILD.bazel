@@ -335,6 +335,9 @@ sphinx_build_binary(
 sphinx_docs(
     name = "docs",
     config = "conf.py",
+    extra_opts = [
+        "--silent",
+    ],
     formats = [
         "html",
     ],

@@ -329,7 +329,7 @@ breathe_projects = {
     "Pigweed": doxygen_xml_path,
 }
 breathe_default_project = "Pigweed"
-breathe_debug_trace_directives = True
+breathe_debug_trace_directives = False
 # (b/295023422) Disable the inaccurate `#include` statements that are generated
 # when `doxygennamespace` is used.
 breathe_show_include = False
