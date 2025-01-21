@@ -149,14 +149,22 @@ cc_library(
     hdrs = [
         "libc_assert_public_overrides/assert.h",
         "libc_assert_public_overrides/cassert",
+    ],
+    strip_include_prefix = "libc_assert_public_overrides",
+    deps = [
+        ":libc_assert_impl",
+    ],
+)
+
+cc_library(
+    name = "libc_assert_impl",
+    hdrs = [
         "public/pw_assert/internal/libc_assert.h",
     ],
-    includes = [
-        "libc_assert_public_overrides",
-        "public",
-    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_preprocessor",
     ],
 )
@@ -166,7 +174,7 @@ cc_library(
     hdrs = [
         "assert_compatibility_public_overrides/pw_assert_backend/assert_backend.h",
     ],
-    includes = ["assert_compatibility_public_overrides"],
+    strip_include_prefix = "assert_compatibility_public_overrides",
     deps = ["//pw_preprocessor"],
 )
 
@@ -181,7 +189,7 @@ cc_library(
 cc_library(
     name = "print_and_abort_assert_backend",
     hdrs = ["print_and_abort_assert_public_overrides/pw_assert_backend/assert_backend.h"],
-    includes = ["print_and_abort_assert_public_overrides"],
+    strip_include_prefix = "print_and_abort_assert_public_overrides",
     deps = [
         ":config",
         ":print_and_abort",
@@ -190,9 +198,8 @@ cc_library(
 
 cc_library(
     name = "print_and_abort_check_backend",
-    hdrs =
-        ["print_and_abort_check_public_overrides/pw_assert_backend/check_backend.h"],
-    includes = ["print_and_abort_check_public_overrides"],
+    hdrs = ["print_and_abort_check_public_overrides/pw_assert_backend/check_backend.h"],
+    strip_include_prefix = "print_and_abort_check_public_overrides",
     deps = [":print_and_abort"],
 )
 
