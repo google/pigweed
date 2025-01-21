@@ -155,6 +155,7 @@ pw_facade(
     backend = ":rpc_server_backend",
     strip_include_prefix = "public",
     deps = [
+        ":config",
         "//pw_thread:thread_core",
     ],
 )
