@@ -1,11 +1,13 @@
 -c ./python_base_requirements.txt
 
 aiohttp==3.9.5
+aiosignal==1.3.2
 alabaster==0.7.16
-anytree==2.12.1
 appdirs==1.4.4
 astroid==3.0.1
 asttokens==2.4.0
+async-timeout==4.0.3
+attrs==24.3.0
 babel==2.16.0
 backcall==0.2.0
 beautifulsoup4==4.12.2
@@ -22,8 +24,10 @@ cryptography==41.0.2
 debugpy==1.8.12
 decorator==5.1.1
 dill==0.3.6
+docopt==0.6.2
 docutils==0.20.1
 executing==2.0.1
+frozenlist==1.5.0
 google-api-core==2.19.2
 googleapis-common-protos==1.65.0
 google-auth==2.23.3
@@ -31,7 +35,6 @@ google-cloud-core==2.3.3
 google-cloud-storage==2.12.0
 google-crc32c==1.5.0
 google-resumable-media==2.6.0
-graphlib-backport==1.0.3; python_version < "3.9"
 humanfriendly==10.0
 idna==3.4
 imagesize==1.4.1
@@ -42,12 +45,13 @@ jedi==0.19.1
 Jinja2==3.1.2
 json5==0.9.11
 jsonschema==4.23.0
-lockfile==0.12.2
+jsonschema-specifications==2024.10.1
 kconfiglib==14.1.0
-natsort==8.4.0
+lockfile==0.12.2
 markupsafe==2.1.3
 matplotlib-inline==0.1.3
 mccabe==0.6.1
+multidict==6.1.0
 mypy==1.6.1
 mypy-extensions==1.0.0
 mypy-protobuf==3.5.0
@@ -64,6 +68,7 @@ prompt-toolkit==3.0.43
 # LINT.IfChange(protobuf)
 protobuf==5.28.2
 # LINT.ThenChange(MODULE.bazel:protobuf,pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json)
+proto-plus==1.25.0
 psutil==5.9.4
 ptpython==3.0.25
 ptyprocess==0.7.0
@@ -74,19 +79,27 @@ pycparser==2.21
 pyelftools==0.31
 pyfakefs==5.7.2
 pygments==2.18.0
+pykwalify==1.8.0
 pylint==3.0.1
 pyperclip==1.8.2
+pyproject-hooks==1.0.0
+pyreadline3==3.5.4
 pyserial==3.5
 pytest==8.3.4
 python-daemon==3.0.1
 pytz==2023.3
 pyusb==1.2.1
 pyyaml==6.0.1
+referencing==0.36.1
 requests==2.31.0
+rpds-py==0.22.3
 rsa==4.8
+ruamel-yaml==0.18.10
+ruamel-yaml-clib==0.2.12
 setuptools==68.0.0
 six==1.16.0
 snowballstemmer==2.2.0
+soupsieve==2.6
 sphinx==7.4.7
 sphinx-argparse==0.4.0
 sphinxcontrib-applehelp==1.0.4
@@ -118,4 +131,3 @@ wcwidth==0.2.6
 websockets==10.4
 yapf==0.31.0
 yarl==1.12.1
-zipp==3.16.2

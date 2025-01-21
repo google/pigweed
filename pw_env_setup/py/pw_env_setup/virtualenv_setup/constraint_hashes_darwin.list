@@ -1206,9 +1206,9 @@ pyyaml==6.0.1 \
     --hash=sha256:fd1592b3fdf65fff2ad0004b5e363300ef59ced41c2e6b3a99d4089fa8c5435d \
     --hash=sha256:fd66fc5d0da6d9815ba2cebeb4205f95818ff4b79c3ebe268e75d961704af52f
     # via -r compiled_requirements.txt
-referencing==0.35.1 \
-    --hash=sha256:25b42124a6c8b632a425174f24087783efb348a6f1e0008e63cd4466fedf703c \
-    --hash=sha256:eda6d3234d62814d1c64e305c1331c9a3a6132da475ab6382eaa997b21ee75de
+referencing==0.36.1 \
+    --hash=sha256:363d9c65f080d0d70bc41c721dce3c7f3e77fc09f269cd5c8813da18069a6794 \
+    --hash=sha256:ca2e6492769e3602957e9b831b94211599d2aade9477f5d44110d2530cf9aade
     # via
     #   -r compiled_requirements.txt
     #   jsonschema
@@ -1335,9 +1335,9 @@ rsa==4.8 \
     # via
     #   -r compiled_requirements.txt
     #   google-auth
-ruamel-yaml==0.18.6 \
-    --hash=sha256:57b53ba33def16c4f3d807c0ccbc00f8a6081827e81ba2491691b76882d0c636 \
-    --hash=sha256:8b27e6a217e786c6fbe5634d8f3f11bc63e0f80f6a5890f28863d9c45aac311b
+ruamel-yaml==0.18.10 \
+    --hash=sha256:20c86ab29ac2153f80a428e1254a8adf686d3383df04490514ca3b79a362db58 \
+    --hash=sha256:30f22513ab2301b3d2b577adc121c6471f28734d3d9728581245f1e76468b4f1
     # via
     #   -r compiled_requirements.txt
     #   pykwalify
@@ -1552,6 +1552,7 @@ typing-extensions==4.4.0 \
     #   astroid
     #   multidict
     #   mypy
+    #   referencing
 urllib3==2.0.4 \
     --hash=sha256:8d22f86aae8ef5e410d4f539fde9ce6b2113a001bb4d189e0aed70642d602b11 \
     --hash=sha256:de7df1803967d2c2a98e4b11bb7d6bd9210474c46e8a0401514e3a42a75ebde4
