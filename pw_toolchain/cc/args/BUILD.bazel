@@ -88,8 +88,7 @@ cc_args(
 cc_args(
     name = "no_canonical_prefixes",
     actions = [
-        "@rules_cc//cc/toolchains/actions:c_compile_actions",
-        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
     args = ["-no-canonical-prefixes"],
 )
