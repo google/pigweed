@@ -19,6 +19,7 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Dict
 import re
+import shlex
 import unittest
 from unittest import mock
 
@@ -32,7 +33,7 @@ class FakeGitToolRunner(ToolRunner):
         self._results = command_results
 
     def _run_tool(self, tool: str, args, **kwargs) -> CompletedProcess:
-        full_command = ' '.join((tool, *tuple(args)))
+        full_command = shlex.join((tool, *tuple(args)))
         for cmd, result in self._results.items():
             if cmd in full_command:
                 return result
@@ -74,7 +75,7 @@ class TestGitRepo(unittest.TestCase):
     ]
     GIT_SUBMODULES_OUT = "\n".join([str(x) for x in SUBMODULES])
 
-    EXPECTED_SUBMODULE_LIST_CMD = ' '.join(
+    EXPECTED_SUBMODULE_LIST_CMD = shlex.join(
         (
             'submodule',
             'foreach',
@@ -235,7 +236,7 @@ class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
 
     def test_cwd_is_root(self):
         """Tests when cwd is the root of a repo."""
-        expected_repo_query = ' '.join(
+        expected_repo_query = shlex.join(
             (
                 '-C',
                 '.',
@@ -256,7 +257,7 @@ class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
 
     def test_cwd_is_not_repo(self):
         """Tests when cwd is not tracked by a repo."""
-        expected_repo_query = ' '.join(
+        expected_repo_query = shlex.join(
             (
                 '-C',
                 '.',
@@ -272,7 +273,7 @@ class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
 
     def test_file(self):
         """Tests a file at the root of a repo."""
-        expected_repo_query = ' '.join(
+        expected_repo_query = shlex.join(
             (
                 '-C',
                 '.',
@@ -294,10 +295,10 @@ class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
 
     def test_parents_memoized(self):
         """Tests multiple queries that are optimized via memoization."""
-        expected_repo_query = ' '.join(
+        expected_repo_query = shlex.join(
             (
                 '-C',
-                os.path.join('subdir', 'nested'),
+                str(Path('subdir/nested')),
                 'rev-parse',
                 '--show-toplevel',
             )
@@ -324,10 +325,10 @@ class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
 
     def test_absolute_path(self):
         """Test that absolute paths hit memoized paths."""
-        expected_repo_query = ' '.join(
+        expected_repo_query = shlex.join(
             (
                 '-C',
-                os.path.join('subdir', 'nested'),
+                str(Path('subdir/nested')),
                 'rev-parse',
                 '--show-toplevel',
             )
@@ -352,7 +353,7 @@ class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
 
     def test_subdir(self):
         """Test that querying a dir properly memoizes things."""
-        expected_repo_query = ' '.join(
+        expected_repo_query = shlex.join(
             (
                 '-C',
                 'subdir',
@@ -375,15 +376,15 @@ class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
 
     def test_nested_repo(self):
         """Test a nested repo works as expected."""
-        expected_inner_repo_query = ' '.join(
+        expected_inner_repo_query = shlex.join(
             (
                 '-C',
-                os.path.join('third_party', 'bogus', 'test'),
+                str(Path('third_party/bogus/test')),
                 'rev-parse',
                 '--show-toplevel',
             )
         )
-        expected_outer_repo_query = ' '.join(
+        expected_outer_repo_query = shlex.join(
             (
                 '-C',
                 'test',
@@ -422,7 +423,7 @@ class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
     def test_absolute_repo_not_under_cwd(self):
         """Test an absolute path that isn't a subdir of cwd works."""
         fake_parallel_repo = _resolve('/dev/null/fake/parallel')
-        expected_repo_query = ' '.join(
+        expected_repo_query = shlex.join(
             (
                 '-C',
                 _resolve('/dev/null/fake/parallel/yep'),
@@ -448,7 +449,7 @@ class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
 
     def test_absolute_not_under_cwd(self):
         """Test files not tracked by a repo."""
-        expected_repo_query = ' '.join(
+        expected_repo_query = shlex.join(
             (
                 '-C',
                 _resolve('/dev/null/fake/parallel/yep'),
@@ -470,6 +471,133 @@ class TestGitRepoFinder(fake_filesystem_unittest.TestCase):
             if file_to_find.endswith('.txt'):
                 self.fs.create_file(file_to_find)
             self.assertEqual(finder.find_git_repo(file_to_find), None)
+
+    def test_make_pathspec_relative(self):
+        """Tests that pathspec relativization works."""
+        expected_queries = (
+            (
+                shlex.join(
+                    (
+                        '-C',
+                        str(Path('george/one')),
+                        'rev-parse',
+                        '--show-toplevel',
+                    )
+                ),
+                self.FAKE_ROOT,
+            ),
+            (
+                shlex.join(
+                    (
+                        '-C',
+                        str(Path('third_party/bogus')),
+                        'rev-parse',
+                        '--show-toplevel',
+                    )
+                ),
+                self.FAKE_NESTED_REPO,
+            ),
+            (
+                shlex.join(
+                    (
+                        '-C',
+                        str(Path('third_party/bogus/frob')),
+                        'rev-parse',
+                        '--show-toplevel',
+                    )
+                ),
+                self.FAKE_NESTED_REPO,
+            ),
+        )
+        runner = FakeGitToolRunner(
+            {
+                expected_args: git_ok(expected_args, repo)
+                for expected_args, repo in expected_queries
+            }
+        )
+        finder = GitRepoFinder(runner)
+
+        files = [
+            'george/one/two.txt',
+            'third_party/bogus/sad.png',
+        ]
+        for file_to_find in files:
+            self.fs.create_file(file_to_find)
+        self.fs.create_dir('third_party/bogus/frob')
+
+        pathspecs = {
+            'george/one/two.txt': str(Path('george/one/two.txt')),
+            'a/': 'a',
+            'third_party/bogus/sad.png': 'sad.png',
+            'third_party/bogus/': '.',
+            'third_party/bogus/frob/j*': str(Path('frob/j*')),
+        }
+        for pathspec, expected in pathspecs.items():
+            maybe_repo, relativized = finder.make_pathspec_relative(pathspec)
+            self.assertNotEqual(
+                maybe_repo, None, f'Could not resolve {pathspec}'
+            )
+            self.assertEqual(relativized, expected)
+
+    def test_make_pathspec_relative_untracked(self):
+        """Tests that untracked files work with relativization."""
+        expected_repo_query = shlex.join(
+            (
+                '-C',
+                str(Path('subdir/nested')),
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {expected_repo_query: git_err(expected_repo_query, '')}
+        )
+        finder = GitRepoFinder(runner)
+
+        self.fs.create_file('george/one/two.txt')
+
+        pathspecs = {
+            'george/one/two.txt': 'george/one/two.txt',
+        }
+        for pathspec, expected in pathspecs.items():
+            maybe_repo, relativized = finder.make_pathspec_relative(pathspec)
+            self.assertEqual(
+                maybe_repo, None, f'Unexpectedly resolved {pathspec}'
+            )
+            self.assertEqual(relativized, expected)
+
+    def test_make_pathspec_relative_absolute(self):
+        """Tests that absolute paths work with relativization."""
+        expected_repo_query = shlex.join(
+            (
+                '-C',
+                _resolve('/dev/null/fake/root/third_party/bogus/one'),
+                'rev-parse',
+                '--show-toplevel',
+            )
+        )
+        runner = FakeGitToolRunner(
+            {
+                expected_repo_query: git_ok(
+                    expected_repo_query, self.FAKE_NESTED_REPO
+                )
+            }
+        )
+        finder = GitRepoFinder(runner)
+
+        self.fs.create_file('third_party/bogus/one/two.txt')
+
+        pathspecs = {
+            _resolve('/dev/null/fake/root/third_party/bogus/one/two.txt'): str(
+                Path('one/two.txt')
+            ),
+        }
+        for pathspec, expected in pathspecs.items():
+            maybe_repo, relativized = finder.make_pathspec_relative(pathspec)
+            self.assertNotEqual(
+                maybe_repo, None, f'Could not resolve {pathspec}'
+            )
+            self.assertEqual(relativized, expected)
 
 
 if __name__ == '__main__':

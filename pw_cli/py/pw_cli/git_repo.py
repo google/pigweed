@@ -370,7 +370,7 @@ class GitRepoFinder:
         search_from = path if path.is_dir() else path.parent
         if not search_from.exists():
             raise ValueError(
-                "Can't find parent repo of `{path_in_repo}`, "
+                f"Can't find parent repo of `{path_in_repo}`, "
                 "path does not exist"
             )
 
@@ -419,6 +419,41 @@ class GitRepoFinder:
             return None
 
         return self.repos[self._known_repo_roots[search_from.resolve()]]
+
+    def make_pathspec_relative(
+        self, pathspec: Path | str
+    ) -> tuple[GitRepo | None, str]:
+        """Finds the root repo of a pathspec, and then relativizes the pathspec.
+
+        Example: Assuming a repo at `external/foo_repo/` and a pathspec of
+        `external/foo_repo/ba*`, returns a GitRepo at `external/foo_repo` and
+        a relativized pathspec of `ba*`.
+
+        Args:
+            pathspec: The pathspec to relativize.
+        Returns:
+            The GitRepo of the pathspec and the pathspec relative to the parent
+            repo's root as a tuple. If the pathspec is not tracked by a repo,
+            the GitRepo is None and the pathspec is returned as-is.
+        """
+        repo = self.find_git_repo(pathspec)
+
+        if repo is None:
+            return None, str(pathspec)
+
+        if Path(pathspec).is_absolute():
+            relative_pattern = Path(pathspec).relative_to(repo.root())
+        else:
+            # Don't resolve(), we don't want to follow symlinks.
+            logical_absolute = Path.cwd() / Path(pathspec)
+            relative_pattern = Path(logical_absolute).relative_to(repo.root())
+
+        # Sometimes the effective pathspec is empty because it matches the root
+        # directory of a repo.
+        if not relative_pattern:
+            return repo, str(Path('.'))
+
+        return repo, str(relative_pattern)
 
 
 def find_git_repo(path_in_repo: Path, tool_runner: ToolRunner) -> GitRepo:
