@@ -15,6 +15,7 @@ load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:copy_to_bin.bzl", "copy_to_bin")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "nanopb_proto_library",
@@ -126,4 +127,12 @@ sphinx_docs_library(
     ],
     prefix = "pw_protobuf_compiler/",
     target_compatible_with = incompatible_with_mcu(),
+)
+
+copy_to_bin(
+    name = "js_protos",
+    srcs = [
+        "pw_protobuf_compiler_protos/nested/more_nesting/test.proto",
+        "pw_protobuf_compiler_protos/test.proto",
+    ],
 )

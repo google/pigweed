@@ -49,6 +49,18 @@ function getRealPathOfSymlink(path: string) {
   }
 }
 
+function getJSPluginPath() {
+  const EXT = process.platform === 'win32' ? '.exe' : '';
+  const pluginPath = getRealPathOfSymlink(
+    path.resolve(
+      path.dirname(require.resolve('protoc-gen-js')),
+      'bin',
+      'protoc-gen-js' + EXT,
+    ),
+  );
+  return pluginPath;
+}
+
 const protoc = async function (
   protos: string[],
   outDir: string,
@@ -61,6 +73,7 @@ const protoc = async function (
       'protoc-gen-ts',
     ),
   );
+  const PROTOC_GEN_JS_PATH = getJSPluginPath();
 
   const protocBinary = require.resolve('@protobuf-ts/protoc/protoc.js');
 
@@ -68,6 +81,7 @@ const protoc = async function (
     protocBinary,
     [
       `--plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}"`,
+      `--plugin="protoc-gen-js=${PROTOC_GEN_JS_PATH}"`,
       `--descriptor_set_out=${path.join(outDir, 'descriptor.bin')}`,
       `--js_out=import_style=commonjs,binary:${outDir}`,
       `--ts_out=${outDir}`,

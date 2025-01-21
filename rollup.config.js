@@ -27,7 +27,7 @@ export default [
     input: path.join('dist', 'protos', 'collection.ts'),
     output: [
       {
-        file: path.join('dist', 'protos', 'collection.umd.js'),
+        file: path.join('dist', 'proto_collection.umd.js'),
         format: 'umd',
         sourcemap: true,
         name: 'PigweedProtoCollection',

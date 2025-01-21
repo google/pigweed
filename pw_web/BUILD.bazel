@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@aspect_rules_js//js:defs.bzl", "js_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
@@ -27,4 +28,58 @@ sphinx_docs_library(
     ],
     prefix = "pw_web/",
     target_compatible_with = incompatible_with_mcu(),
+)
+
+js_library(
+    name = "js_files",
+    srcs = [
+        "log-viewer/src/assets/material_symbols_rounded_subset.woff2",
+        "log-viewer/src/components/log-list/log-list.styles.ts",
+        "log-viewer/src/components/log-list/log-list.ts",
+        "log-viewer/src/components/log-view-controls/log-view-controls.styles.ts",
+        "log-viewer/src/components/log-view-controls/log-view-controls.ts",
+        "log-viewer/src/components/log-view/log-view.styles.ts",
+        "log-viewer/src/components/log-view/log-view.ts",
+        "log-viewer/src/components/log-viewer.styles.ts",
+        "log-viewer/src/components/log-viewer.ts",
+        "log-viewer/src/components/repl/code-editor.styles.ts",
+        "log-viewer/src/components/repl/code-editor.ts",
+        "log-viewer/src/components/repl/repl.styles.ts",
+        "log-viewer/src/components/repl/repl.ts",
+        "log-viewer/src/console.css",
+        "log-viewer/src/console.ts",
+        "log-viewer/src/createLogViewer.ts",
+        "log-viewer/src/custom/browser-log-source.ts",
+        "log-viewer/src/custom/json-log-source.ts",
+        "log-viewer/src/custom/log_data.json",
+        "log-viewer/src/custom/mock-log-source.ts",
+        "log-viewer/src/events/clear-logs.ts",
+        "log-viewer/src/events/close-view.ts",
+        "log-viewer/src/events/column-toggle.ts",
+        "log-viewer/src/events/download-logs.ts",
+        "log-viewer/src/events/input-change.ts",
+        "log-viewer/src/events/resize-column.ts",
+        "log-viewer/src/events/split-view.ts",
+        "log-viewer/src/events/update-log-view-state.ts",
+        "log-viewer/src/events/wrap-toggle.ts",
+        "log-viewer/src/index.css",
+        "log-viewer/src/index.ts",
+        "log-viewer/src/log-source.ts",
+        "log-viewer/src/log-store.ts",
+        "log-viewer/src/repl-kernel.ts",
+        "log-viewer/src/shared/interfaces.ts",
+        "log-viewer/src/shared/state.ts",
+        "log-viewer/src/shared/time-format.ts",
+        "log-viewer/src/shared/view-node.ts",
+        "log-viewer/src/themes/dark.ts",
+        "log-viewer/src/themes/light.ts",
+        "log-viewer/src/utils/debounce.ts",
+        "log-viewer/src/utils/download.ts",
+        "log-viewer/src/utils/log-filter/log-filter.models.ts",
+        "log-viewer/src/utils/log-filter/log-filter.ts",
+        "log-viewer/src/utils/log-filter/log-filter_test.ts",
+        "log-viewer/src/utils/log-filter/test-data.ts",
+        "log-viewer/src/utils/strings.ts",
+        "log-viewer/src/utils/throttle.ts",
+    ],
 )

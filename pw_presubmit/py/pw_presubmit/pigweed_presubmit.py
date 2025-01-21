@@ -1103,6 +1103,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\bgo.(mod|sum)$',
     r'\bpackage-lock.json$',
     r'\bpackage.json$',
+    r'\bpnpm-lock.yaml$',
     r'\brequirements.txt$',
     r'\byarn.lock$',
     r'^docker/tag$',
@@ -1722,6 +1723,7 @@ _LINTFORMAT = (
             r'\bMODULE.bazel.lock$',
             r'\bgo.sum$',
             r'\bpackage-lock.json$',
+            r'\bpnpm-lock.yaml$',
             r'\byarn.lock$',
         )
     ),
