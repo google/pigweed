@@ -163,9 +163,7 @@ configuration.
 
       .. code-block:: console
 
-         bazelisk build //pw_bluetooth_sapphire/host/... \
-           --platforms=//pw_unit_test:googletest_platform \
-           --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
+         bazelisk build --config googletest //pw_bluetooth_sapphire/host/...
 
    .. tab-item:: GN
 
@@ -210,17 +208,13 @@ Running tests
 
       .. code-block:: console
 
-         bazelisk test //pw_bluetooth_sapphire/host/... \
-           --platforms=//pw_unit_test:googletest_platform \
-           --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
+         bazelisk test --config googletest //pw_bluetooth_sapphire/host/...
 
       Run l2cap tests with a test filter, logs, and log level filter:
 
       .. code-block:: console
 
-         bazelisk test //pw_bluetooth_sapphire/host/l2cap:l2cap_test \
-           --platforms=//pw_unit_test:googletest_platform \
-           --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest \
+         bazelisk test --config googletest //pw_bluetooth_sapphire/host/l2cap:l2cap_test \
            --test_arg=--gtest_filter="*InboundChannelFailure" \
            --test_output=all \
            --copt=-DPW_LOG_LEVEL_DEFAULT=PW_LOG_LEVEL_ERROR
