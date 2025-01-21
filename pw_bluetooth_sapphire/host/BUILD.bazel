@@ -14,7 +14,10 @@
 
 # Note, this file is not copybara'd from upstream Fuchsia.
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+    features = ["-layering_check"],
+)
 
 cc_library(
     name = "stack",

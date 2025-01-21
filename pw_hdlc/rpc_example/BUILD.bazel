@@ -16,6 +16,8 @@ load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 
+package(features = ["-layering_check"])
+
 pw_cc_binary(
     name = "rpc_example",
     srcs = [

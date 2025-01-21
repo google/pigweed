@@ -92,6 +92,17 @@ build --features=internal_strict_warnings
 coverage --experimental_generate_llvm_lcov
 coverage --combined_report=lcov
 
+# Enable layering check support.
+#
+# NOTE: this _does not_ by itself enable the layering check; that's done in
+# REPO.bazel. This flag only ensures the module maps for sysroot and toolchain
+# headers (needed for the layering check to not produce false positives) are
+# constructed. Module map construction is gated behind a flag because the
+# approach we take does not work in Bazel versions older than 8.0.0, so some
+# downstream projects using Pigweed's toolchains would be broken if this flag
+# was removed and always set to true in the toolchain definition.
+common --//pw_toolchain/host_clang:layering_check
+
 # Java related flags
 # ==================
 # Workaround for https://github.com/bazelbuild/rules_jvm_external/issues/445.
@@ -194,6 +205,9 @@ build:microbit --platforms=//targets/microbit
 common:googletest --//pw_unit_test:backend=//pw_unit_test:googletest
 common:googletest --//pw_unit_test:main=@com_google_googletest//:gtest_main
 common:googletest --platforms=//pw_unit_test:googletest_platform
+# TODO: https://pwbug.dev/390709187 - Re-enable layering check once the layering
+# issues in the googletest backend are fixed.
+common:googletest --features=-layering_check
 
 # Remote execution config definitions
 # ===================================

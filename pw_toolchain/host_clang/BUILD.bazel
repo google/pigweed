@@ -378,9 +378,6 @@ cc_toolchain(
     }) + select({
         ":fuzztest_enabled": [":fuzztest_feature"],
         "//conditions:default": [],
-    }) + select({
-        ":layering_check_enabled": [":layering_check_feature"],
-        "//conditions:default": [],
     }),
     known_features = [
         "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",

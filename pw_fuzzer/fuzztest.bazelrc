@@ -24,6 +24,9 @@ build:fuzztest \
     --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
 build:fuzztest \
     --@pigweed//pw_unit_test:main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
+# TODO: https://pwbug.dev/390709187 - Re-enable layering check once the layering
+# issues in the googletest backend are fixed.
+build:fuzztest --features=-layering_check
 
 # For fuzzing, we want to disregard any test strategy options and execute each
 # test locally and one at a time. We also want to display as much information as

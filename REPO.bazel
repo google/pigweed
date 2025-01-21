@@ -1,4 +1,4 @@
-# Copyright 2023 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -11,27 +11,16 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Repository-wide configuration for Pigweed.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+See https://bazel.build/external/overview#repo.bazel. This file is used in
+particular to enable toolchain features that we want to enable for all Pigweed
+targets, but not for any external dependencies also compiled with Bazel.
+"""
 
-package(features = ["-layering_check"])
-
-licenses(["notice"])
-
-pw_cc_binary(
-    name = "post_1_task",
-    srcs = ["post_1_task.cc"],
-    deps = [
-        "//pw_async_basic:dispatcher",
-        "//pw_bloat:bloat_this_binary",
-    ],
-)
-
-pw_cc_binary(
-    name = "task",
-    srcs = ["task.cc"],
-    deps = [
-        "//pw_async:task",
-        "//pw_bloat:bloat_this_binary",
-    ],
+repo(
+    # Any C++ toolchain features enabled here will be enabled when compiling
+    # Pigweed, but not when compiling any dependencies hosted in external
+    # repositories.
+    features = ["layering_check"],
 )

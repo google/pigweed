@@ -16,7 +16,10 @@ load("@rules_platform//platform_data:defs.bzl", "platform_data")
 load("@rules_python//python:defs.bzl", "py_library")
 load("//pw_build:python.bzl", "pw_py_binary")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+    features = ["-layering_check"],
+)
 
 pw_py_binary(
     name = "flash",

@@ -22,6 +22,8 @@ load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
 
+package(features = ["-layering_check"])
+
 pw_cc_binary(
     name = "server",
     srcs = ["server.cc"],

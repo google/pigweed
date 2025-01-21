@@ -30,7 +30,10 @@ load("//targets/host_device_simulator:transition.bzl", "host_device_simulator_bi
 load("//targets/rp2040:flash.bzl", "flash_rp2040", "flash_rp2350")
 load("//targets/rp2040:transition.bzl", "rp2040_binary", "rp2350_binary")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+    features = ["-layering_check"],
+)
 
 licenses(["notice"])
 

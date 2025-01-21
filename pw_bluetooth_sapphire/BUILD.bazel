@@ -16,7 +16,10 @@ load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
-package(default_visibility = ["//pw_bluetooth_sapphire:__subpackages__"])
+package(
+    default_visibility = ["//pw_bluetooth_sapphire:__subpackages__"],
+    features = ["-layering_check"],
+)
 
 cc_library(
     name = "config",
