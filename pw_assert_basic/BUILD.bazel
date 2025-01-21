@@ -69,6 +69,7 @@ cc_library(
         ":handler",
         ":pw_assert_basic",
         "//pw_assert:check.facade",
+        "//pw_assert:config",
         "//pw_preprocessor",
     ],
     # Other libraries may not always depend on this library, even if it is
@@ -82,6 +83,7 @@ cc_library(
         "basic_handler.cc",
     ],
     implementation_deps = [
+        "//pw_assert:config",
         "//pw_preprocessor",
         "//pw_string:builder",
         "//pw_sys_io",

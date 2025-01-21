@@ -197,6 +197,7 @@ cc_library(
         ":constexpr_tag",
         ":raw_storage",
         "//pw_assert",
+        "//pw_preprocessor",
         "//pw_varint",
     ],
 )
@@ -289,6 +290,7 @@ pw_cc_test(
         ":filtered_view",
         ":flat_map",
         ":intrusive_list",
+        "//pw_span",
     ],
 )
 
@@ -298,7 +300,7 @@ pw_cc_test(
         "flat_map_test.cc",
     ],
     deps = [
-        ":pw_containers",
+        ":flat_map",
         "//pw_polyfill",
         "//pw_unit_test",
     ],
@@ -314,6 +316,7 @@ pw_cc_test(
         ":inline_var_len_entry_queue",
         "//pw_assert",
         "//pw_bytes",
+        "//pw_varint",
     ],
 )
 
@@ -323,8 +326,8 @@ pw_cc_test(
         "vector_test.cc",
     ],
     deps = [
-        ":pw_containers",
         ":test_helpers",
+        ":vector",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_unit_test",
     ],
@@ -389,6 +392,7 @@ pw_cc_test(
         ":intrusive_forward_list",
         ":vector",
         "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_preprocessor",
         "//pw_unit_test",
     ],
 )
@@ -400,6 +404,7 @@ pw_cc_test(
         ":intrusive_list",
         ":vector",
         "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_preprocessor",
         "//pw_unit_test",
     ],
 )

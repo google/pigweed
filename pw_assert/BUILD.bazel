@@ -214,6 +214,7 @@ pw_cc_test(
         "pw_assert_test/fake_backend.h",
     ],
     deps = [
+        ":config",
         ":facade",
         "//pw_assert",
         "//pw_compilation_testing:negative_compilation_testing",
@@ -221,7 +222,7 @@ pw_cc_test(
         "//pw_result",
         "//pw_span",
         "//pw_status",
-        "//pw_string",
+        "//pw_string:builder",
         "//pw_unit_test",
     ],
 )
