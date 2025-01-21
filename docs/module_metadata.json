@@ -483,6 +483,10 @@
   "pw_interrupt": {
     "status": "unstable"
   },
+  "pw_interrupt_cortex_a": {
+    "status": "experimental",
+    "languages": []
+  },
   "pw_interrupt_cortex_m": {
     "status": "unstable"
   },
