@@ -45,7 +45,7 @@ produces cleaner dependency graphs and is recommended for all users.
 
 How to enable layering check?
 -----------------------------
-#. Add ``common --//pw_toolchain/host_clang:layering_check`` to your
+#. Add ``common --@pigweed//pw_toolchain/host_clang:layering_check`` to your
    ``.bazelrc``. This does not by itself enable the check, it only instructs
    Bazel to include support for it in the toolchain configuration. (This flag
    will become true by default and be removed once all known Pigweed users are
@@ -103,6 +103,9 @@ Limitations
    included headers. For this, use `misc-include-cleaner
    <https://clang.llvm.org/extra/clang-tidy/checks/misc/include-cleaner.html>`__
    in clang-tidy.  See also :bug:`329671260`.
+#. A pattern we use for swapping header implementations using a label flag
+   leads to layering check violations. Figuring out an alternative pattern is
+   tracked at :bug:`391394448`.
 
 .. _module-pw_toolchain-bazel-compiler-specific-logic:
 
