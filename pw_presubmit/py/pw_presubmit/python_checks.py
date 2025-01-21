@@ -169,10 +169,12 @@ def vendor_python_wheels(ctx: PresubmitContext) -> None:
     """Download Python packages locally for the current platform."""
     build.gn_gen(ctx)
     build.ninja(ctx, 'pip_vendor_wheels')
+    # Use the upstream-only build venv.
+    build_venv_target_name = 'upstream_pigweed_build_venv'
 
     download_log = (
         ctx.output_dir
-        / 'python/gen/pw_env_setup/pigweed_build_venv.vendor_wheels'
+        / f'python/gen/pw_env_setup/{build_venv_target_name}.vendor_wheels'
         / 'pip_download_log.txt'
     )
     _LOG.info('Python package download log: %s', download_log)
@@ -180,7 +182,7 @@ def vendor_python_wheels(ctx: PresubmitContext) -> None:
     wheel_output = (
         ctx.output_dir
         / 'python/gen/pw_env_setup'
-        / 'pigweed_build_venv.vendor_wheels/wheels/'
+        / f'{build_venv_target_name}.vendor_wheels/wheels/'
     )
     wheel_destination = ctx.output_dir / 'python_wheels'
     shutil.rmtree(wheel_destination, ignore_errors=True)
@@ -434,10 +436,30 @@ def _generate_constraint_with_hashes(
     output_text = output_text.replace(str(ctx.root), '')
     output_text = output_text.replace(str(output_file.parent), '')
 
+    # Regex for pip requirement comment. Matches:
+    #
+    # ^    # via -r some/prefix/path/compiled_requirements.txt$
+    # ^    # -r some/prefix/path/compiled_requirements.txt$
+    # ^    #    -r some/prefix/path/compiled_requirements.txt$
+    #
+    dash_r_comment_regex = re.compile(
+        r'^(?P<comment>'
+        r' *# *'
+        r'(?:via)?'
+        r' *-r)'
+        r'.*compiled_requirements.txt'
+    )
+
     final_output_text = ''
     for line in output_text.splitlines(keepends=True):
         # Remove --find-links lines
         if line.startswith('--find-links'):
+            continue
+        # Cleanup path prefixes in comments for compiled_requirements.txt files.
+        if 'compiled_requirements.txt' in line:
+            final_output_text += dash_r_comment_regex.sub(
+                r'\g<comment> compiled_requirements.txt', line, count=1
+            )
             continue
         # Remove blank lines
         if line == '\n':
@@ -455,8 +477,14 @@ def _update_upstream_python_constraints(
     """Regenerate platform specific Python constraint files with hashes."""
     with TemporaryDirectory() as tmpdirname:
         out_dir = Path(tmpdirname)
+
+        # Generate constraint_hashes_{linux,darwin,windows}.list
+        # Use the default downstream build venv.
+        build_venv_target_name = 'pigweed_build_venv'
         build.gn_gen(
             ctx,
+            # Omit the upstream only requirements for downstream constraint
+            # hashes.
             pw_build_PIP_REQUIREMENTS=[],
             # Use the constraint file without hashes as the input. This is where
             # new packages are added by developers.
@@ -464,6 +492,9 @@ def _update_upstream_python_constraints(
                 '//pw_env_setup/py/pw_env_setup/virtualenv_setup/'
                 'constraint.list',
             ],
+            pw_build_PYTHON_BUILD_VENV=(
+                f'//pw_env_setup:{build_venv_target_name}'
+            ),
             # This should always be set to false when regenrating constraints.
             pw_build_PYTHON_PIP_INSTALL_REQUIRE_HASHES=False,
         )
@@ -483,14 +514,31 @@ def _update_upstream_python_constraints(
             ctx,
             input_file=(
                 ctx.output_dir
-                / 'python/gen/pw_env_setup/pigweed_build_venv'
+                / f'python/gen/pw_env_setup/{build_venv_target_name}'
                 / 'compiled_requirements.txt'
             ),
             output_file=constraint_hashes_tmp_out,
         )
 
+        # Generate upstream_requirements_{linux,darwin,windows}_lock.txt
+        # Use the upstream-only build venv.
+        build_venv_target_name = 'upstream_pigweed_build_venv'
         build.gn_gen(
             ctx,
+            # Include upstream only requirements.
+            pw_build_PIP_REQUIREMENTS=[
+                '//pw_env_setup/py/pw_env_setup/virtualenv_setup/'
+                'pigweed_upstream_requirements.txt'
+            ],
+            # Use the constraint file without hashes as the input. This is where
+            # new packages are added by developers.
+            pw_build_PIP_CONSTRAINTS=[
+                '//pw_env_setup/py/pw_env_setup/virtualenv_setup/'
+                'constraint.list',
+            ],
+            pw_build_PYTHON_BUILD_VENV=(
+                f'//pw_env_setup:{build_venv_target_name}'
+            ),
             # This should always be set to false when regenrating constraints.
             pw_build_PYTHON_PIP_INSTALL_REQUIRE_HASHES=False,
         )
@@ -511,7 +559,7 @@ def _update_upstream_python_constraints(
             ctx,
             input_file=(
                 ctx.output_dir
-                / 'python/gen/pw_env_setup/pigweed_build_venv'
+                / f'python/gen/pw_env_setup/{build_venv_target_name}'
                 / 'compiled_requirements.txt'
             ),
             output_file=upstream_requirements_lock_tmp_out,

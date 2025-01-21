@@ -110,9 +110,21 @@ pw_python_group("python") {
   ]
 }
 
+# Default Python build venv to use if pw_build_PYTHON_BUILD_VENV is
+# not specified.
 pw_python_venv("pigweed_build_venv") {
   path = "$root_build_dir/python-venv"
   source_packages = [ ":core_pigweed_python_packages" ]
+}
+
+# Upstream only Python build venv that includes the target support
+# package dependencies.
+pw_python_venv("upstream_pigweed_build_venv") {
+  path = "$root_build_dir/python-venv"
+  source_packages = [
+    ":core_pigweed_python_packages",
+    ":pigweed_target_support_packages",
+  ]
 }
 
 pw_python_group("target_support_packages") {
