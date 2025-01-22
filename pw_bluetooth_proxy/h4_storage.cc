@@ -37,7 +37,9 @@ std::optional<pw::span<uint8_t>> H4Storage::ReserveH4Buff() {
   for (const auto& [buff, occupied] : h4_buff_occupied_) {
     if (!occupied) {
       h4_buff_occupied_.at(buff) = true;
-      return {{buff, kH4BuffSize}};
+      pw::span<uint8_t> h4_buff = {buff, kH4BuffSize};
+      std::fill(h4_buff.begin(), h4_buff.end(), 0);
+      return h4_buff;
     }
   }
   return std::nullopt;
