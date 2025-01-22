@@ -13,9 +13,9 @@ to respect these guidelines.
 Good first issue
 ----------------
 We maintain a list of `good first issues for first-time contributors
-<https://pwbug.dev/issues/256050233/dependencies>`__. If you would like to
-contribute to Pigweed but are not sure where to start, take a look at one of
-these!
+<https://issues.pigweed.dev/issues?q=id:256050233%20OR%20parentid:256050233%2B>`__.
+If you would like to contribute to Pigweed but are not sure where to start, take
+a look at one of these!
 
 Get started
 -----------
