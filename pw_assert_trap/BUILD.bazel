@@ -26,33 +26,6 @@ cc_library(
     strip_include_prefix = "public",
 )
 
-# Note: to avoid circular dependencies, this target only includes the headers
-# for pw_assert_trap. The source file and its dependencies are in the separate
-# ":impl" target.
-#
-# If you point //pw_assert:check_backend and //pw_assert:assert_backend to
-# //pw_assert_trap, then //pw_assert:check_backend_impl and
-# //pw_assert:assert_backend_impl should point to //pw_assert_trap:impl.
-cc_library(
-    name = "pw_assert_trap",
-    hdrs = [
-        "assert_public_overrides/pw_assert_backend/assert_backend.h",
-        "check_public_overrides/pw_assert_backend/check_backend.h",
-        "public/pw_assert_trap/assert_trap.h",
-        "public/pw_assert_trap/check_trap.h",
-    ],
-    includes = [
-        "assert_public_overrides",
-        "check_public_overrides",
-        "public",
-    ],
-    deps = [
-        ":handler",
-        "//pw_assert:check.facade",
-        "//pw_preprocessor",
-    ],
-)
-
 cc_library(
     name = "handler",
     hdrs = [
@@ -97,8 +70,20 @@ cc_library(
     name = "assert_backend",
     hdrs = [
         "assert_public_overrides/pw_assert_backend/assert_backend.h",
-        "public/pw_assert_trap/assert_tokenized.h",
     ],
+    strip_include_prefix = "assert_public_overrides",
+    deps = [
+        ":assert_backend_private",
+    ],
+)
+
+cc_library(
+    name = "assert_backend_private",
+    hdrs = [
+        "public/pw_assert_trap/assert_trap.h",
+    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
         ":handler",
     ],
@@ -108,8 +93,20 @@ cc_library(
     name = "check_backend",
     hdrs = [
         "check_public_overrides/pw_assert_backend/check_backend.h",
-        "public/pw_assert_trap/check_tokenized.h",
     ],
+    strip_include_prefix = "check_public_overrides",
+    deps = [
+        ":check_backend_private",
+    ],
+)
+
+cc_library(
+    name = "check_backend_private",
+    hdrs = [
+        "public/pw_assert_trap/check_trap.h",
+    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
         ":handler",
     ],
@@ -144,12 +141,15 @@ pw_cc_test(
     srcs = [
         "trap_handler_test.cc",
     ],
-    # TODO: https://pwbug.dev/351889230 - this fails when trap is the used
-    # as the system assert backend, so disable and only run manually.
-    tags = ["manual"],
+    # TODO: https://pwbug.dev/351889230 - this test will fail to build on any
+    # platform that sets the pw_assert backend to //pw_assert_trap. To be safe,
+    # disable it for any MCU platform. But run it on the host, where the assert
+    # backend is pw_assert_basic.
+    target_compatible_with = incompatible_with_mcu(),
     deps = [
+        ":check_backend_private",
         ":impl_test",
-        ":pw_assert_trap",
+        ":message",
     ],
 )
 
