@@ -2446,6 +2446,81 @@ TEST_F(BasicL2capChannelTest, BasicForward) {
   EXPECT_EQ(capture.to_host_called, 1);
 }
 
+TEST_F(BasicL2capChannelTest, ReadPacketToController) {
+  struct {
+    int sends_called = 0;
+    int from_host_called = 0;
+    std::array<uint8_t, 3> expected_payload = {0xAB, 0xCD, 0xEF};
+    std::array<uint8_t,
+               emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
+                   emboss::BasicL2capHeader::IntrinsicSizeInBytes() + 3>
+        hci_arr{};
+  } capture;
+
+  std::array<uint8_t, sizeof(emboss::H4PacketType) + capture.hci_arr.size()>
+      h4_arr;
+  h4_arr[0] = cpp23::to_underlying(emboss::H4PacketType::ACL_DATA);
+  H4PacketWithH4 h4_packet{h4_arr};
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        ++capture.from_host_called;
+        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
+                               packet.GetHciSpan().end(),
+                               capture.hci_arr.begin(),
+                               capture.hci_arr.end()));
+      });
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+  uint16_t handle = 0x334;
+  uint16_t local_cid = 0x443;
+  uint16_t remote_cid = 0x123;
+  PW_TEST_ASSERT_OK_AND_ASSIGN(BasicL2capChannel channel,
+                               proxy.AcquireBasicL2capChannel(
+                                   /*connection_handle=*/handle,
+                                   /*local_cid=*/local_cid,
+                                   /*remote_cid=*/remote_cid,
+                                   /*transport=*/AclTransportType::kBrEdr,
+                                   /*payload_from_controller_fn=*/nullptr,
+                                   /*payload_from_host_fn=*/
+                                   [&capture](pw::span<uint8_t>) {
+                                     ++capture.sends_called;
+                                     return false;
+                                   },
+                                   /*event_fn=*/nullptr));
+
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(capture.hci_arr);
+  acl->header().handle().Write(handle);
+  acl->data_total_length().Write(
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
+      capture.expected_payload.size());
+
+  emboss::BasicL2capHeaderWriter l2cap_header =
+      emboss::MakeBasicL2capHeaderView(
+          acl->payload().BackingStorage().data(),
+          acl->payload().BackingStorage().SizeInBytes());
+  l2cap_header.pdu_length().Write(capture.expected_payload.size());
+  l2cap_header.channel_id().Write(remote_cid);
+
+  std::copy(capture.expected_payload.begin(),
+            capture.expected_payload.end(),
+            capture.hci_arr.begin() +
+                emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
+                emboss::BasicL2capHeader::IntrinsicSizeInBytes());
+
+  std::copy(capture.hci_arr.begin(), capture.hci_arr.end(), h4_arr.begin() + 1);
+
+  proxy.HandleH4HciFromHost(std::move(h4_packet));
+
+  EXPECT_EQ(capture.from_host_called, 1);
+  EXPECT_EQ(capture.sends_called, 1);
+}
+
 // ########## L2capSignalingTest
 
 class L2capSignalingTest : public ProxyHostTest {};

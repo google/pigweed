@@ -294,6 +294,7 @@ RfcommChannel::RfcommChannel(
           /*local_cid=*/rx_config.cid,
           /*remote_cid=*/tx_config.cid,
           /*payload_from_controller_fn=*/nullptr,
+          /*payload_from_host_fn=*/nullptr,
           /*event_fn=*/std::move(event_fn)),
       rx_config_(rx_config),
       tx_config_(tx_config),

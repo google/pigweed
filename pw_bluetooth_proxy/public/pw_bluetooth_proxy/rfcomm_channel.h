@@ -70,7 +70,8 @@ class RfcommChannel final : public L2capChannel {
   ///
   /// @param[in] channel_number    RFCOMM channel number to use.
   ///
-  /// @param[in] receive_fn        Read callback to be invoked on Rx frames.
+  /// @param[in] payload_from_controller_fn        Read callback to be invoked
+  /// on Rx frames.
   ///
   /// @returns @rst
   ///
