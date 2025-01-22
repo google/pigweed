@@ -43,7 +43,6 @@ cc_library(
         "public/pw_system/config.h",
     ],
     strip_include_prefix = "public",
-    visibility = ["//visibility:private"],
     deps = [":config_override"],
 )
 
