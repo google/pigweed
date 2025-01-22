@@ -91,9 +91,7 @@ def bazel(
     ctx: PresubmitContext,
     cmd: str,
     *args: str,
-    # TODO: https://pwbug.dev/371043540 - Change the default to 'minimal' once
-    # all downstream projects that need different behavior are updated.
-    remote_download_outputs: str = 'toplevel',
+    remote_download_outputs: str = 'minimal',
     stdout: io.TextIOWrapper | None = None,
     strict_module_lockfile: bool = False,
     use_remote_cache: bool = False,
