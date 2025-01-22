@@ -105,7 +105,6 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":config",
-        ":rpc_server",
         "//pw_log_rpc:log_service",
         "//pw_log_rpc:rpc_log_drain",
         "//pw_log_rpc:rpc_log_drain_thread",
