@@ -1501,8 +1501,6 @@ SOURCE_FILES_FILTER_CMAKE_EXCLUDE = FileFilter(
 INCLUDE_CHECK_EXCEPTIONS = (
     # keep-sorted: start
     "//pw_assert_log:check_and_assert_backend",
-    "//pw_async_basic:fake_dispatcher",
-    "//pw_async_basic:task",
     "//pw_async_fuchsia:dispatcher",
     "//pw_async_fuchsia:fake_dispatcher",
     "//pw_async_fuchsia:task",

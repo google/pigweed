@@ -18,7 +18,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -27,15 +26,24 @@ licenses(["notice"])
 cc_library(
     name = "task",
     hdrs = [
-        "public/pw_async_basic/task.h",
         "public_overrides/pw_async_backend/task.h",
     ],
-    includes = [
-        "public",
-        "public_overrides",
-    ],
+    strip_include_prefix = "public_overrides",
     deps = [
-        "//pw_async:task.facade",
+        ":task_private",
+    ],
+)
+
+cc_library(
+    name = "task_private",
+    hdrs = [
+        "public/pw_async_basic/task.h",
+    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pw_async:types",
+        "//pw_chrono:system_clock",
         "//pw_containers:intrusive_list",
     ],
 )
@@ -46,17 +54,27 @@ cc_library(
     testonly = True,
     srcs = ["fake_dispatcher.cc"],
     hdrs = [
-        "public/pw_async_basic/fake_dispatcher.h",
         "public_overrides/pw_async_backend/fake_dispatcher.h",
     ],
-    includes = [
-        "public",
-        "public_override",
-    ],
+    strip_include_prefix = "public_overrides",
     deps = [
+        ":fake_dispatcher_private",
         "//pw_async:fake_dispatcher.facade",
         "//pw_async:task",
         "//pw_log",
+    ],
+)
+
+cc_library(
+    name = "fake_dispatcher_private",
+    testonly = True,
+    hdrs = [
+        "public/pw_async_basic/fake_dispatcher.h",
+    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pw_async:fake_dispatcher.facade",
     ],
 )
 
@@ -74,8 +92,10 @@ cc_library(
     deps = [
         "//pw_async:dispatcher",
         "//pw_async:task",
+        "//pw_chrono:system_clock",
         "//pw_containers:intrusive_list",
         "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
         "//pw_sync:timed_thread_notification",
         "//pw_thread:thread_core",
     ],
@@ -88,9 +108,12 @@ pw_cc_test(
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":dispatcher",
+        "//pw_chrono:system_clock",
         "//pw_log",
         "//pw_span",
+        "//pw_sync:thread_notification",
         "//pw_thread:thread",
+        "//pw_thread_stl:thread",
     ],
 )
 
