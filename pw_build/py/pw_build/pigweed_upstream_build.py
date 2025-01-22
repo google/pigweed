@@ -46,12 +46,6 @@ from pw_build.project_builder_presubmit_runner import (
 
 _LOG = logging.getLogger('pw_build')
 
-_PW_ENV = pw_cli.env.pigweed_environment()
-_REPO_ROOT = pw_cli.env.project_root()
-_PACKAGE_ROOT = _PW_ENV.PW_PACKAGE_ROOT
-if not _PACKAGE_ROOT:
-    _PACKAGE_ROOT = _REPO_ROOT / 'environment/packages'
-
 
 def gn_recipe() -> BuildRecipe:
     """Return the default_gn recipe."""
@@ -111,10 +105,10 @@ def bazel_recipe() -> BuildRecipe:
     )
 
 
-def cmake_recipe() -> BuildRecipe:
+def cmake_recipe(repo_root: Path, package_root: Path) -> BuildRecipe:
     """Construct the default_cmake recipe."""
     toolchain_path = (
-        _REPO_ROOT / 'pw_toolchain' / 'host_clang' / 'toolchain.cmake'
+        repo_root / 'pw_toolchain' / 'host_clang' / 'toolchain.cmake'
     )
 
     cmake_generate_command = [
@@ -123,7 +117,7 @@ def cmake_recipe() -> BuildRecipe:
         '--debug-output',
         '-DCMAKE_MESSAGE_LOG_LEVEL=WARNING',
         '-S',
-        str(_REPO_ROOT),
+        str(repo_root),
         '-B',
         # NOTE: Not an f-string. BuildRecipe will replace with the out dir.
         '{build_dir}',
@@ -131,10 +125,10 @@ def cmake_recipe() -> BuildRecipe:
         'Ninja',
         f'-DCMAKE_TOOLCHAIN_FILE={toolchain_path}',
         '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
-        f'-Ddir_pw_third_party_nanopb={_PACKAGE_ROOT / "nanopb"}',
+        f'-Ddir_pw_third_party_nanopb={package_root / "nanopb"}',
         '-Dpw_third_party_nanopb_ADD_SUBDIRECTORY=ON',
-        f'-Ddir_pw_third_party_emboss={_PACKAGE_ROOT / "emboss"}',
-        f'-Ddir_pw_third_party_boringssl={_PACKAGE_ROOT / "boringssl"}',
+        f'-Ddir_pw_third_party_emboss={package_root / "emboss"}',
+        f'-Ddir_pw_third_party_boringssl={package_root / "boringssl"}',
     ]
 
     if shutil.which('ccache'):
@@ -165,6 +159,15 @@ def cmake_recipe() -> BuildRecipe:
     )
 
 
+def _get_repo_and_package_root() -> tuple[Path, Path]:
+    pw_env = pw_cli.env.pigweed_environment()
+    repo_root = pw_cli.env.project_root()
+    package_root = pw_env.PW_PACKAGE_ROOT
+    if not package_root:
+        package_root = repo_root / 'environment/packages'
+    return (repo_root, package_root)
+
+
 def pigweed_upstream_main() -> int:
     """Entry point for Pigweed upstream ``pw build`` command.
 
@@ -186,13 +189,14 @@ def pigweed_upstream_main() -> int:
        pw build --step gn_combined_build_check --step gn_python_*
        pw build -C out/gn --watch
     """
+    repo_root, package_root = _get_repo_and_package_root()
 
     return main(
         presubmit_programs=pw_presubmit.pigweed_presubmit.PROGRAMS,
         build_recipes=[
             gn_recipe(),
             bazel_recipe(),
-            cmake_recipe(),
+            cmake_recipe(repo_root, package_root),
         ],
         default_root_logfile=Path('out/build.txt'),
     )
@@ -204,7 +208,15 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         [
             gn_recipe(),
             bazel_recipe(),
-            cmake_recipe(),
+            # Empty cmake recipe for argparse validation by display_name.
+            # This is needed because project_root can only be determined with
+            # bazel run and the sphinx docs build runs this function for
+            # argparse documentation.
+            BuildRecipe(
+                build_dir=Path('out/cmake'),
+                title='default_cmake',
+                steps=[],
+            ),
         ],
     )
 
