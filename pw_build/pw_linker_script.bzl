@@ -23,7 +23,9 @@ def _preprocess_linker_script_impl(ctx):
         ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
+        unsupported_features = ctx.disabled_features + [
+            "module_maps",
+        ],
     )
     cxx_compiler_path = cc_common.get_tool_for_action(
         feature_configuration = feature_configuration,
