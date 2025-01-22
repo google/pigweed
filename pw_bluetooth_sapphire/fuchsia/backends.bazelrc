@@ -20,9 +20,9 @@
 common --@rules_fuchsia//fuchsia/flags:fuchsia_targets_enabled=false
 common:fuchsia --@rules_fuchsia//fuchsia/flags:fuchsia_targets_enabled
 
-common:fuchsia --@pigweed//pw_assert:backend=@pigweed//pw_assert_fuchsia
+common:fuchsia --@pigweed//pw_assert:assert_backend=@pigweed//pw_assert_fuchsia:assert_backend
 common:fuchsia --@pigweed//pw_assert:assert_backend_impl=@pigweed//pw_build:empty_cc_library
-common:fuchsia --@pigweed//pw_assert:check_backend=@pigweed//pw_assert_fuchsia
+common:fuchsia --@pigweed//pw_assert:check_backend=@pigweed//pw_assert_fuchsia:check_backend
 common:fuchsia --@pigweed//pw_assert:check_backend_impl=@pigweed//pw_build:empty_cc_library
 common:fuchsia --@pigweed//pw_chrono:system_clock_backend=@pigweed//pw_chrono_stl:system_clock
 common:fuchsia --@pigweed//pw_log:backend=@pigweed//pw_log_fuchsia

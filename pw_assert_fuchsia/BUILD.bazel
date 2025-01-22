@@ -20,25 +20,50 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 cc_library(
-    name = "pw_assert_fuchsia",
+    name = "assert_backend",
     srcs = [
         "assert.cc",
     ],
     hdrs = [
         "assert_public_overrides/pw_assert_backend/assert_backend.h",
-        "check_public_overrides/pw_assert_backend/check_backend.h",
-        "public/pw_assert_fuchsia/assert_backend.h",
-        "public/pw_assert_fuchsia/check_backend.h",
     ],
-    includes = [
-        "assert_public_overrides",
-        "check_public_overrides",
-        "public",
-    ],
+    strip_include_prefix = "assert_public_overrides",
     target_compatible_with = ["@platforms//os:fuchsia"],
     deps = [
-        "//pw_assert:facade",
+        ":assert_backend_private",
     ],
+)
+
+cc_library(
+    name = "assert_backend_private",
+    hdrs = [
+        "public/pw_assert_fuchsia/assert_backend.h",
+    ],
+    strip_include_prefix = "public",
+    target_compatible_with = ["@platforms//os:fuchsia"],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "check_backend",
+    hdrs = [
+        "check_public_overrides/pw_assert_backend/check_backend.h",
+    ],
+    strip_include_prefix = "check_public_overrides",
+    target_compatible_with = ["@platforms//os:fuchsia"],
+    deps = [
+        ":check_backend_private",
+    ],
+)
+
+cc_library(
+    name = "check_backend_private",
+    hdrs = [
+        "public/pw_assert_fuchsia/check_backend.h",
+    ],
+    strip_include_prefix = "public",
+    target_compatible_with = ["@platforms//os:fuchsia"],
+    visibility = ["//visibility:private"],
 )
 
 sphinx_docs_library(
