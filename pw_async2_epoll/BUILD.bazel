@@ -17,7 +17,6 @@ load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -28,13 +27,15 @@ cc_library(
     hdrs = [
         "public_overrides/pw_async2/dispatcher_native.h",
     ],
-    includes = ["public_overrides"],
+    strip_include_prefix = "public_overrides",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//pw_assert",
         "//pw_async2:dispatcher_base",
         "//pw_async2:poll",
         "//pw_log",
+        "//pw_preprocessor",
+        "//pw_status",
     ],
 )
 
