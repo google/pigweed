@@ -17,38 +17,9 @@ load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
-
-# Note: to avoid circular dependencies, this target only includes the headers
-# for pw_assert_tokenized. The source file and its dependencies are in the separate
-# ":impl" target.
-#
-# If you point the //pw_assert:backend to //pw_assert_tokenized, then
-# //pw_assert:backend_impl should point to //pw_assert_tokenized:impl.
-cc_library(
-    name = "pw_assert_tokenized",
-    hdrs = [
-        "assert_public_overrides/pw_assert_backend/assert_backend.h",
-        "check_public_overrides/pw_assert_backend/check_backend.h",
-        "public/pw_assert_tokenized/assert_tokenized.h",
-        "public/pw_assert_tokenized/check_tokenized.h",
-    ],
-    includes = [
-        "assert_public_overrides",
-        "check_public_overrides",
-        "public",
-    ],
-    deps = [
-        ":handler",
-        "//pw_assert:check.facade",
-        "//pw_log_tokenized",
-        "//pw_preprocessor",
-        "//pw_tokenizer",
-    ],
-)
 
 cc_library(
     name = "handler",
@@ -56,6 +27,7 @@ cc_library(
         "public/pw_assert_tokenized/handler.h",
     ],
     strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_preprocessor",
     ],
@@ -68,10 +40,13 @@ cc_library(
     ],
     deps = [
         ":handler",
+        "//pw_assert:config",
         "//pw_base64",
         "//pw_bytes",
         "//pw_log",
         "//pw_log_tokenized",
+        "//pw_log_tokenized:handler",
+        "//pw_log_tokenized:headers",
         "//pw_span",
     ],
     alwayslink = 1,
@@ -81,8 +56,20 @@ cc_library(
     name = "assert_backend",
     hdrs = [
         "assert_public_overrides/pw_assert_backend/assert_backend.h",
+    ],
+    strip_include_prefix = "assert_public_overrides",
+    deps = [
+        ":assert_backend_private",
+    ],
+)
+
+cc_library(
+    name = "assert_backend_private",
+    hdrs = [
         "public/pw_assert_tokenized/assert_tokenized.h",
     ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
         ":handler",
         "//pw_tokenizer",
@@ -93,8 +80,17 @@ cc_library(
     name = "check_backend",
     hdrs = [
         "check_public_overrides/pw_assert_backend/check_backend.h",
+    ],
+    strip_include_prefix = "check_public_overrides",
+    deps = [":check_backend_private"],
+)
+
+cc_library(
+    name = "check_backend_private",
+    hdrs = [
         "public/pw_assert_tokenized/check_tokenized.h",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         ":handler",
         "//pw_log_tokenized",
