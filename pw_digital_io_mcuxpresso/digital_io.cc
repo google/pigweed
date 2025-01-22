@@ -73,6 +73,21 @@ bool GPIO_PinGetInterruptEnable(GPIO_Type* base,
   return ((GPIO_PortGetInterruptEnable(base, port, interrupt) >> pin) & 1);
 }
 
+gpio_pin_enable_polarity_t GPIO_PinGetInterruptPolarity(GPIO_Type* base,
+                                                        uint32_t port,
+                                                        uint32_t pin) {
+  return static_cast<gpio_pin_enable_polarity_t>((base->INTPOL[port] >> pin) &
+                                                 1);
+}
+
+void GPIO_PinSetInterruptPolarity(GPIO_Type* base,
+                                  uint32_t port,
+                                  uint32_t pin,
+                                  gpio_pin_enable_polarity_t polarity) {
+  base->INTPOL[port] = (base->INTPOL[port] & ~(1UL << pin)) |
+                       (static_cast<uint32_t>(polarity) << pin);
+}
+
 }  // namespace
 
 McuxpressoDigitalOut::McuxpressoDigitalOut(GPIO_Type* base,
@@ -248,27 +263,8 @@ pw::Status McuxpressoDigitalInOutInterrupt::DoSetInterruptHandler(
   }
 
   trigger_ = trigger;
-  gpio_pin_enable_polarity_t polarity;
-
-  switch (trigger_) {
-    case InterruptTrigger::kActivatingEdge:
-      polarity = kGPIO_PinIntEnableHighOrRise;
-      break;
-    case InterruptTrigger::kDeactivatingEdge:
-      polarity = kGPIO_PinIntEnableLowOrFall;
-      break;
-    default:
-      return pw::Status::InvalidArgument();
-  }
-
-  gpio_interrupt_config_t config = {
-      .mode = kGPIO_PinIntEnableEdge,
-      .polarity = static_cast<uint8_t>(polarity),
-  };
 
   std::lock_guard lock(port_interrupts_lock);
-  GPIO_SetPinInterruptConfig(base_, port_, pin_, &config);
-
   interrupt_handler_ = std::move(handler);
 
   if (unlisted()) {
@@ -289,6 +285,8 @@ pw::Status McuxpressoDigitalInOutInterrupt::DoEnableInterruptHandler(
     if (interrupt_handler_ == nullptr) {
       return pw::Status::FailedPrecondition();
     }
+
+    ConfigureInterrupt();
     GPIO_PortEnableInterrupts(base_, port_, kGpioInterruptBankIndex, mask);
     NVIC_EnableIRQ(GPIO_INTA_IRQn);
   } else {
@@ -296,6 +294,34 @@ pw::Status McuxpressoDigitalInOutInterrupt::DoEnableInterruptHandler(
   }
 
   return pw::OkStatus();
+}
+
+void McuxpressoDigitalInOutInterrupt::ConfigureInterrupt() const {
+  gpio_interrupt_config_t config{};
+  switch (trigger_) {
+    case InterruptTrigger::kActivatingEdge:
+      config.mode = kGPIO_PinIntEnableEdge;
+      config.polarity = kGPIO_PinIntEnableHighOrRise;
+      break;
+    case InterruptTrigger::kDeactivatingEdge:
+      config.mode = kGPIO_PinIntEnableEdge;
+      config.polarity = kGPIO_PinIntEnableLowOrFall;
+      break;
+    case InterruptTrigger::kBothEdges:
+      // Emulate both edges with a level-sensitive interrupt.
+      // Set the initial polarity of the interrupt to be the opposite of what
+      // the port currently reads (level high if the pin is low, and vice
+      // versa). Either this will capture the first edge,
+      // or if the line changes between when the pin is read and the interrupt
+      // is enabled, it'll fire immediately.
+      config.mode = kGPIO_PinIntEnableLevel;
+      const gpio_pin_enable_polarity_t polarity =
+          GPIO_PinRead(base_, port_, pin_) ? kGPIO_PinIntEnableLowOrFall
+                                           : kGPIO_PinIntEnableHighOrRise;
+      config.polarity = static_cast<uint8_t>(polarity);
+      break;
+  }
+  GPIO_SetPinInterruptConfig(base_, port_, pin_, &config);
 }
 
 PW_EXTERN_C void GPIO_INTA_DriverIRQHandler() PW_NO_LOCK_SAFETY_ANALYSIS {
@@ -316,11 +342,40 @@ PW_EXTERN_C void GPIO_INTA_DriverIRQHandler() PW_NO_LOCK_SAFETY_ANALYSIS {
 
     // For each line registered on that port's interrupt list
     for (const auto& line : list) {
-      if ((port_int_flags & (1UL << line.pin_)) != 0) {
-        line.interrupt_handler_(line.trigger_ ==
-                                        InterruptTrigger::kActivatingEdge
+      const uint32_t pin_mask = 1UL << line.pin_;
+      if ((port_int_flags & pin_mask) != 0) {
+        const auto polarity =
+            GPIO_PinGetInterruptPolarity(base, port, line.pin_);
+        line.interrupt_handler_(polarity == kGPIO_PinIntEnableHighOrRise
                                     ? State::kActive
                                     : State::kInactive);
+
+        if (line.trigger_ == InterruptTrigger::kBothEdges) {
+          // Invert the polarity of the level interrupt before clearing the
+          // flag to catch the next edge.
+          //
+          // We invert here, rather than sampling the line and setting the
+          // polarity based on that. Inverting allows us to capture both edges
+          // of a short pulse. For example, if the polarity is high, and the
+          // line briefly goes high and then low again before the ISR runs.
+          // The first high level causes an interrupt to latch in INTSTAT,
+          // and then when the ISR runs, setting the polarity low would
+          // immediately latch it in INTSTAT again once we clear it.
+          // If we had instead sampled the GPIO as low, and then set the
+          // polarity high, we would have missed the falling edge of the pulse.
+          //
+          // It is critical to invert the polarity before clearing. If INTSTAT
+          // is cleared first, the bit would immediately latch again (assuming
+          // the line is still high). Then we'd invert the polarity to low,
+          // the ISR would fire again, inverting the polarity back to high,
+          // and the ISR would fire again, over and over.
+          gpio_pin_enable_polarity_t new_polarity =
+              (polarity == kGPIO_PinIntEnableHighOrRise)
+                  ? kGPIO_PinIntEnableLowOrFall
+                  : kGPIO_PinIntEnableHighOrRise;
+          GPIO_PinSetInterruptPolarity(base, port, line.pin_, new_polarity);
+        }
+
         GPIO_PinClearInterruptFlag(
             base, port, line.pin_, kGpioInterruptBankIndex);
       }

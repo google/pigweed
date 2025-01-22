@@ -97,9 +97,6 @@ class McuxpressoDigitalIn : public pw::digital_io::DigitalIn {
 ///     (`IOPCTL`) via the Input Buffer Enable (`IBENA`) bit.
 ///   * The input polarity is affected by the Input Invert Enable (`IIENA`) bit
 ///     on the corresponding IO Pad Controller (`IOPCTL`) register.
-/// * Only supports rising or falling edge detection: Calling
-///   `SetInterruptHandler()` with `InterruptTrigger::kBothEdges` will return
-///   `INVALID_ARGUMENT`.
 class McuxpressoDigitalInOutInterrupt
     : public pw::digital_io::DigitalInOutInterrupt,
       public pw::IntrusiveForwardList<McuxpressoDigitalInOutInterrupt>::Item {
@@ -132,6 +129,8 @@ class McuxpressoDigitalInOutInterrupt
       pw::digital_io::InterruptTrigger trigger,
       pw::digital_io::InterruptHandler&& handler) override;
   pw::Status DoEnableInterruptHandler(bool enable) override;
+
+  void ConfigureInterrupt() const;
 
   GPIO_Type* base_;
   const uint32_t port_;
