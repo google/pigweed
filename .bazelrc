@@ -124,7 +124,8 @@ common --@stm32f4xx_hal_driver//:cmsis_device=@cmsis_device_f4//:cmsis_device
 common --@stm32f4xx_hal_driver//:cmsis_init=@cmsis_device_f4//:default_cmsis_init
 common --@cmsis_device_f4//:cmsis_core=@cmsis_core
 
-common --//pw_env_setup/py:pigweed_json=//:pigweed.json
+common --//pw_env_setup/py:pigweed_json=//:pigweed_json
+common --experimental_propagate_custom_flag=//pw_env_setup/py:pigweed_json
 
 build --//pw_function:config_override=//pw_function:upstream_default_config
 

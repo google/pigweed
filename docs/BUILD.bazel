@@ -293,23 +293,20 @@ sphinx_build_binary(
     name = "sphinx_build",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        # TODO: https://pwbug.dev/390456900 - Enable after pigweed_json label flag fix.
-        # "//pw_build/py:pw_build",
+        "//pw_build/py:pw_build",
         "//pw_console/py:pw_console",
         "//pw_containers/py:inline_var_len_entry_queue",
         "//pw_docgen/py:pw_docgen",
-        # TODO: https://pwbug.dev/390456900 - Enable after pigweed_json label flag fix.
-        # "//pw_emu/py:pw_emu",
+        "//pw_emu/py:pw_emu",
         "//pw_hdlc/py:pw_hdlc",
         "//pw_ide/py:pw_ide",
         "//pw_log/py:pw_log",
-        # TODO: https://pwbug.dev/390456900 - Enable after pigweed_json label flag fix.
-        # "//pw_presubmit/py:pw_presubmit",
         "//pw_log_rpc/py:pw_log_rpc",
+        "//pw_presubmit/py:pw_presubmit",
         "//pw_protobuf_compiler/py:pw_protobuf_compiler",
         "//pw_system/py:device_sim",
-        "//pw_system/py:pw_system_lib",
         "//pw_system/py:pw_system_console",
+        "//pw_system/py:pw_system_lib",
         "//pw_tokenizer/py:pw_tokenizer",
         "//pw_transfer/py:pw_transfer",
         "//pw_unit_test/py:pw_unit_test",
