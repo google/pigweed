@@ -17,27 +17,27 @@ load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
 
 cc_library(
     name = "check_backend",
-    srcs = [
-        "assert_log.cc",
-    ],
     hdrs = [
         "check_backend_public_overrides/pw_assert_backend/check_backend.h",
+    ],
+    strip_include_prefix = "check_backend_public_overrides",
+    deps = [":check_backend_private"],
+)
+
+cc_library(
+    name = "check_backend_private",
+    hdrs = [
         "public/pw_assert_log/check_log.h",
     ],
-    includes = [
-        "check_backend_public_overrides",
-        "public",
-    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
-        "//pw_assert:assert_compatibility_backend",
-        "//pw_assert:check.facade",
         "//pw_log",
         "//pw_preprocessor",
     ],
@@ -45,20 +45,36 @@ cc_library(
 
 cc_library(
     name = "assert_backend",
+    srcs = [
+        "assert_log.cc",
+    ],
     hdrs = [
         "assert_backend_public_overrides/pw_assert_backend/assert_backend.h",
+    ],
+    strip_include_prefix = "assert_backend_public_overrides",
+    deps = [
+        ":assert_backend_private",
+        "//pw_assert:config",
+        "//pw_log",
+        "//pw_preprocessor",
+    ],
+)
+
+cc_library(
+    name = "assert_backend_private",
+    hdrs = [
         "public/pw_assert_log/assert_log.h",
     ],
-    includes = [
-        "assert_backend_public_overrides",
-        "public",
-    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_log",
         "//pw_preprocessor",
     ],
 )
 
+# TODO: https://pwbug.dev/378564135 - Remove this target once all users are
+# migrated to using :assert_backend and :check_backend.
 cc_library(
     name = "check_and_assert_backend",
     srcs = [
@@ -77,6 +93,7 @@ cc_library(
     ],
     deps = [
         "//pw_assert:check.facade",
+        "//pw_assert:config",
         "//pw_log",
         "//pw_preprocessor",
     ],

@@ -1500,9 +1500,7 @@ SOURCE_FILES_FILTER_CMAKE_EXCLUDE = FileFilter(
 # TODO: https://pwbug.dev/378564135 - Burn this list down.
 INCLUDE_CHECK_EXCEPTIONS = (
     # keep-sorted: start
-    "//pw_assert_log:assert_backend",
     "//pw_assert_log:check_and_assert_backend",
-    "//pw_assert_log:check_backend",
     "//pw_assert_tokenized:pw_assert_tokenized",
     "//pw_assert_trap:pw_assert_trap",
     "//pw_async2_basic:dispatcher",
