@@ -45,13 +45,6 @@ and GoogleTest integration cannot yet be used in bzlmod-based projects
              remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
          )
 
-         git_override(
-             module_name = "pw_toolchain",
-             commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
-             remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
-             strip_prefix = "pw_toolchain_bazel",
-         )
-
       You can find the latest tip-of-tree commit in the **History** tab in
       `CodeSearch <https://cs.opensource.google/pigweed/pigweed>`__.
 
@@ -65,11 +58,6 @@ and GoogleTest integration cannot yet be used in bzlmod-based projects
          local_path_override(
              module_name = "pigweed",
              path = "third_party/pigweed",
-         )
-
-         local_path_override(
-             module_name = "pw_toolchain",
-             path = "third_party/pigweed/pw_toolchain_bazel",
          )
 
       Pigweed is not yet published to the `Bazel Central Registry
@@ -88,13 +76,6 @@ and GoogleTest integration cannot yet be used in bzlmod-based projects
              name = "pigweed",
              commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
              remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
-         )
-
-         git_repository(
-             name = "pw_toolchain",
-             commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
-             remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
-             strip_prefix = "pw_toolchain_bazel",
          )
 
       You can find the latest tip-of-tree commit in the **History** tab in

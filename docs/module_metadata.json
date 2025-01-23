@@ -888,13 +888,6 @@
       "GN"
     ]
   },
-  "pw_toolchain_bazel": {
-    "tagline": "A modular toolkit for declaring C/C++ toolchains in Bazel",
-    "status": "unstable",
-    "languages": [
-      "Starlark"
-    ]
-  },
   "pw_trace": {
     "status": "stable"
   },

@@ -114,7 +114,6 @@ Modules
    pw_tls_client/docs
    pw_tokenizer/docs
    pw_toolchain/docs
-   pw_toolchain_bazel/docs
    pw_trace/docs
    pw_transfer/docs
    pw_uart/docs

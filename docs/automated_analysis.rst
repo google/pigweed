@@ -229,7 +229,7 @@ AddressSanitizer by building with the appropriate flag:
    bazelisk build --@pigweed//pw_toolchain/host_clang:asan //...
 
 If you're building your own toolchain, you can add
-``@pigweed//pw_toolchain_bazel/flag_sets:asan`` to it.
+``@pigweed//pw_toolchain/cc/args:asan`` to it.
 
 Fuzzers
 =======
