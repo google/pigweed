@@ -53,3 +53,63 @@ cc_library {
     host_supported: true,
     vendor_available: true,
 }
+
+genrule {
+    name: "pw_metric_raw_rpc_header",
+    defaults: ["pw_rpc_generate_raw_rpc_header_with_prefix"],
+    srcs: [
+        "pw_metric_proto/metric_service.pwpb_options",
+        "pw_metric_proto/metric_service.proto",
+    ],
+    out: ["pw_metric_proto/metric_service.raw_rpc.pb.h"],
+}
+
+genrule {
+    name: "pw_metric_pwpb_proto_header",
+    defaults: ["pw_rpc_generate_pwpb_proto_with_prefix"],
+    srcs: [
+        "pw_metric_proto/metric_service.pwpb_options",
+        "pw_metric_proto/metric_service.proto",
+    ],
+    out: ["pw_metric_proto/metric_service.pwpb.h"],
+}
+
+genrule {
+    name: "pw_metric_pwpb_rpc_header",
+    defaults: ["pw_rpc_generate_pwpb_rpc_header_with_prefix"],
+    srcs: [
+        "pw_metric_proto/metric_service.pwpb_options",
+        "pw_metric_proto/metric_service.proto",
+    ],
+    out: [
+        "pw_metric_proto/metric_service.rpc.pwpb.h",
+    ],
+}
+
+cc_library_headers {
+    name: "pw_metric_service_pwpb",
+    cpp_std: "c++20",
+    vendor_available: true,
+    host_supported: true,
+    generated_headers: [
+        "pw_metric_pwpb_proto_header",
+        "pw_metric_pwpb_rpc_header",
+    ],
+    export_generated_headers: [
+        "pw_metric_pwpb_proto_header",
+        "pw_metric_pwpb_rpc_header",
+    ],
+}
+
+cc_library_headers {
+    name: "pw_metric_service_raw",
+    cpp_std: "c++20",
+    vendor_available: true,
+    host_supported: true,
+    generated_headers: [
+        "pw_metric_raw_rpc_header",
+    ],
+    export_generated_headers: [
+        "pw_metric_raw_rpc_header",
+    ],
+}
