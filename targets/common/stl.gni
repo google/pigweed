@@ -43,6 +43,7 @@ pw_thread_stl_BACKENDS = {
   pw_thread_ID_BACKEND = "$dir_pw_thread_stl:id"
   pw_thread_SLEEP_BACKEND = "$dir_pw_thread_stl:sleep"
   pw_thread_THREAD_BACKEND = "$dir_pw_thread_stl:thread"
+  pw_thread_THREAD_CREATION_BACKEND = "$dir_pw_thread_stl:thread_creation"
   pw_thread_THREAD_ITERATION_BACKEND = "$dir_pw_thread_stl:thread_iteration"
   pw_thread_YIELD_BACKEND = "$dir_pw_thread_stl:yield"
   pw_thread_TEST_THREAD_CONTEXT_BACKEND =

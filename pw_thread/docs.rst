@@ -162,7 +162,18 @@ API reference
 .. doxygenclass:: pw::thread::Options
    :members:
 
+.. doxygentypedef:: pw::ThreadPriority
+
 .. doxygenclass:: pw::thread::internal::Priority
+   :members:
+
+.. doxygenclass:: pw::ThreadAttrs
+   :members:
+
+.. doxygenclass:: pw::ThreadContext
+   :members:
+
+.. doxygenclass:: pw::ThreadStack
    :members:
 
 Differences from ``std::thread``

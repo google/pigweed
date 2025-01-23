@@ -24,6 +24,14 @@ pw_add_backend_variable(pw_thread.sleep_BACKEND)
 # Backend for the pw_thread module's pw::Thread to create threads.
 pw_add_backend_variable(pw_thread.thread_BACKEND)
 
+# Backend for pw::Thread's generic thread creation functionality. Must
+# set to "$dir_pw_thread:generic_thread_creation_unsupported" if
+# unimplemented.
+pw_add_backend_variable(pw_thread.thread_creation_BACKEND
+  DEFAULT_BACKEND
+    pw_thread.generic_thread_creation_unsupported
+)
+
 # Backend for the pw_thread module's pw::thread::thread_iteration.
 pw_add_backend_variable(pw_thread.thread_iteration_BACKEND)
 

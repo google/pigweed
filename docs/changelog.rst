@@ -369,7 +369,7 @@ New features:
 
 .. 4f536c6c1137a7282e7f800aa636c79c5c629191
 
-* The new :cpp:class:`pw::ThreadPriority` class is a generic priority
+* The new :cpp:type:`pw::ThreadPriority` class is a generic priority
   class that can be used by any ``pw_thread`` backend. Commit: `Thread
   priority class <https://pwrev.dev/242214>`__.
 

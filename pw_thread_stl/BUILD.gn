@@ -64,8 +64,21 @@ pw_source_set("thread") {
     "thread_public_overrides/pw_thread_backend/thread_inline.h",
     "thread_public_overrides/pw_thread_backend/thread_native.h",
   ]
-  allow_circular_includes_from = [ "$dir_pw_thread:thread.facade" ]
-  deps = [ "$dir_pw_thread:thread.facade" ]
+}
+
+config("thread_creation_public_overrides") {
+  include_dirs = [ "thread_creation_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("thread_creation") {
+  public_configs = [ ":thread_creation_public_overrides" ]
+  public = [
+    "thread_creation_public_overrides/pw_thread_backend/context.h",
+    "thread_creation_public_overrides/pw_thread_backend/options.h",
+    "thread_creation_public_overrides/pw_thread_backend/priority.h",
+    "thread_creation_public_overrides/pw_thread_backend/stack.h",
+  ]
 }
 
 pw_build_assert("check_system_clock_backend") {

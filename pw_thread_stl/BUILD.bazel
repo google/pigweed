@@ -81,6 +81,17 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "thread_creation",
+    hdrs = [
+        "thread_creation_public_overrides/pw_thread_backend/context.h",
+        "thread_creation_public_overrides/pw_thread_backend/options.h",
+        "thread_creation_public_overrides/pw_thread_backend/priority.h",
+        "thread_creation_public_overrides/pw_thread_backend/stack.h",
+    ],
+    strip_include_prefix = "thread_creation_public_overrides",
+)
+
 # This target provides a stub backend for pw::this_thread::thread_iteration.
 # Iterating over child threads isn't supported by STL, so this only exists
 # for portability reasons.

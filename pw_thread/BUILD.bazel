@@ -12,10 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "host_backend_alias", "incompatible_with_mcu")
+load("//pw_build:compatibility.bzl", "HOST_PLATFORMS", "host_backend_alias", "incompatible_with_mcu")
 load("//pw_build:pw_facade.bzl", "pw_facade")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
@@ -126,15 +127,25 @@ pw_facade(
     name = "thread",
     srcs = ["public/pw_thread/config.h"],
     hdrs = [
+        "public/pw_thread/attrs.h",
+        "public/pw_thread/context.h",
         "public/pw_thread/detached_thread.h",
+        "public/pw_thread/native_options.h",
+        "public/pw_thread/priority.h",
+        "public/pw_thread/stack.h",
+        "public/pw_thread/stack_not_supported.h",
         "public/pw_thread/thread.h",
     ],
     backend = ":thread_backend",
     strip_include_prefix = "public",
     deps = [
+        ":generic_priority",
         ":id",
         ":options",
+        ":thread_creation_backend",
         "//pw_function",
+        "//pw_preprocessor",
+        "//pw_span",
     ],
 )
 
@@ -152,6 +163,19 @@ label_flag(
 host_backend_alias(
     name = "thread_unspecified_backend",
     backend = "//pw_thread_stl:thread",
+)
+
+label_flag(
+    name = "thread_creation_backend",
+    build_setting_default = ":thread_creation_default_backend",
+)
+
+alias(
+    name = "thread_creation_default_backend",
+    actual = selects.with_or({
+        HOST_PLATFORMS: "//pw_thread_stl:thread_creation",
+        "//conditions:default": ":generic_thread_creation_unsupported",
+    }),
 )
 
 cc_library(
@@ -185,6 +209,17 @@ cc_library(
         # TODO(amontanez): This should depend on FreeRTOS but our third parties
         # currently do not have Bazel support.
     ],
+)
+
+cc_library(
+    name = "generic_thread_creation_unsupported",
+    hdrs = [
+        "null_thread_creation_public_overrides/pw_thread_backend/context.h",
+        "null_thread_creation_public_overrides/pw_thread_backend/options.h",
+        "null_thread_creation_public_overrides/pw_thread_backend/priority.h",
+        "null_thread_creation_public_overrides/pw_thread_backend/stack.h",
+    ],
+    strip_include_prefix = "null_thread_creation_public_overrides",
 )
 
 pw_facade(
@@ -397,6 +432,31 @@ pw_cc_test(
         "//pw_unit_test",
         "//pw_unit_test:constexpr",
     ],
+)
+
+pw_cc_test(
+    name = "thread_creation_test",
+    srcs = ["thread_creation_test.cc"],
+    deps = [
+        ":thread",
+        "//pw_compilation_testing:negative_compilation_testing",
+    ],
+)
+
+pw_cc_test(
+    name = "attrs_test",
+    srcs = ["attrs_test.cc"],
+    deps = [
+        ":thread",
+        "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_unit_test:constexpr",
+    ],
+)
+
+pw_cc_test(
+    name = "stack_test",
+    srcs = ["stack_test.cc"],
+    deps = [":thread"],
 )
 
 pw_cc_test(

@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pigweed.gni")
+
 declare_args() {
   # Backend for the pw_thread module's pw::Thread::id.
   pw_thread_ID_BACKEND = ""
@@ -21,6 +23,12 @@ declare_args() {
 
   # Backend for the pw_thread module's pw::Thread to create threads.
   pw_thread_THREAD_BACKEND = ""
+
+  # Backend for pw::Thread's generic thread creation functionality. Must
+  # set to "$dir_pw_thread:generic_thread_creation_unsupported" if
+  # unimplemented.
+  pw_thread_THREAD_CREATION_BACKEND =
+      "$dir_pw_thread:generic_thread_creation_unsupported"
 
   # Backend for the pw_thread module's pw::thread::yield.
   pw_thread_YIELD_BACKEND = ""

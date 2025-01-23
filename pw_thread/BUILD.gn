@@ -59,16 +59,46 @@ pw_facade("sleep") {
 }
 
 pw_facade("thread") {
+  assert(pw_thread_THREAD_CREATION_BACKEND != "",
+         "pw_thread_THREAD_CREATION_BACKEND cannot be set to \"\". Set it to " +
+             "\"$dir_pw_thread:generic_thread_creation_unsupported\" if it " +
+             "not implemented")
+
   backend = pw_thread_THREAD_BACKEND
   public_configs = [ ":public_include_path" ]
   public = [
+    "public/pw_thread/attrs.h",
+    "public/pw_thread/context.h",
     "public/pw_thread/detached_thread.h",
+    "public/pw_thread/native_options.h",
+    "public/pw_thread/priority.h",
+    "public/pw_thread/stack.h",
+    "public/pw_thread/stack_not_supported.h",
     "public/pw_thread/thread.h",
   ]
   public_deps = [
+    ":generic_priority",
     ":id",
     ":options",
     dir_pw_function,
+    dir_pw_preprocessor,
+    dir_pw_span,
+    pw_thread_THREAD_CREATION_BACKEND,
+  ]
+}
+
+config("null_thread_creation_public_include_path") {
+  include_dirs = [ "null_thread_creation_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("generic_thread_creation_unsupported") {
+  public_configs = [ ":null_thread_creation_public_include_path" ]
+  public = [
+    "null_thread_creation_public_overrides/pw_thread_backend/context.h",
+    "null_thread_creation_public_overrides/pw_thread_backend/options.h",
+    "null_thread_creation_public_overrides/pw_thread_backend/priority.h",
+    "null_thread_creation_public_overrides/pw_thread_backend/stack.h",
   ]
 }
 
@@ -129,6 +159,31 @@ pw_test("priority_test") {
   negative_compilation_tests = true
 }
 
+pw_test("thread_creation_test") {
+  sources = [ "thread_creation_test.cc" ]
+  deps = [ ":thread" ]
+  negative_compilation_tests = true
+
+  # TODO: b/388048843 - Build on Windows when the toolchain is updated.
+  enable_if = host_os != "win" && pw_thread_THREAD_BACKEND != ""
+}
+
+pw_test("attrs_test") {
+  sources = [ "attrs_test.cc" ]
+  deps = [
+    ":thread",
+    "$dir_pw_unit_test:constexpr",
+  ]
+  negative_compilation_tests = true
+  enable_if = pw_thread_THREAD_BACKEND != ""
+}
+
+pw_test("stack_test") {
+  sources = [ "stack_test.cc" ]
+  deps = [ ":thread" ]
+  enable_if = pw_thread_THREAD_BACKEND != ""
+}
+
 pw_source_set("snapshot") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
@@ -180,14 +235,17 @@ pw_source_set("thread_snapshot_service") {
 
 pw_test_group("tests") {
   tests = [
+    ":attrs_test",
     ":id_facade_test",
+    ":options_test",
     ":priority_test",
     ":sleep_facade_test",
-    ":thread_info_test",
-    ":yield_facade_test",
+    ":stack_test",
     ":test_thread_context_facade_test",
+    ":thread_creation_test",
+    ":thread_info_test",
     ":thread_snapshot_service_test",
-    ":options_test",
+    ":yield_facade_test",
   ]
 }
 

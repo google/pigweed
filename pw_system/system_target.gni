@@ -136,6 +136,8 @@ template("pw_system_target") {
     if (pw_system_USE_MULTI_ENDPOINT_CONFIG) {
       pw_system_CONFIG = "$dir_pw_system:multi_endpoint_rpc_config"
     }
+
+    pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = host_os != "win"
   }
 
   # Populate architecture-specific build args.

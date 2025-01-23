@@ -16,13 +16,31 @@
 #include <type_traits>
 
 #include "pw_function/function.h"
+#include "pw_thread/attrs.h"
+#include "pw_thread/context.h"
 #include "pw_thread/id.h"
+#include "pw_thread/native_options.h"
 #include "pw_thread/options.h"
 
 // clang-format off
 // The backend's thread_native header must provide PW_THREAD_JOINING_ENABLED.
 #include "pw_thread_backend/thread_native.h"  // IWYU pragma: export
 // clang-format on
+
+// Detect if the default "null" thread creation backend is seletecd.
+#ifdef _PW_THREAD_GENERIC_CREATION_UNSUPPORTED
+
+#define PW_THREAD_GENERIC_CREATION_IS_SUPPORTED 0
+#undef _PW_THREAD_GENERIC_CREATION_UNSUPPORTED
+
+#else
+
+// Indicates whether generic thread creation is implemented.
+// TODO: b/385440717 - Remove this flag when generic thread creation is
+// implemented for all pw_thread backends.
+#define PW_THREAD_GENERIC_CREATION_IS_SUPPORTED 1
+
+#endif  // _PW_THREAD_GENERIC_CREATION_UNSUPPORTED
 
 namespace pw {
 namespace thread {
@@ -97,6 +115,27 @@ class Thread {
   ///
   /// @post The thread get EITHER detached or joined.
   Thread(const Options& options, Function<void()>&& entry);
+
+  // Creates a thread with a ThreadContext associated with a ThreadAttrs.
+  template <const ThreadAttrs& kAttributes>
+  Thread(ThreadContextFor<kAttributes>& context, Function<void()>&& entry)
+      : Thread(GetThreadOptions(context), std::move(entry)) {}
+
+  // Creates a thread from context and attributes. Performs a runtime check
+  // that the ThreadContext's stack is large enough, which can be avoided by
+  // using one of the other constructors.
+  template <size_t kStackSizeHintBytes>
+  Thread(ThreadContext<kStackSizeHintBytes>& context,
+         const ThreadAttrs& attributes,
+         Function<void()>&& entry)
+      : Thread(GetThreadOptions(context, attributes), std::move(entry)) {}
+
+  // Creates a thread with the provided context and attributes. The
+  // attributes must have a ThreadStack set.
+  Thread(ThreadContext<>& context,
+         const ThreadAttrs& attributes,
+         Function<void()>&& entry)
+      : Thread(GetThreadOptions(context, attributes), std::move(entry)) {}
 
   /// @post The other thread no longer represents a thread of execution.
   Thread& operator=(Thread&& other);
