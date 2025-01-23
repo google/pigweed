@@ -304,6 +304,10 @@ PW_EXTERN_C_END
 /// enum support, the enum name should be used as the string, and the enum value
 /// as the token.
 #define PW_TOKENIZER_DEFINE_TOKEN(token, domain, string)                       \
+  static_assert(::pw::tokenizer::internal::ValidDomain(domain),                \
+                "pw_tokenizer domains may only contain alphanumeric "          \
+                "characters, underscore, or colon, and cannot start with a "   \
+                "number; space characters are ignored");                       \
   alignas(1) static constexpr auto _PW_TOKENIZER_SECTION _PW_TOKENIZER_UNIQUE( \
       _pw_tokenizer_string_entry_) =                                           \
       ::pw::tokenizer::internal::MakeEntry(token, domain, string)

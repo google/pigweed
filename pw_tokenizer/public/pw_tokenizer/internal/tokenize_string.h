@@ -57,6 +57,23 @@ namespace pw::tokenizer::internal {
 
 static_assert(sizeof(_pw_tokenizer_EntryHeader) == 4 * sizeof(uint32_t));
 
+constexpr bool ValidDomainChar(char ch) {
+  return ('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z') ||
+         ('0' <= ch && ch <= '9') || ch == '_' || ch == ':' || ch == ' ' ||
+         ch == '\t' || ch == '\n';
+}
+
+template <size_t kSize>
+constexpr bool ValidDomain(const char (&domain)[kSize]) {
+  static_assert(kSize > 0u);
+  for (size_t i = 0; i < kSize - 1; ++i) {
+    if (!ValidDomainChar(domain[i])) {
+      return false;
+    }
+  }
+  return domain[kSize - 1] == '\0' && !('0' <= domain[0] && domain[0] <= '9');
+}
+
 // The C++ tokenzied string entry supports both string literals and char arrays,
 // such as __func__.
 template <uint32_t kDomainSize, uint32_t kStringSize>
