@@ -29,6 +29,7 @@ py_library(
         "pw_cli/argument_types.py",
         "pw_cli/arguments.py",
         "pw_cli/branding.py",
+        "pw_cli/collect_files.py",
         "pw_cli/color.py",
         "pw_cli/decorators.py",
         "pw_cli/diff.py",

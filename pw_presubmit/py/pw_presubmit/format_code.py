@@ -41,10 +41,11 @@ from typing import (
     TextIO,
 )
 
+from pw_cli.collect_files import collect_files_in_current_repo
 import pw_cli.color
 from pw_cli.diff import colorize_diff
 import pw_cli.env
-from pw_cli.file_filter import FileFilter, exclude_paths
+from pw_cli.file_filter import FileFilter
 from pw_cli.plural import plural
 import pw_env_setup.config_file
 from pw_presubmit.presubmit import filter_paths
@@ -820,39 +821,18 @@ def format_paths_in_repo(
 ) -> int:
     """Checks or fixes formatting for files in a Git repo."""
 
-    files = [Path(path).resolve() for path in paths if os.path.isfile(path)]
     repo = git_repo.root() if git_repo.is_repo() else None
 
-    # Implement a graceful fallback in case the tracking branch isn't available.
-    if base == git_repo.TRACKING_BRANCH_ALIAS and not git_repo.tracking_branch(
-        repo
-    ):
-        _LOG.warning(
-            'Failed to determine the tracking branch, using --base HEAD~1 '
-            'instead of listing all files'
-        )
-        base = 'HEAD~1'
+    files = collect_files_in_current_repo(
+        paths,
+        PresubmitToolRunner(),
+        modified_since_git_ref=base,
+        exclude_patterns=exclude,
+        action_flavor_text='Formatting',
+    )
 
-    # If this is a Git repo, list the original paths with git ls-files or diff.
-    if repo:
-        project_root = pw_cli.env.pigweed_environment().PW_PROJECT_ROOT
-        _LOG.info(
-            'Formatting %s',
-            git_repo.describe_files(
-                repo, Path.cwd(), base, paths, exclude, project_root
-            ),
-        )
-
-        # Add files from Git and remove duplicates.
-        files = sorted(
-            set(exclude_paths(exclude, git_repo.list_files(base, paths)))
-            | set(files)
-        )
-    elif base:
-        _LOG.critical(
-            'A base commit may only be provided if running from a Git repo'
-        )
-        return 1
+    # The format tooling currently expects absolute paths when filtering paths.
+    files = [Path.cwd() / f for f in files]
 
     return format_files(
         files,

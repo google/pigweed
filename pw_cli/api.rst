@@ -6,6 +6,12 @@ API Reference
 .. pigweed-module-subpage::
    :name: pw_cli
 
+--------------------
+pw_cli.collect_files
+--------------------
+.. automodule:: pw_cli.collect_files
+   :members:
+
 -----------------
 pw_cli.decorators
 -----------------

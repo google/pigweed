@@ -17,7 +17,6 @@ import argparse
 import dataclasses
 import difflib
 import logging
-import os
 from pathlib import Path
 import re
 import sys
@@ -29,10 +28,10 @@ from typing import (
 )
 
 import pw_cli
+from pw_cli.collect_files import collect_files_in_current_repo
 from pw_cli.diff import colorize_diff
-from pw_cli.file_filter import exclude_paths
 from pw_cli.plural import plural
-from . import cli, git_repo, presubmit, presubmit_context
+from . import cli, git_repo, presubmit, presubmit_context, tools
 
 DEFAULT_PATH = Path('out', 'presubmit', 'keep_sorted')
 
@@ -59,7 +58,7 @@ keep-sorted: end
 
 @dataclasses.dataclass
 class KeepSortedContext:
-    paths: list[Path]
+    paths: Sequence[Path]
     fix: bool
     output_dir: Path
     failure_summary_log: Path
@@ -431,39 +430,16 @@ def keep_sorted_in_repo(
 ) -> int:
     """Checks or fixes keep-sorted blocks for files in a Git repo."""
 
-    files = [Path(path).resolve() for path in paths if os.path.isfile(path)]
+    project_root = pw_cli.env.project_root()
     repo = git_repo.root() if git_repo.is_repo() else None
 
-    # Implement a graceful fallback in case the tracking branch isn't available.
-    if base == git_repo.TRACKING_BRANCH_ALIAS and not git_repo.tracking_branch(
-        repo
-    ):
-        _LOG.warning(
-            'Failed to determine the tracking branch, using --base HEAD~1 '
-            'instead of listing all files'
-        )
-        base = 'HEAD~1'
-
-    # If this is a Git repo, list the original paths with git ls-files or diff.
-    project_root = pw_cli.env.pigweed_environment().PW_PROJECT_ROOT
-    if repo:
-        _LOG.info(
-            'Sorting %s',
-            git_repo.describe_files(
-                repo, Path.cwd(), base, paths, exclude, project_root
-            ),
-        )
-
-        # Add files from Git and remove duplicates.
-        files = sorted(
-            set(exclude_paths(exclude, git_repo.list_files(base, paths)))
-            | set(files)
-        )
-    elif base:
-        _LOG.critical(
-            'A base commit may only be provided if running from a Git repo'
-        )
-        return 1
+    files = collect_files_in_current_repo(
+        paths,
+        tools.PresubmitToolRunner(),
+        modified_since_git_ref=base,
+        exclude_patterns=exclude,
+        action_flavor_text='Sorting',
+    )
 
     outdir: Path
     if output_directory:
