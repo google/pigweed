@@ -64,7 +64,7 @@ def pwpb_proto_library(*, name, deps, oneof_callbacks = True, **kwargs):
 _pwpb_proto_compiler_aspect = proto_compiler_aspect(
     ["pwpb.h"],
     "//pw_protobuf/py:plugin",
-    ["--no-legacy-namespace", "--options-file={}"],
+    ["--exclude-legacy-snake-case-field-name-enums", "--no-legacy-namespace", "--options-file={}"],
 )
 
 _pwpb_proto_library = rule(
@@ -87,7 +87,7 @@ _pwpb_proto_library = rule(
 _pwpb_legacy_oneof_compiler_aspect = proto_compiler_aspect(
     ["pwpb.h"],
     "//pw_protobuf/py:plugin",
-    ["--no-oneof-callbacks", "--no-legacy-namespace", "--options-file={}"],
+    ["--exclude-legacy-snake-case-field-name-enums", "--no-oneof-callbacks", "--no-legacy-namespace", "--options-file={}"],
 )
 
 _pwpb_legacy_oneof_proto_library = rule(

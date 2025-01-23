@@ -52,6 +52,7 @@ py_library(
 pw_py_binary(
     name = "plugin",
     srcs = ["pw_protobuf/plugin.py"],
+    args = ["--exclude-legacy-snake-case-field-name-enums"],
     imports = ["."],
     python_version = "PY3",
     deps = [
