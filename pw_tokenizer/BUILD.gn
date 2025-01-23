@@ -371,6 +371,7 @@ pw_doc_group("docs") {
   inputs = [
     "Kconfig",
     "py/pw_tokenizer/encode.py",
+    "public/pw_tokenizer/internal/tokenize_string.h",
   ]
   sources = [
     "api.rst",

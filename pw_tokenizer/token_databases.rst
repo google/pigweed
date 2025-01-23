@@ -107,6 +107,17 @@ provided ``<upstream_commit>``, and tokens present that CSV that are not in the
 newly added tokens are discarded. This helps keep temporary tokens (e.g from
 debug logs) out of the database.
 
+ELF section database format
+===========================
+During compilation, pw_tokenizer stores its entries in an ELF section. Entries
+are stored as a header followed by the domain and string. The format for these
+entries is described below.
+
+.. literalinclude:: public/pw_tokenizer/internal/tokenize_string.h
+   :start-after: [pw_tokenizer-elf-entry]
+   :end-before: [pw_tokenizer-elf-entry]
+   :language: C
+
 JSON support
 ============
 While pw_tokenizer doesn't specify a JSON database format, a token database can
