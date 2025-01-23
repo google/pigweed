@@ -4087,10 +4087,9 @@ TEST_F(SecurityManagerTest, BrEdrResponderCtkdH7NoKeysToDistributeSuccess) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(1, pairing_data_callback_count());
-  ASSERT_TRUE(pairing_data().cross_transport_key.has_value());
-  EXPECT_EQ(pairing_data().cross_transport_key->key().value(),
-            kExpectedLtkBytesH7);
-  EXPECT_EQ(pairing_data().cross_transport_key->security().GetLinkKeyType(),
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
+  EXPECT_EQ(pairing_data().local_ltk->key().value(), kExpectedLtkBytesH7);
+  EXPECT_EQ(pairing_data().local_ltk->security().GetLinkKeyType(),
             hci_spec::LinkKeyType::kUnauthenticatedCombination256);
   EXPECT_FALSE(peer().MutBrEdr().is_pairing());
 }
@@ -4146,10 +4145,9 @@ TEST_F(SecurityManagerTest, BrEdrResponderCtkdH7DistributeIdKeysSuccess) {
   EXPECT_EQ(0, pairing_failed_count());
   EXPECT_EQ(1, pairing_complete_count());
   EXPECT_EQ(1, pairing_data_callback_count());
-  ASSERT_TRUE(pairing_data().cross_transport_key.has_value());
-  EXPECT_EQ(pairing_data().cross_transport_key->key().value(),
-            kExpectedLtkBytesH7);
-  EXPECT_EQ(pairing_data().cross_transport_key->security().GetLinkKeyType(),
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
+  EXPECT_EQ(pairing_data().local_ltk->key().value(), kExpectedLtkBytesH7);
+  EXPECT_EQ(pairing_data().local_ltk->security().GetLinkKeyType(),
             hci_spec::LinkKeyType::kAuthenticatedCombination256);
   ASSERT_TRUE(pairing_data().irk.has_value());
   EXPECT_EQ(pairing_data().irk.value().value(), kIrk);
@@ -4199,10 +4197,9 @@ TEST_F(SecurityManagerTest, BrEdrInitiatorCtkdH7NoKeysToDistributeSuccess) {
   ASSERT_TRUE(ctkd_result.has_value());
   EXPECT_TRUE(ctkd_result.value().is_ok());
   EXPECT_EQ(1, pairing_data_callback_count());
-  ASSERT_TRUE(pairing_data().cross_transport_key.has_value());
-  EXPECT_EQ(pairing_data().cross_transport_key->key().value(),
-            kExpectedLtkBytesH7);
-  EXPECT_EQ(pairing_data().cross_transport_key->security().GetLinkKeyType(),
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
+  EXPECT_EQ(pairing_data().local_ltk->key().value(), kExpectedLtkBytesH7);
+  EXPECT_EQ(pairing_data().local_ltk->security().GetLinkKeyType(),
             hci_spec::LinkKeyType::kUnauthenticatedCombination256);
   EXPECT_FALSE(peer().MutBrEdr().is_pairing());
 }
@@ -4268,10 +4265,9 @@ TEST_F(SecurityManagerTest, BrEdrInitiatorCtkdH7DistributeIdKeysSuccess) {
   EXPECT_TRUE(ctkd_result.value().is_ok());
   EXPECT_FALSE(peer().MutBrEdr().is_pairing());
   EXPECT_EQ(1, pairing_data_callback_count());
-  ASSERT_TRUE(pairing_data().cross_transport_key.has_value());
-  EXPECT_EQ(pairing_data().cross_transport_key->key().value(),
-            kExpectedLtkBytesH7);
-  EXPECT_EQ(pairing_data().cross_transport_key->security().GetLinkKeyType(),
+  ASSERT_TRUE(pairing_data().local_ltk.has_value());
+  EXPECT_EQ(pairing_data().local_ltk->key().value(), kExpectedLtkBytesH7);
+  EXPECT_EQ(pairing_data().local_ltk->security().GetLinkKeyType(),
             hci_spec::LinkKeyType::kUnauthenticatedCombination256);
   ASSERT_TRUE(pairing_data().irk.has_value());
   EXPECT_EQ(pairing_data().irk.value().value(), kIrk);

@@ -846,8 +846,10 @@ void SecurityManagerImpl::OnBrEdrPairingComplete(PairingData pairing_data) {
   if (ct_key_value) {
     // The LE LTK will have the same security properties as the BR/EDR key.
     SecurityProperties bredr_properties(bredr_link_->ltk_type().value());
-    pairing_data.cross_transport_key =
+    sm::LTK le_ltk =
         sm::LTK(bredr_properties, hci_spec::LinkKey(*ct_key_value, 0, 0));
+    pairing_data.local_ltk = le_ltk;
+    pairing_data.peer_ltk = le_ltk;
   } else {
     bt_log(ERROR, "sm", "BR/EDR CTKD key generation failed");
     if (bredr_cross_transport_key_derivation_callback_) {

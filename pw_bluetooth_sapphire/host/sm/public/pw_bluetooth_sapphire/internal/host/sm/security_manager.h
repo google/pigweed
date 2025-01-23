@@ -185,4 +185,7 @@ class SecurityManager {
 using SecurityManagerFactory =
     std::function<decltype(sm::SecurityManager::CreateLE)>;
 
+using BrEdrSecurityManagerFactory =
+    std::function<decltype(sm::SecurityManager::CreateBrEdr)>;
+
 }  // namespace bt::sm
