@@ -23,16 +23,34 @@
 
 namespace bt::sm::testing {
 
-TestSecurityManager::TestSecurityManager(hci::LowEnergyConnection::WeakPtr link,
-                                         l2cap::Channel::WeakPtr,
-                                         IOCapability,
-                                         Delegate::WeakPtr,
-                                         BondableMode bondable_mode,
-                                         gap::LESecurityMode security_mode)
+namespace {
+Role RoleFromLinks(hci::LowEnergyConnection::WeakPtr link,
+                   hci::BrEdrConnection::WeakPtr bredr_link) {
+  pw::bluetooth::emboss::ConnectionRole conn_role =
+      pw::bluetooth::emboss::ConnectionRole::CENTRAL;
+  if (link.is_alive()) {
+    conn_role = link->role();
+  }
+  if (bredr_link.is_alive()) {
+    conn_role = bredr_link->role();
+  }
+  return conn_role == pw::bluetooth::emboss::ConnectionRole::CENTRAL
+             ? Role::kInitiator
+             : Role::kResponder;
+}
+}  // namespace
+
+TestSecurityManager::TestSecurityManager(
+    hci::LowEnergyConnection::WeakPtr link,
+    hci::BrEdrConnection::WeakPtr bredr_link,
+    l2cap::Channel::WeakPtr,
+    IOCapability,
+    Delegate::WeakPtr delegate,
+    BondableMode bondable_mode,
+    gap::LESecurityMode security_mode)
     : SecurityManager(bondable_mode, security_mode),
-      role_(link->role() == pw::bluetooth::emboss::ConnectionRole::CENTRAL
-                ? Role::kInitiator
-                : Role::kResponder),
+      role_(RoleFromLinks(link, bredr_link)),
+      delegate_(std::move(delegate)),
       weak_self_(this) {}
 
 bool TestSecurityManager::AssignLongTermKey(const LTK& ltk) {
@@ -51,6 +69,24 @@ void TestSecurityManager::UpgradeSecurity(SecurityLevel level,
   callback(fit::ok(), security());
 }
 
+void TestSecurityManager::InitiateBrEdrCrossTransportKeyDerivation(
+    CrossTransportKeyDerivationResultCallback callback) {
+  if (!pairing_data_) {
+    callback(ToResult(HostError::kFailed));
+    return;
+  }
+  last_identity_info_ = delegate_->OnIdentityInformationRequest();
+  delegate_->OnPairingComplete(fit::ok());
+  delegate_->OnNewPairingData(pairing_data_.value());
+  callback(fit::ok());
+}
+
+void TestSecurityManager::TriggerPairingComplete(sm::PairingData data) {
+  last_identity_info_ = delegate_->OnIdentityInformationRequest();
+  delegate_->OnPairingComplete(fit::ok());
+  delegate_->OnNewPairingData(data);
+}
+
 void TestSecurityManager::Reset(IOCapability) {}
 void TestSecurityManager::Abort(ErrorCode) {}
 
@@ -61,16 +97,37 @@ std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
     Delegate::WeakPtr delegate,
     BondableMode bondable_mode,
     gap::LESecurityMode security_mode,
-    pw::async::Dispatcher& /*dispatcher*/,
+    pw::async::Dispatcher&,
     gap::Peer::WeakPtr) {
   hci_spec::ConnectionHandle conn = link->handle();
   auto test_sm = std::unique_ptr<TestSecurityManager>(
       new TestSecurityManager(std::move(link),
+                              hci::BrEdrConnection::WeakPtr(),
                               std::move(smp),
                               io_capability,
                               std::move(delegate),
                               bondable_mode,
                               security_mode));
+  test_sms_[conn] = test_sm->GetWeakPtr();
+  return test_sm;
+}
+
+std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateBrEdr(
+    hci::BrEdrConnection::WeakPtr link,
+    l2cap::Channel::WeakPtr smp,
+    Delegate::WeakPtr delegate,
+    bool /*is_controller_remote_public_key_validation_supported*/,
+    pw::async::Dispatcher&,
+    bt::gap::Peer::WeakPtr /*peer*/) {
+  hci_spec::ConnectionHandle conn = link->handle();
+  auto test_sm = std::unique_ptr<TestSecurityManager>(
+      new TestSecurityManager(hci::LowEnergyConnection::WeakPtr(),
+                              std::move(link),
+                              std::move(smp),
+                              IOCapability::kNoInputNoOutput,
+                              std::move(delegate),
+                              BondableMode::Bondable,
+                              gap::LESecurityMode::SecureConnectionsOnly));
   test_sms_[conn] = test_sm->GetWeakPtr();
   return test_sm;
 }
