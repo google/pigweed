@@ -187,8 +187,4 @@ ByteReaderWriter& Rp2StdioChannelInit(MultiBufAllocator& read_allocator,
   return channel.channel();
 }
 
-ByteReaderWriter& Rp2StdioChannelInit(MultiBufAllocator& allocator) {
-  return Rp2StdioChannelInit(allocator, allocator);
-}
-
 }  // namespace pw::channel
