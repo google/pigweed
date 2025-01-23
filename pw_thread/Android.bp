@@ -23,6 +23,9 @@ package {
 cc_defaults {
     name: "pw_thread",
     cpp_std: "c++20",
+    vendor_available: true,
+    host_supported: true,
+    export_include_dirs: ["public"],
     header_libs: [
         "pw_chrono",
         "pw_thread_include_dirs",
@@ -33,6 +36,13 @@ cc_defaults {
     ],
     static_libs: [
         "pw_function",
+        "pw_numeric",
+        "pw_preprocessor",
+        "pw_status",
+    ],
+    export_static_lib_headers: [
+        "pw_function",
+        "pw_numeric",
         "pw_preprocessor",
         "pw_status",
     ],
