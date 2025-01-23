@@ -89,6 +89,32 @@ cc_args(
 )
 
 cc_args(
+    name = "cortex-a35",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-a35",
+    ],
+)
+
+cc_args(
+    name = "aarch64-none-elf",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=aarch64-none-elf",
+    ],
+)
+
+cc_args(
     name = "cxx_compiler_flags",
     actions = [
         "@rules_cc//cc/toolchains/actions:compile_actions",
@@ -262,5 +288,58 @@ toolchain(
         "//pw_build/constraints/arm:cortex-m33",
     ],
     toolchain = ":arm_clang_toolchain_cortex-m",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+cc_toolchain(
+    name = "arm_clang_toolchain_cortex-a",
+    args = [
+        ":cxx_compiler_flags",
+        "@llvm_toolchain_device//:llvm-libc_args",
+        ":cortex_common",
+        ":cortex_common_link",
+        ":warnings",
+        "//pw_toolchain/cc/args:oz",
+        "//pw_toolchain/cc/args:debugging",
+        "//pw_toolchain/cc/args:reduced_size",
+        "//pw_toolchain/cc/args:no_canonical_prefixes",
+        "//pw_toolchain/cc/args:no_rtti",
+        "//pw_toolchain/cc/args:wno_register",
+        "//pw_toolchain/cc/args:wnon_virtual_dtor",
+        "//pw_toolchain/cc/args:common_warnings",
+        "//pw_toolchain/cc/args:color_diagnostics",
+    ] + select({
+        "//pw_build/constraints/arm:cortex-a35": [
+            ":cortex-a35",
+            ":aarch64-none-elf",
+        ],
+        "//pw_build/constraints/arm:none": [],
+    }),
+    enabled_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//pw_toolchain/cc/capability:compiler_is_clang",
+        "//pw_toolchain/cc/capability:linker_is_clang",
+    ] + select({
+        "//pw_toolchain/cc:c++17_enabled": ["//pw_toolchain/cc/args:c++17_feature"],
+        "//conditions:default": [],
+    }) + select({
+        "//pw_toolchain/cc:c++20_enabled": ["//pw_toolchain/cc/args:c++20_feature"],
+        "//conditions:default": [],
+    }),
+    tags = ["manual"],  # Don't try to build this in wildcard builds.
+    target_compatible_with = select({
+        "//pw_build/constraints/arm:cortex-a35": [],
+        "//pw_build/constraints/arm:none": ["@platforms//:incompatible"],
+    }),
+    tool_map = "@llvm_toolchain_device//:all_tools",
+    visibility = ["//pw_toolchain:__pkg__"],
+)
+
+toolchain(
+    name = "arm_clang_cc_toolchain_cortex-a35",
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-a35",
+    ],
+    toolchain = ":arm_clang_toolchain_cortex-a",
     toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
 )
