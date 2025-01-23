@@ -112,6 +112,7 @@ class AdapterImpl final : public Adapter {
                           l2cap::ChannelParameters params,
                           sm::SecurityLevel security_level,
                           l2cap::ChannelCallback cb) override {
+      adapter_->metrics_.le.open_l2cap_channel_requests.Add();
       adapter_->le_connection_manager_->OpenL2capChannel(
           peer_id, psm, params, security_level, std::move(cb));
     }
@@ -509,6 +510,7 @@ class AdapterImpl final : public Adapter {
   inspect::Node metrics_le_node_;
   struct AdapterMetrics {
     struct LeMetrics {
+      UintMetricCounter open_l2cap_channel_requests;
       UintMetricCounter outgoing_connection_requests;
       UintMetricCounter pair_requests;
       UintMetricCounter start_advertising_events;
@@ -852,6 +854,8 @@ void AdapterImpl::AttachInspect(inspect::Node& parent, std::string name) {
   metrics_node_ = adapter_node_.CreateChild(kMetricsInspectNodeName);
 
   metrics_le_node_ = metrics_node_.CreateChild("le");
+  metrics_.le.open_l2cap_channel_requests.AttachInspect(
+      metrics_le_node_, "open_l2cap_channel_requests");
   metrics_.le.outgoing_connection_requests.AttachInspect(
       metrics_le_node_, "outgoing_connection_requests");
   metrics_.le.pair_requests.AttachInspect(metrics_le_node_, "pair_requests");

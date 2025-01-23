@@ -94,6 +94,7 @@ adapter:
             set_connectable_false_events
             set_connectable_true_events
         le:
+            open_l2cap_channel_requests
             outgoing_connection_requests
             pair_requests
             start_advertising_events

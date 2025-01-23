@@ -1158,6 +1158,7 @@ TEST_F(AdapterTest, InspectHierarchy) {
   auto le_matcher =
       AllOf(NodeMatches(AllOf(NameMatches("le"),
                               PropertyList(UnorderedElementsAre(
+                                  UintIs("open_l2cap_channel_requests", 0),
                                   UintIs("outgoing_connection_requests", 0),
                                   UintIs("pair_requests", 0),
                                   UintIs("start_advertising_events", 0),
