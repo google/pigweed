@@ -7,8 +7,8 @@ Authoring guidelines and style guides for ``pigweed.dev`` contributors.
 
 .. grid:: 2
 
-   .. grid-item-card:: :octicon:`list-ordered` Guides
-      :link: contrib-docs-guides
+   .. grid-item-card:: :octicon:`list-ordered` Working with the build system
+      :link: contrib-docs-build
       :link-type: ref
       :class-item: sales-pitch-cta-primary
 
@@ -49,6 +49,15 @@ Authoring guidelines and style guides for ``pigweed.dev`` contributors.
       How to format the C++ code comments that are transformed
       into API references.
 
+   .. grid-item-card:: :octicon:`list-ordered` Website updates
+      :link: contrib-docs-website
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Information about how the ``pigweed.dev`` website is generated.
+
+.. grid:: 1
+
    .. grid-item-card:: :octicon:`list-ordered` Changelog updates
       :link: docs-contrib-docs-changelog
       :link-type: ref
@@ -61,9 +70,7 @@ Authoring guidelines and style guides for ``pigweed.dev`` contributors.
    :maxdepth: 1
    :hidden:
 
-   guides
+   Build system <build>
    modules
-   Writing <../../style/writing>
-   reStructuredText <../../style/rest>
-   Doxygen <../../style/doxygen>
+   website
    changelog

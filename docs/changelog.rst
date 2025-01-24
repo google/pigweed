@@ -1825,7 +1825,7 @@ Changes:
 .. 84375274c2a7dbc0fc29cb1e718d8cdfa05085fa
 
 * Guides for contributing ``pigweed.dev`` documentation have been
-  consolidated into :ref:`contrib-docs-guides`. Commit: `Consolidate
+  consolidated. Commit: `Consolidate
   content for pigweed.dev contributors <https://pwrev.dev/242192>`__.
 
 .. _docs-changelog-2024-10-17-SEEDs:

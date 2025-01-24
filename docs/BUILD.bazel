@@ -72,10 +72,11 @@ sphinx_docs_library(
         "code_reviews.rst",
         "community/index.rst",
         "concepts/index.rst",
+        "contributing/docs/build.rst",
         "contributing/docs/changelog.rst",
-        "contributing/docs/guides.rst",
         "contributing/docs/index.rst",
         "contributing/docs/modules.rst",
+        "contributing/docs/website.rst",
         "contributing/index.rst",
         "embedded_cpp_guide.rst",
         "facades.rst",
@@ -348,27 +349,8 @@ sphinx_docs(
         ":doxygen_xml",
         ":not_prefixed",
         ":prefixed",
-        # TODO: https://pwbug.dev/383540117 - Move this comment to a dedicated
-        # contributor's guide on the Bazel docgen system.
-        #
-        # The fully built rustdoc subsite is provided as a dependency
-        # here. The `html_extra_path` config in `//docs/conf.py` instructs Sphinx
-        # to copy the rustdoc directory to its output.
-        #
-        # Having rustdoc be a dependency to Sphinx probably reduces parallelism of
-        # the docs site build but was the only solution that worked and has a few
-        # advantages:
-        #
-        # * When previewing the docs site locally, rustdoc links now work.
-        #   I.e. after running `bazelisk run //docs:docs.serve` you can browse
-        #   both the main Sphinx site and the rustdoc subsite.
-        #
-        # * Automation related to the rustdoc subsite is now easier. E.g. we
-        #   can now use Sphinx's built-in link checker to make sure that
-        #   there are no 404ing rustdoc links.
-        #
-        # * The main Sphinx site and rustdoc subsite can be deployed in 1 step.
         ":rust",
+        "//:docs",
         "//docker:docs",
         "//kudzu:docs",
         "//pw_alignment:docs",
@@ -556,6 +538,5 @@ sphinx_docs(
         "//seed:docs",
         "//targets:docs",
         "//third_party:docs",
-        "//:docs",
     ],
 )
