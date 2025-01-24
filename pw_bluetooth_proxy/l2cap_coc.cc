@@ -41,7 +41,6 @@ const float kRxCreditReplenishThreshold = 0.30;
 
 L2capCoc::L2capCoc(L2capCoc&& other)
     : L2capChannel(static_cast<L2capCoc&&>(other)),
-      rx_multibuf_allocator_(other.rx_multibuf_allocator_),
       signaling_channel_(other.signaling_channel_),
       rx_mtu_(other.rx_mtu_),
       rx_mps_(other.rx_mps_),
@@ -114,9 +113,10 @@ pw::Result<L2capCoc> L2capCoc::Create(
 
 pw::Status L2capCoc::ReplenishRxCredits(uint16_t additional_rx_credits) {
   PW_CHECK(signaling_channel_);
+  PW_CHECK(rx_multibuf_allocator());
   // SendFlowControlCreditInd logs if status is not ok, so no need to log here.
   return signaling_channel_->SendFlowControlCreditInd(
-      local_cid(), additional_rx_credits, rx_multibuf_allocator_);
+      local_cid(), additional_rx_credits, *rx_multibuf_allocator());
 }
 
 pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
@@ -242,7 +242,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
     }
 
     rx_sdu_ =
-        rx_multibuf_allocator_.AllocateContiguous(rx_sdu_bytes_remaining_);
+        rx_multibuf_allocator()->AllocateContiguous(rx_sdu_bytes_remaining_);
     if (!rx_sdu_) {
       PW_LOG_ERROR(
           "(CID %#x) Rx MultiBuf allocator out of memory. So stopping channel "
@@ -301,16 +301,16 @@ L2capCoc::L2capCoc(pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
                    CocConfig tx_config,
                    Function<void(L2capChannelEvent event)>&& event_fn,
                    Function<void(multibuf::MultiBuf&& payload)>&& receive_fn)
-    : L2capChannel(
-          /*l2cap_channel_manager=*/l2cap_channel_manager,
-          /*connection_handle=*/connection_handle,
-          /*transport=*/AclTransportType::kLe,
-          /*local_cid=*/rx_config.cid,
-          /*remote_cid=*/tx_config.cid,
-          /*payload_from_controller_fn=*/nullptr,
-          /*payload_from_host_fn=*/nullptr,
-          /*event_fn=*/std::move(event_fn)),
-      rx_multibuf_allocator_(rx_multibuf_allocator),
+    : L2capChannel(l2cap_channel_manager,
+                   &rx_multibuf_allocator,
+                   /*connection_handle=*/connection_handle,
+                   /*transport=*/AclTransportType::kLe,
+                   /*local_cid=*/rx_config.cid,
+                   /*remote_cid=*/tx_config.cid,
+                   /*payload_from_controller_fn=*/nullptr,
+                   /*payload_from_host_fn=*/nullptr,
+                   /*event_fn=*/std::move(event_fn)),
+
       signaling_channel_(signaling_channel),
       rx_mtu_(rx_config.mtu),
       rx_mps_(rx_config.mps),

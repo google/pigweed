@@ -500,7 +500,8 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
   }
   PW_CHECK(status.ok() || status.IsAlreadyExists());
   return BasicL2capChannel::Create(
-      /*l2cap_channel_manager=*/l2cap_channel_manager_,
+      l2cap_channel_manager_,
+      &lsc_multibuf_allocator_,
       /*connection_handle=*/connection_handle,
       /*transport=*/transport,
       /*local_cid=*/local_cid,
@@ -570,6 +571,7 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
     return pw::Status::Unavailable();
   }
   return RfcommChannel::Create(l2cap_channel_manager_,
+                               lsc_multibuf_allocator_,
                                connection_handle,
                                rx_config,
                                tx_config,

@@ -25,6 +25,7 @@ class BasicL2capChannel : public L2capChannel {
   // provide MTU_SIG.
   static pw::Result<BasicL2capChannel> Create(
       L2capChannelManager& l2cap_channel_manager,
+      multibuf::MultiBufAllocator* rx_multibuf_allocator,
       uint16_t connection_handle,
       AclTransportType transport,
       uint16_t local_cid,
@@ -46,6 +47,7 @@ class BasicL2capChannel : public L2capChannel {
  protected:
   explicit BasicL2capChannel(
       L2capChannelManager& l2cap_channel_manager,
+      multibuf::MultiBufAllocator* rx_multibuf_allocator,
       uint16_t connection_handle,
       AclTransportType transport,
       uint16_t local_cid,

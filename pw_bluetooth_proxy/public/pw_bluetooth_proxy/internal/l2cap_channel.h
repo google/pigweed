@@ -20,6 +20,7 @@
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_containers/inline_queue.h"
 #include "pw_containers/intrusive_forward_list.h"
+#include "pw_multibuf/allocator.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
@@ -206,6 +207,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
 
   explicit L2capChannel(
       L2capChannelManager& l2cap_channel_manager,
+      multibuf::MultiBufAllocator* rx_multibuf_allocator,
       uint16_t connection_handle,
       AclTransportType transport,
       uint16_t local_cid,
@@ -317,6 +319,10 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
       return payload_from_controller_fn_(payload);
     }
     return false;
+  }
+
+  multibuf::MultiBufAllocator* rx_multibuf_allocator() const {
+    return rx_multibuf_allocator_;
   }
 
  private:
@@ -436,6 +442,9 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //--------------
   //  Data members
   //--------------
+
+  // Optional client-provided multibuf allocator.
+  multibuf::MultiBufAllocator* rx_multibuf_allocator_;
 
   // Client-provided controller read callback.
   pw::Function<bool(pw::span<uint8_t> payload)> payload_from_controller_fn_;

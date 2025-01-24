@@ -167,6 +167,7 @@ std::optional<H4PacketWithH4> RfcommChannel::DequeuePacket() {
 
 Result<RfcommChannel> RfcommChannel::Create(
     L2capChannelManager& l2cap_channel_manager,
+    multibuf::MultiBufAllocator& rx_multibuf_allocator,
     uint16_t connection_handle,
     Config rx_config,
     Config tx_config,
@@ -180,6 +181,7 @@ Result<RfcommChannel> RfcommChannel::Create(
   }
 
   return RfcommChannel(l2cap_channel_manager,
+                       rx_multibuf_allocator,
                        connection_handle,
                        rx_config,
                        tx_config,
@@ -281,21 +283,22 @@ bool RfcommChannel::HandlePduFromHost(pw::span<uint8_t>) { return false; }
 
 RfcommChannel::RfcommChannel(
     L2capChannelManager& l2cap_channel_manager,
+    multibuf::MultiBufAllocator& rx_multibuf_allocator,
     uint16_t connection_handle,
     Config rx_config,
     Config tx_config,
     uint8_t channel_number,
     Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     Function<void(L2capChannelEvent event)>&& event_fn)
-    : L2capChannel(
-          /*l2cap_channel_manager=*/l2cap_channel_manager,
-          /*connection_handle=*/connection_handle,
-          /*transport=*/AclTransportType::kBrEdr,
-          /*local_cid=*/rx_config.cid,
-          /*remote_cid=*/tx_config.cid,
-          /*payload_from_controller_fn=*/nullptr,
-          /*payload_from_host_fn=*/nullptr,
-          /*event_fn=*/std::move(event_fn)),
+    : L2capChannel(l2cap_channel_manager,
+                   &rx_multibuf_allocator,
+                   /*connection_handle=*/connection_handle,
+                   /*transport=*/AclTransportType::kBrEdr,
+                   /*local_cid=*/rx_config.cid,
+                   /*remote_cid=*/tx_config.cid,
+                   /*payload_from_controller_fn=*/nullptr,
+                   /*payload_from_host_fn=*/nullptr,
+                   /*event_fn=*/std::move(event_fn)),
       rx_config_(rx_config),
       tx_config_(tx_config),
       channel_number_(channel_number),

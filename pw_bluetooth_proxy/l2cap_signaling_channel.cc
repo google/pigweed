@@ -36,7 +36,8 @@ L2capSignalingChannel::L2capSignalingChannel(
     uint16_t connection_handle,
     AclTransportType transport,
     uint16_t fixed_cid)
-    : BasicL2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
+    : BasicL2capChannel(l2cap_channel_manager,
+                        /*rx_multibuf_allocator=*/nullptr,
                         /*connection_handle=*/connection_handle,
                         /*transport*/ transport,
                         /*local_cid=*/fixed_cid,

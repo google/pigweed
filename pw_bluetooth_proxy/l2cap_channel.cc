@@ -40,6 +40,7 @@ void L2capChannel::MoveFields(L2capChannel& other) {
   event_fn_ = std::move(other.event_fn_);
   payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
   payload_from_host_fn_ = std::move(other.payload_from_host_fn_);
+  rx_multibuf_allocator_ = other.rx_multibuf_allocator_;
   {
     std::lock_guard lock(send_queue_mutex_);
     std::lock_guard other_lock(other.send_queue_mutex_);
@@ -311,6 +312,7 @@ void L2capChannel::HandleFragmentedPdu() {
 
 L2capChannel::L2capChannel(
     L2capChannelManager& l2cap_channel_manager,
+    multibuf::MultiBufAllocator* rx_multibuf_allocator,
     uint16_t connection_handle,
     AclTransportType transport,
     uint16_t local_cid,
@@ -325,6 +327,7 @@ L2capChannel::L2capChannel(
       local_cid_(local_cid),
       remote_cid_(remote_cid),
       event_fn_(std::move(event_fn)),
+      rx_multibuf_allocator_(rx_multibuf_allocator),
       payload_from_controller_fn_(std::move(payload_from_controller_fn)),
       payload_from_host_fn_(std::move(payload_from_host_fn)) {
   PW_LOG_INFO(

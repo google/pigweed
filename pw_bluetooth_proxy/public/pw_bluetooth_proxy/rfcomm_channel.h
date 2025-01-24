@@ -81,6 +81,7 @@ class RfcommChannel final : public L2capChannel {
   /// @endrst
   static pw::Result<RfcommChannel> Create(
       L2capChannelManager& l2cap_channel_manager,
+      multibuf::MultiBufAllocator& rx_multibuf_allocator,
       uint16_t connection_handle,
       Config rx_config,
       Config tx_config,
@@ -99,6 +100,7 @@ class RfcommChannel final : public L2capChannel {
 
   RfcommChannel(
       L2capChannelManager& l2cap_channel_manager,
+      multibuf::MultiBufAllocator& rx_multibuf_allocator,
       uint16_t connection_handle,
       Config rx_config,
       Config tx_config,
