@@ -297,30 +297,27 @@ pw::Status McuxpressoDigitalInOutInterrupt::DoEnableInterruptHandler(
 }
 
 void McuxpressoDigitalInOutInterrupt::ConfigureInterrupt() const {
-  gpio_interrupt_config_t config{};
-  switch (trigger_) {
-    case InterruptTrigger::kActivatingEdge:
-      config.mode = kGPIO_PinIntEnableEdge;
-      config.polarity = kGPIO_PinIntEnableHighOrRise;
-      break;
-    case InterruptTrigger::kDeactivatingEdge:
-      config.mode = kGPIO_PinIntEnableEdge;
-      config.polarity = kGPIO_PinIntEnableLowOrFall;
-      break;
-    case InterruptTrigger::kBothEdges:
-      // Emulate both edges with a level-sensitive interrupt.
-      // Set the initial polarity of the interrupt to be the opposite of what
-      // the port currently reads (level high if the pin is low, and vice
-      // versa). Either this will capture the first edge,
-      // or if the line changes between when the pin is read and the interrupt
-      // is enabled, it'll fire immediately.
-      config.mode = kGPIO_PinIntEnableLevel;
-      const gpio_pin_enable_polarity_t polarity =
-          GPIO_PinRead(base_, port_, pin_) ? kGPIO_PinIntEnableLowOrFall
-                                           : kGPIO_PinIntEnableHighOrRise;
-      config.polarity = static_cast<uint8_t>(polarity);
-      break;
-  }
+  // Emulate edge interrupts with level-sensitive interrupts.
+  //
+  // This is *required* for kBothEdges support, as the underlying hardware
+  // only supports single edge interrupts. However, we choose to do this
+  // for all interrupts to work around a hardware issue: edge-sensitive GPIO
+  // interrupts do not work properly in deep sleep on the RT5xx. In particularly
+  // bad cases, edge-sensitive interrupts could result in the system constantly
+  // waking up from deep-sleep, doing no work, sleeping, and waking again.
+  //
+  // Set the initial polarity of the interrupt to be the opposite of what
+  // the port currently reads (level high if the pin is low, and vice
+  // versa). Either this will capture the first edge,
+  // or if the line changes between when the pin is read and the interrupt
+  // is enabled, it'll fire immediately.
+  const gpio_pin_enable_polarity_t polarity =
+      GPIO_PinRead(base_, port_, pin_) ? kGPIO_PinIntEnableLowOrFall
+                                       : kGPIO_PinIntEnableHighOrRise;
+  gpio_interrupt_config_t config{
+      .mode = kGPIO_PinIntEnableLevel,
+      .polarity = static_cast<uint8_t>(polarity),
+  };
   GPIO_SetPinInterruptConfig(base_, port_, pin_, &config);
 }
 
@@ -344,38 +341,42 @@ PW_EXTERN_C void GPIO_INTA_DriverIRQHandler() PW_NO_LOCK_SAFETY_ANALYSIS {
     for (const auto& line : list) {
       const uint32_t pin_mask = 1UL << line.pin_;
       if ((port_int_flags & pin_mask) != 0) {
+        const auto trigger = line.trigger_;
         const auto polarity =
             GPIO_PinGetInterruptPolarity(base, port, line.pin_);
-        line.interrupt_handler_(polarity == kGPIO_PinIntEnableHighOrRise
-                                    ? State::kActive
-                                    : State::kInactive);
-
-        if (line.trigger_ == InterruptTrigger::kBothEdges) {
-          // Invert the polarity of the level interrupt before clearing the
-          // flag to catch the next edge.
-          //
-          // We invert here, rather than sampling the line and setting the
-          // polarity based on that. Inverting allows us to capture both edges
-          // of a short pulse. For example, if the polarity is high, and the
-          // line briefly goes high and then low again before the ISR runs.
-          // The first high level causes an interrupt to latch in INTSTAT,
-          // and then when the ISR runs, setting the polarity low would
-          // immediately latch it in INTSTAT again once we clear it.
-          // If we had instead sampled the GPIO as low, and then set the
-          // polarity high, we would have missed the falling edge of the pulse.
-          //
-          // It is critical to invert the polarity before clearing. If INTSTAT
-          // is cleared first, the bit would immediately latch again (assuming
-          // the line is still high). Then we'd invert the polarity to low,
-          // the ISR would fire again, inverting the polarity back to high,
-          // and the ISR would fire again, over and over.
-          gpio_pin_enable_polarity_t new_polarity =
-              (polarity == kGPIO_PinIntEnableHighOrRise)
-                  ? kGPIO_PinIntEnableLowOrFall
-                  : kGPIO_PinIntEnableHighOrRise;
-          GPIO_PinSetInterruptPolarity(base, port, line.pin_, new_polarity);
+        if ((trigger == InterruptTrigger::kDeactivatingEdge &&
+             polarity == kGPIO_PinIntEnableLowOrFall) ||
+            (trigger == InterruptTrigger::kActivatingEdge &&
+             polarity == kGPIO_PinIntEnableHighOrRise) ||
+            (trigger == InterruptTrigger::kBothEdges)) {
+          line.interrupt_handler_(polarity == kGPIO_PinIntEnableHighOrRise
+                                      ? State::kActive
+                                      : State::kInactive);
         }
 
+        // Invert the polarity of the level interrupt before clearing the
+        // flag to catch the next edge.
+        //
+        // We invert here, rather than sampling the line and setting the
+        // polarity based on that. Inverting allows us to capture both edges
+        // of a short pulse. For example, if the polarity is high, and the
+        // line briefly goes high and then low again before the ISR runs.
+        // The first high level causes an interrupt to latch in INTSTAT,
+        // and then when the ISR runs, setting the polarity low would
+        // immediately latch it in INTSTAT again once we clear it.
+        // If we had instead sampled the GPIO as low, and then set the
+        // polarity high, we would have missed the falling edge of the pulse.
+        //
+        // It is critical to invert the polarity before clearing. If INTSTAT
+        // is cleared first, the bit would immediately latch again (assuming
+        // the line is still high). Then we'd invert the polarity to low,
+        // the ISR would fire again, inverting the polarity back to high,
+        // and the ISR would fire again, over and over.
+        gpio_pin_enable_polarity_t new_polarity =
+            (polarity == kGPIO_PinIntEnableHighOrRise)
+                ? kGPIO_PinIntEnableLowOrFall
+                : kGPIO_PinIntEnableHighOrRise;
+        GPIO_PinSetInterruptPolarity(base, port, line.pin_, new_polarity);
         GPIO_PinClearInterruptFlag(
             base, port, line.pin_, kGpioInterruptBankIndex);
       }
