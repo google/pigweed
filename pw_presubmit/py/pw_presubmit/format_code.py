@@ -41,7 +41,10 @@ from typing import (
     TextIO,
 )
 
-from pw_cli.collect_files import collect_files_in_current_repo
+from pw_cli.collect_files import (
+    add_file_collection_arguments,
+    collect_files_in_current_repo,
+)
 import pw_cli.color
 from pw_cli.diff import colorize_diff
 import pw_cli.env
@@ -56,7 +59,6 @@ from pw_presubmit.presubmit_context import (
     PresubmitFailure,
 )
 from pw_presubmit import (
-    cli,
     git_repo,
     owners_checks,
     presubmit_context,
@@ -915,7 +917,7 @@ def arguments(git_paths: bool) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
 
     if git_paths:
-        cli.add_path_arguments(parser)
+        add_file_collection_arguments(parser)
     else:
 
         def existing_path(arg: str) -> Path:

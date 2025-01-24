@@ -18,12 +18,12 @@ import fnmatch
 import logging
 import os
 from pathlib import Path
-import re
 import shutil
 import textwrap
 from typing import Callable, Collection, Sequence
 
 from pw_presubmit import git_repo, presubmit
+from pw_cli.collect_files import add_file_collection_arguments
 
 _LOG = logging.getLogger(__name__)
 DEFAULT_PATH = Path('out', 'presubmit')
@@ -33,56 +33,6 @@ This directory was created by pw_presubmit to run presubmit checks for the
 {repo} repository. This directory is not used by the regular GN or CMake Ninja
 builds. It may be deleted safely.
 '''
-
-
-def add_path_arguments(parser) -> None:
-    """Adds common presubmit check options to an argument parser."""
-
-    parser.add_argument(
-        'paths',
-        metavar='pathspec',
-        nargs='*',
-        help=(
-            'Paths or patterns to which to restrict the checks. These are '
-            'interpreted as Git pathspecs. If --base is provided, only '
-            'paths changed since that commit are checked.'
-        ),
-    )
-
-    base = parser.add_mutually_exclusive_group()
-    base.add_argument(
-        '-b',
-        '--base',
-        metavar='commit',
-        default=git_repo.TRACKING_BRANCH_ALIAS,
-        help=(
-            'Git revision against which to diff for changed files. '
-            'Default is the tracking branch of the current branch: '
-            f'{git_repo.TRACKING_BRANCH_ALIAS}'
-        ),
-    )
-
-    base.add_argument(
-        '--all',
-        '--full',
-        dest='base',
-        action='store_const',
-        const=None,
-        help='Run actions for all files, not just changed files.',
-    )
-
-    parser.add_argument(
-        '-e',
-        '--exclude',
-        metavar='regular_expression',
-        default=[],
-        action='append',
-        type=re.compile,
-        help=(
-            'Exclude paths matching any of these regular expressions, '
-            "which are interpreted relative to each Git repository's root."
-        ),
-    )
 
 
 def _add_programs_arguments(
@@ -202,7 +152,7 @@ def add_arguments(
 ) -> None:
     """Adds common presubmit check options to an argument parser."""
 
-    add_path_arguments(parser)
+    add_file_collection_arguments(parser)
 
     parser.add_argument(
         '--dry-run',

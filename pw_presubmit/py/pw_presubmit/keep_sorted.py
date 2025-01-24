@@ -28,10 +28,13 @@ from typing import (
 )
 
 import pw_cli
-from pw_cli.collect_files import collect_files_in_current_repo
+from pw_cli.collect_files import (
+    add_file_collection_arguments,
+    collect_files_in_current_repo,
+)
 from pw_cli.diff import colorize_diff
 from pw_cli.plural import plural
-from . import cli, git_repo, presubmit, presubmit_context, tools
+from . import git_repo, presubmit, presubmit_context, tools
 
 DEFAULT_PATH = Path('out', 'presubmit', 'keep_sorted')
 
@@ -407,7 +410,7 @@ def parse_args() -> argparse.Namespace:
     """Creates an argument parser and parses arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    cli.add_path_arguments(parser)
+    add_file_collection_arguments(parser)
     parser.add_argument(
         '--fix', action='store_true', help='Apply fixes in place.'
     )
