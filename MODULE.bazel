@@ -108,6 +108,17 @@ use_repo(
     "rules_fuzzing_oss_fuzz",
 )
 
+git_repository = use_repo_rule(
+    "@bazel_tools//tools/build_defs/repo:git.bzl",
+    "git_repository",
+)
+
+git_repository(
+    name = "bazel_clang_tidy",
+    commit = "db677011c7363509a288a9fb3bf0a50830bbf791",
+    remote = "https://github.com/erenon/bazel_clang_tidy.git",
+)
+
 # Configure libusb
 # ================
 #

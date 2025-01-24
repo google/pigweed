@@ -48,6 +48,12 @@ def pw_facade(name, srcs = None, backend = None, **kwargs):
     facade_kwargs.pop("implementation_deps", [])
     native.cc_library(
         name = name + ".facade",
+        # The .facade target is not self-contained (it's missing a dependency
+        # on the backend headers), so it can't be successfully clang-tidied.
+        # "no-clang-tidy-headers" is a special tag defined in bazel_clang_tidy
+        # that exempts a build target's headers from tidying; see
+        # https://github.com/erenon/bazel_clang_tidy/pull/76.
+        tags = facade_kwargs.pop("tags", []) + ["no-clang-tidy-headers"],
         **facade_kwargs
     )
 

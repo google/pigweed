@@ -321,6 +321,15 @@ builtin_module_map(
     }),
 )
 
+alias(
+    name = "sysroot_root",
+    actual = select({
+        "@platforms//os:linux": "@linux_sysroot//:sysroot",
+        "@platforms//os:macos": "@macos_sysroot//:sysroot",
+        "//conditions:default": "//pw_build:empty_cc_library",
+    }),
+)
+
 cc_toolchain(
     name = "host_toolchain",
     args = select({

@@ -243,3 +243,9 @@ js_run_binary(
     args = ["-c"],
     tool = ":rollup_bin",
 )
+
+filegroup(
+    name = "clang_tidy_config",
+    srcs = [".clang-tidy"],
+    visibility = ["//visibility:public"],
+)

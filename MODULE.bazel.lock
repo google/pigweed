@@ -1108,10 +1108,10 @@
                 "linux-arm"
               ],
               "executables": [
-                "'@@+_repo_rules4+doxygen_linux_amd64//:bin/doxygen'",
-                "'@@+_repo_rules4+doxygen_mac_amd64//:doxygen'",
-                "'@@+_repo_rules4+doxygen_mac_arm64//:doxygen'",
-                "'@@+_repo_rules4+doxygen_windows_amd64//:windows.exe'",
+                "'@@+_repo_rules5+doxygen_linux_amd64//:bin/doxygen'",
+                "'@@+_repo_rules5+doxygen_mac_amd64//:doxygen'",
+                "'@@+_repo_rules5+doxygen_mac_arm64//:doxygen'",
+                "'@@+_repo_rules5+doxygen_windows_amd64//:windows.exe'",
                 ""
               ]
             }

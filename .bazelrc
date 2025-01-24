@@ -153,6 +153,19 @@ import %workspace%/pw_fuzzer/libfuzzer.bazelrc
 # Include FuzzTest build configurations.
 import %workspace%/pw_fuzzer/fuzztest.bazelrc
 
+# clang-tidy configuration
+build:clang-tidy --aspects @bazel_clang_tidy//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
+build:clang-tidy --output_groups=report
+build:clang-tidy --@bazel_clang_tidy//:clang_tidy_config=//:clang_tidy_config
+build:clang-tidy --@bazel_clang_tidy//:clang_tidy_executable=@llvm_toolchain//:clang-tidy
+build:clang-tidy --@bazel_clang_tidy//:clang_tidy_additional_deps=//pw_toolchain/host_clang:sysroot_root
+# We need to disable this warning to avoid spurious "#pragma once in main file"
+# warnings for header-only libraries. For another approach, see
+# https://github.com/mongodb-forks/bazel_clang_tidy/pull/2
+#
+# TODO: https://pwbug.dev/341723612 - What do we do in GN?
+build:clang-tidy --copt=-Wno-pragma-once-outside-header
+
 # For some platforms i.e. google/oss-fuzz we need to use the system provided
 # rather than the hermetic toolchains. This allows oss-fuzz to override the
 # build with specialised compilers that are tightly coupled to the fuzzing
