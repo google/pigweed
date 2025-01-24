@@ -18,7 +18,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -54,7 +53,7 @@ pw_cc_test(
     srcs = ["xor_shift_test.cc"],
     deps = [
         ":pw_random",
-        "//pw_assert",
+        "//pw_assert:config",
         "//pw_bytes",
         "//pw_unit_test",
     ],
