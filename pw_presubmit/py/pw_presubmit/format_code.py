@@ -38,7 +38,6 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
-    TextIO,
 )
 
 from pw_cli.collect_files import (
@@ -46,7 +45,6 @@ from pw_cli.collect_files import (
     collect_files_in_current_repo,
 )
 import pw_cli.color
-from pw_cli.diff import colorize_diff
 import pw_cli.env
 from pw_cli.file_filter import FileFilter
 from pw_cli.plural import plural
@@ -63,17 +61,21 @@ from pw_presubmit import (
     owners_checks,
     presubmit_context,
 )
+from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.core import FormattedDiff, FormatFixStatus
 from pw_presubmit.format.cpp import ClangFormatFormatter
-from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.gn import GnFormatter
+from pw_presubmit.format.private.cli_support import (
+    summarize_findings,
+    findings_to_formatted_diffs,
+)
 from pw_presubmit.format.python import BlackFormatter
+from pw_presubmit.rst_format import reformat_rst
 from pw_presubmit.tools import (
     file_summary,
     log_run,
     PresubmitToolRunner,
 )
-from pw_presubmit.rst_format import reformat_rst
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 _COLOR = pw_cli.color.colors()
@@ -464,47 +466,6 @@ def rst_format_fix(ctx: _Context) -> dict[Path, str]:
     return errors
 
 
-def print_format_check(
-    errors: dict[Path, str],
-    show_fix_commands: bool,
-    show_summary: bool = True,
-    colors: bool | None = None,
-    file: TextIO = sys.stdout,
-) -> None:
-    """Prints and returns the result of a check_*_format function."""
-    if not errors:
-        # Don't print anything in the all-good case.
-        return
-
-    if colors is None:
-        colors = file == sys.stdout
-
-    # Show the format fixing diff suggested by the tooling (with colors).
-    if show_summary:
-        _LOG.warning(
-            'Found %d files with formatting errors. Format changes:',
-            len(errors),
-        )
-    for diff in errors.values():
-        if colors:
-            diff = colorize_diff(diff)
-        print(diff, end='', file=file)
-
-    # Show a copy-and-pastable command to fix the issues.
-    if show_fix_commands:
-
-        def path_relative_to_cwd(path: Path):
-            try:
-                return Path(path).resolve().relative_to(Path.cwd().resolve())
-            except ValueError:
-                return Path(path).resolve()
-
-        message = (
-            f'  pw format --fix {path_relative_to_cwd(path)}' for path in errors
-        )
-        _LOG.warning('To fix formatting, run:\n\n%s\n', '\n'.join(message))
-
-
 def print_format_fix(stdout: bytes):
     """Prints the output of a format --fix call."""
     for line in stdout.splitlines():
@@ -687,20 +648,20 @@ def presubmit_check(
     @filter_paths(file_filter=file_filter)
     def check_code_format(ctx: PresubmitContext):
         ctx.paths = presubmit_context.apply_exclusions(ctx)
-        errors = code_format.check(ctx)
-        print_format_check(
+        errors = findings_to_formatted_diffs(code_format.check(ctx))
+        summarize_findings(
             errors,
-            # When running as part of presubmit, show the fix command help.
-            show_fix_commands=True,
+            log_fix_command=True,
+            log_oneliner_summary=True,
         )
         if not errors:
             return
 
         with ctx.failure_summary_log.open('w') as outs:
-            print_format_check(
+            summarize_findings(
                 errors,
-                show_summary=False,
-                show_fix_commands=False,
+                log_fix_command=False,
+                log_oneliner_summary=False,
                 file=outs,
             )
 
@@ -887,18 +848,26 @@ def format_files(
     for line in _file_summary(paths, repo if repo else Path.cwd()):
         print(line, file=sys.stderr)
 
-    check_errors = formatter.check()
-    print_format_check(check_errors, show_fix_commands=(not fix))
+    check_errors = findings_to_formatted_diffs(formatter.check())
+    summarize_findings(
+        check_errors,
+        log_fix_command=(not fix),
+        log_oneliner_summary=True,
+    )
 
     if check_errors:
         if fix:
             _LOG.info(
                 'Applying formatting fixes to %d files', len(check_errors)
             )
-            fix_errors = formatter.fix()
+            fix_errors = findings_to_formatted_diffs(formatter.fix())
             if fix_errors:
                 _LOG.info('Failed to apply formatting fixes')
-                print_format_check(fix_errors, show_fix_commands=False)
+                summarize_findings(
+                    check_errors,
+                    log_fix_command=False,
+                    log_oneliner_summary=True,
+                )
                 return 1
 
             _LOG.info('Formatting fixes applied successfully')

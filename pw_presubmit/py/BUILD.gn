@@ -34,6 +34,8 @@ pw_python_package("py") {
     "pw_presubmit/format/core.py",
     "pw_presubmit/format/cpp.py",
     "pw_presubmit/format/gn.py",
+    "pw_presubmit/format/private/__init__.py",
+    "pw_presubmit/format/private/cli_support.py",
     "pw_presubmit/format/python.py",
     "pw_presubmit/format/test_data/__init__.py",
     "pw_presubmit/format_code.py",
