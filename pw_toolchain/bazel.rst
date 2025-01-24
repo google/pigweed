@@ -30,6 +30,8 @@ upstream toolchains by calling ``register_pigweed_cxx_toolchains()``:
    would prefer more stability in toolchain configurations, consider declaring
    custom toolchains in your project.
 
+.. _module-pw_toolchain-bazel-layering-check:
+
 Layering check
 ==============
 Upstream Pigweed toolchains have support for `layering check
@@ -41,7 +43,6 @@ produces cleaner dependency graphs and is recommended for all users.
 .. admonition:: Note
 
    Layering check requires Bazel 8.0.0 or newer.
-
 
 How to enable layering check?
 -----------------------------

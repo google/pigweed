@@ -12,13 +12,216 @@ Talk to the team at Pigweed Live
 .. pigweed-live::
 
 .. _docs-changelog-latest:
+.. _docs-changelog-2025-01-24:
+
+------------
+Jan 24, 2025
+------------
+.. changelog_highlights_start
+
+Highlights (Jan 10, 2025 to Jan 24, 2025):
+
+* **Thread creation API**: The cross-platform thread creation API proposed
+  in :ref:`seed-0128` has been implemented.
+* **Layering check**: Upstream Pigweed toolchains now support
+  :ref:`layering check <module-pw_toolchain-bazel-layering-check>` in Bazel.
+  Including headers that aren't in the ``hdrs`` of a ``cc_library``
+  you directly depend on becomes a compile-time error.
+* **Cortex-A support**: :ref:`module-pw_interrupt_cortex_a` is a new
+  ``pw_interrupt`` backend for Arm Cortex-A processors. ``pw_toolchain``
+  now supports Arm Cortex-A35.
+* **Atomic API**: The new :ref:`module-pw_atomic` module provides software
+  implementations of atomic operations.
+
+.. changelog_highlights_end
+
+.. _docs-changelog-2025-01-24-Modules:
+
+Modules
+=======
+
+.. _docs-changelog-2025-01-24-Modules-pw_atomic:
+
+pw_atomic
+---------
+New features:
+
+.. 120f202e25b4c59111012e9568c74f4af2fdb09d
+
+* The new :ref:`module-pw_atomic` module provides software
+  implementations of atomic operations. Commit: `Add module for atomic
+  operations <https://pwrev.dev/239719>`__.
+
+.. _docs-changelog-2025-01-24-Modules-pw_bluetooth_proxy:
+
+pw_bluetooth_proxy
+------------------
+New features:
+
+.. c20f1e99713ae9959a223d8504690ccbf98f260f
+
+* Clients of ``pw_bluetooth_proxy`` can now register a callback function
+  for inspecting host-to-controller L2CAP basic channel packets. Commit:
+  `Add host to controller callback packet sniffing
+  <https://pwrev.dev/260553>`__. Bug: :bug:`390191420`.
+
+.. _docs-changelog-2025-01-24-Modules-pw_cli:
+
+pw_cli
+------
+New features:
+
+.. 69614fba8ccf19b2dcaf60f214353a733329fcaa
+
+* The new :py:class:`pw_cli.git_repo.GitRepoFinder` helper class
+  efficiently finds Git repo roots. Commit: `Add helper for efficiently
+  finding git repo roots <https://pwrev.dev/254024>`__. Bug:
+  :bug:`326309165`.
+
+.. _docs-changelog-2025-01-24-Modules-pw_digital_io_mcuxpresso:
+
+pw_digital_io_mcuxpresso
+------------------------
+New features:
+
+.. f282c15c48732f4c4e1e3da15c1cfddea2b9cb47
+
+* :cpp:class:`pw::digital_io::McuxpressoDigitalInOutInterrupt` now
+  supports interrupt triggers on both edges. Commit: `Emulate kBothEdges
+  trigger via level interrupt <https://pwrev.dev/260793>`__. Bug:
+  :bug:`390456846`.
+
+.. _docs-changelog-2025-01-24-Modules-pw_env_setup:
+
+pw_env_setup
+------------
+Changes:
+
+.. 537825f5f67281aee3764444de234e81722a2401
+
+* All transitive Python dependencies are now pinned. Commit: `Pin all
+  transitive Python package dependencies <https://pwrev.dev/261413>`__.
+  Bug: :bug:`390257072`.
+
+.. _docs-changelog-2025-01-24-Modules-pw_interrupt_cortex_a:
+
+pw_interrupt_cortex_a
+---------------------
+New features:
+
+.. e61919ca93f922bc67fc6bd2f005c00f858cdcbd
+
+* :ref:`module-pw_interrupt_cortex_a` is a new ``pw_interrupt`` backend
+  for Arm Cortex-A processors. Commit: `Add pw_interrupt backend for
+  A-profile processors <https://pwrev.dev/261396>`__.
+
+.. _docs-changelog-2025-01-24-Modules-pw_protobuf:
+
+pw_protobuf
+-----------
+Changes:
+
+.. a3cd0bc42a929df218bbc3ed96944cacf5cead7a
+
+* The ``kMaxEncodedSizeBytes`` constant has been renamed to
+  ``kMaxEncodedSizeBytesWithoutValues`` to reflect the fact that it
+  sometimes doesn't represent a message's true maximum size. Commit:
+  `Disambiguate maximum size constants <https://pwrev.dev/259012>`__. Bug:
+  :bug:`379868242`.
+
+.. _docs-changelog-2025-01-24-Modules-pw_rpc:
+
+pw_rpc
+------
+Changes:
+
+.. 0afdf903105c46e8572591de16b7fd2964ad0874
+
+* Recent Java client call ID changes were reverted because they were
+  causing RPC timeouts. Commit: `Revert Java client call ID changes
+  <https://pwrev.dev/260892>`__.
+
+.. _docs-changelog-2025-01-24-Modules-pw_sync:
+
+pw_sync
+-------
+Changes:
+
+.. 86cb968d79207a634c196bc1d289aa1cf25591c7
+
+* Time-related methods previously in :cpp:class:`pw::sync::Borrowable`
+  were moved to a new :cpp:class:`pw::sync::TimedBorrowable` class so that
+  projects can use ``Borrowable`` without depending on :ref:`module-pw_chrono`.
+  Commit: `Split TimedBorrowable from Borrowable
+  <https://pwrev.dev/260313>`__.
+
+.. _docs-changelog-2025-01-24-Modules-pw_system:
+
+pw_system
+---------
+Changes:
+
+.. f1cb7ec19fca8dd7332d31d0ae81309e68601514
+
+* The ``//pw_system:config`` Bazel rule is now public to make it
+  possible to reuse the same configurations when creating custom RPC
+  servers or I/O backends outside of Pigweed. Commit: `Make config library
+  public in Bazel <https://pwrev.dev/261693>`__.
+
+.. _docs-changelog-2025-01-24-Modules-pw_tokenizer:
+
+pw_tokenizer
+------------
+New features:
+
+.. a90ad7872bd7f178d049264214ae3404c212fc4d
+
+* The new :c:macro:`PW_NESTED_TOKEN_FMT` macro is a format specifier for
+  doubly nested token arguments. Commit: `Create generic macro for a
+  nested token format <https://pwrev.dev/253267>`__.
+
+Changes:
+
+.. 1b8d5de1f136c9c46d62869554d1cf9672b8a815
+
+* Token domains have been limited to certain characters. Commit: `Limit
+  token domains to certain characters <https://pwrev.dev/253952>`__.
+
+.. _docs-changelog-2025-01-24-Modules-pw_toolchain:
+
+pw_toolchain
+------------
+New features:
+
+.. 1a98c3d9725b4178148a354b917f15d86fc374b5
+
+* ``pw_toolchain`` now supports Arm Cortex-A35. Commit: `Add toolchain
+  config for Cortex-A35 <https://pwrev.dev/261733>`__.
+
+.. 03e6941c72b91f2cb9550b1b1ba59fa9fe862ab2
+
+* Upstream Pigweed toolchains now support
+  :ref:`layering check <module-pw_toolchain-bazel-layering-check>`.
+  Commit: `Document layering check <https://pwrev.dev/261552>`__. Bug:
+  :bug:`219091175`.
+
+.. _docs-changelog-2025-01-24-Modules-pw_thread:
+
+pw_thread
+---------
+New features:
+
+.. e9d4e4d30b4a49b2ca4dba88656dc660b0a0bcaf
+
+* The cross-platform thread creation API proposed in :ref:`seed-0128`
+  has been implemented. Commit: `Generic thread creation
+  <https://pwrev.dev/255065>`__. Bug: :bug:`373524851`.
+
 .. _docs-changelog-2025-01-09:
 
 -----------
 Jan 9, 2025
 -----------
-.. changelog_highlights_start
-
 Highlights (Dec 27, 2024 to Jan 9, 2025):
 
 * **Bazel 8**: Pigweed now :ref:`depends on Bazel 8
@@ -33,8 +236,6 @@ Highlights (Dec 27, 2024 to Jan 9, 2025):
 * **pw_rpc Java improvements**: The ``pw_rpc`` Java client now
   has better :ref:`concurrent RPC request support
   <docs-changelog-2025-01-09-Modules-pw_rpc>`.
-
-.. changelog_highlights_end
 
 .. _docs-changelog-2025-01-09-Modules:
 
