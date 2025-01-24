@@ -18,7 +18,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -86,7 +85,9 @@ cc_library(
         ":chip_selector",
         ":initiator",
         "//pw_assert",
+        "//pw_bytes",
         "//pw_containers",
+        "//pw_containers:algorithm",
         "//pw_containers:to_array",
         "//pw_unit_test",
     ],
@@ -100,7 +101,8 @@ pw_cc_test(
     deps = [
         ":initiator_mock",
         "//pw_bytes",
-        "//pw_containers",
+        "//pw_containers:algorithm",
+        "//pw_span",
         "//pw_unit_test",
     ],
 )
@@ -127,8 +129,12 @@ pw_cc_test(
         "spi_test.cc",
     ],
     deps = [
+        ":chip_selector",
         ":device",
+        ":initiator",
         ":responder",
+        "//pw_status",
+        "//pw_sync:borrow",
         "//pw_sync:mutex",
         "//pw_unit_test",
     ],
