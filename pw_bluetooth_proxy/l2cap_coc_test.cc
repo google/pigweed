@@ -444,12 +444,18 @@ TEST_F(L2capCocReadTest, BasicRead) {
       proxy,
       CocParameters{.handle = handle,
                     .local_cid = local_cid,
-                    .receive_fn = [&capture](pw::span<uint8_t> payload) {
+                    .receive_fn = [&capture](multibuf::MultiBuf&& payload) {
                       ++capture.receives_called;
-                      EXPECT_TRUE(std::equal(payload.begin(),
-                                             payload.end(),
-                                             capture.expected_payload.begin(),
-                                             capture.expected_payload.end()));
+                      std::optional<ConstByteSpan> rx_sdu =
+                          payload.ContiguousSpan();
+                      ASSERT_TRUE(rx_sdu);
+                      ConstByteSpan expected_sdu =
+                          as_bytes(span(capture.expected_payload.data(),
+                                        capture.expected_payload.size()));
+                      EXPECT_TRUE(std::equal(rx_sdu->begin(),
+                                             rx_sdu->end(),
+                                             expected_sdu.begin(),
+                                             expected_sdu.end()));
                     }});
 
   std::array<uint8_t,
@@ -646,17 +652,15 @@ TEST_F(L2capCocReadTest, ErrorOnRxToStoppedChannel) {
   uint16_t local_cid = 234;
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .handle = handle,
-          .local_cid = local_cid,
-          .rx_credits = num_invalid_rx,
-          .receive_fn =
-              []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
-          .event_fn =
-              [&events_received](L2capChannelEvent event) {
-                ++events_received;
-                EXPECT_EQ(event, L2capChannelEvent::kRxWhileStopped);
-              }});
+      CocParameters{.handle = handle,
+                    .local_cid = local_cid,
+                    .rx_credits = num_invalid_rx,
+                    .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); },
+                    .event_fn =
+                        [&events_received](L2capChannelEvent event) {
+                          ++events_received;
+                          EXPECT_EQ(event, L2capChannelEvent::kRxWhileStopped);
+                        }});
 
   std::array<uint8_t, kFirstKFrameOverAclMinSize> hci_arr;
   hci_arr.fill(0);
@@ -697,12 +701,9 @@ TEST_F(L2capCocReadTest, TooShortAclPassedToHost) {
   uint16_t local_cid = 234;
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .handle = handle,
-          .local_cid = local_cid,
-          .receive_fn = []([[maybe_unused]] pw::span<uint8_t> payload) {
-            FAIL();
-          }});
+      CocParameters{.handle = handle,
+                    .local_cid = local_cid,
+                    .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); }});
 
   std::array<uint8_t, kFirstKFrameOverAclMinSize> hci_arr;
   hci_arr.fill(0);
@@ -735,17 +736,15 @@ TEST_F(L2capCocReadTest, ChannelClosedWithErrorIfMtuExceeded) {
   int events_received = 0;
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .handle = handle,
-          .local_cid = local_cid,
-          .rx_mtu = kRxMtu,
-          .receive_fn =
-              []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
-          .event_fn =
-              [&events_received](L2capChannelEvent event) {
-                ++events_received;
-                EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
-              }});
+      CocParameters{.handle = handle,
+                    .local_cid = local_cid,
+                    .rx_mtu = kRxMtu,
+                    .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); },
+                    .event_fn =
+                        [&events_received](L2capChannelEvent event) {
+                          ++events_received;
+                          EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
+                        }});
 
   constexpr uint16_t kPayloadSize = kRxMtu + 1;
   std::array<uint8_t, kFirstKFrameOverAclMinSize + kPayloadSize> hci_arr;
@@ -785,17 +784,15 @@ TEST_F(L2capCocReadTest, ChannelClosedWithErrorIfMpsExceeded) {
   int events_received = 0;
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .handle = handle,
-          .local_cid = local_cid,
-          .rx_mps = kRxMps,
-          .receive_fn =
-              []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
-          .event_fn =
-              [&events_received](L2capChannelEvent event) {
-                ++events_received;
-                EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
-              }});
+      CocParameters{.handle = handle,
+                    .local_cid = local_cid,
+                    .rx_mps = kRxMps,
+                    .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); },
+                    .event_fn =
+                        [&events_received](L2capChannelEvent event) {
+                          ++events_received;
+                          EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
+                        }});
 
   constexpr uint16_t kPayloadSize = kRxMps + 1;
   std::array<uint8_t, kFirstKFrameOverAclMinSize + kPayloadSize> hci_arr;
@@ -834,16 +831,14 @@ TEST_F(L2capCocReadTest, ChannelClosedWithErrorIfPayloadsExceedSduLength) {
   int events_received = 0;
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .handle = handle,
-          .local_cid = local_cid,
-          .receive_fn =
-              []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
-          .event_fn =
-              [&events_received](L2capChannelEvent event) {
-                ++events_received;
-                EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
-              }});
+      CocParameters{.handle = handle,
+                    .local_cid = local_cid,
+                    .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); },
+                    .event_fn =
+                        [&events_received](L2capChannelEvent event) {
+                          ++events_received;
+                          EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
+                        }});
 
   constexpr uint16_t k1stPayloadSize = 1;
   constexpr uint16_t k2ndPayloadSize = 3;
@@ -905,12 +900,9 @@ TEST_F(L2capCocReadTest, NoReadOnStoppedChannel) {
   uint16_t local_cid = 234;
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .handle = handle,
-          .local_cid = local_cid,
-          .receive_fn = []([[maybe_unused]] pw::span<uint8_t> payload) {
-            FAIL();
-          }});
+      CocParameters{.handle = handle,
+                    .local_cid = local_cid,
+                    .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); }});
 
   std::array<uint8_t, kFirstKFrameOverAclMinSize> hci_arr;
   hci_arr.fill(0);
@@ -943,11 +935,8 @@ TEST_F(L2capCocReadTest, NoReadOnSameCidDifferentConnectionHandle) {
   uint16_t local_cid = 234;
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .local_cid = local_cid,
-          .receive_fn = []([[maybe_unused]] pw::span<uint8_t> payload) {
-            FAIL();
-          }});
+      CocParameters{.local_cid = local_cid,
+                    .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); }});
 
   std::array<uint8_t, kFirstKFrameOverAclMinSize> hci_arr;
   hci_arr.fill(0);
@@ -987,12 +976,17 @@ TEST_F(L2capCocReadTest, MultipleReadsSameChannel) {
       proxy,
       CocParameters{.handle = handle,
                     .local_cid = local_cid,
-                    .receive_fn = [&capture](pw::span<uint8_t> payload) {
+                    .receive_fn = [&capture](multibuf::MultiBuf&& payload) {
                       ++capture.sends_called;
-                      EXPECT_TRUE(std::equal(payload.begin(),
-                                             payload.end(),
-                                             capture.payload.begin(),
-                                             capture.payload.end()));
+                      std::optional<ConstByteSpan> rx_sdu =
+                          payload.ContiguousSpan();
+                      ASSERT_TRUE(rx_sdu);
+                      ConstByteSpan expected_sdu = as_bytes(
+                          span(capture.payload.data(), capture.payload.size()));
+                      EXPECT_TRUE(std::equal(rx_sdu->begin(),
+                                             rx_sdu->end(),
+                                             expected_sdu.begin(),
+                                             expected_sdu.end()));
                     }});
 
   std::array<uint8_t, kFirstKFrameOverAclMinSize + capture.payload.size()>
@@ -1046,12 +1040,16 @@ TEST_F(L2capCocReadTest, MultipleReadsMultipleChannels) {
   constexpr int kNumChannels = 5;
   uint16_t local_cid = 123;
   uint16_t handle = 456;
-  auto receive_fn = [&capture](pw::span<uint8_t> payload) {
+  auto receive_fn = [&capture](multibuf::MultiBuf&& payload) {
     ++capture.sends_called;
-    EXPECT_TRUE(std::equal(payload.begin(),
-                           payload.end(),
-                           capture.payload.begin(),
-                           capture.payload.end()));
+    std::optional<ConstByteSpan> rx_sdu = payload.ContiguousSpan();
+    ASSERT_TRUE(rx_sdu);
+    ConstByteSpan expected_sdu =
+        as_bytes(span(capture.payload.data(), capture.payload.size()));
+    EXPECT_TRUE(std::equal(rx_sdu->begin(),
+                           rx_sdu->end(),
+                           expected_sdu.begin(),
+                           expected_sdu.end()));
   };
   std::array<L2capCoc, kNumChannels> channels{
       BuildCoc(proxy,
@@ -1127,12 +1125,16 @@ TEST_F(L2capCocReadTest, ChannelStoppageDoNotAffectOtherChannels) {
   constexpr int kNumChannels = 5;
   uint16_t local_cid = 123;
   uint16_t handle = 456;
-  auto receive_fn = [&capture](pw::span<uint8_t> payload) {
+  auto receive_fn = [&capture](multibuf::MultiBuf&& payload) {
     ++capture.sends_called;
-    EXPECT_TRUE(std::equal(payload.begin(),
-                           payload.end(),
-                           capture.payload.begin(),
-                           capture.payload.end()));
+    std::optional<ConstByteSpan> rx_sdu = payload.ContiguousSpan();
+    ASSERT_TRUE(rx_sdu);
+    ConstByteSpan expected_sdu =
+        as_bytes(span(capture.payload.data(), capture.payload.size()));
+    EXPECT_TRUE(std::equal(rx_sdu->begin(),
+                           rx_sdu->end(),
+                           expected_sdu.begin(),
+                           expected_sdu.end()));
   };
   std::array<L2capCoc, kNumChannels> channels{
       BuildCoc(proxy,
@@ -1196,155 +1198,6 @@ TEST_F(L2capCocReadTest, ChannelStoppageDoNotAffectOtherChannels) {
   EXPECT_EQ(capture.sends_called, kNumChannels - 2);
 }
 
-TEST_F(L2capCocReadTest, ReadDropsSduSentOver2Segments) {
-  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
-      []([[maybe_unused]] H4PacketWithHci&& packet) {});
-  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
-      []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0,
-                              /*br_edr_acl_credits_to_reserve=*/0);
-
-  int sends_called = 0;
-  uint16_t local_cid = 234;
-  uint16_t handle = 123;
-  L2capCoc channel = BuildCoc(
-      proxy,
-      CocParameters{.handle = handle,
-                    .local_cid = local_cid,
-                    .receive_fn = [&sends_called](pw::span<uint8_t> payload) {
-                      EXPECT_EQ(payload.size(), 0ul);
-                      ++sends_called;
-                    }});
-
-  // Send L2CAP SDU segmented over 2 frames.
-  constexpr uint16_t k1stPayloadSize = 13;
-  constexpr uint16_t k2ndPayloadSize = 19;
-  constexpr uint16_t kSduLength = k1stPayloadSize + k2ndPayloadSize;
-
-  std::array<uint8_t,
-             kFirstKFrameOverAclMinSize +
-                 std::max(k1stPayloadSize, k2ndPayloadSize)>
-      hci_arr;
-  hci_arr.fill(0);
-  H4PacketWithHci h4_1st_segment{
-      emboss::H4PacketType::ACL_DATA,
-      pw::span<uint8_t>(hci_arr.data(),
-                        kFirstKFrameOverAclMinSize + k1stPayloadSize)};
-
-  Result<emboss::AclDataFrameWriter> acl =
-      MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr);
-  acl->header().handle().Write(handle);
-  acl->data_total_length().Write(emboss::FirstKFrame::MinSizeInBytes() +
-                                 k1stPayloadSize);
-
-  emboss::FirstKFrameWriter kframe = emboss::MakeFirstKFrameView(
-      acl->payload().BackingStorage().data(), acl->data_total_length().Read());
-  kframe.pdu_length().Write(kSduLengthFieldSize + k1stPayloadSize);
-  kframe.channel_id().Write(local_cid);
-  kframe.sdu_length().Write(kSduLength);
-
-  proxy.HandleH4HciFromController(std::move(h4_1st_segment));
-
-  // Send 2nd segment.
-  acl->data_total_length().Write(emboss::SubsequentKFrame::MinSizeInBytes() +
-                                 k2ndPayloadSize);
-  kframe.pdu_length().Write(k2ndPayloadSize);
-  H4PacketWithHci h4_2nd_segment{
-      emboss::H4PacketType::ACL_DATA,
-      pw::span<uint8_t>(hci_arr.data(),
-                        emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
-                            emboss::SubsequentKFrame::MinSizeInBytes() +
-                            k2ndPayloadSize)};
-
-  proxy.HandleH4HciFromController(std::move(h4_2nd_segment));
-
-  // Now ensure a non-segmented packet with size 0 payload is read.
-  acl->data_total_length().Write(emboss::FirstKFrame::MinSizeInBytes());
-  kframe.pdu_length().Write(kSduLengthFieldSize);
-  kframe.sdu_length().Write(0);
-  H4PacketWithHci h4_packet{
-      emboss::H4PacketType::ACL_DATA,
-      pw::span<uint8_t>(hci_arr.data(), kFirstKFrameOverAclMinSize)};
-
-  proxy.HandleH4HciFromController(std::move(h4_packet));
-
-  EXPECT_EQ(sends_called, 1);
-}
-
-TEST_F(L2capCocReadTest, ReadDropsSduSentOver4Segments) {
-  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
-      []([[maybe_unused]] H4PacketWithHci&& packet) {});
-  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
-      []([[maybe_unused]] H4PacketWithH4&& packet) {});
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/0,
-                              /*br_edr_acl_credits_to_reserve=*/0);
-
-  int sends_called = 0;
-  uint16_t handle = 123;
-  uint16_t local_cid = 234;
-  L2capCoc channel = BuildCoc(
-      proxy,
-      CocParameters{
-          .handle = handle,
-          .local_cid = local_cid,
-          .receive_fn =
-              [&sends_called]([[maybe_unused]] pw::span<uint8_t> payload) {
-                EXPECT_EQ(payload.size(), 0ul);
-                ++sends_called;
-              }});
-
-  // Send L2CAP SDU segmented over 4 frames with equal PDU length.
-  constexpr uint16_t kPduLength = 13;
-  ASSERT_GE(kPduLength, kSduLengthFieldSize);
-  constexpr uint16_t kSduLength = 4 * kPduLength - kSduLengthFieldSize;
-
-  std::array<uint8_t,
-             emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
-                 emboss::BasicL2capHeader::IntrinsicSizeInBytes() + kPduLength>
-      hci_arr;
-  hci_arr.fill(0);
-  H4PacketWithHci h4_1st_segment{emboss::H4PacketType::ACL_DATA, hci_arr};
-
-  Result<emboss::AclDataFrameWriter> acl =
-      MakeEmbossWriter<emboss::AclDataFrameWriter>(hci_arr);
-  acl->header().handle().Write(handle);
-  acl->data_total_length().Write(
-      emboss::BasicL2capHeader::IntrinsicSizeInBytes() + kPduLength);
-
-  emboss::FirstKFrameWriter kframe = emboss::MakeFirstKFrameView(
-      acl->payload().BackingStorage().data(), acl->data_total_length().Read());
-  kframe.pdu_length().Write(kPduLength);
-  kframe.channel_id().Write(local_cid);
-  kframe.sdu_length().Write(kSduLength);
-
-  proxy.HandleH4HciFromController(std::move(h4_1st_segment));
-
-  H4PacketWithHci h4_2nd_segment{emboss::H4PacketType::ACL_DATA, hci_arr};
-  proxy.HandleH4HciFromController(std::move(h4_2nd_segment));
-
-  H4PacketWithHci h4_3rd_segment{emboss::H4PacketType::ACL_DATA, hci_arr};
-  proxy.HandleH4HciFromController(std::move(h4_3rd_segment));
-
-  H4PacketWithHci h4_4th_segment{emboss::H4PacketType::ACL_DATA, hci_arr};
-  proxy.HandleH4HciFromController(std::move(h4_4th_segment));
-
-  // Now ensure a non-segmented packet with size 0 payload is read.
-  acl->data_total_length().Write(emboss::FirstKFrame::MinSizeInBytes());
-  kframe.pdu_length().Write(kSduLengthFieldSize);
-  kframe.sdu_length().Write(0);
-  H4PacketWithHci h4_packet{
-      emboss::H4PacketType::ACL_DATA,
-      pw::span(hci_arr.data(), kFirstKFrameOverAclMinSize)};
-
-  proxy.HandleH4HciFromController(std::move(h4_packet));
-
-  EXPECT_EQ(sends_called, 1);
-}
-
 TEST_F(L2capCocReadTest, NonCocAclPacketPassesThroughToHost) {
   struct {
     int sends_called = 0;
@@ -1375,11 +1228,8 @@ TEST_F(L2capCocReadTest, NonCocAclPacketPassesThroughToHost) {
   // Acquire unused CoC to validate that doing so does not interfere.
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .handle = capture.handle,
-          .receive_fn = []([[maybe_unused]] pw::span<uint8_t> payload) {
-            FAIL();
-          }});
+      CocParameters{.handle = capture.handle,
+                    .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); }});
 
   std::array<uint8_t,
              emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
@@ -1428,16 +1278,14 @@ TEST_F(L2capCocReadTest,
   uint16_t local_cid = 234;
   L2capCoc channel = BuildCoc(
       proxy,
-      CocParameters{
-          .handle = handle,
-          .local_cid = local_cid,
-          .receive_fn =
-              []([[maybe_unused]] pw::span<uint8_t> payload) { FAIL(); },
-          .event_fn =
-              [&events_called](L2capChannelEvent event) {
-                EXPECT_EQ(event, L2capChannelEvent::kRxFragmented);
-                ++events_called;
-              }});
+      CocParameters{.handle = handle,
+                    .local_cid = local_cid,
+                    .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); },
+                    .event_fn =
+                        [&events_called](L2capChannelEvent event) {
+                          EXPECT_EQ(event, L2capChannelEvent::kRxFragmented);
+                          ++events_called;
+                        }});
 
   constexpr uint8_t kPduLength = 19;
   ASSERT_GT(kPduLength, kSduLengthFieldSize);
@@ -1496,9 +1344,7 @@ TEST_F(L2capCocReadTest,
           .handle = handle,
           .local_cid = different_local_cid,
           .receive_fn =
-              [&reads_called]([[maybe_unused]] pw::span<uint8_t> payload) {
-                ++reads_called;
-              },
+              [&reads_called](multibuf::MultiBuf&&) { ++reads_called; },
           .event_fn =
               []([[maybe_unused]] L2capChannelEvent event) { FAIL(); }});
 
@@ -1540,7 +1386,7 @@ TEST_F(L2capCocReadTest, UnexpectedContinuingFragmentStopsChannel) {
       proxy,
       CocParameters{.handle = handle,
                     .local_cid = local_cid,
-                    .receive_fn = [](span<uint8_t>) { FAIL(); },
+                    .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); },
                     .event_fn =
                         [&events_received](L2capChannelEvent event) {
                           ++events_received;
@@ -1612,10 +1458,9 @@ TEST_F(L2capCocReadTest, FragmentedPduDoesNotInterfereWithOtherChannels) {
   uint16_t handle_frag = 0x123, handle_fine = 0x234;
   uint16_t cid_frag = 0x345, cid_fine = 0x456;
   int packets_received = 0;
-  auto receive_fn =
-      [&packets_received]([[maybe_unused]] pw::span<uint8_t> payload) {
-        ++packets_received;
-      };
+  auto receive_fn = [&packets_received](multibuf::MultiBuf&&) {
+    ++packets_received;
+  };
   L2capCoc frag_channel = BuildCoc(proxy,
                                    CocParameters{
                                        .handle = handle_frag,
@@ -1957,7 +1802,7 @@ TEST_F(L2capCocReassemblyTest, OneSegmentRx) {
       proxy,
       {.handle = handle,
        .local_cid = local_cid,
-       .receive_fn_multibuf = [&capture](multibuf::MultiBuf&& payload) {
+       .receive_fn = [&capture](multibuf::MultiBuf&& payload) {
          ++capture.sdus_received;
          std::optional<ConstByteSpan> rx_sdu = payload.ContiguousSpan();
          ASSERT_TRUE(rx_sdu);
@@ -2007,7 +1852,7 @@ TEST_F(L2capCocReassemblyTest, SduReceivedWhenSegmentedOverFullRangeOfMps) {
       proxy,
       {.handle = handle,
        .local_cid = local_cid,
-       .receive_fn_multibuf = [&capture](multibuf::MultiBuf&& payload) {
+       .receive_fn = [&capture](multibuf::MultiBuf&& payload) {
          ++capture.sdus_received;
          std::optional<ConstByteSpan> rx_sdu = payload.ContiguousSpan();
          ASSERT_TRUE(rx_sdu);
@@ -2054,14 +1899,16 @@ TEST_F(L2capCocReassemblyTest, ErrorIfPayloadBytesExceedSduLength) {
   int events_received = 0;
   L2capCoc channel =
       BuildCoc(proxy,
-               {.handle = handle,
-                .local_cid = local_cid,
-                .event_fn =
-                    [&events_received](L2capChannelEvent event) {
-                      ++events_received;
-                      EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
-                    },
-                .receive_fn_multibuf = [](multibuf::MultiBuf&&) { FAIL(); }});
+               {
+                   .handle = handle,
+                   .local_cid = local_cid,
+                   .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); },
+                   .event_fn =
+                       [&events_received](L2capChannelEvent event) {
+                         ++events_received;
+                         EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
+                       },
+               });
 
   constexpr uint16_t kIndicatedSduLength = 5;
   // First PDU will be 2 bytes for SDU length field + 2 payload bytes
@@ -2107,14 +1954,16 @@ TEST_F(L2capCocReassemblyTest, ErrorIfRxBufferTooSmallForFirstKFrame) {
   int events_received = 0;
   L2capCoc channel =
       BuildCoc(proxy,
-               {.handle = handle,
-                .local_cid = local_cid,
-                .event_fn =
-                    [&events_received](L2capChannelEvent event) {
-                      ++events_received;
-                      EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
-                    },
-                .receive_fn_multibuf = [](multibuf::MultiBuf&&) { FAIL(); }});
+               {
+                   .handle = handle,
+                   .local_cid = local_cid,
+                   .receive_fn = [](multibuf::MultiBuf&&) { FAIL(); },
+                   .event_fn =
+                       [&events_received](L2capChannelEvent event) {
+                         ++events_received;
+                         EXPECT_EQ(event, L2capChannelEvent::kRxInvalid);
+                       },
+               });
 
   std::array<uint8_t, kFirstKFrameOverAclMinSize - 1> hci_arr;
   hci_arr.fill(0);

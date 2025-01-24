@@ -98,9 +98,8 @@ class L2capCoc : public L2capChannel {
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
-      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn,
-      Function<void(multibuf::MultiBuf&& payload)>&& receive_fn_multibuf);
+      Function<void(multibuf::MultiBuf&& payload)>&& receive_fn);
 
   // `SendPayloadFromControllerToClient` with the information payload contained
   // in `kframe`.
@@ -113,16 +112,14 @@ class L2capCoc : public L2capChannel {
   void AddTxCredits(uint16_t credits) PW_LOCKS_EXCLUDED(tx_mutex_);
 
  private:
-  explicit L2capCoc(
-      pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
-      L2capChannelManager& l2cap_channel_manager,
-      L2capSignalingChannel* signaling_channel,
-      uint16_t connection_handle,
-      CocConfig rx_config,
-      CocConfig tx_config,
-      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn,
-      Function<void(multibuf::MultiBuf&& payload)>&& receive_fn_multibuf);
+  explicit L2capCoc(pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
+                    L2capChannelManager& l2cap_channel_manager,
+                    L2capSignalingChannel* signaling_channel,
+                    uint16_t connection_handle,
+                    CocConfig rx_config,
+                    CocConfig tx_config,
+                    Function<void(L2capChannelEvent event)>&& event_fn,
+                    Function<void(multibuf::MultiBuf&& payload)>&& receive_fn);
 
   // Returns max size of L2CAP PDU payload supported by this channel.
   //
@@ -144,9 +141,6 @@ class L2capCoc : public L2capChannel {
     return true;
   }
 
-  void ProcessPduFromControllerMultibuf(span<uint8_t> kframe)
-      PW_LOCKS_EXCLUDED(rx_mutex_);
-
   // Replenish some of the remote's credits.
   pw::Status ReplenishRxCredits(uint16_t additional_rx_credits);
 
@@ -159,7 +153,7 @@ class L2capCoc : public L2capChannel {
   uint16_t tx_mps_;
 
   Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
-  Function<void(multibuf::MultiBuf&& payload)> receive_fn_multibuf_;
+  Function<void(multibuf::MultiBuf&& payload)> receive_fn_;
 
   sync::Mutex rx_mutex_;
   uint16_t remaining_sdu_bytes_to_ignore_ PW_GUARDED_BY(rx_mutex_) = 0;

@@ -217,9 +217,8 @@ struct CocParameters {
   uint16_t tx_mtu = 100;
   uint16_t tx_mps = 100;
   uint16_t tx_credits = 1;
-  pw::Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr;
+  Function<void(multibuf::MultiBuf&& payload)>&& receive_fn = nullptr;
   pw::Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
-  Function<void(multibuf::MultiBuf&& payload)>&& receive_fn_multibuf = nullptr;
 };
 
 // Attempt to AcquireL2capCoc and return result.
