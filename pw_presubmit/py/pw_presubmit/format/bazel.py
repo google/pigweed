@@ -16,10 +16,17 @@
 from pathlib import Path
 from typing import Dict, Final, Iterable, Iterator, List, Sequence, Tuple
 
+from pw_cli.file_filter import FileFilter
 from pw_presubmit.format.core import (
     FileFormatter,
     FormattedFileContents,
     FormatFixStatus,
+)
+
+
+DEFAULT_BAZEL_FILE_PATTERNS = FileFilter(
+    endswith=['.bazel', '.bzl'],
+    name=['^BUILD$', '^WORKSPACE$'],
 )
 
 
@@ -36,6 +43,8 @@ class BuildifierFormatter(FileFormatter):
     def __init__(
         self, warnings_to_fix: Sequence[str] = DEFAULT_WARNINGS_TO_FIX, **kwargs
     ):
+        kwargs.setdefault('mnemonic', 'Bazel')
+        kwargs.setdefault('file_patterns', DEFAULT_BAZEL_FILE_PATTERNS)
         super().__init__(**kwargs)
         self.warnings_to_fix = list(warnings_to_fix)
 

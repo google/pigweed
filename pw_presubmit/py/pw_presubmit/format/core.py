@@ -20,6 +20,7 @@ import logging
 from pathlib import Path
 from typing import Callable, Iterable, Iterator
 
+from pw_cli.file_filter import FileFilter
 from pw_cli.tool_runner import ToolRunner, BasicSubprocessRunner
 
 
@@ -123,7 +124,11 @@ class FileChecker(abc.ABC):
     instead only allows in-memory checks to produce expected resulting diffs.
 
     Attributes:
-        run_tool: The :py:class:`pw_presubmit.format.core.ToolRunner` to use
+        file_patterns: A :py:class:`pw_cli.file_filter.FileFilter` that
+            describes what kind of files this check applies to.
+        mnemonic: A human-readable description of the kind of checker this is
+            (e.g. "C and C++", "Bazel", "Python (black)").
+        tool_runner: The :py:class:`pw_presubmit.format.core.ToolRunner` to use
             when calling out to subprocesses.
         diff_tool: The :py:attr:`pw_presubmit.format.core.DiffCallback` to use
             when producing formatting diffs.
@@ -131,9 +136,14 @@ class FileChecker(abc.ABC):
 
     def __init__(
         self,
+        *,
+        file_patterns: FileFilter,
+        mnemonic: str,
         tool_runner: ToolRunner = BasicSubprocessRunner(),
         diff_tool: DiffCallback = simple_diff,
     ):
+        self.file_patterns = file_patterns
+        self.mnemonic = mnemonic
         # Always call `self.run_tool` rather than `subprocess.run`, as it allows
         # injection of tools and other environment-specific handlers.
         self.run_tool = tool_runner

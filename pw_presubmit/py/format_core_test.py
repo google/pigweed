@@ -17,6 +17,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
+from pw_cli.file_filter import FileFilter
 from pw_presubmit.format.core import (
     FileChecker,
     FormattedDiff,
@@ -31,6 +32,9 @@ class FakeFileChecker(FileChecker):
         'baz': '\nbaz\n',
         'new\n': 'newer\n',
     }
+
+    def __init__(self):
+        super().__init__(mnemonic='Fake', file_patterns=FileFilter(name=['.*']))
 
     def format_file_in_memory(
         self, file_path: Path, file_contents: bytes

@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 from typing import Iterable, Iterator, Optional, Sequence, Tuple, Union
 
+from pw_cli.file_filter import FileFilter
 from pw_presubmit.format.core import (
     FileFormatter,
     FormattedFileContents,
@@ -24,10 +25,15 @@ from pw_presubmit.format.core import (
 )
 
 
+DEFAULT_PYTHON_FILE_PATTERNS = FileFilter(endswith=['.py'])
+
+
 class BlackFormatter(FileFormatter):
     """A formatter that runs ``black`` on files."""
 
     def __init__(self, config_file: Optional[Path], **kwargs):
+        kwargs.setdefault('mnemonic', 'Python (black)')
+        kwargs.setdefault('file_patterns', DEFAULT_PYTHON_FILE_PATTERNS)
         super().__init__(**kwargs)
         self.config_file = config_file
 

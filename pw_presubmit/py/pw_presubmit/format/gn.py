@@ -16,11 +16,15 @@
 from pathlib import Path
 from typing import Final, Iterable, Iterator, Sequence, Tuple
 
+from pw_cli.file_filter import FileFilter
 from pw_presubmit.format.core import (
     FileFormatter,
     FormattedFileContents,
     FormatFixStatus,
 )
+
+
+DEFAULT_GN_FILE_PATTERNS = FileFilter(endswith=['.gn', '.gni'])
 
 
 class GnFormatter(FileFormatter):
@@ -29,6 +33,8 @@ class GnFormatter(FileFormatter):
     DEFAULT_FLAGS: Final[Sequence[str]] = ()
 
     def __init__(self, tool_flags: Sequence[str] = DEFAULT_FLAGS, **kwargs):
+        kwargs.setdefault('mnemonic', 'GN')
+        kwargs.setdefault('file_patterns', DEFAULT_GN_FILE_PATTERNS)
         super().__init__(**kwargs)
         self.gn_format_flags = list(tool_flags)
 

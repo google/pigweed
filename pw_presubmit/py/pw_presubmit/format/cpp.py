@@ -16,10 +16,21 @@
 from pathlib import Path
 from typing import Final, Iterable, Iterator, Sequence
 
+from pw_cli.file_filter import FileFilter
 from pw_presubmit.format.core import (
     FileFormatter,
     FormattedFileContents,
     FormatFixStatus,
+)
+
+
+CPP_HEADER_EXTS = frozenset(('.h', '.hpp', '.hxx', '.h++', '.hh', '.H'))
+CPP_SOURCE_EXTS = frozenset(
+    ('.c', '.cpp', '.cxx', '.c++', '.cc', '.C', '.inc', '.inl')
+)
+CPP_EXTS = CPP_HEADER_EXTS.union(CPP_SOURCE_EXTS)
+DEFAULT_CPP_FILE_PATTERNS = FileFilter(
+    endswith=CPP_EXTS, exclude=[r'\.pb\.h$', r'\.pb\.c$']
 )
 
 
@@ -29,6 +40,8 @@ class ClangFormatFormatter(FileFormatter):
     DEFAULT_FLAGS: Final[Sequence[str]] = ('--style=file',)
 
     def __init__(self, tool_flags: Sequence[str] = DEFAULT_FLAGS, **kwargs):
+        kwargs.setdefault('mnemonic', 'C and C++')
+        kwargs.setdefault('file_patterns', DEFAULT_CPP_FILE_PATTERNS)
         super().__init__(**kwargs)
         self.clang_format_flags = list(tool_flags)
 

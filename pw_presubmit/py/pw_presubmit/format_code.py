@@ -61,15 +61,22 @@ from pw_presubmit import (
     owners_checks,
     presubmit_context,
 )
-from pw_presubmit.format.bazel import BuildifierFormatter
+from pw_presubmit.format.bazel import (
+    BuildifierFormatter,
+    DEFAULT_BAZEL_FILE_PATTERNS,
+)
 from pw_presubmit.format.core import FormattedDiff, FormatFixStatus
+from pw_presubmit.format import cpp
 from pw_presubmit.format.cpp import ClangFormatFormatter
-from pw_presubmit.format.gn import GnFormatter
+from pw_presubmit.format.gn import GnFormatter, DEFAULT_GN_FILE_PATTERNS
 from pw_presubmit.format.private.cli_support import (
     summarize_findings,
     findings_to_formatted_diffs,
 )
-from pw_presubmit.format.python import BlackFormatter
+from pw_presubmit.format.python import (
+    BlackFormatter,
+    DEFAULT_PYTHON_FILE_PATTERNS,
+)
 from pw_presubmit.rst_format import reformat_rst
 from pw_presubmit.tools import (
     file_summary,
@@ -484,14 +491,10 @@ class CodeFormat(NamedTuple):
         return self.filter.endswith
 
 
-CPP_HEADER_EXTS = frozenset(('.h', '.hpp', '.hxx', '.h++', '.hh', '.H'))
-CPP_SOURCE_EXTS = frozenset(
-    ('.c', '.cpp', '.cxx', '.c++', '.cc', '.C', '.inc', '.inl')
-)
-CPP_EXTS = CPP_HEADER_EXTS.union(CPP_SOURCE_EXTS)
-CPP_FILE_FILTER = FileFilter(
-    endswith=CPP_EXTS, exclude=[r'\.pb\.h$', r'\.pb\.c$']
-)
+CPP_HEADER_EXTS = cpp.CPP_HEADER_EXTS
+CPP_SOURCE_EXTS = cpp.CPP_SOURCE_EXTS
+CPP_EXTS = cpp.CPP_EXTS
+CPP_FILE_FILTER = cpp.DEFAULT_CPP_FILE_PATTERNS
 
 C_FORMAT = CodeFormat(
     'C and C++', CPP_FILE_FILTER, clang_format_check, clang_format_fix
@@ -539,18 +542,18 @@ GO_FORMAT: CodeFormat = CodeFormat(
 
 PYTHON_FORMAT: CodeFormat = CodeFormat(
     'Python',
-    FileFilter(endswith=['.py']),
+    DEFAULT_PYTHON_FILE_PATTERNS,
     check_py_format,
     fix_py_format,
 )
 
 GN_FORMAT: CodeFormat = CodeFormat(
-    'GN', FileFilter(endswith=['.gn', '.gni']), check_gn_format, fix_gn_format
+    'GN', DEFAULT_GN_FILE_PATTERNS, check_gn_format, fix_gn_format
 )
 
 BAZEL_FORMAT: CodeFormat = CodeFormat(
     'Bazel',
-    FileFilter(endswith=['.bazel', '.bzl'], name=['^BUILD$', '^WORKSPACE$']),
+    DEFAULT_BAZEL_FILE_PATTERNS,
     check_bazel_format,
     fix_bazel_format,
 )
