@@ -19,7 +19,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -89,6 +88,7 @@ pw_cc_test(
     srcs = ["fake_dispatcher_test.cc"],
     deps = [
         ":fake_dispatcher",
+        "//pw_chrono:system_clock",
         "//pw_containers:vector",
         "//pw_log",
         "//pw_string:to_string",
