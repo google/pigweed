@@ -218,45 +218,6 @@ class ProxyHost {
       Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
-  /// Returns an L2CAP channel operating in basic mode that supports writing to
-  /// and reading from a remote peer.
-  ///
-  /// @param[in] connection_handle          The connection handle of the remote
-  ///                                       peer.
-  ///
-  /// @param[in] local_cid                  L2CAP channel ID of the local
-  ///                                       endpoint.
-  ///
-  /// @param[in] remote_cid                 L2CAP channel ID of the remote
-  ///                                       endpoint.
-  ///
-  /// @param[in] transport                  Logical link transport type.
-  ///
-  /// @param[in] payload_from_controller_fn Read callback to be invoked on Rx
-  ///                                       SDUs. Return value of false
-  ///                                       indicates the packet should be
-  ///                                       forwarded on to host.
-  ///
-  /// @param[in] event_fn                   Handle asynchronous events such as
-  ///                                       errors encountered by the channel.
-  ///                                       See `l2cap_channel_common.h`.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
-  ///  UNAVAILABLE:      If channel could not be created because no memory was
-  ///                    available to accommodate an additional ACL connection.
-  /// @endrst
-  /// @deprecated
-  pw::Result<BasicL2capChannel> AcquireBasicL2capChannel(
-      uint16_t connection_handle,
-      uint16_t local_cid,
-      uint16_t remote_cid,
-      AclTransportType transport,
-      Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn);
-
   /// Send a GATT Notify to the indicated connection.
   ///
   /// @param[in] connection_handle The connection handle of the peer to notify.

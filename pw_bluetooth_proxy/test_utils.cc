@@ -426,6 +426,7 @@ BasicL2capChannel BuildBasicL2capChannel(ProxyHost& proxy,
       params.remote_cid,
       params.transport,
       std::move(params.payload_from_controller_fn),
+      std::move(params.payload_from_host_fn),
       std::move(params.event_fn));
   PW_TEST_EXPECT_OK(channel);
   return std::move(channel.value());

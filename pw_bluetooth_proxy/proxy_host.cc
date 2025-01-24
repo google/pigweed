@@ -545,22 +545,6 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
       /*event_fn=*/std::move(event_fn));
 }
 
-pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
-    uint16_t connection_handle,
-    uint16_t local_cid,
-    uint16_t remote_cid,
-    AclTransportType transport,
-    Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
-  return AcquireBasicL2capChannel(connection_handle,
-                                  local_cid,
-                                  remote_cid,
-                                  transport,
-                                  std::move(payload_from_controller_fn),
-                                  nullptr,
-                                  std::move(event_fn));
-}
-
 namespace {
 
 pw::Result<GattNotifyChannel> CreateGattNotifyChannel(

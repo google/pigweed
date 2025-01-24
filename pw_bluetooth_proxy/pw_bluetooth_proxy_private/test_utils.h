@@ -235,6 +235,7 @@ struct BasicL2capParameters {
   AclTransportType transport = AclTransportType::kLe;
   Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn =
       nullptr;
+  Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn = nullptr;
   Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
 };
 
