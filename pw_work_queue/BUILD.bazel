@@ -46,6 +46,7 @@ cc_library(
     name = "test_thread_header",
     hdrs = ["public/pw_work_queue/test_thread.h"],
     strip_include_prefix = "public",
+    deps = ["//pw_thread:thread"],
 )
 
 cc_library(
