@@ -26,17 +26,12 @@
 
 namespace {
 
-// These are line numbers for the functions below. Moving these functions to
-// other lines will require updating these macros.
-#define TRACE_FUNCTION_LINE 35
-#define TRACE_FUNCTION_GROUP_LINE 36
-#define TRACE_FUNCTION_ID_LINE 38
+// Use a fake line number for traces so the test doesn't depend on line numbers.
+#define TRACE_LINE 12345
 
-void TraceFunction() { PW_TRACE_FUNCTION(); }
-void TraceFunctionGroup() { PW_TRACE_FUNCTION("FunctionGroup"); }
-void TraceFunctionTraceId(uint32_t id) {
-  PW_TRACE_FUNCTION("FunctionGroup", id);
-}
+void TraceFunction();
+void TraceFunctionGroup();
+void TraceFunctionTraceId(uint32_t id);
 
 // This trace test interface registers as a trace callback to capture trace
 // events to verify extpected behaviour. It also supports testing common actions
@@ -164,8 +159,6 @@ class TraceTestInterface {
   pw::trace::Callbacks::SinkHandle sink_handle_;
   pw::trace::Callbacks::EventCallbackHandle event_callback_handle_;
 };
-
-}  // namespace
 
 // Helper macro to pop the next trace out of test interface and check it against
 // expecte values.
@@ -481,14 +474,12 @@ TEST(TokenizedTrace, Function) {
   TraceFunction();
 
   // Check results
-  EXPECT_TRACE(
-      test_interface,
-      PW_TRACE_TYPE_DURATION_START,
-      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_LINE));
-  EXPECT_TRACE(
-      test_interface,
-      PW_TRACE_TYPE_DURATION_END,
-      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_LINE));
+  EXPECT_TRACE(test_interface,
+               PW_TRACE_TYPE_DURATION_START,
+               PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_LINE));
+  EXPECT_TRACE(test_interface,
+               PW_TRACE_TYPE_DURATION_END,
+               PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_LINE));
   EXPECT_TRUE(test_interface.GetEvents().empty());
 }
 
@@ -498,16 +489,14 @@ TEST(TokenizedTrace, FunctionGroup) {
   TraceFunctionGroup();
 
   // Check results
-  EXPECT_TRACE(
-      test_interface,
-      PW_TRACE_TYPE_DURATION_GROUP_START,
-      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_GROUP_LINE),
-      "FunctionGroup");
-  EXPECT_TRACE(
-      test_interface,
-      PW_TRACE_TYPE_DURATION_GROUP_END,
-      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_GROUP_LINE),
-      "FunctionGroup");
+  EXPECT_TRACE(test_interface,
+               PW_TRACE_TYPE_DURATION_GROUP_START,
+               PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_LINE),
+               "FunctionGroup");
+  EXPECT_TRACE(test_interface,
+               PW_TRACE_TYPE_DURATION_GROUP_END,
+               PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_LINE),
+               "FunctionGroup");
   EXPECT_TRUE(test_interface.GetEvents().empty());
 }
 
@@ -517,18 +506,16 @@ TEST(TokenizedTrace, FunctionTraceId) {
   TraceFunctionTraceId(kTraceId);
 
   // Check results
-  EXPECT_TRACE(
-      test_interface,
-      PW_TRACE_TYPE_ASYNC_START,
-      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_ID_LINE),
-      "FunctionGroup",
-      kTraceId);
-  EXPECT_TRACE(
-      test_interface,
-      PW_TRACE_TYPE_ASYNC_END,
-      PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_FUNCTION_ID_LINE),
-      "FunctionGroup",
-      kTraceId);
+  EXPECT_TRACE(test_interface,
+               PW_TRACE_TYPE_ASYNC_START,
+               PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_LINE),
+               "FunctionGroup",
+               kTraceId);
+  EXPECT_TRACE(test_interface,
+               PW_TRACE_TYPE_ASYNC_END,
+               PW_TRACE_FUNCTION_LABEL_FILE_LINE(__FILE__, TRACE_LINE),
+               "FunctionGroup",
+               kTraceId);
   EXPECT_TRUE(test_interface.GetEvents().empty());
 }
 
@@ -613,3 +600,15 @@ TEST(TokenizedTrace, Clear) {
   EXPECT_TRUE(queue.PeekFront() == nullptr);
   EXPECT_FALSE(queue.IsFull());
 }
+
+// Define these functions here so __LINE__ is accurate in the tests above.
+#line TRACE_LINE
+void TraceFunction() { PW_TRACE_FUNCTION(); }
+#line TRACE_LINE
+void TraceFunctionGroup() { PW_TRACE_FUNCTION("FunctionGroup"); }
+void TraceFunctionTraceId(uint32_t id) {
+#line TRACE_LINE
+  PW_TRACE_FUNCTION("FunctionGroup", id);
+}
+
+}  // namespace
