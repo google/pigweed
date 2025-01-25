@@ -29,5 +29,5 @@ cc_library(
         "@platforms//os:none": [],
         "//conditions:default": ["_PW_MBEDTLS_IS_HOST=1"],
     }),
-    includes = ["."],
+    strip_include_prefix = ".",
 )

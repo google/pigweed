@@ -1613,13 +1613,8 @@ INCLUDE_CHECK_EXCEPTIONS = (
     "//targets/rp2040:freertos_config",
     "//targets/stm32f429i_disc1_stm32cube:freertos_config",
     "//targets/stm32f429i_disc1_stm32cube:hal_config",
-    "//third_party/boringssl:sysdeps",
-    "//third_party/chromium_verifier:pthread",
     "//third_party/fuchsia:fit_impl",
     "//third_party/fuchsia:stdcompat",
-    "//third_party/mbedtls:default_config",
-    "//third_party/smartfusion_mss:debug_config",
-    "//third_party/smartfusion_mss:default_config",
     # keep-sorted: end
 )
 

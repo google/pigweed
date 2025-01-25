@@ -17,5 +17,5 @@ cc_library(
     hdrs = [
         "public/chromium_verifier/pthread/pthread.h",
     ],
-    includes = ["public/chromium_verifier/pthread"],
+    strip_include_prefix = "public/chromium_verifier/pthread",
 )

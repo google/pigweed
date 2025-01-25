@@ -26,7 +26,7 @@ cc_library(
     name = "sysdeps",
     hdrs = ["sysdeps/sys/socket.h"],
     copts = ["-Wno-unused-parameter"],
-    includes = ["sysdeps"],
+    strip_include_prefix = "sysdeps",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_assert",

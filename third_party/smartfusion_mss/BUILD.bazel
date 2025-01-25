@@ -27,7 +27,7 @@ liberosoc_configs = [
             "configs/config_pigweed_common.h",
         ],
         copts = ["-Dmss_CONFIG_FILE=\"%s\"" % config_header],
-        includes = ["."],
+        strip_include_prefix = ".",
     )
     for config_name, config_header in liberosoc_configs
 ]

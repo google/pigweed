@@ -53,6 +53,9 @@ cc_library(
         "repo/sdk/lib/fit/include/lib/fit/result.h",
         "repo/sdk/lib/fit/include/lib/fit/traits.h",
     ],
+    # TODO: https://pwbug.dev/378564135 - Replacing this with
+    # strip_include_prefix leads to errors when trying to #include internal
+    # headers within this library.
     includes = ["repo/sdk/lib/fit/include"],
     deps = [
         ":stdcompat",
@@ -80,6 +83,9 @@ cc_library(
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/utility.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/version.h",
     ],
+    # TODO: https://pwbug.dev/378564135 - Replacing this with
+    # strip_include_prefix leads to errors when trying to #include internal
+    # headers within this library.
     includes = ["repo/sdk/lib/stdcompat/include"],
 )
 
