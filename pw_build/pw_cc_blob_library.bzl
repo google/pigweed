@@ -159,5 +159,5 @@ pw_cc_blob_library = rule(
     },
     provides = [CcInfo],
     fragments = ["cpp"],
-    toolchains = ["@rules_python//python:exec_tools_toolchain_type"] + use_cpp_toolchain(),
+    toolchains = use_cpp_toolchain(),
 )

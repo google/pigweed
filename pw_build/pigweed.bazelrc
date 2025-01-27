@@ -48,11 +48,6 @@ common --experimental_exclude_starlark_flags_from_exec_config
 # day (https://github.com/bazelbuild/bazel/issues/7026).
 build --incompatible_strict_action_env
 
-# Expose exec toolchains for Python. We use these toolchains in some rule
-# implementations (git grep for
-# "@rules_python//python:exec_tools_toolchain_type").
-build --@rules_python//python/config_settings:exec_tools_toolchain=enabled
-
 # TODO: https://github.com/bazelbuild/rules_python/issues/2515 - This flag was
 # enabled with Bazel 8.0.0, but it breaks py_proto_library imports when using
 # the latest release of rules_python (1.0.0). Flipping this flag is a temporary

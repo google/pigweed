@@ -99,5 +99,4 @@ pw_sensor_library = rule(
         ),
     },
     provides = [CcInfo],
-    toolchains = ["@rules_python//python:exec_tools_toolchain_type"],
 )

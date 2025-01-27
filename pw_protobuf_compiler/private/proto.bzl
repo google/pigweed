@@ -273,5 +273,4 @@ def proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
         },
         implementation = _proto_compiler_aspect_impl,
         provides = [PwProtoInfo],
-        toolchains = ["@rules_python//python:exec_tools_toolchain_type"],
     )
