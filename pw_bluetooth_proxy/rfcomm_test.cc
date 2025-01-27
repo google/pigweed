@@ -386,6 +386,7 @@ TEST_F(RfcommWriteTest, WriteFlowControl) {
                              }};
   RfcommChannel channel = BuildRfcomm(proxy,
                                       params,
+                                      /*receive_multibuf_fn=*/nullptr,
                                       /*receive_fn=*/nullptr,
                                       /*event_fn=*/std::move(event_fn));
 
@@ -449,6 +450,7 @@ TEST_F(RfcommReadTest, BasicRead) {
   RfcommChannel channel =
       BuildRfcomm(proxy,
                   params,
+                  /*receive_multibuf_fn=*/nullptr,
                   /*receive_fn=*/[&capture](pw::span<uint8_t> payload) {
                     ++capture.rx_called;
                     EXPECT_TRUE(std::equal(payload.begin(),
@@ -484,16 +486,22 @@ TEST_F(RfcommReadTest, ExtendedRead) {
   constexpr uint8_t kExpectedFcs = 0xFA;
 
   RfcommParameters params = {};
-  RfcommChannel channel =
-      BuildRfcomm(proxy,
-                  params, /*receive_fn=*/
-                  [&capture](pw::span<uint8_t> payload) {
-                    ++capture.rx_called;
-                    EXPECT_TRUE(std::equal(payload.begin(),
-                                           payload.end(),
-                                           capture.expected_payload.begin(),
-                                           capture.expected_payload.end()));
-                  });
+  RfcommChannel channel = BuildRfcomm(
+      proxy,
+      params,
+      /*receive_multibuf_fn=*/
+      [&capture](multibuf::MultiBuf&& buffer) {
+        ++capture.rx_called;
+        std::optional<pw::ByteSpan> payload = buffer.ContiguousSpan();
+        ConstByteSpan expected_bytes = as_bytes(span(
+            capture.expected_payload.data(), capture.expected_payload.size()));
+        ASSERT_TRUE(payload.has_value());
+        EXPECT_TRUE(std::equal(payload->begin(),
+                               payload->end(),
+                               expected_bytes.begin(),
+                               expected_bytes.end()));
+      },
+      /*receive_fn=*/nullptr);
   PW_TEST_EXPECT_OK(SendRfcommFromController(proxy,
                                              params,
                                              kExpectedFcs,
@@ -524,10 +532,12 @@ TEST_F(RfcommReadTest, InvalidReads) {
   constexpr uint8_t kInvalidFcs = 0xFF;
 
   RfcommParameters params = {};
-  RfcommChannel channel =
-      BuildRfcomm(proxy,
-                  params, /*receive_fn=*/
-                  [&capture](pw::span<uint8_t>) { ++capture.rx_called; });
+  RfcommChannel channel = BuildRfcomm(
+      proxy,
+      params,
+      /*receive_multibuf_fn=*/
+      [&capture](multibuf::MultiBuf&&) { ++capture.rx_called; },
+      /*receive_fn=*/nullptr);
 
   // Construct valid packet but put invalid checksum on the end. Test that we
   // don't get it sent on to us.

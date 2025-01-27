@@ -212,6 +212,8 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
       AclTransportType transport,
       uint16_t local_cid,
       uint16_t remote_cid,
+      OptionalPayloadReceiveCallback&& payload_from_controller_multibuf_fn,
+      OptionalPayloadReceiveCallback&& payload_from_host_multibuf_fn,
       Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
@@ -302,24 +304,14 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   void ClearQueue();
 
   // Returns false if payload should be forwarded to controller instead.
-  virtual bool SendPayloadFromHostToClient(pw::span<uint8_t> payload) {
-    if (payload_from_host_fn_) {
-      return payload_from_host_fn_(payload);
-    }
-    return false;
-  }
+  virtual bool SendPayloadFromHostToClient(pw::span<uint8_t> payload);
 
   //-------
   //  Rx (protected)
   //-------
 
   // Returns false if payload should be forwarded to host instead.
-  virtual bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) {
-    if (payload_from_controller_fn_) {
-      return payload_from_controller_fn_(payload);
-    }
-    return false;
-  }
+  virtual bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload);
 
   multibuf::MultiBufAllocator* rx_multibuf_allocator() const {
     return rx_multibuf_allocator_;
@@ -445,6 +437,11 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
 
   // Optional client-provided multibuf allocator.
   multibuf::MultiBufAllocator* rx_multibuf_allocator_;
+
+  // Client-provided controller read callback.
+  OptionalPayloadReceiveCallback payload_from_controller_multibuf_fn_;
+  // Client-provided host read callback.
+  OptionalPayloadReceiveCallback payload_from_host_multibuf_fn_;
 
   // Client-provided controller read callback.
   pw::Function<bool(pw::span<uint8_t> payload)> payload_from_controller_fn_;

@@ -167,6 +167,11 @@ class ProxyHost {
   /// Returns an L2CAP channel operating in basic mode that supports writing to
   /// and reading from a remote peer.
   ///
+  /// @param[in] rx_multibuf_allocator      Provides the allocator the channel
+  ///                                       will use for its Rx buffers (for
+  ///                                       both queueing and  returning to the
+  ///                                       client).
+  ///
   /// @param[in] connection_handle          The connection handle of the remote
   ///                                       peer.
   ///
@@ -179,14 +184,14 @@ class ProxyHost {
   /// @param[in] transport                  Logical link transport type.
   ///
   /// @param[in] payload_from_controller_fn Read callback to be invoked on Rx
-  ///                                       SDUs. Return value of false
-  ///                                       indicates the packet should be
-  ///                                       forwarded on to host.
+  ///                                       SDUs. Return value of passed-in
+  ///                                       multibuf indicates the packet should
+  ///                                       be forwarded on to host.
   ///
   /// @param[in] payload_from_host_fn       Read callback to be invoked on Tx
-  ///                                       SDUs. Return value of false
-  ///                                       indicates the packet should be
-  ///                                       forwarded on to the controller.
+  ///                                       SDUs. Return value of passed-in
+  ///                                       multibuf indicates the packet should
+  ///                                       be forwarded on to the controller.
   ///
   /// @param[in] event_fn                   Handle asynchronous events such as
   ///                                       errors encountered by the channel.
@@ -199,6 +204,18 @@ class ProxyHost {
   ///  UNAVAILABLE:      If channel could not be created because no memory was
   ///                    available to accommodate an additional ACL connection.
   /// @endrst
+  pw::Result<BasicL2capChannel> AcquireBasicL2capChannel(
+      multibuf::MultiBufAllocator& rx_multibuf_allocator,
+      uint16_t connection_handle,
+      uint16_t local_cid,
+      uint16_t remote_cid,
+      AclTransportType transport,
+      OptionalPayloadReceiveCallback&& payload_from_controller_fn,
+      OptionalPayloadReceiveCallback&& payload_from_host_fn,
+      Function<void(L2capChannelEvent event)>&& event_fn);
+
+  /// TODO: https://pwbug.dev/379337272 - Remove after migration
+  /// @deprecated Use multibuf allocator version.
   pw::Result<BasicL2capChannel> AcquireBasicL2capChannel(
       uint16_t connection_handle,
       uint16_t local_cid,
@@ -261,6 +278,11 @@ class ProxyHost {
   /// Returns an RFCOMM channel that supports writing to and reading from a
   /// remote peer.
   ///
+  /// @param[in] rx_multibuf_allocator
+  ///                              Provides the allocator the channel will use
+  ///                              for its Rx buffers (for both queueing and
+  ///                              returning to the client).
+  ///
   /// @param[in] connection_handle The connection handle of the remote peer.
   ///
   /// @param[in] rx_config         Parameters applying to reading packets.
@@ -284,6 +306,17 @@ class ProxyHost {
   ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
   ///  UNAVAILABLE: If channel could not be created.
   /// @endrst
+  pw::Result<RfcommChannel> AcquireRfcommChannel(
+      multibuf::MultiBufAllocator& rx_multibuf_allocator,
+      uint16_t connection_handle,
+      RfcommChannel::Config rx_config,
+      RfcommChannel::Config tx_config,
+      uint8_t channel_number,
+      Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
+      Function<void(L2capChannelEvent event)>&& event_fn);
+
+  /// TODO: https://pwbug.dev/379337272 - Remove after migration
+  /// @deprecated Use multibuf allocator version.
   pw::Result<RfcommChannel> AcquireRfcommChannel(
       uint16_t connection_handle,
       RfcommChannel::Config rx_config,

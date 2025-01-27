@@ -398,34 +398,63 @@ L2capCoc ProxyHostTest::BuildCoc(ProxyHost& proxy, CocParameters params) {
   return std::move(channel.value());
 }
 
-BasicL2capChannel BuildBasicL2capChannel(ProxyHost& proxy,
-                                         BasicL2capParameters params) {
-  pw::Result<BasicL2capChannel> channel = proxy.AcquireBasicL2capChannel(
-      params.handle,
-      params.local_cid,
-      params.remote_cid,
-      params.transport,
-      std::move(params.payload_from_controller_fn),
-      std::move(params.payload_from_host_fn),
-      std::move(params.event_fn));
-  PW_TEST_EXPECT_OK(channel);
-  return std::move(channel.value());
+BasicL2capChannel ProxyHostTest::BuildBasicL2capChannel(
+    ProxyHost& proxy, BasicL2capParameters params) {
+  if (params.payload_from_controller_multibuf_fn ||
+      params.payload_from_host_multibuf_fn) {
+    pw::Result<BasicL2capChannel> channel = proxy.AcquireBasicL2capChannel(
+        sut_multibuf_allocator_,
+        params.handle,
+        params.local_cid,
+        params.remote_cid,
+        params.transport,
+        std::move(params.payload_from_controller_multibuf_fn),
+        std::move(params.payload_from_host_multibuf_fn),
+        std::move(params.event_fn));
+    PW_TEST_EXPECT_OK(channel);
+    return std::move(channel.value());
+  } else {
+    pw::Result<BasicL2capChannel> channel = proxy.AcquireBasicL2capChannel(
+        params.handle,
+        params.local_cid,
+        params.remote_cid,
+        params.transport,
+        std::move(params.payload_from_controller_fn),
+        std::move(params.payload_from_host_fn),
+        std::move(params.event_fn));
+    PW_TEST_EXPECT_OK(channel);
+    return std::move(channel.value());
+  }
 }
 
-RfcommChannel BuildRfcomm(
+RfcommChannel ProxyHostTest::BuildRfcomm(
     ProxyHost& proxy,
     RfcommParameters params,
+    Function<void(multibuf::MultiBuf&& payload)>&& receive_multibuf_fn,
     Function<void(pw::span<uint8_t> payload)>&& receive_fn,
     Function<void(L2capChannelEvent event)>&& event_fn) {
-  pw::Result<RfcommChannel> channel =
-      proxy.AcquireRfcommChannel(params.handle,
-                                 params.rx_config,
-                                 params.tx_config,
-                                 params.rfcomm_channel,
-                                 std::move(receive_fn),
-                                 std::move(event_fn));
-  PW_TEST_EXPECT_OK(channel);
-  return std::move((channel.value()));
+  if (receive_multibuf_fn) {
+    pw::Result<RfcommChannel> channel =
+        proxy.AcquireRfcommChannel(sut_multibuf_allocator_,
+                                   params.handle,
+                                   params.rx_config,
+                                   params.tx_config,
+                                   params.rfcomm_channel,
+                                   std::move(receive_multibuf_fn),
+                                   std::move(event_fn));
+    PW_TEST_EXPECT_OK(channel);
+    return std::move((channel.value()));
+  } else {
+    pw::Result<RfcommChannel> channel =
+        proxy.AcquireRfcommChannel(params.handle,
+                                   params.rx_config,
+                                   params.tx_config,
+                                   params.rfcomm_channel,
+                                   std::move(receive_fn),
+                                   std::move(event_fn));
+    PW_TEST_EXPECT_OK(channel);
+    return std::move((channel.value()));
+  }
 }
 
 }  // namespace pw::bluetooth::proxy

@@ -2332,24 +2332,28 @@ TEST_F(BasicL2capChannelTest, BasicRead) {
 
   uint16_t handle = 334;
   uint16_t local_cid = 443;
-  PW_TEST_ASSERT_OK_AND_ASSIGN(
-      BasicL2capChannel channel,
-      proxy.AcquireBasicL2capChannel(
-          /*connection_handle=*/handle,
-          /*local_cid=*/local_cid,
-          /*remote_cid=*/0x123,
-          /*transport=*/AclTransportType::kLe,
-          /*payload_from_controller_fn=*/
-          [&capture](pw::span<uint8_t> payload) {
-            ++capture.sends_called;
-            EXPECT_TRUE(std::equal(payload.begin(),
-                                   payload.end(),
-                                   capture.expected_payload.begin(),
-                                   capture.expected_payload.end()));
-            return true;
-          },
-          /*payload_from_host_fn=*/nullptr,
-          /*event_fn=*/nullptr));
+  BasicL2capChannel channel = BuildBasicL2capChannel(
+      proxy,
+      BasicL2capParameters{
+          .handle = handle,
+          .local_cid = local_cid,
+          .remote_cid = 0x123,
+          .transport = AclTransportType::kLe,
+          .payload_from_controller_multibuf_fn =
+              [&capture](multibuf::MultiBuf&& buffer) {
+                ++capture.sends_called;
+                std::optional<pw::ByteSpan> payload = buffer.ContiguousSpan();
+                ConstByteSpan expected_bytes =
+                    as_bytes(span(capture.expected_payload.data(),
+                                  capture.expected_payload.size()));
+                EXPECT_TRUE(payload.has_value());
+                EXPECT_TRUE(std::equal(payload->begin(),
+                                       payload->end(),
+                                       expected_bytes.begin(),
+                                       expected_bytes.end()));
+                return std::nullopt;
+              },
+      });
 
   std::array<uint8_t,
              emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +

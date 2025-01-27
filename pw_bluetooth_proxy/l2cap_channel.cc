@@ -38,6 +38,10 @@ void L2capChannel::MoveFields(L2capChannel& other) {
   local_cid_ = other.local_cid();
   remote_cid_ = other.remote_cid();
   event_fn_ = std::move(other.event_fn_);
+  payload_from_controller_multibuf_fn_ =
+      std::move(other.payload_from_controller_multibuf_fn_);
+  payload_from_host_multibuf_fn_ =
+      std::move(other.payload_from_host_multibuf_fn_);
   payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
   payload_from_host_fn_ = std::move(other.payload_from_host_fn_);
   rx_multibuf_allocator_ = other.rx_multibuf_allocator_;
@@ -70,8 +74,7 @@ L2capChannel::~L2capChannel() {
   if (state_ != State::kUndefined) {
     PW_LOG_INFO(
         "btproxy: L2capChannel dtor - transport_: %u, connection_handle_ : "
-        "%#x, "
-        "local_cid_: %#x, remote_cid_: %#x, state_: %u",
+        "%#x, local_cid_: %#x, remote_cid_: %#x, state_: %u",
         cpp23::to_underlying(transport_),
         connection_handle_,
         local_cid_,
@@ -317,6 +320,8 @@ L2capChannel::L2capChannel(
     AclTransportType transport,
     uint16_t local_cid,
     uint16_t remote_cid,
+    OptionalPayloadReceiveCallback&& payload_from_controller_multibuf_fn,
+    OptionalPayloadReceiveCallback&& payload_from_host_multibuf_fn,
     Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
     Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn,
     Function<void(L2capChannelEvent event)>&& event_fn)
@@ -328,6 +333,9 @@ L2capChannel::L2capChannel(
       remote_cid_(remote_cid),
       event_fn_(std::move(event_fn)),
       rx_multibuf_allocator_(rx_multibuf_allocator),
+      payload_from_controller_multibuf_fn_(
+          std::move(payload_from_controller_multibuf_fn)),
+      payload_from_host_multibuf_fn_(std::move(payload_from_host_multibuf_fn)),
       payload_from_controller_fn_(std::move(payload_from_controller_fn)),
       payload_from_host_fn_(std::move(payload_from_host_fn)) {
   PW_LOG_INFO(
@@ -481,6 +489,72 @@ void L2capChannel::ReportPacketsMayBeReadyToSend() {
 void L2capChannel::ClearQueue() {
   std::lock_guard lock(send_queue_mutex_);
   send_queue_.clear();
+}
+
+bool L2capChannel::SendPayloadFromHostToClient(pw::span<uint8_t> payload) {
+  if (payload_from_host_fn_) {
+    return payload_from_host_fn_(payload);
+  } else if (payload_from_host_multibuf_fn_) {
+    std::optional<multibuf::MultiBuf> buffer =
+        rx_multibuf_allocator()->AllocateContiguous(payload.size());
+
+    if (!buffer) {
+      PW_LOG_ERROR(
+          "(CID %#x) Rx MultiBuf allocator out of memory. So stopping "
+          "channel and reporting it needs to be closed.",
+          local_cid());
+      StopAndSendEvent(L2capChannelEvent::kRxOutOfMemory);
+      return true;
+    }
+
+    StatusWithSize status = buffer->CopyFrom(/*source=*/as_bytes(payload),
+                                             /*position=*/0);
+    PW_CHECK_OK(status);
+
+    std::optional<multibuf::MultiBuf> client_multibuf =
+        payload_from_host_multibuf_fn_(std::move(*buffer));
+    // If client returned multibuf to us, we drop it and indicate to caller that
+    // packet should be forwarded. In the future when whole path is operating
+    // with multibuf's, we could pass it back up to container to be forwarded.
+    return !client_multibuf.has_value();
+  }
+  return false;
+}
+
+//-------
+//  Rx (protected)
+//-------
+
+// Returns false if payload should be forwarded to host instead.
+bool L2capChannel::SendPayloadFromControllerToClient(
+    pw::span<uint8_t> payload) {
+  if (payload_from_controller_fn_) {
+    return payload_from_controller_fn_(payload);
+  } else if (payload_from_controller_multibuf_fn_) {
+    std::optional<multibuf::MultiBuf> buffer =
+        rx_multibuf_allocator()->AllocateContiguous(payload.size());
+
+    if (!buffer) {
+      PW_LOG_ERROR(
+          "(CID %#x) Rx MultiBuf allocator out of memory. So stopping "
+          "channel and reporting it needs to be closed.",
+          local_cid());
+      StopAndSendEvent(L2capChannelEvent::kRxOutOfMemory);
+      return true;
+    }
+
+    StatusWithSize status = buffer->CopyFrom(/*source=*/as_bytes(payload),
+                                             /*position=*/0);
+    PW_CHECK_OK(status);
+
+    std::optional<multibuf::MultiBuf> client_multibuf =
+        payload_from_controller_multibuf_fn_(std::move(*buffer));
+    // If client returned multibuf to us, we drop it and indicate to caller that
+    // packet should be forwarded. In the future when whole path is operating
+    // with multibuf's, we could pass it back up to container to be forwarded.
+    return !client_multibuf.has_value();
+  }
+  return false;
 }
 
 }  // namespace pw::bluetooth::proxy

@@ -486,6 +486,36 @@ pw::Status ProxyHost::SendAdditionalRxCredits(uint16_t connection_handle,
 }
 
 pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
+    multibuf::MultiBufAllocator& rx_multibuf_allocator,
+    uint16_t connection_handle,
+    uint16_t local_cid,
+    uint16_t remote_cid,
+    AclTransportType transport,
+    OptionalPayloadReceiveCallback&& payload_from_controller_fn,
+    OptionalPayloadReceiveCallback&& payload_from_host_fn,
+    Function<void(L2capChannelEvent event)>&& event_fn) {
+  Status status =
+      acl_data_channel_.CreateAclConnection(connection_handle, transport);
+  if (status.IsResourceExhausted()) {
+    return pw::Status::Unavailable();
+  }
+  PW_CHECK(status.ok() || status.IsAlreadyExists());
+  return BasicL2capChannel::Create(l2cap_channel_manager_,
+                                   &rx_multibuf_allocator,
+                                   /*connection_handle=*/connection_handle,
+                                   /*transport=*/transport,
+                                   /*local_cid=*/local_cid,
+                                   /*remote_cid=*/remote_cid,
+                                   /*payload_from_controller_multibuf_fn=*/
+                                   std::move(payload_from_controller_fn),
+                                   /*payload_from_host_multibuf_fn=*/
+                                   std::move(payload_from_host_fn),
+                                   /*payload_from_controller_fn=*/nullptr,
+                                   /*payload_from_host_fn=*/nullptr,
+                                   /*event_fn=*/std::move(event_fn));
+}
+
+pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
     uint16_t connection_handle,
     uint16_t local_cid,
     uint16_t remote_cid,
@@ -506,6 +536,8 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
       /*transport=*/transport,
       /*local_cid=*/local_cid,
       /*remote_cid=*/remote_cid,
+      /*payload_from_controller_multibuf_fn=*/nullptr,
+      /*payload_from_host_multibuf_fn=*/nullptr,
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
       /*payload_from_host_fn=*/std::move(payload_from_host_fn),
       /*event_fn=*/std::move(event_fn));
@@ -559,6 +591,31 @@ pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
 }
 
 pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
+    multibuf::MultiBufAllocator& rx_multibuf_allocator,
+    uint16_t connection_handle,
+    RfcommChannel::Config rx_config,
+    RfcommChannel::Config tx_config,
+    uint8_t channel_number,
+    Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
+    Function<void(L2capChannelEvent event)>&& event_fn) {
+  Status status = acl_data_channel_.CreateAclConnection(
+      connection_handle, AclTransportType::kBrEdr);
+  if (status != OkStatus() && status != Status::AlreadyExists()) {
+    return pw::Status::Unavailable();
+  }
+  return RfcommChannel::Create(l2cap_channel_manager_,
+                               rx_multibuf_allocator,
+                               connection_handle,
+                               rx_config,
+                               tx_config,
+                               channel_number,
+                               /*payload_from_controller_multibuf_fn=*/
+                               std::move(payload_from_controller_fn),
+                               /*payload_from_controller_fn=*/nullptr,
+                               std::move(event_fn));
+}
+
+pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
     uint16_t connection_handle,
     RfcommChannel::Config rx_config,
     RfcommChannel::Config tx_config,
@@ -570,14 +627,16 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
   if (status != OkStatus() && status != Status::AlreadyExists()) {
     return pw::Status::Unavailable();
   }
-  return RfcommChannel::Create(l2cap_channel_manager_,
-                               lsc_multibuf_allocator_,
-                               connection_handle,
-                               rx_config,
-                               tx_config,
-                               channel_number,
-                               std::move(payload_from_controller_fn),
-                               std::move(event_fn));
+  return RfcommChannel::Create(
+      l2cap_channel_manager_,
+      lsc_multibuf_allocator_,
+      connection_handle,
+      rx_config,
+      tx_config,
+      channel_number,
+      /*payload_from_controller_multibuf_fn=*/nullptr,
+      /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
+      std::move(event_fn));
 }
 
 bool ProxyHost::HasSendLeAclCapability() const {

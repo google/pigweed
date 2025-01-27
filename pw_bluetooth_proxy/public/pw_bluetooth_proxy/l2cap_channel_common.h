@@ -16,6 +16,7 @@
 
 #include <optional>
 
+#include "pw_function/function.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_status/status.h"
 
@@ -57,5 +58,17 @@ struct StatusWithMultiBuf {
   pw::Status status;
   std::optional<pw::multibuf::MultiBuf> buf = std::nullopt;
 };
+
+/// Alias for a client provided callback function for that can receive data from
+/// a channel and optionally own the handling that data.
+///
+/// @param[in] payload  The payload being passed to the client.
+///
+///
+/// @returns If the client will own handling the payload then std::nullopt
+/// should be returned. If the client will not own handling the payload then the
+/// payload MultiBuf should be returned (unaltered).
+using OptionalPayloadReceiveCallback =
+    Function<std::optional<multibuf::MultiBuf>(multibuf::MultiBuf&& payload)>;
 
 }  // namespace pw::bluetooth::proxy

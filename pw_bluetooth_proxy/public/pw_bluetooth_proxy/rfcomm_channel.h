@@ -86,6 +86,8 @@ class RfcommChannel final : public L2capChannel {
       Config rx_config,
       Config tx_config,
       uint8_t channel_number,
+      Function<void(multibuf::MultiBuf&& payload)>&&
+          payload_from_controller_multibuf_fn,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
@@ -105,6 +107,8 @@ class RfcommChannel final : public L2capChannel {
       Config rx_config,
       Config tx_config,
       uint8_t channel_number,
+      Function<void(multibuf::MultiBuf&& payload)>&&
+          payload_from_controller_multibuf_fn,
       Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
@@ -125,12 +129,7 @@ class RfcommChannel final : public L2capChannel {
       PW_LOCKS_EXCLUDED(tx_mutex_);
 
   // Override: All traffic on this channel goes to client.
-  bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) override {
-    if (payload_from_controller_fn_) {
-      payload_from_controller_fn_(payload);
-    }
-    return true;
-  }
+  bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) override;
 
   const Config rx_config_;
   const Config tx_config_;
@@ -140,6 +139,8 @@ class RfcommChannel final : public L2capChannel {
 
   sync::Mutex tx_mutex_;
   uint8_t tx_credits_ PW_GUARDED_BY(tx_mutex_);
+  Function<void(multibuf::MultiBuf&& payload)>
+      payload_from_controller_multibuf_fn_;
   Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
 };
 
