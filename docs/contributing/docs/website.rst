@@ -157,3 +157,24 @@ because the ``pigweed.dev`` production server redirects pages that end in
 ``…/docs.html`` to ``…/`` (e.g. ``pigweed.dev/pw_string/docs.html`` redirects to
 ``pigweed.dev/pw_string/``) and no third-party extension supports the kind of
 URL rewrite customization that we need. See :bug:`386257958`.
+
+.. _contrib-docs-website-analytics:
+
+-------------------
+Google Analytics ID
+-------------------
+The ``pigweed.dev`` Google Analytics ID is not hardcoded anywhere in the
+upstream Pigweed repo. It is passed through the environment like this:
+
+#. Docs builders provide a Google Analytics ID as a command line argument.
+
+#. ``//docs/conf.py`` looks for the existence of a ``GOOGLE_ANALYTICS_ID``
+   OS environment variable and passes the variable along to Sphinx when found.
+
+#. ``//pw_docgen/py/pw_docgen/sphinx/google_analytics.py`` looks for the
+   Sphinx build environment variable and injects the ID (and related
+   JavaScript code) into each page's HTML when found.
+
+Passing the ID through the environment helps us ensure that the production
+ID is only used when someone views the docs from the production domain
+(``pigweed.dev``).

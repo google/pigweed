@@ -232,6 +232,9 @@ html_context = {
     'default_mode': 'dark',
 }
 
+if 'GOOGLE_ANALYTICS_ID' in os.environ:
+    google_analytics_id = os.environ['GOOGLE_ANALYTICS_ID']
+
 # https://sphinx-sitemap.readthedocs.io/en/latest/advanced-configuration.html
 sitemap_url_scheme = '{link}'
 
