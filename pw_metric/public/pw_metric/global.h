@@ -31,14 +31,14 @@ extern IntrusiveList<Metric> global_metrics;
 // group around by dependency injection is infeasible.
 #define PW_METRIC_GLOBAL(variable_name, metric_name, init)                    \
   static constexpr uint32_t variable_name##_token =                           \
-      PW_TOKENIZE_STRING_DOMAIN("metrics", #metric_name);                     \
+      PW_TOKENIZE_STRING_DOMAIN("metrics", metric_name);                      \
   ::pw::metric::TypedMetric<_PW_METRIC_FLOAT_OR_UINT32(init)> variable_name = \
       {variable_name##_token, init, ::pw::metric::global_metrics}
 
 // Define a group that is registered in pw::metric::global_groups.
 #define PW_METRIC_GROUP_GLOBAL(variable_name, group_name)     \
   static constexpr uint32_t variable_name##_token =           \
-      PW_TOKENIZE_STRING_DOMAIN("metrics", #group_name);      \
+      PW_TOKENIZE_STRING_DOMAIN("metrics", group_name);       \
   ::pw::metric::Group variable_name = {variable_name##_token, \
                                        ::pw::metric::global_groups}
 

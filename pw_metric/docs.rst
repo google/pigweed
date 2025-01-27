@@ -372,7 +372,7 @@ tokenizing the metric and group names.
       scope. Putting these on an instance (member context) would lead to dangling
       pointers and misery. Metrics are never deleted or unregistered!
 
-.. cpp:function:: PW_METRIC_GROUP_GLOBAL(identifier, name, value)
+.. cpp:function:: PW_METRIC_GROUP_GLOBAL(identifier, name)
 
    Declare a ``pw::metric::Group`` with name name, and register it in the
    global metric groups list ``pw::metric::global_groups``.
@@ -389,9 +389,9 @@ tokenizing the metric and group names.
       #include "pw_metric/global.h"
 
       // No need to coordinate collection of this group; it's globally registered.
-      PW_METRIC_GROUP_GLOBAL(leagcy_system, "legacy_system");
-      PW_METRIC(leagcy_system, foo, "foo",0.2f);
-      PW_METRIC(leagcy_system, bar, "bar",44000u);
+      PW_METRIC_GROUP_GLOBAL(legacy_system, "legacy_system");
+      PW_METRIC(legacy_system, foo, "foo", 0.2f);
+      PW_METRIC(legacy_system, bar, "bar", 44000u);
 
    .. attention::
       Do not create ``PW_METRIC_GROUP_GLOBAL`` instances anywhere other than

@@ -49,6 +49,12 @@ TEST(Global, Groups) {
   Group::Dump(global_groups);
   EXPECT_EQ(global_groups.size(), 4u);
 
+  static constexpr Token kStatXToken = PW_METRIC_TOKEN("stat_x");
+  EXPECT_EQ(stat_x.name(), kStatXToken);
+
+  static constexpr Token kGyroToken = PW_METRIC_TOKEN("gyro");
+  EXPECT_EQ(gyro_metrics.name(), kGyroToken);
+
   EXPECT_EQ(gyro_metrics.metrics().size(), 1u);
   EXPECT_EQ(comms_metrics.metrics().size(), 2u);
   EXPECT_EQ(power_metrics.metrics().size(), 3u);
