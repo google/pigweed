@@ -205,6 +205,10 @@
                     "type": "string",
                     "description": "Name of the channel"
                   },
+                  "trigger": {
+                    "type": "string",
+                    "description": "Name of the trigger"
+                  },
                   "units": {
                     "type": "string",
                     "description": "Name of the units"
@@ -213,7 +217,6 @@
                 "additionalProperties": false,
                 "required": [
                   "attribute",
-                  "channel",
                   "units"
                 ]
               }

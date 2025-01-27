@@ -169,6 +169,28 @@ class ValidatorTest(unittest.TestCase):
             cause_substrings=[],
         )
 
+    def test_invalid_sensor_attribute(self) -> None:
+        attribute = {
+            "attribute": "sample_rate",
+            "channel": "laundry",
+            "trigger": "data_ready",
+            "units": "rate",
+        }
+        dep_filename = self._generate_dependency_file()
+        self._check_with_exception(
+            metadata={
+                "compatible": {"part": "foo"},
+                "supported-buses": ["i2c"],
+                "deps": [str(dep_filename.resolve())],
+                "attributes": [attribute],
+            },
+            exception_string=(
+                "Attribute instances cannot specify both channel AND trigger:\n"
+                + yaml.safe_dump(attribute, indent=2)
+            ),
+            cause_substrings=[],
+        )
+
     def test_empty_dependency_list(self) -> None:
         """
         Check that an empty or missing 'deps' resolves to one with an empty
@@ -238,11 +260,8 @@ class ValidatorTest(unittest.TestCase):
             cause_substrings=[],
         )
 
-    def test_channel_info_from_deps(self) -> None:
-        """
-        End to end test resolving a dependency file and setting the right
-        default attribute values.
-        """
+    @staticmethod
+    def _generate_dependency_file() -> Path:
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".yaml", encoding="utf-8", delete=False
         ) as dep:
@@ -289,6 +308,14 @@ class ValidatorTest(unittest.TestCase):
                     },
                 )
             )
+        return dep_filename
+
+    def test_channel_info_from_deps(self) -> None:
+        """
+        End to end test resolving a dependency file and setting the right
+        default attribute values.
+        """
+        dep_filename = self._generate_dependency_file()
 
         metadata = Validator(include_paths=[dep_filename.parent]).validate(
             metadata={
@@ -296,9 +323,21 @@ class ValidatorTest(unittest.TestCase):
                 "supported-buses": ["i2c"],
                 "deps": [dep_filename.name],
                 "attributes": [
+                    # Attribute applied to a channel
                     {
                         "attribute": "sample_rate",
                         "channel": "laundry",
+                        "units": "rate",
+                    },
+                    # Attribute applied to the entire device
+                    {
+                        "attribute": "sample_rate",
+                        "units": "rate",
+                    },
+                    # Attribute applied to a trigger
+                    {
+                        "attribute": "sample_rate",
+                        "trigger": "data_ready",
                         "units": "rate",
                     },
                 ],
@@ -385,6 +424,15 @@ class ValidatorTest(unittest.TestCase):
                                 "channel": "laundry",
                                 "units": "rate",
                             },
+                            {
+                                "attribute": "sample_rate",
+                                "units": "rate",
+                            },
+                            {
+                                "attribute": "sample_rate",
+                                "trigger": "data_ready",
+                                "units": "rate",
+                            },
                         ],
                         "channels": {
                             "bar": [
@@ -433,7 +481,9 @@ class ValidatorTest(unittest.TestCase):
         with self.assertRaises(exception_type) as context:
             Validator().validate(metadata=metadata)
 
-        self.assertEqual(str(context.exception).rstrip(), str(exception_string))
+        self.assertEqual(
+            str(context.exception).rstrip(), str(exception_string).rstrip()
+        )
         for cause_substring in cause_substrings:
             self.assertTrue(
                 cause_substring in str(context.exception.__cause__),

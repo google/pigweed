@@ -123,14 +123,14 @@ class Validator:
             "Resolved dependencies:\n%s", yaml.safe_dump(result, indent=2)
         )
 
-        # Resolve all channel entries
+        # Resolve all channel entries (must be done before attributes)
         self._resolve_channels(metadata=metadata, out=result)
+
+        # Resolve all trigger entries (must be done before attributes)
+        self._resolve_triggers(metadata=metadata, out=result)
 
         # Resolve all attribute entries
         self._resolve_attributes(metadata=metadata, out=result)
-
-        # Resolve all trigger entries
-        self._resolve_triggers(metadata=metadata, out=result)
 
         compatible, compatible_str = Validator._get_compatible_string_and_dict(
             metadata.pop("compatible")
@@ -416,7 +416,8 @@ class Validator:
                 trigger["description"] = ""
 
     def _resolve_attributes(self, metadata: dict, out: dict) -> None:
-        """
+        """Resolve and validate any default values in Attributes
+
         For each attribute in the metadta, find the matching definition in the
         'out/attributes' entry and use the data to fill any missing information.
         For example, if an entry exists that looks like:
@@ -434,6 +435,7 @@ class Validator:
         Raises:
           RuntimeError: An error in the schema validation or a missing
             definition.
+
         """
         attributes: list | None = metadata.get("attributes")
         if not attributes:
@@ -444,8 +446,21 @@ class Validator:
         attribute: dict
         for attribute in attributes:
             assert attribute["attribute"] in out["attributes"]
-            assert attribute["channel"] in out["channels"]
             assert attribute["units"] in out["units"]
+
+            has_channel_name = "channel" in attribute
+            has_trigger_name = "trigger" in attribute
+
+            if has_channel_name and has_trigger_name:
+                error = (
+                    "Attribute instances cannot specify both channel AND "
+                    f"trigger:\n{yaml.safe_dump(attribute, indent=2)}"
+                )
+                raise RuntimeError(error)
+            if has_channel_name:
+                assert attribute["channel"] in out["channels"]
+            if has_trigger_name:
+                assert attribute["trigger"] in out["triggers"]
 
     def _resolve_channels(self, metadata: dict, out: dict) -> None:
         """
