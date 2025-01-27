@@ -18,6 +18,7 @@
 #include "pw_bytes/span.h"
 #include "pw_crypto/aes_backend.h"
 #include "pw_crypto/aes_backend_defs.h"
+#include "pw_log/log.h"
 #include "pw_status/status.h"
 
 namespace pw::crypto::aes {
@@ -68,6 +69,15 @@ constexpr bool BackendSupports(size_t key_size_bytes) {
 }  // namespace internal
 
 namespace backend {
+
+/// Initialize the backend context for `Cmac`.
+Status DoInit(NativeCmacContext& ctx, ConstByteSpan key);
+/// Update the backend context for `Cmac`.
+Status DoUpdate(NativeCmacContext& ctx, ConstByteSpan data);
+/// Finalize the backend context for `Cmac` and copy the resulting MAC to the
+/// output.
+Status DoFinal(NativeCmacContext& ctx, BlockSpan out_mac);
+
 /// Implement `raw::EncryptBlock` in the backend. This function should not be
 /// called directly, call `raw::EncryptBlock` instead.
 ///
@@ -86,8 +96,8 @@ Status DoEncryptBlock(ConstByteSpan key,
                       ConstBlockSpan plaintext,
                       BlockSpan out_ciphertext);
 }  // namespace backend
-}  // namespace pw::crypto::aes
 
+}  // namespace pw::crypto::aes
 namespace pw::crypto::unsafe::aes {
 /// Perform raw block-level AES encryption of a single AES block.
 ///

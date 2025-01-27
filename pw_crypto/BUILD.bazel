@@ -152,8 +152,15 @@ pw_facade(
     includes = ["public"],
     deps = [
         "//pw_bytes",
+        "//pw_log",
         "//pw_status",
     ],
+)
+
+cc_library(
+    name = "aes_cmac",
+    hdrs = ["public/pw_crypto/aes_cmac.h"],
+    deps = [":aes"],
 )
 
 label_flag(
@@ -207,6 +214,7 @@ pw_cc_test(
     ],
     deps = [
         ":aes",
+        ":aes_cmac",
         "//pw_containers:vector",
         "//pw_unit_test",
     ],

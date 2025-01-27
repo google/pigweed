@@ -36,6 +36,9 @@
 // This feature requires MBEDTLS_PSA_CRYPTO_C.
 #undef MBEDTLS_LMS_C
 
+// This feature is required to support AES-CMAC.
+#define MBEDTLS_CMAC_C
+
 // Disable a number of TLS related features as we are not maintaining the TLS
 // support.
 #undef MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA_ENABLED

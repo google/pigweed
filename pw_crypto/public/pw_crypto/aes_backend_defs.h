@@ -22,6 +22,7 @@ namespace pw::crypto::aes::backend {
 /// Possible supported AES operations. See `supports` for details.
 enum class AesOperation : uint64_t {
   kUnsafeEncryptBlock,
+  kCmac,
 };
 
 /// Possible supported key sizes. See `supports` for details.

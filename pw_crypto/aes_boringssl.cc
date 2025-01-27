@@ -12,7 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_crypto/aes_boringssl.h"
+
 #include <openssl/aes.h>
+#include <openssl/cipher.h>
+#include <openssl/cmac.h>
 
 #include "pw_assert/check.h"
 #include "pw_crypto/aes.h"
@@ -25,6 +29,50 @@ constexpr size_t kBits = 8;
 }  // namespace
 
 namespace pw::crypto::aes::backend {
+namespace {
+using CmacCtx = NativeCmacContext;
+}  // namespace
+
+Status DoInit(CmacCtx& ctx, ConstByteSpan key) {
+  CMAC_CTX* raw = CMAC_CTX_new();
+  PW_CHECK_NOTNULL(raw);
+  ctx = CmacCtx(raw, CmacContextDeleter());
+
+  const EVP_CIPHER* cipher = nullptr;
+  if (key.size() == kKey128SizeBytes) {
+    cipher = EVP_aes_128_cbc();
+  } else if (key.size() == kKey256SizeBytes) {
+    cipher = EVP_aes_256_cbc();
+  } else {
+    PW_CRASH("Unsupported key size for Cmac (%zu bit)", key.size() * kBits);
+  }
+
+  if (!CMAC_Init(raw, key.data(), key.size(), cipher, nullptr)) {
+    return Status::Internal();
+  }
+
+  return OkStatus();
+}
+
+Status DoUpdate(CmacCtx& ctx, ConstByteSpan data) {
+  auto data_in = reinterpret_cast<const uint8_t*>(data.data());
+  if (!CMAC_Update(ctx.get(), data_in, data.size())) {
+    return Status::Internal();
+  }
+
+  return OkStatus();
+}
+
+Status DoFinal(CmacCtx& ctx, BlockSpan out_mac) {
+  size_t unused_out_len;
+  auto data_out = reinterpret_cast<uint8_t*>(out_mac.data());
+  if (!CMAC_Final(ctx.get(), data_out, &unused_out_len)) {
+    return Status::Internal();
+  }
+
+  return OkStatus();
+}
+
 Status DoEncryptBlock(ConstByteSpan key,
                       ConstBlockSpan plaintext,
                       BlockSpan out_ciphertext) {

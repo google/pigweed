@@ -14,11 +14,27 @@
 
 #pragma once
 
+#include <openssl/cmac.h>
+
 #include "pw_crypto/aes_backend_defs.h"
 
 namespace pw::crypto::aes::backend {
-/// The boringssl backend supports 128-bit, 192-bit, and 256-bit keys.
+/// The boringssl backend supports 128-bit, 192-bit, and 256-bit keys for
+/// RawEncryptBlock.
 template <>
 inline constexpr auto supported<AesOperation::kUnsafeEncryptBlock> =
     SupportedKeySize::k128 | SupportedKeySize::k192 | SupportedKeySize::k256;
+
+/// The boringssl backend supports 128-bit and 256-bit keys for CMAC.
+template <>
+inline constexpr auto supported<AesOperation::kCmac> =
+    SupportedKeySize::k128 | SupportedKeySize::k256;
+
+/// Deleter for ``CMAC_CTX``.
+struct CmacContextDeleter final {
+  void operator()(CMAC_CTX* ctx) { CMAC_CTX_free(ctx); }
+};
+
+/// A ``CMAC_CTX*`` wrapped in a ``std::unique_ptr`` for lifetime management.
+using NativeCmacContext = std::unique_ptr<CMAC_CTX, CmacContextDeleter>;
 }  // namespace pw::crypto::aes::backend

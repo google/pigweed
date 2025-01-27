@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <mbedtls/cipher.h>
+
 #include "pw_crypto/aes_backend_defs.h"
 
 namespace pw::crypto::aes::backend {
@@ -25,4 +27,36 @@ constexpr auto kFullSupport =
 template <>
 inline constexpr auto supported<AesOperation::kUnsafeEncryptBlock> =
     kFullSupport;
+/// The mbedtls backend supports 128-bit, 192-bit, and 256-bit keys for CMAC.
+template <>
+inline constexpr auto supported<AesOperation::kCmac> = kFullSupport;
+
+struct NativeCmacContext final {
+  mbedtls_cipher_context_t cipher;
+
+  NativeCmacContext() { mbedtls_cipher_init(&cipher); }
+  ~NativeCmacContext() { mbedtls_cipher_free(&cipher); }
+
+  NativeCmacContext(const NativeCmacContext&) = delete;
+  NativeCmacContext& operator=(const NativeCmacContext& other) = delete;
+
+  NativeCmacContext(NativeCmacContext&& other) : cipher(other.cipher) {
+    other.cipher = {};
+    // Necessary to init `other.cipher` even though `other` is an rvalue
+    // because the deconstructor unconditionally calls `mbedtls_cipher_free`,
+    // which expects a valid, initialized cipher.
+    mbedtls_cipher_init(&other.cipher);
+  }
+
+  NativeCmacContext& operator=(NativeCmacContext&& other) {
+    mbedtls_cipher_free(&cipher);
+    cipher = other.cipher;
+    other.cipher = {};
+    // Necessary to init `other.cipher` even though `other` is an rvalue
+    // because the deconstructor unconditionally calls `mbedtls_cipher_free`,
+    // which expects a valid, initialized cipher.
+    mbedtls_cipher_init(&other.cipher);
+    return *this;
+  }
+};
 }  // namespace pw::crypto::aes::backend

@@ -19,6 +19,7 @@
 
 #include "pw_assert/assert.h"
 #include "pw_containers/vector.h"
+#include "pw_crypto/aes_cmac.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
@@ -32,6 +33,7 @@ using backend::AesOperation;
 using backend::SupportedKeySize;
 using internal::BackendSupports;
 using unsafe::aes::EncryptBlock;
+using Cmac = aes_cmac::Cmac;
 
 template <typename T>
 void ZeroOut(T& container) {
@@ -64,6 +66,87 @@ auto ToArray(const T& container) {
 // Intentionally chosen to not be a valid AES key size, but larger than the
 // largest AES key size.
 constexpr size_t kMaxVectorSize = 503;
+
+TEST(Aes, Cmac) {
+  constexpr auto kCmacOp = AesOperation::kCmac;
+
+  span<const std::byte> msg1 = STR_TO_BYTES("Hello");
+  span<const std::byte> msg2 = STR_TO_BYTES(", world!");
+  span<const std::byte> msg_full = STR_TO_BYTES("Hello, world!");
+
+  // Output buffer for computed MAC.
+  Block mac;
+  // Ensure dynamically-sized keys will work.
+  Vector<std::byte, kMaxVectorSize> dynamic_key;
+
+  auto reset = [&] {
+    ZeroOut(mac);
+    ZeroOut(dynamic_key);
+    dynamic_key.clear();
+  };
+
+  if constexpr (BackendSupports<kCmacOp>(SupportedKeySize::k128)) {
+    span<const std::byte, 16> key = STR_TO_BYTES(
+        "\x1E\xE4\x01\x50\x0D\xFB\x92\x84\x3A\x73\xBB\xCD\xA6\x6E\x94\xC4");
+    Block expected = SpanToArray(STR_TO_BYTES(
+        "\x30\xF5\xFB\xB8\xB9\x12\x38\xF9\x18\x5D\xA2\x8C\xD8\xAD\x13\xEF"));
+
+    reset();
+    EXPECT_OK(Cmac(key).Update(msg1).Update(msg2).Final(mac));
+    EXPECT_EQ(mac, expected);
+
+    reset();
+    EXPECT_OK(Cmac(key).Update(msg_full).Final(mac));
+    EXPECT_EQ(mac, expected);
+
+    reset();
+    std::copy(key.begin(), key.end(), std::back_inserter(dynamic_key));
+    EXPECT_OK(Cmac(dynamic_key).Update(msg_full).Final(mac));
+    EXPECT_EQ(mac, expected);
+  }
+
+  if constexpr (BackendSupports<kCmacOp>(SupportedKeySize::k192)) {
+    span<const std::byte, 24> key = STR_TO_BYTES(
+        "\x3B\x42\x7C\xB3\xCE\x89\x14\xFC\x89\x78\x00\x84\xC2\x29\x10\xC5"
+        "\xC8\x42\x46\xE5\x2D\x16\x53\xC8");
+    Block expected = SpanToArray(STR_TO_BYTES(
+        "\x0E\xE7\xD6\xCD\x29\xBF\x35\xBE\xEA\xFF\x7C\xC6\xAE\x52\xC7\xBD"));
+
+    reset();
+    EXPECT_OK(Cmac(key).Update(msg1).Update(msg2).Final(mac));
+    EXPECT_EQ(mac, expected);
+
+    reset();
+    EXPECT_OK(Cmac(key).Update(msg_full).Final(mac));
+    EXPECT_EQ(mac, expected);
+
+    reset();
+    std::copy(key.begin(), key.end(), std::back_inserter(dynamic_key));
+    EXPECT_OK(Cmac(dynamic_key).Update(msg_full).Final(mac));
+    EXPECT_EQ(mac, expected);
+  }
+
+  if constexpr (BackendSupports<kCmacOp>(SupportedKeySize::k256)) {
+    span<const std::byte, 32> key = STR_TO_BYTES(
+        "\x64\xC9\x63\x43\x83\xF8\xFA\xC9\xEC\x15\x3B\xBF\x04\xDD\x80\xB4"
+        "\x20\x4B\x05\x87\xD6\x94\x65\xFA\x49\x5E\x48\x4D\x85\x6A\x58\x03");
+    Block expected = SpanToArray(STR_TO_BYTES(
+        "\x76\x4D\x24\x2E\xF2\x0A\x94\xD4\xF3\x42\xCD\x46\x71\x4A\xC0\x4E"));
+
+    reset();
+    EXPECT_OK(Cmac(key).Update(msg1).Update(msg2).Final(mac));
+    EXPECT_EQ(mac, expected);
+
+    reset();
+    EXPECT_OK(Cmac(key).Update(msg_full).Final(mac));
+    EXPECT_EQ(mac, expected);
+
+    reset();
+    std::copy(key.begin(), key.end(), std::back_inserter(dynamic_key));
+    EXPECT_OK(Cmac(dynamic_key).Update(msg_full).Final(mac));
+    EXPECT_EQ(mac, expected);
+  }
+}
 
 TEST(Aes, UnsafeEncryptApi) {
   constexpr auto kRawEncryptBlockOp = AesOperation::kUnsafeEncryptBlock;

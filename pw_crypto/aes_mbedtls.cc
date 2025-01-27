@@ -15,6 +15,7 @@
 #include "pw_crypto/aes_mbedtls.h"
 
 #include <mbedtls/aes.h>
+#include <mbedtls/cmac.h>
 
 #include "pw_assert/check.h"
 #include "pw_crypto/aes.h"
@@ -26,6 +27,55 @@ constexpr size_t kBits = 8;
 }  // namespace
 
 namespace pw::crypto::aes::backend {
+namespace {
+using CmacCtx = NativeCmacContext;
+}  // namespace
+
+Status DoInit(CmacCtx& ctx, ConstByteSpan key) {
+  const auto key_data = reinterpret_cast<const unsigned char*>(key.data());
+
+  const mbedtls_cipher_info_t* info;
+  switch (key.size()) {
+    case kKey128SizeBytes:
+      info = mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_ECB);
+      break;
+    case kKey192SizeBytes:
+      info = mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_ECB);
+      break;
+    case kKey256SizeBytes:
+      info = mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_ECB);
+      break;
+    default:
+      PW_CRASH("Unsupported key size for Cmac (%zu bit)", key.size() * kBits);
+  }
+
+  if (mbedtls_cipher_setup(&ctx.cipher, info)) {
+    return Status::Internal();
+  }
+  if (mbedtls_cipher_cmac_starts(&ctx.cipher, key_data, key.size() * kBits)) {
+    return Status::Internal();
+  }
+
+  return OkStatus();
+}
+
+Status DoUpdate(CmacCtx& ctx, ConstByteSpan data) {
+  const auto data_in = reinterpret_cast<const unsigned char*>(data.data());
+  if (mbedtls_cipher_cmac_update(&ctx.cipher, data_in, data.size())) {
+    return Status::Internal();
+  }
+
+  return OkStatus();
+}
+
+Status DoFinal(CmacCtx& ctx, BlockSpan out_mac) {
+  const auto data_out = reinterpret_cast<unsigned char*>(out_mac.data());
+  if (mbedtls_cipher_cmac_finish(&ctx.cipher, data_out)) {
+    return Status::Internal();
+  }
+
+  return OkStatus();
+}
 
 Status DoEncryptBlock(ConstByteSpan key,
                       ConstBlockSpan plaintext,

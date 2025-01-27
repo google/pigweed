@@ -198,8 +198,14 @@ pw_facade("aes") {
   ]
   public_deps = [
     "$dir_pw_bytes",
+    "$dir_pw_log",
     "$dir_pw_status",
   ]
+}
+
+pw_source_set("aes_cmac") {
+  public = [ "public/pw_crypto/aes_cmac.h" ]
+  deps = [ ":aes" ]
 }
 
 config("boringssl_config") {
@@ -240,6 +246,7 @@ pw_test("aes_test") {
   enable_if = pw_crypto_AES_BACKEND != ""
   deps = [
     ":aes",
+    ":aes_cmac",
     "$dir_pw_containers:vector",
   ]
   sources = [ "aes_test.cc" ]
