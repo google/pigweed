@@ -35,7 +35,8 @@ pw_sensor_library(pw_sensor.test_constants
   GENERATOR_INCLUDES
     $ENV{PW_ROOT}
   SOURCES
-    ${CMAKE_CURRENT_LIST_DIR}/sensor.yaml
+    ${CMAKE_CURRENT_LIST_DIR}/test_sensor1.yaml
+    ${CMAKE_CURRENT_LIST_DIR}/test_sensor2.yaml
   PUBLIC_DEPS
     pw_sensor.types
     pw_containers

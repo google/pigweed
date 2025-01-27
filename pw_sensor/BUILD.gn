@@ -29,7 +29,10 @@ pw_source_set("pw_sensor_types") {
 
 pw_sensor_library("test_constants_lib") {
   out_header = "pw_sensor/generated/sensor_constants.h"
-  sources = [ "sensor.yaml" ]
+  sources = [
+    "test_sensor1.yaml",
+    "test_sensor2.yaml",
+  ]
   inputs = [
     "attributes.yaml",
     "channels.yaml",

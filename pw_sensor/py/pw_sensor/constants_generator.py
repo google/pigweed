@@ -21,6 +21,7 @@ import typing
 from collections.abc import Sequence
 from dataclasses import dataclass, fields, is_dataclass
 from typing import Any
+import types
 
 import jinja2
 import yaml
@@ -88,7 +89,7 @@ class SensorAttributeSpec:
 class CompatibleSpec:
     """Typing for the Compatible dictionary."""
 
-    org: str
+    org: str | None
     part: str
 
 
@@ -153,11 +154,29 @@ def is_primitive(value: Any) -> bool:  # noqa: ANN401
     return isinstance(value, int | float | complex | str | bool)
 
 
+def is_union(t: Any) -> bool:  # noqa: ANN401
+    """Check if the given type is a union
+
+    Args:
+        t: The type to check.
+
+    Returns:
+        True if `t` is a union type, False otherwise.
+
+    """
+    return (
+        typing.get_origin(t) is typing.Union
+        or typing.get_origin(t) is types.UnionType
+    )
+
+
 def create_dataclass_from_dict(
-    cls: Any, data: Any, indent: int = 0  # noqa: ANN401
+    cls: Any,
+    data: Any,
+    indent: int = 0,  # noqa: ANN401
 ) -> Any:  # noqa: ANN401
     """Recursively creates a dataclass instance from a nested dictionary."""
-    field_values = {}
+    field_values: dict[str, Any] = {}
 
     if is_list_type(cls):
         result = []
@@ -177,6 +196,15 @@ def create_dataclass_from_dict(
         if field_value is None:
             field_value = data.get(field.name.replace("_", "-"))
 
+        if (
+            is_union(field.type)
+            and type(None) in typing.get_args(field.type)
+            and field_value is None
+        ):
+            # We have an optional field and no value, skip it
+            field_values[field.name] = None
+            continue
+
         assert field_value is not None
 
         # We need to check if the field is a List, dictionary, or another
@@ -187,7 +215,7 @@ def create_dataclass_from_dict(
                 create_dataclass_from_dict(item_type, item, indent + 2)
                 for item in field_value
             ]
-        elif dict in field.type.__mro__:
+        elif dict in getattr(field.type, "__mro__", []):
             # We might not have types specified in the dataclass
             value_types = typing.get_args(field.type)
             if len(value_types) != 0:
@@ -220,9 +248,9 @@ def main() -> None:
     spec: InputSpec = create_dataclass_from_dict(InputSpec, yaml_input)
 
     jinja_templates = {
-        t: importlib.resources.read_text('pw_sensor.templates', t)
-        for t in importlib.resources.contents('pw_sensor.templates')
-        if t.endswith('.jinja')
+        t: importlib.resources.read_text("pw_sensor.templates", t)
+        for t in importlib.resources.contents("pw_sensor.templates")
+        if t.endswith(".jinja")
     }
     environment = jinja2.Environment(
         loader=jinja2.DictLoader(jinja_templates),
