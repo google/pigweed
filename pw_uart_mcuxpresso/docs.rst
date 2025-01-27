@@ -9,8 +9,13 @@ pw_uart_mcuxpresso
 ``pw_uart_mcuxpresso`` implements the ``pw_uart`` interface for reading
 and writing to a UART using the NXP MCUXpresso SDK.
 
-The only implementation currently provided is ``DmaUartMcuxpresso``, which
-uses DMA transfers to read and write to the UART, minimizing CPU utilization.
+There are two implementations available:
+
+* `DmaUartMcuxpresso`: Implements `pw::Uart`.
+* `DmaUartMcuxpressoNonBlocking`: Implements `pw::UartNonBlocking`.
+
+Both implementations use DMA transfers to read andwrite to the UART,
+minimizing CPU utilization.
 
 .. note::
   For a simpler UART interface, see ``pw_stream_uart_mcuxpresso``.
@@ -32,11 +37,30 @@ The name of the SDK source set must be set in the
 
 Usage
 =====
-
-``DmaUartMcuxpresso`` example:
+---------------------
+``DmaUartMcuxpresso``
+---------------------
 
 .. literalinclude:: dma_uart_example.cc
    :language: cpp
    :linenos:
    :start-after: [pw_uart_mcuxpresso-DmaUartExample]
    :end-before: [pw_uart_mcuxpresso-DmaUartExample]
+
+
+--------------------------------
+``DmaUartMcuxpressoNonBlocking``
+--------------------------------
+.. literalinclude:: dma_uart_nonblocking_example.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_uart_mcuxpresso-DmaUartNonBlockingBasicExample]
+   :end-before: [pw_uart_mcuxpresso-DmaUartNonBlockingBasicExample]
+
+The nonblocking UART can be converted to a blocking UART via an adapter:
+
+.. literalinclude:: dma_uart_nonblocking_example.cc
+   :language: cpp
+   :linenos:
+   :start-after: [pw_uart_mcuxpresso-DmaUartNonBlockingAdapterExample]
+   :end-before: [pw_uart_mcuxpresso-DmaUartNonBlockingAdapterExample]

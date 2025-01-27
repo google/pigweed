@@ -20,10 +20,16 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+log_defines = [
+    "PW_LOG_MODULE_NAME=\\\"UART\\\"",
+    "PW_LOG_LEVEL=PW_LOG_LEVEL_ERROR",
+]
+
 cc_library(
     name = "dma_uart",
     srcs = ["dma_uart.cc"],
     hdrs = ["public/pw_uart_mcuxpresso/dma_uart.h"],
+    local_defines = log_defines,
     strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
@@ -42,6 +48,34 @@ cc_library(
 pw_cc_test(
     name = "dma_uart_example",
     srcs = ["dma_uart_example.cc"],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+    ],
+    deps = [":pw_uart_mcuxpresso"],
+)
+
+cc_library(
+    name = "dma_uart_nonblocking",
+    srcs = ["dma_uart_nonblocking.cc"],
+    hdrs = ["public/pw_uart_mcuxpresso/dma_uart_nonblocking.h"],
+    local_defines = log_defines,
+    strip_include_prefix = "public",
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+    ],
+    deps = [
+        "//pw_clock_tree",
+        "//pw_dma_mcuxpresso",
+        "//pw_preprocessor",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_uart:uart_non_blocking",
+        "//targets:mcuxpresso_sdk",
+    ],
+)
+
+pw_cc_test(
+    name = "dma_uart_nonblocking_example",
+    srcs = ["dma_uart_nonblocking_example.cc"],
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
