@@ -189,6 +189,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         chunk_timeout_s: float | None = None,
         initial_timeout_s: float | None = None,
         initial_offset: int = 0,
+        max_window_size: int = 32768,
     ) -> bytes:
         """Receives ("downloads") data from the server.
 
@@ -249,6 +250,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             self.max_retries,
             self.max_lifetime_retries,
             protocol_version,
+            max_window_size_bytes=max_window_size,
             max_chunk_size=self._max_chunk_size_bytes,
             progress_callback=progress_callback,
             initial_offset=initial_offset,
