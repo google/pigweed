@@ -267,6 +267,7 @@ cc_library(
     name = "stream_rpc_dispatcher",
     hdrs = ["public/pw_rpc_transport/stream_rpc_dispatcher.h"],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":egress_ingress",
         "//pw_metric:metric",

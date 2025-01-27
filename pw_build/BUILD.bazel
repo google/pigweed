@@ -79,6 +79,7 @@ pw_cc_test(
         "PW_BUILD_EXPECTED_HEADER_PATH=\\\"pw_build/pw_build_private/file_prefix_map_test.h\\\"",
         "PW_BUILD_EXPECTED_SOURCE_PATH=\\\"pw_build/file_prefix_map_test.cc\\\"",
     ],
+    tags = ["noclangtidy"],
 )
 
 label_flag(

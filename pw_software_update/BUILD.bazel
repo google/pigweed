@@ -105,6 +105,7 @@ cc_library(
     hdrs = [
         "public/pw_software_update/blob_store_openable_reader.h",
     ],
+    tags = ["noclangtidy"],
     deps = [
         ":openable_reader",
     ],

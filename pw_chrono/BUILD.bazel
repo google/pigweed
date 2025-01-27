@@ -52,6 +52,7 @@ pw_facade(
     ],
     backend = ":system_clock_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":epoch",
         ":virtual_clock",
@@ -76,6 +77,7 @@ pw_facade(
     ],
     backend = ":system_timer_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":system_clock",
     ],

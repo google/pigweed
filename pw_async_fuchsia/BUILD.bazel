@@ -97,6 +97,7 @@ cc_library(
         "public",
         "public_overrides",
     ],
+    tags = ["noclangtidy"],
 )
 
 fuchsia_cc_test(

@@ -43,6 +43,7 @@ cc_library(
         "public/pw_interrupt_cortex_a/context_inline.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     visibility = ["//visibility:private"],
 )
 

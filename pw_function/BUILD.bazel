@@ -28,6 +28,7 @@ cc_library(
     name = "config",
     hdrs = ["public/pw_function/config.h"],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [":config_override"],
 )
 
@@ -64,6 +65,7 @@ cc_library(
         "public/pw_function/pointer.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
 )
 
 pw_cc_test(

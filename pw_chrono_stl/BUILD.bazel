@@ -31,6 +31,7 @@ cc_library(
         "clock_public_overrides",
         "public",
     ],
+    tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_chrono:epoch",
@@ -53,6 +54,7 @@ cc_library(
         "public",
         "timer_public_overrides",
     ],
+    tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_chrono:system_clock",

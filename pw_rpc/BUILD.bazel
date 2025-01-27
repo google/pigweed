@@ -215,6 +215,7 @@ cc_library(
         "public/pw_rpc/synchronous_call_result.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":pw_rpc",
         "//pw_chrono:system_clock",
@@ -290,6 +291,7 @@ cc_library(
         ".",
         "public",
     ],
+    tags = ["noclangtidy"],
     visibility = [":__subpackages__"],
     deps = [
         ":pw_rpc",

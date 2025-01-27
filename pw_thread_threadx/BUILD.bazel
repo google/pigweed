@@ -32,6 +32,7 @@ cc_library(
         "id_public_overrides",
         "public",
     ],
+    tags = ["noclangtidy"],
     # TODO: b/257321712 - Add ThreadX dependency.
     deps = [
         "//pw_thread:id.facade",

@@ -59,6 +59,7 @@ cc_library(
         "public/pw_bluetooth/vendor.h",
     ],
     includes = ["public"],
+    tags = ["noclangtidy"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_containers",
@@ -100,6 +101,7 @@ cc_library(
         "public/pw_bluetooth/vendor.h",
     ],
     includes = ["public"],
+    tags = ["noclangtidy"],
     deps = [
         ":config",
         "//pw_async2:dispatcher",

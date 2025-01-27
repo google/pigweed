@@ -33,6 +33,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/att/packet.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci-spec",
@@ -63,6 +64,7 @@ cc_library(
         "//pw_string",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":definitions",
         "//pw_async:dispatcher",

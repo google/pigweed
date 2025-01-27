@@ -277,6 +277,7 @@ cc_library(
         "public",
         "thread_public_overrides",
     ],
+    tags = ["noclangtidy"],
 )
 
 run_binary(

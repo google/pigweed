@@ -127,6 +127,7 @@ cc_library(
         "public",
         "yield_public_overrides",
     ],
+    tags = ["noclangtidy"],
     deps = [
         "//pw_thread:yield.facade",
     ],

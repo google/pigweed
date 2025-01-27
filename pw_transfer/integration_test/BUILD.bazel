@@ -27,6 +27,7 @@ package(features = ["-layering_check"])
 pw_cc_binary(
     name = "server",
     srcs = ["server.cc"],
+    tags = ["noclangtidy"],
     deps = [
         ":config_cc_proto",
         "//pw_assert",
@@ -98,6 +99,7 @@ pw_cc_binary(
     name = "cpp_client",
     testonly = True,
     srcs = ["client.cc"],
+    tags = ["noclangtidy"],
     deps = [
         ":config_cc_proto",
         "//pw_log",

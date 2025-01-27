@@ -69,6 +69,7 @@ cc_library(
         "FreeRTOSConfig.h",
     ],
     includes = ["./"],
+    tags = ["noclangtidy"],
     deps = ["//third_party/freertos:config_assert"],
 )
 

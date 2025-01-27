@@ -36,6 +36,7 @@ cc_library(
         "//pw_bluetooth_sapphire/host/hci",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_bluetooth:emboss_hci_data",
         "//pw_bluetooth:emboss_hci_events",
@@ -54,6 +55,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/iso/fake_iso_stream.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":iso",
     ],

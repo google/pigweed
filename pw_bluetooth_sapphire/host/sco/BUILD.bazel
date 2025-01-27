@@ -31,6 +31,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/sco/sco_connection_manager.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_bluetooth:emboss_hci_commands",
         "//pw_bluetooth_sapphire/host/common",

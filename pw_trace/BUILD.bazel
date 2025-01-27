@@ -39,6 +39,7 @@ pw_facade(
     ],
     backend = ":backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_preprocessor",
     ],
@@ -59,6 +60,7 @@ cc_library(
         "public",
         "public_overrides",
     ],
+    tags = ["noclangtidy"],
     deps = [
         ":pw_trace.facade",
         "//pw_preprocessor",
@@ -89,6 +91,7 @@ pw_cc_test(
         "pw_trace_test",
         "pw_trace_test/public_overrides",
     ],
+    tags = ["noclangtidy"],
     deps = [
         ":pw_trace",
         "//pw_preprocessor",

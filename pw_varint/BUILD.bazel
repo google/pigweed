@@ -33,6 +33,7 @@ cc_library(
         "public/pw_varint/varint.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_preprocessor",
         "//pw_span",

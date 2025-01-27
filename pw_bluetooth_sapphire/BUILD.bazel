@@ -42,6 +42,7 @@ cc_library(
     srcs = ["central.cc"],
     hdrs = ["public/pw_bluetooth_sapphire/central.h"],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_bluetooth:pw_bluetooth2",
         "//pw_bluetooth_sapphire/host/gap",
@@ -67,6 +68,7 @@ cc_library(
     srcs = ["peripheral.cc"],
     hdrs = ["public/pw_bluetooth_sapphire/peripheral.h"],
     includes = ["public"],
+    tags = ["noclangtidy"],
     deps = [
         "//pw_bluetooth:pw_bluetooth2",
         "//pw_bluetooth_sapphire/host/gap",

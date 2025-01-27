@@ -42,6 +42,7 @@ cc_library(
         "public/pw_assert/short.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":assert_backend",
         ":check_backend",
@@ -76,6 +77,7 @@ pw_facade(
     ],
     backend = ":check_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":config",
         "//pw_preprocessor",
@@ -109,6 +111,7 @@ pw_facade(
     ],
     backend = ":assert_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [":config"],
 )
 
@@ -220,6 +223,7 @@ pw_cc_test(
         "public/pw_assert/internal/check_impl.h",
         "pw_assert_test/fake_backend.h",
     ],
+    tags = ["noclangtidy"],
     deps = [
         ":config",
         ":facade",

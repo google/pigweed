@@ -46,6 +46,7 @@ cc_library(
         "public/pw_trace_tokenized/config.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
 )
 
 cc_library(

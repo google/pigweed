@@ -55,6 +55,7 @@ cc_library(
     name = "fake_channel_output",
     hdrs = ["public/pw_rpc/raw/fake_channel_output.h"],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":server_api",
         "//pw_assert",

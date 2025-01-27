@@ -55,6 +55,7 @@ cc_library(
     includes = [
         "public_overrides",
     ],
+    tags = ["noclangtidy"],
     deps = [
         ":handler.facade",
         ":headers",
@@ -118,6 +119,7 @@ cc_library(
 cc_library(
     name = "base64_over_hdlc",
     srcs = ["base64_over_hdlc.cc"],
+    tags = ["noclangtidy"],
     deps = [
         ":base64",
         ":handler.facade",

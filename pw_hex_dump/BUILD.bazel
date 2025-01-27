@@ -32,6 +32,7 @@ cc_library(
         "public/pw_hex_dump/hex_dump.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_bytes",
         "//pw_span",

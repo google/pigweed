@@ -77,6 +77,7 @@ cc_library(
         "//pw_string:utf_codecs",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     # This library is not compatible with --config=rp2040.
     target_compatible_with = select({
         "@platforms//os:fuchsia": [],

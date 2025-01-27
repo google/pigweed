@@ -78,6 +78,7 @@ cc_library(
     testonly = True,
     hdrs = ["public/pw_allocator/bucket/testing.h"],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_allocator:buffer",
         "//pw_allocator:bump_allocator",

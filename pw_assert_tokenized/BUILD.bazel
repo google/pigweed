@@ -82,6 +82,7 @@ cc_library(
         "check_public_overrides/pw_assert_backend/check_backend.h",
     ],
     strip_include_prefix = "check_public_overrides",
+    tags = ["noclangtidy"],
     deps = [":check_backend_private"],
 )
 

@@ -19,6 +19,7 @@ load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 cc_library(
     name = "base_lib",
     hdrs = ["base.h"],
+    tags = ["noclangtidy"],
 )
 
 # Baseline tokenize string size report binary.
@@ -26,6 +27,7 @@ pw_cc_binary(
     name = "tokenize_string_base",
     srcs = ["tokenize_string.cc"],
     defines = ["BASELINE"],
+    tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":base_lib",
@@ -37,6 +39,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "tokenize_string",
     srcs = ["tokenize_string.cc"],
+    tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":base_lib",
@@ -49,6 +52,7 @@ pw_cc_binary(
     name = "tokenize_string_expr_base",
     srcs = ["tokenize_string_expr.cc"],
     defines = ["BASELINE"],
+    tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":base_lib",
@@ -60,6 +64,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "tokenize_string_expr",
     srcs = ["tokenize_string_expr.cc"],
+    tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":base_lib",

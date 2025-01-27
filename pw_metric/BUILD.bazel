@@ -67,6 +67,7 @@ cc_library(
 cc_library(
     name = "metric_walker",
     hdrs = ["pw_metric_private/metric_walker.h"],
+    tags = ["noclangtidy"],
     visibility = ["//visibility:private"],
     deps = [
         ":metric",

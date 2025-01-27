@@ -119,6 +119,7 @@ cc_library(
     srcs = [
         "log_backend.cc",
     ],
+    tags = ["noclangtidy"],
     deps = [
         ":config",
         ":log",
@@ -606,6 +607,7 @@ cc_library(
         "//conditions:default": [],
     }),
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_allocator:allocator",
         "//pw_async2:dispatcher",

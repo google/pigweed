@@ -399,6 +399,7 @@ cc_library(
         "public/pw_allocator/tracking_allocator.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":allocator",
         "//pw_assert",

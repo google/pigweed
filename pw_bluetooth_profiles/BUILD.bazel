@@ -33,6 +33,7 @@ cc_library(
         "public/pw_bluetooth_profiles/device_info_service.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_assert",
         "//pw_bluetooth",

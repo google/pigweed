@@ -160,6 +160,7 @@ cc_library(
     name = "iterator",
     hdrs = ["public/pw_containers/iterator.h"],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
 )
 
 cc_library(
@@ -193,6 +194,7 @@ cc_library(
     srcs = ["inline_var_len_entry_queue.c"],
     hdrs = ["public/pw_containers/inline_var_len_entry_queue.h"],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":constexpr_tag",
         ":raw_storage",

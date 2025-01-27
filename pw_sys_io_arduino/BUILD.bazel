@@ -37,6 +37,7 @@ cc_library(
     name = "pw_sys_io_arduino_header",
     hdrs = ["public/pw_sys_io_arduino/init.h"],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     visibility = ["//visibility:public"],
 )
 

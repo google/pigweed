@@ -35,6 +35,7 @@ cc_library(
         "public",
         "public_overrides",
     ],
+    tags = ["noclangtidy"],
     deps = [
         "//pw_preprocessor",
     ],

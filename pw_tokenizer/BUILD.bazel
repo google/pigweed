@@ -54,6 +54,7 @@ cc_library(
         "public/pw_tokenizer/tokenize.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":config_override",
         "//pw_bytes:bit",
@@ -284,6 +285,7 @@ pw_cc_test(
         "hash_test.cc",
         "pw_tokenizer_private/generated_hash_test_cases.h",
     ],
+    tags = ["noclangtidy"],
     deps = [
         ":pw_tokenizer",
         "//pw_preprocessor",

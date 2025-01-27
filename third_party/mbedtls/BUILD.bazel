@@ -30,4 +30,5 @@ cc_library(
         "//conditions:default": ["_PW_MBEDTLS_IS_HOST=1"],
     }),
     strip_include_prefix = ".",
+    tags = ["noclangtidy"],
 )

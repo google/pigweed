@@ -72,6 +72,7 @@ cc_library(
         "public/pw_async_basic/fake_dispatcher.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     visibility = ["//visibility:private"],
     deps = [
         "//pw_async:fake_dispatcher.facade",

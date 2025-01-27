@@ -31,6 +31,7 @@ cc_library(
         "public/pw_channel/properties.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_assert",
         "//pw_async2:dispatcher",

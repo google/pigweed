@@ -91,6 +91,7 @@ cc_library(
         "config/stm32f4xx_hal_conf.h",
     ],
     includes = ["config"],
+    tags = ["noclangtidy"],
 )
 
 cc_library(

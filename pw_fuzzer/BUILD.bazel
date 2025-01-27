@@ -69,6 +69,7 @@ cc_library(
         "private_overrides",
         "public_overrides",
     ],
+    tags = ["noclangtidy"],
     deps = ["//pw_unit_test"],
 )
 

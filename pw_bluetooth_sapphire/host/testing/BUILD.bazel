@@ -41,6 +41,7 @@ cc_library(
         ":test_helpers",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_async:fake_dispatcher_fixture",
         "//pw_async:heap_dispatcher",
@@ -198,6 +199,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/testing/peer_fuzzer.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = ["//pw_bluetooth_sapphire/host/gap"],
 )
 

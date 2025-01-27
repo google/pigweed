@@ -38,6 +38,7 @@ pw_facade(
     ],
     backend = ":binary_semaphore_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
@@ -64,6 +65,7 @@ pw_facade(
     ],
     backend = ":counting_semaphore_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
@@ -164,6 +166,7 @@ pw_facade(
     ],
     backend = ":mutex_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":lock_annotations",
         ":virtual_basic_lockable",
@@ -242,6 +245,7 @@ pw_facade(
     ],
     backend = ":interrupt_spin_lock_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":lock_annotations",
         ":virtual_basic_lockable",
@@ -266,6 +270,7 @@ pw_facade(
     ],
     backend = ":thread_notification_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_chrono:system_clock",
     ],
@@ -288,6 +293,7 @@ pw_facade(
     ],
     backend = ":timed_thread_notification_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":thread_notification",
         "//pw_chrono:system_clock",
@@ -316,6 +322,7 @@ cc_library(
         "public",
         "public_overrides",
     ],
+    tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":binary_semaphore",
@@ -333,6 +340,7 @@ cc_library(
         "public",
         "public_overrides",
     ],
+    tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":binary_semaphore_thread_notification_backend",
@@ -355,6 +363,7 @@ cc_library(
         "public/pw_sync/condition_variable.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_sync:mutex",
@@ -401,6 +410,7 @@ cc_library(
     name = "borrow_testing",
     hdrs = ["public/pw_sync/borrow_testing.h"],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":borrow",
         ":lock_traits",
@@ -411,6 +421,7 @@ cc_library(
     name = "timed_borrow_testing",
     hdrs = ["public/pw_sync/timed_borrow_testing.h"],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":borrow_testing",
         ":timed_borrow",

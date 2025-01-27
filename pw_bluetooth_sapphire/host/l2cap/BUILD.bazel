@@ -31,6 +31,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bytes",
@@ -107,6 +108,7 @@ cc_library(
         "//pw_preprocessor",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     target_compatible_with = select({
         "@platforms//os:fuchsia": [],
         "@platforms//os:linux": [],

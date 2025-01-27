@@ -18,6 +18,7 @@ load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 cc_library(
     name = "base_lib",
     hdrs = ["base.h"],
+    tags = ["noclangtidy"],
 )
 
 pw_cc_binary(

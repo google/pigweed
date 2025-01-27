@@ -30,6 +30,7 @@ pw_facade(
     ],
     backend = ":pw_tls_client_backend",
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_assert",
         "//pw_bytes",

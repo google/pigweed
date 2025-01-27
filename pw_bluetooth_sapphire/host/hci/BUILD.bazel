@@ -65,6 +65,7 @@ cc_library(
         "//pw_preprocessor",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci-spec",
@@ -88,6 +89,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/hci/fake_sco_connection.h",
     ],
     strip_include_prefix = "public",
+    tags = ["noclangtidy"],
     deps = [
         ":hci",
         "//pw_async:heap_dispatcher",
