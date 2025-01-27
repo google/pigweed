@@ -180,6 +180,11 @@
         ],
         "sanitizers": [
           [
+            "build",
+            "--config=clang-tidy",
+            "//..."
+          ],
+          [
             "test",
             "--config=asan",
             "//..."
