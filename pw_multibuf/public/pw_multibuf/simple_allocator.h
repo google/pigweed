@@ -75,6 +75,10 @@ class SimpleAllocator : public MultiBufAllocator {
       size_t desired_size,
       ContiguityRequirement contiguity_requirement) final;
 
+  std::optional<size_t> DoGetBackingCapacity() final {
+    return data_area_.size();
+  }
+
   /// Allocates a contiguous buffer of exactly ``size`` bytes.
   pw::Result<MultiBuf> InternalAllocateContiguous(size_t size)
       PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);

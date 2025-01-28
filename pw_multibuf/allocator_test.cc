@@ -72,6 +72,7 @@ class MockMultiBufAllocator : public MultiBufAllocator {
     EXPECT_EQ(contiguous, expected.contiguous);
     return std::move(expected.result);
   }
+  std::optional<size_t> DoGetBackingCapacity() final { return {}; }
 
   std::optional<AllocateExpectation> expected_allocate_;
 };

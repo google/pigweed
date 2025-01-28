@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <cstddef>
 #include <optional>
 
 #include "pw_containers/intrusive_forward_list.h"
@@ -112,6 +113,15 @@ class MultiBufAllocator {
   std::optional<MultiBuf> AllocateContiguous(size_t min_size,
                                              size_t desired_size);
 
+  /// Returns the total amount of memory provided by this object.
+  ///
+  /// This is an optional method. Some memory providers may not have an easily
+  /// defined capacity, e.g. the system allocator.
+  ///
+  /// @retval the total memory if known.
+  /// @retval ``nullopt_t`` if the total memory is not knowable.
+  std::optional<size_t> GetBackingCapacity() { return DoGetBackingCapacity(); }
+
  protected:
   /// Awakens callers asynchronously waiting for allocations of at most
   /// ``size_available`` bytes or at most ``contiguous_size_available``
@@ -176,6 +186,9 @@ class MultiBufAllocator {
       size_t min_size,
       size_t desired_size,
       ContiguityRequirement contiguity_requirement) = 0;
+
+  /// @copydoc MultiBufAllocator::GetBackingCapacity
+  virtual std::optional<size_t> DoGetBackingCapacity() = 0;
 
   sync::Mutex lock_;
   IntrusiveForwardList<MemoryAvailableDelegate> mem_delegates_
