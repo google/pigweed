@@ -264,6 +264,18 @@ copy_file(
     allow_symlink = True,
 )
 
+# Symlink to clang-tidy, for user convenience.
+copy_file(
+    name = "copy_clang_tidy",
+    src = select({
+        "@platforms//os:macos": "@llvm_toolchain_macos//:clang-tidy",
+        "//conditions:default": "@llvm_toolchain//:clang-tidy",
+    }),
+    out = "clang-tidy",
+    allow_symlink = True,
+    is_executable = True,
+)
+
 cc_feature(
     name = "use_module_maps",
     args = ["//pw_toolchain/cc/args:dependent_module_map_files"],
