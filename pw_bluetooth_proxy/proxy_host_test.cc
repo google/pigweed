@@ -2229,15 +2229,12 @@ TEST_F(BasicL2capChannelTest, BasicWrite) {
   // Allow proxy to reserve 1 LE credit.
   PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
 
-  PW_TEST_ASSERT_OK_AND_ASSIGN(
-      BasicL2capChannel channel,
-      proxy.AcquireBasicL2capChannel(/*connection_handle=*/capture.handle,
-                                     /*local_cid=*/0x123,
-                                     /*remote_cid=*/capture.channel_id,
-                                     /*transport=*/AclTransportType::kLe,
-                                     /*payload_from_controller_fn=*/nullptr,
-                                     /*payload_from_host_fn=*/nullptr,
-                                     /*event_fn=*/nullptr));
+  BasicL2capChannel channel =
+      BuildBasicL2capChannel(proxy,
+                             {.handle = capture.handle,
+                              .local_cid = 0x123,
+                              .remote_cid = capture.channel_id,
+                              .transport = AclTransportType::kLe});
 
   PW_TEST_EXPECT_OK(
       channel.Write(MultiBufFromSpan(pw::span(capture.payload))).status);
@@ -2262,15 +2259,13 @@ TEST_F(BasicL2capChannelTest, ErrorOnWriteTooLarge) {
                  emboss::AclDataFrameHeader::IntrinsicSizeInBytes() -
                  emboss::BasicL2capHeader::IntrinsicSizeInBytes() + 1>
       hci_arr;
-  PW_TEST_ASSERT_OK_AND_ASSIGN(
-      BasicL2capChannel channel,
-      proxy.AcquireBasicL2capChannel(/*connection_handle=*/0x123,
-                                     /*local_cid=*/0x123,
-                                     /*remote_cid=*/0x123,
-                                     /*transport=*/AclTransportType::kLe,
-                                     /*payload_from_controller_fn=*/nullptr,
-                                     /*payload_from_host_fn=*/nullptr,
-                                     /*event_fn=*/nullptr));
+
+  BasicL2capChannel channel =
+      BuildBasicL2capChannel(proxy,
+                             {.handle = 0x123,
+                              .local_cid = 0x123,
+                              .remote_cid = 0x123,
+                              .transport = AclTransportType::kLe});
 
   EXPECT_EQ(channel.Write(MultiBufFromSpan(pw::span(hci_arr))).status,
             PW_STATUS_INVALID_ARGUMENT);
@@ -2288,30 +2283,25 @@ TEST_F(BasicL2capChannelTest, CannotCreateChannelWithInvalidArgs) {
                               /*br_edr_acl_credits_to_reserve=*/0);
 
   // Connection handle too large by 1.
-  EXPECT_EQ(
-      proxy
-          .AcquireBasicL2capChannel(/*connection_handle=*/0x0FFF,
-                                    /*local_cid=*/0x123,
-                                    /*remote_cid=*/0x123,
-                                    /*transport=*/AclTransportType::kLe,
-                                    /*payload_from_controller_fn=*/nullptr,
-                                    /*payload_from_host_fn=*/nullptr,
-                                    /*event_fn=*/nullptr)
-          .status(),
-      PW_STATUS_INVALID_ARGUMENT);
+
+  Result<BasicL2capChannel> channel =
+      BuildBasicL2capChannelWithResult(proxy,
+                                       {.handle = 0x0FFF,
+                                        .local_cid = 0x123,
+                                        .remote_cid = 0x123,
+                                        .transport = AclTransportType::kLe});
+  EXPECT_EQ(channel.status(), Status::InvalidArgument());
 
   // Local CID invalid (0).
-  EXPECT_EQ(
-      proxy
-          .AcquireBasicL2capChannel(/*connection_handle=*/0x123,
-                                    /*local_cid=*/0,
-                                    /*remote_cid=*/0x123,
-                                    /*transport=*/AclTransportType::kLe,
-                                    /*payload_from_controller_fn=*/nullptr,
-                                    /*payload_from_host_fn=*/nullptr,
-                                    /*event_fn=*/nullptr)
-          .status(),
-      PW_STATUS_INVALID_ARGUMENT);
+  channel =
+      BuildBasicL2capChannelWithResult(proxy,
+                                       BasicL2capParameters{
+                                           .handle = 0x123,
+                                           .local_cid = 0,
+                                           .remote_cid = 0x123,
+                                           .transport = AclTransportType::kLe,
+                                       });
+  EXPECT_EQ(channel.status(), Status::InvalidArgument());
 }
 
 TEST_F(BasicL2capChannelTest, BasicRead) {
@@ -2339,7 +2329,7 @@ TEST_F(BasicL2capChannelTest, BasicRead) {
           .local_cid = local_cid,
           .remote_cid = 0x123,
           .transport = AclTransportType::kLe,
-          .payload_from_controller_multibuf_fn =
+          .payload_from_controller_fn =
               [&capture](multibuf::MultiBuf&& buffer) {
                 ++capture.sends_called;
                 std::optional<pw::ByteSpan> payload = buffer.ContiguousSpan();
@@ -2417,20 +2407,20 @@ TEST_F(BasicL2capChannelTest, BasicForward) {
 
   uint16_t handle = 334;
   uint16_t local_cid = 443;
-  PW_TEST_ASSERT_OK_AND_ASSIGN(BasicL2capChannel channel,
-                               proxy.AcquireBasicL2capChannel(
-                                   /*connection_handle=*/handle,
-                                   /*local_cid=*/local_cid,
-                                   /*remote_cid=*/0x123,
-                                   /*transport=*/AclTransportType::kLe,
-                                   /*payload_from_controller_fn=*/
-                                   [&capture](pw::span<uint8_t>) {
-                                     ++capture.sends_called;
-                                     // Forward to host.
-                                     return false;
-                                   },
-                                   /*payload_from_host_fn=*/nullptr,
-                                   /*event_fn=*/nullptr));
+  BasicL2capChannel channel =
+      BuildBasicL2capChannel(proxy,
+                             BasicL2capParameters{
+                                 .handle = handle,
+                                 .local_cid = local_cid,
+                                 .remote_cid = 0x123,
+                                 .transport = AclTransportType::kLe,
+                                 .payload_from_controller_fn =
+                                     [&capture](multibuf::MultiBuf&& buffer) {
+                                       ++capture.sends_called;
+                                       // Forward to host.
+                                       return std::move(buffer);
+                                     },
+                             });
 
   Result<emboss::AclDataFrameWriter> acl =
       MakeEmbossWriter<emboss::AclDataFrameWriter>(capture.hci_arr);
@@ -2489,19 +2479,19 @@ TEST_F(BasicL2capChannelTest, ReadPacketToController) {
   uint16_t handle = 0x334;
   uint16_t local_cid = 0x443;
   uint16_t remote_cid = 0x123;
-  PW_TEST_ASSERT_OK_AND_ASSIGN(BasicL2capChannel channel,
-                               proxy.AcquireBasicL2capChannel(
-                                   /*connection_handle=*/handle,
-                                   /*local_cid=*/local_cid,
-                                   /*remote_cid=*/remote_cid,
-                                   /*transport=*/AclTransportType::kBrEdr,
-                                   /*payload_from_controller_fn=*/nullptr,
-                                   /*payload_from_host_fn=*/
-                                   [&capture](pw::span<uint8_t>) {
-                                     ++capture.sends_called;
-                                     return false;
-                                   },
-                                   /*event_fn=*/nullptr));
+  BasicL2capChannel channel =
+      BuildBasicL2capChannel(proxy,
+                             BasicL2capParameters{
+                                 .handle = handle,
+                                 .local_cid = local_cid,
+                                 .remote_cid = remote_cid,
+                                 .transport = AclTransportType::kBrEdr,
+                                 .payload_from_host_fn =
+                                     [&capture](multibuf::MultiBuf&& buffer) {
+                                       ++capture.sends_called;
+                                       return std::move(buffer);
+                                     },
+                             });
 
   Result<emboss::AclDataFrameWriter> acl =
       MakeEmbossWriter<emboss::AclDataFrameWriter>(capture.hci_arr);
@@ -2721,8 +2711,8 @@ TEST_F(L2capSignalingTest, SignalsArePassedOnToHostAfterAclDisconnect) {
       SendDisconnectionCompleteEvent(proxy, /*handle=*/kConnHandle));
   EXPECT_EQ(sends_to_host, 2);
 
-  // Send signal again using the same connection. Signal should be passed on to
-  // host.
+  // Send signal again using the same connection. Signal should be passed on
+  // to host.
   PW_TEST_EXPECT_OK(
       SendL2capConnectionReq(proxy, /*handle=*/kConnHandle, 55, 56));
   EXPECT_EQ(sends_to_host, 3);
@@ -3196,7 +3186,8 @@ TEST_F(ProxyHostConnectionEventTest, HciDisconnectionAlertsListeners) {
       SendConnectionCompleteEvent(proxy, Handle2, emboss::StatusCode::SUCCESS));
 
   // Establish three connected_channels:
-  // handle = 0x123, PSM = 1 | handle = 0x124, PSM = 1 | handle = 0x123, PSM = 1
+  // handle = 0x123, PSM = 1 | handle = 0x124, PSM = 1 | handle = 0x123, PSM =
+  // 1
   constexpr uint16_t kStartSourceCid = 0x111;
   constexpr uint16_t kStartDestinationCid = 0x211;
   for (size_t i = 0; i < 3; ++i) {

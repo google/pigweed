@@ -212,10 +212,8 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
       AclTransportType transport,
       uint16_t local_cid,
       uint16_t remote_cid,
-      OptionalPayloadReceiveCallback&& payload_from_controller_multibuf_fn,
-      OptionalPayloadReceiveCallback&& payload_from_host_multibuf_fn,
-      Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn,
+      OptionalPayloadReceiveCallback&& payload_from_controller_fn,
+      OptionalPayloadReceiveCallback&& payload_from_host_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   // Returns whether or not ACL connection handle & L2CAP channel identifiers
@@ -303,12 +301,12 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Remove all packets from queue.
   void ClearQueue();
 
-  // Returns false if payload should be forwarded to controller instead.
-  virtual bool SendPayloadFromHostToClient(pw::span<uint8_t> payload);
-
   //-------
   //  Rx (protected)
   //-------
+
+  // Returns false if payload should be forwarded to controller instead.
+  virtual bool SendPayloadFromHostToClient(pw::span<uint8_t> payload);
 
   // Returns false if payload should be forwarded to host instead.
   virtual bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload);
@@ -322,6 +320,10 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
   // transitioned to payload_queue_.
   virtual bool UsesPayloadQueue() = 0;
+
+  // Returns false if payload should be forwarded to host instead.
+  bool SendPayloadToClient(pw::span<uint8_t> payload,
+                           OptionalPayloadReceiveCallback& callback);
 
   static constexpr uint16_t kMaxValidConnectionHandle = 0x0EFF;
 
@@ -439,14 +441,9 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   multibuf::MultiBufAllocator* rx_multibuf_allocator_;
 
   // Client-provided controller read callback.
-  OptionalPayloadReceiveCallback payload_from_controller_multibuf_fn_;
+  OptionalPayloadReceiveCallback payload_from_controller_fn_;
   // Client-provided host read callback.
-  OptionalPayloadReceiveCallback payload_from_host_multibuf_fn_;
-
-  // Client-provided controller read callback.
-  pw::Function<bool(pw::span<uint8_t> payload)> payload_from_controller_fn_;
-  // Client-provided host read callback.
-  pw::Function<bool(pw::span<uint8_t> payload)> payload_from_host_fn_;
+  OptionalPayloadReceiveCallback payload_from_host_fn_;
 };
 
 }  // namespace pw::bluetooth::proxy

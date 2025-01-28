@@ -132,13 +132,6 @@ class L2capCoc : public L2capChannel {
   // transitioned to payload_queue_.
   bool UsesPayloadQueue() override { return true; }
 
-  bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) override {
-    if (payload_from_controller_fn_) {
-      payload_from_controller_fn_(payload);
-    }
-    return true;
-  }
-
   // Replenish some of the remote's credits.
   pw::Status ReplenishRxCredits(uint16_t additional_rx_credits);
 
@@ -149,7 +142,6 @@ class L2capCoc : public L2capChannel {
   uint16_t tx_mtu_;
   uint16_t tx_mps_;
 
-  Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
   Function<void(multibuf::MultiBuf&& payload)> receive_fn_;
 
   sync::Mutex rx_mutex_;

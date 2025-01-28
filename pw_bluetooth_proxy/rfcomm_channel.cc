@@ -33,8 +33,6 @@ RfcommChannel::RfcommChannel(RfcommChannel&& other)
       rx_config_(other.rx_config_),
       tx_config_(other.tx_config_),
       channel_number_(other.channel_number_),
-      payload_from_controller_multibuf_fn_(
-          std::move(other.payload_from_controller_multibuf_fn_)),
       payload_from_controller_fn_(
           std::move(other.payload_from_controller_fn_)) {
   {
@@ -174,9 +172,7 @@ Result<RfcommChannel> RfcommChannel::Create(
     Config rx_config,
     Config tx_config,
     uint8_t channel_number,
-    Function<void(multibuf::MultiBuf&& payload)>&&
-        payload_from_controller_multibuf_fn,
-    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
     Function<void(L2capChannelEvent event)>&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/rx_config.cid,
@@ -190,7 +186,6 @@ Result<RfcommChannel> RfcommChannel::Create(
                        rx_config,
                        tx_config,
                        channel_number,
-                       std::move(payload_from_controller_multibuf_fn),
                        std::move(payload_from_controller_fn),
                        std::move(event_fn));
 }
@@ -286,28 +281,28 @@ bool RfcommChannel::DoHandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
 
 bool RfcommChannel::SendPayloadFromControllerToClient(
     pw::span<uint8_t> payload) {
-  if (payload_from_controller_fn_) {
-    payload_from_controller_fn_(payload);
-  } else if (payload_from_controller_multibuf_fn_) {
-    std::optional<multibuf::MultiBuf> buffer =
-        rx_multibuf_allocator()->AllocateContiguous(payload.size());
+  PW_CHECK(rx_multibuf_allocator());
+  std::optional<multibuf::MultiBuf> buffer =
+      rx_multibuf_allocator()->AllocateContiguous(payload.size());
 
-    if (!buffer) {
-      PW_LOG_ERROR(
-          "(CID %#x) Rx MultiBuf allocator out of memory. So stopping "
-          "channel "
-          "and reporting it needs to be closed.",
-          local_cid());
-      StopAndSendEvent(L2capChannelEvent::kRxOutOfMemory);
-      return true;
-    }
-
-    StatusWithSize status = buffer->CopyFrom(/*source=*/as_bytes(payload),
-                                             /*position=*/0);
-    PW_CHECK_OK(status);
-
-    payload_from_controller_multibuf_fn_(std::move(*buffer));
+  if (!buffer) {
+    PW_LOG_ERROR(
+        "(CID %#x) Rx MultiBuf allocator out of memory. So stopping "
+        "channel "
+        "and reporting it needs to be closed.",
+        local_cid());
+    StopAndSendEvent(L2capChannelEvent::kRxOutOfMemory);
+    return true;
   }
+
+  StatusWithSize status = buffer->CopyFrom(/*source=*/as_bytes(payload),
+                                           /*position=*/0);
+  PW_CHECK_OK(status);
+
+  if (payload_from_controller_fn_) {
+    payload_from_controller_fn_(std::move(*buffer));
+  }
+
   return true;
 }
 
@@ -320,9 +315,7 @@ RfcommChannel::RfcommChannel(
     Config rx_config,
     Config tx_config,
     uint8_t channel_number,
-    Function<void(multibuf::MultiBuf&& payload)>&&
-        payload_from_controller_multibuf_fn,
-    Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+    Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
     Function<void(L2capChannelEvent event)>&& event_fn)
     : L2capChannel(l2cap_channel_manager,
                    &rx_multibuf_allocator,
@@ -330,8 +323,6 @@ RfcommChannel::RfcommChannel(
                    /*transport=*/AclTransportType::kBrEdr,
                    /*local_cid=*/rx_config.cid,
                    /*remote_cid=*/tx_config.cid,
-                   /*payload_from_controller_multibuf_fn=*/nullptr,
-                   /*payload_from_host_multibuf_fn=*/nullptr,
                    /*payload_from_controller_fn=*/nullptr,
                    /*payload_from_host_fn=*/nullptr,
                    /*event_fn=*/std::move(event_fn)),
@@ -340,8 +331,6 @@ RfcommChannel::RfcommChannel(
       channel_number_(channel_number),
       rx_credits_(rx_config.credits),
       tx_credits_(tx_config.credits),
-      payload_from_controller_multibuf_fn_(
-          std::move(payload_from_controller_multibuf_fn)),
       payload_from_controller_fn_(std::move(payload_from_controller_fn)) {
   PW_LOG_INFO(
       "btproxy: RfcommChannel ctor - channel_number_: %u, rx_credits_: %u, "

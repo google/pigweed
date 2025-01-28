@@ -226,12 +226,8 @@ struct BasicL2capParameters {
   uint16_t local_cid = 234;
   uint16_t remote_cid = 456;
   AclTransportType transport = AclTransportType::kLe;
-  OptionalPayloadReceiveCallback&& payload_from_controller_multibuf_fn =
-      nullptr;
-  OptionalPayloadReceiveCallback&& payload_from_host_multibuf_fn = nullptr;
-  Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn =
-      nullptr;
-  Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn = nullptr;
+  OptionalPayloadReceiveCallback&& payload_from_controller_fn = nullptr;
+  OptionalPayloadReceiveCallback&& payload_from_host_fn = nullptr;
   Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
 };
 
@@ -253,15 +249,16 @@ class ProxyHostTest : public testing::Test {
 
   L2capCoc BuildCoc(ProxyHost& proxy, CocParameters params);
 
+  Result<BasicL2capChannel> BuildBasicL2capChannelWithResult(
+      ProxyHost& proxy, BasicL2capParameters params);
+
   BasicL2capChannel BuildBasicL2capChannel(ProxyHost& proxy,
                                            BasicL2capParameters params);
 
   RfcommChannel BuildRfcomm(
       ProxyHost& proxy,
       RfcommParameters params = {},
-      Function<void(multibuf::MultiBuf&& payload)>&& receive_multibuf_fn =
-          nullptr,
-      Function<void(pw::span<uint8_t> payload)>&& receive_fn = nullptr,
+      Function<void(multibuf::MultiBuf&& payload)>&& receive_fn = nullptr,
       Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
 
   template <typename T, size_t N>

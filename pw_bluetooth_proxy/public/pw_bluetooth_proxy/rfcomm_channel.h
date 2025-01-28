@@ -86,9 +86,7 @@ class RfcommChannel final : public L2capChannel {
       Config rx_config,
       Config tx_config,
       uint8_t channel_number,
-      Function<void(multibuf::MultiBuf&& payload)>&&
-          payload_from_controller_multibuf_fn,
-      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   // Overridden here to do additional length checks.
@@ -107,9 +105,7 @@ class RfcommChannel final : public L2capChannel {
       Config rx_config,
       Config tx_config,
       uint8_t channel_number,
-      Function<void(multibuf::MultiBuf&& payload)>&&
-          payload_from_controller_multibuf_fn,
-      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
+      Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
@@ -139,9 +135,7 @@ class RfcommChannel final : public L2capChannel {
 
   sync::Mutex tx_mutex_;
   uint8_t tx_credits_ PW_GUARDED_BY(tx_mutex_);
-  Function<void(multibuf::MultiBuf&& payload)>
-      payload_from_controller_multibuf_fn_;
-  Function<void(pw::span<uint8_t> payload)> payload_from_controller_fn_;
+  Function<void(multibuf::MultiBuf&& payload)> payload_from_controller_fn_;
 };
 
 }  // namespace pw::bluetooth::proxy

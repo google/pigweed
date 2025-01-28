@@ -30,10 +30,8 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
     AclTransportType transport,
     uint16_t local_cid,
     uint16_t remote_cid,
-    OptionalPayloadReceiveCallback&& payload_from_controller_multibuf_fn,
-    OptionalPayloadReceiveCallback&& payload_from_host_multibuf_fn,
-    Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn,
+    OptionalPayloadReceiveCallback&& payload_from_controller_fn,
+    OptionalPayloadReceiveCallback&& payload_from_host_fn,
     Function<void(L2capChannelEvent event)>&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/local_cid,
@@ -48,10 +46,6 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
       /*transport=*/transport,
       /*local_cid=*/local_cid,
       /*remote_cid=*/remote_cid,
-      /*payload_from_controller_multibuf_fn=*/
-      std::move(payload_from_controller_multibuf_fn),
-      /*payload_from_host_multibuf_fn=*/
-      std::move(payload_from_host_multibuf_fn),
       /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
       /*payload_from_host_fn=*/std::move(payload_from_host_fn),
       /*event_fn=*/std::move(event_fn));
@@ -108,10 +102,8 @@ BasicL2capChannel::BasicL2capChannel(
     AclTransportType transport,
     uint16_t local_cid,
     uint16_t remote_cid,
-    OptionalPayloadReceiveCallback&& payload_from_controller_multibuf_fn,
-    OptionalPayloadReceiveCallback&& payload_from_host_multibuf_fn,
-    Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-    Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn,
+    OptionalPayloadReceiveCallback&& payload_from_controller_fn,
+    OptionalPayloadReceiveCallback&& payload_from_host_fn,
     Function<void(L2capChannelEvent event)>&& event_fn)
     : L2capChannel(
           l2cap_channel_manager,
@@ -120,10 +112,6 @@ BasicL2capChannel::BasicL2capChannel(
           /*transport=*/transport,
           /*local_cid=*/local_cid,
           /*remote_cid=*/remote_cid,
-          /*payload_from_controller_multibuf_fn=*/
-          std::move(payload_from_controller_multibuf_fn),
-          /*payload_from_host_multibuf_fn=*/
-          std::move(payload_from_host_multibuf_fn),
           /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
           /*payload_from_host_fn=*/std::move(payload_from_host_fn),
           /*event_fn=*/std::move(event_fn)) {

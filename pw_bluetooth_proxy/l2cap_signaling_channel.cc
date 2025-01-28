@@ -42,8 +42,6 @@ L2capSignalingChannel::L2capSignalingChannel(
                         /*transport*/ transport,
                         /*local_cid=*/fixed_cid,
                         /*remote_cid=*/fixed_cid,
-                        /*payload_from_controller_multibuf_fn=*/nullptr,
-                        /*payload_from_host_multibuf_fn=*/nullptr,
                         /*payload_from_controller_fn=*/nullptr,
                         /*payload_from_host_fn=*/nullptr,
                         /*event_fn=*/nullptr),

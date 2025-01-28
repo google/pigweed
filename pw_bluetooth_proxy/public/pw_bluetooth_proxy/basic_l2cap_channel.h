@@ -30,10 +30,8 @@ class BasicL2capChannel : public L2capChannel {
       AclTransportType transport,
       uint16_t local_cid,
       uint16_t remote_cid,
-      OptionalPayloadReceiveCallback&& payload_from_controller_multibuf_fn,
-      OptionalPayloadReceiveCallback&& payload_from_host_multibuf_fn,
-      Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn,
+      OptionalPayloadReceiveCallback&& payload_from_controller_fn,
+      OptionalPayloadReceiveCallback&& payload_from_host_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   BasicL2capChannel(const BasicL2capChannel& other) = delete;
@@ -54,10 +52,8 @@ class BasicL2capChannel : public L2capChannel {
       AclTransportType transport,
       uint16_t local_cid,
       uint16_t remote_cid,
-      OptionalPayloadReceiveCallback&& payload_from_controller_multibuf_fn,
-      OptionalPayloadReceiveCallback&& payload_from_host_multibuf_fn,
-      Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn,
+      OptionalPayloadReceiveCallback&& payload_from_controller_fn,
+      OptionalPayloadReceiveCallback&& payload_from_host_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
   bool HandlePduFromHost(pw::span<uint8_t> bframe) override;

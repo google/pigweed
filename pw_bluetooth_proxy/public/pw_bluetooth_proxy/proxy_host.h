@@ -214,17 +214,6 @@ class ProxyHost {
       OptionalPayloadReceiveCallback&& payload_from_host_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
-  /// TODO: https://pwbug.dev/379337272 - Remove after migration
-  /// @deprecated Use multibuf allocator version.
-  pw::Result<BasicL2capChannel> AcquireBasicL2capChannel(
-      uint16_t connection_handle,
-      uint16_t local_cid,
-      uint16_t remote_cid,
-      AclTransportType transport,
-      Function<bool(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<bool(pw::span<uint8_t> payload)>&& payload_from_host_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn);
-
   /// Send a GATT Notify to the indicated connection.
   ///
   /// @param[in] connection_handle The connection handle of the peer to notify.
@@ -315,16 +304,6 @@ class ProxyHost {
       Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
-  /// TODO: https://pwbug.dev/379337272 - Remove after migration
-  /// @deprecated Use multibuf allocator version.
-  pw::Result<RfcommChannel> AcquireRfcommChannel(
-      uint16_t connection_handle,
-      RfcommChannel::Config rx_config,
-      RfcommChannel::Config tx_config,
-      uint8_t channel_number,
-      Function<void(pw::span<uint8_t> payload)>&& payload_from_controller_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn);
-
   /// Indicates whether the proxy has the capability of sending LE ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy
   /// has not yet or has been unable to reserve credits from the host.
@@ -402,20 +381,6 @@ class ProxyHost {
 
   // Keeps track of the L2CAP-based channels managed by the proxy.
   L2capChannelManager l2cap_channel_manager_;
-
-  // Multibuf allocator to be used if container/client didn't provide an
-  // allocator.  Being used during short transition to allocators being provided
-  // by downstreams. Only lsc_multibuf_allocator_ is used in code, the rest are
-  // just backing it.
-  // TODO: https://pwbug.dev/369849508 - Remove once all containers and clients
-  // provide allocators.
-  std::array<std::byte, 300> lsc_alloc_mem_;
-  pw::allocator::BestFitAllocator<> lsc_bf_allocator_{lsc_alloc_mem_};
-  pw::allocator::SynchronizedAllocator<pw::sync::Mutex> lsc_sync_allocator_{
-      lsc_bf_allocator_};
-  std::array<std::byte, 1500> lsc_multibuf_mem_;
-  pw::multibuf::SimpleAllocator lsc_multibuf_allocator_{lsc_multibuf_mem_,
-                                                        lsc_sync_allocator_};
 };
 
 }  // namespace pw::bluetooth::proxy
