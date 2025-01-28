@@ -211,7 +211,10 @@ class AclDataChannel {
                   uint16_t num_pending_packets,
                   L2capChannelManager& l2cap_channel_manager);
 
-    AclConnection& operator=(AclConnection&& other) = default;
+    AclConnection(const AclConnection&) = delete;
+    AclConnection& operator=(const AclConnection&) = delete;
+    AclConnection(AclConnection&&) = delete;
+    AclConnection& operator=(AclConnection&&) = delete;
 
     void Close();
 
