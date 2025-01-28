@@ -22,6 +22,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -842,6 +843,28 @@ def bazel_test(ctx: PresubmitContext) -> None:
 
 def bthost_package(ctx: PresubmitContext) -> None:
     """Builds, tests, and prepares bt_host for upload."""
+    # Test that `@fuchsia_sdk` isn't fetched when building non-fuchsia targets.
+    # We specifically want to disallow this behavior because `@fuchsia_sdk` is
+    # large and expensive to fetch.
+    non_fuchsia_build_cmd = [
+        'bazel',
+        'build',
+        # TODO: https://pwbug.dev/392092401 - Use `--override_module` instead of
+        # `--override_repository` here once this dep is migrated to bzlmod.
+        '--override_repository=fuchsia_sdk=/disallow/fuchsia_sdk/download/',
+        '//pw_status/...',
+    ]
+    try:
+        build_bazel(ctx, *non_fuchsia_build_cmd[1:])
+    except PresubmitFailure as exc:
+        failure_message = (
+            "ERROR: Non-Fuchsia targets must be able to build without the "
+            "Fuchsia SDK.\nRepro command: " + shlex.join(non_fuchsia_build_cmd)
+        )
+        with ctx.failure_summary_log.open('w') as outs:
+            outs.write(failure_message)
+        raise PresubmitFailure(failure_message) from exc
+
     target = '//pw_bluetooth_sapphire/fuchsia:infra'
     build_bazel(ctx, 'build', '--config=fuchsia', target)
 
