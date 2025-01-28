@@ -48,7 +48,7 @@ bazel_dep(name = "rules_nodejs", version = "6.3.0")
 bazel_dep(name = "rules_platform", version = "0.1.0")
 bazel_dep(name = "rules_probe_rs", version = "0.0.2")
 bazel_dep(name = "rules_python", version = "0.38.0")
-bazel_dep(name = "rules_rust", version = "0.54.1")
+bazel_dep(name = "rules_rust", version = "0.56.0")
 
 # LINT.IfChange(emboss)
 bazel_dep(name = "emboss", version = "2024.1017.203246", repo_name = "com_google_emboss")
