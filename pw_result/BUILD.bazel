@@ -27,9 +27,9 @@ cc_library(
         "public/pw_result/result.h",
     ],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
     deps = [
         "//pw_assert",
+        "//pw_preprocessor",
         "//pw_status",
     ],
 )

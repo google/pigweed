@@ -17,6 +17,7 @@
 #include <utility>
 
 #include "pw_assert/assert.h"
+#include "pw_preprocessor/compiler.h"
 #include "pw_status/status.h"
 
 namespace pw {
