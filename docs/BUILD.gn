@@ -444,6 +444,9 @@ pw_doc_gen("docs") {
     "index.rst",
     "modules.rst",
     "python_build.rst",
+
+    # TODO: b/388905813 - Delete this file.
+    "size_report_notice",
     "targets.rst",
     "third_party_support.rst",
     "toolchain.rst",

@@ -453,7 +453,9 @@ Comparing ``pw::Function`` to a traditional function pointer
 The following size report compares an API using a :cpp:type:`pw::Function` to a
 traditional function pointer.
 
-.. include:: function_size
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: function_size
+.. include:: ../size_report_notice
 
 Typical sizes of various callable types
 =======================================
@@ -461,4 +463,6 @@ The table below demonstrates typical sizes of various callable types, which can
 be used as a reference when sizing external buffers for ``pw::Function``
 objects.
 
-.. include:: callable_size
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: callable_size
+.. include:: ../size_report_notice

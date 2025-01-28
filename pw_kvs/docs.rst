@@ -393,4 +393,6 @@ Code size analysis
 The following size report details the memory usage of ``KeyValueStore`` and
 ``FlashPartition``.
 
-.. include:: kvs_size
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: kvs_size
+.. include:: ../size_report_notice

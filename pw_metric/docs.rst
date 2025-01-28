@@ -740,7 +740,9 @@ Size report
 The below size report shows the cost in code and memory for a few examples of
 metrics. This does not include the RPC service.
 
-.. include:: metric_size_report
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: metric_size_report
+.. include:: ../size_report_notice
 
 .. attention::
    At time of writing, **the above sizes show an unexpectedly large flash

@@ -271,7 +271,9 @@ The following size report showcases the overhead for using Persistent. Note that
 this is templating the Persistent only on a ``uint32_t``, ergo the cost without
 pw_checksum's CRC16 is the approximate cost per type.
 
-.. include:: persistent_size
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: persistent_size
+.. include:: ../size_report_notice
 
 Compatibility
 -------------

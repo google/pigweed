@@ -522,7 +522,9 @@ For example, the GN build rule to generate a size report might look liek:
 
 The size report produced by this rule would render as:
 
-.. include:: examples/custom_allocator_size_report
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: examples/custom_allocator_size_report
+.. include:: ../size_report_notice
 
 .. _AllocatorAwareContainers: https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer
 .. _NVI: https://en.wikipedia.org/wiki/Non-virtual_interface_pattern

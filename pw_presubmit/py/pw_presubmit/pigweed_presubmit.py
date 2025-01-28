@@ -1128,6 +1128,8 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # keep-sorted: start
     r'\.md$',
     r'\.rst$',
+    # TODO: b/388905812 - Delete this file.
+    r'^docs/size_report_notice$',
     # keep-sorted: end
     # Generated protobuf files
     # keep-sorted: start

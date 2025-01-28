@@ -33,7 +33,9 @@ other in your code, depending on point of use requirements:
 This has a few benefits. The primary one is that it allows the core proto
 serialization and deserialization libraries to be relatively small.
 
-.. include:: size_report/protobuf_overview
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: size_report/protobuf_overview
+.. include:: ../size_report_notice
 
 To demonstrate these layers, we use the following protobuf message definition
 in the examples:
@@ -2406,7 +2408,9 @@ This report demonstrates the size of using the entire decoder with all of its
 decode methods and a decode callback for a proto message containing each of the
 protobuf field types.
 
-.. include:: size_report/decoder_partial
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: size_report/decoder_partial
+.. include:: ../size_report_notice
 
 
 Incremental size report
@@ -2416,7 +2420,9 @@ This report is generated using the full report as a base and adding some int32
 fields to the decode callback to demonstrate the incremental cost of decoding
 fields in a message.
 
-.. include:: size_report/decoder_incremental
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: size_report/decoder_incremental
+.. include:: ../size_report_notice
 
 ---------------------------
 Serialized size calculation

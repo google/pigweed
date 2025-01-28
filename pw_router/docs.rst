@@ -93,7 +93,9 @@ Size report
 The following size report shows the cost of a ``StaticRouter`` with a simple
 ``PacketParser`` implementation and a single route using an ``EgressFunction``.
 
-.. include:: static_router_size
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: static_router_size
+.. include:: ../size_report_notice
 
 Zephyr
 ======

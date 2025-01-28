@@ -23,7 +23,9 @@ packet buffer, which comprises the plurality of the example's RAM usage. This is
 not a suitable transport for an actual product; a real implementation would have
 additional overhead proportional to the complexity of the transport.
 
-.. include:: server_size
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: server_size
+.. include:: ../size_report_notice
 
 RPC server implementation
 =========================

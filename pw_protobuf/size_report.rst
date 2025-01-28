@@ -20,7 +20,9 @@ table-based codegen system for constructing proto messages as in-memory structs.
 
 Here's a brief overview of the different encoder/decoder costs:
 
-.. include:: size_report/protobuf_overview
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: size_report/protobuf_overview
+.. include:: ../size_report_notice
 
 .. note::
 
@@ -54,7 +56,9 @@ Trivial proto
 This is a size report for encoding/decoding the ``pw.protobuf.test.ItemInfo``
 message. This is a pretty trivial message with just a few integers.
 
-.. include:: size_report/simple_codegen_size_comparison
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: size_report/simple_codegen_size_comparison
+.. include:: ../size_report_notice
 
 Optional and oneof
 ==================
@@ -62,4 +66,6 @@ This is a size report for encoding/decoding the
 ``pw.protobuf.test.ResponseInfo`` message. This is slightly more complex message
 that has a few explicitly optional fields, a oneof, and a submessage.
 
-.. include:: size_report/oneof_codegen_size_comparison
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: size_report/oneof_codegen_size_comparison
+.. include:: ../size_report_notice

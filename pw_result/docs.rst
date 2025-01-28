@@ -438,4 +438,6 @@ Note that these are simplified examples which do not necessarily reflect the
 usage of ``pw::Result`` in real code. Make sure to always run your own size
 reports to check if ``pw::Result`` is suitable for you.
 
-.. include:: result_size
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: result_size
+.. include:: ../size_report_notice

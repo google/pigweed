@@ -19,7 +19,9 @@ The following shows the code size incurred by the
 of the interface is measured using an empty implementation,
 :ref:`module-pw_allocator-api-null_allocator`.
 
-.. include:: allocator_api_size_report
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: allocator_api_size_report
+.. include:: ../size_report_notice
 
 ----------------------------------
 Concrete allocator implementations
@@ -28,7 +30,9 @@ The following are code sizes for each of the provided allocator implementations
 that directly manage the memory they use to fulfill requests. These are measured
 relative to the empty implementation measured above.
 
-.. include:: concrete_allocators_size_report
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: concrete_allocators_size_report
+.. include:: ../size_report_notice
 
 -------------------------------------
 Forwarding allocators implementations
@@ -39,4 +43,6 @@ by having the forwarding allocator wrap a
 :ref:`module-pw_allocator-api-first_fit_allocator`, and are measured relative to
 that implementation.
 
-.. include:: forwarding_allocators_size_report
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: forwarding_allocators_size_report
+.. include:: ../size_report_notice

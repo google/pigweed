@@ -143,7 +143,9 @@ Size report
 -----------
 The following size report showcases the memory usage of the blob store.
 
-.. include:: blob_size
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: blob_size
+.. include:: ../size_report_notice
 
 .. note::
   The documentation for this module is currently incomplete.

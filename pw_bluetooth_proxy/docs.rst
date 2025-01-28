@@ -115,8 +115,9 @@ Code size analysis
 ------------------
 Delta when constructing a proxy and just sending packets through.
 
-.. include:: use_passthrough_proxy_size_report
-
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: use_passthrough_proxy_size_report
+.. include:: ../size_report_notice
 
 .. _module-pw_bluetooth_proxy-roadmap:
 

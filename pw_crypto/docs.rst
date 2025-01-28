@@ -246,7 +246,9 @@ Size Reports
 Below are size reports for each crypto service. These vary across
 configurations.
 
-.. include:: size_report
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: size_report
+.. include:: ../size_report_notice
 
 -------------
 API reference

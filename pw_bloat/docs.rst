@@ -359,11 +359,15 @@ Resulting in this output:
 
 Simple bloat loop example
 =========================
-.. include:: examples/simple_bloat_loop
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: examples/simple_bloat_loop
+.. include:: ../size_report_notice
 
 Simple bloat function example
 =============================
-.. include:: examples/simple_bloat_function
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: examples/simple_bloat_function
+.. include:: ../size_report_notice
 
 .. _module-pw_bloat-sources:
 

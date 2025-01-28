@@ -187,11 +187,15 @@ Size Report
 Delta of +972 when constructing the first packet view and reading/writing a
 field. This includes the runtime library and the 4-byte buffer.
 
-.. include:: emboss_size_report
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: emboss_size_report
+.. include:: ../size_report_notice
 
 Delta of +96 when adding a second packet view and reading/writing a field.
 
-.. include:: emboss_size_report_diff
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: emboss_size_report_diff
+.. include:: ../size_report_notice
 
 -------
 Roadmap

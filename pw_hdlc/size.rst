@@ -21,7 +21,9 @@ cost of ``pw_hdlc`` if your application is already linking CRC32 and
 variable-length integer handling. ``pw_varint`` is commonly used since it's
 necessary for protocol buffer handling, so it's often already present.
 
-.. include:: size_report
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: size_report
+.. include:: ../size_report_notice
 
 -----------------
 More pw_hdlc docs

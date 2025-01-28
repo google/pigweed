@@ -28,7 +28,9 @@ have a smaller code size impact than a single ``snprintf`` call. Using
 :cpp:type:`pw::StringBuilder` error handling will also impact code size in a
 way that is comparable to ``snprintf``.
 
-.. include:: string_builder_size_report
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: string_builder_size_report
+.. include:: ../size_report_notice
 
 Size comparison: snprintf versus pw::string::Format
 ---------------------------------------------------
@@ -36,4 +38,6 @@ The ``pw::string::Format`` functions have a small, fixed code size
 cost. However, relative to equivalent ``std::snprintf`` calls, there is no
 incremental code size cost to using ``pw::string::Format``.
 
-.. include:: format_size_report
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: format_size_report
+.. include:: ../size_report_notice
