@@ -58,8 +58,9 @@ EXTRA_TARGETS = [
         "triple": "thumbv7m-none-eabi",
     },
     {
+        "build_std": True,
         "cpu": "armv8-m",
-        "triple": "thumbv7m-none-eabi",  # TODO: https://pwbug.dev/352342797 - This should be some variant of ARMv8-M.
+        "triple": "thumbv8m.main-none-eabihf",
     },
 ]
 

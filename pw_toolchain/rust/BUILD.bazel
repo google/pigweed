@@ -12,6 +12,49 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:common_settings.bzl", "string_setting")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+# Setting used when building rust std libraries from scratch (core, alloc, std,
+# etc.).
+string_setting(
+    name = "stdlibs_flavor",
+    build_setting_default = "core_alloc_std",
+    visibility = ["//visibility:public"],
+)
+
+# Special set with no std libs.
+#
+# Used when building core.
+config_setting(
+    name = "stdlibs_none",
+    flag_values = {":stdlibs_flavor": "none"},
+)
+
+# Special set with only core.
+# Used when building compiler_builtins.
+config_setting(
+    name = "stdlibs_core_only",
+    flag_values = {":stdlibs_flavor": "core_only"},
+)
+
+# Included libs: core, compiler_builtins
+config_setting(
+    name = "stdlibs_core",
+    flag_values = {":stdlibs_flavor": "core"},
+)
+
+# Included libs: core, alloc, compiler_builtins
+config_setting(
+    name = "stdlibs_core_alloc",
+    flag_values = {":stdlibs_flavor": "core_alloc"},
+)
+
+# Included libs: core, alloc, std, compiler_builtins
+config_setting(
+    name = "stdlibs_core_alloc_std",
+    flag_values = {":stdlibs_flavor": "core_alloc_std"},
+)

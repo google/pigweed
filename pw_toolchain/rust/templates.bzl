@@ -13,6 +13,62 @@
 # the License.
 """Private templates for generating toolchain repos."""
 
+_rust_toolchain_no_prebuilt_template = """\
+rust_toolchain(
+    name = "{name}_rust_toolchain",
+    binary_ext = "",
+    cargo = "{toolchain_repo}//:bin/cargo",
+    clippy_driver = "{toolchain_repo}//:bin/clippy-driver",
+    default_edition = "2021",
+    dylib_ext = "{dylib_ext}",
+    exec_compatible_with = {exec_compatible_with},
+    exec_triple = "{exec_triple}",
+    opt_level = {{
+      "dbg": "0",
+      "fastbuild": "0",
+      "opt": "z",
+    }},
+    rust_doc = "{toolchain_repo}//:bin/rustdoc",
+    rust_std = select({{
+        "@pigweed//pw_toolchain/rust:stdlibs_none": "{toolchain_repo}//:rust_libs_none",
+        "@pigweed//pw_toolchain/rust:stdlibs_core_only": "{toolchain_repo}//:rust_libs_core_only",
+        "//conditions:default": "{toolchain_repo}//:rust_libs_core",
+    }}),
+    rustc = "{toolchain_repo}//:bin/rustc",
+    rustc_lib = "{toolchain_repo}//:rustc_lib",
+    staticlib_ext = ".a",
+    stdlib_linkflags = [],
+    target_compatible_with = {target_compatible_with},
+    target_triple = "{target_triple}",
+    extra_rustc_flags = {extra_rustc_flags},
+    extra_exec_rustc_flags = {extra_rustc_flags},
+    # TODO: https://pwbug.dev/342695883 - Works around confusing
+    # target_compatible_with semantics in rust_toolchain. Figure out how to
+    # do better.
+    tags = ["manual"],
+)
+"""
+
+def rust_toolchain_no_prebuilt_template(
+        name,
+        exec_triple,
+        target_triple,
+        toolchain_repo,
+        dylib_ext,
+        exec_compatible_with,
+        target_compatible_with,
+        extra_rustc_flags):
+    return _rust_toolchain_no_prebuilt_template.format(
+        name = name,
+        exec_triple = exec_triple,
+        target_triple = target_triple,
+        toolchain_repo = toolchain_repo,
+        dylib_ext = dylib_ext,
+        exec_compatible_with = json.encode(exec_compatible_with),
+        target_compatible_with = json.encode(target_compatible_with),
+        extra_rustc_flags = json.encode(extra_rustc_flags),
+    )
+
 _rust_toolchain_template = """\
 rust_toolchain(
     name = "{name}_rust_toolchain",

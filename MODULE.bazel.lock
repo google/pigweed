@@ -279,7 +279,7 @@
     },
     "//pw_toolchain/rust:extensions.bzl%pw_rust": {
       "general": {
-        "bzlTransitiveDigest": "4l8tJ6rj4REBLfWVzs/9a1cHvgy9jpe5Dsdo7M7vMpQ=",
+        "bzlTransitiveDigest": "9RBev/qYIH/9qKKNfRuoxV5wFA70ZqFfYIHIbTbpAD4=",
         "usagesDigest": "ZCWx/ZUYXarFY7CNN/qL1hd92QBqHLchbkND9INrOeY=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -366,14 +366,6 @@
             }
           },
           "rust_toolchain_target_thumbv7m-none-eabi_armv7e-m": {
-            "repoRuleId": "@@//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl%cipd_repository",
-            "attributes": {
-              "build_file": "@@//pw_toolchain/rust:rust_stdlib.BUILD",
-              "path": "fuchsia/third_party/rust/target/thumbv7m-none-eabi",
-              "tag": "rust_revision:bf9c7a64ad222b85397573668b39e6d1ab9f4a72"
-            }
-          },
-          "rust_toolchain_target_thumbv7m-none-eabi_armv8-m": {
             "repoRuleId": "@@//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl%cipd_repository",
             "attributes": {
               "build_file": "@@//pw_toolchain/rust:rust_stdlib.BUILD",
