@@ -155,6 +155,11 @@ common Android backend should still be provided, which uses the mentioned
    ``filegroup`` captures the absolute paths of the listed source files, so they
    can be addressed properly when the ``cc_defaults`` rule is used.
 
+.. warning::
+
+   Do not include ``vendor_available: true`` or other similar flags in a
+   ``cc_defaults`` as this will conflict with downstream users of the defaults.
+
 .. code-block:: androidbp
 
    filegroup {
