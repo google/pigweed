@@ -367,27 +367,24 @@ cipd_repository(
 cipd_repository(
     name = "doxygen_linux_amd64",
     path = "pigweed/third_party/doxygen/linux-amd64",
-    # TODO: b/384045900 - Update to a fresher executable.
     tag = "version:1.9.6-1",
 )
 
 cipd_repository(
     name = "doxygen_mac_amd64",
     path = "pigweed/third_party/doxygen/mac-amd64",
-    # TODO: b/384045900 - Update to a fresher executable.
     tag = "version:1.9.6-1",
 )
 
 cipd_repository(
     name = "doxygen_mac_arm64",
     path = "pigweed/third_party/doxygen/mac-arm64",
-    tag = "git_revision:401de7aa290e21f557e28515a5887fc40a092f62",
+    tag = "version:1.9.6",
 )
 
 cipd_repository(
     name = "doxygen_windows_amd64",
     path = "pigweed/third_party/doxygen/windows-amd64",
-    # TODO: b/384045900 - Update to a fresher executable.
     tag = "version:1.9.6-1",
 )
 
