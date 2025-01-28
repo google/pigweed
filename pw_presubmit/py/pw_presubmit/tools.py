@@ -14,20 +14,17 @@
 """General purpose tools for running presubmit checks."""
 
 import collections.abc
-from collections import Counter, defaultdict
 import logging
 import os
 from pathlib import Path
 import shlex
 import subprocess
 from typing import (
-    Any,
     Iterable,
     Iterator,
     Sequence,
 )
 
-from pw_cli.plural import plural
 from pw_cli.tool_runner import ToolRunner
 from pw_presubmit.presubmit_context import PRESUBMIT_CONTEXT
 
@@ -56,67 +53,6 @@ def make_box(section_alignments: Sequence[str]) -> str:
             '{10}',
         ]
     )
-
-
-def file_summary(
-    paths: Iterable[Path],
-    levels: int = 2,
-    max_lines: int = 12,
-    max_types: int = 3,
-    pad: str = ' ',
-    pad_start: str = ' ',
-    pad_end: str = ' ',
-) -> list[str]:
-    """Summarizes a list of files by the file types in each directory."""
-
-    # Count the file types in each directory.
-    all_counts: dict[Any, Counter] = defaultdict(Counter)
-
-    for path in paths:
-        parent = path.parents[max(len(path.parents) - levels, 0)]
-        all_counts[parent][path.suffix] += 1
-
-    # If there are too many lines, condense directories with the fewest files.
-    if len(all_counts) > max_lines:
-        counts = sorted(
-            all_counts.items(), key=lambda item: -sum(item[1].values())
-        )
-        counts, others = (
-            sorted(counts[: max_lines - 1]),
-            counts[max_lines - 1 :],
-        )
-        counts.append(
-            (
-                f'({plural(others, "other")})',
-                sum((c for _, c in others), Counter()),
-            )
-        )
-    else:
-        counts = sorted(all_counts.items())
-
-    width = max(len(str(d)) + len(os.sep) for d, _ in counts) if counts else 0
-    width += len(pad_start)
-
-    # Prepare the output.
-    output = []
-    for path, files in counts:
-        total = sum(files.values())
-        del files['']  # Never display no-extension files individually.
-
-        if files:
-            extensions = files.most_common(max_types)
-            other_extensions = total - sum(count for _, count in extensions)
-            if other_extensions:
-                extensions.append(('other', other_extensions))
-
-            types = ' (' + ', '.join(f'{c} {e}' for e, c in extensions) + ')'
-        else:
-            types = ''
-
-        root = f'{path}{os.sep}{pad_start}'.ljust(width, pad)
-        output.append(f'{root}{pad_end}{plural(total, "file")}{types}')
-
-    return output
 
 
 def relative_paths(paths: Iterable[Path], start: Path) -> Iterable[Path]:

@@ -20,6 +20,7 @@ import fnmatch
 import logging
 from pathlib import Path
 
+from pw_cli.collect_files import file_summary
 import pw_cli.env
 import pw_cli.log
 from pw_cli.arguments import (
@@ -42,7 +43,6 @@ from pw_presubmit.presubmit_context import (
     PresubmitFailure,
     get_check_traces,
 )
-from pw_presubmit.tools import file_summary
 
 # pw_watch is not required by pw_build, this is an optional feature.
 try:

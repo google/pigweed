@@ -43,6 +43,7 @@ from typing import (
 from pw_cli.collect_files import (
     add_file_collection_arguments,
     collect_files_in_current_repo,
+    file_summary,
 )
 import pw_cli.color
 import pw_cli.env
@@ -79,7 +80,6 @@ from pw_presubmit.format.python import (
 )
 from pw_presubmit.rst_format import reformat_rst
 from pw_presubmit.tools import (
-    file_summary,
     log_run,
     PresubmitToolRunner,
 )

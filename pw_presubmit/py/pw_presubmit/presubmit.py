@@ -68,6 +68,7 @@ from typing import (
     Set,
 )
 
+from pw_cli.collect_files import file_summary
 import pw_cli.color
 import pw_cli.env
 from pw_cli.plural import plural
@@ -373,7 +374,7 @@ class Presubmit:
         )
 
         _print_ui()
-        for line in tools.file_summary(self._relative_paths):
+        for line in file_summary(self._relative_paths):
             _print_ui(line)
         _print_ui()
 
