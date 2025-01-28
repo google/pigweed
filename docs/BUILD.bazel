@@ -340,6 +340,7 @@ sphinx_docs(
     config = "conf.py",
     extra_opts = [
         "--silent",
+        "--fail-on-warning",
     ],
     formats = [
         "html",
