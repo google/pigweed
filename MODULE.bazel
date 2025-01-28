@@ -89,6 +89,10 @@ single_version_override(
         # we will migrate to that solution.
         # https://github.com/konkers/rules_rust/tree/wip/rustdoc
         "//pw_rust/bazel_patches:0002-PROTOTYPE-Add-ability-to-document-multiple-crates-at.patch",
+
+        # Adds more thumbv6m, thumbv8m, and thumbv8m triples
+        # TODO: https://pwbug.dev/392707726 - Upstream below patch
+        "//pw_rust/bazel_patches:0003-Add-thumbv6m-and-more-thumbv7m-and-thumbv8m-triples.patch",
     ],
 )
 
