@@ -129,6 +129,10 @@ common --experimental_propagate_custom_flag=//pw_env_setup/py:pigweed_json
 
 build --//pw_function:config_override=//pw_function:upstream_default_config
 
+# These flags may be read by tooling running in the exec configuration.
+common --experimental_propagate_custom_flag=//pw_build/luci:is_ci
+common --experimental_propagate_custom_flag=//pw_build/luci:is_shadow
+
 # Sanitizer config definitions
 # ============================
 common:asan --//pw_toolchain/host_clang:asan

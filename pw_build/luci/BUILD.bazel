@@ -1,0 +1,66 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# This package contains flags which may be set by the LUCI
+# (https://github.com/luci) CI system when building Pigweed.
+#
+# NOTE: Be mindful when adding dependencies on these flags. Pigweed developers
+# share a remote cache that's populated by CI. Build actions that depend on the
+# value of these flags will generally not be remotely cached for developers'
+# local use, since in CI (which populates the cache) these flags' values will be
+# different than on local developers' machines.
+
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+
+package(default_visibility = ["//visibility:public"])
+
+# This flag is set to True when bazel is invoked in CI (but not in CQ).
+bool_flag(
+    name = "is_ci",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "is_ci_enabled",
+    flag_values = {
+        ":is_ci": "true",
+    },
+)
+
+# This flag is set to True when bazel is invoked in CQ (but not in CI).
+bool_flag(
+    name = "is_try",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "is_try_enabled",
+    flag_values = {
+        ":is_try": "true",
+    },
+)
+
+# This flag is set to True when bazel is invoked by a builder in a shadow
+# bucket.
+bool_flag(
+    name = "is_shadow",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "is_shadow_enabled",
+    flag_values = {
+        ":is_ci": "true",
+    },
+)
