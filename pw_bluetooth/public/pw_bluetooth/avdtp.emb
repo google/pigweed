@@ -176,7 +176,7 @@ struct ServiceCapability(remaining_size: UInt:32):
 
   if remaining_size > length:
     let new_remaining_size = remaining_size-length
-    length [+new_remaining_size]  ServiceCapability(new_remaining_size)  next
+    length+2 [+new_remaining_size]  ServiceCapability(new_remaining_size)  next
 
 # Cf 8. Signaling Messages
 
