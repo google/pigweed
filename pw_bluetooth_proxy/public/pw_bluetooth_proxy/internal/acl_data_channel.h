@@ -37,13 +37,12 @@ namespace pw::bluetooth::proxy {
 class AclDataChannel {
  public:
   // Direction a packet is traveling on ACL transport.
-  enum class Direction {
+  enum class Direction : bool {
     kFromController,
     kFromHost,
-
-    // Must be last member
-    kMaxDirections,
   };
+  // Must match the number of Direction enumerators.
+  static constexpr size_t kNumDirections = 2;
 
   // Used to `SendAcl` packets.
   class SendCredit {
@@ -262,8 +261,7 @@ class AclDataChannel {
     // fragments are dropped until the PDU has been consumed, then this is
     // unset.
     // TODO: https://pwbug.dev/365179076 - Support recombination.
-    std::array<bool, cpp23::to_underlying(Direction::kMaxDirections)>
-        is_receiving_fragmented_pdu_{};
+    std::array<bool, kNumDirections> is_receiving_fragmented_pdu_{};
   };
 
   class Credits {
