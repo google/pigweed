@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "pw_bytes/span.h"
 #include "pw_multibuf/allocator.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
@@ -32,6 +33,12 @@ class MultiBufWriter {
   /// Creates a MultiBufWriter wrapping a fixed-size, contiguous MultiBuf.
   static pw::Result<MultiBufWriter> Create(
       multibuf::MultiBufAllocator& multibuf_allocator, size_t size);
+
+  // MultiBufWriter is movable but not copyable.
+  MultiBufWriter(const MultiBufWriter&) = delete;
+  MultiBufWriter& operator=(const MultiBufWriter&) = delete;
+  MultiBufWriter(MultiBufWriter&&) = default;
+  MultiBufWriter& operator=(MultiBufWriter&&) = default;
 
   /// Gets a span of the previously-written data.
   ///
@@ -59,7 +66,11 @@ class MultiBufWriter {
   }
 
   /// Writes data into the MultiBuf at the next unwritten location.
-  Status Write(pw::span<const uint8_t> data);
+  Status Write(pw::ConstByteSpan data);
+
+  Status Write(pw::span<const uint8_t> data) {
+    return Write(pw::as_bytes(data));
+  }
 
  private:
   MultiBufWriter(multibuf::MultiBuf&& buf) : buf_(std::move(buf)) {}

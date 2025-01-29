@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_proxy/internal/multibuf_writer.h"
 
+#include "pw_assert/check.h"
+
 namespace pw::bluetooth::proxy {
 
 pw::Result<MultiBufWriter> MultiBufWriter::Create(
@@ -26,14 +28,14 @@ pw::Result<MultiBufWriter> MultiBufWriter::Create(
   return MultiBufWriter(std::move(*buf));
 }
 
-Status MultiBufWriter::Write(pw::span<const uint8_t> data) {
-  ConstByteSpan byte_data(reinterpret_cast<const std::byte*>(data.data()),
-                          data.size());
-  StatusWithSize status = buf_.CopyFrom(byte_data, write_offset_);
+Status MultiBufWriter::Write(ConstByteSpan data) {
+  StatusWithSize status = buf_.CopyFrom(data, write_offset_);
   if (!status.ok()) {
     return status.status();
   }
-  write_offset_ += byte_data.size();
+  PW_CHECK_INT_EQ(status.size(), data.size());  // Specified by API.
+
+  write_offset_ += data.size();
   return OkStatus();
 }
 
