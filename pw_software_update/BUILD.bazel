@@ -95,6 +95,7 @@ cc_library(
     hdrs = [
         "public/pw_software_update/openable_reader.h",
     ],
+    strip_include_prefix = "public",
     deps = [
         "//pw_stream",
     ],
@@ -105,9 +106,10 @@ cc_library(
     hdrs = [
         "public/pw_software_update/blob_store_openable_reader.h",
     ],
-    tags = ["noclangtidy"],
+    strip_include_prefix = "public",
     deps = [
         ":openable_reader",
+        "//pw_blob_store",
     ],
 )
 
