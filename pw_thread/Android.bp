@@ -23,9 +23,6 @@ package {
 cc_defaults {
     name: "pw_thread",
     cpp_std: "c++20",
-    vendor_available: true,
-    host_supported: true,
-    export_include_dirs: ["public"],
     header_libs: [
         "pw_chrono",
         "pw_thread_include_dirs",
