@@ -35,7 +35,7 @@ filegroup(
 
 filegroup(
     name = "rustc_srcs",
-    srcs = glob(["lib/rustlib/src/rust/src/**"]),
+    srcs = glob(["lib/rustlib/src/rust/**/*"]),
     visibility = ["//visibility:public"],
 )
 

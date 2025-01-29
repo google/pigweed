@@ -93,6 +93,12 @@ single_version_override(
         # Adds more thumbv6m, thumbv8m, and thumbv8m triples
         # TODO: https://pwbug.dev/392707726 - Upstream below patch
         "//pw_rust/bazel_patches:0003-Add-thumbv6m-and-more-thumbv7m-and-thumbv8m-triples.patch",
+
+        # Adds ability to specify a subdirectory, relative to the target's BUILD
+        # file, where the rust sources live.  Without this `gen_rust_project`
+        # gets the path to those files wrong.
+        # TODO: https://pwbug.dev/3392708481 - Upstream below patch
+        "//pw_rust/bazel_patches:0004-Add-rust_srcs_subdir-to-rust_analyzer_toolchain.patch",
     ],
 )
 

@@ -148,6 +148,7 @@ rust_analyzer_toolchain(
     proc_macro_srv = "{toolchain_repo}//:libexec/rust-analyzer-proc-macro-srv",
     rustc = "{toolchain_repo}//:bin/rustc",
     rustc_srcs = "{toolchain_repo}//:rustc_srcs",
+    rustc_srcs_subdir = "lib/rustlib/src/rust",
     target_compatible_with = {target_compatible_with},
     visibility = ["//visibility:public"],
 )

@@ -1,0 +1,47 @@
+From 76378fa41d8ff92b7a9ac2b78497524d06cc6845 Mon Sep 17 00:00:00 2001
+From: Erik Gilling <konkers@google.com>
+Date: Thu, 9 Jan 2025 12:44:29 -0800
+Subject: [PATCH 2/2] Add rust_srcs_subdir to rust_analyzer_toolchain
+
+This allows rust toolchains to be declared from repositories with only
+a single BUILD file.  An example would be an `http_archive` repository
+using the `build_file` argument.
+---
+ rust/private/rust_analyzer.bzl | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/rust/private/rust_analyzer.bzl b/rust/private/rust_analyzer.bzl
+index bc12306a..5f40ed00 100644
+--- a/rust/private/rust_analyzer.bzl
++++ b/rust/private/rust_analyzer.bzl
+@@ -277,6 +277,7 @@ def _rust_analyzer_toolchain_impl(ctx):
+         proc_macro_srv = ctx.executable.proc_macro_srv,
+         rustc = ctx.executable.rustc,
+         rustc_srcs = ctx.attr.rustc_srcs,
++        rustc_srcs_subdir = ctx.attr.rustc_srcs_subdir,
+     )
+ 
+     return [toolchain]
+@@ -302,6 +303,10 @@ rust_analyzer_toolchain = rule(
+             doc = "The source code of rustc.",
+             mandatory = True,
+         ),
++        "rustc_srcs_subdir": attr.string(
++            doc = "Subdirectory relative to the location of `rust_srcs` in which the sources reside.",
++            default = "",
++        ),
+     },
+ )
+ 
+@@ -316,7 +321,7 @@ def _rust_analyzer_detect_sysroot_impl(ctx):
+ 
+     rustc_srcs = rust_analyzer_toolchain.rustc_srcs
+ 
+-    sysroot_src = rustc_srcs.label.package + "/library"
++    sysroot_src = rustc_srcs.label.package + rust_analyzer_toolchain.rustc_srcs_subdir + "/library"
+     if rustc_srcs.label.workspace_root:
+         sysroot_src = _OUTPUT_BASE_TEMPLATE + rustc_srcs.label.workspace_root + "/" + sysroot_src
+     else:
+-- 
+2.48.0.rc2.279.g1de40edade-goog
+

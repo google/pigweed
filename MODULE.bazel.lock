@@ -281,7 +281,7 @@
     },
     "//pw_toolchain/rust:extensions.bzl%pw_rust": {
       "general": {
-        "bzlTransitiveDigest": "9RBev/qYIH/9qKKNfRuoxV5wFA70ZqFfYIHIbTbpAD4=",
+        "bzlTransitiveDigest": "CJPgzjEdb02ThSdbXCF6LfZsT/fkp7KEXW23SP+qoBM=",
         "usagesDigest": "ZCWx/ZUYXarFY7CNN/qL1hd92QBqHLchbkND9INrOeY=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -3940,7 +3940,7 @@
     },
     "@@rules_rust+//crate_universe/private:internal_extensions.bzl%cu": {
       "general": {
-        "bzlTransitiveDigest": "7WRv1yxGwbebFl3900PZsmojs/IcHL3vmo4abV+jcmA=",
+        "bzlTransitiveDigest": "jNnJ42p9eq2r2bkKDQL3Meos6gyJ1RHCfyWmgUTZlfE=",
         "usagesDigest": "n9K7ly55ogh0e0ZhNzZBlusPSFC/o5aliHkw+zHwGfc=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
