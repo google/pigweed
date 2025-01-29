@@ -79,6 +79,11 @@ rust_toolchain(
     dylib_ext = "{dylib_ext}",
     exec_compatible_with = {exec_compatible_with},
     exec_triple = "{exec_triple}",
+    opt_level = {{
+      "dbg": "0",
+      "fastbuild": "0",
+      "opt": "z",
+    }},
     rust_doc = "{toolchain_repo}//:bin/rustdoc",
     rust_std = "{target_repo}//:rust_std",
     rustc = "{toolchain_repo}//:bin/rustc",
