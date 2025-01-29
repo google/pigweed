@@ -108,6 +108,66 @@ Limitations
    leads to layering check violations. Figuring out an alternative pattern is
    tracked at :bug:`391394448`.
 
+.. _module-pw_toolchain-bazel-clang-tidy:
+
+clang-tidy
+==========
+To integrate Pigweed's toolchain with `bazel_clang_tidy
+<https://github.com/erenon/bazel_clang_tidy>`_:
+
+#. Add a ``.clang-tidy`` file at the root of your repository listing the checks
+   you wish to enable. `Pigweed's own .clang-tidy file
+   <https://cs.opensource.google/pigweed/pigweed/+/main:.clang-tidy>`__ shows
+   some checks we recommend.
+
+#. Create a ``filegroup`` target containing that file in ``BUILD.bazel`` at
+   the root of your repo.
+
+   .. code-block:: python
+
+      filegroup(
+         name = "clang_tidy_config",
+         srcs = [".clang-tidy"],
+      )
+
+#. Add `bazel_clang_tidy`_ to your ``MODULE.bazel``.
+
+   .. code-block::python
+
+      git_repository = use_repo_rule(
+         "@bazel_tools//tools/build_defs/repo:git.bzl",
+         "git_repository",
+      )
+      git_repository(
+         name = "bazel_clang_tidy",
+         # Check the repository for the latest version!
+         commit = "db677011c7363509a288a9fb3bf0a50830bbf791",
+         remote = "https://github.com/erenon/bazel_clang_tidy.git",
+      )
+
+#. Add a ``clang-tidy`` config in your ``.bazelrc`` file.
+
+   .. code-block:: python
+
+      # clang-tidy configuration
+      build:clang-tidy --aspects @bazel_clang_tidy//clang_tidy:clang_tidy.bzl%clang_tidy_aspect
+      build:clang-tidy --output_groups=report
+      build:clang-tidy --@bazel_clang_tidy//:clang_tidy_config=//:clang_tidy_config
+      # Use the clang-tidy executable from Pigweed's toolchain, and include
+      # our sysroot headers.
+      build:clang-tidy --@bazel_clang_tidy//:clang_tidy_executable=@pigweed//pw_toolchain/host_clang:copy_clang_tidy
+      build:clang-tidy --@bazel_clang_tidy//:clang_tidy_additional_deps=@pigweed//pw_toolchain/host_clang:sysroot_root
+      # Skip any targets with tags = ["noclangtidy"]. This allows a gradual
+      # rollout.
+      build:clang-tidy --build_tag_filters=-noclangtidy
+      # We need to disable this warning to avoid spurious "#pragma once in main file"
+      # warnings for header-only libraries. For another approach, see
+      # https://github.com/mongodb-forks/bazel_clang_tidy/pull/2
+      build:clang-tidy --copt=-Wno-pragma-once-outside-header
+
+Now ``bazelisk build --config=clang-tidy //...`` will run clang-tidy for all
+``cc_library`` targets in your repo!
+
 .. _module-pw_toolchain-bazel-compiler-specific-logic:
 
 -----------------------------

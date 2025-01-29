@@ -83,8 +83,9 @@ We do not currently enable the `Clang Static Analyzers`_ because they suffer
 from false positives, and their findings are time-consuming to manually verify.
 
 clang-tidy can be run with ``ninja static_analysis`` or ``pw presubmit --step
-static_analysis``. Note that as a static analysis tool, clang-tidy will not
-produce any runnable binaries: it simply analyzes the source files.
+static_analysis`` or ``bazelisk build --config=clang-tidy //...``. Note that as
+a static analysis tool, clang-tidy will not produce any runnable binaries: it
+simply analyzes the source files.
 
 .. _clang-tidy: https://clang.llvm.org/extra/clang-tidy/
 .. _Abseil: https://abseil.io/
@@ -230,6 +231,16 @@ AddressSanitizer by building with the appropriate flag:
 
 If you're building your own toolchain, you can add
 ``@pigweed//pw_toolchain/cc/args:asan`` to it.
+
+clang-tidy
+----------
+We recommend using `bazel_clang_tidy
+<https://github.com/erenon/bazel_clang_tidy>`__ to run clang-tidy from Bazel.
+
+If you're using Pigweed's own host toolchain configuration, see the
+:ref:`module-pw_toolchain-bazel-clang-tidy` section for information on how to
+enable clang-tidy in your build.
+
 
 Fuzzers
 =======
