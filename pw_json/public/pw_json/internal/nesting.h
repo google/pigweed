@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
 #include "pw_assert/assert.h"
 #include "pw_status/status.h"

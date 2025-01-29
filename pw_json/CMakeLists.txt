@@ -17,7 +17,6 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 pw_add_library(pw_json.builder INTERFACE
   HEADERS
     public/pw_json/builder.h
-    public/pw_json/internal/builder_impl.h
     public/pw_json/internal/nesting.h
   PUBLIC_INCLUDES
     public
