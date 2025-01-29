@@ -149,6 +149,22 @@ pw_source_set("emboss_util") {
   ]
 }
 
+pw_source_set("snoop") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bluetooth/snoop.h" ]
+  sources = [ "snoop.cc" ]
+  public_deps = [
+    ":emboss_snoop",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_containers:inline_var_len_entry_queue",
+    "$dir_pw_sync:mutex",
+    dir_pw_assert,
+    dir_pw_bluetooth_proxy,
+    dir_pw_hex_dump,
+    dir_pw_log,
+  ]
+}
+
 if (dir_pw_third_party_emboss != "") {
   config("emboss_include_path") {
     include_dirs = [
@@ -233,6 +249,11 @@ if (dir_pw_third_party_emboss != "") {
   emboss_cc_library("emboss_rfcomm_frames") {
     public_configs = [ ":emboss_include_path" ]
     source = "public/pw_bluetooth/rfcomm_frames.emb"
+  }
+
+  emboss_cc_library("emboss_snoop") {
+    public_configs = [ ":emboss_include_path" ]
+    source = "public/pw_bluetooth/snoop.emb"
   }
 
   group("emboss_hci_group") {
@@ -380,4 +401,12 @@ if (dir_pw_third_party_emboss != "") {
       },
     ]
   }
+}
+
+pw_test("snoop_test") {
+  enable_if =
+      dir_pw_third_party_emboss != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "snoop_test.cc" ]
+  include_dirs = [ "." ]
+  deps = [ ":snoop" ]
 }

@@ -1,0 +1,101 @@
+# Copyright 2024 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+[$default byte_order: "BigEndian"]
+[(cpp) namespace: "pw::bluetooth::emboss::snoop_log"]
+
+
+# Struct descriptions taken from:
+# https://fte.com/webhelpii/bpa600/Content/Technical_Information/BT_Snoop_File_Format.htm
+
+enum DataLinkType:
+  [maximum_bits: 32]
+  UNENCAPSULATED_HCI_H1 = 1001
+  HCI_UART_H4           = 1002
+  HCI_BSCP              = 1003
+  HCI_SERIAL_H5         = 1004
+
+
+enum PacketFlags:
+  [maximum_bits: 32]
+  SENT     = 0
+  RECEIVED = 1
+
+
+struct FileHeader:
+  0     [+8]  UInt:8[]      identification_pattern
+    -- Identification Pattern:
+    --   A 64-bit (8 octet) pattern used to identify the file as a snoop packet
+    --   capture file. The Identification Pattern consists of the 8 hexadecimal
+    --   octets: 62 74 73 6E 6F 6F 70 00 This is the ASCII string "btsnoop"
+    --   followed by one null octets.
+
+  $next [+4]  UInt          version_number
+    -- Version Number:
+    --   A 32-bit (4 octet) unsigned integer value representing the version of
+    --   the packet capture file being used.
+
+  $next [+4]  DataLinkType  datalink_type
+    -- Datalink Type:
+    --   A 32-bit (4 octet) field identifying the type of datalink header used
+    --   in the packet records that follow.
+
+
+struct EntryHeader:
+  0     [+4]  UInt         original_length
+    --   A 32-bit unsigned integer representing the length in octets of the
+    --   captured packet as received via a network.
+
+  $next [+4]  UInt         included_length
+    --   A 32-bit unsigned integer representing the length of the Packet Data
+    --   field. This is the number of octets of the captured packet that are
+    --   included in this packet record. If the received packet was truncated,
+    --   the Included Length field is less than the Original Length field.
+
+  $next [+4]  PacketFlags  packet_flags
+    --   Flags specific to this packet.
+
+  $next [+4]  UInt         cumulative_drops
+    --   A 32-bit unsigned integer representing the number of packets that were
+    --   lost by the system that created the packet file between the first
+    --   packet record in the file and this one. Packets may be lost because of
+    --   insufficient resources in the capturing system, or for other reasons.
+    --   Note: some implementations lack the ability to count dropped packets.
+    --   Those implementations may set the cumulative drops value to zero.
+
+  $next [+8]  Int          timestamp_us
+    --   A 64-bit signed integer representing the time of packet arrival, in
+    --   microseconds since midnight, January 1st, 0 AD nominal Gregorian. In
+    --   order to avoid leap-day ambiguity in calculations, note that an
+    --   equivalent epoch may be used of midnight, January 1st 2000 AD, which is
+    --   represented in this field as 0x00E03AB44A676000.
+
+
+struct Entry:
+  let header_size = EntryHeader.$size_in_bytes
+
+  0             [+header_size]               EntryHeader                       header
+
+  header_size   [+header.included_length]    UInt:8[]                          packet_data
+    --   Variable-length field holding the packet that was captured, beginning
+    --   with its datalink header. The Datalink Type field of the file header
+    --   can be used to determine how to decode the datalink header. The length
+    --   of the Packet Data field is given in the Included Length field. Note
+    --   that the length of this field in not necessarily rounded to any
+    --   particular multi-octet boundary, as might otherwise be suggested by the
+    --   diagram.
+
+  header_size   [+1]                         UInt                              packet_h4_type
+
+  header_size+1 [+header.included_length-1]  UInt:8[header.included_length-1]  packet_hci_data

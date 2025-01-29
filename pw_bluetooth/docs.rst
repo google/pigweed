@@ -166,6 +166,37 @@ Usage
 
 .. _module-pw_bluetooth-contributing:
 
+---------
+Snoop Log
+---------
+``pw_bluetooth`` contains an HCI snoop log implementation for recording Rx/Tx
+HCI traffic.
+
+The snoop log is easy to integrate into your H4 Uart driver.
+
+* Add `pw::bluetooth::SnoopBuffer` to your H4 Uart class.
+* Add a call to `pw::bluetooth::SnoopBuffer::AddRx()` in your H4Packet Receive function.
+* Add a call to `pw::bluetooth::SnoopBuffer::AddTx()` in your H4Packet Transmit function.
+* Dump the snoop log via `pw::bluetooth::Snoop::Dump()`
+* Dump the snoop log to the logger via `pw::bluetooth::Snoop::DumpToLog()`
+
+.. code-block:: cpp
+
+   class H4Uart {
+    public:
+     void OnH4PacketReceived(proxy::H4PacketInterface& hci_packet) {
+       snoop_.addRx(packet);
+     }
+     void OnH4PacketTransmitted(proxy::H4PacketInterface& hci_packet) {
+       snoop_.addTx(packet);
+     }
+     void GetSnoopLog() { snoop_.DumpToLog(); }
+
+    private:
+     pw::bluetooth::SnoopBuffer</*kTotalSize=*/4096, /*kMaxHciPacketSize*/ 128>
+         snoop_{pw::chrono::VirtualSystemClock::RealClock()};
+   };
+
 Contributing
 ============
 Emboss ``.emb`` files can be edited to add additional packets and enums.

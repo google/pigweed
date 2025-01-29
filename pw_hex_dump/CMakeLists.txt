@@ -25,6 +25,8 @@ pw_add_library(pw_hex_dump STATIC
     pw_bytes
     pw_span
     pw_status
+    pw_string.builder
+    pw_string.to_string
 )
 
 pw_add_library(pw_hex_dump.log_bytes INTERFACE

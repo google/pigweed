@@ -120,6 +120,30 @@ cc_library(
 )
 
 cc_library(
+    name = "snoop",
+    srcs = [
+        "snoop.cc",
+    ],
+    hdrs = [
+        "public/pw_bluetooth/snoop.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":emboss_snoop",
+        ":emboss_util",
+        "//pw_assert:check",
+        "//pw_bluetooth_proxy",
+        "//pw_chrono:system_clock",
+        "//pw_containers:inline_var_len_entry_queue",
+        "//pw_hex_dump",
+        "//pw_log",
+        "//pw_result",
+        "//pw_span",
+        "//pw_sync:mutex",
+    ],
+)
+
+cc_library(
     name = "emboss_util",
     hdrs = [
         "public/pw_bluetooth/emboss_util.h",
@@ -169,6 +193,18 @@ pw_cc_test(
     ],
     deps = [
         ":pw_bluetooth",
+    ],
+)
+
+pw_cc_test(
+    name = "snoop_test",
+    srcs = [
+        "snoop_test.cc",
+    ],
+    deps = [
+        ":snoop",
+        "//pw_chrono:simulated_system_clock",
+        "//pw_hex_dump:log_bytes",
     ],
 )
 
@@ -352,6 +388,19 @@ cc_library(
         ":emboss_hci_events",
         ":emboss_hci_h4",
     ],
+)
+
+emboss_cc_library(
+    name = "_emboss_snoop",
+    srcs = ["public/pw_bluetooth/snoop.emb"],
+    enable_enum_traits = False,
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "emboss_snoop",
+    includes = ["public"],
+    deps = [":_emboss_snoop"],
 )
 
 pw_cc_test(

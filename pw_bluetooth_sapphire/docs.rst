@@ -244,7 +244,6 @@ Roadmap
 * Support CMake
 * Implement :ref:`module-pw_bluetooth` APIs
 * Optimize memory footprint
-* Add snoop log capture support
 * Add metrics
 * Add configuration options (LE only, Classic only, etc.)
 * Add CLI for controlling stack over RPC
