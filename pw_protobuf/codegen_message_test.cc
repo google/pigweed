@@ -1218,6 +1218,20 @@ TEST(CodegenMessage, ReadOptionalPresentDefaults) {
   EXPECT_EQ(message.sometimes_empty_varint[0], 0x00);
 }
 
+TEST(CodegenMessage, DefaultValues) {
+  Pigweed::Message message;
+  EXPECT_EQ(message.magic_number, 0u);
+  EXPECT_EQ(message.ziggy, 0);
+  EXPECT_EQ(message.cycles, 0u);
+  EXPECT_EQ(message.ratio, 0.0);
+  EXPECT_EQ(message.error_message, "");
+  EXPECT_EQ(message.pigweed.status, Bool::kTrue);
+  EXPECT_EQ(message.bin, Pigweed::Protobuf::Binary::kOne);
+  EXPECT_EQ(message.bungle, 0);
+  EXPECT_EQ(message.test_sfixed32, 0);
+  EXPECT_EQ(message.test_sfixed64, 0);
+}
+
 TEST(CodegenMessage, ReadImportedOptions) {
   // clang-format off
   constexpr uint8_t proto_data[] = {

@@ -1681,6 +1681,9 @@ class Sfixed64Property(MessageProperty):
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldSfixed64', False
 
+    def _default_type_value(self) -> str:
+        return '0'
+
 
 class Uint32WriteMethod(WriteMethod):
     """Method which writes a proto uint32 value."""
@@ -2859,7 +2862,7 @@ PROTO_FIELD_PROPERTIES: dict[int, Type[MessageProperty]] = {
     descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32: Sfixed32Property,
     descriptor_pb2.FieldDescriptorProto.TYPE_INT64: Int64Property,
     descriptor_pb2.FieldDescriptorProto.TYPE_SINT64: Sint64Property,
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: Sfixed32Property,
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: Sfixed64Property,
     descriptor_pb2.FieldDescriptorProto.TYPE_UINT32: Uint32Property,
     descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32: Fixed32Property,
     descriptor_pb2.FieldDescriptorProto.TYPE_UINT64: Uint64Property,

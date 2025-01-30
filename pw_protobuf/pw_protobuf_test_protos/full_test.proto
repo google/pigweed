@@ -94,6 +94,9 @@ message Pigweed {
   uint32 special_property = 13;
 
   int32 bungle = 14;
+
+  sfixed32 test_sfixed32 = 15;
+  sfixed64 test_sfixed64 = 16;
 }
 
 // Another message.
