@@ -168,8 +168,6 @@ html_css_files = [
 
 html_js_files = [
     "js/pigweed.js",
-    # Needed for sidebar search
-    "https://cdnjs.cloudflare.com/ajax/libs/fuzzysort/2.0.4/fuzzysort.js",
 ]
 
 html_extra_path = [
