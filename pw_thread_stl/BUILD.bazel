@@ -22,7 +22,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -32,15 +31,24 @@ cc_library(
     hdrs = [
         "id_public_overrides/pw_thread_backend/id_inline.h",
         "id_public_overrides/pw_thread_backend/id_native.h",
+    ],
+    strip_include_prefix = "id_public_overrides",
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":id_private",
+    ],
+)
+
+cc_library(
+    name = "id_private",
+    hdrs = [
         "public/pw_thread_stl/id_inline.h",
         "public/pw_thread_stl/id_native.h",
     ],
-    includes = [
-        "id_public_overrides",
-        "public",
-    ],
+    strip_include_prefix = "public",
     tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_thread:id.facade",
     ],
@@ -49,15 +57,23 @@ cc_library(
 cc_library(
     name = "sleep",
     hdrs = [
-        "public/pw_thread_stl/sleep_inline.h",
         "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
     ],
-    includes = [
-        "public",
-        "sleep_public_overrides",
-    ],
-    tags = ["noclangtidy"],
+    strip_include_prefix = "sleep_public_overrides",
     target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":sleep_private",
+    ],
+)
+
+cc_library(
+    name = "sleep_private",
+    hdrs = [
+        "public/pw_thread_stl/sleep_inline.h",
+    ],
+    strip_include_prefix = "public",
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_thread:sleep.facade",
@@ -67,20 +83,41 @@ cc_library(
 cc_library(
     name = "thread",
     hdrs = [
-        "public/pw_thread_stl/options.h",
-        "public/pw_thread_stl/thread_inline.h",
-        "public/pw_thread_stl/thread_native.h",
         "thread_public_overrides/pw_thread_backend/thread_inline.h",
         "thread_public_overrides/pw_thread_backend/thread_native.h",
     ],
-    includes = [
-        "public",
-        "thread_public_overrides",
-    ],
-    tags = ["noclangtidy"],
+    strip_include_prefix = "thread_public_overrides",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
+        ":thread_private",
+    ],
+)
+
+cc_library(
+    name = "thread_private",
+    hdrs = [
+        "public/pw_thread_stl/thread_inline.h",
+        "public/pw_thread_stl/thread_native.h",
+    ],
+    strip_include_prefix = "public",
+    tags = ["noclangtidy"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":options",
         "//pw_thread:thread.facade",
+    ],
+)
+
+cc_library(
+    name = "options",
+    hdrs = [
+        "public/pw_thread_stl/options.h",
+    ],
+    strip_include_prefix = "public",
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        "//pw_thread:options",
     ],
 )
 
@@ -94,6 +131,7 @@ cc_library(
     ],
     strip_include_prefix = "thread_creation_public_overrides",
     tags = ["noclangtidy"],
+    deps = [":options"],
 )
 
 # This target provides a stub backend for pw::this_thread::thread_iteration.
@@ -115,6 +153,7 @@ cc_library(
     ],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
+        ":options",
         "//pw_thread:non_portable_test_thread_options",
         "//pw_thread:thread.facade",
     ],
@@ -137,15 +176,24 @@ pw_cc_test(
 cc_library(
     name = "yield",
     hdrs = [
-        "public/pw_thread_stl/yield_inline.h",
         "yield_public_overrides/pw_thread_backend/yield_inline.h",
     ],
-    includes = [
-        "public",
-        "yield_public_overrides",
+    strip_include_prefix = "yield_public_overrides",
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":yield_private",
     ],
+)
+
+cc_library(
+    name = "yield_private",
+    hdrs = [
+        "public/pw_thread_stl/yield_inline.h",
+    ],
+    strip_include_prefix = "public",
     tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_thread:yield.facade",
     ],
@@ -154,16 +202,25 @@ cc_library(
 cc_library(
     name = "test_thread_context",
     hdrs = [
-        "public/pw_thread_stl/test_thread_context_native.h",
         "test_thread_context_public_overrides/pw_thread_backend/test_thread_context_native.h",
     ],
-    includes = [
-        "public",
-        "test_thread_context_public_overrides",
-    ],
+    strip_include_prefix = "test_thread_context_public_overrides",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        ":thread",
+        ":test_thread_context_private",
+    ],
+)
+
+cc_library(
+    name = "test_thread_context_private",
+    hdrs = [
+        "public/pw_thread_stl/test_thread_context_native.h",
+    ],
+    strip_include_prefix = "public",
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:private"],
+    deps = [
+        ":options",
         "//pw_thread:test_thread_context.facade",
     ],
 )

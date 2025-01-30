@@ -114,7 +114,7 @@ pw_cc_test(
         "//pw_span",
         "//pw_sync:thread_notification",
         "//pw_thread:thread",
-        "//pw_thread_stl:thread",
+        "//pw_thread_stl:options",
     ],
 )
 
