@@ -506,6 +506,13 @@ class MessageProperty(ProtoMember):
     def wire_type(self) -> str:
         """Returns the wire type of the property, e.g. kVarint."""
 
+    @abc.abstractmethod
+    def _default_type_value(self) -> str:
+        """Returns the default value for an element of the type as a C++ expr.
+
+        For example, a uint defaults to 0, a bool defaults to false, etc.
+        """
+
     def varint_decode_type(self) -> str:
         """Returns the varint decoding type of the property, e.g. kZigZag.
 
@@ -588,6 +595,21 @@ class MessageProperty(ProtoMember):
         return self.repeated_field_container(
             self.type_name(from_root), self.max_size_constant_name()
         )
+
+    def default_value(self) -> str | None:  # pylint: disable=no-self-use
+        """Returns the default value for the C++ type, if one is required."""
+        if self.callback_type() is not _CallbackType.NONE:
+            # Callbacks have default constructors.
+            return None
+
+        if self.is_repeated():
+            # All repeated containers have default constructors.
+            return None
+
+        if self.is_optional():
+            return 'std::nullopt'
+
+        return self._default_type_value()
 
     def max_size_constant_name(self) -> str:
         return f'k{self._field.name()}MaxSize'
@@ -824,6 +846,9 @@ class SubMessageProperty(MessageProperty):
     def include_in_scratch_size(self) -> bool:
         return True
 
+    def _default_type_value(self) -> str:
+        return r'{}'
+
 
 class BytesReaderMethod(ReadMethod):
     """Method which returns a bytes reader."""
@@ -942,6 +967,9 @@ class DoubleProperty(MessageProperty):
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldDouble', False
 
+    def _default_type_value(self) -> str:
+        return '0'
+
 
 class FloatWriteMethod(WriteMethod):
     """Method which writes a proto float value."""
@@ -1040,6 +1068,9 @@ class FloatProperty(MessageProperty):
 
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldFloat', False
+
+    def _default_type_value(self) -> str:
+        return '0'
 
 
 class Int32WriteMethod(WriteMethod):
@@ -1143,6 +1174,9 @@ class Int32Property(MessageProperty):
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldInt32', False
 
+    def _default_type_value(self) -> str:
+        return '0'
+
 
 class Sint32WriteMethod(WriteMethod):
     """Method which writes a proto sint32 value."""
@@ -1245,6 +1279,9 @@ class Sint32Property(MessageProperty):
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldSint32', False
 
+    def _default_type_value(self) -> str:
+        return '0'
+
 
 class Sfixed32WriteMethod(WriteMethod):
     """Method which writes a proto sfixed32 value."""
@@ -1343,6 +1380,9 @@ class Sfixed32Property(MessageProperty):
 
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldSfixed32', False
+
+    def _default_type_value(self) -> str:
+        return '0'
 
 
 class Int64WriteMethod(WriteMethod):
@@ -1446,6 +1486,9 @@ class Int64Property(MessageProperty):
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldInt64', False
 
+    def _default_type_value(self) -> str:
+        return '0'
+
 
 class Sint64WriteMethod(WriteMethod):
     """Method which writes a proto sint64 value."""
@@ -1541,6 +1584,9 @@ class Sint64Property(MessageProperty):
 
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldSint64', False
+
+    def _default_type_value(self) -> str:
+        return '0'
 
 
 class Sfixed64WriteMethod(WriteMethod):
@@ -1737,6 +1783,9 @@ class Uint32Property(MessageProperty):
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldUint32', False
 
+    def _default_type_value(self) -> str:
+        return '0'
+
 
 class Fixed32WriteMethod(WriteMethod):
     """Method which writes a proto fixed32 value."""
@@ -1835,6 +1884,9 @@ class Fixed32Property(MessageProperty):
 
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldFixed32', False
+
+    def _default_type_value(self) -> str:
+        return '0'
 
 
 class Uint64WriteMethod(WriteMethod):
@@ -1938,6 +1990,9 @@ class Uint64Property(MessageProperty):
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldUint64', False
 
+    def _default_type_value(self) -> str:
+        return '0'
+
 
 class Fixed64WriteMethod(WriteMethod):
     """Method which writes a proto fixed64 value."""
@@ -2037,6 +2092,9 @@ class Fixed64Property(MessageProperty):
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldFixed64', False
 
+    def _default_type_value(self) -> str:
+        return '0'
+
 
 class BoolWriteMethod(WriteMethod):
     """Method which writes a proto bool value."""
@@ -2128,6 +2186,9 @@ class BoolProperty(MessageProperty):
 
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldBool', False
+
+    def _default_type_value(self) -> str:
+        return 'false'
 
 
 class BytesWriteMethod(WriteMethod):
@@ -2228,6 +2289,9 @@ class BytesProperty(MessageProperty):
         if self.callback_type() is not _CallbackType.NONE:
             return None
         return self.max_size_constant_name()
+
+    def _default_type_value(self) -> str:
+        return r'{}'
 
 
 class StringLenWriteMethod(WriteMethod):
@@ -2349,6 +2413,9 @@ class StringProperty(MessageProperty):
 
     def is_string(self) -> bool:
         return True
+
+    def _default_type_value(self) -> str:
+        return r'{}'
 
     @staticmethod
     def repeated_field_container(type_name: str, max_size: str) -> str:
@@ -2547,6 +2614,9 @@ class EnumProperty(MessageProperty):
 
     def _size_fn(self) -> tuple[str, bool]:
         return 'SizeOfFieldEnum', False
+
+    def _default_type_value(self) -> str:
+        return f'static_cast<{self.type_name()}>(0)'
 
 
 # Mapping of protobuf field types to their method definitions.
@@ -3173,7 +3243,11 @@ def generate_struct_for_message(
         for prop in proto_message_field_props(codegen_options, message, root):
             type_name = prop.struct_member_type()
             name = prop.name()
-            output.write_line(f'{type_name} {name};')
+            default_value = prop.default_value()
+            if default_value is not None:
+                output.write_line(f'{type_name} {name} = {default_value};')
+            else:
+                output.write_line(f'{type_name} {name};')
 
             if prop.callback_type() is _CallbackType.NONE:
                 cmp.append(f'this->{name} == other.{name}')
