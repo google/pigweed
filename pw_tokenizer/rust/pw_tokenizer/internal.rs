@@ -35,13 +35,13 @@ impl<'a> From<&'a str> for Argument<'a> {
     }
 }
 
-impl<'a> From<i32> for Argument<'a> {
+impl From<i32> for Argument<'_> {
     fn from(val: i32) -> Self {
         Self::Varint(val)
     }
 }
 
-impl<'a> From<u32> for Argument<'a> {
+impl From<u32> for Argument<'_> {
     fn from(val: u32) -> Self {
         Self::Varint64(val as i64)
     }

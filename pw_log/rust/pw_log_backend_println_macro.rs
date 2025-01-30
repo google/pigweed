@@ -66,7 +66,7 @@ impl<'a> LogfGenerator<'a> {
 
 // Use a [`pw_format::CoreFmtFormatMacroGenerator`] to prepare arguments to call
 // [`std::println`].
-impl<'a> CoreFmtFormatMacroGenerator for LogfGenerator<'a> {
+impl CoreFmtFormatMacroGenerator for LogfGenerator<'_> {
     fn finalize(self, format_string: String) -> Result<TokenStream2> {
         let log_level = self.log_level;
         let args = &self.args;

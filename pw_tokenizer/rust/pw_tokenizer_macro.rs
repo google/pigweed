@@ -138,7 +138,7 @@ impl<'a> TokenizeToBufferGenerator<'a> {
     }
 }
 
-impl<'a> PrintfFormatMacroGenerator for TokenizeToBufferGenerator<'a> {
+impl PrintfFormatMacroGenerator for TokenizeToBufferGenerator<'_> {
     fn finalize(
         self,
         format_string_fragments: &[PrintfFormatStringFragment],
@@ -288,7 +288,7 @@ impl<'a> TokenizeToWriterGenerator<'a> {
     }
 }
 
-impl<'a> PrintfFormatMacroGenerator for TokenizeToWriterGenerator<'a> {
+impl PrintfFormatMacroGenerator for TokenizeToWriterGenerator<'_> {
     fn finalize(
         self,
         format_string_fragments: &[PrintfFormatStringFragment],

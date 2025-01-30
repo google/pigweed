@@ -398,6 +398,7 @@ pub fn core_fmt_format_core_fmt_generator_test_macro(tokens: TokenStream) -> Tok
 pub fn integer_sub_printf_format_core_fmt_generator_test_macro(tokens: TokenStream) -> TokenStream {
     let format_and_args =
         parse_macro_input!(tokens as FormatAndArgsFlavor<PrintfFormatStringParser>);
+    #[allow(clippy::literal_string_with_formatting_args)]
     let generator = CoreFmtTestGenerator::new().with_integer_specifier("{:?}");
     match generate_core_fmt(generator, format_and_args.into()) {
         Ok(token_stream) => token_stream.into(),
@@ -410,6 +411,7 @@ pub fn integer_sub_printf_format_core_fmt_generator_test_macro(tokens: TokenStre
 pub fn string_sub_printf_format_core_fmt_generator_test_macro(tokens: TokenStream) -> TokenStream {
     let format_and_args =
         parse_macro_input!(tokens as FormatAndArgsFlavor<PrintfFormatStringParser>);
+    #[allow(clippy::literal_string_with_formatting_args)]
     let generator = CoreFmtTestGenerator::new().with_string_specifier("{:?}");
     match generate_core_fmt(generator, format_and_args.into()) {
         Ok(token_stream) => token_stream.into(),
@@ -422,6 +424,7 @@ pub fn string_sub_printf_format_core_fmt_generator_test_macro(tokens: TokenStrea
 pub fn char_sub_printf_format_core_fmt_generator_test_macro(tokens: TokenStream) -> TokenStream {
     let format_and_args =
         parse_macro_input!(tokens as FormatAndArgsFlavor<PrintfFormatStringParser>);
+    #[allow(clippy::literal_string_with_formatting_args)]
     let generator = CoreFmtTestGenerator::new().with_char_specifier("{:?}");
     match generate_core_fmt(generator, format_and_args.into()) {
         Ok(token_stream) => token_stream.into(),

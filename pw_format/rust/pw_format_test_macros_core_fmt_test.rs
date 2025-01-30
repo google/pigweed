@@ -43,6 +43,7 @@ pub enum PrintfTestGeneratorOps {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::literal_string_with_formatting_args)]
     use pw_format_test_macros::{
         core_fmt_format_core_fmt_generator_test_macro, core_fmt_format_generator_test_macro,
         core_fmt_format_printf_generator_test_macro,

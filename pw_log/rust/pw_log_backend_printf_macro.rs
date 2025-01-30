@@ -66,7 +66,7 @@ impl<'a> LogfGenerator<'a> {
 
 // Use a [`pw_format::PrintfFormatMacroGenerator`] to prepare arguments to call
 // `printf`.
-impl<'a> PrintfFormatMacroGenerator for LogfGenerator<'a> {
+impl PrintfFormatMacroGenerator for LogfGenerator<'_> {
     fn finalize(
         self,
         format_string_fragments: &[PrintfFormatStringFragment],

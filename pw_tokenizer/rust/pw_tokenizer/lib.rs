@@ -94,11 +94,11 @@ pub mod __private {
 /// 1) The string is hashed into its stable `u32` token.  This is the value that
 ///    is returned from the macro.
 /// 2) A [token database entry](https://pigweed.dev/pw_tokenizer/design.html#binary-database-format)
-///   is generated, assigned to a unique static symbol, placed in a linker
-///   section named `pw_tokenizer.entries.<TOKEN_HASH>`.  A
-///   [linker script](https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_tokenizer/pw_tokenizer_linker_sections.ld)
-///   is responsible for picking these symbols up and aggregating them into a
-///   single `.pw_tokenizer.entries` section in the final binary.
+///    is generated, assigned to a unique static symbol, placed in a linker
+///    section named `pw_tokenizer.entries.<TOKEN_HASH>`.  A
+///    [linker script](https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_tokenizer/pw_tokenizer_linker_sections.ld)
+///    is responsible for picking these symbols up and aggregating them into a
+///    single `.pw_tokenizer.entries` section in the final binary.
 ///
 /// # Example
 /// ```
@@ -238,7 +238,7 @@ macro_rules! tokenize_to_buffer {
 /// - [`pw_status::Error::OutOfRange`] - [`MessageWriter`] does not have enough
 ///   space to fit tokenized data.
 /// - others - `tokenize_core_fmt_to_writer!` will pass on any errors returned
-///  by the [`MessageWriter`].
+///   by the [`MessageWriter`].
 ///
 /// # Code Size
 ///
@@ -321,7 +321,7 @@ macro_rules! tokenize_core_fmt_to_writer {
 /// - [`pw_status::Error::OutOfRange`] - [`MessageWriter`] does not have enough
 ///   space to fit tokenized data.
 /// - others - `tokenize_printf_to_writer!` will pass on any errors returned
-///  by the [`MessageWriter`].
+///   by the [`MessageWriter`].
 ///
 /// # Code Size
 ///
@@ -417,6 +417,7 @@ pub trait MessageWriter {
 #[cfg(test)]
 // Untyped prints code rely on as casts to annotate type information.
 #[allow(clippy::unnecessary_cast)]
+#[allow(clippy::literal_string_with_formatting_args)]
 mod tests {
     use super::*;
     extern crate self as pw_tokenizer;
