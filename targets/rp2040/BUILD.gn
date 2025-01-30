@@ -38,7 +38,6 @@ if (current_toolchain != default_toolchain) {
       "$PICO_ROOT/src/rp2_common/pico_malloc",
       "$dir_pigweed/targets/rp2040:memmap_default_ld",
       "$dir_pw_cpu_exception:entry",
-      "$dir_pw_string",
       "$dir_pw_system",
       "$dir_pw_system:crash_handler",
       "$dir_pw_third_party/freertos",

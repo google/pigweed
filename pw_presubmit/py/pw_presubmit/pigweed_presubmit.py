@@ -974,7 +974,7 @@ def bazel_build(ctx: PresubmitContext) -> None:
         # compatible with this platform. So we list them explicitly. (If an
         # explicitly listed target is incompatible with the platform, Bazel
         # will return an error instead of skipping it.)
-        '//pw_system:system_example',
+        '//pw_bloat:bloat_base',
     )
     # Then using the transition.
     #

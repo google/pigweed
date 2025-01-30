@@ -19,6 +19,7 @@ load("//third_party/freertos:flags.bzl", "FREERTOS_FLAGS")
 
 # Typical RP2040 pw_system backends and other platform configuration flags.
 RP2_SYSTEM_FLAGS = FREERTOS_FLAGS | {
+    "@bazel_tools//tools/cpp:link_extra_libs": str(Label("@pigweed//targets/rp2040:extra_platform_libs")),
     "@freertos//:freertos_config": str(Label("//targets/rp2040:freertos_config")),
     "@pico-sdk//bazel/config:PICO_CLIB": "llvm_libc",
     "@pico-sdk//bazel/config:PICO_STDIO_UART": True,

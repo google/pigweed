@@ -13,6 +13,7 @@
 # the License.
 
 load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@rules_platform//platform_data:defs.bzl", "platform_data")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "host_backend_alias", "incompatible_with_mcu")
@@ -28,7 +29,6 @@ load("//pw_system/py:console.bzl", "device_console", "device_simulator_console")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 load("//targets/host_device_simulator:transition.bzl", "host_device_simulator_binary")
 load("//targets/rp2040:flash.bzl", "flash_rp2040", "flash_rp2350")
-load("//targets/rp2040:transition.bzl", "rp2040_binary", "rp2350_binary")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -562,6 +562,9 @@ pw_cc_binary(
     # testonly dependencies.
     testonly = True,
     srcs = ["example_user_app_init.cc"],
+    # This needs extra platform configuration to work (even on the host), so
+    # don't try to build the cc_binary without it.
+    tags = ["manual"],
     # TODO(b/365184562): This target does not build with asan and fuzztest.
     target_compatible_with = select({
         "//pw_fuzzer:use_fuzztest": ["@platforms//:incompatible"],
@@ -689,16 +692,18 @@ host_device_simulator_binary(
     binary = ":system_example",
 )
 
-rp2040_binary(
+platform_data(
     name = "rp2040_system_example",
     testonly = True,
-    binary = ":system_example",
+    platform = "//targets/rp2040:rp2040_pw_system_demo",
+    target = ":system_example",
 )
 
-rp2350_binary(
+platform_data(
     name = "rp2350_system_example",
     testonly = True,
-    binary = ":system_example",
+    platform = "//targets/rp2040:rp2350_pw_system_demo",
+    target = ":system_example",
 )
 
 flash_rp2040(

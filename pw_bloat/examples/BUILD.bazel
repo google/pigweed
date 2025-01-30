@@ -12,7 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 
 package(default_visibility = ["//visibility:public"])
@@ -22,17 +21,14 @@ licenses(["notice"])
 pw_cc_binary(
     name = "simple_base",
     srcs = ["simple_base.cc"],
-    target_compatible_with = incompatible_with_mcu(),
 )
 
 pw_cc_binary(
     name = "simple_loop",
     srcs = ["simple_loop.cc"],
-    target_compatible_with = incompatible_with_mcu(),
 )
 
 pw_cc_binary(
     name = "simple_function",
     srcs = ["simple_function.cc"],
-    target_compatible_with = incompatible_with_mcu(),
 )

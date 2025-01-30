@@ -86,10 +86,28 @@ platform(
     parents = [":rp2_common"],
 )
 
+platform(
+    name = "rp2040_pw_system_demo",
+    flags = flags_from_dict({
+        "@bazel_tools//tools/cpp:link_extra_libs": ":pre_init",
+    }),
+    parents = [":rp2040"],
+)
+
+platform(
+    name = "rp2350_pw_system_demo",
+    flags = flags_from_dict({
+        "@bazel_tools//tools/cpp:link_extra_libs": ":pre_init",
+    }),
+    parents = [":rp2350"],
+)
+
+# These need to get linked into every `cc_binary` for the linker
+# to succeed.
 cc_library(
     name = "extra_platform_libs",
     deps = [
-        ":pre_init",
+        "//pw_build:default_link_extra_lib",
         "//pw_tokenizer:linker_script",
         "@pico-sdk//src/rp2_common/pico_stdlib",
     ] + if_compiler_is_clang(
@@ -99,6 +117,7 @@ cc_library(
         ],
         otherwise = [],
     ),
+    alwayslink = 1,
 )
 
 alias(
@@ -134,6 +153,7 @@ cc_library(
         "unit_test_app.cc",
     ],
     deps = [
+        ":pre_init",
         "//pw_status",
         "//pw_system",
         "//pw_unit_test:rpc_service",
@@ -171,16 +191,13 @@ cc_library(
     ],
     target_compatible_with = [":freertos_config_cv"],
     deps = [
+        ":extra_platform_libs",
         ":freertos_config",
-        "//pw_assert",
-        "//pw_assert:backend_impl",
         "//pw_cpu_exception:entry_backend_impl",
-        "//pw_string",
         "//pw_system:init",
         "//third_party/freertos:support",
         "@freertos",
         "@pico-sdk//src/rp2_common/hardware_exception:hardware_exception",
-        "@pico-sdk//src/rp2_common/pico_stdlib",
     ],
     alwayslink = 1,
 )
