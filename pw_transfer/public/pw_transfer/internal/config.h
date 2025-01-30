@@ -20,6 +20,7 @@
 #include <limits>
 
 #include "pw_chrono/system_clock.h"
+#include "pw_preprocessor/compiler.h"
 
 // The log level to use for this module. Logs below this level are omitted.
 #ifndef PW_TRANSFER_CONFIG_LOG_LEVEL

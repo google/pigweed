@@ -43,10 +43,10 @@ cc_library(
     name = "config",
     hdrs = ["public/pw_transfer/internal/config.h"],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
     deps = [
         ":config_override",
         "//pw_chrono:system_clock",
+        "//pw_preprocessor",
     ],
 )
 
@@ -166,13 +166,14 @@ cc_library(
 
 cc_library(
     name = "test_helpers",
+    testonly = True,
     srcs = [
         "pw_transfer_private/chunk_testing.h",
     ],
-    tags = ["noclangtidy"],
     deps = [
         ":core",
         "//pw_containers",
+        "//pw_unit_test",
     ],
 )
 

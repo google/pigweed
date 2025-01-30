@@ -50,9 +50,6 @@
 namespace pw::transfer {
 namespace {
 
-using stream::MemoryReader;
-using stream::MemoryWriter;
-
 // This is the maximum size of the socket send buffers. Ideally, this is set
 // to the lowest allowed value to minimize buffering between the proxy and
 // clients so rate limiting causes the client to block and wait for the
@@ -82,10 +79,10 @@ class FileTransferHandler final : public ReadWriteHandler {
         default_destination_path_(default_destination_path),
         offsettable(offsettable) {}
 
-  ~FileTransferHandler() = default;
+  ~FileTransferHandler() override = default;
 
   Status PrepareRead() final {
-    if (sources_.empty() && default_source_path_.length() == 0) {
+    if (sources_.empty() && default_source_path_.empty()) {
       PW_LOG_ERROR("Source paths exhausted");
       return Status::ResourceExhausted();
     }
@@ -125,7 +122,7 @@ class FileTransferHandler final : public ReadWriteHandler {
   }
 
   Status PrepareWrite() final {
-    if (destinations_.empty() && default_destination_path_.length() == 0) {
+    if (destinations_.empty() && default_destination_path_.empty()) {
       PW_LOG_ERROR("Destination paths exhausted");
       return Status::ResourceExhausted();
     }
