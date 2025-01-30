@@ -29,7 +29,6 @@ cc_library(
         "public/pw_uart/uart_base.h",
     ],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
     deps = [
         "//pw_status",
     ],
