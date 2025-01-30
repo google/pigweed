@@ -24,6 +24,7 @@ cc_library_static {
         "id_public_overrides",
         "sleep_public_overrides",
         "thread_public_overrides",
+        "thread_creation_public_overrides",
         "yield_public_overrides",
     ],
     vendor_available: true,
