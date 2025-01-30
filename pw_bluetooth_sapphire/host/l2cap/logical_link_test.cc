@@ -320,5 +320,83 @@ TEST_F(LogicalLinkTest, OpensLeDynamicChannel) {
   ASSERT_TRUE(channel.is_alive());
 }
 
+TEST_F(LogicalLinkTest, OpenFixedChannelsAsync) {
+  ResetAndCreateNewLogicalLink();
+  transport()->acl_data_channel()->SetDataRxHandler(
+      fit::bind_member<&LogicalLink::HandleRxPacket>(link()));
+
+  QueueAclConnectionRetVal cmd_ids;
+  cmd_ids.extended_features_id = 1;
+  cmd_ids.fixed_channels_supported_id = 2;
+
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        l2cap::testing::AclExtFeaturesInfoReq(
+                            cmd_ids.extended_features_id, kConnHandle));
+  const auto kFixedChannelsRsp =
+      l2cap::testing::AclFixedChannelsSupportedInfoRsp(
+          cmd_ids.fixed_channels_supported_id,
+          kConnHandle,
+          kFixedChannelsSupportedBitSM |
+              kFixedChannelsSupportedBitConnectionless);
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        l2cap::testing::AclFixedChannelsSupportedInfoReq(
+                            cmd_ids.fixed_channels_supported_id, kConnHandle),
+                        &kFixedChannelsRsp);
+
+  std::optional<Channel::WeakPtr> sm_channel;
+  link()->OpenFixedChannelAsync(
+      kSMPChannelId,
+      [&sm_channel](Channel::WeakPtr chan) { sm_channel = std::move(chan); });
+  EXPECT_FALSE(sm_channel.has_value());
+  std::optional<Channel::WeakPtr> connectionless_channel;
+  link()->OpenFixedChannelAsync(
+      kConnectionlessChannelId,
+      [&connectionless_channel](Channel::WeakPtr chan) {
+        connectionless_channel = std::move(chan);
+      });
+  EXPECT_FALSE(connectionless_channel.has_value());
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  ASSERT_TRUE(sm_channel.has_value());
+  ASSERT_TRUE(sm_channel.value().is_alive());
+  ASSERT_TRUE(connectionless_channel.has_value());
+  ASSERT_TRUE(connectionless_channel.value().is_alive());
+}
+
+TEST_F(LogicalLinkTest, OpenFixedChannelAsyncFailureNotSupported) {
+  ResetAndCreateNewLogicalLink();
+  transport()->acl_data_channel()->SetDataRxHandler(
+      fit::bind_member<&LogicalLink::HandleRxPacket>(link()));
+
+  QueueAclConnectionRetVal cmd_ids;
+  cmd_ids.extended_features_id = 1;
+  cmd_ids.fixed_channels_supported_id = 2;
+
+  const auto kExtFeaturesRsp = l2cap::testing::AclExtFeaturesInfoRsp(
+      cmd_ids.extended_features_id, kConnHandle, kExtendedFeatures);
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        l2cap::testing::AclExtFeaturesInfoReq(
+                            cmd_ids.extended_features_id, kConnHandle),
+                        &kExtFeaturesRsp);
+  const auto kFixedChannelsRsp =
+      l2cap::testing::AclFixedChannelsSupportedInfoRsp(
+          cmd_ids.fixed_channels_supported_id,
+          kConnHandle,
+          kFixedChannelsSupportedBitSignaling);  // SM not supported
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        l2cap::testing::AclFixedChannelsSupportedInfoReq(
+                            cmd_ids.fixed_channels_supported_id, kConnHandle),
+                        &kFixedChannelsRsp);
+
+  std::optional<Channel::WeakPtr> channel;
+  link()->OpenFixedChannelAsync(
+      kSMPChannelId,
+      [&channel](Channel::WeakPtr chan) { channel = std::move(chan); });
+  EXPECT_FALSE(channel.has_value());
+  RunUntilIdle();
+  ASSERT_TRUE(channel.has_value());
+  ASSERT_FALSE(channel.value().is_alive());
+}
+
 }  // namespace
 }  // namespace bt::l2cap::internal

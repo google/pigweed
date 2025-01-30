@@ -535,14 +535,15 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
   struct QueueRegisterACLRetVal {
     CommandId extended_features_id;
     CommandId fixed_channels_supported_id;
-    ChannelManager::BrEdrFixedChannels fixed_channels;
   };
 
   QueueRegisterACLRetVal QueueRegisterACL(
       hci_spec::ConnectionHandle handle,
       pw::bluetooth::emboss::ConnectionRole role,
       LinkErrorCallback link_error_cb = DoNothing,
-      SecurityUpgradeCallback suc = NopSecurityCallback) {
+      SecurityUpgradeCallback suc = NopSecurityCallback,
+      fit::callback<void(ChannelManager::BrEdrFixedChannels)>
+          fixed_channels_callback = [](BrEdrFixedChannels) {}) {
     QueueRegisterACLRetVal return_val;
     return_val.extended_features_id = NextCommandId();
     return_val.fixed_channels_supported_id = NextCommandId();
@@ -553,18 +554,26 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
     EXPECT_ACL_PACKET_OUT_(testing::AclFixedChannelsSupportedInfoReq(
                                return_val.fixed_channels_supported_id, handle),
                            kHighPriority);
-    return_val.fixed_channels =
-        RegisterACL(handle, role, std::move(link_error_cb), std::move(suc));
+    RegisterACL(handle,
+                role,
+                std::move(link_error_cb),
+                std::move(suc),
+                std::move(fixed_channels_callback));
     return return_val;
   }
 
-  ChannelManager::BrEdrFixedChannels RegisterACL(
+  void RegisterACL(
       hci_spec::ConnectionHandle handle,
       pw::bluetooth::emboss::ConnectionRole role,
       LinkErrorCallback link_error_cb = DoNothing,
-      SecurityUpgradeCallback suc = NopSecurityCallback) {
-    return chanmgr()->AddACLConnection(
-        handle, role, std::move(link_error_cb), std::move(suc));
+      SecurityUpgradeCallback suc = NopSecurityCallback,
+      fit::callback<void(ChannelManager::BrEdrFixedChannels)>
+          fixed_channels_callback = [](auto) {}) {
+    chanmgr()->AddACLConnection(handle,
+                                role,
+                                std::move(link_error_cb),
+                                std::move(suc),
+                                std::move(fixed_channels_callback));
   }
 
   void ReceiveL2capInformationResponses(
@@ -1018,12 +1027,18 @@ TEST_F(ChannelManagerRealAclChannelTest, DeactivateDoesNotCrashOrHang) {
 
 TEST_F(ChannelManagerRealAclChannelTest,
        CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
-  BrEdrFixedChannels fixed_channels =
-      QueueAclConnection(kTestHandle1).fixed_channels;
+  std::optional<BrEdrFixedChannels> fixed_channels;
+  QueueAclConnection(kTestHandle1,
+                     pw::bluetooth::emboss::ConnectionRole::CENTRAL,
+                     [&fixed_channels](BrEdrFixedChannels channels) {
+                       fixed_channels = channels;
+                     });
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  ASSERT_TRUE(fixed_channels.has_value());
 
-  auto chan = std::move(fixed_channels.smp);
+  auto chan = std::move(fixed_channels->smp);
+  ASSERT_TRUE(chan.is_alive());
   chan->Activate(NopRxCallback, [chan] { chan->Deactivate(); });
   chanmgr()->RemoveConnection(kTestHandle1);  // Triggers ClosedCallback.
   RunUntilIdle();
@@ -1403,6 +1418,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUs) {
   SetUp(/*max_acl_payload_size=*/6, /*max_le_payload_size=*/0);
 
   // Send fragmented Extended Features Information Request
+  l2cap::CommandId features_command_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(test_device(),
                         StaticByteBuffer(
                             // ACL data header (handle: 1, length: 6)
@@ -1418,7 +1434,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUs) {
                             // Extended Features Information Request
                             // (code = 0x0A, ID)
                             0x0A,
-                            NextCommandId()));
+                            features_command_id));
   EXPECT_ACL_PACKET_OUT(
       test_device(),
       StaticByteBuffer(
@@ -1436,6 +1452,7 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUs) {
               InformationType::kExtendedFeaturesSupported))));
 
   // Send fragmented Fixed Channels Supported Information Request
+  l2cap::CommandId fixed_channels_command_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(test_device(),
                         StaticByteBuffer(
                             // ACL data header (handle: 1, length: 6)
@@ -1451,7 +1468,11 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUs) {
                             // Fixed Channels Supported Information Request
                             // (command code, command ID)
                             l2cap::kInformationRequest,
-                            NextCommandId()));
+                            fixed_channels_command_id));
+  auto fixed_channels_rsp = testing::AclFixedChannelsSupportedInfoRsp(
+      fixed_channels_command_id,
+      kTestHandle1,
+      kFixedChannelsSupportedBitSignaling | kFixedChannelsSupportedBitSM);
   EXPECT_ACL_PACKET_OUT(
       test_device(),
       StaticByteBuffer(
@@ -1466,15 +1487,22 @@ TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUs) {
           0x00,
           LowerBits(
               static_cast<uint16_t>(InformationType::kFixedChannelsSupported)),
-          UpperBits(static_cast<uint16_t>(
-              InformationType::kFixedChannelsSupported))));
-
-  BrEdrFixedChannels fixed_channels = chanmgr()->AddACLConnection(
+          UpperBits(
+              static_cast<uint16_t>(InformationType::kFixedChannelsSupported))),
+      &fixed_channels_rsp);
+  std::optional<BrEdrFixedChannels> fixed_channels;
+  chanmgr()->AddACLConnection(
       kTestHandle1,
       pw::bluetooth::emboss::ConnectionRole::CENTRAL,
       /*link_error_callback=*/[]() {},
-      /*security_callback=*/[](auto, auto, auto) {});
-  Channel::WeakPtr sm_chan = std::move(fixed_channels.smp);
+      /*security_callback=*/[](auto, auto, auto) {},
+      /*fixed_channels_callback=*/
+      [&fixed_channels](BrEdrFixedChannels channels) {
+        fixed_channels = channels;
+      });
+  RunUntilIdle();
+  ASSERT_TRUE(fixed_channels.has_value());
+  Channel::WeakPtr sm_chan = std::move(fixed_channels->smp);
   sm_chan->Activate(NopRxCallback, DoNothing);
   ASSERT_TRUE(sm_chan.is_alive());
 
@@ -1711,12 +1739,26 @@ TEST_F(ChannelManagerRealAclChannelTest, SendLEFragmentedSDUs) {
 TEST_F(ChannelManagerMockAclChannelTest, ACLChannelSignalLinkError) {
   bool link_error = false;
   auto link_error_cb = [&link_error] { link_error = true; };
-  QueueRegisterACLRetVal acl =
+  BrEdrFixedChannels fixed_channels;
+  auto fixed_channels_cb = [&fixed_channels](BrEdrFixedChannels channels) {
+    fixed_channels = channels;
+  };
+  QueueRegisterACLRetVal return_val =
       QueueRegisterACL(kTestHandle1,
                        pw::bluetooth::emboss::ConnectionRole::CENTRAL,
-                       link_error_cb);
-  acl.fixed_channels.smp->Activate(NopRxCallback, DoNothing);
-  acl.fixed_channels.smp->SignalLinkError();
+                       link_error_cb,
+                       NopSecurityCallback,
+                       fixed_channels_cb);
+  RunUntilIdle();
+  ReceiveL2capInformationResponses(
+      return_val.extended_features_id,
+      return_val.fixed_channels_supported_id,
+      /*features=*/0,
+      kFixedChannelsSupportedBitSignaling | kFixedChannelsSupportedBitSM);
+  RunUntilIdle();
+  ASSERT_TRUE(fixed_channels.smp.is_alive());
+  fixed_channels.smp->Activate(NopRxCallback, DoNothing);
+  fixed_channels.smp->SignalLinkError();
   RunUntilIdle();
   EXPECT_TRUE(link_error);
 }
@@ -1750,10 +1792,22 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorDisconnectsChannels) {
     // Simulate closing the link.
     chanmgr()->RemoveConnection(kTestHandle1);
   };
+  BrEdrFixedChannels fixed_channels;
+  auto fixed_channels_cb = [&fixed_channels](BrEdrFixedChannels channels) {
+    fixed_channels = std::move(channels);
+  };
   QueueRegisterACLRetVal acl =
       QueueRegisterACL(kTestHandle1,
                        pw::bluetooth::emboss::ConnectionRole::CENTRAL,
-                       link_error_cb);
+                       link_error_cb,
+                       NopSecurityCallback,
+                       std::move(fixed_channels_cb));
+  RunUntilIdle();
+  ReceiveL2capInformationResponses(
+      acl.extended_features_id,
+      acl.fixed_channels_supported_id,
+      /*features=*/0,
+      kFixedChannelsSupportedBitSignaling | kFixedChannelsSupportedBitSM);
 
   const auto conn_req_id = NextCommandId();
   const auto config_req_id = NextCommandId();
@@ -1794,12 +1848,13 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorDisconnectsChannels) {
 
   // Activate a new Security Manager channel to signal the error on
   // kTestHandle1.
+  ASSERT_TRUE(fixed_channels.smp.is_alive());
   int fixed_channel_closed = 0;
-  acl.fixed_channels.smp->Activate(
+  fixed_channels.smp->Activate(
       NopRxCallback,
       /*closed_callback=*/[&fixed_channel_closed] { fixed_channel_closed++; });
   ASSERT_FALSE(link_error);
-  acl.fixed_channels.smp->SignalLinkError();
+  fixed_channels.smp->SignalLinkError();
 
   RETURN_IF_FATAL(RunUntilIdle());
 
@@ -3571,19 +3626,14 @@ TEST_F(ChannelManagerMockAclChannelTest, InspectHierarchy) {
       NameMatches("channel_0x2"),
       PropertyList(UnorderedElementsAre(StringIs("local_id", "0x0001"),
                                         StringIs("remote_id", "0x0001")))));
-  auto smp_chan_matcher = NodeMatches(AllOf(
-      NameMatches("channel_0x3"),
-      PropertyList(UnorderedElementsAre(StringIs("local_id", "0x0007"),
-                                        StringIs("remote_id", "0x0007")))));
   auto dyn_chan_matcher = NodeMatches(
-      AllOf(NameMatches("channel_0x4"),
+      AllOf(NameMatches("channel_0x3"),
             PropertyList(UnorderedElementsAre(StringIs("local_id", "0x0040"),
                                               StringIs("remote_id", "0x9042"),
                                               StringIs("psm", "SDP")))));
-  auto channels_matcher =
-      AllOf(NodeMatches(NameMatches("channels")),
-            ChildrenMatch(UnorderedElementsAre(
-                signaling_chan_matcher, smp_chan_matcher, dyn_chan_matcher)));
+  auto channels_matcher = AllOf(NodeMatches(NameMatches("channels")),
+                                ChildrenMatch(UnorderedElementsAre(
+                                    signaling_chan_matcher, dyn_chan_matcher)));
   auto link_matcher = AllOf(
       NodeMatches(NameMatches("logical_links")),
       ChildrenMatch(ElementsAre(AllOf(

@@ -165,7 +165,9 @@ class DataFuzzTest : public TestingBase {
         kHandle,
         pw::bluetooth::emboss::ConnectionRole::CENTRAL,
         /*link_error_callback=*/[] {},
-        /*security_callback=*/[](auto, auto, auto) {});
+        /*security_callback=*/[](auto, auto, auto) {},
+        /*fixed_channels_callback=*/
+        [](l2cap::ChannelManager::BrEdrFixedChannels) {});
     connection_ = true;
   }
 

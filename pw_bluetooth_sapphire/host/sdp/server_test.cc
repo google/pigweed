@@ -69,11 +69,13 @@ class ServerTest : public TestingBase {
     l2cap_->AddACLConnection(kTestHandle1,
                              pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
                              nullptr,
-                             nullptr);
+                             nullptr,
+                             [](l2cap::ChannelManager::BrEdrFixedChannels) {});
     l2cap_->AddACLConnection(kTestHandle2,
                              pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
                              nullptr,
-                             nullptr);
+                             nullptr,
+                             [](l2cap::ChannelManager::BrEdrFixedChannels) {});
     server_ = std::make_unique<Server>(l2cap_.get());
   }
 

@@ -164,13 +164,14 @@ class ChannelManagerMockControllerTest : public TestingBase {
   struct QueueAclConnectionRetVal {
     l2cap::CommandId extended_features_id;
     l2cap::CommandId fixed_channels_supported_id;
-    ChannelManager::BrEdrFixedChannels fixed_channels;
   };
 
   QueueAclConnectionRetVal QueueAclConnection(
       hci_spec::ConnectionHandle handle,
       pw::bluetooth::emboss::ConnectionRole role =
-          pw::bluetooth::emboss::ConnectionRole::CENTRAL) {
+          pw::bluetooth::emboss::ConnectionRole::CENTRAL,
+      fit::callback<void(ChannelManager::BrEdrFixedChannels)>
+          fixed_channels_callback = [](auto) {}) {
     QueueAclConnectionRetVal return_val;
     return_val.extended_features_id = NextCommandId();
     return_val.fixed_channels_supported_id = NextCommandId();
@@ -181,15 +182,24 @@ class ChannelManagerMockControllerTest : public TestingBase {
                           l2cap::testing::AclExtFeaturesInfoReq(
                               return_val.extended_features_id, handle),
                           &kExtFeaturesRsp);
+
+    const auto kFixedChannelsRsp =
+        l2cap::testing::AclFixedChannelsSupportedInfoRsp(
+            return_val.fixed_channels_supported_id,
+            handle,
+            kFixedChannelsSupportedBitSignaling | kFixedChannelsSupportedBitSM);
     EXPECT_ACL_PACKET_OUT(test_device(),
                           l2cap::testing::AclFixedChannelsSupportedInfoReq(
-                              return_val.fixed_channels_supported_id, handle));
+                              return_val.fixed_channels_supported_id, handle),
+                          &kFixedChannelsRsp);
 
-    return_val.fixed_channels = chanmgr()->AddACLConnection(
+    std::optional<ChannelManager::BrEdrFixedChannels> fixed_channels;
+    chanmgr()->AddACLConnection(
         handle,
         role,
         /*link_error_callback=*/[]() {},
-        /*security_callback=*/[](auto, auto, auto) {});
+        /*security_callback=*/[](auto, auto, auto) {},
+        std::move(fixed_channels_callback));
 
     return return_val;
   }

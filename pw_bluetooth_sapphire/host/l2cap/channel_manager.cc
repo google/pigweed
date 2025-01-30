@@ -43,11 +43,12 @@ class ChannelManagerImpl final : public ChannelManager {
                      pw::async::Dispatcher& dispatcher);
   ~ChannelManagerImpl() override;
 
-  BrEdrFixedChannels AddACLConnection(
+  void AddACLConnection(
       hci_spec::ConnectionHandle handle,
       pw::bluetooth::emboss::ConnectionRole role,
-      LinkErrorCallback link_error_cb,
-      SecurityUpgradeCallback security_cb) override;
+      l2cap::LinkErrorCallback link_error_callback,
+      l2cap::SecurityUpgradeCallback security_callback,
+      fit::callback<void(BrEdrFixedChannels)> fixed_channels_callback) override;
 
   [[nodiscard]] LEFixedChannels AddLEConnection(
       hci_spec::ConnectionHandle handle,
@@ -193,21 +194,23 @@ hci::ACLPacketHandler ChannelManagerImpl::MakeInboundDataHandler() {
   };
 }
 
-ChannelManagerImpl::BrEdrFixedChannels ChannelManagerImpl::AddACLConnection(
+void ChannelManagerImpl::AddACLConnection(
     hci_spec::ConnectionHandle handle,
     pw::bluetooth::emboss::ConnectionRole role,
-    LinkErrorCallback link_error_cb,
-    SecurityUpgradeCallback security_cb) {
+    l2cap::LinkErrorCallback link_error_callback,
+    l2cap::SecurityUpgradeCallback security_callback,
+    fit::callback<void(BrEdrFixedChannels)> fixed_channels_callback) {
   bt_log(DEBUG, "l2cap", "register ACL link (handle: %#.4x)", handle);
 
   auto* ll =
       RegisterInternal(handle, bt::LinkType::kACL, role, max_acl_payload_size_);
-  ll->set_error_callback(std::move(link_error_cb));
-  ll->set_security_upgrade_callback(std::move(security_cb));
-
-  Channel::WeakPtr smp = OpenFixedChannel(handle, kSMPChannelId);
-  PW_CHECK(smp.is_alive());
-  return BrEdrFixedChannels{.smp = std::move(smp)};
+  ll->set_error_callback(std::move(link_error_callback));
+  ll->set_security_upgrade_callback(std::move(security_callback));
+  ll->OpenFixedChannelAsync(
+      kSMPChannelId,
+      [cb = std::move(fixed_channels_callback)](Channel::WeakPtr smp) mutable {
+        cb(BrEdrFixedChannels{.smp = std::move(smp)});
+      });
 }
 
 ChannelManagerImpl::LEFixedChannels ChannelManagerImpl::AddLEConnection(

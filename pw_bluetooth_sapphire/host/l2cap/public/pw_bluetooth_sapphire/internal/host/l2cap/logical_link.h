@@ -89,12 +89,18 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // The link MUST not be closed when this is called.
   void Close();
 
-  // Opens the channel with |channel_id| over this logical link. See channel.h
-  // for documentation on |rx_callback| and |closed_callback|. Returns nullptr
-  // if a Channel for |channel_id| already exists.
+  // Opens the channel with |channel_id| over this logical link synchronously,
+  // regardless of peer support. See channel.h for documentation on
+  // |rx_callback| and |closed_callback|. Returns nullptr if a Channel for
+  // |channel_id| already exists.
   //
   // The link MUST not be closed when this is called.
   Channel::WeakPtr OpenFixedChannel(ChannelId channel_id);
+
+  // Same as |OpenFixedChannel|, but waits for interrogation of the peer to
+  // complete before returning the channel asynchronously via |callback|. The
+  // channel will be null if it is not supported by the peer.
+  void OpenFixedChannelAsync(ChannelId channel_id, ChannelCallback callback);
 
   // Opens a dynamic channel to the requested |psm| with the preferred
   // parameters |params| and returns a channel asynchronously via |callback|.
@@ -302,6 +308,10 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // Manages the L2CAP signaling channel on this logical link. Depending on
   // |type_| this will either implement the LE or BR/EDR signaling commands.
   std::unique_ptr<SignalingChannel> signaling_channel_;
+
+  std::optional<FixedChannelsSupported> fixed_channels_supported_;
+  std::unordered_map<ChannelId, fit::closure>
+      fixed_channels_supported_callbacks_;
 
   // Stores packets that have been received on a currently closed channel. We
   // buffer these for fixed channels so that the data is available when the

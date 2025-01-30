@@ -63,11 +63,12 @@ class FakeL2cap final : public ChannelManager {
   void TriggerLinkError(hci_spec::ConnectionHandle handle);
 
   // L2cap overrides:
-  BrEdrFixedChannels AddACLConnection(
+  void AddACLConnection(
       hci_spec::ConnectionHandle handle,
       pw::bluetooth::emboss::ConnectionRole role,
-      LinkErrorCallback link_error_callback,
-      SecurityUpgradeCallback security_callback) override;
+      l2cap::LinkErrorCallback link_error_callback,
+      l2cap::SecurityUpgradeCallback security_callback,
+      fit::callback<void(BrEdrFixedChannels)> fixed_channels_callback) override;
   LEFixedChannels AddLEConnection(
       hci_spec::ConnectionHandle handle,
       pw::bluetooth::emboss::ConnectionRole role,

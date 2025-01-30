@@ -117,15 +117,16 @@ void FakeL2cap::TriggerLinkError(hci_spec::ConnectionHandle handle) {
   link_data.link_error_cb();
 }
 
-ChannelManager::BrEdrFixedChannels FakeL2cap::AddACLConnection(
+void FakeL2cap::AddACLConnection(
     hci_spec::ConnectionHandle handle,
     pw::bluetooth::emboss::ConnectionRole role,
-    l2cap::LinkErrorCallback link_error_cb,
-    l2cap::SecurityUpgradeCallback) {
+    l2cap::LinkErrorCallback link_error_callback,
+    l2cap::SecurityUpgradeCallback,
+    fit::callback<void(BrEdrFixedChannels)> fixed_channels_callback) {
   LinkData* link = RegisterInternal(
-      handle, role, bt::LinkType::kACL, std::move(link_error_cb));
+      handle, role, bt::LinkType::kACL, std::move(link_error_callback));
   auto smp = OpenFakeFixedChannel(link, l2cap::kSMPChannelId);
-  return BrEdrFixedChannels{.smp = std::move(smp)};
+  fixed_channels_callback(BrEdrFixedChannels{.smp = std::move(smp)});
 }
 
 ChannelManager::LEFixedChannels FakeL2cap::AddLEConnection(

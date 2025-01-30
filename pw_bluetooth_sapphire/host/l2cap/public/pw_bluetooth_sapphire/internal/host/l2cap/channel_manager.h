@@ -82,12 +82,14 @@ class ChannelManager {
   // level. This can be triggered by dynamic L2CAP channel creation or by a
   // service-level client via Channel::UpgradeSecurity().
   //
-  // Returns the fixed channels of this link.
-  virtual BrEdrFixedChannels AddACLConnection(
+  // |fixed_channels_callback| will be called with the fixed channels after
+  // interrogating the peer. Channels not supported by the peer will be null.
+  virtual void AddACLConnection(
       hci_spec::ConnectionHandle handle,
       pw::bluetooth::emboss::ConnectionRole role,
       l2cap::LinkErrorCallback link_error_callback,
-      l2cap::SecurityUpgradeCallback security_callback) = 0;
+      l2cap::SecurityUpgradeCallback security_callback,
+      fit::callback<void(BrEdrFixedChannels)> fixed_channels_callback) = 0;
 
   // Registers an LE connection with the L2CAP layer. L2CAP channels can be
   // opened on the logical link represented by |handle| after a call to this

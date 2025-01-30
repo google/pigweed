@@ -924,8 +924,11 @@ void BrEdrConnectionManager::CompleteConnectionSetup(
   };
 
   // Register with L2CAP to handle services on the ACL signaling channel.
-  l2cap_->AddACLConnection(
-      handle, connection->role(), error_handler, std::move(security_callback));
+  l2cap_->AddACLConnection(handle,
+                           connection->role(),
+                           error_handler,
+                           std::move(security_callback),
+                           [](l2cap::ChannelManager::BrEdrFixedChannels) {});
 
   // Remove from the denylist if we successfully connect.
   deny_incoming_.remove(peer->address());
