@@ -113,8 +113,8 @@ pw_py_binary(
     name = "format",
     srcs = ["pw_presubmit/format/pigweed_format.py"],
     data = [
-        ":black",
         "//:.black.toml",
+        "//pw_presubmit/py:black",
     ],
     main = "pw_presubmit/format/pigweed_format.py",
     deps = [
