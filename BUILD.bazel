@@ -33,6 +33,7 @@ exports_files(
         "pigweed.json",
         "PIGWEED_MODULES",
         "tsconfig.json",
+        ".black.toml",
     ],
     visibility = [":__subpackages__"],
 )
