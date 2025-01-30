@@ -56,4 +56,5 @@ void UsePassthroughProxy() {
 int main() {
   pw::bloat::BloatThisBinary();
   pw::bluetooth::proxy::UsePassthroughProxy();
+  return 0;
 }
