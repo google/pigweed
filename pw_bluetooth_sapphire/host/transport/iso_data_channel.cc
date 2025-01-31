@@ -18,6 +18,12 @@
 #include <pw_bluetooth/hci_data.emb.h>
 
 namespace bt::hci {
+namespace {
+
+constexpr size_t kFrameHeaderSize =
+    pw::bluetooth::emboss::IsoDataFrameHeaderView::SizeInBytes();
+
+}  // namespace
 
 class IsoDataChannelImpl final : public IsoDataChannel {
  public:
@@ -134,7 +140,7 @@ bool IsoDataChannelImpl::UnregisterConnection(
 }
 
 void IsoDataChannelImpl::SendData(DynamicByteBuffer packet) {
-  PW_CHECK(packet.size() <= buffer_info_.max_data_length(),
+  PW_CHECK((packet.size() - kFrameHeaderSize) <= buffer_info_.max_data_length(),
            "Unfragmented packet received, cannot send.");
   outbound_queue_.push_back(std::move(packet));
   TrySendPackets();

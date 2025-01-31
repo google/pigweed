@@ -321,4 +321,126 @@ TEST_F(IsoDataChannelTests, SendDataExceedBuffers) {
   EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
 }
 
+TEST_F(IsoDataChannelTests, OversizedPackets) {
+  ASSERT_NE(iso_data_channel(), nullptr);
+
+  constexpr hci_spec::ConnectionHandle kIsoHandle = 0x42;
+  constexpr size_t kTimestampSize = 4;
+  constexpr size_t kSduHeaderSize = 4;
+
+  constexpr size_t kMaxSizeWithOptional =
+      kDefaultMaxDataLength - kTimestampSize - kSduHeaderSize;
+  constexpr size_t kMaxSizeNoTimestamp = kDefaultMaxDataLength - kSduHeaderSize;
+  constexpr size_t kMaxSizeNoOptional = kDefaultMaxDataLength;
+
+  {
+    // Create a packet that is as large as possible and ensure it can be sent.
+    // With all possible optional fields.
+    std::unique_ptr<std::vector<uint8_t>> blob =
+        testing::GenDataBlob(kMaxSizeWithOptional, 100);
+    DynamicByteBuffer packet = testing::IsoDataPacket(
+        /*handle = */ kIsoHandle,
+        /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*timestamp = */ 0x12345678,
+        /*sequence_number = */ 0,
+        /*sdu_length = */ blob->size(),
+        /*status_flag = */
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    iso_data_channel()->SendData(std::move(packet));
+  }
+
+  {
+    // Create a packet that is as large as possible and ensure it can be sent.
+    // Without timestamp.
+    std::unique_ptr<std::vector<uint8_t>> blob =
+        testing::GenDataBlob(kMaxSizeNoTimestamp, 107);
+    DynamicByteBuffer packet = testing::IsoDataPacket(
+        /*handle = */ kIsoHandle,
+        /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*timestamp = */ std::nullopt,
+        /*sequence_number = */ 0,
+        /*sdu_length = */ blob->size(),
+        /*status_flag = */
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    iso_data_channel()->SendData(std::move(packet));
+  }
+
+  {
+    // Create a packet that is as large as possible and ensure it can be sent.
+    // Without any optional field (non-first/complete fragment).
+    std::unique_ptr<std::vector<uint8_t>> blob =
+        testing::GenDataBlob(kMaxSizeNoOptional, 106);
+    DynamicByteBuffer packet = testing::IsoDataPacket(
+        /*handle = */ kIsoHandle,
+        /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::LAST_FRAGMENT,
+        /*timestamp = */ std::nullopt,
+        /*sequence_number = */ std::nullopt,
+        /*sdu_length = */ std::nullopt,
+        /*status_flag = */ std::nullopt,
+        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    iso_data_channel()->SendData(std::move(packet));
+  }
+
+  {
+    // Create a packet that is one byte too large.
+    // With all possible optional fields.
+    std::unique_ptr<std::vector<uint8_t>> blob =
+        testing::GenDataBlob(kMaxSizeWithOptional + 1, 54);
+    DynamicByteBuffer packet = testing::IsoDataPacket(
+        /*handle = */ kIsoHandle,
+        /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*timestamp = */ 0x12345678,
+        /*sequence_number = */ 0,
+        /*sdu_length = */ blob->size(),
+        /*status_flag = */
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+    EXPECT_DEATH_IF_SUPPORTED(iso_data_channel()->SendData(std::move(packet)),
+                              "Unfragmented packet");
+  }
+
+  {
+    // Create a packet that is one byte too large.
+    // Without timestamp.
+    std::unique_ptr<std::vector<uint8_t>> blob =
+        testing::GenDataBlob(kMaxSizeNoTimestamp + 1, 55);
+    DynamicByteBuffer packet = testing::IsoDataPacket(
+        /*handle = */ kIsoHandle,
+        /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+        /*timestamp = */ std::nullopt,
+        /*sequence_number = */ 0,
+        /*sdu_length = */ blob->size(),
+        /*status_flag = */
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+    EXPECT_DEATH_IF_SUPPORTED(iso_data_channel()->SendData(std::move(packet)),
+                              "Unfragmented packet");
+  }
+
+  {
+    // Create a packet that is one byte too large.
+    // Without any optional field (non-first/complete fragment).
+    std::unique_ptr<std::vector<uint8_t>> blob =
+        testing::GenDataBlob(kMaxSizeNoOptional + 1, 56);
+    DynamicByteBuffer packet = testing::IsoDataPacket(
+        /*handle = */ kIsoHandle,
+        /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::LAST_FRAGMENT,
+        /*timestamp = */ std::nullopt,
+        /*sequence_number = */ std::nullopt,
+        /*sdu_length = */ std::nullopt,
+        /*status_flag = */ std::nullopt,
+        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+    EXPECT_DEATH_IF_SUPPORTED(iso_data_channel()->SendData(std::move(packet)),
+                              "Unfragmented packet");
+  }
+
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+}
+
 }  // namespace bt::hci
