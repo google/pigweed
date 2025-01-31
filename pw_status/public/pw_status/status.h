@@ -30,8 +30,9 @@ extern "C" {
 // on Abseil's status/status.h. The values are all-caps and prefixed with
 // PW_STATUS_ instead of using C++ constant style.
 //
-// The status codes are described at https://pigweed.dev/pw_status#status-codes.
-// Consult that guide when deciding which status code to use.
+// The status codes are described at
+// https://pigweed.dev/pw_status/reference.html#status-codes.  Consult that
+// guide when deciding which status code to use.
 typedef enum {
   PW_STATUS_OK = 0,                   // Use OkStatus() in C++
   PW_STATUS_CANCELLED = 1,            // Use Status::Cancelled() in C++
