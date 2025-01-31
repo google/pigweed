@@ -185,7 +185,10 @@ pw_cc_test(
 pw_cc_test(
     name = "service_nc_test",
     srcs = ["service_nc_test.cc"],
-    deps = ["//pw_rpc:pw_rpc_test_raw_rpc"],
+    deps = [
+        "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_rpc:pw_rpc_test_raw_rpc",
+    ],
 )
 
 pw_cc_test(
