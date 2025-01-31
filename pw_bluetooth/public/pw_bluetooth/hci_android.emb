@@ -705,8 +705,8 @@ struct LEApcfEnableCommandCompleteEvent:
   let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
   0     [+hdr_size]  hci.CommandCompleteEvent  command_complete
   $next [+1]         hci.StatusCode            status
-  $next [+1]         UInt                      sub_opcode
-    [requires: this == 0x00]
+  $next [+1]         ApcfSubOpcode             sub_opcode
+    [requires: this == ApcfSubOpcode.ENABLE]
 
   $next [+1]         hci.GenericEnableParam    enabled
     -- Echo back of enable parameter provided in the original command
@@ -828,7 +828,7 @@ struct LEApcfBroadcastAddressCommand:
     -- to NOT_APPLICABLE (ignore the address type).
 
 
-struct LEApcfServiceUUIDCommand(uuid_size: UInt:8):
+struct LEApcfServiceUUID16Command:
   let vendor_size = AndroidCommandHeader.$size_in_bytes
 
   0     [+vendor_size]  AndroidCommandHeader  vendor_command
@@ -844,15 +844,16 @@ struct LEApcfServiceUUIDCommand(uuid_size: UInt:8):
     --
     -- Range: (0, max_filter - 1)
 
+  let uuid_size = 2
+
   $next [+uuid_size]    UInt:8[uuid_size]     uuid
-    -- The Service UUID (16-bit, 32-bit, or 128-bit) for adding to, or deleting
-    -- from, the list.
+    -- The 16-bit Service UUID for adding to, or deleting from, the list.
 
   $next [+uuid_size]    UInt:8[uuid_size]     uuid_mask
-    -- The Service UUID Mask (16-bit, 32-bit, or 128-bit) to add to the list.
+    -- The 16-bit Service UUID Mask to add to the list.
 
 
-struct LEApcfSolicitationUUIDCommand(uuid_size: UInt:8):
+struct LEApcfServiceUUID32Command:
   let vendor_size = AndroidCommandHeader.$size_in_bytes
 
   0     [+vendor_size]  AndroidCommandHeader  vendor_command
@@ -868,13 +869,113 @@ struct LEApcfSolicitationUUIDCommand(uuid_size: UInt:8):
     --
     -- Range: (0, max_filter - 1)
 
+  let uuid_size = 4
+
   $next [+uuid_size]    UInt:8[uuid_size]     uuid
-    -- The Solicitation UUID (16-bit, 32-bit, or 128-bit) for adding to, or
-    -- deleting from, the list.
+    -- The 32-bit Service UUID for adding to, or deleting from, the list.
 
   $next [+uuid_size]    UInt:8[uuid_size]     uuid_mask
-    -- The Solicitation UUID Mask (16-bit, 32-bit, or 128-bit) to add to the
-    -- list.
+    -- The 32-bit Service UUID Mask to add to the list.
+
+
+struct LEApcfServiceUUID128Command:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+
+  $next [+1]            ApcfAction            action
+
+  $next [+1]            UInt                  filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  let uuid_size = 16
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid
+    -- The 128-bit Service UUID for adding to, or deleting from, the list.
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid_mask
+    -- The 128-bit Service UUID Mask to add to the list.
+
+
+struct LEApcfSolicitationUUID16Command:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+
+  $next [+1]            ApcfAction            action
+
+  $next [+1]            UInt                  filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  let uuid_size = 2
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid
+    -- The 16-bit Solicitation UUID for adding to, or deleting from, the list.
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid_mask
+    -- The 16-bit Solicitation UUID Mask to add to the list.
+
+
+struct LEApcfSolicitationUUID32Command:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+
+  $next [+1]            ApcfAction            action
+
+  $next [+1]            UInt                  filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  let uuid_size = 4
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid
+    -- The 32-bit Solicitation UUID for adding to, or deleting from, the list.
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid_mask
+    -- The 32-bit Solicitation UUID Mask to add to the list.
+
+
+struct LEApcfSolicitationUUID128Command:
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+
+  0     [+vendor_size]  AndroidCommandHeader  vendor_command
+
+  $next [+1]            ApcfAction            action
+
+  $next [+1]            UInt                  filter_index
+    -- Filter index used to identify an advertising packet content
+    -- filter. Filter indices are assigned on demand when used.
+    --
+    -- NOTE: The maximum number of packet filters is published via the
+    -- max_filter attribute within LEGetVendorCapabilitiesCommandCompleteEvent.
+    --
+    -- Range: (0, max_filter - 1)
+
+  let uuid_size = 16
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid
+    -- The 128-bit Solicitation UUID for adding to, or deleting from, the list.
+
+  $next [+uuid_size]    UInt:8[uuid_size]     uuid_mask
+    -- The 128-bit Solicitation UUID Mask to add to the list.
 
 
 struct LEApcfLocalNameCommand(size: UInt:8):
