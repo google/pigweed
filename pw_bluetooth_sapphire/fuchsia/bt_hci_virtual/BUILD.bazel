@@ -147,7 +147,6 @@ fuchsia_cc_test(
 fuchsia_unittest_package(
     name = "test_pkg",
     package_name = "bt-hci-virtual-unittests",
-    testonly = True,
     fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.x64,
     unit_tests = [":loopback_test"],

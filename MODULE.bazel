@@ -25,6 +25,7 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "boringssl", version = "0.20240913.0")
 bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
 bazel_dep(name = "gazelle", version = "0.36.0", repo_name = "bazel_gazelle")
+bazel_dep(name = "googletest", version = "1.15.0", repo_name = "com_google_googletest")
 bazel_dep(name = "nanopb", version = "0.4.9.1", repo_name = "com_github_nanopb_nanopb")
 bazel_dep(name = "pico-sdk", version = "2.1.1-develop.bcr.20250113-4b6e6475")
 bazel_dep(name = "picotool", version = "2.0.0")
@@ -75,6 +76,15 @@ archive_override(
 single_version_override(
     module_name = "rules_android",
     version = "0.6.0",
+)
+
+# TODO: https://pwbug.dev/354268150 - Switch back to a release once this commit
+# makes it into one. Downstream projects generally don't need this commit, it's
+# only required for interop with the Fuchsia SDK.
+git_override(
+    module_name = "googletest",
+    commit = "e54519b09463cec3aea77a1739e02c97ca766da5",
+    remote = "https://github.com/google/googletest.git",
 )
 
 single_version_override(
@@ -430,3 +440,45 @@ npm.npm_translate_lock(
     pnpm_lock = "//:pnpm-lock.yaml",
 )
 use_repo(npm, "npm")
+
+# Setup Fuchsia SDK.
+# ==================
+FUCHSIA_SDK_VERSION = "version:27.20250130.2.1"
+
+cipd_repository(
+    name = "fuchsia_sdk",
+    path = "fuchsia/sdk/core/fuchsia-bazel-rules/linux-amd64",
+    tag = FUCHSIA_SDK_VERSION,
+)
+
+cipd_repository(
+    name = "rules_fuchsia",
+    path = "fuchsia/development/rules_fuchsia",
+    tag = FUCHSIA_SDK_VERSION,
+)
+
+fuchsia_clang_repository = use_repo_rule("@rules_fuchsia//fuchsia/workspace:fuchsia_clang_repository.bzl", "fuchsia_clang_repository")
+
+fuchsia_clang_repository(
+    name = "fuchsia_clang",
+    cipd_tag = "git_revision:aea60ab94db4729bad17daa86ccfc411d48a1699",
+)
+
+cipd_repository(
+    name = "fuchsia_products_metadata",
+    path = "fuchsia/development/product_bundles/v2",
+    tag = FUCHSIA_SDK_VERSION,
+)
+
+fuchsia_products_repository = use_repo_rule("//pw_build/bazel_internal/fuchsia_sdk_workspace:products.bzl", "fuchsia_products_repository")
+
+fuchsia_products_repository(
+    name = "fuchsia_products",
+    metadata_file = "@fuchsia_products_metadata//:product_bundles.json",
+)
+
+register_toolchains("//pw_toolchain/fuchsia:fuchsia_sdk_toolchain")
+
+fake_fuchsia_sdk_extension = use_extension("@com_google_googletest//:fake_fuchsia_sdk.bzl", "fuchsia_sdk")
+
+override_repo(fake_fuchsia_sdk_extension, "fuchsia_sdk")
