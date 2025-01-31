@@ -157,10 +157,13 @@ BrEdrConnectionManager::BrEdrConnectionManager(
     hci::Transport::WeakPtr hci,
     PeerCache* peer_cache,
     DeviceAddress local_address,
+    hci::LocalAddressDelegate* low_energy_address_delegate,
     l2cap::ChannelManager* l2cap,
     bool use_interlaced_scan,
     bool local_secure_connections_supported,
     bool legacy_pairing_enabled,
+    bool controller_remote_public_key_validation_supported,
+    sm::BrEdrSecurityManagerFactory security_manager_factory,
     pw::async::Dispatcher& dispatcher)
     : hci_(std::move(hci)),
       cache_(peer_cache),
@@ -172,6 +175,10 @@ BrEdrConnectionManager::BrEdrConnectionManager(
       use_interlaced_scan_(use_interlaced_scan),
       local_secure_connections_supported_(local_secure_connections_supported),
       legacy_pairing_enabled_(legacy_pairing_enabled),
+      controller_remote_public_key_validation_supported_(
+          controller_remote_public_key_validation_supported),
+      security_manager_factory_(std::move(security_manager_factory)),
+      low_energy_address_delegate_(low_energy_address_delegate),
       dispatcher_(dispatcher),
       weak_self_(this) {
   PW_DCHECK(hci_.is_alive());
@@ -796,17 +803,20 @@ void BrEdrConnectionManager::InitializeConnection(
   };
 
   // Create the BrEdrConnection object and place into |connections_| map
-  auto [conn_iter, success] =
-      connections_.try_emplace(handle,
-                               peer->GetWeakPtr(),
-                               std::move(link),
-                               std::move(send_auth_request_cb),
-                               std::move(disconnect_cb),
-                               std::move(on_peer_disconnect_cb),
-                               l2cap_,
-                               hci_,
-                               std::move(request),
-                               dispatcher_);
+  auto [conn_iter, success] = connections_.try_emplace(
+      handle,
+      peer->GetWeakPtr(),
+      std::move(link),
+      std::move(send_auth_request_cb),
+      std::move(disconnect_cb),
+      std::move(on_peer_disconnect_cb),
+      l2cap_,
+      hci_,
+      std::move(request),
+      low_energy_address_delegate_,
+      controller_remote_public_key_validation_supported_,
+      security_manager_factory_,
+      dispatcher_);
   PW_CHECK(success);
 
   BrEdrConnection& connection = conn_iter->second;
@@ -923,12 +933,23 @@ void BrEdrConnectionManager::CompleteConnectionSetup(
     cb(ToResult(HostError::kNotSupported));
   };
 
-  // Register with L2CAP to handle services on the ACL signaling channel.
-  l2cap_->AddACLConnection(handle,
-                           connection->role(),
-                           error_handler,
-                           std::move(security_callback),
-                           [](l2cap::ChannelManager::BrEdrFixedChannels) {});
+  // Register with L2CAP to handle services on the ACL signaling channel and get
+  // the SMP channel.
+  l2cap_->AddACLConnection(
+      handle,
+      connection->role(),
+      error_handler,
+      std::move(security_callback),
+      [self, handle](l2cap::ChannelManager::BrEdrFixedChannels channels) {
+        if (!self.is_alive()) {
+          return;
+        }
+        auto conn = self->connections_.find(handle);
+        if (conn == self->connections_.end()) {
+          return;
+        }
+        conn->second.SetSecurityManagerChannel(std::move(channels.smp));
+      });
 
   // Remove from the denylist if we successfully connect.
   deny_incoming_.remove(peer->address());

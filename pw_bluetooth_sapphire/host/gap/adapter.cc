@@ -1556,11 +1556,14 @@ void AdapterImpl::InitializeStep4() {
         hci_,
         &peer_cache_,
         local_bredr_address,
+        le_address_manager_.get(),
         l2cap_.get(),
         state_.features.HasBit(/*page=*/0,
                                hci_spec::LMPFeature::kInterlacedPageScan),
         state_.IsLocalSecureConnectionsSupported(),
         config_.legacy_pairing_enabled,
+        state_.IsControllerRemotePublicKeyValidationSupported(),
+        sm::SecurityManager::CreateBrEdr,
         dispatcher_);
     bredr_connection_manager_->AttachInspect(
         adapter_node_, kInspectBrEdrConnectionManagerNodeName);

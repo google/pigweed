@@ -26,6 +26,8 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/types.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 
@@ -120,6 +122,7 @@ enum class PairingAction {
 // Set Connection Encryption▶
 //     ◀ Command Status
 //     ◀ Encryption Change (status may be error or encryption may be disabled)
+// Cross transport key derivation procedure (if central)
 //
 // Responder flow
 // --------------
@@ -163,6 +166,7 @@ enum class PairingAction {
 // Set Connection Encryption▶
 //     ◀ Command Status
 //     ◀ Encryption Change (status may be error or encryption may be disabled)
+// Cross transport key derivation procedure (if central)
 //
 // This class is not thread-safe and should only be called on the thread on
 // which it was created.
@@ -188,14 +192,17 @@ class SecureSimplePairingState final {
   // Authentication Request for this peer.
   //
   // |link| must be valid for the lifetime of this object.
-  SecureSimplePairingState(Peer::WeakPtr peer,
-                           PairingDelegate::WeakPtr pairing_delegate,
-                           WeakPtr<hci::BrEdrConnection> link,
-                           bool outgoing_connection,
-                           fit::closure auth_cb,
-                           StatusCallback status_cb);
-  SecureSimplePairingState(SecureSimplePairingState&&) = default;
-  SecureSimplePairingState& operator=(SecureSimplePairingState&&) = default;
+  SecureSimplePairingState(
+      Peer::WeakPtr peer,
+      PairingDelegate::WeakPtr pairing_delegate,
+      WeakPtr<hci::BrEdrConnection> link,
+      bool outgoing_connection,
+      fit::closure auth_cb,
+      StatusCallback status_cb,
+      hci::LocalAddressDelegate* low_energy_address_delegate,
+      bool controller_remote_public_key_validation_supported,
+      sm::BrEdrSecurityManagerFactory security_manager_factory,
+      pw::async::Dispatcher& dispatcher);
   ~SecureSimplePairingState();
 
   // True if there is currently a pairing procedure in progress that the local
@@ -284,6 +291,9 @@ class SecureSimplePairingState final {
   // effect on the next security upgrade.
   void set_security_mode(gap::BrEdrSecurityMode mode) { security_mode_ = mode; }
 
+  void SetSecurityManagerChannel(
+      l2cap::Channel::WeakPtr security_manager_channel);
+
   // Attach pairing state inspect node named |name| as a child of |parent|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
@@ -327,6 +337,9 @@ class SecureSimplePairingState final {
 
     // Wait for Encryption Change.
     kWaitEncryption,
+
+    // Wait for CTKD to complete over SMP. This state is only used as Central.
+    kWaitCrossTransportKeyDerivation,
 
     // Error occurred; wait for link closure and ignore events.
     kFailed,
@@ -390,7 +403,7 @@ class SecureSimplePairingState final {
     bool authenticated;
 
     // Security properties of the link key received from the controller.
-    std::optional<sm::SecurityProperties> security_properties;
+    std::optional<sm::SecurityProperties> received_link_key_security_properties;
 
     // If the preferred security is greater than the existing link key, a new
     // link key will be negotiated (which may still have insufficient security
@@ -406,6 +419,28 @@ class SecureSimplePairingState final {
           weak_self_(this) {}
 
     WeakSelf<Pairing> weak_self_;
+  };
+
+  class SecurityManagerDelegate final
+      : public sm::Delegate,
+        public WeakSelf<SecurityManagerDelegate> {
+   public:
+    SecurityManagerDelegate(SecureSimplePairingState* state)
+        : WeakSelf(this), ssp_state_(state) {}
+
+   private:
+    std::optional<sm::IdentityInfo> OnIdentityInformationRequest() override;
+    void OnNewPairingData(const sm::PairingData& data) override;
+
+    // These methods are not used in BR/EDR.
+    void OnPairingComplete(sm::Result<>) override {}
+    void ConfirmPairing(ConfirmCallback) override {}
+    void DisplayPasskey(uint32_t, DisplayMethod, ConfirmCallback) override {}
+    void RequestPasskey(PasskeyResponseCallback) override {}
+    void OnAuthenticationFailure(hci::Result<>) override {}
+    void OnNewSecurityProperties(const sm::SecurityProperties&) override {}
+
+    SecureSimplePairingState* ssp_state_;
   };
 
   static const char* ToString(State state);
@@ -455,6 +490,8 @@ class SecureSimplePairingState final {
   // Connections
   bool IsPeerSecureConnectionsSupported() const;
 
+  void OnCrossTransportKeyDerivationComplete(sm::Result<> result);
+
   PeerId peer_id_;
   Peer::WeakPtr peer_;
 
@@ -470,6 +507,8 @@ class SecureSimplePairingState final {
 
   // True when the remote device has reported it doesn't have a link key.
   bool peer_missing_key_;
+
+  hci::LocalAddressDelegate* low_energy_address_delegate_;
 
   PairingDelegate::WeakPtr pairing_delegate_;
 
@@ -503,13 +542,20 @@ class SecureSimplePairingState final {
   // pointer to the moved-to instance being cleaned up.
   fit::callback<void(SecureSimplePairingState* self)> cleanup_cb_;
 
+  bool controller_remote_public_key_validation_supported_;
+  SecurityManagerDelegate security_manager_delegate_{this};
+  sm::BrEdrSecurityManagerFactory security_manager_factory_;
+  std::unique_ptr<sm::SecurityManager> security_manager_;
+
+  pw::async::Dispatcher& dispatcher_;
+
   struct InspectProperties {
     inspect::StringProperty encryption_status;
   };
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;
 
-  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecureSimplePairingState);
+  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(SecureSimplePairingState);
 };
 
 PairingAction GetInitiatorPairingAction(

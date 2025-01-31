@@ -27,19 +27,26 @@ const char* const kInspectPairingStateNodeName = "pairing_state_manager";
 
 }  // namespace
 
-BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer,
-                                 std::unique_ptr<hci::BrEdrConnection> link,
-                                 fit::closure send_auth_request_cb,
-                                 fit::callback<void()> disconnect_cb,
-                                 fit::closure on_peer_disconnect_cb,
-                                 l2cap::ChannelManager* l2cap,
-                                 hci::Transport::WeakPtr transport,
-                                 std::optional<BrEdrConnectionRequest> request,
-                                 pw::async::Dispatcher& dispatcher)
+BrEdrConnection::BrEdrConnection(
+    Peer::WeakPtr peer,
+    std::unique_ptr<hci::BrEdrConnection> link,
+    fit::closure send_auth_request_cb,
+    fit::callback<void()> disconnect_cb,
+    fit::closure on_peer_disconnect_cb,
+    l2cap::ChannelManager* l2cap,
+    hci::Transport::WeakPtr transport,
+    std::optional<BrEdrConnectionRequest> request,
+    hci::LocalAddressDelegate* low_energy_address_delegate,
+    bool controller_remote_public_key_validation_supported,
+    sm::BrEdrSecurityManagerFactory security_manager_factory,
+    pw::async::Dispatcher& dispatcher)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
       link_(std::move(link)),
       request_(std::move(request)),
+      controller_remote_public_key_validation_supported_(
+          controller_remote_public_key_validation_supported),
+      security_manager_factory_(std::move(security_manager_factory)),
       l2cap_(l2cap),
       sco_manager_(
           std::make_unique<sco::ScoConnectionManager>(peer_id_,
@@ -73,7 +80,11 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer,
       std::move(legacy_pairing_state),
       request_ && request_->AwaitingOutgoing(),
       std::move(send_auth_request_cb),
-      fit::bind_member<&BrEdrConnection::OnPairingStateStatus>(this));
+      fit::bind_member<&BrEdrConnection::OnPairingStateStatus>(this),
+      low_energy_address_delegate,
+      controller_remote_public_key_validation_supported_,
+      security_manager_factory_,
+      dispatcher_);
 }
 
 BrEdrConnection::~BrEdrConnection() {
@@ -196,6 +207,18 @@ void BrEdrConnection::OnPairingStateStatus(hci_spec::ConnectionHandle,
 
 pw::chrono::SystemClock::duration BrEdrConnection::duration() const {
   return dispatcher_.now() - create_time_;
+}
+
+void BrEdrConnection::SetSecurityManagerChannel(
+    l2cap::Channel::WeakPtr security_manager_channel) {
+  if (!pairing_state_manager_->secure_simple_pairing_state()) {
+    bt_log(DEBUG,
+           "gap-bredr",
+           "dropping SMP channel because SecureSimplePairingState not in use");
+    return;
+  }
+  pairing_state_manager_->secure_simple_pairing_state()
+      ->SetSecurityManagerChannel(std::move(security_manager_channel));
 }
 
 }  // namespace bt::gap

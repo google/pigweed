@@ -40,12 +40,21 @@ PairingStateManager::PairingStateManager(
     std::unique_ptr<LegacyPairingState> legacy_pairing_state,
     bool outgoing_connection,
     fit::closure auth_cb,
-    StatusCallback status_cb)
+    StatusCallback status_cb,
+    hci::LocalAddressDelegate* low_energy_address_delegate,
+    bool controller_remote_public_key_validation_supported,
+    sm::BrEdrSecurityManagerFactory security_manager_factory,
+    pw::async::Dispatcher& dispatcher)
     : peer_(std::move(peer)),
       link_(std::move(link)),
       outgoing_connection_(outgoing_connection),
       auth_cb_(std::move(auth_cb)),
-      status_cb_(std::move(status_cb)) {
+      status_cb_(std::move(status_cb)),
+      dispatcher_(&dispatcher),
+      low_energy_address_delegate_(low_energy_address_delegate),
+      controller_remote_public_key_validation_supported_(
+          controller_remote_public_key_validation_supported),
+      security_manager_factory_(std::move(security_manager_factory)) {
   // If |legacy_pairing_state| is non-null, this means we were responding to
   // Legacy Pairing before the ACL connection between the two devices was
   // complete
@@ -198,13 +207,17 @@ void PairingStateManager::CreateOrUpdatePairingState(
     PairingStateType type, PairingDelegate::WeakPtr pairing_delegate) {
   if (type == PairingStateType::kSecureSimplePairing &&
       !secure_simple_pairing_state_) {
-    secure_simple_pairing_state_ =
-        std::make_unique<SecureSimplePairingState>(peer_,
-                                                   std::move(pairing_delegate),
-                                                   link_,
-                                                   outgoing_connection_,
-                                                   auth_cb_.share(),
-                                                   status_cb_.share());
+    secure_simple_pairing_state_ = std::make_unique<SecureSimplePairingState>(
+        peer_,
+        std::move(pairing_delegate),
+        link_,
+        outgoing_connection_,
+        auth_cb_.share(),
+        status_cb_.share(),
+        low_energy_address_delegate_,
+        controller_remote_public_key_validation_supported_,
+        security_manager_factory_,
+        *dispatcher_);
 
     secure_simple_pairing_state_->AttachInspect(
         inspect_node_, kInspectSecureSimplePairingStateNodeName);

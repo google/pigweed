@@ -27,6 +27,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/sco/sco_connection_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 
 namespace bt::gap {
@@ -51,6 +52,9 @@ class BrEdrConnection final {
                   l2cap::ChannelManager* l2cap,
                   hci::Transport::WeakPtr transport,
                   std::optional<BrEdrConnectionRequest> request,
+                  hci::LocalAddressDelegate* low_energy_address_delegate,
+                  bool controller_remote_public_key_validation_supported,
+                  sm::BrEdrSecurityManagerFactory security_manager_factory,
                   pw::async::Dispatcher& pw_dispatcher);
 
   ~BrEdrConnection();
@@ -123,6 +127,9 @@ class BrEdrConnection final {
     pairing_state_manager_->set_security_mode(mode);
   }
 
+  void SetSecurityManagerChannel(
+      l2cap::Channel::WeakPtr security_manager_channel);
+
  private:
   // |conn_token| is a token received from Peer::MutBrEdr::RegisterConnection().
   void set_peer_connection_token(Peer::ConnectionToken conn_token);
@@ -135,7 +142,10 @@ class BrEdrConnection final {
   Peer::WeakPtr peer_;
   std::unique_ptr<hci::BrEdrConnection> link_;
   std::optional<BrEdrConnectionRequest> request_;
+  bool controller_remote_public_key_validation_supported_;
+  sm::BrEdrSecurityManagerFactory security_manager_factory_;
   std::unique_ptr<PairingStateManager> pairing_state_manager_;
+  l2cap::Channel::WeakPtr security_manager_channel_;
   l2cap::ChannelManager* l2cap_;
   std::unique_ptr<sco::ScoConnectionManager> sco_manager_;
   std::unique_ptr<BrEdrInterrogator> interrogator_;

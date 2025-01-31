@@ -119,6 +119,7 @@ std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateBrEdr(
     bool /*is_controller_remote_public_key_validation_supported*/,
     pw::async::Dispatcher&,
     bt::gap::Peer::WeakPtr /*peer*/) {
+  PW_CHECK(smp.is_alive());
   hci_spec::ConnectionHandle conn = link->handle();
   auto test_sm = std::unique_ptr<TestSecurityManager>(
       new TestSecurityManager(hci::LowEnergyConnection::WeakPtr(),

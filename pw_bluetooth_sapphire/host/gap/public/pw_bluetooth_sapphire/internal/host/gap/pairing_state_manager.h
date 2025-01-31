@@ -80,7 +80,11 @@ class PairingStateManager final {
                       std::unique_ptr<LegacyPairingState> legacy_pairing_state,
                       bool outgoing_connection,
                       fit::closure auth_cb,
-                      StatusCallback status_cb);
+                      StatusCallback status_cb,
+                      hci::LocalAddressDelegate* low_energy_address_delegate,
+                      bool controller_remote_public_key_validation_supported,
+                      sm::BrEdrSecurityManagerFactory security_manager_factory,
+                      pw::async::Dispatcher& dispatcher);
   PairingStateManager(PairingStateManager&&) = default;
   PairingStateManager& operator=(PairingStateManager&&) = default;
 
@@ -229,6 +233,14 @@ class PairingStateManager final {
   // via interrogation or encountering a pairing event specific to SSP or LP.
   fit::closure auth_cb_;
   StatusCallback status_cb_;
+
+  pw::async::Dispatcher* dispatcher_;
+
+  hci::LocalAddressDelegate* low_energy_address_delegate_;
+
+  bool controller_remote_public_key_validation_supported_;
+
+  sm::BrEdrSecurityManagerFactory security_manager_factory_;
 
   struct InspectProperties {
     inspect::StringProperty pairing_state_type;

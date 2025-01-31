@@ -28,6 +28,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/bredr_connection_request.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/service_discoverer.h"
@@ -74,14 +75,18 @@ enum class DisconnectReason : uint8_t {
 // connection is cleaned up and removed from the internal |connections_| map.
 class BrEdrConnectionManager final {
  public:
-  BrEdrConnectionManager(hci::Transport::WeakPtr hci,
-                         PeerCache* peer_cache,
-                         DeviceAddress local_address,
-                         l2cap::ChannelManager* l2cap,
-                         bool use_interlaced_scan,
-                         bool local_secure_connections_supported,
-                         bool legacy_pairing_enabled,
-                         pw::async::Dispatcher& dispatcher);
+  BrEdrConnectionManager(
+      hci::Transport::WeakPtr hci,
+      PeerCache* peer_cache,
+      DeviceAddress local_address,
+      hci::LocalAddressDelegate* low_energy_address_delegate,
+      l2cap::ChannelManager* l2cap,
+      bool use_interlaced_scan,
+      bool local_secure_connections_supported,
+      bool legacy_pairing_enabled,
+      bool controller_remote_public_key_validation_supported,
+      sm::BrEdrSecurityManagerFactory security_manager_factory,
+      pw::async::Dispatcher& dispatcher);
   ~BrEdrConnectionManager();
 
   // Set whether this host is connectable
@@ -412,6 +417,12 @@ class BrEdrConnectionManager final {
   // When True, BR/EDR pairing may attempt to use legacy pairing if the peer
   // does not support SSP.
   bool legacy_pairing_enabled_;
+
+  bool controller_remote_public_key_validation_supported_;
+
+  sm::BrEdrSecurityManagerFactory security_manager_factory_;
+
+  hci::LocalAddressDelegate* low_energy_address_delegate_;
 
   // Outstanding incoming and outgoing connection requests from remote peer with
   // |PeerId|.
