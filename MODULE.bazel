@@ -479,6 +479,6 @@ fuchsia_products_repository(
 
 register_toolchains("//pw_toolchain/fuchsia:fuchsia_sdk_toolchain")
 
-fake_fuchsia_sdk_extension = use_extension("@com_google_googletest//:fake_fuchsia_sdk.bzl", "fuchsia_sdk")
+fake_fuchsia_sdk_extension = use_extension("@com_google_googletest//:fake_fuchsia_sdk.bzl", "fuchsia_sdk", dev_dependency = True)
 
 override_repo(fake_fuchsia_sdk_extension, "fuchsia_sdk")
