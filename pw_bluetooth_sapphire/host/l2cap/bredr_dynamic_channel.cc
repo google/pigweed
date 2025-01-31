@@ -208,11 +208,10 @@ void BrEdrDynamicChannelRegistry::OnRxInfoReq(
     }
 
     case InformationType::kFixedChannelsSupported: {
+      // Express support for the ACL-U Signaling Channel (as required) and the
+      // SM channel (used for CTKD).
       const FixedChannelsSupported channels_supported =
-          kFixedChannelsSupportedBitSignaling;
-
-      // Express support for the ACL-U Signaling Channel (as required)
-      // TODO(fxbug.dev/42175069): Set the bit for SM's fixed channel
+          kFixedChannelsSupportedBitSignaling | kFixedChannelsSupportedBitSM;
       responder->SendFixedChannelsSupported(channels_supported);
       break;
     }

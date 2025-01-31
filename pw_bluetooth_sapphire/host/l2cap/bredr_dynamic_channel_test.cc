@@ -634,6 +634,9 @@ auto MakeInfoReq(InformationType info_type) {
 const ByteBuffer& kExtendedFeaturesInfoReq =
     MakeInfoReq(InformationType::kExtendedFeaturesSupported);
 
+const ByteBuffer& kFixedChannelsSupportedInfoReq =
+    MakeInfoReq(InformationType::kFixedChannelsSupported);
+
 // Information Responses
 
 auto MakeExtendedFeaturesInfoRsp(
@@ -664,6 +667,32 @@ const ByteBuffer& kExtendedFeaturesInfoRsp =
 const ByteBuffer& kExtendedFeaturesInfoRspWithERTM =
     MakeExtendedFeaturesInfoRsp(InformationResult::kSuccess,
                                 kExtendedFeaturesBitEnhancedRetransmission);
+
+auto MakeFixedChannelsSupportedInfoRsp(InformationResult result,
+                                       FixedChannelsSupported channels) {
+  const auto type =
+      static_cast<uint16_t>(InformationType::kFixedChannelsSupported);
+  const auto res = static_cast<uint16_t>(result);
+  const auto channels_bytes = ToBytes(channels);
+  return StaticByteBuffer(
+      // Type
+      LowerBits(type),
+      UpperBits(type),
+
+      // Result
+      LowerBits(res),
+      UpperBits(res),
+
+      // Data
+      channels_bytes[0],
+      channels_bytes[1],
+      channels_bytes[2],
+      channels_bytes[3],
+      channels_bytes[4],
+      channels_bytes[5],
+      channels_bytes[6],
+      channels_bytes[7]);
+}
 
 class BrEdrDynamicChannelTest : public pw::async::test::FakeDispatcherFixture {
  public:
@@ -2169,6 +2198,17 @@ TEST_F(BrEdrDynamicChannelTest, RespondsToInboundExtendedFeaturesRequest) {
   sig()->ReceiveExpect(kInformationRequest,
                        kExtendedFeaturesInfoReq,
                        kExpectedExtendedFeaturesInfoRsp);
+}
+
+TEST_F(BrEdrDynamicChannelTest,
+       RespondsToInboundFixedChannelsSupportedRequest) {
+  const FixedChannelsSupported channels_supported =
+      kFixedChannelsSupportedBitSignaling | kFixedChannelsSupportedBitSM;
+  const auto kExpectedFixedChannelsRsp = MakeFixedChannelsSupportedInfoRsp(
+      InformationResult::kSuccess, channels_supported);
+  sig()->ReceiveExpect(kInformationRequest,
+                       kFixedChannelsSupportedInfoReq,
+                       kExpectedFixedChannelsRsp);
 }
 
 TEST_F(BrEdrDynamicChannelTest, ExtendedFeaturesResponseSaved) {
