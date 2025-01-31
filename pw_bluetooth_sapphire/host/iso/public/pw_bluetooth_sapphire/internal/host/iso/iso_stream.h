@@ -21,6 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_common.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
+#include "pw_bytes/span.h"
 
 namespace bt::iso {
 
@@ -78,6 +79,10 @@ class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
   // attempt is unfulfilled the stream will buffer frames waiting for a read
   // from the client.
   virtual std::unique_ptr<IsoDataPacket> ReadNextQueuedIncomingPacket() = 0;
+
+  // Send a packet over the stream. If the packet is too large then it will be
+  // fragmented.
+  virtual void Send(pw::ConstByteSpan data) = 0;
 
   using WeakPtr = WeakSelf<IsoStream>::WeakPtr;
   virtual WeakPtr GetWeakPtr() = 0;

@@ -57,6 +57,8 @@ class FakeIsoStream : public IsoStream {
     return next_frame;
   }
 
+  void Send(pw::ConstByteSpan) override {}
+
   IsoStream::WeakPtr GetWeakPtr() override { return weak_self_.GetWeakPtr(); }
 
   // Testing functionality

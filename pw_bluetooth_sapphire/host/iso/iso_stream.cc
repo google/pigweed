@@ -16,11 +16,71 @@
 
 #include <pw_assert/check.h>
 
+#include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_inbound_packet_assembler.h"
+#include "pw_bytes/span.h"
 
 namespace bt::iso {
+
+// These values are unfortunately not available for extracting from the emboss
+// definition directly.
+constexpr size_t kTimestampSize = 4;
+constexpr size_t kSduHeaderSize = 4;
+constexpr size_t kFrameHeaderSize =
+    pw::bluetooth::emboss::IsoDataFrameHeaderView::SizeInBytes();
+
+// The next few functions are helpers for determining the size of packets and
+// the buffer space required to send them.
+//
+// BT Core spec v5.4, Vol 4, Part E
+//
+// Sec 4.1.1
+//   The ISO_Data_Packet_Length parameter [...] specifies the maximum buffer
+//   size for each HCI ISO Data packet (excluding the header but including
+//   optional fields such as ISO_SDU_Length).
+//
+// Sec 5.4.5
+//   In the Host to Controller direction, Data_Total_Length shall be less than
+//   or equal to the size of the buffer supported by the Controller (which is
+//   returned using the ISO_Data_Packet_Length return parameter [...].
+constexpr size_t OptionalFieldLength(bool has_timestamp, bool has_sdu_header) {
+  return (has_timestamp ? kTimestampSize : 0) +
+         (has_sdu_header ? kSduHeaderSize : 0);
+}
+constexpr size_t TotalDataLength(bool has_timestamp,
+                                 bool has_sdu_header,
+                                 size_t data_size) {
+  // The total data length is the size of the payload plus optional fields.
+  return OptionalFieldLength(has_timestamp, has_sdu_header) + data_size;
+}
+constexpr size_t TotalPacketSize(bool has_timestamp,
+                                 bool has_sdu_header,
+                                 size_t data_size) {
+  // The entire packet also contains a fixed size header, this is not included
+  // when calculating the size/maximum size for the controller buffers.
+  return kFrameHeaderSize +
+         TotalDataLength(has_timestamp, has_sdu_header, data_size);
+}
+constexpr size_t FragmentDataLength(bool has_timestamp,
+                                    bool has_sdu_header,
+                                    size_t data_size) {
+  // The length of the actual SDU data contained in the fragment.
+  return data_size - OptionalFieldLength(has_timestamp, has_sdu_header);
+}
+
+// Return two subspans of the provided span, the first containing elements
+// indexed by the interval [0, at), the second containing the elements indexed
+// by the interval [at, size()).
+template <typename T>
+std::pair<pw::span<T>, pw::span<T>> SplitSpan(pw::span<T> span, size_t at) {
+  if (at > span.size()) {
+    at = span.size();
+  }
+
+  return {span.subspan(0, at), span.subspan(at)};
+}
 
 class IsoStreamImpl final : public IsoStream {
  public:
@@ -46,13 +106,24 @@ class IsoStreamImpl final : public IsoStream {
   }
   void Close() override;
   std::unique_ptr<IsoDataPacket> ReadNextQueuedIncomingPacket() override;
+  void Send(pw::ConstByteSpan data) override;
   IsoStream::WeakPtr GetWeakPtr() override { return weak_self_.GetWeakPtr(); }
 
   // IsoDataChannel::ConnectionInterface override
   void ReceiveInboundPacket(pw::span<const std::byte> packet) override;
 
  private:
+  struct SduHeaderInfo {
+    uint16_t packet_sequence_number;
+    uint16_t iso_sdu_length;
+  };
+
   void HandleCompletePacket(const pw::span<const std::byte>& packet);
+  DynamicByteBuffer BuildPacketForSending(
+      const pw::span<const std::byte>& data,
+      pw::bluetooth::emboss::IsoDataPbFlag pb_flag,
+      std::optional<SduHeaderInfo> sdu_header = std::nullopt,
+      std::optional<uint32_t> time_stamp = std::nullopt);
 
   enum class IsoStreamState {
     kNotEstablished,
@@ -398,6 +469,50 @@ void IsoStreamImpl::HandleCompletePacket(
       std::make_unique<IsoDataPacket>(packet.begin(), packet.end()));
 }
 
+DynamicByteBuffer IsoStreamImpl::BuildPacketForSending(
+    const pw::span<const std::byte>& data,
+    pw::bluetooth::emboss::IsoDataPbFlag pb_flag,
+    std::optional<SduHeaderInfo> sdu_header,
+    std::optional<uint32_t> time_stamp) {
+  PW_CHECK((pb_flag == pw::bluetooth::emboss::IsoDataPbFlag::FIRST_FRAGMENT ||
+            pb_flag == pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU) ==
+               sdu_header.has_value(),
+           "Header required for first and complete fragments.");
+
+  DynamicByteBuffer packet(TotalPacketSize(
+      time_stamp.has_value(), sdu_header.has_value(), data.size()));
+  auto view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
+      packet.mutable_data(), packet.size());
+
+  view.header().connection_handle().Write(cis_hci_handle_);
+  view.header().pb_flag().Write(pb_flag);
+  view.header().ts_flag().Write(
+      time_stamp.has_value()
+          ? pw::bluetooth::emboss::TsFlag::TIMESTAMP_PRESENT
+          : pw::bluetooth::emboss::TsFlag::TIMESTAMP_NOT_PRESENT);
+  view.header().data_total_length().Write(TotalDataLength(
+      time_stamp.has_value(), sdu_header.has_value(), data.size()));
+
+  if (time_stamp.has_value()) {
+    view.time_stamp().Write(*time_stamp);
+  }
+
+  if (sdu_header.has_value()) {
+    view.packet_sequence_number().Write(sdu_header->packet_sequence_number);
+    view.iso_sdu_length().Write(sdu_header->iso_sdu_length);
+    // This flag is RFU when sending to controller, the valid data flag is all
+    // zeros as required (see BT Core spec v5.4, Vol 4, Part E, Sec 5.4.5).
+    view.packet_status_flag().Write(
+        pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA);
+  }
+
+  memcpy(view.iso_sdu_fragment().BackingStorage().data(),
+         data.data(),
+         data.size());
+
+  return packet;
+}
+
 std::unique_ptr<IsoDataPacket> IsoStreamImpl::ReadNextQueuedIncomingPacket() {
   if (incoming_data_queue_.empty()) {
     inbound_client_is_waiting_ = true;
@@ -408,6 +523,50 @@ std::unique_ptr<IsoDataPacket> IsoStreamImpl::ReadNextQueuedIncomingPacket() {
       std::move(incoming_data_queue_.front());
   incoming_data_queue_.pop();
   return packet;
+}
+
+void IsoStreamImpl::Send(pw::ConstByteSpan data) {
+  PW_CHECK(data_channel_, "Send called while not registered to a data stream.");
+  PW_CHECK(data.size() <= std::numeric_limits<uint16_t>::max());
+
+  const size_t max_length = data_channel_->buffer_info().max_data_length();
+  std::optional<SduHeaderInfo> sdu_header = SduHeaderInfo{
+      // TODO: https://pwbug.dev/393366531 - Implement sequence number.
+      .packet_sequence_number = 0,
+      .iso_sdu_length = static_cast<uint16_t>(data.size()),
+  };
+
+  // Fragmentation loop.
+  while (!data.empty()) {
+    size_t length_remaining =
+        TotalDataLength(/*has_timestamp=*/false,
+                        /*has_sdu_header=*/sdu_header.has_value(),
+                        /*data_size=*/data.size());
+    // This is the first fragment if we haven't sent the SDU header yet.
+    const bool is_first = sdu_header.has_value();
+    // This is the last fragment if there is sufficient buffer space.
+    const bool is_last = length_remaining <= max_length;
+
+    pw::bluetooth::emboss::IsoDataPbFlag flag;
+    if (is_first && is_last) {
+      flag = pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU;
+    } else if (is_first && !is_last) {
+      flag = pw::bluetooth::emboss::IsoDataPbFlag::FIRST_FRAGMENT;
+    } else if (!is_first && is_last) {
+      flag = pw::bluetooth::emboss::IsoDataPbFlag::LAST_FRAGMENT;
+    } else if (!is_first && !is_last) {
+      flag = pw::bluetooth::emboss::IsoDataPbFlag::INTERMEDIATE_FRAGMENT;
+    } else {
+      PW_UNREACHABLE;
+    }
+
+    // Send the largest possible fragment, reduce `data` to remaining span.
+    pw::ConstByteSpan fragment;
+    size_t fragment_length = FragmentDataLength(false, is_first, max_length);
+    std::tie(fragment, data) = SplitSpan(data, fragment_length);
+    data_channel_->SendData(BuildPacketForSending(fragment, flag, sdu_header));
+    sdu_header.reset();
+  }
 }
 
 void IsoStreamImpl::Close() { on_closed_cb_(); }
