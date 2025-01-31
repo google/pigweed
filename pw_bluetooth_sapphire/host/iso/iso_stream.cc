@@ -29,7 +29,8 @@ class IsoStreamImpl final : public IsoStream {
                 hci_spec::ConnectionHandle cis_handle,
                 CisEstablishedCallback on_established_cb,
                 hci::CommandChannel::WeakPtr cmd,
-                pw::Callback<void()> on_closed_cb);
+                pw::Callback<void()> on_closed_cb,
+                hci::IsoDataChannel* data_channel);
 
   // IsoStream overrides
   bool OnCisEstablished(const hci::EventPacket& event) override;
@@ -96,6 +97,9 @@ class IsoStreamImpl final : public IsoStream {
 
   hci::CommandChannel::EventHandlerId cis_established_handler_;
 
+  // The IsoDataChannel that this stream is registered to.
+  hci::IsoDataChannel* data_channel_;
+
   WeakSelf<IsoStreamImpl> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(IsoStreamImpl);
@@ -106,7 +110,8 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
                              hci_spec::ConnectionHandle cis_handle,
                              CisEstablishedCallback on_established_cb,
                              hci::CommandChannel::WeakPtr cmd,
-                             pw::Callback<void()> on_closed_cb)
+                             pw::Callback<void()> on_closed_cb,
+                             hci::IsoDataChannel* data_channel)
     : IsoStream(),
       state_(IsoStreamState::kNotEstablished),
       cig_id_(cig_id),
@@ -117,8 +122,10 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
           fit::bind_member<&IsoStreamImpl::HandleCompletePacket>(this)),
       on_closed_cb_(std::move(on_closed_cb)),
       cmd_(std::move(cmd)),
+      data_channel_(data_channel),
       weak_self_(this) {
   PW_CHECK(cmd_.is_alive());
+  PW_CHECK(data_channel_);
 
   auto weak_self = weak_self_.GetWeakPtr();
   cis_established_handler_ = cmd_->AddLEMetaEventHandler(
@@ -411,13 +418,15 @@ std::unique_ptr<IsoStream> IsoStream::Create(
     hci_spec::ConnectionHandle cis_handle,
     CisEstablishedCallback on_established_cb,
     hci::CommandChannel::WeakPtr cmd,
-    pw::Callback<void()> on_closed_cb) {
+    pw::Callback<void()> on_closed_cb,
+    hci::IsoDataChannel* data_channel) {
   return std::make_unique<IsoStreamImpl>(cig_id,
                                          cis_id,
                                          cis_handle,
                                          std::move(on_established_cb),
                                          std::move(cmd),
-                                         std::move(on_closed_cb));
+                                         std::move(on_closed_cb),
+                                         data_channel);
 }
 
 }  // namespace bt::iso

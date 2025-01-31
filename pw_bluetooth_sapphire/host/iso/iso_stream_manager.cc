@@ -188,12 +188,16 @@ void IsoStreamManager::AcceptCisRequest(
     streams_.erase(id);
   };
 
+  PW_CHECK(hci_.is_alive(),
+           "ISO transport no longer available in AcceptCisRequest (handle %#x)",
+           cis_handle);
   streams_[id] = IsoStream::Create(cig_id,
                                    cis_id,
                                    cis_handle,
                                    std::move(cb),
                                    cmd_->AsWeakPtr(),
-                                   on_closed_cb);
+                                   on_closed_cb,
+                                   hci_->iso_data_channel());
 
   auto command = hci::CommandPacket::New<
       pw::bluetooth::emboss::LEAcceptCISRequestCommandWriter>(

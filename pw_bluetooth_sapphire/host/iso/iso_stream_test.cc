@@ -59,7 +59,8 @@ class IsoStreamTest : public MockControllerTestBase {
         [this]() {
           ASSERT_FALSE(closed_);
           closed_ = true;
-        });
+        },
+        transport()->iso_data_channel());
   }
 
  protected:
