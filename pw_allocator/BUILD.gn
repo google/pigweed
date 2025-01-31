@@ -287,6 +287,15 @@ pw_source_set("null_allocator") {
   sources = [ "null_allocator.cc" ]
 }
 
+pw_source_set("metrics") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/metrics.h" ]
+  public_deps = [
+    ":allocator",
+    dir_pw_metric,
+  ]
+}
+
 pw_source_set("pmr_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/pmr_allocator.h" ]
@@ -312,6 +321,7 @@ pw_source_set("synchronized_allocator") {
   public = [ "public/pw_allocator/synchronized_allocator.h" ]
   public_deps = [
     ":allocator",
+    "$dir_pw_sync:borrow",
     "$dir_pw_sync:lock_annotations",
   ]
 }
@@ -331,13 +341,10 @@ pw_source_set("tlsf_allocator") {
 
 pw_source_set("tracking_allocator") {
   public_configs = [ ":public_include_path" ]
-  public = [
-    "public/pw_allocator/metrics.h",
-    "public/pw_allocator/tracking_allocator.h",
-  ]
+  public = [ "public/pw_allocator/tracking_allocator.h" ]
   public_deps = [
     ":allocator",
-    dir_pw_metric,
+    ":metrics",
     dir_pw_status,
   ]
   deps = [ dir_pw_assert ]
@@ -562,6 +569,11 @@ pw_test("libc_allocator_test") {
   sources = [ "libc_allocator_test.cc" ]
 }
 
+pw_test("metrics_test") {
+  deps = [ ":metrics" ]
+  sources = [ "metrics_test.cc" ]
+}
+
 pw_test("null_allocator_test") {
   deps = [
     ":null_allocator",
@@ -658,6 +670,7 @@ pw_test_group("tests") {
     ":freelist_heap_test",
     ":layout_test",
     ":libc_allocator_test",
+    ":metrics_test",
     ":null_allocator_test",
     ":pmr_allocator_test",
     ":synchronized_allocator_test",

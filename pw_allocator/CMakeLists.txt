@@ -310,6 +310,16 @@ pw_add_library(pw_allocator.null_allocator STATIC
     pw_allocator.allocator
 )
 
+pw_add_library(pw_allocator.metrics INTERFACE
+  HEADERS
+    public/pw_allocator/metrics.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.allocator
+    pw_metric
+)
+
 pw_add_library(pw_allocator.pmr_allocator STATIC
   HEADERS
     public/pw_allocator/pmr_allocator.h
@@ -339,6 +349,7 @@ pw_add_library(pw_allocator.synchronized_allocator INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_sync.borrow
     pw_sync.lock_annotations
 )
 
@@ -358,14 +369,15 @@ pw_add_library(pw_allocator.tlsf_allocator INTERFACE
 
 pw_add_library(pw_allocator.tracking_allocator INTERFACE
   HEADERS
-    public/pw_allocator/metrics.h
     public/pw_allocator/tracking_allocator.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_metric
+    pw_allocator.metrics
     pw_status
+  PRIVATE_DEPS
+    pw_assert
 )
 
 pw_add_library(pw_allocator.typed_pool INTERFACE
@@ -641,6 +653,17 @@ pw_add_test(pw_allocator.libc_allocator_test
   PRIVATE_DEPS
     pw_allocator.libc_allocator
     pw_allocator.testing
+    pw_unit_test
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.metrics_test
+  SOURCES
+    metrics_test.cc
+  PRIVATE_DEPS
+    pw_allocator.metrics
     pw_unit_test
   GROUPS
     modules

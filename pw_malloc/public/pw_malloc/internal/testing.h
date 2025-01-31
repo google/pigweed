@@ -17,7 +17,7 @@
 
 namespace pw::malloc::internal {
 
-struct TestMetrics {
+struct TestMetrics : public ::pw::allocator::NoMetrics {
   PW_ALLOCATOR_METRICS_ENABLE(requested_bytes);
   PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
   PW_ALLOCATOR_METRICS_ENABLE(cumulative_allocated_bytes);

@@ -17,6 +17,7 @@
 #include <mutex>
 
 #include "pw_allocator/allocator.h"
+#include "pw_sync/borrow.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::allocator {
@@ -32,9 +33,32 @@ namespace pw::allocator {
 ///                   Must be default-constructible.
 template <typename LockType>
 class SynchronizedAllocator : public Allocator {
+ private:
+  using Pointer = sync::BorrowedPointer<Allocator, LockType>;
+
  public:
   SynchronizedAllocator(Allocator& allocator) noexcept
-      : Allocator(allocator.capabilities()), allocator_(allocator), lock_{} {}
+      : Allocator(allocator.capabilities()),
+        allocator_(allocator),
+        borrowable_(allocator_, lock_) {}
+
+  /// Returns a borrowed pointer to the allocator.
+  ///
+  /// When an allocator being wrapped implements an interface that extends
+  /// `pw::Allocator`, this method can be used to safely access a downcastable
+  /// pointer. The usual warnings apply to the returned value; namely the caller
+  /// MUST NOT leak the raw pointer.
+  ///
+  /// Example:
+  /// @code{.cpp}
+  ///   pw::allocator::BestFitAllocator<> best_fit(heap);
+  ///   pw::allocator::SynchronizedAllocator<pw::sync::Mutex> synced(best_fit);
+  ///   // ...
+  ///   auto borrowed = synced.Borrow();
+  ///   auto allocator =
+  ///     static_cast<pw::allocator::BestFitAllocator<>&>(*borrowed);
+  /// @endcode
+  Pointer Borrow() const { return borrowable_.acquire(); }
 
  private:
   /// @copydoc Allocator::Allocate
@@ -77,12 +101,16 @@ class SynchronizedAllocator : public Allocator {
 
   Allocator& allocator_ PW_GUARDED_BY(lock_);
   mutable LockType lock_;
+  sync::Borrowable<Allocator, LockType> borrowable_;
 };
 
 /// Tag type used to indicate synchronization is NOT desired.
 ///
 /// This can be useful with allocator parameters for module configuration, e.g.
 /// PW_MALLOC_LOCK_TYPE.
-struct NoSync {};
+struct NoSync {
+  constexpr void lock() {}
+  constexpr void unlock() {}
+};
 
 }  // namespace pw::allocator

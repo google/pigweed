@@ -31,7 +31,7 @@ class Deallocator {
 
   virtual ~Deallocator() = default;
 
-  const Capabilities& capabilities() const { return capabilities_; }
+  constexpr const Capabilities& capabilities() const { return capabilities_; }
 
   /// Returns whether a given capabilityis enabled for this object.
   bool HasCapability(Capability capability) const {

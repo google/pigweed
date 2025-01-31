@@ -64,6 +64,11 @@ class TrackingAllocator : public Allocator {
 
   const MetricsType& metrics() const { return metrics_.metrics(); }
 
+  /// Requests to update out-of-band metrics, if any.
+  ///
+  /// See also `NoMetrics::UpdateDeferred`.
+  void UpdateDeferred() const { metrics_.UpdateDeferred(allocator_); }
+
  private:
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override;
@@ -89,90 +94,105 @@ class TrackingAllocator : public Allocator {
   }
 
   Allocator& allocator_;
-  internal::Metrics<MetricsType> metrics_;
+  mutable internal::Metrics<MetricsType> metrics_;
 };
 
 // Template method implementation.
 
 template <typename MetricsType>
 void* TrackingAllocator<MetricsType>::DoAllocate(Layout layout) {
-  Layout requested = layout;
-  size_t allocated = allocator_.GetAllocated();
-  void* new_ptr = allocator_.Allocate(requested);
-  if (new_ptr == nullptr) {
-    metrics_.RecordFailure(requested.size());
-    return nullptr;
+  if constexpr (internal::AnyEnabled<MetricsType>()) {
+    Layout requested = layout;
+    size_t allocated = allocator_.GetAllocated();
+    void* new_ptr = allocator_.Allocate(requested);
+    if (new_ptr == nullptr) {
+      metrics_.RecordFailure(requested.size());
+      return nullptr;
+    }
+    metrics_.IncrementAllocations();
+    metrics_.ModifyRequested(requested.size(), 0);
+    metrics_.ModifyAllocated(allocator_.GetAllocated(), allocated);
+    return new_ptr;
+  } else {
+    return allocator_.Allocate(layout);
   }
-  metrics_.IncrementAllocations();
-  metrics_.ModifyRequested(requested.size(), 0);
-  metrics_.ModifyAllocated(allocator_.GetAllocated(), allocated);
-  return new_ptr;
 }
 
 template <typename MetricsType>
 void TrackingAllocator<MetricsType>::DoDeallocate(void* ptr) {
-  Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
-  size_t allocated = allocator_.GetAllocated();
-  allocator_.Deallocate(ptr);
-  metrics_.IncrementDeallocations();
-  metrics_.ModifyRequested(0, requested.size());
-  metrics_.ModifyAllocated(allocator_.GetAllocated(), allocated);
+  if constexpr (internal::AnyEnabled<MetricsType>()) {
+    Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
+    size_t allocated = allocator_.GetAllocated();
+    allocator_.Deallocate(ptr);
+    metrics_.IncrementDeallocations();
+    metrics_.ModifyRequested(0, requested.size());
+    metrics_.ModifyAllocated(allocator_.GetAllocated(), allocated);
+  } else {
+    allocator_.Deallocate(ptr);
+  }
 }
 
 template <typename MetricsType>
 bool TrackingAllocator<MetricsType>::DoResize(void* ptr, size_t new_size) {
-  Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
-  size_t allocated = allocator_.GetAllocated();
-  Layout new_requested(new_size, requested.alignment());
-  if (!allocator_.Resize(ptr, new_requested.size())) {
-    metrics_.RecordFailure(new_size);
-    return false;
+  if constexpr (internal::AnyEnabled<MetricsType>()) {
+    Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
+    size_t allocated = allocator_.GetAllocated();
+    if (!allocator_.Resize(ptr, new_size)) {
+      metrics_.RecordFailure(new_size);
+      return false;
+    }
+    metrics_.IncrementResizes();
+    metrics_.ModifyRequested(new_size, requested.size());
+    metrics_.ModifyAllocated(allocator_.GetAllocated(), allocated);
+    return true;
+  } else {
+    return allocator_.Resize(ptr, new_size);
   }
-  metrics_.IncrementResizes();
-  metrics_.ModifyRequested(new_requested.size(), requested.size());
-  metrics_.ModifyAllocated(allocator_.GetAllocated(), allocated);
-  return true;
 }
 
 template <typename MetricsType>
 void* TrackingAllocator<MetricsType>::DoReallocate(void* ptr,
                                                    Layout new_layout) {
-  // Check if possible to resize in place with no additional overhead.
-  Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
-  size_t allocated = allocator_.GetAllocated();
-  Layout new_requested(new_layout.size(), requested.alignment());
-  if (allocator_.Resize(ptr, new_layout.size())) {
-    metrics_.IncrementReallocations();
-    metrics_.ModifyRequested(new_requested.size(), requested.size());
-    metrics_.ModifyAllocated(allocator_.GetAllocated(), allocated);
-    return ptr;
-  }
+  if constexpr (internal::AnyEnabled<MetricsType>()) {
+    // Check if possible to resize in place with no additional overhead.
+    Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
+    size_t allocated = allocator_.GetAllocated();
+    size_t new_size = new_layout.size();
+    if (allocator_.Resize(ptr, new_size)) {
+      metrics_.IncrementReallocations();
+      metrics_.ModifyRequested(new_size, requested.size());
+      metrics_.ModifyAllocated(allocator_.GetAllocated(), allocated);
+      return ptr;
+    }
 
-  // Need to move data to a brand new allocation.
-  // In order to properly record the peak allocation, this method needs to
-  // perform the steps of allocating, copying, and deallocating memory, and
-  // recording metrics in the interim steps.
-  Result<Layout> old_layout = GetUsableLayout(ptr);
-  if (!old_layout.ok()) {
-    metrics_.RecordFailure(new_layout.size());
-    return nullptr;
+    // Need to move data to a brand new allocation.
+    // In order to properly record the peak allocation, this method needs to
+    // perform the steps of allocating, copying, and deallocating memory, and
+    // recording metrics in the interim steps.
+    Result<Layout> old_layout = GetUsableLayout(ptr);
+    if (!old_layout.ok()) {
+      metrics_.RecordFailure(new_size);
+      return nullptr;
+    }
+    void* new_ptr = allocator_.Allocate(new_layout);
+    if (new_ptr == nullptr) {
+      metrics_.RecordFailure(new_size);
+      return nullptr;
+    }
+    // Update with transient allocation to ensure peak metrics are correct.
+    size_t transient_allocated = allocator_.GetAllocated();
+    metrics_.ModifyAllocated(transient_allocated, allocated);
+    if (ptr != nullptr) {
+      std::memcpy(new_ptr, ptr, std::min(new_size, old_layout->size()));
+      allocator_.Deallocate(ptr);
+    }
+    metrics_.IncrementReallocations();
+    metrics_.ModifyRequested(new_size, requested.size());
+    metrics_.ModifyAllocated(allocator_.GetAllocated(), transient_allocated);
+    return new_ptr;
+  } else {
+    return allocator_.Reallocate(ptr, new_layout);
   }
-  void* new_ptr = allocator_.Allocate(new_layout);
-  if (new_ptr == nullptr) {
-    metrics_.RecordFailure(new_layout.size());
-    return nullptr;
-  }
-  // Update with transient allocation to ensure peak metrics are correct.
-  size_t transient_allocated = allocator_.GetAllocated();
-  metrics_.ModifyAllocated(transient_allocated, allocated);
-  if (ptr != nullptr) {
-    std::memcpy(new_ptr, ptr, std::min(new_layout.size(), old_layout->size()));
-    allocator_.Deallocate(ptr);
-  }
-  metrics_.IncrementReallocations();
-  metrics_.ModifyRequested(new_requested.size(), requested.size());
-  metrics_.ModifyAllocated(allocator_.GetAllocated(), transient_allocated);
-  return new_ptr;
 }
 
 // TODO(b/326509341): This is an interim alias to facilitate refactoring

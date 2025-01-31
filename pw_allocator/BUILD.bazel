@@ -344,6 +344,16 @@ cc_library(
 )
 
 cc_library(
+    name = "metrics",
+    hdrs = ["public/pw_allocator/metrics.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":allocator",
+        "//pw_metric:metric",
+    ],
+)
+
+cc_library(
     name = "pmr_allocator",
     srcs = ["pmr_allocator.cc"],
     hdrs = ["public/pw_allocator/pmr_allocator.h"],
@@ -373,8 +383,8 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":allocator",
+        "//pw_sync:borrow",
         "//pw_sync:lock_annotations",
-        "//pw_sync:mutex",
     ],
 )
 
@@ -394,16 +404,13 @@ cc_library(
 
 cc_library(
     name = "tracking_allocator",
-    hdrs = [
-        "public/pw_allocator/metrics.h",
-        "public/pw_allocator/tracking_allocator.h",
-    ],
+    hdrs = ["public/pw_allocator/tracking_allocator.h"],
+    implementation_deps = ["//pw_assert"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
         ":allocator",
-        "//pw_assert",
-        "//pw_metric:metric",
+        ":metrics",
         "//pw_status",
     ],
 )
@@ -697,6 +704,15 @@ pw_cc_test(
     deps = [
         ":libc_allocator",
         ":testing",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "metrics_test",
+    srcs = ["metrics_test.cc"],
+    deps = [
+        ":metrics",
         "//pw_unit_test",
     ],
 )

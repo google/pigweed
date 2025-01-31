@@ -66,18 +66,11 @@ class TrackingAllocatorTest : public ::testing::Test {
 };
 
 struct ExpectedValues {
-  uint32_t requested_bytes = 0;
-  uint32_t peak_requested_bytes = 0;
-  uint32_t cumulative_requested_bytes = 0;
-  uint32_t allocated_bytes = 0;
-  uint32_t peak_allocated_bytes = 0;
-  uint32_t cumulative_allocated_bytes = 0;
-  uint32_t num_allocations = 0;
-  uint32_t num_deallocations = 0;
-  uint32_t num_resizes = 0;
-  uint32_t num_reallocations = 0;
-  uint32_t num_failures = 0;
-  uint32_t unfulfilled_bytes = 0;
+#define INCLUDE_EXPECTED_METRIC(metric_name) uint32_t metric_name = 0
+
+  PW_ALLOCATOR_METRICS_FOREACH(INCLUDE_EXPECTED_METRIC);
+
+#undef INCLUDE_EXPECTED_METRIC
 
   void AddRequestedBytes(uint32_t requested_bytes_) {
     requested_bytes += requested_bytes_;
@@ -92,23 +85,15 @@ struct ExpectedValues {
   }
 
   void Check(const TestMetrics& metrics, int line) {
-    EXPECT_EQ(metrics.requested_bytes.value(), requested_bytes);
-    EXPECT_EQ(metrics.peak_requested_bytes.value(), peak_requested_bytes);
-    EXPECT_EQ(metrics.cumulative_requested_bytes.value(),
-              cumulative_requested_bytes);
-    EXPECT_EQ(metrics.allocated_bytes.value(), allocated_bytes);
-    EXPECT_EQ(metrics.peak_allocated_bytes.value(), peak_allocated_bytes);
-    EXPECT_EQ(metrics.cumulative_allocated_bytes.value(),
-              cumulative_allocated_bytes);
-    EXPECT_EQ(metrics.num_allocations.value(), num_allocations);
-    EXPECT_EQ(metrics.num_deallocations.value(), num_deallocations);
-    EXPECT_EQ(metrics.num_resizes.value(), num_resizes);
-    EXPECT_EQ(metrics.num_reallocations.value(), num_reallocations);
-    EXPECT_EQ(metrics.num_failures.value(), num_failures);
-    EXPECT_EQ(metrics.unfulfilled_bytes.value(), unfulfilled_bytes);
+#define EXPECT_METRIC_EQ(metric_name) \
+  EXPECT_EQ(metrics.metric_name.value(), metric_name);
+
+    PW_ALLOCATOR_METRICS_FOREACH(EXPECT_METRIC_EQ);
     if (testing::Test::HasFailure()) {
       PW_LOG_ERROR("Metrics comparison failed at line %d.", line);
     }
+
+#undef EXPECT_METRIC_EQ
   }
 };
 

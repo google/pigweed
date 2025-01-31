@@ -25,7 +25,7 @@
 namespace examples {
 
 // DOCSTAG: [pw_allocator-examples-metrics-custom_metrics1]
-struct CustomMetrics {
+struct CustomMetrics : public ::pw::allocator::NoMetrics {
   PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
   PW_ALLOCATOR_METRICS_ENABLE(peak_allocated_bytes);
   PW_ALLOCATOR_METRICS_ENABLE(num_failures);

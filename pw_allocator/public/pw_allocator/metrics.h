@@ -16,9 +16,65 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "pw_allocator/allocator.h"
 #include "pw_metric/metric.h"
+#include "pw_status/status_with_size.h"
 
 namespace pw::allocator {
+
+/// Applies the given macro to each metric.
+///
+/// This macro helps ensure consistency between definitions that involve every
+/// metric.
+///
+/// The recognized pw_allocator metrics are:
+///
+/// - Metrics to track the current, peak, and cumulative number of bytes
+///   requested to be allocated, respectively.
+///   - requested_bytes
+///   - peak_requested_bytes
+///   - cumulative_requested_bytes
+///
+/// - Metrics to track the current, peak, and cumulative number of bytes
+///   actually allocated, respectively.
+///   - allocated_bytes
+///   - peak_allocated_bytes
+///   - cumulative_allocated_bytes
+///
+/// - Metrics to track the number of successful calls to each interface method.
+///   - num_allocations
+///   - num_deallocations
+///   - num_resizes
+///   - num_reallocations
+///
+/// - Metrics to track block-related numbers, including the number of free
+///   blocks, as well as the sizes of the smallest and largest blocks.
+///   - num_free_blocks
+///   - smallest_free_block_size
+///   - largest_free_block_size
+///
+/// - Metrics to tracks the number of interface calls that failed, and the
+///   number of bytes requested in those calls.
+///   - num_failures
+///   - unfulfilled_bytes
+#define PW_ALLOCATOR_METRICS_FOREACH(fn) \
+  fn(requested_bytes);                   \
+  fn(peak_requested_bytes);              \
+  fn(cumulative_requested_bytes);        \
+  fn(allocated_bytes);                   \
+  fn(peak_allocated_bytes);              \
+  fn(cumulative_allocated_bytes);        \
+  fn(num_allocations);                   \
+  fn(num_deallocations);                 \
+  fn(num_resizes);                       \
+  fn(num_reallocations);                 \
+  fn(num_free_blocks);                   \
+  fn(smallest_free_block_size);          \
+  fn(largest_free_block_size);           \
+  fn(num_failures);                      \
+  fn(unfulfilled_bytes)
+
+#define PW_ALLOCATOR_ABSORB_SEMICOLON() static_assert(true)
 
 /// Declares the names of metrics used by `pw::allocator::Metrics`.
 ///
@@ -30,38 +86,54 @@ namespace pw::allocator {
 ///
 /// Note: if enabling ``peak_allocated_bytes` or `cumulative_allocated_bytes`,
 /// `allocated_bytes` should also be enabled.
-#define PW_ALLOCATOR_METRICS_DECLARE(metric_name)                           \
-  template <typename MetricsType, typename = void>                          \
-  struct has_##metric_name : std::false_type {};                            \
-  template <typename MetricsType>                                           \
-  struct has_##metric_name<MetricsType,                                     \
-                           std::void_t<decltype(MetricsType::metric_name)>> \
-      : std::true_type {}
+#define PW_ALLOCATOR_METRICS_DECLARE(metric_name)                 \
+  static constexpr bool has_##metric_name() { return false; }     \
+  ::pw::StatusWithSize get_##metric_name() const {                \
+    return ::pw::StatusWithSize::NotFound();                      \
+  }                                                               \
+  static constexpr bool metric_name##_enabled() { return false; } \
+  PW_ALLOCATOR_ABSORB_SEMICOLON()
 
-// Tracks the current, peak, and cumulative number of bytes requested to be
-// allocated, respectively.
-PW_ALLOCATOR_METRICS_DECLARE(requested_bytes);
-PW_ALLOCATOR_METRICS_DECLARE(peak_requested_bytes);
-PW_ALLOCATOR_METRICS_DECLARE(cumulative_requested_bytes);
+/// A predefined metric struct that enables no allocator metrics.
+///
+/// This struct declares all valid metrics, but enables none of them. Other
+/// metrics struct MUST derive from this type, and should use
+/// `PW_ALLOCATOR_METRICS_INCLUDE` and/or `PW_ALLOCATOR_METRICS_ENABLE`.
+struct NoMetrics {
+  PW_ALLOCATOR_METRICS_FOREACH(PW_ALLOCATOR_METRICS_DECLARE);
 
-// Tracks the current, peak, and cumulative number of bytes actually allocated,
-// respectively.
-PW_ALLOCATOR_METRICS_DECLARE(allocated_bytes);
-PW_ALLOCATOR_METRICS_DECLARE(peak_allocated_bytes);
-PW_ALLOCATOR_METRICS_DECLARE(cumulative_allocated_bytes);
-
-// Tracks the number of successful calls to each interface method.
-PW_ALLOCATOR_METRICS_DECLARE(num_allocations);
-PW_ALLOCATOR_METRICS_DECLARE(num_deallocations);
-PW_ALLOCATOR_METRICS_DECLARE(num_resizes);
-PW_ALLOCATOR_METRICS_DECLARE(num_reallocations);
-
-// Tracks the number of interface calls that failed, and the number of bytes
-// requested in those calls.
-PW_ALLOCATOR_METRICS_DECLARE(num_failures);
-PW_ALLOCATOR_METRICS_DECLARE(unfulfilled_bytes);
+  /// Updates metrics by querying an allocator directly.
+  ///
+  /// Metrics are typically updated by an allocator when the pw::Allocator API
+  /// is invoked. In some cases, there may be metrics that cannot be determined
+  /// at the interface or are too expensive to do so, e.g. determining the
+  /// smallest free block. This method provides a way for metrics structs to
+  /// request these values on-demand.
+  ///
+  /// For this empty base struct, this is simply a no-op.
+  void UpdateDeferred(Allocator&) {}
+};
 
 #undef PW_ALLOCATOR_METRICS_DECLARE
+
+/// Includes a metric in a metrics struct.
+///
+/// The ``pw::allocator::TrackingAllocator`` template takes a struct that
+/// includes zero or more of the metrics enumerated by
+/// ``PW_ALLOCATOR_METRICS_DECLARE```.
+///
+/// This struct may be one of ``AllMetrics`` or ``NoMetrics``, or may be a
+/// custom struct that selects a subset of metrics.
+///
+/// A metric that is only included, and not enabled, is expected to only be
+/// updated when `UpdatedDeferred` is invoked.
+#define PW_ALLOCATOR_METRICS_INCLUDE(metric_name)                  \
+  static_assert(!::pw::allocator::NoMetrics::has_##metric_name()); \
+  static constexpr bool has_##metric_name() { return true; }       \
+  inline ::pw::StatusWithSize get_##metric_name() const {          \
+    return ::pw::StatusWithSize(metric_name.value());              \
+  }                                                                \
+  PW_METRIC(metric_name, #metric_name, 0U)
 
 /// Enables a metric for in a metrics struct.
 ///
@@ -72,45 +144,42 @@ PW_ALLOCATOR_METRICS_DECLARE(unfulfilled_bytes);
 /// This struct may be one of ``AllMetrics`` or ``NoMetrics``, or may be a
 /// custom struct that selects a subset of metrics.
 ///
-/// Note that this must be fully-qualified since the metric struct may be
-/// defined in any namespace.
+/// A metric that is enabled is expected to be updated automatically by using a
+/// tracking allocator's API.
 ///
 /// Example:
 /// @code{.cpp}
 ///   struct MyMetrics {
 ///     PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
 ///     PW_ALLOCATOR_METRICS_ENABLE(peak_allocated_bytes);
-///     PW_ALLOCATOR_METRICS_ENABLE(num_failures);
+///     PW_ALLOCATOR_METRICS_INCLUDE(num_free_blocks);
+///
+///     void UpdateDeferred(Allocator& allocator);
 ///   };
 /// @endcode
-#define PW_ALLOCATOR_METRICS_ENABLE(metric_name)                   \
-  static_assert(!::pw::allocator::has_##metric_name<void>::value); \
-  PW_METRIC(metric_name, #metric_name, 0U)
-
-/// A predefined metric struct that enables no allocator metrics.
-struct NoMetrics {};
+#define PW_ALLOCATOR_METRICS_ENABLE(metric_name)                 \
+  static constexpr bool metric_name##_enabled() { return true; } \
+  PW_ALLOCATOR_METRICS_INCLUDE(metric_name)
 
 namespace internal {
 
 /// A metrics type that enables all metrics for testing.
 ///
-/// Warning! Do not use in production code. If metrics are added to it later,
-/// code using this struct may unexpected grow in code size, memory usage,
+/// Warning! Do not use in production code. As metrics are added to it later,
+/// code using this struct may unexpectedly grow in code size, memory usage,
 /// and/or performance overhead.
-struct AllMetrics {
-  PW_ALLOCATOR_METRICS_ENABLE(requested_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(peak_requested_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(cumulative_requested_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(allocated_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(peak_allocated_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(cumulative_allocated_bytes);
-  PW_ALLOCATOR_METRICS_ENABLE(num_allocations);
-  PW_ALLOCATOR_METRICS_ENABLE(num_deallocations);
-  PW_ALLOCATOR_METRICS_ENABLE(num_resizes);
-  PW_ALLOCATOR_METRICS_ENABLE(num_reallocations);
-  PW_ALLOCATOR_METRICS_ENABLE(num_failures);
-  PW_ALLOCATOR_METRICS_ENABLE(unfulfilled_bytes);
+struct AllMetrics : public NoMetrics {
+  PW_ALLOCATOR_METRICS_FOREACH(PW_ALLOCATOR_METRICS_ENABLE);
 };
+
+/// Returns whether any metric is enabled. If not, metric collection can be
+/// skipped.
+template <typename MetricsType>
+constexpr bool AnyEnabled();
+
+/// Copies the values enabled for a given `MetricsType` from `src` to `dst`.
+template <typename MetricsType>
+void CopyMetrics(const MetricsType& src, MetricsType& dst);
 
 /// Encapsulates the metrics struct for ``pw::allocator::TrackingAllocator``.
 ///
@@ -177,71 +246,78 @@ class Metrics final {
   ///                           call.
   void RecordFailure(size_t requested);
 
+  /// Updates metrics by querying an allocator directly.
+  ///
+  /// See also `NoMetrics::UpdateDeferred`.
+  void UpdateDeferred(Allocator& allocator) {
+    metrics_.UpdateDeferred(allocator);
+  }
+
  private:
   metric::Group group_;
   MetricsType metrics_;
 };
 
-// Helper method for converting `size_t`s to `uint32_t`s.
+/// Helper method for converting `size_t`s to `uint32_t`s.
 inline uint32_t ClampU32(size_t size) {
   return static_cast<uint32_t>(std::min(
       size, static_cast<size_t>(std::numeric_limits<uint32_t>::max())));
 }
 
-// Template method implementation.
+// Template method implementations.
+
+template <typename MetricsType>
+constexpr bool AnyEnabled() {
+#define PW_ALLOCATOR_RETURN_IF_ENABLED(metric_name) \
+  if (MetricsType::metric_name##_enabled()) {       \
+    return true;                                    \
+  }                                                 \
+  PW_ALLOCATOR_ABSORB_SEMICOLON()
+
+  PW_ALLOCATOR_METRICS_FOREACH(PW_ALLOCATOR_RETURN_IF_ENABLED);
+  return false;
+
+#undef PW_ALLOCATOR_RETURN_IF_ENABLED
+}
+
+template <typename MetricsType>
+void CopyMetrics(const MetricsType& src, MetricsType& dst) {
+#define PW_ALLOCATOR_COPY_METRIC(metric_name)       \
+  if constexpr (MetricsType::has_##metric_name()) { \
+    dst.metric_name.Set(src.metric_name.value());   \
+  }                                                 \
+  PW_ALLOCATOR_ABSORB_SEMICOLON()
+
+  PW_ALLOCATOR_METRICS_FOREACH(PW_ALLOCATOR_COPY_METRIC);
+
+#undef PW_ALLOCATOR_COPY_METRIC
+}
 
 template <typename MetricsType>
 Metrics<MetricsType>::Metrics(metric::Token token) : group_(token) {
-  if constexpr (has_requested_bytes<MetricsType>::value) {
-    group_.Add(metrics_.requested_bytes);
-  }
-  if constexpr (has_peak_requested_bytes<MetricsType>::value) {
-    group_.Add(metrics_.peak_requested_bytes);
-  }
-  if constexpr (has_cumulative_requested_bytes<MetricsType>::value) {
-    group_.Add(metrics_.cumulative_requested_bytes);
-  }
-  if constexpr (has_allocated_bytes<MetricsType>::value) {
-    group_.Add(metrics_.allocated_bytes);
-  }
-  if constexpr (has_peak_allocated_bytes<MetricsType>::value) {
-    group_.Add(metrics_.peak_allocated_bytes);
-  }
-  if constexpr (has_cumulative_allocated_bytes<MetricsType>::value) {
-    group_.Add(metrics_.cumulative_allocated_bytes);
-  }
-  if constexpr (has_num_allocations<MetricsType>::value) {
-    group_.Add(metrics_.num_allocations);
-  }
-  if constexpr (has_num_deallocations<MetricsType>::value) {
-    group_.Add(metrics_.num_deallocations);
-  }
-  if constexpr (has_num_resizes<MetricsType>::value) {
-    group_.Add(metrics_.num_resizes);
-  }
-  if constexpr (has_num_reallocations<MetricsType>::value) {
-    group_.Add(metrics_.num_reallocations);
-  }
-  if constexpr (has_num_failures<MetricsType>::value) {
-    group_.Add(metrics_.num_failures);
-  }
-  if constexpr (has_unfulfilled_bytes<MetricsType>::value) {
-    group_.Add(metrics_.unfulfilled_bytes);
-  }
+#define PW_ALLOCATOR_ADD_TO_GROUP(metric_name)      \
+  if constexpr (MetricsType::has_##metric_name()) { \
+    group_.Add(metrics_.metric_name);               \
+  }                                                 \
+  PW_ALLOCATOR_ABSORB_SEMICOLON()
+
+  PW_ALLOCATOR_METRICS_FOREACH(PW_ALLOCATOR_ADD_TO_GROUP);
+
+#undef PW_ALLOCATOR_ADD_TO_GROUP
 }
 
 template <typename MetricsType>
 void Metrics<MetricsType>::ModifyRequested(size_t increase, size_t decrease) {
-  if constexpr (has_requested_bytes<MetricsType>::value) {
+  if constexpr (MetricsType::requested_bytes_enabled()) {
     metrics_.requested_bytes.Increment(internal::ClampU32(increase));
     metrics_.requested_bytes.Decrement(internal::ClampU32(decrease));
-    if constexpr (has_peak_requested_bytes<MetricsType>::value) {
+    if constexpr (MetricsType::peak_requested_bytes_enabled()) {
       uint32_t requested_bytes = metrics_.requested_bytes.value();
       if (metrics_.peak_requested_bytes.value() < requested_bytes) {
         metrics_.peak_requested_bytes.Set(requested_bytes);
       }
     }
-    if constexpr (has_cumulative_requested_bytes<MetricsType>::value) {
+    if constexpr (MetricsType::cumulative_requested_bytes_enabled()) {
       if (increase > decrease) {
         metrics_.cumulative_requested_bytes.Increment(
             internal::ClampU32(increase - decrease));
@@ -252,16 +328,16 @@ void Metrics<MetricsType>::ModifyRequested(size_t increase, size_t decrease) {
 
 template <typename MetricsType>
 void Metrics<MetricsType>::ModifyAllocated(size_t increase, size_t decrease) {
-  if constexpr (has_allocated_bytes<MetricsType>::value) {
+  if constexpr (MetricsType::allocated_bytes_enabled()) {
     metrics_.allocated_bytes.Increment(internal::ClampU32(increase));
     metrics_.allocated_bytes.Decrement(internal::ClampU32(decrease));
-    if constexpr (has_peak_allocated_bytes<MetricsType>::value) {
+    if constexpr (MetricsType::peak_allocated_bytes_enabled()) {
       uint32_t allocated_bytes = metrics_.allocated_bytes.value();
       if (metrics_.peak_allocated_bytes.value() < allocated_bytes) {
         metrics_.peak_allocated_bytes.Set(allocated_bytes);
       }
     }
-    if constexpr (has_cumulative_allocated_bytes<MetricsType>::value) {
+    if constexpr (MetricsType::cumulative_allocated_bytes_enabled()) {
       if (increase > decrease) {
         metrics_.cumulative_allocated_bytes.Increment(
             internal::ClampU32(increase - decrease));
@@ -272,41 +348,43 @@ void Metrics<MetricsType>::ModifyAllocated(size_t increase, size_t decrease) {
 
 template <typename MetricsType>
 void Metrics<MetricsType>::IncrementAllocations() {
-  if constexpr (has_num_allocations<MetricsType>::value) {
+  if constexpr (MetricsType::num_allocations_enabled()) {
     metrics_.num_allocations.Increment();
   }
 }
 
 template <typename MetricsType>
 void Metrics<MetricsType>::IncrementDeallocations() {
-  if constexpr (has_num_deallocations<MetricsType>::value) {
+  if constexpr (MetricsType::num_deallocations_enabled()) {
     metrics_.num_deallocations.Increment();
   }
 }
 
 template <typename MetricsType>
 void Metrics<MetricsType>::IncrementResizes() {
-  if constexpr (has_num_resizes<MetricsType>::value) {
+  if constexpr (MetricsType::num_resizes_enabled()) {
     metrics_.num_resizes.Increment();
   }
 }
 
 template <typename MetricsType>
 void Metrics<MetricsType>::IncrementReallocations() {
-  if constexpr (has_num_reallocations<MetricsType>::value) {
+  if constexpr (MetricsType::num_reallocations_enabled()) {
     metrics_.num_reallocations.Increment();
   }
 }
 
 template <typename MetricsType>
 void Metrics<MetricsType>::RecordFailure(size_t requested) {
-  if constexpr (has_num_failures<MetricsType>::value) {
+  if constexpr (MetricsType::num_failures_enabled()) {
     metrics_.num_failures.Increment();
   }
-  if constexpr (has_unfulfilled_bytes<MetricsType>::value) {
+  if constexpr (MetricsType::unfulfilled_bytes_enabled()) {
     metrics_.unfulfilled_bytes.Increment(internal::ClampU32(requested));
   }
 }
+
+#undef PW_ALLOCATOR_ABSORB_SEMICOLON
 
 }  // namespace internal
 }  // namespace pw::allocator
