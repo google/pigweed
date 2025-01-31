@@ -18,7 +18,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -37,6 +36,8 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
+        "//pw_assert:assert",
+        "//pw_assert:check",
         "//pw_bytes",
         "//pw_checksum",
         "//pw_log",
@@ -108,6 +109,7 @@ pw_cc_test(
     srcs = ["encoder_test.cc"],
     deps = [
         ":pw_hdlc",
+        "//pw_bytes",
         "//pw_stream",
         "//pw_unit_test",
     ],
@@ -118,6 +120,7 @@ pw_cc_test(
     srcs = ["decoder_test.cc"],
     deps = [
         ":pw_hdlc",
+        "//pw_bytes",
         "//pw_fuzzer:fuzztest",
         "//pw_result",
         "//pw_stream",
@@ -142,6 +145,7 @@ pw_cc_test(
     srcs = ["wire_packet_parser_test.cc"],
     deps = [
         ":packet_parser",
+        ":pw_hdlc",
         "//pw_bytes",
     ],
 )
@@ -152,6 +156,7 @@ pw_cc_test(
     deps = [
         ":pw_hdlc",
         ":rpc_channel_output",
+        "//pw_bytes",
         "//pw_stream",
         "//pw_unit_test",
     ],
@@ -187,8 +192,11 @@ pw_cc_test(
         ":router",
         "//pw_allocator:testing",
         "//pw_async2:pend_func_task",
+        "//pw_bytes",
         "//pw_channel:forwarding_channel",
         "//pw_channel:loopback_channel",
+        "//pw_containers:inline_queue",
+        "//pw_containers:vector",
         "//pw_multibuf:simple_allocator",
         "//pw_unit_test",
     ],
