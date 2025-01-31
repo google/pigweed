@@ -204,6 +204,14 @@ cipd_repository(
     tag = "version:2@12.2.MPACBTI-Rel1.1",
 )
 
+# Fetch the Zephyr toolchain
+cipd_repository(
+    name = "zephyr_toolchain",
+    build_file = "//pw_toolchain/build_external:zephyr.BUILD",
+    path = "infra/3pp/tools/zephyr_sdk/${os}-${arch}",
+    tag = "version:3@0.17.0",
+)
+
 register_toolchains(
     "//pw_toolchain:cc_toolchain_cortex-m0",
     "//pw_toolchain:cc_toolchain_cortex-m0plus",
