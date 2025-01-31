@@ -24,7 +24,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -77,7 +76,7 @@ cc_library(
         "//pw_log",
         "//pw_preprocessor",
         "//pw_span",
-        "//pw_string",
+        "//pw_string:builder",
     ],
 )
 
@@ -91,7 +90,7 @@ cc_library(
         ":build_id_header",
         "//pw_log",
         "//pw_span",
-        "//pw_string",
+        "//pw_string:builder",
     ],
 )
 
@@ -114,6 +113,7 @@ pw_cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":build_id",
+        ":build_id_header",
         "//pw_span",
         "//pw_unit_test",
     ],

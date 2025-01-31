@@ -18,7 +18,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -85,6 +84,7 @@ pw_cc_test(
     deps = [
         ":alignment",
         "//pw_unit_test",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 
@@ -140,6 +140,7 @@ pw_cc_test(
     deps = [
         ":pw_bytes",
         "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_polyfill",
         "//pw_unit_test",
     ],
 )
