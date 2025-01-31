@@ -251,6 +251,9 @@ doxygen(
         "EXTRACT_PRIV_VIRTUAL = YES",
         "EXTRACT_STATIC = YES",
         "GENERATE_HTML = NO",
+        # Doxygen warns that a tool that LaTeX depends on (epstopdf) is
+        # not available. Explicitly disable LaTeX to stop these warnings.
+        "GENERATE_LATEX = NO",
         "GENERATE_XML = YES",
         "INCLUDE_GRAPH = NO",
         "MACRO_EXPANSION = YES",
@@ -274,7 +277,10 @@ doxygen(
                         configUSE_TIMERS=1 \\
                         configCHECK_FOR_STACK_OVERFLOW=1 \\
                         PW_EXCLUDE_FROM_DOXYGEN=1""",
+        "QUIET = YES",  # Don't log informational messages.
         "RECURSIVE = YES",
+        # TODO: https://pwbug.dev/393634135 - Fix all Doxygen warnings.
+        "WARN_LOGFILE = doxygen_build_logs.txt",
     ],
     # Don't use rules_doxygen's `aliases` attribute. Define aliases within
     # `configurations`. The `aliases` attribute doesn't render aliases with
