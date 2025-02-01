@@ -1,0 +1,156 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+
+licenses(["notice"])
+
+# Additional arm_gcc specific warning flags
+cc_args(
+    name = "warnings",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        # This can't be in common, because proto headers in host builds trigger
+        "-Wundef",
+        # Silence the really verbose ARM warnings.
+        "-Wno-psabi",
+    ],
+)
+
+cc_args(
+    name = "thumb_abi",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mabi=aapcs",
+        "-mthumb",
+    ],
+)
+
+# This flag prevents Arm GCC from printing the resolved paths of symlinks,
+# which prevents compilation actions from being hermetic. See
+# https://github.com/bazelbuild/bazel/issues/21981 and
+# https://pwbug.dev/319665090.
+cc_args(
+    name = "no_canonical_system_headers",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        "-fno-canonical-system-headers",
+    ],
+)
+
+cc_args(
+    name = "cortex_common",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        "-specs=picolibc.specs",
+    ],
+)
+
+cc_args(
+    name = "cortex_common_link",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = [
+        "-Wl,--gc-sections",
+        "-specs=picolibc.specs",
+        "-lstdc++",
+        "-lc",
+        "-lm",
+    ],
+)
+
+cc_args(
+    name = "cortex-m7",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m7",
+    ],
+)
+
+cc_toolchain(
+    name = "arm_cortex-m",
+    args = [
+        "//pw_toolchain/cc/args:oz",
+        "//pw_toolchain/cc/args:debugging",
+        "//pw_toolchain/cc/args:reduced_size",
+        "//pw_toolchain/cc/args:no_canonical_prefixes",
+        "//pw_toolchain/cc/args:no_rtti",
+        "//pw_toolchain/cc/args:wno_register",
+        "//pw_toolchain/cc/args:wnon_virtual_dtor",
+        "//pw_toolchain/cc/args:common_warnings",
+        "//pw_toolchain/cc/args:color_diagnostics",
+    ] + select({
+        # TODO: https://pwbug.dev/380001331 - Add support for other cortex MCUs
+        "//pw_build/constraints/arm:cortex-m7": [":cortex-m7"],
+        "//pw_build/constraints/arm:none": [],
+    }) + [
+        ":thumb_abi",
+        # TODO: https://pwbug.dev/353576440 - Enable unified assembly syntax.
+        # ":unified_asm_syntax",
+        ":cortex_common",
+        ":cortex_common_link",
+        ":no_canonical_system_headers",
+        ":warnings",
+        "//pw_toolchain/zephyr:common_cc",
+    ],
+    enabled_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//pw_toolchain/cc/capability:compiler_is_gcc",
+        "//pw_toolchain/cc/capability:linker_is_gcc",
+    ] + select({
+        "//pw_toolchain/cc:c++17_enabled": ["//pw_toolchain/cc/args:c++17_feature"],
+        "//conditions:default": [],
+    }) + select({
+        "//pw_toolchain/cc:c++20_enabled": ["//pw_toolchain/cc/args:c++20_feature"],
+        "//conditions:default": [],
+    }),
+    known_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//pw_toolchain/cc/args:c++17_feature",
+        "//pw_toolchain/cc/args:c++20_feature",
+        "//pw_toolchain/cc/capability:compiler_is_gcc",
+        "//pw_toolchain/cc/capability:linker_is_gcc",
+    ],
+    target_compatible_with = select({
+        # TODO: https://pwbug.dev/380001331 - Add support for other cortex MCUs
+        "//pw_build/constraints/arm:cortex-m7": [],
+        "//pw_build/constraints/arm:none": ["@platforms//:incompatible"],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    tool_map = "@zephyr_toolchain//:arm_tools",
+    visibility = ["//pw_toolchain:__pkg__"],
+)
+
+toolchain(
+    name = "toolchain_cortex-m7",
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m7",
+    ],
+    toolchain = ":arm_cortex-m",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
