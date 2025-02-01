@@ -20,7 +20,7 @@
 #include <zephyr/usb/usb_device.h>
 
 static int sys_io_init(void) {
-  int err;
+  int err = 0;
 
   if (IS_ENABLED(CONFIG_PIGWEED_SYS_IO_USB)) {
     err = usb_enable(nullptr);
@@ -28,7 +28,9 @@ static int sys_io_init(void) {
       return err;
     }
   }
-  err = console_init();
+  if (IS_ENABLED(CONFIG_CONSOLE_GETCHAR)) {
+    err = console_init();
+  }
   return err;
 }
 
@@ -48,6 +50,9 @@ Status ReadByte(std::byte* dest) {
 }
 
 Status TryReadByte(std::byte* dest) {
+  if (!IS_ENABLED(CONFIG_CONSOLE_GETCHAR)) {
+    return Status::Unimplemented();
+  }
   if (dest == nullptr) {
     return Status::InvalidArgument();
   }
@@ -64,6 +69,9 @@ Status TryReadByte(std::byte* dest) {
 }
 
 Status WriteByte(std::byte b) {
+  if (!IS_ENABLED(CONFIG_CONSOLE_GETCHAR)) {
+    return Status::Unimplemented();
+  }
   return console_putchar(static_cast<char>(b)) < 0
              ? Status::FailedPrecondition()
              : OkStatus();
