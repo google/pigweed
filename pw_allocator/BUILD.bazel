@@ -58,6 +58,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":deallocator",
+        "//pw_numeric:checked_arithmetic",
         "//pw_result",
     ],
 )

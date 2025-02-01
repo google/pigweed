@@ -19,6 +19,7 @@
 #include "pw_allocator/deallocator.h"
 #include "pw_allocator/layout.h"
 #include "pw_allocator/unique_ptr.h"
+#include "pw_numeric/checked_arithmetic.h"
 #include "pw_result/result.h"
 
 namespace pw {
@@ -40,7 +41,7 @@ class Allocator : public Deallocator {
     return layout.size() != 0 ? DoAllocate(layout) : nullptr;
   }
 
-  /// Constructs and object of type `T` from the given `args`
+  /// Constructs an object of type `T` from the given `args`
   ///
   /// The return value is nullable, as allocating memory for the object may
   /// fail. Callers must check for this error before using the resulting
@@ -50,21 +51,41 @@ class Allocator : public Deallocator {
   template <typename T, int&... ExplicitGuard, typename... Args>
   T* New(Args&&... args) {
     void* ptr = Allocate(Layout::Of<T>());
-    return ptr != nullptr ? new (ptr) T(std::forward<Args>(args)...) : nullptr;
+    if (ptr == nullptr) {
+      return nullptr;
+    }
+    return new (ptr) T(std::forward<Args>(args)...);
   }
 
-  /// Constructs an array of type `T` from the given `args` and size
+  /// Constructs an array of `count` objects of type `T`
   ///
   /// The return value is nullable, as allocating memory for the object may
   /// fail. Callers must check for this error before using the resulting
   /// pointer.
   ///
-  /// @param[in]  size        The size of the array to allocate.
-  template <typename T, int&... ExplicitGuard>
-  T* NewArray(size_t size) {
-    Layout layout(sizeof(T) * size, alignof(T));
+  /// @param[in]  count        Number of objects to allocate.
+  template <typename T>
+  T* NewArray(size_t count) {
+    return NewArray<T>(count, alignof(T));
+  }
+
+  /// Constructs an `alignment`-byte aligned array of `count` objects of type
+  /// `T`
+  ///
+  /// The return value is nullable, as allocating memory for the object may
+  /// fail. Callers must check for this error before using the resulting
+  /// pointer.
+  ///
+  /// @param[in]  count        Number of objects to allocate.
+  template <typename T>
+  T* NewArray(size_t count, size_t alignment) {
+    std::optional<size_t> size = CheckedMul<size_t>(sizeof(T), count);
+    if (!size.has_value()) {
+      return nullptr;
+    }
+    Layout layout(size.value(), alignment);
     void* ptr = Allocate(layout);
-    return ptr != nullptr ? new (ptr) T[size] : nullptr;
+    return ptr != nullptr ? new (ptr) T[count] : nullptr;
   }
 
   /// Constructs and object of type `T` from the given `args`, and wraps it in a
@@ -79,16 +100,29 @@ class Allocator : public Deallocator {
     return Deallocator::WrapUnique<T>(New<T>(std::forward<Args>(args)...));
   }
 
-  /// Constructs an array of type `T` from the given `args` and size, and
-  /// wraps it in a `UniquePtr`
+  /// Constructs an array of `count` objects of type `T`, and wraps it in a
+  /// `UniquePtr`
   ///
   /// The returned value may contain null if allocating memory for the object
   /// fails. Callers must check for null before using the `UniquePtr`.
   ///
-  /// @param[in]  size        The size of the array to allocate.
-  template <typename T, int&... ExplicitGuard>
-  [[nodiscard]] UniquePtr<T[]> MakeUniqueArray(size_t size) {
-    return Deallocator::WrapUniqueArray<T>(NewArray<T>(size), size);
+  /// @param[in]  count        Number of objects to allocate.
+  template <typename T>
+  [[nodiscard]] UniquePtr<T[]> MakeUniqueArray(size_t count) {
+    return Deallocator::WrapUniqueArray<T>(NewArray<T>(count), count);
+  }
+
+  /// Constructs an `alignment`-byte aligned array of `count` objects of type
+  /// `T`, and wraps it in a `UniquePtr`
+  ///
+  /// The returned value may contain null if allocating memory for the object
+  /// fails. Callers must check for null before using the `UniquePtr`.
+  ///
+  /// @param[in]  count        Number of objects to allocate.
+  template <typename T>
+  [[nodiscard]] UniquePtr<T[]> MakeUniqueArray(size_t count, size_t alignment) {
+    return Deallocator::WrapUniqueArray<T>(NewArray<T>(count, alignment),
+                                           count);
   }
 
   /// Modifies the size of an previously-allocated block of memory without

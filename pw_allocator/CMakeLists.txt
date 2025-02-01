@@ -42,6 +42,7 @@ pw_add_library(pw_allocator.allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.deallocator
+    pw_numeric.checked_arithmetic
     pw_result
   SOURCES
     allocator.cc

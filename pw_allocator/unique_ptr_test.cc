@@ -156,7 +156,7 @@ class ConstructorCounter {
  public:
   ConstructorCounter() { ++count_; }
 
-  size_t getCount() { return count_; }
+  size_t getCount() { return std::exchange(count_, 0); }
 
  private:
   static size_t count_;
@@ -172,10 +172,27 @@ TEST_F(UniquePtrTest, ArrayElementsAreConstructed) {
   EXPECT_EQ(ptr[0].getCount(), kArraySize);
 }
 
+TEST_F(UniquePtrTest, ArrayElementsAreConstructedWithSpecifiedAlignment) {
+  constexpr static size_t kArraySize = 5;
+  constexpr static size_t kArrayAlignment = 32;
+
+  pw::UniquePtr<ConstructorCounter[]> ptr =
+      allocator_.MakeUniqueArray<ConstructorCounter>(kArraySize,
+                                                     kArrayAlignment);
+  ASSERT_NE(ptr, nullptr);
+
+  auto addr = reinterpret_cast<uintptr_t>(ptr.get());
+  EXPECT_EQ(addr % kArrayAlignment, 0u);
+  EXPECT_EQ(ptr[0].getCount(), kArraySize);
+}
+
 class DestructorCounter {
  public:
   ~DestructorCounter() { ++count_; }
 
+  static size_t getCount() { return std::exchange(count_, 0); }
+
+ private:
   static size_t count_;
 };
 size_t DestructorCounter::count_ = 0;
@@ -186,10 +203,27 @@ TEST_F(UniquePtrTest, DestructorDestroysAndFreesArray) {
       allocator_.MakeUniqueArray<DestructorCounter>(kArraySize);
   ASSERT_NE(ptr, nullptr);
 
-  EXPECT_EQ(DestructorCounter::count_, 0ul);
+  EXPECT_EQ(DestructorCounter::getCount(), 0ul);
   EXPECT_EQ(allocator_.deallocate_size(), 0ul);
   ptr.Reset();  // Reset the UniquePtr, destroying its contents.
-  EXPECT_EQ(DestructorCounter::count_, kArraySize);
+  EXPECT_EQ(DestructorCounter::getCount(), kArraySize);
+  EXPECT_EQ(allocator_.deallocate_size(),
+            sizeof(DestructorCounter) * kArraySize);
+}
+
+TEST_F(UniquePtrTest, DestructorDestroysAndFreesSpecifiedAlignmentArray) {
+  constexpr static size_t kArraySize = 5;
+  constexpr static size_t kArrayAlignment = 32;
+
+  pw::UniquePtr<DestructorCounter[]> ptr =
+      allocator_.MakeUniqueArray<DestructorCounter>(kArraySize,
+                                                    kArrayAlignment);
+  ASSERT_NE(ptr, nullptr);
+
+  EXPECT_EQ(DestructorCounter::getCount(), 0ul);
+  EXPECT_EQ(allocator_.deallocate_size(), 0ul);
+  ptr.Reset();  // Reset the UniquePtr, destroying its contents.
+  EXPECT_EQ(DestructorCounter::getCount(), kArraySize);
   EXPECT_EQ(allocator_.deallocate_size(),
             sizeof(DestructorCounter) * kArraySize);
 }
@@ -217,6 +251,11 @@ TEST_F(UniquePtrTest, CanRelease) {
 
 TEST_F(UniquePtrTest, SizeReturnsCorrectSize) {
   pw::UniquePtr<int[]> ptr_array = allocator_.MakeUniqueArray<int>(5);
+  EXPECT_EQ(ptr_array.size(), 5U);
+}
+
+TEST_F(UniquePtrTest, SizeReturnsCorrectSizeWhenAligned) {
+  pw::UniquePtr<int[]> ptr_array = allocator_.MakeUniqueArray<int>(5, 32);
   EXPECT_EQ(ptr_array.size(), 5U);
 }
 
