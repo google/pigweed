@@ -26,3 +26,6 @@ sphinx_docs_library(
     prefix = "pw_sys_io_zephyr/",
     target_compatible_with = incompatible_with_mcu(),
 )
+
+# TODO: https://pwbug.dev/380001331 - Make this a zephyr_cc_library
+exports_files(["sys_io.cc"])
