@@ -183,7 +183,7 @@
         "mac-arm64"
       ],
       "tags": [
-        "git_revision:1600b9f46b1bd08b00fe86c46ef6dbb48cbe10d6"
+        "git_revision:ae35f033b874c627d81d51070187fbf55f0bf1a7"
       ],
       "version_file": ".versions/qemu.cipd_version"
     },
