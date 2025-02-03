@@ -13,6 +13,9 @@
 # the License.
 """Rules for declaring unit tests."""
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 def pw_cc_test(**kwargs):
     """Wrapper for cc_test providing some defaults.
 
@@ -42,8 +45,7 @@ def pw_cc_test(**kwargs):
     # Add the unit test main label flag dep.
     test_main = kwargs.pop("test_main", str(Label("//pw_unit_test:main")))
     kwargs["deps"] = original_deps + [test_main]
-
-    native.cc_test(**kwargs)
+    cc_test(**kwargs)
 
     kwargs["alwayslink"] = 1
 
@@ -68,4 +70,4 @@ def pw_cc_test(**kwargs):
 
     # Reset the deps for the .lib target.
     kwargs["deps"] = original_deps
-    native.cc_library(name = kwargs.pop("name") + ".lib", **kwargs)
+    cc_library(name = kwargs.pop("name") + ".lib", **kwargs)

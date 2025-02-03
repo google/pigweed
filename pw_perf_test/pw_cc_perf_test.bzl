@@ -13,6 +13,8 @@
 # the License.
 """Rules for declaring performance tests."""
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
 def pw_cc_perf_test(**kwargs):
     """A Pigweed performance test.
 
@@ -29,4 +31,4 @@ def pw_cc_perf_test(**kwargs):
     kwargs["deps"] = kwargs["deps"] + [str(Label("//pw_assert:assert_backend_impl"))]
     kwargs["deps"] = kwargs["deps"] + [str(Label("//pw_assert:check_backend_impl"))]
     kwargs["testonly"] = True
-    native.cc_binary(**kwargs)
+    cc_binary(**kwargs)

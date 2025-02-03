@@ -14,6 +14,8 @@
 """Pigweed's customized cc_library wrappers."""
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
     _compile_cc = "compile_cc",
@@ -30,7 +32,7 @@ def pw_cc_binary(**kwargs):
       **kwargs: Passed to cc_binary.
     """
     kwargs["deps"] = kwargs.get("deps", []) + [str(Label("//pw_build:default_link_extra_lib"))]
-    native.cc_binary(**kwargs)
+    cc_binary(**kwargs)
 
 def _pw_cc_binary_with_map_impl(ctx):
     [cc_info] = _compile_cc(

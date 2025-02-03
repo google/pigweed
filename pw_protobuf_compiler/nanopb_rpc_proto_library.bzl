@@ -14,6 +14,8 @@
 """Rule for generating a C++ RPC proto library using nanopb."""
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
+load("@com_google_protobuf//bazel/common:proto_info.bzl", "ProtoInfo")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//pw_protobuf_compiler/private:proto.bzl", "compile_proto", "proto_compiler_aspect")
 
 def nanopb_rpc_proto_library(*, name, deps, nanopb_proto_library_deps, tags = [], **kwargs):

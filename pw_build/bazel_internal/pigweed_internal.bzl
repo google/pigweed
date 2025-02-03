@@ -16,6 +16,8 @@
 """ An internal set of tools for creating embedded CC targets. """
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 
 def _print_platform_impl(_, ctx):
     if hasattr(ctx.rule.attr, "constraint_values"):

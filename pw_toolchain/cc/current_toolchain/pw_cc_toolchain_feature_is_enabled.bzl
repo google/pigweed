@@ -15,6 +15,7 @@
 
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 
 def _cc_toolchain_feature_is_enabled_impl(ctx):
     toolchain = find_cpp_toolchain(ctx)

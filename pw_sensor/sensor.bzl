@@ -14,6 +14,9 @@
 """A rule for translating pw_sensor YAML definitions into C++.
 """
 
+load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+
 def _pw_sensor_library_impl(ctx):
     out_header = ctx.actions.declare_file(ctx.attr.out_header)
     sources = ctx.files.srcs

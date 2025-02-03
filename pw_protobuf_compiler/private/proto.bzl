@@ -39,6 +39,7 @@ proto_compiler_aspect.
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@com_google_protobuf//bazel/common:proto_info.bzl", "ProtoInfo")
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
     _compile_cc = "compile_cc",

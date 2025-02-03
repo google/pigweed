@@ -14,6 +14,8 @@
 """Rule for generating C++ proto libraries using nanopb."""
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
+load("@com_google_protobuf//bazel/common:proto_info.bzl", "ProtoInfo")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//pw_protobuf_compiler/private:proto.bzl", "compile_proto", "proto_compiler_aspect")
 
 # TODO: b/234873954 - Enable unused variable check.

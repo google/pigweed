@@ -14,6 +14,8 @@
 
 # Note, this file is not copybara'd from upstream Fuchsia.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(
     default_visibility = ["//visibility:public"],
     features = ["-layering_check"],

@@ -14,6 +14,7 @@
 """Rules to convert a binary blob into a C++ library."""
 
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "use_cpp_toolchain")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
     _compile_cc = "compile_cc",

@@ -13,6 +13,8 @@
 # the License.
 """Bazel rules for declaring Pigweed facade interface layers."""
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 def pw_facade(name, srcs = None, backend = None, **kwargs):
     """Create a cc_library with a facade.
 
@@ -46,7 +48,7 @@ def pw_facade(name, srcs = None, backend = None, **kwargs):
     # A facade has no srcs, so it can only have public deps. Don't specify any
     # implementation_deps on the facade target.
     facade_kwargs.pop("implementation_deps", [])
-    native.cc_library(
+    cc_library(
         name = name + ".facade",
         # The .facade target is not self-contained (it's missing a dependency
         # on the backend headers), so it can't be successfully clang-tidied.
@@ -58,7 +60,7 @@ def pw_facade(name, srcs = None, backend = None, **kwargs):
     )
 
     kwargs["deps"] = kwargs.get("deps", []) + [backend]
-    native.cc_library(
+    cc_library(
         name = name,
         srcs = srcs,
         **kwargs
