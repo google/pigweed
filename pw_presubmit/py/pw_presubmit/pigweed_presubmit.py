@@ -1103,6 +1103,7 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # keep-sorted: start
     r'MODULE.bazel.lock',
     r'\b49-pico.rules$',
+    r'\bCargo.lock$',
     r'\bDoxyfile$',
     r'\bPW_PLUGINS$',
     r'\bconstraint.list$',

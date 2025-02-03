@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,15 +12,24 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-.cipd
-.presubmit
-.environment
-environment
-node_modules
-out
-bazel-bin
-bazel-out
-bazel-pigweed
-bazel-testlogs
-outbazel
-third_party/crates_io/rust_crates
+load(":aliases.bzl", "make_crate_aliases")
+
+constraint_setting(
+    name = "std_enabled",
+    default_constraint_value = ":std",
+    visibility = ["//visibility:public"],
+)
+
+constraint_value(
+    name = "std",
+    constraint_setting = ":std_enabled",
+    visibility = ["//visibility:public"],
+)
+
+constraint_value(
+    name = "no_std",
+    constraint_setting = ":std_enabled",
+    visibility = ["//visibility:public"],
+)
+
+make_crate_aliases(name = "aliases")

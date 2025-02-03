@@ -72,10 +72,18 @@ CHANNELS = [
     },
     {
         # In order to approximate a stable toolchain with our nightly one, we
-        # disable experimental features with the exception of `proc_macro_span`
-        # because the `proc-marcro2` automatically detects the toolchain
-        # as nightly and dynamically uses this feature.
-        "extra_rustc_flags": ["-Dwarnings", "-Zallow-features=proc_macro_span,rustc_attrs"],
+        # disable experimental features.  However some crate's build.rs file
+        # autodetects the nightly compiler and automatically enables the
+        # features.  For crates that exist in both `crates_std` and
+        # `crates_no_std` we can use `crate.annotation()` in the `MODULE.bazel`.
+        # For crates that do not exist in both places, this fails an we have
+        # to allow these features globally.  These include:
+        # `error_generic_member_access`: `anyhow` auto detects this feature
+        # `proc_macro_span`: `proc-macro2` auto detects this features
+        "extra_rustc_flags": [
+            "-Dwarnings",
+            "-Zallow-features=error_generic_member_access,proc_macro_span",
+        ],
         "name": "stable",
         "target_settings": ["@rules_rust//rust/toolchain/channel:stable"],
     },

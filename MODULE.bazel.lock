@@ -243,17 +243,16 @@
   "moduleExtensions": {
     "//pw_build:pw_rust_crates_extension.bzl%pw_rust_crates_extension": {
       "general": {
-        "bzlTransitiveDigest": "T8aIp2aauc738fejJO/QS/z6UZ+gOR7XVPK33cyUS44=",
-        "usagesDigest": "B2QCMje5bnk5mx8fJGQ6Ph29f21df4gtvOOSoG8XIAc=",
+        "bzlTransitiveDigest": "VvN2wgt2NRgQvkcrE4FuBy/eFFCGDOtoxCo82y/FBaM=",
+        "usagesDigest": "edi5uLgc7ZfaRnTkq6vAIJ6ahbjf9sG7mpzRRcZ2PpU=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
         "generatedRepoSpecs": {
           "rust_crates": {
-            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:git.bzl%git_repository",
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:local.bzl%local_repository",
             "attributes": {
-              "commit": "ed1ec1bd240b9446b30af5331b960871a0503a6c",
-              "remote": "https://pigweed.googlesource.com/third_party/rust_crates"
+              "path": "third_party/crates_io/rust_crates"
             }
           }
         },
@@ -268,7 +267,7 @@
     },
     "//pw_toolchain/rust:extensions.bzl%pw_rust": {
       "general": {
-        "bzlTransitiveDigest": "0zpjhCipe+Ca8/P2/QbuZxo+fi5CO5OMT5lRuh+dzKk=",
+        "bzlTransitiveDigest": "7W75qLImF3oCPeOBerkNL2TLCsAVgFIzMesEhvA/uis=",
         "usagesDigest": "cJImm0LyCIYoQkWs6+VvdMjzjfi5Oc+IDwVYEr2keig=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},

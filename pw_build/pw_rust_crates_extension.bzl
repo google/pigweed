@@ -25,45 +25,11 @@ pw_rust_crates = use_extension("@pigweed//pw_build:pw_rust_crates_extension.bzl"
 override_repo(pw_rust_crates, rust_crates = "rust_crates")
 """
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:local.bzl", "local_repository")
 
-def _pw_rust_crates_extension_impl(ctx):
-    for module in ctx.modules:
-        if module.tags.default_git_repository:
-            if (module.name != "pigweed"):
-                fail("Only pigweed should set default_git_repository")
-
-            default_git_repository = None
-
-            # Always use the last definition of a default repo
-            # if multiple defined.
-            for repo in module.tags.default_git_repository:
-                default_git_repository = repo
-
-            git_repository(
-                name = "rust_crates",
-                commit = default_git_repository.commit,
-                remote = default_git_repository.remote,
-            )
+def _pw_rust_crates_extension_impl(_ctx):
+    local_repository(name = "rust_crates", path = "third_party/crates_io/rust_crates")
 
 pw_rust_crates_extension = module_extension(
     implementation = _pw_rust_crates_extension_impl,
-    tag_classes = {
-        "default_git_repository": tag_class(
-            attrs = {
-                "commit": attr.string(
-                    mandatory = True,
-                    doc = "Git commit hash to pull",
-                ),
-                "remote": attr.string(
-                    mandatory = True,
-                    doc = "Remote git repository",
-                ),
-            },
-            doc = """The default git repository to use.  Only pigweed should
-            set this. Upstream modules should override the repo with
-            https://bazel.build/rules/lib/globals/module#override_repo
-            """,
-        ),
-    },
 )

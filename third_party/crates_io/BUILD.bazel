@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,15 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-.cipd
-.presubmit
-.environment
-environment
-node_modules
-out
-bazel-bin
-bazel-out
-bazel-pigweed
-bazel-testlogs
-outbazel
-third_party/crates_io/rust_crates
+# Stub target for a future when a presubmit verifies that rust sources appear
+# in build files.
+filegroup(
+    name = "crates_io_util_srcs",
+    srcs = [
+        "src/aliases.rs",
+        "src/main.rs",
+    ],
+)
