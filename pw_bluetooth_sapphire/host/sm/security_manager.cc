@@ -453,8 +453,31 @@ void SecurityManagerImpl::OnPairingRequest(
     return;
   }
 
-  // We only require authentication as Responder if there is a pending Security
-  // Request for it.
+  // "If pairing has been initiated by the local device on the BR/EDR transport,
+  // and a pairing request is received from the same remote device on the LE
+  // transport, the LE pairing shall be rejected with SMP error code BR/EDR
+  // Pairing in Progress if both sides support LE Secure Connections." (v6.0,
+  // Vol. 3, Part C, Sec. 14.2)
+  bool peer_supports_secure_connections = req_params.auth_req & kSC;
+  bool le_secure_connections =
+      low_energy_link_.is_alive() && peer_supports_secure_connections;
+  bool bredr_pairing_in_progress =
+      peer_->bredr() && peer_->bredr()->is_pairing();
+  if (le_secure_connections && bredr_pairing_in_progress) {
+    bt_log(INFO,
+           "sm",
+           "LE: rejecting Pairing Request because BREDR pairing in progress");
+    if (SecurityUpgradeInProgress()) {
+      Abort(ErrorCode::kBREDRPairingInProgress);
+    } else {
+      sm_chan_->SendMessageNoTimerReset(kPairingFailed,
+                                        ErrorCode::kBREDRPairingInProgress);
+    }
+    return;
+  }
+
+  // We only require authentication as Responder if there is a pending
+  // Security Request for it.
   SecurityRequestPhase* security_req_phase =
       std::get_if<SecurityRequestPhase>(&current_phase_);
   auto required_level = security_req_phase

@@ -173,7 +173,9 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
         link_role,
         transport_->GetWeakPtr());
 
-    InitializePeer();
+    if (!peer_) {
+      InitializePeer();
+    }
 
     pairing_ = SecurityManager::CreateLE(fake_le_link_->GetWeakPtr(),
                                          fake_chan_->GetWeakPtr(),
@@ -218,6 +220,10 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
   }
 
   void InitializePeer(bool is_bredr = false) {
+    InitializePeer(is_bredr ? kPeerBrEdrAddr : kPeerAddr);
+  }
+
+  void InitializePeer(DeviceAddress address) {
     auto listeners_cb = [](const gap::Peer&, gap::Peer::NotifyListenersChange) {
     };
     auto expiry_cb = [](const gap::Peer&) {};
@@ -228,7 +234,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
                   std::move(dual_mode_cb),
                   std::move(store_le_bond_cb),
                   kPeerId,
-                  is_bredr ? kPeerBrEdrAddr : kPeerAddr,
+                  address,
                   /*connectable=*/true,
                   &peer_metrics_,
                   dispatcher_);
@@ -4529,6 +4535,38 @@ TEST_F(SecurityManagerTest, BrEdrInitiatorPeerDoesNotWantToDoCtkd) {
   ASSERT_TRUE(received_error_code().has_value());
   EXPECT_EQ(received_error_code().value(),
             ErrorCode::kCrossTransportKeyDerivationNotAllowed);
+}
+
+TEST_F(ResponderPairingTest, BrEdrPairingInProgressErrorInResponseToRequest) {
+  InitializePeer(kPeerPublicAddr);
+  NewSecurityManager(
+      Role::kResponder, IOCapability::kDisplayOnly, BondableMode::Bondable);
+  gap::Peer::PairingToken token = peer().MutBrEdr().RegisterPairing();
+  ReceivePairingRequest(IOCapability::kDisplayOnly, kSC);
+  RunUntilIdle();
+  EXPECT_EQ(0, pairing_response_count());
+  EXPECT_EQ(1, pairing_failed_count());
+  ASSERT_TRUE(received_error_code().has_value());
+  EXPECT_EQ(received_error_code().value(), ErrorCode::kBREDRPairingInProgress);
+}
+
+TEST_F(ResponderPairingTest, BrEdrPairingInProgressDuringSecurityRequestPhase) {
+  InitializePeer(kPeerPublicAddr);
+  NewSecurityManager(
+      Role::kResponder, IOCapability::kDisplayOnly, BondableMode::Bondable);
+  UpgradeSecurity(SecurityLevel::kEncrypted);
+  RunUntilIdle();
+  EXPECT_EQ(1, security_request_count());
+
+  gap::Peer::PairingToken token = peer().MutBrEdr().RegisterPairing();
+
+  ReceivePairingRequest(IOCapability::kDisplayOnly, kSC);
+  RunUntilIdle();
+  EXPECT_EQ(0, pairing_response_count());
+  EXPECT_EQ(0, pairing_response_count());
+  EXPECT_EQ(1, pairing_failed_count());
+  ASSERT_TRUE(received_error_code().has_value());
+  EXPECT_EQ(received_error_code().value(), ErrorCode::kBREDRPairingInProgress);
 }
 
 }  // namespace
