@@ -380,6 +380,23 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
     requested_level = SecurityLevel::kEncrypted;
   }
 
+  // "If pairing has been initiated by the local device on the BR/EDR transport,
+  // and a pairing request is received from the same remote device on the LE
+  // transport, the LE pairing shall be rejected with SMP error code BR/EDR
+  // Pairing in Progress if both sides support LE Secure Connections." (v6.0,
+  // Vol. 3, Part C, Sec. 14.2)
+  bool peer_supports_secure_connections = auth_req & kSC;
+  bool bredr_pairing_in_progress =
+      peer_->bredr() && peer_->bredr()->is_pairing();
+  if (peer_supports_secure_connections && bredr_pairing_in_progress) {
+    bt_log(INFO,
+           "sm",
+           "rejecting Security Request because BREDR pairing in progress");
+    sm_chan_->SendMessageNoTimerReset(kPairingFailed,
+                                      ErrorCode::kBREDRPairingInProgress);
+    return;
+  }
+
   // If we already have a LTK and its security properties satisfy the request,
   // then we start link layer encryption (which will either encrypt the link or
   // perform a key refresh). See Vol 3, Part H, Figure 2.7 for the algorithm.
@@ -395,6 +412,7 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
     low_energy_link_->StartEncryption();
     return;
   }
+
   // V5.1 Vol. 3 Part H Section 3.4: "Upon [...] reception of the Security
   // Request command, the Security Manager Timer shall be [...] restarted."
   StartNewTimer();

@@ -4537,7 +4537,8 @@ TEST_F(SecurityManagerTest, BrEdrInitiatorPeerDoesNotWantToDoCtkd) {
             ErrorCode::kCrossTransportKeyDerivationNotAllowed);
 }
 
-TEST_F(ResponderPairingTest, BrEdrPairingInProgressErrorInResponseToRequest) {
+TEST_F(ResponderPairingTest,
+       BrEdrPairingInProgressErrorInResponseToPairingRequest) {
   InitializePeer(kPeerPublicAddr);
   NewSecurityManager(
       Role::kResponder, IOCapability::kDisplayOnly, BondableMode::Bondable);
@@ -4564,6 +4565,57 @@ TEST_F(ResponderPairingTest, BrEdrPairingInProgressDuringSecurityRequestPhase) {
   RunUntilIdle();
   EXPECT_EQ(0, pairing_response_count());
   EXPECT_EQ(0, pairing_response_count());
+  EXPECT_EQ(1, pairing_failed_count());
+  ASSERT_TRUE(received_error_code().has_value());
+  EXPECT_EQ(received_error_code().value(), ErrorCode::kBREDRPairingInProgress);
+}
+
+TEST_F(InitiatorPairingTest,
+       BrEdrPairingInProgressErrorInResponseToSecurityRequest) {
+  InitializePeer(kPeerPublicAddr);
+  NewSecurityManager(
+      Role::kInitiator, IOCapability::kDisplayOnly, BondableMode::Bondable);
+  gap::Peer::PairingToken token = peer().MutBrEdr().RegisterPairing();
+  ReceiveSecurityRequest(AuthReq::kSC);
+  RunUntilIdle();
+  EXPECT_EQ(0, pairing_request_count());
+  EXPECT_EQ(1, pairing_failed_count());
+  ASSERT_TRUE(received_error_code().has_value());
+  EXPECT_EQ(received_error_code().value(), ErrorCode::kBREDRPairingInProgress);
+}
+
+TEST_F(InitiatorPairingTest,
+       ReceiveSecurityRequestWhenScPairedDuringBrEdrPairingFails) {
+  InitializePeer(kPeerPublicAddr);
+  NewSecurityManager(
+      Role::kInitiator, IOCapability::kDisplayOnly, BondableMode::Bondable);
+
+  UInt128 stk;
+  FastForwardToPhase3(&stk,
+                      /*secure_connections=*/true,
+                      SecurityLevel::kEncrypted,
+                      KeyDistGen::kEncKey);
+  EXPECT_EQ(stk, fake_link()->ltk()->value());
+  EXPECT_EQ(1, pairing_request_count());
+
+  // Receive EncKey and wait until the link is encrypted with the LTK.
+  UInt128 kLTK{{1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0}};
+  uint64_t kRand = 5;
+  uint16_t kEDiv = 20;
+  ReceiveEncryptionInformation(kLTK);
+  ReceiveCentralIdentification(kRand, kEDiv);
+  RunUntilIdle();
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(true));
+  RunUntilIdle();
+  ASSERT_EQ(1, pairing_complete_count());
+  ASSERT_EQ(fit::ok(), security_status());
+  EXPECT_EQ(1, pairing_request_count());
+  ASSERT_EQ(1, fake_link()->start_encryption_count());
+
+  gap::Peer::PairingToken token = peer().MutBrEdr().RegisterPairing();
+
+  ReceiveSecurityRequest(AuthReq::kSC);
+  RunUntilIdle();
   EXPECT_EQ(1, pairing_failed_count());
   ASSERT_TRUE(received_error_code().has_value());
   EXPECT_EQ(received_error_code().value(), ErrorCode::kBREDRPairingInProgress);
