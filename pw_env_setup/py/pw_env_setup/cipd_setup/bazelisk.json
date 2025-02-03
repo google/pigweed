@@ -5,7 +5,7 @@
   ],
   "packages": [
     {
-      "path": "fuchsia/third_party/bazelisk-as-bazel/${platform}",
+      "path": "fuchsia/third_party/3pp/bazelisk-as-bazel/${platform}",
       "platforms": [
         "linux-amd64",
         "mac-amd64",
