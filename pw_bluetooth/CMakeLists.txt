@@ -253,7 +253,7 @@ emboss_cc_library(pw_bluetooth.emboss_snoop
     public
 )
 
-pw_add_library("pw_bluetooth.emboss_hci_group" INTERFACE
+pw_add_library(pw_bluetooth.emboss_hci_group INTERFACE
   PUBLIC_DEPS
     pw_bluetooth.emboss_hci_android
     pw_bluetooth.emboss_hci_commands
@@ -281,7 +281,7 @@ pw_add_library(pw_bluetooth.snoop STATIC
     pw_bluetooth.emboss_snoop
 )
 
-pw_target_link_targets("pw_bluetooth._public_config"
+pw_target_link_targets(pw_bluetooth
   INTERFACE
     pw_bluetooth.emboss_att
     pw_bluetooth.emboss_hci_android

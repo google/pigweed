@@ -67,7 +67,7 @@ function(emboss_cc_library NAME)
     get_target_property(sources ${dep} SOURCES)
     list(APPEND dependent_sources ${sources})
     get_target_property(
-      imports ${dep}._public_config INTERFACE_INCLUDE_DIRECTORIES)
+      imports ${dep} INTERFACE_INCLUDE_DIRECTORIES)
     list(APPEND abs_import_dirs ${imports})
   endforeach()
 

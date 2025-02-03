@@ -257,63 +257,17 @@ function(pw_add_library_generic NAME TYPE)
     endif()
   endforeach()
 
-  # In order to more easily create the various types of libraries, two hidden
-  # targets are created: NAME._config and NAME._public_config which loosely
-  # mirror the GN configs although we also carry target link dependencies
-  # through these.
+  # Applies public or private attributes to a target. This fills a role similar
+  # to GN's public_configs and configs, but adds the attributes directly to the
+  # target to avoid creating extra internal targets.
+  macro(apply_library_config NAME TYPE VISIBILITY)
+    target_include_directories(${NAME} ${TYPE} ${arg_${VISIBILITY}_INCLUDES})
+    target_compile_definitions(${NAME} ${TYPE} ${arg_${VISIBILITY}_DEFINES})
+    target_compile_options(${NAME} ${TYPE} ${arg_${VISIBILITY}_COMPILE_OPTIONS})
+    target_link_options(${NAME} ${TYPE} ${arg_${VISIBILITY}_LINK_OPTIONS})
+    pw_target_link_targets(${NAME} ${TYPE} ${arg_${VISIBILITY}_DEPS})
+  endmacro()
 
-  # Add the NAME._config target_link_libraries dependency with the
-  # PRIVATE_INCLUDES, PRIVATE_DEFINES, PRIVATE_COMPILE_OPTIONS,
-  # PRIVATE_LINK_OPTIONS, and PRIVATE_DEPS.
-  add_library("${NAME}._config" INTERFACE EXCLUDE_FROM_ALL)
-  target_include_directories("${NAME}._config"
-    INTERFACE
-      ${arg_PRIVATE_INCLUDES}
-  )
-  target_compile_definitions("${NAME}._config"
-    INTERFACE
-      ${arg_PRIVATE_DEFINES}
-  )
-  target_compile_options("${NAME}._config"
-    INTERFACE
-      ${arg_PRIVATE_COMPILE_OPTIONS}
-  )
-  target_link_options("${NAME}._config"
-    INTERFACE
-      ${arg_PRIVATE_LINK_OPTIONS}
-  )
-  pw_target_link_targets("${NAME}._config"
-    INTERFACE
-      ${arg_PRIVATE_DEPS}
-  )
-
-  # Add the NAME._public_config target_link_libraries dependency with the
-  # PUBLIC_INCLUDES, PUBLIC_DEFINES, PUBLIC_COMPILE_OPTIONS,
-  # PUBLIC_LINK_OPTIONS, and PUBLIC_DEPS.
-  add_library("${NAME}._public_config" INTERFACE EXCLUDE_FROM_ALL)
-  target_include_directories("${NAME}._public_config"
-    INTERFACE
-      ${arg_PUBLIC_INCLUDES}
-  )
-  target_compile_definitions("${NAME}._public_config"
-    INTERFACE
-      ${arg_PUBLIC_DEFINES}
-  )
-  target_compile_options("${NAME}._public_config"
-    INTERFACE
-      ${arg_PUBLIC_COMPILE_OPTIONS}
-  )
-  target_link_options("${NAME}._public_config"
-    INTERFACE
-      ${arg_PUBLIC_LINK_OPTIONS}
-  )
-  pw_target_link_targets("${NAME}._public_config"
-    INTERFACE
-      ${arg_PUBLIC_DEPS}
-  )
-
-  # Instantiate the library depending on the type using the NAME._config and
-  # NAME._public_config libraries we just created.
   if("${TYPE}" STREQUAL "INTERFACE")
     if(NOT "${arg_SOURCES}" STREQUAL "")
       message(
@@ -322,10 +276,7 @@ function(pw_add_library_generic NAME TYPE)
 
     add_library("${NAME}" INTERFACE EXCLUDE_FROM_ALL)
     target_sources("${NAME}" PRIVATE ${arg_HEADERS})
-    pw_target_link_targets("${NAME}"
-      INTERFACE
-        "${NAME}._public_config"
-    )
+    apply_library_config("${NAME}" INTERFACE PUBLIC)
   elseif(("${TYPE}" STREQUAL "STATIC") OR ("${TYPE}" STREQUAL "SHARED"))
     if("${arg_SOURCES}" STREQUAL "")
       message(
@@ -334,12 +285,8 @@ function(pw_add_library_generic NAME TYPE)
 
     add_library("${NAME}" "${TYPE}" EXCLUDE_FROM_ALL)
     target_sources("${NAME}" PRIVATE ${arg_HEADERS} ${arg_SOURCES})
-    pw_target_link_targets("${NAME}"
-      PUBLIC
-        "${NAME}._public_config"
-      PRIVATE
-        "${NAME}._config"
-    )
+    apply_library_config("${NAME}" PUBLIC PUBLIC)
+    apply_library_config("${NAME}" PRIVATE PRIVATE)
     foreach(compile_option_dep IN LISTS arg_PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE)
       # This will fail at build time if the target does not exist.
       target_compile_options("${NAME}" BEFORE PRIVATE
@@ -356,16 +303,13 @@ function(pw_add_library_generic NAME TYPE)
     # linking dependencies, the library has to be split up into two where the
     # outer interface library forwards not only the internal object library
     # but also its TARGET_OBJECTS.
-    add_library("${NAME}._object" OBJECT EXCLUDE_FROM_ALL)
-    target_sources("${NAME}._object" PRIVATE ${arg_SOURCES})
-    pw_target_link_targets("${NAME}._object"
-      PRIVATE
-        "${NAME}._public_config"
-        "${NAME}._config"
-    )
+    add_library("${NAME}._pw_object" OBJECT EXCLUDE_FROM_ALL)
+    target_sources("${NAME}._pw_object" PRIVATE ${arg_SOURCES})
+    apply_library_config("${NAME}._pw_object" PRIVATE PUBLIC)
+    apply_library_config("${NAME}._pw_object" PRIVATE PRIVATE)
     foreach(compile_option_dep IN LISTS arg_PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE)
       # This will fail at build time if the target does not exist.
-      target_compile_options("${NAME}._object" BEFORE PRIVATE
+      target_compile_options("${NAME}._pw_object" BEFORE PRIVATE
           $<TARGET_PROPERTY:${compile_option_dep},INTERFACE_COMPILE_OPTIONS>
       )
     endforeach()
@@ -374,12 +318,12 @@ function(pw_add_library_generic NAME TYPE)
     target_sources("${NAME}" PRIVATE ${arg_HEADERS})
     pw_target_link_targets("${NAME}"
       INTERFACE
-        "${NAME}._public_config"
-        "${NAME}._object"
+        "${NAME}._pw_object"
     )
+    apply_library_config("${NAME}" INTERFACE PUBLIC)
     target_link_libraries("${NAME}"
       INTERFACE
-        $<TARGET_OBJECTS:${NAME}._object>
+        $<TARGET_OBJECTS:${NAME}._pw_object>
     )
   else()
     message(FATAL_ERROR "Unsupported libary type: ${TYPE}")
