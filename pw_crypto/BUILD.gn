@@ -220,6 +220,7 @@ pw_source_set("aes_boringssl") {
     "public/pw_crypto/aes_boringssl.h",
     "public_overrides/boringssl/pw_crypto/aes_backend.h",
   ]
+  deps = [ "$dir_pw_assert" ]
   public_deps = [
     ":aes.facade",
     "$dir_pw_third_party/boringssl",
@@ -247,6 +248,7 @@ pw_test("aes_test") {
   deps = [
     ":aes",
     ":aes_cmac",
+    "$dir_pw_assert",
     "$dir_pw_containers:vector",
   ]
   sources = [ "aes_test.cc" ]
