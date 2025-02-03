@@ -129,7 +129,6 @@ cc_tool(
         "arm-zephyr-eabi/**/*.a",
         "arm-zephyr-eabi/**/*.ld",
         "arm-zephyr-eabi/**/*.o",
-        "arm-zephyr-eabi/**/*.spec",
         "arm-zephyr-eabi/**/*.specs",
         "arm-zephyr-eabi/**/*.so",
         "arm-zephyr-eabi/libexec/**",
