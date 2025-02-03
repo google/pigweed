@@ -158,11 +158,13 @@ directory_path(
     name = "rollup_entry_point",
     directory = "//:node_modules/rollup/dir",
     path = "dist/bin/rollup",
+    target_compatible_with = incompatible_with_mcu(),
 )
 
 js_binary(
     name = "rollup_bin",
     entry_point = ":rollup_entry_point",
+    target_compatible_with = incompatible_with_mcu(),
 )
 
 filegroup(
@@ -189,12 +191,14 @@ js_run_binary(
     ],
     outs = ["dist/bin/build_default_protos.js"],
     args = ["-c rollup-protos.config.js"],
+    target_compatible_with = incompatible_with_mcu(),
     tool = ":rollup_bin",
 )
 
 js_binary(
     name = "build_protos_binary",
     entry_point = ":build_protos_builder",
+    target_compatible_with = incompatible_with_mcu(),
 )
 
 js_run_binary(
@@ -210,6 +214,7 @@ js_run_binary(
         "//pw_transfer/ts:js_files",
     ],
     out_dirs = ["dist/protos"],
+    target_compatible_with = incompatible_with_mcu(),
     tool = ":build_protos_binary",
 )
 
@@ -242,6 +247,7 @@ js_run_binary(
         "dist/pw_console.umd.js.map",
     ],
     args = ["-c"],
+    target_compatible_with = incompatible_with_mcu(),
     tool = ":rollup_bin",
 )
 

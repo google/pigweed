@@ -818,7 +818,7 @@
     },
     "@@aspect_rules_js+//npm:extensions.bzl%pnpm": {
       "general": {
-        "bzlTransitiveDigest": "Upv8pjJe8zgflrzcUw2wUJhrYssWiM5JgxxNJN78Bow=",
+        "bzlTransitiveDigest": "3EVrVHeIpAzbH8kdJN+aLRgnurLZpwHgWmgyCiV3MSc=",
         "usagesDigest": "0bnQ+rfWPgPBwIzrmxLJ+o/WAhUldmvdunr9wh8cgSk=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1433,7 +1433,7 @@
     },
     "@@rules_python+//python/private/pypi:pip.bzl%pip_internal": {
       "general": {
-        "bzlTransitiveDigest": "cQAz0zD3wISee1EZ5PStw14ZfwFpf3ChdvW6vMcjUKY=",
+        "bzlTransitiveDigest": "6Zpx7tngDBz+afN8QHJa7+jc/GNpSkB7imZElmszAJI=",
         "usagesDigest": "OLoIStnzNObNalKEMRq99FqenhPGLFZ5utVLV4sz7OI=",
         "recordedFileInputs": {
           "@@rules_python+//tools/publish/requirements_darwin.txt": "2994136eab7e57b083c3de76faf46f70fad130bc8e7360a7fed2b288b69e79dc",
