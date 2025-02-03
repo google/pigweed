@@ -305,7 +305,6 @@ class LowEnergyConnection final : public sm::Delegate {
   void CloseRefs();
 
   // sm::Delegate overrides:
-  void OnNewPairingData(const sm::PairingData& pairing_data) override;
   void OnPairingComplete(sm::Result<> status) override;
   void OnAuthenticationFailure(hci::Result<> status) override;
   void OnNewSecurityProperties(const sm::SecurityProperties& sec) override;

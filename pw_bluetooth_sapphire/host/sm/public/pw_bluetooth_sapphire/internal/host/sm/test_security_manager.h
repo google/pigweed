@@ -76,13 +76,15 @@ class TestSecurityManager final : public SecurityManager {
                       IOCapability io_capability,
                       Delegate::WeakPtr delegate,
                       BondableMode bondable_mode,
-                      gap::LESecurityMode security_mode);
+                      gap::LESecurityMode security_mode,
+                      gap::Peer::WeakPtr peer);
   Role role_;
   std::optional<LTK> current_ltk_;
   std::optional<SecurityLevel> last_requested_upgrade_;
   Delegate::WeakPtr delegate_;
   std::optional<sm::IdentityInfo> last_identity_info_;
   std::optional<sm::PairingData> pairing_data_;
+  gap::Peer::WeakPtr peer_;
   WeakSelf<TestSecurityManager> weak_self_;
 };
 

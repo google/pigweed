@@ -845,7 +845,48 @@ void SecurityManagerImpl::OnLowEnergyPairingComplete(PairingData pairing_data) {
   }
 
   if (features_->will_bond) {
-    delegate_->OnNewPairingData(pairing_data);
+    std::optional<sm::LTK> ltk;
+    if (pairing_data.peer_ltk) {
+      ltk = pairing_data.peer_ltk;
+    } else {
+      ltk = pairing_data.local_ltk;
+    }
+
+    if (ltk.has_value()) {
+      bt_log(
+          INFO,
+          "sm",
+          "new %s pairing data: [%s%s%s%s%s%s] (peer: %s)",
+          ltk->security().secure_connections() ? "secure connections"
+                                               : "legacy",
+          pairing_data.peer_ltk ? "peer_ltk " : "",
+          pairing_data.local_ltk ? "local_ltk " : "",
+          pairing_data.irk ? "irk " : "",
+          pairing_data.cross_transport_key ? "ct_key " : "",
+          pairing_data.identity_address
+              ? bt_lib_cpp_string::StringPrintf(
+                    "(identity: %s) ", bt_str(*pairing_data.identity_address))
+                    .c_str()
+              : "",
+          pairing_data.csrk ? "csrk " : "",
+          bt_str(peer_->identifier()));
+
+      if (!peer_->MutLe().StoreBond(pairing_data)) {
+        bt_log(ERROR,
+               "sm",
+               "failed to cache bonding data (id: %s)",
+               bt_str(peer_->identifier()));
+      }
+    } else {
+      // Consider the pairing temporary if no link key was received. This
+      // means we'll remain encrypted with the STK without creating a bond and
+      // reinitiate pairing when we reconnect in the future.
+      bt_log(INFO,
+             "sm",
+             "temporarily paired with peer (peer: %s)",
+             bt_str(peer_->identifier()));
+    }
+
   } else {
     bt_log(INFO,
            "gap-le",
@@ -901,7 +942,12 @@ void SecurityManagerImpl::OnBrEdrPairingComplete(PairingData pairing_data) {
     return;
   }
 
-  delegate_->OnNewPairingData(pairing_data);
+  if (!peer_->MutLe().StoreBond(pairing_data)) {
+    bt_log(ERROR,
+           "sm",
+           "failed to cache bonding data (id: %s)",
+           bt_str(peer_->identifier()));
+  }
 
   if (bredr_cross_transport_key_derivation_callback_) {
     bredr_cross_transport_key_derivation_callback_(fit::ok());

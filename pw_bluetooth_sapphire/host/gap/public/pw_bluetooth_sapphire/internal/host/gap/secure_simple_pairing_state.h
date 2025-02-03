@@ -430,7 +430,6 @@ class SecureSimplePairingState final {
 
    private:
     std::optional<sm::IdentityInfo> OnIdentityInformationRequest() override;
-    void OnNewPairingData(const sm::PairingData& data) override;
 
     // These methods are not used in BR/EDR.
     void OnPairingComplete(sm::Result<>) override {}

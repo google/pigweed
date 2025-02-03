@@ -54,9 +54,6 @@ class Delegate {
   // Called when an ongoing pairing is completed with the given |status|.
   virtual void OnPairingComplete(Result<> status) = 0;
 
-  // Called when new pairing data has been obtained for this peer.
-  virtual void OnNewPairingData(const PairingData& data) = 0;
-
   // Called when the link layer authentication procedure fails. This likely
   // indicates that the LTK or STK used to encrypt the connection was rejected
   // by the peer device.

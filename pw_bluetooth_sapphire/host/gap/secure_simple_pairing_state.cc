@@ -1009,16 +1009,6 @@ std::optional<sm::IdentityInfo> SecureSimplePairingState::
   return id_info;
 }
 
-void SecureSimplePairingState::SecurityManagerDelegate::OnNewPairingData(
-    const sm::PairingData& data) {
-  if (!ssp_state_->peer_->MutLe().StoreBond(data)) {
-    bt_log(ERROR,
-           "gap-bredr",
-           "failed to cache bonding data (id: %s)",
-           bt_str(ssp_state_->peer_id()));
-  }
-}
-
 void SecureSimplePairingState::AttachInspect(inspect::Node& parent,
                                              std::string name) {
   inspect_node_ = parent.CreateChild(name);

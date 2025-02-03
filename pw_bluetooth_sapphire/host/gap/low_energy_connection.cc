@@ -801,45 +801,6 @@ void LowEnergyConnection::CloseRefs() {
   refs_.Mutable()->clear();
 }
 
-void LowEnergyConnection::OnNewPairingData(
-    const sm::PairingData& pairing_data) {
-  const std::optional<sm::LTK> ltk =
-      pairing_data.peer_ltk ? pairing_data.peer_ltk : pairing_data.local_ltk;
-  // Consider the pairing temporary if no link key was received. This
-  // means we'll remain encrypted with the STK without creating a bond and
-  // reinitiate pairing when we reconnect in the future.
-  if (!ltk.has_value()) {
-    bt_log(INFO,
-           "gap-le",
-           "temporarily paired with peer (peer: %s)",
-           bt_str(peer_id()));
-    return;
-  }
-
-  bt_log(INFO,
-         "gap-le",
-         "new %s pairing data: [%s%s%s%s%s%s] (peer: %s)",
-         ltk->security().secure_connections() ? "secure connections" : "legacy",
-         pairing_data.peer_ltk ? "peer_ltk " : "",
-         pairing_data.local_ltk ? "local_ltk " : "",
-         pairing_data.irk ? "irk " : "",
-         pairing_data.cross_transport_key ? "ct_key " : "",
-         pairing_data.identity_address
-             ? bt_lib_cpp_string::StringPrintf(
-                   "(identity: %s) ", bt_str(*pairing_data.identity_address))
-                   .c_str()
-             : "",
-         pairing_data.csrk ? "csrk " : "",
-         bt_str(peer_id()));
-
-  if (!peer_->MutLe().StoreBond(pairing_data)) {
-    bt_log(ERROR,
-           "gap-le",
-           "failed to cache bonding data (id: %s)",
-           bt_str(peer_id()));
-  }
-}
-
 void LowEnergyConnection::OnPairingComplete(sm::Result<> status) {
   bt_log(INFO,
          "gap-le",

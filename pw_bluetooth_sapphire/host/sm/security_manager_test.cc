@@ -228,7 +228,11 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
     };
     auto expiry_cb = [](const gap::Peer&) {};
     auto dual_mode_cb = [](const gap::Peer&) {};
-    auto store_le_bond_cb = [](const sm::PairingData&) { return true; };
+    auto store_le_bond_cb = [this](const sm::PairingData& data) {
+      pairing_data_callback_count_++;
+      pairing_data_ = data;
+      return true;
+    };
     peer_.emplace(std::move(listeners_cb),
                   std::move(expiry_cb),
                   std::move(dual_mode_cb),
@@ -282,12 +286,6 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
   void OnPairingComplete(Result<> status) override {
     pairing_complete_count_++;
     pairing_complete_status_ = status;
-  }
-
-  // Called by |pairing_| when a new LTK is obtained.
-  void OnNewPairingData(const PairingData& pairing_data) override {
-    pairing_data_callback_count_++;
-    pairing_data_ = pairing_data;
   }
 
   // Called by |pairing_| when any encryption procedure fails.
@@ -2160,7 +2158,7 @@ TEST_F(InitiatorPairingTest, LegacyPhase3CompleteWithoutKeyExchange) {
   RunUntilIdle();
 
   // Pairing should succeed without any pairing data.
-  EXPECT_EQ(1, pairing_data_callback_count());
+  EXPECT_EQ(0, pairing_data_callback_count());
   EXPECT_FALSE(peer_ltk());
   EXPECT_FALSE(irk());
   EXPECT_FALSE(identity());
@@ -2880,15 +2878,8 @@ TEST_F(InitiatorPairingTest, Phase3CompleteWithIdKey) {
   EXPECT_EQ(16u, sec_props().enc_key_size());
   EXPECT_FALSE(sec_props().secure_connections());
 
-  EXPECT_EQ(1, pairing_data_callback_count());
-  ASSERT_FALSE(peer_ltk());
-  ASSERT_TRUE(irk());
-  ASSERT_TRUE(identity());
-  ASSERT_FALSE(csrk());
-
-  EXPECT_EQ(sec_props(), irk()->security());
-  EXPECT_EQ(kIRK, irk()->value());
-  EXPECT_EQ(kPeerAddr, *identity());
+  // No LTK was exchanged, so the pairing data callback should not be called.
+  EXPECT_EQ(0, pairing_data_callback_count());
 }
 
 TEST_F(InitiatorPairingTest, Phase3CompleteWithAllKeys) {
@@ -3798,14 +3789,12 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalIdKeyDistributionWithRemoteKeys) {
   // Pairing is considered complete when all keys have been distributed even if
   // we're still encrypted with the STK. This is because the initiator may not
   // always re-encrypt the link with the LTK until a reconnection.
-  EXPECT_EQ(1, pairing_data_callback_count());
+  EXPECT_EQ(0, pairing_failed_count());
+  EXPECT_EQ(1, pairing_complete_count());
+  EXPECT_EQ(fit::ok(), security_status());
+  EXPECT_EQ(security_status(), pairing_complete_status());
   EXPECT_FALSE(peer().MutLe().is_pairing());
-
-  // The peer should have sent us its identity information.
-  ASSERT_TRUE(pairing_data().irk);
-  EXPECT_EQ(kIrk, pairing_data().irk->value());
-  ASSERT_TRUE(pairing_data().identity_address);
-  EXPECT_EQ(kPeerAddr, *pairing_data().identity_address);
+  EXPECT_EQ(0, pairing_data_callback_count());
 }
 
 TEST_F(ResponderPairingTest, AssignLongTermKeyFailsDuringPairing) {
