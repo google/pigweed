@@ -268,7 +268,7 @@ others on your team are unaffected.
 
    For the main Pigweed repository, only core Pigweed team members can force
    submit, and they must first
-   `request a temporary ACL <http://go/pwi-cookbook#bypass-cq>`_ to do so. This
+   `request a temporary ACL <http://go/pw-cookbook#bypass-cq>`_ to do so. This
    process requires an associated bug, so have one on hand before reaching out
    with a force submission request.
 
