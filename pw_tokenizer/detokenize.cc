@@ -28,6 +28,7 @@
 #include "pw_tokenizer/base64.h"
 #include "pw_tokenizer/internal/decode.h"
 #include "pw_tokenizer/nested_tokenization.h"
+#include "pw_tokenizer/tokenize.h"
 
 namespace pw::tokenizer {
 namespace {
@@ -202,14 +203,15 @@ std::string DetokenizedString::BestStringWithErrors() const {
 
 Detokenizer::Detokenizer(const TokenDatabase& database) {
   for (const auto& entry : database) {
-    database_[entry.token].emplace_back(entry.string, entry.date_removed);
+    database_[kDefaultDomain][entry.token].emplace_back(entry.string,
+                                                        entry.date_removed);
   }
 }
 
 Result<Detokenizer> Detokenizer::FromElfSection(
     span<const std::byte> elf_section) {
   size_t index = 0;
-  std::unordered_map<uint32_t, std::vector<TokenizedStringEntry>> database;
+  DomainTokenEntriesMap database;
 
   while (index + sizeof(_pw_tokenizer_EntryHeader) < elf_section.size()) {
     _pw_tokenizer_EntryHeader header;
@@ -221,16 +223,20 @@ Result<Detokenizer> Detokenizer::FromElfSection(
       return Status::DataLoss();
     }
 
-    index += header.domain_length;
-    if (index + header.string_length <= elf_section.size()) {
+    if (index + header.domain_length + header.string_length <=
+        elf_section.size()) {
+      std::string domain(
+          reinterpret_cast<const char*>(elf_section.data() + index),
+          header.domain_length - 1);
+      index += header.domain_length;
       // TODO(b/326365218): Construct FormatString with string_view to avoid
       // creating a copy here.
       std::string entry(
           reinterpret_cast<const char*>(elf_section.data() + index),
-          header.string_length);
+          header.string_length - 1);
       index += header.string_length;
-      database[header.token].emplace_back(entry.c_str(),
-                                          TokenDatabase::kDateRemovedNever);
+      database[std::move(domain)][header.token].emplace_back(
+          entry.c_str(), TokenDatabase::kDateRemovedNever);
     }
   }
   return Detokenizer(std::move(database));
@@ -256,12 +262,17 @@ DetokenizedString Detokenizer::Detokenize(
   uint32_t token = bytes::ReadInOrder<uint32_t>(
       endian::little, encoded.data(), encoded.size());
 
-  const auto result = database_.find(token);
+  const auto domain_it = database_.find(kDefaultDomain);
+  if (domain_it == database_.end()) {
+    return DetokenizedString();
+  }
+
+  const auto result = domain_it->second.find(token);
 
   return DetokenizedString(
       token,
-      result == database_.end() ? span<TokenizedStringEntry>()
-                                : span(result->second),
+      result == domain_it->second.end() ? span<TokenizedStringEntry>()
+                                        : span(result->second),
       encoded.size() < sizeof(token) ? span<const std::byte>()
                                      : encoded.subspan(sizeof(token)));
 }

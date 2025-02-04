@@ -81,15 +81,35 @@ TEST_F(Detokenize, FromElfSection) {
   constexpr uint32_t database_offset_ = 0x00000174;
   constexpr size_t database_size_ = 0x000004C2;
 
-  pw::span<const uint8_t> tokenEntries(
+  pw::span<const uint8_t> token_entries(
       reinterpret_cast<const uint8_t*>(::test::ns::kElfSection.data() +
                                        database_offset_),
       database_size_);
   pw::Result<Detokenizer> detok_from_elf_ =
-      Detokenizer::FromElfSection(tokenEntries);
+      Detokenizer::FromElfSection(token_entries);
   ASSERT_TRUE(detok_from_elf_.ok());
   EXPECT_EQ(detok_from_elf_->Detokenize("\xd6\x8c\x66\x2e").BestString(),
             "Jello, world!");
+}
+
+TEST_F(Detokenize, FromElfSectionCountDomain) {
+  // Create a detokenizer from an ELF file with only the pw_tokenizer sections.
+  // See py/detokenize_test.py.
+  // Offset and size of the .pw_tokenizer.entries section in bytes.
+  constexpr uint32_t database_offset_ = 0x00000174;
+  constexpr size_t database_size_ = 0x000004C2;
+
+  pw::span<const uint8_t> token_entries(
+      reinterpret_cast<const uint8_t*>(::test::ns::kElfSection.data() +
+                                       database_offset_),
+      database_size_);
+  pw::Result<Detokenizer> detok_from_elf_ =
+      Detokenizer::FromElfSection(token_entries);
+  ASSERT_TRUE(detok_from_elf_.ok());
+
+  // Two domains exist in the ELF file.
+  // The token 881436a0="The answer is: %s" is in two domains.
+  EXPECT_EQ(detok_from_elf_->database().size(), 2u);
 }
 
 TEST_F(Detokenize, FromElfFile) {

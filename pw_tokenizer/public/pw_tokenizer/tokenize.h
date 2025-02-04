@@ -315,6 +315,7 @@ PW_EXTERN_C_END
 namespace pw::tokenizer {
 
 using Token = ::pw_tokenizer_Token;
+inline constexpr const char* kDefaultDomain = PW_TOKENIZER_DEFAULT_DOMAIN;
 
 }  // namespace pw::tokenizer
 
