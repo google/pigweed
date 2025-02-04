@@ -16,11 +16,13 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_config(pw_kvs_CONFIG)
 
-pw_add_library(pw_kvs.config INTERFACE
+pw_add_library(pw_kvs._config INTERFACE
   HEADERS
     pw_kvs_private/config.h
   PUBLIC_DEPS
     ${pw_kvs_CONFIG}
+  PUBLIC_INCLUDES
+    .
 )
 
 pw_add_library(pw_kvs STATIC
@@ -59,7 +61,7 @@ pw_add_library(pw_kvs STATIC
     sectors.cc
   PRIVATE_DEPS
     pw_checksum
-    pw_kvs.config
+    pw_kvs._config
     pw_log
 )
 
@@ -105,7 +107,7 @@ pw_add_library(pw_kvs.fake_flash STATIC
   SOURCES
     fake_flash_memory.cc
   PRIVATE_DEPS
-    pw_kvs.config
+    pw_kvs._config
     pw_log
 )
 
@@ -254,7 +256,7 @@ pw_add_library(pw_kvs.flash_partition_stream_test STATIC
   SOURCES
     flash_partition_stream_test.cc
   PRIVATE_DEPS
-    pw_kvs.config
+    pw_kvs._config
     pw_kvs.fake_flash
     pw_kvs.flash_test_partition
     pw_kvs
@@ -267,7 +269,7 @@ pw_add_library(pw_kvs.flash_partition_test_100_iterations STATIC
   SOURCES
     flash_partition_test.cc
   PRIVATE_DEPS
-    pw_kvs.config
+    pw_kvs._config
     pw_kvs.flash_test_partition
     pw_kvs
     pw_log
@@ -281,7 +283,7 @@ pw_add_library(pw_kvs.flash_partition_test_2_iterations STATIC
   SOURCES
     flash_partition_test.cc
   PRIVATE_DEPS
-    pw_kvs.config
+    pw_kvs._config
     pw_kvs.flash_test_partition
     pw_kvs
     pw_log
@@ -295,7 +297,7 @@ pw_add_library(pw_kvs.flash_partition_test_100_iterations_256_write STATIC
   SOURCES
     flash_partition_test.cc
   PRIVATE_DEPS
-    pw_kvs.config
+    pw_kvs._config
     pw_kvs.flash_test_partition
     pw_kvs
     pw_log
@@ -309,7 +311,7 @@ pw_add_library(pw_kvs.flash_partition_test_2_iterations_256_write STATIC
   SOURCES
     flash_partition_test.cc
   PRIVATE_DEPS
-    pw_kvs.config
+    pw_kvs._config
     pw_kvs.flash_test_partition
     pw_kvs
     pw_log
@@ -337,7 +339,7 @@ pw_add_library(pw_kvs.key_value_store_fuzz_test STATIC
   SOURCES
     key_value_store_fuzz_test.cc
   PRIVATE_DEPS
-    pw_kvs.config
+    pw_kvs._config
     pw_kvs.crc16
     pw_kvs.flash_test_partition
     pw_kvs
@@ -371,7 +373,7 @@ pw_add_library(pw_kvs.test_partition STATIC
   SOURCES
     flash_partition_with_stats.cc
   PRIVATE_DEPS
-    pw_kvs.config
+    pw_kvs._config
 )
 
 pw_add_test(pw_kvs.alignment_test
@@ -523,7 +525,7 @@ pw_add_test(pw_kvs.key_value_store_test
   SOURCES
     key_value_store_test.cc
   PRIVATE_DEPS
-    pw_kvs.config
+    pw_kvs._config
     pw_kvs.crc16
     pw_kvs.fake_flash
     pw_kvs

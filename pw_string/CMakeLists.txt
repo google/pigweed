@@ -66,6 +66,7 @@ pw_add_library(pw_string.format STATIC
 pw_add_library(pw_string.string INTERFACE
   HEADERS
     public/pw_string/string.h
+    public/pw_string/internal/string_common_functions.inc
     public/pw_string/internal/string_impl.h
   PUBLIC_INCLUDES
     public

@@ -17,6 +17,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 pw_add_library(pw_result INTERFACE
   HEADERS
     public/pw_result/result.h
+    public/pw_result/internal/result_internal.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS

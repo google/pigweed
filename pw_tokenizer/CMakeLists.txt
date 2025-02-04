@@ -37,7 +37,7 @@ pw_add_library(pw_tokenizer STATIC
     public
   PUBLIC_DEPS
     pw_base64
-    pw_containers
+    pw_containers.to_array
     pw_result
     pw_span
     pw_preprocessor
@@ -123,6 +123,7 @@ pw_add_library(pw_tokenizer._csv STATIC
 pw_add_test(pw_tokenizer.csv_test
   SOURCES
     csv_test.cc
+    pw_tokenizer_private/csv.h
   PRIVATE_DEPS
     pw_tokenizer._csv
   GROUPS
@@ -157,6 +158,7 @@ pw_add_test(pw_tokenizer.argument_types_test
   SOURCES
     argument_types_test_c.c
     argument_types_test.cc
+    pw_tokenizer_private/argument_types_test.h
   PRIVATE_DEPS
     pw_tokenizer
   GROUPS
@@ -177,6 +179,8 @@ pw_add_test(pw_tokenizer.base64_test
 pw_add_test(pw_tokenizer.decode_test
   SOURCES
     decode_test.cc
+    pw_tokenizer_private/tokenized_string_decoding_test_data.h
+    pw_tokenizer_private/varint_decoding_test_data.h
   PRIVATE_DEPS
     pw_varint
     pw_tokenizer.decoder
@@ -188,9 +192,10 @@ pw_add_test(pw_tokenizer.decode_test
 pw_add_test(pw_tokenizer.detokenize_test
   SOURCES
     detokenize_test.cc
+    pw_tokenizer_private/tokenize_test.h
   PRIVATE_DEPS
     pw_tokenizer.decoder
-    pw_build.detokenizer_elf_test_blob
+    pw_tokenizer.detokenizer_elf_test_blob
     pw_stream
   GROUPS
     modules
@@ -210,6 +215,7 @@ pw_add_test(pw_tokenizer.encode_args_test
 pw_add_test(pw_tokenizer.hash_test
   SOURCES
     hash_test.cc
+    pw_tokenizer_private/generated_hash_test_cases.h
   PRIVATE_DEPS
     pw_tokenizer
   GROUPS
@@ -231,6 +237,7 @@ pw_add_test(pw_tokenizer.tokenize_test
   SOURCES
     tokenize_test_c.c
     tokenize_test.cc
+    pw_tokenizer_private/tokenize_test.h
   PRIVATE_DEPS
     pw_varint
     pw_tokenizer
@@ -239,7 +246,7 @@ pw_add_test(pw_tokenizer.tokenize_test
     pw_tokenizer
 )
 
-pw_cc_blob_library(pw_build.detokenizer_elf_test_blob
+pw_cc_blob_library(pw_tokenizer.detokenizer_elf_test_blob
   HEADER
     pw_tokenizer/example_binary_with_tokenized_strings.h
   NAMESPACE

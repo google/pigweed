@@ -29,7 +29,10 @@ pw_add_library(pw_transfer.config INTERFACE
 
 pw_add_library(pw_transfer STATIC
   HEADERS
+    public/pw_transfer/handler.h
     public/pw_transfer/transfer.h
+    public/pw_transfer/internal/chunk.h
+    public/pw_transfer/internal/event.h
   PUBLIC_INCLUDES
     public
   SOURCES

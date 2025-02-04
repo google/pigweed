@@ -114,6 +114,8 @@ pw_add_library(pw_containers._test_helpers STATIC
     pw_containers_private/test_helpers.h
   SOURCES
     test_helpers.cc
+  PUBLIC_INCLUDES
+    .
 )
 
 pw_add_library(pw_containers.to_array INTERFACE
