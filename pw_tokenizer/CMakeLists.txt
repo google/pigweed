@@ -99,6 +99,7 @@ pw_add_library(pw_tokenizer.decoder STATIC
     pw_stream
     pw_tokenizer
     pw_tokenizer.base64
+    pw_tokenizer._csv
   SOURCES
     decode.cc
     detokenize.cc

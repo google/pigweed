@@ -111,6 +111,9 @@ class Detokenizer {
   /// ELF binary.
   static Result<Detokenizer> FromElfFile(stream::SeekableReader& stream);
 
+  /// Constructs a detokenizer from a parsed CSV database.
+  static Result<Detokenizer> FromCsv(std::string_view csv);
+
   /// Decodes and detokenizes the binary encoded message. Returns a
   /// `DetokenizedString` that stores all possible detokenized string results.
   DetokenizedString Detokenize(const span<const std::byte>& encoded) const;
