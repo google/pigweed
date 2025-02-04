@@ -81,7 +81,7 @@ export function getTarget(): Target | undefined {
   return new Target(targetName, settings.codeAnalysisTargetDir());
 }
 
-export async function setTarget(target: Target): Promise<void> {
+export async function baseSetTarget(target: Target): Promise<void> {
   await settings.codeAnalysisTarget(target.name);
   await settings.codeAnalysisTargetDir(target.dir);
 }

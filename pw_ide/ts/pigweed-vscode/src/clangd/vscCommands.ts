@@ -16,12 +16,7 @@ import * as vscode from 'vscode';
 
 import { ClangdActiveFilesCache } from './activeFilesCache';
 import { clangdPath } from './bazel';
-import {
-  availableTargets,
-  getTarget,
-  setTarget as baseSetTarget,
-  Target,
-} from './paths';
+import { availableTargets, getTarget, baseSetTarget, Target } from './paths';
 
 import { didChangeClangdConfig, didChangeTarget } from '../events';
 
