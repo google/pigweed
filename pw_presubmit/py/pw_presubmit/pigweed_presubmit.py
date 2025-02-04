@@ -1564,7 +1564,6 @@ INCLUDE_CHECK_EXCEPTIONS = (
     "//pw_log_basic:headers",
     "//pw_log_fuchsia:pw_log_fuchsia",
     "//pw_log_null:headers",
-    "//pw_log_string:pw_log_string",
     "//pw_log_tokenized:gcc_partially_tokenized",
     "//pw_log_tokenized:pw_log_tokenized",
     "//pw_metric:metric_service_pwpb",
