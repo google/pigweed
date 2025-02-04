@@ -27,7 +27,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -86,6 +85,7 @@ cc_library(
         ":address",
         ":device",
         ":initiator",
+        "//pw_assert",
         "//pw_bytes",
         "//pw_chrono:system_clock",
         "//pw_result",
@@ -114,7 +114,10 @@ cc_library(
         ":address",
         ":initiator",
         "//pw_assert",
+        "//pw_bytes",
+        "//pw_chrono:system_clock",
         "//pw_containers",
+        "//pw_containers:algorithm",
         "//pw_containers:to_array",
         "//pw_unit_test",
     ],
@@ -141,9 +144,12 @@ pw_cc_test(
         "initiator_mock_test.cc",
     ],
     deps = [
+        ":address",
         ":initiator_mock",
         "//pw_bytes",
-        "//pw_containers",
+        "//pw_chrono:system_clock",
+        "//pw_containers:algorithm",
+        "//pw_span",
         "//pw_unit_test",
     ],
 )
@@ -156,7 +162,9 @@ pw_cc_test(
     deps = [
         ":device",
         ":initiator_mock",
-        "//pw_containers",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_containers:algorithm",
         "//pw_unit_test",
     ],
 )
@@ -168,6 +176,8 @@ pw_cc_test(
     ],
     deps = [
         ":register_device",
+        "//pw_assert",
+        "//pw_bytes",
         "//pw_unit_test",
     ],
 )
@@ -206,10 +216,14 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":address",
+        ":i2c_pwpb",
         ":i2c_pwpb_rpc",
         ":initiator",
+        "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_containers:vector",
+        "//pw_function",
+        "//pw_rpc/pwpb:server_api",
         "//pw_status",
     ],
 )
@@ -218,8 +232,11 @@ pw_cc_test(
     name = "i2c_service_test",
     srcs = ["i2c_service_test.cc"],
     deps = [
+        ":address",
         ":i2c_service",
+        ":initiator",
         ":initiator_mock",
+        "//pw_chrono:system_clock",
         "//pw_containers:vector",
         "//pw_rpc/pwpb:test_method_context",
         "//pw_status",
