@@ -30,8 +30,7 @@
 namespace pw::bluetooth::proxy {
 
 void L2capChannel::MoveFields(L2capChannel& other) {
-  // TODO: https://pwbug.dev/380504851 - Add tests for move operators, including
-  // confirmation that event is not sent on Close().
+  // TODO: https://pwbug.dev/380504851 - Add tests for move operators.
   state_ = other.state();
   connection_handle_ = other.connection_handle();
   transport_ = other.transport();
@@ -46,7 +45,7 @@ void L2capChannel::MoveFields(L2capChannel& other) {
     std::lock_guard other_lock(other.send_queue_mutex_);
     payload_queue_ = std::move(other.payload_queue_);
     notify_on_dequeue_ = other.notify_on_dequeue_;
-    l2cap_channel_manager_.ReleaseChannel(other);
+    l2cap_channel_manager_.DeregisterChannel(other);
     l2cap_channel_manager_.RegisterChannel(*this);
   }
   other.Undefine();
@@ -59,7 +58,7 @@ L2capChannel::L2capChannel(L2capChannel&& other)
 
 L2capChannel& L2capChannel::operator=(L2capChannel&& other) {
   if (this != &other) {
-    l2cap_channel_manager_.ReleaseChannel(*this);
+    l2cap_channel_manager_.DeregisterChannel(*this);
     MoveFields(other);
   }
   return *this;
@@ -78,8 +77,13 @@ L2capChannel::~L2capChannel() {
         cpp23::to_underlying(state_));
   }
 
-  l2cap_channel_manager_.ReleaseChannel(*this);
-  ClearQueue();
+  // Channel objects may outlive `ProxyHost`, but they are closed on
+  // `ProxyHost` dtor, so this check will prevent a crash from trying to access
+  // a destructed `L2capChannelManager`.
+  if (state_ != State::kClosed) {
+    l2cap_channel_manager_.DeregisterChannel(*this);
+    ClearQueue();
+  }
 }
 
 void L2capChannel::Stop() {
@@ -99,6 +103,11 @@ void L2capChannel::Stop() {
 }
 
 void L2capChannel::Close() {
+  l2cap_channel_manager_.DeregisterChannel(*this);
+  InternalClose();
+}
+
+void L2capChannel::InternalClose(L2capChannelEvent event) {
   PW_LOG_INFO(
       "btproxy: L2capChannel::Close - transport_: %u, "
       "connection_handle_: %#x, local_cid_: %#x, remote_cid_: %#x, previous "
@@ -110,17 +119,13 @@ void L2capChannel::Close() {
       cpp23::to_underlying(state_));
 
   PW_CHECK(state_ != State::kUndefined);
-
-  // Channel can be closed twice: once for an L2CAP disconnection, then again
-  // for an HCI disconnection if client has not yet dtored channel object.
   if (state_ == State::kClosed) {
     return;
   }
-
-  l2cap_channel_manager_.ReleaseChannel(*this);
   state_ = State::kClosed;
+
   ClearQueue();
-  SendEvent(L2capChannelEvent::kChannelClosedByOther);
+  SendEvent(event);
 }
 
 void L2capChannel::Undefine() { state_ = State::kUndefined; }

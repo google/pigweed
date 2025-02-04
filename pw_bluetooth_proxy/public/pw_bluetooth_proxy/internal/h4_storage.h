@@ -37,9 +37,6 @@ class H4Storage {
   // Marks an H4 buffer as unoccupied.
   void ReleaseH4Buff(const uint8_t* buffer);
 
-  // Marks all H4 buffers as unoccupied.
-  void Reset();
-
   // Returns the number of slots in `h4_buffs_`.
   static constexpr size_t GetNumH4Buffs() { return kNumH4Buffs; }
 

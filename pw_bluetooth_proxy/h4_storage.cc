@@ -53,11 +53,4 @@ void H4Storage::ReleaseH4Buff(const uint8_t* buffer) {
   h4_buff_occupied_.at(const_cast<uint8_t*>(buffer)) = false;
 }
 
-void H4Storage::Reset() {
-  std::lock_guard lock(storage_mutex_);
-  for (const auto& [buff, _] : h4_buff_occupied_) {
-    h4_buff_occupied_.at(buff) = false;
-  }
-}
-
 }  // namespace pw::bluetooth::proxy

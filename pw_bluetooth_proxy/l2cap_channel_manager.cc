@@ -27,8 +27,6 @@ L2capChannelManager::L2capChannelManager(AclDataChannel& acl_data_channel)
       lrd_channel_(channels_.end()),
       round_robin_terminus_(channels_.end()) {}
 
-void L2capChannelManager::Reset() { h4_storage_.Reset(); }
-
 void L2capChannelManager::RegisterChannel(L2capChannel& channel) {
   std::lock_guard lock(channels_mutex_);
   // Insert new channels before `lrd_channel_`.
@@ -43,7 +41,7 @@ void L2capChannelManager::RegisterChannel(L2capChannel& channel) {
   }
 }
 
-void L2capChannelManager::ReleaseChannel(L2capChannel& channel) {
+void L2capChannelManager::DeregisterChannel(L2capChannel& channel) {
   std::lock_guard lock(channels_mutex_);
   if (&channel == &(*lrd_channel_)) {
     Advance(lrd_channel_);
@@ -52,7 +50,7 @@ void L2capChannelManager::ReleaseChannel(L2capChannel& channel) {
     Advance(round_robin_terminus_);
   }
 
-  // Channel will only be removed once, but ReleaseChannel may be called
+  // Channel will only be removed once, but DeregisterChannel() may be called
   // multiple times on the same channel so it's ok for this to return false.
   channels_.remove(channel);
 
@@ -62,6 +60,17 @@ void L2capChannelManager::ReleaseChannel(L2capChannel& channel) {
     lrd_channel_ = channels_.end();
     round_robin_terminus_ = channels_.end();
   }
+}
+
+void L2capChannelManager::DeregisterAndCloseChannels(L2capChannelEvent event) {
+  std::lock_guard lock(channels_mutex_);
+  while (!channels_.empty()) {
+    L2capChannel& front = channels_.front();
+    front.InternalClose(event);
+    channels_.pop_front();
+  }
+  lrd_channel_ = channels_.end();
+  round_robin_terminus_ = channels_.end();
 }
 
 pw::Result<H4PacketWithH4> L2capChannelManager::GetAclH4Packet(uint16_t size) {

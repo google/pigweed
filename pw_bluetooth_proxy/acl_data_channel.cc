@@ -86,6 +86,7 @@ void AclDataChannel::SendCredit::MarkUsed() {
 
 void AclDataChannel::Reset() {
   std::lock_guard lock(mutex_);
+  // Reset credits first so no packets queued in signaling channels can be sent.
   le_credits_.Reset();
   br_edr_credits_.Reset();
   acl_connections_.clear();

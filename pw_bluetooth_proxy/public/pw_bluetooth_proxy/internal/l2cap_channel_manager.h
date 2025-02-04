@@ -20,6 +20,7 @@
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_status_tracker.h"
+#include "pw_bluetooth_proxy/l2cap_channel_common.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -36,16 +37,17 @@ class L2capChannelManager {
  public:
   L2capChannelManager(AclDataChannel& acl_data_channel);
 
-  // Reset state.
-  void Reset();
-
   // Start proxying L2CAP packets addressed to `channel` arriving from
   // the controller and allow `channel` to send & queue Tx L2CAP packets.
   void RegisterChannel(L2capChannel& channel);
 
   // Stop proxying L2CAP packets addressed to `channel` and stop sending L2CAP
   // packets queued in `channel`, if `channel` is currently registered.
-  void ReleaseChannel(L2capChannel& channel);
+  void DeregisterChannel(L2capChannel& channel);
+
+  // Deregister and close all channels then propagate `event` to clients.
+  void DeregisterAndCloseChannels(L2capChannelEvent event)
+      PW_LOCKS_EXCLUDED(channels_mutex_);
 
   // Get an `H4PacketWithH4` backed by a buffer in `H4Storage` able to hold
   // `size` bytes of data.

@@ -41,8 +41,9 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
     kRunning,
     // Channel is stopped, but the L2CAP connection has not been closed.
     kStopped,
-    // L2CAP connection has been closed, either as the result of an
-    // HCI_Disconnection_Complete event or L2CAP_DISCONNECTION_RSP packet.
+    // L2CAP connection has been closed as the result of an
+    // HCI_Disconnection_Complete event, L2CAP_DISCONNECTION_RSP packet, or
+    // HCI_Reset Command packet; or `ProxyHost` dtor has been called.
     kClosed,
     // Channel has been moved from and is no longer a valid object.
     kUndefined,
@@ -66,14 +67,14 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //     the channel object to free its resources.
   void Stop();
 
-  // Indicate that the L2CAP connection has been closed. This has all the same
-  // effects as stopping the channel & triggers a `kChannelClosedByOther` event.
+  // Deregister the channel and enter `State::kClosed`. Closing a channel has
+  // the same effects as stopping the channel and triggers
+  // `L2capChannelEvent::kChannelClosedByOther`.
   //
-  // Returns false and has no effect if channel is already `State::kClosed`.
+  // Deregistered channels are not managed by the proxy, so any traffic
+  // addressed to/from them passes through `ProxyHost` unaffected. (Rx packets
+  // do not trigger `kRxWhileStopped` events.)
   void Close();
-
-  // Indicate channel has been moved from and is no longer a valid object.
-  void Undefine();
 
   //-------------
   //  Tx (public)
@@ -201,6 +202,8 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   AclTransportType transport() const { return transport_; }
 
  protected:
+  friend class L2capChannelManager;
+
   //----------------------
   //  Creation (protected)
   //----------------------
@@ -234,6 +237,12 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
     Stop();
     SendEvent(event);
   }
+
+  // Enter `State::kClosed` without deregistering. This has all the same effects
+  // as stopping the channel and triggers `event`. No-op if channel is already
+  // `State::kClosed`.
+  void InternalClose(
+      L2capChannelEvent event = L2capChannelEvent::kChannelClosedByOther);
 
   // For derived channels to use in lock annotations.
   const sync::Mutex& send_queue_mutex() const
@@ -316,6 +325,11 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   }
 
  private:
+  static constexpr uint16_t kMaxValidConnectionHandle = 0x0EFF;
+
+  // TODO: https://pwbug.dev/349700888 - Make capacity configurable.
+  static constexpr size_t kQueueCapacity = 5;
+
   // Return true if the current object uses payload_queue_.
   // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
   // transitioned to payload_queue_.
@@ -325,10 +339,9 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   bool SendPayloadToClient(pw::span<uint8_t> payload,
                            OptionalPayloadReceiveCallback& callback);
 
-  static constexpr uint16_t kMaxValidConnectionHandle = 0x0EFF;
-
-  // TODO: https://pwbug.dev/349700888 - Make capacity configurable.
-  static constexpr size_t kQueueCapacity = 5;
+  // Enter `State::kUndefined`, indicating that the channel has been moved from
+  // and is no longer a valid object.
+  void Undefine();
 
   // Helper for move constructor and move assignment.
   void MoveFields(L2capChannel& other) PW_LOCKS_EXCLUDED(send_queue_mutex_);

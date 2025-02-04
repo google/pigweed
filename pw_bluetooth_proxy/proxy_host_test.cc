@@ -1752,6 +1752,61 @@ TEST_F(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
   EXPECT_EQ(capture.sends_called, 2);
 }
 
+// ########## DestructionTest
+
+class DestructionTest : public ProxyHostTest {};
+
+// This test can deadlock on failure.
+TEST_F(DestructionTest, CanDestructWhenPacketsQueuedInSignalingChannel) {
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [](H4PacketWithH4&&) {});
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
+  L2capCoc channel = BuildCoc(proxy, CocParameters{.handle = 0x111});
+  L2capCoc channel2 = BuildCoc(proxy, CocParameters{.handle = 0x222});
+
+  PW_TEST_EXPECT_OK(channel.SendAdditionalRxCredits(1));
+}
+
+TEST_F(DestructionTest, ChannelsStopOnProxyDestruction) {
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [](H4PacketWithH4&&) {});
+  size_t events_received = 0;
+
+  pw::Vector<ProxyHost, 1> proxy;
+  proxy.emplace_back(std::move(send_to_host_fn),
+                     std::move(send_to_controller_fn),
+                     /*le_acl_credits_to_reserve=*/0,
+                     /*br_edr_acl_credits_to_reserve=*/0);
+
+  pw::Vector<L2capCoc, 3> channels;
+  for (int i = 0; i < 3; ++i) {
+    channels.push_back(BuildCoc(
+        proxy.front(),
+        CocParameters{.event_fn = [&events_received](L2capChannelEvent event) {
+          ++events_received;
+          EXPECT_EQ(event, L2capChannelEvent::kChannelClosedByOther);
+        }}));
+  }
+
+  // Channel already closed before Proxy destruction should not be affected.
+  channels.back().Close();
+  EXPECT_EQ(events_received, 1ul);
+  proxy.clear();
+  EXPECT_EQ(events_received, channels.size());
+  for (auto& channel : channels) {
+    EXPECT_EQ(channel.state(), L2capChannel::State::kClosed);
+  }
+  channels.clear();
+}
+
 // ########## ResetTest
 
 class ResetTest : public ProxyHostTest {};
@@ -1835,6 +1890,45 @@ TEST_F(ResetTest, ResetClearsActiveConnections) {
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 1);
   // NOCP has credits remaining so will be passed on to host.
   EXPECT_EQ(host_capture.sends_called, 3);
+}
+
+TEST_F(ResetTest, ChannelsCloseOnReset) {
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [](H4PacketWithH4&&) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
+  constexpr uint16_t kRemoteCid = 0x123;
+  constexpr size_t kNumChannels = 3;
+  pw::Vector<L2capCoc, kNumChannels> channels;
+  size_t events_received = 0;
+  for (uint16_t i = 0; i < kNumChannels; ++i) {
+    channels.push_back(BuildCoc(
+        proxy,
+        CocParameters{.remote_cid = static_cast<uint16_t>(kRemoteCid + i),
+                      .event_fn = [&events_received](L2capChannelEvent event) {
+                        if (++events_received == 1) {
+                          EXPECT_EQ(event,
+                                    L2capChannelEvent::kChannelClosedByOther);
+                        } else {
+                          EXPECT_EQ(event, L2capChannelEvent::kReset);
+                        }
+                      }}));
+  }
+
+  // Channel already closed before Proxy destruction should not be affected.
+  channels.back().Close();
+  proxy.Reset();
+  EXPECT_EQ(events_received, channels.size());
+  for (auto& channel : channels) {
+    EXPECT_EQ(channel.state(), L2capChannel::State::kClosed);
+  }
+  channels.clear();
 }
 
 TEST_F(ResetTest, ProxyHandlesMultipleResets) {
@@ -2116,55 +2210,6 @@ TEST_F(MultiSendTest, AttemptToSendOverMaxConnectionsFails) {
       proxy.SendGattNotify(conn_handle, 345, MultiBufFromArray(attribute_value))
           .status.ok());
   EXPECT_EQ(capture.sends_called, ProxyHost::GetMaxNumAclConnections());
-}
-
-TEST_F(MultiSendTest, ResetClearsBuffOccupiedFlags) {
-  constexpr size_t kMaxSends = ProxyHost::GetNumSimultaneousAclSendsSupported();
-  struct {
-    size_t sends_called = 0;
-    std::array<H4PacketWithH4, 2 * kMaxSends> released_packets;
-  } capture;
-
-  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
-      []([[maybe_unused]] H4PacketWithHci&& packet) {});
-  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
-      [&capture](H4PacketWithH4&& packet) {
-        // Capture all packets to prevent their destruction.
-        capture.released_packets[capture.sends_called++] = std::move(packet);
-      });
-
-  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
-                              std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/kMaxSends,
-                              /*br_edr_acl_credits_to_reserve=*/0);
-
-  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, kMaxSends));
-
-  std::array<uint8_t, 1> attribute_value = {0xF};
-  // Occupy all send buffers.
-  for (size_t i = 0; i < kMaxSends; ++i) {
-    EXPECT_TRUE(
-        proxy.SendGattNotify(123, 345, MultiBufFromArray(attribute_value))
-            .status.ok());
-  }
-
-  proxy.Reset();
-  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, kMaxSends));
-
-  // Although sent packets have not been released, proxy.Reset() should have
-  // marked all buffers as unoccupied.
-  for (size_t i = 0; i < kMaxSends; ++i) {
-    EXPECT_TRUE(
-        proxy.SendGattNotify(123, 345, MultiBufFromArray(attribute_value))
-            .status.ok());
-  }
-  EXPECT_EQ(capture.sends_called, 2 * kMaxSends);
-
-  // If captured packets are not reset here, they may destruct after the proxy
-  // and lead to a crash when trying to lock the proxy's destructed mutex.
-  for (auto& packet : capture.released_packets) {
-    packet.ResetAndReturnReleaseFn();
-  }
 }
 
 // ########## BasicL2capChannelTest

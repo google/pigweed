@@ -52,6 +52,8 @@ class ProxyHost {
   ProxyHost& operator=(const ProxyHost&) = delete;
   ProxyHost(ProxyHost&&) = delete;
   ProxyHost& operator=(ProxyHost&&) = delete;
+  /// Deregisters all channels, and if any channels are not yet closed, closes
+  /// them and sends `L2capChannelEvent::kChannelClosedByOther`.
   ~ProxyHost();
 
   // ##### Container API
@@ -97,8 +99,13 @@ class ProxyHost {
   /// time).
   void HandleH4HciFromController(H4PacketWithHci&& h4_packet);
 
-  /// Called by container to notify proxy that the Bluetooth system is being
-  /// reset, so the proxy can reset its internal state.
+  /// Called when an HCI_Reset Command packet is observed. Proxy resets its
+  /// internal state. Deregisters all channels, and if any channels are not yet
+  /// closed, closes them and sends `L2capChannelEvent::kReset`.
+  ///
+  /// May also be called by container to notify proxy that the Bluetooth system
+  /// is being otherwise reset.
+  ///
   /// Warning: Outstanding H4 packets are not invalidated upon reset. If they
   /// are destructed post-reset, packets generated post-reset are liable to be
   /// overwritten prematurely.

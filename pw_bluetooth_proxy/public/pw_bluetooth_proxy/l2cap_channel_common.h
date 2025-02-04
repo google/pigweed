@@ -25,8 +25,9 @@ namespace pw::bluetooth::proxy {
 /// Events returned from all client-facing channel objects in their `event_fn`
 /// callback.
 enum class L2capChannelEvent {
-  /// The channel was closed by something other than `ProxyHost`. The channel is
-  /// now `State::kClosed` and should be cleaned up. See logs for details.
+  /// The channel was closed by something other than `ProxyHost` or due to
+  /// `ProxyHost` shutdown. The channel is now `State::kClosed` and should be
+  /// cleaned up. See logs for details.
   kChannelClosedByOther,
   /// An invalid packet was received. The channel is now `State::kStopped` and
   /// should be closed. See error logs for details.
@@ -38,8 +39,7 @@ enum class L2capChannelEvent {
   /// The channel should have been closed.
   kRxWhileStopped,
   /// `ProxyHost` has been reset. As a result, the channel is now
-  /// `State::kStopped` and should be closed. (All channels are
-  /// `State::kStopped` on a reset.)
+  /// `State::kClosed`. (All channels are `State::kClosed` on a reset.)
   kReset,
   /// PDU recombination is not yet supported, but a fragmented L2CAP frame has
   /// been received. The channel is now `State::kStopped` and should be closed.

@@ -52,6 +52,16 @@ ProxyHost::ProxyHost(
 ProxyHost::~ProxyHost() {
   PW_LOG_INFO("btproxy: ProxyHost dtor");
   acl_data_channel_.Reset();
+  l2cap_channel_manager_.DeregisterAndCloseChannels(
+      L2capChannelEvent::kChannelClosedByOther);
+}
+
+void ProxyHost::Reset() {
+  // Reset AclDataChannel first, so that send credits are reset to 0 until
+  // reinitialized by controller event. This way, new channels can still be
+  // registered, but they cannot erroneously use invalidated send credits.
+  acl_data_channel_.Reset();
+  l2cap_channel_manager_.DeregisterAndCloseChannels(L2capChannelEvent::kReset);
 }
 
 void ProxyHost::HandleH4HciFromHost(H4PacketWithH4&& h4_packet) {
@@ -381,10 +391,8 @@ void ProxyHost::HandleCommandFromHost(H4PacketWithH4&& h4_packet) {
     return;
   }
 
-  // TODO: https://pwbug.dev/381902130 - Handle reset on command complete
-  // successful instead. Also event to container on reset.
   if (command->header().opcode().Read() == emboss::OpCode::RESET) {
-    PW_LOG_INFO("Resetting proxy on seeing RESET command.");
+    PW_LOG_INFO("Resetting proxy on HCI_Reset Command from host.");
     Reset();
   }
 
@@ -439,11 +447,6 @@ void ProxyHost::HandleAclFromHost(H4PacketWithH4&& h4_packet) {
                    acl->payload().SizeInBytes()))) {
     hci_transport_.SendToController(std::move(h4_packet));
   }
-}
-
-void ProxyHost::Reset() {
-  acl_data_channel_.Reset();
-  l2cap_channel_manager_.Reset();
 }
 
 pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
