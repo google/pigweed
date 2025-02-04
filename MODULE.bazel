@@ -356,6 +356,15 @@ use_repo(
     "maven",
 )
 
+# QEMU prebuilts
+# ==============
+cipd_repository(
+    name = "qemu",
+    build_file = "//third_party/qemu:qemu.BUILD",
+    path = "fuchsia/third_party/qemu/${os}-${arch}",
+    tag = "git_revision:d922088eb4ba6bc31a99f17b32cf75e59dd306cd",
+)
+
 # Vendored libraries
 # ==================
 
