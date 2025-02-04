@@ -70,7 +70,6 @@ cc_tool(
     data = glob([
         "arm-zephyr-eabi/**",
         # TODO: https://pwbug.dev/380001331 - Figure out which exact files are needed
-        # "arm-zephyr-eabi/**/*.spec",
         # "arm-zephyr-eabi/**/*.specs",
         # "arm-zephyr-eabi/picolibc/**",
         # "arm-zephyr-eabi/arm-zephyr-eabi/sys-include/**",
@@ -98,7 +97,6 @@ cc_tool(
     data = glob([
         "arm-zephyr-eabi/**",
         # TODO: https://pwbug.dev/380001331 - Figure out which exact files are needed
-        # "arm-zephyr-eabi/**/*.spec",
         # "arm-zephyr-eabi/**/*.specs",
         # "arm-zephyr-eabi/picolibc/**",
         # "arm-zephyr-eabi/include/c++/**",
@@ -188,7 +186,6 @@ cc_tool(
         "//conditions:default": "//:x86_64-zephyr-elf/bin/x86_64-zephyr-elf-g++",
     }),
     data = glob([
-        "x86_64-zephyr-elf/**/*.spec",
         "x86_64-zephyr-elf/**/*.specs",
         "x86_64-zephyr-elf/picolibc/**",
         "x86_64-zephyr-elf/include/**",
@@ -212,7 +209,6 @@ cc_tool(
         "//conditions:default": "//:x86_64-zephyr-elf/bin/x86_64-zephyr-elf-gcc",
     }),
     data = glob([
-        "x86_64-zephyr-elf/**/*.spec",
         "x86_64-zephyr-elf/**/*.specs",
         "x86_64-zephyr-elf/picolibc/**",
         "x86_64-zephyr-elf/include/c++/**",
@@ -241,7 +237,6 @@ cc_tool(
         "x86_64-zephyr-elf/**/*.a",
         "x86_64-zephyr-elf/**/*.ld",
         "x86_64-zephyr-elf/**/*.o",
-        "x86_64-zephyr-elf/**/*.spec",
         "x86_64-zephyr-elf/**/*.specs",
         "x86_64-zephyr-elf/**/*.so",
         "x86_64-zephyr-elf/libexec/**",
