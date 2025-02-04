@@ -22,4 +22,5 @@ RSS feed: `https://pigweed.dev/rss.xml <https://pigweed.dev/rss.xml>`_
    #5: C++20 coroutines without heap allocation <05-coroutines>
    #6: Shaping a better future for Bazel C/C++ toolchains <06-better-cpp-toolchains>
    #7: BazelCon 2024 <07-bazelcon-2024>
+   #8: Migrating pigweed.dev to Bazel <08-bazel-docgen>
    RSS feed <https://pigweed.dev/rss.xml>

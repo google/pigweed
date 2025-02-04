@@ -54,6 +54,7 @@ pw_doc_group("core_docs") {
     "blog/05-coroutines.rst",
     "blog/06-better-cpp-toolchains.rst",
     "blog/07-bazelcon-2024.rst",
+    "blog/08-bazel-docgen.rst",
     "blog/index.rst",
     "blog/rss.xml",
     "code_of_conduct.rst",
