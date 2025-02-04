@@ -227,6 +227,7 @@ doxygen(
         ":doxygen_srcs",
     ],
     outs = [
+        "html",
         "xml",
     ],
     # TODO: b/384047922 - Move configuration to a dedicated Doxyfile.
@@ -251,7 +252,7 @@ doxygen(
         "EXTRACT_PACKAGE = YES",
         "EXTRACT_PRIV_VIRTUAL = YES",
         "EXTRACT_STATIC = YES",
-        "GENERATE_HTML = NO",
+        "GENERATE_HTML = YES",
         # Doxygen warns that a tool that LaTeX depends on (epstopdf) is
         # not available. Explicitly disable LaTeX to stop these warnings.
         "GENERATE_LATEX = NO",
@@ -290,12 +291,37 @@ doxygen(
     target_compatible_with = incompatible_with_mcu(),
 )
 
-# Package up the Doxygen-generated XML in a way that's easy for
-# Breathe/Sphinx to consume.
+filegroup(
+    name = "_doxygen_html_1",
+    srcs = [":doxygen_build"],
+    output_group = "html",
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+copy_directory(
+    name = "_doxygen_html_2",
+    src = ":_doxygen_html_1",
+    out = "doxygen",
+)
+
+sphinx_docs_library(
+    name = "doxygen_html",
+    srcs = [":_doxygen_html_2"],
+    prefix = "doxygen/",
+    target_compatible_with = incompatible_with_mcu(),
+)
+
+filegroup(
+    name = "_doxygen_xml",
+    srcs = [":doxygen_build"],
+    output_group = "xml",
+    target_compatible_with = incompatible_with_mcu(),
+)
+
 sphinx_docs_library(
     name = "doxygen_xml",
-    srcs = [":doxygen_build"],
-    prefix = "doxygen/",
+    srcs = [":_doxygen_xml"],
+    prefix = "_doxygen/",
     target_compatible_with = incompatible_with_mcu(),
 )
 
@@ -356,6 +382,7 @@ sphinx_docs(
     strip_prefix = "docs/",
     target_compatible_with = incompatible_with_mcu(),
     deps = [
+        ":doxygen_html",
         ":doxygen_xml",
         ":not_prefixed",
         ":prefixed",

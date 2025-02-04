@@ -180,6 +180,8 @@ if is_bazel_build:
     # site's sources directory. Specifying the rustdoc directory here instructs
     # Sphinx to copy over the entire directory to its output.
     html_extra_path.append('rustdoc')
+    # Also copy over the Doxygen-generated HTML subsite.
+    html_extra_path.append('doxygen')
 
 html_theme_options = {
     # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html#navigation-bar-dropdown-links
@@ -322,7 +324,7 @@ templates_path = ['docs/layout']
 exclude_patterns = ['docs/templates/**']
 
 doxygen_xml_path = (
-    './doxygen/xml/' if is_bazel_build else './../../../doxygen/xml/'
+    './_doxygen/xml/' if is_bazel_build else './../../../doxygen/xml/'
 )
 breathe_projects = {
     # Assuming doxygen output is at out/docs/doxygen/
