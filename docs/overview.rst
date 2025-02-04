@@ -129,7 +129,10 @@ can be configured using the `--cxxopt flag
 
 Python
 ------
-Pigweed officially supports Python 3.10 and 3.11.
+Pigweed officially supports Python 3.10 and 3.11. Moving forward, Pigweed will
+follow Python's `official supported versions
+<https://devguide.python.org/versions/>`_. Pigweed will drop support for Python
+versions as they reach end-of-life.
 
 .. toctree::
    :maxdepth: 1
