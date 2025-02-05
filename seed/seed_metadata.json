@@ -328,5 +328,16 @@
       "\u0141ukasz K\u0119dziora"
     ],
     "facilitator": "Unassigned"
+  },
+  "0133": {
+    "title": "pw_wakelock",
+    "status": "Draft",
+    "date": "2025-01-30",
+    "cl": "263535",
+    "authors": [
+      "Jiaming (Charlie) Wang",
+      "Ben Lawson"
+    ],
+    "facilitator": "Unassigned"
   }
 }
