@@ -147,12 +147,29 @@
             "//..."
           ],
           [
+            "build",
+            "--@rules_rust//rust/toolchain/channel=nightly",
+            "//..."
+          ],
+          [
+            "test",
+            "--@rules_rust//rust/toolchain/channel=nightly",
+            "//..."
+          ],
+          [
             "test",
             "--config=googletest",
             "//..."
           ],
           [
             "build",
+            "--aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect",
+            "--output_groups=clippy_checks",
+            "//..."
+          ],
+          [
+            "build",
+            "--@rules_rust//rust/toolchain/channel=nightly",
             "--aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect",
             "--output_groups=clippy_checks",
             "//..."
