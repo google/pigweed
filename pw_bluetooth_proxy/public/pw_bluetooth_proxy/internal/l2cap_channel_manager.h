@@ -15,6 +15,7 @@
 #pragma once
 
 #include <atomic>
+#include <optional>
 
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
@@ -114,7 +115,7 @@ class L2capChannelManager {
   // Owns H4 packet buffers.
   H4Storage h4_storage_;
 
-  std::atomic<std::optional<uint16_t>> le_acl_data_packet_length_;
+  std::atomic<std::optional<uint16_t>> le_acl_data_packet_length_{std::nullopt};
 
   // Enforce mutual exclusion of all operations on channels.
   sync::Mutex channels_mutex_;
