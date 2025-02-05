@@ -96,9 +96,22 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
                               transfer_thread,
                               kDefaultMaxWindowSizeBytes);
 
-  // TODO: https://pwbug.dev/357145010 - Don't IgnoreError here.
-  client.set_max_retries(config.max_retries()).IgnoreError();
-  client.set_max_lifetime_retries(config.max_lifetime_retries()).IgnoreError();
+  if (config.max_retries() > 0) {
+    if (client.set_max_retries(config.max_retries()).IsInvalidArgument()) {
+      PW_LOG_ERROR("Invalid max_retries count: %u",
+                   static_cast<unsigned>(config.max_retries()));
+      return Status::InvalidArgument();
+    }
+  }
+
+  if (config.max_lifetime_retries() > 0) {
+    if (client.set_max_lifetime_retries(config.max_lifetime_retries())
+            .IsInvalidArgument()) {
+      PW_LOG_ERROR("Invalid max_lifetime_retries count: %u",
+                   static_cast<unsigned>(config.max_retries()));
+      return Status::InvalidArgument();
+    }
+  }
 
   Status status = pw::OkStatus();
   for (int i = 0; i < num_actions; i++) {
