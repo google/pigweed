@@ -1,18 +1,17 @@
-From b090ae35fadde62e1e7a703e51ac8618d42f15db Mon Sep 17 00:00:00 2001
+From 25e5c2279b86456a6f42d67b39fe3b42927a03f5 Mon Sep 17 00:00:00 2001
 From: Erik Gilling <konkers@google.com>
 Date: Mon, 27 Mar 2023 16:48:26 +0000
-Subject: [PATCH 2/2] PROTOTYPE: Add ability to document multiple crates at
- once
+Subject: [PATCH] PROTOTYPE: Add ability to document multiple crates at once
 
 ---
  rust/defs.bzl                     |   4 +
- rust/private/rustdoc.bzl          | 203 ++++++++++++++++++++++++++++++
+ rust/private/rustdoc.bzl          | 204 ++++++++++++++++++++++++++++++
  util/BUILD.bazel                  |  12 ++
  util/capture_args/BUILD.bazel     |   8 ++
- util/capture_args/capture_args.rs |  28 +++++
+ util/capture_args/capture_args.rs |  28 ++++
  util/run_scripts/BUILD.bazel      |   8 ++
  util/run_scripts/run_scripts.rs   |  40 ++++++
- 7 files changed, 303 insertions(+)
+ 7 files changed, 304 insertions(+)
  create mode 100644 util/capture_args/BUILD.bazel
  create mode 100644 util/capture_args/capture_args.rs
  create mode 100644 util/run_scripts/BUILD.bazel
@@ -41,10 +40,10 @@ index 67a28630..4d58df51 100644
  # See @rules_rust//rust/private:rustdoc_test.bzl for a complete description.
  
 diff --git a/rust/private/rustdoc.bzl b/rust/private/rustdoc.bzl
-index 58d044c6..f43c4377 100644
+index ae81e65d..eebb494b 100644
 --- a/rust/private/rustdoc.bzl
 +++ b/rust/private/rustdoc.bzl
-@@ -229,6 +229,81 @@ def _rust_doc_impl(ctx):
+@@ -229,6 +229,82 @@ def _rust_doc_impl(ctx):
          ),
      ]
  
@@ -68,6 +67,7 @@ index 58d044c6..f43c4377 100644
 +            "--extern",
 +            "{}={}".format(crate_info.name, crate_info.output.path),
 +        ]
++        rustdoc_flags.extend(ctx.attr.rustdoc_flags)
 +
 +        action = rustdoc_compile_action(
 +            ctx = ctx,
@@ -126,7 +126,7 @@ index 58d044c6..f43c4377 100644
  rust_doc = rule(
      doc = dedent("""\
      Generates code documentation.
-@@ -346,3 +421,131 @@ rust_doc = rule(
+@@ -346,3 +422,131 @@ rust_doc = rule(
          "@bazel_tools//tools/cpp:toolchain_type",
      ],
  )
@@ -201,9 +201,9 @@ index 58d044c6..f43c4377 100644
 +            doc = "CSS files to include via `<link>` in a rendered Markdown file.",
 +            allow_files = [".css"],
 +        ),
-+        "rustc_flags": attr.string_list(
++        "rustdoc_flags": attr.string_list(
 +            doc = dedent("""\
-+                List of compiler flags passed to `rustc`.
++                List of flags passed to `rustdoc`.
 +
 +                These strings are subject to Make variable expansion for predefined
 +                source/output path variables like `$location`, `$execpath`, and
@@ -259,10 +259,10 @@ index 58d044c6..f43c4377 100644
 +    incompatible_use_toolchain_transition = True,
 +)
 diff --git a/util/BUILD.bazel b/util/BUILD.bazel
-index 1070f050..37ea5e04 100644
+index 629ae5f7..9607163f 100644
 --- a/util/BUILD.bazel
 +++ b/util/BUILD.bazel
-@@ -9,3 +9,15 @@ alias(
+@@ -3,3 +3,15 @@ alias(
      actual = "//util/collect_coverage",
      visibility = ["//visibility:public"],
  )
@@ -387,5 +387,5 @@ index 00000000..cc8e4796
 +    }
 +}
 -- 
-2.45.1.288.g0e0cd299f1-goog
+2.48.1.262.g85cc9f2d1e-goog
 
