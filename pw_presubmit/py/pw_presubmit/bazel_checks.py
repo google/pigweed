@@ -41,9 +41,7 @@ def includes_presubmit_check(
         #
         # `bazel query` will print the targets matching these conditions, one
         # per line.
-        query = (
-            r'attr("includes", "[.{1,}]", kind(cc_library, ' + targets + '))'
-        )
+        query = r'attr("includes", ".{3,}", kind(cc_library, ' + targets + '))'
 
         # Ideally we would just use a io.StringIO here instead of creating the
         # files, but build.bazel doesn't actually accept _any_ TextIO object as
