@@ -521,7 +521,10 @@ fuchsia_products_repository(
     metadata_file = "@fuchsia_products_metadata//:product_bundles.json",
 )
 
-register_toolchains("//pw_toolchain/fuchsia:fuchsia_sdk_toolchain")
+register_toolchains(
+    "//pw_toolchain/fuchsia:fuchsia_sdk_toolchain",
+    dev_dependency = True,
+)
 
 fake_fuchsia_sdk_extension = use_extension("@com_google_googletest//:fake_fuchsia_sdk.bzl", "fuchsia_sdk", dev_dependency = True)
 
