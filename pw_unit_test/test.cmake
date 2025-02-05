@@ -26,10 +26,6 @@ set(pw_unit_test_BACKEND pw_unit_test.light CACHE STRING
      is used. You could, for example, point this at pw_unit_test.googletest \
      if using upstream GoogleTest directly on your host for GoogleMock.")
 
-set(pw_unit_test_GOOGLETEST_BACKEND "" CACHE STRING
-    "Warning: Deprecated build argument. When using googletest backend set
-    pw_unit_test_BACKEND to pw_unit_test.googletest instead.")
-
 # TODO(ewout): Remove the default.
 set(pw_unit_test_ADD_EXECUTABLE_FUNCTION "pw_add_test_executable" CACHE STRING
     "The name of the CMake function used to instantiate pw_unit_test \

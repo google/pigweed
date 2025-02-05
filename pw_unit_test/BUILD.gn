@@ -73,16 +73,6 @@ pw_source_set("pw_unit_test") {
     ":status_macros",
     pw_unit_test_BACKEND,
   ]
-
-  # Temporarily redirect deprecated googletest pointer to new pointer.
-  if ("$pw_unit_test_GOOGLETEST_BACKEND" == "$dir_pw_third_party/googletest" &&
-      "$pw_unit_test_MAIN" == "$dir_pw_third_party/googletest:gmock_main" &&
-      "$pw_unit_test_BACKEND" == "$dir_pw_unit_test:light") {
-    print("Warning: pw_unit_test_GOOGLETEST_BACKEND is deprecated.")
-    print("Set pw_unit_test_BACKEND to //pw_unit_test:googletest.")
-    public_deps = []  # The list must be empty before overriding.
-    public_deps = [ ":googletest" ]
-  }
 }
 
 # Lightweight unit test backend that implements a subset of GoogleTest.
@@ -118,17 +108,15 @@ pw_source_set("light") {
 }
 
 # Unit test framework backend that redirects to GoogleTest.
-if (pw_unit_test_BACKEND != "") {
-  pw_source_set("googletest") {
-    public_configs = [ ":googletest_public_overrides_include_path" ]
-    public = [ "googletest_public_overrides/pw_unit_test/framework_backend.h" ]
+pw_source_set("googletest") {
+  public_configs = [ ":googletest_public_overrides_include_path" ]
+  public = [ "googletest_public_overrides/pw_unit_test/framework_backend.h" ]
 
-    public_deps = [
-      dir_pw_result,
-      dir_pw_status,
-      pw_unit_test_GOOGLETEST_BACKEND,
-    ]
-  }
+  public_deps = [
+    "$dir_pw_third_party/googletest",
+    dir_pw_result,
+    dir_pw_status,
+  ]
 }
 
 pw_source_set("event_handler") {

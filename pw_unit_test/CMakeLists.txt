@@ -36,21 +36,10 @@ target_include_directories(pw_unit_test
 )
 
 # Temporarily redirect deprecated googletest pointer to new pointer.
-if("${pw_unit_test_GOOGLETEST_BACKEND}" STREQUAL "pw_third_party.googletest")
-  message(DEPRECATION
-    "pw_unit_test_GOOGLETEST_BACKEND is deprecated. Set pw_unit_test_BACKEND "
-    "to pw_unit_test.googletest instead."
-  )
-  target_link_libraries(pw_unit_test
-    INTERFACE
-      pw_unit_test.googletest
-  )
-else()
-  target_link_libraries(pw_unit_test
-    INTERFACE
-      "${pw_unit_test_BACKEND}"
-  )
-endif()
+target_link_libraries(pw_unit_test
+  INTERFACE
+    "${pw_unit_test_BACKEND}"
+)
 
 pw_add_library(pw_unit_test.light STATIC
   HEADERS

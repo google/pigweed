@@ -35,7 +35,6 @@ ARGS_GN = f'''dir_pw_third_party_foo = "{FOO_SOURCE_DIR}"
 pw_log_BACKEND = "$dir_pw_log_basic"
 pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
 dir_pw_third_party_bar = "{BAR_SOURCE_DIR}"
-pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_third_party/googletest"
 pw_unit_test_MAIN == "$dir_pw_third_party/googletest:gmock_main
 dir_pw_third_party_baz = "{BAZ_SOURCE_DIR}"'''
 
