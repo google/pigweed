@@ -220,6 +220,14 @@ html_theme_options = {
     'pygments_dark_style': 'pigweed_code_style',
 }
 
+if 'LUCI_IS_TRY' in os.environ and os.environ['LUCI_IS_TRY'] == '1':
+    html_theme_options['announcement'] = (
+        "You are viewing Pigweed's docs on an automatically generated staging "
+        'site. <b>The content on this staging site may be incorrect or '
+        "unapproved.</b> Pigweed's official, approved docs are only published "
+        'at <a href="https://pigweed.dev">pigweed.dev</a>.'
+    )
+
 # sphinx-sitemap needs this:
 # https://sphinx-sitemap.readthedocs.io/en/latest/getting-started.html#usage
 html_baseurl = 'https://pigweed.dev/'

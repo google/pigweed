@@ -118,9 +118,9 @@ html[data-theme="light"] {
  * Is displayed at the very top of the page when enabled.
  * https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/announcements.html */
 .bd-header-announcement {
-  background-color: #00a100;
+  background-color: red;
+  color: white;
   font-family: var(--pw-font-body);
-  font-style: italic;
   a {
     color: var(--pst-color-light);
     font-weight: bold;
