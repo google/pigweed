@@ -63,6 +63,13 @@ window.pw.initSearch = () => {
       // eslint-disable-next-line no-undef
       Search.performSearch(query);
       timeoutId = null;
+      // Send the search query to Google Analytics.
+      // https://developers.google.com/analytics/devguides/collection/ga4/reference/events#search
+      // eslint-disable-next-line no-undef
+      if (gtag) {
+        // eslint-disable-next-line no-undef
+        gtag('event', 'search', { search_term: query });
+      }
     }, delay_ms);
   });
 };
