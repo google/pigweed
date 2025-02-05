@@ -38,24 +38,14 @@ pw_checksum/crc32.h
 
   The initial value for the CRC32.
 
-.. cpp:function:: uint32_t Crc32(span<const std::byte> data)
+.. cpp:function:: uint32_t Crc32::Calculate(span<const std::byte> data)
 
   Calculates the initial / one-time CRC32 of the provided data using polynomial
   0x4C11DB7, with an initial value of :cpp:expr:`0xFFFFFFFF`.
 
   .. code-block:: cpp
 
-     uint32_t crc = Crc32(my_data);
-
-.. cpp:function:: uint32_t Crc32(span<const std::byte> data, uint32_t previous_result)
-
-  Incrementally append calculation of a CRC32, need to pass in the previous
-  result.
-
-  .. code-block:: cpp
-
-     uint32_t crc = Crc32(my_data);
-     crc = Crc32(more_data, crc);
+     uint32_t crc = Crc32::Calculate(my_data);
 
 .. _CRC32 Implementations:
 
