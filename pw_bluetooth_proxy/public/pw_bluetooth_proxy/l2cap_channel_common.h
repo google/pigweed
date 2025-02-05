@@ -41,10 +41,6 @@ enum class L2capChannelEvent {
   /// `ProxyHost` has been reset. As a result, the channel is now
   /// `State::kClosed`. (All channels are `State::kClosed` on a reset.)
   kReset,
-  /// PDU recombination is not yet supported, but a fragmented L2CAP frame has
-  /// been received. The channel is now `State::kStopped` and should be closed.
-  // TODO: https://pwbug.dev/365179076 - Support recombination.
-  kRxFragmented,
   /// Write space is now available after a previous Write on this channel
   /// returned UNAVAILABLE.
   kWriteAvailable,

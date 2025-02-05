@@ -182,11 +182,6 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // This function will call DoHandlePduFromController on its subclass.
   [[nodiscard]] bool HandlePduFromController(pw::span<uint8_t> l2cap_pdu);
 
-  // Handle fragmented Rx L2CAP PDU. Default implementation stops channel and
-  // sends `kRxFragmented` event to client.
-  // TODO: https://pwbug.dev/365179076 - Support recombination & delete this.
-  virtual void HandleFragmentedPdu();
-
   //--------------
   //  Accessors:
   //--------------
@@ -200,6 +195,10 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   uint16_t connection_handle() const { return connection_handle_; }
 
   AclTransportType transport() const { return transport_; }
+
+  multibuf::MultiBufAllocator* rx_multibuf_allocator() const {
+    return rx_multibuf_allocator_;
+  }
 
  protected:
   friend class L2capChannelManager;
@@ -319,10 +318,6 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
 
   // Returns false if payload should be forwarded to host instead.
   virtual bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload);
-
-  multibuf::MultiBufAllocator* rx_multibuf_allocator() const {
-    return rx_multibuf_allocator_;
-  }
 
  private:
   static constexpr uint16_t kMaxValidConnectionHandle = 0x0EFF;

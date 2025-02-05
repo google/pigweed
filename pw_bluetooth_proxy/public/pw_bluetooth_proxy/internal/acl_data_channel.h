@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
@@ -21,7 +23,10 @@
 #include "pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
+#include "pw_bluetooth_proxy/internal/multibuf_writer.h"
 #include "pw_containers/vector.h"
+#include "pw_multibuf/allocator.h"
+#include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
@@ -43,6 +48,8 @@ class AclDataChannel {
   };
   // Must match the number of Direction enumerators.
   static constexpr size_t kNumDirections = 2;
+
+  static const char* ToString(Direction direction);
 
   // Used to `SendAcl` packets.
   class SendCredit {
@@ -166,33 +173,16 @@ class AclDataChannel {
   pw::Status CreateAclConnection(uint16_t connection_handle,
                                  AclTransportType transport);
 
-  // Sets `is_receiving_fragmented_pdu` flag for connection in a given
-  // direction.
-  //
-  // Returns PW_STATUS_NOT_FOUND if connection does not exist.
-  // Returns PW_STATUS_FAILED_PRECONDITION if already receiving fragmented PDU.
-  pw::Status FragmentedPduStarted(Direction direction,
-                                  uint16_t connection_handle);
-
-  // Returns `is_receiving_fragmented_pdu` flag for connection in a given
-  // direction.
-  //
-  // Returns PW_STATUS_NOT_FOUND if connection does not exist.
-  pw::Result<bool> IsReceivingFragmentedPdu(Direction direction,
-                                            uint16_t connection_handle);
-
-  // Unsets `is_receiving_fragmented_pdu` flag for connection in a given
-  // direction.
-  //
-  // Returns PW_STATUS_NOT_FOUND if connection does not exist.
-  // Returns PW_STATUS_FAILED_PRECONDITION if not receiving fragmented PDU.
-  pw::Status FragmentedPduFinished(Direction direction,
-                                   uint16_t connection_handle);
-
   // Returns the signaling channel for this link if `connection_handle`
   // references a tracked connection and `local_cid` matches its id.
   L2capSignalingChannel* FindSignalingChannel(uint16_t connection_handle,
                                               uint16_t local_cid);
+
+  // Handles an ACL Data frame.
+  // Returns true if the frame was handled and is consumed by the proxy.
+  // Returns false if the frame should be passed on to the other side.
+  bool HandleAclData(AclDataChannel::Direction direction,
+                     emboss::AclDataFrameWriter& acl);
 
  private:
   // An active logical link on ACL logical transport.
@@ -229,16 +219,6 @@ class AclDataChannel {
       num_pending_packets_ = new_val;
     }
 
-    bool is_receiving_fragmented_pdu(Direction direction) const {
-      PW_CHECK(state_ == State::kOpen);
-      return is_receiving_fragmented_pdu_[cpp23::to_underlying(direction)];
-    }
-
-    void set_is_receiving_fragmented_pdu(Direction direction, bool new_val) {
-      PW_CHECK(state_ == State::kOpen);
-      is_receiving_fragmented_pdu_[cpp23::to_underlying(direction)] = new_val;
-    }
-
     L2capSignalingChannel* signaling_channel() {
       if (transport_ == AclTransportType::kLe) {
         return &leu_signaling_channel_;
@@ -246,6 +226,44 @@ class AclDataChannel {
         return &aclu_signaling_channel_;
       }
     }
+
+    // Returns true if recombination is active
+    // (currently receiving and recombining fragments).
+    bool RecombinationActive(Direction direction) {
+      return bool(get_recombination_buffer(direction));
+    }
+
+    // Starts a new recombination session.
+    //
+    // Precondition: Recombination must not already be active
+    // (RecombinationActive must be false).
+    //
+    // Returns:
+    // * FAILED_PRECONDITION if recombination is already active.
+    // * Any error from MultiBufWriter::Create(), namely RESOURCE_EXHAUSTED.
+    // * OK if recombination is started.
+    pw::Status StartRecombination(
+        Direction direction,
+        multibuf::MultiBufAllocator& multibuf_allocator,
+        size_t size);
+
+    // Adds a fragment of data to the recombination buffer.
+    //
+    // Precondition: Recombination must be active
+    // (RecombinationActive must be true).
+    //
+    // Returns:
+    // * FAILED_PRECONDITION if recombination is not active.
+    // * Any error from MultiBufWriter::Write(), namely RESOURCE_EXHAUSTED.
+    // * OK if the data was written, with value:
+    //   * If recombination is incomplete, returns an empty MultiBuf.
+    //   * If recombination is complete, returns a nonempty MultiBuf with the
+    //     recombined data and ends recombination.
+    pw::Result<multibuf::MultiBuf> RecombineFragment(
+        Direction direction, pw::span<const uint8_t> data);
+
+    // Ends recombination.
+    void EndRecombination(Direction direction);
 
    private:
     AclTransportType transport_;
@@ -257,11 +275,13 @@ class AclDataChannel {
     // type based on link type.
     L2capAclUSignalingChannel aclu_signaling_channel_;
 
-    // Set when a fragmented PDU is received. Indexed by Direction. Continuing
-    // fragments are dropped until the PDU has been consumed, then this is
-    // unset.
-    // TODO: https://pwbug.dev/365179076 - Support recombination.
-    std::array<bool, kNumDirections> is_receiving_fragmented_pdu_{};
+    std::array<std::optional<MultiBufWriter>, kNumDirections>
+        recombination_buffers_;
+
+    MultiBufWriter* get_recombination_buffer(Direction direction) {
+      auto& recomb = recombination_buffers_[cpp23::to_underlying(direction)];
+      return recomb ? recomb.operator->() : nullptr;
+    }
   };
 
   class Credits {
@@ -316,6 +336,8 @@ class AclDataChannel {
 
   void HandleLeConnectionCompleteEvent(uint16_t connection_handle,
                                        emboss::StatusCode status);
+
+  // Data members
 
   // Maximum number of simultaneous credit-allocated ACL connections supported.
   // TODO: https://pwbug.dev/349700888 - Make size configurable.

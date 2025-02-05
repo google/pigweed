@@ -375,6 +375,71 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
   return OkStatus();
 }
 
+void SendL2capBFrame(ProxyHost& proxy,
+                     uint16_t handle,
+                     pw::span<const uint8_t> payload,
+                     size_t pdu_length,
+                     uint16_t channel_id) {
+  constexpr size_t kHeadersSize =
+      emboss::AclDataFrameHeader::IntrinsicSizeInBytes() +
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes();
+
+  const size_t acl_data_size =
+      emboss::BasicL2capHeader::IntrinsicSizeInBytes() + payload.size();
+
+  std::vector<uint8_t> hci_buf(kHeadersSize + payload.size());
+  H4PacketWithHci h4_packet{emboss::H4PacketType::ACL_DATA, hci_buf};
+
+  // ACL header
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
+  acl->header().handle().Write(handle);
+  acl->data_total_length().Write(acl_data_size);
+
+  // L2CAP B-Frame header
+  emboss::BFrameWriter bframe = emboss::MakeBFrameView(
+      acl->payload().BackingStorage().data(), acl->payload().SizeInBytes());
+  bframe.pdu_length().Write(pdu_length);
+  bframe.channel_id().Write(channel_id);
+
+  // Payload
+  std::copy(payload.begin(),
+            payload.end(),
+            h4_packet.GetHciSpan().begin() + kHeadersSize);
+
+  proxy.HandleH4HciFromController(std::move(h4_packet));
+}
+
+void SendAclContinuingFrag(ProxyHost& proxy,
+                           uint16_t handle,
+                           pw::span<const uint8_t> payload) {
+  constexpr size_t kHeadersSize =
+      emboss::AclDataFrameHeader::IntrinsicSizeInBytes();
+  // No BasicL2capHeader.
+
+  const size_t acl_data_size =
+      // No BasicL2capHeader.
+      payload.size();
+
+  std::vector<uint8_t> hci_buf(kHeadersSize + payload.size());
+  H4PacketWithHci h4_packet{emboss::H4PacketType::ACL_DATA, hci_buf};
+
+  // ACL header
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
+  acl->header().handle().Write(handle);
+  acl->header().packet_boundary_flag().Write(
+      emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT);
+  acl->data_total_length().Write(acl_data_size);
+
+  // Payload
+  std::copy(payload.begin(),
+            payload.end(),
+            h4_packet.GetHciSpan().begin() + kHeadersSize);
+
+  proxy.HandleH4HciFromController(std::move(h4_packet));
+}
+
 pw::Result<L2capCoc> ProxyHostTest::BuildCocWithResult(ProxyHost& proxy,
                                                        CocParameters params) {
   return proxy.AcquireL2capCoc(

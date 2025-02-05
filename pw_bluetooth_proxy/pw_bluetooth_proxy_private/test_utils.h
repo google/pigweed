@@ -206,6 +206,23 @@ Status SendL2capDisconnectRsp(ProxyHost& proxy,
                               uint16_t destination_cid,
                               Direction direction = Direction::kFromHost);
 
+/// Sends an L2CAP B-Frame.
+///
+/// This can be either a complete PDU (pdu_length == payload.size()) or an
+/// initial fragment (pdu_length > payload.size()).
+void SendL2capBFrame(ProxyHost& proxy,
+                     uint16_t handle,
+                     pw::span<const uint8_t> payload,
+                     size_t pdu_length,
+                     uint16_t channel_id);
+
+/// Sends an ACL frame with CONTINUING_FRAGMENT boundary flag.
+///
+/// No L2CAP header is included.
+void SendAclContinuingFrag(ProxyHost& proxy,
+                           uint16_t handle,
+                           pw::span<const uint8_t> payload);
+
 // TODO: https://pwbug.dev/382783733 - Migrate to L2capChannelEvent callback.
 struct CocParameters {
   uint16_t handle = 123;

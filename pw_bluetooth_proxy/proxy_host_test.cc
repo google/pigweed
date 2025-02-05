@@ -31,6 +31,7 @@
 #include "pw_bluetooth_proxy_private/test_utils.h"
 #include "pw_containers/flat_map.h"
 #include "pw_function/function.h"
+#include "pw_log/log.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"  // IWYU pragma: keep
 #include "pw_unit_test/status_macros.h"
@@ -3494,6 +3495,292 @@ TEST_F(ProxyHostConnectionEventTest,
   PW_TEST_EXPECT_OK(SendDisconnectionCompleteEvent(proxy, kHandle));
   EXPECT_EQ(chan2.state(), L2capChannel::State::kClosed);
   EXPECT_EQ(events_received, 3);
+}
+
+// ########## AclFragTest
+
+class AclFragTest : public ProxyHostTest {
+ protected:
+  static constexpr uint16_t kHandle = 0x4AD;
+  static constexpr uint16_t kLocalCid = 0xC1D;
+
+  int packets_sent_to_host = 0;
+  int packets_sent_to_controller = 0;
+
+  ProxyHost GetProxy() {
+    // We can't add a ProxyHost member because it makes the test fixture too
+    // large, so we provide a helper function instead.
+    return ProxyHost(pw::bind_member<&AclFragTest::SendToHost>(this),
+                     pw::bind_member<&AclFragTest::SendToController>(this),
+                     /*le_acl_credits_to_reserve=*/0,
+                     /*br_edr_acl_credits_to_reserve=*/0);
+  }
+
+  std::vector<multibuf::MultiBuf> payloads_from_controller;
+
+  BasicL2capChannel GetL2capChannel(ProxyHost& proxy) {
+    return BuildBasicL2capChannel(
+        proxy,
+        BasicL2capParameters{
+            .handle = kHandle,
+            .local_cid = kLocalCid,
+            .remote_cid = 0x123,
+            .transport = AclTransportType::kLe,
+            .payload_from_controller_fn =
+                [this](multibuf::MultiBuf&& buffer) {
+                  payloads_from_controller.emplace_back(std::move(buffer));
+                  return std::nullopt;  // Consume
+                },
+        });
+  }
+
+  void ExpectPayloadsFromController(
+      std::initializer_list<ConstByteSpan> expected_payloads) {
+    EXPECT_EQ(payloads_from_controller.size(), expected_payloads.size());
+    if (payloads_from_controller.size() != expected_payloads.size()) {
+      return;
+    }
+
+    auto payloads_iter = payloads_from_controller.begin();
+    for (ConstByteSpan expected : expected_payloads) {
+      std::optional<pw::ByteSpan> payload = (payloads_iter++)->ContiguousSpan();
+      PW_CHECK(payload.has_value());
+      EXPECT_TRUE(std::equal(
+          payload->begin(), payload->end(), expected.begin(), expected.end()));
+    }
+  }
+
+  void VerifyNormalOperationAfterRecombination(ProxyHost& proxy) {
+    // Verify things work normally after recombination ends.
+    static constexpr std::array<uint8_t, 4> kPayload = {'D', 'o', 'n', 'e'};
+    payloads_from_controller.clear();
+    SendL2capBFrame(proxy, kHandle, kPayload, kPayload.size(), kLocalCid);
+    ExpectPayloadsFromController({
+        as_bytes(span(kPayload)),
+    });
+  }
+
+ private:
+  void SendToHost(H4PacketWithHci&& /*packet*/) { ++packets_sent_to_host; }
+
+  void SendToController(H4PacketWithH4&& /*packet*/) {
+    ++packets_sent_to_controller;
+  }
+};
+
+TEST_F(AclFragTest, AclBiggerThanL2capDropped) {
+  ProxyHost proxy = GetProxy();
+  BasicL2capChannel channel = GetL2capChannel(proxy);
+
+  // Send an ACL packet with more data than L2CAP header indicates.
+  static constexpr std::array<uint8_t, 4> kPayload{};
+  SendL2capBFrame(proxy, kHandle, kPayload, 1, kLocalCid);
+
+  // Should be dropped.
+  EXPECT_EQ(packets_sent_to_host, 0);
+  ExpectPayloadsFromController({});
+}
+
+TEST_F(AclFragTest, RecombinationWorksWithEmptyFirstPayload) {
+  ProxyHost proxy = GetProxy();
+  BasicL2capChannel channel = GetL2capChannel(proxy);
+
+  static constexpr std::array<uint8_t, 4> kPayload = {0xA1, 0xB2, 0xC3, 0xD2};
+
+  // Fragment 1: ACL Header + L2CAP B-Frame Header + (no payload)
+  PW_LOG_INFO("Sending frag 1: ACL + L2CAP header");
+  SendL2capBFrame(proxy, kHandle, {}, kPayload.size(), kLocalCid);
+
+  // Fragment 2: ACL Header + Payload frag 2
+  PW_LOG_INFO("Sending frag 2: ACL(CONT) + payload2");
+  SendAclContinuingFrag(proxy, kHandle, kPayload);
+
+  EXPECT_EQ(packets_sent_to_host, 0);
+  ExpectPayloadsFromController({
+      as_bytes(span(kPayload)),
+  });
+
+  VerifyNormalOperationAfterRecombination(proxy);
+}
+
+TEST_F(AclFragTest, RecombinationWorksWithSplitPayloads) {
+  ProxyHost proxy = GetProxy();
+  BasicL2capChannel channel = GetL2capChannel(proxy);
+
+  static constexpr std::array<uint8_t, 2> kPayloadFrag1 = {0xA1, 0xB2};
+  static constexpr std::array<uint8_t, 2> kPayloadFrag2 = {0xC3, 0xD2};
+  static constexpr std::array<uint8_t, 4> kPayload = {0xA1, 0xB2, 0xC3, 0xD2};
+
+  constexpr int kNumIter = 4;
+
+  for (int i = 0; i < kNumIter; ++i) {
+    // Fragment 1: ACL Header + L2CAP B-Frame Header + Payload frag 1
+    PW_LOG_INFO("Sending frag 1: ACL + L2CAP header + payload1");
+    SendL2capBFrame(proxy, kHandle, kPayloadFrag1, kPayload.size(), kLocalCid);
+
+    // Fragment 2: ACL Header + Payload frag 2
+    PW_LOG_INFO("Sending frag 2: ACL(CONT) + payload2");
+    SendAclContinuingFrag(proxy, kHandle, kPayloadFrag2);
+  }
+
+  EXPECT_EQ(packets_sent_to_host, 0);
+  ExpectPayloadsFromController({
+      as_bytes(span(kPayload)),
+      as_bytes(span(kPayload)),
+      as_bytes(span(kPayload)),
+      as_bytes(span(kPayload)),
+  });
+
+  VerifyNormalOperationAfterRecombination(proxy);
+}
+
+TEST_F(AclFragTest, UnexpectedContinuingFragment) {
+  ProxyHost proxy = GetProxy();
+  BasicL2capChannel channel = GetL2capChannel(proxy);
+
+  static constexpr std::array<uint8_t, 4> kPayload = {0xA1, 0xB2, 0xC3, 0xD2};
+
+  // Send an unexpected CONTINUING_FRAGMENT
+  PW_LOG_INFO("Sending frag 1: ACL(CONT) + payload");
+  SendAclContinuingFrag(proxy, kHandle, kPayload);
+
+  ExpectPayloadsFromController({});
+  EXPECT_EQ(packets_sent_to_host, 1);  // Should be passed on to host
+
+  VerifyNormalOperationAfterRecombination(proxy);
+}
+
+TEST_F(AclFragTest, UnexpectedFirstFragment) {
+  ProxyHost proxy = GetProxy();
+  BasicL2capChannel channel = GetL2capChannel(proxy);
+
+  static constexpr std::array<uint8_t, 2> kPayloadFrag1 = {0xA1, 0xB2};
+  static constexpr std::array<uint8_t, 2> kPayloadFrag2 = {0xC3, 0xD2};
+  static constexpr std::array<uint8_t, 4> kPayload = {0xA1, 0xB2, 0xC3, 0xD2};
+
+  // PDU A: Fragment 1: Start recombination by sending first fragment.
+  PW_LOG_INFO("Sending frag 1: ACL + L2CAP header + payload1");
+  SendL2capBFrame(proxy, kHandle, {}, 100, kLocalCid);
+
+  // We never send the 100 byte payload here.
+
+  // So this new first-fragment is unexpected:
+  // PDU B: Fragment 1: ACL Header + L2CAP B-Frame Header + Payload frag 1
+  PW_LOG_INFO("Sending frag 1: ACL + L2CAP header + payload1");
+  SendL2capBFrame(proxy, kHandle, kPayloadFrag1, kPayload.size(), kLocalCid);
+
+  // PDU B: Fragment 2: ACL Header + Payload frag 2
+  PW_LOG_INFO("Sending frag 2: ACL(CONT) + payload2");
+  SendAclContinuingFrag(proxy, kHandle, kPayloadFrag2);
+
+  // Nothing should be sent to the host. The first fragment of PDU A is dropped.
+  EXPECT_EQ(packets_sent_to_host, 0);
+
+  // PDU B is delivered.
+  ExpectPayloadsFromController({
+      as_bytes(span(kPayload)),
+  });
+
+  VerifyNormalOperationAfterRecombination(proxy);
+}
+
+TEST_F(AclFragTest, ContinuingFragmentTooLarge) {
+  ProxyHost proxy = GetProxy();
+  BasicL2capChannel channel = GetL2capChannel(proxy);
+
+  static constexpr std::array<uint8_t, 2> kPayloadFrag1 = {0xA1, 0xB2};
+  static constexpr std::array<uint8_t, 5> kPayloadFrag2TooBig = {
+      0xC3, 0xD2, 0xBA, 0xAA, 0xAD};
+  static constexpr std::array<uint8_t, 4> kPayload = {0xA1, 0xB2, 0xC3, 0xD2};
+
+  // Fragment 1: ACL Header + L2CAP B-Frame Header + Payload frag 1
+  PW_LOG_INFO("Sending frag 1: ACL + L2CAP header + payload1");
+  SendL2capBFrame(proxy, kHandle, kPayloadFrag1, kPayload.size(), kLocalCid);
+
+  // Fragment 2: ACL Header + Payload frag 2
+  PW_LOG_INFO("Sending frag 2: ACL(CONT) + payload2 (too big)");
+  SendAclContinuingFrag(proxy, kHandle, kPayloadFrag2TooBig);
+
+  ExpectPayloadsFromController({});
+
+  // This was for a channel owned by the proxy so it should have been dropped.
+  EXPECT_EQ(packets_sent_to_host, 0);
+
+  VerifyNormalOperationAfterRecombination(proxy);
+}
+
+TEST_F(AclFragTest,
+       CanReceiveUnfragmentedPduOnOneChannelWhileRecombiningOnAnother) {
+  ProxyHost proxy = GetProxy();
+
+  // Channel 1
+  static constexpr std::array<uint8_t, 2> kPayload1Frag1 = {0xA1, 0xB2};
+  static constexpr std::array<uint8_t, 2> kPayload1Frag2 = {0xC3, 0xD2};
+  static constexpr std::array<uint8_t, 4> kPayload1 = {0xA1, 0xB2, 0xC3, 0xD2};
+
+  int channel1_sends_called = 0;
+  BasicL2capChannel channel = BuildBasicL2capChannel(
+      proxy,
+      BasicL2capParameters{
+          .handle = kHandle,
+          .local_cid = kLocalCid,
+          .remote_cid = 0x123,
+          .transport = AclTransportType::kLe,
+          .payload_from_controller_fn =
+              [&channel1_sends_called](multibuf::MultiBuf&& buffer) {
+                ++channel1_sends_called;
+                std::optional<pw::ByteSpan> payload = buffer.ContiguousSpan();
+                ConstByteSpan expected_bytes = as_bytes(span(kPayload1));
+                EXPECT_TRUE(payload.has_value());
+                EXPECT_TRUE(std::equal(payload->begin(),
+                                       payload->end(),
+                                       expected_bytes.begin(),
+                                       expected_bytes.end()));
+                return std::nullopt;
+              },
+      });
+
+  // Channel 2
+  static constexpr uint16_t kHandle2 = 0x4D2;
+  static constexpr uint16_t kLocalCid2 = 0xC2D;
+  static constexpr std::array<uint8_t, 4> kPayload2 = {0x33, 0x66, 0x99, 0xCC};
+
+  int channel2_sends_called = 0;
+  BasicL2capChannel channel2 = BuildBasicL2capChannel(
+      proxy,
+      BasicL2capParameters{
+          .handle = kHandle2,
+          .local_cid = kLocalCid2,
+          .remote_cid = 0x321,
+          .transport = AclTransportType::kLe,
+          .payload_from_controller_fn =
+              [&channel2_sends_called](multibuf::MultiBuf&& buffer) {
+                ++channel2_sends_called;
+                std::optional<pw::ByteSpan> payload = buffer.ContiguousSpan();
+                ConstByteSpan expected_bytes = as_bytes(span(kPayload2));
+                EXPECT_TRUE(payload.has_value());
+                EXPECT_TRUE(std::equal(payload->begin(),
+                                       payload->end(),
+                                       expected_bytes.begin(),
+                                       expected_bytes.end()));
+                return std::nullopt;
+              },
+      });
+
+  // Channel 1: Fragment 1: ACL Header + L2CAP B-Frame Header + Payload frag 1
+  PW_LOG_INFO("Sending frag 1: ACL + L2CAP header + payload1");
+  SendL2capBFrame(proxy, kHandle, kPayload1Frag1, kPayload1.size(), kLocalCid);
+
+  // Channel 2: Send full PDU
+  SendL2capBFrame(proxy, kHandle2, kPayload2, kPayload2.size(), kLocalCid2);
+  EXPECT_EQ(channel2_sends_called, 1);
+
+  // Channel 1: Fragment 2: ACL Header + Payload frag 2
+  PW_LOG_INFO("Sending frag 2: ACL(CONT) + payload2");
+  SendAclContinuingFrag(proxy, kHandle, kPayload1Frag2);
+
+  EXPECT_EQ(channel1_sends_called, 1);
+  EXPECT_EQ(packets_sent_to_host, 0);
 }
 
 }  // namespace

@@ -102,61 +102,6 @@ void ProxyHost::HandleH4HciFromController(H4PacketWithHci&& h4_packet) {
   }
 }
 
-bool ProxyHost::CheckForActiveFragmenting(AclDataChannel::Direction direction,
-                                          emboss::AclDataFrameWriter& acl) {
-  const uint16_t handle = acl.header().handle().Read();
-  const emboss::AclDataPacketBoundaryFlag boundary_flag =
-      acl.header().packet_boundary_flag().Read();
-
-  pw::Result<bool> connection_is_receiving_fragmented_pdu =
-      acl_data_channel_.IsReceivingFragmentedPdu(direction, handle);
-  if (connection_is_receiving_fragmented_pdu.ok() &&
-      *connection_is_receiving_fragmented_pdu) {
-    // We're in a state where this connection is dropping continuing fragments
-    // in a fragmented PDU.
-    if (boundary_flag !=
-        emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT) {
-      // The fragmented PDU has been fully received, so note that then proceed
-      // to process the new PDU as normal.
-      PW_CHECK(acl_data_channel_.FragmentedPduFinished(direction, handle).ok());
-    } else {
-      PW_LOG_INFO("(Connection: 0x%X) Dropping continuing PDU fragment.",
-                  handle);
-      return true;
-    }
-  }
-  return false;
-}
-
-bool ProxyHost::CheckForFragmentedStart(
-    AclDataChannel::Direction direction,
-    emboss::AclDataFrameWriter& acl,
-    emboss::BasicL2capHeaderView& l2cap_header,
-    L2capChannel* channel) {
-  const uint16_t handle = acl.header().handle().Read();
-  const emboss::AclDataPacketBoundaryFlag boundary_flag =
-      acl.header().packet_boundary_flag().Read();
-  // TODO: https://pwbug.dev/365179076 - Support recombination.
-  if (boundary_flag == emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT) {
-    PW_LOG_INFO("(CID: 0x%X) Received unexpected continuing PDU fragment.",
-                handle);
-    channel->HandleFragmentedPdu();
-    return true;
-  }
-  const uint16_t l2cap_frame_length =
-      emboss::BasicL2capHeader::IntrinsicSizeInBytes() +
-      l2cap_header.pdu_length().Read();
-  if (l2cap_frame_length > acl.data_total_length().Read()) {
-    pw::Status status =
-        acl_data_channel_.FragmentedPduStarted(direction, handle);
-    PW_CHECK(status.ok());
-    channel->HandleFragmentedPdu();
-    return true;
-  }
-
-  return false;
-}
-
 void ProxyHost::HandleEventFromController(H4PacketWithHci&& h4_packet) {
   pw::span<uint8_t> hci_buffer = h4_packet.GetHciSpan();
   Result<emboss::EventHeaderView> event =
@@ -243,45 +188,11 @@ void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
     hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
-  const uint16_t handle = acl->header().handle().Read();
 
-  if (CheckForActiveFragmenting(AclDataChannel::Direction::kFromController,
-                                *acl)) {
-    return;
-  }
-
-  emboss::BasicL2capHeaderView l2cap_header = emboss::MakeBasicL2capHeaderView(
-      acl->payload().BackingStorage().data(),
-      acl->payload().BackingStorage().SizeInBytes());
-  // TODO: https://pwbug.dev/365179076 - Technically, the first fragment of a
-  // fragmented PDU may include an incomplete L2CAP header.
-  if (!l2cap_header.Ok()) {
-    PW_LOG_ERROR(
-        "(Connection: 0x%X) ACL packet does not include a valid L2CAP header. "
-        "So will pass on to host.",
-        handle);
+  if (!acl_data_channel_.HandleAclData(
+          AclDataChannel::Direction::kFromController, *acl)) {
     hci_transport_.SendToHost(std::move(h4_packet));
     return;
-  }
-
-  L2capChannel* channel = l2cap_channel_manager_.FindChannelByLocalCid(
-      acl->header().handle().Read(), l2cap_header.channel_id().Read());
-  if (!channel) {
-    hci_transport_.SendToHost(std::move(h4_packet));
-    return;
-  }
-
-  if (CheckForFragmentedStart(AclDataChannel::Direction::kFromController,
-                              *acl,
-                              l2cap_header,
-                              channel)) {
-    return;
-  }
-
-  if (!channel->HandlePduFromController(
-          pw::span(acl->payload().BackingStorage().data(),
-                   acl->payload().SizeInBytes()))) {
-    hci_transport_.SendToHost(std::move(h4_packet));
   }
 }
 
@@ -411,41 +322,10 @@ void ProxyHost::HandleAclFromHost(H4PacketWithH4&& h4_packet) {
     return;
   }
 
-  if (CheckForActiveFragmenting(AclDataChannel::Direction::kFromHost, *acl)) {
-    return;
-  }
-
-  const uint16_t handle = acl->header().handle().Read();
-  emboss::BasicL2capHeaderView l2cap_header = emboss::MakeBasicL2capHeaderView(
-      acl->payload().BackingStorage().data(),
-      acl->payload().BackingStorage().SizeInBytes());
-  // TODO: https://pwbug.dev/365179076 - Technically, the first fragment of a
-  // fragmented PDU may include an incomplete L2CAP header.
-  if (!l2cap_header.Ok()) {
-    PW_LOG_ERROR(
-        "(Connection: 0x%X) ACL packet does not include a valid L2CAP header. "
-        "So will pass on to controller.",
-        handle);
+  if (!acl_data_channel_.HandleAclData(AclDataChannel::Direction::kFromHost,
+                                       *acl)) {
     hci_transport_.SendToController(std::move(h4_packet));
     return;
-  }
-
-  L2capChannel* channel = l2cap_channel_manager_.FindChannelByRemoteCid(
-      acl->header().handle().Read(), l2cap_header.channel_id().Read());
-  if (!channel) {
-    hci_transport_.SendToController(std::move(h4_packet));
-    return;
-  }
-
-  if (CheckForFragmentedStart(
-          AclDataChannel::Direction::kFromHost, *acl, l2cap_header, channel)) {
-    return;
-  }
-
-  if (!channel->HandlePduFromHost(
-          pw::span(acl->payload().BackingStorage().data(),
-                   acl->payload().SizeInBytes()))) {
-    hci_transport_.SendToController(std::move(h4_packet));
   }
 }
 

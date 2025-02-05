@@ -295,25 +295,6 @@ bool L2capChannel::HandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
   return DoHandlePduFromController(l2cap_pdu);
 }
 
-void L2capChannel::HandleFragmentedPdu() {
-  if (state() != State::kRunning) {
-    PW_LOG_ERROR(
-        "btproxy: L2capChannel::HandleFragmentedPdu on non-running "
-        "channel. local_cid: %#x, remote_cid: %#x, state: %u",
-        local_cid(),
-        remote_cid(),
-        cpp23::to_underlying(state()));
-    SendEvent(L2capChannelEvent::kRxWhileStopped);
-    return;
-  }
-  PW_LOG_ERROR(
-      "(CID %u) Fragmented L2CAP frame received, which is not yet supported. "
-      "Channel is now stopped.",
-      local_cid());
-  SendEvent(L2capChannelEvent::kRxFragmented);
-  Stop();
-}
-
 L2capChannel::L2capChannel(
     L2capChannelManager& l2cap_channel_manager,
     multibuf::MultiBufAllocator* rx_multibuf_allocator,
