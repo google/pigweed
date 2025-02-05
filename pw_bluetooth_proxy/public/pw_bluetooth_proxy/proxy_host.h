@@ -16,6 +16,7 @@
 
 #include "pw_allocator/best_fit.h"
 #include "pw_allocator/synchronized_allocator.h"
+#include "pw_bluetooth_proxy/gatt_notify_channel.h"
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
@@ -221,6 +222,32 @@ class ProxyHost {
       OptionalPayloadReceiveCallback&& payload_from_host_fn,
       Function<void(L2capChannelEvent event)>&& event_fn);
 
+  /// Returns a GATT Notify channel channel that supports sending notifications
+  /// to a particular connection handle and attribute.
+  ///
+  /// @param[in] connection_handle The connection handle of the peer to notify.
+  /// Maximum valid connection handle is 0x0EFF.
+  ///
+  /// @param[in] attribute_handle  The attribute handle the notify should be
+  /// sent on. Cannot be 0.
+  ///
+  /// @param[in] event_fn          Handle asynchronous events such as errors and
+  ///                              flow control events encountered by the
+  ///                              channel. See `l2cap_channel_event.h`.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
+  ///  UNAVAILABLE:      If channel could not be created because no memory was
+  ///                    available to accommodate an additional ACL connection.
+  /// @endrst
+  pw::Result<GattNotifyChannel> AcquireGattNotifyChannel(
+      int16_t connection_handle,
+      uint16_t attribute_handle,
+      // TODO: https://pwbug.dev/369709521 - Add event_fn support.
+      Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
+
   /// Send a GATT Notify to the indicated connection.
   ///
   /// @param[in] connection_handle The connection handle of the peer to notify.
@@ -240,6 +267,11 @@ class ProxyHost {
   ///
   ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
   /// @endrst
+  ///
+  /// @deprecated - Clients should use `ProxyHost::AcquireGattNotifyChannel` and
+  /// then call `GattNotifyChannel::Write` on that.
+  // TODO: https://pwbug.dev/369709521 - Delete this once all downstreams
+  // have transitioned.
   StatusWithMultiBuf SendGattNotify(uint16_t connection_handle,
                                     uint16_t attribute_handle,
                                     pw::multibuf::MultiBuf&& payload);
@@ -264,9 +296,10 @@ class ProxyHost {
   ///               at this time (transient error).
   ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
   /// @endrst
-  // @deprecated
+  /// @deprecated - Clients should use `ProxyHost::AcquireGattNotifyChannel` and
+  /// then call `GattNotifyChannel::Write` on that.
   // TODO: https://pwbug.dev/379337272 - Delete this once all downstreams
-  // have transitioned to sending MultiBuf.
+  // have transitioned.
   pw::Status SendGattNotify(uint16_t connection_handle,
                             uint16_t attribute_handle,
                             pw::span<const uint8_t> attribute_value);
