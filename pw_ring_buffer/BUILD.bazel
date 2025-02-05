@@ -19,7 +19,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -34,7 +33,8 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_containers",
+        "//pw_assert",
+        "//pw_containers:intrusive_list",
         "//pw_result",
         "//pw_span",
         "//pw_status",
@@ -47,6 +47,8 @@ pw_cc_test(
     srcs = ["prefixed_entry_ring_buffer_test.cc"],
     deps = [
         ":pw_ring_buffer",
+        "//pw_assert",
+        "//pw_containers:vector",
         "//pw_unit_test",
         "//pw_varint",
     ],
