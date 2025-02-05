@@ -165,7 +165,7 @@ cipd_repository(
     name = "llvm_toolchain",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:9d3f9f47e6e630b8308562297757e0911be03a18",
+    tag = "git_revision:84af3ee5124de3385b829c3a9980fd734f0d92e8",
 )
 
 # TODO: https://pwbug.dev/388593877 - macOS toolchain is behind because of a
@@ -179,13 +179,11 @@ cipd_repository(
     tag = "git_revision:8280651ad57cb9fb24a404cec2401040c28dec98",
 )
 
-# TODO: b/366374135 - This is behind, most recent version
-# is in pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json
 cipd_repository(
     name = "llvm_toolchain_device",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:9d3f9f47e6e630b8308562297757e0911be03a18",
+    tag = "git_revision:84af3ee5124de3385b829c3a9980fd734f0d92e8",
 )
 
 # Fetch linux sysroot for host builds.
