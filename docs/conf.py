@@ -167,7 +167,10 @@ html_css_files = [
 ]
 
 html_js_files = [
-    "js/pigweed.js",
+    # Do not list pigweed.js here. This will cause it to get loaded in <head>.
+    # To improve load performance we modified //docs/layout/layout.html
+    # to load pigweed.js at the end of <body> instead.
+    # "js/pigweed.js",
 ]
 
 html_extra_path = [
