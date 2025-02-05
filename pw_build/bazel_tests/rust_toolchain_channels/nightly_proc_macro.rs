@@ -1,4 +1,4 @@
-// Copyright 2023 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,15 +11,14 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#![cfg_attr(feature = "nightly", feature(type_alias_impl_trait))]
+use proc_macro::TokenStream;
+use quote::quote;
 
-#[cfg(test)]
-mod tests {
-    use pw_format_example_macro::example_macro;
-
-    #[test]
-    fn test() {
-        let string = example_macro!("the answer: ", "%d", 42);
-        assert_eq!(&string, "the answer: 42");
+#[proc_macro]
+pub fn panic_if_not_nightly(_tokens: TokenStream) -> TokenStream {
+    if cfg!(not(feature = "nightly")) {
+        quote! {panic!("not being build with nightly toolchain!");}.into()
+    } else {
+        quote! {}.into()
     }
 }

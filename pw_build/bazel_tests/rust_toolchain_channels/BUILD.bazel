@@ -1,0 +1,44 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_rust//rust:defs.bzl", "rust_proc_macro", "rust_test")
+
+rust_proc_macro(
+    name = "nightly_proc_macro",
+    srcs = [
+        "nightly_proc_macro.rs",
+    ],
+    crate_features = select({
+        "@rules_rust//rust/toolchain/channel:nightly": ["nightly"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "@rust_crates//:quote",
+    ],
+)
+
+rust_test(
+    name = "nightly_toolchain_test",
+    srcs = [
+        "nightly_toolchain.rs",
+    ],
+    proc_macro_deps = [
+        ":nightly_proc_macro",
+    ],
+    target_compatible_with = select({
+        "@rules_rust//rust/toolchain/channel:nightly": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:public"],
+)

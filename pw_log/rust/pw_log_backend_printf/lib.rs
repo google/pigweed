@@ -27,7 +27,6 @@
 //! of a series of traits.  It is documented in the [`varargs`] module.
 //!
 //! TODO: <pwbug.dev/311232605> - Document how to configure facade backends.
-
 #![deny(missing_docs)]
 
 pub mod varargs;

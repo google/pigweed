@@ -103,6 +103,12 @@ coverage --combined_report=lcov
 # was removed and always set to true in the toolchain definition.
 common --//pw_toolchain/host_clang:layering_check
 
+# Rust related flags
+# ==================
+# Ensure that rust channel gets propagated to the exec config under which
+# proc-macros and build.rs files are built.
+common --experimental_propagate_custom_flag=@@rules_rust+//rust/toolchain/channel:channel
+
 # Java related flags
 # ==================
 # Workaround for https://github.com/bazelbuild/rules_jvm_external/issues/445.

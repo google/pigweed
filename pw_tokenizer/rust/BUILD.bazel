@@ -56,7 +56,7 @@ rust_test(
     crate = ":pw_tokenizer_core",
     crate_features = select({
         "@rust_crates//:std": ["std"],
-        "//conditions:default": [""],
+        "//conditions:default": [],
     }),
     # TODO: b/343726867 - support on-device rust tests
     target_compatible_with = incompatible_with_mcu(),
@@ -65,7 +65,12 @@ rust_test(
 rust_doc_test(
     name = "pw_tokenizer_core_doc_test",
     crate = ":pw_tokenizer_core",
-    target_compatible_with = incompatible_with_mcu(),
+    target_compatible_with = select({
+        "@platforms//os:none": ["@platforms//:incompatible"],
+        # TODO: https://github.com/bazelbuild/rules_rust/issues/1431 - enable once rules_rust can set features on doc tests
+        "@rules_rust//rust/toolchain/channel:nightly": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
 )
 
 rust_doc(
@@ -107,6 +112,9 @@ rust_test(
     crate_features = select({
         "@rust_crates//:std": ["std"],
         "//conditions:default": [""],
+    }) + select({
+        "@rules_rust//rust/toolchain/channel:nightly": ["nightly"],
+        "//conditions:default": [],
     }),
     # TODO: b/343726867 - support on-device rust tests
     target_compatible_with = incompatible_with_mcu(),
@@ -115,7 +123,12 @@ rust_test(
 rust_doc_test(
     name = "pw_tokenizer_doc_test",
     crate = ":pw_tokenizer",
-    target_compatible_with = incompatible_with_mcu(),
+    target_compatible_with = select({
+        "@platforms//os:none": ["@platforms//:incompatible"],
+        # TODO: https://github.com/bazelbuild/rules_rust/issues/1431 - enable once rules_rust can set features on doc tests
+        "@rules_rust//rust/toolchain/channel:nightly": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
 )
 
 rust_doc(

@@ -11,6 +11,7 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#![cfg_attr(feature = "nightly", feature(type_alias_impl_trait))]
 
 #[allow(unused_imports)]
 use pw_format::{macros::FormatParams, Style};
