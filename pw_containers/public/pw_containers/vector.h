@@ -606,7 +606,7 @@ typename Vector<T>::iterator Vector<T>::erase(Vector<T>::const_iterator first,
   size_ = static_cast<size_type>(std::distance(begin(), new_end));
 
   // Return an iterator following the last removed element.
-  return new_end;
+  return const_cast<iterator>(first);
 }
 
 template <typename T>

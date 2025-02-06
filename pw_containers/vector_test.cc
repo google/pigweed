@@ -428,7 +428,8 @@ TEST(Vector, Modify_Erase_TrivialRangeBegin) {
     vector.emplace_back(i);
   }
 
-  vector.erase(vector.begin() + 2, vector.end());
+  auto item_after_erased = vector.erase(vector.begin() + 2, vector.end());
+  EXPECT_EQ(item_after_erased, vector.end());
   EXPECT_EQ(vector.size(), 2u);
 
   for (unsigned short i = 0; i < vector.size(); ++i) {
@@ -443,7 +444,8 @@ TEST(Vector, Modify_Erase_TrivialRangeEnd) {
     vector.emplace_back(i);
   }
 
-  vector.erase(vector.begin(), vector.end() - 2);
+  auto item_after_erased = vector.erase(vector.begin(), vector.end() - 2);
+  EXPECT_EQ(item_after_erased, vector.begin());
   EXPECT_EQ(vector.size(), 2u);
 
   for (unsigned short i = 0; i < vector.size(); ++i) {
@@ -458,13 +460,15 @@ TEST(Vector, Modify_Erase_TrivialSingleItem) {
     vector.emplace_back(i);
   }
 
-  vector.erase(vector.begin() + 9);
+  auto item_after_erased = vector.erase(vector.begin() + 9);
+  EXPECT_EQ(item_after_erased, vector.begin() + 9);
 
   EXPECT_EQ(vector.size(), 9u);
   EXPECT_EQ(vector.at(8), 8u);
   EXPECT_EQ(vector.at(0), 0u);
 
-  vector.erase(vector.begin());
+  item_after_erased = vector.erase(vector.begin());
+  EXPECT_EQ(item_after_erased, vector.begin());
   EXPECT_EQ(vector.size(), 8u);
   EXPECT_EQ(vector.at(0), 1u);
 }
@@ -481,7 +485,8 @@ TEST(Vector, Modify_Erase_NonTrivialRangeBegin) {
     EXPECT_EQ(vector[i].value, static_cast<int>(i));
   }
 
-  vector.erase(vector.begin() + 2, vector.end());
+  auto item_after_erased = vector.erase(vector.begin() + 2, vector.end());
+  EXPECT_EQ(item_after_erased, vector.end());
   EXPECT_EQ(vector.size(), 2u);
 
   for (unsigned short i = 0; i < vector.size(); ++i) {
@@ -500,7 +505,8 @@ TEST(Vector, Modify_Erase_NonTrivialRangeEnd) {
     vector.emplace_back(static_cast<int>(i));
   }
 
-  vector.erase(vector.begin(), vector.end() - 2);
+  auto item_after_erased = vector.erase(vector.begin(), vector.end() - 2);
+  EXPECT_EQ(item_after_erased, vector.begin());
   EXPECT_EQ(vector.size(), 2u);
 
   for (unsigned short i = 0; i < vector.size(); ++i) {
@@ -519,7 +525,8 @@ TEST(Vector, Modify_Erase_None) {
     vector.emplace_back(static_cast<int>(i));
   }
 
-  vector.erase(vector.begin() + 2, vector.begin() + 2);
+  auto item_after_erased = vector.erase(vector.begin() + 2, vector.begin() + 2);
+  EXPECT_EQ(item_after_erased, vector.begin() + 2);
   EXPECT_EQ(vector.size(), 10u);
 
   EXPECT_EQ(Counter::destroyed, 0);
@@ -538,8 +545,9 @@ TEST(Vector, Modify_Insert_End) {
   EXPECT_EQ(vector.size(), 8u);
   EXPECT_EQ(Counter::created, 8);
 
-  decltype(vector)::iterator it = vector.insert(vector.cend(), 8);
-  EXPECT_EQ(it->value, 8);
+  decltype(vector)::iterator first_inserted = vector.insert(vector.cend(), 8);
+  EXPECT_EQ(first_inserted, vector.end() - 1);
+  EXPECT_EQ(first_inserted->value, 8);
   EXPECT_EQ(vector.at(8).value, 8);
 
   EXPECT_EQ(Counter::destroyed, 1);
@@ -557,8 +565,10 @@ TEST(Vector, Modify_Insert_Begin) {
 
   EXPECT_EQ(vector.size(), 8u);
 
-  decltype(vector)::iterator it = vector.insert(vector.cbegin(), 123);
-  EXPECT_EQ(it->value, 123);
+  decltype(vector)::iterator first_inserted =
+      vector.insert(vector.cbegin(), 123);
+  EXPECT_EQ(first_inserted, vector.cbegin());
+  EXPECT_EQ(first_inserted->value, 123);
   EXPECT_EQ(vector.at(0).value, 123);
   EXPECT_EQ(vector.at(8).value, 7);
 
@@ -570,7 +580,9 @@ TEST(Vector, Modify_Insert_CountCopies) {
   Vector<Counter, 10> vector;
 
   vector.emplace_back(123);
-  vector.insert(vector.cbegin() + 1, 8, Counter{421});
+  auto first_inserted = vector.insert(vector.cbegin() + 1, 8, Counter{421});
+  EXPECT_EQ(first_inserted, vector.cbegin() + 1);
+  EXPECT_EQ(first_inserted->value, 421);
   EXPECT_EQ(vector.at(0).value, 123);
   EXPECT_EQ(vector.size(), 9u);
 
@@ -589,10 +601,12 @@ TEST(Vector, Modify_Insert_IteratorRange) {
   Vector<int, 10> vector(array_to_insert_first.begin(),
                          array_to_insert_first.end());
 
-  decltype(vector)::iterator it = vector.insert(vector.cbegin() + 3,
-                                                array_to_insert_middle.begin(),
-                                                array_to_insert_middle.end());
-  EXPECT_EQ(*it, array_to_insert_middle.front());
+  decltype(vector)::iterator first_inserted =
+      vector.insert(vector.cbegin() + 3,
+                    array_to_insert_middle.begin(),
+                    array_to_insert_middle.end());
+  EXPECT_EQ(first_inserted, vector.cbegin() + 3);
+  EXPECT_EQ(*first_inserted, array_to_insert_middle.front());
 
   for (unsigned short i = 0; i < vector.max_size(); ++i) {
     EXPECT_EQ(vector[i], static_cast<int>(i));
@@ -612,9 +626,10 @@ TEST(Vector, Modify_Insert_InitializerListRange) {
   Vector<int, 10> vector(array_to_insert_first.begin(),
                          array_to_insert_first.end());
 
-  decltype(vector)::iterator it =
+  decltype(vector)::iterator first_inserted =
       vector.insert(vector.cbegin() + 3, {3, 4, 5, 6, 7});
-  EXPECT_EQ(*it, 3);
+  EXPECT_EQ(first_inserted, vector.cbegin() + 3);
+  EXPECT_EQ(*first_inserted, 3);
 
   for (unsigned short i = 0; i < vector.max_size(); ++i) {
     EXPECT_EQ(vector[i], static_cast<int>(i));
@@ -626,9 +641,10 @@ TEST(Vector, Modify_Insert_NonTrivial_InitializerListRange) {
   Vector<Counter, 10> vector(array_to_insert_first.begin(),
                              array_to_insert_first.end());
 
-  decltype(vector)::iterator it = vector.insert(
+  decltype(vector)::iterator first_inserted = vector.insert(
       vector.cbegin() + 3, std::initializer_list<Counter>{3, 4, 5, 6, 7});
-  EXPECT_EQ(it->value, 3);
+  EXPECT_EQ(first_inserted, vector.cbegin() + 3);
+  EXPECT_EQ(first_inserted->value, 3);
 
   for (unsigned short i = 0; i < vector.max_size(); ++i) {
     EXPECT_EQ(vector[i].value, static_cast<int>(i));
