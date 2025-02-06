@@ -237,3 +237,36 @@ contents.
 .. _fuchsia/prebuilt/bt-host: https://chrome-infra-packages.appspot.com/p/fuchsia/prebuilt/bt-host
 .. _fuchsia/prebuilt/bt-hci-virtual: https://chrome-infra-packages.appspot.com/p/fuchsia/prebuilt/bt-hci-virtual
 .. _pigweed-linux-bazel-bthost: https://ci.chromium.org/ui/p/pigweed/builders/pigweed.ci/pigweed-linux-bazel-bthost
+
+Using Zxdb: the Fuchsia debugger
+================================
+
+`Zxdb is a console-mode debugger`_ for native code running on Fuchsia.
+
+To run Zxdb in pw_bluetooth_sapphire:
+
+#. Start the emulator.
+
+#. Run:
+
+   .. code-block:: console
+
+      # Connect to the debugger
+      $ pw ffx debug connect
+
+      # Attach test package from test output url (e.g. fuchsia-pkg://bazel.test.pkg.publish.anonymous/bt_host_fidl_tests_bazel#meta/fidl_test.cm)
+      $ [zxdb] attach <test-package> (e.g. attach fidl_test.cm)
+
+      # Set a breakpoint
+      $ [zxdb] break <file.cc>:<line-number> (e.g. break fidl/profile_server.cc:384)
+
+#. Run your test in a new terminal:
+
+   .. code-block:: console
+
+      $ bazelisk run --config=fuchsia //pw_bluetooth_sapphire/fuchsia/host/fidl:test_pkg
+
+Once you have successfully connected to the debugger, see `further capabilities`_.
+
+.. _Zxdb is a console-mode debugger: https://fuchsia.dev/fuchsia-src/development/debugger
+.. _further capabilities: https://fuchsia.dev/fuchsia-src/development/debugger?hl=en#working_with_zxdb
