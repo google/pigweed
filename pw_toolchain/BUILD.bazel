@@ -18,10 +18,7 @@ load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
-package(
-    default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
-)
+package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
@@ -90,6 +87,13 @@ cc_library(
     name = "no_destructor",
     hdrs = ["public/pw_toolchain/no_destructor.h"],
     strip_include_prefix = "public",
+    deps = ["//pw_polyfill"],
+)
+
+cc_library(
+    name = "globals",
+    hdrs = ["public/pw_toolchain/globals.h"],
+    strip_include_prefix = "public",
 )
 
 pw_cc_test(
@@ -98,6 +102,18 @@ pw_cc_test(
     deps = [
         ":no_destructor",
         "//pw_assert",
+        "//pw_polyfill",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "globals_test",
+    srcs = ["globals_test.cc"],
+    deps = [
+        ":globals",
+        "//pw_assert",
+        "//pw_polyfill",
         "//pw_unit_test",
     ],
 )
@@ -130,6 +146,7 @@ cc_library(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_toolchain/globals.h",
         "public/pw_toolchain/no_destructor.h",
     ],
 )
@@ -139,6 +156,7 @@ sphinx_docs_library(
     srcs = [
         "bazel.rst",
         "docs.rst",
+        "globals_test.cc",
         "gn.rst",
     ],
     prefix = "pw_toolchain/",

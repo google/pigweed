@@ -28,7 +28,27 @@ pw_add_test(pw_toolchain.no_destructor_test
     no_destructor_test.cc
   PRIVATE_DEPS
     pw_assert.check
+    pw_polyfill
     pw_toolchain.no_destructor
+  GROUPS
+    modules
+    pw_toolchain
+)
+
+pw_add_library(pw_toolchain.globals INTERFACE
+  HEADERS
+    public/pw_toolchain/globals.h
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_toolchain.globals_test
+  SOURCES
+    globals_test.cc
+  PRIVATE_DEPS
+    pw_assert.check
+    pw_polyfill
+    pw_toolchain.globals
   GROUPS
     modules
     pw_toolchain

@@ -15,6 +15,8 @@
 #include "pw_toolchain/no_destructor.h"
 
 #include "pw_assert/check.h"
+#include "pw_polyfill/language_feature_macros.h"
+#include "pw_polyfill/standard.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw {
@@ -40,6 +42,13 @@ class CrashInDestructor {
   int some_value = 0;
 
  private:
+  // Due to a bug in GCC (at least 12.2), classes with private destructors must
+  // friend NoDestructor to use it, even though NoDestructor never calls the
+  // destructor. RuntimeInitGlobal may be used as a workaround.
+#if defined(__GNUC__) && !defined(__clang__)
+  friend class pw::NoDestructor<CrashInDestructor>;
+#endif  // defined(__GNUC__) && !defined(__clang__)
+
   ~CrashInDestructor() { PW_CRASH("This destructor should never execute!"); }
 };
 
@@ -48,6 +57,15 @@ class TrivialDestructor {
   TrivialDestructor(int initial_value) : value(initial_value) {}
 
   int value;
+};
+
+class ConstexprConstructible {
+ public:
+  constexpr ConstexprConstructible() : crash(true) {}
+
+  PW_CONSTEXPR_CPP20 ~ConstexprConstructible() { PW_CHECK(!crash); }
+
+  bool crash;
 };
 
 TEST(NoDestructor, ShouldNotCallDestructor) {
@@ -94,13 +112,25 @@ TEST(NoDestructor, FunctionStatic) {
   static NoDestructor<CrashInDestructor> function_static_no_destructor;
 }
 
-NoDestructor<CrashInDestructor> global_no_destructor;
+TEST(NoDestructor, Constinit) {
+  PW_CONSTINIT static NoDestructor<ConstexprConstructible> should_crash;
+  EXPECT_TRUE(should_crash->crash);
+}
 
-static_assert(!std::is_trivially_destructible<CrashInDestructor>::value,
-              "Type should not be trivially destructible");
-static_assert(
-    std::is_trivially_destructible<NoDestructor<CrashInDestructor>>::value,
-    "Wrapper should be trivially destructible");
+NoDestructor<CrashInDestructor> global_no_destructor;
+PW_CONSTINIT NoDestructor<ConstexprConstructible> global_constinit;
+
+TEST(NoDestructor, Globals) {
+  EXPECT_EQ(global_no_destructor->some_value, 0);
+  EXPECT_TRUE(global_constinit->crash);
+}
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(20)
+
+constexpr NoDestructor<ConstexprConstructible> kConstexprNoDestructor;
+static_assert(kConstexprNoDestructor->crash);
+
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(20)
 
 }  // namespace
 }  // namespace pw

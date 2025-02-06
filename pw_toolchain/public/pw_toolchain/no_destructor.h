@@ -17,11 +17,14 @@
 #include <type_traits>
 #include <utility>
 
+#include "pw_polyfill/language_feature_macros.h"
+
 namespace pw {
 
-/// Helper type to create a function-local static variable of type `T` when `T`
-/// has a non-trivial destructor. Storing a `T` in a `pw::NoDestructor<T>` will
-/// prevent `~T()` from running, even when the variable goes out of scope.
+/// Helper type to create a global or function-local static variable of type `T`
+/// when `T` has a non-trivial destructor. Storing a `T` in a
+/// `pw::NoDestructor<T>` will prevent `~T()` from running, even when the
+/// variable goes out of scope.
 ///
 /// This class is useful when a variable has static storage duration but its
 /// type has a non-trivial destructor. Destructor ordering is not defined and
@@ -34,6 +37,17 @@ namespace pw {
 ///
 /// `pw::NoDestructor<T>` provides a similar API to `std::optional`. Use `*` or
 /// `->` to access the wrapped type.
+///
+/// `NoDestructor` instances can be `constinit` if `T` has a `constexpr`
+/// constructor. In C++20, `NoDestructor` instances may be `constexpr` if `T`
+/// has a `constexpr` destructor. `NoDestructor` is unnecessary for literal
+/// types.
+///
+/// @note `NoDestructor<T>` instances may be constant initialized, whether they
+/// are `constinit` or not. This may be undesirable for large objects, since
+/// moving them from `.bss` to `.data` increases binary size. To prevent this,
+/// use `pw::RuntimeInitGlobal`, which prevents constant initialization and
+/// removes the destructor.
 ///
 /// Example usage:
 /// @code{.cpp}
@@ -54,7 +68,7 @@ namespace pw {
 /// href="https://chromium.googlesource.com/chromium/src/base/+/5ea6e31f927aa335bfceb799a2007c7f9007e680/no_destructor.h">
 /// src/base/no_destructor.h</a>.
 ///
-/// @warning Misuse of NoDestructor can cause memory leaks and other problems.
+/// @warning Misuse of `NoDestructor` can cause memory leaks and other problems.
 /// Only skip destructors when you know it is safe to do so.
 template <typename T>
 class NoDestructor {
@@ -79,51 +93,19 @@ class NoDestructor {
   NoDestructor(const NoDestructor&) = delete;
   NoDestructor& operator=(const NoDestructor&) = delete;
 
-  ~NoDestructor() = default;
+  // Empty destructor. Not technically a trivial destructor, but does nothing.
+  PW_CONSTEXPR_CPP20 ~NoDestructor() {}
 
-  const T& operator*() const { return *storage_.get(); }
-  T& operator*() { return *storage_.get(); }
+  constexpr const T& operator*() const { return storage_; }
+  constexpr T& operator*() { return storage_; }
 
-  const T* operator->() const { return storage_.get(); }
-  T* operator->() { return storage_.get(); }
+  constexpr const T* operator->() const { return &storage_; }
+  constexpr T* operator->() { return &storage_; }
 
  private:
-  class DirectStorage {
-   public:
-    template <typename... Args>
-    explicit constexpr DirectStorage(Args&&... args)
-        : value_(std::forward<Args>(args)...) {}
-
-    const T* get() const { return &value_; }
-    T* get() { return &value_; }
-
-   private:
-    T value_;
+  union {
+    T storage_;
   };
-
-  class PlacementStorage {
-   public:
-    template <typename... Args>
-    explicit PlacementStorage(Args&&... args) {
-      new (&memory_) T(std::forward<Args>(args)...);
-    }
-
-    const T* get() const {
-      return std::launder(reinterpret_cast<const T*>(&memory_));
-    }
-    T* get() { return std::launder(reinterpret_cast<T*>(&memory_)); }
-
-   private:
-    alignas(T) char memory_[sizeof(T)];
-  };
-
-  // If the type is already trivially destructible, use it directly. Trivially
-  // destructible types do not need NoDestructor, but NoDestructor supports them
-  // to work better with generic code.
-  std::conditional_t<std::is_trivially_destructible<T>::value,
-                     DirectStorage,
-                     PlacementStorage>
-      storage_;
 };
 
 }  // namespace pw

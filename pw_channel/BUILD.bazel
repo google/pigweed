@@ -211,6 +211,8 @@ pw_cc_test(
         "//pw_stream:mpsc_stream",
         "//pw_thread:test_thread_context",
         "//pw_thread:thread",
+        "//pw_toolchain:globals",
+        "//pw_toolchain:no_destructor",
         "//pw_unit_test",
     ],
 )

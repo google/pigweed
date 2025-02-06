@@ -23,6 +23,8 @@
 #include "pw_status/status.h"
 #include "pw_stream/mpsc_stream.h"
 #include "pw_thread/test_thread_context.h"
+#include "pw_toolchain/globals.h"
+#include "pw_toolchain/no_destructor.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -70,7 +72,7 @@ struct LiveForeverTestData {
 
 TEST(StreamChannel, ReadsAndWritesData) {
   static pw::NoDestructor<LiveForeverTestData> test_data;
-  static pw::NoDestructor<pw::channel::StreamChannel> stream_channel(
+  static pw::RuntimeInitGlobal<pw::channel::StreamChannel> stream_channel(
       test_data->allocator,
       test_data->channel_input_reader,
       test_data->read_thread_cx.options(),

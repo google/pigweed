@@ -55,11 +55,18 @@ pw_doc_group("docs") {
     "docs.rst",
     "gn.rst",
   ]
+  inputs = [ "globals_test.cc" ]
 }
 
 pw_source_set("no_destructor") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_toolchain/no_destructor.h" ]
+  public_deps = [ dir_pw_polyfill ]
+}
+
+pw_source_set("globals") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_toolchain/globals.h" ]
 }
 
 pw_source_set("sibling_cast") {
@@ -87,6 +94,7 @@ pw_source_set("wrap_abort") {
 
 pw_test_group("tests") {
   tests = [
+    ":globals_test",
     ":no_destructor_test",
     ":sibling_cast_test",
   ]
@@ -97,5 +105,15 @@ pw_test("no_destructor_test") {
   deps = [
     ":no_destructor",
     dir_pw_assert,
+    dir_pw_polyfill,
+  ]
+}
+
+pw_test("globals_test") {
+  sources = [ "globals_test.cc" ]
+  deps = [
+    ":globals",
+    dir_pw_assert,
+    dir_pw_polyfill,
   ]
 }
