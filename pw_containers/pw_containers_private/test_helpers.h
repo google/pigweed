@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <cstddef>
+
 namespace pw::containers::test {
 
 struct CopyOnly {
@@ -45,6 +47,7 @@ struct MoveOnly {
   int value;
 };
 
+// Counter objects CANNOT be globally scoped.
 struct Counter {
   static int created;
   static int destroyed;
@@ -52,33 +55,44 @@ struct Counter {
 
   static void Reset() { created = destroyed = moved = 0; }
 
-  Counter() : value(0) { created += 1; }
-
-  Counter(int val) : value(val) { created += 1; }
-
-  Counter(const Counter& other) : value(other.value) { created += 1; }
-
-  Counter(Counter&& other) : value(other.value) {
-    other.value = 0;
-    moved += 1;
-  }
-
-  Counter& operator=(const Counter& other) {
-    value = other.value;
+  Counter(int val = 0) : value(val), set_to_this_when_constructed_(this) {
+    objects_.Constructed();
     created += 1;
-    return *this;
   }
 
-  Counter& operator=(Counter&& other) {
-    value = other.value;
+  Counter(const Counter& other) : Counter(other.value) {}
+
+  Counter(Counter&& other)
+      : value(other.value), set_to_this_when_constructed_(this) {
+    objects_.Constructed();
     other.value = 0;
     moved += 1;
-    return *this;
   }
 
-  ~Counter() { destroyed += 1; }
+  Counter& operator=(const Counter& other);
+  Counter& operator=(Counter&& other);
+
+  ~Counter();
 
   int value;
+
+ private:
+  class ObjectCounter {
+   public:
+    constexpr ObjectCounter() : count_(0) {}
+
+    ~ObjectCounter();
+
+    void Constructed() { count_ += 1; }
+    void Destructed();
+
+   private:
+    size_t count_;
+  };
+
+  static ObjectCounter objects_;
+
+  Counter* set_to_this_when_constructed_;
 };
 
 }  // namespace pw::containers::test

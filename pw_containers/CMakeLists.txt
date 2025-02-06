@@ -116,6 +116,8 @@ pw_add_library(pw_containers._test_helpers STATIC
     test_helpers.cc
   PUBLIC_INCLUDES
     .
+  PRIVATE_DEPS
+    pw_assert
 )
 
 pw_add_library(pw_containers.to_array INTERFACE

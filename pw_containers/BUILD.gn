@@ -116,6 +116,7 @@ pw_source_set("constexpr_tag") {
 pw_source_set("test_helpers") {
   public = [ "pw_containers_private/test_helpers.h" ]
   sources = [ "test_helpers.cc" ]
+  deps = [ dir_pw_assert ]
   visibility = [ ":*" ]
 }
 

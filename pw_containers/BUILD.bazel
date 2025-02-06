@@ -257,6 +257,7 @@ cc_library(
     srcs = ["test_helpers.cc"],
     hdrs = ["pw_containers_private/test_helpers.h"],
     visibility = [":__subpackages__"],
+    deps = ["//pw_assert"],
 )
 
 cc_library(
