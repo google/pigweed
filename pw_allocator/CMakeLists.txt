@@ -55,6 +55,7 @@ pw_add_library(pw_allocator.allocator_as_pool STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_allocator.deallocator
     pw_allocator.pool
     pw_status
   SOURCES
@@ -98,13 +99,16 @@ pw_add_library(pw_allocator.block_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_allocator.config
+    pw_allocator.deallocator
     pw_allocator.block.allocatable
     pw_allocator.block.basic
     pw_allocator.block.iterable
+    pw_allocator.block.result
     pw_allocator.block.poisonable
     pw_allocator.block.with_layout
     pw_allocator.fragmentation
-    pw_bytes.alignment
+    pw_bytes
     pw_result
     pw_status
   PRIVATE_DEPS
@@ -167,6 +171,7 @@ pw_add_library(pw_allocator.bump_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_allocator.deallocator
     pw_bytes
   PRIVATE_DEPS
     pw_allocator.buffer
@@ -181,9 +186,11 @@ pw_add_library(pw_allocator.chunk_pool STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_allocator.deallocator
     pw_allocator.pool
     pw_bytes
     pw_result
+    pw_status
   PRIVATE_DEPS
     pw_allocator.buffer
     pw_bytes.alignment
@@ -298,6 +305,7 @@ pw_add_library(pw_allocator.libc_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_allocator.deallocator
 )
 
 pw_add_library(pw_allocator.null_allocator STATIC
@@ -309,6 +317,7 @@ pw_add_library(pw_allocator.null_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_allocator.deallocator
 )
 
 pw_add_library(pw_allocator.metrics INTERFACE
@@ -328,7 +337,10 @@ pw_add_library(pw_allocator.pmr_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-  SOURCES
+    pw_allocator.config
+    pw_assert
+    pw_status
+    SOURCES
     pmr_allocator.cc
 )
 
@@ -448,7 +460,10 @@ pw_add_library(pw_allocator.block_allocator_testing STATIC
     pw_allocator.block.testing
     pw_allocator.block_allocator
     pw_allocator.block.detailed_block
+    pw_allocator.buffer
+    pw_allocator.deallocator
     pw_allocator.fuzzing
+    pw_allocator.test_harness
     pw_unit_test
   PRIVATE_DEPS
     pw_assert
@@ -466,7 +481,8 @@ pw_add_library(pw_allocator.test_harness STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
-    pw_containers
+    pw_containers.intrusive_list
+    pw_containers.vector
     pw_random
   PRIVATE_DEPS
     pw_assert
@@ -481,6 +497,7 @@ pw_add_library(pw_allocator.fuzzing STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_allocator.allocator
     pw_allocator.test_harness
     pw_fuzzer.fuzztest
   SOURCES
@@ -494,6 +511,7 @@ pw_add_test(pw_allocator.allocator_as_pool_test
     allocator_as_pool_test.cc
   PRIVATE_DEPS
     pw_allocator.allocator_as_pool
+    pw_allocator.deallocator
     pw_allocator.testing
   GROUPS
     modules
@@ -505,6 +523,7 @@ pw_add_test(pw_allocator.allocator_test
     allocator_test.cc
   PRIVATE_DEPS
     pw_allocator.allocator
+    pw_allocator.deallocator
     pw_allocator.testing
   GROUPS
     modules
@@ -518,6 +537,7 @@ pw_add_test(pw_allocator.best_fit_test
     pw_allocator.best_fit
     pw_allocator.best_fit_block_allocator
     pw_allocator.block_allocator_testing
+    pw_allocator.buffer
   GROUPS
     modules
     pw_allocator
@@ -527,6 +547,7 @@ pw_add_test(pw_allocator.bucket_allocator_test
   SOURCES
     bucket_allocator_test.cc
   PRIVATE_DEPS
+    pw_allocator.allocator
     pw_allocator.block_allocator_testing
     pw_allocator.bucket_allocator
     pw_allocator.bucket_block_allocator
@@ -643,6 +664,8 @@ pw_add_test(pw_allocator.layout_test
   PRIVATE_DEPS
     pw_allocator.deallocator
     pw_allocator.testing
+    pw_result
+    pw_status
   GROUPS
     modules
     pw_allocator
@@ -702,6 +725,9 @@ pw_add_test(pw_allocator.synchronized_allocator_test
     pw_allocator.testing
     pw_allocator.test_harness
     pw_allocator.synchronized_allocator
+    pw_containers.vector
+    pw_random
+    pw_status
     pw_sync.binary_semaphore
     pw_sync.interrupt_spin_lock
     pw_sync.mutex
@@ -709,7 +735,6 @@ pw_add_test(pw_allocator.synchronized_allocator_test
     pw_thread.thread
     pw_thread.thread_core
     pw_thread.yield
-    pw_random
   GROUPS
     modules
     pw_allocator
@@ -730,8 +755,13 @@ pw_add_test(pw_allocator.tracking_allocator_test
   SOURCES
     tracking_allocator_test.cc
   PRIVATE_DEPS
+    pw_allocator.allocator
+    pw_allocator.first_fit
+    pw_allocator.metrics
     pw_allocator.testing
     pw_allocator.tracking_allocator
+    pw_log
+    pw_metric
   GROUPS
     modules
     pw_allocator
@@ -741,6 +771,7 @@ pw_add_test(pw_allocator.typed_pool_test
   SOURCES
     typed_pool_test.cc
   PRIVATE_DEPS
+    pw_allocator.allocator
     pw_allocator.testing
     pw_allocator.typed_pool
     pw_bytes.alignment

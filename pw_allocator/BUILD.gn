@@ -102,11 +102,14 @@ pw_source_set("block_allocator") {
   public = [ "public/pw_allocator/block_allocator.h" ]
   public_deps = [
     ":allocator",
+    ":config",
+    ":deallocator",
     ":fragmentation",
     "block:allocatable",
     "block:basic",
     "block:iterable",
     "block:poisonable",
+    "block:result",
     "block:with_layout",
     dir_pw_bytes,
     dir_pw_result,
@@ -171,6 +174,7 @@ pw_source_set("bump_allocator") {
   public = [ "public/pw_allocator/bump_allocator.h" ]
   public_deps = [
     ":allocator",
+    ":deallocator",
     "$dir_pw_bytes:alignment",
     dir_pw_bytes,
   ]
@@ -182,9 +186,11 @@ pw_source_set("chunk_pool") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/chunk_pool.h" ]
   public_deps = [
+    ":deallocator",
     ":pool",
     dir_pw_bytes,
     dir_pw_result,
+    dir_pw_status,
   ]
   deps = [
     ":buffer",
@@ -277,14 +283,20 @@ pw_source_set("last_fit_block_allocator") {
 pw_source_set("libc_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/libc_allocator.h" ]
-  public_deps = [ ":allocator" ]
+  public_deps = [
+    ":allocator",
+    ":deallocator",
+  ]
   sources = [ "libc_allocator.cc" ]
 }
 
 pw_source_set("null_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/null_allocator.h" ]
-  public_deps = [ ":allocator" ]
+  public_deps = [
+    ":allocator",
+    ":deallocator",
+  ]
   sources = [ "null_allocator.cc" ]
 }
 
@@ -303,6 +315,8 @@ pw_source_set("pmr_allocator") {
   public_deps = [
     ":allocator",
     ":config",
+    dir_pw_assert,
+    dir_pw_status,
   ]
   sources = [ "pmr_allocator.cc" ]
 }
@@ -404,7 +418,11 @@ pw_source_set("block_allocator_testing") {
   public = [ "public/pw_allocator/block_allocator_testing.h" ]
   public_deps = [
     ":block_allocator",
+    ":buffer",
+    ":deallocator",
     ":fuzzing",
+    ":test_harness",
+    "block:detailed_block",
     "block:testing",
     dir_pw_unit_test,
   ]
@@ -422,7 +440,8 @@ pw_source_set("test_harness") {
   public = [ "public/pw_allocator/test_harness.h" ]
   public_deps = [
     ":allocator",
-    dir_pw_containers,
+    "$dir_pw_containers:intrusive_list",
+    "$dir_pw_containers:vector",
     dir_pw_random,
   ]
   deps = [
@@ -435,6 +454,7 @@ pw_source_set("test_harness") {
 pw_source_set("fuzzing") {
   public = [ "public/pw_allocator/fuzzing.h" ]
   public_deps = [
+    ":allocator",
     ":test_harness",
     "$dir_pw_fuzzer:fuzztest",
   ]
@@ -446,6 +466,7 @@ pw_source_set("fuzzing") {
 pw_test("allocator_as_pool_test") {
   deps = [
     ":allocator_as_pool",
+    ":deallocator",
     ":testing",
   ]
   sources = [ "allocator_as_pool_test.cc" ]
@@ -454,6 +475,7 @@ pw_test("allocator_as_pool_test") {
 pw_test("allocator_test") {
   deps = [
     ":allocator",
+    ":deallocator",
     ":testing",
   ]
   sources = [ "allocator_test.cc" ]
@@ -464,12 +486,14 @@ pw_test("best_fit_test") {
     ":best_fit",
     ":best_fit_block_allocator",
     ":block_allocator_testing",
+    ":buffer",
   ]
   sources = [ "best_fit_test.cc" ]
 }
 
 pw_test("bucket_allocator_test") {
   deps = [
+    ":allocator",
     ":block_allocator_testing",
     ":bucket_allocator",
     ":bucket_block_allocator",
@@ -532,6 +556,7 @@ pw_test("first_fit_test") {
     ":first_fit_block_allocator",
     ":last_fit_block_allocator",
     "$dir_pw_third_party/fuchsia:stdcompat",
+    "block:detailed_block",
   ]
   sources = [ "first_fit_test.cc" ]
 }
@@ -558,6 +583,8 @@ pw_test("layout_test") {
   deps = [
     ":deallocator",
     ":testing",
+    dir_pw_result,
+    dir_pw_status,
   ]
   sources = [ "layout_test.cc" ]
 }
@@ -601,6 +628,7 @@ pw_test("synchronized_allocator_test") {
     ":synchronized_allocator",
     ":test_harness",
     ":testing",
+    "$dir_pw_containers:vector",
     "$dir_pw_sync:binary_semaphore",
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:mutex",
@@ -610,6 +638,7 @@ pw_test("synchronized_allocator_test") {
     "$dir_pw_thread:thread_core",
     "$dir_pw_thread:yield",
     dir_pw_random,
+    dir_pw_status,
   ]
   sources = [ "synchronized_allocator_test.cc" ]
 }
@@ -624,14 +653,20 @@ pw_test("tlsf_allocator_test") {
 
 pw_test("tracking_allocator_test") {
   deps = [
+    ":allocator",
+    ":first_fit",
+    ":metrics",
     ":testing",
     ":tracking_allocator",
+    dir_pw_log,
+    dir_pw_metric,
   ]
   sources = [ "tracking_allocator_test.cc" ]
 }
 
 pw_test("typed_pool_test") {
   deps = [
+    ":allocator",
     ":testing",
     ":typed_pool",
     "$dir_pw_bytes:alignment",

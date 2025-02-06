@@ -39,7 +39,10 @@ pw_source_set("named_u32") {
 pw_source_set("custom_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/examples/custom_allocator.h" ]
-  public_deps = [ "$dir_pw_allocator:allocator" ]
+  public_deps = [
+    "$dir_pw_allocator:allocator",
+    "$dir_pw_allocator:deallocator",
+  ]
   sources = [ "custom_allocator.cc" ]
   deps = [
     dir_pw_log,
@@ -80,6 +83,7 @@ pw_test("custom_allocator_perf_test") {
   enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
   deps = [
     ":custom_allocator_test_harness",
+    "$dir_pw_perf_test:state",
     dir_pw_perf_test,
     dir_pw_random,
   ]
@@ -105,6 +109,7 @@ pw_test("linker_sections") {
     "$dir_pw_allocator:allocator",
     "$dir_pw_allocator:first_fit",
     "$dir_pw_allocator:worst_fit",
+    "$dir_pw_allocator/block:detailed_block",
   ]
   sources = [ "linker_sections.cc" ]
 }
@@ -112,6 +117,7 @@ pw_test("linker_sections") {
 pw_test("metrics") {
   deps = [
     ":named_u32",
+    "$dir_pw_allocator:metrics",
     "$dir_pw_allocator:testing",
     "$dir_pw_allocator:tracking_allocator",
     dir_pw_tokenizer,
@@ -121,6 +127,7 @@ pw_test("metrics") {
 
 pw_test("pmr") {
   deps = [
+    "$dir_pw_allocator:allocator",
     "$dir_pw_allocator:pmr_allocator",
     "$dir_pw_allocator:testing",
   ]

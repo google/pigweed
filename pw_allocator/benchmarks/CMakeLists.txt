@@ -38,8 +38,10 @@ pw_add_library(pw_allocator.benchmarks.benchmark STATIC
   PUBLIC_DEPS
     pw_allocator.benchmarks.measurements
     pw_allocator.block_allocator
+    pw_allocator.deallocator
     pw_allocator.fragmentation
     pw_allocator.test_harness
+    pw_assert
     pw_chrono.system_clock
     pw_metric
     pw_tokenizer
@@ -54,6 +56,7 @@ pw_add_test(pw_allocator.benchmarks.measurements_test
     measurements_test.cc
   PRIVATE_DEPS
     pw_allocator.benchmarks.measurements
+    pw_metric
   GROUPS
     modules
     pw_allocator
@@ -64,7 +67,11 @@ pw_add_test(pw_allocator.benchmarks.benchmark_test
     benchmark_test.cc
   PRIVATE_DEPS
     pw_allocator.benchmarks.benchmark
+    pw_allocator.benchmarks.measurements
+    pw_allocator.fragmentation
     pw_allocator.testing
+    pw_allocator.test_harness
+    pw_random
   GROUPS
     modules
     pw_allocator

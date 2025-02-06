@@ -36,6 +36,7 @@ pw_add_library(pw_allocator.examples.custom_allocator STATIC
     public
   PUBLIC_DEPS
     pw_allocator.allocator
+    pw_allocator.deallocator
   SOURCES
     custom_allocator.cc
   PRIVATE_DEPS
@@ -78,6 +79,7 @@ if((NOT "${pw_perf_test.timer_interface_BACKEND}" STREQUAL ""))
     PRIVATE_DEPS
       pw_allocator.examples.custom_allocator_test_harness
       pw_perf_test
+      pw_perf_test.state
       pw_random
     SOURCES
       custom_allocator_perf_test.cc
@@ -102,6 +104,7 @@ pw_add_test(pw_allocator.examples.linker_sections
     pw_allocator.examples.named_u32
     pw_allocator.allocator
     pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
   SOURCES
     linker_sections.cc
 )
@@ -109,11 +112,22 @@ pw_add_test(pw_allocator.examples.linker_sections
 pw_add_test(pw_allocator.examples.metrics
   PRIVATE_DEPS
     pw_allocator.examples.named_u32
+    pw_allocator.metrics
     pw_allocator.testing
     pw_allocator.tracking_allocator
     pw_tokenizer
   SOURCES
     metrics.cc
+)
+
+pw_add_test(pw_allocator.examples.pmr
+  PRIVATE_DEPS
+    pw_allocator.allocator
+    pw_allocator.pmr_allocator
+    pw_allocator.testing
+    pw_tokenizer
+  SOURCES
+    pmr.cc
 )
 
 if((NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL "") AND

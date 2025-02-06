@@ -15,10 +15,7 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
-package(
-    default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
-)
+package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 

@@ -15,10 +15,7 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
-package(
-    default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
-)
+package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
@@ -81,6 +78,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":basic",
+        "//pw_assert",
         "//pw_bytes",
         "//pw_result",
         "//pw_status",
@@ -105,6 +103,7 @@ cc_library(
     deps = [
         ":contiguous",
         "//pw_allocator:config",
+        "//pw_assert",
         "//third_party/fuchsia:stdcompat",
     ],
 )
@@ -162,6 +161,7 @@ pw_cc_test(
     deps = [
         ":basic",
         ":result",
+        "//pw_status",
         "//pw_unit_test",
     ],
 )
@@ -172,7 +172,11 @@ pw_cc_test(
     deps = [
         ":detailed_block",
         ":testing",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_bytes:alignment",
         "//pw_span",
+        "//pw_status",
         "//pw_unit_test",
         "//third_party/fuchsia:stdcompat",
     ],

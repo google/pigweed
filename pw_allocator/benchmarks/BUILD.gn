@@ -55,9 +55,11 @@ pw_source_set("benchmark") {
   public_deps = [
     ":measurements",
     "$dir_pw_allocator:block_allocator",
+    "$dir_pw_allocator:deallocator",
     "$dir_pw_allocator:fragmentation",
     "$dir_pw_allocator:test_harness",
     "$dir_pw_chrono:system_clock",
+    dir_pw_assert,
     dir_pw_metric,
     dir_pw_tokenizer,
   ]
@@ -71,6 +73,7 @@ pw_executable("best_fit_benchmark") {
   deps = [
     ":benchmark",
     "$dir_pw_allocator:best_fit",
+    "$dir_pw_allocator:deallocator",
     "$dir_pw_random",
   ]
 }
@@ -124,7 +127,10 @@ pw_executable("worst_fit_benchmark") {
 
 pw_test("measurements_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
-  deps = [ ":measurements" ]
+  deps = [
+    ":measurements",
+    dir_pw_metric,
+  ]
   sources = [ "measurements_test.cc" ]
 }
 
@@ -132,7 +138,11 @@ pw_test("benchmark_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   deps = [
     ":benchmark",
+    ":measurements",
+    "$dir_pw_allocator:fragmentation",
+    "$dir_pw_allocator:test_harness",
     "$dir_pw_allocator:testing",
+    dir_pw_random,
   ]
   sources = [ "benchmark_test.cc" ]
 }

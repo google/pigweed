@@ -107,17 +107,19 @@ pw_executable("null_allocator") {
 pw_executable("pmr_allocator_base") {
   sources = [ "pmr_allocator_base.cc" ]
   deps = [
-    "..:first_fit_block_allocator",
+    "..:first_fit",
     "..:size_reporter",
+    dir_pw_assert,
   ]
 }
 
 pw_executable("pmr_allocator") {
   sources = [ "pmr_allocator.cc" ]
   deps = [
-    "..:first_fit_block_allocator",
+    "..:first_fit",
     "..:pmr_allocator",
     "..:size_reporter",
+    dir_pw_assert,
   ]
 }
 
@@ -153,6 +155,7 @@ pw_executable("tracking_allocator_all_metrics") {
   sources = [ "tracking_allocator_all_metrics.cc" ]
   deps = [
     "..:first_fit",
+    "..:metrics",
     "..:size_reporter",
     "..:tracking_allocator",
   ]
@@ -162,6 +165,7 @@ pw_executable("tracking_allocator_no_metrics") {
   sources = [ "tracking_allocator_no_metrics.cc" ]
   deps = [
     "..:first_fit",
+    "..:metrics",
     "..:size_reporter",
     "..:tracking_allocator",
   ]

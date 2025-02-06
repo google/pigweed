@@ -14,7 +14,6 @@
 
 #include "pw_allocator/fallback_allocator.h"
 
-#include "pw_allocator/block/basic.h"
 #include "pw_allocator/testing.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"

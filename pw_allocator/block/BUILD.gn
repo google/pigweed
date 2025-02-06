@@ -80,6 +80,7 @@ pw_source_set("contiguous") {
     "$dir_pw_result",
     "$dir_pw_status",
     "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_assert,
   ]
 }
 
@@ -97,6 +98,7 @@ pw_source_set("poisonable") {
     ":contiguous",
     "$dir_pw_allocator:config",
     "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_assert,
   ]
 }
 
@@ -146,6 +148,7 @@ pw_test("result_test") {
   deps = [
     ":basic",
     ":result",
+    dir_pw_status,
   ]
   sources = [ "result_test.cc" ]
 }
@@ -153,8 +156,12 @@ pw_test("result_test") {
 pw_test("detailed_block_test") {
   deps = [
     ":testing",
+    "$dir_pw_bytes:alignment",
     "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_assert,
+    dir_pw_bytes,
     dir_pw_span,
+    dir_pw_status,
   ]
   sources = [ "detailed_block_test.cc" ]
 }

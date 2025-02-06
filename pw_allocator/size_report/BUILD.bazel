@@ -14,10 +14,7 @@
 
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 
-package(
-    default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
-)
+package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
@@ -114,8 +111,9 @@ pw_cc_binary(
     name = "pmr_allocator_base",
     srcs = ["pmr_allocator_base.cc"],
     deps = [
-        "//pw_allocator:first_fit_block_allocator",
+        "//pw_allocator:first_fit",
         "//pw_allocator:size_reporter",
+        "//pw_assert",
     ],
 )
 
@@ -123,9 +121,10 @@ pw_cc_binary(
     name = "pmr_allocator",
     srcs = ["pmr_allocator.cc"],
     deps = [
-        "//pw_allocator:first_fit_block_allocator",
+        "//pw_allocator:first_fit",
         "//pw_allocator:pmr_allocator",
         "//pw_allocator:size_reporter",
+        "//pw_assert",
     ],
 )
 
@@ -156,6 +155,7 @@ pw_cc_binary(
     srcs = ["tracking_allocator_all_metrics.cc"],
     deps = [
         "//pw_allocator:first_fit",
+        "//pw_allocator:metrics",
         "//pw_allocator:size_reporter",
         "//pw_allocator:tracking_allocator",
     ],
@@ -175,6 +175,7 @@ pw_cc_binary(
     srcs = ["tracking_allocator_no_metrics.cc"],
     deps = [
         "//pw_allocator:first_fit",
+        "//pw_allocator:metrics",
         "//pw_allocator:size_reporter",
         "//pw_allocator:tracking_allocator",
     ],

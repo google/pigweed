@@ -75,6 +75,7 @@ pw_add_library(pw_allocator.block.contiguous STATIC
     public
   PUBLIC_DEPS
     pw_allocator.block.basic
+    pw_assert
     pw_bytes
     pw_result
     pw_status
@@ -100,6 +101,7 @@ pw_add_library(pw_allocator.block.poisonable STATIC
   PUBLIC_DEPS
     pw_allocator.block.contiguous
     pw_allocator.config
+    pw_assert
     pw_third_party.fuchsia.stdcompat
   SOURCES
     poisonable.cc
@@ -158,6 +160,7 @@ pw_add_test(pw_allocator.block.result_test
   PRIVATE_DEPS
     pw_allocator.block.basic
     pw_allocator.block.result
+    pw_status
   GROUPS
     modules
     pw_allocator
@@ -169,7 +172,11 @@ pw_add_test(pw_allocator.block.detailed_block_test
   PRIVATE_DEPS
     pw_allocator.block.detailed_block
     pw_allocator.block.testing
+    pw_assert
+    pw_bytes
+    pw_bytes.alignment
     pw_span
+    pw_status
     pw_third_party.fuchsia.stdcompat
   GROUPS
     modules

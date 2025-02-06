@@ -18,10 +18,7 @@ load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
-package(
-    default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
-)
+package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
@@ -46,6 +43,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         "//pw_allocator:allocator",
+        "//pw_allocator:deallocator",
         "//pw_log",
         "//pw_result",
     ],
@@ -90,6 +88,7 @@ pw_cc_test(
     deps = [
         ":custom_allocator_test_harness",
         "//pw_perf_test",
+        "//pw_perf_test:state",
         "//pw_random",
     ],
 )
@@ -116,6 +115,7 @@ pw_cc_test(
         "//pw_allocator:allocator",
         "//pw_allocator:first_fit",
         "//pw_allocator:worst_fit",
+        "//pw_allocator/block:detailed_block",
     ],
 )
 
@@ -124,6 +124,7 @@ pw_cc_test(
     srcs = ["metrics.cc"],
     deps = [
         ":named_u32",
+        "//pw_allocator:metrics",
         "//pw_allocator:testing",
         "//pw_allocator:tracking_allocator",
         "//pw_tokenizer",
@@ -135,6 +136,7 @@ pw_cc_test(
     testonly = True,
     srcs = ["pmr.cc"],
     deps = [
+        "//pw_allocator:allocator",
         "//pw_allocator:pmr_allocator",
         "//pw_allocator:testing",
     ],

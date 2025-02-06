@@ -19,10 +19,7 @@ load(
     "pw_cc_test",
 )
 
-package(
-    default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
-)
+package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
@@ -64,8 +61,10 @@ cc_library(
     deps = [
         ":measurements",
         "//pw_allocator:block_allocator",
+        "//pw_allocator:deallocator",
         "//pw_allocator:fragmentation",
         "//pw_allocator:test_harness",
+        "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_metric:metric",
         "//pw_tokenizer",
@@ -83,6 +82,7 @@ cc_binary(
     deps = [
         ":benchmark",
         "//pw_allocator:best_fit",
+        "//pw_allocator:deallocator",
         "//pw_random",
     ],
 )
@@ -157,7 +157,10 @@ cc_binary(
 pw_cc_test(
     name = "measurements_test",
     srcs = ["measurements_test.cc"],
-    deps = [":measurements"],
+    deps = [
+        ":measurements",
+        "//pw_metric:metric",
+    ],
 )
 
 pw_cc_test(
@@ -165,6 +168,10 @@ pw_cc_test(
     srcs = ["benchmark_test.cc"],
     deps = [
         ":benchmark",
+        ":measurements",
+        "//pw_allocator:fragmentation",
+        "//pw_allocator:test_harness",
         "//pw_allocator:testing",
+        "//pw_random",
     ],
 )
