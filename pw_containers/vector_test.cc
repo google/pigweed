@@ -38,6 +38,11 @@ TEST(Vector, Construct_NoArg) {
   EXPECT_TRUE(vector.empty());
 }
 
+TEST(Vector, Construct_Constexpr) {
+  constexpr Vector<int, 3> vector(pw::kConstexpr);
+  EXPECT_TRUE(vector.empty());
+}
+
 TEST(Vector, Construct_MultipleCopies) {
   Vector<int, 3> vector(3, 123);
 

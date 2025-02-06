@@ -25,6 +25,7 @@
 #include <utility>
 
 #include "pw_assert/assert.h"
+#include "pw_containers/internal/constexpr_tag.h"
 #include "pw_preprocessor/compiler.h"
 
 namespace pw {
@@ -61,6 +62,9 @@ struct VectorStorage;
 template <typename T, size_t kMaxSize = vector_impl::kGeneric>
 class Vector
     : public VectorStorage<T, kMaxSize, std::is_trivially_destructible_v<T>> {
+ private:
+  using Base = VectorStorage<T, kMaxSize, std::is_trivially_destructible_v<T>>;
+
  public:
   using typename Vector<T, vector_impl::kGeneric>::value_type;
   using typename Vector<T, vector_impl::kGeneric>::size_type;
@@ -77,6 +81,11 @@ class Vector
   // Construct
   Vector() noexcept = default;
 
+  // Explicit constexpr constructor. Using this constructor will place the
+  // entire object in .data by default, which will increase ROM size. Use with
+  // caution if working with large capacity sizes.
+  constexpr Vector(ConstexprTag constexpr_tag) noexcept : Base(constexpr_tag) {}
+
   Vector(size_type count, const T& value) { this->Append(count, value); }
 
   explicit Vector(size_type count) { this->Append(count, T()); }
@@ -89,7 +98,9 @@ class Vector
     this->CopyFrom(first, last);
   }
 
-  Vector(const Vector& other) { this->CopyFrom(other.begin(), other.end()); }
+  Vector(const Vector& other) : Base() {
+    this->CopyFrom(other.begin(), other.end());
+  }
 
   template <size_t kOtherMaxSize>
   Vector(const Vector<T, kOtherMaxSize>& other) {
@@ -154,8 +165,15 @@ class Vector
 template <typename T, size_t kMaxSize>
 struct VectorStorage<T, kMaxSize, true>
     : public Vector<T, vector_impl::kGeneric> {
+ private:
+  using Base = Vector<T, vector_impl::kGeneric>;
+
  protected:
-  VectorStorage() : Vector<T, vector_impl::kGeneric>(kMaxSize) {}
+  VectorStorage() : Base(kMaxSize) {}
+
+  constexpr VectorStorage(ConstexprTag /*constexpr_tag*/)
+      : Base(kMaxSize), array_{} {}
+
   // NOTE: no destructor is added, as ``T`` is trivially destructible.
  private:
   friend class Vector<T, kMaxSize>;
@@ -195,13 +213,19 @@ struct VectorStorage<T, kMaxSize, true>
 template <typename T, size_t kMaxSize>
 struct VectorStorage<T, kMaxSize, false>
     : public Vector<T, vector_impl::kGeneric> {
+ private:
+  using Base = Vector<T, vector_impl::kGeneric>;
+
  public:
   ~VectorStorage() {
     static_cast<Vector<T, vector_impl::kGeneric>*>(this)->clear();
   }
 
  protected:
-  VectorStorage() : Vector<T, vector_impl::kGeneric>(kMaxSize) {}
+  VectorStorage() : Base(kMaxSize) {}
+
+  constexpr VectorStorage(ConstexprTag /*constexpr_tag*/)
+      : Base(kMaxSize), array_{} {}
 
  private:
   friend class Vector<T, kMaxSize>;

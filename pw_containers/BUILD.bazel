@@ -212,6 +212,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
+        ":constexpr_tag",
         "//pw_assert",
         "//pw_preprocessor",
     ],

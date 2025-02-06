@@ -149,6 +149,7 @@ pw_add_library(pw_containers.vector INTERFACE
     public
   PUBLIC_DEPS
     pw_assert
+    pw_containers._constexpr_tag
     pw_preprocessor
 )
 
