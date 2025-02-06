@@ -37,6 +37,7 @@ cc_library_static {
     ],
     srcs: [
         "base64.cc",
+        "csv.cc",
         "detokenize.cc",
         "decode.cc",
     ],
