@@ -108,10 +108,11 @@ pw_add_library(pw_bluetooth_proxy.test_utils STATIC
 
 pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
   SOURCES
-    proxy_host_test.cc
+    gatt_notify_test.cc
     h4_packet_test.cc
     l2cap_coc_test.cc
     multibuf_writer_test.cc
+    proxy_host_test.cc
     rfcomm_fcs_test.cc
     rfcomm_test.cc
     utils_test.cc

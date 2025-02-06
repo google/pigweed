@@ -130,6 +130,7 @@ pw_test("pw_bluetooth_proxy_test") {
   enable_if =
       dir_pw_third_party_emboss != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [
+    "gatt_notify_test.cc",
     "h4_packet_test.cc",
     "l2cap_coc_test.cc",
     "multibuf_writer_test.cc",
