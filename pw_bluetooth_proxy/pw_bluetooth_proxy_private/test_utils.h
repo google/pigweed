@@ -248,6 +248,12 @@ struct BasicL2capParameters {
   Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
 };
 
+struct GattNotifyChannelParameters {
+  uint16_t handle = 0xAB;
+  uint16_t attribute_handle = 0xBC;
+  Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
+};
+
 struct RfcommParameters {
   uint16_t handle = 123;
   RfcommChannel::Config rx_config = {
@@ -271,6 +277,12 @@ class ProxyHostTest : public testing::Test {
 
   BasicL2capChannel BuildBasicL2capChannel(ProxyHost& proxy,
                                            BasicL2capParameters params);
+
+  Result<GattNotifyChannel> BuildGattNotifyChannelWithResult(
+      ProxyHost& proxy, GattNotifyChannelParameters params);
+
+  GattNotifyChannel BuildGattNotifyChannel(ProxyHost& proxy,
+                                           GattNotifyChannelParameters params);
 
   RfcommChannel BuildRfcomm(
       ProxyHost& proxy,

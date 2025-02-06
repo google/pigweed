@@ -484,6 +484,20 @@ BasicL2capChannel ProxyHostTest::BuildBasicL2capChannel(
   return std::move(channel.value());
 }
 
+Result<GattNotifyChannel> ProxyHostTest::BuildGattNotifyChannelWithResult(
+    ProxyHost& proxy, GattNotifyChannelParameters params) {
+  return proxy.AcquireGattNotifyChannel(
+      params.handle, params.attribute_handle, std::move(params.event_fn));
+}
+
+GattNotifyChannel ProxyHostTest::BuildGattNotifyChannel(
+    ProxyHost& proxy, GattNotifyChannelParameters params) {
+  pw::Result<GattNotifyChannel> channel =
+      BuildGattNotifyChannelWithResult(proxy, std::move(params));
+  PW_TEST_EXPECT_OK(channel);
+  return std::move(channel.value());
+}
+
 RfcommChannel ProxyHostTest::BuildRfcomm(
     ProxyHost& proxy,
     RfcommParameters params,
