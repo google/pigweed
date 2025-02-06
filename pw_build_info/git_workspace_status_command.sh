@@ -33,6 +33,15 @@
 # "STABLE_" are part of the volatile set, which will be used but do not
 # invalidate stamped targets.
 
+# If we're in a CoG workspace, Git operations are not supported.
+# TODO: https://pwbug.dev/381305105 - This may be supported some day.
+if [[ "$PWD" == /google/cog/* ]];
+then
+    echo "STABLE_GIT_COMMIT UNKNOWN_COG_WORKSPACE"
+    echo "STABLE_GIT_TREE_DIRTY 1"
+    exit 0;
+fi
+
 # Current git commit
 git_rev=$(git rev-parse HEAD) || exit 1
 echo "STABLE_GIT_COMMIT ${git_rev}"
