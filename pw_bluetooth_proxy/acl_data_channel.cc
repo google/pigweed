@@ -596,9 +596,6 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
     std::lock_guard lock(mutex_);
     AclConnection* connection = FindOpenAclConnection(handle);
     if (!connection) {
-      PW_LOG_ERROR("Received packet %s for unknown channel %#x. Passing on.",
-                   ToString(direction),
-                   handle);
       return kUnhandled;
     }
 
