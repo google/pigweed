@@ -12,16 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_unit_test/constexpr.h"
-
 #include <limits>
 
 #include "pw_compilation_testing/negative_compilation.h"
+
+// Start with an example test for the docs, which includes the #includes.
+// DOCSTAG[pw_unit_test-constexpr]
+#include "pw_unit_test/constexpr.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
-
-// DOCSTAG[pw_unit_test-constexpr]
 
 constexpr int ComputeSum(int lhs, int rhs) { return lhs + rhs; }
 
@@ -34,7 +34,10 @@ PW_CONSTEXPR_TEST(PwConstexprTestExample, AddNumbersOverflow, {
   PW_TEST_EXPECT_EQ(ComputeSum(-123, 0), -123) << "Additive identity";
 });
 
+}  // namespace
 // DOCSTAG[pw_unit_test-constexpr]
+
+namespace {
 
 PW_CONSTEXPR_TEST(PwConstexprTest, AllMacros, {
   PW_TEST_EXPECT_TRUE(true) << "";
