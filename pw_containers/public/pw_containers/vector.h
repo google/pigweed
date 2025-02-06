@@ -384,32 +384,34 @@ class Vector<T, vector_impl::kGeneric> {
 
   void clear() noexcept;
 
-  iterator insert(const_iterator index, size_type count, const T& value);
+  iterator insert(const_iterator position, size_type count, const T& value);
 
-  iterator insert(const_iterator index, const T& value) {
-    return insert(index, 1, value);
+  iterator insert(const_iterator position, const T& value) {
+    return insert(position, 1, value);
   }
 
-  iterator insert(const_iterator index, T&& value);
+  iterator insert(const_iterator position, T&& value);
 
   template <
       typename Iterator,
       int&... ExplicitArgumentBarrier,
       typename = std::enable_if_t<vector_impl::IsIterator<Iterator>::value>>
-  iterator insert(const_iterator index, Iterator first, Iterator last) {
-    return InsertFrom(index, first, last);
+  iterator insert(const_iterator position, Iterator first, Iterator last) {
+    return InsertFrom(position, first, last);
   }
 
-  iterator insert(const_iterator index, std::initializer_list<T> list) {
-    return insert(index, list.begin(), list.end());
+  iterator insert(const_iterator position, std::initializer_list<T> list) {
+    return insert(position, list.begin(), list.end());
   }
 
   template <typename... Args>
-  iterator emplace(const_iterator index, Args&&... args);
+  iterator emplace(const_iterator position, Args&&... args);
 
   iterator erase(const_iterator first, const_iterator last);
 
-  iterator erase(const_iterator index) { return erase(index, index + 1); }
+  iterator erase(const_iterator position) {
+    return erase(position, position + 1);
+  }
 
   void push_back(const T& value) { emplace_back(value); }
 
@@ -442,7 +444,7 @@ class Vector<T, vector_impl::kGeneric> {
   void Append(size_type count, const T& value);
 
   template <typename Iterator>
-  iterator InsertFrom(const_iterator index, Iterator first, Iterator last);
+  iterator InsertFrom(const_iterator position, Iterator first, Iterator last);
 
   // Shifts entries to make room for an insert operation. Entries shifted past
   // the end are move constructed with placement new; entries shifted into
@@ -537,13 +539,13 @@ void Vector<T, vector_impl::kGeneric>::resize(size_t new_size, const T& value) {
 }
 
 template <typename T>
-typename Vector<T>::iterator Vector<T>::insert(Vector<T>::const_iterator index,
-                                               T&& value) {
-  PW_DASSERT(index >= cbegin());
-  PW_DASSERT(index <= cend());
+typename Vector<T>::iterator Vector<T>::insert(
+    Vector<T>::const_iterator position, T&& value) {
+  PW_DASSERT(position >= cbegin());
+  PW_DASSERT(position <= cend());
   PW_DASSERT(!full());
 
-  const iterator insertion_point = begin() + std::distance(cbegin(), index);
+  const iterator insertion_point = const_cast<iterator>(position);
   if (insertion_point == end()) {
     emplace_back(std::move(value));
     return insertion_point;
@@ -558,14 +560,13 @@ typename Vector<T>::iterator Vector<T>::insert(Vector<T>::const_iterator index,
 }
 
 template <typename T>
-typename Vector<T>::iterator Vector<T>::insert(Vector<T>::const_iterator index,
-                                               size_type count,
-                                               const T& value) {
-  PW_DASSERT(index >= cbegin());
-  PW_DASSERT(index <= cend());
+typename Vector<T>::iterator Vector<T>::insert(
+    Vector<T>::const_iterator position, size_type count, const T& value) {
+  PW_DASSERT(position >= cbegin());
+  PW_DASSERT(position <= cend());
   PW_DASSERT(size() + count <= max_size());
 
-  const iterator insertion_point = begin() + std::distance(cbegin(), index);
+  const iterator insertion_point = const_cast<iterator>(position);
   if (count == size_type{}) {
     return insertion_point;
   }
@@ -588,13 +589,13 @@ typename Vector<T>::iterator Vector<T>::insert(Vector<T>::const_iterator index,
 template <typename T>
 typename Vector<T>::iterator Vector<T>::erase(Vector<T>::const_iterator first,
                                               Vector<T>::const_iterator last) {
-  iterator source = begin() + std::distance(cbegin(), last);
+  iterator source = const_cast<iterator>(last);
   if (first == last) {
     return source;
   }
 
   // Move subsequent entries over the to-be-erased range.
-  iterator destination = begin() + std::distance(cbegin(), first);
+  iterator destination = const_cast<iterator>(first);
   iterator new_end = std::move(source, end(), destination);
 
   // Destroy any leftover moved entries.
@@ -634,11 +635,11 @@ void Vector<T, vector_impl::kGeneric>::Append(size_type count, const T& value) {
 template <typename T>
 template <typename Iterator>
 typename Vector<T>::iterator Vector<T, vector_impl::kGeneric>::InsertFrom(
-    Vector<T>::const_iterator index, Iterator first, Iterator last) {
-  PW_DASSERT(index >= cbegin());
-  PW_DASSERT(index <= cend());
+    Vector<T>::const_iterator position, Iterator first, Iterator last) {
+  PW_DASSERT(position >= cbegin());
+  PW_DASSERT(position <= cend());
 
-  const iterator insertion_point = begin() + std::distance(cbegin(), index);
+  const iterator insertion_point = const_cast<iterator>(position);
   const size_t count = static_cast<size_t>(std::distance(first, last));
   PW_DASSERT(count <= max_size() - size());
 
