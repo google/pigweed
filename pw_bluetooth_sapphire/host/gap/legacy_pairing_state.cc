@@ -102,6 +102,10 @@ void LegacyPairingState::BuildEstablishedLink(
 
   link_->set_encryption_change_callback(
       fit::bind_member<&LegacyPairingState::OnEncryptionChange>(this));
+
+  if (link_key_.has_value()) {
+    link_->set_link_key(link_key_.value(), hci_spec::LinkKeyType::kCombination);
+  }
 }
 
 void LegacyPairingState::InitiatePairing(StatusCallback status_cb) {

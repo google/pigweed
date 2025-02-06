@@ -68,10 +68,9 @@ PairingStateManager::PairingStateManager(
     // Since PairingStateManager is created when the ACL connection is complete,
     // we need to initialize |legacy_pairing_state_| with information that we
     // didn't have until after the connection was complete (e.g. link, auth_cb,
-    // status_cb)
+    // status_cb) and set the connection's link key.
     legacy_pairing_state_->BuildEstablishedLink(
         link_, auth_cb_.share(), status_cb_.share());
-    legacy_pairing_state_->set_link_ltk();
 
     // We should also check that |peer| and |outgoing_connection| are unchanged
     // before and after connection is complete

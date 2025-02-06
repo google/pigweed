@@ -226,9 +226,6 @@ TEST_F(LegacyPairingStateTest, BuildEstablishedLink) {
                                      MakeAuthRequestCallback(),
                                      NoOpStatusCallback);
 
-  // Store |link_key_| into the connection
-  pairing_state.set_link_ltk();
-
   EXPECT_TRUE(connection()->ltk().has_value());
   EXPECT_EQ(kTestLinkKeyValue, connection()->ltk()->value());
   EXPECT_EQ(kTestLinkKeyValue, pairing_state.link_ltk()->value());

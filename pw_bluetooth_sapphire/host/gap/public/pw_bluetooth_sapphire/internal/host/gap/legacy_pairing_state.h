@@ -84,12 +84,12 @@ class LegacyPairingState final {
                      StatusCallback status_cb);
   ~LegacyPairingState();
 
-  // Sets the |link|'s callbacks fields when the ACL connection is complete
-  // (i.e. after HCI_Connection_Complete event). |auth_cb| and |status_cb| are
-  // passed in from either the LegacyPairingState or PairingStateManager
-  // constructor, depending on which object is first created due to the ordering
-  // of legacy pairing events (which may occur before or after the ACL
-  // connection is created).
+  // Sets the |link|'s callbacks fields and link key when the ACL connection is
+  // complete (i.e. after HCI_Connection_Complete event). |auth_cb| and
+  // |status_cb| are passed in from either the LegacyPairingState or
+  // PairingStateManager constructor, depending on which object is first created
+  // due to the ordering of legacy pairing events (which may occur before or
+  // after the ACL connection is created).
   void BuildEstablishedLink(WeakPtr<hci::BrEdrConnection> link,
                             fit::closure auth_cb,
                             StatusCallback status_cb);
@@ -157,9 +157,6 @@ class LegacyPairingState final {
 
   std::optional<hci_spec::LinkKey> link_key() { return link_key_; }
 
-  void set_link_ltk() {
-    link_->set_link_key(link_key_.value(), hci_spec::LinkKeyType::kCombination);
-  }
   std::optional<hci_spec::LinkKey> link_ltk() const { return link_->ltk(); }
 
  private:

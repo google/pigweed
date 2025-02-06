@@ -1904,6 +1904,34 @@ TEST_F(BrEdrConnectionManagerTest, LinkKeyRequestAndNegativeReply) {
   QueueDisconnection(kConnectionHandle);
 }
 
+// Test: Link Key request arrives after we have received a connect request, but
+// before we have been notified of connect completion (see http://b/393629914).
+TEST_F(BrEdrConnectionManagerTest, ConnectLinkKeySandwich) {
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::AcceptConnectionRequestPacket(kTestDevAddr),
+                        &kAcceptConnectionRequestRsp);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunUntilIdle();
+
+  auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+  ASSERT_FALSE(IsNotConnected(peer));  // connecting
+  ASSERT_FALSE(peer->bonded());
+
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        kLinkKeyRequestNegativeReply,
+                        &kLinkKeyRequestNegativeReplyRsp);
+  test_device()->SendCommandChannelPacket(kLinkKeyRequest);
+  RunUntilIdle();
+
+  QueueSuccessfulInterrogation(kTestDevAddr, kConnectionHandle);
+  test_device()->SendCommandChannelPacket(kConnectionComplete);
+  RunUntilIdle();
+
+  // Queue disconnection for teardown
+  QueueDisconnection(kConnectionHandle);
+}
+
 // Test: replies to Link Key Requests for bonded peer
 TEST_F(BrEdrConnectionManagerTest, RecallLinkKeyForBondedPeer) {
   ASSERT_TRUE(
