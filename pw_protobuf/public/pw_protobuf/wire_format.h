@@ -23,9 +23,9 @@ namespace pw::protobuf {
 // Per the protobuf specification, valid field numbers range between 1 and
 // 2**29 - 1, inclusive. The numbers 19000-19999 are reserved for internal
 // use.
-constexpr static uint32_t kMaxFieldNumber = (1u << 29) - 1;
-constexpr static uint32_t kFirstReservedNumber = 19000;
-constexpr static uint32_t kLastReservedNumber = 19999;
+inline constexpr static uint32_t kMaxFieldNumber = (1u << 29) - 1;
+inline constexpr static uint32_t kFirstReservedNumber = 19000;
+inline constexpr static uint32_t kLastReservedNumber = 19999;
 
 constexpr bool ValidFieldNumber(uint32_t field_number) {
   return field_number != 0 && field_number <= kMaxFieldNumber &&

@@ -47,7 +47,7 @@
 namespace bt::l2cap {
 
 // Maximum count of packets a channel can queue before it must drop old packets
-constexpr uint16_t kDefaultTxMaxQueuedCount = 500;
+inline constexpr uint16_t kDefaultTxMaxQueuedCount = 500;
 
 // Represents a L2CAP channel. Each instance is owned by a service
 // implementation that operates on the corresponding channel. Instances can only

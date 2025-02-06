@@ -93,8 +93,8 @@ Request MakeRequest(Args... args) {
   return Request();
 }
 
-constexpr size_t kMaxRequests = 256;
-constexpr size_t kMaxSize = 2048;
+inline constexpr size_t kMaxRequests = 256;
+inline constexpr size_t kMaxSize = 2048;
 
 inline auto DefaultArbitraryRequests() {
   return pw::allocator::test::ArbitraryRequests<kMaxRequests, kMaxSize>();

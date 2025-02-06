@@ -29,10 +29,10 @@ namespace bt::sdp {
 using ServiceHandle = uint32_t;
 
 // Handle to service record representing SDP itself. (Vol 3, Part B, 2.2)
-constexpr ServiceHandle kSDPHandle = 0x00000000;
+inline constexpr ServiceHandle kSDPHandle = 0x00000000;
 // Handles 0x0000001 - 0x0000FFFF are reserved (Vol 3, Part B, 5.1.1)
-constexpr ServiceHandle kFirstUnreservedHandle = 0x00010000;
-constexpr ServiceHandle kLastHandle = 0xFFFFFFFF;
+inline constexpr ServiceHandle kFirstUnreservedHandle = 0x00010000;
+inline constexpr ServiceHandle kLastHandle = 0xFFFFFFFF;
 
 // Valid security levels for services. (Vol 3, Part C, 5.2.2)
 enum class SecurityLevel : uint8_t {
@@ -70,22 +70,22 @@ enum class ErrorCode : uint16_t {
 };
 
 // ===== SDP PDUs =====
-constexpr OpCode kReserved = 0x00;
+inline constexpr OpCode kReserved = 0x00;
 
 // Error Handling
-constexpr OpCode kErrorResponse = 0x01;
+inline constexpr OpCode kErrorResponse = 0x01;
 
 // Service Search Transaction
-constexpr OpCode kServiceSearchRequest = 0x02;
-constexpr OpCode kServiceSearchResponse = 0x03;
+inline constexpr OpCode kServiceSearchRequest = 0x02;
+inline constexpr OpCode kServiceSearchResponse = 0x03;
 
 // Service Attribute Transaction
-constexpr OpCode kServiceAttributeRequest = 0x04;
-constexpr OpCode kServiceAttributeResponse = 0x05;
+inline constexpr OpCode kServiceAttributeRequest = 0x04;
+inline constexpr OpCode kServiceAttributeResponse = 0x05;
 
 // Service Search Attribute Transaction
-constexpr OpCode kServiceSearchAttributeRequest = 0x06;
-constexpr OpCode kServiceSearchAttributeResponse = 0x07;
+inline constexpr OpCode kServiceSearchAttributeRequest = 0x06;
+inline constexpr OpCode kServiceSearchAttributeResponse = 0x07;
 
 // ====== SDP Protocol UUIDs ======
 // Defined in the Bluetooth Assigned Numbers:
@@ -93,15 +93,15 @@ constexpr OpCode kServiceSearchAttributeResponse = 0x07;
 
 namespace protocol {
 
-constexpr UUID kSDP(uint16_t{0x0001});
-constexpr UUID kRFCOMM(uint16_t{0x0003});
-constexpr UUID kATT(uint16_t{0x0007});
-constexpr UUID kOBEX(uint16_t{0x0008});  // IrDA Interop
-constexpr UUID kBNEP(uint16_t{0x000F});
-constexpr UUID kHIDP(uint16_t{0x0011});
-constexpr UUID kAVCTP(uint16_t{0x0017});
-constexpr UUID kAVDTP(uint16_t{0x0019});
-constexpr UUID kL2CAP(uint16_t{0x0100});
+inline constexpr UUID kSDP(uint16_t{0x0001});
+inline constexpr UUID kRFCOMM(uint16_t{0x0003});
+inline constexpr UUID kATT(uint16_t{0x0007});
+inline constexpr UUID kOBEX(uint16_t{0x0008});  // IrDA Interop
+inline constexpr UUID kBNEP(uint16_t{0x000F});
+inline constexpr UUID kHIDP(uint16_t{0x0011});
+inline constexpr UUID kAVCTP(uint16_t{0x0017});
+inline constexpr UUID kAVDTP(uint16_t{0x0019});
+inline constexpr UUID kL2CAP(uint16_t{0x0100});
 
 }  // namespace protocol
 
@@ -112,63 +112,63 @@ constexpr UUID kL2CAP(uint16_t{0x0100});
 namespace profile {
 
 // Service Discovery Profile (SDP)
-constexpr UUID kServiceDiscoveryClass(uint16_t{0x1000});
-constexpr UUID kBrowseGroupClass(uint16_t{0x1001});
+inline constexpr UUID kServiceDiscoveryClass(uint16_t{0x1000});
+inline constexpr UUID kBrowseGroupClass(uint16_t{0x1001});
 // Serial Port Profile (SPP)
-constexpr UUID kSerialPort(uint16_t{0x1101});
+inline constexpr UUID kSerialPort(uint16_t{0x1101});
 // Dial-up Networking Profile (DUN)
-constexpr UUID kDialupNetworking(uint16_t{0x1103});
+inline constexpr UUID kDialupNetworking(uint16_t{0x1103});
 // Object Push Profile (OPP)
-constexpr UUID kObexObjectPush(uint16_t{0x1105});
+inline constexpr UUID kObexObjectPush(uint16_t{0x1105});
 // File Transfer Profile (FTP)
-constexpr UUID kObexFileTransfer(uint16_t{0x1106});
+inline constexpr UUID kObexFileTransfer(uint16_t{0x1106});
 // Headset Profile (HSP)
-constexpr UUID kHeadset(uint16_t{0x1108});
-constexpr UUID kHeadsetAudioGateway(uint16_t{0x1112});
-constexpr UUID kHeadsetHS(uint16_t{0x1131});
+inline constexpr UUID kHeadset(uint16_t{0x1108});
+inline constexpr UUID kHeadsetAudioGateway(uint16_t{0x1112});
+inline constexpr UUID kHeadsetHS(uint16_t{0x1131});
 // Advanced Audio Distribution Profile (A2DP)
-constexpr UUID kAudioSource(uint16_t{0x110A});
-constexpr UUID kAudioSink(uint16_t{0x110B});
-constexpr UUID kAdvancedAudioDistribution(uint16_t{0x110D});
+inline constexpr UUID kAudioSource(uint16_t{0x110A});
+inline constexpr UUID kAudioSink(uint16_t{0x110B});
+inline constexpr UUID kAdvancedAudioDistribution(uint16_t{0x110D});
 // Audio/Video Remote Control Profile (AVRCP)
-constexpr UUID kAVRemoteControlTarget(uint16_t{0x110C});
-constexpr UUID kAVRemoteControl(uint16_t{0x110E});
-constexpr UUID kAVRemoteControlController(uint16_t{0x110F});
+inline constexpr UUID kAVRemoteControlTarget(uint16_t{0x110C});
+inline constexpr UUID kAVRemoteControl(uint16_t{0x110E});
+inline constexpr UUID kAVRemoteControlController(uint16_t{0x110F});
 // Personal Area Networking (PAN)
-constexpr UUID kPANU(uint16_t{0x1115});
-constexpr UUID kNAP(uint16_t{0x1116});
-constexpr UUID kGN(uint16_t{0x1117});
+inline constexpr UUID kPANU(uint16_t{0x1115});
+inline constexpr UUID kNAP(uint16_t{0x1116});
+inline constexpr UUID kGN(uint16_t{0x1117});
 // Basic Printing and Basic Imaging Profiles omitted (unsupported)
 // Hands-Free Profile (HFP)
-constexpr UUID kHandsfree(uint16_t{0x111E});
-constexpr UUID kHandsfreeAudioGateway(uint16_t{0x111F});
+inline constexpr UUID kHandsfree(uint16_t{0x111E});
+inline constexpr UUID kHandsfreeAudioGateway(uint16_t{0x111F});
 // Human Interface Device omitted (unsupported)
 // Hardcopy Cable Replacement Profile omitted (unsupported)
 // Sim Access Profile (SAP)
-constexpr UUID kSIM_Access(uint16_t{0x112D});
+inline constexpr UUID kSIM_Access(uint16_t{0x112D});
 // Phonebook Access Profile (PBAP)
-constexpr UUID kPhonebookPCE(uint16_t{0x112E});
-constexpr UUID kPhonebookPSE(uint16_t{0x112F});
-constexpr UUID kPhonebook(uint16_t{0x1130});
+inline constexpr UUID kPhonebookPCE(uint16_t{0x112E});
+inline constexpr UUID kPhonebookPSE(uint16_t{0x112F});
+inline constexpr UUID kPhonebook(uint16_t{0x1130});
 // Message Access Profile (MAP)
-constexpr UUID kMessageAccessServer(uint16_t{0x1132});
-constexpr UUID kMessageNotificationServer(uint16_t{0x1133});
-constexpr UUID kMessageAccessProfile(uint16_t{0x1134});
+inline constexpr UUID kMessageAccessServer(uint16_t{0x1132});
+inline constexpr UUID kMessageNotificationServer(uint16_t{0x1133});
+inline constexpr UUID kMessageAccessProfile(uint16_t{0x1134});
 // GNSS and 3DSP omitted (unsupported)
 // Multi-Profile Specification (MPS)
-constexpr UUID kMPSProfile(uint16_t{0x113A});
-constexpr UUID kMPSClass(uint16_t{0x113B});
+inline constexpr UUID kMPSProfile(uint16_t{0x113A});
+inline constexpr UUID kMPSClass(uint16_t{0x113B});
 // Calendar, Task, and Notes Profile omitted (unsupported)
 // Device ID
-constexpr UUID kPeerIdentification(uint16_t{0x1200});
+inline constexpr UUID kPeerIdentification(uint16_t{0x1200});
 // Video Distribution Profile (VDP)
-constexpr UUID kVideoSource(uint16_t{0x1303});
-constexpr UUID kVideoSink(uint16_t{0x1304});
-constexpr UUID kVideoDistribution(uint16_t{0x1305});
+inline constexpr UUID kVideoSource(uint16_t{0x1303});
+inline constexpr UUID kVideoSink(uint16_t{0x1304});
+inline constexpr UUID kVideoDistribution(uint16_t{0x1305});
 // Health Device Profile (HDP)
-constexpr UUID kHDP(uint16_t{0x1400});
-constexpr UUID kHDPSource(uint16_t{0x1401});
-constexpr UUID kHDPSink(uint16_t{0x1402});
+inline constexpr UUID kHDP(uint16_t{0x1400});
+inline constexpr UUID kHDPSource(uint16_t{0x1401});
+inline constexpr UUID kHDPSink(uint16_t{0x1402});
 
 }  // namespace profile
 
@@ -178,12 +178,12 @@ constexpr UUID kHDPSink(uint16_t{0x1402});
 // v5.0, Vol 3, Part B, Sec 5.1
 
 // Service Record Handle
-constexpr AttributeId kServiceRecordHandle = 0x0000;
+inline constexpr AttributeId kServiceRecordHandle = 0x0000;
 
 using ServiceRecordHandleValueType = uint32_t;
 
 // Service Class ID List
-constexpr AttributeId kServiceClassIdList = 0x0001;
+inline constexpr AttributeId kServiceClassIdList = 0x0001;
 
 // A sequence of UUIDs.
 // Must contain at least one UUID.
@@ -192,17 +192,17 @@ using ServiceClassIdListValueType = std::vector<DataElement>;
 // Service Record State
 // Used to facilitate caching. If any part of the service record changes,
 // this value must change.
-constexpr AttributeId kServiceRecordState = 0x0002;
+inline constexpr AttributeId kServiceRecordState = 0x0002;
 
 using ServiceRecordStateValueType = uint32_t;
 
 // Service ID
-constexpr AttributeId kServiceId = 0x0003;
+inline constexpr AttributeId kServiceId = 0x0003;
 
 using ServiceIdValueType = UUID;
 
 // Protocol Descriptor List
-constexpr AttributeId kProtocolDescriptorList = 0x0004;
+inline constexpr AttributeId kProtocolDescriptorList = 0x0004;
 
 // This is a list of DataElementSequences, of which each has as its first
 // element a Protocol UUID, followed by protocol-specific parameters.
@@ -210,24 +210,24 @@ constexpr AttributeId kProtocolDescriptorList = 0x0004;
 using ProtocolDescriptorListValueType = std::vector<DataElement>;
 
 // AdditionalProtocolDescriptorList
-constexpr AttributeId kAdditionalProtocolDescriptorList = 0x000D;
+inline constexpr AttributeId kAdditionalProtocolDescriptorList = 0x000D;
 
 // This is a sequence of Protocol Descriptor Lists
 using AdditionalProtocolDescriptorListValueType = std::vector<DataElement>;
 
 // Browse Group List
 // Browse Group lists are described in v5.0, Vol 3, Part B, Sec 2.6
-constexpr AttributeId kBrowseGroupList = 0x0005;
+inline constexpr AttributeId kBrowseGroupList = 0x0005;
 
 // This is a sequence which is composed of UUIDs of the groups that this
 // service belongs to.
 using BrowseGroupListValueType = std::vector<DataElement>;
 
 // The UUID used for the root of the browsing hierarchy
-constexpr UUID kPublicBrowseRootUuid(uint16_t{0x1002});
+inline constexpr UUID kPublicBrowseRootUuid(uint16_t{0x1002});
 
 // Language Base Attribute Id List
-constexpr AttributeId kLanguageBaseAttributeIdList = 0x0006;
+inline constexpr AttributeId kLanguageBaseAttributeIdList = 0x0006;
 
 // A sequence of uint16_t triplets containing:
 //  - An identifier for a natural language from ISO 639:1988 (E/F)
@@ -239,7 +239,7 @@ using LanguageBaseAttributeIdListValueType = std::vector<DataElement>;
 // Service Info TTL
 // Number of seconds that the service record is expected to be valid and
 // unchanged.
-constexpr AttributeId kServiceInfoTimeToLive = 0x0007;
+inline constexpr AttributeId kServiceInfoTimeToLive = 0x0007;
 
 using ServiceInfoTimeToLiveValueType = uint32_t;
 
@@ -247,12 +247,12 @@ using ServiceInfoTimeToLiveValueType = uint32_t;
 // Represents the relative ability of the service to accept additional clients.
 // 0x00 means no clients can connect, 0xFF means no one is using it.
 // See Vol 3, Part B, 5.1.10
-constexpr AttributeId kServiceAvailability = 0x0008;
+inline constexpr AttributeId kServiceAvailability = 0x0008;
 
 using ServiceAvailabilityValueType = uint8_t;
 
 // Bluetooth Profile Descriptor List
-constexpr AttributeId kBluetoothProfileDescriptorList = 0x0009;
+inline constexpr AttributeId kBluetoothProfileDescriptorList = 0x0009;
 
 // A Sequence of Sequences with:
 //  - a UUID for a profile
@@ -269,17 +269,17 @@ using BluetoothProfileDescriptorListValueType = std::vector<DataElement>;
 // LanguageBaseAttributeIdList
 
 // Service Name
-constexpr AttributeId kServiceNameOffset = 0x0000;
+inline constexpr AttributeId kServiceNameOffset = 0x0000;
 
 using ServiceNameValueType = std::string;
 
 // Service Description
-constexpr AttributeId kServiceDescriptionOffset = 0x0001;
+inline constexpr AttributeId kServiceDescriptionOffset = 0x0001;
 
 using ServiceDescriptionValueType = std::string;
 
 // Provider Name
-constexpr AttributeId kProviderNameOffset = 0x0002;
+inline constexpr AttributeId kProviderNameOffset = 0x0002;
 
 using ProviderNameValueType = std::string;
 
@@ -289,24 +289,24 @@ using ProviderNameValueType = std::string;
 
 // VersionNumberList is a list of the versions supported by the SDP server.
 // See v5.0, Vol 3, Part B, Section 5.2.3
-constexpr AttributeId kSDP_VersionNumberList = 0x0200;
+inline constexpr AttributeId kSDP_VersionNumberList = 0x0200;
 
 using SDP_VersionNumberListType = std::vector<DataElement>;
 
 // ServiceDatabaseState is a 32-bit integer that is changed whenever any other
 // service records are added or deleted from the database.
-constexpr AttributeId kSDP_ServiceDatabaseState = 0x0201;
+inline constexpr AttributeId kSDP_ServiceDatabaseState = 0x0201;
 
 // ===== Advanced Audio Distribution Profile Attribute Definitions ======
 // These attributes are defined as valid for the AudioSource and AudioSink
 // Service Class UUIDs in the Assigned Numbers for SDP
 // https://www.bluetooth.com/specifications/assigned-numbers/service-discovery
-constexpr AttributeId kA2DP_SupportedFeatures = 0x0311;
+inline constexpr AttributeId kA2DP_SupportedFeatures = 0x0311;
 
 // ===== OBEX Protocol Attribute Definitions =====
 // This attribute is defined on a per-profile basis, and is the same for all
 // relevant profiles that require OBEX. See
 // https://www.bluetooth.com/specifications/assigned-numbers/service-discovery
-constexpr AttributeId kGoepL2capPsm = 0x0200;
+inline constexpr AttributeId kGoepL2capPsm = 0x0200;
 
 }  // namespace bt::sdp

@@ -17,8 +17,8 @@
 
 namespace pw::allocator::benchmarks {
 
-constexpr size_t kCapacity = 0x4000000;  // 64 MiB
-constexpr size_t kMaxSize = 0x2000;      // 8 KiB
-constexpr size_t kNumRequests = 40000;
+inline constexpr size_t kCapacity = 0x4000000;  // 64 MiB
+inline constexpr size_t kMaxSize = 0x2000;      // 8 KiB
+inline constexpr size_t kNumRequests = 40000;
 
 }  // namespace pw::allocator::benchmarks

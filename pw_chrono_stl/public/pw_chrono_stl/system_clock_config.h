@@ -27,13 +27,13 @@
 namespace pw::chrono::backend {
 
 // The std::chrono::steady_clock does not have a defined epoch.
-constexpr inline Epoch kSystemClockEpoch = pw::chrono::Epoch::kUnknown;
+inline constexpr Epoch kSystemClockEpoch = pw::chrono::Epoch::kUnknown;
 
 // The std::chrono::steady_clock can be used by signal handlers.
-constexpr inline bool kSystemClockNmiSafe = true;
+inline constexpr bool kSystemClockNmiSafe = true;
 
 // The std::chrono::steady_clock ticks while in a signal handler.
-constexpr inline bool kSystemClockFreeRunning = true;
+inline constexpr bool kSystemClockFreeRunning = true;
 
 }  // namespace pw::chrono::backend
 

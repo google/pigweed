@@ -26,7 +26,7 @@ namespace bt::iso {
 
 // Maximum possible size of an Isochronous data packet.
 // See Core Spec v5.4, Volume 4, Part E, Section 5.4.5
-constexpr size_t kMaxIsochronousDataPacketSize =
+inline constexpr size_t kMaxIsochronousDataPacketSize =
     pw::bluetooth::emboss::IsoDataFrameHeader::MaxSizeInBytes() +
     hci_spec::kMaxIsochronousDataPacketPayloadSize;
 

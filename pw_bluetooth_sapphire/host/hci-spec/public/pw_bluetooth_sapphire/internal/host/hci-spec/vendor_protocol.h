@@ -34,7 +34,7 @@ namespace bt::hci_spec::vendor::android {
 
 // ============================================================================
 // LE Get Vendor Capabilities Command
-constexpr OpCode kLEGetVendorCapabilities = VendorOpCode(0x153);
+inline constexpr OpCode kLEGetVendorCapabilities = VendorOpCode(0x153);
 
 // ============================================================================
 // A2DP Offload Commands
@@ -42,11 +42,11 @@ constexpr OpCode kLEGetVendorCapabilities = VendorOpCode(0x153);
 // The kA2dpOffloadCommand opcode is shared across all a2dp offloading HCI
 // commands. To differentiate between the multiple commands, a subopcode field
 // is included in the command payload.
-constexpr OpCode kA2dpOffloadCommand = VendorOpCode(0x15D);
-constexpr uint8_t kStartA2dpOffloadCommandSubopcode = 0x01;
-constexpr uint8_t kStopA2dpOffloadCommandSubopcode = 0x02;
-constexpr uint32_t kLdacVendorId = 0x0000012D;
-constexpr uint16_t kLdacCodecId = 0x00AA;
+inline constexpr OpCode kA2dpOffloadCommand = VendorOpCode(0x15D);
+inline constexpr uint8_t kStartA2dpOffloadCommandSubopcode = 0x01;
+inline constexpr uint8_t kStopA2dpOffloadCommandSubopcode = 0x02;
+inline constexpr uint32_t kLdacVendorId = 0x0000012D;
+inline constexpr uint16_t kLdacCodecId = 0x00AA;
 
 // ============================================================================
 // Multiple Advertising
@@ -58,13 +58,13 @@ constexpr uint16_t kLdacCodecId = 0x00AA;
 // The kLEMultiAdvt opcode is shared across all multiple advertising HCI
 // commands. To differentiate between the multiple commands, a subopcode field
 // is included in the command payload.
-constexpr OpCode kLEMultiAdvt = VendorOpCode(0x154);
-constexpr uint8_t kLEMultiAdvtSetAdvtParamSubopcode = 0x01;
-constexpr uint8_t kLEMultiAdvtSetAdvtDataSubopcode = 0x02;
-constexpr uint8_t kLEMultiAdvtSetScanRespSubopcode = 0x03;
-constexpr uint8_t kLEMultiAdvtSetRandomAddrSubopcode = 0x4;
-constexpr uint8_t kLEMultiAdvtEnableSubopcode = 0x05;
-constexpr EventCode kLEMultiAdvtStateChangeSubeventCode = 0x55;
+inline constexpr OpCode kLEMultiAdvt = VendorOpCode(0x154);
+inline constexpr uint8_t kLEMultiAdvtSetAdvtParamSubopcode = 0x01;
+inline constexpr uint8_t kLEMultiAdvtSetAdvtDataSubopcode = 0x02;
+inline constexpr uint8_t kLEMultiAdvtSetScanRespSubopcode = 0x03;
+inline constexpr uint8_t kLEMultiAdvtSetRandomAddrSubopcode = 0x4;
+inline constexpr uint8_t kLEMultiAdvtEnableSubopcode = 0x05;
+inline constexpr EventCode kLEMultiAdvtStateChangeSubeventCode = 0x55;
 
 // ============================================================================
 // Advertising Packet Content Filtering
@@ -73,18 +73,18 @@ constexpr EventCode kLEMultiAdvtStateChangeSubeventCode = 0x55;
 // HCI commands. To differentiate between the multiple commands, a subopcode
 // field is included in the command payload. These subopcode fields must be set
 // to a specific value.
-constexpr OpCode kLEApcf = VendorOpCode(0x157);
-constexpr uint8_t kLEApcfEnableSubopcode = 0x00;
-constexpr uint8_t kLEApcfSetFilteringParametersSubopcode = 0x01;
-constexpr uint8_t kLEApcfBroadcastAddressSubopcode = 0x02;
-constexpr uint8_t kLEApcfServiceUUIDSubopcode = 0x03;
-constexpr uint8_t kLEApcfServiceSolicitationUUIDSubopcode = 0x04;
-constexpr uint8_t kLEApcfLocalNameSubopcode = 0x05;
-constexpr uint8_t kLEApcfManufacturerDataSubopcode = 0x06;
-constexpr uint8_t kLEApcfServiceDataSubopcode = 0x07;
-constexpr uint8_t kLEApcfTransportDiscoveryService = 0x08;
-constexpr uint8_t kLEApcfAdTypeFilter = 0x09;
-constexpr uint8_t kLEApcfReadExtendedFeatures = 0xFF;
+inline constexpr OpCode kLEApcf = VendorOpCode(0x157);
+inline constexpr uint8_t kLEApcfEnableSubopcode = 0x00;
+inline constexpr uint8_t kLEApcfSetFilteringParametersSubopcode = 0x01;
+inline constexpr uint8_t kLEApcfBroadcastAddressSubopcode = 0x02;
+inline constexpr uint8_t kLEApcfServiceUUIDSubopcode = 0x03;
+inline constexpr uint8_t kLEApcfServiceSolicitationUUIDSubopcode = 0x04;
+inline constexpr uint8_t kLEApcfLocalNameSubopcode = 0x05;
+inline constexpr uint8_t kLEApcfManufacturerDataSubopcode = 0x06;
+inline constexpr uint8_t kLEApcfServiceDataSubopcode = 0x07;
+inline constexpr uint8_t kLEApcfTransportDiscoveryService = 0x08;
+inline constexpr uint8_t kLEApcfAdTypeFilter = 0x09;
+inline constexpr uint8_t kLEApcfReadExtendedFeatures = 0xFF;
 
 // The maximum length of an advertising data field. The value 29 is selected
 // because advertising data can be between 0 - 31 bytes wide.
@@ -94,6 +94,6 @@ constexpr uint8_t kLEApcfReadExtendedFeatures = 0xFF;
 //
 // With two bytes used, the rest of the payload size can only take up a maximum
 // of 29 bytes.
-constexpr uint8_t kLEApcfMaxPDUValueLength = 29;
+inline constexpr uint8_t kLEApcfMaxPDUValueLength = 29;
 
 }  // namespace bt::hci_spec::vendor::android

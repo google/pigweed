@@ -33,7 +33,7 @@ enum class RequestState : uint8_t {
 
 // Bitmask enabling all packets types. By enabling as many as we can, we expect
 // the controller to only use the ones it supports
-constexpr hci_spec::PacketTypeType kEnableAllPacketTypes =
+inline constexpr hci_spec::PacketTypeType kEnableAllPacketTypes =
     static_cast<hci_spec::PacketTypeType>(
         hci_spec::PacketTypeBits::kEnableDM1) |
     static_cast<hci_spec::PacketTypeType>(

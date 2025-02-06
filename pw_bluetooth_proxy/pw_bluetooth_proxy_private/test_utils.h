@@ -82,7 +82,7 @@ struct KFrameWithStorage {
 };
 
 // Size of sdu_length field in first K-frames.
-constexpr uint8_t kSduLengthFieldSize = 2;
+inline constexpr uint8_t kSduLengthFieldSize = 2;
 
 // Populate a KFrame that encodes a particular segment of `payload` based on the
 // `mps`, or maximum PDU payload size of a segment. `segment_no` is the nth

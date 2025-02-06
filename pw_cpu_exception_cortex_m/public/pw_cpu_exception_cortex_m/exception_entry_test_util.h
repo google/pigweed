@@ -23,12 +23,12 @@ namespace pw::cpu_exception::cortex_m {
 // Constants and utilities that are common to ARMv6, ARMv7 and ARMv8.
 
 // CCR flags. (ARMv6-M Section B3.2.8)
-constexpr uint32_t kUnalignedTrapEnableMask = 0x1u << 3;
+inline constexpr uint32_t kUnalignedTrapEnableMask = 0x1u << 3;
 
 // Magic pattern to help identify if the exception handler's
 // pw_cpu_exception_State pointer was pointing to captured CPU state that was
 // pushed onto the stack.
-constexpr uint32_t kMagicPattern = 0xDEADBEEF;
+inline constexpr uint32_t kMagicPattern = 0xDEADBEEF;
 
 void InstallVectorTableEntries(uint32_t* exception_entry_addr);
 

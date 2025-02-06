@@ -76,7 +76,7 @@ class PeerId : public Identifier<uint64_t> {
   bool IsValid() const { return value() != 0u; }
 };
 
-constexpr PeerId kInvalidPeerId(0u);
+inline constexpr PeerId kInvalidPeerId(0u);
 
 // Generates a valid random peer identifier. This function can never return
 // kInvalidPeerId.

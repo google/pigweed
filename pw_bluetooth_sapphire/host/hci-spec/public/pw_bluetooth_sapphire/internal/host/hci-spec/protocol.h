@@ -129,7 +129,7 @@ struct SynchronousDataHeader {
 // ============= HCI Command and Event (op)code and payloads =============
 
 // No-Op
-constexpr OpCode kNoOp = 0x0000;
+inline constexpr OpCode kNoOp = 0x0000;
 
 // The following is a list of HCI command and event declarations sorted by OGF
 // category. Within each category the commands are sorted by their OCF. Each
@@ -142,317 +142,341 @@ constexpr OpCode kNoOp = 0x0000;
 
 // ======= Link Control Commands =======
 // Core Spec v5.0, Vol 2, Part E, Section 7.1
-constexpr uint8_t kLinkControlOGF = 0x01;
+inline constexpr uint8_t kLinkControlOGF = 0x01;
 constexpr OpCode LinkControlOpCode(const uint16_t ocf) {
   return DefineOpCode(kLinkControlOGF, ocf);
 }
 
 // ===============================
 // Inquiry Command (v1.1) (BR/EDR)
-constexpr OpCode kInquiry = LinkControlOpCode(0x0001);
+inline constexpr OpCode kInquiry = LinkControlOpCode(0x0001);
 
 // ======================================
 // Inquiry Cancel Command (v1.1) (BR/EDR)
-constexpr OpCode kInquiryCancel = LinkControlOpCode(0x0002);
+inline constexpr OpCode kInquiryCancel = LinkControlOpCode(0x0002);
 
 // Inquiry Cancel Command has no command parameters.
 
 // =================================
 // Create Connection (v1.1) (BR/EDR)
-constexpr OpCode kCreateConnection = LinkControlOpCode(0x0005);
+inline constexpr OpCode kCreateConnection = LinkControlOpCode(0x0005);
 
 // =======================================
 // Disconnect Command (v1.1) (BR/EDR & LE)
-constexpr OpCode kDisconnect = LinkControlOpCode(0x0006);
+inline constexpr OpCode kDisconnect = LinkControlOpCode(0x0006);
 
 // ========================================
 // Create Connection Cancel (v1.1) (BR/EDR)
-constexpr OpCode kCreateConnectionCancel = LinkControlOpCode(0x0008);
+inline constexpr OpCode kCreateConnectionCancel = LinkControlOpCode(0x0008);
 
 // =========================================
 // Accept Connection Request (v1.1) (BR/EDR)
-constexpr OpCode kAcceptConnectionRequest = LinkControlOpCode(0x0009);
+inline constexpr OpCode kAcceptConnectionRequest = LinkControlOpCode(0x0009);
 
 // =========================================
 // Reject Connection Request (v1.1) (BR/EDR)
-constexpr OpCode kRejectConnectionRequest = LinkControlOpCode(0x000A);
+inline constexpr OpCode kRejectConnectionRequest = LinkControlOpCode(0x000A);
 
 // ==============================================
 // Link Key Request Reply Command (v1.1) (BR/EDR)
-constexpr OpCode kLinkKeyRequestReply = LinkControlOpCode(0x000B);
+inline constexpr OpCode kLinkKeyRequestReply = LinkControlOpCode(0x000B);
 
-constexpr size_t kBrEdrLinkKeySize = 16;
+inline constexpr size_t kBrEdrLinkKeySize = 16;
 
 // =======================================================
 // Link Key Request Negative Reply Command (v1.1) (BR/EDR)
-constexpr OpCode kLinkKeyRequestNegativeReply = LinkControlOpCode(0x000C);
+inline constexpr OpCode kLinkKeyRequestNegativeReply =
+    LinkControlOpCode(0x000C);
 
 // =======================================================
 // PIN Code Request Reply Command (v1.1) (BR/EDR)
-constexpr OpCode kPinCodeRequestReply = LinkControlOpCode(0x000D);
+inline constexpr OpCode kPinCodeRequestReply = LinkControlOpCode(0x000D);
 
 // =======================================================
 // PIN Code Request Negative Reply Command (v1.1) (BR/EDR)
-constexpr OpCode kPinCodeRequestNegativeReply = LinkControlOpCode(0x000E);
+inline constexpr OpCode kPinCodeRequestNegativeReply =
+    LinkControlOpCode(0x000E);
 
 // ================================================
 // Authentication Requested Command (v1.1) (BR/EDR)
-constexpr OpCode kAuthenticationRequested = LinkControlOpCode(0x0011);
+inline constexpr OpCode kAuthenticationRequested = LinkControlOpCode(0x0011);
 
 // =================================================
 // Set Connection Encryption Command (v1.1) (BR/EDR)
-constexpr OpCode kSetConnectionEncryption = LinkControlOpCode(0x0013);
+inline constexpr OpCode kSetConnectionEncryption = LinkControlOpCode(0x0013);
 
 // ============================================================
 // Remote Name Request Command (v1.1) (BR/EDR)
-constexpr OpCode kRemoteNameRequest = LinkControlOpCode(0x0019);
+inline constexpr OpCode kRemoteNameRequest = LinkControlOpCode(0x0019);
 
 // ======================================================
 // Read Remote Supported Features Command (v1.1) (BR/EDR)
-constexpr OpCode kReadRemoteSupportedFeatures = LinkControlOpCode(0x001B);
+inline constexpr OpCode kReadRemoteSupportedFeatures =
+    LinkControlOpCode(0x001B);
 
 // =====================================================
 // Read Remote Extended Features Command (v1.2) (BR/EDR)
-constexpr OpCode kReadRemoteExtendedFeatures = LinkControlOpCode(0x001C);
+inline constexpr OpCode kReadRemoteExtendedFeatures = LinkControlOpCode(0x001C);
 
 // ============================================================
 // Read Remote Version Information Command (v1.1) (BR/EDR & LE)
-constexpr OpCode kReadRemoteVersionInfo = LinkControlOpCode(0x001D);
+inline constexpr OpCode kReadRemoteVersionInfo = LinkControlOpCode(0x001D);
 
 // =============================================
 // Reject Synchronous Connection Command (BR/EDR)
-constexpr OpCode kRejectSynchronousConnectionRequest =
+inline constexpr OpCode kRejectSynchronousConnectionRequest =
     LinkControlOpCode(0x002A);
 
 // =========================================================
 // IO Capability Request Reply Command (v2.1 + EDR) (BR/EDR)
-constexpr OpCode kIOCapabilityRequestReply = LinkControlOpCode(0x002B);
+inline constexpr OpCode kIOCapabilityRequestReply = LinkControlOpCode(0x002B);
 
 // =============================================================
 // User Confirmation Request Reply Command (v2.1 + EDR) (BR/EDR)
-constexpr OpCode kUserConfirmationRequestReply = LinkControlOpCode(0x002C);
+inline constexpr OpCode kUserConfirmationRequestReply =
+    LinkControlOpCode(0x002C);
 
 // ======================================================================
 // User Confirmation Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
-constexpr OpCode kUserConfirmationRequestNegativeReply =
+inline constexpr OpCode kUserConfirmationRequestNegativeReply =
     LinkControlOpCode(0x002D);
 
 // ========================================================
 // User Passkey Request Reply Command (v2.1 + EDR) (BR/EDR)
-constexpr OpCode kUserPasskeyRequestReply = LinkControlOpCode(0x002E);
+inline constexpr OpCode kUserPasskeyRequestReply = LinkControlOpCode(0x002E);
 
 // =================================================================
 // User Passkey Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
-constexpr OpCode kUserPasskeyRequestNegativeReply = LinkControlOpCode(0x002F);
+inline constexpr OpCode kUserPasskeyRequestNegativeReply =
+    LinkControlOpCode(0x002F);
 
 // ==================================================================
 // IO Capability Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
-constexpr OpCode kIOCapabilityRequestNegativeReply = LinkControlOpCode(0x0034);
+inline constexpr OpCode kIOCapabilityRequestNegativeReply =
+    LinkControlOpCode(0x0034);
 
 // ======================================================
 // Enhanced Setup Synchronous Connection Command (BR/EDR)
-constexpr OpCode kEnhancedSetupSynchronousConnection =
+inline constexpr OpCode kEnhancedSetupSynchronousConnection =
     LinkControlOpCode(0x003D);
 
 // ===============================================================
 // Enhanced Accept Synchronous Connection Request Command (BR/EDR)
-constexpr OpCode kEnhancedAcceptSynchronousConnectionRequest =
+inline constexpr OpCode kEnhancedAcceptSynchronousConnectionRequest =
     LinkControlOpCode(0x003E);
 
 // ======= Controller & Baseband Commands =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.3
-constexpr uint8_t kControllerAndBasebandOGF = 0x03;
+inline constexpr uint8_t kControllerAndBasebandOGF = 0x03;
 constexpr OpCode ControllerAndBasebandOpCode(const uint16_t ocf) {
   return DefineOpCode(kControllerAndBasebandOGF, ocf);
 }
 
 // =============================
 // Set Event Mask Command (v1.1)
-constexpr OpCode kSetEventMask = ControllerAndBasebandOpCode(0x0001);
+inline constexpr OpCode kSetEventMask = ControllerAndBasebandOpCode(0x0001);
 
 // ====================
 // Reset Command (v1.1)
-constexpr OpCode kReset = ControllerAndBasebandOpCode(0x0003);
+inline constexpr OpCode kReset = ControllerAndBasebandOpCode(0x0003);
 
 // ========================================
 // Read PIN Type Command (v1.1) (BR/EDR)
-constexpr OpCode kReadPinType = ControllerAndBasebandOpCode(0x0009);
+inline constexpr OpCode kReadPinType = ControllerAndBasebandOpCode(0x0009);
 
 // ========================================
 // Write PIN Type Command (v1.1) (BR/EDR)
-constexpr OpCode kWritePinType = ControllerAndBasebandOpCode(0x000A);
+inline constexpr OpCode kWritePinType = ControllerAndBasebandOpCode(0x000A);
 
 // ========================================
 // Write Local Name Command (v1.1) (BR/EDR)
-constexpr OpCode kWriteLocalName = ControllerAndBasebandOpCode(0x0013);
+inline constexpr OpCode kWriteLocalName = ControllerAndBasebandOpCode(0x0013);
 
 // =======================================
 // Read Local Name Command (v1.1) (BR/EDR)
-constexpr OpCode kReadLocalName = ControllerAndBasebandOpCode(0x0014);
+inline constexpr OpCode kReadLocalName = ControllerAndBasebandOpCode(0x0014);
 
 // ==========================================
 // Write Page Timeout Command (v1.1) (BR/EDR)
-constexpr OpCode kWritePageTimeout = ControllerAndBasebandOpCode(0x0018);
+inline constexpr OpCode kWritePageTimeout = ControllerAndBasebandOpCode(0x0018);
 
 // ========================================
 // Read Scan Enable Command (v1.1) (BR/EDR)
-constexpr OpCode kReadScanEnable = ControllerAndBasebandOpCode(0x0019);
+inline constexpr OpCode kReadScanEnable = ControllerAndBasebandOpCode(0x0019);
 
 // =========================================
 // Write Scan Enable Command (v1.1) (BR/EDR)
-constexpr OpCode kWriteScanEnable = ControllerAndBasebandOpCode(0x001A);
+inline constexpr OpCode kWriteScanEnable = ControllerAndBasebandOpCode(0x001A);
 
 // ===============================================
 // Read Page Scan Activity Command (v1.1) (BR/EDR)
-constexpr OpCode kReadPageScanActivity = ControllerAndBasebandOpCode(0x001B);
+inline constexpr OpCode kReadPageScanActivity =
+    ControllerAndBasebandOpCode(0x001B);
 
 // ================================================
 // Write Page Scan Activity Command (v1.1) (BR/EDR)
-constexpr OpCode kWritePageScanActivity = ControllerAndBasebandOpCode(0x001C);
+inline constexpr OpCode kWritePageScanActivity =
+    ControllerAndBasebandOpCode(0x001C);
 
 // ===============================================
 // Read Inquiry Scan Activity Command (v1.1) (BR/EDR)
-constexpr OpCode kReadInquiryScanActivity = ControllerAndBasebandOpCode(0x001D);
+inline constexpr OpCode kReadInquiryScanActivity =
+    ControllerAndBasebandOpCode(0x001D);
 
 // ================================================
 // Write Inquiry Scan Activity Command (v1.1) (BR/EDR)
-constexpr OpCode kWriteInquiryScanActivity =
+inline constexpr OpCode kWriteInquiryScanActivity =
     ControllerAndBasebandOpCode(0x001E);
 
 // ============================================
 // Read Class of Device Command (v1.1) (BR/EDR)
-constexpr OpCode kReadClassOfDevice = ControllerAndBasebandOpCode(0x0023);
+inline constexpr OpCode kReadClassOfDevice =
+    ControllerAndBasebandOpCode(0x0023);
 
 // =============================================
 // Write Class Of Device Command (v1.1) (BR/EDR)
-constexpr OpCode kWriteClassOfDevice = ControllerAndBasebandOpCode(0x0024);
+inline constexpr OpCode kWriteClassOfDevice =
+    ControllerAndBasebandOpCode(0x0024);
 
 // =============================================
 // Write Automatic Flush Timeout Command (v1.1) (BR/EDR)
-constexpr OpCode kWriteAutomaticFlushTimeout =
+inline constexpr OpCode kWriteAutomaticFlushTimeout =
     ControllerAndBasebandOpCode(0x0028);
 
 // ===============================================================
 // Read Transmit Transmit Power Level Command (v1.1) (BR/EDR & LE)
-constexpr OpCode kReadTransmitPowerLevel = ControllerAndBasebandOpCode(0x002D);
+inline constexpr OpCode kReadTransmitPowerLevel =
+    ControllerAndBasebandOpCode(0x002D);
 
 // ===============================================================
 // Write Synchonous Flow Control Enable Command (BR/EDR)
-constexpr OpCode kWriteSynchronousFlowControlEnable =
+inline constexpr OpCode kWriteSynchronousFlowControlEnable =
     ControllerAndBasebandOpCode(0x002F);
 
 // ===================================
 // Read Inquiry Scan Type (v1.2) (BR/EDR)
-constexpr OpCode kReadInquiryScanType = ControllerAndBasebandOpCode(0x0042);
+inline constexpr OpCode kReadInquiryScanType =
+    ControllerAndBasebandOpCode(0x0042);
 
 // ====================================
 // Write Inquiry Scan Type (v1.2) (BR/EDR)
-constexpr OpCode kWriteInquiryScanType = ControllerAndBasebandOpCode(0x0043);
+inline constexpr OpCode kWriteInquiryScanType =
+    ControllerAndBasebandOpCode(0x0043);
 
 // =================================
 // Read Inquiry Mode (v1.2) (BR/EDR)
-constexpr OpCode kReadInquiryMode = ControllerAndBasebandOpCode(0x0044);
+inline constexpr OpCode kReadInquiryMode = ControllerAndBasebandOpCode(0x0044);
 
 // ==================================
 // Write Inquiry Mode (v1.2) (BR/EDR)
-constexpr OpCode kWriteInquiryMode = ControllerAndBasebandOpCode(0x0045);
+inline constexpr OpCode kWriteInquiryMode = ControllerAndBasebandOpCode(0x0045);
 
 // ===================================
 // Read Page Scan Type (v1.2) (BR/EDR)
-constexpr OpCode kReadPageScanType = ControllerAndBasebandOpCode(0x0046);
+inline constexpr OpCode kReadPageScanType = ControllerAndBasebandOpCode(0x0046);
 
 // ====================================
 // Write Page Scan Type (v1.2) (BR/EDR)
-constexpr OpCode kWritePageScanType = ControllerAndBasebandOpCode(0x0047);
+inline constexpr OpCode kWritePageScanType =
+    ControllerAndBasebandOpCode(0x0047);
 
 // =================================
 // Write Extended Inquiry Response (v1.2) (BR/EDR)
-constexpr OpCode kWriteExtendedInquiryResponse =
+inline constexpr OpCode kWriteExtendedInquiryResponse =
     ControllerAndBasebandOpCode(0x0052);
 
 // ==============================================
 // Read Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
-constexpr OpCode kReadSimplePairingMode = ControllerAndBasebandOpCode(0x0055);
+inline constexpr OpCode kReadSimplePairingMode =
+    ControllerAndBasebandOpCode(0x0055);
 
 // ===============================================
 // Write Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
-constexpr OpCode kWriteSimplePairingMode = ControllerAndBasebandOpCode(0x0056);
+inline constexpr OpCode kWriteSimplePairingMode =
+    ControllerAndBasebandOpCode(0x0056);
 
 // =========================================
 // Set Event Mask Page 2 Command (v3.0 + HS)
-constexpr OpCode kSetEventMaskPage2 = ControllerAndBasebandOpCode(0x0063);
+inline constexpr OpCode kSetEventMaskPage2 =
+    ControllerAndBasebandOpCode(0x0063);
 
 // =========================================================
 // Read Flow Control Mode Command (v3.0 + HS) (BR/EDR & AMP)
-constexpr OpCode kReadFlowControlMode = ControllerAndBasebandOpCode(0x0066);
+inline constexpr OpCode kReadFlowControlMode =
+    ControllerAndBasebandOpCode(0x0066);
 
 // ==========================================================
 // Write Flow Control Mode Command (v3.0 + HS) (BR/EDR & AMP)
-constexpr OpCode kWriteFlowControlMode = ControllerAndBasebandOpCode(0x0067);
+inline constexpr OpCode kWriteFlowControlMode =
+    ControllerAndBasebandOpCode(0x0067);
 
 // ============================================
 // Read LE Host Support Command (v4.0) (BR/EDR)
-constexpr OpCode kReadLEHostSupport = ControllerAndBasebandOpCode(0x006C);
+inline constexpr OpCode kReadLEHostSupport =
+    ControllerAndBasebandOpCode(0x006C);
 
 // =============================================
 // Write LE Host Support Command (v4.0) (BR/EDR)
-constexpr OpCode kWriteLEHostSupport = ControllerAndBasebandOpCode(0x006D);
+inline constexpr OpCode kWriteLEHostSupport =
+    ControllerAndBasebandOpCode(0x006D);
 
 // =============================================
 // Write Secure Connections Host Support Command (v4.1) (BR/EDR)
-constexpr OpCode kWriteSecureConnectionsHostSupport =
+inline constexpr OpCode kWriteSecureConnectionsHostSupport =
     ControllerAndBasebandOpCode(0x007A);
 
 // ===============================================================
 // Read Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
-constexpr OpCode kReadAuthenticatedPayloadTimeout =
+inline constexpr OpCode kReadAuthenticatedPayloadTimeout =
     ControllerAndBasebandOpCode(0x007B);
 
 // ================================================================
 // Write Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
-constexpr OpCode kWriteAuthenticatedPayloadTimeout =
+inline constexpr OpCode kWriteAuthenticatedPayloadTimeout =
     ControllerAndBasebandOpCode(0x007C);
 
 // ======= Informational Parameters =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.4
-constexpr uint8_t kInformationalParamsOGF = 0x04;
+inline constexpr uint8_t kInformationalParamsOGF = 0x04;
 constexpr OpCode InformationalParamsOpCode(const uint16_t ocf) {
   return DefineOpCode(kInformationalParamsOGF, ocf);
 }
 
 // =============================================
 // Read Local Version Information Command (v1.1)
-constexpr OpCode kReadLocalVersionInfo = InformationalParamsOpCode(0x0001);
+inline constexpr OpCode kReadLocalVersionInfo =
+    InformationalParamsOpCode(0x0001);
 
 // ============================================
 // Read Local Supported Commands Command (v1.2)
-constexpr OpCode kReadLocalSupportedCommands =
+inline constexpr OpCode kReadLocalSupportedCommands =
     InformationalParamsOpCode(0x0002);
 
 // ============================================
 // Read Local Supported Features Command (v1.1)
-constexpr OpCode kReadLocalSupportedFeatures =
+inline constexpr OpCode kReadLocalSupportedFeatures =
     InformationalParamsOpCode(0x0003);
 
 // ====================================================
 // Read Local Extended Features Command (v1.2) (BR/EDR)
-constexpr OpCode kReadLocalExtendedFeatures = InformationalParamsOpCode(0x0004);
+inline constexpr OpCode kReadLocalExtendedFeatures =
+    InformationalParamsOpCode(0x0004);
 
 // ===============================
 // Read Buffer Size Command (v1.1)
-constexpr OpCode kReadBufferSize = InformationalParamsOpCode(0x0005);
+inline constexpr OpCode kReadBufferSize = InformationalParamsOpCode(0x0005);
 
 // ========================================
 // Read BD_ADDR Command (v1.1) (BR/EDR, LE)
-constexpr OpCode kReadBDADDR = InformationalParamsOpCode(0x0009);
+inline constexpr OpCode kReadBDADDR = InformationalParamsOpCode(0x0009);
 
 // =======================================================
 // Read Data Block Size Command (v3.0 + HS) (BR/EDR & AMP)
-constexpr OpCode kReadDataBlockSize = InformationalParamsOpCode(0x000A);
+inline constexpr OpCode kReadDataBlockSize = InformationalParamsOpCode(0x000A);
 
 // ====================================================
 // Read Local Supported Controller Delay Command (v5.2)
-constexpr OpCode kReadLocalSupportedControllerDelay =
+inline constexpr OpCode kReadLocalSupportedControllerDelay =
     InformationalParamsOpCode(0x000F);
 
 // ======= Events =======
@@ -460,232 +484,234 @@ constexpr OpCode kReadLocalSupportedControllerDelay =
 
 // Reserved for vendor-specific debug events
 // (Vol 2, Part E, Section 5.4.4)
-constexpr EventCode kVendorDebugEventCode = 0xFF;
+inline constexpr EventCode kVendorDebugEventCode = 0xFF;
 
 // ======================================
 // Inquiry Complete Event (v1.1) (BR/EDR)
-constexpr EventCode kInquiryCompleteEventCode = 0x01;
+inline constexpr EventCode kInquiryCompleteEventCode = 0x01;
 
 // ====================================
 // Inquiry Result Event (v1.1) (BR/EDR)
-constexpr EventCode kInquiryResultEventCode = 0x02;
+inline constexpr EventCode kInquiryResultEventCode = 0x02;
 
 // =========================================
 // Connection Complete Event (v1.1) (BR/EDR)
-constexpr EventCode kConnectionCompleteEventCode = 0x03;
+inline constexpr EventCode kConnectionCompleteEventCode = 0x03;
 
 // ========================================
 // Connection Request Event (v1.1) (BR/EDR)
-constexpr EventCode kConnectionRequestEventCode = 0x04;
+inline constexpr EventCode kConnectionRequestEventCode = 0x04;
 
 // =================================================
 // Disconnection Complete Event (v1.1) (BR/EDR & LE)
-constexpr EventCode kDisconnectionCompleteEventCode = 0x05;
+inline constexpr EventCode kDisconnectionCompleteEventCode = 0x05;
 
 // =============================================
 // Authentication Complete Event (v1.1) (BR/EDR)
-constexpr EventCode kAuthenticationCompleteEventCode = 0x06;
+inline constexpr EventCode kAuthenticationCompleteEventCode = 0x06;
 
 // ==================================================
 // Remote Name Request Complete Event (v1.1) (BR/EDR)
-constexpr EventCode kRemoteNameRequestCompleteEventCode = 0x07;
+inline constexpr EventCode kRemoteNameRequestCompleteEventCode = 0x07;
 
 // ============================================
 // Encryption Change Event (v1.1) (BR/EDR & LE)
-constexpr EventCode kEncryptionChangeEventCode = 0x08;
+inline constexpr EventCode kEncryptionChangeEventCode = 0x08;
 
 // =========================================================
 // Change Connection Link Key Complete Event (v1.1) (BR/EDR)
-constexpr EventCode kChangeConnectionLinkKeyCompleteEventCode = 0x09;
+inline constexpr EventCode kChangeConnectionLinkKeyCompleteEventCode = 0x09;
 
 // =============================================================
 // Read Remote Supported Features Complete Event (v1.1) (BR/EDR)
-constexpr EventCode kReadRemoteSupportedFeaturesCompleteEventCode = 0x0B;
+inline constexpr EventCode kReadRemoteSupportedFeaturesCompleteEventCode = 0x0B;
 
 // ===================================================================
 // Read Remote Version Information Complete Event (v1.1) (BR/EDR & LE)
-constexpr EventCode kReadRemoteVersionInfoCompleteEventCode = 0x0C;
+inline constexpr EventCode kReadRemoteVersionInfoCompleteEventCode = 0x0C;
 
 // =============================
 // Command Complete Event (v1.1)
-constexpr EventCode kCommandCompleteEventCode = 0x0E;
+inline constexpr EventCode kCommandCompleteEventCode = 0x0E;
 
 // ===========================
 // Command Status Event (v1.1)
-constexpr EventCode kCommandStatusEventCode = 0x0F;
-constexpr uint8_t kCommandStatusPending = 0x00;
+inline constexpr EventCode kCommandStatusEventCode = 0x0F;
+inline constexpr uint8_t kCommandStatusPending = 0x00;
 
 // ===========================
 // Hardware Error Event (v1.1)
-constexpr EventCode kHardwareErrorEventCode = 0x10;
+inline constexpr EventCode kHardwareErrorEventCode = 0x10;
 
 // ========================================
 // Role Change Event (BR/EDR) (v1.1)
-constexpr EventCode kRoleChangeEventCode = 0x12;
+inline constexpr EventCode kRoleChangeEventCode = 0x12;
 
 // ========================================
 // Number Of Completed Packets Event (v1.1)
-constexpr EventCode kNumberOfCompletedPacketsEventCode = 0x13;
+inline constexpr EventCode kNumberOfCompletedPacketsEventCode = 0x13;
 
 // ======================================
 // PIN Code Request Event (v1.1) (BR/EDR)
-constexpr EventCode kPinCodeRequestEventCode = 0x16;
+inline constexpr EventCode kPinCodeRequestEventCode = 0x16;
 
 // ======================================
 // Link Key Request Event (v1.1) (BR/EDR)
-constexpr EventCode kLinkKeyRequestEventCode = 0x17;
+inline constexpr EventCode kLinkKeyRequestEventCode = 0x17;
 
 // ===========================================
 // Link Key Notification Event (v1.1) (BR/EDR)
-constexpr EventCode kLinkKeyNotificationEventCode = 0x18;
+inline constexpr EventCode kLinkKeyNotificationEventCode = 0x18;
 
 // ===========================================
 // Data Buffer Overflow Event (v1.1) (BR/EDR & LE)
-constexpr EventCode kDataBufferOverflowEventCode = 0x1A;
+inline constexpr EventCode kDataBufferOverflowEventCode = 0x1A;
 
 // ==============================================
 // Inquiry Result with RSSI Event (v1.2) (BR/EDR)
-constexpr EventCode kInquiryResultWithRSSIEventCode = 0x22;
+inline constexpr EventCode kInquiryResultWithRSSIEventCode = 0x22;
 
 // ============================================================
 // Read Remote Extended Features Complete Event (v1.1) (BR/EDR)
-constexpr EventCode kReadRemoteExtendedFeaturesCompleteEventCode = 0x23;
+inline constexpr EventCode kReadRemoteExtendedFeaturesCompleteEventCode = 0x23;
 
 // ============================================================
 // Synchronous Connection Complete Event (BR/EDR)
-constexpr EventCode kSynchronousConnectionCompleteEventCode = 0x2C;
+inline constexpr EventCode kSynchronousConnectionCompleteEventCode = 0x2C;
 
 // =============================================
 // Extended Inquiry Result Event (v1.2) (BR/EDR)
-constexpr EventCode kExtendedInquiryResultEventCode = 0x2F;
+inline constexpr EventCode kExtendedInquiryResultEventCode = 0x2F;
 
 // ================================================================
 // Encryption Key Refresh Complete Event (v2.1 + EDR) (BR/EDR & LE)
-constexpr EventCode kEncryptionKeyRefreshCompleteEventCode = 0x30;
+inline constexpr EventCode kEncryptionKeyRefreshCompleteEventCode = 0x30;
 
 // =================================================
 // IO Capability Request Event (v2.1 + EDR) (BR/EDR)
-constexpr EventCode kIOCapabilityRequestEventCode = 0x31;
+inline constexpr EventCode kIOCapabilityRequestEventCode = 0x31;
 
 // ==================================================
 // IO Capability Response Event (v2.1 + EDR) (BR/EDR)
-constexpr EventCode kIOCapabilityResponseEventCode = 0x32;
+inline constexpr EventCode kIOCapabilityResponseEventCode = 0x32;
 
 // =====================================================
 // User Confirmation Request Event (v2.1 + EDR) (BR/EDR)
-constexpr EventCode kUserConfirmationRequestEventCode = 0x33;
+inline constexpr EventCode kUserConfirmationRequestEventCode = 0x33;
 
 // ================================================
 // User Passkey Request Event (v2.1 + EDR) (BR/EDR)
-constexpr EventCode kUserPasskeyRequestEventCode = 0x34;
+inline constexpr EventCode kUserPasskeyRequestEventCode = 0x34;
 
 // ===================================================
 // Simple Pairing Complete Event (v2.1 + EDR) (BR/EDR)
-constexpr EventCode kSimplePairingCompleteEventCode = 0x36;
+inline constexpr EventCode kSimplePairingCompleteEventCode = 0x36;
 
 // =====================================================
 // User Passkey Notification Event (v2.1 + EDR) (BR/EDR)
-constexpr EventCode kUserPasskeyNotificationEventCode = 0x3B;
+inline constexpr EventCode kUserPasskeyNotificationEventCode = 0x3B;
 
 // =========================
 // LE Meta Event (v4.0) (LE)
-constexpr EventCode kLEMetaEventCode = 0x3E;
+inline constexpr EventCode kLEMetaEventCode = 0x3E;
 
 // LE Connection Complete Event (v4.0) (LE)
-constexpr EventCode kLEConnectionCompleteSubeventCode = 0x01;
+inline constexpr EventCode kLEConnectionCompleteSubeventCode = 0x01;
 
 // LE Advertising Report Event (v4.0) (LE)
-constexpr EventCode kLEAdvertisingReportSubeventCode = 0x02;
+inline constexpr EventCode kLEAdvertisingReportSubeventCode = 0x02;
 
 // LE Connection Update Complete Event (v4.0) (LE)
-constexpr EventCode kLEConnectionUpdateCompleteSubeventCode = 0x03;
+inline constexpr EventCode kLEConnectionUpdateCompleteSubeventCode = 0x03;
 
 // LE Read Remote Features Complete Event (v4.0) (LE)
-constexpr EventCode kLEReadRemoteFeaturesCompleteSubeventCode = 0x04;
+inline constexpr EventCode kLEReadRemoteFeaturesCompleteSubeventCode = 0x04;
 
 // LE Long Term Key Request Event (v4.0) (LE)
-constexpr EventCode kLELongTermKeyRequestSubeventCode = 0x05;
+inline constexpr EventCode kLELongTermKeyRequestSubeventCode = 0x05;
 
 // LE Remote Connection Parameter Request Event (v4.1) (LE)
-constexpr EventCode kLERemoteConnectionParameterRequestSubeventCode = 0x06;
+inline constexpr EventCode kLERemoteConnectionParameterRequestSubeventCode =
+    0x06;
 
 // LE Data Length Change Event (v4.2) (LE)
-constexpr EventCode kLEDataLengthChangeSubeventCode = 0x07;
+inline constexpr EventCode kLEDataLengthChangeSubeventCode = 0x07;
 
 // LE Read Local P-256 Public Key Complete Event (v4.2) (LE)
-constexpr EventCode kLEReadLocalP256PublicKeyCompleteSubeventCode = 0x08;
+inline constexpr EventCode kLEReadLocalP256PublicKeyCompleteSubeventCode = 0x08;
 
 // LE Generate DHKey Complete Event (v4.2) (LE)
-constexpr EventCode kLEGenerateDHKeyCompleteSubeventCode = 0x09;
+inline constexpr EventCode kLEGenerateDHKeyCompleteSubeventCode = 0x09;
 
 // LE Enhanced Connection Complete Event (v4.2) (LE)
-constexpr EventCode kLEEnhancedConnectionCompleteSubeventCode = 0x0A;
+inline constexpr EventCode kLEEnhancedConnectionCompleteSubeventCode = 0x0A;
 
 // LE Directed Advertising Report Event (v4.2) (LE)
-constexpr EventCode kLEDirectedAdvertisingReportSubeventCode = 0x0B;
+inline constexpr EventCode kLEDirectedAdvertisingReportSubeventCode = 0x0B;
 
 // LE PHY Update Complete Event (v5.0) (LE)
-constexpr EventCode kLEPHYUpdateCompleteSubeventCode = 0x0C;
+inline constexpr EventCode kLEPHYUpdateCompleteSubeventCode = 0x0C;
 
 // LE Extended Advertising Report Event (v5.0) (LE)
-constexpr EventCode kLEExtendedAdvertisingReportSubeventCode = 0x0D;
+inline constexpr EventCode kLEExtendedAdvertisingReportSubeventCode = 0x0D;
 
 // LE Periodic Advertising Sync Established Event (v5.0) (LE)
-constexpr EventCode kLEPeriodicAdvertisingSyncEstablishedSubeventCode = 0x0E;
+inline constexpr EventCode kLEPeriodicAdvertisingSyncEstablishedSubeventCode =
+    0x0E;
 
 // LE Periodic Advertising Report Event (v5.0) (LE)
-constexpr EventCode kLEPeriodicAdvertisingReportSubeventCode = 0x0F;
+inline constexpr EventCode kLEPeriodicAdvertisingReportSubeventCode = 0x0F;
 
 // LE Periodic Advertising Sync Lost Event (v5.0) (LE)
-constexpr EventCode kLEPeriodicAdvertisingSyncLostSubeventCode = 0x10;
+inline constexpr EventCode kLEPeriodicAdvertisingSyncLostSubeventCode = 0x10;
 
 // LE Scan Timeout Event (v5.0) (LE)
-constexpr EventCode kLEScanTimeoutSubeventCode = 0x11;
+inline constexpr EventCode kLEScanTimeoutSubeventCode = 0x11;
 
 // LE Advertising Set Terminated Event (v5.0) (LE)
-constexpr EventCode kLEAdvertisingSetTerminatedSubeventCode = 0x012;
+inline constexpr EventCode kLEAdvertisingSetTerminatedSubeventCode = 0x012;
 
 // LE Scan Request Received Event (v5.0) (LE)
-constexpr EventCode kLEScanRequestReceivedSubeventCode = 0x13;
+inline constexpr EventCode kLEScanRequestReceivedSubeventCode = 0x13;
 
 // LE Channel Selection Algorithm Event (v5.0) (LE)
-constexpr EventCode kLEChannelSelectionAlgorithmSubeventCode = 0x014;
+inline constexpr EventCode kLEChannelSelectionAlgorithmSubeventCode = 0x014;
 
 // LE Request Peer SCA Complete Event (v5.2) (LE)
-constexpr EventCode kLERequestPeerSCACompleteSubeventCode = 0x1F;
+inline constexpr EventCode kLERequestPeerSCACompleteSubeventCode = 0x1F;
 
 // LE CIS Established Event (v5.2) (LE)
-constexpr EventCode kLECISEstablishedSubeventCode = 0x019;
+inline constexpr EventCode kLECISEstablishedSubeventCode = 0x019;
 
 // LE CIS Request Event (v5.2) (LE)
-constexpr EventCode kLECISRequestSubeventCode = 0x01A;
+inline constexpr EventCode kLECISRequestSubeventCode = 0x01A;
 
 // ================================================================
 // Number Of Completed Data Blocks Event (v3.0 + HS) (BR/EDR & AMP)
-constexpr EventCode kNumberOfCompletedDataBlocksEventCode = 0x48;
+inline constexpr EventCode kNumberOfCompletedDataBlocksEventCode = 0x48;
 
 // ================================================================
 // Authenticated Payload Timeout Expired Event (v4.1) (BR/EDR & LE)
-constexpr EventCode kAuthenticatedPayloadTimeoutExpiredEventCode = 0x57;
+inline constexpr EventCode kAuthenticatedPayloadTimeoutExpiredEventCode = 0x57;
 
 // ======= Status Parameters =======
 // Core Spec v5.0, Vol 2, Part E, Section 7.5
-constexpr uint8_t kStatusParamsOGF = 0x05;
+inline constexpr uint8_t kStatusParamsOGF = 0x05;
 constexpr OpCode StatusParamsOpCode(const uint16_t ocf) {
   return DefineOpCode(kStatusParamsOGF, ocf);
 }
 
 // ========================
 // Read RSSI Command (v1.1)
-constexpr OpCode kReadRSSI = StatusParamsOpCode(0x0005);
+inline constexpr OpCode kReadRSSI = StatusParamsOpCode(0x0005);
 
 // ========================================
 // Read Encryption Key Size (v1.1) (BR/EDR)
-constexpr OpCode kReadEncryptionKeySize = StatusParamsOpCode(0x0008);
+inline constexpr OpCode kReadEncryptionKeySize = StatusParamsOpCode(0x0008);
 
 // ======= LE Controller Commands =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.8
-constexpr uint8_t kLEControllerCommandsOGF = 0x08;
+inline constexpr uint8_t kLEControllerCommandsOGF = 0x08;
 constexpr OpCode LEControllerCommandOpCode(const uint16_t ocf) {
   return DefineOpCode(kLEControllerCommandsOGF, ocf);
 }
@@ -697,376 +723,397 @@ inline bool IsLECommand(OpCode opcode) {
 
 // =====================================
 // LE Set Event Mask Command (v4.0) (LE)
-constexpr OpCode kLESetEventMask = LEControllerCommandOpCode(0x0001);
+inline constexpr OpCode kLESetEventMask = LEControllerCommandOpCode(0x0001);
 
 // =======================================
 // LE Read Buffer Size [v1] Command (v4.0) (LE)
-constexpr OpCode kLEReadBufferSizeV1 = LEControllerCommandOpCode(0x0002);
+inline constexpr OpCode kLEReadBufferSizeV1 = LEControllerCommandOpCode(0x0002);
 
 // ====================================================
 // LE Read Local Supported Features Command (v4.0) (LE)
-constexpr OpCode kLEReadLocalSupportedFeatures =
+inline constexpr OpCode kLEReadLocalSupportedFeatures =
     LEControllerCommandOpCode(0x0003);
 
 // =========================================
 // LE Set Random Address Command (v4.0) (LE)
-constexpr OpCode kLESetRandomAddress = LEControllerCommandOpCode(0x0005);
+inline constexpr OpCode kLESetRandomAddress = LEControllerCommandOpCode(0x0005);
 
 // =================================================
 // LE Set Advertising Parameters Command (v4.0) (LE)
-constexpr OpCode kLESetAdvertisingParameters =
+inline constexpr OpCode kLESetAdvertisingParameters =
     LEControllerCommandOpCode(0x0006);
 
 // ========================================================
 // LE Read Advertising Channel Tx Power Command (v4.0) (LE)
-constexpr OpCode kLEReadAdvertisingChannelTxPower =
+inline constexpr OpCode kLEReadAdvertisingChannelTxPower =
     LEControllerCommandOpCode(0x0007);
 
 // ===========================================
 // LE Set Advertising Data Command (v4.0) (LE)
-constexpr OpCode kLESetAdvertisingData = LEControllerCommandOpCode(0x0008);
+inline constexpr OpCode kLESetAdvertisingData =
+    LEControllerCommandOpCode(0x0008);
 
 // =============================================
 // LE Set Scan Response Data Command (v4.0) (LE)
-constexpr OpCode kLESetScanResponseData = LEControllerCommandOpCode(0x0009);
+inline constexpr OpCode kLESetScanResponseData =
+    LEControllerCommandOpCode(0x0009);
 
 // =============================================
 // LE Set Advertising Enable Command (v4.0) (LE)
-constexpr OpCode kLESetAdvertisingEnable = LEControllerCommandOpCode(0x000A);
+inline constexpr OpCode kLESetAdvertisingEnable =
+    LEControllerCommandOpCode(0x000A);
 
 // ==========================================
 // LE Set Scan Parameters Command (v4.0) (LE)
-constexpr OpCode kLESetScanParameters = LEControllerCommandOpCode(0x000B);
+inline constexpr OpCode kLESetScanParameters =
+    LEControllerCommandOpCode(0x000B);
 
 // ======================================
 // LE Set Scan Enable Command (v4.0) (LE)
-constexpr OpCode kLESetScanEnable = LEControllerCommandOpCode(0x000C);
+inline constexpr OpCode kLESetScanEnable = LEControllerCommandOpCode(0x000C);
 
 // ========================================
 // LE Create Connection Command (v4.0) (LE)
-constexpr OpCode kLECreateConnection = LEControllerCommandOpCode(0x000D);
+inline constexpr OpCode kLECreateConnection = LEControllerCommandOpCode(0x000D);
 
 // ===============================================
 // LE Create Connection Cancel Command (v4.0) (LE)
-constexpr OpCode kLECreateConnectionCancel = LEControllerCommandOpCode(0x000E);
+inline constexpr OpCode kLECreateConnectionCancel =
+    LEControllerCommandOpCode(0x000E);
 
 // ===========================================
 // LE Read Filter Accept List Size Command (v4.0) (LE)
-constexpr OpCode kLEReadFilterAcceptListSize =
+inline constexpr OpCode kLEReadFilterAcceptListSize =
     LEControllerCommandOpCode(0x000F);
 
 // =======================================
 // LE Clear Filter Accept List Command (v4.0) (LE)
-constexpr OpCode kLEClearFilterAcceptList = LEControllerCommandOpCode(0x0010);
+inline constexpr OpCode kLEClearFilterAcceptList =
+    LEControllerCommandOpCode(0x0010);
 
 // ===============================================
 // LE Add Device To Filter Accept List Command (v4.0) (LE)
-constexpr OpCode kLEAddDeviceToFilterAcceptList =
+inline constexpr OpCode kLEAddDeviceToFilterAcceptList =
     LEControllerCommandOpCode(0x0011);
 
 // ====================================================
 // LE Remove Device From Filter Accept List Command (v4.0) (LE)
-constexpr OpCode kLERemoveDeviceFromFilterAcceptList =
+inline constexpr OpCode kLERemoveDeviceFromFilterAcceptList =
     LEControllerCommandOpCode(0x0012);
 
 // ========================================
 // LE Connection Update Command (v4.0) (LE)
-constexpr OpCode kLEConnectionUpdate = LEControllerCommandOpCode(0x0013);
+inline constexpr OpCode kLEConnectionUpdate = LEControllerCommandOpCode(0x0013);
 
 // ======================================================
 // LE Set Host Channel Classification Command (v4.0) (LE)
-constexpr OpCode kLESetHostChannelClassification =
+inline constexpr OpCode kLESetHostChannelClassification =
     LEControllerCommandOpCode(0x0014);
 
 // =======================================
 // LE Read Channel Map Command (v4.0) (LE)
-constexpr OpCode kLEReadChannelMap = LEControllerCommandOpCode(0x0015);
+inline constexpr OpCode kLEReadChannelMap = LEControllerCommandOpCode(0x0015);
 
 // ===========================================
 // LE Read Remote Features Command (v4.0) (LE)
-constexpr OpCode kLEReadRemoteFeatures = LEControllerCommandOpCode(0x0016);
+inline constexpr OpCode kLEReadRemoteFeatures =
+    LEControllerCommandOpCode(0x0016);
 
 // ==============================
 // LE Encrypt Command (v4.0) (LE)
-constexpr OpCode kLEEncrypt = LEControllerCommandOpCode(0x0017);
+inline constexpr OpCode kLEEncrypt = LEControllerCommandOpCode(0x0017);
 
 // ===========================
 // LE Rand Command (v4.0) (LE)
-constexpr OpCode kLERand = LEControllerCommandOpCode(0x0018);
+inline constexpr OpCode kLERand = LEControllerCommandOpCode(0x0018);
 
 // =======================================
 // LE Start Encryption Command (v4.0) (LE)
-constexpr OpCode kLEStartEncryption = LEControllerCommandOpCode(0x0019);
+inline constexpr OpCode kLEStartEncryption = LEControllerCommandOpCode(0x0019);
 
 // ==================================================
 // LE Long Term Key Request Reply Command (v4.0) (LE)
-constexpr OpCode kLELongTermKeyRequestReply = LEControllerCommandOpCode(0x001A);
+inline constexpr OpCode kLELongTermKeyRequestReply =
+    LEControllerCommandOpCode(0x001A);
 
 // ===========================================================
 // LE Long Term Key Request Negative Reply Command (v4.0) (LE)
-constexpr OpCode kLELongTermKeyRequestNegativeReply =
+inline constexpr OpCode kLELongTermKeyRequestNegativeReply =
     LEControllerCommandOpCode(0x001B);
 
 // ============================================
 // LE Read Supported States Command (v4.0) (LE)
-constexpr OpCode kLEReadSupportedStates = LEControllerCommandOpCode(0x001C);
+inline constexpr OpCode kLEReadSupportedStates =
+    LEControllerCommandOpCode(0x001C);
 
 // ====================================
 // LE Receiver Test Command (v4.0) (LE)
-constexpr OpCode kLEReceiverTest = LEControllerCommandOpCode(0x001D);
+inline constexpr OpCode kLEReceiverTest = LEControllerCommandOpCode(0x001D);
 
 // ======================================
 // LE Transmitter Test Command (v4.0) (LE)
-constexpr OpCode kLETransmitterTest = LEControllerCommandOpCode(0x001E);
+inline constexpr OpCode kLETransmitterTest = LEControllerCommandOpCode(0x001E);
 
 // ===============================
 // LE Test End Command (v4.0) (LE)
-constexpr OpCode kLETestEnd = LEControllerCommandOpCode(0x001F);
+inline constexpr OpCode kLETestEnd = LEControllerCommandOpCode(0x001F);
 
 // ================================================================
 // LE Remote Connection Parameter Request Reply Command (v4.1) (LE)
-constexpr OpCode kLERemoteConnectionParameterRequestReply =
+inline constexpr OpCode kLERemoteConnectionParameterRequestReply =
     LEControllerCommandOpCode(0x0020);
 
 // =========================================================================
 // LE Remote Connection Parameter Request Negative Reply Command (v4.1) (LE)
-constexpr OpCode kLERemoteConnectionParameterRequestNegativeReply =
+inline constexpr OpCode kLERemoteConnectionParameterRequestNegativeReply =
     LEControllerCommandOpCode(0x0021);
 
 // ======================================
 // LE Set Data Length Command (v4.2) (LE)
-constexpr OpCode kLESetDataLength = LEControllerCommandOpCode(0x0022);
+inline constexpr OpCode kLESetDataLength = LEControllerCommandOpCode(0x0022);
 
 // =========================================================
 // LE Read Suggested Default Data Length Command (v4.2) (LE)
-constexpr OpCode kLEReadSuggestedDefaultDataLength =
+inline constexpr OpCode kLEReadSuggestedDefaultDataLength =
     LEControllerCommandOpCode(0x0023);
 
 // ==========================================================
 // LE Write Suggested Default Data Length Command (v4.2) (LE)
-constexpr OpCode kLEWriteSuggestedDefaultDataLength =
+inline constexpr OpCode kLEWriteSuggestedDefaultDataLength =
     LEControllerCommandOpCode(0x0024);
 
 // ==================================================
 // LE Read Local P-256 Public Key Command (v4.2) (LE)
-constexpr OpCode kLEReadLocalP256PublicKey = LEControllerCommandOpCode(0x0025);
+inline constexpr OpCode kLEReadLocalP256PublicKey =
+    LEControllerCommandOpCode(0x0025);
 
 // ======================================
 // LE Generate DH Key Command (v4.2) (LE)
-constexpr OpCode kLEGenerateDHKey = LEControllerCommandOpCode(0x0026);
+inline constexpr OpCode kLEGenerateDHKey = LEControllerCommandOpCode(0x0026);
 
 // ===================================================
 // LE Add Device To Resolving List Command (v4.2) (LE)
-constexpr OpCode kLEAddDeviceToResolvingList =
+inline constexpr OpCode kLEAddDeviceToResolvingList =
     LEControllerCommandOpCode(0x0027);
 
 // ========================================================
 // LE Remove Device From Resolving List Command (v4.2) (LE)
-constexpr OpCode kLERemoveDeviceFromResolvingList =
+inline constexpr OpCode kLERemoveDeviceFromResolvingList =
     LEControllerCommandOpCode(0x0028);
 
 // ===========================================
 // LE Clear Resolving List Command (v4.2) (LE)
-constexpr OpCode kLEClearResolvingList = LEControllerCommandOpCode(0x0029);
+inline constexpr OpCode kLEClearResolvingList =
+    LEControllerCommandOpCode(0x0029);
 
 // ===============================================
 // LE Read Resolving List Size Command (v4.2) (LE)
-constexpr OpCode kLEReadResolvingListSize = LEControllerCommandOpCode(0x002A);
+inline constexpr OpCode kLEReadResolvingListSize =
+    LEControllerCommandOpCode(0x002A);
 
 // ===================================================
 // LE Read Peer Resolvable Address Command (v4.2) (LE)
-constexpr OpCode kLEReadPeerResolvableAddress =
+inline constexpr OpCode kLEReadPeerResolvableAddress =
     LEControllerCommandOpCode(0x002B);
 
 // ====================================================
 // LE Read Local Resolvable Address Command (v4.2) (LE)
-constexpr OpCode kLEReadLocalResolvableAddress =
+inline constexpr OpCode kLEReadLocalResolvableAddress =
     LEControllerCommandOpCode(0x002C);
 
 // ====================================================
 // LE Set Address Resolution Enable Command (v4.2) (LE)
-constexpr OpCode kLESetAddressResolutionEnable =
+inline constexpr OpCode kLESetAddressResolutionEnable =
     LEControllerCommandOpCode(0x002D);
 
 // =============================================================
 // LE Set Resolvable Private Address Timeout Command (v4.2) (LE)
-constexpr OpCode kLESetResolvablePrivateAddressTimeout =
+inline constexpr OpCode kLESetResolvablePrivateAddressTimeout =
     LEControllerCommandOpCode(0x002E);
 
 // ===============================================
 // LE Read Maximum Data Length Command (v4.2) (LE)
-constexpr OpCode kLEReadMaximumDataLength = LEControllerCommandOpCode(0x002F);
+inline constexpr OpCode kLEReadMaximumDataLength =
+    LEControllerCommandOpCode(0x002F);
 
 // ===============================
 // LE Read PHY Command (v5.0) (LE)
-constexpr OpCode kLEReadPHY = LEControllerCommandOpCode(0x0030);
+inline constexpr OpCode kLEReadPHY = LEControllerCommandOpCode(0x0030);
 
 // ======================================
 // LE Set Default PHY Command (v5.0) (LE)
-constexpr OpCode kLESetDefaultPHY = LEControllerCommandOpCode(0x0031);
+inline constexpr OpCode kLESetDefaultPHY = LEControllerCommandOpCode(0x0031);
 
 // ==============================
 // LE Set PHY Command (v5.0) (LE)
-constexpr OpCode kLESetPHY = LEControllerCommandOpCode(0x0032);
+inline constexpr OpCode kLESetPHY = LEControllerCommandOpCode(0x0032);
 
 // =============================================
 // LE Enhanced Receiver Test Command (v5.0) (LE)
-constexpr OpCode kLEEnhancedReceiverText = LEControllerCommandOpCode(0x0033);
+inline constexpr OpCode kLEEnhancedReceiverText =
+    LEControllerCommandOpCode(0x0033);
 
 // ================================================
 // LE Enhanced Transmitter Test Command (v5.0) (LE)
-constexpr OpCode kLEEnhancedTransmitterTest = LEControllerCommandOpCode(0x0034);
+inline constexpr OpCode kLEEnhancedTransmitterTest =
+    LEControllerCommandOpCode(0x0034);
 
 // =========================================================
 // LE Set Advertising Set Random Address Command (v5.0) (LE)
-constexpr OpCode kLESetAdvertisingSetRandomAddress =
+inline constexpr OpCode kLESetAdvertisingSetRandomAddress =
     LEControllerCommandOpCode(0x0035);
 
 // ==========================================================
 // LE Set Extended Advertising Parameters Command (v5.0) (LE)
-constexpr OpCode kLESetExtendedAdvertisingParameters =
+inline constexpr OpCode kLESetExtendedAdvertisingParameters =
     LEControllerCommandOpCode(0x0036);
 
 // ====================================================
 // LE Set Extended Advertising Data Command (v5.0) (LE)
-constexpr OpCode kLESetExtendedAdvertisingData =
+inline constexpr OpCode kLESetExtendedAdvertisingData =
     LEControllerCommandOpCode(0x0037);
 
 // ======================================================
 // LE Set Extended Scan Response Data Command (v5.0) (LE)
-constexpr OpCode kLESetExtendedScanResponseData =
+inline constexpr OpCode kLESetExtendedScanResponseData =
     LEControllerCommandOpCode(0x0038);
 
 // ======================================================
 // LE Set Extended Advertising Enable Command (v5.0) (LE)
-constexpr OpCode kLESetExtendedAdvertisingEnable =
+inline constexpr OpCode kLESetExtendedAdvertisingEnable =
     LEControllerCommandOpCode(0x0039);
 
 // ===========================================================
 // LE Read Maximum Advertising Data Length Command (v5.0) (LE)
-constexpr OpCode kLEReadMaximumAdvertisingDataLength =
+inline constexpr OpCode kLEReadMaximumAdvertisingDataLength =
     LEControllerCommandOpCode(0x003A);
 
 // ================================================================
 // LE Read Number of Supported Advertising Sets Command (v5.0) (LE)
-constexpr OpCode kLEReadNumSupportedAdvertisingSets =
+inline constexpr OpCode kLEReadNumSupportedAdvertisingSets =
     LEControllerCommandOpCode(0x003B);
 
 // =============================================
 // LE Remove Advertising Set Command (v5.0) (LE)
-constexpr OpCode kLERemoveAdvertisingSet = LEControllerCommandOpCode(0x003C);
+inline constexpr OpCode kLERemoveAdvertisingSet =
+    LEControllerCommandOpCode(0x003C);
 
 // =============================================
 // LE Clear Advertising Sets Command (v5.0) (LE)
-constexpr OpCode kLEClearAdvertisingSets = LEControllerCommandOpCode(0x003D);
+inline constexpr OpCode kLEClearAdvertisingSets =
+    LEControllerCommandOpCode(0x003D);
 
 // ==========================================================
 // LE Set Periodic Advertising Parameters Command (v5.0) (LE)
-constexpr OpCode kLESetPeriodicAdvertisingParameters =
+inline constexpr OpCode kLESetPeriodicAdvertisingParameters =
     LEControllerCommandOpCode(0x003E);
 
 // ====================================================
 // LE Set Periodic Advertising Data Command (v5.0) (LE)
-constexpr OpCode kLESetPeriodicAdvertisingData =
+inline constexpr OpCode kLESetPeriodicAdvertisingData =
     LEControllerCommandOpCode(0x003F);
 
 // ======================================================
 // LE Set Periodic Advertising Enable Command (v5.0) (LE)
-constexpr OpCode kLESetPeriodicAdvertisingEnable =
+inline constexpr OpCode kLESetPeriodicAdvertisingEnable =
     LEControllerCommandOpCode(0x0040);
 
 // ===================================================
 // LE Set Extended Scan Parameters Command (v5.0) (LE)
-constexpr OpCode kLESetExtendedScanParameters =
+inline constexpr OpCode kLESetExtendedScanParameters =
     LEControllerCommandOpCode(0x0041);
 
 // ===============================================
 // LE Set Extended Scan Enable Command (v5.0) (LE)
-constexpr OpCode kLESetExtendedScanEnable = LEControllerCommandOpCode(0x0042);
+inline constexpr OpCode kLESetExtendedScanEnable =
+    LEControllerCommandOpCode(0x0042);
 
 // =================================================
 // LE Extended Create Connection Command (v5.0) (LE)
-constexpr OpCode kLEExtendedCreateConnection =
+inline constexpr OpCode kLEExtendedCreateConnection =
     LEControllerCommandOpCode(0x0043);
 
 // =======================================================
 // LE Periodic Advertising Create Sync Command (v5.0) (LE)
-constexpr OpCode kLEPeriodicAdvertisingCreateSync =
+inline constexpr OpCode kLEPeriodicAdvertisingCreateSync =
     LEControllerCommandOpCode(0x0044);
 
 // ==============================================================
 // LE Periodic Advertising Create Sync Cancel Command (v5.0) (LE)
-constexpr OpCode kLEPeriodicAdvertisingCreateSyncCancel =
+inline constexpr OpCode kLEPeriodicAdvertisingCreateSyncCancel =
     LEControllerCommandOpCode(0x0045);
 
 // ==========================================================
 // LE Periodic Advertising Terminate Sync Command (v5.0) (LE)
-constexpr OpCode kLEPeriodicAdvertisingTerminateSync =
+inline constexpr OpCode kLEPeriodicAdvertisingTerminateSync =
     LEControllerCommandOpCode(0x0046);
 
 // =============================================================
 // LE Add Device To Periodic Advertiser List Command (v5.0) (LE)
-constexpr OpCode kLEAddDeviceToPeriodicAdvertiserList =
+inline constexpr OpCode kLEAddDeviceToPeriodicAdvertiserList =
     LEControllerCommandOpCode(0x0047);
 
 // ==================================================================
 // LE Remove Device From Periodic Advertiser List Command (v5.0) (LE)
-constexpr OpCode kLERemoveDeviceFromPeriodicAdvertiserList =
+inline constexpr OpCode kLERemoveDeviceFromPeriodicAdvertiserList =
     LEControllerCommandOpCode(0x0048);
 
 // =====================================================
 // LE Clear Periodic Advertiser List Command (v5.0) (LE)
-constexpr OpCode kLEClearPeriodicAdvertiserList =
+inline constexpr OpCode kLEClearPeriodicAdvertiserList =
     LEControllerCommandOpCode(0x0049);
 
 // =========================================================
 // LE Read Periodic Advertiser List Size Command (v5.0) (LE)
-constexpr OpCode kLEReadPeriodicAdvertiserListSize =
+inline constexpr OpCode kLEReadPeriodicAdvertiserListSize =
     LEControllerCommandOpCode(0x004A);
 
 // ==========================================
 // LE Read Transmit Power Command (v5.0) (LE)
-constexpr OpCode kLEReadTransmitPower = LEControllerCommandOpCode(0x004B);
+inline constexpr OpCode kLEReadTransmitPower =
+    LEControllerCommandOpCode(0x004B);
 
 // ================================================
 // LE Read RF Path Compensation Command (v5.0) (LE)
-constexpr OpCode kLEReadRFPathCompensation = LEControllerCommandOpCode(0x004C);
+inline constexpr OpCode kLEReadRFPathCompensation =
+    LEControllerCommandOpCode(0x004C);
 
 // =================================================
 // LE Write RF Path Compensation Command (v5.0) (LE)
-constexpr OpCode kLEWriteRFPathCompensation = LEControllerCommandOpCode(0x004D);
+inline constexpr OpCode kLEWriteRFPathCompensation =
+    LEControllerCommandOpCode(0x004D);
 
 // =======================================
 // LE Set Privacy Mode Command (v5.0) (LE)
-constexpr OpCode kLESetPrivacyMode = LEControllerCommandOpCode(0x004E);
+inline constexpr OpCode kLESetPrivacyMode = LEControllerCommandOpCode(0x004E);
 
 // ============================================
 // LE Read Buffer Size [v2] Command (v5.2) (LE)
-constexpr OpCode kLEReadBufferSizeV2 = LEControllerCommandOpCode(0x0060);
+inline constexpr OpCode kLEReadBufferSizeV2 = LEControllerCommandOpCode(0x0060);
 
 // =======================================
 // LE Request Peer SCA Command (v5.2) (LE)
-constexpr OpCode kLERequestPeerSCA = LEControllerCommandOpCode(0x006D);
+inline constexpr OpCode kLERequestPeerSCA = LEControllerCommandOpCode(0x006D);
 
 // ==========================================
 // LE Setup ISO Data Path Command (v5.2) (LE)
-constexpr OpCode kLESetupISODataPath = LEControllerCommandOpCode(0x006E);
+inline constexpr OpCode kLESetupISODataPath = LEControllerCommandOpCode(0x006E);
 
 // =======================================
 // LE Set Host Feature Command (v5.2) (LE)
-constexpr OpCode kLESetHostFeature = LEControllerCommandOpCode(0x0074);
+inline constexpr OpCode kLESetHostFeature = LEControllerCommandOpCode(0x0074);
 
 // =========================================
 // LE Accept CIS Request Command (v5.2) (LE)
-constexpr OpCode kLEAcceptCISRequest = LEControllerCommandOpCode(0x0066);
+inline constexpr OpCode kLEAcceptCISRequest = LEControllerCommandOpCode(0x0066);
 
 // =========================================
 // LE Reject CIS Request Command (v5.2) (LE)
-constexpr OpCode kLERejectCISRequest = LEControllerCommandOpCode(0x0067);
+inline constexpr OpCode kLERejectCISRequest = LEControllerCommandOpCode(0x0067);
 
 // ======= Vendor Command =======
 // Core Spec v5.0, Vol 2, Part E, Section 5.4.1
-constexpr uint8_t kVendorOGF = 0x3F;
+inline constexpr uint8_t kVendorOGF = 0x3F;
 constexpr OpCode VendorOpCode(const uint16_t ocf) {
   return DefineOpCode(kVendorOGF, ocf);
 }

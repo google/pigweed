@@ -20,7 +20,7 @@ namespace bt {
 
 // Represents a 256-bit (32-octet) unsigned integer. This is commonly used for
 // authentication-related parameters.
-constexpr size_t kUInt256Size = 32;
+inline constexpr size_t kUInt256Size = 32;
 using UInt256 = std::array<uint8_t, kUInt256Size>;
 
 static_assert(UInt256().size() == kUInt256Size,

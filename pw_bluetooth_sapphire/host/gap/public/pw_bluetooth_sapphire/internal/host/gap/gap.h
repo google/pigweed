@@ -77,30 +77,30 @@ enum class PairingStateType : uint8_t {
 const char* PairingStateTypeToString(PairingStateType type);
 
 // Placeholder assigned as the local name when gap::Adapter is initialized.
-constexpr char kDefaultLocalName[] = "fuchsia";
+inline constexpr char kDefaultLocalName[] = "fuchsia";
 
 // Constants used in BR/EDR Inquiry (Core Spec v5.0, Vol 2, Part C, Appendix A)
 // Default cycles value for length of Inquiry. See T_gap(100).
 // This is in 1.28s time slice units, and is 10.24 seconds.
-constexpr uint8_t kInquiryLengthDefault = 0x08;
+inline constexpr uint8_t kInquiryLengthDefault = 0x08;
 
 // The inquiry scan interval and window used by our stack. The unit for these
 // values is controller timeslices (N) where Time in ms = N * 0.625ms
-constexpr uint16_t kInquiryScanInterval = 0x01E0;  // 300 ms
-constexpr uint16_t kInquiryScanWindow = 0x0012;    // 11.25 ms
+inline constexpr uint16_t kInquiryScanInterval = 0x01E0;  // 300 ms
+inline constexpr uint16_t kInquiryScanWindow = 0x0012;    // 11.25 ms
 
 // Constants used in Low Energy (see Core Spec v5.0, Vol 3, Part C, Appendix A).
 
-constexpr pw::chrono::SystemClock::duration kLEGeneralDiscoveryScanMin =
+inline constexpr pw::chrono::SystemClock::duration kLEGeneralDiscoveryScanMin =
     std::chrono::milliseconds(10240);
-constexpr pw::chrono::SystemClock::duration kLEGeneralDiscoveryScanMinCoded =
-    std::chrono::milliseconds(30720);
-constexpr pw::chrono::SystemClock::duration kLEScanFastPeriod =
+inline constexpr pw::chrono::SystemClock::duration
+    kLEGeneralDiscoveryScanMinCoded = std::chrono::milliseconds(30720);
+inline constexpr pw::chrono::SystemClock::duration kLEScanFastPeriod =
     std::chrono::milliseconds(30720);
 
 // The HCI spec defines the time conversion as follows: Time =  N * 0.625 ms,
 // where N is the value of the constant.
-constexpr float kHciScanIntervalToMs = 0.625f;
+inline constexpr float kHciScanIntervalToMs = 0.625f;
 constexpr float HciScanIntervalToMs(uint16_t i) {
   return static_cast<float>(i) * kHciScanIntervalToMs;
 }
@@ -113,74 +113,78 @@ constexpr float HciScanWindowToMs(uint16_t w) { return HciScanIntervalToMs(w); }
 // descriptions.
 
 // For user-initiated scanning
-constexpr uint16_t kLEScanFastInterval = 0x0060;       // 60 ms
-constexpr uint16_t kLEScanFastIntervalCoded = 0x0120;  // 180 ms
-constexpr uint16_t kLEScanFastWindow = 0x0030;         // 30 ms
-constexpr uint16_t kLEScanFastWindowCoded = 0x90;      // 90 ms
+inline constexpr uint16_t kLEScanFastInterval = 0x0060;       // 60 ms
+inline constexpr uint16_t kLEScanFastIntervalCoded = 0x0120;  // 180 ms
+inline constexpr uint16_t kLEScanFastWindow = 0x0030;         // 30 ms
+inline constexpr uint16_t kLEScanFastWindowCoded = 0x90;      // 90 ms
 
 // For background scanning
-constexpr uint16_t kLEScanSlowInterval1 = 0x0800;       // 1.28 s
-constexpr uint16_t kLEScanSlowInterval1Coded = 0x1800;  // 3.84 s
-constexpr uint16_t kLEScanSlowWindow1 = 0x0012;         // 11.25 ms
-constexpr uint16_t kLEScanSlowWindow1Coded = 0x0036;    // 33.75 ms
-constexpr uint16_t kLEScanSlowInterval2 = 0x1000;       // 2.56 s
-constexpr uint16_t kLEScanSlowInterval2Coded = 0x3000;  // 7.68 s
-constexpr uint16_t kLEScanSlowWindow2 = 0x0024;         // 22.5 ms
-constexpr uint16_t kLEScanSlowWindow2Coded = 0x006C;    // 67.5 ms
+inline constexpr uint16_t kLEScanSlowInterval1 = 0x0800;       // 1.28 s
+inline constexpr uint16_t kLEScanSlowInterval1Coded = 0x1800;  // 3.84 s
+inline constexpr uint16_t kLEScanSlowWindow1 = 0x0012;         // 11.25 ms
+inline constexpr uint16_t kLEScanSlowWindow1Coded = 0x0036;    // 33.75 ms
+inline constexpr uint16_t kLEScanSlowInterval2 = 0x1000;       // 2.56 s
+inline constexpr uint16_t kLEScanSlowInterval2Coded = 0x3000;  // 7.68 s
+inline constexpr uint16_t kLEScanSlowWindow2 = 0x0024;         // 22.5 ms
+inline constexpr uint16_t kLEScanSlowWindow2Coded = 0x006C;    // 67.5 ms
 
 // Advertising parameters
-constexpr uint16_t kLEAdvertisingFastIntervalMin1 = 0x0030;       // 30 ms
-constexpr uint16_t kLEAdvertisingFastIntervalMax1 = 0x0060;       // 60 ms
-constexpr uint16_t kLEAdvertisingFastIntervalMin2 = 0x00A0;       // 100 ms
-constexpr uint16_t kLEAdvertisingFastIntervalMax2 = 0x00F0;       // 150 ms
-constexpr uint16_t kLEAdvertisingFastIntervalCodedMin1 = 0x0090;  // 90 ms
-constexpr uint16_t kLEAdvertisingFastIntervalCodedMax1 = 0x0120;  // 180 ms
-constexpr uint16_t kLEAdvertisingFastIntervalCodedMin2 = 0x01E0;  // 300 ms
-constexpr uint16_t kLEAdvertisingFastIntervalCodedMax2 = 0x02D0;  // 450 ms
+inline constexpr uint16_t kLEAdvertisingFastIntervalMin1 = 0x0030;  // 30 ms
+inline constexpr uint16_t kLEAdvertisingFastIntervalMax1 = 0x0060;  // 60 ms
+inline constexpr uint16_t kLEAdvertisingFastIntervalMin2 = 0x00A0;  // 100 ms
+inline constexpr uint16_t kLEAdvertisingFastIntervalMax2 = 0x00F0;  // 150 ms
+inline constexpr uint16_t kLEAdvertisingFastIntervalCodedMin1 =
+    0x0090;  // 90 ms
+inline constexpr uint16_t kLEAdvertisingFastIntervalCodedMax1 =
+    0x0120;  // 180 ms
+inline constexpr uint16_t kLEAdvertisingFastIntervalCodedMin2 =
+    0x01E0;  // 300 ms
+inline constexpr uint16_t kLEAdvertisingFastIntervalCodedMax2 =
+    0x02D0;  // 450 ms
 
-constexpr uint16_t kLEAdvertisingSlowIntervalMin = 0x0640;       // 1 s
-constexpr uint16_t kLEAdvertisingSlowIntervalMax = 0x0780;       // 1.2 s
-constexpr uint16_t kLEAdvertisingSlowIntervalCodedMin = 0x12C0;  // 3 s
-constexpr uint16_t kLEAdvertisingSlowIntervalCodedMax = 0x1680;  // 3.6 s
+inline constexpr uint16_t kLEAdvertisingSlowIntervalMin = 0x0640;       // 1 s
+inline constexpr uint16_t kLEAdvertisingSlowIntervalMax = 0x0780;       // 1.2 s
+inline constexpr uint16_t kLEAdvertisingSlowIntervalCodedMin = 0x12C0;  // 3 s
+inline constexpr uint16_t kLEAdvertisingSlowIntervalCodedMax = 0x1680;  // 3.6 s
 
 // Timeout used for the LE Create Connection command.
-constexpr pw::chrono::SystemClock::duration kLECreateConnectionTimeout =
+inline constexpr pw::chrono::SystemClock::duration kLECreateConnectionTimeout =
     std::chrono::seconds(20);
 // Timeout used for the Br/Edr Create Connection command.
-constexpr pw::chrono::SystemClock::duration kBrEdrCreateConnectionTimeout =
-    std::chrono::seconds(20);
+inline constexpr pw::chrono::SystemClock::duration
+    kBrEdrCreateConnectionTimeout = std::chrono::seconds(20);
 
 // Timeout used for scanning during LE General CEP. Selected to be longer than
 // the scan period.
-constexpr pw::chrono::SystemClock::duration kLEGeneralCepScanTimeout =
+inline constexpr pw::chrono::SystemClock::duration kLEGeneralCepScanTimeout =
     std::chrono::seconds(20);
 
 // Connection Interval Timing Parameters (see v5.0, Vol 3, Part C,
 // Section 9.3.12 and Appendix A)
-constexpr pw::chrono::SystemClock::duration kLEConnectionParameterTimeout =
-    std::chrono::seconds(30);
+inline constexpr pw::chrono::SystemClock::duration
+    kLEConnectionParameterTimeout = std::chrono::seconds(30);
 // Recommended minimum time upon connection establishment before the central
 // starts a connection update procedure.
-constexpr pw::chrono::SystemClock::duration kLEConnectionPauseCentral =
+inline constexpr pw::chrono::SystemClock::duration kLEConnectionPauseCentral =
     std::chrono::seconds(1);
 // Recommended minimum time upon connection establishment before the peripheral
 // starts a connection update procedure.
-constexpr pw::chrono::SystemClock::duration kLEConnectionPausePeripheral =
-    std::chrono::seconds(5);
+inline constexpr pw::chrono::SystemClock::duration
+    kLEConnectionPausePeripheral = std::chrono::seconds(5);
 
-constexpr uint16_t kLEInitialConnIntervalMin = 0x0018;       // 30 ms
-constexpr uint16_t kLEInitialConnIntervalMax = 0x0028;       // 50 ms
-constexpr uint16_t kLEInitialConnIntervalCodedMin = 0x0048;  // 90 ms
-constexpr uint16_t kLEInitialConnIntervalCodedMax = 0x0078;  // 150 ms
+inline constexpr uint16_t kLEInitialConnIntervalMin = 0x0018;       // 30 ms
+inline constexpr uint16_t kLEInitialConnIntervalMax = 0x0028;       // 50 ms
+inline constexpr uint16_t kLEInitialConnIntervalCodedMin = 0x0048;  // 90 ms
+inline constexpr uint16_t kLEInitialConnIntervalCodedMax = 0x0078;  // 150 ms
 
 // Time interval that must expire before a temporary device is removed from the
 // cache.
-constexpr pw::chrono::SystemClock::duration kCacheTimeout =
+inline constexpr pw::chrono::SystemClock::duration kCacheTimeout =
     std::chrono::seconds(60);
 
 // Time interval between random address changes when privacy is enabled (see
 // T_GAP(private_addr_int) in 5.0 Vol 3, Part C, Appendix A)
-constexpr pw::chrono::SystemClock::duration kPrivateAddressTimeout =
+inline constexpr pw::chrono::SystemClock::duration kPrivateAddressTimeout =
     std::chrono::minutes(15);
 
 // Maximum duration for which a scannable advertisement will be stored and not
@@ -191,13 +195,13 @@ constexpr pw::chrono::SystemClock::duration kPrivateAddressTimeout =
 // practice, the typical gap between the two events from the same peer is
 // <=10ms. However in practice it's possible to see gaps as high as 1.5 seconds
 // or more.
-constexpr pw::chrono::SystemClock::duration kLEScanResponseTimeout =
+inline constexpr pw::chrono::SystemClock::duration kLEScanResponseTimeout =
     std::chrono::seconds(2);
 
 // GATT types used in the GAP service.
-constexpr UUID kGenericAccessService(uint16_t{0x1800});
-constexpr UUID kDeviceNameCharacteristic(uint16_t{0x2A00});
-constexpr UUID kAppearanceCharacteristic(uint16_t{0x2A01});
+inline constexpr UUID kGenericAccessService(uint16_t{0x1800});
+inline constexpr UUID kDeviceNameCharacteristic(uint16_t{0x2A00});
+inline constexpr UUID kAppearanceCharacteristic(uint16_t{0x2A01});
 constexpr UUID kPeripheralPreferredConnectionParametersCharacteristic(uint16_t{
     0x2A04});
 

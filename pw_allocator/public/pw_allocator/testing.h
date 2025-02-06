@@ -37,7 +37,7 @@ static_assert(PW_ALLOCATOR_STRICT_VALIDATION,
               "Tests must use a config that enables strict validation");
 
 // A token that can be used in tests.
-constexpr pw::tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
+inline constexpr pw::tokenizer::Token kToken = PW_TOKENIZE_STRING("test");
 
 /// Free all the blocks reachable by the given block. Useful for test cleanup.
 template <typename BlockType>

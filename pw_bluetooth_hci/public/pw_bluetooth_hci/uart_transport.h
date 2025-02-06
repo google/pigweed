@@ -25,10 +25,10 @@ namespace pw::bluetooth_hci {
 // bytes to decode the HCI packet type as defined by the Bluetooth Core
 // Specification version 5.3 "Host Controller Interface Transport Layer" volume
 // 4, part A:
-constexpr inline std::byte kUartCommandPacketIndicator = std::byte{0x01};
-constexpr inline std::byte kUartAsyncDataPacketIndicator = std::byte{0x02};
-constexpr inline std::byte kUartSyncDataPacketIndicator = std::byte{0x03};
-constexpr inline std::byte kUartEventPacketIndicator = std::byte{0x04};
+inline constexpr std::byte kUartCommandPacketIndicator = std::byte{0x01};
+inline constexpr std::byte kUartAsyncDataPacketIndicator = std::byte{0x02};
+inline constexpr std::byte kUartSyncDataPacketIndicator = std::byte{0x03};
+inline constexpr std::byte kUartEventPacketIndicator = std::byte{0x04};
 
 // The HCI UART Transport Layer may be invoked with the following packet types,
 // as defined by Bluetooth Core Specification version 5.3 "Host Controller

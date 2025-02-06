@@ -21,20 +21,20 @@
 
 namespace bt::sdp {
 
-constexpr uint64_t kInvalidContState = 0xFFFFFFFF;
+inline constexpr uint64_t kInvalidContState = 0xFFFFFFFF;
 
 // Maximum length of continuation information is 16 bytes, and the InfoLength
 // is one byte. See v5.0, Vol 3, Part B, Sec 4.3
-constexpr size_t kMaxContStateLength = 17;
+inline constexpr size_t kMaxContStateLength = 17;
 
 // Minimum length allowed by the Maximum Attribute Byte Count in
 // ServiceAttribute and ServiceSearchAttribute requests
-constexpr size_t kMinMaximumAttributeByteCount = 0x0007;
+inline constexpr size_t kMinMaximumAttributeByteCount = 0x0007;
 
 // Selected to be larger than FIDL limit of 512. Prevent poor performance in
 // worst case scenarios. Clients should use larger ranges if they need anywhere
 // near this number of attributes.
-constexpr size_t kMaxAttributeRangesInRequest = 520;
+inline constexpr size_t kMaxAttributeRangesInRequest = 520;
 
 class Request {
  public:

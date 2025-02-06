@@ -24,13 +24,13 @@
 namespace pw::crypto::aes {
 
 /// Number of bytes in an AES block (16). This is independent of key size.
-constexpr size_t kBlockSizeBytes = (128 / 8);
+inline constexpr size_t kBlockSizeBytes = (128 / 8);
 /// Number of bytes in a 128-bit key (16).
-constexpr size_t kKey128SizeBytes = (128 / 8);
+inline constexpr size_t kKey128SizeBytes = (128 / 8);
 /// Number of bytes in a 192-bit key (24).
-constexpr size_t kKey192SizeBytes = (192 / 8);
+inline constexpr size_t kKey192SizeBytes = (192 / 8);
 /// Number of bytes in a 256-bit key (32).
-constexpr size_t kKey256SizeBytes = (256 / 8);
+inline constexpr size_t kKey256SizeBytes = (256 / 8);
 
 /// A single AES block.
 using Block = std::array<std::byte, kBlockSizeBytes>;

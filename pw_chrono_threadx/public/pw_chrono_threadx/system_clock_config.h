@@ -30,13 +30,13 @@ namespace pw::chrono::backend {
 
 // The ThreadX clock starts at zero during initialization, approximately the
 // time since boot.
-constexpr inline Epoch kSystemClockEpoch = pw::chrono::Epoch::kTimeSinceBoot;
+inline constexpr Epoch kSystemClockEpoch = pw::chrono::Epoch::kTimeSinceBoot;
 
 // The current backend implementation is not NMI safe.
-constexpr inline bool kSystemClockNmiSafe = false;
+inline constexpr bool kSystemClockNmiSafe = false;
 
 // The ThreadX clock halts when the systick interrupt is masked.
-constexpr inline bool kSystemClockFreeRunning = false;
+inline constexpr bool kSystemClockFreeRunning = false;
 
 }  // namespace pw::chrono::backend
 

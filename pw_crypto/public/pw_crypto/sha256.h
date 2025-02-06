@@ -26,7 +26,7 @@
 namespace pw::crypto::sha256 {
 
 /// The size of a SHA256 digest in bytes.
-constexpr uint32_t kDigestSizeBytes = 32;
+inline constexpr uint32_t kDigestSizeBytes = 32;
 
 /// A state machine of a hashing session.
 enum class Sha256State {

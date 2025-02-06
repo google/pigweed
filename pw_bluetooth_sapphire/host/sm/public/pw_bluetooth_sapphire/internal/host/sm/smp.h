@@ -26,16 +26,16 @@
 namespace bt::sm {
 
 // Core Spec v5.3, Vol 3, Part H, 3.2
-constexpr uint16_t kNoSecureConnectionsMtu = 23;
-constexpr uint16_t kLeSecureConnectionsMtu = 65;
+inline constexpr uint16_t kNoSecureConnectionsMtu = 23;
+inline constexpr uint16_t kLeSecureConnectionsMtu = 65;
 
 // SMP Timeout in seconds (Core Spec v5.3, Vol 3, Part H, 3.4)
-constexpr pw::chrono::SystemClock::duration kPairingTimeout =
+inline constexpr pw::chrono::SystemClock::duration kPairingTimeout =
     std::chrono::seconds(30);
 
 // The supported encryption key sizes (Core Spec v5.3, Vol 3, Part H, 2.3.4).
-constexpr uint8_t kMinEncryptionKeySize = 7;
-constexpr uint8_t kMaxEncryptionKeySize = 16;
+inline constexpr uint8_t kMinEncryptionKeySize = 7;
+inline constexpr uint8_t kMaxEncryptionKeySize = 16;
 
 // These are the sample ltk and random from (Core Spec v5.3, Vol 6, Part C, 1),
 // they are declared so that SecurityManager can reject any peers using them and
@@ -57,7 +57,7 @@ constexpr UInt128 kSpecSampleLtk = {0xBF,
                                     0x38,
                                     0x68,
                                     0x4C};
-constexpr uint64_t kSpecSampleRandom = 0xABCDEF1234567890;
+inline constexpr uint64_t kSpecSampleRandom = 0xABCDEF1234567890;
 
 // The field that identifies the type of a command.
 using Code = uint8_t;
@@ -216,11 +216,11 @@ enum class AddressType : uint8_t {
 };
 
 // ========== SMP PDUs ========
-constexpr Code kInvalidCode = 0x00;
+inline constexpr Code kInvalidCode = 0x00;
 
 // ======================================
 // Pairing Request (Core Spec v5.3, Vol 3, Part H, 3.5.1)
-constexpr Code kPairingRequest = 0x01;
+inline constexpr Code kPairingRequest = 0x01;
 struct PairingRequestParams {
   // The local I/O capability.
   IOCapability io_capability;
@@ -243,34 +243,34 @@ struct PairingRequestParams {
 
 // =======================================
 // Pairing Response (Core Spec v5.3, Vol 3, Part H, 3.5.2)
-constexpr Code kPairingResponse = 0x02;
+inline constexpr Code kPairingResponse = 0x02;
 using PairingResponseParams = PairingRequestParams;
 
 // ======================================
 // Pairing Confirm (Core Spec v5.3, Vol 3, Part H, 3.5.3)
-constexpr Code kPairingConfirm = 0x03;
+inline constexpr Code kPairingConfirm = 0x03;
 using PairingConfirmValue = UInt128;
 
 // =====================================
 // Pairing Random (Core Spec v5.3, Vol 3, Part H, 3.5.4)
-constexpr Code kPairingRandom = 0x04;
+inline constexpr Code kPairingRandom = 0x04;
 using PairingRandomValue = UInt128;
 
 // =====================================
 // Pairing Failed (Core Spec v5.3, Vol 3, Part H, 3.5.5)
-constexpr Code kPairingFailed = 0x05;
+inline constexpr Code kPairingFailed = 0x05;
 using PairingFailedParams = ErrorCode;
 
 // =============================================
 // Encryption Information (LE Legacy Pairing only; Core Spec v5.3, Vol 3,
 // Part H, 3.6.2)
-constexpr Code kEncryptionInformation = 0x06;
+inline constexpr Code kEncryptionInformation = 0x06;
 using EncryptionInformationParams = UInt128;
 
 // ====================================================================
 // Central Identification (LE Legacy Pairing only; Core Spec v5.3, Vol 3,
 // Part H, 3.6.3)
-constexpr Code kCentralIdentification = 0x07;
+inline constexpr Code kCentralIdentification = 0x07;
 struct CentralIdentificationParams {
   uint16_t ediv;
   uint64_t rand;
@@ -278,12 +278,12 @@ struct CentralIdentificationParams {
 
 // ===========================================
 // Identity Information (Core Spec v5.3, Vol 3, Part H, 3.6.4)
-constexpr Code kIdentityInformation = 0x08;
+inline constexpr Code kIdentityInformation = 0x08;
 using IRK = UInt128;
 
 // ===================================================
 // Identity Address Information (Core Spec v5.3, Vol 3, Part H, 3.6.5)
-constexpr Code kIdentityAddressInformation = 0x09;
+inline constexpr Code kIdentityAddressInformation = 0x09;
 struct IdentityAddressInformationParams {
   AddressType type;
   DeviceAddressBytes bd_addr;
@@ -291,19 +291,19 @@ struct IdentityAddressInformationParams {
 
 // ==========================================
 // Signing Information (Core Spec v5.3, Vol 3, Part H, 3.6.6)
-constexpr Code kSigningInformation = 0x0A;
+inline constexpr Code kSigningInformation = 0x0A;
 using CSRK = UInt128;
 
 // =======================================
 // Security Request (Core Spec v5.3, Vol 3, Part H, 3.6.7)
-constexpr Code kSecurityRequest = 0x0B;
+inline constexpr Code kSecurityRequest = 0x0B;
 
 // See enum AuthReq for parameters.
 
 // ==================================================================
 // Pairing Public Key (Secure Connections only; Core Spec v5.3, Vol 3, Part H,
 // 3.5.6)
-constexpr Code kPairingPublicKey = 0x0C;
+inline constexpr Code kPairingPublicKey = 0x0C;
 struct PairingPublicKeyParams {
   uint8_t x[32];
   uint8_t y[32];
@@ -312,12 +312,12 @@ struct PairingPublicKeyParams {
 // ======================================================================
 // Pairing DHKey Check (LE Secure Connections only; Core Spec v5.3, Vol 3,
 // Part H, 3.5.7)
-constexpr Code kPairingDHKeyCheck = 0x0D;
+inline constexpr Code kPairingDHKeyCheck = 0x0D;
 using PairingDHKeyCheckValueE = UInt128;
 
 // ============================================
 // Keypress Notification (Core Spec v5.3, Vol 3, Part H, 3.5.8)
-constexpr Code kKeypressNotification = 0x0E;
+inline constexpr Code kKeypressNotification = 0x0E;
 
 // See enum KeypressNotificationType above for parameters.
 

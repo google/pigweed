@@ -114,7 +114,7 @@ enum class LogSeverity : int {
   TRACE = PW_LOG_LEVEL_DEBUG,
 };
 
-constexpr size_t kNumLogSeverities = 5;
+inline constexpr size_t kNumLogSeverities = 5;
 
 bool IsPrintfLogLevelEnabled(LogSeverity severity);
 

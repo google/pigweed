@@ -18,6 +18,6 @@
 namespace pw::bluetooth::gatt {
 
 // The maximum length of an attribute value.
-constexpr uint16_t kMaxValueLength = 512;
+inline constexpr uint16_t kMaxValueLength = 512;
 
 }  // namespace pw::bluetooth::gatt

@@ -28,15 +28,15 @@
 namespace pw::chrono::backend {
 
 // The Pico SDK states that the system clock is strictly time-since-boot.
-constexpr inline Epoch kSystemClockEpoch = pw::chrono::Epoch::kTimeSinceBoot;
+inline constexpr Epoch kSystemClockEpoch = pw::chrono::Epoch::kTimeSinceBoot;
 
 // The Pico's system clock is tied to the watchdog, which is a hardware
 // block not tied to a maskable interrupt.
-constexpr inline bool kSystemClockNmiSafe = true;
+inline constexpr bool kSystemClockNmiSafe = true;
 
 // The Pico's system clock is backed by a hardware block, which means it will
 // continue happily even if interrupts are disabled.
-constexpr inline bool kSystemClockFreeRunning = true;
+inline constexpr bool kSystemClockFreeRunning = true;
 
 }  // namespace pw::chrono::backend
 

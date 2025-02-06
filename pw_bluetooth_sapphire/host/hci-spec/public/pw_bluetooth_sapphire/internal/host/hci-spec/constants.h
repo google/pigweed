@@ -361,74 +361,74 @@ enum class EncryptionStatus : uint8_t {
 // TODO(fxbug.dev/42070690, fxbug.dev/42070801) This was
 // increased to handle flaking integration tests. We may want to reduce this
 // to something lower again once we have a bette resolution to this issue.
-constexpr pw::chrono::SystemClock::duration kCommandTimeout = std::chrono::duration_cast<pw::chrono::SystemClock::duration>(std::chrono::seconds(10));
+inline constexpr pw::chrono::SystemClock::duration kCommandTimeout = std::chrono::duration_cast<pw::chrono::SystemClock::duration>(std::chrono::seconds(10));
 
 // The minimum and maximum range values for the LE advertising interval
 // parameters.
 // (see Core Spec v5.0, Vol 2, Part E, Section 7.8.5)
-constexpr uint16_t kLEAdvertisingIntervalMin = 0x0020;
-constexpr uint16_t kLEAdvertisingIntervalMax = 0x4000;
+inline constexpr uint16_t kLEAdvertisingIntervalMin = 0x0020;
+inline constexpr uint16_t kLEAdvertisingIntervalMax = 0x4000;
 
 // The minimum and maximum range values for the LE periodic advertising interval
 // parameters.
 // (see Core Spec v5.0, Vol 2, Part E, Section 7.8.61)
-constexpr uint16_t kLEPeriodicAdvertisingIntervalMin = 0x0006;
-constexpr uint16_t kLEPeriodicAdvertisingIntervalMax = 0xFFFF;
+inline constexpr uint16_t kLEPeriodicAdvertisingIntervalMin = 0x0006;
+inline constexpr uint16_t kLEPeriodicAdvertisingIntervalMax = 0xFFFF;
 
 // The minimum and maximum range values for the LE extended advertising interval
 // parameters.
-constexpr uint32_t kLEExtendedAdvertisingIntervalMin = 0x000020;
-constexpr uint32_t kLEExtendedAdvertisingIntervalMax = 0xFFFFFF;
+inline constexpr uint32_t kLEExtendedAdvertisingIntervalMin = 0x000020;
+inline constexpr uint32_t kLEExtendedAdvertisingIntervalMax = 0xFFFFFF;
 
 // The default LE advertising interval parameter value, corresponding to 1.28
 // seconds (see Core Spec v5.0, Vol 2, Part E, Section 7.8.5).
-constexpr uint16_t kLEAdvertisingIntervalDefault = 0x0800;
+inline constexpr uint16_t kLEAdvertisingIntervalDefault = 0x0800;
 
 // The minimum and maximum range values for the LE scan interval parameters.
 // (see Core Spec v5.0, Vol 2, Part E, Section 7.8.10)
-constexpr uint16_t kLEScanIntervalMin = 0x0004;
-constexpr uint16_t kLEScanIntervalMax = 0x4000;
+inline constexpr uint16_t kLEScanIntervalMin = 0x0004;
+inline constexpr uint16_t kLEScanIntervalMax = 0x4000;
 
 // The minimum and maximum range values for the LE extended scan interval
 // parameters.
 // (see Core Spec v5.0, Vol 2, Part E, Section 7.8.64)
-constexpr uint16_t kLEExtendedScanIntervalMin = 0x0004;
-constexpr uint16_t kLEExtendedScanIntervalMax = 0xFFFF;
+inline constexpr uint16_t kLEExtendedScanIntervalMin = 0x0004;
+inline constexpr uint16_t kLEExtendedScanIntervalMax = 0xFFFF;
 
 // The default LE scan interval parameter value, corresponding to 10
 // milliseconds (see Core Spec v5.0, Vol 2, Part E, Section 7.8.10).
-constexpr uint16_t kLEScanIntervalDefault = 0x0010;
+inline constexpr uint16_t kLEScanIntervalDefault = 0x0010;
 
 // The minimum and maximum range values for the LE connection interval parameters.
 // (see Core Spec v5.0, Vol 2, Part E, Section 7.8.12)
-constexpr uint16_t kLEConnectionIntervalMin = 0x0006;
-constexpr uint16_t kLEConnectionIntervalMax = 0x0C80;
+inline constexpr uint16_t kLEConnectionIntervalMin = 0x0006;
+inline constexpr uint16_t kLEConnectionIntervalMax = 0x0C80;
 
 // The maximum value that can be used for the |conn_latency| parameter in a
 // HCI_LE_Create_Connection
 // command (see Core Spec v5.0, Vol 2, Part E, Section 7.8.12).
-constexpr uint16_t kLEConnectionLatencyMax = 0x01F3;
+inline constexpr uint16_t kLEConnectionLatencyMax = 0x01F3;
 
 // The minimum and maximum range values for LE connection supervision timeout
 // parameters.
-constexpr uint16_t kLEConnectionSupervisionTimeoutMin = 0x000A;
-constexpr uint16_t kLEConnectionSupervisionTimeoutMax = 0x0C80;
+inline constexpr uint16_t kLEConnectionSupervisionTimeoutMin = 0x000A;
+inline constexpr uint16_t kLEConnectionSupervisionTimeoutMax = 0x0C80;
 
 // The minimum and maximum range values for LE link layer tx PDU used on
 // connections.
-constexpr uint16_t kLEMaxTxOctetsMin = 0x001B;
-constexpr uint16_t kLEMaxTxOctetsMax = 0x00FB;
+inline constexpr uint16_t kLEMaxTxOctetsMin = 0x001B;
+inline constexpr uint16_t kLEMaxTxOctetsMax = 0x00FB;
 
 // The minimum and maximum range values for LE link layer tx maximum packet
 // transmission time used on connections.
-constexpr uint16_t kLEMaxTxTimeMin = 0x0148;
-constexpr uint16_t kLEMaxTxTimeMax = 0x4290;
+inline constexpr uint16_t kLEMaxTxTimeMin = 0x0148;
+inline constexpr uint16_t kLEMaxTxTimeMax = 0x4290;
 
 // Minimum, maximum, default values for the Resolvable Private Address timeout
 // parameter.
-constexpr uint16_t kLERPATimeoutMin = 0x0001;      // 1 second
-constexpr uint16_t kLERPATimeoutMax = 0xA1B8;      // Approx. 11.5 hours
-constexpr uint16_t kLERPATimeoutDefault = 0x0384;  // 900 seconds or 15 minutes.
+inline constexpr uint16_t kLERPATimeoutMin = 0x0001;      // 1 second
+inline constexpr uint16_t kLERPATimeoutMax = 0xA1B8;      // Approx. 11.5 hours
+inline constexpr uint16_t kLERPATimeoutDefault = 0x0384;  // 900 seconds or 15 minutes.
 
 // The maximum length of advertising data that can get passed to the
 // HCI_LE_Set_Advertising_Data command.
@@ -437,27 +437,27 @@ constexpr uint16_t kLERPATimeoutDefault = 0x0384;  // 900 seconds or 15 minutes.
 // support 5.0+ the host should use the
 // HCI_LE_Read_Maximum_Advertising_Data_Length command to obtain this
 // information.
-constexpr size_t kMaxLEAdvertisingDataLength = 0x1F;  // (31)
+inline constexpr size_t kMaxLEAdvertisingDataLength = 0x1F;  // (31)
 
 // Core Spec Version 5.4, Volume 6, Part B, Section 2.3.4.9: the total
 // amount of Host Advertising Data before fragmentation shall not exceed 1650
 // octets.
-constexpr size_t kMaxLEExtendedAdvertisingDataLength = 1650;
+inline constexpr size_t kMaxLEExtendedAdvertisingDataLength = 1650;
 
 // Tx Power values, See Core Spec v5.0 Vol 4, Part E, 7.8.6.
-constexpr int8_t kTxPowerInvalid = 127;
-constexpr int8_t kLEAdvertisingTxPowerMin = -127;
-constexpr int8_t kLEAdvertisingTxPowerMax = 20;
-constexpr int8_t kLEExtendedAdvertisingTxPowerNoPreference = 0x7F; // Vol 4, Part E, 7.8.53
+inline constexpr int8_t kTxPowerInvalid = 127;
+inline constexpr int8_t kLEAdvertisingTxPowerMin = -127;
+inline constexpr int8_t kLEAdvertisingTxPowerMax = 20;
+inline constexpr int8_t kLEExtendedAdvertisingTxPowerNoPreference = 0x7F; // Vol 4, Part E, 7.8.53
 
 // Values used in enabling extended advertising. See Core Spec v5.0 Vol 4, Part E, 7.8.56.
-constexpr uint8_t kMaxAdvertisingHandle = 0xEF;
-constexpr uint8_t kNoMaxExtendedAdvertisingEvents = 0;
-constexpr uint8_t kNoAdvertisingDuration = 0;
+inline constexpr uint8_t kMaxAdvertisingHandle = 0xEF;
+inline constexpr uint8_t kNoMaxExtendedAdvertisingEvents = 0;
+inline constexpr uint8_t kNoAdvertisingDuration = 0;
 
 // Values used in enabling extended scanning. See Core Spec v5.4 Vol 4, Part E, 7.8.64.
-constexpr uint16_t kNoScanningDuration = 0;
-constexpr uint16_t kNoScanningPeriod = 0;
+inline constexpr uint16_t kNoScanningDuration = 0;
+inline constexpr uint16_t kNoScanningPeriod = 0;
 
 // LE Advertising event types that can be reported in a LE Advertising Report
 // event.
@@ -524,10 +524,10 @@ enum class LEPeerAddressType : uint8_t {
 // Possible values that can be used for the |adv_channel_map| bitfield in a
 // HCI_LE_Set_Advertising_Parameters command.
 // (see Core Spec v5.0, Vol 2, Part E, Section 7.8.5)
-constexpr uint8_t kLEAdvertisingChannel37 = 0x01;
-constexpr uint8_t kLEAdvertisingChannel38 = 0x02;
-constexpr uint8_t kLEAdvertisingChannel39 = 0x04;
-constexpr uint8_t kLEAdvertisingChannelAll = 0x07;
+inline constexpr uint8_t kLEAdvertisingChannel37 = 0x01;
+inline constexpr uint8_t kLEAdvertisingChannel38 = 0x02;
+inline constexpr uint8_t kLEAdvertisingChannel39 = 0x04;
+inline constexpr uint8_t kLEAdvertisingChannelAll = 0x07;
 
 // Possible values that can be used for the Filter_Policy parameter in a
 // HCI_LE_Periodic_Advertising_Create_Sync command.
@@ -544,14 +544,14 @@ enum class LEPeriodicAdvFilterPolicy : uint8_t {
 // The PHY bitfield values that can be used in HCI_LE_Set_PHY and
 // HCI_LE_Set_Default_PHY commands that can be used for the TX_PHYS and RX_PHYS
 // parameters.
-constexpr uint8_t kLEPHYBit1M = (1 << 0);
-constexpr uint8_t kLEPHYBit2M = (1 << 1);
-constexpr uint8_t kLEPHYBitCoded = (1 << 2);
+inline constexpr uint8_t kLEPHYBit1M = (1 << 0);
+inline constexpr uint8_t kLEPHYBit2M = (1 << 1);
+inline constexpr uint8_t kLEPHYBitCoded = (1 << 2);
 
 // The PHY bitfield values that can be used in HCI_LE_Set_PHY and
 // HCI_LE_Set_Default_PHY commands that can be used for the ALL_PHYS parameter.
-constexpr uint8_t kLEAllPHYSBitTxNoPreference = (1 << 0);
-constexpr uint8_t kLEAllPHYSBitRxNoPreference = (1 << 1);
+inline constexpr uint8_t kLEAllPHYSBitTxNoPreference = (1 << 0);
+inline constexpr uint8_t kLEAllPHYSBitRxNoPreference = (1 << 1);
 
 // Potential values that can be used for the LE PHY parameters in HCI commands
 // and events.
@@ -618,20 +618,20 @@ enum class LEExtendedAdvFragmentPreference : uint8_t {
 
 // The Advertising_Event_Properties bitfield values used in a
 // HCI_LE_Set_Extended_Advertising_Parameters command.
-constexpr uint16_t kLEAdvEventPropBitConnectable                      = (1 << 0);
-constexpr uint16_t kLEAdvEventPropBitScannable                        = (1 << 1);
-constexpr uint16_t kLEAdvEventPropBitDirected                         = (1 << 2);
-constexpr uint16_t kLEAdvEventPropBitHighDutyCycleDirectedConnectable = (1 << 3);
-constexpr uint16_t kLEAdvEventPropBitUseLegacyPDUs                    = (1 << 4);
-constexpr uint16_t kLEAdvEventPropBitAnonymousAdvertising             = (1 << 5);
-constexpr uint16_t kLEAdvEventPropBitIncludeTxPower                   = (1 << 6);
+inline constexpr uint16_t kLEAdvEventPropBitConnectable                      = (1 << 0);
+inline constexpr uint16_t kLEAdvEventPropBitScannable                        = (1 << 1);
+inline constexpr uint16_t kLEAdvEventPropBitDirected                         = (1 << 2);
+inline constexpr uint16_t kLEAdvEventPropBitHighDutyCycleDirectedConnectable = (1 << 3);
+inline constexpr uint16_t kLEAdvEventPropBitUseLegacyPDUs                    = (1 << 4);
+inline constexpr uint16_t kLEAdvEventPropBitAnonymousAdvertising             = (1 << 5);
+inline constexpr uint16_t kLEAdvEventPropBitIncludeTxPower                   = (1 << 6);
 
 // The Event_Type bitfield values reported in a LE Extended Advertising Report Event.
-constexpr uint16_t kLEExtendedAdvEventTypeConnectable  = (1 << 0);
-constexpr uint16_t kLEExtendedAdvEventTypeScannable    = (1 << 1);
-constexpr uint16_t kLEExtendedAdvEventTypeDirected     = (1 << 2);
-constexpr uint16_t kLEExtendedAdvEventTypeScanResponse = (1 << 3);
-constexpr uint16_t kLEExtendedAdvEventTypeLegacy       = (1 << 4);
+inline constexpr uint16_t kLEExtendedAdvEventTypeConnectable  = (1 << 0);
+inline constexpr uint16_t kLEExtendedAdvEventTypeScannable    = (1 << 1);
+inline constexpr uint16_t kLEExtendedAdvEventTypeDirected     = (1 << 2);
+inline constexpr uint16_t kLEExtendedAdvEventTypeScanResponse = (1 << 3);
+inline constexpr uint16_t kLEExtendedAdvEventTypeLegacy       = (1 << 4);
 
 // LE Advertising data status properties stored in bits 5 and 6 of the
 // Event_Type bitfield of a LE Extended Advertising Report event and in a LE
@@ -649,46 +649,46 @@ enum class LEAdvertisingDataStatus : uint16_t {
 
 // The Periodic_Advertising_Properties bitfield used in a
 // HCI_LE_Set_Periodic_Advertising_Parameters command.
-constexpr uint16_t kLEPeriodicAdvPropBitIncludeTxPower = (1 << 6);
+inline constexpr uint16_t kLEPeriodicAdvPropBitIncludeTxPower = (1 << 6);
 
 // The maximum length of LE data packets when the LE Data Packet Length Extension
 // feature is supported. See v5.0, Vol 6, Part B, 4.5.10, Table 4.3.
-constexpr size_t kMaxLEExtendedDataLength = 251;
+inline constexpr size_t kMaxLEExtendedDataLength = 251;
 
 // Maximum value of the Advertising SID subfield in the ADI field of the PDU
-constexpr uint8_t kLEAdvertsingSIDMax = 0xEF;
+inline constexpr uint8_t kLEAdvertsingSIDMax = 0xEF;
 
 // Invalid RSSI value.
-constexpr int8_t kRSSIInvalid = 127;
+inline constexpr int8_t kRSSIInvalid = 127;
 
 // Invalid advertising sid value
-constexpr uint8_t kAdvertisingSidInvalid = 0xFF;
+inline constexpr uint8_t kAdvertisingSidInvalid = 0xFF;
 
 // The maximum length of a friendly name that can be assigned to a BR/EDR
 // controller, in octets.
-constexpr size_t kMaxNameLength = bt::kMaxNameLength;
+inline constexpr size_t kMaxNameLength = bt::kMaxNameLength;
 
 // The maximum number of bytes in a HCI Command Packet payload, excluding the
 // header. See Core Spec v5.0 Vol 2, Part E, 5.4.1, paragraph 2.
-constexpr size_t kMaxCommandPacketPayloadSize = 255;
+inline constexpr size_t kMaxCommandPacketPayloadSize = 255;
 
 // The maximum number of bytes in a HCI event Packet payload, excluding the
 // header. See Core Spec v5.0 Vol 2, Part E, 5.4.4, paragraph 1.
-constexpr size_t kMaxEventPacketPayloadSize = 255;
+inline constexpr size_t kMaxEventPacketPayloadSize = 255;
 
 // The maximum number of bytes in a HCI ACL data packet payload supported by our
 // stack.
-constexpr size_t kMaxACLPayloadSize = 1024;
+inline constexpr size_t kMaxACLPayloadSize = 1024;
 
 // The maximum number of bytes in a HCI Synchronous Data packet payload.
 // This is based on the maximum value of the 1-byte Data_Total_Length field of a Synchronous Data packet.
-constexpr size_t kMaxSynchronousDataPacketPayloadSize = 255;
+inline constexpr size_t kMaxSynchronousDataPacketPayloadSize = 255;
 
 // The maximum number of bytes in an Isochronous data packet payload, based on
 // the maximum size (12 bits) of the data_total_length field of an Isochronous
 // data packet.
 // See Core Spec v5.4, Vol 4, Part E, Section 5.4.5
-constexpr size_t kMaxIsochronousDataPacketPayloadSize = 16384;
+inline constexpr size_t kMaxIsochronousDataPacketPayloadSize = 16384;
 
 // Values that can be used in HCI Read|WriteFlowControlMode commands.
 enum class FlowControlMode : uint8_t {
@@ -734,24 +734,24 @@ enum class LEChannelSelectionAlgorithm : uint8_t {
 // to 27 bytes of data excluding the HCI ACL Data Packet header on Connection
 // Handles associated with an LE-U logical link." (See Core Spec v5.0, Volume 2,
 // Part E, Section 5.4.2)
-constexpr size_t kMinLEACLDataBufferLength = 27;
+inline constexpr size_t kMinLEACLDataBufferLength = 27;
 
 // The maximum value that can be used for a 12-bit connection handle.
-constexpr uint16_t kConnectionHandleMax = 0x0EFF;
+inline constexpr uint16_t kConnectionHandleMax = 0x0EFF;
 
 // The maximum value that can ve used for a 8-bit advertising set handle.
-constexpr uint8_t kAdvertisingHandleMax = 0xEF;
+inline constexpr uint8_t kAdvertisingHandleMax = 0xEF;
 
 // The maximum value that can be set for the length of an Inquiry
-constexpr uint8_t kInquiryLengthMax = 0x30;
+inline constexpr uint8_t kInquiryLengthMax = 0x30;
 
 // Bit 15, or "Clock_Offset_Valid_Flag" of the 16-bit clock offset field.
 // Some HCI commands that require a clock offset expect this bit to be set (e.g.
 // see HCI_Remote_Name_Request command, Vol 2, Part E, 7.1.19).
-constexpr uint16_t kClockOffsetValidFlagBit = 0x8000;
+inline constexpr uint16_t kClockOffsetValidFlagBit = 0x8000;
 
 // Masks the lower 15 bits of a Clock_Offset, excluding the bit 15 - the reserved/validity bit.
-constexpr uint16_t kClockOffsetMask = 0x7FFF;
+inline constexpr uint16_t kClockOffsetMask = 0x7FFF;
 
 // Bitmask Values for the Scan_Enable parameter in a
 // HCI_(Read,Write)_Scan_Enable command.
@@ -764,12 +764,12 @@ using ScanEnableType = uint8_t;
 
 // Constant values for common scanning modes
 // See Spec 5.0, Vol 3, Part C, Section 4.2.2.1, Table 4.2
-constexpr uint16_t kPageScanR0Interval = 0x0800; // 1.28s
-constexpr uint16_t kPageScanR0Window = 0x0800; // 1.28s
-constexpr uint16_t kPageScanR1Interval = 0x0800; // 1.28s
-constexpr uint16_t kPageScanR1Window = 0x0011; // 10.625ms
-constexpr uint16_t kPageScanR2Interval = 0x1000; // 2.56s
-constexpr uint16_t kPageScanR2Window = 0x0011; // 10.625ms
+inline constexpr uint16_t kPageScanR0Interval = 0x0800; // 1.28s
+inline constexpr uint16_t kPageScanR0Window = 0x0800; // 1.28s
+inline constexpr uint16_t kPageScanR1Interval = 0x0800; // 1.28s
+inline constexpr uint16_t kPageScanR1Window = 0x0011; // 10.625ms
+inline constexpr uint16_t kPageScanR2Interval = 0x1000; // 2.56s
+inline constexpr uint16_t kPageScanR2Window = 0x0011; // 10.625ms
 
 enum class InquiryScanType : uint8_t {
   kStandardScan = 0x00, // Standard scan (default) (mandatory)
@@ -784,19 +784,19 @@ enum class LinkType : uint8_t {
 };
 
 // Length of the Extended Inquiry Response data. (Vol 3, Part C, Section 8)
-constexpr size_t kExtendedInquiryResponseBytes = 240;
+inline constexpr size_t kExtendedInquiryResponseBytes = 240;
 
 // Maximum length of a local name in the Extended Inquiry Response data.
 // Length: 1 byte, DataType: 1 byte, Remaining buffer: 238 bytes.
 // (Vol 3, Part C, Section 8)
-constexpr size_t kExtendedInquiryResponseMaxNameBytes = kExtendedInquiryResponseBytes - 2;
+inline constexpr size_t kExtendedInquiryResponseMaxNameBytes = kExtendedInquiryResponseBytes - 2;
 
 // Minimum supported encryption key size for ACL-U links, as queried by Read
 // Encryption Key Size. This isn't specified so the value is taken from the LE
 // limit for SM Long Term Keys (v5.0 Vol 3, Part H, 2.3.4). This limit applies
 // to the per-session encryption key, not the semi-permanent Link Key (v5.0
 // Vol 2, Part H, 1).
-constexpr uint8_t kMinEncryptionKeySize = 7;
+inline constexpr uint8_t kMinEncryptionKeySize = 7;
 
 // inclusive-language: ignore
 // Ignore inclusive language check to match the language used in the spec
@@ -881,18 +881,18 @@ enum class ScoRetransmissionEffort : uint8_t {
 };
 
 // Flush Timeout = N * 0.625ms (Core Spec v5.2, Vol 4, Part E, Sec 7.3.30).
-constexpr float kFlushTimeoutCommandParameterToMillisecondsConversionFactor = 0.625f;
-constexpr float kFlushTimeoutMsToCommandParameterConversionFactor = 1.0f / kFlushTimeoutCommandParameterToMillisecondsConversionFactor;
+inline constexpr float kFlushTimeoutCommandParameterToMillisecondsConversionFactor = 0.625f;
+inline constexpr float kFlushTimeoutMsToCommandParameterConversionFactor = 1.0f / kFlushTimeoutCommandParameterToMillisecondsConversionFactor;
 
 // See Core Spec v5.2, Vol 4, Part E, Sec 7.3.30
-constexpr uint16_t kMaxAutomaticFlushTimeoutCommandParameterValue = 0x07FF;
-constexpr pw::chrono::SystemClock::duration kMaxAutomaticFlushTimeoutDuration = std::chrono::milliseconds(static_cast<int64_t>(kMaxAutomaticFlushTimeoutCommandParameterValue * kFlushTimeoutCommandParameterToMillisecondsConversionFactor));
+inline constexpr uint16_t kMaxAutomaticFlushTimeoutCommandParameterValue = 0x07FF;
+inline constexpr pw::chrono::SystemClock::duration kMaxAutomaticFlushTimeoutDuration = std::chrono::milliseconds(static_cast<int64_t>(kMaxAutomaticFlushTimeoutCommandParameterValue * kFlushTimeoutCommandParameterToMillisecondsConversionFactor));
 
 // Page Timeout = N * 0.625 ms (Core Spec v5.2, Vol 4, Part E, Sec 7.3.16).
 // The default is 5.12 sec.
-constexpr pw::chrono::SystemClock::duration kDurationPerPageTimeoutUnit = std::chrono::duration_cast<pw::chrono::SystemClock::duration>(std::chrono::microseconds(625));
-constexpr pw::chrono::SystemClock::duration kMinPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MIN);
-constexpr pw::chrono::SystemClock::duration kDefaultPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::DEFAULT);
-constexpr pw::chrono::SystemClock::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MAX);
+inline constexpr pw::chrono::SystemClock::duration kDurationPerPageTimeoutUnit = std::chrono::duration_cast<pw::chrono::SystemClock::duration>(std::chrono::microseconds(625));
+inline constexpr pw::chrono::SystemClock::duration kMinPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MIN);
+inline constexpr pw::chrono::SystemClock::duration kDefaultPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::DEFAULT);
+inline constexpr pw::chrono::SystemClock::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MAX);
 
 }  // namespace bt::hci_spec

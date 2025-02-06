@@ -17,6 +17,6 @@ namespace pw::bluetooth {
 
 // The maximum length of a device name. This value was selected based on the HCI
 // and GAP specifications (v5.2, Vol 4, Part E, 7.3.11 and Vol 3, Part C, 12.1).
-constexpr uint8_t kMaxDeviceNameLength = 248;
+inline constexpr uint8_t kMaxDeviceNameLength = 248;
 
 }  // namespace pw::bluetooth

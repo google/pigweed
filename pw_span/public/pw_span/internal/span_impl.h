@@ -57,7 +57,7 @@
 namespace pw {
 
 // [views.constants]
-constexpr size_t dynamic_extent = std::numeric_limits<size_t>::max();
+inline constexpr size_t dynamic_extent = std::numeric_limits<size_t>::max();
 
 template <typename T, size_t Extent = dynamic_extent>
 class span;

@@ -22,18 +22,18 @@
 namespace bt::hci_spec::defaults {
 
 // 50 ms
-constexpr uint16_t kLEConnectionIntervalMin = 0x0028;
+inline constexpr uint16_t kLEConnectionIntervalMin = 0x0028;
 
 // 70 ms
-constexpr uint16_t kLEConnectionIntervalMax = 0x0038;
+inline constexpr uint16_t kLEConnectionIntervalMax = 0x0038;
 
 // 60 ms
-constexpr uint16_t kLEScanInterval = 0x0060;
+inline constexpr uint16_t kLEScanInterval = 0x0060;
 
 // 30 ms
-constexpr uint16_t kLEScanWindow = 0x0030;
+inline constexpr uint16_t kLEScanWindow = 0x0030;
 
 // 420 ms
-constexpr uint16_t kLESupervisionTimeout = 0x002A;
+inline constexpr uint16_t kLESupervisionTimeout = 0x002A;
 
 }  // namespace bt::hci_spec::defaults

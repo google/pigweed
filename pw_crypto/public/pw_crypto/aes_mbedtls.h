@@ -19,7 +19,7 @@
 #include "pw_crypto/aes_backend_defs.h"
 
 namespace pw::crypto::aes::backend {
-constexpr auto kFullSupport =
+inline constexpr auto kFullSupport =
     SupportedKeySize::k128 | SupportedKeySize::k192 | SupportedKeySize::k256;
 
 /// The mbedtls backend supports 128-bit, 192-bit, and 256-bit keys for

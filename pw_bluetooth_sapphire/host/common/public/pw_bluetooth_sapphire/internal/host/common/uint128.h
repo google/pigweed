@@ -20,7 +20,7 @@ namespace bt {
 
 // Represents a 128-bit (16-octet) unsigned integer. This is commonly used for
 // encryption keys and UUID values.
-constexpr size_t kUInt128Size = 16;
+inline constexpr size_t kUInt128Size = 16;
 using UInt128 = std::array<uint8_t, kUInt128Size>;
 
 static_assert(sizeof(UInt128) == kUInt128Size,

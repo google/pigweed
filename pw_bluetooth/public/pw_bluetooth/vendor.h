@@ -22,7 +22,7 @@ namespace pw::bluetooth {
 
 // The maximum buffer length an encoded command might require.
 // Update when adding new commands that might require a larger buffer.
-constexpr uint16_t kMaxVendorCommandBufferSize = 16;
+inline constexpr uint16_t kMaxVendorCommandBufferSize = 16;
 
 enum class AclPriority : uint8_t {
   kNormal = 0,

@@ -29,12 +29,12 @@ namespace pw::software_update {
 class BundledUpdateBackend;
 
 // Name of the top-level Targets metadata.
-constexpr std::string_view kTopLevelTargetsName = "targets";
+inline constexpr std::string_view kTopLevelTargetsName = "targets";
 
 // Name of the "user manifest" target file. The "user manifest" is a product
 // specific blob that is opaque to upstream but need to be passed around in
 // manifest handling (for now).
-constexpr std::string_view kUserManifestTargetFileName = "user_manifest";
+inline constexpr std::string_view kUserManifestTargetFileName = "user_manifest";
 
 // UpdateBundleAccessor is the trusted custodian of a staged incoming update
 // bundle.

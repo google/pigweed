@@ -24,33 +24,38 @@ namespace bt::gatt {
 // 16-bit Attribute Types defined by the GATT profile (Vol 3, Part G, 3.4).
 namespace types {
 
-constexpr uint16_t kPrimaryService16 = 0x2800;
-constexpr uint16_t kSecondaryService16 = 0x2801;
-constexpr uint16_t kIncludeDeclaration16 = 0x2802;
-constexpr uint16_t kCharacteristicDeclaration16 = 0x2803;
-constexpr uint16_t kCharacteristicExtProperties16 = 0x2900;
-constexpr uint16_t kCharacteristicUserDescription16 = 0x2901;
-constexpr uint16_t kClientCharacteristicConfig16 = 0x2902;
-constexpr uint16_t kServerCharacteristicConfig16 = 0x2903;
-constexpr uint16_t kCharacteristicFormat16 = 0x2904;
-constexpr uint16_t kCharacteristicAggregateFormat16 = 0x2905;
-constexpr uint16_t kGenericAttributeService16 = 0x1801;
-constexpr uint16_t kServiceChangedCharacteristic16 = 0x2a05;
-constexpr uint16_t kServerSupportedFeaturesCharacteristic16 = 0x2b3a;
+inline constexpr uint16_t kPrimaryService16 = 0x2800;
+inline constexpr uint16_t kSecondaryService16 = 0x2801;
+inline constexpr uint16_t kIncludeDeclaration16 = 0x2802;
+inline constexpr uint16_t kCharacteristicDeclaration16 = 0x2803;
+inline constexpr uint16_t kCharacteristicExtProperties16 = 0x2900;
+inline constexpr uint16_t kCharacteristicUserDescription16 = 0x2901;
+inline constexpr uint16_t kClientCharacteristicConfig16 = 0x2902;
+inline constexpr uint16_t kServerCharacteristicConfig16 = 0x2903;
+inline constexpr uint16_t kCharacteristicFormat16 = 0x2904;
+inline constexpr uint16_t kCharacteristicAggregateFormat16 = 0x2905;
+inline constexpr uint16_t kGenericAttributeService16 = 0x1801;
+inline constexpr uint16_t kServiceChangedCharacteristic16 = 0x2a05;
+inline constexpr uint16_t kServerSupportedFeaturesCharacteristic16 = 0x2b3a;
 
-constexpr UUID kPrimaryService(kPrimaryService16);
-constexpr UUID kSecondaryService(kSecondaryService16);
-constexpr UUID kIncludeDeclaration(kIncludeDeclaration16);
-constexpr UUID kCharacteristicDeclaration(kCharacteristicDeclaration16);
-constexpr UUID kCharacteristicExtProperties(kCharacteristicExtProperties16);
-constexpr UUID kCharacteristicUserDescription(kCharacteristicUserDescription16);
-constexpr UUID kClientCharacteristicConfig(kClientCharacteristicConfig16);
-constexpr UUID kServerCharacteristicConfig(kServerCharacteristicConfig16);
-constexpr UUID kCharacteristicFormat(kCharacteristicFormat16);
-constexpr UUID kCharacteristicAggregateFormat(kCharacteristicAggregateFormat16);
+inline constexpr UUID kPrimaryService(kPrimaryService16);
+inline constexpr UUID kSecondaryService(kSecondaryService16);
+inline constexpr UUID kIncludeDeclaration(kIncludeDeclaration16);
+inline constexpr UUID kCharacteristicDeclaration(kCharacteristicDeclaration16);
+inline constexpr UUID kCharacteristicExtProperties(
+    kCharacteristicExtProperties16);
+inline constexpr UUID kCharacteristicUserDescription(
+    kCharacteristicUserDescription16);
+inline constexpr UUID kClientCharacteristicConfig(
+    kClientCharacteristicConfig16);
+inline constexpr UUID kServerCharacteristicConfig(
+    kServerCharacteristicConfig16);
+inline constexpr UUID kCharacteristicFormat(kCharacteristicFormat16);
+inline constexpr UUID kCharacteristicAggregateFormat(
+    kCharacteristicAggregateFormat16);
 
 // Defined Generic Attribute Profile Service (Vol 3, Part G, 7)
-constexpr bt::UUID kGenericAttributeService(kGenericAttributeService16);
+inline constexpr bt::UUID kGenericAttributeService(kGenericAttributeService16);
 constexpr bt::UUID kServiceChangedCharacteristic(
     kServiceChangedCharacteristic16);
 constexpr UUID kServerSupportedFeaturesCharacteristic(
@@ -87,8 +92,8 @@ enum ExtendedProperty : uint16_t {
 using ExtendedProperties = uint16_t;
 
 // Values for the "Client Characteristic Configuration" descriptor.
-constexpr uint16_t kCCCNotificationBit = 0x0001;
-constexpr uint16_t kCCCIndicationBit = 0x0002;
+inline constexpr uint16_t kCCCNotificationBit = 0x0001;
+inline constexpr uint16_t kCCCIndicationBit = 0x0002;
 
 using PeerId = PeerId;
 
@@ -135,7 +140,7 @@ struct DescriptorHandle {
 using IdType = uint64_t;
 
 // 0 is reserved as an invalid ID.
-constexpr IdType kInvalidId = 0u;
+inline constexpr IdType kInvalidId = 0u;
 
 // Types representing GATT discovery results.
 

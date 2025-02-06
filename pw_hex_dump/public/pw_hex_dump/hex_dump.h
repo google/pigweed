@@ -30,7 +30,7 @@ namespace pw::dump {
 ///   0x0000F00D
 ///
 /// Note: the +2 accounts for the "0x" prefix.
-constexpr const size_t kHexAddrStringSize = sizeof(uintptr_t) * 2 + 2;
+inline constexpr const size_t kHexAddrStringSize = sizeof(uintptr_t) * 2 + 2;
 
 /// The formatted hex dumper is a configurable class that can dump hex in
 /// various formats. The default produced output is xxd compatible, though

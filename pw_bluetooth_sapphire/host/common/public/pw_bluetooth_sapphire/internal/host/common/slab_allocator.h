@@ -18,11 +18,11 @@
 namespace bt {
 
 // NOTE: Tweak these as needed.
-constexpr size_t kSmallBufferSize = 64;
-constexpr size_t kLargeBufferSize = 2048;
+inline constexpr size_t kSmallBufferSize = 64;
+inline constexpr size_t kLargeBufferSize = 2048;
 
-constexpr size_t kMaxNumSlabs = 100;
-constexpr size_t kSlabSize = 32767;
+inline constexpr size_t kMaxNumSlabs = 100;
+inline constexpr size_t kSlabSize = 32767;
 
 // Returns a slab-allocated byte buffer with |size| bytes of capacity. The
 // underlying allocation occupies |kSmallBufferSize| or |kLargeBufferSize| bytes

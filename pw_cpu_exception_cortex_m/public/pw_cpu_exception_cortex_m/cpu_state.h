@@ -31,7 +31,7 @@ namespace pw::cpu_exception::cortex_m {
 // this purpose. PC and PSR values of 0xFFFFFFFF are dubious too, so this
 // constant is clear enough at suggesting that the registers weren't
 // properly captured.
-constexpr uintptr_t kUndefinedPcLrOrPsrRegValue = 0xFFFF'FFFF;
+inline constexpr uintptr_t kUndefinedPcLrOrPsrRegValue = 0xFFFF'FFFF;
 
 // This is dictated by ARMv7-M architecture. Do not change.
 struct ExceptionRegisters {

@@ -19,7 +19,7 @@
 namespace bt::hci {
 namespace {
 
-constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
+inline constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 
 class FakeAclConnection : public AclDataChannel::ConnectionInterface {
  public:

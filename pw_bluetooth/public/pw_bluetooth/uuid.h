@@ -176,7 +176,8 @@ namespace internal {
 // however if a reference to the return value of BluetoothBase() is needed this
 // variable would be the only global symbol that provides it even if it is used
 // from multiple translation units.
-constexpr Uuid kBluetoothBaseUuid{"00000000-0000-1000-8000-00805F9B34FB"};
+inline constexpr Uuid kBluetoothBaseUuid{
+    "00000000-0000-1000-8000-00805F9B34FB"};
 }  // namespace internal
 
 inline constexpr const Uuid& Uuid::BluetoothBase() {
