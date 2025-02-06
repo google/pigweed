@@ -27,7 +27,7 @@
 
 namespace pw::string::internal::config {
 
-constexpr bool kEnableDecimalFloatExpansion =
+inline constexpr bool kEnableDecimalFloatExpansion =
     PW_STRING_ENABLE_DECIMAL_FLOAT_EXPANSION;
 
 }

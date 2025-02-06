@@ -28,7 +28,6 @@ cc_library(
     name = "config",
     hdrs = ["public/pw_string/internal/config.h"],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
     deps = [":config_override"],
 )
 
