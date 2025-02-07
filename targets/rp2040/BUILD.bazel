@@ -302,3 +302,8 @@ sphinx_docs_library(
     ],
     target_compatible_with = incompatible_with_mcu(),
 )
+
+filegroup(
+    name = "bloaty_config",
+    srcs = ["bloaty_config.bloaty"],
+)

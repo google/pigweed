@@ -114,6 +114,8 @@ pw_cc_binary(
         "-DUSE_STRING_BUILDER=0",
         "-DPROVIDE_BASE_SNPRINTF=1",
     ],
+    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
+    tags = ["manual"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_string",

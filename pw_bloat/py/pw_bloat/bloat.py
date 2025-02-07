@@ -15,7 +15,7 @@
 bloat is a script which generates a size report card for binary files.
 """
 
-import argparse
+from dataclasses import dataclass
 import json
 import logging
 import os
@@ -24,8 +24,6 @@ import subprocess
 import sys
 import tempfile
 from typing import Iterable
-
-import pw_cli.log
 
 from pw_bloat.bloaty_config import generate_bloaty_config
 from pw_bloat.label import DataSourceMap
@@ -40,41 +38,6 @@ _LOG = logging.getLogger(__name__)
 
 MAX_COL_WIDTH = 50
 BINARY_SIZES_EXTENSION = '.binary_sizes.json'
-
-
-def parse_args() -> argparse.Namespace:
-    """Parses the script's arguments."""
-
-    parser = argparse.ArgumentParser('Generate a size report card for binaries')
-    parser.add_argument(
-        '--gn-arg-path',
-        type=str,
-        required=True,
-        help='File path to json of binaries',
-    )
-    parser.add_argument(
-        '--single-report',
-        action="store_true",
-        help='Determine if calling single size report',
-    )
-    parser.add_argument(
-        '--json-key-prefix',
-        type=str,
-        help='Prefix for json keys in size report, default = target name',
-        default=None,
-    )
-    parser.add_argument(
-        '--full-json-summary',
-        action="store_true",
-        help='Include all levels of data sources in json binary report',
-    )
-    parser.add_argument(
-        '--ignore-unused-labels',
-        action="store_true",
-        help='Do not include labels with size equal to zero in report',
-    )
-
-    return parser.parse_args()
 
 
 def run_bloaty(
@@ -255,6 +218,17 @@ def create_binary_sizes_json(
     return json.dumps(json_content, sort_keys=True, indent=2)
 
 
+@dataclass
+class ReportTarget:
+    target_binary: str
+    base_binary: str | None
+    bloaty_config: str
+    label: str
+    source_filter: str | None
+    data_sources: list[str]
+
+
+# Legacy wrapper for single_target_report.
 def single_target_output(
     target: str,
     bloaty_config: str,
@@ -266,36 +240,73 @@ def single_target_output(
     full_json: bool,
     ignore_unused_labels: bool,
 ) -> int:
+    """DEPRECATED - use single_target_report instead."""
+    report_target = ReportTarget(
+        target_binary=target,
+        base_binary=None,
+        bloaty_config=bloaty_config,
+        label='',
+        source_filter=None,
+        data_sources=list(data_sources),
+    )
+    try:
+        single_target_report(
+            report_target,
+            target_out_file,
+            out_dir,
+            extra_args,
+            json_key_prefix,
+            full_json,
+            ignore_unused_labels,
+        )
+        return 0
+    except Exception:  # pylint:disable=broad-exception-caught
+        return 1
+
+
+def single_target_report(
+    target: ReportTarget,
+    target_out_file: str,
+    out_dir: str,
+    extra_args: Iterable[str],
+    json_key_prefix: str,
+    full_json: bool,
+    ignore_unused_labels: bool,
+) -> None:
     """Generates size report for a single target.
 
     Args:
-      target: The ELF binary on which to run.
-      bloaty_config: Path to Bloaty config file.
+      target: Information about the ELF binary on which to run.
       target_out_file: Output file name for the generated reports.
       out_dir: Path to write size reports to.
-      data_sources: Hierarchical data sources to display.
       extra_args: Additional command-line arguments to pass to Bloaty.
       json_key_prefix: Prefix for the json keys, uses target name by default.
       full_json: Json report contains all hierarchical data source totals.
-
-    Returns:
+      ignore_unused_labels: If True, filters out zero-size labels in the output.
         Zero on success.
 
     Raises:
         subprocess.CalledProcessError: The Bloaty invocation failed.
     """
+    extra_args = list(extra_args)
+    if target.source_filter:
+        extra_args.extend(('--source-filter', target.source_filter))
 
     try:
         single_output = run_bloaty(
-            target,
-            bloaty_config,
-            data_sources=data_sources,
+            target.target_binary,
+            target.bloaty_config,
+            data_sources=target.data_sources,
             extra_args=extra_args,
         )
 
     except subprocess.CalledProcessError:
-        _LOG.error('%s: failed to run size report on %s', sys.argv[0], target)
-        return 1
+        _LOG.error(
+            '%s: failed to run size report on %s',
+            sys.argv[0],
+            target.target_binary,
+        )
+        raise
 
     single_tsv = single_output.decode().splitlines()
     single_report = BloatTableOutput(
@@ -326,65 +337,54 @@ def single_target_output(
         out_dir,
     )
 
-    return 0
 
+def diff_report(
+    targets: list[ReportTarget],
+    target_out_file: str,
+    out_dir: str,
+    default_data_sources: Iterable[str],
+    extra_args: Iterable[str],
+    fragment: bool = False,
+) -> None:
+    """Generates a size report diff table containing one or more diff reports.
 
-def main() -> int:
-    """Program entry point."""
+    Args:
+        targets: List of diff comparisons to run. Each target must have both
+            a base_binary and a target_binary.
+        target_out_file: Output file name for the generated reports.
+        out_dir: Directory to which to write output files.
+        default_data_sources: Bloaty data sources to display in the report,
+            unless overridden by individual targets.
+        extra_args: Additional command line arguments to forward to Bloaty.
 
-    args = parse_args()
-    extra_args = ['--tsv']
-    data_sources = ['segment_names', 'symbols']
-    gn_arg_dict = {}
-    json_file = open(args.gn_arg_path)
-    gn_arg_dict = json.load(json_file)
-    json_key_prefix = args.json_key_prefix
+    Raises:
+        ValueError: List of diff targets is malformed.
+        subprocess.CalledProcessError: The Bloaty invocation failed.
+    """
+    default_data_sources = list(default_data_sources)
+    extra_args = list(extra_args)
 
-    if args.single_report:
-        single_binary_args = gn_arg_dict['binaries'][0]
-        if single_binary_args['source_filter']:
-            extra_args.extend(
-                ['--source-filter', single_binary_args['source_filter']]
-            )
-        if single_binary_args['data_sources']:
-            data_sources = single_binary_args['data_sources']
-
-        # Use target binary name as json key prefix if none given
-        if not json_key_prefix:
-            json_key_prefix = single_binary_args['target']
-
-        return single_target_output(
-            single_binary_args['target'],
-            single_binary_args['bloaty_config'],
-            gn_arg_dict['target_name'],
-            gn_arg_dict['out_dir'],
-            data_sources,
-            extra_args,
-            json_key_prefix,
-            args.full_json_summary,
-            args.ignore_unused_labels,
-        )
-
-    default_data_sources = ['segment_names', 'symbols']
-
-    diff_report = ''
+    diff_report_output = ''
     rst_diff_report = ''
-    for curr_diff_binary in gn_arg_dict['binaries']:
+    for diff_target in targets:
         curr_extra_args = extra_args.copy()
         data_sources = default_data_sources
 
-        if curr_diff_binary['source_filter']:
+        if diff_target.source_filter is not None:
             curr_extra_args.extend(
-                ['--source-filter', curr_diff_binary['source_filter']]
+                ['--source-filter', diff_target.source_filter]
             )
 
-        if curr_diff_binary['data_sources']:
-            data_sources = curr_diff_binary['data_sources']
+        if diff_target.data_sources:
+            data_sources = diff_target.data_sources
+
+        if diff_target.base_binary is None:
+            raise ValueError('Binaries to diff_report must have a diff base')
 
         try:
             single_output_base = run_bloaty(
-                curr_diff_binary['base'],
-                curr_diff_binary['bloaty_config'],
+                diff_target.base_binary,
+                diff_target.bloaty_config,
                 data_sources=data_sources,
                 extra_args=curr_extra_args,
             )
@@ -393,14 +393,14 @@ def main() -> int:
             _LOG.error(
                 '%s: failed to run base size report on %s',
                 sys.argv[0],
-                curr_diff_binary["base"],
+                diff_target.base_binary,
             )
-            return 1
+            raise
 
         try:
             single_output_target = run_bloaty(
-                curr_diff_binary['target'],
-                curr_diff_binary['bloaty_config'],
+                diff_target.target_binary,
+                diff_target.bloaty_config,
                 data_sources=data_sources,
                 extra_args=curr_extra_args,
             )
@@ -409,9 +409,9 @@ def main() -> int:
             _LOG.error(
                 '%s: failed to run target size report on %s',
                 sys.argv[0],
-                curr_diff_binary['target'],
+                diff_target.target_binary,
             )
-            return 1
+            raise
 
         if not single_output_target or not single_output_base:
             continue
@@ -424,30 +424,29 @@ def main() -> int:
         )
         diff_dsm = target_dsm.diff(base_dsm)
 
-        diff_report += BloatTableOutput(
+        diff_report_output += BloatTableOutput(
             diff_dsm,
             MAX_COL_WIDTH,
             LineCharset,
-            diff_label=curr_diff_binary['label'],
+            diff_label=diff_target.label,
         ).create_table()
 
-        curr_rst_report = RstOutput(diff_dsm, curr_diff_binary['label'])
-        if rst_diff_report == '':
+        curr_rst_report = RstOutput(diff_dsm, diff_target.label)
+        if not fragment and rst_diff_report == '':
             rst_diff_report = curr_rst_report.create_table()
         else:
             rst_diff_report += f"{curr_rst_report.add_report_row()}\n"
 
-    print(diff_report)
+    if not fragment:
+        print(diff_report_output)
+        write_file(
+            f"{target_out_file}.txt",
+            diff_report_output,
+            out_dir,
+        )
+
     write_file(
-        gn_arg_dict['target_name'], rst_diff_report, gn_arg_dict['out_dir']
+        target_out_file,
+        rst_diff_report,
+        out_dir,
     )
-    write_file(
-        f"{gn_arg_dict['target_name']}.txt", diff_report, gn_arg_dict['out_dir']
-    )
-
-    return 0
-
-
-if __name__ == '__main__':
-    pw_cli.log.install()
-    sys.exit(main())

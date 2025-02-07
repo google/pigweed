@@ -38,6 +38,13 @@ py_library(
 )
 
 pw_py_binary(
+    name = "bloat_build",
+    srcs = ["pw_bloat/build.py"],
+    main = "pw_bloat/build.py",
+    deps = [":pw_bloat"],
+)
+
+pw_py_binary(
     name = "bloat",
     srcs = ["pw_bloat/__main__.py"],
     main = "pw_bloat/__main__.py",

@@ -122,7 +122,7 @@ template("pw_size_report") {
     }
 
     _bloat_script_args = [
-      "--gn-arg-path",
+      "--target-json",
       rebase_path(_args_path, root_build_dir),
       "--single-report",
     ]
@@ -394,7 +394,7 @@ template("pw_size_diff") {
     }
 
     _bloat_script_args = [
-      "--gn-arg-path",
+      "--target-json",
       rebase_path(_diff_path, root_build_dir),
     ]
 
@@ -431,7 +431,7 @@ template("pw_size_diff") {
         metadata = {
           pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
         }
-        script = "$dir_pw_bloat/py/pw_bloat/bloat.py"
+        script = "$dir_pw_bloat/py/pw_bloat/build.py"
         python_deps = [ "$dir_pw_bloat/py" ]
         inputs = _bloaty_configs + [ _diff_path ]
         outputs = [

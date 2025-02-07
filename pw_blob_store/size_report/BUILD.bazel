@@ -24,6 +24,12 @@ licenses(["notice"])
 pw_cc_binary(
     name = "base",
     srcs = ["base.cc"],
+    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
+    tags = ["manual"],
+    target_compatible_with = select({
+        "@platforms//os:none": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",
@@ -39,6 +45,12 @@ pw_cc_binary(
 pw_cc_binary(
     name = "basic_blob",
     srcs = ["basic_blob.cc"],
+    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
+    tags = ["manual"],
+    target_compatible_with = select({
+        "@platforms//os:none": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",
@@ -55,6 +67,12 @@ pw_cc_binary(
 pw_cc_binary(
     name = "deferred_write_blob",
     srcs = ["deferred_write_blob.cc"],
+    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
+    tags = ["manual"],
+    target_compatible_with = select({
+        "@platforms//os:none": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         "//pw_assert",
         "//pw_bloat:bloat_this_binary",

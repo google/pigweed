@@ -529,8 +529,9 @@ class RstOutput:
         if isinstance(self._data_source_map, DiffDataSourceMap):
             self._diff_mode = True
 
-    def create_table(self) -> str:
-        """Initializes RST table and builds first row."""
+    @staticmethod
+    def create_table_heading() -> str:
+        """Creates the heading for a bloat RST table."""
         table_builder = [
             '\n.. list-table::',
             '   :widths: auto',
@@ -541,7 +542,11 @@ class RstOutput:
             list_space = '*' if i == 0 else ' '
             table_builder.append(f"   {list_space} - {col_name}")
 
-        return '\n'.join(table_builder) + f'\n{self.add_report_row()}\n'
+        return '\n'.join(table_builder)
+
+    def create_table(self) -> str:
+        """Initializes RST table and builds first row."""
+        return RstOutput.create_table_heading() + f'\n{self.add_report_row()}\n'
 
     def _label_status_unchanged(self, parent_lb_name: str) -> bool:
         """Determines if parent label has no status change in diff mode."""

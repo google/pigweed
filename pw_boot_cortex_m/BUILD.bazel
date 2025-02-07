@@ -76,3 +76,8 @@ sphinx_docs_library(
     prefix = "pw_boot_cortex_m/",
     target_compatible_with = incompatible_with_mcu(),
 )
+
+filegroup(
+    name = "bloaty_config",
+    srcs = ["bloaty_config.bloaty"],
+)

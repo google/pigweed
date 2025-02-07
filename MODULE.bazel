@@ -409,7 +409,7 @@ http_archive(
 # ===================================
 cipd_repository(
     name = "bloaty",
-    path = "fuchsia/third_party/bloaty/${os}-amd64",
+    path = "fuchsia/third_party/bloaty/${os=linux,mac}-amd64",
     tag = "git_revision:c057ba4f43db0506d4ba8c096925b054b02a8bd3",
 )
 
