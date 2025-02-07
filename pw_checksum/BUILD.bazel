@@ -20,7 +20,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -72,6 +71,7 @@ pw_cc_test(
     deps = [
         ":pw_checksum",
         "//pw_bytes",
+        "//pw_span",
         "//pw_unit_test",
     ],
 )
@@ -82,6 +82,8 @@ pw_cc_perf_test(
     deps = [
         ":pw_checksum",
         "//pw_bytes",
+        "//pw_perf_test",
+        "//pw_span",
     ],
 )
 
@@ -91,6 +93,8 @@ pw_cc_perf_test(
     deps = [
         ":pw_checksum",
         "//pw_bytes",
+        "//pw_perf_test",
+        "//pw_span",
     ],
 )
 
