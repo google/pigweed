@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <cstdint>
+
 namespace pw::bluetooth {
 
 // The maximum length of a device name. This value was selected based on the HCI
