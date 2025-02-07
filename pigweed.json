@@ -195,6 +195,12 @@
             "//..."
           ]
         ],
+        "kernel": [
+          [
+            "query",
+            "//pw_status"
+          ]
+        ],
         "sanitizers": [
           [
             "build",
