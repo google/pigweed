@@ -7,8 +7,25 @@ Working with the pigweed.dev build system
 used by ``pigweed.dev``, you'll need to interact with this Bazel-based
 documentation generation (docgen) system.
 
-Check out :ref:`contrib-docs-build-architecture` for a top-down explanation
+Check out :ref:`contrib-docs-build-appendix-architecture` for a top-down explanation
 of the main components of the docgen system.
+
+.. _contrib-docs-build-quickstart:
+
+----------
+Quickstart
+----------
+#. Build the docs:
+
+   .. code-block:: console
+
+      $ bazelisk build //docs:docs
+
+#. Locally preview the docs:
+
+   .. code-block:: console
+
+      $ bazelisk run //docs:docs.serve
 
 .. _contrib-docs-build-setup:
 
@@ -22,11 +39,16 @@ complete this setup:
 
 #. :ref:`docs-install-bazel`.
 
-.. _contrib-docs-build-doxygen:
+.. _contrib-docs-build-files:
 
--------------------------------
-Add files to the Doxygen system
--------------------------------
+---------------------------
+Add files to the docs build
+---------------------------
+
+.. _contrib-docs-build-files-doxygen:
+
+Add files to the C/C++ API reference auto-generation system (Doxygen)
+=====================================================================
 #. Package your headers into a ``filegroup``:
 
    .. code-block:: py
@@ -61,11 +83,45 @@ Add files to the Doxygen system
 #. Use a `Breathe directive`_ such as ``.. doxygenclass::`` to pull the API
    reference content into a reStructuredText file.
 
-.. _contrib-docs-build-sphinx:
+.. _contrib-docs-build-files-autodoc:
 
-------------------------------
-Add files to the Sphinx system
-------------------------------
+Add files to the Python API reference auto-generation system (autodoc)
+======================================================================
+If you see an error like this:
+
+.. code-block:: text
+
+   sphinx.errors.SphinxWarning: autodoc: failed to import module 'benchmark'
+   from module 'pw_rpc'; the following exception was raised:
+   No module named 'pw_rpc.benchmark'
+
+.. inclusive-language: disable
+.. _autodoc: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
+.. inclusive-language: enable
+
+It means that `autodoc`_ (the program we use to auto-generate Python API
+references) could not find the source code for the module that it was
+supposed to document. To fix this:
+
+#. Add your Python target as a dependency to the ``sphinx_build_binary``
+   rule in ``//docs/BUILD.bazel``:
+
+   .. code-block:: py
+
+      sphinx_build_binary(
+          name = "sphinx_build",
+          target_compatible_with = incompatible_with_mcu(),
+          deps = [
+              # …
+              "//pw_rpc/py:pw_rpc_benchmark",
+              # …
+          ],
+      )
+
+.. _contrib-docs-build-files-sphinx:
+
+Add reStructuredText files to Sphinx
+====================================
 #. Package your inputs into a ``sphinx_docs_library``:
 
    .. code-block:: py
@@ -102,21 +158,87 @@ Add files to the Sphinx system
 
 #. Add your new reStructuredText files to an existing `toctree`_, or create a new one.
 
-----------
+.. _contrib-docs-build-files-source:
+
+Add source code to the docs build
+=================================
+Whenever possible, don't manually write code examples in your reStructuredText
+(reST) docs. These code examples will bitrot over time. Instead, put your code
+examples in real source code that can actually be built and tested, and then
+use Sphinx's ``literalinclude`` feature to insert the code example into your
+doc.
+
+#. Put your code example into a unit test:
+
+   .. code-block:: c++
+
+      // examples.cc
+
+      TEST(StringExamples, BufferExample) {
+        // START: BufferExample
+        // …
+        // END: BufferExample
+      }
+
+#. Include the code example in your reST:
+
+   .. code-block:: rest
+
+      .. literalinclude:: ./examples.cc
+         :language: cpp
+         :dedent:
+         :start-after: // START: BufferExample
+         :end-before: // END: BufferExample
+
+#. Add the source code file to the ``srcs`` list in your
+   ``sphinx_docs_library`` target:
+
+   .. code-block:: py
+
+      sphinx_docs_library(
+          name = "docs",
+          srcs = [
+              # …
+              "examples.cc",
+              # …
+          ],
+      )
+
+.. _contrib-docs-build-files-images:
+
 Add images
-----------
+==========
 Images should not be checked into the Pigweed repo.
 See :ref:`contrib-docs-website-images`.
 
-------------
-Remove files
-------------
-Look for code along the lines of what gets added in :ref:`contrib-docs-build-sphinx`
-and remove it.
+.. _contrib-docs-build-files-remove:
 
-You may want to also set up :ref:`redirects <contrib-docs-website-redirects>`.
+----------------------------------------
+Remove or change files in the docs build
+----------------------------------------
+Here's the general workflow:
 
-.. _contrib-docs-build-basic:
+#. Remove or change files that are used in the docs build.
+
+#. :ref:`contrib-docs-build-build`.
+
+#. When the docs build fails, Bazel's logs will tell you what you need to do
+   next. If Bazel's logs aren't informative, try some of the tips described
+   in :ref:`contrib-docs-build-debug`.
+
+You may need to do some or all of these steps:
+
+* In your module's ``BUILD.bazel`` files, update these rules:
+
+  * ``sphinx_docs_library`` targets (usually named ``docs``)
+
+  * ``filegroup`` targets named ``doxygen``
+
+* Update ``//docs/BUILD.bazel``.
+
+* :ref:`redirects <contrib-docs-website-redirects>`.
+
+.. _contrib-docs-build-build:
 
 --------------
 Build the docs
@@ -125,7 +247,7 @@ Build the docs
 
    $ bazelisk build //docs:docs
 
-.. _contrib-docs-build-watch:
+.. _contrib-docs-build-build-watch:
 
 Watch the docs (automatically rebuild when files change)
 ========================================================
@@ -173,7 +295,7 @@ copying your files to the correct directory, run this command:
 
 .. code-block:: console
 
-   $ bazelisk build //docs:docs/_sources
+   $ bazelisk build //docs:_docs/_sources
 
 .. _contrib-docs-build-debug:
 
@@ -199,7 +321,19 @@ Also consider tweaking these ``extra_opts`` from the ``sphinx_docs`` rule in
 * Check `sphinx-build`_ to see what other options you might want to add or remove.
   ``sphinx-build`` is the underlying command that the ``sphinx_docs`` Bazel rule runs.
 
-.. _contrib-docs-build-architecture:
+.. _contrib-docs-build-troubleshoot:
+
+---------------
+Troubleshooting
+---------------
+
+.. _contrib-docs-build-troubleshoot-autodoc:
+
+autodoc: failed to import module
+================================
+See :ref:`contrib-docs-build-files-autodoc`.
+
+.. _contrib-docs-build-appendix-architecture:
 
 -------------------------------
 Appendix: Architecture overview
