@@ -26,7 +26,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -54,6 +53,7 @@ pw_cc_test(
     srcs = ["digital_io_test.cc"],
     deps = [
         ":pw_digital_io",
+        "//pw_status",
         "//pw_unit_test",
     ],
 )
@@ -68,8 +68,11 @@ cc_library(
         ":digital_io_proto_pwpb_rpc",
         ":pw_digital_io",
         "//pw_function",
+        "//pw_log",
+        "//pw_result",
         "//pw_rpc/pwpb:server_api",
         "//pw_span",
+        "//pw_status",
     ],
 )
 
@@ -116,6 +119,7 @@ pw_cc_test(
     srcs = ["digital_io_mock_test.cc"],
     deps = [
         ":digital_io_mock",
+        "//pw_status",
         "//pw_unit_test",
     ],
 )
