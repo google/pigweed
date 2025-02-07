@@ -118,6 +118,24 @@ fuchsia.git developers can copy/link the ``bt-host.far`` file to
 ``//prebuilt/connectivity/bluetooth/bt-host/<arch>/`` and rename it to
 ``bt-host`` to replace the prebuilt that Fuchsia uses.
 
+Note that copying the ``far`` file to fuchsia.git does not copy the debug symbols which
+means that crashes won't be symbolicated. If you need debug symbols you can run the
+following command in the Pigweed repository to register the symbols.
+
+.. tab-set::
+
+      .. tab-item:: arm64
+
+         .. code-block:: console
+
+            $ bazelisk run --config=fuchsia //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.arm64.debug_symbols
+
+      .. tab-item:: x64
+
+          .. code-block:: console
+
+             $ bazelisk run --config=fuchsia //pw_bluetooth_sapphire/fuchsia/bt_host:pkg.x64.debug_symbols
+
 --------------------
 Working with devices
 --------------------
