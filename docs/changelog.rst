@@ -12,6 +12,224 @@ Talk to the team at Pigweed Live
 .. pigweed-live::
 
 .. _docs-changelog-latest:
+.. _docs-changelog-2025-02-06:
+
+-----------
+Feb 6, 2025
+-----------
+
+.. changelog_highlights_start
+
+.. note::
+
+   :ref:`docs-changelog` will be paused for 2 months.
+   It will resume in April 2025.
+
+Highlights (Jan 25, 2025 to Feb 6, 2025):
+
+* **Tokenization improvements in C++**: The new
+  :cpp:func:`pw::tokenizer::Detokenizer::FromCsv` C++ method constructs a
+  detokenizer from a CSV file. :ref:`Tokenization domains <seed-0105>` are now
+  supported in C++.
+
+* **New global variables wrapper** :cpp:class:`pw::RuntimeInitGlobal` declares
+  a global variable that is initialized at runtime. Its destructor is never
+  run.
+
+* **Bazel-based docs build**: ``pigweed.dev`` is now built with Bazel. See
+  :ref:`blog-08-bazel-docgen`.
+
+.. changelog_highlights_end
+
+.. _docs-changelog-2025-02-06-Modules:
+
+Modules
+=======
+
+.. _docs-changelog-2025-02-06-Modules-pw_allocator:
+
+pw_allocator
+------------
+New features:
+
+.. 9f0f4f8d888e7ebfd228efd622df996f3125f2f1
+
+* :cpp:class:`pw::Allocator` now has more overloads for customizing
+  allocated array alignment. Commit: `Add overloads to customize allocated
+  array alignment <https://pwrev.dev/260276>`__.
+
+Changes:
+
+.. c48adeb92ff36577a34f22cf7b2a0b8d0086a3b2
+
+* ``pw::allocator::test::SynchronizedAllocatorForTest`` was removed.
+  Commit: `Remove SynchronizedAllocatorForTest
+  <https://pwrev.dev/264698>`__.
+
+.. _docs-changelog-2025-02-06-Modules-pw_bluetooth:
+
+pw_bluetooth
+------------
+New features:
+
+.. 7bec9117b6f21884a5046ecabf351b671b167885
+
+* ``pw_bluetooth`` now supports a :ref:`snoop log
+  <module-pw_bluetooth-snoop-log>` for recording
+  HCI RX/TX traffic. Commit: `Add snoop log <https://pwrev.dev/226611>`__.
+  Bug: :bug:`389995204`.
+
+.. _docs-changelog-2025-02-06-Modules-pw_bluetooth_proxy:
+
+pw_bluetooth_proxy
+------------------
+New features:
+
+.. 89a3c9cab649585ebeb7b863035d28ff419829bc
+
+* The new :cpp:class:`pw::bluetooth::proxy::AcquireGattNotifyChannel`
+  method returns a GATT Notify channel that supports sending notifications
+  to a particular connection handle and attribute. Commit: `Support
+  acquire of gatt notify channels <https://pwrev.dev/264954>`__. Bugs:
+  :bug:`369709521`, :bug:`379337272`.
+
+.. _docs-changelog-2025-02-06-Modules-pw_bluetooth_sapphire:
+
+pw_bluetooth_sapphire
+---------------------
+New features:
+
+.. c6f84aa0c5a57695a4a57e3811c89135e9344f00
+
+* :ref:`module-pw_bluetooth_sapphire-fuchsia-zxdb` explains how to use
+  Fuchsia's kernel debugger. Commit: `Document how to use the Zxdb
+  Debugger <https://pwrev.dev/263812>`__.
+
+.. _docs-changelog-2025-02-06-Modules-pw_containers:
+
+pw_containers
+-------------
+New features:
+
+.. 16ddae866c80f3cee061f189cee149700f81d188
+
+* :cpp:class:`pw::Vector` now has an explicit ``constexpr`` constructor.
+  Using this constructor will place the entire object in ``.data`` by
+  default, which will increase ROM size. Commit: `Add explicit constexpr
+  constructor for Vector <https://pwrev.dev/263692>`__.
+
+Bug fixes:
+
+.. 852571bdf8b031b7ca89fff2ae9fdaa4f6cfe0a6
+
+* A bug was fixed where ``pw::Vector::insert`` was move assigning to
+  destroyed objects. Commit: `Do not move assign to destroyed objects in
+  Vector::insert <https://pwrev.dev/252452>`__. Bug: :bug:`381942905`.
+
+.. _docs-changelog-2025-02-06-Modules-pw_crypto:
+
+pw_crypto
+---------
+New features:
+
+.. a1eb87b67a72231755b7fd6671e99d7f7276ba20
+
+* :cpp:class:`pw::crypto::aes_cmac::Cmac` provides support for the
+  AES-CMAC algorithm. Commit: `Add Aes::Cmac <https://pwrev.dev/231913>`__.
+
+.. _docs-changelog-2025-02-06-Modules-pw_tokenizer:
+
+pw_tokenizer
+------------
+New features:
+
+.. 9b46aef8010f3c2edd87f2365d9ef6ee4656df56
+
+* The new :cpp:func:`pw::tokenizer::Detokenizer::FromCsv` C++ method
+  constructs a detokenizer from a CSV file. Commit: `Add support for CSV
+  parsing in C++ <https://pwrev.dev/256653>`__.
+
+.. 8fe4260fdbbf806a2470396d0d1da1bb6b15d522
+
+* :ref:`Tokenization domains <seed-0105>` are now supported in C++.
+  Commit: `Add support for domains in C++ <https://pwrev.dev/255173>`__.
+
+.. _docs-changelog-2025-02-06-Modules-pw_toolchain:
+
+pw_toolchain
+------------
+New features:
+
+.. 5f9420a551774235c883a621e639228525b13591
+
+* :cpp:class:`pw::RuntimeInitGlobal` is a new wrapper for global
+  variables. See :ref:`module-pw_toolchain-cpp-globals`. Commit:
+  `Introduce RuntimeInitGlobal <https://pwrev.dev/263875>`__.
+
+.. d2f7a36184d742e27761591a0dac13fa421e6b32
+
+* :ref:`module-pw_toolchain` has started to support a Zephyr toolchain.
+  Commit: `Add support for Zephyr toolchain <https://pwrev.dev/263836>`__.
+
+.. 51a7b5cc4bbdbb54d4eb0a9b0200a76c7c479c65
+
+* :ref:`module-pw_toolchain-bazel-clang-tidy` explains how to integrate
+  Pigweed's toolchain with ``clang-tidy``. Commit: `Document clang-tidy +
+  Bazel <https://pwrev.dev/262873>`__. Bug: :bug:`341723612`.
+
+.. _docs-changelog-2025-02-06-Modules-pw_transfer:
+
+pw_transfer
+-----------
+Bug fixes:
+
+.. d95bb9205b6826e7c35f06f2ae53e354a1d795e8
+
+* In proto3, when a retry config option is 0, ``pw_transfer`` no longer
+  attempts to set it. Commit: `Ignore 0 retry values from config proto
+  <https://pwrev.dev/265253>`__. Bug: :bug:`357145010`.
+
+.. _docs-changelog-2025-02-06-Build-systems:
+
+Build systems
+=============
+
+.. _docs-changelog-2025-02-06-Build-systems-Bazel:
+
+Bazel
+-----
+New features:
+
+.. 5f466288aea2a17142258a4ed0683b57aa59c711
+
+* The Pigweed Bazel build has started to support Zephyr's toolchain.
+  Commit: `Add Zephyr toolchain CIPD repo <https://pwrev.dev/263832>`__.
+
+.. _docs-changelog-2025-02-06-Docs:
+
+Docs
+====
+New features:
+
+.. 18076431f27790a69116ef91bb8f8c877eb6a479
+
+* `pigweed.dev/rustdoc <https://pigweed.dev/rustdoc>`__ now provides an
+  index of all Pigweed Rust crates. Previously, that page would 404.
+  Commit: `Add index page to Rust API docs <https://pwrev.dev/263838>`__.
+
+.. 55b363ba45eb871df096ca060c93a45f73b741a7
+
+* When viewing the docs on a staging site, there's now a banner at the
+  top of the docs site to make it clear that you're not viewing the
+  official Pigweed docs. Commit: `Present banner on staged docs
+  <https://pwrev.dev/263513>`__. Bug: :bug:`304835851`.
+
+.. 809d32b33e2dd368bc91704e7d70f7069d6cc7d9
+
+* ``pigweed.dev`` is now built with Bazel. See
+  :ref:`blog-08-bazel-docgen`. Commit: `Add Bazel migration blog post
+  <https://pwrev.dev/264515>`__.
+
 .. _docs-changelog-2025-01-24:
 
 ------------

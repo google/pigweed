@@ -164,7 +164,7 @@ Usage
    resolve this. Similarly, you need to rebuild in order for .emb file updates
    to be reflected in the generated headers.
 
-.. _module-pw_bluetooth-contributing:
+.. _module-pw_bluetooth-snoop-log:
 
 ---------
 Snoop Log
@@ -196,6 +196,8 @@ The snoop log is easy to integrate into your H4 Uart driver.
      pw::bluetooth::SnoopBuffer</*kTotalSize=*/4096, /*kMaxHciPacketSize*/ 128>
          snoop_{pw::chrono::VirtualSystemClock::RealClock()};
    };
+
+.. _module-pw_bluetooth-contributing:
 
 Contributing
 ============

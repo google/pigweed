@@ -76,6 +76,8 @@ automatically includes a wrapper for ``abort`` for use of ``stdout`` and
 If you need to use your own wrapper for ``abort``, include the library directly
 using ``pw_toolchain/arm_gcc:newlib_os_interface_stubs``.
 
+.. _module-pw_toolchain-cpp-globals:
+
 Global variables: constant initialization and binary size
 =========================================================
 Global variables---variables with static storage duration---are initialized

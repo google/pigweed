@@ -256,6 +256,8 @@ contents.
 .. _fuchsia/prebuilt/bt-hci-virtual: https://chrome-infra-packages.appspot.com/p/fuchsia/prebuilt/bt-hci-virtual
 .. _pigweed-linux-bazel-bthost: https://ci.chromium.org/ui/p/pigweed/builders/pigweed.ci/pigweed-linux-bazel-bthost
 
+.. _module-pw_bluetooth_sapphire-fuchsia-zxdb:
+
 Using Zxdb: the Fuchsia debugger
 ================================
 
