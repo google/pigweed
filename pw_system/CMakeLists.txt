@@ -125,6 +125,7 @@ pw_add_library(pw_system.transfer_handlers STATIC
     public
   PUBLIC_DEPS
     pw_persistent_ram
+    pw_system.config
     pw_trace_tokenized.config
     pw_transfer
     pw_transfer.proto.pwpb

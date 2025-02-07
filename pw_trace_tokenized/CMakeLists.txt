@@ -139,8 +139,12 @@ pw_add_library(pw_trace_tokenized.rpc_service STATIC
 )
 
 pw_add_library(pw_trace_tokenized.base_trace_service STATIC
+  HEADERS
+    public/pw_trace_tokenized/base_trace_service.h
   SOURCES
     base_trace_service.cc
+  PUBLIC_INCLUDES
+    public
   PRIVATE_DEPS
     pw_log
     pw_stream

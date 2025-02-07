@@ -43,11 +43,7 @@ pw_add_library(pw_rpc.log_config INTERFACE
 pw_add_library(pw_rpc.server STATIC
   HEADERS
     public/pw_rpc/server.h
-    public/pw_rpc/service.h
-    public/pw_rpc/internal/hash.h
-    public/pw_rpc/internal/method.h
-    public/pw_rpc/internal/method_lookup.h
-    public/pw_rpc/internal/method_union.h
+    public/pw_rpc/internal/grpc.h
     public/pw_rpc/internal/server_call.h
   PUBLIC_INCLUDES
     public
@@ -115,13 +111,18 @@ pw_add_library(pw_rpc.common STATIC
     public/pw_rpc/internal/channel_list.h
     public/pw_rpc/internal/encoding_buffer.h
     public/pw_rpc/internal/endpoint.h
+    public/pw_rpc/internal/hash.h
     public/pw_rpc/internal/lock.h
+    public/pw_rpc/internal/method.h
     public/pw_rpc/internal/method_info.h
+    public/pw_rpc/internal/method_lookup.h
+    public/pw_rpc/internal/method_union.h
     public/pw_rpc/internal/packet.h
     public/pw_rpc/method_id.h
     public/pw_rpc/method_info.h
     public/pw_rpc/method_type.h
     public/pw_rpc/packet_meta.h
+    public/pw_rpc/service.h
     public/pw_rpc/service_id.h
     public/pw_rpc/writer.h
   PUBLIC_INCLUDES

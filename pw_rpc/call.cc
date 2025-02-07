@@ -19,12 +19,10 @@
 #include "pw_log/log.h"
 #include "pw_preprocessor/util.h"
 #include "pw_rpc/channel.h"
-#include "pw_rpc/client.h"
 #include "pw_rpc/internal/encoding_buffer.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/internal/packet.pwpb.h"
-#include "pw_rpc/server.h"
 #include "pw_status/status_with_size.h"
 #include "pw_status/try.h"
 
