@@ -962,29 +962,31 @@ def bazel_build(ctx: PresubmitContext) -> None:
         '//pw_build:module_config_test',
     )
 
-    # Build upstream Pigweed for the rp2040.
-    # First using the config.
-    build_bazel(
-        ctx,
-        'build',
-        '--config=rp2040',
-        '//...',
-        # Bazel will silently skip any incompatible targets in wildcard builds;
-        # but we know that some end-to-end targets definitely should remain
-        # compatible with this platform. So we list them explicitly. (If an
-        # explicitly listed target is incompatible with the platform, Bazel
-        # will return an error instead of skipping it.)
-        '//pw_bloat:bloat_base',
-    )
-    # Then using the transition.
-    #
-    # This ensures that the rp2040_binary rule transition includes all required
-    # backends.
-    build_bazel(
-        ctx,
-        'build',
-        '//pw_system:rp2040_system_example',
-    )
+    for rp2xxx in ('rp2040', 'rp2350'):
+        # Build upstream Pigweed for the rp2040 and rp2350.
+        # First using the config.
+        build_bazel(
+            ctx,
+            'build',
+            f'--config={rp2xxx}',
+            '//...',
+            # Bazel will silently skip any incompatible targets in wildcard
+            # builds; but we know that some end-to-end targets definitely should
+            # remain compatible with this platform. So we list them explicitly.
+            # (If an explicitly listed target is incompatible with the platform,
+            # Bazel will return an error instead of skipping it.)
+            '//pw_bloat:bloat_base',
+            '//pw_status:status_test',
+        )
+        # Then using the transition.
+        #
+        # This ensures that the rp2040_binary rule transition includes all
+        # required backends.
+        build_bazel(
+            ctx,
+            'build',
+            f'//pw_system:{rp2xxx}_system_example',
+        )
 
     # Build upstream Pigweed for the Discovery board using STM32Cube.
     build_bazel(
