@@ -191,6 +191,8 @@ pw_toolchain/constexpr_tag.h
 ----------------------------
 .. doxygenstruct:: pw::ConstexprTag
 
+.. doxygenvariable:: pw::kConstexpr
+
 pw_toolchain/globals.h
 ----------------------
 .. doxygenclass:: pw::RuntimeInitGlobal
