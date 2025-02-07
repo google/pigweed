@@ -28,7 +28,6 @@ alias(
 alias(
     name = "presubmit",
     actual = "//pw_kernel/tooling:presubmit",
-    tags = ["kernel"],
 )
 
 sphinx_docs_library(
