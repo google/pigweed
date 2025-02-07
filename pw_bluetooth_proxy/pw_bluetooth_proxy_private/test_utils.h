@@ -103,7 +103,6 @@ template <typename EmbossT>
 Result<EmbossT> CreateAndPopulateToControllerView(H4PacketWithH4& h4_packet,
                                                   emboss::OpCode opcode,
                                                   size_t parameter_total_size) {
-  std::iota(h4_packet.GetHciSpan().begin(), h4_packet.GetHciSpan().end(), 100);
   h4_packet.SetH4Type(emboss::H4PacketType::COMMAND);
   PW_TRY_ASSIGN(auto view, MakeEmbossWriter<EmbossT>(h4_packet.GetHciSpan()));
   view.header().opcode().Write(opcode);
@@ -111,17 +110,21 @@ Result<EmbossT> CreateAndPopulateToControllerView(H4PacketWithH4& h4_packet,
   return view;
 }
 
-// Populate passed H4 event buffer and return Emboss view on it.
+// Populate passed H4 event buffer and return Emboss writer on it. Suitable for
+// use with EmbossT types whose `SizeInBytes()` accurately represents
+// the `parameter_total_size` that should be written (minus `EventHeader` size).
 template <typename EmbossT>
-Result<EmbossT> CreateAndPopulateToHostEventView(H4PacketWithHci& h4_packet,
-                                                 emboss::EventCode event_code) {
-  std::iota(h4_packet.GetHciSpan().begin(), h4_packet.GetHciSpan().end(), 0x10);
+Result<EmbossT> CreateAndPopulateToHostEventWriter(
+    H4PacketWithHci& h4_packet,
+    emboss::EventCode event_code,
+    size_t parameter_total_size = EmbossT::SizeInBytes() -
+                                  emboss::EventHeader::IntrinsicSizeInBytes()) {
   h4_packet.SetH4Type(emboss::H4PacketType::EVENT);
-
   PW_TRY_ASSIGN(auto view, MakeEmbossWriter<EmbossT>(h4_packet.GetHciSpan()));
   view.header().event_code().Write(event_code);
+  view.header().parameter_total_size().Write(parameter_total_size);
   view.status().Write(emboss::StatusCode::SUCCESS);
-  EXPECT_TRUE(view.Ok());
+  EXPECT_TRUE(view.IsComplete());
   return view;
 }
 
@@ -155,6 +158,9 @@ Status SendNumberOfCompletedPackets(
                     nocp_event.GetHciSpan()));
   view.header().event_code().Write(
       emboss::EventCode::NUMBER_OF_COMPLETED_PACKETS);
+  view.header().parameter_total_size().Write(
+      nocp_event.GetHciSpan().size() -
+      emboss::EventHeader::IntrinsicSizeInBytes());
   view.num_handles().Write(kNumConnections);
 
   size_t i = 0;

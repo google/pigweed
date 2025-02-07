@@ -160,11 +160,10 @@ Status SendLeReadBufferResponseFromController(
   std::array<
       uint8_t,
       emboss::LEReadBufferSizeV2CommandCompleteEventWriter::SizeInBytes()>
-      hci_arr;
-  hci_arr.fill(0);
+      hci_arr{};
   H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
   PW_TRY_ASSIGN(auto view,
-                CreateAndPopulateToHostEventView<
+                CreateAndPopulateToHostEventWriter<
                     emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
                     h4_packet, emboss::EventCode::COMMAND_COMPLETE));
   view.command_complete().command_opcode().Write(
@@ -183,12 +182,14 @@ Status SendReadBufferResponseFromController(ProxyHost& proxy,
       hci_arr{};
   H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
   PW_TRY_ASSIGN(auto view,
-                CreateAndPopulateToHostEventView<
+                CreateAndPopulateToHostEventWriter<
                     emboss::ReadBufferSizeCommandCompleteEventWriter>(
                     h4_packet, emboss::EventCode::COMMAND_COMPLETE));
   view.command_complete().command_opcode().Write(
       emboss::OpCode::READ_BUFFER_SIZE);
   view.total_num_acl_data_packets().Write(num_credits_to_reserve);
+  view.acl_data_packet_length().Write(0xFFFF);
+  view.synchronous_data_packet_length().Write(0xFF);
   EXPECT_TRUE(view.Ok());
 
   proxy.HandleH4HciFromController(std::move(h4_packet));
@@ -201,15 +202,15 @@ Status SendConnectionCompleteEvent(ProxyHost& proxy,
                                    uint16_t handle,
                                    emboss::StatusCode status) {
   std::array<uint8_t, emboss::ConnectionCompleteEvent::IntrinsicSizeInBytes()>
-      hci_arr_dc{};
-  H4PacketWithHci dc_event{emboss::H4PacketType::EVENT, hci_arr_dc};
-  PW_TRY_ASSIGN(auto view,
-                MakeEmbossWriter<emboss::ConnectionCompleteEventWriter>(
-                    dc_event.GetHciSpan()));
-  view.header().event_code().Write(emboss::EventCode::CONNECTION_COMPLETE);
+      hci_arr{};
+  H4PacketWithHci h4_packet{emboss::H4PacketType::EVENT, hci_arr};
+  PW_TRY_ASSIGN(
+      auto view,
+      CreateAndPopulateToHostEventWriter<emboss::ConnectionCompleteEventWriter>(
+          h4_packet, emboss::EventCode::CONNECTION_COMPLETE));
   view.status().Write(status);
   view.connection_handle().Write(handle);
-  proxy.HandleH4HciFromController(std::move(dc_event));
+  proxy.HandleH4HciFromController(std::move(h4_packet));
   return OkStatus();
 }
 
@@ -253,6 +254,9 @@ Status SendDisconnectionCompleteEvent(ProxyHost& proxy,
                 MakeEmbossWriter<emboss::DisconnectionCompleteEventWriter>(
                     dc_event_from_controller.GetHciSpan()));
   view.header().event_code().Write(emboss::EventCode::DISCONNECTION_COMPLETE);
+  view.header().parameter_total_size().Write(
+      emboss::DisconnectionCompleteEvent::IntrinsicSizeInBytes() -
+      emboss::EventHeader::IntrinsicSizeInBytes());
   view.status().Write(successful ? emboss::StatusCode::SUCCESS
                                  : emboss::StatusCode::HARDWARE_FAILURE);
   view.connection_handle().Write(handle);

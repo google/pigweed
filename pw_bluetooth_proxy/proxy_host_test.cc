@@ -55,7 +55,7 @@ Status PopulateNoninteractingToControllerBuffer(H4PacketWithH4& h4_packet) {
 // Return a populated H4 event buffer of a type that proxy host doesn't interact
 // with.
 Status CreateNonInteractingToHostBuffer(H4PacketWithHci& h4_packet) {
-  return CreateAndPopulateToHostEventView<emboss::InquiryCompleteEventWriter>(
+  return CreateAndPopulateToHostEventWriter<emboss::InquiryCompleteEventWriter>(
              h4_packet, emboss::EventCode::INQUIRY_COMPLETE)
       .status();
 }
@@ -211,7 +211,7 @@ TEST_F(PassthroughTest, ToHostPassesEqualCommandComplete) {
   H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
   PW_TEST_ASSERT_OK_AND_ASSIGN(
       auto view,
-      CreateAndPopulateToHostEventView<
+      CreateAndPopulateToHostEventWriter<
           emboss::ReadLocalVersionInfoCommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
   view.command_complete().command_opcode().Write(
@@ -461,7 +461,7 @@ TEST_F(BadPacketTest, TooShortCommandCompleteEventToHost) {
   H4PacketWithHci valid_packet{emboss::H4PacketType::UNKNOWN, valid_hci_arr};
   PW_TEST_ASSERT_OK_AND_ASSIGN(
       auto view,
-      CreateAndPopulateToHostEventView<
+      CreateAndPopulateToHostEventWriter<
           emboss::ReadLocalVersionInfoCommandCompleteEventWriter>(
           valid_packet, emboss::EventCode::COMMAND_COMPLETE));
   view.command_complete().command_opcode().Write(
@@ -524,12 +524,11 @@ class ReserveLeAclCreditsTest : public ProxyHostTest {};
 TEST_F(ReserveLeAclCreditsTest, ProxyCreditsReserveCreditsWithReadBufferSize) {
   std::array<uint8_t,
              emboss::ReadBufferSizeCommandCompleteEventWriter::SizeInBytes()>
-      hci_arr;
-  hci_arr.fill(0);
+      hci_arr{};
   H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
   PW_TEST_ASSERT_OK_AND_ASSIGN(
       auto view,
-      CreateAndPopulateToHostEventView<
+      CreateAndPopulateToHostEventWriter<
           emboss::ReadBufferSizeCommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
   view.command_complete().command_opcode().Write(
@@ -578,7 +577,7 @@ TEST_F(ReserveLeAclCreditsTest,
   H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
   PW_TEST_ASSERT_OK_AND_ASSIGN(
       auto view,
-      CreateAndPopulateToHostEventView<
+      CreateAndPopulateToHostEventWriter<
           emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
   view.command_complete().command_opcode().Write(
@@ -629,7 +628,7 @@ TEST_F(ReserveLeAclCreditsTest,
   H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
   PW_TEST_ASSERT_OK_AND_ASSIGN(
       auto view,
-      CreateAndPopulateToHostEventView<
+      CreateAndPopulateToHostEventWriter<
           emboss::LEReadBufferSizeV2CommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
   view.command_complete().command_opcode().Write(
@@ -678,7 +677,7 @@ TEST_F(ReserveLeAclCreditsTest, ProxyCreditsCappedByControllerCredits) {
   H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
   PW_TEST_ASSERT_OK_AND_ASSIGN(
       auto view,
-      CreateAndPopulateToHostEventView<
+      CreateAndPopulateToHostEventWriter<
           emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
   view.command_complete().command_opcode().Write(
@@ -724,7 +723,7 @@ TEST_F(ReserveLeAclCreditsTest, ProxyCreditsReserveZeroCredits) {
   H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
   PW_TEST_ASSERT_OK_AND_ASSIGN(
       auto view,
-      CreateAndPopulateToHostEventView<
+      CreateAndPopulateToHostEventWriter<
           emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
   view.command_complete().command_opcode().Write(
@@ -768,12 +767,11 @@ TEST_F(ReserveLeAclCreditsTest, ProxyCreditsZeroWhenHostCreditsZero) {
   std::array<
       uint8_t,
       emboss::LEReadBufferSizeV1CommandCompleteEventWriter::SizeInBytes()>
-      hci_arr;
-  hci_arr.fill(0);
+      hci_arr{};
   H4PacketWithHci h4_packet{emboss::H4PacketType::UNKNOWN, hci_arr};
   PW_TEST_ASSERT_OK_AND_ASSIGN(
       auto view,
-      CreateAndPopulateToHostEventView<
+      CreateAndPopulateToHostEventWriter<
           emboss::LEReadBufferSizeV1CommandCompleteEventWriter>(
           h4_packet, emboss::EventCode::COMMAND_COMPLETE));
   view.command_complete().command_opcode().Write(
