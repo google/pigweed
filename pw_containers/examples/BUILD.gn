@@ -63,6 +63,15 @@ pw_test("multiple_containers") {
   sources = [ "multiple_containers.cc" ]
 }
 
+pw_test("vector") {
+  deps = [
+    "$dir_pw_containers:vector",
+    dir_pw_function,
+    dir_pw_status,
+  ]
+  sources = [ "vector.cc" ]
+}
+
 pw_test("wrapped_iterator") {
   deps = [ "$dir_pw_containers:wrapped_iterator" ]
   sources = [ "wrapped_iterator.cc" ]
@@ -78,6 +87,7 @@ pw_test_group("examples") {
     ":intrusive_set",
     ":intrusive_multiset",
     ":multiple_containers",
+    ":vector",
     ":wrapped_iterator",
   ]
 }

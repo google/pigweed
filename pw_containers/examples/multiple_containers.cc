@@ -42,7 +42,7 @@ namespace examples {
 class Scheduler {
  public:
   // Adds a task to the queue, and returns an opaque `id` that identifies it.
-  // Returns INVALID_ARGUMENT the task is already in the queue.
+  // Returns INVALID_ARGUMENT if the task is already in the queue.
   pw::Result<uint32_t> ScheduleTask(Task& task) {
     if (task.id != 0) {
       return pw::Status::InvalidArgument();

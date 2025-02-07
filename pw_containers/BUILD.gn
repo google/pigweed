@@ -472,10 +472,29 @@ pw_doc_group("docs") {
     "examples/intrusive_multiset.cc",
     "examples/intrusive_set.cc",
     "examples/multiple_containers.cc",
+    "examples/vector.cc",
     "examples/wrapped_iterator.cc",
   ]
-  sources = [ "docs.rst" ]
-  report_deps = [ ":intrusive_list_size_report" ]
+  sources = [
+    "docs.rst",
+    "lists.rst",
+    "maps.rst",
+    "multiple_containers.rst",
+    "queues.rst",
+    "sets.rst",
+    "utilities.rst",
+    "vectors.rst",
+  ]
+
+  # TODO: b/388905812 - Re-enable the size reports.
+  # report_deps = [
+  #   ":lists_size_report",
+  #   ":maps_size_report",
+  #   ":queues_size_report",
+  #   ":sets_size_report",
+  #   ":utilities_size_report",
+  #   ":vectors_size_report",
+  # ]
 }
 
 pw_size_diff("intrusive_list_size_report") {

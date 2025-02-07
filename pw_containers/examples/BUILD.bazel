@@ -76,6 +76,16 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "vector",
+    srcs = ["vector.cc"],
+    deps = [
+        "//pw_containers:vector",
+        "//pw_function",
+        "//pw_status",
+    ],
+)
+
+pw_cc_test(
     name = "wrapped_iterator",
     srcs = ["wrapped_iterator.cc"],
     deps = ["//pw_containers:wrapped_iterator"],
@@ -92,6 +102,7 @@ sphinx_docs_library(
         "intrusive_multiset.cc",
         "intrusive_set.cc",
         "multiple_containers.cc",
+        "vector.cc",
         "wrapped_iterator.cc",
     ],
     target_compatible_with = incompatible_with_mcu(),

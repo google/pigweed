@@ -310,7 +310,12 @@
     ]
   },
   "pw_containers": {
-    "status": "stable"
+    "tagline": "Generic collections of objects for embedded devices",
+    "status": "stable",
+    "size": "200 to 3300 bytes",
+    "languages": [
+      "C++17"
+    ]
   },
   "pw_cpu_exception": {
     "status": "stable"

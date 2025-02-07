@@ -61,6 +61,15 @@ pw_add_test(pw_containers.examples.multiple_containers
     multiple_containers.cc
 )
 
+pw_add_test(pw_containers.examples.vector
+  PRIVATE_DEPS
+    pw_function
+    pw_status
+    pw_containers.vector
+  SOURCES
+    vector.cc
+)
+
 pw_add_test(pw_containers.examples.wrapped_iterator
   PRIVATE_DEPS
     pw_containers.wrapped_iterator

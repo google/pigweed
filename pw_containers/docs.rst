@@ -6,543 +6,83 @@ pw_containers
 .. pigweed-module::
    :name: pw_containers
 
-The ``pw_containers`` module provides embedded-friendly container classes.
+- **Familiar**: Pigweed containers resemble standard library containers.
+- **Comprehensive**: You can pick containers for speed, size, or in-between.
+- **Embedded-friendly**: No dynamic allocation needed!
 
-----------
-pw::Vector
-----------
-The Vector class is similar to ``std::vector``, except it is backed by a
-fixed-size buffer. Vectors must be declared with an explicit maximum size
-(e.g. ``Vector<int, 10>``) but vectors can be used and referred to without the
-max size template parameter (e.g. ``Vector<int>``).
-
-To allow referring to a ``pw::Vector`` without an explicit maximum size, all
-Vector classes inherit from the generic ``Vector<T>``, which stores the maximum
-size in a variable. This allows Vectors to be used without having to know
-their maximum size at compile time. It also keeps code size small since
-function implementations are shared for all maximum sizes.
-
----------------
-pw::InlineDeque
----------------
-.. doxygentypedef:: pw::InlineDeque
-
----------------
-pw::InlineQueue
----------------
-.. doxygentypedef:: pw::InlineQueue
-
---------------------------
-pw::InlineVarLenEntryQueue
---------------------------
-.. doxygenfile:: pw_containers/inline_var_len_entry_queue.h
-   :sections: detaileddescription
-
-Example
-=======
-.. tab-set::
-
-   .. tab-item:: C++
-      :sync: c++
-
-      Queues are declared with their max size
-      (``InlineVarLenEntryQueue<kMaxSize>``) but may be used without
-      specifying the size (``InlineVarLenEntryQueue<>&``).
-
-      .. code-block:: c++
-
-         // Declare a queue with capacity sufficient for one 10-byte entry or
-         // multiple smaller entries.
-         pw::InlineVarLenEntryQueue<10> queue;
-
-         // Push an entry, asserting if the entry does not fit.
-         queue.push(queue, data)
-
-         // Use push_overwrite() to push entries, overwriting older entries
-         // as needed.
-         queue.push_overwrite(queue, more_data)
-
-         // Remove an entry.
-         queue.pop();
-
-      Alternately, a ``InlineVarLenEntryQueue`` may be initialized in an
-      existing ``uint32_t`` array.
-
-      .. code-block:: c++
-
-         // Initialize a InlineVarLenEntryQueue.
-         uint32_t buffer[32];
-         auto& queue = pw::InlineVarLenEntryQueue<>::Init(buffer);
-
-         // Largest supported entry is 114 B (13 B overhead + 1 B prefix)
-         assert(queue.max_size_bytes() == 114u);
-
-         // Write data
-         queue.push_overwrite(data);
-
-   .. tab-item:: C
-      :sync: c
-
-      A ``InlineVarLenEntryQueue`` may be declared and initialized in C with the
-      :c:macro:`PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE` macro.
-
-      .. code-block:: c
-
-         // Declare a queue with capacity sufficient for one 10-byte entry or
-         // multiple smaller entries.
-         PW_VARIABLE_LENGTH_ENTRY_QUEUE_DECLARE(queue, 10);
-
-         // Push an entry, asserting if the entry does not fit.
-         pw_InlineVarLenEntryQueue_Push(queue, "12345", 5);
-
-         // Use push_overwrite() to push entries, overwriting older entries
-         // as needed.
-         pw_InlineVarLenEntryQueue_PushOverwrite(queue, "abcdefg", 7);
-
-         // Remove an entry.
-         pw_InlineVarLenEntryQueue_Pop(queue);
-
-      Alternately, a ``InlineVarLenEntryQueue`` may be initialized in an
-      existing ``uint32_t`` array.
-
-      .. code-block:: c
-
-         // Initialize a InlineVarLenEntryQueue.
-         uint32_t buffer[32];
-         pw_InlineVarLenEntryQueue_Init(buffer, 32);
-
-         // Largest supported entry is 114 B (13 B overhead + 1 B prefix)
-         assert(pw_InlineVarLenEntryQueue_MaxSizeBytes(buffer) == 114u);
-
-         // Write some data
-         pw_InlineVarLenEntryQueue_PushOverwrite(buffer, "123", 3);
-
-Queue vs. deque
-===============
-This module provides :cpp:type:`InlineVarLenEntryQueue`, but no corresponding
-``InlineVarLenEntryDeque`` class. Following the C++ Standard Library style,
-the deque class would provide ``push_front()`` and ``pop_back()`` operations in
-addition to ``push_back()`` and ``pop_front()`` (equivalent to a queue's
-``push()`` and ``pop()``).
-
-There is no ``InlineVarLenEntryDeque`` class because there is no efficient way
-to implement ``push_front()`` and ``pop_back()``. These operations would
-necessarily be O(n), since each entry knows the position of the next entry, but
-not the previous, as in a single-linked list. Given that these operations would
-be inefficient and unlikely to be used, they are not implemented, and only a
-queue class is provided.
-
-API Reference
-=============
-C++
----
-.. doxygengroup:: inline_var_len_entry_queue_cpp_api
-   :content-only:
-   :members:
-
-C
--
-.. doxygengroup:: inline_var_len_entry_queue_c_api
-   :content-only:
-
-Python
-------
-.. automodule:: pw_containers.inline_var_len_entry_queue
-   :members:
-
-.. _module-pw_containers-intrusive_list:
-
------------------
-pw::IntrusiveList
------------------
-``pw::IntrusiveList`` provides an embedded-friendly, double-linked, intrusive
-list implementation. An intrusive list is a type of linked list that embeds list
-metadata, such as a "next" pointer, into the list object itself. This allows the
-construction of a linked list without the need to dynamically allocate list
-entries.
-
-In C, an intrusive list can be made by manually including the "next" pointer as
-a member of the object's struct. ``pw::IntrusiveList`` uses C++ features to
-simplify the process of creating an intrusive list. It provides classes that
-list elements can inherit from, protecting the list metadata from being accessed
-by the item class.
-
-API Reference
-=============
-This class is similar to ``std::list<T>``, except that the type of items to be
-added must derive from ``pw::IntrusiveList<T>::Item``.
-
-.. doxygenclass:: pw::containers::future::IntrusiveList
-   :members:
-
-.. note::
-   Originally, ``pw::IntrusiveList<T>`` was implemented as a singly-linked list.
-   To facilitate migration to ``pw::IntrusiveForwardList<T>::Item``, this
-   original implementation can still be temporarily used by enabling the
-   ``PW_CONTAINERS_USE_LEGACY_INTRUSIVE_LIST`` module configuration option.
-
-.. _module-pw_containers-intrusive_list-example:
-
-Example
-=======
-.. literalinclude:: examples/intrusive_list.cc
+.. literalinclude:: examples/vector.cc
    :language: cpp
    :linenos:
-   :start-after: [pw_containers-intrusive_list]
-   :end-before: [pw_containers-intrusive_list]
-
-------------------------
-pw::IntrusiveForwardList
-------------------------
-``pw::IntrusiveForwardList`` provides an embedded-friendly, singly-linked,
-intrusive list implementation. It is very similar to
-:ref:`module-pw_containers-intrusive_list`, except that is singly rather than
-doubly linked.
-
-API Reference
-=============
-This class is similar to ``std::forward_list<T>``. Items to be added must derive
-from ``pw::IntrusiveForwardList<T>::Item``.
-
-.. doxygenclass:: pw::IntrusiveForwardList
-   :members:
-
-Example
-=======
-.. literalinclude:: examples/intrusive_forward_list.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_containers-intrusive_forward_list]
-   :end-before: [pw_containers-intrusive_forward_list]
-
-Performance Considerations
-==========================
-Items only include pointers to the next item. To reach previous items, the list
-maintains a cycle of items so that the first item can be reached from the last.
-This structure means certain operations have linear complexity in terms of the
-number of items in the list, i.e. they are "O(n)":
-
-- Removing an item from a list using
-  ``pw::IntrusiveForwardList<T>::remove(const T&)``.
-- Getting the list size using ``pw::IntrusiveForwardList<T>::size()``.
-
-When using a ``pw::IntrusiveForwardList<T>`` in a performance critical section
-or with many items, authors should prefer to avoid these methods. For example,
-it may be preferable to create items that together with their storage outlive
-the list.
-
-Notably, ``pw::IntrusiveForwardList<T>::end()`` is constant complexity (i.e.
-"O(1)"). As a result iterating over a list does not incur an additional penalty.
-
-.. _module-pw_containers-intrusivelist-size-report:
-
-Size report
-===========
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: intrusive_list_size_report
-.. include:: ../size_report_notice
-
-.. _module-pw_containers-intrusive_set:
-
-----------------
-pw::IntrusiveSet
-----------------
-``pw::IntrusiveSet`` provides an embedded-friendly, tree-based, intrusive
-set implementation. The intrusive aspect of the set is very similar to that of
-:ref:`module-pw_containers-intrusive_list`.
-
-API Reference
-=============
-This class is similar to ``std::set<T>``. Items to be added must derive from
-``pw::IntrusiveSet<T>::Item`` or an equivalent type.
-
-.. doxygenclass:: pw::IntrusiveSet
-   :members:
-
-Example
-=======
-.. literalinclude:: examples/intrusive_set.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_containers-intrusive_set]
-   :end-before: [pw_containers-intrusive_set]
-
----------------------
-pw::IntrusiveMultiSet
----------------------
-``pw::IntrusiveMultiSet`` provides an embedded-friendly, tree-based, intrusive
-multiset implementation. This is very similar to
-:ref:`module-pw_containers-intrusive_set`, except that the tree may contain
-multiple items with equivalent keys.
-
-API Reference
-=============
-This class is similar to ``std::multiset<T>``. Items to be added must derive
-from ``pw::IntrusiveMultiSet<T>::Item`` or an equivalent type.
-
-.. doxygenclass:: pw::IntrusiveMultiSet
-   :members:
-
-Example
-=======
-.. literalinclude:: examples/intrusive_multiset.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_containers-intrusive_multiset]
-   :end-before: [pw_containers-intrusive_multiset]
-
-.. _module-pw_containers-intrusive_map:
-
-----------------
-pw::IntrusiveMap
-----------------
-``pw::IntrusiveMap`` provides an embedded-friendly, tree-based, intrusive
-map implementation. The intrusive aspect of the map is very similar to that of
-:ref:`module-pw_containers-intrusive_list`.
-
-API Reference
-=============
-This class is similar to ``std::map<K, V>``. Items to be added must derive from
-``pw::IntrusiveMap<K, V>::Item`` or an equivalent type.
-
-.. doxygenclass:: pw::IntrusiveMap
-   :members:
-
-Example
-=======
-.. literalinclude:: examples/intrusive_map.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_containers-intrusive_map]
-   :end-before: [pw_containers-intrusive_map]
-
----------------------
-pw::IntrusiveMultiMap
----------------------
-``pw::IntrusiveMultiMap`` provides an embedded-friendly, tree-based, intrusive
-multimap implementation. This is very similar to
-:ref:`module-pw_containers-intrusive_map`, except that the tree may contain
-multiple items with equivalent keys.
-
-API Reference
-=============
-This class is similar to ``std::multimap<K, V>``. Items to be added must derive
-from ``pw::IntrusiveMultiMap<K, V>::Item`` or an equivalent type.
-
-.. doxygenclass:: pw::IntrusiveMultiMap
-   :members:
-
-Example
-=======
-.. literalinclude:: examples/intrusive_multimap.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_containers-intrusive_multimap]
-   :end-before: [pw_containers-intrusive_multimap]
-
-------------------------------------
-Using items with multiple containers
-------------------------------------
-Intrusive items may be used with multiple containers, provided each of those
-containers is templated on a type that is not derived from any of the others.
-This can be achieved by multiply inheriting from distinct type:
-
-.. literalinclude:: examples/multiple_containers.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_containers-multiple_containers]
-   :end-before: [pw_containers-multiple_containers]
-
-If one or more types is derived from another, the compiler will fail to build
-with an error that ``ItemType`` is ambiguous or found in multiple base classes.
-
------------------------
-pw::containers::FlatMap
------------------------
-``FlatMap`` provides a simple, fixed-size associative array with `O`\ (log `n`)
-lookup by key.
-
-``pw::containers::FlatMap`` contains the same methods and features for looking
-up data as ``std::map``. However, modification of the underlying data is limited
-to the mapped values, via ``.at()`` (key must exist) and ``mapped_iterator``
-objects returned by ``.mapped_begin()`` and ``.mapped_end()``.
-``mapped_iterator`` objects are bidirectional iterators that can be dereferenced
-to access and mutate the mapped value objects.
-
-The underlying array in ``pw::containers::FlatMap`` does not need to be sorted.
-During construction, ``pw::containers::FlatMap`` will perform a constexpr
-insertion sort.
-
-A ``FlatMap`` can be created in one of several ways. Each of the following
-examples defines a ``FlatMap`` with two items.
-
-.. literalinclude:: examples/flat_map.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_containers-flat_map]
-   :end-before: [pw_containers-flat_map]
-
-----------------------------
-pw::containers::FilteredView
-----------------------------
-.. doxygenclass:: pw::containers::FilteredView
-
--------------------------------
-pw::containers::WrappedIterator
--------------------------------
-``pw::containers::WrappedIterator`` is a class that makes it easy to wrap an
-existing iterator type. It reduces boilerplate by providing ``operator++``,
-``operator--``, ``operator==``, ``operator!=``, and the standard iterator
-aliases (``difference_type``, ``value_type``, etc.). It does not provide the
-dereference operator; that must be supplied by a derived class.
-
-To use it, create a class that derives from ``WrappedIterator`` and define
-``operator*()`` and ``operator->()`` as appropriate. The new iterator might
-apply a transformation to or access a member of the values provided by the
-original iterator. The following example defines an iterator that multiplies the
-values in an array by 2.
-
-.. literalinclude:: examples/wrapped_iterator.cc
-   :language: cpp
-   :linenos:
-   :start-after: [pw_containers-wrapped_iterator]
-   :end-before: [pw_containers-wrapped_iterator]
-
-``WrappedIterator`` may be used in concert with ``FilteredView`` to create a
-view that iterates over a matching values in a container and applies a
-transformation to the values. For example, it could be used with
-``FilteredView`` to filter a list of packets and yield only one field from the
-packet.
-
-The combination of ``FilteredView`` and ``WrappedIterator`` provides some basic
-functional programming features similar to (though much more cumbersome than)
-`generator expressions <https://www.python.org/dev/peps/pep-0289/>`_ (or `filter
-<https://docs.python.org/3/library/functions.html#filter>`_/`map
-<https://docs.python.org/3/library/functions.html#map>`_) in Python or streams
-in Java 8. ``WrappedIterator`` and ``FilteredView`` require no memory
-allocation, which is helpful when memory is too constrained to process the items
-into a new container.
-
-------------------------
-pw::containers::to_array
-------------------------
-``pw::containers::to_array`` is a C++14-compatible implementation of C++20's
-`std::to_array <https://en.cppreference.com/w/cpp/container/array/to_array>`_.
-In C++20, it is an alias for ``std::to_array``. It converts a C array to a
-``std::array``.
-
--------------------------
-pw_containers/algorithm.h
--------------------------
-Pigweed provides a set of Container-based versions of algorithmic functions
-within the C++ standard library, based on a subset of
-``absl/algorithm/container.h``.
-
-.. cpp:function:: bool pw::containers::AllOf()
-
-   Container-based version of the <algorithm> ``std::all_of()`` function to
-   test if all elements within a container satisfy a condition.
-
-.. cpp:function:: bool pw::containers::AnyOf()
-
-   Container-based version of the <algorithm> ``std::any_of()`` function to
-   test if any element in a container fulfills a condition.
-
-.. cpp:function:: bool pw::containers::NoneOf()
-
-   Container-based version of the <algorithm> ``std::none_of()`` function to
-   test if no elements in a container fulfill a condition.
-
-.. cpp:function:: pw::containers::ForEach()
-
-   Container-based version of the <algorithm> ``std::for_each()`` function to
-   apply a function to a container's elements.
-
-.. cpp:function:: pw::containers::Find()
-
-   Container-based version of the <algorithm> ``std::find()`` function to find
-   the first element containing the passed value within a container value.
-
-.. cpp:function:: pw::containers::FindIf()
-
-   Container-based version of the <algorithm> ``std::find_if()`` function to find
-   the first element in a container matching the given condition.
-
-.. cpp:function:: pw::containers::FindIfNot()
-
-   Container-based version of the <algorithm> ``std::find_if_not()`` function to
-   find the first element in a container not matching the given condition.
-
-.. cpp:function:: pw::containers::FindEnd()
-
-   Container-based version of the <algorithm> ``std::find_end()`` function to
-   find the last subsequence within a container.
-
-.. cpp:function:: pw::containers::FindFirstOf()
-
-   Container-based version of the <algorithm> ``std::find_first_of()`` function
-   to find the first element within the container that is also within the options
-   container.
-
-.. cpp:function:: pw::containers::AdjacentFind()
-
-   Container-based version of the <algorithm> ``std::adjacent_find()`` function
-   to find equal adjacent elements within a container.
-
-.. cpp:function:: pw::containers::Count()
-
-   Container-based version of the <algorithm> ``std::count()`` function to count
-   values that match within a container.
-
-.. cpp:function:: pw::containers::CountIf()
-
-   Container-based version of the <algorithm> ``std::count_if()`` function to
-   count values matching a condition within a container.
-
-.. cpp:function:: pw::containers::Mismatch()
-
-   Container-based version of the <algorithm> ``std::mismatch()`` function to
-   return the first element where two ordered containers differ. Applies ``==``
-   to the first ``N`` elements of ``c1`` and ``c2``, where
-   ``N = min(size(c1), size(c2)).`` the function's test condition. Applies
-   ``pred`` to the first N elements of ``c1``  and ``c2``, where
-   ``N = min(size(c1), size(c2))``.
-
-.. cpp:function:: bool pw::containers::Equal()
-
-   Container-based version of the <algorithm> ``std::equal()`` function to
-   test whether two containers are equal.
-
-   .. note::
-
-      The semantics of ``Equal()`` are slightly different than those of
-      ``std::equal()``: while the latter iterates over the second container only
-      up to the size of the first container, ``Equal()`` also checks whether the
-      container sizes are equal.  This better matches expectations about
-      ``Equal()`` based on its signature.
-
-.. cpp:function:: bool pw::containers::IsPermutation()
-
-   Container-based version of the <algorithm> ``std::is_permutation()`` function
-   to test whether a container is a permutation of another.
-
-.. cpp:function:: pw::containers::Search()
-
-   Container-based version of the <algorithm> ``std::search()`` function to
-   search a container for a subsequence.
-
-.. cpp:function:: pw::containers::SearchN()
-
-   Container-based version of the <algorithm> ``std::search_n()`` function to
-   search a container for the first sequence of N elements.
-
--------------
-Compatibility
--------------
-- C++17
+   :start-after: [pw_containers-vector]
+   :end-before: [pw_containers-vector]
+
+Much like the standard containers library, the ``pw_containers`` module provides
+embedded-friendly container class templates and algorithms. These allow
+developers to implement data structures for embedded devices that are more
+resource-constrained than conventional applications. These containers include:
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`list-ordered` Lists
+      :link: module-pw_containers-lists
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Intrusive singly and doubly linked lists.
+
+   .. grid-item-card:: :octicon:`database` Maps
+      :link: module-pw_containers-maps
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Key-value stores with constant or logarithmic performance.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`iterations` Queues
+      :link: module-pw_containers-queues
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Uni- and bidirectional FIFOs.
+
+   .. grid-item-card:: :octicon:`list-unordered` Sets
+      :link: module-pw_containers-sets
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Unordered collections with fast lookup, insertion, and deletion.
+
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`tools` Utilities
+      :link: module-pw_containers-utilities
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Algorithms and iterators for Pigweed containers.
+
+   .. grid-item-card:: :octicon:`code` Vector
+      :link: module-pw_containers-vectors
+      :link-type: ref
+      :class-item: sales-pitch-cta-secondary
+
+      Variable length array with fixed storage.
 
 ------
 Zephyr
 ------
 To enable ``pw_containers`` for Zephyr add ``CONFIG_PIGWEED_CONTAINERS=y`` to
 the project's configuration.
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   lists
+   maps
+   queues
+   sets
+   vectors
+   utilities
+   multiple_containers

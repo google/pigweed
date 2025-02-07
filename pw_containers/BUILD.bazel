@@ -476,6 +476,7 @@ pw_cc_test(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_containers/algorithm.h",
         "public/pw_containers/filtered_view.h",
         "public/pw_containers/inline_deque.h",
         "public/pw_containers/inline_queue.h",
@@ -488,6 +489,7 @@ filegroup(
         "public/pw_containers/intrusive_multimap.h",
         "public/pw_containers/intrusive_multiset.h",
         "public/pw_containers/intrusive_set.h",
+        "public/pw_containers/vector.h",
     ],
 )
 
@@ -496,6 +498,13 @@ sphinx_docs_library(
     srcs = [
         "Kconfig",
         "docs.rst",
+        "lists.rst",
+        "maps.rst",
+        "multiple_containers.rst",
+        "queues.rst",
+        "sets.rst",
+        "utilities.rst",
+        "vectors.rst",
         "//pw_containers/examples:docs",
     ],
     prefix = "pw_containers/",
