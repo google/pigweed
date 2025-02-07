@@ -238,8 +238,10 @@ pw_add_library(pw_multibuf.testing INTERFACE
     public
   PUBLIC_DEPS
     pw_assert
+    pw_allocator.synchronized_allocator
     pw_allocator.testing
     pw_multibuf.simple_allocator
+    pw_sync.mutex
 )
 
 pw_add_library(pw_multibuf._internal_test_utils INTERFACE

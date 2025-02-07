@@ -26,12 +26,10 @@
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
-#include "pw_sync/mutex.h"
 #include "pw_tokenizer/tokenize.h"
 #include "pw_unit_test/framework.h"
 
-namespace pw::allocator {
-namespace test {
+namespace pw::allocator::test {
 
 static_assert(PW_ALLOCATOR_STRICT_VALIDATION,
               "Tests must use a config that enables strict validation");
@@ -181,46 +179,4 @@ class AllocatorForTest : public Allocator {
   size_t resize_new_size_;
 };
 
-/// An `AllocatorForTest` that is thread and interrupt-safe and automatically
-/// initialized on construction.
-template <size_t kBufferSize,
-          typename BlockType_ = FirstFitBlock<uint32_t>,
-          typename MetricsType = internal::AllMetrics>
-class SynchronizedAllocatorForTest : public Allocator {
- private:
-  using BlockType = BlockType_;
-  using Base = AllocatorForTest<kBufferSize, BlockType, MetricsType>;
-
-  /// @copydoc Allocator::Allocate
-  void* DoAllocate(Layout layout) override {
-    std::lock_guard lock(lock_);
-    return base_.Allocate(layout);
-  }
-
-  /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr) override {
-    std::lock_guard lock(lock_);
-    base_.Deallocate(ptr);
-  }
-
-  /// @copydoc Allocator::Deallocate
-  void DoDeallocate(void* ptr, Layout) override { DoDeallocate(ptr); }
-
-  /// @copydoc Allocator::Resize
-  bool DoResize(void* ptr, size_t new_size) override {
-    std::lock_guard lock(lock_);
-    return base_.Resize(ptr, new_size);
-  }
-
-  /// @copydoc Deallocator::GetInfo
-  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
-    std::lock_guard lock(lock_);
-    return GetInfo(base_, info_type, ptr);
-  }
-
-  mutable pw::sync::Mutex lock_;
-  Base base_;
-};
-
-}  // namespace test
-}  // namespace pw::allocator
+}  // namespace pw::allocator::test

@@ -18,6 +18,7 @@
 #include <initializer_list>
 #include <optional>
 
+#include "pw_allocator/synchronized_allocator.h"
 #include "pw_allocator/testing.h"
 #include "pw_assert/assert.h"
 #include "pw_multibuf/simple_allocator.h"
@@ -31,7 +32,8 @@ class SimpleAllocatorForTest : public SimpleAllocator {
   /// Size of the data area.
   static constexpr size_t data_size_bytes() { return kDataSizeBytes; }
 
-  SimpleAllocatorForTest() : SimpleAllocator(data_area_, meta_alloc_) {}
+  SimpleAllocatorForTest()
+      : SimpleAllocator(data_area_, meta_alloc_), meta_alloc_(alloc_) {}
 
   /// Allocates a `MultiBuf` and initializes its contents to the provided data.
   MultiBuf BufWith(std::initializer_list<std::byte> data) {
@@ -43,7 +45,8 @@ class SimpleAllocatorForTest : public SimpleAllocator {
 
  private:
   std::byte data_area_[kDataSizeBytes];
-  allocator::test::SynchronizedAllocatorForTest<kMetaSizeBytes> meta_alloc_;
+  allocator::test::AllocatorForTest<kMetaSizeBytes> alloc_;
+  allocator::SynchronizedAllocator<sync::Mutex> meta_alloc_;
 };
 
 }  // namespace pw::multibuf::test
