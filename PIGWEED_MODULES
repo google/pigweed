@@ -86,6 +86,7 @@ pw_interrupt_xtensa
 pw_interrupt_zephyr
 pw_intrusive_ptr
 pw_json
+pw_kernel
 pw_kvs
 pw_libc
 pw_libcxx

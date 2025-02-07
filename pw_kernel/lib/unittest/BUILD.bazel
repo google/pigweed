@@ -1,0 +1,129 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_proc_macro", "rust_test")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_proc_macro(
+    name = "unittest_proc_macro",
+    srcs = [
+        "unittest_proc_macro.rs",
+    ],
+    tags = ["kernel"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@rust_crates//:proc-macro2",
+        "@rust_crates//:quote",
+        "@rust_crates//:syn",
+    ],
+)
+
+rust_library(
+    name = "unittest",
+    srcs = ["unittest.rs"],
+    proc_macro_deps = [
+        ":unittest_proc_macro",
+    ],
+    tags = ["kernel"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":unittest_core",
+        ":unittest_runner",
+    ],
+)
+
+rust_library(
+    name = "unittest_core",
+    srcs = ["unittest_core.rs"],
+    tags = ["kernel"],
+    target_compatible_with = select({
+        # The intrusive collections crate uses atomics which are not available
+        # on the M0.
+        "@pigweed//pw_build/constraints/chipset:nrf52833": ["@platforms//:incompatible"],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pw_bytes/rust:pw_bytes",
+        "@rust_crates//:intrusive-collections",
+    ],
+)
+
+rust_library(
+    name = "unittest_runner_host",
+    srcs = ["unittest_runner_host.rs"],
+    crate_name = "unittest_runner",
+    tags = ["kernel"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":unittest_core",
+        "//pw_kernel/subsys/console:console_backend",
+        "@pigweed//pw_log/rust:pw_log",
+    ],
+)
+
+rust_library(
+    name = "unittest_runner_cortex_m",
+    srcs = ["unittest_runner_cortex_m.rs"],
+    crate_name = "unittest_runner",
+    tags = ["kernel"],
+    target_compatible_with = select({
+        "//pw_build/constraints/arm:cortex-m0": [],
+        "//pw_build/constraints/arm:cortex-m3": [],
+        "//pw_build/constraints/arm:cortex-m33": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":unittest_core",
+        "//pw_kernel/subsys/console:console_backend",
+        "//pw_kernel/target",
+        "//pw_log/rust:pw_log",
+        "@rust_crates//:cortex-m-rt",
+        "@rust_crates//:cortex-m-semihosting",
+        "@rust_crates//:panic-halt",
+    ],
+)
+
+rust_library(
+    name = "unittest_test",
+    srcs = ["unittest_test.rs"],
+    tags = ["kernel"],
+    visibility = ["//visibility:public"],
+)
+
+rust_test(
+    name = "unittest_test_test",
+    srcs = ["tests/unittest_test_test.rs"],
+    tags = ["kernel"],
+    use_libtest_harness = False,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":unittest",
+        ":unittest_test",
+        "//pw_kernel/target:linker_script",
+        "//pw_log/rust:pw_log",
+        "@rust_crates//:cortex-m-rt",
+        "@rust_crates//:cortex-m-semihosting",
+        "@rust_crates//:panic-halt",
+    ],
+)
+
+label_flag(
+    name = "unittest_runner",
+    build_setting_default = ":unittest_runner_host",
+    tags = ["kernel"],
+)

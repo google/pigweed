@@ -1,0 +1,35 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "qemu_nrf51823_linker_script",
+    linkopts = ["-T$(location qemu-nrf51823.ld)"],
+    target_compatible_with = ["@pigweed//pw_build/constraints/chipset:nrf52833"],
+    deps = [
+        "qemu-nrf51823.ld",
+    ],
+)
+
+cc_library(
+    name = "qemu_lm3s6965_linker_script",
+    linkopts = ["-T$(location qemu-lm3s6965.ld)"],
+    target_compatible_with = ["@pigweed//pw_build/constraints/chipset:lm3s6965evb"],
+    deps = [
+        "qemu-lm3s6965.ld",
+    ],
+)

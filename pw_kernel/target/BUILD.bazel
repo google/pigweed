@@ -1,0 +1,55 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "target_interface",
+    srcs = ["target_interface.rs"],
+)
+
+rust_library(
+    name = "target",
+    srcs = ["target.rs"],
+    deps = [
+        ":target_backend",
+        ":target_interface",
+    ],
+)
+
+label_flag(
+    name = "target_backend",
+    build_setting_default = ":target_backend_generic",
+)
+
+rust_library(
+    name = "target_backend_generic",
+    srcs = ["target_backend_generic.rs"],
+    crate_name = "target_backend",
+    deps = [
+        ":target_interface",
+    ],
+)
+
+label_flag(
+    name = "linker_script",
+    build_setting_default = ":no_linker_script",
+)
+
+cc_library(
+    name = "no_linker_script",
+)

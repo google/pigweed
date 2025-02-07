@@ -1470,6 +1470,7 @@ _EXCLUDE_FROM_TODO_CHECK = (
     r'\bpw_fuzzer/fuzzer.gni',
     r'\bpw_i2c/BUILD.gn',
     r'\bpw_i2c/public/pw_i2c/register_device.h',
+    r'\bpw_kernel/.*',
     r'\bpw_kvs/flash_memory.cc',
     r'\bpw_kvs/key_value_store.cc',
     r'\bpw_log_basic/log_basic.cc',

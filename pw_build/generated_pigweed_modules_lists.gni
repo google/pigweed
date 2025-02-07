@@ -124,6 +124,7 @@ declare_args() {
   dir_pw_interrupt_zephyr = get_path_info("../pw_interrupt_zephyr", "abspath")
   dir_pw_intrusive_ptr = get_path_info("../pw_intrusive_ptr", "abspath")
   dir_pw_json = get_path_info("../pw_json", "abspath")
+  dir_pw_kernel = get_path_info("../pw_kernel", "abspath")
   dir_pw_kvs = get_path_info("../pw_kvs", "abspath")
   dir_pw_libc = get_path_info("../pw_libc", "abspath")
   dir_pw_libcxx = get_path_info("../pw_libcxx", "abspath")
@@ -322,6 +323,7 @@ declare_args() {
     dir_pw_interrupt_zephyr,
     dir_pw_intrusive_ptr,
     dir_pw_json,
+    dir_pw_kernel,
     dir_pw_kvs,
     dir_pw_libc,
     dir_pw_libcxx,
@@ -509,6 +511,7 @@ declare_args() {
     "$dir_pw_interrupt_zephyr:tests",
     "$dir_pw_intrusive_ptr:tests",
     "$dir_pw_json:tests",
+    "$dir_pw_kernel:tests",
     "$dir_pw_kvs:tests",
     "$dir_pw_libc:tests",
     "$dir_pw_libcxx:tests",
@@ -696,6 +699,7 @@ declare_args() {
     "$dir_pw_interrupt_zephyr:docs",
     "$dir_pw_intrusive_ptr:docs",
     "$dir_pw_json:docs",
+    "$dir_pw_kernel:docs",
     "$dir_pw_kvs:docs",
     "$dir_pw_libc:docs",
     "$dir_pw_libcxx:docs",

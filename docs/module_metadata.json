@@ -511,6 +511,13 @@
       "C++17"
     ]
   },
+  "pw_kernel": {
+    "tagline": "Kernel experiments",
+    "status": "experimental",
+    "languages": [
+      "Rust"
+    ]
+  },
   "pw_kvs": {
     "tagline": "Lightweight, persistent key-value store",
     "status": "stable",

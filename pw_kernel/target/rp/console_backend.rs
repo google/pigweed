@@ -1,0 +1,53 @@
+// Copyright 2025 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+#![no_std]
+
+use embedded_io::Write;
+use pw_status::{Error, Result};
+use rp235x_hal::{
+    gpio::{bank0::Gpio12, bank0::Gpio13, FunctionUart, Pin, PullDown},
+    pac::UART0,
+    uart::{self, UartPeripheral},
+};
+use spinlock::SpinLock;
+
+pub type ConsoleUart = UartPeripheral<
+    uart::Enabled,
+    UART0,
+    (
+        Pin<Gpio12, FunctionUart, PullDown>,
+        Pin<Gpio13, FunctionUart, PullDown>,
+    ),
+>;
+
+static UART: SpinLock<Option<ConsoleUart>> = SpinLock::new(None);
+
+#[no_mangle]
+pub fn console_backend_write(buf: &[u8]) -> Result<usize> {
+    let mut uart = UART.lock();
+    match &mut (*uart) {
+        Some(uart) => uart.write(buf).map_err(|_| Error::Unknown),
+        None => Ok(buf.len()),
+    }
+}
+
+#[no_mangle]
+pub fn console_backend_flush() -> Result<()> {
+    Ok(())
+}
+
+pub fn register_uart(val: ConsoleUart) {
+    let mut uart = UART.lock();
+    *uart = Some(val)
+}

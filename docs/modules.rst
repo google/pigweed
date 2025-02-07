@@ -70,6 +70,7 @@ Modules
    pw_interrupt/docs
    pw_intrusive_ptr/docs
    pw_json/docs
+   pw_kernel/docs
    pw_kvs/docs
    pw_libc/docs
    pw_libcxx/docs

@@ -1,0 +1,59 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+common:k_common --@rules_rust//rust/toolchain/channel=nightly
+common:k_common --@pigweed//pw_log/rust:pw_log_backend=//pw_kernel/subsys/console:pw_log_backend
+build:k_common --build_tag_filters=-do_not_build
+test:k_common --test_tag_filters=-integration,-do_not_build,-do_not_run_test
+
+# Lint configuration
+# ==================
+common:k_lint --config=k_common
+
+# Enable clippy lints
+build:k_lint --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect
+build:k_lint --output_groups=+clippy_checks
+
+# Enforce rustfmt formatting
+build:k_lint --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect
+build:k_lint --output_groups=+rustfmt_checks
+
+# Host target configuration
+# ===========================
+common:k_host --config=k_common
+
+# QEMU lm3s6965evb target configuration
+# =======================================
+common:k_qemu_lm3s6965evb --config=k_common
+build:k_qemu_lm3s6965evb --platforms=//pw_kernel/target/qemu:lm3s6965evb
+run:k_qemu_lm3s6965evb --run_under="@qemu//:qemu-system-arm \
+  -cpu cortex-m3 \
+  -machine lm3s6965evb \
+  -nographic \
+  -semihosting-config enable=on,target=native \
+  -serial mon:stdio \
+  -kernel "
+test:k_qemu_lm3s6965evb --run_under="@qemu//:qemu-system-arm \
+  -cpu cortex-m3 \
+  -machine lm3s6965evb \
+  -nographic \
+  -semihosting-config enable=on,target=native \
+  -serial mon:stdio \
+  -kernel "
+
+
+# RP2350 target configuration
+# =======================================
+common:k_rp2350 --config=k_common
+build:k_rp2350 --platforms=//pw_kernel/target/rp:rp2350

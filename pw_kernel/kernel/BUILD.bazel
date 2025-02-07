@@ -1,0 +1,58 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
+
+CORTEX_M_DEPS = [
+    "@rust_crates//:cortex-m",
+    "@rust_crates//:cortex-m-rt",
+]
+
+rust_library(
+    name = "kernel",
+    srcs = [
+        "kernel/arch/arm_cortex_m/exceptions.rs",
+        "kernel/arch/arm_cortex_m/features.rs",
+        "kernel/arch/arm_cortex_m/mod.rs",
+        "kernel/arch/host/mod.rs",
+        "kernel/arch/mod.rs",
+        "kernel/lib.rs",
+        "kernel/scheduler.rs",
+    ],
+    crate_features = select({
+        "@pigweed//pw_build/constraints/arm:cortex-m0": ["arch_arm_cortex_m"],
+        "@pigweed//pw_build/constraints/arm:cortex-m3": ["arch_arm_cortex_m"],
+        "@pigweed//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
+        "//conditions:default": ["arch_host"],
+    }),
+    tags = ["kernel"],
+    target_compatible_with = select({
+        "@pigweed//pw_build/constraints/arm:cortex-m0": [],
+        "@pigweed//pw_build/constraints/arm:cortex-m3": [],
+        "@pigweed//pw_build/constraints/arm:cortex-m33": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "//pw_kernel/lib/list",
+        "//pw_kernel/target",
+        "@pigweed//pw_log/rust:pw_log",
+    ] + select({
+        "@pigweed//pw_build/constraints/arm:cortex-m0": CORTEX_M_DEPS,
+        "@pigweed//pw_build/constraints/arm:cortex-m3": CORTEX_M_DEPS,
+        "@pigweed//pw_build/constraints/arm:cortex-m33": CORTEX_M_DEPS,
+        "//conditions:default": [],
+    }),
+)
