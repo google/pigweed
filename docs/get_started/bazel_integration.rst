@@ -25,8 +25,7 @@ Pigweed can be used in both `bzlmod
 <https://bazel.build/external/overview#workspace-system>`__ based projects.
 
 We recommend using bzlmod (it's the future!), but note that Pigweed's FuzzTest
-and GoogleTest integration cannot yet be used in bzlmod-based projects
-(https://pwbug.dev/365103864).
+integration cannot yet be used in bzlmod-based projects (:bug:`365103864`).
 
 .. tab-set::
 
@@ -37,7 +36,6 @@ and GoogleTest integration cannot yet be used in bzlmod-based projects
       .. code-block:: python
 
          bazel_dep(name = "pigweed")
-         bazel_dep(name = "pw_toolchain")
 
          git_override(
              module_name = "pigweed",
