@@ -16,6 +16,13 @@ include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
 add_subdirectory(arm_gcc EXCLUDE_FROM_ALL)
 
+pw_add_library(pw_toolchain.constexpr_tag INTERFACE
+  HEADERS
+    public/pw_toolchain/constexpr_tag.h
+  PUBLIC_INCLUDES
+    public
+)
+
 pw_add_library(pw_toolchain.no_destructor INTERFACE
   HEADERS
     public/pw_toolchain/no_destructor.h

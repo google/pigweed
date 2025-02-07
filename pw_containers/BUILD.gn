@@ -80,8 +80,8 @@ pw_source_set("flat_map") {
 pw_source_set("inline_deque") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    ":constexpr_tag",
     ":raw_storage",
+    "$dir_pw_toolchain:constexpr_tag",
     dir_pw_assert,
     dir_pw_preprocessor,
     dir_pw_span,
@@ -107,12 +107,6 @@ pw_source_set("raw_storage") {
   visibility = [ ":*" ]
 }
 
-pw_source_set("constexpr_tag") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_containers/internal/constexpr_tag.h" ]
-  visibility = [ ":*" ]
-}
-
 pw_source_set("test_helpers") {
   public = [ "pw_containers_private/test_helpers.h" ]
   sources = [ "test_helpers.cc" ]
@@ -127,11 +121,11 @@ pw_source_set("to_array") {
 
 pw_source_set("inline_var_len_entry_queue") {
   public_configs = [ ":public_include_path" ]
-  public_deps = [ dir_pw_varint ]
-  deps = [
-    ":constexpr_tag",
-    dir_pw_assert,
+  public_deps = [
+    "$dir_pw_toolchain:constexpr_tag",
+    dir_pw_varint,
   ]
+  deps = [ dir_pw_assert ]
   public = [ "public/pw_containers/inline_var_len_entry_queue.h" ]
   sources = [ "inline_var_len_entry_queue.c" ]
 
@@ -142,7 +136,7 @@ pw_source_set("inline_var_len_entry_queue") {
 pw_source_set("vector") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    ":constexpr_tag",
+    "$dir_pw_toolchain:constexpr_tag",
     dir_pw_assert,
     dir_pw_preprocessor,
   ]

@@ -24,10 +24,10 @@
 #include <utility>
 
 #include "pw_assert/assert.h"
-#include "pw_containers/internal/constexpr_tag.h"
 #include "pw_containers/internal/raw_storage.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_span/span.h"
+#include "pw_toolchain/constexpr_tag.h"
 
 namespace pw {
 namespace inline_circular_buffer_impl {

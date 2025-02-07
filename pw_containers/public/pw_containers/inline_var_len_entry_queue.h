@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "pw_containers/internal/constexpr_tag.h"
+#include "pw_toolchain/constexpr_tag.h"
 
 #else
 
@@ -350,7 +350,7 @@ class BasicInlineVarLenEntryQueue
   // Explicit zero element constexpr constructor. Using this constructor will
   // place the entire object in .data, which will increase ROM size. Use with
   // caution if working with large capacity sizes.
-  constexpr BasicInlineVarLenEntryQueue(ConstexprTag /*constexpr_tag*/)
+  constexpr BasicInlineVarLenEntryQueue(ConstexprTag)
       : Base(kMaxSizeBytes), data_{} {}
 
   // `BasicInlineVarLenEntryQueue` is trivially copyable.

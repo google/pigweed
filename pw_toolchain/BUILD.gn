@@ -58,6 +58,11 @@ pw_doc_group("docs") {
   inputs = [ "globals_test.cc" ]
 }
 
+pw_source_set("constexpr_tag") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_toolchain/constexpr_tag.h" ]
+}
+
 pw_source_set("no_destructor") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_toolchain/no_destructor.h" ]

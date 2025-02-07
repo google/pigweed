@@ -24,6 +24,7 @@ pw_add_library(pw_fuzzer.examples.fuzztest.metrics_lib STATIC
     pw_assert
     pw_bytes
     pw_string
+    pw_containers.vector
   SOURCES
     metrics.cc
 )

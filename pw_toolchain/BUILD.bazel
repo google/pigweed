@@ -84,6 +84,12 @@ toolchain(
 )
 
 cc_library(
+    name = "constexpr_tag",
+    hdrs = ["public/pw_toolchain/constexpr_tag.h"],
+    strip_include_prefix = "public",
+)
+
+cc_library(
     name = "no_destructor",
     hdrs = ["public/pw_toolchain/no_destructor.h"],
     strip_include_prefix = "public",
@@ -146,6 +152,7 @@ cc_library(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_toolchain/constexpr_tag.h",
         "public/pw_toolchain/globals.h",
         "public/pw_toolchain/no_destructor.h",
     ],

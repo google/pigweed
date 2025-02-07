@@ -171,11 +171,11 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        ":constexpr_tag",
         ":raw_storage",
         "//pw_assert",
         "//pw_preprocessor",
         "//pw_span",
+        "//pw_toolchain:constexpr_tag",
     ],
 )
 
@@ -197,10 +197,10 @@ cc_library(
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
-        ":constexpr_tag",
         ":raw_storage",
         "//pw_assert",
         "//pw_preprocessor",
+        "//pw_toolchain:constexpr_tag",
         "//pw_varint",
     ],
 )
@@ -212,9 +212,9 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        ":constexpr_tag",
         "//pw_assert",
         "//pw_preprocessor",
+        "//pw_toolchain:constexpr_tag",
     ],
 )
 
@@ -239,15 +239,6 @@ cc_library(
     name = "raw_storage",
     hdrs = [
         "public/pw_containers/internal/raw_storage.h",
-    ],
-    strip_include_prefix = "public",
-    visibility = [":__subpackages__"],
-)
-
-cc_library(
-    name = "constexpr_tag",
-    hdrs = [
-        "public/pw_containers/internal/constexpr_tag.h",
     ],
     strip_include_prefix = "public",
     visibility = [":__subpackages__"],

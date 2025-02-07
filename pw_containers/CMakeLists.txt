@@ -73,10 +73,10 @@ pw_add_library(pw_containers.inline_deque INTERFACE
     public
   PUBLIC_DEPS
     pw_assert.assert
-    pw_containers._constexpr_tag
     pw_containers._raw_storage
     pw_preprocessor
     pw_span
+    pw_toolchain.constexpr_tag
 )
 
 pw_add_library(pw_containers.inline_queue INTERFACE
@@ -98,13 +98,6 @@ pw_add_library(pw_containers.iterator INTERFACE
 pw_add_library(pw_containers._raw_storage INTERFACE
   HEADERS
     public/pw_containers/internal/raw_storage.h
-  PUBLIC_INCLUDES
-    public
-)
-
-pw_add_library(pw_containers._constexpr_tag INTERFACE
-  HEADERS
-    public/pw_containers/internal/constexpr_tag.h
   PUBLIC_INCLUDES
     public
 )
@@ -133,9 +126,9 @@ pw_add_library(pw_containers.inline_var_len_entry_queue STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_containers._constexpr_tag
     pw_containers._raw_storage
     pw_varint
+    pw_toolchain.constexpr_tag
   PRIVATE_DEPS
     pw_assert
   SOURCES
@@ -149,8 +142,8 @@ pw_add_library(pw_containers.vector INTERFACE
     public
   PUBLIC_DEPS
     pw_assert
-    pw_containers._constexpr_tag
     pw_preprocessor
+    pw_toolchain.constexpr_tag
 )
 
 pw_add_library(pw_containers.wrapped_iterator INTERFACE
