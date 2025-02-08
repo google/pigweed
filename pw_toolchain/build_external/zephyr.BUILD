@@ -188,7 +188,6 @@ cc_tool(
     data = glob([
         "x86_64-zephyr-elf/**/*.specs",
         "x86_64-zephyr-elf/picolibc/**",
-        "x86_64-zephyr-elf/include/**",
         "x86_64-zephyr-elf/lib/gcc/x86_64-zephyr-elf/*/include/**",
         "x86_64-zephyr-elf/lib/gcc/x86_64-zephyr-elf/*/include-fixed/**",
         "x86_64-zephyr-elf/libexec/**",
