@@ -43,7 +43,9 @@ class ThreadContext {
   ThreadContext(const ThreadContext&) = delete;
   ThreadContext& operator=(const ThreadContext&) = delete;
 
-  constexpr auto& native() { return native_context_; }
+  constexpr thread::backend::NativeContextWithStack<kStackSizeBytes>& native() {
+    return native_context_;
+  }
 
  private:
   thread::backend::NativeContextWithStack<kStackSizeBytes> native_context_;
@@ -58,7 +60,7 @@ class ThreadContext<kExternallyAllocatedThreadStack> {
   ThreadContext(const ThreadContext&) = delete;
   ThreadContext& operator=(const ThreadContext&) = delete;
 
-  constexpr auto& native() { return native_context_; }
+  constexpr thread::backend::NativeContext& native() { return native_context_; }
 
  private:
   thread::backend::NativeContext native_context_;

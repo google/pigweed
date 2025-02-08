@@ -19,18 +19,30 @@
 #include "pw_function/function.h"
 #include "pw_span/span.h"
 #include "pw_thread_freertos/config.h"
+#include "pw_toolchain/constexpr_tag.h"
 #include "task.h"
 #if PW_THREAD_JOINING_ENABLED
 #include "event_groups.h"
 #endif  // PW_THREAD_JOINING_ENABLED
 
-namespace pw::thread {
+namespace pw {
+
+template <size_t>
+class ThreadContext;
+
+namespace thread {
 
 class Thread;  // Forward declare Thread which depends on Context.
 
-}  // namespace pw::thread
+namespace freertos {
+namespace internal {
 
-namespace pw::thread::freertos {
+template <typename Ctx>
+constexpr void SetStackForContext(Ctx& ctx, span<StackType_t> stack) {
+  ctx.stack_span_ = stack;
+}
+
+}  // namespace internal
 
 class Options;
 
@@ -45,7 +57,7 @@ class Options;
 //      used only for static allocations.
 class Context {
  public:
-  Context() = default;
+  constexpr Context() = default;
   Context(const Context&) = delete;
   Context& operator=(const Context&) = delete;
 
@@ -82,7 +94,7 @@ class Context {
 
   // Note that the FreeRTOS life cycle of this event group is managed together
   // with the task life cycle, not this object's life cycle.
-  StaticEventGroup_t event_group_;
+  StaticEventGroup_t event_group_ = {};
 #endif  // PW_THREAD_JOINING_ENABLED
 
 #if PW_THREAD_FREERTOS_CONFIG_DYNAMIC_ALLOCATION_ENABLED
@@ -113,11 +125,20 @@ class Context {
 //   }
 class StaticContext : public Context {
  public:
-  explicit StaticContext(span<StackType_t> stack_span)
+  explicit constexpr StaticContext(span<StackType_t> stack_span)
       : tcb_{}, stack_span_(stack_span) {}
 
  private:
   friend Context;
+
+  template <size_t>
+  friend class ::pw::ThreadContext;  // Allow constructing without stack.
+
+  // Allow GetNativeOptions to set the stack.
+  template <typename Ctx>
+  friend constexpr void internal::SetStackForContext(Ctx&, span<StackType_t>);
+
+  constexpr StaticContext() : tcb_{} {}
 
   StaticTask_t& tcb() { return tcb_; }
   span<StackType_t> stack() { return stack_span_; }
@@ -143,12 +164,16 @@ class StaticContext : public Context {
 template <size_t kStackSizeWords = config::kDefaultStackSizeWords>
 class StaticContextWithStack final : public StaticContext {
  public:
-  constexpr StaticContextWithStack() : StaticContext(stack_storage_) {
-    static_assert(kStackSizeWords >= config::kMinimumStackSizeWords);
-  }
+  StaticContextWithStack() : StaticContext(stack_storage_) {}
+
+  constexpr StaticContextWithStack(ConstexprTag)
+      : StaticContext(stack_storage_), stack_storage_{} {}
 
  private:
-  std::array<StackType_t, kStackSizeWords> stack_storage_;
+  static_assert(kStackSizeWords >= config::kMinimumStackSizeWords);
+  StackType_t stack_storage_[kStackSizeWords];
 };
 
-}  // namespace pw::thread::freertos
+}  // namespace freertos
+}  // namespace thread
+}  // namespace pw

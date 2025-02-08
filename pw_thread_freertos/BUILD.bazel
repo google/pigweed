@@ -98,7 +98,20 @@ cc_library(
         "//pw_string",
         "//pw_sync:binary_semaphore",
         "//pw_thread:thread.facade",
+        "//pw_toolchain:constexpr_tag",
     ],
+)
+
+cc_library(
+    name = "creation",
+    hdrs = [
+        "thread_creation_public_overrides/pw_thread_backend/context.h",
+        "thread_creation_public_overrides/pw_thread_backend/options.h",
+        "thread_creation_public_overrides/pw_thread_backend/priority.h",
+        "thread_creation_public_overrides/pw_thread_backend/stack.h",
+    ],
+    strip_include_prefix = "thread_creation_public_overrides",
+    deps = ["@freertos"],
 )
 
 label_flag(
@@ -278,7 +291,7 @@ cc_library(
         "public",
         "thread_public_overrides",
     ],
-    tags = ["noclangtidy"],
+    deps = ["@freertos"],
 )
 
 run_binary(

@@ -39,6 +39,7 @@ pw_thread_freertos_BACKENDS = {
   pw_thread_ID_BACKEND = "$dir_pw_thread_freertos:id"
   pw_thread_SLEEP_BACKEND = "$dir_pw_thread_freertos:sleep"
   pw_thread_THREAD_BACKEND = "$dir_pw_thread_freertos:thread"
+  pw_thread_THREAD_CREATION_BACKEND = "$dir_pw_thread_freertos:creation"
   pw_thread_THREAD_ITERATION_BACKEND =
       "$dir_pw_thread_freertos:thread_iteration"
   pw_thread_YIELD_BACKEND = "$dir_pw_thread_freertos:yield"

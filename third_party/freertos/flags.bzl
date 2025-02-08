@@ -29,5 +29,6 @@ FREERTOS_FLAGS = {
     str(Label("//pw_thread:sleep_backend")): str(Label("//pw_thread_freertos:sleep")),
     str(Label("//pw_thread:test_thread_context_backend")): str(Label("//pw_thread_freertos:test_thread_context")),
     str(Label("//pw_thread:thread_backend")): str(Label("//pw_thread_freertos:thread")),
+    str(Label("//pw_thread:thread_creation_backend")): str(Label("//pw_thread_freertos:creation")),
     str(Label("//pw_thread:yield_backend")): str(Label("//pw_thread_freertos:yield")),
 }

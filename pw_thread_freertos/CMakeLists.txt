@@ -85,8 +85,19 @@ pw_add_library(pw_thread_freertos.thread STATIC
     pw_third_party.freertos
     pw_thread.thread.facade
     pw_thread_freertos.config
+    pw_toolchain.constexpr_tag
   SOURCES
     thread.cc
+)
+
+pw_add_library(pw_thread_freertos.creation INTERFACE
+  HEADERS
+    thread_creation_public_overrides/pw_thread_backend/context.h
+    thread_creation_public_overrides/pw_thread_backend/options.h
+    thread_creation_public_overrides/pw_thread_backend/priority.h
+    thread_creation_public_overrides/pw_thread_backend/stack.h
+  PUBLIC_INCLUDES
+    thread_creation_public_overrides
 )
 
 # This target provides the backend for pw::this_thread::yield.

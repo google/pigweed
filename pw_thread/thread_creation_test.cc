@@ -93,7 +93,7 @@ TEST_F(ThreadCreationTest, ThreadContextExternalStack) {
 
 #if PW_NC_TEST(NoStack)
   PW_NC_EXPECT("No stack was provided!");
-  std::ignore = GetThreadOptions<kThread1024>(context);
+  std::ignore = pw::GetThreadOptions<kThread1024>(context);
 #endif  // PW_NC_TEST
 }
 

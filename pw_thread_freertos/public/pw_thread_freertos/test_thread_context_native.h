@@ -23,7 +23,9 @@ class TestThreadContextNative {
  public:
   static constexpr size_t kStackSizeWords = 8192;
 
-  constexpr TestThreadContextNative() { options_.set_static_context(context_); }
+  constexpr TestThreadContextNative() : context_(kConstexpr) {
+    options_.set_static_context(context_);
+  }
 
   TestThreadContextNative(const TestThreadContextNative&) = delete;
   TestThreadContextNative& operator=(const TestThreadContextNative&) = delete;
