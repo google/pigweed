@@ -17,7 +17,7 @@
 #include <array>
 #include <cstddef>
 
-#include "public/pw_allocator/block/basic.h"
+#include "pw_allocator/block/basic.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 

@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "public/pw_uart/uart_non_blocking.h"
+#include "pw_uart/uart_non_blocking.h"
 
 #include <cstdint>
 

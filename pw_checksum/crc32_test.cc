@@ -15,8 +15,8 @@
 
 #include <string_view>
 
-#include "public/pw_checksum/crc32.h"
 #include "pw_bytes/array.h"
+#include "pw_checksum/crc32.h"
 #include "pw_span/span.h"
 #include "pw_unit_test/framework.h"
 

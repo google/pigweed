@@ -17,7 +17,6 @@
 #include <cstddef>
 #include <cstring>
 
-#include "public/pw_kvs/flash_memory.h"
 #include "pw_kvs/fake_flash_memory.h"
 #include "pw_kvs/flash_memory.h"
 #include "pw_kvs_private/config.h"

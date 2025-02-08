@@ -17,7 +17,6 @@
 #include <algorithm>
 
 #include "chre/core/host_comms_manager.h"
-#include "public/pw_chre/host_link.h"
 #include "pw_chre/host_link.h"
 
 namespace chre {

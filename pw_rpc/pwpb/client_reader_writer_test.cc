@@ -16,7 +16,7 @@
 
 #include <optional>
 
-#include "public/pw_rpc/pwpb/client_reader_writer.h"
+#include "pw_rpc/pwpb/client_reader_writer.h"
 #include "pw_rpc/pwpb/client_testing.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
 #include "pw_unit_test/framework.h"

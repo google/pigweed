@@ -16,7 +16,6 @@
 
 #include <random>
 
-#include "public/pw_rpc_transport/rpc_transport.h"
 #include "pw_bytes/span.h"
 #include "pw_metric/metric.h"
 #include "pw_rpc/client_server.h"

@@ -14,7 +14,7 @@
 
 #include "pw_system/file_service.h"
 
-#include "public/pw_system/file_manager.h"
+#include "pw_system/file_manager.h"
 
 namespace pw::system {
 namespace {
