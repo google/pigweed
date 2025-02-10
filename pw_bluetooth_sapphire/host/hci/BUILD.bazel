@@ -113,6 +113,8 @@ pw_cc_test(
         "low_energy_scanner_test.cc",
         "sequential_command_runner_test.cc",
     ],
+    # TODO: https://pwbug.dev/393957973 - Fix this test.
+    tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":hci",

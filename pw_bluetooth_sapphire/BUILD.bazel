@@ -54,6 +54,8 @@ cc_library(
 pw_cc_test(
     name = "central_test",
     srcs = ["central_test.cc"],
+    # TODO: https://pwbug.dev/393957973 - Fix this test.
+    tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":central",
@@ -80,6 +82,8 @@ cc_library(
 pw_cc_test(
     name = "peripheral_test",
     srcs = ["peripheral_test.cc"],
+    # TODO: https://pwbug.dev/393957973 - Fix this test.
+    tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":peripheral",

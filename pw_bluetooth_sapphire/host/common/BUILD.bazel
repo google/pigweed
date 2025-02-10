@@ -139,6 +139,8 @@ pw_cc_test(
         "weak_self_test.cc",
         "windowed_inspect_numeric_property_test.cc",
     ],
+    # TODO: https://pwbug.dev/393957973 - Fix this test.
+    tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":common",

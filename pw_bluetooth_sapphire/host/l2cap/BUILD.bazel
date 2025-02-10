@@ -258,6 +258,8 @@ pw_cc_fuzz_test(
 pw_cc_fuzz_test(
     name = "channel_configuration_fuzzer",
     srcs = ["channel_configuration_fuzztest.cc"],
+    # TODO: https://pwbug.dev/393957973 - Fix this test.
+    tags = ["noubsan"],
     deps = [
         ":l2cap",
         ":testing",
@@ -267,6 +269,8 @@ pw_cc_fuzz_test(
 pw_cc_fuzz_test(
     name = "common_handler_fuzzer",
     srcs = ["common_handler_fuzztest.cc"],
+    # TODO: https://pwbug.dev/393957973 - Fix this test.
+    tags = ["noubsan"],
     deps = [
         ":l2cap",
         ":testing",

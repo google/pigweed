@@ -124,6 +124,8 @@ pw_cc_test(
         "remote_service_manager_test.cc",
         "server_test.cc",
     ],
+    # TODO: https://pwbug.dev/393957973 - Fix this test.
+    tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":gatt",

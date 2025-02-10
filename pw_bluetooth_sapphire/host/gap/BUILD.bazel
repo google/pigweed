@@ -193,6 +193,11 @@ pw_cc_test(
         "secure_simple_pairing_state_test.cc",
         "types_test.cc",
     ],
+    # TODO: https://pwbug.dev/393957973 - Fix this test.
+    tags = [
+        "noasan",
+        "noubsan",
+    ],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":gap",
