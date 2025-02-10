@@ -63,6 +63,13 @@ pw_facade(
     deps = [":status_macros"],
 )
 
+# TODO: https://pwbug.dev/390709187 - Remove this alias once no pw_cc_test has
+# an explicit direct dependency on //pw_unit_test.
+alias(
+    name = "pw_unit_test_alias_for_migration_only",
+    actual = "pw_unit_test",
+)
+
 label_flag(
     name = "backend",
     build_setting_default = ":light",
@@ -89,21 +96,16 @@ cc_library(
     srcs = ["framework_light.cc"],
     hdrs = [
         "light_public_overrides/pw_unit_test/framework_backend.h",
-        # The facade header is included here since
-        # public_overrides/gtest/gtest.h includes it. This avoids a circular
-        # dependency in the build system.
-        "public/pw_unit_test/framework.h",
         "public_overrides/gtest/gtest.h",
     ],
     includes = [
         "light_public_overrides",
-        "public",
         "public_overrides",
     ],
     deps = [
         ":config",
         ":event_handler",
-        ":status_macros",
+        ":pw_unit_test.facade",
         "//pw_assert",
         "//pw_bytes:alignment",
         "//pw_polyfill",

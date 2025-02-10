@@ -34,10 +34,10 @@ def pw_cc_test(**kwargs):
     Args:
       **kwargs: Passed to cc_test.
     """
-    kwargs["deps"] = kwargs.get("deps", []) + [str(Label("//pw_build:default_link_extra_lib"))]
-
-    # Depend on the backend. E.g. to pull in gtest.h include paths.
-    kwargs["deps"] = kwargs["deps"] + [str(Label("//pw_unit_test:backend"))]
+    kwargs["deps"] = kwargs.get("deps", []) + [
+        str(Label("//pw_build:default_link_extra_lib")),
+        str(Label("//pw_unit_test:pw_unit_test_alias_for_migration_only")),
+    ]
 
     # Save the base set of deps minus pw_unit_test:main for the .lib target.
     original_deps = kwargs["deps"]
