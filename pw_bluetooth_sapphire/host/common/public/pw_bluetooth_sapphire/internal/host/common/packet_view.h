@@ -56,6 +56,10 @@ class PacketViewBase {
     this->set_size(header_size() + payload_size);
   }
 
+  // Assignment disabled because PacketViewBase doesn't know whether |this| and
+  // the assigned parameter are the same type of PacketView<…>.
+  PacketViewBase& operator=(const PacketViewBase&) = delete;
+
  protected:
   PacketViewBase(size_t header_size,
                  const ByteBuffer* buffer,
@@ -74,10 +78,6 @@ class PacketViewBase {
   // copy-constructed, but it should stay protected to avoid upcasting from
   // causing issues.
   PacketViewBase(const PacketViewBase&) = default;
-
-  // Assignment disabled because PacketViewBase doesn't know whether |this| and
-  // the assigned parameter are the same type of PacketView<…>.
-  PacketViewBase& operator=(const PacketViewBase&) = delete;
 
   void set_size(size_t size) {
     PW_CHECK(buffer_->size() >= size);
