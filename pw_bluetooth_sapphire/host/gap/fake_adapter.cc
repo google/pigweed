@@ -220,6 +220,7 @@ void FakeAdapter::FakeLowEnergy::StartAdvertising(
 void FakeAdapter::FakeLowEnergy::StartDiscovery(bool active,
                                                 SessionCallback callback) {
   auto session = std::make_unique<LowEnergyDiscoverySession>(
+      next_scan_id_++,
       active,
       *adapter_->peer_cache(),
       adapter_->pw_dispatcher_,

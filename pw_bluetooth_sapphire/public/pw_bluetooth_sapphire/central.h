@@ -122,9 +122,6 @@ class Central final : public pw::bluetooth::low_energy::Central2 {
   // clears `ScanState.scan_handle_`.
   void StopScanLocked(uint16_t scan_id) PW_EXCLUSIVE_LOCKS_REQUIRED(lock());
 
-  // Must only be used on the Bluetooth thread.
-  uint16_t next_scan_id_ = 0;
-
   std::unordered_map<uint16_t, ScanState> scans_ PW_GUARDED_BY(lock());
 
   // Must only be used on the Bluetooth thread.

@@ -35,12 +35,14 @@ const char* kInspectScanIntervalPropertyName = "scan_interval_ms";
 const char* kInspectScanWindowPropertyName = "scan_window_ms";
 
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
+    uint16_t scan_id,
     bool active,
     PeerCache& peer_cache,
     pw::async::Dispatcher& dispatcher,
     fit::function<void(LowEnergyDiscoverySession*)> on_stop_cb,
     fit::function<const std::unordered_set<PeerId>&()> cached_scan_results_fn)
     : WeakSelf(this),
+      scan_id_(scan_id),
       active_(active),
       peer_cache_(peer_cache),
       heap_dispatcher_(dispatcher),
@@ -260,6 +262,7 @@ LowEnergyDiscoveryManager::AddSession(bool active) {
     return this->cached_scan_results_;
   };
   auto session = std::make_unique<LowEnergyDiscoverySession>(
+      next_scan_id_++,
       active,
       *peer_cache_,
       dispatcher_,

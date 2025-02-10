@@ -168,6 +168,7 @@ class FakeAdapter final : public Adapter {
         pw::chrono::SystemClock::duration) override {}
 
    private:
+    uint16_t next_scan_id_ = 0;
     FakeAdapter* adapter_;
     AdvertisementId next_advertisement_id_ = AdvertisementId(1);
     std::unordered_map<AdvertisementId, RegisteredAdvertisement>

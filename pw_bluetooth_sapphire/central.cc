@@ -160,17 +160,16 @@ async2::OnceReceiver<Central::ScanStartResult> Central::Scan(
           return;
         }
 
-        uint16_t scan_id = self->next_scan_id_++;
         ScanHandleImpl* scan_handle_raw_ptr =
-            new ScanHandleImpl(scan_id, &self.get());
+            new ScanHandleImpl(session->scan_id(), &self.get());
         ScanHandle::Ptr scan_handle_ptr(scan_handle_raw_ptr);
         {
           std::lock_guard guard(lock());
-          auto [iter, emplaced] = self->scans_.try_emplace(scan_id,
+          auto [iter, emplaced] = self->scans_.try_emplace(session->scan_id(),
                                                            std::move(session),
                                                            std::move(filters),
                                                            scan_handle_raw_ptr,
-                                                           scan_id,
+                                                           session->scan_id(),
                                                            &self.get());
           PW_CHECK(emplaced);
         }

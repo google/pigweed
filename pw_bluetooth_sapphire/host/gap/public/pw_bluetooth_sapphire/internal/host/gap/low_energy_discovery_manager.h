@@ -244,6 +244,7 @@ class LowEnergyDiscoveryManager final
   // hold a raw pointer as we expect this to out-live us.
   PeerCache* const peer_cache_;
 
+  uint16_t next_scan_id_ = 0;
   hci::LowEnergyScanner::PacketFilterConfig packet_filter_config_;
 
   // Called when a directed connectable advertisement is received during an
@@ -292,6 +293,7 @@ class LowEnergyDiscoverySession final
     : public WeakSelf<LowEnergyDiscoverySession> {
  public:
   explicit LowEnergyDiscoverySession(
+      uint16_t scan_id,
       bool active,
       PeerCache& peer_cache,
       pw::async::Dispatcher& dispatcher,
@@ -343,12 +345,15 @@ class LowEnergyDiscoverySession final
   // Returns true if this session has not been stopped and has not errored.
   bool alive() const { return alive_; }
 
+  uint16_t scan_id() const { return scan_id_; }
+
   // Returns true if this is an active discovery session, or false if this is a
   // passive discovery session.
   bool active() const { return active_; }
 
  private:
-  bool alive_{true};
+  uint16_t scan_id_;
+  bool alive_ = true;
   bool active_;
   PeerCache& peer_cache_;
   pw::async::HeapDispatcher heap_dispatcher_;
