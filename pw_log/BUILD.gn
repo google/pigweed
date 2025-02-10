@@ -178,6 +178,7 @@ pw_test("log_enum_test") {
   deps = [
     ":args",
     ":pw_log",
+    "$dir_pw_unit_test:constexpr",
     dir_pw_tokenizer,
   ]
 

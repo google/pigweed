@@ -253,6 +253,7 @@ pw_cc_test(
         "//pw_log",
         "//pw_tokenizer",
         "//pw_unit_test",
+        "//pw_unit_test:constexpr",
     ],
 )
 

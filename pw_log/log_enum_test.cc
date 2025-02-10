@@ -17,6 +17,7 @@
 #include "pw_log/tokenized_args.h"
 #include "pw_tokenizer/enum.h"
 #include "pw_tokenizer/tokenize.h"
+#include "pw_unit_test/constexpr.h"
 #include "pw_unit_test/framework.h"
 
 namespace this_is_a_test {
@@ -51,68 +52,69 @@ TEST(TokenizedArgs, ExprMatchesStringExpr_TokenizingBackend) {
   EXPECT_EQ(pw::tokenizer::Hash("[:-)"), PW_LOG_TOKEN_EXPR("[:-)"));
 }
 
-TEST(TokenizedArgs, LogTokenFmt_TokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, LogTokenFmt_TokenizingBackend, {
   constexpr const char* nested_token = PW_LOG_TOKEN_FMT();
-  EXPECT_STREQ("$#%08" PRIx32, nested_token);
-}
+  PW_TEST_EXPECT_STREQ("$#%08" PRIx32, nested_token);
+});
 
-TEST(TokenizedArgs, LogTokenEnumFmt_TokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, LogTokenEnumFmt_TokenizingBackend, {
   constexpr char nested_token[] = PW_LOG_ENUM_FMT(::this_is_a_test::Thing);
-  EXPECT_STREQ("${::this_is_a_test::Thing}#%08" PRIx32, nested_token);
-}
+  PW_TEST_EXPECT_STREQ("${::this_is_a_test::Thing}#%08" PRIx32, nested_token);
+});
 
-TEST(TokenizedArgs, LogTokenOrString_TokenizingBackend) {
-  EXPECT_EQ(static_cast<uint32_t>(kAlpha), PW_LOG_ENUM(kAlpha));
-}
+PW_CONSTEXPR_TEST(TokenizedArgs, LogTokenOrString_TokenizingBackend, {
+  PW_TEST_EXPECT_EQ(static_cast<uint32_t>(kAlpha), PW_LOG_ENUM(kAlpha));
+});
 
-TEST(TokenizedArgs, NestedTokenFmt1_TokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, NestedTokenFmt1_TokenizingBackend, {
   constexpr char nested_token[] = PW_LOG_NESTED_TOKEN_FMT();
-  EXPECT_STREQ("${$#%" PRIx32 "}#%08" PRIx32, nested_token);
-}
+  PW_TEST_EXPECT_STREQ("${$#%" PRIx32 "}#%08" PRIx32, nested_token);
+});
 
-TEST(TokenizedArgs, NestedTokenFmt2_TokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, NestedTokenFmt2_TokenizingBackend, {
   constexpr char nested_token[] = PW_LOG_NESTED_TOKEN_FMT("enum_domain");
-  EXPECT_STREQ("${${enum_domain}#%" PRIx32 "}#%08" PRIx32, nested_token);
-}
+  PW_TEST_EXPECT_STREQ("${${enum_domain}#%" PRIx32 "}#%08" PRIx32,
+                       nested_token);
+});
 
 #else
 
-TEST(TokenizedArgs, EmptyString_NonTokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, EmptyString_NonTokenizingBackend, {
   constexpr PW_LOG_TOKEN_TYPE token = PW_LOG_TOKEN("");
-  EXPECT_STREQ("", token);
-}
+  PW_TEST_EXPECT_STREQ("", token);
+});
 
-TEST(TokenizedArgs, ExprMatchesStringExpr_NonTokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, ExprMatchesStringExpr_NonTokenizingBackend, {
   constexpr PW_LOG_TOKEN_TYPE token1 = PW_LOG_TOKEN("[:-)");
   constexpr PW_LOG_TOKEN_TYPE token2 = PW_LOG_TOKEN_EXPR("[:-)");
-  EXPECT_STREQ(token1, token2);
-}
+  PW_TEST_EXPECT_STREQ(token1, token2);
+});
 
-TEST(TokenizedArgs, LogTokenFmt_NonTokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, LogTokenFmt_NonTokenizingBackend, {
   constexpr PW_LOG_TOKEN_TYPE token = PW_LOG_TOKEN_FMT();
-  EXPECT_STREQ("%s", token);
-}
+  PW_TEST_EXPECT_STREQ("%s", token);
+});
 
-TEST(TokenizedArgs, LogTokenEnumFmt_NonTokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, LogTokenEnumFmt_NonTokenizingBackend, {
   constexpr PW_LOG_TOKEN_TYPE nested_token =
       PW_LOG_ENUM_FMT(::this_is_a_test::Thing);
-  EXPECT_STREQ("%s", nested_token);
-}
+  PW_TEST_EXPECT_STREQ("%s", nested_token);
+});
 
-TEST(TokenizedArgs, LogTokenOrString_NonTokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, LogTokenOrString_NonTokenizingBackend, {
   constexpr PW_LOG_TOKEN_TYPE nested_token = PW_LOG_ENUM(kAlpha);
-  EXPECT_STREQ("kAlpha", nested_token);
-}
+  PW_TEST_EXPECT_STREQ("kAlpha", nested_token);
+});
 
-TEST(TokenizedArgs, NestedTokenFmt1_NonTokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, NestedTokenFmt1_NonTokenizingBackend, {
   constexpr char nested_token[] = PW_LOG_NESTED_TOKEN_FMT();
-  EXPECT_STREQ("%s::%s", nested_token);
-}
+  PW_TEST_EXPECT_STREQ("%s::%s", nested_token);
+});
 
-TEST(TokenizedArgs, NestedTokenFmt2_NonTokenizingBackend) {
+PW_CONSTEXPR_TEST(TokenizedArgs, NestedTokenFmt2_NonTokenizingBackend, {
   constexpr char nested_token[] = PW_LOG_NESTED_TOKEN_FMT(kAlpha);
-  EXPECT_STREQ("%s::%s", nested_token);
-}
+  PW_TEST_EXPECT_STREQ("%s::%s", nested_token);
+});
 
 #endif  //__has_include("log_backend/log_backend_uses_pw_tokenizer.h")
 
