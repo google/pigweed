@@ -53,6 +53,7 @@ struct ProtocolErrorTraits {
 
 // Marker used to indicate that an Error holds only HostError.
 class NoProtocolError {
+ public:
   constexpr NoProtocolError() = delete;
 };
 
