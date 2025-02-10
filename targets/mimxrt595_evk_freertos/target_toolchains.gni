@@ -19,16 +19,19 @@ import("$dir_pw_boot/backend.gni")
 import("$dir_pw_log/backend.gni")
 import("$dir_pw_rpc/system_server/backend.gni")
 import("$dir_pw_sys_io/backend.gni")
+import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 
 _target_config = {
   # This target uses FreeRTOS.
   forward_variables_from(pw_targets_FREERTOS_BACKEND_GROUP, "*")
-  pw_thread_THREAD_ITERATION_BACKEND = ""
+  if (pw_third_party_mcuxpresso_SDK !=
+      "//targets/mimxrt595_evk_freertos:mcuxpresso_sdk") {
+    pw_thread_THREAD_ITERATION_BACKEND = ""
+  }
   pw_third_party_freertos_DISABLE_TASKS_STATICS = true
 
-  # Use the logging main.
-  pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
+  pw_unit_test_MAIN = "//targets/mimxrt595_evk_freertos:unit_test_app"
 
   # Configuration options for Pigweed executable targets.
   pw_build_EXECUTABLE_TARGET_TYPE = "mimxrt595_executable"
@@ -43,8 +46,13 @@ _target_config = {
   pw_log_BACKEND = dir_pw_log_basic
   pw_malloc_BACKEND = "$dir_pw_malloc:bucket_block_allocator"
   pw_sys_io_BACKEND = "$dir_pw_sys_io_mcuxpresso"
-
+  pw_system_IO_BACKEND = "$dir_pw_system:sys_io_target_io"
+  pw_system_DEVICE_HANDLER = "$dir_pw_system:unknown_device_handler"
+  pw_system_TARGET_HOOKS_BACKEND = "$dir_pw_system:freertos_target_hooks"
+  pw_system_RPC_SERVER_BACKEND = "$dir_pw_system:hdlc_rpc_server"
   pw_rpc_system_server_BACKEND = "$dir_pw_hdlc:hdlc_sys_io_system_server"
+  pw_trace_BACKEND = "$dir_pw_trace_tokenized:pw_trace_tokenized"
+  pw_trace_tokenizer_time = "$dir_pw_trace_tokenized:fake_trace_time"
 
   # Override the default pw_boot_cortex_m linker script and set the memory
   # regions for the target.

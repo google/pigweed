@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -11,11 +11,22 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Commons Tests."""
 
-import("//build_overrides/pigweed.gni")
+import unittest
 
-import("mcuxpresso.gni")
+from pw_build_mcuxpresso.common import BuildTarget
 
-if (dir_pw_third_party_mcuxpresso != "") {
-  import("$dir_pw_third_party_mcuxpresso/mcuxprseso.gni")
-}
+
+class BuildTargetTest(unittest.TestCase):
+    """BuildTarget tests."""
+
+    def test_name(self):
+        target = BuildTarget("test_rule", "foo")
+
+        self.assertEqual(target.name, "foo")
+
+    def test_label(self):
+        target = BuildTarget("test_rule", "foo")
+
+        self.assertEqual(target.label(), ":foo")

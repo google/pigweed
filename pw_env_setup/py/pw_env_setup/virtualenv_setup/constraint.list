@@ -129,5 +129,6 @@ urllib3==2.0.4
 watchdog==2.3.1
 wcwidth==0.2.6
 websockets==10.4
+west==1.2.0
 yapf==0.31.0
 yarl==1.12.1

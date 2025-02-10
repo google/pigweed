@@ -27,12 +27,6 @@ generate_toolchains("target_toolchains") {
 }
 
 declare_args() {
-  # When compiling with an MCUXpresso SDK, this variable is set to the path of
-  # the manifest file within the SDK installation. When set, a pw_source_set
-  # for a sample project SDK is created at
-  # "//targets/mimxrt595_evk/sample_sdk".
-  pw_target_mimxrt595_evk_MANIFEST = ""
-
   # This list should contain the necessary defines for setting linker script
   # memory regions. While we don't directly use the pw_boot_cortex_m linker
   # script, these are deliberately matching to make being able to later easier.
@@ -48,8 +42,13 @@ config("pw_malloc_active") {
 config("disable_warnings") {
   cflags = [
     "-Wno-cast-qual",
+    "-Wno-error=strict-prototypes",
     "-Wno-redundant-decls",
+    "-Wno-shadow",
+    "-Wno-sign-compare",
+    "-Wno-type-limits",
     "-Wno-undef",
+    "-Wno-unused-function",
     "-Wno-unused-parameter",
     "-Wno-unused-variable",
   ]
@@ -68,8 +67,11 @@ config("freestanding") {
 
 config("sdk_defines") {
   defines = [
+    "BOOT_HEADER_ENABLE=1",
     "CPU_MIMXRT595SFFOC_cm33",
-    "DEBUG_CONSOLE_TRANSFER_NON_BLOCKING",
+    "DEBUG_CONSOLE_TRANSFER_NON_BLOCKING=1",
+    "DEBUG_CONSOLE_DISABLE_RTOS_SYNCHRONIZATION",
+    "FSL_SDK_DRIVER_QUICK_ACCESS_ENABLE=1",
     "SDK_DEBUGCONSOLE=1",
   ]
   visibility = [ ":*" ]
@@ -80,43 +82,57 @@ if (current_toolchain != default_toolchain) {
     defines = pw_target_mimxrt595_evk_LINK_CONFIG_DEFINES
     linker_script = "mimxrt595_flash.ld"
   }
-}
-
-if (pw_third_party_mcuxpresso_SDK != "") {
-  # Startup and vector table for NXP MIMXRT595-EVK.
-  pw_source_set("boot") {
-    public_configs = [ ":pw_malloc_active" ]
-    deps = [
-      "$dir_pw_boot",
-      "$dir_pw_boot_cortex_m",
-      "$dir_pw_preprocessor",
-      "$dir_pw_sys_io_mcuxpresso",
-      pw_third_party_mcuxpresso_SDK,
-    ]
-    if (pw_malloc_BACKEND != "") {
-      deps += [ "$dir_pw_malloc" ]
+  if (pw_third_party_mcuxpresso_SDK != "") {
+    # Startup and vector table for NXP MIMXRT595-EVK.
+    pw_source_set("boot") {
+      public_configs = [ ":pw_malloc_active" ]
+      deps = [
+        "$dir_pigweed/targets/mimxrt595_evk/config",
+        "$dir_pw_boot",
+        "$dir_pw_boot_cortex_m",
+        "$dir_pw_preprocessor",
+        "$dir_pw_sys_io_mcuxpresso",
+        pw_third_party_mcuxpresso_SDK,
+      ]
+      if (pw_malloc_BACKEND != "") {
+        deps += [ "$dir_pw_malloc" ]
+      }
+      sources = [
+        "boot.cc",
+        "vector_table.c",
+      ]
     }
-    sources = [
-      "boot.cc",
-      "vector_table.c",
-    ]
   }
 }
 
-if (pw_third_party_mcuxpresso_SDK == "//targets/mimxrt595_evk:sample_sdk") {
-  pw_mcuxpresso_sdk("sample_sdk") {
-    manifest = pw_target_mimxrt595_evk_MANIFEST
-    include = [
-      "component.serial_manager_uart.MIMXRT595S",
-      "project_template.evkmimxrt595.MIMXRT595S",
-      "utility.debug_console.MIMXRT595S",
+if (pw_third_party_mcuxpresso_SDK == "//targets/mimxrt595_evk:mcuxpresso_sdk") {
+  pw_source_set("mcuxpresso_sdk") {
+    public_deps = [
+      "$dir_pw_third_party_mcuxpresso/:component.serial_manager.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:component.serial_manager_uart.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.flash_config.evkmimxrt595.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.flexcomm_i2c.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.flexcomm_spi.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.flexcomm_usart_dma.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.flexio_spi.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.i3c.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.inputmux.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.lpc_dma.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.lpc_gpio.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.mu.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.pint.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.drivers.power.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:platform.utilities.assert.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:project_template.evkmimxrt595.MIMXRT595S",
+      "$dir_pw_third_party_mcuxpresso/:utility.debug_console.MIMXRT595S",
     ]
-    exclude = [ "device.MIMXRT595S_startup.MIMXRT595S" ]
+  }
 
+  pw_source_set("mcuxpresso_sdk_config") {
     public_configs = [
-      ":disable_warnings",
       ":freestanding",
       ":sdk_defines",
+      ":disable_warnings",
     ]
   }
 }

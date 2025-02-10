@@ -378,9 +378,10 @@ gn_mimxrt595_build = PigweedGnGenNinja(
         'dir_pw_third_party_mcuxpresso': lambda ctx: '"{}"'.format(
             str(ctx.package_root / 'mcuxpresso')
         ),
-        'pw_target_mimxrt595_evk_MANIFEST': '$dir_pw_third_party_mcuxpresso'
-        + '/EVK-MIMXRT595_manifest_v3_13.xml',
-        'pw_third_party_mcuxpresso_SDK': '//targets/mimxrt595_evk:sample_sdk',
+        # pylint: disable=line-too-long
+        'pw_third_party_mcuxpresso_CONFIG': '//targets/mimxrt595_evk:mcuxpresso_sdk_config',
+        'pw_third_party_mcuxpresso_SDK': '//targets/mimxrt595_evk:mcuxpresso_sdk',
+        # pylint: enable=line-too-long
         'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
     },
     ninja_targets=('mimxrt595'),
@@ -397,10 +398,10 @@ gn_mimxrt595_freertos_build = PigweedGnGenNinja(
         'dir_pw_third_party_mcuxpresso': lambda ctx: '"{}"'.format(
             str(ctx.package_root / 'mcuxpresso')
         ),
-        'pw_target_mimxrt595_evk_freertos_MANIFEST': '{}/{}'.format(
-            "$dir_pw_third_party_mcuxpresso", "EVK-MIMXRT595_manifest_v3_13.xml"
-        ),
-        'pw_third_party_mcuxpresso_SDK': '//targets/mimxrt595_evk_freertos:sdk',
+        # pylint: disable=line-too-long
+        'pw_third_party_mcuxpresso_CONFIG': '//targets/mimxrt595_evk_freertos:mcuxpresso_sdk_config',
+        'pw_third_party_mcuxpresso_SDK': '//targets/mimxrt595_evk_freertos:mcuxpresso_sdk',
+        # pylint: enable=line-too-long
         'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
     },
     ninja_targets=('mimxrt595_freertos'),

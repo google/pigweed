@@ -15,7 +15,9 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
+load("//third_party/freertos:flags.bzl", "FREERTOS_FLAGS")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -24,8 +26,100 @@ package(
 
 licenses(["notice"])
 
-pw_linker_script(
-    name = "flash_linker_script",
+constraint_value(
+    name = "freertos_config_cv",
+    constraint_setting = "@freertos//:freertos_config_setting",
+)
+
+platform(
+    name = "platform",
+    constraint_values = [
+        ":freertos_config_cv",
+        "//pw_build/constraints/rtos:freertos",
+        "//pw_interrupt_cortex_m:backend",
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_malloc_freertos:backend",
+        "//pw_build/constraints/arm:cortex-m33",
+        "@freertos//:port_ARM_CM33_NTZ",
+        "@freertos//:malloc_heap_4",
+        "@freertos//:disable_task_statics",
+        "@platforms//cpu:armv8-m",
+        "@platforms//os:none",
+        "@rust_crates//:no_std",
+    ],
+    flags = flags_from_dict(FREERTOS_FLAGS | {
+        "@freertos//:freertos_config": "//targets/mimxrt595_evk_freertos:freertos_config",
+        "@mcuxpresso//:user_config": "//targets/mimxrt595_evk_freertos:mcuxpresso_sdk_lib_config",
+        "@pigweed//pw_assert:assert_backend": "//pw_assert_basic",
+        "@pigweed//pw_assert:assert_backend_impl": "//pw_assert_basic:impl",
+        "@pigweed//pw_assert:check_backend": "//pw_assert_basic",
+        "@pigweed//pw_assert:check_backend_impl": "//pw_assert_basic:impl",
+        "@pigweed//pw_boot:backend": "//pw_boot_cortex_m:armv8m",
+        "@pigweed//pw_log:backend": "//pw_log_basic",
+        "@pigweed//pw_log:backend_impl": "//pw_log_basic:impl",
+        "@pigweed//pw_malloc:backend": "//pw_malloc:bucket_block_allocator",
+        "@pigweed//pw_sys_io:backend": "//pw_sys_io_mcuxpresso",
+        "@pigweed//pw_system:extra_platform_libs": "//targets/mimxrt595_evk_freertos:extra_platform_libs",
+        "@pigweed//pw_unit_test:main": "//targets/mimxrt595_evk_freertos:unit_test_app",
+        "@pigweed//targets:mcuxpresso_sdk": "//targets/mimxrt595_evk_freertos:mcuxpresso_sdk",
+    }),
+)
+
+cc_library(
+    name = "mcuxpresso_sdk",
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:freertos",
+        "@platforms//cpu:armv8-m",
+    ],
+    deps = [
+        "@mcuxpresso//:component.serial_manager.MIMXRT595S",
+        "@mcuxpresso//:component.serial_manager_uart.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.flexcomm_i2c.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.flexcomm_spi.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.flexcomm_usart_dma.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.flexcomm_usart_freertos.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.flexio_spi.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.i3c.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.inputmux.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.lpc_dma.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.lpc_gpio.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.mu.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.pint.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.power.MIMXRT595S",
+        "@mcuxpresso//:platform.utilities.assert.MIMXRT595S",
+        "@mcuxpresso//:project_template.evkmimxrt595.MIMXRT595S",
+        "@mcuxpresso//:utility.debug_console.MIMXRT595S",
+    ],
+)
+
+cc_library(
+    name = "mcuxpresso_sdk_lib_config",
+    defines = [
+        "BOOT_HEADER_ENABLE=1",
+        "CPU_MIMXRT595SFFOC_cm33",
+        "DEBUG_CONSOLE_TRANSFER_NON_BLOCKING=1",
+        "DEBUG_CONSOLE_DISABLE_RTOS_SYNCHRONIZATION",
+        "FSL_RTOS_FREE_RTOS",
+        "FSL_SDK_DRIVER_QUICK_ACCESS_ENABLE=1",
+        "SDK_DEBUGCONSOLE=1",
+        "SDK_OS_FREE_RTOS",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:freertos",
+        "@platforms//cpu:armv8-m",
+    ],
+    deps = [
+        ":freertos_config",
+        "@freertos",
+    ],
+)
+
+exports_files(["mimxrt595_flash.ld"])
+
+cc_library(
+    name = "flash_linker_script_defines",
     defines = [
         "PW_BOOT_FLASH_BEGIN=0x08001180",
         "PW_BOOT_FLASH_SIZE=0x001FEE80",
@@ -36,7 +130,39 @@ pw_linker_script(
         "PW_BOOT_VECTOR_TABLE_BEGIN=0x08001000",
         "PW_BOOT_VECTOR_TABLE_SIZE=0x00000180",
     ],
-    linker_script = "mimxrt595_flash.ld",
+)
+
+pw_linker_script(
+    name = "flash_linker_script",
+    linker_script = ":mimxrt595_flash.ld",
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:freertos",
+        "@platforms//cpu:armv8-m",
+    ],
+    deps = [
+        ":flash_linker_script_defines",
+    ],
+)
+
+cc_library(
+    name = "unit_test_app",
+    testonly = True,
+    srcs = [
+        "unit_test_app.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:freertos",
+        "@platforms//cpu:armv8-m",
+    ],
+    deps = [
+        "//pw_status",
+        "//pw_system",
+        "//pw_unit_test",
+        "//pw_unit_test:logging_event_handler",
+    ],
+    alwayslink = 1,
 )
 
 cc_library(
@@ -50,15 +176,18 @@ cc_library(
     ],
     target_compatible_with = [
         "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:freertos",
         "@platforms//cpu:armv8-m",
     ],
     deps = [
-        ":flash_linker_script",
         "//pw_boot",
         "//pw_boot_cortex_m",
+        "//pw_malloc",
         "//pw_preprocessor",
         "//pw_sys_io_mcuxpresso",
+        "//pw_system:init",
         "//targets:mcuxpresso_sdk",
+        "//targets/mimxrt595_evk_freertos/config",
         "//third_party/freertos:support",
     ],
     alwayslink = 1,
@@ -67,11 +196,31 @@ cc_library(
 cc_library(
     name = "freertos_config",
     hdrs = [
-        "FreeRTOSConfig.h",
+        "config_freertos/FreeRTOSConfig.h",
     ],
-    includes = ["./"],
+    strip_include_prefix = "config_freertos",
     tags = ["noclangtidy"],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:freertos",
+        "@platforms//cpu:armv8-m",
+    ],
     deps = ["//third_party/freertos:config_assert"],
+)
+
+cc_library(
+    name = "extra_platform_libs",
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:freertos",
+        "@platforms//cpu:armv8-m",
+    ],
+    deps = [
+        ":boot",
+        ":flash_linker_script",
+        "//pw_tokenizer:linker_script",
+        "//pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
+    ],
 )
 
 sphinx_docs_library(

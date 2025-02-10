@@ -15,25 +15,169 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:merge_flags.bzl", "flags_from_dict")
+load("//pw_build:pigweed.bzl", "pw_linker_script")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO(pwbug/545): These just list sources files to pass presubmit and aren't
-# expected to actually work.
+platform(
+    name = "platform",
+    constraint_values = [
+        "//pw_interrupt_cortex_m:backend",
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/arm:cortex-m33",
+        "@platforms//cpu:armv8-m",
+        "@platforms//os:none",
+        "@rust_crates//:no_std",
+    ],
+    flags = flags_from_dict({
+        "@mcuxpresso//:user_config": "//targets/mimxrt595_evk:mcuxpresso_sdk_lib_config",
+        "@pigweed//pw_assert:assert_backend": "//pw_assert_basic",
+        "@pigweed//pw_assert:assert_backend_impl": "//pw_assert_basic:impl",
+        "@pigweed//pw_assert:check_backend": "//pw_assert_basic",
+        "@pigweed//pw_assert:check_backend_impl": "//pw_assert_basic:impl",
+        "@pigweed//pw_boot:backend": "//pw_boot_cortex_m:armv8m",
+        "@pigweed//pw_log:backend": "//pw_log_basic",
+        "@pigweed//pw_log:backend_impl": "//pw_log_basic:impl",
+        "@pigweed//pw_malloc:backend": "//pw_malloc:bucket_block_allocator",
+        "@pigweed//pw_sync:interrupt_spin_lock_backend": "//pw_sync_baremetal:interrupt_spin_lock",
+        "@pigweed//pw_sync:mutex_backend": "//pw_sync_baremetal:mutex",
+        "@pigweed//pw_sys_io:backend": "//pw_sys_io_mcuxpresso",
+        "@pigweed//pw_system:extra_platform_libs": "//targets/mimxrt595_evk:extra_platform_libs",
+        "@pigweed//pw_unit_test:main": "//targets/mimxrt595_evk:unit_test_app",
+        "@pigweed//targets:mcuxpresso_sdk": "//targets/mimxrt595_evk:mcuxpresso_sdk",
+    }),
+)
+
+cc_library(
+    name = "mcuxpresso_sdk",
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:none",
+        "@platforms//cpu:armv8-m",
+    ],
+    deps = [
+        "@mcuxpresso//:component.serial_manager.MIMXRT595S",
+        "@mcuxpresso//:component.serial_manager_uart.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.flash_config.evkmimxrt595.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.flexcomm_i2c.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.flexcomm_spi.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.flexcomm_usart_dma.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.flexio_spi.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.i3c.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.inputmux.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.lpc_dma.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.lpc_gpio.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.mu.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.pint.MIMXRT595S",
+        "@mcuxpresso//:platform.drivers.power.MIMXRT595S",
+        "@mcuxpresso//:platform.utilities.assert.MIMXRT595S",
+        "@mcuxpresso//:utility.debug_console.MIMXRT595S",
+    ],
+)
+
+cc_library(
+    name = "mcuxpresso_sdk_lib_config",
+    defines = [
+        "BOOT_HEADER_ENABLE=1",
+        "CPU_MIMXRT595SFFOC_cm33",
+        "DEBUG_CONSOLE_TRANSFER_NON_BLOCKING=1",
+        "DEBUG_CONSOLE_DISABLE_RTOS_SYNCHRONIZATION",
+        "FSL_SDK_DRIVER_QUICK_ACCESS_ENABLE=1",
+        "SDK_DEBUGCONSOLE=1",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:none",
+        "@platforms//cpu:armv8-m",
+    ],
+)
+
+exports_files(["mimxrt595_flash.ld"])
+
+cc_library(
+    name = "flash_linker_script_defines",
+    defines = [
+        "PW_BOOT_FLASH_BEGIN=0x08001180",
+        "PW_BOOT_FLASH_SIZE=0x001FEE80",
+        "PW_BOOT_HEAP_SIZE=200K",
+        "PW_BOOT_MIN_STACK_SIZE=1K",
+        "PW_BOOT_RAM_BEGIN=0x20080000",
+        "PW_BOOT_RAM_SIZE=0x00280000",
+        "PW_BOOT_VECTOR_TABLE_BEGIN=0x08001000",
+        "PW_BOOT_VECTOR_TABLE_SIZE=0x00000180",
+    ],
+)
+
+pw_linker_script(
+    name = "flash_linker_script",
+    linker_script = ":mimxrt595_flash.ld",
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:none",
+        "@platforms//cpu:armv8-m",
+    ],
+    deps = [
+        ":flash_linker_script_defines",
+    ],
+)
+
 cc_library(
     name = "boot",
     srcs = [
         "boot.cc",
         "vector_table.c",
     ],
+    defines = [
+        "PW_MALLOC_ACTIVE=1",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:none",
+        "@platforms//cpu:armv8-m",
+    ],
     deps = [
         "//pw_boot",
         "//pw_boot_cortex_m",
+        "//pw_malloc",
         "//pw_preprocessor",
         "//pw_sys_io_mcuxpresso",
+        "//targets:mcuxpresso_sdk",
+        "//targets/mimxrt595_evk/config",
     ],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "extra_platform_libs",
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:none",
+        "@platforms//cpu:armv8-m",
+    ],
+    deps = [
+        ":boot",
+        ":flash_linker_script",
+        "//pw_tokenizer:linker_script",
+        "//pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
+    ],
+)
+
+cc_library(
+    name = "unit_test_app",
+    testonly = True,
+    target_compatible_with = [
+        "//pw_build/constraints/board:mimxrt595_evk",
+        "//pw_build/constraints/rtos:none",
+        "@platforms//cpu:armv8-m",
+    ],
+    deps = [
+        ":extra_platform_libs",
+        "//pw_unit_test:simple_printing_main",
+    ],
+    alwayslink = 1,
 )
 
 sphinx_docs_library(

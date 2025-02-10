@@ -44,7 +44,8 @@ _target_config = {
 
   # Override the default pw_boot_cortex_m linker script and set the memory
   # regions for the target.
-  pw_boot_cortex_m_LINKER_SCRIPT = "//targets/mimxrt595_evk:flash_linker_script"
+  pw_boot_cortex_m_LINKER_SCRIPT =
+      "$dir_pigweed/targets/mimxrt595_evk:flash_linker_script"
   pw_target_mimxrt595_evk_LINK_CONFIG_DEFINES = [
     "PW_BOOT_FLASH_BEGIN=0x08001180",
     "PW_BOOT_FLASH_SIZE=0x001FEE80",

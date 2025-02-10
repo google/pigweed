@@ -27,11 +27,10 @@ class McuxpressoSdk(pw_package.package_manager.Package):
         super().__init__(*args, name='mcuxpresso', **kwargs)
         self._evkmimxrt595 = pw_package.git_repo.GitRepo(
             name='evkmimxrt595',
-            url=(
-                'https://pigweed-internal.googlesource.com/'
-                'third_party/vendor/nxp/evkmimxrt595'
-            ),
-            commit='003f1764ad3e03b9162bfc02918659c4bcb3eb01',
+            # temporary point to antmicro github fork until
+            # SDK generated files will be upstreamed
+            url='https://github.com/antmicro/mcuxpresso-sdk.git',
+            commit='0cc0caa0c44fc9ceae1ad4c0a9e3b79e8b38d751',
         )
 
     def install(self, path: Path) -> None:

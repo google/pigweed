@@ -348,6 +348,12 @@ click==8.1.3 \
     #   -r compiled_requirements.txt
     #   black
     #   pip-tools
+colorama==0.4.6 \
+    --hash=sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44 \
+    --hash=sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6
+    # via
+    #   -r compiled_requirements.txt
+    #   west
 coloredlogs==15.0.1 \
     --hash=sha256:612ee75c546f53e92e70049c9dbfcc18c935a2b9a53b66085ce9ef6a6e5c0934 \
     --hash=sha256:7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0
@@ -994,6 +1000,7 @@ packaging==24.2 \
     #   build
     #   pydata-sphinx-theme
     #   sphinx
+    #   west
 parameterized==0.9.0 \
     --hash=sha256:4e0758e3d41bea3bbd05ec14fc2c24736723f243b28d702081aef438c9372b1b \
     --hash=sha256:7fc905272cefa4f364c1a3429cbbe9c0f98b793988efb5bf90aac80f08db09b1
@@ -1143,7 +1150,9 @@ pygments==2.18.0 \
 pykwalify==1.8.0 \
     --hash=sha256:731dfa87338cca9f559d1fca2bdea37299116e3139b73f78ca90a543722d6651 \
     --hash=sha256:796b2ad3ed4cb99b88308b533fb2f559c30fa6efb4fa9fda11347f483d245884
-    # via -r compiled_requirements.txt
+    # via
+    #   -r compiled_requirements.txt
+    #   west
 pylint==3.0.1 \
     --hash=sha256:81c6125637be216b4652ae50cc42b9f8208dfb725cdc7e04c48f6902f4dbdf40 \
     --hash=sha256:9c90b89e2af7809a1697f6f5f93f1d0e518ac566e2ac4d2af881a69c13ad01ea
@@ -1231,7 +1240,9 @@ pyyaml==6.0.1 \
     --hash=sha256:fca0e3a251908a499833aa292323f32437106001d436eca0e6e7833256674585 \
     --hash=sha256:fd1592b3fdf65fff2ad0004b5e363300ef59ced41c2e6b3a99d4089fa8c5435d \
     --hash=sha256:fd66fc5d0da6d9815ba2cebeb4205f95818ff4b79c3ebe268e75d961704af52f
-    # via -r compiled_requirements.txt
+    # via
+    #   -r compiled_requirements.txt
+    #   west
 referencing==0.36.1 \
     --hash=sha256:363d9c65f080d0d70bc41c721dce3c7f3e77fc09f269cd5c8813da18069a6794 \
     --hash=sha256:ca2e6492769e3602957e9b831b94211599d2aade9477f5d44110d2530cf9aade
@@ -1705,6 +1716,10 @@ websockets==10.4 \
     --hash=sha256:fe10ddc59b304cb19a1bdf5bd0a7719cbbc9fbdd57ac80ed436b709fcf889106 \
     --hash=sha256:ff64a1d38d156d429404aaa84b27305e957fd10c30e5880d1765c9480bea490f
     # via -r compiled_requirements.txt
+west==1.2.0 \
+    --hash=sha256:33f9f408849e16e54229059c865722acdecc87f7800f721374d84f851be1cae2 \
+    --hash=sha256:b41e51ac90393944f9c01f7be27000d4b329615b7ed074fb0ef693b464681297
+    # via -r compiled_requirements.txt
 wheel==0.40.0 \
     --hash=sha256:cd1196f3faee2b31968d626e1731c94f99cbdb67cf5a46e4f5656cbee7738873 \
     --hash=sha256:d236b20e7cb522daf2390fa84c55eea81c5c30190f90f29ae2ca1ad8355bf247
@@ -1825,3 +1840,4 @@ setuptools==68.0.0 \
     #   -r compiled_requirements.txt
     #   pip-tools
     #   python-daemon
+    #   west

@@ -405,6 +405,14 @@ http_archive(
     urls = ["https://github.com/STMicroelectronics/cmsis-core/archive/refs/tags/v5.4.0_cm4.tar.gz"],
 )
 
+git_repository(
+    name = "mcuxpresso",
+    commit = "0cc0caa0c44fc9ceae1ad4c0a9e3b79e8b38d751",
+    # temporary point to antmicro github fork until SDK generated files
+    # will be pushed to: https://pigweed.googlesource.com/pigweed/mcuxpresso-sdk
+    remote = "https://github.com/antmicro/mcuxpresso-sdk.git",
+)
+
 # Other Pigweed-specific dependencies
 # ===================================
 cipd_repository(

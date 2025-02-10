@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2024 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -11,11 +11,22 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+"""Common constant values for generated SDK"""
 
-import("//build_overrides/pigweed.gni")
+SDK_USER_CONFIG_NAME = "user_config"
+SDK_COMMONS_NAME = "commons"
 
-import("mcuxpresso.gni")
-
-if (dir_pw_third_party_mcuxpresso != "") {
-  import("$dir_pw_third_party_mcuxpresso/mcuxprseso.gni")
-}
+# TODO(krakoczy): Ideally this should be silenced by the downstream project
+# revisit this in the future
+SDK_DEFAULT_COPTS = [
+    "-Wno-cast-qual",
+    "-Wno-error=strict-prototypes",
+    "-Wno-redundant-decls",
+    "-Wno-shadow",
+    "-Wno-sign-compare",
+    "-Wno-type-limits",
+    "-Wno-undef",
+    "-Wno-unused-function",
+    "-Wno-unused-parameter",
+    "-Wno-unused-variable",
+]

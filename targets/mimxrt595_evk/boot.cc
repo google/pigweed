@@ -38,9 +38,9 @@ void pw_boot_PreStaticConstructorInit() {
 }
 
 void pw_boot_PreMainInit() {
-  BOARD_InitPins();
+  BOARD_InitBootPins();
   BOARD_InitBootClocks();
-  BOARD_InitPeripherals();
+  BOARD_InitBootPeripherals();
 
   pw_sys_io_mcuxpresso_Init();
 }
