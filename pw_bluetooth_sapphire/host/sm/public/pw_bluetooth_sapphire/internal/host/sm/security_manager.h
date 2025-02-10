@@ -82,20 +82,6 @@ class SecurityManager {
 
   virtual ~SecurityManager() = default;
 
-  // Assigns the requested |ltk| to this connection, adopting the security
-  // properties of |ltk|. If the local device is the central of the underlying
-  // link, then the link layer authentication procedure will be initiated.
-  //
-  // Returns false if a pairing procedure is in progress when this method is
-  // called. If the link layer authentication procedure fails, then the link
-  // will be disconnected by the controller (Vol 2, Part E, 7.8.24;
-  // hci::Connection guarantees this by severing the link directly).
-  //
-  // This function is mainly intended to assign an existing LTK to a connection
-  // (e.g. from bonding data). This function overwrites any previously assigned
-  // LTK.
-  virtual bool AssignLongTermKey(const LTK& ltk) = 0;
-
   // Attempt to raise the security level of the connection to the desired
   // |level| and notify the result in |callback|.
   //

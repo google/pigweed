@@ -407,20 +407,6 @@ bool LowEnergyConnection::OnL2capFixedChannelsOpened(
          "ATT and SMP fixed channels open (peer: %s)",
          bt_str(peer_id()));
 
-  // Obtain existing pairing data, if any.
-  std::optional<sm::LTK> ltk;
-
-  if (peer_->le() && peer_->le()->bond_data()) {
-    // Legacy pairing allows both devices to generate and exchange LTKs. "The
-    // Central must have the security information (LTK, EDIV, and Rand)
-    // distributed by the Peripheral in LE legacy [...] to setup an encrypted
-    // session" (v5.3, Vol. 3 Part H 2.4.4.2). For Secure Connections peer_ltk
-    // and local_ltk will be equal, so this check is unnecessary but correct.
-    ltk = (link()->role() == pw::bluetooth::emboss::ConnectionRole::CENTRAL)
-              ? peer_->le()->bond_data()->peer_ltk
-              : peer_->le()->bond_data()->local_ltk;
-  }
-
   // Obtain the local I/O capabilities from the delegate. Default to
   // NoInputNoOutput if no delegate is available.
   auto io_cap = sm::IOCapability::kNoInputNoOutput;
@@ -436,18 +422,6 @@ bool LowEnergyConnection::OnL2capFixedChannelsOpened(
                                      security_mode,
                                      dispatcher_,
                                      peer_);
-
-  // Provide SMP with the correct LTK from a previous pairing with the peer, if
-  // it exists. This will start encryption if the local device is the link-layer
-  // central.
-  if (ltk) {
-    bt_log(INFO,
-           "gap-le",
-           "assigning existing LTK (peer: %s, handle: %#.4x)",
-           bt_str(peer_id()),
-           handle());
-    sm_->AssignLongTermKey(*ltk);
-  }
 
   return InitializeGatt(std::move(att), connection_options.service_uuid);
 }

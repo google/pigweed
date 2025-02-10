@@ -76,7 +76,6 @@ class SecurityManagerImpl final : public SecurityManager,
                       pw::async::Dispatcher& dispatcher,
                       bt::gap::Peer::WeakPtr peer);
   // SecurityManager overrides:
-  bool AssignLongTermKey(const LTK& ltk) override;
   void UpgradeSecurity(SecurityLevel level, PairingCallback callback) override;
   void InitiateBrEdrCrossTransportKeyDerivation(
       CrossTransportKeyDerivationResultCallback callback) override;
@@ -214,6 +213,8 @@ class SecurityManagerImpl final : public SecurityManager,
   // Returns true only if all security conditions are met for BR/EDR CTKD.
   bool IsBrEdrCrossTransportKeyDerivationAllowed();
 
+  std::optional<sm::LTK> GetExistingLtkFromPeerCache();
+
   // The role of the local device in pairing.
   // LE roles are fixed for the lifetime of a connection, but BR/EDR roles can
   // be changed after a connection is established, so we cannot cache it during
@@ -347,9 +348,30 @@ SecurityManagerImpl::SecurityManagerImpl(
   if (smp->id() == l2cap::kLESMPChannelId) {
     PW_CHECK(low_energy_link_.is_alive());
     PW_CHECK(low_energy_link_->handle() == smp->link_handle());
+
     // Set up HCI encryption event.
     low_energy_link_->set_encryption_change_callback(
         fit::bind_member<&SecurityManagerImpl::OnEncryptionChange>(this));
+
+    // Obtain existing pairing data, if any.
+    std::optional<sm::LTK> ltk = GetExistingLtkFromPeerCache();
+    if (ltk) {
+      bt_log(INFO,
+             "sm",
+             "starting encryption with existing LTK (peer: %s, handle: %#.4x)",
+             bt_str(peer_->identifier()),
+             low_energy_link_->handle());
+
+      // Sets LTK in low_energy_link_
+      OnNewLongTermKey(*ltk);
+
+      // The initiatior starts encryption when there is an LTK.
+      if (low_energy_link_->role() ==
+              pw::bluetooth::emboss::ConnectionRole::CENTRAL &&
+          !low_energy_link_->StartEncryption()) {
+        bt_log(ERROR, "sm", "Failed to initiate authentication procedure");
+      }
+    }
   }
 }
 
@@ -1029,26 +1051,6 @@ void SecurityManagerImpl::ResetState() {
   current_phase_ = std::monostate{};
 }
 
-bool SecurityManagerImpl::AssignLongTermKey(const LTK& ltk) {
-  PW_CHECK(!bredr_link_.is_alive());
-
-  if (SecurityUpgradeInProgress()) {
-    bt_log(
-        DEBUG, "sm", "Cannot directly assign LTK while pairing is in progress");
-    return false;
-  }
-
-  OnNewLongTermKey(ltk);
-
-  // The initiatior starts encryption when it receives a new LTK from GAP.
-  if (role() == Role::kInitiator && !low_energy_link_->StartEncryption()) {
-    bt_log(ERROR, "sm", "Failed to initiate authentication procedure");
-    return false;
-  }
-
-  return true;
-}
-
 void SecurityManagerImpl::SetSecurityProperties(const SecurityProperties& sec) {
   if (sec != security()) {
     bt_log(DEBUG,
@@ -1347,6 +1349,22 @@ bool SecurityManagerImpl::IsBrEdrCrossTransportKeyDerivationAllowed() {
   // TODO(fxbug.dev/388607971): check for LE pairing in progress
 
   return true;
+}
+
+std::optional<sm::LTK> SecurityManagerImpl::GetExistingLtkFromPeerCache() {
+  if (peer_->le() && peer_->le()->bond_data()) {
+    // Legacy pairing allows both devices to generate and exchange LTKs. "The
+    // Central must have the security information (LTK, EDIV, and Rand)
+    // distributed by the Peripheral in LE legacy [...] to setup an encrypted
+    // session" (v5.3, Vol. 3 Part H 2.4.4.2). For Secure Connections peer_ltk
+    // and local_ltk will be equal, so this check is unnecessary but correct.
+    if (low_energy_link_->role() ==
+        pw::bluetooth::emboss::ConnectionRole::CENTRAL) {
+      return peer_->le()->bond_data()->peer_ltk;
+    }
+    return peer_->le()->bond_data()->local_ltk;
+  }
+  return std::nullopt;
 }
 
 std::unique_ptr<SecurityManager> SecurityManager::CreateLE(

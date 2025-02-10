@@ -139,9 +139,11 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
     l2cap::testing::FakeChannelTest::TearDown();
   }
 
-  void NewSecurityManager(Role role,
-                          IOCapability ioc,
-                          BondableMode bondable_mode) {
+  void NewSecurityManager(
+      Role role,
+      IOCapability ioc,
+      BondableMode bondable_mode,
+      gap::LESecurityMode security_mode = gap::LESecurityMode::Mode1) {
     // Setup fake SMP channel.
     ChannelOptions options(l2cap::kLESMPChannelId);
     fake_chan_ = CreateFakeChannel(options);
@@ -182,7 +184,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest,
                                          ioc,
                                          weak_delegate_.GetWeakPtr(),
                                          bondable_mode,
-                                         gap::LESecurityMode::Mode1,
+                                         security_mode,
                                          dispatcher(),
                                          peer_->GetWeakPtr());
   }
@@ -1365,17 +1367,23 @@ TEST_F(InitiatorPairingTest,
 
 TEST_F(InitiatorPairingTest,
        RejectUnauthenticatedEncryptionInSecureConnectionsOnlyMode) {
-  pairing()->set_security_mode(gap::LESecurityMode::SecureConnectionsOnly);
   const LTK kUnauthenticatedLtk(SecurityProperties(/*encrypted=*/true,
                                                    /*authenticated=*/false,
                                                    /*secure_connections=*/true,
                                                    kMaxEncryptionKeySize),
                                 hci_spec::LinkKey());
-  pairing()->AssignLongTermKey(kUnauthenticatedLtk);
+  sm::PairingData bond_data;
+  bond_data.peer_ltk = kUnauthenticatedLtk;
+  bond_data.local_ltk = kUnauthenticatedLtk;
+  peer().MutLe().SetBondData(bond_data);
+
+  NewSecurityManager(Role::kInitiator,
+                     IOCapability::kDisplayOnly,
+                     BondableMode::Bondable,
+                     gap::LESecurityMode::SecureConnectionsOnly);
   RunUntilIdle();
-  // After setting SC Only mode, assigning and encrypting with an
-  // unauthenticated LTK should cause the channel to be disconnected with an
-  // authentication failure.
+  // In SC Only mode, encrypting with an unauthenticated LTK should
+  // cause the channel to be disconnected with an authentication failure.
   fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunUntilIdle();
 
@@ -2971,22 +2979,19 @@ TEST_F(InitiatorPairingTest, GenerateCrossTransportLinkKey) {
   EXPECT_TRUE(pairing_data().cross_transport_key.has_value());
 }
 
-TEST_F(InitiatorPairingTest, AssignLongTermKeyFailsDuringPairing) {
-  UpgradeSecurity(SecurityLevel::kEncrypted);  // Initiate pairing.
-  SecurityProperties sec_props(
-      SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
-  EXPECT_FALSE(
-      pairing()->AssignLongTermKey(LTK(sec_props, hci_spec::LinkKey())));
-  EXPECT_EQ(0, fake_link()->start_encryption_count());
-  EXPECT_EQ(SecurityLevel::kNoSecurity, pairing()->security().level());
-}
-
 TEST_F(InitiatorPairingTest, AssignLongTermKey) {
   SecurityProperties sec_props(
       SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
   LTK ltk(sec_props, hci_spec::LinkKey());
+  sm::PairingData bond_data;
+  bond_data.peer_ltk = ltk;
+  bond_data.local_ltk = ltk;
+  peer().MutLe().SetBondData(bond_data);
 
-  EXPECT_TRUE(pairing()->AssignLongTermKey(ltk));
+  NewSecurityManager(
+      Role::kInitiator, IOCapability::kDisplayOnly, BondableMode::Bondable);
+  RunUntilIdle();
+
   EXPECT_EQ(1, fake_link()->start_encryption_count());
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(ltk.key(), *fake_link()->ltk());
@@ -3196,13 +3201,21 @@ TEST_F(InitiatorPairingTest,
   SecurityProperties sec_props(
       SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
   const LTK kOriginalLtk(sec_props, hci_spec::LinkKey({1}, 2, 3));
-  const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
+  sm::PairingData bond_data;
+  bond_data.peer_ltk = kOriginalLtk;
+  bond_data.local_ltk = kOriginalLtk;
+  peer().MutLe().SetBondData(bond_data);
 
-  EXPECT_TRUE(pairing()->AssignLongTermKey(kOriginalLtk));
+  NewSecurityManager(
+      Role::kInitiator, IOCapability::kDisplayOnly, BondableMode::Bondable);
+  RunUntilIdle();
+  EXPECT_EQ(1, fake_link()->start_encryption_count());
+
+  const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
   fake_link()->set_ltk(kModifiedLtk);
-  // When we receive the Security Request on a bonded (i.e. AssignLongTermKey
-  // has been called) connection, we will refresh the encryption key. This
-  // checks that the link LTK = the SMP LTK which is not the case.
+  // When we receive the Security Request on a bonded connection, we will
+  // refresh the encryption key. This checks that the link LTK = the SMP LTK
+  // which is not the case.
   ReceiveSecurityRequest(AuthReqField{0});
   RunUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
@@ -3268,8 +3281,14 @@ TEST_F(ResponderPairingTest, SecurityRequestWithExistingLtk) {
                                   kMaxEncryptionKeySize,
                                   /*secure_connections=*/true);
   const LTK kLtk(kProps, hci_spec::LinkKey({1, 2, 3}, 0, 0));
-  // This pretends that we have an already-bonded LTK.
-  pairing()->AssignLongTermKey(kLtk);
+  sm::PairingData bond_data;
+  bond_data.peer_ltk = kLtk;
+  bond_data.local_ltk = kLtk;
+  peer().MutLe().SetBondData(bond_data);
+
+  NewSecurityManager(
+      Role::kResponder, IOCapability::kDisplayOnly, BondableMode::Bondable);
+
   // LTK should have been assigned to the link.
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(kLtk.key(), fake_link()->ltk());
@@ -3301,9 +3320,14 @@ TEST_F(ResponderPairingTest,
                                   kMaxEncryptionKeySize,
                                   /*secure_connections=*/true);
   const LTK kLtk(kProps, hci_spec::LinkKey({1, 2, 3}, 0, 0));
-  // This pretends that we have an already-bonded LTK with kEncrypted security
-  // level.
-  pairing()->AssignLongTermKey(kLtk);
+  sm::PairingData bond_data;
+  bond_data.peer_ltk = kLtk;
+  bond_data.local_ltk = kLtk;
+  peer().MutLe().SetBondData(bond_data);
+
+  NewSecurityManager(
+      Role::kResponder, IOCapability::kDisplayOnly, BondableMode::Bondable);
+
   // LTK should have been assigned to the link.
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(kLtk.key(), fake_link()->ltk());
@@ -3797,23 +3821,18 @@ TEST_F(ResponderPairingTest, LegacyPhase3LocalIdKeyDistributionWithRemoteKeys) {
   EXPECT_EQ(0, pairing_data_callback_count());
 }
 
-TEST_F(ResponderPairingTest, AssignLongTermKeyFailsDuringPairing) {
-  ReceivePairingRequest();
-  RunUntilIdle();
-  SecurityProperties sec_props(
-      SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
-  EXPECT_FALSE(
-      pairing()->AssignLongTermKey(LTK(sec_props, hci_spec::LinkKey())));
-  EXPECT_EQ(0, fake_link()->start_encryption_count());
-  EXPECT_EQ(SecurityLevel::kNoSecurity, pairing()->security().level());
-}
-
 TEST_F(ResponderPairingTest, AssignLongTermKey) {
   SecurityProperties sec_props(
       SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
   LTK ltk(sec_props, hci_spec::LinkKey());
+  sm::PairingData bond_data;
+  bond_data.peer_ltk = ltk;
+  bond_data.local_ltk = ltk;
+  peer().MutLe().SetBondData(bond_data);
 
-  EXPECT_TRUE(pairing()->AssignLongTermKey(ltk));
+  NewSecurityManager(
+      Role::kResponder, IOCapability::kDisplayOnly, BondableMode::Bondable);
+
   ASSERT_TRUE(fake_link()->ltk());
   EXPECT_EQ(ltk.key(), *fake_link()->ltk());
 
@@ -3835,9 +3854,15 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyModifiedOutsideSmDisconnects) {
   SecurityProperties sec_props(
       SecurityLevel::kAuthenticated, 16, /*secure_connections=*/false);
   const LTK kOriginalLtk(sec_props, hci_spec::LinkKey({1}, 2, 3));
-  const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
+  sm::PairingData bond_data;
+  bond_data.peer_ltk = kOriginalLtk;
+  bond_data.local_ltk = kOriginalLtk;
+  peer().MutLe().SetBondData(bond_data);
 
-  EXPECT_TRUE(pairing()->AssignLongTermKey(kOriginalLtk));
+  NewSecurityManager(
+      Role::kResponder, IOCapability::kDisplayOnly, BondableMode::Bondable);
+
+  const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
   fake_link()->set_ltk(kModifiedLtk);
   fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
   RunUntilIdle();

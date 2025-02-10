@@ -40,7 +40,6 @@ class TestSecurityManager final : public SecurityManager {
   ~TestSecurityManager() override = default;
 
   // SecurityManager overrides:
-  bool AssignLongTermKey(const LTK& ltk) override;
   void UpgradeSecurity(SecurityLevel level, PairingCallback callback) override;
   void InitiateBrEdrCrossTransportKeyDerivation(
       CrossTransportKeyDerivationResultCallback) override;

@@ -53,14 +53,20 @@ TestSecurityManager::TestSecurityManager(
       role_(RoleFromLinks(link, bredr_link)),
       delegate_(std::move(delegate)),
       peer_(std::move(peer)),
-      weak_self_(this) {}
-
-bool TestSecurityManager::AssignLongTermKey(const LTK& ltk) {
-  current_ltk_ = ltk;
-  if (role_ == Role::kInitiator) {
-    set_security(ltk.security());
+      weak_self_(this) {
+  if (link.is_alive()) {
+    if (peer_->le() && peer_->le()->bond_data()) {
+      current_ltk_ =
+          (link->role() == pw::bluetooth::emboss::ConnectionRole::CENTRAL)
+              ? peer_->le()->bond_data()->peer_ltk
+              : peer_->le()->bond_data()->local_ltk;
+    }
+    if (current_ltk_) {
+      if (role_ == Role::kInitiator) {
+        set_security(current_ltk_->security());
+      }
+    }
   }
-  return true;
 }
 
 void TestSecurityManager::UpgradeSecurity(SecurityLevel level,
