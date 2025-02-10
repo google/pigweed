@@ -67,6 +67,8 @@ class ThreadInfo:
     def _stack_size_limit_limit_str(self) -> str:
         if not self.has_stack_size_limit():
             return 'size unknown'
+        if self.stack_size_limit() == 0:
+            return 'WARNING: total stack size is 0 bytes'
 
         return f'{self.stack_size_limit()} bytes'
 
@@ -77,6 +79,8 @@ class ThreadInfo:
         used_str = f'{self.stack_used()} bytes'
         if not self.has_stack_size_limit():
             return used_str
+        if self.stack_size_limit() == 0:
+            return used_str + ', NaN%'
         used_str += f', {100*self.stack_used()/self.stack_size_limit():.2f}%'
         return used_str
 
@@ -87,6 +91,8 @@ class ThreadInfo:
         high_used_str = f'{self.stack_pointer_est_peak()} bytes'
         if not self.has_stack_size_limit():
             return high_used_str
+        if self.stack_size_limit() == 0:
+            return high_used_str + ', NaN%'
         high_water_mark_percent = (
             100 * self.stack_pointer_est_peak() / self.stack_size_limit()
         )

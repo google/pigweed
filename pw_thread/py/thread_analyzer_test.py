@@ -94,6 +94,29 @@ class ThreadInfoTest(unittest.TestCase):
         self.assertTrue(thread_info.has_stack_used())
         self.assertEqual(expected, str(thread_info))
 
+    def test_thread_with_zero_size_stack(self):
+        thread = thread_pb2.Thread()
+        thread.stack_start_pointer = 0x5AC6B86C
+        thread.stack_end_pointer = 0x5AC6B86C
+        thread.stack_pointer = 0x5AC6A86C
+        thread.stack_pointer_est_peak = 0x5AC6A86C
+        thread_info = ThreadInfo(thread)
+
+        # pylint: disable=line-too-long
+        expected = '\n'.join(
+            (
+                'Est CPU usage: unknown',
+                'Stack info',
+                '  Current usage:   0x5ac6b86c - 0x5ac6a86c (4096 bytes, NaN%)',
+                '  Est peak usage:  4096 bytes, NaN%',
+                '  Stack limits:    0x5ac6b86c - 0x5ac6b86c (WARNING: total stack size is 0 bytes)',
+            )
+        )
+        # pylint: enable=line-too-long
+        self.assertTrue(thread_info.has_stack_size_limit())
+        self.assertTrue(thread_info.has_stack_used())
+        self.assertEqual(expected, str(thread_info))
+
     def test_thread_with_all_stack_info(self):
         thread = thread_pb2.Thread()
         thread.stack_start_pointer = 0x5AC6B86C
