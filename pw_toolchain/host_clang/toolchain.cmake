@@ -75,6 +75,7 @@ pw_set_backend(pw_thread.id pw_thread_stl.id)
 pw_set_backend(pw_thread.yield pw_thread_stl.yield)
 pw_set_backend(pw_thread.sleep pw_thread_stl.sleep)
 pw_set_backend(pw_thread.thread pw_thread_stl.thread)
+pw_set_backend(pw_thread.thread_creation pw_thread_stl.thread_creation)
 pw_set_backend(pw_thread.test_thread_context pw_thread_stl.test_thread_context)
 pw_set_backend(pw_thread.thread_iteration pw_thread_stl.thread_iteration)
 

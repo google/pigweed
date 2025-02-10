@@ -43,6 +43,17 @@ pw_add_library(pw_thread_stl.thread INTERFACE
     pw_thread.thread.facade
 )
 
+pw_add_library(pw_thread_stl.thread_creation INTERFACE
+  HEADERS
+    thread_creation_public_overrides/pw_thread_backend/context.h
+    thread_creation_public_overrides/pw_thread_backend/options.h
+    thread_creation_public_overrides/pw_thread_backend/priority.h
+    thread_creation_public_overrides/pw_thread_backend/stack.h
+  PUBLIC_INCLUDES
+    thread_creation_public_overrides
+  PUBLIC_DEPS
+    pw_thread_stl.thread
+)
 
 # This target provides the backend for pw::this_thread::sleep_{for,until}.
 pw_add_library(pw_thread_stl.sleep INTERFACE
