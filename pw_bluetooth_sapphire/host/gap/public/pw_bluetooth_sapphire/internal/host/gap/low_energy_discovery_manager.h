@@ -17,11 +17,8 @@
 #include <pw_async/heap_dispatcher.h>
 
 #include <memory>
-#include <queue>
 #include <unordered_set>
 
-#include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
-#include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
@@ -120,9 +117,11 @@ class LowEnergyDiscoveryManager final
       public WeakSelf<LowEnergyDiscoveryManager> {
  public:
   // |peer_cache| and |scanner| MUST out-live this LowEnergyDiscoveryManager.
-  LowEnergyDiscoveryManager(hci::LowEnergyScanner* scanner,
-                            PeerCache* peer_cache,
-                            pw::async::Dispatcher& dispatcher);
+  LowEnergyDiscoveryManager(
+      hci::LowEnergyScanner* scanner,
+      PeerCache* peer_cache,
+      const hci::LowEnergyScanner::PacketFilterConfig& packet_filter_config,
+      pw::async::Dispatcher& dispatcher);
   ~LowEnergyDiscoveryManager() override;
 
   // Starts a new discovery session and reports the result via |callback|. If a
@@ -244,6 +243,8 @@ class LowEnergyDiscoveryManager final
   // The peer cache that we use for storing and looking up scan results. We
   // hold a raw pointer as we expect this to out-live us.
   PeerCache* const peer_cache_;
+
+  hci::LowEnergyScanner::PacketFilterConfig packet_filter_config_;
 
   // Called when a directed connectable advertisement is received during an
   // active or passive scan.

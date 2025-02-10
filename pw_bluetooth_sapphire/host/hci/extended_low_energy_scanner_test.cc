@@ -57,7 +57,10 @@ class ExtendedLowEnergyScannerTest : public TestingBase,
     test_device()->set_settings(settings);
 
     scanner_ = std::make_unique<ExtendedLowEnergyScanner>(
-        &fake_address_delegate_, transport()->GetWeakPtr(), dispatcher());
+        &fake_address_delegate_,
+        ExtendedLowEnergyScanner::PacketFilterConfig(false, 0),
+        transport()->GetWeakPtr(),
+        dispatcher());
     scanner_->set_delegate(this);
 
     auto p = std::make_unique<FakePeer>(kPublicAddr1, dispatcher(), true, true);

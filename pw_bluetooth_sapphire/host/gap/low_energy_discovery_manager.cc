@@ -19,7 +19,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
-#include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
 
 namespace bt::gap {
 
@@ -113,11 +113,13 @@ void LowEnergyDiscoverySession::Stop() {
 LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(
     hci::LowEnergyScanner* scanner,
     PeerCache* peer_cache,
+    const hci::LowEnergyScanner::PacketFilterConfig& packet_filter_config,
     pw::async::Dispatcher& dispatcher)
     : WeakSelf(this),
       dispatcher_(dispatcher),
       state_(State::kIdle, StateToString),
       peer_cache_(peer_cache),
+      packet_filter_config_(packet_filter_config),
       paused_count_(0),
       scanner_(scanner) {
   PW_DCHECK(peer_cache_);

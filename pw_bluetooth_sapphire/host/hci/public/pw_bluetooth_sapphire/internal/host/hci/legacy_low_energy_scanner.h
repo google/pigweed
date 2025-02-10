@@ -30,6 +30,7 @@ class LocalAddressDelegate;
 class LegacyLowEnergyScanner final : public LowEnergyScanner {
  public:
   LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
+                         const PacketFilterConfig& packet_filter_config,
                          Transport::WeakPtr transport,
                          pw::async::Dispatcher& pw_dispatcher);
   ~LegacyLowEnergyScanner() override;

@@ -17,17 +17,18 @@
 #include <pw_assert/check.h>
 #include <pw_preprocessor/compiler.h>
 
-#include "pw_bluetooth_sapphire/internal/host/hci/advertising_report_parser.h"
-
 namespace bt::hci {
 namespace pwemb = pw::bluetooth::emboss;
 
 LegacyLowEnergyScanner::LegacyLowEnergyScanner(
     LocalAddressDelegate* local_addr_delegate,
+    const PacketFilterConfig& packet_filter_config,
     Transport::WeakPtr transport,
     pw::async::Dispatcher& pw_dispatcher)
-    : LowEnergyScanner(
-          local_addr_delegate, std::move(transport), pw_dispatcher),
+    : LowEnergyScanner(local_addr_delegate,
+                       packet_filter_config,
+                       std::move(transport),
+                       pw_dispatcher),
       weak_self_(this) {
   auto self = weak_self_.GetWeakPtr();
   event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(

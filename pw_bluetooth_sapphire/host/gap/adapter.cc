@@ -43,6 +43,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_advertiser.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
@@ -435,6 +436,28 @@ class AdapterImpl final : public Adapter {
   void ParseLEGetVendorCapabilitiesCommandComplete(
       const hci::EventPacket& event);
 
+  hci::LowEnergyScanner::PacketFilterConfig GetPacketFilterConfig() {
+    bool offloading_enabled = false;
+    uint8_t max_filters = 0;
+
+    constexpr pw::bluetooth::Controller::FeaturesBits feature =
+        pw::bluetooth::Controller::FeaturesBits::kAndroidVendorExtensions;
+    if (state().IsControllerFeatureSupported(feature) &&
+        state().android_vendor_capabilities &&
+        state().android_vendor_capabilities->supports_filtering()) {
+      bt_log(INFO,
+             "gap",
+             "controller supports android vendor extensions packet filtering, "
+             "max offloaded filters: %d",
+             max_filters);
+      offloading_enabled = true;
+      max_filters = state().android_vendor_capabilities->max_filters();
+    }
+
+    return hci::LowEnergyScanner::PacketFilterConfig(offloading_enabled,
+                                                     max_filters);
+  }
+
   std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser(bool extended) {
     if (extended) {
       return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(
@@ -477,14 +500,16 @@ class AdapterImpl final : public Adapter {
         extended);
   }
 
-  std::unique_ptr<hci::LowEnergyScanner> CreateScanner(bool extended) {
+  std::unique_ptr<hci::LowEnergyScanner> CreateScanner(
+      bool extended,
+      const hci::LowEnergyScanner::PacketFilterConfig& packet_filter_config) {
     if (extended) {
       return std::make_unique<hci::ExtendedLowEnergyScanner>(
-          le_address_manager_.get(), hci_, dispatcher_);
+          le_address_manager_.get(), packet_filter_config, hci_, dispatcher_);
     }
 
     return std::make_unique<hci::LegacyLowEnergyScanner>(
-        le_address_manager_.get(), hci_, dispatcher_);
+        le_address_manager_.get(), packet_filter_config, hci_, dispatcher_);
   }
 
   // Must be initialized first so that child nodes can be passed to other
@@ -1519,11 +1544,14 @@ void AdapterImpl::InitializeStep4() {
          extended ? "yes" : "no");
   hci_le_advertiser_ = CreateAdvertiser(extended);
   hci_le_connector_ = CreateConnector(extended);
-  hci_le_scanner_ = CreateScanner(extended);
+
+  hci::LowEnergyScanner::PacketFilterConfig packet_filter_config =
+      GetPacketFilterConfig();
+  hci_le_scanner_ = CreateScanner(extended, packet_filter_config);
 
   // Initialize the LE manager objects
   le_discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
-      hci_le_scanner_.get(), &peer_cache_, dispatcher_);
+      hci_le_scanner_.get(), &peer_cache_, packet_filter_config, dispatcher_);
   le_discovery_manager_->AttachInspect(
       adapter_node_, kInspectLowEnergyDiscoveryManagerNodeName);
   le_discovery_manager_->set_peer_connectable_callback(

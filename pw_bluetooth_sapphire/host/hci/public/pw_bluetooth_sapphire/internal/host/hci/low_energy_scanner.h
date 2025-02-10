@@ -217,7 +217,24 @@ class LowEnergyScanner : public LocalAddressClient {
     virtual void OnDirectedAdvertisement(const LowEnergyScanResult&) {}
   };
 
+  // Some Controllers support offloaded packet filtering (e.g. in Android vendor
+  // extensions). PacketFilterConfig allows us to switch on whether this feature
+  // is enabled for the current Controller or not.
+  class PacketFilterConfig {
+   public:
+    PacketFilterConfig(bool offloading_enabled, uint8_t max_filters)
+        : offloading_enabled_(offloading_enabled), max_filters_(max_filters) {}
+
+    bool offloading_enabled() const { return offloading_enabled_; }
+    uint8_t max_filters() const { return max_filters_; }
+
+   private:
+    bool offloading_enabled_ = false;
+    uint8_t max_filters_ = 0;
+  };
+
   LowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
+                   const PacketFilterConfig& packet_filter_config,
                    Transport::WeakPtr hci,
                    pw::async::Dispatcher& pw_dispatcher);
   ~LowEnergyScanner() override = default;
@@ -311,6 +328,10 @@ class LowEnergyScanner : public LocalAddressClient {
   std::unique_ptr<PendingScanResult> RemovePendingResult(
       const DeviceAddress& address);
 
+  const PacketFilterConfig& packet_filter_config() const {
+    return packet_filter_config_;
+  }
+
   Transport::WeakPtr hci() const { return hci_; }
   Delegate* delegate() const { return delegate_; }
 
@@ -343,6 +364,8 @@ class LowEnergyScanner : public LocalAddressClient {
   // cleared at the end of the scan period.
   std::unordered_map<DeviceAddress, std::unique_ptr<PendingScanResult>>
       pending_results_;
+
+  PacketFilterConfig packet_filter_config_;
 
   // Used to obtain the local peer address type to use during scanning.
   LocalAddressDelegate* local_addr_delegate_;  // weak

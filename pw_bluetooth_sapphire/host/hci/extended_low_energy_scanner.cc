@@ -17,6 +17,8 @@
 #include <pw_assert/check.h>
 #include <pw_bluetooth/hci_common.emb.h>
 
+#include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
+
 namespace bt::hci {
 
 using pw::bluetooth::emboss::BdAddrView;
@@ -34,10 +36,13 @@ using pw::bluetooth::emboss::MakeLEExtendedAdvertisingReportDataView;
 
 ExtendedLowEnergyScanner::ExtendedLowEnergyScanner(
     LocalAddressDelegate* local_addr_delegate,
+    const PacketFilterConfig& packet_filter_config,
     Transport::WeakPtr transport,
     pw::async::Dispatcher& pw_dispatcher)
-    : LowEnergyScanner(
-          local_addr_delegate, std::move(transport), pw_dispatcher) {
+    : LowEnergyScanner(local_addr_delegate,
+                       packet_filter_config,
+                       std::move(transport),
+                       pw_dispatcher) {
   event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEExtendedAdvertisingReportSubeventCode,
       [this](const EventPacket& event) {

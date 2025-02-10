@@ -27,7 +27,6 @@
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
-#include "pw_bluetooth_sapphire/internal/host/gap/fake_pairing_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_address_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
@@ -41,18 +40,15 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connector.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
-#include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_l2cap.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/types.h"
-#include "pw_bluetooth_sapphire/internal/host/sm/smp.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/test_security_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sm/types.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
-#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/fake_acl_connection.h"
 
 namespace bt::gap {
@@ -65,7 +61,6 @@ using bt::testing::FakeController;
 using bt::testing::FakePeer;
 
 using TestingBase = bt::testing::FakeDispatcherControllerTest<FakeController>;
-using l2cap::testing::FakeChannel;
 using TestSm = sm::testing::TestSecurityManager;
 using TestSmFactory = sm::testing::TestSecurityManagerFactory;
 using ConnectionResult = LowEnergyConnectionManager::ConnectionResult;
@@ -120,15 +115,20 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     gatt_ = std::make_unique<gatt::testing::FakeLayer>(dispatcher());
     sm_factory_ = std::make_unique<TestSmFactory>();
 
+    hci::LowEnergyScanner::PacketFilterConfig packet_filter_config(false, 0);
+
     address_manager_ = std::make_unique<LowEnergyAddressManager>(
         kAdapterAddress,
         /*delegate=*/[] { return false; },
         cmd_weak,
         dispatcher());
-    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
-        address_manager_.get(), transport()->GetWeakPtr(), dispatcher());
+    scanner_ =
+        std::make_unique<hci::LegacyLowEnergyScanner>(address_manager_.get(),
+                                                      packet_filter_config,
+                                                      transport()->GetWeakPtr(),
+                                                      dispatcher());
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
-        scanner_.get(), peer_cache_.get(), dispatcher());
+        scanner_.get(), peer_cache_.get(), packet_filter_config, dispatcher());
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
         transport()->GetWeakPtr(),
         &addr_delegate_,

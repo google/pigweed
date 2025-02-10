@@ -80,11 +80,14 @@ LowEnergyScanner::PendingScanResult::PendingScanResult(
   StartTimer();
 }
 
-LowEnergyScanner::LowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
-                                   hci::Transport::WeakPtr hci,
-                                   pw::async::Dispatcher& pw_dispatcher)
+LowEnergyScanner::LowEnergyScanner(
+    LocalAddressDelegate* local_addr_delegate,
+    const PacketFilterConfig& packet_filter_config,
+    hci::Transport::WeakPtr hci,
+    pw::async::Dispatcher& pw_dispatcher)
     : pw_dispatcher_(pw_dispatcher),
       scan_timeout_task_(pw_dispatcher_),
+      packet_filter_config_(packet_filter_config),
       local_addr_delegate_(local_addr_delegate),
       hci_(std::move(hci)) {
   PW_DCHECK(local_addr_delegate_);

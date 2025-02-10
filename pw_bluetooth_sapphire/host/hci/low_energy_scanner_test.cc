@@ -91,14 +91,18 @@ class LowEnergyScannerTest : public TestingBase,
 
   template <bool same = std::is_same_v<T, ExtendedLowEnergyScanner>>
   std::enable_if_t<same, ExtendedLowEnergyScanner>* CreateScannerInternal() {
-    return new ExtendedLowEnergyScanner(
-        fake_address_delegate(), transport()->GetWeakPtr(), dispatcher());
+    return new ExtendedLowEnergyScanner(fake_address_delegate(),
+                                        {false, 0},
+                                        transport()->GetWeakPtr(),
+                                        dispatcher());
   }
 
   template <bool same = std::is_same_v<T, LegacyLowEnergyScanner>>
   std::enable_if_t<same, LegacyLowEnergyScanner>* CreateScannerInternal() {
-    return new LegacyLowEnergyScanner(
-        fake_address_delegate(), transport()->GetWeakPtr(), dispatcher());
+    return new LegacyLowEnergyScanner(fake_address_delegate(),
+                                      {false, 0},
+                                      transport()->GetWeakPtr(),
+                                      dispatcher());
   }
 
   using PeerFoundCallback = fit::function<void(const LowEnergyScanResult&)>;

@@ -48,7 +48,7 @@ class AndroidVendorCapabilities final {
   // Number of IRK entries supported in the firmware
   uint8_t irk_list_size() const { return irk_list_size_; }
 
-  // Support for filtering in the controller
+  // Support for packet filtering in the controller
   bool supports_filtering() const { return supports_filtering_; }
 
   // Number of filters supported

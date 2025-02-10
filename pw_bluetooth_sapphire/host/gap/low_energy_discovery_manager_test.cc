@@ -26,6 +26,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
@@ -71,20 +72,24 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     settings.ApplyLegacyLEConfig();
     test_device()->set_settings(settings);
 
+    hci::LowEnergyScanner::PacketFilterConfig packet_filter_config(false, 0);
+
     // TODO(armansito): Now that the hci::LowEnergyScanner is injected into
     // |discovery_manager_| rather than constructed by it, a fake implementation
     // could be injected directly. Consider providing fake behavior here in this
     // harness rather than using a FakeController.
-    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
-        &fake_address_delegate_, transport()->GetWeakPtr(), dispatcher());
+    scanner_ =
+        std::make_unique<hci::LegacyLowEnergyScanner>(&fake_address_delegate_,
+                                                      packet_filter_config,
+                                                      transport()->GetWeakPtr(),
+                                                      dispatcher());
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
-        scanner_.get(), &peer_cache_, dispatcher());
+        scanner_.get(), &peer_cache_, packet_filter_config, dispatcher());
     discovery_manager_->AttachInspect(inspector_.GetRoot(), kInspectNodeName);
 
-    test_device()->set_scan_state_callback(
-        std::bind(&LowEnergyDiscoveryManagerTest::OnScanStateChanged,
-                  this,
-                  std::placeholders::_1));
+    test_device()->set_scan_state_callback([this](auto&& PH1) {
+      OnScanStateChanged(std::forward<decltype(PH1)>(PH1));
+    });
   }
 
   void TearDown() override {

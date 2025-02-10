@@ -50,7 +50,10 @@ class LegacyLowEnergyScannerTest : public TestingBase,
     test_device()->set_settings(settings);
 
     scanner_ = std::make_unique<LegacyLowEnergyScanner>(
-        fake_address_delegate(), transport()->GetWeakPtr(), dispatcher());
+        fake_address_delegate(),
+        LegacyLowEnergyScanner::PacketFilterConfig(false, 0),
+        transport()->GetWeakPtr(),
+        dispatcher());
     scanner_->set_delegate(this);
 
     auto p = std::make_unique<FakePeer>(kPublicAddr,
