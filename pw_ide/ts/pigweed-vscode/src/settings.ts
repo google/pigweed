@@ -21,7 +21,6 @@ interface Setting<T> {
   (value: T | undefined): Thenable<void>;
 }
 
-type ProjectType = 'bootstrap' | 'bazel';
 type TerminalShell = 'bash' | 'zsh';
 
 export interface Settings {
@@ -37,7 +36,6 @@ export interface Settings {
   hideInactiveFileIndicators: Setting<boolean>;
   preserveBazelPath: Setting<boolean>;
   projectRoot: Setting<string>;
-  projectType: Setting<ProjectType>;
   refreshCompileCommandsTarget: Setting<string>;
   terminalShell: Setting<TerminalShell>;
 }
@@ -245,16 +243,6 @@ function projectRoot(value?: string): string | undefined | Thenable<void> {
   return update(value);
 }
 
-function projectType(): ProjectType | undefined;
-function projectType(value: ProjectType | undefined): Thenable<void>;
-function projectType(
-  value?: ProjectType | undefined,
-): ProjectType | undefined | Thenable<void> {
-  const { get, update } = stringSettingFor<ProjectType>('projectType');
-  if (value === undefined) return get();
-  return update(value);
-}
-
 function refreshCompileCommandsTarget(): string;
 function refreshCompileCommandsTarget(
   value: string | undefined,
@@ -291,7 +279,6 @@ export const settings: Settings = {
   hideInactiveFileIndicators,
   preserveBazelPath,
   projectRoot,
-  projectType,
   refreshCompileCommandsTarget,
   terminalShell,
 };

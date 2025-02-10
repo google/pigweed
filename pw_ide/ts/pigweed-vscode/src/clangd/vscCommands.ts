@@ -25,7 +25,7 @@ import logger from '../logging';
 import { RefreshManager } from '../refreshManager';
 import { settingFor, settings, stringSettingFor } from '../settings';
 
-export async function setTarget(
+export async function setTargetWithClangd(
   target: Target | undefined,
   settingsFileWriter: (target: string) => Promise<void>,
 ): Promise<void> {
@@ -101,7 +101,7 @@ export async function setCompileCommandsTarget(
     .then(async (selection) => {
       if (!selection) return;
       const { label: targetName } = selection;
-      await setTarget(
+      await setTargetWithClangd(
         targetNameMap[targetName],
         activeFilesCache.writeToSettings,
       );
@@ -112,7 +112,7 @@ export const setCompileCommandsTargetOnSettingsChange =
   (activeFilesCache: ClangdActiveFilesCache) =>
   (e: vscode.ConfigurationChangeEvent) => {
     if (e.affectsConfiguration('pigweed')) {
-      setTarget(undefined, activeFilesCache.writeToSettings);
+      setTargetWithClangd(undefined, activeFilesCache.writeToSettings);
     }
   };
 

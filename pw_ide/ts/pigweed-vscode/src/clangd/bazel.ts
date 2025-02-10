@@ -26,7 +26,7 @@ export const clangdPath = () =>
 const createClangdSymlinkTarget = ':copy_clangd' as const;
 
 /** Create the `clangd` symlink and add it to settings. */
-export async function initClangdPath(): Promise<void> {
+export async function initBazelClangdPath(): Promise<void> {
   logger.info('Ensuring presence of stable clangd symlink');
   const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
   const cmd = getReliableBazelExecutable();

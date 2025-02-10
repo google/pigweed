@@ -96,6 +96,10 @@
           "type": "string",
           "description": "The build target to use for editor code intelligence"
         },
+        "pigweed.codeAnalysisTargetDir": {
+          "type": "string",
+          "description": "The compile commands directory for the selected build target to use for editor code intelligence"
+        },
         "pigweed.disableBazelSettingsRecommendations": {
           "type": "boolean",
           "default": "false",
@@ -134,14 +138,6 @@
         "pigweed.projectRoot": {
           "type": "string",
           "description": "The root of the Pigweed project source directory"
-        },
-        "pigweed.projectType": {
-          "type": "string",
-          "enum": [
-            "bootstrap",
-            "bazel"
-          ],
-          "description": "The type of Pigweed project, either bootstrap or Bazel"
         },
         "pigweed.refreshCompileCommandsTarget": {
           "type": "string",
