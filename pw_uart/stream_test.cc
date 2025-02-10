@@ -14,7 +14,7 @@
 
 #include "pw_uart/stream.h"
 
-#include "gtest/gtest.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::uart {
 namespace {

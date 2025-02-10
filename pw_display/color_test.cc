@@ -14,9 +14,9 @@
 
 #include "pw_display/color.h"
 
-#include "gtest/gtest.h"
 #include "pw_display/colors_endesga64.h"
 #include "pw_display/colors_pico8.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::display {
 namespace {

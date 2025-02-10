@@ -19,7 +19,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "gtest/gtest.h"
 #include "pw_assert/check.h"
 #include "pw_async2/dispatcher.h"
 #include "pw_bytes/array.h"
@@ -30,6 +29,7 @@
 #include "pw_thread/sleep.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
+#include "pw_unit_test/framework.h"
 
 namespace {
 
