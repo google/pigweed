@@ -46,9 +46,7 @@ inline RpcLock& rpc_lock() {
 
 class PW_SCOPED_LOCKABLE RpcLockGuard {
  public:
-  RpcLockGuard() PW_EXCLUSIVE_LOCK_FUNCTION(rpc_lock()) {
-    rpc_lock().lock();
-  }  // namespace pw::rpc::internal
+  RpcLockGuard() PW_EXCLUSIVE_LOCK_FUNCTION(rpc_lock()) { rpc_lock().lock(); }
 
   ~RpcLockGuard() PW_UNLOCK_FUNCTION(rpc_lock()) { rpc_lock().unlock(); }
 };
