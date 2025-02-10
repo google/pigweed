@@ -21,6 +21,7 @@ import sys
 from pw_cli.tool_runner import ToolRunner, BasicSubprocessRunner
 from pw_presubmit.format.private.cli import FormattingSuite
 from pw_presubmit.format.python import BlackFormatter
+from pw_presubmit.format.cpp import ClangFormatFormatter
 
 try:
     from python.runfiles import runfiles  # type: ignore
@@ -84,6 +85,11 @@ def _pigweed_formatting_suite() -> FormattingSuite:
         default_runner.add_tool(  # type: ignore[attr-defined]
             'black', 'pigweed/pw_presubmit/py/black', r.CurrentRepository()
         )
+        default_runner.add_tool(  # type: ignore[attr-defined]
+            'clang-format',
+            'pigweed/pw_presubmit/py/clang-format',
+            r.CurrentRepository(),
+        )
 
     # This is deliberately not public since there's some work to do to make
     # things more extensible/maintainable before downstream projects try to
@@ -91,6 +97,9 @@ def _pigweed_formatting_suite() -> FormattingSuite:
     pigweed_formatters = [
         BlackFormatter(
             config_file=tool_runfiles['.black.toml'],
+            tool_runner=default_runner,
+        ),
+        ClangFormatFormatter(
             tool_runner=default_runner,
         ),
     ]

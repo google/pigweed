@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@rules_python//python:defs.bzl", "py_library")
 load("@rules_python//python/entry_points:py_console_script_binary.bzl", "py_console_script_binary")
 load("//pw_build:python.bzl", "pw_py_binary", "pw_py_test")
@@ -109,12 +110,24 @@ py_console_script_binary(
     visibility = ["//visibility:private"],
 )
 
+copy_file(
+    name = "clang-format",
+    src = select({
+        "@platforms//os:macos": "@llvm_toolchain_macos//:bin/clang-format",
+        "//conditions:default": "@llvm_toolchain//:bin/clang-format",
+    }),
+    out = "clang-format",
+    allow_symlink = True,
+    is_executable = True,
+)
+
 pw_py_binary(
     name = "format",
     srcs = ["pw_presubmit/format/pigweed_format.py"],
     data = [
         "//:.black.toml",
         "//pw_presubmit/py:black",
+        "//pw_presubmit/py:clang-format",
     ],
     main = "pw_presubmit/format/pigweed_format.py",
     deps = [
