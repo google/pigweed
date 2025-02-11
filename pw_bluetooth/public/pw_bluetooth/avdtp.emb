@@ -12,11 +12,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# This file contains Emboss definitions of the protocol data units (PDUs)
-# associated with the Attribute Protocol (ATT) as defined in Vol 3 (Host), Part
-# F of the Bluetooth Core Specification. The Emboss compiler is used to generate
-# a C++ header from this file.
-
 [$default byte_order: "LittleEndian"]
 [(cpp) namespace: "pw::bluetooth::emboss::avdtp"]
 # Cf. AVDTP Spec v1.3
