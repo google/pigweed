@@ -210,15 +210,15 @@ def generate_seed_index(app: Sphinx, docname: str, source: list[str]) -> None:
     source[
         0
     ] += '   :header: "Number","Title","Status","Authors","Facilitator"\n\n'
-    for number in metadata:
-        cl = metadata[number]['cl']
-        status = map_status_to_badge_style(metadata[number]['status'])
-        title = metadata[number]['title']
+    for number, seed in metadata.items():
+        cl = seed['cl']
+        title = seed['title']
         title = f'`{title} <https://pwrev.dev/{cl}>`__'
-        if status == 'Accepted':
+        if seed['status'].lower() == 'accepted':
             title = f':ref:`seed-{number}`'
-        authors = ', '.join(metadata[number]['authors'])
-        facilitator = metadata[number]['facilitator']
+        authors = ', '.join(seed['authors'])
+        facilitator = seed['facilitator']
+        status = map_status_to_badge_style(seed['status'])
         source[
             0
         ] += f'   "{number}","{title}","{status}","{authors}","{facilitator}"\n'
