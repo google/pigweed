@@ -14,12 +14,18 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:compatibility.bzl", "boolean_constraint_value", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+# TODO: https://pwbug.dev/343487589 - Use this constraint value instead of
+# //pw_build/constraints/board:mimxrt595_evk for libraries in this package.
+boolean_constraint_value(
+    name = "compatible",
+)
 
 cc_library(
     name = "pw_stream_uart_mcuxpresso",
