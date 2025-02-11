@@ -80,9 +80,11 @@ CHANNELS = [
         # to allow these features globally.  These include:
         # `error_generic_member_access`: `anyhow` auto detects this feature
         # `proc_macro_span`: `proc-macro2` auto detects this features
+        # `rustc_attrs`: `rustix` (a gen_rust_project dep) auto detects this
+        #   feature.
         "extra_rustc_flags": [
             "-Dwarnings",
-            "-Zallow-features=error_generic_member_access,proc_macro_span",
+            "-Zallow-features=error_generic_member_access,proc_macro_span,rustc_attrs",
         ],
         "name": "stable",
         "target_settings": ["@rules_rust//rust/toolchain/channel:stable"],
