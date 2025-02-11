@@ -33,6 +33,7 @@ alias(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "cheat_sheet.rst",
         "docs.rst",
     ],
     prefix = "pw_kernel/",

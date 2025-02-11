@@ -22,5 +22,8 @@ pw_test_group("tests") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "cheat_sheet.rst",
+    "docs.rst",
+  ]
 }
