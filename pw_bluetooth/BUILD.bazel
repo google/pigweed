@@ -218,6 +218,14 @@ pw_cc_test(
 )
 
 emboss_cc_library(
+    name = "_emboss_a2dp_aac",
+    srcs = ["public/pw_bluetooth/a2dp_aac.emb"],
+    enable_enum_traits = False,
+    import_dirs = ["public"],
+    visibility = ["//visibility:private"],
+)
+
+emboss_cc_library(
     name = "_emboss_a2dp_sbc",
     srcs = ["public/pw_bluetooth/a2dp_sbc.emb"],
     enable_enum_traits = False,
@@ -243,6 +251,11 @@ emboss_cc_library(
         ":_emboss_hci_data",
         ":_emboss_l2cap_frames",
     ],
+)
+
+cc_library(
+    name = "emboss_a2dp_aac",
+    deps = [":_emboss_a2dp_aac"],
 )
 
 cc_library(

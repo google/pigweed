@@ -1,0 +1,98 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# This file contains Emboss definitions of the protocol data units (PDUs)
+# associated with the Attribute Protocol (ATT) as defined in Vol 3 (Host), Part
+# F of the Bluetooth Core Specification. The Emboss compiler is used to generate
+# a C++ header from this file.
+
+[$default byte_order: "LittleEndian"]
+[(cpp) namespace: "pw::bluetooth::emboss::a2dp::aac"]
+# Cf. A2DP Spec v1.4 Section 4.5 AAC Codec  interoperability requirements
+
+
+enum ObjectType:
+  -- Cf. 4.5.2.1
+  [maximum_bits: 7]
+  MPEG_2_AAC_LC        = 0b1000000
+  MPEG_4_AAC_LC        = 0b0100000
+  MPEG_4_AAC_LTP       = 0b0010000
+  MPEG_4_AAC_SCALABLE  = 0b0001000
+  MPEG_4_HE_AAC        = 0b0000100 # inclusive-language: ignore
+  MPEG_4_HE_AAC_V2     = 0b0000010 # inclusive-language: ignore
+  MPEG_4_HE_AAC_ELD_V2 = 0b0000001 # inclusive-language: ignore
+
+
+enum Drc:
+  -- Cf. 4.5.2.2
+  [maximum_bits: 1]
+  SUPPORTED     = 0b1
+  NOT_SUPPORTED = 0b0
+
+
+enum SamplingFrequencyFirstOctect:
+  -- Cf. 4.5.2.3
+  [maximum_bits: 8]
+  FREQ_8000HZ  = 0b10000000
+  FREQ_11025HZ = 0b01000000
+  FREQ_12000HZ = 0b00100000
+  FREQ_16000HZ = 0b00010000
+  FREQ_22050HZ = 0b00001000
+  FREQ_24000HZ = 0b00000100
+  FREQ_32000HZ = 0b00000010
+  FREQ_44100HZ = 0b00000001
+
+
+enum SamplingFrequencyScdOctet:
+  -- Cf. 4.5.2.3
+  [maximum_bits: 4]
+  FREQ_48000HZ = 0b1000
+  FREQ_64000HZ = 0b0100
+  FREQ_88200HZ = 0b0010
+  FREQ_96000HZ = 0b0001
+
+
+enum Channels:
+  -- Cf. 4.5.2.4
+  [maximum_bits: 4]
+  ONE   = 0b1000
+  TWO   = 0b0100
+  SIX   = 0b0010
+  EIGHT = 0b0001
+
+
+enum Vbr:
+  -- Cf. 4.5.2.6
+  [maximum_bits: 1]
+  SUPPORTED     = 0b1
+  NOT_SUPPORTED = 0b0
+
+
+struct CodecSpecificInformationElements:
+  -- Cf. 4.5.2
+  0     [+1]  bits:
+    0     [+1]       Drc                           drc
+    1     [+7]       ObjectType                    object_type
+
+  $next [+1]         SamplingFrequencyFirstOctect  sampling_frequency_first_octet
+  $next [+1]  bits:
+    0     [+4]       Channels                      channels
+    4     [+4]       SamplingFrequencyScdOctet     sampling_frequency_second_octet
+
+  $next [+1]  bits:
+    0     [+7]       UInt                          bit_rate_0
+    7     [+1]       Vbr                           vbr
+
+  $next [+1]         UInt                          bit_rate_1
+  $next [+1]         UInt                          bit_rate_2
