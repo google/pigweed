@@ -12,6 +12,7 @@
     "strict": true
   },
   "exclude": [
-    "*.js"
+    "*.js",
+    "**/*.e2e.test.ts"
   ]
 }

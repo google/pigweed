@@ -90,6 +90,7 @@ yarn-error.log
 
 # pw_ide
 .pw_ide.user.yaml
+.vscode-test
 
 # Emboss
 *.emb.h

@@ -26,14 +26,14 @@ export const clangdPath = () =>
 const createClangdSymlinkTarget = ':copy_clangd' as const;
 
 /** Create the `clangd` symlink and add it to settings. */
-export async function initBazelClangdPath(): Promise<void> {
+export async function initBazelClangdPath(): Promise<boolean> {
   logger.info('Ensuring presence of stable clangd symlink');
   const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
   const cmd = getReliableBazelExecutable();
 
   if (!cmd) {
     logger.error("Couldn't find a Bazel or Bazelisk executable");
-    return;
+    return false;
   }
 
   const args = ['build', createClangdSymlinkTarget];
@@ -68,8 +68,9 @@ export async function initBazelClangdPath(): Promise<void> {
     });
   });
 
-  if (!success) return;
+  if (!success) return false;
 
   const { update: updatePath } = stringSettingFor('path', 'clangd');
   await updatePath(clangdPath());
+  return true;
 }

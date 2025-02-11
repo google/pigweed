@@ -15,6 +15,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as process from 'process';
+import * as os from 'os';
+import { randomBytes } from 'crypto';
 
 // Convert `exec` from callback style to promise style.
 import { exec as cbExec } from 'child_process';
@@ -216,4 +218,53 @@ export async function patchBazeliskIntoTerminalPath(
   logger.info(`Patching Bazelisk path into ${shellType} terminal`);
   terminal.sendText(cmd, true);
   terminal.show();
+}
+
+/**
+ * This method runs the given commands in the active terminal
+ * and returns the output text. Currently, the API does not
+ * support reading terminal buffer so instead, we pipe output
+ * to a temp text file and then read it out once execution
+ * has completed.
+ */
+export async function executeInTerminalAndGetStdout(
+  cmd: string,
+): Promise<string> {
+  const terminal = vscode.window.activeTerminal;
+
+  if (!terminal) {
+    throw new Error('No active terminal found.');
+  }
+
+  const tmpDir = os.tmpdir();
+  const randomOutputFileName = `vscode-terminal-output-${randomBytes(
+    8,
+  ).toString('hex')}.txt`;
+  const randomDoneFileName = `vscode-terminal-done-${randomBytes(8).toString(
+    'hex',
+  )}.txt`;
+  const tmpOutputFilePath = path.join(tmpDir, randomOutputFileName);
+  const tmpDoneFilePath = path.join(tmpDir, randomDoneFileName);
+
+  try {
+    // Construct the command to redirect output to the temp file and then touch the done file
+    const commandToExecute = `${cmd} &> ${tmpOutputFilePath} && touch ${tmpDoneFilePath}\n`;
+
+    terminal.sendText(commandToExecute);
+
+    // Wait for the done file to exist
+    while (!fs.existsSync(tmpDoneFilePath)) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    const output = fs.readFileSync(tmpOutputFilePath, 'utf-8');
+    return output;
+  } catch (error) {
+    console.error('Error during command execution:', error);
+    throw error;
+  } finally {
+    // Delete the temporary files
+    fs.unlinkSync(tmpOutputFilePath);
+    fs.unlinkSync(tmpDoneFilePath);
+  }
 }
