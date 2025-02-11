@@ -109,6 +109,10 @@ single_version_override(
         # gets the path to those files wrong.
         # TODO: https://pwbug.dev/3392708481 - Upstream below patch
         "//pw_rust/bazel_patches:0004-Add-rust_srcs_subdir-to-rust_analyzer_toolchain.patch",
+
+        # rust_analyzer: Support passing a --config option to Bazel
+        # https://github.com/bazelbuild/rules_rust/pull/3254
+        "//pw_rust/bazel_patches:0005-rust_analyzer-Support-passing-a-config-option-to-Baz.patch",
     ],
 )
 
