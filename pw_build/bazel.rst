@@ -1,5 +1,6 @@
 .. _module-pw_build-bazel:
 
+=====
 Bazel
 =====
 .. pigweed-module-subpage::
@@ -10,8 +11,12 @@ microcontrollers.
 
 .. _module-pw_build-bazel-wrapper-rules:
 
+-----
+Rules
+-----
+
 Wrapper rules
--------------
+=============
 .. _pigweed.bzl: https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/pigweed.bzl
 
 The built-in Bazel rules ``cc_binary``, ``cc_test``, ``py_binary``, and
@@ -27,7 +32,7 @@ access ``pw_cc_binary``:
 .. _module-pw_build-bazel-pw_linker_script:
 
 pw_linker_script
-----------------
+================
 In addition to wrapping the built-in rules, Pigweed also provides a custom
 rule for handling linker scripts with Bazel. e.g.
 
@@ -76,7 +81,7 @@ rule for handling linker scripts with Bazel. e.g.
 .. _module-pw_build-bazel-pw_facade:
 
 pw_facade
----------
+=========
 In Bazel, a :ref:`facade <docs-module-structure-facades>` module has a few
 components:
 
@@ -159,7 +164,7 @@ backend you want to use depends on the platform you are building for. See the
 :ref:`docs-build_system-bazel_configuration` for advice on how to set this up.
 
 pw_cc_blob_library
-------------------
+==================
 The ``pw_cc_blob_library`` rule is useful for embedding binary data into a
 program. The rule takes in a mapping of symbol names to file paths, and
 generates a set of C++ source and header files that embed the contents of the
@@ -172,7 +177,7 @@ time, including before ``main()``.
 and CMake builds.
 
 Arguments
-^^^^^^^^^
+---------
 * ``blobs``: A list of ``pw_cc_blob_info`` targets, where each target
   corresponds to a binary blob to be transformed from file to byte array. This
   is a required field. ``pw_cc_blob_info`` attributes include:
@@ -190,7 +195,7 @@ Arguments
 * ``alwayslink``: Whether this library should always be linked. Defaults to false.
 
 Example
-^^^^^^^
+-------
 **BUILD.bazel**
 
 .. code-block:: python
@@ -261,7 +266,7 @@ Example
 .. _module-pw_build-bazel-pw_cc_binary:
 
 pw_cc_binary
-------------
+============
 .. _cc_binary: https://bazel.build/reference/be/c-cpp#cc_binary
 .. _//pw_build/pw_cc_binary.bzl: https://cs.opensource.google/pigweed/pigweed/+/main:pw_build/pw_cc_binary.bzl
 
@@ -299,7 +304,7 @@ Cons of using ``pw_cc_binary``:
 .. _module-pw_build-bazel-pw_cc_binary_with_map:
 
 pw_cc_binary_with_map
----------------------
+=====================
 The ``pw_cc_binary_with_map`` rule can be used to build a binary like
 ``cc_binary`` does but also generate a .map file from the linking step.
 
@@ -318,7 +323,7 @@ certain things are not implemented like make variable substitution.
 .. _module-pw_build-bazel-pw_elf_to_bin:
 
 pw_elf_to_bin
--------------
+=============
 The ``pw_elf_to_bin`` rule takes in a binary executable target and produces a
 file using the ``-Obinary`` option to ``objcopy``. This is only suitable for use
 with binaries where all the segments are non-overlapping. A common use case for
@@ -337,7 +342,7 @@ this type of file is booting directly on hardware with no bootloader.
 .. _module-pw_build-bazel-pw_elf_to_dump:
 
 pw_elf_to_dump
---------------
+==============
 The ``pw_elf_to_dump`` rule takes in a binary executable target and produces a
 text file containing the output of the toolchain's ``objdump -xd`` command. This
 contains the full binary layout, symbol table and disassembly which is often
@@ -354,14 +359,14 @@ useful when debugging embedded firmware.
    )
 
 pw_copy_and_patch_file
-----------------------
+======================
 Provides the ability to patch a file as part of the build.
 
 The source file will not be patched in place, but instead copied before
 patching. The output of this target will be the patched file.
 
 Arguments
-^^^^^^^^^
+---------
 - ``name``: The name of the target.
 
 - ``source``: The source file to be patched.
@@ -371,8 +376,7 @@ Arguments
 - ``patch_file``: The patch file.
 
 Example
-^^^^^^^
-
+-------
 To apply the patch `changes.patch` to the file `data/file.txt` which is located
 in the bazel dependency `@external-sdk//`.
 
@@ -385,16 +389,15 @@ in the bazel dependency `@external-sdk//`.
        patch_file = "changes.patch",
    )
 
-
 Platform compatibility rules
-----------------------------
+============================
 Macros and rules related to platform compatibility are provided in
 ``//pw_build:compatibility.bzl``.
 
 .. _module-pw_build-bazel-boolean_constraint_value:
 
 boolean_constraint_value
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 This macro is syntactic sugar for declaring a `constraint setting
 <https://bazel.build/reference/be/platforms-and-toolchains#constraint_setting>`__
 with just two possible `constraint values
@@ -406,42 +409,24 @@ This macro is meant to simplify declaring
 :ref:`docs-bazel-compatibility-module-specific`.
 
 host_backend_alias
-^^^^^^^^^^^^^^^^^^
+------------------
 An alias that resolves to the backend for host platforms. This is useful when
 declaring a facade that provides a default backend for host platform use.
 
-Flag merging rules
-------------------
+
+----------------
+Starlark helpers
+----------------
+
+Platform-based flag merging
+===========================
 Macros that help with using platform-based flags are in
 ``//pw_build:merge_flags.bzl``. These are useful, for example, when you wish to
 :ref:`docs-bazel-compatibility-facade-backend-dict`.
 
-Miscellaneous utilities
------------------------
-
-.. _module-pw_build-bazel-empty_cc_library:
-
-empty_cc_library
-^^^^^^^^^^^^^^^^
-This empty library is used as a placeholder for label flags that need to point
-to a library of some kind, but don't actually need the dependency to amount to
-anything.
-
-default_link_extra_lib
-^^^^^^^^^^^^^^^^^^^^^^
-This library groups together all libraries commonly required at link time by
-Pigweed modules. See :ref:`docs-build_system-bazel_link-extra-lib` for more
-details.
-
-unspecified_backend
-^^^^^^^^^^^^^^^^^^^
-A special target used instead of a cc_library as the default condition in
-backend multiplexer select statements to signal that a facade is in an
-unconfigured state. This produces better error messages than e.g. using an
-invalid label.
 
 glob_dirs
-^^^^^^^^^
+=========
 A starlark helper for performing ``glob()`` operations strictly on directories.
 
 .. py:function:: glob_dirs(include: List[str], exclude: List[str] = [], allow_empty: bool = True) -> List[str]
@@ -460,7 +445,7 @@ A starlark helper for performing ``glob()`` operations strictly on directories.
      List of directory paths that match the specified constraints.
 
 match_dir
-^^^^^^^^^
+=========
 A starlark helper for using a wildcard pattern to match a single directory
 
 .. py:function:: match_dir(include: List[str], exclude: List[str] = [], allow_empty: bool = True) -> Optional[str]
@@ -480,6 +465,32 @@ A starlark helper for using a wildcard pattern to match a single directory
      Path to a single directory that matches the specified constraints, or
      ``None`` if no match is found and ``allow_empty`` is ``True``.
 
+-------------
+Build targets
+-------------
+
+.. _module-pw_build-bazel-empty_cc_library:
+
+empty_cc_library
+================
+This empty library is used as a placeholder for label flags that need to point
+to a library of some kind, but don't actually need the dependency to amount to
+anything.
+
+default_link_extra_lib
+======================
+This library groups together all libraries commonly required at link time by
+Pigweed modules. See :ref:`docs-build_system-bazel_link-extra-lib` for more
+details.
+
+unspecified_backend
+===================
+A special target used instead of a cc_library as the default condition in
+backend multiplexer select statements to signal that a facade is in an
+unconfigured state. This produces better error messages than e.g. using an
+invalid label.
+
+------------------------
 Toolchains and platforms
 ------------------------
 Pigweed provides clang-based host toolchains for Linux and Mac Arm gcc
