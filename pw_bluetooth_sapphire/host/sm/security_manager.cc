@@ -93,6 +93,9 @@ class SecurityManagerImpl final : public SecurityManager,
     PairingCallback callback;
   };
 
+  // Pseudo-phase where we are waiting for BR/EDR pairing to complete.
+  struct WaitForBrEdrPairing {};
+
   // Called when we receive a peer security request as initiator, will start
   // Phase 1.
   void OnSecurityRequest(AuthReqField auth_req);
@@ -283,6 +286,7 @@ class SecurityManagerImpl final : public SecurityManager,
   // security upgrade is in progress at the stored phase. No security upgrade is
   // in progress if std::monostate is present.
   std::variant<std::monostate,
+               WaitForBrEdrPairing,
                SecurityRequestPhase,
                std::unique_ptr<Phase1>,
                Phase2Legacy,
@@ -382,7 +386,8 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
     return;
   }
 
-  PW_CHECK(!SecurityUpgradeInProgress());
+  PW_CHECK(!SecurityUpgradeInProgress() ||
+           std::get_if<WaitForBrEdrPairing>(&current_phase_));
 
   if (role() != Role::kInitiator) {
     bt_log(
@@ -507,12 +512,8 @@ void SecurityManagerImpl::OnPairingRequest(
     bt_log(INFO,
            "sm",
            "LE: rejecting Pairing Request because BREDR pairing in progress");
-    if (SecurityUpgradeInProgress()) {
-      Abort(ErrorCode::kBREDRPairingInProgress);
-    } else {
-      sm_chan_->SendMessageNoTimerReset(kPairingFailed,
-                                        ErrorCode::kBREDRPairingInProgress);
-    }
+    sm_chan_->SendMessageNoTimerReset(kPairingFailed,
+                                      ErrorCode::kBREDRPairingInProgress);
     return;
   }
 
@@ -570,6 +571,31 @@ void SecurityManagerImpl::UpgradeSecurityInternal() {
   PW_CHECK(
       !SecurityUpgradeInProgress(),
       "cannot upgrade security while security upgrade already in progress!");
+  PW_CHECK(!request_queue_.empty());
+
+  // "If a BR/EDR/LE device supports LE Secure Connections, then it shall
+  // initiate pairing on only one transport at a time to the same remote
+  // device." (v6.0, Vol 3, Part C, Sec. 14.2)
+  if (peer_->bredr() && peer_->bredr()->is_pairing()) {
+    bt_log(DEBUG,
+           "sm",
+           "Delaying security upgrade until BR/EDR pairing completes");
+    current_phase_ = WaitForBrEdrPairing();
+    peer_->MutBrEdr().add_pairing_completion_callback(
+        [self = weak_self_.GetWeakPtr()]() {
+          if (!self.is_alive() ||
+              !std::get_if<WaitForBrEdrPairing>(&self->current_phase_)) {
+            return;
+          }
+          self->ResetState();
+          if (self->request_queue_.empty()) {
+            return;
+          }
+          self->UpgradeSecurityInternal();
+        });
+    return;
+  }
+
   const PendingRequest& next_req = request_queue_.front();
   if (fit::result result = RequestSecurityUpgrade(next_req.level);
       result.is_error()) {
@@ -773,7 +799,11 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
     return;
   }
 
-  if (!SecurityUpgradeInProgress() || security_request_phase) {
+  WaitForBrEdrPairing* wait_for_bredr_pairing_phase =
+      std::get_if<WaitForBrEdrPairing>(&current_phase_);
+
+  if (!SecurityUpgradeInProgress() || security_request_phase ||
+      wait_for_bredr_pairing_phase) {
     bt_log(DEBUG, "sm", "encryption enabled while not pairing");
     if (bt_is_error(
             ValidateExistingLocalLtk(),
@@ -789,8 +819,8 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
     if (security_request_phase) {
       PW_CHECK(role() == Role::kResponder);
       PW_CHECK(!request_queue_.empty());
-      NotifySecurityCallbacks();
     }
+    NotifySecurityCallbacks();
     return;
   }
 
