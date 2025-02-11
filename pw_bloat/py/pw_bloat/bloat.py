@@ -328,7 +328,6 @@ def single_target_report(
         json_key_prefix, data_source_map, full_json, ignore_unused_labels
     )
 
-    print(single_report_table)
     write_file(target_out_file, rst_single_report.create_table(), out_dir)
     write_file(f'{target_out_file}.txt', single_report_table, out_dir)
     write_file(

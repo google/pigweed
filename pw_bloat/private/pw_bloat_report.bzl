@@ -27,7 +27,6 @@ def _pw_bloat_report_impl(ctx):
     json_metadata = {
         "binaries": [
             {
-                "base": ctx.executable.base.path,
                 "bloaty_config": ctx.file.bloaty_config.path,
                 "label": ctx.attr.label,
                 "target": ctx.executable.target.path,
@@ -37,21 +36,26 @@ def _pw_bloat_report_impl(ctx):
         "target_name": ctx.label.name,
     }
 
-    ctx.actions.write(script_input, json.encode(json_metadata))
+    action_inputs = [
+        ctx.executable.target,
+        ctx.file.bloaty_config,
+        script_input,
+    ]
 
     args = ctx.actions.args()
     args.add("--target-json={}".format(script_input.path))
     args.add("--generate-rst-fragment")
 
+    if ctx.executable.base != None:
+        json_metadata["binaries"][0]["base"] = ctx.executable.base.path
+        action_inputs.append(ctx.executable.base)
+    else:
+        args.add("--single-report")
+
+    ctx.actions.write(script_input, json.encode(json_metadata))
+
     ctx.actions.run(
-        inputs = depset(
-            direct = [
-                ctx.executable.base,
-                ctx.executable.target,
-                ctx.file.bloaty_config,
-                script_input,
-            ],
-        ),
+        inputs = depset(direct = action_inputs),
         progress_message = "Generating RST size report for " + ctx.label.name,
         executable = ctx.executable._bloat_script,
         arguments = [args],
