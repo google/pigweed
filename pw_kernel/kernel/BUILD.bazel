@@ -39,12 +39,6 @@ rust_library(
         "//conditions:default": ["arch_host"],
     }),
     tags = ["kernel"],
-    target_compatible_with = select({
-        "@pigweed//pw_build/constraints/arm:cortex-m0": [],
-        "@pigweed//pw_build/constraints/arm:cortex-m3": [],
-        "@pigweed//pw_build/constraints/arm:cortex-m33": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         "//pw_kernel/lib/list",
         "//pw_kernel/target",
