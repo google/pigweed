@@ -24,6 +24,7 @@ cc_library_static {
     srcs: [
         "acl_data_channel.cc",
         "basic_l2cap_channel.cc",
+        "client_channel.cc",
         "gatt_notify_channel.cc",
         "h4_storage.cc",
         "l2cap_aclu_signaling_channel.cc",

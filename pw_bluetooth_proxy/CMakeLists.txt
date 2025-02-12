@@ -26,6 +26,7 @@ endif()
 pw_add_library(pw_bluetooth_proxy STATIC
   HEADERS
     public/pw_bluetooth_proxy/basic_l2cap_channel.h
+    public/pw_bluetooth_proxy/client_channel.h
     public/pw_bluetooth_proxy/gatt_notify_channel.h
     public/pw_bluetooth_proxy/h4_packet.h
     public/pw_bluetooth_proxy/internal/acl_data_channel.h
@@ -75,6 +76,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
   SOURCES
     acl_data_channel.cc
     basic_l2cap_channel.cc
+    client_channel.cc
     gatt_notify_channel.cc
     h4_storage.cc
     l2cap_aclu_signaling_channel.cc
