@@ -24,8 +24,7 @@ namespace pw::bluetooth::proxy {
 
 /// Events returned from all client-facing channel objects in their `event_fn`
 /// callback.
-// TODO: https://pwbug.dev/388082771 - Move to client channel specific header.
-enum class ClientChannelEvent {
+enum class L2capChannelEvent {
   /// The channel was closed by something other than `ProxyHost` or due to
   /// `ProxyHost` shutdown. The channel is now `State::kClosed` and should be
   /// cleaned up. See logs for details.
@@ -46,9 +45,6 @@ enum class ClientChannelEvent {
   /// returned UNAVAILABLE.
   kWriteAvailable,
 };
-
-// TODO: https://pwbug.dev/388082771 - Remove alias after migration.
-using L2capChannelEvent = ClientChannelEvent;
 
 /// Result object with status and optional MultiBuf that is only present if the
 /// status is NOT `ok()`.
