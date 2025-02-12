@@ -25,9 +25,6 @@ namespace pw::bluetooth::proxy {
 
 /// Thread safe collection of service delegates and l2cap channel connections
 /// currently being tracked.
-///
-/// TODO: https://pwbug.dev/382138082 - Tracked connections should be cleaned up
-/// when their ACL connection goes away.
 class L2capStatusTracker {
  public:
   void RegisterDelegate(L2capStatusDelegate& delegate)

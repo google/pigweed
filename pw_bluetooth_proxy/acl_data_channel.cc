@@ -32,7 +32,6 @@ AclDataChannel::AclConnection::AclConnection(
     uint16_t num_pending_packets,
     L2capChannelManager& l2cap_channel_manager)
     : transport_(transport),
-      state_(State::kOpen),
       connection_handle_(connection_handle),
       num_pending_packets_(num_pending_packets),
       leu_signaling_channel_(l2cap_channel_manager, connection_handle),
@@ -41,17 +40,6 @@ AclDataChannel::AclConnection::AclConnection(
       "btproxy: AclConnection ctor. transport_: %u, connection_handle_: %#x",
       cpp23::to_underlying(transport_),
       connection_handle_);
-}
-
-void AclDataChannel::AclConnection::Close() {
-  PW_LOG_INFO(
-      "btproxy: AclConnection::Close. transport_: %u, connection_handle_: %#x, "
-      "previous state_: %u",
-      cpp23::to_underlying(transport_),
-      connection_handle_,
-      cpp23::to_underlying(state_));
-
-  state_ = State::kClosed;
 }
 
 AclDataChannel::SendCredit::SendCredit(SendCredit&& other) {
@@ -250,7 +238,7 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
         continue;
       }
 
-      AclConnection* connection_ptr = FindOpenAclConnection(handle);
+      AclConnection* connection_ptr = FindAclConnection(handle);
       if (!connection_ptr) {
         // Credits for connection we are not tracking or closed connection, so
         // should pass event on to host.
@@ -398,7 +386,7 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
     std::lock_guard lock(mutex_);
     uint16_t conn_handle = dc_event->connection_handle().Read();
 
-    AclConnection* connection_ptr = FindOpenAclConnection(conn_handle);
+    AclConnection* connection_ptr = FindAclConnection(conn_handle);
 
     if (!connection_ptr) {
       PW_LOG_WARN(
@@ -411,22 +399,21 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
 
     emboss::StatusCode status = dc_event->status().Read();
     if (status == emboss::StatusCode::SUCCESS) {
+      PW_LOG_INFO(
+          "Proxy viewed disconnect (reason: %#.2hhx) for connection %#x.",
+          cpp23::to_underlying(dc_event->reason().Read()),
+          conn_handle);
       if (connection_ptr->num_pending_packets() > 0) {
         PW_LOG_WARN(
-            "Proxy viewed disconnect (reason: %#.2hhx) for connection %#x "
-            "with packets in flight. Releasing associated credits.",
-            cpp23::to_underlying(dc_event->reason().Read()),
+            "Connection %#x is disconnecting with packets in flight. Releasing "
+            "associated credits.",
             conn_handle);
-
         LookupCredits(connection_ptr->transport())
             .MarkCompleted(connection_ptr->num_pending_packets());
       }
 
-      // Close but do not erase connection until all channels on the connection
-      // are dtored, as the channels may still try to access their connection's
-      // contained objects like signaling channels.
-      connection_ptr->Close();
       l2cap_channel_manager_.HandleDisconnectionComplete(conn_handle);
+      acl_connections_.erase(connection_ptr);
       return;
     }
     if (connection_ptr->num_pending_packets() > 0) {
@@ -474,7 +461,7 @@ pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet,
   }
   uint16_t handle = acl_view->handle().Read();
 
-  AclConnection* connection_ptr = FindOpenAclConnection(handle);
+  AclConnection* connection_ptr = FindAclConnection(handle);
   if (!connection_ptr) {
     PW_LOG_ERROR("Tried to send ACL packet on unregistered connection.");
     return pw::Status::NotFound();
@@ -496,7 +483,7 @@ pw::Status AclDataChannel::SendAcl(H4PacketWithH4&& h4_packet,
 Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
                                            AclTransportType transport) {
   std::lock_guard lock(mutex_);
-  AclConnection* connection_it = FindOpenAclConnection(connection_handle);
+  AclConnection* connection_it = FindAclConnection(connection_handle);
   if (connection_it) {
     PW_LOG_WARN(
         "btproxy: Attempt to create new AclConnection when existing one is "
@@ -522,7 +509,7 @@ L2capSignalingChannel* AclDataChannel::FindSignalingChannel(
     uint16_t connection_handle, uint16_t local_cid) {
   std::lock_guard lock(mutex_);
 
-  AclConnection* connection_ptr = FindOpenAclConnection(connection_handle);
+  AclConnection* connection_ptr = FindAclConnection(connection_handle);
   if (!connection_ptr) {
     return nullptr;
   }
@@ -533,12 +520,11 @@ L2capSignalingChannel* AclDataChannel::FindSignalingChannel(
   return nullptr;
 }
 
-AclDataChannel::AclConnection* AclDataChannel::FindOpenAclConnection(
+AclDataChannel::AclConnection* AclDataChannel::FindAclConnection(
     uint16_t connection_handle) {
   AclConnection* connection_it = containers::FindIf(
       acl_connections_, [connection_handle](const AclConnection& connection) {
-        return connection.connection_handle() == connection_handle &&
-               connection.state() == AclConnection::State::kOpen;
+        return connection.connection_handle() == connection_handle;
       });
   return connection_it == acl_connections_.end() ? nullptr : connection_it;
 }
@@ -594,7 +580,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
   multibuf::MultiBuf recombined_mbuf;
   {
     std::lock_guard lock(mutex_);
-    AclConnection* connection = FindOpenAclConnection(handle);
+    AclConnection* connection = FindAclConnection(handle);
     if (!connection) {
       return kUnhandled;
     }

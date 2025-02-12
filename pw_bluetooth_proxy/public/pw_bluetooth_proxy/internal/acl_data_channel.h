@@ -92,7 +92,7 @@ class AclDataChannel {
   AclDataChannel(AclDataChannel&&) = delete;
   AclDataChannel& operator=(AclDataChannel&&) = delete;
 
-  // Returns the max number of simultaneous ACL connections supported.
+  // Returns the max number of active ACL connections supported.
   static constexpr size_t GetMaxNumAclConnections() { return kMaxConnections; }
 
   // Revert to uninitialized state, clearing credit reservation and connections,
@@ -190,11 +190,6 @@ class AclDataChannel {
   // within a new LogicalLinkManager class?
   class AclConnection {
    public:
-    enum class State {
-      kOpen,
-      kClosed,
-    };
-
     AclConnection(AclTransportType transport,
                   uint16_t connection_handle,
                   uint16_t num_pending_packets,
@@ -203,11 +198,7 @@ class AclDataChannel {
     AclConnection(const AclConnection&) = delete;
     AclConnection& operator=(const AclConnection&) = delete;
     AclConnection(AclConnection&&) = delete;
-    AclConnection& operator=(AclConnection&&) = delete;
-
-    void Close();
-
-    State state() const { return state_; }
+    AclConnection& operator=(AclConnection&&) = default;
 
     uint16_t connection_handle() const { return connection_handle_; }
 
@@ -267,7 +258,6 @@ class AclDataChannel {
 
    private:
     AclTransportType transport_;
-    State state_;
     uint16_t connection_handle_;
     uint16_t num_pending_packets_;
     L2capLeUSignalingChannel leu_signaling_channel_;
@@ -323,9 +313,11 @@ class AclDataChannel {
     uint16_t proxy_pending_ = 0;
   };
 
-  // Returns pointer to `kOpen` AclConnection with provided `connection_handle`
-  // in `acl_connections_`. Returns nullptr if no such connection exists.
-  AclConnection* FindOpenAclConnection(uint16_t connection_handle)
+  // Returns pointer to AclConnection with provided `connection_handle` in
+  // `acl_connections_`. Returns nullptr if no such connection exists.
+  //
+  // Pointer is assured valid only as long as `mutex_` is held.
+  AclConnection* FindAclConnection(uint16_t connection_handle)
       PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   Credits& LookupCredits(AclTransportType transport)
@@ -339,7 +331,7 @@ class AclDataChannel {
 
   // Data members
 
-  // Maximum number of simultaneous credit-allocated ACL connections supported.
+  // Maximum number of active ACL connections supported.
   // TODO: https://pwbug.dev/349700888 - Make size configurable.
   static constexpr size_t kMaxConnections = 10;
 
@@ -357,9 +349,6 @@ class AclDataChannel {
   Credits br_edr_credits_ PW_GUARDED_BY(mutex_);
 
   // List of credit-allocated ACL connections.
-  // TODO: https://pwbug.dev/382138082 - Delete ACL connection when their
-  // channel ref count hits 0 and an HCI_Disconnection_Complete event has been
-  // processed.
   pw::Vector<AclConnection, kMaxConnections> acl_connections_
       PW_GUARDED_BY(mutex_);
 

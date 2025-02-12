@@ -127,6 +127,8 @@ class RfcommChannel final : public L2capChannel {
   // Override: All traffic on this channel goes to client.
   bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload) override;
 
+  void DoClose() override {}
+
   const Config rx_config_;
   const Config tx_config_;
   const uint8_t channel_number_;

@@ -112,7 +112,9 @@ pw::Result<L2capCoc> L2capCoc::Create(
 }
 
 pw::Status L2capCoc::ReplenishRxCredits(uint16_t additional_rx_credits) {
-  PW_CHECK(signaling_channel_);
+  if (!signaling_channel_) {
+    return Status::FailedPrecondition();
+  }
   PW_CHECK(rx_multibuf_allocator());
   // SendFlowControlCreditInd logs if status is not ok, so no need to log here.
   return signaling_channel_->SendFlowControlCreditInd(
@@ -124,9 +126,8 @@ pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
     return Status::FailedPrecondition();
   }
   std::lock_guard lock(rx_mutex_);
-  PW_CHECK(signaling_channel_);
-  // SendFlowControlCreditInd logs if status is not ok, so no need to log here.
   Status status = ReplenishRxCredits(additional_rx_credits);
+
   if (status.ok()) {
     // We treat additional bumps from the client as bumping the total allowed
     // credits.
@@ -291,6 +292,11 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
 bool L2capCoc::HandlePduFromHost(pw::span<uint8_t>) {
   // Always forward data from host to controller
   return false;
+}
+
+void L2capCoc::DoClose() {
+  std::lock_guard lock(rx_mutex_);
+  signaling_channel_ = nullptr;
 }
 
 L2capCoc::L2capCoc(pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,

@@ -106,6 +106,8 @@ class L2capCoc : public L2capChannel {
 
   bool HandlePduFromHost(pw::span<uint8_t> kframe) override;
 
+  void DoClose() override;
+
   // Increment tx credits by `credits`.
   void AddTxCredits(uint16_t credits) PW_LOCKS_EXCLUDED(tx_mutex_);
 
@@ -133,9 +135,10 @@ class L2capCoc : public L2capChannel {
   bool UsesPayloadQueue() override { return true; }
 
   // Replenish some of the remote's credits.
-  pw::Status ReplenishRxCredits(uint16_t additional_rx_credits);
+  pw::Status ReplenishRxCredits(uint16_t additional_rx_credits)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rx_mutex_);
 
-  L2capSignalingChannel* signaling_channel_;
+  L2capSignalingChannel* signaling_channel_ PW_GUARDED_BY(rx_mutex_);
 
   uint16_t rx_mtu_;
   uint16_t rx_mps_;

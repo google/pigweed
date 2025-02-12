@@ -237,6 +237,12 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
     SendEvent(event);
   }
 
+  // Called on channel closure, i.e. when the ACL connection or L2CAP connection
+  // is being dropped. Derived channels should override this to clean up state
+  // that is being invalidated, such as dangling references to the channel's
+  // underlying `AclConnection`.
+  virtual void DoClose() = 0;
+
   // Enter `State::kClosed` without deregistering. This has all the same effects
   // as stopping the channel and triggers `event`. No-op if channel is already
   // `State::kClosed`.

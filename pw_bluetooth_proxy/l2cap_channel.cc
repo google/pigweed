@@ -125,6 +125,7 @@ void L2capChannel::InternalClose(L2capChannelEvent event) {
   state_ = State::kClosed;
 
   ClearQueue();
+  DoClose();
   SendEvent(event);
 }
 

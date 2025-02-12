@@ -58,6 +58,8 @@ class BasicL2capChannel : public L2capChannel {
 
   bool HandlePduFromHost(pw::span<uint8_t> bframe) override;
 
+  void DoClose() override {}
+
  private:
   bool DoHandlePduFromController(pw::span<uint8_t> bframe) override;
 

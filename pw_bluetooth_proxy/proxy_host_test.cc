@@ -1517,6 +1517,42 @@ TEST_F(DisconnectionCompleteTest, CanReuseConnectionHandleAfterDisconnection) {
   EXPECT_EQ(capture.sends_called, 2);
 }
 
+TEST_F(DisconnectionCompleteTest, DisconnectionErasesAclConnection) {
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      [](H4PacketWithHci&&) {});
+  int sends_called = 0;
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      [&sends_called](H4PacketWithH4&&) { ++sends_called; });
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
+
+  uint16_t connection_handle = 0x567;
+  pw::Vector<L2capCoc, ProxyHost::GetMaxNumAclConnections()> channels;
+  for (size_t i = 0; i < ProxyHost::GetMaxNumAclConnections(); ++i) {
+    channels.push_back(
+        BuildCoc(proxy, CocParameters{.handle = ++connection_handle}));
+  }
+  EXPECT_EQ(
+      BuildCocWithResult(
+          proxy,
+          CocParameters{.handle = static_cast<uint16_t>(connection_handle + 1)})
+          .status(),
+      Status::Unavailable());
+
+  PW_TEST_EXPECT_OK(SendDisconnectionCompleteEvent(proxy, connection_handle++));
+  // After erasing the last ACL connection, there should be space for a new one.
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      L2capCoc channel,
+      BuildCocWithResult(proxy, CocParameters{.handle = connection_handle}));
+  // Confirm signaling channels are functional.
+  PW_TEST_EXPECT_OK(channel.SendAdditionalRxCredits(3));
+  EXPECT_EQ(sends_called, 1);
+  channels.clear();
+}
+
 // ########## DestructionTest
 
 class DestructionTest : public ProxyHostTest {};

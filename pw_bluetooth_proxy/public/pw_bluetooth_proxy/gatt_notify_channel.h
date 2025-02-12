@@ -47,6 +47,8 @@ class GattNotifyChannel : public L2capChannel {
     return false;
   }
 
+  void DoClose() override {}
+
  private:
   // TODO: https://pwbug.dev/379337272 - Move to true once this channel uses
   // payload queue. Delete once all downstreams have transitioned to
