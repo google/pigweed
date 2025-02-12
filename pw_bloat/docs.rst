@@ -614,3 +614,21 @@ you should produce the following four symbols in your linker script:
 
    PW_BLOAT_MEMORY_REGION_MAP(RAM, ITCM)
    PW_BLOAT_MEMORY_REGION_MAP(RAM, DTCM)
+
+------------------------------------------
+Preventing unwanted compiler optimizations
+------------------------------------------
+Compilers can often be very effective at detecting and removing code that does
+not have an observable effect. For example, if attempting to measure two methods
+that are the inverse of each other, some compilers may recognize the object they
+are being called on will always return to its original state and remove both
+calls. This is desirable when trying to create small and fast code, but not when
+the goal is to actually measure the code size impact of those methods.
+
+To help counteract these unwanted optimizations, this module provides a few
+macros that can conditionally execute statements depending on the value of a
+``mask`` variable. Size report authors can use a ``volatile`` variable to ensure
+the compiler cannot assume which calls will or will not be executed,
+
+.. doxygendefine:: PW_BLOAT_COND
+.. doxygendefine:: PW_BLOAT_EXPR

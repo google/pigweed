@@ -235,6 +235,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_async2_basic/public_overrides/pw_async2/dispatcher_native.h",
   "$dir_pw_async_basic/public/pw_async_basic/dispatcher.h",
   "$dir_pw_base64/public/pw_base64/base64.h",
+  "$dir_pw_bloat/public/pw_bloat/bloat_this_binary.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/controller2.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/gatt/client2.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/gatt/server2.h",

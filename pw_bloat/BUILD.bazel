@@ -41,6 +41,13 @@ pw_cc_binary(
     deps = [":bloat_this_binary"],
 )
 
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_bloat/bloat_this_binary.h",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [

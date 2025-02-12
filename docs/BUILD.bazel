@@ -164,6 +164,7 @@ filegroup(
         "//pw_async2_basic:doxygen",
         "//pw_async_basic:doxygen",
         "//pw_base64:doxygen",
+        "//pw_bloat:doxygen",
         "//pw_bluetooth:doxygen",
         "//pw_bluetooth_proxy:doxygen",
         "//pw_bluetooth_sapphire:doxygen",
