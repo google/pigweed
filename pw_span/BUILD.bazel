@@ -30,7 +30,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        # TODO: b/243851191 - Depending on pw_assert causes a dependency cycle.
+        "//pw_assert:assert",
     ],
 )
 
