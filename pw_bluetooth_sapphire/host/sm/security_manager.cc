@@ -96,6 +96,10 @@ class SecurityManagerImpl final : public SecurityManager,
   // Pseudo-phase where we are waiting for BR/EDR pairing to complete.
   struct WaitForBrEdrPairing {};
 
+  // Pseudo-phase that indicates that encryption is being started while no other
+  // phase is in progress.
+  struct StartingEncryption {};
+
   // Called when we receive a peer security request as initiator, will start
   // Phase 1.
   void OnSecurityRequest(AuthReqField auth_req);
@@ -287,6 +291,7 @@ class SecurityManagerImpl final : public SecurityManager,
   // in progress if std::monostate is present.
   std::variant<std::monostate,
                WaitForBrEdrPairing,
+               StartingEncryption,
                SecurityRequestPhase,
                std::unique_ptr<Phase1>,
                Phase2Legacy,
@@ -371,9 +376,9 @@ SecurityManagerImpl::SecurityManagerImpl(
 
       // The initiatior starts encryption when there is an LTK.
       if (low_energy_link_->role() ==
-              pw::bluetooth::emboss::ConnectionRole::CENTRAL &&
-          !low_energy_link_->StartEncryption()) {
-        bt_log(ERROR, "sm", "Failed to initiate authentication procedure");
+          pw::bluetooth::emboss::ConnectionRole::CENTRAL) {
+        current_phase_ = StartingEncryption();
+        PW_CHECK(low_energy_link_->StartEncryption());
       }
     }
   }
@@ -387,7 +392,8 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
   }
 
   PW_CHECK(!SecurityUpgradeInProgress() ||
-           std::get_if<WaitForBrEdrPairing>(&current_phase_));
+           std::holds_alternative<WaitForBrEdrPairing>(current_phase_) ||
+           std::holds_alternative<StartingEncryption>(current_phase_));
 
   if (role() != Role::kInitiator) {
     bt_log(
@@ -436,7 +442,8 @@ void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
             "disconnecting link as it cannot be encrypted with LTK status")) {
       return;
     }
-    low_energy_link_->StartEncryption();
+    current_phase_ = StartingEncryption();
+    PW_CHECK(low_energy_link_->StartEncryption());
     return;
   }
 
@@ -799,11 +806,13 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
     return;
   }
 
-  WaitForBrEdrPairing* wait_for_bredr_pairing_phase =
-      std::get_if<WaitForBrEdrPairing>(&current_phase_);
+  bool wait_for_bredr_pairing_phase =
+      std::holds_alternative<WaitForBrEdrPairing>(current_phase_);
+  bool starting_encryption_phase =
+      std::holds_alternative<StartingEncryption>(current_phase_);
 
   if (!SecurityUpgradeInProgress() || security_request_phase ||
-      wait_for_bredr_pairing_phase) {
+      starting_encryption_phase || wait_for_bredr_pairing_phase) {
     bt_log(DEBUG, "sm", "encryption enabled while not pairing");
     if (bt_is_error(
             ValidateExistingLocalLtk(),
@@ -816,9 +825,13 @@ void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
     // properties to those of `ltk_`. Otherwise, we let the EndPhase2 pairing
     // function determine the security properties.
     SetSecurityProperties(ltk_->security());
+
     if (security_request_phase) {
       PW_CHECK(role() == Role::kResponder);
       PW_CHECK(!request_queue_.empty());
+    }
+    if (starting_encryption_phase) {
+      ResetState();
     }
     NotifySecurityCallbacks();
     return;

@@ -3220,6 +3220,7 @@ TEST_F(InitiatorPairingTest,
       Role::kInitiator, IOCapability::kDisplayOnly, BondableMode::Bondable);
   RunUntilIdle();
   EXPECT_EQ(1, fake_link()->start_encryption_count());
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
 
   const hci_spec::LinkKey kModifiedLtk(hci_spec::LinkKey({4}, 5, 6));
   fake_link()->set_ltk(kModifiedLtk);
@@ -4723,6 +4724,56 @@ TEST_F(InitiatorPairingTest, UpgradeSecurityWaitsForBrEdrPairingToComplete) {
   RunUntilIdle();
   EXPECT_EQ(1, new_sec_props_count());
   EXPECT_EQ(security_callback_count(), 2);
+}
+
+TEST_F(InitiatorPairingTest,
+       UpgradeSecurityWhileStartingEncryptionQueuesRequest) {
+  SecurityProperties sec_props(
+      SecurityLevel::kEncrypted, 16, /*secure_connections=*/false);
+  LTK ltk(sec_props, hci_spec::LinkKey());
+  sm::PairingData bond_data;
+  bond_data.peer_ltk = ltk;
+  bond_data.local_ltk = ltk;
+  peer().MutLe().SetBondData(bond_data);
+
+  NewSecurityManager(
+      Role::kInitiator, IOCapability::kDisplayOnly, BondableMode::Bondable);
+  RunUntilIdle();
+  EXPECT_EQ(1, fake_link()->start_encryption_count());
+
+  UpgradeSecurity(SecurityLevel::kAuthenticated);
+  RunUntilIdle();
+  EXPECT_EQ(security_callback_count(), 0);
+  EXPECT_EQ(0, pairing_request_count());
+
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
+  RunUntilIdle();
+  EXPECT_EQ(1, new_sec_props_count());
+  EXPECT_EQ(1, pairing_request_count());
+}
+
+TEST_F(InitiatorPairingTest, SecurityRequestReceivedWhileStartingEncryption) {
+  SecurityProperties sec_props(
+      SecurityLevel::kEncrypted, 16, /*secure_connections=*/false);
+  LTK ltk(sec_props, hci_spec::LinkKey());
+  sm::PairingData bond_data;
+  bond_data.peer_ltk = ltk;
+  bond_data.local_ltk = ltk;
+  peer().MutLe().SetBondData(bond_data);
+
+  NewSecurityManager(
+      Role::kInitiator, IOCapability::kDisplayOnly, BondableMode::Bondable);
+  RunUntilIdle();
+  EXPECT_EQ(1, fake_link()->start_encryption_count());
+
+  ReceiveSecurityRequest();
+  RunUntilIdle();
+  EXPECT_EQ(2, fake_link()->start_encryption_count());
+
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
+  RunUntilIdle();
+  EXPECT_EQ(2, fake_link()->start_encryption_count());
+  EXPECT_EQ(1, new_sec_props_count());
 }
 
 }  // namespace
