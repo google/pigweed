@@ -25,70 +25,70 @@ namespace {
 
 using pw::containers::to_array;
 
-class RecombinationBufferTest : public testing::Test {
+class MultiBufWriterTest : public testing::Test {
  protected:
   pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/512,
                                              /*kMetaSizeBytes=*/512>
       allocator;
 };
 
-TEST_F(RecombinationBufferTest, CanCreate) {
-  pw::Result<MultiBufWriter> buf = MultiBufWriter::Create(allocator, 8u);
-  PW_TEST_ASSERT_OK(buf);
-  EXPECT_FALSE(buf->IsComplete());
-  EXPECT_EQ(buf->U8Span().size(), 0u);
+TEST_F(MultiBufWriterTest, CanCreate) {
+  pw::Result<MultiBufWriter> writer = MultiBufWriter::Create(allocator, 8u);
+  PW_TEST_ASSERT_OK(writer);
+  EXPECT_FALSE(writer->IsComplete());
+  EXPECT_EQ(writer->U8Span().size(), 0u);
 }
 
-TEST_F(RecombinationBufferTest, CanWrite) {
-  pw::Result<MultiBufWriter> buf = MultiBufWriter::Create(allocator, 8u);
-  PW_TEST_ASSERT_OK(buf);
+TEST_F(MultiBufWriterTest, CanWrite) {
+  pw::Result<MultiBufWriter> writer = MultiBufWriter::Create(allocator, 8u);
+  PW_TEST_ASSERT_OK(writer);
 
   static constexpr auto kExpectedData =
       to_array<uint8_t>({0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88});
 
   // Write first chunk
-  PW_TEST_EXPECT_OK(buf->Write(to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
-  EXPECT_FALSE(buf->IsComplete());
-  EXPECT_EQ(buf->U8Span().size(), 4u);
+  PW_TEST_EXPECT_OK(writer->Write(to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
+  EXPECT_FALSE(writer->IsComplete());
+  EXPECT_EQ(writer->U8Span().size(), 4u);
 
   // Write second chunk
-  PW_TEST_EXPECT_OK(buf->Write(to_array<uint8_t>({0x55, 0x66, 0x77, 0x88})));
-  EXPECT_TRUE(buf->IsComplete());
-  EXPECT_EQ(buf->U8Span().size(), 8u);
-  EXPECT_TRUE(std::equal(buf->U8Span().begin(),
-                         buf->U8Span().end(),
+  PW_TEST_EXPECT_OK(writer->Write(to_array<uint8_t>({0x55, 0x66, 0x77, 0x88})));
+  EXPECT_TRUE(writer->IsComplete());
+  EXPECT_EQ(writer->U8Span().size(), 8u);
+  EXPECT_TRUE(std::equal(writer->U8Span().begin(),
+                         writer->U8Span().end(),
                          kExpectedData.begin(),
                          kExpectedData.end()));
 }
 
-TEST_F(RecombinationBufferTest, CannotWriteMoreThanRemains) {
-  pw::Result<MultiBufWriter> buf = MultiBufWriter::Create(allocator, 5u);
-  PW_TEST_ASSERT_OK(buf);
+TEST_F(MultiBufWriterTest, CannotWriteMoreThanRemains) {
+  pw::Result<MultiBufWriter> writer = MultiBufWriter::Create(allocator, 5u);
+  PW_TEST_ASSERT_OK(writer);
 
   // Write first chunk
-  PW_TEST_EXPECT_OK(buf->Write(to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
-  EXPECT_FALSE(buf->IsComplete());
-  EXPECT_EQ(buf->U8Span().size(), 4u);
+  PW_TEST_EXPECT_OK(writer->Write(to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
+  EXPECT_FALSE(writer->IsComplete());
+  EXPECT_EQ(writer->U8Span().size(), 4u);
 
   // Cannot write second chunk (one byte too big)
-  EXPECT_EQ(buf->Write(to_array<uint8_t>({0x55, 0x66})),
+  EXPECT_EQ(writer->Write(to_array<uint8_t>({0x55, 0x66})),
             Status::ResourceExhausted());
-  EXPECT_FALSE(buf->IsComplete());
-  EXPECT_EQ(buf->U8Span().size(), 4u);
+  EXPECT_FALSE(writer->IsComplete());
+  EXPECT_EQ(writer->U8Span().size(), 4u);
 }
 
-TEST_F(RecombinationBufferTest, CanTakeMultiBuf) {
-  pw::Result<MultiBufWriter> recomb = MultiBufWriter::Create(allocator, 8u);
-  PW_TEST_ASSERT_OK(recomb);
+TEST_F(MultiBufWriterTest, CanTakeMultiBuf) {
+  pw::Result<MultiBufWriter> writer = MultiBufWriter::Create(allocator, 8u);
+  PW_TEST_ASSERT_OK(writer);
 
   static constexpr auto kData =
       to_array<uint8_t>({0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88});
 
-  PW_TEST_EXPECT_OK(recomb->Write(kData));
-  ASSERT_TRUE(recomb->IsComplete());
+  PW_TEST_EXPECT_OK(writer->Write(kData));
+  ASSERT_TRUE(writer->IsComplete());
 
-  // Take the multibuf from the recomb
-  multibuf::MultiBuf mbuf = std::move(recomb->TakeMultiBuf());
+  // Take the MultiBuf from the MultiBufWriter
+  multibuf::MultiBuf mbuf = std::move(writer->TakeMultiBuf());
   EXPECT_EQ(mbuf.size(), 8u);
 
   std::optional<ByteSpan> mbuf_span = mbuf.ContiguousSpan();
@@ -99,13 +99,13 @@ TEST_F(RecombinationBufferTest, CanTakeMultiBuf) {
       mbuf_u8_span.begin(), mbuf_u8_span.end(), kData.begin(), kData.end()));
 
   // IsComplete() returns true
-  EXPECT_TRUE(recomb->IsComplete());
+  EXPECT_TRUE(writer->IsComplete());
 
   // Can no longer write
-  EXPECT_NE(recomb->Write(kData), OkStatus());
+  EXPECT_NE(writer->Write(kData), OkStatus());
 
   // Calling it again results in an empty multibuf.
-  multibuf::MultiBuf mbuf2 = std::move(recomb->TakeMultiBuf());
+  multibuf::MultiBuf mbuf2 = std::move(writer->TakeMultiBuf());
   EXPECT_EQ(mbuf2.size(), 0u);
 }
 
