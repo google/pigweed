@@ -95,9 +95,11 @@ TEST_F(RecombinationBufferTest, CanTakeMultiBuf) {
   ASSERT_TRUE(bool(mbuf_span));
   pw::span<uint8_t> mbuf_u8_span(reinterpret_cast<uint8_t*>(mbuf_span->data()),
                                  mbuf_span->size());
-
   EXPECT_TRUE(std::equal(
       mbuf_u8_span.begin(), mbuf_u8_span.end(), kData.begin(), kData.end()));
+
+  // IsComplete() returns true
+  EXPECT_TRUE(recomb->IsComplete());
 
   // Can no longer write
   EXPECT_NE(recomb->Write(kData), OkStatus());

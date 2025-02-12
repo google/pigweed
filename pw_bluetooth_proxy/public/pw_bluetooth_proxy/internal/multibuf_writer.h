@@ -50,14 +50,15 @@ class MultiBufWriter {
   }
 
   /// Returns true when the MultiBuf is full; i.e., when the total number of
-  /// bytes written equals the size passed to Create().
+  /// bytes written equals the size passed to Create(). Always returns true
+  /// after TakeMultiBuf() is called.
   bool IsComplete() const { return remain() == 0; }
 
   /// Consumes the underlying MultiBuf.
   ///
   /// After this method is called, this object is reset to an empty state:
   /// No data can be written, and all data accesors will return an empty
-  /// result.
+  /// result. IsComplete() will return true.
   multibuf::MultiBuf&& TakeMultiBuf() {
     write_offset_ = 0;
 
@@ -74,6 +75,9 @@ class MultiBufWriter {
 
  private:
   MultiBufWriter(multibuf::MultiBuf&& buf) : buf_(std::move(buf)) {}
+
+  /// Returns the number of bytes remaining to be written before IsComplete()
+  /// returns true.
   size_t remain() const { return buf_.size() - write_offset_; }
 
   multibuf::MultiBuf buf_;
