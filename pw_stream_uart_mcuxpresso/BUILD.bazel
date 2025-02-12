@@ -21,8 +21,6 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO: https://pwbug.dev/343487589 - Use this constraint value instead of
-# //pw_build/constraints/board:mimxrt595_evk for libraries in this package.
 boolean_constraint_value(
     name = "compatible",
 )
@@ -33,7 +31,7 @@ cc_library(
     hdrs = ["public/pw_stream_uart_mcuxpresso/stream.h"],
     strip_include_prefix = "public",
     target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
+        ":compatible",
     ],
     deps = [
         "//pw_clock_tree",
@@ -49,7 +47,7 @@ cc_library(
     hdrs = ["public/pw_stream_uart_mcuxpresso/interrupt_safe_writer.h"],
     strip_include_prefix = "public",
     target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
+        ":compatible",
     ],
     deps = [
         "//pw_clock_tree",
@@ -63,7 +61,7 @@ pw_cc_test(
     name = "stream_test",
     srcs = ["stream_test.cc"],
     target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
+        ":compatible",
     ],
     deps = [":pw_stream_uart_mcuxpresso"],
 )
@@ -72,7 +70,7 @@ pw_cc_test(
     name = "stream_example",
     srcs = ["stream_example.cc"],
     target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
+        ":compatible",
     ],
     deps = [":pw_stream_uart_mcuxpresso"],
 )
@@ -81,7 +79,7 @@ pw_cc_test(
     name = "interrupt_safe_writer_example",
     srcs = ["interrupt_safe_writer_example.cc"],
     target_compatible_with = [
-        "//pw_build/constraints/board:mimxrt595_evk",
+        ":compatible",
     ],
     deps = [":pw_stream_uart_interrupt_safe_writer_mcuxpresso"],
 )
