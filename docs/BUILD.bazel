@@ -130,6 +130,7 @@ sphinx_docs_library(
         "style/cpp.rst",
         "style/doxygen.rst",
         "style/protobuf.rst",
+        "style/python.rst",
         "style/rest.rst",
         "style/writing.rst",
         "style_guide.rst",

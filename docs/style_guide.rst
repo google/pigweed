@@ -152,23 +152,6 @@ Apache header for source code files that support ``#`` comments:
    # License for the specific language governing permissions and limitations under
    # the License.
 
-
-.. _python-style:
-
-------------
-Python style
-------------
-Pigweed uses the standard Python style: PEP8, which is available on the web at
-https://www.python.org/dev/peps/pep-0008/. All Pigweed Python code should pass
-``pw format``, which invokes ``black`` with a couple options.
-
-Python versions
-===============
-Pigweed officially supports :ref:`a few Python versions
-<docs-concepts-python-version>`. Upstream Pigweed code must support those Python
-versions. The only exception is :ref:`module-pw_env_setup`, which must also
-support Python 2 and 3.6.
-
 ---------------
 Build files: GN
 ---------------
@@ -276,6 +259,7 @@ This plugin will, by default, act upon any file named "OWNERS".
    Commit message <style/commit_message>
    CLI <style/cli>
    Protobuf <style/protobuf>
+   Python <style/python>
    reStructuredText <style/rest>
    Doxygen <style/doxygen>
    Writing <style/writing>
