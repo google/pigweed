@@ -42,6 +42,18 @@ fixed-size buffer.
 
 Size report
 ===========
+The tables below illustrate the following scenarios:
+
+* The memory and code size cost incurred by a adding a single ``Vector``.
+* The memory and code size cost incurred by adding another ``Vector`` with the
+  same type as the first scenario, but with a different size. As ``Vector``
+  is templated on both type and size, a different size results in additional
+  code being generated.
+* The memory and code size cost incurred by adding another ``Vector`` with the
+  same size as the first scenario, but with a different type. As ``Vector``
+  is templated on both type and size, a different size results in additional
+  code being generated.
+
 .. TODO: b/388905812 - Re-enable the size report.
 .. .. include:: vectors_size_report
 .. include:: ../size_report_notice

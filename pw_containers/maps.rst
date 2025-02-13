@@ -101,6 +101,45 @@ from ``pw::IntrusiveMultiMap<K, V>::Item`` or an equivalent type.
 
 Size reports
 ------------
+The tables below illustrate the following scenarios:
+
+* Scenarios related to ``FlatMap``:
+
+  * The memory and code size cost incurred by adding another ``FlatMap``
+  * The memory and code size cost incurred by adding another ``FlatMap`` with
+    different key and value types. As ``FlatMap`` is templated on both key and
+    value types, this results in additional code being generated.
+
+* Scenarios related to ``IntrusiveMap``:
+
+  * The memory and code size cost incurred by a adding a single
+    ``IntrusiveMap``.
+  * The memory and code size cost incurred by adding another ``IntrusiveMap``
+    with the same key type, but a different value type. As ``IntrusiveMap`` is
+    templated on both key and value types, this results in additional code being
+    generated.
+  * The memory and code size cost incurred by adding another ``IntrusiveMap``
+    with the same value type, but a different key type. As ``IntrusiveMap`` is
+    templated on both key and value types, this results in additional code being
+    generated.
+
+* Scenarios related to ``IntrusiveMultiMap``:
+
+  * The memory and code size cost incurred by a adding a single
+    ``IntrusiveMultiMap``.
+  * The memory and code size cost incurred by adding another
+    ``IntrusiveMultiMap`` with the same key type, but a different value type. As
+    ``IntrusiveMultiMap`` is templated on both key and value types, this results
+    in additional code being generated.
+  * The memory and code size cost incurred by adding another
+    ``IntrusiveMultiMap`` with the same value type, but a different key type. As
+    ``IntrusiveMultiMap`` is templated on both key and value types, this results
+    in additional code being generated.
+
+* The memory and code size cost incurred by a adding both an ``IntrusiveMap``
+  and an ``IntrusiveMultiMap`` of the same type. These types reuse code, so the
+  combined sum is less than the sum of its parts.
+
 .. TODO: b/388905812 - Re-enable the size report.
 .. .. include:: maps_size_report
 .. include:: ../size_report_notice

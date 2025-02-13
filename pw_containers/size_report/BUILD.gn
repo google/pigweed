@@ -15,66 +15,363 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 
-pw_source_set("base_lib") {
-  public = [ "base.h" ]
-  public_deps = [ dir_pw_containers ]
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("size_report") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/size_report.h" ]
+  public_deps = [ "$dir_pw_bloat:bloat_this_binary" ]
+}
+
+pw_source_set("flat_map") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/flat_map.h" ]
+  public_deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:flat_map",
+  ]
+}
+
+pw_source_set("inline_deque") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/inline_deque.h" ]
+  public_deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:inline_deque",
+  ]
+}
+
+pw_source_set("inline_queue") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/inline_queue.h" ]
+  public_deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:inline_queue",
+  ]
+}
+
+pw_source_set("intrusive_forward_list") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/intrusive_forward_list.h" ]
+  public_deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:intrusive_forward_list",
+  ]
+}
+
+pw_source_set("intrusive_list") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/intrusive_list.h" ]
+  public_deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:intrusive_list",
+  ]
+}
+
+pw_source_set("intrusive_map") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/intrusive_map.h" ]
+  public_deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:intrusive_map",
+  ]
+}
+
+pw_source_set("intrusive_multimap") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/intrusive_multimap.h" ]
+  public_deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:intrusive_multimap",
+  ]
+}
+
+pw_source_set("intrusive_multiset") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/intrusive_multiset.h" ]
+  public_deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:intrusive_multiset",
+  ]
+}
+
+pw_source_set("intrusive_set") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/intrusive_set.h" ]
+  public_deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:intrusive_set",
+  ]
+}
+
+pw_source_set("vector") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/size_report/vector.h" ]
+  public_deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers:vector",
+  ]
 }
 
 pw_executable("base") {
   sources = [ "base.cc" ]
-  deps = [ ":base_lib" ]
-}
-
-pw_executable("linked_list_one_item") {
-  sources = [ "linked_list.cc" ]
   deps = [
-    ":base_lib",
-    "..",
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
   ]
-  defines = [ "ITEM_COUNT=1" ]
 }
 
-pw_executable("linked_list_two_item") {
-  sources = [ "linked_list.cc" ]
+pw_executable("flat_map_base") {
+  sources = [ "flat_map.cc" ]
   deps = [
-    ":base_lib",
-    "..",
+    ":flat_map",
+    "$dir_pw_bloat:bloat_this_binary",
   ]
-  defines = [ "ITEM_COUNT=2" ]
 }
 
-pw_executable("linked_list_four_item") {
-  sources = [ "linked_list.cc" ]
+pw_executable("flat_map_alternate_types") {
+  sources = [ "flat_map.cc" ]
+  defines = [
+    "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY",
+    "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE",
+  ]
   deps = [
-    ":base_lib",
-    "..",
+    ":flat_map",
+    "$dir_pw_bloat:bloat_this_binary",
   ]
-  defines = [ "ITEM_COUNT=4" ]
 }
 
-pw_executable("intrusive_forward_list_one_item") {
+pw_executable("inline_deque_base") {
+  sources = [ "inline_deque.cc" ]
+  deps = [
+    ":inline_deque",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("inline_deque_alternate_type") {
+  sources = [ "inline_deque.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE" ]
+  deps = [
+    ":inline_deque",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("inline_queue_base") {
+  sources = [ "inline_queue.cc" ]
+  deps = [
+    ":inline_queue",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("inline_queue_alternate_type") {
+  sources = [ "inline_queue.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE" ]
+  deps = [
+    ":inline_queue",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("inline_deque_and_queue") {
+  sources = [ "inline_deque_and_queue.cc" ]
+  deps = [
+    ":inline_deque",
+    ":inline_queue",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_forward_list_base") {
   sources = [ "intrusive_forward_list.cc" ]
   deps = [
-    ":base_lib",
-    "..",
+    ":intrusive_forward_list",
+    "$dir_pw_bloat:bloat_this_binary",
   ]
-  defines = [ "ITEM_COUNT=1" ]
 }
 
-pw_executable("intrusive_forward_list_two_item") {
+pw_executable("intrusive_forward_list_alternate_type") {
   sources = [ "intrusive_forward_list.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE" ]
   deps = [
-    ":base_lib",
-    "..",
+    ":intrusive_forward_list",
+    "$dir_pw_bloat:bloat_this_binary",
   ]
-  defines = [ "ITEM_COUNT=2" ]
 }
 
-pw_executable("intrusive_forward_list_four_item") {
-  sources = [ "intrusive_forward_list.cc" ]
+pw_executable("intrusive_list_base") {
+  sources = [ "intrusive_list.cc" ]
   deps = [
-    ":base_lib",
-    "..",
+    ":intrusive_list",
+    "$dir_pw_bloat:bloat_this_binary",
   ]
-  defines = [ "ITEM_COUNT=4" ]
+}
+
+pw_executable("intrusive_list_alternate_type") {
+  sources = [ "intrusive_list.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE" ]
+  deps = [
+    ":intrusive_list",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_list_and_forward_list") {
+  sources = [ "intrusive_list_and_forward_list.cc" ]
+  deps = [
+    ":intrusive_forward_list",
+    ":intrusive_list",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_map_base") {
+  sources = [ "intrusive_map.cc" ]
+  deps = [
+    ":intrusive_map",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_map_alternate_key") {
+  sources = [ "intrusive_map.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY" ]
+  deps = [
+    ":intrusive_map",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_map_alternate_types") {
+  sources = [ "intrusive_map.cc" ]
+  defines = [
+    "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY",
+    "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE",
+  ]
+  deps = [
+    ":intrusive_map",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_multimap_base") {
+  sources = [ "intrusive_multimap.cc" ]
+  deps = [
+    ":intrusive_multimap",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_multimap_alternate_key") {
+  sources = [ "intrusive_multimap.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY" ]
+  deps = [
+    ":intrusive_multimap",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_multimap_alternate_types") {
+  sources = [ "intrusive_multimap.cc" ]
+  defines = [
+    "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY",
+    "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE",
+  ]
+  deps = [
+    ":intrusive_multimap",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_map_and_multimap") {
+  sources = [ "intrusive_map_and_multimap.cc" ]
+  deps = [
+    ":intrusive_map",
+    ":intrusive_multimap",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_set_base") {
+  sources = [ "intrusive_set.cc" ]
+  deps = [
+    ":intrusive_set",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_set_alternate_type") {
+  sources = [ "intrusive_set.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE" ]
+  deps = [
+    ":intrusive_set",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_multiset_base") {
+  sources = [ "intrusive_multiset.cc" ]
+  deps = [
+    ":intrusive_multiset",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_multiset_alternate_type") {
+  sources = [ "intrusive_multiset.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE" ]
+  deps = [
+    ":intrusive_multiset",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("intrusive_set_and_multiset") {
+  sources = [ "intrusive_set_and_multiset.cc" ]
+  deps = [
+    ":intrusive_multiset",
+    ":intrusive_set",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("vector_base") {
+  sources = [ "vector.cc" ]
+  deps = [
+    ":vector",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("vector_alternate_size") {
+  sources = [ "vector.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_SIZE" ]
+  deps = [
+    ":vector",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("vector_alternate_type") {
+  sources = [ "vector.cc" ]
+  defines = [ "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE" ]
+  deps = [
+    ":vector",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
 }

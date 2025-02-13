@@ -174,7 +174,28 @@ a queue class is provided.
 
 Size reports
 ------------
-.. TODO: b/388905812 - Re-enable the size report.
+The tables below illustrate the following scenarios:
+
 .. TODO: b/394341806 - Add size report for InlineVarLenEntryQueue.
+
+* Scenarios related to ``InlineDeque``:
+
+  * The memory and code size cost incurred by a adding a single ``InlineDeque``.
+  * The memory and code size cost incurred by adding another ``InlineDeque``
+    with a different type. As ``InlineDeque`` is templated on type, this
+    results in additional code being generated.
+
+* Scenarios related to ``InlineQueue``:
+
+  * The memory and code size cost incurred by a adding a single ``InlineQueue``.
+  * The memory and code size cost incurred by adding another ``InlineQueue``
+    with a different type. As ``InlineQueue`` is templated on type, this results
+    in additional code being generated.
+
+* The memory and code size cost incurred by a adding both an ``InlineDeque`` and
+  an ``InlineQueue`` of the same type. These types reuse code, so the combined
+  sum is less than the sum of its parts.
+
+.. TODO: b/388905812 - Re-enable the size report.
 .. .. include:: queues_size_report
 .. include:: ../size_report_notice

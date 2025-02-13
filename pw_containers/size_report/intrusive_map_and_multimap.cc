@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,21 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_containers/size_report/intrusive_forward_list.h"
-
 #include "pw_bloat/bloat_this_binary.h"
+#include "pw_containers/size_report/intrusive_map.h"
+#include "pw_containers/size_report/intrusive_multimap.h"
 
 namespace pw::containers::size_report {
 
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
-  int rc = MeasureIntrusiveForwardList<ForwardListItem<V1>>(mask);
-
-#ifdef PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE
-  rc += MeasureIntrusiveForwardList<ForwardListItem<V2>>(mask);
-#endif
-
-  return rc;
+  return MeasureIntrusiveMap<MapPair<K1, V1>>(mask) +
+         MeasureIntrusiveMultiMap<MultiMapPair<K1, V1>>(mask);
 }
 
 }  // namespace pw::containers::size_report

@@ -110,6 +110,28 @@ Notably, ``pw::IntrusiveForwardList<T>::end()`` is constant complexity (i.e.
 
 Size reports
 ------------
+The tables below illustrate the following scenarios:
+
+* Scenarios related to ``IntrusiveList``:
+
+  * The memory and code size cost incurred by a adding a single
+    ``IntrusiveList``.
+  * The memory and code size cost incurred by adding another ``IntrusiveList``
+    with a different type. As ``IntrusiveList`` is templated on type, this
+    results in additional code being generated.
+
+* Scenarios related to ``IntrusiveForwardList``:
+
+  * The memory and code size cost incurred by a adding a single
+    ``IntrusiveForwardList``.
+  * The memory and code size cost incurred by adding another
+    ``IntrusiveForwardList`` with a different type. As ``IntrusiveForwardList``
+    is templated on type, this results in additional code being generated.
+
+* The memory and code size cost incurred by a adding both an ``IntrusiveList``
+  and an ``IntrusiveForwardList`` of the same type. These types reuse code, so
+  the combined sum is less than the sum of its parts.
+
 .. TODO: b/388905812 - Re-enable the size report.
 .. .. include:: lists_size_report
 .. include:: ../size_report_notice

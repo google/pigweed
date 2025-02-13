@@ -70,6 +70,28 @@ from ``pw::IntrusiveMultiSet<T>::Item`` or an equivalent type.
 
 Size reports
 ------------
+The tables below illustrate the following scenarios:
+
+* Scenarios related to ``IntrusiveSet``:
+
+  * The memory and code size cost incurred by a adding a single
+    ``IntrusiveSet``.
+  * The memory and code size cost incurred by adding another ``IntrusiveSet``
+    with a different type. As ``IntrusiveSet`` is templated on type, this
+    results in additional code being generated.
+
+* Scenarios related to ``IntrusiveMultiSet``:
+
+  * The memory and code size cost incurred by a adding a single
+    ``IntrusiveMultiSet``.
+  * The memory and code size cost incurred by adding another
+    ``IntrusiveMultiSet`` with a different type. As ``IntrusiveMultiSet`` is
+    templated on type, this results in additional code being generated.
+
+* The memory and code size cost incurred by a adding both an ``IntrusiveSet``
+  and an ``IntrusiveMultiSet`` of the same type. These types reuse code, so the
+  combined sum is less than the sum of its parts.
+
 .. TODO: b/388905812 - Re-enable the size report.
 .. .. include:: sets_size_report
 .. include:: ../size_report_notice

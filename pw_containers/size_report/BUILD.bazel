@@ -16,10 +16,123 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
-    name = "base_lib",
-    hdrs = ["base.h"],
-    tags = ["noclangtidy"],
+    name = "size_report",
+    hdrs = ["public/pw_containers/size_report/size_report.h"],
+    strip_include_prefix = "public",
+    deps = ["//pw_bloat:bloat_this_binary"],
+)
+
+cc_library(
+    name = "flat_map",
+    hdrs = ["public/pw_containers/size_report/flat_map.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:flat_map",
+    ],
+)
+
+cc_library(
+    name = "inline_deque",
+    hdrs = ["public/pw_containers/size_report/inline_deque.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:inline_deque",
+    ],
+)
+
+cc_library(
+    name = "inline_queue",
+    hdrs = ["public/pw_containers/size_report/inline_queue.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:inline_queue",
+    ],
+)
+
+cc_library(
+    name = "intrusive_forward_list",
+    hdrs = ["public/pw_containers/size_report/intrusive_forward_list.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:intrusive_forward_list",
+    ],
+)
+
+cc_library(
+    name = "intrusive_list",
+    hdrs = ["public/pw_containers/size_report/intrusive_list.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:intrusive_list",
+    ],
+)
+
+cc_library(
+    name = "intrusive_map",
+    hdrs = ["public/pw_containers/size_report/intrusive_map.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:intrusive_map",
+    ],
+)
+
+cc_library(
+    name = "intrusive_multimap",
+    hdrs = ["public/pw_containers/size_report/intrusive_multimap.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:intrusive_multimap",
+    ],
+)
+
+cc_library(
+    name = "intrusive_multiset",
+    hdrs = ["public/pw_containers/size_report/intrusive_multiset.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:intrusive_multiset",
+    ],
+)
+
+cc_library(
+    name = "intrusive_set",
+    hdrs = ["public/pw_containers/size_report/intrusive_set.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:intrusive_set",
+    ],
+)
+
+cc_library(
+    name = "vector",
+    hdrs = ["public/pw_containers/size_report/vector.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_containers:vector",
+    ],
 )
 
 pw_cc_binary(
@@ -27,73 +140,303 @@ pw_cc_binary(
     srcs = ["base.cc"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        ":base_lib",
-        "//pw_containers",
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
 pw_cc_binary(
-    name = "linked_list_one_item",
-    srcs = ["linked_list.cc"],
-    defines = ["ITEM_COUNT=1"],
+    name = "flat_map_base",
+    srcs = ["flat_map.cc"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        ":base_lib",
-        "//pw_containers",
+        ":flat_map",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
 pw_cc_binary(
-    name = "linked_list_two_item",
-    srcs = ["linked_list.cc"],
-    defines = ["ITEM_COUNT=2"],
+    name = "flat_map_alternate_types",
+    srcs = ["flat_map.cc"],
+    defines = [
+        "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY",
+        "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE",
+    ],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        ":base_lib",
-        "//pw_containers",
+        ":flat_map",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
 pw_cc_binary(
-    name = "linked_list_four_item",
-    srcs = ["linked_list.cc"],
-    defines = ["ITEM_COUNT=4"],
+    name = "inline_deque_base",
+    srcs = ["inline_deque.cc"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        ":base_lib",
-        "//pw_containers",
+        ":inline_deque",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
 pw_cc_binary(
-    name = "intrusive_forward_list_one_item",
+    name = "inline_deque_alternate_type",
+    srcs = ["inline_deque.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":inline_deque",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "inline_queue_base",
+    srcs = ["inline_queue.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":inline_queue",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "inline_queue_alternate_type",
+    srcs = ["inline_queue.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":inline_queue",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "inline_deque_and_queue",
+    srcs = ["inline_deque_and_queue.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":inline_deque",
+        ":inline_queue",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_forward_list_base",
     srcs = ["intrusive_forward_list.cc"],
-    defines = ["ITEM_COUNT=1"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        ":base_lib",
-        "//pw_containers",
+        ":intrusive_forward_list",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
 pw_cc_binary(
-    name = "intrusive_forward_list_two_item",
+    name = "intrusive_forward_list_alternate_type",
     srcs = ["intrusive_forward_list.cc"],
-    defines = ["ITEM_COUNT=2"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        ":base_lib",
-        "//pw_containers",
+        ":intrusive_forward_list",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
 pw_cc_binary(
-    name = "intrusive_forward_list_four_item",
-    srcs = ["intrusive_forward_list.cc"],
-    defines = ["ITEM_COUNT=4"],
+    name = "intrusive_list_base",
+    srcs = ["intrusive_list.cc"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
-        ":base_lib",
-        "//pw_containers",
+        ":intrusive_list",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_list_alternate_type",
+    srcs = ["intrusive_list.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_list",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_list_and_forward_list",
+    srcs = ["intrusive_list_and_forward_list.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_forward_list",
+        ":intrusive_list",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_map_base",
+    srcs = ["intrusive_map.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_map",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_map_alternate_key",
+    srcs = ["intrusive_map.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_map",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_map_alternate_types",
+    srcs = ["intrusive_map.cc"],
+    defines = [
+        "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY",
+        "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_map",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_multimap_base",
+    srcs = ["intrusive_multimap.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_multimap",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_multimap_alternate_key",
+    srcs = ["intrusive_multimap.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_multimap",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_multimap_alternate_types",
+    srcs = ["intrusive_multimap.cc"],
+    defines = [
+        "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY",
+        "PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_multimap",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_map_and_multimap",
+    srcs = ["intrusive_map_and_multimap.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_map",
+        ":intrusive_multimap",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_set_base",
+    srcs = ["intrusive_set.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_set",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_set_alternate_type",
+    srcs = ["intrusive_set.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_set",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_multiset_base",
+    srcs = ["intrusive_multiset.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_multiset",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_multiset_alternate_type",
+    srcs = ["intrusive_multiset.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_multiset",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "intrusive_set_and_multiset",
+    srcs = ["intrusive_set_and_multiset.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":intrusive_multiset",
+        ":intrusive_set",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "vector_base",
+    srcs = ["vector.cc"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":vector",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "vector_alternate_size",
+    srcs = ["vector.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_SIZE"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":vector",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_binary(
+    name = "vector_alternate_type",
+    srcs = ["vector.cc"],
+    defines = ["PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE"],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":vector",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
