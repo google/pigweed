@@ -17,6 +17,8 @@ Pigweed officially supports :ref:`a few Python versions
 versions. The only exception is :ref:`module-pw_env_setup`, which must also
 support Python 2 and 3.6.
 
+.. _docs-style-python-extend-generated-import-paths:
+
 -------------------------------------------------------
 Extend the import path of packages with generated files
 -------------------------------------------------------

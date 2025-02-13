@@ -389,6 +389,75 @@ in the bazel dependency `@external-sdk//`.
        patch_file = "changes.patch",
    )
 
+pw_py_importable_runfile
+========================
+An importable ``py_library`` that makes loading runfiles easier.
+
+When using Bazel runfiles from Python,
+`Rlocation() <https://rules-python.readthedocs.io/en/latest/api/py/runfiles/runfiles.runfiles.html#runfiles.runfiles.Runfiles.Rlocation>`__
+takes two arguments:
+
+1. The ``path`` of the runfiles. This is the apparent repo name joined with
+   the path within that repo.
+2. The ``source_repo`` to evaluate ``path`` from. This is related to how
+   apparent repo names and canonical repo names are handled by Bazel.
+
+Unfortunately, it's easy to get these arguments wrong.
+
+This generated Python library short-circuits this problem by letting Bazel
+generate the correct arguments to ``Rlocation()`` so users don't even have
+to think about what to pass.
+
+For example:
+
+.. code-block:: python
+
+   # In @bloaty//:BUILD.bazel, or wherever is convenient:
+   pw_py_importable_runfile(
+       name = "bloaty_runfiles",
+       target = "//:bin/bloaty",
+       import_location = "bloaty.bloaty_binary",
+       visibility = ["//visibility:public"],
+   )
+
+   # Using the pw_py_importable_runfile from a py_binary in a
+   # BUILD.bazel file:
+   py_binary(
+       name = "my_binary",
+       srcs = ["my_binary.py"],
+       main = "my_binary.py",
+       deps = ["@bloaty//:bloaty_runfiles"],
+   )
+
+   # In my_binary.py:
+   import bloaty.bloaty_binary
+   from python.runfiles import runfiles  # type: ignore
+
+   r = runfiles.Create()
+   bloaty_path = r.Rlocation(*bloaty.bloaty_binary.RLOCATION)
+
+.. note::
+
+   Because this exposes runfiles as importable Python modules,
+   the import paths of the generated libraries may collide with existing
+   Python libraries. When this occurs, you need to
+   :ref:`docs-style-python-extend-generated-import-paths`.
+
+Attrs
+-----
+
+.. list-table::
+   :header-rows: 1
+
+   * - Name
+     - Description
+   * - import_location
+     - The final Python import path of the generated module. By default, this is ``path.to.package.label_name``.
+   * - target
+     - The file this library exposes as runfiles.
+   * - \*\*kwargs
+     - Common attributes to forward both underlying targets.
+
 Platform compatibility rules
 ============================
 Macros and rules related to platform compatibility are provided in

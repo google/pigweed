@@ -58,6 +58,7 @@ pw_python_package("py") {
     "pw_build/project_builder_prefs.py",
     "pw_build/project_builder_presubmit_runner.py",
     "pw_build/python_package.py",
+    "pw_build/python_runfiles.py",
     "pw_build/python_runner.py",
     "pw_build/wrap_ninja.py",
     "pw_build/zip.py",
@@ -85,4 +86,10 @@ pw_python_package("py") {
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
   ruff_toml = "$dir_pigweed/.ruff.toml"
+}
+
+# These are intentionally excluded from the GN build since they're
+# Bazel-only.
+group("bazel_tests") {
+  data = [ "py_runfiles_test.py" ]
 }

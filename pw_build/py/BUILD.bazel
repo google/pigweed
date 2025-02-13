@@ -81,6 +81,12 @@ py_library(
     ],
 )
 
+py_library(
+    name = "python_runfiles",
+    srcs = ["pw_build/python_runfiles.py"],
+    imports = ["."],
+)
+
 pw_py_binary(
     name = "generate_cc_blob_library",
     srcs = [
@@ -212,6 +218,18 @@ pw_py_test(
     ],
     deps = [
         ":pw_build",
+    ],
+)
+
+pw_py_test(
+    name = "py_runfiles_test",
+    size = "small",
+    srcs = [
+        "py_runfiles_test.py",
+    ],
+    deps = [
+        "//pw_build:test_runfile",
+        "//pw_build:test_runfile_remapped",
     ],
 )
 
