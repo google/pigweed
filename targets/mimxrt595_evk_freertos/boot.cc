@@ -23,6 +23,7 @@
 #include "pw_preprocessor/compiler.h"
 #include "pw_sys_io_mcuxpresso/init.h"
 #include "pw_system/init.h"
+#include "pw_toolchain/infinite_loop.h"
 #include "task.h"
 
 #if PW_MALLOC_ACTIVE
@@ -56,7 +57,5 @@ PW_EXTERN_C int main() {
 
 PW_NO_RETURN void pw_boot_PostMain() {
   // In case main() returns, just sit here until the device is reset.
-  while (true) {
-  }
-  PW_UNREACHABLE;
+  pw::InfiniteLoop();
 }

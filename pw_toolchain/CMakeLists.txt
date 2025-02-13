@@ -61,6 +61,26 @@ pw_add_test(pw_toolchain.globals_test
     pw_toolchain
 )
 
+pw_add_library(pw_toolchain.infinite_loop INTERFACE
+  HEADERS
+    public/pw_toolchain/infinite_loop.h
+  PUBLIC_DEPS
+    pw_preprocessor
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_toolchain.infinite_loop_test
+  SOURCES
+    infinite_loop_test.cc
+    infinite_loop_test_c.c
+  PRIVATE_DEPS
+    pw_toolchain.infinite_loop
+  GROUPS
+    modules
+    pw_toolchain
+)
+
 pw_add_library(pw_toolchain._sibling_cast INTERFACE
   HEADERS
     public/pw_toolchain/internal/sibling_cast.h

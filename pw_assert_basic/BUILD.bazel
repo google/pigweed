@@ -96,6 +96,7 @@ cc_library(
         "//pw_preprocessor",
         "//pw_string:builder",
         "//pw_sys_io",
+        "//pw_toolchain:infinite_loop",
     ],
     deps = [":handler.facade"],
     # Other libraries may not always depend on this library, even if it is

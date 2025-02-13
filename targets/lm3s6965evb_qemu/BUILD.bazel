@@ -31,6 +31,7 @@ cc_library(
         "//pw_boot_cortex_m",
         "//pw_preprocessor",
         "//pw_sys_io_baremetal_lm3s6965evb",
+        "//pw_toolchain:infinite_loop",
     ],
 )
 

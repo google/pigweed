@@ -167,6 +167,7 @@ if("${pw_cpu_exception.entry_BACKEND}" STREQUAL
       pw_cpu_exception_cortex_m.cpu_exception
       pw_cpu_exception_cortex_m.cpu_state
       pw_span
+      pw_toolchain.infinite_loop
     GROUPS
       modules
       pw_cpu_exception_cortex_m

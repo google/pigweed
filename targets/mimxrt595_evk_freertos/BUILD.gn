@@ -95,6 +95,7 @@ if (current_toolchain != default_toolchain) {
         "$dir_pw_sys_io_mcuxpresso",
         "$dir_pw_system:init",
         "$dir_pw_third_party/freertos:support",
+        "$dir_pw_toolchain:infinite_loop",
         pw_third_party_mcuxpresso_SDK,
       ]
       sources = [

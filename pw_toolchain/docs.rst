@@ -201,6 +201,10 @@ pw_toolchain/no_destructor.h
 ----------------------------
 .. doxygenclass:: pw::NoDestructor
 
+pw_toolchain/infinite_loop.h
+----------------------------
+.. doxygenfunction:: pw::InfiniteLoop
+
 builtins
 ========
 builtins are LLVM's equivalent of libgcc, the compiler will insert calls to

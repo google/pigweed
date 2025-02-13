@@ -274,6 +274,7 @@ pw_cc_test(
         ":cpu_state",
         "//pw_cpu_exception:handler",
         "//pw_cpu_exception:support",
+        "//pw_toolchain:infinite_loop",
     ],
 )
 

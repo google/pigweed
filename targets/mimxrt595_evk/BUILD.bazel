@@ -144,6 +144,7 @@ cc_library(
         "//pw_malloc",
         "//pw_preprocessor",
         "//pw_sys_io_mcuxpresso",
+        "//pw_toolchain:infinite_loop",
         "//targets:mcuxpresso_sdk",
         "//targets/mimxrt595_evk/config",
     ],

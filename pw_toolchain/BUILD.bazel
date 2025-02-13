@@ -102,6 +102,13 @@ cc_library(
     strip_include_prefix = "public",
 )
 
+cc_library(
+    name = "infinite_loop",
+    hdrs = ["public/pw_toolchain/infinite_loop.h"],
+    strip_include_prefix = "public",
+    deps = ["//pw_preprocessor"],
+)
+
 pw_cc_test(
     name = "no_destructor_test",
     srcs = ["no_destructor_test.cc"],
@@ -120,6 +127,18 @@ pw_cc_test(
         ":globals",
         "//pw_assert",
         "//pw_polyfill",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "infinite_loop_test",
+    srcs = [
+        "infinite_loop_test.cc",
+        "infinite_loop_test_c.c",
+    ],
+    deps = [
+        ":infinite_loop",
         "//pw_unit_test",
     ],
 )
@@ -154,6 +173,7 @@ filegroup(
     srcs = [
         "public/pw_toolchain/constexpr_tag.h",
         "public/pw_toolchain/globals.h",
+        "public/pw_toolchain/infinite_loop.h",
         "public/pw_toolchain/no_destructor.h",
     ],
 )

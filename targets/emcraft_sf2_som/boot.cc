@@ -25,6 +25,7 @@
 #include "pw_string/util.h"
 #include "pw_sys_io_emcraft_sf2/init.h"
 #include "pw_system/init.h"
+#include "pw_toolchain/infinite_loop.h"
 #include "system_m2sxxx.h"
 #include "task.h"
 
@@ -168,7 +169,5 @@ int main() {}
 
 extern "C" PW_NO_RETURN void pw_boot_PostMain() {
   // In case main() returns, just sit here until the device is reset.
-  while (true) {
-  }
-  PW_UNREACHABLE;
+  pw::InfiniteLoop();
 }

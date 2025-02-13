@@ -42,6 +42,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_third_party/freertos",
       "$dir_pw_third_party/freertos:support",
       "$dir_pw_third_party/stm32cube",
+      "$dir_pw_toolchain:infinite_loop",
     ]
     sources = [
       "boot.cc",

@@ -380,6 +380,24 @@ The syntax ``while (true)`` is preferred over ``for (;;)`` for infinite loops.
         DoSomethingForever();
       }
 
+Do not declare empty infinite loops, which are undefined behavior. Instead, call
+:cpp:func:`pw::InfiniteLoop`.
+
+.. admonition:: **Yes**:
+   :class: checkmark
+
+   .. code-block:: cpp
+
+      pw::InfiniteLoop();
+
+.. admonition:: **No**:
+   :class: error
+
+   .. code-block:: cpp
+
+      while (true) {
+        // The compiler may optimize out this loop!
+      }
 
 Prefer early exit with ``return`` and ``continue``
 --------------------------------------------------

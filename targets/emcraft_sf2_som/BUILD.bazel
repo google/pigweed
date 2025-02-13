@@ -43,6 +43,7 @@ cc_library(
         "//pw_preprocessor",
         "//pw_string",
         "//pw_sys_io_emcraft_sf2",
+        "//pw_toolchain:infinite_loop",
         "//third_party/freertos:support",
         "//third_party/smartfusion_mss",
         "@freertos",

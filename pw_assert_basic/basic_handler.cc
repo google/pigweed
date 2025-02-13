@@ -148,8 +148,7 @@ extern "C" void pw_assert_basic_HandleFailure(const char* file_name,
     WriteLine("");
     WriteLine(
         "     ... until a debugger joins. System is waiting in a while(1)");
-    while (true) {
-    }
+    InfiniteLoop();
 #else
 #error PW_ASSERT_BASIC_ACTION Must be set to valid option.
 #endif

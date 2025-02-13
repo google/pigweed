@@ -74,6 +74,12 @@ pw_source_set("globals") {
   public = [ "public/pw_toolchain/globals.h" ]
 }
 
+pw_source_set("infinite_loop") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_toolchain/infinite_loop.h" ]
+  public_deps = [ dir_pw_preprocessor ]
+}
+
 pw_source_set("sibling_cast") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_toolchain/internal/sibling_cast.h" ]
@@ -102,6 +108,7 @@ pw_test_group("tests") {
     ":globals_test",
     ":no_destructor_test",
     ":sibling_cast_test",
+    ":infinite_loop_test",
   ]
 }
 
@@ -121,4 +128,12 @@ pw_test("globals_test") {
     dir_pw_assert,
     dir_pw_polyfill,
   ]
+}
+
+pw_test("infinite_loop_test") {
+  sources = [
+    "infinite_loop_test.cc",
+    "infinite_loop_test_c.c",
+  ]
+  deps = [ ":infinite_loop" ]
 }

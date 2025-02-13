@@ -22,6 +22,7 @@
 #include "pw_cpu_exception_cortex_m_private/config.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_span/span.h"
+#include "pw_toolchain/infinite_loop.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::cpu_exception::cortex_m {
@@ -523,8 +524,7 @@ void TestingExceptionHandler(pw_cpu_exception_State* state) {
   EXPECT_EQ(state->extended.shcsr, cortex_m_shcsr);
 
   // If an unexpected exception occurred, just enter an infinite loop.
-  while (true) {
-  }
+  InfiniteLoop();
 }
 
 }  // namespace
