@@ -185,8 +185,6 @@ TEST_F(RfcommWriteTest, BasicWrite) {
   RfcommParameters params = {.handle = capture.handle,
                              .tx_config = {
                                  .cid = capture.channel_id,
-                                 .max_information_length = 900,
-                                 .credits = 10,
                              }};
   RfcommChannel channel = BuildRfcomm(proxy, params);
   PW_TEST_EXPECT_OK(
@@ -298,8 +296,6 @@ TEST_F(RfcommWriteTest, ExtendedWrite) {
   RfcommParameters params = {.handle = capture.handle,
                              .tx_config = {
                                  .cid = capture.channel_id,
-                                 .max_information_length = 900,
-                                 .credits = 10,
                              }};
   RfcommChannel channel = BuildRfcomm(proxy, params);
   PW_TEST_EXPECT_OK(
@@ -338,8 +334,6 @@ TEST_F(RfcommWriteTest, MixedLengthWrites) {
   RfcommParameters params = {.handle = capture.handle,
                              .tx_config = {
                                  .cid = capture.channel_id,
-                                 .max_information_length = 900,
-                                 .credits = 10,
                              }};
   RfcommChannel channel = BuildRfcomm(proxy, params);
   PW_TEST_EXPECT_OK(
@@ -381,7 +375,6 @@ TEST_F(RfcommWriteTest, WriteFlowControl) {
 
   RfcommParameters params = {.tx_config = {
                                  .cid = 123,
-                                 .max_information_length = 900,
                                  .credits = 0,
                              }};
   RfcommChannel channel = BuildRfcomm(proxy,

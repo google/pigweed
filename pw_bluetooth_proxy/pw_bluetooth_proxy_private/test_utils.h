@@ -32,6 +32,7 @@
 #include "pw_bluetooth_proxy/l2cap_coc.h"
 #include "pw_bluetooth_proxy/l2cap_status_delegate.h"
 #include "pw_bluetooth_proxy/proxy_host.h"
+#include "pw_bluetooth_proxy/rfcomm_channel.h"
 #include "pw_containers/flat_map.h"
 #include "pw_function/function.h"
 #include "pw_multibuf/simple_allocator_for_test.h"
@@ -260,11 +261,17 @@ struct GattNotifyChannelParameters {
   Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
 };
 
+struct RfcommConfigParameters {
+  uint16_t cid = 123;
+  uint16_t max_information_length = 900;
+  uint16_t credits = 10;
+};
+
 struct RfcommParameters {
   uint16_t handle = 123;
-  RfcommChannel::Config rx_config = {
+  RfcommConfigParameters rx_config = {
       .cid = 234, .max_information_length = 900, .credits = 10};
-  RfcommChannel::Config tx_config = {
+  RfcommConfigParameters tx_config = {
       .cid = 456, .max_information_length = 900, .credits = 10};
   uint8_t rfcomm_channel = 3;
 };
