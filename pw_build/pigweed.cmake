@@ -13,7 +13,7 @@
 # the License.
 include_guard(GLOBAL)
 
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.20)
 
 # The PW_ROOT environment variable should be set in bootstrap. If it is not set,
 # set it to the root of the Pigweed repository.
@@ -51,7 +51,7 @@ include("$ENV{PW_ROOT}/pw_unit_test/test.cmake")
 #                        <multi_value_keywords>)
 #
 macro(pw_parse_arguments)
-  # First parse the arguments to this macro.
+  cmake_policy(SET CMP0174 NEW)  # Remove when CMake 3.31 or newer is required.
   cmake_parse_arguments(
     pw_parse_arg "" "NUM_POSITIONAL_ARGS"
     "OPTION_ARGS;ONE_VALUE_ARGS;MULTI_VALUE_ARGS;REQUIRED_ARGS"
