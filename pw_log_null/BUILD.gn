@@ -31,7 +31,10 @@ pw_source_set("pw_log_null") {
   public = [ "public_overrides/pw_log_backend/log_backend.h" ]
   sources = [ "public/pw_log_null/log_null.h" ]
   friend = [ ":*" ]
-  public_deps = [ dir_pw_preprocessor ]
+  public_deps = [
+    "$dir_pw_log:pw_log.facade",
+    dir_pw_preprocessor,
+  ]
 }
 
 pw_source_set("pw_log_null.impl") {

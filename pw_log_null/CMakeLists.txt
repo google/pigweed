@@ -23,6 +23,7 @@ pw_add_library(pw_log_null INTERFACE
     public_overrides
   PUBLIC_DEPS
     pw_preprocessor
+    pw_log.facade
 )
 
 pw_add_test(pw_log_null.test

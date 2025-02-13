@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_preprocessor/arguments.h"
+#include "pw_log/levels.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_preprocessor/util.h"
 
@@ -49,5 +49,11 @@ static inline void pw_log_Ignored(int level,
 
 PW_EXTERN_C_END
 
-#define PW_HANDLE_LOG(level, module, flags, message, ...) \
-  pw_log_Ignored((level), module, (flags), message PW_COMMA_ARGS(__VA_ARGS__))
+#define PW_HANDLE_LOG(level, module, flags, ...)                           \
+  do {                                                                     \
+    static_assert(                                                         \
+        (level) != PW_LOG_LEVEL_FATAL,                                     \
+        "pw_log_null does not support FATAL logs, including asserts from " \
+        "pw_assert_log; disabling FATAL logs or asserts is unsafe");       \
+    pw_log_Ignored((level), (module), (flags), __VA_ARGS__);               \
+  } while (0)
