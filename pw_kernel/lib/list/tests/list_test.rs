@@ -16,8 +16,6 @@
 #![no_main]
 use core::mem::offset_of;
 
-// TODO: add unit tests for push_back and pop_head
-
 use list::*;
 use unittest::test;
 
@@ -84,6 +82,26 @@ fn push_front_adds_in_correct_order() -> unittest::Result<()> {
     unittest::assert_false!(unsafe { list.is_empty() });
 
     unsafe { validate_list(&list, &[1, 2]) }
+}
+
+#[test]
+fn push_back_adds_in_correct_order() -> unittest::Result<()> {
+    let mut element1 = TestMember {
+        value: 1,
+        link: Link::new(),
+    };
+    let mut element2 = TestMember {
+        value: 2,
+        link: Link::new(),
+    };
+
+    let mut list = UnsafeList::<TestMember, TestAdapter>::new();
+    unsafe { list.push_back_unchecked(&mut element2) };
+    unsafe { list.push_back_unchecked(&mut element1) };
+
+    unittest::assert_false!(unsafe { list.is_empty() });
+
+    unsafe { validate_list(&list, &[2, 1]) }
 }
 
 #[test]
@@ -159,6 +177,53 @@ fn unlink_removes_middle_correctly() -> unittest::Result<()> {
     unsafe { list.unlink_element(&element2) };
 
     unsafe { validate_list(&list, &[1, 3]) }
+}
+
+#[test]
+fn pop_head_removes_correctly() -> unittest::Result<()> {
+    let mut element1 = TestMember {
+        value: 1,
+        link: Link::new(),
+    };
+    let mut element2 = TestMember {
+        value: 2,
+        link: Link::new(),
+    };
+    let mut element3 = TestMember {
+        value: 3,
+        link: Link::new(),
+    };
+
+    let mut list = UnsafeList::<TestMember, TestAdapter>::new();
+    unsafe { list.push_front_unchecked(&mut element1) };
+    unsafe { list.push_front_unchecked(&mut element2) };
+    unsafe { list.push_front_unchecked(&mut element3) };
+
+    unsafe {
+        let e = list.pop_head();
+        unittest::assert_true!(e.is_some());
+        let e = e.unwrap();
+        unittest::assert_eq!(e.value, 3);
+        unittest::assert_true!(e.link.is_unlinked());
+    }
+
+    unsafe {
+        let e = list.pop_head();
+        unittest::assert_true!(e.is_some());
+        let e = e.unwrap();
+        unittest::assert_eq!(e.value, 2);
+        unittest::assert_true!(e.link.is_unlinked());
+    }
+
+    unsafe {
+        let e = list.pop_head();
+        unittest::assert_true!(e.is_some());
+        let e = e.unwrap();
+        unittest::assert_eq!(e.value, 1);
+        unittest::assert_true!(e.link.is_unlinked());
+    }
+
+    unsafe { validate_list(&list, &[]) }
 }
 
 #[test]
