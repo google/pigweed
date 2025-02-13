@@ -79,7 +79,8 @@ pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
 pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
-    uint16_t attribute_handle) {
+    uint16_t attribute_handle,
+    Function<void(L2capChannelEvent event)>&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/kAttributeProtocolCID,
                           /*remote_cid=*/kAttributeProtocolCID)) {
@@ -91,12 +92,15 @@ pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
   }
   return GattNotifyChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
                            /*connection_handle=*/connection_handle,
-                           /*attribute_handle=*/attribute_handle);
+                           /*attribute_handle=*/attribute_handle,
+                           std::move(event_fn));
 }
 
-GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
-                                     uint16_t connection_handle,
-                                     uint16_t attribute_handle)
+GattNotifyChannel::GattNotifyChannel(
+    L2capChannelManager& l2cap_channel_manager,
+    uint16_t connection_handle,
+    uint16_t attribute_handle,
+    Function<void(L2capChannelEvent event)>&& event_fn)
     : L2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
                    /*rx_multibuf_allocator*/ nullptr,
                    /*connection_handle=*/connection_handle,
@@ -105,7 +109,7 @@ GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
                    /*remote_cid=*/kAttributeProtocolCID,
                    /*payload_from_controller_fn=*/nullptr,
                    /*payload_from_host_fn=*/nullptr,
-                   /*event_fn=*/nullptr),
+                   /*event_fn=*/std::move(event_fn)),
       attribute_handle_(attribute_handle) {}
 
 }  // namespace pw::bluetooth::proxy

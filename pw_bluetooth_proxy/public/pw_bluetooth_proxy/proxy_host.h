@@ -245,8 +245,7 @@ class ProxyHost {
   pw::Result<GattNotifyChannel> AcquireGattNotifyChannel(
       int16_t connection_handle,
       uint16_t attribute_handle,
-      // TODO: https://pwbug.dev/369709521 - Add event_fn support.
-      Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
+      Function<void(L2capChannelEvent event)>&& event_fn);
 
   /// Send a GATT Notify to the indicated connection.
   ///
