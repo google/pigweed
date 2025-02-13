@@ -95,7 +95,7 @@ function(pw_tokenizer_database NAME)
         DEPENDS
           ${arg_DEPS}
           ${arg_TARGET}
-        OUTPUT ${_database} POST_BUILD
+        OUTPUT ${_database}
     )
   else()
     set(_discard_temporary "")
