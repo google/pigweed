@@ -92,6 +92,9 @@ class Central {
     /// procedure. It should NOT be confused with information for an active
     /// connection obtained using the "Path Loss Reporting" feature.
     std::optional<uint8_t> max_path_loss;
+
+    /// Require that a peer solicits support for a service UUID.
+    std::optional<Uuid> solicitation_uuid;
   };
 
   /// Parameters used during a scan.

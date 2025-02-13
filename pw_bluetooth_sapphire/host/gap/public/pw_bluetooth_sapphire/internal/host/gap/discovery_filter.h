@@ -16,8 +16,8 @@
 #include <string>
 #include <vector>
 
+#include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
-#include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 
 namespace bt {
 
@@ -121,6 +121,18 @@ class DiscoveryFilter final {
     return manufacturer_code_;
   }
 
+  // Sets a device to be filtered by service data UUIDs it requests peers
+  // support (solicitation).
+  //
+  // Passing an empty value for |solicitation_uuids| effectively disables this
+  // filter.
+  void set_solicitation_uuids(const std::vector<UUID>& solicitation_uuids) {
+    solicitation_uuids_ = solicitation_uuids;
+  }
+  const std::vector<UUID>& solicitation_uuids() const {
+    return solicitation_uuids_;
+  }
+
   // Sets this filter up for the "General Discovery" procedure.
   void SetGeneralDiscoveryFlags();
 
@@ -139,6 +151,7 @@ class DiscoveryFilter final {
  private:
   std::vector<UUID> service_uuids_;
   std::vector<UUID> service_data_uuids_;
+  std::vector<UUID> solicitation_uuids_;
   std::string name_substring_;
   std::optional<uint8_t> flags_;
   bool all_flags_required_;

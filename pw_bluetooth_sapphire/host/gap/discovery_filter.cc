@@ -19,6 +19,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
+#include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 
 namespace bt::gap {
 
@@ -49,6 +50,7 @@ bool DiscoveryFilter::MatchLowEnergyResult(
   // |advertising_data| to pass.
   bool needs_ad_check = flags_ || !service_uuids_.empty() ||
                         !service_data_uuids_.empty() ||
+                        !solicitation_uuids_.empty() ||
                         !name_substring_.empty() || manufacturer_code_;
 
   if (!advertising_data.has_value() && needs_ad_check) {
@@ -151,6 +153,20 @@ bool DiscoveryFilter::MatchLowEnergyResult(
     }
   }
 
+  if (!solicitation_uuids_.empty()) {
+    bool solicitation_uuid_found = false;
+    const auto& ad_solicitation_uuids = ad.solicitation_uuids();
+    for (auto uuid : solicitation_uuids_) {
+      if (ad_solicitation_uuids.count(uuid) != 0) {
+        solicitation_uuid_found = true;
+        break;
+      }
+    }
+    if (!solicitation_uuid_found) {
+      return false;
+    }
+  }
+
   // We haven't filtered it out, so it matches.
   return true;
 }
@@ -158,6 +174,7 @@ bool DiscoveryFilter::MatchLowEnergyResult(
 void DiscoveryFilter::Reset() {
   service_uuids_.clear();
   service_data_uuids_.clear();
+  solicitation_uuids_.clear();
   name_substring_.clear();
   connectable_.reset();
   manufacturer_code_.reset();

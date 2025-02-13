@@ -1516,6 +1516,11 @@ bt::gap::DiscoveryFilter DiscoveryFilterFromFidl(
         {bt::UUID(fidl_filter.service_data_uuid().value)});
   }
 
+  if (fidl_filter.has_solicitation_uuid()) {
+    out.set_solicitation_uuids(
+        {bt::UUID(fidl_filter.solicitation_uuid().value)});
+  }
+
   if (fidl_filter.has_manufacturer_id()) {
     out.set_manufacturer_code(fidl_filter.manufacturer_id());
   }

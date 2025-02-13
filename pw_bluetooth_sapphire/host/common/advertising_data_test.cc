@@ -59,6 +59,7 @@ TEST(AdvertisingDataTest, CopyLeavesNoRemnants) {
 
   auto service_uuid = UUID(kId1As16);
   EXPECT_TRUE(data.AddServiceUuid(service_uuid));
+  EXPECT_TRUE(data.AddSolicitationUuid(service_uuid));
 
   StaticByteBuffer service_bytes(0x01, 0x02);
   EXPECT_TRUE(data.SetServiceData(service_uuid, service_bytes.view()));
@@ -74,6 +75,7 @@ TEST(AdvertisingDataTest, CopyLeavesNoRemnants) {
   EXPECT_EQ(0u, data.uris().size());
   EXPECT_EQ(0u, data.manufacturer_data_ids().size());
   EXPECT_EQ(0u, data.service_uuids().size());
+  EXPECT_EQ(0u, data.solicitation_uuids().size());
   EXPECT_EQ(0u, data.service_data_uuids().size());
 }
 
@@ -467,6 +469,13 @@ TEST(AdvertisingDataTest, Equality) {
   EXPECT_TRUE(two.AddServiceUuid(gatt));
   EXPECT_EQ(two, one);
 
+  // Solicitation UUIDs
+  EXPECT_EQ(two, one);
+  EXPECT_TRUE(one.AddSolicitationUuid(gatt));
+  EXPECT_NE(two, one);
+  EXPECT_TRUE(two.AddSolicitationUuid(gatt));
+  EXPECT_EQ(two, one);
+
   // Even when the bytes are the same but from different places
   StaticByteBuffer bytes(0x01, 0x02, 0x03, 0x04);
   StaticByteBuffer same(0x01, 0x02, 0x03, 0x04);
@@ -509,6 +518,8 @@ TEST(AdvertisingDataTest, ToString) {
   UUID service_uuid_16bit = UUID(kId1As16);
   EXPECT_TRUE(data.AddServiceUuid(service_uuid_32bit));
   EXPECT_TRUE(data.AddServiceUuid(service_uuid_16bit));
+  EXPECT_TRUE(data.AddSolicitationUuid(service_uuid_32bit));
+  EXPECT_TRUE(data.AddSolicitationUuid(service_uuid_16bit));
 
   StaticByteBuffer service_bytes(0x01, 0x02);
   EXPECT_TRUE(data.SetServiceData(service_uuid_16bit, service_bytes.view()));
@@ -523,7 +534,9 @@ TEST(AdvertisingDataTest, ToString) {
       "00000212-0000-1000-8000-00805f9b34fb, "
       "12345678-0000-1000-8000-00805f9b34fb, }, Service Data: { { "
       "UUID:00000212-0000-1000-8000-00805f9b34fb, Data: {01 02} }, }, "
-      "Manufacturer Data: { { Company ID: 0x0123, Data: {01 02 03} }, }, }",
+      "Solicitation UUIDs: { 00000212-0000-1000-8000-00805f9b34fb, "
+      "12345678-0000-1000-8000-00805f9b34fb, }, Manufacturer Data: { { Company "
+      "ID: 0x0123, Data: {01 02 03} }, }, }",
       data.ToString());
 }
 
@@ -581,6 +594,7 @@ TEST(AdvertisingDataTest, Move) {
   EXPECT_TRUE(source.AddServiceUuid(gatt));
   EXPECT_TRUE(source.AddServiceUuid(eddy));
   EXPECT_TRUE(source.SetServiceData(heart_rate_uuid, rand_data.view()));
+  EXPECT_TRUE(source.AddSolicitationUuid(heart_rate_uuid));
 
   auto verify_advertising_data = [&](const AdvertisingData& dest,
                                      const char* type) {
@@ -595,6 +609,8 @@ TEST(AdvertisingDataTest, Move) {
     EXPECT_TRUE(ContainersEqual(rand_data, dest.manufacturer_data(0x0123)));
     EXPECT_EQ(std::unordered_set<UUID>({gatt, eddy}), dest.service_uuids());
     EXPECT_TRUE(ContainersEqual(rand_data, dest.service_data(heart_rate_uuid)));
+    EXPECT_EQ(std::unordered_set<UUID>({heart_rate_uuid}),
+              dest.solicitation_uuids());
     EXPECT_EQ(flags, dest.flags().value());
   };
 
@@ -724,6 +740,7 @@ TEST(AdvertisingDataTest, WriteBlockSuccess) {
   auto service_uuid = UUID(kId1As16);
   StaticByteBuffer service_bytes(0x01, 0x02);
   EXPECT_TRUE(data.AddServiceUuid(service_uuid));
+  EXPECT_TRUE(data.AddSolicitationUuid(service_uuid));
   EXPECT_TRUE(data.SetServiceData(service_uuid, service_bytes.view()));
 
   EXPECT_TRUE(data.AddUri("http://fuchsia.cl"));
@@ -778,6 +795,10 @@ TEST(AdvertisingDataTest, WriteBlockSuccess) {
                                 0x03,
                                 0x02,
                                 0x12,
+                                0x02,
+                                0x03,  // solicitation uuids
+                                0x14,
+                                0x12,
                                 0x02);  // uris_
   EXPECT_TRUE(ContainersEqual(expected_buf, write_buf));
 }
@@ -811,6 +832,7 @@ TEST(AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
   auto service_uuid = UUID(kId1As16);
   StaticByteBuffer service_bytes(0x01, 0x02);
   EXPECT_TRUE(data.AddServiceUuid(service_uuid));
+  EXPECT_TRUE(data.AddSolicitationUuid(service_uuid));
   EXPECT_TRUE(data.SetServiceData(service_uuid, service_bytes.view()));
 
   EXPECT_TRUE(data.AddUri("http://fuchsia.cl"));
@@ -868,6 +890,10 @@ TEST(AdvertisingDataTest, WriteBlockWithFlagsSuccess) {
                                 0x03,
                                 0x02,
                                 0x12,
+                                0x02,
+                                0x03,  // solicitation uuids
+                                0x14,
+                                0x12,
                                 0x02);  // uris_
   EXPECT_TRUE(ContainersEqual(expected_buf, write_buf));
 }
@@ -910,6 +936,7 @@ UUID AddNDistinctUuids(AdvertisingData& input,
       return next;
     }
     EXPECT_TRUE(input.AddServiceUuid(next));
+    EXPECT_TRUE(input.AddSolicitationUuid(next));
   }
 }
 
@@ -963,6 +990,10 @@ TEST(AdvertisingDataTest, SetFieldsWithTooLongParameters) {
     EXPECT_TRUE(data.service_uuids().find(should_fail) ==
                 data.service_uuids().end());
 
+    EXPECT_FALSE(data.AddSolicitationUuid(should_fail));
+    EXPECT_TRUE(data.solicitation_uuids().find(should_fail) ==
+                data.solicitation_uuids().end());
+
     // This value must not fit in a 16 bit number in order to count as a "32
     // bit" UUID
     uint32_t starting_32bit_uuid = std::numeric_limits<uint16_t>::max() + 1;
@@ -973,6 +1004,10 @@ TEST(AdvertisingDataTest, SetFieldsWithTooLongParameters) {
     EXPECT_FALSE(data.AddServiceUuid(should_fail));
     EXPECT_TRUE(data.service_uuids().find(should_fail) ==
                 data.service_uuids().end());
+
+    EXPECT_FALSE(data.AddSolicitationUuid(should_fail));
+    EXPECT_TRUE(data.solicitation_uuids().find(should_fail) ==
+                data.solicitation_uuids().end());
 
     UInt128 starting_128bit_uuid = {0xAB,
                                     0xAB,
@@ -997,6 +1032,10 @@ TEST(AdvertisingDataTest, SetFieldsWithTooLongParameters) {
     EXPECT_FALSE(data.AddServiceUuid(should_fail));
     EXPECT_TRUE(data.service_uuids().find(should_fail) ==
                 data.service_uuids().end());
+
+    EXPECT_FALSE(data.AddSolicitationUuid(should_fail));
+    EXPECT_TRUE(data.solicitation_uuids().find(should_fail) ==
+                data.solicitation_uuids().end());
   }
   // Ensures names exceeding kMaxNameLength are rejected.
   {
@@ -1043,8 +1082,14 @@ TEST(AdvertisingDataTest, AddDuplicateServiceUuidsWhenFullSucceeds) {
   EXPECT_FALSE(data.AddServiceUuid(should_fail));
   EXPECT_TRUE(data.service_uuids().find(should_fail) ==
               data.service_uuids().end());
+
+  EXPECT_FALSE(data.AddSolicitationUuid(should_fail));
+  EXPECT_TRUE(data.solicitation_uuids().find(should_fail) ==
+              data.solicitation_uuids().end());
+
   // Verify that we are notified of success when adding an existing UUID
   EXPECT_TRUE(data.AddServiceUuid(UUID(starting_16bit_uuid)));
+  EXPECT_TRUE(data.AddSolicitationUuid(UUID(starting_16bit_uuid)));
 }
 
 TEST(AdvertisingDataTest, ResolvableSetIdentifierRoundTrip) {

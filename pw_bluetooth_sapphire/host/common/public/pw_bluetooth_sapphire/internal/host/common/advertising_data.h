@@ -215,6 +215,16 @@ class AdvertisingData {
   // Returns an empty BufferView if no service data is set for |uuid|
   BufferView service_data(const UUID& uuid) const;
 
+  // Add a UUID to the set of services to solicit for from a peer.
+  // These service UUIDs will automatically be compressed to be represented in
+  // the smallest space possible. Returns true if the Service UUID was
+  // successfully added or already existed in the set of advertised services, or
+  // false if the UUID set was full and `uuid` could not be added.
+  [[nodiscard]] bool AddSolicitationUuid(const UUID& uuid);
+
+  // Get a set of the solicitation UUIDs included in this advertisement.
+  std::unordered_set<UUID> solicitation_uuids() const;
+
   // Set Manufacturer specific data for the company identified by |company_id|.
   // Returns false & does not set the data if |data|.size() exceeds
   // kMaxManufacturerDataLength, otherwise returns true.
@@ -339,6 +349,7 @@ class AdvertisingData {
       {UUIDElemSize::k16Bit, BoundedUuids(kMax16BitUuids)},
       {UUIDElemSize::k32Bit, BoundedUuids(kMax32BitUuids)},
       {UUIDElemSize::k128Bit, BoundedUuids(kMax128BitUuids)}};
+
   // TODO(armansito): Consider storing the payload in its serialized form and
   // have these point into the structure (see fxbug.dev/42172180).
   std::optional<LocalName> local_name_;
@@ -351,13 +362,15 @@ class AdvertisingData {
   std::unordered_map<UUIDElemSize, BoundedUuids> service_uuids_ =
       kEmptyServiceUuidMap;
 
+  std::unordered_map<UUIDElemSize, BoundedUuids> solicitation_uuids_ =
+      kEmptyServiceUuidMap;
+
   // The length of each manufacturer data buffer is always <=
   // kMaxManufacturerDataLength.
   std::unordered_map<uint16_t, DynamicByteBuffer> manufacturer_data_;
 
   // For each element in `service_data_`, the compact size of the UUID + the
-  // buffer length is always
-  // <= kkMaxEncodedServiceDataLength
+  // buffer length is always <= kkMaxEncodedServiceDataLength
   std::unordered_map<UUID, DynamicByteBuffer> service_data_;
 
   std::unordered_set<std::string> uris_;

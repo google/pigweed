@@ -13,18 +13,14 @@
 // the License.
 #pragma once
 
-#include <memory>
 #include <optional>
 
 #include "pw_async2/once_sender.h"
 #include "pw_bluetooth/internal/raii_ptr.h"
-#include "pw_bluetooth/low_energy/advertising_data.h"
 #include "pw_bluetooth/low_energy/connection2.h"
 #include "pw_bluetooth/low_energy/phy.h"
 #include "pw_bluetooth/types.h"
 #include "pw_chrono/system_clock.h"
-#include "pw_containers/vector.h"
-#include "pw_function/function.h"
 #include "pw_result/expected.h"
 
 namespace pw::bluetooth::low_energy {
@@ -72,6 +68,9 @@ class Central2 {
     /// procedure. It should NOT be confused with information for an active
     /// connection obtained using the "Path Loss Reporting" feature.
     std::optional<int8_t> max_path_loss;
+
+    /// Require that a peer solicits support for a service UUID.
+    std::optional<Uuid> solicitation_uuid;
   };
 
   enum class ScanType : uint8_t {
@@ -241,7 +240,8 @@ class Central2 {
   /// peers that satisfy the filters indicated in `options`. The initial results
   /// may report recently discovered peers. Subsequent results will be reported
   /// only when peers have been scanned or updated since the last call.
-  virtual async2::OnceReceiver<ScanStartResult> Scan(ScanOptions options) = 0;
+  virtual async2::OnceReceiver<ScanStartResult> Scan(
+      const ScanOptions& options) = 0;
 };
 
 }  // namespace pw::bluetooth::low_energy

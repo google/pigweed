@@ -18,7 +18,6 @@
 #include <pw_preprocessor/compiler.h>
 
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
-#include "pw_bluetooth_sapphire/internal/host/common/log.h"
 
 namespace bt {
 
@@ -50,14 +49,17 @@ UUIDElemSize SizeForType(DataType type) {
     case DataType::kIncomplete16BitServiceUuids:
     case DataType::kComplete16BitServiceUuids:
     case DataType::kServiceData16Bit:
+    case DataType::kSolicitationUuid16Bit:
       return UUIDElemSize::k16Bit;
     case DataType::kIncomplete32BitServiceUuids:
     case DataType::kComplete32BitServiceUuids:
     case DataType::kServiceData32Bit:
+    case DataType::kSolicitationUuid32Bit:
       return UUIDElemSize::k32Bit;
     case DataType::kIncomplete128BitServiceUuids:
     case DataType::kComplete128BitServiceUuids:
     case DataType::kServiceData128Bit:
+    case DataType::kSolicitationUuid128Bit:
       return UUIDElemSize::k128Bit;
     default:
       break;

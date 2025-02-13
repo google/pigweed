@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/central.h"
 
+#include <array>
+
 #include "pw_async/fake_dispatcher.h"
 #include "pw_async2/pend_func_task.h"
 #include "pw_async2/poll.h"
@@ -260,6 +262,51 @@ TEST_F(CentralTest, ScanResultMatchesSecondFilterOnly) {
               kAdvDataWithUuid1.subspan()[i]);
   }
   EXPECT_FALSE(scan_result.name.has_value());
+}
+
+TEST_F(CentralTest, ScanResultMatchesSolicitationUUID) {
+  Central::ScanOptions options;
+  options.scan_type = Central::ScanType::kActiveUsePublicAddress;
+
+  ScanFilter filter;
+  filter.solicitation_uuid = kUuid1;
+  std::array<Central::ScanFilter, 1> filters{filter};
+  options.filters = filters;
+
+  ScanHandle::Ptr scan_handle = Scan(options);
+  ASSERT_TRUE(scan_handle);
+
+  std::optional<pw::Result<ScanResult>> scan_result_result;
+  PendFuncTask scan_handle_task =
+      MakePendResultTask(scan_handle, scan_result_result);
+  async2_dispatcher().Post(scan_handle_task);
+
+  const bool connectable = false;
+  bt::gap::Peer* peer = peer_cache().NewPeer(kAddress0, connectable);
+  SystemClock::time_point timestamp(SystemClock::duration(6));
+
+  const int rssi = 6;
+  bt::StaticByteBuffer adv_data(
+      0x05, bt::DataType::kSolicitationUuid16Bit, 0x01, 0x00, 0x00, 0x00);
+  peer->MutLe().SetAdvertisingData(rssi, adv_data, timestamp);
+
+  adapter().fake_le()->NotifyScanResult(*peer);
+  EXPECT_TRUE(async2_dispatcher().RunUntilStalled().IsReady());
+
+  ASSERT_TRUE(scan_result_result.has_value());
+  ASSERT_TRUE(scan_result_result.value().ok());
+
+  ScanResult scan_result = std::move(scan_result_result.value().value());
+  scan_result_result.reset();
+  EXPECT_EQ(scan_result.peer_id, peer->identifier().value());
+  EXPECT_EQ(scan_result.connectable, connectable);
+  EXPECT_EQ(scan_result.rssi, rssi);
+
+  ASSERT_TRUE(scan_result.data.IsContiguous());
+  for (size_t i = 0; i < adv_data.size(); i++) {
+    EXPECT_EQ(scan_result.data.ContiguousSpan().value()[i],
+              adv_data.subspan()[i]);
+  }
 }
 
 TEST_F(CentralTest, CachedScanResult) {

@@ -45,6 +45,10 @@ bt::gap::DiscoveryFilter DiscoveryFilterFrom(const Central::ScanFilter& in) {
   if (in.max_path_loss.has_value()) {
     out.set_pathloss(in.max_path_loss.value());
   }
+  if (in.solicitation_uuid.has_value()) {
+    bt::UUID uuid = UuidFrom(in.solicitation_uuid.value());
+    out.set_solicitation_uuids(std::vector<bt::UUID>{std::move(uuid)});
+  }
   return out;
 }
 
@@ -122,7 +126,7 @@ async2::OnceReceiver<Central::ConnectResult> Central::Connect(
 }
 
 async2::OnceReceiver<Central::ScanStartResult> Central::Scan(
-    ScanOptions options) {
+    const ScanOptions& options) {
   // TODO: https://pwbug.dev/377301546 - Support the different types of active
   // scans.
   bool active = (options.scan_type != ScanType::kPassive);

@@ -65,6 +65,22 @@ DataType ServiceDataTypeForUuidSize(UUIDElemSize size) {
   };
 }
 
+DataType SolicitationUuidTypeForUuidSize(UUIDElemSize size) {
+  switch (size) {
+    case UUIDElemSize::k16Bit:
+      return DataType::kSolicitationUuid16Bit;
+    case UUIDElemSize::k32Bit:
+      return DataType::kSolicitationUuid32Bit;
+    case UUIDElemSize::k128Bit:
+      return DataType::kSolicitationUuid128Bit;
+    default:
+      PW_CRASH(
+          "called SolicitationUuidTypeForUuidSize with unknown UUIDElemSize "
+          "%du",
+          size);
+  };
+}
+
 size_t EncodedServiceDataSize(const UUID& uuid, const BufferView data) {
   return uuid.CompactSize() + data.size();
 }
@@ -171,6 +187,8 @@ AdvertisingData& AdvertisingData::operator=(AdvertisingData&& other) noexcept {
   tx_power_ = std::exchange(other.tx_power_, {});
   appearance_ = std::exchange(other.appearance_, {});
   service_uuids_ = std::exchange(other.service_uuids_, kEmptyServiceUuidMap);
+  solicitation_uuids_ =
+      std::exchange(other.solicitation_uuids_, kEmptyServiceUuidMap);
   manufacturer_data_ = std::exchange(other.manufacturer_data_, {});
   service_data_ = std::exchange(other.service_data_, {});
   uris_ = std::exchange(other.uris_, {});
@@ -190,7 +208,7 @@ std::string AdvertisingData::ParseErrorToString(ParseError e) {
     case ParseError::kLocalNameTooLong:
       return "local name exceeds max length (248)";
     case ParseError::kUuidsMalformed:
-      return "malformed service UUIDs list";
+      return "malformed UUIDs list";
     case ParseError::kManufacturerSpecificDataTooSmall:
       return "manufacturer specific data too small";
     case ParseError::kServiceDataTooSmall:
@@ -269,15 +287,15 @@ std::string AdvertisingData::ToString() const {
     result += AdvFlagsToString(flags_);
   }
 
-  bool hasServiceUuids = false;
+  bool has_service_uuids = false;
   for (const auto& [_, bounded_uuids] : service_uuids_) {
     if (!bounded_uuids.set().empty()) {
-      hasServiceUuids = true;
+      has_service_uuids = true;
       break;
     }
   }
 
-  if (hasServiceUuids) {
+  if (has_service_uuids) {
     result += "Service UUIDs: { ";
     for (const auto& [_, bounded_uuids] : service_uuids_) {
       for (const auto& uuid : bounded_uuids.set()) {
@@ -295,6 +313,24 @@ std::string AdvertisingData::ToString() const {
           "{ UUID:%s, Data: {%s} }, ",
           bt_str(uuid),
           data_buffer.ToString(/*as_hex*/ true).c_str());
+    }
+    result += "}, ";
+  }
+
+  bool has_solicitation_uuids = false;
+  for (const auto& [_, bounded_uuids] : solicitation_uuids_) {
+    if (!bounded_uuids.set().empty()) {
+      has_solicitation_uuids = true;
+      break;
+    }
+  }
+
+  if (has_solicitation_uuids) {
+    result += "Solicitation UUIDs: { ";
+    for (const auto& [_, bounded_uuids] : solicitation_uuids_) {
+      for (const auto& uuid : bounded_uuids.set()) {
+        bt_lib_cpp_string::StringAppendf(&result, "%s, ", bt_str(uuid));
+      }
     }
     result += "}, ";
   }
@@ -394,6 +430,17 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(
         }
         break;
       }
+      case DataType::kSolicitationUuid16Bit:
+      case DataType::kSolicitationUuid32Bit:
+      case DataType::kSolicitationUuid128Bit: {
+        if (!ParseUuids(field,
+                        SizeForType(type),
+                        fit::bind_member<&AdvertisingData::AddSolicitationUuid>(
+                            &out_ad))) {
+          return fit::error(ParseError::kUuidsMalformed);
+        }
+        break;
+      }
       case DataType::kManufacturerSpecificData: {
         if (field.size() < kManufacturerSpecificDataSizeMin) {
           return fit::error(ParseError::kManufacturerSpecificDataTooSmall);
@@ -418,10 +465,6 @@ AdvertisingData::ParseResult AdvertisingData::FromBytes(
         }
         const BufferView uuid_bytes(field.data(), uuid_size);
         if (!UUID::FromBytes(uuid_bytes, &uuid)) {
-          // This is impossible given that uuid_bytes.size() is guaranteed to be
-          // a valid UUID size, and the current UUID::FromBytes implementation
-          // only fails if given an invalid size. We leave it in anyway in case
-          // this implementation changes in the future.
           return fit::error(ParseError::kServiceDataUuidMalformed);
         }
         const BufferView service_data(field.data() + uuid_size,
@@ -506,6 +549,7 @@ void AdvertisingData::Copy(AdvertisingData* out) const {
   }
 
   out->service_uuids_ = service_uuids_;
+  out->solicitation_uuids_ = solicitation_uuids_;
   out->resolvable_set_identifier_ = resolvable_set_identifier_;
   out->broadcast_name_ = broadcast_name_;
 
@@ -567,6 +611,21 @@ BufferView AdvertisingData::service_data(const UUID& uuid) const {
   if (iter == service_data_.end())
     return BufferView();
   return BufferView(iter->second);
+}
+
+[[nodiscard]] bool AdvertisingData::AddSolicitationUuid(const UUID& uuid) {
+  auto iter = solicitation_uuids_.find(uuid.CompactSize());
+  PW_CHECK(iter != solicitation_uuids_.end());
+  BoundedUuids& uuids = iter->second;
+  return uuids.AddUuid(uuid);
+}
+
+std::unordered_set<UUID> AdvertisingData::solicitation_uuids() const {
+  std::unordered_set<UUID> out;
+  for (auto& [_elemsize, uuids] : solicitation_uuids_) {
+    out.insert(uuids.set().begin(), uuids.set().end());
+  }
+  return out;
 }
 
 [[nodiscard]] bool AdvertisingData::SetManufacturerData(
@@ -711,6 +770,14 @@ size_t AdvertisingData::CalculateBlockSize(bool include_flags) const {
     len += uuid_size * bounded_uuids.set().size();
   }
 
+  for (const auto& [uuid_size, bounded_uuids] : solicitation_uuids_) {
+    if (bounded_uuids.set().empty()) {
+      continue;
+    }
+    len += 2;  // 1 byte for # of UUIDs and 1 for UUID type
+    len += uuid_size * bounded_uuids.set().size();
+  }
+
   if (resolvable_set_identifier_.has_value()) {
     len += kTLVResolvableSetIdentifierSize;
   }
@@ -823,6 +890,28 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer,
     }
   }
 
+  for (const auto& [uuid_width, bounded_uuids] : solicitation_uuids_) {
+    if (bounded_uuids.set().empty()) {
+      continue;
+    }
+
+    // 1 for type
+    PW_CHECK(1 + uuid_width * bounded_uuids.set().size() <=
+             std::numeric_limits<uint8_t>::max());
+    (*buffer)[pos++] =
+        1 + uuid_width * static_cast<uint8_t>(bounded_uuids.set().size());
+    (*buffer)[pos++] =
+        static_cast<uint8_t>(SolicitationUuidTypeForUuidSize(uuid_width));
+    for (const auto& uuid : bounded_uuids.set()) {
+      PW_CHECK(uuid.CompactSize() == uuid_width,
+               "UUID: %s - Expected Width: %d",
+               bt_str(uuid),
+               uuid_width);
+      auto target = buffer->mutable_view(pos);
+      pos += uuid.ToBytes(&target);
+    }
+  }
+
   if (resolvable_set_identifier_) {
     (*buffer)[pos++] =
         1 +
@@ -850,8 +939,9 @@ bool AdvertisingData::WriteBlock(MutableByteBuffer* buffer,
 bool AdvertisingData::operator==(const AdvertisingData& other) const {
   if ((local_name_ != other.local_name_) || (tx_power_ != other.tx_power_) ||
       (appearance_ != other.appearance_) ||
-      (service_uuids_ != other.service_uuids_) || (uris_ != other.uris_) ||
-      (flags_ != other.flags_) ||
+      (service_uuids_ != other.service_uuids_) ||
+      (solicitation_uuids_ != other.solicitation_uuids_) ||
+      (uris_ != other.uris_) || (flags_ != other.flags_) ||
       (resolvable_set_identifier_ != other.resolvable_set_identifier_) ||
       (broadcast_name_ != other.broadcast_name_)) {
     return false;
@@ -920,7 +1010,7 @@ bool AdvertisingData::BoundedUuids::AddUuid(UUID uuid) {
   }
   bt_log(WARN,
          "gap-le",
-         "Failed to add service UUID %s to AD - no space left",
+         "Failed to add UUID %s to AD - no space left",
          bt_str(uuid));
   return false;
 }

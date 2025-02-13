@@ -39,8 +39,8 @@ class Central final : public pw::bluetooth::low_energy::Central2 {
       bluetooth::low_energy::Connection2::ConnectionOptions options) override
       PW_LOCKS_EXCLUDED(lock());
 
-  async2::OnceReceiver<ScanStartResult> Scan(ScanOptions options) override
-      PW_LOCKS_EXCLUDED(lock());
+  async2::OnceReceiver<ScanStartResult> Scan(
+      const ScanOptions& options) override PW_LOCKS_EXCLUDED(lock());
 
   static pw::sync::Mutex& lock();
 

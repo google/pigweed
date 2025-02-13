@@ -990,6 +990,282 @@ TEST(DiscoveryFilterTest, 128BitServiceDataUuids) {
   EXPECT_TRUE(filter.service_data_uuids().empty());
 }
 
+TEST(DiscoveryFilterTest, 16BitSolicitationUuids) {
+  constexpr uint16_t kUuid1 = 0x1800;
+
+  const auto kNoMatch(
+      AdvertisingData::FromBytes(
+          StaticByteBuffer(
+              0x05, DataType::kSolicitationUuid16Bit, 0x01, 0x02, 0x03, 0x04))
+          .value());
+  const auto kMatch0(AdvertisingData::FromBytes(
+                         StaticByteBuffer(0x05,
+                                          DataType::kSolicitationUuid16Bit,
+                                          LowerBits(kUuid0),
+                                          UpperBits(kUuid0),
+                                          0x01,
+                                          0x02))
+                         .value());
+  const auto kMatch1(AdvertisingData::FromBytes(
+                         StaticByteBuffer(0x05,
+                                          DataType::kSolicitationUuid16Bit,
+                                          LowerBits(kUuid1),
+                                          UpperBits(kUuid1),
+                                          0x03,
+                                          0x04))
+                         .value());
+
+  DiscoveryFilter filter;
+
+  // An empty filter should match all payloads.
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(std::nullopt, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kNoMatch, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch0, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch1, false, hci_spec::kRSSIInvalid));
+
+  // Filter for kUuid0 and kUuid1.
+  filter.set_solicitation_uuids(std::vector<UUID>{UUID(kUuid0), UUID(kUuid1)});
+  EXPECT_FALSE(filter.solicitation_uuids().empty());
+  EXPECT_FALSE(
+      filter.MatchLowEnergyResult(std::nullopt, false, hci_spec::kRSSIInvalid));
+  EXPECT_FALSE(
+      filter.MatchLowEnergyResult(kNoMatch, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch0, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch1, false, hci_spec::kRSSIInvalid));
+
+  filter.Reset();
+  EXPECT_TRUE(filter.solicitation_uuids().empty());
+}
+
+TEST(DiscoveryFilterTest, 32BitSolicitationUuids) {
+  constexpr uint32_t kUuid1 = 0xabcd1800;
+
+  const auto kNoMatch(AdvertisingData::FromBytes(
+                          StaticByteBuffer(0x09,
+                                           DataType::kSolicitationUuid32Bit,
+                                           // Random UUID
+                                           0x01,
+                                           0x02,
+                                           0x03,
+                                           0x04,
+                                           // Random UUID
+                                           0x05,
+                                           0x06,
+                                           0x07,
+                                           0x08))
+                          .value());
+  const auto kMatch0(AdvertisingData::FromBytes(
+                         StaticByteBuffer(0x09,
+                                          DataType::kSolicitationUuid32Bit,
+                                          // kUuid0
+                                          LowerBits(kUuid0),
+                                          UpperBits(kUuid0),
+                                          0x00,
+                                          0x00,
+                                          // Data
+                                          0x01,
+                                          0x02,
+                                          0x03,
+                                          0x04))
+                         .value());
+  const auto kMatch1(AdvertisingData::FromBytes(
+                         StaticByteBuffer(0x09,
+                                          DataType::kSolicitationUuid32Bit,
+                                          // kUuid1
+                                          0x00,
+                                          0x18,
+                                          0xcd,
+                                          0xab,
+                                          // Random UUID
+                                          0x01,
+                                          0x02,
+                                          0x03,
+                                          0x04))
+                         .value());
+
+  DiscoveryFilter filter;
+
+  // An empty filter should match all payloads.
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(std::nullopt, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kNoMatch, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch0, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch1, false, hci_spec::kRSSIInvalid));
+
+  // Filter for kUuid0 and kUuid1.
+  filter.set_solicitation_uuids(std::vector<UUID>{UUID(kUuid0), UUID(kUuid1)});
+  EXPECT_FALSE(filter.solicitation_uuids().empty());
+  EXPECT_FALSE(
+      filter.MatchLowEnergyResult(std::nullopt, false, hci_spec::kRSSIInvalid));
+  EXPECT_FALSE(
+      filter.MatchLowEnergyResult(kNoMatch, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch0, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch1, false, hci_spec::kRSSIInvalid));
+
+  filter.Reset();
+  EXPECT_TRUE(filter.solicitation_uuids().empty());
+}
+
+TEST(DiscoveryFilterTest, 128BitSolicitationUuids) {
+  constexpr UInt128 kUuid1 = {0xDE,
+                              0xAD,
+                              0xBE,
+                              0xEF,
+                              0xDE,
+                              0xAD,
+                              0xBE,
+                              0xEF,
+                              0xDE,
+                              0xAD,
+                              0xBE,
+                              0xEF,
+                              0x00,
+                              0x18,
+                              0xcd,
+                              0xab};
+
+  const auto kNoMatch(AdvertisingData::FromBytes(
+                          StaticByteBuffer(0x11,
+                                           DataType::kSolicitationUuid128Bit,
+
+                                           // Random UUID
+                                           0x00,
+                                           0x01,
+                                           0x02,
+                                           0x03,
+                                           0x04,
+                                           0x05,
+                                           0x06,
+                                           0x07,
+                                           0x08,
+                                           0x09,
+                                           0x0A,
+                                           0x0B,
+                                           0x0C,
+                                           0x0D,
+                                           0x0E,
+                                           0x0F))
+                          .value());
+  const auto kMatch0(
+      AdvertisingData::FromBytes(
+          StaticByteBuffer(0x21,
+                           DataType::kSolicitationUuid128Bit,
+                           // kUuid0 - padded with the BT SIG Base UUID. See
+                           // Core Spec v5.0, Vol 3, Part B, Section 2.5.1.
+                           0xFB,
+                           0x34,
+                           0x9B,
+                           0x5F,
+                           0x80,
+                           0x00,
+                           0x00,
+                           0x80,
+                           0x00,
+                           0x10,
+                           0x00,
+                           0x00,
+                           LowerBits(kUuid0),
+                           UpperBits(kUuid0),
+                           0x00,
+                           0x00,
+                           // Random Data
+                           0x00,
+                           0x01,
+                           0x02,
+                           0x03,
+                           0x04,
+                           0x05,
+                           0x06,
+                           0x07,
+                           0x08,
+                           0x09,
+                           0x0A,
+                           0x0B,
+                           0x0C,
+                           0x0D,
+                           0x0E,
+                           0x0F))
+          .value());
+  const auto kMatch1(AdvertisingData::FromBytes(
+                         StaticByteBuffer(0x21,
+                                          DataType::kSolicitationUuid128Bit,
+
+                                          // kUuid1
+                                          kUuid1[0],
+                                          kUuid1[1],
+                                          kUuid1[2],
+                                          kUuid1[3],
+                                          kUuid1[4],
+                                          kUuid1[5],
+                                          kUuid1[6],
+                                          kUuid1[7],
+                                          kUuid1[8],
+                                          kUuid1[9],
+                                          kUuid1[10],
+                                          kUuid1[11],
+                                          kUuid1[12],
+                                          kUuid1[13],
+                                          kUuid1[14],
+                                          kUuid1[15],
+
+                                          // Random UUID
+                                          0x00,
+                                          0x01,
+                                          0x02,
+                                          0x03,
+                                          0x04,
+                                          0x05,
+                                          0x06,
+                                          0x07,
+                                          0x08,
+                                          0x09,
+                                          0x0A,
+                                          0x0B,
+                                          0x0C,
+                                          0x0D,
+                                          0x0E,
+                                          0x0F))
+                         .value());
+
+  DiscoveryFilter filter;
+
+  // An empty filter should match all payloads.
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(std::nullopt, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kNoMatch, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch0, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch1, false, hci_spec::kRSSIInvalid));
+
+  // Filter for kUuid0 and kUuid1.
+  filter.set_solicitation_uuids(std::vector<UUID>{UUID(kUuid0), UUID(kUuid1)});
+  EXPECT_FALSE(filter.solicitation_uuids().empty());
+  EXPECT_FALSE(
+      filter.MatchLowEnergyResult(std::nullopt, false, hci_spec::kRSSIInvalid));
+  EXPECT_FALSE(
+      filter.MatchLowEnergyResult(kNoMatch, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch0, false, hci_spec::kRSSIInvalid));
+  EXPECT_TRUE(
+      filter.MatchLowEnergyResult(kMatch1, false, hci_spec::kRSSIInvalid));
+
+  filter.Reset();
+  EXPECT_TRUE(filter.solicitation_uuids().empty());
+}
+
 TEST(DiscoveryFilterTest, NameSubstring) {
   const auto kShortenedName(
       AdvertisingData::FromBytes(
