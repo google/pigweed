@@ -15,6 +15,7 @@
 common:k_common --@rules_rust//rust/toolchain/channel=nightly
 common:k_common --@pigweed//pw_log/rust:pw_log_backend=//pw_kernel/subsys/console:pw_log_backend
 build:k_common --build_tag_filters=-do_not_build
+build:k_common -c opt
 test:k_common --test_tag_filters=-integration,-do_not_build,-do_not_run_test
 
 # Lint configuration
