@@ -22,20 +22,40 @@ mod host;
 #[cfg(feature = "arch_host")]
 pub use host::Arch;
 
-#[const_trait]
+use crate::scheduler::{SchedulerState, Stack, Thread};
+use spinlock::SpinLockGuard;
+
 pub trait ThreadState {
     #[allow(dead_code)]
     fn new() -> Self;
+
+    // Switch to this thread.
+    // sched_state: a locked spinlockguard for the main SCHEDULER_STATE struct.
+    //   Will potentially be dropped and reacquired across this function, and
+    //   a copy will be returned (either still held, or newly reacquired).
+    // old_thread: thread we're moving from.
+    // new_thread: must match current_thread and the container for this ThreadState.
+
+    #[allow(dead_code)]
+    fn context_switch<'a>(
+        sched_state: SpinLockGuard<'a, SchedulerState>,
+        old_thread: &mut Thread,
+        new_thread: &mut Thread,
+    ) -> SpinLockGuard<'a, SchedulerState>;
+
+    // Initialize the default frame of the thread which arranges for it to start at the initial_function
+    // with one argument passed in the first argument slot.
+    #[allow(dead_code)]
+    fn initialize_frame(&mut self, stack: Stack, initial_function: fn(usize), arg0: usize);
 }
 
 pub trait ArchInterface {
-    type ThreadState: const ThreadState;
+    type ThreadState: ThreadState;
 
     fn early_init() {}
     fn init() {}
 
     // fill in more arch implementation functions from the kernel here:
     // TODO: interrupt management
-    //       context switching, thread creation, management
-    //       arch-specific backtracing
+    // arch-specific backtracing
 }

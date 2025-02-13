@@ -12,13 +12,25 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 use super::ArchInterface;
+use crate::scheduler::{SchedulerState, Stack, Thread};
 use pw_log::info;
+use spinlock::SpinLockGuard;
 
 pub struct ThreadState {}
 
-impl const super::ThreadState for ThreadState {
+impl super::ThreadState for ThreadState {
     fn new() -> Self {
         Self {}
+    }
+    fn context_switch<'a>(
+        mut _sched_state: SpinLockGuard<'a, SchedulerState>,
+        _old_thread: &mut Thread,
+        _new_thread: &mut Thread,
+    ) -> SpinLockGuard<'a, SchedulerState> {
+        panic!("unimplemented");
+    }
+    fn initialize_frame(&mut self, _stack: Stack, _initial_function: fn(usize), _arg0: usize) {
+        panic!("unimplemented");
     }
 }
 

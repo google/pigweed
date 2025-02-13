@@ -16,6 +16,8 @@
 #![no_main]
 use core::mem::offset_of;
 
+// TODO: add unit tests for push_back and pop_head
+
 use list::*;
 use unittest::test;
 

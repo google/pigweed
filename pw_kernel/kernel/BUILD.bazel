@@ -27,6 +27,7 @@ rust_library(
         "kernel/arch/arm_cortex_m/exceptions.rs",
         "kernel/arch/arm_cortex_m/features.rs",
         "kernel/arch/arm_cortex_m/mod.rs",
+        "kernel/arch/arm_cortex_m/threads.rs",
         "kernel/arch/host/mod.rs",
         "kernel/arch/mod.rs",
         "kernel/lib.rs",
@@ -40,6 +41,7 @@ rust_library(
     }),
     tags = ["kernel"],
     deps = [
+        "//pw_kernel/kernel/sync:spinlock",
         "//pw_kernel/lib/list",
         "//pw_kernel/target",
         "@pigweed//pw_log/rust:pw_log",

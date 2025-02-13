@@ -201,6 +201,33 @@ impl<T, A: Adapter> UnsafeList<T, A> {
         self.head = Some(element_ptr);
     }
 
+    /// unchecked means we don't `assert!((*element_ptr.as_ptr()).is_unlinked());`
+    ///
+    /// # Safety
+    /// It is up to the caller to ensure exclusive access to the list and its
+    /// members.
+    /// It is up to the caller to ensure the element is not in a list
+    pub unsafe fn push_back_unchecked(&mut self, element: &mut T) {
+        let element_ptr = Self::get_link_ptr(element);
+
+        // Link up the added element.
+        (*element_ptr.as_ptr()).set_next(None);
+        (*element_ptr.as_ptr()).set_prev(self.tail);
+
+        match self.tail {
+            // If `tail` was `None`, the list is empty and `head` should point
+            // to the added element.
+            None => self.head = Some(element_ptr),
+
+            // If `tail` is not `None`, point the previous `tail` to the added
+            // element.
+            Some(tail) => (*tail.as_ptr()).set_next(Some(element_ptr)),
+        }
+
+        // Finally point `tail` to the added element.
+        self.tail = Some(element_ptr);
+    }
+
     /// unlinks element from the linked list.
     ///
     /// # Safety
@@ -282,6 +309,26 @@ impl<T, A: Adapter> UnsafeList<T, A> {
 
             cur = next;
         }
+    }
+
+    /// Return a reference to the first element in the list, clearing the
+    /// prev/next fields in the element.
+    ///
+    /// TODO: reevalulate the lifetime marker here, since it is a lie.
+    ///
+    /// # Safety
+    /// It is up to the caller to ensure exclusive access to the list and its
+    /// members.
+    pub unsafe fn pop_head<'a>(&mut self) -> Option<&'a mut T> {
+        let cur = self.head?;
+
+        let element = Self::get_element_mut(cur);
+
+        self.unlink_element(&*element);
+        let element_ptr = Self::get_link_ptr(&*element);
+        (*element_ptr.as_ptr()).set_next(None);
+        (*element_ptr.as_ptr()).set_prev(None);
+        Some(&mut *element)
     }
 }
 

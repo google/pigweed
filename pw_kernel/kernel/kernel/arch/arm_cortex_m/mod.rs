@@ -11,30 +11,24 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
-use cortex_m::peripheral::Peripherals;
+use core::arch::asm;
+use cortex_m::peripheral::*;
 use pw_log::info;
 
 use super::ArchInterface;
 
 mod exceptions;
-
-pub struct ThreadState {}
-
-impl const super::ThreadState for ThreadState {
-    fn new() -> Self {
-        Self {}
-    }
-}
+mod threads;
 
 pub struct Arch {}
 
 impl ArchInterface for Arch {
-    type ThreadState = ThreadState;
+    type ThreadState = threads::ArchThreadState;
 
     fn early_init() {
+        info!("arch early init");
         // TODO: set up the cpu here:
-        //  interrupt vector table
+        //  --interrupt vector table--
         //  irq priority levels
         //  clear pending interrupts
         //  FPU initial state
@@ -44,23 +38,55 @@ impl ArchInterface for Arch {
         let cpuid = p.CPUID.base.read();
         info!("CPUID 0x{:x}", cpuid);
 
-        // Set the VTOR (assumes it exists)
         unsafe {
+            // Set the VTOR (assumes it exists)
             extern "C" {
                 fn pw_boot_vector_table_addr();
             }
             let vector_table = pw_boot_vector_table_addr as *const ();
             p.SCB.vtor.write(vector_table as u32);
-        }
 
-        // Intentionally trigger a hard fault to make sure the VTOR is working.
+            // Set the interrupt priority for SVCall and PendSV to the lowest level
+            // so that all of the external IRQs will preempt them.
+            let mut scb = p.SCB;
+            scb.set_priority(scb::SystemHandler::SVCall, 255);
+            scb.set_priority(scb::SystemHandler::PendSV, 255);
+
+            // Set the systick priority to medium
+            scb.set_priority(scb::SystemHandler::SysTick, 128);
+
+            // TODO: set all of the NVIC external irqs to medium as well
+
+            // TODO: configure BASEPRI, FAULTMASK
+        } // unsafe
+
+        // TEST: Intentionally trigger a hard fault to make sure the VTOR is working.
         // use core::arch::asm;
         // unsafe {
         //     asm!("bkpt");
+        // }
+
+        // TEST: Intentionally trigger a pendsv
+        // use cortex_m::interrupt;
+        // SCB::set_pendsv();
+        // unsafe {
+        //     interrupt::enable();
         // }
     }
 
     fn init() {
         info!("arch init");
     }
+}
+
+// Utility function to read whether or not the cpu considers itself in a handler
+fn in_interrupt_handler() -> bool {
+    let ipsr: u32;
+    // Note: cortex-m crate does not implement this register for some reason, so
+    // read and mask manually
+    unsafe {
+        asm!("mrs {ipsr}, ipsr", ipsr = out(reg) ipsr);
+    }
+    // IPSR[8:0] is the current exception handler (or 0 if in thread mode)
+    ipsr & (0x1ff) != 0
 }
