@@ -14,14 +14,19 @@
 
 #include "pw_allocator/bump_allocator.h"
 
-#include "pw_allocator/size_reporter.h"
+#include <array>
 
-int main() {
-  pw::allocator::SizeReporter reporter;
-  reporter.SetBaseline();
+#include "pw_allocator/size_report/size_report.h"
+#include "pw_bloat/bloat_this_binary.h"
 
-  pw::allocator::BumpAllocator allocator(reporter.buffer());
-  reporter.Measure(allocator);
+namespace pw::allocator::size_report {
 
-  return 0;
+int Measure() {
+  volatile uint32_t mask = bloat::kDefaultMask;
+  static BumpAllocator allocator(GetBuffer());
+  return MeasureAllocator(allocator, mask);
 }
+
+}  // namespace pw::allocator::size_report
+
+int main() { return pw::allocator::size_report::Measure(); }

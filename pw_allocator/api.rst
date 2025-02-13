@@ -104,19 +104,26 @@ memory, and derive from this abstract base type.
 
 .. _module-pw_allocator-api-first_fit_allocator:
 
+BestFitAllocator
+----------------
+.. doxygenclass:: pw::allocator::BestFitAllocator
+   :members:
+
+.. _module-pw_allocator-api-bucket_block_allocator:
+
+BucketAllocator
+---------------
+.. doxygenclass:: pw::allocator::BucketAllocator
+   :members:
+
+.. _module-pw_allocator-api-tlsf_allocator:
+
 FirstFitAllocator
 -----------------
 .. doxygenclass:: pw::allocator::FirstFitAllocator
    :members:
 
 .. _module-pw_allocator-api-best_fit_allocator:
-
-BestFitAllocator
-----------------
-.. doxygenclass:: pw::allocator::BestFitAllocator
-   :members:
-
-.. _module-pw_allocator-api-tlsf_allocator:
 
 TlsfAllocator
 -------------
@@ -128,13 +135,6 @@ TlsfAllocator
 WorstFitAllocator
 -----------------
 .. doxygenclass:: pw::allocator::WorstFitAllocator
-   :members:
-
-.. _module-pw_allocator-api-bucket_block_allocator:
-
-BucketAllocator
-===============
-.. doxygenclass:: pw::allocator::BucketAllocator
    :members:
 
 .. _module-pw_allocator-api-buddy_allocator:
@@ -368,20 +368,24 @@ Fragmentation
 .. doxygenstruct:: pw::allocator::Fragmentation
    :members:
 
-.. _module-pw_allocator-api-size_reporter:
-
-SizeReporter
-============
-This module includes a utility class for generating size reports. It is
-intended for allocator implementers and not for module consumers.
-
-.. doxygenclass:: pw::allocator::SizeReporter
-   :members:
 
 Buffer management
 =================
 .. doxygenclass:: pw::allocator::WithBuffer
    :members:
+
+.. _module-pw_allocator-api-size_reports:
+
+------------
+Size reports
+------------
+This module includes utilities to help generate code size reports for allocator
+implementations. These are used to generate the code size reports for the
+allocators provided by this module, and can also be used to evaluate your own
+custom allocator implementations.
+
+.. doxygenfunction:: pw::allocator::size_report::GetBuffer
+.. doxygenfunction:: pw::allocator::size_report::MeasureAllocator
 
 ------------
 Test support

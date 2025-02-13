@@ -12,19 +12,23 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/first_fit.h"
-#include "pw_allocator/size_reporter.h"
+#include <array>
+
+#include "pw_allocator/best_fit.h"
+#include "pw_allocator/size_report/size_report.h"
 #include "pw_allocator/synchronized_allocator.h"
+#include "pw_bloat/bloat_this_binary.h"
 #include "pw_sync/interrupt_spin_lock.h"
 
-int main() {
-  pw::allocator::SizeReporter reporter;
-  reporter.SetBaseline();
+namespace pw::allocator::size_report {
 
-  pw::allocator::FirstFitAllocator<> allocator(reporter.buffer());
-  pw::allocator::SynchronizedAllocator<pw::sync::InterruptSpinLock>
-      synchronized(allocator);
-  reporter.Measure(synchronized);
-
-  return 0;
+int Measure() {
+  volatile uint32_t mask = bloat::kDefaultMask;
+  static BestFitAllocator<BlockType> base(GetBuffer());
+  static SynchronizedAllocator<sync::InterruptSpinLock> alloc(base);
+  return MeasureAllocator(alloc, mask);
 }
+
+}  // namespace pw::allocator::size_report
+
+int main() { return pw::allocator::size_report::Measure(); }

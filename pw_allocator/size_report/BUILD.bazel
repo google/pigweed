@@ -12,25 +12,55 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# Size reporting support libraries.
+
+cc_library(
+    name = "size_report",
+    srcs = ["size_report.cc"],
+    hdrs = ["public/pw_allocator/size_report/size_report.h"],
+    implementation_deps = [
+        "//pw_allocator:deallocator",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_bytes:alignment",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        "//pw_allocator:allocator",
+        "//pw_allocator/block:detailed_block",
+        "//pw_allocator/bucket:fast_sorted",
+        "//pw_bytes",
+    ],
+)
+
+# Baseline executables for size reporting.
+
 pw_cc_binary(
     name = "base",
     srcs = ["base.cc"],
-    defines = ["PW_ALLOCATOR_SIZE_REPORTER_BASE"],
-    deps = ["//pw_allocator:size_reporter"],
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+    ],
 )
+
+# Concrete allocator binaries to be measured for code size.
 
 pw_cc_binary(
     name = "best_fit",
     srcs = ["best_fit.cc"],
     deps = [
+        ":size_report",
         "//pw_allocator:best_fit",
-        "//pw_allocator:size_reporter",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
@@ -38,8 +68,9 @@ pw_cc_binary(
     name = "bucket_allocator",
     srcs = ["bucket_allocator.cc"],
     deps = [
+        ":size_report",
         "//pw_allocator:bucket_allocator",
-        "//pw_allocator:size_reporter",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
@@ -47,8 +78,10 @@ pw_cc_binary(
     name = "buddy_allocator",
     srcs = ["buddy_allocator.cc"],
     deps = [
+        ":size_report",
         "//pw_allocator:buddy_allocator",
-        "//pw_allocator:size_reporter",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_status",
     ],
 )
 
@@ -56,27 +89,9 @@ pw_cc_binary(
     name = "bump_allocator",
     srcs = ["bump_allocator.cc"],
     deps = [
+        ":size_report",
         "//pw_allocator:bump_allocator",
-        "//pw_allocator:size_reporter",
-    ],
-)
-
-pw_cc_binary(
-    name = "fallback_allocator_base",
-    srcs = ["fallback_allocator_base.cc"],
-    deps = [
-        "//pw_allocator:first_fit",
-        "//pw_allocator:size_reporter",
-    ],
-)
-
-pw_cc_binary(
-    name = "fallback_allocator",
-    srcs = ["fallback_allocator.cc"],
-    deps = [
-        "//pw_allocator:fallback_allocator",
-        "//pw_allocator:first_fit",
-        "//pw_allocator:size_reporter",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
@@ -84,8 +99,9 @@ pw_cc_binary(
     name = "first_fit",
     srcs = ["first_fit.cc"],
     deps = [
+        ":size_report",
         "//pw_allocator:first_fit",
-        "//pw_allocator:size_reporter",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
@@ -93,8 +109,9 @@ pw_cc_binary(
     name = "libc_allocator",
     srcs = ["libc_allocator.cc"],
     deps = [
+        ":size_report",
         "//pw_allocator:libc_allocator",
-        "//pw_allocator:size_reporter",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
@@ -102,62 +119,9 @@ pw_cc_binary(
     name = "null_allocator",
     srcs = ["null_allocator.cc"],
     deps = [
+        ":size_report",
         "//pw_allocator:null_allocator",
-        "//pw_allocator:size_reporter",
-    ],
-)
-
-pw_cc_binary(
-    name = "pmr_allocator_base",
-    srcs = ["pmr_allocator_base.cc"],
-    deps = [
-        "//pw_allocator:first_fit",
-        "//pw_allocator:size_reporter",
-        "//pw_assert",
-    ],
-)
-
-pw_cc_binary(
-    name = "pmr_allocator",
-    srcs = ["pmr_allocator.cc"],
-    deps = [
-        "//pw_allocator:first_fit",
-        "//pw_allocator:pmr_allocator",
-        "//pw_allocator:size_reporter",
-        "//pw_assert",
-    ],
-)
-
-pw_cc_binary(
-    name = "synchronized_allocator_isl",
-    srcs = ["synchronized_allocator_isl.cc"],
-    deps = [
-        "//pw_allocator:first_fit",
-        "//pw_allocator:size_reporter",
-        "//pw_allocator:synchronized_allocator",
-        "//pw_sync:interrupt_spin_lock",
-    ],
-)
-
-pw_cc_binary(
-    name = "synchronized_allocator_mutex",
-    srcs = ["synchronized_allocator_mutex.cc"],
-    deps = [
-        "//pw_allocator:first_fit",
-        "//pw_allocator:size_reporter",
-        "//pw_allocator:synchronized_allocator",
-        "//pw_sync:mutex",
-    ],
-)
-
-pw_cc_binary(
-    name = "tracking_allocator_all_metrics",
-    srcs = ["tracking_allocator_all_metrics.cc"],
-    deps = [
-        "//pw_allocator:first_fit",
-        "//pw_allocator:metrics",
-        "//pw_allocator:size_reporter",
-        "//pw_allocator:tracking_allocator",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
@@ -165,19 +129,9 @@ pw_cc_binary(
     name = "tlsf_allocator",
     srcs = ["tlsf_allocator.cc"],
     deps = [
-        "//pw_allocator:size_reporter",
+        ":size_report",
         "//pw_allocator:tlsf_allocator",
-    ],
-)
-
-pw_cc_binary(
-    name = "tracking_allocator_no_metrics",
-    srcs = ["tracking_allocator_no_metrics.cc"],
-    deps = [
-        "//pw_allocator:first_fit",
-        "//pw_allocator:metrics",
-        "//pw_allocator:size_reporter",
-        "//pw_allocator:tracking_allocator",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 
@@ -185,7 +139,97 @@ pw_cc_binary(
     name = "worst_fit",
     srcs = ["worst_fit.cc"],
     deps = [
-        "//pw_allocator:size_reporter",
+        ":size_report",
         "//pw_allocator:worst_fit",
+        "//pw_bloat:bloat_this_binary",
     ],
+)
+
+# Forwarding allocator binaries to be measured for code size.
+
+pw_cc_binary(
+    name = "fallback_allocator",
+    srcs = ["fallback_allocator.cc"],
+    deps = [
+        ":size_report",
+        "//pw_allocator:best_fit",
+        "//pw_allocator:fallback_allocator",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_bytes",
+    ],
+)
+
+_pmr_allocator_base_deps = [
+    ":size_report",
+    "//pw_allocator:best_fit",
+    "//pw_allocator/block:detailed_block",
+    "//pw_bloat:bloat_this_binary",
+]
+
+pw_cc_binary(
+    name = "pmr_allocator_base",
+    srcs = ["pmr_allocator.cc"],
+    defines = ["PW_ALLOCATOR_SIZE_REPORT_BASE"],
+    deps = _pmr_allocator_base_deps,
+)
+
+pw_cc_binary(
+    name = "pmr_allocator",
+    srcs = ["pmr_allocator.cc"],
+    deps = _pmr_allocator_base_deps + ["//pw_allocator:pmr_allocator"],
+)
+
+_synchronized_allocator_deps = [
+    ":size_report",
+    "//pw_allocator:best_fit",
+    "//pw_allocator:synchronized_allocator",
+    "//pw_bloat:bloat_this_binary",
+]
+
+pw_cc_binary(
+    name = "synchronized_allocator_isl",
+    srcs = ["synchronized_allocator_isl.cc"],
+    deps = _synchronized_allocator_deps + ["//pw_sync:interrupt_spin_lock"],
+)
+
+pw_cc_binary(
+    name = "synchronized_allocator_mutex",
+    srcs = ["synchronized_allocator_mutex.cc"],
+    deps = _synchronized_allocator_deps + ["//pw_sync:mutex"],
+)
+
+_tracking_allocator_deps = [
+    ":size_report",
+    "//pw_allocator:best_fit",
+    "//pw_allocator:metrics",
+    "//pw_allocator:tracking_allocator",
+    "//pw_allocator/block:detailed_block",
+    "//pw_bloat:bloat_this_binary",
+]
+
+pw_cc_binary(
+    name = "tracking_allocator_all_metrics",
+    srcs = ["tracking_allocator_all_metrics.cc"],
+    deps = _tracking_allocator_deps,
+)
+
+pw_cc_binary(
+    name = "tracking_allocator_no_metrics",
+    srcs = ["tracking_allocator_no_metrics.cc"],
+    deps = _tracking_allocator_deps,
+)
+
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_allocator/size_report/size_report.h",
+    ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "public/pw_allocator/size_report/size_report.h",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
 )

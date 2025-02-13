@@ -14,14 +14,17 @@
 
 #include "pw_allocator/worst_fit.h"
 
-#include "pw_allocator/size_reporter.h"
+#include "pw_allocator/size_report/size_report.h"
+#include "pw_bloat/bloat_this_binary.h"
 
-int main() {
-  pw::allocator::SizeReporter reporter;
-  reporter.SetBaseline();
+namespace pw::allocator::size_report {
 
-  pw::allocator::WorstFitAllocator<> allocator(reporter.buffer());
-  reporter.Measure(allocator);
-
-  return 0;
+int Measure() {
+  volatile uint32_t mask = bloat::kDefaultMask;
+  static WorstFitAllocator<BlockType> allocator(GetBuffer());
+  return MeasureAllocator(allocator, mask);
 }
+
+}  // namespace pw::allocator::size_report
+
+int main() { return pw::allocator::size_report::Measure(); }

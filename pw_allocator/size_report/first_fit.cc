@@ -14,15 +14,18 @@
 
 #include "pw_allocator/first_fit.h"
 
-#include "pw_allocator/size_reporter.h"
+#include "pw_allocator/size_report/size_report.h"
+#include "pw_bloat/bloat_this_binary.h"
 
-int main() {
-  pw::allocator::SizeReporter reporter;
-  reporter.SetBaseline();
+namespace pw::allocator::size_report {
 
-  constexpr size_t kThreshold = 128;
-  pw::allocator::FirstFitAllocator<> allocator(reporter.buffer(), kThreshold);
-  reporter.Measure(allocator);
-
-  return 0;
+int Measure() {
+  volatile uint32_t mask = bloat::kDefaultMask;
+  static FirstFitAllocator<BlockType> allocator(GetBuffer());
+  allocator.set_threshold(128);
+  return MeasureAllocator(allocator, mask);
 }
+
+}  // namespace pw::allocator::size_report
+
+int main() { return pw::allocator::size_report::Measure(); }

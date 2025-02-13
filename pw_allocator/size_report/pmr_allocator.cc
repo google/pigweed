@@ -12,26 +12,38 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/pmr_allocator.h"
+#ifndef PW_ALLOCATOR_SIZE_REPORT_BASE
+#include "pw_allocator/pmr_allocator.h"  // nogncheck
+#endif
 
 #include <vector>
 
-#include "pw_allocator/first_fit.h"
-#include "pw_allocator/size_reporter.h"
-#include "pw_assert/check.h"
+#include "pw_allocator/best_fit.h"
+#include "pw_allocator/size_report/size_report.h"
+#include "pw_bloat/bloat_this_binary.h"
 
-int main() {
-  using Bar = ::pw::allocator::SizeReporter::Bar;
+namespace pw::allocator::size_report {
 
-  pw::allocator::SizeReporter reporter;
-  reporter.SetBaseline();
+int Measure() {
+  volatile uint32_t mask = bloat::kDefaultMask;
+  static BestFitAllocator<BlockType> base(GetBuffer());
 
-  pw::allocator::FirstFitAllocator<> base(reporter.buffer());
-  pw::allocator::PmrAllocator allocator(base);
-  std::pmr::vector<Bar> vec(allocator);
-  vec.emplace_back(1);
-  PW_CHECK_UINT_EQ(vec.size(), 1U);
-  vec.clear();
+#ifdef PW_ALLOCATOR_SIZE_REPORT_BASE
+  std::vector<Bar> vec;
+  auto* bar = base.New<Bar>(1);
+  vec.emplace_back(std::move(*bar));
 
-  return 0;
+#else  // PW_ALLOCATOR_SIZE_REPORT_BASE
+  static PmrAllocator alloc(base);
+  std::pmr::vector<Bar> vec(alloc);
+  PW_BLOAT_EXPR(vec.emplace_back(1), mask);
+
+#endif  // PW_ALLOCATOR_SIZE_REPORT_BASE
+
+  PW_BLOAT_EXPR(vec.clear(), mask);
+  return vec.empty() ? 0 : 1;
 }
+
+}  // namespace pw::allocator::size_report
+
+int main() { return pw::allocator::size_report::Measure(); }

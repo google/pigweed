@@ -490,8 +490,8 @@ Measure custom allocator size
 -----------------------------
 If you create your own allocator implementation, you may wish to measure its
 code size, similar to measurements in the module's own
-:ref:`module-pw_allocator-size-reports`. You can use ``pw_bloat`` and
-:ref:`module-pw_allocator-api-size_reporter` to create size reports as described
+:ref:`module-pw_allocator-size-reports`. You can use ``pw_bloat`` and the
+:ref:`module-pw_allocator-api-size_reports` to create size reports as described
 in :ref:`bloat-howto`.
 
 For example, the C++ code for a size report binary might look like:

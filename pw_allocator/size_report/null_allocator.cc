@@ -14,13 +14,16 @@
 
 #include "pw_allocator/null_allocator.h"
 
-#include "pw_allocator/size_reporter.h"
+#include "pw_allocator/size_report/size_report.h"
+#include "pw_bloat/bloat_this_binary.h"
 
-int main() {
-  pw::allocator::SizeReporter reporter;
-  reporter.SetBaseline();
+namespace pw::allocator::size_report {
 
-  reporter.Measure(pw::allocator::GetNullAllocator());
-
-  return 0;
+int Measure() {
+  volatile uint32_t mask = bloat::kDefaultMask;
+  return MeasureAllocator(GetNullAllocator(), mask);
 }
+
+}  // namespace pw::allocator::size_report
+
+int main() { return pw::allocator::size_report::Measure(); }

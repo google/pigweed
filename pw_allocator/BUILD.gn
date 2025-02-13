@@ -725,16 +725,6 @@ pw_test_group("tests") {
 
 # Docs
 
-pw_source_set("size_reporter") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_allocator/size_reporter.h" ]
-  public_deps = [
-    ":null_allocator",
-    "$dir_pw_bloat:bloat_this_binary",
-    dir_pw_bytes,
-  ]
-}
-
 pw_size_diff("allocator_api_size_report") {
   title = "Size of an empty implmentation of the Allocator interface"
   binaries = [
@@ -746,43 +736,54 @@ pw_size_diff("allocator_api_size_report") {
   ]
 }
 
-pw_size_diff("concrete_allocators_size_report") {
-  title = "Sizes of various concrete allocator implementations"
+pw_size_diff("block_allocators_size_report") {
+  title = "Sizes of various block allocator implementations"
   binaries = [
     {
       target = "size_report:best_fit"
-      base = "size_report:null_allocator"
+      base = "size_report:base"
       label = "BestFitAllocator"
     },
     {
-      target = "size_report:buddy_allocator"
-      base = "size_report:null_allocator"
-      label = "BuddyAllocator"
-    },
-    {
-      target = "size_report:bump_allocator"
-      base = "size_report:null_allocator"
-      label = "BumpAllocator"
+      target = "size_report:bucket_allocator"
+      base = "size_report:base"
+      label = "BucketAllocator"
     },
     {
       target = "size_report:first_fit"
-      base = "size_report:null_allocator"
+      base = "size_report:base"
       label = "FirstFitAllocator"
     },
     {
-      target = "size_report:libc_allocator"
-      base = "size_report:null_allocator"
-      label = "LibCAllocator"
-    },
-    {
       target = "size_report:tlsf_allocator"
-      base = "size_report:null_allocator"
+      base = "size_report:base"
       label = "TlsfAllocator"
     },
     {
       target = "size_report:worst_fit"
-      base = "size_report:null_allocator"
+      base = "size_report:base"
       label = "WorstFitAllocator"
+    },
+  ]
+}
+
+pw_size_diff("concrete_allocators_size_report") {
+  title = "Sizes of other concrete allocator implementations"
+  binaries = [
+    {
+      target = "size_report:buddy_allocator"
+      base = "size_report:base"
+      label = "BuddyAllocator"
+    },
+    {
+      target = "size_report:bump_allocator"
+      base = "size_report:base"
+      label = "BumpAllocator"
+    },
+    {
+      target = "size_report:libc_allocator"
+      base = "size_report:base"
+      label = "LibCAllocator"
     },
   ]
 }
@@ -792,7 +793,7 @@ pw_size_diff("forwarding_allocators_size_report") {
   binaries = [
     {
       target = "size_report:fallback_allocator"
-      base = "size_report:fallback_allocator_base"
+      base = "size_report:best_fit"
       label = "FallbackAllocator"
     },
     {
@@ -802,22 +803,22 @@ pw_size_diff("forwarding_allocators_size_report") {
     },
     {
       target = "size_report:synchronized_allocator_isl"
-      base = "size_report:first_fit"
+      base = "size_report:best_fit"
       label = "SynchronizedAllocator<sync::InterruptSpinLock>"
     },
     {
       target = "size_report:synchronized_allocator_mutex"
-      base = "size_report:first_fit"
+      base = "size_report:best_fit"
       label = "SynchronizedAllocator<sync::Mutex>"
     },
     {
       target = "size_report:tracking_allocator_all_metrics"
-      base = "size_report:first_fit"
+      base = "size_report:best_fit"
       label = "TrackingAllocator<AllMetrics>"
     },
     {
       target = "size_report:tracking_allocator_no_metrics"
-      base = "size_report:first_fit"
+      base = "size_report:best_fit"
       label = "TrackingAllocator<NoMetrics>"
     },
   ]
@@ -859,6 +860,7 @@ pw_doc_group("docs") {
   ]
   report_deps = [
     ":allocator_api_size_report",
+    ":block_allocators_size_report",
     ":concrete_allocators_size_report",
     ":forwarding_allocators_size_report",
     "examples:custom_allocator_size_report",

@@ -23,12 +23,25 @@ of the interface is measured using an empty implementation,
 .. .. include:: allocator_api_size_report
 .. include:: ../size_report_notice
 
-----------------------------------
-Concrete allocator implementations
-----------------------------------
-The following are code sizes for each of the provided allocator implementations
-that directly manage the memory they use to fulfill requests. These are measured
-relative to the empty implementation measured above.
+-------------------------------
+Block allocator implementations
+-------------------------------
+Most of the concrete allocator implementations provided by this module that
+are derived from :ref:`module-pw_allocator-api-block_allocator`. The following
+are code sizes for each of the block allocator implementations, and are measured
+relative to the blocks they use.
+
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: block_allocators_size_report
+.. include:: ../size_report_notice
+
+----------------------------------------
+Other concrete allocator implementations
+----------------------------------------
+The following are code sizes for the other allocator implementations that
+directly manage the memory they use to fulfill requests, but that do not derive
+from :ref:`module-pw_allocator-api-block_allocator`. These are measured relative
+to the empty implementation measured above.
 
 .. TODO: b/388905812 - Re-enable the size report.
 .. .. include:: concrete_allocators_size_report

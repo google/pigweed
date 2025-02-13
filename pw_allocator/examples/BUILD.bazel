@@ -148,8 +148,9 @@ pw_cc_binary(
     srcs = ["size_report.cc"],
     deps = [
         ":custom_allocator",
-        "//pw_allocator:first_fit",
-        "//pw_allocator:size_reporter",
+        "//pw_allocator:best_fit",
+        "//pw_allocator/size_report",
+        "//pw_bloat:bloat_this_binary",
     ],
 )
 

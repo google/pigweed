@@ -139,8 +139,9 @@ pw_executable("size_report") {
   sources = [ "size_report.cc" ]
   deps = [
     ":custom_allocator",
-    "$dir_pw_allocator:first_fit",
-    "$dir_pw_allocator:size_reporter",
+    "$dir_pw_allocator:best_fit",
+    "$dir_pw_allocator/size_report:size_report",
+    "$dir_pw_bloat:bloat_this_binary",
   ]
 }
 
@@ -178,7 +179,7 @@ pw_size_diff("custom_allocator_size_report") {
   binaries = [
     {
       target = ":size_report"
-      base = "$dir_pw_allocator/size_report:first_fit"
+      base = "$dir_pw_allocator/size_report:best_fit"
       label = "CustomAllocator"
     },
   ]
