@@ -37,6 +37,9 @@ export interface Settings {
   preserveBazelPath: Setting<boolean>;
   projectRoot: Setting<string>;
   refreshCompileCommandsTarget: Setting<string>;
+  supportBazelTargets: Setting<boolean | 'auto'>;
+  supportCmakeTargets: Setting<boolean | 'auto'>;
+  supportGnTargets: Setting<boolean | 'auto'>;
   terminalShell: Setting<TerminalShell>;
 }
 
@@ -111,6 +114,44 @@ export function boolSettingFor(section: string, category = 'pigweed') {
     },
 
     update: (value: boolean | undefined): Thenable<void> =>
+      vscode.workspace.getConfiguration(category).update(section, value),
+  };
+}
+
+/**
+ * Wrap the verbose ceremony of accessing/updating a particular setting.
+ *
+ * This variation handles some edge cases of boolean settings that also accept
+ * one or more other string literal values.
+ */
+export function boolWithExtraSettingFor<T extends string>(
+  section: string,
+  category = 'pigweed',
+) {
+  return {
+    get: (): boolean | T | undefined => {
+      const current = vscode.workspace
+        .getConfiguration(category)
+        .get(section) as boolean | T | string | undefined;
+
+      // This seems obvious, but thanks to the edge cases handled below, we
+      // need to compare actual values, not just truthiness.
+      if (current === true) return true;
+      if (current === false) return false;
+
+      // Undefined settings can manifest as empty strings.
+      if (current === undefined || current.length === 0) {
+        return undefined;
+      }
+
+      // In some cases, booleans are returned as strings.
+      if (current === 'true') return true;
+      if (current === 'false') return false;
+
+      return current as T;
+    },
+
+    update: (value: boolean | T | undefined): Thenable<void> =>
       vscode.workspace.getConfiguration(category).update(section, value),
   };
 }
@@ -255,6 +296,44 @@ function refreshCompileCommandsTarget(
   return update(value);
 }
 
+function supportBazelTargets(): boolean | 'auto';
+function supportBazelTargets(
+  value: boolean | 'auto' | undefined,
+): Thenable<void>;
+function supportBazelTargets(
+  value?: boolean | 'auto',
+): boolean | 'auto' | undefined | Thenable<void> {
+  const { get, update } = boolWithExtraSettingFor<'auto'>(
+    'supportBazelTargets',
+  );
+  if (value === undefined) return get() ?? 'auto';
+  update(value);
+}
+
+function supportCmakeTargets(): boolean | 'auto';
+function supportCmakeTargets(
+  value: boolean | 'auto' | undefined,
+): Thenable<void>;
+function supportCmakeTargets(
+  value?: boolean | 'auto',
+): boolean | 'auto' | undefined | Thenable<void> {
+  const { get, update } = boolWithExtraSettingFor<'auto'>(
+    'supportCmakeTargets',
+  );
+  if (value === undefined) return get() ?? 'auto';
+  update(value);
+}
+
+function supportGnTargets(): boolean | 'auto';
+function supportGnTargets(value: boolean | 'auto' | undefined): Thenable<void>;
+function supportGnTargets(
+  value?: boolean | 'auto',
+): boolean | 'auto' | undefined | Thenable<void> {
+  const { get, update } = boolWithExtraSettingFor<'auto'>('supportGnTargets');
+  if (value === undefined) return get() ?? 'auto';
+  update(value);
+}
+
 function terminalShell(): TerminalShell;
 function terminalShell(value: TerminalShell | undefined): Thenable<void>;
 function terminalShell(
@@ -280,6 +359,9 @@ export const settings: Settings = {
   preserveBazelPath,
   projectRoot,
   refreshCompileCommandsTarget,
+  supportBazelTargets,
+  supportCmakeTargets,
+  supportGnTargets,
   terminalShell,
 };
 

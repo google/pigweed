@@ -20,6 +20,7 @@ import {
   configureBazelSettings,
   interactivelySetBazeliskPath,
   setBazelRecommendedSettings,
+  shouldSupportBazel,
 } from './bazel';
 
 import {
@@ -69,6 +70,8 @@ import {
 } from './terminal';
 
 import { commandRegisterer, VscCommandCallback } from './utils';
+import { shouldSupportGn } from './gn';
+import { shouldSupportCmake } from './cmake';
 
 interface CommandEntry {
   name: string;
@@ -405,8 +408,51 @@ async function configureProject(
       : undefined;
 }
 
+function buildSystemStatusReason(
+  settingsValue: boolean | 'auto',
+  activeState: boolean,
+): string {
+  switch (settingsValue) {
+    case true:
+      return 'Enabled in settings.';
+    case false:
+      return 'Disabled in settings.';
+    case 'auto':
+      return `Build files ${activeState ? '' : "don't "}exist in project.`;
+  }
+}
+
 export async function activate(context: vscode.ExtensionContext) {
   logger.info('Extension loaded');
+  logger.info('');
+
+  const useBazel = await shouldSupportBazel();
+  const useCmake = await shouldSupportCmake();
+  const useGn = await shouldSupportGn();
+
+  logger.info(`Bazel support is ${useBazel ? 'ACTIVE' : 'DISABLED'}`);
+  logger.info(
+    `↳ Reason: ${buildSystemStatusReason(
+      settings.supportBazelTargets(),
+      useBazel,
+    )}`,
+  );
+  logger.info('');
+
+  logger.info(`CMake support is ${useCmake ? 'ACTIVE' : 'DISABLED'}`);
+  logger.info(
+    `↳ Reason: ${buildSystemStatusReason(
+      settings.supportCmakeTargets(),
+      useCmake,
+    )}`,
+  );
+  logger.info('');
+
+  logger.info(`GN support is ${useGn ? 'ACTIVE' : 'DISABLED'}`);
+  logger.info(
+    `↳ Reason: ${buildSystemStatusReason(settings.supportGnTargets(), useGn)}`,
+  );
+  logger.info('');
 
   // Marshall all of our components and dependencies.
   const refreshManager = disposer.add(RefreshManager.create({ logger }));
@@ -450,7 +496,10 @@ export async function activate(context: vscode.ExtensionContext) {
       settings.disableCompileCommandsFileWatcher(),
     );
 
-    await initAsBazelProject(refreshManager, compileCommandsWatcher);
+    // Don't do Bazel init if the user has explicitly disabled Bazel support.
+    if (useBazel) {
+      await initAsBazelProject(refreshManager, compileCommandsWatcher);
+    }
 
     registerCommands(
       projectType,

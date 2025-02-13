@@ -144,6 +144,45 @@
           "default": "//:refresh_compile_commands",
           "description": "The Bazel target to run to refresh compile commands"
         },
+        "pigweed.supportBazelTargets": {
+          "type": [
+            "boolean",
+            "string"
+          ],
+          "enum": [
+            "auto",
+            true,
+            false
+          ],
+          "default": "auto",
+          "description": "Enable or disable support for Bazel build targets"
+        },
+        "pigweed.supportCmakeTargets": {
+          "type": [
+            "boolean",
+            "string"
+          ],
+          "enum": [
+            "auto",
+            true,
+            false
+          ],
+          "default": "auto",
+          "description": "Enable or disable support for CMake build targets"
+        },
+        "pigweed.supportGnTargets": {
+          "type": [
+            "boolean",
+            "string"
+          ],
+          "enum": [
+            "auto",
+            true,
+            false
+          ],
+          "default": "auto",
+          "description": "Enable or disable support for GN build targets"
+        },
         "pigweed.terminalShell": {
           "type": "string",
           "default": "bash",

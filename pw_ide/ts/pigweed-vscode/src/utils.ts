@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import { globIterate } from 'glob';
+
 import * as vscode from 'vscode';
 import { ExtensionContext } from 'vscode';
 
@@ -27,3 +29,12 @@ export const commandRegisterer =
       vscode.commands.registerCommand(command, callback, thisArg),
     );
   };
+
+/** Return true if there exists at least one file matching the glob. */
+export async function fileTypeExists(globString: string): Promise<boolean> {
+  for await (const _ of globIterate(globString)) {
+    return true;
+  }
+
+  return false;
+}
