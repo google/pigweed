@@ -17,7 +17,7 @@ import * as path from 'path';
 
 import { glob } from 'glob';
 
-import type { Settings, WorkingDirStore } from './settings';
+import type { Settings, WorkingDirStore } from './settings/vscode';
 
 const PIGWEED_JSON = 'pigweed.json' as const;
 

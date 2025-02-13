@@ -27,7 +27,7 @@ import * as vscode from 'vscode';
 
 import { vendoredBazeliskPath } from './bazel';
 import logger from './logging';
-import { bazel_executable, settings } from './settings';
+import { bazel_executable, settings } from './settings/vscode';
 
 type InitScript = 'activate' | 'bootstrap';
 

@@ -28,7 +28,7 @@ import {
   settings,
   ConfigAccessor,
   bazel_codelens,
-} from './settings';
+} from './settings/vscode';
 
 /**
  * Is there a path to the given tool configured in VS Code settings?

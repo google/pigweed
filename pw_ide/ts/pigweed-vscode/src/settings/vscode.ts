@@ -14,7 +14,7 @@
 
 import * as vscode from 'vscode';
 
-import logger from './logging';
+import logger from '../logging';
 
 interface Setting<T> {
   (): T | undefined;

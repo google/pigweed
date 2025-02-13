@@ -28,7 +28,7 @@ import { Disposable } from '../disposables';
 import { didInit, didUpdateActiveFilesCache } from '../events';
 import logger from '../logging';
 import { OK, RefreshCallback, RefreshManager } from '../refreshManager';
-import { settings, workingDir } from '../settings';
+import { settings, workingDir } from '../settings/vscode';
 
 /** Parse a compilation database and get the source files in the build. */
 async function parseForSourceFiles(target: Target): Promise<Set<string>> {

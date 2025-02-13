@@ -24,7 +24,7 @@ import {
 } from './events';
 
 import { RefreshStatus } from './refreshManager';
-import { settings } from './settings';
+import { settings } from './settings/vscode';
 
 const DEFAULT_TARGET_TEXT = 'Select a Target';
 const ICON_IDLE = '$(check)';

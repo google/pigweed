@@ -29,7 +29,7 @@ import {
   RefreshCallbackResult,
 } from './refreshManager';
 
-import { bazel_executable, settings, workingDir } from './settings';
+import { bazel_executable, settings, workingDir } from './settings/vscode';
 
 /** Regex for finding ANSI escape codes. */
 const ANSI_PATTERN = new RegExp(

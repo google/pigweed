@@ -33,7 +33,7 @@ import {
 
 import logger from './logging';
 import { getPigweedProjectRoot } from './project';
-import { settings, workingDir } from './settings';
+import { settings, workingDir } from './settings/vscode';
 
 type DecorationsMap = Map<string, FileDecoration | undefined>;
 

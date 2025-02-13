@@ -15,11 +15,11 @@
 import * as vscode from 'vscode';
 import { RelativePattern } from 'vscode';
 
-import { Disposable } from './disposables';
-import { ClangdActiveFilesCache } from './clangd';
-import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
-import logger from './logging';
-import { settings } from './settings';
+import { Disposable } from '../disposables';
+import { ClangdActiveFilesCache } from '../clangd';
+import { getSettingsData, syncSettingsSharedToProject } from '../configParsing';
+import logger from '../logging';
+import { settings } from './vscode';
 
 export class SettingsFileWatcher extends Disposable {
   constructor() {

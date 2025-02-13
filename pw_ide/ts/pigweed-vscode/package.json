@@ -180,6 +180,7 @@
     "hjson": "^3.2.2",
     "js-yaml": "^4.1.0",
     "node_modules-path": "^2.0.8",
+    "yaml": "^2.7.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

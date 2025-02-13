@@ -18,7 +18,7 @@ import * as path from 'path';
 import { getReliableBazelExecutable } from '../bazel';
 import logger from '../logging';
 import { getPigweedProjectRoot } from '../project';
-import { settings, stringSettingFor, workingDir } from '../settings';
+import { settings, stringSettingFor, workingDir } from '../settings/vscode';
 
 export const clangdPath = () =>
   path.join(workingDir.get(), 'bazel-bin', 'clangd');

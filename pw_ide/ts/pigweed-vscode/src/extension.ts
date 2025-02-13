@@ -51,8 +51,11 @@ import {
   isBootstrapProject,
 } from './project';
 import { RefreshManager } from './refreshManager';
-import { settings, workingDir } from './settings';
-import { ClangdFileWatcher, SettingsFileWatcher } from './settingsWatcher';
+import { settings, workingDir } from './settings/vscode';
+import {
+  ClangdFileWatcher,
+  SettingsFileWatcher,
+} from './settings/settingsWatcher';
 
 import {
   InactiveVisibilityStatusBarItem,

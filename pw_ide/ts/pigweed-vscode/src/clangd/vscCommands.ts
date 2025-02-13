@@ -23,7 +23,7 @@ import { didChangeClangdConfig, didChangeTarget } from '../events';
 import { launchTroubleshootingLink } from '../links';
 import logger from '../logging';
 import { RefreshManager } from '../refreshManager';
-import { settingFor, settings, stringSettingFor } from '../settings';
+import { settingFor, settings, stringSettingFor } from '../settings/vscode';
 
 export async function setTargetWithClangd(
   target: Target | undefined,
