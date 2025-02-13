@@ -5079,7 +5079,7 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
                               PropertyList(UnorderedElementsAre(
                                   UintIs("connection_attempts", 1),
                                   UintIs("failed_connections", 0),
-                                  UintIs("successful_connections", 0))))));
+                                  UintIs("successful_connections", 1))))));
 
   auto outgoing_matcher =
       AllOf(NodeMatches(AllOf(NameMatches("outgoing"),
@@ -5119,7 +5119,7 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
                               PropertyList(UnorderedElementsAre(
                                   UintIs("connection_attempts", 1),
                                   UintIs("failed_connections", 0),
-                                  UintIs("successful_connections", 0))))));
+                                  UintIs("successful_connections", 1))))));
 
   auto requests_matcher = AllOf(NodeMatches(NameMatches("connection_requests")),
                                 ChildrenMatch(::testing::IsEmpty()));
@@ -5155,6 +5155,69 @@ TEST_F(BrEdrConnectionManagerTest, Inspect) {
   hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo());
   EXPECT_THAT(hierarchy.value(),
               ChildrenMatch(ElementsAre(conn_mgr_after_disconnect_matcher)));
+}
+
+// Verify that a failed incoming BR/EDR connection is reflected in inspect data
+TEST_F(BrEdrConnectionManagerTest, InspectDataAfterFailedIncomingConnection) {
+  connmgr()->AttachInspect(inspector().GetRoot(), "bredr_connection_manager");
+
+  const auto connection_complete_failed = testing::ConnectionCompletePacket(
+      kTestDevAddr,
+      kConnectionHandle,
+      pw::bluetooth::emboss::StatusCode::CONNECTION_TIMEOUT);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::AcceptConnectionRequestPacket(kTestDevAddr),
+                        &kAcceptConnectionRequestRsp,
+                        &connection_complete_failed);
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunUntilIdle();
+
+  auto* const peer = peer_cache()->FindByAddress(kTestDevAddr);
+  ASSERT_TRUE(peer);
+
+  auto empty_requests_matcher =
+      AllOf(NodeMatches(NameMatches("connection_requests")),
+            ChildrenMatch(::testing::IsEmpty()));
+
+  auto connections_matcher = AllOf(NodeMatches(NameMatches("connections")),
+                                   ChildrenMatch(::testing::IsEmpty()));
+
+  auto recent_conn_list_matcher =
+      AllOf(NodeMatches(NameMatches("last_disconnected")),
+            ChildrenMatch(::testing::IsEmpty()));
+
+  auto incoming_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("incoming"),
+                              PropertyList(UnorderedElementsAre(
+                                  UintIs("connection_attempts", 1),
+                                  UintIs("failed_connections", 1),
+                                  UintIs("successful_connections", 0))))));
+
+  auto outgoing_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("outgoing"),
+                              PropertyList(UnorderedElementsAre(
+                                  UintIs("connection_attempts", 0),
+                                  UintIs("failed_connections", 0),
+                                  UintIs("successful_connections", 0))))));
+
+  auto conn_mgr_matcher = AllOf(
+      NodeMatches(AllOf(NameMatches("bredr_connection_manager"),
+                        PropertyList(UnorderedElementsAre(
+                            UintIs("disconnect_acl_link_error_count", 0),
+                            UintIs("disconnect_interrogation_failed_count", 0),
+                            UintIs("disconnect_local_api_request_count", 0),
+                            UintIs("disconnect_pairing_failed_count", 0),
+                            UintIs("disconnect_peer_disconnection_count", 0),
+                            UintIs("interrogation_complete_count", 0),
+                            StringIs("security_mode", "Mode 4"))))),
+      ChildrenMatch(UnorderedElementsAre(empty_requests_matcher,
+                                         connections_matcher,
+                                         recent_conn_list_matcher,
+                                         incoming_matcher,
+                                         outgoing_matcher)));
+
+  auto hierarchy = inspect::ReadFromVmo(inspector().DuplicateVmo());
+  EXPECT_THAT(hierarchy.value(), ChildrenMatch(ElementsAre(conn_mgr_matcher)));
 }
 #endif  // NINSPECT
 

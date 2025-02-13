@@ -1169,6 +1169,8 @@ void BrEdrConnectionManager::CompleteRequest(
 
   bool completes_outgoing_request =
       pending_request_ && pending_request_->peer_address() == address;
+  bool has_incoming_request =
+      !completes_outgoing_request && request.HasIncoming();
   bool failed = status.is_error();
 
   const char* direction = completes_outgoing_request ? "outgoing" : "incoming";
@@ -1249,7 +1251,7 @@ void BrEdrConnectionManager::CompleteRequest(
     }
     if (completes_outgoing_request) {
       inspect_properties_.outgoing_.failed_connections_.Add(1);
-    } else if (request.HasIncoming()) {
+    } else if (has_incoming_request) {
       inspect_properties_.incoming_.failed_connections_.Add(1);
     }
     request.NotifyCallbacks(status, [] { return nullptr; });
@@ -1257,7 +1259,7 @@ void BrEdrConnectionManager::CompleteRequest(
   } else {
     if (completes_outgoing_request) {
       inspect_properties_.outgoing_.successful_connections_.Add(1);
-    } else if (request.HasIncoming()) {
+    } else if (has_incoming_request) {
       inspect_properties_.incoming_.successful_connections_.Add(1);
     }
     // Callbacks will be notified when interrogation completes
