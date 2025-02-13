@@ -4776,6 +4776,28 @@ TEST_F(InitiatorPairingTest, SecurityRequestReceivedWhileStartingEncryption) {
   EXPECT_EQ(1, new_sec_props_count());
 }
 
+TEST_F(InitiatorPairingTest, BrEdrCtkdHappenedAfterSecurityManagerCreation) {
+  InitializePeer(kPeerPublicAddr);
+  NewSecurityManager(
+      Role::kInitiator, IOCapability::kDisplayOnly, BondableMode::Bondable);
+
+  sm::PairingData pairing_data;
+  pairing_data.local_ltk = kAuthenticatedSecureKey;
+  pairing_data.peer_ltk = kAuthenticatedSecureKey;
+  peer().MutLe().SetBondData(pairing_data);
+
+  // The security upgrade should simply start encryption with the LTK we just
+  // set.
+  UpgradeSecurity(SecurityLevel::kEncrypted);
+  RunUntilIdle();
+  EXPECT_EQ(0, pairing_request_count());
+  EXPECT_EQ(1, fake_link()->start_encryption_count());
+  fake_link()->TriggerEncryptionChangeCallback(fit::ok(/*enabled=*/true));
+  RunUntilIdle();
+  EXPECT_EQ(1, new_sec_props_count());
+  EXPECT_EQ(security_callback_count(), 1);
+}
+
 }  // namespace
 }  // namespace bt::sm
 // inclusive-language: enable

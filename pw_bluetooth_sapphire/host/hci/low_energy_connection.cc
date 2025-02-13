@@ -153,6 +153,9 @@ LowEnergyConnection::OnLELongTermKeyRequestEvent(const EventPacket& event) {
         status_event, TRACE, "hci-le", "failed to reply to LTK request");
   };
 
+  // TODO(fxbug.dev/388607971): The LTK may be stale if BR/EDR cross-transport
+  // key derivation was performed. Maybe move this method to
+  // sm::SecurityManager.
   if (ltk() && ltk()->rand() == rand && ltk()->ediv() == ediv) {
     auto cmd = CommandPacket::New<
         pw::bluetooth::emboss::LELongTermKeyRequestReplyCommandWriter>(
