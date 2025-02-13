@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include "pw_allocator/best_fit.h"
-#include "pw_allocator/synchronized_allocator.h"
 #include "pw_bluetooth_proxy/gatt_notify_channel.h"
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
@@ -25,7 +23,6 @@
 #include "pw_bluetooth_proxy/l2cap_coc.h"
 #include "pw_bluetooth_proxy/l2cap_status_delegate.h"
 #include "pw_bluetooth_proxy/rfcomm_channel.h"
-#include "pw_multibuf/simple_allocator.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
