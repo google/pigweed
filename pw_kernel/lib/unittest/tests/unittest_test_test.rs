@@ -23,3 +23,9 @@ fn test_add() -> unittest::Result<()> {
     unittest::assert_eq!(add(1, 2), 3);
     Ok(())
 }
+
+#[test]
+fn test_add_ne() -> unittest::Result<()> {
+    unittest::assert_ne!(add(1, 2), 4);
+    Ok(())
+}

@@ -115,6 +115,25 @@ macro_rules! assert_eq {
 }
 
 #[macro_export]
+macro_rules! assert_ne {
+    ($a:expr, $b:expr) => {
+        if $a == $b {
+            return Err(unittest::TestError {
+                file: file!(),
+                line: line!(),
+                message: unittest::pw_bytes::concat_static_strs!(
+                    "assert_ne!(",
+                    stringify!($a),
+                    ", ",
+                    stringify!($b),
+                    ") failed"
+                ),
+            });
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! assert_true {
     ($a:expr) => {
         if !$a {
