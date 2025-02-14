@@ -16,6 +16,7 @@ load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:copy_to_bin.bzl", "copy_to_bin")
+load("//pw_protobuf_compiler:pw_proto_filegroup.bzl", "pw_proto_filegroup")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "nanopb_proto_library",
@@ -134,5 +135,77 @@ copy_to_bin(
     srcs = [
         "pw_protobuf_compiler_protos/nested/more_nesting/test.proto",
         "pw_protobuf_compiler_protos/test.proto",
+    ],
+)
+
+pw_proto_filegroup(
+    name = "prefix_tests_proto_with_options",
+    srcs = ["nanopb_test_protos/prefix_tests.proto"],
+    options_files = ["nanopb_test_protos/prefix_tests.options"],
+)
+
+proto_library(
+    name = "prefix_tests_default_proto",
+    srcs = [":prefix_tests_proto_with_options"],
+)
+
+nanopb_proto_library(
+    name = "prefix_tests_default_nanopb",
+    deps = [":prefix_tests_default_proto"],
+)
+
+pw_cc_test(
+    name = "prefix_default_test",
+    srcs = ["prefix_test.cc"],
+    local_defines = ["PW_PROTOBUF_COMPILER_IMPORT=DEFAULT"],
+    deps = [
+        ":prefix_tests_default_nanopb",
+        "//pw_status",
+        "//pw_string:util",
+    ],
+)
+
+proto_library(
+    name = "prefix_tests_strip_import_prefix_proto",
+    srcs = [":prefix_tests_proto_with_options"],
+    strip_import_prefix = "/pw_protobuf_compiler/nanopb_test_protos",
+)
+
+nanopb_proto_library(
+    name = "prefix_tests_strip_import_prefix_nanopb",
+    deps = [":prefix_tests_strip_import_prefix_proto"],
+)
+
+pw_cc_test(
+    name = "prefix_strip_import_prefix_test",
+    srcs = ["prefix_test.cc"],
+    local_defines = ["PW_PROTOBUF_COMPILER_IMPORT=STRIP_IMPORT_PREFIX"],
+    deps = [
+        ":prefix_tests_strip_import_prefix_nanopb",
+        "//pw_status",
+        "//pw_string:util",
+    ],
+)
+
+proto_library(
+    name = "prefix_tests_import_prefix_proto",
+    srcs = [":prefix_tests_proto_with_options"],
+    import_prefix = "some_prefix",
+    strip_import_prefix = "/pw_protobuf_compiler/nanopb_test_protos",
+)
+
+nanopb_proto_library(
+    name = "prefix_tests_import_prefix_nanopb",
+    deps = [":prefix_tests_import_prefix_proto"],
+)
+
+pw_cc_test(
+    name = "prefix_import_prefix_test",
+    srcs = ["prefix_test.cc"],
+    local_defines = ["PW_PROTOBUF_COMPILER_IMPORT=IMPORT_PREFIX"],
+    deps = [
+        ":prefix_tests_import_prefix_nanopb",
+        "//pw_status",
+        "//pw_string:util",
     ],
 )

@@ -30,6 +30,7 @@ pw_test_group("tests") {
     ":pwpb_test",
     ":nested_packages_test",
     ":pwpb_no_prefix_test",
+    ":prefix_default_test",
   ]
 }
 
@@ -83,4 +84,56 @@ pw_proto_library("pwpb_no_prefix_test_protos") {
 pw_test("pwpb_no_prefix_test") {
   sources = [ "pwpb_test_no_prefix.cc" ]
   deps = [ ":pwpb_no_prefix_test_protos.pwpb" ]
+}
+
+pw_proto_library("prefix_tests_default_proto") {
+  sources = [ "nanopb_test_protos/prefix_tests.proto" ]
+  inputs = [ "nanopb_test_protos/prefix_tests.options" ]
+  prefix = "pw_protobuf_compiler"
+}
+
+pw_test("prefix_default_test") {
+  sources = [ "prefix_test.cc" ]
+  defines = [ "PW_PROTOBUF_COMPILER_IMPORT=DEFAULT" ]
+  deps = [
+    ":prefix_tests_default_proto.nanopb",
+    "$dir_pw_status",
+    "$dir_pw_string",
+  ]
+  enable_if = dir_pw_third_party_nanopb != ""
+}
+
+pw_proto_library("prefix_tests_strip_import_prefix_proto") {
+  sources = [ "nanopb_test_protos/prefix_tests.proto" ]
+  inputs = [ "nanopb_test_protos/prefix_tests.options" ]
+  strip_prefix = "nanopb_test_protos"
+}
+
+pw_test("prefix_strip_import_prefix_test") {
+  sources = [ "prefix_test.cc" ]
+  defines = [ "PW_PROTOBUF_COMPILER_IMPORT=STRIP_IMPORT_PREFIX" ]
+  deps = [
+    ":prefix_tests_default_proto.nanopb",
+    "$dir_pw_status",
+    "$dir_pw_string",
+  ]
+  enable_if = dir_pw_third_party_nanopb != ""
+}
+
+pw_proto_library("prefix_tests_import_prefix_proto") {
+  sources = [ "nanopb_test_protos/prefix_tests.proto" ]
+  inputs = [ "nanopb_test_protos/prefix_tests.options" ]
+  strip_prefix = "nanopb_test_protos"
+  prefix = "some_prefix"
+}
+
+pw_test("prefix_import_prefix_test") {
+  sources = [ "prefix_test.cc" ]
+  defines = [ "PW_PROTOBUF_COMPILER_IMPORT=IMPORT_PREFIX" ]
+  deps = [
+    ":prefix_tests_default_proto.nanopb",
+    "$dir_pw_status",
+    "$dir_pw_string",
+  ]
+  enable_if = dir_pw_third_party_nanopb != ""
 }

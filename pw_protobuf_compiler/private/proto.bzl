@@ -98,6 +98,21 @@ def compile_proto(ctx):
         defines = [],
     )
 
+def _options_symlink_path(options_file, workspace_root, proto_source_root, import_prefix, strip_import_prefix):
+    path_in_module = paths.relativize(options_file.path, workspace_root)
+
+    if strip_import_prefix:
+        stripped_path = paths.relativize(path_in_module, strip_import_prefix.lstrip("/"))
+    else:
+        stripped_path = path_in_module
+
+    if import_prefix:
+        extended_path = paths.join(import_prefix, stripped_path)
+    else:
+        extended_path = stripped_path
+
+    return paths.join(proto_source_root, extended_path)
+
 def _proto_compiler_aspect_impl(target, ctx):
     # List the files we will generate for this proto_library target.
     proto_info = target[ProtoInfo]
@@ -146,6 +161,43 @@ def _proto_compiler_aspect_impl(target, ctx):
             else:
                 srcs.append(out_file)
 
+    # The proto_source_root may be prefixed with the output directory. But it
+    # may not. Ensure that there is no such prefix, which is intended to become
+    # the only case one day. See
+    # https://github.com/protocolbuffers/protobuf/blob/069a66850d1d8bb83c1ca1eb5bdee87525290584/bazel/private/proto_info.bzl#L154-L165
+    relative_proto_source_root = proto_info.proto_source_root
+    if relative_proto_source_root.startswith(out_path):
+        relative_proto_source_root = paths.relativize(relative_proto_source_root, out_path)
+
+    # Symlink the .options files into the proto_source_root, so that they can be
+    # found by protoc plugins regardless of [strip_]import_prefix attribute
+    # values.
+    #
+    # For example, say we have a proto_library in //a/b/BUILD.bazel with
+    # strip_import_prefix = b and import_prefix = xyz. Then, the `.proto` files
+    # will live in the directory,
+    #
+    # bazel-bin/a/b/_virtual_imports/a/xyz/
+    #
+    # What we do here is move the `.options` files to the same directory. Later
+    # on, we'll provide `bazel-bin/a/b/_virtual_imports` to the protoc plugin's
+    # search path via `--custom_opt=-I`. This way, the proto and options files
+    # will be alongside each other, as the plugins expect.
+    symlinks = []
+    for src in ctx.rule.attr.srcs:
+        if PwProtoOptionsInfo in src:
+            for options_file in src[PwProtoOptionsInfo].options_files.to_list():
+                path_to_options_file = _options_symlink_path(
+                    options_file,
+                    target.label.workspace_root,
+                    relative_proto_source_root,
+                    ctx.rule.attr.import_prefix,
+                    ctx.rule.attr.strip_import_prefix,
+                )
+                options_symlink_out = ctx.actions.declare_file(path_to_options_file)
+                ctx.actions.symlink(output = options_symlink_out, target_file = options_file)
+                symlinks.append(options_symlink_out)
+
     # List the `.options` files from any `pw_proto_filegroup` targets listed
     # under this target's `srcs`.
     options_files = [
@@ -155,36 +207,12 @@ def _proto_compiler_aspect_impl(target, ctx):
         for options_file in src[PwProtoOptionsInfo].options_files.to_list()
     ]
 
-    # Local repository options files.
-    options_file_include_paths = [paths.join(".", ctx.rule.attr.strip_import_prefix.lstrip("/"))]
-    for options_file in options_files:
-        # Handle .options files residing in external repositories.
-        if options_file.owner.workspace_root:
-            options_file_include_paths.append(
-                paths.join(
-                    options_file.owner.workspace_root,
-                    ctx.rule.attr.strip_import_prefix.lstrip("/"),
-                ),
-            )
-
-        # Handle generated .options files.
-        if options_file.root.path:
-            options_file_include_paths.append(
-                paths.join(
-                    options_file.root.path,
-                    ctx.rule.attr.strip_import_prefix.lstrip("/"),
-                ),
-            )
-
     args = ctx.actions.args()
     for path in proto_info.transitive_proto_path.to_list():
         args.add("-I{}".format(path))
 
     args.add("--plugin=protoc-gen-custom={}".format(ctx.executable._protoc_plugin.path))
-
-    # Convert include paths to a depset and back to deduplicate entries.
-    for options_file_include_path in depset(options_file_include_paths).to_list():
-        args.add("--custom_opt=-I{}".format(options_file_include_path))
+    args.add("--custom_opt=-I{}".format(paths.join(out_path, relative_proto_source_root)))
 
     for plugin_option in ctx.attr._plugin_options:
         # If the plugin supports directly specifying the location of the options files, pass them here.
@@ -207,7 +235,7 @@ def _proto_compiler_aspect_impl(target, ctx):
         inputs = depset(
             direct = proto_info.direct_sources +
                      proto_info.transitive_sources.to_list() +
-                     options_files,
+                     options_files + symlinks,
             transitive = [proto_info.transitive_descriptor_sets],
         ),
         progress_message = "Generating %s C++ files for %s" % (ctx.attr._extensions, ctx.label.name),
