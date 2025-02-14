@@ -11,9 +11,17 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-
-// This override header includes the main tokenized logging header and defines
-// the PW_LOG macro as the tokenized logging macro.
 #pragma once
 
-#include "pw_interrupt_cortex_a/context_inline.h"
+#include <cstdint>
+
+#include "portmacro.h"
+
+namespace pw::interrupt {
+
+// This backend require the FreeRTOS port to define the xPortIsInsideInterrupt,
+// which is not available on every officially supported port. It may be
+// necessary to extend certain ports for this backend to work.
+inline bool InInterruptContext() { return !!xPortIsInsideInterrupt(); }
+
+}  // namespace pw::interrupt

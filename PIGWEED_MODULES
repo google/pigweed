@@ -80,8 +80,8 @@ pw_i2c_mcuxpresso
 pw_i2c_rp2040
 pw_ide
 pw_interrupt
-pw_interrupt_cortex_a
 pw_interrupt_cortex_m
+pw_interrupt_freertos
 pw_interrupt_xtensa
 pw_interrupt_zephyr
 pw_intrusive_ptr

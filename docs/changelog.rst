@@ -245,7 +245,7 @@ Highlights (Jan 10, 2025 to Jan 24, 2025):
   :ref:`layering check <module-pw_toolchain-bazel-layering-check>` in Bazel.
   Including headers that aren't in the ``hdrs`` of a ``cc_library``
   you directly depend on becomes a compile-time error.
-* **Cortex-A support**: :ref:`module-pw_interrupt_cortex_a` is a new
+* **Cortex-A support**: pw_interrupt_cortex_a is a new
   ``pw_interrupt`` backend for Arm Cortex-A processors. ``pw_toolchain``
   now supports Arm Cortex-A35.
 * **Atomic API**: The new :ref:`module-pw_atomic` module provides software
@@ -329,7 +329,7 @@ New features:
 
 .. e61919ca93f922bc67fc6bd2f005c00f858cdcbd
 
-* :ref:`module-pw_interrupt_cortex_a` is a new ``pw_interrupt`` backend
+* [Deprecated] pw_interrupt_cortex_a is a new ``pw_interrupt`` backend
   for Arm Cortex-A processors. Commit: `Add pw_interrupt backend for
   A-profile processors <https://pwrev.dev/261396>`__.
 

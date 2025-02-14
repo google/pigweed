@@ -41,11 +41,14 @@ cc_library(
 cc_library(
     name = "context_implementation",
     hdrs = [
-        "public/pw_interrupt_cortex_a/context_inline.h",
+        "public/pw_interrupt_freertos/context_inline.h",
     ],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     visibility = ["//visibility:private"],
+    deps = [
+        "@freertos",
+    ],
 )
 
 sphinx_docs_library(
@@ -53,6 +56,6 @@ sphinx_docs_library(
     srcs = [
         "docs.rst",
     ],
-    prefix = "pw_interrupt_cortex_a/",
+    prefix = "pw_interrupt_freertos/",
     target_compatible_with = incompatible_with_mcu(),
 )

@@ -14,11 +14,13 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_library(pw_interrupt_cortex_a.context INTERFACE
+pw_add_library(pw_interrupt_freertos.context INTERFACE
   HEADERS
-    public/pw_interrupt_cortex_a/context_inline.h
+    public/pw_interrupt_freertos/context_inline.h
     public_overrides/pw_interrupt_backend/context_inline.h
   PUBLIC_INCLUDES
     public
     public_overrides
+  PUBLIC_DEPS
+    pw_third_party.freertos
 )

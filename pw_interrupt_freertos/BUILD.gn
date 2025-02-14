@@ -29,13 +29,16 @@ config("backend_config") {
 }
 
 pw_source_set("context") {
-  public_deps = [ "$dir_pw_interrupt:context.facade" ]
+  public_deps = [
+    "$dir_pw_interrupt:context.facade",
+    "$dir_pw_third_party/freertos",
+  ]
   public_configs = [
     ":public_include_path",
     ":backend_config",
   ]
   public = [
-    "public/pw_interrupt_cortex_a/context_inline.h",
+    "public/pw_interrupt_freertos/context_inline.h",
     "public_overrides/pw_interrupt_backend/context_inline.h",
   ]
 }
