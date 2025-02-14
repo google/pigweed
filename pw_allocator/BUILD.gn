@@ -747,6 +747,32 @@ pw_size_diff("blocks_size_report") {
   ]
 }
 
+pw_size_diff("buckets_size_report") {
+  title = "Sizes of various bucket implementations"
+  binaries = [
+    {
+      target = "size_report:fast_sorted"
+      base = "size_report:fast_sorted_base"
+      label = "FastSortedBucket, which uses IntrusiveMultiMap"
+    },
+    {
+      target = "size_report:sequenced"
+      base = "size_report:sequenced_base"
+      label = "SequencedBucket, which uses IntrusiveList"
+    },
+    {
+      target = "size_report:sorted"
+      base = "size_report:sorted_base"
+      label = "SortedBucket, which uses IntrusiveForwardList"
+    },
+    {
+      target = "size_report:unordered"
+      base = "size_report:unordered_base"
+      label = "UnorderedBucket, which uses IntrusiveForwardList"
+    },
+  ]
+}
+
 pw_size_diff("block_allocators_size_report") {
   title = "Sizes of various block allocator implementations"
   binaries = [

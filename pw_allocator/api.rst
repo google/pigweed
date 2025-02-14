@@ -323,51 +323,61 @@ the cost of additional code size.
 .. doxygenclass:: pw::allocator::DetailedBlockImpl
    :members:
 
----------------
-Utility Classes
----------------
-In addition to providing allocator implementations themselves, this module
-includes some utility classes.
-
 .. _module-pw_allocator-api-bucket:
 
+-------
 Buckets
-=======
+-------
 Several block allocator implementations improve performance by managing buckets,
 which are data structures that track free blocks. Several bucket implementations
 are provided that trade off between performance and per-block space needed when
 free.
 
+.. _module-pw_allocator-api-bucket_base:
+
+BucketBase
+==========
+This type is not a standalone bucket, but a CRTP-style base class that provides
+the common interface for other blocks.
+
+.. doxygenclass:: pw::allocator::internal::BucketBase
+   :members:
 
 FastSortedBucket
-----------------
+================
 .. doxygenclass:: pw::allocator::FastSortedBucket
    :members:
 
 ForwardSortedBucket
--------------------
+===================
 .. doxygenclass:: pw::allocator::ForwardSortedBucket
    :members:
 
 ReverseFastSortedBucket
------------------------
+=======================
 .. doxygenclass:: pw::allocator::ReverseFastSortedBucket
    :members:
 
 ReverseSortedBucket
--------------------
+===================
 .. doxygenclass:: pw::allocator::ReverseSortedBucket
    :members:
 
 SequencedBucket
----------------
+===============
 .. doxygenclass:: pw::allocator::SequencedBucket
    :members:
 
 UnorderedBucket
----------------
+===============
 .. doxygenclass:: pw::allocator::UnorderedBucket
    :members:
+
+---------------
+Utility Classes
+---------------
+In addition to providing allocator implementations themselves, this module
+includes some utility classes.
 
 .. _module-pw_allocator-api-metrics_adapter:
 

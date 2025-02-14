@@ -29,7 +29,6 @@ cc_library(
     hdrs = ["public/pw_allocator/size_report/size_report.h"],
     implementation_deps = [
         "//pw_allocator:deallocator",
-        "//pw_bloat:bloat_this_binary",
         "//pw_bytes:alignment",
     ],
     strip_include_prefix = "public",
@@ -38,6 +37,7 @@ cc_library(
         "//pw_allocator:block_allocator",
         "//pw_allocator/block:detailed_block",
         "//pw_allocator/bucket:fast_sorted",
+        "//pw_bloat:bloat_this_binary",
         "//pw_bytes",
     ],
 )
@@ -64,6 +64,92 @@ pw_cc_binary(
         "//pw_allocator/bucket:fast_sorted",
         "//pw_bloat:bloat_this_binary",
     ],
+)
+
+# Bucket binaries to be measured for code size.
+
+_fast_sorted_deps = [
+    ":size_report",
+    "//pw_allocator/bucket:fast_sorted",
+    "//pw_bloat:bloat_this_binary",
+    "//pw_containers/size_report:intrusive_multimap",
+    "//pw_containers/size_report:size_report",
+]
+
+pw_cc_binary(
+    name = "fast_sorted_base",
+    srcs = ["fast_sorted_bucket.cc"],
+    defines = ["PW_ALLOCATOR_SIZE_REPORT_BASE"],
+    deps = _fast_sorted_deps,
+)
+
+pw_cc_binary(
+    name = "fast_sorted",
+    srcs = ["fast_sorted_bucket.cc"],
+    deps = _fast_sorted_deps,
+)
+
+_sequenced_deps = [
+    ":size_report",
+    "//pw_allocator/bucket:sequenced",
+    "//pw_bloat:bloat_this_binary",
+    "//pw_containers/size_report:intrusive_list",
+    "//pw_containers/size_report:size_report",
+]
+
+pw_cc_binary(
+    name = "sequenced_base",
+    srcs = ["sequenced_bucket.cc"],
+    defines = ["PW_ALLOCATOR_SIZE_REPORT_BASE"],
+    deps = _sequenced_deps,
+)
+
+pw_cc_binary(
+    name = "sequenced",
+    srcs = ["sequenced_bucket.cc"],
+    deps = _sequenced_deps,
+)
+
+_sorted_deps = [
+    ":size_report",
+    "//pw_allocator/bucket:sorted",
+    "//pw_bloat:bloat_this_binary",
+    "//pw_containers/size_report:intrusive_forward_list",
+    "//pw_containers/size_report:size_report",
+]
+
+pw_cc_binary(
+    name = "sorted_base",
+    srcs = ["sorted_bucket.cc"],
+    defines = ["PW_ALLOCATOR_SIZE_REPORT_BASE"],
+    deps = _sorted_deps,
+)
+
+pw_cc_binary(
+    name = "sorted",
+    srcs = ["sorted_bucket.cc"],
+    deps = _sorted_deps,
+)
+
+_unordered_deps = [
+    ":size_report",
+    "//pw_allocator/bucket:unordered",
+    "//pw_bloat:bloat_this_binary",
+    "//pw_containers/size_report:intrusive_forward_list",
+    "//pw_containers/size_report:size_report",
+]
+
+pw_cc_binary(
+    name = "unordered_base",
+    srcs = ["unordered_bucket.cc"],
+    defines = ["PW_ALLOCATOR_SIZE_REPORT_BASE"],
+    deps = _unordered_deps,
+)
+
+pw_cc_binary(
+    name = "unordered",
+    srcs = ["unordered_bucket.cc"],
+    deps = _unordered_deps,
 )
 
 # Concrete allocator binaries to be measured for code size.

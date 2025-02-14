@@ -37,6 +37,22 @@ module.
 .. .. include:: blocks_size_report
 .. include:: ../size_report_notice
 
+----------------------
+Bucket implementations
+----------------------
+Most of the concrete allocator implementations are block allocators that use
+:ref:`module-pw_allocator-design-buckets` to organize blocks that are not in use
+and are available for allocation.
+
+The following are code sizes for the block implementations provided by this
+module. These are measured relative to the container they use, as reusing
+container types may save code size. See :ref:`module-pw_containers` for code
+size information on each container type.
+
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: buckets_size_report
+.. include:: ../size_report_notice
+
 -------------------------------
 Block allocator implementations
 -------------------------------

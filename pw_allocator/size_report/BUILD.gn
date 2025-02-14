@@ -31,12 +31,12 @@ pw_source_set("size_report") {
     "$dir_pw_allocator:block_allocator",
     "$dir_pw_allocator/block:detailed_block",
     "$dir_pw_allocator/bucket:fast_sorted",
+    "$dir_pw_bloat:bloat_this_binary",
     dir_pw_bytes,
   ]
   sources = [ "size_report.cc" ]
   deps = [
     "$dir_pw_allocator:deallocator",
-    "$dir_pw_bloat:bloat_this_binary",
     "$dir_pw_bytes",
     "$dir_pw_bytes:alignment",
   ]
@@ -62,6 +62,88 @@ pw_executable("detailed_block") {
     "$dir_pw_allocator/bucket:fast_sorted",
     "$dir_pw_bloat:bloat_this_binary",
   ]
+}
+
+# Bucket binaries to be measured for code size.
+
+_fast_sorted = {
+  sources = [ "fast_sorted_bucket.cc" ]
+  deps = [
+    ":size_report",
+    "$dir_pw_allocator/bucket:fast_sorted",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers/size_report:intrusive_multimap",
+    "$dir_pw_containers/size_report:size_report",
+  ]
+}
+
+pw_executable("fast_sorted_base") {
+  forward_variables_from(_fast_sorted, "*")
+  defines = [ "PW_ALLOCATOR_SIZE_REPORT_BASE" ]
+}
+
+pw_executable("fast_sorted") {
+  forward_variables_from(_fast_sorted, "*")
+}
+
+_sequenced = {
+  sources = [ "sequenced_bucket.cc" ]
+  deps = [
+    ":size_report",
+    "$dir_pw_allocator/bucket:sequenced",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers/size_report:intrusive_list",
+    "$dir_pw_containers/size_report:size_report",
+  ]
+}
+
+pw_executable("sequenced_base") {
+  forward_variables_from(_sequenced, "*")
+  defines = [ "PW_ALLOCATOR_SIZE_REPORT_BASE" ]
+}
+
+pw_executable("sequenced") {
+  forward_variables_from(_sequenced, "*")
+}
+
+_sorted = {
+  sources = [ "sorted_bucket.cc" ]
+  deps = [
+    ":size_report",
+    "$dir_pw_allocator/bucket:sorted",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers/size_report:intrusive_forward_list",
+    "$dir_pw_containers/size_report:size_report",
+  ]
+}
+
+pw_executable("sorted_base") {
+  forward_variables_from(_sorted, "*")
+  defines = [ "PW_ALLOCATOR_SIZE_REPORT_BASE" ]
+}
+
+pw_executable("sorted") {
+  forward_variables_from(_sorted, "*")
+}
+
+_unordered = {
+  sources = [ "unordered_bucket.cc" ]
+  deps = [
+    ":size_report",
+    "$dir_pw_allocator/bucket:unordered",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_containers/size_report:intrusive_forward_list",
+    "$dir_pw_containers/size_report:size_report",
+  ]
+}
+
+pw_executable("unordered_base") {
+  forward_variables_from(_unordered, "*")
+  defines = [ "PW_ALLOCATOR_SIZE_REPORT_BASE" ]
+}
+
+pw_executable("unordered") {
+  forward_variables_from(_unordered, "*")
 }
 
 # Concrete allocator binaries to be measured for code size.

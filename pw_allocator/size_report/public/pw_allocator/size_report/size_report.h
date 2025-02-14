@@ -22,6 +22,7 @@
 #include "pw_allocator/block/detailed_block.h"
 #include "pw_allocator/block_allocator.h"
 #include "pw_allocator/bucket/fast_sorted.h"
+#include "pw_bloat/bloat_this_binary.h"
 #include "pw_bytes/span.h"
 
 namespace pw::allocator::size_report {
@@ -66,6 +67,14 @@ int SetBaseline(uint32_t mask);
 ///                         `PW_BLOAT_EXPR`. See those macros for details.
 template <typename BlockType>
 int MeasureBlock(uint32_t mask);
+
+/// Exercises a bucket as part of a size report.
+///
+/// @tparam     BucketType  The type of bucket to create and exercise.
+/// @param[in]  mask        A bitmap that can be passed to `PW_BLOAT_COND` and
+///                         `PW_BLOAT_EXPR`. See those macros for details.
+template <typename BucketType>
+int MeasureBucket(BucketType& bucket, uint32_t mask);
 
 /// Exercises an allocator as part of a size report.
 ///
@@ -135,6 +144,45 @@ int MeasureBlock(uint32_t mask) {
     block_result = BlockType::Free(std::move(first_block));
     return block_result.ok() ? 0 : 1;
   }
+}
+
+template <typename BucketType>
+int MeasureBucket(BucketType& bucket, uint32_t mask) {
+  if (int rc = SetBaseline(mask); rc != 0) {
+    return rc;
+  }
+  if (int rc = MeasureBlock<BlockType>(mask); rc != 0) {
+    return rc;
+  }
+
+  auto result = BlockType::Init(GetBuffer());
+  BlockType* unallocated = *result;
+
+  // Exercise `Add`.
+  std::array<BlockType*, 4> blocks;
+  for (size_t i = 0; i < blocks.size(); ++i) {
+    Layout layout(16 * (i + 1), 1);
+    auto block_result = BlockType::AllocFirst(std::move(unallocated), layout);
+    blocks[i] = block_result.block();
+    unallocated = blocks[i]->Next();
+    PW_BLOAT_COND(bucket.Add(*blocks[i]), mask);
+  }
+
+  // Exercise `Remove`.
+  PW_BLOAT_COND(bucket.Remove(*blocks[0]), mask);
+
+  // Exercise `RemoveCompatible`.
+  BlockType* compatible = bucket.RemoveCompatible(Layout(32, 1));
+  PW_BLOAT_COND(compatible != nullptr, mask);
+
+  // Exercise `RemoveAny`.
+  BlockType* any_block = bucket.RemoveAny();
+  PW_BLOAT_COND(any_block != nullptr, mask);
+
+  // Exercise `empty` and `Clear`.
+  PW_BLOAT_COND(!bucket.empty(), mask);
+  PW_BLOAT_EXPR(bucket.Clear(), mask);
+  return bucket.empty() ? 0 : 1;
 }
 
 }  // namespace pw::allocator::size_report

@@ -137,6 +137,27 @@ aware of the problem.
    from the usual ``PW_CHECK`` macro. Examining a stack trace may be helpful in
    determining why validation failed.
 
+.. _module-pw_allocator-design-buckets:
+
+Buckets of blocks
+=================
+The most important role of a :ref:`module-pw_allocator-api-block_allocator` is
+to choose the right block to satisfy an allocation request. Different block
+allocators use different strategies to accomplish this, and thus need different
+data structures to organize blocks in order to be able to choose them
+efficiently.
+
+For example, a block allocator that uses a "best-fit" strategy needs to be able
+to efficiently search free blocks by usable size in order to find the smallest
+candidate that could satisfy the request.
+
+The :ref:`module-pw_allocator-api-basic-block` mix-in requires blocks to specify
+both a ``MinInnerSize`` and ``DefaultAlignment``. Together these ensure that the
+usable space of free blocks can be treated as intrusive items for containers.
+The bucket classes that derive from :ref:`module-pw_allocator-api-bucket_base`
+provide such containers to store and retrieve free blocks with different
+performance and code size characteristics.
+
 .. _module-pw_allocator-design-metrics:
 
 Buckets of blocks

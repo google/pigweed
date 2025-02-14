@@ -126,6 +126,7 @@ pw_cc_test(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_allocator/bucket/base.h",
         "public/pw_allocator/bucket/fast_sorted.h",
         "public/pw_allocator/bucket/sequenced.h",
         "public/pw_allocator/bucket/sorted.h",
