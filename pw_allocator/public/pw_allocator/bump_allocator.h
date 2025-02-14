@@ -98,7 +98,7 @@ class BumpAllocator : public Allocator {
   /// pointer.
   ///
   /// @param[in]  args...     Arguments passed to the object constructor.
-  template <typename T, int&... ExplicitGuard, typename... Args>
+  template <typename T, int&... kExplicitGuard, typename... Args>
   T* NewOwned(Args&&... args) {
     internal::Owned<T>* owned = New<internal::Owned<T>>();
     T* ptr = owned != nullptr ? New<T>(std::forward<Args>(args)...) : nullptr;
@@ -120,7 +120,7 @@ class BumpAllocator : public Allocator {
   /// fails. Callers must check for null before using the `UniquePtr`.
   ///
   /// @param[in]  args...     Arguments passed to the object constructor.
-  template <typename T, int&... ExplicitGuard, typename... Args>
+  template <typename T, int&... kExplicitGuard, typename... Args>
   [[nodiscard]] UniquePtr<T> MakeUniqueOwned(Args&&... args) {
     return WrapUnique<T>(NewOwned<T>(std::forward<Args>(args)...));
   }

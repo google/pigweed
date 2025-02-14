@@ -49,26 +49,34 @@ struct ForwardListItem : public IntrusiveForwardList<ForwardListItem<T>>::Item {
 /// This method is used both to measure intrusive forward lists directly, as
 /// well as to provide a baseline for measuring other types that use intrusive
 /// forward lists and want to only measure their contributions to code size.
-template <typename ItemType>
-int MeasureIntrusiveForwardList(uint32_t mask) {
+template <typename ItemType, int&... kExplicitGuard, typename Iterator>
+int MeasureIntrusiveForwardList(Iterator first, Iterator last, uint32_t mask) {
   mask = SetBaseline(mask);
   auto& list1 = GetContainer<IntrusiveForwardList<ItemType>>();
   IntrusiveForwardList<ItemType> list2;
-  auto& items = GetItems<ItemType>();
-  auto iter1 = items.begin() + 3;
-  list1.assign(items.begin(), iter1);
-  list2.assign(iter1, items.end());
+  auto iter1 = first;
+  for (size_t i = 0; i < 3; ++i) {
+    if (iter1 != last) {
+      ++iter1;
+    }
+  }
+  list1.assign(first, iter1);
+  list2.assign(iter1, last);
 
   auto& item1 = list1.front();
   PW_BLOAT_EXPR(list1.pop_front(), mask);
   PW_BLOAT_EXPR(list2.push_front(item1), mask);
-  PW_BLOAT_EXPR(list1.swap(list2), mask);
-  PW_BLOAT_EXPR(list1.sort(), mask);
-  PW_BLOAT_EXPR(list1.reverse(), mask);
-  PW_BLOAT_EXPR(list1.merge(list2), mask);
+  if constexpr (std::is_move_assignable_v<ItemType>) {
+    PW_BLOAT_EXPR(list1.swap(list2), mask);
+    PW_BLOAT_EXPR(list1.reverse(), mask);
+  }
+  if constexpr (internal::is_weakly_orderable_v<ItemType>) {
+    PW_BLOAT_EXPR(list1.sort(), mask);
+    PW_BLOAT_EXPR(list1.merge(list2), mask);
+    PW_BLOAT_COND(list1.unique() != 0, mask);
+  }
   PW_BLOAT_EXPR(list2.clear(), mask);
   PW_BLOAT_EXPR(list1.remove(item1), mask);
-  PW_BLOAT_COND(list1.unique() != 0, mask);
 
   ItemType& item2 = list1.front();
   auto iter2 = list1.erase_after(list1.before_begin());

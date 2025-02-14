@@ -45,4 +45,28 @@ struct IntrusiveItem<Item, T, true> {
   using Type = typename T::ItemType;
 };
 
+// Implementation of `is_weakly_orderable` that uses SFINE to detect when the
+// given type can be ordered using the '<' operator.
+template <typename T>
+struct is_weakly_orderable_impl {
+  template <typename U>
+  static decltype(std::declval<U>() < std::declval<U>()) deduce(T*);
+
+  template <typename>
+  static std::false_type deduce(...);
+
+  using type = typename std::is_same<bool, decltype(deduce<T>(nullptr))>::type;
+};
+
+/// Checks if a type can be compared with the less-than operator, '<'.
+///
+/// If `T` satisfies \em LessThanComparable, provides the member constant
+/// value equal to true. Otherwise value is false.
+template <typename T>
+struct is_weakly_orderable : is_weakly_orderable_impl<T>::type {};
+
+/// Helper variable template for `is_weakly_orderable<T>::value`.
+template <typename T>
+inline constexpr bool is_weakly_orderable_v = is_weakly_orderable<T>::value;
+
 }  // namespace pw::containers::internal

@@ -20,8 +20,12 @@ namespace pw::containers::size_report {
 
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
-  return MeasureIntrusiveList<ListItem<V1>>(mask) +
-         MeasureIntrusiveForwardList<ForwardListItem<V1>>(mask);
+  auto& items1 = GetItems<ListItem<V1>>();
+  auto& items2 = GetItems<ForwardListItem<V1>>();
+  return MeasureIntrusiveList<ListItem<V1>>(
+             items1.begin(), items1.end(), mask) +
+         MeasureIntrusiveForwardList<ForwardListItem<V1>>(
+             items2.begin(), items2.end(), mask);
 }
 
 }  // namespace pw::containers::size_report

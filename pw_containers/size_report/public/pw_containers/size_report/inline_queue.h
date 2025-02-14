@@ -24,13 +24,12 @@ namespace pw::containers::size_report {
 /// This method is used both to measure inline queues directly, as well as to
 /// provide a baseline for measuring other types that use inline queues and want
 /// to only measure their contributions to code size.
-template <typename T>
-int MeasureInlineQueue(uint32_t mask) {
+template <typename T, int&... kExplicitGuard, typename Iterator>
+int MeasureInlineQueue(Iterator first, Iterator last, uint32_t mask) {
   mask = SetBaseline(mask);
   auto& inline_queue = GetContainer<InlineQueue<T, kNumItems>>();
-  const auto& items = GetItems<T>();
-  for (auto& item : items) {
-    inline_queue.push_overwrite(item);
+  while (first != last) {
+    inline_queue.push_overwrite(*first++);
   }
   mask = MeasureContainer(inline_queue, mask);
   PW_BLOAT_COND(inline_queue.full(), mask);

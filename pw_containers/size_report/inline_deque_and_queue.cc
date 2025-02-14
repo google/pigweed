@@ -20,7 +20,9 @@ namespace pw::containers::size_report {
 
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
-  return MeasureInlineDeque<V1>(mask) + MeasureInlineQueue<V1>(mask);
+  auto& items = GetItems<V1>();
+  return MeasureInlineDeque<V1>(items.begin(), items.end(), mask) +
+         MeasureInlineQueue<V1>(items.begin(), items.end(), mask);
 }
 
 }  // namespace pw::containers::size_report

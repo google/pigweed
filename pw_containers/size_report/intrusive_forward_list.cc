@@ -20,10 +20,14 @@ namespace pw::containers::size_report {
 
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
-  int rc = MeasureIntrusiveForwardList<ForwardListItem<V1>>(mask);
+  auto& items1 = GetItems<ForwardListItem<V1>>();
+  int rc = MeasureIntrusiveForwardList<ForwardListItem<V1>>(
+      items1.begin(), items1.end(), mask);
 
 #ifdef PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE
-  rc += MeasureIntrusiveForwardList<ForwardListItem<V2>>(mask);
+  auto& items2 = GetItems<ForwardListItem<V2>>();
+  rc += MeasureIntrusiveForwardList<ForwardListItem<V2>>(
+      items2.begin(), items2.end(), mask);
 #endif
 
   return rc;

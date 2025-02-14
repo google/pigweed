@@ -48,7 +48,7 @@ class Allocator : public Deallocator {
   /// pointer.
   ///
   /// @param[in]  args...     Arguments passed to the object constructor.
-  template <typename T, int&... ExplicitGuard, typename... Args>
+  template <typename T, int&... kExplicitGuard, typename... Args>
   T* New(Args&&... args) {
     void* ptr = Allocate(Layout::Of<T>());
     if (ptr == nullptr) {
@@ -95,7 +95,7 @@ class Allocator : public Deallocator {
   /// fails. Callers must check for null before using the `UniquePtr`.
   ///
   /// @param[in]  args...     Arguments passed to the object constructor.
-  template <typename T, int&... ExplicitGuard, typename... Args>
+  template <typename T, int&... kExplicitGuard, typename... Args>
   [[nodiscard]] UniquePtr<T> MakeUnique(Args&&... args) {
     return Deallocator::WrapUnique<T>(New<T>(std::forward<Args>(args)...));
   }

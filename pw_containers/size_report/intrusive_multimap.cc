@@ -20,13 +20,19 @@ namespace pw::containers::size_report {
 
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
-  int rc = MeasureIntrusiveMultiMap<MultiMapPair<K1, V1>>(mask);
+  auto& pairs1 = GetPairs<MultiMapPair<K1, V1>>();
+  int rc = MeasureIntrusiveMultiMap<K1, MultiMapPair<K1, V1>>(
+      pairs1.begin(), pairs1.end(), mask);
 
 #ifdef PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE
-  rc += MeasureIntrusiveMultiMap<MultiMapPair<K1, V2>>(mask);
+  auto& pairs2 = GetPairs<MultiMapPair<K1, V1>>();
+  rc += MeasureIntrusiveMultiMap<K1, MultiMapPair<K1, V2>>(
+      pairs2.begin(), pairs2.end(), mask);
 #endif
 #ifdef PW_CONTAINERS_SIZE_REPORT_ALTERNATE_KEY_AND_VALUE
-  rc += MeasureIntrusiveMap<MultiMapPair<K2, V2>>(mask);
+  auto& pairs3 = GetPairs<MultiMapPair<K1, V1>>();
+  rc += MeasureIntrusiveMap<K2, MultiMapPair<K2, V2>>(
+      pairs3.begin(), pairs3.end(), mask);
 #endif
 
   return rc;

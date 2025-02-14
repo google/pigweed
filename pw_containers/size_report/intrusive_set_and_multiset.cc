@@ -20,8 +20,11 @@ namespace pw::containers::size_report {
 
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
-  return MeasureIntrusiveSet<SetItem<V1>>(mask) +
-         MeasureIntrusiveMultiSet<MultiSetItem<V1>>(mask);
+  auto& items1 = GetItems<SetItem<V1>>();
+  auto& items2 = GetItems<MultiSetItem<V1>>();
+  return MeasureIntrusiveSet<SetItem<V1>>(items1.begin(), items1.end(), mask) +
+         MeasureIntrusiveMultiSet<MultiSetItem<V1>>(
+             items2.begin(), items2.end(), mask);
 }
 
 }  // namespace pw::containers::size_report

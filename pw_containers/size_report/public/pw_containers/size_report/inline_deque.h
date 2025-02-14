@@ -24,12 +24,11 @@ namespace pw::containers::size_report {
 /// This method is used both to measure inline deques directly, as well as to
 /// provide a baseline for measuring other types that use inline deques and want
 /// to only measure their contributions to code size.
-template <typename T>
-int MeasureInlineDeque(uint32_t mask) {
+template <typename T, int&... kExplicitGuard, typename Iterator>
+int MeasureInlineDeque(Iterator first, Iterator last, uint32_t mask) {
   mask = SetBaseline(mask);
   auto& inline_deque = GetContainer<InlineDeque<T, kNumItems>>();
-  const auto& items = GetItems<T>();
-  inline_deque.assign(items.begin(), items.end());
+  inline_deque.assign(first, last);
   mask = MeasureContainer(inline_deque, mask);
   PW_BLOAT_COND(inline_deque.full(), mask);
 

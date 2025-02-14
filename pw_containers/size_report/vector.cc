@@ -20,14 +20,16 @@ namespace pw::containers::size_report {
 
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
-  int rc = MeasureVector<V1, kNumItems>(mask);
+  auto& items1 = GetItems<V1>();
+  int rc = MeasureVector<V1, kNumItems>(items1.begin(), items1.end(), mask);
 
 #ifdef PW_CONTAINERS_SIZE_REPORT_ALTERNATE_SIZE
-  rc += MeasureVector<V1, kNumItems - 1>(mask);
+  rc += MeasureVector<V1, kNumItems - 1>(items1.begin(), items1.end(), mask);
 #endif
 
 #ifdef PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE
-  rc += MeasureVector<V2, kNumItems>(mask);
+  auto& items2 = GetItems<V2>();
+  rc += MeasureVector<V2, kNumItems>(items2.begin(), items2.end(), mask);
 #endif
 
   return rc;

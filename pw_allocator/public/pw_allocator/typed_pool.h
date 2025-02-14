@@ -89,7 +89,7 @@ class TypedPool : public ChunkPool {
   /// to the pool's object type.
   ///
   /// @param[in]  args...     Arguments passed to the object constructor.
-  template <int&... ExplicitGuard, typename... Args>
+  template <int&... kExplicitGuard, typename... Args>
   T* New(Args&&... args) {
     void* ptr = Allocate();
     return ptr != nullptr ? new (ptr) T(std::forward<Args>(args)...) : nullptr;
@@ -101,7 +101,7 @@ class TypedPool : public ChunkPool {
   /// specific to the pool's object type.
   ///
   /// @param[in]  args...     Arguments passed to the object constructor.
-  template <int&... ExplicitGuard, typename... Args>
+  template <int&... kExplicitGuard, typename... Args>
   UniquePtr<T> MakeUnique(Args&&... args) {
     return Deallocator::WrapUnique<T>(New(std::forward<Args>(args)...));
   }

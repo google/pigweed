@@ -20,10 +20,12 @@ namespace pw::containers::size_report {
 
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
-  int rc = MeasureIntrusiveSet<SetItem<V1>>(mask);
+  auto& items1 = GetItems<SetItem<V1>>();
+  int rc = MeasureIntrusiveSet<SetItem<V1>>(items1.begin(), items1.end(), mask);
 
 #ifdef PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE
-  rc += MeasureIntrusiveSet<SetItem<V2>>(mask);
+  auto& items2 = GetItems<SetItem<V2>>();
+  rc += MeasureIntrusiveSet<SetItem<V2>>(items2.begin(), items2.end(), mask);
 #endif
 
   return rc;

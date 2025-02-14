@@ -35,22 +35,21 @@ struct MultiSetItem : public IntrusiveMultiSet<MultiSetItem<T>>::Item {
 /// This method is used both to measure intrusive multisets directly, as well as
 /// to provide a baseline for measuring other types that use intrusive multisets
 /// and want to only measure their contributions to code size.
-template <typename ItemType>
-int MeasureIntrusiveMultiSet(uint32_t mask) {
+template <typename ItemType, int&... kExplicitGuard, typename Iterator>
+int MeasureIntrusiveMultiSet(Iterator first, Iterator last, uint32_t mask) {
   mask = SetBaseline(mask);
   auto& set1 = GetContainer<IntrusiveMultiSet<ItemType>>();
-  auto& items = GetItems<ItemType>();
-  set1.insert(items.begin(), items.end());
+  set1.insert(first, last);
   mask = MeasureContainer(set1, mask);
 
   IntrusiveMultiSet<ItemType> set2;
-  auto& first = *(set1.begin());
+  auto& item0 = *(set1.begin());
   PW_BLOAT_EXPR(set2.swap(set1), mask);
-  PW_BLOAT_EXPR(set2.erase(first), mask);
+  PW_BLOAT_EXPR(set2.erase(item0), mask);
   PW_BLOAT_EXPR(set1.merge(set2), mask);
-  PW_BLOAT_EXPR(set1.insert(first), mask);
+  PW_BLOAT_EXPR(set1.insert(item0), mask);
 
-  return set1.count(first) != 0 ? 0 : 1;
+  return set1.count(item0) != 0 ? 0 : 1;
 }
 
 }  // namespace pw::containers::size_report

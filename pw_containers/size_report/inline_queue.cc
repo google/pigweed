@@ -20,10 +20,12 @@ namespace pw::containers::size_report {
 
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
-  int rc = MeasureInlineQueue<V1>(mask);
+  auto& items1 = GetItems<V1>();
+  int rc = MeasureInlineQueue<V1>(items1.begin(), items1.end(), mask);
 
 #ifdef PW_CONTAINERS_SIZE_REPORT_ALTERNATE_VALUE
-  rc += MeasureInlineQueue<V2>(mask);
+  auto& items2 = GetItems<V2>();
+  rc += MeasureInlineQueue<V2>(items2.begin(), items2.end(), mask);
 #endif
 
   return rc;

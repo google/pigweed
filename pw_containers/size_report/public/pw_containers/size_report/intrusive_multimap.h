@@ -35,13 +35,14 @@ struct MultiMapPair : public IntrusiveMultiMap<K, MultiMapPair<K, V>>::Pair {
 /// This method is used both to measure intrusive multimaps directly, as well as
 /// to provide a baseline for measuring other types that use intrusive multimaps
 /// and want to only measure their contributions to code size.
-template <typename PairType>
-int MeasureIntrusiveMultiMap(uint32_t mask) {
-  using KeyType = typename PairType::KeyType;
+template <typename KeyType,
+          typename PairType,
+          int&... kExplicitGuard,
+          typename Iterator>
+int MeasureIntrusiveMultiMap(Iterator first, Iterator last, uint32_t mask) {
   mask = SetBaseline(mask);
   auto& map1 = GetContainer<IntrusiveMultiMap<KeyType, PairType>>();
-  auto& items = GetPairs<PairType>();
-  map1.insert(items.begin(), items.end());
+  map1.insert(first, last);
   mask = MeasureContainer(map1, mask);
 
   auto iter = map1.find(1U);
@@ -51,13 +52,13 @@ int MeasureIntrusiveMultiMap(uint32_t mask) {
   PW_BLOAT_COND(iters.first != iters.second, mask);
 
   IntrusiveMultiMap<KeyType, PairType> map2;
-  auto& first = *(map1.begin());
+  auto& item0 = *(map1.begin());
   PW_BLOAT_EXPR(map2.swap(map1), mask);
-  PW_BLOAT_EXPR(map2.erase(first), mask);
+  PW_BLOAT_EXPR(map2.erase(item0), mask);
   PW_BLOAT_EXPR(map1.merge(map2), mask);
-  PW_BLOAT_EXPR(map1.insert(first), mask);
+  PW_BLOAT_EXPR(map1.insert(item0), mask);
 
-  return map1.count(first.key()) != 0 ? 0 : 1;
+  return map1.count(item0.key()) != 0 ? 0 : 1;
 }
 
 }  // namespace pw::containers::size_report

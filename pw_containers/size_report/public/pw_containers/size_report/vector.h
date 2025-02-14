@@ -24,12 +24,11 @@ namespace pw::containers::size_report {
 /// This method is used both to measure vector directly, as well as to
 /// provide a baseline for measuring other types that use vector and
 /// want to only measure their contributions to code size.
-template <typename T, size_t kSize>
-int MeasureVector(uint32_t mask) {
+template <typename T, size_t kSize, int&... kExplicitGuard, typename Iterator>
+int MeasureVector(Iterator first, Iterator last, uint32_t mask) {
   mask = SetBaseline(mask);
   auto& vec = GetContainer<Vector<T, kSize>>();
-  const auto& items = GetItems<T>();
-  vec.assign(items.begin(), items.end());
+  vec.assign(first, last);
   mask = MeasureContainer(vec, mask);
 
   PW_BLOAT_EXPR(vec.resize(kSize - 1), mask);
