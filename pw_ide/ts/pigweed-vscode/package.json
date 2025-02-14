@@ -100,6 +100,25 @@
           "type": "string",
           "description": "The compile commands directory for the selected build target to use for editor code intelligence"
         },
+        "pigweed.compDbSearchPaths": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pathGlob": {
+                "type": "string",
+                "description": "..."
+              },
+              "targetInferencePattern": {
+                "type": "string",
+                "default": "?",
+                "description": "..."
+              }
+            }
+          },
+          "default": [],
+          "description": "..."
+        },
         "pigweed.disableBazelSettingsRecommendations": {
           "type": "boolean",
           "default": "false",

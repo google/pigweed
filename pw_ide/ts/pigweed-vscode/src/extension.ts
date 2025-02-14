@@ -72,6 +72,7 @@ import {
 import { commandRegisterer, VscCommandCallback } from './utils';
 import { shouldSupportGn } from './gn';
 import { shouldSupportCmake } from './cmake';
+import { processCompDbs } from './clangd/parser';
 
 interface CommandEntry {
   name: string;
@@ -91,13 +92,17 @@ const disposer = new Disposer();
 
 type ProjectType = 'bazel' | 'bootstrap' | 'both';
 
-function registerCommands(
+async function registerCommands(
   projectType: ProjectType,
   context: ExtensionContext,
   refreshManager: RefreshManager<any>,
   clangdActiveFilesCache: ClangdActiveFilesCache,
   bazelCompileCommandsWatcher?: BazelRefreshCompileCommandsWatcher | undefined,
-): void {
+): Promise<void> {
+  const useBazel = await shouldSupportBazel();
+  const useCmake = await shouldSupportCmake();
+  const useGn = await shouldSupportGn();
+
   const commands: CommandEntry[] = [
     {
       name: 'pigweed.open-output-panel',
@@ -206,9 +211,16 @@ function registerCommands(
     },
     {
       name: 'pigweed.refresh-compile-commands',
-      callback: () => {
-        bazelCompileCommandsWatcher!.refresh();
-        showProgressDuringRefresh(refreshManager);
+      callback: async () => {
+        if (useGn || useCmake) {
+          const { processedCompDbs } = await processCompDbs();
+          await processedCompDbs.writeAll();
+        }
+
+        if (useBazel) {
+          bazelCompileCommandsWatcher!.refresh();
+          showProgressDuringRefresh(refreshManager);
+        }
       },
       projectType: ['bazel', 'both'],
     },

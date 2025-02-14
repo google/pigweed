@@ -17,16 +17,22 @@ import * as vscode from 'vscode';
 import logger from '../logging';
 
 interface Setting<T> {
-  (): T | undefined;
-  (value: T | undefined): Thenable<void>;
+  (): T;
+  (value: T): Thenable<void>;
+}
+
+interface CompDbSearchPath {
+  pathGlob: string;
+  targetInferencePattern: string;
 }
 
 type TerminalShell = 'bash' | 'zsh';
 
 export interface Settings {
   activateBazeliskInNewTerminals: Setting<boolean>;
-  codeAnalysisTarget: Setting<string>;
-  codeAnalysisTargetDir: Setting<string>;
+  codeAnalysisTarget: Setting<string | undefined>;
+  codeAnalysisTargetDir: Setting<string | undefined>;
+  compDbSearchPaths: Setting<CompDbSearchPath[]>;
   disableBazelSettingsRecommendations: Setting<boolean>;
   disableBazeliskCheck: Setting<boolean>;
   disableCompileCommandsFileWatcher: Setting<boolean>;
@@ -35,7 +41,7 @@ export interface Settings {
   enforceExtensionRecommendations: Setting<boolean>;
   hideInactiveFileIndicators: Setting<boolean>;
   preserveBazelPath: Setting<boolean>;
-  projectRoot: Setting<string>;
+  projectRoot: Setting<string | undefined>;
   refreshCompileCommandsTarget: Setting<string>;
   supportBazelTargets: Setting<boolean | 'auto'>;
   supportCmakeTargets: Setting<boolean | 'auto'>;
@@ -184,6 +190,25 @@ function codeAnalysisTargetDir(
   value?: string,
 ): string | undefined | Thenable<void> {
   const { get, update } = stringSettingFor('codeAnalysisTargetDir');
+  if (value === undefined) return get();
+  return update(value);
+}
+
+function compDbSearchPaths(): CompDbSearchPath[];
+function compDbSearchPaths(value: CompDbSearchPath[]): Thenable<void>;
+function compDbSearchPaths(
+  value?: CompDbSearchPath[],
+): CompDbSearchPath[] | Thenable<void> {
+  const get = () =>
+    vscode.workspace
+      .getConfiguration('pigweed')
+      .get('compDbSearchPaths') as CompDbSearchPath[];
+
+  const update = (value: CompDbSearchPath[]) =>
+    vscode.workspace
+      .getConfiguration('pigweed')
+      .update('compDbSearchPaths', value);
+
   if (value === undefined) return get();
   return update(value);
 }
@@ -349,6 +374,7 @@ export const settings: Settings = {
   activateBazeliskInNewTerminals,
   codeAnalysisTarget,
   codeAnalysisTargetDir,
+  compDbSearchPaths,
   disableBazelSettingsRecommendations,
   disableBazeliskCheck,
   disableCompileCommandsFileWatcher,
