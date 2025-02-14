@@ -307,6 +307,10 @@ class SecureSimplePairingState final {
     // pairing.
     kIdle,
 
+    // As initiator, wait for the Low Energy pairing procedure to complete
+    // (before doing SSP).
+    kInitiatorWaitLEPairingComplete,
+
     // As initiator, wait for Link Key Request.
     kInitiatorWaitLinkKeyRequest,
 
@@ -553,6 +557,8 @@ class SecureSimplePairingState final {
   };
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;
+
+  WeakSelf<SecureSimplePairingState> weak_self_{this};
 
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(SecureSimplePairingState);
 };

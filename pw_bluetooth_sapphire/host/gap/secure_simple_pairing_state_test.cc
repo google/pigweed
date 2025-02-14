@@ -3493,5 +3493,131 @@ TEST_F(PairingStateTest, SetNullSecurityManagerChannelIgnored) {
   pairing_state.SetSecurityManagerChannel(l2cap::Channel::WeakPtr());
 }
 
+TEST_F(PairingStateTest, InitiatorWaitForLEPairingToComplete) {
+  NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
+  SecureSimplePairingState pairing_state(
+      peer()->GetWeakPtr(),
+      pairing_delegate.GetWeakPtr(),
+      connection()->GetWeakPtr(),
+      /*outgoing_connection=*/false,
+      MakeAuthRequestCallback(),
+      NoOpStatusCallback,
+      /*low_energy_address_delegate=*/this,
+      /*controller_remote_public_key_validation_supported=*/true,
+      sm_factory_func(),
+      dispatcher());
+
+  std::optional<Peer::PairingToken> pairing_token =
+      peer()->MutLe().RegisterPairing();
+
+  // Queue 2 requests to ensure that edge case is handled.
+  TestStatusHandler status_handler_0;
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                status_handler_0.MakeStatusCallback());
+  TestStatusHandler status_handler_1;
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                status_handler_1.MakeStatusCallback());
+  RunUntilIdle();
+  EXPECT_EQ(auth_request_count(), 0u);
+
+  pairing_token.reset();
+  EXPECT_EQ(auth_request_count(), 1u);
+
+  AdvanceToEncryptionAsInitiator(&pairing_state);
+  EXPECT_TRUE(pairing_state.initiator());
+  ASSERT_EQ(0, status_handler_0.call_count());
+  ASSERT_EQ(0, status_handler_1.call_count());
+
+  connection()->TriggerEncryptionChangeCallback(fit::ok(true));
+  ASSERT_TRUE(status_handler_0.status());
+  EXPECT_EQ(fit::ok(), *status_handler_0.status());
+  ASSERT_TRUE(status_handler_1.status());
+  EXPECT_EQ(fit::ok(), *status_handler_1.status());
+}
+
+TEST_F(PairingStateTest,
+       LinkKeyRequestWhileInitiatorWaitsForLEPairingToComplete) {
+  NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
+  SecureSimplePairingState pairing_state(
+      peer()->GetWeakPtr(),
+      pairing_delegate.GetWeakPtr(),
+      connection()->GetWeakPtr(),
+      /*outgoing_connection=*/false,
+      MakeAuthRequestCallback(),
+      NoOpStatusCallback,
+      /*low_energy_address_delegate=*/this,
+      /*controller_remote_public_key_validation_supported=*/true,
+      sm_factory_func(),
+      dispatcher());
+
+  std::optional<Peer::PairingToken> pairing_token =
+      peer()->MutLe().RegisterPairing();
+
+  TestStatusHandler status_handler_0;
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                status_handler_0.MakeStatusCallback());
+  RunUntilIdle();
+  EXPECT_EQ(auth_request_count(), 0u);
+
+  EXPECT_TRUE(peer()->MutBrEdr().SetBondData(
+      sm::LTK(sm::SecurityProperties(kTestUnauthenticatedLinkKeyType192),
+              kTestLinkKey)));
+
+  static_cast<void>(pairing_state.OnLinkKeyRequest());
+  ASSERT_EQ(0, status_handler_0.call_count());
+
+  connection()->TriggerEncryptionChangeCallback(fit::ok(true));
+  ASSERT_TRUE(status_handler_0.status());
+  EXPECT_EQ(fit::ok(), *status_handler_0.status());
+
+  // The end of LE pairing should be ignored now.
+  pairing_token.reset();
+  EXPECT_EQ(auth_request_count(), 0u);
+}
+
+TEST_F(PairingStateTest,
+       IoCapabilityResponseWhileInitiatorWaitsForLEPairingToComplete) {
+  NoOpPairingDelegate pairing_delegate(kTestLocalIoCap);
+  SecureSimplePairingState pairing_state(
+      peer()->GetWeakPtr(),
+      pairing_delegate.GetWeakPtr(),
+      connection()->GetWeakPtr(),
+      /*outgoing_connection=*/false,
+      MakeAuthRequestCallback(),
+      NoOpStatusCallback,
+      /*low_energy_address_delegate=*/this,
+      /*controller_remote_public_key_validation_supported=*/true,
+      sm_factory_func(),
+      dispatcher());
+
+  std::optional<Peer::PairingToken> pairing_token =
+      peer()->MutLe().RegisterPairing();
+
+  TestStatusHandler status_handler_0;
+  pairing_state.InitiatePairing(kNoSecurityRequirements,
+                                status_handler_0.MakeStatusCallback());
+  RunUntilIdle();
+  EXPECT_EQ(auth_request_count(), 0u);
+
+  pairing_state.OnIoCapabilityResponse(kTestPeerIoCap);
+  ASSERT_FALSE(pairing_state.initiator());
+  static_cast<void>(pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnUserConfirmationRequest(kTestPasskey,
+                                          NoOpUserConfirmationCallback);
+
+  pairing_state.OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  pairing_state.OnLinkKeyNotification(kTestLinkKeyValue,
+                                      kTestUnauthenticatedLinkKeyType192);
+
+  connection()->TriggerEncryptionChangeCallback(fit::ok(true));
+  ASSERT_TRUE(status_handler_0.status());
+  EXPECT_EQ(fit::ok(), *status_handler_0.status());
+
+  // The end of LE pairing should be ignored now.
+  pairing_token.reset();
+  EXPECT_EQ(auth_request_count(), 0u);
+}
+
 }  // namespace
 }  // namespace bt::gap
