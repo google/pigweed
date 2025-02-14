@@ -41,6 +41,8 @@ class PW_LOCKABLE("pw::rpc::internal::RpcLock") RpcLock {
 
 inline RpcLock& rpc_lock() {
   static NoDestructor<RpcLock> lock;
+  static_assert(PW_RPC_USE_GLOBAL_MUTEX != 0 ||
+                std::is_trivially_destructible_v<decltype(lock)>);
   return *lock;
 }
 

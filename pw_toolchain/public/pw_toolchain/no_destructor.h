@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,7 +13,6 @@
 // the License.
 #pragma once
 
-#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -93,19 +92,46 @@ class NoDestructor {
   NoDestructor(const NoDestructor&) = delete;
   NoDestructor& operator=(const NoDestructor&) = delete;
 
-  // Empty destructor. Not technically a trivial destructor, but does nothing.
-  PW_CONSTEXPR_CPP20 ~NoDestructor() {}
+  ~NoDestructor() = default;
 
-  constexpr const T& operator*() const { return storage_; }
-  constexpr T& operator*() { return storage_; }
+  constexpr const T& operator*() const { return get(); }
+  constexpr T& operator*() { return get(); }
 
-  constexpr const T* operator->() const { return &storage_; }
-  constexpr T* operator->() { return &storage_; }
+  constexpr const T* operator->() const { return &get(); }
+  constexpr T* operator->() { return &get(); }
 
  private:
-  union {
-    T storage_;
+  constexpr T& get() {
+    if constexpr (std::is_trivially_destructible_v<T>) {
+      return storage_;
+    } else {
+      return storage_.value;
+    }
+  }
+
+  constexpr const T& get() const {
+    if constexpr (std::is_trivially_destructible_v<T>) {
+      return storage_;
+    } else {
+      return storage_.value;
+    }
+  }
+
+  union NonTrivialStorage {
+    template <typename... Args>
+    constexpr NonTrivialStorage(Args&&... args)
+        : value(std::forward<Args>(args)...) {}
+
+    // Unfortunately, this cannot be trivially destructible because having a
+    // union member of non-trivially destructible T implicitly deletes the
+    // destructor. Trivial destruction may be possible in future C++ standards.
+    PW_CONSTEXPR_CPP20 ~NonTrivialStorage() {}
+
+    T value;
   };
+
+  std::conditional_t<std::is_trivially_destructible_v<T>, T, NonTrivialStorage>
+      storage_;
 };
 
 }  // namespace pw

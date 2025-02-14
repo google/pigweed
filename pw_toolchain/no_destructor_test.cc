@@ -125,6 +125,12 @@ TEST(NoDestructor, Globals) {
   EXPECT_TRUE(global_constinit->crash);
 }
 
+static_assert(std::is_trivially_destructible<pw::NoDestructor<int>>::value,
+              "Wrapper should be trivially destructible");
+
+constexpr NoDestructor<int> kConstexprTrivialNoDestructor(1138);
+static_assert(*kConstexprTrivialNoDestructor == 1138);
+
 #if PW_CXX_STANDARD_IS_SUPPORTED(20)
 
 constexpr NoDestructor<ConstexprConstructible> kConstexprNoDestructor;
