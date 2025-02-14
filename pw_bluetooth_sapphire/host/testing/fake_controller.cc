@@ -307,19 +307,6 @@ void FakeController::RespondWithCommandStatus(pwemb::OpCode opcode,
 }
 
 void FakeController::SendEvent(hci_spec::EventCode event_code,
-                               const ByteBuffer& payload) {
-  DynamicByteBuffer buffer(sizeof(hci_spec::EventHeader) + payload.size());
-  MutablePacketView<hci_spec::EventHeader> event(&buffer, payload.size());
-
-  event.mutable_header()->event_code = event_code;
-  event.mutable_header()->parameter_total_size =
-      static_cast<uint8_t>(payload.size());
-  event.mutable_payload_data().Write(payload);
-
-  SendCommandChannelPacket(buffer);
-}
-
-void FakeController::SendEvent(hci_spec::EventCode event_code,
                                hci::EventPacket* packet) {
   auto header = packet->template view<pwemb::EventHeaderWriter>();
   uint8_t parameter_total_size = static_cast<uint8_t>(
@@ -329,15 +316,6 @@ void FakeController::SendEvent(hci_spec::EventCode event_code,
   header.parameter_total_size().Write(parameter_total_size);
 
   SendCommandChannelPacket(packet->data());
-}
-
-void FakeController::SendLEMetaEvent(hci_spec::EventCode subevent_code,
-                                     const ByteBuffer& payload) {
-  DynamicByteBuffer buffer(pwemb::LEMetaEvent::IntrinsicSizeInBytes() +
-                           payload.size());
-  buffer[0] = subevent_code;
-  buffer.Write(payload, 1);
-  SendEvent(hci_spec::kLEMetaEventCode, buffer);
 }
 
 void FakeController::SendACLPacket(hci_spec::ConnectionHandle handle,
@@ -2225,19 +2203,17 @@ void FakeController::OnReadRemoteNameRequestCommandReceived(
   RespondWithCommandStatus(pwemb::OpCode::REMOTE_NAME_REQUEST,
                            pwemb::StatusCode::SUCCESS);
 
-  struct RemoteNameRequestCompleteEventParams {
-    pwemb::StatusCode status;
-    DeviceAddressBytes bd_addr;
-    uint8_t remote_name[hci_spec::kMaxNameLength];
-  } __attribute__((packed));
-  RemoteNameRequestCompleteEventParams response = {};
-  response.bd_addr = DeviceAddressBytes(params.bd_addr());
-  std::strncpy((char*)response.remote_name,
-               peer->name().c_str(),
-               hci_spec::kMaxNameLength);
-  response.status = pwemb::StatusCode::SUCCESS;
-  SendEvent(hci_spec::kRemoteNameRequestCompleteEventCode,
-            BufferView(&response, sizeof(response)));
+  auto response =
+      hci::EventPacket::New<pwemb::RemoteNameRequestCompleteEventWriter>(
+          hci_spec::kRemoteNameRequestCompleteEventCode);
+  auto view = response.view_t();
+  view.status().Write(pwemb::StatusCode::SUCCESS);
+  view.bd_addr().CopyFrom(params.bd_addr());
+  std::strncpy(
+      reinterpret_cast<char*>(view.remote_name().BackingStorage().data()),
+      peer->name().c_str(),
+      view.remote_name().SizeInBytes());
+  SendEvent(hci_spec::kRemoteNameRequestCompleteEventCode, &response);
 }
 
 void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(

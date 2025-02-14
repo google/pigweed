@@ -323,15 +323,8 @@ class FakeController final : public ControllerTestDoubleBase,
     le_read_remote_features_cb_ = std::move(callback);
   }
 
-  // Sends a HCI event with the given parameters.
-  void SendEvent(hci_spec::EventCode event_code, const ByteBuffer& payload);
-
   // Sends an HCI event, filling in the parameters in a provided event packet.
   void SendEvent(hci_spec::EventCode event_code, hci::EventPacket* packet);
-
-  // Sends a LE Meta event with the given parameters.
-  void SendLEMetaEvent(hci_spec::EventCode subevent_code,
-                       const ByteBuffer& payload);
 
   // Sends an ACL data packet with the given parameters.
   void SendACLPacket(hci_spec::ConnectionHandle handle,
