@@ -833,7 +833,7 @@ pw_size_table(
 
 pw_size_diff(
     name = "best_fit_size_report",
-    base = "//pw_allocator/size_report:base",
+    base = "//pw_allocator/size_report:detailed_block",
     bloaty_config = "//targets/rp2040:bloaty_config",
     label = "BestFitAllocator",
     # TODO: https://pwbug.dev/388905812 - Make size reports always build.
@@ -843,7 +843,7 @@ pw_size_diff(
 
 pw_size_diff(
     name = "bucket_allocator_size_report",
-    base = "//pw_allocator/size_report:base",
+    base = "//pw_allocator/size_report:detailed_block",
     bloaty_config = "//targets/rp2040:bloaty_config",
     label = "BucketAllocator",
     # TODO: https://pwbug.dev/388905812 - Make size reports always build.
@@ -853,7 +853,7 @@ pw_size_diff(
 
 pw_size_diff(
     name = "first_fit_size_report",
-    base = "//pw_allocator/size_report:base",
+    base = "//pw_allocator/size_report:detailed_block",
     bloaty_config = "//targets/rp2040:bloaty_config",
     label = "FirstFitAllocator",
     # TODO: https://pwbug.dev/388905812 - Make size reports always build.
@@ -863,7 +863,7 @@ pw_size_diff(
 
 pw_size_diff(
     name = "tlsf_allocator_size_report",
-    base = "//pw_allocator/size_report:base",
+    base = "//pw_allocator/size_report:detailed_block",
     bloaty_config = "//targets/rp2040:bloaty_config",
     label = "TlsfAllocator",
     # TODO: https://pwbug.dev/388905812 - Make size reports always build.
@@ -873,7 +873,7 @@ pw_size_diff(
 
 pw_size_diff(
     name = "worst_fit_size_report",
-    base = "//pw_allocator/size_report:base",
+    base = "//pw_allocator/size_report:detailed_block",
     bloaty_config = "//targets/rp2040:bloaty_config",
     label = "WorstFitAllocator",
     # TODO: https://pwbug.dev/388905812 - Make size reports always build.

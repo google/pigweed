@@ -12,8 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <array>
-
 #include "pw_allocator/best_fit.h"
 #include "pw_allocator/size_report/size_report.h"
 #include "pw_allocator/synchronized_allocator.h"

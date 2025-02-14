@@ -23,7 +23,7 @@ int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
   static FirstFitAllocator<BlockType> allocator(GetBuffer());
   allocator.set_threshold(128);
-  return MeasureAllocator(allocator, mask);
+  return MeasureBlockAllocator(allocator, mask);
 }
 
 }  // namespace pw::allocator::size_report

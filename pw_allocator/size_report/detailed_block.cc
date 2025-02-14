@@ -1,4 +1,4 @@
-// Copyright 2024 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,8 +12,9 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/tlsf_allocator.h"
+#include "pw_allocator/block/detailed_block.h"
 
+#include "pw_allocator/bucket/fast_sorted.h"
 #include "pw_allocator/size_report/size_report.h"
 #include "pw_bloat/bloat_this_binary.h"
 
@@ -21,8 +22,7 @@ namespace pw::allocator::size_report {
 
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
-  static TlsfAllocator<BlockType> allocator(GetBuffer());
-  return MeasureBlockAllocator(allocator, mask);
+  return MeasureBlock<DetailedBlock<uint32_t, GenericFastSortedItem>>(mask);
 }
 
 }  // namespace pw::allocator::size_report

@@ -736,32 +736,43 @@ pw_size_diff("allocator_api_size_report") {
   ]
 }
 
+pw_size_diff("blocks_size_report") {
+  title = "Sizes of various block implementations"
+  binaries = [
+    {
+      target = "size_report:detailed_block"
+      base = "size_report:base"
+      label = "DetailedBlock"
+    },
+  ]
+}
+
 pw_size_diff("block_allocators_size_report") {
   title = "Sizes of various block allocator implementations"
   binaries = [
     {
       target = "size_report:best_fit"
-      base = "size_report:base"
+      base = "size_report:detailed_block"
       label = "BestFitAllocator"
     },
     {
       target = "size_report:bucket_allocator"
-      base = "size_report:base"
+      base = "size_report:detailed_block"
       label = "BucketAllocator"
     },
     {
       target = "size_report:first_fit"
-      base = "size_report:base"
+      base = "size_report:detailed_block"
       label = "FirstFitAllocator"
     },
     {
       target = "size_report:tlsf_allocator"
-      base = "size_report:base"
+      base = "size_report:detailed_block"
       label = "TlsfAllocator"
     },
     {
       target = "size_report:worst_fit"
-      base = "size_report:base"
+      base = "size_report:detailed_block"
       label = "WorstFitAllocator"
     },
   ]
@@ -861,6 +872,7 @@ pw_doc_group("docs") {
   report_deps = [
     ":allocator_api_size_report",
     ":block_allocators_size_report",
+    ":blocks_size_report",
     ":concrete_allocators_size_report",
     ":forwarding_allocators_size_report",
     "examples:custom_allocator_size_report",

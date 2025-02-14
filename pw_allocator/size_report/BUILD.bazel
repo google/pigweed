@@ -35,6 +35,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         "//pw_allocator:allocator",
+        "//pw_allocator:block_allocator",
         "//pw_allocator/block:detailed_block",
         "//pw_allocator/bucket:fast_sorted",
         "//pw_bytes",
@@ -48,6 +49,19 @@ pw_cc_binary(
     srcs = ["base.cc"],
     deps = [
         ":size_report",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+# Block binaries to be measured for code size.
+
+pw_cc_binary(
+    name = "detailed_block",
+    srcs = ["detailed_block.cc"],
+    deps = [
+        ":size_report",
+        "//pw_allocator/block:detailed_block",
+        "//pw_allocator/bucket:fast_sorted",
         "//pw_bloat:bloat_this_binary",
     ],
 )

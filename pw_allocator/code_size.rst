@@ -23,6 +23,20 @@ of the interface is measured using an empty implementation,
 .. .. include:: allocator_api_size_report
 .. include:: ../size_report_notice
 
+---------------------
+Block implementations
+---------------------
+Most of the concrete allocator implementations are block allocators that use
+:ref:`module-pw_allocator-design-blocks` to manage allocations. Code size and
+memory overhead for blocks varies depending on what features are included.
+
+The following are code sizes for the block implementations provided by this
+module.
+
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: blocks_size_report
+.. include:: ../size_report_notice
+
 -------------------------------
 Block allocator implementations
 -------------------------------

@@ -245,7 +245,7 @@ overview. Consult the :ref:`module-pw_allocator-api` for additional details.
 - :ref:`module-pw_allocator-api-block_allocator`: Tracks memory using
   :ref:`module-pw_allocator-api-block`. Derived types use specific strategies
   for how to choose a block to use to satisfy a request. See also
-  :ref:`module-pw_allocator-design-block`. Derived types include:
+  :ref:`module-pw_allocator-design-blocks`. Derived types include:
 
   - :ref:`module-pw_allocator-api-first_fit_allocator`: Chooses the first
     block that's large enough to satisfy a request. This strategy is very fast,
@@ -428,17 +428,17 @@ approximately ``0.29``.
 ------------------------
 Detect memory corruption
 ------------------------
-The :ref:`module-pw_allocator-design-block` class provides a few different
-mechanisms to help detect memory corruptions when they happen. First, on every
-deallocation it will check the integrity of the block header and assert if it
-has been modified.
+The :ref:`module-pw_allocator-design-blocks` provide a few different mechanisms
+to help detect memory corruptions when they happen. On every deallocation they
+will check the integrity of the block header and assert if it has been modified.
 
 Additionally, you can enable poisoning to detect additional memory corruptions
 such as use-after-frees. The :ref:`module-pw_allocator-module-configuration` for
-``pw_allocator`` includes the ``PW_ALLOCATOR_BLOCK_POISON_INTERVAL`` option,
-which will "poison" every N-th ``Block``. Allocators "poison" blocks on
-deallocation by writing a set pattern to the usable memory, and later check on
-allocation that the pattern is intact. If it's not, some routine has modified
+``pw_allocator`` includes the ``PW_ALLOCATOR_BLOCK_POISON_INTERVAL`` option. If
+a block derives from :ref:`module-pw_allocator-api-poisonable-block`, the
+allocator will "poison" every N-th block it frees. Allocators "poison" blocks by
+writing a set pattern to the usable memory, and later check on allocation that
+the pattern is intact. If it is not, something has illegally modified
 unallocated memory.
 
 ----------------------

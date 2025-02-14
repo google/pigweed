@@ -28,6 +28,7 @@ pw_source_set("size_report") {
   public = [ "public/pw_allocator/size_report/size_report.h" ]
   public_deps = [
     "$dir_pw_allocator:allocator",
+    "$dir_pw_allocator:block_allocator",
     "$dir_pw_allocator/block:detailed_block",
     "$dir_pw_allocator/bucket:fast_sorted",
     dir_pw_bytes,
@@ -47,6 +48,18 @@ pw_executable("base") {
   sources = [ "base.cc" ]
   deps = [
     ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+# Block binaries to be measured for code size.
+
+pw_executable("detailed_block") {
+  sources = [ "detailed_block.cc" ]
+  deps = [
+    ":size_report",
+    "$dir_pw_allocator/block:detailed_block",
+    "$dir_pw_allocator/bucket:fast_sorted",
     "$dir_pw_bloat:bloat_this_binary",
   ]
 }

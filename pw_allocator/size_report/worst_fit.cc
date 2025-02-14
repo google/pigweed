@@ -22,7 +22,7 @@ namespace pw::allocator::size_report {
 int Measure() {
   volatile uint32_t mask = bloat::kDefaultMask;
   static WorstFitAllocator<BlockType> allocator(GetBuffer());
-  return MeasureAllocator(allocator, mask);
+  return MeasureBlockAllocator(allocator, mask);
 }
 
 }  // namespace pw::allocator::size_report

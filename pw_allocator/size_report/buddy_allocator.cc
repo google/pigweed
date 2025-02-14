@@ -14,8 +14,6 @@
 
 #include "pw_allocator/buddy_allocator.h"
 
-#include <array>
-
 #include "pw_allocator/size_report/size_report.h"
 #include "pw_bloat/bloat_this_binary.h"
 

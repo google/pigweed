@@ -84,16 +84,10 @@ that combined all of their features and more. By decomposing allocators into
 orthogonal behaviors, implementers can choose to pay for only those that they
 want.
 
------------------------------
-Design of allocator utilities
------------------------------
-In addtion to providing allocator implementations themselves, ``pw_allocator``
-includes some foundational classes that can be used to implement allocators.
+.. _module-pw_allocator-design-blocks:
 
-.. _module-pw_allocator-design-block:
-
-pw::allocator::Block
-====================
+Blocks of memory
+================
 Several allocators make use of allocation metadata stored inline with the
 allocations themselves. Often referred to as a "header", this metadata
 immediately precedes the pointer to usable space returned by the allocator. This
@@ -102,31 +96,39 @@ header allows allocations to be variably sized, and converts allocation into a
 matching that of the header type itself.
 
 For ``pw_allocator``, the most common way to store this header is as a
-:ref:`module-pw_allocator-api-block`. This class is used to construct a
-doubly-linked list of subsequences of the allocator's memory region. It was
-designed with the following features:
+:ref:`module-pw_allocator-api-block`. Specific block implementations are created
+by providing a concrete representation and implementing the required methods for
+one or more of the block mix-ins. Each block mix-in provides a specific set of
+features, allowing block implementers to include only what they need. Features
+provided by these block mix-ins include:
 
-- **Templated offset types**: Rather than use pointers to the next and previous
-  blocks, ``Block`` uses offsets of a templated unsigned integral type. This
-  saves a few bits that can be used for other purposes, since the blocks are
-  always aligned to the block header. It also gives callers the ability to
-  reduce the size of the headers if the allocator's memory region is
-  sufficently small, e.g. a type of ``uint16_t`` could be used if the region
-  could hold no more than 65536 block headers.
-- **Splitting and merging**: This class centralizes the logic for splitting
-  memory regions into smaller pieces. Usable sub-blocks can either be split from
-  the beginning or end of a block. Additionally, blocks from  either end can be
-  split at specified alignment boundaries. This class also provides the logic
-  for merging blocks back together. Together, these methods provide the
-  invariant that a free block is only ever adjacent to blocks in use.
-- **Validation and poisoning**: On every deallocation, blocks validate their
-  metadata against their neighbors. A block can fail to be validated if it or
-  its neighbors have had their headers overwritten. In this case, it's unsafe to
-  continue to use this memory and the block code will assert in order make you
-  aware of the problem. Additionally, blocks can "paint" their memory with a
-  known poison pattern that's checked whenever the memory is next allocated. If
-  the check fails, then some code has written to unallocated memory. Again, the
-  block code will assert to alert you of a "use-after-free" condition.
+- A :ref:`module-pw_allocator-api-basic-block` can retrieve the memory that
+  makes up its usable space and its size.
+- A :ref:`module-pw_allocator-api-contiguous-block` knows the blocks that are
+  adjacent to it in memory. It can merge with neighboring blocks and split
+  itself into smaller sub-blocks.
+- An :ref:`module-pw_allocator-api-allocatable-block` knows when it is free or
+  in-use. It can allocate new blocks from either the beginning or end of its
+  usable space when free. When in-use, it can be freed and merged with
+  neighboring blocks that are free. This ensures that free blocks are only ever
+  adjacent to blocks in use, and vice versa.
+- An :ref:`module-pw_allocator-api-alignable-block` can additionally allocate
+  blocks from either end at specified alignment boundaries.
+- A :ref:`module-pw_allocator-api-block-with-layout` can retrieve the layout
+  used to allocate it, even if the block itself is larger due to alignment or
+  padding.
+- The :ref:`module-pw_allocator-api-forward-iterable-block` and
+  :ref:`module-pw_allocator-api-reverse-iterable-block` types provide iterators
+  and ranges that can be used to iterate over a sequence of blocks.
+- A :ref:`module-pw_allocator-api-poisonable-block` can fill its usable space
+  with a pattern when freed. This pattern can be checked on a subsequent
+  allocation to detect if the memory was illegally modified while free.
+
+In addition to poisoning, blocks validate their metadata against their neighbors
+on each allocation and deallocation. A block can fail to be validated if it or
+its neighbors have had their headers overwritten. In this case, it's unsafe to
+continue to use this memory and the block code will assert in order make you
+aware of the problem.
 
 .. tip::
    In the case of memory corruption, the validation routines themsleves may
@@ -136,6 +138,24 @@ designed with the following features:
    determining why validation failed.
 
 .. _module-pw_allocator-design-metrics:
+
+Buckets of blocks
+=================
+The most important role of a :ref:`module-pw_allocator-api-block_allocator` is
+to choose the right block to satisfy an allocation request. Different block
+allocators use different strategies to accomplish this, and thus need different
+data structures to organize blocks in order to be able to choose them
+efficiently.
+
+For example, a block allocator that uses a "best-fit" strategy needs to be able
+to efficiently search free blocks by usable size in order to find the smallest
+candidate that could satisfy the request.
+
+The :ref:`module-pw_allocator-api-basic-block` mix-in requires blocks to specify
+both a ``MinInnerSize`` and ``DefaultAlignment``. Together these ensure that the
+usable space of free blocks can be treated as intrusive items for containers.
+The :ref:`module-pw_allocator-api-bucket` provide such containers to store and
+retrieve free blocks with different performance and code size characteristics.
 
 Allocator metrics
 =================

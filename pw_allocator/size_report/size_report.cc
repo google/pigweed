@@ -76,4 +76,11 @@ int MeasureAllocator(Allocator& allocator, uint32_t mask) {
   return 0;
 }
 
+int MeasureBlockAllocator(BlockAllocator<BlockType>& allocator, uint32_t mask) {
+  if (int rc = MeasureBlock<BlockType>(mask); rc != 0) {
+    return rc;
+  }
+  return MeasureAllocator(allocator, mask);
+}
+
 }  // namespace pw::allocator::size_report
