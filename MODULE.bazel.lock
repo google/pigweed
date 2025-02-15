@@ -1,5 +1,5 @@
 {
-  "lockFileVersion": 16,
+  "lockFileVersion": 18,
   "registryFileHashes": {
     "https://bcr.bazel.build/bazel_registry.json": "8a28e4aff06ee60aed2a8c281907fb8bcbf3b753c91fb5a5c57da3215d5b3497",
     "https://bcr.bazel.build/modules/abseil-cpp/20211102.0/MODULE.bazel": "70390338f7a5106231d20620712f7cccb659cd0e9d073d1991c038eb9fc57589",
@@ -817,7 +817,7 @@
     },
     "@@aspect_rules_js+//npm:extensions.bzl%pnpm": {
       "general": {
-        "bzlTransitiveDigest": "3EVrVHeIpAzbH8kdJN+aLRgnurLZpwHgWmgyCiV3MSc=",
+        "bzlTransitiveDigest": "ScXgEg8LVV6JRrGD0nYopTQ9n5rZHqEbS5HunySpzD8=",
         "usagesDigest": "0bnQ+rfWPgPBwIzrmxLJ+o/WAhUldmvdunr9wh8cgSk=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1098,6 +1098,26 @@
           }
         },
         "recordedRepoMappingEntries": [
+          [
+            "",
+            "doxygen_linux_amd64",
+            "+_repo_rules5+doxygen_linux_amd64"
+          ],
+          [
+            "",
+            "doxygen_mac_amd64",
+            "+_repo_rules5+doxygen_mac_amd64"
+          ],
+          [
+            "",
+            "doxygen_mac_arm64",
+            "+_repo_rules5+doxygen_mac_arm64"
+          ],
+          [
+            "",
+            "doxygen_windows_amd64",
+            "+_repo_rules5+doxygen_windows_amd64"
+          ],
           [
             "rules_doxygen+",
             "bazel_tools",
@@ -1432,7 +1452,7 @@
     },
     "@@rules_python+//python/private/pypi:pip.bzl%pip_internal": {
       "general": {
-        "bzlTransitiveDigest": "6Zpx7tngDBz+afN8QHJa7+jc/GNpSkB7imZElmszAJI=",
+        "bzlTransitiveDigest": "bFzWYaccVlNyDDKkxyxHzB6JeMIyZMHCwZHPHUuvaks=",
         "usagesDigest": "OLoIStnzNObNalKEMRq99FqenhPGLFZ5utVLV4sz7OI=",
         "recordedFileInputs": {
           "@@rules_python+//tools/publish/requirements_darwin.txt": "2994136eab7e57b083c3de76faf46f70fad130bc8e7360a7fed2b288b69e79dc",
