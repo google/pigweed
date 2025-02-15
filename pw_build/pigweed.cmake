@@ -51,7 +51,9 @@ include("$ENV{PW_ROOT}/pw_unit_test/test.cmake")
 #                        <multi_value_keywords>)
 #
 macro(pw_parse_arguments)
-  cmake_policy(SET CMP0174 NEW)  # Remove when CMake 3.31 or newer is required.
+  if(POLICY CMP0174)
+    cmake_policy(SET CMP0174 NEW)  # Remove when CMake 3.31 or newer is required.
+  endif()
   cmake_parse_arguments(
     pw_parse_arg "" "NUM_POSITIONAL_ARGS"
     "OPTION_ARGS;ONE_VALUE_ARGS;MULTI_VALUE_ARGS;REQUIRED_ARGS"
