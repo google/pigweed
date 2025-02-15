@@ -176,14 +176,72 @@ spans of binary data. Convert spans to byte spans with ``pw::as_bytes`` or
 ``pw_bytes/span.h`` provides ``ByteSpan`` and ``ConstByteSpan`` aliases for
 these types.
 
+Convert byte spans back to their original type, or to spans of other 1-byte
+types using ``pw::span_cast<T>``.
+
+.. literalinclude:: cast_test.cc
+   :language: cpp
+   :start-after: [start-pw_span-cast-example]
+   :end-before: [end-pw_span-cast-example]
+
+.. warning::
+
+   ``pw::span_cast<T>`` is only safe to use if the underlying data is actually
+   of the specified type, or if ``T`` is another 1-byte type (e.g.
+   ``uint8_t``). You cannot safely use this function to reinterpret e.g. a raw
+   byte array from ``malloc()`` as a span of integers.
+
+
 ----------
 References
 ----------
 
-API reference
-=============
+pw_span/span.h
+==============
 See `std::span <https://en.cppreference.com/w/cpp/container/span>`_.
 The ``pw::span`` API is designed to match the ``std::span`` API.
+
+pw_span/cast.h
+==============
+This header provides functions for casting between ``pw::span`` types, and is
+not part of the ``std::span`` interface.
+
+..
+   TODO: https://pwbug.dev/396493663 - Doxygen thinks the const/non-const
+   versions of span_cast are the same function and merges their docs together.
+
+   .. doxygengroup:: pw_span_cast
+      :content-only:
+
+.. cpp:function:: span<T> pw::span_cast(std::span<std::byte> bytes)
+
+   Casts a ``pw::span<std::byte>`` (``ByteSpan``) to a span of a
+   different type.
+
+   This function is only safe to use if the underlying data is actually of the
+   specified type. You cannot safely use this function to reinterpret e.g. a
+   raw byte array from ``malloc()`` as a span of integers.
+
+   This function is essentially the inverse of ``pw::as_writable_bytes``.
+
+   If ``kSourceExtentBytes`` is ``dynamic_extent``, the returned span also has
+   a dynamic extent.  Otherwise, the returned span has a static extent of
+   ``kSourceExtentBytes / sizeof(ResultT)``.
+
+.. cpp:function:: span<const T> pw::span_cast(std::span<const std::byte> bytes)
+
+   Casts a ``pw::span<const std::byte>`` (``ConstByteSpan``) to a span of a
+   different const type.
+
+   This function is only safe to use if the underlying data is actually of the
+   specified type. You cannot safely use this function to reinterpret e.g. a
+   raw byte array from ``malloc()`` as a span of integers.
+
+   This function is essentially the inverse of ``pw::as_bytes``.
+
+   If ``kSourceExtentBytes`` is ``dynamic_extent``, the returned span also has
+   a dynamic extent.  Otherwise, the returned span has a static extent of
+   ``kSourceExtentBytes / sizeof(ResultT)``.
 
 Configuration options
 =====================

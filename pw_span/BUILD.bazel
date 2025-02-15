@@ -24,11 +24,35 @@ licenses(["notice"])
 cc_library(
     name = "pw_span",
     hdrs = [
-        "public/pw_span/internal/config.h",
         "public/pw_span/internal/span_impl.h",
         "public/pw_span/span.h",
     ],
     strip_include_prefix = "public",
+    deps = [
+        ":config",
+    ],
+)
+
+cc_library(
+    name = "cast",
+    hdrs = [
+        "public/pw_span/cast.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":config",
+        ":pw_span",
+        "//pw_bytes:alignment",
+    ],
+)
+
+cc_library(
+    name = "config",
+    hdrs = [
+        "public/pw_span/internal/config.h",
+    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_assert:assert",
     ],
@@ -53,9 +77,20 @@ pw_cc_test(
     ],
 )
 
+pw_cc_test(
+    name = "cast_test",
+    srcs = ["cast_test.cc"],
+    deps = [
+        ":cast",
+        ":pw_span",
+        "//pw_bytes",
+    ],
+)
+
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_span/cast.h",
         "public/pw_span/internal/config.h",
     ],
 )
@@ -64,6 +99,7 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "Kconfig",
+        "cast_test.cc",
         "docs.rst",
     ],
     prefix = "pw_span/",

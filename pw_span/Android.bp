@@ -22,4 +22,34 @@ cc_library_static {
     cpp_std: "c++20",
     export_include_dirs: ["public"],
     host_supported: true,
+    defaults: [
+        "pw_android_common_backends",
+    ],
+    header_libs: [
+        "pw_assert",
+    ],
+    export_header_lib_headers: [
+        "pw_assert",
+    ],
+}
+
+cc_library_static {
+    // NOTE: This has to be a separate target (not folded into pw_span)
+    // to avoid a circular dependency with pw_bytes.
+    name: "pw_span_cast",
+    vendor_available: true,
+    cpp_std: "c++20",
+    export_include_dirs: ["public"],
+    host_supported: true,
+    defaults: [
+        "pw_android_common_backends",
+    ],
+    whole_static_libs: [
+        "pw_bytes",
+        "pw_span",
+    ],
+    export_static_lib_headers: [
+        "pw_bytes",
+        "pw_span",
+    ],
 }

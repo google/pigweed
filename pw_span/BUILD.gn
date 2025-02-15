@@ -89,9 +89,25 @@ pw_source_set("pw_span") {
   sources = [ "public/pw_span/internal/span_impl.h" ]
 }
 
+pw_source_set("cast") {
+  public_configs = [ ":public_config" ]
+  public = [ "public/pw_span/cast.h" ]
+  public_deps = [
+    ":config",
+    ":pw_span",
+    "$dir_pw_bytes:alignment",
+  ]
+
+  # Only add a dependency on pw_assert if the flag is explicitly enabled.
+  if (pw_span_ENABLE_ASSERTS) {
+    public_deps += [ "$dir_pw_assert:assert" ]
+  }
+}
+
 pw_test_group("tests") {
   tests = [
     ":pw_span_test",
+    ":cast_test",
     ":compatibility_test",
   ]
 }
@@ -105,6 +121,14 @@ pw_test("pw_span_test") {
   sources = [ "span_test.cc" ]
 }
 
+pw_test("cast_test") {
+  deps = [
+    ":cast",
+    ":pw_span",
+  ]
+  sources = [ "cast_test.cc" ]
+}
+
 pw_test("compatibility_test") {
   deps = [
     ":pw_span",
@@ -114,6 +138,9 @@ pw_test("compatibility_test") {
 }
 
 pw_doc_group("docs") {
-  inputs = [ "Kconfig" ]
+  inputs = [
+    "Kconfig",
+    "cast_test.cc",
+  ]
   sources = [ "docs.rst" ]
 }

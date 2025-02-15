@@ -28,3 +28,13 @@
 #if !defined(PW_SPAN_ENABLE_ASSERTS)
 #define PW_SPAN_ENABLE_ASSERTS 0
 #endif  // !defined(PW_SPAN_ENABLE_ASSERTS)
+
+#if PW_SPAN_ENABLE_ASSERTS
+
+#include "pw_assert/assert.h"
+
+#define _PW_SPAN_ASSERT(arg) PW_ASSERT(arg)
+
+#else
+#define _PW_SPAN_ASSERT(arg)
+#endif  // PW_SPAN_ENABLE_ASSERTS
