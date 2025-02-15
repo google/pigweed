@@ -132,6 +132,7 @@
         "mac-amd64",
         "mac-arm64"
       ],
+      "subdir": "gsutil",
       "tags": [
         "version:3@5.33"
       ]
