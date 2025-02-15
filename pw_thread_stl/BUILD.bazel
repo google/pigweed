@@ -192,7 +192,6 @@ cc_library(
         "public/pw_thread_stl/yield_inline.h",
     ],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
     target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:private"],
     deps = [

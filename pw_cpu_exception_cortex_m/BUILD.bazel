@@ -86,7 +86,6 @@ cc_library(
     name = "cpu_state",
     hdrs = ["public/pw_cpu_exception_cortex_m/cpu_state.h"],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
     deps = [
         "//pw_preprocessor",
         "//pw_preprocessor:cortex_m",
@@ -236,7 +235,6 @@ cc_library(
 cc_library(
     name = "cortex_m_constants",
     hdrs = ["pw_cpu_exception_cortex_m_private/cortex_m_constants.h"],
-    tags = ["noclangtidy"],
     visibility = ["//visibility:private"],
     deps = ["//pw_preprocessor:cortex_m"],
 )

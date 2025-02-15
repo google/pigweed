@@ -98,7 +98,6 @@ cc_library(
     testonly = True,
     srcs = ["test_utils.cc"],
     hdrs = ["pw_bluetooth_proxy_private/test_utils.h"],
-    tags = ["noclangtidy"],
     deps = [
         ":pw_bluetooth_proxy",
         "//pw_bluetooth:emboss_att",

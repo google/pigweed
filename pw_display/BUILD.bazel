@@ -29,7 +29,6 @@ cc_library(
         "public/pw_display/colors_pico8.h",
     ],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
 )
 
 pw_cc_test(

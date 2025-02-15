@@ -53,7 +53,6 @@ cc_library(
         "public/pw_allocator/benchmarks/config.h",
     ],
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
     target_compatible_with = select({
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
