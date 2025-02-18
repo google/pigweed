@@ -116,7 +116,6 @@ pw_cc_test(
         ":build_id",
         ":build_id_header",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 
@@ -138,10 +137,7 @@ pw_cc_test(
         ":git_build_info",
     ],
     tags = ["noclangtidy"],
-    deps = [
-        "//pw_log",
-        "//pw_unit_test",
-    ],
+    deps = ["//pw_log"],
 )
 
 sphinx_docs_library(

@@ -133,10 +133,7 @@ pw_cc_test(
     srcs = [
         "simulated_system_clock_test.cc",
     ],
-    deps = [
-        ":simulated_system_clock",
-        "//pw_unit_test",
-    ],
+    deps = [":simulated_system_clock"],
 )
 
 pw_cc_test(
@@ -148,7 +145,6 @@ pw_cc_test(
     deps = [
         ":system_clock",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -161,7 +157,6 @@ pw_cc_test(
         ":system_clock",
         ":system_timer",
         "//pw_sync:thread_notification",
-        "//pw_unit_test",
     ],
 )
 

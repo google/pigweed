@@ -67,7 +67,6 @@ pw_cc_test(
         ":chunk",
         ":header_chunk_region_tracker",
         "//pw_allocator:testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -115,7 +114,6 @@ pw_cc_test(
         ":internal_test_utils",
         ":pw_multibuf",
         "//pw_bytes",
-        "//pw_unit_test",
     ],
 )
 
@@ -161,7 +159,6 @@ pw_cc_test(
         ":allocator_async",
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
-        "//pw_unit_test",
     ],
 )
 
@@ -187,7 +184,6 @@ pw_cc_test(
         "//pw_allocator:testing",
         "//pw_async2:dispatcher",
         "//pw_async2:poll",
-        "//pw_unit_test",
     ],
 )
 
@@ -210,7 +206,6 @@ pw_cc_test(
         ":internal_test_utils",
         ":pw_multibuf",
         ":stream",
-        "//pw_unit_test",
     ],
 )
 
@@ -232,7 +227,6 @@ pw_cc_test(
     deps = [
         ":from_span",
         "//pw_allocator:testing",
-        "//pw_unit_test",
     ],
 )
 

@@ -129,17 +129,13 @@ pw_cc_test(
         "//pw_assert",
         "//pw_preprocessor",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "null_stream_test",
     srcs = ["null_stream_test.cc"],
-    deps = [
-        ":pw_stream",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_stream"],
 )
 
 pw_cc_test(
@@ -156,17 +152,13 @@ pw_cc_test(
         "//pw_span",
         "//pw_status",
         "//pw_string:builder",
-        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "seek_test",
     srcs = ["seek_test.cc"],
-    deps = [
-        ":pw_stream",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_stream"],
 )
 
 pw_cc_test(
@@ -178,7 +170,6 @@ pw_cc_test(
         "//pw_bytes",
         "//pw_containers:to_array",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 
@@ -190,7 +181,6 @@ pw_cc_test(
         ":pw_stream",
         "//pw_assert",
         "//pw_result",
-        "//pw_unit_test",
     ],
 )
 
@@ -201,7 +191,6 @@ pw_cc_test(
         ":socket_stream",
         "//pw_result",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
@@ -221,7 +210,6 @@ pw_cc_test(
         "//pw_random",
         "//pw_thread:test_thread_context",
         "//pw_thread:thread",
-        "//pw_unit_test",
     ],
 )
 

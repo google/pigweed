@@ -58,7 +58,6 @@ pw_cc_test(
     deps = [
         ":pw_checksum",
         "//pw_bytes",
-        "//pw_unit_test",
     ],
 )
 
@@ -72,7 +71,6 @@ pw_cc_test(
         ":pw_checksum",
         "//pw_bytes",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 

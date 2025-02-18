@@ -140,7 +140,6 @@ pw_cc_test(
     deps = [
         ":base64",
         ":headers",
-        "//pw_unit_test",
     ],
 )
 
@@ -149,10 +148,7 @@ pw_cc_test(
     srcs = [
         "metadata_test.cc",
     ],
-    deps = [
-        ":headers",
-        "//pw_unit_test",
-    ],
+    deps = [":headers"],
 )
 
 pw_cc_test(
@@ -164,7 +160,6 @@ pw_cc_test(
         ":headers",
         "//pw_log:args",
         "//pw_tokenizer",
-        "//pw_unit_test",
     ],
 )
 

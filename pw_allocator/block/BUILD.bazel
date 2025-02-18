@@ -162,7 +162,6 @@ pw_cc_test(
         ":basic",
         ":result",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
@@ -177,7 +176,6 @@ pw_cc_test(
         "//pw_bytes:alignment",
         "//pw_span",
         "//pw_status",
-        "//pw_unit_test",
         "//third_party/fuchsia:stdcompat",
     ],
 )

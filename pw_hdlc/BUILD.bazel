@@ -112,7 +112,6 @@ pw_cc_test(
         ":pw_hdlc",
         "//pw_bytes",
         "//pw_stream",
-        "//pw_unit_test",
     ],
 )
 
@@ -136,7 +135,6 @@ pw_cc_test(
         "//pw_bytes",
         "//pw_result",
         "//pw_stream",
-        "//pw_unit_test",
         "//pw_varint",
     ],
 )
@@ -159,7 +157,6 @@ pw_cc_test(
         ":rpc_channel_output",
         "//pw_bytes",
         "//pw_stream",
-        "//pw_unit_test",
     ],
 )
 
@@ -199,7 +196,6 @@ pw_cc_test(
         "//pw_containers:inline_queue",
         "//pw_containers:vector",
         "//pw_multibuf:simple_allocator",
-        "//pw_unit_test",
     ],
 )
 

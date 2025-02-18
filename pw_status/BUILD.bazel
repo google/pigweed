@@ -52,28 +52,19 @@ pw_cc_test(
         "status_test.cc",
         "status_test_c.c",
     ],
-    deps = [
-        ":pw_status",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_status"],
 )
 
 pw_cc_test(
     name = "status_with_size_test",
     srcs = ["status_with_size_test.cc"],
-    deps = [
-        ":pw_status",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_status"],
 )
 
 pw_cc_test(
     name = "try_test",
     srcs = ["try_test.cc"],
-    deps = [
-        ":pw_status",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_status"],
 )
 
 filegroup(

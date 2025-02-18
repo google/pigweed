@@ -105,17 +105,13 @@ pw_cc_test(
     deps = [
         ":pw_protobuf",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "encoder_test",
     srcs = ["encoder_test.cc"],
-    deps = [
-        ":pw_protobuf",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_protobuf"],
 )
 
 pw_cc_fuzz_test(
@@ -148,44 +144,31 @@ pw_cc_test(
     deps = [
         ":pw_protobuf",
         "//pw_string",
-        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "serialized_size_test",
     srcs = ["serialized_size_test.cc"],
-    deps = [
-        ":pw_protobuf",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_protobuf"],
 )
 
 pw_cc_test(
     name = "stream_decoder_test",
     srcs = ["stream_decoder_test.cc"],
-    deps = [
-        ":pw_protobuf",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_protobuf"],
 )
 
 pw_cc_test(
     name = "map_utils_test",
     srcs = ["map_utils_test.cc"],
-    deps = [
-        ":pw_protobuf",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_protobuf"],
 )
 
 pw_cc_test(
     name = "message_test",
     srcs = ["message_test.cc"],
-    deps = [
-        ":pw_protobuf",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_protobuf"],
 )
 
 pw_cc_perf_test(
@@ -344,7 +327,6 @@ pw_cc_test(
         ":codegen_test_proto_pwpb",
         ":pw_protobuf",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 
@@ -358,7 +340,6 @@ pw_cc_test(
         ":pw_protobuf",
         "//pw_bytes",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 
@@ -371,7 +352,6 @@ pw_cc_test(
         ":codegen_test_proto_pwpb",
         ":pw_protobuf",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 
@@ -387,7 +367,6 @@ pw_cc_test(
         "//pw_span",
         "//pw_status",
         "//pw_stream",
-        "//pw_unit_test",
     ],
 )
 

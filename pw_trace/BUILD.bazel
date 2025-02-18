@@ -77,7 +77,6 @@ pw_cc_test(
     deps = [
         ":pw_trace",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -96,7 +95,6 @@ pw_cc_test(
     deps = [
         ":pw_trace",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -114,7 +112,6 @@ pw_cc_test(
     deps = [
         ":pw_trace.facade",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 

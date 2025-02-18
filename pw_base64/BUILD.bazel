@@ -43,10 +43,7 @@ pw_cc_test(
         "base64_test.cc",
         "base64_test_c.c",
     ],
-    deps = [
-        ":pw_base64",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_base64"],
 )
 
 filegroup(

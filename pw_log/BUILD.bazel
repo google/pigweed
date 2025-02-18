@@ -210,7 +210,6 @@ pw_cc_test(
         ":pw_log.facade",
         ":rate_limited",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -219,10 +218,7 @@ pw_cc_test(
     srcs = [
         "glog_adapter_test.cc",
     ],
-    deps = [
-        ":glog_adapter",
-        "//pw_unit_test",
-    ],
+    deps = [":glog_adapter"],
 )
 
 pw_cc_test(
@@ -239,7 +235,6 @@ pw_cc_test(
         "//pw_preprocessor",
         "//pw_protobuf",
         "//pw_protobuf:bytes_utils",
-        "//pw_unit_test",
     ],
 )
 
@@ -252,7 +247,6 @@ pw_cc_test(
         ":args",
         "//pw_log",
         "//pw_tokenizer",
-        "//pw_unit_test",
         "//pw_unit_test:constexpr",
     ],
 )

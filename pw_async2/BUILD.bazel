@@ -297,10 +297,7 @@ pw_cc_test(
     srcs = [
         "system_time_provider_test.cc",
     ],
-    deps = [
-        ":system_time_provider",
-        "//pw_unit_test",
-    ],
+    deps = [":system_time_provider"],
 )
 
 cc_library(
@@ -323,7 +320,6 @@ pw_cc_test(
     deps = [
         ":simulated_time_provider",
         "//pw_chrono:system_clock",
-        "//pw_unit_test",
     ],
 )
 
@@ -346,7 +342,6 @@ pw_cc_test(
     deps = [
         ":dispatcher",
         ":enqueue_heap_func",
-        "//pw_unit_test",
     ],
 )
 

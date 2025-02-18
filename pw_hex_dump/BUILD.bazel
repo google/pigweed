@@ -50,7 +50,6 @@ pw_cc_test(
         ":pw_hex_dump",
         "//pw_log",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 
@@ -77,7 +76,6 @@ pw_cc_test(
         ":log_bytes",
         "//pw_log",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 

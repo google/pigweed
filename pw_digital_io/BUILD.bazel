@@ -54,7 +54,6 @@ pw_cc_test(
     deps = [
         ":pw_digital_io",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
@@ -120,7 +119,6 @@ pw_cc_test(
     deps = [
         ":digital_io_mock",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 

@@ -222,7 +222,6 @@ pw_cc_test(
         # "generate_test_bundle",
         ":update_bundle",
         "//pw_kvs:fake_flash_test_key_value_store",
-        "//pw_unit_test",
     ],
 )
 
@@ -230,20 +229,14 @@ pw_cc_test(
     name = "bundled_update_service_test",
     srcs = ["bundled_update_service_test.cc"],
     tags = ["manual"],  # bundled_update_service doesn't work yet.
-    deps = [
-        ":bundled_update_service",
-        "//pw_unit_test",
-    ],
+    deps = [":bundled_update_service"],
 )
 
 pw_cc_test(
     name = "bundled_update_service_pwpb_test",
     srcs = ["bundled_update_service_pwpb_test.cc"],
     tags = ["manual"],  # bundled_update_service_pwpb doesn't work yet.
-    deps = [
-        ":bundled_update_service_pwpb",
-        "//pw_unit_test",
-    ],
+    deps = [":bundled_update_service_pwpb"],
 )
 
 sphinx_docs_library(

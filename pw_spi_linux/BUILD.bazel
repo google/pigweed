@@ -67,10 +67,7 @@ pw_cc_test(
     target_compatible_with = [
         "@platforms//os:linux",
     ],
-    deps = [
-        ":pw_spi_linux",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_spi_linux"],
 )
 
 sphinx_docs_library(

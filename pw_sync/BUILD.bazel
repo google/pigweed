@@ -445,7 +445,6 @@ pw_cc_test(
         ":borrow",
         ":lock_testing",
         ":timed_borrow_testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -459,7 +458,6 @@ pw_cc_test(
         ":interrupt_spin_lock",
         ":lock_annotations",
         ":mutex",
-        "//pw_unit_test",
     ],
 )
 
@@ -472,7 +470,6 @@ pw_cc_test(
     deps = [
         ":binary_semaphore",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -485,7 +482,6 @@ pw_cc_test(
     deps = [
         ":counting_semaphore",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -499,7 +495,6 @@ pw_cc_test(
         ":borrow_testing",
         ":mutex",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -514,7 +509,6 @@ pw_cc_test(
         ":timed_mutex",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -527,7 +521,6 @@ pw_cc_test(
     deps = [
         ":recursive_mutex",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -547,7 +540,6 @@ pw_cc_test(
         ":borrow_testing",
         ":interrupt_spin_lock",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -556,10 +548,7 @@ pw_cc_test(
     srcs = [
         "thread_notification_facade_test.cc",
     ],
-    deps = [
-        ":thread_notification",
-        "//pw_unit_test",
-    ],
+    deps = [":thread_notification"],
 )
 
 pw_cc_test(
@@ -570,7 +559,6 @@ pw_cc_test(
     deps = [
         ":timed_thread_notification",
         "//pw_chrono:system_clock",
-        "//pw_unit_test",
     ],
 )
 

@@ -89,7 +89,6 @@ pw_cc_test(
         "//pw_function",
         "//pw_preprocessor",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 

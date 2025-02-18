@@ -62,7 +62,6 @@ pw_cc_test(
     deps = [
         ":pw_persistent_ram",
         "//pw_random",
-        "//pw_unit_test",
     ],
 )
 
@@ -76,7 +75,6 @@ pw_cc_test(
     deps = [
         ":pw_persistent_ram",
         "//pw_random",
-        "//pw_unit_test",
     ],
 )
 

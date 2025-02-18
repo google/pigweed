@@ -300,7 +300,6 @@ pw_cc_test(
     deps = [
         ":flat_map",
         "//pw_polyfill",
-        "//pw_unit_test",
     ],
 )
 
@@ -327,7 +326,6 @@ pw_cc_test(
         ":test_helpers",
         ":vector",
         "//pw_compilation_testing:negative_compilation_testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -341,7 +339,6 @@ pw_cc_test(
         ":inline_deque",
         ":test_helpers",
         "//pw_compilation_testing:negative_compilation_testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -355,7 +352,6 @@ pw_cc_test(
         ":inline_queue",
         ":test_helpers",
         "//pw_compilation_testing:negative_compilation_testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -367,7 +363,6 @@ pw_cc_test(
     deps = [
         ":raw_storage",
         ":test_helpers",
-        "//pw_unit_test",
     ],
 )
 
@@ -391,7 +386,6 @@ pw_cc_test(
         ":vector",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -403,7 +397,6 @@ pw_cc_test(
         ":vector",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -463,7 +456,6 @@ pw_cc_test(
         ":intrusive_multiset",
         ":intrusive_set",
         "//pw_compilation_testing:negative_compilation_testing",
-        "//pw_unit_test",
     ],
 )
 

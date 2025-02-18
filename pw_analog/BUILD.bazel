@@ -82,10 +82,7 @@ pw_cc_test(
     srcs = [
         "analog_input_test.cc",
     ],
-    deps = [
-        ":analog_input",
-        "//pw_unit_test",
-    ],
+    deps = [":analog_input"],
 )
 
 pw_cc_test(
@@ -93,10 +90,7 @@ pw_cc_test(
     srcs = [
         "microvolt_input_test.cc",
     ],
-    deps = [
-        ":microvolt_input",
-        "//pw_unit_test",
-    ],
+    deps = [":microvolt_input"],
 )
 
 sphinx_docs_library(

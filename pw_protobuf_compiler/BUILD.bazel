@@ -36,10 +36,7 @@ pw_cc_test(
     srcs = ["nanopb_test.cc"],
     # TODO: https://pwbug.dev/328311416 - Fix this test.
     tags = ["manual"],
-    deps = [
-        ":pw_protobuf_compiler_nanopb_protos_nanopb",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_protobuf_compiler_nanopb_protos_nanopb"],
 )
 
 pw_cc_test(
@@ -48,7 +45,6 @@ pw_cc_test(
     deps = [
         "//pw_protobuf_compiler/pwpb_test_protos:pwpb_test_pw_proto",
         "//pw_string",
-        "//pw_unit_test",
     ],
 )
 
@@ -74,7 +70,6 @@ pw_cc_test(
     deps = [
         ":pwpb_test_pw_proto_no_prefix",
         "//pw_string",
-        "//pw_unit_test",
     ],
 )
 
@@ -117,7 +112,6 @@ pw_cc_test(
         "//pw_protobuf_compiler/pw_nested_packages/data_type/id:id_pwpb",
         "//pw_protobuf_compiler/pw_nested_packages/data_type/thing:thing_pwpb",
         "//pw_protobuf_compiler/pw_nested_packages/data_type/thing:type_of_thing_pwpb",
-        "//pw_unit_test",
     ],
 )
 

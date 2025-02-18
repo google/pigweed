@@ -144,7 +144,6 @@ pw_cc_test(
     deps = [
         ":format",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 
@@ -154,26 +153,19 @@ pw_cc_test(
     deps = [
         ":string",
         "//pw_compilation_testing:negative_compilation_testing",
-        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "type_to_string_test",
     srcs = ["type_to_string_test.cc"],
-    deps = [
-        ":to_string",
-        "//pw_unit_test",
-    ],
+    deps = [":to_string"],
 )
 
 pw_cc_test(
     name = "string_builder_test",
     srcs = ["string_builder_test.cc"],
-    deps = [
-        ":builder",
-        "//pw_unit_test",
-    ],
+    deps = [":builder"],
 )
 
 pw_cc_test(
@@ -183,26 +175,19 @@ pw_cc_test(
         ":config",
         ":to_string",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "utf_codecs_test",
     srcs = ["utf_codecs_test.cc"],
-    deps = [
-        ":utf_codecs",
-        "//pw_unit_test",
-    ],
+    deps = [":utf_codecs"],
 )
 
 pw_cc_test(
     name = "util_test",
     srcs = ["util_test.cc"],
-    deps = [
-        ":util",
-        "//pw_unit_test",
-    ],
+    deps = [":util"],
 )
 
 filegroup(

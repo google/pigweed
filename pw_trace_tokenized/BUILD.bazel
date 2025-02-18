@@ -260,7 +260,6 @@ pw_cc_test(
         ":buffer",
         ":pw_trace_tokenized",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -273,7 +272,6 @@ pw_cc_test(
         ":buffer_log",
         ":pw_trace_tokenized",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 

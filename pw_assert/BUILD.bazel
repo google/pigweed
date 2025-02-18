@@ -235,7 +235,6 @@ pw_cc_test(
         "//pw_span",
         "//pw_status",
         "//pw_string:builder",
-        "//pw_unit_test",
     ],
 )
 
@@ -248,7 +247,6 @@ pw_cc_test(
     deps = [
         "//pw_assert",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 

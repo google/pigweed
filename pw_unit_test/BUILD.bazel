@@ -329,7 +329,6 @@ pw_cc_test(
     srcs = ["constexpr_test.cc"],
     deps = [
         ":constexpr",
-        ":pw_unit_test",
         "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
@@ -349,10 +348,7 @@ cc_library(
 pw_cc_test(
     name = "multi_event_handler_test",
     srcs = ["multi_event_handler_test.cc"],
-    deps = [
-        ":multi_event_handler",
-        ":pw_unit_test",
-    ],
+    deps = [":multi_event_handler"],
 )
 
 cc_library(
@@ -373,10 +369,7 @@ cc_library(
 pw_cc_test(
     name = "test_record_event_handler_test",
     srcs = ["test_record_event_handler_test.cc"],
-    deps = [
-        ":pw_unit_test",
-        ":test_record_event_handler",
-    ],
+    deps = [":test_record_event_handler"],
 )
 
 proto_library(
@@ -479,7 +472,6 @@ pw_cc_test(
     name = "static_library_support_test",
     srcs = ["static_library_support_test.cc"],
     deps = [
-        ":pw_unit_test",
         ":static_library_support",
         ":tests_in_archive",
         "//pw_assert",
@@ -495,7 +487,6 @@ pw_cc_test(
         "//conditions:default": [],
     }),
     deps = [
-        ":pw_unit_test",
         "//pw_assert",
         "//pw_result",
         "//pw_status",
@@ -510,7 +501,6 @@ pw_cc_test(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        ":pw_unit_test",
         "//pw_status",
         "//pw_string",
     ],

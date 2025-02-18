@@ -104,7 +104,6 @@ pw_cc_test(
         "//pw_bytes",
         "//pw_containers:algorithm",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 
@@ -137,7 +136,6 @@ pw_cc_test(
         "//pw_status",
         "//pw_sync:borrow",
         "//pw_sync:mutex",
-        "//pw_unit_test",
     ],
 )
 

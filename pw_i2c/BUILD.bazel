@@ -98,10 +98,7 @@ pw_cc_test(
     srcs = [
         "address_test.cc",
     ],
-    deps = [
-        ":address",
-        "//pw_unit_test",
-    ],
+    deps = [":address"],
 )
 
 cc_library(
@@ -150,7 +147,6 @@ pw_cc_test(
         "//pw_chrono:system_clock",
         "//pw_containers:algorithm",
         "//pw_span",
-        "//pw_unit_test",
     ],
 )
 
@@ -165,7 +161,6 @@ pw_cc_test(
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers:algorithm",
-        "//pw_unit_test",
     ],
 )
 
@@ -178,7 +173,6 @@ pw_cc_test(
         ":register_device",
         "//pw_assert",
         "//pw_bytes",
-        "//pw_unit_test",
     ],
 )
 

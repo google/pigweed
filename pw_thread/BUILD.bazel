@@ -357,7 +357,6 @@ pw_cc_test(
         ":test_thread_context",
         ":thread",
         "//pw_sync:binary_semaphore",
-        "//pw_unit_test",
     ],
 )
 
@@ -366,10 +365,7 @@ pw_cc_test(
     srcs = [
         "id_facade_test.cc",
     ],
-    deps = [
-        ":thread",
-        "//pw_unit_test",
-    ],
+    deps = [":thread"],
 )
 
 pw_cc_test(
@@ -392,7 +388,6 @@ pw_cc_test(
         ":thread",
         "//pw_chrono:system_clock",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -436,7 +431,6 @@ pw_cc_test(
     deps = [
         ":generic_priority",
         "//pw_compilation_testing:negative_compilation_testing",
-        "//pw_unit_test",
         "//pw_unit_test:constexpr",
     ],
 )
@@ -476,7 +470,6 @@ pw_cc_test(
         ":thread",
         ":yield",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 

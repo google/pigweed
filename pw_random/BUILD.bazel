@@ -56,7 +56,6 @@ pw_cc_test(
         ":pw_random",
         "//pw_assert:config",
         "//pw_bytes",
-        "//pw_unit_test",
     ],
 )
 

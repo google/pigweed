@@ -177,7 +177,6 @@ pw_cc_test(
         "//pw_result",
         "//pw_rpc/raw:test_method_context",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
@@ -192,7 +191,6 @@ pw_cc_test(
         "//pw_protobuf:bytes_utils",
         "//pw_result",
         "//pw_rpc/raw:test_method_context",
-        "//pw_unit_test",
     ],
 )
 
@@ -206,7 +204,6 @@ pw_cc_test(
         "//pw_log_tokenized:headers",
         "//pw_result",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
@@ -233,7 +230,6 @@ pw_cc_test(
         "//pw_rpc/raw:test_method_context",
         "//pw_status",
         "//pw_sync:mutex",
-        "//pw_unit_test",
     ],
 )
 

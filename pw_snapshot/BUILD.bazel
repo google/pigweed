@@ -98,10 +98,7 @@ pw_cc_test(
     srcs = [
         "cpp_compile_test.cc",
     ],
-    deps = [
-        ":snapshot_proto_pwpb",
-        "//pw_unit_test",
-    ],
+    deps = [":snapshot_proto_pwpb"],
 )
 
 pw_cc_test(

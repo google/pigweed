@@ -39,9 +39,6 @@ cc_library(
 pw_cc_test(
     name = "operator_new_test",
     srcs = ["operator_new_test.cc"],
-    deps = [
-        "//pw_unit_test",
-    ],
 )
 
 filegroup(

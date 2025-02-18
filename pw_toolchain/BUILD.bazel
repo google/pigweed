@@ -116,7 +116,6 @@ pw_cc_test(
         ":no_destructor",
         "//pw_assert",
         "//pw_polyfill",
-        "//pw_unit_test",
     ],
 )
 
@@ -127,7 +126,6 @@ pw_cc_test(
         ":globals",
         "//pw_assert",
         "//pw_polyfill",
-        "//pw_unit_test",
     ],
 )
 
@@ -156,7 +154,6 @@ pw_cc_test(
     deps = [
         ":sibling_cast",
         "//pw_compilation_testing:negative_compilation_testing",
-        "//pw_unit_test",
     ],
 )
 

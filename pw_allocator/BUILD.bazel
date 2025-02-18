@@ -503,7 +503,6 @@ pw_cc_test(
         ":allocator_as_pool",
         ":deallocator",
         ":testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -514,7 +513,6 @@ pw_cc_test(
         ":allocator",
         ":deallocator",
         ":testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -526,7 +524,6 @@ pw_cc_test(
         ":best_fit_block_allocator",
         ":block_allocator_testing",
         ":buffer",
-        "//pw_unit_test",
     ],
 )
 
@@ -538,7 +535,6 @@ pw_cc_test(
         ":block_allocator_testing",
         ":bucket_allocator",
         ":bucket_block_allocator",
-        "//pw_unit_test",
     ],
 )
 
@@ -549,7 +545,6 @@ pw_cc_test(
         ":buddy_allocator",
         ":fuzzing",
         ":testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -571,7 +566,6 @@ pw_cc_test(
     deps = [
         ":bump_allocator",
         ":testing",
-        "//pw_unit_test",
         "//third_party/fuchsia:stdcompat",
     ],
 )
@@ -592,7 +586,6 @@ pw_cc_test(
         ":fallback_allocator",
         ":testing",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
@@ -607,7 +600,6 @@ pw_cc_test(
         ":first_fit_block_allocator",
         ":last_fit_block_allocator",
         "//pw_allocator/block:detailed_block",
-        "//pw_unit_test",
         "//third_party/fuchsia:stdcompat",
     ],
 )
@@ -618,7 +610,6 @@ pw_cc_test(
     deps = [
         ":fragmentation",
         ":testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -642,7 +633,6 @@ pw_cc_test(
         ":testing",
         "//pw_result",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
@@ -652,17 +642,13 @@ pw_cc_test(
     deps = [
         ":libc_allocator",
         ":testing",
-        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "metrics_test",
     srcs = ["metrics_test.cc"],
-    deps = [
-        ":metrics",
-        "//pw_unit_test",
-    ],
+    deps = [":metrics"],
 )
 
 pw_cc_test(
@@ -671,7 +657,6 @@ pw_cc_test(
     deps = [
         ":null_allocator",
         ":testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -681,7 +666,6 @@ pw_cc_test(
     deps = [
         ":pmr_allocator",
         ":testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -709,7 +693,6 @@ pw_cc_test(
         "//pw_thread:thread",
         "//pw_thread:thread_core",
         "//pw_thread:yield",
-        "//pw_unit_test",
     ],
 )
 
@@ -719,7 +702,6 @@ pw_cc_test(
     deps = [
         ":block_allocator_testing",
         ":tlsf_allocator",
-        "//pw_unit_test",
     ],
 )
 
@@ -734,7 +716,6 @@ pw_cc_test(
         ":tracking_allocator",
         "//pw_log",
         "//pw_metric:metric",
-        "//pw_unit_test",
     ],
 )
 
@@ -746,7 +727,6 @@ pw_cc_test(
         ":testing",
         ":typed_pool",
         "//pw_bytes:alignment",
-        "//pw_unit_test",
     ],
 )
 
@@ -756,7 +736,6 @@ pw_cc_test(
     deps = [
         ":allocator",
         ":testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -767,7 +746,6 @@ pw_cc_test(
         ":block_allocator_testing",
         ":worst_fit",
         ":worst_fit_block_allocator",
-        "//pw_unit_test",
     ],
 )
 

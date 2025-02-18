@@ -84,7 +84,6 @@ pw_cc_test(
     srcs = ["alignment_test.cc"],
     deps = [
         ":alignment",
-        "//pw_unit_test",
         "//third_party/fuchsia:stdcompat",
     ],
 )
@@ -92,37 +91,25 @@ pw_cc_test(
 pw_cc_test(
     name = "array_test",
     srcs = ["array_test.cc"],
-    deps = [
-        ":pw_bytes",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_bytes"],
 )
 
 pw_cc_test(
     name = "bit_test",
     srcs = ["bit_test.cc"],
-    deps = [
-        ":bit",
-        "//pw_unit_test",
-    ],
+    deps = [":bit"],
 )
 
 pw_cc_test(
     name = "byte_builder_test",
     srcs = ["byte_builder_test.cc"],
-    deps = [
-        ":pw_bytes",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_bytes"],
 )
 
 pw_cc_test(
     name = "endian_test",
     srcs = ["endian_test.cc"],
-    deps = [
-        ":pw_bytes",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_bytes"],
 )
 
 pw_cc_test(
@@ -131,7 +118,6 @@ pw_cc_test(
     deps = [
         ":packed_ptr",
         "//pw_compilation_testing:negative_compilation_testing",
-        "//pw_unit_test",
     ],
 )
 
@@ -142,17 +128,13 @@ pw_cc_test(
         ":pw_bytes",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_polyfill",
-        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "units_test",
     srcs = ["units_test.cc"],
-    deps = [
-        ":pw_bytes",
-        "//pw_unit_test",
-    ],
+    deps = [":pw_bytes"],
 )
 
 filegroup(

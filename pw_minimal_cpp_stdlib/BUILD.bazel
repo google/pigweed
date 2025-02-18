@@ -93,10 +93,7 @@ pw_cc_test(
         "test.cc",
     ],
     tags = ["manual"],  # TODO: b/257529911 - Fix build failures.
-    deps = [
-        ":minimal_cpp_stdlib_isolated_test",
-        "//pw_unit_test",
-    ],
+    deps = [":minimal_cpp_stdlib_isolated_test"],
 )
 
 sphinx_docs_library(

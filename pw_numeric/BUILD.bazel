@@ -33,10 +33,7 @@ cc_library(
 pw_cc_test(
     name = "checked_arithmetic_test",
     srcs = ["checked_arithmetic_test.cc"],
-    deps = [
-        ":checked_arithmetic",
-        "//pw_unit_test",
-    ],
+    deps = [":checked_arithmetic"],
 )
 
 cc_library(
@@ -48,10 +45,7 @@ cc_library(
 pw_cc_test(
     name = "integer_division_test",
     srcs = ["integer_division_test.cc"],
-    deps = [
-        ":integer_division",
-        "//pw_unit_test",
-    ],
+    deps = [":integer_division"],
 )
 
 filegroup(

@@ -49,7 +49,6 @@ pw_cc_test(
         ":pw_ring_buffer",
         "//pw_assert",
         "//pw_containers:vector",
-        "//pw_unit_test",
         "//pw_varint",
     ],
 )

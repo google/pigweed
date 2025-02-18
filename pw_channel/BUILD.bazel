@@ -57,7 +57,6 @@ pw_cc_test(
         "//pw_multibuf:allocator_async",
         "//pw_multibuf:simple_allocator",
         "//pw_preprocessor",
-        "//pw_unit_test",
     ],
 )
 
@@ -86,7 +85,6 @@ pw_cc_test(
         "//pw_multibuf:header_chunk_region_tracker",
         "//pw_multibuf:simple_allocator",
         "//pw_string:string",
-        "//pw_unit_test",
     ],
 )
 
@@ -118,7 +116,6 @@ pw_cc_test(
         "//pw_multibuf:allocator_async",
         "//pw_multibuf:testing",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
@@ -156,7 +153,6 @@ pw_cc_test(
         "//pw_thread:sleep",
         "//pw_thread:thread",
         "//pw_thread_stl:options",
-        "//pw_unit_test",
     ],
 )
 
@@ -213,7 +209,6 @@ pw_cc_test(
         "//pw_thread:thread",
         "//pw_toolchain:globals",
         "//pw_toolchain:no_destructor",
-        "//pw_unit_test",
     ],
 )
 

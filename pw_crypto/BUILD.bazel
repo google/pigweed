@@ -71,10 +71,7 @@ cc_library(
 pw_cc_test(
     name = "sha256_test",
     srcs = ["sha256_test.cc"],
-    deps = [
-        ":sha256",
-        "//pw_unit_test",
-    ],
+    deps = [":sha256"],
 )
 
 cc_library(
@@ -94,10 +91,7 @@ cc_library(
 pw_cc_test(
     name = "sha256_mock_test",
     srcs = ["sha256_mock_test.cc"],
-    deps = [
-        ":sha256_mock",
-        "//pw_unit_test",
-    ],
+    deps = [":sha256_mock"],
 )
 
 pw_facade(
@@ -137,10 +131,7 @@ cc_library(
 pw_cc_test(
     name = "ecdsa_test",
     srcs = ["ecdsa_test.cc"],
-    deps = [
-        ":ecdsa",
-        "//pw_unit_test",
-    ],
+    deps = [":ecdsa"],
 )
 
 pw_facade(
@@ -217,7 +208,6 @@ pw_cc_test(
         ":aes",
         ":aes_cmac",
         "//pw_containers:vector",
-        "//pw_unit_test",
     ],
 )
 

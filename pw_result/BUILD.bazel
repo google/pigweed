@@ -50,17 +50,13 @@ pw_cc_test(
     deps = [
         ":pw_result",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
 pw_cc_test(
     name = "expected_test",
     srcs = ["expected_test.cc"],
-    deps = [
-        ":expected",
-        "//pw_unit_test",
-    ],
+    deps = [":expected"],
 )
 
 pw_cc_test(
@@ -69,7 +65,6 @@ pw_cc_test(
     deps = [
         ":pw_result",
         "//pw_status",
-        "//pw_unit_test",
     ],
 )
 
