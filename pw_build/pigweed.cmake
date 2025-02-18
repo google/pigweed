@@ -80,6 +80,9 @@ endmacro()
 # Wrapper around cmake_parse_arguments that fails with an error if any arguments
 # remained unparsed.
 macro(pw_parse_arguments_strict function start_arg options one multi)
+  if(POLICY CMP0174)
+    cmake_policy(SET CMP0174 NEW)  # Remove when CMake 3.31 or newer is required.
+  endif()
   cmake_parse_arguments(PARSE_ARGV
       "${start_arg}" arg "${options}" "${one}" "${multi}"
   )
