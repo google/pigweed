@@ -20,12 +20,19 @@ import shutil
 import sys
 
 try:
-    from pw_build_mcuxpresso import bazel, components, gn, west_wrap
+    from pw_build_mcuxpresso import (
+        bazel,
+        components,
+        gn,
+        readme_generator,
+        west_wrap,
+    )
 except ImportError:
     # Load from this directory if pw_build_mcuxpresso is not available.
     import bazel  # type: ignore
     import components  # type: ignore
     import gn  # type: ignore
+    import readme_generator  # type: ignore
     import west_wrap  # type: ignore
 
 
@@ -61,9 +68,10 @@ def main():
         print("# Removing old output directory...")
         shutil.rmtree(output_path)
 
-    west_wrap.west_manifest(
+    west_wrap.fetch_project(
         output_path, args.mcuxpresso_repo, args.mcuxpresso_rev
     )
+    modules = west_wrap.list_modules(output_path, args.mcuxpresso_repo)
 
     project = components.Project.from_file(
         output_path / 'core' / 'manifests' / args.manifest_filename,
@@ -81,6 +89,12 @@ def main():
 
     if not args.skip_gn:
         gn.generate_gn_files(project, output_path)
+
+    readme_generator.generate_readme(
+        modules=modules,
+        output_dir=args.output_path,
+        filename="README.md",
+    )
 
     print(f"Output directory: {output_path.resolve().as_posix()}")
 

@@ -26,6 +26,7 @@ py_library(
         "pw_build_mcuxpresso/components.py",
         "pw_build_mcuxpresso/consts.py",
         "pw_build_mcuxpresso/gn.py",
+        "pw_build_mcuxpresso/readme_generator.py",
         "pw_build_mcuxpresso/west_wrap.py",
     ],
     imports = ["."],
