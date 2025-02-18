@@ -31,6 +31,16 @@ class UartStreamMcuxpresso : public NonSeekableReaderWriter {
                        pw::clock_tree::ClockTree& clock_tree,
                        pw::clock_tree::Element& clock_tree_element)
       : base_(base),
+#if FSL_USART_FREERTOS_DRIVER_VERSION >= (MAKE_VERSION(2, 7, 0))
+        config_{.base = base_,
+                .srcclk = 0,
+                .baudrate = baudrate,
+                .parity = parity,
+                .stopbits = stopbits,
+                .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
+                .buffer_size = buffer.size(),
+                .enableHardwareFlowControl = false},
+#else
         config_{.base = base_,
                 .srcclk = 0,
                 .baudrate = baudrate,
@@ -38,7 +48,9 @@ class UartStreamMcuxpresso : public NonSeekableReaderWriter {
                 .stopbits = stopbits,
                 .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
                 .buffer_size = buffer.size()},
-        element_controller_(&clock_tree, &clock_tree_element) {}
+#endif
+        element_controller_(&clock_tree, &clock_tree_element) {
+  }
 
   UartStreamMcuxpresso(USART_Type* base,
                        uint32_t baudrate,
@@ -46,13 +58,26 @@ class UartStreamMcuxpresso : public NonSeekableReaderWriter {
                        usart_stop_bit_count_t stopbits,
                        ByteSpan buffer)
       : base_(base),
+#if FSL_USART_FREERTOS_DRIVER_VERSION >= (MAKE_VERSION(2, 7, 0))
         config_{.base = base_,
                 .srcclk = 0,
                 .baudrate = baudrate,
                 .parity = parity,
                 .stopbits = stopbits,
                 .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
-                .buffer_size = buffer.size()} {}
+                .buffer_size = buffer.size(),
+                .enableHardwareFlowControl = false} {
+  }
+#else
+        config_{.base = base_,
+                .srcclk = 0,
+                .baudrate = baudrate,
+                .parity = parity,
+                .stopbits = stopbits,
+                .buffer = reinterpret_cast<uint8_t*>(buffer.data()),
+                .buffer_size = buffer.size()} {
+  }
+#endif
 
   ~UartStreamMcuxpresso();
 

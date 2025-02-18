@@ -81,7 +81,9 @@ pw_cc_test(
     target_compatible_with = [
         ":compatible",
     ],
-    deps = [":pw_stream_uart_interrupt_safe_writer_mcuxpresso"],
+    deps = [
+        ":interrupt_safe_writer",
+    ],
 )
 
 sphinx_docs_library(

@@ -40,6 +40,7 @@ platform(
         "//pw_build/constraints/board:mimxrt595_evk",
         "//pw_malloc_freertos:backend",
         "//pw_build/constraints/arm:cortex-m33",
+        "//pw_stream_uart_mcuxpresso:compatible",
         "@freertos//:port_ARM_CM33_NTZ",
         "@freertos//:malloc_heap_4",
         "@freertos//:disable_task_statics",

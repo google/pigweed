@@ -21,8 +21,8 @@ namespace examples {
 pw::Status UartInterruptSafeWriterExample() {
   // DOCSTAG: [pw_stream_uart_mcuxpresso-UartInterruptSafeWriterExample]
   constexpr uint32_t kBaudRate = 115200;
-  static constinit pw::stream::InterruptSafeUartWriterMcuxpresso
-      crash_safe_uart(USART0_BASE, kCLOCK_Flexcomm0Clk, kBaudRate);
+  static pw::stream::InterruptSafeUartWriterMcuxpresso crash_safe_uart(
+      USART0_BASE, kCLOCK_Flexcomm0Clk, kBaudRate);
 
   PW_TRY(crash_safe_uart.Enable());
 

@@ -166,7 +166,7 @@ TEST(ClockTreeMcuxpresso, AudioPll) {
   // is enabled while enabling the audio PLL. If FRO_DIV8 wasn't enabled
   // before, it will only be enabled while configuring the audio PLL
   // and be disabled afterward to save power.
-  clock_tree.AcquireWith(audio_pll, fro_div8);
+  PW_TEST_EXPECT_OK(clock_tree.AcquireWith(audio_pll, fro_div8));
 
   // Do something while audio PLL is enabled.
 
