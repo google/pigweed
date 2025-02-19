@@ -158,10 +158,12 @@ pw_source_set("snoop") {
     "$dir_pw_chrono:system_clock",
     "$dir_pw_containers:inline_var_len_entry_queue",
     "$dir_pw_sync:mutex",
+    "$dir_pw_sync:virtual_basic_lockable",
     dir_pw_assert,
     dir_pw_bluetooth_proxy,
     dir_pw_hex_dump,
     dir_pw_log,
+    dir_pw_result,
   ]
 }
 
@@ -302,6 +304,7 @@ pw_test_group("tests") {
     ":uuid_test",
     ":emboss_test",
     ":emboss_util_test",
+    ":snoop_test",
   ]
 }
 
@@ -408,5 +411,8 @@ pw_test("snoop_test") {
       dir_pw_third_party_emboss != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "snoop_test.cc" ]
   include_dirs = [ "." ]
-  deps = [ ":snoop" ]
+  deps = [
+    ":snoop",
+    "$dir_pw_chrono:simulated_system_clock",
+  ]
 }

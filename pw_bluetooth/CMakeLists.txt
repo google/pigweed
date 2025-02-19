@@ -273,12 +273,14 @@ pw_add_library(pw_bluetooth.snoop STATIC
   PUBLIC_DEPS
     pw_assert.check
     pw_bluetooth_proxy
+    pw_bluetooth.emboss_snoop
     pw_chrono.system_clock
     pw_containers.inline_var_len_entry_queue
     pw_hex_dump
     pw_log
     pw_sync.mutex
-    pw_bluetooth.emboss_snoop
+    pw_sync.virtual_basic_lockable
+    pw_result
 )
 
 pw_target_link_targets(pw_bluetooth

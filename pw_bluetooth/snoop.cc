@@ -98,25 +98,22 @@ Status Snoop::DumpUnlocked(
 }
 
 void Snoop::AddEntry(emboss::snoop_log::PacketFlags emboss_packet_flag,
-                     proxy::H4PacketInterface& hci_packet,
-                     span<uint8_t> scratch_entry) {
-  std::lock_guard lock(queue_mutex_);
+                     proxy::H4PacketInterface& hci_packet) {
+  std::lock_guard lock(queue_lock_);
 
-  // Ensure scratch_entry can fit the entire header
-  PW_CHECK_INT_GT(scratch_entry.size(),
-                  emboss::snoop_log::EntryHeader::MaxSizeInBytes());
   size_t hci_packet_length_to_include = std::min(
       hci_packet.GetHciSpan().size(),
-      static_cast<size_t>(scratch_entry.size() -
+      static_cast<size_t>(scratch_buffer_.size() -
                           emboss::snoop_log::EntryHeader::MaxSizeInBytes() -
                           /* hci type*/ 1));
   size_t total_entry_size = hci_packet_length_to_include + /* hci type*/ 1 +
                             emboss::snoop_log::EntryHeader::MaxSizeInBytes();
   // Ensure the scratch buffer can fit the entire entry
-  PW_CHECK_INT_GE(scratch_entry.size(), total_entry_size);
+  PW_CHECK_INT_GE(scratch_buffer_.size(), total_entry_size);
 
   pw::Result<emboss::snoop_log::EntryWriter> result =
-      MakeEmbossWriter<emboss::snoop_log::EntryWriter>(scratch_entry);
+      MakeEmbossWriter<emboss::snoop_log::EntryWriter>(scratch_buffer_);
+  PW_CHECK_OK(result);
   emboss::snoop_log::EntryWriter writer = result.value();
   writer.header().original_length().Write(hci_packet.GetHciSpan().size() +
                                           /* hci type*/ 1);
@@ -140,7 +137,8 @@ void Snoop::AddEntry(emboss::snoop_log::PacketFlags emboss_packet_flag,
                                    /*src=*/hci_packet_trimmed));
 
   // save the entry!
-  queue_.push_overwrite(as_bytes(span{scratch_entry.data(), total_entry_size}));
+  queue_.push_overwrite(
+      as_bytes(span{scratch_buffer_.data(), total_entry_size}));
 }
 
 /// Generates the snoop log file header

@@ -22,19 +22,43 @@
 #include "pw_bytes/span.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_containers/inline_var_len_entry_queue.h"
+#include "pw_result/result.h"
+#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
+#include "pw_sync/virtual_basic_lockable.h"
 
 namespace pw::bluetooth {
 
 /// Snoop will record Rx & Tx transactions in a circular buffer. The most
 /// recent transactions are saved when the buffer is full.
+///
+/// @param system_clock system clock to use
+/// @param queue queue to hold all records
+/// @param lock lock to hold while accessing queue
+/// @param scratch_buffer buffer used for generation of each record. If a record
+/// is larger than the scratch buffer, the record will be truncated.
 class Snoop {
  public:
-  Snoop(chrono::VirtualSystemClock& system_clock,
-        InlineVarLenEntryQueue<>& queue)
-      : system_clock_(system_clock), queue_(queue) {}
+  static pw::Result<Snoop> Create(chrono::VirtualSystemClock& system_clock,
+                                  InlineVarLenEntryQueue<>& queue,
+                                  pw::sync::VirtualBasicLockable& queue_lock,
+                                  span<uint8_t> scratch_buffer) {
+    if (scratch_buffer.size() <
+        emboss::snoop_log::EntryHeader::MaxSizeInBytes()) {
+      return Status::FailedPrecondition();
+    }
+    return Snoop(system_clock, queue, queue_lock, scratch_buffer);
+  }
+
+  // Calculate the size of the scratch buffer.
+  ///
+  /// @param hci_payload_size The number of bytes of the hci packet to save
+  static constexpr size_t NeededScratchBufferSize(size_t hci_payload_size) {
+    return emboss::snoop_log::EntryHeader::MaxSizeInBytes() + /* hci type */ 1 +
+           hci_payload_size;
+  }
 
   // Dump the snoop log to the log as a hex string
   Status DumpToLog();
@@ -48,7 +72,7 @@ class Snoop {
   ///
   /// @param callback callback to invoke
   Status Dump(const Function<Status(ConstByteSpan data)>& callback) {
-    std::lock_guard lock(queue_mutex_);
+    std::lock_guard lock(queue_lock_);
     return DumpUnlocked(callback);
   }
 
@@ -65,16 +89,44 @@ class Snoop {
   Status DumpUnlocked(const Function<Status(ConstByteSpan data)>& callback)
       PW_NO_LOCK_SAFETY_ANALYSIS;
 
+  /// Add a Tx transaction
+  ///
+  /// @param packet Packet to save to snoop log
+  void AddTx(proxy::H4PacketInterface& packet) {
+    AddEntry(emboss::snoop_log::PacketFlags::SENT, packet);
+  }
+
+  // Add an Rx transaction
+  ///
+  /// @param packet Packet to save to snoop log
+  void AddRx(proxy::H4PacketInterface& packet) {
+    AddEntry(emboss::snoop_log::PacketFlags::RECEIVED, packet);
+  }
+
+ protected:
+  /// @param system_clock system clock to use
+  /// @param queue queue to hold all records
+  /// @param lock lock to hold while accessing queue
+  /// @param scratch_buffer buffer used for generation of each record. If a
+  /// record is larger than the scratch buffer, the record will be truncated.
+  Snoop(chrono::VirtualSystemClock& system_clock,
+        InlineVarLenEntryQueue<>& queue,
+        pw::sync::VirtualBasicLockable& queue_lock,
+        span<uint8_t> scratch_buffer)
+      : system_clock_(system_clock),
+        queue_(queue),
+        scratch_buffer_(scratch_buffer),
+        queue_lock_(queue_lock) {}
+
+ private:
   /// Add an entry to the snoop log
   ///
   /// @param packet_flag Packet flags (rx/tx)
   /// @param packet Packet to save to snoop log
   /// @param scratch_entry scratch buffer used to assemble the entry
   void AddEntry(emboss::snoop_log::PacketFlags emboss_packet_flag,
-                proxy::H4PacketInterface& hci_packet,
-                span<uint8_t> scratch_entry);
+                proxy::H4PacketInterface& hci_packet);
 
- private:
   /// Generates the snoop log file header and sends it to the callback
   ///
   /// @param callback callback to invoke
@@ -83,8 +135,9 @@ class Snoop {
 
   constexpr static uint32_t kEmbossFileVersion = 1;
   chrono::VirtualSystemClock& system_clock_;
-  InlineVarLenEntryQueue<>& queue_ PW_GUARDED_BY(queue_mutex_);
-  sync::Mutex queue_mutex_;
+  InlineVarLenEntryQueue<>& queue_ PW_GUARDED_BY(queue_lock_);
+  span<uint8_t> scratch_buffer_ PW_GUARDED_BY(queue_lock_);
+  pw::sync::VirtualBasicLockable& queue_lock_;
 };
 
 /// SnoopBuffer is a buffer backed snoop log.
@@ -95,30 +148,13 @@ template <size_t kTotalSize, size_t kMaxHciPacketSize>
 class SnoopBuffer : public Snoop {
  public:
   SnoopBuffer(chrono::VirtualSystemClock& system_clock)
-      : Snoop(system_clock, queue_buffer_) {}
-
-  /// Add a Tx transaction
-  ///
-  /// @param packet Packet to save to snoop log
-  void AddTx(proxy::H4PacketInterface& packet) {
-    std::array<uint8_t, kScratchEntrySize> entry{};
-    AddEntry(emboss::snoop_log::PacketFlags::SENT, packet, entry);
-  }
-
-  // Add an Rx transaction
-  ///
-  /// @param packet Packet to save to snoop log
-  void AddRx(proxy::H4PacketInterface& packet) {
-    std::array<uint8_t, kScratchEntrySize> entry{};
-    AddEntry(emboss::snoop_log::PacketFlags::RECEIVED, packet, entry);
-  }
+      : Snoop(system_clock, queue_buffer_, queue_mutex_, scratch_buffer_) {}
 
  private:
-  // Entry max size
-  constexpr static size_t kScratchEntrySize =
-      emboss::snoop_log::EntryHeader::MaxSizeInBytes() + /* hci type */ 1 +
-      kMaxHciPacketSize;
+  std::array<uint8_t, Snoop::NeededScratchBufferSize(kMaxHciPacketSize)>
+      scratch_buffer_{};
   InlineVarLenEntryQueue<kTotalSize> queue_buffer_;
+  sync::VirtualMutex queue_mutex_;
 };
 
 }  // namespace pw::bluetooth
