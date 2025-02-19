@@ -24,7 +24,7 @@ cc_library(
     hdrs = ["public/pw_allocator/block/result.h"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_allocator:config",
+        "//pw_allocator:hardening",
         "//pw_assert",
         "//pw_status",
     ],
@@ -37,7 +37,7 @@ cc_library(
     deps = [
         ":allocatable",
         "//pw_allocator:deallocator",
-        "//pw_assert",
+        "//pw_allocator:hardening",
         "//pw_bytes:alignment",
         "//pw_status",
         "//third_party/fuchsia:stdcompat",
@@ -52,7 +52,7 @@ cc_library(
         ":contiguous",
         ":result",
         "//pw_allocator:deallocator",
-        "//pw_assert",
+        "//pw_allocator:hardening",
         "//pw_bytes:alignment",
         "//pw_status",
     ],
@@ -62,10 +62,10 @@ cc_library(
     name = "basic",
     srcs = ["basic.cc"],
     hdrs = ["public/pw_allocator/block/basic.h"],
+    implementation_deps = ["//pw_assert"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_allocator:config",
-        "//pw_assert",
+        "//pw_allocator:hardening",
         "//pw_bytes:alignment",
         "//third_party/fuchsia:stdcompat",
     ],
@@ -75,10 +75,11 @@ cc_library(
     name = "contiguous",
     srcs = ["contiguous.cc"],
     hdrs = ["public/pw_allocator/block/contiguous.h"],
+    implementation_deps = ["//pw_assert"],
     strip_include_prefix = "public",
     deps = [
         ":basic",
-        "//pw_assert",
+        "//pw_allocator:hardening",
         "//pw_bytes",
         "//pw_result",
         "//pw_status",
@@ -99,11 +100,12 @@ cc_library(
     name = "poisonable",
     srcs = ["poisonable.cc"],
     hdrs = ["public/pw_allocator/block/poisonable.h"],
+    implementation_deps = ["//pw_assert"],
     strip_include_prefix = "public",
     deps = [
         ":contiguous",
         "//pw_allocator:config",
-        "//pw_assert",
+        "//pw_allocator:hardening",
         "//third_party/fuchsia:stdcompat",
     ],
 )
@@ -115,7 +117,7 @@ cc_library(
     deps = [
         ":alignable",
         "//pw_allocator:deallocator",
-        "//pw_assert",
+        "//pw_allocator:hardening",
     ],
 )
 
@@ -131,12 +133,10 @@ cc_library(
         ":iterable",
         ":poisonable",
         ":with_layout",
-        "//pw_allocator:config",
         "//pw_allocator:deallocator",
+        "//pw_allocator:hardening",
         "//pw_assert",
         "//pw_bytes",
-        "//pw_preprocessor",
-        "//pw_result",
         "//pw_status",
     ],
 )

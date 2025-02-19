@@ -67,7 +67,7 @@ class PoisonableBlock : public internal::PoisonableBase {
   }
 
   /// Returns whether this block has been poisoned.
-  inline bool IsPoisoned() const;
+  bool IsPoisoned() const;
 
   /// Poisons the block's usable space.
   ///
@@ -93,10 +93,10 @@ class PoisonableBlock : public internal::PoisonableBase {
   void DoMergeNext();
 
   /// @copydoc BasicBlock::CheckInvariants
-  bool DoCheckInvariants(bool crash_on_failure) const;
+  bool DoCheckInvariants(bool strict) const;
 
   /// Clears the poisoned state if a block is not free.
-  inline void SetFree(bool is_free);
+  void SetFree(bool is_free);
 
  private:
   constexpr Derived* derived() { return static_cast<Derived*>(this); }
@@ -135,8 +135,8 @@ namespace internal {
 /// Functions to crash with an error message describing which block invariant
 /// has been violated. These functions are implemented independent of any
 /// template parameters to allow it to use `PW_CHECK`.
-void CrashPoisonCorrupted(uintptr_t addr);
-void CrashPoisonedWhileInUse(uintptr_t addr);
+[[noreturn]] void CrashPoisonCorrupted(uintptr_t addr);
+[[noreturn]] void CrashPoisonedWhileInUse(uintptr_t addr);
 
 }  // namespace internal
 
@@ -144,20 +144,26 @@ void CrashPoisonedWhileInUse(uintptr_t addr);
 
 template <typename Derived>
 bool PoisonableBlock<Derived>::IsPoisoned() const {
-  derived()->CheckInvariantsIfStrict();
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    derived()->CheckInvariants();
+  }
   return derived()->IsPoisonedUnchecked();
 }
 
 template <typename Derived>
 void PoisonableBlock<Derived>::Poison() {
-  derived()->CheckInvariantsIfStrict();
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    derived()->CheckInvariants();
+  }
   auto* begin = PoisonableBegin();
   auto* end = PoisonableEnd();
   if (begin < end) {
     std::fill(begin, end, derived()->GetPoisonWord());
     derived()->SetPoisoned(true);
   }
-  derived()->CheckInvariantsIfStrict();
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    derived()->CheckInvariants();
+  }
 }
 
 template <typename Derived>
@@ -192,13 +198,13 @@ void PoisonableBlock<Derived>::DoMergeNext() {
 }
 
 template <typename Derived>
-bool PoisonableBlock<Derived>::DoCheckInvariants(bool crash_on_failure) const {
+bool PoisonableBlock<Derived>::DoCheckInvariants(bool strict) const {
   auto addr = cpp20::bit_cast<uintptr_t>(this);
   if (!derived()->IsPoisonedUnchecked()) {
     return true;
   }
   if (!derived()->IsFreeUnchecked()) {
-    if (crash_on_failure) {
+    if (strict) {
       internal::CrashPoisonedWhileInUse(addr);
     }
     return false;
@@ -211,7 +217,7 @@ bool PoisonableBlock<Derived>::DoCheckInvariants(bool crash_on_failure) const {
   bool poison_intact = std::all_of(
       begin, end, [this](uintptr_t word) { return word == GetPoisonWord(); });
   if (!poison_intact) {
-    if (crash_on_failure) {
+    if (strict) {
       internal::CrashPoisonCorrupted(addr);
     }
     return false;

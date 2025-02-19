@@ -15,8 +15,7 @@
 
 #include <cstddef>
 
-#include "pw_assert/assert.h"
-#include "pw_preprocessor/compiler.h"
+#include "pw_allocator/hardening.h"
 #include "pw_result/result.h"
 
 namespace pw::allocator {
@@ -57,7 +56,7 @@ class Layout {
   }
 
   constexpr Layout Extend(size_t size) const {
-    PW_ASSERT(!PW_ADD_OVERFLOW(size, size_, &size));
+    Hardening::Increment(size, size_);
     return Layout(size, alignment_);
   }
 

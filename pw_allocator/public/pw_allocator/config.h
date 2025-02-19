@@ -13,24 +13,6 @@
 // the License.
 #pragma once
 
-#ifndef PW_ALLOCATOR_STRICT_VALIDATION
-/// Enables additional checks and crashing on check failure.
-///
-/// Individual allocators have a number of invariants that must hold at before
-/// and after each API call. For example, for a given block that is not first or
-/// last `block->Next()->Prev() == block` and `block->Prev()->Next() == block`.
-///
-/// These invariants can be checked at the beginning an end of each API call,
-/// but doing so may become expensive. Additionally, it may not always be clear
-/// what should be done in a production setting if an invariant fails, e.g.
-/// should it crash, log, or something else?
-///
-/// As a result, these checks and the behavior to crash on failure are only
-/// enabled when strict validation is requested. Strict validation is *always*
-/// enabled for tests.
-#define PW_ALLOCATOR_STRICT_VALIDATION 0
-#endif  // PW_ALLOCATOR_STRICT_VALIDATION
-
 #ifndef PW_ALLOCATOR_BLOCK_POISON_INTERVAL
 /// Controls how frequently blocks are poisoned on deallocation.
 ///
@@ -45,6 +27,58 @@
 /// memory corruptions while mitigating the performance impact.
 #define PW_ALLOCATOR_BLOCK_POISON_INTERVAL 0
 #endif  // PW_ALLOCATOR_BLOCK_POISON_INTERVAL
+
+/// Applies essential checks only.
+///
+/// This is a possible value for ``PW_ALLOCATOR_HARDENING``.
+///
+/// Essential checks include those that should almost never be disabled. An
+/// example is input validation on the public API, e.g. checking if a pointer
+/// passed to ``Allocator::Deallocate`` ]refers to valid allocation.
+#define PW_ALLOCATOR_HARDENING_BASIC 1
+
+/// Applies recommended and essential checks.
+///
+/// This is a possible value for ``PW_ALLOCATOR_HARDENING``.
+///
+/// Recommended checks include those that can detect memory corruption. These
+/// can be very useful in uncovering software defects in other components and in
+/// preventing some security vulnerabilities. As a result, disabling these
+/// checks is discouraged for all projects except those that have strict size
+/// requirements and very high confidence in their codebase.
+///
+/// See ``PW_ALLOCATOR_HARDENING_BASIC`` for a description of essential checks.
+#define PW_ALLOCATOR_HARDENING_ROBUST 2
+
+/// Applies all checks.
+///
+/// This is a possible value for ``PW_ALLOCATOR_HARDENING``.
+///
+/// Debug checks include those that check invariants whose failure indicates a
+/// defect in pw_allocator itself. For example, allocating a new block from an
+/// existing valid free block should result in both blocks being valid with
+/// consistent sizes and pointers to neighbors.
+///
+/// See ``PW_ALLOCATOR_HARDENING_BASIC`` for a description of essential checks.
+/// See ``PW_ALLOCATOR_HARDENING_ROBUST`` for a description of recommended
+/// checks.
+#define PW_ALLOCATOR_HARDENING_DEBUG 3
+
+/// Enables validation checks.
+///
+/// Possible values are:
+///
+/// - PW_ALLOCATOR_HARDENING_BASIC
+/// - PW_ALLOCATOR_HARDENING_ROBUST (default)
+/// - PW_ALLOCATOR_HARDENING_DEBUG
+///
+/// See those values for a description of the types of checks associated with
+/// each level. Subsequent levels include the former, i.e. 'debug' includes
+/// 'robust', which includes 'basic'. Additional checks can detect more errors
+/// at the cost of performance and code size.
+#ifndef PW_ALLOCATOR_HARDENING
+#define PW_ALLOCATOR_HARDENING PW_ALLOCATOR_HARDENING_ROBUST
+#endif  // PW_ALLOCATOR_HARDENING
 
 #ifndef PW_ALLOCATOR_SUPPRESS_DEPRECATED_WARNINGS
 /// Suppresses warnings about using legacy allocator interfaces.

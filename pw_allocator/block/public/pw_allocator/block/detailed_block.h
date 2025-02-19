@@ -26,11 +26,10 @@
 #include "pw_allocator/block/poisonable.h"
 #include "pw_allocator/block/result.h"
 #include "pw_allocator/block/with_layout.h"
+#include "pw_allocator/hardening.h"
 #include "pw_allocator/layout.h"
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
-#include "pw_preprocessor/compiler.h"
-#include "pw_result/result.h"
 #include "pw_status/status.h"
 
 namespace pw::allocator {
@@ -121,7 +120,7 @@ class DetailedBlockImpl
   size_t OuterSizeUnchecked() const;
 
   // `Basic` overrides.
-  bool DoCheckInvariants(bool crash_on_failure) const;
+  bool DoCheckInvariants(bool strict) const;
 
   // `Contiguous` required methods.
   using Contiguous = ContiguousBlock<BlockType>;
@@ -136,14 +135,14 @@ class DetailedBlockImpl
   }
 
   constexpr bool IsLastUnchecked() const { return info_.last != 0; }
-  static inline BlockType* AsBlock(ByteSpan bytes);
+  static BlockType* AsBlock(ByteSpan bytes);
   void SetNext(size_t outer_size, BlockType* next);
   size_t PrevOuterSizeUnchecked() const;
 
   // `Contiguous` overrides.
-  inline BlockType* DoSplitFirst(size_t new_inner_size);
-  inline BlockType* DoSplitLast(size_t new_inner_size);
-  inline void DoMergeNext();
+  BlockType* DoSplitFirst(size_t new_inner_size);
+  BlockType* DoSplitLast(size_t new_inner_size);
+  void DoMergeNext();
 
   // `Allocatable` required methods.
   using Allocatable = AllocatableBlock<BlockType>;
@@ -154,14 +153,11 @@ class DetailedBlockImpl
   // `Alignable` overrides.
   using Alignable = AlignableBlock<BlockType>;
   friend Alignable;
-  inline StatusWithSize DoCanAlloc(Layout layout) const;
-  static inline BlockResult<BlockType> DoAllocFirst(BlockType*&& block,
-                                                    Layout layout);
-  static inline BlockResult<BlockType> DoAllocLast(BlockType*&& block,
-                                                   Layout layout);
-  inline BlockResult<BlockType> DoResize(size_t new_inner_size,
-                                         bool shifted = false);
-  static inline BlockResult<BlockType> DoFree(BlockType*&& block);
+  StatusWithSize DoCanAlloc(Layout layout) const;
+  static BlockResult<BlockType> DoAllocFirst(BlockType*&& block, Layout layout);
+  static BlockResult<BlockType> DoAllocLast(BlockType*&& block, Layout layout);
+  BlockResult<BlockType> DoResize(size_t new_inner_size, bool shifted = false);
+  static BlockResult<BlockType> DoFree(BlockType*&& block);
 
   // `WithLayout` required methods.
   using WithLayout = BlockWithLayout<BlockType>;
@@ -221,17 +217,16 @@ using DetailedBlock =
 
 template <typename Parameters>
 size_t DetailedBlockImpl<Parameters>::OuterSizeUnchecked() const {
-  size_t outer_size;
-  PW_ASSERT(!PW_MUL_OVERFLOW(next_, Basic::kAlignment, &outer_size));
+  size_t outer_size = next_;
+  Hardening::Multiply(outer_size, Basic::kAlignment);
   return outer_size;
 }
 
 template <typename Parameters>
-bool DetailedBlockImpl<Parameters>::DoCheckInvariants(
-    bool crash_on_failure) const {
-  return Basic::DoCheckInvariants(crash_on_failure) &&
-         Contiguous::DoCheckInvariants(crash_on_failure) &&
-         Poisonable::DoCheckInvariants(crash_on_failure);
+bool DetailedBlockImpl<Parameters>::DoCheckInvariants(bool strict) const {
+  return Basic::DoCheckInvariants(strict) &&
+         Contiguous::DoCheckInvariants(strict) &&
+         Poisonable::DoCheckInvariants(strict);
 }
 
 // `Contiguous` methods.
@@ -256,8 +251,8 @@ void DetailedBlockImpl<Parameters>::SetNext(size_t outer_size,
 
 template <typename Parameters>
 size_t DetailedBlockImpl<Parameters>::PrevOuterSizeUnchecked() const {
-  size_t outer_size;
-  PW_ASSERT(!PW_MUL_OVERFLOW(prev_, Basic::kAlignment, &outer_size));
+  size_t outer_size = prev_;
+  Hardening::Multiply(outer_size, Basic::kAlignment);
   return outer_size;
 }
 
@@ -324,16 +319,20 @@ DetailedBlockImpl<Parameters>::DoFree(DetailedBlockImpl*&& block) {
 template <typename Parameters>
 void DetailedBlockImpl<Parameters>::SetRequestedSize(size_t size) {
   size_t inner_size = Basic::InnerSize();
-  size_t padding;
-  PW_ASSERT(!PW_SUB_OVERFLOW(inner_size, size, &padding));
-  PW_ASSERT(padding <= std::numeric_limits<uint16_t>::max());
+  size_t padding = inner_size;
+  Hardening::Decrement(padding, size);
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_ASSERT(padding <= std::numeric_limits<uint16_t>::max());
+  }
   padding_ = static_cast<uint16_t>(padding);
 }
 
 template <typename Parameters>
 void DetailedBlockImpl<Parameters>::SetRequestedAlignment(size_t alignment) {
-  PW_ASSERT((alignment & (alignment - 1)) == 0);
-  PW_ASSERT(alignment < 0x2000);
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_ASSERT((alignment & (alignment - 1)) == 0);
+    PW_ASSERT(alignment < 0x2000);
+  }
   info_.alignment = alignment;
 }
 

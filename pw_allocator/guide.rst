@@ -91,8 +91,19 @@ This module has configuration options that globally affect the behavior of
 :ref:`module documentation <module-structure-compile-time-configuration>` for
 more details.
 
-.. doxygendefine:: PW_ALLOCATOR_STRICT_VALIDATION
-.. doxygendefine:: PW_ALLOCATOR_BLOCK_POISON_INTERVAL
+Module configuration options include:
+
+- :ref:`module-pw_allocator-config-block_poison_interval` determines how
+  frequently blocks that implemented the
+  :ref:`module-pw_allocator-api-poisonable-block` mix-in should apply the poison
+  pattern on deallocation.
+- :ref:`module-pw_allocator-config-hardening` allows you to set how many
+  validation checks are enabled. Additional checks can detect more errors at the
+  cost of performance and code size.
+- :ref:`module-pw_allocator-config-suppress_deprecated_warnings` allows you to
+  silence warnings about deprecated interfaces. This is a temporary measure. It
+  is strongly advised to migrate away from deprecated interfaces as soon as
+  possible as they will eventually be removed.
 
 -----------------
 Inject allocators

@@ -18,6 +18,7 @@
 
 #include "pw_allocator/block/poisonable.h"
 #include "pw_allocator/config.h"
+#include "pw_allocator/hardening.h"
 #include "pw_allocator/layout.h"
 #include "pw_assert/assert.h"
 #include "pw_bytes/alignment.h"
@@ -85,7 +86,7 @@ class BucketBase {
     if (block.InnerSize() < sizeof(ItemType)) {
       return false;
     }
-    if constexpr (PW_ALLOCATOR_STRICT_VALIDATION) {
+    if constexpr (Hardening::kIncludesDebugChecks) {
       PW_ASSERT(block.InnerSize() <= max_inner_size_);
       PW_ASSERT(IsAlignedAs<ItemType>(block.UsableSpace()));
     }

@@ -17,8 +17,8 @@
 
 #include "pw_allocator/block/contiguous.h"
 #include "pw_allocator/block/result.h"
+#include "pw_allocator/hardening.h"
 #include "pw_allocator/layout.h"
-#include "pw_assert/assert.h"
 #include "pw_bytes/alignment.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -58,12 +58,12 @@ class AllocatableBlock : public internal::AllocatableBase {
 
  public:
   /// @returns whether this block is free or is in use.
-  inline bool IsFree() const;
+  bool IsFree() const;
 
   /// Indicates whether the block is in use is free.
   ///
   /// This method will eventually be deprecated. Prefer `IsFree`.
-  inline bool Used() const { return !IsFree(); }
+  bool Used() const { return !IsFree(); }
 
   /// Checks if a block could be split from the block.
   ///
@@ -241,13 +241,17 @@ inline constexpr bool is_allocatable_v = is_allocatable<BlockType>::value;
 
 template <typename Derived>
 bool AllocatableBlock<Derived>::IsFree() const {
-  derived()->CheckInvariantsIfStrict();
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    derived()->CheckInvariants();
+  }
   return derived()->IsFreeUnchecked();
 }
 
 template <typename Derived>
 StatusWithSize AllocatableBlock<Derived>::CanAlloc(Layout layout) const {
-  derived()->CheckInvariantsIfStrict();
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    derived()->CheckInvariants();
+  }
   return derived()->DoCanAlloc(layout);
 }
 
@@ -273,7 +277,9 @@ BlockResult<Derived> AllocatableBlock<Derived>::AllocFirst(Derived*&& block,
   if (block == nullptr || layout.size() == 0) {
     return BlockResult(block, Status::InvalidArgument());
   }
-  block->CheckInvariants(/* crash_on_failure: */ true);
+  if constexpr (Hardening::kIncludesRobustChecks) {
+    block->CheckInvariants();
+  }
   if (!block->IsFree()) {
     return BlockResult(block, Status::FailedPrecondition());
   }
@@ -306,7 +312,9 @@ BlockResult<Derived> AllocatableBlock<Derived>::AllocLast(Derived*&& block,
   if (block == nullptr || layout.size() == 0) {
     return BlockResult(block, Status::InvalidArgument());
   }
-  block->CheckInvariants(/* crash_on_failure: */ true);
+  if constexpr (Hardening::kIncludesRobustChecks) {
+    block->CheckInvariants();
+  }
   if (!block->IsFree()) {
     return BlockResult(block, Status::FailedPrecondition());
   }
@@ -342,7 +350,9 @@ BlockResult<Derived> AllocatableBlock<Derived>::DoAllocLast(Derived*&& block,
 
 template <typename Derived>
 BlockResult<Derived> AllocatableBlock<Derived>::Resize(size_t new_inner_size) {
-  derived()->CheckInvariants(/* crash_on_failure: */ true);
+  if constexpr (Hardening::kIncludesRobustChecks) {
+    derived()->CheckInvariants();
+  }
   if (derived()->IsFree()) {
     return BlockResult(derived(), Status::FailedPrecondition());
   }
@@ -393,7 +403,9 @@ BlockResult<Derived> AllocatableBlock<Derived>::Free(Derived*&& block) {
   if (block == nullptr) {
     return BlockResult(block, Status::InvalidArgument());
   }
-  block->CheckInvariants(/* crash_on_failure: */ true);
+  if constexpr (Hardening::kIncludesRobustChecks) {
+    block->CheckInvariants();
+  }
   return Derived::DoFree(std::move(block));
 }
 
@@ -417,7 +429,9 @@ BlockResult<Derived> AllocatableBlock<Derived>::DoFree(Derived*&& block) {
     result = BlockResult(block, BlockResultNext::kMerged);
   }
 
-  block->CheckInvariantsIfStrict();
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    block->CheckInvariants();
+  }
   return result;
 }
 

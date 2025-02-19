@@ -18,8 +18,8 @@
 
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/buffer.h"
-#include "pw_allocator/config.h"
 #include "pw_allocator/first_fit.h"
+#include "pw_allocator/hardening.h"
 #include "pw_allocator/metrics.h"
 #include "pw_allocator/tracking_allocator.h"
 #include "pw_assert/assert.h"
@@ -31,7 +31,7 @@
 
 namespace pw::allocator::test {
 
-static_assert(PW_ALLOCATOR_STRICT_VALIDATION,
+static_assert(Hardening::kIncludesDebugChecks,
               "Tests must use a config that enables strict validation");
 
 // A token that can be used in tests.

@@ -95,7 +95,9 @@ inline constexpr bool has_layout_v = has_layout<BlockType>::value;
 
 template <typename Derived>
 Result<Layout> BlockWithLayout<Derived>::RequestedLayout() const {
-  derived()->CheckInvariantsIfStrict();
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    derived()->CheckInvariants();
+  }
   if (derived()->IsFree()) {
     return Status::FailedPrecondition();
   }

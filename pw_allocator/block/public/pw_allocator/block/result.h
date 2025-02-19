@@ -16,7 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "pw_allocator/config.h"
+#include "pw_allocator/hardening.h"
 #include "pw_assert/assert.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
@@ -74,7 +74,7 @@ class GenericBlockResult {
   /// Asserts the result is not an error if strict validation is enabled, and
   /// does nothing otherwise.
   constexpr void IgnoreUnlessStrict() const {
-    if constexpr (PW_ALLOCATOR_STRICT_VALIDATION) {
+    if constexpr (Hardening::kIncludesDebugChecks) {
       PW_ASSERT(ok());
     }
   }
@@ -88,7 +88,7 @@ class GenericBlockResult {
 
  private:
   static constexpr size_t Encode(size_t value, size_t bits, size_t shift) {
-    if constexpr (PW_ALLOCATOR_STRICT_VALIDATION) {
+    if constexpr (Hardening::kIncludesDebugChecks) {
       PW_ASSERT(value < (1U << bits));
     }
     return value << shift;
@@ -139,7 +139,9 @@ class [[nodiscard]] BlockResult : public internal::GenericBlockResult {
                         size_t shifted_to_prev)
       : internal::GenericBlockResult(OkStatus(), prev, next, shifted_to_prev),
         block_(block) {
-    block->CheckInvariantsIfStrict();
+    if constexpr (Hardening::kIncludesDebugChecks) {
+      block->CheckInvariants();
+    }
   }
 
   [[nodiscard]] constexpr BlockType* block() const { return block_; }

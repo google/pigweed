@@ -47,9 +47,21 @@ pw_source_set("config") {
   public_deps = [ pw_allocator_CONFIG ]
 }
 
+config("hardening_basic") {
+  defines = [ "PW_ALLOCATOR_HARDENING=PW_ALLOCATOR_HARDENING_BASIC" ]
+}
+
+config("hardening_robust") {
+  defines = [ "PW_ALLOCATOR_HARDENING=PW_ALLOCATOR_HARDENING_ROBUST" ]
+}
+
+config("hardening_debug") {
+  defines = [ "PW_ALLOCATOR_HARDENING=PW_ALLOCATOR_HARDENING_DEBUG" ]
+}
+
 config("test_config") {
   defines = [
-    "PW_ALLOCATOR_STRICT_VALIDATION=1",
+    "PW_ALLOCATOR_HARDENING=PW_ALLOCATOR_HARDENING_DEBUG",
     "PW_ALLOCATOR_BLOCK_POISON_INTERVAL=4",
   ]
 }
@@ -105,6 +117,7 @@ pw_source_set("block_allocator") {
     ":config",
     ":deallocator",
     ":fragmentation",
+    ":hardening",
     "block:allocatable",
     "block:basic",
     "block:iterable",
@@ -142,6 +155,7 @@ pw_source_set("buddy_allocator") {
   public = [ "public/pw_allocator/buddy_allocator.h" ]
   public_deps = [
     ":allocator",
+    ":hardening",
     "$dir_pw_containers:vector",
     "block:basic",
     "bucket:unordered",
@@ -211,7 +225,7 @@ pw_source_set("deallocator") {
   ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    dir_pw_assert,
+    ":hardening",
     dir_pw_preprocessor,
     dir_pw_result,
     dir_pw_status,
@@ -267,8 +281,17 @@ pw_source_set("freelist_heap") {
   public = [ "public/pw_allocator/freelist_heap.h" ]
   public_deps = [
     ":bucket_allocator",
-    dir_pw_assert,
+    ":hardening",
     dir_pw_bytes,
+  ]
+}
+
+pw_source_set("hardening") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/hardening.h" ]
+  public_deps = [
+    ":config",
+    dir_pw_assert,
     dir_pw_preprocessor,
   ]
 }
@@ -369,10 +392,9 @@ pw_source_set("typed_pool") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/typed_pool.h" ]
   public_deps = [
-    ":allocator",
     ":chunk_pool",
+    ":hardening",
     dir_pw_bytes,
-    dir_pw_result,
   ]
 }
 
@@ -404,6 +426,7 @@ pw_source_set("testing") {
     ":allocator",
     ":buffer",
     ":first_fit",
+    ":hardening",
     ":tracking_allocator",
     dir_pw_bytes,
     dir_pw_result,
@@ -747,6 +770,27 @@ pw_size_diff("blocks_size_report") {
   ]
 }
 
+pw_size_diff("hardening_size_report") {
+  title = "Size impact of various levels of pw_allocator hardening"
+  binaries = [
+    {
+      target = "size_report:detailed_block_basic"
+      base = "size_report:base"
+      label = "DetailedBlock with basic assertions enabled"
+    },
+    {
+      target = "size_report:detailed_block_robust"
+      base = "size_report:base"
+      label = "DetailedBlock with robust assertions enabled"
+    },
+    {
+      target = "size_report:detailed_block_debug"
+      base = "size_report:base"
+      label = "DetailedBlock with debug assertions enabled"
+    },
+  ]
+}
+
 pw_size_diff("buckets_size_report") {
   title = "Sizes of various bucket implementations"
   binaries = [
@@ -901,6 +945,7 @@ pw_doc_group("docs") {
     ":blocks_size_report",
     ":concrete_allocators_size_report",
     ":forwarding_allocators_size_report",
+    ":hardening_size_report",
     "examples:custom_allocator_size_report",
   ]
 }

@@ -15,10 +15,9 @@
 
 #include <cstddef>
 
-#include "pw_allocator/allocator.h"
 #include "pw_allocator/chunk_pool.h"
+#include "pw_allocator/hardening.h"
 #include "pw_bytes/span.h"
-#include "pw_result/result.h"
 
 namespace pw::allocator {
 
@@ -37,7 +36,7 @@ class TypedPool : public ChunkPool {
   /// Returns the amount of memory needed to allocate ``num_objects``.
   static constexpr size_t SizeNeeded(size_t num_objects) {
     size_t needed = std::max(sizeof(T), ChunkPool::kMinSize);
-    PW_ASSERT(!PW_MUL_OVERFLOW(needed, num_objects, &needed));
+    Hardening::Multiply(needed, num_objects);
     return needed;
   }
 

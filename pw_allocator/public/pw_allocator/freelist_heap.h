@@ -16,9 +16,8 @@
 #include <cstddef>
 
 #include "pw_allocator/bucket_allocator.h"
-#include "pw_assert/assert.h"
+#include "pw_allocator/hardening.h"
 #include "pw_bytes/span.h"
-#include "pw_preprocessor/compiler.h"
 
 namespace pw::allocator {
 
@@ -40,7 +39,7 @@ class FreeListHeapBuffer {
   }
 
   void* Calloc(size_t num, size_t size) {
-    PW_ASSERT(!PW_MUL_OVERFLOW(num, size, &size));
+    Hardening::Multiply(size, num);
     void* ptr = allocator_.Allocate(Layout(size));
     if (ptr == nullptr) {
       return nullptr;

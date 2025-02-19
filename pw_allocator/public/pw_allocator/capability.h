@@ -15,8 +15,6 @@
 
 #include <cstdint>
 
-#include "pw_assert/assert.h"
-
 namespace pw::allocator {
 
 /// Hints about optional methods implemented or optional behaviors requested

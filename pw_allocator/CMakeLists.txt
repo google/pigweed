@@ -29,7 +29,7 @@ pw_add_library(pw_allocator.config INTERFACE
 
 pw_add_library(pw_allocator.test_config INTERFACE
   PUBLIC_DEFINES
-    PW_ALLOCATOR_STRICT_VALIDATION=1
+    PW_ALLOCATOR_HARDENING=PW_ALLOCATOR_HARDENING_DEBUG
     PW_ALLOCATOR_BLOCK_POISON_INTERVAL=4
 )
 
@@ -108,6 +108,7 @@ pw_add_library(pw_allocator.block_allocator STATIC
     pw_allocator.block.poisonable
     pw_allocator.block.with_layout
     pw_allocator.fragmentation
+    pw_allocator.hardening
     pw_bytes
     pw_result
     pw_status
@@ -144,6 +145,7 @@ pw_add_library(pw_allocator.buddy_allocator STATIC
     pw_allocator.allocator
     pw_allocator.block.basic
     pw_allocator.bucket.unordered
+    pw_allocator.hardening
     pw_bytes
     pw_containers.vector
     pw_status
@@ -211,7 +213,7 @@ pw_add_library(pw_allocator.deallocator STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_assert
+    pw_allocator.hardening
     pw_preprocessor
     pw_result
     pw_status
@@ -281,8 +283,18 @@ pw_add_library(pw_allocator.freelist_heap INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.bucket_allocator
-    pw_assert
+    pw_allocator.hardening
     pw_bytes
+)
+
+pw_add_library(pw_allocator.hardening INTERFACE
+  HEADERS
+    public/pw_allocator/hardening.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.config
+    pw_assert
     pw_preprocessor
 )
 
@@ -399,10 +411,9 @@ pw_add_library(pw_allocator.typed_pool INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.allocator
     pw_allocator.chunk_pool
+    pw_allocator.hardening
     pw_bytes
-    pw_result
 )
 
 pw_add_library(pw_allocator.worst_fit INTERFACE
@@ -440,6 +451,7 @@ pw_add_library(pw_allocator.testing INTERFACE
     pw_allocator.allocator
     pw_allocator.buffer
     pw_allocator.first_fit
+    pw_allocator.hardening
     pw_allocator.test_config
     pw_allocator.tracking_allocator
     pw_bytes

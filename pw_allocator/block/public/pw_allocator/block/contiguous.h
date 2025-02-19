@@ -15,6 +15,7 @@
 
 #include "lib/stdcompat/bit.h"
 #include "pw_allocator/block/basic.h"
+#include "pw_allocator/hardening.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
@@ -79,11 +80,11 @@ class ContiguousBlock : public internal::ContiguousBase {
 
   /// @returns the block immediately before this one, or null if this is the
   /// first block.
-  inline Derived* Prev() const;
+  Derived* Prev() const;
 
   /// @returns the block immediately after this one, or null if this is the last
   /// block.
-  inline Derived* Next() const;
+  Derived* Next() const;
 
  protected:
   /// Split a block into two smaller blocks.
@@ -117,7 +118,7 @@ class ContiguousBlock : public internal::ContiguousBase {
   void DoMergeNext();
 
   /// Performs the ContiguousBlock invariant checks.
-  bool DoCheckInvariants(bool crash_on_failure) const;
+  bool DoCheckInvariants(bool strict) const;
 
  private:
   constexpr Derived* derived() { return static_cast<Derived*>(this); }
@@ -163,14 +164,14 @@ namespace internal {
 /// Functions to crash with an error message describing which block invariant
 /// has been violated. These functions are implemented independent of any
 /// template parameters to allow them to use `PW_CHECK`.
-void CrashNextMisaligned(uintptr_t addr, uintptr_t next);
-void CrashNextPrevMismatched(uintptr_t addr,
-                             uintptr_t next,
-                             uintptr_t next_prev);
-void CrashPrevMisaligned(uintptr_t addr, uintptr_t prev);
-void CrashPrevNextMismatched(uintptr_t addr,
-                             uintptr_t prev,
-                             uintptr_t prev_next);
+[[noreturn]] void CrashNextMisaligned(uintptr_t addr, uintptr_t next);
+[[noreturn]] void CrashNextPrevMismatched(uintptr_t addr,
+                                          uintptr_t next,
+                                          uintptr_t next_prev);
+[[noreturn]] void CrashPrevMisaligned(uintptr_t addr, uintptr_t prev);
+[[noreturn]] void CrashPrevNextMismatched(uintptr_t addr,
+                                          uintptr_t prev,
+                                          uintptr_t prev_next);
 
 }  // namespace internal
 
@@ -186,13 +187,17 @@ Result<Derived*> ContiguousBlock<Derived>::Init(ByteSpan region) {
     return Status::OutOfRange();
   }
   auto* block = Derived::AsBlock(region);
-  block->CheckInvariantsIfStrict();
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    block->CheckInvariants();
+  }
   return block;
 }
 
 template <typename Derived>
 Derived* ContiguousBlock<Derived>::Prev() const {
-  derived()->CheckInvariantsIfStrict();
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    derived()->CheckInvariants();
+  }
   return PrevUnchecked();
 }
 
@@ -203,13 +208,15 @@ Derived* ContiguousBlock<Derived>::PrevUnchecked() const {
     return nullptr;
   }
   auto addr = cpp20::bit_cast<uintptr_t>(this);
-  PW_ASSERT(!PW_SUB_OVERFLOW(addr, prev_outer_size, &addr));
+  Hardening::Decrement(addr, prev_outer_size);
   return std::launder(reinterpret_cast<Derived*>(addr));
 }
 
 template <typename Derived>
 Derived* ContiguousBlock<Derived>::Next() const {
-  derived()->CheckInvariantsIfStrict();
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    derived()->CheckInvariants();
+  }
   return NextUnchecked();
 }
 
@@ -220,7 +227,7 @@ Derived* ContiguousBlock<Derived>::NextUnchecked() const {
   }
   size_t outer_size = derived()->OuterSizeUnchecked();
   auto addr = cpp20::bit_cast<uintptr_t>(this);
-  PW_ASSERT(!PW_ADD_OVERFLOW(addr, outer_size, &addr));
+  Hardening::Increment(addr, outer_size);
   return std::launder(reinterpret_cast<Derived*>(addr));
 }
 
@@ -252,20 +259,20 @@ void ContiguousBlock<Derived>::DoMergeNext() {
 }
 
 template <typename Derived>
-bool ContiguousBlock<Derived>::DoCheckInvariants(bool crash_on_failure) const {
+bool ContiguousBlock<Derived>::DoCheckInvariants(bool strict) const {
   auto addr = cpp20::bit_cast<uintptr_t>(this);
   Derived* next = derived()->NextUnchecked();
   if (next != nullptr) {
     auto next_addr = cpp20::bit_cast<uintptr_t>(next);
     if (next_addr % Derived::kAlignment != 0) {
-      if (crash_on_failure) {
+      if (strict) {
         internal::CrashNextMisaligned(addr, next_addr);
       }
       return false;
     }
     Derived* next_prev = next->PrevUnchecked();
     if (this != next_prev) {
-      if (crash_on_failure) {
+      if (strict) {
         auto next_prev_addr = cpp20::bit_cast<uintptr_t>(next_prev);
         internal::CrashNextPrevMismatched(addr, next_addr, next_prev_addr);
       }
@@ -276,7 +283,7 @@ bool ContiguousBlock<Derived>::DoCheckInvariants(bool crash_on_failure) const {
   if (prev != nullptr) {
     auto prev_addr = cpp20::bit_cast<uintptr_t>(prev);
     if (prev_addr % Derived::kAlignment != 0) {
-      if (crash_on_failure) {
+      if (strict) {
         internal::CrashPrevMisaligned(addr, prev_addr);
       }
       return false;
@@ -284,7 +291,7 @@ bool ContiguousBlock<Derived>::DoCheckInvariants(bool crash_on_failure) const {
     Derived* prev_next = prev->NextUnchecked();
     auto prev_next_addr = cpp20::bit_cast<uintptr_t>(prev_next);
     if (this != prev_next) {
-      if (crash_on_failure) {
+      if (strict) {
         internal::CrashPrevNextMismatched(addr, prev_addr, prev_next_addr);
       }
       return false;

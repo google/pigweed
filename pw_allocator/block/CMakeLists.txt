@@ -20,7 +20,7 @@ pw_add_library(pw_allocator.block.result INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.config
+    pw_allocator.hardening
     pw_assert
     pw_status
 )
@@ -33,7 +33,7 @@ pw_add_library(pw_allocator.block.alignable INTERFACE
   PUBLIC_DEPS
     pw_allocator.block.allocatable
     pw_allocator.deallocator
-    pw_assert
+    pw_allocator.hardening
     pw_bytes.alignment
     pw_status
     pw_third_party.fuchsia.stdcompat
@@ -45,11 +45,10 @@ pw_add_library(pw_allocator.block.allocatable INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.config
     pw_allocator.block.contiguous
     pw_allocator.block.result
     pw_allocator.deallocator
-    pw_assert
+    pw_allocator.hardening
     pw_bytes.alignment
     pw_status
 )
@@ -60,12 +59,13 @@ pw_add_library(pw_allocator.block.basic STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.config
-    pw_assert
+    pw_allocator.hardening
     pw_bytes.alignment
     pw_third_party.fuchsia.stdcompat
   SOURCES
     basic.cc
+  PRIVATE_DEPS
+    pw_assert
 )
 
 pw_add_library(pw_allocator.block.contiguous STATIC
@@ -75,13 +75,15 @@ pw_add_library(pw_allocator.block.contiguous STATIC
     public
   PUBLIC_DEPS
     pw_allocator.block.basic
-    pw_assert
+    pw_allocator.hardening
     pw_bytes
     pw_result
     pw_status
     pw_third_party.fuchsia.stdcompat
   SOURCES
     contiguous.cc
+  PRIVATE_DEPS
+    pw_assert
 )
 
 pw_add_library(pw_allocator.block.iterable INTERFACE
@@ -101,10 +103,12 @@ pw_add_library(pw_allocator.block.poisonable STATIC
   PUBLIC_DEPS
     pw_allocator.block.contiguous
     pw_allocator.config
-    pw_assert
+    pw_allocator.hardening
     pw_third_party.fuchsia.stdcompat
   SOURCES
     poisonable.cc
+  PRIVATE_DEPS
+    pw_assert
 )
 
 pw_add_library(pw_allocator.block.with_layout INTERFACE
@@ -115,7 +119,7 @@ pw_add_library(pw_allocator.block.with_layout INTERFACE
   PUBLIC_DEPS
     pw_allocator.block.alignable
     pw_allocator.deallocator
-    pw_assert
+    pw_allocator.hardening
 )
 
 pw_add_library(pw_allocator.block.detailed_block INTERFACE
@@ -131,12 +135,10 @@ pw_add_library(pw_allocator.block.detailed_block INTERFACE
     pw_allocator.block.iterable
     pw_allocator.block.poisonable
     pw_allocator.block.with_layout
-    pw_allocator.config
     pw_allocator.deallocator
+    pw_allocator.hardening
     pw_assert
     pw_bytes
-    pw_preprocessor
-    pw_result
     pw_status
 )
 

@@ -26,8 +26,8 @@ pw_source_set("base") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/bucket/base.h" ]
   public_deps = [
-    "$dir_pw_allocator:config",
     "$dir_pw_allocator:deallocator",
+    "$dir_pw_allocator:hardening",
     "$dir_pw_allocator/block:poisonable",
   ]
   visibility = [ ":*" ]

@@ -38,9 +38,24 @@ label_flag(
 )
 
 cc_library(
+    name = "hardening_basic",
+    defines = ["PW_ALLOCATOR_HARDENING=PW_ALLOCATOR_HARDENING_BASIC"],
+)
+
+cc_library(
+    name = "hardening_robust",
+    defines = ["PW_ALLOCATOR_HARDENING=PW_ALLOCATOR_HARDENING_ROBUST"],
+)
+
+cc_library(
+    name = "hardening_debug",
+    defines = ["PW_ALLOCATOR_HARDENING=PW_ALLOCATOR_HARDENING_DEBUG"],
+)
+
+cc_library(
     name = "test_config",
     defines = [
-        "PW_ALLOCATOR_STRICT_VALIDATION=1",
+        "PW_ALLOCATOR_HARDENING=PW_ALLOCATOR_HARDENING_DEBUG",
         "PW_ALLOCATOR_BLOCK_POISON_INTERVAL=4",
     ],
 )
@@ -105,6 +120,7 @@ cc_library(
         ":config",
         ":deallocator",
         ":fragmentation",
+        ":hardening",
         "//pw_allocator/block:allocatable",
         "//pw_allocator/block:basic",
         "//pw_allocator/block:iterable",
@@ -150,6 +166,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":allocator",
+        ":hardening",
         "//pw_allocator/block:basic",
         "//pw_allocator/bucket:unordered",
         "//pw_bytes",
@@ -215,7 +232,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
+        ":hardening",
         "//pw_preprocessor",
         "//pw_result",
         "//pw_status",
@@ -277,8 +294,18 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":bucket_allocator",
-        "//pw_assert",
+        ":hardening",
         "//pw_bytes",
+    ],
+)
+
+cc_library(
+    name = "hardening",
+    hdrs = ["public/pw_allocator/hardening.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":config",
+        "//pw_assert",
         "//pw_preprocessor",
     ],
 )
@@ -390,10 +417,9 @@ cc_library(
     hdrs = ["public/pw_allocator/typed_pool.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
         ":chunk_pool",
+        ":hardening",
         "//pw_bytes",
-        "//pw_result",
     ],
 )
 
@@ -431,6 +457,7 @@ cc_library(
         ":allocator",
         ":buffer",
         ":first_fit",
+        ":hardening",
         ":test_config",
         ":tracking_allocator",
         "//pw_assert",

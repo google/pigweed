@@ -61,6 +61,13 @@ Deallocator
 ===========
 Both ``Allocator`` and ``Pool`` derive from and extend ``Deallocator``. This
 type is intended for allocator implementers and not for module consumers.
+pw_allocator: Add bucket size reports
+
+Separating out the bucket size reports from those of the blocks and
+allocators makes it clearer where contributions to code size are coming
+from.
+
+Change-Id: Ibd719f3d4b88c42aa7833c24963e95253c397e03
 
 .. doxygenclass:: pw::Deallocator
    :members:
@@ -86,6 +93,28 @@ The ``UniquePtr`` smart pointer type can be created by any type deriving from
 .. doxygenclass:: pw::UniquePtr
    :members:
 
+--------------------
+Module configuration
+--------------------
+
+.. _module-pw_allocator-config-block_poison_interval:
+
+PW_ALLOCATOR_BLOCK_POISON_INTERVAL
+==================================
+.. doxygendefine:: PW_ALLOCATOR_BLOCK_POISON_INTERVAL
+
+.. _module-pw_allocator-config-hardening:
+
+PW_ALLOCATOR_HARDENING
+======================
+.. doxygendefine:: PW_ALLOCATOR_HARDENING
+
+.. _module-pw_allocator-config-suppress_deprecated_warnings:
+
+PW_ALLOCATOR_SUPPRESS_DEPRECATED_WARNINGS
+=========================================
+.. doxygendefine:: PW_ALLOCATOR_SUPPRESS_DEPRECATED_WARNINGS
+
 -------------------------
 Allocator implementations
 -------------------------
@@ -102,7 +131,7 @@ memory, and derive from this abstract base type.
 .. doxygenclass:: pw::allocator::BlockAllocator
    :members:
 
-.. _module-pw_allocator-api-first_fit_allocator:
+.. _module-pw_allocator-api-best_fit_allocator:
 
 BestFitAllocator
 ----------------
@@ -116,14 +145,14 @@ BucketAllocator
 .. doxygenclass:: pw::allocator::BucketAllocator
    :members:
 
-.. _module-pw_allocator-api-tlsf_allocator:
+.. _module-pw_allocator-api-first_fit_allocator:
 
 FirstFitAllocator
 -----------------
 .. doxygenclass:: pw::allocator::FirstFitAllocator
    :members:
 
-.. _module-pw_allocator-api-best_fit_allocator:
+.. _module-pw_allocator-api-tlsf_allocator:
 
 TlsfAllocator
 -------------

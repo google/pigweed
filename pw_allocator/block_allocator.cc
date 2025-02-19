@@ -18,23 +18,22 @@
 
 namespace pw::allocator::internal {
 
-void GenericBlockAllocator::CrashOnAllocated(void* allocated) {
-  PW_DCHECK(false,
-            "The block at %p was still in use when its allocator was "
-            "destroyed. All memory allocated by an allocator must be released "
-            "before the allocator goes out of scope.",
-            allocated);
+void GenericBlockAllocator::CrashOnAllocated(const void* allocated) {
+  PW_CRASH(
+      "The block at %p was still in use when its allocator was destroyed. All "
+      "memory allocated by an allocator must be released before the allocator "
+      "goes out of scope.",
+      allocated);
 }
 
-void GenericBlockAllocator::CrashOnInvalidFree(void* freed) {
-  PW_DCHECK(
-      false,
+void GenericBlockAllocator::CrashOnInvalidFree(const void* freed) {
+  PW_CRASH(
       "Attemped to free %p, which is outside the allocator's memory region.",
       freed);
 }
 
-void GenericBlockAllocator::CrashOnDoubleFree(void* freed) {
-  PW_DCHECK(false, "The block at %p was freed twice.", freed);
+void GenericBlockAllocator::CrashOnDoubleFree(const void* freed) {
+  PW_CRASH("The block at %p was freed twice.", freed);
 }
 
 }  // namespace pw::allocator::internal

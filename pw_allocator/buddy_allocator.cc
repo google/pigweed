@@ -18,6 +18,7 @@
 #include <utility>
 
 #include "lib/stdcompat/bit.h"
+#include "pw_allocator/hardening.h"
 #include "pw_assert/check.h"
 #include "pw_bytes/alignment.h"
 
@@ -63,7 +64,9 @@ void GenericBuddyAllocator::Init(ByteSpan region) {
   // Ensure there is a byte preceding the first `BuddyBlock`.
   region = GetAlignedSubspan(region.subspan(1), min_outer_size_);
   region = ByteSpan(region.data() - 1, region.size() + 1);
-  PW_CHECK_INT_GE(region.size(), min_outer_size_);
+  if constexpr (Hardening::kIncludesBasicChecks) {
+    PW_CHECK_INT_GE(region.size(), min_outer_size_);
+  }
 
   // Build up the available memory by successively freeing (and thus merging)
   // minimum sized blocks.
@@ -93,12 +96,14 @@ void GenericBuddyAllocator::CrashIfAllocated() {
       total_free += block->OuterSize();
     }
   }
-  PW_CHECK_INT_EQ(region_.size(),
-                  total_free,
-                  "%zu bytes were still in use when an allocator was "
-                  "destroyed. All memory allocated by an allocator must be "
-                  "released before the allocator goes out of scope.",
-                  region_.size() - total_free);
+  if constexpr (Hardening::kIncludesRobustChecks) {
+    PW_CHECK_INT_EQ(region_.size(),
+                    total_free,
+                    "%zu bytes were still in use when an allocator was "
+                    "destroyed. All memory allocated by an allocator must be "
+                    "released before the allocator goes out of scope.",
+                    region_.size() - total_free);
+  }
   region_ = ByteSpan();
 }
 

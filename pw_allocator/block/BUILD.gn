@@ -26,7 +26,7 @@ pw_source_set("result") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/block/result.h" ]
   public_deps = [
-    "$dir_pw_allocator:config",
+    "$dir_pw_allocator:hardening",
     "$dir_pw_assert",
     "$dir_pw_status",
   ]
@@ -38,7 +38,7 @@ pw_source_set("alignable") {
   public_deps = [
     ":allocatable",
     "$dir_pw_allocator:deallocator",
-    "$dir_pw_assert",
+    "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
     "$dir_pw_status",
     "$dir_pw_third_party/fuchsia:stdcompat",
@@ -52,7 +52,7 @@ pw_source_set("allocatable") {
     ":contiguous",
     ":result",
     "$dir_pw_allocator:deallocator",
-    "$dir_pw_assert",
+    "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
     "$dir_pw_status",
   ]
@@ -61,27 +61,28 @@ pw_source_set("allocatable") {
 pw_source_set("basic") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/block/basic.h" ]
-  sources = [ "basic.cc" ]
   public_deps = [
-    "$dir_pw_allocator:config",
-    "$dir_pw_assert",
+    "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
     "$dir_pw_third_party/fuchsia:stdcompat",
   ]
+  sources = [ "basic.cc" ]
+  deps = [ dir_pw_assert ]
 }
 
 pw_source_set("contiguous") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/block/contiguous.h" ]
-  sources = [ "contiguous.cc" ]
   public_deps = [
     ":basic",
+    "$dir_pw_allocator:hardening",
     "$dir_pw_bytes",
     "$dir_pw_result",
     "$dir_pw_status",
     "$dir_pw_third_party/fuchsia:stdcompat",
-    dir_pw_assert,
   ]
+  sources = [ "contiguous.cc" ]
+  deps = [ dir_pw_assert ]
 }
 
 pw_source_set("iterable") {
@@ -93,13 +94,14 @@ pw_source_set("iterable") {
 pw_source_set("poisonable") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/block/poisonable.h" ]
-  sources = [ "poisonable.cc" ]
   public_deps = [
     ":contiguous",
     "$dir_pw_allocator:config",
+    "$dir_pw_allocator:hardening",
     "$dir_pw_third_party/fuchsia:stdcompat",
-    dir_pw_assert,
   ]
+  sources = [ "poisonable.cc" ]
+  deps = [ dir_pw_assert ]
 }
 
 pw_source_set("with_layout") {
@@ -108,7 +110,7 @@ pw_source_set("with_layout") {
   public_deps = [
     ":alignable",
     "$dir_pw_allocator:deallocator",
-    "$dir_pw_assert",
+    "$dir_pw_allocator:hardening",
   ]
 }
 
@@ -123,12 +125,10 @@ pw_source_set("detailed_block") {
     ":iterable",
     ":poisonable",
     ":with_layout",
-    "$dir_pw_allocator:config",
     "$dir_pw_allocator:deallocator",
+    "$dir_pw_allocator:hardening",
     dir_pw_assert,
     dir_pw_bytes,
-    dir_pw_preprocessor,
-    dir_pw_result,
     dir_pw_status,
   ]
 }

@@ -37,6 +37,16 @@ module.
 .. .. include:: blocks_size_report
 .. include:: ../size_report_notice
 
+Impact of different hardening levels
+====================================
+This module includes :ref:`module-pw_allocator-config-hardening` which sets
+which validation checks are included. Additional checks can detect more errors
+at the cost of additional code size, as illustrated in the size report below:
+
+.. TODO: b/388905812 - Re-enable the size report.
+.. .. include:: hardening_size_report
+.. include:: ../size_report_notice
+
 ----------------------
 Bucket implementations
 ----------------------

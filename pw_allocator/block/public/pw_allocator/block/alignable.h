@@ -19,8 +19,8 @@
 #include "lib/stdcompat/bit.h"
 #include "pw_allocator/block/allocatable.h"
 #include "pw_allocator/block/result.h"
+#include "pw_allocator/hardening.h"
 #include "pw_allocator/layout.h"
-#include "pw_assert/assert.h"
 #include "pw_bytes/alignment.h"
 #include "pw_status/status.h"
 
@@ -99,8 +99,8 @@ StatusWithSize AlignableBlock<Derived>::DoCanAlloc(Layout layout) const {
 
   // What is the last aligned address within the leading extra space?
   auto addr = cpp20::bit_cast<uintptr_t>(derived()->UsableSpace());
-  uintptr_t aligned_addr;
-  PW_ASSERT(!PW_ADD_OVERFLOW(addr, extra, &aligned_addr));
+  uintptr_t aligned_addr = addr;
+  Hardening::Increment(aligned_addr, extra);
   aligned_addr = AlignDown(aligned_addr, layout.alignment());
 
   // Is there an aligned address within the extra space?
