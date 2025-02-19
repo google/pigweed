@@ -281,7 +281,7 @@ pw_cc_fuzz_test(
     name = "l2cap_fuzzer",
     srcs = ["l2cap_fuzztest.cc"],
     target_compatible_with = select({
-        "//pw_unit_test:googletest_only": [],
+        "//pw_unit_test:backend_is_googletest": [],
         "@platforms//os:fuchsia": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),

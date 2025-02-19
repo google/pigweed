@@ -231,7 +231,6 @@ build:microbit --platforms=//targets/microbit
 # of the default //pw_unit_test:light framework.
 common:googletest --//pw_unit_test:backend=//pw_unit_test:googletest
 common:googletest --//pw_unit_test:main=@com_google_googletest//:gtest_main
-common:googletest --platforms=//pw_unit_test:googletest_platform
 
 # Remote execution config definitions
 # ===================================

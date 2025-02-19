@@ -78,7 +78,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     target_compatible_with = select({
-        "//pw_unit_test:googletest_only": [],
+        "//pw_unit_test:backend_is_googletest": [],
         "@platforms//os:fuchsia": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
@@ -187,7 +187,7 @@ cc_library(
         "//pw_unit_test:googletest",
     ],
     target_compatible_with = select({
-        "//pw_unit_test:googletest_only": [],
+        "//pw_unit_test:backend_is_googletest": [],
         "@platforms//os:fuchsia": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
@@ -212,7 +212,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     target_compatible_with = select({
-        "//pw_unit_test:googletest_only": [],
+        "//pw_unit_test:backend_is_googletest": [],
         "@platforms//os:fuchsia": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
