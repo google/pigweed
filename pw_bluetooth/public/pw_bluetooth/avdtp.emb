@@ -169,8 +169,8 @@ struct ServiceCapability(remaining_size: UInt:32):
   if service_category == ServiceCategory.MEDIA_CODEC:
     2        [+length]              MediaCodecCapability(length)           media_codec_capability
 
-  if remaining_size > length:
-    let new_remaining_size = remaining_size-length
+  if remaining_size > length+2:
+    let new_remaining_size = remaining_size-length-2
     length+2 [+new_remaining_size]  ServiceCapability(new_remaining_size)  next
 
 # Cf 8. Signaling Messages
@@ -242,7 +242,7 @@ struct GetAllCapabilitiesReject:
 struct SetConfigurationCommand(length: UInt:32):
   -- Cf 8.9.1 AVDTP_SET_CONFIGURATION_CMD
   [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SET_CONFIGURATION]
-  let services_size = length-SignalingHeader.$size_in_bytes
+  let services_size = length-SignalingHeader.$size_in_bytes-2
   0     [+2]              SignalingHeader                   signaling_header
   $next [+1]  bits:
     0     [+6]            Seid                              acp_seid
