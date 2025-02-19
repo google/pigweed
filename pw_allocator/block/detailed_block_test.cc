@@ -549,8 +549,8 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_ShiftToPrev_SubsequentBlock) {
 
   // Verify the previous block was padded.
   size_t old_requested_size = leading - BlockType::kBlockOverhead;
-  auto old_layout = first->RequestedLayout();
-  EXPECT_EQ(old_layout->size(), old_requested_size);
+  Layout old_layout = first->RequestedLayout();
+  EXPECT_EQ(old_layout.size(), old_requested_size);
 
   // Resize the first block, and verify the padding is updated.
   size_t new_requested_size = old_requested_size + 1;
@@ -558,8 +558,8 @@ TEST_FOR_EACH_BLOCK_TYPE(CanAllocFirst_ShiftToPrev_SubsequentBlock) {
   ASSERT_EQ(result.status(), pw::OkStatus());
   EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
   EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-  auto new_layout = first->RequestedLayout();
-  EXPECT_EQ(new_layout->size(), new_requested_size);
+  Layout new_layout = first->RequestedLayout();
+  EXPECT_EQ(new_layout.size(), new_requested_size);
 
   EXPECT_GE(block->InnerSize(), kLayout.size());
   auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
@@ -1403,10 +1403,10 @@ TEST_FOR_EACH_BLOCK_TYPE(CanGetAlignmentFromUsedBlock) {
   ASSERT_EQ(result.status(), pw::OkStatus());
   block2 = result.block();
 
-  auto block1_layout = block1->RequestedLayout();
-  auto block2_layout = block2->RequestedLayout();
-  EXPECT_EQ(block1_layout->alignment(), kAlign);
-  EXPECT_EQ(block2_layout->alignment(), kAlign * 2);
+  Layout block1_layout = block1->RequestedLayout();
+  Layout block2_layout = block2->RequestedLayout();
+  EXPECT_EQ(block1_layout.alignment(), kAlign);
+  EXPECT_EQ(block2_layout.alignment(), kAlign * 2);
 }
 
 TEST_FOR_EACH_BLOCK_TYPE(FreeBlocksHaveDefaultAlignment) {
@@ -1427,18 +1427,14 @@ TEST_FOR_EACH_BLOCK_TYPE(FreeBlocksHaveDefaultAlignment) {
   result = BlockType::AllocLast(std::move(block2), kLayout2);
   ASSERT_EQ(result.status(), pw::OkStatus());
 
-  auto layout = block1->RequestedLayout();
-  ASSERT_EQ(layout.status(), pw::OkStatus());
-  EXPECT_EQ(layout->alignment(), kAlign);
+  Layout layout = block1->RequestedLayout();
+  EXPECT_EQ(layout.alignment(), kAlign);
 
   result = BlockType::Free(std::move(block1));
   ASSERT_EQ(result.status(), pw::OkStatus());
   EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
   EXPECT_EQ(result.next(), BlockResultNext::kMerged);
   block1 = result.block();
-
-  layout = block1->RequestedLayout();
-  EXPECT_EQ(layout.status(), pw::Status::FailedPrecondition());
 }
 
 }  // namespace

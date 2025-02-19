@@ -50,13 +50,15 @@ class AlignableBlock : public internal::AlignableBase {
   }
 
   /// @copydoc AllocatableBlock::CanAlloc
-  StatusWithSize DoCanAlloc(Layout layout) const;
+  constexpr StatusWithSize DoCanAlloc(Layout layout) const;
 
   /// @copydoc AllocatableBlock::AllocFirst
-  static BlockResult<Derived> DoAllocFirst(Derived*&& block, Layout layout);
+  static constexpr BlockResult<Derived> DoAllocFirst(Derived*&& block,
+                                                     Layout layout);
 
   /// @copydoc AllocatableBlock::AllocLast
-  static BlockResult<Derived> DoAllocLast(Derived*&& block, Layout layout);
+  static constexpr BlockResult<Derived> DoAllocLast(Derived*&& block,
+                                                    Layout layout);
 
  private:
   constexpr const Derived* derived() const {
@@ -64,9 +66,9 @@ class AlignableBlock : public internal::AlignableBase {
   }
 
   /// Allocates a block of `new_inner_size` that starts after `leading` bytes.
-  static BlockResult<Derived> DoAllocAligned(Derived*&& block,
-                                             size_t leading,
-                                             size_t new_inner_size);
+  static constexpr BlockResult<Derived> DoAllocAligned(Derived*&& block,
+                                                       size_t leading,
+                                                       size_t new_inner_size);
 
   // BlockWithLayout calls DoAllocFirst
   template <typename>
@@ -79,12 +81,13 @@ struct is_alignable : std::is_base_of<internal::AlignableBase, BlockType> {};
 
 /// Helper variable template for `is_alignable<BlockType>::value`.
 template <typename BlockType>
-inline constexpr bool is_alignable_v = is_alignable<BlockType>::value;
+constexpr bool is_alignable_v = is_alignable<BlockType>::value;
 
 // Template method implementations.
 
 template <typename Derived>
-StatusWithSize AlignableBlock<Derived>::DoCanAlloc(Layout layout) const {
+constexpr StatusWithSize AlignableBlock<Derived>::DoCanAlloc(
+    Layout layout) const {
   // How much extra space is available?
   auto result = derived()->AllocatableBlock<Derived>::DoCanAlloc(layout);
   if (!result.ok()) {
@@ -119,8 +122,8 @@ StatusWithSize AlignableBlock<Derived>::DoCanAlloc(Layout layout) const {
 }
 
 template <typename Derived>
-BlockResult<Derived> AlignableBlock<Derived>::DoAllocFirst(Derived*&& block,
-                                                           Layout layout) {
+constexpr BlockResult<Derived> AlignableBlock<Derived>::DoAllocFirst(
+    Derived*&& block, Layout layout) {
   // Is the default alignment sufficient?
   if (layout.alignment() <= Derived::kAlignment) {
     return AllocatableBlock<Derived>::DoAllocFirst(std::move(block), layout);
@@ -151,8 +154,8 @@ BlockResult<Derived> AlignableBlock<Derived>::DoAllocFirst(Derived*&& block,
 }
 
 template <typename Derived>
-BlockResult<Derived> AlignableBlock<Derived>::DoAllocLast(Derived*&& block,
-                                                          Layout layout) {
+constexpr BlockResult<Derived> AlignableBlock<Derived>::DoAllocLast(
+    Derived*&& block, Layout layout) {
   // Is the default alignment sufficient?
   if (layout.alignment() <= Derived::kAlignment) {
     return AllocatableBlock<Derived>::DoAllocLast(std::move(block), layout);
@@ -172,7 +175,7 @@ BlockResult<Derived> AlignableBlock<Derived>::DoAllocLast(Derived*&& block,
 }
 
 template <typename Derived>
-BlockResult<Derived> AlignableBlock<Derived>::DoAllocAligned(
+constexpr BlockResult<Derived> AlignableBlock<Derived>::DoAllocAligned(
     Derived*&& block, size_t leading_outer_size, size_t new_inner_size) {
   // Allocate everything after aligned address.
   Layout layout(block->InnerSize() - leading_outer_size, Derived::kAlignment);

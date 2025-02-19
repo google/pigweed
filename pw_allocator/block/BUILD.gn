@@ -64,6 +64,8 @@ pw_source_set("basic") {
   public_deps = [
     "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
+    "$dir_pw_result",
+    "$dir_pw_status",
     "$dir_pw_third_party/fuchsia:stdcompat",
   ]
   sources = [ "basic.cc" ]
@@ -77,8 +79,6 @@ pw_source_set("contiguous") {
     ":basic",
     "$dir_pw_allocator:hardening",
     "$dir_pw_bytes",
-    "$dir_pw_result",
-    "$dir_pw_status",
     "$dir_pw_third_party/fuchsia:stdcompat",
   ]
   sources = [ "contiguous.cc" ]

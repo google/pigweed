@@ -117,8 +117,7 @@ provided by these block mix-ins include:
 - A :ref:`module-pw_allocator-api-block-with-layout` can retrieve the layout
   used to allocate it, even if the block itself is larger due to alignment or
   padding.
-- The :ref:`module-pw_allocator-api-forward-iterable-block` and
-  :ref:`module-pw_allocator-api-reverse-iterable-block` types provide iterators
+- The :ref:`module-pw_allocator-api-iterable-block` type provides iterators
   and ranges that can be used to iterate over a sequence of blocks.
 - A :ref:`module-pw_allocator-api-poisonable-block` can fill its usable space
   with a pattern when freed. This pattern can be checked on a subsequent

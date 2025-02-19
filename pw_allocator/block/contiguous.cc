@@ -21,42 +21,48 @@ namespace pw::allocator::internal {
 // TODO: b/234875269 - Add stack tracing to locate which call to the heap
 // operation caused the corruption in the methods below.
 
-void CrashNextMisaligned(uintptr_t addr, uintptr_t next) {
-  PW_CRASH(
-      "A block (%p) is corrupted: it has a 'next' field (%p) that is not "
-      "properly aligned.",
-      cpp20::bit_cast<void*>(addr),
-      cpp20::bit_cast<void*>(next));
+void CheckNextMisaligned(const void* block,
+                         const void* next,
+                         bool next_is_aligned) {
+  PW_CHECK(next_is_aligned,
+           "A block (%p) is corrupted: it has a 'next' field (%p) that is not "
+           "properly aligned.",
+           block,
+           next);
 }
 
-void CrashNextPrevMismatched(uintptr_t addr,
-                             uintptr_t next,
-                             uintptr_t next_prev) {
-  PW_CRASH(
-      "A block (%p) is corrupted: its 'next' field (%p) has a 'prev' field "
-      "(%p) that does not match the block.",
-      cpp20::bit_cast<void*>(addr),
-      cpp20::bit_cast<void*>(next),
-      cpp20::bit_cast<void*>(next_prev));
+void CheckNextPrevMismatched(const void* block,
+                             const void* next,
+                             const void* next_prev,
+                             bool next_prev_matches) {
+  PW_CHECK(next_prev_matches,
+           "A block (%p) is corrupted: its 'next' field (%p) has a 'prev' "
+           "field (%p) that does not match the block.",
+           block,
+           next,
+           next_prev);
 }
 
-void CrashPrevMisaligned(uintptr_t addr, uintptr_t prev) {
-  PW_CRASH(
-      "A block (%p) is corrupted: it has a 'prev' field (%p) that is not "
-      "properly aligned.",
-      cpp20::bit_cast<void*>(addr),
-      cpp20::bit_cast<void*>(prev));
+void CheckPrevMisaligned(const void* block,
+                         const void* prev,
+                         bool prev_is_aligned) {
+  PW_CHECK(prev_is_aligned,
+           "A block (%p) is corrupted: it has a 'prev' field (%p) that is not "
+           "properly aligned.",
+           block,
+           prev);
 }
 
-void CrashPrevNextMismatched(uintptr_t addr,
-                             uintptr_t prev,
-                             uintptr_t prev_next) {
-  PW_CRASH(
-      "A block (%p) is corrupted: its 'prev' field (%p) has a 'next' field "
-      "(%p) that does not match the block.",
-      cpp20::bit_cast<void*>(addr),
-      cpp20::bit_cast<void*>(prev),
-      cpp20::bit_cast<void*>(prev_next));
+void CheckPrevNextMismatched(const void* block,
+                             const void* prev,
+                             const void* prev_next,
+                             bool prev_next_matches) {
+  PW_CHECK(prev_next_matches,
+           "A block (%p) is corrupted: its 'prev' field (%p) has a 'next' "
+           "field (%p) that does not match the block.",
+           block,
+           prev,
+           prev_next);
 }
 
 }  // namespace pw::allocator::internal

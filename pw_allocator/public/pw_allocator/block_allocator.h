@@ -148,13 +148,7 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   void Reset();
 
  protected:
-  using ReverseRange = typename BlockType::ReverseRange;
-
   constexpr explicit BlockAllocator() : Base(kCapabilities) {}
-
-  /// Returns a ``ReverseRange`` of blocks tracking the memory of this
-  /// allocator.
-  ReverseRange rblocks();
 
   /// Returns the block associated with a pointer.
   ///
@@ -255,15 +249,6 @@ template <typename BlockType>
 typename BlockAllocator<BlockType>::Range BlockAllocator<BlockType>::blocks()
     const {
   return Range(first_);
-}
-
-template <typename BlockType>
-typename BlockAllocator<BlockType>::ReverseRange
-BlockAllocator<BlockType>::rblocks() {
-  if constexpr (is_reverse_iterable_v<BlockType>) {
-    PW_ASSERT(last_ == nullptr || last_->Next() == nullptr);
-    return ReverseRange(last_);
-  }
 }
 
 template <typename BlockType>

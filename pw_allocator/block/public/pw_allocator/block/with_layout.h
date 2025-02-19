@@ -57,21 +57,26 @@ class BlockWithLayout : public internal::BaseWithLayout {
 
  public:
   /// @returns The memory layout that was requested using AllocFirst, AllocLast,
-  /// or Resize, or FAILED_PRECONDITION if the block is free.
-  Result<Layout> RequestedLayout() const;
+  /// or Resize.
+  ///
+  /// @pre The block must be in use.
+  constexpr Layout RequestedLayout() const;
 
  protected:
   /// @copydoc AllocatableBlock::AllocFirst
-  static BlockResult<Derived> DoAllocFirst(Derived*&& block, Layout layout);
+  static constexpr BlockResult<Derived> DoAllocFirst(Derived*&& block,
+                                                     Layout layout);
 
   /// @copydoc AllocatableBlock::AllocLast
-  static BlockResult<Derived> DoAllocLast(Derived*&& block, Layout layout);
+  static constexpr BlockResult<Derived> DoAllocLast(Derived*&& block,
+                                                    Layout layout);
 
   /// @copydoc AllocatableBlock::Resize
-  BlockResult<Derived> DoResize(size_t new_inner_size, bool shifted = false);
+  constexpr BlockResult<Derived> DoResize(size_t new_inner_size,
+                                          bool shifted = false);
 
   /// @copydoc AllocatableBlock::Free
-  static BlockResult<Derived> DoFree(Derived*&& block);
+  static constexpr BlockResult<Derived> DoFree(Derived*&& block);
 
  private:
   using BlockResultPrev = internal::GenericBlockResult::Prev;
@@ -89,24 +94,24 @@ struct has_layout : std::is_base_of<internal::BaseWithLayout, BlockType> {};
 
 /// Helper variable template for `has_layout<BlockType>::value`.
 template <typename BlockType>
-inline constexpr bool has_layout_v = has_layout<BlockType>::value;
+constexpr bool has_layout_v = has_layout<BlockType>::value;
 
 // Template method implementations.
 
 template <typename Derived>
-Result<Layout> BlockWithLayout<Derived>::RequestedLayout() const {
+constexpr Layout BlockWithLayout<Derived>::RequestedLayout() const {
   if constexpr (Hardening::kIncludesDebugChecks) {
     derived()->CheckInvariants();
   }
-  if (derived()->IsFree()) {
-    return Status::FailedPrecondition();
+  if constexpr (Hardening::kIncludesRobustChecks) {
+    PW_ASSERT(!derived()->IsFree());
   }
   return Layout(derived()->RequestedSize(), derived()->RequestedAlignment());
 }
 
 template <typename Derived>
-BlockResult<Derived> BlockWithLayout<Derived>::DoAllocFirst(Derived*&& block,
-                                                            Layout layout) {
+constexpr BlockResult<Derived> BlockWithLayout<Derived>::DoAllocFirst(
+    Derived*&& block, Layout layout) {
   auto result = AlignableBlock<Derived>::DoAllocFirst(std::move(block), layout);
   if (!result.ok()) {
     return result;
@@ -118,8 +123,8 @@ BlockResult<Derived> BlockWithLayout<Derived>::DoAllocFirst(Derived*&& block,
 }
 
 template <typename Derived>
-BlockResult<Derived> BlockWithLayout<Derived>::DoAllocLast(Derived*&& block,
-                                                           Layout layout) {
+constexpr BlockResult<Derived> BlockWithLayout<Derived>::DoAllocLast(
+    Derived*&& block, Layout layout) {
   auto result = AlignableBlock<Derived>::DoAllocLast(std::move(block), layout);
   if (!result.ok()) {
     return result;
@@ -131,8 +136,8 @@ BlockResult<Derived> BlockWithLayout<Derived>::DoAllocLast(Derived*&& block,
 }
 
 template <typename Derived>
-BlockResult<Derived> BlockWithLayout<Derived>::DoResize(size_t new_inner_size,
-                                                        bool shifted) {
+constexpr BlockResult<Derived> BlockWithLayout<Derived>::DoResize(
+    size_t new_inner_size, bool shifted) {
   size_t old_size = derived()->RequestedSize();
   auto result =
       derived()->AllocatableBlock<Derived>::DoResize(new_inner_size, shifted);
@@ -145,7 +150,8 @@ BlockResult<Derived> BlockWithLayout<Derived>::DoResize(size_t new_inner_size,
 }
 
 template <typename Derived>
-BlockResult<Derived> BlockWithLayout<Derived>::DoFree(Derived*&& block) {
+constexpr BlockResult<Derived> BlockWithLayout<Derived>::DoFree(
+    Derived*&& block) {
   auto result = AllocatableBlock<Derived>::DoFree(std::move(block));
   if (!result.ok()) {
     return result;

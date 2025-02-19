@@ -21,9 +21,10 @@ namespace pw::allocator::internal {
 // TODO: b/234875269 - Add stack tracing to locate which call to the heap
 // operation caused the corruption in the methods below.
 
-void CrashMisaligned(uintptr_t addr) {
-  PW_CRASH("A block (%p) is invalid: it is not properly aligned.",
-           cpp20::bit_cast<void*>(addr));
+void CheckMisaligned(const void* block, bool is_aligned) {
+  PW_CHECK(is_aligned,
+           "A block (%p) is invalid: it is not properly aligned.",
+           block);
 }
 
 }  // namespace pw::allocator::internal

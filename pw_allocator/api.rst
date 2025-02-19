@@ -306,18 +306,11 @@ BlockWithLayout
 .. doxygenclass:: pw::allocator::BlockWithLayout
    :members:
 
-.. _module-pw_allocator-api-forward-iterable-block:
+.. _module-pw_allocator-api-iterable-block:
 
-ForwardIterableBlock
+IterableBlock
 --------------------
-.. doxygenclass:: pw::allocator::ForwardIterableBlock
-   :members:
-
-.. _module-pw_allocator-api-reverse-iterable-block:
-
-ReverseIterableBlock
---------------------
-.. doxygenclass:: pw::allocator::ReverseIterableBlock
+.. doxygenclass:: pw::allocator::IterableBlock
    :members:
 
 .. _module-pw_allocator-api-poisonable-block:

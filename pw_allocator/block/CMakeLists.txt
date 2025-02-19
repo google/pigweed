@@ -61,6 +61,8 @@ pw_add_library(pw_allocator.block.basic STATIC
   PUBLIC_DEPS
     pw_allocator.hardening
     pw_bytes.alignment
+    pw_result
+    pw_status
     pw_third_party.fuchsia.stdcompat
   SOURCES
     basic.cc
@@ -77,8 +79,6 @@ pw_add_library(pw_allocator.block.contiguous STATIC
     pw_allocator.block.basic
     pw_allocator.hardening
     pw_bytes
-    pw_result
-    pw_status
     pw_third_party.fuchsia.stdcompat
   SOURCES
     contiguous.cc

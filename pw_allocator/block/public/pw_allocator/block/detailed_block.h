@@ -78,8 +78,7 @@ struct DetailedBlockParameters<OffsetType_, void> {
 template <typename Parameters>
 class DetailedBlockImpl
     : public BasicBlock<DetailedBlockImpl<Parameters>>,
-      public ForwardIterableBlock<DetailedBlockImpl<Parameters>>,
-      public ReverseIterableBlock<DetailedBlockImpl<Parameters>>,
+      public IterableBlock<DetailedBlockImpl<Parameters>>,
       public ContiguousBlock<DetailedBlockImpl<Parameters>>,
       public AllocatableBlock<DetailedBlockImpl<Parameters>>,
       public AlignableBlock<DetailedBlockImpl<Parameters>>,
@@ -92,12 +91,8 @@ class DetailedBlockImpl
  public:
   using OffsetType = typename Parameters::OffsetType;
 
-  using Range = typename ForwardIterableBlock<BlockType>::Range;
-  using Iterator = typename ForwardIterableBlock<BlockType>::Iterator;
-
-  using ReverseRange = typename ReverseIterableBlock<BlockType>::ReverseRange;
-  using ReverseIterator =
-      typename ReverseIterableBlock<BlockType>::ReverseIterator;
+  using Range = typename IterableBlock<BlockType>::Range;
+  using Iterator = typename IterableBlock<BlockType>::Iterator;
 
  private:
   constexpr explicit DetailedBlockImpl(size_t outer_size) : info_{} {
@@ -117,10 +112,10 @@ class DetailedBlockImpl
   static constexpr size_t ReservedWhenFree() {
     return Parameters::kLayoutWhenFree.size();
   }
-  size_t OuterSizeUnchecked() const;
+  constexpr size_t OuterSizeUnchecked() const;
 
   // `Basic` overrides.
-  bool DoCheckInvariants(bool strict) const;
+  constexpr bool DoCheckInvariants(bool strict) const;
 
   // `Contiguous` required methods.
   using Contiguous = ContiguousBlock<BlockType>;
@@ -135,29 +130,32 @@ class DetailedBlockImpl
   }
 
   constexpr bool IsLastUnchecked() const { return info_.last != 0; }
-  static BlockType* AsBlock(ByteSpan bytes);
-  void SetNext(size_t outer_size, BlockType* next);
-  size_t PrevOuterSizeUnchecked() const;
+  static constexpr BlockType* AsBlock(ByteSpan bytes);
+  constexpr void SetNext(size_t outer_size, BlockType* next);
+  constexpr size_t PrevOuterSizeUnchecked() const;
 
   // `Contiguous` overrides.
-  BlockType* DoSplitFirst(size_t new_inner_size);
-  BlockType* DoSplitLast(size_t new_inner_size);
-  void DoMergeNext();
+  constexpr BlockType* DoSplitFirst(size_t new_inner_size);
+  constexpr BlockType* DoSplitLast(size_t new_inner_size);
+  constexpr void DoMergeNext();
 
   // `Allocatable` required methods.
   using Allocatable = AllocatableBlock<BlockType>;
   friend Allocatable;
   constexpr bool IsFreeUnchecked() const { return info_.used == 0; }
-  void SetFree(bool is_free);
+  constexpr void SetFree(bool is_free);
 
   // `Alignable` overrides.
   using Alignable = AlignableBlock<BlockType>;
   friend Alignable;
-  StatusWithSize DoCanAlloc(Layout layout) const;
-  static BlockResult<BlockType> DoAllocFirst(BlockType*&& block, Layout layout);
-  static BlockResult<BlockType> DoAllocLast(BlockType*&& block, Layout layout);
-  BlockResult<BlockType> DoResize(size_t new_inner_size, bool shifted = false);
-  static BlockResult<BlockType> DoFree(BlockType*&& block);
+  constexpr StatusWithSize DoCanAlloc(Layout layout) const;
+  static constexpr BlockResult<BlockType> DoAllocFirst(BlockType*&& block,
+                                                       Layout layout);
+  static constexpr BlockResult<BlockType> DoAllocLast(BlockType*&& block,
+                                                      Layout layout);
+  constexpr BlockResult<BlockType> DoResize(size_t new_inner_size,
+                                            bool shifted = false);
+  static constexpr BlockResult<BlockType> DoFree(BlockType*&& block);
 
   // `WithLayout` required methods.
   using WithLayout = BlockWithLayout<BlockType>;
@@ -166,8 +164,8 @@ class DetailedBlockImpl
     return Basic::InnerSize() - padding_;
   }
   constexpr size_t RequestedAlignment() const { return info_.alignment; }
-  void SetRequestedSize(size_t size);
-  void SetRequestedAlignment(size_t alignment);
+  constexpr void SetRequestedSize(size_t size);
+  constexpr void SetRequestedAlignment(size_t alignment);
 
   // `Poisonable` required methods.
   using Poisonable = PoisonableBlock<BlockType>;
@@ -216,14 +214,15 @@ using DetailedBlock =
 // `Basic` methods.
 
 template <typename Parameters>
-size_t DetailedBlockImpl<Parameters>::OuterSizeUnchecked() const {
+constexpr size_t DetailedBlockImpl<Parameters>::OuterSizeUnchecked() const {
   size_t outer_size = next_;
   Hardening::Multiply(outer_size, Basic::kAlignment);
   return outer_size;
 }
 
 template <typename Parameters>
-bool DetailedBlockImpl<Parameters>::DoCheckInvariants(bool strict) const {
+constexpr bool DetailedBlockImpl<Parameters>::DoCheckInvariants(
+    bool strict) const {
   return Basic::DoCheckInvariants(strict) &&
          Contiguous::DoCheckInvariants(strict) &&
          Poisonable::DoCheckInvariants(strict);
@@ -232,14 +231,14 @@ bool DetailedBlockImpl<Parameters>::DoCheckInvariants(bool strict) const {
 // `Contiguous` methods.
 
 template <typename Parameters>
-DetailedBlockImpl<Parameters>* DetailedBlockImpl<Parameters>::AsBlock(
+constexpr DetailedBlockImpl<Parameters>* DetailedBlockImpl<Parameters>::AsBlock(
     ByteSpan bytes) {
   return ::new (bytes.data()) DetailedBlockImpl(bytes.size());
 }
 
 template <typename Parameters>
-void DetailedBlockImpl<Parameters>::SetNext(size_t outer_size,
-                                            BlockType* next) {
+constexpr void DetailedBlockImpl<Parameters>::SetNext(size_t outer_size,
+                                                      BlockType* next) {
   next_ = outer_size / Basic::kAlignment;
   if (next == nullptr) {
     info_.last = 1;
@@ -250,33 +249,33 @@ void DetailedBlockImpl<Parameters>::SetNext(size_t outer_size,
 }
 
 template <typename Parameters>
-size_t DetailedBlockImpl<Parameters>::PrevOuterSizeUnchecked() const {
+constexpr size_t DetailedBlockImpl<Parameters>::PrevOuterSizeUnchecked() const {
   size_t outer_size = prev_;
   Hardening::Multiply(outer_size, Basic::kAlignment);
   return outer_size;
 }
 
 template <typename Parameters>
-DetailedBlockImpl<Parameters>* DetailedBlockImpl<Parameters>::DoSplitFirst(
-    size_t new_inner_size) {
+constexpr DetailedBlockImpl<Parameters>*
+DetailedBlockImpl<Parameters>::DoSplitFirst(size_t new_inner_size) {
   return Poisonable::DoSplitFirst(new_inner_size);
 }
 
 template <typename Parameters>
-DetailedBlockImpl<Parameters>* DetailedBlockImpl<Parameters>::DoSplitLast(
-    size_t new_inner_size) {
+constexpr DetailedBlockImpl<Parameters>*
+DetailedBlockImpl<Parameters>::DoSplitLast(size_t new_inner_size) {
   return Poisonable::DoSplitLast(new_inner_size);
 }
 
 template <typename Parameters>
-void DetailedBlockImpl<Parameters>::DoMergeNext() {
+constexpr void DetailedBlockImpl<Parameters>::DoMergeNext() {
   Poisonable::DoMergeNext();
 }
 
 // `Alignable` methods.
 
 template <typename Parameters>
-void DetailedBlockImpl<Parameters>::SetFree(bool is_free) {
+constexpr void DetailedBlockImpl<Parameters>::SetFree(bool is_free) {
   info_.used = !is_free;
   Poisonable::SetFree(is_free);
 }
@@ -284,32 +283,33 @@ void DetailedBlockImpl<Parameters>::SetFree(bool is_free) {
 // `Alignable` methods.
 
 template <typename Parameters>
-StatusWithSize DetailedBlockImpl<Parameters>::DoCanAlloc(Layout layout) const {
+constexpr StatusWithSize DetailedBlockImpl<Parameters>::DoCanAlloc(
+    Layout layout) const {
   return Alignable::DoCanAlloc(layout);
 }
 
 template <typename Parameters>
-BlockResult<DetailedBlockImpl<Parameters>>
+constexpr BlockResult<DetailedBlockImpl<Parameters>>
 DetailedBlockImpl<Parameters>::DoAllocFirst(DetailedBlockImpl*&& block,
                                             Layout layout) {
   return WithLayout::DoAllocFirst(std::move(block), layout);
 }
 
 template <typename Parameters>
-BlockResult<DetailedBlockImpl<Parameters>>
+constexpr BlockResult<DetailedBlockImpl<Parameters>>
 DetailedBlockImpl<Parameters>::DoAllocLast(DetailedBlockImpl*&& block,
                                            Layout layout) {
   return WithLayout::DoAllocLast(std::move(block), layout);
 }
 
 template <typename Parameters>
-BlockResult<DetailedBlockImpl<Parameters>>
+constexpr BlockResult<DetailedBlockImpl<Parameters>>
 DetailedBlockImpl<Parameters>::DoResize(size_t new_inner_size, bool shifted) {
   return WithLayout::DoResize(new_inner_size, shifted);
 }
 
 template <typename Parameters>
-BlockResult<DetailedBlockImpl<Parameters>>
+constexpr BlockResult<DetailedBlockImpl<Parameters>>
 DetailedBlockImpl<Parameters>::DoFree(DetailedBlockImpl*&& block) {
   return WithLayout::DoFree(std::move(block));
 }
@@ -317,7 +317,7 @@ DetailedBlockImpl<Parameters>::DoFree(DetailedBlockImpl*&& block) {
 // `WithLayout` methods.
 
 template <typename Parameters>
-void DetailedBlockImpl<Parameters>::SetRequestedSize(size_t size) {
+constexpr void DetailedBlockImpl<Parameters>::SetRequestedSize(size_t size) {
   size_t inner_size = Basic::InnerSize();
   size_t padding = inner_size;
   Hardening::Decrement(padding, size);
@@ -328,7 +328,8 @@ void DetailedBlockImpl<Parameters>::SetRequestedSize(size_t size) {
 }
 
 template <typename Parameters>
-void DetailedBlockImpl<Parameters>::SetRequestedAlignment(size_t alignment) {
+constexpr void DetailedBlockImpl<Parameters>::SetRequestedAlignment(
+    size_t alignment) {
   if constexpr (Hardening::kIncludesDebugChecks) {
     PW_ASSERT((alignment & (alignment - 1)) == 0);
     PW_ASSERT(alignment < 0x2000);

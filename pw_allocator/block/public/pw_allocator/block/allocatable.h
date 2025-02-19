@@ -58,12 +58,12 @@ class AllocatableBlock : public internal::AllocatableBase {
 
  public:
   /// @returns whether this block is free or is in use.
-  bool IsFree() const;
+  constexpr bool IsFree() const;
 
   /// Indicates whether the block is in use is free.
   ///
   /// This method will eventually be deprecated. Prefer `IsFree`.
-  bool Used() const { return !IsFree(); }
+  constexpr bool Used() const { return !IsFree(); }
 
   /// Checks if a block could be split from the block.
   ///
@@ -87,7 +87,7 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///    leading block, and/or create a valid trailing block.
   ///
   /// @endrst
-  StatusWithSize CanAlloc(Layout layout) const;
+  constexpr StatusWithSize CanAlloc(Layout layout) const;
 
   /// Splits an aligned block from the start of the block, and marks it as used.
   ///
@@ -122,7 +122,8 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///    leading block, and/or create a valid trailing block.
   ///
   /// @endrst
-  static BlockResult<Derived> AllocFirst(Derived*&& block, Layout layout);
+  static constexpr BlockResult<Derived> AllocFirst(Derived*&& block,
+                                                   Layout layout);
 
   /// Splits an aligned block from the end of the block, and marks it as used.
   ///
@@ -153,7 +154,8 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///    leading block, and/or create a valid trailing block.
   ///
   /// @endrst
-  static BlockResult<Derived> AllocLast(Derived*&& block, Layout layout);
+  static constexpr BlockResult<Derived> AllocLast(Derived*&& block,
+                                                  Layout layout);
 
   /// Grows or shrinks the block.
   ///
@@ -181,7 +183,7 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///    leading block, and/or create a valid trailing block.
   ///
   /// @endrst
-  BlockResult<Derived> Resize(size_t new_inner_size);
+  constexpr BlockResult<Derived> Resize(size_t new_inner_size);
 
   /// Marks the block as free.
   ///
@@ -191,23 +193,26 @@ class AllocatableBlock : public internal::AllocatableBase {
   ///
   /// Note: Freeing may modify the adjacent blocks if they are free.
   /// Allocators that track free blocks must be prepared to handle this merge.
-  static BlockResult<Derived> Free(Derived*&& block);
+  static constexpr BlockResult<Derived> Free(Derived*&& block);
 
  protected:
   /// @copydoc CanAlloc
-  StatusWithSize DoCanAlloc(Layout layout) const;
+  constexpr StatusWithSize DoCanAlloc(Layout layout) const;
 
   /// @copydoc AllocFirst
-  static BlockResult<Derived> DoAllocFirst(Derived*&& block, Layout layout);
+  static constexpr BlockResult<Derived> DoAllocFirst(Derived*&& block,
+                                                     Layout layout);
 
   /// @copydoc AllocLast
-  static BlockResult<Derived> DoAllocLast(Derived*&& block, Layout layout);
+  static constexpr BlockResult<Derived> DoAllocLast(Derived*&& block,
+                                                    Layout layout);
 
   /// @copydoc Resize
-  BlockResult<Derived> DoResize(size_t new_inner_size, bool shifted = false);
+  constexpr BlockResult<Derived> DoResize(size_t new_inner_size,
+                                          bool shifted = false);
 
   /// @copydoc Free
-  static BlockResult<Derived> DoFree(Derived*&& block);
+  static constexpr BlockResult<Derived> DoFree(Derived*&& block);
 
  private:
   using BlockResultPrev = internal::GenericBlockResult::Prev;
@@ -235,12 +240,12 @@ struct is_allocatable : std::is_base_of<internal::AllocatableBase, BlockType> {
 
 /// Helper variable template for `is_allocatable<BlockType>::value`.
 template <typename BlockType>
-inline constexpr bool is_allocatable_v = is_allocatable<BlockType>::value;
+constexpr bool is_allocatable_v = is_allocatable<BlockType>::value;
 
 // Template method implementations.
 
 template <typename Derived>
-bool AllocatableBlock<Derived>::IsFree() const {
+constexpr bool AllocatableBlock<Derived>::IsFree() const {
   if constexpr (Hardening::kIncludesDebugChecks) {
     derived()->CheckInvariants();
   }
@@ -248,7 +253,8 @@ bool AllocatableBlock<Derived>::IsFree() const {
 }
 
 template <typename Derived>
-StatusWithSize AllocatableBlock<Derived>::CanAlloc(Layout layout) const {
+constexpr StatusWithSize AllocatableBlock<Derived>::CanAlloc(
+    Layout layout) const {
   if constexpr (Hardening::kIncludesDebugChecks) {
     derived()->CheckInvariants();
   }
@@ -256,24 +262,25 @@ StatusWithSize AllocatableBlock<Derived>::CanAlloc(Layout layout) const {
 }
 
 template <typename Derived>
-StatusWithSize AllocatableBlock<Derived>::DoCanAlloc(Layout layout) const {
+constexpr StatusWithSize AllocatableBlock<Derived>::DoCanAlloc(
+    Layout layout) const {
   if (!derived()->IsFree()) {
     return StatusWithSize::FailedPrecondition();
   }
   if (layout.size() == 0) {
     return StatusWithSize::InvalidArgument();
   }
-  size_t extra;
+  size_t extra = derived()->InnerSize();
   size_t new_inner_size = AlignUp(layout.size(), Derived::kAlignment);
-  if (PW_SUB_OVERFLOW(derived()->InnerSize(), new_inner_size, &extra)) {
+  if (PW_SUB_OVERFLOW(extra, new_inner_size, &extra)) {
     return StatusWithSize::ResourceExhausted();
   }
   return StatusWithSize(extra);
 }
 
 template <typename Derived>
-BlockResult<Derived> AllocatableBlock<Derived>::AllocFirst(Derived*&& block,
-                                                           Layout layout) {
+constexpr BlockResult<Derived> AllocatableBlock<Derived>::AllocFirst(
+    Derived*&& block, Layout layout) {
   if (block == nullptr || layout.size() == 0) {
     return BlockResult(block, Status::InvalidArgument());
   }
@@ -287,8 +294,8 @@ BlockResult<Derived> AllocatableBlock<Derived>::AllocFirst(Derived*&& block,
 }
 
 template <typename Derived>
-BlockResult<Derived> AllocatableBlock<Derived>::DoAllocFirst(Derived*&& block,
-                                                             Layout layout) {
+constexpr BlockResult<Derived> AllocatableBlock<Derived>::DoAllocFirst(
+    Derived*&& block, Layout layout) {
   size_t size = AlignUp(layout.size(), Derived::kAlignment);
   layout = Layout(size, layout.alignment());
   StatusWithSize can_alloc = block->DoCanAlloc(layout);
@@ -307,8 +314,8 @@ BlockResult<Derived> AllocatableBlock<Derived>::DoAllocFirst(Derived*&& block,
 }
 
 template <typename Derived>
-BlockResult<Derived> AllocatableBlock<Derived>::AllocLast(Derived*&& block,
-                                                          Layout layout) {
+constexpr BlockResult<Derived> AllocatableBlock<Derived>::AllocLast(
+    Derived*&& block, Layout layout) {
   if (block == nullptr || layout.size() == 0) {
     return BlockResult(block, Status::InvalidArgument());
   }
@@ -322,8 +329,8 @@ BlockResult<Derived> AllocatableBlock<Derived>::AllocLast(Derived*&& block,
 }
 
 template <typename Derived>
-BlockResult<Derived> AllocatableBlock<Derived>::DoAllocLast(Derived*&& block,
-                                                            Layout layout) {
+constexpr BlockResult<Derived> AllocatableBlock<Derived>::DoAllocLast(
+    Derived*&& block, Layout layout) {
   size_t size = AlignUp(layout.size(), Derived::kAlignment);
   layout = Layout(size, layout.alignment());
   StatusWithSize can_alloc = block->DoCanAlloc(layout);
@@ -349,7 +356,8 @@ BlockResult<Derived> AllocatableBlock<Derived>::DoAllocLast(Derived*&& block,
 }
 
 template <typename Derived>
-BlockResult<Derived> AllocatableBlock<Derived>::Resize(size_t new_inner_size) {
+constexpr BlockResult<Derived> AllocatableBlock<Derived>::Resize(
+    size_t new_inner_size) {
   if constexpr (Hardening::kIncludesRobustChecks) {
     derived()->CheckInvariants();
   }
@@ -360,8 +368,8 @@ BlockResult<Derived> AllocatableBlock<Derived>::Resize(size_t new_inner_size) {
 }
 
 template <typename Derived>
-BlockResult<Derived> AllocatableBlock<Derived>::DoResize(size_t new_inner_size,
-                                                         bool) {
+constexpr BlockResult<Derived> AllocatableBlock<Derived>::DoResize(
+    size_t new_inner_size, bool) {
   size_t old_inner_size = derived()->InnerSize();
   new_inner_size = AlignUp(new_inner_size, Derived::kAlignment);
   if (old_inner_size == new_inner_size) {
@@ -399,7 +407,8 @@ BlockResult<Derived> AllocatableBlock<Derived>::DoResize(size_t new_inner_size,
 }
 
 template <typename Derived>
-BlockResult<Derived> AllocatableBlock<Derived>::Free(Derived*&& block) {
+constexpr BlockResult<Derived> AllocatableBlock<Derived>::Free(
+    Derived*&& block) {
   if (block == nullptr) {
     return BlockResult(block, Status::InvalidArgument());
   }
@@ -410,7 +419,8 @@ BlockResult<Derived> AllocatableBlock<Derived>::Free(Derived*&& block) {
 }
 
 template <typename Derived>
-BlockResult<Derived> AllocatableBlock<Derived>::DoFree(Derived*&& block) {
+constexpr BlockResult<Derived> AllocatableBlock<Derived>::DoFree(
+    Derived*&& block) {
   block->SetFree(true);
   BlockResult result(block);
 

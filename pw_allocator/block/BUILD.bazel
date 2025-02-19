@@ -67,6 +67,8 @@ cc_library(
     deps = [
         "//pw_allocator:hardening",
         "//pw_bytes:alignment",
+        "//pw_result",
+        "//pw_status",
         "//third_party/fuchsia:stdcompat",
     ],
 )
@@ -81,8 +83,6 @@ cc_library(
         ":basic",
         "//pw_allocator:hardening",
         "//pw_bytes",
-        "//pw_result",
-        "//pw_status",
         "//third_party/fuchsia:stdcompat",
     ],
 )
