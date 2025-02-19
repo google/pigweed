@@ -40,6 +40,7 @@ fuchsia_driver_bind_bytecode(
     output = "bt-hci-virtual.bindbc",
     rules = "meta/bt-hci-virtual.bind",
     deps = [
+        "@fuchsia_sdk//bind/fuchsia.devicetree",
         "@fuchsia_sdk//bind/fuchsia.platform",
     ],
 )
@@ -105,6 +106,17 @@ fuchsia_package(
     components = [":component"],
     fuchsia_api_level = FUCHSIA_API_LEVEL,
     package_repository_name = "fuchsia.com",
+    platform = fuchsia_platforms.x64,
+    visibility = ["//visibility:public"],
+)
+
+fuchsia_package(
+    name = "pkg.x64.repo.disabled",
+    package_name = "virtual",
+    testonly = True,
+    components = [":component"],
+    disable_repository_name = "fuchsia.com",
+    fuchsia_api_level = FUCHSIA_API_LEVEL,
     platform = fuchsia_platforms.x64,
     visibility = ["//visibility:public"],
 )
