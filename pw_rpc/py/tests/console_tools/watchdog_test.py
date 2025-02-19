@@ -40,7 +40,7 @@ class TestWatchdog(unittest.TestCase):
     def test_expiration_callbacks(self) -> None:
         self._watchdog.start()
 
-        self._expiration.not_called()
+        self._expiration.assert_not_called()
 
         self._trigger_timeout()
 
