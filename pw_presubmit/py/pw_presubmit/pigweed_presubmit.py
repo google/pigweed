@@ -1574,7 +1574,6 @@ INCLUDE_CHECK_EXCEPTIONS = (
     "//pw_fuzzer:fuzztest",
     "//pw_fuzzer:fuzztest_stub",
     "//pw_interrupt_cortex_m:context",
-    "//pw_log_basic:headers",
     "//pw_log_fuchsia:pw_log_fuchsia",
     "//pw_log_null:headers",
     "//pw_log_tokenized:gcc_partially_tokenized",

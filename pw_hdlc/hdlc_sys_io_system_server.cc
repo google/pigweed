@@ -19,6 +19,7 @@
 #include "pw_hdlc/default_addresses.h"
 #include "pw_hdlc/encoded_size.h"
 #include "pw_hdlc/rpc_channel.h"
+#include "pw_log/log.h"
 #include "pw_log_basic/log_basic.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_status/try.h"

@@ -18,38 +18,50 @@ load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
 
+# This target is the backend for //pw_log.
 cc_library(
-    name = "headers",
+    name = "pw_log_basic",
     hdrs = [
-        "public/pw_log_basic/log_basic.h",
         "public_overrides/pw_log_backend/log_backend.h",
     ],
-    includes = [
-        "public",
-        "public_overrides",
+    strip_include_prefix = "public_overrides",
+    deps = [":extension"],
+)
+
+# This target directly exposes the log_basic.h header. Outside of this package,
+# only depend on it directly if you are using parts of the pw_log_basic
+# interface which are not in the pw_log interface, such as the
+# `pw::log_basic::SetOutput` function.
+cc_library(
+    name = "extension",
+    srcs = [
+        "log_basic.cc",
     ],
+    hdrs = [
+        "public/pw_log_basic/log_basic.h",
+    ],
+    strip_include_prefix = "public",
     deps = [
+        ":config",
+        "//pw_log:pw_log.facade",
         "//pw_preprocessor",
+        "//pw_string:builder",
+        "//pw_sys_io",
     ],
 )
 
 cc_library(
-    name = "pw_log_basic",
-    srcs = [
-        "log_basic.cc",
+    name = "config",
+    hdrs = [
         "pw_log_basic_private/config.h",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         ":config_override",
-        ":headers",
-        "//pw_log:pw_log.facade",
-        "//pw_string:builder",
-        "//pw_sys_io",
     ],
 )
 
@@ -70,9 +82,17 @@ cc_library(
         "log_string_handler.cc",
     ],
     deps = [
-        ":pw_log_basic",
+        ":extension",
         "//pw_log_string:handler.facade",
     ],
+)
+
+# This config setting is active if pw_log_basic was selected as the backend for pw_log.
+config_setting(
+    name = "is_active_backend",
+    flag_values = {
+        "//pw_log:backend": ":pw_log_basic",
+    },
 )
 
 sphinx_docs_library(
