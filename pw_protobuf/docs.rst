@@ -495,8 +495,9 @@ complex than encoding or using the message structure.
      uint32_t age = 0;
      char name[32] = "";
      Customer::Status status = Customer::Status::UNKNOWN;
+     pw::Status decode_status;
 
-     while ((status = decoder.Next()).ok()) {
+     while ((decode_status = decoder.Next()).ok()) {
        switch (decoder.Field().value()) {
          case Customer::Fields::kAge: {
            PW_TRY_ASSIGN(age, decoder.ReadAge());
@@ -513,7 +514,7 @@ complex than encoding or using the message structure.
        }
      }
 
-     return status.IsOutOfRange() ? OkStatus() : status;
+     return decode_status.IsOutOfRange() ? OkStatus() : decode_status;
    }
 
 .. warning:: ``Fields::SNAKE_CASE`` is deprecated. Use ``Fields::kCamelCase``.
@@ -691,8 +692,9 @@ through the fields and checking the field numbers, along with casting types.
      uint32_t age;
      char name[32];
      Customer::Status status;
+     pw::Status decode_status;
 
-     while ((status = decoder.Next()).ok()) {
+     while ((decode_status = decoder.Next()).ok()) {
        switch (decoder.FieldNumber().value()) {
          case static_cast<uint32_t>(Customer::Fields::kAge): {
            PW_TRY_ASSIGN(age, decoder.ReadInt32());
@@ -711,7 +713,7 @@ through the fields and checking the field numbers, along with casting types.
        }
      }
 
-     return status.IsOutOfRange() ? OkStatus() : status;
+     return decode_status.IsOutOfRange() ? OkStatus() : decode_status;
    }
 
 Find APIs
