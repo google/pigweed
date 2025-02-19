@@ -80,7 +80,8 @@ class TriggerSpec:
 class SensorAttributeSpec:
     """Typing for the SensorAttribute definition dictionary."""
 
-    channel: str
+    channel: str | None
+    trigger: str | None
     attribute: str
     units: str
 
