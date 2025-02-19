@@ -40,19 +40,28 @@ type DecorationsMap = Map<string, FileDecoration | undefined>;
 /** Event emitted when the file decorations have changed. */
 const didChangeFileDecorations = new EventEmitter<Uri[]>();
 
-const DECORATION: Record<FileStatus, FileDecoration | undefined> = {
+const makeDecoration = (
+  target?: string,
+): Record<FileStatus, FileDecoration | undefined> => ({
   ACTIVE: undefined,
   INACTIVE: {
     badge: 'X',
     color: new ThemeColor('disabledForeground'),
-    tooltip: 'This file is not built in the current target group',
+    tooltip: `This file is not built in the ${
+      target ? `"${target}"` : 'current'
+    } target group.`,
   },
   ORPHANED: {
     badge: '!!',
     color: new ThemeColor('errorForeground'),
-    tooltip: 'This file is not built by any defined target groups',
+    tooltip:
+      'This file is not built by any defined target groups, ' +
+      'so no code intelligence can be provided for it. ' +
+      'You can fix this by adding a target that includes this file to a ' +
+      'target group in the "refresh_compile_commands" invocation in the ' +
+      'top-level BUILD.bazel file.',
   },
-};
+});
 
 export class InactiveFileDecorationProvider
   extends Disposable
@@ -116,7 +125,7 @@ export class InactiveFileDecorationProvider
         uri,
       );
 
-      const decoration = DECORATION[status];
+      const decoration = makeDecoration(providedTarget)[status];
       newDecorations.set(uri.toString(), decoration);
     }
 
