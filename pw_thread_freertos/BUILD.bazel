@@ -27,16 +27,24 @@ cc_library(
     hdrs = [
         "id_public_overrides/pw_thread_backend/id_inline.h",
         "id_public_overrides/pw_thread_backend/id_native.h",
+    ],
+    strip_include_prefix = "id_public_overrides",
+    deps = [
+        ":id_private",
+    ],
+)
+
+cc_library(
+    name = "id_private",
+    hdrs = [
         "public/pw_thread_freertos/id_inline.h",
         "public/pw_thread_freertos/id_native.h",
     ],
-    includes = [
-        "id_public_overrides",
-        "public",
-    ],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_interrupt:context",
         "//pw_thread:id.facade",
@@ -46,20 +54,28 @@ cc_library(
 
 cc_library(
     name = "sleep",
+    hdrs = [
+        "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
+    ],
+    strip_include_prefix = "sleep_public_overrides",
+    deps = [
+        ":sleep_private",
+    ],
+)
+
+cc_library(
+    name = "sleep_private",
     srcs = [
         "sleep.cc",
     ],
     hdrs = [
         "public/pw_thread_freertos/sleep_inline.h",
-        "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
     ],
-    includes = [
-        "public",
-        "sleep_public_overrides",
-    ],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_assert",
         "//pw_chrono:system_clock",
@@ -75,21 +91,34 @@ cc_library(
         "thread.cc",
     ],
     hdrs = [
+        "thread_public_overrides/pw_thread_backend/thread_inline.h",
+        "thread_public_overrides/pw_thread_backend/thread_native.h",
+    ],
+    strip_include_prefix = "thread_public_overrides",
+    deps = [
+        ":freertos_tasktcb",
+        ":thread_private",
+        "//pw_assert:check",
+        "//pw_preprocessor",
+        "//pw_thread:thread.facade",
+        "@freertos",
+    ],
+)
+
+cc_library(
+    name = "thread_private",
+    hdrs = [
         "public/pw_thread_freertos/config.h",
         "public/pw_thread_freertos/context.h",
         "public/pw_thread_freertos/options.h",
         "public/pw_thread_freertos/thread_inline.h",
         "public/pw_thread_freertos/thread_native.h",
-        "thread_public_overrides/pw_thread_backend/thread_inline.h",
-        "thread_public_overrides/pw_thread_backend/thread_native.h",
     ],
-    includes = [
-        "public",
-        "thread_public_overrides",
-    ],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         ":config_override",
         ":id",
@@ -97,7 +126,6 @@ cc_library(
         "//pw_function",
         "//pw_string",
         "//pw_sync:binary_semaphore",
-        "//pw_thread:thread.facade",
         "//pw_toolchain:constexpr_tag",
     ],
 )
@@ -174,13 +202,21 @@ pw_cc_test(
 cc_library(
     name = "yield",
     hdrs = [
-        "public/pw_thread_freertos/yield_inline.h",
         "yield_public_overrides/pw_thread_backend/yield_inline.h",
     ],
-    includes = [
-        "public",
-        "yield_public_overrides",
+    strip_include_prefix = "yield_public_overrides",
+    deps = [
+        ":yield_private",
     ],
+)
+
+cc_library(
+    name = "yield_private",
+    hdrs = [
+        "public/pw_thread_freertos/yield_inline.h",
+    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
         "//pw_thread:thread",
         "//pw_thread:yield.facade",
@@ -266,6 +302,7 @@ cc_library(
     # me that's an "unrecognized command line option"; I think it may be a
     # clang-only flag.
     copts = ["-Wno-pedantic"],
+    strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],
@@ -285,13 +322,22 @@ cc_library(
     name = "freertos_tasktcb",
     hdrs = [
         "public/pw_thread_freertos/freertos_tsktcb.h",
-        ":generate_freertos_tsktcb",
     ],
-    includes = [
-        "public",
-        "thread_public_overrides",
+    strip_include_prefix = "public",
+    deps = [
+        ":freertos_tasktcb_private",
+        "@freertos",
     ],
-    deps = ["@freertos"],
+)
+
+cc_library(
+    name = "freertos_tasktcb_private",
+    hdrs = [":generate_freertos_tsktcb"],
+    strip_include_prefix = "thread_public_overrides",
+    visibility = ["//visibility:private"],
+    deps = [
+        "@freertos",
+    ],
 )
 
 run_binary(
@@ -310,16 +356,27 @@ run_binary(
 cc_library(
     name = "test_thread_context",
     hdrs = [
-        "public/pw_thread_freertos/test_thread_context_native.h",
         "test_thread_context_public_overrides/pw_thread_backend/test_thread_context_native.h",
     ],
-    includes = [
-        "public",
-        "test_thread_context_public_overrides",
-    ],
+    strip_include_prefix = "test_thread_context_public_overrides",
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],
+    deps = [
+        ":test_thread_context_private",
+    ],
+)
+
+cc_library(
+    name = "test_thread_context_private",
+    hdrs = [
+        "public/pw_thread_freertos/test_thread_context_native.h",
+    ],
+    strip_include_prefix = "public",
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
+    visibility = ["//visibility:private"],
     deps = [
         ":thread",
         "//pw_thread:test_thread_context.facade",
