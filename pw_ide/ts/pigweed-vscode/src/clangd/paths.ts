@@ -49,7 +49,7 @@ export class Target {
   }
 
   get path() {
-    return path.join(this._dir, this._name);
+    return path.join(this._dir, this._name, CDB_FILE_NAME);
   }
 }
 
