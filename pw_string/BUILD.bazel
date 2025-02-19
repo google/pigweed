@@ -210,6 +210,7 @@ sphinx_docs_library(
         "design.rst",
         "docs.rst",
         "guide.rst",
+        ":string_builder_size_report",
     ],
     prefix = "pw_string/",
     target_compatible_with = incompatible_with_mcu(),
@@ -218,8 +219,7 @@ sphinx_docs_library(
 pw_size_diff(
     name = "string_builder_size_report_both",
     base = "//pw_string/size_report:build_string_with_snprintf",
-    bloaty_config = "//targets/rp2040:bloaty_config",
-    label = "StringBuilder cost when completely replacing snprintf",
+    label = "Total StringBuilder cost when used alongside snprintf",
     # TODO: https://pwbug.dev/388905812 - Make size reports always build.
     tags = ["manual"],
     target = "//pw_string/size_report:build_string_with_string_builder",
@@ -228,7 +228,6 @@ pw_size_diff(
 pw_size_diff(
     name = "string_builder_size_report_replace",
     base = "//pw_string/size_report:build_string_with_snprintf_no_base_snprintf",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "StringBuilder cost when completely replacing snprintf",
     # TODO: https://pwbug.dev/388905812 - Make size reports always build.
     tags = ["manual"],
@@ -238,7 +237,6 @@ pw_size_diff(
 pw_size_diff(
     name = "string_builder_size_report_incremental",
     base = "//pw_string/size_report:build_string_incremental_with_snprintf",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "Incremental cost relative to snprintf for 10 strings",
     # TODO: https://pwbug.dev/388905812 - Make size reports always build.
     tags = ["manual"],

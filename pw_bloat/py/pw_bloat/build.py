@@ -18,7 +18,10 @@ Entry point for the Bazel and GN bloat report builds.
 import argparse
 import json
 from pathlib import Path
+import platform
+import subprocess
 import sys
+
 from typing import List
 
 import pw_cli.log
@@ -89,6 +92,15 @@ def _combine_fragments(output: Path, fragments: List[Path]) -> None:
     output.write_text(table)
 
 
+def _check_for_rosetta() -> bool:
+    try:
+        # Rosetta's internal name is OAH -- check if the OAH daemon is running.
+        subprocess.check_call(('pgrep', '-q', 'oahd'))
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def main() -> int:
     """Program entry point."""
 
@@ -119,6 +131,38 @@ def main() -> int:
     json_args = json.load(json_file)
     json_key_prefix = args.json_key_prefix
 
+    output_directory = json_args.get('out_dir', '.')
+    output_filename = json_args['target_name']
+
+    match sys.platform, platform.machine():
+        case ('linux' | 'darwin', 'x86_64'):
+            platform_supported = True
+        case ('darwin', 'arm64'):
+            platform_supported = _check_for_rosetta()
+        case _:
+            platform_supported = False
+
+    if not platform_supported:
+        out_file = Path(output_directory) / output_filename
+        error_message = (
+            'Size reports are not supported on this platform '
+            '(https://pwbug.dev/397444383)'
+        )
+        if args.generate_rst_fragment:
+            lines = [
+                '   * - Error',
+                f'     - {error_message}',
+                '     - N/A',
+            ]
+        else:
+            lines = [
+                '.. note::',
+                '',
+                f'   {error_message}',
+            ]
+        out_file.write_text('\n'.join(lines))
+        return 0
+
     targets = []
     for binary in json_args['binaries']:
         targets.append(
@@ -142,8 +186,8 @@ def main() -> int:
 
             single_target_report(
                 target,
-                json_args['target_name'],
-                json_args.get('out_dir', '.'),
+                output_filename,
+                output_directory,
                 extra_args,
                 json_key_prefix,
                 args.full_json_summary,
@@ -152,8 +196,8 @@ def main() -> int:
         else:
             diff_report(
                 targets,
-                json_args['target_name'],
-                json_args.get('out_dir', '.'),
+                output_filename,
+                output_directory,
                 default_data_sources,
                 extra_args,
                 fragment=args.generate_rst_fragment,

@@ -56,3 +56,18 @@ sphinx_docs_library(
     prefix = "pw_bloat/",
     target_compatible_with = incompatible_with_mcu(),
 )
+
+alias(
+    name = "pw_size_report_platform",
+    actual = "//targets/rp2040",
+)
+
+label_flag(
+    name = "pw_size_report_bloaty_config",
+    build_setting_default = ":no_bloaty_config",
+)
+
+filegroup(
+    name = "no_bloaty_config",
+    srcs = ["empty.bloaty"],
+)

@@ -29,6 +29,7 @@ RP2_SYSTEM_FLAGS = FREERTOS_FLAGS | {
     "@pigweed//pw_assert:assert_backend_impl": str(Label("//pw_assert_trap:impl")),
     "@pigweed//pw_assert:check_backend": str(Label("//pw_assert_trap:check_backend")),
     "@pigweed//pw_assert:check_backend_impl": str(Label("//pw_assert_trap:impl")),
+    "@pigweed//pw_bloat:pw_size_report_bloaty_config": str(Label("//targets/rp2040:bloaty_config")),
     "@pigweed//pw_build:default_module_config": str(Label("//targets/rp2040:pigweed_module_config")),
     "@pigweed//pw_cpu_exception:entry_backend": str(Label("//pw_cpu_exception_cortex_m:cpu_exception")),
     "@pigweed//pw_cpu_exception:entry_backend_impl": str(Label("//pw_cpu_exception_cortex_m:cpu_exception_impl")),

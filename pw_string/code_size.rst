@@ -28,9 +28,7 @@ have a smaller code size impact than a single ``snprintf`` call. Using
 :cpp:type:`pw::StringBuilder` error handling will also impact code size in a
 way that is comparable to ``snprintf``.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: string_builder_size_report
-.. include:: ../size_report_notice
+.. include:: string_builder_size_report
 
 Size comparison: snprintf versus pw::string::Format
 ---------------------------------------------------

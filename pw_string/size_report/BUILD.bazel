@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -21,7 +21,7 @@ package(
 
 licenses(["notice"])
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "single_write_snprintf",
     srcs = ["format_single.cc"],
     copts = ["-DUSE_FORMAT=0"],
@@ -31,7 +31,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "single_write_format",
     srcs = ["format_single.cc"],
     copts = ["-DUSE_FORMAT=1"],
@@ -41,7 +41,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "multiple_writes_snprintf",
     srcs = ["format_multiple.cc"],
     copts = ["-DUSE_FORMAT=0"],
@@ -51,7 +51,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "multiple_writes_format",
     srcs = ["format_multiple.cc"],
     copts = ["-DUSE_FORMAT=1"],
@@ -61,7 +61,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "many_writes_snprintf",
     srcs = ["format_many_without_error_handling.cc"],
     copts = ["-DUSE_FORMAT=0"],
@@ -71,7 +71,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "many_writes_format",
     srcs = ["format_many_without_error_handling.cc"],
     copts = ["-DUSE_FORMAT=1"],
@@ -81,7 +81,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "build_string_with_snprintf_no_base_snprintf",
     srcs = ["string_builder_size_report.cc"],
     copts = [
@@ -94,7 +94,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "build_string_with_string_builder_no_base_snprintf",
     srcs = ["string_builder_size_report.cc"],
     copts = [
@@ -107,7 +107,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "build_string_with_snprintf",
     srcs = ["string_builder_size_report.cc"],
     copts = [
@@ -122,7 +122,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "build_string_with_string_builder",
     srcs = ["string_builder_size_report.cc"],
     copts = [
@@ -135,7 +135,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "build_string_incremental_with_snprintf",
     srcs = ["string_builder_size_report_incremental.cc"],
     copts = ["-DUSE_STRING_BUILDER=0"],
@@ -145,7 +145,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "build_string_incremental_with_string_builder",
     srcs = ["string_builder_size_report_incremental.cc"],
     copts = ["-DUSE_STRING_BUILDER=1"],

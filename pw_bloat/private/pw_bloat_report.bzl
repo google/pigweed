@@ -13,10 +13,18 @@
 # the License.
 """Internal implementation of size report tables."""
 
+PwSizeBinaryInfo = provider(
+    "Metadata about a binary compiled for a size report",
+    fields = {
+        "binary": "[File] Path to the compiled binary",
+        "bloaty_config": "[File] Bloaty configuration file for the target's platform",
+    },
+)
+
 PwBloatInfo = provider(
     "Information about a pw_bloat size report",
     fields = {
-        "fragment": "Path to compiled RST fragment",
+        "fragment": "[File] Path to compiled RST fragment",
     },
 )
 
@@ -24,10 +32,15 @@ def _pw_bloat_report_impl(ctx):
     rst_output = ctx.actions.declare_file(ctx.label.name)
     script_input = ctx.actions.declare_file(ctx.label.name + "_binaries.json")
 
+    if ctx.file.bloaty_config != None:
+        bloaty_config = ctx.file.bloaty_config
+    else:
+        bloaty_config = ctx.attr.target[PwSizeBinaryInfo].bloaty_config
+
     json_metadata = {
         "binaries": [
             {
-                "bloaty_config": ctx.file.bloaty_config.path,
+                "bloaty_config": bloaty_config.path,
                 "label": ctx.attr.label,
                 "target": ctx.executable.target.path,
             },
@@ -38,7 +51,7 @@ def _pw_bloat_report_impl(ctx):
 
     action_inputs = [
         ctx.executable.target,
-        ctx.file.bloaty_config,
+        bloaty_config,
         script_input,
     ]
 
@@ -73,21 +86,19 @@ pw_bloat_report = rule(
         "base": attr.label(
             executable = True,
             cfg = "target",
-            allow_single_file = True,
             doc = "Optional base binary for a size diff report",
         ),
         "bloaty_config": attr.label(
             allow_single_file = True,
-            mandatory = True,
-            doc = "Bloaty configuration file to use for the size report",
+            doc = "Bloaty configuration file to use for the size report, overriding the platform default",
         ),
         "label": attr.string(doc = "Title for the size report"),
         "target": attr.label(
             mandatory = True,
             executable = True,
             cfg = "target",
-            allow_single_file = True,
             doc = "Binary on which to run the size report",
+            providers = [PwSizeBinaryInfo],
         ),
         "_bloat_script": attr.label(
             default = Label("//pw_bloat/py:bloat_build"),

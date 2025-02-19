@@ -67,7 +67,7 @@ platform(
         "//pw_build/constraints/arm:cortex-m0plus",
     ],
     flags = flags_from_dict({
-        "@pico-sdk//bazel/config:PICO_DEFAULT_LINKER_SCRIPT": ":rp2040_linker_script",
+        "@pico-sdk//bazel/config:PICO_DEFAULT_LINKER_SCRIPT": package_relative_label(":rp2040_linker_script"),
     }),
     parents = [":rp2_common"],
 )
@@ -82,7 +82,7 @@ platform(
         "//pw_build/constraints/arm:cortex-m33",
     ],
     flags = flags_from_dict({
-        "@pico-sdk//bazel/config:PICO_DEFAULT_LINKER_SCRIPT": ":rp2350_linker_script",
+        "@pico-sdk//bazel/config:PICO_DEFAULT_LINKER_SCRIPT": package_relative_label(":rp2350_linker_script"),
     }),
     parents = [":rp2_common"],
 )
@@ -90,7 +90,7 @@ platform(
 platform(
     name = "rp2040_pw_system_demo",
     flags = flags_from_dict({
-        "@bazel_tools//tools/cpp:link_extra_libs": ":pre_init",
+        "@bazel_tools//tools/cpp:link_extra_libs": package_relative_label(":pre_init"),
     }),
     parents = [":rp2040"],
 )
@@ -98,7 +98,7 @@ platform(
 platform(
     name = "rp2350_pw_system_demo",
     flags = flags_from_dict({
-        "@bazel_tools//tools/cpp:link_extra_libs": ":pre_init",
+        "@bazel_tools//tools/cpp:link_extra_libs": package_relative_label(":pre_init"),
     }),
     parents = [":rp2350"],
 )

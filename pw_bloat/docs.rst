@@ -163,11 +163,97 @@ Bloaty config can be provided using the ``-c / --custom-config`` option.
 
 .. _bloat-howto:
 
+------------------------------
+Defining size reports in Bazel
+------------------------------
+
+Size diff reports
+=================
+A size diff report compares the symbols present in two binaries and outputs an
+RST table snippet detailing any changes.
+
+To define a size diff, first define targets for the two binaries being compared
+using the ``pw_cc_size_binary`` rule. This rule accepts the same attributes a
+regular ``cc_binary``.
+
+.. code-block:: bazel
+
+   load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
+
+   pw_cc_size_binary(
+      name = "base_without_foo",
+      srcs = ["base_without_foo.cc"],
+      deps = [
+         "//pw_bloat:bloat_this_binary",
+      ],
+   )
+
+   pw_cc_size_binary(
+      name = "with_foo",
+      srcs = ["with_foo.cc"],
+      deps = [
+         "//pw_bloat:bloat_this_binary",
+         "//pw_foo",
+      ],
+   )
+
+Then, use the ``pw_size_diff`` rule to run the size report on these binaries.
+Each size diff report outputs a single row within an RST table. To collect the
+rows from one or more reports into a final RST output, list them within a
+``pw_size_table`` target.
+
+.. code-block:: bazel
+
+   load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+   load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
+
+   pw_size_diff(
+      name = "foo_size",
+      base = ":base_without_foo",
+      label = "Cost of linking in //pw_foo and performing several of its operations",
+      target = ":with_foo",
+   )
+
+   pw_size_table(
+      name = "foo_size_report",
+      reports = [
+         ":foo_size",
+      ],
+   )
+
+``pw_size_table`` produces an RST output, which can then be listed in the
+``srcs`` of a docs target, and included within one of its own RST files.
+
+.. code-block:: bazel
+
+   load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+
+   sphinx_docs_library(
+      name = "docs",
+      srcs = [
+         "docs.rst",
+         ":foo_size_report",
+      ],
+      prefix = "pw_foo/",
+      target_compatible_with = incompatible_with_mcu(),
+   )
+
+Then, within ``docs.rst``, simply include the generated file using the name of
+its Bazel target.
+
+.. code-block:: rst
+
+   ``pw_foo`` size report
+   ^^^^^^^^^^^^^^^^^^^^^^
+   The following table demonstrates the code size of pulling in ``pw_foo``.
+
+   .. include:: foo_size_report
+
 ---------------------------
 Defining size reports in GN
 ---------------------------
 
-Diff size reports
+Size diff reports
 =================
 Size reports can be defined using the GN template ``pw_size_diff``. The template
 requires at least two executable targets on which to perform a size diff. The
