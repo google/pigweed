@@ -1,7 +1,7 @@
 {
   "root_variable": "PW_ROOT",
   "cipd_package_files": [
-    "pw_env_setup/py/pw_env_setup/cipd_setup/bazel.json",
+    "pw_env_setup/py/pw_env_setup/cipd_setup/bazelisk.json",
     "pw_env_setup/py/pw_env_setup/cipd_setup/python.json"
   ],
   "virtualenv": {

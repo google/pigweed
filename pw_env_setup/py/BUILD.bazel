@@ -65,7 +65,6 @@ py_library(
         "pw_env_setup/cipd_setup/.cipd_version",
         "pw_env_setup/cipd_setup/.cipd_version.digests",
         "pw_env_setup/cipd_setup/arm.json",
-        "pw_env_setup/cipd_setup/bazel.json",
         "pw_env_setup/cipd_setup/bazelisk.json",
         "pw_env_setup/cipd_setup/buildifier.json",
         "pw_env_setup/cipd_setup/clang.json",
