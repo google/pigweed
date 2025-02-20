@@ -173,7 +173,7 @@ Result<RfcommChannel> RfcommChannel::Create(
     Config tx_config,
     uint8_t channel_number,
     Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
+    ChannelEventCallback&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/rx_config.cid,
                           /*remote_cid=*/tx_config.cid)) {
@@ -316,7 +316,7 @@ RfcommChannel::RfcommChannel(
     Config tx_config,
     uint8_t channel_number,
     Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn)
+    ChannelEventCallback&& event_fn)
     : L2capChannel(l2cap_channel_manager,
                    &rx_multibuf_allocator,
                    /*connection_handle=*/connection_handle,

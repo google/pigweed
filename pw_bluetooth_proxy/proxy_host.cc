@@ -335,7 +335,7 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
     L2capCoc::CocConfig rx_config,
     L2capCoc::CocConfig tx_config,
     Function<void(multibuf::MultiBuf&& payload)>&& receive_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
+    ChannelEventCallback&& event_fn) {
   Status status = acl_data_channel_.CreateAclConnection(connection_handle,
                                                         AclTransportType::kLe);
   if (status.IsResourceExhausted()) {
@@ -376,7 +376,7 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
     AclTransportType transport,
     OptionalPayloadReceiveCallback&& payload_from_controller_fn,
     OptionalPayloadReceiveCallback&& payload_from_host_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
+    ChannelEventCallback&& event_fn) {
   Status status =
       acl_data_channel_.CreateAclConnection(connection_handle, transport);
   if (status.IsResourceExhausted()) {
@@ -399,7 +399,7 @@ pw::Result<BasicL2capChannel> ProxyHost::AcquireBasicL2capChannel(
 pw::Result<GattNotifyChannel> ProxyHost::AcquireGattNotifyChannel(
     int16_t connection_handle,
     uint16_t attribute_handle,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
+    ChannelEventCallback&& event_fn) {
   Status status = acl_data_channel_.CreateAclConnection(connection_handle,
                                                         AclTransportType::kLe);
   if (status != OkStatus() && status != Status::AlreadyExists()) {
@@ -442,7 +442,7 @@ pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
     RfcommChannel::Config tx_config,
     uint8_t channel_number,
     Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
+    ChannelEventCallback&& event_fn) {
   Status status = acl_data_channel_.CreateAclConnection(
       connection_handle, AclTransportType::kBrEdr);
   if (status != OkStatus() && status != Status::AlreadyExists()) {

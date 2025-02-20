@@ -266,12 +266,11 @@ TEST_F(L2capCocWriteTest, FlowControlDueToAclCredits) {
       proxy,
       /*num_credits_to_reserve=*/kAclLeCredits));
 
-  pw::Function<void(L2capChannelEvent event)>&& kEventFn{
-      [&capture](L2capChannelEvent event) {
-        if (event == L2capChannelEvent::kWriteAvailable) {
-          capture.write_available_events++;
-        }
-      }};
+  ChannelEventCallback&& kEventFn{[&capture](L2capChannelEvent event) {
+    if (event == L2capChannelEvent::kWriteAvailable) {
+      capture.write_available_events++;
+    }
+  }};
   L2capCoc channel = BuildCoc(proxy,
                               CocParameters{.handle = kHandle,
                                             .tx_credits = kL2capTxCredits,
@@ -335,12 +334,11 @@ TEST_F(L2capCocWriteTest, UnavailableWhenSendQueueIsFullDueToL2capCocCredits) {
       proxy,
       /*num_credits_to_reserve=*/kAclLeCredits));
 
-  pw::Function<void(L2capChannelEvent event)>&& kEventFn{
-      [&capture](L2capChannelEvent event) {
-        if (event == L2capChannelEvent::kWriteAvailable) {
-          capture.write_available_events++;
-        }
-      }};
+  ChannelEventCallback&& kEventFn{[&capture](L2capChannelEvent event) {
+    if (event == L2capChannelEvent::kWriteAvailable) {
+      capture.write_available_events++;
+    }
+  }};
   L2capCoc channel = BuildCoc(proxy,
                               CocParameters{.tx_credits = kL2capTxCredits,
                                             .event_fn = std::move(kEventFn)});

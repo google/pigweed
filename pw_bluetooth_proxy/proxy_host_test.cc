@@ -1589,7 +1589,7 @@ TEST_F(DestructionTest, ChannelsStopOnProxyDestruction) {
 
   // This event function will be called by each of the channels' event
   // functions.
-  Function<void(L2capChannelEvent event)> shared_event_fn =
+  ChannelEventCallback shared_event_fn =
       [&events_received](L2capChannelEvent event) {
         ++events_received;
         EXPECT_EQ(event, L2capChannelEvent::kChannelClosedByOther);
@@ -1724,7 +1724,7 @@ TEST_F(ResetTest, ChannelsCloseOnReset) {
 
   // This event function will be called by each of the channels' event
   // functions.
-  Function<void(L2capChannelEvent event)> shared_event_fn =
+  ChannelEventCallback shared_event_fn =
       [&events_received](L2capChannelEvent event) {
         if (++events_received == 1) {
           EXPECT_EQ(event, L2capChannelEvent::kChannelClosedByOther);

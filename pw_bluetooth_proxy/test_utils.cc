@@ -506,7 +506,7 @@ RfcommChannel ProxyHostTest::BuildRfcomm(
     ProxyHost& proxy,
     RfcommParameters params,
     Function<void(multibuf::MultiBuf&& payload)>&& receive_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
+    ChannelEventCallback&& event_fn) {
   pw::Result<RfcommChannel> channel = proxy.AcquireRfcommChannel(
       sut_multibuf_allocator_,
       params.handle,
@@ -526,8 +526,7 @@ RfcommChannel ProxyHostTest::BuildRfcomm(
 }
 
 OneOfEachChannel ProxyHostTest::BuildOneOfEachChannel(
-    ProxyHost& proxy,
-    Function<void(L2capChannelEvent event)>& shared_event_fn) {
+    ProxyHost& proxy, ChannelEventCallback& shared_event_fn) {
   // Each channel its unique cids and its own rvalue lambda which calls the
   // shared_event_fn.
   return OneOfEachChannel(

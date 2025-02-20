@@ -83,7 +83,7 @@ pw::Result<L2capCoc> L2capCoc::Create(
     uint16_t connection_handle,
     CocConfig rx_config,
     CocConfig tx_config,
-    Function<void(L2capChannelEvent event)>&& event_fn,
+    ChannelEventCallback&& event_fn,
     Function<void(multibuf::MultiBuf&& payload)>&& receive_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/rx_config.cid,
@@ -305,7 +305,7 @@ L2capCoc::L2capCoc(pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
                    uint16_t connection_handle,
                    CocConfig rx_config,
                    CocConfig tx_config,
-                   Function<void(L2capChannelEvent event)>&& event_fn,
+                   ChannelEventCallback&& event_fn,
                    Function<void(multibuf::MultiBuf&& payload)>&& receive_fn)
     : L2capChannel(l2cap_channel_manager,
                    &rx_multibuf_allocator,

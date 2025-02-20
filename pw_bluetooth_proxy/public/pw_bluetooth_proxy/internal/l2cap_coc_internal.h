@@ -29,7 +29,7 @@ class L2capCocInternal final : public L2capCoc {
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
-      Function<void(L2capChannelEvent event)>&& event_fn,
+      ChannelEventCallback&& event_fn,
       Function<void(multibuf::MultiBuf&& payload)>&& receive_fn) {
     return L2capCoc::Create(rx_multibuf_allocator,
                             l2cap_channel_manager,

@@ -32,7 +32,7 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
     uint16_t remote_cid,
     OptionalPayloadReceiveCallback&& payload_from_controller_fn,
     OptionalPayloadReceiveCallback&& payload_from_host_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
+    ChannelEventCallback&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/local_cid,
                           /*remote_cid=*/remote_cid)) {
@@ -104,7 +104,7 @@ BasicL2capChannel::BasicL2capChannel(
     uint16_t remote_cid,
     OptionalPayloadReceiveCallback&& payload_from_controller_fn,
     OptionalPayloadReceiveCallback&& payload_from_host_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn)
+    ChannelEventCallback&& event_fn)
     : L2capChannel(
           l2cap_channel_manager,
           rx_multibuf_allocator,

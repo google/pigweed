@@ -80,7 +80,7 @@ pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
     L2capChannelManager& l2cap_channel_manager,
     uint16_t connection_handle,
     uint16_t attribute_handle,
-    Function<void(L2capChannelEvent event)>&& event_fn) {
+    ChannelEventCallback&& event_fn) {
   if (!AreValidParameters(/*connection_handle=*/connection_handle,
                           /*local_cid=*/kAttributeProtocolCID,
                           /*remote_cid=*/kAttributeProtocolCID)) {
@@ -96,11 +96,10 @@ pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
                            std::move(event_fn));
 }
 
-GattNotifyChannel::GattNotifyChannel(
-    L2capChannelManager& l2cap_channel_manager,
-    uint16_t connection_handle,
-    uint16_t attribute_handle,
-    Function<void(L2capChannelEvent event)>&& event_fn)
+GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
+                                     uint16_t connection_handle,
+                                     uint16_t attribute_handle,
+                                     ChannelEventCallback&& event_fn)
     : L2capChannel(/*l2cap_channel_manager=*/l2cap_channel_manager,
                    /*rx_multibuf_allocator*/ nullptr,
                    /*connection_handle=*/connection_handle,

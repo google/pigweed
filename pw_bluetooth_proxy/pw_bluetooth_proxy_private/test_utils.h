@@ -245,7 +245,7 @@ struct CocParameters {
   uint16_t tx_mps = 100;
   uint16_t tx_credits = 1;
   Function<void(multibuf::MultiBuf&& payload)>&& receive_fn = nullptr;
-  pw::Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
+  ChannelEventCallback&& event_fn = nullptr;
 };
 
 struct BasicL2capParameters {
@@ -255,13 +255,13 @@ struct BasicL2capParameters {
   AclTransportType transport = AclTransportType::kLe;
   OptionalPayloadReceiveCallback&& payload_from_controller_fn = nullptr;
   OptionalPayloadReceiveCallback&& payload_from_host_fn = nullptr;
-  Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
+  ChannelEventCallback&& event_fn = nullptr;
 };
 
 struct GattNotifyChannelParameters {
   uint16_t handle = 0xAB;
   uint16_t attribute_handle = 0xBC;
-  Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
+  ChannelEventCallback&& event_fn = nullptr;
 };
 
 struct RfcommConfigParameters {
@@ -282,7 +282,7 @@ struct RfcommParameters {
 // See BuildOneOfEachChannel
 struct OneOfEachChannelParameters {
   Function<void(multibuf::MultiBuf&& payload)>&& receive_fn = nullptr;
-  pw::Function<void(L2capChannelEvent event)>&& event_fn = nullptr;
+  ChannelEventCallback&& event_fn = nullptr;
 };
 
 // See BuildOneOfEachChannel
@@ -331,7 +331,7 @@ class ProxyHostTest : public testing::Test {
       ProxyHost& proxy,
       RfcommParameters params = {},
       Function<void(multibuf::MultiBuf&& payload)>&& receive_fn = nullptr,
-      Function<void(L2capChannelEvent event)>&& event_fn = nullptr);
+      ChannelEventCallback&& event_fn = nullptr);
 
   template <typename T, size_t N>
   pw::multibuf::MultiBuf MultiBufFromSpan(span<T, N> buf) {
@@ -349,9 +349,8 @@ class ProxyHostTest : public testing::Test {
   //
   // Note, shared_event_fn is a reference (rather than a rvalue) so it can
   // be shared across each channel.
-  OneOfEachChannel BuildOneOfEachChannel(
-      ProxyHost& proxy,
-      Function<void(L2capChannelEvent event)>& shared_event_fn);
+  OneOfEachChannel BuildOneOfEachChannel(ProxyHost& proxy,
+                                         ChannelEventCallback& shared_event_fn);
 
   template <typename T, size_t N>
   pw::multibuf::MultiBuf MultiBufFromArray(const std::array<T, N>& arr) {

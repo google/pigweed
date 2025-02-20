@@ -36,7 +36,7 @@ class GattNotifyChannel : public L2capChannel {
       L2capChannelManager& l2cap_channel_manager,
       uint16_t connection_handle,
       uint16_t attribute_handle,
-      Function<void(L2capChannelEvent event)>&& event_fn);
+      ChannelEventCallback&& event_fn);
 
   bool DoHandlePduFromController(pw::span<uint8_t>) override {
     // Forward all packets to host.
@@ -59,11 +59,10 @@ class GattNotifyChannel : public L2capChannel {
   // TODO: https://pwbug.dev/349602172 - Define ATT CID in pw_bluetooth.
   static constexpr uint16_t kAttributeProtocolCID = 0x0004;
 
-  explicit GattNotifyChannel(
-      L2capChannelManager& l2cap_channel_manager,
-      uint16_t connection_handle,
-      uint16_t attribute_handle,
-      Function<void(L2capChannelEvent event)>&& event_fn);
+  explicit GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
+                             uint16_t connection_handle,
+                             uint16_t attribute_handle,
+                             ChannelEventCallback&& event_fn);
 
   uint16_t attribute_handle_;
 };

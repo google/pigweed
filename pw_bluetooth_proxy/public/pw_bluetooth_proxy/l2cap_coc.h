@@ -96,7 +96,7 @@ class L2capCoc : public L2capChannel {
       uint16_t connection_handle,
       CocConfig rx_config,
       CocConfig tx_config,
-      Function<void(L2capChannelEvent event)>&& event_fn,
+      ChannelEventCallback&& event_fn,
       Function<void(multibuf::MultiBuf&& payload)>&& receive_fn);
 
   // `SendPayloadFromControllerToClient` with the information payload contained
@@ -118,7 +118,7 @@ class L2capCoc : public L2capChannel {
                     uint16_t connection_handle,
                     CocConfig rx_config,
                     CocConfig tx_config,
-                    Function<void(L2capChannelEvent event)>&& event_fn,
+                    ChannelEventCallback&& event_fn,
                     Function<void(multibuf::MultiBuf&& payload)>&& receive_fn);
 
   // Returns max size of L2CAP PDU payload supported by this channel.

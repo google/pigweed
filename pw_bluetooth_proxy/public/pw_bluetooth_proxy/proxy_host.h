@@ -160,7 +160,7 @@ class ProxyHost {
       L2capCoc::CocConfig rx_config,
       L2capCoc::CocConfig tx_config,
       Function<void(multibuf::MultiBuf&& payload)>&& receive_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn);
+      ChannelEventCallback&& event_fn);
 
   /// TODO: https://pwbug.dev/380076024 - Delete after downstream client uses
   /// this method on `L2capCoc`.
@@ -217,7 +217,7 @@ class ProxyHost {
       AclTransportType transport,
       OptionalPayloadReceiveCallback&& payload_from_controller_fn,
       OptionalPayloadReceiveCallback&& payload_from_host_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn);
+      ChannelEventCallback&& event_fn);
 
   /// Returns a GATT Notify channel channel that supports sending notifications
   /// to a particular connection handle and attribute.
@@ -242,7 +242,7 @@ class ProxyHost {
   pw::Result<GattNotifyChannel> AcquireGattNotifyChannel(
       int16_t connection_handle,
       uint16_t attribute_handle,
-      Function<void(L2capChannelEvent event)>&& event_fn);
+      ChannelEventCallback&& event_fn);
 
   /// Send a GATT Notify to the indicated connection.
   ///
@@ -338,7 +338,7 @@ class ProxyHost {
       RfcommChannel::Config tx_config,
       uint8_t channel_number,
       Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn);
+      ChannelEventCallback&& event_fn);
 
   /// Indicates whether the proxy has the capability of sending LE ACL packets.
   /// Note that this indicates intention, so it can be true even if the proxy

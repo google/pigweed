@@ -25,7 +25,7 @@ class GattNotifyChannelInternal final : public GattNotifyChannel {
       L2capChannelManager& l2cap_channel_manager,
       uint16_t connection_handle,
       uint16_t attribute_handle,
-      Function<void(L2capChannelEvent event)>&& event_fn) {
+      ChannelEventCallback&& event_fn) {
     return GattNotifyChannel::Create(l2cap_channel_manager,
                                      connection_handle,
                                      attribute_handle,

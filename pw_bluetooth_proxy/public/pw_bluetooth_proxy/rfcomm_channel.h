@@ -87,7 +87,7 @@ class RfcommChannel final : public L2capChannel {
       Config tx_config,
       uint8_t channel_number,
       Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn);
+      ChannelEventCallback&& event_fn);
 
   // Overridden here to do additional length checks.
   StatusWithMultiBuf Write(multibuf::MultiBuf&& payload) override;
@@ -106,7 +106,7 @@ class RfcommChannel final : public L2capChannel {
       Config tx_config,
       uint8_t channel_number,
       Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
-      Function<void(L2capChannelEvent event)>&& event_fn);
+      ChannelEventCallback&& event_fn);
 
   // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
   // transitioned to payload_queue_.

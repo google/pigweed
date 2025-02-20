@@ -305,7 +305,7 @@ L2capChannel::L2capChannel(
     uint16_t remote_cid,
     OptionalPayloadReceiveCallback&& payload_from_controller_fn,
     OptionalPayloadReceiveCallback&& payload_from_host_fn,
-    Function<void(L2capChannelEvent event)>&& event_fn)
+    ChannelEventCallback&& event_fn)
     : l2cap_channel_manager_(l2cap_channel_manager),
       state_(State::kRunning),
       connection_handle_(connection_handle),

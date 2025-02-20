@@ -46,6 +46,15 @@ enum class L2capChannelEvent {
   kWriteAvailable,
 };
 
+/// Event callback from channels.
+using ChannelEventCallback = pw::InlineFunction<
+    void(L2capChannelEvent event),
+    // Set size to at least two words so we can accept lambdas
+    // that have two pointers in their capture (e.g. callee and a
+    // pointer argument). If platform has defined an even larger
+    // PW_FUNCTION_INLINE_CALLABLE_SIZE use that.
+    std::max(sizeof(void*) * 2, PW_FUNCTION_INLINE_CALLABLE_SIZE)>;
+
 /// Result object with status and optional MultiBuf that is only present if the
 /// status is NOT `ok()`.
 // `pw::Result` can't be used because it only has a value for `ok()` status.
