@@ -76,79 +76,103 @@ fn dump_exception_frame(frame: *const FullExceptionFrame) {
     }
 }
 
-// The real hard fault handler.
-// TODO: figure out how to make a macro of this trampoline to share between handlers.
-#[no_mangle]
-#[naked]
-pub unsafe extern "C" fn HardFault() -> ! {
-    unsafe {
-        naked_asm!(
-            "
+macro_rules! exception_trampoline {
+    ($exception:ident, $handler:ident) => {
+        #[no_mangle]
+        #[naked]
+        pub unsafe extern "C" fn $exception() -> ! {
+            unsafe {
+                naked_asm!(concat!(
+                    "
             push    {{ r4 - r11, lr }}  // save the additional registers
             mov     r0, sp
             sub     sp, 4               // realign the stack to 8 byte boundary
-            bl      _HardFault
+            bl      ",
+                    stringify!($handler),
+                    "
             mov     sp, r0
             pop     {{ r4 - r11, pc }}
 
         "
-        )
-    }
+                ))
+            }
+        }
+    };
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn _HardFault(frame: *mut FullExceptionFrame) -> ! {
+pub unsafe extern "C" fn pw_kernel_hard_fault(frame: *mut FullExceptionFrame) -> ! {
     info!("HardFault");
     dump_exception_frame(frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
+exception_trampoline!(HardFault, pw_kernel_hard_fault);
 
 #[no_mangle]
-pub unsafe extern "C" fn DefaultHandler() -> ! {
+pub unsafe extern "C" fn pw_kernel_default(frame: *mut FullExceptionFrame) -> ! {
     info!("DefaultHandler");
+    dump_exception_frame(frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
+exception_trampoline!(DefaultHandler, pw_kernel_default);
 
 #[no_mangle]
-pub unsafe extern "C" fn NonMaskableInt() -> ! {
+pub unsafe extern "C" fn pw_kernel_non_maskable_int(frame: *mut FullExceptionFrame) -> ! {
     info!("NonMaskableInt");
+    dump_exception_frame(frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
+exception_trampoline!(NonMaskableInt, pw_kernel_non_maskable_int);
 
 #[no_mangle]
-pub unsafe extern "C" fn MemoryManagement() -> ! {
-    info!("MemoryManagement");
+pub unsafe extern "C" fn pw_kernel_memory_management(frame: *mut FullExceptionFrame) -> ! {
+    let mmfar = 0xE000ED34 as *const u32;
+    info!(
+        "MemoryManagement exception at {:08x}",
+        mmfar.read_volatile()
+    );
+    dump_exception_frame(frame);
+
     #[allow(clippy::empty_loop)]
     loop {}
 }
+exception_trampoline!(MemoryManagement, pw_kernel_memory_management);
 
 #[no_mangle]
-pub unsafe extern "C" fn BusFault() -> ! {
-    info!("BusFault");
+pub unsafe extern "C" fn pw_kernel_bus_fault(frame: *mut FullExceptionFrame) -> ! {
+    let bfar = 0xE000ED38 as *const u32;
+    info!("BusFault exception at {:08x}", bfar.read_volatile());
+    dump_exception_frame(frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
+exception_trampoline!(BusFault, pw_kernel_bus_fault);
 
 #[no_mangle]
-pub unsafe extern "C" fn UsageFault() -> ! {
+pub unsafe extern "C" fn pw_kernel_usage_fault(frame: *mut FullExceptionFrame) -> ! {
     info!("UsageFault");
+    dump_exception_frame(frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
+exception_trampoline!(UsageFault, pw_kernel_usage_fault);
 
 #[no_mangle]
-pub unsafe extern "C" fn SVCall() -> ! {
+pub unsafe extern "C" fn pw_kernel_sv_call(frame: *mut FullExceptionFrame) -> ! {
     info!("SVCall");
+    dump_exception_frame(frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
+exception_trampoline!(SVCall, pw_kernel_sv_call);
 
 #[no_mangle]
-pub unsafe extern "C" fn DebugMonitor() -> ! {
+pub unsafe extern "C" fn pw_kernel_debug_monitor(frame: *mut FullExceptionFrame) -> ! {
     info!("DebugMonitor");
+    dump_exception_frame(frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
