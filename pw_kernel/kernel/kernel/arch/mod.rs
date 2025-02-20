@@ -56,6 +56,14 @@ pub trait ArchInterface {
     fn init() {}
 
     // fill in more arch implementation functions from the kernel here:
-    // TODO: interrupt management
     // arch-specific backtracing
+    #[allow(dead_code)]
+    fn enable_interrupts();
+    #[allow(dead_code)]
+    fn disable_interrupts();
+    #[allow(dead_code)]
+    fn interrupts_enabled() -> bool;
+
+    #[allow(dead_code)]
+    fn idle() {}
 }

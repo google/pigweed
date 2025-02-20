@@ -41,6 +41,7 @@ pub struct FullExceptionFrame {
     pub psr: u32,
 }
 
+#[inline(never)]
 fn dump_exception_frame(frame: *const FullExceptionFrame) {
     unsafe {
         info!("Exception frame {:#08x}:", frame as usize);
@@ -148,13 +149,6 @@ pub unsafe extern "C" fn SVCall() -> ! {
 #[no_mangle]
 pub unsafe extern "C" fn DebugMonitor() -> ! {
     info!("DebugMonitor");
-    #[allow(clippy::empty_loop)]
-    loop {}
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn SysTick() -> ! {
-    info!("SysTick");
     #[allow(clippy::empty_loop)]
     loop {}
 }

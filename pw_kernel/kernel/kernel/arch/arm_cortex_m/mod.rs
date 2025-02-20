@@ -19,6 +19,7 @@ use super::ArchInterface;
 
 mod exceptions;
 mod threads;
+mod timer;
 
 pub struct Arch {}
 
@@ -34,7 +35,7 @@ impl ArchInterface for Arch {
         //  FPU initial state
         //  enable cache (if present)
         //  enable cycle counter?
-        let p = Peripherals::take().unwrap();
+        let mut p = Peripherals::take().unwrap();
         let cpuid = p.CPUID.base.read();
         info!("CPUID 0x{:x}", cpuid);
 
@@ -60,6 +61,8 @@ impl ArchInterface for Arch {
             // TODO: configure BASEPRI, FAULTMASK
         } // unsafe
 
+        timer::systick_early_init(&mut p.SYST);
+
         // TEST: Intentionally trigger a hard fault to make sure the VTOR is working.
         // use core::arch::asm;
         // unsafe {
@@ -76,17 +79,53 @@ impl ArchInterface for Arch {
 
     fn init() {
         info!("arch init");
+        timer::systick_init();
+    }
+
+    fn enable_interrupts() {
+        unsafe {
+            cortex_m::interrupt::enable();
+        }
+    }
+    fn disable_interrupts() {
+        cortex_m::interrupt::disable();
+    }
+    fn interrupts_enabled() -> bool {
+        // It's a complicated concept in cortex-m:
+        // If PRIMASK is inactive, then interrupts are 100% disabled otherwise
+        // if the current interrupt priority level is not zero (BASEPRI register) interrupts
+        // at that level are not allowed. For now we're treating nonzero as full disabled.
+        let primask = cortex_m::register::primask::read();
+        let basepri = cortex_m::register::basepri::read();
+        primask.is_active() && (basepri == 0)
+    }
+
+    fn idle() {
+        cortex_m::asm::wfi();
     }
 }
 
-// Utility function to read whether or not the cpu considers itself in a handler
-fn in_interrupt_handler() -> bool {
+fn ipsr_register_read() -> u32 {
     let ipsr: u32;
     // Note: cortex-m crate does not implement this register for some reason, so
     // read and mask manually
     unsafe {
         asm!("mrs {ipsr}, ipsr", ipsr = out(reg) ipsr);
     }
+    ipsr
+}
+
+// Utility function to read whether or not the cpu considers itself in a handler
+fn in_interrupt_handler() -> bool {
     // IPSR[8:0] is the current exception handler (or 0 if in thread mode)
-    ipsr & (0x1ff) != 0
+    ipsr_register_read() & (0x1ff) != 0
+}
+
+#[allow(dead_code)]
+fn dump_int_pri() {
+    info!(
+        "basepri {} primask {}",
+        cortex_m::register::basepri::read(),
+        cortex_m::register::primask::read().is_active()
+    );
 }

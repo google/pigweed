@@ -16,6 +16,7 @@ use core::mem::offset_of;
 
 use super::{Arch, ArchInterface};
 use crate::arch::ThreadState;
+use core::str;
 use list::*;
 use pw_log::info;
 use spinlock::{SpinLock, SpinLockGuard};
@@ -51,13 +52,24 @@ impl Stack {
 }
 
 // TODO: want to name this ThreadState, but collides with ArchThreadstate
-#[allow(dead_code)]
 #[derive(Copy, Clone, PartialEq)]
 enum State {
     New,
     Initial,
     Ready,
     Running,
+    Stopped,
+}
+
+// TODO: use From or Into trait (unclear how to do it with 'static str)
+fn to_string(s: State) -> &'static str {
+    match s {
+        State::New => "New",
+        State::Initial => "Initial",
+        State::Ready => "Ready",
+        State::Running => "Running",
+        State::Stopped => "Stopped",
+    }
 }
 
 pub struct Thread {
@@ -74,7 +86,18 @@ pub struct Thread {
     pub arch_thread_state: <Arch as ArchInterface>::ThreadState,
 }
 
-unsafe impl Sync for Thread {}
+pub struct ThreadListAdapter {}
+
+impl list::Adapter for ThreadListAdapter {
+    const LINK_OFFSET: usize = offset_of!(Thread, active_link);
+}
+
+pub struct GlobalThreadListAdapter {}
+
+impl list::Adapter for GlobalThreadListAdapter {
+    const LINK_OFFSET: usize = offset_of!(Thread, global_link);
+}
+
 impl Thread {
     // Create an empty, uninitialzed thread
     pub fn new() -> Self {
@@ -127,23 +150,13 @@ impl Thread {
     // Dump to the console useful information about this thread
     #[allow(dead_code)]
     pub fn dump(&self) {
-        info!("thread {:#x} state {}", self.id(), self.state as u32);
+        info!("thread {:#x} state {}", self.id(), to_string(self.state));
     }
 
     // A simple id for debugging purposes, currently the pointer to the thread structure itself
     #[allow(dead_code)]
     pub fn id(&self) -> usize {
         core::ptr::from_ref(self) as usize
-    }
-
-    // TODO: consider what to do with methods that implicitly only work on the current thread.
-    // Perhaps part of Scheduler::Current namespace or move the methods to a CurrentThread
-    // object that holds a ref to the current thread.
-    #[allow(dead_code)]
-    pub fn exit(&mut self) -> ! {
-        info!("thread {:#x} exiting", self.id());
-        #[allow(clippy::empty_loop)]
-        loop {}
     }
 }
 
@@ -166,20 +179,6 @@ pub fn bootstrap_scheduler(thread: &mut Thread) -> ! {
     <Arch as ArchInterface>::ThreadState::context_switch(ss, &mut temp_thread, thread);
 
     panic!("should not reach here");
-}
-
-#[allow(dead_code)]
-pub struct ThreadListAdapter {}
-
-impl list::Adapter for ThreadListAdapter {
-    const LINK_OFFSET: usize = offset_of!(Thread, active_link);
-}
-
-#[allow(dead_code)]
-pub struct GlobalThreadListAdapter {}
-
-impl list::Adapter for GlobalThreadListAdapter {
-    const LINK_OFFSET: usize = offset_of!(Thread, global_link);
 }
 
 // Global scheduler state (single processor for now)
@@ -211,12 +210,12 @@ impl SchedulerState {
     }
 
     // Get a mutable reference to the current thread, which is effectively TLS, since it cannot
-    // by definition go out of scope as long as we're using it. Uses the static lifetime to keep the
-    // system from trying to drop the reference.
+    // by definition go out of scope as long as we're using it. Uses the a different lifetime to
+    // keep the language from trying to drop the reference.
     // TODO: cleaner mechanism may be to wrap this with a CurrentThread struct that enforces
     // only using it on the current thread.
     #[allow(dead_code)]
-    pub fn get_current_thread_ref(&self) -> &'static mut Thread {
+    pub fn get_current_thread_ref<'a>(&self) -> &'a mut Thread {
         unsafe { &mut (*self.current_thread) }
     }
 
@@ -249,7 +248,7 @@ impl SchedulerState {
     fn insert_in_run_queue_head(&mut self, thread: &mut Thread) {
         assert!(thread.active_link.is_unlinked());
         assert!(thread.state == State::Ready);
-        info!("pushing thread {:#x} on run queue head", thread.id());
+        // info!("pushing thread {:#x} on run queue head", thread.id());
 
         unsafe {
             self.run_queue.push_front_unchecked(thread);
@@ -260,7 +259,7 @@ impl SchedulerState {
     fn insert_in_run_queue_tail(&mut self, thread: &mut Thread) {
         assert!(thread.active_link.is_unlinked());
         assert!(thread.state == State::Ready);
-        info!("pushing thread {:#x} on run queue tail", thread.id());
+        // info!("pushing thread {:#x} on run queue tail", thread.id());
 
         unsafe {
             self.run_queue.push_back_unchecked(thread);
@@ -273,7 +272,7 @@ fn reschedule(mut ss: SpinLockGuard<SchedulerState>) -> SpinLockGuard<SchedulerS
     let current_thread = ss.get_current_thread_ref();
     assert!(current_thread.state != State::Running);
 
-    info!("reschedule");
+    // info!("reschedule");
 
     // Pop a new thread off the head of the run queue. Note the current thread
     // might not be in the queue.
@@ -287,8 +286,7 @@ fn reschedule(mut ss: SpinLockGuard<SchedulerState>) -> SpinLockGuard<SchedulerS
                 new_thread = thread;
             }
             None => {
-                info!("empty run queue!");
-                panic!("");
+                todo!("empty run queue!");
             }
         }
     }
@@ -297,11 +295,11 @@ fn reschedule(mut ss: SpinLockGuard<SchedulerState>) -> SpinLockGuard<SchedulerS
 
     new_thread.state = State::Running;
     if current_thread.id() == new_thread.id() {
-        info!("decided to continue running thread {:#x}", new_thread.id());
+        // info!("decided to continue running thread {:#x}", new_thread.id());
         return ss;
     }
 
-    info!("switching to thread {:#x}", new_thread.id());
+    // info!("switching to thread {:#x}", new_thread.id());
 
     ss.set_current_thread(new_thread);
     <Arch as ArchInterface>::ThreadState::context_switch(ss, current_thread, new_thread)
@@ -312,11 +310,57 @@ pub fn yield_timeslice() {
     let mut ss = SCHEDULER_STATE.lock();
 
     let current_thread = ss.get_current_thread_ref();
-    info!("yielding thread {:#x}", current_thread.id());
+    // info!("yielding thread {:#x}", current_thread.id());
 
     // Insert the current thread in the run queue at the tail.
     current_thread.state = State::Ready;
     ss.insert_in_run_queue_tail(current_thread);
 
     reschedule(ss);
+}
+
+#[allow(dead_code)]
+pub fn preempt() {
+    let mut ss = SCHEDULER_STATE.lock();
+
+    let current_thread = ss.get_current_thread_ref();
+    // info!("preempt thread {:#x}", current_thread.id());
+
+    // Insert the current thread in the run queue at the tail.
+    current_thread.state = State::Ready;
+    ss.insert_in_run_queue_tail(current_thread);
+
+    reschedule(ss);
+}
+
+// Tick that is called from a timer handler. The scheduler will evaluate if the current thread
+// should be preempted or not
+#[allow(dead_code)]
+pub fn tick(_time_ms: u32) {
+    // info!("tick {} ms", _time_ms);
+
+    // TODO: dynamically deal with time slice for this thread and put it
+    // at the head or tail depending.
+
+    preempt();
+}
+
+// Exit the current thread.
+// For now, simply remove ourselves from the run queue. No cleanup of thread resources
+// is performed.
+#[allow(dead_code)]
+pub fn exit_thread() -> ! {
+    let ss = SCHEDULER_STATE.lock();
+
+    let current_thread = ss.get_current_thread_ref();
+
+    info!("thread {:#x} exiting", current_thread.id());
+
+    current_thread.state = State::Stopped;
+
+    reschedule(ss);
+
+    // Should not get here
+    #[allow(clippy::empty_loop)]
+    loop {}
 }

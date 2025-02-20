@@ -45,4 +45,13 @@ impl ArchInterface for Arch {
     fn init() {
         info!("HOST arch init");
     }
+    fn enable_interrupts() {
+        todo!("unimplemented");
+    }
+    fn disable_interrupts() {
+        todo!("");
+    }
+    fn interrupts_enabled() -> bool {
+        todo!("");
+    }
 }

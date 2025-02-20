@@ -28,6 +28,7 @@ rust_library(
         "kernel/arch/arm_cortex_m/features.rs",
         "kernel/arch/arm_cortex_m/mod.rs",
         "kernel/arch/arm_cortex_m/threads.rs",
+        "kernel/arch/arm_cortex_m/timer.rs",
         "kernel/arch/host/mod.rs",
         "kernel/arch/mod.rs",
         "kernel/lib.rs",

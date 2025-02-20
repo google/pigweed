@@ -91,6 +91,7 @@ impl Kernel {
 // completion of main in thread context
 fn bootstrap_thread_entry(_arg: usize) {
     info!("Welcome to the first thread, continuing bootstrap");
+    assert!(Arch::interrupts_enabled());
 
     Arch::init();
 
@@ -128,15 +129,18 @@ fn bootstrap_thread_entry(_arg: usize) {
     SCHEDULER_STATE.lock().dump_all_threads();
 
     info!("End of kernel test");
-    #[allow(clippy::empty_loop)]
-    loop {
-        scheduler::yield_timeslice();
-    }
+    assert!(Arch::interrupts_enabled());
+
+    info!("Exiting bootstrap thread");
 }
 
+#[allow(dead_code)]
 fn test_thread_entry(arg: usize) {
     info!("i'm a thread! arg {}", arg);
+    assert!(Arch::interrupts_enabled());
+    #[allow(clippy::empty_loop)]
     loop {
-        scheduler::yield_timeslice();
+        info!("thread {}", arg as u8 as char);
+        Arch::idle();
     }
 }

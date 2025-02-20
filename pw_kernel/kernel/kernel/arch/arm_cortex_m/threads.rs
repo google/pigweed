@@ -15,11 +15,12 @@
 
 use super::exceptions::FullExceptionFrame;
 use crate::arch::arm_cortex_m::*;
+use crate::scheduler;
 use crate::scheduler::{SchedulerState, Stack, Thread, SCHEDULER_STATE};
 use core::arch::{asm, naked_asm};
 use core::mem;
 use cortex_m::peripheral::SCB;
-use pw_log::info;
+// use pw_log::info;
 use spinlock::SpinLockGuard;
 
 // Remember the thread that the cpu is currently running off of.
@@ -54,11 +55,11 @@ impl super::super::ThreadState for ArchThreadState {
     ) -> SpinLockGuard<'a, SchedulerState> {
         assert!(core::ptr::from_mut(new_thread) == sched_state.get_current_thread());
 
-        info!(
-            "context switch from thread {:#08x} to thread {:#08x}",
-            old_thread.id(),
-            new_thread.id()
-        );
+        // info!(
+        //     "context switch from thread {:#08x} to thread {:#08x}",
+        //     old_thread.id(),
+        //     new_thread.id()
+        // );
 
         // Remember active_thread only if it wasn't already set and trigger
         // a pendsv only the first time
@@ -85,8 +86,7 @@ impl super::super::ThreadState for ArchThreadState {
             sched_state = SCHEDULER_STATE.lock();
         } else {
             // in interrupt context the pendsv should have already triggered it
-            // TODO: ASSERT pendsv is set
-            panic!("unimplemented path")
+            assert!(SCB::is_pendsv_pending());
         }
         sched_state
     }
@@ -118,19 +118,20 @@ impl super::super::ThreadState for ArchThreadState {
 }
 
 fn trampoline(initial_function: fn(usize), arg0: usize) {
-    info!(
-        "cortex-m trampoline: initial function {:#x} arg {:#x}",
-        initial_function as usize, arg0
-    );
+    // info!(
+    //     "cortex-m trampoline: initial function {:#x} arg {:#x}",
+    //     initial_function as usize, arg0
+    // );
+
+    assert!(Arch::interrupts_enabled());
 
     // Call the actual initial function of the thread.
     initial_function(arg0);
 
     // Get a pointer to the current thread and call exit.
     // Note: must let the scope of the lock guard close,
-    // since exit() does not return.
-    let ct = SCHEDULER_STATE.lock().get_current_thread_ref();
-    ct.exit();
+    // since exit_thread() does not return.
+    scheduler::exit_thread();
 
     // Does not reach.
 }
@@ -149,13 +150,14 @@ unsafe fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut FullExceptionFr
     asm!("clrex");
 
     assert!(in_interrupt_handler());
+    assert!(!Arch::interrupts_enabled());
 
     // Save the incoming frame to the current active thread's arch state, that will function
     // as the context switch frame for when it is returned to later. Clear active thread
     // afterwards.
     let at = get_active_thread();
-    info!("inside pendsv: currently active thread {:08x}", at as usize);
-    info!("old frame {:08x}: pc {:08x}", frame as usize, (*frame).pc);
+    // info!("inside pendsv: currently active thread {:08x}", at as usize);
+    // info!("old frame {:08x}: pc {:08x}", frame as usize, (*frame).pc);
 
     assert!(at != core::ptr::null_mut());
 
