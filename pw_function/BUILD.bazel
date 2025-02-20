@@ -43,7 +43,6 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":config",
-        "//pw_assert",
         "//pw_preprocessor",
         "//third_party/fuchsia:fit",
     ],
