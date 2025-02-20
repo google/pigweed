@@ -27,6 +27,8 @@ rust_library(
         "kernel/arch/arm_cortex_m/exceptions.rs",
         "kernel/arch/arm_cortex_m/features.rs",
         "kernel/arch/arm_cortex_m/mod.rs",
+        "kernel/arch/arm_cortex_m/regs/mod.rs",
+        "kernel/arch/arm_cortex_m/regs/mpu.rs",
         "kernel/arch/arm_cortex_m/threads.rs",
         "kernel/arch/arm_cortex_m/timer.rs",
         "kernel/arch/host/mod.rs",
@@ -40,10 +42,12 @@ rust_library(
         "@pigweed//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
         "//conditions:default": ["arch_host"],
     }),
+    proc_macro_deps = ["@rust_crates//:paste"],
     tags = ["kernel"],
     deps = [
         "//pw_kernel/kernel/sync:spinlock",
         "//pw_kernel/lib/list",
+        "//pw_kernel/lib/regs",
         "//pw_kernel/target",
         "@pigweed//pw_log/rust:pw_log",
     ] + select({

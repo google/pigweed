@@ -18,10 +18,17 @@ use pw_log::info;
 use super::ArchInterface;
 
 mod exceptions;
+mod regs;
 mod threads;
 mod timer;
 
 pub struct Arch {}
+
+// Demonstration of zero over head register abstraction.
+#[inline(never)]
+fn get_num_mpu_regions(mpu: &mut regs::Mpu) -> u8 {
+    mpu._type.read().dregion()
+}
 
 impl ArchInterface for Arch {
     type ThreadState = threads::ArchThreadState;
@@ -36,8 +43,10 @@ impl ArchInterface for Arch {
         //  enable cache (if present)
         //  enable cycle counter?
         let mut p = Peripherals::take().unwrap();
+        let mut r = regs::Regs::get();
         let cpuid = p.CPUID.base.read();
         info!("CPUID 0x{:x}", cpuid);
+        info!("Num MPU Regions: {}", get_num_mpu_regions(&mut r.mpu));
 
         unsafe {
             // Set the VTOR (assumes it exists)
