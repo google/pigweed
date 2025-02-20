@@ -34,7 +34,7 @@ def pwpb_proto_library(*, name, deps, oneof_callbacks = True, **kwargs):
             name = name,
             protos = deps,
             deps = [
-                Label("//pw_assert"),
+                Label("//pw_assert:assert"),
                 Label("//pw_containers:vector"),
                 Label("//pw_preprocessor"),
                 Label("//pw_protobuf"),
@@ -50,7 +50,7 @@ def pwpb_proto_library(*, name, deps, oneof_callbacks = True, **kwargs):
             name = name,
             protos = deps,
             deps = [
-                Label("//pw_assert"),
+                Label("//pw_assert:assert"),
                 Label("//pw_containers:vector"),
                 Label("//pw_preprocessor"),
                 Label("//pw_protobuf"),
