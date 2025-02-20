@@ -18,6 +18,7 @@
 #include <mutex>
 
 #include "pw_assert/check.h"
+#include "pw_bytes/alignment.h"
 
 namespace pw::multibuf {
 namespace internal {
@@ -55,6 +56,21 @@ void LinkedRegionTracker::DeallocateChunkClass(void* ptr) {
 
 }  // namespace internal
 
+// PW_CHECK doesn't like %, so...
+static bool IsAlignedSize(size_t num, size_t alignment) {
+  return num % alignment == 0;
+}
+
+SimpleAllocator::SimpleAllocator(ByteSpan data_area,
+                                 pw::allocator::Allocator& metadata_alloc,
+                                 size_t alignment)
+    : metadata_alloc_(metadata_alloc),
+      data_area_(data_area),
+      alignment_(alignment) {
+  PW_CHECK(IsAlignedAs(data_area_.data(), alignment));
+  PW_CHECK(IsAlignedSize(data_area_.size(), alignment));
+}
+
 pw::Result<MultiBuf> SimpleAllocator::DoAllocate(
     size_t min_size,
     size_t desired_size,
@@ -73,7 +89,13 @@ pw::Result<MultiBuf> SimpleAllocator::DoAllocate(
     lock_.unlock();
     return Status::ResourceExhausted();
   }
+  // All regions should be aligned, so `available` should be aligned.
+  PW_CHECK(IsAlignedSize(available, alignment_));
   size_t goal_size = std::min(desired_size, available);
+  if (goal_size == 0) {
+    lock_.unlock();
+    return MultiBuf();
+  }
   if (contiguity_requirement == kNeedsContiguous) {
     auto out = InternalAllocateContiguous(goal_size);
     lock_.unlock();
@@ -82,24 +104,36 @@ pw::Result<MultiBuf> SimpleAllocator::DoAllocate(
 
   MultiBuf buf;
   Status status;
-  size_t remaining_goal = goal_size;
+  const size_t unaligned = goal_size % alignment_;
+  const size_t extra_for_alignment = unaligned ? alignment_ - unaligned : 0;
+  // There's no danger of increasing the goal here to be more than `available`
+  // because `available` is guaranteed to be aligned.
+  size_t remaining_goal = goal_size + extra_for_alignment;
   ForEachFreeBlock(
-      [this, &buf, &status, remaining_goal](const FreeBlock& block)
-          PW_EXCLUSIVE_LOCKS_REQUIRED(lock_) mutable {
-            if (remaining_goal == 0) {
-              return ControlFlow::Break;
-            }
-            size_t chunk_size = std::min(block.span.size(), remaining_goal);
-            pw::Result<OwnedChunk> chunk = InsertRegion(
-                {block.iter, ByteSpan(block.span.data(), chunk_size)});
-            if (!chunk.ok()) {
-              status = chunk.status();
-              return ControlFlow::Break;
-            }
-            remaining_goal -= chunk->size();
-            buf.PushFrontChunk(std::move(*chunk));
-            return ControlFlow::Continue;
-          });
+      [this, &buf, &status, extra_for_alignment, remaining_goal](
+          const FreeBlock& block) PW_EXCLUSIVE_LOCKS_REQUIRED(lock_) mutable {
+        PW_CHECK(IsAlignedAs(block.span.data(), alignment_));
+        size_t chunk_size = std::min(block.span.size(), remaining_goal);
+        pw::Result<OwnedChunk> chunk =
+            InsertRegion({block.iter, ByteSpan(block.span.data(), chunk_size)});
+        if (!chunk.ok()) {
+          status = chunk.status();
+          return ControlFlow::Break;
+        }
+        remaining_goal -= chunk->size();
+        if (remaining_goal == 0) {
+          if (extra_for_alignment) {
+            // If we had to adjust the goal for alignment, trim the chunk
+            // now. This will keep the regions aligned in size even though
+            // the chunk isn't.
+            (*chunk)->Truncate(chunk->size() - extra_for_alignment);
+          }
+          buf.PushFrontChunk(std::move(*chunk));
+          return ControlFlow::Break;
+        }
+        buf.PushFrontChunk(std::move(*chunk));
+        return ControlFlow::Continue;
+      });
   // Lock must be released prior to possibly free'ing the `buf` in the case
   // where `!status.ok()`. This is necessary so that the destructing chunks
   // can free their regions.
@@ -112,16 +146,22 @@ pw::Result<MultiBuf> SimpleAllocator::DoAllocate(
 
 pw::Result<MultiBuf> SimpleAllocator::InternalAllocateContiguous(size_t size) {
   pw::Result<MultiBuf> buf = Status::ResourceExhausted();
-  ForEachFreeBlock([this, &buf, size](const FreeBlock& block)
-                       PW_EXCLUSIVE_LOCKS_REQUIRED(lock_) {
-                         if (block.span.size() >= size) {
-                           ByteSpan buf_span(block.span.data(), size);
-                           buf = InsertRegion({block.iter, buf_span})
-                                     .transform(MultiBuf::FromChunk);
-                           return ControlFlow::Break;
-                         }
-                         return ControlFlow::Continue;
-                       });
+  const size_t aligned_size = (size + alignment_ - 1) / alignment_ * alignment_;
+  ForEachFreeBlock(
+      [this, &buf, size, aligned_size](const FreeBlock& block)
+          PW_EXCLUSIVE_LOCKS_REQUIRED(lock_) {
+            if (block.span.size() >= aligned_size) {
+              PW_CHECK(IsAlignedAs(block.span.data(), alignment_));
+              ByteSpan buf_span(block.span.data(), aligned_size);
+              buf = InsertRegion({block.iter, buf_span})
+                        .transform([size](OwnedChunk&& owned_chunk) {
+                          owned_chunk->Truncate(size);
+                          return MultiBuf::FromChunk(std::move(owned_chunk));
+                        });
+              return ControlFlow::Break;
+            }
+            return ControlFlow::Continue;
+          });
   return buf;
 }
 

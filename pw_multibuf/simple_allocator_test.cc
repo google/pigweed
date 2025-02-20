@@ -26,6 +26,10 @@ using ::pw::allocator::test::AllocatorForTest;
 constexpr size_t kArbitraryBufferSize = 1024;
 constexpr size_t kArbitraryMetaSize = 1024;
 
+// For the tests that test alignment...
+constexpr size_t kAlignment = 8;
+static_assert(kArbitraryBufferSize % kAlignment == 0);
+
 TEST(SimpleAllocator, AllocateWholeDataAreaSizeSucceeds) {
   std::array<std::byte, kArbitraryBufferSize> data_area;
   AllocatorForTest<kArbitraryMetaSize> meta_alloc;
@@ -142,6 +146,124 @@ TEST(SimpleAllocator, FailedAllocationDoesNotHoldOntoChunks) {
   buf2 = std::nullopt;
   // Ensure that all chunk holds are released by attempting an allocation.
   EXPECT_TRUE(simple_allocator.Allocate(kArbitraryBufferSize).has_value());
+}
+
+TEST(SimpleAllocator, AllocatorReturnsAlignedChunks) {
+  alignas(kAlignment) std::array<std::byte, kArbitraryBufferSize> data_area;
+  AllocatorForTest<kArbitraryMetaSize> meta_alloc;
+  SimpleAllocator simple_allocator(data_area, meta_alloc, kAlignment);
+  std::optional<MultiBuf> buf1 = simple_allocator.Allocate(5);
+
+  {
+    EXPECT_TRUE(buf1);
+    EXPECT_EQ(buf1->Chunks().size(), 1u);
+    const auto first_chunk = buf1->Chunks().begin();
+    EXPECT_EQ(first_chunk->size(), 5u);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(first_chunk->data()) % kAlignment,
+              0u);
+  }
+
+  std::optional<MultiBuf> buf2 = simple_allocator.Allocate(3);
+
+  {
+    EXPECT_TRUE(buf2);
+    EXPECT_EQ(buf2->Chunks().size(), 1u);
+    const auto first_chunk = buf2->Chunks().begin();
+    EXPECT_EQ(first_chunk->size(), 3u);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(first_chunk->data()) % kAlignment,
+              0u);
+  }
+}
+
+TEST(SimpleAllocator, MultipleChunksAreAllAligned) {
+  alignas(kAlignment) std::array<std::byte, kArbitraryBufferSize> data_area;
+  // Use a large metadata arena so that we're not limited by its size.
+  AllocatorForTest<1024 * 1024> meta_alloc;
+  SimpleAllocator simple_allocator(data_area, meta_alloc, kAlignment);
+  std::vector<MultiBuf> bufs_to_keep, bufs_to_free;
+
+  // Keep allocating buffers until we fail, alternating betweens ones we want to
+  // keep and ones we will free.
+  for (;;) {
+    std::optional<MultiBuf> buf = simple_allocator.Allocate(5);
+    if (!buf) {
+      break;
+    }
+    bufs_to_keep.push_back(*std::move(buf));
+    buf = simple_allocator.Allocate(5);
+    if (!buf) {
+      break;
+    }
+    bufs_to_free.push_back(*std::move(buf));
+  }
+
+  const size_t free_bufs = bufs_to_free.size();
+  EXPECT_GT(free_bufs, 0u);
+
+  // Free bufs_to_free which should leave us with lots of fragmentation.
+  bufs_to_free.clear();
+
+  // We should be able to allocate `free_bufs * kAlignment` because every buffer
+  // we freed should have been rounded up to the alignment.
+  std::optional<MultiBuf> buf =
+      simple_allocator.Allocate(free_bufs * kAlignment);
+  EXPECT_TRUE(buf);
+
+  // Check that all chunks of the returned buffer are aligned.
+  size_t total_size = 0;
+  for (const Chunk& chunk : buf->Chunks()) {
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(chunk.data()) % kAlignment, 0u);
+    total_size += chunk.size();
+  }
+
+  EXPECT_EQ(total_size, free_bufs * kAlignment);
+}
+
+TEST(SimpleAllocator, ContiguousChunksAreAligned) {
+  alignas(kAlignment) std::array<std::byte, kArbitraryBufferSize> data_area;
+  AllocatorForTest<kArbitraryMetaSize> meta_alloc;
+  SimpleAllocator simple_allocator(data_area, meta_alloc, kAlignment);
+
+  // First create some fragmentation.
+  std::optional<MultiBuf> buf1 = simple_allocator.Allocate(5);
+  EXPECT_TRUE(buf1);
+  std::optional<MultiBuf> buf2 = simple_allocator.Allocate(5);
+  EXPECT_TRUE(buf1);
+  std::optional<MultiBuf> buf3 = simple_allocator.Allocate(5);
+  EXPECT_TRUE(buf1);
+  std::optional<MultiBuf> buf4 = simple_allocator.Allocate(5);
+  EXPECT_TRUE(buf1);
+  std::optional<MultiBuf> buf5 = simple_allocator.Allocate(5);
+  EXPECT_TRUE(buf1);
+  std::optional<MultiBuf> buf6 = simple_allocator.Allocate(5);
+  EXPECT_TRUE(buf1);
+
+  buf2.reset();
+  buf4.reset();
+  buf5.reset();
+
+  // Now allocate some contiguous buffers.
+  std::optional<MultiBuf> buf7 = simple_allocator.AllocateContiguous(11);
+
+  {
+    EXPECT_TRUE(buf7);
+    EXPECT_EQ(buf7->Chunks().size(), 1u);
+    const auto first_chunk = buf7->Chunks().begin();
+    EXPECT_EQ(first_chunk->size(), 11u);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(first_chunk->data()) % kAlignment,
+              0u);
+  }
+
+  std::optional<MultiBuf> buf8 = simple_allocator.AllocateContiguous(3);
+
+  {
+    EXPECT_TRUE(buf8);
+    EXPECT_EQ(buf8->Chunks().size(), 1u);
+    const auto first_chunk = buf8->Chunks().begin();
+    EXPECT_EQ(first_chunk->size(), 3u);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(first_chunk->data()) % kAlignment,
+              0u);
+  }
 }
 
 }  // namespace

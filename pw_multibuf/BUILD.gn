@@ -153,6 +153,7 @@ pw_source_set("simple_allocator") {
     "$dir_pw_allocator:allocator",
     "$dir_pw_containers:intrusive_list",
   ]
+  deps = [ "$dir_pw_bytes:alignment" ]
 }
 
 pw_test("simple_allocator_test") {

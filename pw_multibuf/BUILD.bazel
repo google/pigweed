@@ -171,6 +171,7 @@ cc_library(
         ":allocator",
         ":pw_multibuf",
         "//pw_allocator:allocator",
+        "//pw_bytes:alignment",
         "//pw_containers:intrusive_list",
     ],
 )

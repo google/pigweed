@@ -66,8 +66,15 @@ class SimpleAllocator : public MultiBufAllocator {
   ///  the in-use regions. This allocator *must* be thread-safe if the resulting
   ///  buffers may travel to another thread. ``SynchronizedAllocator`` can be
   ///  used to create a thread-safe allocator from a non-thread-safe allocator.
-  SimpleAllocator(ByteSpan data_area, pw::allocator::Allocator& metadata_alloc)
-      : metadata_alloc_(metadata_alloc), data_area_(data_area) {}
+  ///
+  /// @param[in] alignment         The alignment to use. All chunks allocated
+  ///  by this allocator will start aligned with the specified alignment. The
+  ///  alignment can change if the prefix Chunk methods are used. The supplied
+  ///  `data_area` *must* be aligned (both start and end) to the specified
+  ///  alignment. Defaults to 1.
+  SimpleAllocator(ByteSpan data_area,
+                  pw::allocator::Allocator& metadata_alloc,
+                  size_t alignment = 1);
 
  private:
   pw::Result<MultiBuf> DoAllocate(
@@ -158,6 +165,7 @@ class SimpleAllocator : public MultiBufAllocator {
   IntrusiveList<internal::LinkedRegionTracker> regions_ PW_GUARDED_BY(lock_);
   pw::allocator::Allocator& metadata_alloc_;
   const ByteSpan data_area_;
+  const size_t alignment_;
 
   friend class internal::LinkedRegionTracker;
 };
