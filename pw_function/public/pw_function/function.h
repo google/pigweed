@@ -20,8 +20,26 @@
 
 namespace pw {
 
+/// @defgroup pw_function
+/// @{
+
 /// `pw::Function` is a wrapper for an arbitrary callable object. It can be used
 /// by callback-based APIs to allow callers to provide any type of callable.
+///
+/// `pw::Function` is an alias shared across the Pigweed codebase. External
+/// users may configure `pw::Function` to meet their needs (e.g. more inline
+/// storage, support for dynamic memory). Having a shared alias ensures that
+/// function objects are interchangeable and keeps code efficient.
+///
+/// Because `pw::Function` is configurable, upstream Pigweed code must compile
+/// against `pw::Function`'s default, minimal configuration: no dynamic memory
+/// and a `PW_FUNCTION_INLINE_CALLABLE_SIZE` of one word.
+///
+/// Almost all upstream Pigweed code should use the default `pw::Function`. If a
+/// different function configuration is needed, use `pw::InlineFunction` or
+/// `pw::DynamicFunction`. This is not recommended, since this results in
+/// increased code size, and conversions between function types are not well
+/// optimized.
 ///
 /// Example:
 /// @code{.cpp}
@@ -48,25 +66,22 @@ namespace pw {
 ///   }
 ///
 /// @endcode
-///
-/// @tparam Allocator The Allocator used to dynamically allocate the callable,
-/// if it exceeds `inline_target_size` and dynamic allocation is enabled. Its
-/// `value_type` is irrelevant, since it must support rebinding.
-template <typename FunctionType,
-          std::size_t inline_target_size =
-              function_internal::config::kInlineCallableSize,
-          typename Allocator = PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE>
+template <typename FunctionType>
 using Function = fit::function_impl<
-    inline_target_size,
+    function_internal::config::kInlineCallableSize,
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
     FunctionType,
-    Allocator>;
+    PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE>;
 
 /// Version of `pw::Function` that exclusively uses inline storage.
 ///
 /// IMPORTANT: If `pw::Function` is configured to allow dynamic allocations then
 /// any attempt to convert `pw::InlineFunction` to `pw::Function` will ALWAYS
 /// allocate.
+///
+/// If dynamic allocation is disabled for `pw::Function`,
+/// `pw::Function<FunctionType>` is identical to
+/// `pw::InlineFunction<FunctionType>`.
 ///
 // TODO: b/252852651 - Remove warning above when conversion from
 // `fit::inline_function` to `fit::function` doesn't allocate anymore.
@@ -75,6 +90,25 @@ template <typename FunctionType,
               function_internal::config::kInlineCallableSize>
 using InlineFunction = fit::inline_function<FunctionType, inline_target_size>;
 
+/// Version of `pw::Function` that always supports dynamic allocation.
+///
+/// If dynamic allocation is enabled for `pw::Function`,
+/// `pw::Function<FunctionType>` is identical to
+/// `pw::DynamicFunction<FunctionType>`.
+///
+/// @tparam Allocator The Allocator used to dynamically allocate the callable,
+/// if it exceeds `inline_target_size`. Its `value_type` is irrelevant, since it
+/// must support rebinding.
+template <typename FunctionType,
+          std::size_t inline_target_size =
+              function_internal::config::kInlineCallableSize,
+          typename Allocator = PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE>
+using DynamicFunction = fit::function_impl<inline_target_size,
+                                           /*require_inline=*/false,
+                                           FunctionType,
+                                           Allocator>;
+
+/// `void`-returning `pw::Function` that takes no arguments.
 using Closure = Function<void()>;
 
 /// `pw::Callback` is identical to @cpp_type{pw::Function} except:
@@ -87,21 +121,28 @@ using Closure = Function<void()>;
 ///
 /// A `pw::Callback` in the "already called" state has the same state as a
 /// `pw::Callback` that has been assigned to `nullptr`.
-template <typename FunctionType,
-          std::size_t inline_target_size =
-              function_internal::config::kInlineCallableSize,
-          typename Allocator = PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE>
+template <typename FunctionType>
 using Callback = fit::callback_impl<
-    inline_target_size,
+    function_internal::config::kInlineCallableSize,
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
     FunctionType,
-    Allocator>;
+    PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE>;
 
 /// Version of `pw::Callback` that exclusively uses inline storage.
 template <typename FunctionType,
           std::size_t inline_target_size =
               function_internal::config::kInlineCallableSize>
 using InlineCallback = fit::inline_callback<FunctionType, inline_target_size>;
+
+/// Version of `pw::Callback` that supports dynamic allocation.
+template <typename FunctionType,
+          std::size_t inline_target_size =
+              function_internal::config::kInlineCallableSize,
+          typename Allocator = PW_FUNCTION_DEFAULT_ALLOCATOR_TYPE>
+using DynamicCallback = fit::callback_impl<inline_target_size,
+                                           /*require_inline=*/false,
+                                           FunctionType,
+                                           Allocator>;
 
 /// Returns a `Callable` which, when called, invokes `method` on `instance`
 /// using the arguments provided.
@@ -115,5 +156,7 @@ template <auto method, typename T>
 auto bind_member(T* instance) {
   return fit::bind_member<method, T>(instance);
 }
+
+/// @}
 
 }  // namespace pw

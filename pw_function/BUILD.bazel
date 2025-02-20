@@ -133,6 +133,7 @@ sphinx_docs_library(
     srcs = [
         "Kconfig",
         "docs.rst",
+        "function_test.cc",
     ],
     prefix = "pw_function/",
     target_compatible_with = incompatible_with_mcu(),

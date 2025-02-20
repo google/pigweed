@@ -19,6 +19,21 @@
 #include "pw_unit_test/framework.h"
 
 namespace pw {
+
+static_assert(
+    std::is_same_v<pw::Function<void()>,
+                   std::conditional_t<
+                       pw::function_internal::config::kEnableDynamicAllocation,
+                       pw::DynamicFunction<void()>,
+                       pw::InlineFunction<void()>>>);
+
+static_assert(
+    std::is_same_v<pw::Callback<void()>,
+                   std::conditional_t<
+                       pw::function_internal::config::kEnableDynamicAllocation,
+                       pw::DynamicCallback<void()>,
+                       pw::InlineCallback<void()>>>);
+
 namespace {
 
 #if PW_NC_TEST(CannotInstantiateWithNonFunction)
@@ -411,3 +426,51 @@ TEST(Function, Null_OperatorEquals_DifferentNamespace) {
 
 }  // namespace
 }  // namespace obscure_different_namespace_which_should_never_collide
+
+namespace {
+
+// DOCSTAG: [pw_function-inline-storage-example]
+// The lambda is moved into the function's internal storage.
+pw::Function<int(int, int)> subtract([](int a, int b) { return a - b; });
+
+// Functions can be also be constructed from custom classes that implement
+// operator().
+class Add {
+ public:
+  Add(int value) : value_(value) {}
+
+  int operator()(int number) { return value_ + number; }
+
+ private:
+  int value_;
+};
+
+// The object is moved into the function's internal storage.
+pw::Function<int(int)> add_100(Add(100));
+
+// This particular object is too large (8 ints of space) for pw::Function as
+// configured.
+class MyCallable {
+ public:
+  int operator()(int index) const { return data_[index]; }
+
+ private:
+  int data_[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+};
+
+#ifdef CODE_DOES_NOT_COMPILE
+// Compiler error: sizeof(MyCallable) exceeds function's inline storage size.
+pw::Function<int(int)> big_function((MyCallable()));
+#endif
+
+// This large callable could be stored in a custom-sized InlineFunction.
+pw::InlineFunction<int(int), sizeof(MyCallable)> big_function((MyCallable()));
+// DOCSTAG: [pw_function-inline-storage-example]
+
+TEST(Function, InlineStorageExample) {
+  EXPECT_EQ(subtract(3, 4), -1);
+  EXPECT_EQ(add_100(7), 107);
+  EXPECT_EQ(big_function(5), 6);
+}
+
+}  // namespace

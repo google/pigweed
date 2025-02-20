@@ -309,30 +309,21 @@ is a compile-time error unless dynamic allocation is enabled.
    callable objects, including function pointers, simple non-capturing and
    capturing lambdas, and lightweight custom classes.
 
-.. code-block:: c++
-
-   // The lambda is moved into the function's internal storage.
-   pw::Function<int(int, int)> subtract([](int a, int b) { return a - b; });
-
-   // Functions can be also be constructed from custom classes that implement
-   // operator(). This particular object is large (8 ints of space).
-   class MyCallable {
-    public:
-     int operator()(int value);
-
-    private:
-     int data_[8];
-   };
-
-   // Compiler error: sizeof(MyCallable) exceeds function's inline storage size.
-   pw::Function<int(int)> function((MyCallable()));
+.. literalinclude:: function_test.cc
+   :language: cpp
+   :start-after: [pw_function-inline-storage-example]
+   :end-before: [pw_function-inline-storage-example]
 
 .. _module-pw_function-dynamic-allocation:
 
 Dynamic allocation
 ==================
-You can configure the inline allocation size of ``pw::Function`` and whether it
-dynamically allocates, but it applies to all uses of ``pw::Function``.
+You can configure the inline allocation size of :cpp:class:`pw::Function` and
+whether it dynamically allocates, but it applies to all uses of
+``pw::Function``. If dynamic allocation is required, use
+:cpp:class:`pw::DynamicFunction`. Note that using multiple variations of
+:cpp:class:`pw::Function` increases code size, and conversions between them may
+not be efficient or possible in all cases.
 
 As mentioned in :ref:`module-pw_function-design`, ``pw::Function`` is an alias
 of Fuchsia's ``fit::function``. ``fit::function`` allows you to specify the
@@ -368,37 +359,18 @@ enabled but a compile-time check for the inlining is still required,
 
 Invoking ``pw::Function`` from a C-style API
 ============================================
-.. _trampoline layers: https://en.wikipedia.org/wiki/Trampoline_(computing)
-
-One use case for invoking ``pw_function`` from a C-style API is to automate the
-generation of `trampoline layers`_. See
-:cpp:type:`pw::function::GetFunctionPointer()`.
+When invoking a :cpp:class:`pw::Function` from a C-style API, a `trampoline
+layer <https://en.wikipedia.org/wiki/Trampoline_(computing)>`_ may be necessary.
+Use :cpp:type:`pw::function::GetFunctionPointer()` to generate a trampoline
+layer for a :cpp:class:`pw::Function` automatically.
 
 .. _module-pw_function-reference:
 
 -------------
 API reference
 -------------
-
-``pw::Function``
-================
-.. doxygentypedef:: pw::Function
-
-``pw::InlineFunction``
-======================
-.. doxygentypedef:: pw::InlineFunction
-
-``pw::Callback``
-================
-.. doxygentypedef:: pw::Callback
-
-``pw::InlineCallback``
-======================
-.. doxygentypedef:: pw::InlineCallback
-
-``pw::bind_member()``
-=====================
-.. doxygenfunction:: pw::bind_member
+.. doxygengroup:: pw_function
+   :content-only:
 
 ``pw::function::GetFunctionPointer()``
 ======================================

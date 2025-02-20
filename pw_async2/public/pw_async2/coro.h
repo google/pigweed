@@ -197,7 +197,8 @@ struct InOut final {
 //
 // `sizeof(void*)` is used as the size since only one pointer capture is
 // required in all cases.
-using PendFillReturnValueFn = pw::Function<Poll<>(Context&), sizeof(void*)>;
+using PendFillReturnValueFn =
+    pw::InlineFunction<Poll<>(Context&), sizeof(void*)>;
 
 // The `promise_type` of `Coro<T>`.
 //
