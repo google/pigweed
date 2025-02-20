@@ -394,7 +394,7 @@ def upload_pigweed_pypi_distribution(
     log_run([py_bin, '-m', 'build'], check=True, cwd=dist_output_path)
 
     dist_path = dist_output_path / 'dist'
-    upload_files = list(dist_path.glob('*'))
+    upload_files = sorted(dist_path.glob('*'))
     expected_files = [
         dist_path / f'pigweed-{version_number}.tar.gz',
         dist_path / f'pigweed-{version_number}-py3-none-any.whl',
