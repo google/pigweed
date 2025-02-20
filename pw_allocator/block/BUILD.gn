@@ -134,8 +134,13 @@ pw_source_set("detailed_block") {
 }
 
 pw_source_set("testing") {
-  public = [ "public/pw_allocator/block/testing.h" ]
+  public = [
+    "public/pw_allocator/block/testing.h",
+    "public/pw_allocator/block/unit_tests.h",
+  ]
   public_deps = [
+    ":allocatable",
+    ":result",
     "$dir_pw_allocator:testing",
     "$dir_pw_bytes:alignment",
     "$dir_pw_third_party/fuchsia:stdcompat",

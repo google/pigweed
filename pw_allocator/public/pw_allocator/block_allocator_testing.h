@@ -31,11 +31,6 @@
 
 namespace pw::allocator::test {
 
-static constexpr size_t kDefaultCapacity = 1024;
-
-template <typename BlockType, size_t kBufferSize = kDefaultCapacity>
-using BlockAlignedBuffer = AlignedBuffer<kBufferSize, BlockType::kAlignment>;
-
 /// Test fixture responsible for managing a memory region and an allocator that
 /// allocates block of memory from it.
 ///
@@ -103,8 +98,6 @@ class BlockAllocatorTestBase : public ::testing::Test {
   void AllocateLarge();
   void AllocateSmall();
   void AllocateTooLarge();
-  void AllocateLargeAlignment();
-  void AllocateAlignmentFailure();
   void DeallocateNull();
   void DeallocateShuffled();
   void ResizeNull();
@@ -140,7 +133,7 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
   // Test fixtures.
   BlockAllocatorTest(BlockAllocatorType& allocator) : allocator_(allocator) {}
 
-  ByteSpan GetBytes() override { return buffer_.as_span(); }
+  ByteSpan GetBytes() override { return util_.bytes(); }
 
   Allocator& GetGenericAllocator() override { return GetAllocator(); }
 
@@ -162,12 +155,14 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
   static void AutomaticallyInit(BlockAllocatorType& allocator);
   void ExplicitlyInit(BlockAllocatorType& allocator);
   void IterateOverBlocks();
+  void AllocateLargeAlignment();
+  void AllocateAlignmentFailure();
   void MeasureFragmentation();
   void PoisonPeriodically();
 
  private:
   BlockAllocatorType& allocator_;
-  BlockAlignedBuffer<BlockType, kCapacity> buffer_;
+  BlockTestUtilities<BlockType> util_;
 };
 
 // Test fixture template method implementations.
@@ -181,13 +176,16 @@ BlockAllocatorType& BlockAllocatorTest<BlockAllocatorType>::GetAllocator() {
 template <typename BlockAllocatorType>
 BlockAllocatorType& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
     std::initializer_list<Preallocation> preallocations) {
-  auto* first = Preallocate<BlockType>(GetBytes(), preallocations);
+  auto* first = util_.Preallocate(preallocations);
   size_t index = 0;
   for (BlockType* block = first; block != nullptr; block = block->Next()) {
     Store(index, block->IsFree() ? nullptr : block->UsableSpace());
     ++index;
   }
-  allocator_.Init(first);
+
+  BlockAllocator<BlockType>& allocator = allocator_;
+  allocator.Init(first);
+
   return allocator_;
 }
 
@@ -214,7 +212,6 @@ void BlockAllocatorTest<BlockAllocatorType>::TearDown() {
       allocator_.Deallocate(ptr);
     }
   }
-  allocator_.Reset();
 }
 
 // Unit tests template method implementations.
@@ -263,6 +260,49 @@ void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
 }
 
 template <typename BlockAllocatorType>
+void BlockAllocatorTest<BlockAllocatorType>::AllocateLargeAlignment() {
+  if constexpr (is_alignable_v<BlockType>) {
+    Allocator& allocator = GetGenericAllocator();
+
+    constexpr size_t kAlignment = 64;
+    Store(0, allocator.Allocate(Layout(kLargeInnerSize, kAlignment)));
+    ASSERT_NE(Fetch(0), nullptr);
+    EXPECT_TRUE(IsAlignedAs(Fetch(0), kAlignment));
+    UseMemory(Fetch(0), kLargeInnerSize);
+
+    Store(1, allocator.Allocate(Layout(kLargeInnerSize, kAlignment)));
+    ASSERT_NE(Fetch(1), nullptr);
+    EXPECT_TRUE(IsAlignedAs(Fetch(1), kAlignment));
+    UseMemory(Fetch(1), kLargeInnerSize);
+  } else {
+    static_assert(is_alignable_v<BlockType>);
+  }
+}
+
+template <typename BlockAllocatorType>
+void BlockAllocatorTest<BlockAllocatorType>::AllocateAlignmentFailure() {
+  if constexpr (is_alignable_v<BlockType>) {
+    // Allocate a two blocks with an unaligned region between them.
+    constexpr size_t kAlignment = 128;
+    ByteSpan bytes = GetBytes();
+    size_t outer_size =
+        GetAlignedOffsetAfter(bytes.data(), kAlignment, kSmallInnerSize) +
+        kAlignment;
+    Allocator& allocator = GetGenericAllocator({
+        {outer_size, Preallocation::kUsed},
+        {kLargeOuterSize, Preallocation::kFree},
+        {Preallocation::kSizeRemaining, Preallocation::kUsed},
+    });
+
+    // The allocator should be unable to create an aligned region..
+    Store(1, allocator.Allocate(Layout(kLargeInnerSize, kAlignment)));
+    EXPECT_EQ(Fetch(1), nullptr);
+  } else {
+    static_assert(is_alignable_v<BlockType>);
+  }
+}
+
+template <typename BlockAllocatorType>
 void BlockAllocatorTest<BlockAllocatorType>::MeasureFragmentation() {
   Allocator& allocator = GetGenericAllocator({
       {0x020, Preallocation::kFree},
@@ -293,41 +333,45 @@ void BlockAllocatorTest<BlockAllocatorType>::MeasureFragmentation() {
 
 template <typename BlockAllocatorType>
 void BlockAllocatorTest<BlockAllocatorType>::PoisonPeriodically() {
-  // Allocate 8 blocks to prevent every other from being merged when freed.
-  Allocator& allocator = GetGenericAllocator({
-      {kSmallOuterSize, Preallocation::kUsed},
-      {kSmallOuterSize, Preallocation::kUsed},
-      {kSmallOuterSize, Preallocation::kUsed},
-      {kSmallOuterSize, Preallocation::kUsed},
-      {kSmallOuterSize, Preallocation::kUsed},
-      {kSmallOuterSize, Preallocation::kUsed},
-      {kSmallOuterSize, Preallocation::kUsed},
-      {Preallocation::kSizeRemaining, Preallocation::kUsed},
-  });
-  ASSERT_LT(BlockType::kPoisonOffset, kSmallInnerSize);
+  if constexpr (is_poisonable_v<BlockType>) {
+    // Allocate 8 blocks to prevent every other from being merged when freed.
+    Allocator& allocator = GetGenericAllocator({
+        {kSmallOuterSize, Preallocation::kUsed},
+        {kSmallOuterSize, Preallocation::kUsed},
+        {kSmallOuterSize, Preallocation::kUsed},
+        {kSmallOuterSize, Preallocation::kUsed},
+        {kSmallOuterSize, Preallocation::kUsed},
+        {kSmallOuterSize, Preallocation::kUsed},
+        {kSmallOuterSize, Preallocation::kUsed},
+        {Preallocation::kSizeRemaining, Preallocation::kUsed},
+    });
+    ASSERT_LT(BlockType::kPoisonOffset, kSmallInnerSize);
 
-  // Since the test poisons blocks, it cannot iterate over the blocks without
-  // crashing. Use `Fetch` instead.
-  for (size_t i = 0; i < 8; ++i) {
-    if (i % 2 != 0) {
-      continue;
-    }
-    auto* bytes = cpp20::bit_cast<std::byte*>(Fetch(i));
-    auto* block = BlockType::FromUsableSpace(bytes);
-    allocator.Deallocate(bytes);
-    EXPECT_TRUE(block->IsFree());
-    EXPECT_TRUE(block->IsValid());
-    bytes[BlockType::kPoisonOffset] = ~bytes[BlockType::kPoisonOffset];
-
-    if (i == 6) {
-      // The test_config is defined to only detect corruption is on every fourth
-      // freed block. Fix up the block to avoid crashing on teardown.
-      EXPECT_FALSE(block->IsValid());
-      bytes[BlockType::kPoisonOffset] = ~bytes[BlockType::kPoisonOffset];
-    } else {
+    // Since the test poisons blocks, it cannot iterate over the blocks without
+    // crashing. Use `Fetch` instead.
+    for (size_t i = 0; i < 8; ++i) {
+      if (i % 2 != 0) {
+        continue;
+      }
+      auto* bytes = cpp20::bit_cast<std::byte*>(Fetch(i));
+      auto* block = BlockType::FromUsableSpace(bytes);
+      allocator.Deallocate(bytes);
+      EXPECT_TRUE(block->IsFree());
       EXPECT_TRUE(block->IsValid());
+      bytes[BlockType::kPoisonOffset] = ~bytes[BlockType::kPoisonOffset];
+
+      if (i == 6) {
+        // The test_config is defined to only detect corruption is on every
+        // fourth freed block. Fix up the block to avoid crashing on teardown.
+        EXPECT_FALSE(block->IsValid());
+        bytes[BlockType::kPoisonOffset] = ~bytes[BlockType::kPoisonOffset];
+      } else {
+        EXPECT_TRUE(block->IsValid());
+      }
+      Store(i, nullptr);
     }
-    Store(i, nullptr);
+  } else {
+    static_assert(is_poisonable_v<BlockType>);
   }
 }
 

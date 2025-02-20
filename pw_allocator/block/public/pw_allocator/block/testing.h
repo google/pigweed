@@ -17,15 +17,24 @@
 #include <limits>
 
 #include "lib/stdcompat/bit.h"
+#include "pw_allocator/block/allocatable.h"
 #include "pw_allocator/block/result.h"
+#include "pw_allocator/buffer.h"
 #include "pw_allocator/layout.h"
 #include "pw_assert/assert.h"
 #include "pw_bytes/alignment.h"
 #include "pw_bytes/span.h"
-#include "pw_result/result.h"
-#include "pw_status/status.h"
 
 namespace pw::allocator::test {
+
+// The size of the memory region used in tests.
+static constexpr size_t kDefaultCapacity = 1024;
+
+// The large alignment used in alignment-related tests.
+static constexpr size_t kAlign = 64;
+
+template <typename BlockType, size_t kBufferSize = kDefaultCapacity>
+using BlockAlignedBuffer = AlignedBuffer<kBufferSize, BlockType::kAlignment>;
 
 /// Utility function that returns the offset from an addres a given number of
 /// bytes `after` a given `ptr` to the next address that has a given
@@ -41,15 +50,7 @@ inline size_t GetAlignedOffsetAfter(const void* ptr,
                                     size_t alignment,
                                     size_t after) {
   auto addr = cpp20::bit_cast<uintptr_t>(ptr) + after;
-  return pw::AlignUp(addr, alignment) - addr;
-}
-
-/// Returns the minimum outer size for a block allocated from a layout with the
-/// given `min_inner_size`.
-template <typename BlockType>
-constexpr size_t GetOuterSize(size_t min_inner_size) {
-  return BlockType::kBlockOverhead +
-         pw::AlignUp(min_inner_size, BlockType::kAlignment);
+  return AlignUp(addr, alignment) - addr;
 }
 
 /// Represents an initial state for a memory block.
@@ -66,7 +67,7 @@ constexpr size_t GetOuterSize(size_t min_inner_size) {
 /// Example:
 /// @code{.cpp}
 ///   // BlockType = UnpoisonedBlock<uint32_t>, so kBlockOverhead == 8.
-///   BlockType* block1 = Preallocate({
+///   BlockType* block1 = util_.Preallocate({
 ///     {32,              kUsed},
 ///     {24,              kFree},
 ///     {48,              kUsed},
@@ -94,11 +95,77 @@ struct Preallocation {
 };
 
 template <typename BlockType>
-BlockType* Preallocate(ByteSpan bytes,
-                       std::initializer_list<Preallocation> preallocs) {
+class BlockTestUtilities {
+ public:
+  BlockTestUtilities() : buffer_(), bytes_(buffer_.as_span()) {}
+
+  ByteSpan bytes() const { return bytes_; }
+
+  // Some tests below need a block with a nonzero inner size to fit within
+  // alignment boundaries.
+  static_assert(kAlign > BlockType::kBlockOverhead + BlockType::kAlignment);
+
+  /// Adjusts the bytes of this object to refer to the subspan given by `offset`
+  /// and `length`.
+  constexpr void TrimBytes(size_t offset, size_t length);
+
+  /// Trims the starting bytes so that the span is block-aligned.
+  void TrimAligned(size_t extra = 0);
+
+  /// Returns the minimum outer size for a block allocated from a layout with
+  /// the given `min_inner_size`.
+  constexpr size_t GetOuterSize(size_t min_inner_size);
+
+  /// Creates a sequence of blocks as described by the given `preallocs` using
+  /// the given `bytes`.
+  ///
+  /// See `Preallocation` for more detail.
+  BlockType* Preallocate(std::initializer_list<Preallocation> preallocs);
+
+  /// Returns the smallest offset into the given memory region which can be
+  /// preceded by a valid block, and at which a block would have properly
+  /// aligned usable space of the given size.
+  ///
+  /// @pre ``bytes`` must not be smaller than the calculated offset plus
+  ///      ``layout.size()``.
+  size_t GetFirstAlignedOffset(Layout layout);
+
+ private:
+  AlignedBuffer<kDefaultCapacity, BlockType::kAlignment> buffer_;
+  ByteSpan bytes_;
+};
+
+//  Template method implementations.
+
+template <typename BlockType>
+constexpr void BlockTestUtilities<BlockType>::TrimBytes(size_t offset,
+                                                        size_t length) {
+  bytes_ = bytes_.subspan(offset, length);
+}
+
+template <typename BlockType>
+void BlockTestUtilities<BlockType>::TrimAligned(size_t extra) {
+  size_t offset =
+      GetAlignedOffsetAfter(bytes_.data(), kAlign, BlockType::kBlockOverhead) +
+      extra;
+  bytes_ = bytes_.subspan(offset);
+}
+
+template <typename BlockType>
+constexpr size_t BlockTestUtilities<BlockType>::GetOuterSize(
+    size_t min_inner_size) {
+  return BlockType::kBlockOverhead +
+         AlignUp(min_inner_size, BlockType::kAlignment);
+}
+
+template <typename BlockType>
+BlockType* BlockTestUtilities<BlockType>::Preallocate(
+    std::initializer_list<Preallocation> preallocs) {
+  static_assert(is_allocatable_v<BlockType>);
+
   // First, look if any blocks use kSizeRemaining, and calculate how large
   // that will be.
-  auto init_result = BlockType::Init(bytes);
+  auto init_result = BlockType::Init(bytes());
   PW_ASSERT(init_result.ok());
   BlockType* block = *init_result;
   size_t remaining_outer_size = block->OuterSize();
@@ -149,6 +216,15 @@ BlockType* Preallocate(ByteSpan bytes,
     next = free_result.block();
   }
   return next;
+}
+
+template <typename BlockType>
+size_t BlockTestUtilities<BlockType>::GetFirstAlignedOffset(Layout layout) {
+  size_t min_block = BlockType::kBlockOverhead + 1;
+  size_t offset = GetAlignedOffsetAfter(bytes().data(),
+                                        layout.alignment(),
+                                        min_block + BlockType::kBlockOverhead);
+  return min_block + offset;
 }
 
 }  // namespace pw::allocator::test

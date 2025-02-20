@@ -144,9 +144,14 @@ cc_library(
 cc_library(
     name = "testing",
     testonly = True,
-    hdrs = ["public/pw_allocator/block/testing.h"],
+    hdrs = [
+        "public/pw_allocator/block/testing.h",
+        "public/pw_allocator/block/unit_tests.h",
+    ],
     strip_include_prefix = "public",
     deps = [
+        ":allocatable",
+        ":result",
         "//pw_allocator:testing",
         "//pw_assert",
         "//pw_bytes:alignment",

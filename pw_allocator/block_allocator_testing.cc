@@ -84,39 +84,6 @@ void BlockAllocatorTestBase::AllocateTooLarge() {
   EXPECT_EQ(Fetch(0), nullptr);
 }
 
-void BlockAllocatorTestBase::AllocateLargeAlignment() {
-  Allocator& allocator = GetGenericAllocator();
-
-  constexpr size_t kAlignment = 64;
-  Store(0, allocator.Allocate(Layout(kLargeInnerSize, kAlignment)));
-  ASSERT_NE(Fetch(0), nullptr);
-  EXPECT_TRUE(IsAlignedAs(Fetch(0), kAlignment));
-  UseMemory(Fetch(0), kLargeInnerSize);
-
-  Store(1, allocator.Allocate(Layout(kLargeInnerSize, kAlignment)));
-  ASSERT_NE(Fetch(1), nullptr);
-  EXPECT_TRUE(IsAlignedAs(Fetch(1), kAlignment));
-  UseMemory(Fetch(1), kLargeInnerSize);
-}
-
-void BlockAllocatorTestBase::AllocateAlignmentFailure() {
-  // Allocate a two blocks with an unaligned region between them.
-  constexpr size_t kAlignment = 128;
-  ByteSpan bytes = GetBytes();
-  size_t outer_size =
-      GetAlignedOffsetAfter(bytes.data(), kAlignment, kSmallInnerSize) +
-      kAlignment;
-  Allocator& allocator = GetGenericAllocator({
-      {outer_size, Preallocation::kUsed},
-      {kLargeOuterSize, Preallocation::kFree},
-      {Preallocation::kSizeRemaining, Preallocation::kUsed},
-  });
-
-  // The allocator should be unable to create an aligned region..
-  Store(1, allocator.Allocate(Layout(kLargeInnerSize, kAlignment)));
-  EXPECT_EQ(Fetch(1), nullptr);
-}
-
 void BlockAllocatorTestBase::DeallocateNull() {
   Allocator& allocator = GetGenericAllocator();
   allocator.Deallocate(nullptr);
