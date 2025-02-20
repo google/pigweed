@@ -436,6 +436,14 @@ cipd_repository(
     tag = "version:pw_transfer_test_binaries_528098d588f307881af83f769207b8e6e1b57520-linux-amd64-cipd.cipd",
 )
 
+workspace_and_buildfile = use_repo_rule("//pw_build/bazel_internal:workspace_and_buildfile.bzl", "workspace_and_buildfile")
+
+workspace_and_buildfile(
+    name = "pw_build_external_runfile_resource",
+    build_file = "//pw_build:test_data/external_py_runfiles.BUILD",
+    dev_dependency = True,
+)
+
 # Doxygen setup
 # =============
 

@@ -32,21 +32,19 @@ def _generated_runfile_import_impl(ctx):
 
     generated_import = ctx.actions.declare_file(import_path + ".py")
 
-    if ctx.file.target:
-        f = ctx.file.target
+    if ctx.file.src:
+        f = ctx.file.src
+        runfiles = ctx.runfiles(ctx.files.src)
+        runfiles = runfiles.merge(ctx.attr.src[DefaultInfo].data_runfiles)
+        target_repo_name = ctx.attr.src.label.repo_name
+    elif ctx.executable.bin:
+        f = ctx.executable.bin
+        runfiles = ctx.runfiles()
+        runfiles = runfiles.merge(ctx.attr.bin[DefaultInfo].data_runfiles)
+        target_repo_name = ctx.attr.bin.label.repo_name
     else:
-        target_files = ctx.attr.target[DefaultInfo].files.to_list()
-        if len(target_files) != 1:
-            fail(
-                ctx.attr.target.label,
-                "provides multiple files, which is currently not supported by",
-                "pw_py_importable_runfile. Please ensure",
-                ctx.label,
-                "specifies a `target` with a single file",
-            )
-        f = ctx.attr.target[DefaultInfo].files.to_list()[0]
+        fail(ctx.label, "requires `src` to be set")
 
-    target_repo_name = ctx.attr.target.label.repo_name
     if not target_repo_name:
         target_repo_name = ctx.attr.module_name
 
@@ -56,6 +54,12 @@ def _generated_runfile_import_impl(ctx):
     current_repo_name = '"{}"'.format(current_repo_name) if current_repo_name else None
 
     runfile_path = f.short_path
+
+    # External runfiles are of the form `../+_repo_blah/`, which needs to be
+    # stripped. The `..` is unneeded, and the `+_repo_blah` is redundant.
+    # This is ugly, but rules_python has to do something similar.
+    if runfile_path.startswith(".."):
+        runfile_path = "/".join(runfile_path.split("/")[2:])
     runfile_path = "{}/{}".format(target_repo_name, runfile_path)
 
     ctx.actions.write(
@@ -67,9 +71,6 @@ def _generated_runfile_import_impl(ctx):
         ),
     )
 
-    runfiles = ctx.runfiles([ctx.file.target])
-    runfiles = runfiles.merge(ctx.attr.target[DefaultInfo].data_runfiles)
-
     return DefaultInfo(
         files = depset(direct = [generated_import]),
         runfiles = runfiles,
@@ -78,14 +79,15 @@ def _generated_runfile_import_impl(ctx):
 _generated_runfile_import = rule(
     implementation = _generated_runfile_import_impl,
     attrs = {
+        "bin": attr.label(executable = True, cfg = "target", allow_files = True),
         "import_dir": attr.string(mandatory = True),
         "import_location": attr.string(mandatory = True),
         "module_name": attr.string(),
-        "target": attr.label(mandatory = True, allow_single_file = True),
+        "src": attr.label(allow_single_file = True),
     },
 )
 
-def pw_py_importable_runfile(*, name, target = None, import_location = None, **kwargs):
+def pw_py_importable_runfile(*, name, src = None, executable = False, import_location = None, **kwargs):
     """An importable py_library that makes loading runfiles easier.
 
     When using Bazel runfiles from Python, ``Rlocation()`` takes two arguments:
@@ -107,7 +109,8 @@ def pw_py_importable_runfile(*, name, target = None, import_location = None, **k
         # In @bloaty//:BUILD.bazel, or wherever is convenient:
         pw_py_importable_runfile(
             name = "bloaty_runfiles",
-            target = "//:bin/bloaty",
+            src = "//:bin/bloaty",
+            executable = True,
             import_location = "bloaty.bloaty_binary",
         )
 
@@ -137,7 +140,8 @@ def pw_py_importable_runfile(*, name, target = None, import_location = None, **k
         name: name of the target.
         import_location: The final Python import path of the generated module.
             By default, this is ``path.to.package.label_name``.
-        target: The file this library exposes as runfiles.
+        src: The file this library exposes as runfiles.
+        executable: Whether or not the source file is executable.
         **kwargs: Common attributes to forward both underlying targets.
     """
     _generated_py_file = "{}._generated_py_import".format(name)
@@ -149,7 +153,8 @@ def pw_py_importable_runfile(*, name, target = None, import_location = None, **k
         ))
     _generated_runfile_import(
         name = _generated_py_file,
-        target = target,
+        src = src if not executable else None,
+        bin = src if executable else None,
         import_location = import_location,
         import_dir = _virtual_import_dir,
         module_name = native.module_name(),
@@ -159,7 +164,7 @@ def pw_py_importable_runfile(*, name, target = None, import_location = None, **k
         name = name,
         imports = [_virtual_import_dir],
         srcs = [":" + _generated_py_file],
-        data = [target],
+        data = [src],
         deps = [
             Label("//pw_build/py:python_runfiles"),
             Label("@rules_python//python/runfiles"),

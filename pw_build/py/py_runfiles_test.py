@@ -17,6 +17,7 @@ import unittest
 
 import pw_build.test_runfile
 import pw_build.another_test_runfile
+import pw_build_external_runfile_resource.black
 from python.runfiles import runfiles  # type: ignore
 
 
@@ -52,7 +53,7 @@ class TestRunfiles(unittest.TestCase):
         self.assertTrue(runfile.is_file())
         self.assertEqual(runfile.read_text(), "OK\n")
 
-    def test_compare_remapped__runfiles(self):
+    def test_compare_remapped_runfiles(self):
         runfile = Path(
             self.r.Rlocation(*pw_build.another_test_runfile.RLOCATION)
         )
@@ -67,6 +68,14 @@ class TestRunfiles(unittest.TestCase):
             runfile.read_text(),
             rules_python_runfile.read_text(),
         )
+
+    def test_external_py_resource(self):
+        runfile = Path(
+            self.r.Rlocation(
+                *pw_build_external_runfile_resource.black.RLOCATION
+            )
+        )
+        self.assertTrue(runfile.is_file())
 
 
 if __name__ == '__main__':

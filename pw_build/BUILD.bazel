@@ -277,15 +277,15 @@ pw_copy_and_patch_file_test(
 pw_py_importable_runfile(
     name = "test_runfile",
     testonly = True,
-    target = "test_data/test_runfile.txt",
+    src = "test_data/test_runfile.txt",
     visibility = ["//pw_build:__subpackages__"],
 )
 
 pw_py_importable_runfile(
     name = "test_runfile_remapped",
     testonly = True,
+    src = "test_data/test_runfile.txt",
     import_location = "pw_build.another_test_runfile",
-    target = "test_data/test_runfile.txt",
     visibility = ["//pw_build:__subpackages__"],
 )
 

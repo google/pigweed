@@ -230,6 +230,7 @@ pw_py_test(
     deps = [
         "//pw_build:test_runfile",
         "//pw_build:test_runfile_remapped",
+        "@pw_build_external_runfile_resource//:black",
     ],
 )
 

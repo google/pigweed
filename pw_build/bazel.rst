@@ -415,7 +415,8 @@ For example:
    # In @bloaty//:BUILD.bazel, or wherever is convenient:
    pw_py_importable_runfile(
        name = "bloaty_runfiles",
-       target = "//:bin/bloaty",
+       src = "//:bin/bloaty",
+       executable = True,
        import_location = "bloaty.bloaty_binary",
        visibility = ["//visibility:public"],
    )
@@ -455,6 +456,8 @@ Attrs
      - The final Python import path of the generated module. By default, this is ``path.to.package.label_name``.
    * - target
      - The file this library exposes as runfiles.
+   * - executable
+     - Whether or not the source file is executable.
    * - \*\*kwargs
      - Common attributes to forward both underlying targets.
 
