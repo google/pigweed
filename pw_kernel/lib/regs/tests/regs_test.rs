@@ -48,3 +48,15 @@ fn set_u32_preserves_unmasked_value() -> unittest::Result<()> {
     unittest::assert_eq!(ops::set_u32(0x5555_5555, 8, 15, 0xaa), 0x5555_aa55);
     Ok(())
 }
+
+#[test]
+fn single_bit_get_u32_extracts_correct_value() -> unittest::Result<()> {
+    unittest::assert_eq!(ops::get_u32(0x0001_0000, 16, 16), 0b1);
+    Ok(())
+}
+
+#[test]
+fn single_bit_set_u32_sets_correct_value() -> unittest::Result<()> {
+    unittest::assert_eq!(ops::set_u32(0xffff_ffff, 16, 16, 0b0), 0xfffe_ffff);
+    Ok(())
+}

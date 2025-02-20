@@ -14,15 +14,21 @@
 #![allow(dead_code)]
 
 pub mod mpu;
+pub mod systick;
 
 pub use mpu::Mpu;
+pub use systick::SysTick;
 
 pub struct Regs {
     pub mpu: Mpu,
+    pub systick: SysTick,
 }
 
 impl Regs {
     pub const fn get() -> Self {
-        Regs { mpu: Mpu::new() }
+        Regs {
+            mpu: Mpu::new(),
+            systick: SysTick::new(),
+        }
     }
 }
