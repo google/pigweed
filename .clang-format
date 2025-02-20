@@ -20,3 +20,4 @@ PointerAlignment: Left
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 LineEnding: LF
+InsertNewlineAtEOF: true
