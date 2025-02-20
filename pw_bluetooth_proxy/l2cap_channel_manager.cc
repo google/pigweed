@@ -66,8 +66,8 @@ void L2capChannelManager::DeregisterAndCloseChannels(L2capChannelEvent event) {
   std::lock_guard lock(channels_mutex_);
   while (!channels_.empty()) {
     L2capChannel& front = channels_.front();
-    front.InternalClose(event);
     channels_.pop_front();
+    front.InternalClose(event);
   }
   lrd_channel_ = channels_.end();
   round_robin_terminus_ = channels_.end();
