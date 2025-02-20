@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import * as assert from 'assert';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
@@ -23,14 +24,15 @@ import {
 
 import { makeTempDir } from './testUtils';
 
-describe('find pigweed.json', () => {
+suite('find pigweed.json', () => {
   test('find pigweed.json 1 level above', async () => {
     const dir = await makeTempDir();
     writeFileSync(join(dir, 'pigweed.json'), '');
     const nestedDir = join(dir, 'nested');
     mkdirSync(nestedDir);
     const projectRoot = findPigweedJsonAbove(nestedDir);
-    expect(projectRoot).toBe(dir);
+
+    assert.strictEqual(dir, projectRoot);
   });
 
   test('find pigweed.json 2 levels above', async () => {
@@ -41,7 +43,8 @@ describe('find pigweed.json', () => {
     const nestedDir2 = join(dir, 'nested', 'again');
     mkdirSync(nestedDir2);
     const projectRoot = findPigweedJsonAbove(nestedDir2);
-    expect(projectRoot).toBe(dir);
+
+    assert.strictEqual(dir, projectRoot);
   });
 
   test('find pigweed.json 1 level below', async () => {
@@ -50,7 +53,8 @@ describe('find pigweed.json', () => {
     mkdirSync(nestedDir);
     writeFileSync(join(nestedDir, 'pigweed.json'), '');
     const projectRoot = await findPigweedJsonBelow(dir);
-    expect(projectRoot[0]).toBe(nestedDir);
+
+    assert.strictEqual(nestedDir, projectRoot[0]);
   });
 
   test('find pigweed.json 2 levels below', async () => {
@@ -61,7 +65,8 @@ describe('find pigweed.json', () => {
     mkdirSync(nestedDir2);
     writeFileSync(join(nestedDir2, 'pigweed.json'), '');
     const projectRoot = await findPigweedJsonBelow(dir);
-    expect(projectRoot[0]).toBe(nestedDir2);
+
+    assert.strictEqual(nestedDir2, projectRoot[0]);
   });
 
   test('find pigweed.json below returns all found', async () => {
@@ -73,9 +78,10 @@ describe('find pigweed.json', () => {
     mkdirSync(nestedDir2);
     writeFileSync(join(nestedDir2, 'pigweed.json'), '');
     const projectRoot = await findPigweedJsonBelow(dir);
-    expect(projectRoot.length).toBe(2);
-    expect(projectRoot).toContain(nestedDir);
-    expect(projectRoot).toContain(nestedDir2);
+
+    assert.equal(2, projectRoot.length);
+    assert.ok(projectRoot.includes(nestedDir));
+    assert.ok(projectRoot.includes(nestedDir2));
   });
 
   test('pigweed.json from above is preferred over below', async () => {
@@ -90,6 +96,7 @@ describe('find pigweed.json', () => {
     writeFileSync(join(pigweedDir, 'pigweed.json'), '');
 
     const projectRoot = await inferPigweedProjectRoot(dir);
-    expect(projectRoot).toBe(dir);
+
+    assert.strictEqual(dir, projectRoot);
   });
 });

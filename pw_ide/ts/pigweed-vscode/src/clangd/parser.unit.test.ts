@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import * as assert from 'assert';
+
 import { inferTarget, inferTargetPositions } from './parser';
 
 test('inferTargetPositions', () => {
@@ -23,7 +25,7 @@ test('inferTargetPositions', () => {
   ];
 
   for (const [glob, positions] of testCases) {
-    expect(inferTargetPositions(glob)).toEqual(positions);
+    assert.deepStrictEqual(positions, inferTargetPositions(glob));
   }
 });
 
@@ -36,6 +38,6 @@ test('inferTarget', () => {
   ];
 
   for (const [glob, path, name] of testCases) {
-    expect(inferTarget(glob, path)).toEqual(name);
+    assert.equal(name, inferTarget(glob, path));
   }
 });

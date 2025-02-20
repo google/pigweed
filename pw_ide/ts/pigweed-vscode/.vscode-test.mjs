@@ -15,11 +15,23 @@
 import { defineConfig } from '@vscode/test-cli';
 import path from 'path';
 
-export default defineConfig({
-	files: 'out/**/*.e2e.test.js',
-	workspaceFolder: path.join(process.cwd(), '..', '..', '..'),
-	mocha: {
-		timeout: 60000
-	},
-	launchArgs: ['--install-extension', 'BazelBuild.vscode-bazel']
-});
+export default defineConfig([
+  {
+    label: 'unitTests',
+    files: 'out/**/*.unit.test.js',
+    workspaceFolder: path.join(process.cwd(), '..', '..', '..'),
+    mocha: {
+      ui: 'tdd',
+      timeout: 20000,
+    },
+  },
+  {
+    label: 'e2eTests',
+    files: 'out/**/*.e2e.test.js',
+    workspaceFolder: path.join(process.cwd(), '..', '..', '..'),
+    mocha: {
+      timeout: 60000,
+    },
+    launchArgs: ['--install-extension', 'BazelBuild.vscode-bazel'],
+  },
+]);

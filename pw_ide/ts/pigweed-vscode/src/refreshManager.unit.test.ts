@@ -14,9 +14,11 @@
 
 /* eslint-disable prefer-const */
 
+import * as assert from 'assert';
+
 import { OK, RefreshManager } from './refreshManager';
 
-describe('callback registration', () => {
+suite('callback registration', () => {
   test('callback registered for state is called on transition', async () => {
     const manager = RefreshManager.create({ useRefreshSignalHandler: false });
     let called = false;
@@ -27,7 +29,7 @@ describe('callback registration', () => {
     }, 'willRefresh');
 
     await manager.move('willRefresh');
-    expect(called).toBeTruthy();
+    assert.ok(called);
   });
 
   test('callback is called every time', async () => {
@@ -40,10 +42,10 @@ describe('callback registration', () => {
     }, 'abort');
 
     await manager.move('abort');
-    expect(called).toBe(1);
+    assert.equal(1, called);
 
     await manager.move('abort');
-    expect(called).toBe(2);
+    assert.equal(2, called);
   });
 
   test('transient callback is run only once', async () => {
@@ -56,10 +58,10 @@ describe('callback registration', () => {
     }, 'abort');
 
     await manager.move('abort');
-    expect(called).toBe(1);
+    assert.equal(1, called);
 
     await manager.move('abort');
-    expect(called).toBe(1);
+    assert.equal(1, called);
   });
 
   test('callback registered for state is not called on other state transition', async () => {
@@ -72,7 +74,7 @@ describe('callback registration', () => {
     }, 'refreshing');
 
     await manager.move('willRefresh');
-    expect(called).toBeFalsy();
+    assert.ok(!called);
   });
 
   test('callback registered for state transition is called on transition', async () => {
@@ -89,10 +91,10 @@ describe('callback registration', () => {
     );
 
     const managerWillRefresh = await manager.move('willRefresh');
-    expect(called).toBeFalsy();
+    assert.ok(!called);
 
     await managerWillRefresh.move('refreshing');
-    expect(called).toBeTruthy();
+    assert.ok(called);
   });
 
   test('callback registered for state transition is not called on different transition', async () => {
@@ -113,10 +115,10 @@ describe('callback registration', () => {
     manager2.on(cb, 'abort', 'didRefresh');
 
     await manager1.move('abort');
-    expect(called).toBeFalsy();
+    assert.ok(!called);
 
     await manager2.move('abort');
-    expect(called).toBeTruthy();
+    assert.ok(called);
   });
 
   test('multiple callbacks are called successfully', async () => {
@@ -135,8 +137,8 @@ describe('callback registration', () => {
     }, 'willRefresh');
 
     await manager.move('willRefresh');
-    expect(called1).toBeTruthy();
-    expect(called2).toBeTruthy();
+    assert.ok(called1);
+    assert.ok(called2);
   });
 
   test('callback error terminates execution', async () => {
@@ -154,8 +156,8 @@ describe('callback registration', () => {
     }, 'willRefresh');
 
     await manager.move('willRefresh');
-    expect(called1).toBeTruthy();
-    expect(called2).toBeFalsy();
+    assert.equal(true, called1);
+    assert.equal(false, called2);
   });
 
   test('callback error precludes calling remaining callbacks', async () => {
@@ -173,12 +175,12 @@ describe('callback registration', () => {
     }, 'willRefresh');
 
     await manager.move('willRefresh');
-    expect(called1).toBeFalsy();
-    expect(called2).toBeFalsy();
+    assert.ok(!called1);
+    assert.ok(!called2);
   });
 });
 
-describe('state transitions', () => {
+suite('state transitions', () => {
   test('moves through states successfully', async () => {
     const manager = RefreshManager.create({ useRefreshSignalHandler: false });
     let willRefreshHappened = false;
@@ -224,11 +226,11 @@ describe('state transitions', () => {
 
     await manager.start();
 
-    expect(willRefreshHappened).toBeTruthy();
-    expect(refreshingHappened).toBeTruthy();
-    expect(didRefreshHappened).toBeTruthy();
-    expect(idleHappened).toBeTruthy();
-    expect(manager.state).toBe('idle');
+    assert.ok(willRefreshHappened);
+    assert.ok(refreshingHappened);
+    assert.ok(didRefreshHappened);
+    assert.ok(idleHappened);
+    assert.equal('idle', manager.state);
   });
 
   test('fault state prevents downstream execution', async () => {
@@ -275,11 +277,11 @@ describe('state transitions', () => {
 
     await manager.start();
 
-    expect(willRefreshHappened).toBeTruthy();
-    expect(refreshingHappened).toBeTruthy();
-    expect(didRefreshHappened).toBeFalsy();
-    expect(idleHappened).toBeFalsy();
-    expect(manager.state).toBe('fault');
+    assert.ok(willRefreshHappened);
+    assert.ok(refreshingHappened);
+    assert.ok(!didRefreshHappened);
+    assert.ok(!idleHappened);
+    assert.equal('fault', manager.state);
   });
 
   test('can start from fault state', async () => {
@@ -329,11 +331,11 @@ describe('state transitions', () => {
 
     await manager.start();
 
-    expect(willRefreshHappened).toBeTruthy();
-    expect(refreshingHappened).toBeTruthy();
-    expect(didRefreshHappened).toBeTruthy();
-    expect(idleHappened).toBeTruthy();
-    expect(manager.state).toBe('idle');
+    assert.ok(willRefreshHappened);
+    assert.ok(refreshingHappened);
+    assert.ok(didRefreshHappened);
+    assert.ok(idleHappened);
+    assert.equal('idle', manager.state);
   });
 
   test('abort signal prevents downstream execution', async () => {
@@ -389,9 +391,9 @@ describe('state transitions', () => {
       ),
     ]);
 
-    expect(willRefreshHappened).toBeTruthy();
-    expect(idleHappened).toBeFalsy();
-    expect(manager.state).toBe('idle');
+    assert.ok(willRefreshHappened);
+    assert.ok(!idleHappened);
+    assert.equal('idle', manager.state);
   });
 
   test('abort signal interrupts callback chain', async () => {
@@ -419,7 +421,7 @@ describe('state transitions', () => {
       ),
     ]);
 
-    expect(calls).toBeLessThan(4);
+    assert.ok(calls < 4);
   });
 
   test('starting refresh waits on idle state', async () => {
@@ -473,7 +475,7 @@ describe('state transitions', () => {
     // This awaits the handler for the signal-triggered refresh.
     await handleRefreshPromise!;
 
-    expect(calls).toBe(2);
+    assert.equal(2, calls);
   });
 
   test('refresh signal triggers from fault state', async () => {
@@ -490,6 +492,7 @@ describe('state transitions', () => {
 
     manager.refresh();
     await manager.handleRefreshSignal();
-    expect(called).toBeTruthy();
+
+    assert.ok(called);
   });
 });

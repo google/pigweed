@@ -228,8 +228,9 @@
     "postPackage": "tsx scripts/prepostPackage.mts --post",
     "package": "npm run clean && npm run build && npm run bundle && npm run prePackage && npm run doPackage && npm run postPackage",
     "packagePrerelease": "npm run clean && npm run build && npm run bundle && npm run prePackage && npm run doPackagePrerelease && npm run postPackage",
-    "test:jest": "jest '.*.test.ts'",
-    "test:e2e": "vscode-test"
+    "test:unit": "npm run build && vscode-test --label unitTests",
+    "test:e2e": "npm run build && vscode-test --label e2eTests",
+    "test:all": "npm run build && vscode-test"
   },
   "dependencies": {
     "@bazel/bazelisk": "^1.19.0",
@@ -254,7 +255,6 @@
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.3.9",
     "eslint": "^8.56.0",
-    "jest": "^29.7.0",
     "mocha": "^10.2.0",
     "node-polyfill-webpack-plugin": "^4.0.0",
     "prettier": "^3.3.2",

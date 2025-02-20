@@ -12,17 +12,20 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+import * as assert from 'assert';
+
 import { loadLegacySettings } from './legacy';
 
-describe('load legacy settings', () => {
+suite('load legacy settings', () => {
   test('successfully loads valid settings', async () => {
     const settingsData = `config_title: pw_ide
 default_target: pw_strict_host_clang_debug
 compdb_gen_cmd: gn gen out`;
 
     const settings = await loadLegacySettings(settingsData);
-    expect(settings).toHaveProperty('default_target');
-    expect(settings?.default_target).toBe('pw_strict_host_clang_debug');
+
+    assert.ok(Object.prototype.hasOwnProperty.call(settings, 'default_target'));
+    assert.equal('pw_strict_host_clang_debug', settings?.default_target);
   });
 
   test('returns null on invalid settings', async () => {
@@ -30,13 +33,15 @@ compdb_gen_cmd: gn gen out`;
   - pw_strict_host_clang_debug`;
 
     const settings = await loadLegacySettings(settingsData);
-    expect(settings).toBeNull();
+
+    assert.equal(null, settings);
   });
 
   test('returns null on unparsable settings', async () => {
     const settingsData = '- 2a05:4800:1:100::';
 
     const settings = await loadLegacySettings(settingsData);
-    expect(settings).toBeNull();
+
+    assert.equal(null, settings);
   });
 });
