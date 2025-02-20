@@ -47,13 +47,6 @@ def nanopb_proto_library(*, name, deps, tags = [], options = None, **kwargs):
         protos = deps,
         deps = [
             Label("@com_github_nanopb_nanopb//:nanopb"),
-            Label("//pw_assert"),
-            Label("//pw_containers:vector"),
-            Label("//pw_preprocessor"),
-            Label("//pw_result"),
-            Label("//pw_span"),
-            Label("//pw_status"),
-            Label("//pw_string:string"),
         ],
         tags = tags + extra_tags,
         **kwargs
