@@ -227,6 +227,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_async2/public/pw_async2/enqueue_heap_func.h",
   "$dir_pw_async2/public/pw_async2/join.h",
   "$dir_pw_async2/public/pw_async2/once_sender.h",
+  "$dir_pw_async2/public/pw_async2/pend_func_awaitable.h",
   "$dir_pw_async2/public/pw_async2/pend_func_task.h",
   "$dir_pw_async2/public/pw_async2/pendable_as_task.h",
   "$dir_pw_async2/public/pw_async2/poll.h",
