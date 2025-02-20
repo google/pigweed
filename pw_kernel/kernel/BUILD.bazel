@@ -29,6 +29,7 @@ rust_library(
         "kernel/arch/arm_cortex_m/mod.rs",
         "kernel/arch/arm_cortex_m/regs/mod.rs",
         "kernel/arch/arm_cortex_m/regs/mpu.rs",
+        "kernel/arch/arm_cortex_m/regs/nvic.rs",
         "kernel/arch/arm_cortex_m/regs/systick.rs",
         "kernel/arch/arm_cortex_m/threads.rs",
         "kernel/arch/arm_cortex_m/timer.rs",
