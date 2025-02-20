@@ -24,25 +24,36 @@
 // pw_numeric/checked_arithmetic_test.cc
 
 // Emits a TEST() for a given templated function with the given type.
-// The test name is prefixed with the type name.
-#define TEST_FUNC_FOR_TYPE(suite, name, func, type) \
-  TEST(suite, name##_##type) { func<type>(); }
+//
+// suite - The name of the test suite (the first argument to TEST()).
+// test_name - The full name of the test.
+// func - The templated function called by the test.
+// type - The type passed to the function template.
+#define TEST_FUNC_FOR_TYPE(suite, test_name, func, type) \
+  TEST(suite, test_name) { func<type>(); }
 
 // Emits a TEST() for a templated function named by the concatention of the
 // test suite and test name, invoked with the given type.
-#define TEST_FOR_TYPE(suite, name, type) \
-  TEST_FUNC_FOR_TYPE(suite, name, suite##name, type)
+//
+// suite - The name of the test suite (the first argument to TEST())
+// name - The base name of the test.
+//        The full name of the test includes _suffix.
+//        The called function is the concatenation of suite and name.
+// suffix - Appened to name (with an underscore) to generate the test name.
+// type - The template type of the called function.
+#define TEST_FOR_TYPE(suite, name, suffix, type) \
+  TEST_FUNC_FOR_TYPE(suite, name##_##suffix, suite##name, type)
 
 // Emits a TEST_FOR_TYPE() for all common <cstdint> types.
-#define TEST_FOR_STDINT_TYPES(suite, func) \
-  TEST_FOR_TYPE(suite, func, uint8_t)      \
-  TEST_FOR_TYPE(suite, func, int8_t)       \
-  TEST_FOR_TYPE(suite, func, uint16_t)     \
-  TEST_FOR_TYPE(suite, func, int16_t)      \
-  TEST_FOR_TYPE(suite, func, uint32_t)     \
-  TEST_FOR_TYPE(suite, func, int32_t)      \
-  TEST_FOR_TYPE(suite, func, uint64_t)     \
-  TEST_FOR_TYPE(suite, func, int64_t)
+#define TEST_FOR_STDINT_TYPES(suite, name)  \
+  TEST_FOR_TYPE(suite, name, u8, uint8_t)   \
+  TEST_FOR_TYPE(suite, name, i8, int8_t)    \
+  TEST_FOR_TYPE(suite, name, u16, uint16_t) \
+  TEST_FOR_TYPE(suite, name, i16, int16_t)  \
+  TEST_FOR_TYPE(suite, name, u32, uint32_t) \
+  TEST_FOR_TYPE(suite, name, i32, int32_t)  \
+  TEST_FOR_TYPE(suite, name, u64, uint64_t) \
+  TEST_FOR_TYPE(suite, name, i64, int64_t)
 
 #define STATIC_ASSERT_EXTENT(spanvar, n) \
   static_assert(decltype(spanvar)::extent == n)
@@ -148,9 +159,13 @@ struct MixedBag {
   double d;
 };
 
-#define TEST_FOR_ALL_TYPES(suite, func) \
-  TEST_FOR_STDINT_TYPES(suite, func)    \
-  TEST_FOR_TYPE(suite, func, MixedBag)
+#define TEST_FOR_ALL_TYPES(suite, name)   \
+  TEST_FOR_TYPE(suite, name, u8, uint8_t) \
+  TEST_FOR_TYPE(suite, name, i8, int8_t)  \
+  TEST_FOR_TYPE(suite, name, char, char)  \
+  TEST_FOR_TYPE(suite, name, uchar, unsigned char)
+// TEST_FOR_STDINT_TYPES(suite, name)
+// TEST_FOR_TYPE(suite, name, MixedBag, MixedBag)
 
 TEST_FOR_ALL_TYPES(SpanCast, RoundTrip)
 TEST_FOR_ALL_TYPES(SpanCast, RoundTripConst)

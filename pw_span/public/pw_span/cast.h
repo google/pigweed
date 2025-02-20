@@ -44,12 +44,17 @@ using SpanFromBytes = span<ResultT,
 /// `kSourceExtentBytes / sizeof(ResultT)`.
 ///
 /// @tparam  ResultT             The type of the returned span.
+///                              Must be one byte to avoid misuse and violation
+///                              of the strict aliasing rule. This restriction
+///                              might be lifted in the future.
 /// @tparam  kSourceExtentBytes  The extent of the source byte span. This is
 ///                              normally inferred and need not be explicitly
 ///                              provided.
 template <class ResultT, size_t kSourceExtentBytes>
 internal::SpanFromBytes<ResultT, kSourceExtentBytes> span_cast(
     span<std::byte, kSourceExtentBytes> bytes) {
+  static_assert(sizeof(ResultT) == 1);
+
   ResultT* const ptr = reinterpret_cast<ResultT*>(bytes.data());
   const size_t count = bytes.size() / sizeof(ResultT);
 
@@ -79,12 +84,17 @@ internal::SpanFromBytes<ResultT, kSourceExtentBytes> span_cast(
 /// `kSourceExtentBytes / sizeof(ResultT)`.
 ///
 /// @tparam  ResultT             The type of the returned span.
+///                              Must be one byte to avoid misuse and violation
+///                              of the strict aliasing rule. This restriction
+///                              might be lifted in the future.
 /// @tparam  kSourceExtentBytes  The extent of the source byte span. This is
 ///                              normally inferred and need not be explicitly
 ///                              provided.
 template <class ResultT, size_t kSourceExtentBytes>
 internal::SpanFromBytes<const ResultT, kSourceExtentBytes> span_cast(
     span<const std::byte, kSourceExtentBytes> bytes) {
+  static_assert(sizeof(ResultT) == 1);
+
   const ResultT* const ptr = reinterpret_cast<const ResultT*>(bytes.data());
   const size_t count = bytes.size() / sizeof(ResultT);
 
