@@ -76,10 +76,7 @@ macro(pw_parse_arguments)
                   ${pw_parse_arg_REQUIRED_ARGS})
 endmacro()
 
-# TODO(ewout, hepler): Deprecate this function in favor of pw_parse_arguments.
-# Wrapper around cmake_parse_arguments that fails with an error if any arguments
-# remained unparsed.
-macro(pw_parse_arguments_strict function start_arg options one multi)
+macro(_pw_parse_arguments_internal function start_arg options one multi)
   if(POLICY CMP0174)
     cmake_policy(SET CMP0174 NEW)  # Remove when CMake 3.31 or newer is required.
   endif()
@@ -93,6 +90,16 @@ macro(pw_parse_arguments_strict function start_arg options one multi)
         "Valid arguments: ${_all_args}"
     )
   endif()
+endmacro()
+
+# DEPRECATED wrapper around cmake_parse_arguments that fails with an error if
+# any arguments remained unparsed. Use pw_parse_arguments instead.
+macro(pw_parse_arguments_strict function start_arg options one multi)
+  message(DEPRECATION
+      "pw_parse_arguments_strict() is deprecated; "
+      "use pw_parse_arguments() instead")
+  _pw_parse_arguments_internal(
+      "${function}" "${start_arg}" "${options}" "${one}" "${multi}")
 endmacro()
 
 # Checks that one or more variables are set. This is used to check that
