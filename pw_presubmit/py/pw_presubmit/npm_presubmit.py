@@ -21,3 +21,10 @@ def npm_test(ctx: PresubmitContext) -> None:
     """Run npm install and npm test in Pigweed root to test all web modules"""
     call('npm', "install", cwd=ctx.root)
     call('npm', "test", cwd=ctx.root)
+
+
+def vscode_test(ctx: PresubmitContext) -> None:
+    """Run npm install and npm run test:all to test the VS Code extension."""
+    vsc_dir = ctx.root / 'pw_ide' / 'ts' / 'pigweed-vscode'
+    call('npm', 'install', cwd=vsc_dir)
+    call('npm', 'run', 'test:all', cwd=vsc_dir)

@@ -1674,6 +1674,7 @@ OTHER_CHECKS = (
     gn_platform_build_check,
     module_owners.presubmit_check(),
     npm_presubmit.npm_test,
+    npm_presubmit.vscode_test,
     pw_transfer_integration_test,
     python_checks.diff_upstream_python_constraints,
     python_checks.update_upstream_python_constraints,
