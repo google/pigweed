@@ -44,6 +44,8 @@
 
 #include "pw_span/internal/config.h"
 
+// IWYU pragma: private, include "pw_span/span.h"
+
 namespace pw {
 
 // [views.constants]
