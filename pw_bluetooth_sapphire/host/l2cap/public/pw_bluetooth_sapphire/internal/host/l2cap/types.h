@@ -248,6 +248,6 @@ struct ServiceInfo {
 namespace pw {
 // AnyChannelMode supports pw::ToString.
 template <>
-StatusWithSize ToString(const bt::l2cap::AnyChannelMode& mode,
+StatusWithSize ToString(const bt::l2cap::AnyChannelMode& value,
                         span<char> buffer);
 }  // namespace pw

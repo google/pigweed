@@ -27,7 +27,7 @@ namespace bt::iso {
 
 class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
  public:
-  virtual ~IsoStream() = default;
+  ~IsoStream() override = default;
 
   // Handler for incoming HCI_LE_CIS_Established events. Returns a value
   // indicating whether the vent was handled.

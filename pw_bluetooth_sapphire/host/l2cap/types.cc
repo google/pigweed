@@ -98,8 +98,8 @@ pw::StatusWithSize AnyChannelModeToPwString(const AnyChannelMode& mode,
 
 namespace pw {
 template <>
-StatusWithSize ToString(const bt::l2cap::AnyChannelMode& mode,
+StatusWithSize ToString(const bt::l2cap::AnyChannelMode& value,
                         span<char> buffer) {
-  return bt::l2cap::AnyChannelModeToPwString(mode, buffer);
+  return bt::l2cap::AnyChannelModeToPwString(value, buffer);
 }
 }  // namespace pw

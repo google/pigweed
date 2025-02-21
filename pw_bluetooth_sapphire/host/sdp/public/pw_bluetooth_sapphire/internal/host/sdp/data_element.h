@@ -85,6 +85,9 @@ class DataElement {
   DataElement();
   ~DataElement() = default;
 
+  // No assignment operator.
+  DataElement& operator=(const DataElement&) = delete;
+
   // Default move constructor and move-assignment
   DataElement(DataElement&&) = default;
   DataElement& operator=(DataElement&&) = default;
@@ -168,9 +171,8 @@ class DataElement {
   std::string ToString() const;
 
  private:
-  // Copy constructor for Clone(), no assignment operator.
+  // Copy constructor for Clone().
   DataElement(const DataElement&);
-  DataElement& operator=(const DataElement&) = delete;
 
   // Sets the size type based on a variable size (Next one, two, or four)
   void SetVariableSize(size_t length);
