@@ -820,10 +820,7 @@ filegroup(
 pw_size_diff(
     name = "null_allocator_size_report",
     base = "//pw_allocator/size_report:base",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "NullAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:null_allocator",
 )
 
@@ -832,57 +829,40 @@ pw_size_table(
     reports = [
         ":null_allocator_size_report",
     ],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
 )
 
 pw_size_diff(
     name = "best_fit_size_report",
     base = "//pw_allocator/size_report:detailed_block",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "BestFitAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:best_fit",
 )
 
 pw_size_diff(
     name = "bucket_allocator_size_report",
     base = "//pw_allocator/size_report:detailed_block",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "BucketAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:bucket_allocator",
 )
 
 pw_size_diff(
     name = "first_fit_size_report",
     base = "//pw_allocator/size_report:detailed_block",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "FirstFitAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:first_fit",
 )
 
 pw_size_diff(
     name = "tlsf_allocator_size_report",
     base = "//pw_allocator/size_report:detailed_block",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "TlsfAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:tlsf_allocator",
 )
 
 pw_size_diff(
     name = "worst_fit_size_report",
     base = "//pw_allocator/size_report:detailed_block",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "WorstFitAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:worst_fit",
 )
 
@@ -895,37 +875,26 @@ pw_size_table(
         ":tlsf_allocator_size_report",
         ":worst_fit_size_report",
     ],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
 )
 
 pw_size_diff(
     name = "buddy_allocator_size_report",
     base = "//pw_allocator/size_report:base",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "BuddyAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:buddy_allocator",
 )
 
 pw_size_diff(
     name = "bump_allocator_size_report",
     base = "//pw_allocator/size_report:base",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "BumpAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:bump_allocator",
 )
 
 pw_size_diff(
     name = "libc_allocator_size_report",
     base = "//pw_allocator/size_report:base",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "LibCAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:libc_allocator",
 )
 
@@ -936,67 +905,47 @@ pw_size_table(
         ":bump_allocator_size_report",
         ":libc_allocator_size_report",
     ],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
 )
 
 pw_size_diff(
     name = "fallback_allocator_size_report",
     base = "//pw_allocator/size_report:best_fit",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "FallbackAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:fallback_allocator",
 )
 
 pw_size_diff(
     name = "pmr_allocator_size_report",
     base = "//pw_allocator/size_report:pmr_allocator_base",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "AsPmrAllocator",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:pmr_allocator",
 )
 
 pw_size_diff(
     name = "synchronized_allocator_size_report_isl",
     base = "//pw_allocator/size_report:best_fit",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "SynchronizedAllocator<sync::InterruptSpinLock>",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:synchronized_allocator_isl",
 )
 
 pw_size_diff(
     name = "synchronized_allocator_size_report_mutex",
     base = "//pw_allocator/size_report:best_fit",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "SynchronizedAllocator<sync::Mutex>",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:synchronized_allocator_mutex",
 )
 
 pw_size_diff(
     name = "tracking_allocator_size_report_all_metrics",
     base = "//pw_allocator/size_report:best_fit",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "TrackingAllocator<AllMetrics>",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:tracking_allocator_all_metrics",
 )
 
 pw_size_diff(
     name = "tracking_allocator_size_report_no_metrics",
     base = "//pw_allocator/size_report:best_fit",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "TrackingAllocator<NoMetrics>",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
     target = "//pw_allocator/size_report:tracking_allocator_no_metrics",
 )
 
@@ -1010,16 +959,13 @@ pw_size_table(
         ":tracking_allocator_size_report_all_metrics",
         ":tracking_allocator_size_report_no_metrics",
     ],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
 )
 
 pw_size_diff(
     name = "unique_ptr_size_report",
     base = "//pw_allocator/size_report:first_fit",
-    bloaty_config = "//targets/rp2040:bloaty_config",
     label = "UniquePtr",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
+    # TODO: https://pwbug.dev/388905812 - Implement this size report.
     tags = ["manual"],
     target = "//pw_allocator/size_report:unique_ptr",
 )
@@ -1029,7 +975,7 @@ pw_size_table(
     reports = [
         ":unique_ptr_size_report",
     ],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
+    # TODO: https://pwbug.dev/388905812 - Implement this size report.
     tags = ["manual"],
 )
 
@@ -1041,6 +987,10 @@ sphinx_docs_library(
         "design.rst",
         "docs.rst",
         "guide.rst",
+        ":allocator_api_size_report",
+        ":block_allocators_size_report",
+        ":concrete_allocators_size_report",
+        ":forwarding_allocators_size_report",
         "//pw_allocator/examples:docs",
         "//pw_allocator/size_report:docs",
     ],
