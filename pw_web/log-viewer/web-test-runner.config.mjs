@@ -23,5 +23,5 @@ export default {
   ],
   files: 'test/**/*.test.js',
   nodeResolve: true,
-  plugins: [vitePlugin()]
+  plugins: [vitePlugin()],
 };

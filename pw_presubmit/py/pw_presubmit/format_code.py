@@ -516,14 +516,14 @@ JAVA_FORMAT: CodeFormat = CodeFormat(
 
 JAVASCRIPT_FORMAT: CodeFormat = CodeFormat(
     'JavaScript',
-    FileFilter(endswith=['.js']),
+    FileFilter(endswith=['.js', '.mjs', '.cjs']),
     typescript_format_check,
     typescript_format_fix,
 )
 
 TYPESCRIPT_FORMAT: CodeFormat = CodeFormat(
     'TypeScript',
-    FileFilter(endswith=['.ts']),
+    FileFilter(endswith=['.ts', '.mts', '.cts']),
     typescript_format_check,
     typescript_format_fix,
 )
