@@ -244,6 +244,10 @@ class CompileCommand {
     return toolchainDir === '.' ? undefined : toolchainDir;
   }
 
+  get sourceFilePath() {
+    return path.resolve(this.data.directory, this.data.file);
+  }
+
   /** The directory path of the output file. */
   get outputPath() {
     return path.dirname(this.commandParts.output);
@@ -426,7 +430,11 @@ export class CompilationDatabase {
   }
 
   async write(filePath: string) {
-    const fileData = JSON.stringify(this.db.map((c) => c.data));
+    const fileData = JSON.stringify(
+      this.db.map((c) => c.data),
+      null,
+      2,
+    );
     await fs_p.mkdir(path.dirname(filePath), { recursive: true });
     await fs_p.writeFile(filePath, fileData);
   }

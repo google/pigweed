@@ -29,33 +29,43 @@ import { didInit, didUpdateActiveFilesCache } from '../events';
 import logger from '../logging';
 import { OK, RefreshCallback, RefreshManager } from '../refreshManager';
 import { settings, workingDir } from '../settings/vscode';
+import { CompilationDatabase } from './parser';
+import { glob } from 'glob';
+
+function isNotInExcludedDirs(
+  excludedDirs: string[],
+  filePath: string,
+): boolean {
+  for (const excludedDir of excludedDirs) {
+    const relative = path.relative(excludedDir, filePath);
+
+    if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 /** Parse a compilation database and get the source files in the build. */
-async function parseForSourceFiles(target: Target): Promise<Set<string>> {
-  const rd = readline_p.createInterface({
-    input: fs.createReadStream(target.path),
-    crlfDelay: Infinity,
-  });
-
-  const regex = /^\s*"file":\s*"([^"]*)",$/;
+export async function parseForSourceFiles(
+  target: Target,
+): Promise<Set<string>> {
+  const compDb = await CompilationDatabase.fromFile(target.path);
   const files = new Set<string>();
+  if (!compDb) return files;
 
-  for await (const line of rd) {
-    const match = regex.exec(line);
+  const _workingDir = workingDir.get();
 
-    if (match) {
-      const matchedPath = match[1];
+  const excludedDirs = [
+    ...(await glob(path.join(workingDir.get(), 'bazel-*'))),
+    path.join(_workingDir, 'external'),
+    path.join(_workingDir, 'environment'),
+  ];
 
-      if (
-        // Ignore files outside of this project dir
-        !path.isAbsolute(matchedPath) &&
-        // Ignore build artifacts
-        !matchedPath.startsWith('bazel') &&
-        // Ignore external dependencies
-        !matchedPath.startsWith('external')
-      ) {
-        files.add(matchedPath);
-      }
+  for (const command of compDb.db) {
+    if (isNotInExcludedDirs(excludedDirs, command.sourceFilePath)) {
+      files.add(path.relative(_workingDir, command.sourceFilePath));
     }
   }
 
@@ -120,7 +130,8 @@ export class ClangdActiveFilesCache extends Disposable {
 
     const targetSourceFiles = await Promise.all(
       targets.map(
-        async (target) => [target, await parseForSourceFiles(target)] as const,
+        async (target) =>
+          [target.name, await parseForSourceFiles(target)] as const,
       ),
     );
 
