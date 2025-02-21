@@ -19,6 +19,7 @@
 #include <stddef.h>
 #endif  // __cplusplus
 
+// IWYU pragma: private, include "pw_assert/check.h"
 // Note: This file depends on the backend header already being included.
 
 #include "pw_assert/config.h"
