@@ -55,6 +55,7 @@ pw_py_binary(
         "--mcuxpresso-rev=MCUX_2.16.000",
         "--device-core=cm33_MIMXRT595S",
         "--output-path=$(GENDIR)/mcuxpresso-sdk",
+        "--clean",
         "--include",
         "project_template.evkmimxrt595.MIMXRT595S",
         "component.serial_manager_uart.MIMXRT595S",
