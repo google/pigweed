@@ -11,10 +11,14 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-use super::ArchInterface;
-use crate::scheduler::{SchedulerState, Stack, Thread};
+
 use pw_log::info;
-use spinlock::SpinLockGuard;
+
+use crate::arch::ArchInterface;
+use crate::scheduler::{SchedulerState, Stack, Thread};
+use crate::sync::spinlock::SpinLockGuard;
+
+mod spinlock;
 
 pub struct ThreadState {}
 
@@ -38,6 +42,7 @@ pub struct Arch {}
 
 impl ArchInterface for Arch {
     type ThreadState = ThreadState;
+    type BareSpinLock = spinlock::BareSpinLock;
 
     fn early_init() {
         info!("HOST arch early init");

@@ -14,7 +14,7 @@
 
 #![no_std]
 #![no_main]
-use spinlock::*;
+use kernel::sync::spinlock::*;
 use unittest::test;
 
 #[test]

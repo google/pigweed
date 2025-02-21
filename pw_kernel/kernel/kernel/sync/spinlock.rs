@@ -12,13 +12,14 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#![no_std]
-
 use core::cell::UnsafeCell;
 use core::ops::{Deref, DerefMut};
 
-pub use spinlock_backend::BareSpinLock;
-pub use spinlock_core::*;
+use crate::arch::{Arch, ArchInterface};
+
+pub use crate::arch::BareSpinLock as BareSpinLockApi;
+
+pub type BareSpinLock = <Arch as ArchInterface>::BareSpinLock;
 
 pub struct SpinLockGuard<'lock, T> {
     lock: &'lock SpinLock<T>,

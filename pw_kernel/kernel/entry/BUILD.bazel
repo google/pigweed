@@ -31,6 +31,7 @@ rust_binary(
     deps = [
         "//pw_kernel/kernel",
         "//pw_kernel/subsys/console:console_backend",
+        "//pw_kernel/target",
         "//pw_kernel/target:linker_script",
         "@rust_crates//:cortex-m-rt",
         "@rust_crates//:cortex-m-semihosting",
@@ -47,5 +48,6 @@ rust_binary(
     deps = [
         "//pw_kernel/kernel",
         "//pw_kernel/subsys/console:console_backend",
+        "//pw_kernel/target",
     ],
 )

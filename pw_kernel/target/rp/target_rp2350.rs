@@ -18,7 +18,7 @@ use rp235x_hal as hal;
 use hal::fugit::RateExtU32;
 use hal::uart::{DataBits, StopBits, UartConfig};
 use hal::Clock;
-use target_interface::TargetInterface;
+use target_interface::{declare_target, TargetInterface};
 
 #[link_section = ".start_block"]
 #[used]
@@ -77,3 +77,5 @@ impl TargetInterface for Target {
         console_backend::register_uart(uart);
     }
 }
+
+declare_target!(Target);

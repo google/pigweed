@@ -16,10 +16,11 @@
 #![feature(naked_functions)]
 
 use pw_log::info;
-use target::{Target, TargetInterface};
 
 mod arch;
 mod scheduler;
+pub mod sync;
+mod target;
 
 use scheduler::Stack;
 use scheduler::Thread;
@@ -59,8 +60,9 @@ pub struct Kernel {}
 
 impl Kernel {
     pub fn main() -> ! {
-        Target::console_init();
-        info!("Welcome to Maize on {}!", Target::NAME);
+        target::console_init();
+        info!("Welcome to Maize on {}!", target::name());
+
         Arch::early_init();
 
         let bootstrap_thread;

@@ -14,12 +14,11 @@
 
 use core::mem::offset_of;
 
-use super::{Arch, ArchInterface};
-use crate::arch::ThreadState;
-use core::str;
 use list::*;
 use pw_log::info;
-use spinlock::{SpinLock, SpinLockGuard};
+
+use crate::arch::{Arch, ArchInterface, ThreadState};
+use crate::sync::spinlock::{SpinLock, SpinLockGuard};
 
 #[derive(Clone, Copy)]
 pub struct Stack {

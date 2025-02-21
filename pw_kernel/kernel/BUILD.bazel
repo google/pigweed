@@ -31,12 +31,17 @@ rust_library(
         "kernel/arch/arm_cortex_m/regs/mpu.rs",
         "kernel/arch/arm_cortex_m/regs/nvic.rs",
         "kernel/arch/arm_cortex_m/regs/systick.rs",
+        "kernel/arch/arm_cortex_m/spinlock.rs",
         "kernel/arch/arm_cortex_m/threads.rs",
         "kernel/arch/arm_cortex_m/timer.rs",
         "kernel/arch/host/mod.rs",
+        "kernel/arch/host/spinlock.rs",
         "kernel/arch/mod.rs",
         "kernel/lib.rs",
         "kernel/scheduler.rs",
+        "kernel/sync/mod.rs",
+        "kernel/sync/spinlock.rs",
+        "kernel/target.rs",
     ],
     crate_features = select({
         "@pigweed//pw_build/constraints/arm:cortex-m0": ["arch_arm_cortex_m"],
@@ -47,10 +52,8 @@ rust_library(
     proc_macro_deps = ["@rust_crates//:paste"],
     tags = ["kernel"],
     deps = [
-        "//pw_kernel/kernel/sync:spinlock",
         "//pw_kernel/lib/list",
         "//pw_kernel/lib/regs",
-        "//pw_kernel/target",
         "@pigweed//pw_log/rust:pw_log",
     ] + select({
         "@pigweed//pw_build/constraints/arm:cortex-m0": CORTEX_M_DEPS,

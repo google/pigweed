@@ -11,14 +11,12 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#![no_std]
 
 use core::cell::UnsafeCell;
 use core::mem::ManuallyDrop;
 
 use cortex_m::interrupt;
 use cortex_m::register::primask::{self, Primask};
-use spinlock_core::BareSpinLockApi;
 
 struct InterruptGuard {
     saved_primask: Primask,
@@ -97,7 +95,7 @@ impl Default for BareSpinLock {
     }
 }
 
-impl BareSpinLockApi for BareSpinLock {
+impl crate::arch::BareSpinLock for BareSpinLock {
     type Guard<'a> = CortexMSpinLockGuard<'a>;
 
     fn try_lock(&self) -> Option<Self::Guard<'_>> {

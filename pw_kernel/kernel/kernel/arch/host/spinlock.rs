@@ -11,11 +11,9 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#![no_std]
-
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use spinlock_core::BareSpinLockApi;
+use crate::arch::BareSpinLock as BareSpinLockApi;
 
 pub struct AtomicSpinLockGuard<'a> {
     lock: &'a BareSpinLock,

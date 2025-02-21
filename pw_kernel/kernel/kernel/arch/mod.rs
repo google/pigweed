@@ -23,7 +23,7 @@ mod host;
 pub use host::Arch;
 
 use crate::scheduler::{SchedulerState, Stack, Thread};
-use spinlock::SpinLockGuard;
+use crate::sync::spinlock::SpinLockGuard;
 
 pub trait ThreadState {
     #[allow(dead_code)]
@@ -49,8 +49,33 @@ pub trait ThreadState {
     fn initialize_frame(&mut self, stack: Stack, initial_function: fn(usize), arg0: usize);
 }
 
+pub trait BareSpinLock {
+    type Guard<'a>
+    where
+        Self: 'a;
+
+    // Rust does not support const function in traits.  However it should be
+    // considered that the BareSpinlockApi includes:
+    //
+    // `const fn new() -> Self`
+
+    fn try_lock(&self) -> Option<Self::Guard<'_>>;
+
+    fn lock(&self) -> Self::Guard<'_> {
+        loop {
+            if let Some(sentinel) = self.try_lock() {
+                return sentinel;
+            }
+        }
+    }
+
+    // TODO - konkers: Add optimized path for functions that know they are in
+    // atomic context (i.e. interrupt handlers).
+}
+
 pub trait ArchInterface {
     type ThreadState: ThreadState;
+    type BareSpinLock: BareSpinLock;
 
     fn early_init() {}
     fn init() {}

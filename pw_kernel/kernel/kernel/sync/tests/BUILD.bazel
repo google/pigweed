@@ -12,16 +12,17 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_test")
 
-package(default_visibility = ["//visibility:public"])
-
-rust_library(
-    name = "spinlock_backend_cortex_m",
-    srcs = ["spinlock_backend_cortex_m.rs"],
-    crate_name = "spinlock_backend",
+rust_test(
+    name = "spinlock_test",
+    srcs = ["spinlock_test.rs"],
+    tags = ["kernel"],
+    use_libtest_harness = False,
+    visibility = ["//visibility:public"],
     deps = [
-        "//pw_kernel/kernel/sync:spinlock_core",
-        "@rust_crates//:cortex-m",
+        "//pw_kernel/kernel",
+        "//pw_kernel/lib/unittest",
+        "//pw_kernel/target:linker_script",
     ],
 )

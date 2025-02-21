@@ -19,6 +19,7 @@ use super::ArchInterface;
 
 mod exceptions;
 mod regs;
+mod spinlock;
 mod threads;
 mod timer;
 
@@ -32,6 +33,7 @@ fn get_num_mpu_regions(mpu: &mut regs::Mpu) -> u8 {
 
 impl ArchInterface for Arch {
     type ThreadState = threads::ArchThreadState;
+    type BareSpinLock = spinlock::BareSpinLock;
 
     fn early_init() {
         info!("arch early init");

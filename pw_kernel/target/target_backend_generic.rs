@@ -13,7 +13,7 @@
 // the License.
 #![no_std]
 
-use target_interface::TargetInterface;
+use target_interface::{declare_target, TargetInterface};
 
 pub struct Target {}
 
@@ -22,3 +22,5 @@ impl TargetInterface for Target {
 
     // Use the default noop implementations.
 }
+
+declare_target!(Target);

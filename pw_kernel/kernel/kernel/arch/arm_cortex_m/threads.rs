@@ -13,15 +13,15 @@
 // the License.
 #![allow(non_snake_case)]
 
-use super::exceptions::FullExceptionFrame;
-use crate::arch::arm_cortex_m::*;
-use crate::scheduler;
-use crate::scheduler::{SchedulerState, Stack, Thread, SCHEDULER_STATE};
 use core::arch::{asm, naked_asm};
 use core::mem;
 use cortex_m::peripheral::SCB;
+
 // use pw_log::info;
-use spinlock::SpinLockGuard;
+
+use crate::arch::arm_cortex_m::{exceptions::FullExceptionFrame, *};
+use crate::scheduler::{self, SchedulerState, Stack, Thread, SCHEDULER_STATE};
+use crate::sync::spinlock::SpinLockGuard;
 
 // Remember the thread that the cpu is currently running off of.
 // NOTE this may lag behind the Scheduler's notion of current_thread due to the way

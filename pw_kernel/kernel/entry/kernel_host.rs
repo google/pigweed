@@ -14,6 +14,7 @@
 
 use console_backend as _;
 use kernel::Kernel;
+use target as _;
 
 fn main() -> ! {
     Kernel::main();

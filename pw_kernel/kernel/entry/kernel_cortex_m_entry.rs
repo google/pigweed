@@ -20,6 +20,7 @@
 // Panic handler that halts the CPU on panic.
 use console_backend as _;
 use panic_halt as _;
+use target as _;
 
 // Cortex M runtime entry macro.
 use cortex_m_rt::entry;

@@ -26,7 +26,6 @@ platform(
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict({
-        "//pw_kernel/kernel/sync:spinlock_backend": "//pw_kernel/arch/arm_cortex_m:spinlock_backend_cortex_m",
         "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_cortex_m",
         "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
         "//pw_kernel/target:linker_script": "//pw_kernel/target/qemu/linker_scripts:qemu_lm3s6965_linker_script",
@@ -43,7 +42,6 @@ platform(
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict({
-        "//pw_kernel/kernel/sync:spinlock_backend": "//pw_kernel/arch/arm_cortex_m:spinlock_backend_cortex_m",
         "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
         "//pw_kernel/target:linker_script": "//pw_kernel/target/qemu/linker_scripts:qemu_nrf51823_linker_script",
     }),

@@ -11,26 +11,5 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#![no_std]
 
-pub trait TargetInterface {
-    const NAME: &'static str;
-
-    /// Called at the very beginning of the kernel to set up the console.
-    fn console_init() {}
-}
-
-#[macro_export]
-macro_rules! declare_target {
-    ($target:ty) => {
-        #[no_mangle]
-        pub fn pw_kernel_target_name() -> &'static str {
-            <$target as $crate::TargetInterface>::NAME
-        }
-
-        #[no_mangle]
-        pub fn pw_kernel_target_console_init() {
-            <$target as $crate::TargetInterface>::console_init();
-        }
-    };
-}
+pub mod spinlock;
