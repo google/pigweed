@@ -227,46 +227,6 @@
             "//pw_kernel/..."
           ]
         ],
-        "sanitizers": [
-          [
-            "build",
-            "--config=clang-tidy",
-            "//..."
-          ],
-          [
-            "test",
-            "--config=asan",
-            "//..."
-          ],
-          [
-            "test",
-            "--config=asan",
-            "--config=googletest",
-            "//..."
-          ],
-          [
-            "test",
-            "--config=tsan",
-            "//..."
-          ],
-          [
-            "test",
-            "--config=tsan",
-            "--config=googletest",
-            "//..."
-          ],
-          [
-            "test",
-            "--config=ubsan",
-            "//..."
-          ],
-          [
-            "test",
-            "--config=ubsan",
-            "--config=googletest",
-            "//..."
-          ]
-        ],
         "clang-tidy": [
           [
             "build",
