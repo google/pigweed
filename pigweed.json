@@ -266,6 +266,52 @@
             "--config=googletest",
             "//..."
           ]
+        ],
+        "clang-tidy": [
+          [
+            "build",
+            "--config=clang-tidy",
+            "//..."
+          ]
+        ],
+        "asan": [
+          [
+            "test",
+            "--config=asan",
+            "//..."
+          ],
+          [
+            "test",
+            "--config=asan",
+            "--config=googletest",
+            "//..."
+          ]
+        ],
+        "tsan": [
+          [
+            "test",
+            "--config=tsan",
+            "//..."
+          ],
+          [
+            "test",
+            "--config=tsan",
+            "--config=googletest",
+            "//..."
+          ]
+        ],
+        "ubsan": [
+          [
+            "test",
+            "--config=ubsan",
+            "//..."
+          ],
+          [
+            "test",
+            "--config=ubsan",
+            "--config=googletest",
+            "//..."
+          ]
         ]
       }
     },
