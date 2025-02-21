@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_async2/dispatcher_base.h"
+#include "pw_async2/dispatcher_base.h"  // IWYU pragma: export
 #include "pw_async2/dispatcher_native.h"
 
 namespace pw::async2 {
