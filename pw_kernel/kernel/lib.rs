@@ -18,6 +18,8 @@
 use pw_log::info;
 
 mod arch;
+#[cfg(not(feature = "std_panic_handler"))]
+mod panic;
 mod scheduler;
 pub mod sync;
 mod target;

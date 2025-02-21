@@ -114,6 +114,13 @@ impl ArchInterface for Arch {
     fn idle() {
         cortex_m::asm::wfi();
     }
+
+    fn panic() -> ! {
+        unsafe {
+            asm!("bkpt");
+        }
+        loop {}
+    }
 }
 
 fn ipsr_register_read() -> u32 {

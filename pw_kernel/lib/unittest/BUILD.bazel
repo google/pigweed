@@ -89,12 +89,12 @@ rust_library(
     }),
     deps = [
         ":unittest_core",
+        "//pw_kernel/kernel",
         "//pw_kernel/subsys/console:console_backend",
         "//pw_kernel/target",
         "//pw_log/rust:pw_log",
         "@rust_crates//:cortex-m-rt",
         "@rust_crates//:cortex-m-semihosting",
-        "@rust_crates//:panic-halt",
     ],
 )
 

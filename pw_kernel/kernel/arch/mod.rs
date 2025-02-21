@@ -80,6 +80,10 @@ pub trait ArchInterface {
     fn early_init() {}
     fn init() {}
 
+    fn panic() -> ! {
+        #[allow(clippy::empty_loop)]
+        loop {}
+    }
     // fill in more arch implementation functions from the kernel here:
     // arch-specific backtracing
     #[allow(dead_code)]

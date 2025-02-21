@@ -15,7 +15,7 @@
 #![feature(type_alias_impl_trait)]
 
 use console_backend as _;
-use panic_halt as _;
+use kernel as _;
 
 use cortex_m_rt::entry;
 use cortex_m_semihosting::debug;

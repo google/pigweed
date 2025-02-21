@@ -12,21 +12,24 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#![no_main]
-#![no_std]
+use core::panic::PanicInfo;
 
-// TODO: move this entry point into the arch module, possibly.
+use pw_log::fatal;
 
-// Panic handler that halts the CPU on panic.
-use console_backend as _;
-use target as _;
+use crate::arch::{Arch, ArchInterface};
 
-// Cortex M runtime entry macro.
-use cortex_m_rt::entry;
+// Temporary panic handler.
+//
+// This is very useful for debugging but the Rust panic infrastructure is quite
+// heavy weight and not appropriate for production.
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    let msg = info.message().as_str().unwrap_or("");
+    if let Some(location) = info.location() {
+        fatal!("Panic at {}:{}: {}", location.file(), location.line(), msg);
+    } else {
+        fatal!("Panic: {}", msg);
+    }
 
-use kernel::Kernel;
-
-#[entry]
-fn main() -> ! {
-    Kernel::main();
+    <Arch as ArchInterface>::panic()
 }

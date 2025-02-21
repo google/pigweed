@@ -35,7 +35,6 @@ rust_binary(
         "//pw_kernel/target:linker_script",
         "@rust_crates//:cortex-m-rt",
         "@rust_crates//:cortex-m-semihosting",
-        "@rust_crates//:panic-halt",
     ],
 )
 
