@@ -15,6 +15,7 @@
 #pragma once
 
 #include "pw_bluetooth/low_energy/central2.h"
+#include "pw_bluetooth_sapphire/internal/connection.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
 #include "pw_multibuf/allocator.h"
 
@@ -122,13 +123,19 @@ class Central final : public pw::bluetooth::low_energy::Central2 {
   // clears `ScanState.scan_handle_`.
   void StopScanLocked(uint16_t scan_id) PW_EXCLUSIVE_LOCKS_REQUIRED(lock());
 
+  void OnConnectionResult(bt::PeerId peer_id,
+                          bt::gap::Adapter::LowEnergy::ConnectionResult result,
+                          async2::OnceSender<ConnectResult> result_sender)
+      PW_LOCKS_EXCLUDED(lock());
+
   std::unordered_map<uint16_t, ScanState> scans_ PW_GUARDED_BY(lock());
 
   // Must only be used on the Bluetooth thread.
   bt::gap::Adapter::WeakPtr adapter_;
 
   // Dispatcher for Bluetooth thread. Thread safe.
-  pw::async::HeapDispatcher dispatcher_;
+  pw::async::Dispatcher& dispatcher_;
+  pw::async::HeapDispatcher heap_dispatcher_;
 
   pw::multibuf::MultiBufAllocator& allocator_;
 

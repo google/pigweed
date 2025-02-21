@@ -185,15 +185,15 @@ class Connection2 {
       ConnectL2capParameters parameters) = 0;
 
  private:
-  /// Request to disconnect this connection. This method is called by the
-  /// ~Connection::Ptr() when it goes out of scope, the API client should never
+  /// Request to destroy this connection. This method is called by the
+  /// ~Connection2::Ptr() when it goes out of scope, the API client should never
   /// call this method.
-  virtual void Disconnect() = 0;
+  virtual void Release() = 0;
 
  public:
   /// Movable `Connection2` smart pointer. When `Connection::Ptr` is destroyed
   /// the `Connection2` will disconnect automatically.
-  using Ptr = internal::RaiiPtr<Connection2, &Connection2::Disconnect>;
+  using Ptr = internal::RaiiPtr<Connection2, &Connection2::Release>;
 };
 
 }  // namespace pw::bluetooth::low_energy

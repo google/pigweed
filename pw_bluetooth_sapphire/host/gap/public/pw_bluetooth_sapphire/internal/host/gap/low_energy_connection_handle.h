@@ -78,14 +78,11 @@ class LowEnergyConnectionHandle final {
   PeerId peer_identifier() const { return peer_id_; }
   hci_spec::ConnectionHandle handle() const { return handle_; }
 
- private:
-  friend class LowEnergyConnectionManager;
-  friend class internal::LowEnergyConnection;
-
   // Called by LowEnergyConnectionManager when the underlying connection is
-  // closed. Notifies |closed_cb_|.
+  // closed. Notifies |closed_cb_|. Clients should NOT call this method.
   void MarkClosed();
 
+ private:
   bool active_;
   PeerId peer_id_;
   hci_spec::ConnectionHandle handle_;

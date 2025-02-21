@@ -49,11 +49,41 @@ pw_source_set("central") {
   public = [ "public/pw_bluetooth_sapphire/central.h" ]
   sources = [ "central.cc" ]
   public_deps = [
+    ":connection",
+    ":uuid",
     "$dir_pw_bluetooth:pw_bluetooth2",
     "$dir_pw_multibuf:allocator",
     "host/gap",
   ]
   public_configs = [ ":public_include_path" ]
+}
+
+pw_source_set("connection") {
+  visibility = [ ":*" ]
+  public = [
+    "public/pw_bluetooth_sapphire/internal/connection.h",
+    "public/pw_bluetooth_sapphire/internal/connection_options.h",
+  ]
+  sources = [
+    "connection.cc",
+    "connection_options.cc",
+  ]
+  public_deps = [
+    ":uuid",
+    "$dir_pw_bluetooth:pw_bluetooth2",
+    "host/gap",
+  ]
+  public_configs = [ ":public_include_path" ]
+}
+
+pw_source_set("uuid") {
+  visibility = [ ":*" ]
+  public = [ "public/pw_bluetooth_sapphire/internal/uuid.h" ]
+  public_configs = [ ":public_include_path" ]
+  deps = [
+    "//pw_bluetooth_sapphire/host/common",
+    "//pw_span",
+  ]
 }
 
 pw_test("central_test") {

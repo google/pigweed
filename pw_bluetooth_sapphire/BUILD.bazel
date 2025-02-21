@@ -45,9 +45,45 @@ cc_library(
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
+        ":connection",
+        ":uuid",
         "//pw_bluetooth:pw_bluetooth2",
         "//pw_bluetooth_sapphire/host/gap",
         "//pw_multibuf:allocator",
+    ],
+)
+
+cc_library(
+    name = "connection",
+    srcs = [
+        "connection.cc",
+        "connection_options.cc",
+    ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/connection.h",
+        "public/pw_bluetooth_sapphire/internal/connection_options.h",
+    ],
+    strip_include_prefix = "public",
+    tags = ["noclangtidy"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":uuid",
+        "//pw_bluetooth:pw_bluetooth2",
+        "//pw_bluetooth_sapphire/host/gap",
+    ],
+)
+
+cc_library(
+    name = "uuid",
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/uuid.h",
+    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pw_bluetooth:pw_bluetooth2",
+        "//pw_bluetooth_sapphire/host/common",
+        "//pw_span",
     ],
 )
 

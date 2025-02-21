@@ -65,6 +65,7 @@ class FakeAdapter final : public Adapter {
     struct Connection {
       PeerId peer_id;
       LowEnergyConnectionOptions options;
+      LowEnergyConnectionHandle* handle;
     };
 
     explicit FakeLowEnergy(FakeAdapter* adapter)

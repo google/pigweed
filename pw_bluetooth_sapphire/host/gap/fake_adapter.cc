@@ -103,8 +103,6 @@ void FakeAdapter::FakeLowEnergy::Connect(
     PeerId peer_id,
     ConnectionResultCallback callback,
     LowEnergyConnectionOptions connection_options) {
-  connections_[peer_id] = Connection{peer_id, connection_options};
-
   auto accept_cis_cb = [](iso::CigCisIdentifier, iso::CisEstablishedCallback) {
     return iso::AcceptCisStatus::kSuccess;
   };
@@ -115,19 +113,30 @@ void FakeAdapter::FakeLowEnergy::Connect(
   auto role_cb = []() {
     return pw::bluetooth::emboss::ConnectionRole::CENTRAL;
   };
-  auto handle = std::make_unique<LowEnergyConnectionHandle>(
-      peer_id,
-      /*handle=*/1,
-      /*release_cb=*/[](auto) {},
-      std::move(accept_cis_cb),
-      std::move(bondable_cb),
-      std::move(security_cb),
-      std::move(role_cb));
+  auto release_cb = [this](LowEnergyConnectionHandle* handle) {
+    // NOTE: This assumes there is only 1 connection handle in tests.
+    PW_CHECK(connections_.erase(handle->peer_identifier()));
+  };
+  auto handle =
+      std::make_unique<LowEnergyConnectionHandle>(peer_id,
+                                                  /*handle=*/1,
+                                                  std::move(release_cb),
+                                                  std::move(accept_cis_cb),
+                                                  std::move(bondable_cb),
+                                                  std::move(security_cb),
+                                                  std::move(role_cb));
+  connections_[peer_id] = Connection{peer_id, connection_options, handle.get()};
   callback(fit::ok(std::move(handle)));
 }
 
 bool FakeAdapter::FakeLowEnergy::Disconnect(PeerId peer_id) {
-  return connections_.erase(peer_id);
+  auto conn_iter = connections_.find(peer_id);
+  if (conn_iter == connections_.end()) {
+    return false;
+  }
+  conn_iter->second.handle->MarkClosed();
+  connections_.erase(conn_iter);
+  return true;
 }
 
 void FakeAdapter::FakeLowEnergy::OpenL2capChannel(

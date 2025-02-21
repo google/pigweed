@@ -148,6 +148,13 @@ class LowEnergyCentralServerTestFakeAdapter
     proxy_.Bind(std::move(handle));
   }
 
+  void TearDown() override {
+    RunLoopUntilIdle();
+    proxy_ = nullptr;
+    server_ = nullptr;
+    bt::fidl::testing::FakeAdapterTestFixture::TearDown();
+  }
+
   fuchsia::bluetooth::le::Central* central_proxy() const {
     return proxy_.get();
   }
