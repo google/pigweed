@@ -33,8 +33,7 @@ pw_source_set("size_report") {
   public_deps = [
     "$dir_pw_allocator:allocator",
     "$dir_pw_allocator:block_allocator",
-    "$dir_pw_allocator/block:detailed_block",
-    "$dir_pw_allocator/bucket:fast_sorted",
+    "$dir_pw_allocator/block:small_block",
     "$dir_pw_bloat:bloat_this_binary",
     dir_pw_bytes,
   ]
@@ -63,33 +62,53 @@ pw_executable("base") {
 
 # Block binaries to be measured for code size.
 
-_detailed_block = {
+pw_executable("detailed_block") {
+  forward_variables_from(_size_report, "*")
   sources = [ "detailed_block.cc" ]
-  deps = [
-    ":size_report",
+  deps += [
     "$dir_pw_allocator/block:detailed_block",
     "$dir_pw_allocator/bucket:fast_sorted",
+  ]
+}
+
+_small_block = {
+  sources = [ "small_block.cc" ]
+  deps = [
+    ":size_report",
+    "$dir_pw_allocator/block:small_block",
     "$dir_pw_bloat:bloat_this_binary",
   ]
 }
 
-pw_executable("detailed_block") {
-  forward_variables_from(_detailed_block, "*")
+pw_executable("small_block") {
+  forward_variables_from(_small_block, "*")
   configs = [ ":hardening_none" ]
 }
 
-pw_executable("detailed_block_basic") {
-  forward_variables_from(_detailed_block, "*")
+pw_executable("small_alignable_block") {
+  forward_variables_from(_size_report, "*")
+  sources = [ "small_alignable_block.cc" ]
+  deps += [ "$dir_pw_allocator/block:small_alignable_block" ]
+}
+
+pw_executable("tiny_block") {
+  forward_variables_from(_size_report, "*")
+  sources = [ "tiny_block.cc" ]
+  deps += [ "$dir_pw_allocator/block:tiny_block" ]
+}
+
+pw_executable("small_block_basic") {
+  forward_variables_from(_small_block, "*")
   configs = [ "$dir_pw_allocator:hardening_basic" ]
 }
 
-pw_executable("detailed_block_robust") {
-  forward_variables_from(_detailed_block, "*")
+pw_executable("small_block_robust") {
+  forward_variables_from(_small_block, "*")
   configs = [ "$dir_pw_allocator:hardening_robust" ]
 }
 
-pw_executable("detailed_block_debug") {
-  forward_variables_from(_detailed_block, "*")
+pw_executable("small_block_debug") {
+  forward_variables_from(_small_block, "*")
   configs = [ "$dir_pw_allocator:hardening_debug" ]
 }
 

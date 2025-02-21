@@ -343,6 +343,7 @@ constexpr BlockResult<Derived> AllocatableBlock<Derived>::DoAllocLast(
   if (extra >= Derived::kMinOuterSize) {
     // Split the large padding off the front.
     block = block->DoSplitLast(layout.size());
+    prev = block->Prev();
     result = BlockResult(block, BlockResultPrev::kSplitNew);
 
   } else if (extra != 0 && prev != nullptr) {

@@ -40,8 +40,7 @@ cc_library(
     deps = [
         "//pw_allocator:allocator",
         "//pw_allocator:block_allocator",
-        "//pw_allocator/block:detailed_block",
-        "//pw_allocator/bucket:fast_sorted",
+        "//pw_allocator/block:small_block",
         "//pw_bloat:bloat_this_binary",
         "//pw_bytes",
     ],
@@ -63,35 +62,55 @@ pw_cc_size_binary(
 
 # Block binaries to be measured for code size.
 
-_detailed_block_deps = [
+pw_cc_size_binary(
+    name = "detailed_block",
+    srcs = ["detailed_block.cc"],
+    deps = _size_report_deps + [
+        "//pw_allocator/block:detailed_block",
+        "//pw_allocator/bucket:fast_sorted",
+    ],
+)
+
+_small_block_deps = [
     ":size_report",
-    "//pw_allocator/block:detailed_block",
-    "//pw_allocator/bucket:fast_sorted",
+    "//pw_allocator/block:small_block",
     "//pw_bloat:bloat_this_binary",
 ]
 
 pw_cc_size_binary(
-    name = "detailed_block",
-    srcs = ["detailed_block.cc"],
-    deps = _detailed_block_deps + [":hardening_none"],
+    name = "small_block",
+    srcs = ["small_block.cc"],
+    deps = _small_block_deps + [":hardening_none"],
 )
 
 pw_cc_size_binary(
-    name = "detailed_block_basic",
-    srcs = ["detailed_block.cc"],
-    deps = _detailed_block_deps + ["//pw_allocator:hardening_basic"],
+    name = "small_alignable_block",
+    srcs = ["small_alignable_block.cc"],
+    deps = _size_report_deps + ["//pw_allocator/block:small_alignable_block"],
 )
 
 pw_cc_size_binary(
-    name = "detailed_block_robust",
-    srcs = ["detailed_block.cc"],
-    deps = _detailed_block_deps + ["//pw_allocator:hardening_robust"],
+    name = "tiny_block",
+    srcs = ["tiny_block.cc"],
+    deps = _size_report_deps + ["//pw_allocator/block:tiny_block"],
 )
 
 pw_cc_size_binary(
-    name = "detailed_block_debug",
-    srcs = ["detailed_block.cc"],
-    deps = _detailed_block_deps + ["//pw_allocator:hardening_debug"],
+    name = "small_block_basic",
+    srcs = ["small_block.cc"],
+    deps = _small_block_deps + ["//pw_allocator:hardening_basic"],
+)
+
+pw_cc_size_binary(
+    name = "small_block_robust",
+    srcs = ["small_block.cc"],
+    deps = _small_block_deps + ["//pw_allocator:hardening_robust"],
+)
+
+pw_cc_size_binary(
+    name = "small_block_debug",
+    srcs = ["small_block.cc"],
+    deps = _small_block_deps + ["//pw_allocator:hardening_debug"],
 )
 
 # Bucket binaries to be measured for code size.

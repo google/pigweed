@@ -95,7 +95,7 @@ Module configuration options include:
 
 - :ref:`module-pw_allocator-config-block_poison_interval` determines how
   frequently blocks that implemented the
-  :ref:`module-pw_allocator-api-poisonable-block` mix-in should apply the poison
+  :ref:`module-pw_allocator-api-poisonable_block` mix-in should apply the poison
   pattern on deallocation.
 - :ref:`module-pw_allocator-config-hardening` allows you to set how many
   validation checks are enabled. Additional checks can detect more errors at the
@@ -446,7 +446,7 @@ will check the integrity of the block header and assert if it has been modified.
 Additionally, you can enable poisoning to detect additional memory corruptions
 such as use-after-frees. The :ref:`module-pw_allocator-module-configuration` for
 ``pw_allocator`` includes the ``PW_ALLOCATOR_BLOCK_POISON_INTERVAL`` option. If
-a block derives from :ref:`module-pw_allocator-api-poisonable-block`, the
+a block derives from :ref:`module-pw_allocator-api-poisonable_block`, the
 allocator will "poison" every N-th block it frees. Allocators "poison" blocks by
 writing a set pattern to the usable memory, and later check on allocation that
 the pattern is intact. If it is not, something has illegally modified

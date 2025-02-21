@@ -451,7 +451,6 @@ pw_source_set("block_allocator_testing") {
   deps = [
     "$dir_pw_bytes:alignment",
     "$dir_pw_third_party/fuchsia:stdcompat",
-    "block:detailed_block",
     dir_pw_assert,
     dir_pw_status,
   ]
@@ -767,6 +766,21 @@ pw_size_diff("blocks_size_report") {
       base = "size_report:base"
       label = "DetailedBlock"
     },
+    {
+      target = "size_report:small_block_basic"
+      base = "size_report:base"
+      label = "SmallBlock"
+    },
+    {
+      target = "size_report:small_alignable_block"
+      base = "size_report:base"
+      label = "SmallAlignableBlock"
+    },
+    {
+      target = "size_report:tiny_block"
+      base = "size_report:base"
+      label = "TinyBlock"
+    },
   ]
 }
 
@@ -774,17 +788,17 @@ pw_size_diff("hardening_size_report") {
   title = "Size impact of various levels of pw_allocator hardening"
   binaries = [
     {
-      target = "size_report:detailed_block_basic"
+      target = "size_report:small_block_basic"
       base = "size_report:base"
       label = "DetailedBlock with basic assertions enabled"
     },
     {
-      target = "size_report:detailed_block_robust"
+      target = "size_report:small_block_robust"
       base = "size_report:base"
       label = "DetailedBlock with robust assertions enabled"
     },
     {
-      target = "size_report:detailed_block_debug"
+      target = "size_report:small_block_debug"
       base = "size_report:base"
       label = "DetailedBlock with debug assertions enabled"
     },

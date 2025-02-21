@@ -271,49 +271,49 @@ block to a derived type.
 
 .. TODO(b/378549332): Add a diagram of mix-in relationships.
 
-.. _module-pw_allocator-api-basic-block:
+.. _module-pw_allocator-api-basic_block:
 
 BasicBlock
 ----------
 .. doxygenclass:: pw::allocator::BasicBlock
    :members:
 
-.. _module-pw_allocator-api-contiguous-block:
+.. _module-pw_allocator-api-contiguous_block:
 
 ContiguousBlock
 ---------------
 .. doxygenclass:: pw::allocator::ContiguousBlock
    :members:
 
-.. _module-pw_allocator-api-allocatable-block:
+.. _module-pw_allocator-api-allocatable_block:
 
 AllocatableBlock
 ----------------
 .. doxygenclass:: pw::allocator::AllocatableBlock
    :members:
 
-.. _module-pw_allocator-api-alignable-block:
+.. _module-pw_allocator-api-alignable_block:
 
 AlignableBlock
 --------------
 .. doxygenclass:: pw::allocator::AlignableBlock
    :members:
 
-.. _module-pw_allocator-api-block-with-layout:
+.. _module-pw_allocator-api-block_with_layout:
 
 BlockWithLayout
 ---------------
 .. doxygenclass:: pw::allocator::BlockWithLayout
    :members:
 
-.. _module-pw_allocator-api-iterable-block:
+.. _module-pw_allocator-api-iterable_block:
 
 IterableBlock
 --------------------
 .. doxygenclass:: pw::allocator::IterableBlock
    :members:
 
-.. _module-pw_allocator-api-poisonable-block:
+.. _module-pw_allocator-api-poisonable_block:
 
 PoisonableBlock
 ---------------
@@ -333,6 +333,40 @@ Block implementations
 =====================
 The following combine block mix-ins and provide both the methods they require as
 well as a concrete representation of the data those methods need.
+
+.. _module-pw_allocator-api-small_block:
+
+SmallBlock
+----------
+This implementation includes just enough mix-ins for fixed-alignment
+allocations.
+
+.. doxygenclass:: pw::allocator::SmallBlock
+   :members:
+
+.. _module-pw_allocator-api-small_alignable_block:
+
+SmallAlignableBlock
+-------------------
+This implementation includes just enough mix-ins for variable-alignment
+allocations.
+
+.. doxygenclass:: pw::allocator::SmallAlignableBlock
+   :members:
+
+.. _module-pw_allocator-api-tiny_block:
+
+TinyBlock
+---------
+This implementation is similar to :ref:`module-pw_allocator-api-small_block`,
+but packs its information into just 4 bytes of overhead per allocation. This
+constrains both its miniumum and maximum allocatable sizes, and incurs small
+code size and performance costs for packing and unpacking header information.
+
+.. doxygenclass:: pw::allocator::TinyBlock
+   :members:
+
+.. _module-pw_allocator-api-detailed_block:
 
 DetailedBlock
 -------------

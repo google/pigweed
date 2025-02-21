@@ -102,26 +102,87 @@ one or more of the block mix-ins. Each block mix-in provides a specific set of
 features, allowing block implementers to include only what they need. Features
 provided by these block mix-ins include:
 
-- A :ref:`module-pw_allocator-api-basic-block` can retrieve the memory that
+- A :ref:`module-pw_allocator-api-basic_block` can retrieve the memory that
   makes up its usable space and its size.
-- A :ref:`module-pw_allocator-api-contiguous-block` knows the blocks that are
+- A :ref:`module-pw_allocator-api-contiguous_block` knows the blocks that are
   adjacent to it in memory. It can merge with neighboring blocks and split
   itself into smaller sub-blocks.
-- An :ref:`module-pw_allocator-api-allocatable-block` knows when it is free or
+- An :ref:`module-pw_allocator-api-allocatable_block` knows when it is free or
   in-use. It can allocate new blocks from either the beginning or end of its
   usable space when free. When in-use, it can be freed and merged with
   neighboring blocks that are free. This ensures that free blocks are only ever
   adjacent to blocks in use, and vice versa.
-- An :ref:`module-pw_allocator-api-alignable-block` can additionally allocate
+- An :ref:`module-pw_allocator-api-alignable_block` can additionally allocate
   blocks from either end at specified alignment boundaries.
-- A :ref:`module-pw_allocator-api-block-with-layout` can retrieve the layout
+- A :ref:`module-pw_allocator-api-block_with_layout` can retrieve the layout
   used to allocate it, even if the block itself is larger due to alignment or
   padding.
-- The :ref:`module-pw_allocator-api-iterable-block` type provides iterators
+- The :ref:`module-pw_allocator-api-iterable_block` type provides iterators
   and ranges that can be used to iterate over a sequence of blocks.
-- A :ref:`module-pw_allocator-api-poisonable-block` can fill its usable space
+- A :ref:`module-pw_allocator-api-poisonable_block` can fill its usable space
   with a pattern when freed. This pattern can be checked on a subsequent
   allocation to detect if the memory was illegally modified while free.
+
+You can use these mix-ins to implement your own block type, or use one of the
+implementations provided by Pigweed. Each of provided block types implements
+some or all of the mix-ins:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Mix-in
+     - BuddyBlock
+     - :ref:`module-pw_allocator-api-tiny_block`
+     - :ref:`module-pw_allocator-api-small_block`
+     - :ref:`module-pw_allocator-api-small_alignable_block`
+     - :ref:`module-pw_allocator-api-detailed_block`
+   * - :ref:`module-pw_allocator-api-basic_block`
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+   * - :ref:`module-pw_allocator-api-contiguous_block`
+     -
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+   * - :ref:`module-pw_allocator-api-iterable_block`
+     -
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+   * - :ref:`module-pw_allocator-api-allocatable_block`
+     -
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+   * - :ref:`module-pw_allocator-api-alignable_block`
+     -
+     -
+     -
+     - ✓
+     - ✓
+   * - :ref:`module-pw_allocator-api-poisonable_block`
+     -
+     -
+     -
+     -
+     - ✓
+   * - :ref:`module-pw_allocator-api-block_with_layout`
+     -
+     -
+     -
+     -
+     - ✓
+
+.. note::
+   ``BuddyBlock`` is a specialized implementation used by
+   :ref:`module-pw_allocator-api-buddy_allocator`. It is not general enough to
+   be used with a generic :ref:`module-pw_allocator-api-block_allocator`.
 
 In addition to poisoning, blocks validate their metadata against their neighbors
 on each allocation and deallocation. A block can fail to be validated if it or
@@ -150,7 +211,7 @@ For example, a block allocator that uses a "best-fit" strategy needs to be able
 to efficiently search free blocks by usable size in order to find the smallest
 candidate that could satisfy the request.
 
-The :ref:`module-pw_allocator-api-basic-block` mix-in requires blocks to specify
+The :ref:`module-pw_allocator-api-basic_block` mix-in requires blocks to specify
 both a ``MinInnerSize`` and ``DefaultAlignment``. Together these ensure that the
 usable space of free blocks can be treated as intrusive items for containers.
 The bucket classes that derive from :ref:`module-pw_allocator-api-bucket_base`
@@ -171,7 +232,7 @@ For example, a block allocator that uses a "best-fit" strategy needs to be able
 to efficiently search free blocks by usable size in order to find the smallest
 candidate that could satisfy the request.
 
-The :ref:`module-pw_allocator-api-basic-block` mix-in requires blocks to specify
+The :ref:`module-pw_allocator-api-basic_block` mix-in requires blocks to specify
 both a ``MinInnerSize`` and ``DefaultAlignment``. Together these ensure that the
 usable space of free blocks can be treated as intrusive items for containers.
 The :ref:`module-pw_allocator-api-bucket` provide such containers to store and

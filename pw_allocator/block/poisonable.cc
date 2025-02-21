@@ -22,15 +22,19 @@ namespace pw::allocator::internal {
 // operation caused the corruption in the methods below.
 
 void CheckPoisonedWhileInUse(const void* block, bool is_free) {
-  PW_CHECK(is_free,
-           "A block (%p) is corrupted: it is marked as poisoned while in use",
-           block);
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_CHECK(is_free,
+             "A block (%p) is corrupted: it is marked as poisoned while in use",
+             block);
+  }
 }
 
 void CheckPoisonCorrupted(const void* block, bool pattern_is_intact) {
-  PW_CHECK(pattern_is_intact,
-           "A block (%p) is corrupted: its has been modified while free",
-           block);
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_CHECK(pattern_is_intact,
+             "A block (%p) is corrupted: its has been modified while free",
+             block);
+  }
 }
 
 }  // namespace pw::allocator::internal

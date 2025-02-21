@@ -19,16 +19,15 @@
 #include <cstring>
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/block/detailed_block.h"
+#include "pw_allocator/block/small_block.h"
 #include "pw_allocator/block_allocator.h"
-#include "pw_allocator/bucket/fast_sorted.h"
 #include "pw_bloat/bloat_this_binary.h"
 #include "pw_bytes/span.h"
 
 namespace pw::allocator::size_report {
 
 /// Default block type to use for tests.
-using BlockType = DetailedBlock<uint32_t, GenericFastSortedItem>;
+using BlockType = SmallBlock;
 
 /// Type used for exercising an allocator.
 struct Foo final {

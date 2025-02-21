@@ -27,10 +27,12 @@ pw_source_set("result") {
   public = [ "public/pw_allocator/block/result.h" ]
   public_deps = [
     "$dir_pw_allocator:hardening",
-    "$dir_pw_assert",
-    "$dir_pw_status",
+    dir_pw_assert,
+    dir_pw_status,
   ]
 }
+
+# Block mixins
 
 pw_source_set("alignable") {
   public_configs = [ ":public_include_path" ]
@@ -40,8 +42,8 @@ pw_source_set("alignable") {
     "$dir_pw_allocator:deallocator",
     "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
-    "$dir_pw_status",
     "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_status,
   ]
 }
 
@@ -54,7 +56,7 @@ pw_source_set("allocatable") {
     "$dir_pw_allocator:deallocator",
     "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
-    "$dir_pw_status",
+    dir_pw_status,
   ]
 }
 
@@ -64,9 +66,9 @@ pw_source_set("basic") {
   public_deps = [
     "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
-    "$dir_pw_result",
-    "$dir_pw_status",
     "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_result,
+    dir_pw_status,
   ]
   sources = [ "basic.cc" ]
   deps = [ dir_pw_assert ]
@@ -78,8 +80,8 @@ pw_source_set("contiguous") {
   public_deps = [
     ":basic",
     "$dir_pw_allocator:hardening",
-    "$dir_pw_bytes",
     "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_bytes,
   ]
   sources = [ "contiguous.cc" ]
   deps = [ dir_pw_assert ]
@@ -114,6 +116,8 @@ pw_source_set("with_layout") {
   ]
 }
 
+# Block implementations
+
 pw_source_set("detailed_block") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/block/detailed_block.h" ]
@@ -132,6 +136,42 @@ pw_source_set("detailed_block") {
     dir_pw_status,
   ]
 }
+
+pw_source_set("small_block_base") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/block/small_block_base.h" ]
+  public_deps = [
+    ":allocatable",
+    ":basic",
+    ":contiguous",
+    ":iterable",
+    "$dir_pw_allocator/bucket:fast_sorted",
+    dir_pw_bytes,
+  ]
+}
+
+pw_source_set("small_block") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/block/small_block.h" ]
+  public_deps = [ ":small_block_base" ]
+}
+
+pw_source_set("small_alignable_block") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/block/small_alignable_block.h" ]
+  public_deps = [
+    ":alignable",
+    ":small_block_base",
+  ]
+}
+
+pw_source_set("tiny_block") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/block/tiny_block.h" ]
+  public_deps = [ ":small_block_base" ]
+}
+
+# Testing
 
 pw_source_set("testing") {
   public = [
@@ -171,9 +211,36 @@ pw_test("detailed_block_test") {
   sources = [ "detailed_block_test.cc" ]
 }
 
+pw_test("small_block_test") {
+  sources = [ "small_block_test.cc" ]
+  deps = [
+    ":small_block",
+    ":testing",
+  ]
+}
+
+pw_test("small_alignable_block_test") {
+  sources = [ "small_alignable_block_test.cc" ]
+  deps = [
+    ":small_alignable_block",
+    ":testing",
+  ]
+}
+
+pw_test("tiny_block_test") {
+  sources = [ "tiny_block_test.cc" ]
+  deps = [
+    ":testing",
+    ":tiny_block",
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":detailed_block_test",
     ":result_test",
+    ":small_alignable_block_test",
+    ":small_block_test",
+    ":tiny_block_test",
   ]
 }

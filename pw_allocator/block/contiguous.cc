@@ -24,45 +24,55 @@ namespace pw::allocator::internal {
 void CheckNextMisaligned(const void* block,
                          const void* next,
                          bool next_is_aligned) {
-  PW_CHECK(next_is_aligned,
-           "A block (%p) is corrupted: it has a 'next' field (%p) that is not "
-           "properly aligned.",
-           block,
-           next);
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_CHECK(
+        next_is_aligned,
+        "A block (%p) is corrupted: it has a 'next' field (%p) that is not "
+        "properly aligned.",
+        block,
+        next);
+  }
 }
 
 void CheckNextPrevMismatched(const void* block,
                              const void* next,
                              const void* next_prev,
                              bool next_prev_matches) {
-  PW_CHECK(next_prev_matches,
-           "A block (%p) is corrupted: its 'next' field (%p) has a 'prev' "
-           "field (%p) that does not match the block.",
-           block,
-           next,
-           next_prev);
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_CHECK(next_prev_matches,
+             "A block (%p) is corrupted: its 'next' field (%p) has a 'prev' "
+             "field (%p) that does not match the block.",
+             block,
+             next,
+             next_prev);
+  }
 }
 
 void CheckPrevMisaligned(const void* block,
                          const void* prev,
                          bool prev_is_aligned) {
-  PW_CHECK(prev_is_aligned,
-           "A block (%p) is corrupted: it has a 'prev' field (%p) that is not "
-           "properly aligned.",
-           block,
-           prev);
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_CHECK(
+        prev_is_aligned,
+        "A block (%p) is corrupted: it has a 'prev' field (%p) that is not "
+        "properly aligned.",
+        block,
+        prev);
+  }
 }
 
 void CheckPrevNextMismatched(const void* block,
                              const void* prev,
                              const void* prev_next,
                              bool prev_next_matches) {
-  PW_CHECK(prev_next_matches,
-           "A block (%p) is corrupted: its 'prev' field (%p) has a 'next' "
-           "field (%p) that does not match the block.",
-           block,
-           prev,
-           prev_next);
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_CHECK(prev_next_matches,
+             "A block (%p) is corrupted: its 'prev' field (%p) has a 'next' "
+             "field (%p) that does not match the block.",
+             block,
+             prev,
+             prev_next);
+  }
 }
 
 }  // namespace pw::allocator::internal

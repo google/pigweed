@@ -25,6 +25,8 @@ pw_add_library(pw_allocator.block.result INTERFACE
     pw_status
 )
 
+# Block mixins
+
 pw_add_library(pw_allocator.block.alignable INTERFACE
   HEADERS
     public/pw_allocator/block/alignable.h
@@ -122,6 +124,8 @@ pw_add_library(pw_allocator.block.with_layout INTERFACE
     pw_allocator.hardening
 )
 
+# Block implementations
+
 pw_add_library(pw_allocator.block.detailed_block INTERFACE
   HEADERS
     public/pw_allocator/block/detailed_block.h
@@ -141,6 +145,8 @@ pw_add_library(pw_allocator.block.detailed_block INTERFACE
     pw_bytes
     pw_status
 )
+
+# Testing
 
 pw_add_library(pw_allocator.block.testing INTERFACE
   HEADERS

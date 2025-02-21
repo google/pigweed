@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,21 +12,18 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/block/basic.h"
+#include "pw_allocator/block/tiny_block.h"
 
-#include "pw_assert/check.h"
+#include <cstdint>
 
-namespace pw::allocator::internal {
+#include "pw_allocator/block/unit_tests.h"
 
-// TODO: b/234875269 - Add stack tracing to locate which call to the heap
-// operation caused the corruption in the methods below.
+namespace {
 
-void CheckMisaligned(const void* block, bool is_aligned) {
-  if constexpr (Hardening::kIncludesDebugChecks) {
-    PW_CHECK(is_aligned,
-             "A block (%p) is invalid: it is not properly aligned.",
-             block);
-  }
-}
+using ::pw::allocator::TinyBlock;
+using TinyBlockTest = ::pw::allocator::test::BlockTest<TinyBlock>;
 
-}  // namespace pw::allocator::internal
+PW_ALLOCATOR_BASIC_BLOCK_TESTS(TinyBlockTest)
+PW_ALLOCATOR_ALLOCATABLE_BLOCK_TESTS(TinyBlockTest)
+
+}  // namespace

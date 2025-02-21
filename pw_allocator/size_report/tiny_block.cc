@@ -1,4 +1,4 @@
-// Copyright 2020 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,21 +12,18 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/block/basic.h"
+#include "pw_allocator/block/tiny_block.h"
 
-#include "pw_assert/check.h"
+#include "pw_allocator/size_report/size_report.h"
+#include "pw_bloat/bloat_this_binary.h"
 
-namespace pw::allocator::internal {
+namespace pw::allocator::size_report {
 
-// TODO: b/234875269 - Add stack tracing to locate which call to the heap
-// operation caused the corruption in the methods below.
-
-void CheckMisaligned(const void* block, bool is_aligned) {
-  if constexpr (Hardening::kIncludesDebugChecks) {
-    PW_CHECK(is_aligned,
-             "A block (%p) is invalid: it is not properly aligned.",
-             block);
-  }
+int Measure() {
+  volatile uint32_t mask = bloat::kDefaultMask;
+  return MeasureBlock<TinyBlock>(mask);
 }
 
-}  // namespace pw::allocator::internal
+}  // namespace pw::allocator::size_report
+
+int main() { return pw::allocator::size_report::Measure(); }
