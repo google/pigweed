@@ -29,6 +29,8 @@ namespace pw::async2 {
 template <typename T, typename Func = Function<Poll<T>(Context&)>>
 class PendFuncAwaitable {
  public:
+  using CallableType = Func;
+
   /// Create a new object` which delegates ``Pend`` to ``pendable``.
   ///
   /// See class docs for more details.
@@ -43,9 +45,13 @@ class PendFuncAwaitable {
   Func func_;
 };
 
-// Template deduction guide to allow inferring T from a lambda's return type.
+// Template deduction guide to allow inferring T from a Callable's return type.
+// This also ensures that when constructing a PendFuncAwaitable from a callable,
+// the template Func parameter is set based on the Callable type, which helps
+// optimize the amount of storage needed.
 template <typename Callable>
 PendFuncAwaitable(Callable) -> PendFuncAwaitable<
-    typename std::invoke_result<Callable, Context&>::type::OutputType>;
+    typename std::invoke_result<Callable, Context&>::type::OutputType,
+    typename std::remove_reference<Callable>::type>;
 
 }  // namespace pw::async2

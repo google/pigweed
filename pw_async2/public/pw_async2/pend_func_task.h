@@ -27,6 +27,8 @@ namespace pw::async2 {
 template <typename Func = Function<Poll<>(Context&)> >
 class PendFuncTask : public Task {
  public:
+  using CallableType = Func;
+
   /// Create a new ``Task`` which delegates ``Pend`` to ``func``.
   ///
   /// See class docs for more details.

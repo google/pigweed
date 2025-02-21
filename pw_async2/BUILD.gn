@@ -236,6 +236,7 @@ if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
       ":pend_func_awaitable",
       ":poll",
       "$dir_pw_allocator:testing",
+      dir_pw_function,
     ]
     sources = [ "pend_func_awaitable_test.cc" ]
   }

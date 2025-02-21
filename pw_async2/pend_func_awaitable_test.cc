@@ -14,19 +14,21 @@
 
 #include "pw_async2/pend_func_awaitable.h"
 
-#include <memory>
 #include <optional>
+#include <utility>
 
 #include "pw_allocator/testing.h"
 #include "pw_async2/coro.h"
 #include "pw_async2/coro_or_else_task.h"
 #include "pw_async2/dispatcher.h"
 #include "pw_async2/poll.h"
+#include "pw_function/function.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
 
+using ::pw::Function;
 using ::pw::OkStatus;
 using ::pw::Result;
 using ::pw::Status;
@@ -104,6 +106,38 @@ TEST(PendFuncAwaitable, TestMailbox) {
   EXPECT_EQ(mailbox.PollCount(), 2);
   EXPECT_EQ(output, 5);
   EXPECT_FALSE(error_handler_did_run);
+}
+
+Poll<int> ReturnsReady8(Context&) { return Ready(8); }
+
+TEST(PendFuncAwaitable, TestTemplateDeductionAndSize) {
+  // A PendFuncAwaitable with an unspecified Func template parameter will
+  // default to pw::Function. This allows the same container to hold a variety
+  // of different callables, but it may either reserve extra inline storage or
+  // dynamically allocate momeory, depending on how pw::Function is configured.
+  std::optional<PendFuncAwaitable<int>> a;
+  a.emplace([](Context&) -> Poll<int> { return Ready(4); });
+  a.emplace(&ReturnsReady8);
+  static_assert(sizeof(decltype(a)::value_type::CallableType) ==
+                sizeof(Function<Poll<int>(Context&)>));
+
+  // When constructing a PendFuncAwaitable directly from a callable, CTAD will
+  // match the Func template parameter to that of the callable. This has the
+  // benefit of reducing the amount of storage needed vs that of a pw::Function.
+  //
+  // A lambda without any captures doesn't require any storage.
+  auto b = PendFuncAwaitable([](Context&) -> Poll<int> { return Ready(4); });
+  static_assert(sizeof(decltype(b)::CallableType) <= 1);
+
+  // A lambda with captures requires storage to hold the captures.
+  int scratch = 6;
+  auto c = PendFuncAwaitable(
+      [&scratch](Context&) -> Poll<int> { return Ready(scratch); });
+  static_assert(sizeof(decltype(c)::CallableType) == sizeof(&scratch));
+
+  // A raw function pointer just needs storage for the pointer value.
+  auto d = PendFuncAwaitable(&ReturnsReady8);
+  static_assert(sizeof(decltype(d)::CallableType) == sizeof(&ReturnsReady8));
 }
 
 }  // namespace

@@ -14,6 +14,9 @@
 
 #include "pw_async2/pend_func_task.h"
 
+#include <optional>
+#include <utility>
+
 #include "pw_async2/dispatcher.h"
 #include "pw_function/function.h"
 #include "pw_unit_test/framework.h"
@@ -72,6 +75,38 @@ TEST(PendFuncTask, HoldsPwFunctionWithEmptyTypeList) {
   PendFuncTask<> func_task([](Context&) -> Poll<> { return Ready(); });
   static_assert(std::is_same<decltype(func_task),
                              PendFuncTask<Function<Poll<>(Context&)>>>::value);
+}
+
+Poll<> ReturnsReady(Context&) { return Ready(); }
+
+TEST(PendFuncTask, TestTemplateDeductionAndSize) {
+  // A PendFuncTask with an unspecified Func template parameter will default
+  // to pw::Function. This allows the same container to hold a variety of
+  // different callables, but it may either reserve extra inline storage or
+  // dynamically allocate momeory, depending on how pw::Function is configured.
+  std::optional<PendFuncTask<>> a;
+  a.emplace([](Context&) -> Poll<> { return Ready(); });
+  a.emplace(&ReturnsReady);
+  static_assert(sizeof(decltype(a)::value_type::CallableType) ==
+                sizeof(Function<Poll<>(Context&)>));
+
+  // When constructing a PendFuncTask directly from a callable, CTAD will match
+  // the Func template parameter to that of the callable. This has the
+  // benefit of reducing the amount of storage needed vs that of a pw::Function.
+  //
+  // A lambda without any captures doesn't require any storage.
+  auto b = PendFuncTask([](Context&) -> Poll<> { return Ready(); });
+  static_assert(sizeof(decltype(b)::CallableType) <= 1);
+
+  // A lambda with captures requires storage to hold the captures.
+  int scratch = 6;
+  auto c = PendFuncTask(
+      [&scratch](Context&) -> Poll<> { return scratch ? Ready() : Pending(); });
+  static_assert(sizeof(decltype(c)::CallableType) == sizeof(&scratch));
+
+  // A raw function pointer just needs storage for the pointer value.
+  auto d = PendFuncTask(&ReturnsReady);
+  static_assert(sizeof(decltype(d)::CallableType) == sizeof(&ReturnsReady));
 }
 
 }  // namespace

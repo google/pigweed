@@ -218,6 +218,7 @@ if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
       pw_async2.pend_func_awaitable
       pw_async2.poll
       pw_allocator.testing
+      pw_function
   )
 endif()
 

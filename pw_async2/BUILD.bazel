@@ -143,6 +143,7 @@ pw_cc_test(
         ":pend_func_awaitable",
         ":poll",
         "//pw_allocator:testing",
+        "//pw_function",
     ],
 )
 

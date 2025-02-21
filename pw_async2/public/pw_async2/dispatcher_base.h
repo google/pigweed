@@ -162,9 +162,9 @@ class Task {
 
  public:
   Task() = default;
-  Task(Task&) = delete;
+  Task(const Task&) = delete;
   Task(Task&&) = delete;
-  Task& operator=(Task&) = delete;
+  Task& operator=(const Task&) = delete;
   Task& operator=(Task&&) = delete;
   virtual ~Task() {
     // Note: the task must not be registered with a ``Dispatcher` upon
