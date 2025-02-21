@@ -41,5 +41,6 @@ pw_doc_group("docs") {
     "0124.rst",
     "0128.rst",
     "0130.rst",
+    "0133.rst",
   ]
 }

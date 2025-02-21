@@ -50,6 +50,7 @@ sphinx_docs_library(
         "0124.rst",
         "0128.rst",
         "0130.rst",
+        "0133.rst",
     ],
     prefix = "seed/",
     target_compatible_with = incompatible_with_mcu(),

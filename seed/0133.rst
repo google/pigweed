@@ -1,0 +1,416 @@
+.. _seed-0133:
+
+==================
+0133: pw_wakelock
+==================
+.. seed::
+   :number: 133
+   :name: pw_wakelock
+   :status: Rejected
+   :proposal_date: 2025-01-31
+   :cl: 263535
+   :authors: Jiaming (Charlie) Wang, Ben Lawson
+   :facilitator: Unassigned
+
+-------------------
+Rejection rationale
+-------------------
+Wake locks are an anti-pattern in software development, especially so in
+embedded systems. MCUs typically do not need wake locks because the scheduler
+does not suspend the system in the middle of tasks like Android does. MCUs also
+suspend/resume faster than more complex systems, so the benefit of keeping the
+system awake when no task is running is minimal or non-existent. Finally, wake
+locks tend to be viral once introduced due to all tasks seemingly needing to be
+wrapped in a wake lock, so we are wary of promoting them.
+
+For now, we think it is more appropriate for subsystems like
+``pw_bluetooth_sapphire`` to provide a custom API for wake lock logic that is
+likely to only be used when the subsystem is running on a big OS like Android
+or Fuchsia. Once we have some more concrete example code, we may reconsider
+power management APIs in Pigweed.
+
+-------
+Summary
+-------
+This SEED proposes the creation of a new ``pw_wakelock`` module that provides a
+portable interface for creating, holding, and destroying wakelocks. A wakelock
+is a handle that, when active, prevents the system from going to a low power
+state.
+
+----------
+Motivation
+----------
+Bluetooth is a major wakeup source on embedded projects and systems typically
+need to stay awake while Bluetooth procedures are active. While this can be done
+with a crude timeout upon packet activity, tight integration with the Bluetooth stack
+enables more effective power management. Accordingly, ``pw_bluetooth_sapphire``
+needs to integrate with the power framework on Fuchsia and future customer
+platforms. This needs to be done in a portable way that enables consistent
+power management behavior across platforms.
+
+Beyond the Sapphire module, wakelocks are a common requirement in battery
+powered embedded projects so we expect users to find a wakelock abstraction
+useful. Additionally, developers need a way to write unit tests for code that
+uses wakelocks without invoking real power management APIs. This indicates the
+need for an abstraction layer.
+
+------------
+Requirements
+------------
+- pw_wakelock should provide an API for creating, holding, and releasing a
+  wakelock.
+- The wakelock API should support unit testing.
+- The wakelock API should not overfit to any existing power management API.
+- The wakelock API should at least be compatible with Fuchsia, Linux, and
+  Zephyr.
+- pw_wakelock backends should be able to adopt an existing platform-specific
+  wakelock. This enables better integration with the rest of the system.
+
+----------------------------------------------
+Investigation into operating system power APIs
+----------------------------------------------
+
+User space power management in Linux
+====================================
+
+Wakelock
+--------
+Wakelock allows processes in user space to prevent CPUs from going into low
+power state by writing a lock name to a file descriptor. The wakelock
+implementation was initially shipped with Android without first landing in the
+Linux mainline, and upstreaming it was `controversial
+<https://lwn.net/Articles/318611/>`_.
+
+Key `APIs <https://lore.kernel.org/lkml/201202220037.53776.rjw@sisk.pl/>`_ from
+userspace are as follows:
+
+Acquire a wakelock
+^^^^^^^^^^^^^^^^^^
+Write wakelock name to ``/sys/power/wake_lock``.
+
+Acquire a wakelock with timeout
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Write wakelock name along with a timeout (in nanoseconds) to
+``/sys/power/wake_lock``.
+
+Release a wakelock
+^^^^^^^^^^^^^^^^^^
+Write wakelock name to ``/sys/power/wake_unlock``.
+
+Power management in Fuchsia
+=====================================
+See `Fuchsia power framework
+<https://fuchsia.dev/fuchsia-src/concepts/power/intro>`_ for detailed
+information on Fuchsia power concepts.
+
+Power element and power level
+-----------------------------
+Power Element is the abstraction that represents either a hardware device or a
+higher level software component. Power elements are composed of discrete power
+levels, which can be a range of performance levels. Managed elements have their
+power level dictated by the Power Broker. Unmanaged elements cannot have
+dependencies and simply report their current power level.
+
+
+Dependencies in power elements
+------------------------------
+The power level of one power element can have a dependency with the power level
+in another power element. Fulfillment policies for power level dependencies are
+strong fulfillment and weak fulfillment. Strong fulfillment means the power
+level is activated, while weak fulfillment does not control the power level. A
+dependency can be strongly-fulfilled only if its required element is managed,
+whereas dependencies on managed and unmanaged elements may be weakly-fulfilled.
+
+Leases
+------
+A component can take a lease at a certain power level in a power element owned
+by the component. A lease is a grant for a managed element to have all of its
+dependencies for a given power level fulfilled. A component can also acquire a
+lease without explicitly configuring a power element or its dependencies. The
+`` fuchsia.power.system/ActivityGovernor.AcquireWakeLease`` API returns a
+``LeaseToken`` that prevents system suspension. The lease is transferable
+across components and drivers using FIDL messages. `Here
+<https://cs.opensource.google/fuchsia/fuchsia/+/main:examples/power/wake_lease/cpp>`_
+is the latest example code for taking a wake lease directly from the System
+Activity Governor. The timed power lease is not available as of now and
+requires a custom implementation.
+
+Power management in Zephyr
+====================================
+Power State Locks in Zephyr provide a mechanism to explicitly prevent the
+system from transitioning into certain power states. This functionality is
+useful when a component needs to ensure the system remains in a specific power
+state, effectively acting similar to a wakelock in Linux.
+
+Power API
+---------
+Zephyr provides System Power Management which is responsible for controlling
+the overall power state of the CPU or the entire System-on-Chip (SoC). This
+involves transitioning the system between different power states, each
+characterized by varying levels of power consumption and wakeup latency.
+
+Processes / Applications can utilize the following `Power Management Policy
+APIs
+<https://docs.zephyrproject.org/latest/doxygen/html/group__subsys__pm__sys__policy.html#gabbb379f8572f164addafe93ad3468f3d>`_
+to prevent the SoC going into certain power states, to keep the CPU along with
+certain devices in the right power level.
+
+pm_policy_state_lock_get()
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+``void pm_policy_state_lock_get(enum pm_state state, uint8_t substate_id)``
+
+Increase a power state lock counter.
+
+A power state will not be allowed on the first call of
+``pm_policy_state_lock_get()``. Subsequent calls will just increase a reference
+count, thus meaning this API can be safely used concurrently. A state will be
+allowed again after ``pm_policy_state_lock_put()`` is called as many times as
+``pm_policy_state_lock_get()``.
+
+Note that the PM_STATE_ACTIVE state is always allowed, so calling this API with
+PM_STATE_ACTIVE will have no effect.
+
+pm_policy_state_lock_is_active()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``bool pm_policy_state_lock_is_active(enum pm_state state, uint8_t substate_id)``
+
+Check if a power state lock is active (not allowed).
+
+pm_policy_state_lock_put()
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+``void pm_policy_state_lock_put(enum pm_state state, uint8_t substate_id)``
+
+Decrease a power state lock counter.
+
+Power states in Zephyr
+----------------------
+Zephyr supports the following power states: active, runtime idle, suspend to
+idle, standby, suspend to ram, suspend to disk, and soft off. See the
+`documentation
+<https://docs.zephyrproject.org/apidoc/latest/group__subsys__pm__states.html#ga20e2f5ea9027a3653e5b9cc5aa1e21d5>`_
+for detailed descriptions.
+
+------
+Design
+------
+We aim to minimize the API surface to maximize portability. For example, we are
+not adding an API with timeout parameters, power levels, or diagnostic features
+(other than names). Tokenization is also optional.
+
+The ``WakelockProvider`` interface is implemented by backends and has a single
+method for vending wakelocks. A ``Wakelock`` is a simple movable class that
+calls a function on destruction. This function can be used by backends to
+unlock the wakelock.
+
+A helper macro ``PW_WAKELOCK_ACQUIRE`` is provided that optionally tokenizes
+the wakelock name parameter depending on the configuration.
+
+Testability is also a primary goal of this design. By using the
+``WakelockProvider`` interface, a fake can be dependency injected into the code
+under test.
+
+API
+===
+.. code-block:: c++
+
+   #define PW_WAKELOCK_ACQUIRE(provider, name) \
+     provider.Acquire(PW_WAKELOCK_TOKEN_EXPR(name))
+
+   class WakelockProvider {
+   public:
+     virtual ~WakelockProvider() = default;
+     virtual Result<Wakelock> Acquire(PW_WAKELOCK_TOKEN_TYPE name) = 0;
+   };
+
+   class Wakelock final {
+   public:
+     Wakelock();
+     Wakelock(pw::Function<void()>);
+     Wakelock(Wakelock&&) = default;
+     Wakelock& operator=(Wakelock&&) = default;
+     Wakelock(const Wakelock&) = delete;
+     Wakelock& operator=(const Wakelock&) = delete;
+
+     ~Wakelock() {
+       if (unlock_fn_) {
+         unlock_fn_();
+       }
+     }
+
+   private:
+     pw::Function<void()> unlock_fn_ = nullptr;
+   };
+
+Example usage
+=============
+.. code-block:: c++
+
+   Status MyFunction(WakelockProvider& provider) {
+     PW_TRY_ASSIGN(Wakelock lock, PW_WAKELOCK_ACQUIRE(provider, "hello_world"));
+     PW_LOG_INFO("Hello World");
+   }
+
+   int main() {
+      LinuxWakelockProvider provider;
+      if (!MyFunction(provider).ok()) {
+        return 1;
+      }
+      return 0;
+   }
+
+Testing
+=======
+A fake ``WakelockProvider`` implementation will be created with the following
+API:
+
+.. code-block:: c++
+
+   class FakeWakelockProvider final : WakelockProvider {
+   public:
+     Result<Wakelock> Acquire(PW_WAKELOCK_TOKEN_TYPE name) override {
+       if (!status_.ok())  {
+         return status_;
+       }
+       wakelock_count_++;
+       return Wakelock([this](){ wakelock_count_--; });
+     }
+
+     uint16_t wakelock_count() const { return wakelock_count_; }
+
+     void set_acquire_status(Status status) { status_ = status; }
+
+   private:
+     uint16_t  wakelock_count_ = 0;
+     Status status_ = PW_STATUS_OK;
+   };
+
+Tokenization
+============
+The tokenized configuration will set ``PW_WAKELOCK_TOKEN_TYPE`` to
+``pw_tokenizer_Token`` and ``PW_WAKELOCK_TOKEN_EXPR`` to
+``PW_TOKENIZE_STRING_EXPR``. By default, these macros will be set to ``const
+char*`` and no-op, respectively.
+
+Backends
+========
+
+No-op
+-----
+There is no reasonable basic backend possible, but we can provide a default
+no-op backend that always succeeds and has an empty implementation.
+
+Linux
+-----
+
+.. code-block:: c++
+
+   #define WAKE_LOCK_PATH "/sys/power/wake_lock"
+   #define WAKE_UNLOCK_PATH "/sys/power/wake_unlock"
+
+   class LinuxWakelockProvider final {
+   public:
+     // Note: if name is tokenized, we can convert the token into a base64
+     // string.
+     Result<Wakelock> Acquire(const char* name) override {
+       int wake_lock_fd = open(WAKE_LOCK_PATH, O_WRONLY|O_APPEND);
+       if (wake_lock_fd < 0) {
+         PW_LOG_WARN("Unable to open %s, err:%s",
+           WAKE_LOCK_PATH, std::strerror(errno));
+         if (errno == ENOENT) {
+           PW_LOG_WARN("No wake lock support");
+         }
+         return Status::Unavailable();
+       }
+
+       // Acquire the wakelock
+       int ret = write(wake_lock_fd, name, strlen(name));
+       close(wake_lock_fd);
+       if (ret < 0) {
+         PW_LOG_ERROR("Failed to acquire wakelock %d %s", ret,
+           strerror(errno));
+         return Status::Unavailable();
+       }
+
+       return Wakelock([name](){ LinuxWakelockProvider::Release(name); });
+     }
+
+     static void Release(const char* name) {
+         int wake_unlock_fd = open(WAKE_UNLOCK_PATH, O_WRONLY|O_APPEND);
+         if (wake_unlock_fd < 0) {
+           PW_LOG_WARN("Unable to open %s, err:%s",
+               WAKE_UNLOCK_PATH, std::strerror(errno));
+           return Status::Unavailable();
+         }
+         // Release the wakelock
+         int ret = write(wake_unlock_fd, name, strlen(name));
+         close(wake_unlock_fd);
+         if (ret < 0) {
+           PW_LOG_ERROR("Failed to release wakelock %d %s", ret, strerror(errno));
+           return;
+         }
+     }
+   };
+
+Fuchsia
+=======
+The Fuchsia backend will be initialized with the client end of
+`ActivityGovernor
+<https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/fidl/fuchsia.power.system/system.fidl;l=206;drc=89a9ea0b8a5fcb5258a8fef4d054c7afe47ef714>`_.
+
+``FuchsiaWakelockProvider::Acquire`` will be implemented by making a
+synchronous call to `ActivityGovernor.AcquireWakeLease()
+<https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/fidl/fuchsia.power.system/system.fidl;l=244;drc=89a9ea0b8a5fcb5258a8fef4d054c7afe47ef714>`_
+for the first wakelock to obtain a ``LeaseToken`` and setting a lock counter to
+1. The lock counter will be incremented for additional ``Acquire`` calls. The
+lock counter will be decremented when a ``Wakelock`` is destroyed. When the
+number of active ``Wakelock`` objects is 0, the ``LeaseToken`` will be
+destroyed. A non-portable method ``FuchsiaWakelockProvider::Adopt`` will
+support creating a ``Wakelock`` from an existing ``LeaseToken``. This will be
+used in FIDL clients and servers before passing a received ``Wakelock`` to
+portable code.
+
+Zephyr
+======
+``ZephyrWakelockProvider::Acquire`` will call ``pm_policy_state_lock_get()``
+with a configurable power state. The default implementation should keep the
+system in  ``PM_STATE_ACTIVE``. On destruction of the ``Wakelock``,
+``pm_policy_state_lock_put()`` will be called.
+
+------------
+Alternatives
+------------
+
+NativeWakelock
+==============
+We originally considered the Class/NativeClass pattern, but is difficult to use
+with unit tests.
+
+.. code-block:: c++
+
+   /// Acquire a wakelock object. Returns a Result<Wakelock>.
+   /// PW_HANDLE_WAKELOCK_ACQUIRE is implemented by the backend.
+   #define PW_WAKELOCK_ACQUIRE(name) \
+           PW_HANDLE_WAKELOCK_ACQUIRE(name, __FILE__, __LINE__)
+
+   // Wakelock interface (using the Class/NativeClass pattern)
+   class Wakelock final {
+   public:
+       Wakelock() : native_wakelock_(*this) {}
+       ~Wakelock();
+       Wakelock(Wakelock&& other);
+       Wakelock& operator=(Wakelock&& other);
+
+       /// Returns the inner `NativeWakelock` containing backend-specific state.
+       /// Only non-portable code should call these methods.
+       backend::NativeWakelock& native_wakelock() { return native_wakelock_; }
+       const backend::NativeWakelock& native_wakelock() const { return native_wakelock_; }
+
+   private:
+       backend::NativeWakelock native_wakelock_;
+   };
+
+Custom wakelock API in pw_bluetooth_sapphire
+============================================
+If this proposal is not accepted, we will need to make a custom wakelock
+abstraction layer inside ``pw_bluetooth_sapphire`` that will likely look similar
+to this proposal.
