@@ -18,37 +18,19 @@ load("@com_google_protobuf//bazel/common:proto_info.bzl", "ProtoInfo")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//pw_protobuf_compiler/private:proto.bzl", "compile_proto", "proto_compiler_aspect")
 
-# TODO: b/234873954 - Enable unused variable check.
-# buildifier: disable=unused-variable
-def nanopb_proto_library(*, name, deps, tags = [], options = None, **kwargs):
+def nanopb_proto_library(*, name, deps, **kwargs):
     """A C++ proto library generated using nanopb.
 
     Attributes:
       deps: proto_library targets for which to generate this library.
     """
 
-    # TODO(tpudlik): Find a way to get Nanopb to generate nested structs.
-    # Otherwise add the manual tag to the resulting library, preventing it
-    # from being built unless directly depended on.  e.g. The 'Pigweed'
-    # message in
-    # pw_protobuf/pw_protobuf_test_protos/full_test.proto will fail to
-    # compile as it has a self referring nested message. According to
-    # the docs
-    # https://jpa.kapsi.fi/nanopb/docs/reference.html#proto-file-options
-    # and https://github.com/nanopb/nanopb/issues/433 it seems like it
-    # should be possible to configure nanopb to generate nested structs via
-    # flags in .options files.
-    #
-    # One issue is nanopb doesn't silently ignore unknown options in .options
-    # files so we can't share .options files with pwpb.
-    extra_tags = ["manual"]
     _nanopb_proto_library(
         name = name,
         protos = deps,
         deps = [
             Label("@com_github_nanopb_nanopb//:nanopb"),
         ],
-        tags = tags + extra_tags,
         **kwargs
     )
 

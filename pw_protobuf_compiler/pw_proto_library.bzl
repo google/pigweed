@@ -37,7 +37,6 @@ def pw_proto_library(
         *,
         name,
         deps,
-        nanopb_options = None,
         enabled_targets = None,
         **kwargs):
     """Generate Pigweed proto C++ code.
@@ -48,8 +47,6 @@ def pw_proto_library(
     Args:
       name: The name of the target.
       deps: proto_library targets from which to generate Pigweed C++.
-      nanopb_options: path to file containing nanopb options, if any
-        (https://jpa.kapsi.fi/nanopb/docs/reference.html#proto-file-options).
       enabled_targets: Specifies which libraries should be generated. Libraries
         will only be generated as needed, but unnecessary outputs may conflict
         with other build rules and thus cause build failures. This filter allows
@@ -101,7 +98,6 @@ def pw_proto_library(
         nanopb_proto_library(
             name = name + ".nanopb",
             deps = deps,
-            options = nanopb_options,
             **kwargs
         )
 
