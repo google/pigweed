@@ -32,7 +32,7 @@ class PendFuncAwaitable {
   /// Create a new object` which delegates ``Pend`` to ``pendable``.
   ///
   /// See class docs for more details.
-  PendFuncAwaitable(Func&& func) : func_(std::forward<Func>(func)) {}
+  constexpr PendFuncAwaitable(Func&& func) : func_(std::forward<Func>(func)) {}
 
   /// Delegates to the stored ``func`` to get a result ``T`` or wait.
   ///
