@@ -74,7 +74,7 @@ Run
 
 .. code-block:: shell
 
-   bazelisk run --config k_qemu_lm3s6965evb //pw_kernel/kernel/entry:kernel
+   bazelisk run --config k_qemu_lm3s6965evb //pw_kernel/entry:kernel
 
 RP2350 Target Board
 ===================
@@ -84,11 +84,11 @@ Build
 
 .. code-block:: shell
 
-   bazelisk build --config k_rp2350 //pw_kernel/kernel/entry:kernel
+   bazelisk build --config k_rp2350 //pw_kernel/entry:kernel
 
 Flash
 -----
 
 .. code-block:: shell
 
-   probe-rs download --chip rp2350 bazel-bin/pw_kernel/kernel/entry/kernel && probe-rs reset
+   probe-rs download --chip rp2350 bazel-bin/pw_kernel/entry/kernel && probe-rs reset
