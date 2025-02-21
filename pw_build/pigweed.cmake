@@ -66,40 +66,26 @@ macro(pw_parse_arguments)
   endif()
 
   # Now that we have the macro's arguments, process the caller's arguments.
-  pw_parse_arguments_strict("${CMAKE_CURRENT_FUNCTION}"
+  cmake_parse_arguments(PARSE_ARGV
     "${pw_parse_arg_NUM_POSITIONAL_ARGS}"
+    arg
     "${pw_parse_arg_OPTION_ARGS}"
     "${pw_parse_arg_ONE_VALUE_ARGS}"
     "${pw_parse_arg_MULTI_VALUE_ARGS}"
   )
-  pw_require_args("${CMAKE_CURRENT_FUNCTION}" "arg_"
-                  ${pw_parse_arg_REQUIRED_ARGS})
-endmacro()
-
-macro(_pw_parse_arguments_internal function start_arg options one multi)
-  if(POLICY CMP0174)
-    cmake_policy(SET CMP0174 NEW)  # Remove when CMake 3.31 or newer is required.
-  endif()
-  cmake_parse_arguments(PARSE_ARGV
-      "${start_arg}" arg "${options}" "${one}" "${multi}"
-  )
   if(NOT "${arg_UNPARSED_ARGUMENTS}" STREQUAL "")
-    set(_all_args ${options} ${one} ${multi})
+    set(_all_args
+        ${pw_parse_arg_OPTION_ARGS}
+        ${pw_parse_arg_ONE_VALUE_ARGS}
+        ${pw_parse_arg_MULTI_VALUE_ARGS})
     message(FATAL_ERROR
-        "Unexpected arguments to ${function}: ${arg_UNPARSED_ARGUMENTS}\n"
+        "Unexpected arguments to ${CMAKE_CURRENT_FUNCTION}: "
+        "${arg_UNPARSED_ARGUMENTS}\n"
         "Valid arguments: ${_all_args}"
     )
   endif()
-endmacro()
-
-# DEPRECATED wrapper around cmake_parse_arguments that fails with an error if
-# any arguments remained unparsed. Use pw_parse_arguments instead.
-macro(pw_parse_arguments_strict function start_arg options one multi)
-  message(DEPRECATION
-      "pw_parse_arguments_strict() is deprecated; "
-      "use pw_parse_arguments() instead")
-  _pw_parse_arguments_internal(
-      "${function}" "${start_arg}" "${options}" "${one}" "${multi}")
+  pw_require_args("${CMAKE_CURRENT_FUNCTION}" "arg_"
+                  ${pw_parse_arg_REQUIRED_ARGS})
 endmacro()
 
 # Checks that one or more variables are set. This is used to check that
