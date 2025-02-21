@@ -18,6 +18,7 @@
 #include "pw_crypto/ecdsa.h"
 #include "pw_function/function.h"
 #include "pw_log/log.h"
+#include "pw_span/cast.h"
 
 namespace pw::crypto::ecdsa {
 
@@ -51,11 +52,9 @@ Status VerifyP256Signature(ConstByteSpan public_key,
     mbedtls_mpi r, s;
   } ctx;
 
-  const uint8_t* public_key_data =
-      reinterpret_cast<const uint8_t*>(public_key.data());
-  const uint8_t* digest_data = reinterpret_cast<const uint8_t*>(digest.data());
-  const uint8_t* signature_data =
-      reinterpret_cast<const uint8_t*>(signature.data());
+  auto public_key_u8 = span_cast<uint8_t>(public_key);
+  auto digest_u8 = span_cast<uint8_t>(digest);
+  auto signature_u8 = span_cast<uint8_t>(signature);
 
   // These init functions never fail.
   mbedtls_ecp_group_init(&ctx.grp);
@@ -78,33 +77,38 @@ Status VerifyP256Signature(ConstByteSpan public_key,
 
   // Load the public key.
   if (mbedtls_ecp_point_read_binary(
-          &ctx.grp, &ctx.Q, public_key_data, public_key.size())) {
+          &ctx.grp, &ctx.Q, public_key_u8.data(), public_key_u8.size())) {
     PW_LOG_DEBUG("Bad public key format");
     return Status::InvalidArgument();
   }
 
   // Load the signature.
-  if (signature.size() != kP256CurveOrderBytes * 2) {
+  if (signature_u8.size() != kP256CurveOrderBytes * 2) {
     PW_LOG_DEBUG("Bad signature format");
     return Status::InvalidArgument();
   }
 
-  if (mbedtls_mpi_read_binary(&ctx.r, signature_data, kP256CurveOrderBytes) ||
+  if (mbedtls_mpi_read_binary(
+          &ctx.r, signature_u8.data(), kP256CurveOrderBytes) ||
       mbedtls_mpi_read_binary(&ctx.s,
-                              signature_data + kP256CurveOrderBytes,
+                              signature_u8.subspan(kP256CurveOrderBytes).data(),
                               kP256CurveOrderBytes)) {
     return Status::Internal();
   }
 
   // Digest must be 32 bytes or longer (and be truncated).
-  if (digest.size() < kP256CurveOrderBytes) {
+  if (digest_u8.size() < kP256CurveOrderBytes) {
     PW_LOG_DEBUG("Digest is too short");
     return Status::InvalidArgument();
   }
 
   // Verify the signature.
-  if (mbedtls_ecdsa_verify(
-          &ctx.grp, digest_data, digest.size(), &ctx.Q, &ctx.r, &ctx.s)) {
+  if (mbedtls_ecdsa_verify(&ctx.grp,
+                           digest_u8.data(),
+                           digest_u8.size(),
+                           &ctx.Q,
+                           &ctx.r,
+                           &ctx.s)) {
     PW_LOG_DEBUG("Signature verification failed");
     return Status::Unauthenticated();
   }

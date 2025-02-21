@@ -20,6 +20,7 @@
 
 #include "pw_assert/check.h"
 #include "pw_crypto/aes.h"
+#include "pw_span/cast.h"
 #include "pw_status/status.h"
 
 namespace {
@@ -55,8 +56,8 @@ Status DoInit(CmacCtx& ctx, ConstByteSpan key) {
 }
 
 Status DoUpdate(CmacCtx& ctx, ConstByteSpan data) {
-  auto data_in = reinterpret_cast<const uint8_t*>(data.data());
-  if (!CMAC_Update(ctx.get(), data_in, data.size())) {
+  auto data_u8 = span_cast<uint8_t>(data);
+  if (!CMAC_Update(ctx.get(), data_u8.data(), data_u8.size())) {
     return Status::Internal();
   }
 
@@ -65,8 +66,8 @@ Status DoUpdate(CmacCtx& ctx, ConstByteSpan data) {
 
 Status DoFinal(CmacCtx& ctx, BlockSpan out_mac) {
   size_t unused_out_len;
-  auto data_out = reinterpret_cast<uint8_t*>(out_mac.data());
-  if (!CMAC_Final(ctx.get(), data_out, &unused_out_len)) {
+  auto data_out = span_cast<uint8_t>(out_mac);
+  if (!CMAC_Final(ctx.get(), data_out.data(), &unused_out_len)) {
     return Status::Internal();
   }
 
@@ -78,12 +79,13 @@ Status DoEncryptBlock(ConstByteSpan key,
                       BlockSpan out_ciphertext) {
   AES_KEY bssl_key;
 
-  auto key_data = reinterpret_cast<const uint8_t*>(key.data());
-  auto plaintext_data = reinterpret_cast<const uint8_t*>(plaintext.data());
-  auto ciphertext_data = reinterpret_cast<uint8_t*>(out_ciphertext.data());
+  auto key_u8 = span_cast<uint8_t>(key);
+  auto plaintext_u8 = span_cast<uint8_t>(plaintext);
+  auto ciphertext_u8 = span_cast<uint8_t>(out_ciphertext);
 
-  PW_CHECK(AES_set_encrypt_key(key_data, key.size() * kBits, &bssl_key) == 0);
-  AES_encrypt(plaintext_data, ciphertext_data, &bssl_key);
+  PW_CHECK(AES_set_encrypt_key(
+               key_u8.data(), key_u8.size() * kBits, &bssl_key) == 0);
+  AES_encrypt(plaintext_u8.data(), ciphertext_u8.data(), &bssl_key);
 
   return OkStatus();
 }
