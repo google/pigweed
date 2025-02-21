@@ -23,4 +23,5 @@ multiple build systems, including:
    cmake
    bazel
    project_builder
+   python_api
    linker_scripts

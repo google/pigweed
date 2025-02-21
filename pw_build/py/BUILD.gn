@@ -60,6 +60,7 @@ pw_python_package("py") {
     "pw_build/python_package.py",
     "pw_build/python_runfiles.py",
     "pw_build/python_runner.py",
+    "pw_build/runfiles_manager.py",
     "pw_build/wrap_ninja.py",
     "pw_build/zip.py",
   ]
@@ -74,6 +75,7 @@ pw_python_package("py") {
     "gn_writer_test.py",
     "project_builder_prefs_test.py",
     "python_runner_test.py",
+    "runfiles_manager_test.py",
     "zip_test.py",
   ]
   python_deps = [

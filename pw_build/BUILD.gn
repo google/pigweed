@@ -452,7 +452,9 @@ pw_doc_group("docs") {
     "linker_scripts.rst",
     "project_builder.rst",
     "python.rst",
+    "python_api.rst",
   ]
+  other_deps = [ "py" ]
 }
 
 config("module_config_test_config") {

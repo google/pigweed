@@ -309,6 +309,7 @@ sphinx_docs_library(
         "project_builder.rst",
         "python.gni",
         "python.rst",
+        "python_api.rst",
         "python_gn_args.gni",
         "//pw_build/py:docs",
     ],
