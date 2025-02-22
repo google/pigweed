@@ -145,6 +145,13 @@ BucketAllocator
 .. doxygenclass:: pw::allocator::BucketAllocator
    :members:
 
+.. _module-pw_allocator-api-dl_allocator:
+
+DlAllocator
+-------------
+.. doxygenclass:: pw::allocator::DlAllocator
+   :members:
+
 .. _module-pw_allocator-api-first_fit_allocator:
 
 FirstFitAllocator

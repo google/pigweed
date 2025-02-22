@@ -219,7 +219,21 @@ pw_add_library(pw_allocator.deallocator STATIC
     pw_status
 )
 
-# TODO(b/376730645): Remove deprecated interfaces.
+pw_add_library(pw_allocator.dl_allocator INTERFACE
+  HEADERS
+    public/pw_allocator/dl_allocator.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator.block_allocator
+    pw_allocator.block.detailed_block
+    pw_allocator.bucket.fast_sorted
+    pw_allocator.bucket.unordered
+    pw_allocator.config
+    pw_third_party.fuchsia.stdcompat
+)
+
+  # TODO(b/376730645): Remove deprecated interfaces.
 pw_add_library(pw_allocator.dual_first_fit_block_allocator INTERFACE
   HEADERS
     public/pw_allocator/dual_first_fit_block_allocator.h
@@ -616,6 +630,17 @@ pw_add_test(pw_allocator.chunk_pool_test
     pw_allocator
 )
 
+pw_add_test(pw_allocator.dl_allocator_test
+  SOURCES
+    dl_allocator_test.cc
+  PRIVATE_DEPS
+    pw_allocator.block_allocator_testing
+    pw_allocator.dl_allocator
+  GROUPS
+    modules
+    pw_allocator
+)
+
 pw_add_test(pw_allocator.fallback_allocator_test
   PRIVATE_DEPS
     pw_allocator.testing
@@ -753,7 +778,7 @@ pw_add_test(pw_allocator.synchronized_allocator_test
 
 pw_add_test(pw_allocator.tlsf_allocator_test
   SOURCES
-  tlsf_allocator_test.cc
+    tlsf_allocator_test.cc
   PRIVATE_DEPS
     pw_allocator.block_allocator_testing
     pw_allocator.tlsf_allocator

@@ -61,6 +61,13 @@ class SortedBucketBase : public BucketBase<Derived, BlockType, SortedItem> {
     items_.insert_after(prev, *item_to_add);
   }
 
+  /// @copydoc `BucketBase::RemoveAny`
+  BlockType* DoRemoveAny() {
+    SortedItem& item = items_.front();
+    items_.pop_front();
+    return BlockType::FromUsableSpace(&item);
+  }
+
   /// @copydoc `BucketBase::Remove`
   bool DoRemove(BlockType& block) {
     return items_.remove(Base::GetItemFrom(block));

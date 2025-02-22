@@ -239,6 +239,20 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "dl_allocator",
+    hdrs = ["public/pw_allocator/dl_allocator.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":block_allocator",
+        ":config",
+        "//pw_allocator/block:detailed_block",
+        "//pw_allocator/bucket:fast_sorted",
+        "//pw_allocator/bucket:unordered",
+        "//third_party/fuchsia:stdcompat",
+    ],
+)
+
 # TODO(b/376730645): Remove deprecated interfaces.
 cc_library(
     name = "dual_first_fit_block_allocator",
@@ -607,6 +621,16 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "dl_allocator_test",
+    srcs = ["dl_allocator_test.cc"],
+    deps = [
+        ":block_allocator_testing",
+        ":dl_allocator",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "fallback_allocator_test",
     srcs = ["fallback_allocator_test.cc"],
     deps = [
@@ -793,6 +817,7 @@ filegroup(
         "public/pw_allocator/chunk_pool.h",
         "public/pw_allocator/config.h",
         "public/pw_allocator/deallocator.h",
+        "public/pw_allocator/dl_allocator.h",
         "public/pw_allocator/fallback_allocator.h",
         "public/pw_allocator/first_fit.h",
         "public/pw_allocator/fragmentation.h",
@@ -846,6 +871,13 @@ pw_size_diff(
 )
 
 pw_size_diff(
+    name = "dl_allocator_size_report",
+    base = "//pw_allocator/size_report:detailed_block",
+    label = "DlAllocator",
+    target = "//pw_allocator/size_report:dl_allocator",
+)
+
+pw_size_diff(
     name = "first_fit_size_report",
     base = "//pw_allocator/size_report:detailed_block",
     label = "FirstFitAllocator",
@@ -871,6 +903,7 @@ pw_size_table(
     reports = [
         ":best_fit_size_report",
         ":bucket_allocator_size_report",
+        ":dl_allocator_size_report",
         ":first_fit_size_report",
         ":tlsf_allocator_size_report",
         ":worst_fit_size_report",

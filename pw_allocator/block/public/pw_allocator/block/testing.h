@@ -94,7 +94,7 @@ struct Preallocation {
   static constexpr size_t kSizeRemaining = std::numeric_limits<size_t>::max();
 };
 
-template <typename BlockType>
+template <typename BlockType, size_t kBufferSize = kDefaultCapacity>
 class BlockTestUtilities {
  public:
   BlockTestUtilities() : buffer_(), bytes_(buffer_.as_span()) {}
@@ -131,35 +131,35 @@ class BlockTestUtilities {
   size_t GetFirstAlignedOffset(Layout layout);
 
  private:
-  AlignedBuffer<kDefaultCapacity, BlockType::kAlignment> buffer_;
+  BlockAlignedBuffer<BlockType, kBufferSize> buffer_;
   ByteSpan bytes_;
 };
 
 //  Template method implementations.
 
-template <typename BlockType>
-constexpr void BlockTestUtilities<BlockType>::TrimBytes(size_t offset,
-                                                        size_t length) {
+template <typename BlockType, size_t kBufferSize>
+constexpr void BlockTestUtilities<BlockType, kBufferSize>::TrimBytes(
+    size_t offset, size_t length) {
   bytes_ = bytes_.subspan(offset, length);
 }
 
-template <typename BlockType>
-void BlockTestUtilities<BlockType>::TrimAligned(size_t extra) {
+template <typename BlockType, size_t kBufferSize>
+void BlockTestUtilities<BlockType, kBufferSize>::TrimAligned(size_t extra) {
   size_t offset =
       GetAlignedOffsetAfter(bytes_.data(), kAlign, BlockType::kBlockOverhead) +
       extra;
   bytes_ = bytes_.subspan(offset);
 }
 
-template <typename BlockType>
-constexpr size_t BlockTestUtilities<BlockType>::GetOuterSize(
+template <typename BlockType, size_t kBufferSize>
+constexpr size_t BlockTestUtilities<BlockType, kBufferSize>::GetOuterSize(
     size_t min_inner_size) {
   return BlockType::kBlockOverhead +
          AlignUp(min_inner_size, BlockType::kAlignment);
 }
 
-template <typename BlockType>
-BlockType* BlockTestUtilities<BlockType>::Preallocate(
+template <typename BlockType, size_t kBufferSize>
+BlockType* BlockTestUtilities<BlockType, kBufferSize>::Preallocate(
     std::initializer_list<Preallocation> preallocs) {
   static_assert(is_allocatable_v<BlockType>);
 
@@ -218,8 +218,9 @@ BlockType* BlockTestUtilities<BlockType>::Preallocate(
   return next;
 }
 
-template <typename BlockType>
-size_t BlockTestUtilities<BlockType>::GetFirstAlignedOffset(Layout layout) {
+template <typename BlockType, size_t kBufferSize>
+size_t BlockTestUtilities<BlockType, kBufferSize>::GetFirstAlignedOffset(
+    Layout layout) {
   size_t min_block = BlockType::kBlockOverhead + 1;
   size_t offset = GetAlignedOffsetAfter(bytes().data(),
                                         layout.alignment(),

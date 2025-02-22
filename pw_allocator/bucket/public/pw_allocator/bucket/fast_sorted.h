@@ -87,6 +87,14 @@ class FastSortedBucket
     items_.insert(*item);
   }
 
+  /// @copydoc `BucketBase::RemoveAny`
+  BlockType* DoRemoveAny() {
+    auto iter = items_.begin();
+    FastSortedItem<BlockType>& item = *iter;
+    items_.erase(iter);
+    return BlockType::FromUsableSpace(&item);
+  }
+
   /// @copydoc `BucketBase::Remove`
   bool DoRemove(BlockType& block) {
     FastSortedItem<BlockType>& item_to_remove = Base::GetItemFrom(block);
@@ -145,6 +153,14 @@ class ReverseFastSortedBucket
  private:
   /// @copydoc `BucketBase::Add`
   void DoAdd(BlockType& block) { impl_.DoAdd(block); }
+
+  /// @copydoc `BucketBase::RemoveAny`
+  BlockType* DoRemoveAny() {
+    auto iter = items_.begin();
+    FastSortedItem<BlockType>& item = *iter;
+    items_.erase(iter);
+    return BlockType::FromUsableSpace(&item);
+  }
 
   /// @copydoc `BucketBase::Remove`
   bool DoRemove(BlockType& block) { return impl_.DoRemove(block); }

@@ -219,6 +219,12 @@ pw_executable("bump_allocator") {
   deps += [ "$dir_pw_allocator:bump_allocator" ]
 }
 
+pw_executable("dl_allocator") {
+  forward_variables_from(_size_report, "*")
+  sources = [ "dl_allocator.cc" ]
+  deps += [ "$dir_pw_allocator:dl_allocator" ]
+}
+
 pw_executable("first_fit") {
   forward_variables_from(_size_report, "*")
   sources = [ "first_fit.cc" ]

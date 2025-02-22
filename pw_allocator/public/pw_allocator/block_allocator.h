@@ -145,7 +145,7 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///
   /// At the time of the call, there MUST NOT be any outstanding allocated
   /// blocks from this allocator.
-  void Reset();
+  virtual void Reset();
 
  protected:
   constexpr explicit BlockAllocator() : Base(kCapabilities) {}
@@ -170,6 +170,12 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   template <typename Ptr>
   Result<internal::copy_const_ptr_t<Ptr, BlockType*>> FromUsableSpace(
       Ptr ptr) const;
+
+  /// Frees the given block.
+  ///
+  /// Derived classes may override this method to hook or even defer freeing
+  /// blocks.
+  virtual void DeallocateBlock(BlockType*&& block);
 
  private:
   using BlockResultPrev = internal::GenericBlockResult::Prev;
@@ -218,6 +224,20 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///
   /// @param  block   The block being freed.
   virtual void RecycleBlock(BlockType&) {}
+
+  /// Completes any pending deallocations.
+  ///
+  /// After calling this method, all memory that has been passed to `Deallocate`
+  /// will be free and available for subsequent allocations.
+  ///
+  /// An allocator implementation may wish to defer doing the work of freeing a
+  /// block and potentially merging it with its neighbors in case it
+  /// subsequently receives a request for the block's exact size. In this case
+  /// it must override this method and clear any caches of freed blocks.
+  ///
+  /// Allocators that free blocks immediately upon a call to `DoDeallocate` can
+  /// simply use the default implementation that does nothing.
+  virtual void Flush() {}
 
   /// Returns if the previous block exists and is free.
   static bool PrevIsFree(const BlockType* block) {
@@ -288,6 +308,7 @@ void BlockAllocator<BlockType>::Init(BlockType* begin, BlockType* end) {
 
 template <typename BlockType>
 void BlockAllocator<BlockType>::Reset() {
+  Flush();
   for (auto* block : blocks()) {
     if (!block->IsFree()) {
       CrashOnAllocated(block);
@@ -356,7 +377,11 @@ void BlockAllocator<BlockType>::DoDeallocate(void* ptr) {
       return;
     }
   }
+  DeallocateBlock(std::move(block));
+}
 
+template <typename BlockType>
+void BlockAllocator<BlockType>::DeallocateBlock(BlockType*&& block) {
   // Neighboring blocks may be merged when freeing.
   if (auto* prev = block->Prev(); prev != nullptr && prev->IsFree()) {
     ReserveBlock(*prev);

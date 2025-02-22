@@ -55,6 +55,13 @@ class UnorderedBucket : public internal::BucketBase<UnorderedBucket<BlockType>,
     items_.push_front(*item);
   }
 
+  /// @copydoc `BucketBase::RemoveAny`
+  BlockType* DoRemoveAny() {
+    UnorderedItem& item = items_.front();
+    items_.pop_front();
+    return BlockType::FromUsableSpace(&item);
+  }
+
   /// @copydoc `BucketBase::Remove`
   bool DoRemove(BlockType& block) {
     return items_.remove(Base::GetItemFrom(block));

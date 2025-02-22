@@ -87,6 +87,13 @@ class SequencedBucket : public internal::BucketBase<SequencedBucket<BlockType>,
     items_.insert(iter, *item_to_add);
   }
 
+  /// @copydoc `BucketBase::RemoveAny`
+  BlockType* DoRemoveAny() {
+    SequencedItem& item = items_.front();
+    items_.pop_front();
+    return BlockType::FromUsableSpace(&item);
+  }
+
   /// @copydoc `BucketBase::Remove`
   bool DoRemove(BlockType& block) {
     SequencedItem& item_to_remove = Base::GetItemFrom(block);

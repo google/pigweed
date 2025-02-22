@@ -94,7 +94,7 @@ class BlockAllocatorTestBase : public ::testing::Test {
   void UseMemory(void* ptr, size_t size);
 
   // Unit tests.
-  void GetCapacity();
+  void GetCapacity(size_t expected = kCapacity);
   void AllocateLarge();
   void AllocateSmall();
   void AllocateTooLarge();
@@ -124,7 +124,8 @@ class BlockAllocatorTestBase : public ::testing::Test {
 /// `BlockAllocator` types.
 ///
 /// @tparam BlockAllocatorType  The type of the `BlockAllocator` being tested.
-template <typename BlockAllocatorType>
+template <typename BlockAllocatorType,
+          size_t kBufferSize = BlockAllocatorTestBase::kCapacity>
 class BlockAllocatorTest : public BlockAllocatorTestBase {
  public:
   using BlockType = typename BlockAllocatorType::BlockType;
@@ -162,19 +163,21 @@ class BlockAllocatorTest : public BlockAllocatorTestBase {
 
  private:
   BlockAllocatorType& allocator_;
-  BlockTestUtilities<BlockType> util_;
+  BlockTestUtilities<BlockType, kBufferSize> util_;
 };
 
 // Test fixture template method implementations.
 
-template <typename BlockAllocatorType>
-BlockAllocatorType& BlockAllocatorTest<BlockAllocatorType>::GetAllocator() {
+template <typename BlockAllocatorType, size_t kBufferSize>
+BlockAllocatorType&
+BlockAllocatorTest<BlockAllocatorType, kBufferSize>::GetAllocator() {
   allocator_.Init(GetBytes());
   return allocator_;
 }
 
-template <typename BlockAllocatorType>
-BlockAllocatorType& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
+template <typename BlockAllocatorType, size_t kBufferSize>
+BlockAllocatorType&
+BlockAllocatorTest<BlockAllocatorType, kBufferSize>::GetAllocator(
     std::initializer_list<Preallocation> preallocations) {
   auto* first = util_.Preallocate(preallocations);
   size_t index = 0;
@@ -189,8 +192,9 @@ BlockAllocatorType& BlockAllocatorTest<BlockAllocatorType>::GetAllocator(
   return allocator_;
 }
 
-template <typename BlockAllocatorType>
-void* BlockAllocatorTest<BlockAllocatorType>::NextAfter(size_t index) {
+template <typename BlockAllocatorType, size_t kBufferSize>
+void* BlockAllocatorTest<BlockAllocatorType, kBufferSize>::NextAfter(
+    size_t index) {
   void* ptr = Fetch(index);
   if (ptr == nullptr) {
     return nullptr;
@@ -204,8 +208,8 @@ void* BlockAllocatorTest<BlockAllocatorType>::NextAfter(size_t index) {
   return block == nullptr ? nullptr : block->UsableSpace();
 }
 
-template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::TearDown() {
+template <typename BlockAllocatorType, size_t kBufferSize>
+void BlockAllocatorTest<BlockAllocatorType, kBufferSize>::TearDown() {
   for (size_t i = 0; i < kNumPtrs; ++i) {
     void* ptr = Fetch(i);
     if (ptr != nullptr) {
@@ -216,22 +220,22 @@ void BlockAllocatorTest<BlockAllocatorType>::TearDown() {
 
 // Unit tests template method implementations.
 
-template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::AutomaticallyInit(
+template <typename BlockAllocatorType, size_t kBufferSize>
+void BlockAllocatorTest<BlockAllocatorType, kBufferSize>::AutomaticallyInit(
     BlockAllocatorType& allocator) {
   EXPECT_NE(*(allocator.blocks().begin()), nullptr);
 }
 
-template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::ExplicitlyInit(
+template <typename BlockAllocatorType, size_t kBufferSize>
+void BlockAllocatorTest<BlockAllocatorType, kBufferSize>::ExplicitlyInit(
     BlockAllocatorType& allocator) {
   EXPECT_EQ(*(allocator.blocks().begin()), nullptr);
   allocator.Init(GetBytes());
   EXPECT_NE(*(allocator.blocks().begin()), nullptr);
 }
 
-template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
+template <typename BlockAllocatorType, size_t kBufferSize>
+void BlockAllocatorTest<BlockAllocatorType, kBufferSize>::IterateOverBlocks() {
   Allocator& allocator = GetGenericAllocator({
       {kSmallOuterSize, Preallocation::kFree},
       {kLargeOuterSize, Preallocation::kUsed},
@@ -259,8 +263,9 @@ void BlockAllocatorTest<BlockAllocatorType>::IterateOverBlocks() {
   EXPECT_EQ(free_count, 4U);
 }
 
-template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::AllocateLargeAlignment() {
+template <typename BlockAllocatorType, size_t kBufferSize>
+void BlockAllocatorTest<BlockAllocatorType,
+                        kBufferSize>::AllocateLargeAlignment() {
   if constexpr (is_alignable_v<BlockType>) {
     Allocator& allocator = GetGenericAllocator();
 
@@ -279,8 +284,9 @@ void BlockAllocatorTest<BlockAllocatorType>::AllocateLargeAlignment() {
   }
 }
 
-template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::AllocateAlignmentFailure() {
+template <typename BlockAllocatorType, size_t kBufferSize>
+void BlockAllocatorTest<BlockAllocatorType,
+                        kBufferSize>::AllocateAlignmentFailure() {
   if constexpr (is_alignable_v<BlockType>) {
     // Allocate a two blocks with an unaligned region between them.
     constexpr size_t kAlignment = 128;
@@ -302,8 +308,9 @@ void BlockAllocatorTest<BlockAllocatorType>::AllocateAlignmentFailure() {
   }
 }
 
-template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::MeasureFragmentation() {
+template <typename BlockAllocatorType, size_t kBufferSize>
+void BlockAllocatorTest<BlockAllocatorType,
+                        kBufferSize>::MeasureFragmentation() {
   Allocator& allocator = GetGenericAllocator({
       {0x020, Preallocation::kFree},
       {0x040, Preallocation::kUsed},
@@ -331,8 +338,8 @@ void BlockAllocatorTest<BlockAllocatorType>::MeasureFragmentation() {
   EXPECT_EQ(fragmentation.sum, sum);
 }
 
-template <typename BlockAllocatorType>
-void BlockAllocatorTest<BlockAllocatorType>::PoisonPeriodically() {
+template <typename BlockAllocatorType, size_t kBufferSize>
+void BlockAllocatorTest<BlockAllocatorType, kBufferSize>::PoisonPeriodically() {
   if constexpr (is_poisonable_v<BlockType>) {
     // Allocate 8 blocks to prevent every other from being merged when freed.
     Allocator& allocator = GetGenericAllocator({

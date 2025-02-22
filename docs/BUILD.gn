@@ -194,6 +194,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_allocator/public/pw_allocator/chunk_pool.h",
   "$dir_pw_allocator/public/pw_allocator/config.h",
   "$dir_pw_allocator/public/pw_allocator/deallocator.h",
+  "$dir_pw_allocator/public/pw_allocator/dl_allocator.h",
   "$dir_pw_allocator/public/pw_allocator/fallback_allocator.h",
   "$dir_pw_allocator/public/pw_allocator/first_fit.h",
   "$dir_pw_allocator/public/pw_allocator/fragmentation.h",

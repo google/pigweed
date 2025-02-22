@@ -232,6 +232,19 @@ pw_source_set("deallocator") {
   ]
 }
 
+pw_source_set("dl_allocator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/dl_allocator.h" ]
+  public_deps = [
+    ":block_allocator",
+    ":config",
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    "block:detailed_block",
+    "bucket:fast_sorted",
+    "bucket:unordered",
+  ]
+}
+
 # TODO(b/376730645): Remove deprecated interfaces.
 pw_source_set("dual_first_fit_block_allocator") {
   public_configs = [ ":public_include_path" ]
@@ -559,6 +572,14 @@ pw_test("chunk_pool_test") {
   sources = [ "chunk_pool_test.cc" ]
 }
 
+pw_test("dl_allocator_test") {
+  deps = [
+    ":block_allocator_testing",
+    ":dl_allocator",
+  ]
+  sources = [ "dl_allocator_test.cc" ]
+}
+
 pw_test("fallback_allocator_test") {
   deps = [
     ":fallback_allocator",
@@ -721,6 +742,7 @@ pw_test_group("tests") {
     ":buffer_test",
     ":bump_allocator_test",
     ":chunk_pool_test",
+    ":dl_allocator_test",
     ":fallback_allocator_test",
     ":first_fit_test",
     ":fragmentation_test",
@@ -843,6 +865,11 @@ pw_size_diff("block_allocators_size_report") {
       target = "size_report:bucket_allocator"
       base = "size_report:detailed_block"
       label = "BucketAllocator"
+    },
+    {
+      target = "size_report:dl_allocator"
+      base = "size_report:detailed_block"
+      label = "DlAllocator"
     },
     {
       target = "size_report:first_fit"

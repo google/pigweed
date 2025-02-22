@@ -221,6 +221,12 @@ pw_cc_size_binary(
 )
 
 pw_cc_size_binary(
+    name = "dl_allocator",
+    srcs = ["dl_allocator.cc"],
+    deps = _size_report_deps + ["//pw_allocator:dl_allocator"],
+)
+
+pw_cc_size_binary(
     name = "first_fit",
     srcs = ["first_fit.cc"],
     deps = _size_report_deps + ["//pw_allocator:first_fit"],

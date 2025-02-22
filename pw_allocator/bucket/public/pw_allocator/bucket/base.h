@@ -98,7 +98,7 @@ class BucketBase {
   /// null. Exactly which block is returned depends on the specific bucket
   /// implementation.
   [[nodiscard]] BlockType* RemoveAny() {
-    return derived()->DoRemoveCompatible(Layout(1, 1));
+    return empty() ? nullptr : derived()->DoRemoveAny();
   }
 
   /// If the given `block` is in this bucket, removes it and returns true;
