@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 
 namespace pw::bluetooth::proxy {
@@ -22,6 +24,9 @@ namespace pw::bluetooth::proxy {
 /// remote peer.
 class GattNotifyChannel : public L2capChannel {
  public:
+  /// Return the attribute handle of this GattNotify channel.
+  uint16_t attribute_handle() const { return attribute_handle_; }
+
   // @deprecated
   // TODO: https://pwbug.dev/379337272 - Delete this once all downstreams
   // have transitioned to Write(MultiBuf) for this channel type.

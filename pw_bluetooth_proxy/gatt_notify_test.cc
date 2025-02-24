@@ -113,6 +113,23 @@ TEST_F(GattNotifyTest, Send1ByteAttributeUsingSendGattNotify) {
   EXPECT_EQ(capture.sends_called, 1);
 }
 
+TEST_F(GattNotifyTest, GetAttributeHandle) {
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
+  GattNotifyChannel channel =
+      BuildGattNotifyChannel(proxy, {.attribute_handle = 0x234});
+  EXPECT_EQ(channel.attribute_handle(), 0x234);
+}
+
 TEST_F(GattNotifyTest, Send1ByteAttribute) {
   struct {
     int sends_called = 0;
