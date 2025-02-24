@@ -94,6 +94,8 @@ fuchsia_cc_binary(
     deps = [
         ":sources",
         "//pw_log_fuchsia",
+        "@fuchsia_sdk//fidl/fuchsia.scheduler:fuchsia.scheduler_cpp",
+        "@fuchsia_sdk//pkg/component_incoming_cpp",
     ],
 )
 
