@@ -14,11 +14,14 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 
-#include "pw_intrusive_ptr/internal/ref_counted_base.h"
 #include "pw_intrusive_ptr/recyclable.h"
+
+// TODO(matthewsedam): Remove this once downstream projects are fixed
+#include "pw_intrusive_ptr/ref_counted.h"
 
 namespace pw {
 
@@ -146,27 +149,6 @@ class IntrusivePtr final {
   }
 
   T* ptr_;
-};
-
-// Base class to be used with the IntrusivePtr. Doesn't provide any public
-// methods.
-//
-// Provides an atomic-based reference counting. Atomics are used irrespective of
-// the settings, which makes it different from the std::shared_ptr (that relies
-// on the threading support settings to determine if atomics should be used for
-// the control block or not).
-//
-// RefCounted MUST never be used as a pointer type to store derived objects -
-// it doesn't provide a virtual destructor.
-template <typename T>
-class RefCounted : private internal::RefCountedBase {
- public:
-  // Type alias for the IntrusivePtr of ref-counted type.
-  using Ptr = IntrusivePtr<T>;
-
- private:
-  template <typename U>
-  friend class IntrusivePtr;
 };
 
 template <typename T, typename U>

@@ -15,6 +15,7 @@
 #pragma once
 #include <pw_assert/check.h>
 #include <pw_intrusive_ptr/intrusive_ptr.h>
+#include <pw_intrusive_ptr/ref_counted.h>
 
 #include <optional>
 

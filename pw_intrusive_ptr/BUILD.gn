@@ -28,6 +28,7 @@ pw_source_set("pw_intrusive_ptr") {
   public = [
     "public/pw_intrusive_ptr/internal/ref_counted_base.h",
     "public/pw_intrusive_ptr/intrusive_ptr.h",
+    "public/pw_intrusive_ptr/ref_counted.h",
   ]
   sources = [ "ref_counted_base.cc" ]
   deps = [ "$dir_pw_assert" ]

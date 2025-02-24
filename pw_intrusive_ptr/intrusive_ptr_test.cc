@@ -14,10 +14,10 @@
 
 #include "pw_intrusive_ptr/intrusive_ptr.h"
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <utility>
 
+#include "pw_intrusive_ptr/ref_counted.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw {
