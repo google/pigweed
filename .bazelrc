@@ -118,6 +118,21 @@ build --tool_java_language_version=11
 build --java_runtime_version=remotejdk_11
 build --repo_env=JAVA_HOME=../bazel_tools/jdk
 
+# JavaScript related flags
+# ========================
+# Allow the Bazel server to check directory sources for changes. Ensures that the Bazel server
+# notices when a directory changes, if you have a directory listed in the srcs of some target.
+# Recommended when using
+# [copy_directory](https://github.com/aspect-build/bazel-lib/blob/main/docs/copy_directory.md) and
+# [rules_js](https://github.com/aspect-build/rules_js) since npm package are source directories
+# inputs to copy_directory actions.
+# Docs: https://bazel.build/reference/command-line-reference#flag--host_jvm_args
+#
+# Ultimately, this is a workaround for
+# https://github.com/aspect-build/rules_js/issues/1408. See also
+# https://github.com/bazelbuild/bazel/commit/c64421bc35214f0414e4f4226cc953e8c55fa0d2.
+startup --host_jvm_args=-DBAZEL_TRACK_SOURCE_DIRECTORIES=1
+
 # Default label flags values
 # ==========================
 build --@freertos//:freertos_config=//third_party/freertos:freertos_config
