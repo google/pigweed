@@ -73,6 +73,7 @@ TEST(Aes, Cmac) {
   span<const std::byte> msg1 = STR_TO_BYTES("Hello");
   span<const std::byte> msg2 = STR_TO_BYTES(", world!");
   span<const std::byte> msg_full = STR_TO_BYTES("Hello, world!");
+  span<const std::byte> msg_empty{};
 
   // Output buffer for computed MAC.
   Block mac;
@@ -100,6 +101,9 @@ TEST(Aes, Cmac) {
     EXPECT_EQ(mac, expected);
 
     reset();
+    EXPECT_OK(Cmac(key).Update(msg_empty).Final(mac));
+
+    reset();
     std::copy(key.begin(), key.end(), std::back_inserter(dynamic_key));
     EXPECT_OK(Cmac(dynamic_key).Update(msg_full).Final(mac));
     EXPECT_EQ(mac, expected);
@@ -121,6 +125,9 @@ TEST(Aes, Cmac) {
     EXPECT_EQ(mac, expected);
 
     reset();
+    EXPECT_OK(Cmac(key).Update(msg_empty).Final(mac));
+
+    reset();
     std::copy(key.begin(), key.end(), std::back_inserter(dynamic_key));
     EXPECT_OK(Cmac(dynamic_key).Update(msg_full).Final(mac));
     EXPECT_EQ(mac, expected);
@@ -140,6 +147,9 @@ TEST(Aes, Cmac) {
     reset();
     EXPECT_OK(Cmac(key).Update(msg_full).Final(mac));
     EXPECT_EQ(mac, expected);
+
+    reset();
+    EXPECT_OK(Cmac(key).Update(msg_empty).Final(mac));
 
     reset();
     std::copy(key.begin(), key.end(), std::back_inserter(dynamic_key));

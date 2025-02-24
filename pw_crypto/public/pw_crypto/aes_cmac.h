@@ -101,6 +101,10 @@ class Cmac {
   ///
   /// @returns This same `Cmac` instance to allow chaining calls.
   Cmac& Update(ConstByteSpan data) {
+    if (data.empty()) {
+      return *this;
+    }
+
     if (state_ != State::kReady) {
       PW_LOG_DEBUG("The backend is not ready/initialized");
       return *this;
