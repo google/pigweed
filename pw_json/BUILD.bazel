@@ -43,6 +43,7 @@ pw_cc_test(
     srcs = ["builder_test.cc"],
     deps = [
         ":builder",
+        "//pw_assert:check",
         "//pw_compilation_testing:negative_compilation_testing",
     ],
 )
