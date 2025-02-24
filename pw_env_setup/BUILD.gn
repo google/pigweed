@@ -58,6 +58,7 @@ pw_python_group("core_pigweed_python_packages") {
     "$dir_pw_module/py",
     "$dir_pw_package/py",
     "$dir_pw_presubmit/py",
+    "$dir_pw_presubmit/py:pigweed_format",
     "$dir_pw_protobuf/py",
     "$dir_pw_protobuf_compiler/py",
     "$dir_pw_rpc/py",

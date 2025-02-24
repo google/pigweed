@@ -34,7 +34,6 @@ pw_python_package("py") {
     "pw_presubmit/format/core.py",
     "pw_presubmit/format/cpp.py",
     "pw_presubmit/format/gn.py",
-    "pw_presubmit/format/pigweed_format.py",
     "pw_presubmit/format/private/__init__.py",
     "pw_presubmit/format/private/cli.py",
     "pw_presubmit/format/private/cli_support.py",
@@ -100,6 +99,25 @@ pw_python_package("py") {
     "$dir_pw_cli/py",
     "$dir_pw_env_setup/py",
     "$dir_pw_package/py",
+  ]
+  pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
+  ruff_toml = "$dir_pigweed/.ruff.toml"
+}
+
+# This is a separate package to avoid dependency cycles with pw_build.
+pw_python_package("pigweed_format") {
+  generate_setup = {
+    metadata = {
+      name = "pigweed_format"
+      version = "0.0.1"
+    }
+  }
+  sources = [ "pigweed_format/__main__.py" ]
+  python_deps = [
+    "$dir_pw_build/py",
+    "$dir_pw_cli/py",
+    "$dir_pw_presubmit/py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"

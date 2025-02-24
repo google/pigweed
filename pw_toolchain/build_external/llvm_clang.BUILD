@@ -21,6 +21,7 @@ load("@bazel_skylib//rules/directory:directory.bzl", "directory")
 load("@bazel_skylib//rules/directory:subdirectory.bzl", "subdirectory")
 load("@pigweed//pw_build/constraints/arm:lists.bzl", "ALL_CORTEX_M_CPUS")
 load("@pigweed//pw_build:glob_dirs.bzl", "match_dir")
+load("@pigweed//pw_build:pw_py_importable_runfile.bzl", "pw_py_importable_runfile")
 load("@bazel_skylib//lib:selects.bzl", "selects")
 
 package(default_visibility = ["//visibility:public"])
@@ -211,6 +212,13 @@ native_binary(
         "//conditions:default": "clang-tidy",
     }),
     visibility = ["//visibility:public"],
+)
+
+pw_py_importable_runfile(
+    name = "py_clang_format",
+    src = ":bin/clang-format",
+    executable = True,
+    import_location = "llvm_toolchain.clang_format",
 )
 
 #####################

@@ -13,5 +13,13 @@
 # the License.
 """The pw_presubmit package provides tools for running presubmit checks."""
 
+# This Python package contains generated Python modules that overlap with
+# this `__init__.py` file's import namespace, so this package's import path
+# must be extended for the generated modules to be discoverable.
+#
+# Note: This needs to be done in every nested `__init__.py` that will contain
+# overlapping generated files.
+__path__ = __import__('pkgutil').extend_path(__path__, __name__)
+
 from pw_presubmit.tools import log_run
 from pw_presubmit.presubmit import *
