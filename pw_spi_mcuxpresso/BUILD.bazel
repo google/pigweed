@@ -84,6 +84,7 @@ cc_library(
         "//pw_dma_mcuxpresso",
         "//pw_function",
         "//pw_log",
+        "//pw_span:cast",
         "//pw_spi:initiator",
         "//pw_spi:responder",
         "//pw_status",

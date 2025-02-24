@@ -76,6 +76,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public = [ "public/pw_spi_mcuxpresso/responder.h" ]
     public_deps = [
       "$dir_pw_digital_io",
+      "$dir_pw_span:cast",
       "$dir_pw_spi:initiator",
       "$dir_pw_spi:responder",
       "$dir_pw_status",
