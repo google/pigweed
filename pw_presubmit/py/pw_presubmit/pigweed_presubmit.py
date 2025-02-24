@@ -482,6 +482,9 @@ gn_chre_googletest_nanopb_sapphire_build = PigweedGnGenNinja(
         pw_function_CONFIG=lambda ctx: '"{}"'.format(
             ctx.root / 'pw_function:enable_dynamic_allocation'
         ),
+        pw_crypto_AES_BACKEND=lambda ctx: '"{}"'.format(
+            ctx.root / 'pw_crypto:aes_boringssl'
+        ),
         pw_bluetooth_sapphire_ENABLED=True,
         pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
     ),
