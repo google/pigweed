@@ -43,6 +43,7 @@ if (dir_pw_third_party_googletest != "") {
   pw_source_set("googletest") {
     public_configs = [ ":includes" ]
     public = [
+      "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock-matchers.h",
       "$dir_pw_third_party_googletest/googlemock/include/gmock/gmock.h",
       "$dir_pw_third_party_googletest/googletest/include/gtest/gtest-spi.h",
       "$dir_pw_third_party_googletest/googletest/include/gtest/gtest.h",
