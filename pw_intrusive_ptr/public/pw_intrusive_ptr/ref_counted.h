@@ -14,13 +14,9 @@
 #pragma once
 
 #include "pw_intrusive_ptr/internal/ref_counted_base.h"
+#include "pw_intrusive_ptr/intrusive_ptr.h"
 
 namespace pw {
-
-// TODO(matthewsedam): Remove this once this header is removed from
-// intrusive_ptr.h and include intrusive_ptr.h
-template <typename T>
-class IntrusivePtr;
 
 // Base class to be used with the IntrusivePtr. Doesn't provide any public
 // methods.

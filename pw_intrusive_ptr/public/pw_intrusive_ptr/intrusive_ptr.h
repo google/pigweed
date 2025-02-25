@@ -20,9 +20,6 @@
 
 #include "pw_intrusive_ptr/recyclable.h"
 
-// TODO(matthewsedam): Remove this once downstream projects are fixed
-#include "pw_intrusive_ptr/ref_counted.h"
-
 namespace pw {
 
 // Shared pointer that relies on the stored object for the refcounting.
