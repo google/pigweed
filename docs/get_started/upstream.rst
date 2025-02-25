@@ -9,6 +9,12 @@ repository, ``https://pigweed.googlesource.com/pigweed/pigweed``. See
 :ref:`docs-get-started` if you're looking for instructions on how to use
 Pigweed in your own project.
 
+.. note::
+
+   This guide needs updating for developing upstream with Bazel. The workflows
+   are a bit simpler since bootstrap isn't needed. See
+   https://pwbug.dev/398929253 for updates.
+
 .. _prerequisites:
 
 Prerequisites
@@ -377,6 +383,11 @@ In macOS and Linux, ``xargs`` can be used to turn this into a single command:
 ----------
 Next steps
 ----------
+
+Contribute a patch
+==================
+Ready to submit a patch upstream? See our :ref:`docs-contributing` guide for our
+patch submission process.
 
 Quickstarts
 ===========
