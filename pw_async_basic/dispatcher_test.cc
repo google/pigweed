@@ -304,5 +304,44 @@ TEST(DispatcherBasic, ExecuteTaskCancelled) {
   ASSERT_EQ(count, 3);
 }
 
+TEST(DispatcherBasic, TaskExecutedByRunUntil) {
+  BasicDispatcher dispatcher;
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    PW_TEST_ASSERT_OK(status);
+    ++count;
+  };
+
+  Task task(inc_count);
+  dispatcher.Post(task);
+
+  // The specific timeout here does not really matter as the task posted above
+  // will be due immediately.
+  const auto time_out_duration =
+      dispatcher.now() +
+      pw::chrono::SystemClock::for_at_least(std::chrono::nanoseconds(100000UL));
+  dispatcher.RunUntil(time_out_duration);
+  ASSERT_EQ(count, 1);
+}
+
+TEST(DispatcherBasic, TaskExecutedByRunFor) {
+  BasicDispatcher dispatcher;
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    PW_TEST_ASSERT_OK(status);
+    ++count;
+  };
+
+  Task task(inc_count);
+  dispatcher.Post(task);
+
+  // The specific timeout here does not really matter as the task posted above
+  // will be due immediately.
+  const auto time_out_duration =
+      pw::chrono::SystemClock::for_at_least(std::chrono::nanoseconds(100000UL));
+  dispatcher.RunFor(time_out_duration);
+  ASSERT_EQ(count, 1);
+}
+
 }  // namespace
 }  // namespace pw::async

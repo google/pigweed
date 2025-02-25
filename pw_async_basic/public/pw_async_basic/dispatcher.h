@@ -76,9 +76,14 @@ class BasicDispatcher : public Dispatcher, public thread::ThreadCore {
                         chrono::SystemClock::time_point time_due)
       PW_LOCKS_EXCLUDED(lock_);
 
+  // If no tasks are due, sleep until a notification is received or the next
+  // task comes due; whichever occurs first.
+  void MaybeSleep() PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
   // If no tasks are due, sleep until a notification is received, the next task
   // comes due, or a timeout elapses; whichever occurs first.
-  void MaybeSleep() PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+  void MaybeSleepUntil(std::optional<chrono::SystemClock::time_point> wake_time)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
   // Dequeue and run each task that is due.
   void ExecuteDueTasks() PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
