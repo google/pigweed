@@ -86,7 +86,10 @@ cc_library(
     ],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
-    deps = ["//pw_assert"],
+    deps = [
+        "//pw_assert:assert",
+        "//pw_preprocessor",
+    ],
 )
 
 cc_library(
