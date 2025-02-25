@@ -69,6 +69,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     pw_multibuf.simple_allocator
     pw_result
     pw_span
+    pw_span.cast
     pw_status
     pw_sync.lock_annotations
     pw_sync.mutex

@@ -26,6 +26,7 @@
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_log/log.h"
 #include "pw_multibuf/allocator.h"
+#include "pw_span/cast.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
@@ -273,15 +274,6 @@ bool L2capSignalingChannel::HandleFlowControlCreditInd(
   return false;
 }
 
-namespace {
-
-// TODO: https://pwbug.dev/389724307 - Move to pw utility function once created.
-pw::span<uint8_t> AsUint8Span(ByteSpan s) {
-  return {reinterpret_cast<uint8_t*>(s.data()), s.size_bytes()};
-}
-
-}  // namespace
-
 Status L2capSignalingChannel::SendFlowControlCreditInd(
     uint16_t cid,
     uint16_t credits,
@@ -306,7 +298,7 @@ Status L2capSignalingChannel::SendFlowControlCreditInd(
 
   Result<emboss::L2capFlowControlCreditIndWriter> command_view =
       MakeEmbossWriter<emboss::L2capFlowControlCreditIndWriter>(
-          AsUint8Span(command_span.value()));
+          pw::span_cast<uint8_t>(command_span.value()));
   PW_CHECK(command_view->IsComplete());
 
   command_view->command_header().code().Write(

@@ -24,6 +24,7 @@
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_log/log.h"
+#include "pw_span/cast.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
@@ -167,15 +168,6 @@ Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
   return status;
 }
 
-namespace {
-
-// TODO: https://pwbug.dev/389724307 - Move to pw utility function once created.
-pw::span<const uint8_t> AsConstUint8Span(ConstByteSpan s) {
-  return {reinterpret_cast<const uint8_t*>(s.data()), s.size_bytes()};
-}
-
-}  // namespace
-
 StatusWithMultiBuf L2capChannel::WriteToPayloadQueue(
     multibuf::MultiBuf&& payload) {
   if (!payload.IsContiguous()) {
@@ -206,7 +198,7 @@ StatusWithMultiBuf L2capChannel::WriteToPduQueue(multibuf::MultiBuf&& payload) {
 
   std::optional<ByteSpan> span = payload.ContiguousSpan();
   PW_CHECK(span.has_value());
-  Status status = Write(AsConstUint8Span(span.value()));
+  Status status = Write(span_cast<const uint8_t>(*span));
 
   if (!status.ok()) {
     return {status, std::move(payload)};

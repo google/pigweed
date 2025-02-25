@@ -18,6 +18,7 @@
 #include "pw_multibuf/allocator.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
+#include "pw_span/cast.h"
 #include "pw_span/span.h"
 
 namespace pw::bluetooth::proxy {
@@ -45,8 +46,7 @@ class MultiBufWriter {
   /// After TakeMultiBuf(), this returns an empty span.
   pw::span<uint8_t> U8Span() {
     // ContiguousSpan() cannot fail because Create() uses AllocateContiguous().
-    return pw::span(reinterpret_cast<uint8_t*>(buf_.ContiguousSpan()->data()),
-                    write_offset_);
+    return pw::span_cast<uint8_t>(*buf_.ContiguousSpan()).first(write_offset_);
   }
 
   /// Returns true when the MultiBuf is full; i.e., when the total number of

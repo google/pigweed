@@ -18,6 +18,7 @@
 
 #include "pw_containers/to_array.h"
 #include "pw_multibuf/simple_allocator_for_test.h"
+#include "pw_span/cast.h"
 #include "pw_unit_test/framework.h"  // IWYU pragma: keep
 
 namespace pw::bluetooth::proxy {
@@ -93,8 +94,7 @@ TEST_F(MultiBufWriterTest, CanTakeMultiBuf) {
 
   std::optional<ByteSpan> mbuf_span = mbuf.ContiguousSpan();
   ASSERT_TRUE(bool(mbuf_span));
-  pw::span<uint8_t> mbuf_u8_span(reinterpret_cast<uint8_t*>(mbuf_span->data()),
-                                 mbuf_span->size());
+  pw::span<uint8_t> mbuf_u8_span = pw::span_cast<uint8_t>(*mbuf_span);
   EXPECT_TRUE(std::equal(
       mbuf_u8_span.begin(), mbuf_u8_span.end(), kData.begin(), kData.end()));
 

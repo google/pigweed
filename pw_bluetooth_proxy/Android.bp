@@ -50,6 +50,7 @@ cc_library_static {
         "pw_multibuf",
         "pw_result",
         "pw_span",
+        "pw_span_cast",
         "pw_status",
     ],
     export_static_lib_headers: [
