@@ -15,6 +15,7 @@
 #pragma once
 
 #include <atomic>
+#include <mutex>
 #include <optional>
 
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
@@ -36,15 +37,50 @@ namespace pw::bluetooth::proxy {
 // around channels.
 class L2capChannelManager {
  public:
+  // Wrapper for locked access to L2capChannel. Lock must be held at
+  // construction already, and will be released on destruct.
+  class LockedL2capChannel {
+   public:
+    LockedL2capChannel(L2capChannel& channel,
+                       std::unique_lock<sync::Mutex>&& lock)
+        : channel_(&channel), lock_(std::move(lock)) {}
+
+    LockedL2capChannel(LockedL2capChannel&& other)
+        : channel_(other.channel_), lock_(std::move(other.lock_)) {
+      other.channel_ = nullptr;
+    }
+
+    LockedL2capChannel& operator=(LockedL2capChannel&& other) {
+      lock_ = std::move(other.lock_);
+      channel_ = other.channel_;
+      other.channel_ = nullptr;
+      return *this;
+    }
+    LockedL2capChannel(const LockedL2capChannel&) = delete;
+    LockedL2capChannel& operator=(const LockedL2capChannel&) = delete;
+
+    // Will assert if accessed on moved-from object.
+    L2capChannel& channel() {
+      PW_ASSERT(channel_);
+      return *channel_;
+    }
+
+   private:
+    L2capChannel* channel_;
+    std::unique_lock<sync::Mutex> lock_;
+  };
+
   L2capChannelManager(AclDataChannel& acl_data_channel);
 
   // Start proxying L2CAP packets addressed to `channel` arriving from
   // the controller and allow `channel` to send & queue Tx L2CAP packets.
-  void RegisterChannel(L2capChannel& channel);
+  void RegisterChannel(L2capChannel& channel)
+      PW_LOCKS_EXCLUDED(channels_mutex_);
 
   // Stop proxying L2CAP packets addressed to `channel` and stop sending L2CAP
   // packets queued in `channel`, if `channel` is currently registered.
-  void DeregisterChannel(L2capChannel& channel);
+  void DeregisterChannel(L2capChannel& channel)
+      PW_LOCKS_EXCLUDED(channels_mutex_);
 
   // Deregister and close all channels then propagate `event` to clients.
   void DeregisterAndCloseChannels(L2capChannelEvent event)
@@ -57,17 +93,36 @@ class L2capChannelManager {
   // Returns PW_STATUS_INVALID_ARGUMENT if `size` is too large for a buffer.
   pw::Result<H4PacketWithH4> GetAclH4Packet(uint16_t size);
 
-  // Send L2CAP packets queued in registered channels.
-  void DrainChannelQueues() PW_LOCKS_EXCLUDED(channels_mutex_);
+  // Report that new tx packets have been queued or new tx credits have been
+  // received since the last DrainChannelQueuesIfNewTx.
+  void ReportNewTxPacketsOrCredits();
+
+  // Send L2CAP packets queued in registered channels. Since this function takes
+  // the channels_mutex_ lock, it can't be directly called while handling a
+  // received packet on a channel. Instead call ReportPacketsMayBeReadyToSend().
+  // Rx processing will then call this function when complete.
+  void DrainChannelQueuesIfNewTx() PW_LOCKS_EXCLUDED(channels_mutex_);
+
+  // Drain channel queues even if no channel explicitly requested it. Should be
+  // used for events triggering queue space at the ACL level.
+  void ForceDrainChannelQueues() PW_LOCKS_EXCLUDED(channels_mutex_);
 
   // Returns the size of an H4 buffer reserved for Tx packets.
   uint16_t GetH4BuffSize() const;
 
-  L2capChannel* FindChannelByLocalCid(uint16_t connection_handle,
-                                      uint16_t local_cid);
+  std::optional<LockedL2capChannel> FindChannelByLocalCid(
+      uint16_t connection_handle, uint16_t local_cid);
 
-  L2capChannel* FindChannelByRemoteCid(uint16_t connection_handle,
-                                       uint16_t remote_cid);
+  std::optional<LockedL2capChannel> FindChannelByRemoteCid(
+      uint16_t connection_handle, uint16_t remote_cid);
+
+  // Must be called with channels_mutex_ held.
+  L2capChannel* FindChannelByLocalCidLocked(uint16_t connection_handle,
+                                            uint16_t local_cid);
+
+  // Must be called with channels_mutex_ held.
+  L2capChannel* FindChannelByRemoteCidLocked(uint16_t connection_handle,
+                                             uint16_t remote_cid);
 
   // Register for notifications of connection and disconnection for a
   // particular L2cap service identified by its PSM.
@@ -83,7 +138,12 @@ class L2capChannelManager {
   void HandleDisconnectionComplete(uint16_t connection_handle);
 
   // Called when a l2cap channel connection is disconnected.
-  void HandleDisconnectionComplete(
+  //
+  // Must be called under channels_lock_ but we can't use proper lock annotation
+  // here since the call comes via signaling channel.
+  // TODO: https://pwbug.dev/390511432 - Figure out way to add annotations to
+  // enforce this invariant.
+  void HandleDisconnectionCompleteLocked(
       const L2capStatusTracker::DisconnectParams& params);
 
   // Core Spec v6.0 Vol 4, Part E, Section 7.8.2: "The LE_ACL_Data_Packet_Length
@@ -109,6 +169,11 @@ class L2capChannelManager {
   void Advance(IntrusiveForwardList<L2capChannel>::iterator& it)
       PW_EXCLUSIVE_LOCKS_REQUIRED(channels_mutex_);
 
+  // Stop proxying L2CAP packets addressed to `channel` and stop sending L2CAP
+  // packets queued in `channel`, if `channel` is currently registered.
+  void DeregisterChannelLocked(L2capChannel& channel)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(channels_mutex_);
+
   // Reference to the ACL data channel owned by the proxy.
   AclDataChannel& acl_data_channel_;
 
@@ -130,6 +195,10 @@ class L2capChannelManager {
   // Iterator to final channel to be visited in ongoing round robin.
   IntrusiveForwardList<L2capChannel>::iterator round_robin_terminus_
       PW_GUARDED_BY(channels_mutex_);
+
+  // True if new tx packets have been queued or new tx credits have been
+  // received since the last DrainChannelQueuesIfNewTx.
+  std::atomic_bool new_tx_since_drain_ = false;
 
   // Channel connection status tracker and delegate holder.
   L2capStatusTracker status_tracker_;

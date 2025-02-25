@@ -41,8 +41,7 @@ void L2capChannelManager::RegisterChannel(L2capChannel& channel) {
   }
 }
 
-void L2capChannelManager::DeregisterChannel(L2capChannel& channel) {
-  std::lock_guard lock(channels_mutex_);
+void L2capChannelManager::DeregisterChannelLocked(L2capChannel& channel) {
   if (&channel == &(*lrd_channel_)) {
     Advance(lrd_channel_);
   }
@@ -60,6 +59,11 @@ void L2capChannelManager::DeregisterChannel(L2capChannel& channel) {
     lrd_channel_ = channels_.end();
     round_robin_terminus_ = channels_.end();
   }
+}
+
+void L2capChannelManager::DeregisterChannel(L2capChannel& channel) {
+  std::lock_guard lock(channels_mutex_);
+  DeregisterChannelLocked(channel);
 }
 
 void L2capChannelManager::DeregisterAndCloseChannels(L2capChannelEvent event) {
@@ -89,7 +93,7 @@ pw::Result<H4PacketWithH4> L2capChannelManager::GetAclH4Packet(uint16_t size) {
   H4PacketWithH4 h4_packet(span(h4_buff->data(), size),
                            /*release_fn=*/[this](const uint8_t* buffer) {
                              this->h4_storage_.ReleaseH4Buff(buffer);
-                             DrainChannelQueues();
+                             ForceDrainChannelQueues();
                            });
   h4_packet.SetH4Type(emboss::H4PacketType::ACL_DATA);
 
@@ -100,7 +104,21 @@ uint16_t L2capChannelManager::GetH4BuffSize() const {
   return H4Storage::GetH4BuffSize();
 }
 
-void L2capChannelManager::DrainChannelQueues() {
+void L2capChannelManager::ForceDrainChannelQueues() {
+  ReportNewTxPacketsOrCredits();
+  DrainChannelQueuesIfNewTx();
+}
+
+void L2capChannelManager::ReportNewTxPacketsOrCredits() {
+  new_tx_since_drain_ = true;
+}
+
+void L2capChannelManager::DrainChannelQueuesIfNewTx() {
+  if (!new_tx_since_drain_) {
+    return;
+  }
+  new_tx_since_drain_ = false;
+
   for (;;) {
     std::optional<AclDataChannel::SendCredit> credit;
     std::optional<H4PacketWithH4> packet;
@@ -143,26 +161,58 @@ void L2capChannelManager::DrainChannelQueues() {
   }
 }
 
-L2capChannel* L2capChannelManager::FindChannelByLocalCid(
-    uint16_t connection_handle, uint16_t local_cid) {
-  std::lock_guard lock(channels_mutex_);
-  auto connection_it = containers::FindIf(
+std::optional<L2capChannelManager::LockedL2capChannel>
+L2capChannelManager::FindChannelByLocalCid(
+    uint16_t connection_handle, uint16_t local_cid) PW_NO_LOCK_SAFETY_ANALYSIS {
+  // Lock annotations don't work with unique_lock
+  std::unique_lock lock(channels_mutex_);
+  L2capChannel* channel =
+      FindChannelByLocalCidLocked(connection_handle, local_cid);
+  if (!channel) {
+    return std::nullopt;
+  }
+  return LockedL2capChannel(*channel, std::move(lock));
+}
+
+std::optional<L2capChannelManager::LockedL2capChannel>
+L2capChannelManager::FindChannelByRemoteCid(uint16_t connection_handle,
+                                            uint16_t remote_cid)
+    PW_NO_LOCK_SAFETY_ANALYSIS {
+  // Lock annotations don't work with unique_lock
+  std::unique_lock lock(channels_mutex_);
+  L2capChannel* channel =
+      FindChannelByRemoteCidLocked(connection_handle, remote_cid);
+  if (!channel) {
+    return std::nullopt;
+  }
+  return LockedL2capChannel(*channel, std::move(lock));
+}
+
+L2capChannel* L2capChannelManager::FindChannelByLocalCidLocked(
+    uint16_t connection_handle, uint16_t local_cid) PW_NO_LOCK_SAFETY_ANALYSIS {
+  auto channel_it = containers::FindIf(
       channels_, [connection_handle, local_cid](const L2capChannel& channel) {
         return channel.connection_handle() == connection_handle &&
                channel.local_cid() == local_cid;
       });
-  return connection_it == channels_.end() ? nullptr : &(*connection_it);
+  if (channel_it == channels_.end()) {
+    return nullptr;
+  }
+  return &(*channel_it);
 }
 
-L2capChannel* L2capChannelManager::FindChannelByRemoteCid(
-    uint16_t connection_handle, uint16_t remote_cid) {
-  std::lock_guard lock(channels_mutex_);
-  auto connection_it = containers::FindIf(
+L2capChannel* L2capChannelManager::FindChannelByRemoteCidLocked(
+    uint16_t connection_handle,
+    uint16_t remote_cid) PW_NO_LOCK_SAFETY_ANALYSIS {
+  auto channel_it = containers::FindIf(
       channels_, [connection_handle, remote_cid](const L2capChannel& channel) {
         return channel.connection_handle() == connection_handle &&
                channel.remote_cid() == remote_cid;
       });
-  return connection_it == channels_.end() ? nullptr : &(*connection_it);
+  if (channel_it == channels_.end()) {
+    return nullptr;
+  }
+  return &(*channel_it);
 }
 
 void L2capChannelManager::Advance(
@@ -195,35 +245,37 @@ void L2capChannelManager::HandleDisconnectionComplete(
       connection_handle);
   for (;;) {
     IntrusiveForwardList<L2capChannel>::iterator channel_it;
-    {
-      std::lock_guard lock(channels_mutex_);
-      channel_it = containers::FindIf(
-          channels_, [connection_handle](L2capChannel& channel) {
-            return channel.connection_handle() == connection_handle &&
-                   channel.state() == L2capChannel::State::kRunning;
-          });
-      if (channel_it == channels_.end()) {
-        break;
-      }
 
-      // We do not need to worry about `channel_it` invalidating after unlocking
-      // because an L2CAP_DISCONNECTION_RSP cannot be sent on this ACL
-      // connection which has already been closed, so this channel will not be
-      // closed elsewhere before we close it below.
+    std::lock_guard lock(channels_mutex_);
+    channel_it = containers::FindIf(
+        channels_, [connection_handle](L2capChannel& channel) {
+          return channel.connection_handle() == connection_handle &&
+                 channel.state() == L2capChannel::State::kRunning;
+        });
+    if (channel_it == channels_.end()) {
+      break;
     }
 
-    channel_it->Close();
+    DeregisterChannelLocked(*channel_it);
+    channel_it->InternalClose();
   }
 
   status_tracker_.HandleDisconnectionComplete(connection_handle);
 }
 
-void L2capChannelManager::HandleDisconnectionComplete(
-    const L2capStatusTracker::DisconnectParams& params) {
+void L2capChannelManager::HandleDisconnectionCompleteLocked(
+    const L2capStatusTracker::DisconnectParams& params)
+    PW_NO_LOCK_SAFETY_ANALYSIS {
+  // Must be called under channels_lock_ but we can't use proper lock annotation
+  // here since the call comes via signaling channel.
+  // TODO: https://pwbug.dev/390511432 - Figure out way to add annotations to
+  // enforce this invariant.
+
   L2capChannel* channel =
-      FindChannelByLocalCid(params.connection_handle, params.local_cid);
+      FindChannelByLocalCidLocked(params.connection_handle, params.local_cid);
   if (channel) {
-    channel->Close();
+    DeregisterChannelLocked(*channel);
+    channel->InternalClose();
   }
   status_tracker_.HandleDisconnectionComplete(params);
 }

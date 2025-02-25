@@ -233,7 +233,7 @@ void L2capSignalingChannel::HandleDisconnectionReq(
 
 void L2capSignalingChannel::HandleDisconnectionRsp(
     Direction, emboss::L2capDisconnectionRspView cmd) {
-  l2cap_channel_manager_.HandleDisconnectionComplete(
+  l2cap_channel_manager_.HandleDisconnectionCompleteLocked(
       L2capStatusTracker::DisconnectParams{
           .connection_handle = connection_handle(),
           .remote_cid = cmd.source_cid().Read(),
@@ -241,7 +241,13 @@ void L2capSignalingChannel::HandleDisconnectionRsp(
 }
 
 bool L2capSignalingChannel::HandleFlowControlCreditInd(
-    emboss::L2capFlowControlCreditIndView cmd) {
+    emboss::L2capFlowControlCreditIndView cmd) PW_NO_LOCK_SAFETY_ANALYSIS {
+  // This function is always called with L2capChannelManager channels lock held,
+  // but we can't assert that with annotations since we don't have a complete
+  // type for L2capChannelManager in l2cap_channel.h.
+  // TODO: https://pwbug.dev/390511432 - Figure out way to add annotations to
+  // enforce this invariant.
+
   if (!cmd.IsComplete()) {
     PW_LOG_ERROR(
         "Buffer is too small for L2CAP_FLOW_CONTROL_CREDIT_IND. So will "
@@ -249,8 +255,12 @@ bool L2capSignalingChannel::HandleFlowControlCreditInd(
     return false;
   }
 
-  L2capChannel* found_channel = l2cap_channel_manager_.FindChannelByRemoteCid(
-      connection_handle(), cmd.cid().Read());
+  // Since this is called as a result of handling a received packet, the
+  // channels lock is already held so we should use the *Locked variant to
+  // lookup.
+  L2capChannel* found_channel =
+      l2cap_channel_manager_.FindChannelByRemoteCidLocked(connection_handle(),
+                                                          cmd.cid().Read());
   if (found_channel) {
     // If this L2CAP_FLOW_CONTROL_CREDIT_IND is addressed to a channel managed
     // by the proxy, it must be an L2CAP connection-oriented channel.
@@ -310,7 +320,7 @@ Status L2capSignalingChannel::SendFlowControlCreditInd(
   command_view->credits().Write(credits);
   PW_CHECK(command_view->Ok());
 
-  StatusWithMultiBuf s = Write(*std::move(command));
+  StatusWithMultiBuf s = WriteDuringRx(*std::move(command));
 
   return s.status;
 }

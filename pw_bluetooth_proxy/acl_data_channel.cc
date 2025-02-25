@@ -172,7 +172,7 @@ void AclDataChannel::ProcessReadBufferSizeCommandCompleteEvent(
     read_buffer_event.total_num_acl_data_packets().Write(host_max);
   }
 
-  l2cap_channel_manager_.DrainChannelQueues();
+  l2cap_channel_manager_.ForceDrainChannelQueues();
 }
 
 template <class EventT>
@@ -199,7 +199,7 @@ void AclDataChannel::ProcessSpecificLEReadBufferSizeCommandCompleteEvent(
   l2cap_channel_manager_.set_le_acl_data_packet_length(
       le_acl_data_packet_length);
   // Send packets that may have queued before we acquired any LE ACL credits.
-  l2cap_channel_manager_.DrainChannelQueues();
+  l2cap_channel_manager_.ForceDrainChannelQueues();
 }
 
 template void
@@ -271,7 +271,7 @@ void AclDataChannel::HandleNumberOfCompletedPacketsEvent(
   }
 
   if (did_reclaim_credits) {
-    l2cap_channel_manager_.DrainChannelQueues();
+    l2cap_channel_manager_.ForceDrainChannelQueues();
   }
   if (should_send_to_host) {
     hci_transport_.SendToHost(std::move(h4_packet));
@@ -644,9 +644,9 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
         const uint16_t l2cap_channel_id = l2cap_header.channel_id().Read();
 
         // Is this a channel we care about?
-        // TODO: https://pwbug.dev/390511432 - Handle channel lifetime concerns.
-        L2capChannel* channel = find_l2cap_channel(l2cap_channel_id);
-        if (!channel) {
+        std::optional<L2capChannelManager::LockedL2capChannel> channel =
+            find_l2cap_channel(l2cap_channel_id);
+        if (!channel.has_value()) {
           return kUnhandled;
         }
 
@@ -674,7 +674,11 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
           is_fragment = true;
 
           // Start recombination
-          auto* multibuf_allocator = channel->rx_multibuf_allocator();
+          // Note: this allocator pointer is only valid as long as channel is
+          // registered with L2capChannelManager. So we hold the
+          // LockedL2capChannel channel to ensure it stays valid for duration of
+          // its use.
+          auto* multibuf_allocator = channel->channel().rx_multibuf_allocator();
           if (!multibuf_allocator) {
             PW_LOG_ERROR(
                 "Cannot start recombination for L2capChannel %#x: "
@@ -759,9 +763,9 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
       MakeEmbossView<emboss::BasicL2capHeaderView>(l2cap_pdu);
   PW_CHECK(l2cap_header.ok());
 
-  // TODO: https://pwbug.dev/390511432 - Handle channel lifetime concerns.
-  L2capChannel* channel = find_l2cap_channel(l2cap_header->channel_id().Read());
-  if (!channel) {
+  std::optional<L2capChannelManager::LockedL2capChannel> channel =
+      find_l2cap_channel(l2cap_header->channel_id().Read());
+  if (!channel.has_value()) {
     // This cannot happen if the packet is a fragment, because recombination
     // only starts for a recognized L2capChannel. So it is safe to return
     // kUnhandled in this case and pass the frame on.
@@ -771,9 +775,10 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
   }
 
   // Pass the L2CAP PDU on to the L2capChannel
-  const bool result = (direction == Direction::kFromController)
-                          ? channel->HandlePduFromController(l2cap_pdu)
-                          : channel->HandlePduFromHost(l2cap_pdu);
+  const bool result =
+      (direction == Direction::kFromController)
+          ? channel->channel().HandlePduFromController(l2cap_pdu)
+          : channel->channel().HandlePduFromHost(l2cap_pdu);
   if (is_fragment) {
     if (!result) {
       // We can't return kUnhandled, as that would pass only this final
@@ -787,6 +792,13 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
       return kHandled;
     }
   }
+
+  // Unlock channel so we can drain any channels with data queued.
+  // It's possible for a channel handling rx traffic to have queued tx traffic.
+  // So release the channel lock, then call DrainChannelQueuesIfNewTx to handle
+  // that possibility.
+  channel.reset();
+  l2cap_channel_manager_.DrainChannelQueuesIfNewTx();
 
   return result;
 }

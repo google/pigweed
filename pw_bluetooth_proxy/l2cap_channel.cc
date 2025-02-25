@@ -131,6 +131,21 @@ void L2capChannel::InternalClose(L2capChannelEvent event) {
 
 void L2capChannel::Undefine() { state_ = State::kUndefined; }
 
+StatusWithMultiBuf L2capChannel::Write(pw::multibuf::MultiBuf&& payload) {
+  StatusWithMultiBuf result = WriteDuringRx(std::move(payload));
+  l2cap_channel_manager_.DrainChannelQueuesIfNewTx();
+  return result;
+}
+
+StatusWithMultiBuf L2capChannel::WriteDuringRx(
+    pw::multibuf::MultiBuf&& payload) {
+  if (UsesPayloadQueue()) {
+    return WriteToPayloadQueue(std::move(payload));
+  } else {
+    return WriteToPduQueue(std::move(payload));
+  }
+}
+
 Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
   PW_CHECK(!UsesPayloadQueue());
 
@@ -149,7 +164,7 @@ Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
       status = OkStatus();
     }
   }
-  ReportPacketsMayBeReadyToSend();
+  ReportNewTxPacketsOrCredits();
   return status;
 }
 
@@ -263,7 +278,7 @@ StatusWithMultiBuf L2capChannel::QueuePayload(multibuf::MultiBuf&& buf) {
     payload_queue_.push(std::move(buf));
   }
 
-  ReportPacketsMayBeReadyToSend();
+  ReportNewTxPacketsOrCredits();
   return {OkStatus(), std::nullopt};
 }
 
@@ -460,8 +475,13 @@ std::optional<uint16_t> L2capChannel::MaxL2capPayloadSize() const {
   return max_acl_data_size - emboss::BasicL2capHeader::IntrinsicSizeInBytes();
 }
 
-void L2capChannel::ReportPacketsMayBeReadyToSend() {
-  l2cap_channel_manager_.DrainChannelQueues();
+void L2capChannel::ReportNewTxPacketsOrCredits() {
+  l2cap_channel_manager_.ReportNewTxPacketsOrCredits();
+}
+
+void L2capChannel::DrainChannelQueuesIfNewTx()
+    PW_LOCKS_EXCLUDED(send_queue_mutex_) {
+  l2cap_channel_manager_.DrainChannelQueuesIfNewTx();
 }
 
 void L2capChannel::ClearQueue() {

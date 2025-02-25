@@ -142,6 +142,7 @@ pw::Status L2capCoc::SendAdditionalRxCredits(uint16_t additional_rx_credits) {
         rx_total_credits_,
         rx_remaining_credits_);
   }
+  DrainChannelQueuesIfNewTx();
   return status;
 }
 
@@ -461,7 +462,7 @@ void L2capCoc::AddTxCredits(uint16_t credits) {
     tx_credits_ += credits;
   }
   if (credits_previously_zero) {
-    ReportPacketsMayBeReadyToSend();
+    ReportNewTxPacketsOrCredits();
   }
 }
 

@@ -273,7 +273,7 @@ bool RfcommChannel::DoHandlePduFromController(pw::span<uint8_t> l2cap_pdu) {
   }
 
   if (credits_previously_zero) {
-    ReportPacketsMayBeReadyToSend();
+    ReportNewTxPacketsOrCredits();
   }
 
   return true;
