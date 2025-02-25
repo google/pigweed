@@ -217,4 +217,5 @@ rust_test(
 label_flag(
     name = "pw_log_backend",
     build_setting_default = ":pw_log_backend_printf",
+    visibility = ["//visibility:public"],
 )

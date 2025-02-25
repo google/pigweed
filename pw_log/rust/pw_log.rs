@@ -47,11 +47,10 @@
 
 pub use pw_log_backend_api::LogLevel;
 
-// Re-export dependences of `pw_log` macros to be accessed via `$crate::__private`.
+// Re-export dependencies of `pw_log` macros to be accessed via `$crate::__private`.
 #[doc(hidden)]
 pub mod __private {
     pub use crate::*;
-    // pub use pw_log_backend;
     pub use pw_log_backend::{pw_log_backend, pw_logf_backend};
 }
 
@@ -297,7 +296,7 @@ macro_rules! critical {
 /// Emit a critical level log message using `printf` format string semantics.
 ///
 /// ```
-/// use pw_log::{criticalf, LogLevel};
+/// use pw_log::criticalf;
 ///
 /// criticalf!(
 ///     "Log Fact: Until the %dth century, all ships' masts were made from a single log.",
@@ -341,7 +340,7 @@ macro_rules! fatal {
 /// *Note*: `fatalf` only emits a log message and does not cause a `panic!()`
 ///
 /// ```
-/// use pw_log::{fatalf, LogLevel};
+/// use pw_log::fatalf;
 ///
 /// fatalf!("Log Fact: All out of log facts! Timber!");
 /// ```
