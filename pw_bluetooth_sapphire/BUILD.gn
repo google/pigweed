@@ -86,6 +86,49 @@ pw_source_set("uuid") {
   ]
 }
 
+pw_source_set("lease") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bluetooth_sapphire/lease.h" ]
+  public_deps = [
+    ":config",
+    dir_pw_function,
+    dir_pw_result,
+  ]
+}
+
+pw_source_set("null_lease_provider") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bluetooth_sapphire/null_lease_provider.h" ]
+  public_deps = [ ":lease" ]
+}
+
+pw_source_set("fake_lease_provider") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bluetooth_sapphire/fake_lease_provider.h" ]
+  public_deps = [ ":lease" ]
+}
+
+pw_source_set("power_delegate") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bluetooth_sapphire/power_delegate.h" ]
+  public_deps = [ ":lease" ]
+}
+
+pw_test("lease_test") {
+  sources = [ "lease_test.cc" ]
+  deps = [ ":lease" ]
+}
+
+pw_test("null_lease_provider_test") {
+  sources = [ "null_lease_provider_test.cc" ]
+  deps = [ ":null_lease_provider" ]
+}
+
+pw_test("fake_lease_provider_test") {
+  sources = [ "fake_lease_provider_test.cc" ]
+  deps = [ ":fake_lease_provider" ]
+}
+
 pw_test("central_test") {
   enable_if = pw_bluetooth_sapphire_ENABLED
   sources = [ "central_test.cc" ]
@@ -114,6 +157,9 @@ pw_test_group("tests") {
   tests = [
     ":peripheral_test",
     ":central_test",
+    ":fake_lease_provider_test",
+    ":null_lease_provider_test",
+    ":lease_test",
   ]
   group_deps = [
     "host:tests",
