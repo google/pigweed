@@ -306,6 +306,7 @@ sphinx_docs_library(
         "gn.rst",
         "linker_scripts.rst",
         "pigweed.bazelrc",
+        "pigweed_recommended.bazelrc",
         "project_builder.rst",
         "python.gni",
         "python.rst",

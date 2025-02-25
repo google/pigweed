@@ -1,0 +1,48 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+# These flags are highly recommended. If you turn any off, you might have a
+# worse experience, but things shouldn't break in inscrutable ways.
+
+# UX flags
+# ========
+# Improve debugability by printing all arguments for failing commands.
+common --verbose_failures
+
+# Suppress the DEBUG: log messages from bazel. We get lots of spammy DEBUG:
+# messages from our third-party dependencies.
+build --ui_event_filters=-debug
+
+# Specifies desired output mode for running tests.
+# Valid values are
+#   'summary' to output only test status summary
+#   'errors' to also print test logs for failed tests
+#   'all' to print logs for all tests
+#   'streamed' to output logs for all tests in real time
+#     (this will force tests to be executed locally one at a time regardless
+#     of --test_strategy value).
+# See more at https://bazel.build/docs/user-manual#test-output.
+test --test_output=errors
+
+# C++ related flags
+# =================
+# Do not strip debug symbols by default.
+common --strip=never
+
+# Silence all C/C++ warnings in external code.
+#
+# Note that this will not silence warnings from external headers #include'd in
+# first-party code.
+common --per_file_copt=external/.*@-w
+common --host_per_file_copt=external/.*@-w

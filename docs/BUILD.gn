@@ -35,6 +35,7 @@ pw_doc_group("core_docs") {
     "$dir_pw_async2/examples/coro_blinky_loop.cc",
     "$dir_pw_async2/examples/count.cc",
     "$dir_pw_async2/public/pw_async2/coro.h",
+    "$dir_pw_build/pigweed_recommended.bazelrc",
     "$dir_pw_build/pigweed.bazelrc",
     "$dir_pw_build/py/gn_tests/BUILD.gn",
     "$dir_pw_build/py/pw_build/generate_python_wheel_cache.py",

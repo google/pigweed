@@ -15,28 +15,10 @@
 
 # Standard flags required for all Pigweed projects.
 import %workspace%/pw_build/pigweed.bazelrc
+import %workspace%/pw_build/pigweed_recommended.bazelrc
 
 # TODO: https://pwbug.dev/258836641 - Only until bzlmod migration is done.
 common --enable_workspace
-
-# UX flags
-# ========
-# Improve debugability by printing all arguments for failing commands.
-common --verbose_failures
-
-# Suppress the DEBUG: log messages from bazel. We get lots of spammy DEBUG:
-# messages from our third-party dependencies.
-build --ui_event_filters=-debug
-
-# Specifies desired output mode for running tests.
-# Valid values are
-#   'summary' to output only test status summary
-#   'errors' to also print test logs for failed tests
-#   'all' to print logs for all tests
-#   'streamed' to output logs for all tests in real time
-#     (this will force tests to be executed locally one at a time regardless
-#     of --test_strategy value).
-test --test_output=errors
 
 # Default build_tag_filters and test_tag_filters
 # ==============================================
@@ -51,16 +33,6 @@ test --test_tag_filters=-integration,-do_not_build,-do_not_run_test,-kernel
 
 # C++ related flags
 # =================
-# Do not strip debug symbols by default.
-common --strip=never
-
-# Silence all C/C++ warnings in external code.
-#
-# Note that this will not silence warnings from external headers #include'd in
-# first-party code.
-common --per_file_copt=external/.*@-w
-common --host_per_file_copt=external/.*@-w
-
 # Picotool needs to build with exceptions and RTTI enabled.
 common --per_file_copt=external.*picotool.*@-fexceptions,-frtti
 common --host_per_file_copt=external.*picotool.*@-fexceptions,-frtti
