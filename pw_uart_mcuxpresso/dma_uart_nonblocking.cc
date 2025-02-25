@@ -117,6 +117,7 @@ Status DmaUartMcuxpressoNonBlocking::Init() {
 
     rx_data_.request.valid = false;
     tx_data_.request.valid = false;
+    tx_data_.flush_request.valid = false;
 
     // Begin reading into the ring buffer.
     TriggerReadDmaIntoRingBuffer();
@@ -525,6 +526,7 @@ void DmaUartMcuxpressoNonBlocking::TxRxCompletionCallback(status_t status) {
     if (tx_data_.tx_idx == tx_data_.buffer.size_bytes()) {
       tx_data_.request.callback(StatusWithSize(tx_data_.buffer.size_bytes()));
       tx_data_.request.valid = false;
+      CompleteFlushRequest(OkStatus());
     } else {
       // No, set up a followup DMA.
       PW_CHECK_INT_LT(tx_data_.tx_idx, tx_data_.buffer.size_bytes());
@@ -627,6 +629,8 @@ bool DmaUartMcuxpressoNonBlocking::DoCancelWrite() {
   tx_data_.request.callback(StatusWithSize::Cancelled(bytes_transmitted));
   tx_data_.request.valid = false;
 
+  CompleteFlushRequest(Status::Aborted());
+
   return true;
 }
 
@@ -699,13 +703,42 @@ Status DmaUartMcuxpressoNonBlocking::DoSetFlowControl(bool enable) {
   return OkStatus();
 }
 
-// Unimplemented
-Status DmaUartMcuxpressoNonBlocking::DoFlushOutput(
-    Function<void(Status status)>&& /*callback*/) {
-  return Status::Unimplemented();
+bool DmaUartMcuxpressoNonBlocking::CompleteFlushRequest(Status status) {
+  if (!tx_data_.flush_request.valid) {
+    return false;
+  }
+
+  tx_data_.flush_request.callback(status);
+  tx_data_.flush_request.valid = false;
+  tx_data_.flush_request.callback = nullptr;
+
+  PW_DCHECK(USART_FIFOSTAT_TXEMPTY(config_.usart_base->FIFOSTAT));
+
+  return true;
 }
 
-// Unimplemented
-bool DmaUartMcuxpressoNonBlocking::DoCancelFlushOutput() { return false; }
+Status DmaUartMcuxpressoNonBlocking::DoFlushOutput(
+    Function<void(Status status)>&& callback) {
+  std::lock_guard lock(interrupt_lock_);
+
+  if (tx_data_.flush_request.valid) {
+    return Status::FailedPrecondition();
+  }
+
+  if (!tx_data_.request.valid) {
+    callback(OkStatus());
+    return OkStatus();
+  }
+
+  tx_data_.flush_request.callback = std::move(callback);
+  tx_data_.flush_request.valid = true;
+
+  return OkStatus();
+}
+
+bool DmaUartMcuxpressoNonBlocking::DoCancelFlushOutput() {
+  std::lock_guard lock(interrupt_lock_);
+  return CompleteFlushRequest(Status::Cancelled());
+}
 
 }  // namespace pw::uart
