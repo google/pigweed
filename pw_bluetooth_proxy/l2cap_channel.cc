@@ -132,13 +132,12 @@ void L2capChannel::InternalClose(L2capChannelEvent event) {
 void L2capChannel::Undefine() { state_ = State::kUndefined; }
 
 StatusWithMultiBuf L2capChannel::Write(pw::multibuf::MultiBuf&& payload) {
-  StatusWithMultiBuf result = WriteDuringRx(std::move(payload));
+  StatusWithMultiBuf result = WriteLocked(std::move(payload));
   l2cap_channel_manager_.DrainChannelQueuesIfNewTx();
   return result;
 }
 
-StatusWithMultiBuf L2capChannel::WriteDuringRx(
-    pw::multibuf::MultiBuf&& payload) {
+StatusWithMultiBuf L2capChannel::WriteLocked(pw::multibuf::MultiBuf&& payload) {
   if (UsesPayloadQueue()) {
     return WriteToPayloadQueue(std::move(payload));
   } else {

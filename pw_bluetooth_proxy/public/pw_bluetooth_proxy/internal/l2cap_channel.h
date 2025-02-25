@@ -256,7 +256,13 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Channels that need to send a payload during handling a received packet
   // directly (for instance to replenish credits) should use this function which
   // does not take the L2capChannelManager channels lock.
-  StatusWithMultiBuf WriteDuringRx(pw::multibuf::MultiBuf&& payload);
+  inline StatusWithMultiBuf WriteDuringRx(pw::multibuf::MultiBuf&& payload) {
+    return WriteLocked(std::move(payload));
+  }
+
+  // Write payload to queue but don't drain the queue as this would require
+  // taking L2capChannelManager channel_mutex_ lock.
+  StatusWithMultiBuf WriteLocked(pw::multibuf::MultiBuf&& payload);
 
   // Queue L2CAP `packet` for sending and `ReportNewTxPacketsOrCredits()`.
   //
