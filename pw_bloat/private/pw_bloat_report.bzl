@@ -65,6 +65,9 @@ def _pw_bloat_report_impl(ctx):
     else:
         args.add("--single-report")
 
+    if ctx.attr.source_filter != None:
+        json_metadata["binaries"][0]["source_filter"] = ctx.attr.source_filter
+
     ctx.actions.write(script_input, json.encode(json_metadata))
 
     ctx.actions.run(
@@ -93,6 +96,7 @@ pw_bloat_report = rule(
             doc = "Bloaty configuration file to use for the size report, overriding the platform default",
         ),
         "label": attr.string(doc = "Title for the size report"),
+        "source_filter": attr.string(doc = "Regex with which to filter symbols"),
         "target": attr.label(
             mandatory = True,
             executable = True,

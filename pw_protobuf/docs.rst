@@ -2410,9 +2410,7 @@ This report demonstrates the size of using the entire decoder with all of its
 decode methods and a decode callback for a proto message containing each of the
 protobuf field types.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: size_report/decoder_partial
-.. include:: ../size_report_notice
+.. include:: size_report/decoder_partial
 
 
 Incremental size report
@@ -2422,9 +2420,7 @@ This report is generated using the full report as a base and adding some int32
 fields to the decode callback to demonstrate the incremental cost of decoding
 fields in a message.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: size_report/decoder_incremental
-.. include:: ../size_report_notice
+.. include:: size_report/decoder_incremental
 
 ---------------------------
 Serialized size calculation

@@ -13,7 +13,9 @@
 # the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -22,8 +24,8 @@ package(
 
 licenses(["notice"])
 
-pw_cc_binary(
-    name = "decoder_partial",
+pw_cc_size_binary(
+    name = "decoder_partial_target",
     srcs = [
         "decoder_partial.cc",
     ],
@@ -34,8 +36,22 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
-    name = "decoder_incremental",
+pw_size_diff(
+    name = "decoder_partial_diff",
+    base = "//pw_bloat:bloat_base",
+    label = "Full wire-format pw_protobuf decoder",
+    target = ":decoder_partial_target",
+)
+
+pw_size_table(
+    name = "decoder_partial",
+    reports = [
+        ":decoder_partial_diff",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "decoder_incremental_target",
     srcs = [
         "decoder_incremental.cc",
     ],
@@ -43,6 +59,20 @@ pw_cc_binary(
         "//pw_bloat:bloat_this_binary",
         "//pw_preprocessor",
         "//pw_protobuf",
+    ],
+)
+
+pw_size_diff(
+    name = "decoder_incremental_diff",
+    base = ":decoder_partial_target",
+    label = "Incremental cost of decoding additional fields",
+    target = ":decoder_incremental_target",
+)
+
+pw_size_table(
+    name = "decoder_incremental",
+    reports = [
+        ":decoder_incremental_diff",
     ],
 )
 
@@ -61,7 +91,7 @@ cc_library(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "proto_base",
     srcs = [
         "proto_base.cc",
@@ -72,7 +102,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "encode_decode_core",
     srcs = [
         "encode_decode_core.cc",
@@ -83,7 +113,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "message_core",
     srcs = [
         "message_core.cc",
@@ -94,7 +124,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "messages_no_codegen",
     srcs = ["simple_codegen_comparison.cc"],
     defines = ["_PW_PROTOBUF_SIZE_REPORT_NO_CODEGEN=1"],
@@ -105,7 +135,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "messages_wire_format",
     srcs = ["simple_codegen_comparison.cc"],
     defines = ["_PW_PROTOBUF_SIZE_REPORT_WIRE_FORMAT=1"],
@@ -116,7 +146,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "messages_message",
     srcs = ["simple_codegen_comparison.cc"],
     defines = ["_PW_PROTOBUF_SIZE_REPORT_MESSAGE=1"],
@@ -127,7 +157,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "oneof_no_codegen",
     srcs = ["oneof_codegen_comparison.cc"],
     defines = ["_PW_PROTOBUF_SIZE_REPORT_NO_CODEGEN=1"],
@@ -138,7 +168,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "oneof_wire_format",
     srcs = ["oneof_codegen_comparison.cc"],
     defines = ["_PW_PROTOBUF_SIZE_REPORT_WIRE_FORMAT=1"],
@@ -149,7 +179,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "oneof_message",
     srcs = ["oneof_codegen_comparison.cc"],
     defines = ["_PW_PROTOBUF_SIZE_REPORT_MESSAGE=1"],
@@ -157,5 +187,97 @@ pw_cc_binary(
         ":proto_bloat",
         "//pw_bloat:bloat_this_binary",
         "//pw_protobuf:codegen_test_proto_pwpb",
+    ],
+)
+
+pw_size_diff(
+    name = "protobuf_overview_encode_decode_core",
+    base = ":proto_base",
+    label = "Full wire-format proto encode/decode library",
+    source_filter = "pw::protobuf::*|section .code",
+    target = ":encode_decode_core",
+)
+
+pw_size_diff(
+    name = "protobuf_overview_message_core",
+    base = ":proto_base",
+    label = "Including table-based `Message` encoder and decoder",
+    source_filter = "pw::protobuf::*|section .code",
+    target = ":message_core",
+)
+
+pw_size_table(
+    name = "protobuf_overview",
+    reports = [
+        ":protobuf_overview_encode_decode_core",
+        ":protobuf_overview_message_core",
+    ],
+)
+
+_PROTOBUF_SOURCE_FILTER = "pw::protobuf_size_report::*"
+
+pw_size_diff(
+    name = "simple_codegen_size_direct_wire_encoder",
+    base = ":message_core",
+    label = "Direct wire format proto encoder",
+    source_filter = _PROTOBUF_SOURCE_FILTER,
+    target = ":messages_no_codegen",
+)
+
+pw_size_diff(
+    name = "simple_codegen_size_wrapped_wire_encoder",
+    base = ":message_core",
+    label = "Generated wrappers for wire format encoder",
+    source_filter = _PROTOBUF_SOURCE_FILTER,
+    target = ":messages_wire_format",
+)
+
+pw_size_diff(
+    name = "simple_codegen_size_message_encoder",
+    base = ":message_core",
+    label = "Generated message encoder",
+    source_filter = _PROTOBUF_SOURCE_FILTER,
+    target = ":messages_message",
+)
+
+pw_size_table(
+    name = "simple_codegen_size_comparison",
+    reports = [
+        ":simple_codegen_size_direct_wire_encoder",
+        ":simple_codegen_size_wrapped_wire_encoder",
+        ":simple_codegen_size_message_encoder",
+    ],
+)
+
+pw_size_diff(
+    name = "oneof_codegen_size_direct_wire_encoder",
+    base = ":message_core",
+    label = "Direct wire format proto encoder",
+    source_filter = _PROTOBUF_SOURCE_FILTER,
+    target = ":oneof_no_codegen",
+)
+
+pw_size_diff(
+    name = "oneof_codegen_size_wrapped_wire_encoder",
+    base = ":message_core",
+    label = "Generated wrappers for wire format encoder",
+    source_filter = _PROTOBUF_SOURCE_FILTER,
+    target = ":oneof_wire_format",
+)
+
+pw_size_diff(
+    name = "oneof_codegen_size_message_encoder",
+    base = ":message_core",
+    label = "Generated message encoder",
+    source_filter = _PROTOBUF_SOURCE_FILTER,
+    target = ":oneof_message",
+)
+
+pw_size_table(
+    name = "oneof_codegen_size_comparison",
+    reports = [
+        ":oneof_codegen_size_direct_wire_encoder",
+        ":oneof_codegen_size_wrapped_wire_encoder",
+        ":oneof_codegen_size_message_encoder",
     ],
 )

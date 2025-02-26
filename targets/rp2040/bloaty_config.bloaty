@@ -30,4 +30,8 @@ custom_data_source: {
     pattern: "LOAD #4"
     replacement: "RAM"
   }
+  rewrite: {
+    pattern: "LOAD #5"
+    replacement: "RAM"
+  }
 }
