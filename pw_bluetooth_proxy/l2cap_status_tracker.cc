@@ -34,6 +34,35 @@ void L2capStatusTracker::UnregisterDelegate(L2capStatusDelegate& delegate) {
 void L2capStatusTracker::HandleConnectionComplete(
     const L2capChannelConnectionInfo& info) {
   std::lock_guard lock(mutex_);
+  if (pending_connection_complete_.has_value()) {
+    PW_LOG_ERROR("Connection complete already pending");
+    return;
+  }
+  pending_connection_complete_ = info;
+}
+
+void L2capStatusTracker::HandleAclDisconnectionComplete(
+    uint16_t connection_handle) {
+  std::lock_guard lock(mutex_);
+  if (pending_acl_disconnection_complete_.has_value()) {
+    PW_LOG_ERROR("ACL disconnection complete already pending");
+    return;
+  }
+  pending_acl_disconnection_complete_ = connection_handle;
+}
+
+void L2capStatusTracker::HandleDisconnectionComplete(
+    const DisconnectParams& params) {
+  std::lock_guard lock(mutex_);
+  if (pending_disconnection_complete_.has_value()) {
+    PW_LOG_ERROR("Disconnection complete already pending");
+    return;
+  }
+  pending_disconnection_complete_ = params;
+}
+
+void L2capStatusTracker::DeliverPendingConnectionComplete(
+    const L2capChannelConnectionInfo& info) {
   bool track = false;
   for (L2capStatusDelegate& delegate : delegates_) {
     if (!delegate.ShouldTrackPsm(info.psm)) {
@@ -57,9 +86,8 @@ void L2capStatusTracker::HandleConnectionComplete(
   }
 }
 
-void L2capStatusTracker::HandleDisconnectionComplete(
+void L2capStatusTracker::DeliverPendingAclDisconnectionComplete(
     uint16_t connection_handle) {
-  std::lock_guard lock(mutex_);
   for (size_t i = 0; i < connected_channel_infos_.size();) {
     L2capChannelConnectionInfo& info = connected_channel_infos_[i];
 
@@ -78,9 +106,8 @@ void L2capStatusTracker::HandleDisconnectionComplete(
   }
 }
 
-void L2capStatusTracker::HandleDisconnectionComplete(
+void L2capStatusTracker::DeliverPendingDisconnectionComplete(
     const DisconnectParams& params) {
-  std::lock_guard lock(mutex_);
   for (L2capStatusDelegate& delegate : delegates_) {
     auto match = [&params](const L2capChannelConnectionInfo& i) {
       return params.connection_handle == i.connection_handle &&
@@ -96,6 +123,25 @@ void L2capStatusTracker::HandleDisconnectionComplete(
 
     delegate.HandleDisconnectionComplete(*connection_it);
     connected_channel_infos_.erase(connection_it);
+  }
+}
+
+void L2capStatusTracker::DeliverPendingEvents() {
+  std::lock_guard lock(mutex_);
+  if (pending_connection_complete_.has_value()) {
+    DeliverPendingConnectionComplete(*pending_connection_complete_);
+    pending_connection_complete_.reset();
+  }
+
+  if (pending_acl_disconnection_complete_.has_value()) {
+    DeliverPendingAclDisconnectionComplete(
+        *pending_acl_disconnection_complete_);
+    pending_acl_disconnection_complete_.reset();
+  }
+
+  if (pending_disconnection_complete_.has_value()) {
+    DeliverPendingDisconnectionComplete(*pending_disconnection_complete_);
+    pending_disconnection_complete_.reset();
   }
 }
 

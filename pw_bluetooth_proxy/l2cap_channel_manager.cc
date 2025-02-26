@@ -237,10 +237,10 @@ void L2capChannelManager::HandleConnectionComplete(
   status_tracker_.HandleConnectionComplete(info);
 }
 
-void L2capChannelManager::HandleDisconnectionComplete(
+void L2capChannelManager::HandleAclDisconnectionComplete(
     uint16_t connection_handle) {
   PW_LOG_INFO(
-      "btproxy: L2capChannelManager::HandleDisconnectionComplete - "
+      "btproxy: L2capChannelManager::HandleAclDisconnectionComplete - "
       "connection_handle: %u",
       connection_handle);
   for (;;) {
@@ -260,7 +260,7 @@ void L2capChannelManager::HandleDisconnectionComplete(
     channel_it->InternalClose();
   }
 
-  status_tracker_.HandleDisconnectionComplete(connection_handle);
+  status_tracker_.HandleAclDisconnectionComplete(connection_handle);
 }
 
 void L2capChannelManager::HandleDisconnectionCompleteLocked(
@@ -278,6 +278,10 @@ void L2capChannelManager::HandleDisconnectionCompleteLocked(
     channel->InternalClose();
   }
   status_tracker_.HandleDisconnectionComplete(params);
+}
+
+void L2capChannelManager::DeliverPendingEvents() {
+  status_tracker_.DeliverPendingEvents();
 }
 
 }  // namespace pw::bluetooth::proxy

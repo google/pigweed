@@ -2911,7 +2911,40 @@ TEST_F(ProxyHostConnectionEventTest, LeConnectionCompletePassthroughOk) {
   EXPECT_EQ(host_called, 1U);
 }
 
-TEST_F(ProxyHostConnectionEventTest, L2capEventsCalled) {
+class L2capStatusTrackerTest : public ProxyHostTest,
+                               public L2capStatusDelegate {
+ public:
+  static constexpr uint16_t kPsm = 1;
+
+  bool ShouldTrackPsm(uint16_t psm) override { return psm == kPsm; }
+  void HandleConnectionComplete(const L2capChannelConnectionInfo& i) override {
+    EXPECT_FALSE(info.has_value());
+    PW_CHECK(proxy_ptr);
+    info.emplace(i);
+    // Test we can create channel directly in callback.
+    l2cap_channel =
+        BuildBasicL2capChannel(*proxy_ptr,
+                               {.handle = i.connection_handle,
+                                .local_cid = i.local_cid,
+                                .remote_cid = i.remote_cid,
+                                .transport = AclTransportType::kBrEdr});
+  }
+  void HandleDisconnectionComplete(
+      const L2capChannelConnectionInfo& i) override {
+    ASSERT_TRUE(info.has_value());
+    EXPECT_EQ(info->direction, i.direction);
+    EXPECT_EQ(info->connection_handle, i.connection_handle);
+    EXPECT_EQ(info->remote_cid, i.remote_cid);
+    EXPECT_EQ(info->local_cid, i.local_cid);
+    info.reset();
+  }
+
+  ProxyHost* proxy_ptr = nullptr;
+  std::optional<L2capChannelConnectionInfo> info;
+  std::optional<BasicL2capChannel> l2cap_channel;
+};
+
+TEST_F(L2capStatusTrackerTest, L2capEventsCalled) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       []([[maybe_unused]] H4PacketWithH4&& packet) {});
 
@@ -2922,42 +2955,20 @@ TEST_F(ProxyHostConnectionEventTest, L2capEventsCalled) {
                               std::move(send_to_controller_fn),
                               /*le_acl_credits_to_reserve=*/0,
                               /*br_edr_acl_credits_to_reserve=*/0);
+  proxy_ptr = &proxy;
 
-  constexpr uint16_t kPsm = 1;
   constexpr uint16_t kSourceCid = 30;
   constexpr uint16_t kDestinationCid = 31;
   constexpr uint16_t kHandle = 123;
 
-  class TestStatusDelegate final : public L2capStatusDelegate {
-   public:
-    bool ShouldTrackPsm(uint16_t psm) override { return psm == kPsm; }
-    void HandleConnectionComplete(
-        const L2capChannelConnectionInfo& i) override {
-      EXPECT_FALSE(info.has_value());
-      info.emplace(i);
-    }
-    void HandleDisconnectionComplete(
-        const L2capChannelConnectionInfo& i) override {
-      ASSERT_TRUE(info.has_value());
-      EXPECT_EQ(info->direction, i.direction);
-      EXPECT_EQ(info->connection_handle, i.connection_handle);
-      EXPECT_EQ(info->remote_cid, i.remote_cid);
-      EXPECT_EQ(info->local_cid, i.local_cid);
-      info.reset();
-    }
-
-    std::optional<L2capChannelConnectionInfo> info;
-  };
-
-  TestStatusDelegate test_delegate;
-  proxy.RegisterL2capStatusDelegate(test_delegate);
+  proxy.RegisterL2capStatusDelegate(*this);
 
   PW_TEST_EXPECT_OK(
       SendConnectionCompleteEvent(proxy, kHandle, emboss::StatusCode::SUCCESS));
 
   // First send CONNECTION_REQ to setup partial connection
   PW_TEST_EXPECT_OK(SendL2capConnectionReq(proxy, kHandle, kSourceCid, kPsm));
-  EXPECT_FALSE(test_delegate.info.has_value());
+  EXPECT_FALSE(info.has_value());
 
   // Send non-successful connection response.
   PW_TEST_EXPECT_OK(SendL2capConnectionRsp(
@@ -2966,7 +2977,7 @@ TEST_F(ProxyHostConnectionEventTest, L2capEventsCalled) {
       kSourceCid,
       kDestinationCid,
       emboss::L2capConnectionRspResultCode::INVALID_SOURCE_CID));
-  EXPECT_FALSE(test_delegate.info.has_value());
+  EXPECT_FALSE(info.has_value());
 
   // Send successful connection response, but expect that it will not have
   // called listener since the connection was closed with error already.
@@ -2976,11 +2987,11 @@ TEST_F(ProxyHostConnectionEventTest, L2capEventsCalled) {
                              kSourceCid,
                              kDestinationCid,
                              emboss::L2capConnectionRspResultCode::SUCCESSFUL));
-  EXPECT_FALSE(test_delegate.info.has_value());
+  EXPECT_FALSE(info.has_value());
 
   // Send new connection req
   PW_TEST_EXPECT_OK(SendL2capConnectionReq(proxy, kHandle, kSourceCid, kPsm));
-  EXPECT_FALSE(test_delegate.info.has_value());
+  EXPECT_FALSE(info.has_value());
 
   // Send rsp with PENDING set.
   PW_TEST_EXPECT_OK(
@@ -2989,7 +3000,7 @@ TEST_F(ProxyHostConnectionEventTest, L2capEventsCalled) {
                              kSourceCid,
                              kDestinationCid,
                              emboss::L2capConnectionRspResultCode::PENDING));
-  EXPECT_FALSE(test_delegate.info.has_value());
+  EXPECT_FALSE(info.has_value());
 
   // Send success rsp
   PW_TEST_EXPECT_OK(
@@ -2998,15 +3009,15 @@ TEST_F(ProxyHostConnectionEventTest, L2capEventsCalled) {
                              kSourceCid,
                              kDestinationCid,
                              emboss::L2capConnectionRspResultCode::SUCCESSFUL));
-  EXPECT_TRUE(test_delegate.info.has_value());
-  EXPECT_EQ(test_delegate.info->local_cid, kDestinationCid);
+  EXPECT_TRUE(info.has_value());
+  EXPECT_EQ(info->local_cid, kDestinationCid);
 
   // Send disconnect
   PW_TEST_EXPECT_OK(SendL2capDisconnectRsp(
       proxy, AclTransportType::kBrEdr, kHandle, kSourceCid, kDestinationCid));
-  EXPECT_FALSE(test_delegate.info.has_value());
+  EXPECT_FALSE(info.has_value());
 
-  proxy.UnregisterL2capStatusDelegate(test_delegate);
+  proxy.UnregisterL2capStatusDelegate(*this);
 
   // Send successful connection sequence with no listeners.
   PW_TEST_EXPECT_OK(SendL2capConnectionReq(proxy, kHandle, kSourceCid, kPsm));
@@ -3016,7 +3027,7 @@ TEST_F(ProxyHostConnectionEventTest, L2capEventsCalled) {
                              kSourceCid,
                              kDestinationCid,
                              emboss::L2capConnectionRspResultCode::SUCCESSFUL));
-  EXPECT_FALSE(test_delegate.info.has_value());
+  EXPECT_FALSE(info.has_value());
 }
 
 TEST_F(ProxyHostConnectionEventTest, HciDisconnectionAlertsListeners) {

@@ -135,16 +135,20 @@ class L2capChannelManager {
   void HandleConnectionComplete(const L2capChannelConnectionInfo& info);
 
   // Called when an ACL connection is disconnected.
-  void HandleDisconnectionComplete(uint16_t connection_handle);
+  void HandleAclDisconnectionComplete(uint16_t connection_handle);
 
   // Called when a l2cap channel connection is disconnected.
   //
-  // Must be called under channels_lock_ but we can't use proper lock annotation
-  // here since the call comes via signaling channel.
+  // Must be called under channels_mutex_ but we can't use proper lock
+  // annotation here since the call comes via signaling channel.
   // TODO: https://pwbug.dev/390511432 - Figure out way to add annotations to
   // enforce this invariant.
   void HandleDisconnectionCompleteLocked(
       const L2capStatusTracker::DisconnectParams& params);
+
+  // Deliver any pending connection events. Should not be called while holding
+  // channels_mutex_.
+  void DeliverPendingEvents();
 
   // Core Spec v6.0 Vol 4, Part E, Section 7.8.2: "The LE_ACL_Data_Packet_Length
   // parameter shall be used to determine the maximum size of the L2CAP PDU
