@@ -26,10 +26,6 @@ projects:
   is our advised approach to get **tokenized asserts**--by using tokenized
   logging, then using the ``pw_assert_log`` backend.
 
-Note: If one desires a null assert module (where asserts are removed), use
-``pw_assert_log`` in combination with ``pw_log_null``. This will direct asserts
-to logs, then the logs are removed due to the null backend.
-
 .. toctree::
    :maxdepth: 1
 
