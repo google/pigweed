@@ -36,9 +36,9 @@ pw_add_library(pw_allocator.benchmarks.benchmark STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_allocator
     pw_allocator.benchmarks.measurements
     pw_allocator.block_allocator
-    pw_allocator.deallocator
     pw_allocator.fragmentation
     pw_allocator.test_harness
     pw_assert

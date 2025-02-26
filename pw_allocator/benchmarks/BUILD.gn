@@ -55,10 +55,10 @@ pw_source_set("benchmark") {
   public_deps = [
     ":measurements",
     "$dir_pw_allocator:block_allocator",
-    "$dir_pw_allocator:deallocator",
     "$dir_pw_allocator:fragmentation",
     "$dir_pw_allocator:test_harness",
     "$dir_pw_chrono:system_clock",
+    dir_pw_allocator,
     dir_pw_assert,
     dir_pw_metric,
     dir_pw_tokenizer,
@@ -73,8 +73,7 @@ pw_executable("best_fit_benchmark") {
   deps = [
     ":benchmark",
     "$dir_pw_allocator:best_fit",
-    "$dir_pw_allocator:deallocator",
-    "$dir_pw_random",
+    dir_pw_random,
   ]
 }
 
@@ -83,7 +82,7 @@ pw_executable("dual_first_fit_benchmark") {
   deps = [
     ":benchmark",
     "$dir_pw_allocator:first_fit",
-    "$dir_pw_random",
+    dir_pw_random,
   ]
 }
 
@@ -92,7 +91,7 @@ pw_executable("first_fit_benchmark") {
   deps = [
     ":benchmark",
     "$dir_pw_allocator:first_fit",
-    "$dir_pw_random",
+    dir_pw_random,
   ]
 }
 
@@ -101,7 +100,7 @@ pw_executable("last_fit_benchmark") {
   deps = [
     ":benchmark",
     "$dir_pw_allocator:first_fit",
-    "$dir_pw_random",
+    dir_pw_random,
   ]
 }
 
@@ -110,7 +109,7 @@ pw_executable("tlsf_benchmark") {
   deps = [
     ":benchmark",
     "$dir_pw_allocator:tlsf_allocator",
-    "$dir_pw_random",
+    dir_pw_random,
   ]
 }
 
@@ -119,7 +118,7 @@ pw_executable("worst_fit_benchmark") {
   deps = [
     ":benchmark",
     "$dir_pw_allocator:worst_fit",
-    "$dir_pw_random",
+    dir_pw_random,
   ]
 }
 

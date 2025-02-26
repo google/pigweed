@@ -59,8 +59,8 @@ cc_library(
     }),
     deps = [
         ":measurements",
+        "//pw_allocator",
         "//pw_allocator:block_allocator",
-        "//pw_allocator:deallocator",
         "//pw_allocator:fragmentation",
         "//pw_allocator:test_harness",
         "//pw_assert",
@@ -81,7 +81,6 @@ cc_binary(
     deps = [
         ":benchmark",
         "//pw_allocator:best_fit",
-        "//pw_allocator:deallocator",
         "//pw_random",
     ],
 )

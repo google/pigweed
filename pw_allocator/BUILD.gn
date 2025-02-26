@@ -23,8 +23,36 @@ import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
-group("pw_allocator") {
-  public_deps = [ ":allocator" ]
+# The core target of this module.
+
+pw_source_set("pw_allocator") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_allocator/allocator.h",
+    "public/pw_allocator/capability.h",
+    "public/pw_allocator/deallocator.h",
+    "public/pw_allocator/layout.h",
+    "public/pw_allocator/pool.h",
+    "public/pw_allocator/unique_ptr.h",
+  ]
+  public_deps = [
+    ":config",
+    ":hardening",
+    "$dir_pw_numeric:checked_arithmetic",
+    dir_pw_bytes,
+    dir_pw_preprocessor,
+    dir_pw_result,
+    dir_pw_status,
+  ]
+  deps = [
+    "$dir_pw_bytes:alignment",
+    "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_assert,
+  ]
+  sources = [
+    "allocator.cc",
+    "unique_ptr.cc",
+  ]
 }
 
 # Module configuration
@@ -68,23 +96,16 @@ config("test_config") {
 
 # Libraries
 
-pw_source_set("allocator") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_allocator/allocator.h" ]
-  public_deps = [
-    ":deallocator",
-    "$dir_pw_numeric:checked_arithmetic",
-    dir_pw_result,
-  ]
-  sources = [ "allocator.cc" ]
+# TODO(b/376730645): Remove deprecated alias.
+group("allocator") {
+  public_deps = [ dir_pw_allocator ]
 }
 
 pw_source_set("allocator_as_pool") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/allocator_as_pool.h" ]
   public_deps = [
-    ":allocator",
-    ":pool",
+    ":pw_allocator",
     dir_pw_status,
   ]
   sources = [ "allocator_as_pool.cc" ]
@@ -113,11 +134,10 @@ pw_source_set("block_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/block_allocator.h" ]
   public_deps = [
-    ":allocator",
     ":config",
-    ":deallocator",
     ":fragmentation",
     ":hardening",
+    ":pw_allocator",
     "block:allocatable",
     "block:basic",
     "block:iterable",
@@ -154,8 +174,8 @@ pw_source_set("buddy_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/buddy_allocator.h" ]
   public_deps = [
-    ":allocator",
     ":hardening",
+    ":pw_allocator",
     "$dir_pw_containers:vector",
     "block:basic",
     "bucket:unordered",
@@ -187,8 +207,7 @@ pw_source_set("bump_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/bump_allocator.h" ]
   public_deps = [
-    ":allocator",
-    ":deallocator",
+    ":pw_allocator",
     "$dir_pw_bytes:alignment",
     dir_pw_bytes,
   ]
@@ -200,8 +219,7 @@ pw_source_set("chunk_pool") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/chunk_pool.h" ]
   public_deps = [
-    ":deallocator",
-    ":pool",
+    ":pw_allocator",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
@@ -215,21 +233,9 @@ pw_source_set("chunk_pool") {
   sources = [ "chunk_pool.cc" ]
 }
 
-pw_source_set("deallocator") {
-  sources = [ "unique_ptr.cc" ]
-  public = [
-    "public/pw_allocator/capability.h",
-    "public/pw_allocator/deallocator.h",
-    "public/pw_allocator/layout.h",
-    "public/pw_allocator/unique_ptr.h",
-  ]
-  public_configs = [ ":public_include_path" ]
-  public_deps = [
-    ":hardening",
-    dir_pw_preprocessor,
-    dir_pw_result,
-    dir_pw_status,
-  ]
+# TODO(b/376730645): Remove deprecated alias.
+group("deallocator") {
+  public_deps = [ dir_pw_allocator ]
 }
 
 pw_source_set("dl_allocator") {
@@ -256,8 +262,7 @@ pw_source_set("fallback_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/fallback_allocator.h" ]
   public_deps = [
-    ":allocator",
-    ":deallocator",
+    ":pw_allocator",
     dir_pw_result,
     dir_pw_status,
   ]
@@ -319,20 +324,14 @@ pw_source_set("last_fit_block_allocator") {
 pw_source_set("libc_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/libc_allocator.h" ]
-  public_deps = [
-    ":allocator",
-    ":deallocator",
-  ]
+  public_deps = [ ":pw_allocator" ]
   sources = [ "libc_allocator.cc" ]
 }
 
 pw_source_set("null_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/null_allocator.h" ]
-  public_deps = [
-    ":allocator",
-    ":deallocator",
-  ]
+  public_deps = [ ":pw_allocator" ]
   sources = [ "null_allocator.cc" ]
 }
 
@@ -340,7 +339,7 @@ pw_source_set("metrics") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/metrics.h" ]
   public_deps = [
-    ":allocator",
+    ":pw_allocator",
     dir_pw_metric,
   ]
 }
@@ -349,29 +348,24 @@ pw_source_set("pmr_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/pmr_allocator.h" ]
   public_deps = [
-    ":allocator",
     ":config",
+    ":pw_allocator",
     dir_pw_assert,
     dir_pw_status,
   ]
   sources = [ "pmr_allocator.cc" ]
 }
 
-pw_source_set("pool") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_allocator/pool.h" ]
-  public_deps = [
-    ":deallocator",
-    dir_pw_bytes,
-    dir_pw_result,
-  ]
+# TODO(b/376730645): Remove deprecated alias.
+group("pool") {
+  public_deps = [ dir_pw_allocator ]
 }
 
 pw_source_set("synchronized_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/synchronized_allocator.h" ]
   public_deps = [
-    ":allocator",
+    ":pw_allocator",
     "$dir_pw_sync:borrow",
     "$dir_pw_sync:lock_annotations",
   ]
@@ -394,8 +388,8 @@ pw_source_set("tracking_allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/tracking_allocator.h" ]
   public_deps = [
-    ":allocator",
     ":metrics",
+    ":pw_allocator",
     dir_pw_status,
   ]
   deps = [ dir_pw_assert ]
@@ -436,10 +430,10 @@ pw_source_set("testing") {
   public_configs = [ ":test_config" ]
   public = [ "public/pw_allocator/testing.h" ]
   public_deps = [
-    ":allocator",
     ":buffer",
     ":first_fit",
     ":hardening",
+    ":pw_allocator",
     ":tracking_allocator",
     dir_pw_bytes,
     dir_pw_result,
@@ -450,12 +444,13 @@ pw_source_set("testing") {
 }
 
 pw_source_set("block_allocator_testing") {
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/block_allocator_testing.h" ]
   public_deps = [
     ":block_allocator",
     ":buffer",
-    ":deallocator",
     ":fuzzing",
+    ":pw_allocator",
     ":test_harness",
     "block:detailed_block",
     "block:testing",
@@ -471,9 +466,10 @@ pw_source_set("block_allocator_testing") {
 }
 
 pw_source_set("test_harness") {
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/test_harness.h" ]
   public_deps = [
-    ":allocator",
+    ":pw_allocator",
     "$dir_pw_containers:intrusive_list",
     "$dir_pw_containers:vector",
     dir_pw_random,
@@ -486,9 +482,10 @@ pw_source_set("test_harness") {
 }
 
 pw_source_set("fuzzing") {
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/fuzzing.h" ]
   public_deps = [
-    ":allocator",
+    ":pw_allocator",
     ":test_harness",
     "$dir_pw_fuzzer:fuzztest",
   ]
@@ -500,7 +497,7 @@ pw_source_set("fuzzing") {
 pw_test("allocator_as_pool_test") {
   deps = [
     ":allocator_as_pool",
-    ":deallocator",
+    ":pw_allocator",
     ":testing",
   ]
   sources = [ "allocator_as_pool_test.cc" ]
@@ -508,8 +505,7 @@ pw_test("allocator_as_pool_test") {
 
 pw_test("allocator_test") {
   deps = [
-    ":allocator",
-    ":deallocator",
+    ":pw_allocator",
     ":testing",
   ]
   sources = [ "allocator_test.cc" ]
@@ -527,10 +523,10 @@ pw_test("best_fit_test") {
 
 pw_test("bucket_allocator_test") {
   deps = [
-    ":allocator",
     ":block_allocator_testing",
     ":bucket_allocator",
     ":bucket_block_allocator",
+    ":pw_allocator",
   ]
   sources = [ "bucket_allocator_test.cc" ]
 }
@@ -623,7 +619,7 @@ pw_test("freelist_heap_test") {
 
 pw_test("layout_test") {
   deps = [
-    ":deallocator",
+    ":pw_allocator",
     ":testing",
     dir_pw_result,
     dir_pw_status,
@@ -695,9 +691,9 @@ pw_test("tlsf_allocator_test") {
 
 pw_test("tracking_allocator_test") {
   deps = [
-    ":allocator",
     ":first_fit",
     ":metrics",
+    ":pw_allocator",
     ":testing",
     ":tracking_allocator",
     dir_pw_log,
@@ -708,7 +704,7 @@ pw_test("tracking_allocator_test") {
 
 pw_test("typed_pool_test") {
   deps = [
-    ":allocator",
+    ":pw_allocator",
     ":testing",
     ":typed_pool",
     "$dir_pw_bytes:alignment",
@@ -717,7 +713,10 @@ pw_test("typed_pool_test") {
 }
 
 pw_test("unique_ptr_test") {
-  deps = [ ":testing" ]
+  deps = [
+    ":pw_allocator",
+    ":testing",
+  ]
   sources = [ "unique_ptr_test.cc" ]
 }
 
@@ -733,8 +732,6 @@ pw_test("worst_fit_test") {
 pw_test_group("tests") {
   tests = [
     ":allocator_as_pool_test",
-
-    # ":allocator_nc_test",
     ":allocator_test",
     ":best_fit_test",
     ":bucket_allocator_test",

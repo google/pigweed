@@ -20,7 +20,7 @@ pw_add_library(pw_allocator.bucket.base INTERFACE
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.deallocator
+    pw_allocator
     pw_allocator.hardening
     pw_allocator.block.poisonable
 )

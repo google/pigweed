@@ -39,10 +39,10 @@ pw_source_set("alignable") {
   public = [ "public/pw_allocator/block/alignable.h" ]
   public_deps = [
     ":allocatable",
-    "$dir_pw_allocator:deallocator",
     "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
     "$dir_pw_third_party/fuchsia:stdcompat",
+    dir_pw_allocator,
     dir_pw_status,
   ]
 }
@@ -53,9 +53,9 @@ pw_source_set("allocatable") {
   public_deps = [
     ":contiguous",
     ":result",
-    "$dir_pw_allocator:deallocator",
     "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
+    dir_pw_allocator,
     dir_pw_status,
   ]
 }
@@ -111,8 +111,8 @@ pw_source_set("with_layout") {
   public = [ "public/pw_allocator/block/with_layout.h" ]
   public_deps = [
     ":alignable",
-    "$dir_pw_allocator:deallocator",
     "$dir_pw_allocator:hardening",
+    dir_pw_allocator,
   ]
 }
 
@@ -129,8 +129,8 @@ pw_source_set("detailed_block") {
     ":iterable",
     ":poisonable",
     ":with_layout",
-    "$dir_pw_allocator:deallocator",
     "$dir_pw_allocator:hardening",
+    dir_pw_allocator,
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_status,

@@ -31,18 +31,14 @@ pw_source_set("size_report") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/size_report/size_report.h" ]
   public_deps = [
-    "$dir_pw_allocator:allocator",
     "$dir_pw_allocator:block_allocator",
     "$dir_pw_allocator/block:small_block",
     "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_allocator,
     dir_pw_bytes,
   ]
   sources = [ "size_report.cc" ]
-  deps = [
-    "$dir_pw_allocator:deallocator",
-    "$dir_pw_bytes",
-    "$dir_pw_bytes:alignment",
-  ]
+  deps = [ "$dir_pw_bytes:alignment" ]
 }
 
 _size_report = {

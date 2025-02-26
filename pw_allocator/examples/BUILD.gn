@@ -39,10 +39,7 @@ pw_source_set("named_u32") {
 pw_source_set("custom_allocator") {
   public_configs = [ ":default_config" ]
   public = [ "public/examples/custom_allocator.h" ]
-  public_deps = [
-    "$dir_pw_allocator:allocator",
-    "$dir_pw_allocator:deallocator",
-  ]
+  public_deps = [ dir_pw_allocator ]
   sources = [ "custom_allocator.cc" ]
   deps = [
     dir_pw_log,
@@ -65,8 +62,8 @@ pw_source_set("custom_allocator_test_harness") {
 pw_test("basic") {
   deps = [
     ":named_u32",
-    "$dir_pw_allocator:allocator",
     "$dir_pw_allocator:testing",
+    dir_pw_allocator,
   ]
   sources = [ "basic.cc" ]
 }
@@ -106,10 +103,10 @@ pw_test("custom_allocator_test") {
 pw_test("linker_sections") {
   deps = [
     ":named_u32",
-    "$dir_pw_allocator:allocator",
     "$dir_pw_allocator:first_fit",
     "$dir_pw_allocator:worst_fit",
     "$dir_pw_allocator/block:detailed_block",
+    dir_pw_allocator,
   ]
   sources = [ "linker_sections.cc" ]
 }
@@ -127,9 +124,9 @@ pw_test("metrics") {
 
 pw_test("pmr") {
   deps = [
-    "$dir_pw_allocator:allocator",
     "$dir_pw_allocator:pmr_allocator",
     "$dir_pw_allocator:testing",
+    dir_pw_allocator,
   ]
   sources = [ "pmr.cc" ]
 }

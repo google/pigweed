@@ -35,8 +35,7 @@ pw_add_library(pw_allocator.examples.custom_allocator STATIC
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_allocator.allocator
-    pw_allocator.deallocator
+    pw_allocator
   SOURCES
     custom_allocator.cc
   PRIVATE_DEPS
@@ -59,8 +58,8 @@ pw_add_library(pw_allocator.examples.custom_allocator_test_harness INTERFACE
 
 pw_add_test(pw_allocator.examples.basic
   PRIVATE_DEPS
+    pw_allocator
     pw_allocator.examples.named_u32
-    pw_allocator.allocator
     pw_allocator.testing
   SOURCES
     basic.cc
@@ -101,8 +100,8 @@ pw_add_test(pw_allocator.examples.custom_allocator_test
 
 pw_add_test(pw_allocator.examples.linker_sections
   PRIVATE_DEPS
+    pw_allocator
     pw_allocator.examples.named_u32
-    pw_allocator.allocator
     pw_allocator.block_allocator
     pw_allocator.block.detailed_block
   SOURCES
@@ -122,7 +121,7 @@ pw_add_test(pw_allocator.examples.metrics
 
 pw_add_test(pw_allocator.examples.pmr
   PRIVATE_DEPS
-    pw_allocator.allocator
+    pw_allocator
     pw_allocator.pmr_allocator
     pw_allocator.testing
     pw_tokenizer

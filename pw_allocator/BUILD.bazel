@@ -23,6 +23,38 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
+# The core target of this module.
+cc_library(
+    name = "pw_allocator",
+    srcs = [
+        "allocator.cc",
+        "unique_ptr.cc",
+    ],
+    hdrs = [
+        "public/pw_allocator/allocator.h",
+        "public/pw_allocator/capability.h",
+        "public/pw_allocator/deallocator.h",
+        "public/pw_allocator/layout.h",
+        "public/pw_allocator/pool.h",
+        "public/pw_allocator/unique_ptr.h",
+    ],
+    implementation_deps = [
+        "//pw_assert",
+        "//pw_bytes:alignment",
+        "//third_party/fuchsia:stdcompat",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":config",
+        ":hardening",
+        "//pw_bytes",
+        "//pw_numeric:checked_arithmetic",
+        "//pw_preprocessor",
+        "//pw_result",
+        "//pw_status",
+    ],
+)
+
 # Module configuration
 
 cc_library(
@@ -62,16 +94,10 @@ cc_library(
 
 # Libraries
 
-cc_library(
+# TODO(b/376730645): Remove deprecated alias.
+alias(
     name = "allocator",
-    srcs = ["allocator.cc"],
-    hdrs = ["public/pw_allocator/allocator.h"],
-    strip_include_prefix = "public",
-    deps = [
-        ":deallocator",
-        "//pw_numeric:checked_arithmetic",
-        "//pw_result",
-    ],
+    actual = ":pw_allocator",
 )
 
 cc_library(
@@ -80,9 +106,7 @@ cc_library(
     hdrs = ["public/pw_allocator/allocator_as_pool.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
-        ":deallocator",
-        ":pool",
+        ":pw_allocator",
         "//pw_status",
     ],
 )
@@ -116,11 +140,10 @@ cc_library(
     hdrs = ["public/pw_allocator/block_allocator.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
         ":config",
-        ":deallocator",
         ":fragmentation",
         ":hardening",
+        ":pw_allocator",
         "//pw_allocator/block:allocatable",
         "//pw_allocator/block:basic",
         "//pw_allocator/block:iterable",
@@ -165,8 +188,8 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
         ":hardening",
+        ":pw_allocator",
         "//pw_allocator/block:basic",
         "//pw_allocator/bucket:unordered",
         "//pw_bytes",
@@ -193,9 +216,8 @@ cc_library(
     hdrs = ["public/pw_allocator/bump_allocator.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
         ":buffer",
-        ":deallocator",
+        ":pw_allocator",
         "//pw_bytes",
         "//pw_bytes:alignment",
     ],
@@ -213,30 +235,17 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        ":deallocator",
-        ":pool",
+        ":pw_allocator",
         "//pw_bytes",
         "//pw_result",
         "//pw_status",
     ],
 )
 
-cc_library(
+# TODO(b/376730645): Remove deprecated alias.
+alias(
     name = "deallocator",
-    srcs = ["unique_ptr.cc"],
-    hdrs = [
-        "public/pw_allocator/capability.h",
-        "public/pw_allocator/deallocator.h",
-        "public/pw_allocator/layout.h",
-        "public/pw_allocator/unique_ptr.h",
-    ],
-    strip_include_prefix = "public",
-    deps = [
-        ":hardening",
-        "//pw_preprocessor",
-        "//pw_result",
-        "//pw_status",
-    ],
+    actual = ":pw_allocator",
 )
 
 cc_library(
@@ -267,8 +276,7 @@ cc_library(
     hdrs = ["public/pw_allocator/fallback_allocator.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
-        ":deallocator",
+        ":pw_allocator",
         "//pw_assert",
         "//pw_result",
         "//pw_status",
@@ -337,10 +345,7 @@ cc_library(
     srcs = ["libc_allocator.cc"],
     hdrs = ["public/pw_allocator/libc_allocator.h"],
     strip_include_prefix = "public",
-    deps = [
-        ":allocator",
-        ":deallocator",
-    ],
+    deps = [":pw_allocator"],
 )
 
 cc_library(
@@ -348,10 +353,7 @@ cc_library(
     srcs = ["null_allocator.cc"],
     hdrs = ["public/pw_allocator/null_allocator.h"],
     strip_include_prefix = "public",
-    deps = [
-        ":allocator",
-        ":deallocator",
-    ],
+    deps = [":pw_allocator"],
 )
 
 cc_library(
@@ -359,7 +361,7 @@ cc_library(
     hdrs = ["public/pw_allocator/metrics.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
+        ":pw_allocator",
         "//pw_metric:metric",
     ],
 )
@@ -370,22 +372,17 @@ cc_library(
     hdrs = ["public/pw_allocator/pmr_allocator.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
         ":config",
+        ":pw_allocator",
         "//pw_assert",
         "//pw_status",
     ],
 )
 
-cc_library(
+# TODO(b/376730645): Remove deprecated alias.
+alias(
     name = "pool",
-    hdrs = ["public/pw_allocator/pool.h"],
-    strip_include_prefix = "public",
-    deps = [
-        ":deallocator",
-        "//pw_bytes",
-        "//pw_result",
-    ],
+    actual = ":pw_allocator",
 )
 
 cc_library(
@@ -393,7 +390,7 @@ cc_library(
     hdrs = ["public/pw_allocator/synchronized_allocator.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
+        ":pw_allocator",
         "//pw_sync:borrow",
         "//pw_sync:lock_annotations",
     ],
@@ -420,8 +417,8 @@ cc_library(
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
-        ":allocator",
         ":metrics",
+        ":pw_allocator",
         "//pw_status",
     ],
 )
@@ -468,10 +465,10 @@ cc_library(
     hdrs = ["public/pw_allocator/testing.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
         ":buffer",
         ":first_fit",
         ":hardening",
+        ":pw_allocator",
         ":test_config",
         ":tracking_allocator",
         "//pw_assert",
@@ -497,8 +494,8 @@ cc_library(
     deps = [
         ":block_allocator",
         ":buffer",
-        ":deallocator",
         ":fuzzing",
+        ":pw_allocator",
         ":test_harness",
         "//pw_allocator/block:detailed_block",
         "//pw_allocator/block:testing",
@@ -513,7 +510,7 @@ cc_library(
     hdrs = ["public/pw_allocator/test_harness.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
+        ":pw_allocator",
         "//pw_assert",
         "//pw_containers:intrusive_list",
         "//pw_containers:vector",
@@ -529,7 +526,7 @@ cc_library(
     hdrs = ["public/pw_allocator/fuzzing.h"],
     strip_include_prefix = "public",
     deps = [
-        ":allocator",
+        ":pw_allocator",
         ":test_harness",
         "//pw_fuzzer:fuzztest",
     ],
@@ -542,7 +539,7 @@ pw_cc_test(
     srcs = ["allocator_as_pool_test.cc"],
     deps = [
         ":allocator_as_pool",
-        ":deallocator",
+        ":pw_allocator",
         ":testing",
     ],
 )
@@ -551,8 +548,7 @@ pw_cc_test(
     name = "allocator_test",
     srcs = ["allocator_test.cc"],
     deps = [
-        ":allocator",
-        ":deallocator",
+        ":pw_allocator",
         ":testing",
     ],
 )
@@ -572,10 +568,10 @@ pw_cc_test(
     name = "bucket_allocator_test",
     srcs = ["bucket_allocator_test.cc"],
     deps = [
-        ":allocator",
         ":block_allocator_testing",
         ":bucket_allocator",
         ":bucket_block_allocator",
+        ":pw_allocator",
     ],
 )
 
@@ -680,7 +676,7 @@ pw_cc_test(
     name = "layout_test",
     srcs = ["layout_test.cc"],
     deps = [
-        ":deallocator",
+        ":pw_allocator",
         ":testing",
         "//pw_result",
         "//pw_status",
@@ -760,9 +756,9 @@ pw_cc_test(
     name = "tracking_allocator_test",
     srcs = ["tracking_allocator_test.cc"],
     deps = [
-        ":allocator",
         ":first_fit",
         ":metrics",
+        ":pw_allocator",
         ":testing",
         ":tracking_allocator",
         "//pw_log",
@@ -774,7 +770,7 @@ pw_cc_test(
     name = "typed_pool_test",
     srcs = ["typed_pool_test.cc"],
     deps = [
-        ":allocator",
+        ":pw_allocator",
         ":testing",
         ":typed_pool",
         "//pw_bytes:alignment",
@@ -785,7 +781,7 @@ pw_cc_test(
     name = "unique_ptr_test",
     srcs = ["unique_ptr_test.cc"],
     deps = [
-        ":allocator",
+        ":pw_allocator",
         ":testing",
     ],
 )

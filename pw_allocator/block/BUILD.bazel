@@ -38,7 +38,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":allocatable",
-        "//pw_allocator:deallocator",
+        "//pw_allocator",
         "//pw_allocator:hardening",
         "//pw_bytes:alignment",
         "//pw_status",
@@ -53,7 +53,7 @@ cc_library(
     deps = [
         ":contiguous",
         ":result",
-        "//pw_allocator:deallocator",
+        "//pw_allocator",
         "//pw_allocator:hardening",
         "//pw_bytes:alignment",
         "//pw_status",
@@ -118,7 +118,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":alignable",
-        "//pw_allocator:deallocator",
+        "//pw_allocator",
         "//pw_allocator:hardening",
     ],
 )
@@ -137,7 +137,7 @@ cc_library(
         ":iterable",
         ":poisonable",
         ":with_layout",
-        "//pw_allocator:deallocator",
+        "//pw_allocator",
         "//pw_allocator:hardening",
         "//pw_assert",
         "//pw_bytes",

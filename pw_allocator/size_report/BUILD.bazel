@@ -32,13 +32,10 @@ cc_library(
     name = "size_report",
     srcs = ["size_report.cc"],
     hdrs = ["public/pw_allocator/size_report/size_report.h"],
-    implementation_deps = [
-        "//pw_allocator:deallocator",
-        "//pw_bytes:alignment",
-    ],
+    implementation_deps = ["//pw_bytes:alignment"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_allocator:allocator",
+        "//pw_allocator",
         "//pw_allocator:block_allocator",
         "//pw_allocator/block:small_block",
         "//pw_bloat:bloat_this_binary",
