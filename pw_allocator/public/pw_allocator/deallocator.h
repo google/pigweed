@@ -127,7 +127,7 @@ class Deallocator {
   /// @param[in]  ptr         Pointer to memory provided by this object.
   template <typename T, std::enable_if_t<!std::is_array_v<T>, int> = 0>
   [[nodiscard]] UniquePtr<T> WrapUnique(T* ptr) {
-    return UniquePtr<T>(UniquePtr<T>::kPrivateConstructor, ptr, this);
+    return UniquePtr<T>(ptr, this);
   }
 
   /// Wraps an array of type ``T`` in a ``UniquePtr``
@@ -136,10 +136,10 @@ class Deallocator {
   /// @param[in]  size        The size of the array.
   template <typename T,
             int&... kExplicitGuard,
-            typename UnderlyingType = std::remove_extent_t<T>,
+            typename ElementType = std::remove_extent_t<T>,
             std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
-  [[nodiscard]] UniquePtr<T> WrapUnique(UnderlyingType* ptr, size_t size) {
-    return UniquePtr<T>(UniquePtr<T>::kPrivateConstructor, ptr, this, size);
+  [[nodiscard]] UniquePtr<T> WrapUnique(ElementType* ptr, size_t size) {
+    return UniquePtr<T>(ptr, size, this);
   }
 
   /// Indicates what kind of information to retrieve using `GetInfo`.

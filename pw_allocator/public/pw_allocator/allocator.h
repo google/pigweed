@@ -66,10 +66,10 @@ class Allocator : public Deallocator {
   /// @param[in]  count        Number of objects to allocate.
   template <typename T,
             int&... kExplicitGuard,
-            typename UnderlyingType = std::remove_extent_t<T>,
+            typename ElementType = std::remove_extent_t<T>,
             std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
-  [[nodiscard]] UnderlyingType* New(size_t count) {
-    return New<T>(count, alignof(UnderlyingType));
+  [[nodiscard]] ElementType* New(size_t count) {
+    return New<T>(count, alignof(ElementType));
   }
 
   /// Constructs an `alignment`-byte aligned array of `count` objects of type
@@ -83,11 +83,11 @@ class Allocator : public Deallocator {
   /// @param[in]  alignment    Alignment to use for the start of the array.
   template <typename T,
             int&... kExplicitGuard,
-            typename UnderlyingType = std::remove_extent_t<T>,
+            typename ElementType = std::remove_extent_t<T>,
             std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
-  [[nodiscard]] UnderlyingType* New(size_t count, size_t alignment) {
+  [[nodiscard]] ElementType* New(size_t count, size_t alignment) {
     void* ptr = Allocate(Layout::Of<T>(count).Align(alignment));
-    return ptr != nullptr ? new (ptr) UnderlyingType[count] : nullptr;
+    return ptr != nullptr ? new (ptr) ElementType[count] : nullptr;
   }
 
   /// Deprecated version of `New` with a different name and templated on

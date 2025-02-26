@@ -12,20 +12,20 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_allocator/unique_ptr.h"
+
 #include <cstddef>
 
 #include "pw_allocator/allocator.h"
-#include "pw_allocator/testing.h"
+#include "pw_allocator/internal/managed_ptr_testing.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
 
-using AllocatorForTest = ::pw::allocator::test::AllocatorForTest<256>;
-
-class UniquePtrTest : public ::testing::Test {
- protected:
-  AllocatorForTest allocator_;
-};
+using pw::allocator::test::Counter;
+using pw::allocator::test::CounterSink;
+using pw::allocator::test::CounterWithBuffer;
+using UniquePtrTest = pw::allocator::test::ManagedPtrTest;
 
 TEST_F(UniquePtrTest, DefaultInitializationIsNullptr) {
   pw::UniquePtr<int> empty;
@@ -39,14 +39,13 @@ TEST_F(UniquePtrTest, OperatorEqNullptrOnEmptyUniquePtrSucceeds) {
 }
 
 TEST_F(UniquePtrTest, OperatorEqNullptrAfterMakeUniqueFails) {
-  pw::UniquePtr<int> ptr = allocator_.MakeUnique<int>(5);
+  auto ptr = allocator_.MakeUnique<int>(5);
   EXPECT_TRUE(ptr != nullptr);
   EXPECT_FALSE(ptr == nullptr);
 }
 
 TEST_F(UniquePtrTest, OperatorEqNullptrAfterMakeUniqueNullptrTypeFails) {
-  pw::UniquePtr<std::nullptr_t> ptr =
-      allocator_.MakeUnique<std::nullptr_t>(nullptr);
+  auto ptr = allocator_.MakeUnique<std::nullptr_t>(nullptr);
   EXPECT_TRUE(ptr != nullptr);
   EXPECT_FALSE(ptr == nullptr);
   EXPECT_TRUE(*ptr == nullptr);
@@ -54,74 +53,44 @@ TEST_F(UniquePtrTest, OperatorEqNullptrAfterMakeUniqueNullptrTypeFails) {
 }
 
 TEST_F(UniquePtrTest, MakeUniqueForwardsConstructorArguments) {
-  class MoveOnly {
-   public:
-    MoveOnly(int value) : value_(value) {}
-    MoveOnly(MoveOnly&) = delete;
-    MoveOnly(MoveOnly&&) {}
-    int Value() const { return value_; }
-
-   private:
-    int value_;
-  };
-
-  class BuiltWithMoveOnly {
-   public:
-    BuiltWithMoveOnly() = delete;
-    BuiltWithMoveOnly(MoveOnly&& mo) : value_(mo.Value()) {}
-    int Value() const { return value_; }
-
-   private:
-    int value_;
-  };
-
-  MoveOnly mo(6);
-  pw::UniquePtr<BuiltWithMoveOnly> ptr =
-      allocator_.MakeUnique<BuiltWithMoveOnly>(std::move(mo));
+  Counter counter(6);
+  auto ptr = allocator_.MakeUnique<CounterSink>(std::move(counter));
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(ptr->Value(), 6);
+  EXPECT_EQ(ptr->value(), 6u);
 }
 
 TEST_F(UniquePtrTest, MoveConstructsFromSubClassAndFreesTotalSize) {
-  struct Base {};
-  struct LargerSub : public Base {
-    std::array<std::byte, 128> mem;
-  };
-  pw::UniquePtr<LargerSub> ptr = allocator_.MakeUnique<LargerSub>();
+  auto ptr = allocator_.MakeUnique<CounterWithBuffer>();
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(allocator_.allocate_size(), 128ul);
-  pw::UniquePtr<Base> base_ptr(std::move(ptr));
+  EXPECT_EQ(allocator_.allocate_size(), sizeof(CounterWithBuffer));
+  pw::UniquePtr<Counter> base_ptr(std::move(ptr));
 
   EXPECT_EQ(allocator_.deallocate_size(), 0ul);
   // The size that is deallocated here should be the size of the larger
   // subclass, not the size of the smaller base class.
   base_ptr.Reset();
-  EXPECT_EQ(allocator_.deallocate_size(), 128ul);
+  EXPECT_EQ(allocator_.deallocate_size(), sizeof(CounterWithBuffer));
 }
 
 TEST_F(UniquePtrTest, MoveAssignsFromSubClassAndFreesTotalSize) {
-  struct Base {};
-  struct LargerSub : public Base {
-    std::array<std::byte, 128> mem;
-  };
-  pw::UniquePtr<LargerSub> ptr = allocator_.MakeUnique<LargerSub>();
+  auto ptr = allocator_.MakeUnique<CounterWithBuffer>();
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(allocator_.allocate_size(), 128ul);
-  pw::UniquePtr<Base> base_ptr = std::move(ptr);
+  EXPECT_EQ(allocator_.allocate_size(), sizeof(CounterWithBuffer));
+  pw::UniquePtr<Counter> base_ptr = std::move(ptr);
 
   EXPECT_EQ(allocator_.deallocate_size(), 0ul);
   // The size that is deallocated here should be the size of the larger
   // subclass, not the size of the smaller base class.
   base_ptr.Reset();
-  EXPECT_EQ(allocator_.deallocate_size(), 128ul);
+  EXPECT_EQ(allocator_.deallocate_size(), sizeof(CounterWithBuffer));
 }
 
 TEST_F(UniquePtrTest, MoveAssignsToExistingDeallocates) {
-  pw::UniquePtr<size_t> size1 = allocator_.MakeUnique<size_t>(1);
+  auto size1 = allocator_.MakeUnique<size_t>(1);
   ASSERT_NE(size1, nullptr);
   EXPECT_EQ(*size1, 1U);
 
-  pw::UniquePtr<size_t> size2 = allocator_.MakeUnique<size_t>(2);
+  auto size2 = allocator_.MakeUnique<size_t>(2);
   ASSERT_NE(size1, nullptr);
   EXPECT_EQ(*size2, 2U);
 
@@ -132,112 +101,79 @@ TEST_F(UniquePtrTest, MoveAssignsToExistingDeallocates) {
 }
 
 TEST_F(UniquePtrTest, DestructorDestroysAndFrees) {
-  int count = 0;
-  class DestructorCounter {
-   public:
-    DestructorCounter(int& count) : count_(&count) {}
-    ~DestructorCounter() { (*count_)++; }
-
-   private:
-    int* count_;
-  };
-  pw::UniquePtr<DestructorCounter> ptr =
-      allocator_.MakeUnique<DestructorCounter>(count);
+  auto ptr = allocator_.MakeUnique<Counter>();
   ASSERT_NE(ptr, nullptr);
-
-  EXPECT_EQ(count, 0);
+  EXPECT_EQ(Counter::GetNumDtorCalls(), 0u);
   EXPECT_EQ(allocator_.deallocate_size(), 0ul);
+
   ptr.Reset();  // Reset the UniquePtr, destroying its contents.
-  EXPECT_EQ(count, 1);
-  EXPECT_EQ(allocator_.deallocate_size(), sizeof(DestructorCounter));
+  EXPECT_EQ(Counter::GetNumDtorCalls(), 1u);
+  EXPECT_EQ(allocator_.deallocate_size(), sizeof(Counter));
 }
-
-class ConstructorCounter {
- public:
-  ConstructorCounter() { ++count_; }
-
-  size_t getCount() { return std::exchange(count_, 0); }
-
- private:
-  static size_t count_;
-};
-size_t ConstructorCounter::count_ = 0;
 
 TEST_F(UniquePtrTest, ArrayElementsAreConstructed) {
   constexpr static size_t kArraySize = 5;
 
-  pw::UniquePtr<ConstructorCounter[]> ptr =
-      allocator_.MakeUniqueArray<ConstructorCounter>(kArraySize);
-  ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(ptr[0].getCount(), kArraySize);
+  // TODO(b/326509341): Remove when downstream consumers migrate.
+  // Use the deprecated method...
+  auto ptr1 = allocator_.MakeUniqueArray<Counter>(kArraySize);
+  ASSERT_NE(ptr1, nullptr);
+  EXPECT_EQ(Counter::GetNumCtorCalls(), kArraySize);
+  for (size_t i = 0; i < kArraySize; ++i) {
+    EXPECT_EQ(ptr1[i].value(), i);
+  }
+
+  // ...and the supported method.
+  auto ptr2 = allocator_.MakeUnique<Counter[]>(kArraySize);
+  EXPECT_EQ(Counter::GetNumCtorCalls(), kArraySize);
+  ASSERT_NE(ptr2, nullptr);
+  for (size_t i = 0; i < kArraySize; ++i) {
+    EXPECT_EQ(ptr2[i].value(), i);
+  }
 }
 
 TEST_F(UniquePtrTest, ArrayElementsAreConstructedWithSpecifiedAlignment) {
   constexpr static size_t kArraySize = 5;
   constexpr static size_t kArrayAlignment = 32;
 
-  pw::UniquePtr<ConstructorCounter[]> ptr =
-      allocator_.MakeUniqueArray<ConstructorCounter>(kArraySize,
-                                                     kArrayAlignment);
-  ASSERT_NE(ptr, nullptr);
+  // TODO(b/326509341): Remove when downstream consumers migrate.
+  // Use the deprecated method...
+  auto ptr1 = allocator_.MakeUniqueArray<Counter>(kArraySize, kArrayAlignment);
+  ASSERT_NE(ptr1, nullptr);
+  EXPECT_EQ(Counter::GetNumCtorCalls(), kArraySize);
 
-  auto addr = reinterpret_cast<uintptr_t>(ptr.get());
-  EXPECT_EQ(addr % kArrayAlignment, 0u);
-  EXPECT_EQ(ptr[0].getCount(), kArraySize);
+  auto addr1 = reinterpret_cast<uintptr_t>(ptr1.get());
+  EXPECT_EQ(addr1 % kArrayAlignment, 0u);
+
+  // ...and the supported method.
+  auto ptr2 = allocator_.MakeUnique<Counter[]>(kArraySize, kArrayAlignment);
+  ASSERT_NE(ptr2, nullptr);
+  EXPECT_EQ(Counter::GetNumCtorCalls(), kArraySize);
+
+  auto addr2 = reinterpret_cast<uintptr_t>(ptr2.get());
+  EXPECT_EQ(addr2 % kArrayAlignment, 0u);
 }
-
-class DestructorCounter {
- public:
-  ~DestructorCounter() { ++count_; }
-
-  static size_t getCount() { return std::exchange(count_, 0); }
-
- private:
-  static size_t count_;
-};
-size_t DestructorCounter::count_ = 0;
 
 TEST_F(UniquePtrTest, DestructorDestroysAndFreesArray) {
   constexpr static size_t kArraySize = 5;
-  pw::UniquePtr<DestructorCounter[]> ptr =
-      allocator_.MakeUniqueArray<DestructorCounter>(kArraySize);
+
+  auto ptr = allocator_.MakeUnique<Counter[]>(kArraySize);
   ASSERT_NE(ptr, nullptr);
-
-  EXPECT_EQ(DestructorCounter::getCount(), 0ul);
+  EXPECT_EQ(Counter::GetNumDtorCalls(), 0u);
   EXPECT_EQ(allocator_.deallocate_size(), 0ul);
+
   ptr.Reset();  // Reset the UniquePtr, destroying its contents.
-  EXPECT_EQ(DestructorCounter::getCount(), kArraySize);
-  EXPECT_EQ(allocator_.deallocate_size(),
-            sizeof(DestructorCounter) * kArraySize);
-}
-
-TEST_F(UniquePtrTest, DestructorDestroysAndFreesSpecifiedAlignmentArray) {
-  constexpr static size_t kArraySize = 5;
-  constexpr static size_t kArrayAlignment = 32;
-
-  pw::UniquePtr<DestructorCounter[]> ptr =
-      allocator_.MakeUniqueArray<DestructorCounter>(kArraySize,
-                                                    kArrayAlignment);
-  ASSERT_NE(ptr, nullptr);
-
-  EXPECT_EQ(DestructorCounter::getCount(), 0ul);
-  EXPECT_EQ(allocator_.deallocate_size(), 0ul);
-  ptr.Reset();  // Reset the UniquePtr, destroying its contents.
-  EXPECT_EQ(DestructorCounter::getCount(), kArraySize);
-  EXPECT_EQ(allocator_.deallocate_size(),
-            sizeof(DestructorCounter) * kArraySize);
+  EXPECT_EQ(Counter::GetNumDtorCalls(), kArraySize);
+  EXPECT_EQ(allocator_.deallocate_size(), sizeof(Counter) * kArraySize);
 }
 
 TEST_F(UniquePtrTest, CanRelease) {
-  struct Size final {
-    size_t value;
-  };
-  Size* size_ptr = nullptr;
+  size_t* raw = nullptr;
   {
-    pw::UniquePtr<Size> ptr = allocator_.MakeUnique<Size>(Size{.value = 1});
+    auto ptr = allocator_.MakeUnique<size_t>(1);
     ASSERT_NE(ptr, nullptr);
     EXPECT_EQ(ptr.deallocator(), &allocator_);
-    size_ptr = ptr.Release();
+    raw = ptr.Release();
 
     // Allocator pointer parameter is optional. Re-releasing returns null.
     EXPECT_EQ(ptr.Release(), nullptr);
@@ -245,18 +181,49 @@ TEST_F(UniquePtrTest, CanRelease) {
 
   // Deallocate should not be called, even though UniquePtr goes out of scope.
   EXPECT_EQ(allocator_.deallocate_size(), 0U);
-  allocator_.Delete(size_ptr);
-  EXPECT_EQ(allocator_.deallocate_size(), sizeof(Size));
+  allocator_.Delete(raw);
+  EXPECT_EQ(allocator_.deallocate_size(), sizeof(size_t));
 }
 
 TEST_F(UniquePtrTest, SizeReturnsCorrectSize) {
-  pw::UniquePtr<int[]> ptr_array = allocator_.MakeUniqueArray<int>(5);
+  auto ptr_array = allocator_.MakeUnique<int[]>(5);
   EXPECT_EQ(ptr_array.size(), 5U);
 }
 
 TEST_F(UniquePtrTest, SizeReturnsCorrectSizeWhenAligned) {
-  pw::UniquePtr<int[]> ptr_array = allocator_.MakeUniqueArray<int>(5, 32);
+  auto ptr_array = allocator_.MakeUnique<int[]>(5, 32);
   EXPECT_EQ(ptr_array.size(), 5U);
+}
+
+TEST_F(UniquePtrTest, CanSwapWhenNeitherAreEmpty) {
+  auto ptr1 = allocator_.MakeUnique<Counter>(111);
+  auto ptr2 = allocator_.MakeUnique<Counter>(222);
+  ptr1.Swap(ptr2);
+  EXPECT_EQ(ptr1->value(), 222u);
+  EXPECT_EQ(ptr2->value(), 111u);
+}
+
+TEST_F(UniquePtrTest, CanSwapWhenOneIsEmpty) {
+  auto ptr1 = allocator_.MakeUnique<Counter>(111);
+  pw::UniquePtr<Counter> ptr2;
+
+  // ptr2 is empty.
+  ptr1.Swap(ptr2);
+  EXPECT_EQ(ptr2->value(), 111u);
+  EXPECT_EQ(ptr1, nullptr);
+
+  // ptr1 is empty.
+  ptr1.Swap(ptr2);
+  EXPECT_EQ(ptr1->value(), 111u);
+  EXPECT_EQ(ptr2, nullptr);
+}
+
+TEST_F(UniquePtrTest, CanSwapWhenBothAreEmpty) {
+  pw::UniquePtr<Counter> ptr1;
+  pw::UniquePtr<Counter> ptr2;
+  ptr1.Swap(ptr2);
+  EXPECT_EQ(ptr1, nullptr);
+  EXPECT_EQ(ptr2, nullptr);
 }
 
 // Verify that the UniquePtr implementation is the size of 2 pointers for the

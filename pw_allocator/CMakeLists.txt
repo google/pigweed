@@ -21,6 +21,7 @@ pw_add_library(pw_allocator STATIC
     public/pw_allocator/allocator.h
     public/pw_allocator/capability.h
     public/pw_allocator/deallocator.h
+    public/pw_allocator/internal/managed_ptr.h
     public/pw_allocator/layout.h
     public/pw_allocator/pool.h
     public/pw_allocator/unique_ptr.h
@@ -40,7 +41,7 @@ pw_add_library(pw_allocator STATIC
     pw_third_party.fuchsia.stdcompat
   SOURCES
     allocator.cc
-    unique_ptr.cc
+    managed_ptr.cc
 )
 
 # Module configuration
@@ -497,6 +498,19 @@ pw_add_library(pw_allocator.block_allocator_testing STATIC
     block_allocator_testing.cc
 )
 
+pw_add_library(pw_allocator.managed_ptr_testing STATIC
+  HEADERS
+    public/pw_allocator/internal/managed_ptr_testing.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator
+    pw_allocator.testing
+    pw_unit_test
+  SOURCES
+    managed_ptr_testing.cc
+)
+
 pw_add_library(pw_allocator.test_harness STATIC
   HEADERS
     public/pw_allocator/test_harness.h
@@ -819,7 +833,7 @@ pw_add_test(pw_allocator.unique_ptr_test
     unique_ptr_test.cc
   PRIVATE_DEPS
     pw_allocator
-    pw_allocator.testing
+    pw_allocator.managed_ptr_testing
   GROUPS
     modules
     pw_allocator

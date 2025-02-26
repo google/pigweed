@@ -1,4 +1,4 @@
-// Copyright 2024 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -12,17 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_allocator/deallocator.h"
+#include "pw_allocator/internal/managed_ptr_testing.h"
 
-namespace pw::allocator::internal {
+namespace pw::allocator::test {
 
-bool BaseUniquePtr::HasCapability(Deallocator* deallocator,
-                                  Capability capability) {
-  return deallocator->HasCapability(capability);
-}
+size_t Counter::num_ctor_calls_ = 0;
+size_t Counter::num_dtor_calls_ = 0;
 
-void BaseUniquePtr::Deallocate(Deallocator* deallocator, void* ptr) {
-  deallocator->Deallocate(ptr);
-}
-
-}  // namespace pw::allocator::internal
+}  // namespace pw::allocator::test

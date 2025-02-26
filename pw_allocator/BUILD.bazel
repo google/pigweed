@@ -28,12 +28,13 @@ cc_library(
     name = "pw_allocator",
     srcs = [
         "allocator.cc",
-        "unique_ptr.cc",
+        "managed_ptr.cc",
     ],
     hdrs = [
         "public/pw_allocator/allocator.h",
         "public/pw_allocator/capability.h",
         "public/pw_allocator/deallocator.h",
+        "public/pw_allocator/internal/managed_ptr.h",
         "public/pw_allocator/layout.h",
         "public/pw_allocator/pool.h",
         "public/pw_allocator/unique_ptr.h",
@@ -504,6 +505,19 @@ cc_library(
 )
 
 cc_library(
+    name = "managed_ptr_testing",
+    testonly = True,
+    srcs = ["managed_ptr_testing.cc"],
+    hdrs = ["public/pw_allocator/internal/managed_ptr_testing.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":pw_allocator",
+        ":testing",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
     name = "test_harness",
     testonly = True,
     srcs = ["test_harness.cc"],
@@ -781,8 +795,8 @@ pw_cc_test(
     name = "unique_ptr_test",
     srcs = ["unique_ptr_test.cc"],
     deps = [
+        ":managed_ptr_testing",
         ":pw_allocator",
-        ":testing",
     ],
 )
 
