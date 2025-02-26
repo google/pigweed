@@ -97,6 +97,7 @@ message Pigweed {
 
   sfixed32 test_sfixed32 = 15;
   sfixed64 test_sfixed64 = 16;
+  sint64 test_sint64 = 17;
 }
 
 // Another message.

@@ -1129,7 +1129,8 @@ TEST(Codegen, FindBuffer) {
   EXPECT_EQ(Pigweed::Pigweed::FindStatus(*pigweed).value(),
             Bool::FILE_NOT_FOUND);
 
-  // Nonexisting fields.
+  // Nonexisting fields. These tests primarily exist to ensure that the correct
+  // Find() methods are being generated.
   EXPECT_EQ(Pigweed::FindData(as_bytes(span(proto_data))).status(),
             Status::NotFound());
   EXPECT_EQ(Pigweed::FindDescription(as_bytes(span(proto_data))).status(),
@@ -1137,6 +1138,12 @@ TEST(Codegen, FindBuffer) {
   EXPECT_EQ(Pigweed::FindSpecialProperty(as_bytes(span(proto_data))).status(),
             Status::NotFound());
   EXPECT_EQ(Pigweed::FindBungle(as_bytes(span(proto_data))).status(),
+            Status::NotFound());
+  EXPECT_EQ(Pigweed::FindTestSfixed32(as_bytes(span(proto_data))).status(),
+            Status::NotFound());
+  EXPECT_EQ(Pigweed::FindTestSfixed64(as_bytes(span(proto_data))).status(),
+            Status::NotFound());
+  EXPECT_EQ(Pigweed::FindTestSint64(as_bytes(span(proto_data))).status(),
             Status::NotFound());
 }
 
