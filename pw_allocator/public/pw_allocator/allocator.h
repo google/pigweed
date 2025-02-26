@@ -49,7 +49,7 @@ class Allocator : public Deallocator {
   ///
   /// @param[in]  args...     Arguments passed to the object constructor.
   template <typename T, int&... kExplicitGuard, typename... Args>
-  T* New(Args&&... args) {
+  [[nodiscard]] std::enable_if_t<!std::is_array_v<T>, T*> New(Args&&... args) {
     void* ptr = Allocate(Layout::Of<T>());
     if (ptr == nullptr) {
       return nullptr;
@@ -64,9 +64,12 @@ class Allocator : public Deallocator {
   /// pointer.
   ///
   /// @param[in]  count        Number of objects to allocate.
-  template <typename T>
-  T* NewArray(size_t count) {
-    return NewArray<T>(count, alignof(T));
+  template <typename T,
+            int&... kExplicitGuard,
+            typename UnderlyingType = std::remove_extent_t<T>,
+            std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
+  [[nodiscard]] UnderlyingType* New(size_t count) {
+    return New<T>(count, alignof(UnderlyingType));
   }
 
   /// Constructs an `alignment`-byte aligned array of `count` objects of type
@@ -77,15 +80,32 @@ class Allocator : public Deallocator {
   /// pointer.
   ///
   /// @param[in]  count        Number of objects to allocate.
+  /// @param[in]  alignment    Alignment to use for the start of the array.
+  template <typename T,
+            int&... kExplicitGuard,
+            typename UnderlyingType = std::remove_extent_t<T>,
+            std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
+  [[nodiscard]] UnderlyingType* New(size_t count, size_t alignment) {
+    void* ptr = Allocate(Layout::Of<T>(count).Align(alignment));
+    return ptr != nullptr ? new (ptr) UnderlyingType[count] : nullptr;
+  }
+
+  /// Deprecated version of `New` with a different name and templated on
+  /// the object type instead of the array type.
+  /// Do not use this method. It will be removed.
+  /// TODO(b/326509341): Remove when downstream consumers migrate.
+  template <typename T>
+  T* NewArray(size_t count) {
+    return New<T[]>(count, alignof(T));
+  }
+
+  /// Deprecated version of `New` with a different name and templated on
+  /// the object type instead of the array type.
+  /// Do not use this method. It will be removed.
+  /// TODO(b/326509341): Remove when downstream consumers migrate.
   template <typename T>
   T* NewArray(size_t count, size_t alignment) {
-    std::optional<size_t> size = CheckedMul<size_t>(sizeof(T), count);
-    if (!size.has_value()) {
-      return nullptr;
-    }
-    Layout layout(size.value(), alignment);
-    void* ptr = Allocate(layout);
-    return ptr != nullptr ? new (ptr) T[count] : nullptr;
+    return New<T[]>(count, alignment);
   }
 
   /// Constructs and object of type `T` from the given `args`, and wraps it in a
@@ -95,21 +115,27 @@ class Allocator : public Deallocator {
   /// fails. Callers must check for null before using the `UniquePtr`.
   ///
   /// @param[in]  args...     Arguments passed to the object constructor.
-  template <typename T, int&... kExplicitGuard, typename... Args>
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<!std::is_array_v<T>, int> = 0,
+            typename... Args>
   [[nodiscard]] UniquePtr<T> MakeUnique(Args&&... args) {
     return Deallocator::WrapUnique<T>(New<T>(std::forward<Args>(args)...));
   }
 
-  /// Constructs an array of `count` objects of type `T`, and wraps it in a
-  /// `UniquePtr`
+  /// Constructs an `alignment`-byte aligned array of `count` objects, and wraps
+  /// it in a `UniquePtr`
   ///
   /// The returned value may contain null if allocating memory for the object
   /// fails. Callers must check for null before using the `UniquePtr`.
   ///
+  /// @tparam     T            An array type.
   /// @param[in]  count        Number of objects to allocate.
-  template <typename T>
-  [[nodiscard]] UniquePtr<T[]> MakeUniqueArray(size_t count) {
-    return Deallocator::WrapUniqueArray<T>(NewArray<T>(count), count);
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
+  [[nodiscard]] UniquePtr<T> MakeUnique(size_t size) {
+    return MakeUnique<T>(size, alignof(std::remove_extent_t<T>));
   }
 
   /// Constructs an `alignment`-byte aligned array of `count` objects of type
@@ -118,12 +144,39 @@ class Allocator : public Deallocator {
   /// The returned value may contain null if allocating memory for the object
   /// fails. Callers must check for null before using the `UniquePtr`.
   ///
+  /// @tparam     T            An array type.
   /// @param[in]  count        Number of objects to allocate.
-  template <typename T>
-  [[nodiscard]] UniquePtr<T[]> MakeUniqueArray(size_t count, size_t alignment) {
-    return Deallocator::WrapUniqueArray<T>(NewArray<T>(count, alignment),
-                                           count);
+  /// @param[in]  alignment    Object alignment.
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
+  [[nodiscard]] UniquePtr<T> MakeUnique(size_t size, size_t alignment) {
+    return Deallocator::WrapUnique<T>(New<T>(size, alignment), size);
   }
+
+  /// Deprecated version of `MakeUnique` with a different name and templated on
+  /// the object type instead of the array type.
+  /// Do not use this method. It will be removed.
+  /// TODO(b/326509341): Remove when downstream consumers migrate.
+  template <typename T>
+  [[nodiscard]] UniquePtr<T[]> MakeUniqueArray(size_t size) {
+    return MakeUnique<T[]>(size, alignof(std::remove_extent_t<T>));
+  }
+
+  /// Deprecated version of `MakeUnique` with a different name and templated on
+  /// the object type instead of the array type.
+  /// Do not use this method. It will be removed.
+  /// TODO(b/326509341): Remove when downstream consumers migrate.
+  template <typename T>
+  [[nodiscard]] UniquePtr<T[]> MakeUniqueArray(size_t size, size_t alignment) {
+    return MakeUnique<T[]>(size, alignment);
+  }
+
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<is_bounded_array_v<T>, int> = 0,
+            typename... Args>
+  void MakeUnique(Args&&...) = delete;
 
   /// Modifies the size of an previously-allocated block of memory without
   /// copying any data.

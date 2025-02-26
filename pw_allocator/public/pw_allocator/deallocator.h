@@ -24,6 +24,16 @@ namespace pw {
 
 /// Abstract interface for releasing memory.
 class Deallocator {
+ protected:
+  // Alias types and variables needed for SFINAE below.
+  template <typename T>
+  static constexpr bool is_bounded_array_v =
+      allocator::internal::is_bounded_array_v<T>;
+
+  template <typename T>
+  static constexpr bool is_unbounded_array_v =
+      allocator::internal::is_unbounded_array_v<T>;
+
  public:
   using Capabilities = allocator::Capabilities;
   using Capability = allocator::Capability;
@@ -97,6 +107,14 @@ class Deallocator {
   /// @param[in]  other       Object to compare with this object.
   bool IsEqual(const Deallocator& other) const { return this == &other; }
 
+  // See WrapUnique below. Disallow calls with explicitly-sized array types like
+  // `T[kN]`.
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<is_bounded_array_v<T>, int> = 0,
+            typename... Args>
+  void WrapUnique(Args&&...) = delete;
+
  protected:
   /// TODO(b/326509341): Remove when downstream consumers migrate.
   constexpr Deallocator() = default;
@@ -107,7 +125,7 @@ class Deallocator {
   /// Wraps an object of type ``T`` in a ``UniquePtr``
   ///
   /// @param[in]  ptr         Pointer to memory provided by this object.
-  template <typename T>
+  template <typename T, std::enable_if_t<!std::is_array_v<T>, int> = 0>
   [[nodiscard]] UniquePtr<T> WrapUnique(T* ptr) {
     return UniquePtr<T>(UniquePtr<T>::kPrivateConstructor, ptr, this);
   }
@@ -116,9 +134,12 @@ class Deallocator {
   ///
   /// @param[in]  ptr         Pointer to memory provided by this object.
   /// @param[in]  size        The size of the array.
-  template <typename T>
-  [[nodiscard]] UniquePtr<T[]> WrapUniqueArray(T* ptr, size_t size) {
-    return UniquePtr<T[]>(UniquePtr<T[]>::kPrivateConstructor, ptr, this, size);
+  template <typename T,
+            int&... kExplicitGuard,
+            typename UnderlyingType = std::remove_extent_t<T>,
+            std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
+  [[nodiscard]] UniquePtr<T> WrapUnique(UnderlyingType* ptr, size_t size) {
+    return UniquePtr<T>(UniquePtr<T>::kPrivateConstructor, ptr, this, size);
   }
 
   /// Indicates what kind of information to retrieve using `GetInfo`.

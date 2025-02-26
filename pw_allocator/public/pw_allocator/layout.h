@@ -19,6 +19,24 @@
 #include "pw_result/result.h"
 
 namespace pw::allocator {
+namespace internal {
+
+// Helper variables to determine when a template parameter is an array type.
+// Based on the sample implementation found at
+// https://en.cppreference.com/w/cpp/memory/unique_ptr/make_unique.
+template <typename>
+constexpr bool is_unbounded_array_v = false;
+
+template <typename T>
+constexpr bool is_unbounded_array_v<T[]> = true;
+
+template <typename>
+constexpr bool is_bounded_array_v = false;
+
+template <typename T, size_t kN>
+constexpr bool is_bounded_array_v<T[kN]> = true;
+
+}  // namespace internal
 
 /// Describes the layout of a block of memory.
 ///
@@ -45,8 +63,25 @@ class Layout {
 
   /// Creates a Layout for the given type.
   template <typename T>
-  static constexpr Layout Of() {
+  static constexpr std::enable_if_t<!std::is_array_v<T>, Layout> Of() {
     return Layout(sizeof(T), alignof(T));
+  }
+
+  /// Creates a Layout for the given bounded array type, e.g. Foo[kN].
+  template <typename T>
+  static constexpr std::enable_if_t<internal::is_bounded_array_v<T>, Layout>
+  Of() {
+    return Layout(sizeof(T), alignof(std::remove_extent_t<T>));
+  }
+
+  /// Creates a Layout for the given array type, e.g. Foo[].
+  template <typename T>
+  static constexpr std::enable_if_t<internal::is_unbounded_array_v<T>, Layout>
+  Of(size_t count) {
+    using U = std::remove_extent_t<T>;
+    size_t size = sizeof(U);
+    Hardening::Multiply(size, count);
+    return Layout(size, alignof(U));
   }
 
   /// If the result is okay, returns its contained layout; otherwise, returns a
@@ -58,6 +93,10 @@ class Layout {
   constexpr Layout Extend(size_t size) const {
     Hardening::Increment(size, size_);
     return Layout(size, alignment_);
+  }
+
+  constexpr Layout Align(size_t alignment) const {
+    return Layout(size_, std::max(alignment, alignment_));
   }
 
   constexpr size_t size() const { return size_; }
