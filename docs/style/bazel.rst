@@ -3,6 +3,9 @@
 ===========
 Bazel style
 ===========
+In general, Pigweed follows the `Bazel Style Guide
+<https://bazel.build/build/style-guide>`. This document provides some additional
+guidance.
 
 ------
 Naming
