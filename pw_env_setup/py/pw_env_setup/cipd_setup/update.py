@@ -389,6 +389,7 @@ def update(  # pylint: disable=too-many-locals
             subprocess.check_call(cmd, stdout=outs, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError:
         with open(log, 'r') as ins:
+            sys.stderr.write(repr(cmd))
             sys.stderr.write(ins.read())
             raise
 
