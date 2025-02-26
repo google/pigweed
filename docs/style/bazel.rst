@@ -110,6 +110,36 @@ exposing paths to tools that will be loaded via runfiles libraries. ``rootpath``
 should be used when exposing a file path to a binary via arguments or
 environment variable (particularly for ``native_binary`` and ``*_test`` rules).
 
+Do not ``load`` from dev dependencies in public Build files
+===========================================================
+If a ``BUILD.bazel`` file contains any target with ``visibility =
+["//visibility:public"]``, it may not contain ``load`` statements referencing
+dev dependencies.
+
+Instead, do one of the following, as appropriate:
+
+#. Mark all all build targets in the ``BUILD.bazel`` file as ``visibility =
+   "//:__subpackages__"`` (to make is clear that they cannot be used by downstream
+   projects).
+#. Move the targets requiring the ``load`` to a different
+   ``BUILD.bazel`` file.
+#. Remove the ``dev_dependency`` attribute from the dependency. Do not take this
+   step lightly: it will require all Pigweed downstream projects to provide this
+   dependency, which may require work if they vendor their dependencies.
+
+Reasoning: Bzlmod allows `bazel_dep
+<https://bazel.build/rules/lib/globals/module#bazel_dep>`__ targets to be
+registered with ``dev_dependency=True``. These dependencies are ignored by
+downstream projects. This is good because it trims their dependency graph.
+But it means downstream projects can't use any functionality that the dev
+dependencies were used for in upstream.
+
+In particular, a downstream project cannot reference *any target* in an upstream
+``BUILD.bazel`` file that loads a macro or a rule from a dev dependency.
+
+To make this restriction clear to anyone working in upstream Pigweed, explicitly
+express it through the ``visibility`` attribute.
+
 ---------------------
 Starlark files (.bzl)
 ---------------------
