@@ -424,34 +424,31 @@ void BlockTest<BlockType>::CanAllocFirst_Exact_FirstBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_ExactAligned_FirstBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Trim the front of the buffer so that the first block is aligned.
-    util_.TrimAligned();
+  // Trim the front of the buffer so that the first block is aligned.
+  util_.TrimAligned();
 
-    // Leave enough space free for the requested block.
-    size_t available = util_.GetOuterSize(kLayout.size());
-    auto* block = util_.Preallocate({
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
+  // Leave enough space free for the requested block.
+  size_t available = util_.GetOuterSize(kLayout.size());
+  auto* block = util_.Preallocate({
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
 
-    // Allocate from the front of the block.
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-    block = result.block();
+  // Allocate from the front of the block.
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
@@ -485,37 +482,34 @@ void BlockTest<BlockType>::CanAllocFirst_Exact_SubsequentBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_ExactAligned_SubsequentBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Preallocate a first block so that the next block is aligned.
-    size_t leading = util_.GetFirstAlignedOffset(kLayout);
+  // Preallocate a first block so that the next block is aligned.
+  size_t leading = util_.GetFirstAlignedOffset(kLayout);
 
-    // Leave enough space free for the requested block.
-    size_t available = util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for the requested block.
+  size_t available = util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {leading, Preallocation::kUsed},
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
-    block = block->Next();
+  auto* block = util_.Preallocate({
+      {leading, Preallocation::kUsed},
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  block = block->Next();
 
-    // Allocate from the front of the block.
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-    block = result.block();
+  // Allocate from the front of the block.
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
@@ -576,314 +570,283 @@ void BlockTest<BlockType>::CanAllocFirst_NewNext_SubsequentBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_NewPrev_FirstBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Trim the front of the buffer so that there is room for a block before the
-    // first alignment boundary.
-    util_.TrimAligned(kAlign - util_.GetOuterSize(1));
-    // util_.TrimAligned();
+  // Trim the front of the buffer so that there is room for a block before the
+  // first alignment boundary.
+  util_.TrimAligned(kAlign - util_.GetOuterSize(1));
+  // util_.TrimAligned();
 
-    // Leave enough space free for a block and the requested block.
-    size_t available =
-        util_.GetOuterSize(1) + util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for a block and the requested block.
+  size_t available = util_.GetOuterSize(1) + util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
+  auto* block = util_.Preallocate({
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
 
-    // Allocate from the front of the block.
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-    block = result.block();
+  // Allocate from the front of the block.
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_NewPrev_SubsequentBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Preallocate a first block with room for another block before the next
-    // alignment boundary.
-    size_t leading =
-        util_.GetFirstAlignedOffset(kLayout) + kAlign - util_.GetOuterSize(1);
+  // Preallocate a first block with room for another block before the next
+  // alignment boundary.
+  size_t leading =
+      util_.GetFirstAlignedOffset(kLayout) + kAlign - util_.GetOuterSize(1);
 
-    // Leave enough space free for a block and the requested block.
-    size_t available =
-        util_.GetOuterSize(1) + util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for a block and the requested block.
+  size_t available = util_.GetOuterSize(1) + util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {leading, Preallocation::kUsed},
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
-    block = block->Next();
+  auto* block = util_.Preallocate({
+      {leading, Preallocation::kUsed},
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  block = block->Next();
 
-    // Allocate from the front of the block.
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-    block = result.block();
+  // Allocate from the front of the block.
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_NewPrevAndNewNext_FirstBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Trim the front of the buffer so that there is room for a block before the
-    // first alignment boundary.
-    util_.TrimAligned(kAlign - util_.GetOuterSize(1));
+  // Trim the front of the buffer so that there is room for a block before the
+  // first alignment boundary.
+  util_.TrimAligned(kAlign - util_.GetOuterSize(1));
 
-    // Leave enough space free for a block, the requested block, and one more
-    // block.
-    size_t available = util_.GetOuterSize(1) +
-                       util_.GetOuterSize(kLayout.size()) +
-                       util_.GetOuterSize(1);
+  // Leave enough space free for a block, the requested block, and one more
+  // block.
+  size_t available = util_.GetOuterSize(1) +
+                     util_.GetOuterSize(kLayout.size()) + util_.GetOuterSize(1);
 
-    auto* block = util_.Preallocate({
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
+  auto* block = util_.Preallocate({
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
 
-    // Allocate from the front of the block.
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
-    EXPECT_EQ(result.next(), BlockResultNext::kSplitNew);
-    block = result.block();
+  // Allocate from the front of the block.
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
+  EXPECT_EQ(result.next(), BlockResultNext::kSplitNew);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_NewPrevAndNewNext_SubsequentBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Preallocate a first block with room for another block before the next
-    // alignment boundary.
-    size_t leading =
-        util_.GetFirstAlignedOffset(kLayout) + kAlign - util_.GetOuterSize(1);
+  // Preallocate a first block with room for another block before the next
+  // alignment boundary.
+  size_t leading =
+      util_.GetFirstAlignedOffset(kLayout) + kAlign - util_.GetOuterSize(1);
 
-    // Leave enough space free for a block and the requested block and one more
-    // block.
-    size_t available = kAlign + util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for a block and the requested block and one more
+  // block.
+  size_t available = kAlign + util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {leading, Preallocation::kUsed},
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
-    block = block->Next();
+  auto* block = util_.Preallocate({
+      {leading, Preallocation::kUsed},
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  block = block->Next();
 
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
-    EXPECT_EQ(result.next(), BlockResultNext::kSplitNew);
-    block = result.block();
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
+  EXPECT_EQ(result.next(), BlockResultNext::kSplitNew);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocFirst_ShiftToPrev_FirstBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Trim the front of the buffer so that there is `kAlignment` bytes before
-    // where the aligned block would start.
-    util_.TrimAligned(kAlign - BlockType::kAlignment);
+  // Trim the front of the buffer so that there is `kAlignment` bytes before
+  // where the aligned block would start.
+  util_.TrimAligned(kAlign - BlockType::kAlignment);
 
-    // Leave enough space free for the `kAlignment` bytes and the requested
-    // block.
-    size_t available =
-        BlockType::kAlignment + util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for the `kAlignment` bytes and the requested
+  // block.
+  size_t available = BlockType::kAlignment + util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
+  auto* block = util_.Preallocate({
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
 
-    // Attempt and fail to allocate from the front of the block.
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    EXPECT_EQ(result.status(), Status::ResourceExhausted());
-    CheckAllReachableBlocks(result.block());
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  // Attempt and fail to allocate from the front of the block.
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  EXPECT_EQ(result.status(), Status::ResourceExhausted());
+  CheckAllReachableBlocks(result.block());
 }
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_ShiftToPrev_SubsequentBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Preallocate a first block so that there is `kAlignment` bytes before
-    // where the aligned block would start.
-    size_t leading =
-        util_.GetFirstAlignedOffset(kLayout) + kAlign - BlockType::kAlignment;
+  // Preallocate a first block so that there is `kAlignment` bytes before
+  // where the aligned block would start.
+  size_t leading =
+      util_.GetFirstAlignedOffset(kLayout) + kAlign - BlockType::kAlignment;
 
-    // Leave enough space free for the `kAlignment` bytes and the requested
-    // block.
-    size_t available =
-        BlockType::kAlignment + util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for the `kAlignment` bytes and the requested
+  // block.
+  size_t available = BlockType::kAlignment + util_.GetOuterSize(kLayout.size());
 
-    auto* first = util_.Preallocate({
-        {leading, Preallocation::kUsed},
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
-    BlockType* block = first->Next();
+  auto* first = util_.Preallocate({
+      {leading, Preallocation::kUsed},
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  BlockType* block = first->Next();
 
-    // Allocate from the front of the block.
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kResizedLarger);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-    block = result.block();
+  // Allocate from the front of the block.
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kResizedLarger);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  block = result.block();
 
-    // Verify the previous block was padded.
-    size_t old_requested_size = leading - BlockType::kBlockOverhead;
-    if constexpr (has_layout_v<BlockType>) {
-      Layout old_layout = first->RequestedLayout();
-      EXPECT_EQ(old_layout.size(), old_requested_size);
-    }
-
-    // Resize the first block.
-    size_t new_requested_size = old_requested_size + 1;
-    result = first->Resize(new_requested_size);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-
-    // Verify the padding is updated.
-    if constexpr (has_layout_v<BlockType>) {
-      Layout new_layout = first->RequestedLayout();
-      EXPECT_EQ(new_layout.size(), new_requested_size);
-    }
-
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-
-    // Verify that freeing the subsequent block does not reclaim bytes that were
-    // resized.
-    result = BlockType::Free(std::move(block));
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-    CheckAllReachableBlocks(first);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
+  // Verify the previous block was padded.
+  size_t old_requested_size = leading - BlockType::kBlockOverhead;
+  if constexpr (has_layout_v<BlockType>) {
+    Layout old_layout = first->RequestedLayout();
+    EXPECT_EQ(old_layout.size(), old_requested_size);
   }
+
+  // Resize the first block.
+  size_t new_requested_size = old_requested_size + 1;
+  result = first->Resize(new_requested_size);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+
+  // Verify the padding is updated.
+  if constexpr (has_layout_v<BlockType>) {
+    Layout new_layout = first->RequestedLayout();
+    EXPECT_EQ(new_layout.size(), new_requested_size);
+  }
+
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+
+  // Verify that freeing the subsequent block does not reclaim bytes that were
+  // resized.
+  result = BlockType::Free(std::move(block));
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  CheckAllReachableBlocks(first);
 }
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocFirst_ShiftToPrevAndNewNext_FirstBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Trim the front of the buffer so that there is `kAlignment` bytes before
-    // where the aligned block would start.
-    util_.TrimAligned(kAlign - BlockType::kAlignment);
+  // Trim the front of the buffer so that there is `kAlignment` bytes before
+  // where the aligned block would start.
+  util_.TrimAligned(kAlign - BlockType::kAlignment);
 
-    // Leave enough space free for the `kAlignment` bytes, the requested block,
-    // and one more block.
-    size_t available = BlockType::kAlignment +
-                       util_.GetOuterSize(kLayout.size()) +
-                       util_.GetOuterSize(1);
+  // Leave enough space free for the `kAlignment` bytes, the requested block,
+  // and one more block.
+  size_t available = BlockType::kAlignment +
+                     util_.GetOuterSize(kLayout.size()) + util_.GetOuterSize(1);
 
-    auto* block = util_.Preallocate({
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
+  auto* block = util_.Preallocate({
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
 
-    // Attempt and fail to allocate from the front of the block.
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    EXPECT_EQ(result.status(), Status::ResourceExhausted());
-    CheckAllReachableBlocks(result.block());
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  // Attempt and fail to allocate from the front of the block.
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  EXPECT_EQ(result.status(), Status::ResourceExhausted());
+  CheckAllReachableBlocks(result.block());
 }
 
 template <typename BlockType>
 void BlockTest<
     BlockType>::CanAllocFirst_ShiftToPrevAndNewNext_SubsequentBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Preallocate a first block so that there is `kAlignment` bytes before
-    // where the aligned block would start.
-    size_t leading =
-        util_.GetFirstAlignedOffset(kLayout) + kAlign - BlockType::kAlignment;
+  // Preallocate a first block so that there is `kAlignment` bytes before
+  // where the aligned block would start.
+  size_t leading =
+      util_.GetFirstAlignedOffset(kLayout) + kAlign - BlockType::kAlignment;
 
-    // Leave enough space free for the `kAlignment` bytes, the requested block,
-    // and one more block.
-    size_t available = BlockType::kAlignment +
-                       util_.GetOuterSize(kLayout.size()) +
-                       util_.GetOuterSize(1);
+  // Leave enough space free for the `kAlignment` bytes, the requested block,
+  // and one more block.
+  size_t available = BlockType::kAlignment +
+                     util_.GetOuterSize(kLayout.size()) + util_.GetOuterSize(1);
 
-    auto* block = util_.Preallocate({
-        {leading, Preallocation::kUsed},
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
-    block = block->Next();
+  auto* block = util_.Preallocate({
+      {leading, Preallocation::kUsed},
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  block = block->Next();
 
-    // Allocate from the front of the block.
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kResizedLarger);
-    EXPECT_EQ(result.next(), BlockResultNext::kSplitNew);
-    block = result.block();
+  // Allocate from the front of the block.
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kResizedLarger);
+  EXPECT_EQ(result.next(), BlockResultNext::kSplitNew);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
@@ -989,40 +952,37 @@ void BlockTest<BlockType>::CanAllocLast_Exact_FirstBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocLast_ExactAligned_FirstBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Trim the front of the buffer so that the first block is aligned.
-    util_.TrimAligned();
+  // Trim the front of the buffer so that the first block is aligned.
+  util_.TrimAligned();
 
-    // Leave enough space free for the requested block.
-    size_t available = util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for the requested block.
+  size_t available = util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
+  auto* block = util_.Preallocate({
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
 
-    // Check if we expect this to succeed.
-    auto can_alloc_last = block->CanAlloc(kLayout);
-    ASSERT_EQ(can_alloc_last.status(), OkStatus());
-    EXPECT_EQ(can_alloc_last.size(), 0U);
+  // Check if we expect this to succeed.
+  auto can_alloc_last = block->CanAlloc(kLayout);
+  ASSERT_EQ(can_alloc_last.status(), OkStatus());
+  EXPECT_EQ(can_alloc_last.size(), 0U);
 
-    // Allocate from the back of the block.
-    auto result = BlockType::AllocLast(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-    block = result.block();
+  // Allocate from the back of the block.
+  auto result = BlockType::AllocLast(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
@@ -1061,42 +1021,39 @@ void BlockTest<BlockType>::CanAllocLast_Exact_SubsequentBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocLast_ExactAligned_SubsequentBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Preallocate a first block so that the next block is aligned.
-    size_t leading = util_.GetFirstAlignedOffset(kLayout);
+  // Preallocate a first block so that the next block is aligned.
+  size_t leading = util_.GetFirstAlignedOffset(kLayout);
 
-    // Leave enough space free for the requested block.
-    size_t available = util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for the requested block.
+  size_t available = util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {leading, Preallocation::kUsed},
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
-    block = block->Next();
+  auto* block = util_.Preallocate({
+      {leading, Preallocation::kUsed},
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  block = block->Next();
 
-    // Check if we expect this to succeed.
-    auto can_alloc_last = block->CanAlloc(kLayout);
-    ASSERT_EQ(can_alloc_last.status(), OkStatus());
-    EXPECT_EQ(can_alloc_last.size(), 0U);
+  // Check if we expect this to succeed.
+  auto can_alloc_last = block->CanAlloc(kLayout);
+  ASSERT_EQ(can_alloc_last.status(), OkStatus());
+  EXPECT_EQ(can_alloc_last.size(), 0U);
 
-    // Allocate from the back of the block.
-    auto result = BlockType::AllocLast(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-    block = result.block();
+  // Allocate from the back of the block.
+  auto result = BlockType::AllocLast(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
@@ -1130,42 +1087,38 @@ void BlockTest<BlockType>::CanAllocLast_NewPrev_FirstBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocLast_NewPrevAligned_FirstBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Trim the front of the buffer so that there is room for a block before the
-    // first alignment boundary.
-    util_.TrimAligned(kAlign - util_.GetOuterSize(1));
+  // Trim the front of the buffer so that there is room for a block before the
+  // first alignment boundary.
+  util_.TrimAligned(kAlign - util_.GetOuterSize(1));
 
-    // Leave enough space free for a block and the requested block.
-    size_t available =
-        util_.GetOuterSize(1) + util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for a block and the requested block.
+  size_t available = util_.GetOuterSize(1) + util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
+  auto* block = util_.Preallocate({
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
 
-    // Check if we expect this to succeed.
-    auto can_alloc_last = block->CanAlloc(kLayout);
-    ASSERT_EQ(can_alloc_last.status(), OkStatus());
-    EXPECT_EQ(can_alloc_last.size(), util_.GetOuterSize(1));
+  // Check if we expect this to succeed.
+  auto can_alloc_last = block->CanAlloc(kLayout);
+  ASSERT_EQ(can_alloc_last.status(), OkStatus());
+  EXPECT_EQ(can_alloc_last.size(), util_.GetOuterSize(1));
 
-    // Allocate from the back of the block.
-    auto result = BlockType::AllocLast(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-    block = result.block();
+  // Allocate from the back of the block.
+  auto result = BlockType::AllocLast(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
@@ -1205,160 +1158,145 @@ void BlockTest<BlockType>::CanAllocLast_NewPrev_SubsequentBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocLast_NewPrevAligned_SubsequentBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Preallocate a first block with room for another block before the next
-    // alignment boundary.
-    size_t leading =
-        util_.GetFirstAlignedOffset(kLayout) + kAlign - util_.GetOuterSize(1);
+  // Preallocate a first block with room for another block before the next
+  // alignment boundary.
+  size_t leading =
+      util_.GetFirstAlignedOffset(kLayout) + kAlign - util_.GetOuterSize(1);
 
-    // Leave enough space free for a block and the requested block.
-    size_t available =
-        util_.GetOuterSize(1) + util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for a block and the requested block.
+  size_t available = util_.GetOuterSize(1) + util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {leading, Preallocation::kUsed},
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
-    block = block->Next();
+  auto* block = util_.Preallocate({
+      {leading, Preallocation::kUsed},
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  block = block->Next();
 
-    // Check if we expect this to succeed.
-    auto can_alloc_last = block->CanAlloc(kLayout);
-    ASSERT_EQ(can_alloc_last.status(), OkStatus());
-    EXPECT_EQ(can_alloc_last.size(), util_.GetOuterSize(1));
+  // Check if we expect this to succeed.
+  auto can_alloc_last = block->CanAlloc(kLayout);
+  ASSERT_EQ(can_alloc_last.status(), OkStatus());
+  EXPECT_EQ(can_alloc_last.size(), util_.GetOuterSize(1));
 
-    // Allocate from the back of the block.
-    auto result = BlockType::AllocLast(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-    block = result.block();
+  // Allocate from the back of the block.
+  auto result = BlockType::AllocLast(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kSplitNew);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  block = result.block();
 
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-    CheckAllReachableBlocks(block);
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+  CheckAllReachableBlocks(block);
 }
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocLast_ShiftToPrev_FirstBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Trim the front of the buffer so that there is `kAlignment` bytes before
-    // where the aligned block would start.
-    util_.TrimAligned(kAlign - BlockType::kAlignment);
+  // Trim the front of the buffer so that there is `kAlignment` bytes before
+  // where the aligned block would start.
+  util_.TrimAligned(kAlign - BlockType::kAlignment);
 
-    // Leave enough space free for the `kAlignment` bytes and the requested
-    // block.
-    size_t available =
-        BlockType::kAlignment + util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for the `kAlignment` bytes and the requested
+  // block.
+  size_t available = BlockType::kAlignment + util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
+  auto* block = util_.Preallocate({
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
 
-    // Check if we expect this to succeed.
-    auto can_alloc_last = block->CanAlloc(kLayout);
-    EXPECT_EQ(can_alloc_last.status(), Status::ResourceExhausted());
+  // Check if we expect this to succeed.
+  auto can_alloc_last = block->CanAlloc(kLayout);
+  EXPECT_EQ(can_alloc_last.status(), Status::ResourceExhausted());
 
-    // Attempt and fail to allocate from the back of the block.
-    auto result = BlockType::AllocFirst(std::move(block), kLayout);
-    EXPECT_EQ(result.status(), Status::ResourceExhausted());
-    CheckAllReachableBlocks(result.block());
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  // Attempt and fail to allocate from the back of the block.
+  auto result = BlockType::AllocFirst(std::move(block), kLayout);
+  EXPECT_EQ(result.status(), Status::ResourceExhausted());
+  CheckAllReachableBlocks(result.block());
 }
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocLast_ShiftToPrev_SubsequentBlock() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
 
-    // Preallocate a first block so that there is `kAlignment` bytes before
-    // where the aligned block would start.
-    size_t leading =
-        util_.GetFirstAlignedOffset(kLayout) + kAlign - BlockType::kAlignment;
+  // Preallocate a first block so that there is `kAlignment` bytes before
+  // where the aligned block would start.
+  size_t leading =
+      util_.GetFirstAlignedOffset(kLayout) + kAlign - BlockType::kAlignment;
 
-    // Leave enough space free for the `kAlignment` bytes and the requested
-    // block.
-    size_t available =
-        BlockType::kAlignment + util_.GetOuterSize(kLayout.size());
+  // Leave enough space free for the `kAlignment` bytes and the requested
+  // block.
+  size_t available = BlockType::kAlignment + util_.GetOuterSize(kLayout.size());
 
-    auto* block = util_.Preallocate({
-        {leading, Preallocation::kUsed},
-        {available, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
-    block = block->Next();
+  auto* block = util_.Preallocate({
+      {leading, Preallocation::kUsed},
+      {available, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  block = block->Next();
 
-    // Check if we expect this to succeed.
-    auto can_alloc_last = block->CanAlloc(kLayout);
-    ASSERT_EQ(can_alloc_last.status(), OkStatus());
-    EXPECT_EQ(can_alloc_last.size(), BlockType::kAlignment);
+  // Check if we expect this to succeed.
+  auto can_alloc_last = block->CanAlloc(kLayout);
+  ASSERT_EQ(can_alloc_last.status(), OkStatus());
+  EXPECT_EQ(can_alloc_last.size(), BlockType::kAlignment);
 
-    // Allocate from the back of the block.
-    auto result = BlockType::AllocLast(std::move(block), kLayout);
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kResizedLarger);
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  // Allocate from the back of the block.
+  auto result = BlockType::AllocLast(std::move(block), kLayout);
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kResizedLarger);
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+  EXPECT_EQ(result.size(), BlockType::kAlignment);
+  block = result.block();
+
+  EXPECT_GE(block->InnerSize(), kLayout.size());
+  auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
+  EXPECT_EQ(addr % kAlign, 0U);
+  EXPECT_FALSE(block->IsFree());
+
+  // Deallocate the block.
+  result = BlockType::Free(std::move(block));
+  ASSERT_EQ(result.status(), OkStatus());
+
+  // If the block tracks its original layout, verify the bytes are reclaimed.
+  if constexpr (has_layout_v<BlockType>) {
+    EXPECT_EQ(result.prev(), BlockResultPrev::kResizedSmaller);
     EXPECT_EQ(result.size(), BlockType::kAlignment);
-    block = result.block();
-
-    EXPECT_GE(block->InnerSize(), kLayout.size());
-    auto addr = cpp20::bit_cast<uintptr_t>(block->UsableSpace());
-    EXPECT_EQ(addr % kAlign, 0U);
-    EXPECT_FALSE(block->IsFree());
-
-    // Deallocate the block.
-    result = BlockType::Free(std::move(block));
-    ASSERT_EQ(result.status(), OkStatus());
-
-    // If the block tracks its original layout, verify the bytes are reclaimed.
-    if constexpr (has_layout_v<BlockType>) {
-      EXPECT_EQ(result.prev(), BlockResultPrev::kResizedSmaller);
-      EXPECT_EQ(result.size(), BlockType::kAlignment);
-    } else {
-      EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
-    }
-    EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
-
-    CheckAllReachableBlocks(result.block());
   } else {
-    static_assert(is_alignable_v<BlockType>);
+    EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
   }
+  EXPECT_EQ(result.next(), BlockResultNext::kUnchanged);
+
+  CheckAllReachableBlocks(result.block());
 }
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocLastIfTooSmallForAlignment() {
-  if constexpr (is_alignable_v<BlockType>) {
-    constexpr Layout kLayout(256, kAlign);
-    constexpr size_t kOuterSize = BlockType::kBlockOverhead + kLayout.size();
+  static_assert(is_alignable_v<BlockType>);
+  constexpr Layout kLayout(256, kAlign);
+  constexpr size_t kOuterSize = BlockType::kBlockOverhead + kLayout.size();
 
-    // Make sure the block's usable space is not aligned.
-    size_t outer_size = util_.GetFirstAlignedOffset(kLayout) + 1;
-    auto* block = util_.Preallocate({
-        {outer_size, Preallocation::kUsed},
-        {kOuterSize, Preallocation::kFree},
-        {Preallocation::kSizeRemaining, Preallocation::kUsed},
-    });
-    block = block->Next();
+  // Make sure the block's usable space is not aligned.
+  size_t outer_size = util_.GetFirstAlignedOffset(kLayout) + 1;
+  auto* block = util_.Preallocate({
+      {outer_size, Preallocation::kUsed},
+      {kOuterSize, Preallocation::kFree},
+      {Preallocation::kSizeRemaining, Preallocation::kUsed},
+  });
+  block = block->Next();
 
-    // Cannot allocate without room to a split a block for alignment.
-    auto result = BlockType::AllocLast(std::move(block), kLayout);
-    EXPECT_EQ(result.status(), Status::ResourceExhausted());
-    CheckAllReachableBlocks(result.block());
-  } else {
-    static_assert(is_alignable_v<BlockType>);
-  }
+  // Cannot allocate without room to a split a block for alignment.
+  auto result = BlockType::AllocLast(std::move(block), kLayout);
+  EXPECT_EQ(result.status(), Status::ResourceExhausted());
+  CheckAllReachableBlocks(result.block());
 }
 
 template <typename BlockType>
@@ -1718,27 +1656,24 @@ void BlockTest<BlockType>::CanCheckInvalidBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanCheckPoison() {
-  if constexpr (is_poisonable_v<BlockType>) {
-    auto* block = util_.Preallocate({
-        {Preallocation::kSizeRemaining, Preallocation::kFree},
-    });
+  static_assert(is_poisonable_v<BlockType>);
+  auto* block = util_.Preallocate({
+      {Preallocation::kSizeRemaining, Preallocation::kFree},
+  });
 
-    ByteSpan data = util_.bytes();
+  ByteSpan data = util_.bytes();
 
-    // Modify a byte in the middle of a free block.
-    // Without poisoning, the modification is undetected.
-    EXPECT_TRUE(block->IsFree());
-    data[kDefaultCapacity / 2] = std::byte(0x7f);
-    EXPECT_TRUE(block->IsValid());
+  // Modify a byte in the middle of a free block.
+  // Without poisoning, the modification is undetected.
+  EXPECT_TRUE(block->IsFree());
+  data[kDefaultCapacity / 2] = std::byte(0x7f);
+  EXPECT_TRUE(block->IsValid());
 
-    // Modify a byte in the middle of a free block.
-    // With poisoning, the modification is detected.
-    block->Poison();
-    data[kDefaultCapacity / 2] = std::byte(0x7f);
-    EXPECT_FALSE(block->IsValid());
-  } else {
-    static_assert(is_poisonable_v<BlockType>);
-  }
+  // Modify a byte in the middle of a free block.
+  // With poisoning, the modification is detected.
+  block->Poison();
+  data[kDefaultCapacity / 2] = std::byte(0x7f);
+  EXPECT_FALSE(block->IsValid());
 }
 
 template <typename BlockType>
@@ -1765,61 +1700,55 @@ void BlockTest<BlockType>::CanGetConstBlockFromUsableSpace() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanGetAlignmentFromUsedBlock() {
-  if constexpr (has_layout_v<BlockType>) {
-    constexpr Layout kLayout1(128, kAlign);
-    constexpr Layout kLayout2(384, kAlign * 2);
+  static_assert(has_layout_v<BlockType>);
+  constexpr Layout kLayout1(128, kAlign);
+  constexpr Layout kLayout2(384, kAlign * 2);
 
-    auto* block1 = util_.Preallocate({
-        {Preallocation::kSizeRemaining, Preallocation::kFree},
-    });
+  auto* block1 = util_.Preallocate({
+      {Preallocation::kSizeRemaining, Preallocation::kFree},
+  });
 
-    auto result = BlockType::AllocLast(std::move(block1), kLayout1);
-    ASSERT_EQ(result.status(), OkStatus());
-    block1 = result.block();
+  auto result = BlockType::AllocLast(std::move(block1), kLayout1);
+  ASSERT_EQ(result.status(), OkStatus());
+  block1 = result.block();
 
-    BlockType* block2 = block1->Prev();
-    result = BlockType::AllocLast(std::move(block2), kLayout2);
-    ASSERT_EQ(result.status(), OkStatus());
-    block2 = result.block();
+  BlockType* block2 = block1->Prev();
+  result = BlockType::AllocLast(std::move(block2), kLayout2);
+  ASSERT_EQ(result.status(), OkStatus());
+  block2 = result.block();
 
-    Layout block1_layout = block1->RequestedLayout();
-    Layout block2_layout = block2->RequestedLayout();
-    EXPECT_EQ(block1_layout.alignment(), kAlign);
-    EXPECT_EQ(block2_layout.alignment(), kAlign * 2);
-  } else {
-    static_assert(has_layout_v<BlockType>);
-  }
+  Layout block1_layout = block1->RequestedLayout();
+  Layout block2_layout = block2->RequestedLayout();
+  EXPECT_EQ(block1_layout.alignment(), kAlign);
+  EXPECT_EQ(block2_layout.alignment(), kAlign * 2);
 }
 
 template <typename BlockType>
 void BlockTest<BlockType>::FreeBlocksHaveDefaultAlignment() {
-  if constexpr (has_layout_v<BlockType>) {
-    constexpr Layout kLayout1(128, kAlign);
-    constexpr Layout kLayout2(384, kAlign * 2);
+  static_assert(has_layout_v<BlockType>);
+  constexpr Layout kLayout1(128, kAlign);
+  constexpr Layout kLayout2(384, kAlign * 2);
 
-    auto* block1 = util_.Preallocate({
-        {Preallocation::kSizeRemaining, Preallocation::kFree},
-    });
+  auto* block1 = util_.Preallocate({
+      {Preallocation::kSizeRemaining, Preallocation::kFree},
+  });
 
-    auto result = BlockType::AllocLast(std::move(block1), kLayout1);
-    ASSERT_EQ(result.status(), OkStatus());
-    block1 = result.block();
+  auto result = BlockType::AllocLast(std::move(block1), kLayout1);
+  ASSERT_EQ(result.status(), OkStatus());
+  block1 = result.block();
 
-    BlockType* block2 = block1->Prev();
-    result = BlockType::AllocLast(std::move(block2), kLayout2);
-    ASSERT_EQ(result.status(), OkStatus());
+  BlockType* block2 = block1->Prev();
+  result = BlockType::AllocLast(std::move(block2), kLayout2);
+  ASSERT_EQ(result.status(), OkStatus());
 
-    Layout layout = block1->RequestedLayout();
-    EXPECT_EQ(layout.alignment(), kAlign);
+  Layout layout = block1->RequestedLayout();
+  EXPECT_EQ(layout.alignment(), kAlign);
 
-    result = BlockType::Free(std::move(block1));
-    ASSERT_EQ(result.status(), OkStatus());
-    EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
-    EXPECT_EQ(result.next(), BlockResultNext::kMerged);
-    block1 = result.block();
-  } else {
-    static_assert(has_layout_v<BlockType>);
-  }
+  result = BlockType::Free(std::move(block1));
+  ASSERT_EQ(result.status(), OkStatus());
+  EXPECT_EQ(result.prev(), BlockResultPrev::kUnchanged);
+  EXPECT_EQ(result.next(), BlockResultNext::kMerged);
+  block1 = result.block();
 }
 
 }  // namespace pw::allocator::test
