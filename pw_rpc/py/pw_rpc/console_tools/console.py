@@ -33,7 +33,8 @@ import pw_status
 from pw_protobuf_compiler import python_protos
 
 import pw_rpc
-from pw_rpc.descriptors import Method
+from pw_rpc import client_utils
+from pw_rpc import descriptors
 from pw_rpc.console_tools import functions
 
 _INDENT = '    '
@@ -45,7 +46,7 @@ class CommandHelper:
     @classmethod
     def from_methods(
         cls,
-        methods: Iterable[Method],
+        methods: Iterable[descriptors.Method],
         variables: Mapping[str, object],
         header: str,
         footer: str = '',
@@ -162,6 +163,55 @@ def flattened_rpc_completions(
     # Dict should contain completion text as keys and descriptions as values.
     custom_word_completions = {
         flattened_rpc_name: 'RPC' for flattened_rpc_name in rpc_list
+    }
+    return custom_word_completions
+
+
+def flattened_rpc_completions_from_modules(
+    device_name: str,
+    paths_or_modules: client_utils.PathsModulesOrProtoLibrary,
+) -> dict[str, str]:
+    """Create a flattened list of rpc commands for repl auto-completion.
+
+    This gathers all rpc commands from a set of paths or modules and
+    produces a flattened list of valid rpc commands to run in an RPC
+    console using the provided device name. This is useful for passing into
+    prompt_toolkit.completion.WordCompleter.
+
+    Args:
+      device_name: The device name used to access RPCs.
+      paths_or_modules: The list of paths to .proto files or proto modules with
+        the supported RPC Service definitions.
+
+    Returns:
+      Dict of flattened rpc commands as keys, and 'RPC' as values.
+      For example: ::
+
+        {
+            'device.rpcs.pw.rpc.EchoService.Echo': 'RPC,
+            'device.rpcs.pw.rpc.BatteryService.GetBatteryStatus': 'RPC',
+        }
+    """
+    if isinstance(paths_or_modules, python_protos.Library):
+        proto_list = paths_or_modules
+    else:
+        proto_list = python_protos.Library.from_paths(paths_or_modules)
+
+    services_from_modules = (
+        descriptors.Service.from_descriptor(service)
+        for module in proto_list.modules()
+        for service in module.DESCRIPTOR.services_by_name.values()
+    )
+    services = descriptors.Services(services_from_modules)
+    methods = [method for service in services for method in service.methods]
+
+    rpc_list = [
+        "{}.rpcs.{}".format(device_name, method.full_name) for method in methods
+    ]
+
+    # Dict should contain completion text as keys and descriptions as values.
+    custom_word_completions = {
+        flattened_rpc_name: "RPC" for flattened_rpc_name in rpc_list
     }
     return custom_word_completions
 
