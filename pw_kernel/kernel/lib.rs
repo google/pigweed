@@ -15,6 +15,7 @@
 #![feature(const_trait_impl)]
 #![feature(naked_functions)]
 
+use foreign_box::ForeignBox;
 use pw_log::info;
 
 mod arch;
@@ -48,13 +49,11 @@ impl ThreadBuffer {
     // TODO: figure out how to properly statically construct a thread or
     // make sure this function can only be called once.
     #[inline(never)]
-    fn alloc_thread(&mut self) -> &mut Thread {
+    unsafe fn alloc_thread(&mut self) -> ForeignBox<Thread> {
         assert!(self.buffer.as_ptr().align_offset(align_of::<Thread>()) == 0);
-        unsafe {
-            let thread_ptr = self.buffer.as_mut_ptr() as *mut Thread;
-            thread_ptr.write(Thread::new());
-            &mut *thread_ptr
-        }
+        let thread_ptr = self.buffer.as_mut_ptr() as *mut Thread;
+        thread_ptr.write(Thread::new());
+        ForeignBox::new_from_ptr(&mut *thread_ptr)
     }
 }
 
@@ -67,7 +66,7 @@ impl Kernel {
 
         Arch::early_init();
 
-        let bootstrap_thread;
+        let mut bootstrap_thread;
         #[allow(static_mut_refs)]
         unsafe {
             info!("allocating bootstrap thread");
@@ -102,7 +101,7 @@ fn bootstrap_thread_entry(_arg: usize) {
     SCHEDULER_STATE.lock().dump_all_threads();
 
     // TODO: Create a few test threads
-    let thread_a;
+    let mut thread_a;
     #[allow(static_mut_refs)]
     unsafe {
         info!("allocating thread A");
@@ -115,7 +114,7 @@ fn bootstrap_thread_entry(_arg: usize) {
     }
     SCHEDULER_STATE.lock().dump_all_threads();
 
-    let thread_b;
+    let mut thread_b;
     #[allow(static_mut_refs)]
     unsafe {
         info!("allocating thread B");
@@ -127,8 +126,8 @@ fn bootstrap_thread_entry(_arg: usize) {
         thread_b.initialize(Stack::from_slice(&STACK_B), test_thread_entry, 'b' as usize);
     }
 
-    thread_a.start();
-    thread_b.start();
+    Thread::start(thread_a);
+    Thread::start(thread_b);
 
     SCHEDULER_STATE.lock().dump_all_threads();
 
