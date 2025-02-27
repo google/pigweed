@@ -308,10 +308,12 @@ class BlockTest : public ::testing::Test {
   BlockTestUtilities<BlockType> util_;
 };
 
-// Unit test template implementations.
+////////////////////////////////////////////////////////////////////////////////
+// Unit tests for blocks derived from `BasicBlock`.
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanCreateSingleAlignedBlock() {
+  static_assert(is_block_v<BlockType>);
   auto result = BlockType::Init(util_.bytes());
   ASSERT_EQ(result.status(), OkStatus());
   BlockType* block = *result;
@@ -327,6 +329,7 @@ void BlockTest<BlockType>::CanCreateSingleAlignedBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanCreateUnalignedSingleBlock() {
+  static_assert(is_block_v<BlockType>);
   ByteSpan aligned(util_.bytes());
 
   auto result = BlockType::Init(aligned.subspan(1));
@@ -335,6 +338,7 @@ void BlockTest<BlockType>::CanCreateUnalignedSingleBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotCreateTooSmallBlock() {
+  static_assert(is_block_v<BlockType>);
   std::array<std::byte, 2> bytes;
   auto result = BlockType::Init(bytes);
   EXPECT_EQ(result.status(), Status::ResourceExhausted());
@@ -342,6 +346,7 @@ void BlockTest<BlockType>::CannotCreateTooSmallBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotCreateTooLargeBlock() {
+  static_assert(is_block_v<BlockType>);
   std::array<std::byte, kDefaultCapacity> bytes;
   auto result = BlockType::Init(bytes);
   EXPECT_EQ(result.status(), Status::OutOfRange());
@@ -349,6 +354,7 @@ void BlockTest<BlockType>::CannotCreateTooLargeBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanCheckValidBlock() {
+  static_assert(is_block_v<BlockType>);
   constexpr size_t kOuterSize1 = 512;
   constexpr size_t kOuterSize2 = 256;
 
@@ -368,6 +374,7 @@ void BlockTest<BlockType>::CanCheckValidBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanCheckInvalidBlock() {
+  static_assert(is_block_v<BlockType>);
   constexpr size_t kOuterSize1 = 128;
   constexpr size_t kOuterSize2 = 384;
 
@@ -401,6 +408,7 @@ void BlockTest<BlockType>::CanCheckInvalidBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanGetBlockFromUsableSpace() {
+  static_assert(is_block_v<BlockType>);
   auto* block1 = util_.Preallocate({
       {Preallocation::kSizeRemaining, Preallocation::kFree},
   });
@@ -412,6 +420,7 @@ void BlockTest<BlockType>::CanGetBlockFromUsableSpace() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanGetConstBlockFromUsableSpace() {
+  static_assert(is_block_v<BlockType>);
   const auto* block1 = util_.Preallocate({
       {Preallocation::kSizeRemaining, Preallocation::kFree},
   });
@@ -421,8 +430,12 @@ void BlockTest<BlockType>::CanGetConstBlockFromUsableSpace() {
   EXPECT_EQ(block1, block2);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Unit testss for blocks derived from `AllocatableBlock`.
+
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocFirst_Null() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(1, 1);
 
   BlockType* block = nullptr;
@@ -434,6 +447,7 @@ void BlockTest<BlockType>::CannotAllocFirst_Null() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocFirst_ZeroSize() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(0, 1);
 
   auto* block = util_.Preallocate({
@@ -447,6 +461,7 @@ void BlockTest<BlockType>::CannotAllocFirst_ZeroSize() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocFirst_Used() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(1, 1);
 
   auto* block = util_.Preallocate({
@@ -460,6 +475,7 @@ void BlockTest<BlockType>::CannotAllocFirst_Used() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocFirst_TooSmall() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(256, 1);
 
   // Trim the buffer so that the layout does not fit.
@@ -475,6 +491,7 @@ void BlockTest<BlockType>::CannotAllocFirst_TooSmall() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_Exact_FirstBlock() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(256, 1);
 
   // Leave enough space free for the requested block.
@@ -498,6 +515,7 @@ void BlockTest<BlockType>::CanAllocFirst_Exact_FirstBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_Exact_SubsequentBlock() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(256, 1);
 
   // Preallocate a first block so that the next block is aligned.
@@ -527,6 +545,7 @@ void BlockTest<BlockType>::CanAllocFirst_Exact_SubsequentBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_NewNext_FirstBlock() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(256, 1);
 
   // Trim the front of the buffer so that the first block is aligned.
@@ -554,6 +573,7 @@ void BlockTest<BlockType>::CanAllocFirst_NewNext_FirstBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_NewNext_SubsequentBlock() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(256, 1);
 
   // Preallocate a first block so that the next block is aligned.
@@ -583,6 +603,7 @@ void BlockTest<BlockType>::CanAllocFirst_NewNext_SubsequentBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocLast_Null() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(1, 1);
 
   BlockType* block = nullptr;
@@ -595,6 +616,7 @@ void BlockTest<BlockType>::CannotAllocLast_Null() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocLast_ZeroSize() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(0, 1);
 
   auto* block = util_.Preallocate({
@@ -613,6 +635,7 @@ void BlockTest<BlockType>::CannotAllocLast_ZeroSize() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocLast_Used() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(1, 1);
 
   auto* block = util_.Preallocate({
@@ -632,6 +655,7 @@ void BlockTest<BlockType>::CannotAllocLast_Used() {
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocLast_TooSmall() {
   constexpr Layout kLayout(256, 1);
+  static_assert(is_allocatable_v<BlockType>);
 
   // Trim the buffer so that the layout does not fit.
   util_.TrimBytes(0, util_.GetOuterSize(kLayout.size()) - 1);
@@ -653,6 +677,7 @@ void BlockTest<BlockType>::CannotAllocLast_TooSmall() {
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocLast_Exact_FirstBlock() {
   constexpr Layout kLayout(256, 1);
+  static_assert(is_allocatable_v<BlockType>);
 
   // Trim the front of the buffer so that the first block is aligned.
   util_.TrimAligned();
@@ -684,6 +709,7 @@ void BlockTest<BlockType>::CanAllocLast_Exact_FirstBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocLast_Exact_SubsequentBlock() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(256, 1);
 
   // Preallocate a first block so that the next block is aligned.
@@ -718,6 +744,7 @@ void BlockTest<BlockType>::CanAllocLast_Exact_SubsequentBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocLast_NewPrev_FirstBlock() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(256, 1);
 
   // Leave enough space free for a block and the requested block.
@@ -747,6 +774,7 @@ void BlockTest<BlockType>::CanAllocLast_NewPrev_FirstBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocLast_NewPrev_SubsequentBlock() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(256, 1);
 
   // Preallocate a first block with room for another block before the next
@@ -782,6 +810,7 @@ void BlockTest<BlockType>::CanAllocLast_NewPrev_SubsequentBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocLastFromNull() {
+  static_assert(is_allocatable_v<BlockType>);
   BlockType* block = nullptr;
   constexpr Layout kLayout(1, 1);
   auto result = BlockType::AllocLast(std::move(block), kLayout);
@@ -791,6 +820,7 @@ void BlockTest<BlockType>::CannotAllocLastFromNull() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocLastZeroSize() {
+  static_assert(is_allocatable_v<BlockType>);
   auto* block = util_.Preallocate({
       {Preallocation::kSizeRemaining, Preallocation::kFree},
   });
@@ -802,6 +832,7 @@ void BlockTest<BlockType>::CannotAllocLastZeroSize() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotAllocLastFromUsed() {
+  static_assert(is_allocatable_v<BlockType>);
   auto* block = util_.Preallocate({
       {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
@@ -813,6 +844,7 @@ void BlockTest<BlockType>::CannotAllocLastFromUsed() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::FreeingNullDoesNothing() {
+  static_assert(is_allocatable_v<BlockType>);
   BlockType* block = nullptr;
   auto result = BlockType::Free(std::move(block));
   EXPECT_EQ(result.status(), Status::InvalidArgument());
@@ -820,6 +852,7 @@ void BlockTest<BlockType>::FreeingNullDoesNothing() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::FreeingFreeBlockDoesNothing() {
+  static_assert(is_allocatable_v<BlockType>);
   auto* block = util_.Preallocate({
       {Preallocation::kSizeRemaining, Preallocation::kFree},
   });
@@ -830,6 +863,7 @@ void BlockTest<BlockType>::FreeingFreeBlockDoesNothing() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanFree() {
+  static_assert(is_allocatable_v<BlockType>);
   auto* block = util_.Preallocate({
       {Preallocation::kSizeRemaining, Preallocation::kUsed},
   });
@@ -847,6 +881,7 @@ void BlockTest<BlockType>::CanFree() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanFreeBlockWithoutMerging() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr size_t kOuterSize = 256;
 
   auto* block = util_.Preallocate({
@@ -872,6 +907,7 @@ void BlockTest<BlockType>::CanFreeBlockWithoutMerging() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanFreeBlockAndMergeWithPrev() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr size_t kOuterSize = 256;
 
   auto* first = util_.Preallocate({
@@ -897,6 +933,7 @@ void BlockTest<BlockType>::CanFreeBlockAndMergeWithPrev() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanFreeBlockAndMergeWithNext() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr size_t kOuterSize = 256;
 
   auto* first = util_.Preallocate({
@@ -921,6 +958,7 @@ void BlockTest<BlockType>::CanFreeBlockAndMergeWithNext() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanFreeBlockAndMergeWithBoth() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr size_t kOuterSize = 128;
 
   auto* first = util_.Preallocate({
@@ -943,6 +981,7 @@ void BlockTest<BlockType>::CanFreeBlockAndMergeWithBoth() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanResizeBlockSameSize() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr size_t kOuterSize = 256;
 
   auto* block = util_.Preallocate({
@@ -961,6 +1000,7 @@ void BlockTest<BlockType>::CanResizeBlockSameSize() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotResizeFreeBlock() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr size_t kOuterSize = 256;
 
   auto* block = util_.Preallocate({
@@ -977,6 +1017,7 @@ void BlockTest<BlockType>::CannotResizeFreeBlock() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanResizeBlockSmallerWithNextFree() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr size_t kOuterSize = 256;
 
   auto* block = util_.Preallocate({
@@ -1003,6 +1044,7 @@ void BlockTest<BlockType>::CanResizeBlockSmallerWithNextFree() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanResizeBlockLargerWithNextFree() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr size_t kOuterSize = 256;
 
   auto* block = util_.Preallocate({
@@ -1030,6 +1072,7 @@ void BlockTest<BlockType>::CanResizeBlockLargerWithNextFree() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotResizeBlockMuchLargerWithNextFree() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr size_t kOuterSize = 256;
 
   auto* block = util_.Preallocate({
@@ -1046,6 +1089,7 @@ void BlockTest<BlockType>::CannotResizeBlockMuchLargerWithNextFree() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanResizeBlockSmallerWithNextUsed() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr Layout kLayout(256, kAlign);
   constexpr size_t kOuterSize = BlockType::kBlockOverhead + kLayout.size();
 
@@ -1070,6 +1114,7 @@ void BlockTest<BlockType>::CanResizeBlockSmallerWithNextUsed() {
 
 template <typename BlockType>
 void BlockTest<BlockType>::CannotResizeBlockLargerWithNextUsed() {
+  static_assert(is_allocatable_v<BlockType>);
   constexpr size_t kOuterSize = 256;
 
   auto* block = util_.Preallocate({
@@ -1082,6 +1127,9 @@ void BlockTest<BlockType>::CannotResizeBlockLargerWithNextUsed() {
   auto result = block->Resize(new_inner_size);
   EXPECT_EQ(result.status(), Status::ResourceExhausted());
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Unit tests for blocks derived from `AlignableBlock`.
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanAllocFirst_ExactAligned_FirstBlock() {
@@ -1676,6 +1724,9 @@ void BlockTest<BlockType>::CannotAllocLastIfTooSmallForAlignment() {
   CheckAllReachableBlocks(result.block());
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Unit tests for blocks derived from `PoisonableBlock`.
+
 template <typename BlockType>
 void BlockTest<BlockType>::CanCheckPoison() {
   static_assert(is_poisonable_v<BlockType>);
@@ -1697,6 +1748,9 @@ void BlockTest<BlockType>::CanCheckPoison() {
   data[kDefaultCapacity / 2] = std::byte(0x7f);
   EXPECT_FALSE(block->IsValid());
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Unit tests for blocks derived from `BlockWithLayout`.
 
 template <typename BlockType>
 void BlockTest<BlockType>::CanGetAlignmentFromUsedBlock() {
