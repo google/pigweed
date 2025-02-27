@@ -50,10 +50,10 @@ impl super::super::ThreadState for ArchThreadState {
 
     fn context_switch<'a>(
         mut sched_state: SpinLockGuard<'a, SchedulerState>,
-        old_thread: &mut Thread,
-        new_thread: &mut Thread,
+        old_thread: *mut Thread,
+        new_thread: *mut Thread,
     ) -> SpinLockGuard<'a, SchedulerState> {
-        assert!(core::ptr::from_mut(new_thread) == sched_state.get_current_thread());
+        assert!(new_thread == sched_state.get_current_thread());
 
         // info!(
         //     "context switch from thread {:#08x} to thread {:#08x}",
@@ -65,7 +65,7 @@ impl super::super::ThreadState for ArchThreadState {
         // a pendsv only the first time
         unsafe {
             if get_active_thread() == core::ptr::null_mut() {
-                set_active_thread(core::ptr::from_mut(old_thread));
+                set_active_thread(old_thread);
 
                 // Queue a PendSV
                 SCB::set_pendsv();
@@ -166,7 +166,7 @@ unsafe fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut FullExceptionFr
 
     // Return the arch frame for the current thread
     let ss = SCHEDULER_STATE.lock();
-    let newframe = ss.get_current_thread_ref().arch_thread_state.frame;
+    let newframe = (*ss.get_current_thread()).arch_thread_state.frame;
     // info!(
     //     "new frame {:08x}: pc {:08x}",
     //     newframe as usize,

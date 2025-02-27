@@ -137,8 +137,10 @@ impl Thread {
         let mut ss = SCHEDULER_STATE.lock();
 
         // Insert the current thread in the run queue at the head.
-        let current_thread = ss.get_current_thread_ref();
-        current_thread.state = State::Ready;
+        let current_thread = ss.get_current_thread();
+        unsafe {
+            (*current_thread).state = State::Ready;
+        }
         ss.insert_in_run_queue_head(current_thread);
 
         // Add this thread to the scheduler and trigger a reschedule event
@@ -208,16 +210,6 @@ impl SchedulerState {
         self.current_thread
     }
 
-    // Get a mutable reference to the current thread, which is effectively TLS, since it cannot
-    // by definition go out of scope as long as we're using it. Uses the a different lifetime to
-    // keep the language from trying to drop the reference.
-    // TODO: cleaner mechanism may be to wrap this with a CurrentThread struct that enforces
-    // only using it on the current thread.
-    #[allow(dead_code)]
-    pub fn get_current_thread_ref<'a>(&self) -> &'a mut Thread {
-        unsafe { &mut (*self.current_thread) }
-    }
-
     #[allow(dead_code)]
     pub fn set_current_thread(&mut self, thread: *mut Thread) {
         self.current_thread = thread;
@@ -244,9 +236,11 @@ impl SchedulerState {
     }
 
     #[allow(dead_code)]
-    fn insert_in_run_queue_head(&mut self, thread: &mut Thread) {
-        assert!(thread.active_link.is_unlinked());
-        assert!(thread.state == State::Ready);
+    fn insert_in_run_queue_head(&mut self, thread: *mut Thread) {
+        unsafe {
+            assert!((*thread).active_link.is_unlinked());
+            assert!((*thread).state == State::Ready);
+        }
         // info!("pushing thread {:#x} on run queue head", thread.id());
 
         unsafe {
@@ -255,9 +249,11 @@ impl SchedulerState {
     }
 
     #[allow(dead_code)]
-    fn insert_in_run_queue_tail(&mut self, thread: &mut Thread) {
-        assert!(thread.active_link.is_unlinked());
-        assert!(thread.state == State::Ready);
+    fn insert_in_run_queue_tail(&mut self, thread: *mut Thread) {
+        unsafe {
+            assert!((*thread).active_link.is_unlinked());
+            assert!((*thread).state == State::Ready);
+        }
         // info!("pushing thread {:#x} on run queue tail", thread.id());
 
         unsafe {
@@ -268,8 +264,10 @@ impl SchedulerState {
 
 #[allow(dead_code)]
 fn reschedule(mut ss: SpinLockGuard<SchedulerState>) -> SpinLockGuard<SchedulerState> {
-    let current_thread = ss.get_current_thread_ref();
-    assert!(current_thread.state != State::Running);
+    let current_thread = ss.get_current_thread();
+    unsafe {
+        assert!((*current_thread).state != State::Running);
+    }
 
     // info!("reschedule");
 
@@ -290,12 +288,14 @@ fn reschedule(mut ss: SpinLockGuard<SchedulerState>) -> SpinLockGuard<SchedulerS
         }
     }
 
-    assert!(new_thread.state == State::Ready);
+    unsafe {
+        assert!((*new_thread).state == State::Ready);
 
-    new_thread.state = State::Running;
-    if current_thread.id() == new_thread.id() {
-        // info!("decided to continue running thread {:#x}", new_thread.id());
-        return ss;
+        (*new_thread).state = State::Running;
+        if (*current_thread).id() == (*new_thread).id() {
+            // info!("decided to continue running thread {:#x}", new_thread.id());
+            return ss;
+        }
     }
 
     // info!("switching to thread {:#x}", new_thread.id());
@@ -308,11 +308,13 @@ fn reschedule(mut ss: SpinLockGuard<SchedulerState>) -> SpinLockGuard<SchedulerS
 pub fn yield_timeslice() {
     let mut ss = SCHEDULER_STATE.lock();
 
-    let current_thread = ss.get_current_thread_ref();
+    let current_thread = ss.get_current_thread();
     // info!("yielding thread {:#x}", current_thread.id());
 
     // Insert the current thread in the run queue at the tail.
-    current_thread.state = State::Ready;
+    unsafe {
+        (*current_thread).state = State::Ready;
+    }
     ss.insert_in_run_queue_tail(current_thread);
 
     reschedule(ss);
@@ -322,11 +324,13 @@ pub fn yield_timeslice() {
 pub fn preempt() {
     let mut ss = SCHEDULER_STATE.lock();
 
-    let current_thread = ss.get_current_thread_ref();
+    let current_thread = ss.get_current_thread();
     // info!("preempt thread {:#x}", current_thread.id());
 
     // Insert the current thread in the run queue at the tail.
-    current_thread.state = State::Ready;
+    unsafe {
+        (*current_thread).state = State::Ready;
+    }
     ss.insert_in_run_queue_tail(current_thread);
 
     reschedule(ss);
@@ -351,11 +355,13 @@ pub fn tick(_time_ms: u32) {
 pub fn exit_thread() -> ! {
     let ss = SCHEDULER_STATE.lock();
 
-    let current_thread = ss.get_current_thread_ref();
+    let current_thread = ss.get_current_thread();
 
-    info!("thread {:#x} exiting", current_thread.id());
+    unsafe {
+        info!("thread {:#x} exiting", (*current_thread).id());
 
-    current_thread.state = State::Stopped;
+        (*current_thread).state = State::Stopped;
+    }
 
     reschedule(ss);
 

@@ -37,11 +37,11 @@ pub trait ThreadState {
     // new_thread: must match current_thread and the container for this ThreadState.
 
     #[allow(dead_code)]
-    fn context_switch<'a>(
-        sched_state: SpinLockGuard<'a, SchedulerState>,
-        old_thread: &mut Thread,
-        new_thread: &mut Thread,
-    ) -> SpinLockGuard<'a, SchedulerState>;
+    fn context_switch(
+        sched_state: SpinLockGuard<'_, SchedulerState>,
+        old_thread: *mut Thread,
+        new_thread: *mut Thread,
+    ) -> SpinLockGuard<'_, SchedulerState>;
 
     // Initialize the default frame of the thread which arranges for it to start at the initial_function
     // with one argument passed in the first argument slot.

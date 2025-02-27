@@ -124,7 +124,7 @@ fn unlink_removes_head_correctly() -> unittest::Result<()> {
     unsafe { list.push_front_unchecked(&mut element2) };
     unsafe { list.push_front_unchecked(&mut element1) };
 
-    unsafe { list.unlink_element(&element1) };
+    unsafe { list.unlink_element(&mut element1) };
 
     unsafe { validate_list(&list, &[2, 3]) }
 }
@@ -149,7 +149,7 @@ fn unlink_removes_tail_correctly() -> unittest::Result<()> {
     unsafe { list.push_front_unchecked(&mut element2) };
     unsafe { list.push_front_unchecked(&mut element1) };
 
-    unsafe { list.unlink_element(&element3) };
+    unsafe { list.unlink_element(&mut element3) };
 
     unsafe { validate_list(&list, &[1, 2]) }
 }
@@ -174,7 +174,7 @@ fn unlink_removes_middle_correctly() -> unittest::Result<()> {
     unsafe { list.push_front_unchecked(&mut element2) };
     unsafe { list.push_front_unchecked(&mut element1) };
 
-    unsafe { list.unlink_element(&element2) };
+    unsafe { list.unlink_element(&mut element2) };
 
     unsafe { validate_list(&list, &[1, 3]) }
 }
@@ -203,24 +203,24 @@ fn pop_head_removes_correctly() -> unittest::Result<()> {
         let e = list.pop_head();
         unittest::assert_true!(e.is_some());
         let e = e.unwrap();
-        unittest::assert_eq!(e.value, 3);
-        unittest::assert_true!(e.link.is_unlinked());
+        unittest::assert_eq!((*e).value, 3);
+        unittest::assert_true!((*e).link.is_unlinked());
     }
 
     unsafe {
         let e = list.pop_head();
         unittest::assert_true!(e.is_some());
         let e = e.unwrap();
-        unittest::assert_eq!(e.value, 2);
-        unittest::assert_true!(e.link.is_unlinked());
+        unittest::assert_eq!((*e).value, 2);
+        unittest::assert_true!((*e).link.is_unlinked());
     }
 
     unsafe {
         let e = list.pop_head();
         unittest::assert_true!(e.is_some());
         let e = e.unwrap();
-        unittest::assert_eq!(e.value, 1);
-        unittest::assert_true!(e.link.is_unlinked());
+        unittest::assert_eq!((*e).value, 1);
+        unittest::assert_true!((*e).link.is_unlinked());
     }
 
     unsafe { validate_list(&list, &[]) }
