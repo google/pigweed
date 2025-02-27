@@ -507,7 +507,7 @@ use_repo(npm, "npm")
 
 # Setup Fuchsia SDK.
 # ==================
-FUCHSIA_SDK_VERSION = "version:27.20250130.2.1"
+FUCHSIA_SDK_VERSION = "version:27.20250226.5.1"
 
 cipd_repository(
     name = "fuchsia_sdk",

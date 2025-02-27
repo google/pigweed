@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@fuchsia_sdk//fuchsia:defs.bzl", "fuchsia_cc_library")
+load("@rules_fuchsia//fuchsia:defs.bzl", "fuchsia_cc_library")
 
 package(default_visibility = ["//visibility:public"])
 

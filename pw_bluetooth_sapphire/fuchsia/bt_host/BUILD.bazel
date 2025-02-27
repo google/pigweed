@@ -13,8 +13,9 @@
 # the License.
 
 load("@fuchsia_infra//infra:infra.bzl", "fuchsia_cipd_releases")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load(
-    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "@rules_fuchsia//fuchsia:defs.bzl",
     "fuchsia_cc_binary",
     "fuchsia_cc_test",
     "fuchsia_component",
@@ -26,11 +27,10 @@ load(
     "fuchsia_unittest_package",
 )
 load(
-    "@fuchsia_sdk//fuchsia:licenses.bzl",
+    "@rules_fuchsia//fuchsia:licenses.bzl",
     "fuchsia_licenses_collection",
     "fuchsia_licenses_spdx",
 )
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//pw_bluetooth_sapphire/fuchsia:fuchsia_api_level.bzl", "FUCHSIA_API_LEVEL")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 

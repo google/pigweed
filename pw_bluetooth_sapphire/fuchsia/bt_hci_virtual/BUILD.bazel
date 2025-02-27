@@ -14,7 +14,7 @@
 
 load("@fuchsia_infra//infra:infra.bzl", "fuchsia_cipd_releases")
 load(
-    "@fuchsia_sdk//fuchsia:defs.bzl",
+    "@rules_fuchsia//fuchsia:defs.bzl",
     "fuchsia_cc_driver",
     "fuchsia_cc_library",
     "fuchsia_cc_test",
@@ -26,7 +26,7 @@ load(
     "fuchsia_unittest_package",
 )
 load(
-    "@fuchsia_sdk//fuchsia:licenses.bzl",
+    "@rules_fuchsia//fuchsia:licenses.bzl",
     "fuchsia_licenses_collection",
     "fuchsia_licenses_spdx",
 )
