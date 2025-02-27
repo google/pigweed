@@ -62,10 +62,10 @@ cc_library(
     hdrs = [
         "public/pw_async2/dispatcher_base.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":poll",
-        "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_containers:vector",
         "//pw_sync:interrupt_spin_lock",
@@ -290,6 +290,7 @@ cc_library(
     hdrs = [
         "public/pw_async2/time_provider.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":dispatcher",

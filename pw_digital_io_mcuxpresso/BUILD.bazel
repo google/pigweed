@@ -31,6 +31,7 @@ cc_library(
         "public/pw_digital_io_mcuxpresso/digital_io.h",
         "public/pw_digital_io_mcuxpresso/pint.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         "//pw_containers:intrusive_forward_list",

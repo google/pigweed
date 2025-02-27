@@ -118,7 +118,6 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":builder",
-        "//pw_assert",
         "//pw_result",
         "//pw_span",
         "//pw_status",
@@ -134,7 +133,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":string",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_result",
         "//pw_span",
         "//pw_status",

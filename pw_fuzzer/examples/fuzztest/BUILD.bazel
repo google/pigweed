@@ -27,9 +27,9 @@ cc_library(
     hdrs = [
         "metrics.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = ["."],
     deps = [
-        "//pw_assert",
         "//pw_bytes",
         "//pw_containers",
         "//pw_status",

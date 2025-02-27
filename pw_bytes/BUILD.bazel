@@ -55,7 +55,7 @@ cc_library(
     hdrs = ["public/pw_bytes/alignment.h"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_preprocessor",
         "//third_party/fuchsia:stdcompat",
@@ -74,7 +74,7 @@ cc_library(
     hdrs = ["public/pw_bytes/packed_ptr.h"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
         "//third_party/fuchsia:stdcompat",
     ],
 )

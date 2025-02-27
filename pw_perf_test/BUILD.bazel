@@ -59,7 +59,7 @@ cc_library(
     deps = [
         ":event_handler",
         ":timer",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_log",
     ],
 )

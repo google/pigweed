@@ -52,6 +52,7 @@ cc_library(
         "public/pw_allocator/benchmarks/benchmark.h",
         "public/pw_allocator/benchmarks/config.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     target_compatible_with = select({
         "@platforms//os:linux": [],
@@ -63,7 +64,6 @@ cc_library(
         "//pw_allocator:block_allocator",
         "//pw_allocator:fragmentation",
         "//pw_allocator:test_harness",
-        "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_metric:metric",
         "//pw_tokenizer",

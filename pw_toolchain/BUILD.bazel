@@ -114,7 +114,7 @@ pw_cc_test(
     srcs = ["no_destructor_test.cc"],
     deps = [
         ":no_destructor",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_polyfill",
     ],
 )
@@ -124,7 +124,7 @@ pw_cc_test(
     srcs = ["globals_test.cc"],
     deps = [
         ":globals",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_polyfill",
     ],
 )
@@ -160,8 +160,8 @@ pw_cc_test(
 cc_library(
     name = "wrap_abort",
     srcs = ["wrap_abort.cc"],
+    implementation_deps = ["//pw_assert:check"],
     linkopts = ["-Wl,--wrap=abort"],
-    deps = ["//pw_assert"],
     alwayslink = 1,
 )
 

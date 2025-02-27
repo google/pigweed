@@ -71,7 +71,6 @@ cc_library(
     hdrs = ["public/pw_rpc_transport/internal/packet_buffer_queue.h"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
         "//pw_bytes",
         "//pw_containers",
         "//pw_log",
@@ -178,7 +177,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":rpc_transport",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_log",
         "//pw_status",
@@ -238,7 +237,7 @@ cc_library(
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":rpc_transport",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_chrono:system_clock",
         "//pw_log",
         "//pw_status",

@@ -28,10 +28,11 @@ cc_library(
     hdrs = [
         "public_overrides/pw_async2/dispatcher_native.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public_overrides",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_async2:dispatcher_base",
         "//pw_async2:poll",
         "//pw_log",

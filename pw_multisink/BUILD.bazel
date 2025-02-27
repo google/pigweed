@@ -33,10 +33,11 @@ cc_library(
         "public/pw_multisink/config.h",
         "public/pw_multisink/multisink.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":config_override",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_containers",
         "//pw_function",

@@ -70,6 +70,7 @@ pw_cc_test(
     deps = [
         ":egress_function",
         ":static_router",
+        "//pw_assert:check",
     ],
 )
 

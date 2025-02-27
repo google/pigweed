@@ -87,7 +87,6 @@ cc_library(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//pw_assert",
         "//pw_async:dispatcher",
         "//pw_async:task",
         "//pw_bluetooth:emboss_hci",

@@ -59,7 +59,6 @@ cc_library(
     tags = ["noclangtidy"],
     deps = [
         ":server_api",
-        "//pw_assert",
         "//pw_containers",
     ],
 )
@@ -71,7 +70,7 @@ cc_library(
     deps = [
         ":fake_channel_output",
         ":server_api",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_containers:vector",
         "//pw_preprocessor",
         "//pw_rpc",
@@ -83,10 +82,10 @@ cc_library(
     name = "client_testing",
     srcs = ["client_testing.cc"],
     hdrs = ["public/pw_rpc/raw/client_testing.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":test_method_context",
-        "//pw_assert",
         "//pw_bytes",
         "//pw_log",
         "//pw_rpc",
@@ -206,6 +205,7 @@ pw_cc_test(
     srcs = ["synchronous_call_test.cc"],
     deps = [
         ":test_method_context",
+        "//pw_assert:check",
         "//pw_rpc:pw_rpc_test_raw_rpc",
         "//pw_rpc:synchronous_client_api",
         "//pw_work_queue",

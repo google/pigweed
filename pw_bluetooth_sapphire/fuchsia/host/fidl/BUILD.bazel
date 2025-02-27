@@ -119,9 +119,9 @@ fuchsia_cc_library(
     hdrs = [
         "public/pw_bluetooth_sapphire/fuchsia/host/fidl/activity_governor_lease_provider.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
         "//pw_bluetooth_sapphire:lease",
         "//pw_bluetooth_sapphire/host/common",
         "@fuchsia_sdk//fidl/fuchsia.power.system:fuchsia.power.system_cpp",

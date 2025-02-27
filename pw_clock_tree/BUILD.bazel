@@ -29,7 +29,7 @@ cc_library(
     hdrs = ["public/pw_clock_tree/clock_tree.h"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_status",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:mutex",
@@ -50,6 +50,7 @@ pw_cc_test(
     srcs = ["examples.cc"],
     deps = [
         ":pw_clock_tree",
+        "//pw_assert:check",
     ],
 )
 

@@ -36,6 +36,7 @@ cc_library(
     tags = ["noclangtidy"],
     # TODO: b/257321712 - Add ThreadX dependency.
     deps = [
+        "//pw_assert:assert",
         "//pw_thread:id.facade",
     ],
 )
@@ -54,6 +55,7 @@ cc_library(
         "thread_public_overrides/pw_thread_backend/thread_inline.h",
         "thread_public_overrides/pw_thread_backend/thread_native.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = [
         "public",
         "thread_public_overrides",
@@ -63,7 +65,7 @@ cc_library(
     deps = [
         ":config_override",
         ":id",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_function",
         "//pw_string",
         "//pw_thread:thread.facade",
@@ -80,6 +82,7 @@ cc_library(
     srcs = [
         "test_threads.cc",
     ],
+    implementation_deps = ["//pw_assert:check"],
     # TODO: b/257321712 - This target doesn't build.
     tags = ["manual"],
     deps = [
@@ -109,6 +112,7 @@ cc_library(
         "public/pw_thread_threadx/sleep_inline.h",
         "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = [
         "public",
         "sleep_public_overrides",
@@ -117,7 +121,6 @@ cc_library(
     tags = ["manual"],
     deps = [
         ":sleep_headers",
-        "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_thread:sleep.facade",
     ],
@@ -136,6 +139,7 @@ cc_library(
     # TODO: b/257321712 - This target doesn't build.
     tags = ["manual"],
     deps = [
+        "//pw_assert:assert",
         "//pw_thread:yield.facade",
     ],
 )

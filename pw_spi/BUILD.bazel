@@ -30,7 +30,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_status",
     ],
@@ -81,11 +81,11 @@ cc_library(
         "public/pw_spi/chip_selector_mock.h",
         "public/pw_spi/initiator_mock.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":chip_selector",
         ":initiator",
-        "//pw_assert",
         "//pw_bytes",
         "//pw_containers",
         "//pw_containers:algorithm",

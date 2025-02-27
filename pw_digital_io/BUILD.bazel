@@ -40,7 +40,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_function",
         "//pw_result",
         "//pw_status",

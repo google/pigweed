@@ -61,7 +61,6 @@ cc_library(
         "//pw_allocator:allocator",
         "//pw_allocator:synchronized_allocator",
         "//pw_allocator:tracking_allocator",
-        "//pw_assert",
         "//pw_bytes",
         "//pw_preprocessor",
     ],
@@ -76,6 +75,7 @@ pw_facade(
     deps = [
         ":common",
         ":config_override",
+        "//pw_assert:check",
     ],
     alwayslink = 1,
 )
@@ -248,6 +248,7 @@ cc_library(
         "PW_MALLOC_NUM_BUCKETS=4",
     ],
     implementation_deps = [
+        "//pw_assert:check",
         "//pw_tokenizer:decoder",
     ],
     strip_include_prefix = "public",

@@ -36,7 +36,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_polyfill",
         "//pw_result",
@@ -52,11 +52,11 @@ cc_library(
     name = "socket_stream",
     srcs = ["socket_stream.cc"],
     hdrs = ["public/pw_stream/socket_stream.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     target_compatible_with = incompatible_with_mcu(unless_platform_has = ":socket_stream_compatible"),
     deps = [
         ":pw_stream",
-        "//pw_assert",
         "//pw_log",
         "//pw_result",
         "//pw_span",
@@ -82,22 +82,21 @@ cc_library(
     name = "std_file_stream",
     srcs = ["std_file_stream.cc"],
     hdrs = ["public/pw_stream/std_file_stream.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     target_compatible_with = incompatible_with_mcu(),
-    deps = [
-        ":pw_stream",
-        "//pw_assert",
-    ],
+    deps = [":pw_stream"],
 )
 
 cc_library(
     name = "interval_reader",
     srcs = ["interval_reader.cc"],
     hdrs = ["public/pw_stream/interval_reader.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":pw_stream",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_status",
     ],
 )
@@ -106,10 +105,10 @@ cc_library(
     name = "mpsc_stream",
     srcs = ["mpsc_stream.cc"],
     hdrs = ["public/pw_stream/mpsc_stream.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":pw_stream",
-        "//pw_assert",
         "//pw_bytes",
         "//pw_chrono:system_clock.facade",
         "//pw_containers:intrusive_list",
@@ -126,7 +125,6 @@ pw_cc_test(
     srcs = ["memory_stream_test.cc"],
     deps = [
         ":pw_stream",
-        "//pw_assert",
         "//pw_preprocessor",
         "//pw_status",
     ],
@@ -144,7 +142,7 @@ pw_cc_test(
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":std_file_stream",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_containers:algorithm",
         "//pw_random",
@@ -166,7 +164,7 @@ pw_cc_test(
     srcs = ["stream_test.cc"],
     deps = [
         ":pw_stream",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_bytes",
         "//pw_containers:to_array",
         "//pw_span",
@@ -179,7 +177,6 @@ pw_cc_test(
     deps = [
         ":interval_reader",
         ":pw_stream",
-        "//pw_assert",
         "//pw_result",
     ],
 )

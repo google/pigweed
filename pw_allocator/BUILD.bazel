@@ -40,7 +40,6 @@ cc_library(
         "public/pw_allocator/unique_ptr.h",
     ],
     implementation_deps = [
-        "//pw_assert",
         "//pw_bytes:alignment",
         "//third_party/fuchsia:stdcompat",
     ],
@@ -139,6 +138,7 @@ cc_library(
     name = "block_allocator",
     srcs = ["block_allocator.cc"],
     hdrs = ["public/pw_allocator/block_allocator.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":config",
@@ -151,7 +151,7 @@ cc_library(
         "//pw_allocator/block:poisonable",
         "//pw_allocator/block:result",
         "//pw_allocator/block:with_layout",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_result",
         "//pw_status",
@@ -166,6 +166,7 @@ cc_library(
         ":block_allocator",
         "//pw_allocator/block:detailed_block",
         "//pw_allocator/bucket:unordered",
+        "//pw_assert:check",
         "//pw_status",
     ],
 )
@@ -183,7 +184,7 @@ cc_library(
     srcs = ["buddy_allocator.cc"],
     hdrs = ["public/pw_allocator/buddy_allocator.h"],
     implementation_deps = [
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_bytes:alignment",
         "//third_party/fuchsia:stdcompat",
     ],
@@ -204,7 +205,6 @@ cc_library(
     hdrs = ["public/pw_allocator/buffer.h"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
         "//pw_bytes",
         "//pw_bytes:alignment",
         "//pw_result",
@@ -230,7 +230,7 @@ cc_library(
     hdrs = ["public/pw_allocator/chunk_pool.h"],
     implementation_deps = [
         ":buffer",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_bytes:alignment",
         "//third_party/fuchsia:stdcompat",
     ],
@@ -275,10 +275,10 @@ cc_library(
     name = "fallback_allocator",
     srcs = ["fallback_allocator.cc"],
     hdrs = ["public/pw_allocator/fallback_allocator.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":pw_allocator",
-        "//pw_assert",
         "//pw_result",
         "//pw_status",
     ],
@@ -328,7 +328,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":config",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_preprocessor",
     ],
 )
@@ -371,11 +371,11 @@ cc_library(
     name = "pmr_allocator",
     srcs = ["pmr_allocator.cc"],
     hdrs = ["public/pw_allocator/pmr_allocator.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":config",
         ":pw_allocator",
-        "//pw_assert",
         "//pw_status",
     ],
 )
@@ -414,12 +414,12 @@ cc_library(
 cc_library(
     name = "tracking_allocator",
     hdrs = ["public/pw_allocator/tracking_allocator.h"],
-    implementation_deps = ["//pw_assert"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
         ":metrics",
         ":pw_allocator",
+        "//pw_assert:assert",
         "//pw_status",
     ],
 )
@@ -472,7 +472,7 @@ cc_library(
         ":pw_allocator",
         ":test_config",
         ":tracking_allocator",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_result",
         "//pw_status",
@@ -486,7 +486,6 @@ cc_library(
     srcs = ["block_allocator_testing.cc"],
     hdrs = ["public/pw_allocator/block_allocator_testing.h"],
     implementation_deps = [
-        "//pw_assert",
         "//pw_bytes:alignment",
         "//pw_status",
         "//third_party/fuchsia:stdcompat",
@@ -500,6 +499,8 @@ cc_library(
         ":test_harness",
         "//pw_allocator/block:detailed_block",
         "//pw_allocator/block:testing",
+        "//pw_assert:assert",
+        "//pw_assert:check",
         "//pw_unit_test",
     ],
 )
@@ -522,10 +523,13 @@ cc_library(
     testonly = True,
     srcs = ["test_harness.cc"],
     hdrs = ["public/pw_allocator/test_harness.h"],
+    implementation_deps = [
+        "//pw_assert:assert",
+        "//pw_assert:check",
+    ],
     strip_include_prefix = "public",
     deps = [
         ":pw_allocator",
-        "//pw_assert",
         "//pw_containers:intrusive_list",
         "//pw_containers:vector",
         "//pw_random",

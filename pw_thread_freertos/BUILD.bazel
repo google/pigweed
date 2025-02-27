@@ -46,6 +46,7 @@ cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        "//pw_assert:assert",
         "//pw_interrupt:context",
         "//pw_thread:id.facade",
         "@freertos",
@@ -71,13 +72,13 @@ cc_library(
     hdrs = [
         "public/pw_thread_freertos/sleep_inline.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],
     visibility = ["//visibility:private"],
     deps = [
-        "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_thread:sleep.facade",
         "//pw_thread:thread",
@@ -94,11 +95,11 @@ cc_library(
         "thread_public_overrides/pw_thread_backend/thread_inline.h",
         "thread_public_overrides/pw_thread_backend/thread_native.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "thread_public_overrides",
     deps = [
         ":freertos_tasktcb",
         ":thread_private",
-        "//pw_assert:check",
         "//pw_preprocessor",
         "//pw_thread:thread.facade",
         "@freertos",
@@ -122,7 +123,7 @@ cc_library(
     deps = [
         ":config_override",
         ":id",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_function",
         "//pw_string",
         "//pw_sync:binary_semaphore",
@@ -218,6 +219,7 @@ cc_library(
     strip_include_prefix = "public",
     visibility = ["//visibility:private"],
     deps = [
+        "//pw_assert:assert",
         "//pw_thread:thread",
         "//pw_thread:yield.facade",
         "@freertos",

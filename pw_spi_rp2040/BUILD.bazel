@@ -29,9 +29,9 @@ cc_library(
     hdrs = [
         "public/pw_spi_rp2040/initiator.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
         "//pw_log",
         "//pw_spi:chip_selector_digital_out",
         "//pw_spi:initiator",

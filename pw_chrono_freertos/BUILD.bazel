@@ -65,12 +65,12 @@ cc_library(
         "public_overrides/pw_chrono_backend/system_timer_inline.h",
         "public_overrides/pw_chrono_backend/system_timer_native.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = [
         "public",
         "public_overrides",
     ],
     deps = [
-        "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_chrono:system_timer.facade",
         "//pw_function",

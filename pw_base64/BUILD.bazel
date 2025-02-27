@@ -29,9 +29,9 @@ cc_library(
     hdrs = [
         "public/pw_base64/base64.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
         "//pw_span",
         "//pw_string:string",
     ],

@@ -25,7 +25,7 @@ pw_cc_binary(
     name = "base",
     srcs = ["base.cc"],
     deps = [
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",
         "//pw_log",
     ],
@@ -41,7 +41,7 @@ pw_cc_binary(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",
         "//pw_kvs",
         "//pw_kvs:fake_flash_12_byte_partition",
@@ -60,7 +60,7 @@ pw_cc_binary(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",
         "//pw_kvs",
         "//pw_kvs:fake_flash_12_byte_partition",

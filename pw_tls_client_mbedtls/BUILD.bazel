@@ -28,6 +28,7 @@ cc_library(
         "public/pw_tls_client_mbedtls/backend_types.h",
         "public_overrides/pw_tls_client_backends/backend_types.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = [
         "public",
         "public_overrides",

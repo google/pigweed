@@ -117,10 +117,10 @@ cc_library(
     ],
     copts = ["-Wno-return-type"],
     defines = ["PW_MALLOC_ACTIVE=1"],
+    implementation_deps = ["//pw_assert:check"],
     target_compatible_with = [":freertos_config_cv"],
     deps = [
         ":freertos_config",
-        "//pw_assert",
         "//pw_boot",
         "//pw_boot_cortex_m",
         "//pw_malloc",

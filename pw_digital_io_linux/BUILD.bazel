@@ -37,6 +37,7 @@ cc_library(
         "public/pw_digital_io_linux/internal/owned_fd.h",
         "public/pw_digital_io_linux/notifier.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
@@ -71,11 +72,9 @@ cc_library(
         "mock_vfs.cc",
     ],
     hdrs = ["mock_vfs.h"],
+    implementation_deps = ["//pw_assert:check"],
     target_compatible_with = ["@platforms//os:linux"],
-    deps = [
-        "//pw_assert",
-        "//pw_log",
-    ],
+    deps = ["//pw_log"],
 )
 
 pw_cc_test(
@@ -91,7 +90,6 @@ pw_cc_test(
     deps = [
         ":mock_vfs",
         ":pw_digital_io_linux",
-        "//pw_assert",
         "//pw_log",
         "//pw_sync:mutex",
         "//pw_sync:timed_thread_notification",
@@ -109,7 +107,7 @@ pw_cc_test(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":pw_digital_io_linux",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_log",
         "//pw_sync:counting_semaphore",
         "//pw_thread:thread",

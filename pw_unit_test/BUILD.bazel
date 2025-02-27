@@ -90,6 +90,7 @@ cc_library(
         "light_public_overrides/pw_unit_test/framework_backend.h",
         "public_overrides/gtest/gtest.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = [
         "light_public_overrides",
         "public_overrides",
@@ -98,7 +99,6 @@ cc_library(
         ":config",
         ":event_handler",
         ":pw_unit_test.facade",
-        "//pw_assert",
         "//pw_bytes:alignment",
         "//pw_polyfill",
         "//pw_preprocessor",
@@ -353,7 +353,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":event_handler",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_json:builder",
     ],
 )
@@ -361,7 +361,10 @@ cc_library(
 pw_cc_test(
     name = "test_record_event_handler_test",
     srcs = ["test_record_event_handler_test.cc"],
-    deps = [":test_record_event_handler"],
+    deps = [
+        ":test_record_event_handler",
+        "//pw_assert:assert",
+    ],
 )
 
 proto_library(
@@ -424,10 +427,10 @@ cc_library(
     srcs = [
         "rpc_main.cc",
     ],
+    implementation_deps = ["//pw_assert:check"],
     deps = [
         ":pw_unit_test",
         ":rpc_service",
-        "//pw_assert",
         "//pw_hdlc:default_addresses",
         "//pw_log",
         "//pw_rpc",
@@ -467,7 +470,7 @@ pw_cc_test(
     deps = [
         ":static_library_support",
         ":tests_in_archive",
-        "//pw_assert",
+        "//pw_assert:check",
     ],
 )
 
@@ -480,7 +483,7 @@ pw_cc_test(
         "//conditions:default": [],
     }),
     deps = [
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_result",
         "//pw_status",
     ],

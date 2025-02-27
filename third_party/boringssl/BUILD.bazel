@@ -29,10 +29,7 @@ cc_library(
     copts = ["-Wno-unused-parameter"],
     strip_include_prefix = "sysdeps",
     target_compatible_with = incompatible_with_mcu(),
-    deps = [
-        "//pw_assert",
-        "@boringssl//:ssl",
-    ],
+    deps = ["@boringssl//:ssl"],
 )
 
 pw_cc_test(

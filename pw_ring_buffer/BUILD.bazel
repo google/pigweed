@@ -31,9 +31,12 @@ cc_library(
     hdrs = [
         "public/pw_ring_buffer/prefixed_entry_ring_buffer.h",
     ],
+    implementation_deps = [
+        "//pw_assert:assert",
+        "//pw_assert:check",
+    ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
         "//pw_containers:intrusive_list",
         "//pw_result",
         "//pw_span",
@@ -47,7 +50,7 @@ pw_cc_test(
     srcs = ["prefixed_entry_ring_buffer_test.cc"],
     deps = [
         ":pw_ring_buffer",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_containers:vector",
         "//pw_varint",
     ],

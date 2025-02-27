@@ -28,9 +28,10 @@ cc_library(
     name = "chunk",
     srcs = ["chunk.cc"],
     hdrs = ["public/pw_multibuf/chunk.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_preprocessor",
         "//pw_span",
@@ -55,7 +56,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":chunk",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
     ],
 )
@@ -99,6 +100,7 @@ cc_library(
     name = "pw_multibuf",
     srcs = ["multibuf.cc"],
     hdrs = ["public/pw_multibuf/multibuf.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":chunk",
@@ -113,6 +115,7 @@ pw_cc_test(
     deps = [
         ":internal_test_utils",
         ":pw_multibuf",
+        "//pw_assert:check",
         "//pw_bytes",
     ],
 )
@@ -142,6 +145,7 @@ cc_library(
     hdrs = [
         "public/pw_multibuf/allocator_async.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":allocator",
@@ -166,6 +170,7 @@ cc_library(
     name = "simple_allocator",
     srcs = ["simple_allocator.cc"],
     hdrs = ["public/pw_multibuf/simple_allocator.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":allocator",
@@ -240,7 +245,7 @@ cc_library(
         ":simple_allocator",
         "//pw_allocator:synchronized_allocator",
         "//pw_allocator:testing",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_sync:mutex",
     ],
 )
@@ -255,7 +260,7 @@ cc_library(
         ":header_chunk_region_tracker",
         ":pw_multibuf",
         "//pw_allocator:testing",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_bytes",
         "//pw_status",
     ],

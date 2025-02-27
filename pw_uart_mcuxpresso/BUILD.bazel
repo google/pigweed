@@ -30,6 +30,7 @@ cc_library(
     name = "dma_uart",
     srcs = ["dma_uart.cc"],
     hdrs = ["public/pw_uart_mcuxpresso/dma_uart.h"],
+    implementation_deps = ["//pw_assert:check"],
     local_defines = log_defines,
     strip_include_prefix = "public",
     target_compatible_with = [
@@ -59,6 +60,7 @@ cc_library(
     name = "dma_uart_nonblocking",
     srcs = ["dma_uart_nonblocking.cc"],
     hdrs = ["public/pw_uart_mcuxpresso/dma_uart_nonblocking.h"],
+    implementation_deps = ["//pw_assert:check"],
     local_defines = log_defines,
     strip_include_prefix = "public",
     target_compatible_with = [

@@ -42,7 +42,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":uart_base",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_chrono:system_clock",
         "//pw_span",
@@ -58,7 +58,6 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":uart_base",
-        "//pw_assert",
         "//pw_bytes",
         "//pw_function",
         "//pw_span",
@@ -74,11 +73,11 @@ cc_library(
     hdrs = [
         "public/pw_uart/blocking_adapter.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":uart",
         ":uart_non_blocking",
-        "//pw_assert",
         "//pw_log",
         "//pw_status",
         "//pw_sync:timed_thread_notification",
@@ -128,7 +127,7 @@ pw_cc_test(
     ],
     deps = [
         ":blocking_adapter",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_bytes",
         "//pw_log",
         "//pw_sync:lock_annotations",

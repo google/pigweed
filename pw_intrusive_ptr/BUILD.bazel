@@ -32,11 +32,9 @@ cc_library(
         "public/pw_intrusive_ptr/intrusive_ptr.h",
         "public/pw_intrusive_ptr/ref_counted.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
-    deps = [
-        ":pw_recyclable",
-        "//pw_assert",
-    ],
+    deps = [":pw_recyclable"],
 )
 
 cc_library(

@@ -165,11 +165,12 @@ cc_library(
         ":yield_mode_yield": ["PW_RPC_YIELD_MODE=PW_RPC_YIELD_MODE_YIELD"],
     }),
     # LINT.ThenChange(//pw_rpc/public/pw_rpc/internal/config.h)
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":config_override",
         ":internal_packet_pwpb",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_containers:intrusive_list",
         "//pw_function",
@@ -219,6 +220,7 @@ cc_library(
     tags = ["noclangtidy"],
     deps = [
         ":pw_rpc",
+        "//pw_assert:assert",
         "//pw_chrono:system_clock",
         "//pw_sync:timed_thread_notification",
     ],
@@ -258,7 +260,7 @@ cc_library(
     deps = [
         ":internal_test_utils",
         ":pw_rpc",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_chrono:system_clock",
         "//pw_status",
         "//pw_sync:counting_semaphore",
@@ -288,6 +290,7 @@ cc_library(
         "pw_rpc_private/fake_server_reader_writer.h",
         "pw_rpc_private/test_method.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = [
         ".",
         "public",
@@ -296,7 +299,7 @@ cc_library(
     visibility = [":__subpackages__"],
     deps = [
         ":pw_rpc",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_containers:filtered_view",
         "//pw_containers:vector",
@@ -320,7 +323,6 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":pw_rpc",
-        "//pw_assert",
         "//pw_hdlc",
         "//pw_hdlc:default_addresses",
         "//pw_hdlc:rpc_channel_output",
@@ -421,7 +423,7 @@ pw_cc_test(
     deps = [
         ":internal_test_utils",
         ":pw_rpc",
-        "//pw_assert",
+        "//pw_assert:check",
     ],
 )
 
@@ -433,7 +435,6 @@ pw_cc_test(
     deps = [
         ":internal_test_utils",
         ":pw_rpc",
-        "//pw_assert",
     ],
 )
 

@@ -53,9 +53,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     visibility = ["//visibility:private"],
-    deps = [
-        "//pw_assert:assert",
-    ],
+    deps = ["//pw_assert:assert"],
 )
 
 pw_cc_test(

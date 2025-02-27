@@ -112,7 +112,7 @@ cc_library(
         ":lock_annotations",
         ":lock_traits",
         ":virtual_basic_lockable",
-        "//pw_assert",
+        "//pw_assert:assert",
     ],
 )
 
@@ -399,10 +399,10 @@ cc_library(
     name = "lock_testing",
     srcs = ["lock_testing.cc"],
     hdrs = ["public/pw_sync/lock_testing.h"],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":virtual_basic_lockable",
-        "//pw_assert",
         "//pw_chrono:system_clock",
     ],
 )

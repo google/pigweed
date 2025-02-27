@@ -30,7 +30,7 @@ pw_cc_binary(
     srcs = ["server.cc"],
     deps = [
         ":config_cc_proto",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_chrono:system_clock",
         "//pw_log",
         "//pw_rpc/system_server",
@@ -101,6 +101,7 @@ pw_cc_binary(
     srcs = ["client.cc"],
     deps = [
         ":config_cc_proto",
+        "//pw_assert:check",
         "//pw_log",
         "//pw_rpc:integration_testing",
         "//pw_status",

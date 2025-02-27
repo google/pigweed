@@ -28,9 +28,9 @@ cc_library(
     hdrs = [
         "public_overrides/pw_async2/dispatcher_native.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public_overrides",
     deps = [
-        "//pw_assert",
         "//pw_async2:dispatcher_base",
         "//pw_async2:poll",
         "//pw_chrono:system_clock",

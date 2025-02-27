@@ -170,11 +170,11 @@ cc_library(
     srcs = [
         "hdlc_rpc_server.cc",
     ],
+    implementation_deps = ["//pw_assert:check"],
     deps = [
         ":config",
         ":io",
         ":rpc_server.facade",
-        "//pw_assert",
         "//pw_hdlc",
         "//pw_hdlc:default_addresses",
         "//pw_hdlc:rpc_channel_output",
@@ -310,11 +310,11 @@ cc_library(
     srcs = [
         "socket_target_io.cc",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":config",
         ":io.facade",
-        "//pw_assert",
         "//pw_stream",
         "//pw_stream:socket_stream",
     ],
@@ -480,6 +480,7 @@ cc_library(
     hdrs = [
         "public/pw_system/device_service_pwpb.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":device_handler",
@@ -596,6 +597,7 @@ cc_library(
         ":work_queue",
         "//pw_allocator:best_fit_block_allocator",
         "//pw_allocator:synchronized_allocator",
+        "//pw_assert:check",
         "//pw_async2:allocate_task",
         "//pw_async2:pend_func_task",
         "//pw_hdlc:router",
@@ -625,7 +627,7 @@ cc_library(
     srcs = ["async_packet_io.cc"],
     hdrs = ["public/pw_system/internal/async_packet_io.h"],
     implementation_deps = [
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_log",
     ],
     strip_include_prefix = "public",
@@ -676,6 +678,7 @@ pw_cc_binary(
     srcs = ["system_async_host_example.cc"],
     deps = [
         ":async",
+        "//pw_assert:check",
         "//pw_channel:epoll_channel",
         "//pw_multibuf:testing",
     ],

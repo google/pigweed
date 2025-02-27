@@ -36,6 +36,7 @@ cc_library(
         "//pw_build/constraints/rtos:embos",
     ],
     deps = [
+        "//pw_assert:assert",
         "//pw_thread:id.facade",
     ],
     # TODO: b/234876414 - This should depend on embOS but our third parties
@@ -51,6 +52,7 @@ cc_library(
         "public/pw_thread_embos/sleep_inline.h",
         "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = [
         "public",
         "sleep_public_overrides",
@@ -59,7 +61,6 @@ cc_library(
         "//pw_build/constraints/rtos:embos",
     ],
     deps = [
-        "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_thread:sleep.facade",
     ],
@@ -81,6 +82,7 @@ cc_library(
         "thread_public_overrides/pw_thread_backend/thread_inline.h",
         "thread_public_overrides/pw_thread_backend/thread_native.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = [
         "public",
         "thread_public_overrides",
@@ -88,7 +90,7 @@ cc_library(
     deps = [
         ":config_override",
         ":id",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_function",
         "//pw_string",
         "//pw_thread:thread.facade",
@@ -107,6 +109,7 @@ cc_library(
     srcs = [
         "test_threads.cc",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     # TODO: b/260637734 - This target doesn't build
     tags = ["manual"],
@@ -130,6 +133,7 @@ cc_library(
     ],
     tags = ["noclangtidy"],
     deps = [
+        "//pw_assert:assert",
         "//pw_thread:yield.facade",
     ],
     # TODO: b/234876414 - This should depend on embOS but our third parties

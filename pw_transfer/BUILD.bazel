@@ -77,11 +77,13 @@ cc_library(
         "public/pw_transfer/rate_estimate.h",
         "public/pw_transfer/transfer_thread.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":config",
         ":transfer_pwpb",
         ":transfer_raw_rpc",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_chrono:system_clock",
         "//pw_containers:intrusive_list",
@@ -111,10 +113,10 @@ cc_library(
     hdrs = [
         "public/pw_transfer/transfer.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
         ":core",
-        "//pw_assert",
         "//pw_bytes",
         "//pw_log",
         "//pw_result",
@@ -136,7 +138,6 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":core",
-        "//pw_assert",
         "//pw_function",
         "//pw_log",
         "//pw_stream",
@@ -214,6 +215,7 @@ pw_cc_test(
     deps = [
         ":pw_transfer",
         ":test_helpers",
+        "//pw_assert:check",
         "//pw_rpc:test_helpers",
         "//pw_rpc/raw:client_testing",
         "//pw_rpc/raw:test_method_context",
@@ -229,7 +231,7 @@ pw_cc_test(
     deps = [
         ":pw_transfer",
         ":test_helpers",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_containers",
         "//pw_rpc:test_helpers",
         "//pw_rpc/raw:test_method_context",
@@ -245,6 +247,7 @@ pw_cc_test(
     deps = [
         ":client",
         ":test_helpers",
+        "//pw_assert:check",
         "//pw_rpc:test_helpers",
         "//pw_rpc/raw:client_testing",
         "//pw_thread:sleep",

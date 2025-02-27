@@ -34,7 +34,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_bytes",
         "//pw_log",
         "//pw_result",

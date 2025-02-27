@@ -67,7 +67,6 @@ cc_library(
     ],
     deps = [
         ":config",
-        "//pw_assert",
         "//pw_log",
         "//pw_status",
         "//pw_tokenizer",
@@ -345,6 +344,7 @@ pw_cc_binary(
 cc_library(
     name = "trace_tokenized_example_rpc",
     srcs = ["example/rpc.cc"],
+    implementation_deps = ["//pw_assert:check"],
     deps = [
         ":trace_rpc_service",
         "//pw_hdlc",

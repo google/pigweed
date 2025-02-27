@@ -166,7 +166,7 @@ pw_cc_test(
         ":named_u32",
         "//pw_allocator:synchronized_allocator",
         "//pw_allocator:testing",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_sync:interrupt_spin_lock",
         "//pw_thread:test_thread_context",
         "//pw_thread:thread",

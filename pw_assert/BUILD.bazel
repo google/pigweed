@@ -46,6 +46,7 @@ cc_library(
     tags = ["noclangtidy"],
     deps = [
         ":assert_backend",
+        ":check",
         ":check_backend",
         ":config",
         "//pw_preprocessor",
@@ -169,7 +170,7 @@ cc_library(
     strip_include_prefix = "public",
     visibility = ["//visibility:private"],
     deps = [
-        "//pw_assert:assert",
+        ":assert",
         "//pw_preprocessor",
     ],
 )
@@ -227,9 +228,9 @@ pw_cc_test(
     ],
     tags = ["noclangtidy"],
     deps = [
+        ":assert",
         ":config",
         ":facade",
-        "//pw_assert",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_preprocessor",
         "//pw_result",
@@ -246,7 +247,8 @@ pw_cc_test(
         "assert_backend_compile_test_c.c",
     ],
     deps = [
-        "//pw_assert",
+        ":assert",
+        ":check",
         "//pw_status",
     ],
 )

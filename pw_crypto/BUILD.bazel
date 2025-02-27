@@ -173,6 +173,7 @@ cc_library(
         "public/pw_crypto/aes_boringssl.h",
         "public_overrides/boringssl/pw_crypto/aes_backend.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = ["public_overrides/boringssl"],
     target_compatible_with = incompatible_with_mcu() + select({
         "@platforms//os:windows": ["@platforms//:incompatible"],
@@ -180,7 +181,6 @@ cc_library(
     }),
     deps = [
         ":aes.facade",
-        "//pw_assert",
         "//pw_span:cast",
         "@boringssl//:crypto",
     ],
@@ -193,10 +193,10 @@ cc_library(
         "public/pw_crypto/aes_mbedtls.h",
         "public_overrides/mbedtls/pw_crypto/aes_backend.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = ["public_overrides/mbedtls"],
     deps = [
         ":aes.facade",
-        "//pw_assert",
         "@mbedtls",
     ],
 )
@@ -209,6 +209,7 @@ pw_cc_test(
     deps = [
         ":aes",
         ":aes_cmac",
+        "//pw_assert:assert",
         "//pw_containers:vector",
     ],
 )

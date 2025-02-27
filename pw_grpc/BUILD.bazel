@@ -44,6 +44,7 @@ cc_library(
     hdrs = [
         "public/pw_grpc/connection.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     local_defines = log_defines,
     strip_include_prefix = "public",
     target_compatible_with = select({
@@ -54,7 +55,6 @@ cc_library(
         ":hpack",
         ":send_queue",
         "//pw_allocator:allocator",
-        "//pw_assert",
         "//pw_async:dispatcher",
         "//pw_async_basic:dispatcher",
         "//pw_bytes",
@@ -140,10 +140,10 @@ cc_library(
     hdrs = [
         "pw_grpc_private/hpack.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     local_defines = log_defines,
     tags = ["noclangtidy"],
     deps = [
-        "//pw_assert",
         "//pw_bytes",
         "//pw_log",
         "//pw_result",

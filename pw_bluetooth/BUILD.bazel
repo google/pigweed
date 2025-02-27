@@ -61,6 +61,7 @@ cc_library(
     ],
     includes = ["public"],
     deps = [
+        "//pw_assert:assert",
         "//pw_chrono:system_clock",
         "//pw_containers",
         "//pw_function",
@@ -103,6 +104,7 @@ cc_library(
     includes = ["public"],
     deps = [
         ":config",
+        "//pw_assert:assert",
         "//pw_async2:dispatcher",
         "//pw_async2:once_sender",
         "//pw_channel",
@@ -126,11 +128,11 @@ cc_library(
     hdrs = [
         "public/pw_bluetooth/snoop.h",
     ],
+    implementation_deps = ["//pw_assert:check"],
     includes = ["public"],
     deps = [
         ":emboss_snoop",
         ":emboss_util",
-        "//pw_assert:check",
         "//pw_bluetooth_proxy",
         "//pw_chrono:system_clock",
         "//pw_containers:inline_var_len_entry_queue",

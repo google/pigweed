@@ -61,6 +61,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
+        "//pw_assert:assert",
         "//pw_rpc",
     ],
 )
@@ -75,7 +76,6 @@ cc_library(
     deps = [
         ":common",
         ":server_api",
-        "//pw_assert",
         "//pw_containers",
         "//pw_rpc:internal_test_utils",
         "//pw_span",
@@ -103,7 +103,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":test_method_context",
-        "//pw_assert",
+        "//pw_assert:assert",
         "//pw_rpc:client_server_testing",
     ],
 )

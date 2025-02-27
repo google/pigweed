@@ -28,6 +28,7 @@ cc_library(
         "//pw_allocator",
         "//pw_allocator:hardening",
         "//pw_allocator/block:poisonable",
+        "//pw_assert:assert",
     ],
 )
 

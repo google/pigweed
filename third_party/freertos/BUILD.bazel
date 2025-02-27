@@ -33,7 +33,8 @@ cc_library(
     }),
     strip_include_prefix = "public",
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
+        "//pw_assert:check",
     ],
 )
 
@@ -53,8 +54,8 @@ cc_library(
         "pw_assert_stack_overflow_hook.cc",
         "static_task_allocation.cc",
     ],
+    implementation_deps = ["//pw_assert:check"],
     deps = [
-        "//pw_assert",
         "//pw_string:util",
         "@freertos",
     ],

@@ -121,7 +121,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":glog_adapter_config_override",
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_log",
         "//pw_preprocessor",
         "//pw_string",
