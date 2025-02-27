@@ -90,7 +90,7 @@
 //     PW_TRACE_INSTANT("HERE");
 //
 // Arguments:
-//     label: A string literal which desribes the trace
+//     label: A string literal which describes the trace
 //     group <optional>: A string literal which groups this trace with others in
 //                       the same module and group.
 //     trace_id <optional>: A runtime uint32_t which groups this trace with
@@ -102,7 +102,7 @@
 // PW_TRACE_INSTANT_FLAG(flag, label, group)
 // PW_TRACE_INSTANT_FLAG(flag, label, group, trace_id)
 //
-// These macros mirror PW_TRACE_INSTANT but intruduce the flag argument to
+// These macros mirror PW_TRACE_INSTANT but introduce the flag argument to
 // specify a flag value which is used instead of PW_TRACE_FLAGS. The flag goes
 // at the start, group and trace_id arguments are still optional.
 #define PW_TRACE_INSTANT_FLAG(...) \
@@ -140,7 +140,7 @@
 //                            data,
 //                            size)
 //
-// These macros mirror PW_TRACE_INSTANT_DATA but intruduce the flag argument to
+// These macros mirror PW_TRACE_INSTANT_DATA but introduce the flag argument to
 // specify a flag value which is used instead of PW_TRACE_FLAGS. The flag goes
 // at the start, group and trace_id arguments are still optional.
 //
@@ -167,7 +167,7 @@
 //    PW_TRACE_END("label");
 //
 // Arguments:
-//     label: A string literal which desribes the trace
+//     label: A string literal which describes the trace
 //     group <optional>: A string literal which groups this trace with others in
 //                       the same module and group.
 //     trace_id <optional>: A runtime uint32_t which groups this trace with
@@ -179,7 +179,7 @@
 // PW_TRACE_START_FLAG(flag, label, group)
 // PW_TRACE_START_FLAG(flag, label, group, trace_id)
 //
-// These macros mirror PW_TRACE_START but intruduce the flag argument to
+// These macros mirror PW_TRACE_START but introduce the flag argument to
 // specify a flag value which is used instead of PW_TRACE_FLAGS. The flag goes
 // at the start, group and trace_id arguments are still optional.
 #define PW_TRACE_START_FLAG(...) \
@@ -221,7 +221,7 @@
 //                          data,
 //                          size)
 //
-// These macros mirror PW_TRACE_START_DATA but intruduce the flag argument to
+// These macros mirror PW_TRACE_START_DATA but introduce the flag argument to
 // specify a flag value which is used instead of PW_TRACE_FLAGS. The flag goes
 // at the start, group and trace_id arguments are still optional.
 //
@@ -248,7 +248,7 @@
 //    PW_TRACE_END("label");
 //
 // Arguments:
-//     label: A string literal which desribes the trace
+//     label: A string literal which describes the trace
 //     group <optional>: A string literal which groups this trace with others in
 //                       the same module and group.
 //     trace_id <optional>: A runtime uint32_t which groups this trace with
@@ -296,7 +296,7 @@
 //                        data,
 //                        size)
 //
-// These macros mirror PW_TRACE_END_DATA but intruduce the flag argument to
+// These macros mirror PW_TRACE_END_DATA but introduce the flag argument to
 // specify a flag value which is used instead of PW_TRACE_FLAGS. The flag goes
 // at the start, group and trace_id arguments are still optional.
 //
@@ -321,7 +321,7 @@
 // functions or loops.
 //
 // Arguments:
-//     label: A string literal which desribes the trace
+//     label: A string literal which describes the trace
 //     group <optional>: A string literal which groups this trace with others in
 //                       the same module and group.
 //     trace_id <optional>: A runtime uint32_t which groups this trace with
@@ -353,7 +353,7 @@
 // PW_TRACE_SCOPE_FLAG(flag, label, group)
 // PW_TRACE_SCOPE_FLAG(flag, label, group, trace_id)
 //
-// These macros mirror PW_TRACE_SCOPE but intruduce the flag argument to
+// These macros mirror PW_TRACE_SCOPE but introduce the flag argument to
 // specify a flag value which is used instead of PW_TRACE_FLAGS. The flag goes
 // at the start, group and trace_id arguments are still optional.
 #ifndef PW_TRACE_SCOPE_FLAG
@@ -405,7 +405,7 @@
 // PW_TRACE_FUNCTION_FLAG(flag, group)
 // PW_TRACE_FUNCTION_FLAG(flag, group, trace_id)
 //
-// These macros mirror PW_TRACE_FUNCTION but intruduce the flag argument to
+// These macros mirror PW_TRACE_FUNCTION but introduce the flag argument to
 // specify a flag value which is used instead of PW_TRACE_FLAGS. The flag goes
 // at the start, group and trace_id arguments are still optional.
 #ifndef PW_TRACE_FUNCTION_FLAG

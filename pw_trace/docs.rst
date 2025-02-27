@@ -233,6 +233,7 @@ example, provide a convenient method of tracing functions or loops.
 
 .. cpp:function:: PW_TRACE_SCOPE(label)
 .. cpp:function:: PW_TRACE_SCOPE(label, group_label)
+.. cpp:function:: PW_TRACE_SCOPE(label, group_label, trace_id)
 
 Function API measures durations until the function returns. This is the only
 macro which does not require a *label*, and instead uses the function name as the
@@ -240,6 +241,7 @@ label. It still can optionally be provided a *group_id*.
 
 .. cpp:function:: PW_TRACE_FUNCTION()
 .. cpp:function:: PW_TRACE_FUNCTION(group_label)
+.. cpp:function:: PW_TRACE_FUNCTION(group_label, trace_id)
 
 Compile time enabling/disabling
 -------------------------------
