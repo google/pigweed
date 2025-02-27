@@ -382,7 +382,6 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
     return;
   }
 
-  bool pending_event = false;
   {
     std::lock_guard lock(mutex_);
     uint16_t conn_handle = dc_event->connection_handle().Read();
@@ -414,7 +413,6 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
       }
 
       l2cap_channel_manager_.HandleAclDisconnectionComplete(conn_handle);
-      pending_event = true;
       acl_connections_.erase(connection_ptr);
     } else {  // Failed disconnect status
       if (connection_ptr->num_pending_packets() > 0) {
@@ -425,10 +423,6 @@ void AclDataChannel::ProcessDisconnectionCompleteEvent(
             conn_handle);
       }
     }
-  }
-
-  if (pending_event) {
-    l2cap_channel_manager_.DeliverPendingEvents();
   }
 }
 

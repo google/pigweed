@@ -146,6 +146,8 @@ void ProxyHost::HandleEventFromController(H4PacketWithHci&& h4_packet) {
     }
   }
   PW_MODIFY_DIAGNOSTICS_POP();
+
+  l2cap_channel_manager_.DeliverPendingEvents();
 }
 
 void ProxyHost::HandleEventFromHost(H4PacketWithH4&& h4_packet) {
