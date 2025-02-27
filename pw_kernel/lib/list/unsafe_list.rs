@@ -11,8 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#![no_std]
-#![cfg_attr(test, no_main)]
 #![allow(dead_code)]
 use core::cell::UnsafeCell;
 use core::marker::PhantomData;

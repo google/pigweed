@@ -18,17 +18,34 @@ package(default_visibility = ["//visibility:public"])
 
 rust_library(
     name = "list",
-    srcs = ["list.rs"],
+    srcs = [
+        "lib.rs",
+        "unsafe_list.rs",
+    ],
     tags = ["kernel"],
+    deps = ["//pw_kernel/lib/foreign_box"],
 )
 
 rust_test(
-    name = "list_test",
-    srcs = ["tests/list_test.rs"],
+    name = "unsafe_list_test",
+    srcs = ["tests/unsafe_list_test.rs"],
     tags = ["kernel"],
     use_libtest_harness = False,
     deps = [
         ":list",
+        "//pw_kernel/lib/unittest",
+        "//pw_kernel/target:linker_script",
+    ],
+)
+
+rust_test(
+    name = "foreign_list_test",
+    srcs = ["tests/foreign_list_test.rs"],
+    tags = ["kernel"],
+    use_libtest_harness = False,
+    deps = [
+        ":list",
+        "//pw_kernel/lib/foreign_box",
         "//pw_kernel/lib/unittest",
         "//pw_kernel/target:linker_script",
     ],
