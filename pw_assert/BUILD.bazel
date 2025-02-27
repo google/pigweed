@@ -42,8 +42,12 @@ cc_library(
         "public/pw_assert/internal/check_impl.h",
         "public/pw_assert/short.h",
     ],
+    deprecation = "This target will be removed soon; depend on //pw_assert:assert and/or //pw_assert:check instead.",
     strip_include_prefix = "public",
-    tags = ["noclangtidy"],
+    tags = [
+        "manual",
+        "noclangtidy",
+    ],
     deps = [
         ":assert_backend",
         ":check",

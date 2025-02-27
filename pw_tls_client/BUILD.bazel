@@ -33,7 +33,8 @@ pw_facade(
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
-        "//pw_assert",
+        "//pw_assert:assert",
+        "//pw_assert:check",
         "//pw_bytes",
         "//pw_result",
         "//pw_status",
