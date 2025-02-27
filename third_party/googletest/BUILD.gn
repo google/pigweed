@@ -75,6 +75,9 @@ if (dir_pw_third_party_googletest != "") {
   }
 } else {
   group("googletest") {
+    if (pw_third_party_googletest_ALIAS != "") {
+      public_deps = [ pw_third_party_googletest_ALIAS ]
+    }
   }
 }
 

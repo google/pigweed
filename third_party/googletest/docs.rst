@@ -29,8 +29,21 @@ Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
 
    .. tab-item:: GN
 
-      * Set the GN var ``dir_pw_third_party_googletest`` to the location of the
-        GoogleTest source.
+      * Set one of the following GN variables:
+
+        * Set ``pw_third_party_googletest_ALIAS`` to point to
+          a GN target label that provides a static library or
+          source set combining GoogleTest/GoogleMock.
+
+          This is required on platforms such as Fuchsia where
+          extra dependencies are required for the library to compile
+          and run properly.
+
+        * Or set ``dir_pw_third_party_googletest`` to point
+          to the location of the googletest submodule instead.
+          This will trigger the generation of a pw_source_set()
+          target wrapping the GoogleTest sources.
+
       * Set the GN var ``pw_unit_test_MAIN`` to
         ``dir_pigweed + "/third_party/googletest:gmock_main"``.
       * Set the GN var ``pw_unit_test_BACKEND`` to
