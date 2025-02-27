@@ -23,8 +23,7 @@ rust_binary(
     edition = "2021",
     tags = ["kernel"],
     target_compatible_with = select({
-        "//pw_build/constraints/chipset:lm3s6965evb": [],
-        "//pw_build/constraints/chipset:nrf52833": [],
+        "//pw_build/constraints/chipset:mps2-an505": [],
         "//pw_kernel/target/rp:rp235x": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),

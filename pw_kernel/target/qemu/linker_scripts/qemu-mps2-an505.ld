@@ -36,11 +36,11 @@ MEMORY
    */
 
   /* Vector Table (typically in flash) */
-  VECTOR_TABLE(rx) : ORIGIN = 0x00000000, LENGTH = 1024
+  VECTOR_TABLE(rx) : ORIGIN = 0x10000000, LENGTH = 2048
   /* Internal Flash */
-  FLASH(rx) : ORIGIN = 0x00000400, LENGTH = 255K
+  FLASH(rx) : ORIGIN = 0x10000800, LENGTH = 255K
   /* Internal SRAM */
-  RAM(rwx) : ORIGIN = 0x20000000, LENGTH = 16K
+  RAM(rwx) : ORIGIN = 0x38000000, LENGTH = 64K
 
   /* Each memory region above has an associated .*.unused_space section that
    * overlays the unused space at the end of the memory segment. These segments
@@ -250,6 +250,7 @@ PROVIDE(NonMaskableInt = DefaultHandler);
 PROVIDE(MemoryManagement = DefaultHandler);
 PROVIDE(BusFault = DefaultHandler);
 PROVIDE(UsageFault = DefaultHandler);
+PROVIDE(SecureFault = DefaultHandler);
 PROVIDE(SVCall = DefaultHandler);
 PROVIDE(DebugMonitor = DefaultHandler);
 PROVIDE(PendSV = DefaultHandler);

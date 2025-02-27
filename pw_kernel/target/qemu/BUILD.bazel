@@ -17,32 +17,17 @@ load("@pigweed//pw_build:merge_flags.bzl", "flags_from_dict")
 package(default_visibility = ["//visibility:public"])
 
 platform(
-    name = "lm3s6965evb",
+    name = "mps2-an505",
     constraint_values = [
-        "//pw_build/constraints/chipset:lm3s6965evb",
-        "//pw_build/constraints/arm:cortex-m3",
-        "@platforms//cpu:armv7-m",
+        "//pw_build/constraints/chipset:mps2-an505",
+        "//pw_build/constraints/arm:cortex-m33",
+        "@platforms//cpu:armv8-m",
         "@platforms//os:none",
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict({
         "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_cortex_m",
         "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
-        "//pw_kernel/target:linker_script": "//pw_kernel/target/qemu/linker_scripts:qemu_lm3s6965_linker_script",
-    }),
-)
-
-platform(
-    name = "microbit",
-    constraint_values = [
-        "//pw_build/constraints/chipset:nrf52833",
-        "//pw_build/constraints/arm:cortex-m0",
-        "@platforms//cpu:armv6-m",
-        "@platforms//os:none",
-        "@rust_crates//:no_std",
-    ],
-    flags = flags_from_dict({
-        "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
-        "//pw_kernel/target:linker_script": "//pw_kernel/target/qemu/linker_scripts:qemu_nrf51823_linker_script",
+        "//pw_kernel/target:linker_script": "//pw_kernel/target/qemu/linker_scripts:qemu_mps2_an505_linker_script",
     }),
 )

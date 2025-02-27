@@ -17,19 +17,10 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "qemu_nrf51823_linker_script",
-    linkopts = ["-T$(location qemu-nrf51823.ld)"],
-    target_compatible_with = ["@pigweed//pw_build/constraints/chipset:nrf52833"],
+    name = "qemu_mps2_an505_linker_script",
+    linkopts = ["-T$(location qemu-mps2-an505.ld)"],
+    target_compatible_with = ["@pigweed//pw_build/constraints/chipset:mps2-an505"],
     deps = [
-        "qemu-nrf51823.ld",
-    ],
-)
-
-cc_library(
-    name = "qemu_lm3s6965_linker_script",
-    linkopts = ["-T$(location qemu-lm3s6965.ld)"],
-    target_compatible_with = ["@pigweed//pw_build/constraints/chipset:lm3s6965evb"],
-    deps = [
-        "qemu-lm3s6965.ld",
+        "qemu-mps2-an505.ld",
     ],
 )

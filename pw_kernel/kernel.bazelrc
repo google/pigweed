@@ -34,25 +34,24 @@ build:k_lint --output_groups=+rustfmt_checks
 # ===========================
 common:k_host --config=k_common
 
-# QEMU lm3s6965evb target configuration
+# QEMU mps2-an505 target configuration
 # =======================================
-common:k_qemu_lm3s6965evb --config=k_common
-build:k_qemu_lm3s6965evb --platforms=//pw_kernel/target/qemu:lm3s6965evb
-run:k_qemu_lm3s6965evb --run_under="@qemu//:qemu-system-arm \
-  -cpu cortex-m3 \
-  -machine lm3s6965evb \
+common:k_qemu_mps2_an505 --config=k_common
+build:k_qemu_mps2_an505 --platforms=//pw_kernel/target/qemu:mps2-an505
+run:k_qemu_mps2_an505 --run_under="@qemu//:qemu-system-arm \
+  -cpu cortex-m33 \
+  -machine mps2-an505 \
   -nographic \
   -semihosting-config enable=on,target=native \
   -serial mon:stdio \
   -kernel "
-test:k_qemu_lm3s6965evb --run_under="@qemu//:qemu-system-arm \
-  -cpu cortex-m3 \
-  -machine lm3s6965evb \
+test:k_qemu_mps2_an505 --run_under="@qemu//:qemu-system-arm \
+  -cpu cortex-m33 \
+  -machine mps2-an505 \
   -nographic \
   -semihosting-config enable=on,target=native \
   -serial mon:stdio \
   -kernel "
-
 
 # RP2350 target configuration
 # =======================================
