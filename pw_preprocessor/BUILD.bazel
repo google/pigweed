@@ -51,22 +51,35 @@ label_flag(
     build_setting_default = "//pw_build:default_module_config",
 )
 
-TESTS = [
-    "arguments_test",
-    "boolean_test",
-    "compiler_test",
-    "concat_test",
-    "util_test",
-]
+pw_cc_test(
+    name = "boolean_test",
+    srcs = ["boolean_test.cc"],
+    deps = [":pw_preprocessor"],
+)
 
-[
-    pw_cc_test(
-        name = t,
-        srcs = [t + ".cc"],
-        deps = [":pw_preprocessor"],
-    )
-    for t in TESTS
-]
+pw_cc_test(
+    name = "compiler_test",
+    srcs = ["compiler_test.cc"],
+    deps = [":pw_preprocessor"],
+)
+
+pw_cc_test(
+    name = "concat_test",
+    srcs = ["concat_test.cc"],
+    deps = [":pw_preprocessor"],
+)
+
+pw_cc_test(
+    name = "util_test",
+    srcs = ["util_test.cc"],
+    deps = [":pw_preprocessor"],
+)
+
+pw_cc_test(
+    name = "arguments_test",
+    srcs = ["arguments_test.cc"],
+    deps = [":pw_preprocessor"],
+)
 
 filegroup(
     name = "doxygen",
