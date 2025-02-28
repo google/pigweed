@@ -74,7 +74,8 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
             # Not catching CalledProcessError because 'cipd ls' seems to never
             # return an error code unless it can't reach the CIPD server.
             output = subprocess.check_output(
-                cmd + ['ls', '-h', path] + extra_args, stderr=subprocess.STDOUT
+                cmd + ['ls', '-h'] + extra_args + [path],
+                stderr=subprocess.STDOUT,
             ).decode()
             if 'No matching packages' not in output:
                 continue
@@ -85,7 +86,7 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
             # or that package is inaccessible.
             try:
                 subprocess.check_output(
-                    cmd + ['instances', path] + extra_args,
+                    cmd + ['instances'] + extra_args + [path],
                     stderr=subprocess.STDOUT,
                 )
             except subprocess.CalledProcessError:
