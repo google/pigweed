@@ -369,9 +369,10 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerAlreadyInScanCache) {
 
   // Ensure peer is in scan cache by doing active discovery.
   LowEnergyDiscoverySessionPtr session;
-  discovery_mgr()->StartDiscovery(/*active=*/true, [&session](auto cb_session) {
-    session = std::move(cb_session);
-  });
+  discovery_mgr()->StartDiscovery(
+      /*active=*/true, {}, [&session](auto cb_session) {
+        session = std::move(cb_session);
+      });
   RunUntilIdle();
 
   ConnectionResult result = fit::ok(nullptr);

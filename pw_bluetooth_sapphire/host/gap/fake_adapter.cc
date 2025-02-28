@@ -226,11 +226,14 @@ void FakeAdapter::FakeLowEnergy::StartAdvertising(
       });
 }
 
-void FakeAdapter::FakeLowEnergy::StartDiscovery(bool active,
-                                                SessionCallback callback) {
+void FakeAdapter::FakeLowEnergy::StartDiscovery(
+    bool active,
+    std::vector<DiscoveryFilter> discovery_filters,
+    SessionCallback callback) {
   auto session = std::make_unique<LowEnergyDiscoverySession>(
       next_scan_id_++,
       active,
+      std::move(discovery_filters),
       *adapter_->peer_cache(),
       adapter_->pw_dispatcher_,
       /*on_stop_cb=*/

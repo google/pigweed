@@ -17,6 +17,10 @@
 #include <lib/fit/function.h>
 #include <pw_assert/check.h>
 
+#include <algorithm>
+#include <vector>
+
+#include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
@@ -37,6 +41,7 @@ const char* kInspectScanWindowPropertyName = "scan_window_ms";
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
     uint16_t scan_id,
     bool active,
+    std::vector<DiscoveryFilter> filters,
     PeerCache& peer_cache,
     pw::async::Dispatcher& dispatcher,
     fit::function<void(LowEnergyDiscoverySession*)> on_stop_cb,
@@ -44,6 +49,7 @@ LowEnergyDiscoverySession::LowEnergyDiscoverySession(
     : WeakSelf(this),
       scan_id_(scan_id),
       active_(active),
+      filters_(std::move(filters)),
       peer_cache_(peer_cache),
       heap_dispatcher_(dispatcher),
       on_stop_cb_(std::move(on_stop_cb)),
@@ -92,9 +98,20 @@ void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
   if (!alive_ || !peer_found_fn_) {
     return;
   }
-  if (filter_.MatchLowEnergyResult(peer.le()->parsed_advertising_data(),
-                                   peer.connectable(),
-                                   peer.rssi())) {
+
+  if (filters_.empty()) {
+    peer_found_fn_(peer);
+    return;
+  }
+
+  if (std::any_of(filters_.begin(),
+                  filters_.end(),
+                  [&peer](const DiscoveryFilter& filter) {
+                    return filter.MatchLowEnergyResult(
+                        peer.le()->parsed_advertising_data(),
+                        peer.connectable(),
+                        peer.rssi());
+                  })) {
     peer_found_fn_(peer);
   }
 }
@@ -136,8 +153,10 @@ LowEnergyDiscoveryManager::~LowEnergyDiscoveryManager() {
   DeactivateAndNotifySessions();
 }
 
-void LowEnergyDiscoveryManager::StartDiscovery(bool active,
-                                               SessionCallback callback) {
+void LowEnergyDiscoveryManager::StartDiscovery(
+    bool active,
+    std::vector<DiscoveryFilter> discovery_filters,
+    SessionCallback callback) {
   PW_CHECK(callback);
   bt_log(INFO, "gap-le", "start %s discovery", active ? "active" : "passive");
 
@@ -152,8 +171,9 @@ void LowEnergyDiscoveryManager::StartDiscovery(bool active,
       (scanner_->state() == hci::LowEnergyScanner::State::kStopping &&
        sessions_.empty())) {
     PW_CHECK(!scanner_->IsScanning());
-    pending_.push_back(
-        DiscoveryRequest{.active = active, .callback = std::move(callback)});
+    pending_.push_back(DiscoveryRequest{.active = active,
+                                        .filters = std::move(discovery_filters),
+                                        .callback = std::move(callback)});
     return;
   }
 
@@ -171,7 +191,7 @@ void LowEnergyDiscoveryManager::StartDiscovery(bool active,
       }
     }
 
-    auto session = AddSession(active);
+    auto session = AddSession(active, std::move(discovery_filters));
     // Post the callback instead of calling it synchronously to avoid bugs
     // caused by client code not expecting this.
     (void)heap_dispatcher_.Post(
@@ -184,7 +204,9 @@ void LowEnergyDiscoveryManager::StartDiscovery(bool active,
     return;
   }
 
-  pending_.push_back({.active = active, .callback = std::move(callback)});
+  pending_.push_back({.active = active,
+                      .filters = std::move(discovery_filters),
+                      .callback = std::move(callback)});
 
   if (paused()) {
     return;
@@ -253,7 +275,8 @@ std::string LowEnergyDiscoveryManager::StateToString(State state) {
 }
 
 std::unique_ptr<LowEnergyDiscoverySession>
-LowEnergyDiscoveryManager::AddSession(bool active) {
+LowEnergyDiscoveryManager::AddSession(
+    bool active, std::vector<DiscoveryFilter> discovery_filters) {
   auto on_stop_cb = [this](LowEnergyDiscoverySession* session_to_remove) {
     RemoveSession(session_to_remove);
   };
@@ -264,6 +287,7 @@ LowEnergyDiscoveryManager::AddSession(bool active) {
   auto session = std::make_unique<LowEnergyDiscoverySession>(
       next_scan_id_++,
       active,
+      std::move(discovery_filters),
       *peer_cache_,
       dispatcher_,
       std::move(on_stop_cb),
@@ -528,11 +552,13 @@ void LowEnergyDiscoveryManager::NotifyPending() {
   if (!pending_.empty()) {
     size_t count = pending_.size();
     std::vector<std::unique_ptr<LowEnergyDiscoverySession>> new_sessions(count);
-    std::generate(new_sessions.begin(),
-                  new_sessions.end(),
-                  [this, i = size_t{0}]() mutable {
-                    return AddSession(pending_[i++].active);
-                  });
+    std::generate(
+        new_sessions.begin(), new_sessions.end(), [this, i = 0]() mutable {
+          bool active = pending_[i].active;
+          std::vector<DiscoveryFilter> filters = std::move(pending_[i].filters);
+          i++;
+          return AddSession(active, filters);
+        });
 
     for (size_t i = count - 1; i < count; i--) {
       auto cb = std::move(pending_.back().callback);

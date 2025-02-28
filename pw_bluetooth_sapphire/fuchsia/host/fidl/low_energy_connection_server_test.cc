@@ -64,7 +64,9 @@ class LowEnergyConnectionServerTest
     std::optional<bt::PeerId> peer_id;
     bt::gap::LowEnergyDiscoverySessionPtr session;
     adapter()->le()->StartDiscovery(
-        /*active=*/true, [&](bt::gap::LowEnergyDiscoverySessionPtr cb_session) {
+        /*active=*/true,
+        {},
+        [&](bt::gap::LowEnergyDiscoverySessionPtr cb_session) {
           session = std::move(cb_session);
           session->SetResultCallback(
               [&](const bt::gap::Peer& peer) { peer_id = peer.identifier(); });

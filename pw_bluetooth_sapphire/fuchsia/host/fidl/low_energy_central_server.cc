@@ -226,7 +226,7 @@ LowEnergyCentralServer::ScanInstance::ScanInstance(
 
   auto self = weak_self_.GetWeakPtr();
   adapter_->le()->StartDiscovery(
-      /*active=*/true, [self](auto session) {
+      /*active=*/true, filters_, [self](auto session) {
         if (!self.is_alive()) {
           bt_log(
               TRACE, "fidl", "ignoring LE discovery session for canceled Scan");
@@ -434,18 +434,13 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter,
     return;
   }
 
-  if (scan_session_deprecated_) {
-    // A scan is already in progress. Update its filter and report success.
-    scan_session_deprecated_->filter()->Reset();
-    fidl_helpers::PopulateDiscoveryFilter(*filter,
-                                          scan_session_deprecated_->filter());
-    callback(Status());
-    return;
-  }
+  bt::gap::DiscoveryFilter discovery_filter;
+  fidl_helpers::PopulateDiscoveryFilter(*filter, &discovery_filter);
 
   requesting_scan_deprecated_ = true;
   adapter()->le()->StartDiscovery(
       /*active=*/true,
+      {discovery_filter},
       [self = weak_self_.GetWeakPtr(),
        filter = std::move(filter),
        callback = std::move(callback),
@@ -462,10 +457,6 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter,
               ErrorCode::FAILED, "Failed to start discovery session"));
           return;
         }
-
-        // Assign the filter contents if a filter was provided.
-        if (filter)
-          fidl_helpers::PopulateDiscoveryFilter(*filter, session->filter());
 
         session->SetResultCallback([self](const auto& peer) {
           if (self.is_alive())

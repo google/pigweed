@@ -140,7 +140,9 @@ class FakeAdapter final : public Adapter {
         std::optional<DeviceAddress::Type> address_type,
         AdvertisingStatusCallback status_callback) override;
 
-    void StartDiscovery(bool active, SessionCallback callback) override;
+    void StartDiscovery(bool active,
+                        std::vector<bt::gap::DiscoveryFilter> filters,
+                        SessionCallback callback) override;
 
     void EnablePrivacy(bool enabled) override;
 

@@ -78,24 +78,29 @@ class PeerCache;
 //         transport, dispatcher);
 //     ...
 //
-//     std::unique_ptr<bt::gap::LowEnergyDiscoverySession> session;
-//     discovery_manager.StartDiscovery(/*active=*/true, [&session](auto
-//     new_session) {
-//       // Take ownership of the session to make sure it isn't terminated when
-//       // this callback returns.
-//       session = std::move(new_session);
+//     // Only scan for peers advertising the "Heart Rate" GATT Service.
+//     uint16_t uuid = 0x180d;
+//     bt::gap::DiscoveryFilter discovery_filter;
+//     discovery_filter.set_service_uuids({bt::UUID(uuid)});
 //
-//       // Only scan for peers advertising the "Heart Rate" GATT Service.
-//       uint16_t uuid = 0x180d;
-//       session->filter()->set_service_uuids({bt::UUID(uuid)});
-//       session->SetResultCallback([](const
-//       bt::hci::LowEnergyScanResult& result,
-//                                     const bt::ByteBuffer&
-//                                     advertising_data) {
-//         // Do stuff with |result| and |advertising_data|. (|advertising_data|
-//         // contains any received Scan Response data as well).
+//     std::vector<bt::gap::DiscoveryFilter> discovery_filters;
+//     discovery_filters.push_back(discovery_filter);
+//
+//     std::unique_ptr<bt::gap::LowEnergyDiscoverySession> session;
+//     discovery_manager.StartDiscovery(/*active=*/true, discovery_filters,
+//       [&session](auto new_session) {
+//         // Take ownership of the session to make sure it isn't terminated
+//         // when this callback returns.
+//         session = std::move(new_session);
+//
+//         session->SetResultCallback([](
+//           const bt::hci::LowEnergyScanResult& result,
+//           const bt::ByteBuffer& advertising_data) {
+//             // Do stuff with |result| and |advertising_data|.
+//             // (|advertising_data| contains any received Scan Response data
+//             // as well).
+//           });
 //       });
-//     });
 //
 // NOTE: These classes are not thread-safe. An instance of
 // LowEnergyDiscoveryManager is bound to its creation thread and the associated
@@ -133,7 +138,9 @@ class LowEnergyDiscoveryManager final
   // TODO(armansito): Implement option to disable duplicate filtering. Would
   // this require software filtering for clients that did not request it?
   using SessionCallback = fit::function<void(LowEnergyDiscoverySessionPtr)>;
-  void StartDiscovery(bool active, SessionCallback callback);
+  void StartDiscovery(bool active,
+                      std::vector<bt::gap::DiscoveryFilter> filters,
+                      SessionCallback callback);
 
   // Pause current and future discovery sessions until the returned PauseToken
   // is destroyed. If PauseDiscovery is called multiple times, discovery will be
@@ -190,7 +197,8 @@ class LowEnergyDiscoveryManager final
   }
 
   // Creates and stores a new session object and returns it.
-  std::unique_ptr<LowEnergyDiscoverySession> AddSession(bool active);
+  std::unique_ptr<LowEnergyDiscoverySession> AddSession(
+      bool active, std::vector<DiscoveryFilter> discovery_filters);
 
   // Called by LowEnergyDiscoverySession to stop a session that it was assigned
   // to.
@@ -254,6 +262,7 @@ class LowEnergyDiscoveryManager final
   // The list of currently pending calls to start discovery.
   struct DiscoveryRequest {
     bool active;
+    std::vector<DiscoveryFilter> filters;
     SessionCallback callback;
   };
   std::vector<DiscoveryRequest> pending_;
@@ -292,9 +301,10 @@ class LowEnergyDiscoveryManager final
 class LowEnergyDiscoverySession final
     : public WeakSelf<LowEnergyDiscoverySession> {
  public:
-  explicit LowEnergyDiscoverySession(
+  LowEnergyDiscoverySession(
       uint16_t scan_id,
       bool active,
+      std::vector<DiscoveryFilter> filters,
       PeerCache& peer_cache,
       pw::async::Dispatcher& dispatcher,
       fit::function<void(LowEnergyDiscoverySession*)> on_stop_cb,
@@ -331,13 +341,6 @@ class LowEnergyDiscoverySession final
   // Marks this session as inactive and notifies the error handler.
   void NotifyError();
 
-  // Returns the filter that belongs to this session. The caller may modify the
-  // filter as desired. By default no peers are filtered.
-  //
-  // NOTE: The client is responsible for setting up the filter's "flags" field
-  // for discovery procedures.
-  DiscoveryFilter* filter() { return &filter_; }
-
   // Ends this session. This instance will stop receiving notifications for
   // peers.
   void Stop();
@@ -355,11 +358,11 @@ class LowEnergyDiscoverySession final
   uint16_t scan_id_;
   bool alive_ = true;
   bool active_;
+  std::vector<DiscoveryFilter> filters_;
   PeerCache& peer_cache_;
   pw::async::HeapDispatcher heap_dispatcher_;
   fit::callback<void()> error_cb_;
   PeerFoundFunction peer_found_fn_;
-  DiscoveryFilter filter_;
   fit::callback<void(LowEnergyDiscoverySession*)> on_stop_cb_;
   fit::function<const std::unordered_set<PeerId>&()> cached_scan_results_fn_;
 

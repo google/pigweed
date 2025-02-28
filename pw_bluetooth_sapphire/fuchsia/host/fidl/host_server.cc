@@ -195,8 +195,18 @@ void HostServer::StartLEDiscovery() {
     return;
   }
 
+  // Set up a general-discovery filter for connectable devices.
+  // NOTE(armansito): This currently has no effect since peer updates
+  // are driven by PeerCache events. |session|'s "result callback" is
+  // unused.
+  bt::gap::DiscoveryFilter filter;
+  filter.set_connectable(true);
+  filter.SetGeneralDiscoveryFlags();
+
   adapter()->le()->StartDiscovery(
-      /*active=*/true, [self = weak_self_.GetWeakPtr()](auto session) {
+      /*active=*/true,
+      {filter},
+      [self = weak_self_.GetWeakPtr()](auto session) {
         // End the new session if this AdapterServer got destroyed in the
         // meantime (e.g. because the client disconnected).
         if (!self.is_alive() || self->discovery_session_servers_.empty()) {
@@ -208,13 +218,6 @@ void HostServer::StartLEDiscovery() {
           self->StopDiscovery(ZX_ERR_INTERNAL);
           return;
         }
-
-        // Set up a general-discovery filter for connectable devices.
-        // NOTE(armansito): This currently has no effect since peer updates
-        // are driven by PeerCache events. |session|'s "result callback" is
-        // unused.
-        session->filter()->set_connectable(true);
-        session->filter()->SetGeneralDiscoveryFlags();
 
         self->le_discovery_session_ = std::move(session);
 
@@ -485,7 +488,7 @@ void HostServer::EnableBackgroundScan(bool enabled) {
 
   requesting_background_scan_ = true;
   adapter()->le()->StartDiscovery(
-      /*active=*/false, [self = weak_self_.GetWeakPtr()](auto session) {
+      /*active=*/false, {}, [self = weak_self_.GetWeakPtr()](auto session) {
         if (!self.is_alive()) {
           return;
         }

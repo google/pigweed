@@ -90,7 +90,6 @@ class Central final : public pw::bluetooth::low_energy::Central2 {
     // Must be run on Bluetooth thread. Not thread safe.
     explicit ScanState(
         std::unique_ptr<bt::gap::LowEnergyDiscoverySession> session,
-        std::vector<bt::gap::DiscoveryFilter> filters,
         ScanHandleImpl* scan_handle,
         uint16_t scan_id,
         Central* central);
@@ -116,7 +115,6 @@ class Central final : public pw::bluetooth::low_energy::Central2 {
     // Members must only be accessed on Bluetooth thread.
     Central* const central_;
     std::unique_ptr<bt::gap::LowEnergyDiscoverySession> session_;
-    const std::vector<bt::gap::DiscoveryFilter> filters_;
   };
 
   // Asynchronously stops the scan corresponding to `scan_id` and synchronously

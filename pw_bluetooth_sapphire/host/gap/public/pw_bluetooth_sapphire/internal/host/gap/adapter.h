@@ -248,11 +248,13 @@ class Adapter {
     // |active| indicates whether active or passive discovery should occur.
     // On failure a nullptr will be returned via |callback|.
     using SessionCallback = LowEnergyDiscoveryManager::SessionCallback;
-    virtual void StartDiscovery(bool active, SessionCallback callback) = 0;
+    virtual void StartDiscovery(bool active,
+                                std::vector<bt::gap::DiscoveryFilter> filters,
+                                SessionCallback callback) = 0;
 
-    // Enable or disable the privacy feature. When enabled, the controller will
-    // be configured to use a new random address if it is currently allowed to
-    // do so.
+    // Enable or disable the privacy feature. When enabled, the controller
+    // will be configured to use a new random address if it is currently
+    // allowed to do so.
     virtual void EnablePrivacy(bool enabled) = 0;
     // Returns true if the privacy feature is currently enabled.
     virtual bool PrivacyEnabled() const = 0;

@@ -27,6 +27,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_discovery_manager.h"
+#include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/event_masks.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_address_manager.h"
@@ -183,9 +184,11 @@ class AdapterImpl final : public Adapter {
       adapter_->metrics_.le.start_advertising_events.Add();
     }
 
-    void StartDiscovery(bool active, SessionCallback callback) override {
-      adapter_->le_discovery_manager_->StartDiscovery(active,
-                                                      std::move(callback));
+    void StartDiscovery(bool active,
+                        std::vector<DiscoveryFilter> discovery_filters,
+                        SessionCallback callback) override {
+      adapter_->le_discovery_manager_->StartDiscovery(
+          active, std::move(discovery_filters), std::move(callback));
       adapter_->metrics_.le.start_discovery_events.Add();
     }
 
