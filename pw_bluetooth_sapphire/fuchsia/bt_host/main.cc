@@ -34,7 +34,8 @@ using InitCallback = fit::callback<void(bool success)>;
 using ErrorCallback = fit::callback<void()>;
 
 const std::string OUTGOING_SERVICE_NAME = "fuchsia.bluetooth.host.Host";
-const std::string ROLE_PROFILE_NAME = "fuchsia.bluetooth.host";
+const std::string THREAD_ROLE_NAME = "fuchsia.bluetooth.host.thread";
+const std::string VMAR_ROLE_NAME = "fuchsia.bluetooth.host.memory";
 
 class LifecycleHandler
     : public fuchsia::process::lifecycle::Lifecycle,
@@ -94,7 +95,28 @@ class LifecycleHandler
   bool shutting_down_ = false;
 };
 
-void SetThreadRole(const std::string& role_name) {
+void SetHandleRole(
+    fidl::SyncClient<fuchsia_scheduler::RoleManager>& role_manager,
+    fuchsia_scheduler::RoleTarget target,
+    const std::string& role_name) {
+  bt_log(DEBUG, "bt-host", "Setting role %s", role_name.c_str());
+  fuchsia_scheduler::RoleManagerSetRoleRequest request;
+  request.target(std::move(target))
+      .role(fuchsia_scheduler::RoleName(role_name));
+  auto set_role_res = role_manager->SetRole(std::move(request));
+  if (!set_role_res.is_ok()) {
+    std::string err_str = set_role_res.error_value().FormatDescription();
+    bt_log(WARN,
+           "bt-host",
+           "Couldn't set role %s: %s",
+           role_name.c_str(),
+           err_str.c_str());
+    return;
+  }
+  bt_log(INFO, "bt-host", "Set role %s successfully.", role_name.c_str());
+}
+
+void SetRoles() {
   bt_log(DEBUG, "bt-host", "Connecting to RoleManager");
   auto client_end_res = component::Connect<fuchsia_scheduler::RoleManager>();
   if (!client_end_res.is_ok()) {
@@ -109,30 +131,36 @@ void SetThreadRole(const std::string& role_name) {
 
   bt_log(DEBUG, "bt-host", "Cloning self thread");
   zx::thread thread_self;
-  zx_status_t status =
+  zx_status_t thread_status =
       zx::thread::self()->duplicate(ZX_RIGHT_SAME_RIGHTS, &thread_self);
-  if (status != ZX_OK) {
-    zx::result<> err = zx::error(status);
+  if (thread_status == ZX_OK) {
+    SetHandleRole(
+        role_manager,
+        fuchsia_scheduler::RoleTarget::WithThread(std::move(thread_self)),
+        THREAD_ROLE_NAME);
+  } else {
+    zx::result<> err = zx::error(thread_status);
     bt_log(ERROR,
            "bt-host",
            "Couldn't clone self thread for profile: %s",
            err.status_string());
-    return;
   }
 
-  bt_log(DEBUG, "bt-host", "Setting thread role");
-  fuchsia_scheduler::RoleManagerSetRoleRequest request;
-  request
-      .target(fuchsia_scheduler::RoleTarget::WithThread(std::move(thread_self)))
-      .role(fuchsia_scheduler::RoleName(role_name));
-  auto set_role_res = role_manager->SetRole(std::move(request));
-  if (!set_role_res.is_ok()) {
-    std::string err_str = set_role_res.error_value().FormatDescription();
-    bt_log(WARN, "bt-host", "Couldn't set thread role: %s", err_str.c_str());
-    return;
+  bt_log(DEBUG, "bt-host", "Cloning root vmar");
+  zx::vmar root_vmar;
+  zx_status_t vmar_status =
+      zx::vmar::root_self()->duplicate(ZX_RIGHT_SAME_RIGHTS, &root_vmar);
+  if (vmar_status == ZX_OK) {
+    SetHandleRole(role_manager,
+                  fuchsia_scheduler::RoleTarget::WithVmar(std::move(root_vmar)),
+                  VMAR_ROLE_NAME);
+  } else {
+    zx::result<> err = zx::error(vmar_status);
+    bt_log(ERROR,
+           "bt-host",
+           "Couldn't clone self thread for profile: %s",
+           err.status_string());
   }
-
-  bt_log(INFO, "bt-host", "Set thread role successfully.");
 }
 
 int main() {
@@ -140,7 +168,7 @@ int main() {
   pw::log_fuchsia::InitializeLogging(loop.dispatcher());
 
   bt_log(INFO, "bt-host", "Starting bt-host");
-  SetThreadRole(ROLE_PROFILE_NAME);
+  SetRoles();
 
   bt_host_config::Config config =
       bt_host_config::Config::TakeFromStartupHandle();
