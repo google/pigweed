@@ -26,6 +26,8 @@ licenses(["notice"])
 
 cc_library(
     name = "pw_bluetooth_proxy",
+
+    # LINT.IfChange
     srcs = [
         "acl_data_channel.cc",
         "basic_l2cap_channel.cc",
@@ -43,6 +45,9 @@ cc_library(
         "rfcomm_channel.cc",
         "rfcomm_fcs.cc",
     ],
+    # LINT.ThenChange(Android.bp, BUILD.gn, CMakeLists.txt)
+
+    # LINT.IfChange
     hdrs = [
         "public/pw_bluetooth_proxy/basic_l2cap_channel.h",
         "public/pw_bluetooth_proxy/gatt_notify_channel.h",
@@ -67,7 +72,10 @@ cc_library(
         "public/pw_bluetooth_proxy/proxy_host.h",
         "public/pw_bluetooth_proxy/rfcomm_channel.h",
     ],
+    # LINT.ThenChange(BUILD.gn, CMakeLists.txt)
     strip_include_prefix = "public",
+
+    # LINT.IfChange
     deps = [
         "//pw_allocator:best_fit",
         "//pw_allocator:synchronized_allocator",
@@ -93,11 +101,14 @@ cc_library(
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
     ],
+    # LINT.ThenChange(Android.bp, BUILD.gn, CMakeLists.txt)
 )
 
 cc_library(
     name = "test_utils",
     testonly = True,
+
+    # LINT.IfChange
     srcs = ["test_utils.cc"],
     hdrs = ["pw_bluetooth_proxy_private/test_utils.h"],
     deps = [
@@ -112,10 +123,13 @@ cc_library(
         "//pw_multibuf:testing",
         "//pw_unit_test",
     ],
+    # LINT.ThenChange(BUILD.gn, CMakeLists.txt)
 )
 
 pw_cc_test(
     name = "pw_bluetooth_proxy_test",
+
+    # LINT.IfChange
     srcs = [
         "gatt_notify_test.cc",
         "h4_packet_test.cc",
@@ -138,6 +152,7 @@ pw_cc_test(
         "//pw_bluetooth:emboss_util",
         "//pw_multibuf",
     ],
+    # LINT.ThenChange(BUILD.gn, CMakeLists.txt)
 )
 
 filegroup(

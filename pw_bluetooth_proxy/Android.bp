@@ -21,6 +21,8 @@ cc_library_static {
     cpp_std: "c++20",
     vendor_available: true,
     host_supported: true,
+
+// LINT.IfChange
     srcs: [
         "acl_data_channel.cc",
         "basic_l2cap_channel.cc",
@@ -88,4 +90,7 @@ cc_library_static {
         "pw_bluetooth_generate_emboss_l2cap_frames",
         "pw_bluetooth_generate_emboss_rfcomm_frames",
     ],
+// LINT.ThenChange(BUILD.gn, BUILD.bazel, CMakeLists.txt)
+
 }
+
