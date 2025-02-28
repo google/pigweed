@@ -118,12 +118,6 @@ pw_py_importable_runfile(
     visibility = ["//visibility:private"],
 )
 
-pw_py_importable_runfile(
-    name = "pigweed_black_config",
-    src = "//:.black.toml",
-    visibility = ["//visibility:private"],
-)
-
 pw_py_binary(
     name = "format",
     srcs = ["pigweed_format/__main__.py"],
@@ -133,7 +127,6 @@ pw_py_binary(
     main = "pigweed_format/__main__.py",
     deps = [
         ":black_runfiles",
-        ":pigweed_black_config",
         "//pw_build/py:pw_build",
     ] + select({
         "@platforms//os:macos": ["@llvm_toolchain_macos//:py_clang_format"],

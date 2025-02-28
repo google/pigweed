@@ -24,16 +24,12 @@ from pw_presubmit.format.cpp import ClangFormatFormatter
 def _pigweed_formatting_suite() -> FormattingSuite:
     runfiles = RunfilesManager()
     # GN
-    runfiles.add_bootstrapped_file('.black.toml', '${PW_ROOT}/.black.toml')
     runfiles.add_bootstrapped_tool(
         'clang-format', 'clang-format', from_shell_path=True
     )
     runfiles.add_bootstrapped_tool('black', 'black', from_shell_path=True)
 
     # Bazel
-    runfiles.add_bazel_file(
-        '.black.toml', 'pw_presubmit.py.pigweed_black_config'
-    )
     runfiles.add_bazel_tool('clang-format', 'llvm_toolchain.clang_format')
     runfiles.add_bazel_tool('black', 'pw_presubmit.py.black_runfiles')
 
@@ -43,7 +39,6 @@ def _pigweed_formatting_suite() -> FormattingSuite:
     # dependency).
     pigweed_formatters = [
         BlackFormatter(
-            config_file=runfiles['.black.toml'],
             tool_runner=runfiles,
         ),
         ClangFormatFormatter(

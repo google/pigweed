@@ -15,9 +15,10 @@
 
 import os
 from pathlib import Path
-from typing import Iterable, Iterator, Optional, Sequence, Tuple, Union
+from typing import Iterable, Iterator, Mapping, Sequence, Tuple
 
 from pw_cli.file_filter import FileFilter
+from pw_cli import find_config
 from pw_presubmit.format.core import (
     FileFormatter,
     FormattedFileContents,
@@ -27,19 +28,46 @@ from pw_presubmit.format.core import (
 
 DEFAULT_PYTHON_FILE_PATTERNS = FileFilter(endswith=['.py'])
 
+# Pigweed prescribes a .black.toml naming pattern for black configs.
+_PIGWEED_BLACK_CONFIG_PATTERN = '.black.toml'
+
 
 class BlackFormatter(FileFormatter):
     """A formatter that runs ``black`` on files."""
 
-    def __init__(self, config_file: Optional[Path], **kwargs):
+    def __init__(self, config_file: Path | bool = True, **kwargs):
+        """Creates a formatter for Python that uses black.
+
+        Args:
+            config_file: The black config file to use to configure black. This
+                defaults to ``True``, which formats files using the nearest
+                ``.black.toml`` file in the parent directory of the file being
+                formatted. ``False`` disables this behavior entirely.
+        """
         kwargs.setdefault('mnemonic', 'Python (black)')
         kwargs.setdefault('file_patterns', DEFAULT_PYTHON_FILE_PATTERNS)
         super().__init__(**kwargs)
-        self.config_file = config_file
+        self._config_file_override: Path | None = (
+            config_file if isinstance(config_file, Path) else None
+        )
+        self._enable_config_lookup = config_file is True
 
-    def _config_file_args(self) -> Sequence[Union[str, Path]]:
-        if self.config_file is not None:
-            return ('--config', Path(self.config_file))
+    def _config_file_for(self, file_path: Path) -> Path | None:
+        if self._config_file_override:
+            return self._config_file_override
+        if not self._enable_config_lookup:
+            return None
+
+        # Search for Pigweed's `.black.toml`
+        configs = find_config.configs_in_parents(
+            _PIGWEED_BLACK_CONFIG_PATTERN, file_path
+        )
+        return next(configs, None)
+
+    def _config_file_args(self, file_path: Path) -> Sequence[str]:
+        config = self._config_file_for(file_path)
+        if config:
+            return ('--config', str(config))
 
         return ()
 
@@ -58,7 +86,7 @@ class BlackFormatter(FileFormatter):
         """
         proc = self.run_tool(
             'black',
-            [*self._config_file_args(), '-q', '-'],
+            [*self._config_file_args(file_path), '-q', '-'],
             input=file_contents,
         )
         ok = proc.returncode == 0
@@ -84,7 +112,7 @@ class BlackFormatter(FileFormatter):
         """
         proc = self.run_tool(
             'black',
-            [*self._config_file_args(), '-q', file_path],
+            [*self._config_file_args(file_path), '-q', file_path],
         )
         ok = proc.returncode == 0
         return FormatFixStatus(
@@ -104,12 +132,24 @@ class BlackFormatter(FileFormatter):
             ``True``, any successful format operations with warnings will also
             be returned.
         """
-        proc = self.run_tool(
-            'black',
-            [*self._config_file_args(), '-q', *paths],
-        )
+        paths_by_config: Mapping[Path | None, Iterable[Path]] = {}
+        if self._config_file_override:
+            paths_by_config = {self._config_file_override: paths}
+        elif self._enable_config_lookup:
+            paths_by_config = find_config.paths_by_nearest_config(
+                _PIGWEED_BLACK_CONFIG_PATTERN, paths
+            )
+        else:
+            paths_by_config = {None: paths}
 
-        # If there's an error, fall back to per-file formatting to figure out
-        # which file has problems.
-        if proc.returncode != 0:
-            yield from super().format_files(paths, keep_warnings)
+        for config, group_paths in paths_by_config.items():
+            config_file_args = ('--config', str(config)) if config else ()
+            proc = self.run_tool(
+                'black',
+                [*config_file_args, '-q', *group_paths],
+            )
+
+            # If there's an error, fall back to per-file formatting to figure
+            # out which file has problems.
+            if proc.returncode != 0:
+                yield from super().format_files(group_paths, keep_warnings)
