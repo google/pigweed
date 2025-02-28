@@ -15,7 +15,6 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -47,23 +46,6 @@ cc_library(
         "//third_party/freertos:support",
         "//third_party/smartfusion_mss",
         "@freertos",
-    ],
-)
-
-pw_cc_binary(
-    name = "demo",
-    srcs = [
-        "main.cc",
-    ],
-    tags = ["manual"],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:freertos",
-    ],
-    deps = [
-        "//pw_thread:thread",
-        "//pw_thread:thread_core",
-        "//pw_thread_freertos:thread",
-        "//third_party/freertos",
     ],
 )
 
