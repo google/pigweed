@@ -434,13 +434,17 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter,
     return;
   }
 
-  bt::hci::DiscoveryFilter discovery_filter;
-  fidl_helpers::PopulateDiscoveryFilter(*filter, &discovery_filter);
+  std::vector<bt::hci::DiscoveryFilter> discovery_filters;
+  if (filter) {
+    bt::hci::DiscoveryFilter discovery_filter;
+    fidl_helpers::PopulateDiscoveryFilter(*filter, &discovery_filter);
+    discovery_filters.emplace_back(discovery_filter);
+  }
 
   requesting_scan_deprecated_ = true;
   adapter()->le()->StartDiscovery(
       /*active=*/true,
-      {discovery_filter},
+      discovery_filters,
       [self = weak_self_.GetWeakPtr(),
        filter = std::move(filter),
        callback = std::move(callback),
