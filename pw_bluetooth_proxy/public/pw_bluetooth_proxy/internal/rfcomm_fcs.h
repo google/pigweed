@@ -17,7 +17,6 @@
 #include <cstdint>
 
 #include "pw_bluetooth/rfcomm_frames.emb.h"
-#include "pw_span/span.h"
 
 namespace pw::bluetooth::proxy {
 

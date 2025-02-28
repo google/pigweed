@@ -14,7 +14,10 @@
 
 #include "pw_bluetooth_proxy/internal/rfcomm_fcs.h"
 
+#include <array>
 #include <cstdint>
+
+#include "pw_span/span.h"
 
 namespace pw::bluetooth::proxy {
 

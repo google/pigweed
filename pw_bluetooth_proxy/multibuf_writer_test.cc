@@ -19,7 +19,7 @@
 #include "pw_containers/to_array.h"
 #include "pw_multibuf/simple_allocator_for_test.h"
 #include "pw_span/cast.h"
-#include "pw_unit_test/framework.h"  // IWYU pragma: keep
+#include "pw_unit_test/framework.h"
 
 namespace pw::bluetooth::proxy {
 namespace {

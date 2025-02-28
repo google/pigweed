@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "pw_assert/check.h"  // IWYU pragma: keep
+#include "pw_assert/check.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_function/function.h"
 

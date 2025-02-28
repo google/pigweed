@@ -15,7 +15,7 @@
 #include <numeric>
 
 #include "lib/stdcompat/utility.h"
-#include "pw_unit_test/framework.h"  // IWYU pragma: keep
+#include "pw_unit_test/framework.h"
 
 // clang-format off
 // All emboss headers are listed (even if they don't have explicit tests) to
