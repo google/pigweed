@@ -55,7 +55,7 @@ cc_library {
         "block/poisonable.cc",
         "chunk_pool.cc",
         "libc_allocator.cc",
-        "unique_ptr.cc",
+        "managed_ptr.cc",
     ],
     static_libs: [
         "pw_bytes",
