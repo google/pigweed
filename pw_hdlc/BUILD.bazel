@@ -178,7 +178,6 @@ cc_library(
         "//pw_async2:poll",
         "//pw_bytes",
         "//pw_channel",
-        "//pw_containers:inline_queue",
         "//pw_containers:vector",
         "//pw_log",
         "//pw_multibuf",

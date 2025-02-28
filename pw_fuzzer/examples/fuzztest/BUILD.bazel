@@ -31,7 +31,7 @@ cc_library(
     includes = ["."],
     deps = [
         "//pw_bytes",
-        "//pw_containers",
+        "//pw_containers:vector",
         "//pw_status",
         "//pw_string",
     ],

@@ -61,6 +61,7 @@ cc_library(
     ],
     deps = [
         ":metric",
+        "//pw_containers:intrusive_list",
     ],
 )
 
@@ -73,7 +74,8 @@ cc_library(
     deps = [
         ":metric",
         "//pw_assert:check",
-        "//pw_containers",
+        "//pw_containers:intrusive_list",
+        "//pw_containers:vector",
         "//pw_status",
         "//pw_tokenizer",
     ],
@@ -83,7 +85,10 @@ cc_library(
     name = "metric_service_nanopb",
     srcs = ["metric_service_nanopb.cc"],
     hdrs = ["public/pw_metric/metric_service_nanopb.h"],
-    implementation_deps = ["//pw_assert:check"],
+    implementation_deps = [
+        "//pw_assert:check",
+        "//pw_containers:vector",
+    ],
     strip_include_prefix = "public",
     deps = [
         ":metric",
@@ -96,7 +101,10 @@ cc_library(
     name = "metric_service_pwpb",
     srcs = ["metric_service_pwpb.cc"],
     hdrs = ["public/pw_metric/metric_service_pwpb.h"],
-    implementation_deps = ["//pw_assert:check"],
+    implementation_deps = [
+        "//pw_assert:check",
+        "//pw_containers:vector",
+    ],
     includes = [
         "metric_proto_cc.pwpb.pb/pw_metric",
         "metric_proto_cc.raw_rpc.pb/pw_metric",
@@ -108,7 +116,7 @@ cc_library(
         ":metric_proto_raw_rpc",
         ":metric_walker",
         "//pw_bytes",
-        "//pw_containers",
+        "//pw_containers:intrusive_list",
         "//pw_preprocessor",
         "//pw_rpc/raw:server_api",
         "//pw_span",

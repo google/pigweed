@@ -187,9 +187,7 @@ cc_library(
         "public/pw_containers/inline_queue.h",
     ],
     strip_include_prefix = "public",
-    deps = [
-        ":inline_deque",
-    ],
+    deps = [":inline_deque"],
 )
 
 cc_library(
@@ -448,7 +446,6 @@ pw_cc_test(
     name = "intrusive_item_test",
     srcs = ["intrusive_item_test.cc"],
     deps = [
-        ":flat_map",
         ":intrusive_forward_list",
         ":intrusive_list",
         ":intrusive_map",

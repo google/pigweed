@@ -75,7 +75,7 @@ pw_cc_test(
     deps = [
         ":packet",
         "//pw_bytes",
-        "//pw_containers",
+        "//pw_containers:algorithm",
         "//pw_status",
     ],
 )

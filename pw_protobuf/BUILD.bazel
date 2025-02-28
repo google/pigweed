@@ -327,6 +327,7 @@ pw_cc_test(
     deps = [
         ":codegen_test_proto_pwpb",
         ":pw_protobuf",
+        "//pw_containers:vector",
         "//pw_span",
     ],
 )

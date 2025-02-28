@@ -39,7 +39,6 @@ cc_library(
         ":config_override",
         "//pw_assert:assert",
         "//pw_bytes",
-        "//pw_containers",
         "//pw_function",
         "//pw_log",
         "//pw_result",
@@ -99,6 +98,7 @@ cc_library(
     srcs = [
         "multisink_threaded_test.cc",
     ],
+    implementation_deps = ["//pw_containers:vector"],
     deps = [
         ":pw_multisink",
         ":test_thread",

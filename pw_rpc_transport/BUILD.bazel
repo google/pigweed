@@ -72,7 +72,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         "//pw_bytes",
-        "//pw_containers",
+        "//pw_containers:intrusive_list",
         "//pw_log",
         "//pw_result",
         "//pw_status",
@@ -89,7 +89,6 @@ pw_cc_test(
     deps = [
         ":packet_buffer_queue",
         "//pw_bytes",
-        "//pw_containers",
         "//pw_result",
         "//pw_status",
         "//pw_sync:lock_annotations",

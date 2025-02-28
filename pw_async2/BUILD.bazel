@@ -67,7 +67,6 @@ cc_library(
     deps = [
         ":poll",
         "//pw_chrono:system_clock",
-        "//pw_containers:vector",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
@@ -104,7 +103,10 @@ cc_library(
 pw_cc_test(
     name = "dispatcher_test",
     srcs = ["dispatcher_test.cc"],
-    deps = [":dispatcher"],
+    deps = [
+        ":dispatcher",
+        "//pw_containers:vector",
+    ],
 )
 
 pw_cc_test(

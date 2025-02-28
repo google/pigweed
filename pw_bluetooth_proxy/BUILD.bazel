@@ -73,6 +73,7 @@ cc_library(
         "public/pw_bluetooth_proxy/rfcomm_channel.h",
     ],
     # LINT.ThenChange(BUILD.gn, CMakeLists.txt)
+    implementation_deps = ["//pw_containers:algorithm"],
     strip_include_prefix = "public",
 
     # LINT.IfChange
@@ -89,7 +90,9 @@ cc_library(
         "//pw_bluetooth:emboss_l2cap_frames",
         "//pw_bluetooth:emboss_rfcomm_frames",
         "//pw_bluetooth:emboss_util",
-        "//pw_containers",
+        "//pw_containers:flat_map",
+        "//pw_containers:inline_queue",
+        "//pw_containers:vector",
         "//pw_function",
         "//pw_log",
         "//pw_multibuf",
@@ -120,6 +123,7 @@ cc_library(
         "//pw_bluetooth:emboss_hci_events",
         "//pw_bluetooth:emboss_hci_h4",
         "//pw_bluetooth:emboss_util",
+        "//pw_containers:flat_map",
         "//pw_multibuf:testing",
         "//pw_unit_test",
     ],
@@ -150,6 +154,7 @@ pw_cc_test(
         "//pw_bluetooth:emboss_hci_events",
         "//pw_bluetooth:emboss_hci_h4",
         "//pw_bluetooth:emboss_util",
+        "//pw_containers:flat_map",
         "//pw_multibuf",
     ],
     # LINT.ThenChange(BUILD.gn, CMakeLists.txt)

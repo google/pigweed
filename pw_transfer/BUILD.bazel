@@ -172,9 +172,9 @@ cc_library(
     srcs = [
         "pw_transfer_private/chunk_testing.h",
     ],
+    implementation_deps = ["//pw_containers:vector"],
     deps = [
         ":core",
-        "//pw_containers",
         "//pw_unit_test",
     ],
 )
@@ -232,7 +232,7 @@ pw_cc_test(
         ":pw_transfer",
         ":test_helpers",
         "//pw_assert:check",
-        "//pw_containers",
+        "//pw_containers:algorithm",
         "//pw_rpc:test_helpers",
         "//pw_rpc/raw:test_method_context",
         "//pw_thread:thread",

@@ -76,7 +76,6 @@ cc_library(
     deps = [
         ":common",
         ":server_api",
-        "//pw_containers",
         "//pw_rpc:internal_test_utils",
         "//pw_span",
     ],
@@ -235,7 +234,7 @@ pw_cc_test(
     deps = [
         ":internal_test_utils",
         ":server_api",
-        "//pw_containers",
+        "//pw_containers:algorithm",
         "//pw_rpc",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
@@ -307,6 +306,7 @@ pw_cc_test(
     srcs = ["server_callback_test.cc"],
     deps = [
         ":test_method_context",
+        "//pw_containers:vector",
         "//pw_rpc",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
     ],

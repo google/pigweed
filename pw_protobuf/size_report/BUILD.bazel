@@ -82,8 +82,8 @@ cc_library(
         "proto_bloat.cc",
     ],
     hdrs = ["proto_bloat.h"],
+    implementation_deps = ["//pw_containers:vector"],
     deps = [
-        "//pw_containers",
         "//pw_preprocessor",
         "//pw_protobuf",
         "//pw_status",

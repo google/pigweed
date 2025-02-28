@@ -60,7 +60,7 @@ cc_library(
         "//pw_bytes",
         "//pw_bytes:alignment",
         "//pw_checksum",
-        "//pw_containers",
+        "//pw_containers:vector",
         "//pw_log",
         "//pw_log:pw_log.facade",
         "//pw_polyfill",
@@ -115,7 +115,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":pw_kvs",
-        "//pw_containers",
+        "//pw_containers:vector",
         "//pw_log",
         "//pw_log:pw_log.facade",
         "//pw_span",
@@ -282,7 +282,7 @@ cc_library(
     target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:private"],
     deps = [
-        "//pw_containers",
+        "//pw_containers:vector",
         "//pw_kvs",
         "//pw_log",
         "//pw_log:pw_log.facade",

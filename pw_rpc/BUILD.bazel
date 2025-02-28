@@ -449,6 +449,7 @@ pw_cc_test(
     srcs = ["test_helpers_test.cc"],
     deps = [
         ":test_helpers",
+        "//pw_containers:vector",
         "//pw_result",
         "//pw_rpc/pwpb:client_testing",
         "//pw_rpc/pwpb:echo_service",

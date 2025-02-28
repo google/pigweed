@@ -57,10 +57,7 @@ cc_library(
     hdrs = ["public/pw_rpc/raw/fake_channel_output.h"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
-    deps = [
-        ":server_api",
-        "//pw_containers",
-    ],
+    deps = [":server_api"],
 )
 
 cc_library(
@@ -138,7 +135,7 @@ pw_cc_test(
     ],
     deps = [
         ":server_api",
-        "//pw_containers",
+        "//pw_containers:algorithm",
         "//pw_protobuf",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_pwpb",

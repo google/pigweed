@@ -76,7 +76,7 @@ cc_library(
     tags = ["noclangtidy"],
     deps = [
         "//pw_assert:assert",
-        "//pw_containers",
+        "//pw_containers:vector",
         "//pw_rpc:internal_test_utils",
     ],
 )
@@ -252,7 +252,7 @@ pw_cc_test(
     deps = [
         ":internal_test_utils",
         ":server_api",
-        "//pw_containers",
+        "//pw_containers:algorithm",
         "//pw_rpc",
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_nanopb",

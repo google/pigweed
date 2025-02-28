@@ -63,7 +63,7 @@ cc_library(
     deps = [
         "//pw_assert:assert",
         "//pw_chrono:system_clock",
-        "//pw_containers",
+        "//pw_containers:vector",
         "//pw_function",
         "//pw_multibuf",
         "//pw_result",
@@ -109,7 +109,7 @@ cc_library(
         "//pw_async2:once_sender",
         "//pw_channel",
         "//pw_chrono:system_clock",
-        "//pw_containers",
+        "//pw_containers:vector",
         "//pw_function",
         "//pw_multibuf",
         "//pw_result",

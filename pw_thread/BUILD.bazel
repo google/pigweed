@@ -196,6 +196,7 @@ cc_library(
         "thread_snapshot_service.cc",
     ],
     hdrs = ["public/pw_thread/thread_snapshot_service.h"],
+    implementation_deps = ["//pw_containers:vector"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [

@@ -81,14 +81,15 @@ cc_library(
         "public/pw_spi/chip_selector_mock.h",
         "public/pw_spi/initiator_mock.h",
     ],
-    implementation_deps = ["//pw_assert:check"],
+    implementation_deps = [
+        "//pw_assert:check",
+        "//pw_containers:algorithm",
+    ],
     strip_include_prefix = "public",
     deps = [
         ":chip_selector",
         ":initiator",
         "//pw_bytes",
-        "//pw_containers",
-        "//pw_containers:algorithm",
         "//pw_containers:to_array",
         "//pw_unit_test",
     ],
