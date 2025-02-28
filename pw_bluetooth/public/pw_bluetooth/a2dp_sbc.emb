@@ -18,7 +18,7 @@
 
 
 enum SamplingFrequency:
-  -- Cf. 4.3.2.1
+  -- Cf. A2DP Spec v1.4 Section 4.3.2.1
   [maximum_bits: 4]
   FREQ_16000HZ = 0b1000
   FREQ_32000HZ = 0b0100
@@ -27,7 +27,7 @@ enum SamplingFrequency:
 
 
 enum ChannelMode:
-  -- Cf. 4.3.2.2
+  -- Cf. A2DP Spec v1.4 Section 4.3.2.2
   [maximum_bits: 4]
   MONO         = 0b1000
   DUAL_CHANNEL = 0b0100
@@ -36,7 +36,7 @@ enum ChannelMode:
 
 
 enum BlockLength:
-  -- Cf. 4.3.2.3
+  -- Cf. A2DP Spec v1.4 Section 4.3.2.3
   [maximum_bits: 4]
   LENGTH_4  = 0b1000
   LENGTH_8  = 0b0100
@@ -45,21 +45,21 @@ enum BlockLength:
 
 
 enum Subbands:
-  -- Cf. 4.3.2.4
+  -- Cf. A2DP Spec v1.4 Section 4.3.2.4
   [maximum_bits: 2]
   SUBBANDS_4 = 0b10
   SUBBANDS_8 = 0b01
 
 
 enum AllocationMethod:
-  -- Cf. 4.3.2.5
+  -- Cf. A2DP Spec v1.4 Section 4.3.2.5
   [maximum_bits: 2]
   SNR      = 0b10
   LOUDNESS = 0b10
 
 
 struct CodecSpecificInformationElements:
-  -- Cf. 4.3.2
+  -- Cf. A2DP Spec v1.4 Section 4.3.2
   0     [+1]  bits:
     0     [+4]       ChannelMode        channel_mode
     4     [+4]       SamplingFrequency  sampling_frequency

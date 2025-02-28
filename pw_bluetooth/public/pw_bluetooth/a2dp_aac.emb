@@ -23,7 +23,7 @@
 
 
 enum ObjectType:
-  -- Cf. 4.5.2.1
+  -- Cf. A2DP Spec v1.4 Section 4.5.2.1
   [maximum_bits: 7]
   MPEG_2_AAC_LC        = 0b1000000
   MPEG_4_AAC_LC        = 0b0100000
@@ -35,14 +35,14 @@ enum ObjectType:
 
 
 enum Drc:
-  -- Cf. 4.5.2.2
+  -- Cf. A2DP Spec v1.4 4.5.2.2
   [maximum_bits: 1]
   SUPPORTED     = 0b1
   NOT_SUPPORTED = 0b0
 
 
 enum SamplingFrequencyFirstOctect:
-  -- Cf. 4.5.2.3
+  -- Cf. A2DP Spec v1.4 Section 4.5.2.3
   [maximum_bits: 8]
   FREQ_8000HZ  = 0b10000000
   FREQ_11025HZ = 0b01000000
@@ -55,7 +55,7 @@ enum SamplingFrequencyFirstOctect:
 
 
 enum SamplingFrequencyScdOctet:
-  -- Cf. 4.5.2.3
+  -- Cf. A2DP Spec v1.4 Section 4.5.2.3
   [maximum_bits: 4]
   FREQ_48000HZ = 0b1000
   FREQ_64000HZ = 0b0100
@@ -64,7 +64,7 @@ enum SamplingFrequencyScdOctet:
 
 
 enum Channels:
-  -- Cf. 4.5.2.4
+  -- Cf. A2DP Spec v1.4 Section 4.5.2.4
   [maximum_bits: 4]
   ONE   = 0b1000
   TWO   = 0b0100
@@ -73,14 +73,14 @@ enum Channels:
 
 
 enum Vbr:
-  -- Cf. 4.5.2.6
+  -- Cf. A2DP Spec v1.4 Section 4.5.2.6
   [maximum_bits: 1]
   SUPPORTED     = 0b1
   NOT_SUPPORTED = 0b0
 
 
 struct CodecSpecificInformationElements:
-  -- Cf. 4.5.2
+  -- Cf. A2DP Spec v1.4 Section 4.5.2
   0     [+1]  bits:
     0     [+1]       Drc                           drc
     1     [+7]       ObjectType                    object_type
