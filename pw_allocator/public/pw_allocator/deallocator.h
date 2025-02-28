@@ -142,6 +142,15 @@ class Deallocator {
     return UniquePtr<T>(ptr, size, this);
   }
 
+  /// Deprecated version of `WrapUnique` with a different name and templated on
+  /// the object type instead of the array type.
+  /// Do not use this method. It will be removed.
+  /// TODO(b/326509341): Remove when downstream consumers migrate.
+  template <typename T>
+  [[nodiscard]] UniquePtr<T[]> WrapUniqueArray(T* ptr, size_t size) {
+    return WrapUnique<T[]>(ptr, size);
+  }
+
   /// Indicates what kind of information to retrieve using `GetInfo`.
   ///
   /// Note that this enum is considered open, and may be extended in the future.

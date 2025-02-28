@@ -226,6 +226,26 @@ TEST_F(UniquePtrTest, CanSwapWhenBothAreEmpty) {
   EXPECT_EQ(ptr2, nullptr);
 }
 
+class UniquePtrTestAllocator
+    : public pw::allocator::test::AllocatorForTest<256> {
+ public:
+  template <typename T>
+  pw::UniquePtr<T[]> MakeBespokeArray(size_t size) {
+    return Deallocator::WrapUniqueArray<T>(New<T[]>(size), size);
+  }
+};
+
+TEST_F(UniquePtrTest, DeprecatedWrapUniqueArrayStillWorks) {
+  constexpr static size_t kArraySize = 5;
+  UniquePtrTestAllocator allocator;
+  {
+    auto ptr = allocator.MakeBespokeArray<Counter>(kArraySize);
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(Counter::GetNumCtorCalls(), kArraySize);
+  }
+  EXPECT_EQ(Counter::GetNumDtorCalls(), kArraySize);
+}
+
 // Verify that the UniquePtr implementation is the size of 2 pointers for the
 // non-array case. This should not contain the size_t size_ parameter.
 static_assert(
