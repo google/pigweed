@@ -20,9 +20,9 @@
 #include <algorithm>
 #include <vector>
 
-#include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
 
 namespace bt::gap {
@@ -41,7 +41,7 @@ const char* kInspectScanWindowPropertyName = "scan_window_ms";
 LowEnergyDiscoverySession::LowEnergyDiscoverySession(
     uint16_t scan_id,
     bool active,
-    std::vector<DiscoveryFilter> filters,
+    std::vector<hci::DiscoveryFilter> filters,
     PeerCache& peer_cache,
     pw::async::Dispatcher& dispatcher,
     fit::function<void(LowEnergyDiscoverySession*)> on_stop_cb,
@@ -106,7 +106,7 @@ void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
 
   if (std::any_of(filters_.begin(),
                   filters_.end(),
-                  [&peer](const DiscoveryFilter& filter) {
+                  [&peer](const hci::DiscoveryFilter& filter) {
                     return filter.MatchLowEnergyResult(
                         peer.le()->parsed_advertising_data(),
                         peer.connectable(),
@@ -155,7 +155,7 @@ LowEnergyDiscoveryManager::~LowEnergyDiscoveryManager() {
 
 void LowEnergyDiscoveryManager::StartDiscovery(
     bool active,
-    std::vector<DiscoveryFilter> discovery_filters,
+    std::vector<hci::DiscoveryFilter> discovery_filters,
     SessionCallback callback) {
   PW_CHECK(callback);
   bt_log(INFO, "gap-le", "start %s discovery", active ? "active" : "passive");
@@ -276,7 +276,7 @@ std::string LowEnergyDiscoveryManager::StateToString(State state) {
 
 std::unique_ptr<LowEnergyDiscoverySession>
 LowEnergyDiscoveryManager::AddSession(
-    bool active, std::vector<DiscoveryFilter> discovery_filters) {
+    bool active, std::vector<hci::DiscoveryFilter> discovery_filters) {
   auto on_stop_cb = [this](LowEnergyDiscoverySession* session_to_remove) {
     RemoveSession(session_to_remove);
   };
@@ -555,7 +555,8 @@ void LowEnergyDiscoveryManager::NotifyPending() {
     std::generate(
         new_sessions.begin(), new_sessions.end(), [this, i = 0]() mutable {
           bool active = pending_[i].active;
-          std::vector<DiscoveryFilter> filters = std::move(pending_[i].filters);
+          std::vector<hci::DiscoveryFilter> filters =
+              std::move(pending_[i].filters);
           i++;
           return AddSession(active, filters);
         });

@@ -249,7 +249,7 @@ class Adapter {
     // On failure a nullptr will be returned via |callback|.
     using SessionCallback = LowEnergyDiscoveryManager::SessionCallback;
     virtual void StartDiscovery(bool active,
-                                std::vector<bt::gap::DiscoveryFilter> filters,
+                                std::vector<hci::DiscoveryFilter> filters,
                                 SessionCallback callback) = 0;
 
     // Enable or disable the privacy feature. When enabled, the controller

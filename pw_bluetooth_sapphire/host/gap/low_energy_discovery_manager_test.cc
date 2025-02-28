@@ -22,9 +22,9 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
-#include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
@@ -281,7 +281,8 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
   // Creates and returns a discovery session.
   std::unique_ptr<LowEnergyDiscoverySession> StartDiscoverySession(
-      bool active = true, std::vector<DiscoveryFilter> discovery_filters = {}) {
+      bool active = true,
+      std::vector<hci::DiscoveryFilter> discovery_filters = {}) {
     std::unique_ptr<LowEnergyDiscoverySession> session;
     discovery_manager()->StartDiscovery(
         active, std::move(discovery_filters), [&](auto cb_session) {
@@ -733,18 +734,18 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
         peers_session0.insert(peer.address());
       };
 
-  DiscoveryFilter discovery_filter;
+  hci::DiscoveryFilter discovery_filter;
   discovery_filter.SetGeneralDiscoveryFlags();
-  std::vector<DiscoveryFilter> discovery_filters;
+  std::vector<hci::DiscoveryFilter> discovery_filters;
   discovery_filters.push_back(discovery_filter);
   sessions.push_back(StartDiscoverySession(/*active=*/true, discovery_filters));
   sessions[0]->SetResultCallback(std::move(result_cb));
 
   // Session 1 is interested in performing limited discovery.
-  DiscoveryFilter discovery_filter1;
+  hci::DiscoveryFilter discovery_filter1;
   discovery_filter1.set_flags(
       static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
-  std::vector<DiscoveryFilter> discovery_filters1;
+  std::vector<hci::DiscoveryFilter> discovery_filters1;
   discovery_filters1.push_back(discovery_filter1);
 
   std::unordered_set<DeviceAddress> peers_session1;
@@ -756,10 +757,10 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   sessions[1]->SetResultCallback(std::move(result_cb));
 
   // Session 2 is interested in peers with UUID 0x180d.
-  DiscoveryFilter discovery_filter2;
+  hci::DiscoveryFilter discovery_filter2;
   uint16_t uuid = 0x180d;
   discovery_filter2.set_service_uuids({UUID(uuid)});
-  std::vector<DiscoveryFilter> discovery_filters2;
+  std::vector<hci::DiscoveryFilter> discovery_filters2;
   discovery_filters2.push_back(discovery_filter2);
 
   std::unordered_set<DeviceAddress> peers_session2;
@@ -771,9 +772,9 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   sessions[2]->SetResultCallback(std::move(result_cb));
 
   // Session 3 is interested in peers whose names contain "Device".
-  DiscoveryFilter discovery_filter3;
+  hci::DiscoveryFilter discovery_filter3;
   discovery_filter3.set_name_substring("Device");
-  std::vector<DiscoveryFilter> discovery_filters3;
+  std::vector<hci::DiscoveryFilter> discovery_filters3;
   discovery_filters3.push_back(discovery_filter3);
 
   std::unordered_set<DeviceAddress> peers_session3;
@@ -785,9 +786,9 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   sessions[3]->SetResultCallback(std::move(result_cb));
 
   // Session 4 is interested in non-connectable peers.
-  DiscoveryFilter discovery_filter4;
+  hci::DiscoveryFilter discovery_filter4;
   discovery_filter4.set_connectable(false);
-  std::vector<DiscoveryFilter> discovery_filters4;
+  std::vector<hci::DiscoveryFilter> discovery_filters4;
   discovery_filters4.push_back(discovery_filter4);
 
   std::unordered_set<DeviceAddress> peers_session4;
@@ -800,10 +801,10 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
 
   // Session 5 is interested in peers with UUID 0x180d and service data UUID
   // 0x1234.
-  DiscoveryFilter discovery_filter5;
+  hci::DiscoveryFilter discovery_filter5;
   discovery_filter5.set_service_uuids({UUID(uuid)});
   discovery_filter5.set_service_data_uuids({UUID(kServiceDataUuid)});
-  std::vector<DiscoveryFilter> discovery_filters5;
+  std::vector<hci::DiscoveryFilter> discovery_filters5;
   discovery_filters5.push_back(discovery_filter5);
 
   std::unordered_set<DeviceAddress> peers_session5;
@@ -864,9 +865,9 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   discovery_manager()->set_scan_period(std::chrono::seconds(20));
 
   // Session 0 is interested in performing general discovery.
-  DiscoveryFilter discovery_filter;
+  hci::DiscoveryFilter discovery_filter;
   discovery_filter.SetGeneralDiscoveryFlags();
-  std::vector<DiscoveryFilter> discovery_filters;
+  std::vector<hci::DiscoveryFilter> discovery_filters;
   discovery_filters.push_back(discovery_filter);
 
   std::unordered_set<DeviceAddress> peers_session0;
@@ -881,10 +882,10 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   ASSERT_EQ(3u, peers_session0.size());
 
   // Session 1 is interested in performing limited discovery.
-  DiscoveryFilter discovery_filter1;
+  hci::DiscoveryFilter discovery_filter1;
   discovery_filter1.set_flags(
       static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
-  std::vector<DiscoveryFilter> discovery_filters1;
+  std::vector<hci::DiscoveryFilter> discovery_filters1;
   discovery_filters1.push_back(discovery_filter1);
 
   std::unordered_set<DeviceAddress> peers_session1;
@@ -896,10 +897,10 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   sessions[1]->SetResultCallback(std::move(result_cb));
 
   // Session 2 is interested in peers with UUID 0x180d.
-  DiscoveryFilter discovery_filter2;
+  hci::DiscoveryFilter discovery_filter2;
   uint16_t uuid = 0x180d;
   discovery_filter2.set_service_uuids({UUID(uuid)});
-  std::vector<DiscoveryFilter> discovery_filters2;
+  std::vector<hci::DiscoveryFilter> discovery_filters2;
   discovery_filters2.push_back(discovery_filter2);
 
   std::unordered_set<DeviceAddress> peers_session2;
@@ -912,9 +913,9 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   sessions[2]->SetResultCallback(std::move(result_cb));
 
   // Session 3 is interested in peers whose names contain "Device".
-  DiscoveryFilter discovery_filter3;
+  hci::DiscoveryFilter discovery_filter3;
   discovery_filter3.set_name_substring("Device");
-  std::vector<DiscoveryFilter> discovery_filters3;
+  std::vector<hci::DiscoveryFilter> discovery_filters3;
   discovery_filters3.push_back(discovery_filter3);
 
   std::unordered_set<DeviceAddress> peers_session3;
@@ -926,9 +927,9 @@ TEST_F(LowEnergyDiscoveryManagerTest,
   sessions[3]->SetResultCallback(std::move(result_cb));
 
   // Session 4 is interested in non-connectable peers.
-  DiscoveryFilter discovery_filter4;
+  hci::DiscoveryFilter discovery_filter4;
   discovery_filter4.set_connectable(false);
-  std::vector<DiscoveryFilter> discovery_filters4;
+  std::vector<hci::DiscoveryFilter> discovery_filters4;
   discovery_filters4.push_back(discovery_filter4);
 
   std::unordered_set<DeviceAddress> peers_session4;
@@ -1093,9 +1094,9 @@ TEST_F(LowEnergyDiscoveryManagerTest,
         addresses_found.insert(peer.address());
       };
 
-  DiscoveryFilter discovery_filter;
+  hci::DiscoveryFilter discovery_filter;
   discovery_filter.SetGeneralDiscoveryFlags();
-  std::vector<DiscoveryFilter> discovery_filters;
+  std::vector<hci::DiscoveryFilter> discovery_filters;
   discovery_filters.push_back(discovery_filter);
 
   auto session = StartDiscoverySession(/*active=*/true, discovery_filters);

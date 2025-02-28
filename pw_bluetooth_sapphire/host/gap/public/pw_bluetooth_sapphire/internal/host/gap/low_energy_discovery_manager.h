@@ -21,8 +21,8 @@
 
 #include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
-#include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
 
 namespace bt {
@@ -80,10 +80,10 @@ class PeerCache;
 //
 //     // Only scan for peers advertising the "Heart Rate" GATT Service.
 //     uint16_t uuid = 0x180d;
-//     bt::gap::DiscoveryFilter discovery_filter;
+//     bt::hci::DiscoveryFilter discovery_filter;
 //     discovery_filter.set_service_uuids({bt::UUID(uuid)});
 //
-//     std::vector<bt::gap::DiscoveryFilter> discovery_filters;
+//     std::vector<bt::hci::DiscoveryFilter> discovery_filters;
 //     discovery_filters.push_back(discovery_filter);
 //
 //     std::unique_ptr<bt::gap::LowEnergyDiscoverySession> session;
@@ -139,7 +139,7 @@ class LowEnergyDiscoveryManager final
   // this require software filtering for clients that did not request it?
   using SessionCallback = fit::function<void(LowEnergyDiscoverySessionPtr)>;
   void StartDiscovery(bool active,
-                      std::vector<bt::gap::DiscoveryFilter> filters,
+                      std::vector<hci::DiscoveryFilter> filters,
                       SessionCallback callback);
 
   // Pause current and future discovery sessions until the returned PauseToken
@@ -198,7 +198,7 @@ class LowEnergyDiscoveryManager final
 
   // Creates and stores a new session object and returns it.
   std::unique_ptr<LowEnergyDiscoverySession> AddSession(
-      bool active, std::vector<DiscoveryFilter> discovery_filters);
+      bool active, std::vector<hci::DiscoveryFilter> discovery_filters);
 
   // Called by LowEnergyDiscoverySession to stop a session that it was assigned
   // to.
@@ -262,7 +262,7 @@ class LowEnergyDiscoveryManager final
   // The list of currently pending calls to start discovery.
   struct DiscoveryRequest {
     bool active;
-    std::vector<DiscoveryFilter> filters;
+    std::vector<hci::DiscoveryFilter> filters;
     SessionCallback callback;
   };
   std::vector<DiscoveryRequest> pending_;
@@ -304,7 +304,7 @@ class LowEnergyDiscoverySession final
   LowEnergyDiscoverySession(
       uint16_t scan_id,
       bool active,
-      std::vector<DiscoveryFilter> filters,
+      std::vector<hci::DiscoveryFilter> filters,
       PeerCache& peer_cache,
       pw::async::Dispatcher& dispatcher,
       fit::function<void(LowEnergyDiscoverySession*)> on_stop_cb,
@@ -358,7 +358,7 @@ class LowEnergyDiscoverySession final
   uint16_t scan_id_;
   bool alive_ = true;
   bool active_;
-  std::vector<DiscoveryFilter> filters_;
+  std::vector<hci::DiscoveryFilter> filters_;
   PeerCache& peer_cache_;
   pw::async::HeapDispatcher heap_dispatcher_;
   fit::callback<void()> error_cb_;

@@ -101,6 +101,7 @@ fuchsia_cc_library(
         "//pw_bluetooth_sapphire/host/common:uuid_string_util",
         "//pw_bluetooth_sapphire/host/gap",
         "//pw_bluetooth_sapphire/host/gatt",
+        "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/sdp",
         "@fuchsia_sdk//fidl/fuchsia.bluetooth.bredr:fuchsia.bluetooth.bredr_cpp",
         "@fuchsia_sdk//fidl/fuchsia.bluetooth:fuchsia.bluetooth_hlcpp",

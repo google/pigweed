@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 #include "pw_bluetooth_sapphire/internal/host/common/supplement_data.h"
@@ -21,7 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_unit_test/framework.h"
 
-namespace bt::gap {
+namespace bt::hci {
 namespace {
 
 constexpr uint16_t kUuid0 = 0x180d;
@@ -1601,4 +1601,4 @@ TEST(DiscoveryFilterTest, GeneralDiscoveryFlags) {
 }
 
 }  // namespace
-}  // namespace bt::gap
+}  // namespace bt::hci

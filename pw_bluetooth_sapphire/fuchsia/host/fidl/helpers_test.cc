@@ -2038,7 +2038,7 @@ TEST_F(HelpersTestFakeAdapter, HostInfoWithLEAddressToFidl) {
 }
 
 TEST(HelpersTest, DiscoveryFilterFromEmptyFidlFilter) {
-  bt::gap::DiscoveryFilter filter = DiscoveryFilterFromFidl(fble::Filter());
+  bt::hci::DiscoveryFilter filter = DiscoveryFilterFromFidl(fble::Filter());
   EXPECT_TRUE(filter.service_uuids().empty());
   EXPECT_TRUE(filter.service_data_uuids().empty());
   EXPECT_TRUE(filter.solicitation_uuids().empty());
@@ -2063,7 +2063,7 @@ TEST(HelpersTest, DiscoveryFilterFromFidlFilter) {
   fidl_filter.set_connectable(true);
   fidl_filter.set_name("name");
   fidl_filter.set_max_path_loss(3);
-  bt::gap::DiscoveryFilter filter = DiscoveryFilterFromFidl(fidl_filter);
+  bt::hci::DiscoveryFilter filter = DiscoveryFilterFromFidl(fidl_filter);
   EXPECT_THAT(filter.service_uuids(),
               ::testing::ElementsAre(service_uuid.value));
   EXPECT_THAT(filter.service_data_uuids(),

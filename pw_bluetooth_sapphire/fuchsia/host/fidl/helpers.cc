@@ -35,8 +35,8 @@
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
-#include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/sco/sco.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/data_element.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/sdp.h"
@@ -1443,7 +1443,7 @@ bool IsScanFilterValid(const fble::ScanFilter& fidl_filter) {
 }
 
 bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
-                             bt::gap::DiscoveryFilter* out_filter) {
+                             bt::hci::DiscoveryFilter* out_filter) {
   PW_DCHECK(out_filter);
 
   if (fidl_filter.service_uuids) {
@@ -1460,8 +1460,9 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
       uuids.push_back(uuid);
     }
 
-    if (!uuids.empty())
+    if (!uuids.empty()) {
       out_filter->set_service_uuids(uuids);
+    }
   }
 
   if (fidl_filter.service_data_uuids) {
@@ -1478,8 +1479,9 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
       uuids.push_back(uuid);
     }
 
-    if (!uuids.empty())
+    if (!uuids.empty()) {
       out_filter->set_service_data_uuids(uuids);
+    }
   }
 
   if (fidl_filter.connectable) {
@@ -1503,9 +1505,9 @@ bool PopulateDiscoveryFilter(const fble::ScanFilter& fidl_filter,
   return true;
 }
 
-bt::gap::DiscoveryFilter DiscoveryFilterFromFidl(
+bt::hci::DiscoveryFilter DiscoveryFilterFromFidl(
     const fuchsia::bluetooth::le::Filter& fidl_filter) {
-  bt::gap::DiscoveryFilter out;
+  bt::hci::DiscoveryFilter out;
 
   if (fidl_filter.has_service_uuid()) {
     out.set_service_uuids({bt::UUID(fidl_filter.service_uuid().value)});

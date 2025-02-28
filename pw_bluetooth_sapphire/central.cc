@@ -22,8 +22,8 @@ namespace {
 
 pw::sync::Mutex g_peripheral_lock;
 
-bt::gap::DiscoveryFilter DiscoveryFilterFrom(const Central::ScanFilter& in) {
-  bt::gap::DiscoveryFilter out;
+bt::hci::DiscoveryFilter DiscoveryFilterFrom(const Central::ScanFilter& in) {
+  bt::hci::DiscoveryFilter out;
   if (in.service_uuid.has_value()) {
     bt::UUID uuid = internal::UuidFrom(in.service_uuid.value());
     out.set_service_uuids(std::vector<bt::UUID>{std::move(uuid)});
@@ -203,7 +203,7 @@ async2::OnceReceiver<Central::ScanStartResult> Central::Scan(
 
   // Convert options to filters now because options contains non-owning views
   // that won't be valid in callbacks.
-  std::vector<bt::gap::DiscoveryFilter> discovery_filters;
+  std::vector<bt::hci::DiscoveryFilter> discovery_filters;
   discovery_filters.reserve(options.filters.size());
   for (const ScanFilter& filter : options.filters) {
     discovery_filters.emplace_back(DiscoveryFilterFrom(filter));

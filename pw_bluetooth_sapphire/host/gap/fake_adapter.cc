@@ -228,7 +228,7 @@ void FakeAdapter::FakeLowEnergy::StartAdvertising(
 
 void FakeAdapter::FakeLowEnergy::StartDiscovery(
     bool active,
-    std::vector<DiscoveryFilter> discovery_filters,
+    std::vector<hci::DiscoveryFilter> discovery_filters,
     SessionCallback callback) {
   auto session = std::make_unique<LowEnergyDiscoverySession>(
       next_scan_id_++,

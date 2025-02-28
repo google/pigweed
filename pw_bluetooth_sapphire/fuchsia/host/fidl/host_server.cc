@@ -199,7 +199,7 @@ void HostServer::StartLEDiscovery() {
   // NOTE(armansito): This currently has no effect since peer updates
   // are driven by PeerCache events. |session|'s "result callback" is
   // unused.
-  bt::gap::DiscoveryFilter filter;
+  bt::hci::DiscoveryFilter filter;
   filter.set_connectable(true);
   filter.SetGeneralDiscoveryFlags();
 

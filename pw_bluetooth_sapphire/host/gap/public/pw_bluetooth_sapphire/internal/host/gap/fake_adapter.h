@@ -141,7 +141,7 @@ class FakeAdapter final : public Adapter {
         AdvertisingStatusCallback status_callback) override;
 
     void StartDiscovery(bool active,
-                        std::vector<bt::gap::DiscoveryFilter> filters,
+                        std::vector<hci::DiscoveryFilter> filters,
                         SessionCallback callback) override;
 
     void EnablePrivacy(bool enabled) override;

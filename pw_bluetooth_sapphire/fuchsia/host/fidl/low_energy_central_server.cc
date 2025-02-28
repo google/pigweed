@@ -284,7 +284,7 @@ void LowEnergyCentralServer::ScanInstance::FilterAndAddPeers(
       continue;
     }
     bool matches_any = false;
-    for (const bt::gap::DiscoveryFilter& filter : filters_) {
+    for (const bt::hci::DiscoveryFilter& filter : filters_) {
       // TODO(fxbug.dev/42111894): Match peer names that are not in advertising
       // data. This might require implementing a new peer filtering class, as
       // DiscoveryFilter only filters advertising data.
@@ -434,7 +434,7 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter,
     return;
   }
 
-  bt::gap::DiscoveryFilter discovery_filter;
+  bt::hci::DiscoveryFilter discovery_filter;
   fidl_helpers::PopulateDiscoveryFilter(*filter, &discovery_filter);
 
   requesting_scan_deprecated_ = true;

@@ -117,7 +117,7 @@ class LowEnergyCentralServer
     ScanCompleteCallback scan_complete_callback_;
     bt::gap::PeerCache::CallbackId peer_updated_callback_id_;
     // The filters specified in `ScanOptions`.
-    std::vector<bt::gap::DiscoveryFilter> filters_;
+    std::vector<bt::hci::DiscoveryFilter> filters_;
     LowEnergyCentralServer* central_server_;
     bt::gap::Adapter::WeakPtr adapter_;
     WeakSelf<ScanInstance> weak_self_;

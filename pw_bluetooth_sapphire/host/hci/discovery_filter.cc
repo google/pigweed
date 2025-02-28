@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 
 #include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
@@ -21,7 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 
-namespace bt::gap {
+namespace bt::hci {
 
 void DiscoveryFilter::SetGeneralDiscoveryFlags() {
   set_flags(static_cast<uint8_t>(AdvFlag::kLEGeneralDiscoverableMode) |
@@ -182,4 +182,4 @@ void DiscoveryFilter::Reset() {
   rssi_.reset();
 }
 
-}  // namespace bt::gap
+}  // namespace bt::hci

@@ -27,7 +27,6 @@
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_discovery_manager.h"
-#include "pw_bluetooth_sapphire/internal/host/gap/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/event_masks.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/gap.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_address_manager.h"
@@ -39,6 +38,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/android_extended_low_energy_advertiser.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_advertiser.h"
@@ -185,7 +185,7 @@ class AdapterImpl final : public Adapter {
     }
 
     void StartDiscovery(bool active,
-                        std::vector<DiscoveryFilter> discovery_filters,
+                        std::vector<hci::DiscoveryFilter> discovery_filters,
                         SessionCallback callback) override {
       adapter_->le_discovery_manager_->StartDiscovery(
           active, std::move(discovery_filters), std::move(callback));
