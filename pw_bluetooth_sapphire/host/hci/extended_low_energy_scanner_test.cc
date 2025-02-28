@@ -35,8 +35,10 @@ using testing::FakePeer;
 constexpr pw::chrono::SystemClock::duration kPwScanResponseTimeout =
     std::chrono::seconds(2);
 
-const StaticByteBuffer kPlainAdvDataBytes('T', 'e', 's', 't');
-const StaticByteBuffer kPlainScanRspBytes('D', 'a', 't', 'a');
+const StaticByteBuffer kPlainAdvDataBytes(
+    5, bt::DataType::kCompleteLocalName, 'T', 'e', 's', 't');
+const StaticByteBuffer kPlainScanRspBytes(
+    5, bt::DataType::kCompleteLocalName, 'D', 'a', 't', 'a');
 
 const DeviceAddress kPublicAddr1(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kPublicAddr2(DeviceAddress::Type::kLEPublic, {2});

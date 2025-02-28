@@ -743,8 +743,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
 
   // Session 1 is interested in performing limited discovery.
   hci::DiscoveryFilter discovery_filter1;
-  discovery_filter1.set_flags(
-      static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
+  discovery_filter1.set_flags(AdvFlag::kLELimitedDiscoverableMode);
   std::vector<hci::DiscoveryFilter> discovery_filters1;
   discovery_filters1.push_back(discovery_filter1);
 
@@ -883,8 +882,7 @@ TEST_F(LowEnergyDiscoveryManagerTest,
 
   // Session 1 is interested in performing limited discovery.
   hci::DiscoveryFilter discovery_filter1;
-  discovery_filter1.set_flags(
-      static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
+  discovery_filter1.set_flags(AdvFlag::kLELimitedDiscoverableMode);
   std::vector<hci::DiscoveryFilter> discovery_filters1;
   discovery_filters1.push_back(discovery_filter1);
 
