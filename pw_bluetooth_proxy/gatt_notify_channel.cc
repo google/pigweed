@@ -109,6 +109,14 @@ GattNotifyChannel::GattNotifyChannel(L2capChannelManager& l2cap_channel_manager,
                    /*payload_from_controller_fn=*/nullptr,
                    /*payload_from_host_fn=*/nullptr,
                    /*event_fn=*/std::move(event_fn)),
-      attribute_handle_(attribute_handle) {}
+      attribute_handle_(attribute_handle) {
+  PW_LOG_INFO("btproxy: GattNotifyChannel ctor - attribute_handle: %u",
+              attribute_handle_);
+}
+
+GattNotifyChannel::~GattNotifyChannel() {
+  PW_LOG_INFO("btproxy: GattNotifyChannel dtor - attribute_handle: %u",
+              attribute_handle_);
+}
 
 }  // namespace pw::bluetooth::proxy

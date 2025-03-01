@@ -24,6 +24,13 @@ namespace pw::bluetooth::proxy {
 /// remote peer.
 class GattNotifyChannel : public L2capChannel {
  public:
+  GattNotifyChannel(const GattNotifyChannel& other) = delete;
+  GattNotifyChannel& operator=(const GattNotifyChannel& other) = delete;
+  GattNotifyChannel(GattNotifyChannel&&) = default;
+  // Move assignment operator allows channels to be erased from pw_containers.
+  GattNotifyChannel& operator=(GattNotifyChannel&& other) = default;
+  ~GattNotifyChannel() override;
+
   /// Return the attribute handle of this GattNotify channel.
   uint16_t attribute_handle() const { return attribute_handle_; }
 
