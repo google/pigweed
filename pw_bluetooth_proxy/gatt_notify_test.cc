@@ -35,7 +35,7 @@ namespace {
 class GattNotifyTest : public ProxyHostTest {};
 
 // TODO: https://pwbug.dev/369709521 - Remove once SendGattNotify is removed.
-TEST_F(GattNotifyTest, Send1ByteAttributeUsingSendGattNotify) {
+TEST_F(GattNotifyTest, Send1ByteAttributeUsingSendGattNotifyMultiBuf) {
   struct {
     int sends_called = 0;
     // First four bits 0x0 encode PB & BC flags
@@ -110,6 +110,82 @@ TEST_F(GattNotifyTest, Send1ByteAttributeUsingSendGattNotify) {
                           capture.attribute_handle,
                           MultiBufFromArray(capture.attribute_value))
           .status);
+  EXPECT_EQ(capture.sends_called, 1);
+}
+
+// TODO: https://pwbug.dev/369709521 - Remove once SendGattNotify is removed.
+TEST_F(GattNotifyTest, Send1ByteAttributeUsingSendGattNotifySpan) {
+  struct {
+    int sends_called = 0;
+    // First four bits 0x0 encode PB & BC flags
+    uint16_t handle = 0x0ACB;
+    // Length of L2CAP PDU
+    uint16_t acl_data_total_length = 0x0008;
+    // Length of ATT PDU
+    uint16_t pdu_length = 0x0004;
+    // Attribute protocol channel ID (0x0004)
+    uint16_t channel_id = 0x0004;
+    // ATT_HANDLE_VALUE_NTF opcode 0x1B
+    uint8_t attribute_opcode = 0x1B;
+    uint16_t attribute_handle = 0x4321;
+    std::array<uint8_t, 1> attribute_value = {0xFA};
+
+    // Built from the preceding values in little endian order.
+    std::array<uint8_t, 12> expected_gatt_notify_packet = {
+        0xCB, 0x0A, 0x08, 0x00, 0x04, 0x00, 0x04, 0x00, 0x1B, 0x21, 0x43, 0xFA};
+  } capture;
+
+  pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+
+  pw::Function<void(H4PacketWithH4 && packet)>&& send_to_controller_fn(
+      [&capture](H4PacketWithH4&& packet) {
+        capture.sends_called++;
+        EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::ACL_DATA);
+        EXPECT_EQ(packet.GetHciSpan().size(),
+                  capture.expected_gatt_notify_packet.size());
+        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
+                               packet.GetHciSpan().end(),
+                               capture.expected_gatt_notify_packet.begin(),
+                               capture.expected_gatt_notify_packet.end()));
+        PW_TEST_ASSERT_OK_AND_ASSIGN(
+            auto acl,
+            MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
+        emboss::BFrameView l2cap =
+            emboss::MakeBFrameView(acl.payload().BackingStorage().data(),
+                                   acl.data_total_length().Read());
+        emboss::AttHandleValueNtfView gatt_notify =
+            emboss::MakeAttHandleValueNtfView(
+                capture.attribute_value.size(),
+                l2cap.payload().BackingStorage().data(),
+                l2cap.pdu_length().Read());
+        EXPECT_EQ(acl.header().handle().Read(), capture.handle);
+        EXPECT_EQ(acl.header().packet_boundary_flag().Read(),
+                  emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE);
+        EXPECT_EQ(acl.header().broadcast_flag().Read(),
+                  emboss::AclDataPacketBroadcastFlag::POINT_TO_POINT);
+        EXPECT_EQ(acl.data_total_length().Read(),
+                  capture.acl_data_total_length);
+        EXPECT_EQ(l2cap.pdu_length().Read(), capture.pdu_length);
+        EXPECT_EQ(l2cap.channel_id().Read(), capture.channel_id);
+        EXPECT_EQ(gatt_notify.attribute_opcode().Read(),
+                  static_cast<emboss::AttOpcode>(capture.attribute_opcode));
+        EXPECT_EQ(gatt_notify.attribute_handle().Read(),
+                  capture.attribute_handle);
+        EXPECT_EQ(gatt_notify.attribute_value()[0].Read(),
+                  capture.attribute_value[0]);
+      });
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/1,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+  // Allow proxy to reserve 1 credit.
+  PW_TEST_EXPECT_OK(SendLeReadBufferResponseFromController(proxy, 1));
+
+  PW_TEST_EXPECT_OK(proxy.SendGattNotify(capture.handle,
+                                         capture.attribute_handle,
+                                         pw::span{capture.attribute_value}));
   EXPECT_EQ(capture.sends_called, 1);
 }
 

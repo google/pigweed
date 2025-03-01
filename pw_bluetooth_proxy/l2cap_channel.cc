@@ -164,7 +164,7 @@ Status L2capChannel::QueuePacket(H4PacketWithH4&& packet) {
       status = OkStatus();
     }
   }
-  ReportNewTxPacketsOrCredits();
+  l2cap_channel_manager_.ForceDrainChannelQueues();
   return status;
 }
 
