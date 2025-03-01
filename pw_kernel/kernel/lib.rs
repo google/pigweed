@@ -100,6 +100,19 @@ fn bootstrap_thread_entry(_arg: usize) {
 
     SCHEDULER_STATE.lock().dump_all_threads();
 
+    let mut idle_thread;
+    #[allow(static_mut_refs)]
+    unsafe {
+        info!("allocating idle_thread");
+        static mut IDLE_THREAD_BUFFER: ThreadBuffer = ThreadBuffer::new();
+        idle_thread = IDLE_THREAD_BUFFER.alloc_thread();
+
+        info!("initializing idle_thread");
+        static mut IDLE_STACK: [u8; 2048] = [0; 2048];
+        idle_thread.initialize(Stack::from_slice(&IDLE_STACK), idle_thread_entry, 0usize);
+    }
+    SCHEDULER_STATE.lock().dump_all_threads();
+
     // TODO: Create a few test threads
     let mut thread_a;
     #[allow(static_mut_refs)]
@@ -126,6 +139,7 @@ fn bootstrap_thread_entry(_arg: usize) {
         thread_b.initialize(Stack::from_slice(&STACK_B), test_thread_entry, 'b' as usize);
     }
 
+    Thread::start(idle_thread);
     Thread::start(thread_a);
     Thread::start(thread_b);
 
@@ -138,12 +152,20 @@ fn bootstrap_thread_entry(_arg: usize) {
 }
 
 #[allow(dead_code)]
+fn idle_thread_entry(_arg: usize) {
+    // Fake idle thread to keep the runqueue from being empty if all threads are blocked.
+    assert!(Arch::interrupts_enabled());
+    loop {
+        Arch::idle();
+    }
+}
+
+#[allow(dead_code)]
 fn test_thread_entry(arg: usize) {
     info!("i'm a thread! arg {}", arg);
     assert!(Arch::interrupts_enabled());
-    #[allow(clippy::empty_loop)]
     loop {
         info!("thread {}", arg as u8 as char);
-        Arch::idle();
+        scheduler::TICK_WAIT_QUEUE.lock().wait();
     }
 }

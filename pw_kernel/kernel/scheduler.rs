@@ -14,6 +14,7 @@
 
 use core::cell::UnsafeCell;
 use core::mem::offset_of;
+use core::ops::{Deref, DerefMut};
 
 use foreign_box::ForeignBox;
 use list::*;
@@ -60,6 +61,7 @@ enum State {
     Ready,
     Running,
     Stopped,
+    Waiting,
 }
 
 // TODO: use From or Into trait (unclear how to do it with 'static str)
@@ -70,6 +72,7 @@ fn to_string(s: State) -> &'static str {
         State::Ready => "Ready",
         State::Running => "Running",
         State::Stopped => "Stopped",
+        State::Waiting => "Waiting",
     }
 }
 
@@ -222,6 +225,26 @@ impl SchedulerState {
         self.current_arch_thread_state
     }
 
+    fn move_current_thread_to_back(&mut self) -> usize {
+        let Some(mut current_thread) = self.current_thread.take() else {
+            panic!("no current thread");
+        };
+        let current_thread_id = current_thread.id();
+        current_thread.state = State::Ready;
+        self.insert_in_run_queue_tail(current_thread);
+        current_thread_id
+    }
+
+    fn move_current_thread_to_front(&mut self) -> usize {
+        let Some(mut current_thread) = self.current_thread.take() else {
+            panic!("no current thread");
+        };
+        let current_thread_id = current_thread.id();
+        current_thread.state = State::Ready;
+        self.insert_in_run_queue_head(current_thread);
+        current_thread_id
+    }
+
     fn set_current_thread(&mut self, thread: ForeignBox<Thread>) {
         self.current_arch_thread_state = thread.arch_thread_state.get();
         self.current_thread = Some(thread);
@@ -303,34 +326,24 @@ fn reschedule(
 
 #[allow(dead_code)]
 pub fn yield_timeslice() {
+    // info!("yielding thread {:#x}", current_thread.id());
     let mut ss = SCHEDULER_STATE.lock();
 
-    let Some(mut current_thread) = ss.current_thread.take() else {
-        panic!("no current thread");
-    };
-    let current_thread_id = current_thread.id();
-    // info!("yielding thread {:#x}", current_thread.id());
-
-    // Insert the current thread in the run queue at the tail.
-    current_thread.state = State::Ready;
-    ss.insert_in_run_queue_tail(current_thread);
+    // Yielding always moves the current task to the back of the run queue
+    let current_thread_id = ss.move_current_thread_to_back();
 
     reschedule(ss, current_thread_id);
 }
 
 #[allow(dead_code)]
 pub fn preempt() {
+    // info!("preempt thread {:#x}", current_thread.id());
     let mut ss = SCHEDULER_STATE.lock();
 
-    let Some(mut current_thread) = ss.current_thread.take() else {
-        panic!("no current thread");
-    };
-    let current_thread_id = current_thread.id();
-    // info!("preempt thread {:#x}", current_thread.id());
-
-    // Insert the current thread in the run queue at the tail.
-    current_thread.state = State::Ready;
-    ss.insert_in_run_queue_tail(current_thread);
+    // For now, always move the current thread to the back of the run queue.
+    // When the scheduler gets more complex, it should evaluate if it has used
+    // up it's time allocation.
+    let current_thread_id = ss.move_current_thread_to_back();
 
     reschedule(ss, current_thread_id);
 }
@@ -343,6 +356,7 @@ pub fn tick(_time_ms: u32) {
 
     // TODO: dynamically deal with time slice for this thread and put it
     // at the head or tail depending.
+    TICK_WAIT_QUEUE.lock().wake_one();
 
     preempt();
 }
@@ -368,3 +382,126 @@ pub fn exit_thread() -> ! {
     #[allow(clippy::empty_loop)]
     loop {}
 }
+
+pub struct SchedLockGuard<'lock, T> {
+    guard: SpinLockGuard<'lock, SchedulerState>,
+    inner: &'lock mut T,
+}
+
+impl<'lock, T> SchedLockGuard<'lock, T> {
+    #[allow(dead_code)]
+    pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState> {
+        &self.guard
+    }
+
+    #[allow(dead_code)]
+    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState> {
+        &mut self.guard
+    }
+
+    #[allow(dead_code)]
+    pub fn into_sched(self) -> SpinLockGuard<'lock, SchedulerState> {
+        self.guard
+    }
+}
+
+impl<T> Deref for SchedLockGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        self.inner
+    }
+}
+
+impl<T> DerefMut for SchedLockGuard<'_, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        self.inner
+    }
+}
+
+/// An owning lock that shares the global scheduler lock.
+///
+/// A [`SchedLockGuard`] can be turned into a `SpinLockGuard<'lock, SchedulerState>`
+/// so that it can be passed to `reschedule()`
+///
+/// # Safety
+/// Taking two different `SchedLock`s at the same time will deadlock as they
+/// share the same underlying lock.
+pub struct SchedLock<T> {
+    inner: UnsafeCell<T>,
+}
+unsafe impl<T> Sync for SchedLock<T> {}
+unsafe impl<T> Send for SchedLock<T> {}
+
+impl<T> SchedLock<T> {
+    pub const fn new(initial_value: T) -> Self {
+        Self {
+            inner: UnsafeCell::new(initial_value),
+        }
+    }
+
+    #[allow(unused)]
+    pub fn try_lock(&self) -> Option<SchedLockGuard<'_, T>> {
+        // Safety: The lock guarantees
+        SCHEDULER_STATE.try_lock().map(|guard| SchedLockGuard {
+            inner: unsafe { &mut *self.inner.get() },
+            guard,
+        })
+    }
+
+    pub fn lock(&self) -> SchedLockGuard<'_, T> {
+        let guard = SCHEDULER_STATE.lock();
+        SchedLockGuard {
+            inner: unsafe { &mut *self.inner.get() },
+            guard,
+        }
+    }
+}
+
+pub struct WaitQueue {
+    queue: ForeignList<Thread, ThreadListAdapter>,
+}
+
+unsafe impl Sync for WaitQueue {}
+unsafe impl Send for WaitQueue {}
+
+impl WaitQueue {
+    #[allow(dead_code)]
+    pub const fn new() -> Self {
+        Self {
+            queue: ForeignList::new(),
+        }
+    }
+}
+
+impl SchedLockGuard<'_, WaitQueue> {
+    #[allow(dead_code)]
+    pub fn add_thread(mut self, thread: ForeignBox<Thread>) {
+        self.queue.push_back(thread);
+    }
+
+    pub fn wake_one(mut self) {
+        if let Some(mut thread) = self.queue.pop_head() {
+            // Move the current thread to the head of its work queue as to not
+            // steal it's time allocation.
+            let current_thread_id = self.sched_mut().move_current_thread_to_front();
+
+            thread.state = State::Ready;
+            self.sched_mut().run_queue.push_back(thread);
+            reschedule(self.into_sched(), current_thread_id);
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn wait(mut self) {
+        let Some(mut thread) = self.sched_mut().current_thread.take() else {
+            panic!("no active thread");
+        };
+        let current_thread_id = thread.id();
+        thread.state = State::Waiting;
+        self.queue.push_back(thread);
+        reschedule(self.into_sched(), current_thread_id);
+    }
+}
+
+pub static TICK_WAIT_QUEUE: SchedLock<WaitQueue> = SchedLock::new(WaitQueue::new());
