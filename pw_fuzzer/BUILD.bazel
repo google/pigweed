@@ -47,7 +47,11 @@ cc_library(
     }),
     deps = [
         ":fuzztest_backend",
-        "//pw_containers",
+        "//pw_containers:flat_map",
+        "//pw_containers:inline_deque",
+        "//pw_containers:inline_queue",
+        "//pw_containers:intrusive_list",
+        "//pw_containers:vector",
         "//pw_result",
         "//pw_status",
         "//pw_string",
