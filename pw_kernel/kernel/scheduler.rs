@@ -140,22 +140,22 @@ impl Thread {
         assert!(thread.state == State::Initial);
         thread.state = State::Ready;
 
-        let mut ss = SCHEDULER_STATE.lock();
+        let mut sched_state = SCHEDULER_STATE.lock();
 
         // If there is a current thread, put it back on the top of the run queue.
-        let id = if let Some(mut current_thread) = ss.current_thread.take() {
+        let id = if let Some(mut current_thread) = sched_state.current_thread.take() {
             let id = current_thread.id();
             current_thread.state = State::Ready;
-            ss.insert_in_run_queue_head(current_thread);
+            sched_state.insert_in_run_queue_head(current_thread);
             id
         } else {
             Self::null_id()
         };
 
-        ss.insert_in_run_queue_tail(thread);
+        sched_state.insert_in_run_queue_tail(thread);
 
         // Add this thread to the scheduler and trigger a reschedule event
-        reschedule(ss, id);
+        reschedule(sched_state, id);
     }
 
     // Dump to the console useful information about this thread
@@ -176,22 +176,22 @@ impl Thread {
 }
 
 pub fn bootstrap_scheduler(mut thread: ForeignBox<Thread>) -> ! {
-    let mut ss = SCHEDULER_STATE.lock();
+    let mut sched_state = SCHEDULER_STATE.lock();
 
     // TODO: assert that this is called exactly once at bootup to switch
     // to this particular thread.
     assert!(thread.state == State::Initial);
     thread.state = State::Ready;
 
-    ss.run_queue.push_back(thread);
+    sched_state.run_queue.push_back(thread);
 
     info!("context switching to first thread");
 
     // Special case where we're switching from a non-thread to something real
     let mut temp_arch_thread_state = ArchThreadState::new();
-    ss.current_arch_thread_state = &raw mut temp_arch_thread_state;
+    sched_state.current_arch_thread_state = &raw mut temp_arch_thread_state;
 
-    reschedule(ss, Thread::null_id());
+    reschedule(sched_state, Thread::null_id());
     panic!("should not reach here");
 }
 
@@ -289,20 +289,20 @@ impl SchedulerState {
 
 #[allow(dead_code)]
 fn reschedule(
-    mut ss: SpinLockGuard<SchedulerState>,
+    mut sched_state: SpinLockGuard<SchedulerState>,
     current_thread_id: usize,
 ) -> SpinLockGuard<SchedulerState> {
     // Caller to reschedule is responsible for removing current thread and
     // put it in the correct run/wait queue.
 
-    assert!(ss.current_thread.is_none());
+    assert!(sched_state.current_thread.is_none());
 
     // info!("reschedule");
 
     // Pop a new thread off the head of the run queue.
     // At the moment cannot handle an empty queue, so will panic in that case.
     // TODO: Implement either an idle thread or a special idle routine for that case.
-    let Some(mut new_thread) = ss.run_queue.pop_head() else {
+    let Some(mut new_thread) = sched_state.run_queue.pop_head() else {
         panic!("run_queue empty");
     };
 
@@ -310,42 +310,46 @@ fn reschedule(
     new_thread.state = State::Running;
 
     if current_thread_id == new_thread.id() {
-        ss.current_thread = Some(new_thread);
+        sched_state.current_thread = Some(new_thread);
         // info!("decided to continue running thread {:#x}", new_thread.id());
-        return ss;
+        return sched_state;
     }
 
     // info!("switching to thread {:#x}", new_thread.id());
     unsafe {
-        let old_thread_state = ss.current_arch_thread_state;
+        let old_thread_state = sched_state.current_arch_thread_state;
         let new_thread_state = new_thread.arch_thread_state.get();
-        ss.set_current_thread(new_thread);
-        <Arch as ArchInterface>::ThreadState::context_switch(ss, old_thread_state, new_thread_state)
+        sched_state.set_current_thread(new_thread);
+        <Arch as ArchInterface>::ThreadState::context_switch(
+            sched_state,
+            old_thread_state,
+            new_thread_state,
+        )
     }
 }
 
 #[allow(dead_code)]
 pub fn yield_timeslice() {
     // info!("yielding thread {:#x}", current_thread.id());
-    let mut ss = SCHEDULER_STATE.lock();
+    let mut sched_state = SCHEDULER_STATE.lock();
 
     // Yielding always moves the current task to the back of the run queue
-    let current_thread_id = ss.move_current_thread_to_back();
+    let current_thread_id = sched_state.move_current_thread_to_back();
 
-    reschedule(ss, current_thread_id);
+    reschedule(sched_state, current_thread_id);
 }
 
 #[allow(dead_code)]
 pub fn preempt() {
     // info!("preempt thread {:#x}", current_thread.id());
-    let mut ss = SCHEDULER_STATE.lock();
+    let mut sched_state = SCHEDULER_STATE.lock();
 
     // For now, always move the current thread to the back of the run queue.
     // When the scheduler gets more complex, it should evaluate if it has used
     // up it's time allocation.
-    let current_thread_id = ss.move_current_thread_to_back();
+    let current_thread_id = sched_state.move_current_thread_to_back();
 
-    reschedule(ss, current_thread_id);
+    reschedule(sched_state, current_thread_id);
 }
 
 // Tick that is called from a timer handler. The scheduler will evaluate if the current thread
@@ -366,9 +370,9 @@ pub fn tick(_time_ms: u32) {
 // is performed.
 #[allow(dead_code)]
 pub fn exit_thread() -> ! {
-    let mut ss = SCHEDULER_STATE.lock();
+    let mut sched_state = SCHEDULER_STATE.lock();
 
-    let Some(mut current_thread) = ss.current_thread.take() else {
+    let Some(mut current_thread) = sched_state.current_thread.take() else {
         panic!("no current thread");
     };
     let current_thread_id = current_thread.id();
@@ -376,7 +380,7 @@ pub fn exit_thread() -> ! {
     info!("thread {:#x} exiting", current_thread.id());
     current_thread.state = State::Stopped;
 
-    reschedule(ss, current_thread_id);
+    reschedule(sched_state, current_thread_id);
 
     // Should not get here
     #[allow(clippy::empty_loop)]

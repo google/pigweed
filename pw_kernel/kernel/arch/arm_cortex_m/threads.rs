@@ -101,9 +101,9 @@ impl super::super::ThreadState for ArchThreadState {
         // Calculate the first 8 byte aligned full exception frame from the top
         // of the thread's stack.
         let mut frame = stack.end().wrapping_sub(size_of::<FullExceptionFrame>());
-        let ao = frame.align_offset(8);
-        if ao > 0 {
-            frame = frame.wrapping_sub(8 - ao);
+        let offset = frame.align_offset(8);
+        if offset > 0 {
+            frame = frame.wrapping_sub(8 - offset);
         }
         let frame: *mut FullExceptionFrame = frame as *mut FullExceptionFrame;
 
