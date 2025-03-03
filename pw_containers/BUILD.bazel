@@ -40,9 +40,11 @@ label_flag(
 # Libraries
 
 cc_library(
-    # This group is deprecated. Prefer to depend on individual features rather
-    # than on this collection.
     name = "pw_containers",
+    deprecation = "Depend on the individual single-header targets instead",
+    # Tagged manual so that we don't hit the deprecation warning when building
+    # upstream Pigweed itself.
+    tags = ["manual"],
     deps = [
         ":algorithm",
         ":flat_map",
