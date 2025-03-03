@@ -12,4 +12,5 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+pub mod mutex;
 pub mod spinlock;

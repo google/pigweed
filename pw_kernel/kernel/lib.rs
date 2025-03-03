@@ -25,11 +25,13 @@ mod scheduler;
 pub mod sync;
 mod target;
 
+use scheduler::yield_timeslice;
 use scheduler::Stack;
 use scheduler::Thread;
 use scheduler::SCHEDULER_STATE;
 
 use arch::{Arch, ArchInterface};
+use sync::mutex::Mutex;
 
 // A structure intended to be statically allocated to hold a Thread structure that will
 // be constructed at run time.
@@ -123,7 +125,11 @@ fn bootstrap_thread_entry(_arg: usize) {
 
         info!("initializing thread A");
         static mut STACK_A: [u8; 2048] = [0; 2048];
-        thread_a.initialize(Stack::from_slice(&STACK_A), test_thread_entry, 'a' as usize);
+        thread_a.initialize(
+            Stack::from_slice(&STACK_A),
+            test_thread_entry_a,
+            'a' as usize,
+        );
     }
     SCHEDULER_STATE.lock().dump_all_threads();
 
@@ -136,7 +142,11 @@ fn bootstrap_thread_entry(_arg: usize) {
 
         info!("initializing thread B");
         static mut STACK_B: [u8; 2048] = [0; 2048];
-        thread_b.initialize(Stack::from_slice(&STACK_B), test_thread_entry, 'b' as usize);
+        thread_b.initialize(
+            Stack::from_slice(&STACK_B),
+            test_thread_entry_b,
+            'b' as usize,
+        );
     }
 
     Thread::start(idle_thread);
@@ -160,12 +170,28 @@ fn idle_thread_entry(_arg: usize) {
     }
 }
 
+static TEST_COUNTER: Mutex<u64> = Mutex::new(0);
+
 #[allow(dead_code)]
-fn test_thread_entry(arg: usize) {
-    info!("i'm a thread! arg {}", arg);
+fn test_thread_entry_a(_arg: usize) {
+    info!("I'm thread A");
     assert!(Arch::interrupts_enabled());
     loop {
-        info!("thread {}", arg as u8 as char);
+        let mut counter = TEST_COUNTER.lock();
+        info!("Thread A incrementing counter");
+        *counter += 1;
         scheduler::TICK_WAIT_QUEUE.lock().wait();
+    }
+}
+
+#[allow(dead_code)]
+fn test_thread_entry_b(_arg: usize) {
+    info!("I'm thread A");
+    assert!(Arch::interrupts_enabled());
+    loop {
+        let counter = TEST_COUNTER.lock();
+        info!("Thread B: counter value {}", *counter);
+        drop(counter);
+        yield_timeslice();
     }
 }

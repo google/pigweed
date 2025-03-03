@@ -170,8 +170,11 @@ impl Thread {
     }
 
     // An id that can not be assigned to any thread in the system.
-    pub fn null_id() -> usize {
-        core::ptr::null::<Self>() as usize
+    pub const fn null_id() -> usize {
+        // `core::ptr::null::<Self>() as usize` can not be evaluated at const time
+        // and a null pointer is defined to be at address 0 (see
+        // https://doc.rust-lang.org/beta/core/ptr/fn.null.html).
+        0usize
     }
 }
 
@@ -248,6 +251,13 @@ impl SchedulerState {
     fn set_current_thread(&mut self, thread: ForeignBox<Thread>) {
         self.current_arch_thread_state = thread.arch_thread_state.get();
         self.current_thread = Some(thread);
+    }
+
+    pub fn current_thread_id(&self) -> usize {
+        match &self.current_thread {
+            Some(thread) => thread.id(),
+            None => Thread::null_id(),
+        }
     }
 
     #[allow(dead_code)]
@@ -462,6 +472,75 @@ impl<T> SchedLock<T> {
     }
 }
 
+pub struct WaitQueueLockState<T> {
+    queue: WaitQueue,
+    inner: T,
+}
+
+pub struct WaitQueueLock<T> {
+    state: SchedLock<WaitQueueLockState<T>>,
+}
+
+impl<T> WaitQueueLock<T> {
+    pub const fn new(initial_value: T) -> Self {
+        Self {
+            state: SchedLock::new(WaitQueueLockState {
+                queue: WaitQueue::new(),
+                inner: initial_value,
+            }),
+        }
+    }
+
+    pub fn lock(&self) -> WaitQueueLockGuard<'_, T> {
+        WaitQueueLockGuard {
+            inner: self.state.lock(),
+        }
+    }
+}
+
+pub struct WaitQueueLockGuard<'lock, T> {
+    inner: SchedLockGuard<'lock, WaitQueueLockState<T>>,
+}
+
+impl<'lock, T> WaitQueueLockGuard<'lock, T> {
+    #[allow(dead_code)]
+    pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState> {
+        &self.inner.guard
+    }
+
+    #[allow(dead_code)]
+    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState> {
+        &mut self.inner.guard
+    }
+
+    #[allow(dead_code)]
+    pub fn into_sched(self) -> SpinLockGuard<'lock, SchedulerState> {
+        self.inner.guard
+    }
+
+    #[allow(dead_code)]
+    pub fn into_wait_queue(self) -> SchedLockGuard<'lock, WaitQueue> {
+        SchedLockGuard::<'lock, WaitQueue> {
+            guard: self.inner.guard,
+            inner: &mut self.inner.inner.queue,
+        }
+    }
+}
+
+impl<T> Deref for WaitQueueLockGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.inner.inner.inner
+    }
+}
+
+impl<T> DerefMut for WaitQueueLockGuard<'_, T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.inner.inner.inner
+    }
+}
+
 pub struct WaitQueue {
     queue: ForeignList<Thread, ThreadListAdapter>,
 }
@@ -496,7 +575,6 @@ impl SchedLockGuard<'_, WaitQueue> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn wait(mut self) {
         let Some(mut thread) = self.sched_mut().current_thread.take() else {
             panic!("no active thread");
