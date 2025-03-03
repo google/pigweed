@@ -1,8 +1,8 @@
 .. _module-pw_env_setup:
 
-------------
+============
 pw_env_setup
-------------
+============
 .. pigweed-module::
    :name: pw_env_setup
 
@@ -53,12 +53,12 @@ runs bootstrap.
 
 On POSIX systems, the environment can be deactivated by running ``deactivate``.
 
-==================================
+----------------------------------
 Using pw_env_setup in your project
-==================================
+----------------------------------
 
 Downstream Projects Using Pigweed's Packages
-********************************************
+============================================
 
 Projects using Pigweed can leverage ``pw_env_setup`` to install Pigweed's
 dependencies or their own dependencies. Projects that only want to use Pigweed's
@@ -201,7 +201,7 @@ process. To check for this add the following.
    _pw_eval_sourced "$_pw_sourced"
 
 Downstream Projects Using Different Packages
-********************************************
+============================================
 Projects depending on Pigweed but using additional or different packages should
 copy the Pigweed `sample project`'s ``bootstrap.sh`` and ``pigweed.json`` and
 update the call to ``pw_bootstrap``. Search for "downstream" for other places
@@ -513,7 +513,7 @@ appear before ``b.json``'s, which will appear before ``a.json``'s.
    d.json
 
 Pinning Python Packages
-***********************
+=======================
 Python modules usually express dependencies as ranges, which makes it easier to
 install many Python packages that might otherwise have conflicting dependencies.
 However, this means version of packages can often change underneath us and
@@ -535,7 +535,7 @@ environment, and bootstrap again. Then run the ``list`` command from above
 again, and run ``pw presubmit``.
 
 Environment Variables
-*********************
+=====================
 Input Variables
 ---------------
 The following environment variables affect env setup behavior. Most users will
@@ -621,7 +621,7 @@ The following environment variables are set by env setup.
   Path to Pigweed's virtualenv.
 
 Non-Shell Environments
-**********************
+======================
 If using this outside of bash—for example directly from an IDE or CI
 system—users can process the ``actions.json`` file that's generated in the
 location specified by the environment config. It lists variables to set, clear,
@@ -683,7 +683,7 @@ It's straightforward to use these variables.
    deps = [ "$pw_env_setup_CIPD_PIGWEED/..." ]
 
 Implementation
-**************
+==============
 The environment is set up by installing CIPD and Python packages in
 ``PW_ENVIRONMENT_ROOT`` or ``<checkout>/environment``, and saving modifications
 to environment variables in setup scripts in those directories. To support
