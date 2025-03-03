@@ -66,6 +66,7 @@ cc_library_static {
     name: "pw_multibuf_allocator",
     srcs: [
         "allocator.cc",
+        "simple_allocator.cc",
     ],
     cpp_std: "c++20",
     export_include_dirs: [

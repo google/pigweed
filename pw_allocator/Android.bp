@@ -51,6 +51,7 @@ cc_library {
     srcs: [
         "allocator.cc",
         "allocator_as_pool.cc",
+        "block_allocator.cc",
         "block/contiguous.cc",
         "block/poisonable.cc",
         "chunk_pool.cc",
