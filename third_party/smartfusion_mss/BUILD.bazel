@@ -14,24 +14,24 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
-# Ready-made configurations
-liberosoc_configs = [
-    ("default", "configs/config_default.h"),
-    ("debug", "configs/config_debug.h"),
-]
+cc_library(
+    name = "default_config",
+    hdrs = [
+        "configs/config_default.h",
+        "configs/config_pigweed_common.h",
+    ],
+    copts = ["-Dmss_CONFIG_FILE=\"configs/config_default.h\""],
+    strip_include_prefix = ".",
+)
 
-# Config targets.
-[
-    cc_library(
-        name = "%s_config" % config_name,
-        hdrs = [
-            config_header,
-            "configs/config_pigweed_common.h",
-        ],
-        copts = ["-Dmss_CONFIG_FILE=\"%s\"" % config_header],
-        strip_include_prefix = ".",
-    )
-    for config_name, config_header in liberosoc_configs
-]
+cc_library(
+    name = "debug_config",
+    hdrs = [
+        "configs/config_debug.h",
+        "configs/config_pigweed_common.h",
+    ],
+    copts = ["-Dmss_CONFIG_FILE=\"configs/config_debug.h\""],
+    strip_include_prefix = ".",
+)
 
 # TODO(skeys): Add build recipe for the library.
