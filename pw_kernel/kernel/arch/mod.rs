@@ -61,6 +61,7 @@ pub trait BareSpinLock {
 
     fn try_lock(&self) -> Option<Self::Guard<'_>>;
 
+    #[inline(always)]
     fn lock(&self) -> Self::Guard<'_> {
         loop {
             if let Some(sentinel) = self.try_lock() {

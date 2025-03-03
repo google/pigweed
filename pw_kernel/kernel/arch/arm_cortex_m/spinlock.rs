@@ -12,22 +12,28 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+use core::arch::asm;
 use core::cell::UnsafeCell;
 use core::mem::ManuallyDrop;
-
-use cortex_m::interrupt;
-use cortex_m::register::primask::{self, Primask};
+use core::sync::atomic::{compiler_fence, Ordering};
 
 struct InterruptGuard {
-    saved_primask: Primask,
+    saved_primask: u32,
 }
 
 impl InterruptGuard {
+    #[inline]
     fn new() -> Self {
-        let saved_primask = primask::read();
-
-        // `cortex_m::interrupt::disable()` handles proper fencing.
-        interrupt::disable();
+        let saved_primask: u32;
+        unsafe {
+            asm!(
+                "mrs {}, PRIMASK
+                 cpsid i",
+                out(reg) saved_primask,
+                options(nomem, nostack, preserves_flags)
+            );
+        }
+        compiler_fence(Ordering::SeqCst);
 
         Self { saved_primask }
     }
@@ -36,11 +42,12 @@ impl InterruptGuard {
 impl Drop for InterruptGuard {
     #[inline]
     fn drop(&mut self) {
-        if self.saved_primask.is_active() {
-            // `cortex_m::interrupt::enable()` handles proper fencing.
-            //
-            // Safety: cortex-m critical sections are not used in this code base.
-            unsafe { interrupt::enable() };
+        if (self.saved_primask & 0x1) == 0x0 {
+            compiler_fence(Ordering::SeqCst);
+
+            unsafe {
+                asm!("cpsie i", options(nomem, nostack, preserves_flags));
+            }
         }
     }
 }
@@ -98,6 +105,7 @@ impl Default for BareSpinLock {
 impl crate::arch::BareSpinLock for BareSpinLock {
     type Guard<'a> = CortexMSpinLockGuard<'a>;
 
+    #[inline(always)]
     fn try_lock(&self) -> Option<Self::Guard<'_>> {
         let guard = InterruptGuard::new();
         // Safety: exclusive access to `is_locked` guaranteed because interrupts
@@ -114,5 +122,28 @@ impl crate::arch::BareSpinLock for BareSpinLock {
             guard: ManuallyDrop::new(guard),
             lock: self,
         })
+    }
+
+    #[inline(always)]
+    fn lock(&self) -> Self::Guard<'_> {
+        let guard = InterruptGuard::new();
+        // Safety: exclusive access to `is_locked` guaranteed because interrupts
+        // are off.
+
+        // For the uniprocessor version of the spinlock, there is no need to spin.
+
+        // TODO - konkers: add debug panic on recursively locked UP spinlock
+        // if unsafe { *self.is_locked.get() } {
+        //     panic!("recursively locked spinlock");
+        // }
+
+        unsafe {
+            *self.is_locked.get() = true;
+        }
+
+        return CortexMSpinLockGuard {
+            guard: ManuallyDrop::new(guard),
+            lock: self,
+        };
     }
 }
