@@ -94,7 +94,7 @@ class FormattingSuite:
         ):
             print(line, file=sys.stderr)
 
-        # TODO: b/326309165 - Load formatter options, and exclusion paths.
+        all_files = tuple(cli_support.filter_exclusions(all_files))
 
         files_by_formatter = cli_support.map_files_to_formatters(
             all_files, self._formatters

@@ -15,21 +15,24 @@
 
 import argparse
 import collections
+import json
 import logging
 from pathlib import Path
+import re
 import sys
 import textwrap
 from typing import (
     Collection,
     Dict,
     Iterable,
+    Iterator,
     List,
     Mapping,
     Sequence,
     TextIO,
 )
 
-from pw_cli import color
+from pw_cli import color, find_config
 from pw_cli.collect_files import add_file_collection_arguments
 from pw_cli.diff import colorize_diff
 from pw_cli.plural import plural
@@ -55,6 +58,29 @@ def findings_to_formatted_diffs(
         )
         for path, finding in diffs.items()
     ]
+
+
+def filter_exclusions(file_paths: Iterable[Path]) -> Iterator[Path]:
+    """Filters paths if they match an exclusion pattern in a pigweed.json."""
+    # TODO: b/399204950 - Dedupe this with the FormatOptions class.
+    paths_by_config = find_config.paths_by_nearest_config(
+        "pigweed.json",
+        file_paths,
+    )
+    for config, paths in paths_by_config.items():
+        if config is None:
+            yield from paths
+            continue
+        config_obj = json.loads(config.read_text())
+        fmt = config_obj.get('pw', {}).get('pw_presubmit', {}).get('format', {})
+        exclude = tuple(re.compile(x) for x in fmt.get('exclude', ()))
+        relpaths = [(x.resolve().relative_to(config.parent), x) for x in paths]
+        for relative_path, original_path in relpaths:
+            # Yield the original path if none of the exclusion patterns match.
+            if not [
+                filt for filt in exclude if filt.search(str(relative_path))
+            ]:
+                yield original_path
 
 
 def summarize_findings(
