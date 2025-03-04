@@ -15,7 +15,10 @@
 load("@rules_python//python:defs.bzl", "py_library")
 load("//pw_build:python.bzl", "pw_py_test")
 
-package(default_visibility = ["//visibility:public"])
+# Unlike most Pigweed modules, this package is private by default. This is
+# because use of pw_env_setup in the Bazel ecosystem is largely nonsense, so
+# nobody should ever be allowed to reference almost everything in here.
+package(default_visibility = ["//visibility:private"])
 
 licenses(["notice"])
 
@@ -43,6 +46,21 @@ label_flag(
 
 py_library(
     name = "pw_env_setup",
+    srcs = [
+        "pw_env_setup/config_file.py",
+    ],
+    imports = ["."],
+    # This library should be considered Pigweed implementation details.
+    # Projects outside of Pigweed should never directly depend on the API of
+    # this module.
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_library(
+    name = "pw_env_setup_private",
     srcs = [
         "pw_env_setup/__init__.py",
         "pw_env_setup/apply_visitor.py",
@@ -96,9 +114,10 @@ py_library(
         ":pigweed_json",
     ],
     imports = ["."],
+    # Nobody in the Bazel ecosystem should ever use these parts of pw_env_setup.
+    visibility = ["//docs:__pkg__"],
     deps = [
         "@python_packages//six",
-        "@rules_python//python/runfiles",
     ],
 )
 
@@ -114,7 +133,7 @@ pw_py_test(
     name = "json_visitor_test",
     srcs = ["json_visitor_test.py"],
     deps = [
-        ":pw_env_setup",
+        ":pw_env_setup_private",
         "@python_packages//six",
     ],
 )
@@ -123,7 +142,7 @@ pw_py_test(
     name = "cipd_setup_update_test",
     srcs = ["cipd_setup_update_test.py"],
     deps = [
-        ":pw_env_setup",
+        ":pw_env_setup_private",
         "@python_packages//parameterized",
     ],
 )
@@ -132,7 +151,7 @@ pw_py_test(
     name = "environment_test",
     srcs = ["environment_test.py"],
     deps = [
-        ":pw_env_setup",
+        ":pw_env_setup_private",
     ],
 )
 
@@ -140,7 +159,7 @@ pw_py_test(
     name = "python_packages_test",
     srcs = ["python_packages_test.py"],
     deps = [
-        ":pw_env_setup",
+        ":pw_env_setup_private",
         "@python_packages//toml",
     ],
 )

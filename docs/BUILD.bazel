@@ -338,6 +338,8 @@ sphinx_build_binary(
         "//pw_containers/py:inline_var_len_entry_queue",
         "//pw_docgen/py:pw_docgen",
         "//pw_emu/py:pw_emu",
+        "//pw_env_setup/py:pw_env_setup",
+        "//pw_env_setup/py:pw_env_setup_private",
         "//pw_hdlc/py:pw_hdlc",
         "//pw_ide/py:pw_ide",
         "//pw_log/py:pw_log",
