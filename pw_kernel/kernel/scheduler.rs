@@ -14,7 +14,6 @@
 
 use core::cell::UnsafeCell;
 use core::mem::offset_of;
-use core::ops::{Deref, DerefMut};
 
 use foreign_box::ForeignBox;
 use list::*;
@@ -22,6 +21,10 @@ use pw_log::info;
 
 use crate::arch::{Arch, ArchInterface, ArchThreadState, ThreadState};
 use crate::sync::spinlock::{SpinLock, SpinLockGuard};
+
+mod locks;
+
+pub use locks::{SchedLock, SchedLockGuard, WaitQueueLock};
 
 #[derive(Clone, Copy)]
 pub struct Stack {
@@ -396,151 +399,6 @@ pub fn exit_thread() -> ! {
     #[allow(clippy::empty_loop)]
     loop {}
 }
-
-pub struct SchedLockGuard<'lock, T> {
-    guard: SpinLockGuard<'lock, SchedulerState>,
-    inner: &'lock mut T,
-}
-
-impl<'lock, T> SchedLockGuard<'lock, T> {
-    #[allow(dead_code)]
-    pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState> {
-        &self.guard
-    }
-
-    #[allow(dead_code)]
-    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState> {
-        &mut self.guard
-    }
-
-    #[allow(dead_code)]
-    pub fn into_sched(self) -> SpinLockGuard<'lock, SchedulerState> {
-        self.guard
-    }
-}
-
-impl<T> Deref for SchedLockGuard<'_, T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        self.inner
-    }
-}
-
-impl<T> DerefMut for SchedLockGuard<'_, T> {
-    fn deref_mut(&mut self) -> &mut T {
-        self.inner
-    }
-}
-
-/// An owning lock that shares the global scheduler lock.
-///
-/// A [`SchedLockGuard`] can be turned into a `SpinLockGuard<'lock, SchedulerState>`
-/// so that it can be passed to `reschedule()`
-///
-/// # Safety
-/// Taking two different `SchedLock`s at the same time will deadlock as they
-/// share the same underlying lock.
-pub struct SchedLock<T> {
-    inner: UnsafeCell<T>,
-}
-unsafe impl<T> Sync for SchedLock<T> {}
-unsafe impl<T> Send for SchedLock<T> {}
-
-impl<T> SchedLock<T> {
-    pub const fn new(initial_value: T) -> Self {
-        Self {
-            inner: UnsafeCell::new(initial_value),
-        }
-    }
-
-    #[allow(unused)]
-    pub fn try_lock(&self) -> Option<SchedLockGuard<'_, T>> {
-        // Safety: The lock guarantees
-        SCHEDULER_STATE.try_lock().map(|guard| SchedLockGuard {
-            inner: unsafe { &mut *self.inner.get() },
-            guard,
-        })
-    }
-
-    pub fn lock(&self) -> SchedLockGuard<'_, T> {
-        let guard = SCHEDULER_STATE.lock();
-        SchedLockGuard {
-            inner: unsafe { &mut *self.inner.get() },
-            guard,
-        }
-    }
-}
-
-pub struct WaitQueueLockState<T> {
-    queue: WaitQueue,
-    inner: T,
-}
-
-pub struct WaitQueueLock<T> {
-    state: SchedLock<WaitQueueLockState<T>>,
-}
-
-impl<T> WaitQueueLock<T> {
-    pub const fn new(initial_value: T) -> Self {
-        Self {
-            state: SchedLock::new(WaitQueueLockState {
-                queue: WaitQueue::new(),
-                inner: initial_value,
-            }),
-        }
-    }
-
-    pub fn lock(&self) -> WaitQueueLockGuard<'_, T> {
-        WaitQueueLockGuard {
-            inner: self.state.lock(),
-        }
-    }
-}
-
-pub struct WaitQueueLockGuard<'lock, T> {
-    inner: SchedLockGuard<'lock, WaitQueueLockState<T>>,
-}
-
-impl<'lock, T> WaitQueueLockGuard<'lock, T> {
-    #[allow(dead_code)]
-    pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState> {
-        &self.inner.guard
-    }
-
-    #[allow(dead_code)]
-    pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState> {
-        &mut self.inner.guard
-    }
-
-    #[allow(dead_code)]
-    pub fn into_sched(self) -> SpinLockGuard<'lock, SchedulerState> {
-        self.inner.guard
-    }
-
-    #[allow(dead_code)]
-    pub fn into_wait_queue(self) -> SchedLockGuard<'lock, WaitQueue> {
-        SchedLockGuard::<'lock, WaitQueue> {
-            guard: self.inner.guard,
-            inner: &mut self.inner.inner.queue,
-        }
-    }
-}
-
-impl<T> Deref for WaitQueueLockGuard<'_, T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        &self.inner.inner.inner
-    }
-}
-
-impl<T> DerefMut for WaitQueueLockGuard<'_, T> {
-    fn deref_mut(&mut self) -> &mut T {
-        &mut self.inner.inner.inner
-    }
-}
-
 pub struct WaitQueue {
     queue: ForeignList<Thread, ThreadListAdapter>,
 }
