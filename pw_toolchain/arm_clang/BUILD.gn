@@ -116,6 +116,19 @@ if (pw_toolchain_USE_LLVM_PREBUILT_LIBRARIES) {
     ldflags += cortex_m_common_link_flags
     defines = cortex_m_common_defines
   }
+
+  config("cortex_m4f") {
+    cflags = [
+      "-mcpu=cortex-m4",
+      "--target=armv7m-none-eabi",
+    ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_hardware_fpu_flags
+    asmflags = cflags
+    ldflags = cflags
+    ldflags += cortex_m_common_link_flags
+    defines = cortex_m_common_defines
+  }
 } else {
   pw_clang_arm_config("cortex_m0plus") {
     cflags = [ "-mcpu=cortex-m0plus" ]
@@ -148,6 +161,14 @@ if (pw_toolchain_USE_LLVM_PREBUILT_LIBRARIES) {
     asmflags = cflags
     ldflags = cflags
   }
+
+  pw_clang_arm_config("cortex_m4f") {
+    cflags = [ "-mcpu=cortex-m4" ]
+    cflags += cortex_m_common_flags
+    cflags += cortex_m_hardware_fpu_flags
+    asmflags = cflags
+    ldflags = cflags
+  }
 }
 
 pw_clang_arm_config("cortex_m3") {
@@ -157,14 +178,6 @@ pw_clang_arm_config("cortex_m3") {
   asmflags = cflags
   ldflags = cflags
   rustflags = [ "--target=thumbv7m-none-eabi" ]
-}
-
-pw_clang_arm_config("cortex_m4f") {
-  cflags = [ "-mcpu=cortex-m4" ]
-  cflags += cortex_m_common_flags
-  cflags += cortex_m_hardware_fpu_flags
-  asmflags = cflags
-  ldflags = cflags
 }
 
 pw_clang_arm_config("cortex_m7") {
