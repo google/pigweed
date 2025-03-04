@@ -14,6 +14,8 @@
 
 #include "pw_metric/metric.h"
 
+#include <limits>
+
 #include "pw_log/log.h"
 #include "pw_unit_test/framework.h"
 
@@ -54,6 +56,41 @@ TEST(Metric, IntFromObject) {
 
   m.Increment(11u);
   EXPECT_EQ(m.value(), 426u);
+}
+
+TEST(Metric, IntLimits) {
+  // Note leading bit is 1; it is stripped from the name to store the type.
+  Token token = 0xf1223344;
+
+  TypedMetric<uint32_t> m(token, static_cast<uint32_t>(31337u));
+  EXPECT_EQ(m.name(), 0x71223344u);
+  EXPECT_TRUE(m.is_int());
+  EXPECT_FALSE(m.is_float());
+  EXPECT_EQ(m.value(), 31337u);
+
+  m.Set(10);
+  EXPECT_EQ(m.value(), 10u);
+
+  m.Decrement(7);
+  EXPECT_EQ(m.value(), 3u);
+
+  m.Decrement(7);
+  EXPECT_EQ(m.value(), 0u);
+
+  m.Decrement(7);
+  EXPECT_EQ(m.value(), 0u);
+
+  m.Set(std::numeric_limits<uint32_t>::max() - 10);
+  EXPECT_EQ(m.value(), std::numeric_limits<uint32_t>::max() - 10);
+
+  m.Increment();
+  EXPECT_EQ(m.value(), std::numeric_limits<uint32_t>::max() - 9);
+
+  m.Increment(9);
+  EXPECT_EQ(m.value(), std::numeric_limits<uint32_t>::max());
+
+  m.Increment(2);
+  EXPECT_EQ(m.value(), std::numeric_limits<uint32_t>::max());
 }
 
 TEST(Metric, IntFromMacroLocal) {

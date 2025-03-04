@@ -14,6 +14,7 @@
 #pragma once
 
 #include <algorithm>
+#include <atomic>
 #include <initializer_list>
 #include <limits>
 
@@ -94,8 +95,8 @@ class Metric : public IntrusiveList<Metric>::Item {
   Token name_and_type_;
 
   union {
-    float float_;
-    uint32_t uint_;
+    std::atomic<float> float_;
+    std::atomic<uint32_t> uint_;
   };
 
   enum : uint32_t {

@@ -15,6 +15,8 @@
 #include "pw_metric/metric.h"
 
 #include <array>
+#include <atomic>
+#include <limits>
 
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
@@ -63,36 +65,56 @@ Metric::Metric(Token name, uint32_t value, IntrusiveList<Metric>& metrics)
 
 float Metric::as_float() const {
   PW_DCHECK(is_float());
-  return float_;
+  return float_.load(std::memory_order_relaxed);
 }
 
 uint32_t Metric::as_int() const {
   PW_DCHECK(is_int());
-  return uint_;
+  return uint_.load(std::memory_order_relaxed);
 }
 
 void Metric::Increment(uint32_t amount) {
   PW_DCHECK(is_int());
-  if (PW_ADD_OVERFLOW(uint_, amount, &uint_)) {
-    uint_ = std::numeric_limits<uint32_t>::max();
+
+  uint32_t value = uint_.load();
+  uint32_t updated;
+
+  if (value == std::numeric_limits<uint32_t>::max()) {
+    return;
   }
+
+  do {
+    if (PW_ADD_OVERFLOW(value, amount, &updated)) {
+      updated = std::numeric_limits<uint32_t>::max();
+    }
+  } while (!uint_.compare_exchange_weak(value, updated));
 }
 
 void Metric::Decrement(uint32_t amount) {
   PW_DCHECK(is_int());
-  if (PW_SUB_OVERFLOW(uint_, amount, &uint_)) {
-    uint_ = 0;
-  }
+
+  uint32_t value = uint_.load();
+  uint32_t updated;
+
+  do {
+    if (value == 0) {
+      return;
+    }
+
+    if (PW_SUB_OVERFLOW(value, amount, &updated)) {
+      updated = 0;
+    }
+  } while (!uint_.compare_exchange_weak(value, updated));
 }
 
 void Metric::SetInt(uint32_t value) {
   PW_DCHECK(is_int());
-  uint_ = value;
+  uint_.store(value, std::memory_order_relaxed);
 }
 
 void Metric::SetFloat(float value) {
   PW_DCHECK(is_float());
-  float_ = value;
+  float_.store(value, std::memory_order_relaxed);
 }
 
 void Metric::Dump(int level, bool last) const {

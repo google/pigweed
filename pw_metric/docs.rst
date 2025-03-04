@@ -179,6 +179,9 @@ The ``pw::metric::Metric`` provides:
 
 The metric object is 12 bytes on 32-bit platforms.
 
+All of the operations on the pw_metric are atomic, and require the system to
+have a ``std::atomic`` backend implementation defined.
+
 .. cpp:class:: pw::metric::Metric
 
    .. cpp:function:: Increment(uint32_t amount = 0)
