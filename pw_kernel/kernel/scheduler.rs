@@ -558,11 +558,6 @@ impl WaitQueue {
 }
 
 impl SchedLockGuard<'_, WaitQueue> {
-    #[allow(dead_code)]
-    pub fn add_thread(mut self, thread: ForeignBox<Thread>) {
-        self.queue.push_back(thread);
-    }
-
     pub fn wake_one(mut self) {
         if let Some(mut thread) = self.queue.pop_head() {
             // Move the current thread to the head of its work queue as to not
