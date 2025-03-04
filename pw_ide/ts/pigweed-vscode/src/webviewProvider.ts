@@ -16,6 +16,7 @@ import * as vscode from 'vscode';
 import { checkExtensionsAndGetStatus } from './extensionManagement';
 import logging from './logging';
 import { getSettingsData } from './configParsing';
+import getCipdReport from './clangd/report';
 
 export class WebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'pigweed.webview';
@@ -44,10 +45,28 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
       switch (data.type) {
         case 'getExtensionData': {
           const report = await checkExtensionsAndGetStatus();
+          logging.info('getExtensionData reported: ' + JSON.stringify(report));
           this._view?.webview.postMessage({
             type: 'extensionData',
             data: report,
           });
+          break;
+        }
+        case 'getCipdReport': {
+          const report = await getCipdReport();
+          logging.info('getCipdReport reported: ' + JSON.stringify(report));
+          this._view?.webview.postMessage({
+            type: 'cipdReport',
+            data: report,
+          });
+          break;
+        }
+        case 'refreshCompileCommands': {
+          vscode.commands.executeCommand('pigweed.refresh-compile-commands');
+          break;
+        }
+        case 'restartClangd': {
+          vscode.commands.executeCommand('clangd.restart');
           break;
         }
         case 'openExtension': {

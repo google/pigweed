@@ -14,36 +14,35 @@
  * the License.
  */
 
-table {
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
+.container {
+	width: 100%;
+	box-sizing: border-box;
 }
 
-th,
-td {
-    padding: 8px;
-    text-align: left;
+.row {
+	display: flex;
+	width: 100%;
+	box-sizing: border-box;
 }
 
-tr.header-row {
-    display: block;
-    width: 100%;
+
+.row div:first-child {
+	flex: 1;
+	padding: 8px;
+	box-sizing: border-box;
+	min-width: 0;
+	text-wrap: balance;
 }
 
-tr.content-row td {
-    width: auto;
+.row div:last-child {
+	white-space: nowrap;
+	padding: 8px;
+	box-sizing: border-box;
 }
 
-tr.content-row td:nth-child(1) {
-    min-width: 100px;
+.row div sub{
+	word-wrap: break-word;
 }
-
-tr.content-row td:nth-child(2) {
-    min-width: 200px;
-    text-align: right;
-}
-
 
 @font-face {
 	font-family: "codicon";

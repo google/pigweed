@@ -25,6 +25,13 @@ type ExtensionData = {
   unwanted: { id: string; installed: boolean; name: string }[];
 };
 
+type CipdReport = {
+  bazelPath?: string;
+  targetSelected?: string;
+  isCompileCommandsGenerated?: boolean;
+  compileCommandsPath?: string;
+};
+
 const vscode = acquireVsCodeApi();
 
 @customElement('app-root')
@@ -41,6 +48,7 @@ export class Root extends LitElement {
   @property() name = 'World';
   @state() count = 0;
   @state() extensionData: ExtensionData = { unwanted: [], recommended: [] };
+  @state() cipdReport: CipdReport = {};
 
   createRenderRoot() {
     return this;
@@ -49,40 +57,19 @@ export class Root extends LitElement {
   render() {
     return html`
       <div>
-        <div>
-          <table style="width: 100%;">
-            <tr class="content-row">
-              <td>
-                <b>Pigweed Extension Logs</b><br />
-                <p>
-                  Dump extension logs and your workspace settings to a file.
-                </p>
-              </td>
-              <td>
-                <button
-                  class="vscode-button"
-                  @click="${() => {
-                    vscode.postMessage({ type: 'dumpLogs' });
-                  }}"
-                >
-                  Dump
-                </button>
-              </td>
-            </tr>
-          </table>
-        </div>
         <details class="vscode-collapsible" open>
           <summary>
             <i class="codicon codicon-chevron-right icon-arrow"></i>
             <b class="title"> Recommended Extensions </b>
           </summary>
           <div>
-            <table style="width: 100%;">
+            <b>Recommended Extensions</b><br/>
+            <div class="container">
               ${this.extensionData.recommended.map(
                 (ext) =>
-                  html`<tr class="content-row">
-                    <td>${ext.name || ext.id}</td>
-                    <td>
+                  html`<div class="row">
+                    <div>${ext.name || ext.id}</div>
+                    <div>
                       ${!ext.installed
                         ? html`
                             <button
@@ -98,25 +85,17 @@ export class Root extends LitElement {
                             </button>
                           `
                         : html`<i>Installed</i>`}
-                    </td>
-                  </tr>`,
+                    </div>
+                  </div>`,
               )}
-            </table>
-          </div>
-        </details>
-
-        <details class="vscode-collapsible" open>
-          <summary>
-            <i class="codicon codicon-chevron-right icon-arrow"></i>
-            <b class="title"> Unwanted Extensions </b>
-          </summary>
-          <div>
-            <table style="width: 100%;">
+            </div>
+            <b>Unwanted Extensions</b><br/>
+            <div class="container">
               ${this.extensionData.unwanted.map(
                 (ext) =>
-                  html`<tr class="content-row">
-                    <td>${ext.name || ext.id}</td>
-                    <td>
+                  html`<div class="row">
+                    <div>${ext.name || ext.id}</div>
+                    <div>
                       ${ext.installed
                         ? html`
                             <button
@@ -132,12 +111,107 @@ export class Root extends LitElement {
                             </button>
                           `
                         : html`<i>Not Installed</i>`}
-                    </td>
-                  </tr>`,
+                    </div>
+                  </div>`,
               )}
-            </table>
+            </div>
           </div>
         </details>
+        <details class="vscode-collapsible" open>
+          <summary>
+            <i class="codicon codicon-chevron-right icon-arrow"></i>
+            <b class="title"> Pigweed Extension Logs </b>
+          </summary>
+          <div class="container">
+            <div class="row">
+              <div>
+                <p>
+                  Dump extension logs and your workspace settings to a file.
+                </p>
+              </div>
+              <div>
+                <button
+                  class="vscode-button"
+                  @click="${() => {
+                    vscode.postMessage({ type: 'dumpLogs' });
+                  }}">
+                  Dump
+                </button>
+              </div>
+            </div>
+          </div>
+        </details>
+        <details class="vscode-collapsible">
+          <summary>
+            <i class="codicon codicon-chevron-right icon-arrow"></i>
+            <b class="title"> Clangd Dashboard </b>
+          </summary>
+        <div>
+          <span>If code navigation is broken, see what is wrong below.</span>
+          <div class="container">
+            <div class="row">
+              <div>
+                <b>Bazel is available</b><br/>
+                <sub>${this.cipdReport.bazelPath || 'N/A'}</sub>
+              </div>
+              <div>${this.cipdReport.bazelPath ? '✅' : '❌'}</div>
+            </div>
+            <div class="row">
+              <div>
+                <b>Target is selected</b><br/>
+                <sub>${this.cipdReport.targetSelected || 'None'}</sub>
+              </div>
+              <div>${this.cipdReport.targetSelected ? '✅' : '❌'}</div>
+            </div>
+            <div class="row">
+              <div>
+                <b>compile_commands.json exists</b><br/>
+                <sub>${this.cipdReport.compileCommandsPath || 'N/A'}</sub>
+              </div>
+              <div>
+                ${this.cipdReport.isCompileCommandsGenerated ? '✅' : '❌'}
+              </div>
+            </div>
+            <div class="row">
+            <div><b>Still not working?</b><br/></div>
+            </div>
+            <div class="row">
+              <div>
+                Refresh the compile_commands.json
+              </div>
+              <div>
+                <button
+                  class="vscode-button"
+                  @click="${() => {
+                    vscode.postMessage({
+                      type: 'refreshCompileCommands',
+                    });
+                  }}"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                Restart clangd language server
+              </div>
+              <div>
+                <button
+                  class="vscode-button"
+                  @click="${() => {
+                    vscode.postMessage({
+                      type: 'restartClangd',
+                    });
+                  }}"
+                >
+                  Restart
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        </detail>
       </div>
     `;
   }
@@ -154,11 +228,14 @@ export class Root extends LitElement {
         const { type } = message;
         if (type === 'extensionData') {
           this.extensionData = message.data;
+        } else if (type === 'cipdReport') {
+          this.cipdReport = message.data;
         }
       },
       false,
     );
 
     vscode.postMessage({ type: 'getExtensionData' });
+    vscode.postMessage({ type: 'getCipdReport' });
   }
 }
