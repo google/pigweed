@@ -425,6 +425,12 @@ cipd_repository(
     tag = "git_revision:c057ba4f43db0506d4ba8c096925b054b02a8bd3",
 )
 
+cipd_repository(
+    name = "buildifier",
+    path = "infra/3pp/tools/buildifier/${platform}",
+    tag = "version:3@v8.0.3",
+)
+
 # Set up legacy pw_transfer test binaries.
 # Required by: pigweed.
 # Used in modules: //pw_transfer.

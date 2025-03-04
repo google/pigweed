@@ -118,15 +118,20 @@ pw_py_importable_runfile(
     visibility = ["//visibility:private"],
 )
 
+pw_py_importable_runfile(
+    name = "buildifier_runfiles",
+    src = "@buildifier",
+    executable = True,
+    visibility = ["//visibility:private"],
+)
+
 pw_py_binary(
     name = "format",
     srcs = ["pigweed_format/__main__.py"],
-    data = [
-        "//pw_presubmit/py:black",
-    ],
     main = "pigweed_format/__main__.py",
     deps = [
         ":black_runfiles",
+        ":buildifier_runfiles",
         "//pw_build/py:pw_build",
     ] + select({
         "@platforms//os:macos": ["@llvm_toolchain_macos//:py_clang_format"],
