@@ -23,7 +23,7 @@ use core::{
 
 use pw_log::fatal;
 
-pub struct ForeignBox<T> {
+pub struct ForeignBox<T: ?Sized> {
     inner: NonNull<T>,
 
     // Guards against the type being dropped w/o a consume call.
@@ -37,7 +37,7 @@ pub struct ForeignBox<T> {
     _phantom: PhantomData<T>,
 }
 
-impl<T> ForeignBox<T> {
+impl<T: ?Sized> ForeignBox<T> {
     #[allow(dead_code)]
     /// Create a new `ForeignBox` from a `NonNull<T>`.
     ///
@@ -88,32 +88,32 @@ impl<T> ForeignBox<T> {
     }
 }
 
-impl<T> Drop for ForeignBox<T> {
+impl<T: ?Sized> Drop for ForeignBox<T> {
     fn drop(&mut self) {
         if !self.consumed {
             // TODO: Build out `pw_log` friendly panics.
             fatal!(
                 "ForeignBox@{:08x} dropped before being consumed!",
-                self.inner.as_ptr() as usize
+                self.inner.as_ptr() as *const () as usize
             );
             panic!("ForeignBox dropped before being consumed!");
         }
     }
 }
 
-impl<T> AsRef<T> for ForeignBox<T> {
+impl<T: ?Sized> AsRef<T> for ForeignBox<T> {
     fn as_ref(&self) -> &T {
         unsafe { self.inner.as_ref() }
     }
 }
 
-impl<T> AsMut<T> for ForeignBox<T> {
+impl<T: ?Sized> AsMut<T> for ForeignBox<T> {
     fn as_mut(&mut self) -> &mut T {
         unsafe { self.inner.as_mut() }
     }
 }
 
-impl<T> Deref for ForeignBox<T> {
+impl<T: ?Sized> Deref for ForeignBox<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -121,7 +121,7 @@ impl<T> Deref for ForeignBox<T> {
     }
 }
 
-impl<T> DerefMut for ForeignBox<T> {
+impl<T: ?Sized> DerefMut for ForeignBox<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut()
     }
@@ -200,5 +200,52 @@ mod tests {
 
         // Prevent foreign_box from being dropped.
         let _ = foreign_box.consume();
+    }
+
+    trait TestDynTrait {
+        fn number(&self) -> u32;
+    }
+
+    struct TimesOne {
+        val: u32,
+    }
+
+    impl TestDynTrait for TimesOne {
+        fn number(&self) -> u32 {
+            self.val
+        }
+    }
+
+    #[allow(dead_code)]
+    struct TimesTwo {
+        val: u32,
+    }
+
+    #[allow(dead_code)]
+    impl TestDynTrait for TimesTwo {
+        fn number(&self) -> u32 {
+            self.val * 2
+        }
+    }
+
+    fn get_number(val: &ForeignBox<dyn TestDynTrait>) -> u32 {
+        val.as_ref().number()
+    }
+
+    #[test]
+    fn supports_dynamic_dispatch() {
+        let mut times_one_val = TimesOne { val: 10 };
+        let ptr = &raw mut times_one_val;
+        let times_one_box = unsafe { ForeignBox::<dyn TestDynTrait>::new_from_ptr(ptr) };
+
+        let mut times_two_val = TimesTwo { val: 10 };
+        let ptr = &raw mut times_two_val;
+        let times_two_box = unsafe { ForeignBox::<dyn TestDynTrait>::new_from_ptr(ptr) };
+
+        assert_eq!(get_number(&times_one_box), 10);
+        assert_eq!(get_number(&times_two_box), 20);
+
+        times_one_box.consume();
+        times_two_box.consume();
     }
 }
