@@ -247,3 +247,28 @@ export async function checkExtensions() {
     );
   }
 }
+
+export async function checkExtensionsAndGetStatus() {
+  const extensions = await getExtensionsJson();
+  const installed: { [key: string]: vscode.Extension<any> } = {};
+  vscode.extensions.all.forEach((ext) => {
+    installed[ext.id] = ext;
+  });
+  const installedIds = vscode.extensions.all.map((ext) => ext.id);
+
+  const recommended = extensions?.recommendations?.map((id) => ({
+    id,
+    installed: installedIds.includes(id),
+    name: installed[id]?.packageJSON?.displayName,
+  }));
+  const unwanted = extensions?.unwantedRecommendations?.map((id) => ({
+    id,
+    installed: installedIds.includes(id),
+    name: installed[id]?.packageJSON?.displayName,
+  }));
+
+  return {
+    recommended,
+    unwanted,
+  };
+}

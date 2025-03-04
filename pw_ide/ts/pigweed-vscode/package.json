@@ -26,6 +26,25 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "custom-activitybar",
+          "title": "Pigweed VSCode Extension",
+          "icon": "./icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "custom-activitybar": [
+        {
+          "type": "webview",
+          "id": "pigweed.webview",
+          "name": "View",
+          "contextualTitle": "View"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "pigweed.open-output-panel",
@@ -235,9 +254,12 @@
   "dependencies": {
     "@bazel/bazelisk": "^1.19.0",
     "@bazel/buildifier": "^7.1.2",
+    "@vscode-elements/elements-lite": "^0.3.0",
+    "@vscode/codicons": "^0.0.36",
     "glob": "^10.4.5",
     "hjson": "^3.2.2",
     "js-yaml": "^4.1.0",
+    "lit": "^3.2.1",
     "node_modules-path": "^2.0.8",
     "yaml": "^2.7.0",
     "zod": "^3.24.1"
@@ -254,11 +276,13 @@
     "@typescript-eslint/parser": "^7.16.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.3.9",
+    "css-loader": "^7.1.2",
     "eslint": "^8.56.0",
     "mocha": "^10.2.0",
     "node-polyfill-webpack-plugin": "^4.0.0",
     "prettier": "^3.3.2",
     "rimraf": "^6.0.1",
+    "style-loader": "^4.0.0",
     "ts-jest": "^29.2.2",
     "ts-loader": "^9.5.1",
     "tsx": "^4.16.2",

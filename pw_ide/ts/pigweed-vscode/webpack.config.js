@@ -19,53 +19,87 @@ const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const webpack = require('webpack');
 
 /**@type {import('webpack').Configuration}*/
-const config = {
-  // We need access to node APIs, so we can't currently build for webworker.
-  target: 'node',
-
-  // the entry point of this extension, 📖 ->
-  // https://webpack.js.org/configuration/entry-context/
+const configForVsCodeExt = {
+  target: ['node', 'es2020'], // Target Node.js environment
   entry: './src/extension.ts',
-
   output: {
-    // the bundle is stored in the 'dist' folder (check package.json), 📖 ->
-    // https://webpack.js.org/configuration/output/
     path: path.resolve(__dirname, 'dist'),
     filename: 'extension.js',
     libraryTarget: 'commonjs2',
     devtoolModuleFilenameTemplate: '../[resource-path]',
+    // clean: true,
   },
   devtool: 'source-map',
   plugins: [new NodePolyfillPlugin()],
   externals: {
-    // the vscode-module is created on-the-fly and must
-    // be excluded. Add other modules that cannot be
-    // webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
     vscode: 'commonjs vscode',
   },
   resolve: {
-    // support reading TypeScript and JavaScript files, 📖 ->
-    // https://github.com/TypeStrong/ts-loader
-    // look for `browser` entry point in imported node modules
-    mainFields: ['browser', 'module', 'main'],
     extensions: ['.ts', '.js'],
-    alias: {
-      // provides alternate implementation for node module and source files
-    },
-    fallback: {
-      // Webpack 5 no longer polyfills Node.js core modules automatically.
-      // see https://webpack.js.org/configuration/resolve/#resolvefallback
-      // for the list of Node.js core module polyfills.
-    },
   },
   module: {
     rules: [
       {
         test: /\.ts$/,
         exclude: /node_modules/,
-        use: [{ loader: 'ts-loader' }],
+        use: [
+          {
+            loader: 'ts-loader',
+            options: {
+              configFile: 'tsconfig.json',
+            },
+          },
+        ],
       },
     ],
   },
 };
-module.exports = config;
+
+/**@type {import('webpack').Configuration}*/
+const configForWebview = {
+  target: 'web', // Target browser environment
+  entry: './src/webview/index.ts',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'webview.js',
+    libraryTarget: 'umd', // or 'var', depending on your needs
+    globalObject: 'this', // Important for webviews
+    // clean: true,
+  },
+  devtool: 'source-map',
+  resolve: {
+    mainFields: ['browser', 'module', 'main'],
+    extensions: ['.ts', '.js'],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: 'ts-loader',
+            options: {
+              configFile: 'tsconfig.webview.json',
+            },
+          },
+        ],
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
+      // {
+      //   test: /\.(png|jpg|jpeg|gif|ttf|svg)($|\?)/,
+      //   loader: "file-loader",
+      //   type: 'asset/resource',
+      //   options: {
+      //       name: "[name].[contenthash].[ext]",
+      //       outputPath: "assets",
+      //   },
+      // },
+    ],
+  },
+};
+
+module.exports = [configForVsCodeExt, configForWebview];

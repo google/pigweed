@@ -68,6 +68,7 @@ import {
   launchTerminal,
   patchBazeliskIntoTerminalPath,
 } from './terminal';
+import { WebviewProvider } from './webviewProvider';
 
 import { commandRegisterer, VscCommandCallback } from './utils';
 import { shouldSupportGn } from './gn';
@@ -435,6 +436,15 @@ function buildSystemStatusReason(
 }
 
 export async function activate(context: vscode.ExtensionContext) {
+  const provider = new WebviewProvider(context.extensionUri);
+
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      WebviewProvider.viewType,
+      provider,
+    ),
+  );
+
   logger.info('Extension loaded');
   logger.info('');
 

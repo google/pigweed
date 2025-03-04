@@ -14,6 +14,7 @@
 
 **/*
 !dist/extension.js
+!dist/**/*
 !node_modules/@bazel/bazelisk/**/*
 !node_modules/@bazel/buildifier/**/*
 !package.json

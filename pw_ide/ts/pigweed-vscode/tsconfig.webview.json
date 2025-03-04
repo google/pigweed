@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "module": "es2020",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "typeRoots": [
+      "src/webview"
+    ],
+    "allowSyntheticDefaultImports": true,
+    "target": "es2020",
+    "lib": [
+      "es2020",
+      "dom"
+    ],
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "noEmitOnError": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": [
+    "src/webview/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
