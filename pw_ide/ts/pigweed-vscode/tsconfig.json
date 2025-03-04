@@ -14,6 +14,6 @@
   "exclude": [
     "*.js",
     "**/*.e2e.test.ts",
-    "src/webview"
+    "src/webview/**/*"
   ]
 }

@@ -14,6 +14,11 @@
 
 import * as vscode from 'vscode';
 
+type LogEntry = {
+  level: 'info' | 'warn' | 'error';
+  message: string;
+  timestamp: Date;
+};
 export interface Logger {
   info: (msg: string) => void;
   warn: (msg: string) => void;
@@ -30,4 +35,27 @@ const logger = {
   error: (msg: string) => output.error(msg),
 };
 
-export default logger;
+export interface LogDumpPassthrough extends Logger {
+  logs: LogEntry[];
+}
+
+function loggerWithPassthrough(logger: Logger): LogDumpPassthrough {
+  const logs: LogEntry[] = [];
+  return {
+    info: (msg: string) => {
+      logger.info(msg);
+      logs.push({ level: 'info', message: msg, timestamp: new Date() });
+    },
+    warn: (msg: string) => {
+      logger.warn(msg);
+      logs.push({ level: 'warn', message: msg, timestamp: new Date() });
+    },
+    error: (msg: string) => {
+      logger.error(msg);
+      logs.push({ level: 'error', message: msg, timestamp: new Date() });
+    },
+    logs,
+  };
+}
+
+export default loggerWithPassthrough(logger);

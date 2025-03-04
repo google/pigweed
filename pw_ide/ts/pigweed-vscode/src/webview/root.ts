@@ -49,6 +49,28 @@ export class Root extends LitElement {
   render() {
     return html`
       <div>
+        <div>
+          <table style="width: 100%;">
+            <tr class="content-row">
+              <td>
+                <b>Pigweed Extension Logs</b><br />
+                <p>
+                  Dump extension logs and your workspace settings to a file.
+                </p>
+              </td>
+              <td>
+                <button
+                  class="vscode-button"
+                  @click="${() => {
+                    vscode.postMessage({ type: 'dumpLogs' });
+                  }}"
+                >
+                  Dump
+                </button>
+              </td>
+            </tr>
+          </table>
+        </div>
         <details class="vscode-collapsible" open>
           <summary>
             <i class="codicon codicon-chevron-right icon-arrow"></i>

@@ -14,6 +14,8 @@
 
 import * as vscode from 'vscode';
 import { checkExtensionsAndGetStatus } from './extensionManagement';
+import logging from './logging';
+import { getSettingsData } from './configParsing';
 
 export class WebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'pigweed.webview';
@@ -51,6 +53,36 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
         case 'openExtension': {
           const extensionId = data.data;
           await vscode.commands.executeCommand('extension.open', extensionId);
+          break;
+        }
+        case 'dumpLogs': {
+          const workspaceFolders = vscode.workspace.workspaceFolders;
+          if (!workspaceFolders) return {};
+          const workspaceFolder = workspaceFolders[0];
+
+          const logsFilePath = vscode.Uri.joinPath(
+            workspaceFolder.uri,
+            'pigweed-vscode-logs.txt',
+          );
+
+          const logs = logging.logs;
+          let output = '';
+          const settings = await getSettingsData();
+          output +=
+            'SETTINGS\n========\n' + JSON.stringify(settings, null, 2) + '\n\n';
+          output += 'LOGS\n====\n';
+          for (const log of logs) {
+            output += `[${log.timestamp.toISOString()}] [${log.level.toUpperCase()}] ${
+              log.message
+            }\n`;
+          }
+          await vscode.workspace.fs.writeFile(
+            logsFilePath,
+            Buffer.from(output),
+          );
+          vscode.window.showInformationMessage(
+            'Logs dumped to ' + logsFilePath.fsPath,
+          );
           break;
         }
       }
