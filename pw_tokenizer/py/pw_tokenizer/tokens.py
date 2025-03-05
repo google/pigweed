@@ -379,7 +379,14 @@ class Database:
         return to_delete
 
     def merge(self, *databases: Database) -> None:
-        """Merges two or more databases together, keeping the newest dates."""
+        """Merges two or more databases together.
+
+        All entries are kept if there are token collisions.
+
+        If there are two identical tokens (same domain, token, and string), the
+        newest removal date (or no date if either token has no removal date) is
+        used for the merged token.
+        """
         for other_db in databases:
             for entry in other_db.entries():
                 key = entry.key()

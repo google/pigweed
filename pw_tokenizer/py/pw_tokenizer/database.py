@@ -638,7 +638,8 @@ def _parse_args() -> tuple[Callable[..., None], argparse.Namespace]:
         help=(
             'Adds new strings to a database with tokenized strings from a set '
             'of ELF files or other token databases. Missing entries are NOT '
-            'marked as removed.'
+            'marked as removed. All unique entries are kept if there are '
+            'collisions.'
         ),
     )
     subparser.set_defaults(handler=_handle_add)
