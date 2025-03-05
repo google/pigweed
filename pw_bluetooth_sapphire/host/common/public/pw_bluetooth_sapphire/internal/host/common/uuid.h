@@ -116,6 +116,18 @@ class UUID final {
   const UInt128& value() const { return value_; }
 
   std::optional<uint16_t> As16Bit() const;
+  std::optional<uint32_t> As32Bit() const;
+
+  // We store the type that this was initialized with to allow quick comparison
+  // with short Bluetooth SIG UUIDs.
+  enum class Type : uint8_t {
+    k16Bit,
+    k32Bit,
+    k128Bit,
+  };
+
+  // The type (size) of this UUID
+  Type type() const { return type_; }
 
  private:
   // The Bluetooth Base UUID defines the first value in the range reserved
@@ -178,14 +190,6 @@ class UUID final {
     }
     return true;
   }
-
-  // We store the type that this was initialized with to allow quick comparison
-  // with short Bluetooth SIG UUIDs.
-  enum class Type : uint8_t {
-    k16Bit,
-    k32Bit,
-    k128Bit,
-  };
 
   // If a quick conversion is possible, these return the 16 or 32 bit values of
   // the UUID in host byte order.

@@ -173,6 +173,14 @@ std::optional<uint16_t> UUID::As16Bit() const {
   return ret;
 }
 
+std::optional<uint32_t> UUID::As32Bit() const {
+  std::optional<uint32_t> ret;
+  if (type_ != Type::k128Bit) {
+    ret = ValueAs32Bit();
+  }
+  return ret;
+}
+
 uint16_t UUID::ValueAs16Bit() const {
   PW_DCHECK(type_ == Type::k16Bit);
 
