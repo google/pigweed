@@ -91,6 +91,8 @@ cc_library(
         "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/l2cap",
         "//pw_bluetooth_sapphire/lib/cpp-string",
+        "//pw_crypto:aes",
+        "//pw_crypto:aes_cmac",
         "//third_party/fuchsia:fit",
         "@boringssl//:crypto",
     ],

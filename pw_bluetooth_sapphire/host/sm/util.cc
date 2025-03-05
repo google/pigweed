@@ -14,10 +14,10 @@
 
 #include "pw_bluetooth_sapphire/internal/host/sm/util.h"
 
-#include <openssl/aes.h>
-#include <openssl/cmac.h>
 #include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
+#include <pw_crypto/aes.h>
+#include <pw_crypto/aes_cmac.h>
 #include <pw_preprocessor/compiler.h>
 
 #include <algorithm>
@@ -56,6 +56,9 @@ const auto kF5Salt = UInt128{0xBE,
                              0x6C};
 const auto kF5KeyId = std::array<uint8_t, 4>{0x65, 0x6C, 0x74, 0x62};
 
+using pw::crypto::aes_cmac::Cmac;
+using pw::crypto::unsafe::aes::EncryptBlock;
+
 // Swap the endianness of a 128-bit integer. |in| and |out| should not be backed
 // by the same buffer.
 void Swap128(const UInt128& in, UInt128* out) {
@@ -63,6 +66,18 @@ void Swap128(const UInt128& in, UInt128* out) {
   for (size_t i = 0; i < in.size(); ++i) {
     (*out)[i] = in[in.size() - i - 1];
   }
+}
+
+// Get a UInt128 view as a const byte span.
+pw::span<const std::byte, kUInt128Size> Bytes128(const UInt128& value) {
+  return pw::span<const std::byte, kUInt128Size>(
+      reinterpret_cast<const std::byte*>(value.data()), value.size());
+}
+
+// Get a UInt128 view as a mutable byte span.
+pw::span<std::byte, kUInt128Size> Bytes128(UInt128* value) {
+  return pw::span<std::byte, kUInt128Size>(
+      reinterpret_cast<std::byte*>(value->data()), value->size());
 }
 
 // XOR two 128-bit integers and return the result in |out|. It is possible to
@@ -278,15 +293,16 @@ void Encrypt(const UInt128& key,
   // and the most significant octet of encryptedData corresponds to out[0] using
   // the notation specified in FIPS-197" for the security function "e" (Vol 3,
   // Part H, 2.2.1).
-  UInt128 be_k, be_pt, be_enc;
-  Swap128(key, &be_k);
-  Swap128(plaintext_data, &be_pt);
+  UInt128 be_key, be_plaintext, be_encrypt;
+  Swap128(key, &be_key);
+  Swap128(plaintext_data, &be_plaintext);
 
-  AES_KEY k;
-  AES_set_encrypt_key(be_k.data(), 128, &k);
-  AES_encrypt(be_pt.data(), be_enc.data(), &k);
+  PW_CHECK_OK(
+      EncryptBlock(
+          Bytes128(be_key), Bytes128(be_plaintext), Bytes128(&be_encrypt)),
+      "Encryption failed.");
 
-  Swap128(be_enc, out_encrypted_data);
+  Swap128(be_encrypt, out_encrypted_data);
 }
 
 void C1(const UInt128& tk,
@@ -446,23 +462,23 @@ DeviceAddress GenerateRandomAddress(bool is_static) {
 
 std::optional<UInt128> AesCmac(const UInt128& hash_key, const ByteBuffer& msg) {
   // Reverse little-endian input parameters to the big-endian format expected by
-  // BoringSSL.
-  UInt128 big_endian_key;
-  Swap128(hash_key, &big_endian_key);
-  DynamicByteBuffer big_endian_msg(msg);
-  uint8_t* msg_begin = big_endian_msg.mutable_data();
-  std::reverse(msg_begin, msg_begin + big_endian_msg.size());
-  UInt128 big_endian_out, little_endian_out;
-  // 0 is the failure error code for AES_CMAC
-  if (AES_CMAC(big_endian_out.data(),
-               big_endian_key.data(),
-               big_endian_key.size(),
-               msg_begin,
-               big_endian_msg.size()) == 0) {
+  // pw_crypto.
+  UInt128 be_key;
+  Swap128(hash_key, &be_key);
+  DynamicByteBuffer be_msg(msg);
+  uint8_t* msg_begin = be_msg.mutable_data();
+  std::reverse(msg_begin, msg_begin + be_msg.size());
+  UInt128 be_out, out;
+
+  if (!Cmac(Bytes128(be_key))
+           .Update(be_msg.subspan())
+           .Final(Bytes128(&be_out))
+           .ok()) {
     return std::nullopt;
   }
-  Swap128(big_endian_out, &little_endian_out);
-  return little_endian_out;
+
+  Swap128(be_out, &out);
+  return out;
 }
 
 std::optional<UInt128> F4(const UInt256& u,
