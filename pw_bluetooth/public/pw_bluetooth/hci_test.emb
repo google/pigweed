@@ -34,7 +34,7 @@ struct TestCommandPacketWithArrayPayload:
   -- Test HCI Command packet with single byte payload.
   let hdr_size = hci.CommandHeader.$size_in_bytes
   0     [+hdr_size]  hci.CommandHeader  header
-  $next [+4]         UInt:8[4]            payload
+  $next [+4]         UInt:8[4]          payload
 
 
 struct TestEventPacket:
