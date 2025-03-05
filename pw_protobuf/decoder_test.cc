@@ -17,6 +17,7 @@
 #include <cstring>
 
 #include "pw_preprocessor/util.h"
+#include "pw_protobuf/wire_format.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::protobuf {
@@ -362,6 +363,18 @@ TEST(CallbackDecoder, Decode_StopsOnNonOkStatus) {
   EXPECT_EQ(decoder.Decode(as_bytes(span(encoded_proto))), Status::Cancelled());
   EXPECT_EQ(handler.field_one, 42);
   EXPECT_EQ(handler.field_three, 1111);
+}
+
+TEST(Decoder, DelimitedFieldSizeLargerThanRemainingSpan_ReturnsDataLoss) {
+  std::array<std::byte, 4> input = {
+      static_cast<std::byte>(
+          static_cast<uint32_t>(FieldKey(1, WireType::kDelimited))),
+      static_cast<std::byte>(3),  // Length longer than remaining subspan.
+      static_cast<std::byte>(172),
+      static_cast<std::byte>(193)};
+  // clang-format on
+  Decoder decoder(input);
+  EXPECT_EQ(decoder.Next(), Status::DataLoss());
 }
 
 }  // namespace

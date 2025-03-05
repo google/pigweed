@@ -1623,5 +1623,20 @@ TEST(StreamDecoder, NestedIncompleteVarint) {
   EXPECT_EQ(nested_decoder.ReadInt32().status(), Status::DataLoss());
 }
 
+TEST(StreamDecoder, DelimitedFieldSizeLargerThanRemainingSpan_ReturnsDataLoss) {
+  std::array<std::byte, 4> input = {
+      static_cast<std::byte>(
+          static_cast<uint32_t>(FieldKey(1, WireType::kDelimited))),
+      static_cast<std::byte>(3),  // Length longer than remaining subspan.
+      static_cast<std::byte>(172),
+      static_cast<std::byte>(193)};
+  // clang-format on
+  stream::MemoryReader reader(input);
+  StreamDecoder decoder(reader);
+  EXPECT_EQ(decoder.Next(), OkStatus());
+  ASSERT_EQ(decoder.FieldNumber().value(), 1u);
+  EXPECT_EQ(decoder.Next(), Status::DataLoss());
+}
+
 }  // namespace
 }  // namespace pw::protobuf
