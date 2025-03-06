@@ -81,6 +81,8 @@ pw_add_test(pw_protobuf.decoder_test
   SOURCES
     decoder_test.cc
   PRIVATE_DEPS
+    pw_fuzzer.fuzztest
+    pw_fuzzer.libfuzzer
     pw_protobuf
   GROUPS
     modules

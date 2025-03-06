@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-################################################################################
+# ###############################################################################
 # FuzzTest support
 #
 # Create FuzzTest-style fuzzers by adding a dep on pw_fuzzer.fuzztest
@@ -36,6 +36,7 @@ if(pw_unit_test_BACKEND STREQUAL "pw_unit_test.fuzztest")
     PUBLIC_INCLUDES
       public
       private
+
     # TODO(b/370836939): Fix these in upstream and remove.
     PUBLIC_COMPILE_OPTIONS
       "-Wno-sign-compare"
@@ -58,5 +59,13 @@ else()
       private_overrides
   )
 endif()
+
+pw_add_library(pw_fuzzer.libfuzzer INTERFACE
+  HEADERS
+    public/pw_fuzzer/asan_interface.h
+    public/pw_fuzzer/fuzzed_data_provider.h
+  PUBLIC_INCLUDES
+    public
+)
 
 add_subdirectory("examples/fuzztest")

@@ -105,6 +105,8 @@ pw_cc_test(
     srcs = ["decoder_test.cc"],
     deps = [
         ":pw_protobuf",
+        "//pw_fuzzer:fuzztest",
+        "//pw_fuzzer:libfuzzer",
         "//pw_preprocessor",
     ],
 )

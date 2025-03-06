@@ -16,6 +16,8 @@
 
 #include <cstring>
 
+#include "pw_fuzzer/asan_interface.h"
+#include "pw_fuzzer/fuzztest.h"
 #include "pw_preprocessor/util.h"
 #include "pw_protobuf/wire_format.h"
 #include "pw_unit_test/framework.h"
@@ -376,6 +378,29 @@ TEST(Decoder, DelimitedFieldSizeLargerThanRemainingSpan_ReturnsDataLoss) {
   Decoder decoder(input);
   EXPECT_EQ(decoder.Next(), Status::DataLoss());
 }
+
+void DoesNotCrash(ConstByteSpan buffer) {
+  // Place the input buffer in the middle of a poisoned memory region to catch
+  // if the decoder attempts to read beyond its bounds in either direction.
+  static std::array<std::byte, 2048> memory_region;
+  constexpr size_t kBufferOffset = 256;
+  ByteSpan input_buffer(memory_region.data() + kBufferOffset, buffer.size());
+
+  ASAN_POISON_MEMORY_REGION(memory_region.data(), memory_region.size());
+  ASAN_UNPOISON_MEMORY_REGION(input_buffer.data(), input_buffer.size());
+
+  std::memcpy(input_buffer.data(), buffer.data(), buffer.size());
+
+  Decoder decoder(input_buffer);
+  for (int i = 0; i < 20; ++i) {
+    decoder.Next().IgnoreError();
+  }
+
+  ASAN_UNPOISON_MEMORY_REGION(memory_region.data(), memory_region.size());
+}
+
+FUZZ_TEST(Decoder, DoesNotCrash)
+    .WithDomains(fuzzer::VectorOf<64>(fuzztest::Arbitrary<std::byte>()));
 
 }  // namespace
 }  // namespace pw::protobuf

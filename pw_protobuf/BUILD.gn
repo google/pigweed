@@ -18,6 +18,7 @@ import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_fuzzer/fuzz_test.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
@@ -139,8 +140,11 @@ pw_fuzzer_group("fuzzers") {
   ]
 }
 
-pw_test("decoder_test") {
-  deps = [ ":pw_protobuf" ]
+pw_fuzz_test("decoder_test") {
+  deps = [
+    ":pw_protobuf",
+    "$dir_pw_fuzzer:libfuzzer",
+  ]
   sources = [ "decoder_test.cc" ]
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
