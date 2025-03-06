@@ -15,13 +15,13 @@
 #include "pw_malloc/malloc.h"
 #include "pw_malloc_freertos/allocator.h"
 
-namespace pw::malloc {
+namespace pw::malloc::backend {
 
-void InitSystemAllocator(ByteSpan) {}
-
-Allocator* GetSystemAllocator() {
+Allocator& CreateSystemAllocator() {
   static freertos::Allocator allocator;
-  return &allocator;
+  return allocator;
 }
 
-}  // namespace pw::malloc
+void InitSystemAllocator(Allocator&, ByteSpan) {}
+
+}  // namespace pw::malloc::backend

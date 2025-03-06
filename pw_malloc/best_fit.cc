@@ -17,18 +17,18 @@
 #include "pw_malloc/config.h"
 #include "pw_malloc/malloc.h"
 
-namespace pw::malloc {
+namespace pw::malloc::backend {
 
 using BlockType = ::pw::allocator::BestFitBlock<PW_MALLOC_BLOCK_OFFSET_TYPE>;
 using BestFitAllocator = ::pw::allocator::BestFitAllocator<BlockType>;
 
-void InitSystemAllocator(ByteSpan heap) {
-  InitSystemAllocator<BestFitAllocator>(heap);
-}
-
-Allocator* GetSystemAllocator() {
+Allocator& CreateSystemAllocator() {
   static BestFitAllocator allocator;
-  return &allocator;
+  return allocator;
 }
 
-}  // namespace pw::malloc
+void InitSystemAllocator(Allocator& system_allocator, ByteSpan heap) {
+  static_cast<BestFitAllocator&>(system_allocator).Init(heap);
+}
+
+}  // namespace pw::malloc::backend
