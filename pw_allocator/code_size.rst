@@ -31,9 +31,7 @@ memory overhead for blocks varies depending on what features are included.
 The following are code sizes for the block implementations provided by this
 module.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: blocks_size_report
-.. include:: ../size_report_notice
+.. include:: blocks_size_report
 
 Impact of different hardening levels
 ====================================
@@ -41,9 +39,7 @@ This module includes :ref:`module-pw_allocator-config-hardening` which sets
 which validation checks are included. Additional checks can detect more errors
 at the cost of additional code size, as illustrated in the size report below:
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: hardening_size_report
-.. include:: ../size_report_notice
+.. include:: hardening_size_report
 
 ----------------------
 Bucket implementations
@@ -57,9 +53,7 @@ module. These are measured relative to the container they use, as reusing
 container types may save code size. See :ref:`module-pw_containers` for code
 size information on each container type.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: buckets_size_report
-.. include:: ../size_report_notice
+.. include:: buckets_size_report
 
 -------------------------------
 Block allocator implementations

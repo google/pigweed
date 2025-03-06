@@ -871,6 +871,113 @@ pw_size_table(
 )
 
 pw_size_diff(
+    name = "detailed_block_report",
+    base = "//pw_allocator/size_report:base",
+    label = "DetailedBlock",
+    target = "//pw_allocator/size_report:detailed_block",
+)
+
+pw_size_diff(
+    name = "small_block_report",
+    base = "//pw_allocator/size_report:base",
+    label = "SmallBlock",
+    target = "//pw_allocator/size_report:small_block_basic",
+)
+
+pw_size_diff(
+    name = "small_alignable_block_report",
+    base = "//pw_allocator/size_report:base",
+    label = "SmallAlignableBlock",
+    target = "//pw_allocator/size_report:small_alignable_block",
+)
+
+pw_size_diff(
+    name = "tiny_block_report",
+    base = "//pw_allocator/size_report:base",
+    label = "TinyBlock",
+    target = "//pw_allocator/size_report:tiny_block",
+)
+
+pw_size_table(
+    name = "blocks_size_report",
+    reports = [
+        ":detailed_block_report",
+        ":small_block_report",
+        ":small_alignable_block_report",
+        ":tiny_block_report",
+    ],
+)
+
+pw_size_diff(
+    name = "small_block_basic_report",
+    base = "//pw_allocator/size_report:base",
+    label = "SmallBlock with basic assertions enabled",
+    target = "//pw_allocator/size_report:small_block_basic",
+)
+
+pw_size_diff(
+    name = "small_block_robust_report",
+    base = "//pw_allocator/size_report:base",
+    label = "DetailedBlock with robust assertions enabled",
+    target = "//pw_allocator/size_report:small_block_robust",
+)
+
+pw_size_diff(
+    name = "small_block_debug_report",
+    base = "//pw_allocator/size_report:base",
+    label = "DetailedBlock with debug assertions enabled",
+    target = "//pw_allocator/size_report:small_block_debug",
+)
+
+pw_size_table(
+    name = "hardening_size_report",
+    reports = [
+        ":fast_sorted_report",
+        ":small_block_basic_report",
+        ":small_block_robust_report",
+        ":small_block_debug_report",
+    ],
+)
+
+pw_size_diff(
+    name = "fast_sorted_report",
+    base = "//pw_allocator/size_report:fast_sorted_base",
+    label = "FastSortedBucket, which uses IntrusiveMultiMap",
+    target = "//pw_allocator/size_report:fast_sorted",
+)
+
+pw_size_diff(
+    name = "sequenced_report",
+    base = "//pw_allocator/size_report:sequenced_base",
+    label = "SequencedBucket, which uses IntrusiveList",
+    target = "//pw_allocator/size_report:sequenced",
+)
+
+pw_size_diff(
+    name = "sorted_report",
+    base = "//pw_allocator/size_report:sorted_base",
+    label = "SortedBucket, which uses IntrusiveForwardList",
+    target = "//pw_allocator/size_report:sorted",
+)
+
+pw_size_diff(
+    name = "unordered_report",
+    base = "//pw_allocator/size_report:unordered_base",
+    label = "UnorderedBucket, which uses IntrusiveForwardList",
+    target = "//pw_allocator/size_report:unordered",
+)
+
+pw_size_table(
+    name = "buckets_size_report",
+    reports = [
+        ":fast_sorted_report",
+        ":sequenced_report",
+        ":sorted_report",
+        ":unordered_report",
+    ],
+)
+
+pw_size_diff(
     name = "best_fit_size_report",
     base = "//pw_allocator/size_report:detailed_block",
     label = "BestFitAllocator",
@@ -1036,8 +1143,11 @@ sphinx_docs_library(
         "guide.rst",
         ":allocator_api_size_report",
         ":block_allocators_size_report",
+        ":blocks_size_report",
+        ":buckets_size_report",
         ":concrete_allocators_size_report",
         ":forwarding_allocators_size_report",
+        ":hardening_size_report",
         "//pw_allocator/examples:docs",
         "//pw_allocator/size_report:docs",
     ],

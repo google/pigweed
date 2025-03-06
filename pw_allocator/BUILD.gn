@@ -993,6 +993,7 @@ pw_doc_group("docs") {
     ":allocator_api_size_report",
     ":block_allocators_size_report",
     ":blocks_size_report",
+    ":buckets_size_report",
     ":concrete_allocators_size_report",
     ":forwarding_allocators_size_report",
     ":hardening_size_report",
