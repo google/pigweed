@@ -766,8 +766,9 @@ gn_host_tools = PigweedGnGenNinja(
 
 
 def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
-    build.install_package(ctx, 'nanopb')
     build.install_package(ctx, 'emboss')
+    build.install_package(ctx, 'flatbuffers')
+    build.install_package(ctx, 'nanopb')
 
     env = None
     if 'clang' in toolchain:
@@ -779,9 +780,10 @@ def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
         '--fresh',
         f'-DCMAKE_TOOLCHAIN_FILE={toolchain_path}',
         '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
+        f'-Ddir_pw_third_party_emboss={ctx.package_root / "emboss"}',
+        f'-Ddir_pw_third_party_flatbuffers={ctx.package_root / "flatbuffers"}',
         f'-Ddir_pw_third_party_nanopb={ctx.package_root / "nanopb"}',
         '-Dpw_third_party_nanopb_ADD_SUBDIRECTORY=ON',
-        f'-Ddir_pw_third_party_emboss={ctx.package_root / "emboss"}',
         env=env,
     )
 

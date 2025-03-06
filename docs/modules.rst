@@ -59,6 +59,7 @@ Modules
    pw_env_setup/docs
    pw_env_setup_zephyr/docs
    pw_file/docs
+   pw_flatbuffers/docs
    pw_format/docs
    pw_function/docs
    pw_fuzzer/docs

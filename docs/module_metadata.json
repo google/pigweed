@@ -400,6 +400,10 @@
   "pw_file": {
     "status": "unstable"
   },
+  "pw_flatbuffers": {
+    "status": "experimental",
+    "languages": []
+  },
   "pw_format": {
     "tagline": "String formatting",
     "status": "experimental",

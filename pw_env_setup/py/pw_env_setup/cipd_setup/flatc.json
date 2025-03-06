@@ -1,0 +1,14 @@
+{
+  "packages": [
+    {
+      "path": "pigweed/third_party/flatc/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "mac-amd64"
+      ],
+      "tags": [
+        "version:2.0.0"
+      ]
+    }
+  ]
+}

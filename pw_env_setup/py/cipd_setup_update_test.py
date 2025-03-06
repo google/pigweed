@@ -161,6 +161,7 @@ class TestCipdSetupUpdate(unittest.TestCase):
             Path('python.json'),
             Path('python311.json'),
             Path('doxygen.json'),
+            Path('flatc.json'),
             Path('go.json'),
             Path('host_tools.json'),
             Path('kythe.json'),

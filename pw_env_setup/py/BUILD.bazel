@@ -92,6 +92,7 @@ py_library(
         "pw_env_setup/cipd_setup/coverage.json",
         "pw_env_setup/cipd_setup/default.json",
         "pw_env_setup/cipd_setup/doxygen.json",
+        "pw_env_setup/cipd_setup/flatc.json",
         "pw_env_setup/cipd_setup/go.json",
         "pw_env_setup/cipd_setup/host_tools.json",
         "pw_env_setup/cipd_setup/kythe.json",

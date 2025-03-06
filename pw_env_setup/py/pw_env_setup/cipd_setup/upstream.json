@@ -5,6 +5,7 @@
     "coverage.json",
     "default.json",
     "doxygen.json",
+    "flatc.json",
     "go.json",
     "host_tools.json",
     "kythe.json",

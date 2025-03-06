@@ -32,6 +32,7 @@ py_library(
         "pw_package/packages/chromium_verifier.py",
         "pw_package/packages/crlset.py",
         "pw_package/packages/emboss.py",
+        "pw_package/packages/flatbuffers.py",
         "pw_package/packages/freertos.py",
         "pw_package/packages/fuzztest.py",
         "pw_package/packages/googletest.py",

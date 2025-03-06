@@ -25,6 +25,7 @@ from pw_package.packages import chre
 from pw_package.packages import chromium_verifier
 from pw_package.packages import crlset
 from pw_package.packages import emboss
+from pw_package.packages import flatbuffers
 from pw_package.packages import freertos
 from pw_package.packages import fuzztest
 from pw_package.packages import googletest
