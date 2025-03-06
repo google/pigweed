@@ -57,7 +57,6 @@ class TrackingAllocatorTest : public ::testing::Test {
 
   void TearDown() override {
     pw::allocator::test::FreeAll<BlockType>(allocator_->blocks());
-    allocator_->Reset();
   }
 
   pw::allocator::WithBuffer<AllocatorType, kCapacity, BlockType::kAlignment>

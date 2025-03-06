@@ -35,10 +35,7 @@ void* CustomAllocator::DoAllocate(Layout layout) {
     return nullptr;
   }
   size_t prev = used_;
-  pw::Result<Layout> allocated = GetAllocatedLayout(allocator_, ptr);
-  if (allocated.ok()) {
-    used_ += allocated->size();
-  }
+  used_ = allocator_.GetAllocated();
   if (prev <= threshold_ && threshold_ < used_) {
     PW_LOG_INFO("more than %zu bytes allocated.", threshold_);
   }
@@ -49,11 +46,8 @@ void CustomAllocator::DoDeallocate(void* ptr) {
   if (ptr == nullptr) {
     return;
   }
-  pw::Result<Layout> allocated = GetAllocatedLayout(allocator_, ptr);
-  if (allocated.ok()) {
-    used_ -= allocated->size();
-  }
   allocator_.Deallocate(ptr);
+  used_ = allocator_.GetAllocated();
 }
 
 }  // namespace examples

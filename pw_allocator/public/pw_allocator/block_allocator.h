@@ -24,6 +24,7 @@
 #include "pw_allocator/capability.h"
 #include "pw_allocator/config.h"
 #include "pw_allocator/fragmentation.h"
+#include "pw_allocator/hardening.h"
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_result/result.h"
@@ -74,13 +75,21 @@ class GenericBlockAllocator : public Allocator {
 
   /// Crashes with an informational message that a given pointer does not belong
   /// to this allocator.
-  [[noreturn]] static void CrashOnInvalidFree(const void* freed);
+  [[noreturn]] static void CrashOnOutOfRange(const void* freed);
 
   /// Crashes with an informational message that a given block was freed twice.
   [[noreturn]] static void CrashOnDoubleFree(const void* freed);
 };
 
 }  // namespace internal
+
+namespace test {
+
+// Forward declaration for friending.
+template <typename, size_t>
+class BlockAllocatorTest;
+
+}  // namespace test
 
 /// A memory allocator that uses a list of blocks.
 ///
@@ -104,13 +113,10 @@ class BlockAllocator : public internal::GenericBlockAllocator {
       Base::GetCapabilities<BlockType>();
   static constexpr size_t kPoisonInterval = PW_ALLOCATOR_BLOCK_POISON_INTERVAL;
 
-  ~BlockAllocator() override { Reset(); }
+  ~BlockAllocator() override;
 
   /// Returns a ``Range`` of blocks tracking the memory of this allocator.
   Range blocks() const;
-
-  /// Returns fragmentation information for the block allocator's memory region.
-  Fragmentation MeasureFragmentation() const;
 
   /// Sets the memory region to be used by this allocator.
   ///
@@ -121,6 +127,12 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///                     `BlockType::Init`.
   void Init(ByteSpan region);
 
+  /// Returns fragmentation information for the block allocator's memory region.
+  Fragmentation MeasureFragmentation() const;
+
+ protected:
+  constexpr explicit BlockAllocator() : Base(kCapabilities) {}
+
   /// Sets the blocks to be used by this allocator.
   ///
   /// This method will use the sequence of blocks including and following
@@ -128,27 +140,7 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///
   /// @param[in]  begin               The first block for this allocator.
   ///                                 The block must not have a previous block.
-  void Init(BlockType* begin) { Init(begin, nullptr); }
-
-  /// Sets the blocks to be used by this allocator.
-  ///
-  /// This method will use the sequence blocks as-is, which must be valid.
-  ///
-  /// @param[in]  begin   The first block for this allocator.
-  /// @param[in]  end     The last block for this allocator. May be null, in
-  ///                     which the sequence including and following `begin` is
-  ///                     used. If not null, the block must not have a next
-  ///                     block.
-  void Init(BlockType* begin, BlockType* end);
-
-  /// Resets the allocator to an uninitialized state.
-  ///
-  /// At the time of the call, there MUST NOT be any outstanding allocated
-  /// blocks from this allocator.
-  virtual void Reset();
-
- protected:
-  constexpr explicit BlockAllocator() : Base(kCapabilities) {}
+  void Init(BlockType* begin);
 
   /// Returns the block associated with a pointer.
   ///
@@ -168,8 +160,7 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   ///
   /// @endrst
   template <typename Ptr>
-  Result<internal::copy_const_ptr_t<Ptr, BlockType*>> FromUsableSpace(
-      Ptr ptr) const;
+  internal::copy_const_ptr_t<Ptr, BlockType*> FromUsableSpace(Ptr ptr) const;
 
   /// Frees the given block.
   ///
@@ -180,6 +171,10 @@ class BlockAllocator : public internal::GenericBlockAllocator {
  private:
   using BlockResultPrev = internal::GenericBlockResult::Prev;
   using BlockResultNext = internal::GenericBlockResult::Next;
+
+  // Let unit tests call internal methods in order to "preallocate" blocks..
+  template <typename, size_t>
+  friend class test::BlockAllocatorTest;
 
   /// @copydoc Allocator::Allocate
   void* DoAllocate(Layout layout) override;
@@ -266,6 +261,17 @@ class BlockAllocator : public internal::GenericBlockAllocator {
 // Template method implementations
 
 template <typename BlockType>
+BlockAllocator<BlockType>::~BlockAllocator() {
+  if constexpr (Hardening::kIncludesRobustChecks) {
+    for (auto* block : blocks()) {
+      if (!block->IsFree()) {
+        CrashOnAllocated(block);
+      }
+    }
+  }
+}
+
+template <typename BlockType>
 typename BlockAllocator<BlockType>::Range BlockAllocator<BlockType>::blocks()
     const {
   return Range(first_);
@@ -274,51 +280,23 @@ typename BlockAllocator<BlockType>::Range BlockAllocator<BlockType>::blocks()
 template <typename BlockType>
 void BlockAllocator<BlockType>::Init(ByteSpan region) {
   Result<BlockType*> result = BlockType::Init(region);
-  Init(*result, nullptr);
+  Init(*result);
 }
 
 template <typename BlockType>
-void BlockAllocator<BlockType>::Init(BlockType* begin, BlockType* end) {
+void BlockAllocator<BlockType>::Init(BlockType* begin) {
   if constexpr (Hardening::kIncludesRobustChecks) {
     PW_ASSERT(begin != nullptr);
     PW_ASSERT(begin->Prev() == nullptr);
   }
-  Reset();
-  if (end == nullptr) {
-    end = begin;
-    for (BlockType* next = end->Next(); next != nullptr; next = end->Next()) {
-      end = next;
-    }
-  } else {
-    if constexpr (Hardening::kIncludesRobustChecks) {
-      PW_ASSERT(begin <= end);
-      PW_ASSERT(end->Next() == nullptr);
-    }
-  }
   first_ = begin;
-  last_ = end;
-
   for (auto* block : blocks()) {
+    last_ = block;
     capacity_ += block->OuterSize();
     if (block->IsFree()) {
       RecycleBlock(*block);
     }
   }
-}
-
-template <typename BlockType>
-void BlockAllocator<BlockType>::Reset() {
-  Flush();
-  for (auto* block : blocks()) {
-    if (!block->IsFree()) {
-      CrashOnAllocated(block);
-    }
-    ReserveBlock(*block);
-  }
-  capacity_ = 0;
-  first_ = nullptr;
-  last_ = nullptr;
-  unpoisoned_ = 0;
 }
 
 template <typename BlockType>
@@ -365,11 +343,7 @@ void* BlockAllocator<BlockType>::DoAllocate(Layout layout) {
 
 template <typename BlockType>
 void BlockAllocator<BlockType>::DoDeallocate(void* ptr) {
-  auto from_usable_space_result = FromUsableSpace(ptr);
-  if (!from_usable_space_result.ok()) {
-    CrashOnInvalidFree(ptr);
-  }
-  BlockType* block = *from_usable_space_result;
+  BlockType* block = FromUsableSpace(ptr);
   if (block->IsFree()) {
     if constexpr (Hardening::kIncludesBasicChecks) {
       CrashOnDoubleFree(block);
@@ -414,11 +388,7 @@ void BlockAllocator<BlockType>::DeallocateBlock(BlockType*&& block) {
 
 template <typename BlockType>
 bool BlockAllocator<BlockType>::DoResize(void* ptr, size_t new_size) {
-  auto result = FromUsableSpace(ptr);
-  if (!result.ok()) {
-    return false;
-  }
-  BlockType* block = *result;
+  BlockType* block = FromUsableSpace(ptr);
 
   // Neighboring blocks may be merged when resizing.
   if (auto* next = block->Next(); next != nullptr && next->IsFree()) {
@@ -490,20 +460,20 @@ Fragmentation BlockAllocator<BlockType>::MeasureFragmentation() const {
 
 template <typename BlockType>
 template <typename Ptr>
-Result<internal::copy_const_ptr_t<Ptr, BlockType*>>
+internal::copy_const_ptr_t<Ptr, BlockType*>
 BlockAllocator<BlockType>::FromUsableSpace(Ptr ptr) const {
   if (ptr < first_->UsableSpace() || last_->UsableSpace() < ptr) {
     if constexpr (Hardening::kIncludesBasicChecks) {
-      CrashOnInvalidFree(ptr);
+      CrashOnOutOfRange(ptr);
     }
-    return Status::OutOfRange();
+    return nullptr;
   }
   auto* block = BlockType::FromUsableSpace(ptr);
   if (!block->IsValid()) {
     if constexpr (Hardening::kIncludesBasicChecks) {
       block->CheckInvariants();
     }
-    return Status::DataLoss();
+    return nullptr;
   }
   return block;
 }

@@ -81,10 +81,7 @@ class AllocatorForTest : public Allocator {
     allocator_->Init(allocator_.as_bytes());
   }
 
-  ~AllocatorForTest() override {
-    FreeAll<BlockType>(blocks());
-    allocator_->Reset();
-  }
+  ~AllocatorForTest() override { FreeAll<BlockType>(blocks()); }
 
   typename BlockType::Range blocks() const { return allocator_->blocks(); }
   typename BlockType::Range blocks() { return allocator_->blocks(); }
@@ -143,7 +140,7 @@ class AllocatorForTest : public Allocator {
 
   /// @copydoc Allocator::Deallocate
   void DoDeallocate(void* ptr) override {
-    Result<Layout> requested = GetRequestedLayout(tracker_, ptr);
+    Result<Layout> requested = GetRequestedLayout(ptr);
     deallocate_ptr_ = ptr;
     deallocate_size_ = requested.ok() ? requested->size() : 0;
     tracker_.Deallocate(ptr);
@@ -154,7 +151,7 @@ class AllocatorForTest : public Allocator {
 
   /// @copydoc Allocator::Resize
   bool DoResize(void* ptr, size_t new_size) override {
-    Result<Layout> requested = GetRequestedLayout(tracker_, ptr);
+    Result<Layout> requested = GetRequestedLayout(ptr);
     resize_ptr_ = ptr;
     resize_old_size_ = requested.ok() ? requested->size() : 0;
     resize_new_size_ = new_size;

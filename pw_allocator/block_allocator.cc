@@ -26,7 +26,7 @@ void GenericBlockAllocator::CrashOnAllocated(const void* allocated) {
       allocated);
 }
 
-void GenericBlockAllocator::CrashOnInvalidFree(const void* freed) {
+void GenericBlockAllocator::CrashOnOutOfRange(const void* freed) {
   PW_CRASH(
       "Attemped to free %p, which is outside the allocator's memory region.",
       freed);
