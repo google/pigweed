@@ -36,28 +36,29 @@ using SynchronizedAllocator =
 using TrackingAllocator =
     ::pw::allocator::TrackingAllocator<PW_MALLOC_METRICS_TYPE>;
 
+SynchronizedAllocator* system_allocator = nullptr;
+const PW_MALLOC_METRICS_TYPE* system_metrics = nullptr;
 PW_MALLOC_METRICS_TYPE system_metrics_snapshot;
 
-pw::Allocator& GetBaseAllocator() {
-  static pw::Allocator& allocator =
-      pw::malloc::backend::CreateSystemAllocator();
-  return allocator;
+/// Instantiates the system allocator, based on the module configuration.
+pw::Allocator& WrapSystemAllocator() {
+  pw::Allocator* system = pw::malloc::GetSystemAllocator();
+  constexpr static Token kToken = PW_TOKENIZE_STRING("system allocator");
+  static TrackingAllocator tracker(kToken, *system);
+  system_metrics = &tracker.metrics();
+  static SynchronizedAllocator synchronized(tracker);
+  system_allocator = &synchronized;
+  return *system_allocator;
 }
 
-SynchronizedAllocator& GetWrappedAllocator() {
-  constexpr static Token kToken = PW_TOKENIZE_STRING("system allocator");
-  static TrackingAllocator tracker(kToken, GetBaseAllocator());
-  static SynchronizedAllocator synchronized(tracker);
-  return synchronized;
+pw::Allocator& SystemAllocator() {
+  static ::pw::Allocator& system = WrapSystemAllocator();
+  return system;
 }
 
 }  // namespace
 
 namespace pw::malloc {
-
-void InitSystemAllocator(ByteSpan heap) {
-  backend::InitSystemAllocator(GetBaseAllocator(), heap);
-}
 
 void InitSystemAllocator(void* heap_low_addr, void* heap_high_addr) {
   auto* lo = std::launder(reinterpret_cast<std::byte*>(heap_low_addr));
@@ -65,19 +66,17 @@ void InitSystemAllocator(void* heap_low_addr, void* heap_high_addr) {
   InitSystemAllocator(pw::ByteSpan(lo, (hi - lo)));
 }
 
-Allocator& GetSystemAllocator() { return GetWrappedAllocator(); }
-
 const PW_MALLOC_METRICS_TYPE& GetSystemMetricsSnapshot() {
   UpdateSystemMetricsSnapshot();
   return system_metrics_snapshot;
 }
 
 void UpdateSystemMetricsSnapshot() {
-  SynchronizedAllocator& synchronized = GetWrappedAllocator();
-  auto allocator = synchronized.Borrow();
+  SystemAllocator();
+  auto allocator = system_allocator->Borrow();
   auto& tracker = static_cast<TrackingAllocator&>(*allocator);
   tracker.UpdateDeferred();
-  CopyMetrics(tracker.metrics(), system_metrics_snapshot);
+  CopyMetrics(*system_metrics, system_metrics_snapshot);
 }
 
 }  // namespace pw::malloc
@@ -93,13 +92,13 @@ void pw_MallocInit(uint8_t* heap_low_addr, uint8_t* heap_high_addr) {
 // "__wrap_<function name>" with "<function_name>", and calling
 // "<function name>" will call "__wrap_<function name>" instead
 void* __wrap_malloc(size_t size) {
-  return GetWrappedAllocator().Allocate(Layout(size));
+  return SystemAllocator().Allocate(Layout(size));
 }
 
-void __wrap_free(void* ptr) { GetWrappedAllocator().Deallocate(ptr); }
+void __wrap_free(void* ptr) { SystemAllocator().Deallocate(ptr); }
 
 void* __wrap_realloc(void* ptr, size_t size) {
-  return GetWrappedAllocator().Reallocate(ptr, Layout(size));
+  return SystemAllocator().Reallocate(ptr, Layout(size));
 }
 
 void* __wrap_calloc(size_t num, size_t size) {

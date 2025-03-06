@@ -17,7 +17,7 @@
 #include "pw_malloc/config.h"
 #include "pw_malloc/malloc.h"
 
-namespace pw::malloc::backend {
+namespace pw::malloc {
 
 using BlockType = ::pw::allocator::BucketBlock<PW_MALLOC_BLOCK_OFFSET_TYPE>;
 using BucketAllocator =
@@ -25,13 +25,13 @@ using BucketAllocator =
                                      PW_MALLOC_MIN_BUCKET_SIZE,
                                      PW_MALLOC_NUM_BUCKETS>;
 
-Allocator& CreateSystemAllocator() {
+void InitSystemAllocator(ByteSpan heap) {
+  InitSystemAllocator<BucketAllocator>(heap);
+}
+
+Allocator* GetSystemAllocator() {
   static BucketAllocator allocator;
-  return allocator;
+  return &allocator;
 }
 
-void InitSystemAllocator(Allocator& system_allocator, ByteSpan heap) {
-  static_cast<BucketAllocator&>(system_allocator).Init(heap);
-}
-
-}  // namespace pw::malloc::backend
+}  // namespace pw::malloc
