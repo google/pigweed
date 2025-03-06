@@ -85,7 +85,23 @@ namespace pw::malloc {
 Allocator* GetSystemAllocator();
 
 /// Returns the metrics for the system allocator using the configured type.
-const PW_MALLOC_METRICS_TYPE& GetSystemMetrics();
+const PW_MALLOC_METRICS_TYPE& GetSystemMetricsSnapshot();
+
+/// Updates the system metrics snapshot.
+///
+/// In order to be thread-safe, the system metrics are only updated when either
+/// this method or `GetSystemMetricsSnapshot` is called. This method can be
+/// used to refresh metrics when a reference to them has already been retrieved.
+///
+/// @code{.cpp}
+///   auto& snapshot = pw::malloc::GetSystemMetricsSnapshot();
+///   DoSomethingWithMetrics(snapshot);
+///
+///   PerformSomeAllocationsAndFrees();
+///   UpdateSystemMetricsSnapshot();
+///   DoSomethingWithMetrics(snapshot);
+/// @endcode
+void UpdateSystemMetricsSnapshot();
 
 // Tmplate method implementations.
 

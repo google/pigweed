@@ -29,39 +29,30 @@
 namespace {
 
 using ::pw::allocator::Layout;
-using ::pw::allocator::NoMetrics;
-using ::pw::allocator::NoSync;
-using ::pw::allocator::SynchronizedAllocator;
-using ::pw::allocator::TrackingAllocator;
+using ::pw::allocator::internal::CopyMetrics;
 using ::pw::metric::Token;
+using SynchronizedAllocator =
+    ::pw::allocator::SynchronizedAllocator<PW_MALLOC_LOCK_TYPE>;
+using TrackingAllocator =
+    ::pw::allocator::TrackingAllocator<PW_MALLOC_METRICS_TYPE>;
 
+SynchronizedAllocator* system_allocator = nullptr;
 const PW_MALLOC_METRICS_TYPE* system_metrics = nullptr;
+PW_MALLOC_METRICS_TYPE system_metrics_snapshot;
 
 /// Instantiates the system allocator, based on the module configuration.
-///
-/// This function must be a template to conditionally omit constexpr branches.
-template <typename MetricsType, typename LockType>
 pw::Allocator& WrapSystemAllocator() {
   pw::Allocator* system = pw::malloc::GetSystemAllocator();
-  if constexpr (!std::is_same_v<MetricsType, NoMetrics>) {
-    constexpr static Token kToken = PW_TOKENIZE_STRING("system allocator");
-    static TrackingAllocator<MetricsType> tracker(kToken, *system);
-    system = &tracker;
-    system_metrics = &tracker.metrics();
-  } else {
-    static MetricsType no_metrics;
-    system_metrics = &no_metrics;
-  }
-  if constexpr (!std::is_same_v<LockType, NoSync>) {
-    static SynchronizedAllocator<LockType> synchronized(*system);
-    system = &synchronized;
-  }
-  return *system;
+  constexpr static Token kToken = PW_TOKENIZE_STRING("system allocator");
+  static TrackingAllocator tracker(kToken, *system);
+  system_metrics = &tracker.metrics();
+  static SynchronizedAllocator synchronized(tracker);
+  system_allocator = &synchronized;
+  return *system_allocator;
 }
 
 pw::Allocator& SystemAllocator() {
-  static pw::Allocator& system =
-      WrapSystemAllocator<PW_MALLOC_METRICS_TYPE, PW_MALLOC_LOCK_TYPE>();
+  static ::pw::Allocator& system = WrapSystemAllocator();
   return system;
 }
 
@@ -75,9 +66,17 @@ void InitSystemAllocator(void* heap_low_addr, void* heap_high_addr) {
   InitSystemAllocator(pw::ByteSpan(lo, (hi - lo)));
 }
 
-const PW_MALLOC_METRICS_TYPE& GetSystemMetrics() {
+const PW_MALLOC_METRICS_TYPE& GetSystemMetricsSnapshot() {
+  UpdateSystemMetricsSnapshot();
+  return system_metrics_snapshot;
+}
+
+void UpdateSystemMetricsSnapshot() {
   SystemAllocator();
-  return *system_metrics;
+  auto allocator = system_allocator->Borrow();
+  auto& tracker = static_cast<TrackingAllocator&>(*allocator);
+  tracker.UpdateDeferred();
+  CopyMetrics(*system_metrics, system_metrics_snapshot);
 }
 
 }  // namespace pw::malloc

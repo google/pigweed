@@ -37,80 +37,90 @@ class MallocTest : public ::pw::unit_test::internal::Test {
   // test frameworks may attempt and fail to de/allocate outside the test method
   // outside the test body.
   void SetUp() override {
-    auto& system_metrics = pw::malloc::GetSystemMetrics();
-    ASSERT_EQ(system_metrics.allocated_bytes.value(), 0U);
+    auto& snapshot = pw::malloc::GetSystemMetricsSnapshot();
+    ASSERT_EQ(snapshot.allocated_bytes.value(), 0U);
   }
 
   void TearDown() override {
-    auto& system_metrics = pw::malloc::GetSystemMetrics();
-    ASSERT_EQ(system_metrics.allocated_bytes.value(), 0U);
+    auto& snapshot = pw::malloc::GetSystemMetricsSnapshot();
+    ASSERT_EQ(snapshot.allocated_bytes.value(), 0U);
   }
 };
 
 TEST_F(MallocTest, MallocFree) {
   constexpr size_t kSize = 256;
-  auto& system_metrics = pw::malloc::GetSystemMetrics();
+  auto& snapshot = pw::malloc::GetSystemMetricsSnapshot();
 
   void* ptr = malloc(kSize);
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(system_metrics.requested_bytes.value(), kSize);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_EQ(snapshot.requested_bytes.value(), kSize);
 
   free(ptr);
-  EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_EQ(snapshot.allocated_bytes.value(), 0U);
 }
 
 TEST_F(MallocTest, NewDelete) {
   constexpr size_t kSize = 256;
-  auto& system_metrics = pw::malloc::GetSystemMetrics();
+  auto& snapshot = pw::malloc::GetSystemMetricsSnapshot();
 
   auto* ptr = new std::array<std::byte, kSize>();
   // Prevent elision of the allocation.
   pw::test::DoNotOptimize(ptr);
   ASSERT_NE(ptr, nullptr);
-  EXPECT_GE(system_metrics.allocated_bytes.value(), kSize);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_GE(snapshot.allocated_bytes.value(), kSize);
 
   delete (ptr);
-  EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_EQ(snapshot.allocated_bytes.value(), 0U);
 }
 
 TEST_F(MallocTest, CallocFree) {
   constexpr size_t kNum = 4;
   constexpr size_t kSize = 64;
-  auto& system_metrics = pw::malloc::GetSystemMetrics();
+  auto& snapshot = pw::malloc::GetSystemMetricsSnapshot();
 
   void* ptr = calloc(kNum, kSize);
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(system_metrics.requested_bytes.value(), kNum * kSize);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_EQ(snapshot.requested_bytes.value(), kNum * kSize);
 
   free(ptr);
-  EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_EQ(snapshot.allocated_bytes.value(), 0U);
 }
 
 TEST_F(MallocTest, ReallocFree) {
   constexpr size_t kSize = 256;
-  auto& system_metrics = pw::malloc::GetSystemMetrics();
+  auto& snapshot = pw::malloc::GetSystemMetricsSnapshot();
 
   void* ptr = realloc(nullptr, kSize);
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(system_metrics.requested_bytes.value(), kSize);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_EQ(snapshot.requested_bytes.value(), kSize);
 
   free(ptr);
-  EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_EQ(snapshot.allocated_bytes.value(), 0U);
 }
 
 TEST_F(MallocTest, MallocReallocFree) {
   constexpr size_t kSize1 = 256;
   constexpr size_t kSize2 = 512;
-  auto& system_metrics = pw::malloc::GetSystemMetrics();
+  auto& snapshot = pw::malloc::GetSystemMetricsSnapshot();
 
   void* ptr = malloc(kSize1);
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(system_metrics.requested_bytes.value(), kSize1);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_EQ(snapshot.requested_bytes.value(), kSize1);
   std::memset(ptr, 1, kSize1);
 
   void* new_ptr = realloc(ptr, kSize2);
   ASSERT_NE(ptr, nullptr);
-  EXPECT_EQ(system_metrics.requested_bytes.value(), kSize2);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_EQ(snapshot.requested_bytes.value(), kSize2);
 
   // Using `new_ptr` prevents the call to `realloc from being optimized away.
   auto* bytes = std::launder(reinterpret_cast<uint8_t*>(new_ptr));
@@ -119,7 +129,8 @@ TEST_F(MallocTest, MallocReallocFree) {
   }
 
   free(new_ptr);
-  EXPECT_EQ(system_metrics.allocated_bytes.value(), 0U);
+  pw::malloc::UpdateSystemMetricsSnapshot();
+  EXPECT_EQ(snapshot.allocated_bytes.value(), 0U);
 }
 
 // This test mimics pw_tokenizer//detokenize_test.cc in order to perform memory
