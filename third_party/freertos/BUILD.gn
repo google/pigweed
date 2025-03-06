@@ -46,6 +46,7 @@ if (dir_pw_third_party_freertos == "") {
       "-Wno-unused-parameter",
       "-Wno-cast-qual",
       "-Wno-int-in-bool-context",
+      "-Wno-redundant-decls",
     ]
     visibility = [ ":*" ]
   }
