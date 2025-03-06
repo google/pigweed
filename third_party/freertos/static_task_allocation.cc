@@ -38,11 +38,18 @@ extern "C" {
     (!defined(configKERNEL_PROVIDED_STATIC_MEMORY) || \
      configKERNEL_PROVIDED_STATIC_MEMORY == 0)
 
+#if ((tskKERNEL_VERSION_MAJOR == 11) && (tskKERNEL_VERSION_MINOR >= 1)) || \
+    tskKERNEL_VERSION_MAJOR > 11
+#define TASK_STACK_SIZE_TYPE configSTACK_DEPTH_TYPE
+#else
+#define TASK_STACK_SIZE_TYPE uint32_t
+#endif  // tskKERNEL_VERSION_MAJOR >= 11
+
 /// Allocates static memory for the idle task. Provides a
 /// `configMINIMAL_STACK_SIZE` stack.
 void vApplicationGetIdleTaskMemory(StaticTask_t** ppxIdleTaskTCBBuffer,
                                    StackType_t** ppxIdleTaskStackBuffer,
-                                   uint32_t* pulIdleTaskStackSize) {
+                                   TASK_STACK_SIZE_TYPE* pulIdleTaskStackSize) {
   static StackType_t idle_stack[configMINIMAL_STACK_SIZE];
   static StaticTask_t idle_tcb;
 
@@ -55,9 +62,10 @@ void vApplicationGetIdleTaskMemory(StaticTask_t** ppxIdleTaskTCBBuffer,
 
 /// Allocates static memory for the timer task. Provides a
 /// `configTIMER_TASK_STACK_DEPTH` stack.
-void vApplicationGetTimerTaskMemory(StaticTask_t** ppxTimerTaskTCBBuffer,
-                                    StackType_t** ppxTimerTaskStackBuffer,
-                                    uint32_t* pulTimerTaskStackSize) {
+void vApplicationGetTimerTaskMemory(
+    StaticTask_t** ppxTimerTaskTCBBuffer,
+    StackType_t** ppxTimerTaskStackBuffer,
+    TASK_STACK_SIZE_TYPE* pulTimerTaskStackSize) {
   static StackType_t timer_stack[configTIMER_TASK_STACK_DEPTH];
   static StaticTask_t timer_tcb;
 

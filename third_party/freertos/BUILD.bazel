@@ -32,6 +32,9 @@ cc_library(
         "//conditions:default": [],
     }),
     strip_include_prefix = "public",
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     deps = [
         "//pw_assert:assert",
         "//pw_assert:check",
@@ -55,6 +58,9 @@ cc_library(
         "static_task_allocation.cc",
     ],
     implementation_deps = ["//pw_assert:check"],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     deps = [
         "//pw_string:util",
         "@freertos",
