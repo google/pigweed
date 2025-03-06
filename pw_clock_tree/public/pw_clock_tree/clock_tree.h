@@ -467,6 +467,11 @@ class ClockTree {
   /// clock tree is enabled.
   /// Acquiring the clock tree element might fail.
   ///
+  /// This is useful when dealing with synchronized clock muxes where, in order
+  /// to switch to a new clock source, both the old and new clock must be
+  /// running. This ensures that the old clock source (`element_with`) is
+  /// running before attempting to activate the new clock source (`element`).
+  ///
   /// Note: May not be called from inside an interrupt context or with
   /// interrupts disabled.
   Status AcquireWith(Element& element, Element& element_with) {
