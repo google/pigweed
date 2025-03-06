@@ -52,7 +52,7 @@ PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan,
       });
   // The SMP fixed channel's MTU must be >=23 bytes (kNoSecureConnectionsMTU)
   // per spec V5.0 Vol. 3 Part H 3.2. As SMP operates on a fixed channel, there
-  // is no way to configure this MTU, so we expect that L2CAP always provides a
+  // is no way to configure this MTU, so we expect that L2CAP always provides a
   // channel with a sufficiently large MTU. This assertion serves as an explicit
   // acknowledgement of that contract between L2CAP and SMP.
   PW_CHECK(chan_->max_tx_sdu_size() >= kNoSecureConnectionsMtu &&

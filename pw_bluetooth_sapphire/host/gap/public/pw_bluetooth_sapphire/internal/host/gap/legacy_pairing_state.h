@@ -122,7 +122,7 @@ class LegacyPairingState final {
   // (or HCI_Link_Key_Request_Negative_Reply if the returned value is null).
   [[nodiscard]] std::optional<hci_spec::LinkKey> OnLinkKeyRequest();
 
-  // |cb| is called with the pin code value to send HCI_PIN_Code_Request_Reply
+  // |cb| is called with the pin code value to send HCI_PIN_Code_Request_Reply
   // or std::nullopt to send HCI_PIN_Code_Request_Negative_Reply.
   using UserPinCodeCallback =
       fit::callback<void(std::optional<uint16_t> passkey)>;
