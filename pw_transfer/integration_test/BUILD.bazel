@@ -16,7 +16,6 @@ load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@com_google_protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_binary")
-load("@rules_jvm_external//:defs.bzl", "artifact")
 load("@rules_python//python:defs.bzl", "py_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
@@ -297,8 +296,8 @@ java_binary(
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
         "//pw_transfer/java/main/dev/pigweed/pw_transfer:client",
         "@com_google_protobuf//:protobuf_java",
-        artifact("com.google.flogger:flogger-system-backend"),
-        artifact("com.google.guava:guava"),
+        "@pigweed_maven_deps//:com_google_flogger_flogger_system_backend",
+        "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )
 

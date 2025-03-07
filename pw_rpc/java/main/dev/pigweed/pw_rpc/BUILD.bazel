@@ -16,7 +16,6 @@
 
 load("@rules_android//android:rules.bzl", "android_library")
 load("@rules_java//java:defs.bzl", "java_library")
-load("@rules_jvm_external//:defs.bzl", "artifact")
 
 RPC_CLIENT_SOURCES = [
     "AbstractCall.java",
@@ -54,8 +53,8 @@ java_library(
         "//pw_rpc:packet_proto_java",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/core",
-        artifact("com.google.code.findbugs:jsr305"),
-        artifact("com.google.guava:guava"),
+        "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )
 
@@ -68,8 +67,8 @@ java_library(
         "//pw_rpc:packet_proto_java_lite",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.code.findbugs:jsr305"),
-        artifact("com.google.guava:guava"),
+        "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )
 
@@ -83,7 +82,7 @@ android_library(
         "//pw_rpc:packet_proto_java_lite",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.code.findbugs:jsr305"),
-        artifact("com.google.guava:guava"),
+        "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )

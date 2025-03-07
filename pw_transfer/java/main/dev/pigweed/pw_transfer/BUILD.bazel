@@ -17,7 +17,6 @@
 
 load("@rules_android//android:rules.bzl", "android_library")
 load("@rules_java//java:defs.bzl", "java_library")
-load("@rules_jvm_external//:defs.bzl", "artifact")
 
 TRANSFER_CLIENT_SOURCES = [
     "ProtocolVersion.java",
@@ -44,9 +43,9 @@ java_library(
         "//pw_transfer:transfer_proto_java",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/core",
-        artifact("com.google.guava:failureaccess"),
-        artifact("com.google.guava:guava"),
-        artifact("com.google.code.findbugs:jsr305"),
+        "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_guava_failureaccess",
+        "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )
 
@@ -60,9 +59,9 @@ java_library(
         "//pw_transfer:transfer_proto_java_lite",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.guava:failureaccess"),
-        artifact("com.google.guava:guava"),
-        artifact("com.google.code.findbugs:jsr305"),
+        "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_guava_failureaccess",
+        "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )
 
@@ -77,8 +76,8 @@ android_library(
         "//pw_transfer:transfer_proto_java_lite",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.guava:failureaccess"),
-        artifact("com.google.guava:guava"),
-        artifact("com.google.code.findbugs:jsr305"),
+        "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_guava_failureaccess",
+        "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )

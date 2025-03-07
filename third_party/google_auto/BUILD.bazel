@@ -13,14 +13,13 @@
 # the License.
 
 load("@rules_java//java:defs.bzl", "java_library", "java_plugin")
-load("@rules_jvm_external//:defs.bzl", "artifact")
 
 java_plugin(
     name = "value_plugin",
     processor_class = "com.google.auto.value.processor.AutoValueProcessor",
     visibility = ["//visibility:private"],
     deps = [
-        artifact("com.google.auto.value:auto-value"),
+        "@pigweed_maven_deps//:com_google_auto_value_auto_value",
     ],
 )
 
@@ -32,7 +31,7 @@ java_library(
     neverlink = 1,
     visibility = ["//visibility:public"],
     exports = [
-        artifact("com.google.auto.value:auto-value"),
-        artifact("com.google.auto.value:auto-value-annotations"),
+        "@pigweed_maven_deps//:com_google_auto_value_auto_value",
+        "@pigweed_maven_deps//:com_google_auto_value_auto_value_annotations",
     ],
 )

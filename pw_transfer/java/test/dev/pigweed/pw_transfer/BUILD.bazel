@@ -15,7 +15,6 @@
 # Tests for the generic pw_rpc client.
 
 load("@rules_java//java:defs.bzl", "java_test")
-load("@rules_jvm_external//:defs.bzl", "artifact")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 licenses(["notice"])
@@ -33,11 +32,11 @@ java_test(
         "//pw_transfer:transfer_proto_java_lite",
         "//pw_transfer/java/main/dev/pigweed/pw_transfer:client_lite",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.code.findbugs:jsr305"),
-        artifact("org.mockito:mockito-core"),
-        artifact("com.google.guava:guava"),
-        artifact("com.google.flogger:flogger-system-backend"),
-        artifact("com.google.truth:truth"),
+        "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_flogger_flogger_system_backend",
+        "@pigweed_maven_deps//:com_google_guava_guava",
+        "@pigweed_maven_deps//:com_google_truth_truth",
+        "@pigweed_maven_deps//:org_mockito_mockito_core",
     ],
 )
 

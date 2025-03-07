@@ -17,7 +17,6 @@
 load("@com_google_protobuf//bazel:java_lite_proto_library.bzl", "java_lite_proto_library")
 load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_java//java:defs.bzl", "java_library", "java_test")
-load("@rules_jvm_external//:defs.bzl", "artifact")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 licenses(["notice"])
@@ -35,8 +34,8 @@ java_library(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.code.findbugs:jsr305"),
-        artifact("com.google.guava:guava"),
+        "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )
 
@@ -51,10 +50,10 @@ java_test(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.guava:guava"),
-        artifact("org.mockito:mockito-core"),
-        artifact("com.google.flogger:flogger-system-backend"),
-        artifact("com.google.truth:truth"),
+        "@pigweed_maven_deps//:com_google_flogger_flogger_system_backend",
+        "@pigweed_maven_deps//:com_google_guava_guava",
+        "@pigweed_maven_deps//:com_google_truth_truth",
+        "@pigweed_maven_deps//:org_mockito_mockito_core",
     ],
 )
 
@@ -69,10 +68,10 @@ java_test(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.flogger:flogger-system-backend"),
-        artifact("com.google.truth:truth"),
-        artifact("com.google.guava:guava"),
-        artifact("org.mockito:mockito-core"),
+        "@pigweed_maven_deps//:com_google_flogger_flogger_system_backend",
+        "@pigweed_maven_deps//:com_google_guava_guava",
+        "@pigweed_maven_deps//:com_google_truth_truth",
+        "@pigweed_maven_deps//:org_mockito_mockito_core",
     ],
 )
 
@@ -87,10 +86,10 @@ java_test(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        artifact("org.mockito:mockito-core"),
-        artifact("com.google.guava:guava"),
-        artifact("com.google.flogger:flogger-system-backend"),
-        artifact("com.google.truth:truth"),
+        "@pigweed_maven_deps//:com_google_flogger_flogger_system_backend",
+        "@pigweed_maven_deps//:com_google_guava_guava",
+        "@pigweed_maven_deps//:com_google_truth_truth",
+        "@pigweed_maven_deps//:org_mockito_mockito_core",
     ],
 )
 
@@ -102,8 +101,8 @@ java_test(
     test_class = "dev.pigweed.pw_rpc.IdsTest",
     deps = [
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
-        artifact("com.google.flogger:flogger-system-backend"),
-        artifact("com.google.truth:truth"),
+        "@pigweed_maven_deps//:com_google_flogger_flogger_system_backend",
+        "@pigweed_maven_deps//:com_google_truth_truth",
     ],
 )
 
@@ -117,8 +116,8 @@ java_test(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.flogger:flogger-system-backend"),
-        artifact("com.google.truth:truth"),
+        "@pigweed_maven_deps//:com_google_flogger_flogger_system_backend",
+        "@pigweed_maven_deps//:com_google_truth_truth",
     ],
 )
 
@@ -131,8 +130,8 @@ java_test(
     deps = [
         ":test_proto_java",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
-        artifact("com.google.flogger:flogger-system-backend"),
-        artifact("com.google.truth:truth"),
+        "@pigweed_maven_deps//:com_google_flogger_flogger_system_backend",
+        "@pigweed_maven_deps//:com_google_truth_truth",
     ],
 )
 
@@ -146,10 +145,10 @@ java_test(
         ":test_proto_java",
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
-        artifact("com.google.flogger:flogger-system-backend"),
-        artifact("com.google.truth:truth"),
-        artifact("com.google.guava:guava"),
-        artifact("org.mockito:mockito-core"),
+        "@pigweed_maven_deps//:com_google_flogger_flogger_system_backend",
+        "@pigweed_maven_deps//:com_google_guava_guava",
+        "@pigweed_maven_deps//:com_google_truth_truth",
+        "@pigweed_maven_deps//:org_mockito_mockito_core",
     ],
 )
 
@@ -164,10 +163,10 @@ java_test(
         "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client_lite",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.flogger:flogger-system-backend"),
-        artifact("com.google.truth:truth"),
-        artifact("com.google.guava:guava"),
-        artifact("org.mockito:mockito-core"),
+        "@pigweed_maven_deps//:com_google_flogger_flogger_system_backend",
+        "@pigweed_maven_deps//:com_google_guava_guava",
+        "@pigweed_maven_deps//:com_google_truth_truth",
+        "@pigweed_maven_deps//:org_mockito_mockito_core",
     ],
 )
 

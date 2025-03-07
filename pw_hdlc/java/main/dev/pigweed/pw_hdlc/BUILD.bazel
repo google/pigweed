@@ -14,7 +14,6 @@
 
 load("@rules_android//android:rules.bzl", "android_library")
 load("@rules_java//java:defs.bzl", "java_library")
-load("@rules_jvm_external//:defs.bzl", "artifact")
 
 PW_HDLC_SOURCES = [
     "CustomVarInt.java",
@@ -32,8 +31,8 @@ java_library(
         "//pw_log/java/main/dev/pigweed/pw_log",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.code.findbugs:jsr305"),
-        artifact("com.google.guava:guava"),
+        "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )
 
@@ -46,7 +45,7 @@ android_library(
         "//pw_log/java/android_main/dev/pigweed/pw_log",
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
-        artifact("com.google.code.findbugs:jsr305"),
-        artifact("com.google.guava:guava"),
+        "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )

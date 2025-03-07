@@ -336,6 +336,7 @@ use_repo(go_deps, "org_golang_google_grpc", "org_golang_google_grpc_examples", "
 # ===========================
 maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
 maven.install(
+    name = "pigweed_maven_deps",
     artifacts = [
         "com.google.auto.value:auto-value-annotations:1.8.2",
         "com.google.auto.value:auto-value:1.8.2",
@@ -353,10 +354,7 @@ maven.install(
         "https://repo1.maven.org/maven2",
     ],
 )
-use_repo(
-    maven,
-    "maven",
-)
+use_repo(maven, "pigweed_maven_deps")
 
 # QEMU prebuilts
 # ==============
