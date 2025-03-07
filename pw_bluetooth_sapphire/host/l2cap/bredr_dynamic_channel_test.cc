@@ -3605,5 +3605,85 @@ TEST_F(BrEdrDynamicChannelTest, RejectReconfigurationAfterChannelOpen) {
   EXPECT_TRUE(channel_close_cb_called);
 }
 
+TEST_F(
+    BrEdrDynamicChannelTest,
+    ErrorSendingConfigRequestWhileRecoveringFromUnacceptableParametersConfigRsp) {
+  EXPECT_OUTBOUND_REQ(*sig(),
+                      kConnectionRequest,
+                      kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  size_t config_req_id = EXPECT_OUTBOUND_REQ(
+      *sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view());
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      ASSERT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(),
+                          {{SignalingChannel::Status::kSuccess,
+                            kExtendedFeaturesInfoRspWithERTM.view()}});
+  RETURN_IF_FATAL(RunUntilIdle());
+  EXPECT_EQ(open_cb_count, 0);
+
+  // This will cause the config request retry to fail to send, which should
+  // gracefully close the dynamic channel.
+  sig()->set_simulate_send_failure(true);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view());
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view());
+
+  // kUnacceptableParameters should cause the config request to retry in basic
+  // mode.
+  RETURN_IF_FATAL(sig()->ReceiveResponses(
+      config_req_id,
+      {{SignalingChannel::Status::kSuccess,
+        kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()}}));
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  // Failure to send the config request should result in the open callback being
+  // called with a null channel.
+  EXPECT_EQ(open_cb_count, 1);
+}
+
+TEST_F(BrEdrDynamicChannelTest,
+       ErrorSendingConfigRequestWhileHandlingRxConfigRequest) {
+  EXPECT_OUTBOUND_REQ(*sig(),
+                      kConnectionRequest,
+                      kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+
+  int open_cb_count = 0;
+  auto open_cb = [&open_cb_count](auto chan) {
+    if (open_cb_count == 0) {
+      ASSERT_FALSE(chan);
+    }
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  sig()->set_simulate_send_failure(true);
+
+  // Receiving a config request with ERTM tells BrEdrDynamicChannel that ERTM is
+  // supported, so it will attempt to send a config request for ERTM, which will
+  // fail to send.
+  EXPECT_OUTBOUND_REQ(
+      *sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view());
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view());
+  RETURN_IF_FATAL(
+      sig()->Receive(kConfigurationRequest, kInboundConfigReqWithERTM));
+  RETURN_IF_FATAL(RunUntilIdle());
+
+  EXPECT_EQ(open_cb_count, 1);
+}
+
 }  // namespace
 }  // namespace bt::l2cap::internal

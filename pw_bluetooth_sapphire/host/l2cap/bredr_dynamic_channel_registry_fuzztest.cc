@@ -54,6 +54,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       bt::l2cap::kSignalingChannelId,
       kTestHandle,
       bt::LinkType::kACL);
+  // Sending packets will fail and close the channel if the send callback isn't
+  // configured.
+  fake_chan->SetSendCallback([](auto) {});
 
   bt::l2cap::internal::BrEdrSignalingChannel sig_chan(
       fake_chan->GetWeakPtr(),

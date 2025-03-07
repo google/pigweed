@@ -188,7 +188,7 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // Called when the peer indicates whether it supports Enhanced Retransmission
   // Mode. Kicks off the configuration process if the preferred channel mode is
   // ERTM.
-  void SetEnhancedRetransmissionSupport(bool supported);
+  [[nodiscard]] bool SetEnhancedRetransmissionSupport(bool supported);
 
   // Reply with affirmative connection response and begin configuration.
   void CompleteInboundConnection(
@@ -280,10 +280,16 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // Begin the local channel Configuration Request flow if it has not yet
   // happened. The channel must not be waiting for the extended features info
   // response.
-  void TrySendLocalConfig();
+  // Returns true if the local config was successfully sent, false if there was
+  // an error. On an error, the error will already have been reported and the
+  // caller should return and not attempt to dereference `this`.
+  [[nodiscard]] bool TrySendLocalConfig();
 
-  // Send local configuration request.
-  void SendLocalConfig();
+  // Send local configuration request, bypassing all checks.
+  // Returns true if the local config was successfully sent, false if there was
+  // an error. On an error, the error will already have been reported and the
+  // caller should return and not attempt to dereference `this`.
+  [[nodiscard]] bool SendLocalConfig();
 
   // Returns true if both the remote and local configs have been accepted.
   bool BothConfigsAccepted() const;
@@ -309,10 +315,8 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   CheckForUnacceptableErtmOptions(const ChannelConfiguration& config) const;
 
   // Try to recover from a configuration response with the "Unacceptable
-  // Parameters" result. Returns true if the negative response could be
-  // recovered from, and false otherwise (in which case an error should be
-  // reported).
-  [[nodiscard]] bool TryRecoverFromUnacceptableParametersConfigRsp(
+  // Parameters" result, signaling an error on failure.
+  void TryRecoverFromUnacceptableParametersConfigRsp(
       const ChannelConfiguration& config);
 
   // Response handlers for outbound requests

@@ -111,7 +111,8 @@ bool FakeSignalingChannel::SendRequest(CommandCode req_code,
     return false;
   }
 
-  Transaction& transaction = transactions_[expected_transaction_index_];
+  size_t transaction_index = expected_transaction_index_++;
+  Transaction& transaction = transactions_[transaction_index];
   ::testing::ScopedTrace trace(
       transaction.file, transaction.line, "Outbound request expected here");
   EXPECT_EQ(transaction.request_code, req_code);
@@ -119,10 +120,14 @@ bool FakeSignalingChannel::SendRequest(CommandCode req_code,
   EXPECT_TRUE(cb);
   transaction.response_callback = std::move(cb);
 
+  if (simulate_send_failure_) {
+    return false;
+  }
+
   // Simulate the remote's response(s)
   (void)heap_dispatcher_.Post(
-      [this, index = expected_transaction_index_](pw::async::Context /*ctx*/,
-                                                  pw::Status status) {
+      [this, index = transaction_index](pw::async::Context /*ctx*/,
+                                        pw::Status status) {
         if (status.ok()) {
           Transaction& transaction = transactions_[index];
           transaction.responses_handled =
@@ -130,7 +135,6 @@ bool FakeSignalingChannel::SendRequest(CommandCode req_code,
         }
       });
 
-  expected_transaction_index_++;
   return (transaction.request_code == req_code);
 }
 
@@ -173,11 +177,18 @@ FakeSignalingChannel::TransactionId FakeSignalingChannel::AddOutbound(
   return transactions_.size() - 1;
 }
 
+void FakeSignalingChannel::Receive(CommandCode req_code,
+                                   const ByteBuffer& req_payload) {
+  Expecter expecter;
+  ReceiveExpectInternal(req_code, req_payload, &expecter);
+}
+
 void FakeSignalingChannel::ReceiveExpect(CommandCode req_code,
                                          const ByteBuffer& req_payload,
                                          const ByteBuffer& rsp_payload) {
   ResponseExpecter expecter(rsp_payload);
   ReceiveExpectInternal(req_code, req_payload, &expecter);
+  EXPECT_TRUE(expecter.called());
 }
 
 void FakeSignalingChannel::ReceiveExpectRejectNotUnderstood(
@@ -229,7 +240,6 @@ void FakeSignalingChannel::ReceiveExpectInternal(CommandCode req_code,
 
   // Invoke delegate assigned for this request type
   iter->second(req_payload, fake_responder);
-  EXPECT_TRUE(static_cast<Expecter*>(fake_responder)->called());
 }
 
 }  // namespace bt::l2cap::internal::testing

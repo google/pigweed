@@ -65,6 +65,9 @@ class FakeSignalingChannel : public SignalingChannelInterface {
   void ReceiveResponses(TransactionId id,
                         const std::vector<Response>& responses);
 
+  // Simulate reception of an inbound request with |req_code| and |req_payload|.
+  void Receive(CommandCode req_code, const ByteBuffer& req_payload);
+
   // Simulate reception of an inbound request with |req_code| and |req_payload|,
   // then expect a corresponding outbound response with payload |rsp_payload|.
   void ReceiveExpect(CommandCode req_code,
@@ -83,6 +86,10 @@ class FakeSignalingChannel : public SignalingChannelInterface {
                                            const ByteBuffer& req_payload,
                                            ChannelId local_cid,
                                            ChannelId remote_cid);
+
+  void set_simulate_send_failure(bool enable) {
+    simulate_send_failure_ = enable;
+  }
 
  private:
   // Expected outbound request and response(s) that this fake sends back
@@ -123,6 +130,7 @@ class FakeSignalingChannel : public SignalingChannelInterface {
 
   // Registered inbound request delegates
   std::unordered_map<CommandCode, RequestDelegate> request_handlers_;
+  bool simulate_send_failure_ = false;
 
   // Test message loop dispatcher
   pw::async::HeapDispatcher heap_dispatcher_;

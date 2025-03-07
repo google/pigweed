@@ -245,8 +245,8 @@ void BrEdrDynamicChannelRegistry::OnRxExtendedFeaturesInfoRsp(
     // Treat failure result as if feature mask indicated no ERTM support so that
     // configuration can fall back to basic mode.
     ForEach([](DynamicChannel* chan) {
-      static_cast<BrEdrDynamicChannel*>(chan)->SetEnhancedRetransmissionSupport(
-          false);
+      std::ignore = static_cast<BrEdrDynamicChannel*>(chan)
+                        ->SetEnhancedRetransmissionSupport(false);
     });
     return;
   }
@@ -283,8 +283,8 @@ void BrEdrDynamicChannelRegistry::OnRxExtendedFeaturesInfoRsp(
   bool ertm_support =
       *extended_features_ & kExtendedFeaturesBitEnhancedRetransmission;
   ForEach([ertm_support](DynamicChannel* chan) {
-    static_cast<BrEdrDynamicChannel*>(chan)->SetEnhancedRetransmissionSupport(
-        ertm_support);
+    std::ignore = static_cast<BrEdrDynamicChannel*>(chan)
+                      ->SetEnhancedRetransmissionSupport(ertm_support);
   });
 }
 
@@ -597,7 +597,11 @@ void BrEdrDynamicChannel::OnRxConfigReq(
   // Record peer support for ERTM even if they haven't sent a Extended Features
   // Mask.
   if (req_mode == RetransmissionAndFlowControlMode::kEnhancedRetransmission) {
-    SetEnhancedRetransmissionSupport(true);
+    // This can send a config request, which can fail and cause the channel to
+    // be destroyed, in which case we should not proceed.
+    if (!SetEnhancedRetransmissionSupport(true)) {
+      return;
+    }
   }
 
   // Set default config options if not already in request.
@@ -813,7 +817,7 @@ void BrEdrDynamicChannel::CompleteInboundConnection(
 
   UpdateLocalConfigForErtm();
   if (!IsWaitingForPeerErtmSupport()) {
-    TrySendLocalConfig();
+    std::ignore = TrySendLocalConfig();
   }
 }
 
@@ -921,17 +925,17 @@ bool BrEdrDynamicChannel::IsWaitingForPeerErtmSupport() {
          (local_mode != RetransmissionAndFlowControlMode::kBasic);
 }
 
-void BrEdrDynamicChannel::TrySendLocalConfig() {
+bool BrEdrDynamicChannel::TrySendLocalConfig() {
   if (state_ & kLocalConfigSent) {
-    return;
+    return true;
   }
 
   PW_CHECK(!IsWaitingForPeerErtmSupport());
 
-  SendLocalConfig();
+  return SendLocalConfig();
 }
 
-void BrEdrDynamicChannel::SendLocalConfig() {
+bool BrEdrDynamicChannel::SendLocalConfig() {
   auto on_config_rsp_timeout = [this, self = weak_self_.GetWeakPtr()] {
     if (self.is_alive()) {
       bt_log(WARN,
@@ -972,7 +976,7 @@ void BrEdrDynamicChannel::SendLocalConfig() {
            "Channel %#.4x: Failed to send Configuration Request",
            local_cid());
     PassOpenError();
-    return;
+    return false;
   }
 
   bt_log(TRACE,
@@ -982,6 +986,7 @@ void BrEdrDynamicChannel::SendLocalConfig() {
          bt_str(request_config));
 
   state_ |= kLocalConfigSent;
+  return true;
 }
 
 bool BrEdrDynamicChannel::BothConfigsAccepted() const {
@@ -1140,7 +1145,7 @@ BrEdrDynamicChannel::CheckForUnacceptableErtmOptions(
   return unacceptable_rfc_option;
 }
 
-bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
+void BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
     const ChannelConfiguration& rsp_config) {
   // Check if channel mode was unacceptable.
   if (rsp_config.retransmission_flow_control_option()) {
@@ -1178,15 +1183,16 @@ bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
                local_cid(),
                static_cast<uint8_t>(rsp_mode),
                static_cast<uint8_t>(remote_mode));
-        return false;
+        PassOpenError();
+        return;
       }
     }
 
     bt_log(TRACE,
            "l2cap-bredr",
            "Channel %#.4x: Attempting to recover from unacceptable parameters "
-           "config response by "
-           "falling back to basic mode and resending config request",
+           "config response by falling back to basic mode and resending config "
+           "request",
            local_cid());
 
     // Fall back to basic mode and try sending config again up to
@@ -1199,11 +1205,12 @@ bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
              "%#.2x basic mode config request attempts has been met",
              local_cid(),
              kMaxNumBasicConfigRequests);
-      return false;
+      PassOpenError();
+      return;
     }
     UpdateLocalConfigForErtm();
-    SendLocalConfig();
-    return true;
+    std::ignore = SendLocalConfig();
+    return;
   }
 
   // Other unacceptable parameters cannot be recovered from.
@@ -1213,7 +1220,7 @@ bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
          "unacceptable parameters config "
          "response",
          local_cid());
-  return false;
+  PassOpenError();
 }
 
 BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConnRsp(
@@ -1339,7 +1346,7 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConnRsp(
 
   UpdateLocalConfigForErtm();
   if (!IsWaitingForPeerErtmSupport()) {
-    TrySendLocalConfig();
+    std::ignore = TrySendLocalConfig();
   }
   return ResponseHandlerAction::kCompleteOutboundTransaction;
 }
@@ -1383,10 +1390,7 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConfigRsp(
            "(options: %s)",
            local_cid(),
            bt_str(rsp.config()));
-
-    if (!TryRecoverFromUnacceptableParametersConfigRsp(rsp.config())) {
-      PassOpenError();
-    }
+    TryRecoverFromUnacceptableParametersConfigRsp(rsp.config());
     return ResponseHandlerAction::kCompleteOutboundTransaction;
   }
 
@@ -1454,15 +1458,16 @@ BrEdrDynamicChannel::ResponseHandlerAction BrEdrDynamicChannel::OnRxConfigRsp(
   return ResponseHandlerAction::kCompleteOutboundTransaction;
 }
 
-void BrEdrDynamicChannel::SetEnhancedRetransmissionSupport(bool supported) {
+bool BrEdrDynamicChannel::SetEnhancedRetransmissionSupport(bool supported) {
   peer_supports_ertm_ = supported;
 
   UpdateLocalConfigForErtm();
 
   // Don't send local config before connection response.
   if (state_ & kConnResponded) {
-    TrySendLocalConfig();
+    return TrySendLocalConfig();
   }
+  return true;
 }
 
 }  // namespace bt::l2cap::internal
