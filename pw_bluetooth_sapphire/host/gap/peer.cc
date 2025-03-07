@@ -276,7 +276,8 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
 
 void Peer::LowEnergyData::ClearBondData() {
   PW_CHECK(bond_data_->has_value());
-  if (bond_data_->value().irk) {
+  if (bond_data_->value().irk &&
+      peer_->address().type() == DeviceAddress::Type::kLERandom) {
     peer_->set_identity_known(false);
   }
   bond_data_.Set(std::nullopt);

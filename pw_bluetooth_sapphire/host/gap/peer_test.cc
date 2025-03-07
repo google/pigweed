@@ -1644,5 +1644,18 @@ TEST_F(PeerTest, BrEdrPairingToken) {
   EXPECT_EQ(count_2, 1);
 }
 
+TEST_F(PeerTest, ClearBondDataDoesNotSetIdentityKnownToFalseIfAddressIsLEPublic) {
+  ASSERT_EQ(peer().address().type(), DeviceAddress::Type::kLEPublic);
+  EXPECT_TRUE(peer().identity_known());
+  sm::PairingData data;
+  data.peer_ltk = kLTK;
+  data.local_ltk = kLTK;
+  data.irk = sm::Key(sm::SecurityProperties(), UInt128{4});
+  peer().MutLe().SetBondData(data);
+  EXPECT_TRUE(peer().identity_known());
+  peer().MutLe().ClearBondData();
+  EXPECT_TRUE(peer().identity_known());
+}
+
 }  // namespace
 }  // namespace bt::gap
