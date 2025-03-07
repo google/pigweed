@@ -28,18 +28,23 @@ cc_library(
     name = "pw_allocator",
     srcs = [
         "allocator.cc",
+        "control_block.cc",
         "managed_ptr.cc",
     ],
     hdrs = [
         "public/pw_allocator/allocator.h",
         "public/pw_allocator/capability.h",
         "public/pw_allocator/deallocator.h",
+        "public/pw_allocator/internal/control_block.h",
         "public/pw_allocator/internal/managed_ptr.h",
         "public/pw_allocator/layout.h",
         "public/pw_allocator/pool.h",
+        "public/pw_allocator/shared_ptr.h",
         "public/pw_allocator/unique_ptr.h",
+        "public/pw_allocator/weak_ptr.h",
     ],
     implementation_deps = [
+        "//pw_assert",
         "//pw_bytes:alignment",
         "//third_party/fuchsia:stdcompat",
     ],
@@ -735,6 +740,15 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "shared_ptr_test",
+    srcs = ["shared_ptr_test.cc"],
+    deps = [
+        ":managed_ptr_testing",
+        ":pw_allocator",
+    ],
+)
+
+pw_cc_test(
     name = "synchronized_allocator_test",
     srcs = ["synchronized_allocator_test.cc"],
     # TODO: b/358411629 - This test times out on rp2.
@@ -805,6 +819,15 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "weak_ptr_test",
+    srcs = ["weak_ptr_test.cc"],
+    deps = [
+        ":managed_ptr_testing",
+        ":pw_allocator",
+    ],
+)
+
+pw_cc_test(
     name = "worst_fit_test",
     srcs = ["worst_fit_test.cc"],
     deps = [
@@ -842,6 +865,7 @@ filegroup(
         "public/pw_allocator/null_allocator.h",
         "public/pw_allocator/pmr_allocator.h",
         "public/pw_allocator/pool.h",
+        "public/pw_allocator/shared_ptr.h",
         "public/pw_allocator/synchronized_allocator.h",
         "public/pw_allocator/test_harness.h",
         "public/pw_allocator/testing.h",
@@ -849,6 +873,7 @@ filegroup(
         "public/pw_allocator/tracking_allocator.h",
         "public/pw_allocator/typed_pool.h",
         "public/pw_allocator/unique_ptr.h",
+        "public/pw_allocator/weak_ptr.h",
         "public/pw_allocator/worst_fit.h",
         "//pw_allocator/block:doxygen",
         "//pw_allocator/bucket:doxygen",

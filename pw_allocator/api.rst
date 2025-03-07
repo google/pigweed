@@ -11,10 +11,12 @@ This module provides the following:
 - Generic allocator interfaces that can be injected into routines that need
   dynamic memory. These include :ref:`module-pw_allocator-api-allocator`, as
   well as the :ref:`module-pw_allocator-api-layout` type that is passed to it
-  and the :ref:`module-pw_allocator-api-unique_ptr` returned from it.
+  and the managed smart pointer types, such as
+  :ref:`module-pw_allocator-api-unique_ptr`, that can be returned from it.
 - Concrete allocator implementations used to provide memory dynamically.
 - "Forwarding" allocators, as described by
   :ref:`module-pw_allocator-design-forwarding`.
+- :ref:`module-pw_allocator-api-block` mix-in types and implementations.
 - Additional allocator utility classes. These are typically used by allocator
   implementers.
 - Test utilities for testing allocator implementations. These are typically used
@@ -61,13 +63,6 @@ Deallocator
 ===========
 Both ``Allocator`` and ``Pool`` derive from and extend ``Deallocator``. This
 type is intended for allocator implementers and not for module consumers.
-pw_allocator: Add bucket size reports
-
-Separating out the bucket size reports from those of the blocks and
-allocators makes it clearer where contributions to code size are coming
-from.
-
-Change-Id: Ibd719f3d4b88c42aa7833c24963e95253c397e03
 
 .. doxygenclass:: pw::Deallocator
    :members:
@@ -76,7 +71,7 @@ Change-Id: Ibd719f3d4b88c42aa7833c24963e95253c397e03
 
 Capabilities
 ============
-Types deriving from ``MemoryResource`` can communicate about their optional
+Types deriving from ``Deallocator`` can communicate about their optional
 methods and behaviors using ``Capabilities``. This type is intended for
 allocator implementers and not for module consumers.
 
@@ -87,10 +82,17 @@ allocator implementers and not for module consumers.
 
 UniquePtr
 =========
-The ``UniquePtr`` smart pointer type can be created by any type deriving from
-``MemoryResource``.
-
 .. doxygenclass:: pw::UniquePtr
+   :members:
+
+SharedPtr
+=========
+.. doxygenclass:: pw::SharedPtr
+   :members:
+
+WeakPtr
+=========
+.. doxygenclass:: pw::WeakPtr
    :members:
 
 --------------------
@@ -265,7 +267,7 @@ A block is an allocatable region of memory, and is the fundamental type managed
 by several of the block allocator implementations.
 
 .. tip::
-   Avoid converting pointers to allocations into ``Block`` instances, even if
+   Avoid converting pointers to allocations into block instances, even if
    you know your memory is coming from a ``BlockAllocator``. Breaking the
    abstraction in this manner will limit your flexibility to change to a
    different allocator in the future.

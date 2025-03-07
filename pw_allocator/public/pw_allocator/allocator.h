@@ -17,7 +17,9 @@
 
 #include "pw_allocator/capability.h"
 #include "pw_allocator/deallocator.h"
+#include "pw_allocator/internal/control_block.h"
 #include "pw_allocator/layout.h"
+#include "pw_allocator/shared_ptr.h"
 #include "pw_allocator/unique_ptr.h"
 #include "pw_numeric/checked_arithmetic.h"
 #include "pw_result/result.h"
@@ -30,6 +32,9 @@ namespace pw {
 /// generic interface must not make any assumptions around allocator behavior,
 /// thread safety, or performance.
 class Allocator : public Deallocator {
+ private:
+  using ControlBlock = allocator::internal::ControlBlock;
+
  public:
   /// Allocates a block of memory with the specified size and alignment.
   ///
@@ -123,8 +128,7 @@ class Allocator : public Deallocator {
     return Deallocator::WrapUnique<T>(New<T>(std::forward<Args>(args)...));
   }
 
-  /// Constructs an `alignment`-byte aligned array of `count` objects, and wraps
-  /// it in a `UniquePtr`
+  /// Constructs an array of `count` objects, and wraps it in a `UniquePtr`
   ///
   /// The returned value may contain null if allocating memory for the object
   /// fails. Callers must check for null before using the `UniquePtr`.
@@ -172,11 +176,75 @@ class Allocator : public Deallocator {
     return MakeUnique<T[]>(size, alignment);
   }
 
+  // Disallow calls with explicitly-sized array types like `T[kN]`.
   template <typename T,
             int&... kExplicitGuard,
             std::enable_if_t<is_bounded_array_v<T>, int> = 0,
             typename... Args>
   void MakeUnique(Args&&...) = delete;
+
+  /// Constructs and object of type `T` from the given `args`, and wraps it in a
+  /// `SharedPtr`
+  ///
+  /// The returned value may contain null if allocating memory for the object
+  /// fails. Callers must check for null before using the `SharedPtr`.
+  ///
+  /// @param[in]  args...     Arguments passed to the object constructor.
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<!std::is_array_v<T>, int> = 0,
+            typename... Args>
+  [[nodiscard]] SharedPtr<T> MakeShared(Args&&... args) {
+    auto* control_block = ControlBlock::Create(this, Layout::Of<T>(), 1);
+    if (control_block == nullptr) {
+      return nullptr;
+    }
+    auto* t = new (control_block->data()) T(std::forward<Args>(args)...);
+    return SharedPtr<T>(t, control_block);
+  }
+
+  /// Constructs an array of `count` objects, and wraps it in a `UniquePtr`
+  ///
+  /// The returned value may contain null if allocating memory for the object
+  /// fails. Callers must check for null before using the `UniquePtr`.
+  ///
+  /// @tparam     T            An array type.
+  /// @param[in]  count        Number of objects to allocate.
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
+  [[nodiscard]] SharedPtr<T> MakeShared(size_t size) {
+    return MakeShared<T>(size, alignof(std::remove_extent_t<T>));
+  }
+
+  /// Constructs an `alignment`-byte aligned array of `count` objects, and wraps
+  /// it in a `SharedPtr`
+  ///
+  /// The returned value may contain null if allocating memory for the object
+  /// fails. Callers must check for null before using the `SharedPtr`.
+  ///
+  /// @tparam     T            An array type.
+  /// @param[in]  count        Number of objects to allocate.
+  /// @param[in]  alignment    Object alignment.
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
+  [[nodiscard]] SharedPtr<T> MakeShared(size_t size, size_t alignment) {
+    Layout layout = Layout::Of<T>(size).Align(alignment);
+    auto* control_block = ControlBlock::Create(this, layout, size);
+    if (control_block == nullptr) {
+      return nullptr;
+    }
+    auto* t = new (control_block->data()) std::remove_extent_t<T>[size];
+    return SharedPtr<T>(t, control_block);
+  }
+
+  // Disallow calls with explicitly-sized array types like `T[kN]`.
+  template <typename T,
+            int&... kExplicitGuard,
+            std::enable_if_t<is_bounded_array_v<T>, int> = 0,
+            typename... Args>
+  std::enable_if_t<is_bounded_array_v<T>> MakeShared(Args&&...) = delete;
 
   /// Modifies the size of an previously-allocated block of memory without
   /// copying any data.

@@ -31,10 +31,13 @@ pw_source_set("pw_allocator") {
     "public/pw_allocator/allocator.h",
     "public/pw_allocator/capability.h",
     "public/pw_allocator/deallocator.h",
+    "public/pw_allocator/internal/control_block.h",
     "public/pw_allocator/internal/managed_ptr.h",
     "public/pw_allocator/layout.h",
     "public/pw_allocator/pool.h",
+    "public/pw_allocator/shared_ptr.h",
     "public/pw_allocator/unique_ptr.h",
+    "public/pw_allocator/weak_ptr.h",
   ]
   public_deps = [
     ":config",
@@ -52,6 +55,7 @@ pw_source_set("pw_allocator") {
   ]
   sources = [
     "allocator.cc",
+    "control_block.cc",
     "managed_ptr.cc",
   ]
 }
@@ -668,6 +672,14 @@ pw_test("pmr_allocator_test") {
   sources = [ "pmr_allocator_test.cc" ]
 }
 
+pw_test("shared_ptr_test") {
+  deps = [
+    ":managed_ptr_testing",
+    ":pw_allocator",
+  ]
+  sources = [ "shared_ptr_test.cc" ]
+}
+
 pw_test("synchronized_allocator_test") {
   enable_if =
       pw_sync_BINARY_SEMAPHORE_BACKEND != "" && pw_sync_MUTEX_BACKEND != "" &&
@@ -732,6 +744,14 @@ pw_test("unique_ptr_test") {
   sources = [ "unique_ptr_test.cc" ]
 }
 
+pw_test("weak_ptr_test") {
+  deps = [
+    ":managed_ptr_testing",
+    ":pw_allocator",
+  ]
+  sources = [ "weak_ptr_test.cc" ]
+}
+
 pw_test("worst_fit_test") {
   deps = [
     ":block_allocator_testing",
@@ -761,11 +781,13 @@ pw_test_group("tests") {
     ":metrics_test",
     ":null_allocator_test",
     ":pmr_allocator_test",
+    ":shared_ptr_test",
     ":synchronized_allocator_test",
     ":tlsf_allocator_test",
     ":tracking_allocator_test",
     ":typed_pool_test",
     ":unique_ptr_test",
+    ":weak_ptr_test",
     ":worst_fit_test",
   ]
   group_deps = [

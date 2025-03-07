@@ -21,10 +21,13 @@ pw_add_library(pw_allocator STATIC
     public/pw_allocator/allocator.h
     public/pw_allocator/capability.h
     public/pw_allocator/deallocator.h
+    public/pw_allocator/internal/control_block.h
     public/pw_allocator/internal/managed_ptr.h
     public/pw_allocator/layout.h
     public/pw_allocator/pool.h
+    public/pw_allocator/shared_ptr.h
     public/pw_allocator/unique_ptr.h
+    public/pw_allocator/weak_ptr.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
@@ -41,6 +44,7 @@ pw_add_library(pw_allocator STATIC
     pw_third_party.fuchsia.stdcompat
   SOURCES
     allocator.cc
+    control_block.cc
     managed_ptr.cc
 )
 
@@ -765,6 +769,17 @@ pw_add_test(pw_allocator.pmr_allocator_test
     pw_allocator
 )
 
+pw_add_test(pw_allocator.shared_ptr_test
+  SOURCES
+    shared_ptr_test.cc
+  PRIVATE_DEPS
+    pw_allocator
+    pw_allocator.managed_ptr_testing
+  GROUPS
+    modules
+    pw_allocator
+)
+
 pw_add_test(pw_allocator.synchronized_allocator_test
   SOURCES
     synchronized_allocator_test.cc
@@ -831,6 +846,17 @@ pw_add_test(pw_allocator.typed_pool_test
 pw_add_test(pw_allocator.unique_ptr_test
   SOURCES
     unique_ptr_test.cc
+  PRIVATE_DEPS
+    pw_allocator
+    pw_allocator.managed_ptr_testing
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.weak_ptr_test
+  SOURCES
+    weak_ptr_test.cc
   PRIVATE_DEPS
     pw_allocator
     pw_allocator.managed_ptr_testing

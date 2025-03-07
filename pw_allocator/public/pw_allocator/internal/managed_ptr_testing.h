@@ -40,6 +40,8 @@ class Counter {
 
   size_t value() const { return value_; }
 
+  void set_value(size_t value) { value_ = value; }
+
  private:
   static size_t num_ctor_calls_;
   static size_t num_dtor_calls_;
