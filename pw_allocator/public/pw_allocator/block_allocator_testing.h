@@ -24,7 +24,6 @@
 #include "pw_allocator/fuzzing.h"
 #include "pw_allocator/test_harness.h"
 #include "pw_assert/assert.h"
-#include "pw_assert/check.h"
 #include "pw_bytes/alignment.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"

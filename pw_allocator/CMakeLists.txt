@@ -39,7 +39,7 @@ pw_add_library(pw_allocator STATIC
     pw_status
     pw_result
   PRIVATE_DEPS
-    pw_assert
+    pw_assert.check
     pw_bytes.alignment
     pw_third_party.fuchsia.stdcompat
   SOURCES
@@ -133,11 +133,12 @@ pw_add_library(pw_allocator.block_allocator STATIC
     pw_allocator.block.with_layout
     pw_allocator.fragmentation
     pw_allocator.hardening
+    pw_assert.assert
     pw_bytes
     pw_result
     pw_status
   PRIVATE_DEPS
-    pw_assert
+    pw_assert.check
   SOURCES
     block_allocator.cc
 )
@@ -174,7 +175,7 @@ pw_add_library(pw_allocator.buddy_allocator STATIC
     pw_containers.vector
     pw_status
   PRIVATE_DEPS
-    pw_assert
+    pw_assert.check
     pw_third_party.fuchsia.stdcompat
   SOURCES
     buddy_allocator.cc
@@ -318,7 +319,7 @@ pw_add_library(pw_allocator.hardening INTERFACE
     public
   PUBLIC_DEPS
     pw_allocator.config
-    pw_assert
+    pw_assert.assert
     pw_preprocessor
 )
 
@@ -372,10 +373,11 @@ pw_add_library(pw_allocator.pmr_allocator STATIC
   PUBLIC_DEPS
     pw_allocator
     pw_allocator.config
-    pw_assert
     pw_status
-    SOURCES
+  SOURCES
     pmr_allocator.cc
+  PRIVATE_DEPS
+    pw_assert.check
 )
 
 # TODO(b/376730645): Remove deprecated alias.
@@ -417,9 +419,8 @@ pw_add_library(pw_allocator.tracking_allocator INTERFACE
   PUBLIC_DEPS
     pw_allocator
     pw_allocator.metrics
+    pw_assert.assert
     pw_status
-  PRIVATE_DEPS
-    pw_assert
 )
 
 pw_add_library(pw_allocator.typed_pool INTERFACE
@@ -471,12 +472,11 @@ pw_add_library(pw_allocator.testing INTERFACE
     pw_allocator.hardening
     pw_allocator.test_config
     pw_allocator.tracking_allocator
+    pw_assert.assert
     pw_bytes
     pw_result
     pw_status
     pw_unit_test
-  PRIVATE_DEPS
-    pw_assert
 )
 
 pw_add_library(pw_allocator.block_allocator_testing STATIC
@@ -492,9 +492,10 @@ pw_add_library(pw_allocator.block_allocator_testing STATIC
     pw_allocator.buffer
     pw_allocator.fuzzing
     pw_allocator.test_harness
+    pw_assert.assert
     pw_unit_test
   PRIVATE_DEPS
-    pw_assert
+    pw_assert.check
     pw_bytes.alignment
     pw_status
     pw_third_party.fuchsia.stdcompat
@@ -526,7 +527,8 @@ pw_add_library(pw_allocator.test_harness STATIC
     pw_containers.vector
     pw_random
   PRIVATE_DEPS
-    pw_assert
+    pw_assert.assert
+    pw_assert.check
     pw_third_party.fuchsia.stdcompat
   SOURCES
     test_harness.cc

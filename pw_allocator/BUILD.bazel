@@ -44,7 +44,7 @@ cc_library(
         "public/pw_allocator/weak_ptr.h",
     ],
     implementation_deps = [
-        "//pw_assert",
+        "//pw_assert:check",
         "//pw_bytes:alignment",
         "//third_party/fuchsia:stdcompat",
     ],
@@ -171,7 +171,6 @@ cc_library(
         ":block_allocator",
         "//pw_allocator/block:detailed_block",
         "//pw_allocator/bucket:unordered",
-        "//pw_assert:check",
         "//pw_status",
     ],
 )
@@ -491,6 +490,7 @@ cc_library(
     srcs = ["block_allocator_testing.cc"],
     hdrs = ["public/pw_allocator/block_allocator_testing.h"],
     implementation_deps = [
+        "//pw_assert:check",
         "//pw_bytes:alignment",
         "//pw_status",
         "//third_party/fuchsia:stdcompat",
@@ -505,7 +505,6 @@ cc_library(
         "//pw_allocator/block:detailed_block",
         "//pw_allocator/block:testing",
         "//pw_assert:assert",
-        "//pw_assert:check",
         "//pw_unit_test",
     ],
 )

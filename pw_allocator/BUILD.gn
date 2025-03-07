@@ -49,9 +49,9 @@ pw_source_set("pw_allocator") {
     dir_pw_status,
   ]
   deps = [
+    "$dir_pw_assert:check",
     "$dir_pw_bytes:alignment",
     "$dir_pw_third_party/fuchsia:stdcompat",
-    dir_pw_assert,
   ]
   sources = [
     "allocator.cc",
@@ -143,6 +143,7 @@ pw_source_set("block_allocator") {
     ":fragmentation",
     ":hardening",
     ":pw_allocator",
+    "$dir_pw_assert:assert",
     "block:allocatable",
     "block:basic",
     "block:iterable",
@@ -153,7 +154,7 @@ pw_source_set("block_allocator") {
     dir_pw_result,
     dir_pw_status,
   ]
-  deps = [ dir_pw_assert ]
+  deps = [ "$dir_pw_assert:check" ]
   sources = [ "block_allocator.cc" ]
 }
 
@@ -188,9 +189,9 @@ pw_source_set("buddy_allocator") {
     dir_pw_status,
   ]
   deps = [
+    "$dir_pw_assert:check",
     "$dir_pw_bytes:alignment",
     "$dir_pw_third_party/fuchsia:stdcompat",
-    dir_pw_assert,
   ]
   sources = [ "buddy_allocator.cc" ]
 }
@@ -202,10 +203,7 @@ pw_source_set("buffer") {
     dir_pw_bytes,
     dir_pw_result,
   ]
-  deps = [
-    "$dir_pw_bytes:alignment",
-    dir_pw_assert,
-  ]
+  deps = [ "$dir_pw_bytes:alignment" ]
 }
 
 pw_source_set("bump_allocator") {
@@ -314,7 +312,7 @@ pw_source_set("hardening") {
   public = [ "public/pw_allocator/hardening.h" ]
   public_deps = [
     ":config",
-    dir_pw_assert,
+    "$dir_pw_assert:assert",
     dir_pw_preprocessor,
   ]
 }
@@ -355,10 +353,10 @@ pw_source_set("pmr_allocator") {
   public_deps = [
     ":config",
     ":pw_allocator",
-    dir_pw_assert,
     dir_pw_status,
   ]
   sources = [ "pmr_allocator.cc" ]
+  deps = [ "$dir_pw_assert:check" ]
 }
 
 # TODO(b/376730645): Remove deprecated alias.
@@ -395,9 +393,9 @@ pw_source_set("tracking_allocator") {
   public_deps = [
     ":metrics",
     ":pw_allocator",
+    "$dir_pw_assert:assert",
     dir_pw_status,
   ]
-  deps = [ dir_pw_assert ]
 }
 
 pw_source_set("typed_pool") {
@@ -440,12 +438,12 @@ pw_source_set("testing") {
     ":hardening",
     ":pw_allocator",
     ":tracking_allocator",
+    "$dir_pw_assert:assert",
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
     dir_pw_unit_test,
   ]
-  deps = [ dir_pw_assert ]
 }
 
 pw_source_set("block_allocator_testing") {
@@ -457,14 +455,15 @@ pw_source_set("block_allocator_testing") {
     ":fuzzing",
     ":pw_allocator",
     ":test_harness",
+    "$dir_pw_assert:assert",
     "block:detailed_block",
     "block:testing",
     dir_pw_unit_test,
   ]
   deps = [
+    "$dir_pw_assert:check",
     "$dir_pw_bytes:alignment",
     "$dir_pw_third_party/fuchsia:stdcompat",
-    dir_pw_assert,
     dir_pw_status,
   ]
   sources = [ "block_allocator_testing.cc" ]
@@ -491,8 +490,9 @@ pw_source_set("test_harness") {
     dir_pw_random,
   ]
   deps = [
+    "$dir_pw_assert:assert",
+    "$dir_pw_assert:check",
     "$dir_pw_third_party/fuchsia:stdcompat",
-    dir_pw_assert,
   ]
   sources = [ "test_harness.cc" ]
 }
