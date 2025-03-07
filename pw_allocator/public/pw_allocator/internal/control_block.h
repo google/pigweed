@@ -123,7 +123,7 @@ class ControlBlock final {
   /// Returns a packed value that combines a count of weak pointers and a count
   /// of shared pointers.
   static constexpr uint32_t Pack(uint16_t num_weak, uint16_t num_shared) {
-    return (num_weak << 16) | (num_shared & 0xFFFF);
+    return (static_cast<uint32_t>(num_weak) << 16) | (num_shared & 0xFFFF);
   }
 
   Allocator* allocator_;
