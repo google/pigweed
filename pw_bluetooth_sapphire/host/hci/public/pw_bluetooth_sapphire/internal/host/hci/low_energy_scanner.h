@@ -317,6 +317,16 @@ class LowEnergyScanner : public LocalAddressClient {
     return packet_filter_config_;
   }
 
+  void NotifyPeerFound(const LowEnergyScanResult& result) {
+    delegate()->OnPeerFound(result);
+  }
+
+  void NotifyDirectedAdvertisement(const LowEnergyScanResult& result) const {
+    delegate()->OnDirectedAdvertisement(result);
+  }
+
+  void set_state(State state) { state_ = state; }
+  pw::async::Dispatcher& dispatcher() const { return pw_dispatcher_; }
   Transport::WeakPtr hci() const { return hci_; }
   Delegate* delegate() const { return delegate_; }
 

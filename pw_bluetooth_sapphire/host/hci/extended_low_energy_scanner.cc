@@ -267,7 +267,7 @@ void ExtendedLowEnergyScanner::OnExtendedAdvertisingReportEvent(
           BufferView(report.data().BackingStorage().begin(), bytes_allowed);
       result.AppendData(truncated_data);
 
-      delegate()->OnPeerFound(result);
+      NotifyPeerFound(result);
       continue;
     }
 
@@ -294,12 +294,12 @@ void ExtendedLowEnergyScanner::OnExtendedAdvertisingReportEvent(
     }
 
     if (is_directed) {
-      delegate()->OnDirectedAdvertisement(result);
+      NotifyDirectedAdvertisement(result);
       continue;
     }
 
     if (IsActiveScanning() && is_scan_response) {
-      delegate()->OnPeerFound(result);
+      NotifyPeerFound(result);
       continue;
     }
 
@@ -311,7 +311,7 @@ void ExtendedLowEnergyScanner::OnExtendedAdvertisingReportEvent(
       continue;
     }
 
-    delegate()->OnPeerFound(result);
+    NotifyPeerFound(result);
   }
 }
 

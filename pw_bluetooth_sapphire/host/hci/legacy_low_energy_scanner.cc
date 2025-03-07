@@ -124,7 +124,7 @@ void LegacyLowEnergyScanner::HandleScanResponse(const DeviceAddress& address,
   pending->result().set_resolved(resolved);
   pending->result().set_rssi(rssi);
 
-  delegate()->OnPeerFound(pending->result());
+  NotifyPeerFound(pending->result());
 
   // The callback handler may stop the scan, destroying objects within the
   // LowEnergyScanner. Avoid doing anything more to prevent use after free
@@ -263,12 +263,12 @@ void LegacyLowEnergyScanner::OnAdvertisingReportEvent(
     result.set_rssi(report.rssi().Read());
 
     if (directed) {
-      delegate()->OnDirectedAdvertisement(result);
+      NotifyDirectedAdvertisement(result);
       continue;
     }
 
     if (!needs_scan_rsp) {
-      delegate()->OnPeerFound(result);
+      NotifyPeerFound(result);
       continue;
     }
 

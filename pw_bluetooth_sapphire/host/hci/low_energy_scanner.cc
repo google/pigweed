@@ -16,8 +16,6 @@
 
 #include <pw_assert/check.h>
 
-#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
-
 namespace bt::hci {
 
 static std::string ScanStateToString(LowEnergyScanner::State state) {
@@ -113,7 +111,7 @@ void LowEnergyScanner::AddPendingResult(LowEnergyScanResult&& scan_result) {
       [this, address = scan_result.address()] {
         std::unique_ptr<PendingScanResult> result =
             RemovePendingResult(address);
-        delegate()->OnPeerFound(result->result());
+        NotifyPeerFound(result->result());
       });
   pending_results_.emplace(scan_result.address(), std::move(pending));
 }
@@ -253,7 +251,7 @@ void LowEnergyScanner::StopScanInternal(bool stopped_by_user) {
   if (!stopped_by_user) {
     for (auto& result : pending_results_) {
       const std::unique_ptr<PendingScanResult>& pending = result.second;
-      delegate_->OnPeerFound(pending->result());
+      NotifyPeerFound(pending->result());
     }
   }
 
