@@ -125,7 +125,7 @@ class LowEnergyDiscoveryManager final
   LowEnergyDiscoveryManager(
       hci::LowEnergyScanner* scanner,
       PeerCache* peer_cache,
-      const hci::LowEnergyScanner::PacketFilterConfig& packet_filter_config,
+      const hci::AdvertisingPacketFilter::Config& packet_filter_config,
       pw::async::Dispatcher& dispatcher);
   ~LowEnergyDiscoveryManager() override;
 
@@ -253,7 +253,7 @@ class LowEnergyDiscoveryManager final
   PeerCache* const peer_cache_;
 
   uint16_t next_scan_id_ = 0;
-  hci::LowEnergyScanner::PacketFilterConfig packet_filter_config_;
+  hci::AdvertisingPacketFilter::Config packet_filter_config_;
 
   // Called when a directed connectable advertisement is received during an
   // active or passive scan.

@@ -37,6 +37,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/advertising_packet_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/android_extended_low_energy_advertiser.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_advertiser.h"
@@ -439,7 +440,7 @@ class AdapterImpl final : public Adapter {
   void ParseLEGetVendorCapabilitiesCommandComplete(
       const hci::EventPacket& event);
 
-  hci::LowEnergyScanner::PacketFilterConfig GetPacketFilterConfig() {
+  hci::AdvertisingPacketFilter::Config GetPacketFilterConfig() const {
     bool offloading_enabled = false;
     uint8_t max_filters = 0;
 
@@ -457,8 +458,8 @@ class AdapterImpl final : public Adapter {
       max_filters = state().android_vendor_capabilities->max_filters();
     }
 
-    return hci::LowEnergyScanner::PacketFilterConfig(offloading_enabled,
-                                                     max_filters);
+    return hci::AdvertisingPacketFilter::Config(offloading_enabled,
+                                                max_filters);
   }
 
   std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser(bool extended) {
@@ -505,7 +506,7 @@ class AdapterImpl final : public Adapter {
 
   std::unique_ptr<hci::LowEnergyScanner> CreateScanner(
       bool extended,
-      const hci::LowEnergyScanner::PacketFilterConfig& packet_filter_config) {
+      const hci::AdvertisingPacketFilter::Config& packet_filter_config) {
     if (extended) {
       return std::make_unique<hci::ExtendedLowEnergyScanner>(
           le_address_manager_.get(), packet_filter_config, hci_, dispatcher_);
@@ -1548,7 +1549,7 @@ void AdapterImpl::InitializeStep4() {
   hci_le_advertiser_ = CreateAdvertiser(extended);
   hci_le_connector_ = CreateConnector(extended);
 
-  hci::LowEnergyScanner::PacketFilterConfig packet_filter_config =
+  hci::AdvertisingPacketFilter::Config packet_filter_config =
       GetPacketFilterConfig();
   hci_le_scanner_ = CreateScanner(extended, packet_filter_config);
 

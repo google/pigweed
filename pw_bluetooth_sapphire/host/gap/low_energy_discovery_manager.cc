@@ -22,6 +22,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/advertising_packet_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
 
@@ -132,7 +133,7 @@ void LowEnergyDiscoverySession::Stop() {
 LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(
     hci::LowEnergyScanner* scanner,
     PeerCache* peer_cache,
-    const hci::LowEnergyScanner::PacketFilterConfig& packet_filter_config,
+    const hci::AdvertisingPacketFilter::Config& packet_filter_config,
     pw::async::Dispatcher& dispatcher)
     : WeakSelf(this),
       dispatcher_(dispatcher),

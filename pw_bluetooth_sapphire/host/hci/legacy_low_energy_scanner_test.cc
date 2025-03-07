@@ -15,6 +15,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
 
 #include "pw_bluetooth/hci_events.emb.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/advertising_packet_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
@@ -53,7 +54,7 @@ class LegacyLowEnergyScannerTest : public TestingBase,
 
     scanner_ = std::make_unique<LegacyLowEnergyScanner>(
         fake_address_delegate(),
-        LegacyLowEnergyScanner::PacketFilterConfig(false, 0),
+        AdvertisingPacketFilter::Config(false, 0),
         transport()->GetWeakPtr(),
         dispatcher());
     scanner_->set_delegate(this);

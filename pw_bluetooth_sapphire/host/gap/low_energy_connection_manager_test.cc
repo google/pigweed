@@ -35,6 +35,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/defaults.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/advertising_packet_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/low_energy_connection.h"
@@ -115,7 +116,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     gatt_ = std::make_unique<gatt::testing::FakeLayer>(dispatcher());
     sm_factory_ = std::make_unique<TestSmFactory>();
 
-    hci::LowEnergyScanner::PacketFilterConfig packet_filter_config(false, 0);
+    hci::AdvertisingPacketFilter::Config packet_filter_config(false, 0);
 
     address_manager_ = std::make_unique<LowEnergyAddressManager>(
         kAdapterAddress,

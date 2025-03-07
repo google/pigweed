@@ -24,6 +24,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/advertising_packet_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
@@ -73,7 +74,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     settings.ApplyLegacyLEConfig();
     test_device()->set_settings(settings);
 
-    hci::LowEnergyScanner::PacketFilterConfig packet_filter_config(false, 0);
+    hci::AdvertisingPacketFilter::Config packet_filter_config(false, 0);
 
     // TODO(armansito): Now that the hci::LowEnergyScanner is injected into
     // |discovery_manager_| rather than constructed by it, a fake implementation

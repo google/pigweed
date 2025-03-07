@@ -16,6 +16,8 @@
 
 #include <pw_assert/check.h>
 
+#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
+
 namespace bt::hci {
 
 static std::string ScanStateToString(LowEnergyScanner::State state) {
@@ -82,8 +84,8 @@ LowEnergyScanner::PendingScanResult::PendingScanResult(
 
 LowEnergyScanner::LowEnergyScanner(
     LocalAddressDelegate* local_addr_delegate,
-    const PacketFilterConfig& packet_filter_config,
-    hci::Transport::WeakPtr hci,
+    const AdvertisingPacketFilter::Config& packet_filter_config,
+    Transport::WeakPtr hci,
     pw::async::Dispatcher& pw_dispatcher)
     : pw_dispatcher_(pw_dispatcher),
       scan_timeout_task_(pw_dispatcher_),

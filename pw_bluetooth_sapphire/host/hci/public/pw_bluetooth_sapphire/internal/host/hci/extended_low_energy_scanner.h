@@ -35,10 +35,11 @@ namespace bt::hci {
 // doesn't subscribe to the HCI_LE_Scan_Timeout Event.
 class ExtendedLowEnergyScanner final : public LowEnergyScanner {
  public:
-  ExtendedLowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
-                           const PacketFilterConfig& packet_filter_config,
-                           Transport::WeakPtr transport,
-                           pw::async::Dispatcher& pw_dispatcher);
+  ExtendedLowEnergyScanner(
+      LocalAddressDelegate* local_addr_delegate,
+      const AdvertisingPacketFilter::Config& packet_filter_config,
+      Transport::WeakPtr transport,
+      pw::async::Dispatcher& pw_dispatcher);
   ~ExtendedLowEnergyScanner() override;
 
   bool StartScan(const ScanOptions& options,

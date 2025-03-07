@@ -44,6 +44,7 @@ cc_library(
     hdrs = [
         "public/pw_bluetooth_sapphire/internal/host/hci/acl_connection.h",
         "public/pw_bluetooth_sapphire/internal/host/hci/advertising_handle_map.h",
+        "public/pw_bluetooth_sapphire/internal/host/hci/advertising_packet_filter.h",
         "public/pw_bluetooth_sapphire/internal/host/hci/advertising_report_parser.h",
         "public/pw_bluetooth_sapphire/internal/host/hci/android_extended_low_energy_advertiser.h",
         "public/pw_bluetooth_sapphire/internal/host/hci/bredr_connection.h",

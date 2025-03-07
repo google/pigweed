@@ -22,7 +22,7 @@ namespace pwemb = pw::bluetooth::emboss;
 
 LegacyLowEnergyScanner::LegacyLowEnergyScanner(
     LocalAddressDelegate* local_addr_delegate,
-    const PacketFilterConfig& packet_filter_config,
+    const AdvertisingPacketFilter::Config& packet_filter_config,
     Transport::WeakPtr transport,
     pw::async::Dispatcher& pw_dispatcher)
     : LowEnergyScanner(local_addr_delegate,

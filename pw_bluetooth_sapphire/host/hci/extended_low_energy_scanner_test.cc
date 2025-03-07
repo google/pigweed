@@ -16,6 +16,7 @@
 
 #include <unordered_map>
 
+#include "pw_bluetooth_sapphire/internal/host/hci/advertising_packet_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
@@ -60,7 +61,7 @@ class ExtendedLowEnergyScannerTest : public TestingBase,
 
     scanner_ = std::make_unique<ExtendedLowEnergyScanner>(
         &fake_address_delegate_,
-        ExtendedLowEnergyScanner::PacketFilterConfig(false, 0),
+        AdvertisingPacketFilter::Config(false, 0),
         transport()->GetWeakPtr(),
         dispatcher());
     scanner_->set_delegate(this);
