@@ -63,7 +63,7 @@ AndroidExtendedLowEnergyAdvertiser::~AndroidExtendedLowEnergyAdvertiser() {
 CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address,
     pwemb::GenericEnableParam enable,
-    bool extended_pdu) {
+    bool extended_pdu) const {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
   PW_CHECK(handle);
@@ -127,7 +127,7 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address,
     const AdvertisingData& data,
     AdvFlags flags,
-    bool extended_pdu) {
+    bool extended_pdu) const {
   if (data.CalculateBlockSize() == 0) {
     std::vector<CommandPacket> packets;
     return packets;
@@ -165,7 +165,7 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
 }
 
 CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
-    const DeviceAddress& address, bool extended_pdu) {
+    const DeviceAddress& address, bool extended_pdu) const {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
   PW_CHECK(handle);
@@ -189,7 +189,7 @@ std::vector<CommandPacket>
 AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address,
     const AdvertisingData& data,
-    bool extended_pdu) {
+    bool extended_pdu) const {
   if (data.CalculateBlockSize() == 0) {
     std::vector<CommandPacket> packets;
     return packets;
@@ -225,7 +225,7 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
 }
 
 CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
-    const DeviceAddress& address, bool extended_pdu) {
+    const DeviceAddress& address, bool extended_pdu) const {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
   PW_CHECK(handle);
@@ -247,7 +247,7 @@ CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
 }
 
 CommandPacket AndroidExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
-    const DeviceAddress& address, bool extended_pdu) {
+    const DeviceAddress& address, bool extended_pdu) const {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
   PW_CHECK(handle);

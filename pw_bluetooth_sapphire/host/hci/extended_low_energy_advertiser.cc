@@ -50,7 +50,7 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
 CommandPacket ExtendedLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address,
     pwemb::GenericEnableParam enable,
-    bool extended_pdu) {
+    bool extended_pdu) const {
   // We only enable or disable a single address at a time. The multiply by 1 is
   // set explicitly to show that data[] within
   // LESetExtendedAdvertisingEnableData is of size 1.
@@ -174,7 +174,7 @@ CommandPacket ExtendedLowEnergyAdvertiser::BuildAdvertisingDataFragmentPacket(
     hci_spec::AdvertisingHandle handle,
     const BufferView& data,
     pwemb::LESetExtendedAdvDataOp operation,
-    pwemb::LEExtendedAdvFragmentPreference fragment_preference) {
+    pwemb::LEExtendedAdvFragmentPreference fragment_preference) const {
   size_t kPayloadSize =
       pwemb::LESetExtendedAdvertisingDataCommandView::MinSizeInBytes().Read() +
       data.size();
@@ -199,7 +199,7 @@ CommandPacket ExtendedLowEnergyAdvertiser::BuildScanResponseDataFragmentPacket(
     hci_spec::AdvertisingHandle handle,
     const BufferView& data,
     pwemb::LESetExtendedAdvDataOp operation,
-    pwemb::LEExtendedAdvFragmentPreference fragment_preference) {
+    pwemb::LEExtendedAdvFragmentPreference fragment_preference) const {
   size_t kPayloadSize =
       pwemb::LESetExtendedScanResponseDataCommandView::MinSizeInBytes().Read() +
       data.size();
@@ -224,7 +224,7 @@ std::vector<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address,
     const AdvertisingData& data,
     AdvFlags flags,
-    bool extended_pdu) {
+    bool extended_pdu) const {
   if (data.CalculateBlockSize() == 0) {
     std::vector<CommandPacket> packets;
     return packets;
@@ -304,7 +304,7 @@ std::vector<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
 }
 
 CommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
-    const DeviceAddress& address, bool extended_pdu) {
+    const DeviceAddress& address, bool extended_pdu) const {
   constexpr size_t kPacketSize =
       pwemb::LESetExtendedAdvertisingDataCommandView::MinSizeInBytes().Read();
   auto packet =
@@ -329,7 +329,7 @@ CommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
 std::vector<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address,
     const AdvertisingData& data,
-    bool extended_pdu) {
+    bool extended_pdu) const {
   if (data.CalculateBlockSize() == 0) {
     std::vector<CommandPacket> packets;
     return packets;
@@ -409,7 +409,7 @@ std::vector<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
 }
 
 CommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
-    const DeviceAddress& address, bool extended_pdu) {
+    const DeviceAddress& address, bool extended_pdu) const {
   constexpr size_t kPacketSize =
       pwemb::LESetExtendedScanResponseDataCommandView::MinSizeInBytes().Read();
   auto packet =
@@ -432,7 +432,7 @@ CommandPacket ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
 }
 
 CommandPacket ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
-    const DeviceAddress& address, bool extended_pdu) {
+    const DeviceAddress& address, bool extended_pdu) const {
   std::optional<hci_spec::AdvertisingHandle> handle =
       advertising_handle_map_.GetHandle(address, extended_pdu);
   PW_CHECK(handle);

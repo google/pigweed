@@ -296,13 +296,13 @@ class LowEnergyScanner : public LocalAddressClient {
   // Build the HCI command packet to set the scan parameters for the flavor of
   // low energy scanning being implemented.
   virtual CommandPacket BuildSetScanParametersPacket(
-      const DeviceAddress& local_address, const ScanOptions& options) = 0;
+      const DeviceAddress& local_address, const ScanOptions& options) const = 0;
 
   // Build the HCI command packet to enable scanning for the flavor of low
   // energy scanning being implemented.
   virtual CommandPacket BuildEnablePacket(
       const ScanOptions& options,
-      pw::bluetooth::emboss::GenericEnableParam enable) = 0;
+      pw::bluetooth::emboss::GenericEnableParam enable) const = 0;
 
   void AddPendingResult(LowEnergyScanResult&& scan_result);
 

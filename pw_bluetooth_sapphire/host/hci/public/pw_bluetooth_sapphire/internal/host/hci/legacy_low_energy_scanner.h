@@ -51,13 +51,14 @@ class LegacyLowEnergyScanner final : public LowEnergyScanner {
   // Build the HCI command packet to set the scan parameters for the flavor of
   // low energy scanning being implemented.
   CommandPacket BuildSetScanParametersPacket(
-      const DeviceAddress& local_address, const ScanOptions& options) override;
+      const DeviceAddress& local_address,
+      const ScanOptions& options) const override;
 
   // Build the HCI command packet to enable scanning for the flavor of low
   // energy scanning being implemented.
   CommandPacket BuildEnablePacket(
       const ScanOptions& options,
-      pw::bluetooth::emboss::GenericEnableParam enable) override;
+      pw::bluetooth::emboss::GenericEnableParam enable) const override;
 
   // Called when a Scan Response is received during an active scan or when we
   // time out waiting

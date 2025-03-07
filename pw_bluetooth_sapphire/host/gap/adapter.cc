@@ -462,7 +462,8 @@ class AdapterImpl final : public Adapter {
                                                 max_filters);
   }
 
-  std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser(bool extended) {
+  std::unique_ptr<hci::LowEnergyAdvertiser> CreateAdvertiser(
+      bool extended) const {
     if (extended) {
       return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(
           hci_, state_.low_energy_state.max_advertising_data_length_);
@@ -494,7 +495,8 @@ class AdapterImpl final : public Adapter {
                                                                      max_advt);
   }
 
-  std::unique_ptr<hci::LowEnergyConnector> CreateConnector(bool extended) {
+  std::unique_ptr<hci::LowEnergyConnector> CreateConnector(
+      bool extended) const {
     return std::make_unique<hci::LowEnergyConnector>(
         hci_,
         le_address_manager_.get(),
@@ -506,7 +508,7 @@ class AdapterImpl final : public Adapter {
 
   std::unique_ptr<hci::LowEnergyScanner> CreateScanner(
       bool extended,
-      const hci::AdvertisingPacketFilter::Config& packet_filter_config) {
+      const hci::AdvertisingPacketFilter::Config& packet_filter_config) const {
     if (extended) {
       return std::make_unique<hci::ExtendedLowEnergyScanner>(
           le_address_manager_.get(), packet_filter_config, hci_, dispatcher_);

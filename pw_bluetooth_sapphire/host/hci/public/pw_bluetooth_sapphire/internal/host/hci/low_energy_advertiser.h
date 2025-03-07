@@ -212,7 +212,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   virtual CommandPacket BuildEnablePacket(
       const DeviceAddress& address,
       pw::bluetooth::emboss::GenericEnableParam enable,
-      bool extended_pdu) = 0;
+      bool extended_pdu) const = 0;
 
   // Build the HCI command packet to set the advertising parameters for the
   // flavor of low energy advertising being implemented.
@@ -229,31 +229,31 @@ class LowEnergyAdvertiser : public LocalAddressClient {
       const DeviceAddress& address,
       const AdvertisingData& data,
       AdvFlags flags,
-      bool extended_pdu) = 0;
+      bool extended_pdu) const = 0;
 
   // Build the HCI command packet to delete the advertising parameters from the
   // controller for the flavor of low energy advertising being implemented. This
   // method is used when stopping an advertisement.
   virtual CommandPacket BuildUnsetAdvertisingData(const DeviceAddress& address,
-                                                  bool extended_pdu) = 0;
+                                                  bool extended_pdu) const = 0;
 
   // Build the HCI command packet to set the data sent in a scan response (if
   // requested) for the flavor of low energy advertising being implemented.
   virtual std::vector<CommandPacket> BuildSetScanResponse(
       const DeviceAddress& address,
       const AdvertisingData& scan_rsp,
-      bool extended_pdu) = 0;
+      bool extended_pdu) const = 0;
 
   // Build the HCI command packet to delete the advertising parameters from the
   // controller for the flavor of low energy advertising being implemented.
   virtual CommandPacket BuildUnsetScanResponse(const DeviceAddress& address,
-                                               bool extended_pdu) = 0;
+                                               bool extended_pdu) const = 0;
 
   // Build the HCI command packet to remove the advertising set entirely from
   // the controller's memory for the flavor of low energy advertising being
   // implemented.
   virtual CommandPacket BuildRemoveAdvertisingSet(const DeviceAddress& address,
-                                                  bool extended_pdu) = 0;
+                                                  bool extended_pdu) const = 0;
 
   // Called when the command packet created with BuildSetAdvertisingParams
   // returns with a result

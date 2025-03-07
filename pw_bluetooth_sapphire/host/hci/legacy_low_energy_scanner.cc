@@ -64,7 +64,7 @@ bool LegacyLowEnergyScanner::StartScan(const ScanOptions& options,
 }
 
 CommandPacket LegacyLowEnergyScanner::BuildSetScanParametersPacket(
-    const DeviceAddress& local_address, const ScanOptions& options) {
+    const DeviceAddress& local_address, const ScanOptions& options) const {
   auto packet = hci::CommandPacket::New<
       pw::bluetooth::emboss::LESetScanParametersCommandWriter>(
       hci_spec::kLESetScanParameters);
@@ -92,7 +92,7 @@ CommandPacket LegacyLowEnergyScanner::BuildSetScanParametersPacket(
 
 CommandPacket LegacyLowEnergyScanner::BuildEnablePacket(
     const ScanOptions& options,
-    pw::bluetooth::emboss::GenericEnableParam enable) {
+    pw::bluetooth::emboss::GenericEnableParam enable) const {
   auto packet =
       CommandPacket::New<pw::bluetooth::emboss::LESetScanEnableCommandWriter>(
           hci_spec::kLESetScanEnable);

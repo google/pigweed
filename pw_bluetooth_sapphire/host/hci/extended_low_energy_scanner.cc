@@ -72,7 +72,7 @@ bool ExtendedLowEnergyScanner::StartScan(const ScanOptions& options,
 }
 
 CommandPacket ExtendedLowEnergyScanner::BuildSetScanParametersPacket(
-    const DeviceAddress& local_address, const ScanOptions& options) {
+    const DeviceAddress& local_address, const ScanOptions& options) const {
   // LESetExtendedScanParametersCommand contains a variable amount of data,
   // depending on how many bits are set within the scanning_phys parameter. As
   // such, we must first calculate the size of the variable data before
@@ -113,7 +113,7 @@ CommandPacket ExtendedLowEnergyScanner::BuildSetScanParametersPacket(
 }
 
 CommandPacket ExtendedLowEnergyScanner::BuildEnablePacket(
-    const ScanOptions& options, GenericEnableParam enable) {
+    const ScanOptions& options, GenericEnableParam enable) const {
   auto packet = CommandPacket::New<LESetExtendedScanEnableCommandWriter>(
       hci_spec::kLESetExtendedScanEnable);
   auto params = packet.view_t();
