@@ -31,32 +31,6 @@ cc_library(
     ],
 )
 
-# A target exposing the interfaces of both "check" and "assert".  We re-expose
-# the headers here instead of just putting "check" and "assert" in the deps to
-# avoid a layering check violation.
-cc_library(
-    name = "pw_assert",
-    hdrs = [
-        "public/pw_assert/assert.h",
-        "public/pw_assert/check.h",
-        "public/pw_assert/internal/check_impl.h",
-        "public/pw_assert/short.h",
-    ],
-    deprecation = "This target will be removed soon; depend on //pw_assert:assert and/or //pw_assert:check instead.",
-    strip_include_prefix = "public",
-    tags = [
-        "manual",
-        "noclangtidy",
-    ],
-    deps = [
-        ":assert_backend",
-        ":check",
-        ":check_backend",
-        ":config",
-        "//pw_preprocessor",
-    ],
-)
-
 label_flag(
     name = "backend",
     build_setting_default = ":unspecified_backend",
