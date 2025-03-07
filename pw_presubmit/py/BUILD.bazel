@@ -133,6 +133,7 @@ pw_py_binary(
         ":black_runfiles",
         ":buildifier_runfiles",
         "//pw_build/py:pw_build",
+        "@rules_python//python/runfiles",
     ] + select({
         "@platforms//os:macos": ["@llvm_toolchain_macos//:py_clang_format"],
         "//conditions:default": ["@llvm_toolchain//:py_clang_format"],

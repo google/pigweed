@@ -45,8 +45,10 @@ class FormattingSuite:
     def __init__(
         self,
         formatters: Collection[FileFormatter],
+        formatter_fix_command: str,
     ):
         self._formatters = formatters
+        self._formatter_fix_command = formatter_fix_command
 
     def main(self) -> int:
         """Entry point for the formatter CLI."""
@@ -109,6 +111,7 @@ class FormattingSuite:
             findings_as_list,
             log_fix_command=(not apply_fixes),
             log_oneliner_summary=True,
+            formatter_fix_command=self._formatter_fix_command,
         )
 
         if not findings:
