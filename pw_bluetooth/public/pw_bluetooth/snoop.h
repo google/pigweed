@@ -52,7 +52,7 @@ class Snoop {
     return Snoop(system_clock, queue, queue_lock, scratch_buffer);
   }
 
-  // Calculate the size of the scratch buffer.
+  /// Calculate the size of the scratch buffer.
   ///
   /// @param hci_payload_size The number of bytes of the hci packet to save
   static constexpr size_t NeededScratchBufferSize(size_t hci_payload_size) {
@@ -60,7 +60,19 @@ class Snoop {
            hci_payload_size;
   }
 
-  // Dump the snoop log to the log as a hex string
+  /// Enable the snoop log
+  void Enable() {
+    std::lock_guard lock(queue_lock_);
+    is_enabled_ = true;
+  }
+
+  /// Disable the snoop log
+  void Disable() {
+    std::lock_guard lock(queue_lock_);
+    is_enabled_ = false;
+  }
+
+  /// Dump the snoop log to the log as a hex string
   Status DumpToLog();
 
   /// Dump the snoop log via callback
@@ -134,6 +146,7 @@ class Snoop {
       const Function<Status(ConstByteSpan data)>& callback);
 
   constexpr static uint32_t kEmbossFileVersion = 1;
+  bool is_enabled_ PW_GUARDED_BY(queue_lock_) = true;
   chrono::VirtualSystemClock& system_clock_;
   InlineVarLenEntryQueue<>& queue_ PW_GUARDED_BY(queue_lock_);
   span<uint8_t> scratch_buffer_ PW_GUARDED_BY(queue_lock_);

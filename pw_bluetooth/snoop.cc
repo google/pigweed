@@ -100,6 +100,9 @@ Status Snoop::DumpUnlocked(
 void Snoop::AddEntry(emboss::snoop_log::PacketFlags emboss_packet_flag,
                      proxy::H4PacketInterface& hci_packet) {
   std::lock_guard lock(queue_lock_);
+  if (!is_enabled_) {
+    return;
+  }
 
   size_t hci_packet_length_to_include = std::min(
       hci_packet.GetHciSpan().size(),

@@ -53,9 +53,7 @@ std::vector<std::byte> hex_string_to_bytes(std::string_view hex_str) {
   return bytes;
 }
 
-TEST(SnoopTest, HeaderOnly) {
-  chrono::SimulatedSystemClock clock{};
-  SnoopBuffer<4096, 256> snoop{clock};
+std::vector<std::byte> get_snoop_log(Snoop& snoop) {
   std::vector<std::byte> snoop_data;
   Status status = snoop.Dump([&snoop_data](ConstByteSpan data) {
     for (const std::byte item : data) {
@@ -64,6 +62,13 @@ TEST(SnoopTest, HeaderOnly) {
     return OkStatus();
   });
   EXPECT_TRUE(status.ok());
+  return snoop_data;
+}
+}  // namespace
+
+TEST(SnoopTest, HeaderOnly) {
+  chrono::SimulatedSystemClock clock{};
+  SnoopBuffer<4096, 256> snoop{clock};
 
   std::string_view expected_snoop_data =  // Identification Pattern (64-bit)
       "6274736e6f6f7000"
@@ -71,7 +76,7 @@ TEST(SnoopTest, HeaderOnly) {
       "00000001"
       // Datalink Type (32-bit)
       "000003ea";
-  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), snoop_data);
+  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), get_snoop_log(snoop));
 }
 
 TEST(SnoopTest, HeaderTx) {
@@ -83,16 +88,6 @@ TEST(SnoopTest, HeaderTx) {
   proxy::H4PacketWithHci packet{emboss::H4PacketType::ACL_DATA, tx_data};
   snoop.AddTx(packet);
 
-  // Get snoop log
-  std::vector<std::byte> snoop_data;
-  Status status = snoop.Dump([&snoop_data](ConstByteSpan data) {
-    for (const std::byte item : data) {
-      snoop_data.push_back(item);
-    }
-    return OkStatus();
-  });
-  EXPECT_TRUE(status.ok());
-
   // Validate
   std::string_view expected_snoop_data =
       ""
@@ -117,7 +112,7 @@ TEST(SnoopTest, HeaderTx) {
       "02"
       // Packet Data[1-N] - Data
       "123456789a";
-  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), snoop_data);
+  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), get_snoop_log(snoop));
 }
 
 TEST(SnoopTest, HeaderTxTruncated) {
@@ -129,16 +124,6 @@ TEST(SnoopTest, HeaderTxTruncated) {
   proxy::H4PacketWithHci packet{emboss::H4PacketType::ACL_DATA, tx_data};
   snoop.AddTx(packet);
 
-  // Get snoop log
-  std::vector<std::byte> snoop_data;
-  Status status = snoop.Dump([&snoop_data](ConstByteSpan data) {
-    for (const std::byte item : data) {
-      snoop_data.push_back(item);
-    }
-    return OkStatus();
-  });
-  EXPECT_TRUE(status.ok());
-
   // Validate
   std::string_view expected_snoop_data =
       ""
@@ -163,7 +148,7 @@ TEST(SnoopTest, HeaderTxTruncated) {
       "02"
       // Packet Data[1-N] - Data
       "123456";
-  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), snoop_data);
+  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), get_snoop_log(snoop));
 }
 
 TEST(SnoopTest, HeaderRx) {
@@ -174,16 +159,6 @@ TEST(SnoopTest, HeaderRx) {
   std::array<uint8_t, 5> rx_data = {0x12, 0x34, 0x56, 0x78, 0x9A};
   proxy::H4PacketWithHci packet{emboss::H4PacketType::ACL_DATA, rx_data};
   snoop.AddRx(packet);
-
-  // Get snoop log
-  std::vector<std::byte> snoop_data;
-  Status status = snoop.Dump([&snoop_data](ConstByteSpan data) {
-    for (const std::byte item : data) {
-      snoop_data.push_back(item);
-    }
-    return OkStatus();
-  });
-  EXPECT_TRUE(status.ok());
 
   // Validate
   std::string_view expected_snoop_data =
@@ -209,7 +184,7 @@ TEST(SnoopTest, HeaderRx) {
       "02"
       // Packet Data[1-N] - Data
       "123456789a";
-  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), snoop_data);
+  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), get_snoop_log(snoop));
 }
 
 TEST(SnoopTest, HeaderRxTruncated) {
@@ -220,16 +195,6 @@ TEST(SnoopTest, HeaderRxTruncated) {
   std::array<uint8_t, 5> rx_data = {0x12, 0x34, 0x56, 0x78, 0x9A};
   proxy::H4PacketWithHci packet{emboss::H4PacketType::ACL_DATA, rx_data};
   snoop.AddRx(packet);
-
-  // Get snoop log
-  std::vector<std::byte> snoop_data;
-  Status status = snoop.Dump([&snoop_data](ConstByteSpan data) {
-    for (const std::byte item : data) {
-      snoop_data.push_back(item);
-    }
-    return OkStatus();
-  });
-  EXPECT_TRUE(status.ok());
 
   // Validate
   std::string_view expected_snoop_data =
@@ -255,7 +220,7 @@ TEST(SnoopTest, HeaderRxTruncated) {
       "02"
       // Packet Data[1-N] - Data
       "123456";
-  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), snoop_data);
+  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), get_snoop_log(snoop));
 }
 
 TEST(SnoopTest, HeaderTxTx) {
@@ -273,16 +238,6 @@ TEST(SnoopTest, HeaderTxTx) {
   proxy::H4PacketWithHci packet2{emboss::H4PacketType::COMMAND, tx_data2};
   snoop.AddTx(packet2);
 
-  // Get snoop log
-  std::vector<std::byte> snoop_data;
-  Status status = snoop.Dump([&snoop_data](ConstByteSpan data) {
-    for (const std::byte item : data) {
-      snoop_data.push_back(item);
-    }
-    return OkStatus();
-  });
-  EXPECT_TRUE(status.ok());
-
   // Validate
   std::string_view expected_snoop_data =
       ""
@@ -322,7 +277,7 @@ TEST(SnoopTest, HeaderTxTx) {
       "01"
       // Packet Data[1-N] - Data
       "BCDEF0";
-  EXPECT_EQ(snoop_data, hex_string_to_bytes(expected_snoop_data));
+  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), get_snoop_log(snoop));
 }
 
 TEST(SnoopTest, HeaderRxRx) {
@@ -340,16 +295,6 @@ TEST(SnoopTest, HeaderRxRx) {
   proxy::H4PacketWithHci packet2{emboss::H4PacketType::COMMAND, rx_data2};
   snoop.AddRx(packet2);
 
-  // Get snoop log
-  std::vector<std::byte> snoop_data;
-  Status status = snoop.Dump([&snoop_data](ConstByteSpan data) {
-    for (const std::byte item : data) {
-      snoop_data.push_back(item);
-    }
-    return OkStatus();
-  });
-  EXPECT_TRUE(status.ok());
-
   // Validate
   std::string_view expected_snoop_data =
       ""
@@ -389,7 +334,7 @@ TEST(SnoopTest, HeaderRxRx) {
       "01"
       // Packet Data[1-N] - Data
       "BCDEF0";
-  EXPECT_EQ(snoop_data, hex_string_to_bytes(expected_snoop_data));
+  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), get_snoop_log(snoop));
 }
 
 TEST(SnoopTest, HeaderRxTxRxTx) {
@@ -418,16 +363,6 @@ TEST(SnoopTest, HeaderRxTxRxTx) {
   std::array<uint8_t, 3> tx_data2 = {0xCB, 0xED, 0x0F};
   proxy::H4PacketWithHci packet4{emboss::H4PacketType::COMMAND, tx_data2};
   snoop.AddTx(packet4);
-
-  // Get snoop log
-  std::vector<std::byte> snoop_data;
-  Status status = snoop.Dump([&snoop_data](ConstByteSpan data) {
-    for (const std::byte item : data) {
-      snoop_data.push_back(item);
-    }
-    return OkStatus();
-  });
-  EXPECT_TRUE(status.ok());
 
   // Validate
   std::string_view expected_snoop_data =
@@ -498,8 +433,79 @@ TEST(SnoopTest, HeaderRxTxRxTx) {
       "01"
       // Packet Data[1-N] - Data
       "CBED0F";
-  EXPECT_EQ(snoop_data, hex_string_to_bytes(expected_snoop_data));
+  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), get_snoop_log(snoop));
 }
 
-}  // namespace
+TEST(SnoopTest, Disabled) {
+  chrono::SimulatedSystemClock clock{};
+  SnoopBuffer<4096, 256> snoop{clock};
+
+  // Disable
+  snoop.Disable();
+
+  // Add packet 1
+  std::array<uint8_t, 5> rx_data1 = {0x12, 0x34, 0x56, 0x78, 0x9A};
+  proxy::H4PacketWithHci packet1{emboss::H4PacketType::ACL_DATA, rx_data1};
+  snoop.AddRx(packet1);
+
+  // Validate
+  std::string_view expected_snoop_data =
+      ""
+      // Identification Pattern (64-bit)
+      "6274736e6f6f7000"
+      // Version Number (32-bit)
+      "00000001"
+      // Datalink Type (32-bit)
+      "000003ea";
+  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), get_snoop_log(snoop));
+}
+
+TEST(SnoopTest, DisabledEnable) {
+  chrono::SimulatedSystemClock clock{};
+  SnoopBuffer<4096, 256> snoop{clock};
+
+  // Disable
+  snoop.Disable();
+
+  // Add packet 1
+  std::array<uint8_t, 5> rx_data1 = {0x12, 0x34, 0x56, 0x78, 0x9A};
+  proxy::H4PacketWithHci packet1{emboss::H4PacketType::ACL_DATA, rx_data1};
+  snoop.AddRx(packet1);
+
+  // Renable
+  snoop.Enable();
+
+  // Add packet 2
+  clock.AdvanceTime(pw::chrono::SystemClock::for_at_least(1us));
+  std::array<uint8_t, 3> tx_data1 = {0xBC, 0xDE, 0xF0};
+  proxy::H4PacketWithHci packet2{emboss::H4PacketType::COMMAND, tx_data1};
+  snoop.AddTx(packet2);
+
+  // Validate
+  std::string_view expected_snoop_data =
+      ""
+      // Identification Pattern (64-bit)
+      "6274736e6f6f7000"
+      // Version Number (32-bit)
+      "00000001"
+      // Datalink Type (32-bit)
+      "000003ea"
+      // Packet 2
+      // Original Length (32-bit)
+      "00000004"
+      // Included Length (32-bit)
+      "00000004"
+      // Packet Flags (32-bit)
+      "00000000"
+      // Cumulative Drops (32-bit)
+      "00000000"
+      // Timestamp Microseconds (64-bit)
+      "0000000000000001"
+      // Packet Data[0] - HCI_TYPE (8-bit)
+      "01"
+      // Packet Data[1-N] - Data
+      "BCDEF0";
+  EXPECT_EQ(hex_string_to_bytes(expected_snoop_data), get_snoop_log(snoop));
+}
+
 }  // namespace pw::bluetooth
