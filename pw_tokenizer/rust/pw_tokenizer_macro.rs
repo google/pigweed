@@ -183,7 +183,7 @@ impl PrintfFormatMacroGenerator for TokenizeToBufferGenerator<'_> {
 
     fn integer_conversion(&mut self, ty: Ident, expression: Arg) -> Result<Option<String>> {
         self.encoding_fragments.push(quote! {
-          Argument::Varint(#ty::from(#expression) as i32)
+          Argument::Varint(#ty::from(#expression) as i64)
         });
 
         Ok(None)
@@ -315,6 +315,12 @@ impl PrintfFormatMacroGenerator for TokenizeToWriterGenerator<'_> {
         } else {
             Ok(quote! {
               {
+                // A limitation of the tokenizer macro is that untyped formats
+                // are not supported, so instead of ("{}", x), the following
+                // ("{}", x as type) must be used  instead.  This
+                // can lead to clippy errors about unnecessary casts, so ensure
+                // it's disabled inside this macro.
+                #![allow(clippy::unnecessary_cast)]
                 use __pw_tokenizer_crate::internal::Argument;
                 __pw_tokenizer_crate::internal::tokenize_to_writer::<#ty>(
                   #token,
@@ -332,7 +338,7 @@ impl PrintfFormatMacroGenerator for TokenizeToWriterGenerator<'_> {
 
     fn integer_conversion(&mut self, ty: Ident, expression: Arg) -> Result<Option<String>> {
         self.encoding_fragments.push(quote! {
-          Argument::Varint(#ty::from(#expression) as i32)
+          Argument::Varint(#ty::from(#expression) as i64)
         });
 
         Ok(None)

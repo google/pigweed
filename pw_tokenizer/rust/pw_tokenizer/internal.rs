@@ -24,9 +24,8 @@ use crate::MessageWriter;
 // engine.
 pub enum Argument<'a> {
     String(&'a str),
-    Varint(i32),
-    Varint64(i64),
     Char(u8),
+    Varint(i64),
 }
 
 impl<'a> From<&'a str> for Argument<'a> {
@@ -35,15 +34,53 @@ impl<'a> From<&'a str> for Argument<'a> {
     }
 }
 
+impl From<bool> for Argument<'_> {
+    fn from(val: bool) -> Self {
+        Self::Char(val as u8)
+    }
+}
+
+impl From<char> for Argument<'_> {
+    fn from(val: char) -> Self {
+        Self::Char(val as u8)
+    }
+}
+
+impl From<u8> for Argument<'_> {
+    fn from(val: u8) -> Self {
+        Self::Char(val)
+    }
+}
+
 impl From<i32> for Argument<'_> {
     fn from(val: i32) -> Self {
-        Self::Varint(val)
+        Self::Varint(val as i64)
     }
 }
 
 impl From<u32> for Argument<'_> {
     fn from(val: u32) -> Self {
-        Self::Varint64(val as i64)
+        Self::Varint(val as i64)
+    }
+}
+
+// TODO: b/400978670 - investigate whether changing these
+// 64bit values to references saves space on 32bit systems.
+impl From<i64> for Argument<'_> {
+    fn from(val: i64) -> Self {
+        Self::Varint(val)
+    }
+}
+
+impl From<u64> for Argument<'_> {
+    fn from(val: u64) -> Self {
+        Self::Varint(val as i64)
+    }
+}
+
+impl From<usize> for Argument<'_> {
+    fn from(val: usize) -> Self {
+        Self::Varint(val as i64)
     }
 }
 
@@ -110,11 +147,6 @@ fn tokenize_engine<W: crate::MessageWriter>(
         match arg {
             Argument::String(s) => encode_string(writer, s)?,
             Argument::Varint(i) => {
-                let mut encode_buffer = [0u8; 10];
-                let len = i.varint_encode(&mut encode_buffer)?;
-                writer.write(&encode_buffer[..len])?;
-            }
-            Argument::Varint64(i) => {
                 let mut encode_buffer = [0u8; 10];
                 let len = i.varint_encode(&mut encode_buffer)?;
                 writer.write(&encode_buffer[..len])?;
