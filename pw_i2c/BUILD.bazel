@@ -121,6 +121,18 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "message_test",
+    srcs = [
+        "message_test.cc",
+    ],
+    deps = [
+        ":address",
+        ":message",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "initiator_test",
     srcs = [
         "initiator_test.cc",

@@ -34,7 +34,7 @@ pw_source_set("address") {
 pw_source_set("message") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_i2c/message.h" ]
-  deps = [
+  public_deps = [
     ":address",
     "$dir_pw_assert",
     "$dir_pw_bytes",
@@ -157,6 +157,7 @@ pw_test_group("tests") {
     ":initiator_mock_test",
     ":initiator_message_mock_test",
     ":initiator_test",
+    ":message_test",
     ":register_device_test",
     ":i2c_service_test",
     ":i2c_message_service_test",
@@ -169,6 +170,14 @@ pw_test("address_test") {
 
   # Disable deprecation warning for Address() constructor.
   cflags = [ "-Wno-deprecated-declarations" ]
+}
+
+pw_test("message_test") {
+  sources = [ "message_test.cc" ]
+  deps = [
+    ":address",
+    ":message",
+  ]
 }
 
 pw_test("initiator_test") {

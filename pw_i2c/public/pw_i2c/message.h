@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_i2c/address.h"
 
@@ -131,8 +132,20 @@ class Message {
 
   /// Getter for the data component.
   ///
+  /// This method is only valid for Read messages and will runtime ASSERT on
+  /// other messages.
+  ///
+  /// @returns the mutable variant of the data passed into one of the
+  /// constructors or factories.
+  ByteSpan GetMutableData() const {
+    PW_ASSERT(IsRead());
+    return data_;
+  }
+
+  /// Getter for the data component.
+  ///
   /// @returns the data passed into one of the constructors or factories.
-  ByteSpan GetData() const { return data_; }
+  ConstByteSpan GetData() const { return data_; }
 
  private:
   enum class Direction : uint8_t {

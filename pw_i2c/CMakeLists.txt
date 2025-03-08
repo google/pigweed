@@ -168,6 +168,17 @@ pw_add_test(pw_i2c.address_test
     pw_i2c
 )
 
+pw_add_test(pw_i2c.message_test
+  SOURCES
+    message_test.cc
+  PRIVATE_DEPS
+    pw_i2c.address
+    pw_i2c.message
+  GROUPS
+    modules
+    pw_i2c
+)
+
 pw_add_test(pw_i2c.initiator_test
   SOURCES
     initiator_test.cc

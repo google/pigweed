@@ -47,7 +47,7 @@ Status MockMessageInitiator::DoTransferFor(
       PW_CHECK_INT_EQ(messages[i].GetData().size(), expected_rx_buffer.size());
       std::copy(expected_rx_buffer.begin(),
                 expected_rx_buffer.end(),
-                messages[i].GetData().begin());
+                messages[i].GetMutableData().begin());
     } else {
       ConstByteSpan expected_tx_buffer = expected_messages[i].data_buffer();
       EXPECT_TRUE(

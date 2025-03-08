@@ -59,7 +59,7 @@ class TestInitiator : public Initiator {
                          "Buffer to read is wrong size");
         std::copy(read_buffer_.begin(),
                   read_buffer_.end(),
-                  messages[i].GetData().begin());
+                  messages[i].GetMutableData().begin());
       } else {
         PW_CHECK(!saw_write);
         saw_write = true;

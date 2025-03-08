@@ -75,14 +75,14 @@ Status Initiator::DoTransferFor(span<const Message> messages,
     }
     return DoWriteReadFor(messages[0].GetAddress(),
                           messages[0].GetData(),
-                          messages[1].GetData(),
+                          messages[1].GetMutableData(),
                           timeout);
   }
 
   if (messages.size() == 1) {
     if (messages[0].IsRead()) {
       return DoWriteReadFor(
-          messages[0].GetAddress(), {}, messages[0].GetData(), timeout);
+          messages[0].GetAddress(), {}, messages[0].GetMutableData(), timeout);
     } else {
       return DoWriteReadFor(
           messages[0].GetAddress(), messages[0].GetData(), {}, timeout);
