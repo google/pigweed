@@ -22,6 +22,7 @@
 #include "pw_containers/vector.h"
 #include "pw_i2c/initiator.h"
 #include "pw_i2c_mcuxpresso/i3c_ccc.h"
+#include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_sync/mutex.h"
 #include "pw_sync/timed_thread_notification.h"
@@ -70,15 +71,17 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
                            I3cCcc ccc_id,
                            pw::i2c::Address address,
                            pw::ByteSpan buffer);
-  pw::Status DoWriteReadFor(pw::i2c::Address address,
-                            pw::ConstByteSpan tx_buffer,
-                            pw::ByteSpan rx_buffer,
-                            pw::chrono::SystemClock::duration timeout)
-      PW_LOCKS_EXCLUDED(mutex_);
+  pw::Status DoTransferFor(span<const Message> messages,
+                           chrono::SystemClock::duration timeout);
+  PW_LOCKS_EXCLUDED(mutex_);
+
+  pw::Result<i3c_bus_type_t> ValidateAndDetermineProtocol(
+      span<const Message> messages) const;
 
   // inclusive-language: disable
-  Status InitiateNonBlockingTransfer(chrono::SystemClock::duration rw_timeout,
-                                     i3c_master_transfer_t* transfer);
+  Status InitiateNonBlockingTransferUntil(
+      chrono::SystemClock::time_point deadline,
+      i3c_master_transfer_t* transfer);
 
   // Non-blocking I3C transfer callback.
   static void TransferCompleteCallback(I3C_Type* base,

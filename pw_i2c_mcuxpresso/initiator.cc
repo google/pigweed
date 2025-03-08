@@ -17,6 +17,7 @@
 
 #include "fsl_i2c.h"
 #include "pw_chrono/system_clock.h"
+#include "pw_log/log.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
@@ -76,15 +77,15 @@ void McuxpressoInitiator::TransferCompleteCallback(I2C_Type*,
   initiator.callback_complete_notification_.release();
 }
 
-Status McuxpressoInitiator::InitiateNonBlockingTransfer(
-    chrono::SystemClock::duration rw_timeout, i2c_master_transfer_t* transfer) {
+Status McuxpressoInitiator::InitiateNonBlockingTransferUntil(
+    chrono::SystemClock::time_point deadline, i2c_master_transfer_t* transfer) {
   const status_t status =
       I2C_MasterTransferNonBlocking(base_, &handle_, transfer);
   if (status != kStatus_Success) {
     return HalStatusToPwStatus(status);
   }
 
-  if (!callback_complete_notification_.try_acquire_for(rw_timeout)) {
+  if (!callback_complete_notification_.try_acquire_until(deadline)) {
     I2C_MasterTransferAbort(base_, &handle_);
     return Status::DeadlineExceeded();
   }
@@ -96,72 +97,56 @@ Status McuxpressoInitiator::InitiateNonBlockingTransfer(
   return HalStatusToPwStatus(transfer_status);
 }
 
-// Performs non-blocking I2C write, read and read-after-write depending on the
-// tx and rx buffer states.
-Status McuxpressoInitiator::DoWriteReadFor(
-    Address device_address,
-    ConstByteSpan tx_buffer,
-    ByteSpan rx_buffer,
-    chrono::SystemClock::duration timeout) {
-  if (timeout <= chrono::SystemClock::duration::zero()) {
-    return Status::DeadlineExceeded();
-  }
+// Performs a sequence of non-blocking I2C reads and writes.
+Status McuxpressoInitiator::DoTransferFor(
+    span<const Message> messages, chrono::SystemClock::duration timeout) {
+  chrono::SystemClock::time_point deadline =
+      chrono::SystemClock::TimePointAfterAtLeast(timeout);
 
-  const uint8_t address = device_address.GetSevenBit();
   std::lock_guard lock(mutex_);
-
   if (!enabled_) {
     return Status::FailedPrecondition();
   }
 
-  if (!tx_buffer.empty() && rx_buffer.empty()) {
-    i2c_master_transfer_t transfer{kI2C_TransferDefaultFlag,
-                                   address,
-                                   kI2C_Write,
-                                   0,
-                                   0,
-                                   const_cast<std::byte*>(tx_buffer.data()),
-                                   tx_buffer.size()};
-    return InitiateNonBlockingTransfer(timeout, &transfer);
-  } else if (tx_buffer.empty() && !rx_buffer.empty()) {
-    i2c_master_transfer_t transfer{kI2C_TransferDefaultFlag,
-                                   address,
-                                   kI2C_Read,
-                                   0,
-                                   0,
-                                   rx_buffer.data(),
-                                   rx_buffer.size()};
-    return InitiateNonBlockingTransfer(timeout, &transfer);
-  } else if (!tx_buffer.empty() && !rx_buffer.empty()) {
-    i2c_master_transfer_t w_transfer{kI2C_TransferNoStopFlag,
-                                     address,
-                                     kI2C_Write,
-                                     0,
-                                     0,
-                                     const_cast<std::byte*>(tx_buffer.data()),
-                                     tx_buffer.size()};
-    const chrono::SystemClock::time_point deadline =
-        chrono::SystemClock::TimePointAfterAtLeast(timeout);
-    PW_TRY(InitiateNonBlockingTransfer(timeout, &w_transfer));
-    i2c_master_transfer_t r_transfer{kI2C_TransferRepeatedStartFlag,
-                                     address,
-                                     kI2C_Read,
-                                     0,
-                                     0,
-                                     rx_buffer.data(),
-                                     rx_buffer.size()};
-    const chrono::SystemClock::duration time_remaining =
-        deadline - chrono::SystemClock::now();
-    if (time_remaining <= chrono::SystemClock::duration::zero()) {
-      // Abort transfer in an unlikely scenario of timeout even with
-      // successful write.
-      I2C_MasterTransferAbort(base_, &handle_);
-      return Status::DeadlineExceeded();
+  pw::Status status = pw::OkStatus();
+  for (unsigned int i = 0; i < messages.size(); ++i) {
+    const Message& msg = messages[i];
+
+    uint32_t i2c_flags = kI2C_TransferDefaultFlag;
+
+    if (msg.IsWriteContinuation()) {
+      i2c_flags |= kI2C_TransferNoStartFlag;
+    } else if (i > 0) {
+      // Use repeated start flag for all but the first message.
+      i2c_flags |= kI2C_TransferRepeatedStartFlag;
     }
-    return InitiateNonBlockingTransfer(time_remaining, &r_transfer);
-  } else {
-    return Status::InvalidArgument();
+
+    // No stop flag prior to the final message.
+    if (i < messages.size() - 1) {
+      i2c_flags |= kI2C_TransferNoStopFlag;
+    }
+    i2c_master_transfer_t transfer{
+        .flags = i2c_flags,
+        .slaveAddress =
+            msg.GetAddress().GetSevenBit(),  // Will CHECK if >7 bits.
+        .direction = msg.IsRead() ? kI2C_Read : kI2C_Write,
+        .subaddress = 0,
+        .subaddressSize = 0,
+        // Cast GetData() here because GetMutableData() is for Writes only.
+        .data = const_cast<std::byte*>(msg.GetData().data()),
+        .dataSize = msg.GetData().size()};
+    status = InitiateNonBlockingTransferUntil(deadline, &transfer);
+    if (!status.ok()) {
+      PW_LOG_WARN("error on submessage %d of %d: status=%d",
+                  i,
+                  messages.size(),
+                  status.code());
+      break;
+    }
   }
+
+  return status;
 }
 // inclusive-language: enable
+
 }  // namespace pw::i2c

@@ -37,6 +37,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
       "$pw_third_party_mcuxpresso_SDK",
     ]
     sources = [ "initiator.cc" ]
+    deps = [ "$dir_pw_log" ]
   }
 
   pw_source_set("i3c_initiator") {
@@ -48,6 +49,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public_deps = [
       "$dir_pw_chrono:system_clock",
       "$dir_pw_i2c:initiator",
+      "$dir_pw_result",
       "$dir_pw_status",
       "$dir_pw_sync:lock_annotations",
       "$dir_pw_sync:mutex",
@@ -55,6 +57,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
       "$pw_third_party_mcuxpresso_SDK",
     ]
     sources = [ "i3c_initiator.cc" ]
+    deps = [ "$dir_pw_log" ]
   }
 }
 

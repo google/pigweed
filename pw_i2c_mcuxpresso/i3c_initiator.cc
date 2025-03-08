@@ -18,6 +18,7 @@
 #include "lib/stdcompat/utility.h"
 #include "pw_bytes/span.h"
 #include "pw_log/log.h"
+#include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
@@ -104,15 +105,15 @@ void I3cMcuxpressoInitiator::TransferCompleteCallback(I3C_Type*,
   initiator.callback_complete_notification_.release();
 }
 
-Status I3cMcuxpressoInitiator::InitiateNonBlockingTransfer(
-    chrono::SystemClock::duration rw_timeout, i3c_master_transfer_t* transfer) {
+Status I3cMcuxpressoInitiator::InitiateNonBlockingTransferUntil(
+    chrono::SystemClock::time_point deadline, i3c_master_transfer_t* transfer) {
   const status_t status =
       I3C_MasterTransferNonBlocking(base_, &handle_, transfer);
   if (status != kStatus_Success) {
     return HalStatusToPwStatus(status);
   }
 
-  if (!callback_complete_notification_.try_acquire_for(rw_timeout)) {
+  if (!callback_complete_notification_.try_acquire_until(deadline)) {
     I3C_MasterTransferAbort(base_, &handle_);
     return Status::DeadlineExceeded();
   }
@@ -254,69 +255,99 @@ pw::Status I3cMcuxpressoInitiator::DoTransferCcc(I3cCccAction rnw,
   return HalStatusToPwStatus(status);
 }
 
-pw::Status I3cMcuxpressoInitiator::DoWriteReadFor(
-    pw::i2c::Address address,
-    pw::ConstByteSpan tx_buffer,
-    pw::ByteSpan rx_buffer,
-    pw::chrono::SystemClock::duration timeout) {
-  i3c_master_transfer_t transfer;
+// Performs a sequence of non-blocking I3C reads and writes.
+Status I3cMcuxpressoInitiator::DoTransferFor(
+    span<const Message> messages, chrono::SystemClock::duration timeout) {
+  PW_TRY_ASSIGN(i3c_bus_type_t bus_type,
+                ValidateAndDetermineProtocol(messages));
 
+  chrono::SystemClock::time_point deadline =
+      chrono::SystemClock::TimePointAfterAtLeast(timeout);
   std::lock_guard lock(mutex_);
   if (!enabled_) {
     return pw::Status::FailedPrecondition();
   }
 
-  if (std::find(i3c_dynamic_address_list_->begin(),
-                i3c_dynamic_address_list_->end(),
-                address.GetSevenBit()) == i3c_dynamic_address_list_->end()) {
-    transfer.busType = kI3C_TypeI2C;
-  } else {
-    transfer.busType = kI3C_TypeI3CSdr;
+  pw::Status status = pw::OkStatus();
+  for (unsigned int i = 0; i < messages.size(); ++i) {
+    if (chrono::SystemClock::now() > deadline) {
+      return pw::Status::DeadlineExceeded();
+    }
+
+    const Message& msg = messages[i];
+
+    uint32_t i3c_flags = kI3C_TransferDefaultFlag;
+
+    if (msg.IsWriteContinuation()) {
+      i3c_flags |= kI3C_TransferNoStartFlag;
+    } else if (i > 0) {
+      // Use repeated start flag for all but the first message.
+      i3c_flags |= kI3C_TransferRepeatedStartFlag;
+    }
+
+    // No stop flag prior to the final message.
+    if (i < messages.size() - 1) {
+      i3c_flags |= kI3C_TransferNoStopFlag;
+    }
+
+    i3c_master_transfer_t transfer{
+        .flags = i3c_flags,
+        .slaveAddress =
+            msg.GetAddress().GetSevenBit(),  // Will CHECK if >7 bits.
+        .direction = msg.IsRead() ? kI3C_Read : kI3C_Write,
+        .subaddress = 0,
+        .subaddressSize = 0,
+        // Cast GetData() here because GetMutableData() is for Writes only.
+        .data = const_cast<std::byte*>(msg.GetData().data()),
+        .dataSize = msg.GetData().size(),
+        .busType = bus_type,
+        .ibiResponse = kI3C_IbiRespNack};
+
+    status = InitiateNonBlockingTransferUntil(deadline, &transfer);
+    if (!status.ok()) {
+      PW_LOG_WARN("error on submessage %d of %d: status=%d",
+                  i,
+                  messages.size(),
+                  status.code());
+      break;
+    }
   }
 
-  if (!tx_buffer.empty() && rx_buffer.empty()) {  // write only
-    transfer.flags = kI3C_TransferDefaultFlag;
-    transfer.slaveAddress = address.GetSevenBit();
-    transfer.direction = kI3C_Write;
-    transfer.subaddress = 0;
-    transfer.subaddressSize = 0;
-    transfer.data = const_cast<std::byte*>(tx_buffer.data());
-    transfer.dataSize = tx_buffer.size();
-    transfer.ibiResponse = kI3C_IbiRespNack;
-    return InitiateNonBlockingTransfer(timeout, &transfer);
-  } else if (tx_buffer.empty() && !rx_buffer.empty()) {  // read only
-    transfer.flags = kI3C_TransferDefaultFlag;
-    transfer.slaveAddress = address.GetSevenBit();
-    transfer.direction = kI3C_Read;
-    transfer.subaddress = 0;
-    transfer.subaddressSize = 0;
-    transfer.data = rx_buffer.data();
-    transfer.dataSize = rx_buffer.size();
-    transfer.ibiResponse = kI3C_IbiRespNack;
-    return InitiateNonBlockingTransfer(timeout, &transfer);
-  } else if (!tx_buffer.empty() && !rx_buffer.empty()) {  // write and read
-    transfer.flags = kI3C_TransferNoStopFlag;
-    transfer.slaveAddress = address.GetSevenBit();
-    transfer.direction = kI3C_Write;
-    transfer.subaddress = 0;
-    transfer.subaddressSize = 0;
-    transfer.data = const_cast<std::byte*>(tx_buffer.data());
-    transfer.dataSize = tx_buffer.size();
-    transfer.ibiResponse = kI3C_IbiRespNack;
-    PW_TRY(InitiateNonBlockingTransfer(timeout, &transfer));
+  return status;
+}
 
-    transfer.flags = kI3C_TransferRepeatedStartFlag;
-    transfer.slaveAddress = address.GetSevenBit();
-    transfer.direction = kI3C_Read;
-    transfer.subaddress = 0;
-    transfer.subaddressSize = 0;
-    transfer.data = rx_buffer.data();
-    transfer.dataSize = rx_buffer.size();
-    transfer.ibiResponse = kI3C_IbiRespNack;
-    return InitiateNonBlockingTransfer(timeout, &transfer);
-  } else {
-    return pw::Status::InvalidArgument();
+pw::Result<i3c_bus_type_t> I3cMcuxpressoInitiator::ValidateAndDetermineProtocol(
+    span<const Message> messages) const {
+  // Establish whether the address is an i2c or i3c client, and that all
+  // messages are of that same type.
+  i3c_bus_type_t bus_type = kI3C_TypeI2C;
+  for (unsigned j = 0; j < messages.size(); ++j) {
+    if (j > 0 && messages[j].GetAddress() == messages[j - 1].GetAddress()) {
+      // Optimization: the most likely case is that all messages have the same
+      // address, don't search the dynamic address list again.
+      continue;
+    }
+
+    // Search the dynamic address list to see if this is an i3c client.
+    i3c_bus_type_t current_bus_type;
+    if (std::find(i3c_dynamic_address_list_->begin(),
+                  i3c_dynamic_address_list_->end(),
+                  messages[j].GetAddress().GetSevenBit()) ==
+        i3c_dynamic_address_list_->end()) {
+      current_bus_type = kI3C_TypeI2C;
+    } else {
+      current_bus_type = kI3C_TypeI3CSdr;
+    }
+
+    if (j == 0) {
+      bus_type = current_bus_type;
+    } else if (current_bus_type != bus_type) {
+      // i2c/i3c type doesn't match between messages.
+      PW_LOG_ERROR("Mismatch of i2c/i3c messages in call.");
+      return pw::Status::InvalidArgument();
+    }
   }
+  return bus_type;
 }
 // inclusive-language: enable
 

@@ -45,15 +45,13 @@ class McuxpressoInitiator final : public Initiator {
   ~McuxpressoInitiator() final;
 
  private:
-  Status DoWriteReadFor(Address device_address,
-                        ConstByteSpan tx_buffer,
-                        ByteSpan rx_buffer,
-                        chrono::SystemClock::duration timeout) override
+  Status DoTransferFor(span<const Message> messages,
+                       chrono::SystemClock::duration timeout) override
       PW_LOCKS_EXCLUDED(mutex_);
 
   // inclusive-language: disable
-  Status InitiateNonBlockingTransfer(chrono::SystemClock::duration rw_timeout,
-                                     i2c_master_transfer_t* transfer)
+  Status InitiateNonBlockingTransferUntil(
+      chrono::SystemClock::time_point deadline, i2c_master_transfer_t* transfer)
       PW_LOCKS_EXCLUDED(callback_isl_);
 
   // Non-blocking I2C transfer callback.
