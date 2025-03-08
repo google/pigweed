@@ -22,6 +22,7 @@ pw_add_library(pw_i2c.address STATIC
     public
   PUBLIC_DEPS
     pw_assert
+    pw_third_party.fuchsia.stdcompat
   SOURCES
     address.cc
 )

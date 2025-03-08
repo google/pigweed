@@ -152,8 +152,6 @@ files for real ``pw::i2c::RegisterDevice`` usage:
 
 Access an I2C device's registers over RPC
 =========================================
-.. TODO: b/331292234 - Make this content less confusing and more helpful.
-
 :cpp:class:`pw::i2c::I2cService` enables accessing an I2C device's registers
 over RPC.
 
@@ -199,3 +197,7 @@ I2C responders that require multi-byte access may expect a specific endianness.
 The order of bytes specified in the bytes field will match the order of bytes
 sent or received on the bus. The maximum supported value for multi-byte access
 is 4 bytes.
+
+.. note::
+   :cpp:class:`pw::i2c::I2cService` currently only supports 7-bit i2c
+   addressing.

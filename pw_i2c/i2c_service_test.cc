@@ -40,8 +40,12 @@ TEST(I2cServiceTest, I2cWriteSingleByteOk) {
   constexpr auto kExpectWrite = bytes::Array<0x02, 0x03>();
   register_addr.push_back(kExpectWrite[0]);
   register_value.push_back(kExpectWrite[1]);
-  auto transactions = MakeExpectedTransactionArray({Transaction(
-      OkStatus(), Address{0x01}, kExpectWrite, {}, kI2cTransactionTimeout)});
+  auto transactions =
+      MakeExpectedTransactionArray({Transaction(OkStatus(),
+                                                Address::SevenBit<0x01>(),
+                                                kExpectWrite,
+                                                {},
+                                                kI2cTransactionTimeout)});
   MockInitiator i2c_initiator(transactions);
 
   PW_PWPB_TEST_METHOD_CONTEXT(I2cService, I2cWrite)
@@ -68,8 +72,12 @@ TEST(I2cServiceTest, I2cWriteMultiByteOk) {
   std::copy(kExpectWrite.begin() + kWriteSize,
             kExpectWrite.end(),
             std::back_inserter(register_value));
-  auto transactions = MakeExpectedTransactionArray({Transaction(
-      OkStatus(), Address{0x01}, kExpectWrite, {}, kI2cTransactionTimeout)});
+  auto transactions =
+      MakeExpectedTransactionArray({Transaction(OkStatus(),
+                                                Address::SevenBit<0x01>(),
+                                                kExpectWrite,
+                                                {},
+                                                kI2cTransactionTimeout)});
   MockInitiator i2c_initiator(transactions);
 
   PW_PWPB_TEST_METHOD_CONTEXT(I2cService, I2cWrite)
@@ -110,7 +118,7 @@ TEST(I2cServiceTest, I2cReadSingleByteOk) {
 
   auto transactions =
       MakeExpectedTransactionArray({Transaction(OkStatus(),
-                                                Address{0x01},
+                                                Address::SevenBit<0x01>(),
                                                 kExpectWrite,
                                                 kExpectRead,
                                                 kI2cTransactionTimeout)});
@@ -141,7 +149,7 @@ TEST(I2cServiceTest, I2cReadMultiByteOk) {
             std::back_inserter(register_addr));
   auto transactions =
       MakeExpectedTransactionArray({Transaction(OkStatus(),
-                                                Address{0x01},
+                                                Address::SevenBit<0x01>(),
                                                 kExpectWrite,
                                                 kExpectRead,
                                                 kI2cTransactionTimeout)});
@@ -174,7 +182,7 @@ TEST(I2cServiceTest, I2cReadMaxByteOk) {
             std::back_inserter(register_addr));
   auto transactions =
       MakeExpectedTransactionArray({Transaction(OkStatus(),
-                                                Address{0x01},
+                                                Address::SevenBit<0x01>(),
                                                 kExpectWrite,
                                                 kExpectRead,
                                                 kI2cTransactionTimeout)});

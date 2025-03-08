@@ -40,6 +40,36 @@ TEST(Address, TenBitRuntimeChecked) {
   EXPECT_EQ(ten_bit.GetTenBit(), Address::kMaxTenBitAddress);
 }
 
+TEST(Address, Equality) {
+  EXPECT_TRUE(Address::SevenBit<0x3A>() == Address::SevenBit<0x3A>());
+  EXPECT_FALSE(Address::SevenBit<0x3A>() == Address::SevenBit<0x3F>());
+  EXPECT_FALSE(Address::SevenBit<0x3F>() == Address::TenBit<0x3F>());
+  EXPECT_TRUE(Address::TenBit<0x3F>() == Address::TenBit<0x3F>());
+}
+
+TEST(Address, GetAddressSeven) {
+  constexpr uint16_t kAddressValue = 0x3A;
+  constexpr Address test_addr = Address::SevenBit<kAddressValue>();
+  EXPECT_EQ(test_addr.GetAddress(), kAddressValue);
+}
+
+TEST(Address, GetAddressTen) {
+  constexpr uint16_t kAddressValue = 0xAA;
+  constexpr Address test_addr = Address::TenBit<kAddressValue>();
+  EXPECT_EQ(test_addr.GetAddress(), kAddressValue);
+}
+
+TEST(Address, IsTenBitTrue) {
+  // Full ten bit address.
+  EXPECT_TRUE(Address::TenBit<0xAA>().IsTenBit());
+
+  // Ten bit address but value that only uses 7 bits.
+  EXPECT_TRUE(Address::TenBit<0x3A>().IsTenBit());
+
+  // Seven bit address.
+  EXPECT_FALSE(Address::SevenBit<0x3A>().IsTenBit());
+}
+
 // TODO: b/235289499 - Verify assert behaviour when trying to get a 7bit address
 // out of a 10bit address.
 

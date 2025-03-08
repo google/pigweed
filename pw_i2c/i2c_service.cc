@@ -50,7 +50,7 @@ void I2cService::I2cWrite(
             std::end(request.value),
             std::back_inserter(write_buffer));
   auto result = initiator->WriteFor(
-      Address{static_cast<uint16_t>(request.target_address)},
+      Address::SevenBit(static_cast<uint16_t>(request.target_address)),
       write_buffer,
       kI2cTimeout);
   responder.Finish({}, result).IgnoreError();
@@ -69,7 +69,7 @@ void I2cService::I2cRead(
   Vector<std::byte, kMaxReadSize> value{};
   value.resize(request.read_size);
   auto result = initiator->WriteReadFor(
-      Address{static_cast<uint16_t>(request.target_address)},
+      Address::SevenBit(static_cast<uint16_t>(request.target_address)),
       request.register_address,
       {value.data(), value.size()},
       kI2cTimeout);

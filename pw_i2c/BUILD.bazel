@@ -96,6 +96,8 @@ pw_cc_test(
     srcs = [
         "address_test.cc",
     ],
+    # Disable deprecation warning for Address() constructor.
+    copts = ["-Wno-deprecated-declarations"],
     deps = [":address"],
 )
 

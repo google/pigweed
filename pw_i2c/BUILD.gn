@@ -27,7 +27,7 @@ config("public_include_path") {
 pw_source_set("address") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_i2c/address.h" ]
-  deps = [ "$dir_pw_assert" ]
+  public_deps = [ "$dir_pw_assert" ]
   sources = [ "address.cc" ]
 }
 
