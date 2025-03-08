@@ -1429,6 +1429,64 @@ TEST(DiscoveryFilterTest, GeneralDiscoveryFlags) {
   EXPECT_FALSE(filter.Matches(kNonDiscoverableData, true, 0));
 }
 
+TEST(DiscoveryFilter, OperatorEqualsEquals) {
+  constexpr uint16_t kUuid1 = 0x1800;
+
+  DiscoveryFilter filter_a;
+  filter_a.set_flags(0b100, true);
+  filter_a.set_service_uuids(std::vector<UUID>{UUID(kUuid0)});
+  filter_a.set_service_data_uuids(std::vector<UUID>{UUID(kUuid0)});
+  filter_a.set_solicitation_uuids(std::vector<UUID>{UUID(kUuid0)});
+  filter_a.set_name_substring("foobar");
+  filter_a.set_connectable(true);
+  filter_a.set_manufacturer_code(1);
+  filter_a.set_pathloss(1);
+  filter_a.set_rssi(1);
+
+  DiscoveryFilter filter_b = filter_a;
+  ASSERT_EQ(filter_a, filter_b);
+
+  filter_b = filter_a;
+  filter_b.set_flags(0b100, false);
+  EXPECT_NE(filter_a, filter_b);
+
+  filter_b = filter_a;
+  filter_b.set_flags(0b101, true);
+  EXPECT_NE(filter_a, filter_b);
+
+  filter_b = filter_a;
+  filter_a.set_service_uuids(std::vector<UUID>{UUID(kUuid1)});
+  EXPECT_NE(filter_a, filter_b);
+
+  filter_b = filter_a;
+  filter_a.set_service_data_uuids(std::vector<UUID>{UUID(kUuid1)});
+  EXPECT_NE(filter_a, filter_b);
+
+  filter_b = filter_a;
+  filter_a.set_solicitation_uuids(std::vector<UUID>{UUID(kUuid1)});
+  EXPECT_NE(filter_a, filter_b);
+
+  filter_b = filter_a;
+  filter_a.set_name_substring("bluetooth");
+  EXPECT_NE(filter_a, filter_b);
+
+  filter_b = filter_a;
+  filter_a.set_connectable(false);
+  EXPECT_NE(filter_a, filter_b);
+
+  filter_b = filter_a;
+  filter_a.set_manufacturer_code(0);
+  EXPECT_NE(filter_a, filter_b);
+
+  filter_b = filter_a;
+  filter_a.set_pathloss(0);
+  EXPECT_NE(filter_a, filter_b);
+
+  filter_b = filter_a;
+  filter_a.set_rssi(0);
+  EXPECT_NE(filter_a, filter_b);
+}
+
 TEST(DiscoveryFilter, ToString) {
   DiscoveryFilter filter;
   filter.set_flags(0b100, false);

@@ -207,6 +207,50 @@ static std::string BoolAlpha(bool value) {
   return "false";
 }
 
+bool DiscoveryFilter::operator==(const DiscoveryFilter& other) const {
+  if (flags_ != other.flags_) {
+    return false;
+  }
+
+  if (all_flags_required_ != other.all_flags_required_) {
+    return false;
+  }
+
+  if (service_uuids_ != other.service_uuids_) {
+    return false;
+  }
+
+  if (service_data_uuids_ != other.service_data_uuids_) {
+    return false;
+  }
+
+  if (solicitation_uuids_ != other.solicitation_uuids_) {
+    return false;
+  }
+
+  if (name_substring_ != other.name_substring_) {
+    return false;
+  }
+
+  if (connectable_ != other.connectable_) {
+    return false;
+  }
+
+  if (manufacturer_code_ != other.manufacturer_code_) {
+    return false;
+  }
+
+  if (pathloss_ != other.pathloss_) {
+    return false;
+  }
+
+  if (rssi_ != other.rssi_) {
+    return false;
+  }
+
+  return true;
+}
+
 std::string DiscoveryFilter::ToString() const {
   std::string result;
 

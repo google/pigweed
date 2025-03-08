@@ -143,6 +143,14 @@ class DiscoveryFilter final {
   // Clears all the fields of this filter.
   void Reset();
 
+  // Determine if another DiscoveryFilter is equal to this one
+  bool operator==(const DiscoveryFilter& other) const;
+
+  // Determine if another DiscoveryFilter is not equal to this one
+  bool operator!=(const DiscoveryFilter& other) const {
+    return !(*this == other);
+  }
+
   // Return a string representation of the filter
   std::string ToString() const;
 
