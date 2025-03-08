@@ -40,6 +40,7 @@ pw_source_set("common") {
   ]
   public = [
     "public/pw_bluetooth_sapphire/internal/host/common/advertising_data.h",
+    "public/pw_bluetooth_sapphire/internal/host/common/bidirectional_map.h",
     "public/pw_bluetooth_sapphire/internal/host/common/bounded_inspect_list_node.h",
     "public/pw_bluetooth_sapphire/internal/host/common/byte_buffer.h",
     "public/pw_bluetooth_sapphire/internal/host/common/device_address.h",
@@ -109,6 +110,7 @@ pw_test("common_test") {
   enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "advertising_data_test.cc",
+    "bidirectional_map_test.cc",
     "bounded_inspect_list_node_test.cc",
     "byte_buffer_test.cc",
     "device_address_test.cc",
