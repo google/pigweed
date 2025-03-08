@@ -1429,5 +1429,37 @@ TEST(DiscoveryFilterTest, GeneralDiscoveryFlags) {
   EXPECT_FALSE(filter.Matches(kNonDiscoverableData, true, 0));
 }
 
+TEST(DiscoveryFilter, ToString) {
+  DiscoveryFilter filter;
+  filter.set_flags(0b100, false);
+  filter.set_service_uuids(std::vector<UUID>{UUID(kUuid0)});
+  filter.set_service_data_uuids(std::vector<UUID>{UUID(kUuid0)});
+  filter.set_solicitation_uuids(std::vector<UUID>{UUID(kUuid0)});
+  filter.set_name_substring("foobar");
+  filter.set_connectable(true);
+  filter.set_manufacturer_code(1);
+  filter.set_pathloss(1);
+  filter.set_rssi(1);
+
+  std::string output =
+      "flags: {0x04}, all flags required: {false}, service uuids: "
+      "{0000180d-0000-1000-8000-00805f9b34fb}, service data uuids: "
+      "{0000180d-0000-1000-8000-00805f9b34fb}, solicitation uuids: "
+      "{0000180d-0000-1000-8000-00805f9b34fb}, name substring: {foobar}, "
+      "connectable: {true}, manufacturer code: {0x01}, "
+      "pathloss: {0x01}, rssi: {0x01}";
+  EXPECT_EQ(output, filter.ToString());
+}
+
+TEST(DiscoveryFilter, ToStringDataMissing) {
+  DiscoveryFilter filter;
+  std::string output =
+      "flags: {0x00}, all flags required: {false}, service uuids: {unset}, "
+      "service data uuids: {unset}, solicitation uuids: {unset}, name "
+      "substring: {unset}, connectable: {unset}, manufacturer code: {0x00}, "
+      "pathloss: {0x00}, rssi: {0x00}";
+  EXPECT_EQ(output, filter.ToString());
+}
+
 }  // namespace
 }  // namespace bt::hci

@@ -17,6 +17,7 @@
 #include <pw_assert/check.h>
 #include <pw_bytes/endian.h>
 
+#include "cpp-string/string_printf.h"
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
@@ -180,6 +181,78 @@ void DiscoveryFilter::Reset() {
   manufacturer_code_.reset();
   pathloss_.reset();
   rssi_.reset();
+}
+
+static std::string UuidCsv(const std::vector<UUID>& uuids) {
+  if (uuids.empty()) {
+    return "unset";
+  }
+
+  bool added = false;
+  std::string result;
+  for (const UUID& uuid : uuids) {
+    bt_lib_cpp_string::StringAppendf(
+        &result, "%s%s", added ? ", " : "", uuid.ToString().c_str());
+    added = true;
+  }
+
+  return result;
+}
+
+static std::string BoolAlpha(bool value) {
+  if (value) {
+    return "true";
+  }
+
+  return "false";
+}
+
+std::string DiscoveryFilter::ToString() const {
+  std::string result;
+
+  bt_lib_cpp_string::StringAppendf(
+      &result, "flags: {0x%02hhx}, ", flags_.has_value() ? flags_.value() : 0);
+
+  bt_lib_cpp_string::StringAppendf(&result,
+                                   "all flags required: {%s}, ",
+                                   all_flags_required_ ? "true" : "false");
+
+  bt_lib_cpp_string::StringAppendf(
+      &result, "service uuids: {%s}, ", UuidCsv(service_uuids_).c_str());
+
+  bt_lib_cpp_string::StringAppendf(&result,
+                                   "service data uuids: {%s}, ",
+                                   UuidCsv(service_data_uuids_).c_str());
+
+  bt_lib_cpp_string::StringAppendf(&result,
+                                   "solicitation uuids: {%s}, ",
+                                   UuidCsv(solicitation_uuids_).c_str());
+
+  bt_lib_cpp_string::StringAppendf(
+      &result,
+      "name substring: {%s}, ",
+      name_substring_.empty() ? "unset" : name_substring_.c_str());
+
+  bt_lib_cpp_string::StringAppendf(&result,
+                                   "connectable: {%s}, ",
+                                   connectable_.has_value()
+                                       ? BoolAlpha(connectable_.value()).c_str()
+                                       : "unset");
+
+  bt_lib_cpp_string::StringAppendf(
+      &result,
+      "manufacturer code: {0x%02hhx}, ",
+      manufacturer_code_.has_value() ? manufacturer_code_.has_value() : 0);
+
+  bt_lib_cpp_string::StringAppendf(
+      &result,
+      "pathloss: {0x%02hhx}, ",
+      pathloss_.has_value() ? pathloss_.has_value() : 0);
+
+  bt_lib_cpp_string::StringAppendf(
+      &result, "rssi: {0x%02hhx}", rssi_.has_value() ? rssi_.has_value() : 0);
+
+  return result;
 }
 
 }  // namespace bt::hci

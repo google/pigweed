@@ -143,6 +143,9 @@ class DiscoveryFilter final {
   // Clears all the fields of this filter.
   void Reset();
 
+  // Return a string representation of the filter
+  std::string ToString() const;
+
  private:
   std::vector<UUID> service_uuids_;
   std::vector<UUID> service_data_uuids_;
@@ -154,6 +157,6 @@ class DiscoveryFilter final {
   std::optional<int8_t> rssi_;
 
   std::optional<uint8_t> flags_;
-  bool all_flags_required_;
+  bool all_flags_required_ = false;
 };
 }  // namespace bt::hci
