@@ -47,31 +47,31 @@ fn dump_exception_frame(frame: *const FullExceptionFrame) {
         info!("Exception frame {:#08x}:", frame as usize);
         info!(
             "r0  {:#010x} r1 {:#010x} r2  {:#010x} r3  {:#010x}",
-            (*frame).r0,
-            (*frame).r1,
-            (*frame).r2,
-            (*frame).r3
+            (*frame).r0 as u32,
+            (*frame).r1 as u32,
+            (*frame).r2 as u32,
+            (*frame).r3 as u32
         );
         info!(
             "r4  {:#010x} r5 {:#010x} r6  {:#010x} r7  {:#010x}",
-            (*frame).r4,
-            (*frame).r5,
-            (*frame).r6,
-            (*frame).r7
+            (*frame).r4 as u32,
+            (*frame).r5 as u32,
+            (*frame).r6 as u32,
+            (*frame).r7 as u32
         );
         info!(
             "r8  {:#010x} r9 {:#010x} r10 {:#010x} r11 {:#010x}",
-            (*frame).r8,
-            (*frame).r9,
-            (*frame).r10,
-            (*frame).r11
+            (*frame).r8 as u32,
+            (*frame).r9 as u32,
+            (*frame).r10 as u32,
+            (*frame).r11 as u32
         );
         info!(
             "r12 {:#010x} lr {:#010x} pc  {:#010x} xpsr {:#010x}",
-            (*frame).r12,
-            (*frame).lr,
-            (*frame).pc,
-            (*frame).psr
+            (*frame).r12 as u32,
+            (*frame).lr as u32,
+            (*frame).pc as u32,
+            (*frame).psr as u32
         );
     }
 }
@@ -132,7 +132,7 @@ pub unsafe extern "C" fn pw_kernel_memory_management(frame: *mut FullExceptionFr
     let mmfar = 0xE000ED34 as *const u32;
     info!(
         "MemoryManagement exception at {:08x}",
-        mmfar.read_volatile()
+        mmfar.read_volatile() as u32
     );
     dump_exception_frame(frame);
 
@@ -144,7 +144,7 @@ exception_trampoline!(MemoryManagement, pw_kernel_memory_management);
 #[no_mangle]
 pub unsafe extern "C" fn pw_kernel_bus_fault(frame: *mut FullExceptionFrame) -> ! {
     let bfar = 0xE000ED38 as *const u32;
-    info!("BusFault exception at {:08x}", bfar.read_volatile());
+    info!("BusFault exception at {:08x}", bfar.read_volatile() as u32);
     dump_exception_frame(frame);
     #[allow(clippy::empty_loop)]
     loop {}

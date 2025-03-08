@@ -76,6 +76,14 @@ Run
 
    bazelisk run --config k_qemu_mps2_an505 //pw_kernel/entry:kernel
 
+If the tokenized logger is being used, the stream can be detokenized with:
+
+.. code-block:: shell
+
+   bazelisk run --config k_qemu_mps2_an505 //pw_kernel/entry:kernel | python -m pw_tokenizer.detokenize base64 ./bazel-bin/pw_kernel/entry/kernel
+
+Note that this requires a bootstrapped environment.
+
 RP2350 Target Board
 ===================
 

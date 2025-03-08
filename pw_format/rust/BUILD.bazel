@@ -37,10 +37,6 @@ rust_library(
         "pw_format/tests/mod.rs",
         "pw_format/tests/printf.rs",
     ],
-    crate_features = select({
-        "@rules_rust//rust/toolchain/channel:nightly": ["nightly_tait"],
-        "//conditions:default": [],
-    }),
     visibility = ["//visibility:public"],
     deps = [
         ":pw_format_core",

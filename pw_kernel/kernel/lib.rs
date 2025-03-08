@@ -64,7 +64,7 @@ pub struct Kernel {}
 impl Kernel {
     pub fn main() -> ! {
         target::console_init();
-        info!("Welcome to Maize on {}!", target::name());
+        info!("Welcome to Maize on {}!", target::name() as &str);
 
         Arch::early_init();
 
@@ -186,11 +186,11 @@ fn test_thread_entry_a(_arg: usize) {
 
 #[allow(dead_code)]
 fn test_thread_entry_b(_arg: usize) {
-    info!("I'm thread A");
+    info!("I'm thread B");
     assert!(Arch::interrupts_enabled());
     loop {
         let counter = TEST_COUNTER.lock();
-        info!("Thread B: counter value {}", *counter);
+        info!("Thread B: counter value {}", *counter as u64);
         drop(counter);
         yield_timeslice();
     }

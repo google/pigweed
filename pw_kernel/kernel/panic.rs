@@ -26,9 +26,14 @@ use crate::arch::{Arch, ArchInterface};
 fn panic(info: &PanicInfo) -> ! {
     let msg = info.message().as_str().unwrap_or("");
     if let Some(location) = info.location() {
-        fatal!("Panic at {}:{}: {}", location.file(), location.line(), msg);
+        fatal!(
+            "Panic at {}:{}: {}",
+            location.file() as &str,
+            location.line() as u32,
+            msg as &str
+        );
     } else {
-        fatal!("Panic: {}", msg);
+        fatal!("Panic: {}", msg as &str);
     }
 
     <Arch as ArchInterface>::panic()

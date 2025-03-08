@@ -47,8 +47,8 @@ impl ArchInterface for Arch {
         let mut p = Peripherals::take().unwrap();
         let mut r = regs::Regs::get();
         let cpuid = p.CPUID.base.read();
-        info!("CPUID 0x{:x}", cpuid);
-        info!("Num MPU Regions: {}", get_num_mpu_regions(&mut r.mpu));
+        info!("CPUID 0x{:x}", cpuid as u32);
+        info!("Num MPU Regions: {}", get_num_mpu_regions(&mut r.mpu) as u8);
 
         unsafe {
             // Set the VTOR (assumes it exists)
@@ -143,7 +143,7 @@ fn in_interrupt_handler() -> bool {
 fn dump_int_pri() {
     info!(
         "basepri {} primask {}",
-        cortex_m::register::basepri::read(),
-        cortex_m::register::primask::read().is_active()
+        cortex_m::register::basepri::read() as u8,
+        cortex_m::register::primask::read().is_active() as bool
     );
 }

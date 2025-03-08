@@ -138,7 +138,7 @@ impl Thread {
 
     #[allow(dead_code)]
     pub fn start(mut thread: ForeignBox<Self>) {
-        info!("starting thread {:#x}", thread.id());
+        info!("starting thread {:#x}", thread.id() as usize);
 
         assert!(thread.state == State::Initial);
         thread.state = State::Ready;
@@ -164,7 +164,11 @@ impl Thread {
     // Dump to the console useful information about this thread
     #[allow(dead_code)]
     pub fn dump(&self) {
-        info!("thread {:#x} state {}", self.id(), to_string(self.state));
+        info!(
+            "thread {:#x} state {}",
+            self.id() as usize,
+            to_string(self.state) as &str
+        );
     }
 
     // A simple id for debugging purposes, currently the pointer to the thread structure itself
@@ -390,7 +394,7 @@ pub fn exit_thread() -> ! {
     };
     let current_thread_id = current_thread.id();
 
-    info!("thread {:#x} exiting", current_thread.id());
+    info!("thread {:#x} exiting", current_thread.id() as usize);
     current_thread.state = State::Stopped;
 
     reschedule(sched_state, current_thread_id);

@@ -27,8 +27,8 @@ static TICKS: atomic::AtomicU32 = atomic::AtomicU32::new(0);
 pub fn systick_dump() {
     info!(
         "counter {} reload {}",
-        SYST::get_current(),
-        SYST::get_reload()
+        SYST::get_current() as u32,
+        SYST::get_reload() as u32
     );
 }
 

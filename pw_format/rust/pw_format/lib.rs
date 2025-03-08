@@ -70,7 +70,6 @@
 //! });
 //! ```
 #![deny(missing_docs)]
-#![cfg_attr(feature = "nightly_tait", feature(type_alias_impl_trait))]
 
 use std::collections::HashSet;
 
