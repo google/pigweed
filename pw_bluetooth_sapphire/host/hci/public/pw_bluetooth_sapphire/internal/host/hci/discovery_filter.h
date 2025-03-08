@@ -134,7 +134,7 @@ class DiscoveryFilter final {
   // Returns true, if the given LE scan result satisfies this filter. Otherwise
   // returns false. |advertising_data| should include scan response data, if
   // any.
-  bool MatchLowEnergyResult(
+  bool Matches(
       const std::optional<std::reference_wrapper<const AdvertisingData>>
           advertising_data,
       bool connectable,

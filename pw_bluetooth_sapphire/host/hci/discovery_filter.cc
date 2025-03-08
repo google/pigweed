@@ -28,7 +28,7 @@ void DiscoveryFilter::SetGeneralDiscoveryFlags() {
             static_cast<uint8_t>(AdvFlag::kLELimitedDiscoverableMode));
 }
 
-bool DiscoveryFilter::MatchLowEnergyResult(
+bool DiscoveryFilter::Matches(
     const std::optional<std::reference_wrapper<const AdvertisingData>>
         advertising_data,
     bool connectable,

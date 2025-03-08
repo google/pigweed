@@ -108,10 +108,9 @@ void LowEnergyDiscoverySession::NotifyDiscoveryResult(const Peer& peer) const {
   if (std::any_of(filters_.begin(),
                   filters_.end(),
                   [&peer](const hci::DiscoveryFilter& filter) {
-                    return filter.MatchLowEnergyResult(
-                        peer.le()->parsed_advertising_data(),
-                        peer.connectable(),
-                        peer.rssi());
+                    return filter.Matches(peer.le()->parsed_advertising_data(),
+                                          peer.connectable(),
+                                          peer.rssi());
                   })) {
     peer_found_fn_(peer);
   }
