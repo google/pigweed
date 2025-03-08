@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <atomic>
 #include <optional>
 
 #include "fsl_clock.h"
@@ -23,6 +24,7 @@
 #include "pw_i2c_mcuxpresso/i3c_ccc.h"
 #include "pw_status/status.h"
 #include "pw_sync/mutex.h"
+#include "pw_sync/timed_thread_notification.h"
 
 namespace pw::i2c {
 
@@ -74,6 +76,18 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
                             pw::chrono::SystemClock::duration timeout)
       PW_LOCKS_EXCLUDED(mutex_);
 
+  // inclusive-language: disable
+  Status InitiateNonBlockingTransfer(chrono::SystemClock::duration rw_timeout,
+                                     i3c_master_transfer_t* transfer);
+
+  // Non-blocking I3C transfer callback.
+  static void TransferCompleteCallback(I3C_Type* base,
+                                       i3c_master_handle_t* handle,
+                                       status_t status,
+                                       void* initiator_ptr);
+
+  // inclusive-language: enable
+
   const Config& config_;
   I3C_Type* base_;
   i3c_device_info_t* device_list_ = nullptr;
@@ -81,6 +95,15 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
   bool enabled_ PW_GUARDED_BY(mutex_) = false;
   pw::sync::Mutex mutex_;
   std::optional<pw::Vector<uint8_t, I3C_MAX_DEVCNT>> i3c_dynamic_address_list_;
+
+  // Transfer completion status for non-blocking I3C transfer.
+  sync::TimedThreadNotification callback_complete_notification_;
+  std::atomic<status_t> transfer_status_;
+
+  // inclusive-language: disable
+  i3c_master_transfer_callback_t initiator_callbacks_;
+  i3c_master_handle_t handle_ PW_GUARDED_BY(mutex_);
+  // inclusive-language: enable
 };
 
 }  // namespace pw::i2c

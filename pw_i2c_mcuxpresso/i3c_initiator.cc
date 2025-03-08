@@ -71,6 +71,16 @@ void I3cMcuxpressoInitiator::Enable() {
   masterConfig.enableOpenDrainHigh = config_.enable_open_drain_high;
 
   I3C_MasterInit(base_, &masterConfig, CLOCK_GetI3cClkFreq());
+
+  // The I3C handle differs in that it takes a struct of three callbacks.
+  initiator_callbacks_ = {
+      .slave2Master = nullptr,
+      .ibiCallback = nullptr,
+      .transferComplete = I3cMcuxpressoInitiator::TransferCompleteCallback};
+
+  // Create the handle for the non-blocking transfer and register callback.
+  I3C_MasterTransferCreateHandle(base_, &handle_, &initiator_callbacks_, this);
+
   enabled_ = true;
 }
 
@@ -82,6 +92,32 @@ void I3cMcuxpressoInitiator::Disable() {
 
   I3C_MasterDeinit(base_);
   enabled_ = false;
+}
+
+void I3cMcuxpressoInitiator::TransferCompleteCallback(I3C_Type*,
+                                                      i3c_master_handle_t*,
+                                                      status_t status,
+                                                      void* initiator_ptr) {
+  I3cMcuxpressoInitiator& initiator =
+      *static_cast<I3cMcuxpressoInitiator*>(initiator_ptr);
+  initiator.transfer_status_ = status;
+  initiator.callback_complete_notification_.release();
+}
+
+Status I3cMcuxpressoInitiator::InitiateNonBlockingTransfer(
+    chrono::SystemClock::duration rw_timeout, i3c_master_transfer_t* transfer) {
+  const status_t status =
+      I3C_MasterTransferNonBlocking(base_, &handle_, transfer);
+  if (status != kStatus_Success) {
+    return HalStatusToPwStatus(status);
+  }
+
+  if (!callback_complete_notification_.try_acquire_for(rw_timeout)) {
+    I3C_MasterTransferAbort(base_, &handle_);
+    return Status::DeadlineExceeded();
+  }
+
+  return HalStatusToPwStatus(transfer_status_);
 }
 
 pw::Status I3cMcuxpressoInitiator::SetDynamicAddressList(
@@ -222,11 +258,10 @@ pw::Status I3cMcuxpressoInitiator::DoWriteReadFor(
     pw::i2c::Address address,
     pw::ConstByteSpan tx_buffer,
     pw::ByteSpan rx_buffer,
-    pw::chrono::SystemClock::duration) {
-  std::lock_guard lock(mutex_);
-  status_t status;
+    pw::chrono::SystemClock::duration timeout) {
   i3c_master_transfer_t transfer;
 
+  std::lock_guard lock(mutex_);
   if (!enabled_) {
     return pw::Status::FailedPrecondition();
   }
@@ -248,7 +283,7 @@ pw::Status I3cMcuxpressoInitiator::DoWriteReadFor(
     transfer.data = const_cast<std::byte*>(tx_buffer.data());
     transfer.dataSize = tx_buffer.size();
     transfer.ibiResponse = kI3C_IbiRespNack;
-    status = I3C_MasterTransferBlocking(base_, &transfer);
+    return InitiateNonBlockingTransfer(timeout, &transfer);
   } else if (tx_buffer.empty() && !rx_buffer.empty()) {  // read only
     transfer.flags = kI3C_TransferDefaultFlag;
     transfer.slaveAddress = address.GetSevenBit();
@@ -258,7 +293,7 @@ pw::Status I3cMcuxpressoInitiator::DoWriteReadFor(
     transfer.data = rx_buffer.data();
     transfer.dataSize = rx_buffer.size();
     transfer.ibiResponse = kI3C_IbiRespNack;
-    status = I3C_MasterTransferBlocking(base_, &transfer);
+    return InitiateNonBlockingTransfer(timeout, &transfer);
   } else if (!tx_buffer.empty() && !rx_buffer.empty()) {  // write and read
     transfer.flags = kI3C_TransferNoStopFlag;
     transfer.slaveAddress = address.GetSevenBit();
@@ -268,10 +303,7 @@ pw::Status I3cMcuxpressoInitiator::DoWriteReadFor(
     transfer.data = const_cast<std::byte*>(tx_buffer.data());
     transfer.dataSize = tx_buffer.size();
     transfer.ibiResponse = kI3C_IbiRespNack;
-    status = I3C_MasterTransferBlocking(base_, &transfer);
-    if (status != kStatus_Success) {
-      return HalStatusToPwStatus(status);
-    }
+    PW_TRY(InitiateNonBlockingTransfer(timeout, &transfer));
 
     transfer.flags = kI3C_TransferRepeatedStartFlag;
     transfer.slaveAddress = address.GetSevenBit();
@@ -281,12 +313,10 @@ pw::Status I3cMcuxpressoInitiator::DoWriteReadFor(
     transfer.data = rx_buffer.data();
     transfer.dataSize = rx_buffer.size();
     transfer.ibiResponse = kI3C_IbiRespNack;
-    status = I3C_MasterTransferBlocking(base_, &transfer);
+    return InitiateNonBlockingTransfer(timeout, &transfer);
   } else {
     return pw::Status::InvalidArgument();
   }
-
-  return HalStatusToPwStatus(status);
 }
 // inclusive-language: enable
 

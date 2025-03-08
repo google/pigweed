@@ -49,7 +49,6 @@ if (pw_third_party_mcuxpresso_SDK != "") {
       "$dir_pw_chrono:system_clock",
       "$dir_pw_i2c:initiator",
       "$dir_pw_status",
-      "$dir_pw_sync:interrupt_spin_lock",
       "$dir_pw_sync:lock_annotations",
       "$dir_pw_sync:mutex",
       "$dir_pw_sync:timed_thread_notification",
