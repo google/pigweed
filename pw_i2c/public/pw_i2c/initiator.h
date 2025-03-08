@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
 #include "pw_bytes/span.h"
 #include "pw_chrono/system_clock.h"
@@ -47,6 +48,44 @@ namespace pw::i2c {
 /// execute these sequences correctly.
 class Initiator {
  public:
+  /// Defined set of supported i2c features.
+  enum class Feature : int {
+    // Initiator does not support extended features.
+    kStandard = 0,
+
+    // Initiator supports 10-bit addressing mode
+    kTenBit = (1 << 0),
+
+    // Initiator supports sending bytes without a start condition or address.
+    kNoStart = (1 << 1),
+  };
+
+  /// Construct Initiator with default features.
+  ///
+  /// Note: this constructor enables kTenBit because the older implementation
+  /// enabled it by default. Most users will not need kTenBit enabled.
+  [[deprecated("Use the Initiator(Feature) constructor")]]
+  constexpr Initiator()
+      : Initiator(kCompatibilityFeatures) {}
+
+  /// Construct Initiator with defined set of features.
+  ///
+  /// Supported features are defined in the Feature enum.
+  ///
+  /// Note: to support only the required features, you should specify
+  ///       Initiator(Initiator::Feature::kStandard).
+  ///
+  /// @code
+  ///   Initiator i2c(Initiator::Feature::kStandard);
+  /// @endcode
+  ///
+  /// @code
+  ///   Initiator i2c(Initiator::Feature::kTenBit |
+  ///                 Initiator::Feature::kNoStart);
+  /// @endcode
+  explicit constexpr Initiator(Feature supported_features)
+      : supported_features_(supported_features) {}
+
   virtual ~Initiator() = default;
 
   /// Writes bytes to an I2C device and then reads bytes from that same
@@ -159,7 +198,7 @@ class Initiator {
   /// @endrst
   Status TransferFor(span<const Message> messages,
                      chrono::SystemClock::duration timeout) {
-    return DoTransferFor(messages, timeout);
+    return DoValidateAndTransferFor(messages, timeout);
   }
 
   /// A variation of `pw::i2c::Initiator::WriteReadFor` that accepts explicit
@@ -332,6 +371,9 @@ class Initiator {
   }
 
  private:
+  /// For backward API compatibility, we default kTenBit to supported.
+  static constexpr Feature kCompatibilityFeatures = Feature::kTenBit;
+
   // This function should not be overridden by future implementations of
   // Initiator unless dealing with an underlying interface that prefers
   // this format.
@@ -352,6 +394,36 @@ class Initiator {
   // as one transaction.
   virtual Status DoTransferFor(span<const Message> messages,
                                chrono::SystemClock::duration timeout);
+
+  // Function to wrap calls to DoTransferFor() and Validate message vector's
+  // contents.
+  [[nodiscard]] Status DoValidateAndTransferFor(
+      span<const Message> messages, chrono::SystemClock::duration timeout);
+
+  /// Validates a sequence of messages.
+  ///
+  /// @returns Status::InvalidArgument on error.
+  Status ValidateMessages(span<const Message> messages) const;
+
+  /// Validate a message's features against the supported feature set.
+  ///
+  /// @returns returns pw::Status::Unimplemented if the Initiator does not
+  /// support a feature required by this message.
+  [[nodiscard]] Status ValidateMessageFeatures(const Message& msg) const;
+
+  /// Checks whether a feature is supported by this Initiator.
+  ///
+  /// @returns true if the feature is supposed by this Initiator.
+  bool IsSupported(Feature feature) const;
+
+  // Features supported by this Initiator.
+  Feature supported_features_ = Feature::kStandard;
 };
+
+inline constexpr Initiator::Feature operator|(Initiator::Feature a,
+                                              Initiator::Feature b) {
+  return static_cast<Initiator::Feature>(static_cast<int>(a) |
+                                         static_cast<int>(b));
+}
 
 }  // namespace pw::i2c

@@ -20,6 +20,7 @@
 #include "pw_i2c/address.h"
 #include "pw_i2c/message.h"
 #include "pw_status/status.h"
+#include "pw_status/try.h"
 
 namespace pw::i2c {
 
@@ -92,6 +93,42 @@ Status Initiator::DoTransferFor(span<const Message> messages,
   // This case could be hit if a new client accesses an older
   // Initiator that does not yet implement the Message interface.
   return Status::Unimplemented();
+}
+
+[[nodiscard]] Status Initiator::DoValidateAndTransferFor(
+    span<const Message> messages, chrono::SystemClock::duration timeout) {
+  PW_TRY(ValidateMessages(messages));
+  return DoTransferFor(messages, timeout);
+}
+
+Status Initiator::ValidateMessages(span<const Message> messages) const {
+  if (messages.empty()) {
+    return Status::InvalidArgument();
+  }
+  bool previous_was_write = false;
+  for (const Message& msg : messages) {
+    // Check for ten-bit capability, etc.
+    PW_TRY(ValidateMessageFeatures(msg));
+    if (msg.IsWriteContinuation() && !previous_was_write) {
+      // WriteContinuation must follow a Write.
+      return Status::InvalidArgument();
+    }
+    previous_was_write = !msg.IsRead();
+  }
+  return pw::OkStatus();
+}
+
+Status Initiator::ValidateMessageFeatures(const Message& msg) const {
+  if ((msg.IsTenBit() && !IsSupported(Feature::kTenBit)) ||
+      (msg.IsWriteContinuation() && !IsSupported(Feature::kNoStart))) {
+    return pw::Status::Unimplemented();
+  }
+  return pw::OkStatus();
+}
+
+bool Initiator::IsSupported(Feature feature) const {
+  return (static_cast<int>(supported_features_) & static_cast<int>(feature)) ==
+         static_cast<int>(feature);
 }
 
 }  // namespace pw::i2c

@@ -34,7 +34,8 @@ class McuxpressoInitiator final : public Initiator {
   };
 
   McuxpressoInitiator(const Config& config)
-      : config_(config),
+      : Initiator(Initiator::Feature::kStandard),
+        config_(config),
         base_(reinterpret_cast<I2C_Type*>(config_.flexcomm_address)) {}
 
   // Should be called before attempting any transfers.

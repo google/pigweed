@@ -22,7 +22,6 @@ pw_add_library(pw_i2c.address STATIC
     public
   PUBLIC_DEPS
     pw_assert
-    pw_third_party.fuchsia.stdcompat
   SOURCES
     address.cc
 )
@@ -164,6 +163,19 @@ pw_add_test(pw_i2c.address_test
     "-Wno-deprecated-declarations"
   PRIVATE_DEPS
     pw_i2c.address
+  GROUPS
+    modules
+    pw_i2c
+)
+
+pw_add_test(pw_i2c.initiator_test
+  SOURCES
+    initiator_test.cc
+  PRIVATE_DEPS
+    pw_chrono.system_clock
+    pw_i2c.address
+    pw_i2c.initiator
+    pw_i2c.message
   GROUPS
     modules
     pw_i2c

@@ -35,7 +35,7 @@ constexpr chrono::SystemClock::duration kTimeout =
 // Default test object. Mimics closely to I2c devices.
 class TestInitiator : public Initiator {
  public:
-  explicit TestInitiator() {}
+  explicit TestInitiator() : Initiator(Initiator::Feature::kStandard) {}
 
   ByteBuilder& GetWriteBuffer() { return write_buffer_; }
 

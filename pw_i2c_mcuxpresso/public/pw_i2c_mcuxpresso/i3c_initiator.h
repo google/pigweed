@@ -39,7 +39,8 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
                                   // for I3C messages, or 1 ODBAUD.
   };
   I3cMcuxpressoInitiator(const Config& config)
-      : config_(config),
+      : Initiator(Initiator::Feature::kStandard),
+        config_(config),
         base_(reinterpret_cast<I3C_Type*>(config.base_address)) {}
 
   // Initializes the I3C controller peripheral as configured in the constructor.

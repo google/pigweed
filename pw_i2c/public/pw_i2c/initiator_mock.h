@@ -172,7 +172,8 @@ constexpr Transaction ProbeTransaction(
 class MockInitiator : public Initiator {
  public:
   explicit constexpr MockInitiator(span<Transaction> transaction_list)
-      : expected_transactions_(transaction_list),
+      : Initiator(Initiator::Feature::kStandard),
+        expected_transactions_(transaction_list),
         expected_transaction_index_(0) {}
 
   /// Indicates whether the actual I2C transactions matched the expected

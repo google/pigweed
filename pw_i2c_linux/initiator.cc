@@ -103,7 +103,10 @@ Result<int> LinuxInitiator::OpenI2cBus(const char* bus_path) {
   return fd;
 }
 
-LinuxInitiator::LinuxInitiator(int fd) : fd_(fd) { PW_DCHECK(fd_ >= 0); }
+LinuxInitiator::LinuxInitiator(int fd)
+    : Initiator(Initiator::Feature::kStandard), fd_(fd) {
+  PW_DCHECK(fd_ >= 0);
+}
 
 LinuxInitiator::~LinuxInitiator() {
   PW_DCHECK(fd_ >= 0);

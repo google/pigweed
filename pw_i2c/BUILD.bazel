@@ -120,6 +120,20 @@ pw_cc_test(
     deps = [":address"],
 )
 
+pw_cc_test(
+    name = "initiator_test",
+    srcs = [
+        "initiator_test.cc",
+    ],
+    deps = [
+        ":address",
+        ":initiator",
+        ":message",
+        "//pw_chrono:system_clock",
+        "//pw_unit_test",
+    ],
+)
+
 cc_library(
     name = "initiator_mock",
     testonly = True,

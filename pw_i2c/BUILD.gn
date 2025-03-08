@@ -156,6 +156,7 @@ pw_test_group("tests") {
     ":device_message_test",
     ":initiator_mock_test",
     ":initiator_message_mock_test",
+    ":initiator_test",
     ":register_device_test",
     ":i2c_service_test",
     ":i2c_message_service_test",
@@ -168,6 +169,17 @@ pw_test("address_test") {
 
   # Disable deprecation warning for Address() constructor.
   cflags = [ "-Wno-deprecated-declarations" ]
+}
+
+pw_test("initiator_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "initiator_test.cc" ]
+  deps = [
+    ":address",
+    ":initiator",
+    ":message",
+    "$dir_pw_chrono:system_clock",
+  ]
 }
 
 pw_test("device_test") {
