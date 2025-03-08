@@ -27,7 +27,18 @@ pw_add_library(pw_i2c.address STATIC
     address.cc
 )
 
-pw_add_library(pw_i2c.initiator INTERFACE
+pw_add_library(pw_i2c.message INTERFACE
+  HEADERS
+    public/pw_i2c/message.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert
+    pw_bytes
+    pw_status
+)
+
+pw_add_library(pw_i2c.initiator STATIC
   HEADERS
     public/pw_i2c/initiator.h
   PUBLIC_INCLUDES
@@ -35,8 +46,12 @@ pw_add_library(pw_i2c.initiator INTERFACE
   PUBLIC_DEPS
     pw_bytes
     pw_chrono.system_clock
+    pw_containers.vector
     pw_i2c.address
+    pw_i2c.message
     pw_status
+  SOURCES
+    initiator.cc
 )
 
 pw_add_library(pw_i2c.device INTERFACE
@@ -115,6 +130,23 @@ pw_add_library(pw_i2c.mock STATIC
     initiator_mock.cc
 )
 
+pw_add_library(pw_i2c.message_mock STATIC
+  HEADERS
+    public/pw_i2c/initiator_message_mock.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_bytes
+    pw_containers.algorithm
+    pw_containers.to_array
+    pw_i2c.initiator
+  PRIVATE_DEPS
+    pw_assert
+    pw_unit_test
+  SOURCES
+    initiator_message_mock.cc
+)
+
 pw_add_library(pw_i2c.gmock INTERFACE
   HEADERS
     public/pw_i2c/initiator_gmock.h
@@ -128,6 +160,8 @@ pw_add_library(pw_i2c.gmock INTERFACE
 pw_add_test(pw_i2c.address_test
   SOURCES
     address_test.cc
+  PRIVATE_COMPILE_OPTIONS
+    "-Wno-deprecated-declarations"
   PRIVATE_DEPS
     pw_i2c.address
   GROUPS
@@ -143,6 +177,19 @@ pw_add_test(pw_i2c.device_test
     pw_containers
     pw_i2c.device
     pw_i2c.mock
+  GROUPS
+    modules
+    pw_i2c
+)
+
+pw_add_test(pw_i2c.device_message_test
+  SOURCES
+    device_message_test.cc
+  PRIVATE_DEPS
+    pw_bytes
+    pw_containers.algorithm
+    pw_i2c.device
+    pw_i2c.message_mock
   GROUPS
     modules
     pw_i2c
@@ -170,6 +217,21 @@ pw_add_test(pw_i2c.initiator_mock_test
     pw_i2c
 )
 
+pw_add_test(pw_i2c.initiator_message_mock_test
+  SOURCES
+    initiator_message_mock_test.cc
+  PUBLIC_DEPS
+    pw_chrono.system_clock
+    pw_containers.algorithm
+    pw_i2c.address
+    pw_i2c.message_mock
+    pw_containers.vector
+    pw_span
+  GROUPS
+    modules
+    pw_i2c
+)
+
 pw_add_test(pw_i2c.i2c_service_test
   SOURCES
     i2c_service_test.cc
@@ -177,6 +239,23 @@ pw_add_test(pw_i2c.i2c_service_test
     pw_containers.vector
     pw_i2c.i2c_service
     pw_i2c.mock
+    pw_rpc.test_utils
+    pw_status
+  GROUPS
+    modules
+    pw_i2c
+)
+
+pw_add_test(pw_i2c.i2c_message_service_test
+  SOURCES
+    i2c_message_service_test.cc
+  PUBLIC_DEPS
+    pw_chrono.system_clock
+    pw_containers.vector
+    pw_i2c.address
+    pw_i2c.i2c_service
+    pw_i2c.initiator
+    pw_i2c.message_mock
     pw_rpc.test_utils
     pw_status
   GROUPS

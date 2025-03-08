@@ -19,6 +19,10 @@
 
 namespace pw::i2c {
 
+///
+/// DEPRECATED: This file is deprecated in favor of initiator_message_mock.cc
+///
+
 Status MockInitiator::DoWriteReadFor(Address device_address,
                                      ConstByteSpan tx_buffer,
                                      ByteSpan rx_buffer,

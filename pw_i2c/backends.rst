@@ -31,6 +31,12 @@ own:
 
 .. _common_pico.cc: https://pigweed.googlesource.com/pigweed/kudzu/+/refs/heads/main/applications/app_common_impl/common_pico.cc
 
+.. note:: :ref:`module-pw_i2c_rp2040` uses the deprecated
+   :cpp:class:`pw::i2c::Initiator` API.
+
+   See :ref:`module-pw_i2c_mcuxpresso` and :ref:`module-pw_i2c_mcuxpresso`
+   for example implementations of ``DoTransferFor(span<Message>, ...)``.
+
 #. Implement the :cpp:class:`pw::i2c::Initiator` interface. See
    :ref:`module-pw_i2c_rp2040` for an example Raspberry Pi Pico SDK
    implementation and `common_pico.cc`_ for example usage of ``pw_i2c_rp2040``.

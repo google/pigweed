@@ -45,14 +45,33 @@ cc_library(
 
 cc_library(
     name = "initiator",
+    srcs = [
+        "initiator.cc",
+    ],
     hdrs = [
         "public/pw_i2c/initiator.h",
     ],
     strip_include_prefix = "public",
     deps = [
         ":address",
+        ":message",
         "//pw_bytes",
         "//pw_chrono:system_clock",
+        "//pw_containers:vector",
+        "//pw_status",
+    ],
+)
+
+cc_library(
+    name = "message",
+    hdrs = [
+        "public/pw_i2c/message.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":address",
+        "//pw_assert:check",
+        "//pw_bytes",
         "//pw_status",
     ],
 )
@@ -122,6 +141,24 @@ cc_library(
 )
 
 cc_library(
+    name = "initiator_message_mock",
+    testonly = True,
+    srcs = ["initiator_message_mock.cc"],
+    hdrs = ["public/pw_i2c/initiator_message_mock.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":address",
+        ":initiator",
+        "//pw_assert:check",
+        "//pw_bytes",
+        "//pw_containers",
+        "//pw_containers:algorithm",
+        "//pw_containers:to_array",
+        "//pw_unit_test",
+    ],
+)
+
+cc_library(
     name = "initiator_gmock",
     testonly = True,
     hdrs = [
@@ -152,6 +189,23 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "initiator_message_mock_test",
+    srcs = [
+        "initiator_message_mock_test.cc",
+    ],
+    deps = [
+        ":address",
+        ":initiator_message_mock",
+        "//pw_bytes",
+        "//pw_chrono:system_clock",
+        "//pw_containers:algorithm",
+        "//pw_containers:vector",
+        "//pw_span",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "device_test",
     srcs = [
         "device_test.cc",
@@ -161,6 +215,20 @@ pw_cc_test(
         ":initiator_mock",
         "//pw_bytes",
         "//pw_containers:algorithm",
+    ],
+)
+
+pw_cc_test(
+    name = "device_message_test",
+    srcs = [
+        "device_message_test.cc",
+    ],
+    deps = [
+        ":device",
+        ":initiator_message_mock",
+        "//pw_bytes",
+        "//pw_containers:algorithm",
+        "//pw_unit_test",
     ],
 )
 
@@ -225,6 +293,21 @@ cc_library(
 )
 
 pw_cc_test(
+    name = "i2c_message_service_test",
+    srcs = ["i2c_message_service_test.cc"],
+    deps = [
+        ":address",
+        ":i2c_service",
+        ":initiator",
+        ":initiator_message_mock",
+        "//pw_chrono:system_clock",
+        "//pw_containers:vector",
+        "//pw_rpc/pwpb:test_method_context",
+        "//pw_status",
+    ],
+)
+
+pw_cc_test(
     name = "i2c_service_test",
     srcs = ["i2c_service_test.cc"],
     deps = [
@@ -246,7 +329,9 @@ filegroup(
         "public/pw_i2c/i2c_service.h",
         "public/pw_i2c/initiator.h",
         "public/pw_i2c/initiator_gmock.h",
+        "public/pw_i2c/initiator_message_mock.h",
         "public/pw_i2c/initiator_mock.h",
+        "public/pw_i2c/message.h",
         "public/pw_i2c/register_device.h",
     ],
 )

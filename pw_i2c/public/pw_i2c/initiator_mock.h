@@ -23,6 +23,10 @@
 
 namespace pw::i2c {
 
+///
+/// DEPRECATED: This file is deprecated in favor of initiator_message_mock.h
+///
+
 /// Base class for creating transaction instances. For read-only,
 /// write-only, or probe transactions, improve code readability
 /// by using one of the following helpers instead:

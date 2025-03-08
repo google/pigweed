@@ -44,21 +44,28 @@ class TestInitiator : public Initiator {
   }
 
  private:
-  Status DoWriteReadFor(Address,
-                        ConstByteSpan tx_data,
-                        ByteSpan rx_data,
-                        chrono::SystemClock::duration) override {
-    // Write
-    if (!tx_data.empty()) {
-      write_buffer_.append(tx_data.data(), tx_data.size());
-    }
+  Status DoTransferFor(span<const Message> messages,
+                       chrono::SystemClock::duration) override {
+    // Ensure we don't have more than one read or write for this test procedure.
+    bool saw_read = false;
+    bool saw_write = false;
+    for (unsigned int i = 0; i < messages.size(); ++i) {
+      if (messages[i].IsRead()) {
+        PW_CHECK(!saw_read);
+        saw_read = true;
 
-    // Read
-    if (!rx_data.empty()) {
-      PW_CHECK_UINT_EQ(
-          read_buffer_.size(), rx_data.size(), "Buffer to read is too big");
-      for (uint32_t i = 0; i < rx_data.size(); i++) {
-        rx_data[i] = read_buffer_.data()[i];
+        PW_CHECK_UINT_EQ(read_buffer_.size(),
+                         messages[i].GetData().size(),
+                         "Buffer to read is wrong size");
+        std::copy(read_buffer_.begin(),
+                  read_buffer_.end(),
+                  messages[i].GetData().begin());
+      } else {
+        PW_CHECK(!saw_write);
+        saw_write = true;
+
+        write_buffer_.append(messages[i].GetData().data(),
+                             messages[i].GetData().size());
       }
     }
 

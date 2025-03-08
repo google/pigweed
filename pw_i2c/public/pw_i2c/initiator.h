@@ -18,6 +18,7 @@
 #include "pw_bytes/span.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_i2c/address.h"
+#include "pw_i2c/message.h"
 #include "pw_status/status.h"
 
 namespace pw::i2c {
@@ -29,17 +30,19 @@ namespace pw::i2c {
 ///
 /// `pw::i2c::Initiator` isn't required to support 10-bit addressing. If only
 /// 7-bit addressing is supported, `pw::i2c::Initiator` fails a runtime
-/// assertion when given an address that is out of 7-bit address range.
+/// assertion if given a Message with the kTenBitAddress flag, or when given
+/// an address that is out of 7-bit address range.
 ///
-/// The implementer of this pure virtual interface is responsible for ensuring
-/// thread safety and enabling functionality such as initialization,
+/// The implementer of TransferFor() (or DoWriteReadFor()) is responsible for
+/// ensuring thread safety and enabling functionality such as initialization,
 /// configuration, enabling and disabling, unsticking SDA, and detecting device
 /// address registration collisions.
 ///
 /// @note `pw::i2c::Initiator` uses internal synchronization, so it's safe to
-/// initiate transactions from multiple threads. However, a combined write and
-/// read transaction may not be atomic when there are multiple initiators on
-/// the bus. Furthermore, devices may require specific sequences of
+/// initiate transactions from multiple threads. Each call to this class will
+/// be executed in a single bus transaction using repeated starts.
+///
+/// Furthermore, devices may require specific sequences of
 /// transactions, and application logic must provide the synchronization to
 /// execute these sequences correctly.
 class Initiator {
@@ -47,24 +50,12 @@ class Initiator {
   virtual ~Initiator() = default;
 
   /// Writes bytes to an I2C device and then reads bytes from that same
-  /// device as either one atomic I2C transaction or two independent I2C
-  /// transactions.
-  ///
-  /// If the I2C bus is a multi-initiator then the implementer of this
-  /// class **must** ensure it's a single-atomic transaction.
+  /// device as one atomic I2C transaction.
   ///
   /// The signal on the bus for the atomic transaction should look like this:
   ///
   /// @code
   ///   START + I2C_ADDRESS + WRITE(0) + TX_BUFFER_BYTES +
-  ///   START + I2C_ADDRESS + READ(1) + RX_BUFFER_BYTES + STOP
-  /// @endcode
-  ///
-  /// The signal on the bus for the two independent transactions should look
-  /// like this:
-  ///
-  /// @code
-  ///   START + I2C_ADDRESS + WRITE(0) + TX_BUFFER_BYTES + STOP
   ///   START + I2C_ADDRESS + READ(1) + RX_BUFFER_BYTES + STOP
   /// @endcode
   ///
@@ -75,8 +66,7 @@ class Initiator {
   /// @param[out] rx_buffer The receive buffer.
   ///
   /// @param[in] timeout The maximum duration to block waiting for both
-  /// exclusive bus access and the completion of the I2C transaction or
-  /// transactions.
+  /// exclusive bus access and the completion of the I2C transaction.
   ///
   /// @pre The provided address must be supported by the initiator. I.e.
   /// don't use a 10-bit address if the initiator only supports 7-bit
@@ -89,7 +79,71 @@ class Initiator {
   ///
   ///    OK: The transaction or transactions succeeded.
   ///
-  ///    INVALID_ARGUMENT: The device address provided is bigger than 10 bits.
+  ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
+  ///    and complete the I2C transaction in time.
+  ///
+  ///    UNAVAILABLE: A NACK condition occurred, meaning the addressed device
+  ///    didn't respond or was unable to process the request.
+  ///
+  ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  ///
+  ///    UNIMPLEMENTED: The interface doesn't support the necessary i2c
+  ///    features or combination of i2c messages.
+  ///
+  /// @endrst
+  Status WriteReadFor(Address device_address,
+                      ConstByteSpan tx_buffer,
+                      ByteSpan rx_buffer,
+                      chrono::SystemClock::duration timeout);
+
+  /// Performs multiple arbitrary reads and writes to an I2C device as one
+  /// atomic transaction. Each part of the transaction is referred to as a
+  /// "message".
+  ///
+  /// For a series of 0...N messages, the signal on the bus for the atomic
+  /// transaction of two messages should look like this:
+  ///
+  /// @code
+  ///   START + #0.I2C_ADDRESS + #0.WRITE/READ(0/1) + #0.BYTES +
+  ///   START + #1.I2C_ADDRESS + #1.WRITE/READ(0/1) + #1.BYTES +
+  ///   ...
+  ///   START + #N.I2C_ADDRESS + #N.WRITE/READ(0/1) + #N.BYTES + STOP
+  /// @endcode
+  ///
+  ///
+  /// @param[in] messages An array of pw::i2c::Message objects to transmit
+  /// as one i2c bus transaction.
+  ///
+  /// For each Message msg in messages:
+  ///
+  /// If msg.GetAddress().IsTenBit() is true:
+  /// * The implementation should transmit that message using the 10-bit
+  ///   addressing scheme defined in the i2c spec.
+  /// * The implementation should CHECK or return an error if 10-bit addressing
+  ///   is unsupported.
+  ///
+  /// If msg.GetAddress().IsWriteContinuation() is true:
+  /// * The implementation should transmit this message without a start
+  /// condition or address.
+  /// * The implementation should CHECK or return an error if the hardware
+  ///   or initiator does not support this feature.
+  ///
+  /// @param[in] timeout The maximum duration to block waiting for both
+  /// exclusive bus access and the completion of the bus transaction.
+  ///
+  /// @pre The provided addresses of each message must be supported by the
+  /// initiator, Don't use a 10-bit address if the initiator only supports
+  /// 7-bit addresses. This method fails a runtime assertion if this
+  /// precondition isn't met.
+  ///
+  /// @returns @rst
+  ///
+  /// .. pw-status-codes::
+  ///
+  ///    OK: The transaction succeeded.
+  ///
+  ///    INVALID_ARGUMENT: The arguments can never be valid. For example,
+  ///    a WriteContinuation without a preceding Write message.
   ///
   ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
   ///    and complete the I2C transaction in time.
@@ -99,12 +153,13 @@ class Initiator {
   ///
   ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
   ///
+  ///    UNIMPLEMENTED: The interface doesn't support the necessary i2c
+  ///    features or combination of i2c messages.
+  ///
   /// @endrst
-  Status WriteReadFor(Address device_address,
-                      ConstByteSpan tx_buffer,
-                      ByteSpan rx_buffer,
-                      chrono::SystemClock::duration timeout) {
-    return DoWriteReadFor(device_address, tx_buffer, rx_buffer, timeout);
+  Status TransferFor(span<const Message> messages,
+                     chrono::SystemClock::duration timeout) {
+    return DoTransferFor(messages, timeout);
   }
 
   /// A variation of `pw::i2c::Initiator::WriteReadFor` that accepts explicit
@@ -149,8 +204,6 @@ class Initiator {
   ///
   ///    OK: The transaction succeeded.
   ///
-  ///    INVALID_ARGUMENT: The device address provided is bigger than 10 bits.
-  ///
   ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
   ///    and complete the I2C transaction in time.
   ///
@@ -158,6 +211,9 @@ class Initiator {
   ///    didn't respond or was unable to process the request.
   ///
   ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  ///
+  ///    UNIMPLEMENTED: The interface doesn't support the necessary i2c
+  ///    features or combination of i2c messages.
   ///
   /// @endrst
   Status WriteFor(Address device_address,
@@ -203,8 +259,6 @@ class Initiator {
   ///
   ///    OK: The transaction succeeded.
   ///
-  ///    INVALID_ARGUMENT: The device address provided is bigger than 10 bits.
-  ///
   ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
   ///    and complete the I2C transaction in time.
   ///
@@ -212,6 +266,9 @@ class Initiator {
   ///    didn't respond or was unable to process the request.
   ///
   ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  ///
+  ///    UNIMPLEMENTED: The interface doesn't support the necessary i2c
+  ///    features or combination of i2c messages.
   ///
   /// @endrst
   Status ReadFor(Address device_address,
@@ -236,8 +293,8 @@ class Initiator {
   ///
   /// @warning This method is not compatible with all devices. For example, some
   /// I2C devices require a device_address in W mode before they can ack the
-  /// device_address in R mode. In this case, use WriteReadFor to read a
-  /// register with known value.
+  /// device_address in R mode. In this case, use WriteReadFor or TransferFor
+  /// to read a register with known value.
   ///
   /// @param[in] device_address The address of the I2C device.
   ///
@@ -255,8 +312,6 @@ class Initiator {
   ///
   ///    OK: The transaction succeeded.
   ///
-  ///    INVALID_ARGUMENT: The device address provided is bigger than 10 bits.
-  ///
   ///    DEADLINE_EXCEEDED: Was unable to acquire exclusive initiator access
   ///    and complete the I2C transaction in time.
   ///
@@ -264,6 +319,9 @@ class Initiator {
   ///    didn't respond or was unable to process the request.
   ///
   ///    FAILED_PRECONDITION: The interface isn't initialized or enabled.
+  ///
+  ///    UNIMPLEMENTED: The interface doesn't support the necessary i2c
+  ///    features or combination of i2c messages.
   ///
   /// @endrst
   Status ProbeDeviceFor(Address device_address,
@@ -274,10 +332,26 @@ class Initiator {
   }
 
  private:
-  virtual Status DoWriteReadFor(Address device_address,
-                                ConstByteSpan tx_buffer,
-                                ByteSpan rx_buffer,
-                                chrono::SystemClock::duration timeout) = 0;
+  // This function should not be overridden by future implementations of
+  // Initiator unless dealing with an underlying interface that prefers
+  // this format.
+  // Implement DoTransferFor(Messages) as a preferred course of action.
+  //
+  // Both the read and write parameters should be transmitted in one bus
+  // operation using a repeated start condition.
+  // If both parameters are present, the write operation is performed first.
+  virtual Status DoWriteReadFor(Address,
+                                ConstByteSpan,
+                                ByteSpan,
+                                chrono::SystemClock::duration) {
+    return Status::Unimplemented();
+  }
+
+  // This method should be overridden by implementations of Initiator.
+  // All messages in one call to DoTransferFor() should be executed
+  // as one transaction.
+  virtual Status DoTransferFor(span<const Message> messages,
+                               chrono::SystemClock::duration timeout);
 };
 
 }  // namespace pw::i2c
