@@ -169,25 +169,21 @@ cipd_repository(
     name = "llvm_toolchain",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:0454dd8c48cd771478f1ae53330ba78e71bcd7cb",
+    tag = "git_revision:6916438b65ee26ac75684dfceb4bdb7e87841ff7",
 )
 
-# TODO: https://pwbug.dev/388593877 - macOS toolchain is behind because of a
-# breakage in C++ standard library headers. Remove this when the upstream LLVM
-# bug (https://github.com/llvm/llvm-project/issues/117630) is fixed and
-# rolled into Pigweed.
 cipd_repository(
     name = "llvm_toolchain_macos",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:8280651ad57cb9fb24a404cec2401040c28dec98",
+    tag = "git_revision:6916438b65ee26ac75684dfceb4bdb7e87841ff7",
 )
 
 cipd_repository(
     name = "llvm_toolchain_device",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:0454dd8c48cd771478f1ae53330ba78e71bcd7cb",
+    tag = "git_revision:6916438b65ee26ac75684dfceb4bdb7e87841ff7",
 )
 
 # Fetch linux sysroot for host builds.
