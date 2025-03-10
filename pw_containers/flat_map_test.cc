@@ -371,4 +371,63 @@ TEST(FlatMap, PairsConstructionWithMoreThanOneElements) {
   }
 }
 
+namespace {
+class MoveOnlyObject {
+ public:
+  MoveOnlyObject(const MoveOnlyObject&) = delete;
+  MoveOnlyObject& operator=(const MoveOnlyObject&) = delete;
+
+  MoveOnlyObject(MoveOnlyObject&& other) {
+    val_ = other.val_;
+    other.val_ = -1;
+  }
+
+  MoveOnlyObject& operator=(MoveOnlyObject&& other) {
+    val_ = other.val_;
+    other.val_ = -1;
+    return *this;
+  }
+
+  ~MoveOnlyObject() = default;
+
+  static MoveOnlyObject Create(int val) { return MoveOnlyObject(val); }
+
+  int val_ = 0;
+
+ private:
+  MoveOnlyObject(int val) : val_(val) {}
+};
+
+}  // namespace
+
+TEST(FlatMap, ConstructWithArrayWithMoveOnlyObject) {
+  std::array<Pair<int, MoveOnlyObject>, 2> arr{{
+      {1, MoveOnlyObject::Create(4)},
+      {-3, MoveOnlyObject::Create(5)},
+  }};
+
+  FlatMap map(std::move(arr));
+
+  EXPECT_EQ(map.begin()->first, -3);
+  EXPECT_EQ(map.at(1).val_, 4);
+  EXPECT_EQ(map.at(-3).val_, 5);
+
+  // Verify objects in arr were moved from.
+  // NOLINTBEGIN(bugprone-use-after-move)
+  EXPECT_EQ(arr[0].second.val_, -1);
+  EXPECT_EQ(arr[1].second.val_, -1);
+  // NOLINTEND(bugprone-use-after-move)
+}
+
+TEST(FlatMap, ConstructDirectWithMoveOnlyObject) {
+  FlatMap<int, MoveOnlyObject, 2> map({{
+      {1, MoveOnlyObject::Create(4)},
+      {-3, MoveOnlyObject::Create(5)},
+  }});
+
+  EXPECT_EQ(map.begin()->first, -3);
+  EXPECT_EQ(map.at(1).val_, 4);
+  EXPECT_EQ(map.at(-3).val_, 5);
+}
+
 }  // namespace pw::containers

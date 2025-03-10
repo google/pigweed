@@ -16,9 +16,9 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <iterator>
 #include <type_traits>
+#include <utility>
 
 #include "pw_assert/assert.h"
 
@@ -133,6 +133,11 @@ class FlatMap {
 
   constexpr FlatMap(const std::array<value_type, kArraySize>& items)
       : items_(items) {
+    ConstexprSort(items_.begin(), kArraySize);
+  }
+
+  constexpr FlatMap(std::array<value_type, kArraySize>&& items)
+      : items_(std::move(items)) {
     ConstexprSort(items_.begin(), kArraySize);
   }
 
