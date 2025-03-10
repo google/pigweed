@@ -208,6 +208,21 @@ cc_args(
 
 # TODO: https://pwbug.dev/346388161 - Push this to upstream rules_cc.
 cc_args(
+    name = "msan",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-fsanitize=memory",
+        "-DMEMORY_SANITIZER",
+        "-fno-sanitize-recover=all",
+    ],
+)
+
+# TODO: https://pwbug.dev/346388161 - Push this to upstream rules_cc.
+cc_args(
     name = "ubsan",
     actions = [
         "@rules_cc//cc/toolchains/actions:c_compile_actions",

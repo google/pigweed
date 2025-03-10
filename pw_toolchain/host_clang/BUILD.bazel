@@ -135,6 +135,32 @@ cc_feature_set(
 )
 
 bool_flag(
+    name = "msan",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "msan_enabled",
+    flag_values = {
+        ":msan": "true",
+    },
+)
+
+cc_feature(
+    name = "msan_feature",
+    args = ["//pw_toolchain/cc/args:msan"],
+    feature_name = "msan",
+    requires_any_of = [":msan_constraint"],
+)
+
+cc_feature_set(
+    name = "msan_constraint",
+    # Rust uses the C++ linker, but not the C++ compiler, so we need to ensure
+    # -fsanitize=memory is not be specified during Rust linking.
+    all_of = [":rules_rust_unsupported_feature"],
+)
+
+bool_flag(
     name = "ubsan",
     build_setting_default = False,
 )
@@ -385,6 +411,9 @@ cc_toolchain(
         ":asan_enabled": [":asan_feature"],
         "//conditions:default": [],
     }) + select({
+        ":msan_enabled": [":msan_feature"],
+        "//conditions:default": [],
+    }) + select({
         ":ubsan_enabled": [":ubsan_feature"],
         "//conditions:default": [],
     }) + select({
@@ -406,6 +435,7 @@ cc_toolchain(
         ":module_maps",
         ":use_module_maps",
         ":asan_feature",
+        ":msan_feature",
         ":ubsan_feature",
         ":tsan_feature",
         ":verbose_compiler_output",
