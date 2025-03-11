@@ -54,11 +54,7 @@ def boolean_constraint_value(name, **kwargs):
     native.constraint_value(
         name = false_value_name,
         constraint_setting = ":" + constraint_setting_name,
-        # The false value is not exposed at this time to avoid exposing more
-        # API surface than necessary, and for better compliance with
-        # https://bazel.build/rules/bzl-style#macros. But we may make it public
-        # in the future.
-        visibility = ["//visibility:private"],
+        **kwargs
     )
 
     native.constraint_value(
