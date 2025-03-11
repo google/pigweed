@@ -532,7 +532,7 @@ Destructors & moves wait for callbacks to complete
       call object, which is not permitted. Fix this condition or change the value of
       PW_RPC_CALLBACK_TIMEOUT_TICKS to avoid this crash.
 
-      See https://pigweed.dev/pw_rpc#destructors-moves-wait-for-callbacks-to-complete
+      See https://pigweed.dev/pw_rpc/cpp.html#destructors-moves-wait-for-callbacks-to-complete
       for details.
 
 Only one thread at a time may execute ``on_next``

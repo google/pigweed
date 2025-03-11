@@ -39,7 +39,7 @@
       timeout_source                                                         \
       " its own call object, which is not permitted. Fix this condition or " \
       "change the value of PW_RPC_CALLBACK_TIMEOUT_TICKS to avoid this "     \
-      "crash. See https://pigweed.dev/pw_rpc"                                \
+      "crash. See https://pigweed.dev/pw_rpc/cpp.html"                       \
       "#destructors-moves-wait-for-callbacks-to-complete for details.",      \
       static_cast<unsigned>((call).channel_id_),                             \
       static_cast<unsigned>((call).service_id_),                             \
