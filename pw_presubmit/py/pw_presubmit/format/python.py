@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Iterable, Iterator, Mapping, Sequence, Tuple
 
 from pw_cli.file_filter import FileFilter
-from pw_cli import find_config
+from pw_config_loader import find_config
 from pw_presubmit.format.core import (
     FileFormatter,
     FormattedFileContents,

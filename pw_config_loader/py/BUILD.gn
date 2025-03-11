@@ -24,6 +24,7 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_config_loader/__init__.py",
+    "pw_config_loader/find_config.py",
     "pw_config_loader/json_config_loader_mixin.py",
     "pw_config_loader/toml_config_loader_mixin.py",
     "pw_config_loader/yaml_config_loader_mixin.py",
@@ -32,7 +33,10 @@ pw_python_package("py") {
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
   ruff_toml = "$dir_pigweed/.ruff.toml"
-  tests = [ "yaml_config_loader_mixin_test.py" ]
+  tests = [
+    "find_config_test.py",
+    "yaml_config_loader_mixin_test.py",
+  ]
 }
 
 pw_python_action_test("process_integration_test") {

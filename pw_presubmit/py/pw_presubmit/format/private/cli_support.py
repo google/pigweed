@@ -32,10 +32,11 @@ from typing import (
     TextIO,
 )
 
-from pw_cli import color, find_config
+from pw_cli import color
 from pw_cli.collect_files import add_file_collection_arguments
 from pw_cli.diff import colorize_diff
 from pw_cli.plural import plural
+from pw_config_loader import find_config
 from pw_presubmit.format.core import (
     FileFormatter,
     FormatFixStatus,

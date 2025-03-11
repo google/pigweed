@@ -24,12 +24,6 @@ pw_cli.file_filter
 .. automodule:: pw_cli.file_filter
    :members:
 
-------------------
-pw_cli.find_config
-------------------
-.. automodule:: pw_cli.find_config
-   :members:
-
 ---------------
 pw_cli.git_repo
 ---------------

@@ -17,7 +17,7 @@ import os
 import unittest
 from pathlib import Path
 
-from pw_cli import find_config
+from pw_config_loader import find_config
 from pyfakefs import fake_filesystem_unittest
 
 

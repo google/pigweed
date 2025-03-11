@@ -20,7 +20,9 @@ package(default_visibility = ["//visibility:public"])
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "api.rst",
         "docs.rst",
+        "//pw_config_loader/py:pw_config_loader",
     ],
     prefix = "pw_config_loader/",
     target_compatible_with = incompatible_with_mcu(),

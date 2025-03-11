@@ -23,6 +23,7 @@ py_library(
     name = "pw_config_loader",
     srcs = [
         "pw_config_loader/__init__.py",
+        "pw_config_loader/find_config.py",
         "pw_config_loader/json_config_loader_mixin.py",
         "pw_config_loader/toml_config_loader_mixin.py",
         "pw_config_loader/yaml_config_loader_mixin.py",
@@ -30,6 +31,7 @@ py_library(
     imports = ["."],
     deps = [
         "@python_packages//pyyaml",
+        "@python_packages//toml",
     ],
 )
 
@@ -41,5 +43,17 @@ pw_py_test(
     ],
     deps = [
         ":pw_config_loader",
+    ],
+)
+
+pw_py_test(
+    name = "find_config_test",
+    size = "small",
+    srcs = [
+        "find_config_test.py",
+    ],
+    deps = [
+        ":pw_config_loader",
+        "@python_packages//pyfakefs",
     ],
 )

@@ -36,7 +36,6 @@ py_library(
         "pw_cli/env.py",
         "pw_cli/envparse.py",
         "pw_cli/file_filter.py",
-        "pw_cli/find_config.py",
         "pw_cli/git_repo.py",
         "pw_cli/interactive_prompts.py",
         "pw_cli/log.py",
@@ -85,18 +84,6 @@ pw_py_test(
     ],
     deps = [
         ":pw_cli",
-    ],
-)
-
-pw_py_test(
-    name = "find_config_test",
-    size = "small",
-    srcs = [
-        "find_config_test.py",
-    ],
-    deps = [
-        ":pw_cli",
-        "@python_packages//pyfakefs",
     ],
 )
 
