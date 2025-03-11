@@ -65,3 +65,10 @@ impl<T, A: Adapter> ForeignList<T, A> {
         unsafe { self.list.for_each(callback) }
     }
 }
+
+impl<T: Ord, A: Adapter> ForeignList<T, A> {
+    pub fn sorted_insert(&mut self, element: ForeignBox<T>) {
+        let element = element.consume();
+        unsafe { self.list.sorted_insert_unchecked(element.as_ptr()) }
+    }
+}

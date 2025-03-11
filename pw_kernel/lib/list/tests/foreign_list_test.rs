@@ -30,6 +30,26 @@ struct TestMember {
     link: Link,
 }
 
+impl PartialEq for TestMember {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+
+impl Eq for TestMember {}
+
+impl PartialOrd for TestMember {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.value.cmp(&other.value))
+    }
+}
+
+impl Ord for TestMember {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        self.value.cmp(&other.value)
+    }
+}
+
 struct TestAdapter {}
 impl Adapter for TestAdapter {
     const LINK_OFFSET: usize = offset_of!(TestMember, link);
@@ -151,4 +171,81 @@ fn pop_head_removes_correctly() -> unittest::Result<()> {
     e.consume();
 
     validate_list(&list, &[])
+}
+
+#[test]
+fn sorted_insert_inserts_sorted_items_in_correct_order() -> unittest::Result<()> {
+    let mut element1 = TestMember {
+        value: 1,
+        link: Link::new(),
+    };
+    let mut element2 = TestMember {
+        value: 2,
+        link: Link::new(),
+    };
+    let mut element3 = TestMember {
+        value: 3,
+        link: Link::new(),
+    };
+
+    let mut list = ForeignList::<TestMember, TestAdapter>::new();
+    list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element3) });
+    list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+    list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+    validate_list(&list, &[1, 2, 3])?;
+    drain_list(&mut list);
+    Ok(())
+}
+
+#[test]
+fn sorted_insert_inserts_reverse_sorted_items_in_correct_order() -> unittest::Result<()> {
+    let mut element1 = TestMember {
+        value: 1,
+        link: Link::new(),
+    };
+    let mut element2 = TestMember {
+        value: 2,
+        link: Link::new(),
+    };
+    let mut element3 = TestMember {
+        value: 3,
+        link: Link::new(),
+    };
+
+    let mut list = ForeignList::<TestMember, TestAdapter>::new();
+    list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+    list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+    list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element3) });
+    validate_list(&list, &[1, 2, 3])?;
+    drain_list(&mut list);
+    Ok(())
+}
+
+#[test]
+fn sorted_insert_inserts_unsorted_items_in_correct_order() -> unittest::Result<()> {
+    let mut element1 = TestMember {
+        value: 1,
+        link: Link::new(),
+    };
+    let mut element2 = TestMember {
+        value: 2,
+        link: Link::new(),
+    };
+    let mut element2_2 = TestMember {
+        value: 2,
+        link: Link::new(),
+    };
+    let mut element3 = TestMember {
+        value: 3,
+        link: Link::new(),
+    };
+
+    let mut list = ForeignList::<TestMember, TestAdapter>::new();
+    list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+    list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+    list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element3) });
+    list.sorted_insert(unsafe { ForeignBox::new_from_ptr(&raw mut element2_2) });
+    validate_list(&list, &[1, 2, 2, 3])?;
+    drain_list(&mut list);
+    Ok(())
 }
