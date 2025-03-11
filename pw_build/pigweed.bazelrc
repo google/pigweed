@@ -59,4 +59,4 @@ common --legacy_external_runfiles=True
 # will be built for the host. This was originally intended to be flipped in
 # Bazel 8.0.0, but didn't quite make the cut.
 # Also see: https://github.com/bazelbuild/bazel/issues/23179
-test --incompatible_bazel_test_exec_run_under=True
+common --incompatible_bazel_test_exec_run_under=True
