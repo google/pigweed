@@ -51,8 +51,8 @@ public final class FutureCallTest {
   @Mock private Channel.Output mockOutput;
 
   private final Channel channel = new Channel(CHANNEL_ID, packet -> mockOutput.send(packet));
-  private final Endpoint endpoint = new Endpoint(ImmutableList.of(channel));
-  private final PendingRpc rpc = PendingRpc.create(channel, METHOD);
+  private final Endpoint endpoint = new Endpoint(CallIdMode.ENABLED, ImmutableList.of(channel));
+  private final PendingRpc rpc = PendingRpc.create(channel, METHOD, Endpoint.FIRST_CALL_ID);
 
   @Test
   public void unaryFuture_response_setsValue() throws Exception {

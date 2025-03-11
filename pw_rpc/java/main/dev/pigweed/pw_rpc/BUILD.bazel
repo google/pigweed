@@ -24,6 +24,7 @@ RPC_CLIENT_SOURCES = [
     "ChannelOutputException.java",
     "Client.java",
     "Endpoint.java",
+    "CallIdMode.java",
     "FutureCall.java",
     "Ids.java",
     "InvalidRpcChannelException.java",
@@ -54,6 +55,7 @@ java_library(
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/core",
         "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_errorprone_error_prone_annotations",
         "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )
@@ -68,6 +70,7 @@ java_library(
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
         "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_errorprone_error_prone_annotations",
         "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )
@@ -83,6 +86,7 @@ android_library(
         "//third_party/google_auto:value",
         "@com_google_protobuf//java/lite",
         "@pigweed_maven_deps//:com_google_code_findbugs_jsr305",
+        "@pigweed_maven_deps//:com_google_errorprone_error_prone_annotations",
         "@pigweed_maven_deps//:com_google_guava_guava",
     ],
 )

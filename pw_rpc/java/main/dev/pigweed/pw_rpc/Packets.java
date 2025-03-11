@@ -20,10 +20,18 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 
 /** Encodes pw_rpc packets of various types. */
 /* package */ class Packets {
-  private Packets() {}
+  private final CallIdMode callIdMode;
 
-  public static byte[] request(PendingRpc rpc, MessageLite payload) {
-    RpcPacket.Builder builder = RpcPacket.newBuilder()
+  public Packets(CallIdMode callIdMode) {
+    this.callIdMode = callIdMode;
+  }
+
+  public boolean callIdsEnabled() {
+    return callIdMode == CallIdMode.ENABLED;
+  }
+
+  public byte[] request(PendingRpc rpc, MessageLite payload) {
+    RpcPacket.Builder builder = newBuilder(rpc.callId())
                                     .setType(PacketType.REQUEST)
                                     .setChannelId(rpc.channel().id())
                                     .setServiceId(rpc.service().id())
@@ -34,8 +42,8 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
     return builder.build().toByteArray();
   }
 
-  public static byte[] cancel(PendingRpc rpc) {
-    return RpcPacket.newBuilder()
+  public byte[] cancel(PendingRpc rpc) {
+    return newBuilder(rpc.callId())
         .setType(PacketType.CLIENT_ERROR)
         .setChannelId(rpc.channel().id())
         .setServiceId(rpc.service().id())
@@ -45,8 +53,8 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
         .toByteArray();
   }
 
-  public static byte[] error(RpcPacket packet, Status status) {
-    return RpcPacket.newBuilder()
+  public byte[] error(RpcPacket packet, Status status) {
+    return newBuilder(packet.getCallId())
         .setType(PacketType.CLIENT_ERROR)
         .setChannelId(packet.getChannelId())
         .setServiceId(packet.getServiceId())
@@ -56,8 +64,8 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
         .toByteArray();
   }
 
-  public static byte[] clientStream(PendingRpc rpc, MessageLite payload) {
-    return RpcPacket.newBuilder()
+  public byte[] clientStream(PendingRpc rpc, MessageLite payload) {
+    return newBuilder(rpc.callId())
         .setType(PacketType.CLIENT_STREAM)
         .setChannelId(rpc.channel().id())
         .setServiceId(rpc.service().id())
@@ -67,13 +75,42 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
         .toByteArray();
   }
 
-  public static byte[] clientStreamEnd(PendingRpc rpc) {
-    return RpcPacket.newBuilder()
+  public byte[] clientStreamEnd(PendingRpc rpc) {
+    return newBuilder(rpc.callId())
         .setType(PacketType.CLIENT_REQUEST_COMPLETION)
         .setChannelId(rpc.channel().id())
         .setServiceId(rpc.service().id())
         .setMethodId(rpc.method().id())
         .build()
         .toByteArray();
+  }
+
+  public byte[] serverError(
+      int channelId, String service, String method, int callId, Status error) {
+    return newBuilder(callId)
+        .setType(PacketType.SERVER_ERROR)
+        .setChannelId(channelId)
+        .setServiceId(Ids.calculate(service))
+        .setMethodId(Ids.calculate(method))
+        .setStatus(error.code())
+        .build()
+        .toByteArray();
+  }
+
+  public RpcPacket.Builder startServerStream(
+      int channelId, String service, String method, int callId) {
+    return newBuilder(callId)
+        .setType(PacketType.SERVER_STREAM)
+        .setChannelId(channelId)
+        .setServiceId(Ids.calculate(service))
+        .setMethodId(Ids.calculate(method));
+  }
+
+  private RpcPacket.Builder newBuilder(int callId) {
+    RpcPacket.Builder builder = RpcPacket.newBuilder();
+    if (callIdMode == CallIdMode.ENABLED) {
+      builder.setCallId(callId);
+    }
+    return builder;
   }
 }
