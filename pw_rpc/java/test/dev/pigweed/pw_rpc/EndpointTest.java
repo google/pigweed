@@ -108,10 +108,8 @@ public final class EndpointTest {
 
   @Test
   public void start_succeeds_callIdIsIncreasing() throws Exception {
-    AbstractCall<MessageLite, MessageLite> call1 =
-        endpointWithRecord.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
-    AbstractCall<MessageLite, MessageLite> call2 =
-        endpointWithRecord.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
+    endpointWithRecord.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
+    endpointWithRecord.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
     RpcPacket packet1 = RpcPacket.parseFrom(sentPackets.get(0));
     RpcPacket packet2 = RpcPacket.parseFrom(sentPackets.get(1));
 

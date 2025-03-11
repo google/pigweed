@@ -90,16 +90,6 @@ public final class ClientTest {
     return responseWithCallId(service, method, status, payload, 0);
   }
 
-  private static byte[] responseNoCallId(String service, String method, Status status) {
-    return packetBuilder(service, method)
-        .clearCallId()
-        .setType(PacketType.RESPONSE)
-        .setStatus(status.code())
-        .setPayload(SomeMessage.getDefaultInstance().toByteString())
-        .build()
-        .toByteArray();
-  }
-
   private static byte[] responseWithCallId(
       String service, String method, Status status, MessageLite payload, int callId) {
     return serverReplyWithCallId(PacketType.RESPONSE, service, method, status, payload, callId);
@@ -175,11 +165,6 @@ public final class ClientTest {
 
   private static RpcPacket legacyRequestPacket(String service, String method, MessageLite payload) {
     return requestPacketWithCallId(service, method, payload, 0);
-  }
-
-  private static RpcPacket legacyResponsePacket(
-      String service, String method, MessageLite payload) {
-    return responsePacketWithCallId(service, method, payload, 0);
   }
 
   private static RpcPacket requestPacket(String service, String method, MessageLite payload) {
