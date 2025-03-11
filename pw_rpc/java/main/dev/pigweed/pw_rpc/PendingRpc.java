@@ -24,6 +24,11 @@ abstract class PendingRpc {
     return new AutoValue_PendingRpc(channel, method, callId);
   }
 
+  /** Creates a copy of the provided rpc with the given {@code callId}. */
+  static PendingRpc withCallId(PendingRpc rpc, int callId) {
+    return create(rpc.channel(), rpc.method(), callId);
+  }
+
   public abstract Channel channel();
 
   public final Service service() {
@@ -38,5 +43,10 @@ abstract class PendingRpc {
   public final String toString() {
     return String.format(
         Locale.ENGLISH, "PendingRpc[%s|channel=%d|callId=%d]", method(), channel().id(), callId());
+  }
+
+  public final boolean equalsExceptCallId(PendingRpc other) {
+    return channel() == other.channel() && method() == other.method()
+        && service() == other.service();
   }
 }

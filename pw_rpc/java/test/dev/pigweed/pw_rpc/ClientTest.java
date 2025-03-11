@@ -66,6 +66,7 @@ public final class ClientTest {
           .build();
 
   private Client client;
+  private Client legacyClient;
   private List<RpcPacket> packetsSent;
 
   @Mock private StreamObserver<AnotherMessage> observer;
@@ -79,6 +80,16 @@ public final class ClientTest {
         PacketType.RESPONSE, service, method, status, SomeMessage.getDefaultInstance());
   }
 
+  private static byte[] response(
+      String service, String method, Status status, MessageLite payload) {
+    return serverReply(PacketType.RESPONSE, service, method, status, payload);
+  }
+
+  private static byte[] legacyResponse(
+      String service, String method, Status status, MessageLite payload) {
+    return responseWithCallId(service, method, status, payload, 0);
+  }
+
   private static byte[] responseNoCallId(String service, String method, Status status) {
     return packetBuilder(service, method)
         .clearCallId()
@@ -89,13 +100,23 @@ public final class ClientTest {
         .toByteArray();
   }
 
-  private static byte[] response(
-      String service, String method, Status status, MessageLite payload) {
-    return serverReply(PacketType.RESPONSE, service, method, status, payload);
+  private static byte[] responseWithCallId(
+      String service, String method, Status status, MessageLite payload, int callId) {
+    return serverReplyWithCallId(PacketType.RESPONSE, service, method, status, payload, callId);
   }
 
   private static byte[] serverStream(String service, String method, MessageLite payload) {
     return serverReply(PacketType.SERVER_STREAM, service, method, Status.OK, payload);
+  }
+
+  private static byte[] serverStreamWithCallId(
+      String service, String method, MessageLite payload, int callId) {
+    return serverReplyWithCallId(
+        PacketType.SERVER_STREAM, service, method, Status.OK, payload, callId);
+  }
+
+  private static byte[] legacyServerStream(String service, String method, MessageLite payload) {
+    return serverStreamWithCallId(service, method, payload, 0);
   }
 
   private static byte[] serverReply(
@@ -108,12 +129,57 @@ public final class ClientTest {
         .toByteArray();
   }
 
+  private static byte[] serverReplyWithCallId(PacketType type,
+      String service,
+      String method,
+      Status status,
+      MessageLite payload,
+      int callId) {
+    return packetBuilder(service, method)
+        .setCallId(callId)
+        .setType(type)
+        .setStatus(status.code())
+        .setPayload(payload.toByteString())
+        .build()
+        .toByteArray();
+  }
+
   private static RpcPacket.Builder packetBuilder(String service, String method) {
+    return packetBuilderWithCallId(service, method, Endpoint.FIRST_CALL_ID);
+  }
+
+  private static RpcPacket.Builder packetBuilderWithCallId(
+      String service, String method, int callId) {
     return RpcPacket.newBuilder()
         .setChannelId(CHANNEL_ID)
-        .setCallId(Endpoint.FIRST_CALL_ID)
+        .setCallId(callId)
         .setServiceId(Ids.calculate(service))
         .setMethodId(Ids.calculate(method));
+  }
+
+  private static RpcPacket requestPacketWithCallId(
+      String service, String method, MessageLite payload, int callId) {
+    return packetBuilderWithCallId(service, method, callId)
+        .setType(PacketType.REQUEST)
+        .setPayload(payload.toByteString())
+        .build();
+  }
+
+  private static RpcPacket responsePacketWithCallId(
+      String service, String method, MessageLite payload, int callId) {
+    return packetBuilderWithCallId(service, method, callId)
+        .setType(PacketType.RESPONSE)
+        .setPayload(payload.toByteString())
+        .build();
+  }
+
+  private static RpcPacket legacyRequestPacket(String service, String method, MessageLite payload) {
+    return requestPacketWithCallId(service, method, payload, 0);
+  }
+
+  private static RpcPacket legacyResponsePacket(
+      String service, String method, MessageLite payload) {
+    return responsePacketWithCallId(service, method, payload, 0);
   }
 
   private static RpcPacket requestPacket(String service, String method, MessageLite payload) {
@@ -126,13 +192,17 @@ public final class ClientTest {
   @Before
   public void setup() {
     packetsSent = new ArrayList<>();
-    client = Client.createMultiCall(ImmutableList.of(new Channel(1, (data) -> {
+    Channel channel = new Channel(CHANNEL_ID, (data) -> {
       try {
         packetsSent.add(RpcPacket.parseFrom(data, ExtensionRegistryLite.getEmptyRegistry()));
       } catch (InvalidProtocolBufferException e) {
         fail("The client sent an invalid packet: " + e);
       }
-    })), ImmutableList.of(SERVICE));
+    });
+
+    client = Client.createMultiCall(ImmutableList.of(channel), ImmutableList.of(SERVICE));
+    legacyClient =
+        Client.createLegacySingleCall(ImmutableList.of(channel), ImmutableList.of(SERVICE));
   }
 
   @Test
@@ -363,30 +433,133 @@ public final class ClientTest {
   }
 
   @Test
-  public void processPacketNoCallId_responsePacket_completesRpc() throws Exception {
-    client = Client.create(ImmutableList.of(new Channel(1, (data) -> {
-      try {
-        packetsSent.add(RpcPacket.parseFrom(data, ExtensionRegistryLite.getEmptyRegistry()));
-      } catch (InvalidProtocolBufferException e) {
-        fail("The client sent an invalid packet: " + e);
-      }
-    })), ImmutableList.of(SERVICE));
+  public void legacyProcessPacket_unary_callsObserver() throws Exception {
+    MethodClient method =
+        legacyClient.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeUnary");
+
+    method.invokeUnary(REQUEST_PAYLOAD, observer);
+
+    assertThat(packetsSent)
+        .containsExactly(
+            legacyRequestPacket("pw.rpc.test1.TheTestService", "SomeUnary", REQUEST_PAYLOAD));
+
+    assertThat(
+        legacyClient.processPacket(legacyResponse(
+            "pw.rpc.test1.TheTestService", "SomeUnary", Status.ALREADY_EXISTS, RESPONSE_PAYLOAD)))
+        .isTrue();
+
+    verify(observer).onNext(RESPONSE_PAYLOAD);
+    verify(observer).onCompleted(Status.ALREADY_EXISTS);
+  }
+
+  @Test
+  public void legacyProcessPacket_streaming_callsObserver() throws Exception {
+    MethodClient method =
+        legacyClient.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeServerStreaming");
+
+    method.invokeServerStreaming(REQUEST_PAYLOAD, observer);
+
+    assertThat(legacyClient.processPacket(legacyResponse("pw.rpc.test1.TheTestService",
+                   "SomeServerStreaming",
+                   Status.OK,
+                   AnotherMessage.getDefaultInstance())))
+        .isTrue();
+
+    verify(observer).onCompleted(Status.OK);
+
+    assertThat(legacyClient.processPacket(legacyServerStream(
+                   "pw.rpc.test1.TheTestService", "SomeServerStreaming", RESPONSE_PAYLOAD)))
+        .isTrue();
+
+    verify(observer, never()).onNext(any());
+  }
+
+  @Test
+  public void processPacket_unaryOpenCallId_callsObserver() throws Exception {
+    MethodClient method = client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeUnary");
+
+    method.invokeUnary(REQUEST_PAYLOAD, observer);
+
+    assertThat(packetsSent)
+        .containsExactly(
+            requestPacket("pw.rpc.test1.TheTestService", "SomeUnary", REQUEST_PAYLOAD));
+
+    assertThat(client.processPacket(responseWithCallId("pw.rpc.test1.TheTestService",
+                   "SomeUnary",
+                   Status.ALREADY_EXISTS,
+                   RESPONSE_PAYLOAD,
+                   0)))
+        .isTrue();
+
+    verify(observer).onNext(RESPONSE_PAYLOAD);
+    verify(observer).onCompleted(Status.ALREADY_EXISTS);
+  }
+
+  @Test
+  public void processPacket_streamingOpenCallId_callsObserver() throws Exception {
     MethodClient method =
         client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeServerStreaming");
 
     method.invokeServerStreaming(REQUEST_PAYLOAD, observer);
 
-    assertThat(client.processPacket(responseNoCallId(
-                   "pw.rpc.test1.TheTestService", "SomeServerStreaming", Status.OK)))
+    assertThat(client.processPacket(responseWithCallId("pw.rpc.test1.TheTestService",
+                   "SomeServerStreaming",
+                   Status.OK,
+                   AnotherMessage.getDefaultInstance(),
+                   Endpoint.OPEN_CALL_ID)))
         .isTrue();
 
     verify(observer).onCompleted(Status.OK);
 
-    assertThat(client.processPacket(serverStream(
-                   "pw.rpc.test1.TheTestService", "SomeServerStreaming", RESPONSE_PAYLOAD)))
+    assertThat(client.processPacket(serverStreamWithCallId("pw.rpc.test1.TheTestService",
+                   "SomeServerStreaming",
+                   RESPONSE_PAYLOAD,
+                   Endpoint.OPEN_CALL_ID)))
         .isTrue();
 
     verify(observer, never()).onNext(any());
+  }
+
+  @Test
+  public void processPacket_openUnaryMethod_callsObserver() throws Exception {
+    MethodClient method = client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeUnary");
+
+    method.openUnary(observer);
+
+    assertThat(client.processPacket(responseWithCallId("pw.rpc.test1.TheTestService",
+                   "SomeUnary",
+                   Status.OK,
+                   RESPONSE_PAYLOAD,
+                   Endpoint.OPEN_CALL_ID)))
+        .isTrue();
+
+    verify(observer).onCompleted(Status.OK);
+  }
+
+  @Test
+  public void processPacket_openStreamingMethod_callsObserver() throws Exception {
+    MethodClient method =
+        client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeServerStreaming");
+
+    method.openServerStreaming(observer);
+
+    assertThat(client.processPacket(serverStreamWithCallId("pw.rpc.test1.TheTestService",
+                   "SomeServerStreaming",
+                   RESPONSE_PAYLOAD,
+                   Endpoint.OPEN_CALL_ID)))
+        .isTrue();
+
+    verify(observer).onNext(RESPONSE_PAYLOAD);
+    verify(observer, never()).onCompleted(any());
+
+    assertThat(client.processPacket(responseWithCallId("pw.rpc.test1.TheTestService",
+                   "SomeServerStreaming",
+                   Status.OK,
+                   AnotherMessage.getDefaultInstance(),
+                   Endpoint.OPEN_CALL_ID)))
+        .isTrue();
+
+    verify(observer).onCompleted(Status.OK);
   }
 
   @Test
