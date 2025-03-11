@@ -15,8 +15,12 @@
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 
 #include <mutex>
+#include <optional>
 
+#include "pw_bluetooth_proxy/internal/acl_data_channel.h"
+#include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_containers/algorithm.h"
+#include "pw_containers/flat_map.h"
 #include "pw_log/log.h"
 #include "pw_status/status.h"
 
@@ -119,38 +123,74 @@ void L2capChannelManager::DrainChannelQueuesIfNewTx() {
   }
   new_tx_since_drain_ = false;
 
+  pw::containers::FlatMap<AclTransportType,
+                          std::optional<AclDataChannel::SendCredit>,
+                          2>
+      credits({{{AclTransportType::kBrEdr, {}}, {AclTransportType::kLe, {}}}});
+
   for (;;) {
-    std::optional<AclDataChannel::SendCredit> credit;
     std::optional<H4PacketWithH4> packet;
+    std::optional<AclDataChannel::SendCredit> packet_credit{};
+
+    // Attempt to reserve credits. This may be our first pass or we may have
+    // used one on last pass.
+    // We reserve credits upfront so that acl_data_channel_'s credits mutex lock
+    // is not acquired inside the channels_mutex_ lock below.
+    // SendCredit is RAII object, any held credits will be returned when
+    // function exits.
+    for (auto& [transport, credit] : credits) {
+      if (!credit.has_value()) {
+        credits.at(transport) = acl_data_channel_.ReserveSendCredit(transport);
+      }
+    }
+
     {
       std::lock_guard lock(channels_mutex_);
+
+      // Container is empty, nothing to do.
       if (lrd_channel_ == channels_.end()) {
-        // This means the container is empty.
         return;
       }
+
+      // If we haven't set terminus yet, just use end of the container.
       if (round_robin_terminus_ == channels_.end()) {
         round_robin_terminus_ = lrd_channel_;
       }
-      credit = acl_data_channel_.ReserveSendCredit(lrd_channel_->transport());
-      if (credit) {
+
+      // If we have a credit for the channel's type, attempt to dequeue
+      // packet from channel.
+      std::optional<AclDataChannel::SendCredit>& current_credit =
+          credits.at(lrd_channel_->transport());
+      if (current_credit.has_value()) {
         packet = lrd_channel_->DequeuePacket();
+        if (packet) {
+          // We were able to dequeue a packet. So also take the current credit
+          // to use when sending the packet below.
+          packet_credit = std::exchange(current_credit, std::nullopt);
+        }
       }
+
+      // Always advance so next dequeue is from next channel.
       Advance(lrd_channel_);
+
       if (packet) {
-        // Round robin should continue until we have done a full loop with no
+        // Round robin will continue until we have done a full loop with no
         // packets dequeued.
         round_robin_terminus_ = lrd_channel_;
       }
     }
 
     if (packet) {
-      // Send while unlocked. This can trigger a recursive round robin once
-      // `packet` is released, but this is fine because `lrd_channel_` has
-      // been adjusted so the recursive call will start where this one left off,
-      // and `round_robin_terminus_` will be updated to point to channels with
-      // dequeued packets.
-      PW_CHECK_OK(
-          acl_data_channel_.SendAcl(std::move(*packet), std::move(*credit)));
+      // A packet with a credit was found inside the lock. Send while unlocked
+      // with that credit.
+      // This will trigger another Drain when `packet` is released. This could
+      // happen during the SendAcl call, but that is fine because `lrd_channel_`
+      // and `round_robin_terminus_` are always adjusted inside the lock. So
+      // each Drain frame's loop will just resume where last one left off and
+      // continue until that it has found no channels with something to dequeue.
+      PW_CHECK_OK(acl_data_channel_.SendAcl(
+          std::move(*packet),
+          std::move(std::exchange(packet_credit, std::nullopt).value())));
       continue;
     }
 
