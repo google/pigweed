@@ -169,21 +169,21 @@ cipd_repository(
     name = "llvm_toolchain",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:6916438b65ee26ac75684dfceb4bdb7e87841ff7",
+    tag = "git_revision:553da9634dc4bae215e6c850d2de3186d09f9da5",
 )
 
 cipd_repository(
     name = "llvm_toolchain_macos",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:6916438b65ee26ac75684dfceb4bdb7e87841ff7",
+    tag = "git_revision:553da9634dc4bae215e6c850d2de3186d09f9da5",
 )
 
 cipd_repository(
     name = "llvm_toolchain_device",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:6916438b65ee26ac75684dfceb4bdb7e87841ff7",
+    tag = "git_revision:553da9634dc4bae215e6c850d2de3186d09f9da5",
 )
 
 # Fetch linux sysroot for host builds.
