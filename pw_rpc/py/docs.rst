@@ -28,6 +28,7 @@ pw_rpc.callback_client
   :members:
     UnaryResponse,
     StreamResponse,
+    Call,
     UnaryCall,
     ServerStreamingCall,
     ClientStreamingCall,
