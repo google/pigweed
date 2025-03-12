@@ -262,6 +262,8 @@ doxygen(
         "INCLUDE_GRAPH = NO",
         "MACRO_EXPANSION = YES",
         "PROJECT_NAME = Pigweed",
+        # TODO: https://pwbug.dev/402489948 - Replace PW_ALLOCATOR_HAS_ATOMICS
+        # when `pw_atomic` provides portable atomics.
         """PREDEFINED = __cplusplus=202002L \\
                         PW_LOCKABLE= \\
                         PW_PRINTF_FORMAT(...)= \\
@@ -277,6 +279,7 @@ doxygen(
                         PW_GUARDED_BY(...)= \\
                         PW_NO_SANITIZE(...)= \\
                         PW_NODISCARD_STR(...)= \\
+                        PW_ALLOCATOR_HAS_ATOMICS=1 \\
                         configSUPPORT_STATIC_ALLOCATION=1 \\
                         configUSE_TIMERS=1 \\
                         configCHECK_FOR_STACK_OVERFLOW=1 \\

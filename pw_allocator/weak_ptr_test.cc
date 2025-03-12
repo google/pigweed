@@ -14,6 +14,9 @@
 
 #include "pw_allocator/weak_ptr.h"
 
+// TODO(b/402489948): Remove when portable atomics are provided by `pw_atomic`.
+#if PW_ALLOCATOR_HAS_ATOMICS
+
 #include <cstddef>
 
 #include "pw_allocator/allocator.h"
@@ -314,3 +317,6 @@ TEST_F(WeakPtrTest, CanswapWhenBothAreExpired) {
 }
 
 }  // namespace
+
+// TODO(b/402489948): Remove when portable atomics are provided by `pw_atomic`.
+#endif  // PW_ALLOCATOR_HAS_ATOMICS

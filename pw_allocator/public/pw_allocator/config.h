@@ -103,3 +103,15 @@
 #define PW_ALLOCATOR_DEPRECATED \
   [[deprecated("See b/376730645 for background and workarounds.")]]
 #endif  // PW_ALLOCATOR_SUPPRESS_DEPRECATED_WARNINGS
+
+/// Indicates whether to include code that requires atomic support.
+///
+/// As an example, the `ControlBlock` used by both `SharedPtr` and `WeakPtr`
+/// needs an `atomic_uint32_t`.
+///
+/// This defaults to atomics being available.
+///
+/// TODO(b/402489948): Remove when portable atomics are provided by `pw_atomic`.
+#ifndef PW_ALLOCATOR_HAS_ATOMICS
+#define PW_ALLOCATOR_HAS_ATOMICS 1
+#endif  // PW_ALLOCATOR_HAS_ATOMICS

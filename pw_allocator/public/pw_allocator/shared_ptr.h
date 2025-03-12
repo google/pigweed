@@ -13,11 +13,18 @@
 // the License.
 #pragma once
 
+#include "pw_allocator/config.h"
+
+// TODO(b/402489948): Remove when portable atomics are provided by `pw_atomic`.
+#if PW_ALLOCATOR_HAS_ATOMICS
+
 #include <cstddef>
 #include <utility>
 
+#include "pw_allocator/deallocator.h"
 #include "pw_allocator/internal/control_block.h"
 #include "pw_allocator/internal/managed_ptr.h"
+#include "pw_allocator/layout.h"
 
 namespace pw {
 
@@ -154,6 +161,11 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   }
 
  private:
+  using Layout = allocator::Layout;
+
+  static constexpr bool is_unbounded_array_v =
+      allocator::internal::is_unbounded_array_v<T>;
+
   // Allow construction with to the implementation of `MakeShared`.
   friend class Allocator;
 
@@ -165,13 +177,36 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
   template <typename>
   friend class WeakPtr;
 
-  /// Private constructor that is public only for use with `emplace` and
-  /// other in-place construction functions.
+  /// Constructs and object of type `T` from the given `args`, and wraps it in a
+  /// `SharedPtr`
   ///
+  /// The returned value may contain null if allocating memory for the object
+  /// fails. Callers must check for null before using the `SharedPtr`.
+  ///
+  /// NOTE: Instances of this type are most commonly constructed using
+  /// `Allocator::MakeShared`.
+  ///
+  /// @param[in]  args...     Arguments passed to the object constructor.
+  template <typename... Args>
+  static SharedPtr Create(Allocator* allocator, Args&&... args);
+
+  /// Constructs an array of `count` objects, and wraps it in a `UniquePtr`
+  ///
+  /// The returned value may contain null if allocating memory for the object
+  /// fails. Callers must check for null before using the `UniquePtr`.
+  ///
+  /// NOTE: Instances of this type are most commonly constructed using
+  /// `Allocator::MakeShared`.
+  ///
+  /// @param[in]  allocator    Used to allocate memory.
+  /// @param[in]  count        Number of objects to allocate.
+  /// @param[in]  count        Alignment requirement for the array.
+  static SharedPtr Create(Allocator* allocator, size_t count, size_t alignment);
+
   /// Constructs a `SharedPtr` from an already-allocated value.
   ///
   /// NOTE: Instances of this type are most commonly constructed using
-  /// `Deallocator::MakeShared`.
+  /// `Allocator::MakeShared`.
   SharedPtr(element_type* value, ControlBlock* control_block)
       : Base(value), control_block_(control_block) {}
 
@@ -193,6 +228,32 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
 };
 
 // Template method implementations.
+
+template <typename T>
+template <typename... Args>
+SharedPtr<T> SharedPtr<T>::Create(Allocator* allocator, Args&&... args) {
+  static_assert(!std::is_array_v<T>);
+  auto* control_block = ControlBlock::Create(allocator, Layout::Of<T>(), 1);
+  if (control_block == nullptr) {
+    return nullptr;
+  }
+  auto* t = new (control_block->data()) T(std::forward<Args>(args)...);
+  return SharedPtr<T>(t, control_block);
+}
+
+template <typename T>
+SharedPtr<T> SharedPtr<T>::Create(Allocator* allocator,
+                                  size_t count,
+                                  size_t alignment) {
+  static_assert(allocator::internal::is_unbounded_array_v<T>);
+  Layout layout = Layout::Of<T>(count).Align(alignment);
+  auto* control_block = ControlBlock::Create(allocator, layout, count);
+  if (control_block == nullptr) {
+    return nullptr;
+  }
+  auto* t = new (control_block->data()) std::remove_extent_t<T>[count];
+  return SharedPtr<T>(t, control_block);
+}
 
 template <typename T>
 template <typename U>
@@ -288,3 +349,6 @@ constexpr void SharedPtr<T>::CheckArrayTypes() {
 }
 
 }  // namespace pw
+
+// TODO(b/402489948): Remove when portable atomics are provided by `pw_atomic`.
+#endif  // PW_ALLOCATOR_HAS_ATOMICS

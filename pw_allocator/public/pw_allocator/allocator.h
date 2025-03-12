@@ -16,8 +16,8 @@
 #include <cstddef>
 
 #include "pw_allocator/capability.h"
+#include "pw_allocator/config.h"
 #include "pw_allocator/deallocator.h"
-#include "pw_allocator/internal/control_block.h"
 #include "pw_allocator/layout.h"
 #include "pw_allocator/shared_ptr.h"
 #include "pw_allocator/unique_ptr.h"
@@ -32,9 +32,6 @@ namespace pw {
 /// generic interface must not make any assumptions around allocator behavior,
 /// thread safety, or performance.
 class Allocator : public Deallocator {
- private:
-  using ControlBlock = allocator::internal::ControlBlock;
-
  public:
   /// Allocates a block of memory with the specified size and alignment.
   ///
@@ -183,6 +180,9 @@ class Allocator : public Deallocator {
             typename... Args>
   void MakeUnique(Args&&...) = delete;
 
+// TODO(b/402489948): Remove when portable atomics are provided by `pw_atomic`.
+#if PW_ALLOCATOR_HAS_ATOMICS
+
   /// Constructs and object of type `T` from the given `args`, and wraps it in a
   /// `SharedPtr`
   ///
@@ -195,12 +195,8 @@ class Allocator : public Deallocator {
             std::enable_if_t<!std::is_array_v<T>, int> = 0,
             typename... Args>
   [[nodiscard]] SharedPtr<T> MakeShared(Args&&... args) {
-    auto* control_block = ControlBlock::Create(this, Layout::Of<T>(), 1);
-    if (control_block == nullptr) {
-      return nullptr;
-    }
-    auto* t = new (control_block->data()) T(std::forward<Args>(args)...);
-    return SharedPtr<T>(t, control_block);
+    return SharedPtr<T>::template Create<Args...>(this,
+                                                  std::forward<Args>(args)...);
   }
 
   /// Constructs an array of `count` objects, and wraps it in a `UniquePtr`
@@ -230,13 +226,7 @@ class Allocator : public Deallocator {
             int&... kExplicitGuard,
             std::enable_if_t<is_unbounded_array_v<T>, int> = 0>
   [[nodiscard]] SharedPtr<T> MakeShared(size_t size, size_t alignment) {
-    Layout layout = Layout::Of<T>(size).Align(alignment);
-    auto* control_block = ControlBlock::Create(this, layout, size);
-    if (control_block == nullptr) {
-      return nullptr;
-    }
-    auto* t = new (control_block->data()) std::remove_extent_t<T>[size];
-    return SharedPtr<T>(t, control_block);
+    return SharedPtr<T>::Create(this, size, alignment);
   }
 
   // Disallow calls with explicitly-sized array types like `T[kN]`.
@@ -245,6 +235,9 @@ class Allocator : public Deallocator {
             std::enable_if_t<is_bounded_array_v<T>, int> = 0,
             typename... Args>
   std::enable_if_t<is_bounded_array_v<T>> MakeShared(Args&&...) = delete;
+
+// TODO(b/402489948): Remove when portable atomics are provided by `pw_atomic`.
+#endif  // PW_ALLOCATOR_HAS_ATOMICS
 
   /// Modifies the size of an previously-allocated block of memory without
   /// copying any data.
