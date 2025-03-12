@@ -437,6 +437,7 @@ pw_cc_test(
     deps = [
         # All emboss targets are listed (even if they don't have explicit tests)
         # to ensure they are compiled.
+        ":emboss_util",
         ":emboss_att",
         ":emboss_hci",
         ":emboss_hci_test",

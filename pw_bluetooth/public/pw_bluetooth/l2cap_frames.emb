@@ -155,6 +155,33 @@ enum L2capCommandRejectReasonCode:
     -- Typically a channel is invalid because it does not exist.
 
 
+enum L2capOptionType:
+  -- Core Spec v6.0, Vol 3, Part A, Section 5
+  [maximum_bits: 8]
+  MTU = 0x01
+
+
+enum L2capConfigurationResult:
+  -- Core Spec v6.0, Vol 3, Part A, Section 4.5
+  [maximum_bits: 16]
+  SUCCESS                         = 0x0000
+  FAILURE_UNACCEPTABLE_PARAMETERS = 0x0001
+  FAILURE_REJECTED                = 0x0002
+  FAILURE_UNKNOWN_OPTIONS         = 0x0003
+  PENDING                         = 0x0004
+  FAILURE_FLOW_SPEC_REJECT        = 0x0005
+
+
+struct L2capOption(remaining_size: UInt:32):
+  -- Core Spec v6.0, Vol 3, Part A, Section 5
+  0               [+1]                     L2capOptionType                  option_type
+  $next           [+1]                     UInt                             option_length
+  $next           [+option_length]         UInt:8[]                         option_data
+  if remaining_size > option_length+2:
+    let new_remaining_size = remaining_size-option_length-2
+    option_length+2 [+new_remaining_size]  L2capOption(new_remaining_size)  next
+
+
 struct CFrame:
   -- A Control Frame (C-frame) contains L2CAP signaling commands exchanged
   -- between peer L2CAP entities. C-frames are exclusively used on the L2CAP
@@ -261,6 +288,37 @@ struct L2capConnectionRsp:
   if result == L2capConnectionRspResultCode.PENDING:
     $next [+2]                                         L2capConnectionRspStatusCode  status
       -- The status of the connection.
+
+
+struct L2capConfigureReq(length: UInt:32):
+  -- Section 4.4
+  -- L2CAP_CONFIGURE_REQ are sent to negociate the contract between two L2CAP
+  -- entities.
+  [requires: command_header.code == L2capSignalingPacketCode.CONFIGURATION_REQ]
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
+  $next [+2]                                           UInt                         destination_cid
+  $next [+2]  bits:
+    0     [+15]                                        UInt                         rfu
+    15    [+1]                                         Flag                         continuation_flag
+
+  let options_size = length-2-2-L2capSignalingCommandHeader.$size_in_bytes
+  $next [+options_size]                                L2capOption(options_size)    options
+
+
+struct L2capConfigureRsp(length: UInt:32):
+  -- Section 4.5
+  -- L2CAP_CONFIGURE_RSP are sent in response to a L2CAP_CONFIGURE_REQ
+  -- packet.
+  [requires: command_header.code == L2capSignalingPacketCode.CONFIGURATION_RSP]
+  0     [+L2capSignalingCommandHeader.$size_in_bytes]  L2capSignalingCommandHeader  command_header
+  $next [+2]                                           UInt                         source_cid
+  $next [+2]  bits:
+    0     [+15]                                        UInt                         rfu
+    15    [+1]                                         Flag                         continuation_flag
+
+  $next [+2]                                           L2capConfigurationResult     result
+  let config_size = length-2-2-2-L2capSignalingCommandHeader.$size_in_bytes
+  $next [+config_size]                                 UInt:8[]                     configs
 
 
 struct L2capDisconnectionReq:

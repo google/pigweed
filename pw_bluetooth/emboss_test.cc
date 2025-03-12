@@ -20,6 +20,7 @@
 // clang-format off
 // All emboss headers are listed (even if they don't have explicit tests) to
 // ensure they are compiled.
+#include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/att.emb.h"  // IWYU pragma: keep
 #include "pw_bluetooth/hci_commands.emb.h"  // IWYU pragma: keep
 #include "pw_bluetooth/hci_common.emb.h"
@@ -545,6 +546,50 @@ TEST(EmbossTest, WriteRfcommExtended) {
   EXPECT_EQ(expected[3], buffer[3]);
 
   EXPECT_EQ(buffer, expected);
+}
+
+TEST(EmbossTest, L2capConfigureReqRecursiveStructureWriter) {
+  constexpr size_t request_size =
+      emboss::L2capConfigureReq::MinSizeInBytes() +
+      (emboss::L2capOption::MinSizeInBytes() + 2 /*MTU option size*/) *
+          2 /*2 options*/;
+
+  std::array<uint8_t, request_size> buffer{};
+
+  auto cmd = MakeEmbossWriter<emboss::L2capConfigureReqWriter>(
+      buffer.size(), &buffer, buffer.size());
+
+  cmd->command_header().code().Write(
+      emboss::L2capSignalingPacketCode::CONFIGURATION_REQ);
+  cmd->command_header().identifier().Write(1);
+  cmd->command_header().data_length().Write(
+      request_size -
+      emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+  cmd->destination_cid().Write(0x0040);
+  cmd->continuation_flag().Write(false);
+
+  auto option1 = cmd->options();
+  option1.option_type().Write(emboss::L2capOptionType::MTU);
+  option1.option_length().Write(2);
+  option1.option_data()[0].Write(0xDC);
+  option1.option_data()[1].Write(0x05);
+
+  auto option2 = option1.next();
+  option2.option_type().Write(emboss::L2capOptionType::MTU);
+  option2.option_length().Write(2);
+  option2.option_data()[0].Write(0x00);
+  option2.option_data()[1].Write(0x06);
+
+  // clang-format off
+  std::array<uint8_t, 16> expected_buffer = {
+      0x04, 0x01, 0x0C, 0x00,  // Command Header (CONFIGURATION_REQ, id = 1, length = 12)
+      0x40, 0x00, 0x00, 0x00,  // Destination CID = 0x0040
+      0x01, 0x02, 0xDC, 0x05,  // Option 1: MTU (length = 2, data = 0x05DC)
+      0x01, 0x02, 0x00, 0x06   // Option 2: MTU (length = 2, data = 0x0600)
+  };
+  // clang-format on
+
+  EXPECT_EQ(buffer, expected_buffer);
 }
 
 }  // namespace

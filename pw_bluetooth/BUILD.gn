@@ -356,6 +356,7 @@ pw_test("emboss_test") {
     ":emboss_hci_test",
     ":emboss_l2cap_frames",
     ":emboss_rfcomm_frames",
+    ":emboss_util",
     "$dir_pw_third_party/fuchsia:stdcompat",
   ]
 }
