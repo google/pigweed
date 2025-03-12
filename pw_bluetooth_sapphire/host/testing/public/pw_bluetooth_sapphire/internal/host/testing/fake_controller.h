@@ -22,6 +22,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/device_address.h"
 #include "pw_bluetooth_sapphire/internal/host/common/device_class.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
+#include "pw_bluetooth_sapphire/internal/host/common/uuid.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/le_connection_parameters.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
@@ -140,6 +141,62 @@ class FakeController final : public ControllerTestDoubleBase,
     uint16_t period = 0;
   };
 
+  struct PacketFilterFeature final {
+    android_emb::ApcfFeatureFilterLogic broadcast_address =
+        android_emb::ApcfFeatureFilterLogic::OR;
+    android_emb::ApcfFeatureFilterLogic service_uuid =
+        android_emb::ApcfFeatureFilterLogic::OR;
+    android_emb::ApcfFeatureFilterLogic solicitation_uuid =
+        android_emb::ApcfFeatureFilterLogic::OR;
+    android_emb::ApcfFeatureFilterLogic local_name =
+        android_emb::ApcfFeatureFilterLogic::OR;
+    android_emb::ApcfFeatureFilterLogic manufacturer_data =
+        android_emb::ApcfFeatureFilterLogic::OR;
+    android_emb::ApcfFeatureFilterLogic service_data =
+        android_emb::ApcfFeatureFilterLogic::OR;
+    android_emb::ApcfFeatureFilterLogic ad_type =
+        android_emb::ApcfFeatureFilterLogic::OR;
+  };
+
+  struct PacketFilter final {
+    uint8_t filter_index = 0;
+
+    std::optional<DeviceAddressBytes> broadcast_address;
+    std::optional<UUID> service_uuid;
+    std::optional<UUID> solicitation_uuid;
+    std::optional<std::string> local_name;
+
+    std::optional<std::vector<uint8_t>> manufacturer_data;
+    std::optional<std::vector<uint8_t>> manufacturer_data_mask;
+
+    std::optional<std::vector<uint8_t>> service_data;
+    std::optional<std::vector<uint8_t>> service_data_mask;
+
+    std::optional<pw::bluetooth::emboss::CommonDataType> advertising_data_type;
+    std::optional<std::vector<uint8_t>> advertising_data;
+    std::optional<std::vector<uint8_t>> advertising_data_mask;
+
+    PacketFilterFeature features_selected;
+    android_emb::ApcfFeatureFilterLogic filter_logic_type;
+
+    std::optional<uint8_t> rssi_high_threshold = 0;
+    std::optional<uint8_t> rssi_low_threshold = 0;
+  };
+
+  struct PacketFilterState final {
+    bool enabled = false;
+    uint8_t max_filters = 0;
+    std::unordered_map<uint8_t, PacketFilter> filters;
+
+    std::unordered_map<uint8_t, PacketFilter*> filters_broadcast_address;
+    std::unordered_map<uint8_t, PacketFilter*> filters_service_uuid;
+    std::unordered_map<uint8_t, PacketFilter*> filters_solicitation_uuid;
+    std::unordered_map<uint8_t, PacketFilter*> filters_local_name;
+    std::unordered_map<uint8_t, PacketFilter*> filters_manufacturer_data;
+    std::unordered_map<uint8_t, PacketFilter*> filters_service_data;
+    std::unordered_map<uint8_t, PacketFilter*> filters_advertising_data;
+  };
+
   // Current device basic advertising state
   struct LEAdvertisingState final {
     BufferView advertised_view() const { return BufferView(data, data_length); }
@@ -224,6 +281,11 @@ class FakeController final : public ControllerTestDoubleBase,
   const LEAdvertisingState& extended_advertising_state(
       hci_spec::AdvertisingHandle handle) {
     return extended_advertising_states_[handle];
+  }
+
+  // Returns the current offloaded packet filter state
+  const PacketFilterState& packet_filter_state() const {
+    return packet_filter_state_;
   }
 
   // Returns the most recent LE connection request parameters.
@@ -553,6 +615,13 @@ class FakeController final : public ControllerTestDoubleBase,
 
   // Returns the next available L2CAP signaling channel command ID.
   uint8_t NextL2CAPCommandId();
+
+  bool DataMatchesWithMask(const std::vector<uint8_t>& a,
+                           const std::vector<uint8_t>& b,
+                           const std::vector<uint8_t>& mask);
+
+  // Returns true if this peer matches the given filter
+  bool FilterMatchesPeer(const FakePeer& peer, const PacketFilter& filter);
 
   // Sends a HCI_Command_Complete event with the given status in response to
   // the command with |opcode|.
@@ -955,6 +1024,156 @@ class FakeController final : public ControllerTestDoubleBase,
   void OnAndroidLEMultiAdvtEnable(
       const android_emb::LEMultiAdvtEnableCommandView& params);
 
+  void OnAndroidLEApcfCommand(
+      const PacketView<hci_spec::CommandHeader>& command_packet);
+
+  void OnAndroidLEApcfEnableCommand(
+      const android_emb::LEApcfEnableCommandView& params);
+
+  void OnAndroidLEApcfSetFilteringParametersCommandAdd(
+      const android_emb::LEApcfSetFilteringParametersCommandView& params);
+
+  void OnAndroidLEApcfSetFilteringParametersCommandDelete(
+      const android_emb::LEApcfSetFilteringParametersCommandView& params);
+
+  void OnAndroidLEApcfSetFilteringParametersCommandClear(
+      const android_emb::LEApcfSetFilteringParametersCommandView& params);
+
+  void OnAndroidLEApcfSetFilteringParametersCommand(
+      const android_emb::LEApcfSetFilteringParametersCommandView& params);
+
+  void OnAndroidLEApcfBroadcastAddressCommandAdd(
+      const android_emb::LEApcfBroadcastAddressCommandView& params);
+
+  void OnAndroidLEApcfBroadcastAddressCommandDelete(
+      const android_emb::LEApcfBroadcastAddressCommandView& params);
+
+  void OnAndroidLEApcfBroadcastAddressCommandClear(
+      const android_emb::LEApcfBroadcastAddressCommandView& params);
+
+  void OnAndroidLEApcfBroadcastAddressCommand(
+      const android_emb::LEApcfBroadcastAddressCommandView& params);
+
+  void OnAndroidLEApcfServiceUUID16CommandAdd(
+      const android_emb::LEApcfServiceUUID16CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID16CommandDelete(
+      const android_emb::LEApcfServiceUUID16CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID16CommandClear(
+      const android_emb::LEApcfServiceUUID16CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID16Command(
+      const android_emb::LEApcfServiceUUID16CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID32CommandAdd(
+      const android_emb::LEApcfServiceUUID32CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID32CommandDelete(
+      const android_emb::LEApcfServiceUUID32CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID32CommandClear(
+      const android_emb::LEApcfServiceUUID32CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID32Command(
+      const android_emb::LEApcfServiceUUID32CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID128CommandAdd(
+      const android_emb::LEApcfServiceUUID128CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID128CommandDelete(
+      const android_emb::LEApcfServiceUUID128CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID128CommandClear(
+      const android_emb::LEApcfServiceUUID128CommandView& params);
+
+  void OnAndroidLEApcfServiceUUID128Command(
+      const android_emb::LEApcfServiceUUID128CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID16CommandAdd(
+      const android_emb::LEApcfSolicitationUUID16CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID16CommandDelete(
+      const android_emb::LEApcfSolicitationUUID16CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID16CommandClear(
+      const android_emb::LEApcfSolicitationUUID16CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID16Command(
+      const android_emb::LEApcfSolicitationUUID16CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID32CommandAdd(
+      const android_emb::LEApcfSolicitationUUID32CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID32CommandDelete(
+      const android_emb::LEApcfSolicitationUUID32CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID32CommandClear(
+      const android_emb::LEApcfSolicitationUUID32CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID32Command(
+      const android_emb::LEApcfSolicitationUUID32CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID128CommandAdd(
+      const android_emb::LEApcfSolicitationUUID128CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID128CommandDelete(
+      const android_emb::LEApcfSolicitationUUID128CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID128CommandClear(
+      const android_emb::LEApcfSolicitationUUID128CommandView& params);
+
+  void OnAndroidLEApcfSolicitationUUID128Command(
+      const android_emb::LEApcfSolicitationUUID128CommandView& params);
+
+  void OnAndroidLEApcfLocalNameCommandAdd(
+      const android_emb::LEApcfLocalNameCommandView& params);
+
+  void OnAndroidLEApcfLocalNameCommandDelete(
+      const android_emb::LEApcfLocalNameCommandView& params);
+
+  void OnAndroidLEApcfLocalNameCommandClear(
+      const android_emb::LEApcfLocalNameCommandView& params);
+
+  void OnAndroidLEApcfLocalNameCommand(
+      const android_emb::LEApcfLocalNameCommandView& params);
+
+  void OnAndroidLEApcfManufacturerDataCommandAdd(
+      const android_emb::LEApcfManufacturerDataCommandView& params);
+
+  void OnAndroidLEApcfManufacturerDataCommandDelete(
+      const android_emb::LEApcfManufacturerDataCommandView& params);
+
+  void OnAndroidLEApcfManufacturerDataCommandClear(
+      const android_emb::LEApcfManufacturerDataCommandView& params);
+
+  void OnAndroidLEApcfManufacturerDataCommand(
+      const android_emb::LEApcfManufacturerDataCommandView& params);
+
+  void OnAndroidLEApcfServiceDataCommandAdd(
+      const android_emb::LEApcfServiceDataCommandView& params);
+
+  void OnAndroidLEApcfServiceDataCommandDelete(
+      const android_emb::LEApcfServiceDataCommandView& params);
+
+  void OnAndroidLEApcfServiceDataCommandClear(
+      const android_emb::LEApcfServiceDataCommandView& params);
+
+  void OnAndroidLEApcfServiceDataCommand(
+      const android_emb::LEApcfServiceDataCommandView& params);
+
+  void OnAndroidLEApcfAdTypeCommandAdd(
+      const android_emb::LEApcfAdTypeCommandView& params);
+
+  void OnAndroidLEApcfAdTypeCommandDelete(
+      const android_emb::LEApcfAdTypeCommandView& params);
+
+  void OnAndroidLEApcfAdTypeCommandClear(
+      const android_emb::LEApcfAdTypeCommandView& params);
+
+  void OnAndroidLEApcfAdTypeCommand(
+      const android_emb::LEApcfAdTypeCommandView& params);
+
   // Called when a command with an OGF of hci_spec::kVendorOGF is received.
   void OnVendorCommand(
       const PacketView<hci_spec::CommandHeader>& command_packet);
@@ -997,6 +1216,7 @@ class FakeController final : public ControllerTestDoubleBase,
   std::optional<OffloadedA2dpChannel> offloaded_a2dp_channel_state_;
 
   LEScanState le_scan_state_;
+  PacketFilterState packet_filter_state_;
   LEAdvertisingState legacy_advertising_state_;
   std::unordered_map<hci_spec::AdvertisingHandle, LEAdvertisingState>
       extended_advertising_states_;
