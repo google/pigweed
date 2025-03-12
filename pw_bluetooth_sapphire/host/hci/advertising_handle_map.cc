@@ -20,95 +20,30 @@ namespace bt::hci {
 
 std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::MapHandle(
     const DeviceAddress& address, bool extended_pdu) {
-  if (auto it = addr_to_handle_.find({address, extended_pdu});
-      it != addr_to_handle_.end()) {
-    return it->second;
+  auto handle = map_.get({address, extended_pdu});
+  if (handle) {
+    return handle;
   }
 
   if (Size() >= capacity_) {
     return std::nullopt;
   }
 
-  std::optional<hci_spec::AdvertisingHandle> handle = NextHandle();
-  PW_CHECK(handle);
+  auto next_handle = NextHandle();
+  PW_CHECK(next_handle);
 
-  addr_to_handle_[{address, extended_pdu}] = handle.value();
-  handle_to_addr_[handle.value()] = {address, extended_pdu};
-  return handle;
-}
-
-// Convert a DeviceAddress to an AdvertisingHandle. The conversion may fail if
-// there is no AdvertisingHandle currently mapping to the provided device
-// address.
-std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::GetHandle(
-    const DeviceAddress& address, bool extended_pdu) const {
-  if (auto it = addr_to_handle_.find({address, extended_pdu});
-      it != addr_to_handle_.end()) {
-    return it->second;
-  }
-
-  return std::nullopt;
+  map_.insert(next_handle.value(), {address, extended_pdu});
+  return next_handle;
 }
 
 std::optional<DeviceAddress> AdvertisingHandleMap::GetAddress(
     hci_spec::AdvertisingHandle handle) const {
-  if (handle_to_addr_.count(handle) != 0) {
-    const auto& [address, extended] = handle_to_addr_.at(handle);
+  if (map_.contains(handle)) {
+    const auto& [address, extended] = map_.get(handle).value().get();
     return address;
   }
 
   return std::nullopt;
-}
-
-void AdvertisingHandleMap::RemoveHandle(hci_spec::AdvertisingHandle handle) {
-  if (handle_to_addr_.count(handle) == 0) {
-    return;
-  }
-
-  const auto& [address, extended] = handle_to_addr_[handle];
-  addr_to_handle_.erase({address, extended});
-  handle_to_addr_.erase(handle);
-}
-
-void AdvertisingHandleMap::RemoveAddress(const DeviceAddress& address,
-                                         bool extended) {
-  auto node = addr_to_handle_.extract({address, extended});
-  if (node.empty()) {
-    return;
-  }
-
-  hci_spec::AdvertisingHandle handle = node.mapped();
-  handle_to_addr_.erase(handle);
-}
-
-std::size_t AdvertisingHandleMap::Size() const {
-  PW_CHECK(addr_to_handle_.size() == handle_to_addr_.size());
-  return addr_to_handle_.size();
-}
-
-bool AdvertisingHandleMap::Empty() const {
-  PW_CHECK(addr_to_handle_.empty() == handle_to_addr_.empty());
-  return addr_to_handle_.empty();
-}
-
-void AdvertisingHandleMap::Clear() {
-  last_handle_ = kStartHandle;
-  addr_to_handle_.clear();
-  handle_to_addr_.clear();
-}
-
-std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
-  if (Size() >= capacity_) {
-    return std::nullopt;
-  }
-
-  hci_spec::AdvertisingHandle handle = last_handle_;
-  do {
-    handle = static_cast<uint8_t>(handle + 1) % capacity_;
-  } while (handle_to_addr_.count(handle) != 0);
-
-  last_handle_ = handle;
-  return handle;
 }
 
 std::optional<hci_spec::AdvertisingHandle>
@@ -119,4 +54,19 @@ AdvertisingHandleMap::LastUsedHandleForTesting() const {
 
   return last_handle_;
 }
+
+std::optional<hci_spec::AdvertisingHandle> AdvertisingHandleMap::NextHandle() {
+  if (Size() >= capacity_) {
+    return std::nullopt;
+  }
+
+  hci_spec::AdvertisingHandle handle = last_handle_;
+  do {
+    handle = static_cast<uint8_t>(handle + 1) % capacity_;
+  } while (map_.contains(handle));
+
+  last_handle_ = handle;
+  return handle;
+}
+
 }  // namespace bt::hci
