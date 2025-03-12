@@ -79,10 +79,11 @@
     "https://bcr.bazel.build/modules/nanopb/0.4.9.1/MODULE.bazel": "334e396616b40359425806bafdfaa0b3086b54298cf177e6b6a56af784d964bd",
     "https://bcr.bazel.build/modules/nanopb/0.4.9.1/source.json": "7daaff82d4e698dfc6cdd0b8a22a71d65f2f3b7c4e176d67f92fecd6a6598532",
     "https://bcr.bazel.build/modules/pico-sdk/2.1.0/MODULE.bazel": "93dabc91a5b4736f5a5e299ccdc224cd1fb6b29fa667619cb8e985311bb469d5",
-    "https://bcr.bazel.build/modules/pico-sdk/2.1.1-develop.bcr.20250113-4b6e6475/MODULE.bazel": "7bd95dc59d1a256268d4e18c3f89ebc641cf8d4235fa967eabe4f01719955498",
-    "https://bcr.bazel.build/modules/pico-sdk/2.1.1-develop.bcr.20250113-4b6e6475/source.json": "0ffdcf0514c663ea1778f7fd1dfa6a24c505d5cb0e527d7b5a08c6999ec11b46",
+    "https://bcr.bazel.build/modules/pico-sdk/2.1.1/MODULE.bazel": "58dce072cd2bd1d9ef07c054c1c9ad0301e008285dbe24580bf880505c0ce382",
+    "https://bcr.bazel.build/modules/pico-sdk/2.1.1/source.json": "ade0380bcf4418f2c186d92e3f1fc5e96c6d1a5d265164ab8ed7451c7b68fec5",
     "https://bcr.bazel.build/modules/picotool/2.1.0/MODULE.bazel": "809dcf7795f3846ce29b4d676dabc664e57e935926ec5c147ffe02602a63a76f",
-    "https://bcr.bazel.build/modules/picotool/2.1.0/source.json": "d4593572549b2ea2c646d7e6f98668780ba04f85355d9036509a5f9ab2b741df",
+    "https://bcr.bazel.build/modules/picotool/2.1.1/MODULE.bazel": "02b5dc8bb61c2e806c14c0af9c812b7b513acba35789cde58cfd33b7c2d34c9a",
+    "https://bcr.bazel.build/modules/picotool/2.1.1/source.json": "fed9e87af77c6ac1a4ff46677498394fccce3b70addaf461639dbd0ac40222d5",
     "https://bcr.bazel.build/modules/platforms/0.0.10/MODULE.bazel": "8cb8efaf200bdeb2150d93e162c40f388529a25852b332cec879373771e48ed5",
     "https://bcr.bazel.build/modules/platforms/0.0.10/source.json": "f22828ff4cf021a6b577f1bf6341cb9dcd7965092a439f64fc1bb3b7a5ae4bd5",
     "https://bcr.bazel.build/modules/platforms/0.0.4/MODULE.bazel": "9b328e31ee156f53f3c416a64f8491f7eb731742655a47c9eec4703a71644aee",
@@ -1299,7 +1300,7 @@
     "@@rules_libusb+//:extensions.bzl%libusb": {
       "general": {
         "bzlTransitiveDigest": "q8w6UeaTkAyBBb3iDZ6OxV87Iq/zovx8RrRjEpxxqao=",
-        "usagesDigest": "+IQV5mzvDszEH7/WLufiDzIEJ8qAlwpc4cg3oH3fO1Q=",
+        "usagesDigest": "gUTFIVF8/P7GmsPlMb/jNCpnZfQiVyDBAFvO4ZLyG5E=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
