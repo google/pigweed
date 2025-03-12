@@ -28,7 +28,6 @@
 #include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
-#include "pw_bluetooth_sapphire/internal/host/hci/low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
@@ -813,11 +812,9 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWithFilters) {
   };
   sessions.push_back(
       StartDiscoverySession(/*active=*/true, discovery_filters5));
-
   sessions[5]->SetResultCallback(std::move(result_cb));
 
   RunUntilIdle();
-
   EXPECT_EQ(6u, sessions.size());
 
   // At this point all sessions should have processed all peers at least once.
@@ -1698,6 +1695,27 @@ TEST_F(LowEnergyDiscoveryManagerTest, SetResultCallbackIgnoresRemovedPeers) {
   RunUntilIdle();
   EXPECT_EQ(result_counts[peer_id_0], 1);
   EXPECT_EQ(result_counts[peer_id_1], 2);
+}
+
+// Client code may be multithreaded and use mutexes while calling
+// LowEnergyDiscoverySession::SetPacketFilters(...). Enusre that we don't call
+// the peer found callback in the same call stack to avoid client bugs
+// (e.g. deadlock).
+TEST_F(LowEnergyDiscoveryManagerTest, SetResultCallbackPostsDiscoveryResults) {
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
+  peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+
+  // Start active session so that results get cached.
+  auto session = StartDiscoverySession();
+
+  bool callback_called = false;
+  session->SetResultCallback(
+      [&](const Peer& /*peer*/) { callback_called = true; });
+
+  ASSERT_FALSE(callback_called);
+  RunUntilIdle();
+  ASSERT_TRUE(callback_called);
 }
 
 }  // namespace

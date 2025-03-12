@@ -19,7 +19,11 @@
 #include "pw_async/fake_dispatcher.h"
 #include "pw_async2/pend_func_task.h"
 #include "pw_async2/poll.h"
+#include "pw_bluetooth/uuid.h"
+#include "pw_bluetooth_sapphire/internal/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/fake_adapter.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
+#include "pw_bluetooth_sapphire/internal/uuid.h"
 #include "pw_multibuf/simple_allocator_for_test.h"
 #include "pw_unit_test/framework.h"
 
@@ -34,6 +38,7 @@ using ScanHandle = Central::ScanHandle;
 using ScanResult = Central::ScanResult;
 using pw::async2::PendFuncTask;
 using pw::async2::Poll;
+using pw::bluetooth_sapphire::internal::UuidFrom;
 using pw::chrono::SystemClock;
 using ScanFilter = Central::ScanFilter;
 using DisconnectReason =
@@ -46,10 +51,6 @@ const bt::StaticByteBuffer kAdvDataWithName(0x05,  // length
                                             'e',
                                             's',
                                             't');
-
-const pw::bluetooth::Uuid kUuid1(1);
-const bt::StaticByteBuffer kAdvDataWithUuid1(
-    0x05, bt::DataType::kIncomplete16BitServiceUuids, 0x01, 0x00, 0x00, 0x00);
 
 auto MakePendResultTask(
     ScanHandle::Ptr& scan_handle,
@@ -190,170 +191,35 @@ TEST_F(CentralTest, ScanOneResultAndStopScanSuccess) {
   EXPECT_EQ(adapter().fake_le()->discovery_sessions().size(), 0u);
 }
 
-TEST_F(CentralTest, ScanResultDoesNotMatchFilter) {
-  Central::ScanOptions options;
-  options.scan_type = Central::ScanType::kActiveUsePublicAddress;
-  Central::ScanFilter filter;
-  filter.name = "different-name";
-  std::array<Central::ScanFilter, 1> filters{filter};
-  options.filters = filters;
+TEST_F(CentralTest, DiscoveryFilterFrom) {
+  ScanFilter scan_filter;
+  scan_filter.service_uuid = pw::bluetooth::Uuid(1);
+  scan_filter.service_data_uuid = pw::bluetooth::Uuid(2);
+  scan_filter.manufacturer_id = 3;
+  scan_filter.connectable = true;
+  scan_filter.name = "bluetooth";
+  scan_filter.max_path_loss = 4;
+  scan_filter.solicitation_uuid = pw::bluetooth::Uuid(6);
 
-  ScanHandle::Ptr scan_handle = Scan(options);
-  ASSERT_TRUE(scan_handle);
+  bt::hci::DiscoveryFilter discovery_filter =
+      pw::bluetooth_sapphire::internal::DiscoveryFilterFrom(scan_filter);
 
-  std::optional<pw::Result<ScanResult>> scan_result_result;
-  PendFuncTask scan_handle_task =
-      MakePendResultTask(scan_handle, scan_result_result);
-  async2_dispatcher().Post(scan_handle_task);
+  EXPECT_EQ(1u, discovery_filter.service_uuids().size());
+  EXPECT_EQ(UuidFrom(scan_filter.service_uuid.value()),
+            discovery_filter.service_uuids()[0]);
 
-  const bool connectable = true;
-  bt::gap::Peer* peer = peer_cache().NewPeer(kAddress0, connectable);
-  const int rssi = 5;
-  SystemClock::time_point timestamp(SystemClock::duration(5));
-  peer->MutLe().SetAdvertisingData(rssi, kAdvDataWithName, timestamp);
+  EXPECT_EQ(1u, discovery_filter.service_data_uuids().size());
+  EXPECT_EQ(UuidFrom(scan_filter.service_data_uuid.value()),
+            discovery_filter.service_data_uuids()[0]);
 
-  adapter().fake_le()->NotifyScanResult(*peer);
+  EXPECT_EQ(1u, discovery_filter.solicitation_uuids().size());
+  EXPECT_EQ(UuidFrom(scan_filter.solicitation_uuid.value()),
+            discovery_filter.solicitation_uuids()[0]);
 
-  async_dispatcher().RunUntilIdle();
-  EXPECT_TRUE(async2_dispatcher().RunUntilStalled().IsPending());
-  EXPECT_FALSE(scan_result_result.has_value());
-  scan_handle_task.Deregister();
-}
-
-TEST_F(CentralTest, ScanResultMatchesSecondFilterOnly) {
-  Central::ScanOptions options;
-  options.scan_type = Central::ScanType::kActiveUsePublicAddress;
-  ScanFilter filter_0;
-  filter_0.service_uuid = pw::bluetooth::Uuid(2);
-  ScanFilter filter_1;
-  filter_1.service_uuid = kUuid1;
-  std::array<ScanFilter, 2> filters{filter_0, filter_1};
-  options.filters = filters;
-
-  ScanHandle::Ptr scan_handle = Scan(options);
-  ASSERT_TRUE(scan_handle);
-  ASSERT_EQ(adapter().fake_le()->discovery_sessions().size(), 1u);
-  EXPECT_TRUE((*adapter().fake_le()->discovery_sessions().cbegin())->active());
-
-  std::optional<pw::Result<ScanResult>> scan_result_result;
-  PendFuncTask scan_handle_task =
-      MakePendResultTask(scan_handle, scan_result_result);
-  async2_dispatcher().Post(scan_handle_task);
-  EXPECT_TRUE(async2_dispatcher().RunUntilStalled().IsPending());
-
-  const bool connectable = false;
-  bt::gap::Peer* peer = peer_cache().NewPeer(kAddress0, connectable);
-  const int rssi = 6;
-  SystemClock::time_point timestamp(SystemClock::duration(6));
-  peer->MutLe().SetAdvertisingData(rssi, kAdvDataWithUuid1, timestamp);
-
-  adapter().fake_le()->NotifyScanResult(*peer);
-
-  EXPECT_TRUE(async2_dispatcher().RunUntilStalled().IsReady());
-  ASSERT_TRUE(scan_result_result.has_value());
-  ASSERT_TRUE(scan_result_result.value().ok());
-
-  ScanResult scan_result = std::move(scan_result_result.value().value());
-  scan_result_result.reset();
-  EXPECT_EQ(scan_result.peer_id, peer->identifier().value());
-  EXPECT_EQ(scan_result.connectable, connectable);
-  EXPECT_EQ(scan_result.rssi, rssi);
-  EXPECT_EQ(scan_result.last_updated, timestamp);
-  ASSERT_EQ(scan_result.data.size(), kAdvDataWithName.size());
-  ASSERT_TRUE(scan_result.data.IsContiguous());
-  for (size_t i = 0; i < kAdvDataWithUuid1.size(); i++) {
-    EXPECT_EQ(scan_result.data.ContiguousSpan().value()[i],
-              kAdvDataWithUuid1.subspan()[i]);
-  }
-  EXPECT_FALSE(scan_result.name.has_value());
-}
-
-TEST_F(CentralTest, ScanResultMatchesSolicitationUUID) {
-  Central::ScanOptions options;
-  options.scan_type = Central::ScanType::kActiveUsePublicAddress;
-
-  ScanFilter filter;
-  filter.solicitation_uuid = kUuid1;
-  std::array<Central::ScanFilter, 1> filters{filter};
-  options.filters = filters;
-
-  ScanHandle::Ptr scan_handle = Scan(options);
-  ASSERT_TRUE(scan_handle);
-
-  std::optional<pw::Result<ScanResult>> scan_result_result;
-  PendFuncTask scan_handle_task =
-      MakePendResultTask(scan_handle, scan_result_result);
-  async2_dispatcher().Post(scan_handle_task);
-
-  const bool connectable = false;
-  bt::gap::Peer* peer = peer_cache().NewPeer(kAddress0, connectable);
-  SystemClock::time_point timestamp(SystemClock::duration(6));
-
-  const int rssi = 6;
-  bt::StaticByteBuffer adv_data(
-      0x05, bt::DataType::kSolicitationUuid16Bit, 0x01, 0x00, 0x00, 0x00);
-  peer->MutLe().SetAdvertisingData(rssi, adv_data, timestamp);
-
-  adapter().fake_le()->NotifyScanResult(*peer);
-  EXPECT_TRUE(async2_dispatcher().RunUntilStalled().IsReady());
-
-  ASSERT_TRUE(scan_result_result.has_value());
-  ASSERT_TRUE(scan_result_result.value().ok());
-
-  ScanResult scan_result = std::move(scan_result_result.value().value());
-  scan_result_result.reset();
-  EXPECT_EQ(scan_result.peer_id, peer->identifier().value());
-  EXPECT_EQ(scan_result.connectable, connectable);
-  EXPECT_EQ(scan_result.rssi, rssi);
-
-  ASSERT_TRUE(scan_result.data.IsContiguous());
-  for (size_t i = 0; i < adv_data.size(); i++) {
-    EXPECT_EQ(scan_result.data.ContiguousSpan().value()[i],
-              adv_data.subspan()[i]);
-  }
-}
-
-TEST_F(CentralTest, CachedScanResult) {
-  const bool connectable = true;
-  bt::gap::Peer* peer = peer_cache().NewPeer(kAddress0, connectable);
-  const int rssi = 5;
-  SystemClock::time_point timestamp(SystemClock::duration(5));
-  peer->MutLe().SetAdvertisingData(rssi, kAdvDataWithName, timestamp);
-  adapter().fake_le()->AddCachedScanResult(peer->identifier());
-
-  Central::ScanOptions options;
-  options.scan_type = Central::ScanType::kActiveUsePublicAddress;
-  // Don't filter results.
-  std::array<ScanFilter, 1> filters{ScanFilter{}};
-  options.filters = filters;
-
-  ScanHandle::Ptr scan_handle = Scan(options);
-  ASSERT_TRUE(scan_handle);
-  ASSERT_EQ(adapter().fake_le()->discovery_sessions().size(), 1u);
-  EXPECT_TRUE((*adapter().fake_le()->discovery_sessions().cbegin())->active());
-
-  std::optional<pw::Result<ScanResult>> scan_result_result;
-  PendFuncTask scan_handle_task =
-      MakePendResultTask(scan_handle, scan_result_result);
-  async2_dispatcher().Post(scan_handle_task);
-
-  EXPECT_TRUE(async2_dispatcher().RunUntilStalled().IsReady());
-  ASSERT_TRUE(scan_result_result.has_value());
-  ASSERT_TRUE(scan_result_result.value().ok());
-
-  ScanResult scan_result = std::move(scan_result_result.value().value());
-  EXPECT_EQ(scan_result.peer_id, peer->identifier().value());
-  EXPECT_EQ(scan_result.connectable, connectable);
-  EXPECT_EQ(scan_result.rssi, rssi);
-  EXPECT_EQ(scan_result.last_updated, timestamp);
-  ASSERT_EQ(scan_result.data.size(), kAdvDataWithName.size());
-  ASSERT_TRUE(scan_result.data.IsContiguous());
-  for (size_t i = 0; i < kAdvDataWithName.size(); i++) {
-    EXPECT_EQ(scan_result.data.ContiguousSpan().value()[i],
-              kAdvDataWithName.subspan()[i]);
-  }
-  ASSERT_TRUE(scan_result.name.has_value());
-  EXPECT_EQ(scan_result.name.value(), "Test");
+  EXPECT_EQ(scan_filter.manufacturer_id, discovery_filter.manufacturer_code());
+  EXPECT_EQ(scan_filter.connectable, discovery_filter.connectable());
+  EXPECT_EQ(scan_filter.name, discovery_filter.name_substring());
+  EXPECT_EQ(scan_filter.max_path_loss, discovery_filter.pathloss());
 }
 
 TEST_F(CentralTest, ScanErrorReceivedByScanHandle) {

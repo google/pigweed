@@ -127,6 +127,85 @@ LowEnergyScanner::RemovePendingResult(const DeviceAddress& address) {
   return std::move(node.mapped());
 }
 
+void LowEnergyScanner::SetPacketFilters(
+    uint16_t scan_id, const std::vector<DiscoveryFilter>& filters) {
+  if (scan_id_to_filters_.count(scan_id) != 0) {
+    UnsetPacketFilters(scan_id);
+  }
+
+  scan_id_to_filters_[scan_id] = filters;
+}
+
+void LowEnergyScanner::UnsetPacketFilters(uint16_t scan_id) {
+  scan_id_to_filters_.erase(scan_id);
+}
+
+void LowEnergyScanner::NotifyCachedPeers(uint16_t scan_id) {
+  if (scan_id_to_filters_.count(scan_id) == 0) {
+    return;
+  }
+
+  const std::vector<DiscoveryFilter>& filters = scan_id_to_filters_[scan_id];
+  for (const LowEnergyScanResult& result : cached_scan_results_) {
+    AdvertisingData::ParseResult ad = AdvertisingData::FromBytes(result.data());
+    bool connectable = result.connectable();
+    int8_t rssi = result.rssi();
+
+    if (AnyFiltersPass(filters, ad, connectable, rssi)) {
+      delegate()->OnPeerFound({scan_id}, result);
+    }
+  }
+}
+
+bool LowEnergyScanner::AnyFiltersPass(
+    const std::vector<DiscoveryFilter>& filters,
+    const AdvertisingData::ParseResult& ad,
+    bool connectable,
+    int8_t rssi) const {
+  if (filters.empty()) {
+    return true;
+  }
+
+  std::optional<std::reference_wrapper<const AdvertisingData>> data;
+  if (ad.is_ok()) {
+    data.emplace(ad.value());
+  }
+
+  for (const DiscoveryFilter& filter : filters) {
+    if (filter.Matches(data, connectable, rssi)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void LowEnergyScanner::NotifyPeerFound(const LowEnergyScanResult& result) {
+  bt_log(DEBUG,
+         "hci-le",
+         "peer found (address: %s, connectable: %d)",
+         bt_str(result.address()),
+         result.connectable());
+
+  cached_scan_results_.push_back(result);
+
+  std::unordered_set<uint16_t> scan_ids;
+
+  AdvertisingData::ParseResult ad = AdvertisingData::FromBytes(result.data());
+  for (const auto& [scan_id, filters] : scan_id_to_filters_) {
+    bool connectable = result.connectable();
+    int8_t rssi = result.rssi();
+
+    if (AnyFiltersPass(filters, ad, connectable, rssi)) {
+      scan_ids.insert(scan_id);
+    }
+  }
+
+  if (!scan_ids.empty()) {
+    delegate_->OnPeerFound(scan_ids, result);
+  }
+}
+
 bool LowEnergyScanner::StartScan(const ScanOptions& options,
                                  ScanStatusCallback callback) {
   PW_CHECK(callback);
@@ -257,6 +336,7 @@ void LowEnergyScanner::StopScanInternal(bool stopped_by_user) {
 
   // Either way clear all results from the previous scan period.
   pending_results_.clear();
+  cached_scan_results().clear();
 
   PW_DCHECK(hci_cmd_runner_->IsReady());
 

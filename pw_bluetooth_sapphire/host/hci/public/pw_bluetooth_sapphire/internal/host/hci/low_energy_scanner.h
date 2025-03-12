@@ -17,6 +17,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/defaults.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/advertising_packet_filter.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
@@ -208,14 +209,16 @@ class LowEnergyScanner : public LocalAddressClient {
    public:
     virtual ~Delegate() = default;
 
-    // Called when a peer is found. During a passive scan |data| contains the
-    // advertising data. During an active scan |data| contains the combined
+    // Called when a peer is found. During a passive scan |result| contains the
+    // advertising data. During an active scan |result| contains the combined
     // advertising and scan response data (if the peer is scannable).
-    virtual void OnPeerFound(const LowEnergyScanResult&) {}
+    virtual void OnPeerFound(const std::unordered_set<uint16_t>& /*scan_id*/,
+                             const LowEnergyScanResult& /*result*/) {}
 
     // Called when a directed advertising report is received from the peer with
     // the given address.
-    virtual void OnDirectedAdvertisement(const LowEnergyScanResult&) {}
+    virtual void OnDirectedAdvertisement(
+        const LowEnergyScanResult& /*result*/) {}
   };
 
   LowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
@@ -289,10 +292,39 @@ class LowEnergyScanner : public LocalAddressClient {
   // true.
   virtual bool StopScan();
 
+  // Associate a set of packet filters with a particular upper layer scan
+  // session with a given scan id.
+  void SetPacketFilters(uint16_t scan_id,
+                        const std::vector<DiscoveryFilter>& filters);
+
+  // Unassociate all packet filters with a particular upper layer scan session
+  // with a given scan id.
+  void UnsetPacketFilters(uint16_t scan_id);
+
+  // Call the Delegate::OnPeerFound method for all cached peers. This method is
+  // useful for relaying peers to an upper layer scan session that joins in the
+  // middle of a real Controller scan.
+  void NotifyCachedPeers(uint16_t scan_id);
+
   // Assigns the delegate for scan events.
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
  protected:
+  bool AnyFiltersPass(const std::vector<DiscoveryFilter>& filters,
+                      const AdvertisingData::ParseResult& ad,
+                      bool connectable,
+                      int8_t rssi) const;
+
+  void NotifyPeerFound(const LowEnergyScanResult& result);
+
+  void NotifyDirectedAdvertisement(const LowEnergyScanResult& result) const {
+    delegate()->OnDirectedAdvertisement(result);
+  }
+
+  std::vector<LowEnergyScanResult>& cached_scan_results() {
+    return cached_scan_results_;
+  }
+
   // Build the HCI command packet to set the scan parameters for the flavor of
   // low energy scanning being implemented.
   virtual CommandPacket BuildSetScanParametersPacket(
@@ -315,14 +347,6 @@ class LowEnergyScanner : public LocalAddressClient {
 
   const AdvertisingPacketFilter::Config& packet_filter_config() const {
     return packet_filter_config_;
-  }
-
-  void NotifyPeerFound(const LowEnergyScanResult& result) {
-    delegate()->OnPeerFound(result);
-  }
-
-  void NotifyDirectedAdvertisement(const LowEnergyScanResult& result) const {
-    delegate()->OnDirectedAdvertisement(result);
   }
 
   void set_state(State state) { state_ = state; }
@@ -353,6 +377,21 @@ class LowEnergyScanner : public LocalAddressClient {
   // and not reported to clients until a corresponding scan response is
   // received.
   pw::chrono::SystemClock::duration scan_response_timeout_;
+
+  // Filters associated with a particular upper layer scan session with a given
+  // scan id. These filters may be offloaded to the Controller if Controller
+  // offloading is supported. If not, or if the Controller memory is full, they
+  // are used to perform Host level packet filtering.
+  std::unordered_map<uint16_t, std::vector<DiscoveryFilter>>
+      scan_id_to_filters_;
+
+  // Cached scan results for the current scan period during discovery. The
+  // minimum (and default) scan period is 10.24 seconds when performing LE
+  // discovery. This can cause a long wait for a discovery session that joined
+  // in the middle of a scan period and duplicate filtering is enabled. We
+  // maintain this cache to immediately notify new sessions of the currently
+  // cached results for this period.
+  std::vector<LowEnergyScanResult> cached_scan_results_;
 
   // Scannable advertising events for which a Scan Response PDU has not been
   // received. This is accumulated during a discovery procedure and always

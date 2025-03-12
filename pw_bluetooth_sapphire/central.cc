@@ -18,19 +18,16 @@
 #include "pw_bluetooth_sapphire/internal/uuid.h"
 
 namespace pw::bluetooth_sapphire {
-namespace {
-
-pw::sync::Mutex g_peripheral_lock;
 
 bt::hci::DiscoveryFilter DiscoveryFilterFrom(const Central::ScanFilter& in) {
   bt::hci::DiscoveryFilter out;
   if (in.service_uuid.has_value()) {
     bt::UUID uuid = internal::UuidFrom(in.service_uuid.value());
-    out.set_service_uuids(std::vector<bt::UUID>{std::move(uuid)});
+    out.set_service_uuids({std::move(uuid)});
   }
   if (in.service_data_uuid.has_value()) {
     bt::UUID uuid = internal::UuidFrom(in.service_data_uuid.value());
-    out.set_service_data_uuids(std::vector<bt::UUID>{std::move(uuid)});
+    out.set_service_data_uuids({std::move(uuid)});
   }
   if (in.manufacturer_id.has_value()) {
     out.set_manufacturer_code(in.manufacturer_id.value());
@@ -46,10 +43,14 @@ bt::hci::DiscoveryFilter DiscoveryFilterFrom(const Central::ScanFilter& in) {
   }
   if (in.solicitation_uuid.has_value()) {
     bt::UUID uuid = internal::UuidFrom(in.solicitation_uuid.value());
-    out.set_solicitation_uuids(std::vector<bt::UUID>{std::move(uuid)});
+    out.set_solicitation_uuids({std::move(uuid)});
   }
   return out;
 }
+
+namespace {
+
+pw::sync::Mutex g_peripheral_lock;
 
 std::optional<Central::ScanResult> ScanResultFrom(
     const bt::gap::Peer& peer, pw::multibuf::MultiBufAllocator& allocator) {

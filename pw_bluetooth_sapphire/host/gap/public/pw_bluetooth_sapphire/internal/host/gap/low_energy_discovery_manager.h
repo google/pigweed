@@ -192,10 +192,6 @@ class LowEnergyDiscoveryManager final
 
   const PeerCache* peer_cache() const { return peer_cache_; }
 
-  const std::unordered_set<PeerId>& cached_scan_results() const {
-    return cached_scan_results_;
-  }
-
   // Creates and stores a new session object and returns it.
   std::unique_ptr<LowEnergyDiscoverySession> AddSession(
       bool active, std::vector<hci::DiscoveryFilter> discovery_filters);
@@ -205,7 +201,8 @@ class LowEnergyDiscoveryManager final
   void RemoveSession(LowEnergyDiscoverySession* session);
 
   // hci::LowEnergyScanner::Delegate override:
-  void OnPeerFound(const hci::LowEnergyScanResult& result) override;
+  void OnPeerFound(const std::unordered_set<uint16_t>& scan_ids,
+                   const hci::LowEnergyScanResult& result) override;
   void OnDirectedAdvertisement(const hci::LowEnergyScanResult& result) override;
 
   // Called by hci::LowEnergyScanner
@@ -267,22 +264,17 @@ class LowEnergyDiscoveryManager final
   };
   std::vector<DiscoveryRequest> pending_;
 
-  // The list of currently active/known sessions. We store raw (weak) pointers
-  // here because, while we don't actually own the session objects they will
-  // always notify us before destruction so we can remove them from this list.
+  // The currently active/known sessions. The number of elements in |sessions_|
+  // acts as our scan reference count. When |sessions_| becomes empty scanning
+  // is stopped. Similarly, scanning is started on the insertion of the first
+  // element.
   //
-  // The number of elements in |sessions_| acts as our scan reference count.
-  // When |sessions_| becomes empty scanning is stopped. Similarly, scanning is
-  // started on the insertion of the first element.
-  std::list<LowEnergyDiscoverySession*> sessions_;
-
-  // Identifiers for the cached scan results for the current scan period during
-  // discovery. The minimum (and default) scan period is 10.24 seconds
-  // when performing LE discovery. This can cause a long wait for a discovery
-  // session that joined in the middle of a scan period and duplicate filtering
-  // is enabled. We maintain this cache to immediately notify new sessions of
-  // the currently cached results for this period.
-  std::unordered_set<PeerId> cached_scan_results_;
+  // We store raw (weak) pointers here because, while we don't actually own the
+  // session objects they will always notify us before destruction so we can
+  // remove them from this list.
+  //
+  using ScanId = uint16_t;
+  std::unordered_map<ScanId, LowEnergyDiscoverySession*> sessions_;
 
   // The value (in ms) that we use for the duration of each scan period.
   pw::chrono::SystemClock::duration scan_period_ = kLEGeneralDiscoveryScanMin;
@@ -304,12 +296,9 @@ class LowEnergyDiscoverySession final
   LowEnergyDiscoverySession(
       uint16_t scan_id,
       bool active,
-      std::vector<hci::DiscoveryFilter> filters,
-      PeerCache& peer_cache,
       pw::async::Dispatcher& dispatcher,
-      fit::function<void(LowEnergyDiscoverySession*)> on_stop_cb,
-      fit::function<const std::unordered_set<PeerId>&()>
-          cached_scan_results_fn);
+      fit::function<void(LowEnergyDiscoverySession*)> notify_cached_peers_cb,
+      fit::function<void(LowEnergyDiscoverySession*)> on_stop_cb);
 
   // Destroying a session instance automatically ends the session.
   ~LowEnergyDiscoverySession();
@@ -358,13 +347,11 @@ class LowEnergyDiscoverySession final
   uint16_t scan_id_;
   bool alive_ = true;
   bool active_;
-  std::vector<hci::DiscoveryFilter> filters_;
-  PeerCache& peer_cache_;
   pw::async::HeapDispatcher heap_dispatcher_;
   fit::callback<void()> error_cb_;
   PeerFoundFunction peer_found_fn_;
+  fit::function<void(LowEnergyDiscoverySession*)> notify_cached_peers_cb_;
   fit::callback<void(LowEnergyDiscoverySession*)> on_stop_cb_;
-  fit::function<const std::unordered_set<PeerId>&()> cached_scan_results_fn_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyDiscoverySession);
 };

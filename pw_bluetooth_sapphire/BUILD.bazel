@@ -88,6 +88,23 @@ cc_library(
 )
 
 cc_library(
+    name = "discovery_filter",
+    srcs = [
+        "discovery_filter.cc",
+    ],
+    hdrs = [
+        "public/pw_bluetooth_sapphire/internal/discovery_filter.h",
+    ],
+    strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
+    deps = [
+        ":uuid",
+        "//pw_bluetooth:pw_bluetooth2",
+        "//pw_bluetooth_sapphire/host/hci",
+    ],
+)
+
+cc_library(
     name = "lease",
     hdrs = [
         "public/pw_bluetooth_sapphire/lease.h",
@@ -165,6 +182,8 @@ pw_cc_test(
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":central",
+        ":discovery_filter",
+        ":uuid",
         "//pw_async:fake_dispatcher",
         "//pw_async2:pend_func_task",
         "//pw_bluetooth_sapphire/host/gap:testing",
