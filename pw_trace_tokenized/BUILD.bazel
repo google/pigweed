@@ -67,14 +67,25 @@ cc_library(
     ],
     deps = [
         ":config",
+        ":trace_time",
         "//pw_log",
         "//pw_status",
         "//pw_tokenizer",
         "//pw_trace:facade",
         "//pw_varint",
-    ] + select({
-        "@platforms//os:none": [":pw_trace_tokenized_fake_time"],
-        "//conditions:default": [":pw_trace_host_trace_time"],
+    ],
+)
+
+label_flag(
+    name = "trace_time",
+    build_setting_default = ":default_trace_time",
+)
+
+alias(
+    name = "default_trace_time",
+    actual = select({
+        "@platforms//os:none": ":pw_trace_tokenized_fake_time",
+        "//conditions:default": ":pw_trace_host_trace_time",
     }),
 )
 

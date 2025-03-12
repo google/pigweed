@@ -161,6 +161,11 @@ be done in one of a few ways.
 .. cpp:function:: PW_TRACE_TIME_TYPE pw_trace_GetTraceTime()
 .. cpp:function:: size_t pw_trace_GetTraceTimeTicksPerSecond()
 
+In the Bazel build, set the ``@pigweed//pw_trace_tokenized:trace_time`` `label
+flag <https://bazel.build/extending/config#label-typed-build-settings>`__ to
+select the implementation of trace time to use. This label flag should point to
+a ``cc_library`` target that provides implementations of the two functions
+above.
 
 ------
 Buffer
