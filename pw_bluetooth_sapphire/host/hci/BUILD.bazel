@@ -25,6 +25,7 @@ cc_library(
     srcs = [
         "acl_connection.cc",
         "advertising_handle_map.cc",
+        "advertising_packet_filter.cc",
         "android_extended_low_energy_advertiser.cc",
         "bredr_connection.cc",
         "bredr_connection_request.cc",
@@ -105,6 +106,7 @@ pw_cc_test(
     name = "hci_test",
     srcs = [
         "advertising_handle_map_test.cc",
+        "advertising_packet_filter_test.cc",
         "connection_test.cc",
         "discovery_filter_test.cc",
         "extended_low_energy_advertiser_test.cc",

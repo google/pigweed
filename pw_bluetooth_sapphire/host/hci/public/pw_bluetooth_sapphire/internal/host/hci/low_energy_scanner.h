@@ -243,6 +243,15 @@ class LowEnergyScanner : public LocalAddressClient {
   // True if no scan procedure is currently enabled.
   bool IsIdle() const { return state() == State::kIdle; }
 
+  // Associate a set of packet filters with a particular upper layer scan
+  // session with a given scan id.
+  void SetPacketFilters(uint16_t scan_id,
+                        const std::vector<DiscoveryFilter>& filters);
+
+  // Unassociate all packet filters with a particular upper layer scan session
+  // with a given scan id.
+  void UnsetPacketFilters(uint16_t scan_id);
+
   // Initiates a scan. This is an asynchronous operation that abides by the
   // following rules:
   //
@@ -292,15 +301,6 @@ class LowEnergyScanner : public LocalAddressClient {
   // true.
   virtual bool StopScan();
 
-  // Associate a set of packet filters with a particular upper layer scan
-  // session with a given scan id.
-  void SetPacketFilters(uint16_t scan_id,
-                        const std::vector<DiscoveryFilter>& filters);
-
-  // Unassociate all packet filters with a particular upper layer scan session
-  // with a given scan id.
-  void UnsetPacketFilters(uint16_t scan_id);
-
   // Call the Delegate::OnPeerFound method for all cached peers. This method is
   // useful for relaying peers to an upper layer scan session that joins in the
   // middle of a real Controller scan.
@@ -345,10 +345,6 @@ class LowEnergyScanner : public LocalAddressClient {
   std::unique_ptr<PendingScanResult> RemovePendingResult(
       const DeviceAddress& address);
 
-  const AdvertisingPacketFilter::Config& packet_filter_config() const {
-    return packet_filter_config_;
-  }
-
   void set_state(State state) { state_ = state; }
   pw::async::Dispatcher& dispatcher() const { return pw_dispatcher_; }
   Transport::WeakPtr hci() const { return hci_; }
@@ -378,13 +374,6 @@ class LowEnergyScanner : public LocalAddressClient {
   // received.
   pw::chrono::SystemClock::duration scan_response_timeout_;
 
-  // Filters associated with a particular upper layer scan session with a given
-  // scan id. These filters may be offloaded to the Controller if Controller
-  // offloading is supported. If not, or if the Controller memory is full, they
-  // are used to perform Host level packet filtering.
-  std::unordered_map<uint16_t, std::vector<DiscoveryFilter>>
-      scan_id_to_filters_;
-
   // Cached scan results for the current scan period during discovery. The
   // minimum (and default) scan period is 10.24 seconds when performing LE
   // discovery. This can cause a long wait for a discovery session that joined
@@ -399,7 +388,10 @@ class LowEnergyScanner : public LocalAddressClient {
   std::unordered_map<DeviceAddress, std::unique_ptr<PendingScanResult>>
       pending_results_;
 
-  AdvertisingPacketFilter::Config packet_filter_config_;
+  // Manages all filtering related tasks for LowEnergyScanner (e.g. Host level
+  // filtering, Controller offloaded filtering, and the transition between the
+  // two, etc).
+  AdvertisingPacketFilter packet_filter_;
 
   // Used to obtain the local peer address type to use during scanning.
   LocalAddressDelegate* local_addr_delegate_;  // weak

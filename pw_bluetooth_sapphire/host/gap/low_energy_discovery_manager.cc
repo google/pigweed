@@ -65,9 +65,8 @@ void LowEnergyDiscoverySession::SetResultCallback(PeerFoundFunction callback) {
 
   peer_found_fn_ = std::move(callback);
 
-  // SetPacketFilters may immediately return back cached peers. We post the call
-  // on the dispatcher to avoid client bugs (e.g. deadlock) when peer_found_fn_
-  // is called in SetResultCallback().
+  // We post the call on the dispatcher to avoid client bugs (e.g. deadlock)
+  // when peer_found_fn_ is called in SetResultCallback().
   pw::Status post_status = heap_dispatcher_.Post(
       [self = GetWeakPtr()](pw::async::Context, pw::Status status) {
         if (!status.ok() || !self.is_alive()) {

@@ -1697,6 +1697,23 @@ TEST_F(LowEnergyDiscoveryManagerTest, SetResultCallbackIgnoresRemovedPeers) {
   EXPECT_EQ(result_counts[peer_id_1], 2);
 }
 
+TEST_F(LowEnergyDiscoveryManagerTest, NewSessionJoinsOngoingScan) {
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
+  Peer* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+
+  // Start active session so that results get cached.
+  auto unused_session = StartDiscoverySession();
+
+  auto session = StartDiscoverySession();
+  std::unordered_set<PeerId> results;
+  session->SetResultCallback(
+      [&](const Peer& peer) { results.insert(peer.identifier()); });
+  RunUntilIdle();
+  ASSERT_EQ(1, results.size());
+  EXPECT_EQ(peer->identifier(), *results.begin());
+}
+
 // Client code may be multithreaded and use mutexes while calling
 // LowEnergyDiscoverySession::SetPacketFilters(...). Enusre that we don't call
 // the peer found callback in the same call stack to avoid client bugs

@@ -87,7 +87,7 @@ LowEnergyScanner::LowEnergyScanner(
     pw::async::Dispatcher& pw_dispatcher)
     : pw_dispatcher_(pw_dispatcher),
       scan_timeout_task_(pw_dispatcher_),
-      packet_filter_config_(packet_filter_config),
+      packet_filter_(packet_filter_config, hci->GetWeakPtr()),
       local_addr_delegate_(local_addr_delegate),
       hci_(std::move(hci)) {
   PW_DCHECK(local_addr_delegate_);
@@ -129,55 +129,26 @@ LowEnergyScanner::RemovePendingResult(const DeviceAddress& address) {
 
 void LowEnergyScanner::SetPacketFilters(
     uint16_t scan_id, const std::vector<DiscoveryFilter>& filters) {
-  if (scan_id_to_filters_.count(scan_id) != 0) {
-    UnsetPacketFilters(scan_id);
-  }
-
-  scan_id_to_filters_[scan_id] = filters;
+  packet_filter_.SetPacketFilters(scan_id, filters);
 }
 
 void LowEnergyScanner::UnsetPacketFilters(uint16_t scan_id) {
-  scan_id_to_filters_.erase(scan_id);
+  packet_filter_.UnsetPacketFilters(scan_id);
 }
 
 void LowEnergyScanner::NotifyCachedPeers(uint16_t scan_id) {
-  if (scan_id_to_filters_.count(scan_id) == 0) {
-    return;
-  }
-
-  const std::vector<DiscoveryFilter>& filters = scan_id_to_filters_[scan_id];
+  // If there are cached scan results, a scan is currently ongoing. Immediately
+  // notify new scan sessions that joined in the middle of an ongoing scan of
+  // the cached scan results.
   for (const LowEnergyScanResult& result : cached_scan_results_) {
     AdvertisingData::ParseResult ad = AdvertisingData::FromBytes(result.data());
     bool connectable = result.connectable();
     int8_t rssi = result.rssi();
 
-    if (AnyFiltersPass(filters, ad, connectable, rssi)) {
+    if (packet_filter_.Matches(scan_id, ad, connectable, rssi)) {
       delegate()->OnPeerFound({scan_id}, result);
     }
   }
-}
-
-bool LowEnergyScanner::AnyFiltersPass(
-    const std::vector<DiscoveryFilter>& filters,
-    const AdvertisingData::ParseResult& ad,
-    bool connectable,
-    int8_t rssi) const {
-  if (filters.empty()) {
-    return true;
-  }
-
-  std::optional<std::reference_wrapper<const AdvertisingData>> data;
-  if (ad.is_ok()) {
-    data.emplace(ad.value());
-  }
-
-  for (const DiscoveryFilter& filter : filters) {
-    if (filter.Matches(data, connectable, rssi)) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 void LowEnergyScanner::NotifyPeerFound(const LowEnergyScanResult& result) {
@@ -189,20 +160,12 @@ void LowEnergyScanner::NotifyPeerFound(const LowEnergyScanResult& result) {
 
   cached_scan_results_.push_back(result);
 
-  std::unordered_set<uint16_t> scan_ids;
-
   AdvertisingData::ParseResult ad = AdvertisingData::FromBytes(result.data());
-  for (const auto& [scan_id, filters] : scan_id_to_filters_) {
-    bool connectable = result.connectable();
-    int8_t rssi = result.rssi();
-
-    if (AnyFiltersPass(filters, ad, connectable, rssi)) {
-      scan_ids.insert(scan_id);
-    }
-  }
+  std::unordered_set<uint16_t> scan_ids =
+      packet_filter_.Matches(ad, result.connectable(), result.rssi());
 
   if (!scan_ids.empty()) {
-    delegate_->OnPeerFound(scan_ids, result);
+    delegate()->OnPeerFound(scan_ids, result);
   }
 }
 
@@ -336,7 +299,7 @@ void LowEnergyScanner::StopScanInternal(bool stopped_by_user) {
 
   // Either way clear all results from the previous scan period.
   pending_results_.clear();
-  cached_scan_results().clear();
+  cached_scan_results_.clear();
 
   PW_DCHECK(hci_cmd_runner_->IsReady());
 
