@@ -80,3 +80,47 @@
     _PW_MUST_PLACE(isection, __section_place_, __LINE__)
 
 /// @}
+
+/// @defgroup pw_must_not_place
+/// @{
+
+// clang-format off
+/// @cond PRIVATE
+#define ___PW_MUST_NOT_PLACE(isection, start_sym, end_sym)  \
+    start_sym = .;                                              \
+    isection                                                    \
+    end_sym = .;                                                \
+    ASSERT(start_sym == end_sym,                                \
+           "Error: Symbols found in pattern below but marked as must not place.");         \
+    ASSERT(start_sym == end_sym, #isection)
+
+#define __PW_MUST_NOT_PLACE(isection, sym_prefix, unique)   \
+    ___PW_MUST_NOT_PLACE(isection, sym_prefix ## start_ ## unique, sym_prefix ## end_ ## unique)
+
+#define _PW_MUST_NOT_PLACE(isection, sym_prefix, unique)    \
+    __PW_MUST_NOT_PLACE(isection, sym_prefix, unique)
+/// @endcond
+
+/// PW_MUST_NOT_PLACE is a macro intended for use in linker scripts to ensure inputs
+/// are _not_ present. It does the opposite of PW_MUST_PLACE.
+///
+/// This can be used to assert that no data members are added to an object file where
+/// there should be none. This is useful to ensure the safety of code that must run
+/// before data or bss init.
+///
+/// @code
+/// SECTIONS
+/// {
+///   .zero_init_ram_early_init
+///   {
+///      PW_MUST_NOT_PLACE(*/libearly_memory_init.a:*.o(.bss*));
+///   }
+/// }
+/// @endcode
+///
+/// When adding a new variable to a library marked with this macro it is expected to
+/// change to PW_MUST_PLACE
+#define PW_MUST_NOT_PLACE(isection)  \
+    _PW_MUST_NOT_PLACE(isection, __section_not_place_, __LINE__)
+
+/// @}

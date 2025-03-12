@@ -67,4 +67,9 @@ SECTIONS
     /* Exercise PW_MUST_PLACE macro on our test object file */
     PW_MUST_PLACE(*/test.pic.o);
   }
+  .data :
+  {
+    /* Exercise PW_MUST_NOT_PLACE to assert there are no data entries in our test object file */
+    PW_MUST_NOT_PLACE(*/test.pic.o(.data*));
+  }
 }

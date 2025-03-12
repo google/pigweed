@@ -23,6 +23,12 @@ Linker Script Helpers
    :content-only:
    :members:
 
+``PW_MUST_NOT_PLACE``
+=====================
+.. doxygengroup:: pw_must_not_place
+   :content-only:
+   :members:
+
 ``LinkerSymbol``
 ================
 .. doxygenclass:: pw::LinkerSymbol
