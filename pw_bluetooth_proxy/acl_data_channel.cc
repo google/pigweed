@@ -789,18 +789,18 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
       (direction == Direction::kFromController)
           ? channel->channel().HandlePduFromController(l2cap_pdu)
           : channel->channel().HandlePduFromHost(l2cap_pdu);
-  if (is_fragment) {
-    if (!result) {
-      // We can't return kUnhandled, as that would pass only this final
-      // fragment to the other side, and all preceding fragments would be
-      // missing.
-      // TODO: https://pwbug.dev/392663102 - Handle rejecting a recombined
-      // L2CAP PDU.
-      PW_LOG_ERROR(
-          "L2capChannel indicates recombined PDU is unhandled, which is "
-          "unsupported. Dropping entire recombined PDU!");
-      return kHandled;
-    }
+
+  if (!result && is_fragment) {
+    // Client rejected the entire PDU, but we just have the continuing packet
+    // with the last fragment. So we can't just return kUnhandled that would
+    // pass only this final fragment to the other side, and all preceding
+    // fragments would be missing.
+    // TODO: https://pwbug.dev/392663102 - Handle rejecting a recombined
+    // L2CAP PDU.
+    PW_LOG_ERROR(
+        "L2capChannel indicates recombined PDU is unhandled, which is "
+        "unsupported. Dropping entire recombined PDU!");
+    return kHandled;
   }
 
   // Unlock channel so we can drain any channels with data queued.
