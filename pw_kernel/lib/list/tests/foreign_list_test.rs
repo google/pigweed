@@ -14,7 +14,7 @@
 
 #![no_std]
 #![no_main]
-use core::mem::offset_of;
+use core::{mem::offset_of, ptr::NonNull};
 
 use foreign_box::ForeignBox;
 use list::*;
@@ -171,6 +171,102 @@ fn pop_head_removes_correctly() -> unittest::Result<()> {
     e.consume();
 
     validate_list(&list, &[])
+}
+
+#[test]
+fn remove_element_can_remove_head() -> unittest::Result<()> {
+    let mut element1 = TestMember {
+        value: 1,
+        link: Link::new(),
+    };
+    let mut element2 = TestMember {
+        value: 2,
+        link: Link::new(),
+    };
+    let mut element3 = TestMember {
+        value: 3,
+        link: Link::new(),
+    };
+
+    let mut list = ForeignList::<TestMember, TestAdapter>::new();
+    list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element3) });
+    list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+    list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+
+    let removed_element = unsafe { list.remove_element(NonNull::new(&raw mut element1).unwrap()) };
+    unittest::assert_true!(removed_element.is_some());
+    unittest::assert_eq!(
+        removed_element.unwrap().consume(),
+        NonNull::new(&raw mut element1).unwrap()
+    );
+
+    validate_list(&list, &[2, 3])?;
+    drain_list(&mut list);
+    Ok(())
+}
+
+#[test]
+fn remove_element_can_remove_middle() -> unittest::Result<()> {
+    let mut element1 = TestMember {
+        value: 1,
+        link: Link::new(),
+    };
+    let mut element2 = TestMember {
+        value: 2,
+        link: Link::new(),
+    };
+    let mut element3 = TestMember {
+        value: 3,
+        link: Link::new(),
+    };
+
+    let mut list = ForeignList::<TestMember, TestAdapter>::new();
+    list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element3) });
+    list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+    list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+
+    let removed_element = unsafe { list.remove_element(NonNull::new(&raw mut element2).unwrap()) };
+    unittest::assert_true!(removed_element.is_some());
+    unittest::assert_eq!(
+        removed_element.unwrap().consume(),
+        NonNull::new(&raw mut element2).unwrap()
+    );
+
+    validate_list(&list, &[1, 3])?;
+    drain_list(&mut list);
+    Ok(())
+}
+
+#[test]
+fn remove_element_can_remove_tail() -> unittest::Result<()> {
+    let mut element1 = TestMember {
+        value: 1,
+        link: Link::new(),
+    };
+    let mut element2 = TestMember {
+        value: 2,
+        link: Link::new(),
+    };
+    let mut element3 = TestMember {
+        value: 3,
+        link: Link::new(),
+    };
+
+    let mut list = ForeignList::<TestMember, TestAdapter>::new();
+    list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element3) });
+    list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element2) });
+    list.push_front(unsafe { ForeignBox::new_from_ptr(&raw mut element1) });
+
+    let removed_element = unsafe { list.remove_element(NonNull::new(&raw mut element3).unwrap()) };
+    unittest::assert_true!(removed_element.is_some());
+    unittest::assert_eq!(
+        removed_element.unwrap().consume(),
+        NonNull::new(&raw mut element3).unwrap()
+    );
+
+    validate_list(&list, &[1, 2])?;
+    drain_list(&mut list);
+    Ok(())
 }
 
 #[test]

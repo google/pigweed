@@ -64,6 +64,16 @@ impl<T, A: Adapter> ForeignList<T, A> {
     pub fn for_each<E, F: FnMut(&T) -> Result<(), E>>(&self, callback: F) -> Result<(), E> {
         unsafe { self.list.for_each(callback) }
     }
+
+    /// # Safety
+    /// Call ensures the element is a valid point to an instance of T.
+    pub unsafe fn remove_element(&mut self, element: NonNull<T>) -> Option<ForeignBox<T>> {
+        unsafe {
+            self.list
+                .unlink_element(element)
+                .map(|element| ForeignBox::new(element))
+        }
+    }
 }
 
 impl<T: Ord, A: Adapter> ForeignList<T, A> {

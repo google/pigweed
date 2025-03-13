@@ -14,7 +14,7 @@
 
 #![no_std]
 #![no_main]
-use core::mem::offset_of;
+use core::{mem::offset_of, ptr::NonNull};
 
 use list::*;
 use unittest::test;
@@ -144,7 +144,7 @@ fn unlink_removes_head_correctly() -> unittest::Result<()> {
     unsafe { list.push_front_unchecked(&mut element2) };
     unsafe { list.push_front_unchecked(&mut element1) };
 
-    unsafe { list.unlink_element(&mut element1) };
+    unsafe { list.unlink_element_unchecked(&mut element1) };
 
     unsafe { validate_list(&list, &[2, 3]) }
 }
@@ -169,7 +169,7 @@ fn unlink_removes_tail_correctly() -> unittest::Result<()> {
     unsafe { list.push_front_unchecked(&mut element2) };
     unsafe { list.push_front_unchecked(&mut element1) };
 
-    unsafe { list.unlink_element(&mut element3) };
+    unsafe { list.unlink_element_unchecked(&mut element3) };
 
     unsafe { validate_list(&list, &[1, 2]) }
 }
@@ -194,9 +194,25 @@ fn unlink_removes_middle_correctly() -> unittest::Result<()> {
     unsafe { list.push_front_unchecked(&mut element2) };
     unsafe { list.push_front_unchecked(&mut element1) };
 
-    unsafe { list.unlink_element(&mut element2) };
+    unsafe { list.unlink_element_unchecked(&mut element2) };
 
     unsafe { validate_list(&list, &[1, 3]) }
+}
+
+#[test]
+fn unlink_fails_non_inserted_element() -> unittest::Result<()> {
+    let mut element1 = TestMember {
+        value: 1,
+        link: Link::new(),
+    };
+
+    let mut list = UnsafeList::<TestMember, TestAdapter>::new();
+
+    unittest::assert_eq!(
+        unsafe { list.unlink_element(NonNull::new(&raw mut element1).unwrap()) },
+        None
+    );
+    Ok(())
 }
 
 #[test]

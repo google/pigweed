@@ -266,7 +266,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
     /// members.
     /// It is up to the caller to ensure the element is in the list
     /// It is up to the caller to ensure the element is non-null.
-    pub unsafe fn unlink_element(&mut self, element: *mut T) {
+    pub unsafe fn unlink_element_unchecked(&mut self, element: *mut T) {
         let element = NonNull::new_unchecked(element);
         let link_ptr = Self::get_link_ptr(element);
 
@@ -291,6 +291,17 @@ impl<T, A: Adapter> UnsafeList<T, A> {
 
         (*link_ptr.as_ptr()).set_next(None);
         (*link_ptr.as_ptr()).set_prev(None);
+    }
+
+    /// # Safety
+    /// Call ensures the element is a valid point to an instance of T.
+    pub unsafe fn unlink_element(&mut self, element: NonNull<T>) -> Option<NonNull<T>> {
+        if (*Self::get_link_ptr(element).as_ptr()).is_linked() {
+            self.unlink_element_unchecked(element.as_ptr());
+            Some(element)
+        } else {
+            None
+        }
     }
 
     /// # Safety
@@ -340,7 +351,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
             let next = (*cur_ptr.as_ptr()).get_next();
 
             if !callback(&mut *element) {
-                self.unlink_element(element);
+                self.unlink_element_unchecked(element);
             }
 
             cur = next;
@@ -360,7 +371,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
 
         let element = Self::get_element_mut(cur);
 
-        self.unlink_element(element);
+        self.unlink_element_unchecked(element);
         Some(element)
     }
 }
