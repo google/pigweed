@@ -25,13 +25,11 @@ py_library(
         "pw_config_loader/__init__.py",
         "pw_config_loader/find_config.py",
         "pw_config_loader/json_config_loader_mixin.py",
-        "pw_config_loader/toml_config_loader_mixin.py",
         "pw_config_loader/yaml_config_loader_mixin.py",
     ],
     imports = ["."],
     deps = [
         "@python_packages//pyyaml",
-        "@python_packages//toml",
     ],
 )
 

@@ -26,7 +26,6 @@ pw_python_package("py") {
     "pw_config_loader/__init__.py",
     "pw_config_loader/find_config.py",
     "pw_config_loader/json_config_loader_mixin.py",
-    "pw_config_loader/toml_config_loader_mixin.py",
     "pw_config_loader/yaml_config_loader_mixin.py",
   ]
   python_deps = [ "$dir_pw_env_setup/py" ]

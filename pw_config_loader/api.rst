@@ -19,12 +19,6 @@ pw_config_loader.json_config_loader_mixin
    :members:
 
 -----------------------------------------
-pw_config_loader.toml_config_loader_mixin
------------------------------------------
-.. automodule:: pw_config_loader.toml_config_loader_mixin
-   :members:
-
------------------------------------------
 pw_config_loader.yaml_config_loader_mixin
 -----------------------------------------
 .. automodule:: pw_config_loader.yaml_config_loader_mixin
