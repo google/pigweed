@@ -53,11 +53,13 @@ mod inner {
     impl LinkInner {
         pub const NEXT_OFFSET: usize = offset_of!(LinkInner, next);
         pub const PREV_OFFSET: usize = offset_of!(LinkInner, prev);
+        pub const UNLINKED_VALUE: Option<NonNull<Link>> =
+            Some(unsafe { NonNull::new_unchecked(usize::MAX as *mut Link) });
 
         pub const fn new() -> Self {
             Self {
-                next: None,
-                prev: None,
+                next: Self::UNLINKED_VALUE,
+                prev: Self::UNLINKED_VALUE,
                 _pin: PhantomPinned,
             }
         }
@@ -93,11 +95,16 @@ impl Link {
     }
 
     pub fn is_unlinked(&self) -> bool {
-        self.get_next().is_none() && self.get_prev().is_none()
+        self.get_next() == LinkInner::UNLINKED_VALUE && self.get_prev() == LinkInner::UNLINKED_VALUE
     }
 
     pub fn is_linked(&self) -> bool {
         !self.is_unlinked()
+    }
+
+    fn set_unlinked(&mut self) {
+        self.set_next(LinkInner::UNLINKED_VALUE);
+        self.set_prev(LinkInner::UNLINKED_VALUE);
     }
 
     #[inline]
@@ -170,6 +177,16 @@ impl<T, A: Adapter> UnsafeList<T, A> {
 
     unsafe fn get_element_mut(link: NonNull<Link>) -> *mut T {
         link.byte_sub(A::LINK_OFFSET).as_ptr() as *mut T
+    }
+
+    /// Returns true if element is in **ANY** list that uses this list's adapter.
+    ///
+    /// # Safety
+    /// `element` must be a valid, non-null pointer.
+    pub unsafe fn is_element_linked(&mut self, element: *mut T) -> bool {
+        let element = NonNull::new_unchecked(element);
+        let link_ptr = Self::get_link_ptr(element);
+        (*link_ptr.as_ptr()).is_linked()
     }
 
     /// unchecked means:
@@ -289,8 +306,7 @@ impl<T, A: Adapter> UnsafeList<T, A> {
             Some(next_ptr) => (*next_ptr.as_ptr()).set_prev(prev),
         }
 
-        (*link_ptr.as_ptr()).set_next(None);
-        (*link_ptr.as_ptr()).set_prev(None);
+        (*link_ptr.as_ptr()).set_unlinked();
     }
 
     /// # Safety

@@ -85,6 +85,25 @@ fn new_list_is_empty() -> unittest::Result<()> {
 }
 
 #[test]
+fn single_element_list_is_non_empty_and_linked() -> unittest::Result<()> {
+    let mut element1 = TestMember {
+        value: 1,
+        link: Link::new(),
+    };
+    let mut list = UnsafeList::<TestMember, TestAdapter>::new();
+
+    unittest::assert_true!(unsafe { list.is_empty() });
+    unittest::assert_false!(unsafe { list.is_element_linked(&raw mut element1) });
+
+    unsafe { list.push_front_unchecked(&raw mut element1) };
+
+    unittest::assert_false!(unsafe { list.is_empty() });
+    unittest::assert_true!(unsafe { list.is_element_linked(&raw mut element1) });
+
+    Ok(())
+}
+
+#[test]
 fn push_front_adds_in_correct_order() -> unittest::Result<()> {
     let mut element1 = TestMember {
         value: 1,
