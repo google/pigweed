@@ -68,4 +68,6 @@ pw_python_venv("downstream_tools_build_venv") {
 pw_python_zip_with_setup("downstream_project_bundle") {
   packages = [ ":downstream_project_tools" ]
   venv = ":downstream_tools_build_venv"
+  setup_sh = "custom_setup.sh"
+  setup_bat = "custom_setup.bat"
 }

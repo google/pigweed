@@ -415,6 +415,12 @@ Arguments
 - ``dirs`` - An optional list of directories to include in the generated
   ``.zip``, formatted the same was as the ``dirs`` argument to ``pw_zip``
   targets.
+- ``venv`` - The GN build venv to use as a base for transitive Python package
+  dependencies. Defaults to the ``pw_build_PYTHON_BUILD_VENV`` GN arg.
+- ``setup_sh`` - An optional setup.sh script to be included with the
+  zip. Defaults to the ``//pw_build/python_dist/setup.sh`` file.
+- ``setup_bat`` - An optional setup.bat script to be included with the
+  zip. Defaults to the ``//pw_build/python_dist/setup.bat`` file.
 
 Example
 -------

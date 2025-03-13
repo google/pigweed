@@ -110,9 +110,24 @@ template("pw_python_wheels") {
 #       formatted the same was as the 'inputs' argument to pw_zip targets.
 #   dirs: An optional list of directories to include in the generated .zip,
 #       formatted the same way as the 'dirs' argument to pw_zip targets.
+#   venv: The GN build venv to use as a base for transitive Python
+#       package dependencies. Defaults to the
+#       pw_build_PYTHON_BUILD_VENV GN arg.
+#   setup_sh: An optional setup.sh script to be included with the
+#       zip. Defaults to the //pw_build/python_dist/setup.sh file.
+#   setup_bat: An optional setup.bat script to be included with the
+#       zip. Defaults to the //pw_build/python_dist/setup.bat file.
 template("pw_python_zip_with_setup") {
   _outer_name = target_name
   _zip_path = "${target_out_dir}/${target_name}.zip"
+  _setup_bat = "$dir_pw_build/python_dist/setup.bat"
+  _setup_sh = "$dir_pw_build/python_dist/setup.sh"
+  if (defined(invoker.setup_sh)) {
+    _setup_sh = invoker.setup_sh
+  }
+  if (defined(invoker.setup_bat)) {
+    _setup_bat = invoker.setup_bat
+  }
 
   _inputs = []
   if (defined(invoker.inputs)) {
@@ -139,8 +154,8 @@ template("pw_python_zip_with_setup") {
   pw_zip(target_name) {
     forward_variables_from(invoker, [ "deps" ])
     inputs = _inputs + [
-               "$dir_pw_build/python_dist/setup.bat > /${target_name}/",
-               "$dir_pw_build/python_dist/setup.sh > /${target_name}/",
+               "${_setup_bat} > /${target_name}/",
+               "${_setup_sh} > /${target_name}/",
              ]
 
     dirs = _dirs + [ "$target_out_dir/$target_name.wheels/ > /$target_name/python_wheels/" ]
