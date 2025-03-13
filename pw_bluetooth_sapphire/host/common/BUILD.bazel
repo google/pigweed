@@ -43,6 +43,7 @@ cc_library(
     hdrs = [
         "public/pw_bluetooth_sapphire/internal/host/common/advertising_data.h",
         "public/pw_bluetooth_sapphire/internal/host/common/bidirectional_map.h",
+        "public/pw_bluetooth_sapphire/internal/host/common/bidirectional_multimap.h",
         "public/pw_bluetooth_sapphire/internal/host/common/bounded_inspect_list_node.h",
         "public/pw_bluetooth_sapphire/internal/host/common/byte_buffer.h",
         "public/pw_bluetooth_sapphire/internal/host/common/device_address.h",
@@ -121,6 +122,7 @@ pw_cc_test(
     srcs = [
         "advertising_data_test.cc",
         "bidirectional_map_test.cc",
+        "bidirectional_multimap_test.cc",
         "bounded_inspect_list_node_test.cc",
         "byte_buffer_test.cc",
         "device_address_test.cc",
