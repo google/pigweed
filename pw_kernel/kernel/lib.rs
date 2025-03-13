@@ -179,9 +179,7 @@ fn test_thread_entry_a(_arg: usize) {
         let mut counter = TEST_COUNTER.lock();
         info!("Thread A incrementing counter");
         *counter += 1;
-        for _ in 0..100 {
-            scheduler::TICK_WAIT_QUEUE.lock().wait();
-        }
+        scheduler::sleep_until(Clock::now() + Duration::from_secs(1));
     }
 }
 

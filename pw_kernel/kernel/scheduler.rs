@@ -27,7 +27,7 @@ use crate::timer::{Instant, TimerCallback, TimerQueue};
 
 mod locks;
 
-pub use locks::{SchedLock, SchedLockGuard, WaitQueueLock};
+pub use locks::{SchedLockGuard, WaitQueueLock};
 
 const WAIT_QUEUE_DEBUG: bool = false;
 macro_rules! wait_queue_debug {
@@ -405,7 +405,6 @@ pub fn tick(now: Instant) {
     //info!("tick {} ms", time_ms);
 
     TimerQueue::process_queue(now);
-    TICK_WAIT_QUEUE.lock().wake_one();
 
     // TODO: dynamically deal with time slice for this thread and put it
     // at the head or tail depending.
@@ -434,6 +433,12 @@ pub fn exit_thread() -> ! {
     #[allow(clippy::empty_loop)]
     loop {}
 }
+
+pub fn sleep_until(deadline: Instant) {
+    let wait_queue = WaitQueueLock::new(());
+    let _ = wait_queue.lock().wait_until(deadline);
+}
+
 pub struct WaitQueue {
     queue: ForeignList<Thread, ThreadListAdapter>,
 }
@@ -585,5 +590,3 @@ impl SchedLockGuard<'_, WaitQueue> {
         (self, unsafe { result.get().read_volatile() })
     }
 }
-
-pub static TICK_WAIT_QUEUE: SchedLock<WaitQueue> = SchedLock::new(WaitQueue::new());
