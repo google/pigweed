@@ -21,6 +21,7 @@ Checks: >
     bugprone-bool-pointer-implicit-conversion,
     bugprone-dangling-handle,
     bugprone-fold-init-type,
+    bugprone-forwarding-reference-overload,
     bugprone-forward-declaration-namespace,
     bugprone-inaccurate-erase,
     bugprone-macro-repeated-side-effects,

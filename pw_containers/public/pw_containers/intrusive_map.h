@@ -122,9 +122,8 @@ class IntrusiveMap {
   /// @param  compare   Function with the signature `bool(Key, Key)` that is
   ///                   used to order items.
   template <typename Comparator>
-  constexpr explicit IntrusiveMap(Comparator&& compare)
-      : IntrusiveMap(std::forward<Comparator>(compare),
-                     [](const T& t) { return t.key(); }) {}
+  constexpr explicit IntrusiveMap(Comparator compare)
+      : IntrusiveMap(std::move(compare), [](const T& t) { return t.key(); }) {}
 
   /// Constructs an empty map of items.
   ///

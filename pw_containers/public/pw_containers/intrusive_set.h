@@ -116,10 +116,10 @@ class IntrusiveSet {
   /// @param    Compare   Function with the signature `bool(T, T)` that is
   ///                     used to order items.
   template <typename Comparator>
-  constexpr explicit IntrusiveSet(Comparator&& compare)
-      : tree_(true,
-              std::forward<Comparator>(compare),
-              [](const T& t) -> const T& { return t; }) {
+  constexpr explicit IntrusiveSet(Comparator compare)
+      : tree_(true, std::move(compare), [](const T& t) -> const T& {
+          return t;
+        }) {
     CheckItemType();
   }
 

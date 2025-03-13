@@ -121,8 +121,8 @@ class IntrusiveMultiMap {
   /// @param  get_key   Function with signature `Key(const T&)` that returns the
   ///                   value that items are sorted on.
   template <typename Comparator>
-  constexpr explicit IntrusiveMultiMap(Comparator&& compare)
-      : IntrusiveMultiMap(std::forward<Comparator>(compare),
+  constexpr explicit IntrusiveMultiMap(Comparator compare)
+      : IntrusiveMultiMap(std::move(compare),
                           [](const T& t) { return t.key(); }) {}
 
   /// Constructs an empty map of items.

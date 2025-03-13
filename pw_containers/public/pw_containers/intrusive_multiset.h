@@ -111,10 +111,10 @@ class IntrusiveMultiSet {
   /// @param    Compare   Function with the signature `bool(T, T)` that is
   ///                     used to order items.
   template <typename Comparator>
-  constexpr explicit IntrusiveMultiSet(Comparator&& compare)
-      : tree_(false,
-              std::forward<Comparator>(compare),
-              [](const T& t) -> const T& { return t; }) {
+  constexpr explicit IntrusiveMultiSet(Comparator compare)
+      : tree_(false, std::move(compare), [](const T& t) -> const T& {
+          return t;
+        }) {
     CheckItemType();
   }
 
