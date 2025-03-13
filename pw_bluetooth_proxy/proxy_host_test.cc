@@ -1932,6 +1932,9 @@ TEST_F(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
           capture.released_packets[capture.sends_called] = std::move(packet);
         } else {
           // Reuse only first packet slot after kMaxSends.
+          // TODO: https://pwbug.dev/402543431 - Move to using vector rather
+          // than new/delete against array slot.
+          new (&(capture.released_packets[0])) H4PacketWithH4();
           capture.released_packets[0] = std::move(packet);
         }
         ++capture.sends_called;
@@ -1955,6 +1958,8 @@ TEST_F(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
 
   // Repeatedly free and reoccupy first buffer.
   for (size_t i = 0; i < kMaxSends; ++i) {
+    // TODO: https://pwbug.dev/402543431 - Move to using vector rather
+    // than new/delete against array slow.
     capture.released_packets[0].~H4PacketWithH4();
     EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
               PW_STATUS_OK);
