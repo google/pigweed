@@ -64,6 +64,30 @@ pw::containers::to_array
 In C++20, it is an alias for ``std::to_array``. It converts a C array to a
 ``std::array``.
 
+----------
+pw::all_of
+----------
+``pw::all_of`` is a C++17 compatible implementation of C++20's
+`std::all_of <https://en.cppreference.com/w/cpp/algorithm/all_any_none_of>`_.
+In C++20, it is an alias for ``std::all_of``. This backports the ``constexpr``
+overload of the function.
+
+----------
+pw::any_of
+----------
+``pw::any_of`` is a C++17 compatible implementation of C++20's
+`std::any_of <https://en.cppreference.com/w/cpp/algorithm/all_any_none_of>`_.
+In C++20, it is an alias for ``std::any_of``. This backports the ``constexpr``
+overload of the function.
+
+-----------
+pw::find_if
+-----------
+``pw::find_if`` is a C++17 compatible implementation of C++20's
+`std::find_if <https://en.cppreference.com/w/cpp/algorithm/find>`_. In C++20, it
+is an alias for ``std::find_if``. This backports the ``constexpr`` overload of
+the function.
+
 -------------------------
 pw_containers/algorithm.h
 -------------------------
@@ -95,3 +119,6 @@ pw_containers/algorithm.h
 .. doxygenfunction:: pw::containers::Search(Sequence1& sequence, Sequence2& subsequence, BinaryPredicate&& pred)
 .. doxygenfunction:: pw::containers::SearchN(Sequence& sequence, Size count, T&& value)
 .. doxygenfunction:: pw::containers::SearchN(Sequence& sequence, Size count, T&& value, BinaryPredicate&& pred)
+.. doxygenfunction:: pw::all_of(InputIt first, InputIt last, Predicate pred)
+.. doxygenfunction:: pw::any_of(InputIt first, InputIt last, Predicate pred)
+.. doxygenfunction:: pw::find_if(InputIt first, InputIt last, Predicate pred)

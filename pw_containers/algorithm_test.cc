@@ -25,6 +25,7 @@
 #include "pw_containers/intrusive_list.h"
 #include "pw_containers/vector.h"
 #include "pw_span/span.h"
+#include "pw_unit_test/constexpr.h"
 #include "pw_unit_test/framework.h"
 
 namespace {
@@ -302,3 +303,61 @@ TEST_F(NonMutatingTest, SearchN) { pw::containers::SearchN(span_, 3, 1); }
 TEST_F(NonMutatingTest, SearchNWithPredicate) {
   pw::containers::SearchN(span_, 3, 1, BinPredicate);
 }
+
+static constexpr std::array<int, 5> kConstExprTestAllOfValues = {5, 6, 7, 8, 9};
+PW_CONSTEXPR_TEST(ConstExprTest, AllOf, {
+  PW_TEST_EXPECT_TRUE(pw::all_of(kConstExprTestAllOfValues.begin(),
+                                 kConstExprTestAllOfValues.end(),
+                                 [](auto v) { return v > 2; }))
+      << "all_of was not evaluated at compile time";
+
+  PW_TEST_EXPECT_TRUE(pw::all_of(kConstExprTestAllOfValues.begin(),
+                                 kConstExprTestAllOfValues.end(),
+                                 [](auto v) { return v < 10; }))
+      << "all_of was not evaluated at compile time";
+
+  PW_TEST_EXPECT_TRUE(!pw::all_of(kConstExprTestAllOfValues.begin(),
+                                  kConstExprTestAllOfValues.end(),
+                                  [](auto v) { return v > 10; }))
+      << "all_of was not evaluated at compile time";
+});
+
+static constexpr std::array<int, 5> kConstExprTestAnyOfValues = {1, 2, 3, 4, 5};
+PW_CONSTEXPR_TEST(ConstExprTest, AnyOf, {
+  PW_TEST_EXPECT_TRUE(pw::any_of(kConstExprTestAnyOfValues.begin(),
+                                 kConstExprTestAnyOfValues.end(),
+                                 [](auto v) { return v > 3; }))
+      << "any_of was not evaluated at compile time";
+
+  PW_TEST_EXPECT_TRUE(pw::any_of(kConstExprTestAnyOfValues.begin(),
+                                 kConstExprTestAnyOfValues.end(),
+                                 [](auto v) { return v == 1; }))
+      << "any_of was not evaluated at compile time";
+
+  PW_TEST_EXPECT_TRUE(!pw::any_of(kConstExprTestAnyOfValues.begin(),
+                                  kConstExprTestAnyOfValues.end(),
+                                  [](auto v) { return v > 10; }))
+      << "any_of was not evaluated at compile time";
+});
+
+static constexpr std::array<int, 5> kConstExprTestFindIfValues = {
+    1, 2, 3, 4, 5};
+PW_CONSTEXPR_TEST(ConstExprTest, FindIf, {
+  constexpr auto it = pw::find_if(kConstExprTestFindIfValues.begin(),
+                                  kConstExprTestFindIfValues.end(),
+                                  [](auto v) { return v > 3; });
+  PW_TEST_EXPECT_EQ(it, kConstExprTestFindIfValues.begin() + 3)
+      << "find_if was not evaluated at compile time";
+
+  constexpr auto it2 = pw::find_if(kConstExprTestFindIfValues.begin(),
+                                   kConstExprTestFindIfValues.end(),
+                                   [](auto v) { return v == 1; });
+  PW_TEST_EXPECT_EQ(it2, kConstExprTestFindIfValues.begin())
+      << "find_if was not evaluated at compile time";
+
+  constexpr auto it3 = pw::find_if(kConstExprTestFindIfValues.begin(),
+                                   kConstExprTestFindIfValues.end(),
+                                   [](auto v) { return v > 10; });
+  PW_TEST_EXPECT_EQ(it3, kConstExprTestFindIfValues.end())
+      << "find_if was not evaluated at compile time";
+});

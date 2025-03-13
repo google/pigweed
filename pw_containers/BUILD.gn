@@ -265,6 +265,7 @@ pw_test("algorithm_test") {
     ":flat_map",
     ":intrusive_list",
     ":vector",
+    "$dir_pw_unit_test:constexpr",
     dir_pw_span,
   ]
 

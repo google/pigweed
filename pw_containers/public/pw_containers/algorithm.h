@@ -43,7 +43,8 @@
 /// to which the function is applied, `Pred` indicates the predicate object type
 /// to be used by the function and `T` indicates the applicable element type.
 
-namespace pw::containers {
+namespace pw {
+namespace containers {
 
 /// Container-based version of the <algorithm> `std::all_of()` function to
 /// test if all elements within a container satisfy a condition.
@@ -323,4 +324,48 @@ internal_algorithm::ContainerIter<Sequence> SearchN(Sequence& sequence,
                        std::forward<BinaryPredicate>(pred));
 }
 
-}  // namespace pw::containers
+}  // namespace containers
+
+#if defined(__cpp_lib_constexpr_algorithms)
+using std::all_of;
+using std::any_of;
+using std::find_if;
+#else
+
+/// Backport of <algorithm>'s `constexprt std::all_of()` so it's available in
+/// C++17.
+template <typename InputIt, typename Predicate>
+constexpr bool all_of(InputIt first, InputIt last, Predicate pred) {
+  for (; first != last; ++first) {
+    if (!pred(*first)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/// Backport of <algorithm>'s `constexprt std::any_of()` so it's available in
+/// C++17.
+template <typename InputIt, typename Predicate>
+constexpr bool any_of(InputIt first, InputIt last, Predicate pred) {
+  for (; first != last; ++first) {
+    if (pred(*first)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Backport of <algorithm>'s `constexprt std::find_if()` so it's available in
+/// C++17.
+template <typename InputIt, typename Predicate>
+constexpr InputIt find_if(InputIt first, InputIt last, Predicate pred) {
+  for (; first != last; ++first) {
+    if (pred(*first)) {
+      return first;
+    }
+  }
+  return last;
+}
+#endif
+}  // namespace pw
