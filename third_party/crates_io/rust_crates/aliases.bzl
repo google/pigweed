@@ -216,6 +216,45 @@ def make_crate_aliases(name):
         visibility = ["//visibility:public"],
     )
     native.alias(
+        name = "riscv",
+        target_compatible_with = select({
+            ":no_std": [],
+            ":std": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        actual = select({
+            ":no_std": "@crates_no_std//:riscv",
+            ":std": "@crates_std//:riscv",
+        }),
+        visibility = ["//visibility:public"],
+    )
+    native.alias(
+        name = "riscv-rt",
+        target_compatible_with = select({
+            ":no_std": [],
+            ":std": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        actual = select({
+            ":no_std": "@crates_no_std//:riscv-rt",
+            ":std": "@crates_std//:riscv-rt",
+        }),
+        visibility = ["//visibility:public"],
+    )
+    native.alias(
+        name = "riscv-semihosting",
+        target_compatible_with = select({
+            ":no_std": [],
+            ":std": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        actual = select({
+            ":no_std": "@crates_no_std//:riscv-semihosting",
+            ":std": "@crates_std//:riscv-semihosting",
+        }),
+        visibility = ["//visibility:public"],
+    )
+    native.alias(
         name = "rp235x-hal",
         target_compatible_with = select({
             ":no_std": [],

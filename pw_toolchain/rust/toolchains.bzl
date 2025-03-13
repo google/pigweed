@@ -62,6 +62,16 @@ EXTRA_TARGETS = [
         "cpu": "armv8-m",
         "triple": "thumbv8m.main-none-eabihf",
     },
+    {
+        "build_std": True,
+        "cpu": "riscv32",
+        "triple": "riscv32imc-unknown-none-elf",
+    },
+    {
+        "build_std": True,
+        "cpu": "riscv32",
+        "triple": "riscv32imac-unknown-none-elf",
+    },
 ]
 
 CHANNELS = [

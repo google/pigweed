@@ -113,6 +113,10 @@ single_version_override(
         # rust_analyzer: Support passing a --config option to Bazel
         # https://github.com/bazelbuild/rules_rust/pull/3254
         "//pw_rust/bazel_patches:0005-rust_analyzer-Support-passing-a-config-option-to-Baz.patch",
+
+        # Adds more riscv32 triples
+        # TODO: https://pwbug.dev/401293971 - Upstream below patch
+        "//pw_rust/bazel_patches:0006-Add-riscv32-triples.patch",
     ],
 )
 
@@ -218,6 +222,8 @@ register_toolchains(
     "//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4",
     "//pw_toolchain/host_clang:host_cc_toolchain_linux",
     "//pw_toolchain/host_clang:host_cc_toolchain_macos",
+    "//pw_toolchain/riscv_clang:riscv_clang_cc_toolchain_rv32imc",
+    "//pw_toolchain/riscv_clang:riscv_clang_cc_toolchain_rv32imac",
     dev_dependency = True,
 )
 
@@ -254,6 +260,8 @@ crate.from_cargo(
         "thumbv6m-none-eabi",
         "thumbv7m-none-eabi",
         "thumbv8m.main-none-eabihf",
+        "riscv32imc-unknown-none-elf",
+        "riscv32imac-unknown-none-elf",
     ],
 )
 use_repo(crate, "crates_no_std")

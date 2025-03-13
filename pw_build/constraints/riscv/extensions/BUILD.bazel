@@ -12,30 +12,28 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-[package]
-name = "crates_no_std"
-version = "0.1.0"
-edition = "2021"
+load("//pw_build:compatibility.bzl", "boolean_constraint_value")
 
-[lib]
-path = "fake.rs"
+package(default_visibility = ["//visibility:public"])
 
-[dependencies]
-compiler_builtins = "0.1.142"
-cortex-m = "0.7.7"
-cortex-m-rt = "0.7.5"
-cortex-m-semihosting = "0.5.0"
-embedded-io = "0.6.1"
-intrusive-collections = { version = "0.9.7", default-features = false }
-panic-halt = "1.0.0"
-paste = "1.0.15"
-riscv = "0.12.1"
-riscv-rt = "0.12.2"
-riscv-semihosting = "0.1.3"
-rp235x-hal = { version = "0.3.0", features = [
-  "binary-info",
-  "critical-section-impl",
-  "rt",
-] }
+licenses(["notice"])
 
-[features]
+# A list of the RISC-V processor extensions known to the pigweed
+# toolchains. These can be used in the platform to define the
+# capabilities of the architecture.
+
+boolean_constraint_value(
+    name = "A",
+)
+
+boolean_constraint_value(
+    name = "C",
+)
+
+boolean_constraint_value(
+    name = "I",
+)
+
+boolean_constraint_value(
+    name = "M",
+)

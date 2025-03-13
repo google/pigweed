@@ -264,7 +264,7 @@
     },
     "//pw_toolchain/rust:extensions.bzl%pw_rust": {
       "general": {
-        "bzlTransitiveDigest": "akI32f2+IqB8ur61VxgIdUnfZam+boqLewhSLn1Q5Vs=",
+        "bzlTransitiveDigest": "8gdOWk2uRqcfjq/0Vg+c53atOLXGto0d6XTb5/sXDQE=",
         "usagesDigest": "cJImm0LyCIYoQkWs6+VvdMjzjfi5Oc+IDwVYEr2keig=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -3943,7 +3943,7 @@
     },
     "@@rules_rust+//crate_universe/private:internal_extensions.bzl%cu": {
       "general": {
-        "bzlTransitiveDigest": "lJV6ue6os61tgLF5oOAfBggcKAB3eirVn/Xj7R1cQpQ=",
+        "bzlTransitiveDigest": "9BKLEnT4s4Y5HqP8NtmJ/rcHVvN3uNm34iWCxmEkIWA=",
         "usagesDigest": "n9K7ly55ogh0e0ZhNzZBlusPSFC/o5aliHkw+zHwGfc=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -7207,7 +7207,7 @@
     },
     "@@rules_rust+//rust/private:internal_extensions.bzl%i": {
       "general": {
-        "bzlTransitiveDigest": "/ijMz+niHoio5U+GPdeNtwnKah3yTb6MZYifGWuYH/8=",
+        "bzlTransitiveDigest": "FvnQmSaaoofGieXk8FppJM9wIT5qfy2gXljS0MsDZSU=",
         "usagesDigest": "8daAc/SRar7Mu8+uVH3y5t7CY0RsiqVBIznBuEjXJ4w=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},

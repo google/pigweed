@@ -1,0 +1,207 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+cc_args(
+    name = "cxx_compiler_flags",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        "-fno-register-global-dtors-with-atexit",
+        "-fno-c++-static-destructors",
+        "-fno-use-cxa-atexit",
+        "-fno-threadsafe-statics",
+        "-D_LIBCPP_REMOVE_TRANSITIVE_INCLUDES",
+    ],
+    data = [
+        "//pw_libcxx:cxx_lib_configs",
+    ],
+)
+
+cc_args(
+    name = "common",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+)
+
+cc_args(
+    name = "common_link",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = [
+        "-nostdlib++",
+        "-nostartfiles",
+        "-Wl,--gc-sections",
+    ],
+)
+
+# Additional riscv_clang specific warning flags
+cc_args(
+    name = "warnings",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        # This can't be in common, because proto headers in host builds trigger
+        "-Wundef",
+    ],
+)
+
+cc_toolchain(
+    name = "riscv_clang_toolchain_rv32",
+    args = [
+        ":cxx_compiler_flags",
+        ":common",
+        ":common_link",
+        ":warnings",
+        ":riscv32-unknown-none-elf",
+        "//pw_toolchain/cc/args:oz",
+        "//pw_toolchain/cc/args:debugging",
+        "//pw_toolchain/cc/args:reduced_size",
+        "//pw_toolchain/cc/args:no_canonical_prefixes",
+        "//pw_toolchain/cc/args:no_rtti",
+        "//pw_toolchain/cc/args:wno_register",
+        "//pw_toolchain/cc/args:wnon_virtual_dtor",
+        "//pw_toolchain/cc/args:common_warnings",
+        "//pw_toolchain/cc/args:color_diagnostics",
+    ] + select({
+        ":imac": [
+            ":rv32imac",
+        ],
+        ":imc": [
+            ":rv32imc",
+        ],
+        "//conditions:default": [],
+    }),
+    enabled_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//pw_toolchain/cc/capability:compiler_is_clang",
+        "//pw_toolchain/cc/capability:linker_is_clang",
+    ] + select({
+        "//pw_toolchain/cc:c++17_enabled": ["//pw_toolchain/cc/args:c++17_feature"],
+        "//conditions:default": [],
+    }) + select({
+        "//pw_toolchain/cc:c++20_enabled": ["//pw_toolchain/cc/args:c++20_feature"],
+        "//conditions:default": [],
+    }),
+    tags = ["manual"],  # Don't try to build this in wildcard builds.
+    target_compatible_with = select({
+        ":imac": [],
+        ":imc": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    tool_map = "@llvm_toolchain_device//:all_tools",
+    visibility = ["//pw_toolchain:__pkg__"],
+)
+
+cc_args(
+    name = "riscv32-unknown-none-elf",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=riscv32-unknown-none-elf",
+    ],
+)
+
+# Note: Needing to spell out each group of extensions isn't ideal
+# as it won't scale.  This is especially true for the config_setting_group
+# which requires specifying the entire set, not just the supported set
+# to avoid ambiguity.
+# -------------------------------------------------------------------
+# IMC
+# -------------------------------------------------------------------
+selects.config_setting_group(
+    name = "imc",
+    match_all = [
+        "//pw_build/constraints/riscv/extensions:I",
+        "//pw_build/constraints/riscv/extensions:M",
+        "//pw_build/constraints/riscv/extensions:C",
+        "//pw_build/constraints/riscv/extensions:A.not",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+cc_args(
+    name = "rv32imc",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-march=rv32imc",
+    ],
+)
+
+toolchain(
+    name = "riscv_clang_cc_toolchain_rv32imc",
+    target_compatible_with = [
+        ":imc",
+        "@platforms//cpu:riscv32",
+    ],
+    toolchain = ":riscv_clang_toolchain_rv32",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# -------------------------------------------------------------------
+# IMAC
+# -------------------------------------------------------------------
+selects.config_setting_group(
+    name = "imac",
+    match_all = [
+        "//pw_build/constraints/riscv/extensions:I",
+        "//pw_build/constraints/riscv/extensions:M",
+        "//pw_build/constraints/riscv/extensions:A",
+        "//pw_build/constraints/riscv/extensions:C",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+cc_args(
+    name = "rv32imac",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-march=rv32imac",
+    ],
+)
+
+toolchain(
+    name = "riscv_clang_cc_toolchain_rv32imac",
+    target_compatible_with = [
+        ":imac",
+        "@platforms//cpu:riscv32",
+    ],
+    toolchain = ":riscv_clang_toolchain_rv32",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
