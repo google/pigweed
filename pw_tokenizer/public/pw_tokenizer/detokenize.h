@@ -36,6 +36,11 @@
 #include "pw_stream/stream.h"
 #include "pw_tokenizer/internal/decode.h"
 #include "pw_tokenizer/token_database.h"
+#include "pw_tokenizer/tokenize.h"
+
+#if PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+#include <regex>
+#endif  // PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
 
 namespace pw::tokenizer {
 
@@ -48,13 +53,14 @@ using DomainTokenEntriesMap = std::unordered_map<
     std::string,
     std::unordered_map<uint32_t, std::vector<TokenizedStringEntry>>>;
 
+/// Decoding result with the date removed, for sorting.
+using DecodingResult = std::pair<DecodedFormatString, uint32_t>;
+
 /// A string that has been detokenized. This class tracks all possible results
 /// if there are token collisions.
 class DetokenizedString {
  public:
-  DetokenizedString(uint32_t token,
-                    const span<const TokenizedStringEntry>& entries,
-                    const span<const std::byte>& arguments);
+  DetokenizedString(uint32_t token, std::vector<DecodingResult> results);
 
   DetokenizedString() : has_token_(false) {}
 
@@ -91,11 +97,7 @@ class Detokenizer {
   explicit Detokenizer(const TokenDatabase& database);
 
   /// Constructs a detokenizer by directly passing the parsed database.
-  explicit Detokenizer(
-      std::unordered_map<
-          std::string,
-          std::unordered_map<uint32_t, std::vector<TokenizedStringEntry>>>&&
-          database)
+  explicit Detokenizer(DomainTokenEntriesMap&& database)
       : database_(std::move(database)) {}
 
   /// Constructs a detokenizer from the `.pw_tokenizer.entries` section of an
@@ -116,21 +118,29 @@ class Detokenizer {
 
   /// Decodes and detokenizes the binary encoded message. Returns a
   /// `DetokenizedString` that stores all possible detokenized string results.
-  DetokenizedString Detokenize(const span<const std::byte>& encoded) const;
+  DetokenizedString Detokenize(const span<const std::byte>& encoded,
+                               std::string_view domain = kDefaultDomain) const {
+    return RecursiveDetokenize(encoded, domain, /*recursion=*/true);
+  }
 
   /// Overload of `Detokenize` for `span<const uint8_t>`.
-  DetokenizedString Detokenize(const span<const uint8_t>& encoded) const {
-    return Detokenize(as_bytes(encoded));
+  DetokenizedString Detokenize(const span<const uint8_t>& encoded,
+                               std::string_view domain = kDefaultDomain) const {
+    return Detokenize(as_bytes(encoded), domain);
   }
 
   /// Overload of `Detokenize` for `std::string_view`.
-  DetokenizedString Detokenize(std::string_view encoded) const {
-    return Detokenize(encoded.data(), encoded.size());
+  DetokenizedString Detokenize(std::string_view encoded,
+                               std::string_view domain = kDefaultDomain) const {
+    return Detokenize(encoded.data(), encoded.size(), domain);
   }
 
   /// Overload of `Detokenize` for a pointer and length.
-  DetokenizedString Detokenize(const void* encoded, size_t size_bytes) const {
-    return Detokenize(span(static_cast<const std::byte*>(encoded), size_bytes));
+  DetokenizedString Detokenize(const void* encoded,
+                               size_t size_bytes,
+                               std::string_view domain = kDefaultDomain) const {
+    return Detokenize(span(static_cast<const std::byte*>(encoded), size_bytes),
+                      domain);
   }
 
   /// Decodes and detokenizes a Base64-encoded message. Returns a
@@ -179,6 +189,26 @@ class Detokenizer {
   const DomainTokenEntriesMap& database() const { return database_; }
 
  private:
+#if PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+  static const std::regex kTokenRegex;
+#endif  // PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+
+  DetokenizedString RecursiveDetokenize(const span<const std::byte>& encoded,
+                                        std::string_view domain,
+                                        bool recursion) const;
+
+  std::string DetokenizeNested(std::string message) const;
+
+#if PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+  std::string DetokenizeScan(const std::smatch& match) const;
+
+  std::string DetokenizeOnce(const std::smatch& match,
+                             const std::string& base,
+                             const std::string& domain) const;
+
+  std::string DetokenizeOnceBase64(const std::smatch& match) const;
+#endif  // PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+
   DomainTokenEntriesMap database_;
 };
 

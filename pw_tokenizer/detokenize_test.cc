@@ -193,6 +193,145 @@ TEST_F(Detokenize, FromCsvFile_BadCsv_Format) {
   EXPECT_TRUE(detok_csv.ok());
 }
 
+constexpr const char kCsvCollisons[] =
+    "1,, D1,crocodile!\n"
+    "1,, D1,alligator!\n"
+    "2,, D2,See ya later ${D1}#00000001\n";
+
+TEST_F(Detokenize, FromCsvFile_BadCsv_Collisons) {
+  pw::Result<Detokenizer> detok_csv = Detokenizer::FromCsv(kCsvCollisons);
+  // Will give warning but continue as expected:
+  // WRN  Collision with token 1 in domain D1.
+  EXPECT_EQ(detok_csv->Detokenize("\2\0\0\0"sv, "D2").BestString(),
+            "See ya later ${D1}#00000001");
+}
+
+constexpr const char kCsvNestedHashedArg[] =
+    "1,,,This is a $#00000002\n"
+    "2,,,nested argument!\n"
+    "3,,,Hello\n";
+
+TEST_F(Detokenize, FromCsvFile_NestedHashedArg) {
+  pw::Result<Detokenizer> detok_csv = Detokenizer::FromCsv(kCsvNestedHashedArg);
+  PW_TEST_ASSERT_OK(detok_csv);
+  constexpr const char* expected = PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+                                       ? "This is a nested argument!"
+                                       : "This is a $#00000002";
+  EXPECT_EQ(detok_csv->Detokenize("\1\0\0\0"sv).BestString(), expected);
+}
+
+constexpr const char kCsvNestedBase64Arg[] =
+    "1,,,base64 argument\n"
+    "2,,,This is a $AQAAAA==\n";
+
+TEST_F(Detokenize, FromCsvFile_NestedBase64Arg) {
+  pw::Result<Detokenizer> detok_csv = Detokenizer::FromCsv(kCsvNestedBase64Arg);
+  PW_TEST_ASSERT_OK(detok_csv);
+  constexpr const char* expected = PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+                                       ? "This is a base64 argument"
+                                       : "This is a $AQAAAA==";
+  EXPECT_EQ(detok_csv->Detokenize("\2\0\0\0"sv).BestString(), expected);
+}
+
+constexpr const char kCsvDeeplyNestedArg[] =
+    "1,,,$10#0000000005\n"
+    "2,,,This is a $#00000004\n"
+    "3,,,deeply nested argument.\n"
+    "4,,,$AQAAAA==\n"
+    "5,,,$AwAAAA==\n";
+
+TEST_F(Detokenize, FromCsvFile_DeeplyNestedArg) {
+  pw::Result<Detokenizer> detok_csv = Detokenizer::FromCsv(kCsvDeeplyNestedArg);
+  PW_TEST_ASSERT_OK(detok_csv);
+  constexpr const char* expected = PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+                                       ? "This is a deeply nested argument."
+                                       : "This is a $#00000004";
+  EXPECT_EQ(detok_csv->Detokenize("\2\0\0\0"sv).BestString(), expected);
+}
+
+constexpr const char kCsvNestedTokenOneDomain[] =
+    "1,, D1,Hello ${D1}#00000002\n"
+    "2,, D1,World!\n"
+    "3,, D1, Today is a great day.\n";
+
+TEST_F(Detokenize, FromCsvFile_NestedTokenOneDomain) {
+  pw::Result<Detokenizer> detok_csv =
+      Detokenizer::FromCsv(kCsvNestedTokenOneDomain);
+  // Check the number of domains
+  ASSERT_EQ(detok_csv->database().size(), 1u);
+
+  // Check the number of entries in each domain
+  for (const auto& [domain, inner_map] : detok_csv->database()) {
+    size_t total_entries = 0;
+    for (const auto& [token, entries] : inner_map) {
+      total_entries += entries.size();
+    }
+    EXPECT_EQ(total_entries, 3u);  // Expect 6 entries in each domain
+  }
+  PW_TEST_ASSERT_OK(detok_csv);
+  constexpr const char* expected = PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+                                       ? "Hello World!"
+                                       : "Hello ${D1}#00000002";
+  EXPECT_EQ(detok_csv->Detokenize("\1\0\0\0"sv, "D1").BestString(), expected);
+}
+
+constexpr const char kCsvMultipleNestedTokens[] =
+    "1,, D1,nested token 1\n"
+    "2,, D1,This is ${D1}#00000001 and this is ${D2}#00000003\n"
+    "3,, D2,nested token 2.\n";
+
+TEST_F(Detokenize, FromCsvFile_MultipleNestedTokens) {
+  pw::Result<Detokenizer> detok_csv =
+      Detokenizer::FromCsv(kCsvMultipleNestedTokens);
+  PW_TEST_ASSERT_OK(detok_csv);
+  constexpr const char* expected =
+      PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+          ? "This is nested token 1 and this is nested token 2."
+          : "This is ${D1}#00000001 and this is ${D2}#00000003";
+  EXPECT_EQ(detok_csv->Detokenize("\2\0\0\0"sv, "D1").BestString(), expected);
+}
+
+constexpr const char kCsvDoubleNested[] =
+    "1,,D1,${$#00000004}#00000002\n"
+    "4,,,D2\n"
+    "2,,D2,You found me!\n";
+
+TEST_F(Detokenize, FromCsvFile_DoubleNestedArg) {
+  pw::Result<Detokenizer> detok_csv = Detokenizer::FromCsv(kCsvDoubleNested);
+  PW_TEST_ASSERT_OK(detok_csv);
+  constexpr const char* expected = PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+                                       ? "You found me!"
+                                       : "${$#00000004}#00000002";
+  EXPECT_EQ(detok_csv->Detokenize("\1\0\0\0"sv, "D1").BestString(), expected);
+}
+
+constexpr const char kCsvEmptyExpansion[] =
+    "1,,D1,This should expand to nothing: $#00000002\n"
+    "2,,,\n"
+    "2,,D3,Hello World!\n";
+
+TEST_F(Detokenize, FromCsvFile_NestedTokenEmptyExpansion) {
+  pw::Result<Detokenizer> detok_csv = Detokenizer::FromCsv(kCsvEmptyExpansion);
+  constexpr const char* expected =
+      PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+          ? "This should expand to nothing: "
+          : "This should expand to nothing: $#00000002";
+  EXPECT_EQ(detok_csv->Detokenize("\1\0\0\0"sv, "D1").BestString(), expected);
+}
+
+constexpr const char kCsvInfiniteRecursion[] =
+    "1,,,$#00000002\n"
+    "2,,,$#00000001\n"
+    "3,,,Hello World!\n";
+
+TEST_F(Detokenize, FromCsvFile_NestedTokenInfiniteRecursion) {
+  pw::Result<Detokenizer> detok_csv =
+      Detokenizer::FromCsv(kCsvInfiniteRecursion);
+  constexpr const char* expected =
+      PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX ? "$#00000001" : "$#00000002";
+  EXPECT_EQ(detok_csv->Detokenize("\1\0\0\0"sv).BestString(), expected);
+}
+
 TEST_F(Detokenize, BestString_MissingToken_IsEmpty) {
   EXPECT_FALSE(detok_.Detokenize("").ok());
   EXPECT_TRUE(detok_.Detokenize("", 0u).BestString().empty());

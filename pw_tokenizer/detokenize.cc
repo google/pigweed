@@ -27,10 +27,15 @@
 #include "pw_result/result.h"
 #include "pw_status/try.h"
 #include "pw_tokenizer/base64.h"
+#include "pw_tokenizer/config.h"
 #include "pw_tokenizer/internal/decode.h"
 #include "pw_tokenizer/nested_tokenization.h"
 #include "pw_tokenizer/tokenize.h"
 #include "pw_tokenizer_private/csv.h"
+
+#if PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+#include <regex>
+#endif  // PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
 
 namespace pw::tokenizer {
 namespace {
@@ -120,9 +125,6 @@ std::string UnknownTokenMessage(uint32_t value) {
   return output;
 }
 
-// Decoding result with the date removed, for sorting.
-using DecodingResult = std::pair<DecodedFormatString, uint32_t>;
-
 // Determines if one result is better than the other if collisions occurred.
 // Returns true if lhs is preferred over rhs. This logic should match the
 // collision resolution logic in detokenize.py.
@@ -170,22 +172,13 @@ constexpr bool IsPrintableAscii(std::string_view data) {
 
 }  // namespace
 
-DetokenizedString::DetokenizedString(
-    uint32_t token,
-    const span<const TokenizedStringEntry>& entries,
-    const span<const std::byte>& arguments)
+DetokenizedString::DetokenizedString(uint32_t token,
+                                     std::vector<DecodingResult> results)
     : token_(token), has_token_(true) {
-  std::vector<DecodingResult> results;
-
-  for (const auto& [format, date_removed] : entries) {
-    results.push_back(DecodingResult{
-        format.Format(span(reinterpret_cast<const uint8_t*>(arguments.data()),
-                           arguments.size())),
-        date_removed});
-  }
-
+  // Sort the results to find the best match.
   std::sort(results.begin(), results.end(), IsBetterResult);
 
+  matches_.reserve(results.size());
   for (auto& result : results) {
     matches_.push_back(std::move(result.first));
   }
@@ -347,30 +340,191 @@ Result<Detokenizer> Detokenizer::FromCsv(std::string_view csv) {
   return Detokenizer(std::move(database));
 }
 
-DetokenizedString Detokenizer::Detokenize(
-    const span<const std::byte>& encoded) const {
-  // The token is missing from the encoded data; there is nothing to do.
-  if (encoded.empty()) {
+DetokenizedString Detokenizer::RecursiveDetokenize(
+    const span<const std::byte>& encoded_message,
+    std::string_view domain,
+    bool recursion) const {
+  int recursion_value = 0;
+  if (recursion) {
+    recursion_value = 9;
+  }
+
+  if (encoded_message.empty()) {
     return DetokenizedString();
   }
 
-  uint32_t token = bytes::ReadInOrder<uint32_t>(
-      endian::little, encoded.data(), encoded.size());
+  // Pad messages smaller than sizeof(uint32_t) with zeroes to support
+  // tokens smaller than a uint32. Messages with arguments must always use
+  // a full 32-bit token.
+  std::array<std::byte, sizeof(uint32_t)> token_data{};
+  std::memcpy(token_data.data(),
+              encoded_message.data(),
+              std::min(encoded_message.size(), token_data.size()));
 
-  const auto domain_it = database_.find(kDefaultDomain);
+  uint32_t token = bytes::ReadInOrder<uint32_t>(endian::little, token_data);
+
+  std::vector<DecodingResult> token_entries;
+
+  auto domain_it = database_.find(std::string(domain));
   if (domain_it == database_.end()) {
     return DetokenizedString();
   }
 
-  const auto result = domain_it->second.find(token);
+  const auto inner_map = domain_it->second;
+  const auto result = inner_map.find(token);
 
-  return DetokenizedString(
-      token,
-      result == domain_it->second.end() ? span<TokenizedStringEntry>()
-                                        : span(result->second),
-      encoded.size() < sizeof(token) ? span<const std::byte>()
-                                     : encoded.subspan(sizeof(token)));
+  if (result == inner_map.end()) {
+    return DetokenizedString(token, std::move(token_entries));
+  }
+
+  // If the token is found in the current domain, add the entries to the
+  // results.
+  for (const auto& [format_string, date_removed] : result->second) {
+    const span<const std::byte> arguments =
+        encoded_message.size() <= sizeof(token)
+            ? span<const std::byte>()
+            : encoded_message.subspan(sizeof(token));
+    DecodedFormatString decoded = format_string.Format(span(
+        reinterpret_cast<const uint8_t*>(arguments.data()), arguments.size()));
+    if (recursion_value > 0) {
+      std::string transformed_value = DetokenizeNested(decoded.value());
+      if (transformed_value != decoded.value()) {
+        decoded =
+            DecodedFormatString({DecodedArg(std::move(transformed_value))}, 0);
+      }
+    }
+    token_entries.push_back(DecodingResult{std::move(decoded), date_removed});
+  }
+
+  // Sort the results to find the best match.
+  std::sort(token_entries.begin(), token_entries.end(), IsBetterResult);
+
+  return DetokenizedString(token, std::move(token_entries));
 }
+
+#if PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+#ifndef PW_EXCLUDE_FROM_DOXYGEN
+const std::regex Detokenizer::kTokenRegex(
+    R"(\$(?:\{(\s*|\s*[a-zA-Z_:][a-zA-Z0-9_:\s]*)\}|))"  // optional domain
+                                                         // specifier and
+                                                         // value
+    R"(([0-9]*)(#)?)"     // optional base specifier and value
+    R"(([0-9]{10})"       // base10 stoken specifier
+    R"(|[A-Fa-f0-9]{8})"  // base16 token specifier
+    R"(|((?:[A-Za-z0-9+/\-_]{4})+(?:[A-Za-z0-9+/\-_]{3}=|[A-Za-z0-9+/\-_]{2}==)?)))"  // base64 token specifier
+);
+#endif  // PW_EXCLUDE_FROM_DOXYGEN
+
+std::string Detokenizer::DetokenizeScan(const std::smatch& match) const {
+  const auto& domain_match = match[1].str();
+  const auto& base = match[2].str();
+  const auto& basespec = match[3].str();
+
+  std::string domain = domain_match.empty() ? kDefaultDomain : domain_match;
+  domain.erase(std::remove_if(domain.begin(), domain.end(), ::isspace),
+               domain.end());
+
+  if (basespec.empty() || base == "64") {
+    return DetokenizeOnceBase64(match);
+  }
+
+  return DetokenizeOnce(match, base.empty() ? "16" : base, domain);
+}
+#endif  // PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+
+std::string Detokenizer::DetokenizeNested(std::string message) const {
+  static constexpr int kRecursion = 9;
+
+  if (database_.empty()) {
+    return message;
+  }
+
+  int iterations = 0;
+  bool changed;
+
+  do {
+    changed = false;
+    size_t index = 0;
+    while (index < message.size()) {
+#if PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+      std::smatch match;
+      if (!std::regex_search(message.cbegin() + index,
+                             message.cend(),
+                             match,
+                             Detokenizer::kTokenRegex)) {
+        break;
+      }
+      std::string detokenized_part = DetokenizeScan(match);
+      if (detokenized_part !=
+          std::string_view(&message[index + match.position()],
+                           match.length())) {
+        message.replace(
+            index + match.position(), match.length(), detokenized_part);
+        changed = true;
+      }
+      index += detokenized_part.size();
+#else
+      break;
+#endif  // PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+    }
+    iterations += 1;
+  } while (changed && iterations < kRecursion);
+
+  return message;
+}
+
+#if PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
+std::string Detokenizer::DetokenizeOnce(const std::smatch& match,
+                                        const std::string& base,
+                                        const std::string& domain) const {
+  const std::string original = match.str(0);
+  const std::string token_str = match[4].str();
+  if (token_str.empty()) {
+    return original;
+  }
+
+  uint32_t token =
+      static_cast<uint32_t>(std::stoul(token_str, nullptr, std::stoi(base)));
+  const auto& domain_it = database_.find(domain);
+  if (domain_it == database_.end() ||
+      domain_it->second.find(token) == domain_it->second.end()) {
+    return original;
+  }
+
+  const auto& entries = domain_it->second.find(token)->second;
+  if (entries.size() == 1) {
+    // Access the FormatString from the TokenizedStringEntry
+    const FormatString& format = entries[0].first;
+    return format.Format(span<const uint8_t>()).value();
+  }
+  if (entries.size() > 1) {
+    // TODO: b/401878237 - Improve pw_tokenizer collision and decode error
+    // handling
+  }
+
+  return original;
+}
+
+std::string Detokenizer::DetokenizeOnceBase64(const std::smatch& match) const {
+  const std::string original = match.str(0);
+  std::string token(1, PW_TOKENIZER_NESTED_PREFIX);
+  token.append(match[4].str());
+  if (token.size() == 1u) {
+    return original;
+  }
+  token.resize(PrefixedBase64DecodeInPlace(token));
+
+  if (!token.empty()) {
+    DetokenizedString detokenized_string =
+        RecursiveDetokenize(as_bytes(span(token)), kDefaultDomain, false);
+    if (!detokenized_string.matches().empty()) {
+      return detokenized_string.BestString();
+    }
+  }
+
+  return original;
+}
+#endif  // PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
 
 DetokenizedString Detokenizer::DetokenizeBase64Message(
     std::string_view text) const {
@@ -402,7 +556,7 @@ std::string Detokenizer::DecodeOptionallyTokenizedData(
     const ConstByteSpan& optionally_tokenized_data) {
   // Try detokenizing as binary using the best result if available, else use
   // the input data as a string.
-  const auto result = Detokenize(optionally_tokenized_data);
+  const auto result = Detokenize(optionally_tokenized_data, kDefaultDomain);
   const bool found_matches = !result.matches().empty();
   // Note: unlike pw_tokenizer.proto.decode_optionally_tokenized, this decoding
   // process does not encode and decode UTF8 format, it is sufficient to check

@@ -126,6 +126,7 @@ pw_source_set("decoder") {
   ]
   deps = [
     ":base64",
+    ":config",
     ":csv",
     "$dir_pw_bytes:bit",
     "$dir_pw_elf:reader",

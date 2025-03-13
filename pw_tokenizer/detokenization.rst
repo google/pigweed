@@ -86,12 +86,14 @@ string.
 
 Decoding Base64
 ===============
-The Python ``Detokenizer`` class supports decoding and detokenizing prefixed
-Base64 messages with ``detokenize_base64`` and related methods.
+The Python and C++ ``Detokenizer`` classes support decoding and detokenizing prefixed
+nested messages with ``detokenize_base64`` and related methods.
 
 .. tip::
-   The Python detokenization tools support recursive detokenization for prefixed
-   Base64 text. Tokenized strings found in detokenized text are detokenized, so
+   The Python and C++ detokenization tools support recursive detokenization for prefixed
+   text.
+
+   Tokenized strings found in detokenized text are detokenized, so
    prefixed Base64 messages can be passed as ``%s`` arguments.
 
    For example, the tokenized string for "Wow!" is ``$RhYjmQ==``. This could be
@@ -102,6 +104,18 @@ Base64 messages with ``detokenize_base64`` and related methods.
    ::
 
      "$pEVTYQkkUmhZam1RPT0=" → "Nested message: $RhYjmQ==" → "Nested message: Wow!"
+
+   Similarly for nested tokens, recursive detokenization can allow for nested tokens
+   to be passed as an argument to another nested token.
+
+   For example, if the string "Surprise!" is saved as Base16 token
+   ``${Domain1}#00000001`` and the string "Domain1" is saved as Base16 token ``$#00000002``,
+   Then the value of ``${$#00000002}#00000001`` will be recursively detokenized as follows:
+
+   ::
+
+    "${$#00000002}#00000001" →  "${Domain1}#00000001" → "Surprise!"
+
 
 Base64 decoding is supported in C++ or C with the
 ``pw::tokenizer::PrefixedBase64Decode`` or ``pw_tokenizer_PrefixedBase64Decode``
