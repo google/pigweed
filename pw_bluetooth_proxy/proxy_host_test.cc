@@ -1865,7 +1865,7 @@ TEST_F(MultiSendTest, CanOccupyAllThenReuseEachBuffer) {
   constexpr size_t kMaxSends = ProxyHost::GetNumSimultaneousAclSendsSupported();
   struct {
     size_t sends_called = 0;
-    std::array<H4PacketWithH4, 2 * kMaxSends> released_packets{};
+    pw::Vector<H4PacketWithH4, kMaxSends * 2> released_packets{};
   } capture;
 
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
@@ -1873,7 +1873,8 @@ TEST_F(MultiSendTest, CanOccupyAllThenReuseEachBuffer) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       [&capture](H4PacketWithH4&& packet) {
         // Capture all packets to prevent their destruction.
-        capture.released_packets[capture.sends_called++] = std::move(packet);
+        capture.sends_called++;
+        capture.released_packets.push_back(std::move(packet));
       });
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
@@ -1899,7 +1900,7 @@ TEST_F(MultiSendTest, CanOccupyAllThenReuseEachBuffer) {
 
   // Confirm we can release and reoccupy each buffer slot.
   for (size_t i = 0; i < kMaxSends; ++i) {
-    capture.released_packets[i].~H4PacketWithH4();
+    capture.released_packets.pop_back();
     EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
               PW_STATUS_OK);
     EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
@@ -1909,9 +1910,10 @@ TEST_F(MultiSendTest, CanOccupyAllThenReuseEachBuffer) {
 
   // If captured packets are not reset here, they may destruct after the proxy
   // and lead to a crash when trying to lock the proxy's destructed mutex.
-  for (auto& packet : capture.released_packets) {
-    packet.ResetAndReturnReleaseFn();
-  }
+  capture.released_packets.clear();
+  // for (auto& packet : capture.released_packets) {
+  //   packet.ResetAndReturnReleaseFn();
+  // }
 }
 
 TEST_F(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
