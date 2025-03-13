@@ -51,6 +51,20 @@ project. These checks include:
 
 .. todo-check: enable
 
+
+.. pw_cli-nav-start
+
+.. grid:: 1
+
+   .. grid-item-card:: :octicon:`gear` ``pigweed.json`` config options
+      :link: module-pw_presubmit-pwigweed_config
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      ``pigweed.json`` configuration options.
+
+.. pw_cli-nav-end
+
 -------------
 Compatibility
 -------------
@@ -194,37 +208,8 @@ Example changes demonstrating how to add formatters:
 
 These will suggest fixes using ``pw format --fix``.
 
-Options for code formatting can be specified in the ``pigweed.json`` file
-(see also :ref:`SEED-0101 <seed-0101>`). These apply to both ``pw presubmit``
-steps that check code formatting and ``pw format`` commands that either check
-or fix code formatting.
-
-* ``python_formatter``: Choice of Python formatter. Options are ``black``
-  (default, used by Pigweed itself) and ``yapf``.
-* ``black_path``: If ``python_formatter`` is ``black``, use this as the
-  executable instead of ``black``.
-* ``black_config_file``: Set the config file for the black formatter.
-* ``exclude``: List of path regular expressions to ignore. Will be evaluated
-  against paths relative to the checkout root using ``re.search``.
-
-Example section from a ``pigweed.json`` file:
-
-.. code-block:: json
-
-   {
-     "pw": {
-       "pw_presubmit": {
-         "format": {
-           "python_formatter": "black",
-           "black_config_file": "$pw_env{PW_PROJECT_ROOT}/config/.black.toml"
-           "black_path": "black",
-           "exclude": [
-             "\\bthird_party/foo/src"
-           ]
-         }
-       }
-     }
-   }
+Options for code formatting can be specified in
+:ref:`module-pw_presubmit-pwigweed_config`.
 
 Sorted Blocks
 ^^^^^^^^^^^^^
@@ -664,3 +649,4 @@ a formatter or remove/disable a PigWeed supplied one.
    :hidden:
 
    format
+   pigweed_config
