@@ -91,6 +91,9 @@ pub struct Thread {
 
     // Architecturally specific thread state, saved on context switch
     pub arch_thread_state: UnsafeCell<ArchThreadState>,
+
+    // TODO - konkers: allow this to be tokenized.
+    pub name: &'static str,
 }
 
 pub struct ThreadListAdapter {}
@@ -107,13 +110,14 @@ impl list::Adapter for GlobalThreadListAdapter {
 
 impl Thread {
     // Create an empty, uninitialzed thread
-    pub fn new() -> Self {
+    pub fn new(name: &'static str) -> Self {
         Thread {
             global_link: Link::new(),
             active_link: Link::new(),
             state: State::New,
             arch_thread_state: UnsafeCell::new(ThreadState::new()),
             stack: Stack::new(),
+            name,
         }
     }
 
@@ -165,7 +169,8 @@ impl Thread {
     #[allow(dead_code)]
     pub fn dump(&self) {
         info!(
-            "thread {:#x} state {}",
+            "thread {} ({:#x}) state {}",
+            self.name as &str,
             self.id() as usize,
             to_string(self.state) as &str
         );
@@ -264,6 +269,14 @@ impl SchedulerState {
         match &self.current_thread {
             Some(thread) => thread.id(),
             None => Thread::null_id(),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn current_thread_name(&self) -> &'static str {
+        match &self.current_thread {
+            Some(thread) => thread.name,
+            None => "none",
         }
     }
 

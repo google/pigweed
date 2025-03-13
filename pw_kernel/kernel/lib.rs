@@ -51,10 +51,10 @@ impl ThreadBuffer {
     // TODO: figure out how to properly statically construct a thread or
     // make sure this function can only be called once.
     #[inline(never)]
-    unsafe fn alloc_thread(&mut self) -> ForeignBox<Thread> {
+    unsafe fn alloc_thread(&mut self, name: &'static str) -> ForeignBox<Thread> {
         assert!(self.buffer.as_ptr().align_offset(align_of::<Thread>()) == 0);
         let thread_ptr = self.buffer.as_mut_ptr() as *mut Thread;
-        thread_ptr.write(Thread::new());
+        thread_ptr.write(Thread::new(name));
         ForeignBox::new_from_ptr(&mut *thread_ptr)
     }
 }
@@ -73,7 +73,7 @@ impl Kernel {
         unsafe {
             info!("allocating bootstrap thread");
             static mut THREAD_BUFFER_BOOTSTRAP: ThreadBuffer = ThreadBuffer::new();
-            bootstrap_thread = THREAD_BUFFER_BOOTSTRAP.alloc_thread();
+            bootstrap_thread = THREAD_BUFFER_BOOTSTRAP.alloc_thread("bootstrap");
 
             info!("initializing bootstrap thread");
             static mut STACK_BOOTSTRAP: [u8; 2048] = [0; 2048];
@@ -107,7 +107,7 @@ fn bootstrap_thread_entry(_arg: usize) {
     unsafe {
         info!("allocating idle_thread");
         static mut IDLE_THREAD_BUFFER: ThreadBuffer = ThreadBuffer::new();
-        idle_thread = IDLE_THREAD_BUFFER.alloc_thread();
+        idle_thread = IDLE_THREAD_BUFFER.alloc_thread("idle");
 
         info!("initializing idle_thread");
         static mut IDLE_STACK: [u8; 2048] = [0; 2048];
@@ -121,7 +121,7 @@ fn bootstrap_thread_entry(_arg: usize) {
     unsafe {
         info!("allocating thread A");
         static mut THREAD_BUFFER_A: ThreadBuffer = ThreadBuffer::new();
-        thread_a = THREAD_BUFFER_A.alloc_thread();
+        thread_a = THREAD_BUFFER_A.alloc_thread("thread_a");
 
         info!("initializing thread A");
         static mut STACK_A: [u8; 2048] = [0; 2048];
@@ -138,7 +138,7 @@ fn bootstrap_thread_entry(_arg: usize) {
     unsafe {
         info!("allocating thread B");
         static mut THREAD_BUFFER_B: ThreadBuffer = ThreadBuffer::new();
-        thread_b = THREAD_BUFFER_B.alloc_thread();
+        thread_b = THREAD_BUFFER_B.alloc_thread("thread_b");
 
         info!("initializing thread B");
         static mut STACK_B: [u8; 2048] = [0; 2048];
