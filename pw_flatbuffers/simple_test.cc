@@ -14,7 +14,18 @@
 
 #include <limits>
 
+#if defined(NORMAL_TEST) && NORMAL_TEST == 1
 #include "pw_flatbuffers_test_schema/simple_test_generated.h"
+#endif
+
+#if defined(PREFIX_TEST) && PREFIX_TEST == 1
+#include "pw_flatbuffers_test_prefix/pw_flatbuffers_test_schema/simple_test_generated.h"
+#endif
+
+#if defined(NO_PREFIX_TEST) && NO_PREFIX_TEST == 1
+#include "simple_test_generated.h"
+#endif
+
 #include "pw_unit_test/framework.h"
 
 namespace pw::flatbuffers {

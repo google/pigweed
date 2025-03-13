@@ -28,9 +28,19 @@ flatbuffers headers. Support for outputting other languages supported by
 
 * ``NAME``: Name of dependency to create. The dependency target name will be
   ``NAME.cpp``
-* ``SOURCES``: Source schema files to compile to headers
+* ``SOURCES``: Source schema files to compile to headers.
 * ``DEPS``: Dependencies needed to compile the passed in schema files
+* ``PREFIX``: Prefix path to be appended to the generated header path.
+* ``STRIP_PREFIX``: Prefix to be removed from the generated header path.
+  This is applied before ``PREFIX``.
 * ``FLATC_FLAGS``: flags to be passed to ``flatc`` when building
+
+Note here that by default, the generated header path will be the relative path
+between the ``CMakeLists.txt`` containing the build rule and the schema it
+compiles. The name of the include file will be the name of the schema file,
+suffixed with ``_generated.h``. For example, if a ``CMakeLists.txt`` at the
+toplevel includes a schema ``foo/schema.fbs``, then the compiled header would
+be included as ``#include "foo/schema_generated.h"``.
 
 **Globals**
 
@@ -49,34 +59,34 @@ Additionally, several global cache variables influence the behavior of
   pigweed provided third party flatbuffers. If left unset, the user takes
   responsibility for properly providing the flatbuffer dependencies to code.
 
-**Example***
+**Example**
 
-.. code_block: cmake
+.. code-block:: cmake
 
-  # Point to our installed directory
-  set(dir_pw_third_party_flatbuffers ${path_to_flatbuffers_install})
+   # Point to our installed directory
+   set(dir_pw_third_party_flatbuffers ${path_to_flatbuffers_install})
 
-  # Set global flags, such as the C++ version
-  set(pw_flatbuffers_FLATC_FLAGS --cpp-std c++11 CACHE LIST "Global args to flatc")
+   # Set global flags, such as the C++ version
+   set(pw_flatbuffers_FLATC_FLAGS --cpp-std c++11 CACHE LIST "Global args to flatc")
 
-  include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
-  include($ENV{PW_ROOT}/pw_flatbuffers/flatbuffers.cmake)
+   include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+   include($ENV{PW_ROOT}/pw_flatbuffers/flatbuffers.cmake)
 
-  # Build the fbs files to headers
-  pw_flatbuffer_library(simple_test_schema
-    SOURCES
-      pw_flatbuffers_test_schema/simple_test.fbs
-  )
+   # Build the fbs files to headers
+   pw_flatbuffer_library(simple_test_schema
+     SOURCES
+       pw_flatbuffers_test_schema/simple_test.fbs
+   )
 
-  # Build a test exe
-  pw_add_test(pw_flatbuffers.simple_test
-    SOURCES
-      simple_test.cc
-    PRIVATE_DEPS
-      simple_test_schema.cpp
-    GROUPS
-      modules
-  )
+   # Build a test exe
+   pw_add_test(pw_flatbuffers.simple_test
+     SOURCES
+       simple_test.cc
+     PRIVATE_DEPS
+       simple_test_schema.cpp
+     GROUPS
+       modules
+   )
 
 
 GN

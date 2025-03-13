@@ -40,6 +40,9 @@ function(pw_flatbuffer_library NAME)
   pw_parse_arguments(
     NUM_POSITIONAL_ARGS
       1
+    ONE_VALUE_ARGS
+      STRIP_PREFIX
+      PREFIX
     MULTI_VALUE_ARGS
       SOURCES
       DEPS
@@ -82,13 +85,17 @@ function(pw_flatbuffer_library NAME)
     cmake_path(RELATIVE_PATH source BASE_DIRECTORY "${out_sources_dir}"
                OUTPUT_VARIABLE rel_source)
     cmake_path(REMOVE_FILENAME rel_source OUTPUT_VARIABLE rel_source_dir)
+    cmake_path(RELATIVE_PATH rel_source_dir BASE_DIRECTORY "${arg_STRIP_PREFIX}"
+               OUTPUT_VARIABLE rel_source_dir_stripped)
+    cmake_path(SET rel_source_dir_stripped_with_prefix "")
+    cmake_path(APPEND rel_source_dir_stripped_with_prefix ${arg_PREFIX} ${rel_source_dir_stripped})
 
     cmake_path(REMOVE_EXTENSION source_filename OUTPUT_VARIABLE
                generated_filename)
     cmake_path(APPEND_STRING generated_filename "_generated.h")
 
     cmake_path(SET generated_directory "${out_dir}")
-    cmake_path(APPEND generated_directory "cpp" ${rel_source_dir})
+    cmake_path(APPEND generated_directory "cpp" ${rel_source_dir_stripped_with_prefix})
 
     cmake_path(SET output "${generated_directory}")
     cmake_path(APPEND output ${generated_filename})
