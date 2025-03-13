@@ -776,12 +776,15 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
   std::optional<L2capChannelManager::LockedL2capChannel> channel =
       find_l2cap_channel(l2cap_header->channel_id().Read());
   if (!channel.has_value()) {
-    // This cannot happen if the packet is a fragment, because recombination
-    // only starts for a recognized L2capChannel. So it is safe to return
-    // kUnhandled in this case and pass the frame on.
-    PW_DCHECK(!is_fragment);
-    // EndRecombination not needed here.
-    return kUnhandled;
+    // Proxy host stopped proxying this channel in another thread, either after
+    // starting recombination (if this is a last fragment) or after we looked up
+    // the channel above (if this is a first whole PDU). So just drop the PDU.
+    // TODO: https://pwbug.dev/401050674 - Case could be made for returning
+    // kUnhandled here for first whole PDU case. But upcoming CL will hold on to
+    // the channel for entire function so that case will be eliminated.
+    // TODO: https://pwbug.dev/392663102 - Will handle rejecting a recombined
+    // L2CAP PDU. So may want to then reject PDU here.
+    return kHandled;
   }
 
   // Pass the L2CAP PDU on to the L2capChannel

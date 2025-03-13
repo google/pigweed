@@ -3445,6 +3445,32 @@ TEST_F(AclFragTest, RecombinationWorksWithEmptyFirstPayload) {
   VerifyNormalOperationAfterRecombination(proxy);
 }
 
+// If a client channel is dropped between first and last packet of a fragmented
+// PDU, then packet should be dropped.
+TEST_F(AclFragTest, ChannelDtorDuringRecombinationDropsPdu) {
+  ProxyHost proxy = GetProxy();
+  std::optional<BasicL2capChannel> channel{GetL2capChannel(proxy)};
+
+  static constexpr std::array<uint8_t, 4> kPayload = {0xA1, 0xB2, 0xC3, 0xD2};
+
+  // Fragment 1: ACL Header + L2CAP B-Frame Header + (no payload)
+  PW_LOG_INFO("Sending frag 1: ACL + L2CAP header");
+  SendL2capBFrame(proxy, kHandle, {}, kPayload.size(), kLocalCid);
+
+  channel.reset();
+
+  // Fragment 2: ACL Header + Payload frag 2
+  PW_LOG_INFO("Sending frag 2: ACL(CONT) + payload2");
+  SendAclContinuingFrag(proxy, kHandle, kPayload);
+
+  EXPECT_EQ(packets_sent_to_host, 0);
+  ExpectPayloadsFromController({});
+
+  // Open up channel again to verify rx still works after completing above.
+  BasicL2capChannel channel2 = GetL2capChannel(proxy);
+  VerifyNormalOperationAfterRecombination(proxy);
+}
+
 TEST_F(AclFragTest, RecombinationWorksWithSplitPayloads) {
   ProxyHost proxy = GetProxy();
   BasicL2capChannel channel = GetL2capChannel(proxy);
