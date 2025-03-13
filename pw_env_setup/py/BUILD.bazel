@@ -155,12 +155,3 @@ pw_py_test(
         ":pw_env_setup_private",
     ],
 )
-
-pw_py_test(
-    name = "python_packages_test",
-    srcs = ["python_packages_test.py"],
-    deps = [
-        ":pw_env_setup_private",
-        "@python_packages//toml",
-    ],
-)

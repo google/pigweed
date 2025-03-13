@@ -27,10 +27,10 @@ class TestPythonPackages(unittest.TestCase):
     """Tests the python_packages module."""
 
     def setUp(self):
-        self.existing_pkgs_minus_toml = '\n'.join(
+        self.existing_pkgs_minus_pip_tools = '\n'.join(
             pkg
             for pkg in python_packages._installed_packages()  # pylint: disable=protected-access
-            if not pkg.startswith('toml==')
+            if not pkg.startswith('pip-tools==')
         )
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_path = Path(self.temp_dir.name)
@@ -42,9 +42,9 @@ class TestPythonPackages(unittest.TestCase):
         # pylint: disable=protected-access
         pkgs = list(python_packages._installed_packages())
         # pylint: enable=protected-access
-        toml_version = importlib.metadata.version('toml')
+        pip_tools_version = importlib.metadata.version('pip-tools')
 
-        self.assertIn(f'toml=={toml_version}', pkgs)
+        self.assertIn(f'pip-tools=={pip_tools_version}', pkgs)
         self.assertNotIn('pw-foo', pkgs)
 
     @mock.patch('pw_env_setup.python_packages._stderr')
@@ -63,33 +63,33 @@ class TestPythonPackages(unittest.TestCase):
 
     @mock.patch('pw_env_setup.python_packages._stderr')
     def test_diff_updated(self, stderr_mock):
-        expected = 'toml>=0.0.1\n' + self.existing_pkgs_minus_toml
+        expected = 'pip-tools>=0.0.1\n' + self.existing_pkgs_minus_pip_tools
         expected_file = self.temp_path / 'test_diff_updated_expected'
         expected_file.write_text(expected, encoding='utf-8')
 
-        toml_version = importlib.metadata.version('toml')
+        pip_tools_version = importlib.metadata.version('pip-tools')
 
         # Updated packages should trigger a failure.
         self.assertEqual(-1, python_packages.diff(expected_file))
 
         stderr_mock.assert_any_call('Updated packages')
         stderr_mock.assert_any_call(
-            f'  toml=={toml_version} (from toml>=0.0.1)'
+            f'  pip-tools=={pip_tools_version} (from pip-tools>=0.0.1)'
         )
 
     @mock.patch('pw_env_setup.python_packages._stderr')
     def test_diff_new(self, stderr_mock):
-        expected = self.existing_pkgs_minus_toml
+        expected = self.existing_pkgs_minus_pip_tools
         expected_file = self.temp_path / 'test_diff_new_expected'
         expected_file.write_text(expected, encoding='utf-8')
 
-        toml_version = importlib.metadata.version('toml')
+        pip_tools_version = importlib.metadata.version('pip-tools')
 
         # New packages should trigger a failure.
         self.assertEqual(-1, python_packages.diff(expected_file))
 
         stderr_mock.assert_any_call('New packages')
-        stderr_mock.assert_any_call(f'  toml=={toml_version}')
+        stderr_mock.assert_any_call(f'  pip-tools=={pip_tools_version}')
         stderr_mock.assert_any_call("Package versions don't match!")
 
 
