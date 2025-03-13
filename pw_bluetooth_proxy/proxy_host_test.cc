@@ -3346,9 +3346,6 @@ class AclFragTest : public ProxyHostTest {
   static constexpr uint16_t kHandle = 0x4AD;
   static constexpr uint16_t kLocalCid = 0xC1D;
 
-  int packets_sent_to_host = 0;
-  int packets_sent_to_controller = 0;
-
   ProxyHost GetProxy() {
     // We can't add a ProxyHost member because it makes the test fixture too
     // large, so we provide a helper function instead.
@@ -3357,8 +3354,6 @@ class AclFragTest : public ProxyHostTest {
                      /*le_acl_credits_to_reserve=*/0,
                      /*br_edr_acl_credits_to_reserve=*/0);
   }
-
-  std::vector<multibuf::MultiBuf> payloads_from_controller;
 
   BasicL2capChannel GetL2capChannel(ProxyHost& proxy) {
     return BuildBasicL2capChannel(
@@ -3370,7 +3365,7 @@ class AclFragTest : public ProxyHostTest {
             .transport = AclTransportType::kLe,
             .payload_from_controller_fn =
                 [this](multibuf::MultiBuf&& buffer) {
-                  payloads_from_controller.emplace_back(std::move(buffer));
+                  payloads_from_controller_.emplace_back(std::move(buffer));
                   return std::nullopt;  // Consume
                 },
         });
@@ -3378,12 +3373,12 @@ class AclFragTest : public ProxyHostTest {
 
   void ExpectPayloadsFromController(
       std::initializer_list<ConstByteSpan> expected_payloads) {
-    EXPECT_EQ(payloads_from_controller.size(), expected_payloads.size());
-    if (payloads_from_controller.size() != expected_payloads.size()) {
+    EXPECT_EQ(payloads_from_controller_.size(), expected_payloads.size());
+    if (payloads_from_controller_.size() != expected_payloads.size()) {
       return;
     }
 
-    auto payloads_iter = payloads_from_controller.begin();
+    auto payloads_iter = payloads_from_controller_.begin();
     for (ConstByteSpan expected : expected_payloads) {
       std::optional<pw::ByteSpan> payload = (payloads_iter++)->ContiguousSpan();
       PW_CHECK(payload.has_value());
@@ -3395,19 +3390,24 @@ class AclFragTest : public ProxyHostTest {
   void VerifyNormalOperationAfterRecombination(ProxyHost& proxy) {
     // Verify things work normally after recombination ends.
     static constexpr std::array<uint8_t, 4> kPayload = {'D', 'o', 'n', 'e'};
-    payloads_from_controller.clear();
+    payloads_from_controller_.clear();
     SendL2capBFrame(proxy, kHandle, kPayload, kPayload.size(), kLocalCid);
     ExpectPayloadsFromController({
         as_bytes(span(kPayload)),
     });
   }
 
+  int packets_sent_to_host_ = 0;
+  int packets_sent_to_controller_ = 0;
+
  private:
-  void SendToHost(H4PacketWithHci&& /*packet*/) { ++packets_sent_to_host; }
+  void SendToHost(H4PacketWithHci&& /*packet*/) { ++packets_sent_to_host_; }
 
   void SendToController(H4PacketWithH4&& /*packet*/) {
-    ++packets_sent_to_controller;
+    ++packets_sent_to_controller_;
   }
+
+  std::vector<multibuf::MultiBuf> payloads_from_controller_;
 };
 
 TEST_F(AclFragTest, AclBiggerThanL2capDropped) {
@@ -3419,7 +3419,7 @@ TEST_F(AclFragTest, AclBiggerThanL2capDropped) {
   SendL2capBFrame(proxy, kHandle, kPayload, 1, kLocalCid);
 
   // Should be dropped.
-  EXPECT_EQ(packets_sent_to_host, 0);
+  EXPECT_EQ(packets_sent_to_host_, 0);
   ExpectPayloadsFromController({});
 }
 
@@ -3437,7 +3437,7 @@ TEST_F(AclFragTest, RecombinationWorksWithEmptyFirstPayload) {
   PW_LOG_INFO("Sending frag 2: ACL(CONT) + payload2");
   SendAclContinuingFrag(proxy, kHandle, kPayload);
 
-  EXPECT_EQ(packets_sent_to_host, 0);
+  EXPECT_EQ(packets_sent_to_host_, 0);
   ExpectPayloadsFromController({
       as_bytes(span(kPayload)),
   });
@@ -3463,7 +3463,7 @@ TEST_F(AclFragTest, ChannelDtorDuringRecombinationDropsPdu) {
   PW_LOG_INFO("Sending frag 2: ACL(CONT) + payload2");
   SendAclContinuingFrag(proxy, kHandle, kPayload);
 
-  EXPECT_EQ(packets_sent_to_host, 0);
+  EXPECT_EQ(packets_sent_to_host_, 0);
   ExpectPayloadsFromController({});
 
   // Open up channel again to verify rx still works after completing above.
@@ -3491,7 +3491,7 @@ TEST_F(AclFragTest, RecombinationWorksWithSplitPayloads) {
     SendAclContinuingFrag(proxy, kHandle, kPayloadFrag2);
   }
 
-  EXPECT_EQ(packets_sent_to_host, 0);
+  EXPECT_EQ(packets_sent_to_host_, 0);
   ExpectPayloadsFromController({
       as_bytes(span(kPayload)),
       as_bytes(span(kPayload)),
@@ -3513,7 +3513,7 @@ TEST_F(AclFragTest, UnexpectedContinuingFragment) {
   SendAclContinuingFrag(proxy, kHandle, kPayload);
 
   ExpectPayloadsFromController({});
-  EXPECT_EQ(packets_sent_to_host, 1);  // Should be passed on to host
+  EXPECT_EQ(packets_sent_to_host_, 1);  // Should be passed on to host
 
   VerifyNormalOperationAfterRecombination(proxy);
 }
@@ -3542,7 +3542,7 @@ TEST_F(AclFragTest, UnexpectedFirstFragment) {
   SendAclContinuingFrag(proxy, kHandle, kPayloadFrag2);
 
   // Nothing should be sent to the host. The first fragment of PDU A is dropped.
-  EXPECT_EQ(packets_sent_to_host, 0);
+  EXPECT_EQ(packets_sent_to_host_, 0);
 
   // PDU B is delivered.
   ExpectPayloadsFromController({
@@ -3572,7 +3572,7 @@ TEST_F(AclFragTest, ContinuingFragmentTooLarge) {
   ExpectPayloadsFromController({});
 
   // This was for a channel owned by the proxy so it should have been dropped.
-  EXPECT_EQ(packets_sent_to_host, 0);
+  EXPECT_EQ(packets_sent_to_host_, 0);
 
   VerifyNormalOperationAfterRecombination(proxy);
 }
@@ -3648,7 +3648,7 @@ TEST_F(AclFragTest,
   SendAclContinuingFrag(proxy, kHandle, kPayload1Frag2);
 
   EXPECT_EQ(channel1_sends_called, 1);
-  EXPECT_EQ(packets_sent_to_host, 0);
+  EXPECT_EQ(packets_sent_to_host_, 0);
 }
 
 }  // namespace
