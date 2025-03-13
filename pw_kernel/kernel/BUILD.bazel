@@ -45,6 +45,7 @@ rust_library(
         "sync/mutex.rs",
         "sync/spinlock.rs",
         "target.rs",
+        "timer.rs",
     ],
     crate_features = select({
         "@pigweed//pw_build/constraints/arm:cortex-m0": ["arch_arm_cortex_m"],
@@ -60,7 +61,10 @@ rust_library(
     deps = [
         "//pw_kernel/lib/foreign_box",
         "//pw_kernel/lib/list",
+        "//pw_kernel/lib/log_if",
+        "//pw_kernel/lib/pw_status",
         "//pw_kernel/lib/regs",
+        "//pw_kernel/lib/time",
         "@pigweed//pw_log/rust:pw_log",
     ] + select({
         "@pigweed//pw_build/constraints/arm:cortex-m0": CORTEX_M_DEPS,

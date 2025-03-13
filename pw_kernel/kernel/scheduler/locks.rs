@@ -15,10 +15,35 @@
 use core::{
     cell::UnsafeCell,
     ops::{Deref, DerefMut},
+    ptr::NonNull,
 };
 
-use crate::scheduler::{SchedulerState, WaitQueue};
+use pw_status::Result;
+
 use crate::sync::spinlock::SpinLockGuard;
+use crate::{
+    scheduler::{SchedulerState, WaitQueue},
+    timer::Instant,
+};
+
+use super::SCHEDULER_STATE;
+
+pub struct SmuggledSchedLock<T> {
+    inner: NonNull<T>,
+}
+
+impl<T> SmuggledSchedLock<T> {
+    /// # Safety
+    /// The caller must guarantee that the underlying lock and it's enclosed data
+    /// is still valid.
+    pub unsafe fn lock(&self) -> SchedLockGuard<'_, T> {
+        let guard = SCHEDULER_STATE.lock();
+        SchedLockGuard {
+            guard,
+            inner: unsafe { &mut *self.inner.as_ptr() },
+        }
+    }
+}
 
 pub struct SchedLockGuard<'lock, T> {
     guard: SpinLockGuard<'lock, SchedulerState>,
@@ -26,19 +51,27 @@ pub struct SchedLockGuard<'lock, T> {
 }
 
 impl<'lock, T> SchedLockGuard<'lock, T> {
-    #[allow(dead_code)]
     pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState> {
         &self.guard
     }
 
-    #[allow(dead_code)]
     pub fn sched_mut(&mut self) -> &mut SpinLockGuard<'lock, SchedulerState> {
         &mut self.guard
     }
 
-    #[allow(dead_code)]
-    pub fn into_sched(self) -> SpinLockGuard<'lock, SchedulerState> {
-        self.guard
+    pub fn reschedule(self, current_thread_id: usize) -> Self {
+        let inner = self.inner;
+        let guard = super::reschedule(self.guard, current_thread_id);
+        Self { guard, inner }
+    }
+
+    /// # Safety
+    /// The caller must guarantee that the underlying lock remains valid and
+    /// un-moved for the live the smuggled lock.
+    pub unsafe fn smuggle(&self) -> SmuggledSchedLock<T> {
+        SmuggledSchedLock {
+            inner: unsafe { NonNull::new_unchecked(self.inner as *const T as *mut T) },
+        }
     }
 }
 
@@ -128,7 +161,6 @@ pub struct WaitQueueLockGuard<'lock, T> {
 }
 
 impl<'lock, T> WaitQueueLockGuard<'lock, T> {
-    #[allow(dead_code)]
     pub fn sched(&self) -> &SpinLockGuard<'lock, SchedulerState> {
         &self.inner.guard
     }
@@ -138,17 +170,31 @@ impl<'lock, T> WaitQueueLockGuard<'lock, T> {
         &mut self.inner.guard
     }
 
-    #[allow(dead_code)]
-    pub fn into_sched(self) -> SpinLockGuard<'lock, SchedulerState> {
-        self.inner.guard
+    pub fn operate_on_wait_queue<F, R>(mut self, f: F) -> (Self, R)
+    where
+        F: FnOnce(SchedLockGuard<'lock, WaitQueue>) -> (SchedLockGuard<'lock, WaitQueue>, R),
+    {
+        let guard = SchedLockGuard::<'lock, WaitQueue> {
+            guard: self.inner.guard,
+            // Safety: Mutable reference only lives as long as the call into f()
+            #[allow(clippy::deref_addrof)]
+            inner: unsafe { &mut *&raw mut self.inner.inner.queue },
+        };
+        let (guard, result) = f(guard);
+        self.inner.guard = guard.guard;
+        (self, result)
     }
 
-    #[allow(dead_code)]
-    pub fn into_wait_queue(self) -> SchedLockGuard<'lock, WaitQueue> {
-        SchedLockGuard::<'lock, WaitQueue> {
-            guard: self.inner.guard,
-            inner: &mut self.inner.inner.queue,
-        }
+    pub fn wait_until(self, deadline: Instant) -> (Self, Result<()>) {
+        self.operate_on_wait_queue(|guard| guard.wait_until(deadline))
+    }
+
+    pub fn wait(self) -> Self {
+        self.operate_on_wait_queue(|guard| (guard.wait(), ())).0
+    }
+
+    pub fn wake_one(self) -> Self {
+        self.operate_on_wait_queue(|guard| (guard.wake_one(), ())).0
     }
 }
 

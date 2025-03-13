@@ -17,6 +17,7 @@
 
 use foreign_box::ForeignBox;
 use pw_log::info;
+use time::Clock as _;
 
 mod arch;
 #[cfg(not(feature = "std_panic_handler"))]
@@ -24,14 +25,12 @@ mod panic;
 mod scheduler;
 pub mod sync;
 mod target;
-
-use scheduler::yield_timeslice;
-use scheduler::Stack;
-use scheduler::Thread;
-use scheduler::SCHEDULER_STATE;
+mod timer;
 
 use arch::{Arch, ArchInterface};
+use scheduler::{yield_timeslice, Stack, Thread, SCHEDULER_STATE};
 use sync::mutex::Mutex;
+use timer::{Clock, Duration};
 
 // A structure intended to be statically allocated to hold a Thread structure that will
 // be constructed at run time.
@@ -180,7 +179,9 @@ fn test_thread_entry_a(_arg: usize) {
         let mut counter = TEST_COUNTER.lock();
         info!("Thread A incrementing counter");
         *counter += 1;
-        scheduler::TICK_WAIT_QUEUE.lock().wait();
+        for _ in 0..100 {
+            scheduler::TICK_WAIT_QUEUE.lock().wait();
+        }
     }
 }
 
@@ -189,7 +190,10 @@ fn test_thread_entry_b(_arg: usize) {
     info!("I'm thread B");
     assert!(Arch::interrupts_enabled());
     loop {
-        let counter = TEST_COUNTER.lock();
+        let Ok(counter) = TEST_COUNTER.lock_until(Clock::now() + Duration::from_millis(500)) else {
+            info!("Thread B: timeout");
+            continue;
+        };
         info!("Thread B: counter value {}", *counter as u64);
         drop(counter);
         yield_timeslice();

@@ -14,17 +14,27 @@
 
 use core::cell::UnsafeCell;
 use core::mem::offset_of;
+use core::ptr::NonNull;
 
 use foreign_box::ForeignBox;
 use list::*;
 use pw_log::info;
+use pw_status::{Error, Result};
 
 use crate::arch::{Arch, ArchInterface, ArchThreadState, ThreadState};
 use crate::sync::spinlock::{SpinLock, SpinLockGuard};
+use crate::timer::{Instant, TimerCallback, TimerQueue};
 
 mod locks;
 
 pub use locks::{SchedLock, SchedLockGuard, WaitQueueLock};
+
+const WAIT_QUEUE_DEBUG: bool = false;
+macro_rules! wait_queue_debug {
+  ($($args:expr),*) => {{
+    log_if::debug_if!(WAIT_QUEUE_DEBUG, $($args),*)
+  }}
+}
 
 #[derive(Clone, Copy)]
 pub struct Stack {
@@ -250,6 +260,7 @@ impl SchedulerState {
         current_thread_id
     }
 
+    #[allow(dead_code)]
     fn move_current_thread_to_front(&mut self) -> usize {
         let Some(mut current_thread) = self.current_thread.take() else {
             panic!("no current thread");
@@ -292,11 +303,13 @@ impl SchedulerState {
     pub fn dump_all_threads(&self) {
         info!("list of all threads:");
         unsafe {
-            let _ = self.thread_list.for_each(|thread| -> Result<(), ()> {
-                //                info!("ptr {:#x}", thread.id());
-                thread.dump();
-                Ok(())
-            });
+            let _ = self
+                .thread_list
+                .for_each(|thread| -> core::result::Result<(), ()> {
+                    //                info!("ptr {:#x}", thread.id());
+                    thread.dump();
+                    Ok(())
+                });
         }
     }
 
@@ -336,6 +349,9 @@ fn reschedule(
         panic!("run_queue empty");
     };
 
+    if new_thread.state != State::Ready {
+        info!("<{}> not ready", new_thread.name);
+    }
     assert!(new_thread.state == State::Ready);
     new_thread.state = State::Running;
 
@@ -385,12 +401,14 @@ pub fn preempt() {
 // Tick that is called from a timer handler. The scheduler will evaluate if the current thread
 // should be preempted or not
 #[allow(dead_code)]
-pub fn tick(_time_ms: u32) {
-    // info!("tick {} ms", _time_ms);
+pub fn tick(now: Instant) {
+    //info!("tick {} ms", time_ms);
+
+    TimerQueue::process_queue(now);
+    TICK_WAIT_QUEUE.lock().wake_one();
 
     // TODO: dynamically deal with time slice for this thread and put it
     // at the head or tail depending.
-    TICK_WAIT_QUEUE.lock().wake_one();
 
     preempt();
 }
@@ -433,26 +451,138 @@ impl WaitQueue {
 }
 
 impl SchedLockGuard<'_, WaitQueue> {
-    pub fn wake_one(mut self) {
-        if let Some(mut thread) = self.queue.pop_head() {
-            // Move the current thread to the head of its work queue as to not
-            // steal it's time allocation.
-            let current_thread_id = self.sched_mut().move_current_thread_to_front();
-
-            thread.state = State::Ready;
-            self.sched_mut().run_queue.push_back(thread);
-            reschedule(self.into_sched(), current_thread_id);
-        }
+    fn add_to_queue_and_reschedule(mut self, mut thread: ForeignBox<Thread>) -> Self {
+        let current_thread_id = thread.id();
+        let current_thread_name = thread.name;
+        thread.state = State::Waiting;
+        self.queue.push_back(thread);
+        wait_queue_debug!("<{}> rescheduling", current_thread_name);
+        self.reschedule(current_thread_id)
     }
 
-    pub fn wait(mut self) {
+    // Safety:
+    // Caller guarantees that thread is non-null, valid, and process_timeout
+    // has exclusive access to `waiting_thread`.
+    unsafe fn process_timeout(&mut self, waiting_thread: *mut Thread) -> Option<Error> {
+        if unsafe { (*waiting_thread).state } != State::Waiting {
+            // Thread has already been woken.
+            return None;
+        }
+
+        let Some(mut thread) = (unsafe {
+            self.queue
+                .remove_element(NonNull::new_unchecked(waiting_thread))
+        }) else {
+            panic!("thread no longer in wait queue");
+        };
+
+        wait_queue_debug!("<{}> timeout", thread.name);
+        thread.state = State::Ready;
+        self.sched_mut().run_queue.push_back(thread);
+        Some(Error::DeadlineExceeded)
+    }
+
+    pub fn wake_one(mut self) -> Self {
+        let Some(mut thread) = self.queue.pop_head() else {
+            return self;
+        };
+        wait_queue_debug!("waking <{}>", thread.name);
+        thread.state = State::Ready;
+        self.sched_mut().run_queue.push_back(thread);
+        self
+    }
+
+    pub fn wait(mut self) -> Self {
+        let Some(thread) = self.sched_mut().current_thread.take() else {
+            panic!("no active thread");
+        };
+        wait_queue_debug!("<{}> waiting", thread.name);
+        self = self.add_to_queue_and_reschedule(thread);
+        wait_queue_debug!("<{}> back", self.sched().current_thread_name());
+        self
+    }
+
+    pub fn wait_until(mut self, deadline: Instant) -> (Self, Result<()>) {
         let Some(mut thread) = self.sched_mut().current_thread.take() else {
             panic!("no active thread");
         };
-        let current_thread_id = thread.id();
-        thread.state = State::Waiting;
-        self.queue.push_back(thread);
-        reschedule(self.into_sched(), current_thread_id);
+
+        wait_queue_debug!("<{}> wait_until", thread.name);
+
+        // Smuggle references to the thread and wait queue into the callback.
+        // Safety:
+        // * The thread will always exists (TODO: support thread termination)
+        // * The wait queue will outlive the callback because it will either
+        //   fire while the thread is in the wait queue or will be the timer
+        //   will be canceled before this function returns.
+        // * All access to thread_ptr and wait_queue_ptr in the callback are
+        //   done while the wait queue lock is held.
+        let thread_ptr = unsafe { thread.as_mut_ptr() };
+        let smuggled_wait_queue = unsafe { self.smuggle() };
+
+        // Safety:
+        // * Only accessed while the wait_queue_lock is held;
+        let result: UnsafeCell<Result<()>> = UnsafeCell::new(Ok(()));
+        let result_ptr = result.get();
+
+        // Timeout callback will remove the thread from the wait queue and put
+        // it back on the run queue.
+        let mut callback_closure = move |callback: ForeignBox<TimerCallback>, _now| {
+            // Safety: wait queue lock is valid for the lifetime of the callback.
+            let mut wait_queue = unsafe { smuggled_wait_queue.lock() };
+
+            // Safety: the wait queue lock protects access to the thread.
+            wait_queue_debug!(
+                "timeout callback for {} ({})",
+                unsafe { (*thread_ptr).name },
+                unsafe { to_string((*thread_ptr).state) }
+            );
+
+            // Safety: We know that thread_ptr is valid for the life of `wait_until`
+            // and this callback will either be called or canceled before `wait_until`
+            // returns.
+            if let Some(error) = unsafe { wait_queue.process_timeout(thread_ptr) } {
+                // Safety: Acquisition of the wait queue lock at the beginning of
+                // the callback ensures mutual exclusion with accesses from the
+                // body of `wait_until`.
+                unsafe { result_ptr.write_volatile(Err(error)) };
+            }
+
+            let _ = callback.consume();
+        };
+
+        let mut callback = TimerCallback::new(deadline, unsafe {
+            ForeignBox::new_from_ptr(&raw mut callback_closure)
+        });
+        let callback_ptr = &raw mut callback;
+        TimerQueue::schedule_timer(unsafe { ForeignBox::new_from_ptr(callback_ptr) });
+
+        // Safety: It is important hold on to the WaitQueue lock that is returned
+        // from reschedule as the pointers needed by the timer canceling code
+        // below rely on it for correctness.
+        self = self.add_to_queue_and_reschedule(thread);
+
+        wait_queue_debug!("<{}> back", self.sched().current_thread_name());
+
+        // Cancel timeout callback if has not already fired.
+        //
+        // Safety: callback_ptr is valid until callback goes out of scope.
+        unsafe { TimerQueue::cancel_and_consume_timer(NonNull::new_unchecked(callback_ptr)) };
+
+        wait_queue_debug!(
+            "<{}> exiting wait_until",
+            self.sched().current_thread_name()
+        );
+
+        // Safety:
+        //
+        // At this point the thread will be in the run queue by virtue of
+        // `reschedule()` return and the timer callback will have fired or be
+        // canceled.  This leaves not dangling references to our "smuggled"
+        // pointers.
+        //
+        // It is also now safe to read the result UnsafeCell
+        (self, unsafe { result.get().read_volatile() })
     }
 }
 

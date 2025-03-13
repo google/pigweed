@@ -15,9 +15,20 @@ use crate::scheduler;
 use core::sync::atomic;
 use cortex_m::peripheral::*;
 use pw_log::info;
+use time::Clock as _;
 
-const TICKS_PER_SEC: u32 = 10000000; // 10Mhz
+const TICKS_PER_SEC: u32 = 1000000; // 1Mhz
 const TICK_HZ: u32 = 100;
+
+pub struct Clock;
+
+impl time::Clock for Clock {
+    const TICKS_PER_SEC: u64 = TICK_HZ as u64;
+
+    fn now() -> time::Instant<Self> {
+        time::Instant::from_ticks(TICKS.load(atomic::Ordering::SeqCst) as u64)
+    }
+}
 
 // Store the total number of 100hz ticks we've accumulated to service
 // current_time below.
@@ -46,7 +57,10 @@ pub fn systick_early_init(syst: &mut SYST) {
     syst.enable_interrupt();
 }
 
-pub fn systick_init() {}
+pub fn systick_init() {
+    info!("ticks_per_10ms: {}", SYST::get_ticks_per_10ms());
+    assert_eq!(SYST::get_ticks_per_10ms() * 100, TICKS_PER_SEC);
+}
 
 #[no_mangle]
 #[allow(non_snake_case)]
@@ -55,22 +69,5 @@ pub unsafe extern "C" fn SysTick() {
 
     //info!("SysTick {}", current_time_ms());
 
-    scheduler::tick(ticks_to_ms());
-}
-
-fn ticks_to_ms() -> u32 {
-    // TODO: handle unsafe wrapping multiplies
-    TICKS.load(atomic::Ordering::Relaxed) * 1000000 / TICK_HZ
-}
-
-fn ticks_elapsed() -> u32 {
-    // TODO: handle unsafe wrapping multiplies
-    (TICKS_PER_SEC / TICK_HZ) - SYST::get_current()
-}
-
-#[allow(dead_code)]
-pub fn current_time_ms() -> u32 {
-    let time = ticks_to_ms() + (ticks_elapsed() * 1000000 / TICKS_PER_SEC);
-
-    time
+    scheduler::tick(Clock::now());
 }

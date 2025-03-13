@@ -39,11 +39,22 @@ impl super::ThreadState for ThreadState {
     }
 }
 
+pub struct Clock;
+
+impl time::Clock for Clock {
+    const TICKS_PER_SEC: u64 = 1_000_000;
+
+    fn now() -> time::Instant<Self> {
+        time::Instant::from_ticks(0)
+    }
+}
+
 pub struct Arch {}
 
 impl ArchInterface for Arch {
     type ThreadState = ThreadState;
     type BareSpinLock = spinlock::BareSpinLock;
+    type Clock = Clock;
 
     fn early_init() {
         info!("HOST arch early init");
