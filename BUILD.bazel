@@ -48,6 +48,11 @@ alias(
     actual = "//pw_watch/py:bazel",
 )
 
+alias(
+    name = "format",
+    actual = "//pw_presubmit/py:format",
+)
+
 # Symlink to clangd, for user convenience.
 copy_file(
     name = "copy_clangd",
