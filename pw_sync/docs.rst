@@ -550,14 +550,17 @@ More information on Clang's thread safety analysis system can be found
 Enabling Clang's Analysis
 -------------------------
 In order to enable the analysis, Clang requires that the ``-Wthread-safety``
-compilation flag be used. In addition, if any STL components like
-``std::lock_guard`` are used, the STL's built in annotations have to be manually
-enabled, typically by setting the ``_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS``
-macro.
+compilation flag be used. To also enable ``PW_ACQUIRED_AFTER`` and/or
+``PW_ACQUIRED_BEFORE``, it also requires the ``-Wthread-safety-beta``
+compilation flag. And if any STL components like ``std::lock_guard`` are used,
+the STL's built in annotations should be manually enabled, typically by setting
+the ``_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS`` macro.
 
 If using GN, the ``pw_build:clang_thread_safety_warnings`` config is provided
-to do this for you, when added to your clang toolchain definition's default
-configs.
+to do all of the above for you, when added to your clang toolchain definition's
+default configs.
+
+
 
 Why use lock annotations?
 -------------------------

@@ -185,7 +185,10 @@ config("strict_warnings") {
 
 # Thread safety warnings are only supported by Clang.
 config("clang_thread_safety_warnings") {
-  cflags = [ "-Wthread-safety" ]
+  cflags = [
+    "-Wthread-safety",
+    "-Wthread-safety-beta",
+  ]
   defines = [ "_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1" ]
 }
 
