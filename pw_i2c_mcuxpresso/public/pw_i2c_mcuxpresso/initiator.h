@@ -59,7 +59,7 @@ class McuxpressoInitiator final : public Initiator {
                                        i2c_master_handle_t* handle,
                                        status_t status,
                                        void* initiator_ptr)
-      PW_GUARDED_BY(callback_isl_);
+      PW_LOCKS_EXCLUDED(callback_isl_);
   // inclusive-language: enable
 
   sync::Mutex mutex_;

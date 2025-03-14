@@ -72,8 +72,8 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
                            pw::i2c::Address address,
                            pw::ByteSpan buffer);
   pw::Status DoTransferFor(span<const Message> messages,
-                           chrono::SystemClock::duration timeout);
-  PW_LOCKS_EXCLUDED(mutex_);
+                           chrono::SystemClock::duration timeout)
+      PW_LOCKS_EXCLUDED(mutex_);
 
   pw::Result<i3c_bus_type_t> ValidateAndDetermineProtocol(
       span<const Message> messages) const;
