@@ -155,7 +155,7 @@ enum L2capCommandRejectReasonCode:
     -- Typically a channel is invalid because it does not exist.
 
 
-enum L2capOptionType:
+enum L2capConfigurationOptionType:
   -- Core Spec v6.0, Vol 3, Part A, Section 5
   [maximum_bits: 8]
   MTU = 0x01
@@ -172,14 +172,17 @@ enum L2capConfigurationResult:
   FAILURE_FLOW_SPEC_REJECT        = 0x0005
 
 
-struct L2capOption(remaining_size: UInt:32):
+struct L2capConfigurationOptionHeader:
   -- Core Spec v6.0, Vol 3, Part A, Section 5
-  0               [+1]                     L2capOptionType                  option_type
-  $next           [+1]                     UInt                             option_length
-  $next           [+option_length]         UInt:8[]                         option_data
-  if remaining_size > option_length+2:
-    let new_remaining_size = remaining_size-option_length-2
-    option_length+2 [+new_remaining_size]  L2capOption(new_remaining_size)  next
+  0     [+1]  L2capConfigurationOptionType  option_type
+  $next [+1]  UInt                          option_length
+
+
+struct L2capMtuConfigurationOption:
+  -- Core Spec v6.0, Vol 3, Part A, Section 5.1
+  [requires: header.option_type == L2capConfigurationOptionType.MTU]
+  0     [+2]  L2capConfigurationOptionHeader  header
+  $next [+2]  UInt:16                         mtu
 
 
 struct CFrame:
@@ -302,7 +305,7 @@ struct L2capConfigureReq(length: UInt:32):
     15    [+1]                                         Flag                         continuation_flag
 
   let options_size = length-2-2-L2capSignalingCommandHeader.$size_in_bytes
-  $next [+options_size]                                L2capOption(options_size)    options
+  $next [+options_size]                                UInt:8[+options_size]        options
 
 
 struct L2capConfigureRsp(length: UInt:32):
@@ -318,7 +321,7 @@ struct L2capConfigureRsp(length: UInt:32):
 
   $next [+2]                                           L2capConfigurationResult     result
   let config_size = length-2-2-2-L2capSignalingCommandHeader.$size_in_bytes
-  $next [+config_size]                                 UInt:8[]                     configs
+  $next [+config_size]                                 UInt:8[+config_size]         configs
 
 
 struct L2capDisconnectionReq:
