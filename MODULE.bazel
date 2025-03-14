@@ -84,7 +84,7 @@ single_version_override(
 git_override(
     module_name = "googletest",
     commit = "e54519b09463cec3aea77a1739e02c97ca766da5",
-    remote = "https://github.com/google/googletest.git",
+    remote = "https://pigweed.googlesource.com/third_party/github/google/googletest.git",
 )
 
 single_version_override(
