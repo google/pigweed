@@ -144,8 +144,7 @@ class Twenty48Game:
 
     def update_max_value(self) -> None:
         for _row, _col, value in self.all_cells():
-            if value > self.max_value:
-                self.max_value = value
+            self.max_value = max(self.max_value, value)
 
     def empty_cells(self) -> Iterable[Twenty48Cell]:
         for row, row_cells in enumerate(self.board):

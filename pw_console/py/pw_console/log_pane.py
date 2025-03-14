@@ -928,9 +928,10 @@ class LogPane(WindowPane):
     ) -> None:
         """Add a log handlers to this LogPane."""
 
+        assert isinstance(logger, (logging.Logger, str))
         if isinstance(logger, logging.Logger):
             logger_instance = logger
-        elif isinstance(logger, str):
+        else:
             logger_instance = logging.getLogger(logger)
 
         if level_name:

@@ -174,8 +174,10 @@ class TestCipdSetupUpdate(unittest.TestCase):
             Path('web.json'),
         ]
 
-        with importlib.resources.path(
-            'pw_env_setup.cipd_setup', 'upstream.json'
+        with importlib.resources.as_file(
+            importlib.resources.files('pw_env_setup.cipd_setup').joinpath(
+                'upstream.json'
+            )
         ) as upstream_json:
             all_files = all_package_files(None, [upstream_json])
             all_files_relative = [

@@ -81,10 +81,12 @@ disable=broad-exception-raised,
         redundant-u-string-prefix,
         subprocess-run-check,
         superfluous-parens,
+        too-many-positional-arguments,
         unnecessary-lambda-assignment,
         unspecified-encoding,
         use-dict-literal,
         use-list-literal,
+        useless-return,
 
 
 # Enable the message, report, category or checker with the given id(s). You can

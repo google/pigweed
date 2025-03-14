@@ -581,12 +581,18 @@ saturn =
     def test_importing_package_data(self) -> None:
         self.assertIn(
             'EMPTY.CSV',
-            importlib.resources.read_text(test_dist1_data, 'empty.csv'),
+            (
+                importlib.resources.files(test_dist1_data)
+                .joinpath('empty.csv')
+                .read_text()
+            ),
         )
         self.assertIn(
             'EMPTY.CSV',
-            importlib.resources.read_text(
-                'test_dist1_data.subdir', 'empty.csv'
+            (
+                importlib.resources.files('test_dist1_data.subdir')
+                .joinpath('empty.csv')
+                .read_text()
             ),
         )
 

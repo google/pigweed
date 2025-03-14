@@ -40,9 +40,12 @@ class PwConsoleWeb:
         self.test_mode_log_loop = asyncio.new_event_loop()
         html_package_path = f'{PW_CONSOLE_MODULE}.html'
         self.html_files = {
-            '/{}'.format(t): importlib.resources.read_text(html_package_path, t)
-            for t in importlib.resources.contents(html_package_path)
-            if Path(t).suffix in ['.css', '.html', '.js', '.json']
+            '/{}'.format(resource.name): resource.read_text()
+            for resource in importlib.resources.files(
+                html_package_path
+            ).iterdir()
+            if resource.is_file()
+            and Path(resource.name).suffix in ['.css', '.html', '.js', '.json']
         }
         self.global_vars = global_vars
         self.loggers = loggers
@@ -56,8 +59,10 @@ class PwConsoleWeb:
 
     def start(self) -> None:
         if self.test_mode:
-            rstdoc_text = importlib.resources.read_text(
-                f'{PW_CONSOLE_MODULE}.docs', 'user_guide.rst'
+            rstdoc_text = (
+                importlib.resources.files(f'{PW_CONSOLE_MODULE}.docs')
+                .joinpath('user_guide.rst')
+                .read_text()
             )
 
             start_fake_logger(

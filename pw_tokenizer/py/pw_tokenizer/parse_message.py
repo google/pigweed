@@ -102,7 +102,7 @@ def _read_stdin():
         while True:
             yield input()
     except KeyboardInterrupt:
-        return
+        pass
 
 
 def _text_list(items: Sequence, conjunction: str = 'or') -> str:

@@ -59,7 +59,10 @@ def _rm_dir(path_to_delete: pathlib.Path) -> None:
     on_rm_error = None
     if platform.system() == 'Windows':
         on_rm_error = make_writable_and_delete
-    shutil.rmtree(path_to_delete, onerror=on_rm_error)
+    shutil.rmtree(  # pylint: disable=deprecated-argument
+        path_to_delete,
+        onerror=on_rm_error,
+    )
 
 
 def main(

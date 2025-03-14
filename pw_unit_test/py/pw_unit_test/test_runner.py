@@ -418,6 +418,7 @@ def parse_metadata(metadata: list[str], root: str) -> dict[str, TestGroup]:
                 tests.append(all_tests[test_binary])
 
         if deps:
+            # pylint: disable=possibly-used-before-assignment
             group_deps.append((group_name, deps))
 
         num_tests += len(tests)

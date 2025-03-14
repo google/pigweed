@@ -122,8 +122,10 @@ class Zephyr(pw_package.git_repo.GitRepo):
         super().install(path)
 
         self.__populate_download_cache_from_cipd(path)
-        with importlib.resources.path(
-            pw_env_setup.virtualenv_setup, 'constraint.list'
+        with importlib.resources.as_file(
+            importlib.resources.files(pw_env_setup.virtualenv_setup).joinpath(
+                'constraint.list'
+            )
         ) as constraint:
             subprocess.check_call(
                 [

@@ -165,8 +165,7 @@ def _flatten(*items):
 
     for item in items:
         if isinstance(item, (list, tuple)):
-            for i in _flatten(*item):
-                yield i
+            yield from _flatten(*item)
         else:
             yield item
 

@@ -149,10 +149,10 @@ def acquire_lock(lockfile: Path, exclusive: bool):
 
     start_time = time.monotonic()
     if exclusive:
-        # pylint: disable-next=used-before-assignment
+        # pylint: disable=possibly-used-before-assignment,used-before-assignment
         lock_type = fcntl.LOCK_EX  # type: ignore[name-defined]
     else:
-        # pylint: disable-next=used-before-assignment
+        # pylint: disable=possibly-used-before-assignment
         lock_type = fcntl.LOCK_SH  # type: ignore[name-defined]
     fd = os.open(lockfile, os.O_RDWR | os.O_CREAT)
 
@@ -166,11 +166,11 @@ def acquire_lock(lockfile: Path, exclusive: bool):
     backoff = 1
     while time.monotonic() - start_time < _LOCK_ACQUISITION_TIMEOUT:
         try:
-            # pylint: disable=used-before-assignment
+            # pylint: disable=possibly-used-before-assignment
             fcntl.flock(  # type: ignore[name-defined]
                 fd, lock_type | fcntl.LOCK_NB  # type: ignore[name-defined]
             )
-            # pylint: enable=used-before-assignment
+            # pylint: enable=possibly-used-before-assignment
             return  # Lock acquired!
         except BlockingIOError:
             pass  # Keep waiting.

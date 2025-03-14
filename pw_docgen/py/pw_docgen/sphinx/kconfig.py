@@ -42,6 +42,10 @@ except ImportError:
     is_bazel_build = False
 
 
+class MissingKconfigRoot(Exception):
+    pass
+
+
 def rst_to_doctree(rst: str) -> Iterable[docutils.nodes.Node]:
     """Convert raw reStructuredText into doctree nodes."""
     # TODO: b/288127315 - Properly resolve references within the rst so that
@@ -132,11 +136,14 @@ def generate_kconfig_reference(
     # Only run this logic on one specific page.
     if 'docs/os/zephyr/kconfig' not in docname:
         return
+    root = None
     # Get the last `section` node in the doc. This is where we'll append the
     # auto-generated content.
     for child in doctree.children:
         if isinstance(child, docutils.nodes.section):
             root = child
+    if not root:
+        raise MissingKconfigRoot
     file_path = f'{app.confdir}/Kconfig.zephyr'
     kconfig = kconfiglib.Kconfig(file_path)
     # There's no need to process kconfig.top_node (the main menu) or

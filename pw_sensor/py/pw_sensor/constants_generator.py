@@ -249,9 +249,11 @@ def main() -> None:
     spec: InputSpec = create_dataclass_from_dict(InputSpec, yaml_input)
 
     jinja_templates = {
-        t: importlib.resources.read_text("pw_sensor.templates", t)
-        for t in importlib.resources.contents("pw_sensor.templates")
-        if t.endswith(".jinja")
+        resource.name: resource.read_text()
+        for resource in importlib.resources.files(
+            "pw_sensor.templates"
+        ).iterdir()
+        if resource.is_file() and resource.name.endswith('.jinja')
     }
     environment = jinja2.Environment(
         loader=jinja2.DictLoader(jinja_templates),

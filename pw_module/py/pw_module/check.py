@@ -65,6 +65,7 @@ def check_module(module) -> bool:
         issues = list(check.run(module))
 
         # Log any issues found
+        log_level = logging.INFO
         for issue in issues:
             if issue.severity == Severity.ERROR:
                 log_level = logging.ERROR

@@ -305,6 +305,7 @@ def map_segments_to_memory_regions(
                     # We found the subregion the segment resides in.
                     segment_to_memory_region[segment] = memory_region_name
         if segment not in segment_to_memory_region:
+            # pylint: disable=logging-not-lazy
             _LOG.error(
                 f'Error: Failed to find memory region for LOAD #{segment} '
                 + f'[{hex(segment_start)},{hex(segment_end)}]'

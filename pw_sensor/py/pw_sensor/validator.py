@@ -24,15 +24,21 @@ import jsonschema.exceptions  # type: ignore
 import yaml
 
 _METADATA_SCHEMA = yaml.safe_load(
-    importlib.resources.read_text("pw_sensor", "metadata_schema.json")
+    importlib.resources.files("pw_sensor")
+    .joinpath("metadata_schema.json")
+    .read_text()
 )
 
 _DEPENDENCY_SCHEMA = yaml.safe_load(
-    importlib.resources.read_text("pw_sensor", "dependency_schema.json")
+    importlib.resources.files("pw_sensor")
+    .joinpath("dependency_schema.json")
+    .read_text()
 )
 
 _RESOLVED_SCHEMA = yaml.safe_load(
-    importlib.resources.read_text("pw_sensor", "resolved_schema.json")
+    importlib.resources.files("pw_sensor")
+    .joinpath("resolved_schema.json")
+    .read_text()
 )
 
 

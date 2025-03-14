@@ -238,4 +238,5 @@ def run_tests(
             )
             for event_handler in event_handlers:
                 event_handler.test_case_expect(current_test_case, expectation)
+    # pylint: disable=used-before-assignment
     return test_record

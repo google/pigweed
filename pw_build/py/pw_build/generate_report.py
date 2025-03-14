@@ -217,7 +217,9 @@ def generate_report(
         if output.returncode != 0:
             _LOG.error(output.stderr)
             return output.returncode
+        # pylint: disable=possibly-used-before-assignment
         export_output_path.write_bytes(output.stdout)
+        # pylint: enable=possibly-used-before-assignment
 
     # Generate the depfile that describes the dependency on the test binaries
     # used to create the report output.

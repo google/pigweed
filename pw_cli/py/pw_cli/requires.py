@@ -51,13 +51,14 @@ _DNS = ' '.join(
         'SUBMIT',
     )
 )
-
+# pylint: disable=line-too-long
 # Subset of the output from pushing to Gerrit.
 DEFAULT_OUTPUT = f'''
 remote:
 remote:   https://{HELPER_GERRIT}-review.git.corp.google.com/c/{HELPER_PROJECT}/+/123456789 {_DNS} [NEW]
 remote:
 '''.strip()
+# pylint: enable=line-too-long
 
 _LOG = logging.getLogger(__name__)
 

@@ -1241,7 +1241,7 @@ def _read_notice_lines(file: TextIO) -> Iterable[str]:
         for _ in range(12):  # The notice is 13 lines; read the remaining 12.
             yield next(lines)
     except StopIteration:
-        return
+        pass
 
 
 @filter_paths(exclude=_EXCLUDE_FROM_COPYRIGHT_NOTICE)

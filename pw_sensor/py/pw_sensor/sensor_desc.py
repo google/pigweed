@@ -31,7 +31,9 @@ logging.basicConfig(level=logging.DEBUG)
 _LOG = logging.getLogger("sensor-describe")
 
 _OUTPUT_SCHEMA = yaml.safe_load(
-    importlib.resources.read_text("pw_sensor", "resolved_schema.json")
+    importlib.resources.files("pw_sensor")
+    .joinpath("resolved_schema.json")
+    .read_text()
 )
 
 

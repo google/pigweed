@@ -188,10 +188,8 @@ class QemuLauncher(Launcher):
         max_ser = -1
         for serial in serials.keys():
             num = int(serial.split('serial')[1])
-            if num < min_ser:
-                min_ser = num
-            if num > max_ser:
-                max_ser = num
+            min_ser = min(min_ser, num)
+            max_ser = max(max_ser, num)
         for i in range(min_ser, max_ser + 1):
             if serials.get(f'serial{i}'):
                 name = serials[f'serial{i}']

@@ -66,7 +66,7 @@ def _get_miniterm(emu: Emulator, chan: str) -> Miniterm:
     chan_type = emu.get_channel_type(chan)
     if chan_type == 'tcp':
         host, port = emu.get_channel_addr(chan)
-        url = f'socket://[{host}]:{port}'
+        url = f'socket://{host}:{port}'
     elif chan_type == 'pty':
         url = emu.get_channel_path(chan)
     else:
