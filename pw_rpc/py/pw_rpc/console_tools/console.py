@@ -229,6 +229,16 @@ class Context:
        context = console_tools.Context(
            clients, default_client, protos, help_header=WELCOME_MESSAGE)
        IPython.start_ipython(argv=[], user_ns=dict(**context.variables()))
+
+    Or with ptpython:
+
+    .. code-block:: python
+
+       from ptpython.repl import embed
+
+       context = console_tools.Context(
+           clients, default_client, protos, help_header=WELCOME_MESSAGE)
+       embed(globals(), dict(**context.variables()))
     """
 
     def __init__(
