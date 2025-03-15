@@ -36,7 +36,11 @@ pw_add_test(pw_async2.poll_test
 
 pw_add_library(pw_async2.dispatcher_base STATIC
   HEADERS
+    public/pw_async2/context.h
     public/pw_async2/dispatcher_base.h
+    public/pw_async2/task.h
+    public/pw_async2/waker.h
+    public/pw_async2/internal/lock.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS

@@ -60,7 +60,11 @@ cc_library(
         "dispatcher_base.cc",
     ],
     hdrs = [
+        "public/pw_async2/context.h",
         "public/pw_async2/dispatcher_base.h",
+        "public/pw_async2/internal/lock.h",
+        "public/pw_async2/task.h",
+        "public/pw_async2/waker.h",
     ],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
@@ -415,6 +419,7 @@ filegroup(
     name = "doxygen",
     srcs = [
         "public/pw_async2/allocate_task.h",
+        "public/pw_async2/context.h",
         "public/pw_async2/coro.h",
         "public/pw_async2/coro_or_else_task.h",
         "public/pw_async2/dispatcher.h",
@@ -428,6 +433,8 @@ filegroup(
         "public/pw_async2/poll.h",
         "public/pw_async2/simulated_time_provider.h",
         "public/pw_async2/system_time_provider.h",
+        "public/pw_async2/task.h",
         "public/pw_async2/time_provider.h",
+        "public/pw_async2/waker.h",
     ],
 )
