@@ -13,10 +13,10 @@
 # the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//pw_build:compatibility.bzl", "host_backend_alias")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -51,15 +51,10 @@ cc_library(
 
 label_flag(
     name = "backend",
-    build_setting_default = ":system_server_backend_multiplexer",
+    build_setting_default = ":unspecified_backend",
 )
 
-cc_library(
-    name = "system_server_backend_multiplexer",
-    visibility = ["//targets:__pkg__"],
-    deps = select({
-        "//pw_build/constraints/board:mimxrt595_evk": ["//pw_hdlc:hdlc_sys_io_system_server"],
-        "//pw_build/constraints/board:stm32f429i-disc1": ["//pw_hdlc:hdlc_sys_io_system_server"],
-        "//conditions:default": ["//targets/host:system_rpc_server"],
-    }),
+host_backend_alias(
+    name = "unspecified_backend",
+    backend = "//targets/host:system_rpc_server",
 )
