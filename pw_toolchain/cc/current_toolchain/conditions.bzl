@@ -15,28 +15,28 @@
 
 def if_compiler_is_clang(then, *, otherwise):
     return select({
-        "//pw_toolchain/cc/current_toolchain:compiler_is_clang": then,
+        Label("//pw_toolchain/cc/current_toolchain:compiler_is_clang"): then,
         "@rules_cc//cc/compiler:clang": then,
         "//conditions:default": otherwise,
     })
 
 def if_compiler_is_gcc(then, *, otherwise):
     return select({
-        "//pw_toolchain/cc/current_toolchain:compiler_is_gcc": then,
+        Label("//pw_toolchain/cc/current_toolchain:compiler_is_gcc"): then,
         "@rules_cc//cc/compiler:gcc": then,
         "//conditions:default": otherwise,
     })
 
 def if_linker_is_clang(then, *, otherwise):
     return select({
-        "//pw_toolchain/cc/current_toolchain:linker_is_clang": then,
+        Label("//pw_toolchain/cc/current_toolchain:linker_is_clang"): then,
         "@rules_cc//cc/compiler:clang": then,
         "//conditions:default": otherwise,
     })
 
 def if_linker_is_gcc(then, *, otherwise):
     return select({
-        "//pw_toolchain/cc/current_toolchain:linker_is_gcc": then,
+        Label("//pw_toolchain/cc/current_toolchain:linker_is_gcc"): then,
         "@rules_cc//cc/compiler:gcc": then,
         "//conditions:default": otherwise,
     })

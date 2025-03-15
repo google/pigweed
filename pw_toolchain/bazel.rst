@@ -220,11 +220,11 @@ Example:
    cc_library(
        copts = if_compiler_is_clang(
            ["-fno-codegen"],
-           default = [],
+           otherwise = [],
        ),
        linkopts = if_linker_is_gcc(
            ["-Wl,--delete-main"],
-           default = [],
+           otherwise = [],
        ),
        srcs = ["lib.cc"],
    )
