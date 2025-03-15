@@ -144,7 +144,10 @@ cc_library(
         ":port_ARM_CM3": ["portable/GCC/ARM_CM3/portmacro.h"],
         # TODO: https://pwbug.dev/352591911 - Decide if we should support older
         # versions that are missing portmacrocommon.h.
-        ":port_ARM_CM33_NTZ": glob(["portable/GCC/ARM_CM33_NTZ/non_secure/*.h"]),
+        ":port_ARM_CM33_NTZ": glob(
+            ["portable/GCC/ARM_CM33_NTZ/non_secure/*.h"],
+            allow_empty = True,
+        ),
         ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/portmacro.h"],
         ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/portmacro.h"],
         ":port_Xtensa": [
