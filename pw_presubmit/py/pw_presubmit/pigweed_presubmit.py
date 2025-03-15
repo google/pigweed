@@ -1581,8 +1581,6 @@ INCLUDE_CHECK_EXCEPTIONS = (
     "//pw_interrupt_cortex_m:context",
     "//pw_log_fuchsia:pw_log_fuchsia",
     "//pw_log_null:headers",
-    "//pw_log_tokenized:gcc_partially_tokenized",
-    "//pw_log_tokenized:pw_log_tokenized",
     "//pw_metric:metric_service_pwpb",
     "//pw_multibuf:internal_test_utils",
     "//pw_perf_test:arm_cortex_timer",

@@ -20,7 +20,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -53,28 +52,35 @@ cc_library(
         "public_overrides/pw_log_backend/log_backend.h",
         "public_overrides/pw_log_backend/log_backend_uses_pw_tokenizer.h",
     ],
-    includes = [
-        "public_overrides",
-    ],
+    strip_include_prefix = "public_overrides",
     tags = ["noclangtidy"],
     deps = [
         ":handler.facade",
         ":headers",
         "//pw_log:pw_log.facade",
+        "//pw_tokenizer",
     ],
 )
 
 cc_library(
     name = "gcc_partially_tokenized",
-    srcs = ["log_tokenized.cc"],
     hdrs = [
         "gcc_partially_tokenized_public_overrides/pw_log_backend/log_backend.h",
+    ],
+    strip_include_prefix = "gcc_partially_tokenized_public_overrides",
+    deps = [
+        ":gcc_partially_tokenized_private",
+        ":headers",
+    ],
+)
+
+cc_library(
+    name = "gcc_partially_tokenized_private",
+    srcs = ["log_tokenized.cc"],
+    hdrs = [
         "public/pw_log_tokenized/gcc_partially_tokenized.h",
     ],
-    includes = [
-        "gcc_partially_tokenized_public_overrides",
-        "public",
-    ],
+    strip_include_prefix = "public",
     deps = [
         ":handler",
         ":headers",
@@ -125,7 +131,9 @@ cc_library(
         ":base64",
         ":handler.facade",
         "//pw_hdlc",
+        "//pw_span",
         "//pw_stream:sys_io_stream",
+        "//pw_string:string",
         "//pw_tokenizer:base64",
     ],
 )
@@ -140,6 +148,7 @@ pw_cc_test(
     deps = [
         ":base64",
         ":headers",
+        "//pw_preprocessor",
     ],
 )
 
