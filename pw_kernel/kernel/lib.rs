@@ -32,6 +32,12 @@ use scheduler::{yield_timeslice, Stack, Thread, SCHEDULER_STATE};
 use sync::mutex::Mutex;
 use timer::{Clock, Duration};
 
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "C" fn pw_assert_HandleFailure() -> ! {
+    Arch::panic();
+}
+
 // A structure intended to be statically allocated to hold a Thread structure that will
 // be constructed at run time.
 #[repr(C, align(4))]
@@ -51,7 +57,7 @@ impl ThreadBuffer {
     // make sure this function can only be called once.
     #[inline(never)]
     unsafe fn alloc_thread(&mut self, name: &'static str) -> ForeignBox<Thread> {
-        assert!(self.buffer.as_ptr().align_offset(align_of::<Thread>()) == 0);
+        pw_assert::eq!(self.buffer.as_ptr().align_offset(align_of::<Thread>()), 0);
         let thread_ptr = self.buffer.as_mut_ptr() as *mut Thread;
         thread_ptr.write(Thread::new(name));
         ForeignBox::new_from_ptr(&mut *thread_ptr)
@@ -95,7 +101,7 @@ impl Kernel {
 // completion of main in thread context
 fn bootstrap_thread_entry(_arg: usize) {
     info!("Welcome to the first thread, continuing bootstrap");
-    assert!(Arch::interrupts_enabled());
+    pw_assert::assert!(Arch::interrupts_enabled());
 
     Arch::init();
 
@@ -155,7 +161,7 @@ fn bootstrap_thread_entry(_arg: usize) {
     SCHEDULER_STATE.lock().dump_all_threads();
 
     info!("End of kernel test");
-    assert!(Arch::interrupts_enabled());
+    pw_assert::assert!(Arch::interrupts_enabled());
 
     info!("Exiting bootstrap thread");
 }
@@ -163,7 +169,7 @@ fn bootstrap_thread_entry(_arg: usize) {
 #[allow(dead_code)]
 fn idle_thread_entry(_arg: usize) {
     // Fake idle thread to keep the runqueue from being empty if all threads are blocked.
-    assert!(Arch::interrupts_enabled());
+    pw_assert::assert!(Arch::interrupts_enabled());
     loop {
         Arch::idle();
     }
@@ -174,7 +180,7 @@ static TEST_COUNTER: Mutex<u64> = Mutex::new(0);
 #[allow(dead_code)]
 fn test_thread_entry_a(_arg: usize) {
     info!("I'm thread A");
-    assert!(Arch::interrupts_enabled());
+    pw_assert::assert!(Arch::interrupts_enabled());
     loop {
         let mut counter = TEST_COUNTER.lock();
         info!("Thread A incrementing counter");
@@ -186,13 +192,14 @@ fn test_thread_entry_a(_arg: usize) {
 #[allow(dead_code)]
 fn test_thread_entry_b(_arg: usize) {
     info!("I'm thread B");
-    assert!(Arch::interrupts_enabled());
+    pw_assert::assert!(Arch::interrupts_enabled());
     loop {
         let Ok(counter) = TEST_COUNTER.lock_until(Clock::now() + Duration::from_millis(500)) else {
             info!("Thread B: timeout");
             continue;
         };
         info!("Thread B: counter value {}", *counter as u64);
+        pw_assert::ne!(*counter, 2);
         drop(counter);
         yield_timeslice();
     }

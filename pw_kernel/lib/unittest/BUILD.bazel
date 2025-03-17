@@ -65,6 +65,7 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         ":unittest_core",
+        "//pw_kernel/kernel",
         "//pw_kernel/subsys/console:console_backend",
         "@pigweed//pw_log/rust:pw_log",
     ],

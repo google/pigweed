@@ -21,7 +21,7 @@ rust_library(
     name = "foreign_box",
     srcs = ["foreign_box.rs"],
     tags = ["kernel"],
-    deps = ["//pw_log/rust:pw_log"],
+    deps = ["//pw_kernel/lib/pw_assert"],
 )
 
 # foreign_box uses the std rust test harness to allow asserting that it panics
@@ -29,6 +29,7 @@ rust_library(
 rust_test(
     name = "foreign_box_test",
     crate = ":foreign_box",
+    crate_features = ["core_panic"],
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
     deps = ["//pw_kernel/subsys/console:console_backend"],

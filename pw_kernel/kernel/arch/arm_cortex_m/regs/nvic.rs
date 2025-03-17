@@ -21,6 +21,7 @@ const IABR_BASE: *mut u32 = 0xe000e300 as *mut u32;
 const IPR_BASE: *mut u32 = 0xe000e400 as *mut u32;
 
 const unsafe fn bit_reg_and_mask(index: usize, reg_base: *mut u32) -> (*mut u32, u32) {
+    // core::assert! used due to const context.
     assert!(index < 32 * 16);
     let offset = index / 32;
     let mask = 1 << (index % 32);
@@ -38,6 +39,7 @@ unsafe fn set_indexed_bit(index: usize, reg_base: *mut u32) {
 }
 
 const unsafe fn priority_reg_and_offset(index: usize, reg_base: *mut u32) -> (*mut u32, usize) {
+    // core::assert! used due to const context.
     assert!(index < 32 * 16);
     let reg_offset = index / 4;
     let field_offset = (index % 4) * 8;

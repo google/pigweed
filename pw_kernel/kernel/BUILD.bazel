@@ -62,6 +62,7 @@ rust_library(
         "//pw_kernel/lib/foreign_box",
         "//pw_kernel/lib/list",
         "//pw_kernel/lib/log_if",
+        "//pw_kernel/lib/pw_assert",
         "//pw_kernel/lib/pw_status",
         "//pw_kernel/lib/regs",
         "//pw_kernel/lib/time",

@@ -119,8 +119,8 @@ impl<T> Mutex<T> {
     fn unlock(&self) {
         let mut state = self.state.lock();
 
-        assert!(state.count > 0);
-        assert_eq!(state.holder_thread_id, state.sched().current_thread_id());
+        pw_assert::assert!(state.count > 0);
+        pw_assert::eq!(state.holder_thread_id, state.sched().current_thread_id());
         state.holder_thread_id = Thread::null_id();
 
         state.count -= 1;

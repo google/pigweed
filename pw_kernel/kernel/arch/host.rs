@@ -32,10 +32,10 @@ impl super::ThreadState for ThreadState {
         _old_thread_state: *mut ThreadState,
         _new_thread_state: *mut ThreadState,
     ) -> SpinLockGuard<'_, SchedulerState> {
-        panic!("unimplemented");
+        pw_assert::panic!("unimplemented");
     }
     fn initialize_frame(&mut self, _stack: Stack, _initial_function: fn(usize), _arg0: usize) {
-        panic!("unimplemented");
+        pw_assert::panic!("unimplemented");
     }
 }
 

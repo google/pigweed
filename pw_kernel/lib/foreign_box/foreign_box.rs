@@ -21,8 +21,6 @@ use core::{
     ptr::NonNull,
 };
 
-use pw_log::fatal;
-
 pub struct ForeignBox<T: ?Sized> {
     inner: NonNull<T>,
 
@@ -61,7 +59,11 @@ impl<T: ?Sized> ForeignBox<T> {
     /// of the `ForeignBox` object.
     pub unsafe fn new_from_ptr(ptr: *mut T) -> Self {
         let Some(ptr) = NonNull::new(ptr) else {
-            panic!("Null pointer");
+            if cfg!(feature = "core_panic") {
+                panic!("Null pointer");
+            } else {
+                pw_assert::panic!("Null pointer");
+            }
         };
         Self::new(ptr)
     }
@@ -91,12 +93,17 @@ impl<T: ?Sized> ForeignBox<T> {
 impl<T: ?Sized> Drop for ForeignBox<T> {
     fn drop(&mut self) {
         if !self.consumed {
-            // TODO: Build out `pw_log` friendly panics.
-            fatal!(
-                "ForeignBox@{:08x} dropped before being consumed!",
-                self.inner.as_ptr() as *const () as usize
-            );
-            panic!("ForeignBox dropped before being consumed!");
+            if cfg!(feature = "core_panic") {
+                panic!(
+                    "ForeignBox@{:08x} dropped before being consumed!",
+                    self.inner.as_ptr() as *const () as usize
+                );
+            } else {
+                pw_assert::panic!(
+                    "ForeignBox@{:08x} dropped before being consumed!",
+                    self.inner.as_ptr() as *const () as usize
+                );
+            }
         }
     }
 }
@@ -133,7 +140,6 @@ mod tests {
 
     // Ensure that the console backend (needed for pw_log) is linked.
     use console_backend as _;
-
     #[test]
     fn consume_returns_the_same_pointer() {
         let mut value = 0xdecafbad_u32;

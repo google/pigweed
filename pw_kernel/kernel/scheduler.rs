@@ -135,7 +135,7 @@ impl Thread {
     // thread prior to starting it
     #[allow(dead_code)]
     pub fn initialize(&mut self, stack: Stack, entry_point: fn(usize), arg: usize) -> &mut Thread {
-        assert!(self.state == State::New);
+        pw_assert::assert!(self.state == State::New);
         self.stack = stack;
 
         // Call the arch to arrange for the thread to start directly
@@ -154,7 +154,8 @@ impl Thread {
     pub fn start(mut thread: ForeignBox<Self>) {
         info!("starting thread {:#x}", thread.id() as usize);
 
-        assert!(thread.state == State::Initial);
+        pw_assert::assert!(thread.state == State::Initial);
+
         thread.state = State::Ready;
 
         let mut sched_state = SCHEDULER_STATE.lock();
@@ -205,7 +206,7 @@ pub fn bootstrap_scheduler(mut thread: ForeignBox<Thread>) -> ! {
 
     // TODO: assert that this is called exactly once at bootup to switch
     // to this particular thread.
-    assert!(thread.state == State::Initial);
+    pw_assert::assert!(thread.state == State::Initial);
     thread.state = State::Ready;
 
     sched_state.run_queue.push_back(thread);
@@ -217,7 +218,7 @@ pub fn bootstrap_scheduler(mut thread: ForeignBox<Thread>) -> ! {
     sched_state.current_arch_thread_state = &raw mut temp_arch_thread_state;
 
     reschedule(sched_state, Thread::null_id());
-    panic!("should not reach here");
+    pw_assert::panic!("should not reach here");
 }
 
 // Global scheduler state (single processor for now)
@@ -252,7 +253,7 @@ impl SchedulerState {
 
     fn move_current_thread_to_back(&mut self) -> usize {
         let Some(mut current_thread) = self.current_thread.take() else {
-            panic!("no current thread");
+            pw_assert::panic!("no current thread");
         };
         let current_thread_id = current_thread.id();
         current_thread.state = State::Ready;
@@ -263,7 +264,7 @@ impl SchedulerState {
     #[allow(dead_code)]
     fn move_current_thread_to_front(&mut self) -> usize {
         let Some(mut current_thread) = self.current_thread.take() else {
-            panic!("no current thread");
+            pw_assert::panic!("no current thread");
         };
         let current_thread_id = current_thread.id();
         current_thread.state = State::Ready;
@@ -315,7 +316,7 @@ impl SchedulerState {
 
     #[allow(dead_code)]
     fn insert_in_run_queue_head(&mut self, thread: ForeignBox<Thread>) {
-        assert!(thread.state == State::Ready);
+        pw_assert::assert!(thread.state == State::Ready);
         // info!("pushing thread {:#x} on run queue head", thread.id());
 
         self.run_queue.push_front(thread);
@@ -323,7 +324,7 @@ impl SchedulerState {
 
     #[allow(dead_code)]
     fn insert_in_run_queue_tail(&mut self, thread: ForeignBox<Thread>) {
-        assert!(thread.state == State::Ready);
+        pw_assert::assert!(thread.state == State::Ready);
         // info!("pushing thread {:#x} on run queue tail", thread.id());
 
         self.run_queue.push_back(thread);
@@ -338,7 +339,7 @@ fn reschedule(
     // Caller to reschedule is responsible for removing current thread and
     // put it in the correct run/wait queue.
 
-    assert!(sched_state.current_thread.is_none());
+    pw_assert::assert!(sched_state.current_thread.is_none());
 
     // info!("reschedule");
 
@@ -346,13 +347,14 @@ fn reschedule(
     // At the moment cannot handle an empty queue, so will panic in that case.
     // TODO: Implement either an idle thread or a special idle routine for that case.
     let Some(mut new_thread) = sched_state.run_queue.pop_head() else {
-        panic!("run_queue empty");
+        pw_assert::panic!("run_queue empty");
     };
 
-    if new_thread.state != State::Ready {
-        info!("<{}> not ready", new_thread.name);
-    }
-    assert!(new_thread.state == State::Ready);
+    pw_assert::assert!(
+        new_thread.state == State::Ready,
+        "<{}> not ready",
+        new_thread.name
+    );
     new_thread.state = State::Running;
 
     if current_thread_id == new_thread.id() {
@@ -420,7 +422,7 @@ pub fn exit_thread() -> ! {
     let mut sched_state = SCHEDULER_STATE.lock();
 
     let Some(mut current_thread) = sched_state.current_thread.take() else {
-        panic!("no current thread");
+        pw_assert::panic!("no current thread");
     };
     let current_thread_id = current_thread.id();
 
@@ -478,7 +480,7 @@ impl SchedLockGuard<'_, WaitQueue> {
             self.queue
                 .remove_element(NonNull::new_unchecked(waiting_thread))
         }) else {
-            panic!("thread no longer in wait queue");
+            pw_assert::panic!("thread no longer in wait queue");
         };
 
         wait_queue_debug!("<{}> timeout", thread.name);
@@ -499,7 +501,7 @@ impl SchedLockGuard<'_, WaitQueue> {
 
     pub fn wait(mut self) -> Self {
         let Some(thread) = self.sched_mut().current_thread.take() else {
-            panic!("no active thread");
+            pw_assert::panic!("no active thread");
         };
         wait_queue_debug!("<{}> waiting", thread.name);
         self = self.add_to_queue_and_reschedule(thread);
@@ -509,7 +511,7 @@ impl SchedLockGuard<'_, WaitQueue> {
 
     pub fn wait_until(mut self, deadline: Instant) -> (Self, Result<()>) {
         let Some(mut thread) = self.sched_mut().current_thread.take() else {
-            panic!("no active thread");
+            pw_assert::panic!("no active thread");
         };
 
         wait_queue_debug!("<{}> wait_until", thread.name);

@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 use console_backend as _;
+use kernel as _;
 use pw_log::{error, info};
 
 #[no_mangle]

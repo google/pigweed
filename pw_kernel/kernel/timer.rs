@@ -128,7 +128,7 @@ impl TimerQueue {
             drop(timer_queue);
 
             let Some(mut callback_fn) = callback.callback.take() else {
-                panic!("Non callback function found on timer");
+                pw_assert::panic!("Non callback function found on timer");
             };
             (callback_fn)(callback, now);
             let _ = callback_fn.consume();
