@@ -79,11 +79,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         bt::l2cap::internal::DynamicChannelRegistry::ServiceInfo(
             params, service_chan_cb));
   };
+  // Random channel IDs are disabled because they result in infinite loops in
+  // RandomGenerator::GetInt when the remaining fuzzer data is all 0 or there
+  // is insufficient remaining data.
   bt::l2cap::internal::BrEdrDynamicChannelRegistry registry(
       &sig_chan,
       close_cb,
       service_cb,
-      /*random_channel_ids=*/true);
+      /*random_channel_ids=*/false);
 
   while (provider.remaining_bytes() > 0) {
     // Receive an l2cap packet.

@@ -68,10 +68,13 @@ class DataFuzzTest : public TestingBase {
         hci::DataBufferInfo(kMaxDataPacketLength, kBufferMaxNumPackets);
     InitializeACLDataChannel(bredr_buffer_info);
 
+    // Random channel IDs are disabled because they result in infinite loops in
+    // RandomGenerator::GetInt when the remaining fuzzer data is all 0 or there
+    // is insufficient remaining data.
     channel_manager_ =
         l2cap::ChannelManager::Create(transport()->acl_data_channel(),
                                       transport()->command_channel(),
-                                      /*random_channel_ids=*/true,
+                                      /*random_channel_ids=*/false,
                                       dispatcher());
   }
 
