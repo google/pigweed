@@ -73,12 +73,24 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     settings.ApplyLegacyLEConfig();
     test_device()->set_settings(settings);
 
-    hci::AdvertisingPacketFilter::Config packet_filter_config(false, 0);
+    test_device()->set_scan_state_callback([this](auto&& PH1) {
+      OnScanStateChanged(std::forward<decltype(PH1)>(PH1));
+    });
 
-    // TODO(armansito): Now that the hci::LowEnergyScanner is injected into
-    // |discovery_manager_| rather than constructed by it, a fake implementation
-    // could be injected directly. Consider providing fake behavior here in this
-    // harness rather than using a FakeController.
+    SetupDiscoveryManager();
+  }
+
+  void TearDown() override {
+    discovery_manager_ = nullptr;
+    scanner_ = nullptr;
+    test_device()->Stop();
+    TestingBase::TearDown();
+  }
+
+ protected:
+  void SetupDiscoveryManager(
+      hci::AdvertisingPacketFilter::Config packet_filter_config = {false, 0}) {
+    discovery_manager_ = nullptr;
     scanner_ =
         std::make_unique<hci::LegacyLowEnergyScanner>(&fake_address_delegate_,
                                                       packet_filter_config,
@@ -87,22 +99,8 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
         scanner_.get(), &peer_cache_, packet_filter_config, dispatcher());
     discovery_manager_->AttachInspect(inspector_.GetRoot(), kInspectNodeName);
-
-    test_device()->set_scan_state_callback([this](auto&& PH1) {
-      OnScanStateChanged(std::forward<decltype(PH1)>(PH1));
-    });
   }
 
-  void TearDown() override {
-    if (discovery_manager_) {
-      discovery_manager_ = nullptr;
-    }
-    scanner_ = nullptr;
-    test_device()->Stop();
-    TestingBase::TearDown();
-  }
-
- protected:
   LowEnergyDiscoveryManager* discovery_manager() const {
     return discovery_manager_.get();
   }
@@ -1229,6 +1227,26 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(pw::bluetooth::emboss::LEScanType::ACTIVE,
             test_device()->le_scan_state().scan_type);
+  EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
+}
+
+TEST_F(LowEnergyDiscoveryManagerTest, StartScanDuringOffloadedFilters) {
+  SetupDiscoveryManager({true, 8});
+
+  auto session_a = StartDiscoverySession(false);
+  RunUntilIdle();
+  ASSERT_TRUE(test_device()->le_scan_state().enabled);
+
+  // The scan state should transition to enabled.
+  ASSERT_EQ(1u, scan_states().size());
+  EXPECT_TRUE(scan_states()[0]);
+
+  // starting another discovery session while offloading is enabled should cause
+  // us to restart the scan so the new filters can take effect in the Controller
+  hci::DiscoveryFilter filter;
+  filter.set_connectable(true);
+  auto session_b = StartDiscoverySession(false, {filter});
+
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));
 }
 

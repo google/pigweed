@@ -94,11 +94,8 @@ class PeerCache;
 //         session = std::move(new_session);
 //
 //         session->SetResultCallback([](
-//           const bt::hci::LowEnergyScanResult& result,
-//           const bt::ByteBuffer& advertising_data) {
-//             // Do stuff with |result| and |advertising_data|.
-//             // (|advertising_data| contains any received Scan Response data
-//             // as well).
+//           const bt::hci::LowEnergyScanResult& result) {
+//             // Do stuff with |result|
 //           });
 //       });
 //

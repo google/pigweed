@@ -92,6 +92,7 @@ LowEnergyScanner::LowEnergyScanner(
       hci_(std::move(hci)) {
   PW_DCHECK(local_addr_delegate_);
   PW_DCHECK(hci_.is_alive());
+
   hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(
       hci_->command_channel()->AsWeakPtr());
 
@@ -130,6 +131,15 @@ LowEnergyScanner::RemovePendingResult(const DeviceAddress& address) {
 void LowEnergyScanner::SetPacketFilters(
     uint16_t scan_id, const std::vector<DiscoveryFilter>& filters) {
   packet_filter_.SetPacketFilters(scan_id, filters);
+
+  // If there are cached scan results, a scan is currently ongoing. If a scan
+  // session is joining in during an ongoing scan, the cached peers it receives
+  // will be based on the filters which were previously offloaded. We will have
+  // potentially kicked out peers that the new scan session may have been
+  // interested in.
+  if (packet_filter_.IsOffloadedFilteringEnabled()) {
+    cached_scan_results_.clear();
+  }
 }
 
 void LowEnergyScanner::UnsetPacketFilters(uint16_t scan_id) {
@@ -137,9 +147,6 @@ void LowEnergyScanner::UnsetPacketFilters(uint16_t scan_id) {
 }
 
 void LowEnergyScanner::NotifyCachedPeers(uint16_t scan_id) {
-  // If there are cached scan results, a scan is currently ongoing. Immediately
-  // notify new scan sessions that joined in the middle of an ongoing scan of
-  // the cached scan results.
   for (const LowEnergyScanResult& result : cached_scan_results_) {
     AdvertisingData::ParseResult ad = AdvertisingData::FromBytes(result.data());
     bool connectable = result.connectable();

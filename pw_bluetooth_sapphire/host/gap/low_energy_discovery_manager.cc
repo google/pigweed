@@ -152,17 +152,8 @@ void LowEnergyDiscoveryManager::StartDiscovery(
   // includes the state in which we are stopping and restarting scan in
   // between scan periods).
   if (!sessions_.empty()) {
-    if (active) {
-      // If this is the first active session, stop scanning and wait for
-      // OnScanStatus() to initiate active scan.
-      if (!std::any_of(sessions_.begin(), sessions_.end(), [](auto s) {
-            return s.second->active();
-          })) {
-        StopScan();
-      }
-    }
-
     auto session = AddSession(active, std::move(discovery_filters));
+
     // Post the callback instead of calling it synchronously to avoid bugs
     // caused by client code not expecting this.
     (void)heap_dispatcher_.Post(
@@ -172,6 +163,34 @@ void LowEnergyDiscoveryManager::StartDiscovery(
             cb(std::move(discovery_session));
           }
         });
+
+    // If this is the first active session, stop scanning and wait for
+    // OnScanStatus() to initiate active scan.
+    if (active) {
+      for (const auto& [scan_id, s] : sessions_) {
+        if (s->active()) {
+          StopScan();
+          break;
+        }
+      }
+    }
+
+    // If we have already offloaded packet filters to the Controller, the
+    // Controller will only return peers matching the filters it is configured
+    // with. Those filters may not be a strict subset of the newly added scan
+    // session. The new scan session may miss out on previously seen, but
+    // discarded, valid peers. As such, if a scan session is joining during an
+    // ongoing scan, we need to stop the scan, update Controller filters (done
+    // in AddSession(...) above), and then restart the scan (via
+    // OnScanStatus() later).
+    if (scanner_->IsOffloadedFilteringEnabled()) {
+      bt_log(INFO,
+             "gap-le",
+             "offloaded filtering enabled, adding new scan session requires "
+             "reloading all filters in the Controller");
+      StopScan();
+    }
+
     return;
   }
 
@@ -533,8 +552,9 @@ void LowEnergyDiscoveryManager::NotifyPending() {
 
 void LowEnergyDiscoveryManager::StartScan(bool active) {
   auto cb = [self = GetWeakPtr()](auto status) {
-    if (self.is_alive())
+    if (self.is_alive()) {
       self->OnScanStatus(status);
+    }
   };
 
   // TODO(armansito): A client that is interested in scanning nearby beacons
