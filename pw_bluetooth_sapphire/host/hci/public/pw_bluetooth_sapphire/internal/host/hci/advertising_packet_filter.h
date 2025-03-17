@@ -108,7 +108,8 @@ class AdvertisingPacketFilter {
   // Determine whether the Controller has memory available to add |slots| more
   // offloaded filters of the type |filter_type|. If Controller offloading isn't
   // enabled, this method returns false.
-  bool MemoryAvailable(OffloadedFilterType filter_type, uint8_t slots) const;
+  bool MemoryAvailableForSlots(OffloadedFilterType filter_type,
+                               uint8_t slots) const;
 
   // Enable Controller based filtering. After the commands this method issues
   // are run, all advertising packet filtering will occur on the Controller

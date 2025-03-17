@@ -260,35 +260,38 @@ bool AdvertisingPacketFilter::MemoryAvailableForFilter(
 
   if (!filter.service_uuids().empty()) {
     uint8_t value = ++new_slots[OffloadedFilterType::kServiceUUID];
-    if (!MemoryAvailable(OffloadedFilterType::kServiceUUID, value)) {
+    if (!MemoryAvailableForSlots(OffloadedFilterType::kServiceUUID, value)) {
       return false;
     }
   }
 
   if (!filter.service_data_uuids().empty()) {
     uint8_t value = ++new_slots[OffloadedFilterType::kServiceDataUUID];
-    if (!MemoryAvailable(OffloadedFilterType::kServiceDataUUID, value)) {
+    if (!MemoryAvailableForSlots(OffloadedFilterType::kServiceDataUUID,
+                                 value)) {
       return false;
     }
   }
 
   if (!filter.solicitation_uuids().empty()) {
     uint8_t value = ++new_slots[OffloadedFilterType::kSolicitationUUID];
-    if (!MemoryAvailable(OffloadedFilterType::kSolicitationUUID, value)) {
+    if (!MemoryAvailableForSlots(OffloadedFilterType::kSolicitationUUID,
+                                 value)) {
       return false;
     }
   }
 
   if (!filter.name_substring().empty()) {
     uint8_t value = ++new_slots[OffloadedFilterType::kLocalName];
-    if (!MemoryAvailable(OffloadedFilterType::kLocalName, value)) {
+    if (!MemoryAvailableForSlots(OffloadedFilterType::kLocalName, value)) {
       return false;
     }
   }
 
   if (filter.manufacturer_code().has_value()) {
     uint8_t value = ++new_slots[OffloadedFilterType::kManufacturerCode];
-    if (!MemoryAvailable(OffloadedFilterType::kManufacturerCode, value)) {
+    if (!MemoryAvailableForSlots(OffloadedFilterType::kManufacturerCode,
+                                 value)) {
       return false;
     }
   }
@@ -324,8 +327,8 @@ bool AdvertisingPacketFilter::MemoryAvailableForFilters(
   return true;
 }
 
-bool AdvertisingPacketFilter::MemoryAvailable(OffloadedFilterType filter_type,
-                                              uint8_t slots) const {
+bool AdvertisingPacketFilter::MemoryAvailableForSlots(
+    OffloadedFilterType filter_type, uint8_t slots) const {
   if (!config_.offloading_enabled()) {
     return false;
   }
