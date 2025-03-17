@@ -149,8 +149,8 @@ status must be returned, see :ref:`module-pw_status-guide-status-with-size`.
 Returning a result from a function
 ==================================
 To return a result from a function, return either a value (implicitly indicating
-success), or a `non-OK pw::Status <module-pw_status-codes>` object otherwise (to
-indicate failure).
+success), or a :ref:`non-OK pw::Status <module-pw_status-codes>` object
+otherwise (to indicate failure).
 
 .. code-block:: cpp
 
