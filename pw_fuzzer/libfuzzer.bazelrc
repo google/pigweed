@@ -20,9 +20,7 @@ build:libfuzzer \
 build:libfuzzer \
     --@rules_fuzzing//fuzzing:cc_engine_instrumentation=libfuzzer
 build:libfuzzer --@rules_fuzzing//fuzzing:cc_engine_sanitizer=asan
-build:libfuzzer \
-    --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
-build:libfuzzer --platforms=@pigweed//pw_unit_test:googletest_platform
+build:libfuzzer --config=googletest
 
 test:libfuzzer --test_output=streamed
 
