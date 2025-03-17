@@ -450,6 +450,10 @@ inline constexpr int8_t kLEAdvertisingTxPowerMin = -127;
 inline constexpr int8_t kLEAdvertisingTxPowerMax = 20;
 inline constexpr int8_t kLEExtendedAdvertisingTxPowerNoPreference = 0x7F; // Vol 4, Part E, 7.8.53
 
+// The valid range of RSSI values in event packets. Core Spec v6.0, Vol 4, Part E, 7.7.38.
+inline constexpr int8_t kMinRssi = -127;
+inline constexpr int8_t kMaxRssi = 20;
+
 // Values used in enabling extended advertising. See Core Spec v5.0 Vol 4, Part E, 7.8.56.
 inline constexpr uint8_t kMaxAdvertisingHandle = 0xEF;
 inline constexpr uint8_t kNoMaxExtendedAdvertisingEvents = 0;
