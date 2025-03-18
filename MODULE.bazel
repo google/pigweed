@@ -365,7 +365,7 @@ use_repo(maven, "pigweed_maven_deps")
 cipd_repository(
     name = "qemu",
     build_file = "//third_party/qemu:qemu.BUILD",
-    path = "fuchsia/third_party/qemu/${os}-${arch}",
+    path = "fuchsia/third_party/qemu/${platform}",
     tag = "git_revision:aa90f1161bb17a4863e16ec2f75104cff0752d4e",
 )
 
