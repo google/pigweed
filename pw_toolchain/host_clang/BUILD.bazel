@@ -20,7 +20,6 @@ load("@rules_cc//cc/toolchains:feature_constraint.bzl", "cc_feature_constraint")
 load("@rules_cc//cc/toolchains:feature_set.bzl", "cc_feature_set")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
 load("//pw_toolchain/cc:builtin_module_map.bzl", "builtin_module_map")
-load("//pw_toolchain/host_clang:paths.bzl", "LLVM_TOOLCHAIN")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -41,8 +40,9 @@ cc_args(
         # Force dropping the system libc++.
         "-nostdlib++",
         # Use libc++ provided by the toolchain.
-        LLVM_TOOLCHAIN + "/lib/libc++.a",
+        "{TOOLCHAIN_ROOT}/lib/libc++.a",
     ],
+    format = {"TOOLCHAIN_ROOT": "@llvm_toolchain//:toolchain_root"},
     target_compatible_with = ["@platforms//os:macos"],
 )
 
@@ -282,10 +282,7 @@ cc_feature(
 # Symlink to clangd, for user convenience.
 copy_file(
     name = "copy_clangd",
-    src = select({
-        "@platforms//os:macos": "@llvm_toolchain_macos//:bin/clangd",
-        "//conditions:default": "@llvm_toolchain//:bin/clangd",
-    }),
+    src = "@llvm_toolchain//:bin/clangd",
     out = "clangd",
     allow_symlink = True,
 )
@@ -293,10 +290,7 @@ copy_file(
 # Symlink to clang-tidy, for user convenience.
 copy_file(
     name = "copy_clang_tidy",
-    src = select({
-        "@platforms//os:macos": "@llvm_toolchain_macos//:clang-tidy",
-        "//conditions:default": "@llvm_toolchain//:clang-tidy",
-    }),
+    src = "@llvm_toolchain//:clang-tidy",
     out = "clang-tidy",
     allow_symlink = True,
     is_executable = True,
@@ -347,9 +341,9 @@ builtin_module_map(
             "@linux_sysroot//:usr-include",
         ],
         "@platforms//os:macos": [
-            "@llvm_toolchain_macos//:include-x86_64-unknown-linux-gnu-c++-v1",
-            "@llvm_toolchain_macos//:include-c++-v1",
-            "@llvm_toolchain_macos//:lib-clang-include",
+            "@llvm_toolchain//:include-x86_64-unknown-linux-gnu-c++-v1",
+            "@llvm_toolchain//:include-c++-v1",
+            "@llvm_toolchain//:lib-clang-include",
             "@macos_sysroot//:usr-include",
             "@macos_sysroot//:CoreFoundation.framework-Headers",
             "@macos_sysroot//:IOKit.framework-Headers",
@@ -452,10 +446,7 @@ cc_toolchain(
         ":layering_check_enabled": ":builtin_module_map",
         "//conditions:default": None,
     }),
-    tool_map = select({
-        "@platforms//os:macos": "@llvm_toolchain_macos//:all_tools",
-        "//conditions:default": "@llvm_toolchain//:all_tools",
-    }),
+    tool_map = "@llvm_toolchain//:all_tools",
 )
 
 toolchain(
