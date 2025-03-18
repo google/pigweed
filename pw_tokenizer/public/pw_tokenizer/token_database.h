@@ -86,10 +86,10 @@ class TokenDatabase {
 
   template <typename T>
   static constexpr uint32_t ReadUint32(const T* bytes) {
-    return static_cast<uint8_t>(bytes[0]) |
-           static_cast<uint8_t>(bytes[1]) << 8 |
-           static_cast<uint8_t>(bytes[2]) << 16 |
-           static_cast<uint8_t>(bytes[3]) << 24;
+    return static_cast<uint32_t>(static_cast<uint8_t>(bytes[0]) |
+                                 static_cast<uint8_t>(bytes[1]) << 8 |
+                                 static_cast<uint8_t>(bytes[2]) << 16 |
+                                 static_cast<uint8_t>(bytes[3]) << 24);
   }
 
  public:
@@ -152,7 +152,7 @@ class TokenDatabase {
     constexpr const Entry* operator->() const { return &entry_; }
 
     constexpr difference_type operator-(const iterator& rhs) const {
-      return (raw_ - rhs.raw_) / sizeof(RawEntry);
+      return (raw_ - rhs.raw_) / static_cast<difference_type>(sizeof(RawEntry));
     }
 
    private:
@@ -196,7 +196,9 @@ class TokenDatabase {
         : begin_(begin), end_(end) {}
 
     // The number of entries in this list.
-    constexpr size_type size() const { return end_ - begin_; }
+    constexpr size_type size() const {
+      return static_cast<size_type>(end_ - begin_);
+    }
 
     // True of the list is empty.
     constexpr bool empty() const { return begin_ == end_; }
@@ -265,7 +267,7 @@ class TokenDatabase {
 
   /// Returns the total number of entries (unique token-string pairs).
   constexpr size_type size() const {
-    return (end_.data - begin_.data) / sizeof(RawEntry);
+    return static_cast<size_type>(end_.data - begin_.data) / sizeof(RawEntry);
   }
 
   /// True if this database was constructed with valid data. The database might

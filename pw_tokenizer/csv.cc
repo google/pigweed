@@ -26,7 +26,9 @@ constexpr char kSeparator = ',';
 
 }  // namespace
 
-std::optional<std::vector<std::string>> CsvParser::ParseCharacterOrEof(int ch) {
+std::optional<std::vector<std::string>> CsvParser::ParseCharacterOrEof(
+    int val) {
+  const char ch = static_cast<char>(val);
   switch (state_) {
     case kNewEntry:
       if (ch == '"') {
@@ -43,7 +45,7 @@ std::optional<std::vector<std::string>> CsvParser::ParseCharacterOrEof(int ch) {
       }
       break;
     case kUnquotedEntry:
-      if (ch == kEndOfFile || IsLineEnd(ch)) {
+      if (val == kEndOfFile || IsLineEnd(ch)) {
         return FinishLine();
       }
       if (ch == kSeparator) {
@@ -54,7 +56,7 @@ std::optional<std::vector<std::string>> CsvParser::ParseCharacterOrEof(int ch) {
       }
       break;
     case kQuotedEntry:
-      if (ch == kEndOfFile) {
+      if (val == kEndOfFile) {
         PW_LOG_WARN("Unexpected end-of-file in quoted entry; ignoring line");
       } else if (ch == '"') {
         state_ = kQuotedEntryQuote;
@@ -66,7 +68,7 @@ std::optional<std::vector<std::string>> CsvParser::ParseCharacterOrEof(int ch) {
       if (ch == '"') {
         state_ = kQuotedEntry;
         line_.back().push_back('"');
-      } else if (ch == kEndOfFile || IsLineEnd(ch)) {
+      } else if (val == kEndOfFile || IsLineEnd(ch)) {
         return FinishLine();
       } else if (ch == kSeparator) {
         state_ = kNewEntry;

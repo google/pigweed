@@ -38,7 +38,7 @@ class CsvParser {
 
   std::optional<std::vector<std::string>> FinishLine();
 
-  std::optional<std::vector<std::string>> ParseCharacterOrEof(int ch);
+  std::optional<std::vector<std::string>> ParseCharacterOrEof(int val);
 
   enum {
     kNewEntry,

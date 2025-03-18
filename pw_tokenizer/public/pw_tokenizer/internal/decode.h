@@ -258,7 +258,7 @@ DecodedArg DecodedArg::FromValue(const char* format,
   }
 
   // Reserve space in the value string for the snprintf call.
-  arg.value_.append(value_size + 1, '\0');
+  arg.value_.append(static_cast<size_t>(value_size) + 1, '\0');
 
   // Print the value to the string in the reserved space, then pop off the \0.
   std::snprintf(arg.value_.data(), arg.value_.size(), format, value);
