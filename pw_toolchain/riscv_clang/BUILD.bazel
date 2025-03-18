@@ -111,7 +111,7 @@ cc_toolchain(
         ":imc": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    tool_map = "@llvm_toolchain_device//:all_tools",
+    tool_map = "@llvm_toolchain//:all_tools",
     visibility = ["//pw_toolchain:__pkg__"],
 )
 

@@ -219,7 +219,7 @@ cc_toolchain(
     name = "arm_clang_toolchain_cortex-m",
     args = [
         ":cxx_compiler_flags",
-        "@llvm_toolchain_device//:llvm-libc_args",
+        "@llvm_toolchain//:llvm-libc_args",
         ":thumb_abi",
         ":cortex_common",
         ":cortex_common_link",
@@ -271,7 +271,7 @@ cc_toolchain(
         "//pw_build/constraints/arm:cortex-m33": [],
         "//pw_build/constraints/arm:none": ["@platforms//:incompatible"],
     }),
-    tool_map = "@llvm_toolchain_device//:all_tools",
+    tool_map = "@llvm_toolchain//:all_tools",
     visibility = ["//pw_toolchain:__pkg__"],
 )
 
@@ -306,7 +306,7 @@ cc_toolchain(
     name = "arm_clang_toolchain_cortex-a",
     args = [
         ":cxx_compiler_flags",
-        "@llvm_toolchain_device//:llvm-libc_args",
+        "@llvm_toolchain//:llvm-libc_args",
         ":cortex_common",
         ":cortex_common_link",
         ":warnings",
@@ -343,7 +343,7 @@ cc_toolchain(
         "//pw_build/constraints/arm:cortex-a35": [],
         "//pw_build/constraints/arm:none": ["@platforms//:incompatible"],
     }),
-    tool_map = "@llvm_toolchain_device//:all_tools",
+    tool_map = "@llvm_toolchain//:all_tools",
     visibility = ["//pw_toolchain:__pkg__"],
 )
 

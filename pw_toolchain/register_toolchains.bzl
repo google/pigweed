@@ -62,14 +62,6 @@ def register_pigweed_cxx_toolchains(
         build_file = "@pigweed//pw_toolchain/host_clang:macos_sysroot.BUILD",
     )
 
-    # Fetch llvm toolchain for device.
-    cipd_repository(
-        name = "llvm_toolchain_device",
-        build_file = "@pigweed//pw_toolchain/build_external:llvm_clang.BUILD",
-        path = "fuchsia/third_party/clang/${os}-${arch}",
-        tag = "git_revision:553da9634dc4bae215e6c850d2de3186d09f9da5" if not clang_tag else clang_tag,
-    )
-
     # Fetch llvm toolchain for host.
     cipd_repository(
         name = "llvm_toolchain",
