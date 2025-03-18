@@ -64,6 +64,7 @@ cc_library(
 pw_cc_test(
     name = "chunk_test",
     srcs = ["chunk_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":chunk",
         ":header_chunk_region_tracker",
@@ -74,6 +75,7 @@ pw_cc_test(
 pw_cc_test(
     name = "header_chunk_region_tracker_test",
     srcs = ["header_chunk_region_tracker_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":chunk",
         ":header_chunk_region_tracker",
@@ -112,6 +114,7 @@ cc_library(
 pw_cc_test(
     name = "multibuf_test",
     srcs = ["multibuf_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
         ":pw_multibuf",
@@ -145,6 +148,7 @@ cc_library(
     hdrs = [
         "public/pw_multibuf/allocator_async.h",
     ],
+    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
@@ -158,6 +162,7 @@ cc_library(
 pw_cc_test(
     name = "allocator_test",
     srcs = ["allocator_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":allocator",
         ":allocator_async",
@@ -170,6 +175,7 @@ cc_library(
     name = "simple_allocator",
     srcs = ["simple_allocator.cc"],
     hdrs = ["public/pw_multibuf/simple_allocator.h"],
+    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
@@ -184,6 +190,7 @@ cc_library(
 pw_cc_test(
     name = "simple_allocator_test",
     srcs = ["simple_allocator_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":simple_allocator",
         "//pw_allocator:null_allocator",
@@ -208,6 +215,7 @@ cc_library(
 pw_cc_test(
     name = "stream_test",
     srcs = ["stream_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
         ":pw_multibuf",
@@ -230,6 +238,7 @@ cc_library(
 pw_cc_test(
     name = "from_span_test",
     srcs = ["from_span_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":from_span",
         "//pw_allocator:testing",
@@ -240,6 +249,7 @@ cc_library(
     name = "testing",
     testonly = True,
     hdrs = ["public/pw_multibuf/simple_allocator_for_test.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":simple_allocator",
@@ -254,6 +264,7 @@ cc_library(
     name = "internal_test_utils",
     testonly = True,
     hdrs = ["pw_multibuf_private/test_utils.h"],
+    features = ["-conversion_warnings"],
     includes = ["pw_multibuf_private"],
     visibility = ["//visibility:private"],
     deps = [

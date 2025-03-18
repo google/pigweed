@@ -24,6 +24,7 @@ licenses(["notice"])
 pw_cc_binary(
     name = "use_passthrough_proxy",
     srcs = ["use_passthrough_proxy.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_bluetooth_proxy",

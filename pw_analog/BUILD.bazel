@@ -90,6 +90,7 @@ pw_cc_test(
     srcs = [
         "microvolt_input_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [":microvolt_input"],
 )
 

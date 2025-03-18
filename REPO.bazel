@@ -23,9 +23,7 @@ repo(
     # Pigweed, but not when compiling any dependencies hosted in external
     # repositories.
     features = [
-        # TODO: https://pwbug.dev/259746255 - Uncomment this after all broken
-        # targets are allowlisted.
-        # "conversion_warnings",
+        "conversion_warnings",
         "layering_check",
     ],
 )

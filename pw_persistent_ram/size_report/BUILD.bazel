@@ -26,6 +26,7 @@ pw_cc_binary(
     srcs = [
         "persistent.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_persistent_ram",
@@ -37,6 +38,7 @@ pw_cc_binary(
     srcs = [
         "persistent_base.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_persistent_ram",
@@ -48,6 +50,7 @@ pw_cc_binary(
     srcs = [
         "persistent_base_with_crc16.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_persistent_ram",

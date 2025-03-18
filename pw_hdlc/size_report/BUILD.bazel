@@ -35,6 +35,7 @@ deps = [
 pw_cc_binary(
     name = "base",
     srcs = ["hdlc_size_report.cc"],
+    features = ["-conversion_warnings"],
     deps = deps,
 )
 
@@ -42,6 +43,7 @@ pw_cc_binary(
     name = "base_crc",
     srcs = ["hdlc_size_report.cc"],
     copts = ["-DENABLE_CRC=1"],
+    features = ["-conversion_warnings"],
     deps = deps,
 )
 
@@ -53,6 +55,7 @@ pw_cc_binary(
         "-DENABLE_DECODE=1",
         "-DENABLE_CRC",
     ],
+    features = ["-conversion_warnings"],
     deps = deps,
 )
 
@@ -63,5 +66,6 @@ pw_cc_binary(
         "-DENABLE_ENCODE=1",
         "-DENABLE_DECODE=1",
     ],
+    features = ["-conversion_warnings"],
     deps = deps,
 )

@@ -149,6 +149,7 @@ cc_library(
 cc_library(
     name = "small_block_base",
     hdrs = ["public/pw_allocator/block/small_block_base.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":allocatable",
@@ -163,6 +164,7 @@ cc_library(
 cc_library(
     name = "small_block",
     hdrs = ["public/pw_allocator/block/small_block.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [":small_block_base"],
 )
@@ -170,6 +172,7 @@ cc_library(
 cc_library(
     name = "small_alignable_block",
     hdrs = ["public/pw_allocator/block/small_alignable_block.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":alignable",
@@ -180,6 +183,7 @@ cc_library(
 cc_library(
     name = "tiny_block",
     hdrs = ["public/pw_allocator/block/tiny_block.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [":small_block_base"],
 )
@@ -193,6 +197,7 @@ cc_library(
         "public/pw_allocator/block/testing.h",
         "public/pw_allocator/block/unit_tests.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":allocatable",
@@ -218,6 +223,7 @@ pw_cc_test(
 pw_cc_test(
     name = "detailed_block_test",
     srcs = ["detailed_block_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":detailed_block",
         ":testing",
@@ -228,6 +234,7 @@ pw_cc_test(
 pw_cc_test(
     name = "small_block_test",
     srcs = ["small_block_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":small_block",
         ":testing",
@@ -238,6 +245,7 @@ pw_cc_test(
 pw_cc_test(
     name = "small_alignable_block_test",
     srcs = ["small_alignable_block_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":small_alignable_block",
         ":testing",
@@ -248,6 +256,7 @@ pw_cc_test(
 pw_cc_test(
     name = "tiny_block_test",
     srcs = ["tiny_block_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":testing",
         ":tiny_block",

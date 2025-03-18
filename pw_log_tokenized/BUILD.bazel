@@ -92,12 +92,14 @@ cc_library(
 alias(
     name = "impl",
     actual = ":handler",
+    features = ["-conversion_warnings"],
 )
 
 pw_facade(
     name = "handler",
     hdrs = ["public/pw_log_tokenized/handler.h"],
     backend = ":handler_backend",
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = ["//pw_preprocessor"],
 )
@@ -105,6 +107,7 @@ pw_facade(
 label_flag(
     name = "handler_backend",
     build_setting_default = ":base64_over_hdlc",
+    features = ["-conversion_warnings"],
 )
 
 # There is no default backend for now.
@@ -126,6 +129,7 @@ cc_library(
 cc_library(
     name = "base64_over_hdlc",
     srcs = ["base64_over_hdlc.cc"],
+    features = ["-conversion_warnings"],
     tags = ["noclangtidy"],
     deps = [
         ":base64",

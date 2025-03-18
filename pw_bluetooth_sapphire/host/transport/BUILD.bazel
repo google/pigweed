@@ -50,6 +50,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/transport/slab_allocators.h",
         "public/pw_bluetooth_sapphire/internal/host/transport/transport.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
@@ -75,6 +76,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/transport/fake_sco_data_channel.h",
         "public/pw_bluetooth_sapphire/internal/host/transport/mock_acl_data_channel.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
@@ -95,6 +97,7 @@ pw_cc_test(
         "slab_allocators_test.cc",
         "transport_test.cc",
     ],
+    features = ["-conversion_warnings"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":testing",

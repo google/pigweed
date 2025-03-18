@@ -34,6 +34,7 @@ cc_library(
 pw_cc_test(
     name = "color_test",
     srcs = ["color_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [":color"],
 )
 

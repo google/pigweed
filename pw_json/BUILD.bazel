@@ -41,6 +41,7 @@ cc_library(
 pw_cc_test(
     name = "builder_test",
     srcs = ["builder_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":builder",
         "//pw_assert:check",

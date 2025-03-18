@@ -85,6 +85,7 @@ cc_library(
     name = "metric_service_nanopb",
     srcs = ["metric_service_nanopb.cc"],
     hdrs = ["public/pw_metric/metric_service_nanopb.h"],
+    features = ["-conversion_warnings"],
     implementation_deps = [
         "//pw_assert:check",
         "//pw_containers:vector",
@@ -198,6 +199,7 @@ pw_cc_test(
     srcs = [
         "metric_service_nanopb_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":metric_service_nanopb",
         "//pw_rpc/nanopb:test_method_context",
@@ -209,6 +211,7 @@ pw_cc_test(
     srcs = [
         "metric_service_pwpb_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":metric_service_pwpb",
         "//pw_rpc/pwpb:test_method_context",

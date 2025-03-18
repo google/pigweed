@@ -61,6 +61,7 @@ cc_library(
         "public/pw_trace_tokenized/trace_tokenized.h",
         "public_overrides/pw_trace_backend/trace_backend.h",
     ],
+    features = ["-conversion_warnings"],
     includes = [
         "public",
         "public_overrides",
@@ -79,6 +80,7 @@ cc_library(
 label_flag(
     name = "trace_time",
     build_setting_default = ":default_trace_time",
+    features = ["-conversion_warnings"],
 )
 
 alias(
@@ -87,6 +89,7 @@ alias(
         "@platforms//os:none": ":pw_trace_tokenized_fake_time",
         "//conditions:default": ":pw_trace_host_trace_time",
     }),
+    features = ["-conversion_warnings"],
 )
 
 cc_library(
@@ -97,6 +100,7 @@ cc_library(
     hdrs = [
         "public/pw_trace_tokenized/base_trace_service.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":buffer",
@@ -114,6 +118,7 @@ cc_library(
     hdrs = [
         "public/pw_trace_tokenized/trace_service_pwpb.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":base_trace_service",
@@ -130,6 +135,7 @@ cc_library(
     hdrs = [
         "public/pw_trace_tokenized/trace_rpc_service_nanopb.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":buffer",
@@ -147,6 +153,7 @@ cc_library(
     hdrs = [
         "public/pw_trace_tokenized/trace_buffer.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":pw_trace_tokenized",
@@ -164,6 +171,7 @@ cc_library(
     hdrs = [
         "public/pw_trace_tokenized/trace_buffer_log.h",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":buffer",
         "//pw_base64",
@@ -251,6 +259,7 @@ pw_cc_test(
     srcs = [
         "trace_test.cc",
     ],
+    features = ["-conversion_warnings"],
     includes = [
         "pw_trace_test",
         "pw_trace_test/public_overrides",
@@ -266,6 +275,7 @@ pw_cc_test(
     srcs = [
         "trace_buffer_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":buffer",
         ":pw_trace_tokenized",
@@ -278,6 +288,7 @@ pw_cc_test(
     srcs = [
         "trace_buffer_log_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":buffer_log",
         ":pw_trace_tokenized",
@@ -290,6 +301,7 @@ pw_cc_test(
     srcs = [
         "trace_service_pwpb_test.cc",
     ],
+    features = ["-conversion_warnings"],
     # TODO: b/343778108 - update to run on all compatible devices
     target_compatible_with = incompatible_with_mcu(),
     deps = [
@@ -304,6 +316,7 @@ pw_cc_test(
 cc_library(
     name = "pw_trace_host_trace_time",
     srcs = ["host_trace_time.cc"],
+    features = ["-conversion_warnings"],
     includes = ["example/public"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [":config"],
@@ -312,6 +325,7 @@ cc_library(
 cc_library(
     name = "pw_trace_example_to_file",
     hdrs = ["example/public/pw_trace_tokenized/example/trace_to_file.h"],
+    features = ["-conversion_warnings"],
     includes = ["example/public"],
     deps = [
         ":pw_trace_tokenized",
@@ -322,6 +336,7 @@ cc_library(
 pw_cc_binary(
     name = "trace_tokenized_example_basic",
     srcs = ["example/basic.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_trace_example_to_file",
         "//pw_log",
@@ -333,6 +348,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "trace_tokenized_example_trigger",
     srcs = ["example/trigger.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_trace_example_to_file",
         "//pw_log",
@@ -344,6 +360,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "trace_tokenized_example_filter",
     srcs = ["example/filter.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_trace_example_to_file",
         "//pw_log",
@@ -355,6 +372,7 @@ pw_cc_binary(
 cc_library(
     name = "trace_tokenized_example_rpc",
     srcs = ["example/rpc.cc"],
+    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     deps = [
         ":trace_rpc_service",
@@ -370,6 +388,7 @@ cc_library(
 cc_library(
     name = "trace_tokenized_example_linux_group_by_tid",
     srcs = ["example/linux_group_by_tid.cc"],
+    features = ["-conversion_warnings"],
     target_compatible_with = select({
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],

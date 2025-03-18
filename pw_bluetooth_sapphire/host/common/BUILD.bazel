@@ -75,6 +75,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/common/weak_self.h",
         "public/pw_bluetooth_sapphire/internal/host/common/windowed_inspect_numeric_property.h",
     ],
+    features = ["-conversion_warnings"],
     implementation_deps = [
         "//pw_string",
         "//pw_string:utf_codecs",
@@ -142,6 +143,7 @@ pw_cc_test(
         "weak_self_test.cc",
         "windowed_inspect_numeric_property_test.cc",
     ],
+    features = ["-conversion_warnings"],
     # TODO: https://pwbug.dev/393957973 - Fix this test.
     tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
@@ -158,5 +160,6 @@ pw_cc_test(
 pw_cc_fuzz_test(
     name = "advertising_data_fuzzer",
     srcs = ["advertising_data_fuzztest.cc"],
+    features = ["-conversion_warnings"],
     deps = [":common"],
 )

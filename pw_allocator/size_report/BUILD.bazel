@@ -62,6 +62,7 @@ pw_cc_size_binary(
 pw_cc_size_binary(
     name = "detailed_block",
     srcs = ["detailed_block.cc"],
+    features = ["-conversion_warnings"],
     deps = _size_report_deps + [
         "//pw_allocator/block:detailed_block",
         "//pw_allocator/bucket:fast_sorted",
@@ -122,12 +123,14 @@ pw_cc_size_binary(
     name = "fast_sorted_base",
     srcs = ["fast_sorted_bucket.cc"],
     defines = ["PW_ALLOCATOR_SIZE_REPORT_BASE"],
+    features = ["-conversion_warnings"],
     deps = _fast_sorted_deps,
 )
 
 pw_cc_size_binary(
     name = "fast_sorted",
     srcs = ["fast_sorted_bucket.cc"],
+    features = ["-conversion_warnings"],
     deps = _fast_sorted_deps,
 )
 
@@ -220,6 +223,7 @@ pw_cc_size_binary(
 pw_cc_size_binary(
     name = "dl_allocator",
     srcs = ["dl_allocator.cc"],
+    features = ["-conversion_warnings"],
     deps = _size_report_deps + ["//pw_allocator:dl_allocator"],
 )
 
@@ -244,6 +248,7 @@ pw_cc_size_binary(
 pw_cc_size_binary(
     name = "tlsf_allocator",
     srcs = ["tlsf_allocator.cc"],
+    features = ["-conversion_warnings"],
     deps = _size_report_deps + ["//pw_allocator:tlsf_allocator"],
 )
 
@@ -274,6 +279,7 @@ pw_cc_size_binary(
     name = "pmr_allocator_base",
     srcs = ["pmr_allocator.cc"],
     defines = ["PW_ALLOCATOR_SIZE_REPORT_BASE"],
+    features = ["-conversion_warnings"],
     deps = _pmr_allocator_base_deps,
 )
 

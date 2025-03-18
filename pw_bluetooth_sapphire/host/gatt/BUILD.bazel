@@ -30,6 +30,7 @@ cc_library(
     hdrs = [
         "public/pw_bluetooth_sapphire/internal/host/gatt/gatt_defs.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
@@ -44,6 +45,7 @@ cc_library(
     hdrs = [
         "public/pw_bluetooth_sapphire/internal/host/gatt/persisted_data.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":definitions",
@@ -78,6 +80,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/gatt/server.h",
         "public/pw_bluetooth_sapphire/internal/host/gatt/types.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
@@ -100,6 +103,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/gatt/fake_layer.h",
         "public/pw_bluetooth_sapphire/internal/host/gatt/mock_server.h",
     ],
+    features = ["-conversion_warnings"],
     implementation_deps = [
         "//pw_bluetooth_sapphire/host/common",
         "//pw_unit_test:googletest",
@@ -124,6 +128,7 @@ pw_cc_test(
         "remote_service_manager_test.cc",
         "server_test.cc",
     ],
+    features = ["-conversion_warnings"],
     # TODO: https://pwbug.dev/393957973 - Fix this test.
     tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",

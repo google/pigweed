@@ -27,6 +27,7 @@ package(features = ["-layering_check"])
 pw_cc_binary(
     name = "server",
     srcs = ["server.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":config_cc_proto",
         "//pw_assert:check",
@@ -73,11 +74,13 @@ pw_py_test(
 proto_library(
     name = "config_proto",
     srcs = ["config.proto"],
+    features = ["-conversion_warnings"],
     deps = ["//pw_protobuf:status_proto"],
 )
 
 cc_proto_library(
     name = "config_cc_proto",
+    features = ["-conversion_warnings"],
     # cc_proto_library pulls in the regular proto library, which is only
     # needed for host tests.
     target_compatible_with = incompatible_with_mcu(),
@@ -98,6 +101,7 @@ pw_cc_binary(
     name = "cpp_client",
     testonly = True,
     srcs = ["client.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":config_cc_proto",
         "//pw_assert:check",
@@ -126,6 +130,7 @@ py_library(
         ":python_client",
         ":server",
     ],
+    features = ["-conversion_warnings"],
     imports = ["."],
     deps = [
         ":config_pb2",
@@ -182,6 +187,7 @@ pw_py_test(
     srcs = [
         "cross_language_medium_read_test.py",
     ],
+    features = ["-conversion_warnings"],
     tags = [
         "integration",
     ],
@@ -200,6 +206,7 @@ pw_py_test(
     srcs = [
         "cross_language_medium_write_test.py",
     ],
+    features = ["-conversion_warnings"],
     tags = [
         "integration",
     ],
@@ -218,6 +225,7 @@ pw_py_test(
     srcs = [
         "cross_language_small_test.py",
     ],
+    features = ["-conversion_warnings"],
     tags = [
         "integration",
     ],
@@ -235,6 +243,7 @@ pw_py_test(
     srcs = [
         "multi_transfer_test.py",
     ],
+    features = ["-conversion_warnings"],
     tags = [
         "integration",
     ],
@@ -250,6 +259,7 @@ pw_py_test(
     name = "expected_errors_test",
     timeout = "long",
     srcs = ["expected_errors_test.py"],
+    features = ["-conversion_warnings"],
     tags = [
         "integration",
     ],
@@ -270,6 +280,7 @@ pw_py_test(
     data = [
         "@pw_transfer_test_binaries//:all",
     ],
+    features = ["-conversion_warnings"],
     tags = [
         "integration",
     ],

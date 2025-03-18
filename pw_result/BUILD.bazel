@@ -62,6 +62,7 @@ pw_cc_test(
 pw_cc_test(
     name = "statusor_test",
     srcs = ["statusor_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_result",
         "//pw_status",

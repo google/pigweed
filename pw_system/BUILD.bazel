@@ -64,6 +64,7 @@ cc_library(
 
 cc_library(
     name = "pw_system",
+    features = ["-conversion_warnings"],
     deps = [
         ":init",
         ":io",
@@ -93,6 +94,7 @@ cc_library(
 label_flag(
     name = "extra_platform_libs",
     build_setting_default = "//targets/host_device_simulator:boot",
+    features = ["-conversion_warnings"],
 )
 
 cc_library(
@@ -103,6 +105,7 @@ cc_library(
     hdrs = [
         "public/pw_system/log.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":config",
@@ -120,6 +123,7 @@ cc_library(
     srcs = [
         "log_backend.cc",
     ],
+    features = ["-conversion_warnings"],
     tags = ["noclangtidy"],
     deps = [
         ":config",
@@ -153,6 +157,7 @@ pw_facade(
         "public/pw_system/rpc_server.h",
     ],
     backend = ":rpc_server_backend",
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":config",
@@ -163,6 +168,7 @@ pw_facade(
 label_flag(
     name = "rpc_server_backend",
     build_setting_default = "//pw_system:hdlc_rpc_server",
+    features = ["-conversion_warnings"],
 )
 
 cc_library(
@@ -170,6 +176,7 @@ cc_library(
     srcs = [
         "hdlc_rpc_server.cc",
     ],
+    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     deps = [
         ":config",
@@ -192,6 +199,7 @@ cc_library(
     hdrs = [
         "public/pw_system/thread_snapshot_service.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         "//pw_rpc",
@@ -252,6 +260,7 @@ cc_library(
     hdrs = [
         "public/pw_system/init.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":benchmark_service",
@@ -312,6 +321,7 @@ cc_library(
     srcs = [
         "socket_target_io.cc",
     ],
+    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
@@ -330,6 +340,7 @@ cc_library(
     hdrs = [
         "public/pw_system/transfer_handlers.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":config",
@@ -347,6 +358,7 @@ cc_library(
     hdrs = [
         "public/pw_system/file_manager.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":config",
@@ -370,6 +382,7 @@ cc_library(
     hdrs = [
         "public/pw_system/transfer_service.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":file_manager",
@@ -399,6 +412,7 @@ cc_library(
     hdrs = [
         "public/pw_system/file_service.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":file_manager",
@@ -413,6 +427,7 @@ cc_library(
     hdrs = [
         "public/pw_system/trace_service.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":transfer_handlers",
@@ -602,6 +617,7 @@ cc_library(
         "threads.cc",
     ],
     hdrs = ["public/pw_system/system.h"],
+    features = ["-conversion_warnings"],
     implementation_deps = [
         ":async_packet_io",
         ":device_service",
@@ -642,6 +658,7 @@ cc_library(
     name = "async_packet_io",
     srcs = ["async_packet_io.cc"],
     hdrs = ["public/pw_system/internal/async_packet_io.h"],
+    features = ["-conversion_warnings"],
     implementation_deps = [
         "//pw_assert:check",
         "//pw_log",
@@ -669,6 +686,7 @@ cc_library(
 pw_cc_test(
     name = "async_packet_io_test",
     srcs = ["async_packet_io_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":async_packet_io",
         "//pw_allocator:testing",
@@ -680,6 +698,7 @@ pw_cc_test(
 pw_cc_test(
     name = "system_async_test",
     srcs = ["system_async_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":async",
         "//pw_allocator:testing",
@@ -692,6 +711,7 @@ pw_cc_binary(
     name = "system_async_host_example",
     testonly = True,
     srcs = ["system_async_host_example.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":async",
         "//pw_assert:check",
@@ -704,12 +724,14 @@ host_device_simulator_binary(
     name = "system_async_host_simulator_example",
     testonly = True,
     binary = ":system_async_host_example",
+    features = ["-conversion_warnings"],
 )
 
 host_device_simulator_binary(
     name = "simulator_system_example",
     testonly = True,
     binary = ":system_example",
+    features = ["-conversion_warnings"],
 )
 
 platform_data(
@@ -742,6 +764,7 @@ flash_rp2350(
 device_simulator_console(
     name = "simulator_system_example_console",
     testonly = True,
+    features = ["-conversion_warnings"],
     host_binary = ":simulator_system_example",
     script = "//pw_system/py:device_sim",
 )

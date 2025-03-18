@@ -34,6 +34,7 @@ cc_library(
     hdrs = [
         "public/pw_allocator/benchmarks/measurements.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         "//pw_chrono:system_clock",
@@ -52,6 +53,7 @@ cc_library(
         "public/pw_allocator/benchmarks/benchmark.h",
         "public/pw_allocator/benchmarks/config.h",
     ],
+    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     target_compatible_with = select({
@@ -78,6 +80,7 @@ cc_binary(
     srcs = [
         "best_fit_benchmark.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":benchmark",
         "//pw_allocator:best_fit",
@@ -91,6 +94,7 @@ cc_binary(
     srcs = [
         "dual_first_fit_benchmark.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":benchmark",
         "//pw_allocator:first_fit",
@@ -104,6 +108,7 @@ cc_binary(
     srcs = [
         "first_fit_benchmark.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":benchmark",
         "//pw_allocator:first_fit",
@@ -117,6 +122,7 @@ cc_binary(
     srcs = [
         "last_fit_benchmark.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":benchmark",
         "//pw_allocator:first_fit",
@@ -130,6 +136,7 @@ cc_binary(
     srcs = [
         "tlsf_benchmark.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":benchmark",
         "//pw_allocator:tlsf_allocator",
@@ -143,6 +150,7 @@ cc_binary(
     srcs = [
         "worst_fit_benchmark.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":benchmark",
         "//pw_allocator:worst_fit",
@@ -155,6 +163,7 @@ cc_binary(
 pw_cc_test(
     name = "measurements_test",
     srcs = ["measurements_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":measurements",
         "//pw_metric:metric",
@@ -164,6 +173,7 @@ pw_cc_test(
 pw_cc_test(
     name = "benchmark_test",
     srcs = ["benchmark_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":benchmark",
         ":measurements",

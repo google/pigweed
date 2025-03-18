@@ -112,6 +112,7 @@ cc_library(
         "public/pw_tokenizer/internal/decode.h",
         "public/pw_tokenizer/token_database.h",
     ],
+    features = ["-conversion_warnings"],
     implementation_deps = [
         "//pw_elf:reader",
     ],
@@ -136,6 +137,7 @@ cc_library(
     name = "csv",
     srcs = ["csv.cc"],
     hdrs = ["pw_tokenizer_private/csv.h"],
+    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_log"],
     visibility = ["//visibility:private"],
 )
@@ -143,6 +145,7 @@ cc_library(
 pw_cc_test(
     name = "csv_test",
     srcs = ["csv_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [":csv"],
 )
 
@@ -169,6 +172,7 @@ pw_cc_binary(
     srcs = [
         "generate_decoding_test_data.cc",
     ],
+    features = ["-conversion_warnings"],
     target_compatible_with = select(
         {
             "@platforms//os:linux": [],
@@ -218,6 +222,7 @@ pw_cc_test(
         "pw_tokenizer_private/tokenized_string_decoding_test_data.h",
         "pw_tokenizer_private/varint_decoding_test_data.h",
     ],
+    features = ["-conversion_warnings"],
     # TODO: https://pwbug.dev/346628514 - Fix this for rp2040
     target_compatible_with = select({
         "//pw_build/constraints/chipset:rp2040": ["@platforms//:incompatible"],
@@ -249,6 +254,7 @@ pw_cc_test(
     srcs = [
         "detokenize_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":decoder",
         ":detokenizer_elf_test_blob",
@@ -259,6 +265,7 @@ pw_cc_test(
 pw_cc_fuzz_test(
     name = "detokenize_fuzzer",
     srcs = ["detokenize_fuzzer.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":decoder",
         ":pw_tokenizer",
@@ -290,6 +297,7 @@ pw_cc_test(
     srcs = [
         "simple_tokenize_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [":pw_tokenizer"],
 )
 
@@ -298,6 +306,7 @@ pw_cc_test(
     srcs = [
         "token_database_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [":decoder"],
 )
 

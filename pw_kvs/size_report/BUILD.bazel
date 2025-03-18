@@ -24,6 +24,7 @@ licenses(["notice"])
 pw_cc_binary(
     name = "base",
     srcs = ["base.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",

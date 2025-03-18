@@ -38,6 +38,7 @@ cc_library(
         "public/pw_rpc_system_server/rpc_server.h",
         "public/pw_rpc_system_server/socket.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":backend",

@@ -94,6 +94,7 @@ pw_cc_test(
     srcs = [
         "client_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":client_api",
         ":client_testing",
@@ -104,6 +105,7 @@ pw_cc_test(
 pw_cc_test(
     name = "client_reader_writer_test",
     srcs = ["client_reader_writer_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":client_api",
         ":client_testing",
@@ -116,6 +118,7 @@ pw_cc_test(
     srcs = [
         "codegen_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":client_api",
         ":client_testing",
@@ -133,6 +136,7 @@ pw_cc_test(
     srcs = [
         "method_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":server_api",
         "//pw_containers:algorithm",
@@ -147,6 +151,7 @@ pw_cc_test(
     srcs = [
         "method_info_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_rpc:internal_test_utils",
         "//pw_rpc:pw_rpc_test_raw_rpc",
@@ -158,6 +163,7 @@ pw_cc_test(
     srcs = [
         "method_union_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":server_api",
         "//pw_protobuf",
@@ -169,6 +175,7 @@ pw_cc_test(
 pw_cc_test(
     name = "server_reader_writer_test",
     srcs = ["server_reader_writer_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":test_method_context",
         "//pw_rpc:internal_test_utils",
@@ -182,6 +189,7 @@ pw_cc_test(
 pw_cc_test(
     name = "service_nc_test",
     srcs = ["service_nc_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_rpc:pw_rpc_test_raw_rpc",
@@ -191,6 +199,7 @@ pw_cc_test(
 pw_cc_test(
     name = "stub_generation_test",
     srcs = ["stub_generation_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_rpc:pw_rpc_test_pwpb",
         "//pw_rpc:pw_rpc_test_raw_rpc",
@@ -200,6 +209,7 @@ pw_cc_test(
 pw_cc_test(
     name = "synchronous_call_test",
     srcs = ["synchronous_call_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":test_method_context",
         "//pw_assert:check",

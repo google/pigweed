@@ -21,6 +21,7 @@ licenses(["notice"])
 pw_cc_binary(
     name = "pointer_base",
     srcs = ["pointer_base.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_function",
@@ -30,6 +31,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "basic_function",
     srcs = ["basic_function.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_function",
@@ -41,6 +43,7 @@ pw_cc_binary(
     srcs = ["callable_size.cc"],
     copts = ["-Wno-unused-private-field"],
     defines = ["_BASE=1"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_function",

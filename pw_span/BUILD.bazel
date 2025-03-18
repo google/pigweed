@@ -59,6 +59,7 @@ cc_library(
 pw_cc_test(
     name = "pw_span_test",
     srcs = ["span_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_span",
         "//pw_polyfill",

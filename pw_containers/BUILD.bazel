@@ -123,6 +123,7 @@ cc_library(
         "public/pw_containers/internal/aa_tree_item.h",
         "public/pw_containers/internal/aa_tree_iterator.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     visibility = [":__subpackages__"],
     deps = [
@@ -136,6 +137,7 @@ cc_library(
 cc_library(
     name = "intrusive_map",
     hdrs = ["public/pw_containers/intrusive_map.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [":aa_tree"],
 )
@@ -143,6 +145,7 @@ cc_library(
 cc_library(
     name = "intrusive_multimap",
     hdrs = ["public/pw_containers/intrusive_multimap.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [":aa_tree"],
 )
@@ -150,6 +153,7 @@ cc_library(
 cc_library(
     name = "intrusive_set",
     hdrs = ["public/pw_containers/intrusive_set.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [":aa_tree"],
 )
@@ -157,6 +161,7 @@ cc_library(
 cc_library(
     name = "intrusive_multiset",
     hdrs = ["public/pw_containers/intrusive_multiset.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [":aa_tree"],
 )
@@ -404,6 +409,7 @@ pw_cc_test(
 pw_cc_test(
     name = "intrusive_map_test",
     srcs = ["intrusive_map_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":intrusive_map",
         ":intrusive_multimap",
@@ -415,6 +421,7 @@ pw_cc_test(
 pw_cc_test(
     name = "intrusive_multimap_test",
     srcs = ["intrusive_multimap_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":intrusive_map",
         ":intrusive_multimap",
@@ -426,6 +433,7 @@ pw_cc_test(
 pw_cc_test(
     name = "intrusive_set_test",
     srcs = ["intrusive_set_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":intrusive_multiset",
         ":intrusive_set",
@@ -437,6 +445,7 @@ pw_cc_test(
 pw_cc_test(
     name = "intrusive_multiset_test",
     srcs = ["intrusive_multiset_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":intrusive_multiset",
         ":intrusive_set",
@@ -448,6 +457,7 @@ pw_cc_test(
 pw_cc_test(
     name = "intrusive_item_test",
     srcs = ["intrusive_item_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":intrusive_forward_list",
         ":intrusive_list",

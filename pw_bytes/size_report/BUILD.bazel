@@ -24,6 +24,7 @@ licenses(["notice"])
 pw_cc_binary(
     name = "with_byte_builder",
     srcs = ["byte_builder_size_report.cc"],
+    features = ["-conversion_warnings"],
     local_defines = ["USE_BYTE_BUILDER=1"],
     deps = [
         "//pw_bloat:bloat_this_binary",
@@ -34,6 +35,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "without_byte_builder",
     srcs = ["byte_builder_size_report.cc"],
+    features = ["-conversion_warnings"],
     local_defines = ["USE_BYTE_BUILDER=0"],
     deps = [
         "//pw_bloat:bloat_this_binary",

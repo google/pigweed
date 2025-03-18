@@ -204,6 +204,7 @@ pw_cc_test(
         "public/pw_assert/internal/check_impl.h",
         "pw_assert_test/fake_backend.h",
     ],
+    features = ["-conversion_warnings"],
     tags = ["noclangtidy"],
     deps = [
         ":assert",

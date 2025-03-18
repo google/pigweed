@@ -21,6 +21,7 @@ licenses(["notice"])
 pw_cc_binary(
     name = "post_1_task",
     srcs = ["post_1_task.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_async_basic:dispatcher",
         "//pw_bloat:bloat_this_binary",
@@ -30,6 +31,7 @@ pw_cc_binary(
 pw_cc_binary(
     name = "task",
     srcs = ["task.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_async:task",
         "//pw_bloat:bloat_this_binary",

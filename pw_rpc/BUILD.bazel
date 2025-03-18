@@ -81,6 +81,7 @@ cc_library(
 pw_cc_test(
     name = "benchmark_service_test",
     srcs = ["benchmark_service_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":benchmark",
         ":internal_test_utils",
@@ -337,6 +338,7 @@ cc_library(
         "public/pw_rpc/integration_test_socket_client.h",
         "public/pw_rpc/integration_testing.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":pw_rpc",
@@ -361,6 +363,7 @@ pw_cc_test(
     srcs = [
         "call_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
         ":pw_rpc",
@@ -370,6 +373,7 @@ pw_cc_test(
 pw_cc_test(
     name = "callback_test",
     srcs = ["callback_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_rpc",
         ":pw_rpc_test_raw_rpc",
@@ -385,6 +389,7 @@ pw_cc_test(
 pw_cc_test(
     name = "channel_test",
     srcs = ["channel_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
         ":pw_rpc",
@@ -394,6 +399,7 @@ pw_cc_test(
 pw_cc_test(
     name = "method_test",
     srcs = ["method_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
         ":pw_rpc",
@@ -405,6 +411,7 @@ pw_cc_test(
     srcs = [
         "packet_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_rpc",
         "//pw_fuzzer:fuzztest",
@@ -416,6 +423,7 @@ pw_cc_test(
     srcs = [
         "packet_meta_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_rpc",
         "//pw_fuzzer:fuzztest",
@@ -425,6 +433,7 @@ pw_cc_test(
 pw_cc_test(
     name = "client_server_test",
     srcs = ["client_server_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":client_server",
         ":internal_test_utils",
@@ -437,6 +446,7 @@ pw_cc_test(
     srcs = [
         "server_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
         ":pw_rpc",
@@ -449,6 +459,7 @@ pw_cc_test(
     srcs = [
         "service_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
         ":pw_rpc",
@@ -458,12 +469,14 @@ pw_cc_test(
 pw_cc_test(
     name = "fake_channel_output_test",
     srcs = ["fake_channel_output_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [":internal_test_utils"],
 )
 
 pw_cc_test(
     name = "test_helpers_test",
     srcs = ["test_helpers_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":test_helpers",
         "//pw_containers:vector",

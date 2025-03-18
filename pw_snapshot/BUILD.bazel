@@ -35,6 +35,7 @@ cc_library(
     hdrs = [
         "public/pw_snapshot/uuid.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":metadata_proto_pwpb",
@@ -98,6 +99,7 @@ pw_cc_test(
     srcs = [
         "cpp_compile_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [":snapshot_proto_pwpb"],
 )
 
@@ -106,6 +108,7 @@ pw_cc_test(
     srcs = [
         "uuid_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":metadata_proto_pwpb",
         ":uuid",

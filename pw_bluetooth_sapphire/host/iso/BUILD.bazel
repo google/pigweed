@@ -33,6 +33,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream.h",
         "public/pw_bluetooth_sapphire/internal/host/iso/iso_stream_manager.h",
     ],
+    features = ["-conversion_warnings"],
     implementation_deps = [
         "//pw_bluetooth_sapphire/host/hci",
     ],
@@ -55,6 +56,7 @@ cc_library(
     hdrs = [
         "public/pw_bluetooth_sapphire/internal/host/iso/fake_iso_stream.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
@@ -70,6 +72,7 @@ pw_cc_test(
         "iso_stream_manager_test.cc",
         "iso_stream_test.cc",
     ],
+    features = ["-conversion_warnings"],
     # TODO: https://pwbug.dev/393957973 - Fix this test.
     tags = [
         "noasan",

@@ -35,6 +35,7 @@ cc_library(
         "public/pw_hdlc/encoder.h",
         "public/pw_hdlc/internal/protocol.h",
     ],
+    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
@@ -53,6 +54,7 @@ cc_library(
 cc_library(
     name = "rpc_channel_output",
     hdrs = ["public/pw_hdlc/rpc_channel.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":pw_hdlc",
@@ -72,6 +74,7 @@ cc_library(
     name = "packet_parser",
     srcs = ["wire_packet_parser.cc"],
     hdrs = ["public/pw_hdlc/wire_packet_parser.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":pw_hdlc",
@@ -115,6 +118,7 @@ cc_library(
 pw_cc_test(
     name = "encoder_test",
     srcs = ["encoder_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_hdlc",
         "//pw_bytes",
@@ -125,6 +129,7 @@ pw_cc_test(
 pw_cc_test(
     name = "decoder_test",
     srcs = ["decoder_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_hdlc",
         "//pw_bytes",
@@ -137,6 +142,7 @@ pw_cc_test(
 pw_cc_test(
     name = "encoded_size_test",
     srcs = ["encoded_size_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_hdlc",
         "//pw_bytes",
@@ -149,6 +155,7 @@ pw_cc_test(
 pw_cc_test(
     name = "wire_packet_parser_test",
     srcs = ["wire_packet_parser_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":packet_parser",
         ":pw_hdlc",
@@ -159,6 +166,7 @@ pw_cc_test(
 pw_cc_test(
     name = "rpc_channel_test",
     srcs = ["rpc_channel_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_hdlc",
         ":rpc_channel_output",
@@ -171,6 +179,7 @@ cc_library(
     name = "router",
     srcs = ["router.cc"],
     hdrs = ["public/pw_hdlc/router.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":pw_hdlc",
@@ -192,6 +201,7 @@ cc_library(
 pw_cc_test(
     name = "router_test",
     srcs = ["router_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":router",
         "//pw_allocator:testing",

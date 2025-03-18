@@ -42,6 +42,7 @@ cc_library(
     name = "central",
     srcs = ["central.cc"],
     hdrs = ["public/pw_bluetooth_sapphire/central.h"],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     deps = [
@@ -63,6 +64,7 @@ cc_library(
         "public/pw_bluetooth_sapphire/internal/connection.h",
         "public/pw_bluetooth_sapphire/internal/connection_options.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
     visibility = ["//visibility:private"],
@@ -78,6 +80,7 @@ cc_library(
     hdrs = [
         "public/pw_bluetooth_sapphire/internal/uuid.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     visibility = ["//visibility:private"],
     deps = [
@@ -95,6 +98,7 @@ cc_library(
     hdrs = [
         "public/pw_bluetooth_sapphire/internal/discovery_filter.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     visibility = ["//visibility:private"],
     deps = [
@@ -177,6 +181,7 @@ pw_cc_test(
 pw_cc_test(
     name = "central_test",
     srcs = ["central_test.cc"],
+    features = ["-conversion_warnings"],
     # TODO: https://pwbug.dev/393957973 - Fix this test.
     tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
@@ -195,6 +200,7 @@ cc_library(
     name = "peripheral",
     srcs = ["peripheral.cc"],
     hdrs = ["public/pw_bluetooth_sapphire/peripheral.h"],
+    features = ["-conversion_warnings"],
     includes = ["public"],
     tags = ["noclangtidy"],
     deps = [
@@ -207,6 +213,7 @@ cc_library(
 pw_cc_test(
     name = "peripheral_test",
     srcs = ["peripheral_test.cc"],
+    features = ["-conversion_warnings"],
     # TODO: https://pwbug.dev/393957973 - Fix this test.
     tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",

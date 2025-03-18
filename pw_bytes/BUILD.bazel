@@ -97,12 +97,14 @@ pw_cc_test(
 pw_cc_test(
     name = "bit_test",
     srcs = ["bit_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [":bit"],
 )
 
 pw_cc_test(
     name = "byte_builder_test",
     srcs = ["byte_builder_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [":pw_bytes"],
 )
 

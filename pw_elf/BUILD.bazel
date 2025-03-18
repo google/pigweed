@@ -32,6 +32,7 @@ cc_library(
         "public/pw_elf/internal/stream_utils.h",
         "public/pw_elf/reader.h",
     ],
+    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         "//pw_assert:assert",
@@ -52,6 +53,7 @@ pw_cc_test(
         # TODO(jrreinhart): Move this file to this module.
         "//pw_tokenizer/py:elf_reader_test_binary.elf",
     ],
+    features = ["-conversion_warnings"],
     local_defines = [
         "TEST_ELF_FILE_PATH=\\\"$(execpath //pw_tokenizer/py:elf_reader_test_binary.elf)\\\"",
     ],

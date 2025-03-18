@@ -101,6 +101,7 @@ cc_library(
         "public/pw_bluetooth/uuid.h",
         "public/pw_bluetooth/vendor.h",
     ],
+    features = ["-conversion_warnings"],
     includes = ["public"],
     deps = [
         ":config",
@@ -128,6 +129,7 @@ cc_library(
     hdrs = [
         "public/pw_bluetooth/snoop.h",
     ],
+    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     includes = ["public"],
     deps = [
@@ -183,6 +185,7 @@ pw_cc_test(
     srcs = [
         "api2_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":pw_bluetooth2",
     ],
@@ -203,6 +206,7 @@ pw_cc_test(
     srcs = [
         "snoop_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":snoop",
         "//pw_chrono:simulated_system_clock",

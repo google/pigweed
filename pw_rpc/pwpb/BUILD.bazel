@@ -152,6 +152,7 @@ pw_cc_test(
     srcs = [
         "client_call_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":client_api",
         ":internal_test_utils",
@@ -165,6 +166,7 @@ pw_cc_test(
     srcs = [
         "client_reader_writer_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":client_api",
         ":client_testing",
@@ -177,6 +179,7 @@ pw_cc_test(
     srcs = [
         "client_server_context_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":client_api",
         ":client_server_testing",
@@ -190,6 +193,7 @@ pw_cc_test(
     srcs = [
         "client_server_context_threaded_test.cc",
     ],
+    features = ["-conversion_warnings"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":client_api",
@@ -207,6 +211,7 @@ pw_cc_test(
     srcs = [
         "codegen_test.cc",
     ],
+    features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
         ":test_method_context",
@@ -219,6 +224,7 @@ pw_cc_test(
 pw_cc_test(
     name = "fake_channel_output_test",
     srcs = ["fake_channel_output_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":common",
         ":server_api",
@@ -231,6 +237,7 @@ pw_cc_test(
 pw_cc_test(
     name = "method_test",
     srcs = ["method_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
         ":server_api",
@@ -244,6 +251,7 @@ pw_cc_test(
 pw_cc_test(
     name = "method_info_test",
     srcs = ["method_info_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_rpc",
         "//pw_rpc:internal_test_utils",
@@ -254,6 +262,7 @@ pw_cc_test(
 pw_cc_test(
     name = "method_lookup_test",
     srcs = ["method_lookup_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":test_method_context",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
@@ -264,6 +273,7 @@ pw_cc_test(
 pw_cc_test(
     name = "method_union_test",
     srcs = ["method_union_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":internal_test_utils",
         ":server_api",
@@ -275,6 +285,7 @@ pw_cc_test(
 pw_cc_test(
     name = "echo_service_test",
     srcs = ["echo_service_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":echo_service",
         ":test_method_context",
@@ -284,6 +295,7 @@ pw_cc_test(
 pw_cc_test(
     name = "server_reader_writer_test",
     srcs = ["server_reader_writer_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":server_api",
         ":test_method_context",
@@ -295,6 +307,7 @@ pw_cc_test(
 pw_cc_test(
     name = "serde_test",
     srcs = ["serde_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":common",
         "//pw_rpc:pw_rpc_test_pwpb",
@@ -304,6 +317,7 @@ pw_cc_test(
 pw_cc_test(
     name = "server_callback_test",
     srcs = ["server_callback_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":test_method_context",
         "//pw_containers:vector",
@@ -315,6 +329,7 @@ pw_cc_test(
 pw_cc_test(
     name = "stub_generation_test",
     srcs = ["stub_generation_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_rpc:pw_rpc_test_pwpb_rpc",
     ],
@@ -323,6 +338,7 @@ pw_cc_test(
 pw_cc_test(
     name = "synchronous_call_test",
     srcs = ["synchronous_call_test.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         ":test_method_context",
         "//pw_rpc:pw_rpc_test_pwpb_rpc",

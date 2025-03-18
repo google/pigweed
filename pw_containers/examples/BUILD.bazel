@@ -43,30 +43,35 @@ pw_cc_test(
 pw_cc_test(
     name = "intrusive_map",
     srcs = ["intrusive_map.cc"],
+    features = ["-conversion_warnings"],
     deps = ["//pw_containers:intrusive_map"],
 )
 
 pw_cc_test(
     name = "intrusive_multimap",
     srcs = ["intrusive_multimap.cc"],
+    features = ["-conversion_warnings"],
     deps = ["//pw_containers:intrusive_multimap"],
 )
 
 pw_cc_test(
     name = "intrusive_set",
     srcs = ["intrusive_set.cc"],
+    features = ["-conversion_warnings"],
     deps = ["//pw_containers:intrusive_set"],
 )
 
 pw_cc_test(
     name = "intrusive_multiset",
     srcs = ["intrusive_multiset.cc"],
+    features = ["-conversion_warnings"],
     deps = ["//pw_containers:intrusive_multiset"],
 )
 
 pw_cc_test(
     name = "multiple_containers",
     srcs = ["multiple_containers.cc"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_containers:intrusive_list",
         "//pw_containers:intrusive_map",
