@@ -69,6 +69,19 @@ cc_feature(
     visibility = ["//:__subpackages__"],
 )
 
+cc_args(
+    name = "w_conversion",
+    actions = ["@rules_cc//cc/toolchains/actions:cpp_compile_actions"],
+    args = ["-Wconversion"],
+)
+
+cc_feature(
+    name = "conversion_warnings_feature",
+    args = [":w_conversion"],
+    feature_name = "conversion_warnings",
+    visibility = ["//:__subpackages__"],
+)
+
 # Allow uses of the register keyword, which may appear in C headers.
 cc_args(
     name = "wno_register",

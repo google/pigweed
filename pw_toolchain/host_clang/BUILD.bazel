@@ -437,6 +437,7 @@ cc_toolchain(
         ":supports_pic",
         "//pw_toolchain/cc/args:c++17_feature",
         "//pw_toolchain/cc/args:c++20_feature",
+        "//pw_toolchain/cc/args:conversion_warnings_feature",
         "//pw_toolchain/cc/capability:compiler_is_clang",
         "//pw_toolchain/cc/capability:linker_is_clang",
     ],

@@ -22,5 +22,10 @@ repo(
     # Any C++ toolchain features enabled here will be enabled when compiling
     # Pigweed, but not when compiling any dependencies hosted in external
     # repositories.
-    features = ["layering_check"],
+    features = [
+        # TODO: https://pwbug.dev/259746255 - Uncomment this after all broken
+        # targets are allowlisted.
+        # "conversion_warnings",
+        "layering_check",
+    ],
 )
