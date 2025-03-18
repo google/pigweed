@@ -106,6 +106,39 @@ py_library(
     ],
 )
 
+py_library(
+    name = "pw_rpc_benchmark",
+    srcs = [
+        "pw_rpc/benchmark/__init__.py",
+        "pw_rpc/benchmark/benchmark.py",
+        "pw_rpc/benchmark/benchmark_results.py",
+    ],
+    imports = ["."],
+    deps = [
+        ":pw_rpc",
+        "//pw_rpc:benchmark_py_pb2",
+        "//pw_rpc:benchmark_raw_rpc",
+    ],
+)
+
+pw_py_test(
+    name = "goodput_test",
+    size = "small",
+    srcs = [
+        "tests/benchmark/goodput_test.py",
+    ],
+    deps = [
+        ":pw_rpc",
+        ":pw_rpc_benchmark",
+        "//pw_protobuf_compiler:pw_protobuf_compiler_protos_py_pb2",
+        "//pw_rpc:benchmark_py_pb2",
+        "//pw_rpc:echo_py_pb2",
+        "//pw_rpc:internal_packet_proto_pb2",
+        "//pw_status/py:pw_status",
+        "//pw_system/py:pw_system_lib",
+    ],
+)
+
 pw_py_test(
     name = "callback_client_test",
     size = "small",

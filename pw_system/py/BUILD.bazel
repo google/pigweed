@@ -62,6 +62,19 @@ py_library(
     ],
 )
 
+py_library(
+    name = "pw_system_benchmark_runner",
+    srcs = [
+        "pw_system/benchmark_runner/__init__.py",
+        "pw_system/benchmark_runner/__main__.py",
+        "pw_system/benchmark_runner/benchmark_runner.py",
+    ],
+    imports = ["."],
+    deps = [
+        "//pw_rpc/py:pw_rpc_benchmark",
+    ],
+)
+
 pw_py_binary(
     name = "pw_system_console",
     srcs = [

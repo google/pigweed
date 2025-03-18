@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -164,6 +164,7 @@ pw_source_set("init") {
   public = [ "public/pw_system/init.h" ]
   sources = [ "init.cc" ]
   deps = [
+    ":benchmark_service",
     ":device_service",
     ":file_manager",
     ":file_service",
@@ -176,6 +177,7 @@ pw_source_set("init") {
     ":work_queue",
     "$dir_pw_metric:global",
     "$dir_pw_metric:metric_service_pwpb",
+    "$dir_pw_rpc:benchmark",
     "$dir_pw_rpc/pwpb:echo_service",
     "$dir_pw_thread:thread",
     "$dir_pw_trace",
@@ -349,6 +351,14 @@ pw_source_set("device_service") {
   public_deps = []
   sources = [ "device_service.cc" ]
   deps = [ ":device_service_pwpb" ]
+}
+
+pw_source_set("benchmark_service") {
+  public = [ "public/pw_system/benchmark_service.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ "$dir_pw_rpc:benchmark" ]
+  sources = [ "benchmark_service.cc" ]
+  deps = []
 }
 
 pw_source_set("thread_snapshot_service") {

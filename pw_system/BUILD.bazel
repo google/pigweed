@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -254,6 +254,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
+        ":benchmark_service",
         ":device_service",
         ":file_manager",
         ":file_service",
@@ -266,6 +267,7 @@ cc_library(
         ":work_queue",
         "//pw_metric:global",
         "//pw_metric:metric_service_pwpb",
+        "//pw_rpc:benchmark",
         "//pw_rpc/pwpb:echo_service",
         "//pw_thread:thread",
     ] + select({
@@ -372,6 +374,20 @@ cc_library(
     deps = [
         ":file_manager",
         "//pw_transfer",
+    ],
+)
+
+cc_library(
+    name = "benchmark_service",
+    srcs = [
+        "benchmark_service.cc",
+    ],
+    hdrs = [
+        "public/pw_system/benchmark_service.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        "//pw_rpc:benchmark",
     ],
 )
 

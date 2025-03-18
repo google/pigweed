@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -26,6 +26,10 @@
 #include "pw_system/target_hooks.h"
 #include "pw_system/work_queue.h"
 #include "pw_thread/detached_thread.h"
+
+#if PW_SYSTEM_ENABLE_RPC_BENCHMARK_SERVICE
+#include "pw_system/benchmark_service.h"
+#endif  // PW_SYSTEM_ENABLE_RPC_BENCHMARK_SERVICE
 
 #if PW_SYSTEM_ENABLE_TRANSFER_SERVICE
 #include "pw_system/file_service.h"
@@ -77,6 +81,10 @@ void InitImpl() {
   GetRpcServer().RegisterService(GetLogService());
   GetRpcServer().RegisterService(metric_service);
   RegisterDeviceService(GetRpcServer());
+
+#if PW_SYSTEM_ENABLE_RPC_BENCHMARK_SERVICE
+  RegisterBenchmarkService(GetRpcServer());
+#endif  // PW_SYSTEM_ENABLE_RPC_BENCHMARK_SERVICE
 
 #if PW_SYSTEM_ENABLE_TRANSFER_SERVICE
   RegisterTransferService(GetRpcServer());

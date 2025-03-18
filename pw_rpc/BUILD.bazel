@@ -62,6 +62,11 @@ raw_rpc_proto_library(
     deps = [":benchmark_proto"],
 )
 
+py_proto_library(
+    name = "benchmark_py_pb2",
+    deps = [":benchmark_proto"],
+)
+
 cc_library(
     name = "benchmark",
     srcs = ["benchmark.cc"],
@@ -70,6 +75,18 @@ cc_library(
     deps = [
         ":benchmark_pwpb",
         ":benchmark_raw_rpc",
+    ],
+)
+
+pw_cc_test(
+    name = "benchmark_service_test",
+    srcs = ["benchmark_service_test.cc"],
+    deps = [
+        ":benchmark",
+        ":internal_test_utils",
+        "//pw_rpc:pw_rpc_test_raw_rpc",
+        "//pw_rpc/raw:client_testing",
+        "//pw_rpc/raw:test_method_context",
     ],
 )
 
@@ -566,6 +583,7 @@ pwpb_rpc_proto_library(
 filegroup(
     name = "doxygen",
     srcs = [
+        "public/pw_rpc/benchmark.h",
         "public/pw_rpc/channel.h",
         "public/pw_rpc/internal/config.h",
         "public/pw_rpc/synchronous_call.h",

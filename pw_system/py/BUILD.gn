@@ -23,6 +23,9 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_system/__init__.py",
+    "pw_system/benchmark_runner/__init__.py",
+    "pw_system/benchmark_runner/__main__.py",
+    "pw_system/benchmark_runner/benchmark_runner.py",
     "pw_system/console.py",
     "pw_system/device.py",
     "pw_system/device_connection.py",

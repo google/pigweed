@@ -173,6 +173,14 @@
 #define PW_SYSTEM_CRASH_SNAPSHOT_MEMORY_SIZE_BYTES 2048
 #endif  // PW_SYSTEM_CRASH_SNAPSHOT_MEMORY_SIZE_BYTES
 
+// PW_SYSTEM_ENABLE_RPC_BENCHMARK_SERVICE specifies if a default RPC benchmark
+// service is added to the system server.
+//
+// Defaults to 0 (disabled).
+#ifndef PW_SYSTEM_ENABLE_RPC_BENCHMARK_SERVICE
+#define PW_SYSTEM_ENABLE_RPC_BENCHMARK_SERVICE 0
+#endif
+
 namespace pw::system {
 
 // This is the default channel used by the pw_system RPC server. Some other

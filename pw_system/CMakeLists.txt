@@ -161,6 +161,18 @@ pw_add_library(pw_system.transfer_service STATIC
     transfer_service.cc
 )
 
+pw_add_library(pw_system.benchmark_service STATIC
+  HEADERS
+    public/pw_system/benchmark_service.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_rpc.benchmark
+  SOURCES
+    benchmark_service.cc
+)
+
+
 pw_add_library(pw_system.file_service STATIC
   HEADERS
     public/pw_system/file_service.h
@@ -254,6 +266,7 @@ pw_add_library(pw_system.init STATIC
   SOURCES
     init.cc
   PRIVATE_DEPS
+    pw_system.benchmark_service
     pw_system.device_service
     pw_system.file_manager
     pw_system.file_service

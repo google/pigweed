@@ -40,6 +40,19 @@ pw_add_library(pw_rpc.log_config INTERFACE
     pw_rpc.config
 )
 
+pw_add_library(pw_rpc.benchmark STATIC
+  HEADERS
+    public/pw_rpc/benchmark.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_rpc.protos.pwpb
+    pw_rpc.protos.pwpb_rpc
+    pw_rpc.protos.raw_rpc
+  SOURCES
+    benchmark.cc
+)
+
 pw_add_library(pw_rpc.server STATIC
   HEADERS
     public/pw_rpc/server.h
@@ -305,6 +318,21 @@ pw_proto_library(pw_rpc.test_protos
 pw_add_library(pw_rpc.disable_global_mutex_config INTERFACE
   PUBLIC_DEFINES
     PW_RPC_USE_GLOBAL_MUTEX=0
+)
+
+pw_add_test(pw_rpc.benchmark_service_test
+  SOURCES
+    benchmark_service_test.cc
+  PRIVATE_DEPS
+    pw_rpc.benchmark
+    pw_rpc.pwpb.client_testing
+    pw_rpc.raw.test_method_context
+    #pw_rpc.test_protos.pwpb_rpc
+    pw_rpc.test_protos.raw_rpc
+    pw_rpc.test_utils
+  GROUPS
+    modules
+    pw_rpc
 )
 
 pw_add_test(pw_rpc.call_test

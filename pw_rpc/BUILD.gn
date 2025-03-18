@@ -231,6 +231,17 @@ pw_source_set("benchmark") {
   sources = [ "benchmark.cc" ]
 }
 
+pw_test("benchmark_service_test") {
+  deps = [
+    ":benchmark",
+    ":test_protos.raw_rpc",
+    ":test_utils",
+    "raw:client_testing",
+    "raw:test_method_context",
+  ]
+  sources = [ "benchmark_service_test.cc" ]
+}
+
 pw_source_set("fake_channel_output") {
   public = [
     "public/pw_rpc/internal/fake_channel_output.h",
@@ -454,6 +465,7 @@ pw_size_diff("server_size") {
 
 pw_test_group("tests") {
   tests = [
+    ":benchmark_service_test",
     ":call_test",
     ":callback_test",
     ":channel_test",

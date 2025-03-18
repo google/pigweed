@@ -8,7 +8,8 @@ Python client
 
 The ``pw_rpc`` Python package makes it possible to call Pigweed RPCs from
 Python. The package includes a ``pw_rpc`` client library, as well as tools for
-creating a ``pw_rpc`` console.
+creating a ``pw_rpc`` console, and a separate benchmarking utility for measuring
+and debugging RPC performance.
 
 pw_rpc.client
 =============
@@ -51,3 +52,12 @@ pw_rpc.console_tools
      alias_deprecated_command,
      flattened_rpc_completions,
      help_as_repr,
+
+pw_rpc.benchmark
+================
+.. automodule:: pw_rpc.benchmark
+  :members:
+    DataStatistics,
+    BaseResult,
+    GoodputStatisticsResult,
+    Benchmark,
