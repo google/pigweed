@@ -234,10 +234,6 @@ common:remote_cache --legacy_important_outputs
 common:remote_cache --remote_cache=grpcs://remotebuildexecution.googleapis.com
 common:remote_cache --remote_instance_name=projects/pigweed-rbe-open/instances/default-instance
 common:remote_cache --remote_upload_local_results=false
-# TODO: https://github.com/bazelbuild/bazel/issues/24867 - This flag breaks
-# runfiles handling with remote caching, and causes a bunch of
-# java.io.FileNotFoundException when creating runfiles trees.
-common:remote_cache --experimental_inprocess_symlink_creation=false
 
 # cache-silo-key: this is essentially a "salt" added to the remote cache key.
 # Change it to a new value when we want to create a new cache from scratch
