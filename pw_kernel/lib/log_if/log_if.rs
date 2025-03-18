@@ -37,14 +37,14 @@ pub mod __private {
 /// ```
 #[macro_export]
 macro_rules! log_if {
-  ($condition:expr, $log_level:expr, $format_string:literal) => {{
+  ($condition:expr, $log_level:expr, $format_string:literal $(,)?) => {{
     if $condition {
       use $crate::__private as __pw_log_crate;
       $crate::__private::pw_log_backend!($log_level, $format_string)
     }
   }};
 
-  ($condition:expr, $log_level:expr, $format_string:literal, $($args:expr),*) => {{
+  ($condition:expr, $log_level:expr, $format_string:literal, $($args:expr),* $(,)?) => {{
     if $condition {
       use $crate::__private as __pw_log_crate;
       $crate::__private::pw_log_backend!($log_level, $format_string, $($args),*)
@@ -67,17 +67,17 @@ macro_rules! log_if {
 /// ```
 #[macro_export]
 macro_rules! logf_if {
-  ($condition:expr, $log_level:expr, $format_string:literal) => {{
+  ($condition:expr, $log_level:expr, $format_string:literal $(,)?) => {{
     if $condition {
       use $crate::__private as __pw_log_crate;
       $crate::__private::pw_logf_backend!($log_level, $format_string)
     }
   }};
 
-  ($condition:expr, $log_level:expr, $format_string:literal, $($args:expr), *) => {{
+  ($condition:expr, $log_level:expr, $format_string:literal, $($args:expr),* $(,)?) => {{
     if $condition {
       use $crate::__private as __pw_log_crate;
-      $crate::__private::pw_logf_backend!($log_level, $format_string, $($args), *)
+      $crate::__private::pw_logf_backend!($log_level, $format_string, $($args),*)
     }
   }};
 }
@@ -94,9 +94,9 @@ macro_rules! logf_if {
 /// ```
 #[macro_export]
 macro_rules! debug_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Debug, $($args), *)
+    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Debug, $($args),*)
   }};
 }
 
@@ -112,9 +112,9 @@ macro_rules! debug_if {
 /// ```
 #[macro_export]
 macro_rules! debugf_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
       use $crate::__private as __pw_log_crate;
-      __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Debug, $($args), *)
+      __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Debug, $($args),*)
   }};
 }
 
@@ -131,9 +131,9 @@ macro_rules! debugf_if {
 /// ```
 #[macro_export]
 macro_rules! info_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Info, $($args), *)
+    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Info, $($args),*)
   }};
 }
 
@@ -150,9 +150,9 @@ macro_rules! info_if {
 /// ```
 #[macro_export]
 macro_rules! infof_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Info, $($args), *)
+    __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Info, $($args),*)
   }};
 }
 
@@ -169,9 +169,9 @@ macro_rules! infof_if {
 /// ```
 #[macro_export]
 macro_rules! warn_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Warn, $($args), *)
+    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Warn, $($args),*)
   }};
 }
 
@@ -188,9 +188,9 @@ macro_rules! warn_if {
 /// ```
 #[macro_export]
 macro_rules! warnf_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Warn, $($args), *)
+    __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Warn, $($args),*)
   }};
 }
 
@@ -208,9 +208,9 @@ macro_rules! warnf_if {
 /// ```
 #[macro_export]
 macro_rules! error_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Error, $($args), *)
+    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Error, $($args),*)
   }};
 }
 
@@ -228,9 +228,9 @@ macro_rules! error_if {
 /// ```
 #[macro_export]
 macro_rules! errorf_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Error, $($args), *)
+    __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Error, $($args),*)
   }};
 }
 
@@ -248,9 +248,9 @@ macro_rules! errorf_if {
 /// ```
 #[macro_export]
 macro_rules! critical_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Critical, $($args), *)
+    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Critical, $($args),*)
   }};
 }
 
@@ -268,9 +268,9 @@ macro_rules! critical_if {
 /// ```
 #[macro_export]
 macro_rules! criticalf_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Critical, $($args), *)
+    __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Critical, $($args),*)
   }};
 }
 
@@ -287,9 +287,9 @@ macro_rules! criticalf_if {
 /// ```
 #[macro_export]
 macro_rules! fatal_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
     use $crate::__private as __pw_log_crate;
-    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Fatal, $($args), *)
+    __pw_log_crate::log_if!($condition, __pw_log_crate::LogLevel::Fatal, $($args),*)
   }};
 }
 
@@ -306,8 +306,8 @@ macro_rules! fatal_if {
 /// ```
 #[macro_export]
 macro_rules! fatalf_if {
-  ($condition:expr, $($args:expr), *) => {{
+  ($condition:expr, $($args:expr),* $(,)?) => {{
       use $crate::__private as __pw_log_crate;
-      __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Fatal, $($args), *)
+      __pw_log_crate::logf_if!($condition, __pw_log_crate::LogLevel::Fatal, $($args),*)
   }};
 }
