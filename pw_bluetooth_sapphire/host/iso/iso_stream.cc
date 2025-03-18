@@ -90,7 +90,8 @@ class IsoStreamImpl final : public IsoStream {
                 CisEstablishedCallback on_established_cb,
                 hci::CommandChannel::WeakPtr cmd,
                 pw::Callback<void()> on_closed_cb,
-                hci::IsoDataChannel* data_channel);
+                hci::IsoDataChannel* data_channel,
+                pw::chrono::VirtualSystemClock& clock);
 
   // IsoStream overrides
   bool OnCisEstablished(const hci::EventPacket& event) override;
@@ -173,6 +174,11 @@ class IsoStreamImpl final : public IsoStream {
 
   WeakSelf<IsoStreamImpl> weak_self_;
 
+  pw::chrono::VirtualSystemClock& clock_;
+  pw::chrono::SystemClock::time_point reference_time_;
+  uint16_t next_sdu_sequence_number_ = 0;
+  uint32_t iso_interval_usec_ = 0;
+
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(IsoStreamImpl);
 };
 
@@ -182,7 +188,8 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
                              CisEstablishedCallback on_established_cb,
                              hci::CommandChannel::WeakPtr cmd,
                              pw::Callback<void()> on_closed_cb,
-                             hci::IsoDataChannel* data_channel)
+                             hci::IsoDataChannel* data_channel,
+                             pw::chrono::VirtualSystemClock& clock)
     : IsoStream(),
       state_(IsoStreamState::kNotEstablished),
       cig_id_(cig_id),
@@ -194,7 +201,8 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
       on_closed_cb_(std::move(on_closed_cb)),
       cmd_(std::move(cmd)),
       data_channel_(data_channel),
-      weak_self_(this) {
+      weak_self_(this),
+      clock_(clock) {
   PW_CHECK(cmd_.is_alive());
   PW_CHECK(data_channel_);
 
@@ -274,6 +282,11 @@ bool IsoStreamImpl::OnCisEstablished(const hci::EventPacket& event) {
   params->max_pdu_size = view.max_pdu_p_to_c().Read();
 
   cis_established_cb_(status, GetWeakPtr(), cis_params_);
+
+  reference_time_ = clock_.now();
+
+  iso_interval_usec_ = cis_params_.iso_interval *
+                       CisEstablishedParameters::kIsoIntervalToMicroseconds;
 
   // Event handled
   return true;
@@ -528,22 +541,43 @@ std::unique_ptr<IsoDataPacket> IsoStreamImpl::ReadNextQueuedIncomingPacket() {
 void IsoStreamImpl::Send(pw::ConstByteSpan data) {
   PW_CHECK(data_channel_, "Send called while not registered to a data stream.");
   PW_CHECK(data.size() <= std::numeric_limits<uint16_t>::max());
-
   const size_t max_length = data_channel_->buffer_info().max_data_length();
+
+  // Calculate the current interval sequence number
+  auto now = clock_.now();
+  auto elapsed_time = now - reference_time_;
+  uint64_t elapsed_usec =
+      std::chrono::duration_cast<std::chrono::microseconds>(elapsed_time)
+          .count();
+  uint16_t interval_sequence_num =
+      static_cast<uint16_t>(elapsed_usec / iso_interval_usec_);
+
+  uint16_t current_sequence_num = next_sdu_sequence_number_;
+
+  // Handle missed interval
+  if (current_sequence_num < interval_sequence_num) {
+    bt_log(INFO,
+           "iso",
+           "Skipped interval: advancing sequence number from %u to current "
+           "interval %u",
+           current_sequence_num,
+           interval_sequence_num);
+    current_sequence_num = interval_sequence_num;
+  }
+
   std::optional<SduHeaderInfo> sdu_header = SduHeaderInfo{
-      // TODO: https://pwbug.dev/393366531 - Implement sequence number.
-      .packet_sequence_number = 0,
+      .packet_sequence_number = current_sequence_num,
       .iso_sdu_length = static_cast<uint16_t>(data.size()),
   };
 
   // Fragmentation loop.
   while (!data.empty()) {
-    size_t length_remaining =
-        TotalDataLength(/*has_timestamp=*/false,
-                        /*has_sdu_header=*/sdu_header.has_value(),
-                        /*data_size=*/data.size());
-    // This is the first fragment if we haven't sent the SDU header yet.
+    // Determine if this is the first fragment of the SDU
     const bool is_first = sdu_header.has_value();
+
+    size_t length_remaining = TotalDataLength(/*has_timestamp=*/false,
+                                              /*has_sdu_header=*/is_first,
+                                              /*data_size=*/data.size());
     // This is the last fragment if there is sufficient buffer space.
     const bool is_last = length_remaining <= max_length;
 
@@ -567,6 +601,7 @@ void IsoStreamImpl::Send(pw::ConstByteSpan data) {
     data_channel_->SendData(BuildPacketForSending(fragment, flag, sdu_header));
     sdu_header.reset();
   }
+  next_sdu_sequence_number_ = current_sequence_num + 1;
 }
 
 void IsoStreamImpl::Close() { on_closed_cb_(); }
@@ -578,14 +613,16 @@ std::unique_ptr<IsoStream> IsoStream::Create(
     CisEstablishedCallback on_established_cb,
     hci::CommandChannel::WeakPtr cmd,
     pw::Callback<void()> on_closed_cb,
-    hci::IsoDataChannel* data_channel) {
+    hci::IsoDataChannel* data_channel,
+    pw::chrono::VirtualSystemClock& clock) {
   return std::make_unique<IsoStreamImpl>(cig_id,
                                          cis_id,
                                          cis_handle,
                                          std::move(on_established_cb),
                                          std::move(cmd),
                                          std::move(on_closed_cb),
-                                         data_channel);
+                                         data_channel,
+                                         clock);
 }
 
 }  // namespace bt::iso

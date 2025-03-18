@@ -65,6 +65,7 @@ pw_test("iso_test") {
     ":iso",
     "$dir_pw_bluetooth_sapphire/host/testing",
     "$dir_pw_bluetooth_sapphire/host/testing:mock_controller",
+    "$dir_pw_chrono:simulated_system_clock",
   ]
 }
 

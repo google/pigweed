@@ -80,5 +80,6 @@ pw_cc_test(
         ":iso",
         "//pw_bluetooth_sapphire/host/testing",
         "//pw_bluetooth_sapphire/host/testing:mock_controller",
+        "//pw_chrono:simulated_system_clock",
     ],
 )

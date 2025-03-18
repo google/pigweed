@@ -18,6 +18,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
+#include "pw_chrono/simulated_system_clock.h"
 
 namespace bt::iso {
 namespace {
@@ -67,7 +68,8 @@ class IsoStreamTest : public MockControllerTestBase {
           ASSERT_FALSE(closed_);
           closed_ = true;
         },
-        transport()->iso_data_channel());
+        transport()->iso_data_channel(),
+        test_clock_);
   }
 
  protected:
@@ -112,6 +114,7 @@ class IsoStreamTest : public MockControllerTestBase {
 
  protected:
   bool accept_incoming_sdus_ = true;
+  pw::chrono::SimulatedSystemClock test_clock_;
 
  private:
   std::unique_ptr<IsoStream> iso_stream_;
@@ -518,8 +521,14 @@ TEST_F(IsoStreamTest, SendPacket) {
       iso::IsoStream::SetupDataPathError::kSuccess);
   RegisterStream();
 
+  uint32_t iso_interval_usec =
+      established_parameters()->iso_interval *
+      CisEstablishedParameters::kIsoIntervalToMicroseconds;
+
   constexpr size_t kMaxFirstPacketSize =
       kMaxControllerSDUFragmentSize - kSduHeaderSize;
+
+  uint16_t expected_sequence_num = 0;
 
   {
     std::vector<uint8_t> blob =
@@ -530,7 +539,7 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*connection_handle = */ iso_stream()->cis_handle(),
             /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
-            /*sequence_number = */ 0,
+            /*sequence_number = */ expected_sequence_num,
             /*sdu_length = */ blob.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
             /*sdu_data = */ pw::span(blob.data(), blob.size())));
@@ -539,6 +548,11 @@ TEST_F(IsoStreamTest, SendPacket) {
         pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+    ++expected_sequence_num;
+
+    // Advance the clock by one ISO interval
+    test_clock_.AdvanceTime(std::chrono::microseconds(iso_interval_usec));
   }
 
   {
@@ -551,7 +565,7 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*connection_handle = */ iso_stream()->cis_handle(),
             /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
-            /*sequence_number = */ 0,
+            /*sequence_number = */ expected_sequence_num,
             /*sdu_length = */ blob.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
             /*sdu_data = */ pw::span(blob.data(), blob.size())));
@@ -560,6 +574,11 @@ TEST_F(IsoStreamTest, SendPacket) {
         pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+    ++expected_sequence_num;
+
+    // Advance the clock by one ISO interval
+    test_clock_.AdvanceTime(std::chrono::microseconds(iso_interval_usec));
   }
 
   {
@@ -573,7 +592,58 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*connection_handle = */ iso_stream()->cis_handle(),
             /*pb_flag = */ IsoDataPbFlag::FIRST_FRAGMENT,
             /*timestamp = */ std::nullopt,
-            /*sequence_number = */ 0,
+            /*sequence_number = */ expected_sequence_num,
+            /*sdu_length = */ blob.size(),
+            /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
+            /*sdu_data = */ pw::span(blob.data(), kMaxFirstPacketSize)));
+    EXPECT_ISO_PACKET_OUT(
+        test_device(),
+        testing::IsoDataPacket(
+            /*connection_handle = */ iso_stream()->cis_handle(),
+            /*pb_flag = */ IsoDataPbFlag::INTERMEDIATE_FRAGMENT,
+            /*timestamp = */ std::nullopt,
+            /*sequence_number = */ std::nullopt,
+            /*sdu_length = */ std::nullopt,
+            /*status_flag = */ std::nullopt,
+            /*sdu_data = */
+            pw::span(blob.data(), blob.size())
+                .subspan(kMaxFirstPacketSize, kMaxControllerSDUFragmentSize)));
+    EXPECT_ISO_PACKET_OUT(
+        test_device(),
+        testing::IsoDataPacket(
+            /*connection_handle = */ iso_stream()->cis_handle(),
+            /*pb_flag = */ IsoDataPbFlag::LAST_FRAGMENT,
+            /*timestamp = */ std::nullopt,
+            /*sequence_number = */ std::nullopt,
+            /*sdu_length = */ std::nullopt,
+            /*status_flag = */ std::nullopt,
+            /*sdu_data = */
+            pw::span(blob.data(), blob.size())
+                .subspan(kMaxFirstPacketSize + kMaxControllerSDUFragmentSize)));
+
+    iso_stream()->Send(
+        pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
+    RunUntilIdle();
+    EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+    expected_sequence_num += 2;
+
+    // Advance the clock by two ISO intervals to simulate a skipped interval
+    test_clock_.AdvanceTime(std::chrono::microseconds(2 * iso_interval_usec));
+  }
+
+  {
+    // Send a packet that just barely needs to be split into three fragments.
+    std::vector<uint8_t> blob = *testing::GenDataBlob(
+        kMaxFirstPacketSize + kMaxControllerSDUFragmentSize + 1,
+        /*starting_value=*/77);
+    EXPECT_ISO_PACKET_OUT(
+        test_device(),
+        testing::IsoDataPacket(
+            /*connection_handle = */ iso_stream()->cis_handle(),
+            /*pb_flag = */ IsoDataPbFlag::FIRST_FRAGMENT,
+            /*timestamp = */ std::nullopt,
+            /*sequence_number = */ expected_sequence_num,
             /*sdu_length = */ blob.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
             /*sdu_data = */ pw::span(blob.data(), kMaxFirstPacketSize)));
@@ -607,49 +677,185 @@ TEST_F(IsoStreamTest, SendPacket) {
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
   }
+}
+
+TEST_F(IsoStreamTest, PacketReceivedBeforeNextInterval) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+  RegisterStream();
+
+  uint32_t iso_interval_usec =
+      established_parameters()->iso_interval *
+      CisEstablishedParameters::kIsoIntervalToMicroseconds;
+
+  constexpr size_t kMaxFirstPacketSize =
+      kMaxControllerSDUFragmentSize - kSduHeaderSize;
+
+  uint16_t expected_sequence_num = 0;
+
+  // Send the first packet
+  {
+    std::vector<uint8_t> blob1 =
+        *testing::GenDataBlob(kMaxFirstPacketSize / 2, /*starting_value=*/111);
+
+    EXPECT_ISO_PACKET_OUT(
+        test_device(),
+        testing::IsoDataPacket(
+            /*connection_handle = */ iso_stream()->cis_handle(),
+            /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
+            /*timestamp = */ std::nullopt,
+            /*sequence_number = */ expected_sequence_num,
+            /*sdu_length = */ blob1.size(),
+            /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
+            /*sdu_data = */ pw::span(blob1.data(), blob1.size())));
+
+    iso_stream()->Send(pw::span(
+        reinterpret_cast<const std::byte*>(blob1.data()), blob1.size()));
+    RunUntilIdle();
+    EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+    ++expected_sequence_num;
+  }
+
+  // Send a second packet immediately before the next interval is produced
+  {
+    std::vector<uint8_t> blob2 =
+        *testing::GenDataBlob(kMaxFirstPacketSize / 3, /*starting_value=*/55);
+
+    EXPECT_ISO_PACKET_OUT(
+        test_device(),
+        testing::IsoDataPacket(
+            /*connection_handle = */ iso_stream()->cis_handle(),
+            /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
+            /*timestamp = */ std::nullopt,
+            /*sequence_number = */ expected_sequence_num,
+            /*sdu_length = */ blob2.size(),
+            /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
+            /*sdu_data = */ pw::span(blob2.data(), blob2.size())));
+
+    iso_stream()->Send(pw::span(
+        reinterpret_cast<const std::byte*>(blob2.data()), blob2.size()));
+    RunUntilIdle();
+    EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+    ++expected_sequence_num;
+
+    test_clock_.AdvanceTime(std::chrono::microseconds(iso_interval_usec));
+  }
+
+  // Send a third packet after the interval has passed
+  {
+    std::vector<uint8_t> blob3 =
+        *testing::GenDataBlob(kMaxFirstPacketSize / 4, /*starting_value=*/99);
+
+    // Expect the sequence number to have advanced to the next interval
+    EXPECT_ISO_PACKET_OUT(
+        test_device(),
+        testing::IsoDataPacket(
+            /*connection_handle = */ iso_stream()->cis_handle(),
+            /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
+            /*timestamp = */ std::nullopt,
+            /*sequence_number = */ expected_sequence_num,
+            /*sdu_length = */ blob3.size(),
+            /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
+            /*sdu_data = */ pw::span(blob3.data(), blob3.size())));
+
+    iso_stream()->Send(pw::span(
+        reinterpret_cast<const std::byte*>(blob3.data()), blob3.size()));
+    RunUntilIdle();
+    EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+  }
+}
+
+TEST_F(IsoStreamTest, PacketReceivedAtIntervalBoundaries) {
+  EstablishCis(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  SetupDataPath(
+      pw::bluetooth::emboss::DataPathDirection::OUTPUT,
+      /*codec_configuration=*/std::nullopt,
+      /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
+      iso::IsoStream::SetupDataPathError::kSuccess);
+  RegisterStream();
+
+  uint32_t iso_interval_usec =
+      established_parameters()->iso_interval *
+      CisEstablishedParameters::kIsoIntervalToMicroseconds;
+
+  constexpr size_t kMaxFirstPacketSize =
+      kMaxControllerSDUFragmentSize - kSduHeaderSize;
+
+  uint16_t expected_sequence_num = 0;
 
   {
-    // Send a packet that just barely needs to be split into three fragments.
-    std::vector<uint8_t> blob = *testing::GenDataBlob(
-        kMaxFirstPacketSize + kMaxControllerSDUFragmentSize + 1,
-        /*starting_value=*/77);
+    std::vector<uint8_t> blob =
+        *testing::GenDataBlob(kMaxFirstPacketSize / 2, /*starting_value=*/111);
     EXPECT_ISO_PACKET_OUT(
         test_device(),
         testing::IsoDataPacket(
             /*connection_handle = */ iso_stream()->cis_handle(),
-            /*pb_flag = */ IsoDataPbFlag::FIRST_FRAGMENT,
+            /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
-            /*sequence_number = */ 0,
+            /*sequence_number = */ expected_sequence_num,
             /*sdu_length = */ blob.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob.data(), kMaxFirstPacketSize)));
-    EXPECT_ISO_PACKET_OUT(
-        test_device(),
-        testing::IsoDataPacket(
-            /*connection_handle = */ iso_stream()->cis_handle(),
-            /*pb_flag = */ IsoDataPbFlag::INTERMEDIATE_FRAGMENT,
-            /*timestamp = */ std::nullopt,
-            /*sequence_number = */ std::nullopt,
-            /*sdu_length = */ std::nullopt,
-            /*status_flag = */ std::nullopt,
-            /*sdu_data = */
-            pw::span(blob.data(), blob.size())
-                .subspan(kMaxFirstPacketSize, kMaxControllerSDUFragmentSize)));
-    EXPECT_ISO_PACKET_OUT(
-        test_device(),
-        testing::IsoDataPacket(
-            /*connection_handle = */ iso_stream()->cis_handle(),
-            /*pb_flag = */ IsoDataPbFlag::LAST_FRAGMENT,
-            /*timestamp = */ std::nullopt,
-            /*sequence_number = */ std::nullopt,
-            /*sdu_length = */ std::nullopt,
-            /*status_flag = */ std::nullopt,
-            /*sdu_data = */
-            pw::span(blob.data(), blob.size())
-                .subspan(kMaxFirstPacketSize + kMaxControllerSDUFragmentSize)));
+            /*sdu_data = */ pw::span(blob.data(), blob.size())));
 
     iso_stream()->Send(
         pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
+    RunUntilIdle();
+    EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+    ++expected_sequence_num;
+
+    // Advance the clock by almost one ISO interval
+    test_clock_.AdvanceTime(std::chrono::microseconds(iso_interval_usec - 1));
+  }
+
+  {
+    // Send a packet one tick before the next interval
+    std::vector<uint8_t> blob =
+        *testing::GenDataBlob(kMaxFirstPacketSize, /*starting_value=*/7);
+    EXPECT_ISO_PACKET_OUT(
+        test_device(),
+        testing::IsoDataPacket(
+            /*connection_handle = */ iso_stream()->cis_handle(),
+            /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
+            /*timestamp = */ std::nullopt,
+            /*sequence_number = */ expected_sequence_num,
+            /*sdu_length = */ blob.size(),
+            /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
+            /*sdu_data = */ pw::span(blob.data(), blob.size())));
+
+    iso_stream()->Send(
+        pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
+    RunUntilIdle();
+    EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+    // Advance the clock by one more microsecond to reach the next interval
+    test_clock_.AdvanceTime(std::chrono::microseconds(1));
+    ++expected_sequence_num;
+  }
+
+  // Send a third packet after the interval has passed
+  {
+    std::vector<uint8_t> blob3 =
+        *testing::GenDataBlob(kMaxFirstPacketSize / 4, /*starting_value=*/99);
+
+    // Expect the sequence number to have advanced to the next interval
+    EXPECT_ISO_PACKET_OUT(
+        test_device(),
+        testing::IsoDataPacket(
+            /*connection_handle = */ iso_stream()->cis_handle(),
+            /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
+            /*timestamp = */ std::nullopt,
+            /*sequence_number = */ expected_sequence_num,
+            /*sdu_length = */ blob3.size(),
+            /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
+            /*sdu_data = */ pw::span(blob3.data(), blob3.size())));
+
+    iso_stream()->Send(pw::span(
+        reinterpret_cast<const std::byte*>(blob3.data()), blob3.size()));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
   }
