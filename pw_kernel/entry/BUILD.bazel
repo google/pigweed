@@ -38,6 +38,26 @@ rust_binary(
 )
 
 rust_binary(
+    name = "kernel_riscv",
+    srcs = ["kernel_riscv.rs"],
+    edition = "2021",
+    tags = ["kernel"],
+    target_compatible_with = select({
+        "//pw_build/constraints/chipset:qemu-virt": [],
+        "@platforms//cpu:riscv32": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "//pw_kernel/kernel",
+        "//pw_kernel/subsys/console:console_backend",
+        "//pw_kernel/target",
+        "//pw_kernel/target:linker_script",
+        "@rust_crates//:riscv-rt",
+        "@rust_crates//:riscv-semihosting",
+    ],
+)
+
+rust_binary(
     name = "kernel_host",
     srcs = ["kernel_host.rs"],
     edition = "2021",

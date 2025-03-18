@@ -11,24 +11,36 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#![no_std]
 
-#[cfg(feature = "arch_arm_cortex_m")]
-use cortex_m_semihosting::hio::hstdout;
+use super::ArchInterface;
 
-#[cfg(feature = "arch_riscv")]
-use riscv_semihosting::hio::hstdout;
+mod spinlock;
+mod threads;
+mod timer;
 
-use pw_status::{Error, Result};
+pub struct Arch {}
 
-#[no_mangle]
-pub fn console_backend_write(buf: &[u8]) -> Result<usize> {
-    let mut stdout = hstdout().map_err(|_| Error::Unavailable)?;
-    stdout.write_all(buf).map_err(|_| Error::DataLoss)?;
-    Ok(buf.len())
-}
+impl ArchInterface for Arch {
+    type ThreadState = threads::ArchThreadState;
+    type BareSpinLock = spinlock::BareSpinLock;
+    type Clock = timer::Clock;
 
-#[no_mangle]
-pub fn console_backend_flush() -> Result<()> {
-    Ok(())
+    fn early_init() {}
+
+    fn init() {}
+
+    fn enable_interrupts() {}
+
+    fn disable_interrupts() {}
+
+    fn interrupts_enabled() -> bool {
+        true
+    }
+
+    fn idle() {}
+
+    fn panic() -> ! {
+        #[allow(clippy::empty_loop)]
+        loop {}
+    }
 }

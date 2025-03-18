@@ -11,24 +11,13 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#![no_std]
 
-#[cfg(feature = "arch_arm_cortex_m")]
-use cortex_m_semihosting::hio::hstdout;
+pub struct Clock;
 
-#[cfg(feature = "arch_riscv")]
-use riscv_semihosting::hio::hstdout;
+impl time::Clock for Clock {
+    const TICKS_PER_SEC: u64 = 1_000_000;
 
-use pw_status::{Error, Result};
-
-#[no_mangle]
-pub fn console_backend_write(buf: &[u8]) -> Result<usize> {
-    let mut stdout = hstdout().map_err(|_| Error::Unavailable)?;
-    stdout.write_all(buf).map_err(|_| Error::DataLoss)?;
-    Ok(buf.len())
-}
-
-#[no_mangle]
-pub fn console_backend_flush() -> Result<()> {
-    Ok(())
+    fn now() -> time::Instant<Self> {
+        time::Instant::from_ticks(0)
+    }
 }

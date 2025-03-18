@@ -21,6 +21,11 @@ CORTEX_M_DEPS = [
     "@rust_crates//:cortex-m-rt",
 ]
 
+RISCV_DEPS = [
+    "@rust_crates//:riscv",
+    "@rust_crates//:riscv-rt",
+]
+
 rust_library(
     name = "kernel",
     srcs = [
@@ -37,6 +42,10 @@ rust_library(
         "arch/arm_cortex_m/timer.rs",
         "arch/host.rs",
         "arch/host/spinlock.rs",
+        "arch/riscv.rs",
+        "arch/riscv/spinlock.rs",
+        "arch/riscv/threads.rs",
+        "arch/riscv/timer.rs",
         "lib.rs",
         "panic.rs",
         "scheduler.rs",
@@ -51,6 +60,7 @@ rust_library(
         "@pigweed//pw_build/constraints/arm:cortex-m0": ["arch_arm_cortex_m"],
         "@pigweed//pw_build/constraints/arm:cortex-m3": ["arch_arm_cortex_m"],
         "@pigweed//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
+        "@platforms//cpu:riscv32": ["arch_riscv"],
         "//conditions:default": [
             "arch_host",
             "std_panic_handler",
@@ -71,6 +81,7 @@ rust_library(
         "@pigweed//pw_build/constraints/arm:cortex-m0": CORTEX_M_DEPS,
         "@pigweed//pw_build/constraints/arm:cortex-m3": CORTEX_M_DEPS,
         "@pigweed//pw_build/constraints/arm:cortex-m33": CORTEX_M_DEPS,
+        "@platforms//cpu:riscv32": RISCV_DEPS,
         "//conditions:default": [],
     }),
 )

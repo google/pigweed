@@ -13,22 +13,12 @@
 // the License.
 #![no_std]
 
-#[cfg(feature = "arch_arm_cortex_m")]
-use cortex_m_semihosting::hio::hstdout;
+use target_interface::{declare_target, TargetInterface};
 
-#[cfg(feature = "arch_riscv")]
-use riscv_semihosting::hio::hstdout;
+pub struct Target {}
 
-use pw_status::{Error, Result};
-
-#[no_mangle]
-pub fn console_backend_write(buf: &[u8]) -> Result<usize> {
-    let mut stdout = hstdout().map_err(|_| Error::Unavailable)?;
-    stdout.write_all(buf).map_err(|_| Error::DataLoss)?;
-    Ok(buf.len())
+impl TargetInterface for Target {
+    const NAME: &'static str = "QEMU-VIRT-RISCV";
 }
 
-#[no_mangle]
-pub fn console_backend_flush() -> Result<()> {
-    Ok(())
-}
+declare_target!(Target);

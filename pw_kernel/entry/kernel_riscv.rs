@@ -11,24 +11,22 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
+#![no_main]
 #![no_std]
 
-#[cfg(feature = "arch_arm_cortex_m")]
-use cortex_m_semihosting::hio::hstdout;
+// TODO: move this entry point into the arch module, possibly.
 
-#[cfg(feature = "arch_riscv")]
-use riscv_semihosting::hio::hstdout;
+// Panic handler that halts the CPU on panic.
+use console_backend as _;
+use target as _;
 
-use pw_status::{Error, Result};
+// RISC-V runtime entry macro.
+use riscv_rt::entry;
 
-#[no_mangle]
-pub fn console_backend_write(buf: &[u8]) -> Result<usize> {
-    let mut stdout = hstdout().map_err(|_| Error::Unavailable)?;
-    stdout.write_all(buf).map_err(|_| Error::DataLoss)?;
-    Ok(buf.len())
-}
+use kernel::Kernel;
 
-#[no_mangle]
-pub fn console_backend_flush() -> Result<()> {
-    Ok(())
+#[entry]
+fn main() -> ! {
+    Kernel::main();
 }

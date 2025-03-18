@@ -60,6 +60,10 @@ Test
 QEMU
 ====
 
+Supported QEMU platforms:
+* ``k_qemu_mps2_an505`` - a cortex-m33 based system
+* ``k_qemu_virt_riscv32`` - a riscv32 based system
+
 Test
 ----
 
@@ -76,11 +80,19 @@ Run
 
    bazelisk run --config k_qemu_mps2_an505 //pw_kernel/entry:kernel
 
+.. code-block:: shell
+
+   bazelisk run --config k_qemu_virt_riscv32 //pw_kernel/entry:kernel_riscv
+
 If the tokenized logger is being used, the stream can be detokenized with:
 
 .. code-block:: shell
 
    bazelisk run --config k_qemu_mps2_an505 //pw_kernel/entry:kernel | python -m pw_tokenizer.detokenize base64 ./bazel-bin/pw_kernel/entry/kernel
+
+.. code-block:: shell
+
+   bazelisk run --config k_qemu_virt_riscv32 //pw_kernel/entry:kernel_riscv | python -m pw_tokenizer.detokenize base64 ./bazel-bin/pw_kernel/entry/kernel
 
 Note that this requires a bootstrapped environment.
 

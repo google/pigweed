@@ -53,6 +53,27 @@ test:k_qemu_mps2_an505 --run_under="@qemu//:qemu-system-arm \
   -serial mon:stdio \
   -kernel "
 
+# QEMU virt riscv32 target configuration
+# =======================================
+common:k_qemu_virt_riscv32 --config=k_common
+build:k_qemu_virt_riscv32 --platforms=//pw_kernel/target/qemu/virt:riscv32imc
+run:k_qemu_virt_riscv32 --run_under="@qemu//:qemu-system-riscv32 \
+  -bios none \
+  -cpu rv32 \
+  -machine virt \
+  -nographic \
+  -semihosting-config enable=on,target=native \
+  -serial mon:stdio \
+  -kernel "
+test:k_qemu_virt_riscv32 --run_under="@qemu//:qemu-system-riscv32 \
+  -bios none \
+  -cpu rv32 \
+  -machine virt \
+  -nographic \
+  -semihosting-config enable=on,target=native \
+  -serial mon:stdio \
+  -kernel "
+
 # RP2350 target configuration
 # =======================================
 common:k_rp2350 --config=k_common

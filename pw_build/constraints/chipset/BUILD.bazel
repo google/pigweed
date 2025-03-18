@@ -40,6 +40,11 @@ constraint_value(
 )
 
 constraint_value(
+    name = "qemu-virt",
+    constraint_setting = ":chipset",
+)
+
+constraint_value(
     name = "rp2040",
     constraint_setting = ":chipset",
 )

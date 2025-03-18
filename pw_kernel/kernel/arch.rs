@@ -17,6 +17,11 @@ mod arm_cortex_m;
 #[cfg(feature = "arch_arm_cortex_m")]
 pub use arm_cortex_m::Arch;
 
+#[cfg(feature = "arch_riscv")]
+mod riscv;
+#[cfg(feature = "arch_riscv")]
+pub use riscv::Arch;
+
 #[cfg(feature = "arch_host")]
 mod host;
 #[cfg(feature = "arch_host")]

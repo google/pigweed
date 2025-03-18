@@ -94,6 +94,26 @@ rust_library(
 )
 
 rust_library(
+    name = "unittest_runner_riscv",
+    srcs = ["unittest_runner_riscv.rs"],
+    crate_name = "unittest_runner",
+    tags = ["kernel"],
+    target_compatible_with = select({
+        "@platforms//cpu:riscv32": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":unittest_core",
+        "//pw_kernel/kernel",
+        "//pw_kernel/lib/pw_assert",
+        "//pw_kernel/subsys/console:console_backend",
+        "//pw_kernel/target",
+        "@rust_crates//:riscv-rt",
+        "@rust_crates//:riscv-semihosting",
+    ],
+)
+
+rust_library(
     name = "unittest_test",
     srcs = ["unittest_test.rs"],
     tags = ["kernel"],

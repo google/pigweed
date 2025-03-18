@@ -13,22 +13,14 @@
 // the License.
 #![no_std]
 
-#[cfg(feature = "arch_arm_cortex_m")]
-use cortex_m_semihosting::hio::hstdout;
+use console_backend as _;
+use kernel as _;
 
-#[cfg(feature = "arch_riscv")]
-use riscv_semihosting::hio::hstdout;
+use riscv_rt::entry;
 
-use pw_status::{Error, Result};
-
-#[no_mangle]
-pub fn console_backend_write(buf: &[u8]) -> Result<usize> {
-    let mut stdout = hstdout().map_err(|_| Error::Unavailable)?;
-    stdout.write_all(buf).map_err(|_| Error::DataLoss)?;
-    Ok(buf.len())
-}
-
-#[no_mangle]
-pub fn console_backend_flush() -> Result<()> {
-    Ok(())
+#[entry]
+fn main() -> ! {
+    // TODO: davidroth - implement this.  Also look at combing with the
+    // cortex-m runner.
+    pw_assert::panic!("implement riscv unittest runner");
 }

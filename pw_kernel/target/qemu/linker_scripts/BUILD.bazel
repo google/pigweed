@@ -17,10 +17,10 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "qemu_mps2_an505_linker_script",
-    linkopts = ["-T$(location qemu-mps2-an505.ld)"],
+    name = "mps2-an505",
+    linkopts = ["-T$(location mps2-an505.ld)"],
     target_compatible_with = ["@pigweed//pw_build/constraints/chipset:mps2-an505"],
     deps = [
-        "qemu-mps2-an505.ld",
+        "mps2-an505.ld",
     ],
 )

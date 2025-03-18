@@ -28,6 +28,6 @@ platform(
     flags = flags_from_dict({
         "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_cortex_m",
         "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
-        "//pw_kernel/target:linker_script": "//pw_kernel/target/qemu/linker_scripts:qemu_mps2_an505_linker_script",
+        "//pw_kernel/target:linker_script": "//pw_kernel/target/qemu/linker_scripts:mps2-an505",
     }),
 )

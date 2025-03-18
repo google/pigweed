@@ -37,18 +37,31 @@ rust_library(
 rust_library(
     name = "console_backend_semihosting",
     srcs = ["console_backend_semihosting.rs"],
+    crate_features = select({
+        "@pigweed//pw_build/constraints/arm:cortex-m0": ["arch_arm_cortex_m"],
+        "@pigweed//pw_build/constraints/arm:cortex-m3": ["arch_arm_cortex_m"],
+        "@pigweed//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
+        "@platforms//cpu:riscv32": ["arch_riscv"],
+        "//conditions:default": [],
+    }),
     crate_name = "console_backend",
     target_compatible_with = select({
         "//pw_build/constraints/arm:cortex-m0": [],
         "//pw_build/constraints/arm:cortex-m3": [],
         "//pw_build/constraints/arm:cortex-m33": [],
+        "@platforms//cpu:riscv32": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
         "//pw_kernel/lib/pw_status",
-        "@rust_crates//:cortex-m-semihosting",
         "@rust_crates//:embedded-io",
-    ],
+    ] + select({
+        "@pigweed//pw_build/constraints/arm:cortex-m0": ["@rust_crates//:cortex-m-semihosting"],
+        "@pigweed//pw_build/constraints/arm:cortex-m3": ["@rust_crates//:cortex-m-semihosting"],
+        "@pigweed//pw_build/constraints/arm:cortex-m33": ["@rust_crates//:cortex-m-semihosting"],
+        "@platforms//cpu:riscv32": ["@rust_crates//:riscv-semihosting"],
+        "//conditions:default": [],
+    }),
 )
 
 label_flag(
