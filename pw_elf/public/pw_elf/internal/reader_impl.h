@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include "pw_assert/assert.h"
 #include "pw_elf/internal/elf.h"
 #include "pw_elf/internal/stream_utils.h"
@@ -42,13 +44,14 @@ class ElfReaderImpl {
       Elf_Shdr section_hdr = std::move(section_hdr_ret.value());
 
       // Read the section name string
-      PW_TRY_WITH_SIZE(
-          stream_.Seek(str_table_data_off() + section_hdr.sh_name));
+      PW_TRY_WITH_SIZE(stream_.Seek(
+          str_table_data_off() + static_cast<ptrdiff_t>(section_hdr.sh_name)));
       auto section_name = ReadNullTermString(stream_);
       PW_TRY_WITH_SIZE(section_name.status());
 
       if (section_name.value() == name) {
-        PW_TRY_WITH_SIZE(stream_.Seek(section_hdr.sh_offset));
+        PW_TRY_WITH_SIZE(
+            stream_.Seek(static_cast<ptrdiff_t>(section_hdr.sh_offset)));
         return StatusWithSize(section_hdr.sh_size);
       }
     }
@@ -81,13 +84,13 @@ class ElfReaderImpl {
 
   Status SeekToSectionHeader(unsigned int index) {
     PW_ASSERT(file_header_);
-    return stream_.Seek(file_header_->e_shoff +
-                        (index * file_header_->e_shentsize));
+    return stream_.Seek(static_cast<ptrdiff_t>(
+        file_header_->e_shoff + (index * file_header_->e_shentsize)));
   }
 
   ptrdiff_t str_table_data_off() const {
     PW_ASSERT(str_table_sec_hdr_);
-    return str_table_sec_hdr_->sh_offset;
+    return static_cast<ptrdiff_t>(str_table_sec_hdr_->sh_offset);
   }
 
   unsigned int sec_hdr_count() const {
