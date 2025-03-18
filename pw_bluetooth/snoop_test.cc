@@ -439,9 +439,11 @@ TEST(SnoopTest, HeaderRxTxRxTx) {
 TEST(SnoopTest, Disabled) {
   chrono::SimulatedSystemClock clock{};
   SnoopBuffer<4096, 256> snoop{clock};
+  EXPECT_TRUE(snoop.IsEnabled());
 
   // Disable
   snoop.Disable();
+  EXPECT_FALSE(snoop.IsEnabled());
 
   // Add packet 1
   std::array<uint8_t, 5> rx_data1 = {0x12, 0x34, 0x56, 0x78, 0x9A};
@@ -463,9 +465,11 @@ TEST(SnoopTest, Disabled) {
 TEST(SnoopTest, DisabledEnable) {
   chrono::SimulatedSystemClock clock{};
   SnoopBuffer<4096, 256> snoop{clock};
+  EXPECT_TRUE(snoop.IsEnabled());
 
   // Disable
   snoop.Disable();
+  EXPECT_FALSE(snoop.IsEnabled());
 
   // Add packet 1
   std::array<uint8_t, 5> rx_data1 = {0x12, 0x34, 0x56, 0x78, 0x9A};
@@ -474,6 +478,7 @@ TEST(SnoopTest, DisabledEnable) {
 
   // Renable
   snoop.Enable();
+  EXPECT_TRUE(snoop.IsEnabled());
 
   // Add packet 2
   clock.AdvanceTime(pw::chrono::SystemClock::for_at_least(1us));

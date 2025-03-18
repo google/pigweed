@@ -72,6 +72,11 @@ class Snoop {
     is_enabled_ = false;
   }
 
+  bool IsEnabled() {
+    std::lock_guard lock(queue_lock_);
+    return is_enabled_;
+  }
+
   /// Dump the snoop log to the log as a hex string
   Status DumpToLog();
 
