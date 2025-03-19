@@ -18,7 +18,7 @@ load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
 
 def pw_cc_size_binary(
         name,
-        platform = "//pw_bloat:pw_size_report_platform",
+        platform = Label("//pw_bloat:pw_size_report_platform"),
         **cc_binary_kwargs):
     """Compiles a pw_cc_binary target with a configured platform.
 
@@ -37,7 +37,7 @@ def pw_cc_size_binary(
         target_compatible_with = select({
             # As these binaries are intended to be built for a size reporting
             # target, they should not be included in sanitizer builds.
-            "//pw_toolchain/host_clang:asan_enabled": ["@platforms//:incompatible"],
+            Label("//pw_toolchain/host_clang:asan_enabled"): ["@platforms//:incompatible"],
             "//conditions:default": [],
         }),
         **cc_binary_kwargs
