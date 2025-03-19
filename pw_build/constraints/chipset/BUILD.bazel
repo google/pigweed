@@ -30,27 +30,12 @@ constraint_value(
 )
 
 constraint_value(
-    name = "mps2-an505",
-    constraint_setting = ":chipset",
-)
-
-constraint_value(
     name = "nrf52833",
     constraint_setting = ":chipset",
 )
 
 constraint_value(
-    name = "qemu-virt",
-    constraint_setting = ":chipset",
-)
-
-constraint_value(
     name = "rp2040",
-    constraint_setting = ":chipset",
-)
-
-constraint_value(
-    name = "rp2350",
     constraint_setting = ":chipset",
 )
 

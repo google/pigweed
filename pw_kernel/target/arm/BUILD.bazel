@@ -12,13 +12,12 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
+load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 
 platform(
     name = "mps2-an505",
     constraint_values = [
-        "//pw_build/constraints/chipset:mps2-an505",
         "//pw_build/constraints/arm:cortex-m33",
         "@platforms//cpu:armv8-m",
         "@platforms//os:none",
@@ -31,11 +30,10 @@ platform(
     }),
 )
 
-cc_library(
+pw_linker_script(
     name = "linker_script_mps2_an505",
-    linkopts = ["-T$(location mps2-an505.ld)"],
-    target_compatible_with = ["//pw_build/constraints/chipset:mps2-an505"],
-    deps = [
-        "mps2-an505.ld",
+    linker_script = "mps2-an505.ld",
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
     ],
 )

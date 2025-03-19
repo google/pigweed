@@ -93,7 +93,6 @@ rust_library(
     ],
     crate_name = "pw_log_backend",
     proc_macro_deps = [":pw_log_backend_basic_macro"],
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         ":console",
@@ -108,7 +107,6 @@ rust_library(
         "pw_log_backend_tokenized.rs",
     ],
     crate_name = "pw_log_backend",
-    tags = ["manual"],
     visibility = ["//visibility:public"],
     deps = [
         ":console",

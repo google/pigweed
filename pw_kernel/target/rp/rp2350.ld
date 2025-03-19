@@ -100,7 +100,7 @@ SECTIONS
   {
     . = ALIGN(4);
 
-    # RP235x boot header
+    /* RP235x boot header */
     KEEP(*(.start_block));
     KEEP(*(.boot_info));
 
@@ -160,7 +160,7 @@ SECTIONS
     . = ALIGN(4);
   } >RAM AT> FLASH
 
-  # Picotool entries go at the end of text.
+  /* Picotool entries go at the end of text. */
   .bi_entries : ALIGN(4)
   {
       __bi_entries_start = .;
@@ -273,7 +273,7 @@ PROVIDE(SysTick = DefaultHandler);
 PROVIDE(HardFault = HardFault_);
 
 
-# rp235x-pac crate handlers
+/* rp235x-pac crate handlers */
 PROVIDE(TIMER0_IRQ_0 = DefaultHandler);
 PROVIDE(TIMER0_IRQ_1 = DefaultHandler);
 PROVIDE(TIMER0_IRQ_2 = DefaultHandler);

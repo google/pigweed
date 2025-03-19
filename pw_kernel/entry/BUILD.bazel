@@ -39,9 +39,6 @@ rust_binary(
     tags = ["kernel"],
     target_compatible_with = select({
         "//pw_build/constraints/arm:cortex-m33": [],
-        "//pw_build/constraints/chipset:mps2-an505": [],
-        "//pw_build/constraints/chipset:qemu-virt": [],
-        "//pw_build/constraints/chipset:rp2350": [],
         "@platforms//cpu:riscv32": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),

@@ -12,14 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
+load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 
 platform(
     name = "rp2350",
     constraint_values = [
-        "//pw_build/constraints/chipset:rp2350",
         "//pw_build/constraints/arm:cortex-m33",
         "@platforms//cpu:armv8-m",
         "@platforms//os:none",
@@ -33,14 +32,11 @@ platform(
     }),
 )
 
-cc_library(
+pw_linker_script(
     name = "linker_script_rp2350",
-    linkopts = ["-T$(location rp2350.ld)"],
+    linker_script = "rp2350.ld",
     target_compatible_with = [
-        "//pw_build/constraints/chipset:rp2350",
-    ],
-    deps = [
-        "rp2350.ld",
+        "//pw_build/constraints/arm:cortex-m33",
     ],
 )
 
@@ -49,7 +45,7 @@ rust_library(
     srcs = ["console_rp2350.rs"],
     crate_name = "console_backend",
     target_compatible_with = [
-        "//pw_build/constraints/chipset:rp2350",
+        "//pw_build/constraints/arm:cortex-m33",
     ],
     deps = [
         "//pw_kernel/kernel",
@@ -64,7 +60,7 @@ rust_library(
     srcs = ["target_rp2350.rs"],
     crate_name = "target_backend",
     target_compatible_with = [
-        "//pw_build/constraints/chipset:rp2350",
+        "//pw_build/constraints/arm:cortex-m33",
     ],
     deps = [
         ":console_rp2350",
