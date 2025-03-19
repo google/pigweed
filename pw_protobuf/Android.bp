@@ -178,7 +178,7 @@ genrule {
         "--out-dir=$$(dirname $(location google/protobuf/descriptor.pwpb.h)) " +
         "--plugin-path=$(location pw_protobuf_plugin_py) " +
         "--compile-dir=$${compile_dir} " +
-        "--sources $${proto_files} " +
+        "--sources $${proto_files[@]} " +
         "--language pwpb " +
         "--no-experimental-proto3-optional " +
         "--no-experimental-editions " +
