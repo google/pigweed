@@ -22,10 +22,10 @@
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
+#include "pw_bluetooth_proxy/internal/recombiner.h"
 #include "pw_containers/algorithm.h"  // IWYU pragma: keep
 #include "pw_log/log.h"
 #include "pw_status/status.h"
-#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -611,8 +611,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
     if (!connection) {
       return kUnhandled;
     }
-    AclConnection::Recombiner& recombiner =
-        connection->GetRecombiner(direction);
+    Recombiner& recombiner = connection->GetRecombiner(direction);
 
     // TODO: https://pwbug.dev/392665312 - make this <const uint8_t>
     const pw::span<uint8_t> acl_payload{
@@ -851,67 +850,6 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
   l2cap_channel_manager_.DeliverPendingEvents();
 
   return result;
-}
-
-pw::Status AclDataChannel::AclConnection::Recombiner::StartRecombination(
-    uint16_t local_cid,
-    multibuf::MultiBufAllocator& multibuf_allocator,
-    size_t size) {
-  if (IsActive()) {
-    return Status::FailedPrecondition();
-  }
-
-  is_active_ = true;
-  local_cid_ = local_cid;
-  expected_size_ = size;
-  recombined_size_ = 0;
-
-  Result<MultiBufWriter> mbufw =
-      MultiBufWriter::Create(multibuf_allocator, size);
-  if (!mbufw.ok()) {
-    return mbufw.status();
-  }
-
-  mbufw_.emplace(std::move(*mbufw));
-
-  return pw::OkStatus();
-}
-
-pw::Status AclDataChannel::AclConnection::Recombiner::RecombineFragment(
-    pw::span<const uint8_t> data) {
-  if (!IsActive()) {
-    return Status::FailedPrecondition();
-  }
-
-  PW_CHECK(mbufw_.has_value());
-  pw::Status status = mbufw_->Write(pw::as_bytes(data));
-
-  if (status == pw::OkStatus()) {
-    recombined_size_ += data.size();
-  }
-
-  PW_CHECK_INT_EQ(mbufw_->U8Span().size(), recombined_size_);
-
-  return status;
-}
-
-multibuf::MultiBuf AclDataChannel::AclConnection::Recombiner::TakeAndEnd() {
-  PW_CHECK(IsActive());
-  PW_CHECK(IsComplete());
-
-  multibuf::MultiBuf mbuf = mbufw_->TakeMultiBuf();
-  // We expect MultiBufWriter to have used `AllocateContiguous()` to create the
-  // MultiBuf.
-  PW_CHECK(mbuf.IsContiguous());
-
-  EndRecombination();
-
-  return mbuf;
-}
-
-void AclDataChannel::AclConnection::Recombiner::EndRecombination() {
-  is_active_ = false;
-  mbufw_ = std::nullopt;
 }
 
 }  // namespace pw::bluetooth::proxy

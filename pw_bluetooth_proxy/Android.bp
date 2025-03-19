@@ -37,6 +37,7 @@ cc_library_static {
         "l2cap_status_tracker.cc",
         "multibuf_writer.cc",
         "proxy_host.cc",
+        "recombiner.cc",
         "rfcomm_channel.cc",
         "rfcomm_fcs.cc",
     ],
