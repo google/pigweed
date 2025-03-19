@@ -61,7 +61,7 @@ void Task::RemoveWakerLocked(Waker& waker) {
 }
 
 bool Task::IsRegistered() const {
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   return state_ != Task::State::kUnposted;
 }
 
@@ -69,7 +69,7 @@ void Task::Deregister() {
   pw::sync::Mutex* task_execution_lock;
   {
     // Fast path: the task is not running.
-    std::lock_guard lock(dispatcher_lock());
+    std::lock_guard lock(impl::dispatcher_lock());
     if (TryDeregister()) {
       return;
     }
@@ -83,7 +83,7 @@ void Task::Deregister() {
   //
   // This restriction is documented above, but is still fairly footgun-y.
   std::lock_guard task_lock(*task_execution_lock);
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   PW_CHECK(TryDeregister());
 }
 
@@ -114,7 +114,7 @@ bool Task::TryDeregister() {
 }
 
 Waker::Waker(Waker&& other) noexcept {
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   if (other.task_ == nullptr) {
     return;
   }
@@ -124,7 +124,7 @@ Waker::Waker(Waker&& other) noexcept {
 }
 
 Waker& Waker::operator=(Waker&& other) noexcept {
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   RemoveFromTaskWakerListLocked();
   if (other.task_ == nullptr) {
     return *this;
@@ -136,7 +136,7 @@ Waker& Waker::operator=(Waker&& other) noexcept {
 }
 
 void Waker::Wake() && {
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   if (task_ != nullptr) {
     task_->dispatcher_->WakeTask(*task_);
     RemoveFromTaskWakerListLocked();
@@ -144,7 +144,7 @@ void Waker::Wake() && {
 }
 
 void Waker::InternalCloneInto(Waker& out) & {
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   // The `out` waker already points to this task, so no work is necessary.
   if (out.task_ == task_) {
     return;
@@ -159,12 +159,12 @@ void Waker::InternalCloneInto(Waker& out) & {
 }
 
 bool Waker::IsEmpty() const {
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   return task_ == nullptr;
 }
 
 void Waker::InsertIntoTaskWakerList() {
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   InsertIntoTaskWakerListLocked();
 }
 
@@ -175,7 +175,7 @@ void Waker::InsertIntoTaskWakerListLocked() {
 }
 
 void Waker::RemoveFromTaskWakerList() {
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   RemoveFromTaskWakerListLocked();
 }
 
@@ -186,7 +186,7 @@ void Waker::RemoveFromTaskWakerListLocked() {
 }
 
 void NativeDispatcherBase::Deregister() {
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   UnpostTaskList(first_woken_);
   first_woken_ = nullptr;
   last_woken_ = nullptr;
@@ -197,7 +197,7 @@ void NativeDispatcherBase::Deregister() {
 void NativeDispatcherBase::Post(Task& task) {
   bool wake_dispatcher = false;
   {
-    std::lock_guard lock(dispatcher_lock());
+    std::lock_guard lock(impl::dispatcher_lock());
     PW_DASSERT(task.state_ == Task::State::kUnposted);
     PW_DASSERT(task.dispatcher_ == nullptr);
     task.state_ = Task::State::kWoken;
@@ -218,7 +218,7 @@ void NativeDispatcherBase::Post(Task& task) {
 
 NativeDispatcherBase::SleepInfo NativeDispatcherBase::AttemptRequestWake(
     bool allow_empty) {
-  std::lock_guard lock(dispatcher_lock());
+  std::lock_guard lock(impl::dispatcher_lock());
   // Don't allow sleeping if there are already tasks waiting to be run.
   if (first_woken_ != nullptr) {
     return SleepInfo::DontSleep();
@@ -238,7 +238,7 @@ NativeDispatcherBase::RunOneTaskResult NativeDispatcherBase::RunOneTask(
   std::lock_guard task_lock(task_execution_lock_);
   Task* task;
   {
-    std::lock_guard lock(dispatcher_lock());
+    std::lock_guard lock(impl::dispatcher_lock());
     task = PopWokenTask();
     if (task == nullptr) {
       bool all_complete = first_woken_ == nullptr && sleeping_ == nullptr;
@@ -259,7 +259,7 @@ NativeDispatcherBase::RunOneTaskResult NativeDispatcherBase::RunOneTask(
   if (complete) {
     bool all_complete;
     {
-      std::lock_guard lock(dispatcher_lock());
+      std::lock_guard lock(impl::dispatcher_lock());
       switch (task->state_) {
         case Task::State::kUnposted:
         case Task::State::kSleeping:
@@ -282,7 +282,7 @@ NativeDispatcherBase::RunOneTaskResult NativeDispatcherBase::RunOneTask(
         /*completed_main_task=*/task == task_to_look_for,
         /*ran_a_task=*/true);
   } else {
-    std::lock_guard lock(dispatcher_lock());
+    std::lock_guard lock(impl::dispatcher_lock());
     if (task->state_ == Task::State::kRunning) {
       task->state_ = Task::State::kSleeping;
       AddTaskToSleepingList(*task);

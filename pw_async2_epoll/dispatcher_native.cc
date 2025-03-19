@@ -62,7 +62,7 @@ Status NativeDispatcher::NativeInit() {
 
 Poll<> NativeDispatcher::DoRunUntilStalled(Dispatcher& dispatcher, Task* task) {
   {
-    std::lock_guard lock(dispatcher_lock());
+    std::lock_guard lock(impl::dispatcher_lock());
     PW_CHECK(task == nullptr || HasPostedTask(*task),
              "Attempted to run a dispatcher until a task was stalled, "
              "but that task has not been `Post`ed to that `Dispatcher`.");
@@ -80,7 +80,7 @@ Poll<> NativeDispatcher::DoRunUntilStalled(Dispatcher& dispatcher, Task* task) {
 
 void NativeDispatcher::DoRunToCompletion(Dispatcher& dispatcher, Task* task) {
   {
-    std::lock_guard lock(dispatcher_lock());
+    std::lock_guard lock(impl::dispatcher_lock());
     PW_CHECK(task == nullptr || HasPostedTask(*task),
              "Attempted to run a dispatcher until a task was complete, "
              "but that task has not been `Post`ed to that `Dispatcher`.");

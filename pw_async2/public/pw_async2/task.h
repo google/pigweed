@@ -14,7 +14,7 @@
 #pragma once
 
 #include "pw_async2/context.h"
-#include "pw_async2/internal/lock.h"
+#include "pw_async2/lock.h"
 #include "pw_async2/poll.h"
 #include "pw_sync/lock_annotations.h"
 
@@ -128,7 +128,7 @@ class Task {
   ///
   /// If the task is currently running, this will return false and the task
   /// will not be deregistered.
-  bool TryDeregister() PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+  bool TryDeregister() PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   /// Attempts to advance this ``Task`` to completion.
   ///
@@ -159,18 +159,21 @@ class Task {
   virtual void DoDestroy() {}
 
   // Unlinks all ``Waker`` objects associated with this ``Task.``
-  void RemoveAllWakersLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+  void RemoveAllWakersLocked()
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   // Adds a ``Waker`` to the linked list of ``Waker`` s tracked by this
   // ``Task``.
-  void AddWakerLocked(Waker&) PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+  void AddWakerLocked(Waker&)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   // Removes a ``Waker`` from the linked list of ``Waker`` s tracked by this
   // ``Task``
   //
   // Precondition: the provided waker *must* be in the list of ``Waker`` s
   // tracked by this ``Task``.
-  void RemoveWakerLocked(Waker&) PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+  void RemoveWakerLocked(Waker&)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   enum class State {
     kUnposted,
@@ -179,7 +182,7 @@ class Task {
     kSleeping,
   };
   // The current state of the task.
-  State state_ PW_GUARDED_BY(dispatcher_lock()) = State::kUnposted;
+  State state_ PW_GUARDED_BY(impl::dispatcher_lock()) = State::kUnposted;
 
   // A pointer to the dispatcher this task is associated with.
   //
@@ -187,16 +190,17 @@ class Task {
   //
   // This value must be cleared by the dispatcher upon destruction in order to
   // prevent null access.
-  NativeDispatcherBase* dispatcher_ PW_GUARDED_BY(dispatcher_lock()) = nullptr;
+  NativeDispatcherBase* dispatcher_ PW_GUARDED_BY(impl::dispatcher_lock()) =
+      nullptr;
 
   // Pointers for whatever linked-list this ``Task`` is in.
   // These are controlled by the ``Dispatcher``.
-  Task* prev_ PW_GUARDED_BY(dispatcher_lock()) = nullptr;
-  Task* next_ PW_GUARDED_BY(dispatcher_lock()) = nullptr;
+  Task* prev_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
+  Task* next_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
 
   // A pointer to the first element of the linked list of ``Waker`` s that may
   // awaken this ``Task``.
-  Waker* wakers_ PW_GUARDED_BY(dispatcher_lock()) = nullptr;
+  Waker* wakers_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
 };
 
 }  // namespace pw::async2

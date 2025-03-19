@@ -14,7 +14,7 @@
 #pragma once
 
 #include "pw_async2/context.h"
-#include "pw_async2/internal/lock.h"
+#include "pw_async2/lock.h"
 #include "pw_async2/task.h"
 #include "pw_async2/waker.h"
 #include "pw_sync/lock_annotations.h"
@@ -60,7 +60,7 @@ class NativeDispatcherBase {
 
   /// Check that a task is posted on this ``Dispatcher``.
   bool HasPostedTask(Task& task)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock()) {
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock()) {
     return task.dispatcher_ == this;
   }
 
@@ -71,9 +71,9 @@ class NativeDispatcherBase {
   /// destructors. It is not called by the ``NativeDispatcherBase`` destructor,
   /// as doing so would allow the ``Dispatcher`` to be referenced between the
   /// calls to ``~Dispatcher`` and ``~NativeDispatcherBase``.
-  void Deregister() PW_LOCKS_EXCLUDED(dispatcher_lock());
+  void Deregister() PW_LOCKS_EXCLUDED(impl::dispatcher_lock());
 
-  void Post(Task& task) PW_LOCKS_EXCLUDED(dispatcher_lock());
+  void Post(Task& task) PW_LOCKS_EXCLUDED(impl::dispatcher_lock());
 
   /// Information about whether and when to sleep until as returned by
   /// ``NativeDispatcherBase::AttemptRequestWake``.
@@ -109,7 +109,7 @@ class NativeDispatcherBase {
   /// @param  allow_empty Whether or not to allow sleeping when no tasks are
   ///                     registered.
   SleepInfo AttemptRequestWake(bool allow_empty)
-      PW_LOCKS_EXCLUDED(dispatcher_lock());
+      PW_LOCKS_EXCLUDED(impl::dispatcher_lock());
 
   /// Information about the result of a call to ``RunOneTask``.
   ///
@@ -147,32 +147,33 @@ class NativeDispatcherBase {
   /// This method's implementation should ensure that the ``Dispatcher`` comes
   /// back from sleep and begins invoking ``RunOneTask`` again.
   ///
-  /// Note: the ``dispatcher_lock()`` may or may not be held here, so it must
-  /// not be acquired by ``DoWake``, nor may ``DoWake`` assume that it has been
-  /// acquired.
+  /// Note: the ``impl::dispatcher_lock()`` may or may not be held here, so it
+  /// must not be acquired by ``DoWake``, nor may ``DoWake`` assume that it has
+  /// been acquired.
   virtual void DoWake() = 0;
 
   static void UnpostTaskList(Task*)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
   static void RemoveTaskFromList(Task&)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
   void RemoveWokenTaskLocked(Task&)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
   void RemoveSleepingTaskLocked(Task&)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   // For use by ``WakeTask`` and ``DispatcherImpl::Post``.
-  void AddTaskToWokenList(Task&) PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+  void AddTaskToWokenList(Task&)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   // For use by ``RunOneTask``.
   void AddTaskToSleepingList(Task&)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   // For use by ``Waker``.
-  void WakeTask(Task&) PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+  void WakeTask(Task&) PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   // For use by ``RunOneTask``.
-  Task* PopWokenTask() PW_EXCLUSIVE_LOCKS_REQUIRED(dispatcher_lock());
+  Task* PopWokenTask() PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   // A lock guarding ``Task`` execution.
   //
@@ -180,18 +181,18 @@ class NativeDispatcherBase {
   // queue, and only released after they have been run and possibly
   // destroyed.
   //
-  // If acquiring this lock and ``dispatcher_lock()``, this lock must
+  // If acquiring this lock and ``impl::dispatcher_lock()``, this lock must
   // be acquired first in order to avoid deadlocks.
   //
   // Acquiring this lock may be a slow process, as it must wait until
   // the running task has finished executing ``Task::Pend``.
   pw::sync::Mutex task_execution_lock_;
 
-  Task* first_woken_ PW_GUARDED_BY(dispatcher_lock()) = nullptr;
-  Task* last_woken_ PW_GUARDED_BY(dispatcher_lock()) = nullptr;
+  Task* first_woken_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
+  Task* last_woken_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
   // Note: the sleeping list's order is not significant.
-  Task* sleeping_ PW_GUARDED_BY(dispatcher_lock()) = nullptr;
-  bool wants_wake_ PW_GUARDED_BY(dispatcher_lock()) = false;
+  Task* sleeping_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
+  bool wants_wake_ PW_GUARDED_BY(impl::dispatcher_lock()) = false;
 };
 
 PW_MODIFY_DIAGNOSTICS_POP();
