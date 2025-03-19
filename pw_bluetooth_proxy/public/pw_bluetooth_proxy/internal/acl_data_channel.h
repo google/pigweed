@@ -18,6 +18,7 @@
 
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/hci_events.emb.h"
+#include "pw_bluetooth_proxy/direction.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
 #include "pw_bluetooth_proxy/internal/l2cap_aclu_signaling_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h"
@@ -38,16 +39,6 @@ namespace pw::bluetooth::proxy {
 // buffers.
 class AclDataChannel {
  public:
-  // Direction a packet is traveling on ACL transport.
-  enum class Direction : bool {
-    kFromController,
-    kFromHost,
-  };
-  // Must match the number of Direction enumerators.
-  static constexpr size_t kNumDirections = 2;
-
-  static const char* ToString(Direction direction);
-
   // Used to `SendAcl` packets.
   class SendCredit {
    public:
@@ -178,8 +169,7 @@ class AclDataChannel {
   // Handles an ACL Data frame.
   // Returns true if the frame was handled and is consumed by the proxy.
   // Returns false if the frame should be passed on to the other side.
-  bool HandleAclData(AclDataChannel::Direction direction,
-                     emboss::AclDataFrameWriter& acl);
+  bool HandleAclData(Direction direction, emboss::AclDataFrameWriter& acl);
 
  private:
   // An active logical link on ACL logical transport.

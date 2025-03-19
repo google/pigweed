@@ -16,15 +16,10 @@
 
 #include <cstdint>
 
+#include "pw_bluetooth_proxy/direction.h"
 #include "pw_containers/intrusive_forward_list.h"
 
 namespace pw::bluetooth::proxy {
-
-// Direction a packet is traveling in the proxy host.
-enum class Direction {
-  kFromController,
-  kFromHost,
-};
 
 struct L2capChannelConnectionInfo {
   Direction direction;

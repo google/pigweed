@@ -16,7 +16,7 @@
 
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/basic_l2cap_channel.h"
-#include "pw_bluetooth_proxy/l2cap_status_delegate.h"
+#include "pw_bluetooth_proxy/direction.h"
 #include "pw_containers/vector.h"
 #include "pw_multibuf/allocator.h"
 #include "pw_sync/lock_annotations.h"

@@ -21,6 +21,7 @@
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/hci_h4.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
+#include "pw_bluetooth_proxy/direction.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/gatt_notify_channel_internal.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
@@ -191,8 +192,7 @@ void ProxyHost::HandleAclFromController(H4PacketWithHci&& h4_packet) {
     return;
   }
 
-  if (!acl_data_channel_.HandleAclData(
-          AclDataChannel::Direction::kFromController, *acl)) {
+  if (!acl_data_channel_.HandleAclData(Direction::kFromController, *acl)) {
     hci_transport_.SendToHost(std::move(h4_packet));
     return;
   }
@@ -324,8 +324,7 @@ void ProxyHost::HandleAclFromHost(H4PacketWithH4&& h4_packet) {
     return;
   }
 
-  if (!acl_data_channel_.HandleAclData(AclDataChannel::Direction::kFromHost,
-                                       *acl)) {
+  if (!acl_data_channel_.HandleAclData(Direction::kFromHost, *acl)) {
     hci_transport_.SendToController(std::move(h4_packet));
     return;
   }

@@ -17,6 +17,7 @@
 #include "pw_assert/check.h"
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
+#include "pw_bluetooth_proxy/direction.h"
 #include "pw_log/log.h"
 
 namespace pw::bluetooth::proxy {

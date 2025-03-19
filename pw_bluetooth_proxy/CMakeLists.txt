@@ -47,6 +47,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     public/pw_bluetooth_proxy/l2cap_channel_common.h
     public/pw_bluetooth_proxy/l2cap_coc.h
     public/pw_bluetooth_proxy/l2cap_status_delegate.h
+    public/pw_bluetooth_proxy/direction.h
     public/pw_bluetooth_proxy/proxy_host.h
     public/pw_bluetooth_proxy/rfcomm_channel.h
 # LINT.ThenChange(BUILD.bazel, BUILD.gn)

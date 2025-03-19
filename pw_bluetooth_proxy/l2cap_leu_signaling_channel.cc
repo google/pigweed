@@ -15,6 +15,7 @@
 #include "pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h"
 
 #include "pw_bluetooth/l2cap_frames.emb.h"
+#include "pw_bluetooth_proxy/direction.h"
 #include "pw_log/log.h"
 
 namespace pw::bluetooth::proxy {

@@ -89,15 +89,6 @@ void AclDataChannel::Reset() {
   }
 }
 
-const char* AclDataChannel::ToString(Direction direction) {
-  switch (direction) {
-    case Direction::kFromController:
-      return "from controller";
-    case Direction::kFromHost:
-      return "from host";
-  }
-}
-
 void AclDataChannel::Credits::Reset() {
   proxy_max_ = 0;
   proxy_pending_ = 0;
@@ -545,16 +536,16 @@ AclDataChannel::AclConnection* AclDataChannel::FindAclConnection(
 namespace {
 
 std::optional<L2capChannelManager::LockedL2capChannel> GetLockedChannel(
-    const AclDataChannel::Direction direction,
+    const Direction direction,
     const uint16_t handle,
     const uint16_t l2cap_channel_id,
     L2capChannelManager& manager) {
   std::optional<L2capChannelManager::LockedL2capChannel> channel;
 
   switch (direction) {
-    case AclDataChannel::Direction::kFromController:
+    case Direction::kFromController:
       return manager.FindChannelByLocalCid(handle, l2cap_channel_id);
-    case AclDataChannel::Direction::kFromHost:
+    case Direction::kFromHost:
       return manager.FindChannelByRemoteCid(handle, l2cap_channel_id);
     default:
       PW_LOG_ERROR("Unrecognized Direction enumerator value %d.",
@@ -565,7 +556,7 @@ std::optional<L2capChannelManager::LockedL2capChannel> GetLockedChannel(
 
 }  // namespace
 
-bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
+bool AclDataChannel::HandleAclData(Direction direction,
                                    emboss::AclDataFrameWriter& acl) {
   // This function returns whether or not the frame was handled here.
   // * Return true if the frame was handled by the proxy and should _not_ be
@@ -648,7 +639,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
               "Received non-continuation packet %s on channel %#x while "
               "recombination is active! Dropping previous partially-recombined "
               "PDU and handling this first packet normally.",
-              ToString(direction),
+              DirectionToString(direction),
               handle);
           recombiner.EndRecombination();
         }
@@ -666,7 +657,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
               "ACL packet %s on channel %#x does not include full L2CAP "
               "header. "
               "Passing on.",
-              ToString(direction),
+              DirectionToString(direction),
               handle);
           return kUnhandled;
         }
@@ -691,7 +682,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
           PW_LOG_ERROR(
               "ACL packet %s on channel %#x has payload (%u bytes) larger than "
               "specified L2CAP PDU size (%u bytes). Dropping.",
-              ToString(direction),
+              DirectionToString(direction),
               handle,
               acl_payload_size,
               l2cap_frame_length);
@@ -739,7 +730,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
       default: {
         PW_LOG_ERROR(
             "Packet %s on channel %#x: Unexpected ACL boundary flag: %u",
-            ToString(direction),
+            DirectionToString(direction),
             handle,
             cpp23::to_underlying(boundary_flag));
         return kUnhandled;
@@ -762,7 +753,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
         PW_LOG_ERROR(
             "Received continuation packet %s on channel %#x over specified PDU "
             "length. Dropping entire PDU.",
-            ToString(direction),
+            DirectionToString(direction),
             handle);
         recombiner.EndRecombination();
         return kHandled;  // We own the channel; drop.
