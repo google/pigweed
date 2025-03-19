@@ -18,6 +18,7 @@
 #include <optional>
 
 #include "lib/stdcompat/utility.h"
+#include "pw_assert/check.h"
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
@@ -862,6 +863,8 @@ pw::Status AclDataChannel::AclConnection::Recombiner::StartRecombination(
 
   is_active_ = true;
   local_cid_ = local_cid;
+  expected_size_ = size;
+  recombined_size_ = 0;
 
   Result<MultiBufWriter> mbufw =
       MultiBufWriter::Create(multibuf_allocator, size);
@@ -881,7 +884,15 @@ pw::Status AclDataChannel::AclConnection::Recombiner::RecombineFragment(
   }
 
   PW_CHECK(mbufw_.has_value());
-  return mbufw_->Write(pw::as_bytes(data));
+  pw::Status status = mbufw_->Write(pw::as_bytes(data));
+
+  if (status == pw::OkStatus()) {
+    recombined_size_ += data.size();
+  }
+
+  PW_CHECK_INT_EQ(mbufw_->U8Span().size(), recombined_size_);
+
+  return status;
 }
 
 multibuf::MultiBuf AclDataChannel::AclConnection::Recombiner::TakeAndEnd() {

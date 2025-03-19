@@ -16,6 +16,7 @@
 
 #include <optional>
 
+#include "pw_assert/check.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/hci_events.emb.h"
 #include "pw_bluetooth_proxy/internal/hci_transport.h"
@@ -232,7 +233,11 @@ class AclDataChannel {
       bool IsComplete() const {
         PW_CHECK(is_active_);
         PW_CHECK(mbufw_.has_value());
-        return mbufw_->IsComplete();
+
+        bool completed = recombined_size_ == expected_size_;
+        PW_CHECK(completed == mbufw_->IsComplete());
+
+        return completed;
       }
 
       // Returns true if recombination is active.
@@ -249,6 +254,8 @@ class AclDataChannel {
      private:
       bool is_active_ = false;
       uint16_t local_cid_ = 0;
+      size_t expected_size_ = 0;
+      size_t recombined_size_ = 0;
       std::optional<MultiBufWriter> mbufw_ = std::nullopt;
     };
 
