@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "pw_assert/check.h"
 #include "pw_bytes/span.h"
 #include "pw_multibuf/allocator.h"
 #include "pw_multibuf/multibuf.h"
@@ -46,6 +47,7 @@ class MultiBufWriter {
   /// After TakeMultiBuf(), this returns an empty span.
   pw::span<uint8_t> U8Span() {
     // ContiguousSpan() cannot fail because Create() uses AllocateContiguous().
+    PW_CHECK(buf_.IsContiguous());
     return pw::span_cast<uint8_t>(*buf_.ContiguousSpan()).first(write_offset_);
   }
 

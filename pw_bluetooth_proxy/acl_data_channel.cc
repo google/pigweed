@@ -599,6 +599,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
 
   const uint16_t handle = acl.header().handle().Read();
 
+  bool is_first = false;
   bool is_fragment = false;
   pw::span<uint8_t> l2cap_pdu;
   multibuf::MultiBuf recombined_mbuf;
@@ -636,6 +637,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
       // Non-fragment or the first fragment of a fragmented PDU.
       case emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE:
       case emboss::AclDataPacketBoundaryFlag::FIRST_FLUSHABLE: {
+        is_first = true;
         // Ensure recombination is not already in progress
         if (connection->RecombinationActive(direction)) {
           PW_LOG_WARN(
@@ -749,8 +751,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
         // should fail is if the fragment is larger than expected, which can
         // only happen on a continuing fragment, because the first fragment
         // starts recombination above.
-        PW_DCHECK(boundary_flag ==
-                  emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT);
+        PW_DCHECK(!is_first);
 
         PW_LOG_ERROR(
             "Received continuation packet %s on channel %#x over specified PDU "
@@ -779,14 +780,17 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
     }
   }  // std::lock_guard lock(connection_mutex_)
 
-  // Remember: Past this point, we operate on l2cap_pdu, but our return value
-  // controls the disposition of (what might be) the last fragment!
+  // At this point we have a valid L2CAP frame in `l2cap_pdu`. It may be
+  // from a single first ACL packet or a series of recombined ones (in which
+  // case we should be handling the last continuing packet).
+  PW_CHECK((is_first && !is_fragment) || (!is_first && is_fragment));
 
-  // We should have a valid L2CAP frame in `l2cap_pdu`.
-  // This cannot happen if the packet is a fragment, because recombination
-  // only completes when the entire L2CAP PDU has been recombined.
-  // And it cannot happen if the packet is _not_ a fragment due to the check
-  // above.
+  // But note, our return value only controls the disposition of the current ACL
+  // packet.
+
+  // TODO: https://pwbug.dev/402457004 - URGENT: If !is_first, need to hold the
+  // channel before this since l2cap_pdu is span on multibuf (which came from
+  // channel's allocator).
   Result<emboss::BasicL2capHeaderView> l2cap_header =
       MakeEmbossView<emboss::BasicL2capHeaderView>(l2cap_pdu);
   PW_CHECK(l2cap_header.ok());
