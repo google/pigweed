@@ -24,7 +24,7 @@ pw_add_library(pw_async2_epoll.dispatcher_backend STATIC
     public_overrides
   PUBLIC_DEPS
     pw_assert.check
-    pw_async2.dispatcher_base
+    pw_async2.dispatcher.facade
     pw_async2.poll
   PRIVATE_DEPS
     pw_log

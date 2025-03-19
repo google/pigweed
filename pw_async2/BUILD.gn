@@ -50,10 +50,17 @@ pw_test("poll_test") {
   sources = [ "poll_test.cc" ]
 }
 
-# NOTE: this target should only be used directly by implementors of the
-# `dispatcher` facade.
-pw_source_set("dispatcher_base") {
+pw_facade("dispatcher") {
+  backend = pw_async2_DISPATCHER_BACKEND
   public_configs = [ ":public_include_path" ]
+  public = [
+    "public/pw_async2/context.h",
+    "public/pw_async2/dispatcher.h",
+    "public/pw_async2/dispatcher_base.h",
+    "public/pw_async2/lock.h",
+    "public/pw_async2/task.h",
+    "public/pw_async2/waker.h",
+  ]
   public_deps = [
     ":poll",
     "$dir_pw_assert",
@@ -64,21 +71,7 @@ pw_source_set("dispatcher_base") {
     "$dir_pw_toolchain:no_destructor",
   ]
   deps = [ "$dir_pw_assert:check" ]
-  public = [
-    "public/pw_async2/context.h",
-    "public/pw_async2/dispatcher_base.h",
-    "public/pw_async2/lock.h",
-    "public/pw_async2/task.h",
-    "public/pw_async2/waker.h",
-  ]
   sources = [ "dispatcher_base.cc" ]
-}
-
-pw_facade("dispatcher") {
-  backend = pw_async2_DISPATCHER_BACKEND
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_async2/dispatcher.h" ]
-  public_deps = [ ":dispatcher_base" ]
 }
 
 pw_test("dispatcher_test") {

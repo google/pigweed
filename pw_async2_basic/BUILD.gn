@@ -28,7 +28,7 @@ pw_source_set("dispatcher_backend") {
   public_configs = [ ":backend_config" ]
   public_deps = [
     "$dir_pw_assert:check",
-    "$dir_pw_async2:dispatcher_base",
+    "$dir_pw_async2:dispatcher.facade",
     "$dir_pw_async2:poll",
     "$dir_pw_sync:thread_notification",
   ]

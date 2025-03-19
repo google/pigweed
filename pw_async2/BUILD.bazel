@@ -19,6 +19,7 @@ load(
     "incompatible_with_mcu",
     "minimum_cxx_20",
 )
+load("//pw_build:pw_facade.bzl", "pw_facade")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
@@ -52,20 +53,19 @@ pw_cc_test(
     ],
 )
 
-# NOTE: this target should only be used directly by implementors of the
-# `dispatcher` facade.
-cc_library(
-    name = "dispatcher_base",
-    srcs = [
-        "dispatcher_base.cc",
-    ],
+pw_facade(
+    name = "dispatcher",
+    srcs = ["dispatcher_base.cc"],
     hdrs = [
         "public/pw_async2/context.h",
+        "public/pw_async2/dispatcher.h",
         "public/pw_async2/dispatcher_base.h",
         "public/pw_async2/lock.h",
         "public/pw_async2/task.h",
         "public/pw_async2/waker.h",
     ],
+    backend = ":dispatcher_backend",
+    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
@@ -75,19 +75,6 @@ cc_library(
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
         "//pw_toolchain:no_destructor",
-    ],
-)
-
-cc_library(
-    name = "dispatcher",
-    hdrs = [
-        "public/pw_async2/dispatcher.h",
-    ],
-    features = ["-conversion_warnings"],
-    strip_include_prefix = "public",
-    deps = [
-        ":dispatcher_backend",
-        ":dispatcher_base",
     ],
 )
 

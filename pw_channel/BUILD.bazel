@@ -190,7 +190,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         ":pw_channel",
-        "//pw_async2:dispatcher_base",
+        "//pw_async2:dispatcher",
         "//pw_log",
         "//pw_multibuf",
         "//pw_multibuf:allocator",

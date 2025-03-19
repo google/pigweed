@@ -34,9 +34,12 @@ pw_add_test(pw_async2.poll_test
     pw_async2.poll
 )
 
-pw_add_library(pw_async2.dispatcher_base STATIC
+pw_add_facade(pw_async2.dispatcher STATIC
+  BACKEND
+    pw_async2.dispatcher_BACKEND
   HEADERS
     public/pw_async2/context.h
+    public/pw_async2/dispatcher.h
     public/pw_async2/dispatcher_base.h
     public/pw_async2/lock.h
     public/pw_async2/task.h
@@ -54,17 +57,6 @@ pw_add_library(pw_async2.dispatcher_base STATIC
     pw_toolchain.no_destructor
   SOURCES
     dispatcher_base.cc
-)
-
-pw_add_facade(pw_async2.dispatcher INTERFACE
-  BACKEND
-    pw_async2.dispatcher_BACKEND
-  HEADERS
-    public/pw_async2/dispatcher.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_async2.dispatcher_base
 )
 
 pw_add_test(pw_async2.dispatcher_test

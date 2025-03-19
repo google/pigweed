@@ -34,7 +34,7 @@ cc_library(
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         "//pw_assert:assert",
-        "//pw_async2:dispatcher_base",
+        "//pw_async2:dispatcher.facade",
         "//pw_async2:poll",
         "//pw_log",
         "//pw_preprocessor",
