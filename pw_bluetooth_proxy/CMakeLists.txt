@@ -28,6 +28,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
 # LINT.IfChange
   HEADERS
     public/pw_bluetooth_proxy/basic_l2cap_channel.h
+    public/pw_bluetooth_proxy/direction.h
     public/pw_bluetooth_proxy/gatt_notify_channel.h
     public/pw_bluetooth_proxy/h4_packet.h
     public/pw_bluetooth_proxy/internal/acl_data_channel.h
@@ -35,19 +36,18 @@ pw_add_library(pw_bluetooth_proxy STATIC
     public/pw_bluetooth_proxy/internal/h4_storage.h
     public/pw_bluetooth_proxy/internal/hci_transport.h
     public/pw_bluetooth_proxy/internal/l2cap_aclu_signaling_channel.h
-    public/pw_bluetooth_proxy/internal/l2cap_channel.h
     public/pw_bluetooth_proxy/internal/l2cap_channel_manager.h
+    public/pw_bluetooth_proxy/internal/l2cap_channel.h
     public/pw_bluetooth_proxy/internal/l2cap_coc_internal.h
+    public/pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h
     public/pw_bluetooth_proxy/internal/l2cap_signaling_channel.h
     public/pw_bluetooth_proxy/internal/l2cap_status_tracker.h
-    public/pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h
     public/pw_bluetooth_proxy/internal/logical_transport.h
     public/pw_bluetooth_proxy/internal/recombiner.h
     public/pw_bluetooth_proxy/internal/rfcomm_fcs.h
     public/pw_bluetooth_proxy/l2cap_channel_common.h
     public/pw_bluetooth_proxy/l2cap_coc.h
     public/pw_bluetooth_proxy/l2cap_status_delegate.h
-    public/pw_bluetooth_proxy/direction.h
     public/pw_bluetooth_proxy/proxy_host.h
     public/pw_bluetooth_proxy/rfcomm_channel.h
 # LINT.ThenChange(BUILD.bazel, BUILD.gn)
@@ -85,8 +85,8 @@ pw_add_library(pw_bluetooth_proxy STATIC
     gatt_notify_channel.cc
     h4_storage.cc
     l2cap_aclu_signaling_channel.cc
-    l2cap_channel.cc
     l2cap_channel_manager.cc
+    l2cap_channel.cc
     l2cap_coc.cc
     l2cap_leu_signaling_channel.cc
     l2cap_signaling_channel.cc
@@ -106,12 +106,12 @@ pw_add_library(pw_bluetooth_proxy.test_utils STATIC
     pw_bluetooth_proxy_private/test_utils.h
   PUBLIC_DEPS
     pw_bluetooth_proxy
-    pw_third_party.fuchsia.stdcompat
     pw_bluetooth.emboss_hci_commands
     pw_bluetooth.emboss_hci_common
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
     pw_multibuf.testing
+    pw_third_party.fuchsia.stdcompat
     pw_unit_test
   SOURCES
     test_utils.cc
@@ -125,13 +125,13 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
   PRIVATE_DEPS
     pw_bluetooth_proxy
     pw_bluetooth_proxy.test_utils
-    pw_third_party.fuchsia.stdcompat
     pw_bluetooth.emboss_att
     pw_bluetooth.emboss_hci_commands
     pw_bluetooth.emboss_hci_common
     pw_bluetooth.emboss_hci_events
     pw_bluetooth.emboss_hci_h4
     pw_multibuf
+    pw_third_party.fuchsia.stdcompat
   SOURCES
     gatt_notify_test.cc
     h4_packet_test.cc
