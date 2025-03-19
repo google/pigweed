@@ -16,8 +16,8 @@
 
 #include <optional>
 
-#include "multibuf_writer.h"
 #include "pw_assert/check.h"
+#include "pw_multibuf/allocator.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
@@ -65,12 +65,9 @@ class Recombiner {
   // Returns true if recombined size matches specified size.
   bool IsComplete() const {
     PW_CHECK(is_active_);
-    PW_CHECK(mbufw_.has_value());
+    PW_CHECK(buf_.has_value());
 
-    bool completed = recombined_size_ == expected_size_;
-    PW_CHECK(completed == mbufw_->IsComplete());
-
-    return completed;
+    return recombined_size_ == expected_size_;
   }
 
   // Returns true if recombination is active.
@@ -85,11 +82,13 @@ class Recombiner {
   }
 
  private:
+  size_t write_offset() const { return recombined_size_; }
+
   bool is_active_ = false;
   uint16_t local_cid_ = 0;
   size_t expected_size_ = 0;
   size_t recombined_size_ = 0;
-  std::optional<MultiBufWriter> mbufw_ = std::nullopt;
+  std::optional<multibuf::MultiBuf> buf_ = std::nullopt;
 };
 
 }  // namespace pw::bluetooth::proxy

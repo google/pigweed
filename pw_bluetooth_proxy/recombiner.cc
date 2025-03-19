@@ -18,6 +18,7 @@
 
 #include "pw_assert/check.h"
 #include "pw_status/status.h"
+#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -34,13 +35,10 @@ pw::Status Recombiner::StartRecombination(
   expected_size_ = size;
   recombined_size_ = 0;
 
-  Result<MultiBufWriter> mbufw =
-      MultiBufWriter::Create(multibuf_allocator, size);
-  if (!mbufw.ok()) {
-    return mbufw.status();
+  buf_ = multibuf_allocator.AllocateContiguous(size);
+  if (!buf_) {
+    return Status::ResourceExhausted();
   }
-
-  mbufw_.emplace(std::move(*mbufw));
 
   return pw::OkStatus();
 }
@@ -50,34 +48,33 @@ pw::Status Recombiner::RecombineFragment(pw::span<const uint8_t> data) {
     return Status::FailedPrecondition();
   }
 
-  PW_CHECK(mbufw_.has_value());
-  pw::Status status = mbufw_->Write(pw::as_bytes(data));
+  PW_CHECK(buf_.has_value());
+  PW_TRY(buf_->CopyFrom(as_bytes(data), write_offset()));
 
-  if (status == pw::OkStatus()) {
-    recombined_size_ += data.size();
-  }
+  recombined_size_ += data.size();
 
-  PW_CHECK_INT_EQ(mbufw_->U8Span().size(), recombined_size_);
-
-  return status;
+  return pw::OkStatus();
 }
 
 multibuf::MultiBuf Recombiner::TakeAndEnd() {
   PW_CHECK(IsActive());
   PW_CHECK(IsComplete());
 
-  multibuf::MultiBuf mbuf = mbufw_->TakeMultiBuf();
+  PW_CHECK(buf_);
+  multibuf::MultiBuf mbuf_buf = std::exchange(buf_, std::nullopt).value();
+
   // We expect MultiBufWriter to have used `AllocateContiguous()` to create the
   // MultiBuf.
-  PW_CHECK(mbuf.IsContiguous());
+  PW_CHECK(mbuf_buf.IsContiguous());
 
   EndRecombination();
-  return mbuf;
+
+  return mbuf_buf;
 }
 
 void Recombiner::EndRecombination() {
   is_active_ = false;
-  mbufw_ = std::nullopt;
+  buf_ = std::nullopt;
 }
 
 }  // namespace pw::bluetooth::proxy
