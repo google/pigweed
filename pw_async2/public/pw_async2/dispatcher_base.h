@@ -30,12 +30,6 @@ template <typename T>
 using PendOutputOf = typename decltype(std::declval<T>().Pend(
     std::declval<Context&>()))::OutputType;
 
-template <typename, typename = void>
-constexpr bool is_pendable = false;
-
-template <typename T>
-constexpr bool is_pendable<T, std::void_t<PendOutputOf<T>>> = true;
-
 // Windows GCC doesn't realize the nonvirtual destructor is protected.
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wnon-virtual-dtor");

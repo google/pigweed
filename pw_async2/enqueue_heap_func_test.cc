@@ -15,7 +15,6 @@
 #include "pw_async2/enqueue_heap_func.h"
 
 #include "pw_async2/dispatcher_base.h"
-#include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
 namespace {

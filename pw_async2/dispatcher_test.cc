@@ -14,8 +14,8 @@
 
 #include "pw_async2/dispatcher.h"
 
-#include "gtest/gtest.h"
 #include "pw_containers/vector.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::async2 {
 namespace {

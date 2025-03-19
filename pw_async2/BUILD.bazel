@@ -24,7 +24,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
 )
 
 licenses(["notice"])
@@ -115,6 +114,7 @@ pw_cc_test(
         "//pw_function",
         "//pw_thread:sleep",
         "//pw_thread:thread",
+        "//pw_thread_stl:options",
     ],
 )
 
@@ -144,6 +144,7 @@ pw_cc_test(
         ":poll",
         "//pw_allocator:testing",
         "//pw_function",
+        "//pw_status",
     ],
 )
 
@@ -164,7 +165,11 @@ pw_cc_test(
     name = "pend_func_task_test",
     srcs = ["pend_func_task_test.cc"],
     features = ["-conversion_warnings"],
-    deps = [":pend_func_task"],
+    deps = [
+        ":dispatcher",
+        ":pend_func_task",
+        "//pw_function",
+    ],
 )
 
 cc_library(
@@ -183,7 +188,10 @@ pw_cc_test(
     name = "pendable_as_task_test",
     srcs = ["pendable_as_task_test.cc"],
     features = ["-conversion_warnings"],
-    deps = [":pendable_as_task"],
+    deps = [
+        ":dispatcher",
+        ":pendable_as_task",
+    ],
 )
 
 cc_library(
@@ -229,6 +237,7 @@ pw_cc_test(
     ],
     features = ["-conversion_warnings"],
     deps = [
+        ":dispatcher",
         ":once_sender",
         "//pw_containers:vector",
     ],
@@ -251,6 +260,7 @@ cc_library(
         ":dispatcher",
         "//pw_allocator:allocator",
         "//pw_function",
+        "//pw_status",
     ],
 )
 
@@ -263,6 +273,7 @@ pw_cc_test(
         ":dispatcher",
         "//pw_allocator:null_allocator",
         "//pw_allocator:testing",
+        "//pw_status",
     ],
 )
 
@@ -276,6 +287,7 @@ cc_library(
         ":coro",
         ":dispatcher",
         "//pw_function",
+        "//pw_status",
     ],
 )
 
@@ -289,6 +301,7 @@ pw_cc_test(
         ":dispatcher",
         "//pw_allocator:null_allocator",
         "//pw_allocator:testing",
+        "//pw_status",
     ],
 )
 
@@ -308,6 +321,7 @@ cc_library(
         "//pw_chrono:virtual_clock",
         "//pw_containers:intrusive_list",
         "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
         "//pw_toolchain:no_destructor",
     ],
 )

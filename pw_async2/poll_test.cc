@@ -16,9 +16,9 @@
 
 #include <type_traits>
 
-#include "gtest/gtest.h"
 #include "pw_async2/try.h"
 #include "pw_result/result.h"
+#include "pw_unit_test/framework.h"
 
 namespace pw::async2 {
 namespace {
