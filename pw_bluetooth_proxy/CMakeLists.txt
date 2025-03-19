@@ -142,7 +142,7 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
     rfcomm_fcs_test.cc
     rfcomm_test.cc
     utils_test.cc
-# LINT.ThenChange(Android.bp, BUILD.bazel, BUILD.gn)
+# LINT.ThenChange(BUILD.bazel, BUILD.gn)
 
   GROUPS
     modules
