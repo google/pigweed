@@ -168,6 +168,9 @@ To integrate Pigweed's toolchain with `bazel_clang_tidy
 Now ``bazelisk build --config=clang-tidy //...`` will run clang-tidy for all
 ``cc_library`` targets in your repo!
 
+As an example of this setup, see `the CL that added clang-tidy support to our
+Quickstart repo <http://pwrev.dev/266934>`__.
+
 Conversion warnings
 ===================
 By default, upstream Pigweed is built with `-Wconversion
