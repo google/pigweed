@@ -16,7 +16,6 @@
 
 #include <cstdint>
 
-#include "pw_allocator/testing.h"
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"

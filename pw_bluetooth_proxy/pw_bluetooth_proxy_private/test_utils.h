@@ -15,11 +15,9 @@
 #pragma once
 
 #include <cstdint>
-#include <numeric>
 #include <variant>
 #include <vector>
 
-#include "pw_assert/check.h"
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"

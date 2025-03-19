@@ -14,12 +14,12 @@
 
 #include "pw_bluetooth_proxy/basic_l2cap_channel.h"
 
+#include "pw_assert/check.h"
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_log/log.h"
-#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 

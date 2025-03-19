@@ -18,10 +18,8 @@
 #include <optional>
 
 #include "pw_bluetooth/emboss_util.h"
-#include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/direction.h"
-#include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
@@ -29,7 +27,6 @@
 #include "pw_multibuf/allocator.h"
 #include "pw_span/cast.h"
 #include "pw_status/status.h"
-#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
