@@ -699,6 +699,8 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
           auto status = connection->StartRecombination(
               direction, *multibuf_allocator, l2cap_frame_length);
           if (!status.ok()) {
+            // TODO: https://pwbug.dev/404275508 - This is an acquired channel,
+            // so need to do something different than just pass on to AP.
             PW_LOG_ERROR(
                 "Cannot start recombination for L2capChannel %#x: "
                 "%s. Passing on.",
