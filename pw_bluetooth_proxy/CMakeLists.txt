@@ -42,7 +42,6 @@ pw_add_library(pw_bluetooth_proxy STATIC
     public/pw_bluetooth_proxy/internal/l2cap_status_tracker.h
     public/pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h
     public/pw_bluetooth_proxy/internal/logical_transport.h
-    public/pw_bluetooth_proxy/internal/multibuf_writer.h
     public/pw_bluetooth_proxy/internal/recombiner.h
     public/pw_bluetooth_proxy/internal/rfcomm_fcs.h
     public/pw_bluetooth_proxy/l2cap_channel_common.h
@@ -91,7 +90,6 @@ pw_add_library(pw_bluetooth_proxy STATIC
     l2cap_leu_signaling_channel.cc
     l2cap_signaling_channel.cc
     l2cap_status_tracker.cc
-    multibuf_writer.cc
     proxy_host.cc
     recombiner.cc
     rfcomm_channel.cc
@@ -137,7 +135,6 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
     gatt_notify_test.cc
     h4_packet_test.cc
     l2cap_coc_test.cc
-    multibuf_writer_test.cc
     proxy_host_test.cc
     recombiner_test.cc
     rfcomm_fcs_test.cc
