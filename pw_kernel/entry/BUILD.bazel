@@ -24,7 +24,7 @@ rust_binary(
     tags = ["kernel"],
     target_compatible_with = select({
         "//pw_build/constraints/chipset:mps2-an505": [],
-        "//pw_kernel/target/rp:rp235x": [],
+        "//pw_build/constraints/chipset:rp2350": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [

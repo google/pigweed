@@ -12,11 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_build:merge_flags.bzl", "flags_from_dict")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_rust//rust:defs.bzl", "rust_library")
-
-package(default_visibility = ["//visibility:public"])
+load("//pw_build:merge_flags.bzl", "flags_from_dict")
 
 platform(
     name = "riscv32imc",
@@ -43,7 +41,7 @@ cc_library(
         "-T$(location riscv.ld)",
     ],
     target_compatible_with = [
-        "@pigweed//pw_build/constraints/chipset:qemu-virt",
+        "//pw_build/constraints/chipset:qemu-virt",
         "@platforms//cpu:riscv32",
     ],
     deps = [
@@ -56,7 +54,7 @@ rust_library(
     srcs = ["console_riscv.rs"],
     crate_name = "console_backend",
     target_compatible_with = [
-        "@pigweed//pw_build/constraints/chipset:qemu-virt",
+        "//pw_build/constraints/chipset:qemu-virt",
         "@platforms//cpu:riscv32",
     ],
     deps = [
@@ -71,7 +69,7 @@ rust_library(
     srcs = ["target_riscv.rs"],
     crate_name = "target_backend",
     target_compatible_with = [
-        "@pigweed//pw_build/constraints/chipset:qemu-virt",
+        "//pw_build/constraints/chipset:qemu-virt",
         "@platforms//cpu:riscv32",
     ],
     deps = [

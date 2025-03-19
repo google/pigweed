@@ -12,9 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_build:merge_flags.bzl", "flags_from_dict")
-
-package(default_visibility = ["//visibility:public"])
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//pw_build:merge_flags.bzl", "flags_from_dict")
 
 platform(
     name = "mps2-an505",
@@ -28,6 +27,15 @@ platform(
     flags = flags_from_dict({
         "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_cortex_m",
         "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
-        "//pw_kernel/target:linker_script": "//pw_kernel/target/qemu/linker_scripts:mps2-an505",
+        "//pw_kernel/target:linker_script": ":linker_script_mps2_an505",
     }),
+)
+
+cc_library(
+    name = "linker_script_mps2_an505",
+    linkopts = ["-T$(location mps2-an505.ld)"],
+    target_compatible_with = ["//pw_build/constraints/chipset:mps2-an505"],
+    deps = [
+        "mps2-an505.ld",
+    ],
 )

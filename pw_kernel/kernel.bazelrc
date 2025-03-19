@@ -37,7 +37,7 @@ common:k_host --config=k_common
 # QEMU mps2-an505 target configuration
 # =======================================
 common:k_qemu_mps2_an505 --config=k_common
-build:k_qemu_mps2_an505 --platforms=//pw_kernel/target/qemu:mps2-an505
+build:k_qemu_mps2_an505 --platforms=//pw_kernel/target/arm:mps2-an505
 run:k_qemu_mps2_an505 --run_under="@qemu//:qemu-system-arm \
   -cpu cortex-m33 \
   -machine mps2-an505 \
@@ -56,7 +56,7 @@ test:k_qemu_mps2_an505 --run_under="@qemu//:qemu-system-arm \
 # QEMU virt riscv32 target configuration
 # =======================================
 common:k_qemu_virt_riscv32 --config=k_common
-build:k_qemu_virt_riscv32 --platforms=//pw_kernel/target/qemu/virt:riscv32imc
+build:k_qemu_virt_riscv32 --platforms=//pw_kernel/target/qemu-virt:riscv32imc
 run:k_qemu_virt_riscv32 --run_under="@qemu//:qemu-system-riscv32 \
   -bios none \
   -cpu rv32 \
