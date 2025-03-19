@@ -319,7 +319,9 @@ class TokenDatabase {
 
     // Count the strings in the string table.
     size_type string_count = 0;
-    for (auto i = std::begin(bytes) + StringTable(entries); i < std::end(bytes);
+    for (auto i =
+             std::begin(bytes) + static_cast<ptrdiff_t>(StringTable(entries));
+         i < std::end(bytes);
          ++i) {
       string_count += (*i == '\0') ? 1 : 0;
     }

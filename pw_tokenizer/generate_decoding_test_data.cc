@@ -346,7 +346,7 @@ void GenerateEncodedStrings(TestDataFile* file) {
   }
 
   for (int i = 0; i < 100; ++i) {
-    unsigned long long n1 = big(random);
+    unsigned long long n1 = static_cast<unsigned long long>(big(random));
     int n2 = medium(random);
     char ch = static_cast<char>(small(random));
     if (ch == '"' || ch == '\\') {
@@ -358,7 +358,7 @@ void GenerateEncodedStrings(TestDataFile* file) {
 
   for (int i = 0; i < 100; ++i) {
     const long long n1 = big(random);
-    const unsigned n2 = medium(random);
+    const unsigned n2 = static_cast<unsigned>(medium(random));
     const char ch = static_cast<char>(small(random));
 
     MAKE_TEST_CASE(

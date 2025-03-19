@@ -40,7 +40,7 @@ uint32_t TestHash(const char (&str)[kSize])
   // The coefficient calculation is done modulo 0x100000000, so the unsigned
   // integer overflows are intentional.
   for (size_t i = 0; i < length; ++i) {
-    hash += coefficient * str[i];
+    hash += coefficient * static_cast<uint32_t>(str[i]);
     coefficient *= k65599HashConstant;
   }
 
