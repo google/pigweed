@@ -594,8 +594,11 @@ bool AclDataChannel::HandleAclData(Direction direction,
 
   bool is_first = false;
   bool is_fragment = false;
-  pw::span<uint8_t> l2cap_pdu;
-  multibuf::MultiBuf recombined_mbuf;
+
+  // This is set once we have a complete PDU.
+  pw::span<uint8_t> full_l2cap_pdu;
+  // This is only set if we have recombined.
+  std::optional<multibuf::MultiBuf> recombined_mbuf;
   {
     std::lock_guard lock(connection_mutex_);
     AclConnection* connection = FindAclConnection(handle);
@@ -738,7 +741,7 @@ bool AclDataChannel::HandleAclData(Direction direction,
 
     if (!is_fragment) {
       // Not a fragment; the complete payload is the payload of this ACL frame.
-      l2cap_pdu = acl_payload;
+      full_l2cap_pdu = acl_payload;
     } else {
       // Recombine this fragment
       pw::Status recomb_status = recombiner.RecombineFragment(acl_payload);
@@ -769,14 +772,14 @@ bool AclDataChannel::HandleAclData(Direction direction,
       // so should not be accessing multibuf here.
       recombined_mbuf = recombiner.TakeAndEnd();
       // TakeAndEnd returns a contiguous MultiBuf.
-      PW_CHECK(recombined_mbuf.IsContiguous());
+      PW_CHECK(recombined_mbuf->IsContiguous());
 
-      std::optional<ByteSpan> mbuf_span = recombined_mbuf.ContiguousSpan();
+      std::optional<ByteSpan> mbuf_span = recombined_mbuf->ContiguousSpan();
       // Span should be present since MultiBuf is contiguous.
       PW_CHECK(mbuf_span);
 
-      l2cap_pdu = pw::span(reinterpret_cast<uint8_t*>(mbuf_span->data()),
-                           mbuf_span->size());
+      full_l2cap_pdu = pw::span(reinterpret_cast<uint8_t*>(mbuf_span->data()),
+                                mbuf_span->size());
     }
   }  // std::lock_guard lock(connection_mutex_)
 
@@ -788,11 +791,17 @@ bool AclDataChannel::HandleAclData(Direction direction,
   // But note, our return value only controls the disposition of the current ACL
   // packet.
 
-  // TODO: https://pwbug.dev/402457004 - URGENT: If !is_first, need to hold the
-  // channel before this since l2cap_pdu is span on multibuf (which came from
-  // channel's allocator).
+  if (is_fragment) {
+    // If we recombined, then l2cap_pdu is span on recombined_mbuf. So ensure we
+    // are holding recombined_mbuf before we use l2cap_pdu below.
+    PW_CHECK(recombined_mbuf);
+
+    // TODO: https://pwbug.dev/402457004 - Also need to be holding the channel
+    // before this since recombined_mbuf is from channel's allocator.
+  }
+
   Result<emboss::BasicL2capHeaderView> l2cap_header =
-      MakeEmbossView<emboss::BasicL2capHeaderView>(l2cap_pdu);
+      MakeEmbossView<emboss::BasicL2capHeaderView>(full_l2cap_pdu);
   PW_CHECK(l2cap_header.ok());
 
   std::optional<LockedL2capChannel> channel =
@@ -815,8 +824,8 @@ bool AclDataChannel::HandleAclData(Direction direction,
   // Pass the L2CAP PDU on to the L2capChannel
   const bool result =
       (direction == Direction::kFromController)
-          ? channel->channel().HandlePduFromController(l2cap_pdu)
-          : channel->channel().HandlePduFromHost(l2cap_pdu);
+          ? channel->channel().HandlePduFromController(full_l2cap_pdu)
+          : channel->channel().HandlePduFromHost(full_l2cap_pdu);
 
   if (!result && is_fragment) {
     // Client rejected the entire PDU, but we just have the continuing packet
