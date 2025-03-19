@@ -21,7 +21,12 @@
 use console_backend as _;
 use target as _;
 
-// RISC-V runtime entry macro.
+// Cortex-M runtime entry macro.
+#[cfg(feature = "arch_arm_cortex_m")]
+use cortex_m_rt::entry;
+
+// RISCV runtime entry maco.
+#[cfg(feature = "arch_riscv")]
 use riscv_rt::entry;
 
 use kernel::Kernel;

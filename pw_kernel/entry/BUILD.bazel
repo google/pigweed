@@ -12,38 +12,36 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = ["//visibility:public"])
 
-rust_binary(
-    name = "kernel",
-    srcs = ["kernel_cortex_m_entry.rs"],
-    edition = "2021",
-    tags = ["kernel"],
-    target_compatible_with = select({
-        "//pw_build/constraints/chipset:mps2-an505": [],
-        "//pw_build/constraints/chipset:rp2350": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        "//pw_kernel/kernel",
-        "//pw_kernel/subsys/console:console_backend",
-        "//pw_kernel/target",
-        "//pw_kernel/target:linker_script",
-        "@rust_crates//:cortex-m-rt",
-        "@rust_crates//:cortex-m-semihosting",
-    ],
-)
+CORTEX_M_DEPS = [
+    "@rust_crates//:cortex-m",
+    "@rust_crates//:cortex-m-rt",
+]
+
+RISCV_DEPS = [
+    "@rust_crates//:riscv",
+    "@rust_crates//:riscv-rt",
+]
 
 rust_binary(
-    name = "kernel_riscv",
-    srcs = ["kernel_riscv.rs"],
+    name = "kernel",
+    srcs = ["kernel.rs"],
+    crate_features = select({
+        "//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
+        "@platforms//cpu:riscv32": ["arch_riscv"],
+        "//conditions:default": ["arch_host"],
+    }),
     edition = "2021",
     tags = ["kernel"],
     target_compatible_with = select({
+        "//pw_build/constraints/arm:cortex-m33": [],
+        "//pw_build/constraints/chipset:mps2-an505": [],
         "//pw_build/constraints/chipset:qemu-virt": [],
+        "//pw_build/constraints/chipset:rp2350": [],
         "@platforms//cpu:riscv32": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
@@ -52,9 +50,11 @@ rust_binary(
         "//pw_kernel/subsys/console:console_backend",
         "//pw_kernel/target",
         "//pw_kernel/target:linker_script",
-        "@rust_crates//:riscv-rt",
-        "@rust_crates//:riscv-semihosting",
-    ],
+    ] + select({
+        "@pigweed//pw_build/constraints/arm:cortex-m33": CORTEX_M_DEPS,
+        "@platforms//cpu:riscv32": RISCV_DEPS,
+        "//conditions:default": [],
+    }),
 )
 
 rust_binary(
