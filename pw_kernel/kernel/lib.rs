@@ -199,7 +199,7 @@ fn test_thread_entry_b(_arg: usize) {
             continue;
         };
         info!("Thread B: counter value {}", *counter as u64);
-        pw_assert::ne!(*counter, 2);
+        pw_assert::ne!(*counter, 4);
         drop(counter);
         yield_timeslice();
     }

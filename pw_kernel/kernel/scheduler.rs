@@ -97,6 +97,7 @@ pub struct Thread {
     pub active_link: Link,
 
     state: State,
+    preempt_disable_count: u32,
     stack: Stack,
 
     // Architecturally specific thread state, saved on context switch
@@ -125,6 +126,7 @@ impl Thread {
             global_link: Link::new(),
             active_link: Link::new(),
             state: State::New,
+            preempt_disable_count: 0,
             arch_thread_state: UnsafeCell::new(ThreadState::new()),
             stack: Stack::new(),
             name,
@@ -219,6 +221,29 @@ pub fn bootstrap_scheduler(mut thread: ForeignBox<Thread>) -> ! {
 
     reschedule(sched_state, Thread::null_id());
     pw_assert::panic!("should not reach here");
+}
+
+struct PremptDisableGuard;
+
+impl PremptDisableGuard {
+    fn new() -> Self {
+        let mut sched_state = SCHEDULER_STATE.lock();
+        sched_state.current_thread_mut().preempt_disable_count += 1;
+
+        Self
+    }
+}
+
+impl Drop for PremptDisableGuard {
+    fn drop(&mut self) {
+        let mut sched_state = SCHEDULER_STATE.lock();
+        let thread = sched_state.current_thread_mut();
+
+        thread.preempt_disable_count -= 1;
+        if thread.preempt_disable_count == 0 {
+            preempt();
+        }
+    }
 }
 
 // Global scheduler state (single processor for now)
@@ -350,6 +375,18 @@ impl SchedulerState {
     }
 }
 
+impl SpinLockGuard<'_, SchedulerState> {
+    /// Reschedule if preemption is enabled
+    fn try_reschedule(mut self) -> Self {
+        if self.current_thread().preempt_disable_count == 0 {
+            let current_thread_id = self.move_current_thread_to_back();
+            reschedule(self, current_thread_id)
+        } else {
+            self
+        }
+    }
+}
+
 #[allow(dead_code)]
 fn reschedule(
     mut sched_state: SpinLockGuard<SchedulerState>,
@@ -425,12 +462,8 @@ pub fn preempt() {
 pub fn tick(now: Instant) {
     //info!("tick {} ms", time_ms);
 
+    let _guard = PremptDisableGuard::new();
     TimerQueue::process_queue(now);
-
-    // TODO: dynamically deal with time slice for this thread and put it
-    // at the head or tail depending.
-
-    preempt();
 }
 
 // Exit the current thread.
@@ -513,7 +546,7 @@ impl SchedLockGuard<'_, WaitQueue> {
         wait_queue_debug!("waking <{}>", thread.name);
         thread.state = State::Ready;
         self.sched_mut().run_queue.push_back(thread);
-        self
+        self.try_reschedule()
     }
 
     pub fn wait(mut self) -> Self {

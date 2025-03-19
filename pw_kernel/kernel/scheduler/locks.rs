@@ -65,6 +65,12 @@ impl<'lock, T> SchedLockGuard<'lock, T> {
         Self { guard, inner }
     }
 
+    pub fn try_reschedule(self) -> Self {
+        let inner = self.inner;
+        let guard = self.guard.try_reschedule();
+        Self { guard, inner }
+    }
+
     /// # Safety
     /// The caller must guarantee that the underlying lock remains valid and
     /// un-moved for the live the smuggled lock.
