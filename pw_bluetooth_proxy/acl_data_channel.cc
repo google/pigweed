@@ -24,6 +24,7 @@
 #include "pw_containers/algorithm.h"  // IWYU pragma: keep
 #include "pw_log/log.h"
 #include "pw_status/status.h"
+#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -609,6 +610,8 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
     if (!connection) {
       return kUnhandled;
     }
+    AclConnection::Recombiner& recombiner =
+        connection->GetRecombiner(direction);
 
     // TODO: https://pwbug.dev/392665312 - make this <const uint8_t>
     const pw::span<uint8_t> acl_payload{
@@ -627,7 +630,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
         // TODO: https://pwbug.dev/393417198 - This could also be an erroneous
         // continuation of an already-recombined PDU, which would be better to
         // drop.
-        if (!connection->RecombinationActive(direction)) {
+        if (!recombiner.IsActive()) {
           return kUnhandled;
         }
 
@@ -638,15 +641,16 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
       case emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE:
       case emboss::AclDataPacketBoundaryFlag::FIRST_FLUSHABLE: {
         is_first = true;
+
         // Ensure recombination is not already in progress
-        if (connection->RecombinationActive(direction)) {
+        if (recombiner.IsActive()) {
           PW_LOG_WARN(
               "Received non-continuation packet %s on channel %#x while "
               "recombination is active! Dropping previous partially-recombined "
               "PDU and handling this first packet normally.",
               ToString(direction),
               handle);
-          connection->EndRecombination(direction);
+          recombiner.EndRecombination();
         }
 
         // Currently, we require the full L2CAP header: We need the pdu_length
@@ -713,8 +717,11 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
                 channel->channel().local_cid());
             return kUnhandled;
           }
-          auto status = connection->StartRecombination(
-              direction, *multibuf_allocator, l2cap_frame_length);
+
+          pw::Status status =
+              recombiner.StartRecombination(channel->channel().local_cid(),
+                                            *multibuf_allocator,
+                                            l2cap_frame_length);
           if (!status.ok()) {
             // TODO: https://pwbug.dev/404275508 - This is an acquired channel,
             // so need to do something different than just pass on to AP.
@@ -745,7 +752,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
     } else {
       // Recombine this fragment
       Result<multibuf::MultiBuf> recomb_result =
-          connection->RecombineFragment(direction, acl_payload);
+          recombiner.RecombineFragment(acl_payload);
       if (!recomb_result.ok()) {
         // Given that RecombinationActive is checked above, the only way this
         // should fail is if the fragment is larger than expected, which can
@@ -758,7 +765,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
             "length. Dropping entire PDU.",
             ToString(direction),
             handle);
-        connection->EndRecombination(direction);
+        recombiner.EndRecombination();
         return kHandled;  // We own the channel; drop.
       }
 
@@ -842,48 +849,52 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
   return result;
 }
 
-pw::Status AclDataChannel::AclConnection::StartRecombination(
-    Direction direction,
+pw::Status AclDataChannel::AclConnection::Recombiner::StartRecombination(
+    uint16_t local_cid,
     multibuf::MultiBufAllocator& multibuf_allocator,
     size_t size) {
-  if (RecombinationActive(direction)) {
+  if (IsActive()) {
     return Status::FailedPrecondition();
   }
 
-  Result<MultiBufWriter> recomb =
+  is_active_ = true;
+  local_cid_ = local_cid;
+
+  Result<MultiBufWriter> mbufw =
       MultiBufWriter::Create(multibuf_allocator, size);
-  if (!recomb.ok()) {
-    return recomb.status();
+  if (!mbufw.ok()) {
+    return mbufw.status();
   }
-  recombination_buffers_[cpp23::to_underlying(direction)].emplace(
-      std::move(*recomb));
+
+  mbufw_.emplace(std::move(*mbufw));
+
   return pw::OkStatus();
 }
 
-pw::Result<multibuf::MultiBuf> AclDataChannel::AclConnection::RecombineFragment(
-    Direction direction, pw::span<const uint8_t> data) {
-  MultiBufWriter* recomb = get_recombination_buffer(direction);
-  if (!recomb) {
+pw::Result<multibuf::MultiBuf>
+AclDataChannel::AclConnection::Recombiner::RecombineFragment(
+    pw::span<const uint8_t> data) {
+  if (!IsActive()) {
     return Status::FailedPrecondition();
   }
 
-  if (Status status = recomb->Write(data); !status.ok()) {
-    return status;
-  }
+  PW_CHECK(mbufw_.has_value());
+  PW_TRY(mbufw_->Write(pw::as_bytes(data)));
 
-  if (!recomb->IsComplete()) {
+  if (!IsComplete()) {
     // Return an empty multibuf to indicate recombination is not complete.
     return multibuf::MultiBuf();
   }
 
   // Consume and return the resulting multibuf and end recombination.
-  auto mbuf = std::move(recomb->TakeMultiBuf());
-  EndRecombination(direction);
+  multibuf::MultiBuf mbuf = mbufw_->TakeMultiBuf();
+  EndRecombination();
   return mbuf;
 }
 
-void AclDataChannel::AclConnection::EndRecombination(Direction direction) {
-  recombination_buffers_[cpp23::to_underlying(direction)] = std::nullopt;
+void AclDataChannel::AclConnection::Recombiner::EndRecombination() {
+  is_active_ = false;
+  mbufw_ = std::nullopt;
 }
 
 }  // namespace pw::bluetooth::proxy

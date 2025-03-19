@@ -190,6 +190,65 @@ class AclDataChannel {
   // within a new LogicalLinkManager class?
   class AclConnection {
    public:
+    class Recombiner {
+     public:
+      Recombiner() = default;
+
+      // Starts a new recombination session.
+      //
+      // Precondition: Recombination must not already be active.
+      //
+      // Returns:
+      // * FAILED_PRECONDITION if recombination is already active.
+      // * Any error from MultiBufWriter::Create(), namely RESOURCE_EXHAUSTED.
+      // * OK if recombination is started.
+      pw::Status StartRecombination(
+          uint16_t local_cid,
+          multibuf::MultiBufAllocator& multibuf_allocator,
+          size_t size);
+
+      // Adds a fragment of data to the recombination buffer.
+      //
+      // Precondition: Recombination must be active
+      //
+      // Returns:
+      // * FAILED_PRECONDITION if recombination is not active.
+      // * Any error from MultiBufWriter::Write(), namely RESOURCE_EXHAUSTED.
+      // * OK if the data was written, with value:
+      //   * If recombination is incomplete, returns an empty MultiBuf.
+      //   * If recombination is complete, returns a nonempty MultiBuf with the
+      //     recombined data and ends recombination.
+      pw::Result<multibuf::MultiBuf> RecombineFragment(
+          pw::span<const uint8_t> data);
+
+      // Ends recombination.
+      // Frees any MultiBuf held.
+      void EndRecombination();
+
+      // Returns true if recombined size matches specified size.
+      bool IsComplete() const {
+        PW_CHECK(is_active_);
+        PW_CHECK(mbufw_.has_value());
+        return mbufw_->IsComplete();
+      }
+
+      // Returns true if recombination is active.
+      // (currently receiving and recombining fragments).
+      uint16_t IsActive() { return is_active_; }
+
+      // Returns local_cid of channel being recombined. Should only be called
+      // when recombination is active.
+      uint16_t local_cid() {
+        PW_CHECK(IsActive());
+        return local_cid_;
+      }
+
+     private:
+      bool is_active_ = false;
+      uint16_t local_cid_ = 0;
+      std::optional<MultiBufWriter> mbufw_ = std::nullopt;
+    };
+
     AclConnection(AclTransportType transport,
                   uint16_t connection_handle,
                   uint16_t num_pending_packets,
@@ -218,43 +277,9 @@ class AclDataChannel {
       }
     }
 
-    // Returns true if recombination is active
-    // (currently receiving and recombining fragments).
-    bool RecombinationActive(Direction direction) {
-      return bool(get_recombination_buffer(direction));
+    Recombiner& GetRecombiner(Direction direction) {
+      return get_recombination_buffer(direction);
     }
-
-    // Starts a new recombination session.
-    //
-    // Precondition: Recombination must not already be active
-    // (RecombinationActive must be false).
-    //
-    // Returns:
-    // * FAILED_PRECONDITION if recombination is already active.
-    // * Any error from MultiBufWriter::Create(), namely RESOURCE_EXHAUSTED.
-    // * OK if recombination is started.
-    pw::Status StartRecombination(
-        Direction direction,
-        multibuf::MultiBufAllocator& multibuf_allocator,
-        size_t size);
-
-    // Adds a fragment of data to the recombination buffer.
-    //
-    // Precondition: Recombination must be active
-    // (RecombinationActive must be true).
-    //
-    // Returns:
-    // * FAILED_PRECONDITION if recombination is not active.
-    // * Any error from MultiBufWriter::Write(), namely RESOURCE_EXHAUSTED.
-    // * OK if the data was written, with value:
-    //   * If recombination is incomplete, returns an empty MultiBuf.
-    //   * If recombination is complete, returns a nonempty MultiBuf with the
-    //     recombined data and ends recombination.
-    pw::Result<multibuf::MultiBuf> RecombineFragment(
-        Direction direction, pw::span<const uint8_t> data);
-
-    // Ends recombination.
-    void EndRecombination(Direction direction);
 
    private:
     AclTransportType transport_;
@@ -265,12 +290,10 @@ class AclDataChannel {
     // type based on link type.
     L2capAclUSignalingChannel aclu_signaling_channel_;
 
-    std::array<std::optional<MultiBufWriter>, kNumDirections>
-        recombination_buffers_;
+    std::array<Recombiner, kNumDirections> recombination_buffers_{};
 
-    MultiBufWriter* get_recombination_buffer(Direction direction) {
-      auto& recomb = recombination_buffers_[cpp23::to_underlying(direction)];
-      return recomb ? recomb.operator->() : nullptr;
+    Recombiner& get_recombination_buffer(Direction direction) {
+      return recombination_buffers_[cpp23::to_underlying(direction)];
     }
   };
 
