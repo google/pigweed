@@ -15,6 +15,7 @@
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 
 #include <mutex>
+#include <optional>
 
 #include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/emboss_util.h"
@@ -539,6 +540,29 @@ AclDataChannel::AclConnection* AclDataChannel::FindAclConnection(
   return connection_it == acl_connections_.end() ? nullptr : connection_it;
 }
 
+namespace {
+
+std::optional<L2capChannelManager::LockedL2capChannel> GetLockedChannel(
+    const AclDataChannel::Direction direction,
+    const uint16_t handle,
+    const uint16_t l2cap_channel_id,
+    L2capChannelManager& manager) {
+  std::optional<L2capChannelManager::LockedL2capChannel> channel;
+
+  switch (direction) {
+    case AclDataChannel::Direction::kFromController:
+      return manager.FindChannelByLocalCid(handle, l2cap_channel_id);
+    case AclDataChannel::Direction::kFromHost:
+      return manager.FindChannelByRemoteCid(handle, l2cap_channel_id);
+    default:
+      PW_LOG_ERROR("Unrecognized Direction enumerator value %d.",
+                   cpp23::to_underlying(direction));
+      return std::nullopt;
+  }
+}
+
+}  // namespace
+
 bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
                                    emboss::AclDataFrameWriter& acl) {
   // This function returns whether or not the frame was handled here.
@@ -575,16 +599,6 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
 
   const uint16_t handle = acl.header().handle().Read();
 
-  auto find_l2cap_channel = [this, direction, handle](uint16_t channel_id) {
-    switch (direction) {
-      case Direction::kFromController:
-        return l2cap_channel_manager_.FindChannelByLocalCid(handle, channel_id);
-      case Direction::kFromHost:
-        return l2cap_channel_manager_.FindChannelByRemoteCid(handle,
-                                                             channel_id);
-    }
-  };
-
   bool is_fragment = false;
   pw::span<uint8_t> l2cap_pdu;
   multibuf::MultiBuf recombined_mbuf;
@@ -605,7 +619,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
         acl.header().packet_boundary_flag().Read();
     switch (boundary_flag) {
       // A subsequent fragment of a fragmented PDU.
-      case emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT:
+      case emboss::AclDataPacketBoundaryFlag::CONTINUING_FRAGMENT: {
         // If recombination is not active, these are probably fragments for a
         // PDU that we previously chose not to recombine. Simply ignore them.
         //
@@ -618,7 +632,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
 
         is_fragment = true;
         break;
-
+      }
       // Non-fragment or the first fragment of a fragmented PDU.
       case emboss::AclDataPacketBoundaryFlag::FIRST_NON_FLUSHABLE:
       case emboss::AclDataPacketBoundaryFlag::FIRST_FLUSHABLE: {
@@ -651,11 +665,12 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
           return kUnhandled;
         }
 
-        const uint16_t l2cap_channel_id = l2cap_header.channel_id().Read();
-
         // Is this a channel we care about?
         std::optional<L2capChannelManager::LockedL2capChannel> channel =
-            find_l2cap_channel(l2cap_channel_id);
+            GetLockedChannel(direction,
+                             handle,
+                             l2cap_header.channel_id().Read(),
+                             l2cap_channel_manager_);
         if (!channel.has_value()) {
           return kUnhandled;
         }
@@ -693,7 +708,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
             PW_LOG_ERROR(
                 "Cannot start recombination for L2capChannel %#x: "
                 "no channel rx allocator. Passing on.",
-                l2cap_channel_id);
+                channel->channel().local_cid());
             return kUnhandled;
           }
           auto status = connection->StartRecombination(
@@ -704,7 +719,7 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
             PW_LOG_ERROR(
                 "Cannot start recombination for L2capChannel %#x: "
                 "%s. Passing on.",
-                l2cap_channel_id,
+                channel->channel().local_cid(),
                 status.str());
             return kUnhandled;
           }
@@ -712,13 +727,14 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
         break;
       }
 
-      default:
+      default: {
         PW_LOG_ERROR(
             "Packet %s on channel %#x: Unexpected ACL boundary flag: %u",
             ToString(direction),
             handle,
             cpp23::to_underlying(boundary_flag));
         return kUnhandled;
+      }
     }
 
     if (!is_fragment) {
@@ -776,7 +792,10 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
   PW_CHECK(l2cap_header.ok());
 
   std::optional<L2capChannelManager::LockedL2capChannel> channel =
-      find_l2cap_channel(l2cap_header->channel_id().Read());
+      GetLockedChannel(direction,
+                       handle,
+                       l2cap_header->channel_id().Read(),
+                       l2cap_channel_manager_);
   if (!channel.has_value()) {
     // Proxy host stopped proxying this channel in another thread, either after
     // starting recombination (if this is a last fragment) or after we looked up
