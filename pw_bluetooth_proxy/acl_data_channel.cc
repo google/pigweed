@@ -636,7 +636,7 @@ bool AclDataChannel::HandleAclData(Direction direction,
         // Ensure recombination is not already in progress
         if (recombiner.IsActive()) {
           PW_LOG_WARN(
-              "Received non-continuation packet %s on channel %#x while "
+              "Received non-continuation packet %s on connection %#x while "
               "recombination is active! Dropping previous partially-recombined "
               "PDU and handling this first packet normally.",
               DirectionToString(direction),
@@ -654,9 +654,8 @@ bool AclDataChannel::HandleAclData(Direction direction,
                                              acl_payload.size());
         if (!l2cap_header.Ok()) {
           PW_LOG_ERROR(
-              "ACL packet %s on channel %#x does not include full L2CAP "
-              "header. "
-              "Passing on.",
+              "ACL packet %s on connection %#x does not include full L2CAP "
+              "header. Passing on.",
               DirectionToString(direction),
               handle);
           return kUnhandled;
@@ -680,8 +679,8 @@ bool AclDataChannel::HandleAclData(Direction direction,
 
         if (l2cap_frame_length < acl_payload_size) {
           PW_LOG_ERROR(
-              "ACL packet %s on channel %#x has payload (%u bytes) larger than "
-              "specified L2CAP PDU size (%u bytes). Dropping.",
+              "ACL packet %s on connection %#x has payload (%u bytes) larger "
+              "than specified L2CAP PDU size (%u bytes). Dropping.",
               DirectionToString(direction),
               handle,
               acl_payload_size,
@@ -729,7 +728,7 @@ bool AclDataChannel::HandleAclData(Direction direction,
 
       default: {
         PW_LOG_ERROR(
-            "Packet %s on channel %#x: Unexpected ACL boundary flag: %u",
+            "Packet %s on connection %#x: Unexpected ACL boundary flag: %u",
             DirectionToString(direction),
             handle,
             cpp23::to_underlying(boundary_flag));
@@ -751,8 +750,8 @@ bool AclDataChannel::HandleAclData(Direction direction,
         PW_DCHECK(!is_first);
 
         PW_LOG_ERROR(
-            "Received continuation packet %s on channel %#x over specified PDU "
-            "length. Dropping entire PDU.",
+            "Received continuation packet %s on connection %#x over specified "
+            "PDU length. Dropping entire PDU.",
             DirectionToString(direction),
             handle);
         recombiner.EndRecombination();
