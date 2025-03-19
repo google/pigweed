@@ -214,12 +214,15 @@ class AclDataChannel {
       // Returns:
       // * FAILED_PRECONDITION if recombination is not active.
       // * Any error from MultiBufWriter::Write(), namely RESOURCE_EXHAUSTED.
-      // * OK if the data was written, with value:
-      //   * If recombination is incomplete, returns an empty MultiBuf.
-      //   * If recombination is complete, returns a nonempty MultiBuf with the
-      //     recombined data and ends recombination.
-      pw::Result<multibuf::MultiBuf> RecombineFragment(
-          pw::span<const uint8_t> data);
+      // * OK if the data was written
+      pw::Status RecombineFragment(pw::span<const uint8_t> data);
+
+      // Returns the recombined MultiBuf and ends recombination.
+      //
+      // The MultiBuf will be non-empty and contiguous.
+      //
+      // Preconditions: `IsActive()` and `IsComplete()` are both true.
+      multibuf::MultiBuf TakeAndEnd();
 
       // Ends recombination.
       // Frees any MultiBuf held.

@@ -751,9 +751,8 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
       l2cap_pdu = acl_payload;
     } else {
       // Recombine this fragment
-      Result<multibuf::MultiBuf> recomb_result =
-          recombiner.RecombineFragment(acl_payload);
-      if (!recomb_result.ok()) {
+      pw::Status recomb_status = recombiner.RecombineFragment(acl_payload);
+      if (!recomb_status.ok()) {
         // Given that RecombinationActive is checked above, the only way this
         // should fail is if the fragment is larger than expected, which can
         // only happen on a continuing fragment, because the first fragment
@@ -769,19 +768,23 @@ bool AclDataChannel::HandleAclData(AclDataChannel::Direction direction,
         return kHandled;  // We own the channel; drop.
       }
 
-      if (recomb_result->empty()) {
-        // An empty MultiBuf means we need to await the remaining fragments.
+      if (!recombiner.IsComplete()) {
+        // We are done with this packet and awaiting the remaining fragments.
         return kHandled;
       }
 
       // Recombination complete!
-      // RecombineFragment() internally calls EndRecombination() when complete.
-      recombined_mbuf = std::move(*recomb_result);
 
-      // ContiguousSpan() cannot fail because MultiBufWriter::Create() uses
-      // AllocateContiguous().
+      // TODO: https://pwbug.dev/402457004 - If channel is gone we have no data,
+      // so should not be accessing multibuf here.
+      recombined_mbuf = recombiner.TakeAndEnd();
+      // TakeAndEnd returns a contiguous MultiBuf.
+      PW_CHECK(recombined_mbuf.IsContiguous());
+
       std::optional<ByteSpan> mbuf_span = recombined_mbuf.ContiguousSpan();
+      // Span should be present since MultiBuf is contiguous.
       PW_CHECK(mbuf_span);
+
       l2cap_pdu = pw::span(reinterpret_cast<uint8_t*>(mbuf_span->data()),
                            mbuf_span->size());
     }
@@ -871,24 +874,27 @@ pw::Status AclDataChannel::AclConnection::Recombiner::StartRecombination(
   return pw::OkStatus();
 }
 
-pw::Result<multibuf::MultiBuf>
-AclDataChannel::AclConnection::Recombiner::RecombineFragment(
+pw::Status AclDataChannel::AclConnection::Recombiner::RecombineFragment(
     pw::span<const uint8_t> data) {
   if (!IsActive()) {
     return Status::FailedPrecondition();
   }
 
   PW_CHECK(mbufw_.has_value());
-  PW_TRY(mbufw_->Write(pw::as_bytes(data)));
+  return mbufw_->Write(pw::as_bytes(data));
+}
 
-  if (!IsComplete()) {
-    // Return an empty multibuf to indicate recombination is not complete.
-    return multibuf::MultiBuf();
-  }
+multibuf::MultiBuf AclDataChannel::AclConnection::Recombiner::TakeAndEnd() {
+  PW_CHECK(IsActive());
+  PW_CHECK(IsComplete());
 
-  // Consume and return the resulting multibuf and end recombination.
   multibuf::MultiBuf mbuf = mbufw_->TakeMultiBuf();
+  // We expect MultiBufWriter to have used `AllocateContiguous()` to create the
+  // MultiBuf.
+  PW_CHECK(mbuf.IsContiguous());
+
   EndRecombination();
+
   return mbuf;
 }
 
