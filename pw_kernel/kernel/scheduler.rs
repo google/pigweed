@@ -462,6 +462,12 @@ pub fn preempt() {
 pub fn tick(now: Instant) {
     //info!("tick {} ms", time_ms);
 
+    // In lieu of a proper timer interface, the scheduler needs to be robust
+    // to timer ticks arriving before it is initialized.
+    if SCHEDULER_STATE.lock().current_thread.is_none() {
+        return;
+    }
+
     let _guard = PremptDisableGuard::new();
     TimerQueue::process_queue(now);
 }
