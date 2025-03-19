@@ -139,6 +139,7 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
     l2cap_coc_test.cc
     multibuf_writer_test.cc
     proxy_host_test.cc
+    recombiner_test.cc
     rfcomm_fcs_test.cc
     rfcomm_test.cc
     utils_test.cc
