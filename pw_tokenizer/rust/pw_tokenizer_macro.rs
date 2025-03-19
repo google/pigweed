@@ -42,11 +42,8 @@ fn token_backend(domain: &str, fragments: &[TokenStream2]) -> TokenStream2 {
     // pw_tokenizer is intended for use with ELF files only. Mach-O files (macOS
     // executables) do not support section names longer than 16 characters, so a
     // short, unused section name is used on macOS.
-    let section = if cfg!(target_os = "macos") {
-        ",pw,".to_string()
-    } else {
-        ".pw_tokenizer.entries.rust".to_string()
-    };
+    let section = ".pw_tokenizer.entries.rust".to_string();
+    let mac_section = ",pw,".to_string();
 
     let domain = CString::new(domain).unwrap();
     let domain_bytes = domain.as_bytes_with_nul();
@@ -74,7 +71,8 @@ fn token_backend(domain: &str, fragments: &[TokenStream2]) -> TokenStream2 {
             };
             // This is currently manually verified to be correct.
             // TODO: b/287132907 - Add integration tests for token database.
-            #[link_section = #section ]
+            #[cfg_attr(target_os = "macos", link_section = #mac_section)]
+            #[cfg_attr(not(target_os = "macos"), link_section = #section)]
             #[used]
             static #ident: TokenEntry = TokenEntry {
                 magic: #TOKENIZER_ENTRY_MAGIC,
