@@ -29,7 +29,7 @@ def nanopb_proto_library(*, name, deps, **kwargs):
         name = name,
         protos = deps,
         deps = [
-            Label("@com_github_nanopb_nanopb//:nanopb"),
+            Label("@nanopb//:nanopb"),
         ],
         **kwargs
     )
@@ -42,7 +42,7 @@ def _custom_opt_for_library_include_format():
     #include statements need to be relative to the root of that tree. Handle
     this case using --library-include-format.
     """
-    pb_h = Label("@com_github_nanopb_nanopb//:pb.h")
+    pb_h = Label("@nanopb//:pb.h")
     if pb_h.workspace_root == "":
         # Monorepo case
         return "--library-include-format=#include \"{}/%s\"".format(pb_h.package)
@@ -51,7 +51,7 @@ def _custom_opt_for_library_include_format():
 
 _nanopb_proto_compiler_aspect = proto_compiler_aspect(
     ["pb.h", "pb.c"],
-    Label("@com_github_nanopb_nanopb//:protoc-gen-nanopb"),
+    Label("@nanopb//:protoc-gen-nanopb"),
     [_custom_opt_for_library_include_format()],
 )
 

@@ -62,7 +62,7 @@ cc_library(
     strip_include_prefix = "public",
     deps = [
         "//pw_rpc",
-        "@com_github_nanopb_nanopb//:nanopb",
+        "@nanopb",
     ],
 )
 
@@ -341,7 +341,7 @@ pw_cc_test(
         ":test_method_context",
         "//pw_rpc",
         "//pw_rpc:pw_rpc_test_nanopb_rpc",
-        "@com_github_nanopb_nanopb//:nanopb",
+        "@nanopb",
     ],
 )
 

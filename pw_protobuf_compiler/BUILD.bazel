@@ -92,7 +92,7 @@ proto_library(
 proto_library(
     name = "pw_protobuf_compiler_nanopb_protos",
     srcs = ["nanopb_test_protos/nanopb_test.proto"],
-    deps = ["@com_github_nanopb_nanopb//:nanopb_proto"],
+    deps = ["@nanopb//:nanopb_proto"],
 )
 
 nanopb_proto_library(
