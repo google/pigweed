@@ -119,7 +119,6 @@ cc_library(
 cc_library(
     name = "best_fit",
     hdrs = ["public/pw_allocator/best_fit.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
@@ -133,7 +132,6 @@ cc_library(
 cc_library(
     name = "best_fit_block_allocator",
     hdrs = ["public/pw_allocator/best_fit_block_allocator.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":best_fit",
@@ -145,7 +143,6 @@ cc_library(
     name = "block_allocator",
     srcs = ["block_allocator.cc"],
     hdrs = ["public/pw_allocator/block_allocator.h"],
-    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
@@ -169,7 +166,6 @@ cc_library(
 cc_library(
     name = "bucket_allocator",
     hdrs = ["public/pw_allocator/bucket_allocator.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
@@ -183,7 +179,6 @@ cc_library(
 cc_library(
     name = "bucket_block_allocator",
     hdrs = ["public/pw_allocator/bucket_block_allocator.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [":bucket_allocator"],
 )
@@ -192,7 +187,6 @@ cc_library(
     name = "buddy_allocator",
     srcs = ["buddy_allocator.cc"],
     hdrs = ["public/pw_allocator/buddy_allocator.h"],
-    features = ["-conversion_warnings"],
     implementation_deps = [
         "//pw_assert:check",
         "//pw_bytes:alignment",
@@ -262,7 +256,6 @@ alias(
 cc_library(
     name = "dl_allocator",
     hdrs = ["public/pw_allocator/dl_allocator.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
@@ -278,7 +271,6 @@ cc_library(
 cc_library(
     name = "dual_first_fit_block_allocator",
     hdrs = ["public/pw_allocator/dual_first_fit_block_allocator.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [":first_fit"],
 )
@@ -299,7 +291,6 @@ cc_library(
 cc_library(
     name = "first_fit",
     hdrs = ["public/pw_allocator/first_fit.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
@@ -313,7 +304,6 @@ cc_library(
 cc_library(
     name = "first_fit_block_allocator",
     hdrs = ["public/pw_allocator/first_fit_block_allocator.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [":first_fit"],
 )
@@ -322,14 +312,12 @@ cc_library(
     name = "fragmentation",
     srcs = ["fragmentation.cc"],
     hdrs = ["public/pw_allocator/fragmentation.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
 )
 
 cc_library(
     name = "freelist_heap",
     hdrs = ["public/pw_allocator/freelist_heap.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":bucket_allocator",
@@ -353,7 +341,6 @@ cc_library(
 cc_library(
     name = "last_fit_block_allocator",
     hdrs = ["public/pw_allocator/last_fit_block_allocator.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [":first_fit"],
 )
@@ -417,7 +404,6 @@ cc_library(
 cc_library(
     name = "tlsf_allocator",
     hdrs = ["public/pw_allocator/tlsf_allocator.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
@@ -456,7 +442,6 @@ cc_library(
 cc_library(
     name = "worst_fit",
     hdrs = ["public/pw_allocator/worst_fit.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":block_allocator",
@@ -470,7 +455,6 @@ cc_library(
 cc_library(
     name = "worst_fit_block_allocator",
     hdrs = ["public/pw_allocator/worst_fit_block_allocator.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":config",
@@ -484,7 +468,6 @@ cc_library(
     name = "testing",
     testonly = True,
     hdrs = ["public/pw_allocator/testing.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":buffer",
@@ -506,7 +489,6 @@ cc_library(
     testonly = True,
     srcs = ["block_allocator_testing.cc"],
     hdrs = ["public/pw_allocator/block_allocator_testing.h"],
-    features = ["-conversion_warnings"],
     implementation_deps = [
         "//pw_assert:check",
         "//pw_bytes:alignment",
@@ -532,7 +514,6 @@ cc_library(
     testonly = True,
     srcs = ["managed_ptr_testing.cc"],
     hdrs = ["public/pw_allocator/internal/managed_ptr_testing.h"],
-    features = ["-conversion_warnings"],
     strip_include_prefix = "public",
     deps = [
         ":pw_allocator",
@@ -578,7 +559,6 @@ cc_library(
 pw_cc_test(
     name = "allocator_as_pool_test",
     srcs = ["allocator_as_pool_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":allocator_as_pool",
         ":pw_allocator",
@@ -589,7 +569,6 @@ pw_cc_test(
 pw_cc_test(
     name = "allocator_test",
     srcs = ["allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":pw_allocator",
         ":testing",
@@ -599,7 +578,6 @@ pw_cc_test(
 pw_cc_test(
     name = "best_fit_test",
     srcs = ["best_fit_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":best_fit",
         ":best_fit_block_allocator",
@@ -611,7 +589,6 @@ pw_cc_test(
 pw_cc_test(
     name = "bucket_allocator_test",
     srcs = ["bucket_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":block_allocator_testing",
         ":bucket_allocator",
@@ -623,7 +600,6 @@ pw_cc_test(
 pw_cc_test(
     name = "buddy_allocator_test",
     srcs = ["buddy_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":buddy_allocator",
         ":fuzzing",
@@ -634,7 +610,6 @@ pw_cc_test(
 pw_cc_test(
     name = "buffer_test",
     srcs = ["buffer_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":buffer",
         ":testing",
@@ -647,7 +622,6 @@ pw_cc_test(
 pw_cc_test(
     name = "bump_allocator_test",
     srcs = ["bump_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":bump_allocator",
         ":testing",
@@ -658,7 +632,6 @@ pw_cc_test(
 pw_cc_test(
     name = "chunk_pool_test",
     srcs = ["chunk_pool_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":chunk_pool",
         ":testing",
@@ -668,7 +641,6 @@ pw_cc_test(
 pw_cc_test(
     name = "dl_allocator_test",
     srcs = ["dl_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":block_allocator_testing",
         ":dl_allocator",
@@ -679,7 +651,6 @@ pw_cc_test(
 pw_cc_test(
     name = "fallback_allocator_test",
     srcs = ["fallback_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":fallback_allocator",
         ":testing",
@@ -690,7 +661,6 @@ pw_cc_test(
 pw_cc_test(
     name = "first_fit_test",
     srcs = ["first_fit_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":block_allocator_testing",
         ":buffer",
@@ -706,7 +676,6 @@ pw_cc_test(
 pw_cc_test(
     name = "fragmentation_test",
     srcs = ["fragmentation_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":fragmentation",
         ":testing",
@@ -716,7 +685,6 @@ pw_cc_test(
 pw_cc_test(
     name = "freelist_heap_test",
     srcs = ["freelist_heap_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":freelist_heap",
         ":testing",
@@ -729,7 +697,6 @@ pw_cc_test(
 pw_cc_test(
     name = "layout_test",
     srcs = ["layout_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":pw_allocator",
         ":testing",
@@ -741,7 +708,6 @@ pw_cc_test(
 pw_cc_test(
     name = "libc_allocator_test",
     srcs = ["libc_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":libc_allocator",
         ":testing",
@@ -757,7 +723,6 @@ pw_cc_test(
 pw_cc_test(
     name = "null_allocator_test",
     srcs = ["null_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":null_allocator",
         ":testing",
@@ -767,7 +732,6 @@ pw_cc_test(
 pw_cc_test(
     name = "pmr_allocator_test",
     srcs = ["pmr_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":pmr_allocator",
         ":testing",
@@ -777,7 +741,6 @@ pw_cc_test(
 pw_cc_test(
     name = "shared_ptr_test",
     srcs = ["shared_ptr_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":managed_ptr_testing",
         ":pw_allocator",
@@ -787,7 +750,6 @@ pw_cc_test(
 pw_cc_test(
     name = "synchronized_allocator_test",
     srcs = ["synchronized_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     # TODO: b/358411629 - This test times out on rp2.
     target_compatible_with = select({
         "@pico-sdk//bazel/constraint:rp2040": ["@platforms//:incompatible"],
@@ -815,7 +777,6 @@ pw_cc_test(
 pw_cc_test(
     name = "tlsf_allocator_test",
     srcs = ["tlsf_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":block_allocator_testing",
         ":tlsf_allocator",
@@ -825,7 +786,6 @@ pw_cc_test(
 pw_cc_test(
     name = "tracking_allocator_test",
     srcs = ["tracking_allocator_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":first_fit",
         ":metrics",
@@ -840,7 +800,6 @@ pw_cc_test(
 pw_cc_test(
     name = "typed_pool_test",
     srcs = ["typed_pool_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":pw_allocator",
         ":testing",
@@ -852,7 +811,6 @@ pw_cc_test(
 pw_cc_test(
     name = "unique_ptr_test",
     srcs = ["unique_ptr_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":managed_ptr_testing",
         ":pw_allocator",
@@ -862,7 +820,6 @@ pw_cc_test(
 pw_cc_test(
     name = "weak_ptr_test",
     srcs = ["weak_ptr_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":managed_ptr_testing",
         ":pw_allocator",
@@ -872,7 +829,6 @@ pw_cc_test(
 pw_cc_test(
     name = "worst_fit_test",
     srcs = ["worst_fit_test.cc"],
-    features = ["-conversion_warnings"],
     deps = [
         ":block_allocator_testing",
         ":worst_fit",

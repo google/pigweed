@@ -25,7 +25,7 @@
 namespace pw::allocator::internal {
 
 BuddyBlock::BuddyBlock(size_t outer_size) {
-  outer_size_log2_ = cpp20::countr_zero(outer_size);
+  outer_size_log2_ = CountRZero<size_t, uint8_t>(outer_size);
 }
 
 StatusWithSize BuddyBlock::CanAlloc(Layout layout) const {
@@ -162,7 +162,8 @@ void GenericBuddyAllocator::Deallocate(void* ptr) {
     // Determine the expected address of this free block's buddy by determining
     // if it would be first or second in a merged block of the next larger size.
     std::byte* item = block->UsableSpace();
-    if ((item - region_.data()) % (block->OuterSize() * 2) == 0) {
+    size_t offset = static_cast<size_t>(item - region_.data());
+    if (offset % (block->OuterSize() * 2) == 0) {
       item += outer_size;
     } else {
       item -= outer_size;

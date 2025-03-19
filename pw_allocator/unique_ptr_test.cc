@@ -86,11 +86,11 @@ TEST_F(UniquePtrTest, MoveAssignsFromSubClassAndFreesTotalSize) {
 }
 
 TEST_F(UniquePtrTest, MoveAssignsToExistingDeallocates) {
-  auto size1 = allocator_.MakeUnique<size_t>(1);
+  auto size1 = allocator_.MakeUnique<size_t>(1u);
   ASSERT_NE(size1, nullptr);
   EXPECT_EQ(*size1, 1U);
 
-  auto size2 = allocator_.MakeUnique<size_t>(2);
+  auto size2 = allocator_.MakeUnique<size_t>(2u);
   ASSERT_NE(size1, nullptr);
   EXPECT_EQ(*size2, 2U);
 
@@ -170,7 +170,7 @@ TEST_F(UniquePtrTest, DestructorDestroysAndFreesArray) {
 TEST_F(UniquePtrTest, CanRelease) {
   size_t* raw = nullptr;
   {
-    auto ptr = allocator_.MakeUnique<size_t>(1);
+    auto ptr = allocator_.MakeUnique<size_t>(1u);
     ASSERT_NE(ptr, nullptr);
     EXPECT_EQ(ptr.deallocator(), &allocator_);
     raw = ptr.Release();
@@ -196,15 +196,15 @@ TEST_F(UniquePtrTest, SizeReturnsCorrectSizeWhenAligned) {
 }
 
 TEST_F(UniquePtrTest, CanSwapWhenNeitherAreEmpty) {
-  auto ptr1 = allocator_.MakeUnique<Counter>(111);
-  auto ptr2 = allocator_.MakeUnique<Counter>(222);
+  auto ptr1 = allocator_.MakeUnique<Counter>(111u);
+  auto ptr2 = allocator_.MakeUnique<Counter>(222u);
   ptr1.Swap(ptr2);
   EXPECT_EQ(ptr1->value(), 222u);
   EXPECT_EQ(ptr2->value(), 111u);
 }
 
 TEST_F(UniquePtrTest, CanSwapWhenOneIsEmpty) {
-  auto ptr1 = allocator_.MakeUnique<Counter>(111);
+  auto ptr1 = allocator_.MakeUnique<Counter>(111u);
   pw::UniquePtr<Counter> ptr2;
 
   // ptr2 is empty.

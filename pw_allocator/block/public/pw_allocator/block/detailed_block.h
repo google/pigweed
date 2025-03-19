@@ -96,7 +96,7 @@ class DetailedBlockImpl
 
  private:
   constexpr explicit DetailedBlockImpl(size_t outer_size) : info_{} {
-    next_ = outer_size / Basic::kAlignment;
+    next_ = static_cast<OffsetType>(outer_size / Basic::kAlignment);
     info_.last = 1;
     info_.alignment = Basic::kAlignment;
   }
@@ -239,7 +239,7 @@ constexpr DetailedBlockImpl<Parameters>* DetailedBlockImpl<Parameters>::AsBlock(
 template <typename Parameters>
 constexpr void DetailedBlockImpl<Parameters>::SetNext(size_t outer_size,
                                                       BlockType* next) {
-  next_ = outer_size / Basic::kAlignment;
+  next_ = static_cast<OffsetType>(outer_size / Basic::kAlignment);
   if (next == nullptr) {
     info_.last = 1;
     return;
@@ -334,7 +334,7 @@ constexpr void DetailedBlockImpl<Parameters>::SetRequestedAlignment(
     PW_ASSERT((alignment & (alignment - 1)) == 0);
     PW_ASSERT(alignment < 0x2000);
   }
-  info_.alignment = alignment;
+  info_.alignment = static_cast<uint16_t>(alignment);
 }
 
 }  // namespace pw::allocator

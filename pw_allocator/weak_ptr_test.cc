@@ -31,7 +31,7 @@ using WeakPtrTest = pw::allocator::test::ManagedPtrTest;
 
 TEST_F(WeakPtrTest, DefaultInitializationIsExpired) {
   pw::WeakPtr<int> weak;
-  EXPECT_EQ(weak.use_count(), 0u);
+  EXPECT_EQ(weak.use_count(), 0);
   EXPECT_TRUE(weak.expired());
   EXPECT_EQ(weak.Lock(), nullptr);
 }
@@ -39,12 +39,12 @@ TEST_F(WeakPtrTest, DefaultInitializationIsExpired) {
 TEST_F(WeakPtrTest, CanConstructMultipleFromSingleSharedPtr) {
   auto shared = allocator_.MakeShared<int>(42);
   pw::WeakPtr<int> weak1(shared);
-  EXPECT_EQ(weak1.use_count(), 1u);
+  EXPECT_EQ(weak1.use_count(), 1);
   EXPECT_FALSE(weak1.expired());
 
   pw::WeakPtr<int> weak2(shared);
-  EXPECT_EQ(weak1.use_count(), 1u);
-  EXPECT_EQ(weak2.use_count(), 1u);
+  EXPECT_EQ(weak1.use_count(), 1);
+  EXPECT_EQ(weak2.use_count(), 1);
   EXPECT_FALSE(weak1.expired());
   EXPECT_FALSE(weak2.expired());
 }
@@ -53,7 +53,7 @@ TEST_F(WeakPtrTest, CanLockWhenActive) {
   auto shared1 = allocator_.MakeShared<int>(42);
   pw::WeakPtr<int> weak(shared1);
 
-  EXPECT_EQ(weak.use_count(), 1u);
+  EXPECT_EQ(weak.use_count(), 1);
   EXPECT_FALSE(weak.expired());
 
   auto shared2 = weak.Lock();
@@ -66,7 +66,7 @@ TEST_F(WeakPtrTest, CannotLockWhenExpired) {
   pw::WeakPtr<int> weak(shared);
 
   shared.reset();
-  EXPECT_EQ(weak.use_count(), 0u);
+  EXPECT_EQ(weak.use_count(), 0);
   EXPECT_TRUE(weak.expired());
 
   auto shared2 = weak.Lock();
@@ -78,8 +78,8 @@ TEST_F(WeakPtrTest, CanCopyConstructWhenActive) {
   pw::WeakPtr<int> weak1(shared1);
   pw::WeakPtr<int> weak2(weak1);
 
-  EXPECT_EQ(weak1.use_count(), 1u);
-  EXPECT_EQ(weak2.use_count(), 1u);
+  EXPECT_EQ(weak1.use_count(), 1);
+  EXPECT_EQ(weak2.use_count(), 1);
   EXPECT_FALSE(weak1.expired());
   EXPECT_FALSE(weak2.expired());
 
@@ -100,8 +100,8 @@ TEST_F(WeakPtrTest, CanCopyConstructWhenExpired) {
   EXPECT_GT(allocated, deallocated);
 
   pw::WeakPtr<int> weak2(weak1);
-  EXPECT_EQ(weak1.use_count(), 0u);
-  EXPECT_EQ(weak2.use_count(), 0u);
+  EXPECT_EQ(weak1.use_count(), 0);
+  EXPECT_EQ(weak2.use_count(), 0);
   EXPECT_TRUE(weak1.expired());
   EXPECT_TRUE(weak2.expired());
 
@@ -118,7 +118,7 @@ TEST_F(WeakPtrTest, CanCopyAssignWhenActive) {
     weak = tmp;
   }
 
-  EXPECT_EQ(weak.use_count(), 1u);
+  EXPECT_EQ(weak.use_count(), 1);
   EXPECT_FALSE(weak.expired());
 
   auto shared2 = weak.Lock();
@@ -141,7 +141,7 @@ TEST_F(WeakPtrTest, CanCopyAssignWhenExpired) {
   size_t deallocated = allocator_.deallocate_size();
   EXPECT_GT(allocated, deallocated);
 
-  EXPECT_EQ(weak.use_count(), 0u);
+  EXPECT_EQ(weak.use_count(), 0);
   EXPECT_TRUE(weak.expired());
 
   // Allocator should be untouched by copy-assignment.
@@ -154,7 +154,7 @@ TEST_F(WeakPtrTest, CanMoveConstructWhenActive) {
   pw::WeakPtr<int> weak1(shared1);
   pw::WeakPtr<int> weak2(std::move(weak1));
 
-  EXPECT_EQ(weak2.use_count(), 1u);
+  EXPECT_EQ(weak2.use_count(), 1);
   EXPECT_FALSE(weak2.expired());
 
   auto shared2 = weak2.Lock();
@@ -174,7 +174,7 @@ TEST_F(WeakPtrTest, CanMoveConstructWhenExpired) {
   EXPECT_GT(allocated, deallocated);
 
   pw::WeakPtr<int> weak2(std::move(weak1));
-  EXPECT_EQ(weak2.use_count(), 0u);
+  EXPECT_EQ(weak2.use_count(), 0);
   EXPECT_TRUE(weak2.expired());
 
   // Allocator should be untouched by move-construction.
@@ -190,7 +190,7 @@ TEST_F(WeakPtrTest, CanMoveAssignWhenActive) {
     weak = std::move(tmp);
   }
 
-  EXPECT_EQ(weak.use_count(), 1u);
+  EXPECT_EQ(weak.use_count(), 1);
   EXPECT_FALSE(weak.expired());
 
   auto shared2 = weak.Lock();
@@ -213,7 +213,7 @@ TEST_F(WeakPtrTest, CanMoveAssignWhenExpired) {
   size_t deallocated = allocator_.deallocate_size();
   EXPECT_GT(allocated, deallocated);
 
-  EXPECT_EQ(weak.use_count(), 0u);
+  EXPECT_EQ(weak.use_count(), 0);
   EXPECT_TRUE(weak.expired());
 
   // Allocator should be untouched by move-assignment.
@@ -275,8 +275,8 @@ TEST_F(WeakPtrTest, OwnerBeforeProvidesPartialOrder) {
 }
 
 TEST_F(WeakPtrTest, CanswapWhenNeitherAreExpired) {
-  auto shared1 = allocator_.MakeShared<Counter>(111);
-  auto shared2 = allocator_.MakeShared<Counter>(222);
+  auto shared1 = allocator_.MakeShared<Counter>(111u);
+  auto shared2 = allocator_.MakeShared<Counter>(222u);
   pw::WeakPtr<Counter> weak1(shared1);
   pw::WeakPtr<Counter> weak2(shared2);
 
@@ -286,8 +286,8 @@ TEST_F(WeakPtrTest, CanswapWhenNeitherAreExpired) {
 }
 
 TEST_F(WeakPtrTest, CanswapWhenOneIsExpired) {
-  auto shared1 = allocator_.MakeShared<Counter>(111);
-  auto shared2 = allocator_.MakeShared<Counter>(222);
+  auto shared1 = allocator_.MakeShared<Counter>(111u);
+  auto shared2 = allocator_.MakeShared<Counter>(222u);
   pw::WeakPtr<Counter> weak1(shared1);
   pw::WeakPtr<Counter> weak2(shared2);
   shared2.reset();
@@ -304,8 +304,8 @@ TEST_F(WeakPtrTest, CanswapWhenOneIsExpired) {
 }
 
 TEST_F(WeakPtrTest, CanswapWhenBothAreExpired) {
-  auto shared1 = allocator_.MakeShared<Counter>(111);
-  auto shared2 = allocator_.MakeShared<Counter>(222);
+  auto shared1 = allocator_.MakeShared<Counter>(111u);
+  auto shared2 = allocator_.MakeShared<Counter>(222u);
   pw::WeakPtr<Counter> weak1(shared1);
   pw::WeakPtr<Counter> weak2(shared2);
   shared1.reset();

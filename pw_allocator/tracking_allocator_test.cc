@@ -71,14 +71,14 @@ struct ExpectedValues {
 
 #undef INCLUDE_EXPECTED_METRIC
 
-  void AddRequestedBytes(uint32_t requested_bytes_) {
-    requested_bytes += requested_bytes_;
+  void AddRequestedBytes(size_t requested_bytes_) {
+    requested_bytes += static_cast<uint32_t>(requested_bytes_);
     peak_requested_bytes = std::max(requested_bytes, peak_requested_bytes);
     cumulative_requested_bytes += requested_bytes_;
   }
 
-  void AddAllocatedBytes(uint32_t allocated_bytes_) {
-    allocated_bytes += allocated_bytes_;
+  void AddAllocatedBytes(size_t allocated_bytes_) {
+    allocated_bytes += static_cast<uint32_t>(allocated_bytes_);
     peak_allocated_bytes = std::max(allocated_bytes, peak_allocated_bytes);
     cumulative_allocated_bytes += allocated_bytes_;
   }

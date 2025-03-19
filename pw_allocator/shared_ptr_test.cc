@@ -42,7 +42,7 @@ TEST_F(SharedPtrTest, OperatorEqNullptrOnEmptySharedPtrSucceeds) {
 }
 
 TEST_F(SharedPtrTest, OperatorEqNullptrAfterMakeSharedFails) {
-  auto ptr = allocator_.MakeShared<Counter>(5);
+  auto ptr = allocator_.MakeShared<Counter>(5u);
   EXPECT_NE(ptr.get(), nullptr);
   EXPECT_TRUE(ptr != nullptr);
   EXPECT_FALSE(ptr == nullptr);
@@ -62,8 +62,8 @@ TEST_F(SharedPtrTest, CopyConstructionIncreasesUseCount) {
   EXPECT_EQ(ptr1.get(), ptr2.get());
   EXPECT_EQ(ptr1->value(), 42u);
   EXPECT_EQ(ptr2->value(), 42u);
-  EXPECT_EQ(ptr1.use_count(), 2u);
-  EXPECT_EQ(ptr2.use_count(), 2u);
+  EXPECT_EQ(ptr1.use_count(), 2);
+  EXPECT_EQ(ptr2.use_count(), 2);
   EXPECT_EQ(Counter::GetNumCtorCalls(), 1U);
   EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
 }
@@ -75,8 +75,8 @@ TEST_F(SharedPtrTest, CopyAssignmentIncreasesUseCount) {
   EXPECT_EQ(ptr1.get(), ptr2.get());
   EXPECT_EQ(ptr1->value(), 42u);
   EXPECT_EQ(ptr2->value(), 42u);
-  EXPECT_EQ(ptr1.use_count(), 2u);
-  EXPECT_EQ(ptr2.use_count(), 2u);
+  EXPECT_EQ(ptr1.use_count(), 2);
+  EXPECT_EQ(ptr2.use_count(), 2);
   EXPECT_EQ(Counter::GetNumCtorCalls(), 1U);
   EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
 }
@@ -97,7 +97,7 @@ TEST_F(SharedPtrTest, MoveConstructsFromSubClassAndFreesTotalSize) {
   EXPECT_GE(allocated, sizeof(CounterWithBuffer));
 
   pw::SharedPtr<Counter> base_ptr(std::move(ptr));
-  EXPECT_EQ(base_ptr.use_count(), 1u);
+  EXPECT_EQ(base_ptr.use_count(), 1);
   EXPECT_EQ(allocator_.deallocate_size(), 0ul);
 
   // The size that is deallocated here should be the size of the larger
@@ -117,7 +117,7 @@ TEST_F(SharedPtrTest, MoveAssignsFromSubClassAndFreesTotalSize) {
   EXPECT_GE(allocated, sizeof(CounterWithBuffer));
 
   pw::SharedPtr<Counter> base_ptr = std::move(ptr);
-  EXPECT_EQ(base_ptr.use_count(), 1u);
+  EXPECT_EQ(base_ptr.use_count(), 1);
   EXPECT_EQ(allocator_.deallocate_size(), 0ul);
 
   // The size that is deallocated here should be the size of the larger
@@ -162,22 +162,22 @@ TEST_F(SharedPtrTest, SizeReturnsCorrectSizeWhenAligned) {
 
 TEST_F(SharedPtrTest, FreedExactlyOnce) {
   auto ptr1 = allocator_.MakeShared<Counter>(42u);
-  EXPECT_EQ(ptr1.use_count(), 1u);
+  EXPECT_EQ(ptr1.use_count(), 1);
   EXPECT_EQ(Counter::GetNumCtorCalls(), 1U);
 
   pw::SharedPtr<Counter> ptr2 = ptr1;
-  EXPECT_EQ(ptr1.use_count(), 2u);
+  EXPECT_EQ(ptr1.use_count(), 2);
   EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
   EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
 
   {
     pw::SharedPtr<Counter> ptr3(std::move(ptr1));
-    EXPECT_EQ(ptr3.use_count(), 2u);
+    EXPECT_EQ(ptr3.use_count(), 2);
     EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
     EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
 
     ptr2 = nullptr;
-    EXPECT_EQ(ptr3.use_count(), 1u);
+    EXPECT_EQ(ptr3.use_count(), 1);
     EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
     EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
   }
@@ -187,23 +187,23 @@ TEST_F(SharedPtrTest, FreedExactlyOnce) {
 
 TEST_F(SharedPtrTest, ArrayFreedExactlyOnce) {
   auto ptr1 = allocator_.MakeShared<Counter[]>(5);
-  EXPECT_EQ(ptr1.use_count(), 1u);
+  EXPECT_EQ(ptr1.use_count(), 1);
   EXPECT_EQ(Counter::GetNumCtorCalls(), 5U);
   EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
 
   pw::SharedPtr<Counter[]> ptr2 = ptr1;
-  EXPECT_EQ(ptr1.use_count(), 2u);
+  EXPECT_EQ(ptr1.use_count(), 2);
   EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
   EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
 
   {
     pw::SharedPtr<Counter[]> ptr3(std::move(ptr1));
-    EXPECT_EQ(ptr3.use_count(), 2u);
+    EXPECT_EQ(ptr3.use_count(), 2);
     EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
     EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
 
     ptr2 = nullptr;
-    EXPECT_EQ(ptr3.use_count(), 1u);
+    EXPECT_EQ(ptr3.use_count(), 1);
     EXPECT_EQ(Counter::GetNumCtorCalls(), 0U);
     EXPECT_EQ(Counter::GetNumDtorCalls(), 0U);
   }
@@ -234,15 +234,15 @@ TEST_F(SharedPtrTest, OwnerBeforeProvidesPartialOrder) {
 }
 
 TEST_F(SharedPtrTest, CanswapWhenNeitherAreEmpty) {
-  auto ptr1 = allocator_.MakeShared<Counter>(111);
-  auto ptr2 = allocator_.MakeShared<Counter>(222);
+  auto ptr1 = allocator_.MakeShared<Counter>(111u);
+  auto ptr2 = allocator_.MakeShared<Counter>(222u);
   ptr1.swap(ptr2);
   EXPECT_EQ(ptr1->value(), 222u);
   EXPECT_EQ(ptr2->value(), 111u);
 }
 
 TEST_F(SharedPtrTest, CanswapWhenOneIsEmpty) {
-  auto ptr1 = allocator_.MakeShared<Counter>(111);
+  auto ptr1 = allocator_.MakeShared<Counter>(111u);
   pw::SharedPtr<Counter> ptr2;
 
   // ptr2 is empty.

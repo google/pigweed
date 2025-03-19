@@ -119,7 +119,7 @@ class WeakPtr final : public ::pw::allocator::internal::WeakManagedPtr<T> {
 
   /// Returns the number of shared pointers to the associated object, or 0 if
   /// this object is empty.
-  uint32_t use_count() const noexcept {
+  int32_t use_count() const noexcept {
     return control_block_ == nullptr ? 0 : control_block_->num_shared();
   }
 

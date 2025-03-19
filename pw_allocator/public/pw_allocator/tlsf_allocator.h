@@ -88,7 +88,8 @@ class TlsfAllocator : public BlockAllocator<BlockType> {
   using BucketType = FastSortedBucket<BlockType>;
 
   static constexpr size_t kNumBucketsPerShelf = 16;
-  static constexpr size_t kBucketBits = cpp20::countr_zero(kNumBucketsPerShelf);
+  static constexpr size_t kBucketBits =
+      internal::CountRZero(kNumBucketsPerShelf);
   using Shelf = std::array<BucketType, kNumBucketsPerShelf>;
 
   static_assert(kMinSize >= kNumBucketsPerShelf,
@@ -230,12 +231,12 @@ TlsfIndices TlsfAllocator<BlockType, kMinSize, kNumShelves>::MapToIndices(
   }
 
   // Most significant bit set determines the shelf.
-  size_t shelf = cpp20::countr_zero(cpp20::bit_floor(size));
+  auto shelf = internal::CountRZero(cpp20::bit_floor(size));
   // Each shelf has 16 buckets, so next 4 bits determine the bucket.
   auto bucket = static_cast<uint16_t>((size >> (shelf - kBucketBits)) & 0xF);
 
   // Adjust for minimum size, and clamp to the valid range.
-  shelf -= cpp20::countr_zero(kMinSize);
+  shelf -= internal::CountRZero(kMinSize);
   if (shelf >= kNumShelves) {
     shelf = kNumShelves - 1;
     bucket = kNumBucketsPerShelf - 1;
@@ -263,7 +264,7 @@ bool TlsfAllocator<BlockType, kMinSize, kNumShelves>::FindNextAvailable(
   if (bucket_bitmap != 0) {
     // There's at least one non-empty bucket on the current shelf whose
     // blocks are at least as large as the requested size.
-    indices.bucket = cpp20::countr_zero(bucket_bitmap);
+    indices.bucket = internal::CountRZero(bucket_bitmap);
     return true;
   }
 
@@ -272,8 +273,8 @@ bool TlsfAllocator<BlockType, kMinSize, kNumShelves>::FindNextAvailable(
   // non-empty bucket with the smallest blocks.
   uint32_t shelf_bitmap = shelf_bitmap_ & (~uint32_t(0) << (indices.shelf + 1));
   if (shelf_bitmap != 0) {
-    indices.shelf = cpp20::countr_zero(shelf_bitmap);
-    indices.bucket = cpp20::countr_zero(bucket_bitmaps_[indices.shelf]);
+    indices.shelf = internal::CountRZero(shelf_bitmap);
+    indices.bucket = internal::CountRZero(bucket_bitmaps_[indices.shelf]);
     return true;
   }
 
@@ -284,7 +285,7 @@ bool TlsfAllocator<BlockType, kMinSize, kNumShelves>::FindNextAvailable(
 template <typename BlockType, size_t kMinSize, size_t kNumShelves>
 void TlsfAllocator<BlockType, kMinSize, kNumShelves>::UpdateBitmaps(
     const TlsfIndices& indices, bool empty) {
-  uint16_t bucket_bitmap = uint32_t(1) << indices.bucket;
+  auto bucket_bitmap = static_cast<uint16_t>(1 << indices.bucket);
   if (empty) {
     bucket_bitmaps_[indices.shelf] &= ~bucket_bitmap;
   } else {

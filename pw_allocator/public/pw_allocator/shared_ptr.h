@@ -139,7 +139,7 @@ class SharedPtr final : public ::pw::allocator::internal::ManagedPtr<T> {
 
   /// Returns the number of shared pointers to the associated object, or 0 if
   /// this object is empty.
-  size_t use_count() const {
+  int32_t use_count() const {
     return control_block_ == nullptr ? 0 : control_block_->num_shared();
   }
 
