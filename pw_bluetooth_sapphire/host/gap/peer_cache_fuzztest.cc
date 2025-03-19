@@ -40,6 +40,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     return 0;
   }
   bt::gap::Peer* const peer = peer_cache.NewPeer(addr, connectable);
+  PW_CHECK(peer);
 
   bt::gap::testing::PeerFuzzer peer_fuzzer(fuzzed_data_provider, *peer);
   while (fuzzed_data_provider.remaining_bytes() != 0) {

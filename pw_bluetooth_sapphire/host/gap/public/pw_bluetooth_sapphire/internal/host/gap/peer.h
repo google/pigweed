@@ -606,6 +606,9 @@ class Peer final {
   //     its BD_ADDR, then there will be two separate Peer entries for
   //     it.
   const DeviceAddress& address() const { return *address_; }
+
+  // TODO: b/404642497 - Calculate whether the identity is known instead of
+  // using a bug-prone variable that can be out of sync.
   bool identity_known() const { return identity_known_; }
 
   // The LMP version of this device obtained doing discovery.

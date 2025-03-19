@@ -186,6 +186,9 @@ class PeerFuzzer final {
   }
 
   void BrEdrDataSetInquiryDataWithRssi() {
+    if (!peer_.identity_known()) {
+      return;
+    }
     StaticPacket<pw::bluetooth::emboss::InquiryResultWithRssiWriter>
         inquiry_data;
     fdp().ConsumeData(inquiry_data.mutable_data().mutable_data(),
