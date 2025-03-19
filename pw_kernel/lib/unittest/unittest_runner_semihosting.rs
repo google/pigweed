@@ -16,8 +16,16 @@
 use console_backend as _;
 use kernel as _;
 
+#[cfg(feature = "arch_arm_cortex_m")]
 use cortex_m_rt::entry;
+#[cfg(feature = "arch_arm_cortex_m")]
 use cortex_m_semihosting::debug;
+
+#[cfg(feature = "arch_riscv")]
+use riscv_rt::entry;
+#[cfg(feature = "arch_riscv")]
+use riscv_semihosting::debug;
+
 use pw_log::{error, info};
 use target::{Target, TargetInterface};
 
@@ -46,7 +54,7 @@ fn run_ctors() {
 
 #[entry]
 fn main() -> ! {
-    // cortex_m_rt does not run ctors so we need to the that manually.
+    // cortex_m_rt and riscv_rt do not run ctors so we need to do the that manually.
     run_ctors();
 
     Target::console_init();

@@ -28,7 +28,7 @@ platform(
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict({
-        "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_riscv",
+        "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_semihosting",
         "//pw_kernel/subsys/console:console_backend": ":console_riscv",
         "//pw_kernel/target:linker_script": ":linker_script_riscv",
         "//pw_kernel/target:target_backend": ":target_riscv",

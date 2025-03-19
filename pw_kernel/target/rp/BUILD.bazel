@@ -26,7 +26,7 @@ platform(
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict({
-        "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_cortex_m",
+        "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_semihosting",
         "//pw_kernel/subsys/console:console_backend": ":console_rp2350",
         "//pw_kernel/target:linker_script": ":linker_script_rp2350",
         "//pw_kernel/target:target_backend": ":target_rp2350",
