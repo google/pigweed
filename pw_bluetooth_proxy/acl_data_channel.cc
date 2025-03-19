@@ -535,12 +535,12 @@ AclDataChannel::AclConnection* AclDataChannel::FindAclConnection(
 
 namespace {
 
-std::optional<L2capChannelManager::LockedL2capChannel> GetLockedChannel(
+std::optional<LockedL2capChannel> GetLockedChannel(
     const Direction direction,
     const uint16_t handle,
     const uint16_t l2cap_channel_id,
     L2capChannelManager& manager) {
-  std::optional<L2capChannelManager::LockedL2capChannel> channel;
+  std::optional<LockedL2capChannel> channel;
 
   switch (direction) {
     case Direction::kFromController:
@@ -663,7 +663,7 @@ bool AclDataChannel::HandleAclData(Direction direction,
         }
 
         // Is this a channel we care about?
-        std::optional<L2capChannelManager::LockedL2capChannel> channel =
+        std::optional<LockedL2capChannel> channel =
             GetLockedChannel(direction,
                              handle,
                              l2cap_header.channel_id().Read(),
@@ -796,7 +796,7 @@ bool AclDataChannel::HandleAclData(Direction direction,
       MakeEmbossView<emboss::BasicL2capHeaderView>(l2cap_pdu);
   PW_CHECK(l2cap_header.ok());
 
-  std::optional<L2capChannelManager::LockedL2capChannel> channel =
+  std::optional<LockedL2capChannel> channel =
       GetLockedChannel(direction,
                        handle,
                        l2cap_header->channel_id().Read(),

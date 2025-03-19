@@ -22,6 +22,7 @@
 #include "pw_bluetooth_proxy/internal/h4_storage.h"
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_status_tracker.h"
+#include "pw_bluetooth_proxy/internal/locked_l2cap_channel.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 
 namespace pw::bluetooth::proxy {
@@ -37,39 +38,6 @@ namespace pw::bluetooth::proxy {
 // around channels.
 class L2capChannelManager {
  public:
-  // Wrapper for locked access to L2capChannel. Lock must be held at
-  // construction already, and will be released on destruct.
-  class LockedL2capChannel {
-   public:
-    LockedL2capChannel(L2capChannel& channel,
-                       std::unique_lock<sync::Mutex>&& lock)
-        : channel_(&channel), lock_(std::move(lock)) {}
-
-    LockedL2capChannel(LockedL2capChannel&& other)
-        : channel_(other.channel_), lock_(std::move(other.lock_)) {
-      other.channel_ = nullptr;
-    }
-
-    LockedL2capChannel& operator=(LockedL2capChannel&& other) {
-      lock_ = std::move(other.lock_);
-      channel_ = other.channel_;
-      other.channel_ = nullptr;
-      return *this;
-    }
-    LockedL2capChannel(const LockedL2capChannel&) = delete;
-    LockedL2capChannel& operator=(const LockedL2capChannel&) = delete;
-
-    // Will assert if accessed on moved-from object.
-    L2capChannel& channel() {
-      PW_ASSERT(channel_);
-      return *channel_;
-    }
-
-   private:
-    L2capChannel* channel_;
-    std::unique_lock<sync::Mutex> lock_;
-  };
-
   L2capChannelManager(AclDataChannel& acl_data_channel);
 
   // Start proxying L2CAP packets addressed to `channel` arriving from

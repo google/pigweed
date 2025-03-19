@@ -42,6 +42,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     public/pw_bluetooth_proxy/internal/l2cap_leu_signaling_channel.h
     public/pw_bluetooth_proxy/internal/l2cap_signaling_channel.h
     public/pw_bluetooth_proxy/internal/l2cap_status_tracker.h
+    public/pw_bluetooth_proxy/internal/locked_l2cap_channel.h
     public/pw_bluetooth_proxy/internal/logical_transport.h
     public/pw_bluetooth_proxy/internal/recombiner.h
     public/pw_bluetooth_proxy/internal/rfcomm_fcs.h

@@ -201,8 +201,7 @@ void L2capChannelManager::DrainChannelQueuesIfNewTx() {
   }
 }
 
-std::optional<L2capChannelManager::LockedL2capChannel>
-L2capChannelManager::FindChannelByLocalCid(
+std::optional<LockedL2capChannel> L2capChannelManager::FindChannelByLocalCid(
     uint16_t connection_handle, uint16_t local_cid) PW_NO_LOCK_SAFETY_ANALYSIS {
   // Lock annotations don't work with unique_lock
   std::unique_lock lock(channels_mutex_);
@@ -214,10 +213,9 @@ L2capChannelManager::FindChannelByLocalCid(
   return LockedL2capChannel(*channel, std::move(lock));
 }
 
-std::optional<L2capChannelManager::LockedL2capChannel>
-L2capChannelManager::FindChannelByRemoteCid(uint16_t connection_handle,
-                                            uint16_t remote_cid)
-    PW_NO_LOCK_SAFETY_ANALYSIS {
+std::optional<LockedL2capChannel> L2capChannelManager::FindChannelByRemoteCid(
+    uint16_t connection_handle,
+    uint16_t remote_cid) PW_NO_LOCK_SAFETY_ANALYSIS {
   // Lock annotations don't work with unique_lock
   std::unique_lock lock(channels_mutex_);
   L2capChannel* channel =

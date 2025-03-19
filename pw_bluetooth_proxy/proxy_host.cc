@@ -362,7 +362,7 @@ pw::Result<L2capCoc> ProxyHost::AcquireL2capCoc(
 pw::Status ProxyHost::SendAdditionalRxCredits(uint16_t connection_handle,
                                               uint16_t local_cid,
                                               uint16_t additional_rx_credits) {
-  std::optional<L2capChannelManager::LockedL2capChannel> channel =
+  std::optional<LockedL2capChannel> channel =
       l2cap_channel_manager_.FindChannelByLocalCid(connection_handle,
                                                    local_cid);
   PW_CHECK(channel.has_value());
