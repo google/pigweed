@@ -235,21 +235,10 @@ class DocsFileChangeEventHandler(FileSystemEventHandler):
         if isinstance(event, FileModifiedEvent):
             # Push the path of the modified file to the WebSocket server's
             # message queue.
-            path = Path(event.src_path).relative_to(Path.cwd())
+            path = Path(str(event.src_path)).relative_to(Path.cwd())
             self._ws_handler.push_message(str(path))
 
         return super().on_modified(event)
-
-
-class DocsFileChangeObserver(Observer):  # pylint: disable=too-many-ancestors
-    """Watch for changes to built docs files."""
-
-    def __init__(
-        self, path: str, event_handler: FileSystemEventHandler, *args, **kwargs
-    ):
-        super().__init__(*args, **kwargs)
-        self.schedule(event_handler, path, recursive=True)
-        _LOG.info("Watching build docs files at: %s", path)
 
 
 def serve_docs(
@@ -280,7 +269,11 @@ def serve_docs(
 
     threading.Thread(None, websocket_server.run, 'pw_docserver_ws').start()
     threading.Thread(None, http_server_thread, 'pw_docserver_http').start()
-    DocsFileChangeObserver(str(docs_path), event_handler).start()
+
+    observer = Observer()
+    observer.schedule(event_handler, str(docs_path), recursive=True)
+    _LOG.info("Watching build docs files at: %s", str(docs_path))
+    observer.start()
 
     _LOG.info('Serving docs at http://%s:%d', address, port)
 

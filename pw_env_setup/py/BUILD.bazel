@@ -118,6 +118,7 @@ py_library(
     # Nobody in the Bazel ecosystem should ever use these parts of pw_env_setup.
     visibility = ["//docs:__pkg__"],
     deps = [
+        "@python_packages//setuptools",  # For import pkg_resources
         "@python_packages//six",
     ],
 )
