@@ -30,6 +30,7 @@ import {
 } from './refreshManager';
 
 import { bazel_executable, settings, workingDir } from './settings/vscode';
+import { generateCompileCommands } from './clangd/compileCommandsGenerator';
 
 /** Regex for finding ANSI escape codes. */
 const ANSI_PATTERN = new RegExp(
@@ -53,97 +54,6 @@ const cleanLogLine = (line: Buffer) => {
 
   return stripped;
 };
-
-/**
- * Create a container for a process running the refresh compile commands target.
- *
- * @return Refresh callbacks to do the refresh and to abort it
- */
-function createRefreshProcess(): [RefreshCallback, () => void] {
-  // This provides us a handle to abort the process, if needed.
-  const refreshController = new AbortController();
-  const abort = () => refreshController.abort();
-  const signal = refreshController.signal;
-
-  // This callback will be registered with the RefreshManager to be called
-  // when it's time to do the refresh.
-  const cb: RefreshCallback = async () => {
-    logger.info('Refreshing compile commands');
-    const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
-    const cmd = bazel_executable.get();
-
-    if (!cmd) {
-      const message = "Couldn't find a Bazel or Bazelisk executable";
-      logger.error(message);
-      return { error: message };
-    }
-
-    const refreshTarget = settings.refreshCompileCommandsTarget();
-
-    if (!refreshTarget) {
-      const message =
-        "There's no configured Bazel target to refresh compile commands";
-      logger.error(message);
-      return { error: message };
-    }
-
-    const args = ['run', settings.refreshCompileCommandsTarget()!];
-    let result: RefreshCallbackResult = OK;
-
-    // TODO: https://pwbug.dev/350861417 - This should use the Bazel
-    // extension commands instead, but doing that through the VS Code
-    // command API is not simple.
-    const spawnedProcess = child_process.spawn(cmd, args, { cwd, signal });
-
-    // Wrapping this in a promise that only resolves on exit or error ensures
-    // that this refresh callback blocks until the spawned process is complete.
-    // Otherwise, the callback would return early while the spawned process is
-    // still executing, prematurely moving on to later refresh manager states
-    // that depend on *this* callback being finished.
-    return new Promise((resolve) => {
-      spawnedProcess.on('spawn', () => {
-        logger.info(`Running ${cmd} ${args.join(' ')}`);
-      });
-
-      // All of the output actually goes out on stderr
-      spawnedProcess.stderr.on('data', (data) =>
-        logger.info(cleanLogLine(data)),
-      );
-
-      spawnedProcess.on('error', (err) => {
-        const { name, message } = err;
-
-        if (name === 'ABORT_ERR') {
-          logger.info('Aborted refreshing compile commands');
-        } else {
-          logger.error(
-            `[${name}] while refreshing compile commands: ${message}`,
-          );
-          result = { error: message };
-        }
-
-        resolve(result);
-      });
-
-      spawnedProcess.on('exit', (code) => {
-        if (code === 0) {
-          logger.info('Finished refreshing compile commands');
-        } else {
-          const message =
-            'Failed to complete compile commands refresh ' +
-            `(error code: ${code})`;
-
-          logger.error(message);
-          result = { error: message };
-        }
-
-        resolve(result);
-      });
-    });
-  };
-
-  return [cb, abort];
-}
 
 /** A file watcher that automatically runs a refresh on Bazel file changes. */
 export class BazelRefreshCompileCommandsWatcher extends Disposable {
@@ -191,15 +101,7 @@ export class BazelRefreshCompileCommandsWatcher extends Disposable {
 
   /** Trigger a refresh compile commands process. */
   refresh = () => {
-    const [cb, abort] = createRefreshProcess();
-
-    const wrappedAbort = () => {
-      abort();
-      return OK;
-    };
-
-    this.refreshManager.onOnce(cb, 'refreshing');
-    this.refreshManager.onOnce(wrappedAbort, 'abort');
+    this.refreshManager.onOnce(generateCompileCommands, 'refreshing');
     this.refreshManager.refresh();
   };
 }

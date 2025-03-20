@@ -208,7 +208,7 @@ const UNSUPPORTED_EXECUTABLES = ['_pw_invalid', 'python'];
  *
  * See: https://clang.llvm.org/docs/JSONCompilationDatabase.html
  */
-class CompileCommand {
+export class CompileCommand {
   readonly data: CompileCommandData;
   private readonly commandParts: CommandParts;
 
@@ -440,7 +440,7 @@ export class CompilationDatabase {
   }
 }
 
-class CompilationDatabaseMap extends Map<string, CompilationDatabase> {
+export class CompilationDatabaseMap extends Map<string, CompilationDatabase> {
   // It's like Python's `defaultdict` -- `get` creates if the key isn't present.
   get(key: string): CompilationDatabase {
     if (!this.has(key)) {

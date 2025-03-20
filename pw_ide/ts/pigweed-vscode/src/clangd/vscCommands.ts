@@ -13,7 +13,7 @@
 // the License.
 
 import * as vscode from 'vscode';
-
+import * as path from 'path';
 import { ClangdActiveFilesCache } from './activeFilesCache';
 import { clangdPath } from './bazel';
 import { availableTargets, getTarget, baseSetTarget, Target } from './paths';
@@ -47,7 +47,7 @@ export async function setTargetWithClangd(
   Promise.all([
     updatePath(clangdPath()),
     updateArgs([
-      `--compile-commands-dir=${target.path}`,
+      `--compile-commands-dir=${path.dirname(target.path)}`,
       '--query-driver=**',
       '--header-insertion=never',
       '--background-index',

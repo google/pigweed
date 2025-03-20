@@ -45,8 +45,6 @@ export class Root extends LitElement {
     }
   `;
 
-  @property() name = 'World';
-  @state() count = 0;
   @state() extensionData: ExtensionData = { unwanted: [], recommended: [] };
   @state() cipdReport: CipdReport = {};
 
@@ -65,6 +63,10 @@ export class Root extends LitElement {
           <div>
             <b>Recommended Extensions</b><br/>
             <div class="container">
+              ${
+                this.extensionData.recommended.length === 0 &&
+                html` <p><i>No recommended extensions found.</i></p> `
+              }
               ${this.extensionData.recommended.map(
                 (ext) =>
                   html`<div class="row">
@@ -91,6 +93,10 @@ export class Root extends LitElement {
             </div>
             <b>Unwanted Extensions</b><br/>
             <div class="container">
+              ${
+                this.extensionData.unwanted.length === 0 &&
+                html` <p><i>No unwanted extensions found.</i></p> `
+              }
               ${this.extensionData.unwanted.map(
                 (ext) =>
                   html`<div class="row">
@@ -147,7 +153,7 @@ export class Root extends LitElement {
             <b class="title"> Clangd Dashboard </b>
           </summary>
         <div>
-          <span>If code navigation is broken, see what is wrong below.</span>
+          <span>Settings for code navigation.</span>
           <div class="container">
             <div class="row">
               <div>
@@ -214,10 +220,6 @@ export class Root extends LitElement {
         </detail>
       </div>
     `;
-  }
-
-  modify(val: number) {
-    this.count += val;
   }
 
   async firstUpdated() {
