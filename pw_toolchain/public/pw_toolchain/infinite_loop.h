@@ -29,6 +29,10 @@ namespace pw {
 
 }  // namespace pw
 
+// pw_InfiniteLoop is the C name for pw::InfiniteLoop. Only use this alias for
+// code that must compile in C and C++.
+[[noreturn]] inline void pw_InfiniteLoop() { ::pw::InfiniteLoop(); }
+
 #else
 
 #include "pw_preprocessor/compiler.h"

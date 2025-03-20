@@ -35,6 +35,21 @@ TEST(InfiniteLoop, Compiles) {
   }
 }
 
+int TestInfiniteLoopCAlias(int loop_infinitely_if_0) {
+  if (loop_infinitely_if_0 != 0) {
+    return loop_infinitely_if_0;
+  }
+  pw_InfiniteLoop();  // No return statement needed because of infinite loop.
+}
+
+TEST(InfiniteLoop, CAliasCompiles) {
+  EXPECT_EQ(TestInfiniteLoopCAlias(123), 123);
+
+  if (false) {
+    EXPECT_EQ(TestInfiniteLoopCAlias(0), 0);  // Loops forever!
+  }
+}
+
 TEST(InfiniteLoop, CompilesInC) {
   EXPECT_EQ(pw_TestInfiniteLoopC(123), 123);
 
