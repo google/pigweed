@@ -18,12 +18,12 @@
 #[doc(hidden)]
 pub mod __private {
     use console;
-    use pw_log_backend_api::LogLevel;
     use pw_status::Result;
     use pw_stream::{Cursor, Write};
     use pw_tokenizer::MessageWriter;
 
     // Re-export for use by the `pw_logf_backend!` macro.
+    pub use colors::log_level_tag;
     pub use pw_tokenizer::{tokenize_core_fmt_to_writer, tokenize_printf_to_writer};
 
     const ENCODE_BUFFER_SIZE: usize = 32;
@@ -67,17 +67,6 @@ pub mod __private {
             }
 
             Ok(())
-        }
-    }
-
-    pub const fn log_level_tag(level: LogLevel) -> &'static str {
-        match level {
-            LogLevel::Debug => "DBG",
-            LogLevel::Info => "INF",
-            LogLevel::Warn => "WRN",
-            LogLevel::Error => "ERR",
-            LogLevel::Critical => "CRT",
-            LogLevel::Fatal => "FTL",
         }
     }
 }

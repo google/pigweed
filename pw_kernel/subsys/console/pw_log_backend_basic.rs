@@ -18,20 +18,9 @@
 pub mod __private {
     pub use pw_log_backend_basic_macro::{_pw_log_backend, _pw_logf_backend};
 
+    pub use colors::log_level_tag;
     pub use console;
     pub use embedded_io;
-    use pw_log_backend_api::LogLevel;
-
-    pub const fn log_level_tag(level: LogLevel) -> &'static str {
-        match level {
-            LogLevel::Debug => "DBG",
-            LogLevel::Info => "INF",
-            LogLevel::Warn => "WRN",
-            LogLevel::Error => "ERR",
-            LogLevel::Critical => "CRT",
-            LogLevel::Fatal => "FTL",
-        }
-    }
 }
 
 // Implement the `pw_log` backend API.

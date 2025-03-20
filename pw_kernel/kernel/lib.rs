@@ -28,7 +28,7 @@ mod target;
 mod timer;
 
 use arch::{Arch, ArchInterface};
-use scheduler::{yield_timeslice, Stack, Thread, SCHEDULER_STATE};
+use scheduler::{Stack, Thread, SCHEDULER_STATE};
 use sync::mutex::Mutex;
 use timer::{Clock, Duration};
 
@@ -175,32 +175,40 @@ fn idle_thread_entry(_arg: usize) {
     }
 }
 
+fn test_thread_entry_a(_arg: usize) {
+    info!("Thread A starting");
+    pw_assert::assert!(Arch::interrupts_enabled());
+    thread_a();
+}
+
+fn test_thread_entry_b(_arg: usize) {
+    info!("Thread B starting");
+    pw_assert::assert!(Arch::interrupts_enabled());
+    thread_b();
+}
+
 static TEST_COUNTER: Mutex<u64> = Mutex::new(0);
 
-#[allow(dead_code)]
-fn test_thread_entry_a(_arg: usize) {
-    info!("I'm thread A");
-    pw_assert::assert!(Arch::interrupts_enabled());
+fn thread_a() {
     loop {
         let mut counter = TEST_COUNTER.lock();
-        info!("Thread A incrementing counter");
-        *counter += 1;
         scheduler::sleep_until(Clock::now() + Duration::from_secs(1));
+        info!("Thread A: incrementing counter");
+        *counter += 1;
     }
 }
 
-#[allow(dead_code)]
-fn test_thread_entry_b(_arg: usize) {
-    info!("I'm thread B");
-    pw_assert::assert!(Arch::interrupts_enabled());
+fn thread_b() {
     loop {
-        let Ok(counter) = TEST_COUNTER.lock_until(Clock::now() + Duration::from_millis(500)) else {
+        let deadline = Clock::now() + Duration::from_millis(600);
+        let Ok(counter) = TEST_COUNTER.lock_until(deadline) else {
             info!("Thread B: timeout");
             continue;
         };
         info!("Thread B: counter value {}", *counter as u64);
         pw_assert::ne!(*counter, 4);
         drop(counter);
-        yield_timeslice();
+        // Give Thread A a chance to acquire the mutex.
+        scheduler::yield_timeslice();
     }
 }

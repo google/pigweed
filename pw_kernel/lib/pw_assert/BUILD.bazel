@@ -21,6 +21,7 @@ rust_library(
     srcs = [
         "pw_assert.rs",
     ],
+    crate_features = ["color"],
     tags = ["kernel"],
     deps = ["//pw_log/rust:pw_log"],
 )
