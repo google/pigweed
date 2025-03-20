@@ -174,6 +174,21 @@ Example:
    def pw_generated_header(*, name, src, dest, **kwargs):
        # Implementation...
 
+Hard-coded labels in macros
+===========================
+Hard-coded labels in macro definitions are permitted, but they should usually be
+wrapped in a `Label() <https://bazel.build/rules/lib/builtins/Label#Label>`__
+constructor.
+
+Reasoning: When a macro stamps out a string intended to become a label, the
+string is evaluated **relative to the site where the macro is used**. This means
+that ``"//:foo"`` has different meanings based on where the macro is stamped
+out: ``@pigweed//:foo`` if used in Pigweed and ``@some_project//:foo`` if used
+in another project. Using ``Label("//:foo")`` forces the label to be evaluated
+relative to the location of the ``.bzl`` file that the hard-coded string/label
+is written in. This ensures the label always points to a consistent location. In
+almost all cases, hard-coded labels should be wrapped in ``Label()``.
+
 ---------------------
 C++ specific patterns
 ---------------------
