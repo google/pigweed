@@ -489,10 +489,6 @@ Status AclDataChannel::CreateAclConnection(uint16_t connection_handle,
   std::lock_guard lock(connection_mutex_);
   AclConnection* connection_it = FindAclConnection(connection_handle);
   if (connection_it) {
-    PW_LOG_WARN(
-        "btproxy: Attempt to create new AclConnection when existing one is "
-        "already open. connection_handle: %#x",
-        connection_handle);
     return Status::AlreadyExists();
   }
   if (acl_connections_.full()) {
