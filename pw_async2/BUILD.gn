@@ -358,8 +358,10 @@ pw_doc_group("docs") {
     "examples/basic.cc",
     "examples/once_send_recv.cc",
   ]
+  report_deps = [ "size_report:full_size_report" ]
   sources = [
     "backends.rst",
+    "code_size.rst",
     "docs.rst",
     "guides.rst",
     "reference.rst",

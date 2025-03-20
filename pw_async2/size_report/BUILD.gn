@@ -1,0 +1,133 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_async2/backend.gni")
+import("$dir_pw_bloat/bloat.gni")
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_chrono/backend.gni")
+import("$dir_pw_sync/backend.gni")
+import("$dir_pw_thread/backend.gni")
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("size_report") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_async2/size_report/size_report.h" ]
+  public_deps = [
+    "$dir_pw_allocator:allocator",
+    "$dir_pw_allocator:first_fit",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_bloat:bloat_this_binary",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:thread_notification",
+    dir_pw_preprocessor,
+  ]
+  sources = [ "size_report.cc" ]
+}
+
+pw_executable("empty_base") {
+  deps = [
+    ":size_report",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+  sources = [ "base.cc" ]
+}
+
+pw_executable("async2_core") {
+  deps = [
+    ":size_report",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:once_sender",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_assert,
+  ]
+  sources = [ "async2_core.cc" ]
+}
+
+pw_executable("async2_core_additional_task") {
+  deps = [
+    ":size_report",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:once_sender",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_assert,
+  ]
+  defines = [ "_PW_ASYNC2_SIZE_REPORT_INCREMENTAL_TASK=1" ]
+  sources = [ "async2_core.cc" ]
+}
+
+pw_executable("async2_core_once_sender") {
+  deps = [
+    ":size_report",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:once_sender",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_assert,
+  ]
+  defines = [ "_PW_ASYNC2_SIZE_REPORT_ONCE_SENDER=1" ]
+  sources = [ "async2_core.cc" ]
+}
+
+pw_executable("async2_core_once_sender_incremental") {
+  deps = [
+    ":size_report",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:once_sender",
+    "$dir_pw_bloat:bloat_this_binary",
+    dir_pw_assert,
+  ]
+  defines = [
+    "_PW_ASYNC2_SIZE_REPORT_ONCE_SENDER=1",
+    "_PW_ASYNC2_SIZE_REPORT_ONCE_SENDER_INCREMENTAL=1",
+  ]
+  sources = [ "async2_core.cc" ]
+}
+
+pw_size_diff("full_size_report") {
+  title = "Size impact of core pw_async2 primitives"
+  binaries = [
+    {
+      target = ":async2_core"
+      base = ":empty_base"
+      label = "Full cost of including pw_async2"
+    },
+    {
+      target = ":async2_core_additional_task"
+      base = ":async2_core"
+      label =
+          "Base incremental cost of adding a task to an existing async system"
+    },
+    {
+      target = ":async2_core_once_sender"
+      base = ":async2_core"
+      label = "Size of OnceSender / OnceReceiver"
+    },
+    {
+      target = ":async2_core_once_sender_incremental"
+      base = ":async2_core_once_sender"
+      label =
+          "Cost of additional OnceSender / OnceReceiver template specialization"
+    },
+  ]
+  enable_if = pw_async2_DISPATCHER_BACKEND != "" &&
+              pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+              pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" &&
+              pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != ""
+}

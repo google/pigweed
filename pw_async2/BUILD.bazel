@@ -1,4 +1,4 @@
-# Copyright 2023 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -432,11 +432,13 @@ sphinx_docs_library(
     name = "docs",
     srcs = [
         "backends.rst",
+        "code_size.rst",
         "docs.rst",
         "guides.rst",
         "public/pw_async2/coro.h",
         "reference.rst",
         "//pw_async2/examples:docs",
+        "//pw_async2/size_report:full_size_report",
     ],
     prefix = "pw_async2/",
     target_compatible_with = incompatible_with_mcu(),

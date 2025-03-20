@@ -1,0 +1,161 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+cc_library(
+    name = "size_report",
+    srcs = ["size_report.cc"],
+    hdrs = ["public/pw_async2/size_report/size_report.h"],
+    strip_include_prefix = "public",
+    deps = [
+        "//pw_allocator:allocator",
+        "//pw_allocator:first_fit",
+        "//pw_async2:dispatcher",
+        "//pw_bloat:bloat_this_binary",
+        "//pw_preprocessor",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:mutex",
+        "//pw_sync:thread_notification",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "empty_base",
+    srcs = ["base.cc"],
+    deps = [
+        ":size_report",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "async2_core",
+    srcs = ["async2_core.cc"],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "async2_core_additional_task",
+    srcs = ["async2_core.cc"],
+    defines = ["_PW_ASYNC2_SIZE_REPORT_INCREMENTAL_TASK=1"],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "async2_core_once_sender",
+    srcs = ["async2_core.cc"],
+    defines = ["_PW_ASYNC2_SIZE_REPORT_ONCE_SENDER=1"],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_async2:once_sender",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "async2_core_once_sender_incremental",
+    srcs = ["async2_core.cc"],
+    defines = [
+        "_PW_ASYNC2_SIZE_REPORT_ONCE_SENDER=1",
+        "_PW_ASYNC2_SIZE_REPORT_ONCE_SENDER_INCREMENTAL=1",
+    ],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:dispatcher",
+        "//pw_async2:once_sender",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "async2_core_coroutine",
+    srcs = ["async2_core.cc"],
+    defines = ["_PW_ASYNC2_SIZE_REPORT_COROUTINE=1"],
+    deps = [
+        ":size_report",
+        "//pw_assert:check",
+        "//pw_async2:coro",
+        "//pw_async2:dispatcher",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_size_diff(
+    name = "full_size_report_row",
+    base = ":empty_base",
+    label = "Full cost of including pw_async2",
+    target = ":async2_core",
+)
+
+pw_size_diff(
+    name = "incremental_task_row",
+    base = ":async2_core",
+    label = "Base incremental cost of adding a task to an existing async system",
+    target = ":async2_core_additional_task",
+)
+
+pw_size_diff(
+    name = "once_sender_row",
+    base = ":async2_core",
+    label = "Size of OnceSender / OnceReceiver",
+    target = ":async2_core_once_sender",
+)
+
+pw_size_diff(
+    name = "incremental_once_sender_row",
+    base = ":async2_core_once_sender",
+    label = "Cost of additional OnceSender / OnceReceiver template specialization",
+    target = ":async2_core_once_sender_incremental",
+)
+
+pw_size_diff(
+    name = "coroutine_row",
+    base = ":async2_core",
+    label = "Size of pw_async2's C++ coroutine adapters",
+    target = ":async2_core_coroutine",
+)
+
+pw_size_table(
+    name = "full_size_report",
+    reports = [
+        ":full_size_report_row",
+        ":incremental_task_row",
+        ":once_sender_row",
+        ":incremental_once_sender_row",
+    ] + select({
+        "//pw_toolchain/cc:c++20_enabled": [":coroutine_row"],
+        "//conditions:default": [],
+    }),
+)
