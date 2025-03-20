@@ -14,20 +14,29 @@
 
 #pragma once
 
-#include <optional>
-
 #include "pw_assert/check.h"
-#include "pw_multibuf/allocator.h"
+#include "pw_bluetooth_proxy/internal/locked_l2cap_channel.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
 
-// Recombiner recombines a fragmented ACL payload into a single payload.
+// Recombiner recombines a fragmented ACL payload for a channel into a single
+// payload.
+//
+// Its functions are passed the locked target channel which it uses to
+// provide storage for the payload as it is recombined. Currently the locked
+// channel needs to be passed for each call because client can dtor it from
+// under us. Passing the locked version of the channel helps to ensure we
+// actually have the lock.
+//
+// TODO: https://pwbug.dev/402454277 - Once we have channel ref ptrs the
+// Recombiner can hold on to its channel's ref ptr for the duration of
+// recombination. So will only need it passed at start of recombination.
 class Recombiner {
  public:
-  Recombiner() = default;
+  Recombiner(Direction direction) : direction_(direction) {}
 
   // Starts a new recombination session.
   //
@@ -37,9 +46,7 @@ class Recombiner {
   // * FAILED_PRECONDITION if recombination is already active.
   // * Any error from MultiBufWriter::Create(), namely RESOURCE_EXHAUSTED.
   // * OK if recombination is started.
-  pw::Status StartRecombination(uint16_t local_cid,
-                                multibuf::MultiBufAllocator& multibuf_allocator,
-                                size_t size);
+  pw::Status StartRecombination(LockedL2capChannel& channel, size_t size);
 
   // Adds a fragment of data to the recombination buffer.
   //
@@ -49,23 +56,23 @@ class Recombiner {
   // * FAILED_PRECONDITION if recombination is not active.
   // * Any error from MultiBufWriter::Write(), namely RESOURCE_EXHAUSTED.
   // * OK if the data was written
-  pw::Status RecombineFragment(pw::span<const uint8_t> data);
+  pw::Status RecombineFragment(std::optional<LockedL2capChannel>& channel,
+                               pw::span<const uint8_t> data);
 
   // Returns the recombined MultiBuf and ends recombination.
   //
   // The MultiBuf will be non-empty and contiguous.
   //
   // Preconditions: `IsActive()` and `IsComplete()` are both true.
-  multibuf::MultiBuf TakeAndEnd();
+  multibuf::MultiBuf TakeAndEnd(std::optional<LockedL2capChannel>& channel);
 
   // Ends recombination.
-  // Frees any MultiBuf held.
-  void EndRecombination();
+  // Frees the MultiBuf held in the channel (if any).
+  void EndRecombination(std::optional<LockedL2capChannel>& channel);
 
   // Returns true if recombined size matches specified size.
   bool IsComplete() const {
     PW_CHECK(is_active_);
-    PW_CHECK(buf_.has_value());
 
     return recombined_size_ == expected_size_;
   }
@@ -85,10 +92,10 @@ class Recombiner {
   size_t write_offset() const { return recombined_size_; }
 
   bool is_active_ = false;
+  Direction direction_;
   uint16_t local_cid_ = 0;
   size_t expected_size_ = 0;
   size_t recombined_size_ = 0;
-  std::optional<multibuf::MultiBuf> buf_ = std::nullopt;
 };
 
 }  // namespace pw::bluetooth::proxy

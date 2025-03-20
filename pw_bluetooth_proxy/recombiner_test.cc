@@ -15,9 +15,14 @@
 #include "pw_bluetooth_proxy/internal/recombiner.h"
 
 #include <cstdint>
+#include <mutex>
+#include <optional>
 
+#include "pw_bluetooth_proxy/internal/locked_l2cap_channel.h"
+#include "pw_bluetooth_proxy/proxy_host.h"
+#include "pw_bluetooth_proxy_private/test_utils.h"
 #include "pw_containers/to_array.h"
-#include "pw_multibuf/simple_allocator_for_test.h"
+#include "pw_span/cast.h"
 #include "pw_status/status.h"
 #include "pw_unit_test/framework.h"
 
@@ -26,23 +31,26 @@ namespace {
 
 using pw::containers::to_array;
 
-class RecombinerTest : public testing::Test {
- protected:
-  pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/512,
-                                             /*kMetaSizeBytes=*/512>
-      allocator_;
-};
+class RecombinerTest : public ProxyHostTest {};
 
 TEST_F(RecombinerTest, InactiveAtCreation) {
-  Recombiner recombiner{};
+  Recombiner recombiner{Direction::kFromHost};
 
   EXPECT_FALSE(recombiner.IsActive());
 }
 
 TEST_F(RecombinerTest, Start) {
-  Recombiner recombiner{};
+  ProxyHost proxy_{[]([[maybe_unused]] H4PacketWithHci&& packet) {},
+                   []([[maybe_unused]] H4PacketWithH4&& packet) {},
+                   0,
+                   0};
+  BasicL2capChannel channel = BuildBasicL2capChannel(proxy_, {});
+  pw::sync::Mutex mutex;
+  LockedL2capChannel locked_channel{channel, std::unique_lock(mutex)};
 
-  PW_TEST_EXPECT_OK(recombiner.StartRecombination(0x20, allocator_, 8u));
+  Recombiner recombiner{Direction::kFromHost};
+
+  PW_TEST_EXPECT_OK(recombiner.StartRecombination(locked_channel, 8u));
 
   EXPECT_TRUE(recombiner.IsActive());
   EXPECT_FALSE(recombiner.IsComplete());
@@ -50,47 +58,98 @@ TEST_F(RecombinerTest, Start) {
 
 TEST_F(RecombinerTest, GetLocalCid) {
   constexpr uint16_t kLocalCid = 0x20;
-  Recombiner recombiner{};
+  ProxyHost proxy_{[]([[maybe_unused]] H4PacketWithHci&& packet) {},
+                   []([[maybe_unused]] H4PacketWithH4&& packet) {},
+                   0,
+                   0};
+  BasicL2capChannel channel =
+      BuildBasicL2capChannel(proxy_, {.local_cid = kLocalCid});
+  pw::sync::Mutex mutex;
+  LockedL2capChannel locked_channel{channel, std::unique_lock(mutex)};
 
-  PW_TEST_EXPECT_OK(recombiner.StartRecombination(kLocalCid, allocator_, 8u));
+  Recombiner recombiner{Direction::kFromController};
+
+  PW_TEST_EXPECT_OK(recombiner.StartRecombination(locked_channel, 8u));
 
   EXPECT_EQ(recombiner.local_cid(), kLocalCid);
 }
 
-TEST_F(RecombinerTest, End) {
-  Recombiner recombiner{};
+TEST_F(RecombinerTest, EndWithChannel) {
+  ProxyHost proxy_{[]([[maybe_unused]] H4PacketWithHci&& packet) {},
+                   []([[maybe_unused]] H4PacketWithH4&& packet) {},
+                   0,
+                   0};
+  BasicL2capChannel channel = BuildBasicL2capChannel(proxy_, {});
+  pw::sync::Mutex mutex;
+  std::optional<LockedL2capChannel> locked_channel{
+      LockedL2capChannel{channel, std::unique_lock(mutex)}};
 
-  PW_TEST_EXPECT_OK(recombiner.StartRecombination(0x20, allocator_, 8u));
+  Recombiner recombiner{Direction::kFromController};
+
+  PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
 
   EXPECT_TRUE(recombiner.IsActive());
 
-  recombiner.EndRecombination();
+  recombiner.EndRecombination(locked_channel);
+
+  EXPECT_FALSE(recombiner.IsActive());
+}
+
+TEST_F(RecombinerTest, EndWithoutChannel) {
+  ProxyHost proxy_{[]([[maybe_unused]] H4PacketWithHci&& packet) {},
+                   []([[maybe_unused]] H4PacketWithH4&& packet) {},
+                   0,
+                   0};
+  Recombiner recombiner{Direction::kFromController};
+
+  {
+    BasicL2capChannel channel = BuildBasicL2capChannel(proxy_, {});
+    pw::sync::Mutex mutex;
+    std::optional<LockedL2capChannel> locked_channel{
+        LockedL2capChannel{channel, std::unique_lock(mutex)}};
+
+    PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
+  }
+
+  EXPECT_TRUE(recombiner.IsActive());
+
+  std::optional<LockedL2capChannel> null_channel = std::nullopt;
+
+  recombiner.EndRecombination(null_channel);
 
   EXPECT_FALSE(recombiner.IsActive());
 }
 
 TEST_F(RecombinerTest, WriteTakeEnd) {
-  Recombiner recombiner{};
+  ProxyHost proxy_{[]([[maybe_unused]] H4PacketWithHci&& packet) {},
+                   []([[maybe_unused]] H4PacketWithH4&& packet) {},
+                   0,
+                   0};
+  Recombiner recombiner{Direction::kFromController};
+  BasicL2capChannel channel = BuildBasicL2capChannel(proxy_, {});
+  pw::sync::Mutex mutex;
+  std::optional<LockedL2capChannel> locked_channel{
+      LockedL2capChannel{channel, std::unique_lock(mutex)}};
 
-  PW_TEST_EXPECT_OK(recombiner.StartRecombination(0x20, allocator_, 8u));
+  PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
 
   static constexpr std::array<uint8_t, 8> kExpectedData = {
       0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
 
   // Write first chunk
   PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
-      to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
+      locked_channel, to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
 
   EXPECT_FALSE(recombiner.IsComplete());
 
   // Write second chunk
   PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
-      to_array<uint8_t>({0x55, 0x66, 0x77, 0x88})));
+      locked_channel, to_array<uint8_t>({0x55, 0x66, 0x77, 0x88})));
 
   // Test combined result
   EXPECT_TRUE(recombiner.IsComplete());
 
-  multibuf::MultiBuf mbuf = recombiner.TakeAndEnd();
+  multibuf::MultiBuf mbuf = recombiner.TakeAndEnd(locked_channel);
   EXPECT_TRUE(mbuf.IsContiguous());
 
   EXPECT_FALSE(recombiner.IsActive());
@@ -105,27 +164,72 @@ TEST_F(RecombinerTest, WriteTakeEnd) {
       span.begin(), span.end(), kExpectedData.begin(), kExpectedData.end()));
 }
 
-TEST_F(RecombinerTest, CannotOverwrite) {
-  Recombiner recombiner{};
+TEST_F(RecombinerTest, WriteCompleteWithoutChannel) {
+  ProxyHost proxy_{[]([[maybe_unused]] H4PacketWithHci&& packet) {},
+                   []([[maybe_unused]] H4PacketWithH4&& packet) {},
+                   0,
+                   0};
+  Recombiner recombiner{Direction::kFromController};
 
-  PW_TEST_EXPECT_OK(recombiner.StartRecombination(0x20, allocator_, 8u));
+  {
+    BasicL2capChannel channel = BuildBasicL2capChannel(proxy_, {});
+    pw::sync::Mutex mutex;
+    std::optional<LockedL2capChannel> locked_channel{
+        LockedL2capChannel{channel, std::unique_lock(mutex)}};
+
+    PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
+
+    // Write first chunk
+    PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
+        locked_channel, to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
+
+    EXPECT_FALSE(recombiner.IsComplete());
+  }
+
+  std::optional<LockedL2capChannel> null_channel = std::nullopt;
+
+  // Write second chunk
+  PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
+      null_channel, to_array<uint8_t>({0x55, 0x66, 0x77, 0x88})));
+
+  EXPECT_TRUE(recombiner.IsComplete());
+
+  // Typically client ends recombination at this point.
+  recombiner.EndRecombination(null_channel);
+  EXPECT_FALSE(recombiner.IsActive());
+}
+
+TEST_F(RecombinerTest, CannotOverwrite) {
+  ProxyHost proxy_{[]([[maybe_unused]] H4PacketWithHci&& packet) {},
+                   []([[maybe_unused]] H4PacketWithH4&& packet) {},
+                   0,
+                   0};
+  Recombiner recombiner{Direction::kFromController};
+
+  BasicL2capChannel channel = BuildBasicL2capChannel(proxy_, {});
+  pw::sync::Mutex mutex;
+  std::optional<LockedL2capChannel> locked_channel{
+      LockedL2capChannel{channel, std::unique_lock(mutex)}};
+
+  PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
 
   // Write first chunk
   PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
-      to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
+      locked_channel, to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
 
   EXPECT_FALSE(recombiner.IsComplete());
 
   // Try to write too large a second chunk.
-  EXPECT_EQ(recombiner.RecombineFragment(
-                to_array<uint8_t>({0x55, 0x66, 0x77, 0x88, 0x99})),
-            pw::Status::ResourceExhausted());
+  EXPECT_EQ(
+      recombiner.RecombineFragment(
+          locked_channel, to_array<uint8_t>({0x55, 0x66, 0x77, 0x88, 0x99})),
+      pw::Status::ResourceExhausted());
 
   // Should still not be complete.
   EXPECT_FALSE(recombiner.IsComplete());
 
-  // Typically client ends recombination at this point.
-  recombiner.EndRecombination();
+  // Client ends recombination at this point.
+  recombiner.EndRecombination(locked_channel);
   EXPECT_FALSE(recombiner.IsActive());
 }
 

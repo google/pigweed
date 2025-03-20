@@ -15,7 +15,6 @@
 #pragma once
 
 #include <atomic>
-#include <mutex>
 #include <optional>
 
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"

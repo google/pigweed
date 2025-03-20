@@ -14,7 +14,10 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "pw_assert/check.h"
+#include "pw_bluetooth_proxy/direction.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
@@ -24,6 +27,7 @@
 #include "pw_multibuf/multibuf.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
+#include "pw_status/try.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 
@@ -190,10 +194,6 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
 
   AclTransportType transport() const { return transport_; }
 
-  multibuf::MultiBufAllocator* rx_multibuf_allocator() const {
-    return rx_multibuf_allocator_;
-  }
-
  protected:
   friend class L2capChannelManager;
 
@@ -334,6 +334,10 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Returns false if payload should be forwarded to host instead.
   virtual bool SendPayloadFromControllerToClient(pw::span<uint8_t> payload);
 
+  multibuf::MultiBufAllocator* rx_multibuf_allocator() const {
+    return rx_multibuf_allocator_;
+  }
+
  private:
   static constexpr uint16_t kMaxValidConnectionHandle = 0x0EFF;
 
@@ -456,6 +460,58 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   [[nodiscard]] virtual bool DoHandlePduFromController(
       pw::span<uint8_t> l2cap_pdu) = 0;
 
+  //-------------
+  //  Rx recombine - private, used by friend Recombiner only
+  //-------------
+  // TODO: https://pwbug.dev/404094475 - This section (and underlying data
+  // member) could eventually move up into a AclChannel class.
+
+  // The Rx combine functions private and only used by friend Recombiner.
+  friend class Recombiner;
+
+  // Create MultiBuf that Recombiner can use to store in-progress payload when
+  // being recombined.
+  pw::Status StartRecombinationBuf(Direction direction, size_t payload_size);
+
+  // Returns true if this channel has a recombination MultiBuf (which means
+  // recombination is active for this channel).
+  bool HasRecombinationBuf(Direction direction) {
+    return GetRecombinationBufOptRef(direction).has_value();
+  }
+
+  // Return the recombination buf to the caller.
+  //
+  // Channel no longer has buf after this call.
+  multibuf::MultiBuf TakeRecombinationBuf(Direction direction) {
+    PW_CHECK(GetRecombinationBufOptRef(direction).has_value());
+    return std::exchange(GetRecombinationBufOptRef(direction), std::nullopt)
+        .value();
+  }
+
+  // Copy the passed span to the recombination buf.
+  //
+  // Precondition: `HasCombinationBuf()`.
+  pw::Status CopyToRecombinationBuf(Direction direction,
+                                    ConstByteSpan data,
+                                    uint16_t write_offset) {
+    PW_CHECK(HasRecombinationBuf(direction));
+
+    PW_TRY(GetRecombinationBufOptRef(direction)->CopyFrom(as_bytes(data),
+                                                          write_offset));
+    return pw::OkStatus();
+  }
+
+  // Return reference to the recombination MultiBuf.
+  //
+  // Intended for use just within L2capChannel functions.
+  std::optional<multibuf::MultiBuf>& GetRecombinationBufOptRef(
+      Direction direction) {
+    return recombination_mbufs_[cpp23::to_underlying(direction)];
+  }
+
+  // Destroy the recombination MultiBuf.
+  void EndRecombinationBuf(Direction direction);
+
   //--------------
   //  Data members
   //--------------
@@ -467,6 +523,13 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   OptionalPayloadReceiveCallback payload_from_controller_fn_;
   // Client-provided host read callback.
   OptionalPayloadReceiveCallback payload_from_host_fn_;
+
+  // Recombination MultiBufs used by Recombiner to store in-progress
+  // payloads when they are being recombined.
+  // They are stored here so that they can be allocated with the channel's
+  // allocator and also properly destroyed with the channel.
+  std::array<std::optional<multibuf::MultiBuf>, kNumDirections>
+      recombination_mbufs_{};
 };
 
 }  // namespace pw::bluetooth::proxy

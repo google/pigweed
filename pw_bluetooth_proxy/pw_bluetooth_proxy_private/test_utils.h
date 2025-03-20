@@ -247,6 +247,7 @@ struct CocParameters {
 };
 
 struct BasicL2capParameters {
+  multibuf::MultiBufAllocator* rx_multibuf_allocator = nullptr;
   uint16_t handle = 123;
   uint16_t local_cid = 234;
   uint16_t remote_cid = 456;

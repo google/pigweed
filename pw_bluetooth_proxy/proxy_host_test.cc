@@ -3356,10 +3356,13 @@ class AclFragTest : public ProxyHostTest {
                      /*br_edr_acl_credits_to_reserve=*/0);
   }
 
-  BasicL2capChannel GetL2capChannel(ProxyHost& proxy) {
+  BasicL2capChannel GetL2capChannel(
+      ProxyHost& proxy,
+      multibuf::MultiBufAllocator* rx_multibuf_allocator = nullptr) {
     return BuildBasicL2capChannel(
         proxy,
         BasicL2capParameters{
+            .rx_multibuf_allocator = rx_multibuf_allocator,
             .handle = kHandle,
             .local_cid = kLocalCid,
             .remote_cid = 0x123,
@@ -3446,24 +3449,36 @@ TEST_F(AclFragTest, RecombinationWorksWithEmptyFirstPayload) {
   VerifyNormalOperationAfterRecombination(proxy);
 }
 
-// If a client channel is dropped between first and last packet of a fragmented
-// PDU, then packet should be dropped.
+// If a client channel is dropped between first and last
+// packet of a fragmented PDU, then packet should be dropped.
+// Under msan this test also verifies code is not trying to access channel
+// allocator's memory after channel dtor.
 TEST_F(AclFragTest, ChannelDtorDuringRecombinationDropsPdu) {
   ProxyHost proxy = GetProxy();
-  std::optional<BasicL2capChannel> channel{GetL2capChannel(proxy)};
-
   static constexpr std::array<uint8_t, 4> kPayload = {0xA1, 0xB2, 0xC3, 0xD2};
 
-  // Fragment 1: ACL Header + L2CAP B-Frame Header + (no payload)
-  PW_LOG_INFO("Sending frag 1: ACL + L2CAP header");
-  SendL2capBFrame(proxy, kHandle, {}, kPayload.size(), kLocalCid);
+  {
+    pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/1024,
+                                               /*kMetaSizeBytes=*/2 * 1024>
+        rx_allocator{};
+    BasicL2capChannel channel = GetL2capChannel(proxy, &rx_allocator);
 
-  channel.reset();
+    // Fragment 1: ACL Header + L2CAP B-Frame Header + (no payload)
+    PW_LOG_INFO("Sending frag 1: ACL + L2CAP header");
+
+    SendL2capBFrame(proxy, kHandle, {}, kPayload.size(), kLocalCid);
+
+    // Dtor of channel and allocator.
+  }
 
   // Fragment 2: ACL Header + Payload frag 2
   PW_LOG_INFO("Sending frag 2: ACL(CONT) + payload2");
+  // Since channel was destroyed before this, channel allocator's memory should
+  // not be accessed (msan will verify).
   SendAclContinuingFrag(proxy, kHandle, kPayload);
 
+  // Since channel was destroyed before 2nd fragment was sent, PDU should have
+  // been dropped.
   EXPECT_EQ(packets_sent_to_host_, 0);
   ExpectPayloadsFromController({});
 

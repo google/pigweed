@@ -467,8 +467,11 @@ L2capCoc ProxyHostTest::BuildCoc(ProxyHost& proxy, CocParameters params) {
 
 Result<BasicL2capChannel> ProxyHostTest::BuildBasicL2capChannelWithResult(
     ProxyHost& proxy, BasicL2capParameters params) {
+  multibuf::MultiBufAllocator* rx_multibuf_allocator =
+      params.rx_multibuf_allocator ? params.rx_multibuf_allocator
+                                   : &sut_multibuf_allocator_;
   return proxy.AcquireBasicL2capChannel(
-      sut_multibuf_allocator_,
+      *rx_multibuf_allocator,
       params.handle,
       params.local_cid,
       params.remote_cid,

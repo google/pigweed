@@ -532,9 +532,9 @@ AclDataChannel::AclConnection* AclDataChannel::FindAclConnection(
 namespace {
 
 std::optional<LockedL2capChannel> GetLockedChannel(
-    const Direction direction,
-    const uint16_t handle,
-    const uint16_t l2cap_channel_id,
+    Direction direction,
+    uint16_t handle,
+    uint16_t l2cap_channel_id,
     L2capChannelManager& manager) {
   std::optional<LockedL2capChannel> channel;
 
@@ -591,11 +591,19 @@ bool AclDataChannel::HandleAclData(Direction direction,
   bool is_first = false;
   bool is_fragment = false;
 
-  // This is set once we have a complete PDU.
-  pw::span<uint8_t> full_l2cap_pdu;
-  // This is only set if we have recombined.
+  // Set once we know CID from the first packet or from recombiner.
+  uint16_t local_cid;
+
+  // This is set once we have a complete PDU, if we still have a channel.
+  std::optional<pw::span<uint8_t>> full_l2cap_pdu;
+  // This is set once we have a complete PDU, if we have recombined and still
+  // have a channel.
   std::optional<multibuf::MultiBuf> recombined_mbuf;
   {
+    // Connection_mutex_ is expected to be acquired before/outside
+    // channels_mutex_.
+    // TODO: https://pwbug.dev/404344433 - Look at how we can ensure this with
+    // thread safety analysis.
     std::lock_guard lock(connection_mutex_);
     AclConnection* connection = FindAclConnection(handle);
     if (!connection) {
@@ -624,6 +632,8 @@ bool AclDataChannel::HandleAclData(Direction direction,
           return kUnhandled;
         }
 
+        local_cid = recombiner.local_cid();
+
         is_fragment = true;
         break;
       }
@@ -640,7 +650,15 @@ bool AclDataChannel::HandleAclData(Direction direction,
               "PDU and handling this first packet normally.",
               DirectionToString(direction),
               handle);
-          recombiner.EndRecombination();
+
+          // Note this conditionally acquires channels_mutex_ which, if nested,
+          // is expected to be acquired after/inside connection_mutex_.
+          std::optional<LockedL2capChannel> channel =
+              GetLockedChannel(direction,
+                               handle,
+                               recombiner.local_cid(),
+                               l2cap_channel_manager_);
+          recombiner.EndRecombination(channel);
         }
 
         // Currently, we require the full L2CAP header: We need the pdu_length
@@ -660,12 +678,13 @@ bool AclDataChannel::HandleAclData(Direction direction,
           return kUnhandled;
         }
 
+        local_cid = l2cap_header.channel_id().Read();
+
         // Is this a channel we care about?
-        std::optional<LockedL2capChannel> channel =
-            GetLockedChannel(direction,
-                             handle,
-                             l2cap_header.channel_id().Read(),
-                             l2cap_channel_manager_);
+        // Note this conditionally acquires channels_mutex_ which, if nested,
+        // is expected to be acquired after/inside connection_mutex_.
+        std::optional<LockedL2capChannel> channel = GetLockedChannel(
+            direction, handle, local_cid, l2cap_channel_manager_);
         if (!channel.has_value()) {
           return kUnhandled;
         }
@@ -678,9 +697,11 @@ bool AclDataChannel::HandleAclData(Direction direction,
 
         if (l2cap_frame_length < acl_payload_size) {
           PW_LOG_ERROR(
-              "ACL packet %s on connection %#x has payload (%u bytes) larger "
-              "than specified L2CAP PDU size (%u bytes). Dropping.",
+              "ACL packet %s for channel %#x on connection %#x has payload "
+              "(%u bytes) larger than specified L2CAP PDU size (%u bytes). "
+              "Dropping.",
               DirectionToString(direction),
+              channel->channel().local_cid(),
               handle,
               acl_payload_size,
               l2cap_frame_length);
@@ -694,23 +715,8 @@ bool AclDataChannel::HandleAclData(Direction direction,
           is_fragment = true;
 
           // Start recombination
-          // Note: this allocator pointer is only valid as long as channel is
-          // registered with L2capChannelManager. So we hold the
-          // LockedL2capChannel channel to ensure it stays valid for duration of
-          // its use.
-          auto* multibuf_allocator = channel->channel().rx_multibuf_allocator();
-          if (!multibuf_allocator) {
-            PW_LOG_ERROR(
-                "Cannot start recombination for L2capChannel %#x: "
-                "no channel rx allocator. Passing on.",
-                channel->channel().local_cid());
-            return kUnhandled;
-          }
-
           pw::Status status =
-              recombiner.StartRecombination(channel->channel().local_cid(),
-                                            *multibuf_allocator,
-                                            l2cap_frame_length);
+              recombiner.StartRecombination(*channel, l2cap_frame_length);
           if (!status.ok()) {
             // TODO: https://pwbug.dev/404275508 - This is an acquired channel,
             // so need to do something different than just pass on to AP.
@@ -740,7 +746,14 @@ bool AclDataChannel::HandleAclData(Direction direction,
       full_l2cap_pdu = acl_payload;
     } else {
       // Recombine this fragment
-      pw::Status recomb_status = recombiner.RecombineFragment(acl_payload);
+
+      // Note this conditionally acquires channels_mutex_ which, if nested,
+      // is expected to be acquired after/inside connection_mutex_.
+      std::optional<LockedL2capChannel> channel = GetLockedChannel(
+          direction, handle, local_cid, l2cap_channel_manager_);
+
+      pw::Status recomb_status =
+          recombiner.RecombineFragment(channel, acl_payload);
       if (!recomb_status.ok()) {
         // Given that RecombinationActive is checked above, the only way this
         // should fail is if the fragment is larger than expected, which can
@@ -749,11 +762,12 @@ bool AclDataChannel::HandleAclData(Direction direction,
         PW_DCHECK(!is_first);
 
         PW_LOG_ERROR(
-            "Received continuation packet %s on connection %#x over specified "
-            "PDU length. Dropping entire PDU.",
+            "Received continuation packet %s for channel %#x on connection "
+            "%#x over specified PDU length. Dropping entire PDU.",
             DirectionToString(direction),
+            local_cid,
             handle);
-        recombiner.EndRecombination();
+        recombiner.EndRecombination(channel);
         return kHandled;  // We own the channel; drop.
       }
 
@@ -764,22 +778,24 @@ bool AclDataChannel::HandleAclData(Direction direction,
 
       // Recombination complete!
 
-      // TODO: https://pwbug.dev/402457004 - If channel is gone we have no data,
-      // so should not be accessing multibuf here.
-      recombined_mbuf = recombiner.TakeAndEnd();
-      // TakeAndEnd returns a contiguous MultiBuf.
-      PW_CHECK(recombined_mbuf->IsContiguous());
+      if (channel.has_value()) {
+        // Store the resulting multibuf if we still have the channel. This
+        // needs to be held as long as we refer to its span in full_l2cap_pdu.
+        recombined_mbuf = recombiner.TakeAndEnd(channel);
+        // TakeAndEnd returns a contiguous MultiBuf.
+        PW_CHECK(recombined_mbuf->IsContiguous());
 
-      std::optional<ByteSpan> mbuf_span = recombined_mbuf->ContiguousSpan();
-      // Span should be present since MultiBuf is contiguous.
-      PW_CHECK(mbuf_span);
+        std::optional<ByteSpan> mbuf_span = recombined_mbuf->ContiguousSpan();
+        // Span should be present since MultiBuf is contiguous.
+        PW_CHECK(mbuf_span);
 
-      full_l2cap_pdu = pw::span(reinterpret_cast<uint8_t*>(mbuf_span->data()),
-                                mbuf_span->size());
+        full_l2cap_pdu = pw::span(reinterpret_cast<uint8_t*>(mbuf_span->data()),
+                                  mbuf_span->size());
+      }
     }
   }  // std::lock_guard lock(connection_mutex_)
 
-  // At this point we have a valid L2CAP frame in `l2cap_pdu`. It may be
+  // At this point we have recombined a valid L2CAP frame. It may be
   // from a single first ACL packet or a series of recombined ones (in which
   // case we should be handling the last continuing packet).
   PW_CHECK((is_first && !is_fragment) || (!is_first && is_fragment));
@@ -787,41 +803,39 @@ bool AclDataChannel::HandleAclData(Direction direction,
   // But note, our return value only controls the disposition of the current ACL
   // packet.
 
-  if (is_fragment) {
-    // If we recombined, then l2cap_pdu is span on recombined_mbuf. So ensure we
-    // are holding recombined_mbuf before we use l2cap_pdu below.
-    PW_CHECK(recombined_mbuf);
-
-    // TODO: https://pwbug.dev/402457004 - Also need to be holding the channel
-    // before this since recombined_mbuf is from channel's allocator.
-  }
-
-  Result<emboss::BasicL2capHeaderView> l2cap_header =
-      MakeEmbossView<emboss::BasicL2capHeaderView>(full_l2cap_pdu);
-  PW_CHECK(l2cap_header.ok());
-
+  // We need channels lock and channel to send to. Also, if recombining, we get
+  // our recombined buf from it and must hold it for as long as
+  // `recombined_mbuf` and `send_l2cap_pdu` are accessed.
   std::optional<LockedL2capChannel> channel =
-      GetLockedChannel(direction,
-                       handle,
-                       l2cap_header->channel_id().Read(),
-                       l2cap_channel_manager_);
+      GetLockedChannel(direction, handle, local_cid, l2cap_channel_manager_);
   if (!channel.has_value()) {
     // Proxy host stopped proxying this channel in another thread, either after
     // starting recombination (if this is a last fragment) or after we looked up
     // the channel above (if this is a first whole PDU). So just drop the PDU.
-    // TODO: https://pwbug.dev/401050674 - Case could be made for returning
-    // kUnhandled here for first whole PDU case. But upcoming CL will hold on to
-    // the channel for entire function so that case will be eliminated.
-    // TODO: https://pwbug.dev/392663102 - Will handle rejecting a recombined
-    // L2CAP PDU. So may want to then reject PDU here.
+    PW_LOG_INFO(
+        "Dropping PDU %s for channel %#x on connection %#x since channel was "
+        "destroyed by client since first packet was received.",
+        DirectionToString(direction),
+        local_cid,
+        handle);
     return kHandled;
   }
 
   // Pass the L2CAP PDU on to the L2capChannel
+
+  // We should have full PDU from above (either from first packet or from
+  // recombiner).
+  PW_CHECK(full_l2cap_pdu.has_value());
+  if (is_fragment) {
+    // If this is a fragment, full_l2cap_pdu is view on recombined_mbuf. So
+    // ensure we are still holding it.
+    PW_CHECK(recombined_mbuf.has_value());
+  }
+
   const bool result =
       (direction == Direction::kFromController)
-          ? channel->channel().HandlePduFromController(full_l2cap_pdu)
-          : channel->channel().HandlePduFromHost(full_l2cap_pdu);
+          ? channel->channel().HandlePduFromController(*full_l2cap_pdu)
+          : channel->channel().HandlePduFromHost(*full_l2cap_pdu);
 
   if (!result && is_fragment) {
     // Client rejected the entire PDU, but we just have the continuing packet

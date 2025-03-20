@@ -15,6 +15,7 @@
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 
 #include <mutex>
+#include <optional>
 
 #include "lib/stdcompat/utility.h"
 #include "pw_bluetooth/emboss_util.h"
@@ -522,6 +523,24 @@ bool L2capChannel::SendPayloadToClient(
   // packet should be forwarded. In the future when whole path is operating
   // with multibuf's, we could pass it back up to container to be forwarded.
   return !client_multibuf.has_value();
+}
+
+pw::Status L2capChannel::StartRecombinationBuf(Direction direction,
+                                               size_t payload_size) {
+  std::optional<multibuf::MultiBuf>& buf_optref =
+      GetRecombinationBufOptRef(direction);
+  PW_CHECK(!buf_optref.has_value());
+
+  buf_optref = rx_multibuf_allocator_->AllocateContiguous(payload_size);
+  if (!buf_optref.has_value()) {
+    return Status::ResourceExhausted();
+  }
+
+  return pw::OkStatus();
+}
+
+void L2capChannel::EndRecombinationBuf(Direction direction) {
+  GetRecombinationBufOptRef(direction) = std::nullopt;
 }
 
 }  // namespace pw::bluetooth::proxy

@@ -218,7 +218,8 @@ class AclDataChannel {
     // type based on link type.
     L2capAclUSignalingChannel aclu_signaling_channel_;
 
-    std::array<Recombiner, kNumDirections> recombination_buffers_{};
+    std::array<Recombiner, kNumDirections> recombination_buffers_{
+        Recombiner{Direction{0}}, Recombiner{Direction{1}}};
 
     Recombiner& get_recombination_buffer(Direction direction) {
       return recombination_buffers_[cpp23::to_underlying(direction)];

@@ -17,64 +17,97 @@
 #include <optional>
 
 #include "pw_assert/check.h"
+#include "pw_log/log.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
 
-pw::Status Recombiner::StartRecombination(
-    uint16_t local_cid,
-    multibuf::MultiBufAllocator& multibuf_allocator,
-    size_t size) {
+pw::Status Recombiner::StartRecombination(LockedL2capChannel& channel,
+                                          size_t size) {
   if (IsActive()) {
     return Status::FailedPrecondition();
   }
 
   is_active_ = true;
-  local_cid_ = local_cid;
+  local_cid_ = channel.channel().local_cid();
   expected_size_ = size;
   recombined_size_ = 0;
 
-  buf_ = multibuf_allocator.AllocateContiguous(size);
-  if (!buf_) {
-    return Status::ResourceExhausted();
-  }
-
-  return pw::OkStatus();
+  return channel.channel().StartRecombinationBuf(direction_, size);
 }
 
-pw::Status Recombiner::RecombineFragment(pw::span<const uint8_t> data) {
+pw::Status Recombiner::RecombineFragment(
+    std::optional<LockedL2capChannel>& channel, pw::span<const uint8_t> data) {
   if (!IsActive()) {
     return Status::FailedPrecondition();
   }
 
-  PW_CHECK(buf_.has_value());
-  PW_TRY(buf_->CopyFrom(as_bytes(data), write_offset()));
+  if (!channel.has_value()) {
+    // Channel was destroyed before recombination ended. We still
+    // need to complete recombination to read the fragments from ACL connection,
+    // but Recombiner won't be storing the data (just tracking sizes).
+
+    PW_LOG_INFO(
+        "Channel %#x that was receiving the recombined PDU %s is no longer "
+        "acquired. Will complete reading the recombined PDU, but result will "
+        "be dropped.",
+        local_cid(),
+        DirectionToString(direction_));
+
+    recombined_size_ += data.size();
+
+    return pw::OkStatus();
+  }
+
+  PW_CHECK_INT_EQ(channel->channel().local_cid(), local_cid_);
+
+  PW_CHECK(channel->channel().HasRecombinationBuf(direction_));
+
+  PW_TRY(channel->channel().CopyToRecombinationBuf(
+      direction_, as_bytes(data), write_offset()));
 
   recombined_size_ += data.size();
 
   return pw::OkStatus();
 }
 
-multibuf::MultiBuf Recombiner::TakeAndEnd() {
+multibuf::MultiBuf Recombiner::TakeAndEnd(
+    std::optional<LockedL2capChannel>& channel) {
   PW_CHECK(IsActive());
   PW_CHECK(IsComplete());
+  PW_CHECK(channel.has_value());
 
-  PW_CHECK(buf_);
-  multibuf::MultiBuf mbuf_buf = std::exchange(buf_, std::nullopt).value();
+  PW_CHECK_INT_EQ(channel->channel().local_cid(), local_cid_);
 
-  // We expect MultiBufWriter to have used `AllocateContiguous()` to create the
+  // TODO: https://pwbug.dev/402457004 - It's actually possible for old channel
+  // to be dtor'd and new channel with same id created since we started
+  // recombination. That case would trigger this CHECK. Will handle more
+  // appropriately in later CL.
+  PW_CHECK(channel->channel().HasRecombinationBuf(direction_));
+
+  multibuf::MultiBuf return_buf =
+      channel->channel().TakeRecombinationBuf(direction_);
+  // Should always be true since use `AllocateContiguous()` to create the
   // MultiBuf.
-  PW_CHECK(mbuf_buf.IsContiguous());
+  PW_CHECK(return_buf.IsContiguous());
 
-  EndRecombination();
+  EndRecombination(channel);
 
-  return mbuf_buf;
+  return return_buf;
 }
 
-void Recombiner::EndRecombination() {
+void Recombiner::EndRecombination(std::optional<LockedL2capChannel>& channel) {
   is_active_ = false;
-  buf_ = std::nullopt;
+
+  if (!channel.has_value()) {
+    // Channel and its recombination writer has already been destroyed.
+    return;
+  }
+
+  PW_CHECK_INT_EQ(channel->channel().local_cid(), local_cid_);
+
+  channel->channel().EndRecombinationBuf(direction_);
 }
 
 }  // namespace pw::bluetooth::proxy
