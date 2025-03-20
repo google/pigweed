@@ -26,6 +26,7 @@ type ExtensionData = {
 };
 
 type CipdReport = {
+  clangdPath?: string;
   bazelPath?: string;
   targetSelected?: string;
   isCompileCommandsGenerated?: boolean;
@@ -155,6 +156,13 @@ export class Root extends LitElement {
         <div>
           <span>Settings for code navigation.</span>
           <div class="container">
+            <div class="row">
+              <div>
+                <b>Clangd is available</b><br/>
+                <sub>${this.cipdReport.clangdPath || 'N/A'}</sub>
+              </div>
+              <div>${this.cipdReport.clangdPath ? '✅' : '❌'}</div>
+            </div>
             <div class="row">
               <div>
                 <b>Bazel is available</b><br/>

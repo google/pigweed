@@ -14,19 +14,32 @@
 
 import * as child_process from 'child_process';
 import * as path from 'path';
+import * as vscode from 'vscode';
 
 import { getReliableBazelExecutable } from '../bazel';
 import logger from '../logging';
 import { getPigweedProjectRoot } from '../project';
 import { settings, stringSettingFor, workingDir } from '../settings/vscode';
+import { existsSync } from 'fs';
 
-export const clangdPath = () =>
-  path.join(workingDir.get(), 'bazel-bin', 'clangd');
-
-const createClangdSymlinkTarget = ':copy_clangd' as const;
+const createClangdSymlinkTarget =
+  '@pigweed//pw_toolchain/host_clang:copy_clangd' as const;
+export const clangdPath = () => {
+  const cmd = getReliableBazelExecutable();
+  if (!cmd) return;
+  const args = ['cquery', createClangdSymlinkTarget, '--output=files'];
+  logger.info(`Running ${cmd} ${args.join(' ')}`);
+  const result = child_process.spawnSync(cmd, args, { cwd: workingDir.get() });
+  const clangPath = result.stdout.toString().trim();
+  logger.info('clangPath resolves to ' + clangPath);
+  if (existsSync(path.join(workingDir.get(), clangPath))) {
+    return path.join(workingDir.get(), clangPath);
+  }
+};
 
 /** Create the `clangd` symlink and add it to settings. */
 export async function initBazelClangdPath(): Promise<boolean> {
+  const existingClangdPath = clangdPath();
   logger.info('Ensuring presence of stable clangd symlink');
   const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
   const cmd = getReliableBazelExecutable();
@@ -56,6 +69,17 @@ export async function initBazelClangdPath(): Promise<boolean> {
     spawnedProcess.on('exit', (code) => {
       if (code === 0) {
         logger.info('Finished ensuring presence of stable clangd symlink');
+        if (!existingClangdPath) {
+          // clangd vscode extension gets stuck in a bad state if it doesn't
+          // find clangd initially and then it doesn't work until we re-open
+          // the window. This is fixed in vscode-clangd here:
+          // https://github.com/clangd/vscode-clangd/pull/749
+          // But hasn't been released in store (discussed here:
+          // https://github.com/clangd/vscode-clangd/issues/776)
+          // Until then, we will just reload the window to get vscode-clangd
+          // out of bad state.
+          vscode.commands.executeCommand('workbench.action.reloadWindow');
+        }
         resolve(true);
       } else {
         const message =

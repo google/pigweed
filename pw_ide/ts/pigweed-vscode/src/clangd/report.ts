@@ -15,9 +15,15 @@
 import { existsSync } from 'fs';
 import { getReliableBazelExecutable } from '../bazel';
 import { getTarget } from './paths';
+import { clangdPath } from './bazel';
 
 export default function getCipdReport(): Promise<any> {
   const report: any = {};
+
+  // Check if clangd is found
+  const clangdCmd = clangdPath();
+  report['clangdPath'] = clangdCmd;
+
   // Check if bazel is found
   const bazelCmd = getReliableBazelExecutable();
   report['bazelPath'] = bazelCmd;

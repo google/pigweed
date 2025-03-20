@@ -14,7 +14,7 @@
 
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { initBazelClangdPath } from './clangd/bazel';
+import { clangdPath, initBazelClangdPath } from './clangd/bazel';
 import { executeInTerminalAndGetStdout } from './terminal';
 import { patchBazeliskIntoTerminalPath } from './terminal';
 
@@ -23,6 +23,11 @@ suite('Extension Test Suite', () => {
   test('Clang init', async () => {
     const success = await initBazelClangdPath();
     assert.strictEqual(success, true);
+  });
+
+  test('Clang is from Pigweed', async () => {
+    const path = clangdPath();
+    assert.strictEqual(path!.includes('pw_toolchain/host_clang'), true);
   });
 
   test('Bazel build test', async () => {
