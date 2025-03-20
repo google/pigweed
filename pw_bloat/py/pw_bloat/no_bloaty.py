@@ -19,7 +19,8 @@ import sys
 _NO_BLOATY_ERROR: str = '''
 .. note::
 
-  The size reporting tool is not yet available on Windows systems.
+  Pigweed's size reporting tooling is not available for this platform/target
+  configuration.
 '''
 
 

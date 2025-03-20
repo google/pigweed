@@ -264,6 +264,7 @@ template("pw_size_report_aggregation") {
 #         Overrides global source_filter argument.
 #       data_sources: Optional List of datasources from bloaty config file
 #         Overrides global data_sources argument.
+#   enable_if: Only generate a size report if this condition is met.
 #
 #
 # Example:
@@ -405,7 +406,10 @@ template("pw_size_diff") {
 
     _doc_rst_output = "$target_gen_dir/${target_name}"
 
-    if (host_os == "win") {
+    _size_reports_disabled =
+        host_os == "win" || (defined(invoker.enable_if) && !invoker.enable_if)
+
+    if (_size_reports_disabled) {
       # Bloaty is not yet packaged for Windows systems; display a message
       # indicating this.
       not_needed("*")
