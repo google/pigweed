@@ -70,11 +70,11 @@ export async function setCompileCommandsTarget(
   const currentTarget = getTarget();
   const targets = await availableTargets();
   const targetNameMap = Object.fromEntries(
-    targets.map((target) => [target.name, target]),
+    targets.map((target) => [target.displayName, target]),
   );
 
   const targetEntries = targets.map((target) => ({
-    label: target.name,
+    label: target.displayName,
     iconPath: markIfActive(target === currentTarget),
   }));
 

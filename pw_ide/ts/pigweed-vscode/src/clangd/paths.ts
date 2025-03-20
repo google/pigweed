@@ -22,7 +22,7 @@ export const CDB_FILE_NAME = 'compile_commands.json' as const;
 
 export const CDB_FILE_DIR = '.compile_commands';
 
-const CDB_FILE_DIRS = [
+export const CDB_FILE_DIRS = [
   CDB_FILE_DIR,
   '.pw_ide', // The legacy pw_ide directory
 ];
@@ -50,6 +50,18 @@ export class Target {
 
   get path() {
     return path.join(this._dir, this._name, CDB_FILE_NAME);
+  }
+
+  get displayName() {
+    if (this._dir === CDB_FILE_DIRS[0]) {
+      return this._name;
+    }
+
+    // If the target is not in the canonical directory, append the directory
+    // name to distinguish it from targets with the same name in the canonical
+    // directory.
+    const dirName = path.basename(this._dir);
+    return `${this._name} (${dirName})`;
   }
 }
 
