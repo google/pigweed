@@ -122,6 +122,7 @@ export function isBootstrapProject(projectRoot: string): boolean {
 
 const WORKSPACE = 'WORKSPACE' as const;
 const BZLMOD = 'MODULE.bazel' as const;
+const BUILD = 'BUILD.bazel' as const;
 
 export function getWorkspaceFile(projectRoot: string): string {
   return path.join(projectRoot, WORKSPACE);
@@ -131,12 +132,18 @@ export function getBzlmodFile(projectRoot: string): string {
   return path.join(projectRoot, BZLMOD);
 }
 
+export function getBuildFile(projectRoot: string): string {
+  return path.join(projectRoot, BUILD);
+}
+
 /**
- * It's a Bazel project if it has a `WORKSPACE` file or bzlmod file.
+ * It's a Bazel project if it has a BUILD.bazel file
+ * along with either `WORKSPACE` file or bzlmod file.
  */
 export function isBazelProject(projectRoot: string): boolean {
   return (
-    fs.existsSync(getWorkspaceFile(projectRoot)) ||
-    fs.existsSync(getBzlmodFile(projectRoot))
+    (fs.existsSync(getWorkspaceFile(projectRoot)) ||
+      fs.existsSync(getBzlmodFile(projectRoot))) &&
+    fs.existsSync(getBuildFile(projectRoot))
   );
 }
