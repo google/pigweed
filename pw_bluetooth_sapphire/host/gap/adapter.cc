@@ -471,21 +471,11 @@ class AdapterImpl final : public Adapter {
           hci_, state_.low_energy_state.max_advertising_data_length_);
     }
 
-    constexpr pw::bluetooth::Controller::FeaturesBits feature =
-        pw::bluetooth::Controller::FeaturesBits::kAndroidVendorExtensions;
-    if (state().IsControllerFeatureSupported(feature) &&
-        state().android_vendor_capabilities.has_value()) {
-      uint8_t max_advt =
-          state()
-              .android_vendor_capabilities->max_simultaneous_advertisements();
-      bt_log(INFO,
-             "gap",
-             "controller support for extended advertising via android vendor "
-             "extensions: yes, max simultaneous advertisements: %d",
-             max_advt);
-      return std::make_unique<hci::AndroidExtendedLowEnergyAdvertiser>(
-          hci_, max_advt);
-    }
+    // TODO(b/405398246): When we enabled Android vendor extensions, we found
+    // that OOBE on smart displays and some other devices stopped working. As
+    // a stop gap measure, we disabled multiple advertising via vendor
+    // extensions. Once we work out the issues with multiple advertising via
+    // vendor extensions, we should re-enable them.
 
     return std::make_unique<hci::LegacyLowEnergyAdvertiser>(hci_);
   }
