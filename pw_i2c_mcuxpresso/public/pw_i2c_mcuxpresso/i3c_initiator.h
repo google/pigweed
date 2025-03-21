@@ -106,6 +106,17 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
   // is required before calling this method.
   pw::Status Initialize() PW_LOCKS_EXCLUDED(mutex_);
 
+  // Broadcast the i3c control command RSTDAA (Reset Dynamic Addressing).
+  // This will cause all i3c targets to drop their i3c address and revert
+  // to their uninitialized, i2c-only state.
+  //
+  // This command is useful when the i3c initiator is going to shutdown and
+  // the bus should be returned its original state.
+  //
+  // After calling this, you will need to call Initialize() again to assign
+  // i3c target dynamic addresses to communicate over i3c.
+  pw::Status ResetAddressing() PW_LOCKS_EXCLUDED(mutex_);
+
   // Set the target's maximum read length by sending an i3c SETMRL message.
   // The target i3c device must have `address` assigned as its i3c address.
   pw::Status SetMaxReadLength(pw::i2c::Address address,
@@ -149,6 +160,8 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
   // SETDASA is the i3c command "Set Dynamic Address from Static Address".
   pw::Status DoSetDasa(pw::i2c::Address static_addr)
       PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  pw::Status DoResetAddressing() PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const Config& config_;
   I3C_Type* base_;

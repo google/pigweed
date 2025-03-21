@@ -185,6 +185,28 @@ pw::Status I3cMcuxpressoInitiator::DoSetDasa(pw::i2c::Address static_addr) {
   return pw::OkStatus();
 }
 
+pw::Status I3cMcuxpressoInitiator::DoResetAddressing() {
+  if (pw::Status status = DoTransferCcc(I3cCccAction::kWrite,
+                                        I3cCcc::kRstdaaBroadcast,
+                                        kBroadcastAddress,
+                                        pw::ByteSpan());
+      !(status.ok())) {
+    if (status != pw::Status::Unavailable()) {
+      return status;
+    }
+    PW_LOG_WARN("Failed to broadcast first RSTDAA, trying again...");
+    PW_TRY(DoTransferCcc(I3cCccAction::kWrite,
+                         I3cCcc::kRstdaaBroadcast,
+                         kBroadcastAddress,
+                         pw::ByteSpan()));
+  }
+}
+
+pw::Status I3cMcuxpressoInitiator::ResetAddressing() {
+  std::lock_guard lock(mutex_);
+  return DoResetAddressing();
+}
+
 pw::Status I3cMcuxpressoInitiator::SetMaxReadLength(pw::i2c::Address address,
                                                     uint16_t max_read_length) {
   std::lock_guard lock(mutex_);
@@ -221,23 +243,8 @@ pw::Status I3cMcuxpressoInitiator::Initialize() {
   masterConfig.enableOpenDrainHigh = kI3cInitEnableOpenDrainHigh;
   I3C_MasterInit(base_, &masterConfig, CLOCK_GetI3cClkFreq());
 
-  // Broadcast RSTDAA
-  // TODO: b/312487906 - First broadcast CCC receives NANK randomly on random
-  // devices.
-  if (pw::Status status = DoTransferCcc(I3cCccAction::kWrite,
-                                        I3cCcc::kRstdaaBroadcast,
-                                        kBroadcastAddress,
-                                        pw::ByteSpan());
-      !(status.ok())) {
-    if (status != pw::Status::Unavailable()) {
-      return status;
-    }
-    PW_LOG_WARN("Failed to broadcast first CCC, trying again...");
-    PW_TRY(DoTransferCcc(I3cCccAction::kWrite,
-                         I3cCcc::kRstdaaBroadcast,
-                         kBroadcastAddress,
-                         pw::ByteSpan()));
-  }
+  DoResetAddressing();
+
   // Broadcast DISEC 0x0b
   PW_TRY(DoTransferCcc(I3cCccAction::kWrite,
                        I3cCcc::kDisecBroadcast,
