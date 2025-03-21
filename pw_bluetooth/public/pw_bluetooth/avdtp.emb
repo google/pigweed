@@ -218,8 +218,8 @@ struct GetAllCapabilitiesCommand:
   [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
-    0     [+6]       Seid             acp_seid
-    $next [+2]       UInt             rfa
+    0     [+2]       UInt             rfa
+    2     [+6]       Seid             acp_seid
 
 
 struct GetAllCapabilitiesResponse(length: UInt:32):
@@ -245,12 +245,12 @@ struct SetConfigurationCommand(length: UInt:32):
   let services_size = length-SignalingHeader.$size_in_bytes-2
   0     [+2]              SignalingHeader                   signaling_header
   $next [+1]  bits:
-    0     [+6]            Seid                              acp_seid
-    $next [+2]            UInt                              rfa
+    0     [+2]            UInt                              rfa
+    2     [+6]            Seid                              acp_seid
 
   $next [+1]  bits:
-    0     [+6]            Seid                              int_seid
-    $next [+2]            UInt                              rfa2
+    0     [+2]            UInt                              rfa2
+    2     [+6]            Seid                              int_seid
 
   $next [+services_size]  ServiceCapability(services_size)  service_capabilities
 
@@ -276,8 +276,8 @@ struct StreamStartCommand:
   [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_START]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
-    0     [+6]       Seid             acp_seid
-    $next [+2]       UInt             rfa
+    0     [+2]       UInt             rfa
+    2     [+6]       Seid             acp_seid
 
 
 struct StreamStartResponse:
@@ -291,8 +291,8 @@ struct StreamStartReject:
   [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_START]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
-    0     [+6]       Seid             acp_seid
-    $next [+2]       UInt             rfa
+    0     [+2]       UInt             rfa
+    2     [+6]       Seid             acp_seid
 
   $next [+1]         ErrorCode        error_code
 
@@ -304,8 +304,8 @@ struct CloseCommand:
   [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_CLOSE]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
-    0     [+6]       Seid             acp_seid
-    $next [+2]       UInt             rfa
+    0     [+2]       UInt             rfa
+    2     [+6]       Seid             acp_seid
 
 
 struct CloseResponse:
@@ -328,8 +328,8 @@ struct StreamSuspendCommand:
   [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SUSPEND]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
-    0     [+6]       Seid             acp_seid
-    $next [+2]       UInt             rfa
+    0     [+2]       UInt             rfa
+    2     [+6]       Seid             acp_seid
 
 
 struct StreamSuspendResponse:
@@ -343,7 +343,7 @@ struct StreamSuspendReject:
   [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SUSPEND]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
-    0     [+6]       Seid             acp_seid
-    $next [+2]       UInt             rfa
+    0     [+2]       UInt             rfa
+    2     [+6]       Seid             acp_seid
 
   $next [+1]         ErrorCode        error_code
