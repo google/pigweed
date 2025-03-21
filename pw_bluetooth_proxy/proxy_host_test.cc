@@ -3487,6 +3487,44 @@ TEST_F(AclFragTest, ChannelDtorDuringRecombinationDropsPdu) {
   VerifyNormalOperationAfterRecombination(proxy);
 }
 
+// During recombination dtor first channel, but then create new channel with
+// same cid. Verify recombination is properly dropped.
+TEST_F(AclFragTest, ChannelDtorAndNewChannelDuringRecombination) {
+  ProxyHost proxy = GetProxy();
+  static constexpr std::array<uint8_t, 4> kPayload = {0xA1, 0xB2, 0xC3, 0xD2};
+
+  {
+    pw::multibuf::test::SimpleAllocatorForTest</*kDataSizeBytes=*/1024,
+                                               /*kMetaSizeBytes=*/2 * 1024>
+        rx_allocator{};
+    BasicL2capChannel channel = GetL2capChannel(proxy, &rx_allocator);
+
+    // Fragment 1: ACL Header + L2CAP B-Frame Header + (no payload)
+    PW_LOG_INFO("Sending frag 1: ACL + L2CAP header");
+
+    SendL2capBFrame(proxy, kHandle, {}, kPayload.size(), kLocalCid);
+
+    // Dtor of channel and allocator.
+  }
+
+  // Open up L2CAP channel with same channel id on same connection.
+  BasicL2capChannel channel2 = GetL2capChannel(proxy);
+
+  // Fragment 2: ACL Header + Payload frag 2
+  PW_LOG_INFO("Sending frag 2: ACL(CONT) + payload2");
+  // Since channel1 was destroyed before this, channel1 allocator's
+  // memory should not be accessed (msan will verify).
+  SendAclContinuingFrag(proxy, kHandle, kPayload);
+
+  // Since channel1 was destroyed before 2nd fragment was sent, its PDU should
+  // have been dropped even though channel2 with same cid was created.
+  EXPECT_EQ(packets_sent_to_host_, 0);
+  ExpectPayloadsFromController({});
+
+  // Verify rx to channel2 still works.
+  VerifyNormalOperationAfterRecombination(proxy);
+}
+
 TEST_F(AclFragTest, RecombinationWorksWithSplitPayloads) {
   ProxyHost proxy = GetProxy();
   BasicL2capChannel channel = GetL2capChannel(proxy);

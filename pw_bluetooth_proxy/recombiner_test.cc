@@ -89,6 +89,7 @@ TEST_F(RecombinerTest, EndWithChannel) {
   PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
 
   EXPECT_TRUE(recombiner.IsActive());
+  EXPECT_FALSE(recombiner.IsComplete());
 
   recombiner.EndRecombination(locked_channel);
 
@@ -112,6 +113,7 @@ TEST_F(RecombinerTest, EndWithoutChannel) {
   }
 
   EXPECT_TRUE(recombiner.IsActive());
+  EXPECT_FALSE(recombiner.IsComplete());
 
   std::optional<LockedL2capChannel> null_channel = std::nullopt;
 
@@ -120,18 +122,22 @@ TEST_F(RecombinerTest, EndWithoutChannel) {
   EXPECT_FALSE(recombiner.IsActive());
 }
 
-TEST_F(RecombinerTest, WriteTakeEnd) {
+TEST_F(RecombinerTest, WriteThenTake) {
   ProxyHost proxy_{[]([[maybe_unused]] H4PacketWithHci&& packet) {},
                    []([[maybe_unused]] H4PacketWithH4&& packet) {},
                    0,
                    0};
-  Recombiner recombiner{Direction::kFromController};
+  Direction kDirection = Direction::kFromController;
+  Recombiner recombiner{kDirection};
   BasicL2capChannel channel = BuildBasicL2capChannel(proxy_, {});
   pw::sync::Mutex mutex;
   std::optional<LockedL2capChannel> locked_channel{
       LockedL2capChannel{channel, std::unique_lock(mutex)}};
 
   PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
+
+  EXPECT_TRUE(recombiner.IsActive());
+  EXPECT_FALSE(recombiner.IsComplete());
 
   static constexpr std::array<uint8_t, 8> kExpectedData = {
       0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
@@ -140,25 +146,23 @@ TEST_F(RecombinerTest, WriteTakeEnd) {
   PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
       locked_channel, to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
 
+  EXPECT_TRUE(recombiner.IsActive());
   EXPECT_FALSE(recombiner.IsComplete());
 
   // Write second chunk
   PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
       locked_channel, to_array<uint8_t>({0x55, 0x66, 0x77, 0x88})));
 
-  // Test combined result
+  // We have read all expected bytes.
   EXPECT_TRUE(recombiner.IsComplete());
-
-  multibuf::MultiBuf mbuf = recombiner.TakeAndEnd(locked_channel);
-  EXPECT_TRUE(mbuf.IsContiguous());
-
+  // We are no longer recombining.
   EXPECT_FALSE(recombiner.IsActive());
 
-  std::optional<ByteSpan> mbuf_span = mbuf.ContiguousSpan();
-  EXPECT_TRUE(mbuf_span);
+  multibuf::MultiBuf mbuf = Recombiner::TakeBuf(locked_channel, kDirection);
+  EXPECT_TRUE(mbuf.IsContiguous());
 
-  pw::span<uint8_t> span = pw::span(
-      reinterpret_cast<uint8_t*>(mbuf_span->data()), mbuf_span->size());
+  pw::span<uint8_t> span =
+      pw::span_cast<uint8_t>(mbuf.ContiguousSpan().value());
 
   EXPECT_TRUE(std::equal(
       span.begin(), span.end(), kExpectedData.begin(), kExpectedData.end()));
@@ -179,10 +183,14 @@ TEST_F(RecombinerTest, WriteCompleteWithoutChannel) {
 
     PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
 
+    EXPECT_TRUE(recombiner.IsActive());
+    EXPECT_FALSE(recombiner.IsComplete());
+
     // Write first chunk
     PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
         locked_channel, to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
 
+    EXPECT_TRUE(recombiner.IsActive());
     EXPECT_FALSE(recombiner.IsComplete());
   }
 
@@ -192,14 +200,17 @@ TEST_F(RecombinerTest, WriteCompleteWithoutChannel) {
   PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
       null_channel, to_array<uint8_t>({0x55, 0x66, 0x77, 0x88})));
 
+  // We have read all expected bytes.
   EXPECT_TRUE(recombiner.IsComplete());
+  // We are no longer recombining.
+  EXPECT_FALSE(recombiner.IsActive());
 
-  // Typically client ends recombination at this point.
   recombiner.EndRecombination(null_channel);
+
   EXPECT_FALSE(recombiner.IsActive());
 }
 
-TEST_F(RecombinerTest, CannotOverwrite) {
+TEST_F(RecombinerTest, RecombinedPduIsLargerThanSpecified) {
   ProxyHost proxy_{[]([[maybe_unused]] H4PacketWithHci&& packet) {},
                    []([[maybe_unused]] H4PacketWithH4&& packet) {},
                    0,
@@ -213,10 +224,14 @@ TEST_F(RecombinerTest, CannotOverwrite) {
 
   PW_TEST_EXPECT_OK(recombiner.StartRecombination(*locked_channel, 8u));
 
+  EXPECT_TRUE(recombiner.IsActive());
+  EXPECT_FALSE(recombiner.IsComplete());
+
   // Write first chunk
   PW_TEST_EXPECT_OK(recombiner.RecombineFragment(
       locked_channel, to_array<uint8_t>({0x11, 0x22, 0x33, 0x44})));
 
+  EXPECT_TRUE(recombiner.IsActive());
   EXPECT_FALSE(recombiner.IsComplete());
 
   // Try to write too large a second chunk.
@@ -227,9 +242,12 @@ TEST_F(RecombinerTest, CannotOverwrite) {
 
   // Should still not be complete.
   EXPECT_FALSE(recombiner.IsComplete());
+  // Still waiting for a packet of the right size.
+  EXPECT_TRUE(recombiner.IsActive());
 
   // Client ends recombination at this point.
   recombiner.EndRecombination(locked_channel);
+
   EXPECT_FALSE(recombiner.IsActive());
 }
 

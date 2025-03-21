@@ -29,12 +29,25 @@ pw::Status Recombiner::StartRecombination(LockedL2capChannel& channel,
     return Status::FailedPrecondition();
   }
 
+  pw::Status status = channel.channel().StartRecombinationBuf(direction_, size);
+
+  if (status.IsResourceExhausted()) {
+    PW_LOG_ERROR(
+        "Channel %#x can not store recombination buffer %s of size %zu.",
+        channel.channel().local_cid(),
+        status.str(),
+        size);
+    return status;
+  }
+  // We only expect OK or ResourceExhausted from StartRecombinationBuf.
+  PW_CHECK(status.ok());
+
   is_active_ = true;
   local_cid_ = channel.channel().local_cid();
   expected_size_ = size;
   recombined_size_ = 0;
 
-  return channel.channel().StartRecombinationBuf(direction_, size);
+  return pw::OkStatus();
 }
 
 pw::Status Recombiner::RecombineFragment(
@@ -43,62 +56,62 @@ pw::Status Recombiner::RecombineFragment(
     return Status::FailedPrecondition();
   }
 
-  if (!channel.has_value()) {
-    // Channel was destroyed before recombination ended. We still
-    // need to complete recombination to read the fragments from ACL connection,
-    // but Recombiner won't be storing the data (just tracking sizes).
+  if (!HasBuf(channel)) {
+    // Channel we started recombination with was destroyed. Even if we were
+    // passed a channel, if its recombination buffer is gone that indicates it
+    // is a new channel.
+    // We still need to complete recombination to read the fragments from ACL
+    // connection, but Recombiner won't be storing the data (just tracking
+    // sizes).
 
     PW_LOG_INFO(
-        "Channel %#x that was receiving the recombined PDU %s is no longer "
-        "acquired. Will complete reading the recombined PDU, but result will "
-        "be dropped.",
+        "The channel instance (local cid %#x) that was initially receiving the "
+        "recombined PDU %s is no longer acquired. Will complete reading the "
+        "recombined PDU, but result will be dropped.",
         local_cid(),
         DirectionToString(direction_));
 
-    recombined_size_ += data.size();
+  } else {
+    // We have a channel, add data to its buf.
 
-    return pw::OkStatus();
+    // Since channel was found in caller using cid, this should never be false.
+    PW_CHECK_INT_EQ(channel->channel().local_cid(), local_cid_);
+
+    PW_TRY(channel->channel().CopyToRecombinationBuf(
+        direction_, as_bytes(data), write_offset()));
   }
 
-  PW_CHECK_INT_EQ(channel->channel().local_cid(), local_cid_);
-
-  PW_CHECK(channel->channel().HasRecombinationBuf(direction_));
-
-  PW_TRY(channel->channel().CopyToRecombinationBuf(
-      direction_, as_bytes(data), write_offset()));
-
   recombined_size_ += data.size();
+
+  if (IsComplete()) {
+    // Recombination is complete so we are no longer active (no longer
+    // recombining). Note buf is left in channel to be taken later in static
+    // TakeBuf
+    is_active_ = false;
+  }
 
   return pw::OkStatus();
 }
 
-multibuf::MultiBuf Recombiner::TakeAndEnd(
-    std::optional<LockedL2capChannel>& channel) {
-  PW_CHECK(IsActive());
-  PW_CHECK(IsComplete());
+// static
+multibuf::MultiBuf Recombiner::TakeBuf(
+    std::optional<LockedL2capChannel>& channel, Direction direction) {
   PW_CHECK(channel.has_value());
-
-  PW_CHECK_INT_EQ(channel->channel().local_cid(), local_cid_);
-
-  // TODO: https://pwbug.dev/402457004 - It's actually possible for old channel
-  // to be dtor'd and new channel with same id created since we started
-  // recombination. That case would trigger this CHECK. Will handle more
-  // appropriately in later CL.
-  PW_CHECK(channel->channel().HasRecombinationBuf(direction_));
+  PW_CHECK(channel->channel().HasRecombinationBuf(direction));
 
   multibuf::MultiBuf return_buf =
-      channel->channel().TakeRecombinationBuf(direction_);
-  // Should always be true since use `AllocateContiguous()` to create the
+      channel->channel().TakeRecombinationBuf(direction);
+  // Should always be true since we used `AllocateContiguous()` to create the
   // MultiBuf.
   PW_CHECK(return_buf.IsContiguous());
-
-  EndRecombination(channel);
 
   return return_buf;
 }
 
 void Recombiner::EndRecombination(std::optional<LockedL2capChannel>& channel) {
   is_active_ = false;
+  expected_size_ = 0;
+  recombined_size_ = 0;
 
   if (!channel.has_value()) {
     // Channel and its recombination writer has already been destroyed.

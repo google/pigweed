@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_proxy/internal/acl_data_channel.h"
 
+#include <cstdint>
 #include <mutex>
 #include <optional>
 
@@ -25,6 +26,7 @@
 #include "pw_bluetooth_proxy/internal/recombiner.h"
 #include "pw_containers/algorithm.h"  // IWYU pragma: keep
 #include "pw_log/log.h"
+#include "pw_span/cast.h"
 #include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
@@ -594,11 +596,11 @@ bool AclDataChannel::HandleAclData(Direction direction,
   // Set once we know CID from the first packet or from recombiner.
   uint16_t local_cid;
 
-  // This is set once we have a complete PDU, if we still have a channel.
-  std::optional<pw::span<uint8_t>> full_l2cap_pdu;
-  // This is set once we have a complete PDU, if we have recombined and still
-  // have a channel.
-  std::optional<multibuf::MultiBuf> recombined_mbuf;
+  // TODO: https://pwbug.dev/392665312 - make this <const uint8_t>
+  const pw::span<uint8_t> acl_payload{
+      acl.payload().BackingStorage().data(),
+      acl.payload().BackingStorage().SizeInBytes()};
+
   {
     // Connection_mutex_ is expected to be acquired before/outside
     // channels_mutex_.
@@ -610,11 +612,6 @@ bool AclDataChannel::HandleAclData(Direction direction,
       return kUnhandled;
     }
     Recombiner& recombiner = connection->GetRecombiner(direction);
-
-    // TODO: https://pwbug.dev/392665312 - make this <const uint8_t>
-    const pw::span<uint8_t> acl_payload{
-        acl.payload().BackingStorage().data(),
-        acl.payload().BackingStorage().SizeInBytes()};
 
     // Is this a fragment?
     const emboss::AclDataPacketBoundaryFlag boundary_flag =
@@ -741,10 +738,7 @@ bool AclDataChannel::HandleAclData(Direction direction,
       }
     }
 
-    if (!is_fragment) {
-      // Not a fragment; the complete payload is the payload of this ACL frame.
-      full_l2cap_pdu = acl_payload;
-    } else {
+    if (is_fragment) {
       // Recombine this fragment
 
       // Note this conditionally acquires channels_mutex_ which, if nested,
@@ -777,22 +771,10 @@ bool AclDataChannel::HandleAclData(Direction direction,
       }
 
       // Recombination complete!
+      // We will collect the recombination buffer from the channel below
+      // (outside the connection mutex).
 
-      if (channel.has_value()) {
-        // Store the resulting multibuf if we still have the channel. This
-        // needs to be held as long as we refer to its span in full_l2cap_pdu.
-        recombined_mbuf = recombiner.TakeAndEnd(channel);
-        // TakeAndEnd returns a contiguous MultiBuf.
-        PW_CHECK(recombined_mbuf->IsContiguous());
-
-        std::optional<ByteSpan> mbuf_span = recombined_mbuf->ContiguousSpan();
-        // Span should be present since MultiBuf is contiguous.
-        PW_CHECK(mbuf_span);
-
-        full_l2cap_pdu = pw::span(reinterpret_cast<uint8_t*>(mbuf_span->data()),
-                                  mbuf_span->size());
-      }
-    }
+    }  // is_fragment
   }  // std::lock_guard lock(connection_mutex_)
 
   // At this point we have recombined a valid L2CAP frame. It may be
@@ -808,36 +790,80 @@ bool AclDataChannel::HandleAclData(Direction direction,
   // `recombined_mbuf` and `send_l2cap_pdu` are accessed.
   std::optional<LockedL2capChannel> channel =
       GetLockedChannel(direction, handle, local_cid, l2cap_channel_manager_);
+
+  // If recombining, will be set with the recombined PDU. And must be held
+  // as long as `send_l2cap_pdu` is accessed.
+  std::optional<multibuf::MultiBuf> recombined_mbuf;
+
+  // PDU we will actually send (will be set from first packet or from
+  // recombination).
+  pw::span<uint8_t> send_l2cap_pdu;
+
   if (!channel.has_value()) {
-    // Proxy host stopped proxying this channel in another thread, either after
-    // starting recombination (if this is a last fragment) or after we looked up
-    // the channel above (if this is a first whole PDU). So just drop the PDU.
+    // We don't have the channel anymore.  This indicates that the
+    // channel instance that recombination was started with has since been
+    // destroyed. So "drop" the PDU and handle the packet.
     PW_LOG_INFO(
-        "Dropping PDU %s for channel %#x on connection %#x since channel was "
-        "destroyed by client since first packet was received.",
+        "Dropping first PDU %s original intended for channel %#x on connection "
+        "%#x since channel instance was destroyed by client since first packet "
+        "was received.",
         DirectionToString(direction),
         local_cid,
         handle);
+    // TODO: https://pwbug.dev/402454277 - We might want to consider passing
+    // kUnhandled for "signaling" channels, but since we don't have the channel
+    // here we have no way to determine the channel type. Once we have shared
+    // channel refs we should revisit.
     return kHandled;
   }
 
-  // Pass the L2CAP PDU on to the L2capChannel
+  if (is_first) {
+    // We have whole PDU in first packet.
+    send_l2cap_pdu = acl_payload;
+  } else {
+    // We are a fragment, so we need to collect the recombined PDU from the
+    // channel.
 
-  // We should have full PDU from above (either from first packet or from
-  // recombiner).
-  PW_CHECK(full_l2cap_pdu.has_value());
-  if (is_fragment) {
-    // If this is a fragment, full_l2cap_pdu is view on recombined_mbuf. So
-    // ensure we are still holding it.
+    if (!Recombiner::HasBuf(channel, direction)) {
+      // To get here we must have a `channel`, but now we have found `channel
+      // doesn't have a recombination buf. This indicates `channel` is instance
+      // other than the one we started recombination with. So "drop" the PDU and
+      // handle the packet.
+      PW_LOG_INFO(
+          "Dropping recombined PDU %s original intended for channel %#x on "
+          "connection %#x since channel instance was destroyed by client since "
+          "first packet was received.",
+          DirectionToString(direction),
+          local_cid,
+          handle);
+      // TODO: https://pwbug.dev/392663102 - Revisit what best behavior is here
+      // when we work on support for rejecting a recombined L2CAP PDU.
+      return kHandled;
+    }
+
+    // Store the recombined multibuf.
+    recombined_mbuf = Recombiner::TakeBuf(channel, direction);
+    // We must have had IsComplete above to get here, so buf should always have
+    // a value.
     PW_CHECK(recombined_mbuf.has_value());
-  }
+    // Confirm the MultiBuf is contiguous as expected.
+    PW_CHECK(recombined_mbuf->IsContiguous());
 
+    send_l2cap_pdu =
+        pw::span_cast<uint8_t>(recombined_mbuf->ContiguousSpan().value());
+
+  }  // is_first else
+
+  // Pass the L2CAP PDU on to the L2capChannel
+  // TODO: https://pwbug.dev/403567488 - Look at sending MultiBuf here rather
+  // than span. Channels at next level will create MultiBuf to pass on their
+  // payload any.
   const bool result =
       (direction == Direction::kFromController)
-          ? channel->channel().HandlePduFromController(*full_l2cap_pdu)
-          : channel->channel().HandlePduFromHost(*full_l2cap_pdu);
+          ? channel->channel().HandlePduFromController(send_l2cap_pdu)
+          : channel->channel().HandlePduFromHost(send_l2cap_pdu);
 
-  if (!result && is_fragment) {
+  if ((result == kUnhandled) && is_fragment) {
     // Client rejected the entire PDU, but we just have the continuing packet
     // with the last fragment. So we can't just return kUnhandled that would
     // pass only this final fragment to the other side, and all preceding
@@ -850,10 +876,9 @@ bool AclDataChannel::HandleAclData(Direction direction,
     return kHandled;
   }
 
-  // Unlock channel so we can drain any channels with data queued.
-  // It's possible for a channel handling rx traffic to have queued tx traffic.
-  // So release the channel lock, then call DrainChannelQueuesIfNewTx to handle
-  // that possibility.
+  // It's possible for a channel handling rx traffic to have queued tx traffic
+  // or events. So release the channel lock, then call
+  // `DrainChannelQueuesIfNewTx` and `DeliverPendingEvents`.
   channel.reset();
   l2cap_channel_manager_.DrainChannelQueuesIfNewTx();
   l2cap_channel_manager_.DeliverPendingEvents();

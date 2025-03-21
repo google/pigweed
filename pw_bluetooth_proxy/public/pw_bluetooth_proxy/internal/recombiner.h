@@ -40,7 +40,9 @@ class Recombiner {
 
   // Starts a new recombination session.
   //
-  // Precondition: Recombination must not already be active.
+  // Precondition: `!IsActive()`
+  //
+  // Postcondition: `IsActive()`
   //
   // Returns:
   // * FAILED_PRECONDITION if recombination is already active.
@@ -50,7 +52,14 @@ class Recombiner {
 
   // Adds a fragment of data to the recombination buffer.
   //
-  // Precondition: Recombination must be active
+  // If the data completes recombination, then `IsComplete() will now be true
+  // and `IsActive()` will be false.
+  //
+  // Preconditions: `IsActive()`, `!IsComplete()`
+  //
+  // Postconditions if recombination is not completed: Same as Preconditions.
+  //
+  // Postconditions if recombination is completed: `!IsActive()`, `IsComplete()`
   //
   // Returns:
   // * FAILED_PRECONDITION if recombination is not active.
@@ -63,27 +72,50 @@ class Recombiner {
   //
   // The MultiBuf will be non-empty and contiguous.
   //
-  // Preconditions: `IsActive()` and `IsComplete()` are both true.
-  multibuf::MultiBuf TakeAndEnd(std::optional<LockedL2capChannel>& channel);
+  // Preconditions: `IsComplete()` on relevant Recombiner instance.
+  //
+  // Postconditions: `!HasBuf()`
+  //
+  // This is static method so that it can be called outside of the connection
+  // mutex. It can be called once after IsComplete is returned by the relevant
+  // Recombiner instance.
+  static multibuf::MultiBuf TakeBuf(std::optional<LockedL2capChannel>& channel,
+                                    Direction direction);
 
   // Ends recombination.
+  //
+  // Postconditions: `!IsActive()`
+  //
   // Frees the MultiBuf held in the channel (if any).
   void EndRecombination(std::optional<LockedL2capChannel>& channel);
 
-  // Returns true if recombined size matches specified size.
-  bool IsComplete() const {
-    PW_CHECK(is_active_);
+  // Returns true if channel is present and has a recombination buffer for the
+  // given direction.
+  static bool HasBuf(std::optional<LockedL2capChannel>& channel,
+                     Direction direction) {
+    return channel.has_value() &&
+           channel->channel().HasRecombinationBuf(direction);
+  }
 
+  // Returns true if channel is present and has a recombination buffer.
+  bool HasBuf(std::optional<LockedL2capChannel>& channel) const {
+    return HasBuf(channel, direction_);
+  }
+
+  // Returns true if recombined size matches specified size.
+  // Should only be called after a RecombineFragment.
+  bool IsComplete() const {
+    PW_CHECK(expected_size_ > 0);
     return recombined_size_ == expected_size_;
   }
 
-  // Returns true if recombination is active.
-  // (currently receiving and recombining fragments).
-  uint16_t IsActive() { return is_active_; }
+  // Returns true if recombination is is in progress. So we have started
+  // receiving and recombining fragments, but have not completed yet.
+  uint16_t IsActive() const { return is_active_; }
 
   // Returns local_cid of channel being recombined. Should only be called
   // when recombination is active.
-  uint16_t local_cid() {
+  uint16_t local_cid() const {
     PW_CHECK(IsActive());
     return local_cid_;
   }
