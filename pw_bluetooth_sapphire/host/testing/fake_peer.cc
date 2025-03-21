@@ -156,9 +156,11 @@ void FakePeer::WriteScanResponseReport(
           ? pw::bluetooth::emboss::LEAddressType::RANDOM
           : pw::bluetooth::emboss::LEAddressType::PUBLIC);
 
-  std::memcpy(report.data().BackingStorage().data(),
-              scan_response_.data(),
-              scan_response_.size());
+  if (scan_response_.data() != nullptr) {
+    std::memcpy(report.data().BackingStorage().data(),
+                scan_response_.data(),
+                scan_response_.size());
+  }
 
   report.rssi().Write(rssi());
 }
@@ -226,9 +228,13 @@ DynamicByteBuffer FakePeer::BuildLegacyAdvertisingReportEvent(
             : pw::bluetooth::emboss::LEAddressType::PUBLIC);
   }
   report.address().CopyFrom(address_.value().view());
-  std::memcpy(report.data().BackingStorage().data(),
-              advertising_data_.data(),
-              advertising_data_.size());
+
+  if (advertising_data_.data() != nullptr) {
+    std::memcpy(report.data().BackingStorage().data(),
+                advertising_data_.data(),
+                advertising_data_.size());
+  }
+
   report.rssi().Write(rssi());
 
   if (include_scan_rsp) {

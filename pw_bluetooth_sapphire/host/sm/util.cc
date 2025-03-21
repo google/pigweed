@@ -375,10 +375,9 @@ uint32_t Ah(const UInt128& k, uint32_t r) {
   UInt128 hash128;
   Encrypt(k, r_prime, &hash128);
 
-  return pw::bytes::ConvertOrderFrom(
-             cpp20::endian::little,
-             *reinterpret_cast<uint32_t*>(hash128.data())) &
-         k24BitMax;
+  uint32_t result = pw::bytes::ReadInOrder<uint32_t>(cpp20::endian::little,
+                                                     &hash128.data()[0]);
+  return result & k24BitMax;
 }
 
 bool IrkCanResolveRpa(const UInt128& irk, const DeviceAddress& rpa) {

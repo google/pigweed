@@ -1721,8 +1721,8 @@ void AdapterTest::GetSupportedDelayRangeHelper(
   InitializeAdapter([&](bool success) { init_success = success; });
   ASSERT_TRUE(init_success);
 
-  pw::Status cb_status = static_cast<pw::Status::Code>(
-      200);  // Error code that should never be returned
+  // Error code that should never be returned
+  pw::Status cb_status = static_cast<pw::Status::Code>(PW_STATUS_LAST + 1);
   uint32_t min_delay_us = -1;
   uint32_t max_delay_us = -1;
   Adapter::GetSupportedDelayRangeCallback cb =

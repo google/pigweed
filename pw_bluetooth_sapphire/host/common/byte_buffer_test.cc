@@ -194,6 +194,17 @@ TEST(ByteBufferTest, DynamicByteBufferExpand) {
   EXPECT_EQ(buffer.view(0, data.size()).ToString(), data);
 }
 
+TEST(ByteBufferTest, DynamicByteBufferExpandUninitialized) {
+  DynamicByteBuffer buffer;
+  ASSERT_EQ(0u, buffer.size());
+  ASSERT_EQ(nullptr, buffer.data());
+
+  size_t new_size = 8;
+  ASSERT_TRUE(buffer.expand(new_size));
+  ASSERT_EQ(new_size, buffer.size());
+  ASSERT_NE(nullptr, buffer.data());
+}
+
 TEST(ByteBufferTest, ByteBufferToStringAsHex) {
   StaticByteBuffer bytes(0x01, 0x02, 0x03);
   std::string bytesStringAsHex = bytes.ToString(/*as_hex*/ true);

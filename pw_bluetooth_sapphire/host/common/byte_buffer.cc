@@ -225,7 +225,7 @@ uint8_t* DynamicByteBuffer::mutable_data() { return buffer_.get(); }
 size_t DynamicByteBuffer::size() const { return buffer_size_; }
 
 void DynamicByteBuffer::Fill(uint8_t value) {
-  memset(buffer_.get(), value, buffer_size_);
+  std::memset(buffer_.get(), value, buffer_size_);
 }
 
 bool DynamicByteBuffer::expand(size_t new_buffer_size) {
@@ -241,10 +241,15 @@ bool DynamicByteBuffer::expand(size_t new_buffer_size) {
 
   std::unique_ptr<uint8_t[]> new_buffer =
       std::make_unique<uint8_t[]>(new_buffer_size);
-  memcpy(new_buffer.get(), buffer_.get(), buffer_size_);
+
+  // Handle the case where the default constructor was used and no actual buffer
+  // data was initialized.
+  if (buffer_ != nullptr) {
+    std::memcpy(new_buffer.get(), buffer_.get(), buffer_size_);
+  }
+
   buffer_.swap(new_buffer);
   buffer_size_ = new_buffer_size;
-
   return true;
 }
 
