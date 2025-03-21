@@ -12,8 +12,10 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_toolchain/cc/current_toolchain:conditions.bzl", "if_compiler_is_clang")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
@@ -37,6 +39,32 @@ pw_cc_test(
     srcs = [
         "logf_test.cc",
     ],
+)
+
+cc_library(
+    name = "noop_io",
+    srcs = [
+        "noop_io.cc",
+    ],
+    target_compatible_with = if_compiler_is_clang(
+        [],
+        otherwise = ["@platforms//:incompatible"],
+    ),
+    deps = ["//pw_preprocessor"],
+    alwayslink = True,
+)
+
+cc_library(
+    name = "errno",
+    srcs = [
+        "errno.cc",
+    ],
+    target_compatible_with = if_compiler_is_clang(
+        [],
+        otherwise = ["@platforms//:incompatible"],
+    ),
+    deps = ["//pw_preprocessor"],
+    alwayslink = True,
 )
 
 sphinx_docs_library(

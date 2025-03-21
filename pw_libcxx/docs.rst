@@ -6,7 +6,6 @@ pw_libcxx
 .. pigweed-module::
    :name: pw_libcxx
 
-The ``pw_libcxx`` module provides libcxx symbols, and will eventually facilitate
-pulling in headers as well. Currently, none of the library is built from
-upstream LLVM libcxx, instead the symbols provided should just crash in
-an embedded context.
+The ``pw_libcxx`` module provides symbols that would normally be provided by the
+`libc++abi` library, and will eventually facilitate pulling in headers as well.
+Currently, a basic implementation is provided on top of llvm-libc.

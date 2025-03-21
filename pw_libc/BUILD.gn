@@ -205,6 +205,14 @@ if (dir_pw_third_party_llvm_libc != "") {
   }
 }
 
+pw_static_library("noop_io") {
+  sources = [ "noop_io.cc" ]
+}
+
+pw_static_library("errno") {
+  sources = [ "errno.cc" ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
