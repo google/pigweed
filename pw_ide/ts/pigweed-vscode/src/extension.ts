@@ -74,6 +74,7 @@ import { commandRegisterer, VscCommandCallback } from './utils';
 import { shouldSupportGn } from './gn';
 import { shouldSupportCmake } from './cmake';
 import { processCompDbs } from './clangd/parser';
+import { saveUnprocessedMapping } from './clangd/unprocessedMapping';
 
 interface CommandEntry {
   name: string;
@@ -214,8 +215,16 @@ async function registerCommands(
       name: 'pigweed.refresh-compile-commands',
       callback: async () => {
         if (useGn || useCmake) {
-          const { processedCompDbs } = await processCompDbs();
-          await processedCompDbs.writeAll();
+          const { processedCompDbs, unprocessedCompDbs } =
+            await processCompDbs();
+
+          const writePromises = [processedCompDbs.writeAll()];
+
+          if (unprocessedCompDbs.length > 0) {
+            writePromises.push(saveUnprocessedMapping(unprocessedCompDbs));
+          }
+
+          await Promise.all(writePromises);
         }
 
         if (useBazel) {

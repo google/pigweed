@@ -16,6 +16,7 @@ import * as path from 'path';
 
 import { glob } from 'glob';
 
+import { loadUnprocessedMapping } from './unprocessedMapping';
 import { settings, workingDir } from '../settings/vscode';
 
 export const CDB_FILE_NAME = 'compile_commands.json' as const;
@@ -37,19 +38,21 @@ export class Target {
 
   constructor(name: string, dir?: string) {
     this._name = name;
-    this._dir = dir ?? CDB_FILE_DIRS[0];
+    this._dir = dir ?? path.join(CDB_FILE_DIRS[0], name);
   }
 
   get name() {
     return this._name;
   }
 
+  /** Absolute path to the directory containing the compile commmands file. */
   get dir() {
     return this._dir;
   }
 
+  /** Absolute path to the compile commands file. */
   get path() {
-    return path.join(this._dir, this._name, CDB_FILE_NAME);
+    return path.join(this._dir, CDB_FILE_NAME);
   }
 
   get displayName() {
@@ -66,26 +69,35 @@ export class Target {
 }
 
 export async function availableTargets(): Promise<Target[]> {
-  return (
-    (
-      await Promise.all(
-        CDB_DIRS().map(async (cwd) =>
-          // For each compile commands dir, get the name of every sub dir in the
-          // that contains a compile commands file.
-          (await glob(`**/${CDB_FILE_NAME}`, { cwd }))
-            .map(
-              (filePath) =>
-                new Target(path.basename(path.dirname(filePath)), cwd),
-            )
-            // Filter out a catch-all database in the root compile commands dir
-            .filter((target) => target.name.trim() !== '.'),
-        ),
-      )
+  // Get targets from the standard compile commands directories.
+  const directoryTargets = (
+    await Promise.all(
+      CDB_DIRS().map(async (cwd) =>
+        // For each compile commands dir, get the name of every sub dir in the
+        // that contains a compile commands file.
+        (await glob(`**/${CDB_FILE_NAME}`, { cwd }))
+          .map((filePath) => {
+            const name = path.basename(path.dirname(filePath));
+            const dir = path.join(cwd, name);
+            return new Target(name, dir);
+          })
+          // Filter out a catch-all database in the root compile commands dir
+          .filter((target) => target.name.trim() !== '.'),
+      ),
     )
-      .flat()
-      // Ensures the targets are returned in alphabetical order by name, which
-      // is useful for UI features but annoying to handle at that level.
-      .sort((a, b) => a.name.localeCompare(b.name))
+  ).flat();
+
+  // Get targets from the unprocessed mapping file.
+  const unprocessedTargets = Object.entries(await loadUnprocessedMapping()).map(
+    ([name, filePath]) => {
+      const dir = path.dirname(path.join(workingDir.get(), filePath));
+      return new Target(name, dir);
+    },
+  );
+
+  // Combine all targets and sort them alphabetically for UI simplicity.
+  return [...directoryTargets, ...unprocessedTargets].sort((a, b) =>
+    a.name.localeCompare(b.name),
   );
 }
 

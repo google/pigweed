@@ -47,7 +47,7 @@ export async function setTargetWithClangd(
   Promise.all([
     updatePath(clangdPath()),
     updateArgs([
-      `--compile-commands-dir=${path.dirname(target.path)}`,
+      `--compile-commands-dir=${target.dir}`,
       '--query-driver=**',
       '--header-insertion=never',
       '--background-index',
