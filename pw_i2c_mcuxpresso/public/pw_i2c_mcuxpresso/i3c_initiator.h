@@ -70,7 +70,9 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
   pw::Status DoTransferCcc(I3cCccAction rnw,
                            I3cCcc ccc_id,
                            pw::i2c::Address address,
-                           pw::ByteSpan buffer);
+                           pw::ByteSpan buffer)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
   pw::Status DoTransferFor(span<const Message> messages,
                            chrono::SystemClock::duration timeout)
       PW_LOCKS_EXCLUDED(mutex_);

@@ -229,7 +229,7 @@ pw::Status I3cMcuxpressoInitiator::DoTransferCcc(I3cCccAction rnw,
     transfer.busType = kI3C_TypeI3CSdr;
     status = I3C_MasterTransferBlocking(base_, &transfer);
   } else {  // direct
-    transfer.flags = kI3C_TransferDefaultFlag;
+    transfer.flags = kI3C_TransferNoStopFlag;
     transfer.slaveAddress = kBroadcastAddressRaw;
     transfer.direction = kI3C_Write;
     transfer.subaddress = static_cast<uint32_t>(ccc_id);
