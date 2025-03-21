@@ -52,18 +52,58 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
   // Deinitializes the I3C controller peripheral.
   void Disable() PW_LOCKS_EXCLUDED(mutex_);
 
-  // Set dynamic address list, which will be used to assign dynamic addresses to
-  // I3C devices on the bus during bus initialization step, or to determine the
-  // type (I2C or I3C) for each transaction.
+  // Set dynamic address list that will be used to assign dynamic addresses to
+  // I3C devices on the bus during bus initialization step.
   //
-  // Warning: dynamic address list can only be set once.
+  // Subsequent transfers using this initiator to these addresses will
+  // use the i3c protocol.
+  //
+  // If this value is not set, or is an empty span, no dynamic address
+  // initialization will occur on the bus.
+  //
+  // Calling this function again will overwrite the previous list and be used
+  // if Disable(), Enable(), and Initialize() are called again.
+  pw::Status SetDynamicAddressList(
+      pw::span<const Address> dynamic_address_list);
+
+  // Set dynamic address list that will be used to assign dynamic addresses to
+  // I3C devices on the bus during bus initialization step.
+  //
+  // Subsequent transfers using this initiator to these addresses will
+  // use the i3c protocol.
+  //
+  // If this value is not set, or is an empty span, no dynamic address
+  // initialization will occur on the bus.
+  //
+  // Calling this function again will overwrite the previous list and be used
+  // if Disable(), Enable(), and Initialize() are called again.
+  [[deprecated("Use SetDynamicAddressList(span<Address>)")]]
   pw::Status SetDynamicAddressList(
       pw::span<const uint8_t> dynamic_address_list);
 
-  // Initialize the I3C bus (Dynamic address assignment)
+  // Set the static address list. All addresses on this list will be sent an
+  // i3c SETDASA command to convert their static i2c address to a dynamic i3c
+  // address during initialization. The SETDASA will be sent before any
+  // dynamic address initialization.
   //
-  // Warning: Users should set correct dynamic addresses (SetDynamicAddressList)
-  // before calling this function.
+  // Note: Subsequent transfers from this initiator to these addresses will use
+  // the i3c protocol.
+  //
+  // Note: I3C refers to all i3c addresses as "dynamic addresses", even if they
+  // are assigned based on the static i2c address of the target device using
+  // SETDASA.
+  //
+  // Calling this function again will overwrite the previous list and be used
+  // if Disable(), Enable(), and Initialize() are called again.
+  pw::Status SetStaticAddressList(pw::span<const Address> static_address_list);
+
+  // Initialize the I3C bus (Static and Dynamic address assignment)
+  //
+  // If dynamic address assignment is desired, a call to SetDynamicAddressList()
+  // is required before calling this method.
+  //
+  // If static address assignment is desired, a call to SetStaticAddressList()
+  // is required before calling this method.
   pw::Status Initialize() PW_LOCKS_EXCLUDED(mutex_);
 
  private:
@@ -93,13 +133,20 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
 
   // inclusive-language: enable
 
+  // Request that a target use its i2c static address as its i3c dynamic
+  // address.
+  // SETDASA is the i3c command "Set Dynamic Address from Static Address".
+  pw::Status DoSetDasa(pw::i2c::Address static_addr)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
   const Config& config_;
   I3C_Type* base_;
   i3c_device_info_t* device_list_ = nullptr;
   uint8_t device_count_ = 0;
   bool enabled_ PW_GUARDED_BY(mutex_) = false;
   pw::sync::Mutex mutex_;
-  std::optional<pw::Vector<uint8_t, I3C_MAX_DEVCNT>> i3c_dynamic_address_list_;
+  std::optional<pw::Vector<Address, I3C_MAX_DEVCNT>> i3c_dynamic_address_list_;
+  std::optional<pw::Vector<Address, I3C_MAX_DEVCNT>> i3c_static_address_list_;
 
   // Transfer completion status for non-blocking I3C transfer.
   sync::TimedThreadNotification callback_complete_notification_;

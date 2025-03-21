@@ -122,20 +122,15 @@ Status I3cMcuxpressoInitiator::InitiateNonBlockingTransferUntil(
 }
 
 pw::Status I3cMcuxpressoInitiator::SetDynamicAddressList(
-    pw::span<const uint8_t> dynamic_address_list) {
-  if (i3c_dynamic_address_list_.has_value()) {
-    PW_LOG_ERROR("i3c_dynamic_address_list_ can only be set once");
-    return pw::Status::AlreadyExists();
-  }
-
-  pw::Vector<uint8_t, I3C_MAX_DEVCNT> address_list_temp;
+    pw::span<const Address> dynamic_address_list) {
+  pw::Vector<Address, I3C_MAX_DEVCNT> address_list_temp;
   size_t dynamic_address_num = dynamic_address_list.size();
   if (dynamic_address_num > I3C_MAX_DEVCNT) {
     PW_LOG_WARN("Only the first %d dynamic addresses are accepted",
                 I3C_MAX_DEVCNT);
     dynamic_address_num = I3C_MAX_DEVCNT;
   }
-  address_list_temp.resize(dynamic_address_num);
+  address_list_temp.resize(dynamic_address_num, Address(0));
   std::copy(dynamic_address_list.begin(),
             dynamic_address_list.begin() + dynamic_address_num,
             address_list_temp.begin());
@@ -144,15 +139,55 @@ pw::Status I3cMcuxpressoInitiator::SetDynamicAddressList(
   return pw::OkStatus();
 }
 
+pw::Status I3cMcuxpressoInitiator::SetDynamicAddressList(
+    pw::span<const uint8_t> dynamic_address_list) {
+  pw::Vector<Address, I3C_MAX_DEVCNT> address_list_temp;
+  size_t dynamic_address_num = dynamic_address_list.size();
+  if (dynamic_address_num > I3C_MAX_DEVCNT) {
+    PW_LOG_WARN("Only the first %d dynamic addresses are accepted",
+                I3C_MAX_DEVCNT);
+    dynamic_address_num = I3C_MAX_DEVCNT;
+  }
+  address_list_temp.resize(dynamic_address_num, Address(0));
+  for (int i = 0; i < dynamic_address_num; ++i) {
+    address_list_temp[i] =
+        Address::SevenBit(static_cast<uint16_t>(dynamic_address_list[i]));
+  }
+  i3c_dynamic_address_list_.emplace(address_list_temp);
+
+  return pw::OkStatus();
+}
+
+pw::Status I3cMcuxpressoInitiator::SetStaticAddressList(
+    pw::span<const Address> static_address_list) {
+  pw::Vector<Address, I3C_MAX_DEVCNT> address_list_temp;
+  size_t static_address_num = static_address_list.size();
+  if (static_address_num > I3C_MAX_DEVCNT) {
+    PW_LOG_WARN("Only the first %d static addresses are accepted",
+                I3C_MAX_DEVCNT);
+    static_address_num = I3C_MAX_DEVCNT;
+  }
+  address_list_temp.resize(static_address_num, Address(0));
+  std::copy(static_address_list.begin(),
+            static_address_list.begin() + static_address_num,
+            address_list_temp.begin());
+  i3c_static_address_list_.emplace(address_list_temp);
+
+  return pw::OkStatus();
+}
+
+pw::Status I3cMcuxpressoInitiator::DoSetDasa(pw::i2c::Address static_addr) {
+  std::array<std::byte, 1> dasa_buffer = {
+      static_cast<std::byte>(static_addr.GetAddress() << 1)};
+  PW_LOG_INFO("  sending SETDASA 0x%02x", static_addr.GetAddress());
+  PW_TRY(DoTransferCcc(
+      I3cCccAction::kWrite, I3cCcc::kSetdasaDirect, static_addr, dasa_buffer));
+  return pw::OkStatus();
+}
+
 pw::Status I3cMcuxpressoInitiator::Initialize() {
   std::lock_guard lock(mutex_);
   i3c_master_config_t masterConfig;
-
-  if (!i3c_dynamic_address_list_.has_value() ||
-      i3c_dynamic_address_list_->empty()) {
-    PW_LOG_ERROR("Cannot initialize the bus without dynamic address");
-    return pw::Status::FailedPrecondition();
-  }
 
   // Initialize I3C master with low I3C speed to match I3C timing requirement
   // (mipi_I3C-Basic_specification_v1-1-1 section 6.2 Table 86 I3C Open Drain
@@ -187,12 +222,27 @@ pw::Status I3cMcuxpressoInitiator::Initialize() {
                        I3cCcc::kDisecBroadcast,
                        kBroadcastAddress,
                        kDisecBuffer));
-  // DAA
-  status_t hal_status = I3C_MasterProcessDAA(base_,
-                                             i3c_dynamic_address_list_->data(),
-                                             i3c_dynamic_address_list_->size());
-  if (hal_status != kStatus_Success) {
-    PW_LOG_ERROR("Failed to initialize the I3C bus...");
+
+  // SETDASA
+  if (i3c_static_address_list_.has_value()) {
+    for (const Address static_addr : *i3c_static_address_list_) {
+      DoSetDasa(static_addr);
+    }
+  }
+
+  status_t hal_status = kStatus_Success;
+  if (i3c_dynamic_address_list_.has_value() &&
+      !i3c_dynamic_address_list_->empty()) {
+    // ENTDAA
+    std::array<uint8_t, I3C_MAX_DEVCNT> address_list;
+    for (int i = 0; i < i3c_dynamic_address_list_->size(); ++i) {
+      address_list[i] = i3c_dynamic_address_list_->at(i).GetAddress();
+    }
+    hal_status =
+        I3C_MasterProcessDAA(base_, address_list.data(), address_list.size());
+    if (hal_status != kStatus_Success) {
+      PW_LOG_ERROR("Failed to initialize the I3C bus... %d", hal_status);
+    }
   }
 
   // Re-initialize I3C master with user provided speed.
@@ -332,11 +382,16 @@ pw::Result<i3c_bus_type_t> I3cMcuxpressoInitiator::ValidateAndDetermineProtocol(
     i3c_bus_type_t current_bus_type;
     if (std::find(i3c_dynamic_address_list_->begin(),
                   i3c_dynamic_address_list_->end(),
-                  messages[j].GetAddress().GetSevenBit()) ==
+                  messages[j].GetAddress()) !=
         i3c_dynamic_address_list_->end()) {
-      current_bus_type = kI3C_TypeI2C;
-    } else {
       current_bus_type = kI3C_TypeI3CSdr;
+    } else if (std::find(i3c_static_address_list_->begin(),
+                         i3c_static_address_list_->end(),
+                         messages[j].GetAddress()) !=
+               i3c_static_address_list_->end()) {
+      current_bus_type = kI3C_TypeI3CSdr;
+    } else {
+      current_bus_type = kI3C_TypeI2C;
     }
 
     if (j == 0) {

@@ -61,6 +61,15 @@ Usage
 
    I3cMcuxpressoInitiator i3c_0_initiator{kI3c0Config};
 
-   const std::array dynamic_address_list = {kDynamicAddress};
-   PW_TRY(i3c_initiator.SetDynamicAddressList(dynamic_address_list));
+   // Initialize the i3c core library. After this is called, the
+   // initiator can be used for regular i2c communication.
+   i3c_0_initiator.Enable();
+
+   // Perform an i3c bus initialization by assigning the following targets
+   // their i2c static address as their i3c dynamic address.
+   constexpr std::array<pw::i2c::Address, 2> kI3cTargets = {
+       pw::i2c::Address::SevenBit<0x23>(),
+       pw::i2c::Address::SevenBit<0x38>(),
+   };
+   i3c_initiator.SetStaticAddressList(kI3cTargets);
    PW_TRY(i3c_initiator.Initialize());
