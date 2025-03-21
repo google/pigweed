@@ -150,20 +150,39 @@ Prefer to write C++ code over C code, using ``extern "C"`` for symbols that must
 have C linkage. ``extern "C"`` functions should be defined within C++
 namespaces to simplify referring to other code.
 
-C++ functions with no parameters do not include ``void`` in the parameter list.
-C functions with no parameters must include ``void``.
+Declarations in ``.h`` files for ``extern "C"`` functions with no parameters
+must include ``void`` in their parameter lists to prevent being called with
+parameters erronesouly in C code. For consistency with the header file, use
+``(void)`` in the C++ definition also.
 
 .. code-block:: cpp
+   :caption: example.h
+
+   #include "pw_preprocessor/util.h"
+
+   PW_EXTERN_C_START
+
+   // Ensure (void) is used here for parameter-less functions.
+   int pw_ExampleOne(void);
+   int pw_ExampleTwo(void);
+
+   PW_EXTERN_C_END
+
+.. code-block:: cpp
+   :caption: example.cc
 
    namespace pw {
 
    bool ThisIsACppFunction() { return true; }
 
-   extern "C" int pw_ThisIsACFunction(void) { return -1; }
+   // Both of these example functions are C++ functions with C linkage.
+   // They can call C++ code and use C++ constructs.
+   // (void) is not technically necessary, but included for consistency.
+   extern "C" int pw_ExampleOne(void) { return -1; }
 
    extern "C" {
 
-   int pw_ThisIsAlsoACFunction(void) {
+   int pw_ExampleTwo(void) {
      return ThisIsACppFunction() ? 100 : 0;
    }
 
