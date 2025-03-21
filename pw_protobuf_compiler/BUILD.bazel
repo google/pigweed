@@ -34,8 +34,6 @@ licenses(["notice"])
 pw_cc_test(
     name = "nanopb_test",
     srcs = ["nanopb_test.cc"],
-    # TODO: https://pwbug.dev/328311416 - Fix this test.
-    tags = ["manual"],
     deps = [":pw_protobuf_compiler_nanopb_protos_nanopb"],
 )
 

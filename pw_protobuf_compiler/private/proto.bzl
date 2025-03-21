@@ -114,6 +114,10 @@ def _options_symlink_path(options_file, workspace_root, proto_source_root, impor
     return paths.join(proto_source_root, extended_path)
 
 def _proto_compiler_aspect_impl(target, ctx):
+    for excluded_target in ctx.attr._excluded_targets:
+        if excluded_target.label == target.label:
+            return PwProtoInfo(srcs = [], hdrs = [], includes = [])
+
     # List the files we will generate for this proto_library target.
     proto_info = target[ProtoInfo]
 
@@ -268,7 +272,7 @@ def _proto_compiler_aspect_impl(target, ctx):
         includes = transitive_includes,
     )]
 
-def proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
+def proto_compiler_aspect(extensions, protoc_plugin, plugin_options = [], excluded_targets = []):
     """Returns an aspect that runs the proto compiler.
 
     The aspect propagates through the deps of proto_library targets, running
@@ -285,18 +289,25 @@ def proto_compiler_aspect(extensions, protoc_plugin, plugin_options = []):
     return aspect(
         attr_aspects = ["deps"],
         attrs = {
+            "_excluded_targets": attr.label_list(
+                default = excluded_targets,
+                doc = "List of targets at which the aspect should stop propagating.",
+            ),
             "_extensions": attr.string_list(default = extensions),
             "_plugin_options": attr.string_list(
                 default = plugin_options,
+                doc = "List of options to pass to the protoc plugin.",
             ),
             "_protoc": attr.label(
                 default = Label("@com_google_protobuf//:protoc"),
                 executable = True,
+                doc = "Path to the protoc binary.",
                 cfg = "exec",
             ),
             "_protoc_plugin": attr.label(
                 default = Label(protoc_plugin),
                 executable = True,
+                doc = "Protoc plugin to invoke.",
                 cfg = "exec",
             ),
         },

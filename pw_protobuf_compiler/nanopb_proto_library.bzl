@@ -50,9 +50,10 @@ def _custom_opt_for_library_include_format():
         return "--library-include-format=#include \"%s\""
 
 _nanopb_proto_compiler_aspect = proto_compiler_aspect(
-    ["pb.h", "pb.c"],
-    Label("@nanopb//:protoc-gen-nanopb"),
-    [_custom_opt_for_library_include_format()],
+    extensions = ["pb.h", "pb.c"],
+    protoc_plugin = Label("@nanopb//:protoc-gen-nanopb"),
+    plugin_options = [_custom_opt_for_library_include_format()],
+    excluded_targets = [Label("@nanopb//:nanopb_proto"), Label("@com_google_protobuf//:descriptor_proto")],
 )
 
 _nanopb_proto_library = rule(
