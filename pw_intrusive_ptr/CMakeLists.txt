@@ -18,6 +18,7 @@ pw_add_library(pw_intrusive_ptr STATIC
   HEADERS
     public/pw_intrusive_ptr/internal/ref_counted_base.h
     public/pw_intrusive_ptr/intrusive_ptr.h
+    public/pw_intrusive_ptr/recyclable.h
     public/pw_intrusive_ptr/ref_counted.h
   PUBLIC_INCLUDES
     public

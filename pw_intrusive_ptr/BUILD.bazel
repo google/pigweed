@@ -30,6 +30,7 @@ cc_library(
     hdrs = [
         "public/pw_intrusive_ptr/internal/ref_counted_base.h",
         "public/pw_intrusive_ptr/intrusive_ptr.h",
+        "public/pw_intrusive_ptr/recyclable.h",
         "public/pw_intrusive_ptr/ref_counted.h",
     ],
     implementation_deps = ["//pw_assert:check"],
