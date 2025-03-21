@@ -13,7 +13,6 @@
 // the License.
 
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { ClangdActiveFilesCache } from './activeFilesCache';
 import { clangdPath } from './bazel';
 import { availableTargets, getTarget, baseSetTarget, Target } from './paths';
@@ -107,14 +106,6 @@ export async function setCompileCommandsTarget(
       );
     });
 }
-
-export const setCompileCommandsTargetOnSettingsChange =
-  (activeFilesCache: ClangdActiveFilesCache) =>
-  (e: vscode.ConfigurationChangeEvent) => {
-    if (e.affectsConfiguration('pigweed')) {
-      setTargetWithClangd(undefined, activeFilesCache.writeToSettings);
-    }
-  };
 
 export async function refreshCompileCommandsAndSetTarget(
   refresh: () => void,

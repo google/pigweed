@@ -35,7 +35,6 @@ import {
   initBazelClangdPath,
   refreshCompileCommandsAndSetTarget,
   setCompileCommandsTarget,
-  setCompileCommandsTargetOnSettingsChange,
 } from './clangd';
 
 import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
@@ -547,14 +546,6 @@ export async function activate(context: vscode.ExtensionContext) {
       clangdActiveFilesCache,
     );
   }
-
-  // If the current target is changed directly via a settings file change (in
-  // other words, not by running a command), detect that and do all the other
-  // stuff that the command would otherwise have done.
-  vscode.workspace.onDidChangeConfiguration(
-    setCompileCommandsTargetOnSettingsChange(clangdActiveFilesCache),
-    disposer.disposables,
-  );
 
   if (settings.enforceExtensionRecommendations()) {
     logger.info('Project is configured to enforce extension recommendations');
