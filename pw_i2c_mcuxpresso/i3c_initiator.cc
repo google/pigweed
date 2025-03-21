@@ -185,6 +185,27 @@ pw::Status I3cMcuxpressoInitiator::DoSetDasa(pw::i2c::Address static_addr) {
   return pw::OkStatus();
 }
 
+pw::Status I3cMcuxpressoInitiator::SetMaxReadLength(pw::i2c::Address address,
+                                                    uint16_t max_read_length) {
+  std::lock_guard lock(mutex_);
+  std::array<std::byte, 2> writemrl_buffer = {
+      static_cast<std::byte>(max_read_length >> 8),
+      static_cast<std::byte>(max_read_length & 0xff),
+  };
+  return DoTransferCcc(
+      I3cCccAction::kWrite, I3cCcc::kSetmrlDirect, address, writemrl_buffer);
+}
+
+pw::Result<uint16_t> I3cMcuxpressoInitiator::GetMaxReadLength(
+    pw::i2c::Address address) {
+  std::lock_guard lock(mutex_);
+  std::array<std::byte, 3> readmrl_buffer;
+  PW_TRY(DoTransferCcc(
+      I3cCccAction::kRead, I3cCcc::kGetmrlDirect, address, readmrl_buffer));
+  return static_cast<uint8_t>(readmrl_buffer[0]) << 8 |
+         static_cast<uint8_t>(readmrl_buffer[1]);
+}
+
 pw::Status I3cMcuxpressoInitiator::Initialize() {
   std::lock_guard lock(mutex_);
   i3c_master_config_t masterConfig;

@@ -106,6 +106,17 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
   // is required before calling this method.
   pw::Status Initialize() PW_LOCKS_EXCLUDED(mutex_);
 
+  // Set the target's maximum read length by sending an i3c SETMRL message.
+  // The target i3c device must have `address` assigned as its i3c address.
+  pw::Status SetMaxReadLength(pw::i2c::Address address,
+                              uint16_t max_read_length)
+      PW_LOCKS_EXCLUDED(mutex_);
+
+  // Get the target's maximum read length by sending an i3c GETMRL message.
+  // The target i3c device must have `address` assigned as its i3c address.
+  pw::Result<uint16_t> GetMaxReadLength(pw::i2c::Address address)
+      PW_LOCKS_EXCLUDED(mutex_);
+
  private:
   pw::Status DoTransferCcc(I3cCccAction rnw,
                            I3cCcc ccc_id,
