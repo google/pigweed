@@ -18,9 +18,21 @@ Interact with the Pico
       .. tab-item:: VS Code
          :sync: vsc
 
-         In **Bazel Build Targets** right-click
-         **:rp2040_console (native_binary)** (under **//apps/blinky**)
-         and then select **Run target**.
+         .. tab-set::
+
+            .. tab-item:: Pico 1 & 1W (RP2040)
+               :sync: rp2040
+
+               In **Bazel Build Targets** right-click
+               **:rp2040_console (native_binary)** (under **//apps/blinky**)
+               and then select **Run target**.
+
+            .. tab-item:: Pico 2 & 2W (RP2350)
+               :sync: rp2350
+
+               In **Bazel Build Targets** right-click
+               **:rp2350_console (native_binary)** (under **//apps/blinky**)
+               and then select **Run target**.
 
       .. tab-item:: CLI
          :sync: cli
