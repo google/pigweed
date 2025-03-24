@@ -266,6 +266,15 @@ pw_string_list_comparison_test(
     ],
 )
 
+pw_string_list_comparison_test(
+    name = "no_match_subpackage",
+    actual = glob_dirs(
+        ["test_data/glob_dirs/subpackage"],
+        allow_empty = True,
+    ),
+    expected = [],
+)
+
 pw_copy_and_patch_file_test(
     name = "patch_file_basic",
     src = "test_data/pw_copy_and_patch_file/basic.txt",
