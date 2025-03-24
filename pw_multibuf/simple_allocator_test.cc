@@ -177,20 +177,22 @@ TEST(SimpleAllocator, AllocatorReturnsAlignedChunks) {
 
 TEST(SimpleAllocator, MultipleChunksAreAllAligned) {
   alignas(kAlignment) std::array<std::byte, kArbitraryBufferSize> data_area;
-  // Use a large metadata arena so that we're not limited by its size.
-  AllocatorForTest<1024 * 1024> meta_alloc;
+  AllocatorForTest<kArbitraryMetaSize> meta_alloc;
   SimpleAllocator simple_allocator(data_area, meta_alloc, kAlignment);
   std::vector<MultiBuf> bufs_to_keep, bufs_to_free;
 
   // Keep allocating buffers until we fail, alternating betweens ones we want to
   // keep and ones we will free.
+  constexpr size_t kBufSize = 250;
+  constexpr size_t kRoundedBufSize =
+      (kBufSize + kAlignment - 1) / kAlignment * kAlignment;
   for (;;) {
-    std::optional<MultiBuf> buf = simple_allocator.Allocate(5);
+    std::optional<MultiBuf> buf = simple_allocator.Allocate(kBufSize);
     if (!buf) {
       break;
     }
     bufs_to_keep.push_back(*std::move(buf));
-    buf = simple_allocator.Allocate(5);
+    buf = simple_allocator.Allocate(kBufSize);
     if (!buf) {
       break;
     }
@@ -198,15 +200,15 @@ TEST(SimpleAllocator, MultipleChunksAreAllAligned) {
   }
 
   const size_t free_bufs = bufs_to_free.size();
-  EXPECT_GT(free_bufs, 0u);
+  EXPECT_GT(free_bufs, 1u);
 
   // Free bufs_to_free which should leave us with lots of fragmentation.
   bufs_to_free.clear();
 
-  // We should be able to allocate `free_bufs * kAlignment` because every buffer
-  // we freed should have been rounded up to the alignment.
+  // We should be able to allocate `free_bufs * kRoundedBufSize` because every
+  // buffer we freed should have been rounded up to the alignment.
   std::optional<MultiBuf> buf =
-      simple_allocator.Allocate(free_bufs * kAlignment);
+      simple_allocator.Allocate(free_bufs * kRoundedBufSize);
   EXPECT_TRUE(buf);
 
   // Check that all chunks of the returned buffer are aligned.
@@ -216,7 +218,7 @@ TEST(SimpleAllocator, MultipleChunksAreAllAligned) {
     total_size += chunk.size();
   }
 
-  EXPECT_EQ(total_size, free_bufs * kAlignment);
+  EXPECT_EQ(total_size, free_bufs * kRoundedBufSize);
 }
 
 TEST(SimpleAllocator, ContiguousChunksAreAligned) {
