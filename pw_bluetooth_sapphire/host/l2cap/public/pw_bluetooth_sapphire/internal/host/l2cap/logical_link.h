@@ -185,6 +185,10 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   std::unique_ptr<hci::ACLDataPacket> GetNextOutboundPacket() override;
   bool HasAvailablePacket() const override;
 
+  // Called by ChannelImpl::OnRxPacket() to return credits after the associated
+  // packet has been handled.
+  void SignalCreditsAvailable(ChannelId channel, uint16_t credits);
+
  private:
   friend class ChannelImpl;
 

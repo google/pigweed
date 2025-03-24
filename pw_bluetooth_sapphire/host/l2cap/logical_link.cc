@@ -552,6 +552,14 @@ void LogicalLink::SignalError() {
   }
 }
 
+void LogicalLink::SignalCreditsAvailable(ChannelId channel, uint16_t credits) {
+  if (closed_) {
+    return;
+  }
+
+  CommandHandler(signaling_channel_.get()).SendCredits(channel, credits);
+}
+
 void LogicalLink::Close() {
   PW_DCHECK(!closed_);
 

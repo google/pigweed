@@ -162,6 +162,25 @@ void FakeSignalingChannel::ServeRequest(CommandCode req_code,
   request_handlers_[req_code] = std::move(cb);
 }
 
+bool FakeSignalingChannel::SendCommandWithoutResponse(
+    CommandCode req_code, const ByteBuffer& payload) {
+  if (expected_transaction_index_ >= transactions_.size()) {
+    ADD_FAILURE() << "Received unexpected outbound command after handling "
+                  << transactions_.size();
+    return false;
+  }
+
+  Transaction& transaction = transactions_[expected_transaction_index_];
+  ::testing::ScopedTrace trace(
+      transaction.file, transaction.line, "Outbound request expected here");
+  EXPECT_EQ(transaction.request_code, req_code);
+  EXPECT_TRUE(ContainersEqual(transaction.req_payload, payload));
+  EXPECT_EQ(0u, transaction.responses.size());
+
+  ++expected_transaction_index_;
+  return (transaction.request_code == req_code);
+}
+
 FakeSignalingChannel::TransactionId FakeSignalingChannel::AddOutbound(
     const char* file,
     int line,

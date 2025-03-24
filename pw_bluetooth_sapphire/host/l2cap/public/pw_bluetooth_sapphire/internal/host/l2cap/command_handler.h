@@ -182,6 +182,9 @@ class CommandHandler {
                          DisconnectionResponder* responder)>;
   void ServeDisconnectionRequest(DisconnectionRequestCallback callback);
 
+  // L2CAP_FLOW_CONTROL_CREDIT_IND commands do not receive a response.
+  bool SendCredits(ChannelId local_cid, uint16_t credits);
+
   // |sig| must be valid for the lifetime of this object.
   // |command_failed_callback| is called if an outbound request timed out with
   // RTX or ERTX timers after retransmission (if configured). The call may come

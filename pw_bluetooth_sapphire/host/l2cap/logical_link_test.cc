@@ -398,5 +398,17 @@ TEST_F(LogicalLinkTest, OpenFixedChannelAsyncFailureNotSupported) {
   ASSERT_FALSE(channel.value().is_alive());
 }
 
+TEST_F(LogicalLinkTest, SignalCreditsAvailable) {
+  constexpr ChannelId kExpectedCid = 0x4321;
+  constexpr uint16_t kExpectedCredits = 0x3141;
+  ResetAndCreateNewLogicalLink(LinkType::kLE, false);
+
+  const auto cmd = l2cap::testing::AclFlowControlCreditInd(
+      1, kConnHandle, kExpectedCid, kExpectedCredits);
+  EXPECT_ACL_PACKET_OUT(test_device(), cmd);
+  link()->SignalCreditsAvailable(kExpectedCid, kExpectedCredits);
+  RunUntilIdle();
+}
+
 }  // namespace
 }  // namespace bt::l2cap::internal

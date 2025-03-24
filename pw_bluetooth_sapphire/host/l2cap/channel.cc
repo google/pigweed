@@ -156,9 +156,17 @@ ChannelImpl::ChannelImpl(pw::async::Dispatcher& dispatcher,
         std::make_unique<BasicModeTxEngine>(id, max_tx_sdu_size(), *this);
   } else if (std::holds_alternative<CreditBasedFlowControlMode>(info_.mode)) {
     PW_CHECK(info_.remote_initial_credits.has_value());
+
+    auto return_credits_cb = [this](uint16_t credits) {
+      if (link_.is_alive()) {
+        // |link| is expected to ignore this call if it has been closed.
+        link_->SignalCreditsAvailable(id_, credits);
+      }
+    };
+
     auto mode = std::get<CreditBasedFlowControlMode>(info_.mode);
     rx_engine_ = std::make_unique<CreditBasedFlowControlRxEngine>(
-        std::move(connection_failure_cb));
+        std::move(connection_failure_cb), std::move(return_credits_cb));
     tx_engine_ = std::make_unique<CreditBasedFlowControlTxEngine>(
         id,
         max_tx_sdu_size(),

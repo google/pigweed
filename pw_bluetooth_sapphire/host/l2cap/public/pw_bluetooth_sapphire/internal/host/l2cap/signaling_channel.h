@@ -103,6 +103,10 @@ class SignalingChannelInterface {
   // the current delegate.
   virtual void ServeRequest(CommandCode req_code, RequestDelegate cb) = 0;
 
+  // Send a command that expects no response.
+  virtual bool SendCommandWithoutResponse(CommandCode req_code,
+                                          const ByteBuffer& payload) = 0;
+
  protected:
   virtual ~SignalingChannelInterface() = default;
 };
@@ -123,6 +127,8 @@ class SignalingChannel : public SignalingChannelInterface {
                    const ByteBuffer& payload,
                    ResponseHandler cb) override;
   void ServeRequest(CommandCode req_code, RequestDelegate cb) override;
+  bool SendCommandWithoutResponse(CommandCode req_code,
+                                  const ByteBuffer& payload) override;
 
   bool is_open() const { return is_open_; }
 
@@ -188,6 +194,11 @@ class SignalingChannel : public SignalingChannelInterface {
   // kInvalidId. The caller is responsible for bookkeeping when reusing command
   // IDs to prevent collisions with pending commands.
   CommandId GetNextCommandId();
+
+  // Generate a command identifier in sequential order that is never
+  // kInvalidId, and ensures that it does not correspond to a pending command.
+  // If all possible command IDs are pending, returns std::nullopt.
+  std::optional<CommandId> GetNextAvailableCommandId();
 
  private:
   // Enqueue a response to a request with command id |id| and payload

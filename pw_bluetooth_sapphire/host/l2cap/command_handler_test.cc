@@ -421,5 +421,23 @@ TEST_F(CommandHandlerTest, RejectInvalidChannelId) {
       kDisconnectionRequest, discon_req, kLocalCId, kRemoteCId));
 }
 
+TEST_F(CommandHandlerTest, SendCredits) {
+  constexpr ChannelId kExpectedChannel = 0x1234;
+  constexpr uint16_t kExpectedCredits = 0x0142;
+  StaticByteBuffer expected_credit_payload(
+      // Channel ID
+      LowerBits(kExpectedChannel),
+      UpperBits(kExpectedChannel),
+
+      // Credits
+      LowerBits(kExpectedCredits),
+      UpperBits(kExpectedCredits));
+
+  EXPECT_OUTBOUND_REQ(
+      *fake_sig(), kLEFlowControlCredit, expected_credit_payload.view());
+  cmd_handler()->SendCredits(kExpectedChannel, kExpectedCredits);
+  RunUntilIdle();
+}
+
 }  // namespace
 }  // namespace bt::l2cap::internal

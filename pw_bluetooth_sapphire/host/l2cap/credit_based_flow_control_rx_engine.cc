@@ -23,14 +23,19 @@ constexpr auto kSduHeaderSize =
     pw::bluetooth::emboss::KFrameSduHeader::IntrinsicSizeInBytes();
 
 CreditBasedFlowControlRxEngine::CreditBasedFlowControlRxEngine(
-    FailureCallback failure_callback)
-    : failure_callback_(std::move(failure_callback)) {}
+    FailureCallback failure_callback,
+    ReturnCreditsCallback return_credits_callback)
+    : failure_callback_(std::move(failure_callback)),
+      return_credits_callback_(std::move(return_credits_callback)) {}
 
 ByteBufferPtr CreditBasedFlowControlRxEngine::ProcessPdu(PDU pdu) {
   if (!pdu.is_valid()) {
     OnFailure();
     return nullptr;
   }
+
+  // Every PDU consumes a credit.
+  ++current_sdu_credits_;
 
   size_t sdu_offset = 0;
   if (!next_sdu_) {
@@ -67,13 +72,24 @@ ByteBufferPtr CreditBasedFlowControlRxEngine::ProcessPdu(PDU pdu) {
   }
 
   valid_bytes_ = 0;
+  unacked_read_credits_.push_back(current_sdu_credits_);
+  current_sdu_credits_ = 0;
   return std::move(next_sdu_);
+}
+
+void CreditBasedFlowControlRxEngine::AcknowledgeRead() {
+  PW_CHECK(!unacked_read_credits_.empty(),
+           "Acknowledgement of non-existing read.");
+  return_credits_callback_(unacked_read_credits_.front());
+  unacked_read_credits_.pop_front();
 }
 
 void CreditBasedFlowControlRxEngine::OnFailure() {
   failure_callback_();
   valid_bytes_ = 0;
   next_sdu_ = nullptr;
+  unacked_read_credits_ = {};
+  current_sdu_credits_ = 0;
 }
 
 }  // namespace bt::l2cap::internal

@@ -96,6 +96,12 @@ DynamicByteBuffer AclLeCreditBasedConnectionRsp(
     uint16_t credits,
     LECreditBasedConnectionResult result);
 
+DynamicByteBuffer AclFlowControlCreditInd(
+    l2cap::CommandId id,
+    hci_spec::ConnectionHandle link_handle,
+    l2cap::ChannelId cid,
+    uint16_t credits);
+
 // S-Frame Packets
 
 DynamicByteBuffer AclSFrame(hci_spec::ConnectionHandle link_handle,

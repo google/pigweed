@@ -39,10 +39,14 @@ class CreditBasedFlowControlRxEngineTest : public ::testing::Test {
     return engine().ProcessPdu(ToPdu(buffer));
   }
 
+  uint64_t total_credits_returned() { return total_credits_returned_; }
+
  private:
   size_t failure_callback_count_ = 0;
-  std::unique_ptr<Engine> engine_ =
-      std::make_unique<Engine>([this] { ++failure_callback_count_; });
+  uint64_t total_credits_returned_ = 0;
+  std::unique_ptr<Engine> engine_ = std::make_unique<Engine>(
+      [this] { ++failure_callback_count_; },
+      [this](uint16_t credits) { total_credits_returned_ += credits; });
 };
 
 TEST_F(CreditBasedFlowControlRxEngineTest, SmallUnsegmentedSdu) {
@@ -60,6 +64,10 @@ TEST_F(CreditBasedFlowControlRxEngineTest, SmallUnsegmentedSdu) {
   ASSERT_TRUE(sdu);
   EXPECT_TRUE(ContainersEqual(StaticByteBuffer('t', 'e', 's', 't'), *sdu));
   EXPECT_EQ(0u, failure_callback_count());
+
+  EXPECT_EQ(0u, total_credits_returned());
+  engine().AcknowledgeRead();
+  EXPECT_EQ(1u, total_credits_returned());
 }
 
 TEST_F(CreditBasedFlowControlRxEngineTest, LargeUnsegmentedSdu) {
@@ -79,6 +87,10 @@ TEST_F(CreditBasedFlowControlRxEngineTest, LargeUnsegmentedSdu) {
   ASSERT_TRUE(sdu);
   EXPECT_TRUE(ContainersEqual(payload.view(2), *sdu));
   EXPECT_EQ(0u, failure_callback_count());
+
+  EXPECT_EQ(0u, total_credits_returned());
+  engine().AcknowledgeRead();
+  EXPECT_EQ(1u, total_credits_returned());
 }
 
 TEST_F(CreditBasedFlowControlRxEngineTest, SduSegmentedIntoManySmallPdus) {
@@ -106,6 +118,10 @@ TEST_F(CreditBasedFlowControlRxEngineTest, SduSegmentedIntoManySmallPdus) {
   ASSERT_TRUE(sdu);
   EXPECT_TRUE(ContainersEqual(expected, *sdu));
   EXPECT_EQ(0u, failure_callback_count());
+
+  EXPECT_EQ(0u, total_credits_returned());
+  engine().AcknowledgeRead();
+  EXPECT_EQ(4u, total_credits_returned());
 }
 
 TEST_F(CreditBasedFlowControlRxEngineTest, FailSduSmallerThanPayload) {

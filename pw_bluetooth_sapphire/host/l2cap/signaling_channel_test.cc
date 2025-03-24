@@ -74,6 +74,7 @@ class TestSignalingChannel : public SignalingChannel {
     switch (code) {
       case kCommandRejectCode:
       case kEchoResponse:
+      case kLEFlowControlCredit:
         return true;
     }
 
@@ -454,16 +455,19 @@ TEST_F(SignalingChannelTest, ReuseCommandIdsUntilExhausted) {
   fake_chan()->SetSendCallback(std::move(check_header_id), dispatcher());
 
   const StaticByteBuffer req_data('y', 'o', 'o', 'o', 'o', '\0');
+  const StaticByteBuffer empty_credit(0, 0, 0, 0);
 
   for (int i = 0; i < kMaxCommandId; i++) {
     EXPECT_TRUE(
         sig()->SendRequest(kEchoRequest, req_data, kTestResponseHandler));
   }
 
-  // All command IDs should be exhausted at this point, so no commands of this
+  // All command IDs should be exhausted at this point, so no commands of any
   // type should be allowed to be sent.
   EXPECT_FALSE(
       sig()->SendRequest(kEchoRequest, req_data, kTestResponseHandler));
+  EXPECT_FALSE(
+      sig()->SendCommandWithoutResponse(kLEFlowControlCredit, empty_credit));
 
   RunUntilIdle();
   EXPECT_EQ(kMaxCommandId, req_count);
@@ -831,6 +835,44 @@ TEST_F(SignalingChannelTest, DoNotRejectRemoteResponseInvalidId) {
   RunUntilIdle();
   EXPECT_FALSE(echo_cb_called);
   EXPECT_FALSE(reject_sent);
+}
+
+TEST_F(SignalingChannelTest, SendWithoutResponse) {
+  StaticByteBuffer expected(
+      // Command header (Command code, ID, length)
+      kLEFlowControlCredit,
+      1,
+      0x04,
+      0x00,
+
+      // Channel ID
+      0x12,
+      0x34,
+
+      // Credits
+      0x01,
+      0x42);
+
+  StaticByteBuffer payload(
+      // Channel ID
+      0x12,
+      0x34,
+
+      // Credits
+      0x01,
+      0x42);
+
+  bool cb_called = false;
+  auto send_cb = [&expected, &cb_called](auto packet) {
+    cb_called = true;
+    EXPECT_TRUE(ContainersEqual(expected, *packet));
+  };
+  fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
+
+  sig()->SendCommandWithoutResponse(kLEFlowControlCredit, payload);
+
+  RunUntilIdle();
+  EXPECT_TRUE(cb_called);
 }
 
 }  // namespace

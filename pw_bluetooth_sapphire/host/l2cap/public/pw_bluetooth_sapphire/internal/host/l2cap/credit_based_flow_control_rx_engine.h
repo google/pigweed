@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <deque>
+
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/rx_engine.h"
 
@@ -27,17 +29,26 @@ class CreditBasedFlowControlRxEngine final : public RxEngine {
   // callback must disconnect the channel to remain compliant with the spec.
   // See Core Spec Ver 5.4, Vol 3, Part A, Sec 3.4.3.
   using FailureCallback = fit::callback<void()>;
+  // Callback to invoke when credits should be returned to the transmitting end
+  // of the connection.
+  using ReturnCreditsCallback = fit::callback<void(uint16_t credits)>;
 
-  explicit CreditBasedFlowControlRxEngine(FailureCallback failure_callback);
+  explicit CreditBasedFlowControlRxEngine(FailureCallback failure_callback,
+                                          ReturnCreditsCallback return_credits);
   ~CreditBasedFlowControlRxEngine() override = default;
 
   ByteBufferPtr ProcessPdu(PDU pdu) override;
+  void AcknowledgeRead() override;
 
  private:
   FailureCallback failure_callback_;
+  ReturnCreditsCallback return_credits_callback_;
 
   MutableByteBufferPtr next_sdu_ = nullptr;
   size_t valid_bytes_ = 0;
+
+  std::deque<uint16_t> unacked_read_credits_ = {};
+  uint16_t current_sdu_credits_ = 0;
 
   // Call the failure callback and reset.
   void OnFailure();

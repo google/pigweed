@@ -48,6 +48,8 @@ class FakeSignalingChannel : public SignalingChannelInterface {
                    const ByteBuffer& payload,
                    ResponseHandler cb) override;
   void ServeRequest(CommandCode req_code, RequestDelegate cb) override;
+  bool SendCommandWithoutResponse(CommandCode req_code,
+                                  const ByteBuffer& payload) override;
 
   // Add an expected outbound request, which FakeSignalingChannel will respond
   // to with the contents of |responses|. The request's contents will be

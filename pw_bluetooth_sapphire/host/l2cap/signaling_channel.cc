@@ -56,34 +56,19 @@ bool SignalingChannel::SendRequest(CommandCode req_code,
                                    ResponseHandler cb) {
   PW_CHECK(cb);
 
-  // Command identifiers for pending requests are assumed to be unique across
-  // all types of requests and reused by order of least recent use. See v5.0
-  // Vol 3, Part A Section 4.
-  //
-  // Uniqueness across different command types: "Within each signaling channel a
-  // different Identifier shall be used for each successive command"
-  // Reuse order: "the Identifier may be recycled if all other Identifiers have
-  // subsequently been used"
-  const CommandId initial_id = GetNextCommandId();
-  CommandId id;
-  for (id = initial_id; IsCommandPending(id);) {
-    id = GetNextCommandId();
-
-    if (id == initial_id) {
-      bt_log(
-          WARN,
-          "l2cap",
-          "sig: all valid command IDs in use for pending requests; can't send "
-          "request %#.2x",
-          req_code);
-      return false;
-    }
+  const std::optional<CommandId> id = GetNextAvailableCommandId();
+  if (!id.has_value()) {
+    bt_log(WARN,
+           "l2cap",
+           "sig: all valid command IDs in use for pending requests; can't send "
+           "request %#.2x",
+           req_code);
+    return false;
   }
-
-  auto command_packet = BuildPacket(req_code, id, payload);
+  auto command_packet = BuildPacket(req_code, *id, payload);
 
   CommandCode response_code = req_code + 1;
-  EnqueueResponse(*command_packet, id, response_code, std::move(cb));
+  EnqueueResponse(*command_packet, *id, response_code, std::move(cb));
 
   return Send(std::move(command_packet));
 }
@@ -92,6 +77,21 @@ void SignalingChannel::ServeRequest(CommandCode req_code, RequestDelegate cb) {
   PW_CHECK(!IsSupportedResponse(req_code));
   PW_CHECK(cb);
   inbound_handlers_[req_code] = std::move(cb);
+}
+
+bool SignalingChannel::SendCommandWithoutResponse(CommandCode req_code,
+                                                  const ByteBuffer& payload) {
+  const std::optional<CommandId> id = GetNextAvailableCommandId();
+  if (!id.has_value()) {
+    bt_log(WARN,
+           "l2cap",
+           "sig: all valid command IDs in use for pending requests; can't send "
+           "request %#.2x",
+           req_code);
+    return false;
+  }
+  auto command_packet = BuildPacket(req_code, *id, payload);
+  return Send(std::move(command_packet));
 }
 
 void SignalingChannel::EnqueueResponse(const ByteBuffer& request_packet,
@@ -310,6 +310,27 @@ CommandId SignalingChannel::GetNextCommandId() {
   }
 
   return cmd;
+}
+
+std::optional<CommandId> SignalingChannel::GetNextAvailableCommandId() {
+  // Command identifiers for pending requests are assumed to be unique across
+  // all types of requests and reused by order of least recent use. See v5.0
+  // Vol 3, Part A Section 4.
+  //
+  // Uniqueness across different command types: "Within each signaling channel a
+  // different Identifier shall be used for each successive command"
+  // Reuse order: "the Identifier may be recycled if all other Identifiers have
+  // subsequently been used"
+  const CommandId initial_id = GetNextCommandId();
+  CommandId id;
+  for (id = initial_id; IsCommandPending(id);) {
+    id = GetNextCommandId();
+
+    if (id == initial_id) {
+      return std::nullopt;
+    }
+  }
+  return id;
 }
 
 void SignalingChannel::OnChannelClosed() {

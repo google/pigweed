@@ -121,6 +121,14 @@ void CommandHandler::ServeDisconnectionRequest(
   sig()->ServeRequest(kDisconnectionRequest, std::move(on_discon_req));
 }
 
+bool CommandHandler::SendCredits(ChannelId local_cid, uint16_t credits) {
+  LEFlowControlCreditParams payload = {
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, local_cid),
+      pw::bytes::ConvertOrderTo(cpp20::endian::little, credits)};
+  return sig()->SendCommandWithoutResponse(
+      kLEFlowControlCredit, BufferView(&payload, sizeof(payload)));
+}
+
 CommandHandler::CommandHandler(SignalingChannelInterface* sig,
                                fit::closure request_fail_callback)
     : sig_(sig), request_fail_callback_(std::move(request_fail_callback)) {
