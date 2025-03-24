@@ -122,7 +122,6 @@ pw_cc_test(
         "sequential_command_runner_test.cc",
     ],
     features = ["-conversion_warnings"],
-    # TODO: https://pwbug.dev/393957973 - Fix this test.
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":hci",
