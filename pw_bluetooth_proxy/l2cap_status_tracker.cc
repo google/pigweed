@@ -61,6 +61,16 @@ void L2capStatusTracker::HandleDisconnectionComplete(
   pending_disconnection_complete_ = params;
 }
 
+void L2capStatusTracker::HandleConfigurationChanged(
+    const L2capChannelConfigurationInfo& info) {
+  std::lock_guard lock(mutex_);
+  if (pending_configuration_complete_.has_value()) {
+    PW_LOG_ERROR("Configuration already pending");
+    return;
+  }
+  pending_configuration_complete_ = info;
+}
+
 void L2capStatusTracker::DeliverPendingConnectionComplete(
     const L2capChannelConnectionInfo& info) {
   bool track = false;
@@ -126,6 +136,24 @@ void L2capStatusTracker::DeliverPendingDisconnectionComplete(
   }
 }
 
+void L2capStatusTracker::DeliverPendingConfigurationComplete(
+    const L2capChannelConfigurationInfo& config_info) {
+  for (L2capStatusDelegate& delegate : delegates_) {
+    auto match =
+        [&config_info](const L2capChannelConnectionInfo& connection_info) {
+          return config_info.local_cid == connection_info.local_cid &&
+                 config_info.remote_cid == connection_info.remote_cid;
+        };
+    auto connection_it = std::find_if(connected_channel_infos_.begin(),
+                                      connected_channel_infos_.end(),
+                                      match);
+    if (connection_it == connected_channel_infos_.end()) {
+      return;
+    }
+    delegate.HandleConfigurationChanged(config_info);
+  }
+}
+
 void L2capStatusTracker::DeliverPendingEvents() {
   std::lock_guard lock(mutex_);
   if (pending_connection_complete_.has_value()) {
@@ -142,6 +170,11 @@ void L2capStatusTracker::DeliverPendingEvents() {
   if (pending_disconnection_complete_.has_value()) {
     DeliverPendingDisconnectionComplete(*pending_disconnection_complete_);
     pending_disconnection_complete_.reset();
+  }
+
+  if (pending_configuration_complete_.has_value()) {
+    DeliverPendingConfigurationComplete(*pending_configuration_complete_);
+    pending_configuration_complete_.reset();
   }
 }
 

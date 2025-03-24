@@ -101,6 +101,9 @@ class L2capChannelManager {
   // Called when a l2cap channel connection successfully made.
   void HandleConnectionComplete(const L2capChannelConnectionInfo& info);
 
+  // Called when a l2cap channel configuration is done.
+  void HandleConfigurationChanged(const L2capChannelConfigurationInfo& info);
+
   // Called when an ACL connection is disconnected.
   void HandleAclDisconnectionComplete(uint16_t connection_handle);
 

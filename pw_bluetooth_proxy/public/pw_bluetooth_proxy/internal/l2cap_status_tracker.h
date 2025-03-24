@@ -47,6 +47,9 @@ class L2capStatusTracker {
   void HandleConnectionComplete(const L2capChannelConnectionInfo& info)
       PW_LOCKS_EXCLUDED(mutex_);
 
+  void HandleConfigurationChanged(const L2capChannelConfigurationInfo& info)
+      PW_LOCKS_EXCLUDED(mutex_);
+
   void HandleAclDisconnectionComplete(uint16_t connection_handle)
       PW_LOCKS_EXCLUDED(mutex_);
 
@@ -62,6 +65,10 @@ class L2capStatusTracker {
 
  private:
   void DeliverPendingConnectionComplete(const L2capChannelConnectionInfo& info)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  void DeliverPendingConfigurationComplete(
+      const L2capChannelConfigurationInfo& info)
       PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   void DeliverPendingAclDisconnectionComplete(uint16_t connection_handle)
@@ -82,6 +89,8 @@ class L2capStatusTracker {
       connected_channel_infos_ PW_GUARDED_BY(mutex_){};
 
   std::optional<L2capChannelConnectionInfo> pending_connection_complete_
+      PW_GUARDED_BY(mutex_);
+  std::optional<L2capChannelConfigurationInfo> pending_configuration_complete_
       PW_GUARDED_BY(mutex_);
   std::optional<uint16_t> pending_acl_disconnection_complete_
       PW_GUARDED_BY(mutex_);

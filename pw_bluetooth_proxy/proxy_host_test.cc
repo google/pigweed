@@ -2947,10 +2947,176 @@ class L2capStatusTrackerTest : public ProxyHostTest,
     info.reset();
   }
 
+  void HandleConfigurationChanged(
+      const L2capChannelConfigurationInfo& i) override {
+    configuration_called++;
+    PW_CHECK(proxy_ptr);
+
+    EXPECT_EQ(config_info->direction, i.direction);
+    EXPECT_EQ(config_info->connection_handle, i.connection_handle);
+    EXPECT_EQ(config_info->local_cid, i.local_cid);
+
+    EXPECT_EQ(config_info->mtu, i.mtu);
+  }
+
   ProxyHost* proxy_ptr = nullptr;
+  uint8_t configuration_called = 0;
   std::optional<L2capChannelConnectionInfo> info;
   std::optional<BasicL2capChannel> l2cap_channel;
+  std::optional<L2capChannelConfigurationInfo> config_info;
 };
+
+// TODO(b/405201804): Add test that check MTU value in the response
+TEST_F(L2capStatusTrackerTest, L2capConfigurationMTUCalled) {
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
+  proxy_ptr = &proxy;
+
+  constexpr uint16_t kLocalCid = 30;
+  constexpr uint16_t kRemoteCid = 31;
+  constexpr uint16_t kHandle = 123;
+
+  proxy.RegisterL2capStatusDelegate(*this);
+
+  PW_TEST_EXPECT_OK(
+      SendConnectionCompleteEvent(proxy, kHandle, emboss::StatusCode::SUCCESS));
+
+  // Receive new connection req
+  PW_TEST_EXPECT_OK(SendL2capConnectionReq(proxy, kHandle, kRemoteCid, kPsm));
+  EXPECT_FALSE(info.has_value());
+
+  // Send success rsp
+  PW_TEST_EXPECT_OK(
+      SendL2capConnectionRsp(proxy,
+                             kHandle,
+                             kRemoteCid,
+                             kLocalCid,
+                             emboss::L2capConnectionRspResultCode::SUCCESSFUL));
+
+  auto l2cap_options = L2capOptions{
+      .mtu = MtuOption{1024},
+  };
+
+  // Send Configure Request
+  auto expected_sent_l2cap_configuration = L2capChannelConfigurationInfo{
+      .direction = Direction::kFromHost,
+      .connection_handle = kHandle,
+      .remote_cid = kRemoteCid,
+      .local_cid = kLocalCid,
+      .mtu = MtuOption{1024},
+  };
+  config_info.emplace(expected_sent_l2cap_configuration);
+
+  PW_TEST_EXPECT_OK(SendL2capConfigureReq(
+      proxy, Direction::kFromHost, kHandle, kRemoteCid, l2cap_options));
+
+  PW_TEST_EXPECT_OK(
+      SendL2capConfigureRsp(proxy,
+                            Direction::kFromController,
+                            kHandle,
+                            kLocalCid,
+                            emboss::L2capConfigurationResult::SUCCESS));
+  ASSERT_EQ(this->configuration_called, 1);
+
+  // Receive Configure Request
+  auto expected_recv_l2cap_configuration = L2capChannelConfigurationInfo{
+      .direction = Direction::kFromController,
+      .connection_handle = kHandle,
+      .remote_cid = kRemoteCid,
+      .local_cid = kLocalCid,
+      .mtu = MtuOption{1024},
+  };
+
+  config_info.emplace(expected_recv_l2cap_configuration);
+
+  PW_TEST_EXPECT_OK(SendL2capConfigureReq(
+      proxy, Direction::kFromController, kHandle, kLocalCid, l2cap_options));
+
+  PW_TEST_EXPECT_OK(
+      SendL2capConfigureRsp(proxy,
+                            Direction::kFromHost,
+                            kHandle,
+                            kRemoteCid,
+                            emboss::L2capConfigurationResult::SUCCESS));
+  ASSERT_EQ(this->configuration_called, 2);
+
+  proxy.UnregisterL2capStatusDelegate(*this);
+}
+
+TEST_F(L2capStatusTrackerTest, L2capConfigurationNoOption) {
+  pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
+      []([[maybe_unused]] H4PacketWithH4&& packet) {});
+
+  pw::Function<void(H4PacketWithHci && packet)> send_to_host_fn(
+      []([[maybe_unused]] H4PacketWithHci&& packet) {});
+
+  ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
+                              std::move(send_to_controller_fn),
+                              /*le_acl_credits_to_reserve=*/0,
+                              /*br_edr_acl_credits_to_reserve=*/0);
+
+  proxy_ptr = &proxy;
+
+  constexpr uint16_t kSourceCid = 30;
+  constexpr uint16_t kDestinationCid = 31;
+  constexpr uint16_t kHandle = 123;
+
+  proxy.RegisterL2capStatusDelegate(*this);
+
+  PW_TEST_EXPECT_OK(
+      SendConnectionCompleteEvent(proxy, kHandle, emboss::StatusCode::SUCCESS));
+
+  // Send new connection req
+  PW_TEST_EXPECT_OK(SendL2capConnectionReq(proxy, kHandle, kSourceCid, kPsm));
+  EXPECT_FALSE(info.has_value());
+
+  // Send success rsp
+  PW_TEST_EXPECT_OK(
+      SendL2capConnectionRsp(proxy,
+                             kHandle,
+                             kSourceCid,
+                             kDestinationCid,
+                             emboss::L2capConnectionRspResultCode::SUCCESSFUL));
+
+  // Send Configure Request
+  auto expected_l2cap_configuration = L2capChannelConfigurationInfo{
+      .direction = Direction::kFromController,
+      .connection_handle = kHandle,
+      .remote_cid = kSourceCid,
+      .local_cid = kDestinationCid,
+      .mtu = std::nullopt,
+  };
+
+  config_info.emplace(expected_l2cap_configuration);
+
+  auto l2cap_options = L2capOptions{
+      .mtu = std::nullopt,
+  };
+
+  PW_TEST_EXPECT_OK(SendL2capConfigureReq(proxy,
+                                          Direction::kFromController,
+                                          kHandle,
+                                          kDestinationCid,
+                                          l2cap_options));
+
+  PW_TEST_EXPECT_OK(
+      SendL2capConfigureRsp(proxy,
+                            Direction::kFromHost,
+                            kHandle,
+                            kSourceCid,
+                            emboss::L2capConfigurationResult::SUCCESS));
+
+  proxy.UnregisterL2capStatusDelegate(*this);
+}
 
 TEST_F(L2capStatusTrackerTest, L2capEventsCalled) {
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
@@ -3061,8 +3227,14 @@ TEST_F(ProxyHostConnectionEventTest, HciDisconnectionAlertsListeners) {
       ++disconnections_received;
     }
 
+    void HandleConfigurationChanged(
+        const L2capChannelConfigurationInfo&) override {
+      ++configuration_received;
+    }
+
     int connections_received = 0;
     int disconnections_received = 0;
+    int configuration_received = 0;
   };
 
   TestStatusDelegate test_delegate;
@@ -3079,6 +3251,11 @@ TEST_F(ProxyHostConnectionEventTest, HciDisconnectionAlertsListeners) {
   // 1
   constexpr uint16_t kStartSourceCid = 0x111;
   constexpr uint16_t kStartDestinationCid = 0x211;
+
+  auto l2cap_options = L2capOptions{
+      .mtu = MtuOption{1024},
+  };
+
   for (size_t i = 0; i < 3; ++i) {
     PW_TEST_EXPECT_OK(SendL2capConnectionReq(
         proxy, i == 1 ? Handle2 : Handle1, kStartSourceCid + i, kPsm));
@@ -3088,9 +3265,21 @@ TEST_F(ProxyHostConnectionEventTest, HciDisconnectionAlertsListeners) {
         kStartSourceCid + i,
         kStartDestinationCid + i,
         emboss::L2capConnectionRspResultCode::SUCCESSFUL));
+    PW_TEST_EXPECT_OK(SendL2capConfigureReq(proxy,
+                                            Direction::kFromController,
+                                            i == 1 ? Handle2 : Handle1,
+                                            kStartDestinationCid + i,
+                                            l2cap_options));
+    PW_TEST_EXPECT_OK(
+        SendL2capConfigureRsp(proxy,
+                              Direction::kFromHost,
+                              i == 1 ? Handle2 : Handle1,
+                              kStartSourceCid + i,
+                              emboss::L2capConfigurationResult::SUCCESS));
   }
 
   EXPECT_EQ(test_delegate.connections_received, 3);
+  EXPECT_EQ(test_delegate.configuration_received, 3);
   EXPECT_EQ(test_delegate.disconnections_received, 0);
 
   // Disconnect handle1, which should disconnect first and third channel.

@@ -23,6 +23,7 @@
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 #include "pw_bluetooth_proxy/internal/l2cap_coc_internal.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
+#include "pw_bytes/span.h"
 #include "pw_log/log.h"
 #include "pw_multibuf/allocator.h"
 #include "pw_span/cast.h"
@@ -117,6 +118,28 @@ bool L2capSignalingChannel::HandleL2capSignalingCommand(
         return false;
       }
       HandleConnectionRsp(direction, *connection_rsp_cmd);
+      return false;
+    }
+    case emboss::L2capSignalingPacketCode::CONFIGURATION_REQ: {
+      Result<emboss::L2capConfigureReqView> configure_req_cmd =
+          emboss::MakeL2capConfigureReqView(cmd.SizeInBytes(),
+                                            cmd.BackingStorage().data(),
+                                            cmd.SizeInBytes());
+      if (!configure_req_cmd.ok()) {
+        return false;
+      }
+      HandleConfigurationReq(direction, *configure_req_cmd);
+      return false;
+    }
+    case emboss::L2capSignalingPacketCode::CONFIGURATION_RSP: {
+      Result<emboss::L2capConfigureRspView> configure_rsp_cmd =
+          emboss::MakeL2capConfigureRspView(cmd.SizeInBytes(),
+                                            cmd.BackingStorage().data(),
+                                            cmd.SizeInBytes());
+      if (!configure_rsp_cmd.ok()) {
+        return false;
+      }
+      HandleConfigurationRsp(direction, *configure_rsp_cmd);
       return false;
     }
     case emboss::L2capSignalingPacketCode::DISCONNECTION_REQ: {
@@ -220,6 +243,113 @@ void L2capSignalingChannel::HandleConnectionRsp(
       // All other codes mean the connection has failed.
       pending_connections_.erase(pending_it);
       break;
+    }
+  }
+}
+
+// TODO(b/404878244): Implement Continuation flag logic
+void L2capSignalingChannel::HandleConfigurationReq(
+    Direction direction, emboss::L2capConfigureReqView cmd) {
+  std::lock_guard lock(mutex_);
+
+  std::optional<MtuOption> mtu = std::nullopt;
+
+  int64_t bytes_consumed = 0;
+  int64_t options_size = cmd.options_size().Read();
+  pw::ConstByteSpan options_payload = pw::as_bytes(
+      pw::span(cmd.options().BackingStorage().data(), options_size));
+  while (bytes_consumed < options_size) {
+    pw::ConstByteSpan remaining_bytes =
+        options_payload.subspan(bytes_consumed, options_size - bytes_consumed);
+    Result<emboss::L2capConfigurationOptionHeaderView> option_header =
+        MakeEmbossView<emboss::L2capConfigurationOptionHeaderView>(
+            remaining_bytes.data(),
+            emboss::L2capConfigurationOptionHeader::IntrinsicSizeInBytes());
+    if (!option_header.ok()) {
+      return;
+    }
+    bytes_consumed +=
+        emboss::L2capConfigurationOptionHeader::IntrinsicSizeInBytes() +
+        option_header->option_length().Read();
+
+    switch (option_header->option_type().Read()) {
+      case emboss::L2capConfigurationOptionType::MTU: {
+        Result<emboss::L2capMtuConfigurationOptionView> l2cap_option_view =
+            MakeEmbossView<emboss::L2capMtuConfigurationOptionView>(
+                remaining_bytes.data(),
+                emboss::L2capMtuConfigurationOption::IntrinsicSizeInBytes());
+        constexpr size_t mtu_length =
+            emboss::L2capMtuConfigurationOption::IntrinsicSizeInBytes() -
+            emboss::L2capConfigurationOptionHeader::IntrinsicSizeInBytes();
+        if (!l2cap_option_view->Ok() ||
+            l2cap_option_view->header().option_length().Read() != mtu_length) {
+          PW_LOG_WARN(
+              "HandleConfigurationReq: connection_handle=%d "
+              "destination_cid=%#x identifier=%d L2capMtuConfigurationOption "
+              "is "
+              "malformed, dropping the configuration options.",
+              connection_handle(),
+              cmd.destination_cid().Read(),
+              cmd.command_header().identifier().Read());
+          return;
+        }
+        mtu.emplace(MtuOption{.mtu = l2cap_option_view->mtu().Read()});
+        break;
+      }
+    }
+  }
+  uint16_t cid = cmd.destination_cid().Read();
+
+  pending_configurations_.emplace_back(PendingConfiguration{
+      .identifier = cmd.command_header().identifier().Read(),
+      .info = L2capChannelConfigurationInfo{
+          .direction = direction,
+          .connection_handle = connection_handle(),
+          .remote_cid = direction == Direction::kFromHost
+                            ? cid
+                            : static_cast<uint16_t>(0),
+          .local_cid = direction == Direction::kFromController
+                           ? cid
+                           : static_cast<uint16_t>(0),
+          .mtu = mtu,
+      }});
+}
+
+void L2capSignalingChannel::HandleConfigurationRsp(
+    Direction direction, emboss::L2capConfigureRspView cmd) {
+  std::lock_guard lock(mutex_);
+  uint32_t identifier = cmd.command_header().identifier().Read();
+  auto match = [identifier](const PendingConfiguration& pending) -> bool {
+    return identifier == pending.identifier;
+  };
+  PendingConfiguration* pending_it = std::find_if(
+      pending_configurations_.begin(), pending_configurations_.end(), match);
+  if (pending_it == pending_configurations_.end()) {
+    PW_LOG_WARN("No match found for l2cap configuration");
+    return;
+  }
+  if (direction == Direction::kFromHost) {
+    pending_it->info.remote_cid = cmd.source_cid().Read();
+  } else {
+    pending_it->info.local_cid = cmd.source_cid().Read();
+  }
+
+  // TODO(b/405201804): Check MTU value in the response
+  switch (cmd.result().Read()) {
+    case emboss::L2capConfigurationResult::SUCCESS: {
+      l2cap_channel_manager_.HandleConfigurationChanged(pending_it->info);
+      pending_configurations_.erase(pending_it);
+      break;
+    }
+    case emboss::L2capConfigurationResult::PENDING: {
+      break;
+    }
+    case emboss::L2capConfigurationResult::FAILURE_UNACCEPTABLE_PARAMETERS:
+    case emboss::L2capConfigurationResult::FAILURE_REJECTED:
+    case emboss::L2capConfigurationResult::FAILURE_UNKNOWN_OPTIONS:
+    case emboss::L2capConfigurationResult::FAILURE_FLOW_SPEC_REJECT:
+    default: {
+      pending_configurations_.erase(pending_it);
     }
   }
 }

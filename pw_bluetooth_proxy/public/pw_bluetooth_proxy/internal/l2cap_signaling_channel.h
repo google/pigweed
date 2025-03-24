@@ -17,6 +17,7 @@
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_bluetooth_proxy/basic_l2cap_channel.h"
 #include "pw_bluetooth_proxy/direction.h"
+#include "pw_bluetooth_proxy/l2cap_status_delegate.h"
 #include "pw_containers/vector.h"
 #include "pw_multibuf/allocator.h"
 #include "pw_sync/lock_annotations.h"
@@ -58,6 +59,13 @@ class L2capSignalingChannel : public BasicL2capChannel {
   // Handle L2CAP_CONNECTION_RSP.
   void HandleConnectionRsp(Direction direction,
                            emboss::L2capConnectionRspView cmd);
+
+  // Handle L2CAP_CONFIGURATION_REQ
+  void HandleConfigurationReq(Direction direction,
+                              emboss::L2capConfigureReqView cmd);
+
+  void HandleConfigurationRsp(Direction direction,
+                              emboss::L2capConfigureRspView cmd);
 
   // Handle L2CAP_DISCONNECTION_REQ.
   void HandleDisconnectionReq(Direction direction,
@@ -112,13 +120,27 @@ class L2capSignalingChannel : public BasicL2capChannel {
     uint16_t psm;
   };
 
+  struct PendingConfiguration {
+    uint8_t identifier;
+    L2capChannelConfigurationInfo info;
+  };
+
   // Number of partially open l2cap connections the signaling channel can track.
   // These are kept open till the connection response comes through providing
   // the destination_cid to complete the connection info.
   static constexpr size_t kMaxPendingConnections = 10;
 
+  // The maximum number of pending L2CAP configuration (inbound/outbound ).
+  static constexpr size_t kMaxPendingConfigurations =
+      2 * kMaxPendingConnections;
+
+  // TODO(b/405190891): Properly clean-up pending_connections_ and
+  // pending_configurations_
   Vector<PendingConnection, kMaxPendingConnections> pending_connections_
       PW_GUARDED_BY(mutex_){};
+
+  Vector<PendingConfiguration, kMaxPendingConfigurations>
+      pending_configurations_ PW_GUARDED_BY(mutex_){};
 
   sync::Mutex mutex_;
 

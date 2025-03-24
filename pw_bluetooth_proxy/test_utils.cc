@@ -300,6 +300,106 @@ Status SendL2capConnectionReq(ProxyHost& proxy,
   return OkStatus();
 }
 
+Status SendL2capConfigureReq(ProxyHost& proxy,
+                             Direction direction,
+                             uint16_t handle,
+                             uint16_t destination_cid,
+                             L2capOptions& l2cap_options) {
+  size_t kOptionsSize = 0;
+  if (l2cap_options.mtu.has_value()) {
+    kOptionsSize += emboss::L2capMtuConfigurationOption::IntrinsicSizeInBytes();
+  }
+  const size_t kConfigureReqLen =
+      emboss::L2capConfigureReq::MinSizeInBytes() + kOptionsSize;
+
+  PW_TRY_ASSIGN(
+      CFrameWithStorage cframe,
+      SetupCFrame(handle,
+                  cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING),
+                  kConfigureReqLen));
+
+  auto configure_req_writer = MakeEmbossWriter<emboss::L2capConfigureReqWriter>(
+      cframe.writer.payload().SizeInBytes(),
+      cframe.writer.payload().BackingStorage().data(),
+      cframe.writer.payload().SizeInBytes());
+  configure_req_writer->command_header().code().Write(
+      emboss::L2capSignalingPacketCode::CONFIGURATION_REQ);
+  configure_req_writer->command_header().data_length().Write(
+      kConfigureReqLen -
+      emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+  configure_req_writer->destination_cid().Write(destination_cid);
+  configure_req_writer->continuation_flag().Write(false);
+
+  if (l2cap_options.mtu.has_value()) {
+    constexpr size_t buffer_size =
+        emboss::L2capMtuConfigurationOption::IntrinsicSizeInBytes();
+    std::array<uint8_t, buffer_size> l2cap_option_buffer{};
+
+    auto l2cap_option =
+        MakeEmbossWriter<emboss::L2capMtuConfigurationOptionWriter>(
+            &l2cap_option_buffer);
+    l2cap_option->header().option_type().Write(
+        emboss::L2capConfigurationOptionType::MTU);
+    l2cap_option->header().option_length().Write(2);
+    l2cap_option->mtu().Write(l2cap_options.mtu.value().mtu);
+
+    memcpy(configure_req_writer->options().BackingStorage().data(),
+           l2cap_option_buffer.data(),
+           l2cap_option_buffer.size());
+  }
+
+  if (direction == Direction::kFromController) {
+    H4PacketWithHci configuration_req_packet{emboss::H4PacketType::ACL_DATA,
+                                             cframe.acl.hci_span()};
+    proxy.HandleH4HciFromController(std::move(configuration_req_packet));
+  } else {
+    H4PacketWithH4 configure_req_packet{emboss::H4PacketType::ACL_DATA,
+                                        cframe.acl.h4_span()};
+    proxy.HandleH4HciFromHost(std::move(configure_req_packet));
+  }
+
+  return OkStatus();
+}
+
+Status SendL2capConfigureRsp(ProxyHost& proxy,
+                             Direction direction,
+                             uint16_t handle,
+                             uint16_t local_cid,
+                             emboss::L2capConfigurationResult result) {
+  constexpr size_t kConfigureRspLen =
+      emboss::L2capConfigureRsp::MinSizeInBytes();
+  PW_TRY_ASSIGN(
+      CFrameWithStorage cframe,
+      SetupCFrame(handle,
+                  cpp23::to_underlying(emboss::L2capFixedCid::ACL_U_SIGNALING),
+                  kConfigureRspLen));
+
+  auto configure_rsp_writer = MakeEmbossWriter<emboss::L2capConfigureRspWriter>(
+      cframe.writer.payload().SizeInBytes(),
+      cframe.writer.payload().BackingStorage().data(),
+      cframe.writer.payload().SizeInBytes());
+  configure_rsp_writer->command_header().code().Write(
+      emboss::L2capSignalingPacketCode::CONFIGURATION_RSP);
+  configure_rsp_writer->command_header().data_length().Write(
+      kConfigureRspLen -
+      emboss::L2capSignalingCommandHeader::IntrinsicSizeInBytes());
+  configure_rsp_writer->source_cid().Write(local_cid);
+  configure_rsp_writer->continuation_flag().Write(false);
+  configure_rsp_writer->result().Write(result);
+
+  if (direction == Direction::kFromController) {
+    H4PacketWithHci configure_rsp_packet{emboss::H4PacketType::ACL_DATA,
+                                         cframe.acl.hci_span()};
+    proxy.HandleH4HciFromController(std::move(configure_rsp_packet));
+  } else {
+    H4PacketWithH4 configure_rsp_packet{emboss::H4PacketType::ACL_DATA,
+                                        cframe.acl.h4_span()};
+    proxy.HandleH4HciFromHost(std::move(configure_rsp_packet));
+  }
+
+  return OkStatus();
+}
+
 Status SendL2capConnectionRsp(
     ProxyHost& proxy,
     uint16_t handle,

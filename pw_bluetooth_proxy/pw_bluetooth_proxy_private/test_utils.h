@@ -196,10 +196,26 @@ Status SendDisconnectionCompleteEvent(
     Direction direction = Direction::kFromController,
     bool successful = true);
 
+struct L2capOptions {
+  std::optional<MtuOption> mtu;
+};
+
 Status SendL2capConnectionReq(ProxyHost& proxy,
                               uint16_t handle,
                               uint16_t source_cid,
                               uint16_t psm);
+
+Status SendL2capConfigureReq(ProxyHost& proxy,
+                             Direction direction,
+                             uint16_t handle,
+                             uint16_t destination_cid,
+                             L2capOptions& l2cap_options);
+
+Status SendL2capConfigureRsp(ProxyHost& proxy,
+                             Direction direction,
+                             uint16_t handle,
+                             uint16_t local_cid,
+                             emboss::L2capConfigurationResult result);
 
 Status SendL2capConnectionRsp(ProxyHost& proxy,
                               uint16_t handle,

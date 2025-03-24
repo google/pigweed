@@ -275,6 +275,11 @@ void L2capChannelManager::HandleConnectionComplete(
   status_tracker_.HandleConnectionComplete(info);
 }
 
+void L2capChannelManager::HandleConfigurationChanged(
+    const L2capChannelConfigurationInfo& info) {
+  status_tracker_.HandleConfigurationChanged(info);
+}
+
 void L2capChannelManager::HandleAclDisconnectionComplete(
     uint16_t connection_handle) {
   PW_LOG_INFO(

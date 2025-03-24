@@ -15,6 +15,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include "pw_bluetooth_proxy/direction.h"
 #include "pw_containers/intrusive_forward_list.h"
@@ -25,10 +26,27 @@ struct L2capChannelConnectionInfo {
   Direction direction;
   uint16_t psm;
   uint16_t connection_handle;
-  // Otherwise known as source_cid
+  // Channel ID on the remote device.
   uint16_t remote_cid;
-  // Otherwise known as destination_cid
+  // Channel ID on the local device.
   uint16_t local_cid;
+};
+
+struct MtuOption {
+  uint16_t mtu;
+
+  bool operator==(const MtuOption& other) const { return mtu == other.mtu; }
+};
+
+struct L2capChannelConfigurationInfo {
+  Direction direction;
+  uint16_t connection_handle;
+  // Channel ID on the remote device.
+  uint16_t remote_cid;
+  // Channel ID on the local device.
+  uint16_t local_cid;
+  // Incoming MTU if direction is kFromHost, Outgoing MTU if kFromController.
+  std::optional<MtuOption> mtu;
 };
 
 class L2capStatusDelegate
@@ -44,6 +62,11 @@ class L2capStatusDelegate
   /// doesn't currently handle credit based l2cap channels.
   virtual void HandleConnectionComplete(
       const L2capChannelConnectionInfo& info) = 0;
+
+  /// Called when a l2cap channel is configured.
+  /// TODO: b/402799315 - Make virtual pure once downstreams are implemented
+  virtual void HandleConfigurationChanged(
+      const L2capChannelConfigurationInfo&) {}
 
   /// Called when a l2cap channel connection is disconnected.
   ///
