@@ -23,6 +23,8 @@ import { launchTroubleshootingLink } from '../links';
 import logger from '../logging';
 import { RefreshManager } from '../refreshManager';
 import { settingFor, settings, stringSettingFor } from '../settings/vscode';
+import { processCompDbs } from './parser';
+import { saveUnprocessedMapping } from './unprocessedMapping';
 
 export async function setTargetWithClangd(
   target: Target | undefined,
@@ -105,6 +107,18 @@ export async function setCompileCommandsTarget(
         activeFilesCache.writeToSettings,
       );
     });
+}
+
+export async function refreshNonBazelCompileCommands() {
+  const { processedCompDbs, unprocessedCompDbs } = await processCompDbs();
+
+  const writePromises = [processedCompDbs.writeAll()];
+
+  if (unprocessedCompDbs.length > 0) {
+    writePromises.push(saveUnprocessedMapping(unprocessedCompDbs));
+  }
+
+  await Promise.all(writePromises);
 }
 
 export async function refreshCompileCommandsAndSetTarget(

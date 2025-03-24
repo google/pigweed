@@ -34,6 +34,7 @@ import {
   enableInactiveFileCodeIntelligence,
   initBazelClangdPath,
   refreshCompileCommandsAndSetTarget,
+  refreshNonBazelCompileCommands,
   setCompileCommandsTarget,
 } from './clangd';
 
@@ -72,8 +73,6 @@ import { WebviewProvider } from './webviewProvider';
 import { commandRegisterer, VscCommandCallback } from './utils';
 import { shouldSupportGn } from './gn';
 import { shouldSupportCmake } from './cmake';
-import { processCompDbs } from './clangd/parser';
-import { saveUnprocessedMapping } from './clangd/unprocessedMapping';
 
 interface CommandEntry {
   name: string;
@@ -214,16 +213,7 @@ async function registerCommands(
       name: 'pigweed.refresh-compile-commands',
       callback: async () => {
         if (useGn || useCmake) {
-          const { processedCompDbs, unprocessedCompDbs } =
-            await processCompDbs();
-
-          const writePromises = [processedCompDbs.writeAll()];
-
-          if (unprocessedCompDbs.length > 0) {
-            writePromises.push(saveUnprocessedMapping(unprocessedCompDbs));
-          }
-
-          await Promise.all(writePromises);
+          await refreshNonBazelCompileCommands();
         }
 
         if (useBazel) {
@@ -231,34 +221,24 @@ async function registerCommands(
           showProgressDuringRefresh(refreshManager);
         }
       },
-      projectType: ['bazel', 'both'],
-    },
-    {
-      name: 'pigweed.refresh-compile-commands',
-      callback: () =>
-        vscode.window.showWarningMessage(
-          'This command is currently not supported with Bootstrap projects',
-        ),
-      projectType: ['bootstrap'],
+      projectType: ['any'],
     },
     {
       name: 'pigweed.refresh-compile-commands-and-set-target',
-      callback: () => {
-        refreshCompileCommandsAndSetTarget(
-          bazelCompileCommandsWatcher!.refresh,
-          refreshManager,
-          clangdActiveFilesCache,
-        );
+      callback: async () => {
+        if (useGn || useCmake) {
+          await refreshNonBazelCompileCommands();
+        }
+
+        if (useBazel) {
+          refreshCompileCommandsAndSetTarget(
+            bazelCompileCommandsWatcher!.refresh,
+            refreshManager,
+            clangdActiveFilesCache,
+          );
+        }
       },
-      projectType: ['bazel', 'both'],
-    },
-    {
-      name: 'pigweed.refresh-compile-commands-and-set-target',
-      callback: () =>
-        vscode.window.showWarningMessage(
-          'This command is currently not supported with Bootstrap projects',
-        ),
-      projectType: ['bootstrap'],
+      projectType: ['any'],
     },
   ];
 
