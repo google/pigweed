@@ -15,6 +15,17 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_async2/backend.cmake)
 
+pw_add_module_config(pw_async2_CONFIG)
+
+pw_add_library(pw_async2.config INTERFACE
+  HEADERS
+    public/pw_async2/internal/config.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    ${pw_async2_CONFIG}
+)
+
 pw_add_library(pw_async2.poll INTERFACE
   HEADERS
     public/pw_async2/poll.h
@@ -51,10 +62,14 @@ pw_add_facade(pw_async2.dispatcher STATIC
     pw_assert.check
     pw_async2.poll
     pw_chrono.system_clock
+    pw_metric
     pw_sync.interrupt_spin_lock
     pw_sync.lock_annotations
     pw_sync.mutex
     pw_toolchain.no_destructor
+  PRIVATE_DEPS
+    pw_log
+    pw_async2.config
   SOURCES
     dispatcher_base.cc
 )
@@ -218,7 +233,6 @@ if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
   )
 endif()
 
-
 pw_add_library(pw_async2.time_provider STATIC
   HEADERS
     public/pw_async2/time_provider.h
@@ -248,7 +262,7 @@ pw_add_library(pw_async2.system_time_provider STATIC
 )
 
 if((NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "") AND
-   (NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL ""))
+  (NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL ""))
   pw_add_test(pw_async2.system_time_provider_test
     SOURCES
       system_time_provider_test.cc
@@ -270,7 +284,7 @@ pw_add_library(pw_async2.simulated_time_provider INTERFACE
 )
 
 if((NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "") AND
-   (NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL ""))
+  (NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL ""))
   pw_add_test(pw_async2.simulated_time_provider_test
     SOURCES
       simulated_time_provider_test.cc

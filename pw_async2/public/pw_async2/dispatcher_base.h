@@ -17,6 +17,7 @@
 #include "pw_async2/lock.h"
 #include "pw_async2/task.h"
 #include "pw_async2/waker.h"
+#include "pw_metric/metric.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
 
@@ -131,10 +132,20 @@ class NativeDispatcherBase {
   [[nodiscard]] RunOneTaskResult RunOneTask(Dispatcher& dispatcher,
                                             Task* task_to_look_for);
 
+  uint32_t tasks_polled() const { return tasks_polled_.value(); }
+  uint32_t tasks_completed() const { return tasks_completed_.value(); }
+  uint32_t sleep_count() const { return sleep_count_.value(); }
+  uint32_t wake_count() const { return wake_count_.value(); }
+
  private:
   friend class Dispatcher;
   friend class Task;
   friend class Waker;
+
+  void Wake() {
+    wake_count_.Increment();
+    DoWake();
+  }
 
   /// Sends a wakeup signal to this ``Dispatcher``.
   ///
@@ -169,6 +180,8 @@ class NativeDispatcherBase {
   // For use by ``RunOneTask``.
   Task* PopWokenTask() PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
+  void LogRegisteredTasks();
+
   // A lock guarding ``Task`` execution.
   //
   // This will be acquired prior to pulling any tasks off of the ``Task``
@@ -187,6 +200,12 @@ class NativeDispatcherBase {
   // Note: the sleeping list's order is not significant.
   Task* sleeping_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
   bool wants_wake_ PW_GUARDED_BY(impl::dispatcher_lock()) = false;
+
+  PW_METRIC_GROUP(metrics_, "pw::async2::NativeDispatcherBase");
+  PW_METRIC(metrics_, tasks_polled_, "tasks_polled", 0u);
+  PW_METRIC(metrics_, tasks_completed_, "tasks_completed", 0u);
+  PW_METRIC(metrics_, sleep_count_, "sleep_count", 0u);
+  PW_METRIC(metrics_, wake_count_, "wake_count", 0u);
 };
 
 PW_MODIFY_DIAGNOSTICS_POP();

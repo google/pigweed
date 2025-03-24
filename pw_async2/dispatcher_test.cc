@@ -59,6 +59,8 @@ TEST(Dispatcher, RunUntilStalledPendsPostedTask) {
   EXPECT_EQ(task.polled, 1);
   EXPECT_EQ(task.destroyed, 1);
   EXPECT_FALSE(task.IsRegistered());
+  EXPECT_EQ(dispatcher.tasks_polled(), 1u);
+  EXPECT_EQ(dispatcher.tasks_completed(), 1u);
 }
 
 TEST(Dispatcher, RunUntilStalledReturnsOnNotReady) {
@@ -69,6 +71,8 @@ TEST(Dispatcher, RunUntilStalledReturnsOnNotReady) {
   EXPECT_FALSE(dispatcher.RunUntilStalled(task).IsReady());
   EXPECT_EQ(task.polled, 1);
   EXPECT_EQ(task.destroyed, 0);
+  EXPECT_EQ(dispatcher.tasks_polled(), 1u);
+  EXPECT_EQ(dispatcher.tasks_completed(), 0u);
 }
 
 TEST(Dispatcher, RunUntilStalledDoesNotPendSleepingTask) {
@@ -80,21 +84,29 @@ TEST(Dispatcher, RunUntilStalledDoesNotPendSleepingTask) {
   EXPECT_FALSE(dispatcher.RunUntilStalled(task).IsReady());
   EXPECT_EQ(task.polled, 1);
   EXPECT_EQ(task.destroyed, 0);
+  EXPECT_EQ(dispatcher.tasks_polled(), 1u);
+  EXPECT_EQ(dispatcher.tasks_completed(), 0u);
 
   task.should_complete = true;
   EXPECT_FALSE(dispatcher.RunUntilStalled(task).IsReady());
   EXPECT_EQ(task.polled, 1);
   EXPECT_EQ(task.destroyed, 0);
+  EXPECT_EQ(dispatcher.tasks_polled(), 1u);
+  EXPECT_EQ(dispatcher.tasks_completed(), 0u);
 
   std::move(task.last_waker).Wake();
   EXPECT_TRUE(dispatcher.RunUntilStalled(task).IsReady());
   EXPECT_EQ(task.polled, 2);
   EXPECT_EQ(task.destroyed, 1);
+  EXPECT_EQ(dispatcher.tasks_polled(), 2u);
+  EXPECT_EQ(dispatcher.tasks_completed(), 1u);
 }
 
 TEST(Dispatcher, RunUntilStalledWithNoTasksReturnsReady) {
   Dispatcher dispatcher;
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
+  EXPECT_EQ(dispatcher.tasks_polled(), 0u);
+  EXPECT_EQ(dispatcher.tasks_completed(), 0u);
 }
 
 TEST(Dispatcher, RunToCompletionPendsMultipleTasks) {
@@ -147,6 +159,7 @@ TEST(Dispatcher, RunToCompletionPendsMultipleTasks) {
   //   others
   // - two which have woken back up and complete
   EXPECT_EQ(counter, 5);
+  EXPECT_EQ(dispatcher.tasks_polled(), 5u);
 }
 
 TEST(Dispatcher, RunPendableUntilStalledReturnsOutputOnReady) {
@@ -192,6 +205,7 @@ TEST(Dispatcher, PostToDispatcherFromInsidePendSucceeds) {
   EXPECT_TRUE(dispatcher.RunUntilStalled().IsReady());
   EXPECT_EQ(posted_task.polled, 1);
   EXPECT_EQ(posted_task.destroyed, 1);
+  EXPECT_EQ(dispatcher.tasks_polled(), 2u);
 }
 
 TEST(Dispatcher, RunToCompletionPendsPostedTask) {
@@ -202,6 +216,7 @@ TEST(Dispatcher, RunToCompletionPendsPostedTask) {
   dispatcher.RunToCompletion(task);
   EXPECT_EQ(task.polled, 1);
   EXPECT_EQ(task.destroyed, 1);
+  EXPECT_EQ(dispatcher.tasks_polled(), 1u);
 }
 
 TEST(Dispatcher, RunToCompletionIgnoresDeregisteredTask) {
@@ -215,6 +230,7 @@ TEST(Dispatcher, RunToCompletionIgnoresDeregisteredTask) {
   dispatcher.RunToCompletion();
   EXPECT_EQ(task.polled, 0);
   EXPECT_EQ(task.destroyed, 0);
+  EXPECT_EQ(dispatcher.tasks_polled(), 0u);
 }
 
 }  // namespace

@@ -59,6 +59,7 @@ pw_facade(
         "public/pw_async2/context.h",
         "public/pw_async2/dispatcher.h",
         "public/pw_async2/dispatcher_base.h",
+        "public/pw_async2/internal/config.h",
         "public/pw_async2/lock.h",
         "public/pw_async2/task.h",
         "public/pw_async2/waker.h",
@@ -68,8 +69,11 @@ pw_facade(
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     deps = [
+        ":config_override",
         ":poll",
         "//pw_chrono:system_clock",
+        "//pw_log",
+        "//pw_metric:metric",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
@@ -81,6 +85,11 @@ label_flag(
     name = "dispatcher_backend",
     build_setting_default = ":dispatcher_backend_multiplexer",
     features = ["-conversion_warnings"],
+)
+
+label_flag(
+    name = "config_override",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(
@@ -454,6 +463,7 @@ filegroup(
         "public/pw_async2/dispatcher.h",
         "public/pw_async2/dispatcher_base.h",
         "public/pw_async2/enqueue_heap_func.h",
+        "public/pw_async2/internal/config.h",
         "public/pw_async2/join.h",
         "public/pw_async2/once_sender.h",
         "public/pw_async2/pend_func_awaitable.h",

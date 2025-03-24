@@ -65,6 +65,7 @@ TEST(Dispatcher, RunToCompletion_SleepsUntilWoken) {
   // Poll once when sleeping then once when woken.
   EXPECT_EQ(task.polled, 2);
   EXPECT_EQ(task.destroyed, 1);
+  EXPECT_EQ(dispatcher.tasks_polled(), 2u);
 }
 
 }  // namespace

@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_async2/backend.gni")
 import("$dir_pw_build/facade.gni")
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
@@ -23,6 +24,13 @@ import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_unit_test/test.gni")
+
+declare_args() {
+  # The build target that overrides the default configuration options for this
+  # module. This should point to a source set that provides defines through a
+  # public config (which may -include a file or add defines directly).
+  pw_async2_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -69,9 +77,22 @@ pw_facade("dispatcher") {
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:mutex",
     "$dir_pw_toolchain:no_destructor",
+    dir_pw_metric,
   ]
-  deps = [ "$dir_pw_assert:check" ]
+  deps = [
+    ":config",
+    "$dir_pw_assert:check",
+    dir_pw_log,
+  ]
   sources = [ "dispatcher_base.cc" ]
+}
+
+pw_source_set("config") {
+  sources = [ "public/pw_async2/internal/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ pw_async2_CONFIG ]
+  visibility = [ "./*" ]
+  friend = [ "./*" ]
 }
 
 pw_test("dispatcher_test") {

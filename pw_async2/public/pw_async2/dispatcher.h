@@ -120,6 +120,17 @@ class Dispatcher {
     return task.TakeOutput();
   }
 
+  /// Outputs log statements about the tasks currently registered with this
+  /// dispatcher.
+  void LogRegisteredTasks() { native_.LogRegisteredTasks(); }
+
+  /// Returns the total number of times the dispatcher has called a task's
+  /// ``Pend()`` method.
+  uint32_t tasks_polled() const { return native_.tasks_polled(); }
+
+  /// Returns the total number of tasks the dispatcher has run to completion.
+  uint32_t tasks_completed() const { return native_.tasks_completed(); }
+
   /// Returns a reference to the native backend-specific dispatcher type.
   pw::async2::backend::NativeDispatcher& native() { return native_; }
 

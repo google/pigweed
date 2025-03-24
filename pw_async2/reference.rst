@@ -109,3 +109,13 @@ Utilities
 
 .. doxygenclass:: pw::async2::OnceRefReceiver
   :members:
+
+Configuration options
+=====================
+The following options can be adjusted via compile-time configuration of
+``pw_async2``, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
+
+.. doxygenfile:: pw_async2/public/pw_async2/internal/config.h
+   :sections: define
