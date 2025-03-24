@@ -54,6 +54,9 @@ class ByteBuffer {
   // Returns the number of bytes contained in this buffer.
   virtual size_t size() const = 0;
 
+  // Returns true if size() == 0, false otherwise
+  bool empty() const { return size() == 0; }
+
   // Returns a BufferView that points to the region of this buffer starting at
   // |pos| of |size| bytes. If |size| is larger than the size of this BufferView
   // then the returned region will contain all bytes in this buffer starting at

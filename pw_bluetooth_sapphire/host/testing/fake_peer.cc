@@ -339,7 +339,11 @@ void FakePeer::FillExtendedAdvertisingReport(
 
   PW_DCHECK(data.size() < 0xFF);
   report.data_length().Write(static_cast<uint8_t>(data.size()));
-  std::memcpy(report.data().BackingStorage().begin(), data.data(), data.size());
+
+  if (!data.empty()) {
+    std::memcpy(
+        report.data().BackingStorage().begin(), data.data(), data.size());
+  }
 }
 
 DynamicByteBuffer FakePeer::BuildExtendedAdvertisingReports(
