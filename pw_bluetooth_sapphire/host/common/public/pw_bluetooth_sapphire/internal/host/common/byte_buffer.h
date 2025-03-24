@@ -272,6 +272,9 @@ class ByteBuffer {
     if (size() != other.size()) {
       return false;
     }
+    if (empty()) {
+      return other.empty();
+    }
     return (memcmp(data(), other.data(), size()) == 0);
   }
 
