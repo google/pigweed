@@ -56,14 +56,14 @@ export class Target {
   }
 
   get displayName() {
-    if (this._dir === CDB_FILE_DIRS[0]) {
+    if (path.dirname(this._dir) === CDB_FILE_DIRS[0]) {
       return this._name;
     }
 
     // If the target is not in the canonical directory, append the directory
     // name to distinguish it from targets with the same name in the canonical
     // directory.
-    const dirName = path.basename(this._dir);
+    const dirName = path.basename(path.dirname(this._dir));
     return `${this._name} (${dirName})`;
   }
 }

@@ -21,7 +21,7 @@ test('should use base name for targets in canonical directory', () => {
 
   assert.equal(target.name, 'host_clang');
   assert.equal(target.displayName, 'host_clang');
-  assert.equal(target.dir, CDB_FILE_DIRS[0]);
+  assert.equal(path.dirname(target.dir), CDB_FILE_DIRS[0]);
   assert.equal(
     target.path,
     path.join(CDB_FILE_DIRS[0], 'host_clang', CDB_FILE_NAME),
@@ -29,11 +29,14 @@ test('should use base name for targets in canonical directory', () => {
 });
 
 test('should append directory name for targets in non-canonical directory', () => {
-  const target = new Target('host_clang', CDB_FILE_DIRS[1]);
+  const target = new Target(
+    'host_clang',
+    path.join(CDB_FILE_DIRS[1], 'host_clang'),
+  );
 
   assert.equal(target.name, 'host_clang');
   assert.equal(target.displayName, 'host_clang (.pw_ide)');
-  assert.equal(target.dir, CDB_FILE_DIRS[1]);
+  assert.equal(path.dirname(target.dir), CDB_FILE_DIRS[1]);
   assert.equal(
     target.path,
     path.join(CDB_FILE_DIRS[1], 'host_clang', CDB_FILE_NAME),
