@@ -53,7 +53,8 @@ TEST(PacketViewTest, EmptyPayload) {
   EXPECT_EQ(0u, packet.payload_size());
   EXPECT_EQ(0u, packet.payload_data().size());
 
-  EXPECT_EQ(512, packet.header().field16);
+  uint16_t field16_value = packet.header().field16;
+  EXPECT_EQ(512, field16_value);
   EXPECT_EQ(255, packet.header().field8);
 
   // Verify the buffer contents.
