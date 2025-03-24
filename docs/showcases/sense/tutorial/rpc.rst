@@ -6,6 +6,12 @@
 Now, let's revisit ``pw_console`` and ``pw_rpc``. This time, we'll send commands
 to and view logs from the real Pico device.
 
+.. warning::
+
+   https://pwrev.dev/405441939 - The LED does not work yet on the Pico W or
+   Pico 2 W.
+
+
 .. _showcase-sense-tutorial-pico-rpc-interact:
 
 ----------------------
