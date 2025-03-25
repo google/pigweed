@@ -182,8 +182,6 @@ pw_cc_test(
     name = "central_test",
     srcs = ["central_test.cc"],
     features = ["-conversion_warnings"],
-    # TODO: https://pwbug.dev/393957973 - Fix this test.
-    tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":central",
@@ -214,8 +212,6 @@ pw_cc_test(
     name = "peripheral_test",
     srcs = ["peripheral_test.cc"],
     features = ["-conversion_warnings"],
-    # TODO: https://pwbug.dev/393957973 - Fix this test.
-    tags = ["noubsan"],
     test_main = "//pw_bluetooth_sapphire/host/testing:gtest_main",
     deps = [
         ":peripheral",

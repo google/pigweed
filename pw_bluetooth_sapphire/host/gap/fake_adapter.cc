@@ -22,9 +22,9 @@ namespace bt::gap::testing {
 
 FakeAdapter::FakeAdapter(pw::async::Dispatcher& pw_dispatcher)
     : init_state_(InitState::kNotInitialized),
+      pw_dispatcher_(pw_dispatcher),
       fake_le_(std::make_unique<FakeLowEnergy>(this)),
       fake_bredr_(std::make_unique<FakeBrEdr>()),
-      pw_dispatcher_(pw_dispatcher),
       heap_dispatcher_(pw_dispatcher),
       peer_cache_(pw_dispatcher),
       weak_self_(this) {}
