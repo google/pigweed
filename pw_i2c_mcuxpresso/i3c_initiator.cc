@@ -182,6 +182,7 @@ pw::Status I3cMcuxpressoInitiator::DoSetDasa(pw::i2c::Address static_addr) {
   PW_LOG_INFO("  sending SETDASA 0x%02x", static_addr.GetAddress());
   PW_TRY(DoTransferCcc(
       I3cCccAction::kWrite, I3cCcc::kSetdasaDirect, static_addr, dasa_buffer));
+
   return pw::OkStatus();
 }
 
@@ -200,11 +201,41 @@ pw::Status I3cMcuxpressoInitiator::DoResetAddressing() {
                          kBroadcastAddress,
                          pw::ByteSpan()));
   }
+  i3c_assigned_addresses_.clear();
 }
 
 pw::Status I3cMcuxpressoInitiator::ResetAddressing() {
   std::lock_guard lock(mutex_);
   return DoResetAddressing();
+}
+
+pw::Status I3cMcuxpressoInitiator::AddAssignedI3cAddress(
+    pw::i2c::Address address) {
+  if (i3c_assigned_addresses_.full()) {
+    PW_LOG_ERROR("Too many i3c devices on bus, can't add 0x%02x",
+                 address.GetAddress());
+    return pw::Status::ResourceExhausted();
+  }
+  if (std::find(i3c_assigned_addresses_.begin(),
+                i3c_assigned_addresses_.end(),
+                address) == i3c_assigned_addresses_.end()) {
+    i3c_assigned_addresses_.push_back(address);
+  } else {
+    PW_LOG_WARN("Address was already in i3c_assigned_addresses_: 0x%02x",
+                address.GetAddress());
+  }
+  return pw::OkStatus();
+}
+
+void I3cMcuxpressoInitiator::ForgetAssignedAddress(pw::i2c::Address address) {
+  auto to_erase = std::find(
+      i3c_assigned_addresses_.begin(), i3c_assigned_addresses_.end(), address);
+  if (to_erase != i3c_assigned_addresses_.end()) {
+    i3c_assigned_addresses_.erase(to_erase);
+  } else {
+    PW_LOG_WARN("Request to forget unknown address: 0x%02x",
+                address.GetAddress());
+  }
 }
 
 pw::Status I3cMcuxpressoInitiator::SetMaxReadLength(pw::i2c::Address address,
@@ -271,6 +302,18 @@ pw::Status I3cMcuxpressoInitiator::Initialize() {
     if (hal_status != kStatus_Success) {
       PW_LOG_ERROR("Failed to initialize the I3C bus... %d", hal_status);
     }
+
+    // Examine the found devices
+    uint8_t dev_count = 0;
+    i3c_device_info_t* devlist =
+        I3C_MasterGetDeviceListAfterDAA(base_, &dev_count);
+    for (uint8_t i = 0; i < dev_count; ++i) {
+      i3c_device_info_t* info = devlist + i;
+      AddAssignedI3cAddress(pw::i2c::Address::SevenBit(info->dynamicAddr));
+      PW_LOG_INFO("Found dynamic i3c device: 0x%02x vendor=0x%04x",
+                  info->dynamicAddr,
+                  info->vendorID);
+    }
   }
 
   // Re-initialize I3C master with user provided speed.
@@ -283,6 +326,13 @@ pw::Status I3cMcuxpressoInitiator::Initialize() {
   I3C_MasterInit(base_, &masterConfig, CLOCK_GetI3cClkFreq());
 
   return HalStatusToPwStatus(hal_status);
+}
+
+pw::Status I3cMcuxpressoInitiator::SetDasa(pw::i2c::Address static_addr) {
+  std::lock_guard lock(mutex_);
+  PW_TRY(DoSetDasa(static_addr));
+  PW_TRY(AddAssignedI3cAddress(static_addr));
+  return pw::OkStatus();
 }
 
 pw::Status I3cMcuxpressoInitiator::DoTransferCcc(I3cCccAction rnw,
@@ -417,15 +467,9 @@ pw::Result<i3c_bus_type_t> I3cMcuxpressoInitiator::ValidateAndDetermineProtocol(
 
     // Search the dynamic address list to see if this is an i3c client.
     i3c_bus_type_t current_bus_type;
-    if (std::find(i3c_dynamic_address_list_->begin(),
-                  i3c_dynamic_address_list_->end(),
-                  messages[j].GetAddress()) !=
-        i3c_dynamic_address_list_->end()) {
-      current_bus_type = kI3C_TypeI3CSdr;
-    } else if (std::find(i3c_static_address_list_->begin(),
-                         i3c_static_address_list_->end(),
-                         messages[j].GetAddress()) !=
-               i3c_static_address_list_->end()) {
+    if (std::find(i3c_assigned_addresses_.begin(),
+                  i3c_assigned_addresses_.end(),
+                  messages[j].GetAddress()) != i3c_assigned_addresses_.end()) {
       current_bus_type = kI3C_TypeI3CSdr;
     } else {
       current_bus_type = kI3C_TypeI2C;

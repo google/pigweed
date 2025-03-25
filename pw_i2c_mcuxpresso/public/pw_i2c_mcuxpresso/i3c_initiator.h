@@ -106,6 +106,24 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
   // is required before calling this method.
   pw::Status Initialize() PW_LOCKS_EXCLUDED(mutex_);
 
+  // Request that a target use its i2c static address as its i3c dynamic
+  // address. This method can be used when a single device (for example
+  // recently powered on) needs to have its i3c address set for communication
+  // on the i3c bus.
+  //
+  // SETDASA is the i3c command "Set Dynamic Address from Static Address".
+  //
+  // Enable() needs to be called before this method.
+  pw::Status SetDasa(pw::i2c::Address static_addr) PW_LOCKS_EXCLUDED(mutex_);
+
+  // Forget an address that was previously assigned.
+  //
+  // This is helpful when a device has been powered off and has lots its i3c
+  // address. After calling this, any transfers to this device will again be
+  // in i2c mode.
+  void ForgetAssignedAddress(pw::i2c::Address address)
+      PW_LOCKS_EXCLUDED(mutex_);
+
   // Broadcast the i3c control command RSTDAA (Reset Dynamic Addressing).
   // This will cause all i3c targets to drop their i3c address and revert
   // to their uninitialized, i2c-only state.
@@ -142,6 +160,9 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
   pw::Result<i3c_bus_type_t> ValidateAndDetermineProtocol(
       span<const Message> messages) const;
 
+  // Record an address as being dynamically assigned and in i3c mode.
+  pw::Status AddAssignedI3cAddress(pw::i2c::Address address);
+
   // inclusive-language: disable
   Status InitiateNonBlockingTransferUntil(
       chrono::SystemClock::time_point deadline,
@@ -171,6 +192,7 @@ class I3cMcuxpressoInitiator final : public pw::i2c::Initiator {
   pw::sync::Mutex mutex_;
   std::optional<pw::Vector<Address, I3C_MAX_DEVCNT>> i3c_dynamic_address_list_;
   std::optional<pw::Vector<Address, I3C_MAX_DEVCNT>> i3c_static_address_list_;
+  pw::Vector<Address, I3C_MAX_DEVCNT> i3c_assigned_addresses_;
 
   // Transfer completion status for non-blocking I3C transfer.
   sync::TimedThreadNotification callback_complete_notification_;
