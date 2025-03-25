@@ -27,7 +27,9 @@ class TestResponse : public CommandHandler::Response {
 
 void fuzz(const uint8_t* data, size_t size) {
   DynamicByteBuffer buf(size);
-  memcpy(buf.mutable_data(), data, size);
+  if (size > 0) {
+    memcpy(buf.mutable_data(), data, size);
+  }
   TestResponse test_response(SignalingChannel::Status::kSuccess);
   bool result = test_response.TestParseReject(buf);
   (void)result;

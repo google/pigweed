@@ -19,7 +19,9 @@ namespace bt::l2cap::internal {
 
 void fuzz(const uint8_t* data, size_t size) {
   DynamicByteBuffer buf(size);
-  memcpy(buf.mutable_data(), data, size);
+  if (size > 0) {
+    memcpy(buf.mutable_data(), data, size);
+  }
   ChannelConfiguration config;
   bool _result = config.ReadOptions(buf);
   // unused.
