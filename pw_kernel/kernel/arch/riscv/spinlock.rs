@@ -15,26 +15,37 @@
 // use core::arch::asm;
 use core::cell::UnsafeCell;
 use core::mem::ManuallyDrop;
-// use core::sync::atomic::{compiler_fence, Ordering};
+use core::sync::atomic::{compiler_fence, Ordering};
+use riscv::register::*;
 
-struct InterruptGuard {}
+pub struct InterruptGuard {
+    saved_interrupt_enable: bool,
+}
 
 impl InterruptGuard {
     #[inline]
-    fn new() -> Self {
-        // TODO: disable interrupts, but don't panic with a TODO
-        // as it blocks bringup.
-        // pw_assert::panic!("implement InterruptGuard::new()");
-        Self {}
+    pub fn new() -> Self {
+        // TODO: combine these two into single instruction
+        let saved_interrupt_enable = mstatus::read().mie();
+        unsafe {
+            mstatus::clear_mie();
+        }
+        compiler_fence(Ordering::SeqCst);
+        Self {
+            saved_interrupt_enable,
+        }
     }
 }
 
 impl Drop for InterruptGuard {
     #[inline]
     fn drop(&mut self) {
-        // TODO: disable interrupts, but don't panic with a TODO
-        // as it blocks bringup.
-        // pw_assert::panic!("implement InterruptGuard::drop()");
+        compiler_fence(Ordering::SeqCst);
+        if self.saved_interrupt_enable {
+            unsafe {
+                mstatus::set_mie();
+            }
+        }
     }
 }
 
@@ -96,6 +107,7 @@ impl crate::arch::BareSpinLock for BareSpinLock {
         let guard = InterruptGuard::new();
         // Safety: exclusive access to `is_locked` guaranteed because interrupts
         // are off.
+        // TODO - pwbug/405145609: use volatile read and writes for state variable
         if unsafe { *self.is_locked.get() } {
             return None;
         }

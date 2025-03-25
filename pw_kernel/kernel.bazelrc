@@ -62,7 +62,6 @@ run:k_qemu_virt_riscv32 --run_under="@qemu//:qemu-system-riscv32 \
   -cpu rv32 \
   -machine virt \
   -nographic \
-  -semihosting-config enable=on,target=native \
   -serial mon:stdio \
   -kernel "
 test:k_qemu_virt_riscv32 --run_under="@qemu//:qemu-system-riscv32 \
@@ -70,7 +69,6 @@ test:k_qemu_virt_riscv32 --run_under="@qemu//:qemu-system-riscv32 \
   -cpu rv32 \
   -machine virt \
   -nographic \
-  -semihosting-config enable=on,target=native \
   -serial mon:stdio \
   -kernel "
 

@@ -37,7 +37,6 @@ unsafe fn set_active_thread(t: *mut ArchThreadState) {
 }
 
 pub struct ArchThreadState {
-    #[allow(dead_code)]
     frame: *mut FullExceptionFrame,
 }
 

@@ -13,7 +13,9 @@
 // the License.
 
 use super::ArchInterface;
+use riscv;
 
+mod exceptions;
 mod spinlock;
 mod threads;
 mod timer;
@@ -25,19 +27,36 @@ impl ArchInterface for Arch {
     type BareSpinLock = spinlock::BareSpinLock;
     type Clock = timer::Clock;
 
-    fn early_init() {}
+    fn early_init() {
+        // Make sure interrupts are disabled
+        Self::disable_interrupts();
 
-    fn init() {}
-
-    fn enable_interrupts() {}
-
-    fn disable_interrupts() {}
-
-    fn interrupts_enabled() -> bool {
-        true
+        timer::early_init();
     }
 
-    fn idle() {}
+    fn init() {
+        timer::init();
+    }
+
+    fn enable_interrupts() {
+        unsafe {
+            riscv::register::mstatus::set_mie();
+        }
+    }
+
+    fn disable_interrupts() {
+        unsafe {
+            riscv::register::mstatus::clear_mie();
+        }
+    }
+
+    fn interrupts_enabled() -> bool {
+        riscv::register::mstatus::read().mie()
+    }
+
+    fn idle() {
+        riscv::asm::wfi();
+    }
 
     fn panic() -> ! {
         #[allow(clippy::empty_loop)]

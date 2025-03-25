@@ -43,6 +43,7 @@ rust_library(
         "arch/host.rs",
         "arch/host/spinlock.rs",
         "arch/riscv.rs",
+        "arch/riscv/exceptions.rs",
         "arch/riscv/spinlock.rs",
         "arch/riscv/threads.rs",
         "arch/riscv/timer.rs",
