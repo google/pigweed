@@ -42,9 +42,8 @@ impl InterruptGuard {
 impl Drop for InterruptGuard {
     #[inline]
     fn drop(&mut self) {
+        compiler_fence(Ordering::SeqCst);
         if (self.saved_primask & 0x1) == 0x0 {
-            compiler_fence(Ordering::SeqCst);
-
             unsafe {
                 asm!("cpsie i", options(nomem, nostack, preserves_flags));
             }
