@@ -52,9 +52,9 @@ class TestBuildRecipe(unittest.TestCase):
                 # result
                 [
                     'bazel',
+                    '--output_base',
+                    'outbazel',
                     'build',
-                    '--symlink_prefix',
-                    str(Path('outbazel') / 'bazel-'),
                     '//pw_analog/...',
                     '//pw_assert/...',
                 ],
@@ -70,9 +70,9 @@ class TestBuildRecipe(unittest.TestCase):
                 # result
                 [
                     'bazel',
+                    '--output_base',
+                    'outbazel',
                     'test',
-                    '--symlink_prefix',
-                    str(Path('outbazel') / 'bazel-'),
                     '//...:all',
                 ],
             ),
@@ -87,9 +87,9 @@ class TestBuildRecipe(unittest.TestCase):
                 # result
                 [
                     'bazel',
+                    '--output_base',
+                    'outbazel',
                     'clean',
-                    '--symlink_prefix',
-                    str(Path('outbazel') / 'bazel-'),
                 ],
             ),
             (
