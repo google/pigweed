@@ -597,11 +597,15 @@ class WindowList:
             return
 
         # Swap with the previous pane
-        previous_pane = self.active_panes[pane_index - 1]
-        self.active_panes[pane_index - 1] = pane
+        swapped_pane_index = pane_index - 1
+        previous_pane = self.active_panes[swapped_pane_index]
+        self.active_panes[swapped_pane_index] = pane
         self.active_panes[pane_index] = previous_pane
 
-        self.refresh_ui()
+        if self.display_mode == DisplayMode.TABBED:
+            self.switch_to_tab(swapped_pane_index)
+        else:
+            self.refresh_ui()
 
     def move_pane_down(self):
         pane = self.get_current_active_pane()
@@ -612,11 +616,15 @@ class WindowList:
             return
 
         # Swap with the next pane
-        next_pane = self.active_panes[pane_index + 1]
-        self.active_panes[pane_index + 1] = pane
+        swapped_pane_index = pane_index + 1
+        next_pane = self.active_panes[swapped_pane_index]
+        self.active_panes[swapped_pane_index] = pane
         self.active_panes[pane_index] = next_pane
 
-        self.refresh_ui()
+        if self.display_mode == DisplayMode.TABBED:
+            self.switch_to_tab(swapped_pane_index)
+        else:
+            self.refresh_ui()
 
     def _get_next_visible_pane_after(self, target_pane):
         """Return the next visible pane that appears after the target pane."""

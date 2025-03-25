@@ -112,22 +112,39 @@ def window_pane_titles(window_manager):
     ]
 
 
-def target_list_and_pane(window_manager, list_index, pane_index):
-    # pylint: disable=protected-access
+def target_window_pane(console_app, window_manager, pane_index: int):
     # Bypass prompt_toolkit has_focus()
+    # pylint: disable=protected-access
+    window_manager._get_active_window_list_and_pane = MagicMock(  # type: ignore
+        return_value=(
+            window_manager.window_lists[0],
+            window_manager.window_lists[0].active_panes[pane_index],
+        )
+    )
+    # pylint: enable=protected-access
+
+    window_list = console_app.window_manager.first_window_list()
+    window_list.get_current_active_pane = MagicMock(  # type: ignore
+        return_value=window_list.active_panes[pane_index]
+    )
+
+
+def target_list_and_pane(window_manager, list_index, pane_index):
     pane = window_manager.window_lists[list_index].active_panes[pane_index]
     # If the pane is in focus it will be visible.
     pane.show_pane = True
+    # Bypass prompt_toolkit has_focus()
+    # pylint: disable=protected-access
     window_manager._get_active_window_list_and_pane = MagicMock(  # type: ignore
         return_value=(
             window_manager.window_lists[list_index],
             window_manager.window_lists[list_index].active_panes[pane_index],
         )
     )
+    # pylint: enable=protected-access
 
 
 class TestWindowManager(unittest.TestCase):
-    # pylint: disable=protected-access
     """Tests for window management functions."""
 
     maxDiff = None
@@ -342,23 +359,8 @@ class TestWindowManager(unittest.TestCase):
                 len(window_manager.first_window_list().active_panes), 4
             )
 
-            def target_window_pane(index: int):
-                # Bypass prompt_toolkit has_focus()
-                window_manager._get_active_window_list_and_pane = (
-                    MagicMock(  # type: ignore
-                        return_value=(
-                            window_manager.window_lists[0],
-                            window_manager.window_lists[0].active_panes[index],
-                        )
-                    )
-                )
-                window_list = console_app.window_manager.first_window_list()
-                window_list.get_current_active_pane = MagicMock(  # type: ignore
-                    return_value=window_list.active_panes[index]
-                )
-
             # Target the first window pane
-            target_window_pane(0)
+            target_window_pane(console_app, window_manager, 0)
 
             # Shrink the first pane
             window_manager.shrink_pane()
@@ -388,7 +390,7 @@ class TestWindowManager(unittest.TestCase):
             )
 
             # Shrink last pane
-            target_window_pane(3)
+            target_window_pane(console_app, window_manager, 3)
 
             window_manager.shrink_pane()
             self.assertEqual(
@@ -402,7 +404,7 @@ class TestWindowManager(unittest.TestCase):
             )
 
             # Enlarge second pane
-            target_window_pane(1)
+            target_window_pane(console_app, window_manager, 1)
             window_manager.reset_pane_sizes()
 
             window_manager.enlarge_pane()
@@ -430,9 +432,20 @@ class TestWindowManager(unittest.TestCase):
                 ],
             )
 
-            target_window_pane(0)
+            # Switch to Tabbed view mode
+            window_manager.window_lists[0].set_display_mode(DisplayMode.TABBED)
+
+            target_window_pane(console_app, window_manager, 0)
+            self.assertEqual(
+                window_manager.window_lists[0].focused_pane_index, 0
+            )
+
             window_manager.move_pane_down()
             self.assertEqual(
+                window_manager.window_lists[0].focused_pane_index, 1
+            )
+
+            self.assertEqual(
                 window_pane_titles(window_manager),
                 [
                     [
@@ -443,10 +456,17 @@ class TestWindowManager(unittest.TestCase):
                     ],
                 ],
             )
-            target_window_pane(2)
+            target_window_pane(console_app, window_manager, 2)
             window_manager.move_pane_up()
-            target_window_pane(1)
+            self.assertEqual(
+                window_manager.window_lists[0].focused_pane_index, 1
+            )
+
+            target_window_pane(console_app, window_manager, 1)
             window_manager.move_pane_up()
+            self.assertEqual(
+                window_manager.window_lists[0].focused_pane_index, 0
+            )
             self.assertEqual(
                 window_pane_titles(window_manager),
                 [
@@ -458,8 +478,15 @@ class TestWindowManager(unittest.TestCase):
                     ],
                 ],
             )
-            target_window_pane(0)
+
+            target_window_pane(console_app, window_manager, 0)
+            self.assertEqual(
+                window_manager.window_lists[0].focused_pane_index, 0
+            )
             window_manager.move_pane_up()
+            self.assertEqual(
+                window_manager.window_lists[0].focused_pane_index, 0
+            )
             self.assertEqual(
                 window_pane_titles(window_manager),
                 [
@@ -468,6 +495,27 @@ class TestWindowManager(unittest.TestCase):
                         'Log1 - test_log1',
                         'Log2 - test_log2',
                         'Python Repl - ',
+                    ],
+                ],
+            )
+
+            target_window_pane(console_app, window_manager, 2)
+            window_manager.move_pane_down()
+            self.assertEqual(
+                window_manager.window_lists[0].focused_pane_index, 3
+            )
+            window_manager.move_pane_down()
+            self.assertEqual(
+                window_manager.window_lists[0].focused_pane_index, 3
+            )
+            self.assertEqual(
+                window_pane_titles(window_manager),
+                [
+                    [
+                        'Log0 - test_log0',
+                        'Log1 - test_log1',
+                        'Python Repl - ',
+                        'Log2 - test_log2',
                     ],
                 ],
             )

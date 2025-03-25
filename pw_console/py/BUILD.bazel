@@ -126,6 +126,9 @@ pw_py_binary(
     srcs = [
         "pw_console/__main__.py",
     ],
+    args = [
+        "--test-mode",
+    ],
     main = "pw_console/__main__.py",
     deps = [
         ":pw_console",

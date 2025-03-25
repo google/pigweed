@@ -16,10 +16,32 @@ Run in Test Mode
 
 Begin each section below by running the console in test mode:
 
-.. code-block:: shell
+.. tab-set::
 
-   touch /tmp/empty.yaml
-   env PW_CONSOLE_CONFIG_FILE='/tmp/empty.yaml' pw console --test-mode
+   .. tab-item:: Bazel
+      :sync: bazel
+
+      .. code-block:: shell
+
+         bazelisk run //pw_console/py:pw_console_test_mode
+
+   .. tab-item:: GN
+      :sync: gn
+
+      .. code-block:: shell
+
+         touch /tmp/empty.yaml
+         env PW_CONSOLE_CONFIG_FILE='/tmp/empty.yaml' pw-console --test-mode
+
+Add note to the commit message
+==============================
+
+Add a ``Testing:`` line to your commit message and mention the steps
+executed. For example:
+
+.. code-block:: text
+
+   Testing: Log Pane Steps 1-6
 
 Test Sections
 =============
@@ -912,16 +934,6 @@ Quit Confirmation Dialog
        | Press :kbd:`Ctrl-d`
      - | The quit dialog appears.
      - |checkbox|
-
-Add note to the commit message
-==============================
-
-Add a ``Testing:`` line to your commit message and mention the steps
-executed. For example:
-
-.. code-block:: text
-
-   Testing: Log Pane Steps 1-6
 
 .. |checkbox| raw:: html
 
