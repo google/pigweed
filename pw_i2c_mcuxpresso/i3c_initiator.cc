@@ -381,12 +381,21 @@ Status I3cMcuxpressoInitiator::DoTransferFor(
         .busType = bus_type,
         .ibiResponse = kI3C_IbiRespNack};
 
-    status = InitiateNonBlockingTransferUntil(deadline, &transfer);
+    if (bus_type == kI3C_TypeI2C) {
+      // The i2c mode is not working with NonBlocking transfers.
+      // TODO(b/406239331): investigate NonBlocking issue further.
+      status_t sdk_status = I3C_MasterTransferBlocking(base_, &transfer);
+      status = HalStatusToPwStatus(sdk_status);
+    } else {
+      status = InitiateNonBlockingTransferUntil(deadline, &transfer);
+    }
+
     if (!status.ok()) {
-      PW_LOG_WARN("error on submessage %d of %d: status=%d",
+      PW_LOG_WARN("error on submessage %d of %d: status=%d %s",
                   i,
                   messages.size(),
-                  status.code());
+                  status.code(),
+                  status.str());
       break;
     }
   }
