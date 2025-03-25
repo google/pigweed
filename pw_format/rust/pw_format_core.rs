@@ -78,9 +78,8 @@ macro_rules! declare_formatter {
     };
 }
 
-declare_formatter!(bool, "c");
 declare_formatter!(char, "c");
-declare_formatter!(u8, "c");
+declare_formatter!(u8, "d");
 declare_formatter!(i32, "d");
 declare_formatter!(u32, "u", "x", "X");
 declare_formatter!(i64, "d");

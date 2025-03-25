@@ -34,12 +34,6 @@ impl<'a> From<&'a str> for Argument<'a> {
     }
 }
 
-impl From<bool> for Argument<'_> {
-    fn from(val: bool) -> Self {
-        Self::Char(val as u8)
-    }
-}
-
 impl From<char> for Argument<'_> {
     fn from(val: char) -> Self {
         Self::Char(val as u8)
@@ -48,7 +42,7 @@ impl From<char> for Argument<'_> {
 
 impl From<u8> for Argument<'_> {
     fn from(val: u8) -> Self {
-        Self::Char(val)
+        Self::Varint(val as i64)
     }
 }
 

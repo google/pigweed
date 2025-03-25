@@ -145,6 +145,6 @@ fn dump_int_pri() {
     info!(
         "basepri {} primask {}",
         cortex_m::register::basepri::read() as u8,
-        cortex_m::register::primask::read().is_active() as bool
+        cortex_m::register::primask::read().is_active() as u8
     );
 }
