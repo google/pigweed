@@ -87,16 +87,14 @@ bool IsoInboundPacketAssemblerTest::TestFragmentedSdu(
     std::optional<size_t> complete_sdu_size) {
   size_t initial_frames_received = outgoing_packets()->size();
 
-  // By default the total SDU size will be the sum of all fragment sizes
-  if (!complete_sdu_size.has_value()) {
-    complete_sdu_size = 0;
-    for (size_t fragment_size : fragment_sizes) {
-      (*complete_sdu_size) += fragment_size;
-    }
+  // Populate our SDU backing data buffer
+  size_t data_size = 0;
+  for (size_t fragment_size : fragment_sizes) {
+    data_size += fragment_size;
   }
-
   std::unique_ptr<std::vector<uint8_t>> sdu_data =
-      testing::GenDataBlob(*complete_sdu_size, /*starting_value=*/76);
+      testing::GenDataBlob(data_size, /*starting_value=*/76);
+
   std::vector<DynamicByteBuffer> iso_data_fragment_packets =
       testing::IsoDataFragments(
           kDefaultConnectionHandle,
@@ -105,6 +103,20 @@ bool IsoInboundPacketAssemblerTest::TestFragmentedSdu(
           pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
           *sdu_data,
           fragment_sizes);
+
+  // Override the iso_sdu_length field, if an alternate value was provided
+  if (complete_sdu_size.has_value() && ((*complete_sdu_size) != data_size)) {
+    PW_CHECK(iso_data_fragment_packets.size() > 0);
+    auto view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(
+        iso_data_fragment_packets[0].mutable_data(),
+        iso_data_fragment_packets[0].size());
+    PW_CHECK((view.header().pb_flag().Read() ==
+              pw::bluetooth::emboss::IsoDataPbFlag::FIRST_FRAGMENT) ||
+             (view.header().pb_flag().Read() ==
+              pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU));
+    view.iso_sdu_length().Write(*complete_sdu_size);
+  }
+
   for (size_t frames_sent = 0; frames_sent < fragment_sizes.size();
        frames_sent++) {
     // We should not receive any packets until all of the fragments have been
@@ -127,7 +139,7 @@ bool IsoInboundPacketAssemblerTest::TestFragmentedSdu(
       pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
       /*time_stamp=*/std::nullopt,
       kDefaultPacketSequenceNumber,
-      *complete_sdu_size,
+      data_size,
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
       *sdu_data);
   pw::span<const std::byte> expected_output_as_span = expected_output.subspan();
