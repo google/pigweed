@@ -265,8 +265,11 @@ void Router::TryFillBufferToEncodeAndSend(Context& cx) {
 }
 
 void Router::WriteOutgoingMessages(Context& cx) {
-  while (io_channel_.is_write_open() &&
-         io_channel_.PendReadyToWrite(cx).IsReady()) {
+  while (io_channel_.is_write_open()) {
+    io_channel_.PendWrite(cx).IgnorePoll();
+    if (io_channel_.PendReadyToWrite(cx).IsPending()) {
+      return;
+    }
     TryFillBufferToEncodeAndSend(cx);
     if (!buffer_to_encode_and_send_.has_value()) {
       // No channels have new data to send.
