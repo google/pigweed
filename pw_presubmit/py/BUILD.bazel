@@ -37,6 +37,7 @@ py_library(
         "pw_presubmit/format/core.py",
         "pw_presubmit/format/cpp.py",
         "pw_presubmit/format/gn.py",
+        "pw_presubmit/format/owners.py",
         "pw_presubmit/format/private/__init__.py",
         "pw_presubmit/format/private/cli.py",
         "pw_presubmit/format/private/cli_support.py",
@@ -95,6 +96,7 @@ py_library(
         "pw_presubmit/format/core.py",
         "pw_presubmit/format/cpp.py",
         "pw_presubmit/format/gn.py",
+        "pw_presubmit/format/owners.py",
         "pw_presubmit/format/private/__init__.py",
         "pw_presubmit/format/private/cli.py",
         "pw_presubmit/format/private/cli_support.py",
@@ -135,6 +137,7 @@ pw_py_binary(
     deps = [
         ":black_runfiles",
         ":buildifier_runfiles",
+        ":format_core",
         "//pw_build/py:pw_build",
         "@llvm_toolchain//:py_clang_format",
         "@rules_python//python/runfiles",

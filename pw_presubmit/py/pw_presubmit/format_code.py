@@ -58,7 +58,6 @@ from pw_presubmit.presubmit_context import (
 )
 from pw_presubmit import (
     git_repo,
-    owners_checks,
     presubmit_context,
 )
 from pw_presubmit.format.bazel import (
@@ -69,6 +68,10 @@ from pw_presubmit.format.core import FormattedDiff, FormatFixStatus
 from pw_presubmit.format import cpp
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.gn import GnFormatter, DEFAULT_GN_FILE_PATTERNS
+from pw_presubmit.format.owners import (
+    OwnersFormatter,
+    DEFAULT_OWNERS_FILE_PATTERNS,
+)
 from pw_presubmit.format.private.cli_support import (
     summarize_findings,
     findings_to_formatted_diffs,
@@ -245,11 +248,18 @@ def fix_bazel_format(ctx: _Context) -> dict[Path, str]:
 
 
 def check_owners_format(ctx: _Context) -> dict[Path, str]:
-    return owners_checks.run_owners_checks(ctx.paths)
+    formatter = OwnersFormatter(tool_runner=PresubmitToolRunner())
+    return _make_formatting_diff_dict(
+        formatter.get_formatting_diffs(
+            ctx.paths,
+            ctx.dry_run,
+        )
+    )
 
 
 def fix_owners_format(ctx: _Context) -> dict[Path, str]:
-    return owners_checks.format_owners_file(ctx.paths)
+    formatter = OwnersFormatter(tool_runner=PresubmitToolRunner())
+    return _make_format_fix_error_output_dict(formatter.format_files(ctx.paths))
 
 
 def check_go_format(ctx: _Context) -> dict[Path, str]:
@@ -586,7 +596,7 @@ MARKDOWN_FORMAT: CodeFormat = CodeFormat(
 
 OWNERS_CODE_FORMAT = CodeFormat(
     'OWNERS',
-    filter=FileFilter(name=['^OWNERS$']),
+    filter=DEFAULT_OWNERS_FILE_PATTERNS,
     check=check_owners_format,
     fix=fix_owners_format,
 )

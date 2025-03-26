@@ -19,6 +19,7 @@ from pw_build.runfiles_manager import RunfilesManager
 from pw_presubmit.format.bazel import BuildifierFormatter
 from pw_presubmit.format.cpp import ClangFormatFormatter
 from pw_presubmit.format.private.cli import FormattingSuite
+from pw_presubmit.format.owners import OwnersFormatter
 from pw_presubmit.format.python import BlackFormatter
 
 
@@ -61,6 +62,9 @@ def _pigweed_formatting_suite() -> FormattingSuite:
             tool_runner=runfiles,
         ),
         ClangFormatFormatter(
+            tool_runner=runfiles,
+        ),
+        OwnersFormatter(
             tool_runner=runfiles,
         ),
     ]
