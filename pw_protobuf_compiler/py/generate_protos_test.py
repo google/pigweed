@@ -21,7 +21,7 @@ from unittest.mock import patch, Mock
 from pathlib import Path
 
 
-import pw_protobuf_compiler.generate_protos
+from pw_protobuf_compiler import generate_protos
 
 
 class TestArgGeneration(unittest.TestCase):
@@ -50,7 +50,7 @@ class TestArgGeneration(unittest.TestCase):
             --proto-path /path/to/other_proto
             --sources /path/to/proto/foo.proto /path/to/other_proto/bar.proto
         """
-        pw_protobuf_compiler.generate_protos.main(args.split())
+        generate_protos.main(args.split())
         subprocess_mock.assert_called_once_with(
             (
                 Path("protoc"),
@@ -94,7 +94,7 @@ class TestArgGeneration(unittest.TestCase):
             --proto-path /path/to/other_proto
             --sources /path/to/proto/foo.proto /path/to/other_proto/bar.proto
         """
-        pw_protobuf_compiler.generate_protos.main(args.split())
+        generate_protos.main(args.split())
         subprocess_mock.assert_called_once_with(
             (
                 Path("protoc"),
@@ -138,7 +138,7 @@ class TestArgGeneration(unittest.TestCase):
             --proto-path /path/to/other_proto
             --sources /path/to/proto/foo.proto /path/to/other_proto/bar.proto
         """
-        pw_protobuf_compiler.generate_protos.main(args.split())
+        generate_protos.main(args.split())
         subprocess_mock.assert_called_once_with(
             (
                 Path("protoc"),
@@ -173,7 +173,7 @@ class TestArgGeneration(unittest.TestCase):
             --sources /path/to/proto/foo.proto /path/to/other_proto/bar.proto
         """
         with self.assertRaises(SystemExit):
-            pw_protobuf_compiler.generate_protos.main(args.split())
+            generate_protos.main(args.split())
 
 
 if __name__ == "__main__":
