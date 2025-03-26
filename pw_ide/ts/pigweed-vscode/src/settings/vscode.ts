@@ -30,6 +30,7 @@ type TerminalShell = 'bash' | 'zsh';
 
 export interface Settings {
   activateBazeliskInNewTerminals: Setting<boolean>;
+  clangdAlternatePath: Setting<string | undefined>;
   codeAnalysisTarget: Setting<string | undefined>;
   codeAnalysisTargetDir: Setting<string | undefined>;
   compDbSearchPaths: Setting<CompDbSearchPath[]>;
@@ -171,6 +172,16 @@ function activateBazeliskInNewTerminals(
 ): boolean | undefined | Thenable<void> {
   const { get, update } = boolSettingFor('activateBazeliskInNewTerminals');
   if (value === undefined) return get() ?? false;
+  return update(value);
+}
+
+function clangdAlternatePath(): string | undefined;
+function clangdAlternatePath(value: string | undefined): Thenable<void>;
+function clangdAlternatePath(
+  value?: string,
+): string | undefined | Thenable<void> {
+  const { get, update } = stringSettingFor('clangdAlternatePath');
+  if (value === undefined) return get();
   return update(value);
 }
 
@@ -372,6 +383,7 @@ function terminalShell(
 /** Entry point for accessing settings. */
 export const settings: Settings = {
   activateBazeliskInNewTerminals,
+  clangdAlternatePath,
   codeAnalysisTarget,
   codeAnalysisTargetDir,
   compDbSearchPaths,

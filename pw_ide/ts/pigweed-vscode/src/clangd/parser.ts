@@ -459,6 +459,16 @@ export class CompilationDatabaseMap extends Map<string, CompilationDatabase> {
     return undefined;
   }
 
+  map<T>(fn: (key: string, value: CompilationDatabase) => T) {
+    const rtn: T[] = [];
+
+    for (const key of this.keys()) {
+      rtn.push(fn(key, this.get(key)));
+    }
+
+    return rtn;
+  }
+
   async writeAll(): Promise<void> {
     const workingDirPath = workingDir.get();
     const promises: Promise<void>[] = [];

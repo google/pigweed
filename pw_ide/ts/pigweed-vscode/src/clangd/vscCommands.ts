@@ -14,7 +14,7 @@
 
 import * as vscode from 'vscode';
 import { ClangdActiveFilesCache } from './activeFilesCache';
-import { clangdPath } from './bazel';
+import { clangdPath as bazelClangdPath } from './bazel';
 import { availableTargets, getTarget, baseSetTarget, Target } from './paths';
 
 import { didChangeClangdConfig, didChangeTarget } from '../events';
@@ -24,6 +24,12 @@ import logger from '../logging';
 import { RefreshManager } from '../refreshManager';
 import { settingFor, settings, stringSettingFor } from '../settings/vscode';
 import { processCompDbs } from './parser';
+import {
+  getTargetType,
+  loadProcessedMapping,
+  ProcessedTargetMapping,
+  saveProcessedMapping,
+} from './processedMapping';
 import { saveUnprocessedMapping } from './unprocessedMapping';
 
 export async function setTargetWithClangd(
@@ -37,6 +43,37 @@ export async function setTargetWithClangd(
     throw new Error(`Target not among available targets: ${target}`);
   }
 
+  const targetType = await getTargetType(target.name);
+  let clangdPath: string;
+
+  if (targetType === 'bazel') {
+    const clangdPathForBazel = bazelClangdPath();
+
+    if (!clangdPathForBazel) {
+      vscode.window.showErrorMessage(
+        'A Bazel target was selected, but a clangd binary could not be found ' +
+          'among the Bazel binaries.',
+      );
+
+      return;
+    }
+
+    clangdPath = clangdPathForBazel;
+  } else {
+    const clangdPathForBootstrap = settings.clangdAlternatePath();
+
+    if (!clangdPathForBootstrap) {
+      vscode.window.showErrorMessage(
+        'Set this config value to the path to clangd: ' +
+          'pigweed.clangdAlternatePath',
+      );
+
+      return;
+    }
+
+    clangdPath = clangdPathForBootstrap;
+  }
+
   await baseSetTarget(target);
   didChangeTarget.fire(target.name);
 
@@ -46,7 +83,7 @@ export async function setTargetWithClangd(
   // These updates all happen asynchronously, and we want to make sure they're
   // all done before we trigger a clangd restart.
   Promise.all([
-    updatePath(clangdPath()),
+    updatePath(clangdPath),
     updateArgs([
       `--compile-commands-dir=${target.dir}`,
       '--query-driver=**',
@@ -112,7 +149,21 @@ export async function setCompileCommandsTarget(
 export async function refreshNonBazelCompileCommands() {
   const { processedCompDbs, unprocessedCompDbs } = await processCompDbs();
 
-  const writePromises = [processedCompDbs.writeAll()];
+  const currentProcessedMapping = await loadProcessedMapping();
+
+  const updatedProcessedMapping: ProcessedTargetMapping = Object.fromEntries(
+    processedCompDbs.map((targetName) => [targetName, 'bootstrap']),
+  );
+
+  const newProcessedMapping: ProcessedTargetMapping = {
+    ...currentProcessedMapping,
+    ...updatedProcessedMapping,
+  };
+
+  const writePromises = [
+    processedCompDbs.writeAll(),
+    saveProcessedMapping(newProcessedMapping),
+  ];
 
   if (unprocessedCompDbs.length > 0) {
     writePromises.push(saveUnprocessedMapping(unprocessedCompDbs));

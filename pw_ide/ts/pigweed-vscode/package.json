@@ -111,6 +111,10 @@
           "default": "false",
           "description": "When enabled, the path to Bazelisk will be added to the integrated terminal when launched"
         },
+        "pigweed.clangdAlternatePath": {
+          "type": "string",
+          "description": "Path to clangd to use for non-Bazel targets"
+        },
         "pigweed.codeAnalysisTarget": {
           "type": "string",
           "description": "The build target to use for editor code intelligence"
