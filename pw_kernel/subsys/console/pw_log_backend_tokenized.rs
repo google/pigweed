@@ -26,7 +26,9 @@ pub mod __private {
     pub use colors::log_level_tag;
     pub use pw_tokenizer::{tokenize_core_fmt_to_writer, tokenize_printf_to_writer};
 
-    const ENCODE_BUFFER_SIZE: usize = 32;
+    // Use 52 to match the default value PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES
+    // on the C++ tokenizer side.
+    const ENCODE_BUFFER_SIZE: usize = 52;
 
     // A simple implementation of [`pw_tokenizer::MessageWriter`] that writes
     // data to a buffer.  On message finalization, it base64 encodes the data

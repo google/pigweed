@@ -179,15 +179,28 @@ pub fn tokenize_to_writer<W: crate::MessageWriter>(
     args: &[Argument<'_>],
 ) -> Result<()> {
     let mut writer = W::new();
-    tokenize_engine(&mut writer, token, args)?;
-    writer.finalize()
+
+    match tokenize_engine(&mut writer, token, args) {
+        // Still finalize the writer even if the buffer
+        // is full so as to avoid loosing the entire
+        // log message.
+        Ok(_) | Err(Error::OutOfRange) =>  writer.finalize(),
+        Err(error) => Err(error),
+    }
 }
 
 #[inline(never)]
 pub fn tokenize_to_writer_no_args<W: crate::MessageWriter>(token: u32) -> Result<()> {
     let mut writer = W::new();
-    writer.write(&token.to_le_bytes()[..])?;
-    writer.finalize()
+    let result = writer.write(&token.to_le_bytes()[..]);
+
+    match result {
+        // Still finalize the writer even if the buffer
+        // is full so as to avoid loosing the entire
+        // log message.
+        Ok(_) | Err(Error::OutOfRange) =>  writer.finalize(),
+        Err(error) => Err(error),
+    }
 }
 
 #[cfg(test)]
