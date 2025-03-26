@@ -29,13 +29,16 @@ import {
 } from './bazelWatcher';
 
 import {
+  availableTargets,
   ClangdActiveFilesCache,
   disableInactiveFileCodeIntelligence,
   enableInactiveFileCodeIntelligence,
+  getTarget,
   initBazelClangdPath,
   refreshCompileCommandsAndSetTarget,
   refreshNonBazelCompileCommands,
   setCompileCommandsTarget,
+  setTargetWithClangd,
 } from './clangd';
 
 import { getSettingsData, syncSettingsSharedToProject } from './configParsing';
@@ -51,7 +54,7 @@ import {
   isBazelProject,
   isBootstrapProject,
 } from './project';
-import { RefreshManager } from './refreshManager';
+import { OK, RefreshManager } from './refreshManager';
 import { settings, workingDir } from './settings/vscode';
 import {
   ClangdFileWatcher,
@@ -466,6 +469,23 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Marshall all of our components and dependencies.
   const refreshManager = disposer.add(RefreshManager.create({ logger }));
+
+  refreshManager.on(async () => {
+    const target = getTarget();
+    if (!target) {
+      const allTargets = await availableTargets();
+      if (allTargets.length > 0) {
+        await setTargetWithClangd(
+          allTargets[0],
+          clangdActiveFilesCache.writeToSettings,
+        );
+        // Due to an unknown clangd extension issue, the clangd refuses to work
+        // on first-ever run, restarting clangd does not work either.
+        await vscode.commands.executeCommand('workbench.action.reloadWindow');
+      }
+    }
+    return OK;
+  }, 'didRefresh');
 
   const { clangdActiveFilesCache } = disposer.addMany({
     clangdActiveFilesCache: new ClangdActiveFilesCache(refreshManager),

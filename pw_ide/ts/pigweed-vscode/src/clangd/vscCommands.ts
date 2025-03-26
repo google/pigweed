@@ -82,7 +82,7 @@ export async function setTargetWithClangd(
 
   // These updates all happen asynchronously, and we want to make sure they're
   // all done before we trigger a clangd restart.
-  Promise.all([
+  await Promise.all([
     updatePath(clangdPath),
     updateArgs([
       `--compile-commands-dir=${target.dir}`,
@@ -91,10 +91,9 @@ export async function setTargetWithClangd(
       '--background-index',
     ]),
     settingsFileWriter(target.name),
-  ]).then(() =>
-    // Restart the clangd server so it picks up the new setting.
-    vscode.commands.executeCommand('clangd.restart'),
-  );
+  ]);
+  // Restart the clangd server so it picks up the new setting.
+  vscode.commands.executeCommand('clangd.restart');
 }
 
 /** Show a checkmark next to the item if it's the current setting. */
