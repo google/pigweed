@@ -31,6 +31,7 @@ pw_python_package("py") {
   tests = [
     "compiled_protos_test.py",
     "python_protos_test.py",
+    "generate_protos_test.py",
   ]
   python_deps = [ "$dir_pw_cli/py" ]
   python_test_deps = [ "..:test_protos.python" ]

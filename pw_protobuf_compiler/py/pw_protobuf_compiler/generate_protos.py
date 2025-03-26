@@ -253,11 +253,10 @@ DEFAULT_PROTOC_ARGS: dict[str, _DefaultArgsFunction] = {
 BUILTIN_PROTOC_LANGS = ('go', 'python')
 
 
-def main() -> int:
+def main(input_args) -> int:
     """Runs protoc as configured by command-line arguments."""
-
     parser = _argument_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(input_args)
 
     if args.plugin_path is None and args.language not in BUILTIN_PROTOC_LANGS:
         parser.error(
@@ -319,4 +318,4 @@ def main() -> int:
 
 if __name__ == '__main__':
     setup_logging()
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

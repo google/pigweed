@@ -58,6 +58,20 @@ pw_py_test(
     ],
 )
 
+pw_py_test(
+    name = "generate_protos_test",
+    size = "small",
+    srcs = [
+        "generate_protos_test.py",
+    ],
+    imports = [
+        ".",
+    ],
+    deps = [
+        ":pw_protobuf_compiler",
+    ],
+)
+
 # TODO(tonymd) Find out how to make protoc available in the bazel sandbox.
 # pw_py_test(
 #     name = "python_protos_test",
