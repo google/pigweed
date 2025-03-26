@@ -68,8 +68,3 @@
 #ifndef PW_TOKENIZER_NESTED_PREFIX_STR
 #define PW_TOKENIZER_NESTED_PREFIX_STR "$"
 #endif  // PW_TOKENIZER_NESTED_PREFIX_STR
-
-// This flag is used to conditionally enable the regex for nested token values.
-#ifndef PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX
-#define PW_TOKENIZER_CFG_DETOKENIZE_WITH_REGEX 0
-#endif  // PW_TOKENIZER_NESTED_PREFIX_STR

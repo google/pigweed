@@ -191,10 +191,10 @@ class DecodedFormatString {
                       size_t remaining_bytes)
       : segments_(std::move(segments)), remaining_bytes_(remaining_bytes) {}
 
-  DecodedFormatString(const DecodedFormatString&) = delete;
+  DecodedFormatString(const DecodedFormatString&) = default;
   DecodedFormatString(DecodedFormatString&&) = default;
 
-  DecodedFormatString& operator=(const DecodedFormatString&) = delete;
+  DecodedFormatString& operator=(const DecodedFormatString&) = default;
   DecodedFormatString& operator=(DecodedFormatString&&) = default;
 
   // Returns the decoded format string. If any argument decoding errors
