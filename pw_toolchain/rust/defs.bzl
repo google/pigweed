@@ -87,7 +87,7 @@ def pw_rust_register_toolchains(pigweed_repo_name = "@pigweed"):
         for the registered repositories.  Defaults to "@pigweed".
 
     For this registration to be valid one must
-    1. Call `pw_rust_register_toolchain_and_target_repos(tag)` pervisouly in the
+    1. Call `pw_rust_register_toolchain_and_target_repos(tag)` previously in the
        WORKSPACE file.
     2. Call `pw_rust_declare_toolchain_targets()` from
        `//pw_toolchain/rust/BUILD.bazel`.
