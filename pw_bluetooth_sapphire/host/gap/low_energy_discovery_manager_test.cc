@@ -1728,7 +1728,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, NewSessionJoinsOngoingScan) {
   session->SetResultCallback(
       [&](const Peer& peer) { results.insert(peer.identifier()); });
   RunUntilIdle();
-  ASSERT_EQ(1, results.size());
+  ASSERT_EQ(1u, results.size());
   EXPECT_EQ(peer->identifier(), *results.begin());
 }
 
