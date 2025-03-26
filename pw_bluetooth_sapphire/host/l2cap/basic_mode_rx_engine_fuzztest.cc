@@ -23,6 +23,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   bt::l2cap::Fragmenter fragmenter(kTestHandle);
   bt::l2cap::internal::BasicModeRxEngine rx_engine;
 
+  // In production, TxEngines enforce the maximum size before passing PDUs to
+  // the fragmenter.
+  bt::BufferView data_view(
+      data,
+      std::min(size,
+               static_cast<size_t>(bt::l2cap::kMaxBasicFramePayloadSize)));
+
   // The use of a fragmenter, to build a PDU for the receive engine, is
   // admittedly counterintuitive. (In actual operation, we use a Fragmenter on
   // the transmit path, and a Recombiner on the receive path.) Pragmatically,
@@ -31,9 +38,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // Note that using a Fragmenter to build the PDU doesn't decrease the efficacy
   // of fuzzing, because the only guarantees provided by the Fragmenter are
   // those that are preconditions for RxEngine::ProcessPdu().
-  auto pdu = fragmenter.BuildFrame(kTestChannelId,
-                                   bt::BufferView(data, size),
-                                   bt::l2cap::FrameCheckSequenceOption::kNoFcs);
+  auto pdu = fragmenter.BuildFrame(
+      kTestChannelId, data_view, bt::l2cap::FrameCheckSequenceOption::kNoFcs);
   rx_engine.ProcessPdu(std::move(pdu));
   return 0;
 }
