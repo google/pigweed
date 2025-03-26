@@ -77,6 +77,50 @@ class TestArgGeneration(unittest.TestCase):
     @unittest.skipIf(
         platform.system() == "Windows", "Test does not work on windows"
     )
+    def test_pwpb_no_compile_dir(mkdir_mock, subprocess_mock):
+        """
+        Test for language=pwpb, no use of --compile-dir
+        """
+        mkdir_mock.return_value = None
+        subprocess_subprocess_mock_result = Mock()
+        subprocess_subprocess_mock_result.returncode = 0
+        subprocess_mock.return_value = subprocess_subprocess_mock_result
+
+        args = """
+            --out-dir /my/out/dir/for/pwpb
+            --language pwpb
+            --plugin-path /bin/pw_protobuf_plugin_py
+            --proto-path /path/to/proto
+            --proto-path /path/to/other_proto
+            --sources /path/to/proto/foo.proto /path/to/other_proto/bar.proto
+        """
+        pw_protobuf_compiler.generate_protos.main(args.split())
+        subprocess_mock.assert_called_once_with(
+            (
+                Path("protoc"),
+                f'-I{Path("/path/to/proto")}',
+                f'-I{Path("/path/to/other_proto")}',
+                '--experimental_allow_proto3_optional',
+                '--experimental_editions',
+                '--plugin',
+                'protoc-gen-custom=/bin/pw_protobuf_plugin_py',
+                f'--custom_opt=-I{Path("/path/to/proto")}',
+                f'--custom_opt=-I{Path("/path/to/other_proto")}',
+                '--custom_out',
+                Path('/my/out/dir/for/pwpb'),
+                Path('/path/to/proto/foo.proto'),
+                Path('/path/to/other_proto/bar.proto'),
+            ),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+    @staticmethod
+    @patch('subprocess.run')
+    @patch('pathlib.Path.mkdir')
+    @unittest.skipIf(
+        platform.system() == "Windows", "Test does not work on windows"
+    )
     def test_nanopb(mkdir_mock, subprocess_mock):
         """
         Test for language=nanopb
@@ -112,6 +156,24 @@ class TestArgGeneration(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
+
+    @unittest.skipIf(
+        platform.system() == "Windows", "Test does not work on windows"
+    )
+    def test_nanopb_no_compile_dir(self):
+        """
+        Test for language=nanopb, no use of --compile-dir
+        """
+        args = """
+            --out-dir /my/out/dir/for/nanopb
+            --language nanopb
+            --plugin-path /bin/pw_protobuf_plugin_py
+            --proto-path /path/to/proto
+            --proto-path /path/to/other_proto
+            --sources /path/to/proto/foo.proto /path/to/other_proto/bar.proto
+        """
+        with self.assertRaises(SystemExit):
+            pw_protobuf_compiler.generate_protos.main(args.split())
 
 
 if __name__ == "__main__":
