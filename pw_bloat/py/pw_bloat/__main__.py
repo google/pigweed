@@ -17,7 +17,7 @@ import argparse
 import logging
 from pathlib import Path
 import sys
-from typing import Iterable
+from typing import Iterable, NoReturn
 
 from pw_bloat import bloat
 from pw_bloat.label import DataSourceMap
@@ -28,7 +28,8 @@ import pw_cli.log
 _LOG = logging.getLogger(__name__)
 
 
-def _parse_args() -> argparse.Namespace:
+def parse_args() -> argparse.Namespace:
+    """Parse pw bloat arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
 
     parser.add_argument(
@@ -155,16 +156,22 @@ def _diff_report(
     return 0
 
 
-def main() -> int:
+def run_report(
+    binary: Path | None = None,
+    diff: Path | None = None,
+    custom_config: Path | None = None,
+    data_sources: Iterable[str] | None = None,
+    verbose: bool = False,
+) -> int:
     """Run binary size reports."""
+    if binary is None:
+        _LOG.error('the following arguments are required: BINARY')
+        return -1
 
-    pw_cli.log.install()
-
-    args = _parse_args()
-
-    if args.data_sources:
-        data_sources = args.data_sources
-    elif args.custom_config is not None:
+    if data_sources:
+        # Use passed in data_sources
+        pass
+    elif custom_config is not None:
         # If a custom config is provided, automatic memoryregions are not being
         # used. Fallback to segments as the primary data source.
         data_sources = ('segments', 'sections')
@@ -172,23 +179,28 @@ def main() -> int:
         # No custom config will attempt to generate one from memoryregions.
         data_sources = ('memoryregions', 'sections')
 
-    if not args.verbose:
+    if not verbose:
         pw_cli.log.set_all_loggers_minimum_level(logging.ERROR)
 
-    if args.diff is not None:
+    if diff is not None:
         return _diff_report(
-            args.binary,
-            args.diff,
-            custom_config=args.custom_config,
+            binary,
+            diff,
+            custom_config=custom_config,
             data_sources=data_sources,
         )
 
     return _single_binary_report(
-        args.binary,
-        custom_config=args.custom_config,
+        binary,
+        custom_config=custom_config,
         data_sources=data_sources,
     )
 
 
+def main() -> NoReturn:
+    pw_cli.log.install()
+    sys.exit(run_report(**vars(parse_args())))
+
+
 if __name__ == '__main__':
-    sys.exit(main())
+    main()
