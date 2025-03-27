@@ -330,10 +330,10 @@ void FakePeer::FillExtendedAdvertisingReport(
       pw::bluetooth::emboss::LEPrimaryAdvertisingPHY::LE_1M);
   report.secondary_phy().Write(
       pw::bluetooth::emboss::LESecondaryAdvertisingPHY::NONE);
-  report.advertising_sid().Write(0);
+  report.advertising_sid().Write(advertising_sid());
   report.tx_power().Write(tx_power());
   report.rssi().Write(rssi());
-  report.periodic_advertising_interval().Write(0);
+  report.periodic_advertising_interval().Write(periodic_advertising_interval());
 
   // skip direct_address_type and direct_address for now since we don't use it
 

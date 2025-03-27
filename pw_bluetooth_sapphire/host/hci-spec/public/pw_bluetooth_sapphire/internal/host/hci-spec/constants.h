@@ -668,6 +668,9 @@ inline constexpr int8_t kRSSIInvalid = 127;
 // Invalid advertising sid value
 inline constexpr uint8_t kAdvertisingSidInvalid = 0xFF;
 
+// Invalid periodic advertising interval
+inline constexpr uint16_t kPeriodicAdvertisingIntervalInvalid = 0x0000;
+
 // The maximum length of a friendly name that can be assigned to a BR/EDR
 // controller, in octets.
 inline constexpr size_t kMaxNameLength = bt::kMaxNameLength;

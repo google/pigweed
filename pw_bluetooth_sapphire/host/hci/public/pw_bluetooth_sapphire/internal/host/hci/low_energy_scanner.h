@@ -53,6 +53,13 @@ class LowEnergyScanResult {
   uint8_t advertising_sid() const { return advertising_sid_; }
   void set_advertising_sid(uint8_t value) { advertising_sid_ = value; }
 
+  uint16_t periodic_advertising_interval() const {
+    return periodic_advertising_interval_;
+  }
+  void set_periodic_advertising_interval(uint16_t value) {
+    periodic_advertising_interval_ = value;
+  }
+
   BufferView data() const { return buffer_.view(0, data_size_); }
   void AppendData(const ByteBuffer& data);
 
@@ -78,6 +85,11 @@ class LowEnergyScanResult {
   // Matches the advertising SID subfield in the ADI field of the received
   // advertisement, used to synchronize against a periodic advertising train
   uint8_t advertising_sid_ = hci_spec::kAdvertisingSidInvalid;
+
+  // Interval of periodic advertisements, in increments of 1.25 ms, specified in
+  // the LE extended advertising report.
+  uint16_t periodic_advertising_interval_ =
+      hci_spec::kPeriodicAdvertisingIntervalInvalid;
 
   // The size of the data so far accumulated in |buffer_|.
   size_t data_size_ = 0u;

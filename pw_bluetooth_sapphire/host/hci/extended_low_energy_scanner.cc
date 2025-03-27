@@ -248,6 +248,8 @@ void ExtendedLowEnergyScanner::OnExtendedAdvertisingReportEvent(
     result.set_rssi(rssi);
     result.set_tx_power(report.tx_power().Read());
     result.set_advertising_sid(report.advertising_sid().Read());
+    result.set_periodic_advertising_interval(
+        report.periodic_advertising_interval().Read());
 
     // If the next set of data exceeds the maximum allowed in an extended
     // advertising data payload, take as much as we can and report it back.

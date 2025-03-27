@@ -45,6 +45,9 @@ const DeviceAddress kPublicAddr1(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kPublicAddr2(DeviceAddress::Type::kLEPublic, {2});
 const DeviceAddress kPublicAddr3(DeviceAddress::Type::kLEPublic, {3});
 
+constexpr uint8_t kAdvertisingSid = 0xa;
+constexpr uint16_t kPeriodicAdvertisingInterval = 0x1234;
+
 class ExtendedLowEnergyScannerTest : public TestingBase,
                                      public LowEnergyScanner::Delegate {
  public:
@@ -67,17 +70,22 @@ class ExtendedLowEnergyScannerTest : public TestingBase,
     scanner_->SetPacketFilters(0, {});
     scanner_->set_delegate(this);
 
+    // peers(0)
     auto p = std::make_unique<FakePeer>(kPublicAddr1, dispatcher(), true, true);
     p->set_use_extended_advertising_pdus(true);
     p->set_advertising_data(kPlainAdvDataBytes);
     p->set_scan_response(kPlainScanRspBytes);
     peers_.push_back(std::move(p));
 
+    // peers(1)
     p = std::make_unique<FakePeer>(kPublicAddr2, dispatcher(), true, false);
     p->set_use_extended_advertising_pdus(true);
     p->set_advertising_data(kPlainAdvDataBytes);
+    p->set_advertising_sid(kAdvertisingSid);
+    p->set_periodic_advertising_interval(kPeriodicAdvertisingInterval);
     peers_.push_back(std::move(p));
 
+    // peers(2)
     p = std::make_unique<FakePeer>(kPublicAddr3, dispatcher(), true, false);
     p->set_use_extended_advertising_pdus(true);
     p->set_advertising_data(kPlainAdvDataBytes);
@@ -159,6 +167,9 @@ TEST_F(ExtendedLowEnergyScannerTest, ParseAdvertisingReportsSingleReport) {
     EXPECT_EQ(peer(1)->address(), result.address());
     EXPECT_EQ(peer(1)->advertising_data().size(), result.data().size());
     EXPECT_EQ(peer(1)->advertising_data(), result.data());
+    EXPECT_EQ(result.advertising_sid(), kAdvertisingSid);
+    EXPECT_EQ(result.periodic_advertising_interval(),
+              kPeriodicAdvertisingInterval);
   });
 
   RunUntilIdle();

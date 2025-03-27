@@ -95,6 +95,17 @@ class FakePeer {
   int8_t rssi() const { return -1; }
   int8_t tx_power() const { return -2; }
 
+  // LE extended advertising attributes
+  uint8_t advertising_sid() const { return advertising_sid_; }
+  void set_advertising_sid(uint8_t value) { advertising_sid_ = value; }
+
+  uint16_t periodic_advertising_interval() const {
+    return periodic_advertising_interval_;
+  }
+  void set_periodic_advertising_interval(uint16_t value) {
+    periodic_advertising_interval_ = value;
+  }
+
   // The local name of the device. Used in HCI Remote Name Request event.
   std::string name() const { return name_; }
   void set_name(const std::string& name) { name_ = name; }
@@ -253,6 +264,10 @@ class FakePeer {
   bool address_resolved_;
   bool use_extended_advertising_pdus_ = false;
   bool send_advertising_report_;
+
+  uint8_t advertising_sid_ = bt::hci_spec::kAdvertisingSidInvalid;
+  uint16_t periodic_advertising_interval_ =
+      bt::hci_spec::kPeriodicAdvertisingIntervalInvalid;
 
   pw::bluetooth::emboss::StatusCode connect_status_;
   pw::bluetooth::emboss::StatusCode connect_response_;
