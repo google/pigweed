@@ -14,9 +14,11 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include "fsl_mu.h"
 #include "pw_bytes/span.h"
+#include "pw_chrono/system_clock.h"
 #include "pw_status/status.h"
 #include "pw_stream/stream.h"
 #include "pw_sync/binary_semaphore.h"
@@ -33,14 +35,21 @@ namespace pw::stream {
 // Interrupt setup is different between cores, so that is left to the user. An
 // example can be found in the docs. In the MU interrupt handler on each core,
 // the `HandleInterrupt` function on the stream should be called.
+//
+// If write_timeout is set then write must be finished within the
+// specified timeout. This implies that the reader side must handle messages
+// promptly to avoid data loss.
 class ShmemMcuxpressoStream : public NonSeekableReaderWriter {
  public:
-  ShmemMcuxpressoStream(MU_Type* base,
-                        ByteSpan shared_read_buffer,
-                        ByteSpan shared_write_buffer)
+  ShmemMcuxpressoStream(
+      MU_Type* base,
+      ByteSpan shared_read_buffer,
+      ByteSpan shared_write_buffer,
+      std::optional<chrono::SystemClock::duration> write_timeout = std::nullopt)
       : base_(base),
         shared_read_buffer_(shared_read_buffer),
-        shared_write_buffer_(shared_write_buffer) {}
+        shared_write_buffer_(shared_write_buffer),
+        write_timeout_(write_timeout) {}
   ~ShmemMcuxpressoStream();
 
   void Enable();
@@ -59,6 +68,7 @@ class ShmemMcuxpressoStream : public NonSeekableReaderWriter {
   sync::BinarySemaphore read_semaphore_;
   sync::BinarySemaphore write_semaphore_;
   sync::BinarySemaphore write_done_semaphore_;
+  std::optional<chrono::SystemClock::duration> write_timeout_;
 };
 
 }  // namespace pw::stream

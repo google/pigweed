@@ -74,7 +74,17 @@ Status ShmemMcuxpressoStream::DoWrite(ConstByteSpan data) {
   if (data.size() > shared_write_buffer_.size()) {
     return Status::InvalidArgument();
   }
-  write_semaphore_.acquire();
+
+  chrono::SystemClock::time_point deadline{};
+
+  if (write_timeout_.has_value()) {
+    deadline = chrono::SystemClock::now() + *write_timeout_;
+    if (!write_semaphore_.try_acquire_until(deadline)) {
+      return Status::DeadlineExceeded();
+    }
+  } else {
+    write_semaphore_.acquire();
+  }
 
   std::copy(data.begin(), data.end(), shared_write_buffer_.begin());
 
@@ -83,11 +93,18 @@ Status ShmemMcuxpressoStream::DoWrite(ConstByteSpan data) {
 
   MU_SendMsgNonBlocking(base_, kMuRegDataSize, data.size());
 
-  write_done_semaphore_.acquire();
+  Status status = OkStatus();
+  if (write_timeout_.has_value()) {
+    status = write_done_semaphore_.try_acquire_until(deadline)
+                 ? OkStatus()
+                 : Status::DeadlineExceeded();
+  } else {
+    write_done_semaphore_.acquire();
+  }
 
   MU_EnableInterrupts(base_, kMU_Tx0EmptyInterruptEnable);
 
-  return OkStatus();
+  return status;
 }
 
 void ShmemMcuxpressoStream::HandleInterrupt() {

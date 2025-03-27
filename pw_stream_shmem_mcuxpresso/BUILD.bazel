@@ -30,6 +30,7 @@ cc_library(
         "//pw_build/constraints/board:mimxrt595_evk",
     ],
     deps = [
+        "//pw_chrono:system_clock",
         "//pw_preprocessor",
         "//pw_stream",
         "//pw_sync:binary_semaphore",

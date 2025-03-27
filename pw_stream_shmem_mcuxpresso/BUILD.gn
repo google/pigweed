@@ -28,6 +28,7 @@ if (pw_third_party_mcuxpresso_SDK != "") {
     public_configs = [ ":default_config" ]
     public = [ "public/pw_stream_shmem_mcuxpresso/stream.h" ]
     public_deps = [
+      "$dir_pw_chrono:system_clock",
       "$dir_pw_stream",
       "$dir_pw_sync:binary_semaphore",
     ]
