@@ -20,6 +20,7 @@ load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
 load("@bazel_skylib//rules/directory:directory.bzl", "directory")
 load("@bazel_skylib//rules/directory:subdirectory.bzl", "subdirectory")
 load("@pigweed//pw_build/constraints/arm:lists.bzl", "ALL_CORTEX_M_CPUS")
+load("@pigweed//pw_build/constraints/riscv:lists.bzl", "ALL_RISCV_CPUS")
 load("@pigweed//pw_build:glob_dirs.bzl", "match_dir")
 load("@pigweed//pw_build:pw_py_importable_runfile.bzl", "pw_py_importable_runfile")
 load("@bazel_skylib//lib:selects.bzl", "selects")
@@ -270,6 +271,10 @@ filegroup(
             ":llvm-libc_arm-none-eabi_compile_files",
             ":llvm-libc_arm-none-eabi_link_files",
         ],
+        ALL_RISCV_CPUS: [
+            ":llvm-libc_riscv-unknown-elf_compile_files",
+            ":llvm-libc_riscv-unknown-elf_link_files",
+        ],
         "//conditions:default": [],
     }),
 )
@@ -304,6 +309,23 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+filegroup(
+    name = "llvm-libc_riscv-unknown-elf_compile_files",
+    srcs = glob([
+        "include/riscv*-unknown-unknown-elf/**",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "llvm-libc_riscv-unknown-elf_link_files",
+    srcs = glob([
+        "lib/riscv*-unknown-unknown-elf/**",
+        "lib/clang/*/lib/riscv*-unknown-unknown-elf/**",
+    ]),
+    visibility = ["//visibility:public"],
+)
+
 cc_args(
     name = "llvm-libc_link_args",
     actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
@@ -315,9 +337,24 @@ cc_args(
             "-Wl,-lc++",
             "-Wl,-lm",
         ],
+        ALL_RISCV_CPUS: [
+            "-nostdlib++",
+            "-nostartfiles",
+            "-unwindlib=none",
+            "-Wl,-lc++",
+            "-Wl,-lm",
+        ],
         "//conditions:default": [],
     }),
-    data = [":llvm-libc_arm-none-eabi_link_files"],
+    data = selects.with_or({
+        ALL_CORTEX_M_CPUS: [
+            ":llvm-libc_arm-none-eabi_link_files"
+        ],
+        ALL_RISCV_CPUS: [
+            ":llvm-libc_riscv-unknown-elf_link_files"
+        ],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:private"],
 )
 
@@ -326,9 +363,18 @@ cc_args(
     actions = ["@rules_cc//cc/toolchains/actions:compile_actions"],
     args = selects.with_or({
         ALL_CORTEX_M_CPUS: [],
+        ALL_RISCV_CPUS: [],
         "//conditions:default": [],
     }),
-    data = [":llvm-libc_arm-none-eabi_compile_files"],
+    data = selects.with_or({
+        ALL_CORTEX_M_CPUS: [
+            ":llvm-libc_arm-none-eabi_compile_files"
+        ],
+        ALL_RISCV_CPUS: [
+            ":llvm-libc_riscv-unknown-elf_compile_files"
+        ],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:private"],
 )
 

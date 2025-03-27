@@ -49,8 +49,6 @@ cc_args(
     name = "common_link",
     actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
     args = [
-        "-nostdlib++",
-        "-nostartfiles",
         "-Wl,--gc-sections",
     ],
 )
@@ -85,6 +83,7 @@ cc_toolchain(
         "//pw_toolchain/cc/args:wnon_virtual_dtor",
         "//pw_toolchain/cc/args:common_warnings",
         "//pw_toolchain/cc/args:color_diagnostics",
+        "@llvm_toolchain//:llvm-libc_args",
     ] + select({
         ":imac": [
             ":rv32imac",
@@ -124,7 +123,7 @@ cc_args(
         "@rules_cc//cc/toolchains/actions:link_actions",
     ],
     args = [
-        "--target=riscv32-unknown-none-elf",
+        "--target=riscv32-unknown-elf",
     ],
 )
 
