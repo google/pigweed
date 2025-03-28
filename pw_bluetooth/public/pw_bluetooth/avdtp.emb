@@ -12,6 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import "pw_bluetooth/a2dp_sbc.emb" as sbc
+import "pw_bluetooth/a2dp_aac.emb" as aac
+
 [$default byte_order: "LittleEndian"]
 [(cpp) namespace: "pw::bluetooth::emboss::avdtp"]
 # Cf. AVDTP Spec v1.3
@@ -151,27 +154,60 @@ enum ServiceCategory:
   DELAY_REPORTING    = 0x08
 
 
-struct MediaCodecCapability(length: UInt:32):
+struct MediaCodecCapabilityHeader:
   -- Cf. Table 8.52
   0     [+1]  bits:
     0     [+4]       UInt            rfa
     $next [+4]       MediaType       media_type
 
   $next [+1]         MediaCodecType  media_codec_type
-  $next [+length-2]  UInt:8[]        media_codec_specific_informations_elements
+
+
+struct MediaCodecCapability(length: UInt:32):
+  -- Cf. Table 8.52
+  0     [+MediaCodecCapabilityHeader.$size_in_bytes]  MediaCodecCapabilityHeader  header
+  $next [+length-2]                                   UInt:8[]                    media_codec_specific_information_elements
+  # TODO(b/406318757): Remove once downstreams are updated
+  2     [+length-2]                                   UInt:8[]                    media_codec_specific_informations_elements
+  0     [+1]  bits:
+    0     [+4]                                        UInt                        rfa
+    $next [+4]                                        MediaType                   media_type
+
+  1     [+1]                                          MediaCodecType              media_codec_type
+
+
+struct MediaCodecCapabilitySbc:
+  -- Cf. Table 8.52
+  [requires: header.media_codec_type == MediaCodecType.SBC]
+  0     [+MediaCodecCapabilityHeader.$size_in_bytes]            MediaCodecCapabilityHeader            header
+  $next [+sbc.CodecSpecificInformationElements.$size_in_bytes]  sbc.CodecSpecificInformationElements  codec
+
+
+struct MediaCodecCapabilityAac:
+  -- Cf. Table 8.52
+  [requires: header.media_codec_type == MediaCodecType.AAC]
+  0     [+MediaCodecCapabilityHeader.$size_in_bytes]            MediaCodecCapabilityHeader            header
+  $next [+aac.CodecSpecificInformationElements.$size_in_bytes]  aac.CodecSpecificInformationElements  codec
 
 
 struct ServiceCapability(remaining_size: UInt:32):
   -- Cf. 8.21.1 Generic Service Capabilities
   -- Cf. Table 8.46
-  0        [+1]                     ServiceCategory                        service_category
-  1        [+1]                     UInt                                   length
+  0        [+1]                                         ServiceCategory                        service_category
+  1        [+1]                                         UInt                                   length
+  2        [+remaining_size-2]                          UInt:8[remaining_size-2]               raw_service_capability
   if service_category == ServiceCategory.MEDIA_CODEC:
-    2        [+length]              MediaCodecCapability(length)           media_codec_capability
+    2        [+length]                                  MediaCodecCapability(length)           media_codec_capability
+
+  if service_category == ServiceCategory.MEDIA_CODEC && media_codec_capability.header.media_codec_type == MediaCodecType.SBC:
+    2        [+MediaCodecCapabilitySbc.$size_in_bytes]  MediaCodecCapabilitySbc                sbc_codec
+
+  if service_category == ServiceCategory.MEDIA_CODEC && media_codec_capability.header.media_codec_type == MediaCodecType.AAC:
+    2        [+MediaCodecCapabilityAac.$size_in_bytes]  MediaCodecCapabilityAac                aac_codec
 
   if remaining_size > length+2:
     let new_remaining_size = remaining_size-length-2
-    length+2 [+new_remaining_size]  ServiceCapability(new_remaining_size)  next
+    length+2 [+new_remaining_size]                      ServiceCapability(new_remaining_size)  next
 
 # Cf 8. Signaling Messages
 
@@ -240,6 +276,32 @@ struct StreamEndPointDiscoveryResponse(length: UInt:32):
 struct StreamEndPointDiscoveryReject:
   -- Cf. 8.6.3 AVDTP_DISCOVER_REJ
   [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
+  0     [+2]  SignalingHeader  signaling_header
+  $next [+1]  ErrorCode        error_code
+
+# Cf 8.7 GetCapabilities - AVDTP_GET_CAPABILITIES
+
+
+struct GetCapabilitiesCommand:
+  -- Cf 8.7.1 AVDTP_GET_CAPABILITIES_CMD
+  [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_CAPABILITIES]
+  0     [+2]         SignalingHeader  signaling_header
+  $next [+1]  bits:
+    0     [+2]       UInt             rfa
+    2     [+6]       Seid             acp_seid
+
+
+struct GetCapabilitiesResponse(length: UInt:32):
+  -- Cf 8.8.2 AVDTP_GET_ALL_CAPABILITIES_RSP
+  [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
+  0     [+2]              SignalingHeader                   signaling_header
+  let services_size = length-SignalingHeader.$size_in_bytes
+  $next [+services_size]  ServiceCapability(services_size)  service_capabilities
+
+
+struct GetCapabilitiesReject:
+  -- Cf 8.6.3 AVDTP_GET_CAPABILITIES_REJ
+  [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_CAPABILITIES]
   0     [+2]  SignalingHeader  signaling_header
   $next [+1]  ErrorCode        error_code
 

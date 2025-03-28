@@ -246,6 +246,10 @@ emboss_cc_library(
     enable_enum_traits = False,
     import_dirs = ["public"],
     visibility = ["//visibility:private"],
+    deps = [
+        ":_emboss_a2dp_aac",
+        ":_emboss_a2dp_sbc",
+    ],
 )
 
 emboss_cc_library(
