@@ -175,7 +175,7 @@ template("pw_size_report") {
         metadata = {
           pw_doc_sources = rebase_path([ _doc_rst_output ], root_build_dir)
         }
-        script = "$dir_pw_bloat/py/pw_bloat/bloat.py"
+        script = "$dir_pw_bloat/py/pw_bloat/build.py"
         python_deps = [ "$dir_pw_bloat/py" ]
         inputs = [
           pw_bloat_BLOATY_CONFIG,
