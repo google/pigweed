@@ -25,7 +25,7 @@ struct Uart {
 }
 
 impl Uart {
-    fn write(&self, buf: &[u8]) -> Result<usize> {
+    fn write_all(&self, buf: &[u8]) -> Result<()> {
         unsafe {
             for c in buf.iter() {
                 // Simply write the character to the fifo, assuming it
@@ -34,7 +34,7 @@ impl Uart {
                 // fill its buffers.
                 ptr::write_volatile(self.base_addr as *mut u8, *c);
             }
-            Ok(buf.len())
+            Ok(())
         }
     }
 }
@@ -44,12 +44,7 @@ static UART: SpinLock<Uart> = SpinLock::new(Uart {
 });
 
 #[no_mangle]
-pub fn console_backend_write(buf: &[u8]) -> Result<usize> {
+pub fn console_backend_write_all(buf: &[u8]) -> Result<()> {
     let uart = UART.lock();
-    uart.write(buf)
-}
-
-#[no_mangle]
-pub fn console_backend_flush() -> Result<()> {
-    Ok(())
+    uart.write_all(buf)
 }

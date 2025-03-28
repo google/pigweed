@@ -15,11 +15,6 @@ use pw_status::{Error, Result};
 use std::io::{stdout, Write as StdWrite};
 
 #[no_mangle]
-pub fn console_backend_write(buf: &[u8]) -> Result<usize> {
-    stdout().lock().write(buf).map_err(|_| Error::Unknown)
-}
-
-#[no_mangle]
-pub fn console_backend_flush() -> Result<()> {
-    stdout().lock().flush().map_err(|_| Error::Unknown)
+pub fn console_backend_write_all(buf: &[u8]) -> Result<()> {
+    stdout().lock().write_all(buf).map_err(|_| Error::Unknown)
 }

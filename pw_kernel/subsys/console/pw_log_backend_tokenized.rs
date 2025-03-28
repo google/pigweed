@@ -58,14 +58,17 @@ pub mod __private {
 
             // Pigweed's detokenization tools recognize base64 encoded data
             // prefixed with a `$` as tokenized data interspersed with plain text.
+            // To ensure an single call to write_all(), the encode buffer is prefixed
+            // with the $ and postfixed with a newline.
             // TODO: b/401562650 - implement streaming base64 encoder.
             let mut encode_buffer = [0u8; pw_base64::encoded_size(ENCODE_BUFFER_SIZE)];
-            if let Ok(s) = pw_base64::encode_str(&data[..write_len], &mut encode_buffer) {
-                use embedded_io::Write;
+            encode_buffer[0] = b"$"[0];
+            // pass a slice of encode_buffer to ensure $ is not encoded.
+            if let Ok(s) = pw_base64::encode_str(&data[0..write_len], &mut encode_buffer[1..]) {
+                // postfix the encoded buffer with a newline after the $ and encoded string
+                encode_buffer[s.len() + 2] = b"\n"[0];
                 let mut console = console::Console::new();
-                let _ = console.write(b"$");
-                let _ = console.write(s.as_bytes());
-                let _ = console.write(b"\n");
+                let _ = console.write_all(&encode_buffer);
             }
 
             Ok(())

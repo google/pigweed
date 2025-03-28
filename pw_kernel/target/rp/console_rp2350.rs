@@ -34,17 +34,12 @@ pub type ConsoleUart = UartPeripheral<
 static UART: SpinLock<Option<ConsoleUart>> = SpinLock::new(None);
 
 #[no_mangle]
-pub fn console_backend_write(buf: &[u8]) -> Result<usize> {
+pub fn console_backend_write_all(buf: &[u8]) -> Result<()> {
     let mut uart = UART.lock();
     match &mut (*uart) {
-        Some(uart) => uart.write(buf).map_err(|_| Error::Unknown),
-        None => Ok(buf.len()),
+        Some(uart) => uart.write_all(buf).map_err(|_| Error::Unknown),
+        None => Ok(()),
     }
-}
-
-#[no_mangle]
-pub fn console_backend_flush() -> Result<()> {
-    Ok(())
 }
 
 pub fn register_uart(val: ConsoleUart) {

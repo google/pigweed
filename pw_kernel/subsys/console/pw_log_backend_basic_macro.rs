@@ -78,7 +78,7 @@ impl CoreFmtFormatMacroGenerator for LogfGenerator<'_> {
             // So match the behavior of the tokenized logger and also ignore
             // unnecessary casts here.
             #![allow(clippy::unnecessary_cast)]
-            use __pw_log_backend_crate::embedded_io::Write;
+            use core::fmt::Write;
             let mut console = __pw_log_backend_crate::console::Console::new();
             let _ = core::write!(
                 &mut console,

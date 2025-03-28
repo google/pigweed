@@ -22,13 +22,8 @@ use riscv_semihosting::hio::hstdout;
 use pw_status::{Error, Result};
 
 #[no_mangle]
-pub fn console_backend_write(buf: &[u8]) -> Result<usize> {
+pub fn console_backend_write_all(buf: &[u8]) -> Result<()> {
     let mut stdout = hstdout().map_err(|_| Error::Unavailable)?;
     stdout.write_all(buf).map_err(|_| Error::DataLoss)?;
-    Ok(buf.len())
-}
-
-#[no_mangle]
-pub fn console_backend_flush() -> Result<()> {
     Ok(())
 }
