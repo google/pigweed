@@ -134,7 +134,7 @@ cc_library(
     hdrs = [
         "config/FreeRTOSConfig.h",
     ],
-    includes = ["config/"],
+    strip_include_prefix = "config",
     target_compatible_with = [":freertos_config_cv"],
     deps = [
         "//third_party/freertos:config_assert",
