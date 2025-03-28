@@ -176,16 +176,49 @@ struct ServiceCapability(remaining_size: UInt:32):
 # Cf 8. Signaling Messages
 
 
-struct SignalingHeader:
+struct CommonSignalingHeader:
   -- Cf. 8.4 AVDTP Signaling header
   0     [+1]  bits:
-    0     [+2]       MessageType           message_type
-    $next [+2]       PacketType            packet_type
-    $next [+4]       UInt                  transaction_label
+    0     [+2]       MessageType  message_type
+    $next [+2]       PacketType   packet_type
+    $next [+4]       UInt         transaction_label
 
+
+struct SignalingHeader:
+  -- Cf. 8.4 AVDTP Signaling header
+  [requires: header.packet_type == PacketType.SINGLE_PACKET]
+  0     [+CommonSignalingHeader.$size_in_bytes]  CommonSignalingHeader  header
   $next [+1]  bits:
-    0     [+6]       SignalIdentifierCode  signal_identifier
-    $next [+2]       UInt                  rfa
+    0     [+6]                                   SignalIdentifierCode   signal_identifier
+    $next [+2]                                   UInt                   rfa
+
+  # TODO(b/405443669): Remove once downstream are updated
+  0     [+1]  bits:
+    0     [+2]                                   MessageType            message_type
+    $next [+2]                                   PacketType             packet_type
+    $next [+4]                                   UInt                   transaction_label
+
+
+struct StartSignalingHeader:
+  -- Cf. 8.4 AVDTP SignalingHeader
+  [requires: header.packet_type == PacketType.START_PACKET]
+  0     [+CommonSignalingHeader.$size_in_bytes]  CommonSignalingHeader  header
+  $next [+1]                                     UInt                   number_of_signal_packets
+  $next [+1]  bits:
+    0     [+6]                                   SignalIdentifierCode   signal_identifier
+    $next [+2]                                   UInt                   rfa
+
+
+struct ContinueSignalingHeader:
+  -- Cf. 8.4 AVDTP Signaling header
+  [requires: header.packet_type == PacketType.CONTINUE_PACKET]
+  0 [+CommonSignalingHeader.$size_in_bytes]  CommonSignalingHeader  header
+
+
+struct EndSignalingHeader:
+  -- Cf. 8.4 AVDTP Signaling header
+  [requires: header.packet_type == PacketType.END_PACKET]
+  0 [+CommonSignalingHeader.$size_in_bytes]  CommonSignalingHeader  header
 
 # Cf 8.6 Stream End Point Discovery - AVDTP_DISCOVER
 
