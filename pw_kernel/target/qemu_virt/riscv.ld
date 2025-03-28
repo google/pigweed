@@ -206,7 +206,7 @@ _stext = ORIGIN(REGION_TEXT);
 _heap_size = 1K; /* Set heap size to 1KB */
 _max_hart_id = 1; /* Two harts present */
 _hart_stack_size = 1K; /* Set stack size per hart to 1KB */
-_stack_start = ADDR(.stack);
+_stack_start = _stack_high;
 
 
 PROVIDE(InstructionMisaligned = ExceptionHandler);
