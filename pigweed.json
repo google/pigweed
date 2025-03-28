@@ -229,6 +229,16 @@
           ],
           [
             "build",
+            "--config=k_qemu_virt_riscv32",
+            "//pw_kernel/..."
+          ],
+          [
+            "test",
+            "--config=k_qemu_virt_riscv32",
+            "//pw_kernel/..."
+          ],
+          [
+            "build",
             "--config=k_rp2350",
             "//pw_kernel/..."
           ]
