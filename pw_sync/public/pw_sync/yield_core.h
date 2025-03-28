@@ -26,6 +26,9 @@
 #include <zircon/syscalls.h>
 #define PW_SYNC_YIELD_CORE_FOR_SMT() zx_thread_legacy_yield(0)
 
+#elif defined(__riscv)
+#define PW_SYNC_YIELD_CORE_FOR_SMT() asm volatile("pause");
+
 #else
 #error "No processor yield implementation for this architecture."
 
