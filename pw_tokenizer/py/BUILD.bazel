@@ -64,6 +64,18 @@ pw_py_binary(
     deps = [":pw_tokenizer"],
 )
 
+pw_py_binary(
+    name = "serial_detokenizer",
+    srcs = [
+        "pw_tokenizer/serial_detokenizer.py",
+    ],
+    main = "pw_tokenizer/serial_detokenizer.py",
+    deps = [
+        ":pw_tokenizer",
+        "@python_packages//pyserial",
+    ],
+)
+
 # This test attempts to directly access files in the source tree, which is
 # incompatible with sandboxing.
 # TODO: b/241307309 - Fix this test.

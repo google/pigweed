@@ -164,7 +164,7 @@ fn trampoline(initial_function: fn(usize), arg0: usize) {
         LOG_THREAD_CREATE,
         "riscv trampoline: initial function {:#x} arg {:#x}",
         initial_function as usize,
-        arg0
+        arg0 as usize
     );
 
     // Enable interrupts

@@ -14,7 +14,7 @@
 
 common:k_common --@rules_rust//rust/toolchain/channel=nightly
 common:k_common --@pigweed//pw_toolchain:cortex-m_toolchain_kind=clang
-common:k_common --@pigweed//pw_log/rust:pw_log_backend=//pw_kernel/subsys/console:pw_log_backend_basic
+common:k_common --@pigweed//pw_log/rust:pw_log_backend=//pw_kernel/subsys/console:pw_log_backend_tokenized
 build:k_common --build_tag_filters=-do_not_build
 build:k_common -c opt
 test:k_common --test_tag_filters=-integration,-do_not_build,-do_not_run_test
@@ -39,41 +39,33 @@ common:k_host --config=k_common
 # =======================================
 common:k_qemu_mps2_an505 --config=k_common
 build:k_qemu_mps2_an505 --platforms=//pw_kernel/target/arm:mps2-an505
-run:k_qemu_mps2_an505 --run_under="@qemu//:qemu-system-arm \
-  -cpu cortex-m33 \
-  -machine mps2-an505 \
-  -nographic \
-  -semihosting-config enable=on,target=native \
-  -serial mon:stdio \
-  -kernel "
-test:k_qemu_mps2_an505 --run_under="@qemu//:qemu-system-arm \
-  -cpu cortex-m33 \
-  -machine mps2-an505 \
-  -nographic \
-  -semihosting-config enable=on,target=native \
-  -serial mon:stdio \
-  -kernel "
+run:k_qemu_mps2_an505 --run_under="//pw_kernel/tooling:qemu \
+  --cpu cortex-m33 \
+  --machine mps2-an505 \
+  --semihosting \
+  --image "
+test:k_qemu_mps2_an505 --run_under="//pw_kernel/tooling:qemu \
+  --cpu cortex-m33 \
+  --machine mps2-an505 \
+  --semihosting \
+  --image "
 
 # QEMU virt riscv32 target configuration
 # =======================================
 common:k_qemu_virt_riscv32 --config=k_common
 build:k_qemu_virt_riscv32 --platforms=//pw_kernel/target/qemu_virt:riscv32imc
-run:k_qemu_virt_riscv32 --run_under="@qemu//:qemu-system-riscv32 \
-  -bios none \
-  -cpu rv32 \
-  -machine virt \
-  -nographic \
-  -serial mon:stdio \
-  -kernel "
-test:k_qemu_virt_riscv32 --run_under="@qemu//:qemu-system-riscv32 \
-  -bios none \
-  -cpu rv32 \
-  -machine virt \
-  -nographic \
-  -serial mon:stdio \
-  -kernel "
+run:k_qemu_virt_riscv32 --run_under="//pw_kernel/tooling:qemu \
+  --cpu rv32 \
+  --machine virt \
+  --image "
+test:k_qemu_virt_riscv32 --run_under="//pw_kernel/tooling:qemu \
+  --cpu rv32 \
+  --machine virt \
+  --semihosting \
+  --image "
 
 # RP2350 target configuration
 # =======================================
 common:k_rp2350 --config=k_common
 build:k_rp2350 --platforms=//pw_kernel/target/rp:rp2350
+run:k_rp2350 --run_under="//pw_kernel/tooling:serial_detokenizer "

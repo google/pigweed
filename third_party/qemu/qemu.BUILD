@@ -17,6 +17,7 @@ A build file for qemu binaries.
 """
 
 load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+load("@pigweed//pw_build:pw_py_importable_runfile.bzl", "pw_py_importable_runfile")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -30,4 +31,18 @@ native_binary(
 native_binary(
     name = "qemu-system-riscv32",
     src = "bin/qemu-system-riscv32",
+)
+
+pw_py_importable_runfile(
+    name = "qemu-system-arm-runfiles",
+    src = ":qemu-system-arm",
+    executable = True,
+    import_location = "qemu.qemu_system_arm",
+)
+
+pw_py_importable_runfile(
+    name = "qemu-system-riscv32-runfiles",
+    src = ":qemu-system-riscv32",
+    executable = True,
+    import_location = "qemu.qemu_system_riscv32",
 )

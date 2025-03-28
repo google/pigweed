@@ -58,9 +58,12 @@ pub fn systick_early_init(syst: &mut SYST) {
 }
 
 pub fn systick_init() {
-    info!("ticks_per_10ms: {}", SYST::get_ticks_per_10ms());
+    info!("ticks_per_10ms: {}", SYST::get_ticks_per_10ms() as u32);
     if SYST::get_ticks_per_10ms() > 0 {
-        pw_assert::eq!(SYST::get_ticks_per_10ms() * 100, TICKS_PER_SEC);
+        pw_assert::eq!(
+            (SYST::get_ticks_per_10ms() * 100) as u64,
+            TICKS_PER_SEC as u64
+        );
     }
 }
 

@@ -120,7 +120,10 @@ impl<T> Mutex<T> {
         let mut state = self.state.lock();
 
         pw_assert::assert!(state.count > 0);
-        pw_assert::eq!(state.holder_thread_id, state.sched().current_thread_id());
+        pw_assert::eq!(
+            state.holder_thread_id as usize,
+            state.sched().current_thread_id() as usize
+        );
         state.holder_thread_id = Thread::null_id();
 
         state.count -= 1;

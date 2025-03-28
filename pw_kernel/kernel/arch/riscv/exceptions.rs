@@ -34,19 +34,19 @@ fn dump_exception_frame(frame: &riscv_rt::TrapFrame) {
 
     info!(
         "ra  {:#010x} t0 {:#010x} t1  {:#010x} t2  {:#010x}",
-        frame.ra, frame.t0, frame.t1, frame.t2
+        frame.ra as u32, frame.t0 as u32, frame.t1 as u32, frame.t2 as u32
     );
     info!(
         "t3  {:#010x} t4 {:#010x} t5  {:#010x} t6  {:#010x}",
-        frame.t3, frame.t4, frame.t5, frame.t6
+        frame.t3 as u32, frame.t4 as u32, frame.t5 as u32, frame.t6 as u32
     );
     info!(
         "a0  {:#010x} a1 {:#010x} a2  {:#010x} a3  {:#010x}",
-        frame.a0, frame.a1, frame.a2, frame.a3
+        frame.a0 as u32, frame.a1 as u32, frame.a2 as u32, frame.a3 as u32
     );
     info!(
         "a4  {:#010x} a5 {:#010x} a6  {:#010x} a7  {:#010x}",
-        frame.a4, frame.a5, frame.a6, frame.a7
+        frame.a4 as u32, frame.a5 as u32, frame.a6 as u32, frame.a7 as u32
     );
 }
 
@@ -57,7 +57,11 @@ fn custom_exception_handler(trap_frame: &riscv_rt::TrapFrame) -> ! {
     let mepc = mepc::read();
 
     // For now, always dump the exception we've received and halt.
-    info!("Exception mcause {:x} mepc {:x}", mcause.bits(), mepc);
+    info!(
+        "Exception mcause {:x} mepc {:x}",
+        mcause.bits() as usize,
+        mepc as usize
+    );
     dump_exception_frame(trap_frame);
     loop {
         riscv::asm::wfi();
@@ -70,8 +74,8 @@ unsafe fn custom_interrupt_handler() {
     debug_if!(
         LOG_EXCEPTIONS,
         "Interrupt mcause {:x} mepc {:x}",
-        mcause::read().bits(),
-        mepc::read()
+        mcause::read().bits() as usize,
+        mepc::read() as usize
     );
 
     let mcause = mcause::read();

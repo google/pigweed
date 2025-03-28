@@ -95,6 +95,7 @@ macro_rules! panic {
 #[macro_export]
 macro_rules! assert {
   ($condition:expr $(,)?) => {{
+      #[allow(clippy::unnecessary_cast)]
       if !$condition {
           // Ideally we'd combine these two log statements.  However, the `pw_log` API
           // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
@@ -105,6 +106,7 @@ macro_rules! assert {
   }};
 
   ($condition:expr, $($args:expr),* $(,)?) => {{
+      #[allow(clippy::unnecessary_cast)]
       if !$condition {
           // Ideally we'd combine these two log statements.  However, the `pw_log` API
           // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
@@ -119,25 +121,25 @@ macro_rules! assert {
 #[macro_export]
 macro_rules! eq {
   ($condition_a:expr, $condition_b:expr $(,)?) => {{
-      let a = &$condition_a;
-      let b = &$condition_b;
-      if *a != *b {
+      #[allow(clippy::deref_addrof)]
+      #[allow(clippy::unnecessary_cast)]
+      if *&$condition_a != *&$condition_b {
           // Ideally we'd combine these two log statements.  However, the `pw_log` API
           // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
           $crate::__private_log_panic_banner!();
-          $crate::__private::fatal!("assert_eq!() failed, {} != {}", a, b);
+          $crate::__private::fatal!("assert_eq!() failed, {} != {}", $condition_a, $condition_b);
           unsafe{$crate::pw_assert_HandleFailure()}
       }
   }};
 
   ($condition_a:expr, $condition_b:expr, $($args:expr),* $(,)?) => {{
-      let a = &$condition_a;
-      let b = &$condition_b;
-      if *a != *b {
+      #[allow(clippy::deref_addrof)]
+      #[allow(clippy::unnecessary_cast)]
+      if *&$condition_a != *&$condition_b {
           // Ideally we'd combine these two log statements.  However, the `pw_log` API
           // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
           $crate::__private_log_panic_banner!();
-          $crate::__private::fatal!("assert_eq!() failed, {} != {}", a, b);
+          $crate::__private::fatal!("assert_eq!() failed, {} != {}", $condition_a, $condition_b);
           $crate::__private::fatal!($($args),*);
           unsafe{$crate::pw_assert_HandleFailure()}
       }
@@ -147,25 +149,25 @@ macro_rules! eq {
 #[macro_export]
 macro_rules! ne {
   ($condition_a:expr, $condition_b:expr $(,)?) => {{
-      let a = &$condition_a;
-      let b = &$condition_b;
-      if *a == *b {
+      #[allow(clippy::deref_addrof)]
+      #[allow(clippy::unnecessary_cast)]
+      if *&$condition_a == *&$condition_b {
           // Ideally we'd combine these two log statements.  However, the `pw_log` API
           // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
           $crate::__private_log_panic_banner!();
-          $crate::__private::fatal!("assert_neq!() failed, {} == {}", a, b);
+          $crate::__private::fatal!("assert_neq!() failed, {} == {}", $condition_a, $condition_b);
           unsafe{$crate::pw_assert_HandleFailure()}
       }
   }};
 
   ($condition_a:expr, $condition_b:expr, $($args:expr),* $(,)?) => {{
-      let a = &$condition_a;
-      let b = &$condition_b;
-      if *a == *b {
+      #[allow(clippy::deref_addrof)]
+      #[allow(clippy::unnecessary_cast)]
+      if *&$condition_a == *&$condition_b {
           // Ideally we'd combine these two log statements.  However, the `pw_log` API
           // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
           $crate::__private_log_panic_banner!();
-          $crate::__private::fatal!("assert_neq!() failed, {} == {}", a, b);
+          $crate::__private::fatal!("assert_neq!() failed, {} == {}", $condition_a, $condition_b);
           $crate::__private::fatal!($($args),*);
           unsafe{$crate::pw_assert_HandleFailure()}
       }

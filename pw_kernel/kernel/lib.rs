@@ -57,7 +57,10 @@ impl ThreadBuffer {
     // make sure this function can only be called once.
     #[inline(never)]
     unsafe fn alloc_thread(&mut self, name: &'static str) -> ForeignBox<Thread> {
-        pw_assert::eq!(self.buffer.as_ptr().align_offset(align_of::<Thread>()), 0);
+        pw_assert::eq!(
+            self.buffer.as_ptr().align_offset(align_of::<Thread>()) as usize,
+            0 as usize
+        );
         let thread_ptr = self.buffer.as_mut_ptr() as *mut Thread;
         thread_ptr.write(Thread::new(name));
         ForeignBox::new_from_ptr(&mut *thread_ptr)
@@ -206,7 +209,7 @@ fn thread_b() {
             continue;
         };
         info!("Thread B: counter value {}", *counter as u64);
-        pw_assert::ne!(*counter, 4);
+        pw_assert::ne!(*counter as usize, 4 as usize);
         drop(counter);
         // Give Thread A a chance to acquire the mutex.
         scheduler::yield_timeslice();

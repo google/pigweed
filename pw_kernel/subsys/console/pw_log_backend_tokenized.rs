@@ -32,7 +32,7 @@ pub mod __private {
 
     // A simple implementation of [`pw_tokenizer::MessageWriter`] that writes
     // data to a buffer.  On message finalization, it base64 encodes the data
-    // and prints it using `hprintln!`.
+    // and writes it to the console.
     pub struct LogMessageWriter {
         cursor: Cursor<[u8; ENCODE_BUFFER_SIZE]>,
     }

@@ -409,7 +409,7 @@ fn reschedule(
     pw_assert::assert!(
         new_thread.state == State::Ready,
         "<{}> not ready",
-        new_thread.name
+        new_thread.name as &str
     );
     new_thread.state = State::Running;
 
@@ -519,7 +519,7 @@ impl SchedLockGuard<'_, WaitQueue> {
         let current_thread_name = thread.name;
         thread.state = State::Waiting;
         self.queue.push_back(thread);
-        wait_queue_debug!("<{}> rescheduling", current_thread_name);
+        wait_queue_debug!("<{}> rescheduling", current_thread_name as &str);
         self.reschedule(current_thread_id)
     }
 
@@ -539,7 +539,7 @@ impl SchedLockGuard<'_, WaitQueue> {
             pw_assert::panic!("thread no longer in wait queue");
         };
 
-        wait_queue_debug!("<{}> timeout", thread.name);
+        wait_queue_debug!("<{}> timeout", thread.name as &str);
         thread.state = State::Ready;
         self.sched_mut().run_queue.push_back(thread);
         Some(Error::DeadlineExceeded)
@@ -549,7 +549,7 @@ impl SchedLockGuard<'_, WaitQueue> {
         let Some(mut thread) = self.queue.pop_head() else {
             return self;
         };
-        wait_queue_debug!("waking <{}>", thread.name);
+        wait_queue_debug!("waking <{}>", thread.name as &str);
         thread.state = State::Ready;
         self.sched_mut().run_queue.push_back(thread);
         self.try_reschedule()
@@ -557,15 +557,15 @@ impl SchedLockGuard<'_, WaitQueue> {
 
     pub fn wait(mut self) -> Self {
         let thread = self.sched_mut().take_current_thread();
-        wait_queue_debug!("<{}> waiting", thread.name);
+        wait_queue_debug!("<{}> waiting", thread.name as &str);
         self = self.add_to_queue_and_reschedule(thread);
-        wait_queue_debug!("<{}> back", self.sched().current_thread_name());
+        wait_queue_debug!("<{}> back", self.sched().current_thread_name() as &str);
         self
     }
 
     pub fn wait_until(mut self, deadline: Instant) -> (Self, Result<()>) {
         let mut thread = self.sched_mut().take_current_thread();
-        wait_queue_debug!("<{}> wait_until", thread.name);
+        wait_queue_debug!("<{}> wait_until", thread.name as &str);
 
         // Smuggle references to the thread and wait queue into the callback.
         // Safety:
@@ -592,8 +592,8 @@ impl SchedLockGuard<'_, WaitQueue> {
             // Safety: the wait queue lock protects access to the thread.
             wait_queue_debug!(
                 "timeout callback for {} ({})",
-                unsafe { (*thread_ptr).name },
-                unsafe { to_string((*thread_ptr).state) }
+                unsafe { (*thread_ptr).name } as &str,
+                unsafe { to_string((*thread_ptr).state) } as &str
             );
 
             // Safety: We know that thread_ptr is valid for the life of `wait_until`
@@ -620,7 +620,7 @@ impl SchedLockGuard<'_, WaitQueue> {
         // below rely on it for correctness.
         self = self.add_to_queue_and_reschedule(thread);
 
-        wait_queue_debug!("<{}> back", self.sched().current_thread_name());
+        wait_queue_debug!("<{}> back", self.sched().current_thread_name() as &str);
 
         // Cancel timeout callback if has not already fired.
         //
@@ -629,7 +629,7 @@ impl SchedLockGuard<'_, WaitQueue> {
 
         wait_queue_debug!(
             "<{}> exiting wait_until",
-            self.sched().current_thread_name()
+            self.sched().current_thread_name() as &str
         );
 
         // Safety:

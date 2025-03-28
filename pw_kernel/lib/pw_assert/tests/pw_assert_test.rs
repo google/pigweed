@@ -22,39 +22,39 @@ use unittest::test;
 
 #[test]
 fn assert_syntax_works() -> unittest::Result<()> {
-    pw_assert::assert!(true);
-    pw_assert::assert!(true,);
+    pw_assert::assert!(true as bool);
+    pw_assert::assert!(true as bool,);
 
-    pw_assert::assert!(true, "custom msg");
-    pw_assert::assert!(true, "custom msg",);
+    pw_assert::assert!(true as bool, "custom msg");
+    pw_assert::assert!(true as bool, "custom msg",);
 
-    pw_assert::assert!(true, "custom msg with arg {}", 42);
-    pw_assert::assert!(true, "custom msg with arg {}", 42,);
+    pw_assert::assert!(true as bool, "custom msg with arg {}", 42 as u32);
+    pw_assert::assert!(true as bool, "custom msg with arg {}", 42 as u32,);
     Ok(())
 }
 
 #[test]
 fn assert_eq_syntax_works() -> unittest::Result<()> {
-    pw_assert::eq!(1, 1);
-    pw_assert::eq!(1, 1,);
+    pw_assert::eq!(1 as u32, 1 as u32);
+    pw_assert::eq!(1 as u32, 1 as u32,);
 
-    pw_assert::eq!(1, 1, "custom msg");
-    pw_assert::eq!(1, 1, "custom msg",);
+    pw_assert::eq!(1 as u32, 1 as u32, "custom msg");
+    pw_assert::eq!(1 as u32, 1 as u32, "custom msg",);
 
-    pw_assert::eq!(1, 1, "custom msg with arg {}", 42);
-    pw_assert::eq!(1, 1, "custom msg with arg {}", 42,);
+    pw_assert::eq!(1 as u32, 1 as u32, "custom msg with arg {}", 42 as u32);
+    pw_assert::eq!(1 as u32, 1 as u32, "custom msg with arg {}", 42 as u32,);
     Ok(())
 }
 
 #[test]
 fn assert_ne_syntax_works() -> unittest::Result<()> {
-    pw_assert::ne!(1, 2);
-    pw_assert::ne!(1, 2,);
+    pw_assert::ne!(1 as u32, 2 as u32);
+    pw_assert::ne!(1 as u32, 2 as u32,);
 
-    pw_assert::ne!(1, 2, "custom msg");
-    pw_assert::ne!(1, 2, "custom msg",);
+    pw_assert::ne!(1 as u32, 2 as u32, "custom msg");
+    pw_assert::ne!(1 as u32, 2 as u32, "custom msg",);
 
-    pw_assert::ne!(1, 2, "custom msg with arg {}", 42);
-    pw_assert::ne!(1, 2, "custom msg with arg {}", 42,);
+    pw_assert::ne!(1 as u32, 2 as u32, "custom msg with arg {}", 42 as u32);
+    pw_assert::ne!(1 as u32, 2 as u32, "custom msg with arg {}", 42 as u32,);
     Ok(())
 }
