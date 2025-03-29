@@ -48,6 +48,12 @@ cc_library(
     ],
     strip_include_prefix = "public",
     tags = ["noclangtidy"],
+    deps = [":config_backend"],
+)
+
+label_flag(
+    name = "config_backend",
+    build_setting_default = "//pw_build:default_module_config",
 )
 
 cc_library(
