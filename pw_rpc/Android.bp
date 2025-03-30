@@ -450,15 +450,15 @@ genrule_defaults {
 // is compiled with "pw_rpc" as the prefix.
 genrule_defaults {
     name: "pw_rpc_generate_pwpb_proto_with_prefix",
-    cmd: "in_files=($(in)); prefix_dir=$$(dirname $${in_files[0]}); " +
-        "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
+    cmd: "in_files=($(in)); proto_files=(); proto_path_args=(); " +
         "for f in \"$${in_files[@]}\"; do " +
         "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
+        "proto_path_args+=(\"--proto-path=$$(dirname $$(dirname $${f})) \"); " +
         "proto_files+=(\"$${f}\"); fi; done; " +
         "python3 $(location pw_protobuf_compiler_py) " +
         "--plugin-path=$(location pw_protobuf_plugin_py) " +
         "--out-dir=$(genDir) " +
-        "--compile-dir=$${compile_dir} " +
+        "$${proto_path_args[@]}" +
         "--language pwpb " +
         "--sources $${proto_files[@]} " +
         "--no-experimental-proto3-optional " +
@@ -504,15 +504,15 @@ genrule_defaults {
 // is compiled with "pw_rpc" as the prefix.
 genrule_defaults {
     name: "pw_rpc_generate_pwpb_rpc_header_with_prefix",
-    cmd: "in_files=($(in)); prefix_dir=$$(dirname $${in_files[0]}); " +
-        "compile_dir=$$(dirname $${prefix_dir}); proto_files=(); " +
+    cmd: "in_files=($(in)); proto_files=(); proto_path_args=(); " +
         "for f in \"$${in_files[@]}\"; do " +
         "if [[ \"$${f##*.}\" == \"proto\" ]]; then " +
+        "proto_path_args+=(\"--proto-path=$$(dirname $$(dirname $${f})) \"); " +
         "proto_files+=(\"$${f}\"); fi; done; " +
         "python3 $(location pw_protobuf_compiler_py) " +
         "--plugin-path=$(location pw_rpc_plugin_pwpb_py) " +
         "--out-dir=$(genDir) " +
-        "--compile-dir=$${compile_dir} " +
+        "$${proto_path_args[@]}" +
         "--language pwpb_rpc " +
         "--sources $${proto_files[@]} " +
         "--no-experimental-proto3-optional " +
