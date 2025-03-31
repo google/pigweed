@@ -108,12 +108,6 @@ class BuildCommand:
         """Return flags that appear immediately after the build command."""
         assert self.build_system_command
         assert self.build_dir
-
-        if self.is_bazel_command():
-            # Bazel doesn't use -C for the out directory. Instead we use
-            # --output_base to save some outputs to the desired location.
-            return ['--output_base', str(self.build_dir)]
-
         return []
 
     def _get_build_system_args(self) -> list[str]:
@@ -125,10 +119,14 @@ class BuildCommand:
             return ['-C', str(self.build_dir), *self.targets]
 
         if self.is_bazel_command():
+            # Bazel doesn't use -C for the out directory. Instead we use
+            # --symlink_prefix to save some outputs to the desired
+            # location. This is the same pattern used by pw_presubmit.
+            bazel_args = ['--symlink_prefix', str(self.build_dir / 'bazel-')]
             if self.bazel_clean_command():
                 # Targets are unrecognized args for bazel clean
-                return []
-            return [*self.targets]
+                return bazel_args
+            return bazel_args + [*self.targets]
 
         raise UnknownBuildSystem(
             f'\n\nUnknown build system command "{self.build_system_command}" '
