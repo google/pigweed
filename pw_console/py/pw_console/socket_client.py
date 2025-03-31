@@ -189,8 +189,6 @@ class SocketClient:
 
         # Enable reusing address and port for reconnections.
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        if hasattr(socket, 'SO_REUSEPORT'):
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.socket.settimeout(self._timeout)
         self.socket.connect(self._address)
         self._connected = True
