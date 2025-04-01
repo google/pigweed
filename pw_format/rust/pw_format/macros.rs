@@ -39,7 +39,7 @@ use std::marker::PhantomData;
 use proc_macro2::Ident;
 use quote::{format_ident, quote, ToTokens};
 use syn::{
-    parse::{discouraged::Speculative, Parse, ParseStream},
+    parse::{Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned,
     Expr, ExprCast, LitStr, Token,
@@ -258,22 +258,25 @@ pub enum Arg {
     Expr(Expr),
 }
 
+impl Arg {
+    fn parse_expr(expr: Expr) -> syn::parse::Result<Self> {
+        match expr.clone() {
+            Expr::Cast(cast) => Ok(Self::ExprCast(cast)),
+
+            // Expr::Casts maybe be wrapped in an Expr::Group or in unexplained
+            // cases where macro expansion in the rust-analyzer VSCode plugin
+            // may cause them to be wrapped in an Expr::Paren instead.
+            Expr::Paren(paren) => Self::parse_expr(*paren.expr),
+            Expr::Group(group) => Self::parse_expr(*group.expr),
+
+            _ => Ok(Self::Expr(expr)),
+        }
+    }
+}
+
 impl Parse for Arg {
     fn parse(input: ParseStream) -> syn::parse::Result<Self> {
-        // Try parsing as an explicit cast first.  This lets the user name a
-        // type when type_alias_impl_trait is not enabled.
-        let fork = input.fork();
-        if let Ok(cast) = fork.parse::<ExprCast>() {
-            // Speculative parsing and `advance_to` is discouraged due to error
-            // presentation.  However, since `ExprCast` is a subset of `Expr`,
-            //  any errors in parsing here will be reported when trying to parse
-            //  as an `Expr` below.
-            input.advance_to(&fork);
-            return Ok(Self::ExprCast(cast));
-        }
-
-        // Otherwise prase as an expression.
-        input.parse::<Expr>().map(Self::Expr)
+        Self::parse_expr(input.parse::<Expr>()?)
     }
 }
 
@@ -638,7 +641,7 @@ impl PrintfFormatStringFragment {
                 let Arg::ExprCast(cast) = arg else {
                     return Err(Error::new(&format!(
                       "Expected argument to untyped format (%v/{{}}) to be a cast expression (e.g. x as i32), but found {}.",
-                      arg.to_token_stream()
+                      arg.to_token_stream(), 
                     )));
                 };
                 let ty = &cast.ty;
