@@ -499,9 +499,6 @@
     "status": "experimental",
     "languages": []
   },
-  "pw_interrupt_xtensa": {
-    "status": "unstable"
-  },
   "pw_interrupt_zephyr": {
     "status": "unstable"
   },

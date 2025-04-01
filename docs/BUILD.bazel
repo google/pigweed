@@ -483,7 +483,6 @@ sphinx_docs(
         "//pw_interrupt:docs",
         "//pw_interrupt_cortex_m:docs",
         "//pw_interrupt_freertos:docs",
-        "//pw_interrupt_xtensa:docs",
         "//pw_interrupt_zephyr:docs",
         "//pw_intrusive_ptr:docs",
         "//pw_json:docs",

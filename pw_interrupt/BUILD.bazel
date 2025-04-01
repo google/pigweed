@@ -43,7 +43,6 @@ alias(
     actual = select({
         "//pw_interrupt_cortex_m:backend": "//pw_interrupt_cortex_m:context",
         "//pw_interrupt_freertos:backend": "//pw_interrupt_freertos:context",
-        "//pw_interrupt_xtensa:backend": "//pw_interrupt_xtensa:context",
         "//conditions:default": "//pw_build:unspecified_backend",
     }),
     visibility = ["//targets:__pkg__"],
