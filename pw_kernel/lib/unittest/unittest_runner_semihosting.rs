@@ -26,7 +26,6 @@ use riscv_rt::entry;
 #[cfg(feature = "arch_riscv")]
 use riscv_semihosting::debug;
 
-use pw_log::{error, info};
 use target::{Target, TargetInterface};
 
 // #[no_mangle]
@@ -58,29 +57,14 @@ fn main() -> ! {
     run_ctors();
 
     Target::console_init();
-    info!("=============== Unit Test Runner ===============");
+    pw_log::info!("=============== Unit Test Runner ===============");
 
-    let mut success = true;
-    unittest_core::for_each_test(|test| {
-        info!("[{}] running", test.desc.name as &str);
-        match test.test_fn {
-            unittest_core::TestFn::StaticTestFn(f) => {
-                if let Err(e) = f() {
-                    error!(
-                        "[{}] FAILED: {}:{} - {}",
-                        test.desc.name as &str, e.file as &str, e.line as u32, e.message as &str
-                    );
-                    success = false;
-                } else {
-                    info!("[{}] PASSED", test.desc.name as &str);
-                }
-            }
-        };
-    });
-    match success {
-        true => debug::exit(debug::EXIT_SUCCESS),
-        false => debug::exit(debug::EXIT_FAILURE),
-    }
+    use unittest_core::TestsResult;
+    let status = match unittest_core::run_all_tests() {
+        TestsResult::AllPassed => debug::EXIT_SUCCESS,
+        TestsResult::SomeFailed => debug::EXIT_FAILURE,
+    };
+    debug::exit(status);
 
     #[allow(clippy::empty_loop)]
     loop {}

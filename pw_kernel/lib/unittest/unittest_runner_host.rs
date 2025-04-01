@@ -13,31 +13,13 @@
 // the License.
 use console_backend as _;
 use kernel as _;
-use pw_log::{error, info};
 
 #[no_mangle]
 pub extern "C" fn main() -> core::ffi::c_int {
-    let mut success = true;
-    unittest_core::for_each_test(|test| {
-        info!("[{}] running", test.desc.name as &str);
-        match test.test_fn {
-            unittest_core::TestFn::StaticTestFn(f) => {
-                if let Err(e) = f() {
-                    error!(
-                        "[{}] FAILED: {}:{} - {}",
-                        test.desc.name as &str, e.file as &str, e.line as u32, e.message as &str
-                    );
-                    success = false;
-                } else {
-                    info!("[{}] PASSED", test.desc.name as &str);
-                }
-            }
-        }
-    });
-
     // Return a C error code here as we're implementing a "bare main".
-    match success {
-        true => 0,
-        false => 1,
+    use unittest_core::TestsResult;
+    match unittest_core::run_all_tests() {
+        TestsResult::AllPassed => 0,
+        TestsResult::SomeFailed => 1,
     }
 }

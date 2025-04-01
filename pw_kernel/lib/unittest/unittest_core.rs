@@ -55,6 +55,35 @@ where
     });
 }
 
+pub enum TestsResult {
+    AllPassed,
+    SomeFailed,
+}
+
+pub fn run_all_tests() -> TestsResult {
+    let mut result = TestsResult::AllPassed;
+    for_each_test(|test| {
+        pw_log::info!("[{}] running", test.desc.name as &str);
+        match test.test_fn {
+            TestFn::StaticTestFn(f) => {
+                if let Err(e) = f() {
+                    pw_log::error!(
+                        "[{}] FAILED: {}:{} - {}",
+                        test.desc.name as &str,
+                        e.file as &str,
+                        e.line as u32,
+                        e.message as &str
+                    );
+                    result = TestsResult::SomeFailed;
+                } else {
+                    pw_log::info!("[{}] PASSED", test.desc.name as &str);
+                }
+            }
+        }
+    });
+    result
+}
+
 pub struct TestError {
     pub file: &'static str,
     pub line: u32,

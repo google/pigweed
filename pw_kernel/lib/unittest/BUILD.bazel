@@ -64,6 +64,7 @@ rust_library(
         "//pw_bytes/rust:pw_bytes",
         "//pw_kernel/lib/foreign_box",
         "//pw_kernel/lib/list",
+        "@pigweed//pw_log/rust:pw_log",
     ],
 )
 
@@ -78,7 +79,6 @@ rust_library(
         ":unittest_core",
         "//pw_kernel/kernel",
         "//pw_kernel/subsys/console:console_backend",
-        "@pigweed//pw_log/rust:pw_log",
     ],
 )
 
