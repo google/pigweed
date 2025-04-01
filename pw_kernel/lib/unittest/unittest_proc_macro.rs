@@ -29,14 +29,13 @@ pub fn test(_attr: TokenStream, item: TokenStream) -> TokenStream {
             unittest::TestDesc{
                 name: #fn_name,
             },
-             unittest::TestFn::StaticTestFn(#fn_ident),
+            unittest::TestFn::StaticTestFn(#fn_ident),
         );
 
         extern "C" fn #ctor_fn_ident() -> usize {
-            use core::ptr::addr_of_mut;
             // Safety: We're only ever mutating this at constructor time which
             // is single threaded.
-            let desc = unsafe { addr_of_mut!(#desc_ident).as_mut().unwrap_unchecked() };
+            let desc = unsafe { unittest::foreign_box::ForeignBox::new_from_ptr(&mut #desc_ident) };
             unittest::add_test(desc);
             0
         }

@@ -14,7 +14,7 @@
 
 #![no_std]
 #![no_main]
-use core::{mem::offset_of, ptr::NonNull};
+use core::ptr::NonNull;
 
 use foreign_box::ForeignBox;
 use list::*;

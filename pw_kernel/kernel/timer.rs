@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use core::{mem::offset_of, ptr::NonNull};
+use core::ptr::NonNull;
 
 use foreign_box::ForeignBox;
 use list::{ForeignList, Link};

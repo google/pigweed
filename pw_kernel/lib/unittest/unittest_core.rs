@@ -14,31 +14,30 @@
 
 #![no_std]
 
-use core::ptr::addr_of_mut;
-use intrusive_collections::{intrusive_adapter, LinkedList, LinkedListLink};
+use foreign_box::ForeignBox;
+use list::{ForeignList, Link};
 
+pub use foreign_box;
 pub use pw_bytes;
 
-intrusive_adapter!(pub TestDescAndFnAdapter<'a> = &'a TestDescAndFn: TestDescAndFn { link: LinkedListLink });
+list::define_adapter!(pub TestDescAndFnAdapter => TestDescAndFn.link);
 
-static mut TEST_LIST: Option<LinkedList<TestDescAndFnAdapter>> = None;
+static mut TEST_LIST: ForeignList<TestDescAndFn, TestDescAndFnAdapter> = ForeignList::new();
 
 // All accesses to test list go through this function.  This gives us a
 // single point of ownership of TEST_LIST and keeps us from leaking references
 // to it.
 fn access_test_list<F>(callback: F)
 where
-    F: FnOnce(&mut LinkedList<TestDescAndFnAdapter>),
+    F: FnOnce(&mut ForeignList<TestDescAndFn, TestDescAndFnAdapter>),
 {
     // Safety: Tests are single threaded for now.  This assumption needs to be
     // revisited.
-    let test_list: &mut Option<LinkedList<TestDescAndFnAdapter>> =
-        unsafe { addr_of_mut!(TEST_LIST).as_mut().unwrap_unchecked() };
-    let list = test_list.get_or_insert_with(|| LinkedList::new(TestDescAndFnAdapter::new()));
-    callback(list)
+    #[allow(static_mut_refs)]
+    callback(unsafe { &mut TEST_LIST })
 }
 
-pub fn add_test(test: &'static mut TestDescAndFn) {
+pub fn add_test(test: ForeignBox<TestDescAndFn>) {
     access_test_list(|test_list| test_list.push_back(test))
 }
 
@@ -47,9 +46,12 @@ where
     F: FnMut(&TestDescAndFn),
 {
     access_test_list(|test_list| {
-        for test in test_list.iter() {
-            callback(test);
-        }
+        test_list
+            .for_each(|t| {
+                callback(t);
+                Ok::<(), ()>(())
+            })
+            .unwrap();
     });
 }
 
@@ -72,7 +74,7 @@ pub struct TestDesc {
 pub struct TestDescAndFn {
     pub desc: TestDesc,
     pub test_fn: TestFn,
-    pub link: LinkedListLink,
+    pub link: Link,
 }
 
 impl TestDescAndFn {
@@ -80,7 +82,7 @@ impl TestDescAndFn {
         Self {
             desc,
             test_fn,
-            link: LinkedListLink::new(),
+            link: Link::new(),
         }
     }
 }

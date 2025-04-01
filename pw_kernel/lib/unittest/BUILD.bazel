@@ -62,7 +62,8 @@ rust_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pw_bytes/rust:pw_bytes",
-        "@rust_crates//:intrusive-collections",
+        "//pw_kernel/lib/foreign_box",
+        "//pw_kernel/lib/list",
     ],
 )
 

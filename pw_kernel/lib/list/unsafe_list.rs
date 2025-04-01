@@ -156,7 +156,7 @@ macro_rules! define_adapter {
         $vis enum $name {}
 
         impl $crate::Adapter for $name {
-            const LINK_OFFSET: usize = offset_of!($node, $link);
+            const LINK_OFFSET: usize = core::mem::offset_of!($node, $link);
         }
     };
 }

@@ -13,7 +13,6 @@
 // the License.
 
 use core::cell::UnsafeCell;
-use core::mem::offset_of;
 use core::ptr::NonNull;
 
 use foreign_box::ForeignBox;
