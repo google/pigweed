@@ -108,7 +108,6 @@ pw_source_set("uuid_string_util") {
 }
 
 pw_test("common_test") {
-  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "advertising_data_test.cc",
     "bidirectional_map_test.cc",

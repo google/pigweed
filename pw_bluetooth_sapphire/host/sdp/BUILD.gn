@@ -60,7 +60,6 @@ pw_source_set("sdp") {
 }
 
 pw_test("sdp_test") {
-  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "client_test.cc",
     "data_element_test.cc",

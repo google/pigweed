@@ -98,7 +98,6 @@ pw_source_set("testing") {
 }
 
 pw_test("hci_test") {
-  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "advertising_handle_map_test.cc",
     "advertising_packet_filter_test.cc",

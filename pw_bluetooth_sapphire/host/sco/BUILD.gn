@@ -41,7 +41,6 @@ pw_source_set("sco") {
 }
 
 pw_test("sco_test") {
-  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "sco_connection_manager_test.cc",
     "sco_connection_test.cc",

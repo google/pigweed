@@ -77,7 +77,6 @@ pw_source_set("testing") {
 }
 
 pw_test("transport_test") {
-  enable_if = pw_unit_test_BACKEND == "$dir_pw_unit_test:googletest"
   sources = [
     "acl_data_channel_test.cc",
     "command_channel_test.cc",
