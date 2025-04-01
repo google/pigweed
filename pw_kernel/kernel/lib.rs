@@ -69,6 +69,34 @@ impl ThreadBuffer {
 
 pub struct Kernel {}
 
+macro_rules! init_thread {
+    ($name:literal, $entry:expr) => {{
+        info!("allocating thread: {}", $name as &'static str);
+        let mut thread = {
+            static mut THREAD_BUFFER: ThreadBuffer = ThreadBuffer::new();
+            #[allow(static_mut_refs)]
+            unsafe {
+                THREAD_BUFFER.alloc_thread($name)
+            }
+        };
+
+        info!("initializing thread: {}", $name as &'static str);
+        thread.initialize(
+            {
+                static mut STACK: [u8; 2048] = [0; 2048];
+                #[allow(static_mut_refs)]
+                unsafe {
+                    Stack::from_slice(&STACK)
+                }
+            },
+            $entry,
+            0,
+        );
+
+        thread
+    }};
+}
+
 impl Kernel {
     pub fn main() -> ! {
         target::console_init();
@@ -76,22 +104,7 @@ impl Kernel {
 
         Arch::early_init();
 
-        let mut bootstrap_thread;
-        #[allow(static_mut_refs)]
-        unsafe {
-            info!("allocating bootstrap thread");
-            static mut THREAD_BUFFER_BOOTSTRAP: ThreadBuffer = ThreadBuffer::new();
-            bootstrap_thread = THREAD_BUFFER_BOOTSTRAP.alloc_thread("bootstrap");
-
-            info!("initializing bootstrap thread");
-            static mut STACK_BOOTSTRAP: [u8; 2048] = [0; 2048];
-            bootstrap_thread.initialize(
-                Stack::from_slice(&STACK_BOOTSTRAP),
-                bootstrap_thread_entry,
-                0,
-            );
-        }
-
+        let bootstrap_thread = init_thread!("bootstrap", bootstrap_thread_entry);
         info!("created thread, bootstrapping");
 
         // special case where we bootstrap the system by half context switching to this thread
@@ -110,52 +123,17 @@ fn bootstrap_thread_entry(_arg: usize) {
 
     SCHEDULER_STATE.lock().dump_all_threads();
 
-    let mut idle_thread;
-    #[allow(static_mut_refs)]
-    unsafe {
-        info!("allocating idle_thread");
-        static mut IDLE_THREAD_BUFFER: ThreadBuffer = ThreadBuffer::new();
-        idle_thread = IDLE_THREAD_BUFFER.alloc_thread("idle");
+    let idle_thread = init_thread!("idle", idle_thread_entry);
 
-        info!("initializing idle_thread");
-        static mut IDLE_STACK: [u8; 2048] = [0; 2048];
-        idle_thread.initialize(Stack::from_slice(&IDLE_STACK), idle_thread_entry, 0usize);
-    }
     SCHEDULER_STATE.lock().dump_all_threads();
 
-    // TODO: Create a few test threads
-    let mut thread_a;
-    #[allow(static_mut_refs)]
-    unsafe {
-        info!("allocating thread A");
-        static mut THREAD_BUFFER_A: ThreadBuffer = ThreadBuffer::new();
-        thread_a = THREAD_BUFFER_A.alloc_thread("thread_a");
+    let thread_a = init_thread!("A", test_thread_entry_a);
 
-        info!("initializing thread A");
-        static mut STACK_A: [u8; 2048] = [0; 2048];
-        thread_a.initialize(
-            Stack::from_slice(&STACK_A),
-            test_thread_entry_a,
-            'a' as usize,
-        );
-    }
     SCHEDULER_STATE.lock().dump_all_threads();
 
-    let mut thread_b;
-    #[allow(static_mut_refs)]
-    unsafe {
-        info!("allocating thread B");
-        static mut THREAD_BUFFER_B: ThreadBuffer = ThreadBuffer::new();
-        thread_b = THREAD_BUFFER_B.alloc_thread("thread_b");
+    let thread_b = init_thread!("B", test_thread_entry_b);
 
-        info!("initializing thread B");
-        static mut STACK_B: [u8; 2048] = [0; 2048];
-        thread_b.initialize(
-            Stack::from_slice(&STACK_B),
-            test_thread_entry_b,
-            'b' as usize,
-        );
-    }
+    SCHEDULER_STATE.lock().dump_all_threads();
 
     Thread::start(idle_thread);
     Thread::start(thread_a);
