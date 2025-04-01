@@ -149,6 +149,18 @@ pub trait Adapter {
     const LINK_OFFSET: usize;
 }
 
+/// Defines an adapter type and implements [`Adapter`] for it.
+#[macro_export]
+macro_rules! define_adapter {
+    ($vis:vis $name:ident => $node:ident.$link:ident) => {
+        $vis enum $name {}
+
+        impl $crate::Adapter for $name {
+            const LINK_OFFSET: usize = offset_of!($node, $link);
+        }
+    };
+}
+
 impl<T, A: Adapter> UnsafeList<T, A> {
     pub const fn new() -> Self {
         Self {

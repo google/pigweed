@@ -49,10 +49,7 @@ impl Ord for TestMember {
     }
 }
 
-struct TestAdapter {}
-impl Adapter for TestAdapter {
-    const LINK_OFFSET: usize = offset_of!(TestMember, link);
-}
+define_adapter!(TestAdapter => TestMember.link);
 
 unsafe fn validate_list(
     list: &UnsafeList<TestMember, TestAdapter>,
