@@ -167,13 +167,6 @@ struct MediaCodecCapability(length: UInt:32):
   -- Cf. Table 8.52
   0     [+MediaCodecCapabilityHeader.$size_in_bytes]  MediaCodecCapabilityHeader  header
   $next [+length-2]                                   UInt:8[]                    media_codec_specific_information_elements
-  # TODO(b/406318757): Remove once downstreams are updated
-  2     [+length-2]                                   UInt:8[]                    media_codec_specific_informations_elements
-  0     [+1]  bits:
-    0     [+4]                                        UInt                        rfa
-    $next [+4]                                        MediaType                   media_type
-
-  1     [+1]                                          MediaCodecType              media_codec_type
 
 
 struct MediaCodecCapabilitySbc:
@@ -228,12 +221,6 @@ struct SignalingHeader:
     0     [+6]                                   SignalIdentifierCode   signal_identifier
     $next [+2]                                   UInt                   rfa
 
-  # TODO(b/405443669): Remove once downstream are updated
-  0     [+1]  bits:
-    0     [+2]                                   MessageType            message_type
-    $next [+2]                                   PacketType             packet_type
-    $next [+4]                                   UInt                   transaction_label
-
 
 struct StartSignalingHeader:
   -- Cf. 8.4 AVDTP SignalingHeader
@@ -261,13 +248,13 @@ struct EndSignalingHeader:
 
 struct StreamEndPointDiscoveryCommand:
   -- Cf. 8.6.1 AVDTP_DISCOVER_CMD
-  [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
+  [requires: signaling_header.header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
   0 [+2]  SignalingHeader  signaling_header
 
 
 struct StreamEndPointDiscoveryResponse(length: UInt:32):
   -- Cf. 8.6.2 AVDTP_DISCOVER_RSP
-  [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
   let seps_size = length-SignalingHeader.$size_in_bytes
   0     [+2]          SignalingHeader  signaling_header
   $next [+seps_size]  Sep[]            others_acp_sep
@@ -275,7 +262,7 @@ struct StreamEndPointDiscoveryResponse(length: UInt:32):
 
 struct StreamEndPointDiscoveryReject:
   -- Cf. 8.6.3 AVDTP_DISCOVER_REJ
-  [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_DISCOVER]
   0     [+2]  SignalingHeader  signaling_header
   $next [+1]  ErrorCode        error_code
 
@@ -284,7 +271,7 @@ struct StreamEndPointDiscoveryReject:
 
 struct GetCapabilitiesCommand:
   -- Cf 8.7.1 AVDTP_GET_CAPABILITIES_CMD
-  [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_CAPABILITIES]
+  [requires: signaling_header.header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_CAPABILITIES]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
     0     [+2]       UInt             rfa
@@ -293,7 +280,7 @@ struct GetCapabilitiesCommand:
 
 struct GetCapabilitiesResponse(length: UInt:32):
   -- Cf 8.8.2 AVDTP_GET_ALL_CAPABILITIES_RSP
-  [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
   0     [+2]              SignalingHeader                   signaling_header
   let services_size = length-SignalingHeader.$size_in_bytes
   $next [+services_size]  ServiceCapability(services_size)  service_capabilities
@@ -301,7 +288,7 @@ struct GetCapabilitiesResponse(length: UInt:32):
 
 struct GetCapabilitiesReject:
   -- Cf 8.6.3 AVDTP_GET_CAPABILITIES_REJ
-  [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_CAPABILITIES]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_CAPABILITIES]
   0     [+2]  SignalingHeader  signaling_header
   $next [+1]  ErrorCode        error_code
 
@@ -310,7 +297,7 @@ struct GetCapabilitiesReject:
 
 struct GetAllCapabilitiesCommand:
   -- Cf 8.8.1 AVDTP_GET_ALL_CAPABILITIES_CMD
-  [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
+  [requires: signaling_header.header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
     0     [+2]       UInt             rfa
@@ -319,7 +306,7 @@ struct GetAllCapabilitiesCommand:
 
 struct GetAllCapabilitiesResponse(length: UInt:32):
   -- Cf 8.8.2 AVDTP_GET_ALL_CAPABILITIES_RSP
-  [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
   0     [+2]              SignalingHeader                   signaling_header
   let services_size = length-SignalingHeader.$size_in_bytes
   $next [+services_size]  ServiceCapability(services_size)  service_capabilities
@@ -327,7 +314,7 @@ struct GetAllCapabilitiesResponse(length: UInt:32):
 
 struct GetAllCapabilitiesReject:
   -- Cf 8.8.3 AVDTP_GET_ALL_CAPABILITIES_REJ
-  [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_GET_ALL_CAPABILITIES]
   0     [+2]  SignalingHeader  signaling_header
   $next [+1]  ErrorCode        error_code
 
@@ -336,7 +323,7 @@ struct GetAllCapabilitiesReject:
 
 struct SetConfigurationCommand(length: UInt:32):
   -- Cf 8.9.1 AVDTP_SET_CONFIGURATION_CMD
-  [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SET_CONFIGURATION]
+  [requires: signaling_header.header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SET_CONFIGURATION]
   let services_size = length-SignalingHeader.$size_in_bytes-2
   0     [+2]              SignalingHeader                   signaling_header
   $next [+1]  bits:
@@ -352,13 +339,13 @@ struct SetConfigurationCommand(length: UInt:32):
 
 struct SetConfigurationResponse:
   -- Cf 8.9.2 AVDTP_SET_CONFIGURATION_RSP
-  [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SET_CONFIGURATION]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SET_CONFIGURATION]
   0 [+2]  SignalingHeader  signaling_header
 
 
 struct SetConfigurationReject:
   -- Cf 8.9.3 AVDTP_SET_CONFIGURATION_REJ
-  [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SET_CONFIGURATION]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SET_CONFIGURATION]
   0     [+2]  SignalingHeader  signaling_header
   $next [+1]  ServiceCategory  service_category
   $next [+1]  ErrorCode        error_code
@@ -368,7 +355,7 @@ struct SetConfigurationReject:
 
 struct StreamStartCommand:
   -- Cf 8.13.1 AVDTP_START_CMD
-  [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_START]
+  [requires: signaling_header.header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_START]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
     0     [+2]       UInt             rfa
@@ -377,13 +364,13 @@ struct StreamStartCommand:
 
 struct StreamStartResponse:
   -- Cf 8.13.2 AVDTP_START_RSP
-  [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_START]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_START]
   0 [+2]  SignalingHeader  signaling_header
 
 
 struct StreamStartReject:
   -- Cf 8.13.3 AVDTP_START_REJ
-  [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_START]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_START]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
     0     [+2]       UInt             rfa
@@ -396,7 +383,7 @@ struct StreamStartReject:
 
 struct CloseCommand:
   -- Cf 8.14.1 AVDTP_CLOSE_CMD
-  [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_CLOSE]
+  [requires: signaling_header.header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_CLOSE]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
     0     [+2]       UInt             rfa
@@ -405,13 +392,13 @@ struct CloseCommand:
 
 struct CloseResponse:
   -- Cf 8.14.2 AVDTP_CLOSE_RSP
-  [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_CLOSE]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_CLOSE]
   0 [+2]  SignalingHeader  signaling_header
 
 
 struct CloseReject:
   -- Cf 8.14.3 AVDTP_CLOSE_REJ
-  [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_CLOSE]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_CLOSE]
   0     [+2]  SignalingHeader  signaling_header
   $next [+1]  ErrorCode        error_code
 
@@ -420,7 +407,7 @@ struct CloseReject:
 
 struct StreamSuspendCommand:
   -- Cf 8.15.1 AVDTP_SUSPEND_CMD
-  [requires: signaling_header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SUSPEND]
+  [requires: signaling_header.header.message_type == MessageType.COMMAND && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SUSPEND]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
     0     [+2]       UInt             rfa
@@ -429,13 +416,13 @@ struct StreamSuspendCommand:
 
 struct StreamSuspendResponse:
   -- Cf 8.15.2 AVDTP_SUSPEND_RSP
-  [requires: signaling_header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SUSPEND]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_ACCEPT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SUSPEND]
   0 [+2]  SignalingHeader  signaling_header
 
 
 struct StreamSuspendReject:
   -- Cf 8.15.3 AVDTP_SUSPEND_REJ
-  [requires: signaling_header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SUSPEND]
+  [requires: signaling_header.header.message_type == MessageType.RESPONSE_REJECT && signaling_header.signal_identifier == SignalIdentifierCode.AVDTP_SUSPEND]
   0     [+2]         SignalingHeader  signaling_header
   $next [+1]  bits:
     0     [+2]       UInt             rfa
