@@ -35,16 +35,16 @@ enum class ArgType : uint8_t {
   kString = PW_TOKENIZER_ARG_TYPE_STRING,
 };
 
-size_t EncodeInt(int value, const span<std::byte>& output) {
+size_t EncodeInt(int value, span<std::byte> output) {
   // Use the 64-bit function to avoid instantiating both 32-bit and 64-bit.
   return pw_tokenizer_EncodeInt64(value, output.data(), output.size());
 }
 
-size_t EncodeInt64(int64_t value, const span<std::byte>& output) {
+size_t EncodeInt64(int64_t value, span<std::byte> output) {
   return pw_tokenizer_EncodeInt64(value, output.data(), output.size());
 }
 
-size_t EncodeFloat(float value, const span<std::byte>& output) {
+size_t EncodeFloat(float value, span<std::byte> output) {
   if (output.size() < sizeof(value)) {
     return 0;
   }
@@ -52,7 +52,7 @@ size_t EncodeFloat(float value, const span<std::byte>& output) {
   return sizeof(value);
 }
 
-size_t EncodeString(const char* string, const span<std::byte>& output) {
+size_t EncodeString(const char* string, span<std::byte> output) {
   // The top bit of the status byte indicates if the string was truncated.
   static constexpr size_t kMaxStringLength = 0x7Fu;
 
@@ -70,11 +70,11 @@ size_t EncodeString(const char* string, const span<std::byte>& output) {
 
   // Scan the string to find out how many bytes to copy.
   size_t bytes_to_copy = 0;
-  std::byte overflow_bit = std::byte(0);
+  std::byte overflow_bit = std::byte{0};
 
   while (string[bytes_to_copy] != '\0') {
     if (bytes_to_copy == max_bytes) {
-      overflow_bit = std::byte('\x80');
+      overflow_bit = std::byte{0x80};
       break;
     }
     bytes_to_copy += 1;
