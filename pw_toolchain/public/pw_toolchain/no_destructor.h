@@ -23,19 +23,21 @@ namespace pw {
 /// Helper type to create a global or function-local static variable of type `T`
 /// when `T` has a non-trivial destructor. Storing a `T` in a
 /// `pw::NoDestructor<T>` will prevent `~T()` from running, even when the
-/// variable goes out of scope.
+/// variable goes out of scope. `pw::NoDestructor<T>` provides an API similar to
+/// `std::optional`. Use `*` or `->` to access the wrapped type.
 ///
 /// This class is useful when a variable has static storage duration but its
 /// type has a non-trivial destructor. Destructor ordering is not defined and
 /// can cause issues in multithreaded environments. Additionally, removing
 /// destructor calls can save code size.
 ///
+/// Even though `pw::NoDestructor` does not call the destructor, classes with a
+/// private destructor must `friend class pw::NoDestructor<CrashInDestructor>`
+/// to be used with `pw::NoDestructor`.
+///
 /// Except in generic code, do not use `pw::NoDestructor<T>` with trivially
 /// destructible types. Use the type directly instead. If the variable can be
 /// `constexpr`, make it `constexpr`.
-///
-/// `pw::NoDestructor<T>` provides a similar API to `std::optional`. Use `*` or
-/// `->` to access the wrapped type.
 ///
 /// `NoDestructor` instances can be `constinit` if `T` has a `constexpr`
 /// constructor. In C++20, `NoDestructor` instances may be `constexpr` if `T`

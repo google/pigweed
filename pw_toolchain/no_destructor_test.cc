@@ -42,12 +42,9 @@ class CrashInDestructor {
   int some_value = 0;
 
  private:
-  // Due to a bug in GCC (at least 12.2), classes with private destructors must
-  // friend NoDestructor to use it, even though NoDestructor never calls the
-  // destructor. RuntimeInitGlobal may be used as a workaround.
-#if defined(__GNUC__) && !defined(__clang__)
+  // Even though the destructor is never called, classes with private
+  // destructors must friend `pw::NoDestructor`.
   friend class pw::NoDestructor<CrashInDestructor>;
-#endif  // defined(__GNUC__) && !defined(__clang__)
 
   ~CrashInDestructor() { PW_CRASH("This destructor should never execute!"); }
 };
