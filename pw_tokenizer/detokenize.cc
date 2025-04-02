@@ -349,8 +349,8 @@ Result<Detokenizer> Detokenizer::FromCsv(std::string_view csv) {
   return Detokenizer(std::move(database));
 }
 
-DetokenizedString Detokenizer::Detokenize(
-    const span<const std::byte>& encoded) const {
+DetokenizedString Detokenizer::Detokenize(const span<const std::byte>& encoded,
+                                          std::string_view domain) const {
   // The token is missing from the encoded data; there is nothing to do.
   if (encoded.empty()) {
     return DetokenizedString();
@@ -359,7 +359,7 @@ DetokenizedString Detokenizer::Detokenize(
   uint32_t token = bytes::ReadInOrder<uint32_t>(
       endian::little, encoded.data(), encoded.size());
 
-  const auto domain_it = database_.find(kDefaultDomain);
+  auto domain_it = database_.find(std::string(domain));
   if (domain_it == database_.end()) {
     return DetokenizedString();
   }

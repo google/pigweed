@@ -36,6 +36,7 @@
 #include "pw_stream/stream.h"
 #include "pw_tokenizer/internal/decode.h"
 #include "pw_tokenizer/token_database.h"
+#include "pw_tokenizer/tokenize.h"
 
 namespace pw::tokenizer {
 
@@ -116,21 +117,27 @@ class Detokenizer {
 
   /// Decodes and detokenizes the binary encoded message. Returns a
   /// `DetokenizedString` that stores all possible detokenized string results.
-  DetokenizedString Detokenize(const span<const std::byte>& encoded) const;
+  DetokenizedString Detokenize(const span<const std::byte>& encoded,
+                               std::string_view domain = kDefaultDomain) const;
 
   /// Overload of `Detokenize` for `span<const uint8_t>`.
-  DetokenizedString Detokenize(const span<const uint8_t>& encoded) const {
-    return Detokenize(as_bytes(encoded));
+  DetokenizedString Detokenize(const span<const uint8_t>& encoded,
+                               std::string_view domain = kDefaultDomain) const {
+    return Detokenize(as_bytes(encoded), domain);
   }
 
   /// Overload of `Detokenize` for `std::string_view`.
-  DetokenizedString Detokenize(std::string_view encoded) const {
-    return Detokenize(encoded.data(), encoded.size());
+  DetokenizedString Detokenize(std::string_view encoded,
+                               std::string_view domain = kDefaultDomain) const {
+    return Detokenize(encoded.data(), encoded.size(), domain);
   }
 
   /// Overload of `Detokenize` for a pointer and length.
-  DetokenizedString Detokenize(const void* encoded, size_t size_bytes) const {
-    return Detokenize(span(static_cast<const std::byte*>(encoded), size_bytes));
+  DetokenizedString Detokenize(const void* encoded,
+                               size_t size_bytes,
+                               std::string_view domain = kDefaultDomain) const {
+    return Detokenize(span(static_cast<const std::byte*>(encoded), size_bytes),
+                      domain);
   }
 
   /// Decodes and detokenizes a Base64-encoded message. Returns a
