@@ -28,19 +28,19 @@ pub mod __private {
 
     // Use 52 to match the default value PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES
     // on the C++ tokenizer side.
-    const ENCODE_BUFFER_SIZE: usize = 52;
+    const BUFFER_SIZE: usize = 52;
 
     // A simple implementation of [`pw_tokenizer::MessageWriter`] that writes
     // data to a buffer.  On message finalization, it base64 encodes the data
     // and writes it to the console.
     pub struct LogMessageWriter {
-        cursor: Cursor<[u8; ENCODE_BUFFER_SIZE]>,
+        cursor: Cursor<[u8; BUFFER_SIZE]>,
     }
 
     impl MessageWriter for LogMessageWriter {
         fn new() -> Self {
             Self {
-                cursor: Cursor::new([0u8; ENCODE_BUFFER_SIZE]),
+                cursor: Cursor::new([0u8; BUFFER_SIZE]),
             }
         }
 
@@ -61,18 +61,31 @@ pub mod __private {
             // To ensure an single call to write_all(), the encode buffer is prefixed
             // with the $ and postfixed with a newline.
             // TODO: b/401562650 - implement streaming base64 encoder.
-            let mut encode_buffer = [0u8; pw_base64::encoded_size(ENCODE_BUFFER_SIZE)];
-            encode_buffer[0] = b"$"[0];
+            const ENCODED_SIZE: usize = pw_base64::encoded_size(BUFFER_SIZE);
+            let mut encode_buffer = [0u8; ENCODED_SIZE + 2];
+            encode_buffer[0] = b'$';
             // pass a slice of encode_buffer to ensure $ is not encoded.
-            if let Ok(s) = pw_base64::encode_str(&data[0..write_len], &mut encode_buffer[1..]) {
+            if let Ok(s) =
+                pw_base64::encode_str(&data[0..write_len], &mut encode_buffer[1..ENCODED_SIZE + 1])
+            {
                 // postfix the encoded buffer with a newline after the $ and encoded string
-                encode_buffer[s.len() + 2] = b"\n"[0];
+                encode_buffer[s.len() + 1] = b'\n';
                 let mut console = console::Console::new();
                 let _ = console.write_all(&encode_buffer);
+            } else {
+                unreachable()
             }
 
             Ok(())
         }
+    }
+
+    fn unreachable() -> ! {
+        extern "C" {
+            fn pw_assert_HandleFailure() -> !;
+        }
+
+        unsafe { pw_assert_HandleFailure() };
     }
 }
 
