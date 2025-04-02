@@ -314,6 +314,9 @@ class ChannelImpl : public Channel, public TxEngine::TxChannel {
 
   bool HasFragments() const { return !pending_tx_fragments_.empty(); }
 
+  // Add send credits to the TxEngine. No-op for TxEngines that are creditless.
+  void AddCredits(uint16_t credits);
+
   // Channel overrides:
   const sm::SecurityProperties security() override;
   bool Activate(RxCallback rx_callback,

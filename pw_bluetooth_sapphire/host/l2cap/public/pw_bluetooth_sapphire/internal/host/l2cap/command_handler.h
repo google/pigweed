@@ -185,10 +185,14 @@ class CommandHandler {
   // L2CAP_FLOW_CONTROL_CREDIT_IND commands do not receive a response.
   bool SendCredits(ChannelId local_cid, uint16_t credits);
 
+  using FlowControlCreditIndCallback =
+      fit::function<void(ChannelId remote_cid, uint16_t credits)>;
+  void ServeFlowControlCreditInd(FlowControlCreditIndCallback callback);
+
   // |sig| must be valid for the lifetime of this object.
-  // |command_failed_callback| is called if an outbound request timed out with
-  // RTX or ERTX timers after retransmission (if configured). The call may come
-  // after the lifetime of this object.
+  // |command_failed_callback| is called if an outbound request timed out
+  // with RTX or ERTX timers after retransmission (if configured). The call
+  // may come after the lifetime of this object.
   explicit CommandHandler(SignalingChannelInterface* sig,
                           fit::closure request_fail_callback = nullptr);
   virtual ~CommandHandler() = default;

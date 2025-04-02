@@ -439,5 +439,27 @@ TEST_F(CommandHandlerTest, SendCredits) {
   RunUntilIdle();
 }
 
+TEST_F(CommandHandlerTest, ReceiveCredits) {
+  const uint16_t expected_credits = 5;
+  int cb_count = 0;
+  cmd_handler()->ServeFlowControlCreditInd(
+      [&cb_count, expected_credits](ChannelId remote_cid, uint16_t credits) {
+        cb_count++;
+        EXPECT_EQ(remote_cid, kRemoteCId);
+        EXPECT_EQ(credits, expected_credits);
+      });
+
+  StaticByteBuffer payload(
+      // Channel ID
+      LowerBits(kRemoteCId),
+      UpperBits(kRemoteCId),
+      // Credits
+      LowerBits(expected_credits),
+      UpperBits(expected_credits));
+  fake_sig()->Receive(kLEFlowControlCredit, payload);
+  RunUntilIdle();
+  EXPECT_EQ(cb_count, 1);
+}
+
 }  // namespace
 }  // namespace bt::l2cap::internal

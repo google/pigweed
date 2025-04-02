@@ -147,5 +147,10 @@ DynamicByteBuffer AclIFrame(hci_spec::ConnectionHandle link_handle,
                             uint8_t tx_seq,
                             bool is_poll_response,
                             const ByteBuffer& payload);
+// K-Frame Packets
+
+DynamicByteBuffer AclKFrame(hci_spec::ConnectionHandle link_handle,
+                            l2cap::ChannelId channel_id,
+                            const ByteBuffer& payload);
 
 }  // namespace bt::l2cap::testing

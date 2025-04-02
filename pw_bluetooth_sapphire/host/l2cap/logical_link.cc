@@ -132,6 +132,7 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle,
         random_channel_ids);
 
     ServeConnectionParameterUpdateRequest();
+    ServeFlowControlCreditInd();
   } else {
     signaling_channel_ = std::make_unique<BrEdrSignalingChannel>(
         OpenFixedChannel(kSignalingChannelId), role_, pw_dispatcher_);
@@ -1050,5 +1051,30 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
 
     connection_parameter_update_callback_(params);
   }
+}
+
+void LogicalLink::ServeFlowControlCreditInd() {
+  PW_CHECK(signaling_channel_);
+  PW_CHECK(type_ == bt::LinkType::kLE);
+
+  LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
+  cmd_handler.ServeFlowControlCreditInd(
+      fit::bind_member<&LogicalLink::OnRxFlowControlCreditInd>(this));
+}
+
+void LogicalLink::OnRxFlowControlCreditInd(ChannelId remote_cid,
+                                           uint16_t credits) {
+  ChannelImpl* channel = nullptr;
+  for (auto& [_, chan] : channels_) {
+    if (chan->remote_id() == remote_cid) {
+      channel = chan.get();
+    }
+  }
+  if (!channel) {
+    bt_log(
+        WARN, "l2cap", "ignoring flow control credit ind for unknown channel");
+    return;
+  }
+  channel->AddCredits(credits);
 }
 }  // namespace bt::l2cap::internal

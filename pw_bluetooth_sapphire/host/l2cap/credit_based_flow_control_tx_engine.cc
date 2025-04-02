@@ -31,7 +31,6 @@ constexpr auto kLeCreditBasedFlowControlMode =
 
 constexpr size_t kMinimumLeMtu = 23;
 constexpr size_t kMinimumLeMps = 23;
-constexpr auto kPduHeaderSize = emboss::KFramePduHeader::IntrinsicSizeInBytes();
 constexpr auto kSduHeaderSize = emboss::KFrameSduHeader::IntrinsicSizeInBytes();
 
 constexpr uint32_t kMaxCredits = 65535;
@@ -41,34 +40,6 @@ constexpr typename std::underlying_type<Enum>::type EnumValue(const Enum& e) {
   return static_cast<typename std::underlying_type<Enum>::type>(e);
 }
 
-// Returns the payload size of the next PDU needed to transmit the maximal
-// amount of the remaining |total_payload_size| bytes.
-uint16_t NextPduPayloadSize(size_t total_payload_size, uint16_t max_pdu_size) {
-  PW_DCHECK(max_pdu_size > kPduHeaderSize);
-  // Factor in the header size.
-  uint16_t max_payload_size = max_pdu_size - kPduHeaderSize;
-  // There is no risk of overflow in this static cast as any value of
-  // `total_payload_size` larger than uint16_t max will be bounded by the
-  // smaller value in `max_payload_size`.
-  return static_cast<uint16_t>(
-      std::min<size_t>(total_payload_size, max_payload_size));
-}
-
-// Create and initialize a K-Frame with appropriate PDU header.
-// Returns a tuple of the frame itself and a view of the payload.
-std::tuple<DynamicByteBuffer, MutableBufferView> CreateFrame(
-    uint16_t payload_size, uint16_t channel_id) {
-  uint16_t pdu_size = kPduHeaderSize + payload_size;
-
-  DynamicByteBuffer buf(pdu_size);
-  auto header =
-      emboss::KFramePduHeaderWriter(buf.mutable_data(), kPduHeaderSize);
-  header.pdu_length().Write(payload_size);
-  header.channel_id().Write(channel_id);
-
-  MutableBufferView payload = buf.mutable_view(kPduHeaderSize);
-  return std::make_tuple(std::move(buf), payload);
-}
 }  // namespace
 
 CreditBasedFlowControlTxEngine::CreditBasedFlowControlTxEngine(
@@ -76,11 +47,11 @@ CreditBasedFlowControlTxEngine::CreditBasedFlowControlTxEngine(
     uint16_t max_tx_sdu_size,
     TxChannel& channel,
     CreditBasedFlowControlMode mode,
-    uint16_t max_tx_pdu_size,
+    uint16_t max_tx_pdu_payload_size,
     uint16_t initial_credits)
     : TxEngine(channel_id, max_tx_sdu_size, channel),
       mode_(mode),
-      max_tx_pdu_size_(max_tx_pdu_size),
+      max_tx_pdu_payload_size_(max_tx_pdu_payload_size),
       credits_(initial_credits) {
   // The enhanced flow control mode is not yet supported.
   PW_CHECK(mode_ == kLeCreditBasedFlowControlMode,
@@ -91,10 +62,10 @@ CreditBasedFlowControlTxEngine::CreditBasedFlowControlTxEngine(
       mode != kLeCreditBasedFlowControlMode || max_tx_sdu_size > kMinimumLeMtu,
       "Invalid MTU for LE mode: %d",
       max_tx_sdu_size);
-  PW_DCHECK(
-      mode != kLeCreditBasedFlowControlMode || max_tx_pdu_size > kMinimumLeMps,
-      "Invalid MPS for LE mode: %d",
-      max_tx_pdu_size);
+  PW_DCHECK(mode != kLeCreditBasedFlowControlMode ||
+                max_tx_pdu_payload_size > kMinimumLeMps,
+            "Invalid MPS for LE mode: %d",
+            max_tx_pdu_payload_size);
 }
 
 CreditBasedFlowControlTxEngine::~CreditBasedFlowControlTxEngine() = default;
@@ -119,38 +90,39 @@ size_t CreditBasedFlowControlTxEngine::segments_count() const {
 }
 
 void CreditBasedFlowControlTxEngine::SegmentSdu(ByteBufferPtr sdu) {
-  size_t payload_remaining = sdu->size() + kSduHeaderSize;
+  size_t data_remaining = kSduHeaderSize + sdu->size();
 
+  // In credit based flow control segmentation, the first PDU contains an SDU
+  // Length header + a payload of maximum size |max_tx_pdu_payload_size_|, and
+  // subsequent PDUs only contain payloads of maximum size
+  // |max_tx_pdu_payload_size_|. This loop iterates over each potential packet
+  // (and will only execute once if the entire SDU fits in a single PDU).
   do {
-    // A credit based flow control packet has a fairly simple segmentation
-    // scheme where each PDU contains (at most) |max_tx_pdu_size_| - header_size
-    // bytes. The only bit of (relatively minor) complexity is the SDU size
-    // field, which is only included in the first K-Frame/PDU of the SDU. This
-    // loop iterates over each potential packet (and will only execute once if
-    // the entire SDU fits in a single PDU).
+    std::unique_ptr<DynamicByteBuffer> segment;
+    MutableBufferView payload_view;
 
-    DynamicByteBuffer frame;
-    MutableBufferView payload;
-    std::tie(frame, payload) = CreateFrame(
-        NextPduPayloadSize(payload_remaining, max_tx_pdu_size_), channel_id());
-    PW_DCHECK(payload.size() <= payload_remaining);
+    if (data_remaining == kSduHeaderSize + sdu->size()) {
+      data_remaining -= kSduHeaderSize;
+      segment = std::make_unique<DynamicByteBuffer>(
+          kSduHeaderSize +
+          std::min<size_t>(data_remaining, max_tx_pdu_payload_size_));
+      payload_view = segment->mutable_view(kSduHeaderSize);
 
-    if (payload_remaining > sdu->size()) {
       // First frame of the SDU, write the SDU header.
-      emboss::KFrameSduHeaderWriter header(payload.mutable_data(),
+      emboss::KFrameSduHeaderWriter header(segment->mutable_data(),
                                            kSduHeaderSize);
       header.sdu_length().Write(sdu->size());
-
-      payload = payload.mutable_view(kSduHeaderSize);
-      payload_remaining -= kSduHeaderSize;
-      PW_DCHECK(payload_remaining == sdu->size());
+    } else {
+      segment = std::make_unique<DynamicByteBuffer>(
+          std::min<size_t>(data_remaining, max_tx_pdu_payload_size_));
+      payload_view = segment->mutable_view();
     }
 
-    sdu->Copy(&payload, sdu->size() - payload_remaining, payload.size());
-    payload_remaining -= payload.size();
+    sdu->Copy(&payload_view, sdu->size() - data_remaining, payload_view.size());
+    data_remaining -= payload_view.size();
 
-    segments_.push_back(std::make_unique<DynamicByteBuffer>(std::move(frame)));
-  } while (payload_remaining > 0);
+    segments_.push_back(std::move(segment));
+  } while (data_remaining > 0);
 }
 
 void CreditBasedFlowControlTxEngine::TrySendSegments() {

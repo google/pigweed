@@ -56,6 +56,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   void NotifySduQueued() override;
 
+  bool AddCredits(uint16_t credits) override;
+
   // Updates the Engine's knowledge of the last frame acknowledged by our peer.
   // The value of |is_poll_response| should reflect the 'F' bit in header of the
   // frame which led to this call.

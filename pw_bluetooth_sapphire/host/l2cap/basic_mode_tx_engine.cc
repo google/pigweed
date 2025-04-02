@@ -37,4 +37,9 @@ void BasicModeTxEngine::NotifySduQueued() {
   channel().SendFrame(std::move(*sdu));
 }
 
+bool BasicModeTxEngine::AddCredits(uint16_t) {
+  bt_log(WARN, "l2cap", "attempt to add credits to BasicModeTxEngine");
+  return false;
+}
+
 }  // namespace bt::l2cap::internal

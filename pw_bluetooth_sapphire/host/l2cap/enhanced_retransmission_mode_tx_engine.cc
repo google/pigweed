@@ -88,6 +88,11 @@ void Engine::NotifySduQueued() {
   ProcessSdu(std::move(*sdu));
 }
 
+bool Engine::AddCredits(uint16_t) {
+  bt_log(WARN, "l2cap", "attempt to add credits to ERTM TxEngine");
+  return false;
+}
+
 void Engine::ProcessSdu(ByteBufferPtr sdu) {
   PW_CHECK(sdu);
   // TODO(fxbug.dev/42054330): Add support for segmentation

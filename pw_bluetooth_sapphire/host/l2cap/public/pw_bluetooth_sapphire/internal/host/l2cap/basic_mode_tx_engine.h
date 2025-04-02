@@ -34,6 +34,8 @@ class BasicModeTxEngine final : public TxEngine {
   // Notify that an SDU is ready for transmitting. See |TxEngine|.
   void NotifySduQueued() override;
 
+  bool AddCredits(uint16_t credits) override;
+
  private:
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeTxEngine);
 };

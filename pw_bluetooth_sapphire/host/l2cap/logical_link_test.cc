@@ -24,6 +24,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/test_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/mock_controller.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/link_type.h"
@@ -301,14 +302,14 @@ TEST_F(LogicalLinkTest, OpensLeDynamicChannel) {
                                                     kFirstDynamicChannelId,
                                                     kDefaultMTU,
                                                     kMaxInboundPduPayloadSize,
-                                                    0);
+                                                    /*credits=*/0);
   const auto rsp = l2cap::testing::AclLeCreditBasedConnectionRsp(
       /*id=*/1,
       /*link_handle=*/kConnHandle,
       /*cid=*/kFirstDynamicChannelId,
       /*mtu=*/64,
       /*mps=*/32,
-      /*credits=*/10,
+      /*credits=*/1,
       /*result=*/LECreditBasedConnectionResult::kSuccess);
   EXPECT_ACL_PACKET_OUT(test_device(), req, &rsp);
 
@@ -316,8 +317,25 @@ TEST_F(LogicalLinkTest, OpensLeDynamicChannel) {
   link()->OpenChannel(
       kPsm, kParams, [&](auto result) { channel = std::move(result); });
   RunUntilIdle();
-
   ASSERT_TRUE(channel.is_alive());
+  channel->Activate([](auto) {}, []() {});
+
+  EXPECT_ACL_PACKET_OUT(
+      test_device(),
+      l2cap::testing::AclKFrame(
+          kConnHandle, channel->remote_id(), StaticByteBuffer(0x08)));
+  channel->Send(NewBuffer(0x08));
+  channel->Send(NewBuffer(0x09));
+  RunUntilIdle();
+
+  EXPECT_ACL_PACKET_OUT(
+      test_device(),
+      l2cap::testing::AclKFrame(
+          kConnHandle, channel->remote_id(), StaticByteBuffer(0x09)));
+  test_device()->SendACLDataChannelPacket(
+      l2cap::testing::AclFlowControlCreditInd(
+          1, kConnHandle, channel->remote_id(), /*credits=*/1));
+  RunUntilIdle();
 }
 
 TEST_F(LogicalLinkTest, OpenFixedChannelsAsync) {

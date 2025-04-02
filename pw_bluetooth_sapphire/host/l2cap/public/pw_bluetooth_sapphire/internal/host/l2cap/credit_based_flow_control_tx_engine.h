@@ -35,7 +35,7 @@ class CreditBasedFlowControlTxEngine final : public TxEngine {
   // |max_tx_sdu_size|     - Maximum size of an SDU (Tx MTU).
   // |channel|             - A |TxEngine::TxChannel| to send frames to.
   // |mode|                - Mode of credit-based flow control.
-  // |max_tx_pdu_size|     - Maximum size of a PDU (Tx MPS).
+  // |max_tx_pdu_payload_size|     - Maximum size of a PDU payload (Tx MPS).
   // |initial_credits|     - Initial value to use for credits. The transmit
   //                         engine can only send packets if it has sufficient
   //                         credits. See |AddCredits|.
@@ -43,7 +43,7 @@ class CreditBasedFlowControlTxEngine final : public TxEngine {
                                  uint16_t max_tx_sdu_size,
                                  TxChannel& channel,
                                  CreditBasedFlowControlMode mode,
-                                 uint16_t max_tx_pdu_size,
+                                 uint16_t max_tx_pdu_payload_size,
                                  uint16_t initial_credits);
   ~CreditBasedFlowControlTxEngine() override;
 
@@ -59,7 +59,7 @@ class CreditBasedFlowControlTxEngine final : public TxEngine {
   //
   // Returns true if successful, or false if the credits value would cause the
   // number of credits to exceed 65535, and does not modify the credit value.
-  bool AddCredits(uint16_t credits);
+  bool AddCredits(uint16_t credits) override;
 
   // Provide the current count of unspent credits.
   uint16_t credits() const;
@@ -79,7 +79,7 @@ class CreditBasedFlowControlTxEngine final : public TxEngine {
   void ProcessSdus();
 
   CreditBasedFlowControlMode mode_;
-  uint16_t max_tx_pdu_size_;
+  uint16_t max_tx_pdu_payload_size_;
   uint16_t credits_;
 
   // An ordered collection of PDUs that make up the segments of the current

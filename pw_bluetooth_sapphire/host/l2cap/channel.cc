@@ -200,6 +200,12 @@ ChannelImpl::~ChannelImpl() {
   }
 }
 
+void ChannelImpl::AddCredits(uint16_t credits) {
+  if (tx_engine_) {
+    tx_engine_->AddCredits(credits);
+  }
+}
+
 const sm::SecurityProperties ChannelImpl::security() {
   if (link_.is_alive()) {
     return link_->security();

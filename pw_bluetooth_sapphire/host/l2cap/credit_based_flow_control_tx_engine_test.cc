@@ -70,20 +70,15 @@ TEST_F(CreditBasedFlowControlTxEngineTest, SendBasicPayload) {
   auto& sent = sent_frames()[0];
 
   ASSERT_TRUE(sent);
-  EXPECT_EQ(sent->size(), 10u);
+  EXPECT_EQ(sent->size(), 6u);
   EXPECT_EQ(channel().queue_size(), 0u);
 
   // clang-format off: Formatter wants each value on a separate line.
-  StaticByteBuffer<10> expected{
-      // PDU size field (LE u16)
-      6, 0,
-      // Channel field (LE u16)
-      kTestChannelId, 0,
+  StaticByteBuffer expected(
       // SDU size field (LE u16)
       4, 0,
       // Payload
-      't', 'e', 's', 't',
-  };
+      't', 'e', 's', 't');
   // clang-format on
 
   EXPECT_TRUE(ContainersEqual(*sent, expected));
@@ -108,35 +103,28 @@ TEST_F(CreditBasedFlowControlTxEngineTest, SendSegmentedPayload) {
   auto& sent_second = sent_frames()[1];
 
   ASSERT_TRUE(sent_first);
-  EXPECT_EQ(sent_first->size(), kTestMps);
+  EXPECT_EQ(sent_first->size(), kTestMps + 2);
 
   // clang-format off: Formatter wants each value on a separate line.
-  StaticByteBuffer<kTestMps> expected_first{
-      // PDU size field (LE u16)
-      (kTestMps - 4), 0,
-      // Channel field (LE u16)
-      kTestChannelId, 0,
+  StaticByteBuffer<kTestMps + 2> expected_first{
       // SDU size field (LE u16)
       72, 0,
       // Payload
       'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
       'h', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'a', 'b', 'c', 'd', 'e', 'f',
       'g', 'h', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'a', 'b', 'c', 'd', 'e',
-      'f', 'g', 'h', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'a', 'b',
+      'f', 'g', 'h', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'a', 'b', 'c', 'd',
+      'e', 'f', 'g', 'h',
   };
   // clang-format on
 
   ASSERT_TRUE(sent_second);
-  EXPECT_EQ(sent_second->size(), 18u);
+  EXPECT_EQ(sent_second->size(), 8u);
 
   // clang-format off: Formatter wants each value on a separate line.
-  StaticByteBuffer<18> expected_second{
-      // PDU size field (LE u16)
-      14, 0,
-      // Channel field (LE u16)
-      kTestChannelId, 0,
+  StaticByteBuffer<8> expected_second{
       // Payload
-      'c', 'd', 'e', 'f', 'g', 'h', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 
   };
   // clang-format on
 
@@ -154,14 +142,10 @@ TEST_F(CreditBasedFlowControlTxEngineTest, NoSendWithoutCreditsBasic) {
   auto& sent_first = sent_frames()[0];
 
   ASSERT_TRUE(sent_first);
-  EXPECT_EQ(sent_first->size(), 11u);
+  EXPECT_EQ(sent_first->size(), 7u);
 
   // clang-format off: Formatter wants each value on a separate line.
-  StaticByteBuffer<11> expected_first{
-      // PDU size field (LE u16)
-      7, 0,
-      // Channel field (LE u16)
-      kTestChannelId, 0,
+  StaticByteBuffer<7> expected_first{
       // SDU size field (LE u16)
       5, 0,
       // Payload
@@ -191,14 +175,10 @@ TEST_F(CreditBasedFlowControlTxEngineTest, NoSendWithoutCreditsBasic) {
   ASSERT_EQ(sent_frames().size(), 2u);
   auto& sent_second = sent_frames()[1];
   ASSERT_TRUE(sent_second);
-  EXPECT_EQ(sent_second->size(), 12u);
+  EXPECT_EQ(sent_second->size(), 8u);
 
   // clang-format off: Formatter wants each value on a separate line.
-  StaticByteBuffer<12> expected_second{
-      // PDU size field (LE u16)
-      8, 0,
-      // Channel field (LE u16)
-      170, 0,
+  StaticByteBuffer<8> expected_second{
       // SDU size field (LE u16)
       6, 0,
       // Payload
@@ -231,21 +211,18 @@ TEST_F(CreditBasedFlowControlTxEngineTest, NoSendWithoutCreditsSegmented) {
   ASSERT_EQ(sent_frames().size(), 1u);
   auto& sent_first = sent_frames()[0];
   ASSERT_TRUE(sent_first);
-  EXPECT_EQ(sent_first->size(), kTestMps);
+  EXPECT_EQ(sent_first->size(), kTestMps + 2);
 
   // clang-format off: Formatter wants each value on a separate line.
-  StaticByteBuffer<kTestMps> expected_first{
-      // PDU size field (LE u16)
-      (kTestMps - 4), 0,
-      // Channel field (LE u16)
-      170, 0,
+  StaticByteBuffer<kTestMps + 2> expected_first{
       // SDU size field (LE u16)
       150, 0,
       // Payload
-      'L', 'o', 'r', 'e', 'm', ' ', 'i', 'p', 's', 'u', 'm', ' ', 'd', 'o', 'l',
-      'o', 'r', ' ', 's', 'i', 't', ' ', 'a', 'm', 'e', 't', ',', ' ', 'c', 'o',
-      'n', 's', 'e', 'c', 't', 'e', 't', 'u', 'r', ' ', 'a', 'd', 'i', 'p', 'i',
-      's', 'c', 'i', 'n', 'g', ' ', 'e', 'l', 'i', 't', '.', ' ', 'S',
+      'L', 'o', 'r', 'e', 'm', ' ', 'i', 'p', 's', 'u', 'm', ' ', 'd', 'o',
+      'l', 'o', 'r', ' ', 's', 'i', 't', ' ', 'a', 'm', 'e', 't', ',', ' ',
+      'c', 'o', 'n', 's', 'e', 'c', 't', 'e', 't', 'u', 'r', ' ', 'a', 'd',
+      'i', 'p', 'i', 's', 'c', 'i', 'n', 'g', ' ', 'e', 'l', 'i', 't', '.',
+      ' ', 'S', 'e', 'd', ' ', 'e', 't', ' '
   };
   // clang-format on
 
@@ -262,15 +239,13 @@ TEST_F(CreditBasedFlowControlTxEngineTest, NoSendWithoutCreditsSegmented) {
 
   // clang-format off: Formatter wants each value on a separate line.
   StaticByteBuffer<kTestMps> expected_second{
-      // PDU size field (LE u16)
-      (kTestMps - 4), 0,
-      // Channel field (LE u16)
-      170, 0,
       // Payload
-      'e', 'd', ' ', 'e', 't', ' ', 'v', 'e', 'h', 'i', 'c', 'u', 'l', 'a', ' ',
-      'e', 'n', 'i', 'm', '.', ' ', 'U', 't', ' ', 's', 'i', 't', ' ', 'a', 'm',
-      'e', 't', ' ', 'm', 'a', 'g', 'n', 'a', ' ', 'm', 'a', 'u', 'r', 'i', 's',
-      '.', ' ', 'U', 't', ' ', 's', 'e', 'd', ' ', 't', 'u', 'r', 'p', 'i', 's',
+                                              'v', 'e', 'h', 'i', 'c', 'u',
+      'l', 'a', ' ', 'e', 'n', 'i', 'm', '.', ' ', 'U', 't', ' ', 's', 'i',
+      't', ' ', 'a', 'm', 'e', 't', ' ', 'm', 'a', 'g', 'n', 'a', ' ', 'm',
+      'a', 'u', 'r', 'i', 's', '.', ' ', 'U', 't', ' ', 's', 'e', 'd', ' ',
+      't', 'u', 'r', 'p', 'i', 's', ' ', 'n', 'i', 'b', 'h', '.', ' ', 'V',
+      'e', 's'
   };
   // clang-format on
 
@@ -281,20 +256,15 @@ TEST_F(CreditBasedFlowControlTxEngineTest, NoSendWithoutCreditsSegmented) {
   ASSERT_EQ(sent_frames().size(), 3u);
   auto& sent_third = sent_frames()[2];
   ASSERT_TRUE(sent_third);
-  EXPECT_EQ(sent_third->size(), 36u);
+  EXPECT_EQ(sent_third->size(), 22u);
   EXPECT_EQ(engine().credits(), 9);
   EXPECT_EQ(engine().segments_count(), 0u);
 
   // clang-format off: Formatter wants each value on a separate line.
-  StaticByteBuffer<36> expected_third{
-      // PDU size field (LE u16)
-      32, 0,
-      // Channel field (LE u16)
-      170, 0,
+  StaticByteBuffer<22> expected_third{
       // Payload
-      ' ', 'n', 'i', 'b', 'h', '.', ' ', 'V', 'e', 's', 't', 'i', 'b', 'u', 'l',
-      'u', 'm', ' ', 's', 'e', 'd', ' ', 't', 'o', 'r', 't', 'o', 'r', ' ', 'i',
-      'd', '.'
+                't', 'i', 'b', 'u', 'l', 'u', 'm', ' ', 's', 'e', 'd', ' ',
+      't', 'o', 'r', 't', 'o', 'r', ' ', 'i', 'd', '.'
   };
   // clang-format on
 
@@ -323,21 +293,18 @@ TEST_F(CreditBasedFlowControlTxEngineTest, DoesNotAcceptSduWhilePdusQueued) {
   ASSERT_EQ(sent_frames().size(), 1u);
   auto& sent_first = sent_frames()[0];
   ASSERT_TRUE(sent_first);
-  EXPECT_EQ(sent_first->size(), kTestMps);
+  EXPECT_EQ(sent_first->size(), kTestMps + 2);
 
   // clang-format off: Formatter wants each value on a separate line.
-  StaticByteBuffer<kTestMps> expected_first{
-      // PDU size field (LE u16)
-      (kTestMps - 4), 0,
-      // Channel field (LE u16)
-      170, 0,
+  StaticByteBuffer<kTestMps + 2> expected_first{
       // SDU size field (LE u16)
       150, 0,
       // Payload
-      'L', 'o', 'r', 'e', 'm', ' ', 'i', 'p', 's', 'u', 'm', ' ', 'd', 'o', 'l',
-      'o', 'r', ' ', 's', 'i', 't', ' ', 'a', 'm', 'e', 't', ',', ' ', 'c', 'o',
-      'n', 's', 'e', 'c', 't', 'e', 't', 'u', 'r', ' ', 'a', 'd', 'i', 'p', 'i',
-      's', 'c', 'i', 'n', 'g', ' ', 'e', 'l', 'i', 't', '.', ' ', 'S',
+      'L', 'o', 'r', 'e', 'm', ' ', 'i', 'p', 's', 'u', 'm', ' ', 'd', 'o',
+      'l', 'o', 'r', ' ', 's', 'i', 't', ' ', 'a', 'm', 'e', 't', ',', ' ',
+      'c', 'o', 'n', 's', 'e', 'c', 't', 'e', 't', 'u', 'r', ' ', 'a', 'd',
+      'i', 'p', 'i', 's', 'c', 'i', 'n', 'g', ' ', 'e', 'l', 'i', 't', '.',
+      ' ', 'S', 'e', 'd', ' ', 'e', 't', ' '
   };
   // clang-format on
 
@@ -362,10 +329,10 @@ TEST_F(CreditBasedFlowControlTxEngineTest, DoesNotAcceptSduWhilePdusQueued) {
   EXPECT_EQ(sent_second->size(), kTestMps);
 
   ASSERT_TRUE(sent_third);
-  EXPECT_EQ(sent_third->size(), 36u);
+  EXPECT_EQ(sent_third->size(), 22u);
 
   ASSERT_TRUE(sent_fourth);
-  EXPECT_EQ(sent_fourth->size(), 14u);
+  EXPECT_EQ(sent_fourth->size(), 10u);
 
   EXPECT_EQ(engine().credits(), 0);
   EXPECT_EQ(engine().segments_count(), 0u);
@@ -373,41 +340,30 @@ TEST_F(CreditBasedFlowControlTxEngineTest, DoesNotAcceptSduWhilePdusQueued) {
 
   // clang-format off: Formatter wants each value on a separate line.
   StaticByteBuffer<kTestMps> expected_second{
-      // PDU size field (LE u16)
-      (kTestMps - 4), 0,
-      // Channel field (LE u16)
-      170, 0,
       // Payload
-      'e', 'd', ' ', 'e', 't', ' ', 'v', 'e', 'h', 'i', 'c', 'u', 'l', 'a', ' ',
-      'e', 'n', 'i', 'm', '.', ' ', 'U', 't', ' ', 's', 'i', 't', ' ', 'a', 'm',
-      'e', 't', ' ', 'm', 'a', 'g', 'n', 'a', ' ', 'm', 'a', 'u', 'r', 'i', 's',
-      '.', ' ', 'U', 't', ' ', 's', 'e', 'd', ' ', 't', 'u', 'r', 'p', 'i', 's',
+                                              'v', 'e', 'h', 'i', 'c', 'u',
+      'l', 'a', ' ', 'e', 'n', 'i', 'm', '.', ' ', 'U', 't', ' ', 's', 'i',
+      't', ' ', 'a', 'm', 'e', 't', ' ', 'm', 'a', 'g', 'n', 'a', ' ', 'm',
+      'a', 'u', 'r', 'i', 's', '.', ' ', 'U', 't', ' ', 's', 'e', 'd', ' ',
+      't', 'u', 'r', 'p', 'i', 's', ' ', 'n', 'i', 'b', 'h', '.', ' ', 'V',
+      'e', 's'
   };
   // clang-format on
 
   EXPECT_TRUE(ContainersEqual(*sent_second, expected_second));
 
   // clang-format off: Formatter wants each value on a separate line.
-  StaticByteBuffer<36> expected_third{
-      // PDU size field (LE u16)
-      32, 0,
-      // Channel field (LE u16)
-      170, 0,
+  StaticByteBuffer<22> expected_third{
       // Payload
-      ' ', 'n', 'i', 'b', 'h', '.', ' ', 'V', 'e', 's', 't', 'i', 'b', 'u', 'l',
-      'u', 'm', ' ', 's', 'e', 'd', ' ', 't', 'o', 'r', 't', 'o', 'r', ' ', 'i',
-      'd', '.'
+                't', 'i', 'b', 'u', 'l', 'u', 'm', ' ', 's', 'e', 'd', ' ',
+      't', 'o', 'r', 't', 'o', 'r', ' ', 'i', 'd', '.'
   };
   // clang-format on
 
   EXPECT_TRUE(ContainersEqual(*sent_third, expected_third));
 
   // clang-format off: Formatter wants each value on a separate line.
-  StaticByteBuffer<14> expected_fourth{
-      // PDU size field (LE u16)
-      10, 0,
-      // Channel field (LE u16)
-      170, 0,
+  StaticByteBuffer<10> expected_fourth{
       // SDU size field (LE u16)
       8, 0,
       // Payload

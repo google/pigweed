@@ -751,4 +751,32 @@ DynamicByteBuffer AclIFrame(hci_spec::ConnectionHandle link_handle,
   return acl_packet;
 }
 
+DynamicByteBuffer AclKFrame(hci_spec::ConnectionHandle link_handle,
+                            l2cap::ChannelId channel_id,
+                            const ByteBuffer& payload) {
+  const uint16_t sdu_size = payload.size();
+  const uint16_t pdu_size = sdu_size + sizeof(sdu_size);
+  const uint16_t acl_size = pdu_size + sizeof(BasicHeader);
+  StaticByteBuffer headers(
+      // ACL data header: link handle, length
+      LowerBits(link_handle),
+      UpperBits(link_handle),
+      LowerBits(acl_size),
+      UpperBits(acl_size),
+      // L2CAP B-frame header: pdu length, channel-id
+      LowerBits(pdu_size),
+      UpperBits(pdu_size),
+      LowerBits(channel_id),
+      UpperBits(channel_id),
+      // L2CAP SDU length
+      LowerBits(sdu_size),
+      UpperBits(sdu_size));
+
+  DynamicByteBuffer acl_packet(headers.size() + payload.size());
+  headers.Copy(&acl_packet);
+  auto payload_destination = acl_packet.mutable_view(headers.size());
+  payload.Copy(&payload_destination);
+  return acl_packet;
+}
+
 }  // namespace bt::l2cap::testing

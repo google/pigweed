@@ -253,6 +253,9 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
       uint16_t timeout_multiplier,
       LowEnergyCommandHandler::ConnectionParameterUpdateResponder* responder);
 
+  void ServeFlowControlCreditInd();
+  void OnRxFlowControlCreditInd(ChannelId remote_cid, uint16_t credits);
+
   // Processes the next ACL priority request in the  |pending_acl_requests_|
   // queue. In order to optimize radio performance, ACL priority is downgraded
   // whenever possible (i.e. when no more channels are requesting high
