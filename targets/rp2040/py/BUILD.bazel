@@ -61,7 +61,7 @@ py_library(
         "//pw_tokenizer/py:pw_tokenizer",
         "//pw_unit_test:unit_test_py_pb2",
         "//pw_unit_test/py:pw_unit_test",
-        "@python_packages//pyusb",
+        "@pigweed_python_packages//pyusb",
         "@rules_python//python/runfiles",
     ],
 )

@@ -40,7 +40,7 @@ pw_py_binary(
     main = "pw_build_mcuxpresso/__main__.py",
     deps = [
         ":pw_build_mcuxpresso",
-        "@python_packages//west",
+        "@pigweed_python_packages//west",
     ],
 )
 
@@ -82,6 +82,6 @@ pw_py_binary(
     main = "pw_build_mcuxpresso/__main__.py",
     deps = [
         ":pw_build_mcuxpresso",
-        "@python_packages//west",
+        "@pigweed_python_packages//west",
     ],
 )

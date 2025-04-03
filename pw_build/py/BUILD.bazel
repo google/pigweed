@@ -98,7 +98,7 @@ pw_py_binary(
 pw_py_binary(
     name = "copy_and_patch",
     srcs = ["pw_build/copy_and_patch.py"],
-    deps = ["@python_packages//patch"],
+    deps = ["@pigweed_python_packages//patch"],
 )
 
 pw_py_binary(
@@ -150,7 +150,7 @@ pw_py_test(
     tags = ["manual"],
     deps = [
         ":pw_build",
-        "@python_packages//parameterized",
+        "@pigweed_python_packages//parameterized",
     ],
 )
 
@@ -257,7 +257,7 @@ pw_py_test(
     ],
     deps = [
         ":pw_project_builder",
-        "@python_packages//parameterized",
+        "@pigweed_python_packages//parameterized",
     ],
 )
 
@@ -269,7 +269,7 @@ pw_py_test(
     ],
     deps = [
         ":pw_project_builder",
-        "@python_packages//parameterized",
+        "@pigweed_python_packages//parameterized",
     ],
 )
 

@@ -29,7 +29,7 @@ py_library(
     ],
     imports = ["."],
     deps = [
-        "@python_packages//pyserial",
+        "@pigweed_python_packages//pyserial",
     ],
 )
 

@@ -28,6 +28,6 @@ py_library(
         "//pw_stream/py:pw_stream",
         "//pw_tokenizer/py:pw_tokenizer",
         "//pw_trace/py:pw_trace",
-        "@python_packages//pyserial",
+        "@pigweed_python_packages//pyserial",
     ],
 )

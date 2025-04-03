@@ -50,8 +50,8 @@ py_library(
     ],
     imports = ["."],
     deps = [
-        "@python_packages//prompt_toolkit",
-        "@python_packages//psutil",
+        "@pigweed_python_packages//prompt_toolkit",
+        "@pigweed_python_packages//psutil",
     ],
 )
 
@@ -95,7 +95,7 @@ pw_py_test(
     ],
     deps = [
         ":pw_cli",
-        "@python_packages//pyfakefs",
+        "@pigweed_python_packages//pyfakefs",
     ],
 )
 

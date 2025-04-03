@@ -33,9 +33,9 @@ py_library(
     ],
     imports = ["."],
     deps = [
-        "@python_packages//jinja2",
-        "@python_packages//jsonschema",
-        "@python_packages//pyyaml",
+        "@pigweed_python_packages//jinja2",
+        "@pigweed_python_packages//jsonschema",
+        "@pigweed_python_packages//pyyaml",
     ],
 )
 
@@ -50,8 +50,8 @@ pw_py_binary(
     imports = ["."],
     deps = [
         ":pw_sensor",
-        "@python_packages//jinja2",
-        "@python_packages//pyyaml",
+        "@pigweed_python_packages//jinja2",
+        "@pigweed_python_packages//pyyaml",
     ],
 )
 
@@ -61,7 +61,7 @@ pw_py_binary(
     imports = ["."],
     deps = [
         ":pw_sensor",
-        "@python_packages//pyyaml",
+        "@pigweed_python_packages//pyyaml",
     ],
 )
 
@@ -79,8 +79,8 @@ pw_py_test(
     srcs = ["validator_test.py"],
     deps = [
         ":pw_sensor",
-        "@python_packages//jsonschema",
-        "@python_packages//pyyaml",
+        "@pigweed_python_packages//jsonschema",
+        "@pigweed_python_packages//pyyaml",
     ],
 )
 

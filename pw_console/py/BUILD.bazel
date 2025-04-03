@@ -110,14 +110,14 @@ py_library(
         "//pw_cli/py:pw_cli",
         "//pw_config_loader/py:pw_config_loader",
         "//pw_log_tokenized/py:pw_log_tokenized",
-        "@python_packages//aiohttp",
-        "@python_packages//jinja2",
-        "@python_packages//prompt_toolkit",
-        "@python_packages//ptpython",
-        "@python_packages//pygments",
-        "@python_packages//pyperclip",
-        "@python_packages//pyyaml",
-        "@python_packages//websockets",
+        "@pigweed_python_packages//aiohttp",
+        "@pigweed_python_packages//jinja2",
+        "@pigweed_python_packages//prompt_toolkit",
+        "@pigweed_python_packages//ptpython",
+        "@pigweed_python_packages//pygments",
+        "@pigweed_python_packages//pyperclip",
+        "@pigweed_python_packages//pyyaml",
+        "@pigweed_python_packages//websockets",
     ],
 )
 
@@ -187,7 +187,7 @@ pw_py_test(
     ],
     deps = [
         ":pw_console",
-        "@python_packages//parameterized",
+        "@pigweed_python_packages//parameterized",
     ],
 )
 
@@ -210,7 +210,7 @@ pw_py_test(
     ],
     deps = [
         ":pw_console",
-        "@python_packages//parameterized",
+        "@pigweed_python_packages//parameterized",
     ],
 )
 
@@ -244,7 +244,7 @@ pw_py_test(
     ],
     deps = [
         ":pw_console",
-        "@python_packages//parameterized",
+        "@pigweed_python_packages//parameterized",
     ],
 )
 
@@ -256,7 +256,7 @@ pw_py_test(
     ],
     deps = [
         ":pw_console",
-        "@python_packages//parameterized",
+        "@pigweed_python_packages//parameterized",
     ],
 )
 

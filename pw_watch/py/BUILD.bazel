@@ -31,7 +31,7 @@ py_library(
     imports = ["."],
     deps = [
         "//pw_cli/py:pw_cli",
-        "@python_packages//watchdog",
+        "@pigweed_python_packages//watchdog",
     ],
 )
 
@@ -46,7 +46,7 @@ pw_py_binary(
         "//pw_build/py:pw_project_builder",
         "//pw_config_loader/py:pw_config_loader",
         "//pw_console/py:pw_console",
-        "@python_packages//prompt_toolkit",
+        "@pigweed_python_packages//prompt_toolkit",
     ],
 )
 

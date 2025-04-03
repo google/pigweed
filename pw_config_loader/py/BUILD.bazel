@@ -29,7 +29,7 @@ py_library(
     ],
     imports = ["."],
     deps = [
-        "@python_packages//pyyaml",
+        "@pigweed_python_packages//pyyaml",
     ],
 )
 
@@ -52,6 +52,6 @@ pw_py_test(
     ],
     deps = [
         ":pw_config_loader",
-        "@python_packages//pyfakefs",
+        "@pigweed_python_packages//pyfakefs",
     ],
 )

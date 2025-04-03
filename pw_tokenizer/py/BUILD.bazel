@@ -72,7 +72,7 @@ pw_py_binary(
     main = "pw_tokenizer/serial_detokenizer.py",
     deps = [
         ":pw_tokenizer",
-        "@python_packages//pyserial",
+        "@pigweed_python_packages//pyserial",
     ],
 )
 

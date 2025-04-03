@@ -112,7 +112,7 @@ py_library(
 
 py_console_script_binary(
     name = "black",
-    pkg = "@python_packages//black",
+    pkg = "@pigweed_python_packages//black",
     visibility = ["//visibility:private"],
 )
 
@@ -272,7 +272,7 @@ pw_py_test(
     deps = [
         ":format_testing_utils",
         ":pw_presubmit",
-        "@python_packages//black",
+        "@pigweed_python_packages//black",
     ],
 )
 

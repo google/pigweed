@@ -57,8 +57,8 @@ py_library(
         "//pw_transfer/py:pw_transfer",
         "//pw_unit_test:unit_test_py_pb2",
         "//pw_unit_test/py:pw_unit_test",
-        "@python_packages//debugpy",
-        "@python_packages//pyserial",
+        "@pigweed_python_packages//debugpy",
+        "@pigweed_python_packages//pyserial",
     ],
 )
 

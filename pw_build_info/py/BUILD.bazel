@@ -23,7 +23,7 @@ py_library(
     ],
     imports = ["."],
     deps = [
-        "@python_packages//pyelftools",
+        "@pigweed_python_packages//pyelftools",
     ],
 )
 

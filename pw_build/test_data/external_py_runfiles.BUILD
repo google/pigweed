@@ -18,7 +18,7 @@ load("@rules_python//python/entry_points:py_console_script_binary.bzl", "py_cons
 py_console_script_binary(
     name = "black_entry_point",
     script = "black",
-    pkg = "@python_packages//black",
+    pkg = "@pigweed_python_packages//black",
 )
 
 pw_py_importable_runfile(

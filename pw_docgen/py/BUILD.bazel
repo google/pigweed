@@ -43,10 +43,10 @@ py_library(
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_status/py:pw_status",
-        "@python_packages//jsonschema",
-        "@python_packages//kconfiglib",
-        "@python_packages//pytz",
-        "@python_packages//sphinx",
+        "@pigweed_python_packages//jsonschema",
+        "@pigweed_python_packages//kconfiglib",
+        "@pigweed_python_packages//pytz",
+        "@pigweed_python_packages//sphinx",
         "@rules_python//python/runfiles",
     ],
 )
