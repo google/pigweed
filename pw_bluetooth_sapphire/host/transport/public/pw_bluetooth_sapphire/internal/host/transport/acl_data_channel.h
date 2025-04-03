@@ -28,6 +28,7 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/data_buffer_info.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/link_type.h"
+#include "pw_bluetooth_sapphire/lease.h"
 
 namespace bt::hci {
 
@@ -107,7 +108,8 @@ class AclDataChannel {
       Transport* transport,
       pw::bluetooth::Controller* hci,
       const DataBufferInfo& bredr_buffer_info,
-      const DataBufferInfo& le_buffer_info);
+      const DataBufferInfo& le_buffer_info,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
 
   virtual ~AclDataChannel() = default;
 

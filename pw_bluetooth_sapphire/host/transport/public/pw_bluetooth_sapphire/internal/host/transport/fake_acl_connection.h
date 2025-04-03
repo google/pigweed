@@ -52,6 +52,9 @@ class FakeAclConnection : public AclDataChannel::ConnectionInterface {
   bt::LinkType type() const override { return type_; }
 
   ACLDataPacketPtr GetNextOutboundPacket() override {
+    if (get_next_outbound_packet_cb_) {
+      get_next_outbound_packet_cb_();
+    }
     if (queued_packets_.empty()) {
       return nullptr;
     }
@@ -62,10 +65,15 @@ class FakeAclConnection : public AclDataChannel::ConnectionInterface {
 
   bool HasAvailablePacket() const override { return !queued_packets_.empty(); }
 
+  void set_get_next_outbound_packet_callback(fit::function<void()> callback) {
+    get_next_outbound_packet_cb_ = std::move(callback);
+  }
+
  private:
   hci_spec::ConnectionHandle handle_;
   bt::LinkType type_;
   AclDataChannel* data_channel_;
+  fit::function<void()> get_next_outbound_packet_cb_ = nullptr;
   std::queue<ACLDataPacketPtr> queued_packets_;
   WeakSelf<ConnectionInterface> weak_interface_;
 };

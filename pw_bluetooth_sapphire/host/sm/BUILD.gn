@@ -133,6 +133,7 @@ pw_test("sm_tests") {
   deps = [
     ":sm",
     ":testing",
+    "$dir_pw_bluetooth_sapphire:fake_lease_provider",
     "$dir_pw_bluetooth_sapphire/host/hci:testing",
     "$dir_pw_bluetooth_sapphire/host/l2cap:testing",
     "$dir_pw_bluetooth_sapphire/host/testing",

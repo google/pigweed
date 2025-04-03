@@ -54,6 +54,7 @@ pw_source_set("transport") {
     "$dir_pw_async:dispatcher",
     "$dir_pw_async:task",
     "$dir_pw_bluetooth:emboss_hci_group",
+    "$dir_pw_bluetooth_sapphire:lease",
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/hci-spec",
     "$dir_pw_third_party/fuchsia:fit",

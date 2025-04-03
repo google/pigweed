@@ -40,6 +40,7 @@ pw_source_set("testing") {
     "$dir_pw_async:fake_dispatcher_fixture",
     "$dir_pw_async:heap_dispatcher",
     "$dir_pw_bluetooth_sapphire:config",
+    "$dir_pw_bluetooth_sapphire:fake_lease_provider",
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/gap:definitions",
     "$dir_pw_bluetooth_sapphire/host/hci-spec",

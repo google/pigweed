@@ -22,6 +22,7 @@
 #include "fidl/fuchsia.hardware.bluetooth/cpp/fidl.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt.h"
+#include "pw_bluetooth_sapphire/null_lease_provider.h"
 #include "pw_random_fuchsia/zircon_random_generator.h"
 
 namespace bthost {
@@ -70,6 +71,9 @@ class BtHostComponent {
                   bool initialize_rng);
 
   pw::async_fuchsia::FuchsiaDispatcher pw_dispatcher_;
+
+  // Use NullLeaseProvider until we are ready to enable power management.
+  pw::bluetooth_sapphire::NullLeaseProvider lease_provider_;
 
   // Path of bt-hci device the component supports
   std::string device_path_;

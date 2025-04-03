@@ -25,6 +25,7 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/iso_data_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/sco_data_channel.h"
+#include "pw_bluetooth_sapphire/lease.h"
 
 namespace bt::hci {
 
@@ -33,8 +34,10 @@ namespace bt::hci {
 // to send and receive HCI packets from the underlying Bluetooth controller.
 class Transport final : public WeakSelf<Transport> {
  public:
-  explicit Transport(std::unique_ptr<pw::bluetooth::Controller> hci,
-                     pw::async::Dispatcher& dispatcher);
+  explicit Transport(
+      std::unique_ptr<pw::bluetooth::Controller> controller,
+      pw::async::Dispatcher& dispatcher,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
 
   // Initializes the command channel and features. The result will be reported
   // via |complete_callback|.
@@ -115,6 +118,8 @@ class Transport final : public WeakSelf<Transport> {
   std::unique_ptr<pw::bluetooth::Controller> controller_;
 
   std::optional<pw::bluetooth::Controller::FeaturesBits> features_;
+
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
 
   // The HCI command and event flow control handler.
   // CommandChannel must be constructed first & shut down last because

@@ -18,7 +18,7 @@
 namespace pw::bluetooth_sapphire {
 
 /// A no-op LeaseProvider that always successfully returns an fake lease.
-class NullLeaseProvider final : LeaseProvider {
+class NullLeaseProvider final : public LeaseProvider {
  public:
   ~NullLeaseProvider() override = default;
   Result<Lease> Acquire(PW_SAPPHIRE_LEASE_TOKEN_TYPE) override {

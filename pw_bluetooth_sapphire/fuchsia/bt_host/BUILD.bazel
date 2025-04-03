@@ -63,6 +63,7 @@ cc_library(
     deps = [
         ":bt_host_config",
         "//pw_async_fuchsia:dispatcher",
+        "//pw_bluetooth_sapphire:null_lease_provider",
         "//pw_bluetooth_sapphire/fuchsia/host/controllers",
         "//pw_bluetooth_sapphire/fuchsia/host/fidl",
         "//pw_bluetooth_sapphire/fuchsia/lib/fidl",

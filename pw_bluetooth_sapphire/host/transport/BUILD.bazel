@@ -58,6 +58,7 @@ cc_library(
         "//pw_async:task",
         "//pw_bluetooth",
         "//pw_bluetooth:emboss_hci_common",
+        "//pw_bluetooth_sapphire:lease",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci-spec",
         "//third_party/fuchsia:fit",

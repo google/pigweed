@@ -736,10 +736,13 @@ TEST_P(
   acl_data_channel()->ClearControllerPacketCount(kConnectionHandle0);
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  EXPECT_GE(lease_provider().lease_count(), 1u);
 
   // There are no active connections now
   acl_data_channel()->UnregisterConnection(kConnectionHandle1);
+  EXPECT_GE(lease_provider().lease_count(), 1u);
   acl_data_channel()->ClearControllerPacketCount(kConnectionHandle1);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
   RunUntilIdle();
 }
 
@@ -1057,6 +1060,8 @@ TEST_F(AclDataChannelTest,
   acl_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
   acl_data_channel()->RegisterConnection(connection_1.GetWeakPtr());
 
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+
   // Fill up BR/EDR controller buffer then queue one additional packet
   for (size_t i = 0; i <= kBufferMaxNumPackets; ++i) {
     // Last packet should remain queued
@@ -1084,6 +1089,7 @@ TEST_F(AclDataChannelTest,
   }
   EXPECT_EQ(connection_0.queued_packets().size(), 1u);
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  EXPECT_GE(lease_provider().lease_count(), 1u);
 
   // Fill up LE controller buffer then queue one additional packet
   for (size_t i = 0; i <= kBufferMaxNumPackets; ++i) {
@@ -1112,6 +1118,7 @@ TEST_F(AclDataChannelTest,
   }
   EXPECT_EQ(connection_1.queued_packets().size(), 1u);
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  EXPECT_GE(lease_provider().lease_count(), 1u);
 
   // Send out last packet on BR/EDR link
   EXPECT_ACL_PACKET_OUT(test_device(),
@@ -1127,6 +1134,7 @@ TEST_F(AclDataChannelTest,
   test_device()->SendCommandChannelPacket(
       bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, 1));
   RunUntilIdle();
+  EXPECT_GE(lease_provider().lease_count(), 1u);
 
   // Send out last packet on LE link
   EXPECT_ACL_PACKET_OUT(test_device(),
@@ -1146,6 +1154,61 @@ TEST_F(AclDataChannelTest,
   EXPECT_EQ(connection_0.queued_packets().size(), 0u);
   EXPECT_EQ(connection_1.queued_packets().size(), 0u);
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  EXPECT_GE(lease_provider().lease_count(), 1u);
+
+  // Receive NOCP for all sent packets. No more should be sent, and the wake
+  // lease should be released.
+  test_device()->SendCommandChannelPacket(
+      bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0,
+                                                  kBufferMaxNumPackets));
+  test_device()->SendCommandChannelPacket(
+      bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle1,
+                                                  kBufferMaxNumPackets));
+  RunUntilIdle();
+  EXPECT_GE(lease_provider().lease_count(), 0u);
+}
+
+TEST_F(AclDataChannelTest, WakeLeaseHeldWhileGettingLastPacketFromConnection) {
+  constexpr size_t kMaxNumPackets = 1;
+  InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets),
+                           DataBufferInfo());
+
+  FakeAclConnection connection_0(
+      acl_data_channel(), kConnectionHandle0, bt::LinkType::kACL);
+  int outbound_packet_callback_count = 0;
+  connection_0.set_get_next_outbound_packet_callback(
+      [this, &outbound_packet_callback_count] {
+        outbound_packet_callback_count++;
+        EXPECT_GE(lease_provider().lease_count(), 1u);
+      });
+
+  acl_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
+
+  const StaticByteBuffer kPacket(
+      // ACL data header (handle: 0, length 1)
+      LowerBits(kConnectionHandle0),
+      UpperBits(kConnectionHandle0),
+      // payload length
+      0x01,
+      0x00,
+      // payload
+      static_cast<uint8_t>(1));
+  EXPECT_ACL_PACKET_OUT(test_device(), kPacket);
+
+  // Create packet to send
+  ACLDataPacketPtr packet =
+      ACLDataPacket::New(kConnectionHandle0,
+                         hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                         hci_spec::ACLBroadcastFlag::kPointToPoint,
+                         /*payload_size=*/1);
+  packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(1);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+  connection_0.QueuePacket(std::move(packet));
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  EXPECT_EQ(outbound_packet_callback_count, 1);
+  acl_data_channel()->UnregisterConnection(kConnectionHandle0);
+  EXPECT_EQ(lease_provider().lease_count(), 1u);
 }
 
 INSTANTIATE_TEST_SUITE_P(AclDataChannelTest,

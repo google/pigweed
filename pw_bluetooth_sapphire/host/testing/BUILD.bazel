@@ -49,6 +49,7 @@ cc_library(
         "//pw_async:heap_dispatcher",
         "//pw_bluetooth",
         "//pw_bluetooth_sapphire:config",
+        "//pw_bluetooth_sapphire:fake_lease_provider",
         "//pw_bluetooth_sapphire/fuchsia/lib/inspect_testing",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/gap:definitions",

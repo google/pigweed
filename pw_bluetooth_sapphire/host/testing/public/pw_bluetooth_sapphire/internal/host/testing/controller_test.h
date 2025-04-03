@@ -19,6 +19,7 @@
 
 #include "pw_async/fake_dispatcher_fixture.h"
 #include "pw_bluetooth/controller.h"
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
@@ -63,8 +64,8 @@ class ControllerTest {
     std::unique_ptr<pw::bluetooth::Controller> controller =
         ControllerTest<ControllerTestDoubleType>::SetUpTestController();
     test_device_->set_features(features);
-    transport_ =
-        std::make_unique<hci::Transport>(std::move(controller), dispatcher_);
+    transport_ = std::make_unique<hci::Transport>(
+        std::move(controller), dispatcher_, lease_provider_);
 
     if (initialize_transport) {
       std::optional<bool> init_result;
@@ -135,6 +136,10 @@ class ControllerTest {
     return test_device_;
   }
 
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider& lease_provider() {
+    return lease_provider_;
+  }
+
  private:
   std::unique_ptr<pw::bluetooth::Controller> SetUpTestController() {
     std::unique_ptr<ControllerTestDoubleType> controller =
@@ -161,6 +166,7 @@ class ControllerTest {
   pw::async::Dispatcher& dispatcher_;
   pw::async::HeapDispatcher heap_dispatcher_{dispatcher_};
   typename ControllerTestDoubleType::WeakPtr test_device_;
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<hci::Transport> transport_;
   hci::ACLPacketHandler data_received_callback_;
 

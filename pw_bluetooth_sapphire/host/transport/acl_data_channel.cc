@@ -27,15 +27,18 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/link_type.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
+#include "pw_bluetooth_sapphire/lease.h"
 
 namespace bt::hci {
 
 class AclDataChannelImpl final : public AclDataChannel {
  public:
-  AclDataChannelImpl(Transport* transport,
-                     pw::bluetooth::Controller* hci,
-                     const DataBufferInfo& bredr_buffer_info,
-                     const DataBufferInfo& le_buffer_info);
+  AclDataChannelImpl(
+      Transport* transport,
+      pw::bluetooth::Controller* hci,
+      const DataBufferInfo& bredr_buffer_info,
+      const DataBufferInfo& le_buffer_info,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
   ~AclDataChannelImpl() override;
 
   // AclDataChannel overrides:
@@ -171,6 +174,9 @@ class AclDataChannelImpl final : public AclDataChannel {
   ConnectionMap::iterator current_bredr_link_ = registered_connections_.end();
   ConnectionMap::iterator current_le_link_ = registered_connections_.end();
 
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
+  std::optional<pw::bluetooth_sapphire::Lease> wake_lease_;
+
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AclDataChannelImpl);
 };
 
@@ -178,19 +184,23 @@ std::unique_ptr<AclDataChannel> AclDataChannel::Create(
     Transport* transport,
     pw::bluetooth::Controller* hci,
     const DataBufferInfo& bredr_buffer_info,
-    const DataBufferInfo& le_buffer_info) {
+    const DataBufferInfo& le_buffer_info,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider) {
   return std::make_unique<AclDataChannelImpl>(
-      transport, hci, bredr_buffer_info, le_buffer_info);
+      transport, hci, bredr_buffer_info, le_buffer_info, wake_lease_provider);
 }
 
-AclDataChannelImpl::AclDataChannelImpl(Transport* transport,
-                                       pw::bluetooth::Controller* hci,
-                                       const DataBufferInfo& bredr_buffer_info,
-                                       const DataBufferInfo& le_buffer_info)
+AclDataChannelImpl::AclDataChannelImpl(
+    Transport* transport,
+    pw::bluetooth::Controller* hci,
+    const DataBufferInfo& bredr_buffer_info,
+    const DataBufferInfo& le_buffer_info,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
     : transport_(transport),
       hci_(hci),
       bredr_buffer_info_(bredr_buffer_info),
-      le_buffer_info_(le_buffer_info) {
+      le_buffer_info_(le_buffer_info),
+      wake_lease_provider_(wake_lease_provider) {
   PW_DCHECK(transport_);
   PW_CHECK(hci_);
 
@@ -320,6 +330,11 @@ void AclDataChannelImpl::SendPackets(ConnectionMap::iterator& current_link) {
     if (!current_link->second->HasAvailablePacket()) {
       continue;
     }
+
+    // Acquire a wake lease because we may be taking the last queued packet from
+    // upper layers, causing them to drop their wake leases.
+    pw::Result<pw::bluetooth_sapphire::Lease> lease = PW_SAPPHIRE_ACQUIRE_LEASE(
+        wake_lease_provider_, "AclDataChannelImpl::SendPackets");
 
     // If there is an available packet, send and update packet counts
     ACLDataPacketPtr packet = current_link->second->GetNextOutboundPacket();
@@ -562,6 +577,10 @@ void AclDataChannelImpl::DecrementPendingPacketsForLinkType(LinkType link_type,
     PW_DCHECK(*num_pending_le_packets_ >= count);
     *num_pending_le_packets_.Mutable() -= count;
   }
+
+  if (*num_pending_bredr_packets_ == 0 && *num_pending_le_packets_ == 0) {
+    wake_lease_.reset();
+  }
 }
 
 void AclDataChannelImpl::IncrementPendingPacketsForLinkType(
@@ -573,6 +592,14 @@ void AclDataChannelImpl::IncrementPendingPacketsForLinkType(
   } else if (link_type == LinkType::kLE) {
     *num_pending_le_packets_.Mutable() += 1;
     PW_DCHECK(*num_pending_le_packets_ <= le_buffer_info_.max_num_packets());
+  }
+
+  if (!wake_lease_) {
+    pw::Result<pw::bluetooth_sapphire::Lease> lease =
+        PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_, "AclDataChannel");
+    if (lease.ok()) {
+      wake_lease_ = std::move(lease.value());
+    }
   }
 }
 
