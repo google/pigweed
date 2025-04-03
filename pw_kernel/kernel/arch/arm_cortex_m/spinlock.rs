@@ -30,7 +30,7 @@ impl InterruptGuard {
                 "mrs {}, PRIMASK
                  cpsid i",
                 out(reg) saved_primask,
-                options(nomem, nostack, preserves_flags)
+                options(preserves_flags)
             );
         }
         compiler_fence(Ordering::SeqCst);
@@ -45,7 +45,7 @@ impl Drop for InterruptGuard {
         compiler_fence(Ordering::SeqCst);
         if (self.saved_primask & 0x1) == 0x0 {
             unsafe {
-                asm!("cpsie i", options(nomem, nostack, preserves_flags));
+                asm!("cpsie i", options(preserves_flags));
             }
         }
     }
