@@ -77,6 +77,12 @@ iterator will progress until it sees the corrupted section and instead move to
      PW_LOG_WARN("Iterator failed to read some entries!");
    }
 
+Iterators come in 2 different flavors:
+* ``PrefixedEntryRingBufferMulti::iterator`` which will provide ``Entry``
+objects with ``pw::span<std::byte>`` buffer type.
+* ``PrefixedEntryRingBufferMulti::const_iterator`` which will provide ``Entry``
+objects with ``pw::span<const std::byte>`` buffer type.
+
 Data corruption
 ===============
 ``PrefixedEntryRingBufferMulti`` offers a circular ring buffer for arbitrary

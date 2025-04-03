@@ -29,8 +29,10 @@ using std::byte;
 namespace pw {
 namespace ring_buffer {
 namespace {
-using Entry = PrefixedEntryRingBufferMulti::Entry;
+using Entry = PrefixedEntryRingBufferMulti::Entry<false>;
 using iterator = PrefixedEntryRingBufferMulti::iterator;
+using ConstEntry = PrefixedEntryRingBufferMulti::Entry<true>;
+using const_iterator = PrefixedEntryRingBufferMulti::const_iterator;
 
 TEST(PrefixedEntryRingBuffer, NoBuffer) {
   PrefixedEntryRingBuffer ring(false);
@@ -541,6 +543,100 @@ TEST(PrefixedEntryRingBuffer, Iterator) {
     validated_entries++;
   }
   EXPECT_EQ(validated_entries, entry_count);
+}
+
+TEST(PrefixedEntryRingBuffer, IteratorTypes) {
+  PrefixedEntryRingBuffer ring;
+  byte test_buffer[kTestBufferSize];
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
+
+  auto begin = ring.begin();
+  auto cbegin = ring.cbegin();
+  auto end = ring.end();
+  auto cend = ring.cend();
+  static_assert(std::is_same_v<decltype(begin->buffer), pw::span<std::byte>>,
+                "begin() should return a mutable Entry");
+  static_assert(
+      std::is_same_v<decltype(cbegin->buffer), pw::span<const std::byte>>,
+      "cbegin() should return a const Entry");
+  static_assert(std::is_same_v<decltype(end->buffer), pw::span<std::byte>>,
+                "end() should return a mutable Entry");
+  static_assert(
+      std::is_same_v<decltype(cend->buffer), pw::span<const std::byte>>,
+      "cend() should return a const Entry");
+}
+
+TEST(PrefixedEntryRingBuffer, IteratorConversion) {
+  static_assert(
+      std::is_constructible_v<iterator, const iterator&>,
+      "Should be able to convert mutable iterator to another mutable iterator");
+  static_assert(
+      !std::is_constructible_v<iterator, const const_iterator&>,
+      "Should not be able to convert const iterator to a mutable iterator");
+  static_assert(
+      std::is_constructible_v<const_iterator, const iterator&>,
+      "Should be able to convert mutable iterator to a const iterator");
+  static_assert(
+      std::is_constructible_v<const_iterator, const const_iterator&>,
+      "Should be able to convert const iterator to another const iterator");
+
+  PrefixedEntryRingBuffer ring;
+  byte test_buffer[kTestBufferSize];
+  EXPECT_EQ(ring.SetBuffer(test_buffer), OkStatus());
+  {
+    // Copy a mutable iterator
+    iterator it = ring.begin();
+    iterator copy(it);
+    const_iterator const_copy(it);
+
+    EXPECT_EQ(it, copy);
+    EXPECT_EQ(it, const_copy);
+  }
+  {
+    // Copy a const iterator
+    const_iterator it = ring.cbegin();
+    const_iterator const_copy(it);
+
+    EXPECT_EQ(it, const_copy);
+  }
+}
+
+TEST(PrefixedEntryRingBuffer, IteratorComparison) {
+  PrefixedEntryRingBuffer ring1;
+  PrefixedEntryRingBuffer ring2;
+  byte test_buffer1[kTestBufferSize];
+  byte test_buffer2[kTestBufferSize];
+  EXPECT_EQ(ring1.SetBuffer(test_buffer1), OkStatus());
+  EXPECT_EQ(ring2.SetBuffer(test_buffer2), OkStatus());
+
+  // Fill up the ring buffer with a constant value.
+  size_t entry_count1 = 0;
+  while (TryPushBack<size_t>(ring1, entry_count1).ok()) {
+    entry_count1++;
+  }
+
+  size_t entry_count2 = 0;
+  while (TryPushBack<size_t>(ring2, entry_count2).ok()) {
+    entry_count2++;
+  }
+
+  EXPECT_EQ(entry_count1, entry_count2);
+
+  // Iterators are considered the same regardless of constantness
+  EXPECT_EQ(ring1.begin(), ring1.begin());
+  EXPECT_EQ(ring1.begin(), ring1.cbegin());
+  EXPECT_EQ(ring1.cbegin(), ring1.begin());
+
+  // Iterators to different buffers are not the same, even if they're in the
+  // same position.
+  EXPECT_NE(ring1.begin(), ring2.begin());
+
+  // End iterators are always the same regardless of constantness or the buffer
+  // they come from.
+  EXPECT_EQ(ring1.end(), ring2.end());
+  EXPECT_EQ(ring1.end(), ring1.end());
+  EXPECT_EQ(ring1.end(), ring1.cend());
+  EXPECT_EQ(ring1.cend(), ring1.end());
 }
 
 TEST(PrefixedEntryRingBuffer, IteratorDecrement) {

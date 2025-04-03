@@ -37,6 +37,7 @@ cc_library(
     ],
     strip_include_prefix = "public",
     deps = [
+        "//pw_assert:check",
         "//pw_containers:intrusive_list",
         "//pw_result",
         "//pw_span",
