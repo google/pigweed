@@ -1,19 +1,23 @@
-From d6e8d7bd0d41316912cba51857f1d915fa1f345b Mon Sep 17 00:00:00 2001
+From 51d33741c86ba44d9e34c788ee77b35eb2ab037b Mon Sep 17 00:00:00 2001
 From: Erik Gilling <konkers@google.com>
 Date: Thu, 12 Dec 2024 14:45:10 -0800
-Subject: [PATCH 1/2] Add thumbv6m and more thumbv7m and thumbv8m triples
+Subject: [PATCH] Add riscv32imac, thumbv6m and more thumbv7m and thumbv8m
+ triples
 
 These are commonly used in microcontrollers.
 ---
- rust/platform/triple_mappings.bzl | 3 +++
- 1 file changed, 3 insertions(+)
+ rust/platform/triple_mappings.bzl | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/rust/platform/triple_mappings.bzl b/rust/platform/triple_mappings.bzl
-index b436af3a..73e89467 100644
+index d28fe747..4a7e61f0 100644
 --- a/rust/platform/triple_mappings.bzl
 +++ b/rust/platform/triple_mappings.bzl
-@@ -56,8 +56,11 @@ SUPPORTED_T2_PLATFORM_TRIPLES = {
+@@ -55,10 +55,14 @@ SUPPORTED_T2_PLATFORM_TRIPLES = {
+     "i686-unknown-freebsd": _support(std = True, host_tools = False),
+     "powerpc-unknown-linux-gnu": _support(std = True, host_tools = True),
      "riscv32imc-unknown-none-elf": _support(std = True, host_tools = False),
++    "riscv32imac-unknown-none-elf": _support(std = True, host_tools = False),
      "riscv64gc-unknown-none-elf": _support(std = True, host_tools = False),
      "s390x-unknown-linux-gnu": _support(std = True, host_tools = True),
 +    "thumbv6m-none-eabi": _support(std = False, host_tools = False),
@@ -24,6 +28,13 @@ index b436af3a..73e89467 100644
      "wasm32-unknown-unknown": _support(std = True, host_tools = False),
      "wasm32-wasip1": _support(std = True, host_tools = False),
      "x86_64-apple-ios": _support(std = True, host_tools = False),
+@@ -117,6 +121,7 @@ _CPU_ARCH_TO_BUILTIN_PLAT_SUFFIX = {
+     "powerpc64le": "ppc64le",
+     "riscv32": "riscv32",
+     "riscv32imc": "riscv32",
++    "riscv32imac": "riscv32",
+     "riscv64": "riscv64",
+     "riscv64gc": "riscv64",
+     "s390": None,
 -- 
-2.48.0.rc2.279.g1de40edade-goog
-
+2.49.0.472.ge94155a9ec-goog

@@ -1,4 +1,4 @@
-From 25e5c2279b86456a6f42d67b39fe3b42927a03f5 Mon Sep 17 00:00:00 2001
+From 0c20865e67cd5557b4c9f28132d1bd0adecbfd7a Mon Sep 17 00:00:00 2001
 From: Erik Gilling <konkers@google.com>
 Date: Mon, 27 Mar 2023 16:48:26 +0000
 Subject: [PATCH] PROTOTYPE: Add ability to document multiple crates at once
@@ -18,10 +18,10 @@ Subject: [PATCH] PROTOTYPE: Add ability to document multiple crates at once
  create mode 100644 util/run_scripts/run_scripts.rs
 
 diff --git a/rust/defs.bzl b/rust/defs.bzl
-index 67a28630..4d58df51 100644
+index e05c4ada..83cc0bc9 100644
 --- a/rust/defs.bzl
 +++ b/rust/defs.bzl
-@@ -56,6 +56,7 @@ load(
+@@ -60,6 +60,7 @@ load(
  load(
      "//rust/private:rustdoc.bzl",
      _rust_doc = "rust_doc",
@@ -29,7 +29,7 @@ index 67a28630..4d58df51 100644
  )
  load(
      "//rust/private:rustdoc_test.bzl",
-@@ -99,6 +100,9 @@ rust_test_suite = _rust_test_suite
+@@ -103,6 +104,9 @@ rust_test_suite = _rust_test_suite
  rust_doc = _rust_doc
  # See @rules_rust//rust/private:rustdoc.bzl for a complete description.
  
@@ -40,10 +40,10 @@ index 67a28630..4d58df51 100644
  # See @rules_rust//rust/private:rustdoc_test.bzl for a complete description.
  
 diff --git a/rust/private/rustdoc.bzl b/rust/private/rustdoc.bzl
-index ae81e65d..eebb494b 100644
+index 3cd3ee95..0cbb3d67 100644
 --- a/rust/private/rustdoc.bzl
 +++ b/rust/private/rustdoc.bzl
-@@ -229,6 +229,82 @@ def _rust_doc_impl(ctx):
+@@ -240,6 +240,82 @@ def _rust_doc_impl(ctx):
          ),
      ]
  
@@ -126,7 +126,7 @@ index ae81e65d..eebb494b 100644
  rust_doc = rule(
      doc = dedent("""\
      Generates code documentation.
-@@ -346,3 +422,131 @@ rust_doc = rule(
+@@ -353,3 +429,131 @@ rust_doc = rule(
          "@bazel_tools//tools/cpp:toolchain_type",
      ],
  )
@@ -217,7 +217,7 @@ index ae81e65d..eebb494b 100644
 +        ),
 +        "_dir_zipper": attr.label(
 +            doc = "A tool that orchestrates the creation of zip archives for rustdoc outputs.",
-+            default = Label("//util/dir_zipper"),
++            default = Label("//rust/private/rustdoc/dir_zipper"),
 +            cfg = "exec",
 +            executable = True,
 +        ),
@@ -387,5 +387,5 @@ index 00000000..cc8e4796
 +    }
 +}
 -- 
-2.48.1.262.g85cc9f2d1e-goog
+2.49.0.472.ge94155a9ec-goog
 

@@ -49,7 +49,7 @@ bazel_dep(name = "rules_nodejs", version = "6.3.0")
 bazel_dep(name = "rules_platform", version = "0.1.0")
 bazel_dep(name = "rules_probe_rs", version = "0.0.2")
 bazel_dep(name = "rules_python", version = "0.40.0")
-bazel_dep(name = "rules_rust", version = "0.56.0")
+bazel_dep(name = "rules_rust", version = "0.59.2")
 
 # LINT.IfChange(emboss)
 bazel_dep(name = "emboss", version = "2024.1017.203246", repo_name = "com_google_emboss")
@@ -109,14 +109,6 @@ single_version_override(
         # gets the path to those files wrong.
         # TODO: https://pwbug.dev/3392708481 - Upstream below patch
         "//pw_rust/bazel_patches:0004-Add-rust_srcs_subdir-to-rust_analyzer_toolchain.patch",
-
-        # rust_analyzer: Support passing a --config option to Bazel
-        # https://github.com/bazelbuild/rules_rust/pull/3254
-        "//pw_rust/bazel_patches:0005-rust_analyzer-Support-passing-a-config-option-to-Baz.patch",
-
-        # Adds more riscv32 triples
-        # TODO: https://pwbug.dev/401293971 - Upstream below patch
-        "//pw_rust/bazel_patches:0006-Add-riscv32-triples.patch",
     ],
 )
 
