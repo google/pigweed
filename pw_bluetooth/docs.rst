@@ -85,9 +85,8 @@ Controller2
 .. doxygenclass:: pw::bluetooth::Controller2
    :members:
 
-----------------------------
 Module Configuration Options
-----------------------------
+============================
 The following configurations can be adjusted via compile-time configuration of
 this module, see the
 :ref:`module documentation <module-structure-compile-time-configuration>` for
@@ -108,7 +107,7 @@ defined:
 - L2CAP
 - H4
 
-.. _module-pw_bluetooth-usage:
+.. _module-pw_bluetooth-emboss-usage:
 
 Usage
 =====
@@ -164,6 +163,24 @@ Usage
    resolve this. Similarly, you need to rebuild in order for .emb file updates
    to be reflected in the generated headers.
 
+.. _module-pw_bluetooth-emboss-contributing:
+
+Contributing
+============
+Emboss ``.emb`` files can be edited to add additional packets and enums.
+
+Emboss files should be formatted by running the following from the Pigweed root.
+
+.. code-block:: bash
+
+   (export EMBOSS_PATH="environment/packages/emboss" &&
+       export PYTHONPATH+=":${EMBOSS_PATH}" &&
+       python3 "${EMBOSS_PATH}/compiler/front_end/format.py" pw_bluetooth/public/pw_bluetooth/*.emb)
+
+If adding files, be sure to update the GN, Bazel, and CMake build rules.
+Presubmit runs the ``emboss_test.cc`` test on all three.
+
+
 .. _module-pw_bluetooth-snoop-log:
 
 ---------
@@ -197,26 +214,9 @@ The snoop log is easy to integrate into your H4 Uart driver.
          snoop_{pw::chrono::VirtualSystemClock::RealClock()};
    };
 
-.. _module-pw_bluetooth-contributing:
-
-Contributing
-============
-Emboss ``.emb`` files can be edited to add additional packets and enums.
-
-Emboss files should be formatted by running the following from the Pigweed root.
-
-.. code-block:: bash
-
-   (export EMBOSS_PATH="environment/packages/emboss" &&
-       export PYTHONPATH+=":${EMBOSS_PATH}" &&
-       python3 "${EMBOSS_PATH}/compiler/front_end/format.py" pw_bluetooth/public/pw_bluetooth/*.emb)
-
-If adding files, be sure to update the GN, Bazel, and CMake build rules.
-Presubmit runs the ``emboss_test.cc`` test on all three.
-
-
+-----------
 Size Report
-===========
+-----------
 Delta of +972 when constructing the first packet view and reading/writing a
 field. This includes the runtime library and the 4-byte buffer.
 
@@ -233,7 +233,6 @@ Delta of +96 when adding a second packet view and reading/writing a field.
 -------
 Roadmap
 -------
-- Bluetooth Proxy (WIP in in :ref:`module-pw_bluetooth_proxy`)
 - Add automated Emboss file formatting to `pw format` (:bug:`331195584`)
 - Create a backend for the Bluetooth API using Fuchsia's Bluetooth stack
   (Sapphire).
