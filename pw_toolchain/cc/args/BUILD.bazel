@@ -353,4 +353,5 @@ cc_args(
         "dependent_module_map_files": "@rules_cc//cc/toolchains/variables:dependent_module_map_files",
     },
     iterate_over = "@rules_cc//cc/toolchains/variables:dependent_module_map_files",
+    requires_not_none = "@rules_cc//cc/toolchains/variables:dependent_module_map_files",
 )
