@@ -77,7 +77,7 @@
 /// you can choose to add ``KEEP()`` around your input to prevent garbage
 /// collection.
 #define PW_MUST_PLACE(isection)  \
-    _PW_MUST_PLACE(isection, __section_place_, __LINE__)
+    _PW_MUST_PLACE(isection, __section_place_, __COUNTER__)
 
 /// @}
 
@@ -121,6 +121,6 @@
 /// When adding a new variable to a library marked with this macro it is expected to
 /// change to PW_MUST_PLACE
 #define PW_MUST_NOT_PLACE(isection)  \
-    _PW_MUST_NOT_PLACE(isection, __section_not_place_, __LINE__)
+    _PW_MUST_NOT_PLACE(isection, __section_not_place_, __COUNTER__)
 
 /// @}
