@@ -41,8 +41,8 @@ pub enum CsrClkSource {
 
 pub struct CsrVal(u32);
 impl CsrVal {
-    rw_bool_field!(enable, 0);
-    rw_bool_field!(tickint, 1);
+    rw_bool_field!(u32, enable, 0);
+    rw_bool_field!(u32, tickint, 1);
 
     pub const fn clksource(&self) -> CsrClkSource {
         // Safety: Value is masked to only contain valid enum values.
@@ -53,26 +53,26 @@ impl CsrVal {
         Self(ops::set_u32(self.0, 2, 2, val as u32))
     }
 
-    rw_bool_field!(countflag, 16);
+    rw_bool_field!(u32, countflag, 16);
 }
 rw_reg!(Csr, CsrVal, 0xe000e010);
 
 pub struct RvrVal(u32);
 impl RvrVal {
-    rw_int_field!(reload, 0, 23, u32);
+    rw_int_field!(u32, reload, 0, 23, u32);
 }
 rw_reg!(Rvr, RvrVal, 0xe000e014);
 
 pub struct CvrVal(u32);
 impl CvrVal {
-    rw_int_field!(current, 0, 23, u32);
+    rw_int_field!(u32, current, 0, 23, u32);
 }
 rw_reg!(Cvr, CvrVal, 0xe000e018);
 
 pub struct CalibVal(u32);
 impl CalibVal {
-    rw_int_field!(tenms, 0, 23, u32);
-    rw_bool_field!(skew, 30);
-    rw_bool_field!(noref, 31);
+    rw_int_field!(u32, tenms, 0, 23, u32);
+    rw_bool_field!(u32, skew, 30);
+    rw_bool_field!(u32, noref, 31);
 }
 rw_reg!(Calib, CalibVal, 0xe000e01c);

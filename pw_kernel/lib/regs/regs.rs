@@ -51,22 +51,22 @@ pub trait RW<T> {
 
 #[macro_export]
 macro_rules! ro_bool_field {
-    ($name:ident, $offset:literal) => {
+    ($val_type:ty, $name:ident, $offset:literal) => {
         #[inline]
         pub const fn $name(&self) -> bool {
-            $crate::ops::get_bool(self.0, $offset)
+            $crate::ops::get_bool(self.0 as usize, $offset)
         }
     };
 }
 
 #[macro_export]
 macro_rules! rw_bool_field {
-    ($name:ident, $offset:literal) => {
-        ro_bool_field!($name, $offset);
+    ($val_type:ty, $name:ident, $offset:literal) => {
+        ro_bool_field!($val_type, $name, $offset);
         paste::paste! {
           #[inline]
           pub const fn [<with_ $name>](self, val: bool) -> Self {
-              Self($crate::ops::set_bool(self.0, $offset, val))
+              Self($crate::ops::set_bool(self.0 as usize, $offset, val) as $val_type)
           }
         }
     };
@@ -74,22 +74,22 @@ macro_rules! rw_bool_field {
 
 #[macro_export]
 macro_rules! ro_int_field {
-    ($name:ident, $start:literal, $end:literal, $ty:ty) => {
+    ($val_type:ty, $name:ident, $start:literal, $end:literal, $ty:ty) => {
         #[inline]
         pub const fn $name(&self) -> $ty {
-            $crate::ops::get_u32(self.0, $start, $end) as $ty
+            $crate::ops::get_usize(self.0 as usize, $start, $end) as $ty
         }
     };
 }
 
 #[macro_export]
 macro_rules! rw_int_field {
-    ($name:ident, $start:literal, $end:literal, $ty:ty) => {
-        ro_int_field!($name, $start, $end, $ty);
+    ($val_type:ty, $name:ident, $start:literal, $end:literal, $ty:ty) => {
+        ro_int_field!($val_type, $name, $start, $end, $ty);
         paste::paste! {
           #[inline]
           pub const fn [<with_ $name>](self, val: $ty) -> Self {
-              Self($crate::ops::set_u32(self.0, $start, $end, val as u32))
+              Self($crate::ops::set_usize(self.0 as usize, $start, $end, val as usize) as $val_type)
           }
         }
     };
@@ -97,9 +97,9 @@ macro_rules! rw_int_field {
 
 #[macro_export]
 macro_rules! ro_masked_field {
-    ($name:ident, $mask:literal) => {
+    ($name:ident, $mask:expr, $ty:ty) => {
         #[inline]
-        pub const fn $name(&self) -> u32 {
+        pub const fn $name(&self) -> $ty {
             self.0 & $mask
         }
     };
@@ -107,12 +107,12 @@ macro_rules! ro_masked_field {
 
 #[macro_export]
 macro_rules! rw_masked_field {
-    ($name:ident, $mask:literal) => {
-        ro_masked_field!($name, $mask);
+    ($name:ident, $mask:expr, $ty:ty) => {
+        ro_masked_field!($name, $mask, $ty);
 
         paste::paste! {
             #[inline]
-            pub const fn [<with_ $name>](self, val: u32) -> Self {
+            pub const fn [<with_ $name>](self, val: $ty) -> Self {
               Self(self.0 & !$mask | (val & $mask))
             }
         }
@@ -158,28 +158,55 @@ macro_rules! rw_reg {
 
 pub mod ops {
     #[inline]
-    pub const fn mask(start: u32, end: u32) -> u32 {
+    pub const fn mask(start: usize, end: usize) -> usize {
         let length = end - start + 1;
-        (((1u64 << length) - 1) as u32) << start
+        if length == usize::BITS as usize {
+            // Special case full mask to keep shifting logic below from overflowing.
+            usize::MAX
+        } else {
+            ((1usize << length) - 1) << start
+        }
     }
 
     #[inline]
-    pub const fn get_bool(value: u32, bit: u32) -> bool {
+    pub const fn mask_u32(start: u32, end: u32) -> u32 {
+        let length = end - start + 1;
+        if length == u32::BITS {
+            // Special case full mask to keep shifting logic below from overflowing.
+            u32::MAX
+        } else {
+            ((1u32 << length) - 1) << start
+        }
+    }
+
+    #[inline]
+    pub const fn get_bool(value: usize, bit: usize) -> bool {
         (value >> bit) & 0x1 == 0x1
     }
 
     #[inline]
-    pub const fn set_bool(value: u32, bit: u32, field_value: bool) -> u32 {
-        value & !(1 << bit) | ((field_value as u32) << bit)
+    pub const fn set_bool(value: usize, bit: usize, field_value: bool) -> usize {
+        value & !(1 << bit) | ((field_value as usize) << bit)
     }
 
     #[inline]
     pub const fn get_u32(value: u32, start: u32, end: u32) -> u32 {
-        (value & mask(start, end)) >> start
+        (value & mask_u32(start, end)) >> start
     }
 
     #[inline]
     pub const fn set_u32(value: u32, start: u32, end: u32, field_value: u32) -> u32 {
+        let mask = mask_u32(start, end);
+        (value & !mask) | ((field_value << start) & mask)
+    }
+
+    #[inline]
+    pub const fn get_usize(value: usize, start: usize, end: usize) -> usize {
+        (value & mask(start, end)) >> start
+    }
+
+    #[inline]
+    pub const fn set_usize(value: usize, start: usize, end: usize, field_value: usize) -> usize {
         let mask = mask(start, end);
         (value & !mask) | ((field_value << start) & mask)
     }

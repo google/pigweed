@@ -41,23 +41,23 @@ impl Mpu {
 
 pub struct TypeVal(u32);
 impl TypeVal {
-    ro_bool_field!(separate, 0);
-    ro_int_field!(dregion, 8, 15, u8);
+    ro_bool_field!(u32, separate, 0);
+    ro_int_field!(u32, dregion, 8, 15, u8);
 }
 ro_reg!(Type, TypeVal, 0xE000ED90);
 
 pub struct CtrlVal(u32);
 impl CtrlVal {
-    rw_bool_field!(enable, 0);
-    rw_bool_field!(hfnmiena, 1);
-    rw_bool_field!(privdefena, 2);
+    rw_bool_field!(u32, enable, 0);
+    rw_bool_field!(u32, hfnmiena, 1);
+    rw_bool_field!(u32, privdefena, 2);
 }
 rw_reg!(Ctrl, CtrlVal, 0xE000ED94);
 
 #[derive(Default)]
 pub struct RnrVal(u32);
 impl RnrVal {
-    rw_int_field!(region, 0, 7, u8);
+    rw_int_field!(u32, region, 0, 7, u8);
 }
 rw_reg!(Rnr, RnrVal, 0xE000ED98);
 
@@ -80,7 +80,7 @@ pub enum RbarSh {
 #[derive(Copy, Clone, Default)]
 pub struct RbarVal(u32);
 impl RbarVal {
-    rw_bool_field!(xn, 0);
+    rw_bool_field!(u32, xn, 0);
 
     pub const fn ap(&self) -> RbarAp {
         // Safety: Value is masked to only contain valid enum values.
@@ -100,17 +100,17 @@ impl RbarVal {
         Self(ops::set_u32(self.0, 3, 4, val as u32))
     }
 
-    rw_masked_field!(base, 0xffff_ffe0);
+    rw_masked_field!(base, 0xffff_ffe0, u32);
 }
 rw_reg!(Rbar, RbarVal, 0xE000ED9C);
 
 #[derive(Copy, Clone, Default)]
 pub struct RlarVal(u32);
 impl RlarVal {
-    rw_bool_field!(en, 0);
-    rw_int_field!(attrindx, 1, 3, u8);
-    rw_bool_field!(pxn, 4);
-    rw_masked_field!(limit, 0xffff_ffe0);
+    rw_bool_field!(u32, en, 0);
+    rw_int_field!(u32, attrindx, 1, 3, u8);
+    rw_bool_field!(u32, pxn, 4);
+    rw_masked_field!(limit, 0xffff_ffe0, u32);
 }
 rw_reg!(Rlar, RlarVal, 0xE000EDA0);
 
