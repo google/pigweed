@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <optional>
 
 #include "pw_assert/assert.h"
 #include "pw_assert/check.h"
@@ -34,6 +35,30 @@ void PrefixedEntryRingBufferMulti::Clear() {
     reader.read_idx_ = 0;
     reader.entry_count_ = 0;
   }
+}
+
+pw::Status PrefixedEntryRingBufferMulti::PopBack(size_t num_entries) {
+  std::optional<size_t> min_entry_count;
+  for (Reader& reader : readers_) {
+    if (min_entry_count.has_value()) {
+      min_entry_count = std::min(min_entry_count.value(), reader.EntryCount());
+    } else {
+      min_entry_count = reader.EntryCount();
+    }
+  }
+
+  if (!min_entry_count.has_value()) {
+    return pw::Status::OutOfRange();
+  }
+
+  if (num_entries > min_entry_count.value()) {
+    return pw::Status::OutOfRange();
+  }
+
+  for (Reader& reader : readers_) {
+    reader.entry_count_ -= num_entries;
+  }
+  return pw::OkStatus();
 }
 
 Status PrefixedEntryRingBufferMulti::SetBuffer(span<byte> buffer) {

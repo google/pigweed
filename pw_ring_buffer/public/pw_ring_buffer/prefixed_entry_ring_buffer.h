@@ -22,6 +22,7 @@
 #include "pw_result/result.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
+#include "pw_status/status_with_size.h"
 
 namespace pw {
 namespace ring_buffer {
@@ -420,6 +421,13 @@ class PrefixedEntryRingBufferMulti {
 
   // Removes all data from the ring buffer.
   void Clear();
+
+  // Removes num_entries from the back of the buffer.
+  //
+  // Return values:
+  // OK - Successfully removed num_entries from the all readers
+  // OUT_OF_RANGE - At least 1 reader doesn't have enough entries
+  pw::Status PopBack(size_t num_entries);
 
   // Write a chunk of data to the ring buffer. If available space is less than
   // size of data chunk to be written then silently pop and discard oldest
