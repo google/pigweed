@@ -12,16 +12,27 @@ to make it easier to design robust, feature-rich toolchains.
 ---------------------------
 Upstream Pigweed toolchains
 ---------------------------
-Pigweed's C/C++ toolchains are automatically registered when using Pigweed from
-a Bzlmod Bazel project. Legacy WORKSPACE-based projects can use Pigweed's
-upstream toolchains by calling ``register_pigweed_cxx_toolchains()``:
+Pigweed's C/C++ toolchains can be registered from a bzlmod project by adding
+the following to your ``MODULE.bazel``:
 
 .. code-block:: py
 
-   load("@pigweed//pw_toolchain:register_toolchains.bzl", "register_pigweed_cxx_toolchains")
+   register_toolchains(
+       "@pigweed//pw_toolchain:cc_toolchain_cortex-m0",
+       "@pigweed//pw_toolchain:cc_toolchain_cortex-m0plus",
+       "@pigweed//pw_toolchain:cc_toolchain_cortex-m33",
+       "@pigweed//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m3",
+       "@pigweed//pw_toolchain/arm_gcc:arm_gcc_cc_toolchain_cortex-m4",
+       "@pigweed//pw_toolchain/host_clang:host_cc_toolchain_linux",
+       "@pigweed//pw_toolchain/host_clang:host_cc_toolchain_macos",
+       "@pigweed//pw_toolchain/riscv_clang:riscv_clang_cc_toolchain_rv32imc",
+       "@pigweed//pw_toolchain/riscv_clang:riscv_clang_cc_toolchain_rv32imac",
+       dev_dependency = True,
+   )
 
-   register_pigweed_cxx_toolchains()
-
+If you create custom ARM or RISC-V toolchains, you may want to remove
+Pigweed's device-specific toolchains to avoid them accidentally getting selected
+for your device build.
 
 .. admonition:: Note
    :class: warning
