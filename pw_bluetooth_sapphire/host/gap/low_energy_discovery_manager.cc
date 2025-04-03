@@ -352,8 +352,11 @@ void LowEnergyDiscoveryManager::OnPeerFound(
     peer->set_connectable(true);
   }
 
-  peer->MutLe().SetAdvertisingData(
-      result.rssi(), result.data(), dispatcher_.now());
+  peer->MutLe().SetAdvertisingData(result.rssi(),
+                                   result.data(),
+                                   dispatcher_.now(),
+                                   result.advertising_sid(),
+                                   result.periodic_advertising_interval());
 
   for (uint16_t scan_id : scan_ids) {
     if (sessions_.count(scan_id) != 0) {

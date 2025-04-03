@@ -208,6 +208,22 @@ class Peer final {
       return bonded() && auto_conn_behavior_ == AutoConnectBehavior::kAlways;
     }
 
+    // Returns the advertising SID. This will be
+    // hci_spec::kAdvertisingSidInvalid if no value was present in the peer's
+    // advertising report.
+    uint8_t advertising_sid() const { return advertising_sid_; }
+    void set_advertising_sid(uint8_t value) { advertising_sid_ = value; }
+
+    // Returns the periodic advertising interval or
+    // hci_spec::kPeriodicAdvertisingIntervalInvalid if no value was present in
+    // the peer's advertising report.
+    uint16_t periodic_advertising_interval() const {
+      return periodic_advertising_interval_;
+    }
+    void set_periodic_advertising_interval(uint16_t value) {
+      periodic_advertising_interval_ = value;
+    }
+
     // Will return an empty view if there is no advertising data.
     BufferView advertising_data() const { return adv_data_buffer_.view(); }
 
@@ -269,11 +285,14 @@ class Peer final {
     // Setters:
 
     // Overwrites the stored advertising and scan response data with the
-    // contents of |data| and updates the known RSSI and timestamp with the
-    // given values.
-    void SetAdvertisingData(int8_t rssi,
-                            const ByteBuffer& data,
-                            pw::chrono::SystemClock::time_point timestamp);
+    // contents of |data| and updates the known attributes with the given
+    // values.
+    void SetAdvertisingData(
+        int8_t rssi,
+        const ByteBuffer& data,
+        pw::chrono::SystemClock::time_point timestamp,
+        std::optional<uint8_t> advertising_sid = std::nullopt,
+        std::optional<uint16_t> periodic_advertising_interval = std::nullopt);
 
     // Register a connection that is in the request/initializing state. A token
     // is returned that should be owned until the initialization is complete or
@@ -413,6 +432,10 @@ class Peer final {
 
     std::optional<pw::bluetooth::emboss::LESleepClockAccuracyRange>
         sleep_clock_accuracy_;
+
+    uint8_t advertising_sid_ = hci_spec::kAdvertisingSidInvalid;
+    uint16_t periodic_advertising_interval_ =
+        hci_spec::kPeriodicAdvertisingIntervalInvalid;
 
     uint8_t pairing_tokens_count_ = 0;
     std::vector<fit::callback<void()>> pairing_complete_callbacks_;

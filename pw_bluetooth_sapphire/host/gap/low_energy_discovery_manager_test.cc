@@ -26,6 +26,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/peer_cache.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/advertising_packet_filter.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/discovery_filter.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/extended_low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/fake_local_address_delegate.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/legacy_low_energy_scanner.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/controller_test.h"
@@ -70,7 +71,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     scan_enabled_ = false;
 
     FakeController::Settings settings;
-    settings.ApplyLegacyLEConfig();
+    settings.ApplyExtendedLEConfig();
     test_device()->set_settings(settings);
 
     test_device()->set_scan_state_callback([this](auto&& PH1) {
@@ -89,13 +90,23 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
 
  protected:
   void SetupDiscoveryManager(
+      bool extended = false,
       hci::AdvertisingPacketFilter::Config packet_filter_config = {false, 0}) {
     discovery_manager_ = nullptr;
-    scanner_ =
-        std::make_unique<hci::LegacyLowEnergyScanner>(&fake_address_delegate_,
-                                                      packet_filter_config,
-                                                      transport()->GetWeakPtr(),
-                                                      dispatcher());
+    if (extended) {
+      scanner_ = std::make_unique<hci::ExtendedLowEnergyScanner>(
+          &fake_address_delegate_,
+          packet_filter_config,
+          transport()->GetWeakPtr(),
+          dispatcher());
+    } else {
+      scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
+          &fake_address_delegate_,
+          packet_filter_config,
+          transport()->GetWeakPtr(),
+          dispatcher());
+    }
+
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
         scanner_.get(), &peer_cache_, packet_filter_config, dispatcher());
     discovery_manager_->AttachInspect(inspector_.GetRoot(), kInspectNodeName);
@@ -296,7 +307,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
  private:
   PeerCache peer_cache_{dispatcher()};
   hci::FakeLocalAddressDelegate fake_address_delegate_{dispatcher()};
-  std::unique_ptr<hci::LegacyLowEnergyScanner> scanner_;
+  std::unique_ptr<hci::LowEnergyScanner> scanner_;
   std::unique_ptr<LowEnergyDiscoveryManager> discovery_manager_;
 
   bool scan_enabled_;
@@ -1231,7 +1242,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartActiveScanDuringPassiveScan) {
 }
 
 TEST_F(LowEnergyDiscoveryManagerTest, StartScanDuringOffloadedFilters) {
-  SetupDiscoveryManager({true, 8});
+  SetupDiscoveryManager(/*extended=*/false, {true, 8});
 
   auto session_a = StartDiscoverySession(false);
   RunUntilIdle();
@@ -1751,6 +1762,30 @@ TEST_F(LowEnergyDiscoveryManagerTest, SetResultCallbackPostsDiscoveryResults) {
   ASSERT_FALSE(callback_called);
   RunUntilIdle();
   ASSERT_TRUE(callback_called);
+}
+
+// Information only found in the extended data advertisement is properly
+// translated from scan results to peer fields.
+TEST_F(LowEnergyDiscoveryManagerTest, LeExtendedDataIsPopulated) {
+  SetupDiscoveryManager(/*extended=*/true);
+  uint8_t kAdvertisingSid = 0x08;
+  uint16_t kPeriodicAdvertisingInterval = 0xfedc;
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
+  fake_peer->set_advertising_sid(kAdvertisingSid);
+  fake_peer->set_periodic_advertising_interval(kPeriodicAdvertisingInterval);
+  test_device()->AddPeer(std::move(fake_peer));
+
+  auto session = StartDiscoverySession();
+  bool peer_seen = false;
+  session->SetResultCallback([&](const Peer& peer) {
+    ASSERT_EQ(peer.address(), kAddress0);
+    peer_seen = true;
+    EXPECT_EQ(peer.le()->advertising_sid(), kAdvertisingSid);
+    EXPECT_EQ(peer.le()->periodic_advertising_interval(),
+              kPeriodicAdvertisingInterval);
+  });
+  RunUntilIdle();
+  EXPECT_TRUE(peer_seen);
 }
 
 }  // namespace

@@ -1130,6 +1130,30 @@ TEST_F(PeerTest, SetInvalidAdvertisingData) {
   EXPECT_EQ(peer().MutLe().advertising_data().size(), 0u);
 }
 
+TEST_F(PeerTest, SetExtendedAdvertisingCheckDefaultValues) {
+  peer().MutLe().SetAdvertisingData(
+      /*rssi=*/32, kInvalidAdvData, pw::chrono::SystemClock::time_point());
+  ASSERT_TRUE(peer().le().has_value());
+  EXPECT_EQ(peer().le()->advertising_sid(), hci_spec::kAdvertisingSidInvalid);
+  EXPECT_EQ(peer().le()->periodic_advertising_interval(),
+            hci_spec::kPeriodicAdvertisingIntervalInvalid);
+}
+
+TEST_F(PeerTest, SetExtendedAdvertisingData) {
+  const uint8_t kAdvertisingSid = 0x0c;
+  const uint16_t kPeriodicAdvertisingInterval = 0x1234;
+  peer().MutLe().SetAdvertisingData(
+      /*rssi=*/32,
+      kInvalidAdvData,
+      pw::chrono::SystemClock::time_point(),
+      kAdvertisingSid,
+      kPeriodicAdvertisingInterval);
+  ASSERT_TRUE(peer().le().has_value());
+  EXPECT_EQ(peer().le()->advertising_sid(), kAdvertisingSid);
+  EXPECT_EQ(peer().le()->periodic_advertising_interval(),
+            kPeriodicAdvertisingInterval);
+}
+
 TEST_F(PeerDeathTest, RegisterTwoBrEdrConnectionsAsserts) {
   SetUpPeer(/*address=*/kAddrBrEdr, /*connectable=*/true);
   std::optional<Peer::ConnectionToken> token_0 =

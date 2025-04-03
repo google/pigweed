@@ -105,11 +105,21 @@ void Peer::LowEnergyData::AttachInspect(inspect::Node& parent,
 void Peer::LowEnergyData::SetAdvertisingData(
     int8_t rssi,
     const ByteBuffer& data,
-    pw::chrono::SystemClock::time_point timestamp) {
+    pw::chrono::SystemClock::time_point timestamp,
+    std::optional<uint8_t> advertising_sid,
+    std::optional<uint16_t> periodic_advertising_interval) {
   // Prolong this peer's expiration in case it is temporary.
   peer_->UpdateExpiry();
 
   peer_->SetRssiInternal(rssi);
+
+  if (advertising_sid.has_value()) {
+    set_advertising_sid(*advertising_sid);
+  }
+
+  if (periodic_advertising_interval.has_value()) {
+    set_periodic_advertising_interval(*periodic_advertising_interval);
+  }
 
   AdvertisingData::ParseResult res = AdvertisingData::FromBytes(data);
   if (!res.is_ok()) {

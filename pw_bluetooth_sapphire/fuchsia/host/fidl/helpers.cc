@@ -1792,6 +1792,17 @@ fble::Peer PeerToFidlLe(const bt::gap::Peer& peer) {
   zx_time_t last_updated_ns = peer.last_updated().time_since_epoch().count();
   output.set_last_updated(last_updated_ns);
 
+  uint8_t advertising_sid = peer.le()->advertising_sid();
+  if (advertising_sid != bt::hci_spec::kAdvertisingSidInvalid) {
+    output.set_advertising_sid(advertising_sid);
+  }
+  uint16_t periodic_advertising_interval =
+      peer.le()->periodic_advertising_interval();
+  if (periodic_advertising_interval !=
+      bt::hci_spec::kPeriodicAdvertisingIntervalInvalid) {
+    output.set_periodic_advertising_interval(periodic_advertising_interval);
+  }
+
   return output;
 }
 

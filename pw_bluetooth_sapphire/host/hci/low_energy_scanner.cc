@@ -54,6 +54,8 @@ LowEnergyScanResult& LowEnergyScanResult::operator=(
   resolved_ = other.resolved_;
   connectable_ = other.connectable_;
   rssi_ = other.rssi_;
+  advertising_sid_ = other.advertising_sid_;
+  periodic_advertising_interval_ = other.periodic_advertising_interval_;
   data_size_ = other.data_size_;
 
   if (buffer_.size() < other.buffer_.size()) {

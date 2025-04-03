@@ -2170,6 +2170,8 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithAllFields) {
                      pw_dispatcher());
   peer.RegisterName("name");
   const int8_t kRssi = 1;
+  const uint8_t kAdvertisingSid = 0x04;
+  const uint16_t kPeriodicAdvertisingInterval = 0x5678;
   auto adv_bytes = bt::StaticByteBuffer(
       // Uri: "https://abc.xyz"
       0x0B,
@@ -2187,7 +2189,9 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithAllFields) {
   peer.MutLe().SetAdvertisingData(
       kRssi,
       adv_bytes,
-      pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(1)));
+      pw::chrono::SystemClock::time_point(std::chrono::nanoseconds(1)),
+      kAdvertisingSid,
+      kPeriodicAdvertisingInterval);
 
   fble::Peer fidl_peer = PeerToFidlLe(peer);
   ASSERT_TRUE(fidl_peer.has_id());
@@ -2198,6 +2202,11 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithAllFields) {
   EXPECT_EQ(fidl_peer.name(), "name");
   ASSERT_TRUE(fidl_peer.has_rssi());
   EXPECT_EQ(fidl_peer.rssi(), kRssi);
+  ASSERT_TRUE(fidl_peer.has_advertising_sid());
+  EXPECT_EQ(fidl_peer.advertising_sid(), kAdvertisingSid);
+  ASSERT_TRUE(fidl_peer.has_periodic_advertising_interval());
+  EXPECT_EQ(fidl_peer.periodic_advertising_interval(),
+            kPeriodicAdvertisingInterval);
   ASSERT_TRUE(fidl_peer.has_data());
   EXPECT_THAT(fidl_peer.data().uris(),
               ::testing::ElementsAre("https://abc.xyz"));
@@ -2229,6 +2238,8 @@ TEST_F(HelpersTestWithLoop, PeerToFidlLeWithoutAdvertisingData) {
   EXPECT_FALSE(fidl_peer.bonded());
   EXPECT_FALSE(fidl_peer.has_name());
   EXPECT_FALSE(fidl_peer.has_rssi());
+  EXPECT_FALSE(fidl_peer.has_advertising_sid());
+  EXPECT_FALSE(fidl_peer.has_periodic_advertising_interval());
   EXPECT_FALSE(fidl_peer.has_data());
   ASSERT_TRUE(fidl_peer.has_last_updated());
   EXPECT_EQ(fidl_peer.last_updated(), 0);

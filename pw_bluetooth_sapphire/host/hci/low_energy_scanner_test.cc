@@ -926,4 +926,24 @@ TYPED_TEST(LowEnergyScannerTest, NewFilterWhileOffloadingEnabled) {
   ASSERT_EQ(0u, results.size());
 }
 
+TEST(LowEnergyScanResultTest, AssignmentOperator) {
+  constexpr int8_t kRSSI = -18;
+  constexpr uint8_t kAdvertisingSid = 0x0d;
+  constexpr uint16_t kPeriodicAdvertisingInterval = 0x2468;
+  LowEnergyScanResult scan_result_1(
+      kPublicAddress1, /*resolved=*/true, /*connectable=*/true);
+  scan_result_1.set_rssi(kRSSI);
+  scan_result_1.set_advertising_sid(kAdvertisingSid);
+  scan_result_1.set_periodic_advertising_interval(kPeriodicAdvertisingInterval);
+
+  LowEnergyScanResult scan_result_2 = scan_result_1;
+  EXPECT_EQ(scan_result_2.address(), kPublicAddress1);
+  EXPECT_EQ(scan_result_2.resolved(), true);
+  EXPECT_EQ(scan_result_2.connectable(), true);
+  EXPECT_EQ(scan_result_2.rssi(), kRSSI);
+  EXPECT_EQ(scan_result_2.advertising_sid(), kAdvertisingSid);
+  EXPECT_EQ(scan_result_2.periodic_advertising_interval(),
+            kPeriodicAdvertisingInterval);
+}
+
 }  // namespace bt::hci
