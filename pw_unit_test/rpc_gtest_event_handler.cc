@@ -20,7 +20,7 @@
 
 namespace pw::unit_test::internal {
 
-RpcEventHandler::RpcEventHandler(UnitTestService& service) : service_(service) {
+RpcEventHandler::RpcEventHandler(UnitTestThread& thread) : thread_(thread) {
   // Initialize GoogleTest and disable the default result printer.
   testing::InitGoogleTest();
   auto unit_test = testing::UnitTest::GetInstance();
@@ -35,7 +35,7 @@ void RpcEventHandler::ExecuteTests(span<std::string_view> suites_to_run) {
         "GoogleTest backend does not support test suite filtering. Running all "
         "suites.");
   }
-  if (service_.verbose_) {
+  if (thread_.verbose_) {
     PW_LOG_WARN(
         "GoogleTest backend does not support reporting passed expectations.");
   }
@@ -49,7 +49,7 @@ void RpcEventHandler::ExecuteTests(span<std::string_view> suites_to_run) {
 }
 
 void RpcEventHandler::OnTestProgramStart(const testing::UnitTest&) {
-  service_.WriteTestRunStart();
+  thread_.WriteTestRunStart();
 }
 
 void RpcEventHandler::OnTestProgramEnd(const testing::UnitTest& unit_test) {
@@ -59,7 +59,7 @@ void RpcEventHandler::OnTestProgramEnd(const testing::UnitTest& unit_test) {
       .skipped_tests = unit_test.skipped_test_count(),
       .disabled_tests = unit_test.disabled_test_count(),
   };
-  service_.WriteTestRunEnd(run_tests_summary);
+  thread_.WriteTestRunEnd(run_tests_summary);
 }
 
 void RpcEventHandler::OnTestStart(const testing::TestInfo& test_info) {
@@ -68,7 +68,7 @@ void RpcEventHandler::OnTestStart(const testing::TestInfo& test_info) {
       .test_name = test_info.name(),
       .file_name = test_info.file(),
   };
-  service_.WriteTestCaseStart(test_case);
+  thread_.WriteTestCaseStart(test_case);
 }
 
 void RpcEventHandler::OnTestEnd(const testing::TestInfo& test_info) {
@@ -81,7 +81,7 @@ void RpcEventHandler::OnTestEnd(const testing::TestInfo& test_info) {
     result = TestResult::kFailure;
   }
 
-  service_.WriteTestCaseEnd(result);
+  thread_.WriteTestCaseEnd(result);
 }
 
 void RpcEventHandler::OnTestPartResult(const testing::TestPartResult& result) {
@@ -91,7 +91,7 @@ void RpcEventHandler::OnTestPartResult(const testing::TestPartResult& result) {
       .line_number = result.line_number(),
       .success = result.passed(),
   };
-  service_.WriteTestCaseExpectation(expectation);
+  thread_.WriteTestCaseExpectation(expectation);
 }
 
 void RpcEventHandler::OnTestDisabled(const testing::TestInfo& test_info) {
@@ -100,7 +100,7 @@ void RpcEventHandler::OnTestDisabled(const testing::TestInfo& test_info) {
       .test_name = test_info.name(),
       .file_name = test_info.file(),
   };
-  service_.WriteTestCaseDisabled(test_case);
+  thread_.WriteTestCaseDisabled(test_case);
 }
 
 }  // namespace pw::unit_test::internal

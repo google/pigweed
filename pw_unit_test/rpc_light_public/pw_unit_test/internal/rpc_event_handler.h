@@ -18,14 +18,14 @@
 
 namespace pw::unit_test {
 
-class UnitTestService;
+class UnitTestThread;
 
 namespace internal {
 
 // Unit test event handler that streams test events through an RPC service.
 class RpcEventHandler : public EventHandler {
  public:
-  RpcEventHandler(UnitTestService& service);
+  RpcEventHandler(UnitTestThread& thread);
   void ExecuteTests(span<std::string_view> suites_to_run);
 
   void TestProgramStart(const ProgramSummary&) override {}
@@ -44,7 +44,7 @@ class RpcEventHandler : public EventHandler {
   void TestCaseDisabled(const TestCase& test_case) override;
 
  private:
-  UnitTestService& service_;
+  UnitTestThread& thread_;
 };
 
 }  // namespace internal

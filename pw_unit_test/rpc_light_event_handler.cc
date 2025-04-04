@@ -17,8 +17,7 @@
 
 namespace pw::unit_test::internal {
 
-RpcEventHandler::RpcEventHandler(UnitTestService& service)
-    : service_(service) {}
+RpcEventHandler::RpcEventHandler(UnitTestThread& thread) : thread_(thread) {}
 
 void RpcEventHandler::ExecuteTests(span<std::string_view> suites_to_run) {
   RegisterEventHandler(this);
@@ -33,27 +32,27 @@ void RpcEventHandler::ExecuteTests(span<std::string_view> suites_to_run) {
   SetTestSuitesToRun({});
 }
 
-void RpcEventHandler::RunAllTestsStart() { service_.WriteTestRunStart(); }
+void RpcEventHandler::RunAllTestsStart() { thread_.WriteTestRunStart(); }
 
 void RpcEventHandler::RunAllTestsEnd(const RunTestsSummary& run_tests_summary) {
-  service_.WriteTestRunEnd(run_tests_summary);
+  thread_.WriteTestRunEnd(run_tests_summary);
 }
 
 void RpcEventHandler::TestCaseStart(const TestCase& test_case) {
-  service_.WriteTestCaseStart(test_case);
+  thread_.WriteTestCaseStart(test_case);
 }
 
 void RpcEventHandler::TestCaseEnd(const TestCase&, TestResult result) {
-  service_.WriteTestCaseEnd(result);
+  thread_.WriteTestCaseEnd(result);
 }
 
 void RpcEventHandler::TestCaseExpect(const TestCase&,
                                      const TestExpectation& expectation) {
-  service_.WriteTestCaseExpectation(expectation);
+  thread_.WriteTestCaseExpectation(expectation);
 }
 
 void RpcEventHandler::TestCaseDisabled(const TestCase& test_case) {
-  service_.WriteTestCaseDisabled(test_case);
+  thread_.WriteTestCaseDisabled(test_case);
 }
 
 }  // namespace pw::unit_test::internal

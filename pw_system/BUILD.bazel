@@ -605,7 +605,7 @@ pw_cc_binary(
     }),
     deps = [
         ":pw_system",
-        "//pw_unit_test:rpc_service",
+        "//pw_rpc/pwpb:echo_service",
     ],
 )
 

@@ -18,14 +18,14 @@
 
 namespace pw::unit_test {
 
-class UnitTestService;
+class UnitTestThread;
 
 namespace internal {
 
 // GoogleTest event handler that streams test events through an RPC service.
 class RpcEventHandler : public testing::EmptyTestEventListener {
  public:
-  RpcEventHandler(UnitTestService& service);
+  RpcEventHandler(UnitTestThread& thread);
   void ExecuteTests(span<std::string_view> suites_to_run);
 
   void OnTestProgramStart(const testing::UnitTest& unit_test) override;
@@ -37,7 +37,7 @@ class RpcEventHandler : public testing::EmptyTestEventListener {
   void OnTestDisabled(const testing::TestInfo& test_info) override;
 
  private:
-  UnitTestService& service_;
+  UnitTestThread& thread_;
 };
 
 }  // namespace internal

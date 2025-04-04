@@ -157,6 +157,8 @@ cc_library(
         ":pre_init",
         "//pw_status",
         "//pw_system",
+        "//pw_thread:thread",
+        "//pw_thread_freertos:thread",
         "//pw_unit_test:rpc_service",
     ],
     alwayslink = True,

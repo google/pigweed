@@ -13,14 +13,31 @@
 // the License.
 
 #include "pw_system/rpc_server.h"
+#include "pw_thread/detached_thread.h"
+#include "pw_thread_freertos/context.h"
+#include "pw_thread_freertos/options.h"
 #include "pw_unit_test/unit_test_service.h"
 
 namespace pw::system {
 
-pw::unit_test::UnitTestService unit_test_service;
+thread::freertos::StaticContextWithStack<4096> unit_test_thread_context;
+
+const thread::Options& UnitTestThreadOptions() {
+  static constexpr auto kOptions =
+      thread::freertos::Options()
+          .set_name("UnitTestThread")
+          .set_static_context(unit_test_thread_context)
+          .set_priority(tskIDLE_PRIORITY + 1);
+  return kOptions;
+}
+
+unit_test::UnitTestThread unit_test_thread;
 
 // This will run once after pw::system::Init() completes. This callback must
 // return or it will block the work queue.
-void UserAppInit() { GetRpcServer().RegisterService(unit_test_service); }
+void UserAppInit() {
+  thread::DetachedThread(UnitTestThreadOptions(), unit_test_thread);
+  GetRpcServer().RegisterService(unit_test_thread.service());
+}
 
 }  // namespace pw::system

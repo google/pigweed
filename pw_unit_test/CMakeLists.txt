@@ -92,13 +92,13 @@ pw_add_library(pw_unit_test.fuzztest INTERFACE
 
 pw_add_test(pw_unit_test.framework_test
     SOURCES
-      framework_test.cc
+  framework_test.cc
     PRIVATE_DEPS
-      pw_assert
-      pw_status
+  pw_assert
+  pw_status
     GROUPS
-      pw_unit_test
-  )
+  pw_unit_test
+)
 
 if(${pw_unit_test_BACKEND} STREQUAL "pw_unit_test.light")
   pw_add_test(pw_unit_test.framework_light_test
@@ -277,7 +277,13 @@ if("${pw_unit_test_BACKEND}" STREQUAL "pw_unit_test.light")
       pw_unit_test.unit_test_proto.pwpb
       pw_unit_test.unit_test_proto.raw_rpc
       pw_containers.vector
+      pw_string.util
+      pw_sync.lock_annotations
+      pw_sync.mutex
+      pw_sync.thread_notification
+      pw_thread.thread_core
     PRIVATE_DEPS
+      pw_assert
       pw_log
     PUBLIC_INCLUDES
       public

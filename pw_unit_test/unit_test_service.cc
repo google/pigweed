@@ -14,31 +14,110 @@
 
 #include "pw_unit_test/unit_test_service.h"
 
-#include "pw_containers/vector.h"
+#include <mutex>
+#include <string_view>
+
+#include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_protobuf/decoder.h"
+#include "pw_status/status.h"
+#include "pw_string/util.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::unit_test {
 
-void UnitTestService::Run(ConstByteSpan request, RawServerWriter& writer) {
-  writer_ = std::move(writer);
+void UnitTestThread::Reset() {
+  std::lock_guard lock(mutex_);
+  ResetLocked();
+}
+
+void UnitTestThread::ResetLocked() {
+  PW_CHECK(!running_,
+           "Attempted to reset unit test thread with an active test run");
   verbose_ = false;
+  test_suites_to_run_.clear();
+}
+
+Status UnitTestThread::ScheduleTestRun(
+    rpc::RawServerWriter&& writer, span<std::string_view> test_suites_to_run) {
+  std::lock_guard lock(mutex_);
+
+  if (running_) {
+    writer.Finish(Status::Unavailable()).IgnoreError();
+    return Status::Unavailable();
+  }
+
+  for (std::string_view& suite : test_suites_to_run) {
+    test_suites_to_run_.emplace_back();
+    if (!string::Copy(suite, test_suites_to_run_.back()).ok()) {
+      writer.Finish(Status::InvalidArgument()).IgnoreError();
+      return Status::InvalidArgument();
+    }
+  }
+
+  writer_ = std::move(writer);
+
+  notification_.release();
+  return OkStatus();
+}
+
+void UnitTestThread::Run() {
+  while (true) {
+    notification_.acquire();
+
+    {
+      std::lock_guard lock(mutex_);
+      PW_CHECK(!running_);
+      running_ = true;
+    }
+
+    Vector<std::string_view, kMaxTestSuiteFilters> suites_to_run;
+    for (auto& suite : test_suites_to_run_) {
+      suites_to_run.push_back(suite.data());
+    }
+
+    PW_LOG_INFO("Starting unit test run");
+    handler_.ExecuteTests(suites_to_run);
+    PW_LOG_INFO("Unit test run complete");
+
+    writer_.Finish(OkStatus()).IgnoreError();
+
+    {
+      std::lock_guard lock(mutex_);
+      running_ = false;
+
+      ResetLocked();
+    }
+  }
+}
+
+void UnitTestThread::Service::Run(ConstByteSpan request,
+                                  RawServerWriter& writer) {
+  if (thread_.running()) {
+    PW_LOG_WARN("Unit test run requested while one is already in progress");
+    writer.Finish(Status::Unavailable()).IgnoreError();
+    return;
+  }
 
   // List of test suite names to run. The string views in this vector point to
   // data in the raw protobuf request message, so it is only valid for the
   // duration of this function.
-  pw::Vector<std::string_view, 16> suites_to_run;
+  Vector<std::string_view, UnitTestThread::kMaxTestSuiteFilters> suites_to_run;
 
   protobuf::Decoder decoder(request);
 
-  Status status;
-  while ((status = decoder.Next()).ok()) {
+  Status decode_status;
+  while ((decode_status = decoder.Next()).ok()) {
     switch (static_cast<pwpb::TestRunRequest::Fields>(decoder.FieldNumber())) {
-      case pwpb::TestRunRequest::Fields::kReportPassedExpectations:
-        decoder.ReadBool(&verbose_)
-            .IgnoreError();  // TODO: b/242598609 - Handle Status properly
+      case pwpb::TestRunRequest::Fields::kReportPassedExpectations: {
+        bool value;
+        decode_status = decoder.ReadBool(&value);
+        if (!decode_status.ok()) {
+          break;
+        }
+        thread_.set_verbose(value);
         break;
+      }
 
       case pwpb::TestRunRequest::Fields::kTestSuite: {
         std::string_view suite_name;
@@ -51,8 +130,7 @@ void UnitTestService::Run(ConstByteSpan request, RawServerWriter& writer) {
         } else {
           PW_LOG_ERROR("Maximum of %u test suite filters supported",
                        static_cast<unsigned>(suites_to_run.max_size()));
-          writer_.Finish(Status::InvalidArgument())
-              .IgnoreError();  // TODO: b/242598609 - Handle Status properly
+          writer.Finish(Status::InvalidArgument()).IgnoreError();
           return;
         }
 
@@ -61,27 +139,26 @@ void UnitTestService::Run(ConstByteSpan request, RawServerWriter& writer) {
     }
   }
 
-  if (status != Status::OutOfRange()) {
-    writer_.Finish(status)
-        .IgnoreError();  // TODO: b/242598609 - Handle Status properly
+  if (decode_status != Status::OutOfRange()) {
+    writer.Finish(decode_status).IgnoreError();
     return;
   }
 
-  PW_LOG_INFO("Starting unit test run");
-  handler_.ExecuteTests(suites_to_run);
-  PW_LOG_INFO("Unit test run complete");
+  PW_LOG_INFO("Queueing unit test run");
 
-  writer_.Finish().IgnoreError();  // TODO: b/242598609 - Handle Status properly
+  if (!thread_.ScheduleTestRun(std::move(writer), suites_to_run).ok()) {
+    PW_LOG_ERROR("Failed to queue unit test run");
+  }
 }
 
-void UnitTestService::WriteTestRunStart() {
+void UnitTestThread::WriteTestRunStart() {
   // Write out the key for the start field (even though the message is empty).
   WriteEvent([&](pwpb::Event::StreamEncoder& event) {
     event.GetTestRunStartEncoder();
   });
 }
 
-void UnitTestService::WriteTestRunEnd(const RunTestsSummary& summary) {
+void UnitTestThread::WriteTestRunEnd(const RunTestsSummary& summary) {
   WriteEvent([&](pwpb::Event::StreamEncoder& event) {
     pwpb::TestRunEnd::StreamEncoder test_run_end = event.GetTestRunEndEncoder();
     test_run_end.WritePassed(summary.passed_tests)
@@ -95,7 +172,7 @@ void UnitTestService::WriteTestRunEnd(const RunTestsSummary& summary) {
   });
 }
 
-void UnitTestService::WriteTestCaseStart(const TestCase& test_case) {
+void UnitTestThread::WriteTestCaseStart(const TestCase& test_case) {
   WriteEvent([&](pwpb::Event::StreamEncoder& event) {
     pwpb::TestCaseDescriptor::StreamEncoder descriptor =
         event.GetTestCaseStartEncoder();
@@ -108,14 +185,14 @@ void UnitTestService::WriteTestCaseStart(const TestCase& test_case) {
   });
 }
 
-void UnitTestService::WriteTestCaseEnd(TestResult result) {
+void UnitTestThread::WriteTestCaseEnd(TestResult result) {
   WriteEvent([&](pwpb::Event::StreamEncoder& event) {
     event.WriteTestCaseEnd(static_cast<pwpb::TestCaseResult>(result))
         .IgnoreError();  // TODO: b/242598609 - Handle Status properly
   });
 }
 
-void UnitTestService::WriteTestCaseDisabled(const TestCase& test_case) {
+void UnitTestThread::WriteTestCaseDisabled(const TestCase& test_case) {
   WriteEvent([&](pwpb::Event::StreamEncoder& event) {
     pwpb::TestCaseDescriptor::StreamEncoder descriptor =
         event.GetTestCaseDisabledEncoder();
@@ -128,7 +205,7 @@ void UnitTestService::WriteTestCaseDisabled(const TestCase& test_case) {
   });
 }
 
-void UnitTestService::WriteTestCaseExpectation(
+void UnitTestThread::WriteTestCaseExpectation(
     const TestExpectation& expectation) {
   if (!verbose_ && expectation.success) {
     return;

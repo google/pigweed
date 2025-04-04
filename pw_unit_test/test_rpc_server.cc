@@ -16,12 +16,20 @@
 #include "pw_log/log.h"
 #include "pw_rpc_system_server/rpc_server.h"
 #include "pw_rpc_system_server/socket.h"
+#include "pw_thread/detached_thread.h"
+#include "pw_thread/thread.h"
+#include "pw_thread_stl/options.h"
 #include "pw_unit_test/framework.h"
 #include "pw_unit_test/unit_test_service.h"
 
 namespace {
 
-pw::unit_test::UnitTestService unit_test_service;
+pw::thread::Options& UnitTestThreadOptions() {
+  static pw::thread::stl::Options options;
+  return options;
+}
+
+pw::unit_test::UnitTestThread unit_test_thread;
 
 TEST(Passing, Zero) {}
 
@@ -72,9 +80,13 @@ int main(int argc, char* argv[]) {
     PW_LOG_ERROR("Usage: %s PORT", argv[0]);
     return 1;
   }
-  pw::rpc::system_server::set_socket_port(std::atoi(argv[1]));
+
+  pw::thread::DetachedThread(UnitTestThreadOptions(), unit_test_thread);
+
+  pw::rpc::system_server::set_socket_port(
+      static_cast<uint16_t>(std::atoi(argv[1])));
   pw::rpc::system_server::Init();
-  pw::rpc::system_server::Server().RegisterService(unit_test_service);
+  pw::rpc::system_server::Server().RegisterService(unit_test_thread.service());
 
   PW_LOG_INFO("Starting pw_rpc server");
   PW_CHECK_OK(pw::rpc::system_server::Start());

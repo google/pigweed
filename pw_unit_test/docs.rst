@@ -487,13 +487,15 @@ To set up RPC-based unit tests in your application:
    * Bazel: ``@pigweed//pw_unit_test:rpc_service``
    * GN: ``$dir_pw_unit_test:rpc_service``
 
-2. Create a ``pw::unit_test::UnitTestService`` instance.
+2. Initialize a ``pw::unit_test::UnitTestThread`` instance and define a
+   ``pw::Thread`` using it as the entry point. (See example below.)
 
-3. Register the instance with your RPC server.
+3. Register the thread's ``Service`` with your RPC server.
 
    .. code-block:: c++
 
       #include "pw_rpc/server.h"
+      #include "pw_thread/thread.h"
       #include "pw_unit_test/unit_test_service.h"
 
       pw::rpc::Channel channels[] = {
@@ -501,15 +503,25 @@ To set up RPC-based unit tests in your application:
       };
       pw::rpc::Server server(channels);
 
-      pw::unit_test::UnitTestService unit_test_service;
+      constexpr pw::ThreadAttrs kUnitTestThreadAttrs =
+      pw::ThreadAttrs()
+         .set_name("UnitTestThread")
+         .set_priority(pw::ThreadPriority::Medium())
+         .set_stack_size_bytes(4096);
+      pw::ThreadContextFor<kUnitTestThreadAttrs> unit_test_thread_context;
 
-      void RegisterServices() {
-        server.RegisterService(unit_test_services);
+      pw::unit_test::UnitTestThread unit_test_thread;
+
+      void AppInit() {
+        pw::Thread(
+           pw::GetThreadOptions(unit_test_thread_context), unit_test_thread)
+         .detach();
+        server.RegisterService(unit_test_thread.service());
       }
 
    See :ref:`module-pw_rpc` for more guidance around setting up RPC.
 
-4. Run tests that have been flashed to a device by calling
+6. Run tests that have been flashed to a device by calling
    ``pw_unit_test.rpc.run_tests()`` in Python. The argument should be an RPC
    client services object that has the unit testing RPC service enabled. By
    default, the results output via logging. The return value is a

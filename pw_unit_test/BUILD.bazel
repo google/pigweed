@@ -420,24 +420,11 @@ cc_library(
         ":unit_test_raw_rpc",
         "//pw_log",
         "//pw_span",
-    ],
-)
-
-cc_library(
-    name = "rpc_main",
-    testonly = True,
-    srcs = [
-        "rpc_main.cc",
-    ],
-    features = ["-conversion_warnings"],
-    implementation_deps = ["//pw_assert:check"],
-    deps = [
-        ":pw_unit_test",
-        ":rpc_service",
-        "//pw_hdlc:default_addresses",
-        "//pw_log",
-        "//pw_rpc",
-        "//pw_rpc/system_server",
+        "//pw_string:util",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+        "//pw_sync:thread_notification",
+        "//pw_thread:thread_core",
     ],
 )
 
@@ -506,16 +493,19 @@ pw_cc_test(
     ],
 )
 
-# TODO(hepler): Build this as a cc_binary and use it in integration tests.
-filegroup(
+pw_cc_binary(
     name = "test_rpc_server",
+    testonly = True,
     srcs = ["test_rpc_server.cc"],
-    # deps = [
-    #     ":pw_unit_test",
-    #     ":rpc_service",
-    #     "//pw_log",
-    #     "//pw_rpc/system_server",
-    # ],
+    target_compatible_with = incompatible_with_mcu(),
+    deps = [
+        ":pw_unit_test",
+        ":rpc_service",
+        "//pw_log",
+        "//pw_rpc/system_server",
+        "//pw_thread:thread",
+        "//pw_thread_stl:thread",
+    ],
 )
 
 filegroup(

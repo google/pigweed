@@ -307,8 +307,16 @@ pw_source_set("rpc_service") {
     ":unit_test_proto.pwpb",
     ":unit_test_proto.raw_rpc",
     "$dir_pw_containers:vector",
+    "$dir_pw_string:util",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:thread_notification",
+    "$dir_pw_thread:thread_core",
   ]
-  deps = [ dir_pw_log ]
+  deps = [
+    dir_pw_assert,
+    dir_pw_log,
+  ]
   public = [ "public/pw_unit_test/unit_test_service.h" ]
   sources = [ "unit_test_service.cc" ]
   defines = []
@@ -322,17 +330,6 @@ pw_source_set("rpc_service") {
     sources += [ "rpc_gtest_event_handler.cc" ]
     public += [ "rpc_gtest_public/pw_unit_test/internal/rpc_event_handler.h" ]
   }
-}
-
-pw_source_set("rpc_main") {
-  testonly = pw_unit_test_TESTONLY
-  public_deps = [ ":pw_unit_test" ]
-  deps = [
-    ":rpc_service",
-    "$dir_pw_rpc/system_server",
-    dir_pw_log,
-  ]
-  sources = [ "rpc_main.cc" ]
 }
 
 if (pw_unit_test_BACKEND == "$dir_pw_unit_test:light") {
@@ -355,6 +352,8 @@ pw_executable("test_rpc_server") {
     ":rpc_service",
     "$dir_pw_rpc/system_server",
     "$dir_pw_rpc/system_server:socket",
+    "$dir_pw_thread:thread",
+    "$dir_pw_thread_stl:thread",
     dir_pw_log,
   ]
 }

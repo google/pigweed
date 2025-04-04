@@ -14,13 +14,13 @@
 #define PW_LOG_MODULE_NAME "user_init"
 
 #include "pw_log/log.h"
+#include "pw_rpc/echo_service_pwpb.h"
 #include "pw_system/rpc_server.h"
 #include "pw_trace/trace.h"
-#include "pw_unit_test/unit_test_service.h"
 
 namespace pw::system {
 
-pw::unit_test::UnitTestService unit_test_service;
+pw::rpc::EchoService echo_service;
 
 // This will run once after pw::system::Init() completes. This callback must
 // return or it will block the work queue.
@@ -28,7 +28,7 @@ void UserAppInit() {
   PW_TRACE_FUNCTION();
 
   PW_LOG_INFO("Pigweed is fun!");
-  GetRpcServer().RegisterService(unit_test_service);
+  GetRpcServer().RegisterService(echo_service);
 }
 
 }  // namespace pw::system

@@ -19,7 +19,6 @@ include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 # WARNING: Many of the dependencies in this file are missing and need to be
 # added/updated. This is provided as a starting point, but currently does not
 # work.
-
 if("${pw_cpu_exception.entry_BACKEND}" STREQUAL "")
   pw_add_library(pw_system.config INTERFACE
     HEADERS
@@ -345,8 +344,9 @@ pw_add_library(pw_system.freertos_target_hooks STATIC
     pw_system.config
     pw_thread.thread
     pw_thread_freertos.thread
-    # TODO: b/234876414 - This should depend on FreeRTOS but our third parties
-    # currently do not have CMake support.
+
+  # TODO: b/234876414 - This should depend on FreeRTOS but our third parties
+  # currently do not have CMake support.
 )
 
 pw_add_library(pw_system.zephyr_target_hooks STATIC
@@ -371,7 +371,7 @@ target_link_libraries(pw_system.system_example
     pw_log
     pw_thread.sleep
     pw_trace
-    pw_unit_test.rpc_service
+    pw_rpc.pwpb.echo_service
     pw_system.target_hooks
     targets.host_device_simulator.boot
 )
@@ -438,7 +438,7 @@ pw_add_library(pw_system.async_packet_io STATIC
 )
 
 if((NOT "${pw_async2.dispatcher_BACKEND}" STREQUAL "") AND
-   (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows"))
+  (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows"))
   # TODO: b/317922402 - Run on Windows when thread detaching is supported.
   pw_add_test(pw_system.async_packet_io_test
     SOURCES
@@ -467,7 +467,6 @@ if((NOT "${pw_async2.dispatcher_BACKEND}" STREQUAL "") AND
   )
 endif()
 
-
 add_executable(pw_system.system_async_host_example EXCLUDE_FROM_ALL
   example_user_app_init.cc
 )
@@ -476,7 +475,7 @@ target_link_libraries(pw_system.system_async_host_example
     pw_system.async
     pw_channel.epoll_channel
     pw_multibuf.testing
+    pw_rpc.pwpb.echo_service
     pw_trace
-    pw_unit_test.rpc_service
     targets.host_device_simulator.boot
 )

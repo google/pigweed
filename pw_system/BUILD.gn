@@ -464,13 +464,9 @@ pw_executable("system_example") {
   deps = [
     ":pw_system",
     "$dir_pw_log",
+    "$dir_pw_rpc/pwpb:echo_service",
     "$dir_pw_thread:sleep",
     "$dir_pw_trace",
-    "$dir_pw_unit_test:rpc_service",
-
-    # Adds a test that the test server can run.
-    "$dir_pw_status:status_test.lib",
-    "$dir_pw_string:string_builder_test.lib",
   ]
 }
 

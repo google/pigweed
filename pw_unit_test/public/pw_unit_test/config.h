@@ -18,7 +18,7 @@
 #include <cstddef>
 
 #ifndef PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE
-/// The size of the event buffer that the ``UnitTestService`` contains.
+/// The size of the event buffer that the ``UnitTestThread`` contains.
 /// This buffer is used to encode events.  By default this is set to
 /// 128 bytes.
 #define PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE 128

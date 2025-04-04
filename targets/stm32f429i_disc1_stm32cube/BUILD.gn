@@ -55,6 +55,8 @@ if (current_toolchain != default_toolchain) {
     deps = [
       "$dir_pw_status",
       "$dir_pw_system",
+      "$dir_pw_thread:thread",
+      "$dir_pw_thread_freertos:thread",
       "$dir_pw_unit_test:rpc_service",
     ]
   }

@@ -125,13 +125,6 @@ To send an RPC message that will be echoed back:
    >>> device.rpcs.pw.rpc.EchoService.Echo(msg='Hello, world!')
    (Status.OK, pw.rpc.EchoMessage(msg='Hello, world!'))
 
-To run unit tests included on the simulated device:
-
-.. code-block:: pycon
-
-   >>> device.run_tests()
-   True
-
 You are now up and running!
 
 .. seealso::
