@@ -386,6 +386,7 @@ sphinx_docs_library(
         "public/pw_tokenizer/internal/tokenize_string.h",
         "token_databases.rst",
         "tokenization.rst",
+        "tokenize_test.cc",
     ],
     prefix = "pw_tokenizer/",
     target_compatible_with = incompatible_with_mcu(),

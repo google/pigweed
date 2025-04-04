@@ -28,6 +28,49 @@
 namespace pw::tokenizer {
 namespace {
 
+// Example of problematic tokenization in headers and a possible fix.
+#define TOKENIZED_LOG(...)                                               \
+  do {                                                                   \
+    char buffer[32];                                                     \
+    size_t size = sizeof(buffer);                                        \
+    PW_TOKENIZE_TO_BUFFER_DOMAIN("example", buffer, &size, __VA_ARGS__); \
+  } while (0)
+
+#define MACRO_DEFINED_AT_COMMAND_LINE "CORE"
+
+void DoImportantWork() {}
+
+// DOCSTAG: [pw_tokenizer-header-example-1]
+// header file
+inline void FunctionInHeader() {
+  // This log statement varies depending on the translation unit!
+  TOKENIZED_LOG("Initializing subsystem: " MACRO_DEFINED_AT_COMMAND_LINE);
+  DoImportantWork();
+  // ...
+}
+// DOCSTAG: [pw_tokenizer-header-example-1]
+
+// DOCSTAG: [pw_tokenizer-header-example-3]
+// source file
+void LogInitializingSubsystem() {
+  TOKENIZED_LOG("Initializing subsystem: " MACRO_DEFINED_AT_COMMAND_LINE);
+}
+// DOCSTAG: [pw_tokenizer-header-example-3]
+
+// DOCSTAG: [pw_tokenizer-header-example-2]
+// header file
+inline void UpdatedFunctionInHeader() {
+  LogInitializingSubsystem();  // Log from the .cc file
+  DoImportantWork();
+  // ...
+}
+// DOCSTAG: [pw_tokenizer-header-example-2]
+
+TEST(TokenizationExamples, CallTheFunctions) {
+  FunctionInHeader();
+  UpdatedFunctionInHeader();
+}
+
 // Constructs an array with the hashed string followed by the provided bytes.
 template <uint8_t... kData, size_t kSize>
 constexpr auto ExpectedData(

@@ -385,6 +385,7 @@ pw_doc_group("docs") {
     "Kconfig",
     "py/pw_tokenizer/encode.py",
     "public/pw_tokenizer/internal/tokenize_string.h",
+    "tokenize_test.cc",
   ]
   sources = [
     "api.rst",

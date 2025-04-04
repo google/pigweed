@@ -601,14 +601,57 @@ by checking the ELF file, if necessary.
 
 Tokenization in headers
 -----------------------
-Tokenizing code in header files (inline functions or templates) may trigger
-warnings such as ``-Wlto-type-mismatch`` under certain conditions. That
-is because tokenization requires declaring a character array for each tokenized
-string. If the tokenized string includes macros that change value, the size of
-this character array changes, which means the same static variable is defined
-with different sizes. It should be safe to suppress these warnings, but, when
-possible, code that tokenizes strings with macros that can change value should
-be moved to source files rather than headers.
+The ``pw_tokenizer`` macros may be used in either source or header files.
+However, care must be used when tokenizing in header files (inline functions or
+templates). The value of the tokenized string must not change across translation
+units, otherwise the program violates the One Definition Rule. Compilers may
+emit warnings such as ``-Wlto-type-mismatch``.
+
+Tokenization requires declaring a character array for each tokenized string. If
+a tokenized string includes macros that change value in different translation
+units, the variable's value changes, which is an ODR violation. The tokenized
+string is never read by the program, but this should still be avoided. Ensure
+tokenized strings in headers do not change value, or move them to a source file
+if they might.
+
+For example, the following hypothetical log statement uses a macro whose value
+is set differently per translation unit.
+
+.. literalinclude:: tokenize_test.cc
+   :language: c++
+   :start-after: pw_tokenizer-header-example-1
+   :end-before: pw_tokenizer-header-example-1
+
+To avoid potential ODR violations, the log statemenent can be moved to a .cc
+file.
+
+.. literalinclude:: tokenize_test.cc
+   :language: c++
+   :start-after: pw_tokenizer-header-example-2
+   :end-before: pw_tokenizer-header-example-2
+
+.. literalinclude:: tokenize_test.cc
+   :language: c++
+   :start-after: pw_tokenizer-header-example-3
+   :end-before: pw_tokenizer-header-example-3
+
+.. warning::
+
+   :ref:`module-pw_log_tokenized` includes the ``PW_LOG_MODULE_NAME`` in its
+   tokenized strings, which may be different in each translation unit. To safely
+   log in headers, the log module name must be set for the duration of the
+   header. This can be done with `push/pop macro pragmas
+   <https://gcc.gnu.org/onlinedocs/gcc/Push_002fPop-Macro-Pragmas.html>`_.
+
+   .. code-block:: c++
+
+      #pragma push_macro("PW_LOG_MODULE_NAME")
+      #undef PW_LOG_MODULE_NAME
+      #define PW_LOG_MODULE_NAME "MY_MODULE_NAME"
+
+      // header contents
+
+      #pragma pop_macro("PW_LOG_MODULE_NAME")
 
 ----------------------
 Tokenization in Python
