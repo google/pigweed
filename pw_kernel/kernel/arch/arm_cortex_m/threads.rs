@@ -99,8 +99,8 @@ impl super::super::ThreadState for ArchThreadState {
     fn initialize_frame(
         &mut self,
         stack: Stack,
-        initial_function: extern "C" fn(usize),
-        arg0: usize,
+        initial_function: extern "C" fn(usize, usize),
+        (arg0, arg1): (usize, usize),
     ) {
         // Calculate the first 8 byte aligned full exception frame from the top
         // of the thread's stack.
@@ -111,12 +111,14 @@ impl super::super::ThreadState for ArchThreadState {
         }
         let frame: *mut FullExceptionFrame = frame as *mut FullExceptionFrame;
 
-        // Clear the stack and set up the exception frame such that it would return to the
-        // function passed in with arg0 passed in the first argument slot.
+        // Clear the stack and set up the exception frame such that it would
+        // return to the function passed in with arg0 and arg1 passed in the
+        // first two argument slots.
         unsafe {
             (*frame) = mem::zeroed();
             (*frame).r0 = initial_function as u32;
             (*frame).r1 = arg0 as u32;
+            (*frame).r2 = arg1 as u32;
             (*frame).pc = trampoline as u32;
             (*frame).psr = 1 << 24; // T bit
             (*frame).return_address = 0xfffffff9; // return to state using MSP and no FP
@@ -126,7 +128,7 @@ impl super::super::ThreadState for ArchThreadState {
     }
 }
 
-extern "C" fn trampoline(initial_function: extern "C" fn(usize), arg0: usize) {
+extern "C" fn trampoline(initial_function: extern "C" fn(usize, usize), arg0: usize, arg1: usize) {
     // info!(
     //     "cortex-m trampoline: initial function {:#x} arg {:#x}",
     //     initial_function as usize, arg0
@@ -135,7 +137,7 @@ extern "C" fn trampoline(initial_function: extern "C" fn(usize), arg0: usize) {
     pw_assert::assert!(Arch::interrupts_enabled());
 
     // Call the actual initial function of the thread.
-    initial_function(arg0);
+    initial_function(arg0, arg1);
 
     // Get a pointer to the current thread and call exit.
     // Note: must let the scope of the lock guard close,

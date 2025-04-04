@@ -49,13 +49,13 @@ pub trait ThreadState {
     ) -> SpinLockGuard<'_, SchedulerState>;
 
     // Initialize the default frame of the thread which arranges for it to start at the initial_function
-    // with one argument passed in the first argument slot.
+    // with arguments passed in the first two argument slots.
     #[allow(dead_code)]
     fn initialize_frame(
         &mut self,
         stack: Stack,
-        initial_function: extern "C" fn(usize),
-        arg0: usize,
+        initial_function: extern "C" fn(usize, usize),
+        args: (usize, usize),
     );
 }
 

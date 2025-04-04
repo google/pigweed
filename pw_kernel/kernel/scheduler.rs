@@ -126,18 +126,27 @@ impl Thread {
     // Initialize the mutable parts of the thread, must be called once per
     // thread prior to starting it
     #[allow(dead_code)]
-    pub fn initialize(
-        &mut self,
-        stack: Stack,
-        entry_point: extern "C" fn(usize),
-        arg: usize,
-    ) -> &mut Thread {
+    pub fn initialize(&mut self, stack: Stack, entry_point: fn(usize), arg: usize) -> &mut Thread {
         pw_assert::assert!(self.state == State::New);
         self.stack = stack;
 
+        let args = (entry_point as usize, arg);
+        extern "C" fn trampoline(entry_point: usize, arg: usize) {
+            let entry_point = core::ptr::with_exposed_provenance::<()>(entry_point);
+            // SAFETY: This function is only ever passed to the
+            // architecture-specific call to `initialize_frame` below. It is
+            // never called directly. In `initialize_frame`, the first argument
+            // is `entry_point as usize`. `entry_point` is a `fn(usize)`. Thus,
+            // this transmute preserves validity, and the preceding
+            // `with_exposed_provenance` ensures that the resulting `fn(usize)`
+            // has valid provenance for its referent.
+            let entry_point: fn(usize) = unsafe { core::mem::transmute(entry_point) };
+            entry_point(arg);
+        }
+
         // Call the arch to arrange for the thread to start directly
         unsafe {
-            (*self.arch_thread_state.get()).initialize_frame(stack, entry_point, arg);
+            (*self.arch_thread_state.get()).initialize_frame(stack, trampoline, args);
         }
         self.state = State::Initial;
 

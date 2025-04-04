@@ -118,7 +118,7 @@ impl Kernel {
 }
 
 // completion of main in thread context
-extern "C" fn bootstrap_thread_entry(_arg: usize) {
+fn bootstrap_thread_entry(_arg: usize) {
     info!("Welcome to the first thread, continuing bootstrap");
     pw_assert::assert!(Arch::interrupts_enabled());
 
@@ -151,7 +151,7 @@ extern "C" fn bootstrap_thread_entry(_arg: usize) {
 }
 
 #[allow(dead_code)]
-extern "C" fn idle_thread_entry(_arg: usize) {
+fn idle_thread_entry(_arg: usize) {
     // Fake idle thread to keep the runqueue from being empty if all threads are blocked.
     pw_assert::assert!(Arch::interrupts_enabled());
     loop {
@@ -159,13 +159,13 @@ extern "C" fn idle_thread_entry(_arg: usize) {
     }
 }
 
-extern "C" fn test_thread_entry_a(_arg: usize) {
+fn test_thread_entry_a(_arg: usize) {
     info!("Thread A starting");
     pw_assert::assert!(Arch::interrupts_enabled());
     thread_a();
 }
 
-extern "C" fn test_thread_entry_b(_arg: usize) {
+fn test_thread_entry_b(_arg: usize) {
     info!("Thread B starting");
     pw_assert::assert!(Arch::interrupts_enabled());
     thread_b();

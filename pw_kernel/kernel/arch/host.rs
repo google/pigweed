@@ -37,8 +37,8 @@ impl super::ThreadState for ThreadState {
     fn initialize_frame(
         &mut self,
         _stack: Stack,
-        _initial_function: extern "C" fn(usize),
-        _arg0: usize,
+        _initial_function: extern "C" fn(usize, usize),
+        _args: (usize, usize),
     ) {
         pw_assert::panic!("unimplemented");
     }
