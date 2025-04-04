@@ -25,7 +25,6 @@
 #include "pw_unit_test/framework.h"
 #include "pw_varint/varint.h"
 
-namespace pw::tokenizer {
 namespace {
 
 // Example of problematic tokenization in headers and a possible fix.
@@ -76,7 +75,7 @@ template <uint8_t... kData, size_t kSize>
 constexpr auto ExpectedData(
     const char (&format)[kSize],
     uint32_t token_mask = std::numeric_limits<uint32_t>::max()) {
-  const uint32_t value = Hash(format) & token_mask;
+  const uint32_t value = pw::tokenizer::Hash(format) & token_mask;
   return std::array<uint8_t, sizeof(uint32_t) + sizeof...(kData)>{
       static_cast<uint8_t>(value & 0xff),
       static_cast<uint8_t>(value >> 8 & 0xff),
@@ -92,37 +91,38 @@ TEST(TokenizeString, EmptyString_IsZero) {
 
 TEST(TokenizeString, String_MatchesHash) {
   constexpr uint32_t token = PW_TOKENIZE_STRING("[:-)");
-  EXPECT_EQ(Hash("[:-)"), token);
+  EXPECT_EQ(pw::tokenizer::Hash("[:-)"), token);
 }
 
 TEST(TokenizeString, String_MatchesHashExpr) {
-  EXPECT_EQ(Hash("[:-)"), PW_TOKENIZE_STRING_EXPR("[:-)"));
+  EXPECT_EQ(pw::tokenizer::Hash("[:-)"), PW_TOKENIZE_STRING_EXPR("[:-)"));
 }
 
 TEST(TokenizeString, ExpressionWithStringVariable) {
   constexpr char kTestString[] = "test";
-  EXPECT_EQ(Hash(kTestString), PW_TOKENIZE_STRING_EXPR(kTestString));
-  EXPECT_EQ(Hash(kTestString),
+  EXPECT_EQ(pw::tokenizer::Hash(kTestString),
+            PW_TOKENIZE_STRING_EXPR(kTestString));
+  EXPECT_EQ(pw::tokenizer::Hash(kTestString),
             PW_TOKENIZE_STRING_DOMAIN_EXPR("TEST_DOMAIN", kTestString));
   EXPECT_EQ(
-      Hash(kTestString) & 0xAAAAAAAA,
+      pw::tokenizer::Hash(kTestString) & 0xAAAAAAAA,
       PW_TOKENIZE_STRING_MASK_EXPR("TEST_DOMAIN", 0xAAAAAAAA, kTestString));
 }
 
 constexpr uint32_t kGlobalToken = PW_TOKENIZE_STRING(">:-[]");
 
 TEST(TokenizeString, GlobalVariable_MatchesHash) {
-  EXPECT_EQ(Hash(">:-[]"), kGlobalToken);
+  EXPECT_EQ(pw::tokenizer::Hash(">:-[]"), kGlobalToken);
 }
 
 struct TokenizedWithinClass {
   static constexpr uint32_t kThisToken = PW_TOKENIZE_STRING("???");
 };
 
-static_assert(Hash("???") == TokenizedWithinClass::kThisToken);
+static_assert(pw::tokenizer::Hash("???") == TokenizedWithinClass::kThisToken);
 
 TEST(TokenizeString, ClassMember_MatchesHash) {
-  EXPECT_EQ(Hash("???"), TokenizedWithinClass().kThisToken);
+  EXPECT_EQ(pw::tokenizer::Hash("???"), TokenizedWithinClass().kThisToken);
 }
 
 TEST(TokenizeString, WithinNonCapturingLambda) {
@@ -130,7 +130,7 @@ TEST(TokenizeString, WithinNonCapturingLambda) {
     return PW_TOKENIZE_STRING("Lambda!");
   }();
 
-  EXPECT_EQ(Hash("Lambda!"), non_capturing_lambda);
+  EXPECT_EQ(pw::tokenizer::Hash("Lambda!"), non_capturing_lambda);
 }
 
 TEST(TokenizeString, WithinCapturingLambda) {
@@ -144,7 +144,7 @@ TEST(TokenizeString, WithinCapturingLambda) {
   }();
 
   ASSERT_TRUE(executed_lambda);
-  EXPECT_EQ(Hash("Capturing lambda!"), capturing_lambda);
+  EXPECT_EQ(pw::tokenizer::Hash("Capturing lambda!"), capturing_lambda);
 }
 
 TEST(TokenizeString, Mask) {
@@ -204,22 +204,24 @@ TEST(TokenizeString, Array) {
   constexpr char array[] = "won-won-won-wonderful";
 
   const uint32_t array_hash = PW_TOKENIZE_STRING(array);
-  EXPECT_EQ(Hash(array), array_hash);
+  EXPECT_EQ(pw::tokenizer::Hash(array), array_hash);
 }
 
 TEST(TokenizeString, NullInString) {
   // Use PW_TOKENIZER_STRING_TOKEN to avoid emitting strings with NUL into the
   // ELF file. The CSV database format does not support NUL.
   constexpr char nulls[32] = {};
-  static_assert(Hash(nulls) == PW_TOKENIZER_STRING_TOKEN(nulls));
+  static_assert(pw::tokenizer::Hash(nulls) == PW_TOKENIZER_STRING_TOKEN(nulls));
   static_assert(PW_TOKENIZER_STRING_TOKEN(nulls) != 0u);
 
-  static_assert(PW_TOKENIZER_STRING_TOKEN("\0") == Hash("\0"));
-  static_assert(PW_TOKENIZER_STRING_TOKEN("\0") != Hash(""));
+  static_assert(PW_TOKENIZER_STRING_TOKEN("\0") == pw::tokenizer::Hash("\0"));
+  static_assert(PW_TOKENIZER_STRING_TOKEN("\0") != pw::tokenizer::Hash(""));
 
-  static_assert(PW_TOKENIZER_STRING_TOKEN("abc\0def") == Hash("abc\0def"));
+  static_assert(PW_TOKENIZER_STRING_TOKEN("abc\0def") ==
+                pw::tokenizer::Hash("abc\0def"));
 
-  static_assert(Hash("abc\0def") != Hash("abc\0def\0"));
+  static_assert(pw::tokenizer::Hash("abc\0def") !=
+                pw::tokenizer::Hash("abc\0def\0"));
 }
 
 // Verify that we can tokenize multiple strings from one source line.
@@ -625,4 +627,3 @@ TEST_F(TokenizeToBuffer, Domain_Specified) {
                 "that calls it cannot be used here!")
 
 }  // namespace
-}  // namespace pw::tokenizer
