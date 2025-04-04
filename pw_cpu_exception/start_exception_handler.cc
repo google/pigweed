@@ -29,7 +29,8 @@ extern "C" void pw_cpu_exception_RestoreDefaultHandler() {
   exception_handler = &pw_cpu_exception_DefaultHandler;
 }
 
-extern "C" void pw_cpu_exception_HandleException(void* cpu_state) {
+extern "C" [[gnu::used]]
+void pw_cpu_exception_HandleException(void* cpu_state) {
   exception_handler(reinterpret_cast<pw_cpu_exception_State*>(cpu_state));
 }
 
