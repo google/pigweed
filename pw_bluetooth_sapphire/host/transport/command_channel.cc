@@ -59,7 +59,8 @@ CommandChannel::TransactionData::TransactionData(
     hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions,
-    CommandCallback callback)
+    CommandCallback callback,
+    pw::bluetooth_sapphire::Lease wake_lease)
     : channel_(channel),
       transaction_id_(transaction_id),
       opcode_(opcode),
@@ -68,6 +69,7 @@ CommandChannel::TransactionData::TransactionData(
       exclusions_(std::move(exclusions)),
       callback_(std::move(callback)),
       timeout_task_(channel_->dispatcher_),
+      wake_lease_(std::move(wake_lease)),
       handler_id_(0u) {
   PW_DCHECK(transaction_id != 0u);
   exclusions_.insert(opcode_);
@@ -127,13 +129,16 @@ CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
   };
 }
 
-CommandChannel::CommandChannel(pw::bluetooth::Controller* hci,
-                               pw::async::Dispatcher& dispatcher)
+CommandChannel::CommandChannel(
+    pw::bluetooth::Controller* hci,
+    pw::async::Dispatcher& dispatcher,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
     : next_transaction_id_(1u),
       next_event_handler_id_(1u),
       hci_(hci),
       allowed_command_packets_(1u),
       dispatcher_(dispatcher),
+      wake_lease_provider_(wake_lease_provider),
       weak_ptr_factory_(this) {
   hci_->SetEventFunction(fit::bind_member<&CommandChannel::OnEvent>(this));
 
@@ -220,6 +225,10 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     next_transaction_id_.Set(1);
   }
 
+  pw::bluetooth_sapphire::Lease wake_lease =
+      PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_, "CommandChannel")
+          .value_or(pw::bluetooth_sapphire::Lease());
+
   const hci_spec::OpCode opcode = command_packet.opcode();
   const TransactionId transaction_id = next_transaction_id_.value();
   next_transaction_id_.Set(transaction_id + 1);
@@ -231,7 +240,8 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
                                         complete_event_code,
                                         le_meta_subevent_code,
                                         std::move(exclusions),
-                                        std::move(callback));
+                                        std::move(callback),
+                                        std::move(wake_lease));
 
   QueuedCommand command(std::move(command_packet), std::move(data));
 

@@ -35,6 +35,7 @@
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/constants.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
+#include "pw_bluetooth_sapphire/lease.h"
 
 namespace bt::hci {
 
@@ -46,8 +47,10 @@ namespace bt::hci {
 class CommandChannel final {
  public:
   // Starts listening for HCI commands and starts handling commands and events.
-  explicit CommandChannel(pw::bluetooth::Controller* hci,
-                          pw::async::Dispatcher& dispatcher);
+  explicit CommandChannel(
+      pw::bluetooth::Controller* hci,
+      pw::async::Dispatcher& dispatcher,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
 
   ~CommandChannel();
 
@@ -260,7 +263,8 @@ class CommandChannel final {
                     hci_spec::EventCode complete_event_code,
                     std::optional<hci_spec::EventCode> le_meta_subevent_code,
                     std::unordered_set<hci_spec::OpCode> exclusions,
-                    CommandCallback callback);
+                    CommandCallback callback,
+                    pw::bluetooth_sapphire::Lease wake_lease);
     ~TransactionData();
 
     // Starts the transaction timer, which will call
@@ -305,6 +309,7 @@ class CommandChannel final {
     std::unordered_set<hci_spec::OpCode> exclusions_;
     CommandCallback callback_;
     bt::SmartTask timeout_task_;
+    pw::bluetooth_sapphire::Lease wake_lease_;
 
     // If non-zero, the id of the handler registered for this transaction.
     // Always zero if this transaction is synchronous.
@@ -453,6 +458,8 @@ class CommandChannel final {
   inspect::Node command_channel_node_;
 
   pw::async::Dispatcher& dispatcher_;
+
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
 
   // As events can arrive in the event thread at any time, we should invalidate
   // our weak pointers early.

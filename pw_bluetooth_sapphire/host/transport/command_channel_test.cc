@@ -77,6 +77,8 @@ CommandPacket MakeReadRemoteSupportedFeatures(uint16_t connection_handle) {
 }
 
 TEST_F(CommandChannelTest, SingleRequestResponse) {
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+
   // Set up expectations:
   // clang-format off
   // HCI_Reset
@@ -105,8 +107,8 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
           hci_spec::kReset);
   CommandChannel::TransactionId id = cmd_channel()->SendCommand(
       std::move(reset),
-      [&id, test_obj](CommandChannel::TransactionId callback_id,
-                      const EventPacket& event) {
+      [&id, test_obj, this](CommandChannel::TransactionId callback_id,
+                            const EventPacket& event) {
         auto view =
             event.view<pw::bluetooth::emboss::SimpleCommandCompleteEventView>();
         EXPECT_EQ(id, callback_id);
@@ -119,11 +121,14 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
                   view.command_complete().command_opcode().Read());
         EXPECT_EQ(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE,
                   view.status().Read());
+        EXPECT_GT(lease_provider().lease_count(), 0u);
       });
+  EXPECT_GT(lease_provider().lease_count(), 0u);
 
   test_obj = nullptr;
   EXPECT_FALSE(test_obj_deleted);
   RunUntilIdle();
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 
   // Make sure that the I/O thread is no longer holding on to |test_obj|.
   TearDown();
@@ -132,6 +137,8 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
 }
 
 TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+
   // Set up expectations: HCI_Inquiry (general, unlimited, 1s)
   const auto req = testing::InquiryCommandPacket(0x01);
   // HCI_Command_Status
@@ -149,8 +156,8 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
   // Send HCI_Inquiry
   CommandChannel::TransactionId id;
   int cb_count = 0;
-  auto cb = [&cb_count, &id](CommandChannel::TransactionId callback_id,
-                             const EventPacket& event) {
+  auto cb = [&cb_count, &id, this](CommandChannel::TransactionId callback_id,
+                                   const EventPacket& event) {
     cb_count++;
     EXPECT_EQ(callback_id, id);
     if (cb_count == 1) {
@@ -160,6 +167,7 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
                 view.status().Read());
       EXPECT_EQ(pw::bluetooth::emboss::OpCode::INQUIRY,
                 view.command_opcode_enum().Read());
+      EXPECT_GT(lease_provider().lease_count(), 0u);
     } else {
       EXPECT_EQ(hci_spec::kInquiryCompleteEventCode, event.event_code());
       EXPECT_EQ(fit::ok(), event.ToResult());
@@ -176,7 +184,9 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
 
   id = cmd_channel()->SendCommand(
       std::move(packet), cb, hci_spec::kInquiryCompleteEventCode);
+  EXPECT_GT(lease_provider().lease_count(), 0u);
   RunUntilIdle();
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
   EXPECT_EQ(2, cb_count);
 }
 
@@ -278,11 +288,16 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
     cb_event_count++;
   };
 
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+
   auto reset =
       hci::CommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(
           hci_spec::kReset);
   [[maybe_unused]] auto reset_id =
       cmd_channel()->SendCommand(std::move(reset), cb);
+
+  EXPECT_GT(lease_provider().lease_count(), 0u);
+
   auto inquiry = hci::CommandPacket::New<
       pw::bluetooth::emboss::InquiryCancelCommandWriter>(
       hci_spec::kInquiryCancel);
@@ -293,6 +308,7 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
 
   EXPECT_EQ(1u, transaction_count);
   EXPECT_EQ(1u, cb_event_count);
+  EXPECT_GT(lease_provider().lease_count(), 0u);
 
   test_device()->SendCommandChannelPacket(rsp_commandsavail);
 
@@ -300,6 +316,7 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
 
   EXPECT_EQ(2u, transaction_count);
   EXPECT_EQ(2u, cb_event_count);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
 // Tests:

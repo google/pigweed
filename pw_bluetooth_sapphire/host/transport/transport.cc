@@ -53,7 +53,7 @@ void Transport::Initialize(
     }
 
     self->command_channel_ = std::make_unique<CommandChannel>(
-        self->controller_.get(), self->dispatcher_);
+        self->controller_.get(), self->dispatcher_, self->wake_lease_provider_);
     self->command_channel_->set_channel_timeout_cb([self] {
       if (self.is_alive()) {
         self->OnChannelError();
