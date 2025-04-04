@@ -40,6 +40,8 @@ class RxEngine {
   // but will return credits in credit-based modes.
   virtual void AcknowledgeRead() {}
 
+  virtual bool IsQueueEmpty() = 0;
+
  private:
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RxEngine);
 };

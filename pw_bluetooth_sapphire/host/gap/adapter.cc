@@ -51,6 +51,7 @@
 #include "pw_bluetooth_sapphire/internal/host/sm/security_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/control_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/transport.h"
+#include "pw_bluetooth_sapphire/lease.h"
 
 namespace bt::gap {
 
@@ -70,11 +71,13 @@ static constexpr const char* kInspectBrEdrDiscoveryManagerNodeName =
 // instance is created.
 class AdapterImpl final : public Adapter {
  public:
-  explicit AdapterImpl(pw::async::Dispatcher& pw_dispatcher,
-                       hci::Transport::WeakPtr hci,
-                       gatt::GATT::WeakPtr gatt,
-                       Config config,
-                       std::unique_ptr<l2cap::ChannelManager> l2cap);
+  explicit AdapterImpl(
+      pw::async::Dispatcher& pw_dispatcher,
+      hci::Transport::WeakPtr hci,
+      gatt::GATT::WeakPtr gatt,
+      Config config,
+      std::unique_ptr<l2cap::ChannelManager> l2cap,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
   ~AdapterImpl() override;
 
   AdapterId identifier() const override { return identifier_; }
@@ -546,6 +549,8 @@ class AdapterImpl final : public Adapter {
   // Uniquely identifies this adapter on the current system.
   AdapterId identifier_;
 
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
+
   hci::Transport::WeakPtr hci_;
 
   // Callback invoked to notify clients when the underlying transport is
@@ -620,12 +625,15 @@ class AdapterImpl final : public Adapter {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterImpl);
 };
 
-AdapterImpl::AdapterImpl(pw::async::Dispatcher& pw_dispatcher,
-                         hci::Transport::WeakPtr hci,
-                         gatt::GATT::WeakPtr gatt,
-                         Config config,
-                         std::unique_ptr<l2cap::ChannelManager> l2cap)
+AdapterImpl::AdapterImpl(
+    pw::async::Dispatcher& pw_dispatcher,
+    hci::Transport::WeakPtr hci,
+    gatt::GATT::WeakPtr gatt,
+    Config config,
+    std::unique_ptr<l2cap::ChannelManager> l2cap,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
     : identifier_(Random<AdapterId>()),
+      wake_lease_provider_(wake_lease_provider),
       hci_(std::move(hci)),
       init_state_(State::kNotInitialized),
       peer_cache_(pw_dispatcher),
@@ -1458,7 +1466,8 @@ void AdapterImpl::InitializeStep3() {
     l2cap_ = l2cap::ChannelManager::Create(hci_->acl_data_channel(),
                                            hci_->command_channel(),
                                            /*random_channel_ids=*/true,
-                                           dispatcher_);
+                                           dispatcher_,
+                                           wake_lease_provider_);
     l2cap_->AttachInspect(adapter_node_,
                           l2cap::ChannelManager::kInspectNodeName);
   }
@@ -1851,9 +1860,10 @@ std::unique_ptr<Adapter> Adapter::Create(
     hci::Transport::WeakPtr hci,
     gatt::GATT::WeakPtr gatt,
     Config config,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
     std::unique_ptr<l2cap::ChannelManager> l2cap) {
   return std::make_unique<AdapterImpl>(
-      pw_dispatcher, hci, gatt, config, std::move(l2cap));
+      pw_dispatcher, hci, gatt, config, std::move(l2cap), wake_lease_provider);
 }
 
 }  // namespace bt::gap

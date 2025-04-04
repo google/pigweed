@@ -122,6 +122,7 @@ cc_library(
         ":definitions",
         "//pw_bluetooth",
         "//pw_bluetooth:emboss_hci_android",
+        "//pw_bluetooth_sapphire:lease",
         "//pw_bluetooth_sapphire/host/common",
         "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/sm:definitions",

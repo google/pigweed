@@ -59,6 +59,9 @@ void MockAclDataChannel::UnregisterConnection(
 }
 
 void MockAclDataChannel::OnOutboundPacketAvailable() {
+  if (sending_paused_) {
+    return;
+  }
   // Assume there is infinite buffer space available
   SendPackets();
 }
@@ -87,7 +90,7 @@ void MockAclDataChannel::SendPackets() {
       packets.push_back(connection->GetNextOutboundPacket());
     }
   }
-  if (send_packets_cb_) {
+  if (send_packets_cb_ && !packets.empty()) {
     send_packets_cb_(std::move(packets));
   }
 }

@@ -43,6 +43,7 @@
 #include "pw_bluetooth_sapphire/internal/host/transport/command_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/error.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/link_type.h"
+#include "pw_bluetooth_sapphire/lease.h"
 
 namespace bt::l2cap {
 
@@ -280,6 +281,7 @@ class ChannelImpl : public Channel, public TxEngine::TxChannel {
       hci::CommandChannel::WeakPtr cmd_channel,
       uint16_t max_acl_payload_size,
       A2dpOffloadManager& a2dp_offload_manager,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
       uint16_t max_tx_queued = kDefaultTxMaxQueuedCount);
 
   static std::unique_ptr<ChannelImpl> CreateDynamicChannel(
@@ -291,6 +293,7 @@ class ChannelImpl : public Channel, public TxEngine::TxChannel {
       hci::CommandChannel::WeakPtr cmd_channel,
       uint16_t max_acl_payload_size,
       A2dpOffloadManager& a2dp_offload_manager,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
       uint16_t max_tx_queued = kDefaultTxMaxQueuedCount);
 
   ~ChannelImpl() override;
@@ -349,6 +352,7 @@ class ChannelImpl : public Channel, public TxEngine::TxChannel {
               hci::CommandChannel::WeakPtr cmd_channel,
               uint16_t max_acl_payload_size,
               A2dpOffloadManager& a2dp_offload_manager,
+              pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
               uint16_t max_tx_queued);
 
   // Common channel closure logic. Called on Deactivate/OnClosed.
@@ -359,6 +363,10 @@ class ChannelImpl : public Channel, public TxEngine::TxChannel {
 
   // Called by |tx_engine_| to get a queued SDU for processing.
   std::optional<ByteBufferPtr> GetNextQueuedSdu() override;
+
+  bool AreQueuesEmpty();
+
+  void TryAcquireWakeLease();
 
   pw::async::Dispatcher& pw_dispatcher_;
 
@@ -406,6 +414,9 @@ class ChannelImpl : public Channel, public TxEngine::TxChannel {
   const Fragmenter fragmenter_;
 
   uint8_t dropped_packets = 0;
+
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
+  std::optional<pw::bluetooth_sapphire::Lease> wake_lease_;
 
   struct InspectProperties {
     inspect::Node node;

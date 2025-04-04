@@ -40,6 +40,8 @@ class CreditBasedFlowControlRxEngine final : public RxEngine {
   ByteBufferPtr ProcessPdu(PDU pdu) override;
   void AcknowledgeRead() override;
 
+  bool IsQueueEmpty() override { return next_sdu_ == nullptr; }
+
  private:
   FailureCallback failure_callback_;
   ReturnCreditsCallback return_credits_callback_;

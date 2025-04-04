@@ -115,8 +115,8 @@ inline DynamicByteBuffer AclSFrameReceiverReady(
     hci_spec::ConnectionHandle link_handle,
     l2cap::ChannelId channel_id,
     uint8_t receive_seq_num,
-    bool is_poll_request,
-    bool is_poll_response) {
+    bool is_poll_request = false,
+    bool is_poll_response = false) {
   return AclSFrame(link_handle,
                    channel_id,
                    internal::SupervisoryFunction::ReceiverReady,
@@ -150,6 +150,12 @@ DynamicByteBuffer AclIFrame(hci_spec::ConnectionHandle link_handle,
 // K-Frame Packets
 
 DynamicByteBuffer AclKFrame(hci_spec::ConnectionHandle link_handle,
+                            l2cap::ChannelId channel_id,
+                            const ByteBuffer& payload);
+
+// B-Frame Packets
+
+DynamicByteBuffer AclBFrame(hci_spec::ConnectionHandle link_handle,
                             l2cap::ChannelId channel_id,
                             const ByteBuffer& payload);
 

@@ -17,6 +17,7 @@
 #include <pw_bytes/endian.h>
 #include <pw_random/fuzzer.h>
 
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
@@ -77,7 +78,8 @@ class DataFuzzTest : public TestingBase {
         l2cap::ChannelManager::Create(transport()->acl_data_channel(),
                                       transport()->command_channel(),
                                       /*random_channel_ids=*/false,
-                                      dispatcher());
+                                      dispatcher(),
+                                      lease_provider_);
   }
 
   ~DataFuzzTest() override {
@@ -183,6 +185,7 @@ class DataFuzzTest : public TestingBase {
  private:
   FuzzedDataProvider data_;
   pw::random::FuzzerRandomGenerator rng_;
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<l2cap::ChannelManager> channel_manager_;
   bool connection_ = false;
   std::unordered_map<l2cap::ChannelId, l2cap::Channel::WeakPtr> channels_;

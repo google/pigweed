@@ -29,8 +29,6 @@ class MockAclDataChannel final : public AclDataChannel {
 
   using SendPacketsCallback =
       fit::function<bool(std::list<ACLDataPacketPtr> packets)>;
-  // using SendPacketsCallback = fit::function<bool(WeakPtr<ConnectionInterface>
-  // connection)>;
   void set_send_packets_cb(SendPacketsCallback cb) {
     send_packets_cb_ = std::move(cb);
   }
@@ -50,6 +48,13 @@ class MockAclDataChannel final : public AclDataChannel {
   }
 
   void ReceivePacket(std::unique_ptr<ACLDataPacket> packet);
+
+  void set_sending_paused(bool paused) {
+    sending_paused_ = paused;
+    if (!paused) {
+      SendPackets();
+    }
+  }
 
   // AclDataChannel overrides:
   void AttachInspect(inspect::Node& /*unused*/,
@@ -83,6 +88,7 @@ class MockAclDataChannel final : public AclDataChannel {
   SendPacketsCallback send_packets_cb_;
   DropQueuedPacketsCallback drop_queued_packets_cb_;
   RequestAclPriorityCallback request_acl_priority_cb_;
+  bool sending_paused_ = false;
 };
 
 }  // namespace bt::hci::testing

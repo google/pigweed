@@ -94,6 +94,7 @@ TEST_F(CreditBasedFlowControlRxEngineTest, LargeUnsegmentedSdu) {
 }
 
 TEST_F(CreditBasedFlowControlRxEngineTest, SduSegmentedIntoManySmallPdus) {
+  EXPECT_TRUE(engine().IsQueueEmpty());
   // clang-format off
   EXPECT_FALSE(ProcessPayload(StaticByteBuffer(
       // SDU size field (LE u16)
@@ -102,11 +103,13 @@ TEST_F(CreditBasedFlowControlRxEngineTest, SduSegmentedIntoManySmallPdus) {
       't', 'e', 's', 't'
   )));
   // clang-format on
+  EXPECT_FALSE(engine().IsQueueEmpty());
 
   EXPECT_FALSE(ProcessPayload(StaticByteBuffer('i', 'n', 'g', ' ')));
   EXPECT_FALSE(ProcessPayload(StaticByteBuffer('f', 'o', 'r', ' ')));
   const ByteBufferPtr sdu =
       ProcessPayload(StaticByteBuffer('b', 'u', 'g', 's'));
+  EXPECT_TRUE(engine().IsQueueEmpty());
 
   // clang-format off
   StaticByteBuffer expected(

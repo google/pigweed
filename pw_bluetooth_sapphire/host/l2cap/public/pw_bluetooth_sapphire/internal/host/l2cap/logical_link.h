@@ -76,7 +76,8 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
               hci::CommandChannel* cmd_channel,
               bool random_channel_ids,
               A2dpOffloadManager& a2dp_offload_manager,
-              pw::async::Dispatcher& dispatcher);
+              pw::async::Dispatcher& dispatcher,
+              pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
 
   // When a logical link is destroyed it notifies all of its channels to close
   // themselves. Data packets will no longer be routed to the associated
@@ -269,6 +270,8 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // Round robins through channels in logical link to get next packet to send
   // Returns nullptr if there are no connections with pending packets
   void RoundRobinChannels();
+
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
 
   pw::async::Dispatcher& pw_dispatcher_;
 

@@ -75,6 +75,7 @@ std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
     hci::CommandChannel::WeakPtr cmd_channel,
     uint16_t max_acl_payload_size,
     A2dpOffloadManager& a2dp_offload_manager,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
     uint16_t max_tx_queued) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Setting the ChannelInfo MTU to kMaxMTU effectively cancels any L2CAP-level
@@ -93,6 +94,7 @@ std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
                       std::move(cmd_channel),
                       max_acl_payload_size,
                       a2dp_offload_manager,
+                      wake_lease_provider,
                       max_tx_queued));
 }
 
@@ -105,6 +107,7 @@ std::unique_ptr<ChannelImpl> ChannelImpl::CreateDynamicChannel(
     hci::CommandChannel::WeakPtr cmd_channel,
     uint16_t max_acl_payload_size,
     A2dpOffloadManager& a2dp_offload_manager,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
     uint16_t max_tx_queued) {
   return std::unique_ptr<ChannelImpl>(new ChannelImpl(dispatcher,
                                                       id,
@@ -114,24 +117,28 @@ std::unique_ptr<ChannelImpl> ChannelImpl::CreateDynamicChannel(
                                                       std::move(cmd_channel),
                                                       max_acl_payload_size,
                                                       a2dp_offload_manager,
+                                                      wake_lease_provider,
                                                       max_tx_queued));
 }
 
-ChannelImpl::ChannelImpl(pw::async::Dispatcher& dispatcher,
-                         ChannelId id,
-                         ChannelId remote_id,
-                         internal::LogicalLinkWeakPtr link,
-                         ChannelInfo info,
-                         hci::CommandChannel::WeakPtr cmd_channel,
-                         uint16_t max_acl_payload_size,
-                         A2dpOffloadManager& a2dp_offload_manager,
-                         uint16_t max_tx_queued)
+ChannelImpl::ChannelImpl(
+    pw::async::Dispatcher& dispatcher,
+    ChannelId id,
+    ChannelId remote_id,
+    internal::LogicalLinkWeakPtr link,
+    ChannelInfo info,
+    hci::CommandChannel::WeakPtr cmd_channel,
+    uint16_t max_acl_payload_size,
+    A2dpOffloadManager& a2dp_offload_manager,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
+    uint16_t max_tx_queued)
     : Channel(id, remote_id, link->type(), link->handle(), info, max_tx_queued),
       pw_dispatcher_(dispatcher),
       active_(false),
       link_(link),
       cmd_channel_(std::move(cmd_channel)),
       fragmenter_(link->handle(), max_acl_payload_size),
+      wake_lease_provider_(wake_lease_provider),
       a2dp_offload_manager_(a2dp_offload_manager),
       weak_self_(this) {
   PW_CHECK(link_.is_alive());
@@ -234,12 +241,16 @@ bool ChannelImpl::Activate(RxCallback rx_callback,
     // Channel may be destroyed in rx_cb_, so we need to check self after
     // calling rx_cb_.
     auto self = GetWeakPtr();
-    auto pending = std::move(pending_rx_sdus_);
+    std::queue<ByteBufferPtr, std::list<ByteBufferPtr>> pending;
+    std::swap(pending_rx_sdus_, pending);
     while (self.is_alive() && !pending.empty()) {
       TRACE_FLOW_END(
           "bluetooth", "ChannelImpl::HandleRxPdu queued", pending.size());
       rx_cb_(std::move(pending.front()));
       pending.pop();
+    }
+    if (self.is_alive() && AreQueuesEmpty()) {
+      wake_lease_.reset();
     }
   }
 
@@ -297,6 +308,10 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
     return false;
   }
 
+  if (!wake_lease_) {
+    TryAcquireWakeLease();
+  }
+
   pending_tx_sdus_.push(std::move(sdu));
   tx_engine_->NotifySduQueued();
   return true;
@@ -327,6 +342,11 @@ std::unique_ptr<hci::ACLDataPacket> ChannelImpl::GetNextOutboundPacket() {
     fragment = std::move(pending_tx_fragments_.front());
     pending_tx_fragments_.pop_front();
   }
+
+  if (AreQueuesEmpty()) {
+    wake_lease_.reset();
+  }
+
   return fragment;
 }
 
@@ -470,13 +490,20 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
 
   ByteBufferPtr sdu = rx_engine_->ProcessPdu(std::move(pdu));
   if (!sdu) {
-    // The PDU may have been invalid, out-of-sequence, or part of a segmented
-    // SDU.
+    // The PDU may have been invalid, out-of-sequence, part of a segmented
+    // SDU, or a signaling PDU.
     // * If invalid, we drop the PDU (per Core Spec Ver 5, Vol 3, Part A,
     //   Secs. 3.3.6 and/or 3.3.7).
     // * If out-of-sequence or part of a segmented SDU, we expect that some
     //   later call to ProcessPdu() will return us an SDU containing this
     //   PDU's data.
+    // * If a signaling PDU, packet queue state may have changed and we might be
+    //   able to release the wake lease.
+    if (AreQueuesEmpty()) {
+      wake_lease_.reset();
+    } else if (!wake_lease_) {
+      TryAcquireWakeLease();
+    }
     return;
   }
 
@@ -488,7 +515,17 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
     TRACE_FLOW_BEGIN("bluetooth",
                      "ChannelImpl::HandleRxPdu queued",
                      pending_rx_sdus_.size());
+
+    if (!wake_lease_) {
+      TryAcquireWakeLease();
+    }
     return;
+  }
+
+  // The PDU may have been the last segment of an SDU, in which case an RxEngine
+  // queue may have been emptied.
+  if (AreQueuesEmpty()) {
+    wake_lease_.reset();
   }
 
   PW_CHECK(rx_cb_);
@@ -521,6 +558,7 @@ void ChannelImpl::CleanUp() {
   closed_cb_ = nullptr;
   rx_engine_ = nullptr;
   tx_engine_ = nullptr;
+  wake_lease_.reset();
 }
 
 void ChannelImpl::SendFrame(ByteBufferPtr pdu) {
@@ -558,6 +596,10 @@ void ChannelImpl::SendFrame(ByteBufferPtr pdu) {
   if (pending_tx_pdus_.size() == 1u) {
     link_->OnOutboundPacketAvailable();
   }
+
+  if (!wake_lease_ && !AreQueuesEmpty()) {
+    TryAcquireWakeLease();
+  }
 }
 
 std::optional<ByteBufferPtr> ChannelImpl::GetNextQueuedSdu() {
@@ -566,6 +608,21 @@ std::optional<ByteBufferPtr> ChannelImpl::GetNextQueuedSdu() {
   ByteBufferPtr next_sdu = std::move(pending_tx_sdus_.front());
   pending_tx_sdus_.pop();
   return next_sdu;
+}
+
+bool ChannelImpl::AreQueuesEmpty() {
+  return pending_rx_sdus_.empty() && pending_tx_sdus_.empty() &&
+         pending_tx_pdus_.empty() && pending_tx_fragments_.empty() &&
+         (!tx_engine_ || tx_engine_->IsQueueEmpty()) &&
+         (!rx_engine_ || rx_engine_->IsQueueEmpty());
+}
+
+void ChannelImpl::TryAcquireWakeLease() {
+  pw::Result<pw::bluetooth_sapphire::Lease> lease =
+      PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_, "l2cap::ChannelImpl");
+  if (lease.ok()) {
+    wake_lease_ = std::move(lease.value());
+  }
 }
 
 }  // namespace internal

@@ -102,6 +102,7 @@ pw_source_set("l2cap") {
   public_deps = [
     ":definitions",
     "$dir_pw_bluetooth:emboss_hci_android",
+    "$dir_pw_bluetooth_sapphire:lease",
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_bluetooth_sapphire/host/sm:definitions",

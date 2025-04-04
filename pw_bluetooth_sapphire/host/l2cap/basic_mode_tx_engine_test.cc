@@ -36,10 +36,12 @@ TEST(BasicModeTxEngineTest, ProcessSduTransmitsMinimalSizedSdu) {
   constexpr size_t kMtu = 10;
   const StaticByteBuffer payload(1);
   channel.QueueSdu(std::make_unique<DynamicByteBuffer>(payload));
-  BasicModeTxEngine(kTestChannelId, kMtu, channel).NotifySduQueued();
+  BasicModeTxEngine engine(kTestChannelId, kMtu, channel);
+  engine.NotifySduQueued();
   EXPECT_EQ(1u, n_pdus);
   ASSERT_TRUE(last_pdu);
   EXPECT_TRUE(ContainersEqual(payload, *last_pdu));
+  EXPECT_TRUE(engine.IsQueueEmpty());
 }
 
 TEST(BasicModeTxEngineTest, ProcessSduTransmitsMaximalSizedSdu) {

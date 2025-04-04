@@ -50,6 +50,8 @@ class CreditBasedFlowControlTxEngine final : public TxEngine {
   // Notify the engine that an SDU is ready for processing. See |TxEngine|.
   void NotifySduQueued() override;
 
+  bool IsQueueEmpty() override { return segments_.empty(); }
+
   // Attempt to add credits to the transmit engine. The engine will only
   // transmit pending PDUs if it has sufficient credits to do so. If there
   // are pending PDUs, this function may invoke |SendFrame|.

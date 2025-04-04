@@ -84,11 +84,14 @@ class Adapter {
   // Optionally, a FakeL2cap  may be passed for testing purposes as |l2cap|. If
   // nullptr is passed, then the Adapter will create and initialize its own
   // L2cap.
+  // |wake_lease_provider| will be used to acquire wake leases and must outlive
+  // the returned Adapter.
   static std::unique_ptr<Adapter> Create(
       pw::async::Dispatcher& pw_dispatcher,
       hci::Transport::WeakPtr hci,
       gatt::GATT::WeakPtr gatt,
       Config config,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
       std::unique_ptr<l2cap::ChannelManager> l2cap = nullptr);
   virtual ~Adapter() = default;
 

@@ -77,6 +77,9 @@ class TxEngine {
   // overflow, or not supported).
   virtual bool AddCredits(uint16_t credits) = 0;
 
+  // Returns true if there are no packets queued inside of the TxEngine.
+  virtual bool IsQueueEmpty() = 0;
+
  protected:
   ChannelId channel_id() const { return channel_id_; }
   uint16_t max_tx_sdu_size() const { return max_tx_sdu_size_; }

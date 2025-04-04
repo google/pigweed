@@ -17,6 +17,7 @@
 #include <memory>
 #include <optional>
 
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/channel.h"
@@ -79,7 +80,8 @@ class LogicalLinkTest : public TestingBase {
         transport()->command_channel(),
         random_channel_ids,
         *a2dp_offload_manager_,
-        dispatcher());
+        dispatcher(),
+        lease_provider_);
   }
   void ResetAndCreateNewLogicalLink(LinkType type = LinkType::kACL,
                                     bool random_channel_ids = true) {
@@ -92,6 +94,7 @@ class LogicalLinkTest : public TestingBase {
   void DeleteLink() { link_ = nullptr; }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<LogicalLink> link_;
   std::unique_ptr<A2dpOffloadManager> a2dp_offload_manager_;
 };

@@ -203,10 +203,12 @@ TEST_F(CreditBasedFlowControlTxEngineTest, NoSendWithoutCreditsSegmented) {
       'e', 's', 't', 'i', 'b', 'u', 'l', 'u', 'm', ' ', 's', 'e', 'd', ' ',
       't', 'o', 'r', 't', 'o', 'r', ' ', 'i', 'd', '.'};
 
+  EXPECT_TRUE(engine().IsQueueEmpty());
   ProcessSdu(std::make_unique<DynamicByteBuffer>(segmented));
   EXPECT_EQ(engine().credits(), 0);
   EXPECT_EQ(engine().segments_count(), 2u);
   EXPECT_EQ(channel().queue_size(), 0u);
+  EXPECT_FALSE(engine().IsQueueEmpty());
 
   ASSERT_EQ(sent_frames().size(), 1u);
   auto& sent_first = sent_frames()[0];
@@ -236,6 +238,7 @@ TEST_F(CreditBasedFlowControlTxEngineTest, NoSendWithoutCreditsSegmented) {
   EXPECT_EQ(sent_second->size(), kTestMps);
   EXPECT_EQ(engine().credits(), 0);
   EXPECT_EQ(engine().segments_count(), 1u);
+  EXPECT_FALSE(engine().IsQueueEmpty());
 
   // clang-format off: Formatter wants each value on a separate line.
   StaticByteBuffer<kTestMps> expected_second{
@@ -259,6 +262,7 @@ TEST_F(CreditBasedFlowControlTxEngineTest, NoSendWithoutCreditsSegmented) {
   EXPECT_EQ(sent_third->size(), 22u);
   EXPECT_EQ(engine().credits(), 9);
   EXPECT_EQ(engine().segments_count(), 0u);
+  EXPECT_TRUE(engine().IsQueueEmpty());
 
   // clang-format off: Formatter wants each value on a separate line.
   StaticByteBuffer<22> expected_third{

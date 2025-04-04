@@ -659,7 +659,7 @@ DynamicByteBuffer AclFlowControlCreditInd(
       0x00,
       0x05,
       0x00,
-      // LE credit based connection request, id 0x16, length 4
+      // L2CAP flow control credit ind, id 0x16, length 4
       l2cap::kLEFlowControlCredit,
       id,
       0x04,
@@ -771,6 +771,30 @@ DynamicByteBuffer AclKFrame(hci_spec::ConnectionHandle link_handle,
       // L2CAP SDU length
       LowerBits(sdu_size),
       UpperBits(sdu_size));
+
+  DynamicByteBuffer acl_packet(headers.size() + payload.size());
+  headers.Copy(&acl_packet);
+  auto payload_destination = acl_packet.mutable_view(headers.size());
+  payload.Copy(&payload_destination);
+  return acl_packet;
+}
+
+DynamicByteBuffer AclBFrame(hci_spec::ConnectionHandle link_handle,
+                            l2cap::ChannelId channel_id,
+                            const ByteBuffer& payload) {
+  const uint16_t pdu_size = payload.size();
+  const uint16_t acl_size = pdu_size + sizeof(BasicHeader);
+  StaticByteBuffer headers(
+      // ACL data header: link handle, length
+      LowerBits(link_handle),
+      UpperBits(link_handle),
+      LowerBits(acl_size),
+      UpperBits(acl_size),
+      // L2CAP B-frame header: pdu length, channel-id
+      LowerBits(pdu_size),
+      UpperBits(pdu_size),
+      LowerBits(channel_id),
+      UpperBits(channel_id));
 
   DynamicByteBuffer acl_packet(headers.size() + payload.size());
   headers.Copy(&acl_packet);

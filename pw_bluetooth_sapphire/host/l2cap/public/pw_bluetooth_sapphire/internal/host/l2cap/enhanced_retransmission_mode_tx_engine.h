@@ -58,6 +58,8 @@ class EnhancedRetransmissionModeTxEngine final : public TxEngine {
 
   bool AddCredits(uint16_t credits) override;
 
+  bool IsQueueEmpty() override { return pending_pdus_.empty(); }
+
   // Updates the Engine's knowledge of the last frame acknowledged by our peer.
   // The value of |is_poll_response| should reflect the 'F' bit in header of the
   // frame which led to this call.

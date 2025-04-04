@@ -36,6 +36,11 @@ class BasicModeTxEngine final : public TxEngine {
 
   bool AddCredits(uint16_t credits) override;
 
+  bool IsQueueEmpty() override {
+    // This class has no internal queue.
+    return true;
+  }
+
  private:
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeTxEngine);
 };

@@ -22,9 +22,11 @@ namespace bt::l2cap::internal {
 class BasicModeRxEngine final : public RxEngine {
  public:
   BasicModeRxEngine() = default;
-  virtual ~BasicModeRxEngine() = default;
+  ~BasicModeRxEngine() override = default;
 
   ByteBufferPtr ProcessPdu(PDU) override;
+
+  bool IsQueueEmpty() override { return true; }
 
  private:
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BasicModeRxEngine);

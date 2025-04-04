@@ -16,6 +16,7 @@
 
 #include <pw_async_fuchsia/dispatcher.h>
 
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/fake_layer.h"
@@ -57,6 +58,7 @@ class AdapterTestFixture
   bt::l2cap::testing::FakeL2cap* l2cap() const { return l2cap_; }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   pw::async_fuchsia::FuchsiaDispatcher pw_dispatcher_;
   std::unique_ptr<bt::gap::Adapter> adapter_;
   bt::l2cap::testing::FakeL2cap* l2cap_;

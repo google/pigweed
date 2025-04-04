@@ -127,8 +127,12 @@ void CreditBasedFlowControlTxEngine::SegmentSdu(ByteBufferPtr sdu) {
 
 void CreditBasedFlowControlTxEngine::TrySendSegments() {
   while (credits_ > 0 && !segments_.empty()) {
-    channel().SendFrame(std::move(segments_.front()));
+    ByteBufferPtr segment = std::move(segments_.front());
+    // Ordering is important here. We must remove the segment from the queue
+    // before notifying the channel so the channel can check whether the segment
+    // queue is empty now.
     segments_.pop_front();
+    channel().SendFrame(std::move(segment));
     --credits_;
   }
 }

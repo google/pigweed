@@ -37,6 +37,8 @@ class EnhancedRetransmissionModeRxEngine final : public RxEngine {
 
   ByteBufferPtr ProcessPdu(PDU) override;
 
+  bool IsQueueEmpty() override { return true; }
+
   // Set a callback to be invoked when any frame is received that indicates the
   // peer's acknowledgment for the sequence of packets that it received from the
   // local host. The values are not checked against the local sender's TxWindow.

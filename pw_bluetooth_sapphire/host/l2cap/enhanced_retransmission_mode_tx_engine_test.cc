@@ -1578,12 +1578,15 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
                      channel(),
                      NoOpFailureCallback,
                      dispatcher());
+  EXPECT_TRUE(tx_engine.IsQueueEmpty());
 
   // Send out two frames.
   QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   QueueSdu(tx_engine, std::make_unique<DynamicByteBuffer>(kDefaultPayload));
   RunUntilIdle();
   ASSERT_EQ(2u, pdu_seq_numbers.size());
+  EXPECT_EQ((std::vector{uint8_t{0}, uint8_t{1}}), pdu_seq_numbers);
+  EXPECT_FALSE(tx_engine.IsQueueEmpty());
   pdu_seq_numbers.clear();
 
   // Indicate the remote is busy, and queue a third frame.
@@ -1600,6 +1603,11 @@ TEST_F(EnhancedRetransmissionModeTxEngineTest,
   tx_engine.UpdateAckSeq(1, /*is_poll_response=*/true);
   RunUntilIdle();
   EXPECT_EQ((std::vector{uint8_t{1}, uint8_t{2}}), pdu_seq_numbers);
+  EXPECT_FALSE(tx_engine.IsQueueEmpty());
+
+  tx_engine.UpdateAckSeq(3, /*is_poll_response=*/false);
+  RunUntilIdle();
+  EXPECT_TRUE(tx_engine.IsQueueEmpty());
 }
 
 TEST_F(EnhancedRetransmissionModeTxEngineTest,

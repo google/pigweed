@@ -37,10 +37,12 @@ class ChannelManagerImpl final : public ChannelManager {
  public:
   using LinkErrorCallback = fit::closure;
 
-  ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,
-                     hci::CommandChannel* cmd_channel,
-                     bool random_channel_ids,
-                     pw::async::Dispatcher& dispatcher);
+  ChannelManagerImpl(
+      hci::AclDataChannel* acl_data_channel,
+      hci::CommandChannel* cmd_channel,
+      bool random_channel_ids,
+      pw::async::Dispatcher& dispatcher,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
   ~ChannelManagerImpl() override;
 
   void AddACLConnection(
@@ -112,6 +114,8 @@ class ChannelManagerImpl final : public ChannelManager {
   std::optional<ServiceInfo> QueryService(hci_spec::ConnectionHandle handle,
                                           Psm psm);
 
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
+
   pw::async::Dispatcher& pw_dispatcher_;
 
   // Maximum sizes for data packet payloads from host to controller.
@@ -157,11 +161,14 @@ class ChannelManagerImpl final : public ChannelManager {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManagerImpl);
 };
 
-ChannelManagerImpl::ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,
-                                       hci::CommandChannel* cmd_channel,
-                                       bool random_channel_ids,
-                                       pw::async::Dispatcher& dispatcher)
-    : pw_dispatcher_(dispatcher),
+ChannelManagerImpl::ChannelManagerImpl(
+    hci::AclDataChannel* acl_data_channel,
+    hci::CommandChannel* cmd_channel,
+    bool random_channel_ids,
+    pw::async::Dispatcher& dispatcher,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
+    : wake_lease_provider_(wake_lease_provider),
+      pw_dispatcher_(dispatcher),
       acl_data_channel_(acl_data_channel),
       cmd_channel_(cmd_channel),
       a2dp_offload_manager_(
@@ -430,7 +437,8 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(
       cmd_channel_,
       random_channel_ids_,
       *a2dp_offload_manager_,
-      pw_dispatcher_);
+      pw_dispatcher_,
+      wake_lease_provider_);
 
   if (ll_node_) {
     ll->AttachInspect(ll_node_,
@@ -484,9 +492,13 @@ std::unique_ptr<ChannelManager> ChannelManager::Create(
     hci::AclDataChannel* acl_data_channel,
     hci::CommandChannel* cmd_channel,
     bool random_channel_ids,
-    pw::async::Dispatcher& dispatcher) {
-  return std::make_unique<ChannelManagerImpl>(
-      acl_data_channel, cmd_channel, random_channel_ids, dispatcher);
+    pw::async::Dispatcher& dispatcher,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider) {
+  return std::make_unique<ChannelManagerImpl>(acl_data_channel,
+                                              cmd_channel,
+                                              random_channel_ids,
+                                              dispatcher,
+                                              wake_lease_provider);
 }
 
 }  // namespace bt::l2cap

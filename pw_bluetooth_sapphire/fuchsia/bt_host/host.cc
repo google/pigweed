@@ -82,8 +82,11 @@ bool BtHostComponent::Initialize(
   gap::Adapter::Config config = {
       .legacy_pairing_enabled = legacy_pairing_enabled,
   };
-  gap_ = gap::Adapter::Create(
-      pw_dispatcher_, hci_->GetWeakPtr(), gatt_->GetWeakPtr(), config);
+  gap_ = gap::Adapter::Create(pw_dispatcher_,
+                              hci_->GetWeakPtr(),
+                              gatt_->GetWeakPtr(),
+                              config,
+                              lease_provider_);
   if (!gap_) {
     bt_log(WARN, "bt-host", "GAP could not be created");
     return false;

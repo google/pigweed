@@ -15,6 +15,7 @@
 #include "pw_bloat/bloat_this_binary.h"
 #include "pw_bluetooth_sapphire/internal/host/common/random.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
+#include "pw_bluetooth_sapphire/null_lease_provider.h"
 #include "pw_random/random.h"
 
 namespace {
@@ -45,10 +46,15 @@ int main() {
   bt::set_random_generator(&random_generator);
   std::unique_ptr<bt::hci::Transport> transport;
   std::unique_ptr<bt::gatt::GATT> gatt;
+  pw::bluetooth_sapphire::NullLeaseProvider lease_provider;
 
   bt::gap::Adapter::Config config{};
-  std::unique_ptr<bt::gap::Adapter> adapter = bt::gap::Adapter::Create(
-      dispatcher, transport->GetWeakPtr(), gatt->GetWeakPtr(), config);
+  std::unique_ptr<bt::gap::Adapter> adapter =
+      bt::gap::Adapter::Create(dispatcher,
+                               transport->GetWeakPtr(),
+                               gatt->GetWeakPtr(),
+                               config,
+                               lease_provider);
   auto gap_init_cb = []([[maybe_unused]] bool success) {};
   auto transport_closed_cb = []() {};
   adapter->Initialize(std::move(gap_init_cb), std::move(transport_closed_cb));

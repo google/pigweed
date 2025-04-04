@@ -19,6 +19,7 @@
 #include <memory>
 #include <type_traits>
 
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/vendor_protocol.h"
@@ -496,7 +497,8 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
     chanmgr_ = ChannelManager::Create(&acl_data_channel_,
                                       transport()->command_channel(),
                                       /*random_channel_ids=*/false,
-                                      dispatcher());
+                                      dispatcher(),
+                                      lease_provider());
 
     packet_rx_handler_ = [this](std::unique_ptr<hci::ACLDataPacket> packet) {
       acl_data_channel_.ReceivePacket(std::move(packet));
@@ -692,12 +694,10 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
         {file_name, line_number, DynamicByteBuffer(data), ll_type, priority});
   }
 
-  void ActivateOutboundErtmChannel(
-      ChannelCallback activated_cb,
+  void OpenOutboundErtmChannel(
+      ChannelCallback open_cb,
       hci_spec::ConnectionHandle conn_handle = kTestHandle1,
-      uint8_t max_outbound_transmit = 3,
-      Channel::ClosedCallback closed_cb = DoNothing,
-      Channel::RxCallback rx_cb = NopRxCallback) {
+      uint8_t max_outbound_transmit = 3) {
     l2cap::ChannelParameters chan_params;
     auto config_mode =
         l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
@@ -718,17 +718,69 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
                                                          max_outbound_transmit),
                            kHighPriority);
 
-    ActivateOutboundChannel(kTestPsm,
-                            chan_params,
-                            std::move(activated_cb),
-                            conn_handle,
-                            std::move(closed_cb),
-                            std::move(rx_cb));
+    chanmgr()->OpenL2capChannel(
+        conn_handle, kTestPsm, chan_params, std::move(open_cb));
 
     ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
     ReceiveAclDataPacket(InboundConfigurationRequest(
         kPeerConfigRequestId, kInboundMtu, config_mode, max_outbound_transmit));
     ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
+  }
+
+  void ActivateOutboundErtmChannel(
+      ChannelCallback activated_cb,
+      Channel::ClosedCallback closed_cb = DoNothing,
+      Channel::RxCallback rx_cb = NopRxCallback) {
+    OpenOutboundErtmChannel(
+        [activated_cb = std::move(activated_cb),
+         rx_cb = std::move(rx_cb),
+         closed_cb = std::move(closed_cb)](auto chan) mutable {
+          if (!chan.is_alive() ||
+              !chan->Activate(std::move(rx_cb), std::move(closed_cb))) {
+            activated_cb(Channel::WeakPtr());
+          } else {
+            activated_cb(std::move(chan));
+          }
+        });
+  }
+
+  void OpenInboundErtmChannel(ChannelCallback channel_cb) {
+    CommandId kPeerConnReqId = 3;
+
+    l2cap::ChannelParameters chan_params;
+    auto config_mode =
+        l2cap::RetransmissionAndFlowControlMode::kEnhancedRetransmission;
+    chan_params.mode = config_mode;
+    chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
+
+    const auto cmd_ids = QueueRegisterACL(
+        kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+    ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(
+        cmd_ids.extended_features_id,
+        kTestHandle1,
+        kExtendedFeaturesBitEnhancedRetransmission));
+    EXPECT_TRUE(chanmgr()->RegisterService(
+        kTestPsm, chan_params, std::move(channel_cb)));
+
+    const auto config_req_id = NextCommandId();
+    EXPECT_ACL_PACKET_OUT_(OutboundConnectionResponse(kPeerConnReqId),
+                           kHighPriority);
+    EXPECT_ACL_PACKET_OUT_(
+        OutboundConfigurationRequest(
+            config_req_id, *chan_params.max_rx_sdu_size, config_mode),
+        kHighPriority);
+    const auto kInboundMtu = kDefaultMTU;
+    EXPECT_ACL_PACKET_OUT_(OutboundConfigurationResponse(
+                               kPeerConfigRequestId, kInboundMtu, config_mode),
+                           kHighPriority);
+
+    ReceiveAclDataPacket(InboundConnectionRequest(kPeerConnReqId));
+    ReceiveAclDataPacket(InboundConfigurationRequest(
+        kPeerConfigRequestId, kInboundMtu, config_mode));
+    ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
+
+    RunUntilIdle();
+    EXPECT_TRUE(AllExpectedPacketsSent());
   }
 
   // Returns true if all expected outbound packets up to this call have been
@@ -4739,6 +4791,160 @@ TEST_F(ChannelManagerRealAclChannelTest, InspectHierarchy) {
               AllOf(ChildrenMatch(UnorderedElementsAre(l2cap_matcher))));
 }
 #endif  // NINSPECT
+
+TEST_F(ChannelManagerMockAclChannelTest, LeaseAcquisitionAndRelease) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr opened_chan) {
+    channel = std::move(opened_chan);
+  };
+
+  OpenInboundErtmChannel(std::move(channel_cb));
+  ASSERT_TRUE(channel.is_alive());
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+
+  StaticByteBuffer payload(0x03);
+  ReceiveAclDataPacket(testing::AclIFrame(kTestHandle1,
+                                          channel->id(),
+                                          /*receive_seq_num=*/0,
+                                          /*tx_seq=*/0,
+                                          /*is_poll_response=*/false,
+                                          payload));
+
+  RunUntilIdle();
+  // Lease should be queued while RX packet queued.
+  EXPECT_GE(lease_provider().lease_count(), 1u);
+
+  // Activating should clear the rx packet queue, releasing lease.
+  channel->Activate(NopRxCallback, DoNothing);
+  EXPECT_TRUE(AllExpectedPacketsSent());
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+
+  // ERTM mode TX engine should queue the SDU until it is acknowledged,
+  // resulting in lease acquisition.
+  auto sdu = std::make_unique<StaticByteBuffer<1>>(0x01);
+  EXPECT_ACL_PACKET_OUT_(testing::AclIFrame(kTestHandle1,
+                                            channel->remote_id(),
+                                            /*receive_seq_num=*/1,
+                                            /*tx_seq=*/0,
+                                            /*is_poll_response=*/false,
+                                            StaticByteBuffer(0x01)),
+                         kHighPriority);
+
+  channel->Send(std::move(sdu));
+  EXPECT_TRUE(AllExpectedPacketsSent());
+  EXPECT_GE(lease_provider().lease_count(), 1u);
+
+  // Acknowledging I-Frame should release lease.
+  ReceiveAclDataPacket(testing::AclSFrameReceiverReady(kTestHandle1,
+                                                       channel->id(),
+                                                       /*receive_seq_num=*/1));
+  RunUntilIdle();
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+
+  // Paused sending so the next PDU is queued.
+  acl_data_channel()->set_sending_paused(true);
+
+  // Poll request should trigger poll response PDU, which will be queued.
+  ReceiveAclDataPacket(
+      testing::AclSFrameReceiverReady(kTestHandle1,
+                                      channel->id(),
+                                      /*receive_seq_num=*/1,
+                                      /*is_poll_request=*/true));
+  EXPECT_GE(lease_provider().lease_count(), 1u);
+
+  EXPECT_ACL_PACKET_OUT_(
+      testing::AclSFrameReceiverReady(kTestHandle1,
+                                      channel->remote_id(),
+                                      /*receive_seq_num=*/1,
+                                      /*is_poll_request=*/false,
+                                      /*is_poll_response=*/true),
+      kHighPriority);
+  acl_data_channel()->set_sending_paused(false);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+}
+
+TEST_F(ChannelManagerMockAclChannelTest,
+       CreditBasedConnectionQueuedSduLeaseAcquisitionAndRelease) {
+  auto channels = chanmgr()->AddLEConnection(
+      kTestHandle1,
+      pw::bluetooth::emboss::ConnectionRole::CENTRAL,
+      /*link_error_callback=*/[] {},
+      /*conn_param_callback=*/[](auto&) {},
+      /*security_callback=*/[](auto, auto, auto) {});
+
+  static constexpr uint16_t kPsm = 0x015;
+  static constexpr ChannelParameters kParams{
+      .mode = CreditBasedFlowControlMode::kLeCreditBasedFlowControl,
+      .max_rx_sdu_size = std::nullopt,
+      .flush_timeout = std::nullopt,
+  };
+
+  const auto req =
+      l2cap::testing::AclLeCreditBasedConnectionReq(1,
+                                                    kTestHandle1,
+                                                    kPsm,
+                                                    kFirstDynamicChannelId,
+                                                    kDefaultMTU,
+                                                    kMaxInboundPduPayloadSize,
+                                                    /*credits=*/0);
+  EXPECT_ACL_PACKET_OUT_(req, kHighPriority);
+
+  WeakPtr<Channel> channel;
+  chanmgr()->OpenL2capChannel(
+      kTestHandle1, kPsm, kParams, [&channel](auto result) {
+        channel = std::move(result);
+      });
+  RunUntilIdle();
+
+  ReceiveAclDataPacket(l2cap::testing::AclLeCreditBasedConnectionRsp(
+      /*id=*/1,
+      /*link_handle=*/kTestHandle1,
+      /*cid=*/kFirstDynamicChannelId,
+      /*mtu=*/64,
+      /*mps=*/32,
+      /*credits=*/0,
+      /*result=*/LECreditBasedConnectionResult::kSuccess));
+  ASSERT_TRUE(channel.is_alive());
+  EXPECT_TRUE(AllExpectedPacketsSent());
+
+  channel->Activate(NopRxCallback, DoNothing);
+
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+  auto sdu = std::make_unique<StaticByteBuffer<1>>(0x01);
+  channel->Send(std::move(sdu));
+  RunUntilIdle();
+  EXPECT_GE(lease_provider().lease_count(), 1u);
+
+  EXPECT_ACL_PACKET_OUT_(
+      l2cap::testing::AclKFrame(
+          kTestHandle1, channel->remote_id(), StaticByteBuffer(0x01)),
+      kHighPriority);
+  ReceiveAclDataPacket(l2cap::testing::AclFlowControlCreditInd(
+      1, kTestHandle1, channel->remote_id(), /*credits=*/20));
+
+  RunUntilIdle();
+  EXPECT_TRUE(AllExpectedPacketsSent());
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+
+  StaticByteBuffer segment_0(
+      // SDU Length
+      2,
+      0x00,
+      // Payload
+      0x01);
+  StaticByteBuffer segment_1(
+      // Payload
+      0x02);
+
+  ReceiveAclDataPacket(
+      testing::AclBFrame(kTestHandle1, channel->id(), segment_0));
+  // First segment should be queued.
+  EXPECT_GE(lease_provider().lease_count(), 1u);
+
+  ReceiveAclDataPacket(
+      testing::AclBFrame(kTestHandle1, channel->id(), segment_1));
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+}
 
 }  // namespace
 }  // namespace bt::l2cap

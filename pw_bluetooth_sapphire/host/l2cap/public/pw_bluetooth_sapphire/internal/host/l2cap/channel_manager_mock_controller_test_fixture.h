@@ -58,7 +58,8 @@ class ChannelManagerMockControllerTest : public TestingBase {
     channel_manager_ = ChannelManager::Create(transport()->acl_data_channel(),
                                               transport()->command_channel(),
                                               /*random_channel_ids=*/false,
-                                              dispatcher_);
+                                              dispatcher_,
+                                              lease_provider_);
 
     next_command_id_ = 1;
   }
@@ -76,7 +77,8 @@ class ChannelManagerMockControllerTest : public TestingBase {
     channel_manager_ = ChannelManager::Create(transport()->acl_data_channel(),
                                               transport()->command_channel(),
                                               /*random_channel_ids=*/false,
-                                              dispatcher_);
+                                              dispatcher_,
+                                              lease_provider_);
 
     next_command_id_ = 1;
   }
@@ -232,6 +234,7 @@ class ChannelManagerMockControllerTest : public TestingBase {
   ChannelManager* chanmgr() const { return channel_manager_.get(); }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<ChannelManager> channel_manager_;
   l2cap::CommandId next_command_id_;
   pw::async::Dispatcher& dispatcher_;

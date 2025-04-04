@@ -73,6 +73,7 @@ class AdapterTest : public TestingBase {
                                transport()->GetWeakPtr(),
                                gatt_->GetWeakPtr(),
                                config,
+                               lease_provider_,
                                std::move(l2cap));
   }
 
@@ -111,6 +112,7 @@ class AdapterTest : public TestingBase {
 
  private:
   bool transport_closed_called_;
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<gatt::testing::FakeLayer> gatt_;
   std::unique_ptr<Adapter> adapter_;
 
@@ -1332,7 +1334,12 @@ class AdapterConstructorTest : public TestingBase {
     TestingBase::TearDown();
   }
 
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider& lease_provider() {
+    return lease_provider_;
+  }
+
  protected:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
   std::unique_ptr<gatt::testing::FakeLayer> gatt_;
 };
@@ -1368,6 +1375,7 @@ TEST_F(AdapterConstructorTest, GattCallbacks) {
                                  transport()->GetWeakPtr(),
                                  gatt_->GetWeakPtr(),
                                  config,
+                                 lease_provider(),
                                  std::move(l2cap_));
 
   EXPECT_EQ(set_persist_cb_count, 1);

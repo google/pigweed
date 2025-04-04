@@ -57,11 +57,14 @@ class ChannelManager {
   };
 
   // Create a ChannelManager. FakeL2cap can be used instead in tests.
+  // |wake_lease_provider| will be used to acquire wake leases, and must outlive
+  // the returned ChannelManager.
   static std::unique_ptr<ChannelManager> Create(
       hci::AclDataChannel* acl_data_channel,
       hci::CommandChannel* cmd_channel,
       bool random_channel_ids,
-      pw::async::Dispatcher& dispatcher);
+      pw::async::Dispatcher& dispatcher,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
 
   virtual ~ChannelManager() = default;
 
