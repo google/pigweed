@@ -97,7 +97,12 @@ impl super::super::ThreadState for ArchThreadState {
     }
 
     #[inline(never)]
-    fn initialize_frame(&mut self, stack: Stack, initial_function: fn(usize), arg0: usize) {
+    fn initialize_frame(
+        &mut self,
+        stack: Stack,
+        initial_function: extern "C" fn(usize),
+        arg0: usize,
+    ) {
         // Calculate the first 8 byte aligned full exception frame from the top
         // of the thread's stack.
         let mut frame = stack.end().wrapping_sub(size_of::<FullExceptionFrame>());
@@ -122,7 +127,7 @@ impl super::super::ThreadState for ArchThreadState {
     }
 }
 
-fn trampoline(initial_function: fn(usize), arg0: usize) {
+extern "C" fn trampoline(initial_function: extern "C" fn(usize), arg0: usize) {
     // info!(
     //     "cortex-m trampoline: initial function {:#x} arg {:#x}",
     //     initial_function as usize, arg0

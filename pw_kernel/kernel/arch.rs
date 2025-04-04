@@ -51,7 +51,12 @@ pub trait ThreadState {
     // Initialize the default frame of the thread which arranges for it to start at the initial_function
     // with one argument passed in the first argument slot.
     #[allow(dead_code)]
-    fn initialize_frame(&mut self, stack: Stack, initial_function: fn(usize), arg0: usize);
+    fn initialize_frame(
+        &mut self,
+        stack: Stack,
+        initial_function: extern "C" fn(usize),
+        arg0: usize,
+    );
 }
 
 pub trait BareSpinLock {

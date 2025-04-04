@@ -69,7 +69,12 @@ impl super::super::ThreadState for ArchThreadState {
     }
 
     #[inline(never)]
-    fn initialize_frame(&mut self, stack: Stack, initial_function: fn(usize), arg0: usize) {
+    fn initialize_frame(
+        &mut self,
+        stack: Stack,
+        initial_function: extern "C" fn(usize),
+        arg0: usize,
+    ) {
         // Calculate the first 8 byte aligned full exception frame from the top
         // of the thread's stack.
         let mut frame = stack.end().wrapping_sub(size_of::<ContextSwitchFrame>());
@@ -159,7 +164,7 @@ extern "C" fn asm_trampoline() {
 
 #[allow(unused)]
 #[no_mangle]
-fn trampoline(initial_function: fn(usize), arg0: usize) {
+extern "C" fn trampoline(initial_function: extern "C" fn(usize), arg0: usize) {
     debug_if!(
         LOG_THREAD_CREATE,
         "riscv trampoline: initial function {:#x} arg {:#x}",

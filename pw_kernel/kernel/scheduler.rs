@@ -126,7 +126,12 @@ impl Thread {
     // Initialize the mutable parts of the thread, must be called once per
     // thread prior to starting it
     #[allow(dead_code)]
-    pub fn initialize(&mut self, stack: Stack, entry_point: fn(usize), arg: usize) -> &mut Thread {
+    pub fn initialize(
+        &mut self,
+        stack: Stack,
+        entry_point: extern "C" fn(usize),
+        arg: usize,
+    ) -> &mut Thread {
         pw_assert::assert!(self.state == State::New);
         self.stack = stack;
 
