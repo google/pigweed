@@ -24,6 +24,13 @@ use crate::{
     timer::Instant,
 };
 
+const MUTEX_DEBUG: bool = false;
+macro_rules! mutex_debug {
+  ($($args:expr),*) => {{
+    log_if::debug_if!(MUTEX_DEBUG, $($args),*)
+  }}
+}
+
 struct MutexState {
     count: u32,
     holder_thread_id: usize,
@@ -82,8 +89,10 @@ impl<T> Mutex<T> {
         // TODO - konkers: investigate using core::intrinsics::unlikely() or
         //                 core::hint::unlikely()
         if state.count > 1 {
+            mutex_debug!("mutex {:08x} lock wait", &raw const *self as usize);
             state = state.wait();
         }
+        mutex_debug!("mutex {:08x} lock acquired", &raw const *self as usize);
 
         state.holder_thread_id = state.sched().current_thread_id();
 
@@ -101,13 +110,24 @@ impl<T> Mutex<T> {
         //                 core::hint::unlikely()
         if state.count > 1 {
             let result;
+            mutex_debug!(
+                "mutex {:08x} lock_util({}) wait",
+                &raw const *self as usize,
+                deadline.ticks() as u64
+            );
             (state, result) = state.wait_until(deadline);
 
             if let Err(e) = result {
+                mutex_debug!(
+                    "mutex {:08x} lock_until error: {}",
+                    &raw const *self as usize,
+                    e as u32
+                );
                 state.count -= 1;
                 return Err(e);
             }
         }
+        mutex_debug!("mutex {:08x} lock_until", &raw const *self as usize);
 
         state.holder_thread_id = state.sched().current_thread_id();
 
