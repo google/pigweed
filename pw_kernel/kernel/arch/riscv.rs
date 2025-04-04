@@ -16,6 +16,7 @@ use super::ArchInterface;
 use riscv;
 
 mod exceptions;
+mod regs;
 mod spinlock;
 mod threads;
 mod timer;

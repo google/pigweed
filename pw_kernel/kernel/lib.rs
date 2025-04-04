@@ -18,12 +18,15 @@
 use foreign_box::ForeignBox;
 use pw_log::info;
 use time::Clock as _;
+// TODO - konkers: move into "real" user space
+use syscall_user::*;
 
 mod arch;
 #[cfg(not(feature = "std_panic_handler"))]
 mod panic;
 mod scheduler;
 pub mod sync;
+mod syscall;
 mod target;
 mod timer;
 
@@ -187,6 +190,13 @@ fn thread_b() {
             continue;
         };
         info!("Thread B: counter value {}", *counter as u64);
+
+        let val = SysCall::debug_add(0xdecaf000, 0xbad);
+        match val {
+            Ok(val) => info!("retval: {:08x}", val as u32),
+            Err(e) => info!("error: {}", e as u32),
+        }
+
         pw_assert::ne!(*counter as usize, 4 as usize);
         drop(counter);
         // Give Thread A a chance to acquire the mutex.

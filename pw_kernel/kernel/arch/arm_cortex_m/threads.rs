@@ -11,7 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#![allow(non_snake_case)]
 
 use core::arch::{asm, naked_asm};
 use core::mem;
@@ -149,7 +148,7 @@ extern "C" fn trampoline(initial_function: extern "C" fn(usize), arg0: usize) {
 // Called by the pendsv handler, returns the new stack to switch to after
 // performing some housekeeping.
 #[no_mangle]
-unsafe fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut FullExceptionFrame {
+unsafe extern "C" fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut FullExceptionFrame {
     // TODO:
     // save incoming frame to active_thread.archstate
     // clear active_thread
@@ -165,13 +164,14 @@ unsafe fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut FullExceptionFr
     // Save the incoming frame to the current active thread's arch state, that will function
     // as the context switch frame for when it is returned to later. Clear active thread
     // afterwards.
-    let at = get_active_thread();
+    let active_thread = get_active_thread();
     // info!("inside pendsv: currently active thread {:08x}", at as usize);
     // info!("old frame {:08x}: pc {:08x}", frame as usize, (*frame).pc);
 
-    pw_assert::assert!(at != core::ptr::null_mut());
+    pw_assert::assert!(active_thread != core::ptr::null_mut());
 
-    (*at).frame = frame;
+    (*active_thread).frame = frame;
+
     set_active_thread(core::ptr::null_mut());
 
     // Return the arch frame for the current thread

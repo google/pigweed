@@ -45,11 +45,12 @@
 /// Status code for no error.
 pub const OK: u32 = 0;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 /// Error type compatible with Pigweed's [pw_status](https://pigweed.dev/pw_status).
 ///
 /// For an in depth explanation of the values of the `Error` enum, see
 /// the [Pigweed status codes documentation](https://pigweed.dev/pw_status/#status-codes).
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(u32)]
 pub enum Error {
     Cancelled = 1,
     Unknown = 2,

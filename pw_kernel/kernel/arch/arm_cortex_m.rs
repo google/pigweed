@@ -20,6 +20,7 @@ use super::ArchInterface;
 mod exceptions;
 mod regs;
 mod spinlock;
+mod syscall;
 mod threads;
 mod timer;
 

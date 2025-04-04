@@ -17,6 +17,7 @@
 use core::arch::naked_asm;
 use pw_log::info;
 
+/// Exception frame with all registers
 #[repr(C)]
 pub struct FullExceptionFrame {
     // Extra state pushed by the first level assembly handler
@@ -31,6 +32,19 @@ pub struct FullExceptionFrame {
     pub return_address: u32,
 
     // State that hardware pushes automatically
+    pub r0: u32,
+    pub r1: u32,
+    pub r2: u32,
+    pub r3: u32,
+    pub r12: u32,
+    pub lr: u32,
+    pub pc: u32,
+    pub psr: u32,
+}
+
+/// Exception frame with only the registers pushed by the core.
+#[repr(C)]
+pub struct ExceptionFrame {
     pub r0: u32,
     pub r1: u32,
     pub r2: u32,
@@ -160,14 +174,8 @@ pub unsafe extern "C" fn pw_kernel_usage_fault(frame: *mut FullExceptionFrame) -
 }
 exception_trampoline!(UsageFault, pw_kernel_usage_fault);
 
-#[no_mangle]
-pub unsafe extern "C" fn pw_kernel_sv_call(frame: *mut FullExceptionFrame) -> ! {
-    info!("SVCall");
-    dump_exception_frame(frame);
-    #[allow(clippy::empty_loop)]
-    loop {}
-}
-exception_trampoline!(SVCall, pw_kernel_sv_call);
+// PendSV is defined in thread.rs
+// SVCall is defined in syscall.rs
 
 #[no_mangle]
 pub unsafe extern "C" fn pw_kernel_debug_monitor(frame: *mut FullExceptionFrame) -> ! {

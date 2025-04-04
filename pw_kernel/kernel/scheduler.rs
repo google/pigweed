@@ -389,7 +389,6 @@ fn reschedule(
 ) -> SpinLockGuard<SchedulerState> {
     // Caller to reschedule is responsible for removing current thread and
     // put it in the correct run/wait queue.
-
     pw_assert::assert!(sched_state.current_thread.is_none());
 
     // info!("reschedule");
