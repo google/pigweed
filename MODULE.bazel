@@ -253,6 +253,13 @@ crate.from_cargo(
     name = "crates_std",
     cargo_lockfile = "//third_party/crates_io/crates_std:Cargo.lock",
     manifests = ["//third_party/crates_io/crates_std:Cargo.toml"],
+    supported_platform_triples = [
+        # Host platforms
+        "aarch64-unknown-linux-gnu",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin",
+    ],
 )
 use_repo(crate, "crates_std")
 
