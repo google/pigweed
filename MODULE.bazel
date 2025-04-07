@@ -25,11 +25,11 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "boringssl", version = "0.20240913.0")
 bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
 bazel_dep(name = "gazelle", version = "0.40.0", repo_name = "bazel_gazelle")
-bazel_dep(name = "googletest", version = "1.15.0", repo_name = "com_google_googletest")
+bazel_dep(name = "googletest", version = "1.16.0", repo_name = "com_google_googletest")
 bazel_dep(name = "nanopb", version = "0.4.9.1")
 bazel_dep(name = "pico-sdk", version = "2.1.1")
 bazel_dep(name = "picotool", version = "2.1.1")
-bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "platforms", version = "0.0.11")
 
 # LINT.IfChange(protobuf)
 bazel_dep(name = "protobuf", version = "28.2", repo_name = "com_google_protobuf")
@@ -37,7 +37,7 @@ bazel_dep(name = "protobuf", version = "28.2", repo_name = "com_google_protobuf"
 
 # A transitive dependency requires this.
 bazel_dep(name = "re2", version = "2024-07-02.bcr.1")
-bazel_dep(name = "rules_android", version = "0.1.1")
+bazel_dep(name = "rules_android", version = "0.6.0")
 bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "rules_fuzzing", version = "0.5.2")
 bazel_dep(name = "rules_go", version = "0.52.0", repo_name = "io_bazel_rules_go")
@@ -67,24 +67,6 @@ archive_override(
     module_name = "hedron_compile_commands",
     strip_prefix = "bazel-compile-commands-extractor-163521345aa6366fd1ed801b989b668b5c806f69",
     urls = ["https://github.com/chadnorvell/bazel-compile-commands-extractor/archive/163521345aa6366fd1ed801b989b668b5c806f69.tar.gz"],
-)
-
-# TODO: https://pwbug.dev/372510795 - A `bazel_dep` on this version propagates
-# to downstream projects, which causes breakages since downstream is still
-# pre-Bazel 8.0.0. When all downstream projects are flipped to Bazel 8.0.0,
-# remove this and update the rules_android bazel_dep requirement.
-single_version_override(
-    module_name = "rules_android",
-    version = "0.6.0",
-)
-
-# TODO: https://pwbug.dev/354268150 - Switch back to a release once this commit
-# makes it into one. Downstream projects generally don't need this commit, it's
-# only required for interop with the Fuchsia SDK.
-git_override(
-    module_name = "googletest",
-    commit = "e54519b09463cec3aea77a1739e02c97ca766da5",
-    remote = "https://pigweed.googlesource.com/third_party/github/google/googletest.git",
 )
 
 single_version_override(
