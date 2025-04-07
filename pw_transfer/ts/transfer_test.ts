@@ -212,7 +212,7 @@ describe('Transfer client', () => {
     expect(data).toEqual(textEncoder.encode('0123456789abcdef'));
     expect(sentChunks).toHaveLength(3);
     expect(sentChunks[1].getType()).toEqual(Chunk.Type.PARAMETERS_CONTINUE);
-    expect(sentChunks[1].getOffset()).toEqual(8);
+    expect(Number(sentChunks[1].getOffset())).toEqual(8);
     expect(sentChunks[sentChunks.length - 1].hasStatus()).toBe(true);
     expect(sentChunks[sentChunks.length - 1].getStatus()).toEqual(Status.OK);
   });
