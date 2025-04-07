@@ -33,7 +33,9 @@ class Rp2040Initiator final : public Initiator {
   };
 
   Rp2040Initiator(const Config& config, i2c_inst_t* instance)
-      : config_(config), instance_(instance) {}
+      : Initiator(Initiator::Feature::kStandard),
+        config_(config),
+        instance_(instance) {}
 
   // Should be called before attempting any transfers.
   void Enable() PW_LOCKS_EXCLUDED(mutex_);
