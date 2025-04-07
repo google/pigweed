@@ -98,6 +98,13 @@ expressions matching individual files, rather than directories. For example,
 provide ``"the_path/.*"`` to exclude all files in all directories under
 ``the_path``.
 
+.. admonition:: Note
+
+   These regex patterns are applied to the relative path in your source tree.
+   This means ``foo/bar.txt`` will match only a single file at exactly
+   ``foo/bar.txt`` and ``.*/foo/bar.txt`` will match any ``bar.txt`` in a
+   ``foo`` directory that **does not** live at the root of the source tree.
+
 The build argument ``pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS`` is used
 used to exclude header files from the analysis. This argument must be a list of
 POSIX-style path suffixes for include paths, or regular expressions matching
