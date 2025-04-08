@@ -257,6 +257,7 @@ pw_cc_fuzz_test(
     deps = [
         ":l2cap",
         ":testing",
+        "//pw_bluetooth_sapphire:null_lease_provider",
         "//pw_random:fuzzer_generator",
     ],
 )

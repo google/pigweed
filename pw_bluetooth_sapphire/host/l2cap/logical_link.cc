@@ -127,7 +127,10 @@ LogicalLink::LogicalLink(
   // Set up the signaling channel and dynamic channels.
   if (type_ == bt::LinkType::kLE) {
     signaling_channel_ = std::make_unique<LESignalingChannel>(
-        OpenFixedChannel(kLESignalingChannelId), role_, pw_dispatcher_);
+        OpenFixedChannel(kLESignalingChannelId),
+        role_,
+        pw_dispatcher_,
+        wake_lease_provider_);
     dynamic_registry_ = std::make_unique<LeDynamicChannelRegistry>(
         signaling_channel_.get(),
         fit::bind_member<&LogicalLink::OnChannelDisconnectRequest>(this),
@@ -138,7 +141,10 @@ LogicalLink::LogicalLink(
     ServeFlowControlCreditInd();
   } else {
     signaling_channel_ = std::make_unique<BrEdrSignalingChannel>(
-        OpenFixedChannel(kSignalingChannelId), role_, pw_dispatcher_);
+        OpenFixedChannel(kSignalingChannelId),
+        role_,
+        pw_dispatcher_,
+        wake_lease_provider_);
     dynamic_registry_ = std::make_unique<BrEdrDynamicChannelRegistry>(
         signaling_channel_.get(),
         fit::bind_member<&LogicalLink::OnChannelDisconnectRequest>(this),

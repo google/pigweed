@@ -16,6 +16,7 @@
 
 #include <pw_bytes/endian.h>
 
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
@@ -39,7 +40,7 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
 
     fake_sig_chan_ = CreateFakeChannel(options);
     sig_ = std::make_unique<LESignalingChannel>(
-        fake_sig_chan_->GetWeakPtr(), Role, dispatcher());
+        fake_sig_chan_->GetWeakPtr(), Role, dispatcher(), lease_provider_);
   }
 
   void TearDown() override { sig_ = nullptr; }
@@ -47,6 +48,7 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
   LESignalingChannel* sig() const { return sig_.get(); }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<testing::FakeChannel> fake_sig_chan_;
   std::unique_ptr<LESignalingChannel> sig_;
 

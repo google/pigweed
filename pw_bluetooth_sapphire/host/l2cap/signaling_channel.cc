@@ -24,10 +24,13 @@
 
 namespace bt::l2cap::internal {
 
-SignalingChannel::SignalingChannel(Channel::WeakPtr chan,
-                                   pw::bluetooth::emboss::ConnectionRole role,
-                                   pw::async::Dispatcher& dispatcher)
+SignalingChannel::SignalingChannel(
+    Channel::WeakPtr chan,
+    pw::bluetooth::emboss::ConnectionRole role,
+    pw::async::Dispatcher& dispatcher,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
     : pw_dispatcher_(dispatcher),
+      wake_lease_provider_(wake_lease_provider),
       is_open_(true),
       chan_(std::move(chan)),
       role_(role),
@@ -100,8 +103,17 @@ void SignalingChannel::EnqueueResponse(const ByteBuffer& request_packet,
                                        ResponseHandler cb) {
   PW_CHECK(IsSupportedResponse(response_command_code));
 
-  const auto [iter, inserted] = pending_commands_.try_emplace(
-      id, request_packet, response_command_code, std::move(cb), pw_dispatcher_);
+  pw::bluetooth_sapphire::Lease wake_lease =
+      PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_, "SignalingChannel")
+          .value_or(pw::bluetooth_sapphire::Lease());
+
+  const auto [iter, inserted] =
+      pending_commands_.try_emplace(id,
+                                    request_packet,
+                                    response_command_code,
+                                    std::move(cb),
+                                    pw_dispatcher_,
+                                    std::move(wake_lease));
   PW_CHECK(inserted);
 
   // Start the RTX timer per Core Spec v5.0, Volume 3, Part A, Sec 6.2.1 which

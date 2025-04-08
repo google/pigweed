@@ -232,6 +232,7 @@ pw_fuzzer("bredr_dynamic_channel_registry_fuzzer") {
   deps = [
     ":l2cap",
     ":testing",
+    "$dir_pw_bluetooth_sapphire:null_lease_provider",
     "$dir_pw_random:fuzzer_generator",
   ]
 }

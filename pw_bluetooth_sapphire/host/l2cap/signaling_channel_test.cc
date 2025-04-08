@@ -19,6 +19,7 @@
 
 #include <chrono>
 
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
@@ -39,11 +40,14 @@ const auto kTestResponseHandler = [](Status, const ByteBuffer&) {
 
 class TestSignalingChannel : public SignalingChannel {
  public:
-  explicit TestSignalingChannel(Channel::WeakPtr chan,
-                                pw::async::Dispatcher& dispatcher)
+  explicit TestSignalingChannel(
+      Channel::WeakPtr chan,
+      pw::async::Dispatcher& dispatcher,
+      pw::bluetooth_sapphire::LeaseProvider& lease_provider)
       : SignalingChannel(std::move(chan),
                          pw::bluetooth::emboss::ConnectionRole::CENTRAL,
-                         dispatcher) {
+                         dispatcher,
+                         lease_provider) {
     set_mtu(kTestMTU);
   }
   ~TestSignalingChannel() override = default;
@@ -105,7 +109,7 @@ class SignalingChannelTest : public testing::FakeChannelTest {
 
     fake_channel_inst_ = CreateFakeChannel(options);
     sig_ = std::make_unique<TestSignalingChannel>(
-        fake_channel_inst_->GetWeakPtr(), dispatcher());
+        fake_channel_inst_->GetWeakPtr(), dispatcher(), lease_provider_);
   }
 
   void TearDown() override {
@@ -119,7 +123,12 @@ class SignalingChannelTest : public testing::FakeChannelTest {
 
   void DestroySig() { sig_ = nullptr; }
 
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider& lease_provider() {
+    return lease_provider_;
+  }
+
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<TestSignalingChannel> sig_;
 
   // Own the fake channel so that its lifetime can span beyond that of |sig_|.
@@ -685,6 +694,7 @@ TEST_F(SignalingChannelTest, TwoResponsesToARetransmittedOutboundRequest) {
 // for the following response.
 TEST_F(SignalingChannelTest,
        ExpectAdditionalResponseExtendsRtxTimeoutToErtxTimeout) {
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
   bool tx_success = false;
   fake_chan()->SetSendCallback([&tx_success](auto) { tx_success = true; },
                                dispatcher());
@@ -692,8 +702,11 @@ TEST_F(SignalingChannelTest,
   const StaticByteBuffer req_data{'h', 'e', 'l', 'l', 'o'};
   int rx_cb_calls = 0;
   EXPECT_TRUE(sig()->SendRequest(
-      kEchoRequest, req_data, [&rx_cb_calls](Status status, const ByteBuffer&) {
+      kEchoRequest,
+      req_data,
+      [this, &rx_cb_calls](Status status, const ByteBuffer&) {
         rx_cb_calls++;
+        EXPECT_GT(lease_provider().lease_count(), 0u);
         if (rx_cb_calls <= 2) {
           EXPECT_EQ(Status::kSuccess, status);
         } else {
@@ -703,9 +716,11 @@ TEST_F(SignalingChannelTest,
             kExpectAdditionalResponse;
       }));
 
+  EXPECT_GT(lease_provider().lease_count(), 0u);
   RunUntilIdle();
   EXPECT_TRUE(tx_success);
   EXPECT_EQ(0, rx_cb_calls);
+  EXPECT_GT(lease_provider().lease_count(), 0u);
 
   const StaticByteBuffer echo_rsp(
       // Echo response with no payload.
@@ -715,12 +730,14 @@ TEST_F(SignalingChannelTest,
       0x00);
   fake_chan()->Receive(echo_rsp);
   EXPECT_EQ(1, rx_cb_calls);
+  EXPECT_GT(lease_provider().lease_count(), 0u);
 
   // The handler expects more responses so the RTX timer shouldn't have expired.
   RunFor(kSignalingChannelResponseTimeout);
 
   fake_chan()->Receive(echo_rsp);
   EXPECT_EQ(2, rx_cb_calls);
+  EXPECT_GT(lease_provider().lease_count(), 0u);
 
   // The second response should have reset the ERTX timer, so it shouldn't fire
   // yet.
@@ -731,6 +748,7 @@ TEST_F(SignalingChannelTest,
   // kTimeOut "response."
   RunFor(std::chrono::seconds(1));
   EXPECT_EQ(3, rx_cb_calls);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
 TEST_F(SignalingChannelTest, RegisterRequestResponder) {
@@ -870,9 +888,70 @@ TEST_F(SignalingChannelTest, SendWithoutResponse) {
   fake_chan()->SetSendCallback(std::move(send_cb), dispatcher());
 
   sig()->SendCommandWithoutResponse(kLEFlowControlCredit, payload);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 
   RunUntilIdle();
   EXPECT_TRUE(cb_called);
+}
+
+TEST_F(SignalingChannelTest, SendMultipleCommandsSimultaneously) {
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+  fake_chan()->SetSendCallback([](auto) {}, dispatcher());
+
+  const StaticByteBuffer req_data{'h', 'e', 'l', 'l', 'o'};
+  int rx_cb_calls_0 = 0;
+  EXPECT_TRUE(sig()->SendRequest(
+      kEchoRequest,
+      req_data,
+      [this, &rx_cb_calls_0](Status status, const ByteBuffer&) {
+        rx_cb_calls_0++;
+        EXPECT_EQ(Status::kSuccess, status);
+        EXPECT_GT(lease_provider().lease_count(), 0u);
+        return SignalingChannel::ResponseHandlerAction::
+            kCompleteOutboundTransaction;
+      }));
+
+  EXPECT_GT(lease_provider().lease_count(), 0u);
+  RunUntilIdle();
+  EXPECT_EQ(0, rx_cb_calls_0);
+  EXPECT_GT(lease_provider().lease_count(), 0u);
+
+  int rx_cb_calls_1 = 0;
+  EXPECT_TRUE(sig()->SendRequest(
+      kEchoRequest,
+      req_data,
+      [this, &rx_cb_calls_1](Status status, const ByteBuffer&) {
+        rx_cb_calls_1++;
+        EXPECT_EQ(Status::kSuccess, status);
+        EXPECT_GT(lease_provider().lease_count(), 0u);
+        return SignalingChannel::ResponseHandlerAction::
+            kCompleteOutboundTransaction;
+      }));
+
+  EXPECT_GT(lease_provider().lease_count(), 0u);
+  RunUntilIdle();
+  EXPECT_EQ(0, rx_cb_calls_1);
+  EXPECT_GT(lease_provider().lease_count(), 0u);
+
+  const StaticByteBuffer echo_rsp_0(
+      // Echo response with no payload.
+      0x09,
+      0x01,  // ID (1)
+      0x00,
+      0x00);
+  fake_chan()->Receive(echo_rsp_0);
+  EXPECT_EQ(1, rx_cb_calls_0);
+  EXPECT_GT(lease_provider().lease_count(), 0u);
+
+  const StaticByteBuffer echo_rsp_1(
+      // Echo response with no payload.
+      0x09,
+      0x02,  // ID (2)
+      0x00,
+      0x00);
+  fake_chan()->Receive(echo_rsp_1);
+  EXPECT_EQ(1, rx_cb_calls_1);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
 }  // namespace

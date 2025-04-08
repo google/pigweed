@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_signaling_channel.h"
 
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/mock_channel_test.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 
@@ -41,7 +42,7 @@ class BrEdrSignalingChannelTest : public testing::MockChannelTest {
 
     fake_chan_ = CreateFakeChannel(options);
     sig_ = std::make_unique<BrEdrSignalingChannel>(
-        fake_chan_->GetWeakPtr(), kDeviceRole, dispatcher());
+        fake_chan_->GetWeakPtr(), kDeviceRole, dispatcher(), lease_provider_);
   }
 
   void TearDown() override {
@@ -52,6 +53,7 @@ class BrEdrSignalingChannelTest : public testing::MockChannelTest {
   BrEdrSignalingChannel* sig() const { return sig_.get(); }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   testing::FakeChannel::WeakPtr fake_chan_;
   std::unique_ptr<BrEdrSignalingChannel> sig_;
 };

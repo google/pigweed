@@ -759,6 +759,10 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
         cmd_ids.extended_features_id,
         kTestHandle1,
         kExtendedFeaturesBitEnhancedRetransmission));
+    ReceiveAclDataPacket(testing::AclFixedChannelsSupportedInfoRsp(
+        cmd_ids.fixed_channels_supported_id,
+        kTestHandle1,
+        kFixedChannelsSupportedBitSignaling));
     EXPECT_TRUE(chanmgr()->RegisterService(
         kTestPsm, chan_params, std::move(channel_cb)));
 

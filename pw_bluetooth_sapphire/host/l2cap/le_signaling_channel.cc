@@ -25,8 +25,9 @@ namespace bt::l2cap::internal {
 LESignalingChannel::LESignalingChannel(
     Channel::WeakPtr chan,
     pw::bluetooth::emboss::ConnectionRole role,
-    pw::async::Dispatcher& dispatcher)
-    : SignalingChannel(std::move(chan), role, dispatcher) {
+    pw::async::Dispatcher& dispatcher,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
+    : SignalingChannel(std::move(chan), role, dispatcher, wake_lease_provider) {
   set_mtu(kMinLEMTU);
 }
 

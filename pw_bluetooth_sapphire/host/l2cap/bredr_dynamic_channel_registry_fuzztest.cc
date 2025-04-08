@@ -21,6 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_dynamic_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/bredr_signaling_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
+#include "pw_bluetooth_sapphire/null_lease_provider.h"
 
 constexpr static bt::hci_spec::ConnectionHandle kTestHandle = 0x0001;
 
@@ -49,6 +50,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // Dispatcher needed for signaling channel response timeout.
   pw::async::test::FakeDispatcher dispatcher;
 
+  pw::bluetooth_sapphire::NullLeaseProvider lease_provider;
+
   auto fake_chan = std::make_unique<bt::l2cap::testing::FakeChannel>(
       bt::l2cap::kSignalingChannelId,
       bt::l2cap::kSignalingChannelId,
@@ -61,7 +64,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   bt::l2cap::internal::BrEdrSignalingChannel sig_chan(
       fake_chan->GetWeakPtr(),
       pw::bluetooth::emboss::ConnectionRole::CENTRAL,
-      dispatcher);
+      dispatcher,
+      lease_provider);
 
   auto open_cb = []([[maybe_unused]] auto chan) {};
   auto close_cb = []([[maybe_unused]] auto chan) {};
