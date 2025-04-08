@@ -65,6 +65,24 @@ pw_py_binary(
 )
 
 pw_py_binary(
+    name = "elf_reader",
+    srcs = ["pw_tokenizer/elf_reader.py"],
+    deps = [":pw_tokenizer"],
+)
+
+pw_py_binary(
+    name = "encode",
+    srcs = ["pw_tokenizer/encode.py"],
+    deps = [":pw_tokenizer"],
+)
+
+pw_py_binary(
+    name = "parse_message",
+    srcs = ["pw_tokenizer/parse_message.py"],
+    deps = [":pw_tokenizer"],
+)
+
+pw_py_binary(
     name = "serial_detokenizer",
     srcs = [
         "pw_tokenizer/serial_detokenizer.py",
