@@ -23,6 +23,7 @@ namespace {
 class MockTask : public Task {
  public:
   bool should_complete = false;
+  bool unschedule = false;
   int polled = 0;
   int destroyed = 0;
   Waker last_waker;
@@ -30,22 +31,30 @@ class MockTask : public Task {
  private:
   Poll<> DoPend(Context& cx) override {
     ++polled;
+    if (unschedule) {
+      return cx.Unschedule();
+    }
     PW_ASYNC_STORE_WAKER(cx, last_waker, "MockTask is waiting for last_waker");
     if (should_complete) {
       return Ready();
-    } else {
-      return Pending();
     }
+    return Pending();
   }
+
   void DoDestroy() override { ++destroyed; }
 };
 
 class MockPendable {
  public:
   MockPendable(Poll<int> value) : value_(value) {}
-  Poll<int> Pend(Context&) { return value_; }
+  Poll<int> Pend(Context& cx) {
+    PW_ASYNC_STORE_WAKER(
+        cx, last_waker_, "MockPendable is waiting for last_waker");
+    return value_;
+  }
 
  private:
+  Waker last_waker_;
   Poll<int> value_;
 };
 
@@ -231,6 +240,32 @@ TEST(Dispatcher, RunToCompletionIgnoresDeregisteredTask) {
   EXPECT_EQ(task.polled, 0);
   EXPECT_EQ(task.destroyed, 0);
   EXPECT_EQ(dispatcher.tasks_polled(), 0u);
+}
+
+TEST(Dispatcher, UnscheduleAllowsRepost) {
+  Dispatcher dispatcher;
+  MockTask task;
+  task.should_complete = false;
+  task.unschedule = true;
+  dispatcher.Post(task);
+  EXPECT_TRUE(task.IsRegistered());
+
+  // The dispatcher returns Ready() since the task has opted out of being woken,
+  // so it no longer exists in the dispatcher queues.
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+  EXPECT_EQ(task.polled, 1);
+  EXPECT_EQ(dispatcher.tasks_polled(), 1u);
+
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+  EXPECT_EQ(task.polled, 1);
+  EXPECT_EQ(dispatcher.tasks_polled(), 1u);
+
+  // The task must be re-posted to run again.
+  task.should_complete = true;
+  dispatcher.Post(task);
+  EXPECT_EQ(dispatcher.RunUntilStalled(), Ready());
+  EXPECT_EQ(task.polled, 2);
+  EXPECT_EQ(dispatcher.tasks_polled(), 2u);
 }
 
 }  // namespace

@@ -13,9 +13,12 @@
 // the License.
 #pragma once
 
+#include "pw_async2/poll.h"
+
 namespace pw::async2 {
 
 class Dispatcher;
+class NativeDispatcherBase;
 class Waker;
 
 /// Context for an asynchronous ``Task``.
@@ -30,7 +33,7 @@ class Context {
   /// Creates a new ``Context`` containing the currently-running ``Dispatcher``
   /// and a ``Waker`` for the current ``Task``.
   Context(Dispatcher& dispatcher, Waker& waker)
-      : dispatcher_(&dispatcher), waker_(&waker) {}
+      : dispatcher_(&dispatcher), waker_(&waker), requires_waker_(true) {}
 
   /// The ``Dispatcher`` on which the current ``Task`` is executing.
   ///
@@ -54,6 +57,16 @@ class Context {
   /// ```
   void ReEnqueue();
 
+  /// Indicates that the task has not completed, but that it also does not need
+  /// to register a waker and go to sleep. This results in the task being
+  // removed from the dispatcher, requiring it to be manually re-posted to run
+  // again.
+  template <typename T = ReadyType>
+  Poll<T> Unschedule() {
+    requires_waker_ = false;
+    return Pending();
+  }
+
   /// INTERNAL-ONLY: users should use the `PW_ASYNC_STORE_WAKER` macro instead.
   ///
   /// Saves a ``Waker`` into ``waker_out`` which, when awoken, will cause the
@@ -61,8 +74,11 @@ class Context {
   void InternalStoreWaker(Waker& waker_out);
 
  private:
+  friend class NativeDispatcherBase;
+
   Dispatcher* dispatcher_;
   Waker* waker_;
+  bool requires_waker_;
 };
 
 }  // namespace pw::async2

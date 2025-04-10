@@ -260,11 +260,13 @@ NativeDispatcherBase::RunOneTaskResult NativeDispatcherBase::RunOneTask(
   }
 
   bool complete;
+  bool requires_waker;
   {
     Waker waker(*task);
     Context context(dispatcher, waker);
     tasks_polled_.Increment();
     complete = task->Pend(context).IsReady();
+    requires_waker = context.requires_waker_;
   }
   if (complete) {
     tasks_completed_.Increment();
@@ -297,8 +299,19 @@ NativeDispatcherBase::RunOneTaskResult NativeDispatcherBase::RunOneTask(
     if (task->state_ == Task::State::kRunning) {
       PW_LOG_DEBUG("Dispatcher adding task %p to sleep queue",
                    static_cast<const void*>(task));
-      task->state_ = Task::State::kSleeping;
-      AddTaskToSleepingList(*task);
+
+      if (requires_waker) {
+        PW_CHECK_NOTNULL(
+            task->wakers_,
+            "Task %p returned Pending() without registering a waker",
+            static_cast<const void*>(task));
+        task->state_ = Task::State::kSleeping;
+        AddTaskToSleepingList(*task);
+      } else {
+        // Require the task to be manually re-posted.
+        task->state_ = Task::State::kUnposted;
+        task->dispatcher_ = nullptr;
+      }
     }
     return RunOneTaskResult(
         /*completed_all_tasks=*/false,
