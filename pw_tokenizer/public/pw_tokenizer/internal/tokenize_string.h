@@ -60,7 +60,7 @@ static_assert(sizeof(_pw_tokenizer_EntryHeader) == 4 * sizeof(uint32_t));
 constexpr bool ValidDomainChar(char ch) {
   return ('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z') ||
          ('0' <= ch && ch <= '9') || ch == '_' || ch == ':' || ch == ' ' ||
-         ch == '\t' || ch == '\n';
+         ('\t' <= ch && ch <= '\r');
 }
 
 template <size_t kSize>

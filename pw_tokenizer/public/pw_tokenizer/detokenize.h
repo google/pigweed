@@ -151,20 +151,17 @@ class Detokenizer {
   ///
   /// @param[in] text Text potentially containing tokenized messages.
   ///
-  /// @param[in] max_passes `DetokenizeText` supports recursive detokenization.
-  /// Tokens can expand to other tokens. The maximum number of detokenization
-  /// passes is specified by `max_passes` (0 is equivalent to 1).
-  ///
   /// @returns The original string with nested tokenized messages decoded in
   ///     context. Messages that fail to decode are left as-is.
-  std::string DetokenizeText(std::string_view text,
-                             unsigned max_passes = 3) const;
+  std::string DetokenizeText(std::string_view text) const {
+    return DetokenizeTextRecursive(text, kMaxDecodePasses);
+  }
 
   /// Deprecated version of `DetokenizeText` with no recursive detokenization.
   /// @deprecated Call `DetokenizeText` instead.
   [[deprecated("Use DetokenizeText() instead")]] std::string DetokenizeBase64(
       std::string_view text) const {
-    return DetokenizeText(text, 1);
+    return DetokenizeTextRecursive(text, 1);
   }
 
   /// Decodes data that may or may not be tokenized, such as proto fields marked
@@ -186,6 +183,14 @@ class Detokenizer {
   const DomainTokenEntriesMap& database() const { return database_; }
 
  private:
+  // 4 passes supports detokenizing two layers of nested messages with tokenized
+  // domains (e.g. ${${bar}#ab12cd34}#00000012), without allowing a hypothetical
+  // detokenization cycle to continue for too long.
+  static constexpr unsigned kMaxDecodePasses = 4;
+
+  std::string DetokenizeTextRecursive(std::string_view text,
+                                      unsigned max_passes) const;
+
   DomainTokenEntriesMap database_;
 };
 

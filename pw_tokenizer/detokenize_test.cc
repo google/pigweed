@@ -203,6 +203,17 @@ TEST_F(Detokenize, FromCsvFile_WithExplicitDomain) {
             "World!");
 }
 
+TEST_F(Detokenize, FromCsvFile_DomainIgnoresWhitespace) {
+  pw::Result<Detokenizer> detok_csv =
+      Detokenizer::FromCsv(kCsvDifferentDomains);
+  EXPECT_EQ(detok_csv->Detokenize("\1\0\0\0"sv, "dom\n  ain1").BestString(),
+            "Hello");
+  EXPECT_EQ(detok_csv->Detokenize("\2\0\0\0"sv, " domain2").BestString(), "");
+  EXPECT_EQ(
+      detok_csv->Detokenize("\3\0\0\0"sv, " d\toma\r\vin  3\n").BestString(),
+      "World!");
+}
+
 TEST_F(Detokenize, BestString_MissingToken_IsEmpty) {
   EXPECT_FALSE(detok_.Detokenize("").ok());
   EXPECT_TRUE(detok_.Detokenize("", 0u).BestString().empty());

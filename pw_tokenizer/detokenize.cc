@@ -359,7 +359,14 @@ DetokenizedString Detokenizer::Detokenize(const span<const std::byte>& encoded,
   uint32_t token = bytes::ReadInOrder<uint32_t>(
       endian::little, encoded.data(), encoded.size());
 
-  auto domain_it = database_.find(std::string(domain));
+  std::string canonical_domain;
+  for (char ch : domain) {
+    if (!std::isspace(ch)) {
+      canonical_domain.push_back(ch);
+    }
+  }
+
+  auto domain_it = database_.find(canonical_domain);
   if (domain_it == database_.end()) {
     return DetokenizedString();
   }
@@ -381,8 +388,8 @@ DetokenizedString Detokenizer::DetokenizeBase64Message(
   return Detokenize(buffer);
 }
 
-std::string Detokenizer::DetokenizeText(std::string_view text,
-                                        const unsigned max_passes) const {
+std::string Detokenizer::DetokenizeTextRecursive(std::string_view text,
+                                                 unsigned max_passes) const {
   NestedMessageDetokenizer detokenizer(*this);
   detokenizer.Detokenize(text);
 
