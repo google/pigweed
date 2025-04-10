@@ -237,6 +237,32 @@ deactivate() {
   unset PW_BRANDING_BANNER_COLOR
 }
 
+_pw_get_meta() {
+  curl -s "http://metadata.google.internal/computeMetadata/v1/$1" \
+    -H "Metadata-Flavor: Google"
+}
+
+pw_google_checks() {
+  # Checks common Google-specific issues.
+  if [ which glinux-fixme &> /dev/null ]; then
+    return
+  fi
+
+  LI=0
+  if _pw_get_meta "project/project-id" | grep -q "cloudtop-prod-"; then
+    if ! _pw_get_meta "instance/tags" | grep -q "allow-internet-exception"; then
+      LI=1
+    fi
+  fi
+
+  if [[ ${LI} -eq 1 ]] ; then
+    pw_error "Warning: Running on glinux machine without Internet access"
+    pw_error_info "  The current machine ($(hostname)) has limited access to"
+    pw_error_info "  the Internet. Some parts of bootstrap will likely fail."
+    pw_error_info "  See http://go/lri for more."
+  fi
+}
+
 # The next three functions use the following variables.
 # * PW_BANNER_FUNC: function to print banner
 # * PW_BOOTSTRAP_PYTHON: specific Python interpreter to use for bootstrap
@@ -264,6 +290,8 @@ pw_bootstrap() {
     pw_error_info
     return
   fi
+
+  pw_google_checks
 
   # Allow forcing a specific version of Python for testing pursposes.
   if [ -n "$PW_BOOTSTRAP_PYTHON" ]; then
@@ -409,4 +437,5 @@ pw_cleanup() {
   unset -f _pw_hello
   unset -f pw_error
   unset -f pw_error_info
+  unset -f _pw_get_meta
 }
