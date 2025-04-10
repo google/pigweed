@@ -56,6 +56,8 @@ and `Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_.
      - Backend module
    * - FreeRTOS
      - :ref:`module-pw_sync_freertos`
+   * - Zephyr
+     - :ref:`module-pw_sync_zephyr`
    * - ThreadX
      - :ref:`module-pw_sync_threadx`
    * - embOS
@@ -63,8 +65,6 @@ and `Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_.
    * - STL
      - :ref:`module-pw_sync_stl`
    * - Baremetal
-     - Planned
-   * - Zephyr
      - Planned
    * - CMSIS-RTOS API v2 & RTX5
      - Planned
