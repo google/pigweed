@@ -187,7 +187,6 @@ cc_library(
         "arm_cortex_cyccnt_public_overrides",
         "public",
     ],
-    target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":duration_unit",
         ":timer.facade",

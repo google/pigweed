@@ -39,7 +39,12 @@ class State {
  public:
   // KeepRunning() should be called in a while loop. Responsible for managing
   // iterations and timestamps.
-  bool KeepRunning();
+  bool KeepRunning() {
+    internal::Timestamp iteration_end = internal::GetCurrentTimestamp();
+    const bool keep_running = KeepRunningInternal(iteration_end);
+    iteration_start_ = internal::GetCurrentTimestamp();
+    return keep_running;
+  }
 
  private:
   // Allows the framework to create state objects and unit tests for the state
@@ -47,6 +52,8 @@ class State {
   friend State internal::CreateState(int durations,
                                      EventHandler& event_handler,
                                      const char* test_name);
+
+  bool KeepRunningInternal(internal::Timestamp iteration_end);
 
   // Privated constructor to prevent unauthorized instances of the state class.
   constexpr State(int iterations,
@@ -76,8 +83,11 @@ class State {
   // Time at the start of the iteration
   internal::Timestamp iteration_start_;
 
+  // Run the loop this many times before recording data.
+  static constexpr int kWarmUpIterations = 1;
+
   // The current iteration.
-  int current_iteration_ = -1;
+  int current_iteration_ = -(kWarmUpIterations + 1);
 
   EventHandler* event_handler_;
 

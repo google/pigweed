@@ -37,6 +37,8 @@ void TestFunction() {
   }
 }
 
+constexpr int kWarmUpIterations = 1;
+
 TEST(StateTest, KeepRunningTest) {
   constexpr int test_iterations = 10;
   State state_obj = internal::CreateState(test_iterations, handler, "");
@@ -45,7 +47,7 @@ TEST(StateTest, KeepRunningTest) {
     ++total_iterations;
     TestFunction();
   }
-  EXPECT_EQ(total_iterations, test_iterations);
+  EXPECT_EQ(total_iterations, kWarmUpIterations + test_iterations);
 }
 
 TEST(StateTest, SingleTest) {
@@ -56,7 +58,7 @@ TEST(StateTest, SingleTest) {
     ++total_iterations;
     TestFunction();
   }
-  EXPECT_EQ(total_iterations, test_iterations);
+  EXPECT_EQ(total_iterations, kWarmUpIterations + test_iterations);
 }
 
 }  // namespace
