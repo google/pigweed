@@ -105,8 +105,8 @@ class AATreeIterator {
 
   friend class GenericAATree;
 
-  template <typename, typename>
-  friend class AATree;
+  template <typename>
+  friend class KeyedAATree;
 
   // Only the generic and derived AA trees can create iterators that actually
   // point to something. They provides a pointer to its pointer to the root of

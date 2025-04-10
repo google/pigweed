@@ -46,8 +46,8 @@ class AATreeItem {
   // fields of items.
   friend class GenericAATree;
 
-  template <typename, typename>
-  friend class AATree;
+  template <typename>
+  friend class KeyedAATree;
 
   template <typename>
   friend class AATreeIterator;
