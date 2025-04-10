@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstring>
 #include <optional>
+#include <utility>
 
 #include "pw_assert/assert.h"
 #include "pw_assert/check.h"
@@ -28,6 +29,7 @@ namespace ring_buffer {
 
 using std::byte;
 using Reader = PrefixedEntryRingBufferMulti::Reader;
+using ReadOutput = PrefixedEntryRingBuffer::ReadOutput;
 
 void PrefixedEntryRingBufferMulti::Clear() {
   write_idx_ = 0;
@@ -152,12 +154,19 @@ Status PrefixedEntryRingBufferMulti::InternalPushBack(
   return OkStatus();
 }
 
-auto GetOutput(span<byte> data_out, size_t* write_index) {
-  return [data_out, write_index](span<const byte> src) -> Status {
-    size_t copy_size = std::min(data_out.size_bytes(), src.size_bytes());
+struct GetOutputFnData {
+  pw::span<std::byte> data_out;
+  size_t* write_index;
+};
 
-    memcpy(data_out.data() + *write_index, src.data(), copy_size);
-    *write_index += copy_size;
+ReadOutput GetOutput(GetOutputFnData& fn_data) {
+  return [&fn_data](span<const byte> src) -> Status {
+    size_t copy_size =
+        std::min(fn_data.data_out.size_bytes(), src.size_bytes());
+
+    memcpy(
+        fn_data.data_out.data() + *fn_data.write_index, src.data(), copy_size);
+    *fn_data.write_index += copy_size;
 
     return (copy_size == src.size_bytes()) ? OkStatus()
                                            : Status::ResourceExhausted();
@@ -167,23 +176,25 @@ auto GetOutput(span<byte> data_out, size_t* write_index) {
 Status PrefixedEntryRingBufferMulti::InternalPeekFront(
     const Reader& reader, span<byte> data, size_t* bytes_read_out) const {
   *bytes_read_out = 0;
-  return InternalRead(reader, GetOutput(data, bytes_read_out), false);
+  GetOutputFnData fn_data = {.data_out = data, .write_index = bytes_read_out};
+  return InternalRead(reader, GetOutput(fn_data), false);
 }
 
 Status PrefixedEntryRingBufferMulti::InternalPeekFront(
-    const Reader& reader, ReadOutput output) const {
-  return InternalRead(reader, output, false);
+    const Reader& reader, ReadOutput&& output) const {
+  return InternalRead(reader, std::move(output), false);
 }
 
 Status PrefixedEntryRingBufferMulti::InternalPeekFrontWithPreamble(
     const Reader& reader, span<byte> data, size_t* bytes_read_out) const {
   *bytes_read_out = 0;
-  return InternalRead(reader, GetOutput(data, bytes_read_out), true);
+  GetOutputFnData fn_data = {.data_out = data, .write_index = bytes_read_out};
+  return InternalRead(reader, GetOutput(fn_data), true);
 }
 
 Status PrefixedEntryRingBufferMulti::InternalPeekFrontWithPreamble(
-    const Reader& reader, ReadOutput output) const {
-  return InternalRead(reader, output, true);
+    const Reader& reader, ReadOutput&& output) const {
+  return InternalRead(reader, std::move(output), true);
 }
 
 Status PrefixedEntryRingBufferMulti::InternalPeekFrontPreamble(
@@ -200,10 +211,9 @@ Status PrefixedEntryRingBufferMulti::InternalPeekFrontPreamble(
 // TODO: b/235351046 - Consider whether this internal templating is required, or
 // if we can simply promote GetOutput to a static function and remove the
 // template. T should be similar to Status (*read_output)(span<const byte>)
-template <typename T>
 Status PrefixedEntryRingBufferMulti::InternalRead(
     const Reader& reader,
-    T read_output,
+    ReadOutput&& read_output,
     bool include_preamble_in_output,
     uint32_t* user_preamble_out) const {
   if (buffer_ == nullptr) {
@@ -468,8 +478,10 @@ Status PrefixedEntryRingBufferMulti::Reader::PeekFrontWithPreamble(
     uint32_t& user_preamble_out,
     size_t& entry_bytes_read_out) const {
   entry_bytes_read_out = 0;
+  GetOutputFnData fn_data = {.data_out = data,
+                             .write_index = &entry_bytes_read_out};
   return buffer_->InternalRead(
-      *this, GetOutput(data, &entry_bytes_read_out), false, &user_preamble_out);
+      *this, GetOutput(fn_data), false, &user_preamble_out);
 }
 
 size_t PrefixedEntryRingBufferMulti::Reader::EntriesSize() const {

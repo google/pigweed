@@ -21,6 +21,7 @@ pw_add_library(pw_ring_buffer STATIC
     public
   PUBLIC_DEPS
     pw_containers
+    pw_function
     pw_result
     pw_span
     pw_status

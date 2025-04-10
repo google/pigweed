@@ -16,9 +16,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <utility>
 
 #include "pw_assert/check.h"
 #include "pw_containers/intrusive_list.h"
+#include "pw_function/function.h"
 #include "pw_result/result.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
@@ -44,7 +46,7 @@ namespace ring_buffer {
 // around as needed.
 class PrefixedEntryRingBufferMulti {
  public:
-  typedef Status (*ReadOutput)(span<const std::byte>);
+  using ReadOutput = pw::Function<Status(span<const std::byte>)>;
 
   // A reader that provides a single-reader interface into the multi-reader ring
   // buffer it has been attached to via AttachReader(). Readers maintain their
@@ -91,8 +93,8 @@ class PrefixedEntryRingBufferMulti {
       return buffer_->InternalPeekFront(*this, data, bytes_read_out);
     }
 
-    Status PeekFront(ReadOutput output) const {
-      return buffer_->InternalPeekFront(*this, output);
+    Status PeekFront(ReadOutput&& output) const {
+      return buffer_->InternalPeekFront(*this, std::move(output));
     }
 
     // Peek the front entry's preamble only to avoid copying data unnecessarily.
@@ -118,8 +120,8 @@ class PrefixedEntryRingBufferMulti {
           *this, data, bytes_read_out);
     }
 
-    Status PeekFrontWithPreamble(ReadOutput output) const {
-      return buffer_->InternalPeekFrontWithPreamble(*this, output);
+    Status PeekFrontWithPreamble(ReadOutput&& output) const {
+      return buffer_->InternalPeekFrontWithPreamble(*this, std::move(output));
     }
 
     // Pop and discard the oldest stored data chunk of data from the ring
@@ -513,7 +515,7 @@ class PrefixedEntryRingBufferMulti {
   Status InternalPeekFront(const Reader& reader,
                            span<std::byte> data,
                            size_t* bytes_read_out) const;
-  Status InternalPeekFront(const Reader& reader, ReadOutput output) const;
+  Status InternalPeekFront(const Reader& reader, ReadOutput&& output) const;
 
   Status InternalPeekFrontPreamble(const Reader& reader,
                                    uint32_t& user_preamble_out) const;
@@ -523,7 +525,7 @@ class PrefixedEntryRingBufferMulti {
                                        span<std::byte> data,
                                        size_t* bytes_read_out) const;
   Status InternalPeekFrontWithPreamble(const Reader& reader,
-                                       ReadOutput output) const;
+                                       ReadOutput&& output) const;
 
   // Pop and discard the oldest stored data chunk of data from the ring buffer.
   //
@@ -544,11 +546,9 @@ class PrefixedEntryRingBufferMulti {
   // chunk, to be read.
   size_t InternalFrontEntryTotalSizeBytes(const Reader& reader) const;
 
-  // Internal version of Read used by all the public interface versions. T
-  // should be of type ReadOutput.
-  template <typename T>
+  // Internal version of Read used by all the public interface versions.
   Status InternalRead(const Reader& reader,
-                      T read_output,
+                      ReadOutput&& read_output,
                       bool include_preamble_in_output,
                       uint32_t* user_preamble_out = nullptr) const;
 

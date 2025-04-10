@@ -18,6 +18,24 @@ PrefixedEntryRingBuffer
 arbitrary length data entries with an optional user-defined preamble byte. It
 supports multiple independent readers.
 
+Reading
+=======
+One or more readers can be attached to a
+:cpp:class:`pw::ring_buffer::PrefixedEntryRingBuffer` using the
+:cpp:class:`pw::ring_buffer::PrefixedEntryRingBufferMulti::Reader` class. Each
+reader is able to peek at the front of the buffer and pop items from the buffer.
+Elements are not deleted from the buffer until all the attached readers have
+popped them.
+
+There are 2 ways to read the front elmement of the buffer:
+1. Copying the data. This can be done using variants of the ``PeekFront`` and
+``PeekFrontWithPreamble`` which accept a ``pw::ByteSpan`` that will be written
+to.
+2. Reading the data directly. This is done using overloads of ``PeekFront`` and
+``PeekFrontWithPreamble`` which accept a
+``pw::Function<pw::Status(pw::ConstByteSpan)>`` and thus provide a short lived
+view into the front entry.
+
 Iterator
 ========
 In crash contexts, it may be useful to scan through a ring buffer that may

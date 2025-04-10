@@ -39,6 +39,7 @@ cc_library(
     deps = [
         "//pw_assert:check",
         "//pw_containers:intrusive_list",
+        "//pw_function",
         "//pw_result",
         "//pw_span",
         "//pw_status",
