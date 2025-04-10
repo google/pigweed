@@ -62,6 +62,7 @@ pw_add_facade(pw_async2.dispatcher STATIC
     pw_assert.check
     pw_async2.poll
     pw_chrono.system_clock
+    pw_containers.intrusive_forward_list
     pw_metric
     pw_sync.interrupt_spin_lock
     pw_sync.lock_annotations

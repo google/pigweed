@@ -31,6 +31,7 @@ cc_library(
         "//pw_allocator:first_fit",
         "//pw_async2:dispatcher",
         "//pw_bloat:bloat_this_binary",
+        "//pw_containers:intrusive_forward_list",
         "//pw_preprocessor",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:mutex",

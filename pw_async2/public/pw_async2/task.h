@@ -16,6 +16,7 @@
 #include "pw_async2/context.h"
 #include "pw_async2/lock.h"
 #include "pw_async2/poll.h"
+#include "pw_containers/intrusive_forward_list.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::async2 {
@@ -198,9 +199,8 @@ class Task {
   Task* prev_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
   Task* next_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
 
-  // A pointer to the first element of the linked list of ``Waker`` s that may
-  // awaken this ``Task``.
-  Waker* wakers_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
+  // Linked list of ``Waker`` s that may awaken this ``Task``.
+  IntrusiveForwardList<Waker> wakers_ PW_GUARDED_BY(impl::dispatcher_lock());
 };
 
 }  // namespace pw::async2

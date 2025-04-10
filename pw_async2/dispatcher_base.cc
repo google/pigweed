@@ -14,6 +14,7 @@
 
 #include "pw_async2/dispatcher_base.h"
 
+#include <iterator>
 #include <mutex>
 
 #include "pw_assert/check.h"
@@ -37,32 +38,21 @@ void Context::InternalStoreWaker(Waker& waker_out) {
 }
 
 void Task::RemoveAllWakersLocked() {
-  while (wakers_ != nullptr) {
-    Waker* current = wakers_;
-    wakers_ = current->next_;
-    current->task_ = nullptr;
-    current->next_ = nullptr;
+  while (!wakers_.empty()) {
+    Waker& waker = wakers_.front();
+    wakers_.pop_front();
+    waker.task_ = nullptr;
   }
 }
 
 void Task::AddWakerLocked(Waker& waker) {
   waker.task_ = this;
-  waker.next_ = wakers_;
-  wakers_ = &waker;
+  wakers_.push_front(waker);
 }
 
 void Task::RemoveWakerLocked(Waker& waker) {
-  if (&waker == wakers_) {
-    wakers_ = wakers_->next_;
-  } else {
-    Waker* current = wakers_;
-    while (current->next_ != &waker) {
-      current = current->next_;
-    }
-    current->next_ = current->next_->next_;
-  }
+  wakers_.remove(waker);
   waker.task_ = nullptr;
-  waker.next_ = nullptr;
 }
 
 bool Task::IsRegistered() const {
@@ -301,10 +291,9 @@ NativeDispatcherBase::RunOneTaskResult NativeDispatcherBase::RunOneTask(
                    static_cast<const void*>(task));
 
       if (requires_waker) {
-        PW_CHECK_NOTNULL(
-            task->wakers_,
-            "Task %p returned Pending() without registering a waker",
-            static_cast<const void*>(task));
+        PW_CHECK(!task->wakers_.empty(),
+                 "Task %p returned Pending() without registering a waker",
+                 static_cast<const void*>(task));
         task->state_ = Task::State::kSleeping;
         AddTaskToSleepingList(*task);
       } else {
@@ -436,11 +425,8 @@ void NativeDispatcherBase::LogRegisteredTasks() {
   }
   PW_LOG_INFO("Sleeping tasks:");
   for (Task* task = sleeping_; task != nullptr; task = task->next_) {
-    int waker_count = 0;
-    for (Waker* waker = task->wakers_; waker != nullptr; waker = waker->next_) {
-      waker_count++;
-    }
-
+    int waker_count = static_cast<int>(
+        std::distance(task->wakers_.begin(), task->wakers_.end()));
     PW_LOG_INFO(
         "  - Task %p (%d wakers)", static_cast<const void*>(task), waker_count);
   }

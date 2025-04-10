@@ -73,6 +73,7 @@ pw_facade("dispatcher") {
     ":poll",
     "$dir_pw_assert",
     "$dir_pw_chrono:system_clock",
+    "$dir_pw_containers:intrusive_forward_list",
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:mutex",

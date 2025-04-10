@@ -72,6 +72,7 @@ pw_facade(
         ":config_override",
         ":poll",
         "//pw_chrono:system_clock",
+        "//pw_containers:intrusive_forward_list",
         "//pw_log",
         "//pw_metric:metric",
         "//pw_sync:interrupt_spin_lock",

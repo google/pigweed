@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_async2/lock.h"
+#include "pw_containers/intrusive_forward_list.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::async2 {
@@ -59,7 +60,7 @@ class Task;
 ///
 /// ``Waker`` s are most commonly created by ``Dispatcher`` s, which pass them
 /// into ``Task::Pend`` via its ``Context`` argument.
-class Waker {
+class Waker : public pw::IntrusiveForwardList<Waker>::Item {
   friend class Task;
   friend class NativeDispatcherBase;
 
@@ -131,10 +132,6 @@ class Waker {
 
   // The ``Task`` to poll when awoken.
   Task* task_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
-
-  // The next ``Waker`` that may awaken this ``Task``.
-  // This list is controlled by the corresponding ``Task``.
-  Waker* next_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
 };
 
 }  // namespace pw::async2
