@@ -54,6 +54,9 @@ extern size_t pw_trace_GetTraceTimeTicksPerSecond(void);
 #define PW_TRACE_GET_TIME_DELTA(last_time, current_time) \
   ((current_time) - (last_time))
 #ifdef __cplusplus
+
+#include <type_traits>
+
 static_assert(
     std::is_unsigned<PW_TRACE_TIME_TYPE>::value,
     "Default time delta implementation only works for unsigned time types.");
