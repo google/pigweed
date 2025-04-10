@@ -14,6 +14,7 @@
 
 #include "pw_bluetooth_sapphire/internal/host/l2cap/basic_mode_rx_engine.h"
 
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fragmenter.h"
@@ -52,7 +53,8 @@ TEST(BasicModeRxEngineTest, ProcessPduCanHandleZeroBytePayload) {
   hci_packet->mutable_view()->mutable_data().Write(byte_buf);
   hci_packet->InitializeFromBuffer();
 
-  Recombiner recombiner(kTestHandle);
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider;
+  Recombiner recombiner(kTestHandle, lease_provider);
   auto result = recombiner.ConsumeFragment(std::move(hci_packet));
   EXPECT_FALSE(result.frames_dropped);
   ASSERT_TRUE(result.pdu);

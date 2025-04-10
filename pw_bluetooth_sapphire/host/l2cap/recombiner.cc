@@ -30,7 +30,10 @@ const BasicHeader& GetBasicHeader(const hci::ACLDataPacket& fragment) {
 
 }  // namespace
 
-Recombiner::Recombiner(hci_spec::ConnectionHandle handle) : handle_(handle) {}
+Recombiner::Recombiner(
+    hci_spec::ConnectionHandle handle,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
+    : handle_(handle), wake_lease_provider_(wake_lease_provider) {}
 
 Recombiner::Result Recombiner::ConsumeFragment(hci::ACLDataPacketPtr fragment) {
   PW_DCHECK(fragment);
@@ -126,13 +129,16 @@ Recombiner::Result Recombiner::ProcessFirstFragment(
     return {.pdu = {std::move(pdu)}, .frames_dropped = false};
   }
 
+  pw::bluetooth_sapphire::Lease lease =
+      PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_, "Recombiner")
+          .value_or(pw::bluetooth_sapphire::Lease());
+
   // We need to recombine multiple fragments to obtain a complete PDU.
   BeginTrace();
-  recombination_ = {
-      .pdu = std::move(pdu),
-      .expected_frame_length = expected_frame_length,
-      .accumulated_length = current_length,
-  };
+  recombination_ = {.pdu = std::move(pdu),
+                    .expected_frame_length = expected_frame_length,
+                    .accumulated_length = current_length,
+                    .wake_lease = std::move(lease)};
   return {.pdu = {}, .frames_dropped = false};
 }
 

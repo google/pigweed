@@ -109,7 +109,7 @@ LogicalLink::LogicalLink(
                 .count();
           }),
       closed_(false),
-      recombiner_(handle),
+      recombiner_(handle, wake_lease_provider),
       acl_data_channel_(acl_data_channel),
       cmd_channel_(cmd_channel),
       query_service_cb_(std::move(query_service_cb)),

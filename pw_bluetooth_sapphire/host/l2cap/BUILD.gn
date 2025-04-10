@@ -202,6 +202,7 @@ pw_test("l2cap_tests") {
     ":l2cap",
     ":testing",
     "$dir_pw_async:fake_dispatcher_fixture",
+    "$dir_pw_bluetooth_sapphire:null_lease_provider",
     "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_bluetooth_sapphire/host/hci:testing",
     "$dir_pw_bluetooth_sapphire/host/testing",

@@ -223,6 +223,7 @@ pw_cc_test(
         ":l2cap",
         ":testing",
         "//pw_async:fake_dispatcher_fixture",
+        "//pw_bluetooth_sapphire:null_lease_provider",
         "//pw_bluetooth_sapphire/host/hci",
         "//pw_bluetooth_sapphire/host/hci:testing",
         "//pw_bluetooth_sapphire/host/testing",

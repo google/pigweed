@@ -19,6 +19,7 @@
 
 #include <cstdint>
 
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/protocol.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/pdu.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/packet.h"
@@ -127,9 +128,24 @@ void ValidatePdu(PDU pdu,
     ValidatePdu(__VA_ARGS__); \
   } while (false)
 
+class RecombinerTest : public ::testing::Test {
+ public:
+  RecombinerTest() : recombiner_(kTestHandle, lease_provider_) {}
+
+  Recombiner& recombiner() { return recombiner_; }
+
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider& lease_provider() {
+    return lease_provider_;
+  }
+
+ private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
+  Recombiner recombiner_;
+};
+
 // The following test exercises a PW_DCHECK and thus only works in DEBUG builds.
 #ifdef DEBUG
-TEST(RecombinerTest, WrongHandle) {
+TEST_F(RecombinerTest, WrongHandle) {
   Recombiner recombiner(kTestHandle);
   auto packet = PacketFromBytes(0x02,
                                 0x00,  // handle: 0x0002
@@ -141,170 +157,163 @@ TEST(RecombinerTest, WrongHandle) {
 }
 #endif  // DEBUG
 
-TEST(RecombinerTest, FirstFragmentTooShort) {
-  Recombiner recombiner(kTestHandle);
-  auto result = recombiner.ConsumeFragment(FirstFragmentWithShortL2capHeader());
+TEST_F(RecombinerTest, FirstFragmentTooShort) {
+  auto result =
+      recombiner().ConsumeFragment(FirstFragmentWithShortL2capHeader());
+  EXPECT_FALSE(result.pdu);
+  EXPECT_TRUE(result.frames_dropped);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+}
+
+TEST_F(RecombinerTest, FirstFragmentTooLong) {
+  auto result =
+      recombiner().ConsumeFragment(FirstFragmentWithTooLargePayload());
   EXPECT_FALSE(result.pdu);
   EXPECT_TRUE(result.frames_dropped);
 }
 
-TEST(RecombinerTest, FirstFragmentTooLong) {
-  Recombiner recombiner(kTestHandle);
-  auto result = recombiner.ConsumeFragment(FirstFragmentWithTooLargePayload());
+TEST_F(RecombinerTest, ContinuingFragmentWhenNotRecombining) {
+  auto result = recombiner().ConsumeFragment(ContinuingFragment(""));
   EXPECT_FALSE(result.pdu);
   EXPECT_TRUE(result.frames_dropped);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
-TEST(RecombinerTest, ContinuingFragmentWhenNotRecombining) {
-  Recombiner recombiner(kTestHandle);
-  auto result = recombiner.ConsumeFragment(ContinuingFragment(""));
-  EXPECT_FALSE(result.pdu);
-  EXPECT_TRUE(result.frames_dropped);
-}
-
-TEST(RecombinerTest, CompleteEmptyFirstFragment) {
-  Recombiner recombiner(kTestHandle);
-  auto result = recombiner.ConsumeFragment(FirstFragment(""));
+TEST_F(RecombinerTest, CompleteEmptyFirstFragment) {
+  auto result = recombiner().ConsumeFragment(FirstFragment(""));
   EXPECT_FALSE(result.frames_dropped);
   ASSERT_TRUE(result.pdu);
   VALIDATE_PDU(std::move(*result.pdu), "");
 }
 
-TEST(RecombinerTest, CompleteNonEmptyFirstFragment) {
-  Recombiner recombiner(kTestHandle);
-  auto result = recombiner.ConsumeFragment(FirstFragment("Test"));
+TEST_F(RecombinerTest, CompleteNonEmptyFirstFragment) {
+  auto result = recombiner().ConsumeFragment(FirstFragment("Test"));
   EXPECT_FALSE(result.frames_dropped);
   ASSERT_TRUE(result.pdu);
   VALIDATE_PDU(std::move(*result.pdu), "Test");
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
-TEST(RecombinerTest, TwoPartRecombination) {
-  Recombiner recombiner(kTestHandle);
-  auto result = recombiner.ConsumeFragment(FirstFragment("der", {4}));
+TEST_F(RecombinerTest, TwoPartRecombination) {
+  auto result = recombiner().ConsumeFragment(FirstFragment("der", {4}));
+  EXPECT_FALSE(result.frames_dropped);
+  EXPECT_FALSE(result.pdu);
+  EXPECT_NE(lease_provider().lease_count(), 0u);
+
+  result = recombiner().ConsumeFragment(ContinuingFragment("p"));
+  EXPECT_FALSE(result.frames_dropped);
+  ASSERT_TRUE(result.pdu);
+  VALIDATE_PDU(std::move(*result.pdu), "derp");
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+}
+
+TEST_F(RecombinerTest, ThreePartRecombination) {
+  auto result = recombiner().ConsumeFragment(FirstFragment("d", {4}));
   EXPECT_FALSE(result.frames_dropped);
   EXPECT_FALSE(result.pdu);
 
-  result = recombiner.ConsumeFragment(ContinuingFragment("p"));
+  result = recombiner().ConsumeFragment(ContinuingFragment("er"));
+  EXPECT_FALSE(result.frames_dropped);
+  EXPECT_FALSE(result.pdu);
+
+  result = recombiner().ConsumeFragment(ContinuingFragment("p"));
   EXPECT_FALSE(result.frames_dropped);
   ASSERT_TRUE(result.pdu);
   VALIDATE_PDU(std::move(*result.pdu), "derp");
 }
 
-TEST(RecombinerTest, ThreePartRecombination) {
-  Recombiner recombiner(kTestHandle);
-  auto result = recombiner.ConsumeFragment(FirstFragment("d", {4}));
-  EXPECT_FALSE(result.frames_dropped);
-  EXPECT_FALSE(result.pdu);
-
-  result = recombiner.ConsumeFragment(ContinuingFragment("er"));
-  EXPECT_FALSE(result.frames_dropped);
-  EXPECT_FALSE(result.pdu);
-
-  result = recombiner.ConsumeFragment(ContinuingFragment("p"));
-  EXPECT_FALSE(result.frames_dropped);
-  ASSERT_TRUE(result.pdu);
-  VALIDATE_PDU(std::move(*result.pdu), "derp");
-}
-
-TEST(RecombinerTest, RecombinationDroppedDueToCompleteFirstPacket) {
-  Recombiner recombiner(kTestHandle);
-
+TEST_F(RecombinerTest, RecombinationDroppedDueToCompleteFirstPacket) {
   // Write a partial first fragment that initiates a recombination (complete
   // frame length is 2 but payload contains 1 byte).
-  auto result = recombiner.ConsumeFragment(FirstFragment("a", {2}));
+  auto result = recombiner().ConsumeFragment(FirstFragment("a", {2}));
   EXPECT_FALSE(result.frames_dropped);
   EXPECT_FALSE(result.pdu);  // No complete PDU yet.
+  EXPECT_NE(lease_provider().lease_count(), 0u);
 
   // Write a new complete first fragment. The previous (still recombining) frame
   // should get dropped and the new frame should get delivered. This should
   // report an error for the dropped PDU even though it also returns a valid
   // PDU.
-  result = recombiner.ConsumeFragment(FirstFragment("derp"));
+  result = recombiner().ConsumeFragment(FirstFragment("derp"));
   EXPECT_TRUE(result.frames_dropped);
 
   // We should have a complete PDU that doesn't contain the dropped segment
   // ("a").
   ASSERT_TRUE(result.pdu);
   VALIDATE_PDU(std::move(*result.pdu), "derp");
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
-TEST(RecombinerTest, RecombinationDroppedDueToPartialFirstPacket) {
-  Recombiner recombiner(kTestHandle);
-
+TEST_F(RecombinerTest, RecombinationDroppedDueToPartialFirstPacket) {
   // Write a partial first fragment that initiates a recombination (complete
   // frame length is 2 but payload contains 1 byte).
-  auto result = recombiner.ConsumeFragment(FirstFragment("a", {2}));
+  auto result = recombiner().ConsumeFragment(FirstFragment("a", {2}));
   EXPECT_FALSE(result.frames_dropped);
   EXPECT_FALSE(result.pdu);  // No complete PDU yet.
 
   // Write a new partial first fragment. The previous (still recombining) frame
   // should get dropped and the new frame should be buffered for recombination.
-  result = recombiner.ConsumeFragment(FirstFragment("de", {4}));
+  result = recombiner().ConsumeFragment(FirstFragment("de", {4}));
   EXPECT_TRUE(result.frames_dropped);
   EXPECT_FALSE(result.pdu);  // No complete PDU yet.
 
   // Complete the new sequence. This should not contain the dropped segment
   // ("a")
-  result = recombiner.ConsumeFragment(ContinuingFragment("rp"));
+  result = recombiner().ConsumeFragment(ContinuingFragment("rp"));
   EXPECT_FALSE(result.frames_dropped);
   ASSERT_TRUE(result.pdu);
   VALIDATE_PDU(std::move(*result.pdu), "derp");
 }
 
-TEST(RecombinerTest, RecombinationDroppedDueToMalformedFirstPacket) {
-  Recombiner recombiner(kTestHandle);
-
+TEST_F(RecombinerTest, RecombinationDroppedDueToMalformedFirstPacket) {
   // Write a partial first fragment that initiates a recombination (complete
   // frame length is 2 but payload contains 1 byte).
-  auto result = recombiner.ConsumeFragment(FirstFragment("a", {2}));
+  auto result = recombiner().ConsumeFragment(FirstFragment("a", {2}));
   EXPECT_FALSE(result.frames_dropped);
   EXPECT_FALSE(result.pdu);  // No complete PDU yet.
 
   // Write a new partial first fragment. The previous (still recombining) frame
   // should get dropped. The new fragment should also get dropped since it's
   // malformed.
-  result = recombiner.ConsumeFragment(FirstFragmentWithShortL2capHeader());
+  result = recombiner().ConsumeFragment(FirstFragmentWithShortL2capHeader());
   EXPECT_TRUE(result.frames_dropped);
   EXPECT_FALSE(result.pdu);  // No complete PDU yet.
 
   // Complete a new sequence. This should not contain the dropped segments.
-  result = recombiner.ConsumeFragment(FirstFragment("derp"));
+  result = recombiner().ConsumeFragment(FirstFragment("derp"));
   EXPECT_FALSE(result.frames_dropped);
   ASSERT_TRUE(result.pdu);
   VALIDATE_PDU(std::move(*result.pdu), "derp");
 }
 
-TEST(RecombinerTest, RecombinationDroppedDueToTooLargeContinuingFrame) {
-  Recombiner recombiner(kTestHandle);
-
+TEST_F(RecombinerTest, RecombinationDroppedDueToTooLargeContinuingFrame) {
   // Write a partial first fragment that initiates a recombination (complete
   // frame length is 2 but payload contains 1 byte).
-  auto result = recombiner.ConsumeFragment(FirstFragment("a", {2}));
+  auto result = recombiner().ConsumeFragment(FirstFragment("a", {2}));
   EXPECT_FALSE(result.frames_dropped);
   EXPECT_FALSE(result.pdu);  // No complete PDU yet.
 
   // Write a continuing fragment that makes the complete frame larger than 2
   // bytes. The previous (still recombining) frame should get dropped alongside
   // the new fragment.
-  result = recombiner.ConsumeFragment(ContinuingFragment("bc"));
+  result = recombiner().ConsumeFragment(ContinuingFragment("bc"));
   EXPECT_TRUE(result.frames_dropped);
   EXPECT_FALSE(result.pdu);  // No complete PDU.
 
   // The next frame should not include the two dropped fragments.
-  result = recombiner.ConsumeFragment(FirstFragment("derp"));
+  result = recombiner().ConsumeFragment(FirstFragment("derp"));
   EXPECT_FALSE(result.frames_dropped);
   ASSERT_TRUE(result.pdu);
   VALIDATE_PDU(std::move(*result.pdu), "derp");
 }
 
-TEST(RecombinerTest, RecombinationDroppedForFrameWithMaxSize) {
+TEST_F(RecombinerTest, RecombinationDroppedForFrameWithMaxSize) {
   constexpr size_t kFrameSize = std::numeric_limits<uint16_t>::max();
   constexpr size_t kRxSize = kFrameSize + 1;
 
-  Recombiner recombiner(kTestHandle);
   {
     const auto result =
-        recombiner.ConsumeFragment(FirstFragment("", {kFrameSize}));
+        recombiner().ConsumeFragment(FirstFragment("", {kFrameSize}));
     EXPECT_FALSE(result.frames_dropped);
     EXPECT_FALSE(result.pdu);
   }
@@ -320,8 +329,8 @@ TEST(RecombinerTest, RecombinationDroppedForFrameWithMaxSize) {
     const size_t size = std::min(hci_spec::kMaxACLPayloadSize, remainder);
     acc += size;
 
-    const auto result =
-        recombiner.ConsumeFragment(ContinuingFragment(std::string(size, 'd')));
+    const auto result = recombiner().ConsumeFragment(
+        ContinuingFragment(std::string(size, 'd')));
     if (acc == kRxSize) {
       completed = true;
       EXPECT_TRUE(result.frames_dropped) << "last fragment should get dropped!";
@@ -334,13 +343,12 @@ TEST(RecombinerTest, RecombinationDroppedForFrameWithMaxSize) {
   EXPECT_TRUE(completed);
 }
 
-TEST(RecombinerTest, RecombinationSucceedsForFrameWithMaxSize) {
+TEST_F(RecombinerTest, RecombinationSucceedsForFrameWithMaxSize) {
   constexpr size_t kFrameSize = std::numeric_limits<uint16_t>::max();
 
-  Recombiner recombiner(kTestHandle);
   {
     const auto result =
-        recombiner.ConsumeFragment(FirstFragment("", {kFrameSize}));
+        recombiner().ConsumeFragment(FirstFragment("", {kFrameSize}));
     EXPECT_FALSE(result.frames_dropped);
     EXPECT_FALSE(result.pdu);
   }
@@ -356,8 +364,8 @@ TEST(RecombinerTest, RecombinationSucceedsForFrameWithMaxSize) {
     const size_t size = std::min(hci_spec::kMaxACLPayloadSize, remainder);
     acc += size;
 
-    auto result =
-        recombiner.ConsumeFragment(ContinuingFragment(std::string(size, 'd')));
+    auto result = recombiner().ConsumeFragment(
+        ContinuingFragment(std::string(size, 'd')));
     if (acc == kFrameSize) {
       completed = true;
       EXPECT_FALSE(result.frames_dropped)

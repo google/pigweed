@@ -21,6 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/l2cap_defs.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/pdu.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/acl_data_packet.h"
+#include "pw_bluetooth_sapphire/lease.h"
 
 namespace bt::l2cap {
 
@@ -37,7 +38,9 @@ namespace bt::l2cap {
 // instance will be accessed on multiple threads.
 class Recombiner final {
  public:
-  explicit Recombiner(hci_spec::ConnectionHandle handle);
+  explicit Recombiner(
+      hci_spec::ConnectionHandle handle,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
 
   // Consumes an ACL data fragment. This function may return a complete L2CAP
   // PDU if |fragment| completes a sequence or constitutes a complete fragment
@@ -99,6 +102,7 @@ class Recombiner final {
     PDU pdu;
     size_t expected_frame_length = 0u;
     size_t accumulated_length = 0u;
+    pw::bluetooth_sapphire::Lease wake_lease;
   };
   std::optional<Recombination> recombination_;
 
@@ -111,6 +115,8 @@ class Recombiner final {
   // Flows track from AddFragment to Release, only when there is fragmentation.
   // (PDUs are expected to be released immediately when there is no recombining)
   std::vector<trace_flow_id_t> trace_ids_;
+
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Recombiner);
 };

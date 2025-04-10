@@ -21,6 +21,7 @@
 #include "pw_bluetooth_sapphire/internal/host/l2cap/recombiner.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/test_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/packet.h"
+#include "pw_bluetooth_sapphire/null_lease_provider.h"
 #include "pw_unit_test/framework.h"
 
 namespace bt::l2cap {
@@ -40,7 +41,8 @@ hci::ACLDataPacketPtr PacketFromBytes(T... data) {
 }
 
 TEST(PduTest, CanCopyEmptyBody) {
-  Recombiner recombiner(0x0001);
+  pw::bluetooth_sapphire::NullLeaseProvider lease_provider;
+  Recombiner recombiner(0x0001, lease_provider);
 
   // clang-format off
 
@@ -67,7 +69,8 @@ TEST(PduTest, CanCopyEmptyBody) {
 }
 
 TEST(PduTest, Move) {
-  Recombiner recombiner(0x0001);
+  pw::bluetooth_sapphire::NullLeaseProvider lease_provider;
+  Recombiner recombiner(0x0001, lease_provider);
 
   // clang-format off
 
@@ -116,7 +119,8 @@ TEST(PduTest, Move) {
 }
 
 TEST(PduTest, ReleaseFragments) {
-  Recombiner recombiner(0x0001);
+  pw::bluetooth_sapphire::NullLeaseProvider lease_provider;
+  Recombiner recombiner(0x0001, lease_provider);
 
   // clang-format off
 
@@ -171,7 +175,8 @@ TEST(PduTest, ReleaseFragments) {
 }
 
 TEST(PduTest, ReadSingleFragment) {
-  Recombiner recombiner(0x0001);
+  pw::bluetooth_sapphire::NullLeaseProvider lease_provider;
+  Recombiner recombiner(0x0001, lease_provider);
 
   // clang-format off
 
@@ -214,7 +219,8 @@ TEST(PduTest, ReadSingleFragment) {
 }
 
 TEST(PduTest, ReadMultipleFragments) {
-  Recombiner recombiner(0x0001);
+  pw::bluetooth_sapphire::NullLeaseProvider lease_provider;
+  Recombiner recombiner(0x0001, lease_provider);
 
   // clang-format off
 
@@ -303,4 +309,4 @@ TEST(PduTest, ReadMultipleFragments) {
 }
 
 }  // namespace
-}  // namespace bt
+}  // namespace bt::l2cap
