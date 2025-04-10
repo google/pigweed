@@ -1,4 +1,4 @@
-.. _module-pw_toolchain:
+.. _module-pw_third_party_llvm_builtins:
 
 ================
 LLVM compiler-rt
@@ -31,21 +31,24 @@ GN
 ==
 * Set the GN var ``dir_pw_third_party_llvm_builtins`` to the location of the
   LLVM compiler-rt source. If you used the command above, this will be
-  ``//third_party/llvm_builtins``
+  ``//third_party/llvm_builtins``.
 
-  This can be set in your args.gn or .gn file like:
-  ``dir_pw_third_party_llvm_builtins = "//third_party/llvm_builtins"``
+  This can be set in your ``args.gn`` or ``.gn`` file:
 
-* Set the ``pw_third_party_llvm_builtins_TARGET_BUILTINS`` to the pw_source_set
+  .. code-block:: text
+
+     dir_pw_third_party_llvm_builtins = "//third_party/llvm_builtins"
+
+* Set the ``pw_third_party_llvm_builtins_TARGET_BUILTINS`` to the ``pw_source_set``
   that selectively adds the files required for the given architecture from the
   LLVM compiler-rt checkout directory.
 
-  For example, you can add the following in your args.gn or .gn file to use the
+  For example, you can add the following in your ``args.gn`` or ``.gn`` file to use the
   builtins for ARMv7-M targets.
 
-  .. code-block::
+  .. code-block:: text
 
      pw_third_party_llvm_builtins_TARGET_BUILTINS = "$dir_pw_third_party/llvm_builtins:arm_builtins_armv7m"
 
-* Set the optional ``pw_third_party_llvm_builtins_ignore_list`` to the list of
-  files included in pw_source_sets in ``$dir_pw_third_party/llvm_builtins/BUILD.gn`` file.
+* Set the optional ``pw_third_party_llvm_builtins_ignore_list`` variable to the list of
+  files included in ``pw_source_set`` in ``$dir_pw_third_party/llvm_builtins/BUILD.gn``.
