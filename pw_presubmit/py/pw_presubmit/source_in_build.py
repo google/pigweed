@@ -34,7 +34,10 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 # filter within the check or we won't properly ignore files that the caller
 # asked to be ignored.
 
-_DEFAULT_BAZEL_EXTENSIONS = (*format_code.C_FORMAT.extensions,)
+_DEFAULT_BAZEL_EXTENSIONS = (
+    '.rst',
+    *format_code.C_FORMAT.extensions,
+)
 
 
 def bazel(
