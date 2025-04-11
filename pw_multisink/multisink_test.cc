@@ -725,5 +725,11 @@ TEST(UnsafeIterationFromEnd, Truncation) {
   EXPECT_EQ(kExpectedEntries.size(), entry_count);
 }
 
+TEST(MultisinkTest, TotalSize) {
+  std::array<std::byte, 100> buffer;
+  MultiSink multisink(buffer);
+  EXPECT_EQ(multisink.TotalSizeBytes(), buffer.size());
+}
+
 }  // namespace
 }  // namespace pw::multisink

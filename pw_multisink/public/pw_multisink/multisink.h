@@ -431,6 +431,11 @@ class MultiSink {
   Status UnsafeForEachEntryFromEnd(
       const Function<void(ConstByteSpan)>& callback, size_t max_size_bytes);
 
+  // Returns the total size of the underlying buffer in bytes.
+  size_t TotalSizeBytes() const PW_NO_LOCK_SAFETY_ANALYSIS {
+    return ring_buffer_.TotalSizeBytes();
+  }
+
  protected:
   friend Drain;
 
