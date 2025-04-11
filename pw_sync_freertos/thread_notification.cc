@@ -47,15 +47,16 @@ void ThreadNotification::acquire() {
   // Enforce the pw::sync::ThreadNotification IRQ contract.
   PW_DCHECK(!interrupt::InInterruptContext());
 
-  // Enforce that only a single thread can block at a time.
-  PW_DCHECK(native_type_.blocked_thread == nullptr);
-
   // Ensure that no one forgot to clean up nor corrupted the task notification
   // state in the TCB.
   PW_DCHECK(xTaskNotifyStateClear(nullptr) == pdFALSE);
 
   {
-    std::lock_guard lock(native_type_.shared_spin_lock);
+    std::lock_guard lock(backend::NativeThreadNotification::shared_spin_lock);
+
+    // Enforce that only a single thread can block at a time.
+    PW_DCHECK(native_type_.blocked_thread == nullptr);
+
     if (native_type_.notified) {
       native_type_.notified = false;
       return;
@@ -70,7 +71,7 @@ void ThreadNotification::acquire() {
   while (WaitForNotification(portMAX_DELAY) == pdFALSE) {
   }
 
-  std::lock_guard lock(native_type_.shared_spin_lock);
+  std::lock_guard lock(backend::NativeThreadNotification::shared_spin_lock);
   // The task handle was cleared by the notifier.
   // Note that this may hide another notification, however this is considered
   // a form of notification saturation just like as if this happened before
@@ -80,7 +81,7 @@ void ThreadNotification::acquire() {
 
 void ThreadNotification::release() {
   if (!interrupt::InInterruptContext()) {  // Task context
-    std::lock_guard lock(native_type_.shared_spin_lock);
+    std::lock_guard lock(backend::NativeThreadNotification::shared_spin_lock);
     if (native_type_.blocked_thread != nullptr) {
 #ifdef configTASK_NOTIFICATION_ARRAY_ENTRIES
       xTaskNotifyIndexed(native_type_.blocked_thread,
@@ -97,7 +98,7 @@ void ThreadNotification::release() {
   }
 
   // Interrupt context
-  std::lock_guard lock(native_type_.shared_spin_lock);
+  std::lock_guard lock(backend::NativeThreadNotification::shared_spin_lock);
   if (native_type_.blocked_thread != nullptr) {
     BaseType_t woke_higher_task = pdFALSE;
 

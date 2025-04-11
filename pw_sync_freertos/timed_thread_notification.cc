@@ -53,16 +53,17 @@ bool TimedThreadNotification::try_acquire_until(
   // Enforce the pw::sync::TImedThreadNotification IRQ contract.
   PW_DCHECK(!interrupt::InInterruptContext());
 
-  // Enforce that only a single thread can block at a time.
-  PW_DCHECK(native_handle().blocked_thread == nullptr);
-
   // Ensure that no one forgot to clean up nor corrupted the task notification
   // state in the TCB.
   PW_DCHECK(xTaskNotifyStateClear(nullptr) == pdFALSE);
 
   {
     native_handle_type handle = native_handle();
-    std::lock_guard lock(handle.shared_spin_lock);
+    std::lock_guard lock(backend::NativeThreadNotification::shared_spin_lock);
+
+    // Enforce that only a single thread can block at a time.
+    PW_DCHECK(native_handle().blocked_thread == nullptr);
+
     const bool notified = handle.notified;
     // Don't block if we've already reached the specified deadline time.
     if (notified || (SystemClock::now() >= deadline)) {
@@ -88,7 +89,7 @@ bool TimedThreadNotification::try_acquire_until(
   }
 
   native_handle_type handle = native_handle();
-  std::lock_guard lock(handle.shared_spin_lock);
+  std::lock_guard lock(backend::NativeThreadNotification::shared_spin_lock);
   // We need to clear the thread notification state in case we were
   // notified after timing out but before entering this critical section.
 #ifdef configTASK_NOTIFICATION_ARRAY_ENTRIES
