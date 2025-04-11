@@ -17,6 +17,7 @@
 
 #include "pw_allocator/block/alignable.h"
 #include "pw_allocator/block/result.h"
+#include "pw_allocator/hardening.h"
 #include "pw_allocator/layout.h"
 #include "pw_assert/assert.h"
 

@@ -84,12 +84,6 @@ class Layout {
     return Layout(size, alignof(U));
   }
 
-  /// If the result is okay, returns its contained layout; otherwise, returns a
-  /// default layout.
-  static constexpr Layout Unwrap(const Result<Layout>& result) {
-    return result.ok() ? (*result) : Layout();
-  }
-
   constexpr Layout Extend(size_t size) const {
     Hardening::Increment(size, size_);
     return Layout(size, alignment_);

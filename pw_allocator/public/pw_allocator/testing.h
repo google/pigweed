@@ -161,9 +161,17 @@ class AllocatorForTest : public Allocator {
   /// @copydoc Allocator::GetAllocated
   size_t DoGetAllocated() const override { return tracker_.GetAllocated(); }
 
-  /// @copydoc Deallocator::GetInfo
-  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
-    return GetInfo(tracker_, info_type, ptr);
+  /// @copydoc Deallocator::GetCapacity
+  size_t DoGetCapacity() const override { return tracker_.GetCapacity(); }
+
+  /// @copydoc Deallocator::GetLayout
+  Layout DoGetLayout(LayoutType layout_type, const void* ptr) const override {
+    return GetLayout(tracker_, layout_type, ptr);
+  }
+
+  /// @copydoc Deallocator::Recognizes
+  bool DoRecognizes(const void* ptr) const override {
+    return Recognizes(tracker_, ptr);
   }
 
   WithBuffer<AllocatorType, kBufferSize> allocator_;

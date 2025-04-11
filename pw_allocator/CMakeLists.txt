@@ -170,6 +170,7 @@ pw_add_library(pw_allocator.buddy_allocator STATIC
     pw_allocator
     pw_allocator.block.basic
     pw_allocator.bucket.unordered
+    pw_allocator.deallocator
     pw_allocator.hardening
     pw_bytes
     pw_containers.vector

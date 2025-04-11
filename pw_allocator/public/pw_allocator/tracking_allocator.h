@@ -88,9 +88,17 @@ class TrackingAllocator : public Allocator {
   /// @copydoc Allocator::GetAllocated
   size_t DoGetAllocated() const override { return allocator_.GetAllocated(); }
 
-  /// @copydoc Deallocator::GetInfo
-  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
-    return GetInfo(allocator_, info_type, ptr);
+  /// @copydoc Deallocator::GetCapacity
+  size_t DoGetCapacity() const override { return allocator_.GetCapacity(); }
+
+  /// @copydoc Deallocator::GetLayout
+  Layout DoGetLayout(LayoutType layout_type, const void* ptr) const override {
+    return GetLayout(allocator_, layout_type, ptr);
+  }
+
+  /// @copydoc Deallocator::Recognizes
+  bool DoRecognizes(const void* ptr) const override {
+    return Recognizes(allocator_, ptr);
   }
 
   Allocator& allocator_;
@@ -121,7 +129,7 @@ void* TrackingAllocator<MetricsType>::DoAllocate(Layout layout) {
 template <typename MetricsType>
 void TrackingAllocator<MetricsType>::DoDeallocate(void* ptr) {
   if constexpr (internal::AnyEnabled<MetricsType>()) {
-    Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
+    Layout requested = GetRequestedLayout(ptr);
     size_t allocated = allocator_.GetAllocated();
     allocator_.Deallocate(ptr);
     metrics_.IncrementDeallocations();
@@ -135,9 +143,10 @@ void TrackingAllocator<MetricsType>::DoDeallocate(void* ptr) {
 template <typename MetricsType>
 bool TrackingAllocator<MetricsType>::DoResize(void* ptr, size_t new_size) {
   if constexpr (internal::AnyEnabled<MetricsType>()) {
-    Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
+    Layout requested = GetRequestedLayout(ptr);
     size_t allocated = allocator_.GetAllocated();
-    if (!allocator_.Resize(ptr, new_size)) {
+    Layout new_requested(new_size, requested.alignment());
+    if (!allocator_.Resize(ptr, new_requested.size())) {
       metrics_.RecordFailure(new_size);
       return false;
     }
@@ -155,12 +164,13 @@ void* TrackingAllocator<MetricsType>::DoReallocate(void* ptr,
                                                    Layout new_layout) {
   if constexpr (internal::AnyEnabled<MetricsType>()) {
     // Check if possible to resize in place with no additional overhead.
-    Layout requested = Layout::Unwrap(GetRequestedLayout(ptr));
+    Layout requested = GetRequestedLayout(ptr);
     size_t allocated = allocator_.GetAllocated();
     size_t new_size = new_layout.size();
+    Layout new_requested(new_size, requested.alignment());
     if (allocator_.Resize(ptr, new_size)) {
       metrics_.IncrementReallocations();
-      metrics_.ModifyRequested(new_size, requested.size());
+      metrics_.ModifyRequested(new_requested.size(), requested.size());
       metrics_.ModifyAllocated(allocator_.GetAllocated(), allocated);
       return ptr;
     }

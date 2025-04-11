@@ -65,28 +65,4 @@ void ChunkPool::DoDeallocate(void* ptr) {
   next_ = cpp20::bit_cast<std::byte*>(ptr);
 }
 
-Result<Layout> ChunkPool::DoGetInfo(InfoType info_type, const void* ptr) const {
-  if (info_type == InfoType::kCapacity) {
-    return Layout(end_ - start_, allocated_layout_.alignment());
-  }
-  auto addr = cpp20::bit_cast<uintptr_t>(ptr);
-  if (addr < start_ || end_ <= addr) {
-    return Status::OutOfRange();
-  }
-  if ((addr - start_) % allocated_layout_.size() != 0) {
-    return Status::OutOfRange();
-  }
-  switch (info_type) {
-    case InfoType::kRequestedLayoutOf:
-    case InfoType::kUsableLayoutOf:
-    case InfoType::kAllocatedLayoutOf:
-      return allocated_layout_;
-    case InfoType::kRecognizes:
-      return Layout();
-    case InfoType::kCapacity:
-    default:
-      return Status::Unimplemented();
-  }
-}
-
 }  // namespace pw::allocator

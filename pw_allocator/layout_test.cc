@@ -77,20 +77,4 @@ TEST(LayoutTest, Extend) {
   EXPECT_EQ(layout2.alignment(), kAlignment);
 }
 
-TEST(LayoutTest, UnwrapOk) {
-  constexpr size_t kSize = 1024;
-  constexpr size_t kAlignment = 8;
-  pw::Result<Layout> result = Layout(kSize, kAlignment);
-  Layout layout = Layout::Unwrap(result);
-  EXPECT_EQ(layout.size(), kSize);
-  EXPECT_EQ(layout.alignment(), kAlignment);
-}
-
-TEST(LayoutTest, UnwrapError) {
-  pw::Result<Layout> result = pw::Status::Unimplemented();
-  Layout layout = Layout::Unwrap(result);
-  EXPECT_EQ(layout.size(), 0U);
-  EXPECT_EQ(layout.alignment(), alignof(std::max_align_t));
-}
-
 }  // namespace

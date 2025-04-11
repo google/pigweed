@@ -19,6 +19,7 @@
 #include "pw_allocator/allocator.h"
 #include "pw_allocator/block/basic.h"
 #include "pw_allocator/bucket/unordered.h"
+#include "pw_allocator/layout.h"
 #include "pw_bytes/span.h"
 #include "pw_containers/vector.h"
 #include "pw_status/try.h"
@@ -95,7 +96,7 @@ class GenericBuddyAllocator final {
   size_t GetCapacity() const { return region_.size(); }
 
   /// Returns the allocated layout for a given pointer.
-  Result<Layout> GetLayout(const void* ptr) const;
+  Layout GetLayout(const void* ptr) const;
 
   /// Ensures all allocations have been freed. Crashes with a diagnostic message
   /// If any allocations remain outstanding.
@@ -172,27 +173,21 @@ class BuddyAllocator : public Allocator {
   /// @copydoc Deallocator::DoDeallocate
   void DoDeallocate(void* ptr) override { impl_.Deallocate(ptr); }
 
-  /// @copydoc Deallocator::GetInfo
-  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
-    switch (info_type) {
-      case InfoType::kUsableLayoutOf: {
-        Layout layout;
-        PW_TRY_ASSIGN(layout, impl_.GetLayout(ptr));
-        return Layout(layout.size() - 1, layout.alignment());
-      }
-      case InfoType::kAllocatedLayoutOf:
-        return impl_.GetLayout(ptr);
-      case InfoType::kCapacity:
-        return Layout(impl_.GetCapacity(), kMinOuterSize);
-      case InfoType::kRecognizes: {
-        Layout layout;
-        PW_TRY_ASSIGN(layout, impl_.GetLayout(ptr));
-        return Layout();
-      }
-      case InfoType::kRequestedLayoutOf:
-      default:
-        return Status::Unimplemented();
+  /// @copydoc Deallocator::GetCapacity
+  size_t DoGetCapacity() const override { return impl_.GetCapacity(); }
+
+  /// @copydoc Deallocator::GetLayout
+  Layout DoGetLayout(LayoutType layout_type, const void* ptr) const override {
+    Layout layout = impl_.GetLayout(ptr);
+    if (layout_type == LayoutType::kUsable && layout.size() != 0) {
+      layout = Layout(layout.size() - 1, layout.alignment());
     }
+    return layout;
+  }
+
+  /// @copydoc Deallocator::Recognizes
+  bool DoRecognizes(const void* ptr) const override {
+    return impl_.GetLayout(ptr).size() != 0;
   }
 
   std::array<BucketType, kNumBuckets> buckets_;
