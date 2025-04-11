@@ -961,6 +961,14 @@ void HostServer::PeerWatcherServer::OnPeerRemoved(bt::PeerId id) {
 }
 
 void HostServer::PeerWatcherServer::MaybeCallCallback() {
+  if (updated_.empty() && removed_.empty()) {
+    wake_lease_.reset();
+  } else if (!wake_lease_) {
+    wake_lease_ = PW_SAPPHIRE_ACQUIRE_LEASE(host_->wake_lease_provider_,
+                                            "PeerWatcherServer")
+                      .value_or(pw::bluetooth_sapphire::Lease());
+  }
+
   if (!callback_) {
     return;
   }

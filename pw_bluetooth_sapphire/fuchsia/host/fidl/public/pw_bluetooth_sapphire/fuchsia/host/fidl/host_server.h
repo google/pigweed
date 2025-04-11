@@ -154,6 +154,8 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
     ::fuchsia::bluetooth::host::PeerWatcher::GetNextCallback callback_ =
         nullptr;
 
+    std::optional<pw::bluetooth_sapphire::Lease> wake_lease_;
+
     HostServer* host_;
 
     // Keep this as the last member to make sure that all weak pointers are
