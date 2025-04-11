@@ -25,6 +25,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_handle.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt.h"
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_common.h"
+#include "pw_bluetooth_sapphire/lease.h"
 
 namespace bthost {
 
@@ -39,6 +40,7 @@ class LowEnergyConnectionServer
   LowEnergyConnectionServer(
       bt::gap::Adapter::WeakPtr adapter,
       bt::gatt::GATT::WeakPtr gatt,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
       std::unique_ptr<bt::gap::LowEnergyConnectionHandle> connection,
       zx::channel handle,
       fit::callback<void()> closed_cb);
@@ -71,6 +73,7 @@ class LowEnergyConnectionServer
   bt::PeerId peer_id_;
   bt::gap::Adapter::WeakPtr adapter_;
   bt::gatt::GATT::WeakPtr gatt_;
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
   std::optional<Gatt2ClientServer> gatt_client_server_;
 
   std::unordered_map<bt::iso::CigCisIdentifier,

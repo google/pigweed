@@ -18,6 +18,7 @@
 
 #include <cstddef>
 
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/l2cap/fake_channel.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/gtest_helpers.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/loop_fixture.h"
@@ -47,8 +48,10 @@ class ChannelServerChannelActivatedTest : public ChannelServerTest {
     ChannelServerTest::SetUp();
     fidl::InterfaceHandle<Channel> handle;
     auto closed_cb = [this]() { server_closed_ = true; };
-    server_ = ChannelServer::Create(
-        handle.NewRequest(), fake_chan().AsWeakPtr(), std::move(closed_cb));
+    server_ = ChannelServer::Create(handle.NewRequest(),
+                                    fake_chan().AsWeakPtr(),
+                                    lease_provider_,
+                                    std::move(closed_cb));
     ASSERT_TRUE(server_);
     ASSERT_TRUE(fake_chan().activated());
     client_ = handle.Bind();
@@ -69,7 +72,12 @@ class ChannelServerChannelActivatedTest : public ChannelServerTest {
 
   void DestroyServer() { server_.reset(); }
 
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider& lease_provider() {
+    return lease_provider_;
+  }
+
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   bool server_closed_ = false;
   std::unique_ptr<ChannelServer> server_;
   fidl::InterfacePtr<Channel> client_;
@@ -154,10 +162,12 @@ TEST_F(ChannelServerChannelActivatedTest, SendTooLargePacketDropsPacket) {
 }
 
 TEST_F(ChannelServerChannelActivatedTest, ReceiveManyPacketsAndDropSome) {
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
   for (uint8_t i = 0; i < 2 * ChannelServer::kDefaultReceiveQueueLimit; i++) {
     bt::StaticByteBuffer packet(i, 0x01, 0x02);
     fake_chan().Receive(packet);
   }
+  EXPECT_NE(lease_provider().lease_count(), 0u);
   RunLoopUntilIdle();
 
   std::vector<std::vector<fbt::Packet>> packets;
@@ -169,6 +179,7 @@ TEST_F(ChannelServerChannelActivatedTest, ReceiveManyPacketsAndDropSome) {
         });
     RunLoopUntilIdle();
     ASSERT_EQ(packets.size(), static_cast<size_t>(i + 1));
+    EXPECT_NE(lease_provider().lease_count(), 0u);
   }
 
   // Some packets were dropped, so only the packets under the queue limit should
@@ -180,6 +191,11 @@ TEST_F(ChannelServerChannelActivatedTest, ReceiveManyPacketsAndDropSome) {
     ASSERT_EQ(packets[i].size(), 1u);
     EXPECT_EQ(packets[i][0].packet, packet);
   }
+
+  // Hanging Receive() call should cause wake lease to be dropped.
+  client()->Receive([](::fuchsia::bluetooth::Channel_Receive_Result result) {});
+  RunLoopUntilIdle();
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
 TEST_F(ChannelServerChannelActivatedTest,
@@ -218,8 +234,12 @@ TEST_F(ChannelServerTest, ActivateFails) {
   fidl::InterfaceHandle<Channel> handle;
   bool server_closed = false;
   auto closed_cb = [&]() { server_closed = true; };
-  std::unique_ptr<ChannelServer> server = ChannelServer::Create(
-      handle.NewRequest(), fake_chan().AsWeakPtr(), std::move(closed_cb));
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider;
+  std::unique_ptr<ChannelServer> server =
+      ChannelServer::Create(handle.NewRequest(),
+                            fake_chan().AsWeakPtr(),
+                            lease_provider,
+                            std::move(closed_cb));
   EXPECT_FALSE(server);
   EXPECT_FALSE(server_closed);
 }
@@ -228,6 +248,23 @@ TEST_F(ChannelServerChannelActivatedTest, DeactivateOnServerDestruction) {
   EXPECT_TRUE(fake_chan().activated());
   DestroyServer();
   EXPECT_FALSE(fake_chan().activated());
+}
+
+TEST_F(ChannelServerChannelActivatedTest, ChannelClosesWhileRxPacketQueued) {
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
+  bt::StaticByteBuffer packet(0x00, 0x01, 0x02);
+  fake_chan().Receive(packet);
+  EXPECT_NE(lease_provider().lease_count(), 0u);
+  RunLoopUntilIdle();
+
+  std::optional<zx_status_t> error;
+  client().set_error_handler([&](zx_status_t status) { error = status; });
+  fake_chan().Close();
+  EXPECT_TRUE(server_closed());
+  RunLoopUntilIdle();
+  ASSERT_TRUE(error.has_value());
+  EXPECT_EQ(error.value(), ZX_ERR_CONNECTION_RESET);
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
 }  // namespace

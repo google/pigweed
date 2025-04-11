@@ -28,6 +28,7 @@
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_advertising_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/low_energy_connection_manager.h"
+#include "pw_bluetooth_sapphire/lease.h"
 
 namespace bthost {
 
@@ -38,6 +39,7 @@ class LowEnergyPeripheralServer
   LowEnergyPeripheralServer(
       bt::gap::Adapter::WeakPtr adapter,
       bt::gatt::GATT::WeakPtr gatt,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
       fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> request,
       bool privileged = false);
   ~LowEnergyPeripheralServer() override;
@@ -183,6 +185,8 @@ class LowEnergyPeripheralServer
     advertisements_.erase(id);
   }
 
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
+
   // Represents the current advertising instance:
   // - Contains no value if advertising was never requested.
   // - Contains a value while advertising is being (re)enabled and during
@@ -230,6 +234,7 @@ class LowEnergyPrivilegedPeripheralServer
   LowEnergyPrivilegedPeripheralServer(
       const bt::gap::Adapter::WeakPtr& adapter,
       bt::gatt::GATT::WeakPtr gatt,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
       fidl::InterfaceRequest<fuchsia::bluetooth::le::PrivilegedPeripheral>
           request);
 

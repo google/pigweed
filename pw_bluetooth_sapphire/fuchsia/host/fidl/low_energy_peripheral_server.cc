@@ -234,9 +234,11 @@ LowEnergyPeripheralServer::AdvertisementInstanceDeprecated::Register(
 LowEnergyPeripheralServer::LowEnergyPeripheralServer(
     bt::gap::Adapter::WeakPtr adapter,
     bt::gatt::GATT::WeakPtr gatt,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
     fidl::InterfaceRequest<Peripheral> request,
     bool privileged)
     : AdapterServerBase(std::move(adapter), this, std::move(request)),
+      wake_lease_provider_(wake_lease_provider),
       gatt_(std::move(gatt)),
       privileged_(privileged),
       weak_self_(this) {}
@@ -447,6 +449,7 @@ LowEnergyPeripheralServer::CreateConnectionServer(
   auto conn_server = std::make_unique<LowEnergyConnectionServer>(
       adapter(),
       gatt_,
+      wake_lease_provider_,
       std::move(connection),
       std::move(local),
       [this, conn_server_id] {
@@ -586,12 +589,17 @@ void LowEnergyPeripheralServer::StartAdvertisingInternal(
 LowEnergyPrivilegedPeripheralServer::LowEnergyPrivilegedPeripheralServer(
     const bt::gap::Adapter::WeakPtr& adapter,
     bt::gatt::GATT::WeakPtr gatt,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
     fidl::InterfaceRequest<fuchsia::bluetooth::le::PrivilegedPeripheral>
         request)
     : AdapterServerBase(adapter, this, std::move(request)), weak_self_(this) {
   fidl::InterfaceHandle<fuchsia::bluetooth::le::Peripheral> handle;
-  le_peripheral_server_ = std::make_unique<LowEnergyPeripheralServer>(
-      adapter, std::move(gatt), handle.NewRequest(), /*privileged=*/true);
+  le_peripheral_server_ =
+      std::make_unique<LowEnergyPeripheralServer>(adapter,
+                                                  std::move(gatt),
+                                                  wake_lease_provider,
+                                                  handle.NewRequest(),
+                                                  /*privileged=*/true);
 }
 
 void LowEnergyPrivilegedPeripheralServer::Advertise(

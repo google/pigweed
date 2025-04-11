@@ -16,6 +16,7 @@
 
 #include "fuchsia/bluetooth/cpp/fidl.h"
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/adapter_test_fixture.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/fake_adapter_test_fixture.h"
 #include "pw_bluetooth_sapphire/internal/host/common/advertising_data.h"
@@ -58,8 +59,11 @@ class LowEnergyPeripheralServerTestFakeAdapter
 
     // Create a LowEnergyPeripheralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Peripheral> handle;
-    peripheral_server_ = std::make_unique<LowEnergyPeripheralServer>(
-        adapter()->AsWeakPtr(), fake_gatt_->GetWeakPtr(), handle.NewRequest());
+    peripheral_server_ =
+        std::make_unique<LowEnergyPeripheralServer>(adapter()->AsWeakPtr(),
+                                                    fake_gatt_->GetWeakPtr(),
+                                                    lease_provider_,
+                                                    handle.NewRequest());
     peripheral_client_.Bind(std::move(handle));
   }
 
@@ -79,6 +83,7 @@ class LowEnergyPeripheralServerTestFakeAdapter
   }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<LowEnergyPeripheralServer> peripheral_server_;
   fble::PeripheralPtr peripheral_client_;
   std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;
@@ -105,6 +110,7 @@ class LowEnergyPrivilegedPeripheralServerTestFakeAdapter
         std::make_unique<LowEnergyPrivilegedPeripheralServer>(
             adapter()->AsWeakPtr(),
             fake_gatt_->GetWeakPtr(),
+            lease_provider_,
             privileged_handle.NewRequest());
   }
 
@@ -120,6 +126,7 @@ class LowEnergyPrivilegedPeripheralServerTestFakeAdapter
   }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<LowEnergyPrivilegedPeripheralServer>
       privileged_peripheral_server_;
   std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;
@@ -141,8 +148,11 @@ class LowEnergyPeripheralServerTest
 
     // Create a LowEnergyPeripheralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Peripheral> handle;
-    server_ = std::make_unique<LowEnergyPeripheralServer>(
-        adapter(), fake_gatt_->GetWeakPtr(), handle.NewRequest());
+    server_ =
+        std::make_unique<LowEnergyPeripheralServer>(adapter(),
+                                                    fake_gatt_->GetWeakPtr(),
+                                                    lease_provider_,
+                                                    handle.NewRequest());
     peripheral_client_.Bind(std::move(handle));
   }
 
@@ -162,6 +172,7 @@ class LowEnergyPeripheralServerTest
   }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<LowEnergyPeripheralServer> server_;
   fble::PeripheralPtr peripheral_client_;
   std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;
@@ -184,7 +195,10 @@ class LowEnergyPrivilegedPeripheralServerTest
     // client.
     fidl::InterfaceHandle<fble::PrivilegedPeripheral> handle;
     server_ = std::make_unique<LowEnergyPrivilegedPeripheralServer>(
-        adapter(), fake_gatt_->GetWeakPtr(), handle.NewRequest());
+        adapter(),
+        fake_gatt_->GetWeakPtr(),
+        lease_provider_,
+        handle.NewRequest());
     peripheral_client_.Bind(std::move(handle));
   }
 
@@ -204,6 +218,7 @@ class LowEnergyPrivilegedPeripheralServerTest
   }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<LowEnergyPrivilegedPeripheralServer> server_;
   fble::PrivilegedPeripheralPtr peripheral_client_;
   std::unique_ptr<bt::gatt::testing::FakeLayer> fake_gatt_;

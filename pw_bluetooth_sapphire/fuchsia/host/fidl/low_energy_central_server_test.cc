@@ -23,6 +23,7 @@
 #include "fuchsia/bluetooth/gatt/cpp/fidl.h"
 #include "fuchsia/bluetooth/le/cpp/fidl.h"
 #include "lib/fidl/cpp/interface_request.h"
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/adapter_test_fixture.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/fake_adapter_test_fixture.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/helpers.h"
@@ -76,7 +77,7 @@ class LowEnergyCentralServerTest : public TestingBase {
     fidl::InterfaceHandle<fble::Central> handle;
     gatt_ = take_gatt();
     server_ = std::make_unique<LowEnergyCentralServer>(
-        adapter(), handle.NewRequest(), gatt_->GetWeakPtr());
+        adapter(), handle.NewRequest(), gatt_->GetWeakPtr(), lease_provider_);
     proxy_.Bind(std::move(handle));
 
     bt::testing::FakeController::Settings settings;
@@ -127,6 +128,7 @@ class LowEnergyCentralServerTest : public TestingBase {
   }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<LowEnergyCentralServer> server_;
   fble::CentralPtr proxy_;
   std::unique_ptr<bt::gatt::GATT> gatt_;
@@ -143,8 +145,10 @@ class LowEnergyCentralServerTestFakeAdapter
     // Create a LowEnergyCentralServer and bind it to a local client.
     fidl::InterfaceHandle<fble::Central> handle;
     gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
-    server_ = std::make_unique<LowEnergyCentralServer>(
-        adapter()->AsWeakPtr(), handle.NewRequest(), gatt_->GetWeakPtr());
+    server_ = std::make_unique<LowEnergyCentralServer>(adapter()->AsWeakPtr(),
+                                                       handle.NewRequest(),
+                                                       gatt_->GetWeakPtr(),
+                                                       lease_provider_);
     proxy_.Bind(std::move(handle));
   }
 
@@ -160,6 +164,7 @@ class LowEnergyCentralServerTestFakeAdapter
   }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<LowEnergyCentralServer> server_;
   fble::CentralPtr proxy_;
   std::unique_ptr<bt::gatt::GATT> gatt_;

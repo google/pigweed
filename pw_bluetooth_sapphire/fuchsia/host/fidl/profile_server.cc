@@ -235,12 +235,15 @@ AclPriority FidlToAclPriority(fidlbredr::A2dpDirectionPriority in) {
 
 }  // namespace
 
-ProfileServer::ProfileServer(bt::gap::Adapter::WeakPtr adapter,
-                             fidl::InterfaceRequest<Profile> request)
+ProfileServer::ProfileServer(
+    bt::gap::Adapter::WeakPtr adapter,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
+    fidl::InterfaceRequest<Profile> request)
     : ServerBase(this, std::move(request)),
       advertised_total_(0),
       searches_total_(0),
       adapter_(std::move(adapter)),
+      wake_lease_provider_(wake_lease_provider),
       weak_self_(this) {}
 
 ProfileServer::~ProfileServer() {
@@ -1266,8 +1269,10 @@ ProfileServer::BindChannelServer(bt::l2cap::Channel::WeakPtr channel,
   bt::l2cap::Channel::UniqueId unique_id = channel->unique_id();
 
   std::unique_ptr<bthost::ChannelServer> connection_server =
-      ChannelServer::Create(
-          client.NewRequest(), std::move(channel), std::move(closed_callback));
+      ChannelServer::Create(client.NewRequest(),
+                            std::move(channel),
+                            wake_lease_provider_,
+                            std::move(closed_callback));
   if (!connection_server) {
     return std::nullopt;
   }

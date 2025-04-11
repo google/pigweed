@@ -19,6 +19,7 @@
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/server_base.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
+#include "pw_bluetooth_sapphire/lease.h"
 
 namespace bthost {
 
@@ -37,6 +38,7 @@ class ChannelServer : public ServerBase<fuchsia::bluetooth::Channel> {
   static std::unique_ptr<ChannelServer> Create(
       fidl::InterfaceRequest<fuchsia::bluetooth::Channel> request,
       bt::l2cap::Channel::WeakPtr channel,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
       fit::callback<void()> closed_callback);
 
   ~ChannelServer() override;
@@ -51,6 +53,7 @@ class ChannelServer : public ServerBase<fuchsia::bluetooth::Channel> {
 
   ChannelServer(fidl::InterfaceRequest<fuchsia::bluetooth::Channel> request,
                 bt::l2cap::Channel::WeakPtr channel,
+                pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
                 fit::callback<void()> closed_callback);
 
   // fuchsia::bluetooth::Channel overrides:
@@ -71,6 +74,10 @@ class ChannelServer : public ServerBase<fuchsia::bluetooth::Channel> {
   void ServiceReceiveQueue();
 
   bt::l2cap::Channel::WeakPtr channel_;
+
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
+
+  std::optional<pw::bluetooth_sapphire::Lease> wake_lease_;
 
   // The maximum number of inbound packets to queue when the FIDL protocol is
   // full.

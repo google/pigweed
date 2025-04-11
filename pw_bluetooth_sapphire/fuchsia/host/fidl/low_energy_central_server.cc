@@ -63,9 +63,11 @@ bt::gap::LowEnergyConnectionOptions ConnectionOptionsFromFidl(
 LowEnergyCentralServer::LowEnergyCentralServer(
     bt::gap::Adapter::WeakPtr adapter,
     fidl::InterfaceRequest<Central> request,
-    bt::gatt::GATT::WeakPtr gatt)
+    bt::gatt::GATT::WeakPtr gatt,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
     : AdapterServerBase(std::move(adapter), this, std::move(request)),
       gatt_(std::move(gatt)),
+      wake_lease_provider_(wake_lease_provider),
       requesting_scan_deprecated_(false),
       weak_self_(this) {
   PW_CHECK(gatt_.is_alive());
@@ -385,12 +387,13 @@ void LowEnergyCentralServer::Connect(
             self->connections_.erase(peer_id);
           }
         };
-        auto server =
-            std::make_unique<LowEnergyConnectionServer>(self->adapter(),
-                                                        self->gatt_,
-                                                        std::move(conn_ref),
-                                                        request.TakeChannel(),
-                                                        std::move(closed_cb));
+        auto server = std::make_unique<LowEnergyConnectionServer>(
+            self->adapter(),
+            self->gatt_,
+            self->wake_lease_provider_,
+            std::move(conn_ref),
+            request.TakeChannel(),
+            std::move(closed_cb));
 
         PW_CHECK(!conn_iter->second);
         conn_iter->second = std::move(server);

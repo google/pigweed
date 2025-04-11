@@ -23,6 +23,7 @@
 #include <zircon/errors.h>
 
 #include "fuchsia/bluetooth/host/cpp/fidl.h"
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/adapter_test_fixture.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/fake_adapter_test_fixture.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/helpers.h"
@@ -147,7 +148,8 @@ class HostServerTest : public bthost::testing::AdapterTestFixture {
     host_server_ =
         std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
                                      adapter()->AsWeakPtr(),
-                                     gatt_->GetWeakPtr());
+                                     gatt_->GetWeakPtr(),
+                                     lease_provider_);
     host_.Bind(std::move(host_handle));
   }
 
@@ -258,6 +260,7 @@ class HostServerTest : public bthost::testing::AdapterTestFixture {
   }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<HostServer> host_server_;
   std::unique_ptr<bt::gatt::GATT> gatt_;
   fuchsia::bluetooth::host::HostPtr host_;
@@ -1611,7 +1614,8 @@ class HostServerTestFakeAdapter
     host_server_ =
         std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
                                      adapter()->AsWeakPtr(),
-                                     gatt_->GetWeakPtr());
+                                     gatt_->GetWeakPtr(),
+                                     lease_provider_);
     host_.Bind(std::move(host_handle));
   }
 
@@ -1631,6 +1635,7 @@ class HostServerTestFakeAdapter
   fuchsia::bluetooth::host::HostPtr& host_client_ptr() { return host_; }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<HostServer> host_server_;
   fuchsia::bluetooth::host::HostPtr host_;
   std::unique_ptr<bt::gatt::GATT> gatt_;

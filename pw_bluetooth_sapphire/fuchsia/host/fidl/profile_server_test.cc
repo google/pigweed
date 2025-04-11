@@ -24,6 +24,7 @@
 #include "fuchsia/bluetooth/cpp/fidl.h"
 #include "lib/fidl/cpp/vector.h"
 #include "lib/zx/socket.h"
+#include "pw_bluetooth_sapphire/fake_lease_provider.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/adapter_test_fixture.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/fake_adapter_test_fixture.h"
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/helpers.h"
@@ -223,6 +224,7 @@ class ProfileServerTest : public TestingBase {
     fidlbredr::ProfileHandle profile_handle;
     client_.Bind(std::move(profile_handle));
     server_ = std::make_unique<ProfileServer>(adapter()->AsWeakPtr(),
+                                              lease_provider_,
                                               client_.NewRequest(dispatcher()));
   }
   void SetUp() override { SetUp(FeaturesBits{0}); }
@@ -241,6 +243,7 @@ class ProfileServerTest : public TestingBase {
   bt::gap::PeerCache* peer_cache() const { return adapter()->peer_cache(); }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<ProfileServer> server_;
   fidlbredr::ProfilePtr client_;
 
@@ -1875,6 +1878,7 @@ class ProfileServerTestFakeAdapter
     fidlbredr::ProfileHandle profile_handle;
     client_.Bind(std::move(profile_handle));
     server_ = std::make_unique<ProfileServer>(adapter()->AsWeakPtr(),
+                                              lease_provider_,
                                               client_.NewRequest(dispatcher()));
   }
 
@@ -1883,6 +1887,7 @@ class ProfileServerTestFakeAdapter
   fidlbredr::ProfilePtr& client() { return client_; }
 
  private:
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider lease_provider_;
   std::unique_ptr<ProfileServer> server_;
   fidlbredr::ProfilePtr client_;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServerTestFakeAdapter);

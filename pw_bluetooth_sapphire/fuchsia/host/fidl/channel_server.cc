@@ -21,11 +21,14 @@ namespace fidlbt = fuchsia::bluetooth;
 
 namespace bthost {
 
-ChannelServer::ChannelServer(fidl::InterfaceRequest<fidlbt::Channel> request,
-                             bt::l2cap::Channel::WeakPtr channel,
-                             fit::callback<void()> closed_callback)
+ChannelServer::ChannelServer(
+    fidl::InterfaceRequest<fidlbt::Channel> request,
+    bt::l2cap::Channel::WeakPtr channel,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
+    fit::callback<void()> closed_callback)
     : ServerBase(this, std::move(request)),
       channel_(std::move(channel)),
+      wake_lease_provider_(wake_lease_provider),
       closed_cb_(std::move(closed_callback)),
       weak_self_(this) {
   binding()->set_error_handler(
@@ -67,6 +70,8 @@ void ChannelServer::Send(std::vector<::fuchsia::bluetooth::Packet> packets,
     }
   }
 
+  // Wait to send response until after calling Channel::Send() to ensure a wake
+  // lease is held in L2CAP.
   fidlbt::Channel_Send_Response response;
   // NOLINTNEXTLINE(performance-move-const-arg)
   callback(fidlbt::Channel_Send_Result::WithResponse(std::move(response)));
@@ -79,6 +84,13 @@ void ChannelServer::Receive(ReceiveCallback callback) {
     return;
   }
   receive_cb_ = std::move(callback);
+
+  // Treat a Receive() call as an acknowledgement of the previous response.
+  // We can now release the lease if no packets are queued.
+  if (wake_lease_ && receive_queue_.empty()) {
+    wake_lease_.reset();
+  }
+
   ServiceReceiveQueue();
 }
 
@@ -149,6 +161,7 @@ void ChannelServer::Deactivate() {
   }
   channel_->Deactivate();
   binding()->Close(ZX_ERR_CONNECTION_RESET);
+  wake_lease_.reset();
 
   state_ = State::kDeactivated;
 }
@@ -184,6 +197,14 @@ void ChannelServer::OnChannelDataReceived(bt::ByteBufferPtr rx_data) {
   }
 
   receive_queue_.push_back(std::move(rx_data));
+
+  // A wake lease should be held as long as packets are queued.
+  if (!wake_lease_) {
+    wake_lease_ =
+        PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_, "ChannelServer")
+            .value_or(pw::bluetooth_sapphire::Lease());
+  }
+
   ServiceReceiveQueue();
 }
 
@@ -221,18 +242,30 @@ void ChannelServer::ServiceReceiveQueue() {
   receive_cb_(
       fidlbt::Channel_Receive_Result::WithResponse(std::move(response)));
   receive_cb_ = nullptr;
+
+  // Hold a wake lease while waiting for the client to call Receive() again,
+  // indicating they received the packet.
+  if (!wake_lease_) {
+    wake_lease_ =
+        PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_, "ChannelServer")
+            .value_or(pw::bluetooth_sapphire::Lease());
+  }
 }
 
 std::unique_ptr<ChannelServer> ChannelServer::Create(
     fidl::InterfaceRequest<fidlbt::Channel> request,
     bt::l2cap::Channel::WeakPtr channel,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
     fit::callback<void()> closed_callback) {
   if (!channel.is_alive()) {
     return nullptr;
   }
 
-  std::unique_ptr<ChannelServer> server(new ChannelServer(
-      std::move(request), std::move(channel), std::move(closed_callback)));
+  std::unique_ptr<ChannelServer> server(
+      new ChannelServer(std::move(request),
+                        std::move(channel),
+                        wake_lease_provider,
+                        std::move(closed_callback)));
 
   if (!server->Activate()) {
     return nullptr;

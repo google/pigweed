@@ -90,6 +90,7 @@ bt::sm::SecurityLevel ConvertSecurityRequirementsFromFidl(
 LowEnergyConnectionServer::LowEnergyConnectionServer(
     bt::gap::Adapter::WeakPtr adapter,
     bt::gatt::GATT::WeakPtr gatt,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
     std::unique_ptr<bt::gap::LowEnergyConnectionHandle> connection,
     zx::channel handle,
     fit::callback<void()> closed_cb)
@@ -99,6 +100,7 @@ LowEnergyConnectionServer::LowEnergyConnectionServer(
       peer_id_(conn_->peer_identifier()),
       adapter_(std::move(adapter)),
       gatt_(std::move(gatt)),
+      wake_lease_provider_(wake_lease_provider),
       weak_self_(this) {
   PW_DCHECK(conn_);
 
@@ -360,8 +362,10 @@ void LowEnergyConnectionServer::ServeChannel(
 
   auto on_close = [this, unique_id]() { channel_servers_.erase(unique_id); };
 
-  auto server = ChannelServer::Create(
-      std::move(request), std::move(channel), std::move(on_close));
+  auto server = ChannelServer::Create(std::move(request),
+                                      std::move(channel),
+                                      wake_lease_provider_,
+                                      std::move(on_close));
 
   if (!server) {
     bt_log(ERROR,

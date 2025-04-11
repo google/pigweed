@@ -23,6 +23,7 @@
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/bredr_connection_manager.h"
 #include "pw_bluetooth_sapphire/internal/host/sdp/server.h"
+#include "pw_bluetooth_sapphire/lease.h"
 #include "pw_intrusive_ptr/intrusive_ptr.h"
 
 namespace bthost {
@@ -32,6 +33,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
  public:
   ProfileServer(
       bt::gap::Adapter::WeakPtr adapter,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
       fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> request);
   ~ProfileServer() override;
 
@@ -359,6 +361,8 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   std::unique_ptr<AudioOffloadController> audio_offload_controller_server_;
 
   bt::gap::Adapter::WeakPtr adapter_;
+
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
 
   // If true, use Channel.socket. If false, use Channel.connection.
   bool use_sockets_ = true;
