@@ -15,18 +15,22 @@
 """
 
 import argparse
+import logging
 import subprocess
 import sys
-import logging
+import tempfile
+import threading
+import time
 
+from pathlib import Path
 from pw_tokenizer import detokenize
 
 _LOG = logging.getLogger(__name__)
 _LOG.setLevel(logging.INFO)
 
 try:
-    import qemu.qemu_system_arm
-    import qemu.qemu_system_riscv32
+    import qemu.qemu_system_arm  # type: ignore
+    import qemu.qemu_system_riscv32  # type: ignore
     from python.runfiles import runfiles  # type: ignore
 
     r = runfiles.Create()
@@ -83,6 +87,31 @@ def _parse_args():
     return parser.parse_args()
 
 
+def _detokenizer(
+    image: Path, tokenized_file: Path, qemu_finished: threading.Event
+):
+    try:
+        detokenizer = detokenize.Detokenizer(image)
+        with open(tokenized_file, 'r', buffering=1) as f:
+            while not qemu_finished.is_set():
+                try:
+                    line = f.readline()
+                    if line:
+                        detokenizer.detokenize_base64_to_file(
+                            line, sys.stdout.buffer
+                        )
+                        sys.stdout.flush()
+                    else:
+                        time.sleep(0.01)
+                except BlockingIOError:
+                    # If writing to stdout too fast, it's sometimes possible
+                    # to get BlockingIOError due to the stdout buffer being
+                    # full, so sleep and try again.
+                    time.sleep(0.1)
+    except OSError as e:
+        print(f"Exception opening file {e}", file=sys.stderr)
+
+
 def _main(args) -> int:
     try:
         qemu_exe: str = _QEMU_BINARY_CPU_TYPE[args.cpu.lower()]
@@ -111,23 +140,36 @@ def _main(args) -> int:
         ]
 
     _LOG.info("Invoking QEMU: %s", qemu_args)
-    process = subprocess.Popen(
-        args=qemu_args,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
+    with tempfile.NamedTemporaryFile() as f:
+        with subprocess.Popen(
+            args=qemu_args,
+            stdout=f,
+        ) as proc:
+            # Capturing the sub process stdout or stderr and then writing to
+            # stdout can cause deadlocks (see
+            # https://docs.python.org/3/library/subprocess.html#subprocess.Popen.stderr)
+            # due to a write buffer (child process) filling up the pipe
+            # buffer before the parent process can consume it.
+            # To work around this, write to a temp file, and have the
+            # detokenizer poll and detokenize the temp file.
+            qemu_finished_event = threading.Event()
+            stdout_thread = threading.Thread(
+                target=_detokenizer,
+                args=(Path(args.image), Path(f.name), qemu_finished_event),
+                daemon=True,
+            )
+            stdout_thread.start()
+            out, err = proc.communicate()
+            qemu_finished_event.set()
+            if out:
+                print(out)
+            if err:
+                print(err)
 
-    detokenizer = detokenize.Detokenizer(args.image)
+            return_code = proc.returncode
+    stdout_thread.join()
 
-    while True:
-        output = process.stdout.readline()
-        if output == '' and process.poll() is not None:
-            break
-        if output:
-            print(detokenizer.detokenize_text(output.strip()))
-
-    sys.exit(process.poll())
+    sys.exit(return_code)
 
 
 if __name__ == '__main__':
