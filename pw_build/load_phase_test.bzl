@@ -52,6 +52,10 @@ def build_comparison_case_rule(attr_type):
         "provides": [_TestExpectationInfo],
     }
 
+bool_comparison = rule(
+    **build_comparison_case_rule(attr.bool())
+)
+
 string_comparison = rule(
     **build_comparison_case_rule(attr.string())
 )
@@ -62,6 +66,7 @@ string_list_comparison = rule(
 
 # Collect into a single struct to make it easier to load in a BUILD file.
 PW_LOAD_PHASE_TEST_TYPES = struct(
+    BOOL = bool_comparison,
     STRING = string_comparison,
     STRING_LIST = string_list_comparison,
 )
@@ -105,5 +110,6 @@ def pw_load_phase_test(comparison_type):
     return comparison_test
 
 # Actual test rule types.
+pw_bool_comparison_test = pw_load_phase_test(PW_LOAD_PHASE_TEST_TYPES.BOOL)
 pw_string_comparison_test = pw_load_phase_test(PW_LOAD_PHASE_TEST_TYPES.STRING)
 pw_string_list_comparison_test = pw_load_phase_test(PW_LOAD_PHASE_TEST_TYPES.STRING_LIST)
