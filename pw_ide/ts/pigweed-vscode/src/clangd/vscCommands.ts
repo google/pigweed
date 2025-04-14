@@ -21,7 +21,7 @@ import { didChangeClangdConfig, didChangeTarget } from '../events';
 
 import { launchTroubleshootingLink } from '../links';
 import logger from '../logging';
-import { RefreshManager } from '../refreshManager';
+import { OK, RefreshCallbackResult, RefreshManager } from '../refreshManager';
 import { settingFor, settings, stringSettingFor } from '../settings/vscode';
 import { processCompDbs } from './parser';
 import {
@@ -145,7 +145,7 @@ export async function setCompileCommandsTarget(
     });
 }
 
-export async function refreshNonBazelCompileCommands() {
+async function refreshNonBazelCompileCommandsInternal(): Promise<RefreshCallbackResult> {
   const { processedCompDbs, unprocessedCompDbs } = await processCompDbs();
 
   const currentProcessedMapping = await loadProcessedMapping();
@@ -169,6 +169,14 @@ export async function refreshNonBazelCompileCommands() {
   }
 
   await Promise.all(writePromises);
+  return OK;
+}
+
+export async function refreshNonBazelCompileCommands(
+  refreshManager: RefreshManager<any>,
+) {
+  refreshManager.onOnce(refreshNonBazelCompileCommandsInternal, 'refreshing');
+  refreshManager.refresh();
 }
 
 export async function refreshCompileCommandsAndSetTarget(

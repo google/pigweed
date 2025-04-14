@@ -216,7 +216,7 @@ async function registerCommands(
       name: 'pigweed.refresh-compile-commands',
       callback: async () => {
         if (useGn || useCmake) {
-          await refreshNonBazelCompileCommands();
+          await refreshNonBazelCompileCommands(refreshManager);
         }
 
         if (useBazel) {
@@ -230,7 +230,7 @@ async function registerCommands(
       name: 'pigweed.refresh-compile-commands-and-set-target',
       callback: async () => {
         if (useGn || useCmake) {
-          await refreshNonBazelCompileCommands();
+          await refreshNonBazelCompileCommands(refreshManager);
         }
 
         if (useBazel) {
