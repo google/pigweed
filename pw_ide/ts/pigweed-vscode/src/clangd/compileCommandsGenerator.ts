@@ -12,15 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import * as vscode from 'vscode';
 import * as child_process from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
-import { getReliableBazelExecutable } from '../bazel';
-import logger from '../logging';
-import { getPigweedProjectRoot } from '../project';
-import { settings, workingDir } from '../settings/vscode';
-import { OK, RefreshCallbackResult } from '../refreshManager';
+import { Logger } from '../loggingTypes';
 import {
   CompilationDatabase,
   CompilationDatabaseMap,
@@ -60,13 +55,12 @@ type AQueryOutput = {
 /**
  * Postcondition: Either //external points into Bazel's fullest set of external workspaces in output_base, or we've exited with an error that'll help the user resolve the issue.
  */
-function ensureExternalWorkspacesLink_exists() {
-  const cwd = workingDir.get();
+function ensureExternalWorkspacesLink_exists(cwd: string, logger?: Logger) {
   const isWindows = process.platform === 'win32';
   const source = path.resolve(path.join(cwd, 'external'));
 
   if (!fs.existsSync(path.join(cwd, 'bazel-out'))) {
-    logger.error('//bazel-out is missing.');
+    logger?.error('//bazel-out is missing.');
     process.exit(1);
   }
 
@@ -81,7 +75,7 @@ function ensureExternalWorkspacesLink_exists() {
 
   // Handle problem cases where //external exists
   if (fs.existsSync(source) && fs.lstatSync(source)) {
-    logger.info('Removing existing //external symlink');
+    logger?.info('Removing existing //external symlink');
     fs.unlinkSync(source);
   }
 
@@ -91,10 +85,10 @@ function ensureExternalWorkspacesLink_exists() {
       // We create a junction on Windows because symlinks need more than default permissions (ugh). Without an elevated prompt or a system in developer mode, symlinking would fail with get "OSError: [WinError 1314] A required privilege is not held by the client:"
       child_process.execSync(`mklink /J "${source}" "${dest}"`); // shell required for mklink builtin
     } else {
-      logger.info('symlinking ' + dest + '->' + source);
+      logger?.info('symlinking ' + dest + '->' + source);
       fs.symlinkSync(dest, source, 'dir');
     }
-    logger.info('Automatically added //external workspace link.');
+    logger?.info('Automatically added //external workspace link.');
   }
 }
 
@@ -163,13 +157,11 @@ function getSourceFile(args: string[]) {
   return candidates[0];
 }
 
-async function runCquery(cwd: string): Promise<CQueryItem[]> {
-  const cmd = getReliableBazelExecutable();
-
-  if (!cmd) {
-    throw new Error("Couldn't find a Bazel or Bazelisk executable");
-  }
-
+async function runCquery(
+  bazelCmd: string,
+  cwd: string,
+  logger?: Logger,
+): Promise<CQueryItem[]> {
   const bzlPath = path.join(__dirname, '..', 'scripts', 'cquery.bzl');
   const args = [
     'cquery',
@@ -179,13 +171,13 @@ async function runCquery(cwd: string): Promise<CQueryItem[]> {
     '--keep_going',
     '--experimental_platform_in_output_dir',
   ];
-  const spawnedProcess = child_process.spawn(cmd, args, { cwd });
+  const spawnedProcess = child_process.spawn(bazelCmd, args, { cwd });
 
   const headersArray = await new Promise<CQueryItem[] | null>((resolve) => {
     let output = '';
 
     spawnedProcess.stdout.on('data', (data) => (output += data.toString()));
-    spawnedProcess.stderr.on('data', (data) => logger.info(data.toString()));
+    spawnedProcess.stderr.on('data', (data) => logger?.info(data.toString()));
 
     spawnedProcess.on('exit', (code) => {
       try {
@@ -196,7 +188,7 @@ async function runCquery(cwd: string): Promise<CQueryItem[]> {
         resolve(parsedHeaders);
       } catch (e) {
         const message = 'Failed to run cquery ' + `(error code: ${code})`;
-        logger.error(message);
+        logger?.error(message);
         resolve(null);
       }
     });
@@ -206,12 +198,11 @@ async function runCquery(cwd: string): Promise<CQueryItem[]> {
   return headersArray;
 }
 
-async function runAquery(cwd: string): Promise<Action[]> {
-  const cmd = getReliableBazelExecutable();
-
-  if (!cmd) {
-    throw new Error("Couldn't find a Bazel or Bazelisk executable");
-  }
+async function runAquery(
+  bazelCmd: string,
+  cwd: string,
+  logger?: Logger,
+): Promise<Action[]> {
   const args = [
     'aquery',
     '--include_commandline',
@@ -226,13 +217,13 @@ async function runAquery(cwd: string): Promise<Action[]> {
     '--experimental_platform_in_output_dir',
     '--keep_going',
   ];
-  const spawnedProcess = child_process.spawn(cmd, args, { cwd });
+  const spawnedProcess = child_process.spawn(bazelCmd, args, { cwd });
 
   const outputJson = await new Promise<Action[] | null>((resolve) => {
     let output = '';
 
     spawnedProcess.stdout.on('data', (data) => (output += data.toString()));
-    spawnedProcess.stderr.on('data', (data) => logger.info(data.toString()));
+    spawnedProcess.stderr.on('data', (data) => logger?.info(data.toString()));
 
     spawnedProcess.on('exit', (code) => {
       try {
@@ -248,7 +239,7 @@ async function runAquery(cwd: string): Promise<Action[]> {
       } catch (e) {
         const message = 'Failed to run aquery ' + `(error code: ${code})`;
 
-        logger.error(message);
+        logger?.error(message);
         resolve(null);
       }
     });
@@ -267,6 +258,7 @@ async function runAquery(cwd: string): Promise<Action[]> {
 function getCppCommandForFiles(
   headersByTarget: { [key: string]: string[] },
   action: Action,
+  logger?: Logger,
 ) {
   if (!action || !Array.isArray(action.arguments)) {
     throw new Error('Invalid compile action: missing arguments');
@@ -282,11 +274,11 @@ function getCppCommandForFiles(
   try {
     sourceFile = getSourceFile(args);
   } catch (err: any) {
-    logger.warn('Warning: ' + err.message);
+    logger?.warn('Warning: ' + err.message);
     sourceFile = '';
   }
   if (sourceFile && !fs.existsSync(sourceFile)) {
-    logger.warn(
+    logger?.warn(
       'Warning: Source file ' +
         sourceFile +
         ' does not exist. It may be generated.',
@@ -379,6 +371,7 @@ export async function generateCompileCommandsFromAqueryCquery(
   cwd: string,
   aqueryActions: Action[],
   cqueryJson: CQueryItem[],
+  logger?: Logger,
 ) {
   const virtualToRealMap = resolveVirtualIncludesToRealPaths(cqueryJson);
   const headersByTarget: { [key: string]: string[] } = {};
@@ -406,7 +399,7 @@ export async function generateCompileCommandsFromAqueryCquery(
         sourceFiles,
         headerFiles,
         arguments: cmdArgs,
-      } = getCppCommandForFiles(headersByTarget, action);
+      } = getCppCommandForFiles(headersByTarget, action, logger);
       const files = [...sourceFiles];
       // Include header entries if not already added.
       for (const hdr of headerFiles) {
@@ -430,7 +423,7 @@ export async function generateCompileCommandsFromAqueryCquery(
     });
 
     compileCommandsPerPlatform.set(platform, compileCommands);
-    logger.info(
+    logger?.info(
       'Finished generating compile_commands.json for platform ' +
         platform +
         ' with ' +
@@ -442,32 +435,34 @@ export async function generateCompileCommandsFromAqueryCquery(
   return compileCommandsPerPlatform;
 }
 
-export async function generateCompileCommands(): Promise<RefreshCallbackResult> {
+export async function generateCompileCommands(
+  bazelCmd: string,
+  cwd: string,
+  cdbFileDir: string,
+  cdbFilename: string,
+  logger?: Logger,
+) {
   const startTime = Date.now();
-  logger.info('Generating compile_commands.json.');
-  const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
-  ensureExternalWorkspacesLink_exists();
-  const aqueryActions = await runAquery(cwd);
-  const cqueryJson = await runCquery(cwd);
+  logger?.info('Generating compile_commands.json.');
+  ensureExternalWorkspacesLink_exists(cwd, logger);
+  const aqueryActions = await runAquery(bazelCmd, cwd, logger);
+  const cqueryJson = await runCquery(bazelCmd, cwd, logger);
 
   const compileCommandsPerPlatform =
     await generateCompileCommandsFromAqueryCquery(
       cwd,
       aqueryActions,
       cqueryJson,
+      logger,
     );
 
-  await compileCommandsPerPlatform.writeAll();
+  await compileCommandsPerPlatform.writeAll(cwd, cdbFileDir, cdbFilename);
 
-  logger.info(
+  logger?.info(
     'Finished generating compile_commands.json for ' +
       compileCommandsPerPlatform.size +
       ' platforms in ' +
       (Date.now() - startTime) +
       'ms.',
   );
-
-  // Restart the clangd server so it picks up the new compile commands.
-  vscode.commands.executeCommand('clangd.restart');
-  return OK;
 }

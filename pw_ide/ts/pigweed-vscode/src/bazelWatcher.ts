@@ -12,8 +12,6 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import * as child_process from 'child_process';
-
 import * as vscode from 'vscode';
 import { ProgressLocation } from 'vscode';
 
@@ -21,6 +19,7 @@ import { Disposable } from './disposables';
 import { launchTroubleshootingLink } from './links';
 import logger from './logging';
 import { getPigweedProjectRoot } from './project';
+import { getReliableBazelExecutable } from './bazel';
 
 import {
   RefreshCallback,
@@ -31,6 +30,7 @@ import {
 
 import { bazel_executable, settings, workingDir } from './settings/vscode';
 import { generateCompileCommands } from './clangd/compileCommandsGenerator';
+import { CDB_FILE_DIR, CDB_FILE_NAME } from './clangd';
 
 /** Regex for finding ANSI escape codes. */
 const ANSI_PATTERN = new RegExp(
@@ -101,7 +101,23 @@ export class BazelRefreshCompileCommandsWatcher extends Disposable {
 
   /** Trigger a refresh compile commands process. */
   refresh = () => {
-    this.refreshManager.onOnce(generateCompileCommands, 'refreshing');
+    this.refreshManager.onOnce(async () => {
+      const cwd = (await getPigweedProjectRoot(settings, workingDir)) as string;
+      const bazelCmd = getReliableBazelExecutable();
+      if (!bazelCmd) {
+        throw new Error("Couldn't find a Bazel or Bazelisk executable");
+      }
+      await generateCompileCommands(
+        bazelCmd,
+        cwd,
+        CDB_FILE_DIR,
+        CDB_FILE_NAME,
+        logger,
+      );
+      // Restart the clangd server so it picks up the new compile commands.
+      vscode.commands.executeCommand('clangd.restart');
+      return OK;
+    }, 'refreshing');
     this.refreshManager.refresh();
   };
 }

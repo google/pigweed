@@ -15,15 +15,27 @@
 import * as vscode from 'vscode';
 import { ClangdActiveFilesCache } from './activeFilesCache';
 import { clangdPath as bazelClangdPath } from './bazel';
-import { availableTargets, getTarget, baseSetTarget, Target } from './paths';
+import {
+  availableTargets,
+  getTarget,
+  baseSetTarget,
+  Target,
+  CDB_FILE_DIR,
+  CDB_FILE_NAME,
+} from './paths';
 
 import { didChangeClangdConfig, didChangeTarget } from '../events';
 
 import { launchTroubleshootingLink } from '../links';
 import logger from '../logging';
 import { OK, RefreshCallbackResult, RefreshManager } from '../refreshManager';
-import { settingFor, settings, stringSettingFor } from '../settings/vscode';
-import { processCompDbs } from './parser';
+import {
+  settingFor,
+  settings,
+  stringSettingFor,
+  workingDir,
+} from '../settings/vscode';
+import { processCompDbs } from './compileCommandsUtils';
 import {
   getTargetType,
   loadProcessedMapping,
@@ -160,7 +172,7 @@ async function refreshNonBazelCompileCommandsInternal(): Promise<RefreshCallback
   };
 
   const writePromises = [
-    processedCompDbs.writeAll(),
+    processedCompDbs.writeAll(workingDir.get(), CDB_FILE_DIR, CDB_FILE_NAME),
     saveProcessedMapping(newProcessedMapping),
   ];
 

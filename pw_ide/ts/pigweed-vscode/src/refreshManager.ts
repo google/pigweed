@@ -40,7 +40,7 @@
  * in-progress refresh process.
  */
 
-import type { Logger } from './logging';
+import type { Logger } from './loggingTypes';
 
 /** Refresh statuses that broadly represent a refresh in progress. */
 export type RefreshStatusInProgress =

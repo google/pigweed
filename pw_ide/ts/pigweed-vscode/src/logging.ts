@@ -13,18 +13,7 @@
 // the License.
 
 import * as vscode from 'vscode';
-
-type LogEntry = {
-  level: 'info' | 'warn' | 'error';
-  message: string;
-  timestamp: Date;
-};
-export interface Logger {
-  info: (msg: string) => void;
-  warn: (msg: string) => void;
-  error: (msg: string) => void;
-}
-
+import { Logger, LogDumpPassthrough, LogEntry } from './loggingTypes';
 export const output = vscode.window.createOutputChannel('Pigweed', {
   log: true,
 });
@@ -34,10 +23,6 @@ const logger = {
   warn: (msg: string) => output.warn(msg),
   error: (msg: string) => output.error(msg),
 };
-
-export interface LogDumpPassthrough extends Logger {
-  logs: LogEntry[];
-}
 
 function loggerWithPassthrough(logger: Logger): LogDumpPassthrough {
   const logs: LogEntry[] = [];
