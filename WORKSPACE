@@ -18,14 +18,6 @@ workspace(
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
-# TODO: b/383856665 - rules_fuchsia requires host_platform. Once this is fixed
-# we can remove this entry.
-load("@platforms//host:extension.bzl", "host_platform_repo")
-
-host_platform_repo(
-    name = "host_platform",
-)
-
 # Setup Fuchsia SDK.
 git_repository(
     name = "fuchsia_infra",

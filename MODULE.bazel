@@ -123,6 +123,11 @@ git_repository(
     remote = "https://github.com/erenon/bazel_clang_tidy.git",
 )
 
+# TODO: b/383856665 - rules_fuchsia requires host_platform. Once this is fixed
+# we can remove this entry.
+host_platform = use_extension("@platforms//host:extension.bzl", "host_platform")
+use_repo(host_platform, "host_platform")
+
 # Configure libusb
 # ================
 #
