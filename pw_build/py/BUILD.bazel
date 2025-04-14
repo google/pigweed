@@ -118,6 +118,12 @@ pw_py_binary(
     ],
 )
 
+pw_py_binary(
+    name = "bazel_to_gn",
+    srcs = ["pw_build/bazel_to_gn.py"],
+    deps = [":pw_build"],
+)
+
 pw_py_test(
     name = "bazel_query_test",
     size = "small",

@@ -37,6 +37,8 @@ from pw_build.bazel_query import (
 from pw_build.gn_target import GnTarget
 from pw_build.gn_writer import GnFile
 
+ROOT_DIR_VARNAMES = ['PW_ROOT', 'BUILD_WORKSPACE_DIRECTORY']
+
 
 def _parse_args() -> argparse.Namespace:
     """Parse arguments."""
@@ -58,11 +60,15 @@ def _parse_args() -> argparse.Namespace:
     )
     args = parser.parse_args()
 
+    for varname in ROOT_DIR_VARNAMES:
+        if args.root_dir:
+            break
+        pw_root = os.getenv(varname)
+        if pw_root:
+            args.root_dir = PurePath(pw_root)
+
     if not args.root_dir:
-        pw_root = os.getenv('PW_ROOT')
-        if not pw_root:
-            raise RuntimeError('PW_ROOT is not set')
-        args.root_dir = PurePath(pw_root)
+        raise RuntimeError('Unable to determine project root.')
 
     return args
 
@@ -326,8 +332,9 @@ def _bazel_to_gn(args: argparse.Namespace) -> None:
         args: Script arguments. See `_parse_args`.
     """
     b2g = BazelToGnConverter()
-
     root_dir = Path(args.root_dir)
+    os.chdir(root_dir)
+
     print('[~] Converting Bazel rules and their dependencies to GN targets...')
     with open(Path(root_dir, 'MODULE.bazel')) as file:
         b2g.load_modules(file)
@@ -376,7 +383,6 @@ def _bazel_to_gn(args: argparse.Namespace) -> None:
     print()
 
     print('[~] Updating presubmit packages...')
-    print('(!) `bazel mod show_repo` may be slow, please be patient...')
     for repo_name in b2g.repo_names(only_generated=True):
         update_path = root_dir.joinpath(
             'pw_package',
@@ -394,6 +400,11 @@ def _bazel_to_gn(args: argparse.Namespace) -> None:
     print('[+] Presubmit package update complete!')
     print()
     print('[+] Bazel to GN translation complete!')
+    print()
+    print('Next steps:')
+    print('  1. Update Python packages using `ninja -C out python.install`.')
+    print('  2. Build, e.g. using `pw build --step <some_gn_build>`.')
+    print('  3. If applicable update a recurring task bug, e.g. b/315368642.')
 
 
 if __name__ == '__main__':

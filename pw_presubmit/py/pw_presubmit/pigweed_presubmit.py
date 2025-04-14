@@ -497,7 +497,7 @@ gn_chre_googletest_nanopb_sapphire_build = PigweedGnGenNinja(
 gn_fuzz_build = PigweedGnGenNinja(
     name='gn_fuzz_build',
     path_filter=_BUILD_FILE_FILTER,
-    packages=('abseil-cpp', 'fuzztest', 'googletest', 're2'),
+    packages=('abseil-cpp', 'fuzztest', 'googletest'),
     gn_args={
         'dir_pw_third_party_abseil_cpp': lambda ctx: '"{}"'.format(
             ctx.package_root / 'abseil-cpp'
@@ -507,15 +507,6 @@ gn_fuzz_build = PigweedGnGenNinja(
         ),
         'dir_pw_third_party_googletest': lambda ctx: '"{}"'.format(
             ctx.package_root / 'googletest'
-        ),
-        'dir_pw_third_party_re2': lambda ctx: '"{}"'.format(
-            ctx.package_root / 're2'
-        ),
-        'pw_unit_test_MAIN': lambda ctx: '"{}"'.format(
-            ctx.root / 'third_party/googletest:gmock_main'
-        ),
-        'pw_unit_test_BACKEND': lambda ctx: '"{}"'.format(
-            ctx.root / 'pw_unit_test:googletest'
         ),
     },
     ninja_targets=('fuzzers',),

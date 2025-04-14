@@ -21,7 +21,10 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 
 config("absl_public_config") {
-  cflags = [ "-Wno-gcc-compat" ]
+  cflags = [
+    "-Wno-gcc-compat",
+    "-Wno-nullability-extension",
+  ]
   if (dir_pw_third_party_abseil_cpp != "") {
     include_dirs = [ dir_pw_third_party_abseil_cpp ]
   }
