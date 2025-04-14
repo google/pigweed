@@ -63,7 +63,6 @@ installation. In order to use it, you only need to define a suitable toolchain.
 
       .. code-block::
 
-         # Include FuzzTest build configurations.
          import %workspace%/path/to/pigweed/pw_fuzzer/libfuzzer.bazelrc
 
 ------------------------------------

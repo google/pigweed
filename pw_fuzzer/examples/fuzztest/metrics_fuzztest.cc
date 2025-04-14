@@ -13,6 +13,7 @@
 // the License.
 
 #include <algorithm>
+#include <string_view>
 
 #include "metrics.h"
 #include "pw_fuzzer/fuzztest.h"
@@ -40,7 +41,13 @@ void ArbitrarySerializeAndDeserialize(const Vector<Metric>& metrics) {
   EXPECT_TRUE(src.Serialize(buffer).ok());
   EXPECT_TRUE(dst.Deserialize(buffer).ok());
   for (const auto& metric : metrics) {
-    EXPECT_EQ(dst.GetValue(metric.name).value_or(0), metric.value);
+    auto src_value = src.GetValue(metric.name);
+    ASSERT_TRUE(src_value.has_value());
+
+    auto dst_value = dst.GetValue(metric.name);
+    ASSERT_TRUE(dst_value.has_value());
+
+    EXPECT_EQ(*dst_value, *src_value);
   }
 }
 

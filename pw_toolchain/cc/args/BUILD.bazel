@@ -272,6 +272,7 @@ cc_args(
         "@rules_cc//cc/toolchains/actions:link_actions",
     ],
     args = [
+        "-fsanitize-coverage=inline-8bit-counters,trace-cmp,pc-table",
         "-DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION",
         "-UNDEBUG",
         "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG",

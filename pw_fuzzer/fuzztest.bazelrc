@@ -12,18 +12,20 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Adapted from @com_google_fuzztest//bazel:setup_configs
-
+# Adapted from @fuzztest//bazel:setup_configs
 build:fuzztest --@pigweed//pw_toolchain/host_clang:fuzztest
 build:fuzztest --dynamic_mode=off
 build:fuzztest \
-    --per_file_copt=+//,-fuzztest/.*,-googletest/.*,-googlemock/.*@-fsanitize-coverage=inline-8bit-counters,-fsanitize-coverage=trace-cmp
+    --per_file_copt=//common:,//fuzztest:,//centipede:,-//centipede/.*fuzz_target,googletest/.*,googlemock/.*@-fsanitize-coverage=0
 build:fuzztest \
-    --@pigweed//pw_fuzzer:fuzztest_backend=@com_google_fuzztest//fuzztest:fuzztest_core
+    --@fuzztest//fuzztest:use_riegeli=false
+build:fuzztest \
+    --@pigweed//pw_fuzzer:fuzztest_backend=@fuzztest//fuzztest:fuzztest_core
 build:fuzztest \
     --@pigweed//pw_unit_test:backend=@pigweed//pw_unit_test:googletest
 build:fuzztest \
-    --@pigweed//pw_unit_test:main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
+    --@pigweed//pw_unit_test:main=@fuzztest//fuzztest:fuzztest_gtest_main
+
 # TODO: https://pwbug.dev/390709187 - Re-enable layering check once the layering
 # issues in the googletest backend are fixed.
 build:fuzztest --features=-layering_check

@@ -30,7 +30,7 @@ config_setting(
     name = "use_fuzztest",
     testonly = True,
     flag_values = {
-        "//pw_fuzzer:fuzztest_backend": "@com_google_fuzztest//fuzztest:fuzztest_core",
+        "//pw_fuzzer:fuzztest_backend": "@fuzztest//fuzztest:fuzztest_core",
     },
 )
 
@@ -45,6 +45,9 @@ cc_library(
         ":use_fuzztest": ["private"],
         "//conditions:default": [],
     }),
+
+    # TODO: b/292628774 - Only linux is supported for now.
+    target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":fuzztest_backend",
         "//pw_containers:flat_map",

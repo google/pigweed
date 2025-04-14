@@ -24,6 +24,7 @@ bazel_dep(name = "aspect_rules_js", version = "2.1.0")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "boringssl", version = "0.20240913.0")
 bazel_dep(name = "freertos", version = "10.5.1.bcr.2")
+bazel_dep(name = "fuzztest", version = "20250214.0")
 bazel_dep(name = "gazelle", version = "0.40.0", repo_name = "bazel_gazelle")
 bazel_dep(name = "googletest", version = "1.16.0", repo_name = "com_google_googletest")
 bazel_dep(name = "nanopb", version = "0.4.9.1")
@@ -36,6 +37,7 @@ bazel_dep(name = "protobuf", version = "28.2", repo_name = "com_google_protobuf"
 # LINT.ThenChange(pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json,pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list:protobuf)
 
 # A transitive dependency requires this.
+bazel_dep(name = "abseil-cpp", version = "20240116.1")
 bazel_dep(name = "re2", version = "2024-07-02.bcr.1")
 bazel_dep(name = "rules_android", version = "0.6.0")
 bazel_dep(name = "rules_cc", version = "0.1.1")
