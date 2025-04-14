@@ -6,6 +6,13 @@ Glossary
 This glossary defines terms that have specific meanings in the context of
 Pigweed.
 
+.. _docs-glossary-development-host:
+
+----------------
+Development host
+----------------
+The computer that you develop software on.
+
 .. _docs-glossary-facade:
 
 ------
@@ -50,3 +57,21 @@ Learn more:
 * :ref:`List of modules <docs-module-guides>`
 * :ref:`docs-module-structure`
 * :ref:`docs-concepts-embedded-development-libraries`
+
+.. _docs-glossary-committers:
+
+------------------
+Pigweed committers
+------------------
+People who have write access to :ref:`docs-glossary-upstream`.
+I.e. people who can run Pigweed's tryjobs, approve code reviews,
+and merge code into upstream Pigweed.
+
+.. _docs-glossary-upstream:
+
+----------------
+Upstream Pigweed
+----------------
+.. _main repository: https://cs.opensource.google/pigweed/Pigweed
+
+Pigweed's `main repository`_.

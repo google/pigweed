@@ -207,6 +207,7 @@ Configure system settings
 
            git config --global core.symlinks true
 
+.. _docs-first-time-setup-guide-support-notes:
 
 -------------
 Support notes

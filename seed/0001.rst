@@ -93,7 +93,7 @@ Process
 Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
 
 #. If you haven't already, clone the Pigweed repository and set it up locally,
-   following the :ref:`docs-get-started-upstream` guide.
+   following :ref:`docs-contributing`.
 
 #. Check out a clean Git branch off of ``main`` for your SEED.
 

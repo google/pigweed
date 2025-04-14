@@ -15,6 +15,8 @@ target.
 
    $ ninja -C out stm32f429i
 
+.. _target-stm32f429i-disc1-test:
+
 Testing
 =======
 When working in upstream Pigweed, building this target will build all Pigweed modules' unit tests.

@@ -190,11 +190,11 @@ Talk to us
    docs/get_started/index
    What's new <changelog>
    modules
+   Contributing <docs/contributing/index>
    Source code <https://cs.pigweed.dev/pigweed>
    docs/showcases/index
    docs/concepts/index
    Toolchain <toolchain>
    docs/3p/index
    docs/community/index
-   Developing & contributing <docs/contributing/index>
    Blog <docs/blog/index>

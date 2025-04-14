@@ -1,452 +1,309 @@
 .. _docs-contributing:
 
-============
-Contributing
-============
-We'd love to accept your patches and contributions to Pigweed. There are just a
-few small guidelines you need to follow.
+==================
+Contributing guide
+==================
 
-Before participating in our community, please take a moment to review our
-:ref:`docs-code-of-conduct`. We expect everyone who interacts with the project
-to respect these guidelines.
+.. Note to authors: This guide should be optimized to help people quickly
+.. contribute to Pigweed. The guide should be short and concise. We don't want
+.. to overwhelm new contributors and make the contribution process feel daunting.
+.. Detailed context and edge cases should be put elsewhere.
 
-Good first issue
-----------------
-We maintain a list of `good first issues for first-time contributors
-<https://issues.pigweed.dev/issues?q=id:256050233%20OR%20parentid:256050233%2B>`__.
-If you would like to contribute to Pigweed but are not sure where to start, take
-a look at one of these!
+.. _main repository: https://cs.opensource.google/pigweed/pigweed
 
-Get started
------------
-See :ref:`docs-get-started-upstream`.
+Thank you for your interest in improving :ref:`docs-glossary-upstream`! This
+guide quickly walks you through the end-to-end contribution process.
 
-Pigweed contribution overview
------------------------------
-.. note::
-
-  If you have any trouble with this flow, reach out in our `chat room
-  <https://discord.gg/M9NSeTA>`_ or on the `mailing list
-  <https://groups.google.com/forum/#!forum/pigweed>`_ for help.
-
-One-time contributor setup
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-#. Sign the
-   `Contributor License Agreement <https://cla.developers.google.com/>`_.
-#. Verify that your Git user email (git config user.email) is either Google
-   Account email or an Alternate email for the Google account used to sign
-   the CLA (Manage Google account → Personal Info → email).
-#. Obtain a login cookie from Gerrit's
-   `new-password <https://pigweed.googlesource.com/new-password>`_ page.
-#. Install the :ref:`gerrit-commit-hook` to automatically add a
-   ``Change-Id: ...`` line to your commit.
-#. Install the Pigweed presubmit check hook with ``pw presubmit --install``.
-   Remember to :ref:`activate-pigweed-environment` first!
-
-Presubmission process
-^^^^^^^^^^^^^^^^^^^^^
-Before making or sending major changes or SEEDs, please reach out in our
-`chat room <https://discord.gg/M9NSeTA>`_ or on the `mailing list
-<https://groups.google.com/forum/#!forum/pigweed>`_ first to ensure the changes
-make sense for upstream. We generally go through a design phase before making
-large changes. See :ref:`SEED-0001` for a description of this process; but
-please discuss with us before writing a full SEED. Let us know of any
-priorities, timelines, requirements, and limitations ahead of time.
-
-For minor changes that don't fit the SEED process, follow the
-:ref:`docs-code_reviews-small-changes` guidance and the `Change submission
-process`_.
-
-.. warning::
-   Skipping communicating with us before doing large amounts of work risks
-   accepting your contribution. Communication is key!
-
-Change submission process
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. note::
-   A change is a single git commit, and is also known as Change List or CL for
-   short.
+.. _good first issues: https://issues.pigweed.dev/issues?q=id:256050233%20OR%20parentid:256050233%2B
+.. _bring it home changes: https://pigweed-review.googlesource.com/q/hashtag:%22BringItHome
 
 .. tip::
-   Follow :ref:`docs-code_reviews-small-changes` for a smooth submission process
 
-#. Go through the `Presubmission process`_ and review this document's guidance.
-#. Ensure all files include the correct copyright and license headers.
-#. Include any necessary changes to the documentation.
-#. Run :ref:`module-pw_presubmit` to detect style or compilation issues before
-   uploading.
-#. Upload the change with ``git push origin HEAD:refs/for/main``.
-#. Add ``gwsq-pigweed@pigweed.google.com.iam.gserviceaccount.com`` as a
-   reviewer. This will automatically choose an appropriate person to review the
-   change.
-#. Address any reviewer feedback by amending the commit
-   (``git commit --amend``).
-#. Submit change to CI builders to merge. If you are not part of Pigweed's
-   core team, you can ask the reviewer to add the `+2 CQ` vote, which will
-   trigger a rebase and submit once the builders pass.
+   If you don't have a particular contribution in mind, check out our
+   `good first issues`_ and `bring it home changes`_. The bring it home changes
+   are incomplete changes that we would be happy to merge but need more work
+   before we can accept them.
 
-Contributor License Agreement
------------------------------
-Contributions to this project must be accompanied by a Contributor License
-Agreement. You (or your employer) retain the copyright to your contribution;
-this simply gives us permission to use and redistribute your contributions as
-part of the project. Head over to <https://cla.developers.google.com/> to see
-your current agreements on file or to sign a new one.
+.. _docs-contributing-help:
 
-You generally only need to submit a CLA once, so if you've already submitted one
-(even if it was for a different project), you probably don't need to do it
-again.
+----------
+Contact us
+----------
+.. _issue tracker: https://pwbug.dev
+.. _public chat room: https://discord.gg/M9NSeTA
+.. _corp chat rooms: http://go/pigweed-chat-rooms
 
-.. _docs-contributing-contribution-standards:
+If you ever need help, please don't hesitate to contact us:
 
-Contribution Standards
-----------------------
-Contributions, i.e. CLs, are expected to be complete solutions, accompanied by
-documentation and unit tests when merited, e.g. new code, bug fixes, or code
-that changes some behavior. This also means that code changes must be tested.
-Tests will avoid or minimize any negative impact to Pigweed users, while
-documentation will help others learn about the new changes.
+* Create an issue in our `issue tracker`_ or leave a new comment on an
+  existing issue
+* Message us in our `public chat room`_
+* (Googlers) Message us in our `corp chat rooms`_
 
-We understand that you may have different priorities or not know the best way to
-complete your contribution. In that case, reach out via our `chat room
-<https://discord.gg/M9NSeTA>`_ or on the `mailing list
-<https://groups.google.com/forum/#!forum/pigweed>`_ for help or `File a bug
-<https://issues.pigweed.dev/issues?q=status:open>`_
-requesting fixes describing how this may be blocking you. Otherwise you risk
-working on a CL that does not match our vision and could be rejected. To keep
-our focus, we cannot adopt incomplete CLs.
+.. _docs-contributing-expectations:
 
-.. _gerrit-commit-hook:
-
-Build System Support
---------------------
-Pigweed users are split across a number of build systems including:
-
-* `Bazel <https://bazel.build/>`_
-* `GN (a ninja generator) <https://gn.googlesource.com/gn/>`_
-* `CMake <https://cmake.org/>`_
-* `Soong (Android's build system) <https://source.android.com/docs/setup/build>`_
-
-In order to ensure parity between different build systems, contributions must
-include support for at least Bazel (``BUILD.bazel``), GN (``BUILD.gn``) and
-CMake (``CMakeLists.txt``).
-
-We understand that most people don't have experience with all of the build
-systems Pigweed supports, and that this requirement is a burden on contributors.
-We find most people are able to follow the patterns in existing build files to
-add support for their changes; but not always. We're happy to help with build
-questions on Discord for that reason. Don't be shy if you need help!
-
-Gerrit Commit Hook
-------------------
-Gerrit requires all changes to have a ``Change-Id`` tag at the bottom of each
-commit message. You should set this up to be done automatically using the
-instructions below.
-
-The commands below assume that your current working directory is the root
-of your Pigweed repository.
-
-**Linux/macOS**
-
-.. code-block:: bash
-
-   f=`git rev-parse --git-dir`/hooks/commit-msg ; mkdir -p $(dirname $f) ; curl -Lo $f https://gerrit-review.googlesource.com/tools/hooks/commit-msg ; chmod +x $f
-
-**Windows**
-
-.. code-block:: batch
-
-   git rev-parse --git-dir > gitrepopath.txt & set /p "g="< gitrepopath.txt & del gitrepopath.txt & call set "f=%g%/hooks" & call mkdir "%f%" & call curl -Lo "%f%/commit-msg" https://gerrit-review.googlesource.com/tools/hooks/commit-msg
-
-Commit Message
---------------
-See the :ref:`commit message section of the style
-guide<docs-pw-style-commit-message>` for how commit messages should look.
-
-Documentation
--------------
-Most changes to Pigweed should have an associated documentation change.
-
-Building
-^^^^^^^^
-To build the documentation, follow the :ref:`getting
-started<docs-get-started-upstream>` guide so you can build Pigweed. Then:
-
-#. Change to your checkout directory and ``. activate.sh`` if necessary
-#. Run ``pw watch -C out`` to build the code, run tests, and build docs
-#. Wait for the build to finish (see a ``PASS``)
-#. Navigate to  ``<CHECKOUT>/out/docs/gen/docs/html/index.html``
-#. Edit the relevant ``.rst`` file. Save when ready
-#. Refresh your browser after the build completes
-
-Alternately, you can use the local webserver in watch; this works better for
-some pages that have external resources: ``pw watch --serve-docs`` then
-navigate to `http://localhost:8000 <http://localhost:8000>`_ in your browser.
-
-Submission checklist
-^^^^^^^^^^^^^^^^^^^^
-All Pigweed changes must either:
-
-#. Include updates to documentation, or
-#. Assert no documentation is needed by voting +1 on the ``Docs-Not-Needed``
-   #label in Gerrit.
-
-It's acceptable to only document new changes in an otherwise underdocumented
-module, but it's not acceptable to not document new changes because the module
-doesn't have any other documentation.
-
-Code Reviews
 ------------
-See :ref:`docs-code_reviews` for information about the code review process.
+Expectations
+------------
+This is what we expect from all contributors. Please don't send
+us code if you can't commit to all of these expectations. You're
+welcome to `create an issue <https://pwbug.dev>`_ instead.
 
-Experimental Repository and Where to Land Code
-----------------------------------------------
-Pigweed's has an `Experimental Repository
-<https://pigweed.googlesource.com/pigweed/experimental>`_ which differs from
-our main repository in a couple key ways:
+.. _docs-contributing-expectations-community:
 
-* Code is not expected to become production grade.
-* Code review standards are relaxed to allow experimentation.
-* In general the value of the code in the repository is the knowledge gained
-  from the experiment, not the code itself.
+Community guidelines
+====================
+.. _Google's Open Source Community Guidelines: https://opensource.google/conduct/
 
-Good uses of the repo include:
+We expect everyone who interacts with the project to respect our
+:ref:`docs-code-of-conduct` and `Google's Open Source Community Guidelines`_.
 
-* Experimenting with using an API (ex. C++20 coroutines) with no plans to
-  turn it into production code.
-* One-off test programs to gather data.
+.. _docs-contributing-expectations-complete:
 
-We would like to avoid large pieces of code being developed in the experimental
-repository then imported into the Pigweed repository. If large amounts of code
-end up needing to migrate from experimental to main, then it must be landed
-incrementally as a series of reviewable patches, typically no
-`larger than 500 lines each
-<https://google.github.io/eng-practices/review/developer/small-cls.html>`_.
-This creates a large code review burden that often results in poorer reviews.
-Therefore, if the eventual location of the code will be the main Pigweed
-repository, it is **strongly encouraged** that the code be developed in the
-**main repository under an experimental flag**.
+Complete solutions
+==================
+Contributions are expected to be complete solutions accompanied by
+documentation, tests, and :ref:`support for our primary build systems
+<docs-contributing-expectations-build-systems>`.
 
-.. note::
-   The current organization of the experimental repository does not reflect
-   this policy. This will be re-organized once we have concrete recommendations
-   on its organization.
+.. _docs-contributing-expectations-build-systems:
 
-Community Guidelines
---------------------
-This project follows `Google's Open Source Community Guidelines
-<https://opensource.google/conduct/>`_ and the :ref:`docs-code-of-conduct`.
+Support for primary build systems
+---------------------------------
+Patches must include support for our three primary build systems: Bazel, GN,
+and CMake. Soong is optional but appreciated. We understand that not everyone has
+experience with all three builds; but for most patches following the pattern of
+existing code is enough. If not, we can help on :ref:`chat <docs-contributing-help>`.
 
-Presubmit Checks and Continuous Integration
--------------------------------------------
-All Pigweed change lists (CLs) must adhere to Pigweed's style guide and pass a
-suite of automated builds, tests, and style checks to be merged upstream. Much
-of this checking is done using Pigweed's ``pw_presubmit`` module by automated
-builders. These builders run before each Pigweed CL is submitted and in our
-continuous integration infrastructure (see `Pigweed's build console
-<https://ci.chromium.org/p/pigweed/g/pigweed/console>`_).
+:ref:`docs-contributing-build` provides the common commands that you need when
+working with each build system.
 
-Running Presubmit Checks
-^^^^^^^^^^^^^^^^^^^^^^^^
-To run automated presubmit checks on a pending CL, click the ``CQ DRY RUN``
-button in the Gerrit UI. The results appear in the Tryjobs section, below the
-source listing. Jobs that passed are green; jobs that failed are red.
+.. _docs-contributing-expectations-major-changes:
 
-If all checks pass, you will see a ``Dry run: This CL passed the CQ dry run.``
-comment on your change. If any checks fail, you will see a ``Dry run: Failed
-builds:`` message. All failures must be addressed before submitting.
+Communications around major changes
+===================================
+.. _public chat room: https://discord.gg/M9NSeTA
+.. _create an issue: https://pwbug.dev
 
-In addition to the publicly visible presubmit checks, Pigweed runs internal
-presubmit checks that are only visible within Google. If any these checks fail,
-external developers will see a ``Dry run: Failed builds:`` comment on the CL,
-even if all visible checks passed. Reach out to the Pigweed team for help
-addressing these issues.
+Before making major changes or :ref:`SEEDs <seed-0001>`, please
+:ref:`contact us <docs-contributing-help>`. We always have design
+discussions before making large changes.
 
-Project Presubmit Checks
-^^^^^^^^^^^^^^^^^^^^^^^^
-In addition to Pigweed's presubmit checks, some projects that use Pigweed run
-their presubmit checks in Pigweed's infrastructure. This supports a development
-flow where projects automatically update their Pigweed submodule if their tests
-pass. If a project cannot build against Pigweed's tip-of-tree, it will stay on
-a fixed Pigweed revision until the issues are fixed. See the `examples
-<https://pigweed.googlesource.com/pigweed/examples/>`_ repo for an example of
-this.
+.. _docs-contributing-requirements:
 
-Pigweed does its best to keep builds passing for dependent projects. In some
-circumstances, the Pigweed maintainers may choose to merge changes that break
-dependent projects. This will only be done if
+------------
+Requirements
+------------
+Your :ref:`docs-glossary-development-host` must meet these requirements:
 
-* a feature or fix is needed urgently in Pigweed or for a different project,
-  and
-* the project broken by the change does not imminently need Pigweed updates.
+.. _hermetically: https://bazel.build/basics/hermeticity
 
-The downstream project will continue to build against their last working
-revision of Pigweed until the incompatibilities are fixed.
+* Operating system: Linux has the best support, then macOS, then Windows. See
+  :ref:`docs-first-time-setup-guide-support-notes`.
 
-In these situations, Pigweed's commit queue submission process will fail for all
-changes. If a change passes all presubmit checks except for known failures, the
-Pigweed team may permit manual submission of the CL. Contact the Pigweed team
-for submission approval.
+* Disk space: After a full build, the Pigweed repository takes up about 10
+  gigabytes of disk space. The repo is large because we `hermetically`_
+  download many different cross-platform toolchains and compile the code
+  for many hardware architectures.
 
-Code coverage in Gerrit
-^^^^^^^^^^^^^^^^^^^^^^^
-Unit test coverage data for C++ is computed by the ``coverage`` builder and
-displayed in Gerrit.
+.. _docs-contributing-setup:
 
-.. image:: https://storage.googleapis.com/pigweed-media/gerrit_code_coverage.png
-   :width: 800
-   :alt: Code coverage display in Gerrit
+-----
+Setup
+-----
 
-#. **When will coverage data be visible on my CL?** The coverage builder needs
-   to finish running (about 6 minutes), and then the data needs to be ingested
-   by the coverage pipeline (ran every 30 minutes).
+.. _docs-contributing-setup-cla:
 
-#. **What tests is this based on?** Only the C++ unit tests of the modules ran
-   as part of the GN build. (There's no coverage data for Python or Rust yet.)
+Contributor license agreement
+=============================
+.. _Google Open Source Contributor License Agreement: https://cla.developers.google.com/
 
-#. **Can I generate a coverage report locally?** Yes. Running ``pw
-   presubmit --step coverage`` will generate a HTML report at
-   ``out/presubmit/coverage/host_clang_coverage/obj/coverage_report/html/index.html``.
+Sign the `Google Open Source Contributor License Agreement`_ (CLA). If you've already
+signed it for another Google project, you don't need to sign it again.
 
-#. **I'd love to have this in my Pigweed-based project!** See
-   :ref:`module-pw_build-gn-pw_coverage_report` for GN and
-   :ref:`docs-build_system-bazel_coverage` for Bazel.
+All Pigweed contributors must sign the CLA. You (or your employer) retain the
+copyright to your contribution. The CLA simply gives us permission to use and
+redistribute your contributions as part of the project.
 
-Running local presubmits
-------------------------
-To speed up the review process, consider adding :ref:`module-pw_presubmit` as a
-git push hook using the following command:
+.. _docs-contributing-setup-devtools:
 
-Linux/macOS
-^^^^^^^^^^^
-.. code-block:: bash
+Install developer tools
+=======================
+A few tools must be installed globally on your development host:
 
-   $ pw presubmit --install
+#. Complete the :ref:`first-time setup <docs-first-time-setup-guide>` process.
 
-This will be effectively the same as running the following command before every
-``git push``:
+#. :ref:`Install Bazelisk <docs-install-bazel>`.
 
-.. code-block:: bash
+.. _Pigweed onboarding for Googlers: http://go/pigweed-onboarding#getting-started
 
-   $ pw presubmit
+If you're a Googler working on a Google-owned development host,
+there is some extra required setup. See `Pigweed onboarding for Googlers`_.
 
+.. _docs-contributing-clone:
 
-.. image:: https://storage.googleapis.com/pigweed-media/pw_presubmit/pw_presubmit_demo.gif
-  :width: 800
-  :alt: pw presubmit demo
-
-If you ever need to bypass the presubmit hook (due to it being broken, for
-example) you may push using this command:
-
-.. code-block:: bash
-
-   $ git push origin HEAD:refs/for/main --no-verify
-
-Presubmit and branch management
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-When creating new feature branches, make sure to specify the upstream branch to
-track, e.g.
-
-.. code-block:: bash
-
-   $ git checkout -b myfeature origin/main
-
-When tracking an upstream branch, ``pw presubmit`` will only run checks on the
-modified files, rather than the entire repository.
-
-Presubmit flags
-^^^^^^^^^^^^^^^
-``pw presubmit`` can accept a number of flags
-
-``-b commit, --base commit``
-  Git revision against which to diff for changed files. Default is the tracking
-  branch of the current branch. Set commit to "HEAD" to check files added or
-  modified but not yet commited. Cannot be used with --full.
-
-``--full``
-  Run presubmit on all files, not just changed files. Cannot be used with
-  --base.
-
-``-e regular_expression, --exclude regular_expression``
-  Exclude paths matching any of these regular expressions, which are interpreted
-  relative to each Git repository's root.
-
-``-k, --keep-going``
-  Continue instead of aborting when errors occur.
-
-``--output-directory OUTPUT_DIRECTORY``
-  Output directory (default: <repo root>/out/presubmit)
-
-``--package-root PACKAGE_ROOT``
-  Package root directory (default: <output directory>/packages)
-
-``--clear, --clean``
-  Delete the presubmit output directory and exit.
-
-``-p, --program PROGRAM``
-  Which presubmit program to run
-
-``--step STEP``
-  Provide explicit steps instead of running a predefined program.
-
-``--install``
-  Install the presubmit as a Git pre-push hook and exit.
-
-.. _Sphinx: https://www.sphinx-doc.org/
-
-.. inclusive-language: disable
-
-.. _reStructuredText Primer: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
-
-.. inclusive-language: enable
-
-.. _docs-contributing-presubmit-virtualenv-hashes:
-
-Updating Python dependencies in the virtualenv_setup directory
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-If you update any of the requirements or constraints files in
-``//pw_env_setup/py/pw_env_setup/virtualenv_setup``, you must run this command
-to ensure that all of the hashes are updated:
-
-.. code-block:: console
-
-   pw presubmit --step update_upstream_python_constraints --full
-
-For Python packages that have native extensions, the command needs to be run 3
-times: once on Linux, once on macOS, and once on Windows.  See the warning
-about caching Python packages for multiple platforms in
-:ref:`docs-python-build-downloading-packages`.
-
-Fortunately, we have builders to help with this. The procedure is:
-
-#. Upload your change to Gerrit.
-#. Use the "CHOOSE TRYJOBS" dialog to run the following tryjobs:
-
-   * "pigweed-linux-python-constraints"
-   * "pigweed-mac-x86-python-constraints"
-   * "pigweed-windows-python-constraints"
-
-#. If any jobs fail, their results will include the diff that you need to apply
-   to your CL (via ``git apply``) to update the constraints and requirements
-   lockfiles. (You can find it under "diff_upstream_python_constraints" >
-   "logs" > "git_diff.txt".) Apply the patch, e.g. by running:
+Clone the repo
+==============
+#. Clone the upstream Pigweed repository:
 
    .. code-block:: console
 
-      curl https://logs.chromium.org/logs/pigweed/buildbucket/cr-buildbucket/${BBID}/+/u/diff_upstream_python_constraints/logs/git_diff.txt/git_diff.txt | git apply
+      $ git clone https://pigweed.googlesource.com/pigweed/pigweed
 
-   where ``${BBID}`` is the BuildBucket ID of the build.  Then upload a new
-   patchset to Gerrit.
+#. ``cd`` into the repo:
 
-#. If the job passes, the lockfile is already up to date on this host
-   platform and no patching is necessary!
+   .. code-block:: console
+
+      $ cd pigweed
+
+Gerrit setup
+============
+.. _Gerrit: https://www.gerritcodereview.com/
+.. _new password: https://pigweed.googlesource.com/new-password
+
+Set up your development host to be able to push code to our `Gerrit`_ instance:
+
+#. Obtain a login cookie from Gerrit's `new password`_ page. Make sure
+   to sign in with the email address that you used for the
+   :ref:`docs-contributing-setup-cla`.
+
+#. Install the Gerrit commit hook so that a ``Change-Id`` is automatically
+   added to the bottom of all of your commits messages.
+
+   .. tab-set::
+
+      .. tab-item:: Linux
+
+         .. code-block:: console
+
+            $ f=`git rev-parse --git-dir`/hooks/commit-msg ; mkdir -p $(dirname $f) ; curl -Lo $f https://gerrit-review.googlesource.com/tools/hooks/commit-msg ; chmod +x $f
+
+      .. tab-item:: macOS
+
+         .. code-block:: console
+
+            $ f=`git rev-parse --git-dir`/hooks/commit-msg ; mkdir -p $(dirname $f) ; curl -Lo $f https://gerrit-review.googlesource.com/tools/hooks/commit-msg ; chmod +x $f
+
+      .. tab-item:: Windows
+
+         .. code-block:: console
+
+            $ git rev-parse --git-dir > gitrepopath.txt & set /p "g="< gitrepopath.txt & del gitrepopath.txt & call set "f=%g%/hooks" & call mkdir "%f%" & call curl -Lo "%f%/commit-msg" https://gerrit-review.googlesource.com/tools/hooks/commit-msg
+
+.. _mirror: https://github.com/google/pigweed
+
+
+.. _docs-contributing-change:
+
+------------------
+Create your change
+------------------
+.. _Basic Gerrit walkthrough for GitHub users: https://gerrit-review.googlesource.com/Documentation/intro-gerrit-walkthrough-github.html
+.. _Changes: https://gerrit-review.googlesource.com/Documentation/concept-changes.html
+
+.. _docs-contributing-change-gerrit:
+
+Differences between Gerrit and GitHub
+=====================================
+We do all of our code reviews on `Gerrit`_. Our GitHub `mirror`_ is read-only.
+Gerrit's code review workflow is different than GitHub. See `Basic Gerrit
+walkthrough for GitHub users`_ and `Changes`_.
+
+.. _docs-contributing-change-git-push:
+
+Pushing changes
+===============
+Always use this command to push up your code to Gerrit:
+
+.. code-block:: console
+
+   $ git push origin HEAD:refs/for/main
+
+.. _docs-contributing-change-git-amend:
+
+Amending changes
+================
+When you need to update the code in your change, use ``--amend``:
+
+.. code-block:: console
+
+   $ git commit --amend
+
+This workflow is required because each commit past ``main`` is treated
+as a separate change.
+
+If you use incremental commits to help keep track of your work, you will
+eventually need to use a ``rebase`` workflow to merge all of the commits
+into a single commit:
+
+.. code-block:: console
+
+   $ git rebase -i HEAD~10 # last 10 commits
+   # An interactive editor will open. Mark each of your incremental
+   # commits with `f` or `fixup` to merge them into the first commit.
+
+.. _docs-contributing-change-message:
+
+Commit message conventions
+==========================
+Follow our :ref:`docs-pw-style-commit-message`.
+
+We use a specific structured format for commit titles. We have a
+:ref:`presubmit check <docs-contributing-review-presubmit>` that
+enforces our commit title style.
+
+.. _docs-contributing-review:
+
+-----------
+Code review
+-----------
+
+.. _docs-contributing-review-presubmit:
+
+Dry run the presubmit checks
+============================
+If you want to dry run Pigweed's :ref:`presubmit checks
+<docs-ci-cq-intro-presubmit>`, ask a :ref:`committer <docs-glossary-committers>`
+to kick them off for you. Only committers can start a dry run.
+
+The presubmit checks are our suite of automated builds, tests, linters, and
+formatters. When you attempt to :ref:`merge your change
+<docs-contributing-review-merge>`, all of the presubmit checks must pass. Dry
+running the presubmit checks lets you find and fix issues early.
+
+.. _docs-contributing-review-reviewers:
+
+Selecting reviewers
+===================
+Look for ``OWNERS`` files near the code that you've contributed. Those people
+should be your reviewers. If you can't find owners, add
+``gwsq-pigweed@pigweed.google.com.iam.gserviceaccount.com`` as a reviewer. This
+will automatically choose an appropriate person to review the change.
+
+.. _docs-contributing-review-merge:
+
+Merging your change
+===================
+You need 2 :ref:`docs-glossary-committers` to approve your change. Only
+committers can merge changes.
+
+.. _docs-contributing-feedback:
+
+--------
+Feedback
+--------
+Thank you very much for contributing to Pigweed! And welcome to the community :)
+
+If you have suggestions on how we can improve our contribution
+process you are welcome to send us feedback using the
+:ref:`usual channels <docs-contributing-help>`.
 
 .. toctree::
    :maxdepth: 1
    :hidden:
 
    self
+   build
    Code reviews (Gerrit) <https://pigweed-review.googlesource.com>
    ../code_reviews
    Issue tracker <https://issues.pigweed.dev/issues?q=status:open>

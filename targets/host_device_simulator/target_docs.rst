@@ -19,7 +19,7 @@ Setup
 .. note::
 
    The instructions below show you how to try out Host Device Simulator within
-   an :ref:`upstream Pigweed environment <docs-get-started-upstream>`. To set
+   an :ref:`upstream Pigweed environment <docs-contributing>`. To set
    up a target *similar* to Host Device Simulator in your own project, see
    `Kudzu`_ or the `examples repo`_.
 

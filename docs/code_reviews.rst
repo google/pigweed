@@ -26,7 +26,6 @@ Please follow the guidance in `Google's Eng-Practices Small CLs
 
 Complete changes
 ================
-Please follow the guidance in :ref:`docs-contributing-contribution-standards`.
 In summary, CLs must be complete, tested, and include documentation and unit
 tests for new code, bug fixes, and any code changes that merit it. However, to
 enable iterative work and small changes, ``TODO`` comments are acceptable. They
@@ -130,3 +129,42 @@ Docs-Only Changes Do Not Need To Be Complete
 ============================================
 Documentation-only changes should generally be accepted if they make the docs
 better or more complete, even if the documentation change itself is incomplete.
+
+.. _docs-code_reviews-experimental:
+
+Experimental repository and where to land code
+==============================================
+.. _experimental repository: https://pigweed.googlesource.com/pigweed/experimental
+.. _main repository: https://pigweed.googlesource.com/pigweed/pigweed
+.. _no larger than 500 lines each: https://google.github.io/eng-practices/review/developer/small-cls.html
+
+Pigweed has an `experimental repository`_ which differs from
+our `main repository`_ in a couple key ways:
+
+* Code is not expected to become production grade.
+* Code review standards are relaxed to allow experimentation.
+* In general the value of the code in the repository is the knowledge gained
+  from the experiment, not the code itself.
+* The repository is minimally maintained, and might contain
+  a significant amount of broken code.
+
+.. warning::
+
+   Adding the experimental repository as a dependency is strongly discouraged.
+   Pigweed will never provide updates or bug fixes for code that lives in the
+   experimental repository.
+
+Good uses of the repo include:
+
+* Experimenting with using an API (e.g. C++20 coroutines) with no plans to
+  turn it into production code.
+* One-off test programs to gather data.
+
+We would like to avoid large pieces of code being developed in the experimental
+repository and then imported into the main repository. If large amounts of code
+end up needing to migrate from experimental to main, then it must be landed
+incrementally as a series of reviewable patches, typically `no larger than 500
+lines each`_. This creates a large code review burden that often results in
+poorer reviews. Therefore, if the eventual location of the code will be the
+main Pigweed repository, it is **strongly encouraged** that the code be
+developed in the **main repository under an experimental flag**.

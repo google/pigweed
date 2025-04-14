@@ -95,13 +95,6 @@ Create a Pigweed-based project
       Study the code of Kudzu, a just-for-fun Maker Faire 2023 project that
       demonstrates complex Pigweed usage. This project also uses GN.
 
-   .. grid-item-card:: :octicon:`list-ordered` Upstream Pigweed
-      :link: docs-get-started-upstream
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      Get set up to contribute to upstream Pigweed.
-
 ------------------------------------------
 Use Pigweed modules in an existing project
 ------------------------------------------
@@ -136,4 +129,3 @@ Pigweed is modular: you can use as much or as little of it as you need.
    Bazel integration <bazel_integration>
    GitHub Actions <github_actions>
    Zephyr quickstart <zephyr>
-   Upstream Pigweed <upstream>

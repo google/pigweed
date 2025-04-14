@@ -17,6 +17,52 @@ button. The ``Submit`` button is still accessible behind the ``...`` button
 in the top right corner of the Gerrit UI, but in some cases requires elevated
 permissions.
 
+.. _docs-ci-cq-intro-presubmit:
+
+Presubmit checks and continuous integration
+===========================================
+.. _Pigweed's build console: https://ci.chromium.org/p/pigweed/g/pigweed/console
+
+All Pigweed changelists (CLs) must adhere to Pigweed's style guide and pass a
+suite of automated builds, tests, and style checks to be merged upstream. Much
+of this checking is done by running :ref:`module-pw_presubmit` in automated builders.
+These builders run before each Pigweed CL is submitted and in our
+continuous integration infrastructure. See `Pigweed's build console`_.
+
+In addition to the publicly visible presubmit checks, Pigweed runs internal
+presubmit checks that are only visible within Google. If any these checks fail,
+external developers will see a ``Dry run: Failed builds:`` comment on the CL,
+even if all visible checks passed. Reach out to the Pigweed team for help
+addressing these issues.
+
+.. _docs-ci-cq-intro-presubmit-projects:
+
+Project presubmit checks
+------------------------
+.. _examples repo: https://pigweed.googlesource.com/pigweed/examples/
+
+In addition to Pigweed's presubmit checks, some projects that use Pigweed run
+their presubmit checks in Pigweed's infrastructure. This supports a development
+flow where projects automatically update their Pigweed submodule if their tests
+pass. If a project cannot build against Pigweed's tip-of-tree, it will stay on
+a fixed Pigweed revision until the issues are fixed. See the `examples repo`_
+for a demonstration of this.
+
+Pigweed does its best to keep builds passing for dependent projects. In some
+circumstances, the Pigweed maintainers may choose to merge changes that break
+dependent projects. This will only be done if:
+
+* A feature or fix is needed urgently in Pigweed or for a different project.
+* The project broken by the change does not imminently need Pigweed updates.
+
+The downstream project will continue to build against their last working
+revision of Pigweed until the incompatibilities are fixed.
+
+In these situations, Pigweed's commit queue submission process will fail for all
+changes. If a change passes all presubmit checks except for known failures, the
+Pigweed team may permit manual submission of the CL. Contact the Pigweed team
+for submission approval.
+
 Triggering presubmits
 =====================
 Presubmits are not automatically run when a patch set is uploaded. Click
@@ -35,13 +81,38 @@ If a presubmit fails you'll get a Gerrit comment with a link to the failing
 build. The status of tryjobs (pending, running, failed, passed, etc.) is
 shown directly in the Gerrit UI (see :ref:`tryjobs`).
 
+.. _docs-ci-cq-intro-coverage:
+
+Code coverage
+-------------
+Unit test coverage data for C++ is computed by the ``coverage`` builder and
+displayed in Gerrit.
+
+.. image:: https://storage.googleapis.com/pigweed-media/gerrit_code_coverage.png
+   :width: 800
+   :alt: Code coverage display in Gerrit
+
+* **When will coverage data be visible on my CL?** The coverage builder needs
+  to finish running (about 6 minutes), and then the data needs to be ingested
+  by the coverage pipeline (ran every 30 minutes).
+
+* **What tests is this based on?** Only the C++ unit tests of the modules ran
+  as part of the GN build. (There's no coverage data for Python or Rust yet.)
+
+* **Can I generate a coverage report locally?** Yes. Running ``pw
+  presubmit --step coverage`` will generate a HTML report at
+  ``out/presubmit/coverage/host_clang_coverage/obj/coverage_report/html/index.html``.
+
+* **I'd love to have this in my Pigweed-based project!** See
+  :ref:`module-pw_build-gn-pw_coverage_report` for GN and
+  :ref:`docs-build_system-bazel_coverage` for Bazel.
+
 Auto-Submit
 ===========
 If you want your change to be automatically submitted when all requirements
 are met (``Code-Review +2``, ``OWNERS``-approval, all comments resolved,
 etc.) set the ``Auto-Submit`` label to +1. If submission fails it will be
 retried a couple times with backoff and then the auto submit job will give up.
-
 
 .. _further-details:
 
@@ -374,3 +445,45 @@ but won't be able to resolve it. Builders having access to ``secret-project``
 will see all three changes and attempt to patch all three in. Pigweed-Internal
 change C is not included in any workspaces so it will never be patched in, but
 it transitively applies requirements to public changes.
+
+.. _docs-contributing-appendix-python:
+
+--------------------------------------------------------------
+Updating Python dependencies in the virtualenv_setup directory
+--------------------------------------------------------------
+If you update any of the requirements or constraints files in
+``//pw_env_setup/py/pw_env_setup/virtualenv_setup``, you must run this command
+to ensure that all of the hashes are updated:
+
+.. code-block:: console
+
+   $ pw presubmit --step update_upstream_python_constraints --full
+
+For Python packages that have native extensions, the command needs to be run 3
+times: once on Linux, once on macOS, and once on Windows. See the warning
+about caching Python packages for multiple platforms in
+:ref:`docs-python-build-downloading-packages`.
+
+Fortunately, we have builders to help with this. The procedure is:
+
+#. Upload your change to Gerrit.
+#. Use the **CHOOSE TRYJOBS** dialog to run the following tryjobs:
+
+   * **pigweed-linux-python-constraints**
+   * **pigweed-mac-x86-python-constraints**
+   * **pigweed-windows-python-constraints**
+
+#. If any jobs fail, their results will include the diff that you need to apply
+   to your CL (via ``git apply``) to update the constraints and requirements
+   lockfiles. (You can find it under **diff_upstream_python_constraints** >
+   **logs** > **git_diff.txt**.) Apply the patch, e.g. by running:
+
+   .. code-block:: console
+
+      curl https://logs.chromium.org/logs/pigweed/buildbucket/cr-buildbucket/${BBID}/+/u/diff_upstream_python_constraints/logs/git_diff.txt/git_diff.txt | git apply
+
+   Where ``${BBID}`` is the BuildBucket ID of the build. Then upload a new
+   patchset to Gerrit.
+
+#. If the job passes, the lockfile is already up-to-date on this host
+   platform and no patching is necessary!

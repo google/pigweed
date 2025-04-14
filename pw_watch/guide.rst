@@ -14,7 +14,7 @@ systems.
 -------------------------------
 Set up your Pigweed environment
 -------------------------------
-See :ref:`activate-pigweed-environment` if you see an error like this:
+See :ref:`docs-contributing-build-gn-activate` if you see an error like this:
 
 .. code-block:: console
 

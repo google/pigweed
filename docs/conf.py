@@ -188,7 +188,7 @@ if is_bazel_build:
 
 html_theme_options = {
     # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html#navigation-bar-dropdown-links
-    'header_links_before_dropdown': 5,
+    'header_links_before_dropdown': 6,
     # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/header-links.html#icon-links
     'icon_links': [
         {
@@ -273,6 +273,7 @@ redirects = {
     'docs/contributing': './contributing/index.html',
     'docs/contributing/changelog': './docs/changelog.html',
     'docs/contributing/module_docs': './docs/modules.html',
+    'docs/get_started/upstream': '../contributing/index.html',
     'docs/getting_started': './get_started/index.html',
     'docs/infra/github': '../get_started/github.html',
     'docs/os_abstraction_layers': './os/index.html',

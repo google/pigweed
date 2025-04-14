@@ -27,6 +27,8 @@ Build everything
 
    $ bazelisk build --config=rp2040 //...
 
+.. _target-rp2040-upstream-tests:
+
 Run on-device tests
 ===================
 .. _PicoPico: https://pigweed.googlesource.com/pigweed/hardware/picopico
