@@ -22,7 +22,7 @@ namespace pw::allocator::size_report {
 ByteSpan GetBuffer() {
   static std::array<std::byte, 0x400> buffer;
   return buffer;
-};
+}
 
 int SetBaseline(uint32_t mask) {
   bloat::BloatThisBinary();

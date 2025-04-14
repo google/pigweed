@@ -1342,6 +1342,8 @@ DynamicByteBuffer StartA2dpOffloadRequest(
           const_cast<l2cap::A2dpOffloadManager::Configuration&>(config)
               .ldac_configuration.view());
       break;
+    case android_emb::A2dpCodecType::APTX:
+    case android_emb::A2dpCodecType::APTX_HD:
     default:
       break;
   }

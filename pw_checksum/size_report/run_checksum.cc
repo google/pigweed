@@ -84,7 +84,7 @@ class Fletcher16 {
   PW_NO_INLINE void Update(std::byte) {}
   PW_NO_INLINE uint32_t value() const {
     return static_cast<uint32_t>(sum2_) << 8 | sum1_;
-  };
+  }
   void clear() {}
 
  private:

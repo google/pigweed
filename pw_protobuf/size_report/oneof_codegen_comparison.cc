@@ -380,6 +380,9 @@ PW_NO_INLINE void BasicDecode() {
             ConsumeValue(key_token);
             break;
           }
+          case ResponseInfo::Fields::kTimestamp:
+          case ResponseInfo::Fields::kHasValue:
+          case ResponseInfo::Fields::kItemInfo:
           default:
             return Status::DataLoss();
         }

@@ -28,12 +28,15 @@
 #include "pw_span/span.h"
 
 extern "C" void pw_assert_HandleFailure(void) {
+#if PW_ASSERT_ENABLE_DEBUG
   PW_HANDLE_LOG(PW_LOG_LEVEL_FATAL,
                 "pw_assert_tokenized",
                 PW_LOG_FLAGS,
-#if PW_ASSERT_ENABLE_DEBUG
                 "PW_ASSERT() or PW_DASSERT() failure");
 #else
+  PW_HANDLE_LOG(PW_LOG_LEVEL_FATAL,
+                "pw_assert_tokenized",
+                PW_LOG_FLAGS,
                 "PW_ASSERT() failure. Note: PW_DASSERT disabled");
 #endif  // PW_ASSERT_ENABLE_DEBUG
   PW_UNREACHABLE;
