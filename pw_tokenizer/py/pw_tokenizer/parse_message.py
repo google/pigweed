@@ -112,6 +112,10 @@ def _text_list(items: Sequence, conjunction: str = 'or') -> str:
     return f'{", ".join(str(i) for i in items[:-1])} {conjunction} {items[-1]}'
 
 
+def _print_raw(data: bytes) -> str:
+    return f'{data!r} [{data.hex(" ", 1)}] ({len(data)} bytes)'
+
+
 def main(
     messages: Iterable[str],
     max_args: int,
@@ -136,19 +140,9 @@ def main(
             exit_code = 2
             continue
 
-        _LOG.info(
-            'Binary: %r [%s] (%d bytes)',
-            parsed.binary,
-            parsed.binary.hex(' ', 1),
-            len(parsed.binary),
-        )
+        _LOG.info('Binary: %s', _print_raw(parsed.binary))
         _LOG.info('Token:  0x%08x', parsed.token)
-        _LOG.info(
-            'Args:   %r [%s] (%d bytes)',
-            parsed.binary_args,
-            parsed.binary_args.hex(' ', 1),
-            len(parsed.binary_args),
-        )
+        _LOG.info('Args:   %s', _print_raw(parsed.binary_args))
         _LOG.info(
             'Decoding with up to %d %s arguments', max_args, _text_list(specs)
         )
@@ -170,13 +164,26 @@ def main(
             )
             exit_code = 1
 
-        for i, result in enumerate(results, 1):
+        for result_num, result in enumerate(results, 1):
             _LOG.info(  # pylint: disable=logging-fstring-interpolation
                 f'  Attempt %{len(str(len(results)))}d: [%s] %s',
-                i,
+                result_num,
                 ' '.join(str(a.specifier) for a in result.args),
                 ' '.join(str(a) for a in result.args),
             )
+
+            raw_width = max(
+                len('raw'), *(len(_print_raw(a.raw_data)) for a in result.args)
+            )
+            _LOG.info('      arg spec %s decoded', 'raw'.ljust(raw_width))
+            for arg_num, arg in enumerate(result.args):
+                _LOG.info(
+                    '      %3d %s   %s %s',
+                    arg_num,
+                    arg.specifier,
+                    _print_raw(arg.raw_data).ljust(raw_width),
+                    arg,
+                )
         print()
 
     return exit_code
