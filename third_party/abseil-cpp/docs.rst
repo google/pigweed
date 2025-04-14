@@ -42,11 +42,3 @@ modules:
 
 The GN build files for Abseil-C++ will be updated when the build files for those
 modules are updated. See those modules for instructions on updating.
-
-.. DO NOT EDIT BELOW THIS LINE. Generated section.
-
-Version
-=======
-The update script was last run for revision `e9ca8d1c`_.
-
-.. _e9ca8d1c: https://github.com/abseil/abseil-cpp/tree/e9ca8d1ca225ef94fd20890b5440b22f490a410a

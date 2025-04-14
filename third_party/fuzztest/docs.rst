@@ -101,11 +101,3 @@ directory, run:
 .. code-block:: console
 
    $ bazel run @com_google_fuzztest//bazel:setup_configs > fuzztest.bazelrc
-
-.. DO NOT EDIT BELOW THIS LINE. Generated section.
-
-Version
-=======
-The update script was last run for revision `b7257a64`_.
-
-.. _b7257a64: https://github.com/google/fuzztes/tree/b7257a64c701fc30265eb91179bf9310549bf440

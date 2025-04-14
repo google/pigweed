@@ -17,7 +17,7 @@ import json
 import re
 import subprocess
 
-from pathlib import PurePath, PurePosixPath
+from pathlib import PurePosixPath
 from typing import (
     Any,
     Callable,
@@ -26,7 +26,9 @@ from typing import (
 
 BazelValue = bool | int | str | list[str] | dict[str, str]
 
-LABEL_PAT = re.compile(r'^(?:(?:@([a-zA-Z0-9_]*))?//([^:]*))?(?::([^:]+))?$')
+LABEL_PAT = re.compile(
+    r'^(?:(?:@(?P<repo>[^/]*))?//(?P<package>[^:]*))?' r'(?::(?P<name>.+))?$'
+)
 
 
 class ParseError(Exception):
@@ -38,10 +40,37 @@ class BazelLabel:
 
     def __init__(
         self,
-        label_str: str,
-        repo: str | None = None,
-        package: str | None = None,
+        repo_name: str,
+        package: str,
+        name: str,
     ) -> None:
+        self._repo_name = repo_name
+        self._package = package
+        self._name = name
+
+    def __str__(self) -> str:
+        """Canonical representation of a Bazel label."""
+        return f'@{self._repo_name}//{self._package}:{self._name}'
+
+    def repo_name(self) -> str:
+        """Returns the repository identifier associated with this label."""
+        return self._repo_name
+
+    def package(self) -> str:
+        """Returns the package path associated with this label."""
+        return self._package
+
+    def name(self) -> str:
+        """Returns the target name associated with this label."""
+        return self._name
+
+    @classmethod
+    def from_string(
+        cls,
+        label_str: str,
+        repo_name: str | None = None,
+        package: str | None = None,
+    ) -> 'BazelLabel':
         """Creates a Bazel label.
 
         This method will attempt to parse the repo, package, and target portion
@@ -50,6 +79,9 @@ class BazelLabel:
         portions of the label are omitted, it will use the given package, if
         provided. If the target portion is omitted, the last segment of the
         package will be used.
+
+        Note: This script currently does not accept labels with canonical repo
+        names, i.e. labels starting with '@@' such as '@@foo//bar:baz.
 
         Args:
             label_str: Bazel label string, like "@repo//pkg:target".
@@ -62,32 +94,15 @@ class BazelLabel:
         if match.group(1) or not package:
             package = ''
         if match.group(1):
-            self._repo = match.group(1)
+            repo_name = match.group(1)
+        elif not repo_name:
+            raise ParseError(f'unable to determine repo name: "{label_str}"')
+        package = match.group(2) if match.group(2) else package
+        if match.group(3):
+            name = match.group(3)
         else:
-            assert repo
-            self._repo = repo
-        self._package = match.group(2) if match.group(2) else package
-        self._target = (
-            match.group(3)
-            if match.group(3)
-            else PurePosixPath(self._package).name
-        )
-
-    def __str__(self) -> str:
-        """Canonical representation of a Bazel label."""
-        return f'@{self._repo}//{self._package}:{self._target}'
-
-    def repo(self) -> str:
-        """Returns the repository identifier associated with this label."""
-        return self._repo
-
-    def package(self) -> str:
-        """Returns the package path associated with this label."""
-        return self._package
-
-    def target(self) -> str:
-        """Returns the target name associated with this label."""
-        return self._target
+            name = PurePosixPath(package).name
+        return cls(repo_name, package, name)
 
 
 def parse_invalid(attr: dict[str, Any]) -> BazelValue:
@@ -245,85 +260,30 @@ class BazelRule:
         values = self.get_list(attr_name)
         self._attrs[attr_name] = [v for v in values if v not in remove]
 
-    def generate(self) -> Iterable[str]:
-        """Yields a sequence of strings describing the rule in Bazel."""
-        yield f'{self._kind}('
-        yield f'    name = "{self._label.target()}",'
-        for name in sorted(self._attrs.keys()):
-            if name == 'name':
-                continue
-            attr_type = self._types[name]
-            if attr_type == 'boolean':
-                yield f'    {name} = {self.get_bool(name)},'
-            elif attr_type == 'integer':
-                yield f'    {name} = {self.get_int(name)},'
-            elif attr_type == 'string':
-                yield f'    {name} = "{self.get_str(name)}",'
-            elif attr_type == 'string_list' or attr_type == 'label_list':
-                strs = self.get_list(name)
-                if len(strs) == 1:
-                    yield f'    {name} = ["{strs[0]}"],'
-                elif len(strs) > 1:
-                    yield f'    {name} = ['
-                    for s in strs:
-                        yield f'        "{s}",'
-                    yield '    ],'
-            elif attr_type == 'string_dict':
-                str_dict = self.get_dict(name)
-                yield f'    {name} = {{'
-                for k, v in str_dict.items():
-                    yield f'        {k} = "{v}",'
-                yield '    },'
-        yield ')'
 
-
-class BazelWorkspace:
+class BazelRepo:
     """Represents a local instance of a Bazel repository.
 
     Attributes:
-        defaults: Attributes automatically applied to every rule in the
-                  workspace, which may be ignored when parsing.
-        generate: Indicates whether GN should be automatically generated for
-                  this workspace or not.
+        generate: Indicates whether GN should be automatically generated from
+                  Bazel rules or not.
         targets:  A list of the Bazel targets to parse, along with their
                   dependencies.
+        options:  Command-line options to use when invoking `bazel cquery`.
     """
 
-    def __init__(
-        self, repo: str, source_dir: PurePath | None, fetch: bool = True
-    ) -> None:
+    def __init__(self, repo_name: str) -> None:
         """Creates an object representing a Bazel workspace at the given path.
 
         Args:
-            repo: The Bazel repository name, like "com_google_pigweed".
-            source_dir: Path to the local instance of a Bazel workspace.
+            repo_name: The Bazel repository name, like "pigweed".
         """
-        self.defaults: dict[str, list[str]] = {}
-        self.generate = True
+        self.generate = False
         self.targets: list[str] = []
         self.options: dict[str, Any] = {}
         self._fetched = False
-        self._repo: str = repo
-        self._revisions: dict[str, str] = {}
+        self._repo_name: str = repo_name
         self._rules: dict[str, BazelRule] = {}
-        self._source_dir = source_dir
-
-        # Make sure the workspace has up-to-date objects and refs.
-        if fetch:
-            self._git('fetch')
-
-    def repo(self) -> str:
-        """Returns the Bazel repository name for this workspace."""
-        return self._repo
-
-    def get_http_archives(self) -> Iterable[BazelRule]:
-        """Returns the http_archive rules from a workspace's WORKSPACE file."""
-        if not self.generate:
-            return
-        for result in self._query('kind(http_archive, //external:*)'):
-            if result['type'] != 'RULE':
-                continue
-            yield self._make_rule(result['rule'])
 
     def get_rules(self, labels: list[BazelLabel]) -> Iterable[BazelRule]:
         """Returns a rule matching the given label."""
@@ -331,36 +291,43 @@ class BazelWorkspace:
             return
         needed: list[str] = []
         for label in labels:
-            print(f'Examining [{label}]                             ')
-            short = f'//{label.package()}:{label.target()}'
-            rule = self._rules.get(short, None)
+            label_str = str(label)
+            rule = self._rules.get(label_str, None)
             if rule:
                 yield rule
                 continue
-            needed.append(short)
+            needed.append(label_str)
         flags = [f'--{label}={value}' for label, value in self.options.items()]
         results = list(self._cquery('+'.join(needed), flags))
         for result in results:
             rule_data = result['target']['rule']
             yield self._make_rule(rule_data)
 
-    def revision(self, commitish: str = 'HEAD') -> str:
-        """Returns the revision digest of the workspace's git commit-ish."""
-        try:
-            return self._git('rev-parse', commitish)
-        except ParseError:
-            pass
-        tags = self._git('tag', '--list').split()
-        tag = min([tag for tag in tags if commitish in tag], key=len)
-        return self._git('rev-parse', tag)
+    def revision(self) -> str:
+        """Returns the git revision of the repo.
 
-    def timestamp(self, revision: str) -> str:
-        """Returns the timestamp of the workspace's git commit-ish."""
-        return self._git('show', '--no-patch', '--format=%ci', revision)
+        TODO: https://pwbug.dev/398015969 - Return HTTP archives directly.
+        """
+        result = self._bazel('mod', 'show_repo', self._repo_name)
 
-    def url(self) -> str:
-        """Returns the git URL of the workspace."""
-        return self._git('remote', 'get-url', 'origin')
+        # This is a bit brittle, but works for all the current deps.
+        m1 = re.search(r'urls = \["([^"]+)"\]', result)
+        if not m1:
+            raise ParseError(
+                f'Failed to find URL for "{self._repo_name}" in:\n', result
+            )
+        url = m1.group(1)
+        m2 = re.match(
+            r'(https?://github.com/[^/]+/[^/]+)/releases/download/([^/]+)', url
+        )
+        if not m2:
+            raise ParseError(f'Unsupported URL: {url}')
+        tag = m2.group(2)
+
+        result = self._git('ls-remote', m2.group(1), '-t', tag)
+        if not result:
+            raise ParseError(f'Tag not found for {self._repo_name}: {tag}')
+        return result.split()[0]
 
     def _cquery(self, expr: str, flags: list[str]) -> Iterable[Any]:
         """Invokes `bazel cquery` with the given selector."""
@@ -374,18 +341,16 @@ class BazelWorkspace:
 
     def _make_rule(self, rule_data: Any) -> BazelRule:
         """Make a BazelRule from JSON data returned by query or cquery."""
-        short = rule_data['name']
-        label = BazelLabel(short, repo=self._repo)
+        label_str = rule_data['name']
+        label = BazelLabel.from_string(label_str)
         rule = BazelRule(rule_data['ruleClass'], label)
         rule.parse_attrs(rule_data['attribute'])
-        for attr_name, values in self.defaults.items():
-            rule.filter_attr(attr_name, values)
-        self._rules[short] = rule
+        self._rules[label_str] = rule
         return rule
 
     def _bazel(self, *args: str) -> str:
         """Execute a Bazel command in the workspace."""
-        return self._exec('bazel', *args, '--noshow_progress', check=False)
+        return self._exec('bazelisk', *args, '--noshow_progress', check=False)
 
     def _git(self, *args: str) -> str:
         """Execute a git command in the workspace."""
@@ -396,7 +361,6 @@ class BazelWorkspace:
         try:
             result = subprocess.run(
                 list(args),
-                cwd=self._source_dir,
                 check=check,
                 capture_output=True,
             )
@@ -410,6 +374,5 @@ class BazelWorkspace:
             errmsg = error.stderr.decode('utf-8')
         cmdline = ' '.join(list(args))
         raise ParseError(
-            f'{self._repo} failed to exec '
-            + f'`cd {self._source_dir} && {cmdline}`: {errmsg}'
+            f'{self._repo_name} failed to exec `{cmdline}`: {errmsg}'
         )

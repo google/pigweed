@@ -17,142 +17,132 @@ import json
 import unittest
 
 from io import StringIO
-from pathlib import PurePath
 
 from unittest import mock
+from unittest.mock import call
 
 from pw_build.bazel_to_gn import BazelToGnConverter
 
 # Test fixtures.
 
-PW_ROOT = '/path/to/pigweed'
-FOO_SOURCE_DIR = '/path/to/foo'
-BAR_SOURCE_DIR = '../relative/path/to/bar'
-BAZ_SOURCE_DIR = '/path/to/baz'
+
+class MockCalls:
+    def __init__(self, mock_run) -> None:
+        self._calls: list[tuple] = []
+        self._mock_run = mock_run
+        self._side_effects: list[mock.MagicMock] = []
+        self._mock_run.side_effect = self._side_effects
+
+    def add(self, call_obj: tuple, retval: str) -> None:
+        self._calls.extend([call_obj])
+        self._side_effects.extend(
+            [
+                mock.MagicMock(**r)
+                for r in [{'stdout.decode.return_value': retval}]
+            ],
+        )
+
+    def check(self):
+        self._mock_run.assert_has_calls(self._calls)
+
 
 # Simulated out/args.gn file contents.
-ARGS_GN = f'''dir_pw_third_party_foo = "{FOO_SOURCE_DIR}"
-pw_log_BACKEND = "$dir_pw_log_basic"
-pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
-dir_pw_third_party_bar = "{BAR_SOURCE_DIR}"
-pw_unit_test_MAIN == "$dir_pw_third_party/googletest:gmock_main
-dir_pw_third_party_baz = "{BAZ_SOURCE_DIR}"'''
+MODULE_BAZEL = '''module(
+    name = "pigweed",
+    version = "0.0.1",
+)
 
-# Simulated Bazel repo names.
-FOO_REPO = 'dev_pigweed_foo'
-BAR_REPO = 'dev_pigweed_bar'
-BAZ_REPO = 'dev_pigweed_baz'
+register_execution_platforms("@local_config_platform//:host")
+
+bazel_dep(name = "foo", version = "1.2.3")
+bazel_dep(name = "bar", version = "2025-02-17")
+bazel_dep(name = "baz", version = "20250217.2")
+'''
 
 # Simulated //third_party.../bazel_to_gn.json file contents.
-FOO_B2G_JSON = f'''{{
-  "repo": "{FOO_REPO}",
-  "targets": [ "//package:target" ]
-}}'''
-BAR_B2G_JSON = f'''{{
-  "repo": "{BAR_REPO}",
-  "options": {{
-    "//package:my_flag": true
-  }},
-  "targets": [ "//bar/pkg:bar_target1" ]
-}}'''
-BAZ_B2G_JSON = f'''{{
-  "repo": "{BAZ_REPO}",
-  "generate": false
-}}'''
+FOO_B2G_JSON = '''{
+  "generate": true,
+  "targets": [ "@foo//package:name" ]
+}'''
+BAR_B2G_JSON = '''{
+  "generate": true,
+  "options": {
+    "@bar//package:my_flag": true
+  },
+  "targets": [ "@bar//bar/pkg:bar_target1" ]
+}'''
 
-# Simulated 'bazel cquery ...' results.
-FOO_RULE_JSON = f'''{{
-  "results": [
-    {{
-      "target": {{
-        "rule": {{
-          "name": "//package:target",
-          "ruleClass": "cc_library",
-          "attribute": [
-            {{
-              "explicitlySpecified": true,
-              "name": "hdrs",
-              "type": "label_list",
-              "stringListValue": [ "//include:foo.h" ]
-            }},
-            {{
-              "explicitlySpecified": true,
-              "name": "srcs",
-              "type": "label_list",
-              "stringListValue": [ "//src:foo.cc" ]
-            }},
-            {{
-              "explicitlySpecified": true,
-              "name": "additional_linker_inputs",
-              "type": "label_list",
-              "stringListValue": [ "//data:input" ]
-            }},
-            {{
-              "explicitlySpecified": true,
-              "name": "includes",
-              "type": "string_list",
-              "stringListValue": [ "include" ]
-            }},
-            {{
-              "explicitlySpecified": true,
-              "name": "copts",
-              "type": "string_list",
-              "stringListValue": [ "-cflag" ]
-            }},
-            {{
-              "explicitlySpecified": true,
-              "name": "linkopts",
-              "type": "string_list",
-              "stringListValue": [ "-ldflag" ]
-            }},
-            {{
-              "explicitlySpecified": true,
-              "name": "defines",
-              "type": "string_list",
-              "stringListValue": [ "DEFINE" ]
-            }},
-            {{
-              "explicitlySpecified": true,
-              "name": "local_defines",
-              "type": "string_list",
-              "stringListValue": [ "LOCAL_DEFINE" ]
-            }},
-            {{
-              "explicitlySpecified": true,
-              "name": "deps",
-              "type": "label_list",
-              "stringListValue": [
-                "@{BAR_REPO}//bar/pkg:bar_target1",
-                "@{BAR_REPO}//bar/pkg:bar_target2"
-              ]
-            }},
-            {{
-              "explicitlySpecified": true,
-              "name": "implementation_deps",
-              "type": "label_list",
-              "stringListValue": [ "@{BAZ_REPO}//baz/pkg:baz_target" ]
-            }}
-          ]
-        }}
-      }}
-    }}
-  ]
-}}
-'''
-BAR_RULE_JSON = '''
-{
+# Simulated 'bazelisk cquery ...' results.
+FOO_RULE_JSON = '''{
   "results": [
     {
       "target": {
         "rule": {
-          "name": "//bar/pkg:bar_target1",
+          "name": "@foo//package:target",
           "ruleClass": "cc_library",
           "attribute": [
             {
               "explicitlySpecified": true,
+              "name": "hdrs",
+              "type": "label_list",
+              "stringListValue": [ "//include:foo.h" ]
+            },
+            {
+              "explicitlySpecified": true,
+              "name": "srcs",
+              "type": "label_list",
+              "stringListValue": [ "//src:foo.cc" ]
+            },
+            {
+              "explicitlySpecified": true,
+              "name": "additional_linker_inputs",
+              "type": "label_list",
+              "stringListValue": [ "//data:input" ]
+            },
+            {
+              "explicitlySpecified": true,
+              "name": "includes",
+              "type": "string_list",
+              "stringListValue": [ "include" ]
+            },
+            {
+              "explicitlySpecified": true,
+              "name": "copts",
+              "type": "string_list",
+              "stringListValue": [ "-cflag" ]
+            },
+            {
+              "explicitlySpecified": true,
+              "name": "linkopts",
+              "type": "string_list",
+              "stringListValue": [ "-ldflag" ]
+            },
+            {
+              "explicitlySpecified": true,
               "name": "defines",
               "type": "string_list",
-              "stringListValue": [ "FILTERED", "KEPT" ]
+              "stringListValue": [ "DEFINE" ]
+            },
+            {
+              "explicitlySpecified": true,
+              "name": "local_defines",
+              "type": "string_list",
+              "stringListValue": [ "LOCAL_DEFINE" ]
+            },
+            {
+              "explicitlySpecified": true,
+              "name": "deps",
+              "type": "label_list",
+              "stringListValue": [
+                "@bar//bar/pkg:bar_target1",
+                "@bar//bar/pkg:bar_target2"
+              ]
+            },
+            {
+              "explicitlySpecified": true,
+              "name": "implementation_deps",
+              "type": "label_list",
+              "stringListValue": [ "@baz//baz/pkg:baz_target" ]
             }
           ]
         }
@@ -162,171 +152,27 @@ BAR_RULE_JSON = '''
 }
 '''
 
-# Simulated Bazel WORKSPACE file for Pigweed.
-# Keep this in sync with PW_EXTERNAL_DEPS below.
-PW_WORKSPACE = f'''
-http_archive(
-    name = "{FOO_REPO}",
-    strip_prefix = "foo-feedface",
-    url = "http://localhost:9000/feedface.tgz",
-)
-
-http_archive(
-    name = "{BAR_REPO}",
-    strip_prefix = "bar-v1.0",
-    urls = ["http://localhost:9000/bar/v1.0.tgz"],
-)
-
-http_archive(
-    name = "{BAZ_REPO}",
-    strip_prefix = "baz-v1.5",
-    url = "http://localhost:9000/baz/v1.5.zip",
-)
-
-http_archive(
-    name = "other",
-    strip_prefix = "other-v2.0",
-    url = "http://localhost:9000/other/v2.0.zip",
-)
-
-another_rule(
-    # aribtrary contents
-)
-'''
-
-# Simulated 'bazel query //external:*' results for com_google_pigweed.
-# Keep this in sync with PW_WORKSPACE above.
-PW_EXTERNAL_DEPS = '\n'.join(
-    [
-        json.dumps(
-            {
-                'type': 'RULE',
-                'rule': {
-                    'name': f'//external:{FOO_REPO}',
-                    'ruleClass': 'http_archive',
-                    'attribute': [
-                        {
-                            'name': 'strip_prefix',
-                            'explicitlySpecified': True,
-                            "type": "string",
-                            'stringValue': 'foo-feedface',
-                        },
-                        {
-                            'name': 'url',
-                            'explicitlySpecified': True,
-                            "type": "string",
-                            'stringValue': 'http://localhost:9000/feedface.tgz',
-                        },
-                    ],
-                },
-            }
-        ),
-        json.dumps(
-            {
-                'type': 'RULE',
-                'rule': {
-                    'name': f'//external:{BAR_REPO}',
-                    'ruleClass': 'http_archive',
-                    'attribute': [
-                        {
-                            'name': 'strip_prefix',
-                            'explicitlySpecified': True,
-                            "type": "string",
-                            'stringValue': 'bar-v1.0',
-                        },
-                        {
-                            'name': 'urls',
-                            'explicitlySpecified': True,
-                            "type": "string_list",
-                            'stringListValue': [
-                                'http://localhost:9000/bar/v1.0.tgz'
-                            ],
-                        },
-                    ],
-                },
-            }
-        ),
-    ]
-)
-# Simulated 'bazel query //external:*' results for dev_pigweed_foo.
-FOO_EXTERNAL_DEPS = '\n'.join(
-    [
-        json.dumps(
-            {
-                'type': 'RULE',
-                'rule': {
-                    'name': f'//external:{BAR_REPO}',
-                    'ruleClass': 'http_archive',
-                    'attribute': [
-                        {
-                            'name': 'strip_prefix',
-                            'explicitlySpecified': True,
-                            "type": "string",
-                            'stringValue': 'bar-v2.0',
-                        },
-                        {
-                            'name': 'urls',
-                            'explicitlySpecified': True,
-                            "type": "string_list",
-                            'stringListValue': [
-                                'http://localhost:9000/bar/v2.0.tgz'
-                            ],
-                        },
-                    ],
-                },
-            }
-        ),
-        json.dumps(
-            {
-                'type': 'RULE',
-                'rule': {
-                    'name': f'//external:{BAZ_REPO}',
-                    'ruleClass': 'http_archive',
-                    'attribute': [
-                        {
-                            'name': 'url',
-                            'explicitlySpecified': True,
-                            "type": "string",
-                            'stringValue': 'http://localhost:9000/baz/v1.5.tgz',
-                        }
-                    ],
-                },
-            }
-        ),
-    ]
-)
 # Unit tests.
 
 
 class TestBazelToGnConverter(unittest.TestCase):
     """Tests for bazel_to_gn.BazelToGnConverter."""
 
-    def test_parse_args_gn(self):
-        """Tests parsing args.gn."""
-        b2g = BazelToGnConverter(PW_ROOT)
-        b2g.parse_args_gn(StringIO(ARGS_GN))
-        self.assertEqual(b2g.get_source_dir('foo'), PurePath(FOO_SOURCE_DIR))
-        self.assertEqual(b2g.get_source_dir('bar'), PurePath(BAR_SOURCE_DIR))
-        self.assertEqual(b2g.get_source_dir('baz'), PurePath(BAZ_SOURCE_DIR))
+    def test_parse_bazel_to_gn(self):
+        """Tests loading a repo from a bazel_to_gn.json file."""
+        b2g = BazelToGnConverter()
+        b2g.load_modules(StringIO(MODULE_BAZEL))
+        b2g.parse_bazel_to_gn('foo', StringIO(FOO_B2G_JSON))
+        b2g.parse_bazel_to_gn('bar', StringIO(BAR_B2G_JSON))
+        self.assertEqual(
+            set(b2g.repo_names()), set(['pigweed', 'foo', 'bar', 'baz'])
+        )
 
-    @mock.patch('subprocess.run')
-    def test_load_workspace(self, _):
-        """Tests loading a workspace from a bazel_to_gn.json file."""
-        b2g = BazelToGnConverter(PW_ROOT)
-        b2g.parse_args_gn(StringIO(ARGS_GN))
-        b2g.load_workspace('foo', StringIO(FOO_B2G_JSON))
-        b2g.load_workspace('bar', StringIO(BAR_B2G_JSON))
-        b2g.load_workspace('baz', StringIO(BAZ_B2G_JSON))
-        self.assertEqual(b2g.get_name(repo=FOO_REPO), 'foo')
-        self.assertEqual(b2g.get_name(repo=BAR_REPO), 'bar')
-        self.assertEqual(b2g.get_name(repo=BAZ_REPO), 'baz')
-
-    @mock.patch('subprocess.run')
-    def test_get_initial_targets(self, _):
+    def test_get_initial_targets(self):
         """Tests adding initial targets to the pending queue."""
-        b2g = BazelToGnConverter(PW_ROOT)
-        b2g.parse_args_gn(StringIO(ARGS_GN))
-        b2g.load_workspace('foo', StringIO(FOO_B2G_JSON))
+        b2g = BazelToGnConverter()
+        b2g.load_modules(StringIO(MODULE_BAZEL))
+        b2g.parse_bazel_to_gn('foo', StringIO(FOO_B2G_JSON))
         targets = b2g.get_initial_targets('foo')
         json_targets = json.loads(FOO_B2G_JSON)['targets']
         self.assertEqual(len(targets), len(json_targets))
@@ -334,51 +180,67 @@ class TestBazelToGnConverter(unittest.TestCase):
 
     @mock.patch('subprocess.run')
     def test_load_rules(self, mock_run):
-        """Tests loading a rule from a Bazel workspace."""
-        mock_run.side_effect = [
-            mock.MagicMock(**retval)
-            for retval in [
-                {'stdout.decode.return_value': ''},  # foo: git fetch
-                {'stdout.decode.return_value': FOO_RULE_JSON},
-            ]
-        ]
-        b2g = BazelToGnConverter(PW_ROOT)
-        b2g.parse_args_gn(StringIO(ARGS_GN))
-        b2g.load_workspace('foo', StringIO(FOO_B2G_JSON))
+        """Tests loading a rule from a Bazel repo."""
+        mock_calls = MockCalls(mock_run)
+        mock_calls.add(
+            call(
+                [
+                    'bazelisk',
+                    'cquery',
+                    '@foo//package:name',
+                    '--output=jsonproto',
+                    '--noshow_progress',
+                ],
+                check=False,
+                capture_output=True,
+            ),
+            FOO_RULE_JSON,
+        )
+
+        b2g = BazelToGnConverter()
+        b2g.load_modules(StringIO(MODULE_BAZEL))
+        b2g.parse_bazel_to_gn('foo', StringIO(FOO_B2G_JSON))
         labels = b2g.get_initial_targets('foo')
         rule = list(b2g.load_rules(labels))[0]
         self.assertEqual(
             rule.get_list('deps'),
             [
-                f'@{BAR_REPO}//bar/pkg:bar_target1',
-                f'@{BAR_REPO}//bar/pkg:bar_target2',
+                '@bar//bar/pkg:bar_target1',
+                '@bar//bar/pkg:bar_target2',
             ],
         )
         self.assertEqual(
             rule.get_list('implementation_deps'),
             [
-                f'@{BAZ_REPO}//baz/pkg:baz_target',
+                '@baz//baz/pkg:baz_target',
             ],
         )
         self.assertEqual(b2g.num_loaded(), 1)
+        mock_calls.check()
 
     @mock.patch('subprocess.run')
     def test_convert_rule(self, mock_run):
         """Tests converting a Bazel rule into a GN target."""
-        mock_run.side_effect = [
-            mock.MagicMock(**retval)
-            for retval in [
-                {'stdout.decode.return_value': ''},  # foo: git fetch
-                {'stdout.decode.return_value': ''},  # bar: git fetch
-                {'stdout.decode.return_value': ''},  # baz: git fetch
-                {'stdout.decode.return_value': FOO_RULE_JSON},
-            ]
-        ]
-        b2g = BazelToGnConverter(PW_ROOT)
-        b2g.parse_args_gn(StringIO(ARGS_GN))
-        b2g.load_workspace('foo', StringIO(FOO_B2G_JSON))
-        b2g.load_workspace('bar', StringIO(BAR_B2G_JSON))
-        b2g.load_workspace('baz', StringIO(BAZ_B2G_JSON))
+        mock_calls = MockCalls(mock_run)
+        mock_calls.add(
+            call(
+                [
+                    'bazelisk',
+                    'cquery',
+                    '@foo//package:name',
+                    '--output=jsonproto',
+                    '--noshow_progress',
+                ],
+                check=False,
+                capture_output=True,
+            ),
+            FOO_RULE_JSON,
+        )
+
+        b2g = BazelToGnConverter()
+        b2g.load_modules(StringIO(MODULE_BAZEL))
+        b2g.parse_bazel_to_gn('foo', StringIO(FOO_B2G_JSON))
+        b2g.parse_bazel_to_gn('bar', StringIO(BAR_B2G_JSON))
         labels = b2g.get_initial_targets('foo')
         rule = list(b2g.load_rules(labels))[0]
         gn_target = b2g.convert_rule(rule)
@@ -410,21 +272,42 @@ class TestBazelToGnConverter(unittest.TestCase):
             gn_target.attrs['sources'], ['$dir_pw_third_party_foo/src/foo.cc']
         )
 
+        mock_calls.check()
+
     @mock.patch('subprocess.run')
     def test_update_pw_package(self, mock_run):
         """Tests updating the pw_package file."""
-        mock_run.side_effect = [
-            mock.MagicMock(**retval)
-            for retval in [
-                {'stdout.decode.return_value': ''},  # foo: git fetch
-                {'stdout.decode.return_value': 'some-tag'},
-                {'stdout.decode.return_value': '2024-01-01 00:00:00'},
-                {'stdout.decode.return_value': '2024-01-01 00:00:01'},
-            ]
-        ]
-        b2g = BazelToGnConverter(PW_ROOT)
-        b2g.parse_args_gn(StringIO(ARGS_GN))
-        b2g.load_workspace('foo', StringIO(FOO_B2G_JSON))
+        mock_calls = MockCalls(mock_run)
+        mock_calls.add(
+            call(
+                ['bazelisk', 'mod', 'show_repo', 'foo', '--noshow_progress'],
+                check=False,
+                capture_output=True,
+            ),
+            '''
+http_archive(
+    urls = ["https://github.com/test/foo/releases/download/some-tag/foo.tgz"],
+)
+''',
+        )
+        mock_calls.add(
+            call(
+                [
+                    'git',
+                    'ls-remote',
+                    'https://github.com/test/foo',
+                    '-t',
+                    'some-tag',
+                ],
+                check=True,
+                capture_output=True,
+            ),
+            'feedface\trefs/tags/some-tag',
+        )
+
+        b2g = BazelToGnConverter()
+        b2g.load_modules(StringIO(MODULE_BAZEL))
+        b2g.parse_bazel_to_gn('foo', StringIO(FOO_B2G_JSON))
         contents = '''some_python_call(
     name='foo',
     commit='cafef00d',
@@ -433,68 +316,43 @@ class TestBazelToGnConverter(unittest.TestCase):
 '''
         inputs = contents.split('\n')
         outputs = list(b2g.update_pw_package('foo', inputs))
+
         self.assertEqual(outputs[0:2], inputs[0:2])
         self.assertEqual(outputs[3], inputs[3].replace('cafef00d', 'some-tag'))
         self.assertEqual(outputs[4:-1], inputs[4:])
 
+        mock_calls.check()
+
     @mock.patch('subprocess.run')
     def test_get_imports(self, mock_run):
         """Tests getting the GNI files needed for a GN target."""
-        mock_run.side_effect = [
-            mock.MagicMock(**retval)
-            for retval in [
-                {'stdout.decode.return_value': ''},  # foo: git fetch
-                {'stdout.decode.return_value': ''},  # bar: git fetch
-                {'stdout.decode.return_value': ''},  # baz: git fetch
-                {'stdout.decode.return_value': FOO_RULE_JSON},
-            ]
-        ]
-        b2g = BazelToGnConverter(PW_ROOT)
-        b2g.parse_args_gn(StringIO(ARGS_GN))
-        b2g.load_workspace('foo', StringIO(FOO_B2G_JSON))
-        b2g.load_workspace('bar', StringIO(BAR_B2G_JSON))
-        b2g.load_workspace('baz', StringIO(BAZ_B2G_JSON))
+        mock_calls = MockCalls(mock_run)
+        mock_calls.add(
+            call(
+                [
+                    'bazelisk',
+                    'cquery',
+                    '@foo//package:name',
+                    '--output=jsonproto',
+                    '--noshow_progress',
+                ],
+                check=False,
+                capture_output=True,
+            ),
+            FOO_RULE_JSON,
+        )
+
+        b2g = BazelToGnConverter()
+        b2g.load_modules(StringIO(MODULE_BAZEL))
+        b2g.parse_bazel_to_gn('foo', StringIO(FOO_B2G_JSON))
+        b2g.parse_bazel_to_gn('bar', StringIO(BAR_B2G_JSON))
         labels = b2g.get_initial_targets('foo')
         rule = list(b2g.load_rules(labels))[0]
         gn_target = b2g.convert_rule(rule)
         imports = set(b2g.get_imports(gn_target))
         self.assertEqual(imports, {'$dir_pw_third_party/foo/foo.gni'})
 
-    @mock.patch('subprocess.run')
-    def test_update_doc_rst(self, mock_run):
-        """Tests updating the git revision in the docs."""
-        mock_run.side_effect = [
-            mock.MagicMock(**retval)
-            for retval in [
-                {'stdout.decode.return_value': ''},  # foo: git fetch
-                {'stdout.decode.return_value': 'http://src/foo.git'},
-                {'stdout.decode.return_value': 'deadbeeffeedface'},
-            ]
-        ]
-        b2g = BazelToGnConverter(PW_ROOT)
-        b2g.parse_args_gn(StringIO(ARGS_GN))
-        b2g.load_workspace('foo', StringIO(FOO_B2G_JSON))
-        inputs = (
-            [f'preserved {i}' for i in range(10)]
-            + ['.. DO NOT EDIT BELOW THIS LINE. Generated section.']
-            + [f'overwritten {i}' for i in range(10)]
-        )
-        outputs = list(b2g.update_doc_rst('foo', inputs))
-        self.assertEqual(len(outputs), 18)
-        self.assertEqual(outputs[:11], inputs[:11])
-        self.assertEqual(outputs[11], '')
-        self.assertEqual(outputs[12], 'Version')
-        self.assertEqual(outputs[13], '=======')
-        self.assertEqual(
-            outputs[14],
-            'The update script was last run for revision `deadbeef`_.',
-        )
-        self.assertEqual(outputs[15], '')
-        self.assertEqual(
-            outputs[16],
-            '.. _deadbeef: http://src/foo/tree/deadbeeffeedface',
-        )
-        self.assertEqual(outputs[17], '')
+        mock_calls.check()
 
 
 if __name__ == '__main__':

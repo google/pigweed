@@ -1,7 +1,10 @@
 {
-  "repo": "com_google_fuzztest",
-  "targets": [ "//fuzztest:fuzztest_core", "//fuzztest:fuzztest_gtest_main" ],
+  "generate": true,
+  "targets": [
+    "@fuzztest//fuzztest:fuzztest_core",
+    "@fuzztest//fuzztest:fuzztest_gtest_main"
+  ],
   "options": {
-    "//fuzztest:use_riegeli": false
+    "@fuzztest//fuzztest:use_riegeli": false
   }
 }
