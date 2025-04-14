@@ -1510,7 +1510,6 @@ SOURCE_FILES_FILTER_GN_EXCLUDE = FileFilter(
     exclude=(
         # keep-sorted: start
         r'\bpw_bluetooth_sapphire/fuchsia',
-        r'\bpw_kernel',
         # keep-sorted: end
     ),
 )
