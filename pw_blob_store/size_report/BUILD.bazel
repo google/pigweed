@@ -12,7 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -21,15 +23,11 @@ package(
 
 licenses(["notice"])
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "base",
     srcs = ["base.cc"],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
-    target_compatible_with = select({
-        "@platforms//os:none": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
+    # TODO: b/259746255 - Fix the conversion warnings coming from pw_kvs.
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",
@@ -42,15 +40,11 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "basic_blob",
     srcs = ["basic_blob.cc"],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
-    target_compatible_with = select({
-        "@platforms//os:none": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
+    # TODO: b/259746255 - Fix the conversion warnings coming from pw_kvs.
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",
@@ -64,15 +58,11 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "deferred_write_blob",
     srcs = ["deferred_write_blob.cc"],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
-    target_compatible_with = select({
-        "@platforms//os:none": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
+    # TODO: b/259746255 - Fix the conversion warnings coming from pw_kvs.
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",
@@ -84,4 +74,10 @@ pw_cc_binary(
         "//pw_sync:borrow",
         "//pw_sync:virtual_basic_lockable",
     ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    prefix = "pw_blob_store/size_report/",
+    target_compatible_with = incompatible_with_mcu(),
 )
