@@ -96,7 +96,6 @@ pw_test("crc32_test") {
 }
 
 pw_perf_test("crc32_perf_tests") {
-  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
   deps = [
     ":pw_checksum",
     dir_pw_bytes,
@@ -105,7 +104,6 @@ pw_perf_test("crc32_perf_tests") {
 }
 
 pw_perf_test("crc16_perf_tests") {
-  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
   deps = [
     ":pw_checksum",
     dir_pw_bytes,

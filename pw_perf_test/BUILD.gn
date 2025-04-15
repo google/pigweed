@@ -175,7 +175,6 @@ pw_source_set("pw_perf_test_arm_cortex") {
 # Module-level targets
 
 pw_perf_test("example_perf_test") {
-  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
   sources = [ "examples/example_perf_test.cc" ]
 }
 

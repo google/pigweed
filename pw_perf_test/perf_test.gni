@@ -53,7 +53,8 @@ declare_args() {
 template("pw_perf_test") {
   _test_target_name = target_name
 
-  _test_is_enabled = !defined(invoker.enable_if) || invoker.enable_if
+  _test_is_enabled = pw_perf_test_TIMER_INTERFACE_BACKEND != "" &&
+                     (!defined(invoker.enable_if) || invoker.enable_if)
 
   _test_output_dir = "${target_out_dir}/test"
   if (defined(invoker.output_dir)) {

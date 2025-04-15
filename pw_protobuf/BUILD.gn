@@ -245,7 +245,6 @@ group("perf_tests") {
 }
 
 pw_perf_test("encoder_perf_test") {
-  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
   deps = [ ":pw_protobuf" ]
   sources = [ "encoder_perf_test.cc" ]
 
