@@ -101,7 +101,7 @@ extern "C" void pw_Base64Encode(const void* binary_data,
   }
 
   // If the source data length isn't a multiple of 3, pad the end with either 1
-  // or 2 '=' characters, to stay Python-compatible.
+  // or 2 '=' characters.
   if (remaining > 0u) {
     *output++ = BitGroup0Char(bytes[0]);
     if (remaining == 1u) {
@@ -116,33 +116,43 @@ extern "C" void pw_Base64Encode(const void* binary_data,
 }
 
 extern "C" size_t pw_Base64Decode(const char* base64,
-                                  size_t base64_size_bytes,
-                                  void* output) {
-  // If too small, can't be valid input, due to likely missing padding
-  if (base64_size_bytes < 4) {
+                                  const size_t base64_size_bytes,
+                                  void* const output) {
+  // If empty or missing padding, return 0.
+  if (base64_size_bytes == 0 || base64_size_bytes % kEncodedGroupSize != 0) {
     return 0;
   }
 
   uint8_t* binary = static_cast<uint8_t*>(output);
-  for (size_t ch = 0; ch < base64_size_bytes; ch += kEncodedGroupSize) {
+  size_t ch = 0;
+  for (; ch < base64_size_bytes - kEncodedGroupSize; ch += kEncodedGroupSize) {
     const uint8_t char0 = CharToBits(base64[ch + 0]);
     const uint8_t char1 = CharToBits(base64[ch + 1]);
     const uint8_t char2 = CharToBits(base64[ch + 2]);
     const uint8_t char3 = CharToBits(base64[ch + 3]);
 
-    *binary++ = Byte0(char0, char1);
+    binary[0] = Byte0(char0, char1);
+    binary[1] = Byte1(char1, char2);
+    binary[2] = Byte2(char2, char3);
+    binary += 3;
+  }
+
+  // Decode the final group, which may include padding.
+  const uint8_t char0 = CharToBits(base64[ch + 0]);
+  const uint8_t char1 = CharToBits(base64[ch + 1]);
+  const uint8_t char2 = CharToBits(base64[ch + 2]);
+  const uint8_t char3 = CharToBits(base64[ch + 3]);
+
+  *binary++ = Byte0(char0, char1);
+
+  if (base64[ch + 2] != kPadding) {
     *binary++ = Byte1(char1, char2);
-    *binary++ = Byte2(char2, char3);
+    if (base64[ch + 3] != kPadding) {
+      *binary++ = Byte2(char2, char3);
+    }
   }
 
-  size_t pad = 0;
-  if (base64[base64_size_bytes - 2] == kPadding) {
-    pad = 2;
-  } else if (base64[base64_size_bytes - 1] == kPadding) {
-    pad = 1;
-  }
-
-  return static_cast<size_t>(binary - static_cast<uint8_t*>(output)) - pad;
+  return static_cast<size_t>(binary - static_cast<uint8_t*>(output));
 }
 
 extern "C" bool pw_Base64IsValidChar(char base64_char) {
@@ -151,16 +161,28 @@ extern "C" bool pw_Base64IsValidChar(char base64_char) {
 }
 
 extern "C" bool pw_Base64IsValid(const char* base64_data, size_t base64_size) {
+  if (base64_size == 0u) {
+    return true;
+  }
+
   if (base64_size % kEncodedGroupSize != 0) {
     return false;
   }
 
-  for (size_t i = 0; i < base64_size; ++i) {
+  // Check up to the last two characters, which are potentially padding.
+  for (size_t i = 0; i < base64_size - 2; ++i) {
     if (!pw_Base64IsValidChar(base64_data[i])) {
       return false;
     }
   }
-  return true;
+
+  // Check the last two possibly padding characters.
+  if (base64_data[base64_size - 2] == kPadding) {
+    return base64_data[base64_size - 1] == kPadding;
+  }
+
+  return pw_Base64IsValidChar(base64_data[base64_size - 1]) ||
+         base64_data[base64_size - 1] == kPadding;
 }
 
 size_t Encode(span<const std::byte> binary, span<char> output_buffer) {

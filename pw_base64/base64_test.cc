@@ -375,6 +375,61 @@ TEST(Base64, ExampleFromRfc4648Section9) {
   EXPECT_STREQ("foobar", output);
 }
 
+TEST(Base64, DecodeIgnoresOnePaddingByte) {
+  std::array<char, 6> decode_buffer{'?', '?', '?', '?', '?', '?'};
+  EXPECT_EQ(Decode("AAAAAAA=", decode_buffer.data()), 5u);
+  EXPECT_EQ(decode_buffer[0], '\0');
+  EXPECT_EQ(decode_buffer[1], '\0');
+  EXPECT_EQ(decode_buffer[2], '\0');
+  EXPECT_EQ(decode_buffer[3], '\0');
+  EXPECT_EQ(decode_buffer[4], '\0');
+  EXPECT_EQ(decode_buffer[5], '?');
+}
+
+TEST(Base64, DecodeIgnoresTwoPaddingBytes) {
+  std::array<char, 6> decode_buffer{'?', '?', '?', '?', '?', '?'};
+  EXPECT_EQ(Decode("AAAAAA==", decode_buffer.data()), 4u);
+  EXPECT_EQ(decode_buffer[0], '\0');
+  EXPECT_EQ(decode_buffer[1], '\0');
+  EXPECT_EQ(decode_buffer[2], '\0');
+  EXPECT_EQ(decode_buffer[3], '\0');
+  EXPECT_EQ(decode_buffer[4], '?');
+  EXPECT_EQ(decode_buffer[5], '?');
+}
+
+TEST(Base64, IsValid) {
+  EXPECT_TRUE(IsValid(""));
+  for (const EncodedData& data : kSingleCharTestData) {
+    ASSERT_TRUE(IsValid(data.encoded_data));
+  }
+  for (const EncodedData& data : kRandomTestData) {
+    ASSERT_TRUE(IsValid(data.encoded_data));
+  }
+}
+
+TEST(Base64, IsValidIncorrectLength) {
+  EXPECT_FALSE(IsValid("a"));
+  EXPECT_FALSE(IsValid("aa"));
+  EXPECT_FALSE(IsValid("aaa"));
+
+  EXPECT_FALSE(IsValid("AAAAa"));
+  EXPECT_FALSE(IsValid("AAAAaa"));
+  EXPECT_FALSE(IsValid("AAAAaaa"));
+}
+
+TEST(Base64, IsValidIncorrectPadding) {
+  EXPECT_FALSE(IsValid("AAAAaa=a"));
+  EXPECT_TRUE(IsValid("AAAAaaa="));
+
+  EXPECT_FALSE(IsValid("aa=a"));
+  EXPECT_TRUE(IsValid("aaa="));
+
+  EXPECT_FALSE(IsValid("="));
+  EXPECT_FALSE(IsValid("=="));
+  EXPECT_FALSE(IsValid("==="));
+  EXPECT_FALSE(IsValid("====="));
+}
+
 // Functions that call the Base64 API from C. These are defined in
 // base64_test.c; no point in having a separate header.
 extern "C" {
