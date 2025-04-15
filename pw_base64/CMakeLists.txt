@@ -32,6 +32,7 @@ pw_add_test(pw_base64.base64_test
     base64_test_c.c
   PRIVATE_DEPS
     pw_base64
+    pw_unit_test.constexpr
   GROUPS
     modules
     pw_base64

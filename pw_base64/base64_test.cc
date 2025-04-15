@@ -16,6 +16,7 @@
 
 #include <cstring>
 
+#include "pw_unit_test/constexpr.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::base64 {
@@ -429,6 +430,40 @@ TEST(Base64, IsValidIncorrectPadding) {
   EXPECT_FALSE(IsValid("==="));
   EXPECT_FALSE(IsValid("====="));
 }
+
+PW_CONSTEXPR_TEST(Base64, DecodedSize_Valid, {
+  PW_TEST_EXPECT_EQ(DecodedSize(""), 0u);
+  PW_TEST_EXPECT_EQ(DecodedSize("ab=="), 1u);
+  PW_TEST_EXPECT_EQ(DecodedSize("abc="), 2u);
+  PW_TEST_EXPECT_EQ(DecodedSize("abcd"), 3u);
+  PW_TEST_EXPECT_EQ(DecodedSize("1234ab=="), 4u);
+  PW_TEST_EXPECT_EQ(DecodedSize("1234abc="), 5u);
+  PW_TEST_EXPECT_EQ(DecodedSize("1234abcd"), 6u);
+});
+
+PW_CONSTEXPR_TEST(Base64, DecodedSize_Invalid, {
+  PW_TEST_EXPECT_EQ(DecodedSize("a"), 0u);
+  PW_TEST_EXPECT_EQ(DecodedSize("ab"), 0u);
+  PW_TEST_EXPECT_EQ(DecodedSize("abc"), 0u);
+  PW_TEST_EXPECT_EQ(DecodedSize("1234ab"), 0u);
+  PW_TEST_EXPECT_EQ(DecodedSize("1234abc"), 0u);
+});
+
+PW_CONSTEXPR_TEST(Base64, MaxDecodedSize_Valid, {
+  PW_TEST_EXPECT_EQ(MaxDecodedSize(0), 0u);
+  PW_TEST_EXPECT_EQ(MaxDecodedSize(4), 3u);
+  PW_TEST_EXPECT_EQ(MaxDecodedSize(8), 6u);
+  PW_TEST_EXPECT_EQ(MaxDecodedSize(12), 9u);
+  PW_TEST_EXPECT_EQ(MaxDecodedSize(16), 12u);
+});
+
+PW_CONSTEXPR_TEST(Base64, MaxDecodedSize_Invalid, {
+  for (unsigned i = 0; i < 20; ++i) {
+    if ((i % 4) != 0) {
+      PW_TEST_EXPECT_EQ(MaxDecodedSize(i), 0u);
+    }
+  }
+});
 
 // Functions that call the Base64 API from C. These are defined in
 // base64_test.c; no point in having a separate header.
