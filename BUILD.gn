@@ -668,6 +668,7 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_checksum:perf_tests",
       "$dir_pw_perf_test:examples",
       "$dir_pw_protobuf:perf_tests",
+      "$dir_pw_tokenizer:detokenize_perf_test",
     ]
     output_metadata = true
   }

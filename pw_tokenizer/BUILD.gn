@@ -21,6 +21,7 @@ import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
+import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -268,6 +269,14 @@ pw_test("detokenize_test") {
   # TODO(tonymd): This fails on Teensyduino 1.54 beta core. It may be related to
   # linking in stl functions. Will debug when 1.54 is released.
   enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "arduino_executable"
+}
+
+pw_perf_test("detokenize_perf_test") {
+  sources = [ "detokenize_perf_test.cc" ]
+  deps = [
+    ":decoder",
+    "$dir_pw_assert:check",
+  ]
 }
 
 pw_test("encode_args_test") {
