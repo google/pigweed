@@ -292,8 +292,7 @@ def _handle_create(
             f'The file {database} already exists! Use --force to overwrite.'
         )
 
-    if not database.parent.exists():
-        database.parent.mkdir(parents=True)
+    database.parent.mkdir(parents=True, exist_ok=True)
 
     if output_type == 'directory':
         if str(database) == '-':
