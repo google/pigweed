@@ -172,3 +172,90 @@ This is only valid if, for the datagram channel:
   meaningless for byte channels,
 - short or zero-length writes through the byte API will not result in
   unacceptable overhead.
+
+-----------------------------
+Hourglass inheritance pattern
+-----------------------------
+:cpp:class:`pw::channel::Channel` uses an uncommon, hourglass-like inheritance
+pattern. This pattern offers the advantages of multiple inheritance without the
+downsides (overhead, potential for the diamond problem).
+
+Empty base classes define the public interface with strongly typed capability
+guarantees. A shared core class privately inherits from all of the empty bases.
+This core class is virtual and stores common state variables. A series of
+implementation classes inherit from the core class. These correspond with the
+empty bases at the top of the hierarchy, expressing their capabilities in the
+type system once again.
+
+This pattern is hourglass-like because the hierarchy starts with several types
+at the top, narrows to a single type in the middle, then expands out to the
+implementation classes at the bottom.
+
+Advantages of this pattern:
+
+- Express capabilities in the type system, with support for optional
+  capabilities.
+- No multiple virtual inheritance. All supported functionality is in a single
+  vtable.
+- Trivial and safe conversions between related types. Any type can be used
+  through a reference to a compatible type without indirection or memory
+  aliasing.
+
+The drawback of this pattern is implementation complexity. While the core
+implementation is complicated, the resulting classes are straightforward to use
+or extend.
+
+.. mermaid::
+
+   classDiagram
+       class TypeA {
+           +CommonFunctions()
+           +FunctionForA()
+       }
+
+       class TypeB {
+           +CommonFunctions()
+           +FunctionForB()
+       }
+
+       class TypeAB {
+           +CommonFunctions()
+           +FunctionForA()
+           +FunctionForB()
+       }
+
+       class Core {
+           -common_state
+           -capabilities
+           +CommonFunctions()
+           +MaybeFunctionForA()
+           +MaybeFunctionForB()
+
+           virtual -DoFunctionForA()
+           virtual -DoFunctionForB()
+       }
+
+       class ImplementTypeA {
+           +CommonFunctions()
+           +FunctionForA()
+       }
+
+       class ImplementTypeB {
+           +CommonFunctions()
+           +FunctionForB()
+       }
+
+       class ImplementTypeAB {
+           +CommonFunctions()
+           +FunctionForA()
+           +FunctionForB()
+       }
+
+       TypeA <|-- Core
+       TypeB <|-- Core
+       TypeAB <|-- Core
+
+
+       Core <|-- ImplementTypeA
+       Core <|-- ImplementTypeB
+       Core <|-- ImplementTypeAB

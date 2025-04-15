@@ -28,8 +28,10 @@ inline constexpr bool kDerivedFrom =
                           std::add_const_t<std::add_volatile_t<Base>>*>;
 
 // Converts a pointer or reference between two compatible sibling types: types
-// that share a common base and with no additional data members. This operation
-// is NOT recommended in general; this helper is only intended for upstream use.
+// that share a common base with no additional data members.
+//
+// Do NOT use SiblingCast in new code. It is deprecated. Classes that use
+// SiblingCast will be migrated to the inheritance pattern used in pw_channel.
 //
 // A "sibling cast" can be accomplished with a static_cast to the base type
 // followed by a static_cast to the sibling type. However, this results in
