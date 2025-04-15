@@ -93,11 +93,4 @@ then run:
 
 .. code-block:: console
 
-   $ python pw_build/py/pw_build/bazel_to_gn.py fuzztest
-
-Additionally, the ``fuzztest.bazelrc`` file should regenerated. From this
-directory, run:
-
-.. code-block:: console
-
-   $ bazel run @com_google_fuzztest//bazel:setup_configs > fuzztest.bazelrc
+   $ bazelisk run //pw_build/py:bazel_to_gn fuzztest

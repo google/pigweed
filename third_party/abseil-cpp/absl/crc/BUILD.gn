@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -19,35 +19,18 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 
-# Generated from @com_google_absl//absl/crc:cpu_detect
+# Generated from @abseil-cpp//absl/crc:cpu_detect
 abseil_cpp_source_set("cpu_detect") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/crc/internal/cpu_detect.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/crc/internal/cpu_detect.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../base",
     "../base:config",
+    "../types:optional",
   ]
 }
 
-# Generated from @com_google_absl//absl/crc:crc32c
+# Generated from @abseil-cpp//absl/crc:crc32c
 abseil_cpp_source_set("crc32c") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/crc/crc32c.h",
@@ -60,24 +43,6 @@ abseil_cpp_source_set("crc32c") {
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_memcpy_fallback.cc",
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_memcpy_x86_arm_combined.cc",
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_non_temporal_memcpy.cc",
-  ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
   ]
   public_deps = [
     ":cpu_detect",
@@ -92,30 +57,12 @@ abseil_cpp_source_set("crc32c") {
   ]
 }
 
-# Generated from @com_google_absl//absl/crc:crc_cord_state
+# Generated from @abseil-cpp//absl/crc:crc_cord_state
 abseil_cpp_source_set("crc_cord_state") {
   public =
       [ "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_cord_state.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_cord_state.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":crc32c",
     "../base:config",
@@ -124,7 +71,7 @@ abseil_cpp_source_set("crc_cord_state") {
   ]
 }
 
-# Generated from @com_google_absl//absl/crc:crc_internal
+# Generated from @abseil-cpp//absl/crc:crc_internal
 abseil_cpp_source_set("crc_internal") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc.h",
@@ -134,24 +81,6 @@ abseil_cpp_source_set("crc_internal") {
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc.cc",
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_internal.h",
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/crc_x86_arm_combined.cc",
-  ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
   ]
   public_deps = [
     ":cpu_detect",
@@ -165,52 +94,16 @@ abseil_cpp_source_set("crc_internal") {
   ]
 }
 
-# Generated from @com_google_absl//absl/crc:non_temporal_arm_intrinsics
+# Generated from @abseil-cpp//absl/crc:non_temporal_arm_intrinsics
 abseil_cpp_source_set("non_temporal_arm_intrinsics") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/crc/internal/non_temporal_arm_intrinsics.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [ "../base:config" ]
 }
 
-# Generated from @com_google_absl//absl/crc:non_temporal_memcpy
+# Generated from @abseil-cpp//absl/crc:non_temporal_memcpy
 abseil_cpp_source_set("non_temporal_memcpy") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/crc/internal/non_temporal_memcpy.h",
-  ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
   ]
   public_deps = [
     ":non_temporal_arm_intrinsics",

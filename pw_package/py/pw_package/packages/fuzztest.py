@@ -31,7 +31,7 @@ class FuzzTest(pw_package.git_repo.GitRepo):
                 'https://pigweed.googlesource.com/'
                 'third_party/github/google/fuzztest'
             ),
-            commit='b7257a64c701fc30265eb91179bf9310549bf440',
+            commit='cc35c77e079518d249d34784ad80ab247e973f73',
             **kwargs,
         )
 

@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -19,27 +19,9 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 
-# Generated from @com_google_absl//absl/log:absl_vlog_is_on
+# Generated from @abseil-cpp//absl/log:absl_vlog_is_on
 abseil_cpp_source_set("absl_vlog_is_on") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/absl_vlog_is_on.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../base:config",
     "../base:core_headers",
@@ -48,27 +30,9 @@ abseil_cpp_source_set("absl_vlog_is_on") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log:check
+# Generated from @abseil-cpp//absl/log:check
 abseil_cpp_source_set("check") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/check.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "internal:check_impl",
     "internal:check_op",
@@ -78,28 +42,10 @@ abseil_cpp_source_set("check") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log:globals
+# Generated from @abseil-cpp//absl/log:globals
 abseil_cpp_source_set("globals") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/globals.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/log/globals.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../base:atomic_hook",
     "../base:config",
@@ -112,55 +58,19 @@ abseil_cpp_source_set("globals") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log:log
+# Generated from @abseil-cpp//absl/log:log
 abseil_cpp_source_set("log") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/log.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":vlog_is_on",
     "internal:log_impl",
   ]
 }
 
-# Generated from @com_google_absl//absl/log:log_entry
+# Generated from @abseil-cpp//absl/log:log_entry
 abseil_cpp_source_set("log_entry") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/log_entry.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/log/log_entry.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../base:config",
     "../base:core_headers",
@@ -172,82 +82,29 @@ abseil_cpp_source_set("log_entry") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log:log_sink
+# Generated from @abseil-cpp//absl/log:log_sink
 abseil_cpp_source_set("log_sink") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/log_sink.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/log/log_sink.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":log_entry",
     "../base:config",
   ]
 }
 
-# Generated from @com_google_absl//absl/log:log_sink_registry
+# Generated from @abseil-cpp//absl/log:log_sink_registry
 abseil_cpp_source_set("log_sink_registry") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/log_sink_registry.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":log_sink",
     "../base:config",
+    "../base:nullability",
     "internal:log_sink_set",
   ]
 }
 
-# Generated from @com_google_absl//absl/log:vlog_is_on
+# Generated from @abseil-cpp//absl/log:vlog_is_on
 abseil_cpp_source_set("vlog_is_on") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/vlog_is_on.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [ ":absl_vlog_is_on" ]
 }

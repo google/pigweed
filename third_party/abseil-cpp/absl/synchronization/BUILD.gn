@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -19,28 +19,10 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 
-# Generated from @com_google_absl//absl/synchronization:graphcycles_internal
+# Generated from @abseil-cpp//absl/synchronization:graphcycles_internal
 abseil_cpp_source_set("graphcycles_internal") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/synchronization/internal/graphcycles.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/synchronization/internal/graphcycles.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../base",
     "../base:base_internal",
@@ -51,28 +33,10 @@ abseil_cpp_source_set("graphcycles_internal") {
   ]
 }
 
-# Generated from @com_google_absl//absl/synchronization:kernel_timeout_internal
+# Generated from @abseil-cpp//absl/synchronization:kernel_timeout_internal
 abseil_cpp_source_set("kernel_timeout_internal") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/synchronization/internal/kernel_timeout.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/synchronization/internal/kernel_timeout.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../base",
     "../base:config",
@@ -82,7 +46,7 @@ abseil_cpp_source_set("kernel_timeout_internal") {
   ]
 }
 
-# Generated from @com_google_absl//absl/synchronization:synchronization
+# Generated from @abseil-cpp//absl/synchronization:synchronization
 abseil_cpp_source_set("synchronization") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/synchronization/barrier.h",
@@ -113,24 +77,6 @@ abseil_cpp_source_set("synchronization") {
     "$dir_pw_third_party_abseil_cpp/absl/synchronization/internal/win32_waiter.cc",
     "$dir_pw_third_party_abseil_cpp/absl/synchronization/mutex.cc",
     "$dir_pw_third_party_abseil_cpp/absl/synchronization/notification.cc",
-  ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
   ]
   public_deps = [
     ":graphcycles_internal",

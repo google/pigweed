@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -19,14 +19,14 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 
-# Generated from @com_google_absl//absl/time/internal/cctz:civil_time
+# Generated from @abseil-cpp//absl/time/internal/cctz:civil_time
 abseil_cpp_source_set("civil_time") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/time/internal/cctz/include/cctz/civil_time.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/time/internal/cctz/src/civil_time_detail.cc" ]
   public_deps = [ "../../../base:config" ]
 }
 
-# Generated from @com_google_absl//absl/time/internal/cctz:time_zone
+# Generated from @abseil-cpp//absl/time/internal/cctz:time_zone
 abseil_cpp_source_set("time_zone") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/time/internal/cctz/include/cctz/time_zone.h",

@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -19,28 +19,10 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 
-# Generated from @com_google_absl//absl/log/internal:append_truncated
+# Generated from @abseil-cpp//absl/log/internal:append_truncated
 abseil_cpp_source_set("append_truncated") {
   public =
       [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/append_truncated.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../../base:config",
     "../../strings",
@@ -48,27 +30,9 @@ abseil_cpp_source_set("append_truncated") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:check_impl
+# Generated from @abseil-cpp//absl/log/internal:check_impl
 abseil_cpp_source_set("check_impl") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/check_impl.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":check_op",
     ":conditions",
@@ -78,61 +42,27 @@ abseil_cpp_source_set("check_impl") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:check_op
+# Generated from @abseil-cpp//absl/log/internal:check_op
 abseil_cpp_source_set("check_op") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/check_op.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/check_op.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":nullguard",
     ":nullstream",
     ":strip",
+    "../../base",
     "../../base:config",
     "../../base:core_headers",
     "../../base:nullability",
+    "../../debugging:leak_check",
     "../../strings",
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:conditions
+# Generated from @abseil-cpp//absl/log/internal:conditions
 abseil_cpp_source_set("conditions") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/conditions.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/conditions.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":voidify",
     "../../base",
@@ -141,83 +71,29 @@ abseil_cpp_source_set("conditions") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:config
+# Generated from @abseil-cpp//absl/log/internal:config
 abseil_cpp_source_set("config") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/config.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../../base:config",
     "../../base:core_headers",
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:fnmatch
+# Generated from @abseil-cpp//absl/log/internal:fnmatch
 abseil_cpp_source_set("fnmatch") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/fnmatch.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/fnmatch.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../../base:config",
     "../../strings",
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:format
+# Generated from @abseil-cpp//absl/log/internal:format
 abseil_cpp_source_set("format") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/log_format.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/log_format.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":append_truncated",
     ":config",
@@ -232,28 +108,10 @@ abseil_cpp_source_set("format") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:globals
+# Generated from @abseil-cpp//absl/log/internal:globals
 abseil_cpp_source_set("globals") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/globals.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/globals.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../../base:config",
     "../../base:core_headers",
@@ -264,27 +122,9 @@ abseil_cpp_source_set("globals") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:log_impl
+# Generated from @abseil-cpp//absl/log/internal:log_impl
 abseil_cpp_source_set("log_impl") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/log_impl.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":conditions",
     ":log_message",
@@ -293,29 +133,11 @@ abseil_cpp_source_set("log_impl") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:log_message
+# Generated from @abseil-cpp//absl/log/internal:log_message
 abseil_cpp_source_set("log_message") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/log_message.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/log_message.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":append_truncated",
     ":format",
@@ -323,6 +145,7 @@ abseil_cpp_source_set("log_message") {
     ":log_sink_set",
     ":nullguard",
     ":proto",
+    ":structured_proto",
     "..:globals",
     "..:log_entry",
     "..:log_sink",
@@ -332,6 +155,7 @@ abseil_cpp_source_set("log_message") {
     "../../base:core_headers",
     "../../base:errno_saver",
     "../../base:log_severity",
+    "../../base:nullability",
     "../../base:raw_logging_internal",
     "../../base:strerror",
     "../../container:inlined_vector",
@@ -343,29 +167,11 @@ abseil_cpp_source_set("log_message") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:log_sink_set
+# Generated from @abseil-cpp//absl/log/internal:log_sink_set
 abseil_cpp_source_set("log_sink_set") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/log_sink_set.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/log_sink_set.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":config",
     ":globals",
@@ -385,55 +191,19 @@ abseil_cpp_source_set("log_sink_set") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:nullguard
+# Generated from @abseil-cpp//absl/log/internal:nullguard
 abseil_cpp_source_set("nullguard") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/nullguard.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/nullguard.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../../base:config",
     "../../base:core_headers",
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:nullstream
+# Generated from @abseil-cpp//absl/log/internal:nullstream
 abseil_cpp_source_set("nullstream") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/nullstream.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../../base:config",
     "../../base:core_headers",
@@ -442,28 +212,10 @@ abseil_cpp_source_set("nullstream") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:proto
+# Generated from @abseil-cpp//absl/log/internal:proto
 abseil_cpp_source_set("proto") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/proto.h" ]
   sources = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/proto.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     "../../base",
     "../../base:config",
@@ -473,27 +225,9 @@ abseil_cpp_source_set("proto") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:strip
+# Generated from @abseil-cpp//absl/log/internal:strip
 abseil_cpp_source_set("strip") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/strip.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":log_message",
     ":nullstream",
@@ -502,29 +236,26 @@ abseil_cpp_source_set("strip") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:vlog_config
+# Generated from @abseil-cpp//absl/log/internal:structured_proto
+abseil_cpp_source_set("structured_proto") {
+  public =
+      [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/structured_proto.h" ]
+  sources =
+      [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/structured_proto.cc" ]
+  public_deps = [
+    ":proto",
+    "../../base:config",
+    "../../strings",
+    "../../types:span",
+    "../../types:variant",
+  ]
+}
+
+# Generated from @abseil-cpp//absl/log/internal:vlog_config
 abseil_cpp_source_set("vlog_config") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/vlog_config.h" ]
   sources =
       [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/vlog_config.cc" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [
     ":fnmatch",
     "../../base",
@@ -538,26 +269,8 @@ abseil_cpp_source_set("vlog_config") {
   ]
 }
 
-# Generated from @com_google_absl//absl/log/internal:voidify
+# Generated from @abseil-cpp//absl/log/internal:voidify
 abseil_cpp_source_set("voidify") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/log/internal/voidify.h" ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
-  ]
   public_deps = [ "../../base:config" ]
 }

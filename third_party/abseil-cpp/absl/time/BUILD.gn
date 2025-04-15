@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -19,7 +19,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 
-# Generated from @com_google_absl//absl/time:time
+# Generated from @abseil-cpp//absl/time:time
 abseil_cpp_source_set("time") {
   public = [
     "$dir_pw_third_party_abseil_cpp/absl/time/civil_time.h",
@@ -34,24 +34,6 @@ abseil_cpp_source_set("time") {
     "$dir_pw_third_party_abseil_cpp/absl/time/internal/get_current_time_chrono.inc",
     "$dir_pw_third_party_abseil_cpp/absl/time/internal/get_current_time_posix.inc",
     "$dir_pw_third_party_abseil_cpp/absl/time/time.cc",
-  ]
-  cflags = [
-    "-DNOMINMAX",
-    "-Wall",
-    "-Wcast-qual",
-    "-Wconversion-null",
-    "-Wextra",
-    "-Wformat-security",
-    "-Wmissing-declarations",
-    "-Wnon-virtual-dtor",
-    "-Woverlength-strings",
-    "-Wpointer-arith",
-    "-Wundef",
-    "-Wunused-local-typedefs",
-    "-Wunused-result",
-    "-Wvarargs",
-    "-Wvla",
-    "-Wwrite-strings",
   ]
   public_deps = [
     "../base",
