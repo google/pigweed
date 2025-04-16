@@ -19,6 +19,7 @@
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_span/span.h"
+#include "pw_status/status.h"
 
 // With dynamic allocation enabled, include the specified header and don't
 // require the constructor to be constexpr.
@@ -75,6 +76,14 @@ class ChannelList {
   //
   Status Add(uint32_t channel_id, ChannelOutput& output);
 
+  // Sets the default channel output. Returns:
+  //
+  //   OK - the channel was added
+  //   ALREADY_EXISTS - a default channel output is already present; remove it
+  //       first
+  //
+  Status SetDefaultChannelOutput(ChannelOutput& output);
+
   // Removes the channel with the requested ID. Returns:
   //
   //   OK - the channel was removed
@@ -87,6 +96,9 @@ class ChannelList {
 #else
   span<Channel> channels_;
 #endif  // PW_RPC_DYNAMIC_ALLOCATION
+
+ private:
+  Channel default_channel_ = Channel();
 };
 
 }  // namespace pw::rpc::internal

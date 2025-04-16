@@ -14,7 +14,20 @@
 
 #include "pw_rpc/internal/channel_list.h"
 
+#include <cstdint>
+
+#include "pw_rpc/channel.h"
+#include "pw_status/status.h"
+
 namespace pw::rpc::internal {
+namespace {
+
+// Since `Get` returns a `Channel` object and not a `ChannelBase` object, we
+// must associate a channel ID with the default channel output, even though it
+// will never be used. Any real channels can have the same ID and it will not
+// cause issues.
+constexpr uint32_t kDefaultChannelOutputChannelId = 1;
+}  // namespace
 
 const Channel* ChannelList::Get(uint32_t channel_id) const {
   for (const Channel& channel : channels_) {
@@ -22,6 +35,11 @@ const Channel* ChannelList::Get(uint32_t channel_id) const {
       return &channel;
     }
   }
+
+  if (default_channel_.assigned()) {
+    return &default_channel_;
+  }
+
   return nullptr;
 }
 
@@ -41,6 +59,15 @@ Status ChannelList::Add(uint32_t channel_id, ChannelOutput& output) {
   new_channel->Configure(channel_id, output);
 #endif  // PW_RPC_DYNAMIC_ALLOCATION
 
+  return OkStatus();
+}
+
+Status ChannelList::SetDefaultChannelOutput(ChannelOutput& output) {
+  if (default_channel_.assigned()) {
+    return Status::AlreadyExists();
+  }
+
+  default_channel_ = Channel::Create<kDefaultChannelOutputChannelId>(&output);
   return OkStatus();
 }
 

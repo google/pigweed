@@ -387,6 +387,15 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "channel_list_test",
+    srcs = ["channel_list_test.cc"],
+    deps = [
+        ":internal_test_utils",
+        ":pw_rpc",
+    ],
+)
+
+pw_cc_test(
     name = "channel_test",
     srcs = ["channel_test.cc"],
     features = ["-conversion_warnings"],

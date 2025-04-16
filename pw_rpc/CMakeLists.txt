@@ -357,6 +357,17 @@ pw_add_test(pw_rpc.channel_test
     pw_rpc
 )
 
+pw_add_test(pw_rpc.channel_list_test
+  SOURCES
+    channel_list_test.cc
+  PRIVATE_DEPS
+    pw_rpc.server
+    pw_rpc.test_utils
+  GROUPS
+    modules
+    pw_rpc
+)
+
 pw_add_test(pw_rpc.packet_test
   SOURCES
     packet_test.cc

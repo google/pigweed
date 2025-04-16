@@ -265,6 +265,25 @@ with the ``ABORTED`` status.
    // on_error callbacks with ABORTED status.
    client->CloseChannel(1);
 
+Default Channel Output
+============================
+Sometimes it may be necessary to register a ``ChannelOutput`` that handles all
+messages which do not match a specific channel, for example, if the server
+itself doesn't have direct access to the clients and it has to be routed through
+some middleware. For cases like this, a default channel output can be registered
+which processes all packets with unrecognized channel ids.
+
+.. code-block:: cpp
+
+   // Only registered channel has id of 1.
+   std::array<Channel, 1> channels = { Channel::Create<1>(...) };
+   // `MyDefaultChannelOutput` is a class that implements the
+   // `pw::rpc::ChannelOutput` interface. It will process all packets that don't
+   // have a packet id of 1.
+   MyDefaultChannelOutput default_channel_output;
+   Server server(channels);
+   PW_ASSERT_OK(server.SetDefaultChannelOutput(default_channel_output));
+
 .. _module-pw_rpc-remap:
 
 Remapping channels

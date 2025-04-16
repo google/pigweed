@@ -468,6 +468,7 @@ pw_test_group("tests") {
     ":benchmark_service_test",
     ":call_test",
     ":callback_test",
+    ":channel_list_test",
     ":channel_test",
     ":client_server_test",
     ":test_helpers_test",
@@ -524,6 +525,14 @@ pw_test("callback_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("channel_list_test") {
+  deps = [
+    ":server",
+    ":test_utils",
+  ]
+  sources = [ "channel_list_test.cc" ]
 }
 
 pw_test("channel_test") {

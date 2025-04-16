@@ -192,6 +192,32 @@ TEST_F(BasicServer, ProcessPacket_ValidMethodInService42_InvokesMethod) {
             0);
 }
 
+TEST_F(BasicServer, ProcessPacket_DefaultChannelOutput_InvokesMethod) {
+  constexpr uint32_t kUnusedChannelId = 99;
+  constexpr uint32_t kServiceId = 1;
+  constexpr uint32_t kMethodId = 100;
+  RawFakeChannelOutput<2> default_output;
+  Server server_with_default_channel_output(channels_);
+  ASSERT_EQ(server_with_default_channel_output.SetDefaultChannelOutput(
+                default_output),
+            OkStatus());
+  TestService service_1(kServiceId);
+  server_with_default_channel_output.RegisterService(service_1);
+
+  EXPECT_EQ(OkStatus(),
+            server_with_default_channel_output.ProcessPacket(EncodePacket(
+                PacketType::REQUEST, kUnusedChannelId, kServiceId, kMethodId)));
+
+  const Packet& packet =
+      static_cast<internal::test::FakeChannelOutput&>(default_output)
+          .last_packet();
+  EXPECT_EQ(packet.type(), PacketType::kResponse);
+  EXPECT_EQ(packet.channel_id(), kUnusedChannelId);
+  EXPECT_EQ(packet.service_id(), 1u);
+  EXPECT_EQ(packet.method_id(), 100u);
+  EXPECT_EQ(packet.status(), OkStatus());
+}
+
 TEST_F(BasicServer, UnregisterService_CannotCallMethod) {
   const uint32_t kCallId = 8675309;
   server_.UnregisterService(service_1_, service_42_);

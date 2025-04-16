@@ -103,6 +103,15 @@ class Endpoint {
   //
   void CleanUpCalls() PW_UNLOCK_FUNCTION(rpc_lock());
 
+  // Sets the default channel output.
+  //
+  // If a default channel output is already set, this will return AlreadyExists.
+  Status SetDefaultChannelOutput(ChannelOutput& output)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
+    RpcLockGuard lock;
+    return channels_.SetDefaultChannelOutput(output);
+  }
+
  protected:
   _PW_RPC_CONSTEXPR Endpoint() = default;
 
