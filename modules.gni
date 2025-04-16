@@ -22,5 +22,60 @@
 import("pw_build/generated_pigweed_modules_lists.gni")
 
 declare_args() {
+  # This is retained for backwards compatibility. Prefer using the pw_external_*
+  # variables instead.
   dir_pw_third_party = get_path_info("third_party", "abspath")
+}
+
+# When referencing an external dependency, prefer to use these names to prevent
+# multiple definitions of the same build rules. These default to Pigweed's GN
+# integrations in Pigweed's third_party directory.
+#
+# Warning: If your project overrides these, keep in mind that you'll need to
+# chase any changes in exposed build targets, their semantics, and any other
+# changes Pigweed might make.
+declare_args() {
+  pw_external_abseil_cpp =
+      get_path_info("$dir_pw_third_party/abseil-cpp", "abspath")
+  pw_external_ambiq = get_path_info("$dir_pw_third_party/ambiq", "abspath")
+  pw_external_apollo4 = get_path_info("$dir_pw_third_party/apollo4", "abspath")
+  pw_external_arduino = get_path_info("$dir_pw_third_party/arduino", "abspath")
+  pw_external_boringssl =
+      get_path_info("$dir_pw_third_party/boringssl", "abspath")
+  pw_external_chre = get_path_info("$dir_pw_third_party/chre", "abspath")
+  pw_external_chromium_verifier =
+      get_path_info("$dir_pw_third_party/chromium_verifier", "abspath")
+  pw_external_embos = get_path_info("$dir_pw_third_party/embos", "abspath")
+  pw_external_emboss = get_path_info("$dir_pw_third_party/emboss", "abspath")
+  pw_external_freertos =
+      get_path_info("$dir_pw_third_party/freertos", "abspath")
+  pw_external_fuchsia = get_path_info("$dir_pw_third_party/fuchsia", "abspath")
+  pw_external_fuzztest =
+      get_path_info("$dir_pw_third_party/fuzztest", "abspath")
+  pw_external_googletest =
+      get_path_info("$dir_pw_third_party/googletest", "abspath")
+  pw_external_llvm_builtins =
+      get_path_info("$dir_pw_third_party/llvm_builtins", "abspath")
+  pw_external_llvm_libc =
+      get_path_info("$dir_pw_third_party/llvm_libc", "abspath")
+  pw_external_llvm_libcxx =
+      get_path_info("$dir_pw_third_party/llvm_libcxx", "abspath")
+  pw_external_mbedtls = get_path_info("$dir_pw_third_party/mbedtls", "abspath")
+  pw_external_mcuxpresso =
+      get_path_info("$dir_pw_third_party/mcuxpresso", "abspath")
+  pw_external_nanopb = get_path_info("$dir_pw_third_party/nanopb", "abspath")
+  pw_external_perfetto =
+      get_path_info("$dir_pw_third_party/perfetto", "abspath")
+  pw_external_pico_sdk =
+      get_path_info("$dir_pw_third_party/pico_sdk", "abspath")
+  pw_external_protobuf =
+      get_path_info("$dir_pw_third_party/protobuf", "abspath")
+  pw_external_re2 = get_path_info("$dir_pw_third_party/re2", "abspath")
+  pw_external_repo = get_path_info("$dir_pw_third_party/repo", "abspath")
+  pw_external_smartfusion_mss =
+      get_path_info("$dir_pw_third_party/smartfusion_mss", "abspath")
+  pw_external_stm32cube =
+      get_path_info("$dir_pw_third_party/stm32cube", "abspath")
+  pw_external_threadx = get_path_info("$dir_pw_third_party/threadx", "abspath")
+  pw_external_tinyusb = get_path_info("$dir_pw_third_party/tinyusb", "abspath")
 }
