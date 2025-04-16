@@ -81,7 +81,7 @@ if (current_toolchain != default_toolchain) {
       ":pw_cpu_exception_active",
     ]
 
-    public_deps = [ "$dir_pw_third_party/ambiq:sdk" ]
+    public_deps = [ "$pw_external_ambiq:sdk" ]
 
     deps = [
       ":check_ambiq_product_defined",

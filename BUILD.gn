@@ -25,7 +25,6 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_rpc/config.gni")
 import("$dir_pw_rust/rust.gni")
-import("$dir_pw_third_party/ambiq/ambiq.gni")
 import("$dir_pw_third_party/fuzztest/fuzztest.gni")
 import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 import("$dir_pw_toolchain/c_optimization.gni")
@@ -33,6 +32,7 @@ import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_toolchain/non_c_toolchain.gni")
 import("$dir_pw_trace/backend.gni")
 import("$dir_pw_unit_test/test.gni")
+import("$pw_external_ambiq/ambiq.gni")
 
 # Main build file for upstream Pigweed.
 
