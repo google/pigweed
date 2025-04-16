@@ -40,7 +40,7 @@ if (pw_arduino_build_CORE_PATH != "") {
     deps = [
       ":arduino_init",
       "$dir_pw_sys_io",
-      "$dir_pw_third_party/arduino:arduino_core_sources",
+      "$pw_external_arduino:arduino_core_sources",
     ]
     sources = [ "arduino_main_wrapper.cc" ]
   }
