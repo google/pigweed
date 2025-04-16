@@ -240,12 +240,14 @@ bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
 fpromise::result<bt::StaticPacket<
     pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
 FidlToScoParameters(
-    const fuchsia::bluetooth::bredr::ScoConnectionParameters& params);
+    const fuchsia::bluetooth::bredr::ScoConnectionParameters& params,
+    uint8_t sco_offload_path_index);
 fpromise::result<std::vector<bt::StaticPacket<
     pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>>
 FidlToScoParametersVector(
     const std::vector<fuchsia::bluetooth::bredr::ScoConnectionParameters>&
-        params);
+        params,
+    uint8_t sco_offload_path_index);
 
 // Returns true if |handle| is within the valid handle range.
 bool IsFidlGattHandleValid(fuchsia::bluetooth::gatt2::Handle handle);

@@ -140,7 +140,8 @@ void BtHostComponent::ShutDown() {
 }
 
 void BtHostComponent::BindToHostInterface(
-    fidl::ServerEnd<fuchsia_bluetooth_host::Host> host_client) {
+    fidl::ServerEnd<fuchsia_bluetooth_host::Host> host_client,
+    uint8_t sco_offload_index) {
   if (host_server_) {
     bt_log(WARN, "bt-host", "Host interface channel already open");
     return;
@@ -154,7 +155,8 @@ void BtHostComponent::BindToHostInterface(
   host_server_ = std::make_unique<HostServer>(std::move(channel),
                                               gap_->AsWeakPtr(),
                                               gatt_->GetWeakPtr(),
-                                              lease_provider_);
+                                              lease_provider_,
+                                              sco_offload_index);
   host_server_->set_error_handler([this](zx_status_t status) {
     PW_DCHECK(host_server_);
     bt_log(WARN, "bt-host", "Host interface disconnected");

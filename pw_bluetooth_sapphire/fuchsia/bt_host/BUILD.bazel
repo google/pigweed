@@ -117,6 +117,7 @@ fuchsia_structured_config_values(
     values = {
         "device_path": "/dev/class/bt-hci/000",
         "legacy_pairing_enabled": False,
+        "sco_offload_path_index": 6,
     },
 )
 

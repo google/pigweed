@@ -62,7 +62,8 @@ HostServer::HostServer(
     zx::channel channel,
     const bt::gap::Adapter::WeakPtr& adapter,
     bt::gatt::GATT::WeakPtr gatt,
-    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
+    uint8_t sco_offload_index)
     : AdapterServerBase(adapter, this, std::move(channel)),
       pairing_delegate_(nullptr),
       gatt_(std::move(gatt)),
@@ -70,6 +71,7 @@ HostServer::HostServer(
       requesting_background_scan_(false),
       requesting_discoverable_(false),
       io_capability_(IOCapability::kNoInputNoOutput),
+      sco_offload_index_(sco_offload_index),
       weak_self_(this),
       weak_pairing_(this) {
   PW_CHECK(gatt_.is_alive());
@@ -125,6 +127,7 @@ void HostServer::RequestProtocol(fhost::ProtocolRequest request) {
     case fhost::ProtocolRequest::Tag::kProfile:
       BindServer<ProfileServer>(adapter()->AsWeakPtr(),
                                 wake_lease_provider_,
+                                sco_offload_index_,
                                 std::move(request.profile()));
       break;
     case fhost::ProtocolRequest::Tag::kPrivilegedPeripheral:

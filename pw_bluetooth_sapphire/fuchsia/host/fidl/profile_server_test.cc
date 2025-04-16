@@ -223,8 +223,10 @@ class ProfileServerTest : public TestingBase {
 
     fidlbredr::ProfileHandle profile_handle;
     client_.Bind(std::move(profile_handle));
+    uint8_t sco_offload_index = 6;
     server_ = std::make_unique<ProfileServer>(adapter()->AsWeakPtr(),
                                               lease_provider_,
+                                              sco_offload_index,
                                               client_.NewRequest(dispatcher()));
   }
   void SetUp() override { SetUp(FeaturesBits{0}); }
@@ -1459,7 +1461,9 @@ TEST_F(ProfileServerTest, ConnectScoWithInvalidParameters) {
 TEST_F(ProfileServerTest, ConnectScoWithMissingPeerId) {
   fidlbredr::ScoConnectionParameters sco_params =
       CreateScoConnectionParameters();
-  EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
+  uint8_t sco_offload_index = 6;
+  EXPECT_TRUE(
+      fidl_helpers::FidlToScoParameters(sco_params, sco_offload_index).is_ok());
   std::vector<fidlbredr::ScoConnectionParameters> sco_params_list;
   sco_params_list.emplace_back(std::move(sco_params));
   fidlbredr::ProfileConnectScoRequest request;
@@ -1491,7 +1495,9 @@ TEST_F(ProfileServerTest, ConnectScoWithMissingPeerId) {
 TEST_F(ProfileServerTest, ConnectScoWithMissingConnectionDoesNotCrash) {
   fidlbredr::ScoConnectionParameters sco_params =
       CreateScoConnectionParameters();
-  EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
+  uint8_t sco_offload_index = 6;
+  EXPECT_TRUE(
+      fidl_helpers::FidlToScoParameters(sco_params, sco_offload_index).is_ok());
   std::vector<fidlbredr::ScoConnectionParameters> sco_params_list;
   sco_params_list.emplace_back(std::move(sco_params));
   fidlbredr::ProfileConnectScoRequest request;
@@ -1569,7 +1575,9 @@ TEST_F(ProfileServerTest, ConnectScoInitiatorWithTooManyParameters) {
 TEST_F(ProfileServerTest, ConnectScoWithUnconnectedPeerReturnsError) {
   fidlbredr::ScoConnectionParameters sco_params =
       CreateScoConnectionParameters();
-  EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
+  uint8_t sco_offload_index = 6;
+  EXPECT_TRUE(
+      fidl_helpers::FidlToScoParameters(sco_params, sco_offload_index).is_ok());
   std::vector<fidlbredr::ScoConnectionParameters> sco_params_list;
   sco_params_list.emplace_back(std::move(sco_params));
 
@@ -1604,7 +1612,9 @@ TEST_F(ProfileServerTest, ConnectScoWithUnconnectedPeerReturnsError) {
 TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorSuccess) {
   fidlbredr::ScoConnectionParameters sco_params =
       CreateScoConnectionParameters(fidlbredr::HfpParameterSet::T1);
-  EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
+  uint8_t sco_offload_index = 6;
+  EXPECT_TRUE(
+      fidl_helpers::FidlToScoParameters(sco_params, sco_offload_index).is_ok());
   std::vector<fidlbredr::ScoConnectionParameters> sco_params_list;
   sco_params_list.emplace_back(std::move(sco_params));
 
@@ -1793,7 +1803,9 @@ TEST_F(ProfileServerTestConnectedPeer,
 TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorAndCloseProtocol) {
   fidlbredr::ScoConnectionParameters sco_params =
       CreateScoConnectionParameters();
-  EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
+  uint8_t sco_offload_index = 6;
+  EXPECT_TRUE(
+      fidl_helpers::FidlToScoParameters(sco_params, sco_offload_index).is_ok());
   std::vector<fidlbredr::ScoConnectionParameters> sco_params_list;
   sco_params_list.emplace_back(std::move(sco_params));
 
@@ -1827,7 +1839,9 @@ TEST_F(ProfileServerTestConnectedPeer,
        ConnectScoInitiatorAndCloseReceiverBeforeCompleteEvent) {
   fidlbredr::ScoConnectionParameters sco_params =
       CreateScoConnectionParameters();
-  EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
+  uint8_t sco_offload_index = 6;
+  EXPECT_TRUE(
+      fidl_helpers::FidlToScoParameters(sco_params, sco_offload_index).is_ok());
   std::vector<fidlbredr::ScoConnectionParameters> sco_params_list;
   sco_params_list.emplace_back(std::move(sco_params));
 
@@ -1877,8 +1891,10 @@ class ProfileServerTestFakeAdapter
 
     fidlbredr::ProfileHandle profile_handle;
     client_.Bind(std::move(profile_handle));
+    uint8_t sco_offload_index = 6;
     server_ = std::make_unique<ProfileServer>(adapter()->AsWeakPtr(),
                                               lease_provider_,
+                                              sco_offload_index,
                                               client_.NewRequest(dispatcher()));
   }
 
