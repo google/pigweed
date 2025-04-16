@@ -26,7 +26,7 @@ pw_doc_group("docs") {
 # To use, checkout the Ambiq Apollo4 SDK source into a directory, then set
 # the build arg dir_pw_third_party_ambiq_SDK to point to that directory. The
 # Ambiq Apollo 4 SDK library will be available in GN
-# at "$dir_pw_third_party/apollo4".
+# at "$pw_external_apollo4".
 if (dir_pw_third_party_ambiq_SDK != "") {
   config("apollo4p_sdk_defines") {
     defines = [
