@@ -264,6 +264,19 @@ cc_args(
     ],
 )
 
+# Thread safety warnings are only supported by Clang.
+cc_args(
+    name = "thread_safety_warnings",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-Wthread-safety",
+        "-D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1",
+    ],
+)
+
 cc_args(
     name = "fuzztest",
     actions = [

@@ -64,19 +64,6 @@ cc_args(
     args = ["-no_warning_for_no_symbols"],
 )
 
-# Thread safety warnings are only supported by Clang.
-cc_args(
-    name = "thread_safety_warnings",
-    actions = [
-        "@rules_cc//cc/toolchains/actions:c_compile_actions",
-        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
-    ],
-    args = [
-        "-Wthread-safety",
-        "-D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS=1",
-    ],
-)
-
 cc_args(
     name = "verbose_compiler_flags",
     actions = [
@@ -377,12 +364,12 @@ cc_toolchain(
         ],
         "//conditions:default": [],
     }) + [
-        ":thread_safety_warnings",
         ":link_with_lld",
         "//pw_toolchain/cc/args:debugging",
         "//pw_toolchain/cc/args:reduced_size",
         "//pw_toolchain/cc/args:no_canonical_prefixes",
         "//pw_toolchain/cc/args:no_rtti",
+        "//pw_toolchain/cc/args:thread_safety_warnings",
         "//pw_toolchain/cc/args:wno_register",
         "//pw_toolchain/cc/args:wnon_virtual_dtor",
         "//pw_toolchain/cc/args:common_warnings",

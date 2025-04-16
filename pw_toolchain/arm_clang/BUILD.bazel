@@ -229,6 +229,7 @@ cc_toolchain(
         "//pw_toolchain/cc/args:reduced_size",
         "//pw_toolchain/cc/args:no_canonical_prefixes",
         "//pw_toolchain/cc/args:no_rtti",
+        "//pw_toolchain/cc/args:thread_safety_warnings",
         "//pw_toolchain/cc/args:wno_register",
         "//pw_toolchain/cc/args:wnon_virtual_dtor",
         "//pw_toolchain/cc/args:common_warnings",
