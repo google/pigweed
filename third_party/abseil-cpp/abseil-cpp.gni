@@ -19,7 +19,7 @@ import("$dir_pw_build/target_types.gni")
 declare_args() {
   # If compiling tests with Abseil C++, this variable is set to the path to the
   # Abseil C++ installation. When set, a pw_source_set for the Abseil C++ library
-  # is created at "$dir_pw_third_party/abseil-cpp".
+  # is created at "$pw_external_abseil_cpp".
   dir_pw_third_party_abseil_cpp = ""
 }
 
@@ -30,8 +30,8 @@ template("abseil_cpp_source_set") {
     public_configs = []
     remove_configs = []
     forward_variables_from(invoker, "*")
-    configs += [ "$dir_pw_third_party/abseil-cpp:absl_config" ]
-    public_configs += [ "$dir_pw_third_party/abseil-cpp:absl_public_config" ]
+    configs += [ "$pw_external_abseil_cpp:absl_config" ]
+    public_configs += [ "$pw_external_abseil_cpp:absl_public_config" ]
     remove_configs += [ "$dir_pw_fuzzer:instrumentation" ]
   }
 }

@@ -24,10 +24,10 @@ fuzztest_source_set("bazel") {
   public = [ "$dir_pw_third_party_fuzztest/common/bazel.h" ]
   sources = [ "$dir_pw_third_party_fuzztest/common/bazel.cc" ]
   public_deps = [
-    "$dir_pw_third_party/abseil-cpp/absl/log:check",
-    "$dir_pw_third_party/abseil-cpp/absl/status",
-    "$dir_pw_third_party/abseil-cpp/absl/strings",
-    "$dir_pw_third_party/abseil-cpp/absl/time",
+    "$pw_external_abseil_cpp/absl/log:check",
+    "$pw_external_abseil_cpp/absl/status",
+    "$pw_external_abseil_cpp/absl/strings",
+    "$pw_external_abseil_cpp/absl/time",
   ]
 }
 
@@ -41,21 +41,21 @@ fuzztest_source_set("blob_file") {
     ":logging",
     ":remote_file",
     ":status_macros",
-    "$dir_pw_third_party/abseil-cpp/absl/base:nullability",
-    "$dir_pw_third_party/abseil-cpp/absl/log",
-    "$dir_pw_third_party/abseil-cpp/absl/log:check",
-    "$dir_pw_third_party/abseil-cpp/absl/status",
-    "$dir_pw_third_party/abseil-cpp/absl/status:statusor",
-    "$dir_pw_third_party/abseil-cpp/absl/strings:str_format",
-    "$dir_pw_third_party/abseil-cpp/absl/strings:string_view",
-    "$dir_pw_third_party/abseil-cpp/absl/time",
+    "$pw_external_abseil_cpp/absl/base:nullability",
+    "$pw_external_abseil_cpp/absl/log",
+    "$pw_external_abseil_cpp/absl/log:check",
+    "$pw_external_abseil_cpp/absl/status",
+    "$pw_external_abseil_cpp/absl/status:statusor",
+    "$pw_external_abseil_cpp/absl/strings:str_format",
+    "$pw_external_abseil_cpp/absl/strings:string_view",
+    "$pw_external_abseil_cpp/absl/time",
   ]
 }
 
 # Generated from @fuzztest//common:defs
 fuzztest_source_set("defs") {
   public = [ "$dir_pw_third_party_fuzztest/common/defs.h" ]
-  public_deps = [ "$dir_pw_third_party/abseil-cpp/absl/types:span" ]
+  public_deps = [ "$pw_external_abseil_cpp/absl/types:span" ]
 }
 
 # Generated from @fuzztest//common:hash
@@ -72,8 +72,8 @@ fuzztest_source_set("hash") {
 fuzztest_source_set("logging") {
   public = [ "$dir_pw_third_party_fuzztest/common/logging.h" ]
   public_deps = [
-    "$dir_pw_third_party/abseil-cpp/absl/log",
-    "$dir_pw_third_party/abseil-cpp/absl/log:check",
+    "$pw_external_abseil_cpp/absl/log",
+    "$pw_external_abseil_cpp/absl/log:check",
   ]
 }
 
@@ -86,11 +86,11 @@ fuzztest_source_set("remote_file") {
     ":logging",
     ":remote_file_oss",
     ":status_macros",
-    "$dir_pw_third_party/abseil-cpp/absl/base:nullability",
-    "$dir_pw_third_party/abseil-cpp/absl/log:check",
-    "$dir_pw_third_party/abseil-cpp/absl/status",
-    "$dir_pw_third_party/abseil-cpp/absl/status:statusor",
-    "$dir_pw_third_party/abseil-cpp/absl/strings",
+    "$pw_external_abseil_cpp/absl/base:nullability",
+    "$pw_external_abseil_cpp/absl/log:check",
+    "$pw_external_abseil_cpp/absl/status",
+    "$pw_external_abseil_cpp/absl/status:statusor",
+    "$pw_external_abseil_cpp/absl/strings",
   ]
 }
 
@@ -104,12 +104,12 @@ fuzztest_source_set("remote_file_oss") {
     ":defs",
     ":logging",
     ":status_macros",
-    "$dir_pw_third_party/abseil-cpp/absl/base:nullability",
-    "$dir_pw_third_party/abseil-cpp/absl/log",
-    "$dir_pw_third_party/abseil-cpp/absl/log:check",
-    "$dir_pw_third_party/abseil-cpp/absl/status",
-    "$dir_pw_third_party/abseil-cpp/absl/status:statusor",
-    "$dir_pw_third_party/abseil-cpp/absl/strings",
+    "$pw_external_abseil_cpp/absl/base:nullability",
+    "$pw_external_abseil_cpp/absl/log",
+    "$pw_external_abseil_cpp/absl/log:check",
+    "$pw_external_abseil_cpp/absl/status",
+    "$pw_external_abseil_cpp/absl/status:statusor",
+    "$pw_external_abseil_cpp/absl/strings",
   ]
 }
 
@@ -117,14 +117,14 @@ fuzztest_source_set("remote_file_oss") {
 fuzztest_source_set("sha1") {
   public = [ "$dir_pw_third_party_fuzztest/common/sha1.h" ]
   sources = [ "$dir_pw_third_party_fuzztest/common/sha1.cc" ]
-  public_deps = [ "$dir_pw_third_party/abseil-cpp/absl/base:nullability" ]
+  public_deps = [ "$pw_external_abseil_cpp/absl/base:nullability" ]
 }
 
 # Generated from @fuzztest//common:status_macros
 fuzztest_source_set("status_macros") {
   public = [ "$dir_pw_third_party_fuzztest/common/status_macros.h" ]
   public_deps = [
-    "$dir_pw_third_party/abseil-cpp/absl/base:core_headers",
-    "$dir_pw_third_party/abseil-cpp/absl/log",
+    "$pw_external_abseil_cpp/absl/base:core_headers",
+    "$pw_external_abseil_cpp/absl/log",
   ]
 }
