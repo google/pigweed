@@ -133,7 +133,7 @@ Permitted Headers
      use the ``pw::span`` version for compatability
    * ``<string>`` -- can use :ref:`module-pw_string`
    * ``<thread>`` -- can use :ref:`module-pw_thread`
-   * ``<future>`` -- eventually :ref:`module-pw_async` will offer this
+   * ``<future>`` -- eventually :ref:`module-pw_async2` will offer this
    * ``<exception>``, ``<stdexcept>`` -- no exceptions
    * ``<memory>``, ``<scoped_allocator>`` -- no allocations
    * ``<regex>``
@@ -152,7 +152,7 @@ namespaces to simplify referring to other code.
 
 Declarations in ``.h`` files for ``extern "C"`` functions with no parameters
 must include ``void`` in their parameter lists to prevent being called with
-parameters erronesouly in C code. For consistency with the header file, use
+parameters erroneously in C code. For consistency with the header file, use
 ``(void)`` in the C++ definition also.
 
 .. code-block:: cpp
@@ -431,7 +431,7 @@ multitude of reasons:
 * It makes it clear what part of the code is the **"main business" versus "edge
   case handling"**.
 * For **functions**, parameter checking is in its own section at the top of the
-  function, rather than scattered around in the fuction body.
+  function, rather than scattered around in the function body.
 * For **loops**, element checking is in its own section at the top of the loop,
   rather than scattered around in the loop body.
 * Commit **deltas are simpler to follow** in code reviews; since adding a new
@@ -712,10 +712,10 @@ Log in the right spot
 Limiting logs to only the most relevant sections of code can guide developers to
 areas that require debugging.
 
-- **Log errors as soon as they can be umabiguously determined to be errors.** An
-  unambiguous error is one that will be reported to the caller of the module or
-  component. Avoid logging errors that are handled internally by the module or
-  component.
+- **Log errors as soon as they can be unambiguously determined to be errors.**
+  An unambiguous error is one that will be reported to the caller of the module
+  or component. Avoid logging errors that are handled internally by the module
+  or component.
 
   - Example: A task manager would not log a failure to schedule a specific
     worker from a pool, but may log the failure to find *any* worker in the
@@ -883,7 +883,7 @@ Logging the most useful information requires considering what may be relevant to
 an error and cannot be obtained another way.
 
 - **Include relevant context**, such as function parameters.
-- **Capitalize your log message, but do not end with puncuation.** Log backends
+- **Capitalize your log message, but do not end with punctuation.** Log backends
   typically combine your log message with additional information and format
   them.
 
@@ -981,7 +981,7 @@ C++ code
   ``foo_bar`` style naming.  For consistency with other variables whose value is
   always fixed for the duration of the program, the naming convention is
   ``kCamelCase``, and so that is the style we use in Pigweed.
-* Trivial membor accessors should be named with ``snake_case()``. The Google
+* Trivial member accessors should be named with ``snake_case()``. The Google
   C++ style allows either ``snake_case()`` or ``CapsCase()``, but Pigweed
   always uses ``snake_case()``.
 * Abstract base classes should be named generically, with derived types named
