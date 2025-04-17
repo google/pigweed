@@ -148,6 +148,10 @@ class StreamChannel final
   // threads.
   ~StreamChannel() final = default;
 
+  // Even though the destructor is never called, classes with private
+  // destructors must friend `pw::NoDestructor`.
+  friend class pw::NoDestructor<StreamChannel>;
+
   Status ProvideBufferIfAvailable(async2::Context& cx);
 
   async2::Poll<Result<multibuf::MultiBuf>> DoPendRead(
