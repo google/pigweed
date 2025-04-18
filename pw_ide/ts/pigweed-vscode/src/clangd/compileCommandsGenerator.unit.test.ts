@@ -21,14 +21,25 @@ import {
   resolveVirtualIncludesToRealPaths,
 } from './compileCommandsGenerator';
 import { CompileCommand } from './parser';
+import path from 'path';
+
+function fixPathSeparator(p: string) {
+  return p.replace(/\//g, path.sep);
+}
+
+function fixPathSeparators(paths: string[]) {
+  return paths.map(fixPathSeparator);
+}
 
 const SAMPLE_AQUERY_ACTION = {
   targetId: 423,
-  targetLabel: '//pw_containers/intrusive_map:intrusive_map_test',
+  targetLabel: fixPathSeparator(
+    '//pw_containers/intrusive_map:intrusive_map_test',
+  ),
   actionKey: '990ae6a0baba62cba42e7576fa759c8622188f59632495aaefec66cc77bab3d6',
   mnemonic: 'CppCompile',
   configurationId: 2,
-  arguments: [
+  arguments: fixPathSeparators([
     'external/+_repo_rules5+llvm_toolchain_macos/bin/clang++',
     '--sysroot\u003dexternal/+_repo_rules3+macos_sysroot',
     '-Wthread-safety',
@@ -158,7 +169,7 @@ const SAMPLE_AQUERY_ACTION = {
     'pw_containers/intrusive_map_test.cc',
     '-o',
     'bazel-out/darwin_arm64-fastbuild/bin/pw_containers/_objs/intrusive_map_test/intrusive_map_test.pic.o',
-  ],
+  ]),
   environmentVariables: [
     {
       key: 'PATH',
@@ -176,18 +187,18 @@ const SAMPLE_AQUERY_ACTION = {
 
 const SAMPLE_CQUERY_HEADERS = [
   [
-    '//pw_containers:intrusive_map',
-    [
+    fixPathSeparator('//pw_containers:intrusive_map'),
+    fixPathSeparators([
       'pw_containers/public/pw_containers/intrusive_map.h',
       'bazel-out/darwin_arm64-fastbuild/bin/pw_containers/_virtual_includes/intrusive_map/pw_containers/intrusive_map.h',
-    ],
+    ]),
   ],
 ];
 
 const SAMPLE_COMPILE_COMMAND = {
-  file: 'pw_containers/intrusive_map_test.cc',
-  directory: 'bazel-out/darwin_arm64-fastbuild/bin',
-  arguments: [
+  file: fixPathSeparator('pw_containers/intrusive_map_test.cc'),
+  directory: fixPathSeparator('bazel-out/darwin_arm64-fastbuild/bin'),
+  arguments: fixPathSeparators([
     'external/+_repo_rules5+llvm_toolchain_macos/bin/clang++',
     '--sysroot\u003dexternal/+_repo_rules3+macos_sysroot',
     '-Wthread-safety',
@@ -317,7 +328,7 @@ const SAMPLE_COMPILE_COMMAND = {
     'pw_containers/intrusive_map_test.cc',
     '-o',
     'bazel-out/darwin_arm64-fastbuild/bin/pw_containers/_objs/intrusive_map_test/intrusive_map_test.pic.o',
-  ],
+  ]),
 };
 
 test('inferPlatformOfAction', () => {
@@ -331,10 +342,10 @@ test('resolveVirtualIncludesToRealPaths', () => {
   const cqueryHeaderWithNoVirtualInclude = [
     [
       '//pw_containers:intrusive_map',
-      [
+      fixPathSeparators([
         'pw_containers/public/pw_containers/intrusive_map.h',
         'pw_containers/public/pw_containers/intrusive_map.h',
-      ],
+      ]),
     ],
   ];
 
@@ -343,7 +354,7 @@ test('resolveVirtualIncludesToRealPaths', () => {
     cqueryHeaderWithNoVirtualInclude as any,
   );
 
-  assert.equal(Object.values(map)[0], 'pw_containers/public');
+  assert.equal(Object.values(map)[0], fixPathSeparator('pw_containers/public'));
   assert.equal(Object.values(mapEmpty).length, 0);
 });
 
@@ -358,7 +369,8 @@ test('applyVirtualIncludeFix', () => {
 
   assert.deepEqual(
     compileCommandFixed.data.arguments!.filter(
-      (arg: string) => arg.indexOf('_virtual_includes/intrusive_map') >= 0,
+      (arg: string) =>
+        arg.indexOf(fixPathSeparator('_virtual_includes/intrusive_map')) >= 0,
     ),
     [],
   );
@@ -381,5 +393,8 @@ test('generateCompileCommandsFromAqueryCquery', async () => {
   )!;
   assert.equal(compileCommands.db.length, 1);
   const compileCommand = compileCommands.db[0];
-  assert.equal(compileCommand.data.file, 'pw_containers/intrusive_map_test.cc');
+  assert.equal(
+    compileCommand.data.file,
+    fixPathSeparator('pw_containers/intrusive_map_test.cc'),
+  );
 });

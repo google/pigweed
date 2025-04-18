@@ -13,6 +13,8 @@
 # the License.
 """Presubmit to npm install and run tests"""
 
+import os
+import shutil
 from pw_presubmit.presubmit import call
 from pw_presubmit.presubmit_context import PresubmitContext
 
@@ -26,5 +28,6 @@ def npm_test(ctx: PresubmitContext) -> None:
 def vscode_test(ctx: PresubmitContext) -> None:
     """Run npm install and npm run test:all to test the VS Code extension."""
     vsc_dir = ctx.root / 'pw_ide' / 'ts' / 'pigweed-vscode'
-    call('npm', 'install', cwd=vsc_dir)
-    call('npm', 'run', 'test:all', cwd=vsc_dir)
+    npm = shutil.which('npm.cmd' if os.name == 'nt' else 'npm')
+    call(npm, 'install', cwd=vsc_dir)
+    call(npm, 'run', 'test:all', cwd=vsc_dir)

@@ -13,15 +13,16 @@
 // the License.
 
 import * as assert from 'assert';
+import * as path from 'path';
 
 import { inferTarget, inferTargetPositions } from './parser';
 
 test('inferTargetPositions', () => {
   const testCases: [string, number[]][] = [
     ['?', [0]],
-    ['*/?', [1]],
-    ['*/*/?', [2]],
-    ['*/?/?', [1, 2]],
+    ['*' + path.sep + '?', [1]],
+    ['*' + path.sep + '*' + path.sep + '?', [2]],
+    ['*' + path.sep + '?' + path.sep + '?', [1, 2]],
   ];
 
   for (const [glob, positions] of testCases) {
@@ -31,13 +32,25 @@ test('inferTargetPositions', () => {
 
 test('inferTarget', () => {
   const testCases: [string, string, string][] = [
-    ['?', 'target/thing.o', 'target'],
-    ['*/?', 'variants/target/foo/bar/thing.o', 'target'],
-    ['*/*/*/*/?', 'foo/bar/baz/hi/target/obj/thing.o', 'target'],
-    ['*/?/?', 'variants/target/foo/bar/thing.o', 'target_foo'],
+    ['?', ['target', 'thing.o'].join(path.sep), 'target'],
+    [
+      '*' + path.sep + '?',
+      ['variants', 'target', 'foo', 'bar', 'thing.o'].join(path.sep),
+      'target',
+    ],
+    [
+      '*' + path.sep + '*' + path.sep + '*' + path.sep + '*' + path.sep + '?',
+      ['foo', 'bar', 'baz', 'hi', 'target', 'obj', 'thing.o'].join(path.sep),
+      'target',
+    ],
+    [
+      '*' + path.sep + '?' + path.sep + '?',
+      ['variants', 'target', 'foo', 'bar', 'thing.o'].join(path.sep),
+      'target_foo',
+    ],
   ];
 
-  for (const [glob, path, name] of testCases) {
-    assert.equal(name, inferTarget(glob, path));
+  for (const [glob, inputPath, name] of testCases) {
+    assert.equal(name, inferTarget(glob, inputPath));
   }
 });
