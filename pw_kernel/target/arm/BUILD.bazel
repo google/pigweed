@@ -29,6 +29,7 @@ platform(
         "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_semihosting",
         "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
         "//pw_kernel/target:linker_script": ":linker_script_mps2_an505",
+        "//pw_kernel/target:target_backend": ":target_mps2_an505",
     }),
 )
 
@@ -37,6 +38,19 @@ pw_linker_script(
     linker_script = "mps2-an505.ld",
     target_compatible_with = [
         "//pw_build/constraints/arm:cortex-m33",
+    ],
+)
+
+rust_library(
+    name = "target_mps2_an505",
+    srcs = ["target_mps2_an505.rs"],
+    crate_name = "target_backend",
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
+    deps = [
+        "//pw_kernel/target:demo",
+        "//pw_kernel/target:target_interface",
     ],
 )
 
