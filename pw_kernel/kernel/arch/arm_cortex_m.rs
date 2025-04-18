@@ -46,7 +46,7 @@ impl ArchInterface for Arch {
         //  FPU initial state
         //  enable cache (if present)
         //  enable cycle counter?
-        let mut p = Peripherals::take().unwrap();
+        let p = Peripherals::take().unwrap();
         let mut r = regs::Regs::get();
         let cpuid = p.CPUID.base.read();
         info!("CPUID 0x{:x}", cpuid as u32);
@@ -74,7 +74,7 @@ impl ArchInterface for Arch {
             // TODO: configure BASEPRI, FAULTMASK
         } // unsafe
 
-        timer::systick_early_init(&mut p.SYST);
+        timer::systick_early_init();
 
         // TEST: Intentionally trigger a hard fault to make sure the VTOR is working.
         // use core::arch::asm;

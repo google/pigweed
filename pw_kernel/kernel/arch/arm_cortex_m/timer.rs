@@ -11,9 +11,9 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+use crate::arch::arm_cortex_m::regs::Regs;
 use crate::scheduler;
 use core::sync::atomic;
-use cortex_m::peripheral::*;
 use pw_log::info;
 use time::Clock as _;
 
@@ -36,34 +36,42 @@ static TICKS: atomic::AtomicU32 = atomic::AtomicU32::new(0);
 
 #[allow(dead_code)]
 pub fn systick_dump() {
-    info!(
-        "counter {} reload {}",
-        SYST::get_current() as u32,
-        SYST::get_reload() as u32
-    );
+    let systick_regs = Regs::get().systick;
+    let current = systick_regs.cvr.read().current();
+    let reload = systick_regs.rvr.read().reload();
+
+    info!("current {} reload {}", current as u32, reload as u32);
 }
 
-pub fn systick_early_init(syst: &mut SYST) {
+pub fn systick_early_init() {
     info!("starting monotonic systick\n");
 
-    syst.disable_counter();
-    syst.disable_interrupt();
-    syst.clear_current();
+    let mut csr = Regs::get().systick.csr;
+    // disable counter and interrupts
+    let mut csr_val = csr.read().with_enable(false).with_tickint(false);
+    csr.write(csr_val);
+
+    // clear current value
+    let mut cvr = Regs::get().systick.cvr;
+    let cvr_val = cvr.read().with_current(0);
+    cvr.write(cvr_val);
 
     // set a 100Hz timer
-    syst.set_reload(TICKS_PER_SEC / TICK_HZ);
-    syst.enable_counter();
+    let mut rvr = Regs::get().systick.rvr;
+    let rvr_val = rvr.read().with_reload(TICKS_PER_SEC / TICK_HZ);
+    rvr.write(rvr_val);
 
-    syst.enable_interrupt();
+    // enable counter and interrupts
+    csr_val = csr.read().with_enable(true).with_tickint(true);
+    csr.write(csr_val);
 }
 
 pub fn systick_init() {
-    info!("ticks_per_10ms: {}", SYST::get_ticks_per_10ms() as u32);
-    if SYST::get_ticks_per_10ms() > 0 {
-        pw_assert::eq!(
-            (SYST::get_ticks_per_10ms() * 100) as u64,
-            TICKS_PER_SEC as u64
-        );
+    let systick_regs = Regs::get().systick;
+    let ticks_per_10ms = systick_regs.calib.read().tenms();
+    info!("ticks_per_10ms: {}", ticks_per_10ms as u32);
+    if ticks_per_10ms > 0 {
+        pw_assert::eq!((ticks_per_10ms * 100) as u64, TICKS_PER_SEC as u64);
     }
 }
 
