@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load("@rules_rust//rust:defs.bzl", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 
@@ -24,6 +25,7 @@ platform(
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict({
+        "//pw_kernel/config:kernel_config": ":config_mps2_an505",
         "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_semihosting",
         "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
         "//pw_kernel/target:linker_script": ":linker_script_mps2_an505",
@@ -35,5 +37,17 @@ pw_linker_script(
     linker_script = "mps2-an505.ld",
     target_compatible_with = [
         "//pw_build/constraints/arm:cortex-m33",
+    ],
+)
+
+rust_library(
+    name = "config_mps2_an505",
+    srcs = ["config_mps2_an505.rs"],
+    crate_name = "kernel_config",
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
+    deps = [
+        "//pw_kernel/config:kernel_config_interface",
     ],
 )

@@ -22,6 +22,7 @@ test:k_common --test_tag_filters=-integration,-do_not_build,-do_not_run_test
 # Lint configuration
 # ==================
 common:k_lint --config=k_common
+common:k_lint --@pigweed//pw_kernel/config:kernel_config=//pw_kernel/target/host:config_host
 
 # Enable clippy lints
 build:k_lint --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect
@@ -34,6 +35,7 @@ build:k_lint --output_groups=+rustfmt_checks
 # Host target configuration
 # ===========================
 common:k_host --config=k_common
+common:k_host --@pigweed//pw_kernel/config:kernel_config=//pw_kernel/target/host:config_host
 # For simplicity have the host use basic logger rather than tokenized logger.
 common:k_host --@pigweed//pw_log/rust:pw_log_backend=//pw_kernel/subsys/console:pw_log_backend_basic
 

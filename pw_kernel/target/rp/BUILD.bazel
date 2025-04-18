@@ -25,6 +25,7 @@ platform(
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict({
+        "//pw_kernel/config:kernel_config": ":config_rp2350",
         "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_semihosting",
         "//pw_kernel/subsys/console:console_backend": ":console_rp2350",
         "//pw_kernel/target:linker_script": ":linker_script_rp2350",
@@ -69,5 +70,17 @@ rust_library(
         "@rust_crates//:cortex-m-rt",
         "@rust_crates//:panic-halt",
         "@rust_crates//:rp235x-hal",
+    ],
+)
+
+rust_library(
+    name = "config_rp2350",
+    srcs = ["config_rp2350.rs"],
+    crate_name = "kernel_config",
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
+    deps = [
+        "//pw_kernel/config:kernel_config_interface",
     ],
 )

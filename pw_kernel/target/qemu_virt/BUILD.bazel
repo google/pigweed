@@ -27,6 +27,7 @@ platform(
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict({
+        "//pw_kernel/config:kernel_config": ":config_riscv",
         "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_semihosting",
         "//pw_kernel/subsys/console:console_backend": ":console_riscv",
         "//pw_kernel/target:linker_script": ":linker_script_riscv",
@@ -68,5 +69,17 @@ rust_library(
         "//pw_kernel/target:demo",
         "//pw_kernel/target:target_interface",
         "@rust_crates//:panic-halt",
+    ],
+)
+
+rust_library(
+    name = "config_riscv",
+    srcs = ["config_riscv.rs"],
+    crate_name = "kernel_config",
+    target_compatible_with = [
+        "@platforms//cpu:riscv32",
+    ],
+    deps = [
+        "//pw_kernel/config:kernel_config_interface",
     ],
 )

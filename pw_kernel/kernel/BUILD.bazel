@@ -73,6 +73,7 @@ rust_library(
     proc_macro_deps = ["@rust_crates//:paste"],
     tags = ["kernel"],
     deps = [
+        "//pw_kernel/config:kernel_config",
         "//pw_kernel/lib/foreign_box",
         "//pw_kernel/lib/list",
         "//pw_kernel/lib/log_if",
