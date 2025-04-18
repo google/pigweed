@@ -18,13 +18,29 @@ load("@rules_rust//rust:defs.bzl", "rust_library")
 package(default_visibility = ["//visibility:public"])
 
 rust_library(
+    name = "demo",
+    srcs = ["demo.rs"],
+    tags = ["kernel"],
+    deps = [
+        "//pw_kernel/kernel",
+        "//pw_kernel/lib/pw_assert",
+        "//pw_kernel/lib/time",
+        # TODO - konkers: remove this once we have userspace.
+        "//pw_kernel/syscall:syscall_user",
+        "//pw_log/rust:pw_log",
+    ],
+)
+
+rust_library(
     name = "target_interface",
     srcs = ["target_interface.rs"],
+    tags = ["kernel"],
 )
 
 rust_library(
     name = "target",
     srcs = ["target.rs"],
+    tags = ["kernel"],
     deps = [
         ":target_backend",
         ":target_interface",
@@ -34,13 +50,16 @@ rust_library(
 label_flag(
     name = "target_backend",
     build_setting_default = ":target_backend_generic",
+    tags = ["kernel"],
 )
 
 rust_library(
     name = "target_backend_generic",
     srcs = ["target_backend_generic.rs"],
     crate_name = "target_backend",
+    tags = ["kernel"],
     deps = [
+        ":demo",
         ":target_interface",
     ],
 )
@@ -48,6 +67,7 @@ rust_library(
 label_flag(
     name = "linker_script",
     build_setting_default = ":no_linker_script",
+    tags = ["kernel"],
 )
 
 cc_library(

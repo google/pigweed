@@ -20,6 +20,10 @@ pub struct Target {}
 impl TargetInterface for Target {
     const NAME: &'static str = "Generic";
 
+    fn main() -> ! {
+        demo::main()
+    }
+
     // Use the default noop implementations.
 }
 

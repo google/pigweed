@@ -76,6 +76,10 @@ impl TargetInterface for Target {
 
         console_backend::register_uart(uart);
     }
+
+    fn main() -> ! {
+        demo::main()
+    }
 }
 
 declare_target!(Target);

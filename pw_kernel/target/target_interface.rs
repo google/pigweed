@@ -18,6 +18,10 @@ pub trait TargetInterface {
 
     /// Called at the very beginning of the kernel to set up the console.
     fn console_init() {}
+
+    /// Called at the end of Kernel::main to invoke any target specific
+    /// code.
+    fn main() -> !;
 }
 
 #[macro_export]
@@ -31,6 +35,11 @@ macro_rules! declare_target {
         #[no_mangle]
         pub fn pw_kernel_target_console_init() {
             <$target as $crate::TargetInterface>::console_init();
+        }
+
+        #[no_mangle]
+        pub fn pw_kernel_target_main() -> ! {
+            <$target as $crate::TargetInterface>::main();
         }
     };
 }

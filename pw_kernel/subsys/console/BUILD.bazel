@@ -77,6 +77,7 @@ rust_library(
 label_flag(
     name = "console_backend",
     build_setting_default = ":console_backend_stdio",
+    tags = ["kernel"],
     visibility = ["//visibility:public"],
 )
 

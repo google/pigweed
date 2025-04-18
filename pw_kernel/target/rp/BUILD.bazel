@@ -64,6 +64,7 @@ rust_library(
     ],
     deps = [
         ":console_rp2350",
+        "//pw_kernel/target:demo",
         "//pw_kernel/target:target_interface",
         "@rust_crates//:cortex-m-rt",
         "@rust_crates//:panic-halt",

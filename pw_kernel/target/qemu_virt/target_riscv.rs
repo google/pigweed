@@ -19,6 +19,10 @@ pub struct Target {}
 
 impl TargetInterface for Target {
     const NAME: &'static str = "QEMU-VIRT-RISCV";
+
+    fn main() -> ! {
+        demo::main()
+    }
 }
 
 declare_target!(Target);

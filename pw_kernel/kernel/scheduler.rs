@@ -187,12 +187,14 @@ impl Thread {
         arg: usize,
     ) -> &mut Thread {
         let process = SCHEDULER_STATE.lock().kernel_process.get();
-        self.initialize(process, stack, entry_point, arg)
+        unsafe { self.initialize(process, stack, entry_point, arg) }
     }
 
-    // Initialize the mutable parts of the thread, must be called once per
-    // thread prior to starting it
-    pub fn initialize(
+    /// # Safety
+    /// It is up to the caller to ensure that *process is valid.
+    /// Initialize the mutable parts of the thread, must be called once per
+    /// thread prior to starting it
+    pub unsafe fn initialize(
         &mut self,
         process: *mut Process,
         stack: Stack,

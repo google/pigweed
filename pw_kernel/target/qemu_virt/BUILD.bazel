@@ -65,6 +65,7 @@ rust_library(
     ],
     deps = [
         ":console_riscv",
+        "//pw_kernel/target:demo",
         "//pw_kernel/target:target_interface",
         "@rust_crates//:panic-halt",
     ],
