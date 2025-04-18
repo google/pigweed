@@ -84,7 +84,7 @@ macro_rules! init_thread {
         };
 
         info!("initializing thread: {}", $name as &'static str);
-        thread.initialize(
+        thread.initialize_kernel_thread(
             {
                 static mut STACK: [u8; 2048] = [0; 2048];
                 #[allow(static_mut_refs)]
@@ -106,6 +106,9 @@ impl Kernel {
         info!("Welcome to Maize on {}!", target::name() as &str);
 
         Arch::early_init();
+
+        // Prepare the scheduler for thread initialization.
+        scheduler::initialize();
 
         let bootstrap_thread = init_thread!("bootstrap", bootstrap_thread_entry);
         info!("created thread, bootstrapping");

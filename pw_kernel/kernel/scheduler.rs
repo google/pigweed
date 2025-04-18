@@ -13,7 +13,7 @@
 // the License.
 
 use core::cell::UnsafeCell;
-use core::ptr::NonNull;
+use core::ptr::{null_mut, NonNull};
 
 use foreign_box::ForeignBox;
 use list::*;
@@ -88,12 +88,68 @@ fn to_string(s: State) -> &'static str {
     }
 }
 
+pub struct Process {
+    // List of the processes in the system
+    pub link: Link,
+
+    // TODO - konkers: allow this to be tokenized.
+    pub name: &'static str,
+
+    thread_list: UnsafeList<Thread, ProcessThreadListAdapter>,
+}
+list::define_adapter!(pub ProcessListAdapter => Process.link);
+
+impl Process {
+    /// Creates a new, empty, unregistered process.
+    pub const fn new(name: &'static str) -> Self {
+        Self {
+            link: Link::new(),
+            name,
+            thread_list: UnsafeList::new(),
+        }
+    }
+
+    /// Registers process with scheduler.
+    pub fn register(&mut self) {
+        unsafe {
+            SCHEDULER_STATE.lock().add_process_to_list(self);
+        }
+    }
+
+    pub fn add_to_thread_list(&mut self, thread: &mut Thread) {
+        unsafe {
+            self.thread_list.push_front_unchecked(thread);
+        }
+    }
+
+    // A simple id for debugging purposes, currently the pointer to the thread structure itself
+    pub fn id(&self) -> usize {
+        core::ptr::from_ref(self) as usize
+    }
+
+    pub fn dump(&self) {
+        info!("process {} ({:#x})", self.name as &str, self.id() as usize);
+        unsafe {
+            let _ = self
+                .thread_list
+                .for_each(|thread| -> core::result::Result<(), ()> {
+                    thread.dump();
+                    Ok(())
+                });
+        }
+    }
+}
+
 pub struct Thread {
-    // List of the threads in the system
-    pub global_link: Link,
+    // List of threads in a given process.
+    pub process_link: Link,
 
     // Active state link (run queue, wait queue, etc)
     pub active_link: Link,
+
+    // Safety: All accesses to the parent process must be done with the
+    // scheduler lock held.
+    process: *mut Process,
 
     state: State,
     preempt_disable_count: u32,
@@ -107,14 +163,15 @@ pub struct Thread {
 }
 
 list::define_adapter!(pub ThreadListAdapter => Thread.active_link);
-list::define_adapter!(pub GlobalThreadListAdapter => Thread.global_link);
+list::define_adapter!(pub ProcessThreadListAdapter => Thread.process_link);
 
 impl Thread {
     // Create an empty, uninitialzed thread
     pub fn new(name: &'static str) -> Self {
         Thread {
-            global_link: Link::new(),
+            process_link: Link::new(),
             active_link: Link::new(),
+            process: null_mut(),
             state: State::New,
             preempt_disable_count: 0,
             arch_thread_state: UnsafeCell::new(ThreadState::new()),
@@ -123,12 +180,28 @@ impl Thread {
         }
     }
 
+    pub fn initialize_kernel_thread(
+        &mut self,
+        stack: Stack,
+        entry_point: fn(usize),
+        arg: usize,
+    ) -> &mut Thread {
+        let process = SCHEDULER_STATE.lock().kernel_process.get();
+        self.initialize(process, stack, entry_point, arg)
+    }
+
     // Initialize the mutable parts of the thread, must be called once per
     // thread prior to starting it
-    #[allow(dead_code)]
-    pub fn initialize(&mut self, stack: Stack, entry_point: fn(usize), arg: usize) -> &mut Thread {
+    pub fn initialize(
+        &mut self,
+        process: *mut Process,
+        stack: Stack,
+        entry_point: fn(usize),
+        arg: usize,
+    ) -> &mut Thread {
         pw_assert::assert!(self.state == State::New);
         self.stack = stack;
+        self.process = process;
 
         let args = (entry_point as usize, arg);
         extern "C" fn trampoline(entry_point: usize, arg: usize) {
@@ -150,8 +223,18 @@ impl Thread {
         }
         self.state = State::Initial;
 
-        // Add our list to the global thread list
-        SCHEDULER_STATE.lock().add_thread_to_list(self);
+        let _sched_state = SCHEDULER_STATE.lock();
+        unsafe {
+            // Safety: *process is only accessed with the scheduler lock held.
+
+            // Assert that the parent process is added to the scheduler.
+            pw_assert::assert!(
+                (*process).link.is_linked(),
+                "Tried to add a Thread to an unregistered Process"
+            );
+            // Add thread to processes thread list.
+            (*process).add_to_thread_list(self);
+        }
 
         self
     }
@@ -186,7 +269,7 @@ impl Thread {
     #[allow(dead_code)]
     pub fn dump(&self) {
         info!(
-            "thread {} ({:#x}) state {}",
+            "- thread {} ({:#x}) state {}",
             self.name as &str,
             self.id() as usize,
             to_string(self.state) as &str
@@ -204,6 +287,17 @@ impl Thread {
         // and a null pointer is defined to be at address 0 (see
         // https://doc.rust-lang.org/beta/core/ptr/fn.null.html).
         0usize
+    }
+}
+
+pub fn initialize() {
+    let mut sched_state = SCHEDULER_STATE.lock();
+
+    // The kernel process needs be to initialized before any kernel threads so
+    // that they can properly be parented underneath it.
+    unsafe {
+        let kernel_process = sched_state.kernel_process.get();
+        sched_state.add_process_to_list(kernel_process);
     }
 }
 
@@ -253,9 +347,13 @@ impl Drop for PremptDisableGuard {
 // Global scheduler state (single processor for now)
 #[allow(dead_code)]
 pub struct SchedulerState {
+    // The scheduler owns the kernel process from which all kernel threads
+    // are parented.
+    kernel_process: UnsafeCell<Process>,
+
     current_thread: Option<ForeignBox<Thread>>,
     current_arch_thread_state: *mut ArchThreadState,
-    thread_list: UnsafeList<Thread, GlobalThreadListAdapter>,
+    process_list: UnsafeList<Process, ProcessListAdapter>,
     // For now just have a single round robin list, expand to multiple queues.
     run_queue: ForeignList<Thread, ThreadListAdapter>,
 }
@@ -268,9 +366,10 @@ impl SchedulerState {
     #[allow(dead_code)]
     const fn new() -> Self {
         Self {
+            kernel_process: UnsafeCell::new(Process::new("kernel")),
             current_thread: None,
             current_arch_thread_state: core::ptr::null_mut(),
-            thread_list: UnsafeList::new(),
+            process_list: UnsafeList::new(),
             run_queue: ForeignList::new(),
         }
     }
@@ -342,9 +441,9 @@ impl SchedulerState {
 
     #[allow(dead_code)]
     #[inline(never)]
-    pub fn add_thread_to_list(&mut self, thread: &mut Thread) {
+    pub unsafe fn add_process_to_list(&mut self, process: *mut Process) {
         unsafe {
-            self.thread_list.push_front_unchecked(thread);
+            self.process_list.push_front_unchecked(process);
         }
     }
 
@@ -353,10 +452,9 @@ impl SchedulerState {
         info!("list of all threads:");
         unsafe {
             let _ = self
-                .thread_list
-                .for_each(|thread| -> core::result::Result<(), ()> {
-                    //                info!("ptr {:#x}", thread.id());
-                    thread.dump();
+                .process_list
+                .for_each(|process| -> core::result::Result<(), ()> {
+                    process.dump();
                     Ok(())
                 });
         }
