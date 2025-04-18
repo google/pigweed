@@ -362,7 +362,17 @@ if (pw_android_toolchain_NDK_PATH != "") {
 }
 
 group("docs") {
-  deps = [ "$dir_pigweed/docs($dir_pigweed/targets/docs)" ]
+  deps = [
+    # TODO: https://pwbug.dev/318892911 - Delete the GN build of pigweed.dev.
+    "$dir_pigweed/docs($dir_pigweed/targets/docs)",
+
+    # Build a small Sphinx site that exercises the pw_docgen features that
+    # Pigweed clients rely on.
+    "$dir_pw_docgen/py/tests:docs($dir_pigweed/targets/docs)",
+
+    # Unit test the small Sphinx site.
+    "$dir_pw_docgen/py/tests:tests.run($pw_build_PYTHON_TOOLCHAIN)",
+  ]
 }
 
 # Tests that are run as host actions, such as tests of the build system.

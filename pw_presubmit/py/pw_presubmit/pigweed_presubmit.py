@@ -19,18 +19,19 @@ import argparse
 import json
 import logging
 import os
-from pathlib import Path
 import platform
 import re
 import shlex
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 from typing import Callable, Iterable, Sequence, TextIO
 
-from pw_cli.plural import plural
-from pw_cli.file_filter import FileFilter
 import pw_package.pigweed_packages
+from pw_cli.file_filter import FileFilter
+from pw_cli.plural import plural
+
 from pw_presubmit import (
     bazel_checks,
     block_submission,
@@ -52,17 +53,10 @@ from pw_presubmit import (
     source_in_build,
     todo_check,
 )
-from pw_presubmit.presubmit import (
-    Programs,
-    call,
-    filter_paths,
-)
-from pw_presubmit.presubmit_context import (
-    PresubmitContext,
-    PresubmitFailure,
-)
-from pw_presubmit.tools import log_run
 from pw_presubmit.install_hook import install_git_hook
+from pw_presubmit.presubmit import Programs, call, filter_paths
+from pw_presubmit.presubmit_context import PresubmitContext, PresubmitFailure
+from pw_presubmit.tools import log_run
 
 _LOG = logging.getLogger(__name__)
 
@@ -1506,6 +1500,14 @@ SOURCE_FILES_FILTER = FileFilter(
     ),
 )
 
+SOURCE_FILES_FILTER_BAZEL_EXCLUDE = FileFilter(
+    exclude=(
+        # keep-sorted: start
+        r'\bpw_docgen/py/tests',
+        # keep-sorted: end
+    ),
+)
+
 SOURCE_FILES_FILTER_GN_EXCLUDE = FileFilter(
     exclude=(
         # keep-sorted: start
@@ -1748,7 +1750,9 @@ LINTFORMAT = (
     # a bazel query that pulls in all of Pigweed's external dependencies
     # (https://stackoverflow.com/q/71024130/1224002). These are cached, but
     # after a roll it can be quite slow.
-    source_in_build.bazel(SOURCE_FILES_FILTER),
+    source_in_build.bazel(SOURCE_FILES_FILTER).with_file_filter(
+        SOURCE_FILES_FILTER_BAZEL_EXCLUDE
+    ),
     python_checks.check_python_versions,
     python_checks.gn_python_lint,
 )

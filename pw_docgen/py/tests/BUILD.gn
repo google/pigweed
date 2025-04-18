@@ -1,0 +1,65 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/python.gni")
+import("$dir_pw_build/python_action_test.gni")
+import("$dir_pw_docgen/docs.gni")
+
+pw_doc_group("sources") {
+  sources = [ "lib.rst" ]
+}
+
+pw_python_action("doxygen") {
+  _output_dir = "docs/gen/pw_docgen/py/tests/doxygen"
+  script = "doxygen.py"
+  inputs = [
+    "Doxyfile",
+    "lib.h",
+  ]
+  args = [
+    "--outdir",
+    _output_dir,
+    "--doxyfile",
+    rebase_path("Doxyfile", root_build_dir),
+    "--data",
+    rebase_path("lib.h", root_build_dir),
+  ]
+  outputs = [
+    "$root_build_dir/$_output_dir/html/index.html",
+    "$root_build_dir/$_output_dir/xml/index.xml",
+  ]
+}
+
+if (current_toolchain == "//targets/docs:docs") {
+  pw_doc_gen("docs") {
+    conf = "conf.py"
+    sources = [ "index.rst" ]
+    output_directory = target_gen_dir
+    deps = [
+      ":doxygen",
+      ":sources",
+    ]
+  }
+}
+
+pw_python_action_test("tests") {
+  sources = [ "test_gn_docs_build.py" ]
+  deps = [ ":docs($dir_pigweed/targets/docs)" ]
+  args = [
+    "--docs-dir",
+    "docs/gen/pw_docgen/py/tests/html",
+  ]
+}
