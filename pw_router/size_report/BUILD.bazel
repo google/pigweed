@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -21,15 +21,9 @@ package(
 
 licenses(["notice"])
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "base",
     srcs = ["base.cc"],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
-    target_compatible_with = select({
-        "@platforms//os:none": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",
@@ -38,15 +32,9 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "static_router_with_one_route",
     srcs = ["static_router_with_one_route.cc"],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
-    target_compatible_with = select({
-        "@platforms//os:none": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",
