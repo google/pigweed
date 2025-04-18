@@ -18,7 +18,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 # Path to flatc
 set(pw_flatbuffers_FLATC flatc CACHE STRING "Flatbuffers compiler")
 # Global args for flatc
-set(pw_flatbuffers_FLATC_FLAGS "" CACHE LIST "Global args to flatc")
+set(pw_flatbuffers_FLATC_FLAGS "" CACHE STRING "Global args to flatc")
 
 # If set, this is added to the generated library as a public dependency. Since
 # flatbuffers is a header only library, this should be a library containing all
