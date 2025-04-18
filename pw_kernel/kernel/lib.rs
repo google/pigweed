@@ -28,6 +28,7 @@ mod target;
 mod timer;
 
 use arch::{Arch, ArchInterface};
+use kernel_config::{KernelConfig, KernelConfigInterface};
 use scheduler::SCHEDULER_STATE;
 pub use scheduler::{sleep_until, yield_timeslice, Stack, Thread};
 pub use timer::{Clock, Duration};
@@ -79,7 +80,7 @@ pub struct Kernel {}
 
 #[macro_export]
 macro_rules! init_thread {
-    ($name:literal, $entry:expr) => {{
+    ($name:literal, $entry:expr, $stack_size:expr) => {{
         info!("allocating thread: {}", $name as &'static str);
         use $crate::Stack;
         use $crate::ThreadBuffer;
@@ -94,7 +95,7 @@ macro_rules! init_thread {
         info!("initializing thread: {}", $name as &'static str);
         thread.initialize_kernel_thread(
             {
-                static mut STACK: [u8; 2048] = [0; 2048];
+                static mut STACK: [u8; $stack_size] = [0; $stack_size];
                 #[allow(static_mut_refs)]
                 unsafe {
                     Stack::from_slice(&STACK)
@@ -118,7 +119,11 @@ impl Kernel {
         // Prepare the scheduler for thread initialization.
         scheduler::initialize();
 
-        let bootstrap_thread = init_thread!("bootstrap", bootstrap_thread_entry);
+        let bootstrap_thread = init_thread!(
+            "bootstrap",
+            bootstrap_thread_entry,
+            KernelConfig::KERNEL_STACK_SIZE_BYTES
+        );
         info!("created thread, bootstrapping");
 
         // special case where we bootstrap the system by half context switching to this thread
@@ -137,7 +142,11 @@ fn bootstrap_thread_entry(_arg: usize) {
 
     SCHEDULER_STATE.lock().dump_all_threads();
 
-    let idle_thread = init_thread!("idle", idle_thread_entry);
+    let idle_thread = init_thread!(
+        "idle",
+        idle_thread_entry,
+        KernelConfig::KERNEL_STACK_SIZE_BYTES
+    );
 
     SCHEDULER_STATE.lock().dump_all_threads();
 

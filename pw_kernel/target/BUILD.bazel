@@ -22,6 +22,7 @@ rust_library(
     srcs = ["demo.rs"],
     tags = ["kernel"],
     deps = [
+        "//pw_kernel/config:kernel_config",
         "//pw_kernel/kernel",
         "//pw_kernel/lib/pw_assert",
         "//pw_kernel/lib/time",

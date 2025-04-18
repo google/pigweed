@@ -15,6 +15,7 @@
 
 use kernel::sync::mutex::Mutex;
 use kernel::{Clock, Duration, Thread};
+use kernel_config::{KernelConfig, KernelConfigInterface};
 use pw_log::info;
 use time::Clock as _;
 
@@ -22,7 +23,11 @@ use time::Clock as _;
 use syscall_user::*;
 
 pub fn main() -> ! {
-    let thread_b = kernel::init_thread!("B", test_thread_entry_b);
+    let thread_b = kernel::init_thread!(
+        "B",
+        test_thread_entry_b,
+        KernelConfig::KERNEL_STACK_SIZE_BYTES
+    );
     Thread::start(thread_b);
 
     info!("Thread A re-using bootstrap thread");
