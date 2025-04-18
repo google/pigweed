@@ -14,6 +14,7 @@
 
 use crate::arch::riscv::spinlock::InterruptGuard;
 use crate::scheduler;
+use kernel_config::{KernelConfig, KernelConfigInterface};
 use pw_log::info;
 use time::Clock as _;
 use time::Duration;
@@ -24,8 +25,6 @@ use time::Duration;
 const CLINT_BASE: usize = 0x200_0000;
 const CLINT_MTIMECMP_REGISTER: usize = CLINT_BASE + 0x4000;
 const CLINT_MTIME_REGISTER: usize = CLINT_BASE + 0xbff8;
-
-const MONOTONIC_TICK_RATE_HZ: i64 = 100;
 
 fn read_mtime() -> u64 {
     // TODO: consider using riscv::register::time instead.
@@ -47,7 +46,7 @@ fn set_next_monotonic_tick() {
     let now = read_mtime();
 
     let ticks_per_monotonic: Duration<Clock> =
-        time::Duration::from_millis(1000 / MONOTONIC_TICK_RATE_HZ);
+        time::Duration::from_millis((1000 / KernelConfig::SCHEDULER_TICK_HZ).into());
 
     write_mtimecmp(now + (ticks_per_monotonic.ticks() as u64));
 }

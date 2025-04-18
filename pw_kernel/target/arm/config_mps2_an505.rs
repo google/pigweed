@@ -19,4 +19,6 @@ pub struct KernelConfig;
 
 impl KernelConfigInterface for KernelConfig {}
 
-impl CortexMKernelConfigInterface for KernelConfig {}
+impl CortexMKernelConfigInterface for KernelConfig {
+    const SYS_TICK_HZ: u32 = 20_000_000;
+}

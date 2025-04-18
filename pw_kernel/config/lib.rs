@@ -13,13 +13,19 @@
 // the License.
 #![no_std]
 
-// Kernel configuration common to all architectures.
-pub trait KernelConfigInterface {}
+/// Kernel configuration common to all architectures.
+pub trait KernelConfigInterface {
+    /// Rate of the scheduler monotonic tick.
+    const SCHEDULER_TICK_HZ: u32 = 100;
+}
 
-// Cortex-M specific configuration.
+/// Cortex-M specific configuration.
 // TODO: davidroth - Once Arch is out of tree, move this configuration also.
-pub trait CortexMKernelConfigInterface {}
+pub trait CortexMKernelConfigInterface {
+    /// Rate of the Cortex-M systick system timer.
+    const SYS_TICK_HZ: u32;
+}
 
-// RISC-V specific configuration.
+/// RISC-V specific configuration.
 // TODO: davidroth - Once Arch is out of tree, move this configuration also.
 pub trait RiscVKernelConfigInterface {}

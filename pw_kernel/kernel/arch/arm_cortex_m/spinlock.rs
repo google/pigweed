@@ -17,13 +17,13 @@ use core::cell::UnsafeCell;
 use core::mem::ManuallyDrop;
 use core::sync::atomic::{compiler_fence, Ordering};
 
-struct InterruptGuard {
+pub struct InterruptGuard {
     saved_primask: u32,
 }
 
 impl InterruptGuard {
     #[inline]
-    fn new() -> Self {
+    pub fn new() -> Self {
         let saved_primask: u32;
         unsafe {
             asm!(
