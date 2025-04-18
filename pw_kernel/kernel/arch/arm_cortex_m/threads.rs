@@ -116,12 +116,12 @@ impl super::super::ThreadState for ArchThreadState {
         // first two argument slots.
         unsafe {
             (*frame) = mem::zeroed();
-            (*frame).r0 = initial_function as u32;
-            (*frame).r1 = arg0 as u32;
-            (*frame).r2 = arg1 as u32;
-            (*frame).pc = trampoline as u32;
-            (*frame).psr = 1 << 24; // T bit
-            (*frame).return_address = 0xfffffff9; // return to state using MSP and no FP
+            (*frame).user.r0 = initial_function as u32;
+            (*frame).user.r1 = arg0 as u32;
+            (*frame).user.r2 = arg1 as u32;
+            (*frame).user.pc = trampoline as u32;
+            (*frame).user.psr = 1 << 24; // T bit
+            (*frame).kernel.return_address = 0xfffffff9; // return to state using MSP and no FP
         }
 
         self.frame = frame

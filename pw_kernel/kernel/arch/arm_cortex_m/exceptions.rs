@@ -20,26 +20,8 @@ use pw_log::info;
 /// Exception frame with all registers
 #[repr(C)]
 pub struct FullExceptionFrame {
-    // Extra state pushed by the first level assembly handler
-    pub r4: u32,
-    pub r5: u32,
-    pub r6: u32,
-    pub r7: u32,
-    pub r8: u32,
-    pub r9: u32,
-    pub r10: u32,
-    pub r11: u32,
-    pub return_address: u32,
-
-    // State that hardware pushes automatically
-    pub r0: u32,
-    pub r1: u32,
-    pub r2: u32,
-    pub r3: u32,
-    pub r12: u32,
-    pub lr: u32,
-    pub pc: u32,
-    pub psr: u32,
+    pub kernel: KernelExceptionFrame,
+    pub user: ExceptionFrame,
 }
 
 /// Exception frame with only the registers pushed by the core.
@@ -55,39 +37,51 @@ pub struct ExceptionFrame {
     pub psr: u32,
 }
 
-#[inline(never)]
-fn dump_exception_frame(frame: *const FullExceptionFrame) {
-    unsafe {
-        info!("Exception frame {:#08x}:", frame as usize);
+impl ExceptionFrame {
+    #[inline(never)]
+    fn dump(&self) {
+        info!("Exception frame {:#08x}:", &raw const *self as usize);
         info!(
             "r0  {:#010x} r1 {:#010x} r2  {:#010x} r3  {:#010x}",
-            (*frame).r0 as u32,
-            (*frame).r1 as u32,
-            (*frame).r2 as u32,
-            (*frame).r3 as u32
+            self.r0 as u32, self.r1 as u32, self.r2 as u32, self.r3 as u32
         );
+    }
+}
+
+/// Exception frame with the registers that the kernel first level assembly
+/// exception handler wrapper pushes.
+#[repr(C)]
+pub struct KernelExceptionFrame {
+    pub r4: u32,
+    pub r5: u32,
+    pub r6: u32,
+    pub r7: u32,
+    pub r8: u32,
+    pub r9: u32,
+    pub r10: u32,
+    pub r11: u32,
+    pub return_address: u32,
+}
+
+impl KernelExceptionFrame {
+    #[inline(never)]
+    fn dump(&self) {
+        info!("Kernel exception frame {:#08x}:", &raw const *self as usize);
         info!(
             "r4  {:#010x} r5 {:#010x} r6  {:#010x} r7  {:#010x}",
-            (*frame).r4 as u32,
-            (*frame).r5 as u32,
-            (*frame).r6 as u32,
-            (*frame).r7 as u32
+            self.r4 as u32, self.r5 as u32, self.r6 as u32, self.r7 as u32
         );
         info!(
             "r8  {:#010x} r9 {:#010x} r10 {:#010x} r11 {:#010x}",
-            (*frame).r8 as u32,
-            (*frame).r9 as u32,
-            (*frame).r10 as u32,
-            (*frame).r11 as u32
-        );
-        info!(
-            "r12 {:#010x} lr {:#010x} pc  {:#010x} xpsr {:#010x}",
-            (*frame).r12 as u32,
-            (*frame).lr as u32,
-            (*frame).pc as u32,
-            (*frame).psr as u32
+            self.r8 as u32, self.r9 as u32, self.r10 as u32, self.r11 as u32
         );
     }
+}
+
+#[inline(never)]
+fn dump_exception_frame(frame: &FullExceptionFrame) {
+    frame.user.dump();
+    frame.kernel.dump();
 }
 
 macro_rules! exception_trampoline {
@@ -117,7 +111,7 @@ macro_rules! exception_trampoline {
 #[no_mangle]
 pub unsafe extern "C" fn pw_kernel_hard_fault(frame: *mut FullExceptionFrame) -> ! {
     info!("HardFault");
-    dump_exception_frame(frame);
+    dump_exception_frame(&*frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
@@ -126,7 +120,7 @@ exception_trampoline!(HardFault, pw_kernel_hard_fault);
 #[no_mangle]
 pub unsafe extern "C" fn pw_kernel_default(frame: *mut FullExceptionFrame) -> ! {
     info!("DefaultHandler");
-    dump_exception_frame(frame);
+    dump_exception_frame(&*frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
@@ -135,7 +129,7 @@ exception_trampoline!(DefaultHandler, pw_kernel_default);
 #[no_mangle]
 pub unsafe extern "C" fn pw_kernel_non_maskable_int(frame: *mut FullExceptionFrame) -> ! {
     info!("NonMaskableInt");
-    dump_exception_frame(frame);
+    dump_exception_frame(&*frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
@@ -148,7 +142,7 @@ pub unsafe extern "C" fn pw_kernel_memory_management(frame: *mut FullExceptionFr
         "MemoryManagement exception at {:08x}",
         mmfar.read_volatile() as u32
     );
-    dump_exception_frame(frame);
+    dump_exception_frame(&*frame);
 
     #[allow(clippy::empty_loop)]
     loop {}
@@ -159,7 +153,7 @@ exception_trampoline!(MemoryManagement, pw_kernel_memory_management);
 pub unsafe extern "C" fn pw_kernel_bus_fault(frame: *mut FullExceptionFrame) -> ! {
     let bfar = 0xE000ED38 as *const u32;
     info!("BusFault exception at {:08x}", bfar.read_volatile() as u32);
-    dump_exception_frame(frame);
+    dump_exception_frame(&*frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
@@ -168,7 +162,7 @@ exception_trampoline!(BusFault, pw_kernel_bus_fault);
 #[no_mangle]
 pub unsafe extern "C" fn pw_kernel_usage_fault(frame: *mut FullExceptionFrame) -> ! {
     info!("UsageFault");
-    dump_exception_frame(frame);
+    dump_exception_frame(&*frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
@@ -180,7 +174,7 @@ exception_trampoline!(UsageFault, pw_kernel_usage_fault);
 #[no_mangle]
 pub unsafe extern "C" fn pw_kernel_debug_monitor(frame: *mut FullExceptionFrame) -> ! {
     info!("DebugMonitor");
-    dump_exception_frame(frame);
+    dump_exception_frame(&*frame);
     #[allow(clippy::empty_loop)]
     loop {}
 }
