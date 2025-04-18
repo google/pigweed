@@ -41,7 +41,7 @@ pw_executable("boringssl_base") {
   deps = [
     ":wrap_getentropy",
     "$dir_pw_bloat:bloat_this_binary",
-    "$dir_pw_third_party/boringssl",
+    "$pw_external_boringssl",
   ]
 }
 

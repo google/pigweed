@@ -16,10 +16,10 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_third_party/boringssl/boringssl.gni")
 import("$dir_pw_third_party/chromium_verifier/chromium_verifier.gni")
 import("$dir_pw_tls_client/configs.gni")
 import("$dir_pw_unit_test/test.gni")
+import("$pw_external_boringssl/boringssl.gni")
 
 config("backend_config") {
   include_dirs = [
@@ -37,7 +37,7 @@ pw_source_set("pw_tls_client_boringssl") {
   sources = [ "tls_client_boringssl.cc" ]
   public_deps = [
     "$dir_pigweed/pw_tls_client:pw_tls_client.facade",
-    "$dir_pw_third_party/boringssl",
+    "$pw_external_boringssl",
   ]
 }
 

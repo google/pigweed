@@ -230,7 +230,7 @@ pw_source_set("aes_boringssl") {
   public_deps = [
     ":aes.facade",
     "$dir_pw_span:cast",
-    "$dir_pw_third_party/boringssl",
+    "$pw_external_boringssl",
   ]
 }
 

@@ -16,9 +16,9 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_third_party/boringssl/boringssl.gni")
 import("$dir_pw_tls_client/configs.gni")
 import("$dir_pw_unit_test/test.gni")
+import("$pw_external_boringssl/boringssl.gni")
 
 config("public_includes") {
   include_dirs = [ "public" ]
@@ -67,9 +67,9 @@ pw_facade("time") {
   # The target should only be used by TLS libraries to obtain date time
   visibility = [
     ":*",
-    "$dir_pw_third_party/boringssl",
     "$dir_pw_third_party/mbedtls",
     "$dir_pw_third_party/mbedtls:mbedtls_v3",
+    "$pw_external_boringssl",
   ]
 }
 
@@ -92,7 +92,7 @@ pw_source_set("test_server") {
     "$dir_pw_bytes",
     "$dir_pw_log",
     "$dir_pw_stream",
-    "$dir_pw_third_party/boringssl",
+    "$pw_external_boringssl",
   ]
 }
 

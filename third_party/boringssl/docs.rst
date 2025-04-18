@@ -4,7 +4,7 @@
 BoringSSL
 =========
 
-The ``$dir_pw_third_party/boringssl`` module provides the build files to
+The ``$pw_external_boringssl`` module provides the build files to
 compile and use BoringSSL. The source code of BoringSSL needs to be provided by
 the user. It is recommended to download it via Git submodules.
 
@@ -39,7 +39,7 @@ version.
    $ python src/util/generate_build_files.py gn
 
 The GN variables needed are defined in
-``$dir_pw_third_party/boringssl/boringssl.gni``:
+``$pw_external_boringssl/boringssl.gni``:
 
 #. Set the GN ``dir_pw_third_party_boringssl`` to the path of the BoringSSL
    installation.
@@ -75,4 +75,4 @@ The GN variables needed are defined in
    caused by two build targets using the same source files.
 
 After this is done a ``pw_source_set`` for the BoringSSL library is created at
-``$dir_pw_third_party/boringssl``.
+``$pw_external_boringssl``.
