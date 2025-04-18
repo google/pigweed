@@ -78,9 +78,10 @@ common --//pw_toolchain/host_clang:layering_check
 
 # Rust related flags
 # ==================
-# Ensure that rust channel gets propagated to the exec config under which
-# proc-macros and build.rs files are built.
+# Ensure that rust channel and error format get propagated to the exec config
+# under which proc-macros and build.rs files are built.
 common --experimental_propagate_custom_flag=@@rules_rust+//rust/toolchain/channel:channel
+common --experimental_propagate_custom_flag=@@rules_rust+//rust/settings:error_format
 
 # Java related flags
 # ==================
