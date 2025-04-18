@@ -214,6 +214,15 @@ The snoop log is easy to integrate into your H4 Uart driver.
          snoop_{pw::chrono::VirtualSystemClock::RealClock()};
    };
 
+---------
+HCI Utils
+---------
+``pw_bluetooth`` contains a header with HCI utility functions.
+
+.. doxygenfunction:: pw::bluetooth::GetHciHeaderSize
+.. doxygenfunction:: pw::bluetooth::GetHciPayloadSize
+
+
 -----------
 Size Report
 -----------

@@ -148,6 +148,19 @@ pw_source_set("emboss_util") {
     dir_pw_status,
   ]
 }
+pw_source_set("hci_util") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_bluetooth/hci_util.h" ]
+  sources = [ "hci_util.cc" ]
+  public_deps = [
+    ":emboss_hci_common",
+    ":emboss_hci_data",
+    ":emboss_hci_h4",
+    dir_pw_result,
+    dir_pw_span,
+    dir_pw_status,
+  ]
+}
 
 pw_source_set("snoop") {
   public_configs = [ ":public_include_path" ]
@@ -405,6 +418,14 @@ if (dir_pw_third_party_emboss != "") {
       },
     ]
   }
+}
+
+pw_test("hci_util_test") {
+  enable_if =
+      dir_pw_third_party_emboss != "" && pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "hci_util_test.cc" ]
+  include_dirs = [ "." ]
+  deps = [ ":hci_util" ]
 }
 
 pw_test("snoop_test") {

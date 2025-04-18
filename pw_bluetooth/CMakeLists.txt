@@ -283,6 +283,23 @@ pw_add_library(pw_bluetooth.snoop STATIC
     pw_result
 )
 
+pw_add_library(pw_bluetooth.hci_util STATIC
+  HEADERS
+    public/pw_bluetooth/hci_util.h
+  PUBLIC_INCLUDES
+    public
+  SOURCES
+    hci_util.cc
+  PUBLIC_DEPS
+    pw_bluetooth.emboss_hci_h4
+    pw_result
+    pw_span
+  PRIVATE_DEPS
+    pw_bluetooth.emboss_hci_common
+    pw_bluetooth.emboss_hci_data
+    pw_status
+)
+
 pw_target_link_targets(pw_bluetooth
   INTERFACE
     pw_bluetooth.emboss_att
@@ -329,6 +346,15 @@ pw_add_test(pw_bluetooth.snoop_test
     snoop_test.cc
   PRIVATE_DEPS
     pw_bluetooth.snoop
+  GROUPS
+    modules
+)
+
+pw_add_test(pw_bluetooth.hci_util_test
+  SOURCES
+    hci_util_test.cc
+  PRIVATE_DEPS
+    pw_bluetooth.hci_util
   GROUPS
     modules
 )

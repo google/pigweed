@@ -255,6 +255,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_bluetooth/public/pw_bluetooth/controller2.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/gatt/client2.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/gatt/server2.h",
+  "$dir_pw_bluetooth/public/pw_bluetooth/hci_util.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/low_energy/central2.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/low_energy/channel.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/low_energy/connection2.h",
