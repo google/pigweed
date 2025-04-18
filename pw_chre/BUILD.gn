@@ -17,8 +17,8 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_third_party/chre/chre.gni")
 import("$dir_pw_unit_test/test.gni")
+import("$pw_external_chre/chre.gni")
 
 config("disable_warnings") {
   cflags = [
@@ -84,7 +84,7 @@ pw_source_set("pw_chre_backend") {
   ]
   deps = [
     "$dir_pw_string:format",
-    "$dir_pw_third_party/chre:chre_headers",
+    "$pw_external_chre:chre_headers",
   ]
   public_deps = [
     ":chre_backend_headers",
@@ -105,7 +105,7 @@ pw_source_set("pw_chre_backend") {
 pw_source_set("chre_backend") {
   public_deps = [
     ":pw_chre_backend",
-    "$dir_pw_third_party/chre:shared_platform",
+    "$pw_external_chre:shared_platform",
   ]
 }
 
@@ -121,7 +121,7 @@ pw_source_set("chre") {
     "public/pw_chre/host_link.h",
   ]
   sources = [ "chre.cc" ]
-  deps = [ "$dir_pw_third_party/chre" ]
+  deps = [ "$pw_external_chre" ]
 }
 
 pw_executable("chre_example") {
@@ -134,7 +134,7 @@ pw_executable("chre_example") {
     ":chre",
     ":chre_empty_host_link",
     "$dir_pw_system",
-    "$dir_pw_third_party/chre:example_apps",
+    "$pw_external_chre:example_apps",
   ]
 }
 
@@ -145,8 +145,8 @@ group("host_example") {
 pw_test_group("tests") {
   enable_if = dir_pw_third_party_chre != ""
   tests = [
-    "$dir_pw_third_party/chre:unit_tests",
-    "$dir_pw_third_party/chre:integration_tests",
+    "$pw_external_chre:unit_tests",
+    "$pw_external_chre:integration_tests",
   ]
 }
 

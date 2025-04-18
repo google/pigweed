@@ -23,7 +23,7 @@ import("chre.gni")
 # This file defines a GN source_set for an external installation of chre.
 # To use, checkout the chre source into a directory, then set the build arg
 # dir_pw_third_party_chre to point to that directory. The chre library
-# will be available in GN at "$dir_pw_third_party/chre".
+# will be available in GN at "$pw_external_chre".
 if (dir_pw_third_party_chre == "") {
 } else {
   config("disable_warnings") {

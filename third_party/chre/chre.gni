@@ -15,7 +15,7 @@
 declare_args() {
   # If compiling backends with chre, this variable is set to the path to the
   # chre installation. When set, a pw_source_set for the chre library is
-  # created at "$dir_pw_third_party/chre".
+  # created at "$pw_external_chre".
   dir_pw_third_party_chre = ""
 
   # The configuration for building CHRE.
