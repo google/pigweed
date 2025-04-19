@@ -63,7 +63,7 @@ pw_python_package("py") {
     "pw_rpc/testing.py",
   ]
   tests = [
-    "tests/benchmark/goodput_test.py",
+    "tests/benchmark/benchmark_test.py",
     "tests/callback_client_test.py",
     "tests/client_test.py",
     "tests/console_tools/console_tools_test.py",

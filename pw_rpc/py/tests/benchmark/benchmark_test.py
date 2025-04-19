@@ -11,31 +11,76 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""THis class runs various unit tests for the benchmark class"""
+"""Unit tests for the benchmark class' functions."""
 from collections import Counter
-from dataclasses import dataclass
+from collections.abc import Iterable
 import unittest
 from unittest import mock
 
 from pw_rpc.benchmark import benchmark
 from pw_rpc.benchmark import benchmark_results
+from pw_rpc.callback_client.errors import RpcTimeout
 from pw_status import Status
 
 
-@dataclass
-class TestEchoReturn:
-    status = Status.OK
+def unbounded_search_helper() -> Iterable[Exception | tuple]:
+    """A helper class for testing unbounded buffer searches.
+
+    This function returns the pattern of RPC responses for a system with a
+    490-byte payload size limit (matching UnaryEcho), with a search starting
+    from a buffer size of 0.
+    """
+    unary_echo = mock.MagicMock()
+
+    # The RPC exception class in errors.py is initializing itself with an
+    # f-string of the method name.  Since we are mocking, the f-string init
+    # inserts the object reference of the mock into the f-string, instead
+    # of the .return_value set for that mock.  This means the exception string
+    # is printed incorrectly, so instead we're just overriding the mock's
+    # __str__ method so the exceptions behave correctly.
+    def workaround(self) -> str:
+        del self  # Unused
+        return "benchmark.UnaryEcho"
+
+    unary_echo.method.__str__ = workaround
+    for size in range(-1, 9):
+        # payload sizes: 0 to 256, with range stopping before 512
+        yield (Status.OK, 'a' * (0 if 0 > size else 2**size))
+    yield RpcTimeout(rpc=unary_echo, timeout=5000)  # payload size: 512
+    yield (Status.OK, 'a' * 384)
+    yield (Status.OK, 'a' * 448)
+    yield (Status.OK, 'a' * 480)
+    yield RpcTimeout(rpc=unary_echo, timeout=5000)  # payload size: 496
+    yield (Status.OK, 'a' * 488)
+    yield RpcTimeout(rpc=unary_echo, timeout=5000)  # payload size: 496
+    yield (Status.OK, 'a' * 490)
+    yield RpcTimeout(rpc=unary_echo, timeout=5000)  # payload size: 492
+    yield RpcTimeout(rpc=unary_echo, timeout=5000)  # payload size: 491
 
 
-class GoodTimeTest(unittest.TestCase):
-    """Tests the Benchmark tools class in pw_rpc."""
+class BenchmarkTests(unittest.TestCase):
+    """Tests the functions of the Benchmark class in pw_rpc."""
 
     def setUp(self) -> None:
         # This is a Magic Mock given the complexity (and multiple layers of
         # objects) required for device instantiation.
         self.rpcs = mock.MagicMock()
-        self.rpcs.pw.rpc.Benchmark.UnaryEcho.return_value = TestEchoReturn()
-        self.uut = benchmark.Benchmark(rpcs=self.rpcs)
+        self.default_rpc_result = (Status.OK, 'aaaaaaaa')
+        self.rpcs.pw.rpc.Benchmark.UnaryEcho.return_value = (
+            self.default_rpc_result
+        )
+        self.rpcs.pw.rpc.EchoService.Echo.return_value = self.default_rpc_result
+        self.unary_echo_max_size_bytes = 490  # Experimentally determined.
+        self.echo_max_size_bytes = 64  # Experimentally determined.
+        self.benchmark_options = benchmark.BenchmarkOptions(
+            max_payload_size=self.echo_max_size_bytes,
+            max_sample_set_size=1000,
+            quantile_divisions=100,
+            use_echo_service=False,
+        )
+        self.uut = benchmark.Benchmark(
+            rpcs=self.rpcs, options=self.benchmark_options
+        )
 
     @mock.patch('time.time', mock.Mock(side_effect=[0, 100]))
     def test_goodput_test_succeeds_with_default_arguments(self) -> None:
@@ -232,7 +277,7 @@ class GoodTimeTest(unittest.TestCase):
         can execute with the default echo service instead of benchmark echo."""
 
         rpcs = mock.MagicMock()
-        rpcs.pw.rpc.EchoService.Echo.return_value = TestEchoReturn()
+        rpcs.pw.rpc.EchoService.Echo.return_value = self.default_rpc_result
         expected_statistics = benchmark_results.DataStatistics(
             datapoints=[100.0],
         )
@@ -381,6 +426,197 @@ class GoodTimeTest(unittest.TestCase):
                     file=None,
                 ),
             ],
+        )
+
+    def test_buffer_size_test_succeeds_with_default_arguments(self) -> None:
+        """Verifies that the find_max_echo_buffer_size function will execute
+        correctly if run with default arguments."""
+        expected_result = benchmark_results.FindMaxEchoBufferSizeResult(
+            last_error_message="No Errors Raised",
+            limited_by_max_size=True,
+            max_packet_size_bytes=self.benchmark_options.max_payload_size,
+            max_payload_size_bytes=self.benchmark_options.max_payload_size,
+            payload_start_size_bytes=0,
+        )
+        result = self.uut.find_max_echo_buffer_size()
+
+        self.assertIsInstance(
+            result, benchmark_results.FindMaxEchoBufferSizeResult
+        )
+        self.assertEqual(
+            expected_result.last_error_message,
+            result.last_error_message,
+        )
+        self.assertEqual(
+            expected_result.limited_by_max_size,
+            result.limited_by_max_size,
+        )
+        self.assertEqual(
+            expected_result.max_packet_size_bytes,
+            result.max_packet_size_bytes,
+        )
+        self.assertEqual(
+            expected_result.max_payload_size_bytes,
+            result.max_payload_size_bytes,
+        )
+        self.assertEqual(
+            expected_result.payload_start_size_bytes,
+            result.payload_start_size_bytes,
+        )
+
+    def test_buffer_size_test_is_right_on_strange_start_value(self) -> None:
+        """Verifies that the find_max_echo_buffer_size function will find the
+        correct packet size even if given an unusual starting value."""
+        expected_result = benchmark_results.FindMaxEchoBufferSizeResult(
+            last_error_message="No Errors Raised",
+            limited_by_max_size=True,
+            max_packet_size_bytes=self.benchmark_options.max_payload_size,
+            max_payload_size_bytes=self.benchmark_options.max_payload_size,
+            payload_start_size_bytes=3,
+        )
+        result = self.uut.find_max_echo_buffer_size(start_size=3)
+
+        self.assertIsInstance(
+            result, benchmark_results.FindMaxEchoBufferSizeResult
+        )
+        self.assertEqual(
+            expected_result.last_error_message,
+            result.last_error_message,
+        )
+        self.assertEqual(
+            expected_result.limited_by_max_size,
+            result.limited_by_max_size,
+        )
+        self.assertEqual(
+            expected_result.max_packet_size_bytes,
+            result.max_packet_size_bytes,
+        )
+        self.assertEqual(
+            expected_result.max_payload_size_bytes,
+            result.max_payload_size_bytes,
+        )
+        self.assertEqual(
+            expected_result.payload_start_size_bytes,
+            result.payload_start_size_bytes,
+        )
+
+    def test_buffer_size_test_is_right_on_strange_max_size(self) -> None:
+        """Verifies that the find_max_echo_buffer_size function will find the
+        correct packet size even if given an unusual max packet size."""
+        benchmark_options = benchmark.BenchmarkOptions(max_payload_size=65)
+        uut = benchmark.Benchmark(rpcs=self.rpcs, options=benchmark_options)
+        expected_result = benchmark_results.FindMaxEchoBufferSizeResult(
+            last_error_message="No Errors Raised",
+            limited_by_max_size=True,
+            max_packet_size_bytes=65,
+            max_payload_size_bytes=65,
+            payload_start_size_bytes=0,
+        )
+        result = uut.find_max_echo_buffer_size()
+
+        self.assertIsInstance(
+            result, benchmark_results.FindMaxEchoBufferSizeResult
+        )
+        self.assertEqual(
+            expected_result.last_error_message,
+            result.last_error_message,
+        )
+        self.assertEqual(
+            expected_result.limited_by_max_size,
+            result.limited_by_max_size,
+        )
+        self.assertEqual(
+            expected_result.max_packet_size_bytes,
+            result.max_packet_size_bytes,
+        )
+        self.assertEqual(
+            expected_result.max_payload_size_bytes,
+            result.max_payload_size_bytes,
+        )
+        self.assertEqual(
+            expected_result.payload_start_size_bytes,
+            result.payload_start_size_bytes,
+        )
+
+    def test_buffer_size_test_succeeds_when_using_echo(self) -> None:
+        """Verifies that the find_max_echo_buffer_size function
+        will execute correctly if run with the non-unary Echo RPC."""
+        benchmark_options = benchmark.BenchmarkOptions(use_echo_service=True)
+        uut = benchmark.Benchmark(rpcs=self.rpcs, options=benchmark_options)
+        expected_result = benchmark_results.FindMaxEchoBufferSizeResult(
+            last_error_message="No Errors Raised",
+            # Non-Unary Echo fails because of data loss when decoding, not
+            # because of an error returned by the RPC.
+            limited_by_max_size=True,
+            max_packet_size_bytes=self.benchmark_options.max_payload_size,
+            max_payload_size_bytes=self.benchmark_options.max_payload_size,
+            payload_start_size_bytes=0,
+        )
+        result = uut.find_max_echo_buffer_size()
+
+        self.assertIsInstance(
+            result, benchmark_results.FindMaxEchoBufferSizeResult
+        )
+        self.assertEqual(
+            expected_result.last_error_message,
+            result.last_error_message,
+        )
+        self.assertEqual(
+            expected_result.limited_by_max_size,
+            result.limited_by_max_size,
+        )
+        self.assertEqual(
+            expected_result.max_packet_size_bytes,
+            result.max_packet_size_bytes,
+        )
+        self.assertEqual(
+            expected_result.max_payload_size_bytes,
+            result.max_payload_size_bytes,
+        )
+        self.assertEqual(
+            expected_result.payload_start_size_bytes,
+            result.payload_start_size_bytes,
+        )
+
+    def test_buffer_size_test_is_right_on_unbounded_search(self) -> None:
+        """Verifies that the find_max_echo_buffer_size function will find the
+        correct packet size for an unbounded search."""
+        benchmark_options = benchmark.BenchmarkOptions(max_payload_size=512)
+        rpcs = mock.MagicMock()
+        rpcs.pw.rpc.Benchmark.UnaryEcho.side_effect = unbounded_search_helper()
+        uut = benchmark.Benchmark(rpcs=rpcs, options=benchmark_options)
+        expected_result = benchmark_results.FindMaxEchoBufferSizeResult(
+            # pylint: disable-next=line-too-long
+            last_error_message="No response received for benchmark.UnaryEcho after 5000 s",
+            limited_by_max_size=False,
+            max_packet_size_bytes=-1,
+            max_payload_size_bytes=self.unary_echo_max_size_bytes,
+            payload_start_size_bytes=0,
+        )
+        result = uut.find_max_echo_buffer_size(max_size=-1)
+
+        self.assertIsInstance(
+            result, benchmark_results.FindMaxEchoBufferSizeResult
+        )
+        self.assertEqual(
+            expected_result.last_error_message,
+            result.last_error_message,
+        )
+        self.assertEqual(
+            expected_result.limited_by_max_size,
+            result.limited_by_max_size,
+        )
+        self.assertEqual(
+            expected_result.max_packet_size_bytes,
+            result.max_packet_size_bytes,
+        )
+        self.assertEqual(
+            expected_result.max_payload_size_bytes,
+            result.max_payload_size_bytes,
+        )
+        self.assertEqual(
+            expected_result.payload_start_size_bytes,
+            result.payload_start_size_bytes,
         )
 
 

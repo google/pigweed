@@ -19,6 +19,7 @@ from typing import Any
 from pw_protobuf_protos import common_pb2
 from pw_rpc import echo_pb2, benchmark_pb2
 from pw_rpc.benchmark import benchmark
+from pw_rpc.benchmark.benchmark import BenchmarkOptions
 from pw_system import device as pw_device
 from pw_system.device_connection import (
     create_device_serial_or_socket_connection,
@@ -51,6 +52,7 @@ class Runner:
         self,
         args: argparse.Namespace,
         logger: logging.Logger,
+        benchmark_options: BenchmarkOptions = BenchmarkOptions(),
         device: pw_device.Device | None = None,
     ) -> None:
         """Creates a Runner object for interacting with pw_rpc benchmark.  Must
@@ -58,6 +60,7 @@ class Runner:
 
         Args:
             args: An arg list for the CLI arg parser.
+            benchmark_options : what options to set for the benchmarker.
             device: An optional device connection to use. Defaults to
                 a default (sim) connection if None.
             logger: Where to log package data.
@@ -92,7 +95,9 @@ class Runner:
         else:
             self.device = device
         self.rpcs = self.device.rpcs
-        self.uut = benchmark.Benchmark(rpcs=self.rpcs)
+        self.uut = benchmark.Benchmark(
+            rpcs=self.rpcs, options=benchmark_options
+        )
 
     def execute_all(self) -> int:
         """Runs all tests available to pw_rpc's benchmark tools.
@@ -108,10 +113,10 @@ class Runner:
         # benchmark tests.
         result = self.uut.measure_rpc_goodput()
         result.print_results()
-        result = self.uut.measure_rpc_goodput(size=64)
-        result.print_results()
         result = self.uut.measure_rpc_goodput_statistics()
         result.print_results()
+        buffer_size_result = self.uut.find_max_echo_buffer_size()
+        buffer_size_result.print_results()
 
         return 0
 

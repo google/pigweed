@@ -101,9 +101,50 @@ class BaseResult(ABC):
 
     status: Status = Status.OK
 
+    def print_results(self, file: TextIO | None = None) -> None:
+        for line in self.results():
+            print(line, file=file)
+
     @abstractmethod
-    def print_results(self, file=None):
+    def results(self) -> Iterable[str]:
         pass
+
+
+@dataclass(kw_only=True, frozen=True)
+class FindMaxEchoBufferSizeResult(BaseResult):
+    """Encapsulates the data of the find_max_echo_buffer_size function.
+
+    This class provides helper and accessor functions to calculate the results
+    of a max echo buffer size test in the ``benchmark.py`` file.  Use the
+    ``print_results`` function to show the calculated test metrics (typically
+    only done at the end of a test).
+    """
+
+    last_error_message: str = ""
+    limited_by_max_size: bool = False
+    max_packet_size_bytes: int = 0
+    max_payload_size_bytes: int = 0
+    payload_start_size_bytes: int = 0
+
+    def results(self) -> Iterable[str]:
+        """Returns a printable iterable of test results.
+
+        Args:
+            None.
+
+        Returns:
+            Iterable: An iterable string useful for printing.
+        """
+        yield "find_max_echo_buffer_size test results:"
+        yield f"Starting packet size:     {self.payload_start_size_bytes} B"
+        yield f"Max measured packet size: {self.max_payload_size_bytes} B"
+        if 0 > self.max_packet_size_bytes:
+            yield "Max allowed packet size:  Unbounded."
+        else:
+            yield f"Max allowed packet size:  {self.max_packet_size_bytes} B"
+        yield f"Last error message:       {self.last_error_message}"
+        # pylint: disable-next=line-too-long
+        yield f"Test stopped by benchmark option's max packet size? {self.limited_by_max_size}"
 
 
 @dataclass(kw_only=True)
@@ -150,7 +191,7 @@ class GoodputStatisticsResult(BaseResult):
             None.
 
         Returns:
-            None: Raises an exception on an empty data set.
+            Iterable: An iterable string useful for printing.
         """
 
         yield "measure_rpc_goodput_statistics test results:"
@@ -169,17 +210,3 @@ class GoodputStatisticsResult(BaseResult):
             for status, count in self.statuses.items():
                 # pylint: disable-next=line-too-long
                 yield f"  status: {status} count: {count} percent of total: {(count / total ) * 100.0}"
-
-    def print_results(self, file: TextIO | None = None) -> None:
-        """Calculates and displays the statistics for a given sample set.
-
-        Args:
-            file: An optional file to redirect the print statements to.
-                Defaults to the temrinal.
-
-        Returns:
-            None: Raises an exception on an empty data set.
-        """
-
-        for line in self.results():
-            print(line, file=file)

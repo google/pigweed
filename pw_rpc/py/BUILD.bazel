@@ -122,10 +122,10 @@ py_library(
 )
 
 pw_py_test(
-    name = "goodput_test",
+    name = "benchmark_test",
     size = "small",
     srcs = [
-        "tests/benchmark/goodput_test.py",
+        "tests/benchmark/benchmark_test.py",
     ],
     deps = [
         ":pw_rpc",
