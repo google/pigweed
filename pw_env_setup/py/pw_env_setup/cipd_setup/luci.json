@@ -80,7 +80,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:016e8a97556c5e997cb8fed1b924125316edfe3d"
+        "git_revision:042bb48104e2e24d1f48943216a4f6c4a53cb3c6"
       ],
       "version_file": ".versions/led.cipd_version"
     },
@@ -107,7 +107,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:049bb25feb40813970cbc8022607b05251700acc"
+        "git_revision:042bb48104e2e24d1f48943216a4f6c4a53cb3c6"
       ],
       "version_file": ".versions/logdog.cipd_version"
     },
@@ -134,7 +134,7 @@
       ],
       "subdir": "gsutil",
       "tags": [
-        "version:3@5.33"
+        "version:3@5.34"
       ]
     },
     {
