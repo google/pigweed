@@ -41,7 +41,7 @@ pw_source_set("config") {
   public = [ "public/pw_thread_freertos/config.h" ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
     pw_thread_freertos_CONFIG,
   ]
 }
@@ -60,7 +60,7 @@ pw_source_set("id") {
   public_deps = [
     "$dir_pw_assert",
     "$dir_pw_interrupt:context",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
   ]
   public = [
     "id_public_overrides/pw_thread_backend/id_inline.h",
@@ -103,9 +103,9 @@ pw_source_set("sleep") {
     ":check_system_clock_backend",
     "$dir_pw_assert",
     "$dir_pw_chrono_freertos:system_clock",
-    "$dir_pw_third_party/freertos",
     "$dir_pw_thread:sleep.facade",
     "$dir_pw_thread:thread",
+    "$pw_external_freertos",
   ]
 }
 
@@ -126,9 +126,9 @@ pw_source_set("thread") {
     ":id",
     "$dir_pw_assert",
     "$dir_pw_string",
-    "$dir_pw_third_party/freertos",
     "$dir_pw_thread:thread.facade",
     "$dir_pw_toolchain:constexpr_tag",
+    "$pw_external_freertos",
     dir_pw_function,
     dir_pw_span,
   ]
@@ -165,10 +165,10 @@ if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
     public_configs = [ ":thread_public_overrides" ]
     deps = [
       ":freertos_tsktcb",
-      "$dir_pw_third_party/freertos",
       "$dir_pw_thread:thread_info",
       "$dir_pw_thread:thread_iteration.facade",
       "$dir_pw_thread_freertos:util",
+      "$pw_external_freertos",
       dir_pw_function,
       dir_pw_span,
       dir_pw_status,
@@ -197,8 +197,8 @@ pw_source_set("yield") {
   ]
   public_deps = [
     "$dir_pw_assert",
-    "$dir_pw_third_party/freertos",
     "$dir_pw_thread:thread",
+    "$pw_external_freertos",
   ]
   deps = [ "$dir_pw_thread:yield.facade" ]
 }
@@ -206,7 +206,7 @@ pw_source_set("yield") {
 pw_source_set("util") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
     dir_pw_function,
     dir_pw_span,
     dir_pw_status,
@@ -242,7 +242,7 @@ if (dir_pw_third_party_freertos != "") {
   pw_source_set("auto_freertos_tsktcb") {
     public_configs = [ ":auto_freertos_include_path" ]
     public = [ "${target_gen_dir}/public_overrides/pw_thread_freertos_backend/freertos_tsktcb.h" ]
-    public_deps = [ "$dir_pw_third_party/freertos" ]
+    public_deps = [ "$pw_external_freertos" ]
     deps = [ ":generate_freertos_tsktcb" ]
     visibility = [ ":freertos_tsktcb" ]
   }
@@ -252,16 +252,16 @@ pw_facade("freertos_tsktcb") {
   backend = pw_thread_freertos_FREERTOS_TSKTCB_BACKEND
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_thread_freertos/freertos_tsktcb.h" ]
-  public_deps = [ "$dir_pw_third_party/freertos" ]
+  public_deps = [ "$pw_external_freertos" ]
 }
 
 pw_source_set("snapshot") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
-    "$dir_pw_third_party/freertos",
     "$dir_pw_thread:protos.pwpb",
     "$dir_pw_thread:snapshot",
+    "$pw_external_freertos",
     dir_pw_function,
     dir_pw_protobuf,
     dir_pw_status,
@@ -323,11 +323,11 @@ if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
       "$dir_pw_string:builder",
       "$dir_pw_string:util",
       "$dir_pw_sync:thread_notification",
-      "$dir_pw_third_party/freertos",
       "$dir_pw_thread:non_portable_test_thread_options",
       "$dir_pw_thread:thread",
       "$dir_pw_thread:thread_info",
       "$dir_pw_thread:thread_iteration",
+      "$pw_external_freertos",
     ]
   }
 }

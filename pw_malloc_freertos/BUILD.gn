@@ -27,7 +27,7 @@ pw_source_set("allocator") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_malloc_freertos/allocator.h" ]
   public_deps = [ "$dir_pw_allocator:allocator" ]
-  deps = [ "$dir_pw_third_party/freertos" ]
+  deps = [ "$pw_external_freertos" ]
   sources = [ "allocator.cc" ]
 }
 

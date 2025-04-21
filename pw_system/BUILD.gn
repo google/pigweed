@@ -397,9 +397,9 @@ if (pw_system_TARGET_HOOKS_BACKEND == "") {
     deps = [
       ":config",
       ":init",
-      "$dir_pw_third_party/freertos",
       "$dir_pw_thread:thread",
       "$dir_pw_thread_freertos:thread",
+      "$pw_external_freertos",
     ]
     sources = [ "freertos_target_hooks.cc" ]
   }

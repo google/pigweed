@@ -105,9 +105,9 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_string",
       "$dir_pw_sys_io_emcraft_sf2",
       "$dir_pw_system",
-      "$dir_pw_third_party/freertos",
-      "$dir_pw_third_party/freertos:support",
       "$dir_pw_toolchain:infinite_loop",
+      "$pw_external_freertos",
+      "$pw_external_freertos:support",
     ]
     sources = [
       "boot.cc",
@@ -129,7 +129,7 @@ if (current_toolchain != default_toolchain) {
 
   pw_source_set("sf2_freertos_config") {
     public_configs = [ ":config_includes" ]
-    public_deps = [ "$dir_pw_third_party/freertos:config_assert" ]
+    public_deps = [ "$pw_external_freertos:config_assert" ]
     public = [ "config/FreeRTOSConfig.h" ]
   }
 }
@@ -146,7 +146,7 @@ pw_system_target("emcraft_sf2_som") {
     pw_log_tokenized_HANDLER_BACKEND = "$dir_pw_system:log_backend.impl"
     pw_third_party_freertos_CONFIG =
         "$dir_pigweed/targets/emcraft_sf2_som:sf2_freertos_config"
-    pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm3"
+    pw_third_party_freertos_PORT = "$pw_external_freertos:arm_cm3"
     pw_sys_io_BACKEND = dir_pw_sys_io_emcraft_sf2
 
     pw_boot_cortex_m_LINKER_SCRIPT =
@@ -166,7 +166,7 @@ pw_system_target("emcraft_sf2_som_debug") {
     pw_log_tokenized_HANDLER_BACKEND = "$dir_pw_system:log_backend.impl"
     pw_third_party_freertos_CONFIG =
         "$dir_pigweed/targets/emcraft_sf2_som:sf2_freertos_config"
-    pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm3"
+    pw_third_party_freertos_PORT = "$pw_external_freertos:arm_cm3"
     pw_sys_io_BACKEND = dir_pw_sys_io_emcraft_sf2
 
     # Override the default pw_boot_cortex_m linker script and set the memory

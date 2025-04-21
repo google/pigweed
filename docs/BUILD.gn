@@ -393,8 +393,6 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_sync/public/pw_sync/virtual_basic_lockable.h",
   "$dir_pw_sys_io/public/pw_sys_io/sys_io.h",
   "$dir_pw_system/public/pw_system/system.h",
-  "$dir_pw_third_party/freertos/pw_assert_stack_overflow_hook.cc",
-  "$dir_pw_third_party/freertos/static_task_allocation.cc",
   "$dir_pw_thread/public/pw_thread/attrs.h",
   "$dir_pw_thread/public/pw_thread/context.h",
   "$dir_pw_thread/public/pw_thread/internal/priority.h",
@@ -436,6 +434,8 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_varint/public/pw_varint/stream.h",
   "$dir_pw_varint/public/pw_varint/varint.h",
   "$dir_pw_work_queue/public/pw_work_queue/work_queue.h",
+  "$pw_external_freertos/pw_assert_stack_overflow_hook.cc",
+  "$pw_external_freertos/static_task_allocation.cc",
 ]  # keep-sorted: end
 
 pw_python_action("generate_doxygen") {

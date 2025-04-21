@@ -31,7 +31,7 @@ config("backend_config") {
 pw_source_set("context") {
   public_deps = [
     "$dir_pw_interrupt:context.facade",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
   ]
   public_configs = [
     ":public_include_path",

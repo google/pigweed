@@ -40,7 +40,7 @@ pw_source_set("config") {
   public = [ "public/pw_chrono_freertos/config.h" ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
     dir_pw_polyfill,
     pw_chrono_freertos_CONFIG,
   ]
@@ -61,7 +61,7 @@ pw_source_set("system_clock") {
     ":config",
     "$dir_pw_chrono:epoch",
     "$dir_pw_chrono:system_clock.facade",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
   ]
   sources = [ "system_clock.cc" ]
   deps = [
@@ -86,7 +86,7 @@ pw_source_set("system_timer") {
   public_deps = [
     "$dir_pw_chrono:system_clock",
     "$dir_pw_chrono:system_timer.facade",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
   ]
   deps = [
     "$dir_pw_assert",

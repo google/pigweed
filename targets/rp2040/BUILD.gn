@@ -40,8 +40,8 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_cpu_exception:entry",
       "$dir_pw_system",
       "$dir_pw_system:crash_handler",
-      "$dir_pw_third_party/freertos",
-      "$dir_pw_third_party/freertos:support",
+      "$pw_external_freertos",
+      "$pw_external_freertos:support",
     ]
     sources = [ "boot.cc" ]
   }
@@ -101,7 +101,7 @@ if (current_toolchain != default_toolchain) {
 
   pw_source_set("rp2040_freertos_config") {
     public_configs = [ ":config_includes" ]
-    public_deps = [ "$dir_pw_third_party/freertos:config_assert" ]
+    public_deps = [ "$pw_external_freertos:config_assert" ]
     public = [ "config/FreeRTOSConfig.h" ]
   }
 
@@ -150,7 +150,7 @@ pw_system_target("rp2040") {
 
     pw_third_party_freertos_CONFIG =
         "$dir_pigweed/targets/rp2040:rp2040_freertos_config"
-    pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm0"
+    pw_third_party_freertos_PORT = "$pw_external_freertos:arm_cm0"
 
     pw_sys_io_BACKEND = dir_pw_sys_io_stdio
 

@@ -44,7 +44,7 @@ pw_source_set("config") {
   public = [ "public/pw_sync_freertos/config.h" ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
     pw_sync_freertos_CONFIG,
   ]
 }
@@ -75,7 +75,7 @@ pw_source_set("binary_semaphore") {
     "$dir_pw_chrono:system_clock",
     "$dir_pw_chrono_freertos:system_clock",
     "$dir_pw_interrupt:context",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
   ]
   sources = [ "binary_semaphore.cc" ]
   deps = [
@@ -101,7 +101,7 @@ pw_source_set("counting_semaphore") {
     "$dir_pw_chrono:system_clock",
     "$dir_pw_chrono_freertos:system_clock",
     "$dir_pw_interrupt:context",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
   ]
   sources = [ "counting_semaphore.cc" ]
   deps = [
@@ -126,7 +126,7 @@ pw_source_set("mutex") {
     "$dir_pw_assert",
     "$dir_pw_interrupt:context",
     "$dir_pw_sync:mutex.facade",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
   ]
 }
 
@@ -150,7 +150,7 @@ pw_source_set("timed_mutex") {
     "$dir_pw_assert",
     "$dir_pw_chrono_freertos:system_clock",
     "$dir_pw_interrupt:context",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
   ]
 }
 
@@ -179,7 +179,7 @@ pw_source_set("thread_notification") {
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:thread_notification.facade",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
   ]
   sources = [ "thread_notification.cc" ]
   deps = [ ":config" ]
@@ -213,7 +213,7 @@ pw_source_set("timed_thread_notification") {
     "$dir_pw_assert",
     "$dir_pw_chrono_freertos:system_clock",
     "$dir_pw_interrupt:context",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
   ]
 }
 
@@ -229,7 +229,7 @@ pw_source_set("interrupt_spin_lock") {
     "public_overrides/pw_sync_backend/interrupt_spin_lock_inline.h",
     "public_overrides/pw_sync_backend/interrupt_spin_lock_native.h",
   ]
-  public_deps = [ "$dir_pw_third_party/freertos" ]
+  public_deps = [ "$pw_external_freertos" ]
   sources = [ "interrupt_spin_lock.cc" ]
   deps = [
     "$dir_pw_assert",
@@ -252,11 +252,11 @@ pw_source_set("thread_notification_test") {
   deps = [
     "$dir_pw_chrono:system_clock",
     "$dir_pw_sync:thread_notification",
-    "$dir_pw_third_party/freertos",
     "$dir_pw_thread:non_portable_test_thread_options",
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",
     "$dir_pw_unit_test",
+    "$pw_external_freertos",
   ]
 }
 
@@ -278,11 +278,11 @@ pw_source_set("timed_thread_notification_test") {
   deps = [
     "$dir_pw_chrono:system_clock",
     "$dir_pw_sync:timed_thread_notification",
-    "$dir_pw_third_party/freertos",
     "$dir_pw_thread:non_portable_test_thread_options",
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",
     "$dir_pw_unit_test",
+    "$pw_external_freertos",
   ]
 }
 

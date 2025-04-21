@@ -91,7 +91,7 @@ SDK with the Pigweed third-party target:
    pw_mcuxpresso_sdk("freertos_project_sdk") {
      // manifest and includes ommitted for clarity
      exclude = [ "middleware.freertos-kernel.MIMXRT595S" ]
-     public_deps = [ "$dir_pw_third_party/freertos" ]
+     public_deps = [ "$pw_external_freertos" ]
    }
 
 Introducing dependencies

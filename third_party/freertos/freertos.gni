@@ -15,7 +15,7 @@
 declare_args() {
   # If compiling backends with freertos, this variable is set to the path to the
   # freertos installation. When set, a pw_source_set for the freertos library is
-  # created at "$dir_pw_third_party/freertos".
+  # created at "$pw_external_freertos".
   dir_pw_third_party_freertos = ""
 
   # The pw_source_set which provides the FreeRTOS config header.

@@ -126,7 +126,7 @@ being foundational infrastructure.
      # build arguments set by the user will be overridden by these settings.
      build_args = {
        pw_third_party_freertos_CONFIG = "$dir_pigweed/targets/stm32f429i_disc1_stm32cube:stm32f4xx_freertos_config"
-       pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm4f"
+       pw_third_party_freertos_PORT = "$pw_external_freertos:arm_cm4f"
        pw_sys_io_BACKEND = dir_pw_sys_io_stm32cube
        dir_pw_third_party_stm32cube = dir_pw_third_party_stm32cube_f4
        pw_third_party_stm32cube_PRODUCT = "STM32F429xx"
@@ -156,7 +156,7 @@ being foundational infrastructure.
        pw_log_BACKEND = dir_pw_log_basic #dir_pw_log_tokenized
        pw_log_tokenized_HANDLER_BACKEND = "//pw_system:log"
        pw_third_party_freertos_CONFIG = "$dir_pigweed/targets/emcraft_sf2_som:sf2_freertos_config"
-       pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm3"
+       pw_third_party_freertos_PORT = "$pw_external_freertos:arm_cm3"
        pw_sys_io_BACKEND = dir_pw_sys_io_emcraft_sf2
        dir_pw_third_party_smartfusion_mss = dir_pw_third_party_smartfusion_mss_exported
        pw_third_party_stm32cube_CONFIG =

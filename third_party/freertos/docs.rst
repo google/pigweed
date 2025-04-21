@@ -3,9 +3,8 @@
 ========
 FreeRTOS
 ========
-
-The ``$dir_pw_third_party/freertos/`` module contains various helpers to use
-FreeRTOS, including Pigweed backend modules which depend on FreeRTOS.
+The ``//third_party/freertos`` directory in Pigweed contains build system
+integration helpers for FreeRTOS.
 
 -------------
 Build Support
@@ -16,7 +15,7 @@ This is required when compiling backends modules for FreeRTOS.
 GN
 ==
 In order to use this you are expected to configure the following variables from
-``$dir_pw_third_party/freertos:freertos.gni``:
+``$pw_external_freertos:freertos.gni``:
 
 #. Set the GN ``dir_pw_third_party_freertos`` to the path of the FreeRTOS
    installation.
@@ -26,7 +25,7 @@ In order to use this you are expected to configure the following variables from
    the FreeRTOS port specific includes and sources.
 
 After this is done a ``pw_source_set`` for the FreeRTOS library is created at
-``$dir_pw_third_party/freertos``.
+``$pw_external_freertos``.
 
 CMake
 =====
@@ -96,7 +95,7 @@ To facilitate this, Pigweed offers an opt-in option which can be enabled,
 *  in Bazel through ``@freertos//:disable_task_statics``.
 
 This redefines ``static`` to nothing for the ``Source/tasks.c`` FreeRTOS source
-file when building through ``$dir_pw_third_party/freertos`` in GN and through
+file when building through ``$pw_external_freertos`` in GN and through
 ``pw_third_party.freertos`` in CMake.
 
 .. attention:: If you use this, make sure that your FreeRTOSConfig.h and port

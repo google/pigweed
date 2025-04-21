@@ -22,7 +22,7 @@ import("freertos.gni")
 # This file defines a GN source_set for an external installation of freertos.
 # To use, checkout the freertos source into a directory, then set the build arg
 # dir_pw_third_party_freertos to point to that directory. The freertos library
-# will be available in GN at "$dir_pw_third_party/freertos".
+# will be available in GN at "$pw_external_freertos".
 if (dir_pw_third_party_freertos == "") {
   group("freertos") {
   }
@@ -240,7 +240,7 @@ pw_source_set("config_assert") {
 pw_source_set("support") {
   deps = [
     "$dir_pw_string:util",
-    "$dir_pw_third_party/freertos",
+    "$pw_external_freertos",
     dir_pw_assert,
   ]
   sources = [
