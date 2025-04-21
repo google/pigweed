@@ -13,7 +13,7 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
-import("$dir_pw_third_party/emboss/emboss.gni")
+import("$pw_external_emboss/emboss.gni")
 
 # Compiles a .emb file into a .h file.
 # $dir_pw_third_party_emboss must be set to the path of your Emboss
@@ -68,7 +68,7 @@ template("emboss_cc_library") {
   output_path = root_gen_dir + path_sep + string_join(path_sep, fakedirs)
 
   action("${target_name}_header") {
-    script = "$dir_pw_third_party/emboss/embossc_runner.py"
+    script = "$pw_external_emboss/embossc_runner.py"
 
     args = [
       rebase_path("$dir_pw_third_party_emboss/embossc", root_build_dir),
@@ -175,7 +175,7 @@ template("emboss_cc_library") {
     }
     public_deps += [
       ":${target_name}_header",
-      "$dir_pw_third_party/emboss:cpp_utils",
+      "$pw_external_emboss:cpp_utils",
     ]
 
     if (!defined(invoker.public_configs)) {

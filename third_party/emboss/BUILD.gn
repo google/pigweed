@@ -17,7 +17,7 @@ import("$dir_pw_build/python.gni")
 import("$dir_pw_build/target_types.gni")
 
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_third_party/emboss/emboss.gni")
+import("$pw_external_emboss/emboss.gni")
 
 config("default_config") {
   # EMBOSS_DCHECK is used as an assert() for logic embedded in Emboss, where

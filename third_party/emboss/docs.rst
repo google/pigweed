@@ -6,9 +6,8 @@ Emboss
 `Emboss <https://github.com/google/emboss>`_ is a tool for generating code to
 safely read and write binary data structures.
 
-The ``$dir_pw_third_party/emboss`` module provides an ``emboss_cc_library`` GN
-template, defined in build_defs.gni, which generates C++ bindings for the given
-Emboss source file. The Emboss source code needs to be provided by the user.
+The ``//third_party/emboss`` directory contains build system integration for
+emboss libraries. The Emboss source code needs to be provided by the user.
 
 ------------------
 Configuring Emboss
@@ -70,7 +69,7 @@ Using Emboss
 
       .. code-block::
 
-         import("$dir_pw_third_party/emboss/build_defs.gni")
+         import("$pw_external_emboss/build_defs.gni")
 
          emboss_cc_library("emboss_protocol") {
             source = "public/my-project/my-protocol.emb"
