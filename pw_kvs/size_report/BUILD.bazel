@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -21,7 +21,7 @@ package(
 
 licenses(["notice"])
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "base",
     srcs = ["base.cc"],
     features = ["-conversion_warnings"],
@@ -32,15 +32,10 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "base_with_only_flash",
     srcs = ["base_with_only_flash.cc"],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
-    target_compatible_with = select({
-        "@platforms//os:none": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",
@@ -51,15 +46,10 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "with_kvs",
     srcs = ["with_kvs.cc"],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
-    target_compatible_with = select({
-        "@platforms//os:none": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_assert:check",
         "//pw_bloat:bloat_this_binary",

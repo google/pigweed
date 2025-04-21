@@ -14,6 +14,8 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -862,10 +864,33 @@ filegroup(
     ],
 )
 
+pw_size_diff(
+    name = "with_kvs_size_diff",
+    base = "//pw_kvs/size_report:base_with_only_flash",
+    label = "KeyValueStore",
+    target = "//pw_kvs/size_report:with_kvs",
+)
+
+pw_size_diff(
+    name = "base_with_only_flash_size_diff",
+    base = "//pw_kvs/size_report:base",
+    label = "FlashPartition",
+    target = "//pw_kvs/size_report:base_with_only_flash",
+)
+
+pw_size_table(
+    name = "kvs_size",
+    reports = [
+        ":with_kvs_size_diff",
+        ":base_with_only_flash_size_diff",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        ":kvs_size",
     ],
     prefix = "pw_kvs/",
     target_compatible_with = incompatible_with_mcu(),
