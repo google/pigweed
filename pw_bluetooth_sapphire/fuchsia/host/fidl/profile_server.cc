@@ -238,14 +238,12 @@ AclPriority FidlToAclPriority(fidlbredr::A2dpDirectionPriority in) {
 ProfileServer::ProfileServer(
     bt::gap::Adapter::WeakPtr adapter,
     pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
-    uint8_t sco_offload_index,
     fidl::InterfaceRequest<Profile> request)
     : ServerBase(this, std::move(request)),
       advertised_total_(0),
       searches_total_(0),
       adapter_(std::move(adapter)),
       wake_lease_provider_(wake_lease_provider),
-      sco_offload_index_(sco_offload_index),
       weak_self_(this) {}
 
 ProfileServer::~ProfileServer() {
@@ -911,8 +909,8 @@ void ProfileServer::ConnectSco(
     return;
   }
 
-  auto params_result = fidl_helpers::FidlToScoParametersVector(
-      request.params(), sco_offload_index_);
+  auto params_result =
+      fidl_helpers::FidlToScoParametersVector(request.params());
   if (params_result.is_error()) {
     bt_log(WARN,
            "fidl",

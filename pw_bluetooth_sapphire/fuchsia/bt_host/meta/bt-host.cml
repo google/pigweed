@@ -41,14 +41,6 @@
             type: "bool",
         },
         {
-            // The offloaded index to use for SCO offload, when the OFFLOAD path is specified
-            // by the requester.  This is in process of deprecation and should be used
-            // sparingly. See fxbug.dev/42140527
-            config: "fuchsia.bluetooth.ScoOffloadPathIndex",
-            key: "sco_offload_path_index",
-            type: "uint8",
-        },
-        {
             directory: "dev-bt-hci",
             rights: [ "r*" ],
             path: "/dev/class/bt-hci",

@@ -58,8 +58,7 @@ class BtHostComponent {
 
   // Binds the given |host_client| to a Host FIDL interface server.
   void BindToHostInterface(
-      fidl::ServerEnd<fuchsia_bluetooth_host::Host> host_client,
-      uint8_t sco_offload_index);
+      fidl::ServerEnd<fuchsia_bluetooth_host::Host> host_client);
 
   std::string device_path() { return device_path_; }
 

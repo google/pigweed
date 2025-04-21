@@ -145,13 +145,11 @@ class HostServerTest : public bthost::testing::AdapterTestFixture {
 
   void ResetHostServer() {
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
-    uint8_t sco_offload_index = 6;
     host_server_ =
         std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
                                      adapter()->AsWeakPtr(),
                                      gatt_->GetWeakPtr(),
-                                     lease_provider(),
-                                     sco_offload_index);
+                                     lease_provider());
     host_.Bind(std::move(host_handle));
   }
 
@@ -1632,13 +1630,11 @@ class HostServerTestFakeAdapter
     FakeAdapterTestFixture::SetUp();
     gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>(pw_dispatcher());
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
-    uint8_t sco_offload_index = 6;
     host_server_ =
         std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
                                      adapter()->AsWeakPtr(),
                                      gatt_->GetWeakPtr(),
-                                     lease_provider_,
-                                     sco_offload_index);
+                                     lease_provider_);
     host_.Bind(std::move(host_handle));
   }
 
