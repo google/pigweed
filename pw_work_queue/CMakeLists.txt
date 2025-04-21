@@ -14,12 +14,13 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_library(pw_work_queue STATIC
+pw_add_library(pw_work_queue INTERFACE
   HEADERS
     public/pw_work_queue/work_queue.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_assert
     pw_containers.inline_queue
     pw_sync.interrupt_spin_lock
     pw_sync.lock_annotations
@@ -28,10 +29,7 @@ pw_add_library(pw_work_queue STATIC
     pw_thread.thread_core
     pw_function
     pw_metric
-    pw_span
     pw_status
-  SOURCES
-    work_queue.cc
 )
 
 pw_add_library(pw_work_queue.test_thread INTERFACE

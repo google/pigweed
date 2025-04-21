@@ -35,12 +35,11 @@ pw_source_set("pw_work_queue") {
     "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:thread",
     "$dir_pw_thread:thread_core",
+    dir_pw_assert,
     dir_pw_function,
     dir_pw_metric,
-    dir_pw_span,
     dir_pw_status,
   ]
-  sources = [ "work_queue.cc" ]
 }
 
 pw_source_set("test_thread") {

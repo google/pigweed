@@ -14,13 +14,12 @@
 
 #pragma once
 
-#include <array>
 #include <cstdint>
 
+#include "pw_assert/assert.h"
 #include "pw_containers/inline_queue.h"
 #include "pw_function/function.h"
 #include "pw_metric/metric.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_sync/interrupt_spin_lock.h"
 #include "pw_sync/lock_annotations.h"
@@ -28,8 +27,6 @@
 #include "pw_thread/thread_core.h"
 
 namespace pw::work_queue {
-
-using WorkItem = Function<void()>;
 
 /// Enables threads and interrupts to enqueue work as a
 /// `pw::work_queue::WorkItem` for execution by the work queue.
@@ -47,17 +44,18 @@ using WorkItem = Function<void()>;
 /// Once a stop has been requested the queue will no longer accept further work.
 ///
 /// The entire API is thread-safe and interrupt-safe.
-class WorkQueue : public thread::ThreadCore {
+template <typename WorkItem>
+class CustomWorkQueue : public thread::ThreadCore {
  public:
   /// @param[in] queue The work entries to enqueue.
   ///
-  /// @param[in] queue_capacity The internal queue size which limits the number
-  /// of outstanding work requests.
+  /// @param[in] fn The function to invoke on each enqueued WorkItem
   ///
   /// @note The `ThreadNotification` prevents this from being `constexpr`.
-  WorkQueue(InlineQueue<WorkItem>& queue, size_t queue_capacity)
-      : stop_requested_(false), queue_(queue) {
-    min_queue_remaining_.Set(static_cast<uint32_t>(queue_capacity));
+  CustomWorkQueue(InlineQueue<WorkItem>& queue,
+                  pw::Function<void(WorkItem&)>&& fn)
+      : stop_requested_(false), queue_(queue), fn_(std::move(fn)) {
+    min_queue_remaining_.Set(static_cast<uint32_t>(queue.capacity()));
   }
 
   /// Enqueues a `work_item` for execution by the work queue thread.
@@ -94,7 +92,14 @@ class WorkQueue : public thread::ThreadCore {
   /// * The queue must not overflow, i.e. be full.
   /// * The queue must not have been requested to stop, i.e. it must
   ///   not be in the process of shutting down.
-  void CheckPushWork(WorkItem&& work_item) PW_LOCKS_EXCLUDED(lock_);
+  void CheckPushWork(WorkItem&& work_item) PW_LOCKS_EXCLUDED(lock_) {
+    PW_ASSERT_OK(InternalPushWork(std::move(work_item)),
+                 "Failed to push work item into the work queue");
+  }
+  void CheckPushWork(WorkItem& work_item) PW_LOCKS_EXCLUDED(lock_) {
+    PW_ASSERT_OK(InternalPushWork(std::move(work_item)),
+                 "Failed to push work item into the work queue");
+  }
 
   /// Locks the queue to prevent further work enqueing, finishes outstanding
   /// work, then shuts down the worker thread.
@@ -102,16 +107,81 @@ class WorkQueue : public thread::ThreadCore {
   /// The `WorkQueue` cannot be resumed after stopping because the `ThreadCore`
   /// thread returns and may be joined. The `WorkQueue` must be reconstructed
   /// for re-use after the thread has been joined.
-  void RequestStop() PW_LOCKS_EXCLUDED(lock_);
+  void RequestStop() PW_LOCKS_EXCLUDED(lock_) {
+    {
+      std::lock_guard lock(lock_);
+      stop_requested_ = true;
+    }  // Release lock before calling .release() on the semaphore.
+    work_notification_.release();
+  }
 
  private:
-  void Run() override PW_LOCKS_EXCLUDED(lock_);
-  Status InternalPushWork(WorkItem&& work_item) PW_LOCKS_EXCLUDED(lock_);
+  void Run() override PW_LOCKS_EXCLUDED(lock_) {
+    while (true) {
+      work_notification_.acquire();
 
+      // Drain the work queue.
+      bool stop_requested;
+      bool work_remaining;
+      do {
+        std::optional<WorkItem> possible_work_item;
+        {
+          std::lock_guard lock(lock_);
+          if (!queue_.empty()) {
+            possible_work_item.emplace(std::move(queue_.front()));
+            queue_.pop();
+          }
+          work_remaining = !queue_.empty();
+          stop_requested = stop_requested_;
+        }
+        if (!possible_work_item.has_value()) {
+          continue;  // No work item to process.
+        }
+        WorkItem& work_item = possible_work_item.value();
+        fn_(work_item);
+      } while (work_remaining);
+
+      // Queue was drained, return if we've been requested to stop.
+      if (stop_requested) {
+        return;
+      }
+    }
+  }
+
+  Status InternalPushWork(WorkItem&& work_item) PW_LOCKS_EXCLUDED(lock_) {
+    {
+      std::lock_guard lock(lock_);
+
+      if (stop_requested_) {
+        // Entries are not permitted to be enqueued once stop has been
+        // requested.
+        return Status::FailedPrecondition();
+      }
+
+      if (queue_.full()) {
+        return Status::ResourceExhausted();
+      }
+
+      queue_.emplace(std::move(work_item));
+
+      // Update the watermarks for the queue.
+      const uint32_t queue_entries = queue_.size();
+      if (queue_entries > max_queue_used_.value()) {
+        max_queue_used_.Set(queue_entries);
+      }
+      const uint32_t queue_remaining = queue_.capacity() - queue_entries;
+      if (queue_remaining < min_queue_remaining_.value()) {
+        min_queue_remaining_.Set(queue_entries);
+      }
+    }  // Release lock before calling .release() on the semaphore.
+    work_notification_.release();
+    return OkStatus();
+  }
   sync::InterruptSpinLock lock_;
   bool stop_requested_ PW_GUARDED_BY(lock_);
   InlineQueue<WorkItem>& queue_ PW_GUARDED_BY(lock_);
   sync::ThreadNotification work_notification_;
+  pw::Function<void(WorkItem&)> fn_;
 
   // TODO(ewout): The group and/or its name token should be passed as a ctor
   // arg instead. Depending on the approach here the group should be exposed
@@ -125,13 +195,47 @@ class WorkQueue : public thread::ThreadCore {
   PW_METRIC(metrics_, min_queue_remaining_, "min_queue_remaining", 0u);
 };
 
-template <size_t kWorkQueueEntries>
-class WorkQueueWithBuffer : public WorkQueue {
+/// Creates a WorkQueue.
+///
+/// WorkQueue enqueues `pw_function::Closure` and the worker thread
+/// invokes the Closure.
+class WorkQueue : public CustomWorkQueue<Closure> {
  public:
-  constexpr WorkQueueWithBuffer() : WorkQueue(queue_, kWorkQueueEntries) {}
+  /// @param[in] queue The work entries to enqueue.
+  WorkQueue(InlineQueue<Closure>& queue)
+      : CustomWorkQueue(queue, [](Closure& fn) { fn(); }) {}
+};
+
+/// Creates a WorkQueue and the backing queue.
+///
+/// @param kWorkQueueEntries The number of entries in the work queue
+///
+/// @param WorkItem The type that will enqueued.
+template <size_t kWorkQueueEntries, typename WorkItem>
+class CustomWorkQueueWithBuffer : public CustomWorkQueue<WorkItem> {
+ public:
+  /// @param[in] fn The function to invoke on each enqueued WorkItem
+  constexpr CustomWorkQueueWithBuffer(pw::Function<void(WorkItem&)>&& fn)
+      : CustomWorkQueue<WorkItem>(queue_, std::move(fn)) {}
 
  private:
   InlineQueue<WorkItem, kWorkQueueEntries> queue_;
+};
+
+/// Creates a WorkQueue and the backing queue.
+///
+/// WorkQueueWithBuffer enqueues `pw_function::Closure` and the worker thread
+/// invokes the Closure.
+///
+/// @param kWorkQueueEntries The number of entries in the work queue (e.g. the
+/// total number of work requests before the queue is full).
+template <size_t kWorkQueueEntries>
+class WorkQueueWithBuffer : public WorkQueue {
+ public:
+  constexpr WorkQueueWithBuffer() : WorkQueue(queue_) {}
+
+ private:
+  InlineQueue<Closure, kWorkQueueEntries> queue_;
 };
 
 }  // namespace pw::work_queue

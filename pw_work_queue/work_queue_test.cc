@@ -117,6 +117,30 @@ TEST(WorkQueue, PingPongTwoRequestTypesWithExtraRequests) {
   EXPECT_EQ(context_b.counter, kPingPongs);
 }
 
+TEST(WorkQueue, CustomWorkItem) {
+  struct CustomWorkItem {
+    int counter;
+  };
+
+  int counter = 0;
+
+  CustomWorkQueueWithBuffer<10, CustomWorkItem> work_queue(
+      [&counter](CustomWorkItem& work_item) { counter += work_item.counter; });
+
+  // Start the worker thread.
+  Thread work_thread(test::WorkQueueThreadOptions(), work_queue);
+
+  EXPECT_EQ(OkStatus(), work_queue.PushWork({.counter = 5}));
+  EXPECT_EQ(OkStatus(), work_queue.PushWork({.counter = 10}));
+  EXPECT_EQ(OkStatus(), work_queue.PushWork({.counter = 20}));
+
+  // Wait for the worker thread to terminate.
+  work_queue.RequestStop();
+  work_thread.join();
+
+  EXPECT_EQ(counter, 5 + 10 + 20);
+}
+
 // TODO(ewout): Add unit tests for the metrics once they have been restructured.
 
 }  // namespace
