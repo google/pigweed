@@ -317,6 +317,8 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
         : results(std::move(results)), search_id(search_id) {}
     fidl::InterfacePtr<fuchsia::bluetooth::bredr::SearchResults> results;
     bt::gap::BrEdrConnectionManager::SearchId search_id;
+    uint16_t unacknowledged_search_results_count = 0;
+    std::optional<pw::bluetooth_sapphire::Lease> wake_lease;
   };
 
   uint64_t searches_total_;

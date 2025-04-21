@@ -1099,10 +1099,29 @@ void ProfileServer::OnServiceFound(
 
   fuchsia::bluetooth::PeerId fidl_peer_id{peer_id.value()};
 
+  search_it->second.unacknowledged_search_results_count++;
+  if (!search_it->second.wake_lease) {
+    search_it->second.wake_lease =
+        PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_,
+                                  "SearchResults.ServiceFound")
+            .value_or(pw::bluetooth_sapphire::Lease());
+  }
+
+  auto response_cb = [search_id, this](auto) {
+    auto search_it = searches_.find(search_id);
+    if (search_it == searches_.end()) {
+      return;
+    }
+    search_it->second.unacknowledged_search_results_count--;
+    if (search_it->second.unacknowledged_search_results_count == 0) {
+      search_it->second.wake_lease.reset();
+    }
+  };
+
   search_it->second.results->ServiceFound(fidl_peer_id,
                                           std::move(descriptor_list),
                                           std::move(fidl_attrs),
-                                          [](auto) {});
+                                          std::move(response_cb));
 }
 
 void ProfileServer::OnScoConnectionResult(
