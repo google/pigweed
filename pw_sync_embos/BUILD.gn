@@ -56,7 +56,7 @@ pw_source_set("binary_semaphore") {
     "$dir_pw_chrono:system_clock",
     "$dir_pw_chrono_embos:system_clock",
     "$dir_pw_interrupt:context",
-    "$dir_pw_third_party/embos",
+    "$pw_external_embos",
   ]
   sources = [ "binary_semaphore.cc" ]
   deps = [
@@ -82,7 +82,7 @@ pw_source_set("counting_semaphore") {
     "$dir_pw_chrono:system_clock",
     "$dir_pw_chrono_embos:system_clock",
     "$dir_pw_interrupt:context",
-    "$dir_pw_third_party/embos",
+    "$pw_external_embos",
   ]
   sources = [ "counting_semaphore.cc" ]
   deps = [
@@ -107,7 +107,7 @@ pw_source_set("mutex") {
     "$dir_pw_assert",
     "$dir_pw_interrupt:context",
     "$dir_pw_sync:mutex.facade",
-    "$dir_pw_third_party/embos",
+    "$pw_external_embos",
   ]
 }
 
@@ -131,7 +131,7 @@ pw_source_set("timed_mutex") {
     "$dir_pw_assert",
     "$dir_pw_chrono_embos:system_clock",
     "$dir_pw_interrupt:context",
-    "$dir_pw_third_party/embos",
+    "$pw_external_embos",
   ]
 }
 
@@ -147,12 +147,12 @@ pw_source_set("interrupt_spin_lock") {
     "public_overrides/pw_sync_backend/interrupt_spin_lock_inline.h",
     "public_overrides/pw_sync_backend/interrupt_spin_lock_native.h",
   ]
-  public_deps = [ "$dir_pw_third_party/embos" ]
+  public_deps = [ "$pw_external_embos" ]
   sources = [ "interrupt_spin_lock.cc" ]
   deps = [
     "$dir_pw_assert",
     "$dir_pw_sync:interrupt_spin_lock.facade",
-    "$dir_pw_third_party/embos",
+    "$pw_external_embos",
   ]
 }
 

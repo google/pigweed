@@ -15,7 +15,7 @@
 declare_args() {
   # If compiling backends with embOS, this variable is set to the path to the
   # embOS include directory. When set, a pw_source_set for the embos library
-  # is created at "$dir_pw_third_party/embos".
+  # is created at "$pw_external_embos".
   dir_pw_third_party_embos_include = ""
 
   # The pw_source_set which provides the port specific includes and sources.

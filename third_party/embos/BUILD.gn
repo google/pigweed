@@ -20,7 +20,7 @@ import("embos.gni")
 # This file defines a GN source_set for an external installation of embOS.
 # To use, checkout the embOS source into a directory, then set the build arg
 # dir_pw_third_party_embOS to point to that directory. The embOS library
-# will be available in GN at "$dir_pw_third_party/embos".
+# will be available in GN at "$pw_external_embos".
 if (dir_pw_third_party_embos_include != "") {
   config("public_includes") {
     include_dirs = [ "$dir_pw_third_party_embos_include" ]
