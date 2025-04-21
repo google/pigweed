@@ -16,6 +16,8 @@ load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
@@ -219,10 +221,41 @@ pw_cc_test(
     ],
 )
 
+pw_size_diff(
+    name = "one_metric_size_diff",
+    base = "//pw_metric/size_report:base",
+    label = "1 metric and 1 group, no dump or export",
+    target = "//pw_metric/size_report:one_metric",
+)
+
+pw_size_diff(
+    name = "dump_size_diff",
+    base = "//pw_metric/size_report:base",
+    label = "(+) dump group and metrics to log",
+    target = "//pw_metric/size_report:dump",
+)
+
+pw_size_diff(
+    name = "more_metrics_size_diff",
+    base = "//pw_metric/size_report:dump",
+    label = "(+) 1 group (+) 4 metrics",
+    target = "//pw_metric/size_report:more_metrics",
+)
+
+pw_size_table(
+    name = "metric_size_report",
+    reports = [
+        ":one_metric_size_diff",
+        ":dump_size_diff",
+        ":more_metrics_size_diff",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        ":metric_size_report",
     ],
     prefix = "pw_metric/",
     target_compatible_with = incompatible_with_mcu(),
