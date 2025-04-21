@@ -500,7 +500,7 @@ class SecureSimplePairingState final {
 
   // The current GAP security mode of the device (v5.2 Vol. 3 Part C
   // Section 5.2.2)
-  gap::BrEdrSecurityMode security_mode_;
+  gap::BrEdrSecurityMode security_mode_ = gap::BrEdrSecurityMode::Mode4;
 
   // The BR/EDR link whose pairing is being driven by this object.
   WeakPtr<hci::BrEdrConnection> link_;
