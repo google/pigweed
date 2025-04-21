@@ -17,21 +17,33 @@ Transitions used when building rust std libraries from source
 """
 
 def _no_stdlibs_transition_impl(_, __):
-    return {"//pw_toolchain/rust:stdlibs_flavor": "none"}
+    return {
+        "//pw_toolchain/rust:stdlibs_flavor": "none",
+        "@rules_rust//rust/toolchain/channel": "nightly",
+    }
 
 _no_stdlibs_transition = transition(
     implementation = _no_stdlibs_transition_impl,
     inputs = [],
-    outputs = ["//pw_toolchain/rust:stdlibs_flavor"],
+    outputs = [
+        "//pw_toolchain/rust:stdlibs_flavor",
+        "@rules_rust//rust/toolchain/channel",
+    ],
 )
 
 def _core_only_transition_impl(_, __):
-    return {"//pw_toolchain/rust:stdlibs_flavor": "core_only"}
+    return {
+        "//pw_toolchain/rust:stdlibs_flavor": "core_only",
+        "@rules_rust//rust/toolchain/channel": "nightly",
+    }
 
 _core_only_transition = transition(
     implementation = _core_only_transition_impl,
     inputs = [],
-    outputs = ["//pw_toolchain/rust:stdlibs_flavor"],
+    outputs = [
+        "//pw_toolchain/rust:stdlibs_flavor",
+        "@rules_rust//rust/toolchain/channel",
+    ],
 )
 
 def _forward_and_symlink(ctx):
