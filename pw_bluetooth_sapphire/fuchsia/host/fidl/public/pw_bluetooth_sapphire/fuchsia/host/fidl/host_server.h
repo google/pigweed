@@ -46,7 +46,8 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   HostServer(zx::channel channel,
              const bt::gap::Adapter::WeakPtr& adapter,
              bt::gatt::GATT::WeakPtr gatt,
-             pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
+             pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
+             uint8_t sco_offload_index);
   ~HostServer() override;
 
   // ::fuchsia::bluetooth::host::Host overrides:
@@ -299,6 +300,9 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   std::optional<PeerWatcherServer> peer_watcher_server_;
 
   std::optional<BondingDelegateServer> bonding_delegate_server_;
+
+  // The SCO data path index to use when specifies the OFFLOAD path.
+  uint8_t sco_offload_index_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.

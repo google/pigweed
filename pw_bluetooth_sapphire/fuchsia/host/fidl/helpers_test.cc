@@ -1863,28 +1863,29 @@ T copy(T t) {
 
 TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   fbredr::ScoConnectionParameters params;
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  uint8_t sco_offload_index = 3;
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
   params.set_parameter_set(fbredr::HfpParameterSet::T2);
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
   params.set_air_coding_format(fbt::AssignedCodingFormat::MSBC);
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
   params.set_air_frame_size(8u);
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
   params.set_io_bandwidth(32000);
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
   params.set_io_coding_format(fbt::AssignedCodingFormat::LINEAR_PCM);
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
   params.set_io_frame_size(16u);
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
   params.set_io_pcm_data_format(faudio::SampleFormat::PCM_SIGNED);
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
   params.set_io_pcm_sample_payload_msb_position(3u);
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
   params.set_path(fbredr::DataPath::OFFLOAD);
-  ASSERT_TRUE(FidlToScoParameters(params).is_ok());
+  ASSERT_TRUE(FidlToScoParameters(params, sco_offload_index).is_ok());
 
   bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
-      out = FidlToScoParameters(params).take_value();
+      out = FidlToScoParameters(params, sco_offload_index).take_value();
   auto view = out.view();
   EXPECT_EQ(view.transmit_bandwidth().Read(), 8000u);
   EXPECT_EQ(view.receive_bandwidth().Read(), 8000u);
@@ -1927,9 +1928,9 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   EXPECT_EQ(view.output_pcm_sample_payload_msb_position().Read(), 3u);
 
   EXPECT_EQ(view.input_data_path().Read(),
-            static_cast<pw::bluetooth::emboss::ScoDataPath>(6));
+            static_cast<pw::bluetooth::emboss::ScoDataPath>(sco_offload_index));
   EXPECT_EQ(view.output_data_path().Read(),
-            static_cast<pw::bluetooth::emboss::ScoDataPath>(6));
+            static_cast<pw::bluetooth::emboss::ScoDataPath>(sco_offload_index));
 
   EXPECT_EQ(view.input_transport_unit_size_bits().Read(), 0u);
   EXPECT_EQ(view.output_transport_unit_size_bits().Read(), 0u);
@@ -1945,16 +1946,16 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
 
   // When the IO coding format is Linear PCM, the PCM data format is required.
   params.clear_io_pcm_data_format();
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
 
   // PCM_FLOAT is not a supported PCM format.
   params.set_io_pcm_data_format(faudio::SampleFormat::PCM_FLOAT);
-  EXPECT_TRUE(FidlToScoParameters(params).is_error());
+  EXPECT_TRUE(FidlToScoParameters(params, sco_offload_index).is_error());
 
   // PCM format for non-PCM IO coding formats is kNotApplicable and MSB is 0.
   params.set_io_coding_format(fbt::AssignedCodingFormat::TRANSPARENT);
-  ASSERT_TRUE(FidlToScoParameters(params).is_ok());
-  out = FidlToScoParameters(params).value();
+  ASSERT_TRUE(FidlToScoParameters(params, sco_offload_index).is_ok());
+  out = FidlToScoParameters(params, sco_offload_index).value();
   EXPECT_EQ(view.input_pcm_data_format().Read(),
             pw::bluetooth::emboss::PcmDataFormat::NOT_APPLICABLE);
   EXPECT_EQ(view.input_pcm_sample_payload_msb_position().Read(), 0u);

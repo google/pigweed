@@ -183,7 +183,7 @@ int main() {
 
   LifecycleHandler lifecycle_handler(&loop, host->GetWeakPtr());
 
-  auto init_cb = [&host, &lifecycle_handler, &loop](bool success) {
+  auto init_cb = [&host, &lifecycle_handler, &loop, &config](bool success) {
     PW_DCHECK(host);
     if (!success) {
       bt_log(
@@ -203,7 +203,8 @@ int main() {
       lifecycle_handler.Stop();
       return;
     }
-    host->BindToHostInterface(std::move(endpoints->server));
+    host->BindToHostInterface(std::move(endpoints->server),
+                              config.sco_offload_path_index());
 
     // Add Host device and protocol to bt-gap via Receiver
     zx::result receiver_client =

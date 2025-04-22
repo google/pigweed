@@ -2280,15 +2280,12 @@ fpromise::result<pw::bluetooth::emboss::PcmDataFormat> FidlToPcmDataFormat(
 }
 
 pw::bluetooth::emboss::ScoDataPath FidlToScoDataPath(
-    const fbredr::DataPath& path) {
+    const fbredr::DataPath& path, uint8_t offload_value) {
   switch (path) {
     case fbredr::DataPath::HOST:
       return pw::bluetooth::emboss::ScoDataPath::HCI;
     case fbredr::DataPath::OFFLOAD: {
-      // TODO(fxbug.dev/42136417): Use path from stack configuration file
-      // instead of this hardcoded value. "6" is the data path usually used in
-      // Broadcom controllers.
-      return static_cast<pw::bluetooth::emboss::ScoDataPath>(6);
+      return static_cast<pw::bluetooth::emboss::ScoDataPath>(offload_value);
     }
     case fbredr::DataPath::TEST:
       return pw::bluetooth::emboss::ScoDataPath::AUDIO_TEST_MODE;
@@ -2297,7 +2294,8 @@ pw::bluetooth::emboss::ScoDataPath FidlToScoDataPath(
 
 fpromise::result<bt::StaticPacket<
     pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
-FidlToScoParameters(const fbredr::ScoConnectionParameters& params) {
+FidlToScoParameters(const fbredr::ScoConnectionParameters& params,
+                    uint8_t sco_offload_path_index) {
   bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
       out;
   auto view = out.view();
@@ -2406,7 +2404,7 @@ FidlToScoParameters(const fbredr::ScoConnectionParameters& params) {
     bt_log(WARN, "fidl", "SCO parameters missing data path");
     return fpromise::error();
   }
-  auto path = FidlToScoDataPath(params.path());
+  auto path = FidlToScoDataPath(params.path(), sco_offload_path_index);
   view.input_data_path().Write(path);
   view.output_data_path().Write(path);
 
@@ -2432,7 +2430,8 @@ FidlToScoParameters(const fbredr::ScoConnectionParameters& params) {
 fpromise::result<std::vector<bt::StaticPacket<
     pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>>
 FidlToScoParametersVector(
-    const std::vector<fbredr::ScoConnectionParameters>& params) {
+    const std::vector<fbredr::ScoConnectionParameters>& params,
+    uint8_t sco_offload_path_index) {
   std::vector<bt::StaticPacket<
       pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
       out;
@@ -2440,7 +2439,7 @@ FidlToScoParametersVector(
   for (const fbredr::ScoConnectionParameters& param : params) {
     fpromise::result<bt::StaticPacket<
         pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
-        result = FidlToScoParameters(param);
+        result = FidlToScoParameters(param, sco_offload_path_index);
     if (result.is_error()) {
       return fpromise::error();
     }
