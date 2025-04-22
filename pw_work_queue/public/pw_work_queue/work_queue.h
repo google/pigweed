@@ -15,6 +15,7 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 
 #include "pw_assert/assert.h"
 #include "pw_containers/inline_queue.h"
