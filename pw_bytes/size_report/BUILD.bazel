@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -21,7 +21,7 @@ package(
 
 licenses(["notice"])
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "with_byte_builder",
     srcs = ["byte_builder_size_report.cc"],
     features = ["-conversion_warnings"],
@@ -32,7 +32,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "without_byte_builder",
     srcs = ["byte_builder_size_report.cc"],
     features = ["-conversion_warnings"],

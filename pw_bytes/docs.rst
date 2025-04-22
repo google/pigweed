@@ -62,9 +62,7 @@ pw_bytes/byte_builder.h
 
 Size report: using ByteBuffer
 -----------------------------
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: byte_builder_size_report
-.. include:: ../size_report_notice
+.. include:: byte_builder_size_report
 
 pw_bytes/bit.h
 ================
