@@ -269,6 +269,7 @@ Status SendDisconnectionCompleteEvent(ProxyHost& proxy,
 }
 
 Status SendL2capConnectionReq(ProxyHost& proxy,
+                              Direction direction,
                               uint16_t handle,
                               uint16_t source_cid,
                               uint16_t psm) {
@@ -294,9 +295,17 @@ Status SendL2capConnectionReq(ProxyHost& proxy,
   conn_req_writer.psm().Write(psm);
   conn_req_writer.source_cid().Write(source_cid);
 
-  H4PacketWithHci connection_req_packet{emboss::H4PacketType::ACL_DATA,
-                                        cframe.acl.hci_span()};
-  proxy.HandleH4HciFromController(std::move(connection_req_packet));
+  if (direction == Direction::kFromController) {
+    H4PacketWithHci packet{emboss::H4PacketType::ACL_DATA,
+                           cframe.acl.hci_span()};
+    proxy.HandleH4HciFromController(std::move(packet));
+  } else if (direction == Direction::kFromHost) {
+    H4PacketWithH4 packet{emboss::H4PacketType::ACL_DATA, cframe.acl.h4_span()};
+    proxy.HandleH4HciFromHost(std::move(packet));
+  } else {
+    return Status::InvalidArgument();
+  }
+
   return OkStatus();
 }
 
@@ -402,6 +411,7 @@ Status SendL2capConfigureRsp(ProxyHost& proxy,
 
 Status SendL2capConnectionRsp(
     ProxyHost& proxy,
+    Direction direction,
     uint16_t handle,
     uint16_t source_cid,
     uint16_t destination_cid,
@@ -428,18 +438,26 @@ Status SendL2capConnectionRsp(
   conn_rsp_writer.destination_cid().Write(destination_cid);
   conn_rsp_writer.result().Write(result_code);
 
-  H4PacketWithH4 connection_rsp_packet{emboss::H4PacketType::ACL_DATA,
-                                       cframe.acl.h4_span()};
-  proxy.HandleH4HciFromHost(std::move(connection_rsp_packet));
+  if (direction == Direction::kFromController) {
+    H4PacketWithHci packet{emboss::H4PacketType::ACL_DATA,
+                           cframe.acl.hci_span()};
+    proxy.HandleH4HciFromController(std::move(packet));
+  } else if (direction == Direction::kFromHost) {
+    H4PacketWithH4 packet{emboss::H4PacketType::ACL_DATA, cframe.acl.h4_span()};
+    proxy.HandleH4HciFromHost(std::move(packet));
+  } else {
+    return Status::InvalidArgument();
+  }
+
   return OkStatus();
 }
 
 Status SendL2capDisconnectRsp(ProxyHost& proxy,
+                              Direction direction,
                               AclTransportType transport,
                               uint16_t handle,
                               uint16_t source_cid,
-                              uint16_t destination_cid,
-                              Direction direction) {
+                              uint16_t destination_cid) {
   constexpr size_t kDisconnectionRspLen =
       emboss::L2capDisconnectionRsp::MinSizeInBytes();
   PW_TRY_ASSIGN(

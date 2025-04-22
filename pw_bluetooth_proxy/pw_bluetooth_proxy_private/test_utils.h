@@ -201,6 +201,7 @@ struct L2capOptions {
 };
 
 Status SendL2capConnectionReq(ProxyHost& proxy,
+                              Direction direction,
                               uint16_t handle,
                               uint16_t source_cid,
                               uint16_t psm);
@@ -218,17 +219,19 @@ Status SendL2capConfigureRsp(ProxyHost& proxy,
                              emboss::L2capConfigurationResult result);
 
 Status SendL2capConnectionRsp(ProxyHost& proxy,
+                              Direction direction,
                               uint16_t handle,
                               uint16_t source_cid,
                               uint16_t destination_cid,
+
                               emboss::L2capConnectionRspResultCode result_code);
 
 Status SendL2capDisconnectRsp(ProxyHost& proxy,
+                              Direction direction,
                               AclTransportType transport,
                               uint16_t handle,
                               uint16_t source_cid,
-                              uint16_t destination_cid,
-                              Direction direction = Direction::kFromHost);
+                              uint16_t destination_cid);
 
 /// Sends an L2CAP B-Frame.
 ///

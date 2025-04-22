@@ -141,7 +141,9 @@ void L2capStatusTracker::DeliverPendingConfigurationComplete(
   for (L2capStatusDelegate& delegate : delegates_) {
     auto match =
         [&config_info](const L2capChannelConnectionInfo& connection_info) {
-          return config_info.local_cid == connection_info.local_cid &&
+          return config_info.connection_handle ==
+                     connection_info.connection_handle &&
+                 config_info.local_cid == connection_info.local_cid &&
                  config_info.remote_cid == connection_info.remote_cid;
         };
     auto connection_it = std::find_if(connected_channel_infos_.begin(),

@@ -217,14 +217,20 @@ void L2capSignalingChannel::HandleConnectionRsp(
 
   switch (cmd.result().Read()) {
     case emboss::L2capConnectionRspResultCode::SUCCESSFUL: {
+      uint16_t local = direction == Direction::kFromHost
+                           ? cmd.destination_cid().Read()
+                           : cmd.source_cid().Read();
+      uint16_t remote = direction == Direction::kFromHost
+                            ? cmd.source_cid().Read()
+                            : cmd.destination_cid().Read();
       // We now have complete connection info
       l2cap_channel_manager_.HandleConnectionComplete(
           L2capChannelConnectionInfo{
               .direction = request_direction,
               .psm = pending_it->psm,
               .connection_handle = connection_handle(),
-              .remote_cid = cmd.source_cid().Read(),
-              .local_cid = cmd.destination_cid().Read(),
+              .remote_cid = remote,
+              .local_cid = local,
           });
       pending_connections_.erase(pending_it);
 
@@ -361,12 +367,19 @@ void L2capSignalingChannel::HandleDisconnectionReq(
 }
 
 void L2capSignalingChannel::HandleDisconnectionRsp(
-    Direction, emboss::L2capDisconnectionRspView cmd) {
+    Direction direction, emboss::L2capDisconnectionRspView cmd) {
+  uint16_t local = direction == Direction::kFromHost
+                       ? cmd.destination_cid().Read()
+                       : cmd.source_cid().Read();
+  uint16_t remote = direction == Direction::kFromHost
+                        ? cmd.source_cid().Read()
+                        : cmd.destination_cid().Read();
+
   l2cap_channel_manager_.HandleDisconnectionCompleteLocked(
       L2capStatusTracker::DisconnectParams{
           .connection_handle = connection_handle(),
-          .remote_cid = cmd.source_cid().Read(),
-          .local_cid = cmd.destination_cid().Read()});
+          .remote_cid = remote,
+          .local_cid = local});
 }
 
 bool L2capSignalingChannel::HandleFlowControlCreditInd(
