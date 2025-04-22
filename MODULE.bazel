@@ -154,7 +154,7 @@ cipd_repository(
     name = "llvm_toolchain",
     build_file = "//pw_toolchain/build_external:llvm_clang.BUILD",
     path = "fuchsia/third_party/clang/${os}-${arch}",
-    tag = "git_revision:553da9634dc4bae215e6c850d2de3186d09f9da5",
+    tag = "git_revision:03b0f55d9c6319a851a60bb084faca0e32a38f2b",
 )
 
 # Fetch linux sysroot for host builds.
@@ -201,7 +201,7 @@ register_toolchains(
 
 # Rust toolchains
 pw_rust = use_extension("//pw_toolchain/rust:extensions.bzl", "pw_rust")
-pw_rust.toolchain(cipd_tag = "rust_revision:77a455303bf08da8eef6236b2b4422a77cd25c42")
+pw_rust.toolchain(cipd_tag = "git_revisions:afa859f8121bf2985362a2c8414dc71a825ccf2d,03b0f55d9c6319a851a60bb084faca0e32a38f2b")
 use_repo(pw_rust, "pw_rust_toolchains")
 
 register_toolchains(

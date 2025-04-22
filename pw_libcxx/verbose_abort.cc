@@ -18,7 +18,7 @@
 
 // Older LLVM distributions don't define this.
 #ifndef _LIBCPP_VERBOSE_ABORT_NOEXCEPT
-#define _LIBCPP_VERBOSE_ABORT_NOEXCEPT
+#define _LIBCPP_VERBOSE_ABORT_NOEXCEPT _NOEXCEPT
 #endif  // _LIBCPP_VERBOSE_ABORT_NOEXCEPT
 
 // Inline functions in libc++ headers call this.
