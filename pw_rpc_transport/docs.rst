@@ -226,7 +226,7 @@ that A is unaware of which transport and framing B is using when talking to C:
      ChannelEgress{kChannelAC, b_to_a_egress},
    };
 
-   HdlcRpcIngress<kMaxPacketSize> b_ingress(b_rx_channels);
+   HdlcRpcIngress<kMaxPacketSize> a_ingress(a_rx_channels);
    SimpleRpcIngress<kMaxPacketSize> c_ingress(c_rx_channels);
 
    ServiceRegistry registry(tx_channels);
