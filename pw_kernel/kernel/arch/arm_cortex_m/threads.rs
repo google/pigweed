@@ -12,13 +12,16 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use core::arch::{asm, naked_asm};
+use core::arch::asm;
 use core::mem;
+
 use cortex_m::peripheral::SCB;
 
 // use pw_log::info;
 
-use crate::arch::arm_cortex_m::{exceptions::FullExceptionFrame, *};
+use crate::arch::arm_cortex_m::exceptions::{exception, FullExceptionFrame};
+use crate::arch::arm_cortex_m::{in_interrupt_handler, Arch};
+use crate::arch::ArchInterface;
 use crate::scheduler::{self, SchedulerState, Stack, SCHEDULER_STATE};
 use crate::sync::spinlock::SpinLockGuard;
 
@@ -149,8 +152,9 @@ extern "C" fn trampoline(initial_function: extern "C" fn(usize, usize), arg0: us
 
 // Called by the pendsv handler, returns the new stack to switch to after
 // performing some housekeeping.
+#[exception(exception = "PendSV", disable_interrupts)]
 #[no_mangle]
-unsafe extern "C" fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut FullExceptionFrame {
+extern "C" fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut FullExceptionFrame {
     // TODO:
     // save incoming frame to active_thread.archstate
     // clear active_thread
@@ -158,7 +162,7 @@ unsafe extern "C" fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut Full
 
     // Clear any local reservations on atomic addresses, in case we were context switched
     // in the middle of an atomic sequence.
-    asm!("clrex");
+    unsafe { asm!("clrex") };
 
     pw_assert::assert!(in_interrupt_handler());
     pw_assert::assert!(!Arch::interrupts_enabled());
@@ -166,19 +170,21 @@ unsafe extern "C" fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut Full
     // Save the incoming frame to the current active thread's arch state, that will function
     // as the context switch frame for when it is returned to later. Clear active thread
     // afterwards.
-    let active_thread = get_active_thread();
+    let active_thread = unsafe { get_active_thread() };
     // info!("inside pendsv: currently active thread {:08x}", at as usize);
     // info!("old frame {:08x}: pc {:08x}", frame as usize, (*frame).pc);
 
     pw_assert::assert!(active_thread != core::ptr::null_mut());
 
-    (*active_thread).frame = frame;
+    unsafe {
+        (*active_thread).frame = frame;
 
-    set_active_thread(core::ptr::null_mut());
+        set_active_thread(core::ptr::null_mut());
+    }
 
     // Return the arch frame for the current thread
     let mut ss = SCHEDULER_STATE.lock();
-    let newframe = (*ss.get_current_arch_thread_state()).frame;
+    let newframe = unsafe { (*ss.get_current_arch_thread_state()).frame };
     // info!(
     //     "new frame {:08x}: pc {:08x}",
     //     newframe as usize,
@@ -186,27 +192,4 @@ unsafe extern "C" fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut Full
     // );
 
     newframe
-}
-
-#[no_mangle]
-#[naked]
-pub unsafe extern "C" fn PendSV() -> ! {
-    unsafe {
-        naked_asm!(
-            "
-            push    {{ r4 - r11, lr }}  // save the additional registers
-            mov     r0, sp
-            sub     sp, 4               // realign the stack to 8 byte boundary
-            cpsid   i
-
-            bl      pendsv_swap_sp
-
-            // TODO: should sp be saved before cpsie?
-            cpsie   i
-            mov     sp, r0
-            pop     {{ r4 - r11, pc }}
-
-        "
-        )
-    }
 }

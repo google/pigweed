@@ -60,7 +60,7 @@ rust_library(
         "target.rs",
         "timer.rs",
     ],
-    crate_features = select({
+    crate_features = ["user_space"] + select({
         "@pigweed//pw_build/constraints/arm:cortex-m0": ["arch_arm_cortex_m"],
         "@pigweed//pw_build/constraints/arm:cortex-m3": ["arch_arm_cortex_m"],
         "@pigweed//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
@@ -70,7 +70,10 @@ rust_library(
             "std_panic_handler",
         ],
     }),
-    proc_macro_deps = ["@rust_crates//:paste"],
+    proc_macro_deps = [
+        "//pw_kernel/macros:arm_cortex_m_macro",
+        "@rust_crates//:paste",
+    ],
     tags = ["kernel"],
     deps = [
         "//pw_kernel/config:kernel_config",
