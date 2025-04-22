@@ -58,6 +58,10 @@
           "module": "pw_presubmit.pigweed_presubmit",
           "function": "main"
         },
+        "push": {
+          "module": "pw_cli.push",
+          "function": "push"
+        },
         "requires": {
           "module": "pw_cli.requires",
           "function": "main"
