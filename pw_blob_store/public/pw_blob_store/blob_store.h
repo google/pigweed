@@ -423,9 +423,9 @@ class BlobStore {
   // write_buffer - Used for buffering writes. Needs to be at least
   //     flash_write_size_bytes.
   // flash_write_size_bytes - Size in bytes to use for flash write operations.
-  //     This should be chosen to balance optimal write size and required buffer
-  //     size. Must be greater than or equal to flash write alignment, less than
-  //     or equal to flash sector size.
+  //     All underlying flash writes will be a multiple of this size. This
+  //     should be chosen to balance optimal write size and required buffer
+  //     size. Must be a multiple of flash write alignment.
   BlobStore(std::string_view name,
             kvs::FlashPartition& partition,
             kvs::ChecksumAlgorithm* checksum_algo,
