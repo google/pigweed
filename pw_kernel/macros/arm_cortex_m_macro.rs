@@ -50,7 +50,8 @@ use syn::{
     parse::{Parse, ParseStream, Result},
     parse_macro_input,
     punctuated::Punctuated,
-    Ident, ItemFn, Token,
+    spanned::Spanned,
+    Error, FnArg, Ident, ItemFn, Token, Type,
 };
 
 #[derive(Eq, PartialEq, Hash, Debug)]
@@ -120,6 +121,65 @@ impl Parse for Attributes {
     }
 }
 
+fn validate_handler_abi(handler: &ItemFn) -> Result<()> {
+    let abi = handler.sig.abi.as_ref().ok_or_else(|| {
+        Error::new(
+            handler.sig.span(),
+            "Handler missing an ABI.  Annotate with `extern \"C\"`",
+        )
+    })?;
+
+    let abi_name = abi.name.as_ref().ok_or_else(|| {
+        Error::new(
+            handler.sig.span(),
+            "Handler missing ABI name. Annotate with `extern \"C\"`",
+        )
+    })?;
+
+    if abi_name.value() != "C" {
+        return Err(Error::new(
+            handler.sig.span(),
+            "Handler ABI must be C. Annotate with `extern \"C\"`",
+        ));
+    }
+
+    Ok(())
+}
+
+fn handler_function_argument_error(handler: &ItemFn) -> Error {
+    Error::new(
+        handler.sig.inputs.span(),
+        "Handler must have a single `*mut KernelExceptionFrame` argument",
+    )
+}
+
+fn validate_handler_args(handler: &ItemFn) -> Result<()> {
+    if handler.sig.inputs.len() != 1 {
+        return Err(handler_function_argument_error(handler));
+    }
+
+    let FnArg::Typed(pat_ty) = &handler.sig.inputs.first().unwrap() else {
+        return Err(handler_function_argument_error(handler));
+    };
+
+    let Type::Ptr(ty) = &*pat_ty.ty else {
+        return Err(handler_function_argument_error(handler));
+    };
+
+    if ty.mutability.is_none() {
+        return Err(handler_function_argument_error(handler));
+    };
+
+    Ok(())
+}
+
+fn validate_handler_function(handler: &ItemFn) -> Result<()> {
+    validate_handler_abi(handler)?;
+    validate_handler_args(handler)?;
+
+    Ok(())
+}
+
 fn save_exception_frame(asm: &mut String, kernel_mode: &KernelMode) {
     asm.push_str("// save the additional registers\n");
     if kernel_mode.save_psp_needed() {
@@ -175,8 +235,13 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
     let handler = parse_macro_input!(item as ItemFn);
     let attributes = parse_macro_input!(attr as Attributes);
 
+    if let Err(e) = validate_handler_function(&handler) {
+        return e.to_compile_error().into();
+    }
+
     let exception_ident = format_ident!("{}", attributes.exception);
-    let handler_name = handler.sig.ident.to_string();
+    let handler_ident = &handler.sig.ident;
+    let handler_name = handler_ident.clone().to_string();
 
     let mut asm = String::new();
     save_exception_frame(&mut asm, &kernel_mode);
@@ -201,6 +266,8 @@ fn exception(attr: TokenStream, item: TokenStream, kernel_mode: KernelMode) -> T
                 core::arch::naked_asm!(#asm)
             }
         }
+        // Compile time assert that the handler function signature matches.
+        const _: crate::arch::arm_cortex_m::exceptions::ExceptionHandler = #handler_ident;
         #handler
     }
     .into()

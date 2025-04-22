@@ -19,7 +19,7 @@ use cortex_m::peripheral::SCB;
 
 // use pw_log::info;
 
-use crate::arch::arm_cortex_m::exceptions::{exception, FullExceptionFrame};
+use crate::arch::arm_cortex_m::exceptions::{exception, FullExceptionFrame, KernelExceptionFrame};
 use crate::arch::arm_cortex_m::{in_interrupt_handler, Arch};
 use crate::arch::ArchInterface;
 use crate::scheduler::{self, SchedulerState, Stack, SCHEDULER_STATE};
@@ -39,7 +39,7 @@ unsafe fn set_active_thread(t: *mut ArchThreadState) {
 }
 
 pub struct ArchThreadState {
-    frame: *mut FullExceptionFrame,
+    frame: *mut KernelExceptionFrame,
 }
 
 impl super::super::ThreadState for ArchThreadState {
@@ -105,6 +105,8 @@ impl super::super::ThreadState for ArchThreadState {
         initial_function: extern "C" fn(usize, usize),
         (arg0, arg1): (usize, usize),
     ) {
+        // TODO - konkers: Split user and kernel stacks.
+
         // Calculate the first 8 byte aligned full exception frame from the top
         // of the thread's stack.
         let mut frame = stack.end().wrapping_sub(size_of::<FullExceptionFrame>());
@@ -127,7 +129,7 @@ impl super::super::ThreadState for ArchThreadState {
             (*frame).kernel.return_address = 0xfffffff9; // return to state using MSP and no FP
         }
 
-        self.frame = frame
+        self.frame = &raw mut (unsafe { &mut *frame }).kernel;
     }
 }
 
@@ -154,7 +156,7 @@ extern "C" fn trampoline(initial_function: extern "C" fn(usize, usize), arg0: us
 // performing some housekeeping.
 #[exception(exception = "PendSV", disable_interrupts)]
 #[no_mangle]
-extern "C" fn pendsv_swap_sp(frame: *mut FullExceptionFrame) -> *mut FullExceptionFrame {
+extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
     // TODO:
     // save incoming frame to active_thread.archstate
     // clear active_thread

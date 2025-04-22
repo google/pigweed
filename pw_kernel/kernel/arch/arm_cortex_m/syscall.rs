@@ -14,7 +14,7 @@
 
 use crate::syscall::raw_handle_syscall;
 
-use super::exceptions::{exception, FullExceptionFrame};
+use super::exceptions::{exception, KernelExceptionFrame};
 
 // Pulls arguments out of the exception frame and calls the arch-independent
 // syscall handler.
@@ -23,15 +23,15 @@ use super::exceptions::{exception, FullExceptionFrame};
 // the SVCall handler to save some code space and execution time.
 #[exception(exception = "SVCall", disable_interrupts)]
 #[no_mangle]
-extern "C" fn handle_svc(frame: *mut FullExceptionFrame) -> *mut FullExceptionFrame {
+extern "C" fn handle_svc(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
     let ret_val = raw_handle_syscall(
-        unsafe { &*frame }.kernel.r11 as u16,
-        unsafe { &*frame }.kernel.r4 as usize,
-        unsafe { &*frame }.kernel.r5 as usize,
-        unsafe { &*frame }.kernel.r6 as usize,
-        unsafe { &*frame }.kernel.r7 as usize,
+        unsafe { &*frame }.r11 as u16,
+        unsafe { &*frame }.r4 as usize,
+        unsafe { &*frame }.r5 as usize,
+        unsafe { &*frame }.r6 as usize,
+        unsafe { &*frame }.r7 as usize,
     );
-    unsafe { &mut *frame }.kernel.r4 = (ret_val as u64) as u32;
-    unsafe { &mut *frame }.kernel.r5 = (ret_val as u64 >> 32) as u32;
+    unsafe { &mut *frame }.r4 = (ret_val as u64) as u32;
+    unsafe { &mut *frame }.r5 = (ret_val as u64 >> 32) as u32;
     frame
 }
