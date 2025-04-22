@@ -42,7 +42,7 @@ pub struct ExceptionFrame {
 
 impl ExceptionFrame {
     #[inline(never)]
-    fn dump(&self) {
+    pub fn dump(&self) {
         info!("Exception frame {:#08x}:", &raw const *self as usize);
         info!(
             "r0  {:#010x} r1 {:#010x} r2  {:#010x} r3  {:#010x}",
@@ -70,7 +70,7 @@ pub struct KernelExceptionFrame {
 
 impl KernelExceptionFrame {
     #[inline(never)]
-    fn dump(&self) {
+    pub fn dump(&self) {
         info!("Kernel exception frame {:#08x}:", &raw const *self as usize);
         info!(
             "r4  {:#010x} r5 {:#010x} r6  {:#010x} r7  {:#010x}",
@@ -84,7 +84,7 @@ impl KernelExceptionFrame {
 }
 
 #[inline(never)]
-fn dump_exception_frame(frame: &FullExceptionFrame) {
+pub fn dump_exception_frame(frame: &FullExceptionFrame) {
     frame.user.dump();
     frame.kernel.dump();
 }

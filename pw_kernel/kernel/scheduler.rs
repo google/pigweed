@@ -323,10 +323,10 @@ pub fn bootstrap_scheduler(mut thread: ForeignBox<Thread>) -> ! {
     pw_assert::panic!("should not reach here");
 }
 
-struct PremptDisableGuard;
+pub struct PremptDisableGuard;
 
 impl PremptDisableGuard {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut sched_state = SCHEDULER_STATE.lock();
         sched_state.current_thread_mut().preempt_disable_count += 1;
 

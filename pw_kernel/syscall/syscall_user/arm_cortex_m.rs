@@ -25,8 +25,16 @@ macro_rules! syscall_veneer {
         #[naked]
         unsafe extern "C" fn $name($($arg_name: $arg_type),*) -> i64 {
             naked_asm!("
-                mov   ip, {id}
+                push  {{r4-r7, r11}}
+                mov   r11, {id}
+                mov   r4, r0
+                mov   r5, r1
+                mov   r6, r2
+                mov   r7, r3
                 svc   0
+                mov   r0, r4
+                mov   r1, r5
+                pop  {{r4-r7, r11}}
                 bx lr
                 ",
                 id = const SysCallId::$id as u32

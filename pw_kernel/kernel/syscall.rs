@@ -16,6 +16,8 @@ use pw_status::Result;
 
 use syscall_defs::{SysCallId, SysCallReturnValue};
 
+use crate::scheduler::PremptDisableGuard;
+
 pub fn handle_syscall(
     id: u16,
     arg0: usize,
@@ -23,6 +25,8 @@ pub fn handle_syscall(
     _arg2: usize,
     _arg3: usize,
 ) -> Result<u64> {
+    let _guard = PremptDisableGuard::new();
+
     // Instead of having a architecture independent match here, an array of
     // extern "C" function pointers could be kept and use the architecture's
     // calling convention to directly call them.
