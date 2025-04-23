@@ -263,7 +263,9 @@ pw_cc_perf_test(
     deps = [
         ":decoder",
         "//pw_assert:check",
+        "//pw_bytes",
         "//pw_perf_test",
+        "//pw_span",
     ],
 )
 

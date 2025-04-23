@@ -276,6 +276,8 @@ pw_perf_test("detokenize_perf_test") {
   deps = [
     ":decoder",
     "$dir_pw_assert:check",
+    dir_pw_bytes,
+    dir_pw_span,
   ]
 }
 
