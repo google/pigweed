@@ -36,6 +36,4 @@ The ``pw::string::Format`` functions have a small, fixed code size
 cost. However, relative to equivalent ``std::snprintf`` calls, there is no
 incremental code size cost to using ``pw::string::Format``.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: format_size_report
-.. include:: ../size_report_notice
+.. include:: format_size_report

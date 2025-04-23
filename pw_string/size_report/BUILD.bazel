@@ -69,6 +69,7 @@ pw_cc_size_binary(
     name = "many_writes_snprintf",
     srcs = ["format_many_without_error_handling.cc"],
     copts = ["-DUSE_FORMAT=0"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_string",
@@ -79,6 +80,7 @@ pw_cc_size_binary(
     name = "many_writes_format",
     srcs = ["format_many_without_error_handling.cc"],
     copts = ["-DUSE_FORMAT=1"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_string",
@@ -120,8 +122,7 @@ pw_cc_size_binary(
         "-DUSE_STRING_BUILDER=0",
         "-DPROVIDE_BASE_SNPRINTF=1",
     ],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
+    features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",
         "//pw_string",

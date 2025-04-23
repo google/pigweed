@@ -203,6 +203,66 @@ filegroup(
     ],
 )
 
+pw_size_diff(
+    name = "build_string_with_string_builder_size_diff",
+    base = "//pw_string/size_report:build_string_with_snprintf",
+    label = "Total StringBuilder cost when used alongside snprintf",
+    target = "//pw_string/size_report:build_string_with_string_builder",
+)
+
+pw_size_diff(
+    name = "build_string_with_string_builder_no_base_snprintf_size_diff",
+    base = "//pw_string/size_report:build_string_with_snprintf_no_base_snprintf",
+    label = "StringBuilder cost when completely replacing snprintf",
+    target = "//pw_string/size_report:build_string_with_string_builder_no_base_snprintf",
+)
+
+pw_size_diff(
+    name = "build_string_incremental_with_string_builder_size_diff",
+    base = "//pw_string/size_report:build_string_incremental_with_snprintf",
+    label = "Incremental cost relative to snprintf for 10 strings",
+    target = "//pw_string/size_report:build_string_incremental_with_string_builder",
+)
+
+pw_size_table(
+    name = "string_builder_size_report",
+    reports = [
+        ":build_string_with_string_builder_size_diff",
+        ":build_string_with_string_builder_no_base_snprintf_size_diff",
+        ":build_string_incremental_with_string_builder_size_diff",
+    ],
+)
+
+pw_size_diff(
+    name = "single_write_format_size_diff",
+    base = "//pw_string/size_report:single_write_snprintf",
+    label = "Format instead of snprintf once, return size",
+    target = "//pw_string/size_report:single_write_format",
+)
+
+pw_size_diff(
+    name = "multiple_writes_format_size_diff",
+    base = "//pw_string/size_report:multiple_writes_snprintf",
+    label = "Format instead of snprintf 10 times, handle errors",
+    target = "//pw_string/size_report:multiple_writes_format",
+)
+
+pw_size_diff(
+    name = "many_writes_format_size_diff",
+    base = "//pw_string/size_report:many_writes_snprintf",
+    label = "Format instead of snprintf 50 times, no error handling",
+    target = "//pw_string/size_report:many_writes_format",
+)
+
+pw_size_table(
+    name = "format_size_report",
+    reports = [
+        ":single_write_format_size_diff",
+        ":multiple_writes_format_size_diff",
+        ":many_writes_format_size_diff",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
@@ -212,46 +272,9 @@ sphinx_docs_library(
         "design.rst",
         "docs.rst",
         "guide.rst",
+        ":format_size_report",
         ":string_builder_size_report",
     ],
     prefix = "pw_string/",
     target_compatible_with = incompatible_with_mcu(),
-)
-
-pw_size_diff(
-    name = "string_builder_size_report_both",
-    base = "//pw_string/size_report:build_string_with_snprintf",
-    label = "Total StringBuilder cost when used alongside snprintf",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
-    target = "//pw_string/size_report:build_string_with_string_builder",
-)
-
-pw_size_diff(
-    name = "string_builder_size_report_replace",
-    base = "//pw_string/size_report:build_string_with_snprintf_no_base_snprintf",
-    label = "StringBuilder cost when completely replacing snprintf",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
-    target = "//pw_string/size_report:build_string_with_string_builder_no_base_snprintf",
-)
-
-pw_size_diff(
-    name = "string_builder_size_report_incremental",
-    base = "//pw_string/size_report:build_string_incremental_with_snprintf",
-    label = "Incremental cost relative to snprintf for 10 strings",
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
-    target = "//pw_string/size_report:build_string_incremental_with_string_builder",
-)
-
-pw_size_table(
-    name = "string_builder_size_report",
-    reports = [
-        ":string_builder_size_report_both",
-        ":string_builder_size_report_replace",
-        ":string_builder_size_report_incremental",
-    ],
-    # TODO: https://pwbug.dev/388905812 - Make size reports always build.
-    tags = ["manual"],
 )
