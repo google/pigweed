@@ -12,24 +12,65 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "simple_base",
     srcs = ["simple_base.cc"],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "simple_loop",
     srcs = ["simple_loop.cc"],
 )
 
-pw_cc_binary(
+pw_size_diff(
+    name = "simple_loop_size_diff",
+    base = ":simple_base",
+    label = "Simple bloat loop",
+    target = ":simple_loop",
+)
+
+pw_cc_size_binary(
     name = "simple_function",
     srcs = ["simple_function.cc"],
     features = ["-conversion_warnings"],
+)
+
+pw_size_diff(
+    name = "simple_function_size_diff",
+    base = ":simple_base",
+    label = "Simple bloat function",
+    target = ":simple_function",
+)
+
+pw_size_table(
+    name = "simple_bloat_loop",
+    reports = [
+        ":simple_loop_size_diff",
+    ],
+)
+
+pw_size_table(
+    name = "simple_bloat_function",
+    reports = [
+        ":simple_function_size_diff",
+    ],
+)
+
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        ":simple_bloat_function",
+        ":simple_bloat_loop",
+    ],
+    target_compatible_with = incompatible_with_mcu(),
 )
