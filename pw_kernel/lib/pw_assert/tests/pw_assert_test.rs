@@ -34,6 +34,19 @@ fn assert_syntax_works() -> unittest::Result<()> {
 }
 
 #[test]
+fn debug_assert_syntax_works() -> unittest::Result<()> {
+    pw_assert::debug_assert!(true as bool);
+    pw_assert::debug_assert!(true as bool,);
+
+    pw_assert::debug_assert!(true as bool, "custom msg");
+    pw_assert::debug_assert!(true as bool, "custom msg",);
+
+    pw_assert::debug_assert!(true as bool, "custom msg with arg {}", 42 as u32);
+    pw_assert::debug_assert!(true as bool, "custom msg with arg {}", 42 as u32,);
+    Ok(())
+}
+
+#[test]
 fn assert_eq_syntax_works() -> unittest::Result<()> {
     pw_assert::eq!(1 as u32, 1 as u32);
     pw_assert::eq!(1 as u32, 1 as u32,);

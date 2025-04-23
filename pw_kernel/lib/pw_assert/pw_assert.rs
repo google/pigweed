@@ -119,6 +119,38 @@ macro_rules! assert {
 }
 
 #[macro_export]
+macro_rules! debug_assert {
+  ($condition:expr $(,)?) => {
+    #[cfg(debug_assertions)]
+    {
+      #[allow(clippy::unnecessary_cast)]
+      if !$condition {
+          // Ideally we'd combine these two log statements.  However, the `pw_log` API
+          // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
+          $crate::__private_log_panic_banner!();
+          $crate::__private::fatal!("debug_assert!() failed");
+          unsafe{$crate::pw_assert_HandleFailure()}
+      }
+    }
+  };
+
+  ($condition:expr, $($args:expr),* $(,)?) => {
+    #[cfg(debug_assertions)]
+    {
+      #[allow(clippy::unnecessary_cast)]
+      if !$condition {
+          // Ideally we'd combine these two log statements.  However, the `pw_log` API
+          // does not support passing through `PW_FMT_CONCAT` tokens to `pw_format`.
+          $crate::__private_log_panic_banner!();
+          $crate::__private::fatal!("debug_assert!() failed");
+          $crate::__private::fatal!($($args),*);
+          unsafe{$crate::pw_assert_HandleFailure()}
+      }
+    }
+  };
+}
+
+#[macro_export]
 macro_rules! eq {
   ($condition_a:expr, $condition_b:expr $(,)?) => {{
       #[allow(clippy::deref_addrof)]

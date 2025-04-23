@@ -14,6 +14,8 @@
 
 common:k_common --@rules_rust//rust/toolchain/channel=nightly
 common:k_common --@pigweed//pw_toolchain:cortex-m_toolchain_kind=clang
+# For now, enable debug assertions for all builds
+common:k_common --@rules_rust//rust/settings:extra_rustc_flag="-Cdebug-assertions"
 common:k_common --@pigweed//pw_log/rust:pw_log_backend=//pw_kernel/subsys/console:pw_log_backend_tokenized
 build:k_common --build_tag_filters=-do_not_build
 build:k_common -c opt
