@@ -246,7 +246,7 @@ pw_test("wire_packet_parser_test") {
   configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
-pw_size_diff("size_report") {
+pw_size_diff("pw_hdlc_size_table") {
   title = "HDLC sizes"
 
   binaries = [
@@ -278,5 +278,5 @@ pw_doc_group("docs") {
     "py/pw_hdlc/decode.py",
     "py/pw_hdlc/encode.py",
   ]
-  report_deps = [ ":size_report" ]
+  report_deps = [ ":pw_hdlc_size_table" ]
 }

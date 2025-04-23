@@ -14,6 +14,8 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -224,6 +226,28 @@ filegroup(
     ],
 )
 
+pw_size_diff(
+    name = "full_size_diff",
+    base = "//pw_hdlc/size_report:base",
+    label = "HDLC encode and decode",
+    target = "//pw_hdlc/size_report:full",
+)
+
+pw_size_diff(
+    name = "full_crc_size_diff",
+    base = "//pw_hdlc/size_report:base_crc",
+    label = "HDLC encode and decode, ignoring CRC and varint",
+    target = "//pw_hdlc/size_report:full_crc",
+)
+
+pw_size_table(
+    name = "pw_hdlc_size_table",
+    reports = [
+        ":full_size_diff",
+        ":full_crc_size_diff",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
@@ -234,6 +258,7 @@ sphinx_docs_library(
         "guide.rst",
         "router.rst",
         "size.rst",
+        ":pw_hdlc_size_table",
         "//pw_hdlc/rpc_example:docs",
     ],
     prefix = "pw_hdlc/",
