@@ -63,13 +63,14 @@ pw_add_facade(pw_async2.dispatcher STATIC
     pw_async2.poll
     pw_chrono.system_clock
     pw_containers.intrusive_forward_list
+    pw_log
     pw_metric
     pw_sync.interrupt_spin_lock
     pw_sync.lock_annotations
     pw_sync.mutex
+    pw_tokenizer
     pw_toolchain.no_destructor
   PRIVATE_DEPS
-    pw_log
     pw_async2.config
   SOURCES
     dispatcher_base.cc

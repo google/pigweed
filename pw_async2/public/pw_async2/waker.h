@@ -13,25 +13,46 @@
 // the License.
 #pragma once
 
+#include "pw_async2/internal/config.h"
 #include "pw_async2/lock.h"
 #include "pw_containers/intrusive_forward_list.h"
+#include "pw_log/tokenized_args.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::async2 {
 
 class Task;
+class Waker;
+
+namespace internal {
+
+using WaitReasonType = PW_LOG_TOKEN_TYPE;
+static constexpr WaitReasonType kWaitReasonDefaultValue =
+    PW_LOG_TOKEN_DEFAULT_VALUE;
+
+void CloneWaker(Waker& waker_in,
+                Waker& waker_out,
+                WaitReasonType wait_reason = kWaitReasonDefaultValue);
+
+}  // namespace internal
 
 /// Stores a waker associated with the current context in ``waker_out``.
 /// When ``waker_out`` is later awoken with :cpp:func:`pw::async2::Waker::Wake`,
 /// the :cpp:class:`pw::async2::Task` associated with ``cx`` will be awoken and
 /// its ``DoPend`` method will be invoked again.
 ///
-/// NOTE: wait_reason_string is currently unused, but will be used for debugging
-/// in the future.
-#define PW_ASYNC_STORE_WAKER(context, waker_out, wait_reason_string)           \
-  do {                                                                         \
-    [[maybe_unused]] constexpr const char* __MUST_BE_STR = wait_reason_string; \
-    context.InternalStoreWaker(waker_out);                                     \
+/// ``wait_reason_string`` is a human-readable description of why the task is
+/// blocked. If the module configuration option ``PW_ASYNC2_DEBUG_WAIT_REASON``
+/// is set, this string will be stored with the waker and reported by
+/// ``Dispatcher::LogRegisteredTasks`` when its associated task is blocked.
+#define PW_ASYNC_STORE_WAKER(context, waker_out, wait_reason_string)         \
+  do {                                                                       \
+    [[maybe_unused]] constexpr const char*                                   \
+        pw_async2_wait_reason_must_be_string = wait_reason_string;           \
+    constexpr ::pw::async2::internal::WaitReasonType pw_async2_wait_reason = \
+        PW_LOG_TOKEN("pw_async2", wait_reason_string);                       \
+    ::pw::async2::internal::StoreWaker(                                      \
+        context, waker_out, pw_async2_wait_reason);                          \
   } while (0)
 
 /// Stores a waker associated with ``waker_in`` in ``waker_out``.
@@ -39,12 +60,18 @@ class Task;
 /// the :cpp:class:`pw::async2::Task` associated with ``waker_in`` will be
 /// awoken and its ``DoPend`` method will be invoked again.
 ///
-/// NOTE: wait_reason_string is currently unused, but will be used for debugging
-/// in the future.
-#define PW_ASYNC_CLONE_WAKER(waker_in, waker_out, wait_reason_string)          \
-  do {                                                                         \
-    [[maybe_unused]] constexpr const char* __MUST_BE_STR = wait_reason_string; \
-    waker_in.InternalCloneInto(waker_out);                                     \
+/// ``wait_reason_string`` is a human-readable description of why the task is
+/// blocked. If the module configuration option ``PW_ASYNC2_DEBUG_WAIT_REASON``
+/// is set, this string will be stored with the waker and reported by
+/// ``Dispatcher::LogRegisteredTasks`` when its associated task is blocked.
+#define PW_ASYNC_CLONE_WAKER(waker_in, waker_out, wait_reason_string)        \
+  do {                                                                       \
+    [[maybe_unused]] constexpr const char*                                   \
+        pw_async2_wait_reason_must_be_string = wait_reason_string;           \
+    constexpr ::pw::async2::internal::WaitReasonType pw_async2_wait_reason = \
+        PW_LOG_TOKEN("pw_async2", wait_reason_string);                       \
+    ::pw::async2::internal::CloneWaker(                                      \
+        waker_in, waker_out, pw_async2_wait_reason);                         \
   } while (0)
 
 /// An object which can respond to asynchronous events by queueing work to
@@ -87,17 +114,6 @@ class Waker : public pw::IntrusiveForwardList<Waker>::Item {
   /// This operation is guaranteed to be thread-safe.
   void Wake() && PW_LOCKS_EXCLUDED(impl::dispatcher_lock());
 
-  /// INTERNAL-ONLY: users should use the `PW_ASYNC_CLONE_WAKER` macro.
-  ///
-  /// Creates a second ``Waker`` from this ``Waker``.
-  ///
-  /// ``Clone`` is made explicit in order to allow for easier tracking of
-  /// the different ``Waker``s that may wake up a ``Task``.
-  ///
-  /// This operation is guaranteed to be thread-safe.
-  void InternalCloneInto(Waker& waker_out) &
-      PW_LOCKS_EXCLUDED(impl::dispatcher_lock());
-
   /// Returns whether this ``Waker`` is empty.
   ///
   /// Empty wakers are those that perform no action upon wake. These may be
@@ -119,9 +135,24 @@ class Waker : public pw::IntrusiveForwardList<Waker>::Item {
   }
 
  private:
+  friend void internal::CloneWaker(Waker& waker_in,
+                                   Waker& waker_out,
+                                   internal::WaitReasonType wait_reason);
+
   Waker(Task& task) PW_LOCKS_EXCLUDED(impl::dispatcher_lock()) : task_(&task) {
     InsertIntoTaskWakerList();
   }
+
+  /// INTERNAL-ONLY: users should use the `PW_ASYNC_CLONE_WAKER` macro.
+  ///
+  /// Creates a second ``Waker`` from this ``Waker``.
+  ///
+  /// ``Clone`` is made explicit in order to allow for easier tracking of
+  /// the different ``Waker``s that may wake up a ``Task``.
+  ///
+  /// This operation is guaranteed to be thread-safe.
+  void InternalCloneInto(Waker& waker_out, PW_LOG_TOKEN_TYPE wait_reason) &
+      PW_LOCKS_EXCLUDED(impl::dispatcher_lock());
 
   void InsertIntoTaskWakerList();
   void InsertIntoTaskWakerListLocked()
@@ -132,6 +163,10 @@ class Waker : public pw::IntrusiveForwardList<Waker>::Item {
 
   // The ``Task`` to poll when awoken.
   Task* task_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
+
+#if PW_ASYNC2_DEBUG_WAIT_REASON
+  internal::WaitReasonType wait_reason_ = internal::kWaitReasonDefaultValue;
+#endif  // PW_ASYNC2_DEBUG_WAIT_REASON
 };
 
 }  // namespace pw::async2

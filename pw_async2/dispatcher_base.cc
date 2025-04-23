@@ -19,6 +19,7 @@
 
 #include "pw_assert/check.h"
 #include "pw_async2/internal/config.h"
+#include "pw_async2/waker.h"
 
 #define PW_LOG_MODULE_NAME PW_ASYNC2_CONFIG_LOG_MODULE_NAME
 #define PW_LOG_LEVEL PW_ASYNC2_CONFIG_LOG_LEVEL
@@ -26,15 +27,28 @@
 #include "pw_log/log.h"
 
 namespace pw::async2 {
+namespace internal {
+
+void CloneWaker(Waker& waker_in,
+                Waker& waker_out,
+                internal::WaitReasonType wait_reason) {
+  waker_in.InternalCloneInto(waker_out, wait_reason);
+}
+
+void StoreWaker(Context& cx,
+                Waker& waker_out,
+                internal::WaitReasonType wait_reason) {
+  CloneWaker(*cx.waker_, waker_out, wait_reason);
+}
+
+}  // namespace internal
 
 void Context::ReEnqueue() {
   Waker waker;
-  waker_->InternalCloneInto(waker);
+  // The new waker will be immediately woken and removed, so its wait reason
+  // does not matter.
+  internal::CloneWaker(*waker_, waker);
   std::move(waker).Wake();
-}
-
-void Context::InternalStoreWaker(Waker& waker_out) {
-  waker_->InternalCloneInto(waker_out);
 }
 
 void Task::RemoveAllWakersLocked() {
@@ -53,6 +67,9 @@ void Task::AddWakerLocked(Waker& waker) {
 void Task::RemoveWakerLocked(Waker& waker) {
   wakers_.remove(waker);
   waker.task_ = nullptr;
+#if PW_ASYNC2_DEBUG_WAIT_REASON
+  waker.wait_reason_ = internal::kWaitReasonDefaultValue;
+#endif  // PW_ASYNC2_DEBUG_WAIT_REASON
 }
 
 bool Task::IsRegistered() const {
@@ -138,7 +155,8 @@ void Waker::Wake() && {
   }
 }
 
-void Waker::InternalCloneInto(Waker& out) & {
+void Waker::InternalCloneInto(
+    Waker& out, [[maybe_unused]] PW_LOG_TOKEN_TYPE wait_reason) & {
   std::lock_guard lock(impl::dispatcher_lock());
   // The `out` waker already points to this task, so no work is necessary.
   if (out.task_ == task_) {
@@ -147,6 +165,11 @@ void Waker::InternalCloneInto(Waker& out) & {
   // Remove the output waker from its existing task's list.
   out.RemoveFromTaskWakerListLocked();
   out.task_ = task_;
+
+#if PW_ASYNC2_DEBUG_WAIT_REASON
+  out.wait_reason_ = wait_reason;
+#endif  // PW_ASYNC2_DEBUG_WAIT_REASON
+
   // Only add if the waker being cloned is actually associated with a task.
   if (task_ != nullptr) {
     task_->AddWakerLocked(out);
@@ -429,7 +452,25 @@ void NativeDispatcherBase::LogRegisteredTasks() {
         std::distance(task->wakers_.begin(), task->wakers_.end()));
     PW_LOG_INFO(
         "  - Task %p (%d wakers)", static_cast<const void*>(task), waker_count);
+
+#if PW_ASYNC2_DEBUG_WAIT_REASON
+    LogTaskWakers(*task);
+#endif  // PW_ASYNC2_DEBUG_WAIT_REASON
   }
 }
+
+#if PW_ASYNC2_DEBUG_WAIT_REASON
+void NativeDispatcherBase::LogTaskWakers(const Task& task) {
+  int i = 0;
+  for (const Waker& waker : task.wakers_) {
+    i++;
+    if (waker.wait_reason_ != internal::kWaitReasonDefaultValue) {
+      PW_LOG_INFO("    * Waker %d: " PW_LOG_TOKEN_FMT("pw_async2"),
+                  i,
+                  waker.wait_reason_);
+    }
+  }
+}
+#endif  // PW_ASYNC2_DEBUG_WAIT_REASON
 
 }  // namespace pw::async2

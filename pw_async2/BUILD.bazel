@@ -65,7 +65,15 @@ pw_facade(
         "public/pw_async2/waker.h",
     ],
     backend = ":dispatcher_backend",
-    implementation_deps = ["//pw_assert:check"],
+    # LINT.IfChange
+    defines = select({
+        ":debug_wait_reason_disabled": ["PW_ASYNC2_DEBUG_WAIT_REASON=0"],
+        ":debug_wait_reason_enabled": ["PW_ASYNC2_DEBUG_WAIT_REASON=1"],
+    }),
+    # LINT.ThenChange(//pw_async2/public/pw_async2/internal/config.h)
+    implementation_deps = [
+        "//pw_assert:check",
+    ],
     strip_include_prefix = "public",
     deps = [
         ":config_override",
@@ -73,12 +81,18 @@ pw_facade(
         "//pw_chrono:system_clock",
         "//pw_containers:intrusive_forward_list",
         "//pw_log",
+        "//pw_log:args",
         "//pw_metric:metric",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
         "//pw_toolchain:no_destructor",
-    ],
+    ] + select({
+        ":debug_wait_reason_disabled": [],
+        ":debug_wait_reason_enabled": [
+            "//pw_tokenizer",
+        ],
+    }),
 )
 
 label_flag(
@@ -89,6 +103,21 @@ label_flag(
 label_flag(
     name = "config_override",
     build_setting_default = "//pw_build:default_module_config",
+)
+
+constraint_setting(
+    name = "debug_wait_reason",
+    default_constraint_value = "debug_wait_reason_disabled",
+)
+
+constraint_value(
+    name = "debug_wait_reason_disabled",
+    constraint_setting = ":debug_wait_reason",
+)
+
+constraint_value(
+    name = "debug_wait_reason_enabled",
+    constraint_setting = ":debug_wait_reason",
 )
 
 cc_library(

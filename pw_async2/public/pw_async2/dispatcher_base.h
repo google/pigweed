@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_async2/context.h"
+#include "pw_async2/internal/config.h"
 #include "pw_async2/lock.h"
 #include "pw_async2/task.h"
 #include "pw_async2/waker.h"
@@ -181,6 +182,11 @@ class NativeDispatcherBase {
   Task* PopWokenTask() PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   void LogRegisteredTasks();
+
+#if PW_ASYNC2_DEBUG_WAIT_REASON
+  void LogTaskWakers(const Task& task)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
+#endif  // PW_ASYNC2_DEBUG_WAIT_REASON
 
   // A lock guarding ``Task`` execution.
   //

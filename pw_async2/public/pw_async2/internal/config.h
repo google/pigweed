@@ -24,3 +24,20 @@
 #ifndef PW_ASYNC2_CONFIG_LOG_MODULE_NAME
 #define PW_ASYNC2_CONFIG_LOG_MODULE_NAME "PW_ASYNC2"
 #endif  // PW_ASYNC2_CONFIG_LOG_MODULE_NAME
+
+/// Controls how the ``wait_reason_string`` argument to
+/// @c_macro{PW_ASYNC_STORE_WAKER} and @c_macro{PW_ASYNC_CLONE_WAKER} is used.
+/// If enabled, wait reasons are stored within their wakers, allowing easier
+/// debugging of sleeping tasks.
+///
+/// Note: The module dependencies of ``pw_async2`` vary based on on the value of
+/// ``PW_ASYNC2_DEBUG_WAIT_REASON``.
+/// When building pw_async2 with Bazel, you should NOT set this module config
+// value directly. Instead, tell the build system which value you wish to select
+/// by adding one of the following constraint_values to the target platform:
+///
+///   - ``@pigweed//pw_async2:debug_wait_reason_disabled`` (default)
+///   - ``@pigweed//pw_async2:debug_wait_reason_enabled``
+#ifndef PW_ASYNC2_DEBUG_WAIT_REASON
+#define PW_ASYNC2_DEBUG_WAIT_REASON 0
+#endif  // PW_ASYNC2_DEBUG_WAIT_REASON
