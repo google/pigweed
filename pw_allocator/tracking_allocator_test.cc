@@ -107,7 +107,9 @@ TEST_F(TrackingAllocatorTest, InitialValues) {
 }
 
 TEST_F(TrackingAllocatorTest, GetCapacity) {
-  EXPECT_EQ(tracker_.GetCapacity(), kCapacity);
+  pw::StatusWithSize capacity = tracker_.GetCapacity();
+  EXPECT_EQ(capacity.status(), pw::OkStatus());
+  EXPECT_EQ(capacity.size(), kCapacity);
 }
 
 TEST_F(TrackingAllocatorTest, AddTrackingAllocatorAsChild) {

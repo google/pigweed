@@ -154,7 +154,9 @@ void TestGetCapacity() {
   SynchronizedAllocator<LockType> synchronized(allocator);
   Background background(synchronized);
 
-  EXPECT_EQ(synchronized.GetCapacity(), kCapacity);
+  pw::StatusWithSize capacity = synchronized.GetCapacity();
+  EXPECT_EQ(capacity.status(), pw::OkStatus());
+  EXPECT_EQ(capacity.size(), kCapacity);
 }
 
 TEST(SynchronizedAllocatorTest, GetCapacitySpinLock) {

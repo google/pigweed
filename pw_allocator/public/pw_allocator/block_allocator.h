@@ -191,17 +191,8 @@ class BlockAllocator : public internal::GenericBlockAllocator {
   /// @copydoc Allocator::GetAllocated
   size_t DoGetAllocated() const override { return allocated_; }
 
-  /// @copydoc Deallocator::GetCapacity
-  size_t DoGetCapacity() const override { return capacity_; }
-
-  /// @copydoc Deallocator::GetLayout
-  Layout DoGetLayout(LayoutType layout_type, const void* ptr) const override;
-
-  /// @copydoc Deallocator::Recognizes
-  bool DoRecognizes(const void* ptr) const override {
-    return first_->UsableSpace() <= ptr && ptr <= last_->UsableSpace() &&
-           BlockType::FromUsableSpace(ptr)->IsValid();
-  }
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
 
   /// Selects a free block to allocate from.
   ///
@@ -420,22 +411,40 @@ bool BlockAllocator<BlockType>::DoResize(void* ptr, size_t new_size) {
 }
 
 template <typename BlockType>
-Layout BlockAllocator<BlockType>::DoGetLayout(LayoutType layout_type,
-                                              const void* ptr) const {
-  const auto* block = FromUsableSpace(ptr);
-  switch (layout_type) {
-    case LayoutType::kRequested:
-      if constexpr (has_layout_v<BlockType>) {
-        return block->RequestedLayout();
-      } else {
-        break;
-      }
-    case LayoutType::kUsable:
-      return Layout(block->InnerSize(), BlockType::kAlignment);
-    case LayoutType::kAllocated:
-      return Layout(block->OuterSize(), BlockType::kAlignment);
+Result<Layout> BlockAllocator<BlockType>::DoGetInfo(InfoType info_type,
+                                                    const void* ptr) const {
+  // Handle types not related to a block first.
+  if (info_type == InfoType::kCapacity) {
+    return Layout(capacity_);
   }
-  return Layout();
+  // Get a block from the given pointer.
+  if (ptr < first_->UsableSpace() || last_->UsableSpace() < ptr) {
+    return Status::NotFound();
+  }
+  const auto* block = BlockType::FromUsableSpace(ptr);
+  if (!block->IsValid()) {
+    return Status::DataLoss();
+  }
+  if (block->IsFree()) {
+    return Status::FailedPrecondition();
+  }
+  if constexpr (kCapabilities.has(kImplementsGetRequestedLayout)) {
+    if (info_type == InfoType::kRequestedLayoutOf) {
+      return block->RequestedLayout();
+    }
+  }
+  switch (info_type) {
+    case InfoType::kUsableLayoutOf:
+      return Layout(block->InnerSize(), BlockType::kAlignment);
+    case InfoType::kAllocatedLayoutOf:
+      return Layout(block->OuterSize(), BlockType::kAlignment);
+    case InfoType::kRecognizes:
+      return Layout();
+    case InfoType::kCapacity:
+    case InfoType::kRequestedLayoutOf:
+    default:
+      return Status::Unimplemented();
+  }
 }
 
 template <typename BlockType>

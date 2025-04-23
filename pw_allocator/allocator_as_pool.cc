@@ -23,17 +23,9 @@ void* AllocatorAsPool::DoAllocate() { return allocator_.Allocate(layout()); }
 
 void AllocatorAsPool::DoDeallocate(void* ptr) { allocator_.Deallocate(ptr); }
 
-size_t AllocatorAsPool::DoGetCapacity() const {
-  return allocator_.GetCapacity();
-}
-
-Layout AllocatorAsPool::DoGetLayout(LayoutType layout_type,
-                                    const void* ptr) const {
-  return GetLayout(allocator_, layout_type, ptr);
-}
-
-bool AllocatorAsPool::DoRecognizes(const void* ptr) const {
-  return Recognizes(allocator_, ptr);
+Result<Layout> AllocatorAsPool::DoGetInfo(InfoType info_type,
+                                          const void* ptr) const {
+  return GetInfo(allocator_, info_type, ptr);
 }
 
 }  // namespace pw::allocator

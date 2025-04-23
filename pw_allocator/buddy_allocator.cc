@@ -191,14 +191,14 @@ void GenericBuddyAllocator::Deallocate(void* ptr) {
   std::ignore = bucket->Add(*block);
 }
 
-Layout GenericBuddyAllocator::GetLayout(const void* ptr) const {
+Result<Layout> GenericBuddyAllocator::GetLayout(const void* ptr) const {
   if (ptr < region_.data()) {
-    return Layout();
+    return Status::OutOfRange();
   }
   size_t offset = cpp20::bit_cast<uintptr_t>(ptr) -
                   cpp20::bit_cast<uintptr_t>(region_.data());
   if (region_.size() <= offset || offset % min_outer_size_ != 0) {
-    return Layout();
+    return Status::OutOfRange();
   }
   const auto* block = BuddyBlock::FromUsableSpace(ptr);
   return Layout(block->InnerSize(), min_outer_size_);

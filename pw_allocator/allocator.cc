@@ -25,8 +25,8 @@ void* Allocator::DoReallocate(void* ptr, Layout new_layout) {
   if (Resize(ptr, new_layout.size())) {
     return ptr;
   }
-  Layout old_layout = GetUsableLayout(ptr);
-  if (old_layout.size() == 0) {
+  Result<Layout> old_layout = GetUsableLayout(ptr);
+  if (!old_layout.ok()) {
     return nullptr;
   }
   void* new_ptr = Allocate(new_layout);
@@ -34,7 +34,7 @@ void* Allocator::DoReallocate(void* ptr, Layout new_layout) {
     return nullptr;
   }
   if (ptr != nullptr) {
-    std::memcpy(new_ptr, ptr, std::min(new_layout.size(), old_layout.size()));
+    std::memcpy(new_ptr, ptr, std::min(new_layout.size(), old_layout->size()));
     Deallocate(ptr);
   }
   return new_ptr;

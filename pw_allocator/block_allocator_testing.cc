@@ -51,7 +51,9 @@ void BlockAllocatorTestBase::UseMemory(void* ptr, size_t size) {
 
 void BlockAllocatorTestBase::GetCapacity(size_t expected) {
   Allocator& allocator = GetGenericAllocator();
-  EXPECT_EQ(allocator.GetCapacity(), expected);
+  StatusWithSize capacity = allocator.GetCapacity();
+  EXPECT_EQ(capacity.status(), OkStatus());
+  EXPECT_EQ(capacity.size(), expected);
 }
 
 void BlockAllocatorTestBase::AllocateLarge() {

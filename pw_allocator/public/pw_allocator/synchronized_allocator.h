@@ -87,28 +87,16 @@ class SynchronizedAllocator : public Allocator {
     return allocator_.Reallocate(ptr, new_layout);
   }
 
-  /// @copydoc Allocator::GetAlloc
+  /// @copydoc Allocator::GetAllocated
   size_t DoGetAllocated() const override {
     std::lock_guard lock(lock_);
     return allocator_.GetAllocated();
   }
 
-  /// @copydoc Deallocator::GetCapacity
-  size_t DoGetCapacity() const override {
-    std::lock_guard lock(lock_);
-    return allocator_.GetCapacity();
-  }
-
   /// @copydoc Deallocator::GetInfo
-  Layout DoGetLayout(LayoutType layout_type, const void* ptr) const override {
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override {
     std::lock_guard lock(lock_);
-    return GetLayout(allocator_, layout_type, ptr);
-  }
-
-  /// @copydoc Deallocator::Recognizes
-  bool DoRecognizes(const void* ptr) const override {
-    std::lock_guard lock(lock_);
-    return Recognizes(allocator_, ptr);
+    return GetInfo(allocator_, info_type, ptr);
   }
 
   Allocator& allocator_ PW_GUARDED_BY(lock_);

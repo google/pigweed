@@ -50,14 +50,8 @@ class FallbackAllocator : public Allocator {
   /// @copydoc Allocator::GetAllocated
   size_t DoGetAllocated() const override;
 
-  /// @copydoc Deallocator::GetCapacity
-  size_t DoGetCapacity() const override;
-
-  /// @copydoc Deallocator::GetLayout
-  Layout DoGetLayout(LayoutType layout_type, const void* ptr) const override;
-
-  /// @copydoc Deallocator::Recognizes
-  bool DoRecognizes(const void* ptr) const override;
+  /// @copydoc Deallocator::GetInfo
+  Result<Layout> DoGetInfo(InfoType info_type, const void* ptr) const override;
 
   Allocator& primary_;
   Allocator& secondary_;

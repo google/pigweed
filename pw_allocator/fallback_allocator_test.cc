@@ -41,7 +41,9 @@ class FallbackAllocatorTest : public ::testing::Test {
 // Unit tests.
 
 TEST_F(FallbackAllocatorTest, GetCapacity) {
-  EXPECT_EQ(allocator_.GetCapacity(), kCapacity * 2);
+  pw::StatusWithSize capacity = allocator_.GetCapacity();
+  EXPECT_EQ(capacity.status(), pw::OkStatus());
+  EXPECT_EQ(capacity.size(), kCapacity);
 }
 
 TEST_F(FallbackAllocatorTest, AllocateFromPrimary) {
