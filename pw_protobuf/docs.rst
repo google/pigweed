@@ -33,9 +33,7 @@ other in your code, depending on point of use requirements:
 This has a few benefits. The primary one is that it allows the core proto
 serialization and deserialization libraries to be relatively small.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: size_report/protobuf_overview
-.. include:: ../size_report_notice
+.. include:: size_report/protobuf_overview
 
 To demonstrate these layers, we use the following protobuf message definition
 in the examples:
