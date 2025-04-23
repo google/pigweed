@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -21,7 +21,7 @@ package(
 
 licenses(["notice"])
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "persistent",
     srcs = [
         "persistent.cc",
@@ -33,7 +33,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "persistent_base",
     srcs = [
         "persistent_base.cc",
@@ -45,7 +45,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "persistent_base_with_crc16",
     srcs = [
         "persistent_base_with_crc16.cc",

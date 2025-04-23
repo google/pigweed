@@ -14,6 +14,8 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -91,10 +93,33 @@ pw_cc_test(
     ],
 )
 
+pw_size_diff(
+    name = "persistent_with_pw_checksum_size_diff",
+    base = "//pw_persistent_ram/size_report:persistent_base",
+    label = "Persistent including pw_checksum's CRC16",
+    target = "//pw_persistent_ram/size_report:persistent",
+)
+
+pw_size_diff(
+    name = "persistent_without_pw_checksum_size_diff",
+    base = "//pw_persistent_ram/size_report:persistent_base_with_crc16",
+    label = "Persistent without pw_checksum's CRC16",
+    target = "//pw_persistent_ram/size_report:persistent",
+)
+
+pw_size_table(
+    name = "persistent_size",
+    reports = [
+        ":persistent_with_pw_checksum_size_diff",
+        ":persistent_without_pw_checksum_size_diff",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
+        ":persistent_size",
     ],
     prefix = "pw_persistent_ram/",
     target_compatible_with = incompatible_with_mcu(),
