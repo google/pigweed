@@ -540,7 +540,7 @@ constexpr std::byte kTestData[] = {
       "module_" PW_STRINGIFY(num), (num), (num), kTestData, \
       (num) % PW_ARRAY_SIZE(kTestData)
 #define QUEUE_CHECK_RESULT(queue_size, result, num)                            \
-  result && ((result->trace_token) == (num)) &&                                \
+  result&&((result->trace_token) == (num)) &&                                  \
       ((result->event_type) == static_cast<pw_trace_EventType>((num) % 10)) && \
       (strncmp(result->module,                                                 \
                "module_" PW_STRINGIFY(num),                                    \
