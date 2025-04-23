@@ -31,6 +31,7 @@
 #include "pw_tokenizer/tokenize.h"
 
 #define PW_LOG_TOKEN_TYPE pw_tokenizer_Token
+#define PW_LOG_TOKEN_DEFAULT_VALUE ((pw_tokenizer_Token)0)
 #define PW_LOG_TOKEN PW_TOKENIZE_STRING_OPTIONAL_DOMAIN
 #define PW_LOG_TOKEN_EXPR PW_TOKENIZE_STRING_EXPR
 #define PW_LOG_TOKEN_FMT PW_TOKEN_FMT
@@ -44,6 +45,16 @@
 ///
 /// For non-tokenizing backends, defaults to `const char*`.
 #define PW_LOG_TOKEN_TYPE const char*
+
+/// An "empty" value for a token.
+///
+/// If nested tokenization is supported by the logging backend, this is 0.
+/// Otherwise, it is ``nullptr``.
+#ifdef __cplusplus
+#define PW_LOG_TOKEN_DEFAULT_VALUE nullptr
+#else
+#define PW_LOG_TOKEN_DEFAULT_VALUE NULL
+#endif  // __cplusplus
 
 /// If nested tokenization is supported by the logging backend, this is an
 /// alias for `PW_TOKENIZE_STRING`. No-op otherwise.
