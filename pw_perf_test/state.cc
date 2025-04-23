@@ -17,6 +17,7 @@
 #include "pw_perf_test/state.h"
 
 #include "pw_log/log.h"
+#include "pw_numeric/integer_division.h"
 
 namespace pw::perf_test {
 namespace internal {
@@ -26,6 +27,7 @@ State CreateState(int durations,
                   const char* test_name) {
   return State(durations, event_handler, test_name);
 }
+
 }  // namespace internal
 
 bool State::KeepRunningInternal(internal::Timestamp iteration_end) {
@@ -40,21 +42,21 @@ bool State::KeepRunningInternal(internal::Timestamp iteration_end) {
     return true;
   }
 
+  int64_t duration = internal::GetDuration(iteration_start_, iteration_end);
+  if (duration > max_) {
+    max_ = duration;
+  }
+  if (duration < min_) {
+    min_ = duration;
+  }
+  total_duration_ += duration;
+  PW_LOG_DEBUG("Iteration number: %d - Duration: %ld",
+               current_iteration_,
+               static_cast<long>(duration));
+  event_handler_->TestCaseIteration({static_cast<uint32_t>(current_iteration_),
+                                     static_cast<float>(duration)});
+
   if (current_iteration_ < test_iterations_) {
-    int64_t duration = internal::GetDuration(iteration_start_, iteration_end);
-    if (duration > max_) {
-      max_ = duration;
-    }
-    if (duration < min_) {
-      min_ = duration;
-    }
-    total_duration_ += duration;
-    PW_LOG_DEBUG("Iteration number: %d - Duration: %ld",
-                 current_iteration_,
-                 static_cast<long>(duration));
-    event_handler_->TestCaseIteration(
-        {static_cast<uint32_t>(current_iteration_),
-         static_cast<float>(duration)});
     return true;
   }
 
@@ -62,7 +64,8 @@ bool State::KeepRunningInternal(internal::Timestamp iteration_end) {
   PW_LOG_DEBUG("Total Duration: %ld  Total Iterations: %d",
                static_cast<long>(total_duration_),
                test_iterations_);
-  mean_ = total_duration_ / test_iterations_;
+  mean_ =
+      IntegerDivisionRoundNearest(total_duration_, int64_t{test_iterations_});
   PW_LOG_DEBUG("Mean: %ld", static_cast<long>(mean_));
   PW_LOG_DEBUG("Minimum: %ld", static_cast<long>(min_));
   PW_LOG_DEBUG("Maximum: %ld", static_cast<long>(max_));

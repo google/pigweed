@@ -44,6 +44,7 @@ pw_add_library(pw_perf_test.state STATIC
     pw_assert
   PRIVATE_DEPS
     pw_log
+    pw_numeric.integer_division
   SOURCES
     state.cc
 )

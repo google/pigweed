@@ -69,7 +69,7 @@ class State {
   int64_t mean_ = -1;
 
   // Stores the total number of iterations wanted
-  int test_iterations_;
+  const int test_iterations_;
 
   // Stores the total duration of the tests.
   int64_t total_duration_ = 0;

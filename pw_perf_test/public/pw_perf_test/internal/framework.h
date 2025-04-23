@@ -41,7 +41,7 @@ class Framework {
   int RunAllTests();
 
  private:
-  static constexpr int kDefaultIterations = 10;
+  static constexpr int kDefaultIterations = 100;
 
   EventHandler* event_handler_;
 

@@ -54,7 +54,10 @@ pw_source_set("state") {
     ":timer_interface",
     dir_pw_assert,
   ]
-  deps = [ dir_pw_log ]
+  deps = [
+    "$dir_pw_numeric:integer_division",
+    dir_pw_log,
+  ]
   sources = [ "state.cc" ]
 }
 

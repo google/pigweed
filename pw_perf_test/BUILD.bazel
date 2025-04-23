@@ -55,12 +55,15 @@ cc_library(
     hdrs = [
         "public/pw_perf_test/state.h",
     ],
+    implementation_deps = [
+        "//pw_log",
+        "//pw_numeric:integer_division",
+    ],
     strip_include_prefix = "public",
     deps = [
         ":event_handler",
         ":timer",
         "//pw_assert:assert",
-        "//pw_log",
     ],
 )
 
