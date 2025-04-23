@@ -54,6 +54,4 @@ The tables below illustrate the following scenarios:
   is templated on both type and size, a different size results in additional
   code being generated.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: vectors_size_report
-.. include:: ../size_report_notice
+.. include:: vectors_size_report

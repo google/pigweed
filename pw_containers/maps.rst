@@ -140,6 +140,4 @@ The tables below illustrate the following scenarios:
   and an ``IntrusiveMultiMap`` of the same type. These types reuse code, so the
   combined sum is less than the sum of its parts.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: maps_size_report
-.. include:: ../size_report_notice
+.. include:: maps_size_report
