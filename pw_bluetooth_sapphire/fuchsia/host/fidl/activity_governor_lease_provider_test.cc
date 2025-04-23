@@ -14,6 +14,8 @@
 
 #include "pw_bluetooth_sapphire/fuchsia/host/fidl/activity_governor_lease_provider.h"
 
+#include <fidl/fuchsia.power.system/cpp/test_base.h>
+
 #include "gmock/gmock.h"
 #include "lib/async-loop/cpp/loop.h"
 #include "lib/async/cpp/task.h"
@@ -22,7 +24,7 @@ namespace bthost {
 namespace {
 
 class FakeActivityGovernor final
-    : public fidl::Server<fuchsia_power_system::ActivityGovernor> {
+    : public fidl::testing::TestBase<fuchsia_power_system::ActivityGovernor> {
  public:
   FakeActivityGovernor(
       fidl::ServerEnd<fuchsia_power_system::ActivityGovernor> server_end,
@@ -52,7 +54,14 @@ class FakeActivityGovernor final
   void handle_unknown_method(
       fidl::UnknownMethodMetadata<fuchsia_power_system::ActivityGovernor>
           metadata,
-      fidl::UnknownMethodCompleter::Sync& completer) override {}
+      fidl::UnknownMethodCompleter::Sync& completer) override {
+    FAIL();
+  }
+
+  void NotImplemented_(const std::string& name,
+                       ::fidl::CompleterBase& completer) override {
+    FAIL();
+  }
 
  private:
   async::Loop& loop_;

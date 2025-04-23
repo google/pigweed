@@ -149,6 +149,11 @@ class LowEnergyCentralServer
   void DisconnectPeripheral(::std::string identifier,
                             DisconnectPeripheralCallback callback) override;
 
+  void CreateConnectedIsochronousGroup(
+      ::fuchsia::bluetooth::le::CentralCreateConnectedIsochronousGroupRequest
+          request,
+      CreateConnectedIsochronousGroupCallback callback) override {}
+
   // fuchsia::bluetooth::le::ChannelListenerRegistry overrides:
   void ListenL2cap(
       fuchsia::bluetooth::le::ChannelListenerRegistryListenL2capRequest request,

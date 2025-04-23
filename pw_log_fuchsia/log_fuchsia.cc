@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <fidl/fuchsia.diagnostics.types/cpp/fidl.h>
 #include <fidl/fuchsia.logger/cpp/fidl.h>
 #include <lib/component/incoming/cpp/protocol.h>
 #include <lib/syslog/structured_backend/cpp/fuchsia_syslog.h>
@@ -58,20 +59,22 @@ const char* LogLevelToString(int severity) {
 }
 
 FuchsiaLogSeverity FuchsiaLogSeverityFromFidl(
-    fuchsia_diagnostics::Severity severity) {
+    fuchsia_diagnostics_types::Severity severity) {
   switch (severity) {
-    case fuchsia_diagnostics::Severity::kFatal:
+    case fuchsia_diagnostics_types::Severity::kFatal:
       return FUCHSIA_LOG_FATAL;
-    case fuchsia_diagnostics::Severity::kError:
+    case fuchsia_diagnostics_types::Severity::kError:
       return FUCHSIA_LOG_ERROR;
-    case fuchsia_diagnostics::Severity::kWarn:
+    case fuchsia_diagnostics_types::Severity::kWarn:
       return FUCHSIA_LOG_WARNING;
-    case fuchsia_diagnostics::Severity::kInfo:
+    case fuchsia_diagnostics_types::Severity::kInfo:
       return FUCHSIA_LOG_INFO;
-    case fuchsia_diagnostics::Severity::kDebug:
+    case fuchsia_diagnostics_types::Severity::kDebug:
       return FUCHSIA_LOG_DEBUG;
-    case fuchsia_diagnostics::Severity::kTrace:
+    case fuchsia_diagnostics_types::Severity::kTrace:
       return FUCHSIA_LOG_TRACE;
+    default:
+      return FUCHSIA_LOG_INFO;
   }
 }
 
@@ -117,7 +120,7 @@ class LogState {
     WaitForInterestChanged();
   }
 
-  void HandleInterest(fuchsia_diagnostics::wire::Interest& interest) {
+  void HandleInterest(fuchsia_diagnostics_types::wire::Interest& interest) {
     if (!interest.has_min_severity()) {
       severity_ = FUCHSIA_LOG_INFO;
     } else {

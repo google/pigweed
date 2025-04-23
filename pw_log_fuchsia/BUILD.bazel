@@ -36,6 +36,7 @@ cc_library(
     ],
     target_compatible_with = ["@platforms//os:fuchsia"],
     deps = [
+        "@fuchsia_sdk//fidl/fuchsia.diagnostics.types:fuchsia.diagnostics.types_cpp",
         "@fuchsia_sdk//fidl/fuchsia.logger:fuchsia.logger_cpp",
         "@fuchsia_sdk//pkg/async-cpp",
         "@fuchsia_sdk//pkg/component_incoming_cpp",
