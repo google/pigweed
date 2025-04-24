@@ -190,6 +190,48 @@ _BAZEL_ELAPSED_TIME = re.compile(
 )
 
 
+def check_ansi_codes(s: str) -> list[str] | None:
+    """
+    Checks if a string contains an ANSI escape code but does not end with the
+    reset code.
+
+    Args:
+      s: The input string to check.
+
+    Returns:
+      None if all color codes end with a reset code
+      List of colors codes
+    """
+    # Regular expression to find any ANSI escape code.
+    # \x1b is the escape character (ESC).
+    # \[ matches the literal '['.
+    # [0-9;]* matches any sequence of digits (0-9) and semicolons (;)
+    #         zero or more times.
+    # m matches the literal 'm'
+    # See https://en.wikipedia.org/wiki/ANSI_escape_code#Select_Graphic_Rendition_parameters #pylint: disable=line-too-long
+    ansi_escape_pattern = re.compile(r"\x1b\[[0-9;]*m")
+
+    # The specific ANSI sequence to reset all attributes
+    ansi_reset_code = "\x1b[0m"
+
+    codes = ansi_escape_pattern.findall(s)
+
+    if not codes:
+        return None
+
+    # multiple color codes can be set, but they are all cleared via a reset code
+    active_codes = []
+    for code in codes:
+        if code != ansi_reset_code:
+            active_codes.append(code)
+        else:
+            active_codes.clear()
+
+    if not active_codes:
+        return None
+    return active_codes
+
+
 def execute_command_no_logging(
     command: list,
     env: dict,
@@ -258,6 +300,7 @@ def execute_command_with_logging(
         logger.info('')
 
         failure_line = False
+        previous_colors = None
         while returncode is None:
             output = ''
             error_output = ''
@@ -301,6 +344,9 @@ def execute_command_with_logging(
                     recipe.status.log_last_failure()
                 failure_line = False
 
+            if previous_colors:
+                output = ''.join(previous_colors) + output
+
             # Mypy output mixes character encoding in color coded output
             # and uses the 'sgr0' (or exit_attribute_mode) capability from the
             # host machine's terminfo database.
@@ -312,7 +358,12 @@ def execute_command_with_logging(
             #
             # The following replace calls will strip out those
             # sequences.
-            stripped_output = output.replace('\x1b(B', '').strip()
+            stripped_output = output.replace('\x1b(B', '').rstrip()
+
+            previous_colors = check_ansi_codes(stripped_output)
+            if previous_colors:
+                # There were colors that weren't cleared, append the reset code
+                stripped_output += '\x1b[0m'
 
             # If this isn't a build step.
             if not line_match_result or (

@@ -66,14 +66,15 @@ pw_python_package("py") {
   ]
   tests = [
     "bazel_query_test.py",
-    "build_recipe_test.py",
     "bazel_to_gn_test.py",
+    "build_recipe_test.py",
     "create_python_tree_test.py",
     "file_prefix_map_test.py",
     "generate_cc_blob_library_test.py",
     "gn_target_test.py",
     "gn_writer_test.py",
     "project_builder_prefs_test.py",
+    "project_builder_test.py",
     "python_runner_test.py",
     "runfiles_manager_test.py",
     "zip_test.py",
