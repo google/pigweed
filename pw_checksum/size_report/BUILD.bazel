@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,7 +27,7 @@ licenses(["notice"])
 #   ERROR: package contains errors: pw_checksum/size_report
 #
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "noop_checksum",
     srcs = ["run_checksum.cc"],
     copts = ["-DUSE_NOOP_CHECKSUM=1"],
@@ -41,7 +41,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "crc16_checksum",
     srcs = ["run_checksum.cc"],
     copts = ["-DUSE_CRC16_CHECKSUM=1"],
@@ -55,7 +55,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "crc32_8bit_checksum",
     srcs = ["run_checksum.cc"],
     copts = ["-DUSE_CRC32_8BIT_CHECKSUM=1"],
@@ -69,7 +69,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "crc32_4bit_checksum",
     srcs = ["run_checksum.cc"],
     copts = ["-DUSE_CRC32_4BIT_CHECKSUM=1"],
@@ -83,7 +83,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "crc32_1bit_checksum",
     srcs = ["run_checksum.cc"],
     copts = ["-DUSE_CRC32_1BIT_CHECKSUM=1"],
@@ -97,7 +97,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "fletcher16_checksum",
     srcs = ["run_checksum.cc"],
     copts = ["-DUSE_FLETCHER16_CHECKSUM=1"],

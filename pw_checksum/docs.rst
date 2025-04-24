@@ -108,9 +108,7 @@ The CRC module currently optimizes for speed instead of binary size, by using
 pre-computed 256-entry tables to reduce the CPU cycles per byte CRC
 calculation.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: size_report
-.. include:: ../size_report_notice
+.. include:: pw_checksum_size_report
 
 Compatibility
 =============

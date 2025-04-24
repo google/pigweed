@@ -118,7 +118,7 @@ group("perf_tests") {
   ]
 }
 
-pw_size_diff("size_report") {
+pw_size_diff("pw_checksum_size_report") {
   title = "Checksum sizes"
 
   binaries = [
@@ -153,5 +153,5 @@ pw_size_diff("size_report") {
 pw_doc_group("docs") {
   inputs = [ "Kconfig" ]
   sources = [ "docs.rst" ]
-  report_deps = [ ":size_report" ]
+  report_deps = [ ":pw_checksum_size_report" ]
 }
