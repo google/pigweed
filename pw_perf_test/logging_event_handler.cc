@@ -44,17 +44,16 @@ void LoggingEventHandler::TestCaseIteration(const TestIteration& iteration) {
                internal::GetDurationUnitStr());
 }
 
-void LoggingEventHandler::TestCaseMeasure(const TestMeasurement& measurement) {
+void LoggingEventHandler::TestCaseEnd(const TestCase& info,
+                                      const TestMeasurement& measurement) {
+  // Use long instead of long long since some platforms don't support %lld
   PW_LOG_INFO(PW_PERF_TEST_GOOGLETEST_CASE_MEASUREMENT,
-              static_cast<unsigned long>(measurement.mean),
+              static_cast<long>(measurement.mean),
               internal::GetDurationUnitStr(),
-              static_cast<unsigned long>(measurement.min),
+              static_cast<long>(measurement.min),
               internal::GetDurationUnitStr(),
-              static_cast<unsigned long>(measurement.max),
+              static_cast<long>(measurement.max),
               internal::GetDurationUnitStr());
-}
-
-void LoggingEventHandler::TestCaseEnd(const TestCase& info) {
   PW_LOG_INFO(PW_PERF_TEST_GOOGLETEST_CASE_END, info.name);
 }
 

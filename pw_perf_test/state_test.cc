@@ -26,14 +26,13 @@ class EmptyEventHandler : public EventHandler {
   void RunAllTestsEnd() override {}
   void TestCaseStart(const TestCase&) override {}
   void TestCaseIteration(const TestIteration&) override {}
-  void TestCaseMeasure(const TestMeasurement&) override {}
-  void TestCaseEnd(const TestCase&) override {}
+  void TestCaseEnd(const TestCase&, const TestMeasurement&) override {}
 };
 
 EmptyEventHandler handler;
 
 void TestFunction() {
-  for (volatile int i = 0; i < 100000; i = i + 1) {
+  for (volatile int i = 0; i < 10; i = i + 1) {
   }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,22 +13,23 @@
 // the License.
 #pragma once
 
-#include <cstdint>
-
 #include "pw_perf_test/event_handler.h"
 
 namespace pw::perf_test {
 
-// An event handler that depends on the pw_log module. This event handler acts
-// as the default for perf tests, and follows a GTEST-style format of messaging.
-class LoggingEventHandler : public EventHandler {
+class LogCsvEventHandler : public EventHandler {
  public:
+  LogCsvEventHandler() : iterations_(0) {}
+
   void RunAllTestsStart(const TestRunInfo& summary) override;
   void RunAllTestsEnd() override;
   void TestCaseStart(const TestCase& info) override;
   void TestCaseIteration(const TestIteration& iteration) override;
   void TestCaseEnd(const TestCase& info,
                    const TestMeasurement& measurement) override;
+
+ private:
+  int iterations_;
 };
 
 }  // namespace pw::perf_test

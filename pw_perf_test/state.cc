@@ -70,12 +70,11 @@ bool State::KeepRunningInternal(internal::Timestamp iteration_end) {
   PW_LOG_DEBUG("Minimum: %ld", static_cast<long>(min_));
   PW_LOG_DEBUG("Maximum: %ld", static_cast<long>(max_));
   TestMeasurement test_measurement = {
-      .mean = static_cast<float>(mean_),
-      .max = static_cast<float>(max_),
-      .min = static_cast<float>(min_),
+      .mean = mean_,
+      .max = max_,
+      .min = min_,
   };
-  event_handler_->TestCaseMeasure(test_measurement);
-  event_handler_->TestCaseEnd(test_info);
+  event_handler_->TestCaseEnd(test_info, test_measurement);
   return false;
 }
 

@@ -74,6 +74,23 @@ pw_source_set("event_handler") {
   public = [ "public/pw_perf_test/event_handler.h" ]
 }
 
+pw_source_set("log_csv_event_handler") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_perf_test/log_csv_event_handler.h" ]
+  public_deps = [
+    ":event_handler",
+    ":pw_perf_test",
+    "$dir_pw_string:builder",
+  ]
+  deps = [ dir_pw_log ]
+  sources = [ "log_csv_event_handler.cc" ]
+}
+
+pw_source_set("log_csv_main") {
+  public_deps = [ ":log_csv_event_handler" ]
+  sources = [ "log_csv_main.cc" ]
+}
+
 pw_source_set("logging_event_handler") {
   public_configs = [ ":public_include_path" ]
   public = [

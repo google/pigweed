@@ -23,5 +23,5 @@
 #define PW_PERF_TEST_GOOGLETEST_CASE_START "[ RUN      ] %s"
 #define PW_PERF_TEST_GOOGLETEST_CASE_ITERATION "[ Iteration ] #%u: %lu %s"
 #define PW_PERF_TEST_GOOGLETEST_CASE_MEASUREMENT \
-  "[  RESULT  ] MEAN: %lu %s, MIN: %lu %s, MAX: %lu %s"
+  "[  RESULT  ] MEAN: %ld %s, MIN: %ld %s, MAX: %ld %s"
 #define PW_PERF_TEST_GOOGLETEST_CASE_END "[     DONE ] %s"

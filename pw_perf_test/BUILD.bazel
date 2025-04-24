@@ -83,16 +83,37 @@ cc_library(
 )
 
 cc_library(
+    name = "log_csv_event_handler",
+    srcs = ["log_csv_event_handler.cc"],
+    hdrs = ["public/pw_perf_test/log_csv_event_handler.h"],
+    implementation_deps = ["//pw_log"],
+    strip_include_prefix = "public",
+    deps = [
+        ":event_handler",
+        "//pw_string:string",
+    ],
+)
+
+cc_library(
+    name = "log_csv_main",
+    srcs = ["log_csv_main.cc"],
+    deps = [
+        ":log_csv_event_handler",
+        ":pw_perf_test",
+    ],
+)
+
+cc_library(
     name = "logging_event_handler",
     srcs = ["logging_event_handler.cc"],
     hdrs = [
         "public/pw_perf_test/googletest_style_event_handler.h",
         "public/pw_perf_test/logging_event_handler.h",
     ],
+    implementation_deps = ["//pw_log"],
     strip_include_prefix = "public",
     deps = [
         ":event_handler",
-        "//pw_log",
     ],
 )
 
