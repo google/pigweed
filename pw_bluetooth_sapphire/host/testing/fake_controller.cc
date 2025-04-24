@@ -3473,9 +3473,27 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
       return;
     }
 
-    // TODO(fxbug.dev/42161900): if own address type is random, check that a
-    // random address is set.
+    // Core Spec v6.0, Volume 4, Part E, Section 7.8.56:
+    // If the advertising set's Own_Address_Type parameter is set to 0x01 and
+    // the random address for the advertising set has not been initialized using
+    // the HCI_LE_Set_Advertising_Set_Random_Address command, the Controller
+    // shall return the error code Invalid HCI Command Parameters (0x12).
+    if (state.own_address_type == pwemb::LEOwnAddressType::RANDOM &&
+        !state.random_address.has_value()) {
+      bt_log(INFO,
+             "fake-hci",
+             "cannot enable, requires random address but hasn't been set");
+      RespondWithCommandComplete(
+          pwemb::OpCode::LE_SET_EXTENDED_ADVERTISING_ENABLE,
+          pwemb::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+      return;
+    }
+  }
 
+  for (uint8_t i = 0; i < num_sets; i++) {
+    hci_spec::AdvertisingHandle handle =
+        params.data()[i].advertising_handle().Read();
+    LEAdvertisingState& state = extended_advertising_states_[handle];
     state.enabled = true;
   }
 

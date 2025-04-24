@@ -232,12 +232,8 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   data.Copy(&staged_parameters_.data);
   scan_rsp.Copy(&staged_parameters_.scan_rsp);
 
-  pwemb::LEOwnAddressType own_addr_type;
-  if (address.type() == DeviceAddress::Type::kLEPublic) {
-    own_addr_type = pwemb::LEOwnAddressType::PUBLIC;
-  } else {
-    own_addr_type = pwemb::LEOwnAddressType::RANDOM;
-  }
+  pwemb::LEOwnAddressType own_addr_type =
+      DeviceAddress::DeviceAddrToLeOwnAddr(address.type());
 
   AdvertisingEventProperties properties =
       GetAdvertisingEventProperties(data, scan_rsp, options, connect_callback);
@@ -290,6 +286,14 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
     const AdvertisingOptions& options,
     ConnectionCallback connect_callback,
     hci::ResultFunction<> result_callback) {
+  if (address.type() == DeviceAddress::Type::kLERandom) {
+    std::optional<CommandPacket> set_random_addr_packet =
+        BuildSetAdvertisingRandomAddr(address, options.extended_pdu);
+    if (set_random_addr_packet.has_value()) {
+      hci_cmd_runner_->QueueCommand(*set_random_addr_packet);
+    }
+  }
+
   std::vector<CommandPacket> set_adv_data_packets = BuildSetAdvertisingData(
       address, staged_parameters_.data, options.flags, options.extended_pdu);
   for (auto& packet : set_adv_data_packets) {
@@ -333,8 +337,8 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(
 // StopAdvertising() by iterating through all addresses and calling
 // StopAdvertising(address) on each iteration. However, such an implementation
 // won't work. Each call to StopAdvertising(address) checks if the command
-// runner is running, cancels any pending commands if it is, and then issues new
-// ones. Called in quick succession, StopAdvertising(address) won't have a
+// runner is running, cancels any pending commands if it is, and then issues
+// new ones. Called in quick succession, StopAdvertising(address) won't have a
 // chance to finish its previous HCI commands before being cancelled. Instead,
 // we must enqueue them all at once and then run them together.
 void LowEnergyAdvertiser::StopAdvertising() {
@@ -413,9 +417,9 @@ void LowEnergyAdvertiser::CompleteIncomingConnection(
     const DeviceAddress& peer_address,
     const hci_spec::LEConnectionParameters& conn_params,
     bool extended_pdu) {
-  // Immediately construct a Connection object. If this object goes out of scope
-  // following the error checks below, it will send the a command to disconnect
-  // the link.
+  // Immediately construct a Connection object. If this object goes out of
+  // scope following the error checks below, it will send the a command to
+  // disconnect the link.
   std::unique_ptr<LowEnergyConnection> link =
       std::make_unique<LowEnergyConnection>(
           handle, local_address, peer_address, conn_params, role, hci());

@@ -223,6 +223,12 @@ class LowEnergyAdvertiser : public LocalAddressClient {
       const AdvertisingIntervalRange& interval,
       bool extended_pdu) = 0;
 
+  // Build the HCI command packet to set the random address to use for the
+  // flavor of low energy advertising being implemented. If no command packet is
+  // needed for this advertising mechanism, return a nullopt.
+  virtual std::optional<CommandPacket> BuildSetAdvertisingRandomAddr(
+      const DeviceAddress& address, bool extended_pdu) const = 0;
+
   // Build the HCI command packet to set the advertising data for the flavor of
   // low energy advertising being implemented.
   virtual std::vector<CommandPacket> BuildSetAdvertisingData(

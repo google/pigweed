@@ -47,6 +47,14 @@ CommandPacket LegacyLowEnergyAdvertiser::BuildEnablePacket(
   return packet;
 }
 
+std::optional<CommandPacket>
+LegacyLowEnergyAdvertiser::BuildSetAdvertisingRandomAddr(
+    const DeviceAddress& /*address*/, bool /*extended_pdu*/) const {
+  // In legacy advertising, random addresses use a single, global address set by
+  // the controlleer
+  return std::nullopt;
+}
+
 std::vector<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress&,
     const AdvertisingData& data,

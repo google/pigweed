@@ -239,6 +239,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousAdvertisements) {
             public_addr_state.own_address_type);
   EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
             random_addr_state.own_address_type);
+  ASSERT_TRUE(random_addr_state.random_address.has_value());
+  EXPECT_EQ(kRandomAddress, *random_addr_state.random_address);
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin,
             public_addr_state.interval_min);
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax,
@@ -247,6 +249,82 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousAdvertisements) {
             random_addr_state.interval_min);
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax - 1u,
             random_addr_state.interval_max);
+}
+
+// Ensure that we can start multiple advertisements that use random addresses,
+// with a different address for each.
+TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousRandomAdvertisements) {
+  const DeviceAddress kRandomAddress1(DeviceAddress::Type::kLERandom, {0x55});
+  const DeviceAddress kRandomAddress2(DeviceAddress::Type::kLERandom, {0xaa});
+  this->test_device()->set_num_supported_advertising_sets(2);
+
+  AdvertisingData ad = this->GetExampleData();
+  AdvertisingData scan_data = this->GetExampleData();
+
+  // start first random address advertising
+  AdvertisingOptions options1(kTestInterval,
+                              kDefaultNoAdvFlags,
+                              /*extended_pdu=*/false,
+                              /*anonymous=*/false,
+                              /*include_tx_power_level=*/false);
+  this->advertiser()->StartAdvertising(kRandomAddress1,
+                                       ad,
+                                       scan_data,
+                                       options1,
+                                       /*connect_callback=*/nullptr,
+                                       this->MakeExpectSuccessCallback());
+  this->RunUntilIdle();
+  std::optional<hci_spec::AdvertisingHandle> handle1 =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(handle1);
+
+  // start second random address advertising
+  constexpr AdvertisingIntervalRange random_interval(
+      hci_spec::kLEAdvertisingIntervalMin + 1u,
+      hci_spec::kLEAdvertisingIntervalMax - 1u);
+  AdvertisingOptions options2(random_interval,
+                              kDefaultNoAdvFlags,
+                              /*extended_pdu=*/false,
+                              /*anonymous=*/false,
+                              /*include_tx_power_level=*/false);
+  this->advertiser()->StartAdvertising(kRandomAddress2,
+                                       ad,
+                                       scan_data,
+                                       options2,
+                                       /*connect_callback=*/nullptr,
+                                       this->MakeExpectSuccessCallback());
+  this->RunUntilIdle();
+  std::optional<hci_spec::AdvertisingHandle> handle2 =
+      this->advertiser()->LastUsedHandleForTesting();
+  ASSERT_TRUE(handle2);
+
+  // check everything is correct
+  EXPECT_EQ(2u, this->advertiser()->NumAdvertisements());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising());
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(kRandomAddress1,
+                                                /*extended_pdu=*/false));
+  EXPECT_TRUE(this->advertiser()->IsAdvertising(kRandomAddress2,
+                                                /*extended_pdu=*/false));
+
+  const LEAdvertisingState& addr_state1 =
+      this->test_device()->extended_advertising_state(handle1.value());
+  const LEAdvertisingState& addr_state2 =
+      this->test_device()->extended_advertising_state(handle2.value());
+
+  EXPECT_TRUE(addr_state1.enabled);
+  EXPECT_TRUE(addr_state2.enabled);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
+            addr_state1.own_address_type);
+  ASSERT_TRUE(addr_state1.random_address.has_value());
+  EXPECT_EQ(kRandomAddress1, *addr_state1.random_address);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
+            addr_state2.own_address_type);
+  ASSERT_TRUE(addr_state2.random_address.has_value());
+  EXPECT_EQ(kRandomAddress2, *addr_state2.random_address);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin, addr_state1.interval_min);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax, addr_state1.interval_max);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin + 1u, addr_state2.interval_min);
+  EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax - 1u, addr_state2.interval_max);
 }
 
 TYPED_TEST(LowEnergyMultipleAdvertisingTest,

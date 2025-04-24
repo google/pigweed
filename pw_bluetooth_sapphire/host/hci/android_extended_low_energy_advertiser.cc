@@ -122,6 +122,26 @@ AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   return packet;
 }
 
+std::optional<CommandPacket>
+AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingRandomAddr(
+    const DeviceAddress& address, bool extended_pdu) const {
+  auto packet =
+      CommandPacket::New<android_emb::LEMultiAdvtSetRandomAddrCommandWriter>(
+          android_hci::kLEMultiAdvt);
+  auto view = packet.view_t();
+
+  std::optional<hci_spec::AdvertisingHandle> handle =
+      advertising_handle_map_.GetHandle(address, extended_pdu);
+  PW_CHECK(handle.has_value());
+
+  view.vendor_command().sub_opcode().Write(
+      android_hci::kLEMultiAdvtSetRandomAddrSubopcode);
+  view.random_address().CopyFrom(address.value().view());
+  view.adv_handle().Write(*handle);
+
+  return packet;
+}
+
 std::vector<CommandPacket>
 AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address,

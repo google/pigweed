@@ -160,6 +160,24 @@ ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
   return packet;
 }
 
+std::optional<CommandPacket>
+ExtendedLowEnergyAdvertiser::BuildSetAdvertisingRandomAddr(
+    const DeviceAddress& address, bool extended_pdu) const {
+  auto packet = hci::CommandPacket::New<
+      pwemb::LESetAdvertisingSetRandomAddressCommandWriter>(
+      hci_spec::kLESetAdvertisingSetRandomAddress);
+  auto view = packet.view_t();
+
+  std::optional<hci_spec::AdvertisingHandle> handle =
+      advertising_handle_map_.GetHandle(address, extended_pdu);
+  PW_CHECK(handle);
+
+  view.advertising_handle().Write(*handle);
+  view.random_address().CopyFrom(address.value().view());
+
+  return packet;
+}
+
 // TODO(fxbug.dev/330935479): we can reduce code duplication by
 // templatizing this method. However, we first have to rename
 // advertising_data_length and advertising_data in

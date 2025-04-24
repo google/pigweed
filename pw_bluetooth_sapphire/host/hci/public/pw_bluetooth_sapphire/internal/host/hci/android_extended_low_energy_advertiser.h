@@ -95,6 +95,9 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       const AdvertisingIntervalRange& interval,
       bool extended_pdu) override;
 
+  std::optional<CommandPacket> BuildSetAdvertisingRandomAddr(
+      const DeviceAddress& address, bool extended_pdu) const override;
+
   std::vector<CommandPacket> BuildSetAdvertisingData(
       const DeviceAddress& address,
       const AdvertisingData& data,

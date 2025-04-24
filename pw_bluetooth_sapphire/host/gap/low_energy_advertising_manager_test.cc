@@ -153,6 +153,11 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return std::nullopt;
   }
 
+  std::optional<hci::CommandPacket> BuildSetAdvertisingRandomAddr(
+      const DeviceAddress& /*address*/, bool /*extended_pdu*/) const override {
+    return std::nullopt;
+  }
+
   std::vector<hci::CommandPacket> BuildSetAdvertisingData(
       const DeviceAddress&,
       const AdvertisingData&,
