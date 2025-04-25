@@ -57,7 +57,13 @@ class FakeIsoStream : public IsoStream {
     return next_frame;
   }
 
-  void Send(pw::ConstByteSpan) override {}
+  void Send(pw::ConstByteSpan data) override {
+    sent_data_queue_.emplace(data.begin(), data.end());
+  }
+
+  std::queue<std::vector<std::byte>>& GetSentDataQueue() {
+    return sent_data_queue_;
+  }
 
   IsoStream::WeakPtr GetWeakPtr() override { return weak_self_.GetWeakPtr(); }
 
@@ -86,6 +92,7 @@ class FakeIsoStream : public IsoStream {
   std::queue<std::unique_ptr<IsoDataPacket>> incoming_packet_queue_;
   size_t incoming_packet_requests_ = 0;
   WeakSelf<FakeIsoStream> weak_self_;
+  std::queue<std::vector<std::byte>> sent_data_queue_;
 };
 
 }  // namespace bt::iso::testing

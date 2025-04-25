@@ -144,6 +144,24 @@ void IsoStreamServer::SetupDataPath(
           fit::bind_member<&IsoStreamServer::OnIncomingDataAvailable>(this));
 }
 
+void IsoStreamServer::Write(
+    fuchsia::bluetooth::le::IsochronousStreamWriteRequest request,
+    WriteCallback fidl_cb) {
+  if (!iso_stream_->is_alive()) {
+    bt_log(WARN, "fidl", "Attempt to write data on a closed stream");
+    Close(ZX_ERR_BAD_STATE);
+    return;
+  }
+
+  const std::vector<uint8_t>& data = request.data();
+
+  pw::span<const std::byte> data_span =
+      std::as_bytes(pw::span(data.data(), data.size()));
+
+  (*iso_stream_)->Send(data_span);
+  fidl_cb(fpromise::ok());
+}
+
 void IsoStreamServer::SendIncomingPacket(pw::span<const std::byte> packet) {
   auto view = pw::bluetooth::emboss::MakeIsoDataFramePacketView(packet.data(),
                                                                 packet.size());

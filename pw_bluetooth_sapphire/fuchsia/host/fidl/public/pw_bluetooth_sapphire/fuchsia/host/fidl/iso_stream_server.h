@@ -50,7 +50,7 @@ class IsoStreamServer
   void Read(ReadCallback callback) override;
   void Write(::fuchsia::bluetooth::le::IsochronousStreamWriteRequest
                  IsochronousStreamWriteRequest,
-             WriteCallback callback) override {}
+             WriteCallback callback) override;
   void handle_unknown_method(uint64_t ordinal, bool has_response) override;
 
   // Complete a Read() operation by sending a complete packet to

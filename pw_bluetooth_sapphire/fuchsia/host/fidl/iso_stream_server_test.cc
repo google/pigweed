@@ -84,8 +84,9 @@ class IsoStreamServerTest : public TestingBase {
   IsoStreamServer* server() const { return server_.get(); }
   fuchsia::bluetooth::le::IsochronousStreamPtr* client() { return &client_; }
   std::optional<zx_status_t> epitaph() const { return epitaph_; }
-  bt::iso::testing::FakeIsoStream* fake_iso_stream() {
-    return fake_iso_stream_.get();
+
+  std::unique_ptr<bt::iso::testing::FakeIsoStream>& fake_iso_stream() {
+    return fake_iso_stream_;
   }
 
   std::queue<::fuchsia::bluetooth::le::IsochronousStreamOnEstablishedRequest>
@@ -412,6 +413,74 @@ TEST_F(IsoStreamServerDataTest, DataReceivedBeforeRead) {
             memcmp(view.iso_sdu_fragment().BackingStorage().data(),
                    response.data().data(),
                    sdu_data_size));
+}
+
+TEST_F(IsoStreamServerDataTest, WriteDataSuccess) {
+  server()->OnStreamEstablished(fake_iso_stream()->GetWeakPtr(),
+                                kCisParameters);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fake_iso_stream());
+
+  std::vector<uint8_t> data = {0x01, 0x02, 0x03, 0x04, 0x05};
+  std::vector<uint8_t> data_copy = data;
+
+  fuchsia::bluetooth::le::IsochronousStream_Write_Result result;
+  fuchsia::bluetooth::le::IsochronousStream::WriteCallback fidl_cb =
+      [&result](fuchsia::bluetooth::le::IsochronousStream_Write_Result
+                    result_received) { result = std::move(result_received); };
+
+  fuchsia::bluetooth::le::IsochronousStreamWriteRequest request;
+  request.set_data(std::move(data));
+
+  (*client())->Write(std::move(request), std::move(fidl_cb));
+  RunLoopUntilIdle();
+
+  // Validate that the write operation was successful
+  ASSERT_FALSE(result.is_err());
+
+  // Extract the sent data from the queue
+  auto& sent_data_queue = fake_iso_stream()->GetSentDataQueue();
+  ASSERT_EQ(sent_data_queue.size(), 1u);
+
+  const std::vector<std::byte>& sent_bytes_from_queue = sent_data_queue.front();
+
+  std::vector<uint8_t> converted_sent_data(sent_bytes_from_queue.size());
+  std::transform(sent_bytes_from_queue.begin(),
+                 sent_bytes_from_queue.end(),
+                 converted_sent_data.begin(),
+                 [](std::byte b) { return static_cast<uint8_t>(b); });
+
+  // Validate sent data matches original data that was passed to write()
+  EXPECT_EQ(converted_sent_data, data_copy);
+}
+
+TEST_F(IsoStreamServerDataTest, WriteDataFailsWhenStreamClosed) {
+  server()->OnStreamEstablished(fake_iso_stream()->GetWeakPtr(),
+                                kCisParameters);
+  RunLoopUntilIdle();
+  ASSERT_TRUE(fake_iso_stream());
+
+  fake_iso_stream()->Close();
+  fake_iso_stream().reset();
+  ASSERT_FALSE(fake_iso_stream());
+
+  std::vector<uint8_t> data = {0x01, 0x02, 0x03, 0x04, 0x05};
+  fuchsia::bluetooth::le::IsochronousStream_Write_Result result;
+
+  fuchsia::bluetooth::le::IsochronousStream::WriteCallback fidl_cb =
+      [&result](fuchsia::bluetooth::le::IsochronousStream_Write_Result
+                    result_received) { result = std::move(result_received); };
+
+  fuchsia::bluetooth::le::IsochronousStreamWriteRequest request;
+  request.set_data(std::move(data));
+
+  (*client())->Write(std::move(request), std::move(fidl_cb));
+  RunLoopUntilIdle();
+
+  // Verify that the channel was closed with the correct epitaph
+  auto status = epitaph();
+  ASSERT_TRUE(status.has_value());
+  EXPECT_EQ(*status, ZX_ERR_BAD_STATE);
 }
 
 // Attempting to Read() twice from the FIDL interface without receiving any data
