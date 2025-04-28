@@ -634,7 +634,7 @@ template <typename ValueType, typename SizeType>
 void BasicInlineDeque<ValueType, SizeType>::resize(size_type new_size,
                                                    const value_type& value) {
   if (size() < new_size) {
-    Append(std::min(max_size(), new_size) - size(), value);
+    Append(new_size - size(), value);
   } else {
     while (size() > new_size) {
       pop_back();

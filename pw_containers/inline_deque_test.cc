@@ -588,16 +588,6 @@ TEST(InlineDeque, Modify_Resize_Larger) {
   }
 }
 
-TEST(InlineDeque, Modify_Resize_LargerThanMax) {
-  InlineDeque<CopyOnly, 10> deque;
-  deque.resize(1000, CopyOnly(123));
-
-  EXPECT_EQ(deque.size(), 10u);
-  for (auto& i : deque) {
-    EXPECT_EQ(i.value, 123);
-  }
-}
-
 TEST(InlineDeque, Modify_Resize_Smaller) {
   InlineDeque<CopyOnly, 10> deque(9, CopyOnly(123));
   deque.resize(3, CopyOnly(123));
