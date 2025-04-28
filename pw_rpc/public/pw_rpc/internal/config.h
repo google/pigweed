@@ -71,6 +71,15 @@
 /// be configured for pw_sync:mutex.
 ///
 /// This is enabled by default.
+///
+/// Note: The dependencies of pw_rpc depend on the value of
+/// PW_RPC_USE_GLOBAL_MUTEX. When building pw_rpc with Bazel, you should NOT set
+/// this module config value directly. Instead, tell the build system which
+/// value you wish to select by adding one of the following constraint_values to
+/// the target platform:
+///
+///   - `@pigweed//pw_rpc:use_global_mutex_true` (the default)
+///   - `@pigweed//pw_rpc:use_global_mutex_false`
 #ifndef PW_RPC_USE_GLOBAL_MUTEX
 #define PW_RPC_USE_GLOBAL_MUTEX 1
 #endif  // PW_RPC_USE_GLOBAL_MUTEX
