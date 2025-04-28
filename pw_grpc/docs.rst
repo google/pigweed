@@ -29,3 +29,14 @@ responses.
 
 Refer to the ``test_pw_rpc_server.cc`` file for detailed usage example of how to
 integrate into a ``pw_rpc`` network.
+
+-----
+Build
+-----
+In order to use this module, a few config override for the ``pw_rpc`` module
+must be set. ``PW_RPC_COMPLETION_REQUEST_CALLBACK=1`` and
+``PW_RPC_METHOD_STORES_TYPE=1``.
+
+If you are using bazel, you can include an array providing these defines via
+``load("pw_grpc:config.bzl", "PW_GRPC_PW_RPC_CONFIG_OVERRIDES");`` and add those
+to your ``//pw_rpc:config_override`` target.

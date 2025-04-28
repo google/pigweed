@@ -17,7 +17,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_test")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
-load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:compatibility.bzl", "boolean_constraint_value", "incompatible_with_mcu")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "pw_proto_filegroup",
@@ -25,6 +25,7 @@ load(
     "pwpb_rpc_proto_library",
 )
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
+load(":config.bzl", "PW_GRPC_PW_RPC_CONFIG_OVERRIDES")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -35,6 +36,25 @@ log_defines = [
     "PW_LOG_MODULE_NAME=\\\"GRPC\\\"",
     "PW_LOG_LEVEL=PW_LOG_LEVEL_INFO",
 ]
+
+# In order to use this module, it must be explicitly enabled by the platform
+# since it requires a non-default pw_rpc config_override to build and function.
+# The required pw_rpc config options are provided by the
+# PW_GRPC_PW_RPC_CONFIG_OVERRIDES defines array in config.bzl.
+#
+# Since we can't automatically determine whether those overrides are set, we
+# require the module to be explicitly enabled using this constraint.
+boolean_constraint_value(
+    name = "enabled",
+)
+
+# Required config options to apply to //pw_rpc:config_override. This can be used
+# to override the pw_rpc config on the command line or on a platforms flags:
+#   --//pw_rpc:config_override=//pw_grpc:pw_rpc_config
+cc_library(
+    name = "pw_rpc_config",
+    defines = PW_GRPC_PW_RPC_CONFIG_OVERRIDES,
+)
 
 cc_library(
     name = "connection",
@@ -217,15 +237,6 @@ pwpb_rpc_proto_library(
     name = "echo_pwpb_rpc",
     pwpb_proto_library_deps = [":echo_pwpb"],
     deps = [":echo_proto"],
-)
-
-# Required config options to apply to //pw_rpc:config_override
-cc_library(
-    name = "pw_rpc_config",
-    defines = [
-        "PW_RPC_COMPLETION_REQUEST_CALLBACK=1",
-        "PW_RPC_METHOD_STORES_TYPE=1",
-    ],
 )
 
 config_setting(
