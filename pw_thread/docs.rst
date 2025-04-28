@@ -585,6 +585,13 @@ currently running thread and produce symbolized thread dumps.
   Snapshot integration is a work-in-progress and may see significant API
   changes.
 
+--------------
+Thread Checker
+--------------
+.. doxygenclass:: pw::ThreadChecker
+   :members:
+.. doxygenclass:: pw::LazyInitThreadChecker
+   :members:
 
 .. toctree::
    :hidden:

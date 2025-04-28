@@ -394,6 +394,7 @@ _doxygen_input_files = [  # keep-sorted: start
   "$dir_pw_sys_io/public/pw_sys_io/sys_io.h",
   "$dir_pw_system/public/pw_system/system.h",
   "$dir_pw_thread/public/pw_thread/attrs.h",
+  "$dir_pw_thread/public/pw_thread/checker.h",
   "$dir_pw_thread/public/pw_thread/context.h",
   "$dir_pw_thread/public/pw_thread/internal/priority.h",
   "$dir_pw_thread/public/pw_thread/options.h",

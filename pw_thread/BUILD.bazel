@@ -321,6 +321,19 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "checker",
+    hdrs = [
+        "public/pw_thread/checker.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":config",
+        ":thread",
+        "//pw_sync:lock_annotations",
+    ],
+)
+
 # To instantiate this as a pw_cc_test, depend on this pw_cc_library and the
 # pw_cc_library which implements the backend for non_portable_test_thread_options. See
 # //pw_thread_stl:thread_backend_test as an example.
@@ -524,6 +537,7 @@ filegroup(
     name = "doxygen",
     srcs = [
         "public/pw_thread/attrs.h",
+        "public/pw_thread/checker.h",
         "public/pw_thread/context.h",
         "public/pw_thread/internal/priority.h",
         "public/pw_thread/options.h",

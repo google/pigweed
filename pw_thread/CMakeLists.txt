@@ -203,6 +203,17 @@ pw_add_library(pw_thread.snapshot STATIC
     pw_log
 )
 
+pw_add_library(pw_thread.checker INTERFACE
+  HEADERS
+    public/pw_thread/checker.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_sync.lock_annotations
+    pw_thread.config
+    pw_thread.thread
+)
+
 pw_proto_library(pw_thread.protos
   SOURCES
     pw_thread_protos/thread.proto

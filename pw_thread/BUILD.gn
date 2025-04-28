@@ -201,6 +201,16 @@ pw_source_set("snapshot") {
   ]
 }
 
+pw_source_set("checker") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_thread/checker.h" ]
+  public_deps = [
+    ":config",
+    ":thread",
+    "$dir_pw_sync:lock_annotations",
+  ]
+}
+
 pw_source_set("thread_info") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ dir_pw_span ]
