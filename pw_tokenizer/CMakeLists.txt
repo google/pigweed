@@ -195,6 +195,7 @@ pw_add_test(pw_tokenizer.detokenize_test
     detokenize_test.cc
     pw_tokenizer_private/tokenize_test.h
   PRIVATE_DEPS
+    pw_base64
     pw_tokenizer.decoder
     pw_tokenizer.detokenizer_elf_test_blob
     pw_stream

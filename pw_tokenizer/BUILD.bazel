@@ -114,6 +114,7 @@ cc_library(
         "public/pw_tokenizer/token_database.h",
     ],
     implementation_deps = [
+        "//pw_base64",
         "//pw_elf:reader",
     ],
     strip_include_prefix = "public",
@@ -251,6 +252,7 @@ pw_cc_test(
         "detokenize_test.cc",
     ],
     deps = [
+        ":base64",
         ":decoder",
         ":detokenizer_elf_test_blob",
         "//pw_stream",

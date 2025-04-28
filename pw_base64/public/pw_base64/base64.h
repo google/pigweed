@@ -55,7 +55,7 @@ size_t pw_Base64Decode(const char* base64,
                        size_t base64_size_bytes,
                        void* output);
 
-// Returns true if provided char is a valid Base64 character.
+// Returns true if provided char is a valid non-padding Base64 character.
 bool pw_Base64IsValidChar(char base64_char);
 
 // Returns true if the provided string is valid Base64 encoded data. Accepts
@@ -220,7 +220,7 @@ inline bool IsValid(std::string_view base64) {
 /// @param[in] base64 The character to check. Can be encoded with either the
 /// standard (`+/`) or URL-safe (`-_`) alphabet.
 ///
-/// @returns `true` if the provided character is a valid Base64 character.
+/// @returns `true` if the character is a valid non-padding Base64 character.
 inline bool IsValidChar(char base64) { return pw_Base64IsValidChar(base64); }
 
 }  // namespace pw::base64

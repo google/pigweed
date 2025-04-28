@@ -18,6 +18,7 @@
 #include <string_view>
 
 #include "pw_stream/memory_stream.h"
+#include "pw_tokenizer/base64.h"
 #include "pw_tokenizer/example_binary_with_tokenized_strings.h"
 #include "pw_unit_test/framework.h"
 
@@ -36,26 +37,23 @@ auto TestCases(Args... args) {
   return std::array<Case, sizeof...(Args)>{args...};
 }
 
-// Database with the following entries and arbitrary token values:
-// {
-//   0x00000001: "One",
-//   0x00000005: "TWO",
-//   0x000000ff: "333",
-//   0xDDEEEEFF: "One",
-//   0xEEEEEEEE: "$AQAAAA==",  # Nested Base64 token for "One"
-// }
+// Binary format token database with 8 entries.
 constexpr char kTestDatabase[] =
     "TOKENS\0\0"
-    "\x06\x00\x00\x00"  // Number of tokens in this database.
+    "\x08\x00\x00\x00"  // Number of tokens in this database.
     "\0\0\0\0"
     "\x01\x00\x00\x00----"
     "\x05\x00\x00\x00----"
+    "\xd7\x00\x00\x00----"
+    "\xeb\x00\x00\x00----"
     "\xFF\x00\x00\x00----"
     "\xFF\xEE\xEE\xDD----"
     "\xEE\xEE\xEE\xEE----"
     "\x9D\xA7\x97\xF8----"
     "One\0"
     "TWO\0"
+    "d7 encodes as 16==\0"
+    "$64==+\0"  // recursively decodes to itself with a + after it
     "333\0"
     "FOUR\0"
     "$AQAAAA==\0"
@@ -287,7 +285,13 @@ TEST_F(Detokenize, Base64_NoArguments) {
            Case{"$123456==" FOUR, "$123456==FOUR"},
            Case{NEST_ONE, "One"},
            Case{NEST_ONE NEST_ONE NEST_ONE, "OneOneOne"},
-           Case{FOUR "$" ONE NEST_ONE "?", "FOUR$OneOne?"})) {
+           Case{FOUR "$" ONE NEST_ONE "?", "FOUR$OneOne?"},
+           Case{"$16==", "d7 encodes as 16=="},
+           Case{"${unknown domain}16==", "${unknown domain}16=="},
+           Case{"${}16==", "d7 encodes as 16=="},
+           Case{"${ }16==", "d7 encodes as 16=="},
+           Case{"${\r\t\n }16==", "d7 encodes as 16=="},
+           Case{"$64==", "$64==++++"})) {
     EXPECT_EQ(detok_.DetokenizeText(data), expected);
   }
 }
@@ -296,6 +300,7 @@ TEST_F(Detokenize, OptionallyTokenizedData) {
   for (auto [data, expected] : TestCases(
            Case{ONE, "One"},
            Case{"\1\0\0\0", "One"},
+           Case{"$====AQAAAA==", "$====AQAAAA=="},
            Case{TWO, "TWO"},
            Case{THREE, "333"},
            Case{FOUR, "FOUR"},
@@ -365,9 +370,11 @@ TEST_F(DetokenizeWithArgs, Empty) {
 TEST_F(DetokenizeWithArgs, Successful) {
   // Run through test cases, but don't include cases that use %hhu or %llu since
   // these are not currently supported in arm-none-eabi-gcc.
-  for (auto [data, expected] : TestCases(
+  for (const auto& [data, expected] : TestCases(
            Case{"\x0A\x0B\x0C\x0D\5force\4Luke"sv, "Use the force, Luke."},
            Case{"\x0E\x0F\x00\x01\4\4them"sv, "Now there are 2 of them!"},
+           Case{"\x0E\x0F\x00\x01\x80\x01\4them"sv,
+                "Now there are 64 of them!"},
            Case{"\xAA\xAA\xAA\xAA\xfc\x01"sv, "~!"},
            Case{"\xCC\xCC\xCC\xCC\xfe\xff\x07"sv, "65535!"},
            Case{"\xDD\xDD\xDD\xDD\xfe\xff\x07"sv, "65535!"},
@@ -375,6 +382,16 @@ TEST_F(DetokenizeWithArgs, Successful) {
            Case{"\xEE\xEE\xEE\xEE\xfe\xff\x07"sv, "65535!"},
            Case{"\xEE\xEE\xEE\xEE\xfe\xff\xff\xff\x1f"sv, "4294967295!"})) {
     EXPECT_EQ(detok_.Detokenize(data).BestString(), expected);
+
+    // Encode the test cases to Base64, then decode them with DetokenizeText.
+    std::string text(pw::tokenizer::Base64EncodedBufferSize(data.size()), '\0');
+    ASSERT_EQ(text.size() - 1,  // subtract 1 for unnecessary \0
+              pw::tokenizer::PrefixedBase64Encode(pw::as_bytes(pw::span(data)),
+                                                  text));
+    ASSERT_EQ(text.back(), '\0');
+    text.pop_back();
+
+    EXPECT_EQ(detok_.DetokenizeText(text), expected);
   }
 }
 

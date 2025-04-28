@@ -261,6 +261,7 @@ pw_test("decode_test") {
 pw_test("detokenize_test") {
   sources = [ "detokenize_test.cc" ]
   deps = [
+    ":base64",
     ":decoder",
     ":detokenizer_elf_test_blob",
     dir_pw_stream,

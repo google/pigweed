@@ -53,6 +53,28 @@ Using the detokenizing tools with the database, the logs can be decoded:
    encoded. For projects that wish to interleave tokenized with plain text,
    using Base64 is a worthwhile tradeoff.
 
+.. _module-pw_tokenizer-base64-decoding:
+
+---------------------
+Nested detokenization
+---------------------
+The Python, C++, TypeScript, and Java detokenization tools support detokenizing
+:ref:`nested messages <module-pw_tokenizer-nested-arguments>`.
+
+.. tip::
+   The detokenization tools support recursive detokenization for Base64, base
+   10, or base 16 messages. Tokenized strings found in detokenized text are
+   detokenized recursively, so nested messages can be passed as arguments.
+
+   For example, the tokenized string for "Wow!" is ``$RhYjmQ==``. This could be
+   passed as an argument to the printf-style string ``Nested message: %s``,
+   which encodes to ``$pEVTYQkkUmhZam1RPT0=``. The detokenizer would decode the
+   message as follows:
+
+   ::
+
+     "$pEVTYQkkUmhZam1RPT0=" → "Nested message: $RhYjmQ==" → "Nested message: Wow!"
+
 ------------------------
 Detokenization in Python
 ------------------------
@@ -82,33 +104,8 @@ Base64, or plaintext UTF-8, use
 determine the correct method to detokenize and always provide a printable
 string.
 
-.. _module-pw_tokenizer-base64-decoding:
-
-Decoding Base64
-===============
-The Python ``Detokenizer`` class supports decoding and detokenizing prefixed
-Base64 messages with ``detokenize_base64`` and related methods.
-
-.. tip::
-   The Python detokenization tools support recursive detokenization for prefixed
-   Base64 text. Tokenized strings found in detokenized text are detokenized, so
-   prefixed Base64 messages can be passed as ``%s`` arguments.
-
-   For example, the tokenized string for "Wow!" is ``$RhYjmQ==``. This could be
-   passed as an argument to the printf-style string ``Nested message: %s``, which
-   encodes to ``$pEVTYQkkUmhZam1RPT0=``. The detokenizer would decode the message
-   as follows:
-
-   ::
-
-     "$pEVTYQkkUmhZam1RPT0=" → "Nested message: $RhYjmQ==" → "Nested message: Wow!"
-
-Base64 decoding is supported in C++ or C with the
-``pw::tokenizer::PrefixedBase64Decode`` or ``pw_tokenizer_PrefixedBase64Decode``
-functions.
-
 Investigating undecoded Base64 messages
----------------------------------------
+=======================================
 Tokenized messages cannot be decoded if the token is not recognized. The Python
 package includes the ``parse_message`` tool, which parses tokenized Base64
 messages without looking up the token in a database. This tool attempts to guess
@@ -124,7 +121,7 @@ The tool is executed by passing Base64 tokenized messages, with or without the
 see full usage information.
 
 Example
-^^^^^^^
+-------
 .. code-block::
 
    $ python -m pw_tokenizer.parse_message '$329JMwA=' koSl524TRkFJTEVEX1BSRUNPTkRJVElPTgJPSw== --specs %s %d
@@ -253,13 +250,13 @@ interpreted as plain text.
 Detokenization in C++
 ---------------------
 The C++ detokenization libraries can be used in C++ or any language that can
-call into C++ with a C-linkage wrapper, such as Java or Rust. A reference
-Java Native Interface (JNI) implementation is provided.
+call into C++ with a C-linkage wrapper, such as Java or Rust. A reference Java
+Native Interface (JNI) implementation is provided.
 
-The C++ detokenization library uses binary-format token databases (created with
-``database.py create --type binary``). Read a binary format database from a
-file or include it in the source code. Pass the database array to
-``TokenDatabase::Create``, and construct a detokenizer.
+The C++ detokenization library uses a CSV, binary-format (created with
+``database.py create --type binary``), or ELF section format token database.
+Read the database from a file or include it in the source code. Pass the
+database array to ``TokenDatabase::Create``, and construct a detokenizer.
 
 .. code-block:: cpp
 

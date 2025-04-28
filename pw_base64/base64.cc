@@ -60,7 +60,7 @@ constexpr uint8_t kX = 0xff;  // Value used for invalid characters
 // character, which is +.
 constexpr uint8_t kDecodeTable[] = {
     62, kX, 62, kX, 63, 52, 53, 54, 55, 56,  //  0 - 09
-    57, 58, 59, 60, 61, kX, kX, kX, 0,  kX,  // 10 - 19
+    57, 58, 59, 60, 61, kX, kX, kX, kX, kX,  // 10 - 19
     kX, kX, 0,  1,  2,  3,  4,  5,  6,  7,   // 20 - 29
     8,  9,  10, 11, 12, 13, 14, 15, 16, 17,  // 30 - 39
     18, 19, 20, 21, 22, 23, 24, 25, kX, kX,  // 40 - 49

@@ -408,6 +408,20 @@ TEST(Base64, IsValid) {
   }
 }
 
+TEST(Base64, IsValidCharValid) {
+  for (char ch : {'0', '9', 'A', 'Z', 'a', 'Z', '-', '_', '/', '+'}) {
+    ASSERT_TRUE(IsValidChar(ch));
+  }
+}
+
+TEST(Base64, IsValidCharInvalid) {
+  for (char ch : "=!@#$%^&*()\\") {
+    ASSERT_FALSE(IsValidChar(ch));
+  }
+  ASSERT_FALSE(IsValidChar(static_cast<char>(128)));
+  ASSERT_FALSE(IsValidChar(static_cast<char>(255)));
+}
+
 TEST(Base64, IsValidIncorrectLength) {
   EXPECT_FALSE(IsValid("a"));
   EXPECT_FALSE(IsValid("aa"));
@@ -419,6 +433,9 @@ TEST(Base64, IsValidIncorrectLength) {
 }
 
 TEST(Base64, IsValidIncorrectPadding) {
+  EXPECT_FALSE(IsValid("AAA=aaaa"));
+  EXPECT_FALSE(IsValid("AAAAaa=a"));
+  EXPECT_FALSE(IsValid("AAA=aa=a"));
   EXPECT_FALSE(IsValid("AAAAaa=a"));
   EXPECT_TRUE(IsValid("AAAAaaa="));
 
@@ -428,6 +445,7 @@ TEST(Base64, IsValidIncorrectPadding) {
   EXPECT_FALSE(IsValid("="));
   EXPECT_FALSE(IsValid("=="));
   EXPECT_FALSE(IsValid("==="));
+  EXPECT_FALSE(IsValid("===="));
   EXPECT_FALSE(IsValid("====="));
 }
 
