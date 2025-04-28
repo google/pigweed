@@ -249,6 +249,21 @@ inline constexpr OpCode kEnhancedSetupSynchronousConnection =
 inline constexpr OpCode kEnhancedAcceptSynchronousConnectionRequest =
     LinkControlOpCode(0x003E);
 
+// ======= Link Policy Commands ======
+// Core Spec v6.0 Vol 4, Part E, Section 7.2
+inline constexpr uint8_t kLinkPolicyOGF = 0x02;
+constexpr OpCode LinkPolicyOpCode(const uint16_t ocf) {
+  return DefineOpCode(kLinkPolicyOGF, ocf);
+}
+
+// =========================
+// Sniff Mode Command (v1.1)
+inline constexpr OpCode kSniffMode = LinkPolicyOpCode(0x0003);
+
+// ==============================
+// Exit Sniff Mode Command (v1.1)
+inline constexpr OpCode kExitSniffMode = LinkPolicyOpCode(0x0004);
+
 // ======= Controller & Baseband Commands =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.3
 inline constexpr uint8_t kControllerAndBasebandOGF = 0x03;
@@ -534,6 +549,10 @@ inline constexpr EventCode kRoleChangeEventCode = 0x12;
 // ========================================
 // Number Of Completed Packets Event (v1.1)
 inline constexpr EventCode kNumberOfCompletedPacketsEventCode = 0x13;
+
+// ========================
+// Mode Change Event (v1.1)
+inline constexpr EventCode kModeChangeEventCode = 0x14;
 
 // ======================================
 // PIN Code Request Event (v1.1) (BR/EDR)
