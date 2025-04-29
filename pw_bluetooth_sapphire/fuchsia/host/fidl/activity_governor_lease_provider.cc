@@ -66,18 +66,22 @@ ActivityGovernorLeaseProvider::ActivityGovernorLeaseProvider(
     fidl::ServerEnd<SuspendBlocker> suspend_blocker_server,
     async_dispatcher_t* dispatcher)
     : governor_(std::move(activity_governor_client)),
+      token_([](const auto& t) -> bool { return static_cast<bool>(t); }),
       binding_ref_(fidl::BindServer(
           dispatcher, std::move(suspend_blocker_server), this)) {}
 
 pw::Result<pw::bluetooth_sapphire::Lease>
-ActivityGovernorLeaseProvider::Acquire(const char*) {
+ActivityGovernorLeaseProvider::Acquire(const char* name) {
   ref_count_++;
 
-  if (!token_ && state_ == State::kSuspending) {
+  if (!*token_ && state_ == State::kSuspending) {
     AcquireWakeLease();
   }
 
-  auto lease_dropped_cb = [self = weak_ptr_factory_.GetWeakPtr()]() {
+  inspect::Node lease_node = node_.CreateChild(name);
+
+  auto lease_dropped_cb = [self = weak_ptr_factory_.GetWeakPtr(),
+                           node = std::move(lease_node)]() {
     if (self.is_alive()) {
       self->OnLeaseDropped();
     }
@@ -86,16 +90,22 @@ ActivityGovernorLeaseProvider::Acquire(const char*) {
   return pw::bluetooth_sapphire::Lease(std::move(lease_dropped_cb));
 }
 
+void ActivityGovernorLeaseProvider::AttachInspect(inspect::Node& parent,
+                                                  const char* name) {
+  node_ = parent.CreateChild(name);
+  token_.AttachInspect(node_, "token");
+}
+
 void ActivityGovernorLeaseProvider::OnLeaseDropped() {
   PW_DCHECK_UINT_NE(ref_count_, 0u);
   ref_count_--;
   if (ref_count_ == 0) {
-    token_.reset();
+    token_.Set(std::nullopt);
   }
 }
 
 void ActivityGovernorLeaseProvider::AcquireWakeLease() {
-  PW_DCHECK(!token_);
+  PW_DCHECK(!*token_);
   fidl::Request<ActivityGovernor::AcquireWakeLease> request;
   request.name() = kLeaseName;
 
@@ -108,13 +118,13 @@ void ActivityGovernorLeaseProvider::AcquireWakeLease() {
            result.error_value().FormatDescription().c_str());
     return;
   }
-  token_ = std::move(result->token());
+  token_.Set(std::move(result->token()));
 }
 
 void ActivityGovernorLeaseProvider::BeforeSuspend(
     BeforeSuspendCompleter::Sync& completer) {
   state_ = State::kSuspending;
-  if (!token_ && ref_count_ != 0) {
+  if (!*token_ && ref_count_ != 0) {
     AcquireWakeLease();
   }
   completer.Reply();

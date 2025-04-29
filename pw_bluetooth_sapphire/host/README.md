@@ -32,7 +32,7 @@ to the Fuchsia system.
 
 To query the current state of the `bt-host` Inspect hierarchy through `ffx` tooling, run
 
-`ffx inspect show bootstrap/driver_manager --file class/bt-host/000.inspect`
+`ffx inspect show core/bluetooth-core/bt-host-collection`
 
 ### Hierarchy
 ```
@@ -221,4 +221,9 @@ adapter:
                 peer_id
                 duration_s
                 @time
+lease_provider:
+    token
+    // Child node for each Lease, for example:
+    AclDataChannel:
+name
 ```

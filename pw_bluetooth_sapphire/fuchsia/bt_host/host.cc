@@ -44,6 +44,7 @@ BtHostComponent::BtHostComponent(
   inspector_.root().RecordString("name", device_path_);
 
   if (activity_governor) {
+    activity_governor->AttachInspect(inspector_.root(), "lease_provider");
     lease_provider_.emplace<std::unique_ptr<ActivityGovernorLeaseProvider>>(
         std::move(activity_governor));
   }

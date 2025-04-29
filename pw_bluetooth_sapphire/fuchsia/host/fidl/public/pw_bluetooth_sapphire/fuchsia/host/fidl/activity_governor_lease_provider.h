@@ -16,6 +16,8 @@
 
 #include <fidl/fuchsia.power.system/cpp/fidl.h>
 
+#include "pw_bluetooth_sapphire/internal/host/common/inspect.h"
+#include "pw_bluetooth_sapphire/internal/host/common/inspectable.h"
 #include "pw_bluetooth_sapphire/internal/host/common/macros.h"
 #include "pw_bluetooth_sapphire/internal/host/common/weak_self.h"
 #include "pw_bluetooth_sapphire/lease.h"
@@ -45,6 +47,8 @@ class ActivityGovernorLeaseProvider final
   ~ActivityGovernorLeaseProvider() override = default;
   pw::Result<pw::bluetooth_sapphire::Lease> Acquire(const char* name) override;
 
+  void AttachInspect(inspect::Node& parent, const char* name);
+
  private:
   enum class State {
     kResumed,
@@ -62,9 +66,10 @@ class ActivityGovernorLeaseProvider final
           metadata,
       fidl::UnknownMethodCompleter::Sync& completer) override {}
 
+  inspect::Node node_;
   State state_ = State::kResumed;
   fidl::SyncClient<fuchsia_power_system::ActivityGovernor> governor_;
-  std::optional<::fuchsia_power_system::LeaseToken> token_;
+  bt::BoolInspectable<std::optional<::fuchsia_power_system::LeaseToken>> token_;
   uint16_t ref_count_ = 0;
   std::optional<fidl::ServerBindingRef<::fuchsia_power_system::SuspendBlocker>>
       binding_ref_;

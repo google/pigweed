@@ -121,10 +121,16 @@ class Inspectable {
 
   const ValueT* operator->() const { return &value_; }
 
-  // Update value and property. This is the ONLY place the value should be
-  // updated directly.
+  // Update value and property, making a copy of `value`.
   const ValueT& Set(const ValueT& value) {
     value_ = value;
+    UpdateProperty();
+    return value_;
+  }
+
+  // Update value and property, moving `value`.
+  const ValueT& Set(ValueT&& value) {
+    value_ = std::move(value);
     UpdateProperty();
     return value_;
   }

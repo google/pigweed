@@ -21,9 +21,13 @@
 #include "lib/async/cpp/task.h"
 #include "lib/async/cpp/wait.h"
 #include "lib/async_patterns/testing/cpp/dispatcher_bound.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/inspect_util.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/loop_fixture.h"
 
 using SuspendBlocker = fuchsia_power_system::SuspendBlocker;
+using namespace inspect::testing;
+using bt::testing::GetInspectValue;
+using bt::testing::ReadInspect;
 
 namespace bthost {
 namespace {
@@ -116,6 +120,7 @@ class ActivityGovernorLeaseProviderTest : public bt::testing::TestLoopFixture {
     provider_ = ActivityGovernorLeaseProvider::Create(std::move(client_end),
                                                       dispatcher());
     ASSERT_TRUE(provider_);
+    provider_->AttachInspect(inspector_.GetRoot(), "lease_provider");
 
     std::optional<fidl::ClientEnd<fuchsia_power_system::SuspendBlocker>>
         suspend_blocker =
@@ -136,7 +141,10 @@ class ActivityGovernorLeaseProviderTest : public bt::testing::TestLoopFixture {
     return suspend_blocker_.value();
   }
 
+  inspect::Inspector& inspector() { return inspector_; }
+
  private:
+  inspect::Inspector inspector_;
   std::unique_ptr<ActivityGovernorLeaseProvider> provider_;
   std::optional<fidl::Client<fuchsia_power_system::SuspendBlocker>>
       suspend_blocker_;
@@ -234,6 +242,28 @@ TEST_F(ActivityGovernorLeaseProviderTest, AcquireLeaseAfterSuspend) {
   lease = pw::Status::Cancelled();
   RunLoopUntilIdle();
   EXPECT_EQ(lease_closed_count, 1);
+}
+
+TEST_F(ActivityGovernorLeaseProviderTest, Inspect) {
+  auto token_value = GetInspectValue<inspect::BoolPropertyValue>(
+      inspector(), {"lease_provider", "token"});
+  ASSERT_TRUE(token_value);
+  EXPECT_EQ(*token_value, false);
+
+  pw::Result<pw::bluetooth_sapphire::Lease> lease =
+      provider().Acquire("test_lease");
+  ASSERT_TRUE(lease.ok());
+
+  inspect::Hierarchy hierarchy = ReadInspect(inspector());
+  const inspect::Hierarchy* node =
+      hierarchy.GetByPath({"lease_provider", "test_lease"});
+  EXPECT_TRUE(node);
+
+  lease = pw::Status::Cancelled();
+
+  hierarchy = ReadInspect(inspector());
+  node = hierarchy.GetByPath({"lease_provider", "test_lease"});
+  EXPECT_FALSE(node);
 }
 
 }  // namespace
