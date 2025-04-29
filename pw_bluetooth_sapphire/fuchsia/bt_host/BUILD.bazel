@@ -66,6 +66,7 @@ cc_library(
         "//pw_bluetooth_sapphire:null_lease_provider",
         "//pw_bluetooth_sapphire/fuchsia/host/controllers",
         "//pw_bluetooth_sapphire/fuchsia/host/fidl",
+        "//pw_bluetooth_sapphire/fuchsia/host/fidl:activity_governor_lease_provider",
         "//pw_bluetooth_sapphire/fuchsia/lib/fidl",
         "//pw_bluetooth_sapphire/host:stack",
         "//pw_bluetooth_sapphire/host/common",
@@ -95,6 +96,7 @@ fuchsia_cc_binary(
     deps = [
         ":sources",
         "//pw_log_fuchsia",
+        "@fuchsia_sdk//fidl/fuchsia.power.system:fuchsia.power.system_cpp",
         "@fuchsia_sdk//fidl/fuchsia.scheduler:fuchsia.scheduler_cpp",
         "@fuchsia_sdk//pkg/component_incoming_cpp",
     ],
@@ -116,6 +118,7 @@ fuchsia_structured_config_values(
     cvf_output_name = "bt-host",
     values = {
         "device_path": "/dev/class/bt-hci/000",
+        "enable_suspend": False,
         "legacy_pairing_enabled": False,
         "sco_offload_path_index": 6,
     },

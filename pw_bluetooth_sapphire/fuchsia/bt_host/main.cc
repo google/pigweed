@@ -22,10 +22,12 @@
 
 #include "fidl/fuchsia.bluetooth.host/cpp/fidl.h"
 #include "fidl/fuchsia.hardware.bluetooth/cpp/fidl.h"
+#include "fidl/fuchsia.power.system/cpp/fidl.h"
 #include "fidl/fuchsia.scheduler/cpp/fidl.h"
 #include "host.h"
 #include "lib/component/incoming/cpp/protocol.h"
 #include "pw_bluetooth_sapphire/fuchsia/bt_host/bt_host_config.h"
+#include "pw_bluetooth_sapphire/fuchsia/host/fidl/activity_governor_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/common/log.h"
 #include "pw_log/log.h"
 #include "util.h"
@@ -178,8 +180,28 @@ int main() {
   }
   bt_log(INFO, "bt-host", "device_path: %s", config.device_path().c_str());
 
+  std::unique_ptr<bthost::ActivityGovernorLeaseProvider> lease_provider;
+  if (config.enable_suspend()) {
+    zx::result client_end_res =
+        component::Connect<fuchsia_power_system::ActivityGovernor>();
+    if (!client_end_res.is_ok()) {
+      bt_log(ERROR,
+             "bt-host",
+             "Couldn't connect to ActivityGovernor: %s",
+             client_end_res.status_string());
+      return 1;
+    }
+    lease_provider = bthost::ActivityGovernorLeaseProvider::Create(
+        std::move(client_end_res.value()), loop.dispatcher());
+    if (!lease_provider) {
+      bt_log(ERROR, "bt-host", "Couldn't create ActivityGovernorLeaseProvider");
+      return 1;
+    }
+  }
+
   std::unique_ptr<bthost::BtHostComponent> host =
-      bthost::BtHostComponent::Create(loop.dispatcher(), config.device_path());
+      bthost::BtHostComponent::Create(
+          loop.dispatcher(), config.device_path(), std::move(lease_provider));
 
   LifecycleHandler lifecycle_handler(&loop, host->GetWeakPtr());
 

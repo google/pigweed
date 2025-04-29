@@ -20,6 +20,7 @@
 
 #include "fidl/fuchsia.bluetooth.host/cpp/fidl.h"
 #include "fidl/fuchsia.hardware.bluetooth/cpp/fidl.h"
+#include "pw_bluetooth_sapphire/fuchsia/host/fidl/activity_governor_lease_provider.h"
 #include "pw_bluetooth_sapphire/internal/host/gap/adapter.h"
 #include "pw_bluetooth_sapphire/internal/host/gatt/gatt.h"
 #include "pw_bluetooth_sapphire/null_lease_provider.h"
@@ -33,7 +34,9 @@ class BtHostComponent {
  public:
   // Creates a new Host.
   static std::unique_ptr<BtHostComponent> Create(
-      async_dispatcher_t* dispatcher, const std::string& device_path);
+      async_dispatcher_t* dispatcher,
+      const std::string& device_path,
+      std::unique_ptr<ActivityGovernorLeaseProvider> activity_governor);
 
   // Does not override RNG
   static std::unique_ptr<BtHostComponent> CreateForTesting(
@@ -67,14 +70,19 @@ class BtHostComponent {
   WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
-  BtHostComponent(async_dispatcher_t* dispatcher,
-                  const std::string& device_path,
-                  bool initialize_rng);
+  BtHostComponent(
+      async_dispatcher_t* dispatcher,
+      const std::string& device_path,
+      bool initialize_rng,
+      std::unique_ptr<ActivityGovernorLeaseProvider> activity_governor);
+
+  pw::bluetooth_sapphire::LeaseProvider& lease_provider();
 
   pw::async_fuchsia::FuchsiaDispatcher pw_dispatcher_;
 
-  // Use NullLeaseProvider until we are ready to enable power management.
-  pw::bluetooth_sapphire::NullLeaseProvider lease_provider_;
+  std::variant<pw::bluetooth_sapphire::NullLeaseProvider,
+               std::unique_ptr<bthost::ActivityGovernorLeaseProvider>>
+      lease_provider_;
 
   // Path of bt-hci device the component supports
   std::string device_path_;
