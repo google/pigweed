@@ -1116,6 +1116,16 @@ struct SniffModeCommand:
     -- Mandatory Range for Controller: 0 to 0x0028
     [requires: 0x0000 <= this <= 0x7FFF]
 
+
+struct ExitSniffModeCommand:
+  -- 7.2.3 Exit Sniff Mode command (v1.1)
+  -- HCI_Exit_Sniff_Mode
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]  hci.CommandHeader  header
+  $next [+2]         UInt               connection_handle
+    -- Identifies an ACL connection
+    [requires: 0x0000 <= this <= 0x0EFF]
+
 # ========== 7.3 Controller & Baseband Commands ==========
 
 

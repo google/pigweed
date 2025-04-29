@@ -49,6 +49,13 @@ enum LinkType:
   ESCO = 0x02
 
 
+enum AclConnectionMode:
+  [maximum_bits: 8]
+  ACTIVE = 0x00
+  HOLD   = 0x01
+  SNIFF  = 0x02
+
+
 enum EncryptionStatus:
   OFF                                = 0x00
   ON_WITH_E0_FOR_BREDR_OR_AES_FOR_LE = 0x01
@@ -1336,10 +1343,27 @@ struct NumberOfCompletedPacketsEvent:
   let data_length = num_handles*NumberOfCompletedPacketsEventData.$size_in_bytes
   $next [+data_length]  NumberOfCompletedPacketsEventData[]  nocp_data
 
-# 7.7.20 Mode Change event
-# HCI_Mode_Change
-# TODO: b/265052417 - Definition needs to be added
 
+struct ModeChangeEvent:
+  -- 7.7.20 Mode Change event (v1.1)
+  -- HCI_Mode_Change
+  let hdr_size = hci.EventHeader.$size_in_bytes
+  0     [+hdr_size]  hci.EventHeader    header
+  $next [+1]         hci.StatusCode     status
+  $next [+2]         UInt               connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]         AclConnectionMode  current_mode
+  $next [+2]         UInt               interval
+    -- Hold mode:
+    --   Number of baseband slots to wait
+    --   Hold interval = N * 0x625ms (1 Baseband slot)
+    --   Time range: 1.25ms to 40.9s
+    -- Sniff mode:
+    --   Number of baseband slots between sniff anchor points
+    --   Time between sniff anchor points = N * 0x625ms (1 Baseband slot)
+    --   Time range: 1.25ms to 40.9s
+    [requires: 0x0002 <= this <= 0xFFFE]
 
 # 7.7.21 Return Link Keys event
 # HCI_Return_Link_Keys
