@@ -69,13 +69,11 @@ all tests, but this is slow:
 
 Emulator
 ========
-To start the emulator, use one of the following commands:
+To start the emulator, use the following command:
 
 .. code-block::
 
-   bazelisk run @fuchsia_products//:core.x64.emu -- --headless
-   # OR
-   bazelisk run @fuchsia_products//:minimal.arm64.emu -- --headless
+   bazelisk run --config=fuchsia @fuchsia_products//:core.x64.emu -- --headless
 
 To stop the running emulator, use the following command:
 
