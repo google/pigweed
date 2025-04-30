@@ -185,8 +185,8 @@ extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExc
     }
 
     // Return the arch frame for the current thread
-    let mut ss = SCHEDULER_STATE.lock();
-    let newframe = unsafe { (*ss.get_current_arch_thread_state()).frame };
+    let mut sched_state = SCHEDULER_STATE.lock();
+    let newframe = unsafe { (*sched_state.get_current_arch_thread_state()).frame };
     // info!(
     //     "new frame {:08x}: pc {:08x}",
     //     newframe as usize,
