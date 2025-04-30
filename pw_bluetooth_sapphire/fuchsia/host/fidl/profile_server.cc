@@ -667,7 +667,9 @@ void ProfileServer::ScoConnectionServer::Close(zx_status_t epitaph) {
 void ProfileServer::Advertise(
     fuchsia::bluetooth::bredr::ProfileAdvertiseRequest request,
     AdvertiseCallback callback) {
-  if (!request.has_services() || !request.has_receiver()) {
+  const bool has_receiver =
+      request.has_receiver() || request.has_connection_receiver();
+  if (!request.has_services() || !has_receiver) {
     callback(fidlbredr::Profile_Advertise_Result::WithErr(
         fuchsia::bluetooth::ErrorCode::INVALID_ARGUMENTS));
     return;
@@ -728,30 +730,43 @@ void ProfileServer::Advertise(
     registered_definitions.emplace_back(std::move(def.value()));
   }
 
-  fidlbredr::ConnectionReceiverPtr receiver =
-      request.mutable_receiver()->Bind();
-  // Monitor events on the `ConnectionReceiver`. Remove the service if the FIDL
-  // client revokes the service registration.
-  receiver.events().OnRevoke = [this, ad_id = next]() {
-    bt_log(DEBUG,
-           "fidl",
-           "Connection receiver revoked. Ending service advertisement %lu",
-           ad_id);
-    OnConnectionReceiverClosed(ad_id);
-  };
-  // Errors on the `ConnectionReceiver` will result in service unregistration.
-  receiver.set_error_handler([this, ad_id = next](zx_status_t status) {
-    bt_log(DEBUG,
-           "fidl",
-           "Connection receiver closed with error: %s. Ending service "
-           "advertisement %lu",
-           zx_status_get_string(status),
-           ad_id);
-    OnConnectionReceiverClosed(ad_id);
-  });
+  std::optional<ConnectionReceiverVariant> receiver_var;
+  if (request.has_receiver()) {
+    receiver_var = request.mutable_receiver()->Bind();
+  } else if (request.has_connection_receiver()) {
+    receiver_var = request.mutable_connection_receiver()->Bind();
+  } else {
+    // This is checked above, so it should never happen.
+    ZX_PANIC("Missing ConnectionReceiver parameter");
+  }
+  std::visit(
+      [this, next](auto&& receiver) {
+        // Monitor events on the `ConnectionReceiver`. Remove the service if the
+        // FIDL client revokes the service registration.
+        receiver.events().OnRevoke = [this, ad_id = next]() {
+          bt_log(
+              DEBUG,
+              "fidl",
+              "Connection receiver revoked. Ending service advertisement %lu",
+              ad_id);
+          OnConnectionReceiverClosed(ad_id);
+        };
+        // Errors on the `ConnectionReceiver` will result in service
+        // unregistration.
+        receiver.set_error_handler([this, ad_id = next](zx_status_t status) {
+          bt_log(DEBUG,
+                 "fidl",
+                 "Connection receiver closed with error: %s. Ending service "
+                 "advertisement %lu",
+                 zx_status_get_string(status),
+                 ad_id);
+          OnConnectionReceiverClosed(ad_id);
+        });
+      },
+      *receiver_var);
 
   current_advertised_.try_emplace(
-      next, std::move(receiver), registration_handle);
+      next, std::move(*receiver_var), registration_handle);
   advertised_total_ = next;
   fuchsia::bluetooth::bredr::Profile_Advertise_Response result;
   result.set_services(std::move(registered_definitions));
@@ -1024,8 +1039,36 @@ void ProfileServer::OnChannelConnected(
     return;
   }
 
-  it->second.receiver->Connected(
-      peer_id, std::move(fidl_chan.value()), std::move(list));
+  ConnectionReceiverVariant& receiver_var = it->second.receiver;
+  if (auto* receiver =
+          std::get_if<fidl::InterfacePtr<fidlbredr::ConnectionReceiver>>(
+              &receiver_var)) {
+    (*receiver)->Connected(
+        peer_id, std::move(fidl_chan.value()), std::move(list));
+  } else if (auto* receiver = std::get_if<
+                 fidl::InterfacePtr<fidlbredr::ConnectionReceiver2>>(
+                 &receiver_var)) {
+    fidlbredr::ConnectionReceiver2ConnectedRequest request;
+    request.set_peer_id(peer_id);
+    request.set_channel(std::move(fidl_chan.value()));
+    request.set_protocol(std::move(list));
+    // Capture a wake lease until a response is received.
+    pw::bluetooth_sapphire::Lease wake_lease =
+        PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_,
+                                  "ConnectionReceiver2.Connected")
+            .value_or(pw::bluetooth_sapphire::Lease());
+    (*receiver)->Connected(
+        std::move(request),
+        [lease = std::move(wake_lease)](
+            fidlbredr::ConnectionReceiver2_Connected_Result result) {
+          if (result.is_framework_err()) {
+            bt_log(WARN,
+                   "fidl",
+                   "ConnectionReceiver2.Connected error: %d",
+                   fidl::ToUnderlying(result.framework_err()));
+          }
+        });
+  }
 }
 
 void ProfileServer::OnConnectionReceiverClosed(uint64_t ad_id) {

@@ -221,6 +221,10 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
     WeakSelf<ScoConnectionServer> weak_self_;
   };
 
+  using ConnectionReceiverVariant = std::variant<
+      fidl::InterfacePtr<fuchsia::bluetooth::bredr::ConnectionReceiver>,
+      fidl::InterfacePtr<fuchsia::bluetooth::bredr::ConnectionReceiver2>>;
+
   // fuchsia::bluetooth::bredr::Profile overrides:
   void Advertise(fuchsia::bluetooth::bredr::ProfileAdvertiseRequest request,
                  AdvertiseCallback callback) override;
@@ -297,13 +301,11 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
 
   // Advertised Services
   struct AdvertisedService {
-    AdvertisedService(
-        fidl::InterfacePtr<fuchsia::bluetooth::bredr::ConnectionReceiver>
-            receiver,
-        bt::sdp::Server::RegistrationHandle registration_handle)
+    AdvertisedService(ConnectionReceiverVariant receiver,
+                      bt::sdp::Server::RegistrationHandle registration_handle)
         : receiver(std::move(receiver)),
           registration_handle(registration_handle) {}
-    fidl::InterfacePtr<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver;
+    ConnectionReceiverVariant receiver;
     bt::sdp::Server::RegistrationHandle registration_handle;
   };
 
