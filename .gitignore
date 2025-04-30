@@ -25,6 +25,7 @@ twister-out*/
 
 # Editors
 .pw_ide/
+.compile_commands/
 .vscode/*
 !.vscode/OWNERS
 !.vscode/pw_project_*.json
@@ -33,6 +34,7 @@ twister-out*/
 .project
 .cproject
 # Clangd directories
+.clangd
 .clangd/
 /.cache/clangd/
 # Vim
