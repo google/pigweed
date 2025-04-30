@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -18,36 +18,35 @@
 #include "pw_assert/assert.h"
 #include "pw_chrono/system_clock.h"
 #include "pw_interrupt/context.h"
-#include "pw_sync/binary_semaphore.h"
+#include "pw_sync/counting_semaphore.h"
 
 namespace pw::sync {
 
-inline BinarySemaphore::BinarySemaphore() : native_type_() {
+inline CountingSemaphore::CountingSemaphore() : native_type_() {
   constexpr unsigned int kInitialCount = 0;
-  k_sem_init(&native_type_, kInitialCount, backend::kBinarySemaphoreMaxValue);
+  k_sem_init(&native_type_, kInitialCount, backend::kCountingSemaphoreMaxValue);
 }
 
-inline BinarySemaphore::~BinarySemaphore() = default;
+inline CountingSemaphore::~CountingSemaphore() = default;
 
-inline void BinarySemaphore::release() { k_sem_give(&native_type_); }
-
-inline void BinarySemaphore::acquire() {
+inline void CountingSemaphore::acquire() {
   PW_DASSERT(!interrupt::InInterruptContext());
   PW_ASSERT(k_sem_take(&native_type_, K_FOREVER) == 0);
 }
 
-inline bool BinarySemaphore::try_acquire() noexcept {
+inline bool CountingSemaphore::try_acquire() noexcept {
   return k_sem_take(&native_type_, K_NO_WAIT) == 0;
 }
 
-inline bool BinarySemaphore::try_acquire_until(
+inline bool CountingSemaphore::try_acquire_until(
     chrono::SystemClock::time_point deadline) {
   // Note that if this deadline is in the future, it will get rounded up by
   // one whole tick due to how try_acquire_for is implemented.
   return try_acquire_for(deadline - chrono::SystemClock::now());
 }
 
-inline BinarySemaphore::native_handle_type BinarySemaphore::native_handle() {
+inline CountingSemaphore::native_handle_type
+CountingSemaphore::native_handle() {
   return native_type_;
 }
 

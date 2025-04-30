@@ -30,6 +30,14 @@ config PIGWEED_SYNC_MUTEX
 config PIGWEED_SYNC_BINARY_SEMAPHORE
     bool "Link pw_sync.binary_semaphore library"
     select PIGWEED_SYNC
+    select PIGWEED_ASSERT
+    help
+      See :ref:`module-pw_sync` for module details.
+
+config PIGWEED_SYNC_COUNTING_SEMAPHORE
+    bool "Link pw_sync.counting_semaphore library"
+    select PIGWEED_SYNC
+    select PIGWEED_ASSERT
     help
       See :ref:`module-pw_sync` for module details.
 
