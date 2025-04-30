@@ -6,18 +6,22 @@ pw_package
 .. pigweed-module::
    :name: pw_package
 
-The package module provides a mechanism to install additional tools used by
-Pigweed. Most Pigweed dependencies should be installed using
-:ref:`module-pw_env_setup`. Examples of reasons packages should be managed using
-this module instead are listed below.
+The package module provides a mechanism to install additional resources used by
+Pigweed.
 
-* The dependency is extremely large and not commonly used.
-* The dependency has a number of compatible versions and we want to allow
-  downstream projects to pick a version rather than being forced to use ours.
-* The dependency has license issues that make it complicated for Google to
-  include it directly as a submodule or distribute it as a CIPD package.
-* The dependency needs to be "installed" into the system in some manner beyond
-  just extraction and thus isn't a good match for distribution with CIPD.
+Pigweed does not (with a few very specific and small exceptions) include mirrors
+or submodules containing external source dependencies like FreeRTOS, STM32Cube,
+Raspberry Pi Pico SDK, etc. This is done to ensure projects can vendor the
+version of their choice, and reduces the proliferation of multiple definitions
+of these dependencies.
+
+While part of this module is supported for downstream use, the general answer of
+whether you should use this module in your project is "no".
+
+.. admonition:: Warning
+   :class: error
+
+   This module is only intended to be used by Pigweed. Please do not rely on it.
 
 -----
 Usage
@@ -48,11 +52,10 @@ By default ``pw package`` operates on the directory referenced by
 Middleware-Only Packages
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Pigweed itself includes a number of packages that simply clone git repositories.
-In general, these should not be used by projects using Pigweed. Pigweed uses
-these packages to avoid using submodules so downstream projects don't have
-multiple copies of a given repository in their source tree. Projects using
-Pigweed should use submodules instead of packages because submodules are
-supported by much more mature tooling: git. To install these packages anyway,
+In general, these should not be used by projects using Pigweed. Projects
+should use `Git submodules
+<https://git-scm.com/book/en/v2/Git-Tools-Submodules>`__ instead of packages.
+To bypass this restriction and install these packages anyway,
 use ``--force`` on the command line or ``force=True`` in Python code.
 
 -----------
