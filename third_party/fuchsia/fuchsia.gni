@@ -17,5 +17,5 @@ import("//build_overrides/pigweed.gni")
 declare_args() {
   # Path to the Fuchsia sources to use in Pigweed's build. Defaults to Pigweed's
   # mirror of the few Fuchsia source files it uses.
-  dir_pw_third_party_fuchsia = "$dir_pw_third_party/fuchsia/repo"
+  dir_pw_third_party_fuchsia = "$pw_external_fuchsia/repo"
 }

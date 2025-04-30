@@ -82,7 +82,7 @@ pw_source_set("common") {
     "$dir_pw_bluetooth_sapphire/lib/cpp-string",
     "$dir_pw_bluetooth_sapphire/lib/cpp-type",
     "$dir_pw_chrono:system_clock",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
     dir_pw_assert,
     dir_pw_intrusive_ptr,
     dir_pw_log,

@@ -419,7 +419,7 @@ pw_source_set("must_place") {
 pw_source_set("linker_symbol") {
   public_configs = [ ":default_config" ]
   public = [ "public/pw_build/linker_symbol.h" ]
-  public_deps = [ "$dir_pw_third_party/fuchsia:stdcompat" ]
+  public_deps = [ "$pw_external_fuchsia:stdcompat" ]
 }
 
 pw_doc_group("docs") {

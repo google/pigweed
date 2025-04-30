@@ -134,8 +134,8 @@ pw_source_set("test_utils") {
     "$dir_pw_bluetooth:emboss_hci_h4",
     "$dir_pw_bluetooth:emboss_util",
     "$dir_pw_multibuf:testing",
-    "$dir_pw_third_party/fuchsia:stdcompat",
     "$dir_pw_unit_test",
+    "$pw_external_fuchsia:stdcompat",
   ]
   sources = [ "test_utils.cc" ]
 
@@ -162,7 +162,7 @@ pw_test("pw_bluetooth_proxy_test") {
     "$dir_pw_bluetooth:emboss_hci_h4",
     "$dir_pw_bluetooth:emboss_util",
     "$dir_pw_multibuf",
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$pw_external_fuchsia:stdcompat",
   ]
   sources = [
     "gatt_notify_test.cc",

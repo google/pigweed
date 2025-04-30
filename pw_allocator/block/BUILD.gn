@@ -41,7 +41,7 @@ pw_source_set("alignable") {
     ":allocatable",
     "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$pw_external_fuchsia:stdcompat",
     dir_pw_allocator,
     dir_pw_status,
   ]
@@ -66,7 +66,7 @@ pw_source_set("basic") {
   public_deps = [
     "$dir_pw_allocator:hardening",
     "$dir_pw_bytes:alignment",
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$pw_external_fuchsia:stdcompat",
     dir_pw_result,
     dir_pw_status,
   ]
@@ -80,7 +80,7 @@ pw_source_set("contiguous") {
   public_deps = [
     ":basic",
     "$dir_pw_allocator:hardening",
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$pw_external_fuchsia:stdcompat",
     dir_pw_bytes,
   ]
   sources = [ "contiguous.cc" ]
@@ -100,7 +100,7 @@ pw_source_set("poisonable") {
     ":contiguous",
     "$dir_pw_allocator:config",
     "$dir_pw_allocator:hardening",
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$pw_external_fuchsia:stdcompat",
   ]
   sources = [ "poisonable.cc" ]
   deps = [ dir_pw_assert ]
@@ -183,7 +183,7 @@ pw_source_set("testing") {
     ":result",
     "$dir_pw_allocator:testing",
     "$dir_pw_bytes:alignment",
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$pw_external_fuchsia:stdcompat",
     dir_pw_assert,
     dir_pw_status,
   ]
@@ -202,7 +202,7 @@ pw_test("detailed_block_test") {
   deps = [
     ":testing",
     "$dir_pw_bytes:alignment",
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$pw_external_fuchsia:stdcompat",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_span,

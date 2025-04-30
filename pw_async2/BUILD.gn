@@ -45,7 +45,7 @@ pw_source_set("poll") {
   ]
   public_deps = [
     "$dir_pw_string:to_string",
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$pw_external_fuchsia:stdcompat",
     dir_pw_polyfill,
   ]
 }

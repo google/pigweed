@@ -107,7 +107,7 @@ pw_source_set("l2cap") {
     "$dir_pw_bluetooth_sapphire/host/hci",
     "$dir_pw_bluetooth_sapphire/host/sm:definitions",
     "$dir_pw_bluetooth_sapphire/host/transport",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
     dir_pw_bluetooth,
     dir_pw_string,
   ]
@@ -156,7 +156,7 @@ pw_source_set("testing") {
     "$dir_pw_async:heap_dispatcher",
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/hci-spec",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
   ]
   deps = [
     "$dir_pw_bluetooth_sapphire/host/testing:gtest_helpers",

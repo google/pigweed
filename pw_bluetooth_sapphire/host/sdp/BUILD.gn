@@ -55,7 +55,7 @@ pw_source_set("sdp") {
   public_deps = [
     ":definitions",
     "$dir_pw_bluetooth_sapphire/host/l2cap",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
   ]
 }
 

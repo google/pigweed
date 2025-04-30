@@ -29,7 +29,7 @@ pw_source_set("definitions") {
   public_deps = [
     "$dir_pw_bluetooth_sapphire/host/att:definitions",
     "$dir_pw_bluetooth_sapphire/host/common",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
   ]
 }
 
@@ -38,7 +38,7 @@ pw_source_set("persisted_data") {
       [ "public/pw_bluetooth_sapphire/internal/host/gatt/persisted_data.h" ]
   public_deps = [
     ":definitions",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
   ]
   public_configs = [ ":public_include_path" ]
 }
@@ -74,7 +74,7 @@ pw_source_set("gatt") {
     ":persisted_data",
     "$dir_pw_bluetooth_sapphire:config",
     "$dir_pw_bluetooth_sapphire/host/att",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
   ]
 }
 
@@ -95,7 +95,7 @@ pw_source_set("testing") {
     ":gatt",
     "$dir_pw_async:heap_dispatcher",
     "$dir_pw_bluetooth_sapphire/host/att",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
   ]
   deps = [
     "$dir_pw_bluetooth_sapphire/host/common",

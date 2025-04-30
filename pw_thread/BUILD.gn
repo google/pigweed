@@ -142,7 +142,7 @@ pw_source_set("generic_priority") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     "$dir_pw_numeric:integer_division",
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$pw_external_fuchsia:stdcompat",
     dir_pw_assert,
     dir_pw_polyfill,
   ]

@@ -27,7 +27,7 @@ pw_source_set("definitions") {
   public_deps = [
     "$dir_pw_bluetooth_sapphire/host/common",
     "$dir_pw_bluetooth_sapphire/host/sm:definitions",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
   ]
 }
 
@@ -127,7 +127,7 @@ pw_source_set("gap") {
     "$dir_pw_bluetooth_sapphire/host/sm",
     "$dir_pw_bluetooth_sapphire/host/sm:definitions",
     "$dir_pw_string:utf_codecs",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
   ]
   deps = [
     "$dir_pw_bluetooth_sapphire/host/sm",

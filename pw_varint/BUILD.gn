@@ -26,7 +26,7 @@ config("default_config") {
 pw_source_set("pw_varint") {
   public_configs = [ ":default_config" ]
   public_deps = [
-    "$dir_pw_third_party/fuchsia:stdcompat",
+    "$pw_external_fuchsia:stdcompat",
     dir_pw_preprocessor,
     dir_pw_span,
   ]

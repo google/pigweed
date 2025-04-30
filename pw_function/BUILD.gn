@@ -30,7 +30,7 @@ pw_source_set("config") {
   public = [ "public/pw_function/config.h" ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
     pw_function_CONFIG,
   ]
   visibility = [ ":*" ]
@@ -40,7 +40,7 @@ pw_source_set("pw_function") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
-    "$dir_pw_third_party/fuchsia:fit",
+    "$pw_external_fuchsia:fit",
     dir_pw_assert,
     dir_pw_preprocessor,
   ]
@@ -85,7 +85,7 @@ pw_test_group("tests") {
     ":function_test",
     ":pointer_test",
     ":scope_guard_test",
-    "$dir_pw_third_party/fuchsia:function_tests",
+    "$pw_external_fuchsia:function_tests",
   ]
 }
 
