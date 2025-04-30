@@ -18,6 +18,7 @@
 #include "pw_async2/lock.h"
 #include "pw_async2/task.h"
 #include "pw_async2/waker.h"
+#include "pw_containers/intrusive_list.h"
 #include "pw_metric/metric.h"
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/mutex.h"
@@ -158,21 +159,11 @@ class NativeDispatcherBase {
   /// been acquired.
   virtual void DoWake() = 0;
 
-  static void UnpostTaskList(Task*)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
-  static void RemoveTaskFromList(Task&)
+  static void UnpostTaskList(IntrusiveList<Task>& list)
       PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
   void RemoveWokenTaskLocked(Task&)
       PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
   void RemoveSleepingTaskLocked(Task&)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
-
-  // For use by ``WakeTask`` and ``DispatcherImpl::Post``.
-  void AddTaskToWokenList(Task&)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
-
-  // For use by ``RunOneTask``.
-  void AddTaskToSleepingList(Task&)
       PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   // For use by ``Waker``.
@@ -201,10 +192,8 @@ class NativeDispatcherBase {
   // the running task has finished executing ``Task::Pend``.
   pw::sync::Mutex task_execution_lock_;
 
-  Task* first_woken_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
-  Task* last_woken_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
-  // Note: the sleeping list's order is not significant.
-  Task* sleeping_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
+  IntrusiveList<Task> woken_ PW_GUARDED_BY(impl::dispatcher_lock());
+  IntrusiveList<Task> sleeping_ PW_GUARDED_BY(impl::dispatcher_lock());
   bool wants_wake_ PW_GUARDED_BY(impl::dispatcher_lock()) = false;
 
   PW_METRIC_GROUP(metrics_, "pw::async2::NativeDispatcherBase");

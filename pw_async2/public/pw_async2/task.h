@@ -17,6 +17,7 @@
 #include "pw_async2/lock.h"
 #include "pw_async2/poll.h"
 #include "pw_containers/intrusive_forward_list.h"
+#include "pw_containers/intrusive_list.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::async2 {
@@ -53,7 +54,7 @@ class NativeDispatcherBase;
 /// - Call ``Deregister`` on the ``Task`` prior to its destruction. NOTE that
 ///   ``Deregister`` may not be called from inside the ``Task``'s own ``Pend``
 ///   method.
-class Task {
+class Task : public IntrusiveList<Task>::Item {
   friend class Dispatcher;
   friend class Waker;
   friend class NativeDispatcherBase;
@@ -193,11 +194,6 @@ class Task {
   // prevent null access.
   NativeDispatcherBase* dispatcher_ PW_GUARDED_BY(impl::dispatcher_lock()) =
       nullptr;
-
-  // Pointers for whatever linked-list this ``Task`` is in.
-  // These are controlled by the ``Dispatcher``.
-  Task* prev_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
-  Task* next_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
 
   // Linked list of ``Waker`` s that may awaken this ``Task``.
   IntrusiveForwardList<Waker> wakers_ PW_GUARDED_BY(impl::dispatcher_lock());
