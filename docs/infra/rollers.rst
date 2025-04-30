@@ -17,7 +17,7 @@ owners across are responsible for keeping them green.
 Our rollers
 -----------
 Rollers from Pigweed into downstream projects can be seen on the
-`Pigweed Console <https://ci.chromium.org/p/pigweed/g/pigweed.pigweed/console>`_.
+`Pigweed Roll Console <https://ci.chromium.org/p/pigweed/g/pigweed.pigweed.roll/console>`_.
 Many more rollers are visible when logged in using an @google.com account than
 when not.
 
