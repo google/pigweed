@@ -161,7 +161,6 @@ group("third_party_docs") {
     "$dir_pigweed/third_party/llvm_libcxx:docs",
     "$dir_pigweed/third_party/nanopb:docs",
     "$dir_pigweed/third_party/perfetto:docs",
-    "$dir_pigweed/third_party/re2:docs",
     "$dir_pigweed/third_party/tinyusb:docs",
   ]
 }

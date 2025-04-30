@@ -70,7 +70,6 @@ declare_args() {
       get_path_info("$dir_pw_third_party/pico_sdk", "abspath")
   pw_external_protobuf =
       get_path_info("$dir_pw_third_party/protobuf", "abspath")
-  pw_external_re2 = get_path_info("$dir_pw_third_party/re2", "abspath")
   pw_external_repo = get_path_info("$dir_pw_third_party/repo", "abspath")
   pw_external_smartfusion_mss =
       get_path_info("$dir_pw_third_party/smartfusion_mss", "abspath")

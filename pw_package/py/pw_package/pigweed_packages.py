@@ -36,7 +36,6 @@ from pw_package.packages import pico_sdk
 from pw_package.packages import picotool
 from pw_package.packages import pigweed_examples_repo
 from pw_package.packages import protobuf
-from pw_package.packages import re2
 from pw_package.packages import smartfusion_mss
 from pw_package.packages import stm32cube
 from pw_package.packages import zephyr

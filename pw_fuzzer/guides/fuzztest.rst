@@ -171,7 +171,7 @@ are not expressed by `domains`__ as described below.
 Step 3: Add a FUZZ_TEST macro invocation
 --------------------------------------------
 
-Now, include ``"fuzztest/fuzztest.h"`` and pass the test suite name and your
+Now, include ``"pw_fuzzer/fuzztest.h"`` and pass the test suite name and your
 function name to the ``FUZZ_TEST`` macro. Call ``WithDomains`` on the returned
 object to specify the input domain for each parameter of the function. For
 example:

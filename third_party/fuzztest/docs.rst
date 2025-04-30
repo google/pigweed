@@ -38,9 +38,6 @@ Add FuzzTest to your workspace with the following command.
       * Set ``dir_pw_third_party_googletest`` to the location of the
         :ref:`module-pw_third_party_googletest` source.
 
-      * Set ``dir_pw_third_party_re2`` to the location of the
-        :ref:`module-pw_third_party_re2` source.
-
       This can be set in your ``args.gn`` or ``.gn`` file. For example:
 
       .. code-block::
@@ -49,7 +46,6 @@ Add FuzzTest to your workspace with the following command.
          dir_pw_third_party_abseil_cpp="//third_party/abseil-cpp"
          dir_pw_third_party_fuzztest="//third_party/fuzztest"
          dir_pw_third_party_googletest="//third_party/googletest"
-         dir_pw_third_party_re2="//third_party/re2"
 
    .. tab-item:: CMake
 

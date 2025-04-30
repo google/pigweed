@@ -23,5 +23,4 @@ to make it easier to work with these third-party dependencies.
    third_party/llvm_libcxx/docs
    third_party/nanopb/docs
    third_party/perfetto/docs
-   third_party/re2/docs
    third_party/tinyusb/docs
