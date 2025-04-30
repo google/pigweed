@@ -54,7 +54,7 @@ Flags can also be passed to the test binary:
 .. code-block:: console
 
    bazelisk run --config=fuchsia //pw_bluetooth_sapphire/fuchsia/host/l2cap:test_pkg \
-     -- --gtest-filter="*Example" --severity=DEBUG
+     -- --gtest_filter="*Example" --severity=DEBUG
 
 .. note::
    If the test is unable to connect to the emulator, run ``pw ffx target
