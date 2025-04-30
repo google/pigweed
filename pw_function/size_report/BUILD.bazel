@@ -12,13 +12,13 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "pointer_base",
     srcs = ["pointer_base.cc"],
     features = ["-conversion_warnings"],
@@ -28,7 +28,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "basic_function",
     srcs = ["basic_function.cc"],
     features = ["-conversion_warnings"],
@@ -38,11 +38,83 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
-    name = "callable_size",
+pw_cc_size_binary(
+    name = "callable_size_base",
     srcs = ["callable_size.cc"],
     copts = ["-Wno-unused-private-field"],
     defines = ["_BASE=1"],
+    features = ["-conversion_warnings"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_function",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "callable_size_function_pointer",
+    srcs = ["callable_size.cc"],
+    copts = ["-Wno-unused-private-field"],
+    defines = ["_FUNCTION_POINTER=1"],
+    features = ["-conversion_warnings"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_function",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "callable_size_static_lambda",
+    srcs = ["callable_size.cc"],
+    copts = ["-Wno-unused-private-field"],
+    defines = ["_STATIC_LAMBDA=1"],
+    features = ["-conversion_warnings"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_function",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "callable_size_simple_lambda",
+    srcs = ["callable_size.cc"],
+    copts = ["-Wno-unused-private-field"],
+    defines = ["_SIMPLE_LAMBDA=1"],
+    features = ["-conversion_warnings"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_function",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "callable_size_capturing_lambda",
+    srcs = ["callable_size.cc"],
+    copts = ["-Wno-unused-private-field"],
+    defines = ["_CAPTURING_LAMBDA=1"],
+    features = ["-conversion_warnings"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_function",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "callable_size_multi_capturing_lambda",
+    srcs = ["callable_size.cc"],
+    copts = ["-Wno-unused-private-field"],
+    defines = ["_MULTI_CAPTURING_LAMBDA=1"],
+    features = ["-conversion_warnings"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_function",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "callable_size_custom_class",
+    srcs = ["callable_size.cc"],
+    copts = ["-Wno-unused-private-field"],
+    defines = ["_CUSTOM_CLASS=1"],
     features = ["-conversion_warnings"],
     deps = [
         "//pw_bloat:bloat_this_binary",

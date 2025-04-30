@@ -15,6 +15,8 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -128,12 +130,67 @@ filegroup(
     ],
 )
 
+pw_size_diff(
+    name = "callable_size_function_pointer_size_diff",
+    base = "//pw_function/size_report:callable_size_base",
+    label = "Function pointer",
+    target = "//pw_function/size_report:callable_size_function_pointer",
+)
+
+pw_size_diff(
+    name = "callable_size_static_lambda_size_diff",
+    base = "//pw_function/size_report:callable_size_base",
+    label = "Static lambda (operator+)",
+    target = "//pw_function/size_report:callable_size_static_lambda",
+)
+
+pw_size_diff(
+    name = "callable_size_simple_lambda_size_diff",
+    base = "//pw_function/size_report:callable_size_base",
+    label = "Non-capturing lambda",
+    target = "//pw_function/size_report:callable_size_simple_lambda",
+)
+
+pw_size_diff(
+    name = "callable_size_capturing_lambda_size_diff",
+    base = "//pw_function/size_report:callable_size_base",
+    label = "Simple capturing lambda",
+    target = "//pw_function/size_report:callable_size_capturing_lambda",
+)
+
+pw_size_diff(
+    name = "callable_size_multi_capturing_lambda_size_diff",
+    base = "//pw_function/size_report:callable_size_base",
+    label = "Multi-argument capturing lambda",
+    target = "//pw_function/size_report:callable_size_multi_capturing_lambda",
+)
+
+pw_size_diff(
+    name = "callable_size_custom_class_size_diff",
+    base = "//pw_function/size_report:callable_size_base",
+    label = "Custom class",
+    target = "//pw_function/size_report:callable_size_custom_class",
+)
+
+pw_size_table(
+    name = "function_size",
+    reports = [
+        ":callable_size_function_pointer_size_diff",
+        ":callable_size_static_lambda_size_diff",
+        ":callable_size_simple_lambda_size_diff",
+        ":callable_size_capturing_lambda_size_diff",
+        ":callable_size_multi_capturing_lambda_size_diff",
+        ":callable_size_custom_class_size_diff",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
         "Kconfig",
         "docs.rst",
         "function_test.cc",
+        ":function_size",
     ],
     prefix = "pw_function/",
     target_compatible_with = incompatible_with_mcu(),
