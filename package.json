@@ -82,7 +82,7 @@
     "react-dom": "^17.0.2",
     "requirejs": "^2.3.6",
     "rimraf": "^3.0.2",
-    "rollup": "^2.52.8",
+    "rollup": "^3.29.5",
     "rollup-plugin-node-builtins": "^2.0.0",
     "rollup-plugin-node-globals": "^1.4.0",
     "rollup-plugin-node-polyfills": "^0.2.1",
@@ -96,7 +96,7 @@
     "tsc-watch": "^5.0.3",
     "tslib": "^2.4.0",
     "typescript": "^4.3.5",
-    "vite": "^5.2.8"
+    "vite": "^6.3.4"
   },
   "dependencies": {
     "@protobuf-ts/protoc": "^2.9.4",
