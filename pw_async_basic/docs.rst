@@ -60,6 +60,4 @@ Next, construct and use a ``BasicDispatcher``.
 -----------
 Size Report
 -----------
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: docs_size_report
-.. include:: ../size_report_notice
+.. include:: docs_size_report

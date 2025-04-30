@@ -12,13 +12,16 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pw_cc_binary.bzl", "pw_cc_binary")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
 
-package(features = ["-layering_check"])
+package(
+    default_visibility = ["//visibility:public"],
+    features = ["-layering_check"],
+)
 
 licenses(["notice"])
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "post_1_task",
     srcs = ["post_1_task.cc"],
     features = ["-conversion_warnings"],
@@ -28,7 +31,7 @@ pw_cc_binary(
     ],
 )
 
-pw_cc_binary(
+pw_cc_size_binary(
     name = "task",
     srcs = ["task.cc"],
     features = ["-conversion_warnings"],
