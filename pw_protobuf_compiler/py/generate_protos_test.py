@@ -14,6 +14,7 @@
 # the License.
 """Tests arg parsing and command generation."""
 
+import os
 import platform
 import unittest
 import subprocess
@@ -69,6 +70,7 @@ class TestArgGeneration(unittest.TestCase):
             ),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            env=os.environ.copy(),
         )
 
     @staticmethod
@@ -113,6 +115,7 @@ class TestArgGeneration(unittest.TestCase):
             ),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            env=os.environ.copy(),
         )
 
     @staticmethod
@@ -155,6 +158,7 @@ class TestArgGeneration(unittest.TestCase):
             ),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            env=os.environ.copy(),
         )
 
     @unittest.skipIf(

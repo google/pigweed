@@ -86,7 +86,6 @@ if (dir_pw_third_party_nanopb != "") {
         _protoc_binary_path += ".exe"
       }
     }
-
     inputs = [
       "$dir_pw_third_party_nanopb/pb.h",
       "$dir_pw_third_party_nanopb/pb_common.h",
@@ -113,17 +112,25 @@ if (dir_pw_third_party_nanopb != "") {
       args = [
         "--nanopb-root=" +
             rebase_path(dir_pw_third_party_nanopb, root_build_dir),
-        "--protoc-binary=" + pw_protobuf_compiler_PROTOC_BINARY,
-      ]
-      if (pw_third_party_nanopb_AGGRESSIVE_NANOPB_PB2_REGEN) {
-        args += [ "--aggressive-regen" ]
-      }
+        "--nanopb-pb2-dir=" +
+            rebase_path(pw_protobuf_compiler_INTERNAL_NANOPB_PB2_DIR,
+                        root_build_dir,
+                        root_gen_dir),
 
-      # Nanopb writes a file to:
-      #   $dir_pw_third_party_nanopb/generator/proto/nanopb_pb2.py
-      # Since this is in the source tree, we can't track it as an output. 😒
-      # Use a stamp instead.
-      stamp = true
+        # This is spelled a little weirdly because
+        # `pw_protobuf_compiler_PROTOC_BINARY` often points to a GN-absolute
+        # path like //.environment/packages/protobuf/protoc rather than the
+        # originally intended build-root relative path of
+        # ../.environment/packages/protobuf/protoc. This basically says
+        # "make GN-absolute paths relative to the build root, and don't modify
+        # paths that are already relative to the build root."
+        "--protoc-binary=" + rebase_path(pw_protobuf_compiler_PROTOC_BINARY,
+                                         root_build_dir,
+                                         root_build_dir),
+      ]
+
+      outputs =
+          [ "$pw_protobuf_compiler_INTERNAL_NANOPB_PB2_DIR/nanopb_pb2.py" ]
     }
   }
 } else {

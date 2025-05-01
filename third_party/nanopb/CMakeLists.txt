@@ -53,6 +53,7 @@ add_custom_command(
     python3
     "${CMAKE_CURRENT_LIST_DIR}/generate_nanopb_proto.py"
     --nanopb-root "${dir_pw_third_party_nanopb}"
+    --nanopb-pb2-dir "${_pw_protobuf_compiler_NANOPB_PB2_DIR}"
     --protoc-binary "$ENV{PW_PIGWEED_CIPD_INSTALL_DIR}/bin/protoc"
   DEPENDS
     "${CMAKE_CURRENT_LIST_DIR}/generate_nanopb_proto.py"

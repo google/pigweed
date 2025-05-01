@@ -58,6 +58,9 @@ declare_args() {
   pw_protobuf_compiler_PROTOC_BINARY = _default_protc
 }
 
+# Nanopb's nanopb_pb2.py is generated once per build at the same location.
+pw_protobuf_compiler_INTERNAL_NANOPB_PB2_DIR = "$root_gen_dir/global_nanopb_pb2"
+
 # Internal template that invokes protoc with a pw_python_action. This should not
 # be used outside of this file; use pw_proto_library instead.
 #
@@ -160,6 +163,10 @@ template("_pw_invoke_protoc") {
                 rebase_path(invoker.compile_dir, root_build_dir),
                 "--out-dir",
                 rebase_path(_out_dir, root_build_dir),
+                "--nanopb-pb2-dir",
+                rebase_path(pw_protobuf_compiler_INTERNAL_NANOPB_PB2_DIR,
+                            root_build_dir,
+                            root_gen_dir),
                 "--sources",
               ] + rebase_path(invoker.sources, root_build_dir)
 

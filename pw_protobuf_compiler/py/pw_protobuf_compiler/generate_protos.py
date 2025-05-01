@@ -115,6 +115,11 @@ def _argument_parser() -> argparse.ArgumentParser:
         action='store_true',
         help='Generate legacy inline oneof members instead of callbacks',
     )
+    parser.add_argument(
+        '--nanopb-pb2-dir',
+        type=Path,
+        help='Directory containing the generated nanopb_pb2',
+    )
 
     return parser
 
@@ -299,9 +304,19 @@ def main(input_args) -> int:
         *args.sources,
     )
 
+    env = os.environ.copy()
+    if args.nanopb_pb2_dir:
+        env['NANOPB_PB2_NO_REBUILD'] = '1'
+        pythonpath = env.get('PYTHONPATH', '').split(os.pathsep)
+        pythonpath.insert(0, str(args.nanopb_pb2_dir))
+        env['PYTHONPATH'] = os.pathsep.join(pythonpath)
+
     try:
         process = subprocess.run(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            env=env,
         )
     finally:
         if wrapper_script:
