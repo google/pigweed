@@ -169,7 +169,8 @@ FUZZ_TEST(Packet, EncodeDecode)
 
 constexpr size_t kReservedSize = 2 /* type */ + 2 /* channel */ +
                                  5 /* service */ + 5 /* method */ +
-                                 2 /* payload key */ + 2 /* status */;
+                                 4 /* call id */ + 2 /* payload key */
+                                 + 2 /* status */;
 
 TEST(Packet, PayloadUsableSpace_ExactFit) {
   EXPECT_EQ(

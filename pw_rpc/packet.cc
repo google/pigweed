@@ -117,6 +117,8 @@ size_t Packet::MinEncodedSizeBytes() const {
 
   reserved_size += 1;  // channel_id key
   reserved_size += varint::EncodedSize(channel_id());
+  reserved_size += 1;  // call_id key
+  reserved_size += varint::EncodedSize(call_id());
   reserved_size += 1 + sizeof(uint32_t);  // service_id key and fixed32
   reserved_size += 1 + sizeof(uint32_t);  // method_id key and fixed32
 

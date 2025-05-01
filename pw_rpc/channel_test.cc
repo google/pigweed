@@ -37,8 +37,8 @@ TEST(ChannelOutput, Name) {
 constexpr Packet kTestPacket(
     pwpb::PacketType::RESPONSE, 23, 42, 100, 0, {}, Status::NotFound());
 const size_t kReservedSize = 2 /* type */ + 2 /* channel */ + 5 /* service */ +
-                             5 /* method */ + 2 /* payload key */ +
-                             2 /* status (if not OK) */;
+                             5 /* method */ + 2 /* call id */ +
+                             2 /* payload key */ + 2 /* status (if not OK) */;
 
 enum class ChannelId {
   kOne = 1,
