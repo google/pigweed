@@ -231,7 +231,7 @@ class LuciTrigger:
 
 
 @dataclasses.dataclass
-class LuciContext:
+class LuciContext:  # pylint: disable=too-many-instance-attributes
     """LUCI-specific information about the environment.
 
     Attributes:
@@ -243,6 +243,7 @@ class LuciContext:
         bucket: The LUCI bucket under which this build is running (often ends
             with "ci" or "try").
         builder: The builder being run.
+        tags: The buildbucket tags applied to this build.
         swarming_server: The swarming server on which this build is running.
         swarming_task_id: The swarming task id of this build.
         cas_instance: The CAS instance accessible from this build.
@@ -261,6 +262,7 @@ class LuciContext:
     project: str
     bucket: str
     builder: str
+    tags: Sequence[tuple[str, str]]
     swarming_server: str
     swarming_task_id: str
     cas_instance: str
@@ -299,9 +301,7 @@ class LuciContext:
             env = os.environ.copy()
 
         luci_vars = [
-            'BUILDBUCKET_ID',
-            'BUILDBUCKET_NAME',
-            'BUILD_NUMBER',
+            'BUILDBUCKET_METADATA_JSON',
             'LUCI_CONTEXT',
             'SWARMING_TASK_ID',
             'SWARMING_SERVER',
@@ -309,16 +309,18 @@ class LuciContext:
         if any(x for x in luci_vars if x not in env):
             return None
 
-        project, bucket, builder = env['BUILDBUCKET_NAME'].split(':')
+        with Path(env['BUILDBUCKET_METADATA_JSON']).open() as ins:
+            bb_metadata = json.load(ins)
 
-        bbid: int = 0
-        pipeline: LuciPipeline | None = None
-        try:
-            bbid = int(env['BUILDBUCKET_ID'])
-            pipeline = LuciPipeline.create(bbid, fake_pipeline_props)
+        project = bb_metadata['project']
+        bucket = bb_metadata['bucket']
+        builder = bb_metadata['builder']
 
-        except ValueError:
-            pass
+        bbid = int(bb_metadata['id'])
+        number = int(bb_metadata['number'])
+        pipeline = LuciPipeline.create(bbid, fake_pipeline_props)
+
+        tags = tuple(bb_metadata['tags'])
 
         # Logic to identify cas instance from swarming server is derived from
         # https://chromium.googlesource.com/infra/luci/recipes-py/+/main/recipe_modules/cas/api.py
@@ -328,10 +330,11 @@ class LuciContext:
 
         result = LuciContext(
             buildbucket_id=bbid,
-            build_number=int(env['BUILD_NUMBER']),
+            build_number=int(number),
             project=project,
             bucket=bucket,
             builder=builder,
+            tags=tags,
             swarming_server=env['SWARMING_SERVER'],
             swarming_task_id=env['SWARMING_TASK_ID'],
             cas_instance=cas_instance,
@@ -344,17 +347,46 @@ class LuciContext:
 
     @staticmethod
     def create_for_testing(**kwargs):
-        env = {
-            'BUILDBUCKET_ID': '881234567890',
-            'BUILDBUCKET_NAME': 'pigweed:bucket.try:builder-name',
-            'BUILD_NUMBER': '123',
-            'LUCI_CONTEXT': '/path/to/context/file.json',
-            'SWARMING_SERVER': 'https://chromium-swarm.appspot.com',
-            'SWARMING_TASK_ID': 'cd2dac62d2',
-        }
-        env.update(kwargs)
+        """Easily create a LuciContext for testing."""
+        with tempfile.TemporaryDirectory() as tempdir:
+            name = kwargs.pop(
+                'BUILDBUCKET_NAME',
+                'pigweed:bucket.try:builder-name',
+            )
+            project, bucket, builder = name.split(':')
 
-        return LuciContext.create_from_environment(env, {})
+            bb_metadata = {
+                'id': kwargs.pop('BUILDBUCKET_ID', '881234567890'),
+                'number': kwargs.pop('BUILD_NUMBER', '123'),
+                'project': project,
+                'bucket': bucket,
+                'builder': builder,
+                'tags': kwargs.pop('tags', [('key', 'value')]),
+            }
+
+            swarming_server = kwargs.pop(
+                'SWARMING_SERVER',
+                'https://chromium-swarm.appspot.com',
+            )
+            swarming_task_id = kwargs.pop('SWARMING_TASK_ID', 'cd2dac62d2')
+
+            if kwargs:
+                raise ValueError(f'unexpected kwargs: {kwargs}')
+
+            json_path = Path(tempdir) / 'bbmetadata.json'
+
+            with json_path.open('w') as outs:
+                json.dump(bb_metadata, outs)
+
+            env = {
+                'BUILDBUCKET_METADATA_JSON': str(json_path),
+                'LUCI_CONTEXT': '/path/to/context/file.json',
+                'SWARMING_SERVER': swarming_server,
+                'SWARMING_TASK_ID': swarming_task_id,
+            }
+            env.update(kwargs)
+
+            return LuciContext.create_from_environment(env, {})
 
 
 @dataclasses.dataclass
