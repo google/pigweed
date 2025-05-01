@@ -2770,6 +2770,10 @@ TEST_F(L2capSignalingTest, RemoteLocalCidCollisionBetweenProfiles) {
       case L2capChannelEvent::kReset:
         reset_called++;
         break;
+      case L2capChannelEvent::kRxInvalid:
+      case L2capChannelEvent::kRxOutOfMemory:
+      case L2capChannelEvent::kRxWhileStopped:
+      case L2capChannelEvent::kWriteAvailable:
       default:
         break;
     }
