@@ -59,8 +59,14 @@ int main() {
   PW_LOG_INFO("We care about optimizing: %d", *unoptimizable);
 
   std::byte packet_buffer[128];
-  pw::sys_io::ReadBytes(packet_buffer);
-  pw::sys_io::WriteBytes(packet_buffer);
+  auto read_status = pw::sys_io::ReadBytes(packet_buffer);
+  if (!read_status.ok()) {
+    PW_LOG_ERROR("Read failed");
+  }
+  auto write_status = pw::sys_io::WriteBytes(packet_buffer);
+  if (!write_status.ok()) {
+    PW_LOG_ERROR("Write failed");
+  }
 
   return static_cast<int>(packet_buffer[92]);
 }

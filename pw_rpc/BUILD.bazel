@@ -18,6 +18,8 @@ load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_build:copy_to_bin.bzl", "copy_to_bin")
 load(
@@ -633,6 +635,28 @@ filegroup(
     ],
 )
 
+pw_size_diff(
+    name = "server_only_size_diff",
+    base = "//pw_rpc/size_report:base",
+    label = "Server by itself",
+    target = "//pw_rpc/size_report:server_only",
+)
+
+pw_size_diff(
+    name = "server_with_echo_service_size_diff",
+    base = "//pw_rpc/size_report:base_with_nanopb",
+    label = "Server with a registered nanopb EchoService",
+    target = "//pw_rpc/size_report:server_with_echo_service",
+)
+
+pw_size_table(
+    name = "server_size",
+    reports = [
+        ":server_only_size_diff",
+        ":server_with_echo_service_size_diff",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
@@ -646,6 +670,7 @@ sphinx_docs_library(
         "internal/packet.proto",
         "libraries.rst",
         "protocol.rst",
+        ":server_size",
         "//pw_rpc/nanopb:docs",
         "//pw_rpc/pwpb:docs",
         "//pw_rpc/py:docs",

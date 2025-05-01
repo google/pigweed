@@ -75,11 +75,20 @@ int main() {
   PW_LOG_INFO("We care about optimizing: %d", *unoptimizable);
 
   std::byte packet_buffer[128];
-  pw::sys_io::ReadBytes(packet_buffer);
-  pw::sys_io::WriteBytes(packet_buffer);
+  auto read_status = pw::sys_io::ReadBytes(packet_buffer);
+  if (!read_status.ok()) {
+    PW_LOG_ERROR("Read failed");
+  }
+  auto write_status = pw::sys_io::WriteBytes(packet_buffer);
+  if (!write_status.ok()) {
+    PW_LOG_ERROR("Write failed");
+  }
 
   my_product::server.RegisterService(my_product::echo_service);
-  my_product::server.ProcessPacket(packet_buffer);
+  auto process_status = my_product::server.ProcessPacket(packet_buffer);
+  if (!process_status.ok()) {
+    PW_LOG_ERROR("Packet processing failed");
+  }
 
   return static_cast<int>(packet_buffer[92]);
 }
