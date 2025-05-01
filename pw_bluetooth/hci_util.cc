@@ -35,6 +35,7 @@ pw::Result<size_t> GetHciHeaderSize(emboss::H4PacketType type) {
       return pw::bluetooth::emboss::EventHeaderView::SizeInBytes();
     case emboss::H4PacketType::ISO_DATA:
       return pw::bluetooth::emboss::IsoDataFrameHeaderView::SizeInBytes();
+    case emboss::H4PacketType::UNKNOWN:
     default:
       return pw::Status::InvalidArgument();
   }
@@ -83,6 +84,7 @@ pw::Result<size_t> GetHciPayloadSize(emboss::H4PacketType type,
       }
       return view.data_total_length().Read();
     };
+    case emboss::H4PacketType::UNKNOWN:
     default:
       return pw::Status::InvalidArgument();
   }
