@@ -12,7 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-use super::ArchInterface;
+use core::arch::asm;
+
 use riscv;
 
 mod exceptions;
@@ -21,6 +22,7 @@ mod spinlock;
 mod threads;
 mod timer;
 
+use crate::arch::ArchInterface;
 pub struct Arch {}
 
 impl ArchInterface for Arch {
@@ -60,6 +62,9 @@ impl ArchInterface for Arch {
     }
 
     fn panic() -> ! {
+        unsafe {
+            asm!("ebreak");
+        }
         #[allow(clippy::empty_loop)]
         loop {}
     }

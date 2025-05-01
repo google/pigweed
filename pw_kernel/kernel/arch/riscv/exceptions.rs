@@ -82,6 +82,11 @@ fn custom_exception_handler(exception: Exception, mepc: usize, frame: &mut TrapF
         Exception::EnvironmentCallFromMMode => {
             handle_ecall(frame);
         }
+        Exception::Breakpoint => {
+            dump_exception_frame(frame);
+            #[allow(clippy::empty_loop)]
+            loop {}
+        }
         _ => {
             dump_exception_frame(frame);
             pw_assert::panic!("unhandled exception {}", exception as usize);
