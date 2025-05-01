@@ -13,6 +13,7 @@
 # the License.
 
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:args_list.bzl", "cc_args_list")
 load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 
 package(default_visibility = ["//visibility:public"])
@@ -42,31 +43,45 @@ cc_args(
 )
 
 # This config contains warnings that are enabled for upstream Pigweed.
-# This config MUST NOT be used downstream to allow for warnings to be
-# added in the future without breaking downstream.
+# This config MUST NOT ever be exposed to downstream.
+cc_args_list(
+    name = "internal_strict_warnings",
+    args = [
+        ":pedantic_warnings",
+        ":extra_pigweed_warnings",
+    ],
+    visibility = ["//:__subpackages__"],
+)
+
 cc_args(
-    name = "internal_strict_warnings_flags",
+    name = "extra_pigweed_warnings",
     actions = [
-        "@rules_cc//cc/toolchains/actions:c_compile_actions",
-        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
     ],
     args = [
         "-Wswitch-enum",
         "-Wextra-semi",
-    ] + select({
-        "@platforms//os:windows": [],
-        # TODO: b/243069432 - Enable pedantic warnings on Windows once passing.
-        "//conditions:default": [":pedantic_warnings"],
-    }),
+    ],
     visibility = ["//:__subpackages__"],
 )
 
-# Add `--features=internal_strict_warnings` to your Bazel invocation to enable.
-cc_feature(
-    name = "internal_strict_warnings",
-    args = [":internal_strict_warnings_flags"],
-    feature_name = "internal_strict_warnings",
-    visibility = ["//:__subpackages__"],
+cc_args(
+    name = "pedantic_warnings",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        # Enable -Wpedantic, but disable a few warnings.
+        "-Wpedantic",
+
+        # Allow designated initializers, which were added in C++20 but widely
+        # supported prior and permitted by the Google style guide.
+        "-Wno-c++20-designator",
+
+        # Allow empty ... arguments in macros, which are permitted in C++20 but
+        # widely supported prior.
+        "-Wno-gnu-zero-variadic-macro-arguments",
+    ],
 )
 
 cc_args(
@@ -75,6 +90,8 @@ cc_args(
     args = ["-Wconversion"],
 )
 
+# This is currently expressed as a feature so it can be selectively disabled
+# while fixes are rolled out.
 cc_feature(
     name = "conversion_warnings_feature",
     args = [":w_conversion"],

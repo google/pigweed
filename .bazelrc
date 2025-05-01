@@ -48,17 +48,17 @@ common:cxx20 --//pw_toolchain/cc:cxx_standard=20
 #
 # TODO: https://pwbug.dev/347317581 - This is supported by Bazel's default C++
 # toolchain, but not yet by Pigweed's own toolchains.
-build --features=external_include_paths
+common --features=external_include_paths
 
 # Turn on internal warnings for upstream Pigweed. DO NOT enable in downstream
 # projects to allow for warnings to be added in the future without breaking
 # downstream.
 #
-build --features=internal_strict_warnings
+common --features=internal_strict_warnings
 
 # This feature can't be enabled until __unordtf2 and __letf2 are implemented by
 # compiler-rt. See https://reviews.llvm.org/D53608.
-# build --features=fully_static_link
+# common --features=fully_static_link
 
 # Required for combined code coverage reports.
 coverage --experimental_generate_llvm_lcov

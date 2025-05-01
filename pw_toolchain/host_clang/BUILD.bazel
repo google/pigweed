@@ -19,6 +19,7 @@ load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 load("@rules_cc//cc/toolchains:feature_constraint.bzl", "cc_feature_constraint")
 load("@rules_cc//cc/toolchains:feature_set.bzl", "cc_feature_set")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+load("//pw_build:pigweed_is_root.bzl", "pigweed_is_root")
 load("//pw_toolchain/cc:builtin_module_map.bzl", "builtin_module_map")
 
 package(default_visibility = ["//visibility:public"])
@@ -217,15 +218,16 @@ cc_feature(
     feature_name = "fuzztest",
 )
 
-# This is a sentinel feature defined by rules_rust. It is by definition
-# unsupported: rules_rust will disable this feature when linking Rust code.
+# This is a sentinel feature defined by rules_rust. This is enabled by default
+# during normal compilation, and whenever Rust binaries are being linked it is
+# disabled.
 cc_feature(
     name = "rules_rust_unsupported_feature",
     feature_name = "rules_rust_unsupported_feature",
 )
 
-# This is a sentinel feature defined by rules_go. It is by definition
-# unsupported: rules_go will disable this feature when linking Go code.
+# This is a sentinel feature defined by rules_go. This is enabled by default
+# during normal compilation, and during cgo compilation it is disabled.
 cc_feature(
     name = "rules_go_unsupported_feature",
     feature_name = "rules_go_unsupported_feature",
@@ -238,17 +240,19 @@ cc_feature_constraint(
     none_of = [":rules_go_unsupported_feature"],
 )
 
-# Golang doesn't link with PIE enabled. See pwbug.dev/347708308.
-#
-# We want to disable PIE only when we're *not* compiling Golang code.
 cc_args(
-    name = "no_pie_for_go_flags",
+    name = "cgo_link_flags",
     actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
-    args = [
-        "-no-pie",
-    ],
+    args = select({
+        "@platforms//os:linux": [
+            # Golang doesn't link with PIE enabled on linux. See
+            # https://pwbug.dev/347708308. We want to disable PIE only when
+            # we're linking Golang code.
+            "-no-pie",
+        ],
+        "//conditions:default": [],
+    }),
     requires_any_of = [":rules_go_constraint"],
-    target_compatible_with = ["@platforms//os:linux"],
 )
 
 cc_args(
@@ -257,7 +261,10 @@ cc_args(
         "@rules_cc//cc/toolchains/actions:compile_actions",
         "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    args = ["-Wno-unused-parameter"],
+    args = [
+        "-Wno-strict-prototypes",
+        "-Wno-unused-parameter",
+    ],
     requires_any_of = [":rules_go_constraint"],
 )
 
@@ -354,7 +361,6 @@ cc_toolchain(
     args = select({
         "@platforms//os:linux": [
             ":linux_link_libs",
-            ":no_pie_for_go_flags",
             "@linux_sysroot//:sysroot",
         ],
         "@platforms//os:macos": [
@@ -365,6 +371,7 @@ cc_toolchain(
         "//conditions:default": [],
     }) + [
         ":link_with_lld",
+        ":cgo_link_flags",
         "//pw_toolchain/cc/args:debugging",
         "//pw_toolchain/cc/args:reduced_size",
         "//pw_toolchain/cc/args:no_canonical_prefixes",
@@ -374,6 +381,9 @@ cc_toolchain(
         "//pw_toolchain/cc/args:wnon_virtual_dtor",
         "//pw_toolchain/cc/args:common_warnings",
         "//pw_toolchain/cc/args:color_diagnostics",
+    ] + (
+        ["//pw_toolchain/cc/args:internal_strict_warnings"] if pigweed_is_root() else []
+    ) + [
         # Must go after the general warnings that are enabled.
         ":silence_cgo_warnings",
     ] + select({
@@ -413,20 +423,15 @@ cc_toolchain(
     known_features = [
         "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
         ":layering_check_feature",
-        ":module_maps",
         ":use_module_maps",
         ":asan_feature",
         ":msan_feature",
         ":ubsan_feature",
         ":tsan_feature",
         ":verbose_compiler_output",
-        ":rules_rust_unsupported_feature",
-        ":supports_pic",
         "//pw_toolchain/cc/args:c++17_feature",
         "//pw_toolchain/cc/args:c++20_feature",
         "//pw_toolchain/cc/args:conversion_warnings_feature",
-        "//pw_toolchain/cc/capability:compiler_is_clang",
-        "//pw_toolchain/cc/capability:linker_is_clang",
     ],
     # TODO: https://pwbug.dev/219091175 - Remove this select (always set this to
     # builtin_module_map) once all Pigweed downstream projects are on Bazel 8.

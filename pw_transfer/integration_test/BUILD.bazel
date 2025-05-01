@@ -27,6 +27,11 @@ package(features = ["-layering_check"])
 pw_cc_binary(
     name = "server",
     srcs = ["server.cc"],
+    copts = [
+        # These warnings come from protobuf codegen.
+        "-Wno-nullability-extension",
+        "-Wno-gcc-compat",
+    ],
     features = ["-conversion_warnings"],
     deps = [
         ":config_cc_proto",
@@ -101,6 +106,11 @@ pw_cc_binary(
     name = "cpp_client",
     testonly = True,
     srcs = ["client.cc"],
+    copts = [
+        # These warnings come from protobuf codegen.
+        "-Wno-nullability-extension",
+        "-Wno-gcc-compat",
+    ],
     features = ["-conversion_warnings"],
     deps = [
         ":config_cc_proto",

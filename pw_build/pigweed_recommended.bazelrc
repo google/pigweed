@@ -40,9 +40,9 @@ test --test_output=errors
 # Do not strip debug symbols by default.
 common --strip=never
 
-# Silence all C/C++ warnings in external code.
+# Silence all C/C++ warnings in external code and externally generated code.
 #
 # Note that this will not silence warnings from external headers #include'd in
 # first-party code.
-common --per_file_copt=external/.*@-w
-common --host_per_file_copt=external/.*@-w
+common --per_file_copt=external/.*,.*\.pb\.cc@-w
+common --host_per_file_copt=external/.*,.*\.pb\.cc@-w
