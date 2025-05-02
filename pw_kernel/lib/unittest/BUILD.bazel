@@ -12,20 +12,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_proc_macro", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
-
-CORTEX_M_DEPS = [
-    "@rust_crates//:cortex-m-rt",
-    "@rust_crates//:cortex-m-semihosting",
-]
-
-RISCV_DEPS = [
-    "@rust_crates//:riscv-rt",
-    "@rust_crates//:riscv-semihosting",
-]
 
 rust_proc_macro(
     name = "unittest_proc_macro",
@@ -69,48 +58,6 @@ rust_library(
 )
 
 rust_library(
-    name = "unittest_runner_host",
-    srcs = ["unittest_runner_host.rs"],
-    crate_name = "unittest_runner",
-    tags = ["kernel"],
-    target_compatible_with = incompatible_with_mcu(),
-    visibility = ["//visibility:public"],
-    deps = [
-        ":unittest_core",
-        "//pw_kernel/kernel",
-        "//pw_kernel/subsys/console:console_backend",
-    ],
-)
-
-rust_library(
-    name = "unittest_runner_semihosting",
-    srcs = ["unittest_runner_semihosting.rs"],
-    crate_features = select({
-        "//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
-        "@platforms//cpu:riscv32": ["arch_riscv"],
-        "//conditions:default": ["arch_host"],
-    }),
-    crate_name = "unittest_runner",
-    tags = ["kernel"],
-    target_compatible_with = select({
-        "//pw_build/constraints/arm:cortex-m33": [],
-        "@platforms//cpu:riscv32": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
-    deps = [
-        ":unittest_core",
-        "//pw_kernel/kernel",
-        "//pw_kernel/subsys/console:console_backend",
-        "//pw_kernel/target",
-        "//pw_log/rust:pw_log",
-    ] + select({
-        "@pigweed//pw_build/constraints/arm:cortex-m33": CORTEX_M_DEPS,
-        "@platforms//cpu:riscv32": RISCV_DEPS,
-        "//conditions:default": [],
-    }),
-)
-
-rust_library(
     name = "unittest_test",
     srcs = ["unittest_test.rs"],
     tags = ["kernel"],
@@ -136,6 +83,6 @@ rust_test(
 
 label_flag(
     name = "unittest_runner",
-    build_setting_default = ":unittest_runner_host",
+    build_setting_default = "//pw_kernel/target/host:unittest_runner",
     tags = ["kernel"],
 )

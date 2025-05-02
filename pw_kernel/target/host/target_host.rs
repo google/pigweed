@@ -11,9 +11,32 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+
 use console_backend as _;
 use kernel as _;
 
+use target_common::{declare_target, TargetInterface};
+
+pub struct Target {}
+
+impl TargetInterface for Target {
+    const NAME: &'static str = "Host";
+
+    fn main() -> ! {
+        demo::main()
+    }
+
+    // Use the default noop implementations.
+}
+
+declare_target!(Target);
+
+#[cfg(not(feature = "test"))]
+fn main() -> ! {
+    kernel::Kernel::main();
+}
+
+#[cfg(feature = "test")]
 #[no_mangle]
 pub extern "C" fn main() -> core::ffi::c_int {
     // Return a C error code here as we're implementing a "bare main".

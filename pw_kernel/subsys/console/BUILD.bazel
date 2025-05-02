@@ -52,6 +52,7 @@ rust_library(
         "@platforms//cpu:riscv32": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
+    visibility = ["//visibility:public"],
     deps = [
         "//pw_kernel/lib/pw_status",
         "@rust_crates//:embedded-io",

@@ -43,3 +43,38 @@ macro_rules! declare_target {
         }
     };
 }
+
+pub fn run_tests<S>(success_status: S, failure_status: S) -> S {
+    pw_log::info!("=============== Unit Test Runner ===============");
+
+    use unittest_core::TestsResult;
+    match unittest_core::run_all_tests() {
+        TestsResult::AllPassed => success_status,
+        TestsResult::SomeFailed => failure_status,
+    }
+}
+
+/// Run all ELF static constructors.
+///
+/// # Safety
+///
+/// Only call this function if the given architecture does not automatically run
+/// ELF constructors.
+pub unsafe fn run_ctors() {
+    type CtorFn = unsafe extern "C" fn() -> usize;
+
+    extern "C" {
+        static __init_array_start: CtorFn;
+        static __init_array_end: CtorFn;
+    }
+
+    unsafe {
+        let start_ptr: *const CtorFn = &__init_array_start;
+        let end_ptr: *const CtorFn = &__init_array_end;
+        let num_ctors = end_ptr.offset_from(start_ptr) as usize;
+        let ctors = core::slice::from_raw_parts(start_ptr, num_ctors);
+        for ctor in ctors {
+            let _ = ctor();
+        }
+    }
+}

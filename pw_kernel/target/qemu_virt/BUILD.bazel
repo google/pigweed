@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 
@@ -28,10 +28,9 @@ platform(
     ],
     flags = flags_from_dict({
         "//pw_kernel/config:kernel_config": ":config_riscv",
-        "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_semihosting",
+        "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
         "//pw_kernel/subsys/console:console_backend": ":console_riscv",
         "//pw_kernel/target:linker_script": ":linker_script_riscv",
-        "//pw_kernel/target:target_backend": ":target_riscv",
     }),
 )
 
@@ -57,18 +56,48 @@ rust_library(
     ],
 )
 
-rust_library(
+SRCS = ["target_riscv.rs"]
+
+TARGET_COMPATIBLE_WITH = [
+    "@platforms//cpu:riscv32",
+]
+
+COMMON_DEPS = [
+    ":console_riscv",
+    ":linker_script_riscv",
+    "//pw_kernel/kernel",
+    "//pw_kernel/target:demo",
+    "//pw_kernel/target:target_common",
+    "@rust_crates//:panic-halt",
+    "@rust_crates//:riscv",
+    "@rust_crates//:riscv-rt",
+]
+
+rust_binary(
     name = "target_riscv",
-    srcs = ["target_riscv.rs"],
-    crate_name = "target_backend",
-    target_compatible_with = [
-        "@platforms//cpu:riscv32",
-    ],
-    deps = [
-        ":console_riscv",
-        "//pw_kernel/target:demo",
-        "//pw_kernel/target:target_interface",
-        "@rust_crates//:panic-halt",
+    srcs = SRCS,
+    edition = "2021",
+    tags = ["kernel"],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    deps = COMMON_DEPS,
+)
+
+# When building as a unit test runner, this target will be depended upon by
+# other libraries (in other words, it won't be the root of the dependency
+# graph). Declaring this as a `rust_binary` would result in it being built, but
+# not linked against the other libraries in the build graph.
+rust_library(
+    name = "unittest_runner",
+    srcs = SRCS,
+    crate_features = ["test"],
+    crate_name = "unittest_runner",
+    edition = "2021",
+    tags = ["kernel"],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    deps = COMMON_DEPS + [
+        "//pw_kernel/lib/unittest:unittest_core",
+        "@pigweed//pw_log/rust:pw_log",
+        "@rust_crates//:riscv-semihosting",
     ],
 )
 
@@ -76,9 +105,7 @@ rust_library(
     name = "config_riscv",
     srcs = ["config_riscv.rs"],
     crate_name = "kernel_config",
-    target_compatible_with = [
-        "@platforms//cpu:riscv32",
-    ],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
         "//pw_kernel/config:kernel_config_interface",
     ],

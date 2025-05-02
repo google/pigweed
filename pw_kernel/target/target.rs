@@ -15,4 +15,4 @@
 #![no_std]
 
 pub use target_backend::Target;
-pub use target_interface::TargetInterface;
+pub use target_common::TargetInterface;

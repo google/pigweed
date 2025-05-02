@@ -33,36 +33,24 @@ rust_library(
 )
 
 rust_library(
-    name = "target_interface",
-    srcs = ["target_interface.rs"],
-    tags = ["kernel"],
-)
-
-rust_library(
-    name = "target",
-    srcs = ["target.rs"],
+    name = "target_common",
+    srcs = ["target_common.rs"],
     tags = ["kernel"],
     deps = [
-        ":target_backend",
-        ":target_interface",
+        "//pw_kernel/lib/unittest:unittest_core",
+        "@pigweed//pw_log/rust:pw_log",
     ],
 )
 
 label_flag(
-    name = "target_backend",
-    build_setting_default = ":target_backend_generic",
+    name = "target",
+    build_setting_default = ":no_target",
     tags = ["kernel"],
 )
 
-rust_library(
-    name = "target_backend_generic",
-    srcs = ["target_backend_generic.rs"],
-    crate_name = "target_backend",
+cc_library(
+    name = "no_target",
     tags = ["kernel"],
-    deps = [
-        ":demo",
-        ":target_interface",
-    ],
 )
 
 label_flag(

@@ -12,8 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #![no_std]
+#![no_main]
 
-use target_interface::{declare_target, TargetInterface};
+use console_backend as _;
+
+use target_common::{declare_target, TargetInterface};
 
 pub struct Target {}
 
@@ -26,3 +29,25 @@ impl TargetInterface for Target {
 }
 
 declare_target!(Target);
+
+#[cortex_m_rt::entry]
+fn main() -> ! {
+    // cortex_m_rt does not run ctors, so we do it manually. Note that this is
+    // required in order to register tests, which is a prerequisite to calling
+    // `run_tests` below.
+    unsafe { target_common::run_ctors() };
+
+    #[cfg(not(feature = "test"))]
+    kernel::Kernel::main();
+
+    #[cfg(feature = "test")]
+    {
+        use cortex_m_semihosting::debug::*;
+        Target::console_init();
+        exit(target_common::run_tests(EXIT_SUCCESS, EXIT_FAILURE));
+
+        // `exit` can return under rare circumstances.
+        #[allow(clippy::empty_loop)]
+        loop {}
+    }
+}

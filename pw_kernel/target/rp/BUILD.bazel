@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 
@@ -26,10 +26,9 @@ platform(
     ],
     flags = flags_from_dict({
         "//pw_kernel/config:kernel_config": ":config_rp2350",
-        "//pw_kernel/lib/unittest:unittest_runner": "//pw_kernel/lib/unittest:unittest_runner_semihosting",
+        "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
         "//pw_kernel/subsys/console:console_backend": ":console_rp2350",
         "//pw_kernel/target:linker_script": ":linker_script_rp2350",
-        "//pw_kernel/target:target_backend": ":target_rp2350",
     }),
 )
 
@@ -56,20 +55,49 @@ rust_library(
     ],
 )
 
-rust_library(
+SRCS = ["target_rp2350.rs"]
+
+TARGET_COMPATIBLE_WITH = [
+    "//pw_build/constraints/arm:cortex-m33",
+]
+
+COMMON_DEPS = [
+    ":console_rp2350",
+    ":linker_script_rp2350",
+    "//pw_kernel/kernel",
+    "//pw_kernel/target:demo",
+    "//pw_kernel/target:target_common",
+    "@rust_crates//:cortex-m",
+    "@rust_crates//:cortex-m-rt",
+    "@rust_crates//:panic-halt",
+    "@rust_crates//:rp235x-hal",
+]
+
+rust_binary(
     name = "target_rp2350",
-    srcs = ["target_rp2350.rs"],
-    crate_name = "target_backend",
-    target_compatible_with = [
-        "//pw_build/constraints/arm:cortex-m33",
-    ],
-    deps = [
-        ":console_rp2350",
-        "//pw_kernel/target:demo",
-        "//pw_kernel/target:target_interface",
-        "@rust_crates//:cortex-m-rt",
-        "@rust_crates//:panic-halt",
-        "@rust_crates//:rp235x-hal",
+    srcs = SRCS,
+    edition = "2021",
+    tags = ["kernel"],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    deps = COMMON_DEPS,
+)
+
+# When building as a unit test runner, this target will be depended upon by
+# other libraries (in other words, it won't be the root of the dependency
+# graph). Declaring this as a `rust_binary` would result in it being built, but
+# not linked against the other libraries in the build graph.
+rust_library(
+    name = "unittest_runner",
+    srcs = SRCS,
+    crate_features = ["test"],
+    crate_name = "unittest_runner",
+    edition = "2021",
+    tags = ["kernel"],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    deps = COMMON_DEPS + [
+        "//pw_kernel/lib/unittest:unittest_core",
+        "@pigweed//pw_log/rust:pw_log",
+        "@rust_crates//:cortex-m-semihosting",
     ],
 )
 
@@ -77,9 +105,7 @@ rust_library(
     name = "config_rp2350",
     srcs = ["config_rp2350.rs"],
     crate_name = "kernel_config",
-    target_compatible_with = [
-        "//pw_build/constraints/arm:cortex-m33",
-    ],
+    target_compatible_with = TARGET_COMPATIBLE_WITH,
     deps = [
         "//pw_kernel/config:kernel_config_interface",
     ],

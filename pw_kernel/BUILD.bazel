@@ -32,7 +32,7 @@ alias(
 
 alias(
     name = "console",
-    actual = "//pw_kernel/entry:kernel",
+    actual = "//pw_kernel/target",
 )
 
 sphinx_docs_library(
