@@ -26,3 +26,5 @@ target_link_libraries(app
     pw_unit_test.light
     pw_unit_test.logging_event_handler
 )
+target_link_libraries(app PRIVATE ${TEST_LIB}.lib)
+zephyr_append_cmake_library(${TEST_LIB})

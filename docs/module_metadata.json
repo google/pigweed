@@ -353,6 +353,12 @@
   "pw_digital_io_rp2040": {
     "status": "stable"
   },
+  "pw_digital_io_zephyr": {
+    "status": "experimental",
+    "languages": [
+      "C++"
+    ]
+  },
   "pw_display": {
     "tagline": "Graphic display support and framebuffer management",
     "status": "experimental",

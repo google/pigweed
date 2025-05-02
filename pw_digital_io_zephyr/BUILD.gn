@@ -1,4 +1,4 @@
-# Copyright 2023 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,25 +12,16 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Do not rely on the PW_ROOT environment variable being set through bootstrap.
-# Regardless of whether it's set or not the following include will ensure it is.
+import("//build_overrides/pigweed.gni")
 
-# Test configs:
-CONFIG_TEST=y
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
 
-# C++ configs:
-CONFIG_CPP=y
-CONFIG_STD_CPP20=y
-CONFIG_REQUIRES_FULL_LIBCPP=y
+# Zephyr only uses CMake, so this file is empty.
+pw_test_group("tests") {
+  tests = []
+}
 
-# Enable asserts
-CONFIG_PIGWEED_ASSERT=y
-
-# Enable logging (needed to capture gTest output)
-CONFIG_LOG=y
-CONFIG_PIGWEED_LOG_ZEPHYR=y
-CONFIG_PIGWEED_SYS_IO=y
-
-# Emulators
-CONFIG_GPIO=y
-CONFIG_GPIO_EMUL=y
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}

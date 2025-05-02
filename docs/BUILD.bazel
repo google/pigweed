@@ -469,6 +469,7 @@ sphinx_docs(
         "//pw_digital_io_linux:docs",
         "//pw_digital_io_mcuxpresso:docs",
         "//pw_digital_io_rp2040:docs",
+        "//pw_digital_io_zephyr:docs",
         "//pw_display:docs",
         "//pw_dma_mcuxpresso:docs",
         "//pw_docgen:docs",

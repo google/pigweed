@@ -177,6 +177,9 @@ endfunction()
 
 # Runs any deferred library checks for pw_target_link_targets.
 #
+# Makes one exception for the zephyr_interface which is only brought in when
+# integrating with the Zephyr build system.
+#
 # Required Args:
 #
 #   <name> - The name of the library target to add the link dependencies to.

@@ -1,4 +1,4 @@
-# Copyright 2023 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -12,25 +12,18 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-# Do not rely on the PW_ROOT environment variable being set through bootstrap.
-# Regardless of whether it's set or not the following include will ensure it is.
+load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 
-# Test configs:
-CONFIG_TEST=y
+package(default_visibility = ["//visibility:public"])
 
-# C++ configs:
-CONFIG_CPP=y
-CONFIG_STD_CPP20=y
-CONFIG_REQUIRES_FULL_LIBCPP=y
+licenses(["notice"])
 
-# Enable asserts
-CONFIG_PIGWEED_ASSERT=y
-
-# Enable logging (needed to capture gTest output)
-CONFIG_LOG=y
-CONFIG_PIGWEED_LOG_ZEPHYR=y
-CONFIG_PIGWEED_SYS_IO=y
-
-# Emulators
-CONFIG_GPIO=y
-CONFIG_GPIO_EMUL=y
+sphinx_docs_library(
+    name = "docs",
+    srcs = [
+        "docs.rst",
+    ],
+    prefix = "pw_digital_io_zephyr/",
+    target_compatible_with = incompatible_with_mcu(),
+)

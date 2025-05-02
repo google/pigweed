@@ -24,6 +24,8 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
       pw_assert.assert pw_assert_zephyr.assert pw_assert/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_ASSERT
       pw_assert.check pw_assert_zephyr.check pw_assert/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_ZEPHYR_PIGWEED_MODULE
+      pw_async2.dispatcher pw_async2_basic.dispatcher_backend pw_async2/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK
       pw_chrono.system_clock pw_chrono_zephyr.system_clock pw_chrono/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_INTERRUPT_CONTEXT
@@ -102,6 +104,7 @@ add_subdirectory(pw_containers EXCLUDE_FROM_ALL)
 add_subdirectory(pw_cpu_exception EXCLUDE_FROM_ALL)
 add_subdirectory(pw_cpu_exception_cortex_m EXCLUDE_FROM_ALL)
 add_subdirectory(pw_digital_io EXCLUDE_FROM_ALL)
+add_subdirectory(pw_digital_io_zephyr EXCLUDE_FROM_ALL)
 add_subdirectory(pw_display EXCLUDE_FROM_ALL)
 add_subdirectory(pw_elf EXCLUDE_FROM_ALL)
 add_subdirectory(pw_file EXCLUDE_FROM_ALL)

@@ -21,3 +21,8 @@ tests:
   pw.base64:
     extra_configs:
       - CONFIG_PIGWEED_BASE64=y
+    extra_args:
+      - TEST_LIB=pw_base64.base64_test
+  pw.digital_io:
+    extra_args:
+      - TEST_LIB=pw_digital_io_zephyr.digital_io_test
