@@ -554,6 +554,7 @@ def zephyr_build(ctx: PresubmitContext) -> None:
         ctx.pw_root / dir
         for dir in os.listdir(ctx.pw_root)
         if dir.startswith('pw_')
+        and (ctx.pw_root / dir / 'testcase.yaml').is_file()
     ]
     testsuite_roots_list = [
         args for dir in testsuite_roots for args in ('--testsuite-root', dir)
@@ -580,7 +581,11 @@ def zephyr_build(ctx: PresubmitContext) -> None:
         '--clobber-output',
         '--inline-logs',
         '--verbose',
+        '--coverage',
+        '--coverage-basedir',
+        str(ctx.pw_root),
         *platform_filters,
+        '-x=CONFIG_COVERAGE=y',
         '-x=CONFIG_LLVM_USE_LLD=y',
         '-x=CONFIG_COMPILER_RT_RTLIB=y',
         f'-x=TOOLCHAIN_C_FLAGS=--sysroot={sysroot_dir}',
