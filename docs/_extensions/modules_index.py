@@ -23,10 +23,9 @@ from sphinx.application import Sphinx
 try:  # Bazel location for the data
     from python.runfiles import runfiles  # type: ignore
 
-    r = runfiles.Create()
-    modules_file = r.Rlocation('pigweed/PIGWEED_MODULES')
-    r = runfiles.Create()
-    metadata_file = r.Rlocation('pigweed/docs/module_metadata.json')
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    modules_file = f"{script_dir}/../PIGWEED_MODULES"
+    metadata_file = f"{script_dir}/../module_metadata.json"
 except ImportError:  # GN location for the data
     modules_file = f'{os.environ["PW_ROOT"]}/PIGWEED_MODULES'
     metadata_file = f'{os.environ["PW_ROOT"]}/docs/module_metadata.json'

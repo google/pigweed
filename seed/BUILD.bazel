@@ -51,6 +51,8 @@ sphinx_docs_library(
         "0128.rst",
         "0130.rst",
         "0133.rst",
+        "seed_metadata.json",
+        "seed_metadata_schema.json",
     ],
     prefix = "seed/",
     target_compatible_with = incompatible_with_mcu(),

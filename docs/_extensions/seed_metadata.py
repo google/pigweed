@@ -44,9 +44,9 @@ except ModuleNotFoundError:
 try:  # Bazel
     from python.runfiles import runfiles  # type: ignore
 
-    runfile = runfiles.Create()
-    metadata_path = runfile.Rlocation('pigweed/seed/seed_metadata.json')
-    schema_path = runfile.Rlocation('pigweed/seed/seed_metadata_schema.json')
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    metadata_path = f"{script_dir}/../seed/seed_metadata.json"
+    schema_path = f"{script_dir}/../seed/seed_metadata_schema.json"
 except ImportError:  # GN
     metadata_path = f'{os.environ["PW_ROOT"]}/seed/seed_metadata.json'
     schema_path = f'{os.environ["PW_ROOT"]}/seed/seed_metadata_schema.json'

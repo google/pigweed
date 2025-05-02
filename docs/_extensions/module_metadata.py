@@ -74,10 +74,9 @@ EnvAttrT = TypeVar('EnvAttrT')
 try:  # Bazel location for the data
     from python.runfiles import runfiles  # type: ignore
 
-    r = runfiles.Create()
-    schema_file = r.Rlocation('pigweed/docs/module_metadata_schema.json')
-    r = runfiles.Create()
-    metadata_file = r.Rlocation('pigweed/docs/module_metadata.json')
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    schema_file = f"{script_dir}/../module_metadata_schema.json"
+    metadata_file = f"{script_dir}/../module_metadata.json"
 except ImportError:  # GN location for the data
     schema_file = f'{os.environ["PW_ROOT"]}/docs/module_metadata_schema.json'
     metadata_file = f'{os.environ["PW_ROOT"]}/docs/module_metadata.json'

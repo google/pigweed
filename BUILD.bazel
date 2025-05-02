@@ -150,6 +150,7 @@ sphinx_docs_library(
     srcs = [
         ".bazelversion",
         "Kconfig.zephyr",
+        "PIGWEED_MODULES",
     ],
     target_compatible_with = incompatible_with_mcu(),
     visibility = ["//visibility:public"],

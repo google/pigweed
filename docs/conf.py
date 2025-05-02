@@ -84,21 +84,21 @@ else:  # GN build
     sys.path.append(f'{pw_root}/docs/_extensions')
 
 extensions = [
+    "breathe",
     "bug",  # Custom extension to normalize Pigweed bug links.
+    "kconfig",
+    "module_metadata",
+    "modules_index",
+    "pigweed_live",
+    "pw_status_codes",
     "pw_docgen.sphinx.google_analytics",  # Enables optional Google Analytics
-    "pw_docgen.sphinx.kconfig",
-    "pw_docgen.sphinx.module_metadata",
-    "pw_docgen.sphinx.modules_index",
-    "pw_docgen.sphinx.pigweed_live",
-    "pw_docgen.sphinx.pw_status_codes",
-    "pw_docgen.sphinx.seed_metadata",
+    "seed_metadata",
     "sitemap",  # Custom extension to handle pigweed.dev sitemap nuances.
     "sphinx.ext.autodoc",  # Automatic documentation for Python code
     "sphinx.ext.napoleon",  # Parses Google-style docstrings
     "sphinxarg.ext",  # Automatic documentation of Python argparse
     "sphinxcontrib.mermaid",
     "sphinx_design",
-    "breathe",
     "sphinx_copybutton",  # Copy-to-clipboard button on code blocks
     "sphinx_reredirects",
 ]
