@@ -19,11 +19,16 @@ use cortex_m::peripheral::SCB;
 
 // use pw_log::info;
 
-use crate::arch::arm_cortex_m::exceptions::{exception, FullExceptionFrame, KernelExceptionFrame};
+use crate::arch::arm_cortex_m::exceptions::{
+    exception, ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking,
+    ExcReturnStack, ExceptionFrame, KernelExceptionFrame, RetPsrVal,
+};
 use crate::arch::arm_cortex_m::{in_interrupt_handler, Arch};
 use crate::arch::ArchInterface;
 use crate::scheduler::{self, SchedulerState, Stack, SCHEDULER_STATE};
 use crate::sync::spinlock::SpinLockGuard;
+
+const STACK_ALIGNMENT: usize = 8;
 
 // Remember the thread that the cpu is currently running off of.
 // NOTE this may lag behind the Scheduler's notion of current_thread due to the way
@@ -40,6 +45,35 @@ unsafe fn set_active_thread(t: *mut ArchThreadState) {
 
 pub struct ArchThreadState {
     frame: *mut KernelExceptionFrame,
+}
+
+impl ArchThreadState {
+    #[inline(never)]
+    fn initialize_frame(
+        &mut self,
+        user_frame: *mut ExceptionFrame,
+        kernel_frame: *mut KernelExceptionFrame,
+        psp: u32,
+        return_address: ExcReturn,
+        initial_function: extern "C" fn(usize, usize),
+        (arg0, arg1): (usize, usize),
+    ) {
+        // Clear the stack and set up the exception frame such that it would
+        // return to the function passed in with arg0 and arg1 passed in the
+        // first two argument slots.
+        unsafe {
+            (*user_frame) = mem::zeroed();
+            (*user_frame).r0 = initial_function as u32;
+            (*user_frame).r1 = arg0 as u32;
+            (*user_frame).r2 = arg1 as u32;
+            (*user_frame).pc = trampoline as u32;
+            (*user_frame).psr = RetPsrVal(0).with_t(true);
+            (*kernel_frame) = mem::zeroed();
+            (*kernel_frame).psp = psp;
+            (*kernel_frame).return_address = return_address.bits() as u32;
+        }
+        self.frame = kernel_frame;
+    }
 }
 
 impl super::super::ThreadState for ArchThreadState {
@@ -60,7 +94,7 @@ impl super::super::ThreadState for ArchThreadState {
         // info!(
         //     "context switch from thread {:#08x} to thread {:#08x}",
         //     old_thread.id(),
-        //     new_thread.id()
+        //     new_thread.id(),
         // );
 
         // Remember active_thread only if it wasn't already set and trigger
@@ -82,6 +116,7 @@ impl super::super::ThreadState for ArchThreadState {
 
             // TODO: make sure this always drops interrupts, may need to force a cpsid here.
             drop(sched_state);
+            pw_assert::debug_assert!(Arch::interrupts_enabled());
 
             // PendSV should fire and a context switch will happen.
 
@@ -98,38 +133,69 @@ impl super::super::ThreadState for ArchThreadState {
         sched_state
     }
 
-    #[inline(never)]
-    fn initialize_frame(
+    fn initialize_kernel_frame(
         &mut self,
-        stack: Stack,
+        kernel_stack: Stack,
         initial_function: extern "C" fn(usize, usize),
-        (arg0, arg1): (usize, usize),
+        args: (usize, usize),
     ) {
-        // TODO - konkers: Split user and kernel stacks.
+        let user_frame = Stack::aligned_stack_allocation(
+            kernel_stack.end(),
+            size_of::<ExceptionFrame>(),
+            STACK_ALIGNMENT,
+        );
+        let kernel_frame = Stack::aligned_stack_allocation(
+            user_frame,
+            size_of::<KernelExceptionFrame>(),
+            STACK_ALIGNMENT,
+        );
 
-        // Calculate the first 8 byte aligned full exception frame from the top
-        // of the thread's stack.
-        let mut frame = stack.end().wrapping_sub(size_of::<FullExceptionFrame>());
-        let offset = frame.align_offset(8);
-        if offset > 0 {
-            frame = frame.wrapping_sub(8 - offset);
-        }
-        let frame: *mut FullExceptionFrame = frame as *mut FullExceptionFrame;
+        self.initialize_frame(
+            user_frame as *mut ExceptionFrame,
+            kernel_frame as *mut KernelExceptionFrame,
+            0x0,
+            ExcReturn::new(
+                ExcReturnStack::MainSecure,
+                ExcReturnRegisterStacking::Default,
+                ExcReturnFrameType::Standard,
+                ExcReturnMode::ThreadSecure,
+            ),
+            initial_function,
+            args,
+        );
+    }
 
-        // Clear the stack and set up the exception frame such that it would
-        // return to the function passed in with arg0 and arg1 passed in the
-        // first two argument slots.
-        unsafe {
-            (*frame) = mem::zeroed();
-            (*frame).user.r0 = initial_function as u32;
-            (*frame).user.r1 = arg0 as u32;
-            (*frame).user.r2 = arg1 as u32;
-            (*frame).user.pc = trampoline as u32;
-            (*frame).user.psr = 1 << 24; // T bit
-            (*frame).kernel.return_address = 0xfffffff9; // return to state using MSP and no FP
-        }
-
-        self.frame = &raw mut (unsafe { &mut *frame }).kernel;
+    #[cfg(feature = "user_space")]
+    fn initialize_user_frame(
+        &mut self,
+        kernel_stack: Stack,
+        initial_sp: *mut u8,
+        initial_function: extern "C" fn(usize, usize),
+        args: (usize, usize),
+    ) {
+        let user_frame = Stack::aligned_stack_allocation(
+            initial_sp,
+            size_of::<ExceptionFrame>(),
+            STACK_ALIGNMENT,
+        );
+        let kernel_frame = Stack::aligned_stack_allocation(
+            kernel_stack.end(),
+            size_of::<KernelExceptionFrame>(),
+            STACK_ALIGNMENT,
+        );
+        self.initialize_frame(
+            user_frame as *mut ExceptionFrame,
+            kernel_frame as *mut KernelExceptionFrame,
+            user_frame as u32,
+            ExcReturn::new(
+                ExcReturnStack::ThreadSecure,
+                ExcReturnRegisterStacking::Default,
+                ExcReturnFrameType::Standard,
+                ExcReturnMode::ThreadSecure,
+            ),
+            initial_function,
+            args,
+        );
     }
 }
 
@@ -173,7 +239,10 @@ extern "C" fn pendsv_swap_sp(frame: *mut KernelExceptionFrame) -> *mut KernelExc
     // as the context switch frame for when it is returned to later. Clear active thread
     // afterwards.
     let active_thread = unsafe { get_active_thread() };
-    // info!("inside pendsv: currently active thread {:08x}", at as usize);
+    // info!(
+    //     "inside pendsv: currently active thread {:08x}",
+    //     active_thread as usize
+    // );
     // info!("old frame {:08x}: pc {:08x}", frame as usize, (*frame).pc);
 
     pw_assert::assert!(active_thread != core::ptr::null_mut());

@@ -60,14 +60,22 @@ impl ArchInterface for Arch {
             let vector_table = pw_boot_vector_table_addr as *const ();
             p.SCB.vtor.write(vector_table as u32);
 
-            // Set the interrupt priority for SVCall and PendSV to the lowest level
-            // so that all of the external IRQs will preempt them.
+            // Only the high two bits or the priority are guaranteed to be
+            // implemented.  Values below are chosen accordingly.
+            //
+            // Note: Higher values have lower priority
             let mut scb = p.SCB;
-            scb.set_priority(scb::SystemHandler::SVCall, 255);
-            scb.set_priority(scb::SystemHandler::PendSV, 255);
 
-            // Set the systick priority to medium
-            scb.set_priority(scb::SystemHandler::SysTick, 128);
+            // Set SVCall (system calls) to the lowest priority.
+            scb.set_priority(scb::SystemHandler::SVCall, 0b1111_1111);
+
+            // Set PendSV (used by context switching) to just above SVCall so
+            // that system calls can context switch.
+            scb.set_priority(scb::SystemHandler::PendSV, 0b1011_1111);
+
+            // Set IRQs to a priority above SVCall and PendSV so that they
+            // can preempt them.
+            scb.set_priority(scb::SystemHandler::SysTick, 0b0111_1111);
 
             // TODO: set all of the NVIC external irqs to medium as well
 
@@ -103,6 +111,7 @@ impl ArchInterface for Arch {
     fn disable_interrupts() {
         cortex_m::interrupt::disable();
     }
+
     fn interrupts_enabled() -> bool {
         // It's a complicated concept in cortex-m:
         // If PRIMASK is inactive, then interrupts are 100% disabled otherwise
@@ -138,7 +147,14 @@ fn ipsr_register_read() -> u32 {
 // Utility function to read whether or not the cpu considers itself in a handler
 fn in_interrupt_handler() -> bool {
     // IPSR[8:0] is the current exception handler (or 0 if in thread mode)
-    ipsr_register_read() & (0x1ff) != 0
+    // TODO: konkers - Create register wrapper for IPSR.
+    let current_exception = ipsr_register_read() & 0x1ff;
+
+    // Treat SVCall (0xb) as in thread mode as we drop the SVCall pending bit
+    // during system call execution to allow it to block and be preempted.
+    // The code that manages this is in
+    // [`crate::arch::arm_cortex_m::syscall::handle_syscall()`]
+    current_exception != 0 && current_exception != 0xb
 }
 
 #[allow(dead_code)]

@@ -43,6 +43,39 @@ pub struct ArchThreadState {
     frame: *mut ContextSwitchFrame,
 }
 
+impl ArchThreadState {
+    #[inline(never)]
+    fn initialize_frame(
+        &mut self,
+        kernel_stack: Stack,
+        trampoline: extern "C" fn(),
+        initial_sp: usize,
+        initial_function: extern "C" fn(usize, usize),
+        (arg0, arg1): (usize, usize),
+    ) {
+        let frame = Stack::aligned_stack_allocation(
+            kernel_stack.initial_sp(8),
+            size_of::<ContextSwitchFrame>(),
+            8,
+        );
+        let frame: *mut ContextSwitchFrame = frame as *mut ContextSwitchFrame;
+        unsafe { (*frame) = mem::zeroed() };
+
+        unsafe {
+            // Clear the stack and set up the exception frame such that it would
+            // return to the function passed in with arg0 and arg1 passed in the
+            // first two argument slots.
+            (*frame).ra = trampoline as usize;
+            (*frame).s0 = initial_function as usize;
+            (*frame).s1 = arg0;
+            (*frame).s2 = arg1;
+            (*frame).s5 = initial_sp;
+        }
+
+        self.frame = frame
+    }
+}
+
 impl super::super::ThreadState for ArchThreadState {
     fn new() -> Self {
         Self {
@@ -68,34 +101,30 @@ impl super::super::ThreadState for ArchThreadState {
         sched_state
     }
 
-    #[inline(never)]
-    fn initialize_frame(
+    fn initialize_kernel_frame(
         &mut self,
-        stack: Stack,
+        kernel_stack: Stack,
         initial_function: extern "C" fn(usize, usize),
-        (arg0, arg1): (usize, usize),
+        args: (usize, usize),
     ) {
-        // Calculate the first 8 byte aligned full exception frame from the top
-        // of the thread's stack.
-        let mut frame = stack.end().wrapping_sub(size_of::<ContextSwitchFrame>());
-        let offset = frame.align_offset(8);
-        if offset > 0 {
-            frame = frame.wrapping_sub(8 - offset);
-        }
-        let frame: *mut ContextSwitchFrame = frame as *mut ContextSwitchFrame;
+        self.initialize_frame(kernel_stack, asm_trampoline, 0x0, initial_function, args);
+    }
 
-        // Clear the stack and set up the exception frame such that it would
-        // return to the function passed in with arg0 and arg1 passed in the
-        // first two argument slots.
-        unsafe {
-            (*frame) = mem::zeroed();
-            (*frame).ra = asm_trampoline as usize;
-            (*frame).s0 = initial_function as usize;
-            (*frame).s1 = arg0;
-            (*frame).s2 = arg1;
-        }
-
-        self.frame = frame
+    #[cfg(feature = "user_space")]
+    fn initialize_user_frame(
+        &mut self,
+        kernel_stack: Stack,
+        initial_sp: *mut u8,
+        initial_function: extern "C" fn(usize, usize),
+        args: (usize, usize),
+    ) {
+        self.initialize_frame(
+            kernel_stack,
+            asm_user_trampoline,
+            initial_sp as usize,
+            initial_function,
+            args,
+        );
     }
 }
 
@@ -152,10 +181,38 @@ extern "C" fn riscv_context_switch(
 // pass the initial function and arguments via two of the saved s registers.
 #[no_mangle]
 #[naked]
+extern "C" fn asm_user_trampoline() {
+    unsafe {
+        naked_asm!(
+            "
+                // Store the kernel stack pointer in mscratch.
+                csrw    mscratch, sp
+
+                // Set initial SP as pass in by `initialize_frame()`
+                mv      sp, s5
+
+                // Set args for function call
+                mv      a0, s0
+                mv      a1, s1
+                mv      a2, s2
+
+                // TODO: mret into non-privileged mode
+                tail    trampoline
+            "
+        )
+    }
+}
+
+// Since the context switch frame does not contain the function arg registers,
+// pass the initial function and arguments via two of the saved s registers.
+#[no_mangle]
+#[naked]
 extern "C" fn asm_trampoline() {
     unsafe {
         naked_asm!(
             "
+                // Zero out mscratch to signify that this is a kernel thread.
+                csrw    mscratch, zero
                 mv a0, s0
                 mv a1, s1
                 mv a2, s2

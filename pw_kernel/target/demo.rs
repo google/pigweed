@@ -30,6 +30,20 @@ pub fn main() -> ! {
     );
     Thread::start(thread_b);
 
+    let thread_c = kernel::init_non_priv_thread!(
+        "C",
+        test_thread_entry_c,
+        KernelConfig::KERNEL_STACK_SIZE_BYTES
+    );
+    Thread::start(thread_c);
+
+    let thread_d = kernel::init_non_priv_thread!(
+        "D",
+        test_thread_entry_d,
+        KernelConfig::KERNEL_STACK_SIZE_BYTES
+    );
+    Thread::start(thread_d);
+
     info!("Thread A re-using bootstrap thread");
     thread_a()
 }
@@ -37,6 +51,18 @@ pub fn main() -> ! {
 fn test_thread_entry_b(_arg: usize) {
     info!("Thread B starting");
     thread_b();
+}
+
+#[allow(dead_code)]
+fn test_thread_entry_c(_arg: usize) {
+    info!("Thread C starting");
+    thread_c();
+}
+
+#[allow(dead_code)]
+fn test_thread_entry_d(_arg: usize) {
+    info!("Thread D starting");
+    thread_d();
 }
 
 static TEST_COUNTER: Mutex<u64> = Mutex::new(0);
@@ -59,15 +85,29 @@ fn thread_b() {
         };
         info!("Thread B: counter value {}", *counter as u64);
 
-        let val = SysCall::debug_add(0xdecaf000, 0xbad);
-        match val {
-            Ok(val) => info!("retval: {:08x}", val as u32),
-            Err(e) => info!("error: {}", e as u32),
-        }
-
         pw_assert::ne!(*counter as usize, 4 as usize);
         drop(counter);
         // Give Thread A a chance to acquire the mutex.
         kernel::yield_timeslice();
+    }
+}
+
+fn thread_c() {
+    loop {
+        let val = SysCall::debug_add(0xdecaf000, 0xbad);
+        match val {
+            Ok(val) => info!("Thread C: retval: {:08x}", val as u32),
+            Err(e) => info!("error: {}", e as u32),
+        }
+    }
+}
+
+fn thread_d() {
+    loop {
+        let val = SysCall::debug_add(0xcafe0000, 0xcafe);
+        match val {
+            Ok(val) => info!("Thread D: retval: {:08x}", val as u32),
+            Err(e) => info!("error: {}", e as u32),
+        }
     }
 }

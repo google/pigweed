@@ -37,7 +37,10 @@ macro_rules! wait_queue_debug {
 
 #[derive(Clone, Copy)]
 pub struct Stack {
+    // Starting (lowest) address of the stack.  Inclusive.
     start: *const u8,
+
+    // Ending (highest) address of the stack.  Exclusive.
     end: *const u8,
 }
 
@@ -46,7 +49,7 @@ impl Stack {
     pub const fn from_slice(slice: &[u8]) -> Self {
         let start: *const u8 = slice.as_ptr();
         // Safety: offset based on known size of slice.
-        let end = unsafe { start.add(slice.len() - 1) };
+        let end = unsafe { start.add(slice.len()) };
         Self { start, end }
     }
 
@@ -57,11 +60,30 @@ impl Stack {
         }
     }
 
-    pub fn start(self) -> *const u8 {
+    pub fn start(&self) -> *const u8 {
         self.start
     }
-    pub fn end(self) -> *const u8 {
+    pub fn end(&self) -> *const u8 {
         self.end
+    }
+
+    pub fn initial_sp(&self, alignment: usize) -> *const u8 {
+        // Use a zero sized allocation to align the initial stack pointer.
+        Self::aligned_stack_allocation(self.end, 0, alignment)
+    }
+
+    pub fn contains(&self, ptr: *const u8) -> bool {
+        ptr >= self.start && ptr < self.end
+    }
+
+    pub fn aligned_stack_allocation(sp: *const u8, size: usize, alignment: usize) -> *const u8 {
+        let sp = sp.wrapping_byte_sub(size);
+        let offset = sp.align_offset(alignment);
+        if offset > 0 {
+            sp.wrapping_byte_sub(alignment - offset)
+        } else {
+            sp
+        }
     }
 }
 
@@ -180,49 +202,78 @@ impl Thread {
         }
     }
 
-    pub fn initialize_kernel_thread(
-        &mut self,
-        stack: Stack,
-        entry_point: fn(usize),
-        arg: usize,
-    ) -> &mut Thread {
-        let process = SCHEDULER_STATE.lock().kernel_process.get();
-        unsafe { self.initialize(process, stack, entry_point, arg) }
+    extern "C" fn trampoline(entry_point: usize, arg: usize) {
+        let entry_point = core::ptr::with_exposed_provenance::<()>(entry_point);
+        // SAFETY: This function is only ever passed to the
+        // architecture-specific call to `initialize_frame` below. It is
+        // never called directly. In `initialize_frame`, the first argument
+        // is `entry_point as usize`. `entry_point` is a `fn(usize)`. Thus,
+        // this transmute preserves validity, and the preceding
+        // `with_exposed_provenance` ensures that the resulting `fn(usize)`
+        // has valid provenance for its referent.
+        let entry_point: fn(usize) = unsafe { core::mem::transmute(entry_point) };
+        entry_point(arg);
     }
 
-    /// # Safety
-    /// It is up to the caller to ensure that *process is valid.
-    /// Initialize the mutable parts of the thread, must be called once per
-    /// thread prior to starting it
-    pub unsafe fn initialize(
+    pub fn initialize_kernel_thread(
         &mut self,
-        process: *mut Process,
-        stack: Stack,
+        kernel_stack: Stack,
         entry_point: fn(usize),
         arg: usize,
     ) -> &mut Thread {
         pw_assert::assert!(self.state == State::New);
-        self.stack = stack;
-        self.process = process;
+        let args = (entry_point as usize, arg);
+        unsafe {
+            (*self.arch_thread_state.get()).initialize_kernel_frame(
+                kernel_stack,
+                Self::trampoline,
+                args,
+            );
+        }
+
+        let process = SCHEDULER_STATE.lock().kernel_process.get();
+        unsafe { self.initialize(process, kernel_stack) }
+    }
+
+    #[cfg(feature = "user_space")]
+    pub fn initialize_non_priv_thread(
+        &mut self,
+        kernel_stack: Stack,
+        main_stack: Stack,
+        entry_point: fn(usize),
+        arg: usize,
+    ) -> &mut Thread {
+        pw_assert::assert!(self.state == State::New);
 
         let args = (entry_point as usize, arg);
-        extern "C" fn trampoline(entry_point: usize, arg: usize) {
-            let entry_point = core::ptr::with_exposed_provenance::<()>(entry_point);
-            // SAFETY: This function is only ever passed to the
-            // architecture-specific call to `initialize_frame` below. It is
-            // never called directly. In `initialize_frame`, the first argument
-            // is `entry_point as usize`. `entry_point` is a `fn(usize)`. Thus,
-            // this transmute preserves validity, and the preceding
-            // `with_exposed_provenance` ensures that the resulting `fn(usize)`
-            // has valid provenance for its referent.
-            let entry_point: fn(usize) = unsafe { core::mem::transmute(entry_point) };
-            entry_point(arg);
-        }
-
-        // Call the arch to arrange for the thread to start directly
         unsafe {
-            (*self.arch_thread_state.get()).initialize_frame(stack, trampoline, args);
+            (*self.arch_thread_state.get()).initialize_user_frame(
+                kernel_stack,
+                // Conservatively align stack to 16 bytes which is needed for
+                // the RISC-V calling convention.   Ideally this would be
+                // architecture dependant.  However, this value will eventually
+                // be passed in from user space.
+                main_stack.initial_sp(16) as *mut u8,
+                Self::trampoline,
+                args,
+            );
         }
+        // TODO: konkers - pass process in as an argument once we support user processes.
+        let process = SCHEDULER_STATE.lock().kernel_process.get();
+        unsafe { self.initialize(process, kernel_stack) }
+    }
+
+    /// # Preconditions
+    /// `self.arch_thread_state` is initialized before calling this function.
+    ///
+    /// # Safety
+    /// It is up to the caller to ensure that *process is valid.
+    /// Initialize the mutable parts of the thread, must be called once per
+    /// thread prior to starting it
+    unsafe fn initialize(&mut self, process: *mut Process, kernel_stack: Stack) -> &mut Thread {
+        self.stack = kernel_stack;
+        self.process = process;
+
         self.state = State::Initial;
 
         let _sched_state = SCHEDULER_STATE.lock();
@@ -243,7 +294,11 @@ impl Thread {
 
     #[allow(dead_code)]
     pub fn start(mut thread: ForeignBox<Self>) {
-        info!("starting thread {:#x}", thread.id() as usize);
+        info!(
+            "starting thread {} {:#x}",
+            thread.name as &str,
+            thread.id() as usize
+        );
 
         pw_assert::assert!(thread.state == State::Initial);
 
@@ -511,8 +566,9 @@ fn reschedule(
 
     pw_assert::assert!(
         new_thread.state == State::Ready,
-        "<{}> not ready",
-        new_thread.name as &str
+        "<{}>({:#x}) not ready",
+        new_thread.name as &str,
+        new_thread.id() as usize,
     );
     new_thread.state = State::Running;
 

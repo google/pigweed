@@ -19,18 +19,143 @@ pub(crate) use arm_cortex_m_macro::kernel_only_exception as exception;
 pub(crate) use arm_cortex_m_macro::user_space_exception as exception;
 
 use pw_log::info;
+use regs::*;
 
+/// Combined Exception Return Program Status Register Value
+pub struct RetPsrVal(pub u32);
+impl RetPsrVal {
+    rw_int_field!(u32, exception, 0, 8, u16);
+    rw_bool_field!(u32, sprealign, 9);
+    rw_int_field!(u32, branch_flags, 10, 19, u16);
+    rw_bool_field!(u32, sfpa, 20);
+    rw_bool_field!(u32, b, 21);
+    rw_bool_field!(u32, t, 24);
+    rw_int_field!(u32, it, 25, 26, u8);
+    rw_bool_field!(u32, q, 27);
+    rw_bool_field!(u32, v, 28);
+    rw_bool_field!(u32, c, 29);
+    rw_bool_field!(u32, z, 30);
+    rw_bool_field!(u32, n, 31);
+}
+
+/// Exception Return Payload (EXC_RETURN)
+///
+/// Represents an Exception Return Payload (EXC_RETURN) as described in D1.2.26
+/// of the Armv8-M Architecture Reference Manual.
+pub struct ExcReturn(usize);
+
+impl ExcReturn {
+    const S: usize = 1 << 6;
+    const DCRS: usize = 1 << 5;
+    const F_TYPE: usize = 1 << 4;
+    const MODE: usize = 1 << 3;
+    const SP_SEL: usize = 1 << 2;
+    const ES: usize = 1 << 0;
+    const RESERVED: usize = 0xffffff80;
+
+    /// Create a new ExcReturn payload
+    pub const fn new(
+        stack_type: ExcReturnStack,
+        register_stacking: ExcReturnRegisterStacking,
+        frame_type: ExcReturnFrameType,
+        mode: ExcReturnMode,
+    ) -> Self {
+        Self(
+            Self::RESERVED
+                | stack_type as usize
+                | register_stacking as usize
+                | frame_type as usize
+                | mode as usize,
+        )
+    }
+
+    /// Returns the bitwise representation of this return payload
+    pub const fn bits(&self) -> usize {
+        self.0
+    }
+}
+
+/// Which Stack to use on exception return
+///
+/// This represents a combination of the `S` and `SPSEL` bits in the Exception
+/// Return Payload.
+#[derive(Clone, Copy)]
+#[allow(dead_code)]
+#[repr(usize)]
+pub enum ExcReturnStack {
+    /// Main, Non-Secure stack
+    MainNonSecure = 0,
+
+    /// Thread, Non-Secure stack
+    ThreadNonSecure = ExcReturn::SP_SEL,
+
+    /// Main, Secure stack
+    MainSecure = ExcReturn::S,
+
+    /// Thread, Secure stack
+    ThreadSecure = ExcReturn::S | ExcReturn::SP_SEL,
+}
+
+/// Default callee register stacking
+///
+/// This represents the `DCRS` bit in the Exception Return Payload.
+#[derive(Clone, Copy)]
+#[allow(dead_code)]
+#[repr(usize)]
+pub enum ExcReturnRegisterStacking {
+    /// Skip stacking of additional state context registers.
+    Skipped = 0,
+
+    /// Default rules for stacking of additional state context registers.
+    Default = ExcReturn::DCRS,
+}
+
+/// Stack frame type
+///
+/// This represents the `FType` bit in the Exception Return Payload.
+#[derive(Clone, Copy)]
+#[allow(dead_code)]
+#[repr(usize)]
+pub enum ExcReturnFrameType {
+    /// Standard Stack Frame
+    Standard = ExcReturn::F_TYPE,
+    /// Extended Stack Frame
+    Extended = 0,
+}
+
+/// Return Mode
+///
+/// This represents a combination of the `MODE` and `ES` bits in the Exception
+/// Return Payload.
+#[derive(Clone, Copy)]
+#[allow(dead_code)]
+#[repr(usize)]
+pub enum ExcReturnMode {
+    /// Handler, Non-Secure mode
+    HandlerNonSecure = 0,
+
+    /// Thread, Non-Secure mode
+    ThreadNonSecure = ExcReturn::MODE,
+
+    /// Handler, Secure mode
+    HandlerSecure = ExcReturn::ES,
+
+    /// Thread, Secure mode
+    ThreadSecure = ExcReturn::MODE | ExcReturn::ES,
+}
+
+/// Type of all exception handlers.
+///
+/// # Returns
+/// Returns the frame representing the context in which to return.  This lets
+/// exceptions perform context switches.
 #[allow(dead_code)]
 pub type ExceptionHandler = extern "C" fn(*mut KernelExceptionFrame) -> *mut KernelExceptionFrame;
 
-/// Exception frame with all registers
-#[repr(C)]
-pub struct FullExceptionFrame {
-    pub kernel: KernelExceptionFrame,
-    pub user: ExceptionFrame,
-}
-
-/// Exception frame with only the registers pushed by the core.
+/// Exception frame with only the registers pushed by the hardware.
+///
+/// Note: This is pushed to the active stack at the time of the exception which
+/// may be either a user-mode or kernel stack.
 #[repr(C)]
 pub struct ExceptionFrame {
     pub r0: u32,
@@ -40,7 +165,7 @@ pub struct ExceptionFrame {
     pub r12: u32,
     pub lr: u32,
     pub pc: u32,
-    pub psr: u32,
+    pub psr: RetPsrVal,
 }
 
 impl ExceptionFrame {
@@ -52,11 +177,17 @@ impl ExceptionFrame {
             "r0  {:#010x} r1 {:#010x} r2  {:#010x} r3  {:#010x}",
             self.r0 as u32, self.r1 as u32, self.r2 as u32, self.r3 as u32
         );
+        info!(
+            "r12 {:#010x} lr {:#010x} pc  {:#010x} psr {:#010x}",
+            self.r12 as u32, self.lr as u32, self.pc as u32, self.psr.0 as u32
+        );
     }
 }
 
 /// Exception frame with the registers that the kernel first level assembly
 /// exception handler wrapper pushes.
+///
+/// Note: Always pushed to the kernel stack.
 #[repr(C)]
 pub struct KernelExceptionFrame {
     pub r4: u32,
@@ -84,13 +215,32 @@ impl KernelExceptionFrame {
             "r8  {:#010x} r9 {:#010x} r10 {:#010x} r11 {:#010x}",
             self.r8 as u32, self.r9 as u32, self.r10 as u32, self.r11 as u32
         );
+        info!(
+            "psp {:#010x} return_address {:#010x}",
+            self.psp as u32, self.return_address as u32,
+        );
+
+        let user_frame = if self.return_address & (ExcReturn::SP_SEL as u32) == 0 {
+            // If we came from the Main stack, the user frame is directly above
+            // the kernel frame on the stack.
+            unsafe { (&raw const *self).byte_add(size_of::<Self>()) as *const ExceptionFrame }
+        } else {
+            // If we came from the Thread stack, the user frame is pointed to by
+            // the psp field of the kernel frame.
+            self.psp as *const ExceptionFrame
+        };
+
+        unsafe { &*user_frame }.dump();
     }
 }
 
 #[exception(exception = "HardFault")]
 #[no_mangle]
 extern "C" fn pw_kernel_hard_fault(frame: *mut KernelExceptionFrame) -> *mut KernelExceptionFrame {
-    info!("HardFault");
+    let hfsr = 0xE000ED2C as *const u32;
+    info!("HardFault (HFSR: {:08x})", unsafe { hfsr.read_volatile() }
+        as u32);
+
     unsafe { &*frame }.dump();
     #[allow(clippy::empty_loop)]
     loop {}

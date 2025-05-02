@@ -36,6 +36,7 @@ rust_library(
         "arch/arm_cortex_m/regs.rs",
         "arch/arm_cortex_m/regs/mpu.rs",
         "arch/arm_cortex_m/regs/nvic.rs",
+        "arch/arm_cortex_m/regs/scb.rs",
         "arch/arm_cortex_m/regs/systick.rs",
         "arch/arm_cortex_m/spinlock.rs",
         "arch/arm_cortex_m/syscall.rs",
@@ -71,6 +72,7 @@ rust_library(
         ],
     }),
     proc_macro_deps = [
+        "//pw_kernel/macros:riscv_macro",
         "//pw_kernel/macros:arm_cortex_m_macro",
         "@rust_crates//:paste",
     ],

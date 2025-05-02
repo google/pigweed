@@ -15,16 +15,19 @@
 
 pub mod mpu;
 pub mod nvic;
+pub mod scb;
 pub mod systick;
 
 pub use mpu::Mpu;
 pub use nvic::Nvic;
+pub use scb::Scb;
 pub use systick::SysTick;
 
 pub struct Regs {
     pub mpu: Mpu,
     pub nvic: Nvic,
     pub systick: SysTick,
+    pub scb: Scb,
 }
 
 impl Regs {
@@ -33,6 +36,7 @@ impl Regs {
             mpu: Mpu::new(),
             nvic: Nvic::new(),
             systick: SysTick::new(),
+            scb: Scb::new(),
         }
     }
 }

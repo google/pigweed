@@ -109,6 +109,50 @@ macro_rules! init_thread {
     }};
 }
 
+#[macro_export]
+macro_rules! init_non_priv_thread {
+    ($name:literal, $entry:expr, $stack_size:expr) => {{
+        info!(
+            "allocating non-privileged thread: {}",
+            $name as &'static str
+        );
+        use $crate::Stack;
+        use $crate::ThreadBuffer;
+        let mut thread = {
+            static mut THREAD_BUFFER: ThreadBuffer = ThreadBuffer::new();
+            #[allow(static_mut_refs)]
+            unsafe {
+                THREAD_BUFFER.alloc_thread($name)
+            }
+        };
+
+        info!(
+            "initializing non-privileged thread: {}",
+            $name as &'static str
+        );
+        thread.initialize_non_priv_thread(
+            {
+                static mut STACK: [u8; $stack_size] = [0; $stack_size];
+                #[allow(static_mut_refs)]
+                unsafe {
+                    Stack::from_slice(&STACK)
+                }
+            },
+            {
+                static mut STACK: [u8; $stack_size] = [0; $stack_size];
+                #[allow(static_mut_refs)]
+                unsafe {
+                    Stack::from_slice(&STACK)
+                }
+            },
+            $entry,
+            0,
+        );
+
+        thread
+    }};
+}
+
 impl Kernel {
     pub fn main() -> ! {
         target::console_init();

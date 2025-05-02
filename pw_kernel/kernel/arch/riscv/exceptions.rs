@@ -11,8 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-use core::arch::naked_asm;
-
 use log_if::debug_if;
 use pw_log::info;
 
@@ -20,7 +18,17 @@ use crate::arch::riscv::regs::{Cause, Exception, Interrupt, MCause, MCauseVal};
 use crate::arch::riscv::timer;
 use crate::syscall::raw_handle_syscall;
 
+#[cfg(not(feature = "user_space"))]
+pub(crate) use riscv_macro::kernel_only_exception as exception;
+#[cfg(feature = "user_space")]
+pub(crate) use riscv_macro::user_space_exception as exception;
+
 const LOG_EXCEPTIONS: bool = false;
+
+/// Type of all exception handlers.
+#[allow(dead_code)]
+pub type ExceptionHandler =
+    unsafe extern "C" fn(mcause: MCauseVal, mepc: usize, frame: &mut TrapFrame);
 
 #[inline(never)]
 fn dump_exception_frame(frame: &TrapFrame) {
@@ -44,6 +52,10 @@ fn dump_exception_frame(frame: &TrapFrame) {
     info!(
         "a4  {:#010x} a5 {:#010x} a6  {:#010x} a7  {:#010x}",
         frame.a4 as u32, frame.a5 as u32, frame.a6 as u32, frame.a7 as u32
+    );
+    info!(
+        "tp  {:#010x} gp {:#010x} sp  {:#010x}",
+        frame.tp as u32, frame.gp as u32, frame.sp as u32
     );
     info!("mstatus {:#010x}", frame.status as u32);
     info!("mcause {:#010x}", MCause::read().0 as u32);
@@ -69,7 +81,7 @@ fn handle_ecall(frame: &mut TrapFrame) {
     frame.epc += 4;
 }
 
-fn custom_exception_handler(exception: Exception, mepc: usize, frame: &mut TrapFrame) {
+fn exception_handler(exception: Exception, mepc: usize, frame: &mut TrapFrame) {
     // For now, always dump the exception we've received and halt.
     debug_if!(
         LOG_EXCEPTIONS,
@@ -95,7 +107,7 @@ fn custom_exception_handler(exception: Exception, mepc: usize, frame: &mut TrapF
 }
 
 // Default interrupt handler
-unsafe fn custom_interrupt_handler(interrupt: Interrupt, mepc: usize, frame: &TrapFrame) {
+unsafe fn interrupt_handler(interrupt: Interrupt, mepc: usize, frame: &TrapFrame) {
     debug_if!(
         LOG_EXCEPTIONS,
         "Interrupt interrupt {:x} mepc {:x}, trap_frame {:x}, mstatus {:x}",
@@ -115,12 +127,12 @@ unsafe fn custom_interrupt_handler(interrupt: Interrupt, mepc: usize, frame: &Tr
     }
 }
 
+#[exception(exception = "_start_trap")]
 #[no_mangle]
-#[link_section = ".trap.rust"]
-pub unsafe extern "C" fn trap_handler(mcause: MCauseVal, mepc: usize, frame: &mut TrapFrame) {
+unsafe extern "C" fn trap_handler(mcause: MCauseVal, mepc: usize, frame: &mut TrapFrame) {
     match mcause.cause() {
-        Cause::Interrupt(interrupt) => custom_interrupt_handler(interrupt, mepc, frame),
-        Cause::Exception(exception) => custom_exception_handler(exception, mepc, frame),
+        Cause::Interrupt(interrupt) => interrupt_handler(interrupt, mepc, frame),
+        Cause::Exception(exception) => exception_handler(exception, mepc, frame),
     }
 }
 
@@ -158,78 +170,3 @@ pub struct TrapFrame {
 }
 
 const _: () = assert!(core::mem::size_of::<TrapFrame>() == 0x60);
-
-#[naked]
-#[no_mangle]
-#[link_section = ".trap"]
-unsafe extern "C" fn _start_trap() {
-    naked_asm!(
-        "
-        // TODO - konkers: swap stack pointer into mscratch and check for user space.
-        // For now, use the same stack we came in on since we are not implementing protection.
-        addi  sp, sp, -0x60
-
-        // Note: All stack math here assumes 32bit word sizes.
-        sw    t6, 0x44(sp)
-        sw    t5, 0x40(sp)
-        sw    t4, 0x3c(sp)
-        sw    t3, 0x38(sp)
-        sw    t2, 0x34(sp)
-        sw    t1, 0x30(sp)
-        sw    t0, 0x2c(sp)
-
-        sw    a7, 0x28(sp)
-        sw    a6, 0x24(sp)
-        sw    a5, 0x20(sp)
-        sw    a4, 0x1c(sp)
-        sw    a3, 0x18(sp)
-        sw    a2, 0x14(sp)
-        sw    a1, 0x10(sp)
-        sw    a0, 0x0c(sp)
-
-        sw    ra, 0x08(sp)
-        csrr  t0, mstatus
-        sw    t0, 0x04(sp)
-
-        csrr  a0, mcause
-        csrr  a1, mepc
-        sw    a1, 0x00(sp)
-
-        mv    a2, sp
-
-        // Call trap_handler with the following arguments:
-        // a0: mcause
-        // a1: mepc
-        // a2: &TrapFrame
-        call  trap_handler
-
-        lw    t0, 0x00(sp)
-        lw    t1, 0x04(sp)
-        csrw  mepc, t0
-        csrw  mstatus, t1
-
-        lw    ra, 0x08(sp)
-
-        lw    a0, 0x0c(sp)
-        lw    a1, 0x10(sp)
-        lw    a2, 0x14(sp)
-        lw    a3, 0x18(sp)
-        lw    a4, 0x1c(sp)
-        lw    a5, 0x20(sp)
-        lw    a6, 0x24(sp)
-        lw    a7, 0x28(sp)
-
-        lw    t0, 0x2c(sp)
-        lw    t1, 0x30(sp)
-        lw    t2, 0x34(sp)
-        lw    t3, 0x38(sp)
-        lw    t4, 0x3c(sp)
-        lw    t5, 0x40(sp)
-        lw    t6, 0x44(sp)
-
-        addi  sp, sp, 0x60
-
-        mret
-    "
-    );
-}

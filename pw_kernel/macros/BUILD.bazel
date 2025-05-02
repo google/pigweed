@@ -27,3 +27,17 @@ rust_proc_macro(
         "@rust_crates//:syn",
     ],
 )
+
+rust_proc_macro(
+    name = "riscv_macro",
+    srcs = [
+        "riscv_macro.rs",
+    ],
+    tags = ["kernel"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@rust_crates//:proc-macro2",
+        "@rust_crates//:quote",
+        "@rust_crates//:syn",
+    ],
+)

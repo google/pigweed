@@ -48,12 +48,27 @@ pub trait ThreadState {
         new_thread_state: *mut ArchThreadState,
     ) -> SpinLockGuard<'_, SchedulerState>;
 
-    // Initialize the default frame of the thread which arranges for it to start at the initial_function
-    // with arguments passed in the first two argument slots.
-    #[allow(dead_code)]
-    fn initialize_frame(
+    /// Initialize the default frame of a kernel thread
+    ///
+    /// Arranges for the thread to start at `initial_function` with arguments
+    /// passed in the first two argument slots.  The stack pointer of the thread
+    /// is set to the top of the kernel stack.
+    fn initialize_kernel_frame(
         &mut self,
-        stack: Stack,
+        kernel_stack: Stack,
+        initial_function: extern "C" fn(usize, usize),
+        args: (usize, usize),
+    );
+
+    /// Initialize the default frame of a user thread
+    ///
+    /// Arranges for the thread to start at `initial_function` with arguments
+    /// passed in the first two argument slots
+    #[cfg(feature = "user_space")]
+    fn initialize_user_frame(
+        &mut self,
+        kernel_stack: Stack,
+        initial_sp: *mut u8,
         initial_function: extern "C" fn(usize, usize),
         args: (usize, usize),
     );

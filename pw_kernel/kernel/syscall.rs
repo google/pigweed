@@ -15,8 +15,9 @@
 use pw_status::Result;
 
 use syscall_defs::{SysCallId, SysCallReturnValue};
+use time::Clock;
 
-use crate::scheduler::PremptDisableGuard;
+const SYSCALL_DEBUG: bool = false;
 
 pub fn handle_syscall(
     id: u16,
@@ -25,16 +26,24 @@ pub fn handle_syscall(
     _arg2: usize,
     _arg3: usize,
 ) -> Result<u64> {
-    let _guard = PremptDisableGuard::new();
+    log_if::debug_if!(SYSCALL_DEBUG, "syscall {:#06x}", id as usize);
 
     // Instead of having a architecture independent match here, an array of
     // extern "C" function pointers could be kept and use the architecture's
     // calling convention to directly call them.
+    //
+    // This allows [`crate::arch::arm_cortex_m::in_interrupt_handler()`] to treat
+    // active SVCalls as not in interrupt context.
     let id: SysCallId = id.try_into()?;
-    match id {
+    let res = match id {
         SysCallId::DebugNoOp => Ok(0),
-        SysCallId::DebugAdd => Ok((arg0 + arg1) as u64),
-    }
+        SysCallId::DebugAdd => {
+            crate::sleep_until(crate::Clock::now() + crate::Duration::from_secs(1));
+            Ok((arg0 + arg1) as u64)
+        }
+    };
+    log_if::debug_if!(SYSCALL_DEBUG, "syscall {:#06x} returning", id as usize);
+    res
 }
 
 #[allow(dead_code)]
