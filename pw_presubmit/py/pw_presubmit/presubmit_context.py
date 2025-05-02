@@ -272,19 +272,19 @@ class LuciContext:  # pylint: disable=too-many-instance-attributes
 
     @property
     def is_try(self):
-        return re.search(r'\btry$', self.bucket)
+        return 'try' in self.bucket.split('.')
 
     @property
     def is_ci(self):
-        return re.search(r'\bci$', self.bucket)
+        return 'ci' in self.bucket.split('.')
 
     @property
     def is_dev(self):
-        return re.search(r'\bdev\b', self.bucket)
+        return 'dev' in self.bucket.split('.')
 
     @property
     def is_shadow(self):
-        return re.search(r'\bshadow\b', self.bucket)
+        return 'shadow' in self.bucket.split('.')
 
     @property
     def is_prod(self):
