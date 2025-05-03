@@ -194,7 +194,7 @@ class ServerSocket {
   void ReleaseSocket();
   void ReleaseSocketWithLockHeld() PW_EXCLUSIVE_LOCKS_REQUIRED(socket_mutex_);
 
-  uint16_t port_ = -1;
+  uint16_t port_ = 0;
   sync::Mutex socket_mutex_;
   int socket_own_count_ PW_GUARDED_BY(socket_mutex_) = 0;
   bool ready_ PW_GUARDED_BY(socket_mutex_) = false;

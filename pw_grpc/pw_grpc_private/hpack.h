@@ -32,9 +32,10 @@ inline constexpr uint32_t kHpackMaxStringSize = 127;
 Result<InlineString<kHpackMaxStringSize>> HpackParseRequestHeaders(
     ConstByteSpan payload);
 
-// Decodes an HPACK integer.
+// Decodes an HPACK unsigned integer.
 // Consumed bytes are removed from the `input` span.
-Result<int> HpackIntegerDecode(ConstByteSpan& input, int bits_in_first_byte);
+Result<uint32_t> HpackIntegerDecode(ConstByteSpan& input,
+                                    uint8_t bits_in_first_byte);
 
 // Decodes an HPACK string.
 // Consumed bytes are removed from the `input` span.

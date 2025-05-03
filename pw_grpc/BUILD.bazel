@@ -160,7 +160,6 @@ cc_library(
     hdrs = [
         "pw_grpc_private/hpack.h",
     ],
-    features = ["-conversion_warnings"],
     implementation_deps = ["//pw_assert:check"],
     local_defines = log_defines,
     tags = ["noclangtidy"],
@@ -177,7 +176,6 @@ cc_library(
 pw_cc_test(
     name = "hpack_test",
     srcs = ["hpack_test.cc"],
-    features = ["-conversion_warnings"],
     tags = ["noclangtidy"],
     deps = [
         ":hpack",

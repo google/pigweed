@@ -315,7 +315,7 @@ Status Connection::SharedState::SendData(StreamId stream_id,
 
   ByteBuilder prefix(chunk);
   prefix.PutUint8(0);
-  prefix.PutUint32(message_size, endian::big);
+  prefix.PutUint32(static_cast<uint32_t>(message_size), endian::big);
 
   // Write FrameHeader
   if (!chunk->ClaimPrefix(sizeof(WireFrameHeader))) {
@@ -1116,7 +1116,7 @@ Status Connection::Reader::ProcessSettingsFrame(const FrameHeader& frame,
         // RFC 9113 §6.5.2: "Values above the maximum flow-control window size
         // of 2^31-1 MUST be treated as a connection error of type
         // FLOW_CONTROL_ERROR."
-        if ((value & (1 << 31)) != 0) {
+        if ((value & 0x80000000) != 0) {
           SendGoAway(Http2Error::FLOW_CONTROL_ERROR);
           return Status::Internal();
         }

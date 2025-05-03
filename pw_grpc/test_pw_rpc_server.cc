@@ -172,7 +172,7 @@ constexpr uint32_t kTestChannelId = 1;
 
 int main(int argc, char* argv[]) {
   std::vector<std::string> args(argv, argv + argc);
-  int port = 3400;
+  uint16_t port = 3400;
   int num_connections = 1;
 
   if (args.size() > 1) {
@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
           "should be processed before exit");
       exit(0);
     }
-    port = stoi(args[1]);
+    port = static_cast<uint16_t>(stoi(args[1]));
   }
 
   if (args.size() > 2) {

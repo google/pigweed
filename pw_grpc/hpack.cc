@@ -31,25 +31,26 @@ namespace {
 }
 
 // RFC 7541 §5.1
-Result<int> HpackIntegerDecode(ConstByteSpan& input, int bits_in_first_byte) {
+Result<uint32_t> HpackIntegerDecode(ConstByteSpan& input,
+                                    uint8_t bits_in_first_byte) {
   if (input.empty()) {
     return Status::InvalidArgument();
   }
 
-  const int n = bits_in_first_byte;
-  int i = static_cast<int>(input[0]) & ((1 << n) - 1);
+  const uint8_t n = bits_in_first_byte;
+  uint32_t i = static_cast<uint32_t>(input[0]) & ((1 << n) - 1U);
   input = input.subspan(1);
 
-  if (i < ((1 << n) - 1)) {
+  if (i < ((1 << n) - 1U)) {
     return i;
   }
 
-  int m = 0;
+  uint32_t m = 0;
   while (true) {
     if (input.empty()) {
       return Status::InvalidArgument();
     }
-    int b = static_cast<int>(input[0]);
+    uint32_t b = static_cast<uint32_t>(input[0]);
     input = input.subspan(1);
     i += (b & 127) << m;
     m += 7;
@@ -93,7 +94,7 @@ Result<InlineString<kHpackMaxStringSize>> HpackStringDecode(
 Result<InlineString<kHpackMaxStringSize>> HpackHuffmanDecode(
     ConstByteSpan input) {
   StringBuffer<kHpackMaxStringSize> buffer;
-  int table_index = 0;
+  uint32_t table_index = 0;
 
   // See definition of kHuffmanDecoderTable in hpack.autogen.h.
   for (std::byte byte : input) {
@@ -126,7 +127,7 @@ Result<InlineString<kHpackMaxStringSize>> HpackParseRequestHeaders(
 
     // RFC 7541 §6.1
     if ((first & 0b1000'0000) != 0) {
-      PW_TRY_ASSIGN(int index, HpackIntegerDecode(input, 7));
+      PW_TRY_ASSIGN(uint32_t index, HpackIntegerDecode(input, 7));
       // RFC 7541 Appendix A: these are the only static table entries for :path.
       if (index == 4) {
         return "/";
@@ -145,7 +146,7 @@ Result<InlineString<kHpackMaxStringSize>> HpackParseRequestHeaders(
     }
 
     // RFC 7541 §6.2
-    int index;
+    uint32_t index;
     if ((first & 0b1100'0000) == 0b0100'0000) {
       PW_TRY_ASSIGN(index, HpackIntegerDecode(input, 6));
     } else {

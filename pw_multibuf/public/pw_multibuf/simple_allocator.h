@@ -145,7 +145,8 @@ class SimpleAllocator : public MultiBufAllocator {
       if (cur_iter == regions_.end()) {
         break;
       }
-      size_t unused = cur_iter->region_.data() - last_used_end;
+      size_t unused =
+          static_cast<size_t>(cur_iter->region_.data() - last_used_end);
       if (unused != 0) {
         ControlFlow cf = function({prev_iter, ByteSpan(last_used_end, unused)});
         if (cf == ControlFlow::Break) {
@@ -155,7 +156,8 @@ class SimpleAllocator : public MultiBufAllocator {
       last_used_end = cur_iter->region_.data() + cur_iter->region_.size();
       prev_iter = cur_iter;
     }
-    size_t unused = (data_area_.data() + data_area_.size()) - last_used_end;
+    size_t unused = static_cast<size_t>(
+        (data_area_.data() + data_area_.size()) - last_used_end);
     if (unused != 0) {
       function({prev_iter, ByteSpan(last_used_end, unused)});
     }

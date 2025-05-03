@@ -20,7 +20,7 @@
 namespace pw::grpc {
 namespace {
 
-void TestIntegerDecode(ConstByteSpan input, int bits, int expected) {
+void TestIntegerDecode(ConstByteSpan input, uint8_t bits, uint32_t expected) {
   auto result = HpackIntegerDecode(input, bits);
   ASSERT_TRUE(result.ok());
   EXPECT_EQ(*result, expected);
@@ -36,15 +36,15 @@ void TestHuffmanDecode(ConstByteSpan input, std::string_view expected) {
 // Integer test cases from RFC 7541 Appendix C.1.
 TEST(HpackTest, HpackIntegerDecodeC11) {
   const auto kInput = bytes::Array<0b11101010>();
-  TestIntegerDecode(kInput, /*bits_in_first_byte=*/5, /*expected=*/10);
+  TestIntegerDecode(kInput, /*bits_in_first_byte=*/5, /*expected=*/10U);
 }
 TEST(HpackTest, HpackIntegerDecodeC12) {
   const auto kInput = bytes::Array<0b11111111, 0b10011010, 0b00001010>();
-  TestIntegerDecode(kInput, /*bits_in_first_byte=*/5, /*expected=*/1337);
+  TestIntegerDecode(kInput, /*bits_in_first_byte=*/5, /*expected=*/1337U);
 }
 TEST(HpackTest, HpackIntegerDecodeC13) {
   const auto kInput = bytes::Array<0b00101010>();
-  TestIntegerDecode(kInput, /*bits_in_first_byte=*/8, /*expected=*/42);
+  TestIntegerDecode(kInput, /*bits_in_first_byte=*/8, /*expected=*/42U);
 }
 
 // Huffman test cases from RFC 7541 Appendix C.4.
