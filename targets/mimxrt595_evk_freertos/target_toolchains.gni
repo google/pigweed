@@ -19,8 +19,8 @@ import("$dir_pw_boot/backend.gni")
 import("$dir_pw_log/backend.gni")
 import("$dir_pw_rpc/system_server/backend.gni")
 import("$dir_pw_sys_io/backend.gni")
-import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
+import("$pw_external_mcuxpresso/mcuxpresso.gni")
 
 _target_config = {
   # This target uses FreeRTOS.

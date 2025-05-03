@@ -113,7 +113,7 @@ pw_source_set("googletest") {
   public = [ "googletest_public_overrides/pw_unit_test/framework_backend.h" ]
 
   public_deps = [
-    "$dir_pw_third_party/googletest",
+    "$pw_external_googletest",
     dir_pw_result,
     dir_pw_status,
   ]
@@ -147,7 +147,7 @@ pw_source_set("googletest_handler_adapter") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":event_handler",
-    "$dir_pw_third_party/googletest",
+    "$pw_external_googletest",
     dir_pw_preprocessor,
   ]
   public = [ "public/pw_unit_test/googletest_handler_adapter.h" ]
@@ -158,7 +158,7 @@ pw_source_set("googletest_test_matchers") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_unit_test/googletest_test_matchers.h" ]
   public_deps = [
-    "$dir_pw_third_party/googletest",
+    "$pw_external_googletest",
     dir_pw_result,
     dir_pw_status,
   ]

@@ -17,8 +17,8 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_third_party/fuzztest/fuzztest.gni")
 import("$dir_pw_unit_test/test.gni")
+import("$pw_external_fuzztest/fuzztest.gni")
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -101,7 +101,7 @@ if (dir_pw_third_party_fuzztest != "" && pw_toolchain_FUZZING_ENABLED) {
       ":private_include_path",
     ]
     public_deps = [
-      "$dir_pw_third_party/fuzztest/fuzztest:fuzztest_core",
+      "$pw_external_fuzztest/fuzztest:fuzztest_core",
       dir_pw_containers,
       dir_pw_result,
       dir_pw_status,
@@ -187,7 +187,7 @@ if (dir_pw_third_party_fuzztest == "") {
     } else {
       deps = [
         ":asan_default_options",
-        "$dir_pw_third_party/fuzztest/fuzztest:fuzztest_gtest_main",
+        "$pw_external_fuzztest/fuzztest:fuzztest_gtest_main",
       ]
     }
   }

@@ -3,7 +3,7 @@
 ========
 FuzzTest
 ========
-The ``$dir_pw_third_party/fuzztest/`` module provides build files to allow
+The ``$pw_external_fuzztest/`` module provides build files to allow
 optionally including upstream FuzzTest.
 
 .. _module-pw_third_party_fuzztest-using_upstream:

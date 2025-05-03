@@ -17,5 +17,5 @@ import("//build_overrides/pigweed.gni")
 declare_args() {
   # Path to the perfetto sources to use in Pigweed's build. Defaults to
   # Pigweed's mirror of the few perfetto proto files it uses.
-  dir_pw_third_party_perfetto = "$dir_pw_third_party/perfetto/repo"
+  dir_pw_third_party_perfetto = "$pw_external_perfetto/repo"
 }

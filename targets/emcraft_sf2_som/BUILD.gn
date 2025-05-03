@@ -19,8 +19,8 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_system/system_target.gni")
-import("$dir_pw_third_party/smartfusion_mss/mss.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
+import("$pw_external_smartfusion_mss/mss.gni")
 
 config("pw_malloc_active") {
   if (pw_malloc_BACKEND != "") {

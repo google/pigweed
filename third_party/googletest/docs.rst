@@ -3,7 +3,7 @@
 ==========
 GoogleTest
 ==========
-The ``$dir_pw_third_party/googletest/`` module provides various helpers to
+The ``$pw_external_googletest/`` module provides various helpers to
 optionally use full upstream `GoogleTest/GoogleMock`__ with
 :ref:`module-pw_unit_test`.
 

@@ -43,18 +43,17 @@ declare_args() {
 
   # pw_source_set with `stm32{family}xx_hal_conf.h`
   # The default uses the in-tree `stm32{family}xx_hal_conf_template.h`.
-  pw_third_party_stm32cube_CONFIG =
-      "$dir_pw_third_party/stm32cube:hal_config_template"
+  pw_third_party_stm32cube_CONFIG = "$pw_external_stm32cube:hal_config_template"
 
   # pw_source_set containing timebase
   # The default uses the in-tree `stm32{family}xx_hal_timebase_tim_template.c`
   pw_third_party_stm32cube_TIMEBASE =
-      "$dir_pw_third_party/stm32cube:hal_timebase_template"
+      "$pw_external_stm32cube:hal_timebase_template"
 
   # pw_source_set containing cmsis init logic
   # The default uses the in-tree `system_stm32{family}xx.c`
   pw_third_party_stm32cube_CMSIS_INIT =
-      "$dir_pw_third_party/stm32cube:cmsis_init_template"
+      "$pw_external_stm32cube:cmsis_init_template"
 
   # pw_source_set containing the core initization logic. This normally includes
   # a `startup_stm32{...}.s` + a dependent `pw_linker_script`. The default
@@ -62,5 +61,5 @@ declare_args() {
   # $pw_third_party_stm32cube_PRODUCT. If set to "", you must provide your own
   # linker/startup logic somewhere else in the build.
   pw_third_party_stm32cube_CORE_INIT =
-      "$dir_pw_third_party/stm32cube:core_init_template"
+      "$pw_external_stm32cube:core_init_template"
 }

@@ -22,12 +22,12 @@ import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_rpc/system_server/backend.gni")
 import("$dir_pw_sys_io/backend.gni")
 import("$dir_pw_system/backend.gni")
-import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_toolchain/host_gcc/toolchains.gni")
 import("$dir_pw_toolchain/traits.gni")
 import("$dir_pw_trace/backend.gni")
 import("$dir_pw_trace_tokenized/config.gni")
+import("$pw_external_nanopb/nanopb.gni")
 
 _host_common = {
   forward_variables_from(pw_targets_STL_BACKEND_GROUP, "*")

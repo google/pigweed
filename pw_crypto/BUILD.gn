@@ -134,7 +134,7 @@ pw_source_set("sha256_mbedtls") {
   sources = [ "sha256_mbedtls.cc" ]
   public_deps = [
     ":sha256.facade",
-    "$dir_pw_third_party/mbedtls",
+    "$pw_external_mbedtls",
   ]
 }
 
@@ -147,7 +147,7 @@ pw_source_set("sha256_mbedtls_v3") {
   sources = [ "sha256_mbedtls.cc" ]
   public_deps = [
     ":sha256.facade",
-    "$dir_pw_third_party/mbedtls:mbedtls_v3",
+    "$pw_external_mbedtls:mbedtls_v3",
   ]
 }
 
@@ -166,7 +166,7 @@ pw_source_set("ecdsa_mbedtls") {
   deps = [
     "$dir_pw_function",
     "$dir_pw_log",
-    "$dir_pw_third_party/mbedtls",
+    "$pw_external_mbedtls",
   ]
   public_deps = [
     ":ecdsa.facade",
@@ -179,7 +179,7 @@ pw_source_set("ecdsa_mbedtls_v3") {
   deps = [
     "$dir_pw_function",
     "$dir_pw_log",
-    "$dir_pw_third_party/mbedtls:mbedtls_v3",
+    "$pw_external_mbedtls:mbedtls_v3",
   ]
   public_deps = [
     ":ecdsa.facade",
@@ -244,7 +244,7 @@ pw_source_set("aes_mbedtls_v3") {
   sources = [ "aes_mbedtls.cc" ]
   public_deps = [
     ":aes.facade",
-    "$dir_pw_third_party/mbedtls:mbedtls_v3",
+    "$pw_external_mbedtls:mbedtls_v3",
   ]
 }
 

@@ -226,7 +226,7 @@ if (dir_pw_third_party_mbedtls != "") {
     include_dirs = [
       "$dir_pw_third_party_mbedtls",
       "$dir_pw_third_party_mbedtls/include",
-      "$dir_pw_third_party/mbedtls",
+      "$pw_external_mbedtls",
     ]
     cflags = [
       "-Wno-error=cast-qual",

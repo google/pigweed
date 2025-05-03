@@ -15,6 +15,6 @@
 declare_args() {
   # If compiling host tools that use libprotobuf, this variable is set to the
   # path to the protobuf installation. When set, a pw_source_set for the
-  # protobuf library is created at "$dir_pw_third_party/protobuf".
+  # protobuf library is created at "$pw_external_protobuf".
   dir_pw_third_party_protobuf = ""
 }

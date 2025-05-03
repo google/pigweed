@@ -22,7 +22,7 @@ import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/python_gn_args.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_third_party/nanopb/nanopb.gni")
+import("$pw_external_nanopb/nanopb.gni")
 import("toolchain.gni")
 
 # Variables forwarded from the public pw_proto_library template to the final
@@ -313,7 +313,7 @@ template("_pw_nanopb_rpc_proto_library") {
                     "$dir_pw_rpc:server",
                     "$dir_pw_rpc/nanopb:client_api",
                     "$dir_pw_rpc/nanopb:server_api",
-                    "$dir_pw_third_party/nanopb",
+                    "$pw_external_nanopb",
                   ] + invoker.deps
     public = invoker.outputs
     check_includes = false
@@ -344,7 +344,7 @@ template("_pw_nanopb_proto_library") {
       forward_variables_from(invoker, "*", _forwarded_vars)
       language = "nanopb"
       plugin = "$dir_pw_third_party_nanopb/generator/protoc-gen-nanopb"
-      other_deps = [ "$dir_pw_third_party/nanopb:generate_nanopb_proto.action" ]
+      other_deps = [ "$pw_external_nanopb:generate_nanopb_proto.action" ]
     }
 
     # Create a library with the generated source files.
@@ -357,7 +357,7 @@ template("_pw_nanopb_proto_library") {
       forward_variables_from(invoker, _forwarded_vars)
       public_configs = [ ":$target_name._include_path" ]
       deps = [ ":$target_name._gen($pw_protobuf_compiler_TOOLCHAIN)" ]
-      public_deps = [ "$dir_pw_third_party/nanopb" ] + invoker.deps
+      public_deps = [ "$pw_external_nanopb" ] + invoker.deps
       sources = invoker.outputs
       public = filter_include(sources, [ "*.pb.h" ])
     }

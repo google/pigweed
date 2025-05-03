@@ -19,7 +19,7 @@ import("$dir_pw_build/target_types.gni")
 declare_args() {
   # If compiling tests with FuzzTest, this variable is set to the path to the
   # FuzzTest installation. When set, a pw_source_set for the FuzzTest library is
-  # created at "$dir_pw_third_party/fuzztest".
+  # created at "$pw_external_fuzztest".
   dir_pw_third_party_fuzztest = ""
 }
 
@@ -29,7 +29,7 @@ template("fuzztest_source_set") {
     public_configs = []
     remove_configs = []
     forward_variables_from(invoker, "*")
-    public_configs += [ "$dir_pw_third_party/fuzztest:fuzztest_public_config" ]
+    public_configs += [ "$pw_external_fuzztest:fuzztest_public_config" ]
     remove_configs += [
       "$dir_pw_fuzzer:instrumentation",
       "$dir_pw_toolchain/host_clang:sanitize_address",

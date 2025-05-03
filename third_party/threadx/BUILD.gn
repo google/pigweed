@@ -19,7 +19,7 @@ import("$dir_pw_build/target_types.gni")
 declare_args() {
   # If compiling backends with ThreadX, this variable is set to the path to the
   # ThreadX include directory. When set, a pw_source_set for the threadx library
-  # is created at "$dir_pw_third_party/threadx".
+  # is created at "$pw_external_threadx".
   dir_pw_third_party_threadx_include = ""
 
   # The pw_source_set which provides the port specific includes and sources.
@@ -29,7 +29,7 @@ declare_args() {
 # This file defines a GN source_set for an external installation of ThreadX.
 # To use, checkout the threadx source into a directory, then set the build arg
 # dir_pw_third_party_threadx_include to point to that directory. The ThreadX
-# library will be available in GN at "$dir_pw_third_party/threadx".
+# library will be available in GN at "$pw_external_threadx".
 if (dir_pw_third_party_threadx_include != "") {
   config("public_includes") {
     include_dirs = [ "$dir_pw_third_party_threadx_include" ]

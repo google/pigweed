@@ -15,9 +15,9 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_third_party/mbedtls/mbedtls.gni")
 import("$dir_pw_tls_client/configs.gni")
 import("$dir_pw_unit_test/test.gni")
+import("$pw_external_mbedtls/mbedtls.gni")
 
 config("public_includes") {
   include_dirs = [ "public" ]
@@ -42,8 +42,8 @@ pw_source_set("pw_tls_client_mbedtls") {
     "$dir_pw_assert",
     "$dir_pw_log",
     "$dir_pw_stream",
-    "$dir_pw_third_party/mbedtls:mbedtls",
     "$dir_pw_tls_client:tls_entropy",
+    "$pw_external_mbedtls:mbedtls",
   ]
 }
 

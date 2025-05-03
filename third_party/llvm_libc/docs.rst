@@ -3,7 +3,7 @@
 =========
 LLVM libc
 =========
-The ``$dir_pw_third_party/llvm_libc/`` module provides various helpers to
+The ``$pw_external_llvm_libc/`` module provides various helpers to
 optionally use LLVM ``libc`` with :ref:`module-pw_libc`.
 
 ------------------------

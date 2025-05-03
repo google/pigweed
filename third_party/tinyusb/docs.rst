@@ -4,7 +4,7 @@
 TinyUSB
 =======
 
-The ``$dir_pw_third_party/tinyusb/`` module contains the build files needed to
+The ``$pw_external_tinyusb/`` module contains the build files needed to
 integrate TinyUSB into a Pigweed build.
 
 ----------------
@@ -15,7 +15,7 @@ include the source code of the `tinyusb <https://github.com/hathach/tinyusb>`_
 project.
 
 In order to use this you are expected to configure the following variables from
-``$dir_pw_third_party/tinyusb:tinyusb.gni``:
+``$pw_external_tinyusb:tinyusb.gni``:
 
 #. Set the GN ``pw_third_party_tinyusb_SOURCE`` to the path of the TinyUSB
    source code directory. This is the directory that contains the ``src/``
@@ -29,7 +29,7 @@ In order to use this you are expected to configure the following variables from
    the upstream TinyUSB project, check the ``src/portable/`` path for your MCU.
 
 After this is done multiple ``pw_source_set`` entries for the different parts of
-TinyUSB library are created at ``$dir_pw_third_party/tinyusb``.
+TinyUSB library are created at ``$pw_external_tinyusb``.
 
 .. _third_party-tinyusb_classes:
 

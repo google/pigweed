@@ -143,7 +143,7 @@ pw_source_set("gmock") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":initiator",
-    "$dir_pw_third_party/googletest",
+    "$pw_external_googletest",
   ]
   public = [ "public/pw_i2c/initiator_gmock.h" ]
 }

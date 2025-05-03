@@ -17,7 +17,7 @@ import("//build_overrides/pigweed.gni")
 declare_args() {
   # If compiling backends with mbedtls, this variable is set to the path to the
   # mbedtls source code. When set, a pw_source_set for the mbedtls library is
-  # created at "$dir_pw_third_party/mbedtls".
+  # created at "$pw_external_mbedtls".
   dir_pw_third_party_mbedtls = ""
 
   # Path to the config header.

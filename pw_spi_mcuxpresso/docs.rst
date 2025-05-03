@@ -28,10 +28,10 @@ This example shows what your SDK setup would look like if using an RT595 EVK.
 
 .. code-block:: text
 
-   import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
+   import("$pw_external_mcuxpresso/mcuxpresso.gni")
 
    pw_mcuxpresso_sdk("sample_project_sdk") {
-     manifest = "$dir_pw_third_party/mcuxpresso/evkmimxrt595/EVK-MIMXRT595_manifest_v3_13.xml"
+     manifest = "$pw_external_mcuxpresso/evkmimxrt595/EVK-MIMXRT595_manifest_v3_13.xml"
      include = [
        "component.serial_manager_uart.MIMXRT595S",
        "platform.drivers.flexio_spi.MIMXRT595S",

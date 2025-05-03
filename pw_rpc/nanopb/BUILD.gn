@@ -17,9 +17,9 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
-import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
+import("$pw_external_nanopb/nanopb.gni")
 
 config("public") {
   include_dirs = [ "public" ]
@@ -77,7 +77,7 @@ pw_source_set("common") {
   sources = [ "common.cc" ]
 
   if (dir_pw_third_party_nanopb != "") {
-    public_deps += [ "$dir_pw_third_party/nanopb" ]
+    public_deps += [ "$pw_external_nanopb" ]
   }
 }
 
@@ -124,7 +124,7 @@ pw_source_set("internal_test_utils") {
   public = [ "pw_rpc_nanopb_private/internal_test_utils.h" ]
   public_deps = [ dir_pw_span ]
   if (dir_pw_third_party_nanopb != "") {
-    public_deps += [ "$dir_pw_third_party/nanopb" ]
+    public_deps += [ "$pw_external_nanopb" ]
   }
 }
 

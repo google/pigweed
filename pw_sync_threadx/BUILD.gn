@@ -56,7 +56,7 @@ pw_source_set("mutex") {
     "$dir_pw_assert",
     "$dir_pw_interrupt:context",
     "$dir_pw_sync:mutex.facade",
-    "$dir_pw_third_party/threadx",
+    "$pw_external_threadx",
   ]
 }
 
@@ -77,7 +77,7 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "") {
       "$dir_pw_assert",
       "$dir_pw_chrono:system_clock",
       "$dir_pw_interrupt:context",
-      "$dir_pw_third_party/threadx",
+      "$pw_external_threadx",
     ]
     sources = [ "binary_semaphore.cc" ]
     deps = [
@@ -103,7 +103,7 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "") {
       "$dir_pw_assert",
       "$dir_pw_chrono:system_clock",
       "$dir_pw_interrupt:context",
-      "$dir_pw_third_party/threadx",
+      "$pw_external_threadx",
     ]
     sources = [ "counting_semaphore.cc" ]
     deps = [
@@ -132,7 +132,7 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "") {
       ":check_system_clock_backend",
       "$dir_pw_assert",
       "$dir_pw_interrupt:context",
-      "$dir_pw_third_party/threadx",
+      "$pw_external_threadx",
       pw_chrono_SYSTEM_CLOCK_BACKEND,
     ]
   }
@@ -151,7 +151,7 @@ pw_source_set("interrupt_spin_lock") {
     "public_overrides/pw_sync_backend/interrupt_spin_lock_inline.h",
     "public_overrides/pw_sync_backend/interrupt_spin_lock_native.h",
   ]
-  public_deps = [ "$dir_pw_third_party/threadx" ]
+  public_deps = [ "$pw_external_threadx" ]
   sources = [ "interrupt_spin_lock.cc" ]
   deps = [
     "$dir_pw_assert",

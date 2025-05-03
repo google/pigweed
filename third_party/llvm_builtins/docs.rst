@@ -3,7 +3,7 @@
 ================
 LLVM compiler-rt
 ================
-The ``$dir_pw_third_party/llvm_builtins/`` directory provides the GN integration
+The ``$pw_external_llvm_builtins/`` directory provides the GN integration
 necessary to link against LLVM compiler-rt project. The intention here is to use
 the builtins provided by the LLVM compiler-rt project.
 
@@ -48,7 +48,7 @@ GN
 
   .. code-block:: text
 
-     pw_third_party_llvm_builtins_TARGET_BUILTINS = "$dir_pw_third_party/llvm_builtins:arm_builtins_armv7m"
+     pw_third_party_llvm_builtins_TARGET_BUILTINS = "$pw_external_llvm_builtins:arm_builtins_armv7m"
 
 * Set the optional ``pw_third_party_llvm_builtins_ignore_list`` variable to the list of
-  files included in ``pw_source_set`` in ``$dir_pw_third_party/llvm_builtins/BUILD.gn``.
+  files included in ``pw_source_set`` in ``$pw_external_llvm_builtins/BUILD.gn``.

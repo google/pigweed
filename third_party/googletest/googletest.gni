@@ -15,7 +15,7 @@
 declare_args() {
   # If compiling tests with googletest, this variable is set to the path to the
   # googletest installation. When set, a pw_source_set for the googletest
-  # library is created at "$dir_pw_third_party/googletest". Incompatible
+  # library is created at "$pw_external_googletest". Incompatible
   # with pw_third_party_googletest_ALIAS definition.
   dir_pw_third_party_googletest = ""
 

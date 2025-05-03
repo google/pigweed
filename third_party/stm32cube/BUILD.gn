@@ -16,7 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/linker_script.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_third_party/stm32cube/stm32cube.gni")
+import("$pw_external_stm32cube/stm32cube.gni")
 
 if (dir_pw_third_party_stm32cube == "") {
   group("linker_script_template") {
@@ -44,7 +44,7 @@ if (dir_pw_third_party_stm32cube == "") {
     pw_third_party_stm32cube_PRODUCT,
   ]
   if (pw_third_party_stm32cube_CORE_INIT ==
-      "$dir_pw_third_party/stm32cube:core_init_template") {
+      "$pw_external_stm32cube:core_init_template") {
     find_files_args += [ "--init" ]
   }
 
@@ -55,7 +55,7 @@ if (dir_pw_third_party_stm32cube == "") {
                       [ "$rebased_dir_pw_third_party_stm32cube/files.txt" ])
 
   if (pw_third_party_stm32cube_CORE_INIT ==
-      "$dir_pw_third_party/stm32cube:core_init_template") {
+      "$pw_external_stm32cube:core_init_template") {
     assert(files.gcc_linker != "" || files.iar_linker != "",
            "No linker file found")
 

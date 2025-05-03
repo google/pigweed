@@ -40,7 +40,7 @@ pw_source_set("config") {
   public = [ "public/pw_chrono_threadx/config.h" ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_third_party/threadx",
+    "$pw_external_threadx",
     dir_pw_polyfill,
     pw_chrono_threadx_CONFIG,
   ]
@@ -61,7 +61,7 @@ pw_source_set("system_clock") {
     ":config",
     "$dir_pw_chrono:epoch",
     "$dir_pw_chrono:system_clock.facade",
-    "$dir_pw_third_party/threadx",
+    "$pw_external_threadx",
   ]
   sources = [ "system_clock.cc" ]
   deps = [

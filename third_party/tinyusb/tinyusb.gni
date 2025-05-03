@@ -15,7 +15,7 @@
 declare_args() {
   # If compiling backends with tinyusb, this variable is set to the path to the
   # tinyusb source code. When set, a pw_source_set for the tinyusb library is
-  # created at "$dir_pw_third_party/tinyusb".
+  # created at "$pw_external_tinyusb".
   pw_third_party_tinyusb_SOURCE = ""
 
   # The pw_source_set which provides the port specific includes and sources for

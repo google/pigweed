@@ -17,7 +17,7 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_third_party/fuzztest/fuzztest.gni")
+import("$pw_external_fuzztest/fuzztest.gni")
 
 # Generated from @fuzztest//common:bazel
 fuzztest_source_set("bazel") {

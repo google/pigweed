@@ -4,7 +4,7 @@
 Nanopb
 ======
 
-The ``$dir_pw_third_party/nanopb/`` module contains Nanopb, a tiny protobuf
+The ``$pw_external_nanopb/`` module contains Nanopb, a tiny protobuf
 library. It is used by :ref:`module-pw_protobuf_compiler`.
 
 ----------------
@@ -22,7 +22,7 @@ In your toolchain configuration, you can use the following:
 
 .. code-block::
 
-   pw_third_party_nanopb_CONFIG = "$dir_pw_third_party/nanopb:disable_error_messages"
+   pw_third_party_nanopb_CONFIG = "$pw_external_nanopb:disable_error_messages"
 
 
 This will add ``-DPB_NO_ERRMSG=1`` to the build, which disables error messages

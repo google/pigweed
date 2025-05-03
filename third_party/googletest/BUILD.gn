@@ -21,7 +21,7 @@ import("googletest.gni")
 # This file defines a GN source_set for an external installation of googletest.
 # To use, checkout the googletest source into a directory, then set the build
 # arg dir_pw_third_party_googletest to point to that directory. The googletest
-# library will be available in GN at "$dir_pw_third_party/googletest".
+# library will be available in GN at "$pw_external_googletest".
 if (dir_pw_third_party_googletest != "") {
   config("includes") {
     include_dirs = [

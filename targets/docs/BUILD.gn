@@ -19,10 +19,10 @@ import("$dir_pw_boot_cortex_m/toolchain.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_log_tokenized/backend.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
-import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_toolchain/traits.gni")
+import("$pw_external_nanopb/nanopb.gni")
 
 if (current_toolchain != default_toolchain) {
   pw_source_set("tokenized_log_handler") {

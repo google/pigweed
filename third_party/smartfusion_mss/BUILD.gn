@@ -15,7 +15,7 @@
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/linker_script.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_third_party/smartfusion_mss/mss.gni")
+import("$pw_external_smartfusion_mss/mss.gni")
 
 declare_args() {
   pw_target_smartfusion2_LINK_CONFIG_DEFINES = []
@@ -90,7 +90,7 @@ if (dir_pw_third_party_smartfusion_mss != "") {
       "$dir_pw_third_party_smartfusion_mss/exported_firmware/CMSIS/V4.5/Include",
       "$dir_pw_third_party_smartfusion_mss/exported_firmware/drivers",
       "$dir_pw_third_party_smartfusion_mss/exported_firmware/CMSIS",
-      "$dir_pw_third_party/smartfusion_mss",
+      "$pw_external_smartfusion_mss",
     ]
     cflags = [
       "-Wno-error=cast-qual",

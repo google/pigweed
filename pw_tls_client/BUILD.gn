@@ -67,9 +67,9 @@ pw_facade("time") {
   # The target should only be used by TLS libraries to obtain date time
   visibility = [
     ":*",
-    "$dir_pw_third_party/mbedtls",
-    "$dir_pw_third_party/mbedtls:mbedtls_v3",
     "$pw_external_boringssl",
+    "$pw_external_mbedtls",
+    "$pw_external_mbedtls:mbedtls_v3",
   ]
 }
 

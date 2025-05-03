@@ -31,7 +31,7 @@ pw_executable("base") {
 
 pw_executable("base_with_nanopb") {
   sources = [ "base_with_nanopb.cc" ]
-  deps = _deps + [ "$dir_pw_third_party/nanopb" ]
+  deps = _deps + [ "$pw_external_nanopb" ]
 }
 
 pw_executable("server_only") {

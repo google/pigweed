@@ -54,7 +54,7 @@ pw_source_set("analog_input_gmock") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":analog_input",
-    "$dir_pw_third_party/googletest",
+    "$pw_external_googletest",
   ]
   public = [ "public/pw_analog/analog_input_gmock.h" ]
 }
@@ -63,7 +63,7 @@ pw_source_set("microvolt_input_gmock") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":microvolt_input",
-    "$dir_pw_third_party/googletest",
+    "$pw_external_googletest",
   ]
   public = [ "public/pw_analog/microvolt_input_gmock.h" ]
 }

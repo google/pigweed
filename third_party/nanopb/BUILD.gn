@@ -27,7 +27,7 @@ pw_doc_group("docs") {
 # This file defines a GN source_set for an external installation of nanopb.
 # To use, checkout the nanopb source into a directory, then set the build arg
 # dir_pw_third_party_nanopb to point to that directory. The nanopb library
-# will be available in GN at "$dir_pw_third_party/nanopb".
+# will be available in GN at "$pw_external_nanopb".
 if (dir_pw_third_party_nanopb != "") {
   config("includes") {
     include_dirs = [ dir_pw_third_party_nanopb ]

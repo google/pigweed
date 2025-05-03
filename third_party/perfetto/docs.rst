@@ -3,7 +3,7 @@
 ==========
 Perfetto
 ==========
-The ``$dir_pw_third_party/perfetto/`` module provides the perfetto protos.  Only
+The ``$pw_external_perfetto/`` module provides the perfetto protos.  Only
 the protos are provided, and not the entire distribution, as there is no need
 for it.
 

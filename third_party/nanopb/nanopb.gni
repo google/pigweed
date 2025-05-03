@@ -18,7 +18,7 @@ import("$dir_pw_build/module_config.gni")
 declare_args() {
   # If compiling protos for nanopb, this variable is set to the path to the
   # nanopb installation. When set, a pw_source_set for the nanopb library is
-  # created at "$dir_pw_third_party/nanopb".
+  # created at "$pw_external_nanopb".
   dir_pw_third_party_nanopb = ""
 
   # The build target that overrides the default configuration options for this

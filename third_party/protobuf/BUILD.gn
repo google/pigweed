@@ -21,7 +21,7 @@ import("protobuf.gni")
 # This file defines a GN source_set for an external installation of protobuf.
 # To use, checkout the protobuf source into a directory, then set the build arg
 # dir_pw_third_party_protobuf to point to that directory. The protobuf library
-# will be available in GN at "$dir_pw_third_party/protobuf".
+# will be available in GN at "$pw_external_protobuf".
 #
 # This is known to work with commit 300dfcc5bf46d0fae35146db2195891df4959e4 in
 # the protobuf repository. These targets may not work with other versions.

@@ -43,7 +43,7 @@ pw_source_set("config") {
   public = [ "public/pw_thread_threadx/config.h" ]
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_third_party/threadx",
+    "$pw_external_threadx",
     pw_thread_threadx_CONFIG,
   ]
 }
@@ -62,7 +62,7 @@ pw_source_set("id") {
   public_deps = [
     "$dir_pw_assert",
     "$dir_pw_interrupt:context",
-    "$dir_pw_third_party/threadx",
+    "$pw_external_threadx",
   ]
   public = [
     "$dir_pw_thread:thread.facade",
@@ -103,8 +103,8 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
       ":check_system_clock_backend",
       "$dir_pw_assert",
       "$dir_pw_chrono_threadx:system_clock",
-      "$dir_pw_third_party/threadx",
       "$dir_pw_thread:thread",
+      "$pw_external_threadx",
     ]
   }
 }
@@ -125,8 +125,8 @@ pw_source_set("thread") {
     ":config",
     "$dir_pw_assert",
     "$dir_pw_string",
-    "$dir_pw_third_party/threadx",
     "$dir_pw_thread:thread.facade",
+    "$pw_external_threadx",
     dir_pw_function,
     dir_pw_span,
   ]
@@ -159,8 +159,8 @@ pw_source_set("yield") {
   ]
   public_deps = [
     "$dir_pw_assert",
-    "$dir_pw_third_party/threadx",
     "$dir_pw_thread:thread",
+    "$pw_external_threadx",
   ]
   deps = [ "$dir_pw_thread:yield.facade" ]
 }
@@ -168,7 +168,7 @@ pw_source_set("yield") {
 pw_source_set("util") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    "$dir_pw_third_party/threadx",
+    "$pw_external_threadx",
     dir_pw_function,
     dir_pw_status,
   ]
@@ -180,9 +180,9 @@ pw_source_set("snapshot") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
     ":config",
-    "$dir_pw_third_party/threadx",
     "$dir_pw_thread:protos.pwpb",
     "$dir_pw_thread:snapshot",
+    "$pw_external_threadx",
     dir_pw_bytes,
     dir_pw_function,
     dir_pw_log,

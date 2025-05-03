@@ -3,7 +3,7 @@
 ===========
 LLVM libcxx
 ===========
-The ``$dir_pw_third_party/llvm_libcxx/`` module provides various helpers to
+The ``$pw_external_llvm_libcxx/`` module provides various helpers to
 optionally use LLVM ``libcxx`` with :ref:`module-pw_libcxx`.
 
 ---------------------------
