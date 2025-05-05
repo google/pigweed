@@ -1255,7 +1255,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartScanDuringOffloadedFilters) {
   // starting another discovery session while offloading is enabled should cause
   // us to restart the scan so the new filters can take effect in the Controller
   hci::DiscoveryFilter filter;
-  filter.set_connectable(true);
+  filter.set_name_substring("bort");
   auto session_b = StartDiscoverySession(false, {filter});
 
   EXPECT_THAT(scan_states(), ::testing::ElementsAre(true, false, true));

@@ -120,6 +120,10 @@ class AdvertisingPacketFilter {
   // filtering.
   void DisableOffloadedFiltering();
 
+  // Determine if the this filter contains any predicates that can be offloaded
+  // to the Controller.
+  bool IsOffloadable(const DiscoveryFilter& filter);
+
   // Queue HCI commands necessary to offload the given filter to the Controller.
   bool Offload(ScanId scan_id, const DiscoveryFilter& filter);
 

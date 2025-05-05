@@ -151,16 +151,26 @@ TEST_F(AdvertisingPacketFilterTest, OffloadingRemainsDisabledIfConfiguredOff) {
 }
 
 // offloading doesn't begin until we actually have a filter to offload
-TEST_F(AdvertisingPacketFilterTest, OffloadingEnabledOnFirstFilter) {
+TEST_F(AdvertisingPacketFilterTest, OffloadingEnabledOnFirstOffloadableFilter) {
   AdvertisingPacketFilter packet_filter({true, 1}, transport()->GetWeakPtr());
-  RunUntilIdle();
 
+  // No filters to offload
+  RunUntilIdle();
   EXPECT_FALSE(packet_filter.IsOffloadedFilteringEnabled());
   EXPECT_FALSE(test_device()->packet_filter_state().enabled);
 
-  DiscoveryFilter filter;
-  filter.set_connectable(true);
-  packet_filter.SetPacketFilters(0, {filter});
+  // A filter with no attributes that can be offloaded
+  DiscoveryFilter filter_1;
+  filter_1.set_connectable(true);
+  packet_filter.SetPacketFilters(0, {filter_1});
+  RunUntilIdle();
+  EXPECT_FALSE(packet_filter.IsOffloadedFilteringEnabled());
+  EXPECT_FALSE(test_device()->packet_filter_state().enabled);
+
+  // First offloadable filter enables offloading
+  DiscoveryFilter filter_2;
+  filter_2.set_name_substring("bort");
+  packet_filter.SetPacketFilters(0, {filter_2});
   RunUntilIdle();
   EXPECT_TRUE(packet_filter.IsOffloadedFilteringEnabled());
   EXPECT_TRUE(test_device()->packet_filter_state().enabled);

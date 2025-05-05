@@ -61,6 +61,20 @@ void AdvertisingPacketFilter::SetPacketFilters(
     return;
   }
 
+  // If none of our filters are offloadable and we turn on scan filter
+  // offloading, we will get no results.
+  bool any_filters_offloadable = false;
+  for (const DiscoveryFilter& filter : filters) {
+    if (IsOffloadable(filter)) {
+      any_filters_offloadable = true;
+      break;
+    }
+  }
+  if (!any_filters_offloadable) {
+    bt_log(INFO, "hci-le", "no filters can be offloaded");
+    return;
+  }
+
   if (!MemoryAvailableForFilters(filters)) {
     bt_log(INFO,
            "hci-le",
@@ -400,6 +414,14 @@ void AdvertisingPacketFilter::DisableOffloadedFiltering() {
   last_filter_index_ = kStartFilterIndex;
   scan_id_to_index_.clear();
   offloaded_filtering_enabled_ = false;
+}
+
+bool AdvertisingPacketFilter::IsOffloadable(const DiscoveryFilter& filter) {
+  return !filter.service_uuids().empty() ||
+         !filter.service_data_uuids().empty() ||
+         !filter.solicitation_uuids().empty() ||
+         !filter.name_substring().empty() ||
+         filter.manufacturer_code().has_value();
 }
 
 bool AdvertisingPacketFilter::Offload(ScanId scan_id,
