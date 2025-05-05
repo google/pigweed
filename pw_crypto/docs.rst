@@ -156,8 +156,8 @@ configured. If using GN, do,
 
    ninja -C out
 
-If using Bazel, add the Mbed TLS repository to your WORKSPACE and select
-appropriate backends by adding them to your project's `platform
+If using Bazel, add a ``bazel_dep`` on Mbed TLS to your ``MODULE.bazel`` file
+and select appropriate backends by adding them to your project's `platform
 <https://bazel.build/extending/platforms>`_:
 
 .. code-block:: python
@@ -226,7 +226,7 @@ configured. To do that:
 
    ninja -C out
 
-If using Bazel, add the BoringSSL repository to your WORKSPACE or MODULE.bazel
+If using Bazel, add the BoringSSL repository to your ``MODULE.bazel``
 and select appropriate backends by adding them to your project's `platform
 <https://bazel.build/extending/platforms>`_:
 

@@ -243,17 +243,8 @@ GN build files may be generated using the following command:
 
    python3 pw_build/py/pw_build/bazel_to_gn.py <library>
 
-For Bazel, ``http_archive`` rules should be added or updated in the project
-WORKSPACE file.
-
-.. code-block::
-
-   http_archive(
-       name = "com_google_absl",
-       sha256 = "0ddd37f347c58d89f449dd189a645bfd97bcd85c5284404a3af27a3ca3476f39",
-       strip_prefix = "abseil-cpp-fad946221cec37175e762c399760f54b9de9a9fa",
-       url = "https://github.com/abseil/abseil-cpp/archive/fad946221cec37175e762c399760f54b9de9a9fa.tar.gz",
-   )
+In Bazel, these third-party dependencies should be added as a ``bazel_dep`` so
+they can be overridden downstream.
 
 .. _module-pw_build-python-packages:
 

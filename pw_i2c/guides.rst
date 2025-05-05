@@ -39,12 +39,6 @@ Quickstart
            }),
          )
 
-      .. note::
-
-         This assumes that your Bazel ``WORKSPACE`` has a `repository
-         <https://bazel.build/concepts/build-ref#repositories>`_ named
-         ``@pigweed`` that points to the upstream Pigweed repository.
-
       If creating your own implementation, depend on the virtual interface:
 
       .. code-block:: python

@@ -178,10 +178,6 @@ Set up your build system
              ],
          )
 
-      This assumes that your Bazel ``WORKSPACE`` has a `repository
-      <https://bazel.build/concepts/build-ref#repositories>`_ named ``@pigweed``
-      that points to the upstream Pigweed repository.
-
       See also :ref:`module-pw_unit_test-bazel`.
 
    .. tab-item:: GN

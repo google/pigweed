@@ -30,9 +30,6 @@ Get Started
       If only one part of the module is needed, depend only on it; for example
       ``@pigweed//pw_string:format``.
 
-      This assumes ``@pigweed`` is the name you pulled Pigweed into your Bazel
-      ``WORKSPACE`` as.
-
    .. tab-item:: GN
 
       Add ``$dir_pw_string`` to the ``deps`` list in your ``pw_executable()``

@@ -31,12 +31,6 @@ Get started
       For a narrower dependency, depend on subtargets, e.g.
       ``@pigweed//pw_allocator:tracking_allocator``.
 
-      This assumes ``@pigweed`` is the name you pulled Pigweed into your Bazel
-      ``WORKSPACE`` as.
-
-      This assumes that your Bazel ``WORKSPACE`` has a `repository`_ named
-      ``@pigweed`` that points to the upstream Pigweed repository.
-
    .. tab-item:: GN
 
       Add ``dir_pw_allocator`` to the ``deps`` list in your build target:

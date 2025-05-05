@@ -65,10 +65,6 @@ Get started
            ]
          }
 
-      This assumes that your Bazel ``WORKSPACE`` has a `repository
-      <https://bazel.build/concepts/build-ref#repositories>`_ named ``@pigweed``
-      that points to the upstream Pigweed repository.
-
    .. tab-item:: GN
 
       Add ``$dir_pw_function`` to your target's ``deps``:

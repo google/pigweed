@@ -98,27 +98,24 @@ assumes `bootstrap.sh` is at the top level of your repository.
 
 Bazel Usage
 -----------
-It is possible to pull in a CIPD dependency into Bazel using WORKSPACE rules
-rather than using `bootstrap.sh`. e.g.
+Bazel projects should pull in CIPD dependencies using repository rules
+rather than relying on `bootstrap.sh`. e.g.
 
 .. code-block:: python
 
-   # WORKSPACE
+   # MODULE.bazel
 
-   load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "pigweed_deps")
+   cipd_repository = use_repo_rule("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "cipd_repository")
 
-   # Setup CIPD client and packages.
-   # Required by: pigweed.
-   # Used by modules: all.
-   pigweed_deps()
-
-   load("@cipd_deps//:cipd_init.bzl", "cipd_init")
-
-   cipd_init()
-
+   cipd_repository(
+      name = "qemu",
+      build_file = "//third_party/qemu:qemu.BUILD",
+      path = "fuchsia/third_party/qemu/${platform}",
+      tag = "git_revision:aa90f1161bb17a4863e16ec2f75104cff0752d4e",
+   )
 
 This will make the entire set of Pigweeds remote repositories available to your
-project. Though these repositories will only be donwloaded if you use them. To
+project. Though these repositories will only be downloaded if you use them. To
 get a full list of the remote repositories that this configures, run:
 
 .. code-block:: console

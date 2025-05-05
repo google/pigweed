@@ -267,8 +267,8 @@ from STM. So, if your project builds firmware for more than one MCU family, you
 will need to configure separate sets of the three [#]_ STM repositories for each MCU
 family. To do so,
 
-1.  Add the appropriate repositories to your WORKSPACE under different names,
-    eg. ``@stm32f4xx_hal_driver`` and ``@stm32h7xx_hal_driver``.
+1.  Add the appropriate repositories to your ``MODULE.bazel`` under different
+    names, eg. ``@stm32f4xx_hal_driver`` and ``@stm32h7xx_hal_driver``.
 2.  Set the corresponding :ref:`module-pw_stm32cube_build-bazel-label-flags` as
     part of the platform definition for your embedded target platforms.
 

@@ -17,7 +17,7 @@
 # https://cs.opensource.google/fuchsia/fuchsia/+/main:build/bazel_sdk/bazel_rules_fuchsia/fuchsia/workspace/fuchsia_products_repository.bzl
 ##########
 
-"""Defines a WORKSPACE rule for generating SDK companion image targets."""
+"""Defines a repository rule for generating SDK companion image targets."""
 
 def _fuchsia_products_repository_impl(ctx):
     if (bool(ctx.attr.cipd_bin) and bool(ctx.attr.ensure_file)) == bool(ctx.attr.metadata_file):

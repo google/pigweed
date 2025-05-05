@@ -380,14 +380,6 @@ These rules build the corresponding firmware code; there are no rules for
 generating Python libraries. The Bazel rules differ slightly compared to the GN
 build to be more in line with what would be considered idiomatic in Bazel.
 
-To use Pigweeds Protobuf rules you must first pull in the required dependencies
-into your Bazel WORKSPACE file. e.g.
-
-.. code-block:: python
-
-   # WORKSPACE ...
-   load("@pigweed//pw_protobuf_compiler:deps.bzl", "pw_protobuf_dependencies")
-   pw_protobuf_dependencies()
 
 Bazel uses a different set of rules to manage proto files than it does to
 compile them. e.g.

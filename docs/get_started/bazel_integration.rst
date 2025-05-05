@@ -17,79 +17,48 @@ Bazel version pin:
 .. literalinclude:: ../../.bazelversion
    :language: text
 
+.. _docs-bazel-integration-add-pigweed-as-a-dependency:
+
 -------------------------------------
 Add Pigweed as an external dependency
 -------------------------------------
-Pigweed can be used in both `bzlmod
-<https://bazel.build/external/overview#bzlmod>`__ and `WORKSPACE
-<https://bazel.build/external/overview#workspace-system>`__ based projects.
+Pigweed only supports `bzlmod
+<https://bazel.build/external/overview#bzlmod>`__ based projects. `WORKSPACE
+<https://bazel.build/external/overview#workspace-system>`__ based projects are
+no longer supported.
 
-We recommend using bzlmod (it's the future!), but note that Pigweed's FuzzTest
-integration cannot yet be used in bzlmod-based projects (:bug:`365103864`).
+Add Pigweed as a ``bazel_dep`` with a ``git_override``:
 
-.. tab-set::
+.. code-block:: python
 
-   .. tab-item:: bzlmod
+   bazel_dep(name = "pigweed")
 
-      Use a ``git_override``:
+   git_override(
+         module_name = "pigweed",
+         commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
+         remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
+   )
 
-      .. code-block:: python
+You can find the latest tip-of-tree commit in the **History** tab in
+`CodeSearch <https://cs.opensource.google/pigweed/pigweed>`__.
 
-         bazel_dep(name = "pigweed")
+Add Pigweed as Git submodule
+============================
+If you manage your dependencies as submodules, you can add Pigweed as a
+submodule, too, and then add it to your ``MODULE.bazel`` as a
+`local_path_override
+<https://bazel.build/rules/lib/globals/module#local_path_override>`__:
 
-         git_override(
-             module_name = "pigweed",
-             commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
-             remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
-         )
+.. code-block:: python
 
-      You can find the latest tip-of-tree commit in the **History** tab in
-      `CodeSearch <https://cs.opensource.google/pigweed/pigweed>`__.
+   local_path_override(
+         module_name = "pigweed",
+         path = "third_party/pigweed",
+   )
 
-      If you manage your dependencies as submodules, you can add Pigweed as a
-      submodule, too, and then add it to your ``MODULE.bazel`` as a
-      `local_path_override
-      <https://bazel.build/rules/lib/globals/module#local_path_override>`__:
-
-      .. code-block:: python
-
-         local_path_override(
-             module_name = "pigweed",
-             path = "third_party/pigweed",
-         )
-
-      Pigweed is not yet published to the `Bazel Central Registry
-      <https://registry.bazel.build/>`__. If this is a pain point for you,
-      please reach out to us on `chat <https://discord.gg/M9NSeTA>`__.
-
-   .. tab-item:: WORKSPACE
-
-      Add Pigweed as a `git_repository
-      <https://bazel.build/rules/lib/repo/git#git_repository>`__ in your
-      ``WORKSPACE``:
-
-      .. code-block:: python
-
-         git_repository(
-             name = "pigweed",
-             commit = "c00e9e430addee0c8add16c32eb6d8ab94189b9e",
-             remote = "https://pigweed.googlesource.com/pigweed/pigweed.git",
-         )
-
-      You can find the latest tip-of-tree commit in the **History** tab in
-      `CodeSearch <https://cs.opensource.google/pigweed/pigweed>`__.
-
-      If you manage your dependencies as submodules, you can add Pigweed as a
-      submodule, too, and then add it to your ``WORKSPACE`` as a
-      `local_repository
-      <https://bazel.build/reference/be/workspace#local_repository>`__:
-
-      .. code-block:: python
-
-         local_repository(
-             name = "pigweed",
-             path = "third_party/pigweed",
-         )
+Pigweed is not yet published to the `Bazel Central Registry
+<https://registry.bazel.build/>`__. If this is a pain point for you,
+please reach out to us on `chat <https://discord.gg/M9NSeTA>`__.
 
 ---------------------------
 Use Pigweed in your project

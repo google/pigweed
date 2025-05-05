@@ -855,8 +855,9 @@ project.
 
 Consider a scenario that you are building a flight controller for a spacecraft.
 But you have very little experience with Pigweed and have just landed here.
-First things first, you would set up your WORKSPACE to fetch Pigweed
-repository. Then, add the dependencies that you need from Pigweed's WORKSPACE.
+First things first, you would
+:ref:`docs-bazel-integration-add-pigweed-as-a-dependency` in your
+project's ``MODULE.bazel``.
 
 Maybe you want to try using the :ref:`pw_chrono <module-pw_chrono>` module. So
 you create a target in your repository like so:

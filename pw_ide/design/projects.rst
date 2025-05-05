@@ -89,12 +89,11 @@ Bazel projects
 ==============
 This project structure has the following properties:
 
-* Development tools and dependences are managed by Bazel. There are multiple
-  mechanisms for this, including
-  `WORKSPACE <https://bazel.build/concepts/build-ref#workspace>`_ and
-  `bzlmod <https://docs.bazel.build/versions/5.1.0/bzlmod.html>`_. Regardless of
-  the mechanism used, Bazel manages the tools and dependencies, and their
-  location on disk.
+* Development tools and dependencies are managed by Bazel.
+  `bzlmod <https://docs.bazel.build/versions/5.1.0/bzlmod.html>`_ uses a few
+  forms of version resolution to ensure all tooling and external resources are
+  available when they're needed. Regardless of the mechanism used, Bazel manages
+  the tools and dependencies, and their location on disk.
 
 * The Bazel environment is created and updated by running a Bazel build command.
 
