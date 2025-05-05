@@ -1,0 +1,52 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_run_binary")
+load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
+
+filegroup(
+    name = "js_files",
+    srcs = [
+        "package.json",
+        "rollup.config.js",
+        "scripts/cquery.bzl",
+        "src/clangd/compileCommandsGenerator.ts",
+        "src/clangd/parser.ts",
+        "tsconfig.json",
+    ],
+)
+
+js_run_binary(
+    name = "compile_commands_generator",
+    srcs = [
+        ":js_files",
+        "//:node_modules",
+    ],
+    outs = [
+        "out/bin/compileCommandsGenerator.js",
+        "out/scripts/cquery.bzl",
+    ],
+    args = ["-c rollup.config.js"],
+    chdir = package_name(),
+    log_level = "debug",
+    target_compatible_with = incompatible_with_mcu(),
+    tool = "//:rollup_bin",
+)
+
+js_binary(
+    name = "compile_commands_generator_binary",
+    data = [":compile_commands_generator"],
+    entry_point = "out/bin/compileCommandsGenerator.js",
+    target_compatible_with = incompatible_with_mcu(),
+)

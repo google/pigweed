@@ -52,6 +52,11 @@ type AQueryOutput = {
   ];
 };
 
+interface ParsedBazelCommand {
+  targets: string[];
+  args: string[];
+}
+
 /**
  * Postcondition: Either //external points into Bazel's fullest set of external workspaces in output_base, or we've exited with an error that'll help the user resolve the issue.
  */
@@ -60,7 +65,7 @@ function ensureExternalWorkspacesLink_exists(cwd: string, logger?: Logger) {
   const source = path.resolve(path.join(cwd, 'external'));
 
   if (!fs.existsSync(path.join(cwd, 'bazel-out'))) {
-    logger?.error('//bazel-out is missing.');
+    logger?.error('bazel-out is missing at: ' + path.join(cwd, 'bazel-out'));
     process.exit(1);
   }
 
@@ -160,12 +165,15 @@ function getSourceFile(args: string[]) {
 async function runCquery(
   bazelCmd: string,
   cwd: string,
+  bazelTargets: string[],
+  bazelArgs: string[],
   logger?: Logger,
 ): Promise<CQueryItem[]> {
   const bzlPath = path.join(__dirname, '..', 'scripts', 'cquery.bzl');
   const args = [
     'cquery',
-    'deps(//...)',
+    ...bazelArgs,
+    `deps(set(${bazelTargets.join(' ')}))`,
     '--output=starlark',
     '--starlark:file=' + bzlPath,
     '--keep_going',
@@ -201,13 +209,16 @@ async function runCquery(
 async function runAquery(
   bazelCmd: string,
   cwd: string,
+  bazelTarget: string,
+  bazelArgs: string[],
   logger?: Logger,
 ): Promise<Action[]> {
   const args = [
     'aquery',
     '--include_commandline',
     '--output=jsonproto',
-    'mnemonic("CppCompile", "//...")',
+    ...bazelArgs,
+    `mnemonic("CppCompile", "${bazelTarget}")`,
     '--include_artifacts=false',
     '--ui_event_filters=-info',
     '--features=-compiler_param_file',
@@ -228,6 +239,10 @@ async function runAquery(
     spawnedProcess.on('exit', (code) => {
       try {
         const aqueryJson: AQueryOutput = JSON.parse(output);
+        if (!aqueryJson.actions || aqueryJson.actions.length === 0) {
+          resolve([]);
+          return;
+        }
         const actions = aqueryJson.actions.map((action: Action) => {
           action.targetLabel = aqueryJson.targets.find(
             (target) => target.id === action.targetId,
@@ -237,7 +252,7 @@ async function runAquery(
         });
         resolve(actions);
       } catch (e) {
-        const message = 'Failed to run aquery ' + `(error code: ${code})`;
+        const message = 'Failed to run aquery ' + `(error code: ${code}): ${e}`;
 
         logger?.error(message);
         resolve(null);
@@ -440,14 +455,28 @@ export async function generateCompileCommands(
   cwd: string,
   cdbFileDir: string,
   cdbFilename: string,
+  bazelTargets: string[] = ['//...'],
+  bazelArgs: string[] = [],
   logger?: Logger,
 ) {
   const startTime = Date.now();
   logger?.info('Generating compile_commands.json.');
   ensureExternalWorkspacesLink_exists(cwd, logger);
-  const aqueryActions = await runAquery(bazelCmd, cwd, logger);
-  const cqueryJson = await runCquery(bazelCmd, cwd, logger);
 
+  const aqueryActions = (
+    await Promise.all(
+      bazelTargets.map(async (target) =>
+        runAquery(bazelCmd, cwd, target, bazelArgs),
+      ),
+    )
+  ).flat();
+  const cqueryJson = await runCquery(
+    bazelCmd,
+    cwd,
+    bazelTargets,
+    bazelArgs,
+    logger,
+  );
   const compileCommandsPerPlatform =
     await generateCompileCommandsFromAqueryCquery(
       cwd,
@@ -455,7 +484,6 @@ export async function generateCompileCommands(
       cqueryJson,
       logger,
     );
-
   await compileCommandsPerPlatform.writeAll(cwd, cdbFileDir, cdbFilename);
 
   logger?.info(
@@ -465,4 +493,265 @@ export async function generateCompileCommands(
       (Date.now() - startTime) +
       'ms.',
   );
+}
+
+function deleteFilesInSubDir(parentDirPath: string, fileNameToDelete: string) {
+  try {
+    if (!fs.existsSync(parentDirPath)) {
+      return;
+    }
+
+    const parentEntries = fs.readdirSync(parentDirPath, {
+      withFileTypes: true,
+    });
+
+    for (const parentEntry of parentEntries) {
+      if (parentEntry.isDirectory()) {
+        const potentialFilePath = path.join(
+          parentDirPath,
+          parentEntry.name,
+          fileNameToDelete,
+        );
+        try {
+          if (fs.existsSync(potentialFilePath)) {
+            fs.unlinkSync(potentialFilePath);
+            console.log(`  Deleted: ${potentialFilePath}`);
+          }
+        } catch (fileOpErr: any) {
+          console.error(
+            `  Error processing file ${potentialFilePath}: ${fileOpErr.message}`,
+          );
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error(
+      `Error processing parent directory ${parentDirPath}: ${err.message}`,
+    );
+  }
+}
+
+/**
+ * Parses a Bazel command string to extract targets and canonicalize arguments.
+ *
+ * This function tokenizes the input command, identifies the Bazel subcommand (e.g., build, test),
+ * and separates recognized Bazel targets (those starting with `//` or `:`) from other arguments.
+ * It then uses `bazel canonicalize-flags` with the identified subcommand to normalize the
+ * remaining arguments.
+ *
+ * @param {string} command - The Bazel command string to parse (e.g., "build //foo:bar --config=my_config -c opt").
+ * @param {string} bazelPath - The path to the Bazel executable.
+ * @param {string} cwd - The current working directory in which to run `bazel canonicalize-flags`.
+ * @returns {Promise<ParsedBazelCommand>} A promise that resolves to an object containing:
+ * - `targets`: An array of identified Bazel target strings.
+ * - `args`: An array of canonicalized Bazel argument strings.
+ * @throws {Error} If the command is empty, invalid, contains no targets, or if `bazel canonicalize-flags` fails.
+ */
+export async function parseBazelBuildCommand(
+  command: string,
+  bazelPath: string,
+  cwd: string,
+): Promise<ParsedBazelCommand> {
+  // This regex tokenizes a command string, respecting quotes and allowing
+  // concatenation of quoted and unquoted parts into single arguments
+  // (e.g., `foo="bar baz"` becomes one token). It handles:
+  // 1. Unquoted sequences `[^\s"']+`
+  // 2. Double-quoted strings `"(?:\\.|[^"\\])*"` (with escapes)
+  // 3. Single-quoted strings `'(?:\\.|[^'\\])*'` (with escapes)
+  // The outer `(?:...)+` structure groups these if they are adjacent without spaces.
+  // Whitespace separates the final tokens. Uses global flag `/g`.
+  const tokenizerRegex = /(?:[^\s"']+|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')+/g;
+  const trimmedCommand = command.trim();
+
+  // If the command is empty after trimming, handle it early.
+  if (trimmedCommand === '') {
+    throw new Error(`Invalid bazel command (empty): ${command}`);
+  }
+
+  const parts = trimmedCommand.match(tokenizerRegex);
+
+  if (!parts || parts.length === 0 || (parts.length === 1 && parts[0] === '')) {
+    throw new Error(`Invalid bazel command (empty): ${command}`);
+  }
+
+  // Determine the bazel subcommand (build, run, test, etc.) - needed for canonicalize-flags
+  // Assumes the subcommand is the first part after 'bazel'
+  const subCommand = parts[0];
+  // Filter out the subcommand for further processing
+  const potentialTargetsAndArgs = parts.length > 1 ? parts.slice(1) : ['//...'];
+
+  // 2. Identify targets and potential arguments
+  const targets: string[] = [];
+  const potentialArgs: string[] = [];
+
+  for (const part of potentialTargetsAndArgs) {
+    // Basic target identification (starts with // or :)
+    // More robust parsing might be needed for complex target patterns.
+    if (part.startsWith('//') || part.startsWith(':')) {
+      targets.push(part);
+    } else {
+      // Anything else is considered a potential argument for canonicalization
+      potentialArgs.push(part);
+    }
+  }
+
+  // Throw if no target is identified *after* splitting
+  if (targets.length === 0) {
+    throw new Error(
+      `Could not find any bazel targets (starting with // or :) in command: ${command}`,
+    );
+  }
+
+  // Canonicalize arguments using `bazel canonicalize-flags`.
+  // This Bazel command takes a list of flags and returns them in a stable, canonical form.
+  // For example, it expands shorthand flags, orders them consistently, and handles flags that
+  // might be specified in different ways but mean the same thing.
+  //
+  // Example:
+  // If `subCommand` is 'build' and `potentialArgs` is `['-c', 'opt', '--config=myconfig']`,
+  // `bazel canonicalize-flags --for_command=build -- -c opt --config=myconfig`
+  // will output:
+  //   --compilation_mode=opt
+  //   --config=myconfig
+  // This step ensures that arguments are processed in a standardized way.
+  let canonicalizedArgs: string[] = [];
+  if (potentialArgs.length > 0) {
+    const canonicalizeCmdArgs = [
+      'canonicalize-flags',
+      `--for_command=${subCommand}`,
+      '--',
+      ...potentialArgs,
+    ];
+
+    try {
+      const result = await new Promise<{ stdout: string; stderr: string }>(
+        (resolve, reject) => {
+          let stdout = '';
+          let stderr = '';
+          const spawnedProcess = child_process.spawn(
+            bazelPath,
+            canonicalizeCmdArgs,
+            {
+              cwd: cwd, // Run in the specified working directory
+              shell: false, // More secure and predictable
+              env: process.env, // Inherit environment
+            },
+          );
+
+          spawnedProcess.stdout.on('data', (data) => {
+            stdout += data.toString();
+          });
+
+          spawnedProcess.stderr.on('data', (data) => {
+            stderr += data.toString();
+          });
+
+          spawnedProcess.on('error', (err) => {
+            reject(
+              new Error(
+                `Failed to spawn bazel canonicalize-flags: ${err.message}`,
+              ),
+            );
+          });
+
+          spawnedProcess.on('close', (code) => {
+            if (code === 0) {
+              resolve({ stdout, stderr });
+            } else {
+              reject(
+                new Error(
+                  `bazel canonicalize-flags failed with exit code ${code}:\n${stderr}`,
+                ),
+              );
+            }
+          });
+        },
+      );
+
+      // Process the stdout: split by lines, trim, filter empty
+      canonicalizedArgs = result.stdout
+        .trim()
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line !== ''); // Filter out potential empty lines
+    } catch (error) {
+      // Rethrow or handle the error from the promise/spawn
+      throw new Error(
+        `Error during bazel canonicalize-flags: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  // 4. Return the results
+  return {
+    targets: targets,
+    args: canonicalizedArgs,
+  };
+}
+
+async function runAsCli() {
+  const consoleLogger: Logger = {
+    info: console.log,
+    warn: console.warn,
+    error: console.error,
+  };
+  const args = process.argv.slice(2);
+  const parsedArgs: { [key: string]: string } = {};
+
+  for (let i = 0; i < args.length; i += 2) {
+    const argName = args[i];
+    const argValue = args[i + 1];
+
+    if (argName && argName.startsWith('--')) {
+      const key = argName.substring(2);
+      parsedArgs[key] = argValue;
+    }
+  }
+
+  if (!parsedArgs['target'] || !parsedArgs['cwd'] || !parsedArgs['bazelCmd']) {
+    console.error('Missing required arguments.', parsedArgs);
+    process.exit(1);
+  }
+
+  const { targets, args: bazelArgs } = await parseBazelBuildCommand(
+    parsedArgs['target'],
+    parsedArgs['bazelCmd'],
+    parsedArgs['cwd'],
+  );
+
+  console.log(
+    'Generating compile_commands.json...',
+    parsedArgs,
+    targets,
+    bazelArgs,
+  );
+
+  const cdbFileDir = parsedArgs['cdbFileDir'] || '.compile_commands';
+
+  // Delete and recreate the compile_commands directory.
+  const fullCdbDirPath = path.join(parsedArgs['cwd'], cdbFileDir);
+  deleteFilesInSubDir(fullCdbDirPath, 'compile_commands.json');
+  fs.mkdirSync(fullCdbDirPath, { recursive: true });
+
+  generateCompileCommands(
+    parsedArgs['bazelCmd'],
+    parsedArgs['cwd'],
+    cdbFileDir,
+    parsedArgs['cdbFilename'] || 'compile_commands.json',
+    targets,
+    bazelArgs,
+    consoleLogger,
+  )
+    .then(() => {
+      console.log('Finished generating compile_commands.json.');
+    })
+    .catch((err) => {
+      console.error('Error generating compile_commands.json:', err);
+      process.exit(1);
+    });
+}
+if (require.main === module) {
+  runAsCli();
 }

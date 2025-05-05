@@ -112,6 +112,8 @@ export class BazelRefreshCompileCommandsWatcher extends Disposable {
         cwd,
         CDB_FILE_DIR,
         CDB_FILE_NAME,
+        ['//...'],
+        [],
         logger,
       );
       // Restart the clangd server so it picks up the new compile commands.

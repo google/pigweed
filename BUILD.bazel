@@ -170,6 +170,7 @@ js_binary(
     name = "rollup_bin",
     entry_point = ":rollup_entry_point",
     target_compatible_with = incompatible_with_mcu(),
+    visibility = [":__subpackages__"],
 )
 
 filegroup(

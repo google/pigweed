@@ -18,10 +18,13 @@ import {
   applyVirtualIncludeFix,
   generateCompileCommandsFromAqueryCquery,
   inferPlatformOfAction,
+  parseBazelBuildCommand,
   resolveVirtualIncludesToRealPaths,
 } from './compileCommandsGenerator';
 import { CompileCommand } from './parser';
 import path from 'path';
+import { getReliableBazelExecutable } from '../bazel';
+import { workingDir } from '../settings/vscode';
 
 function fixPathSeparator(p: string) {
   return p.replace(/\//g, path.sep);
@@ -396,5 +399,207 @@ test('generateCompileCommandsFromAqueryCquery', async () => {
   assert.equal(
     compileCommand.data.file,
     fixPathSeparator('pw_containers/intrusive_map_test.cc'),
+  );
+});
+
+test('parseBazelBuildCommand_singleTarget_noArgs', async () => {
+  const bazel = getReliableBazelExecutable();
+  const { targets, args } = await parseBazelBuildCommand(
+    'build //pw_status/...',
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['//pw_status/...']);
+  assert.deepEqual(args, []);
+});
+
+test('parseBazelBuildCommand_multipleTargets_noArgs', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command = 'build //pw_string:pw_string //pw_status/ts:js_files';
+  const { targets, args } = await parseBazelBuildCommand(
+    command,
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, [
+    '//pw_string:pw_string',
+    '//pw_status/ts:js_files',
+  ]);
+  assert.deepEqual(args, []);
+});
+
+test('parseBazelBuildCommand_oneConfigArg_oneTarget', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command = 'build --config rp2040 //pw_status/...';
+  const { targets, args } = await parseBazelBuildCommand(
+    command,
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['//pw_status/...']);
+  assert.deepEqual(args, ['--config=rp2040']);
+});
+
+test('parseBazelBuildCommand_onePlatformArg_oneTarget_testSubcommand', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command =
+    'test --platforms=@pigweed//targets/rp2040 //pw_string:pw_string';
+  const { targets, args } = await parseBazelBuildCommand(
+    command,
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['//pw_string:pw_string']);
+  assert.deepEqual(args, ['--platforms=@pigweed//targets/rp2040']);
+});
+
+test('parseBazelBuildCommand_bothArgs_multipleTargets', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command =
+    'build --config rp2040 --platforms=@pigweed//targets/rp2040 //pw_status/... //pw_string/...';
+  const { targets, args } = await parseBazelBuildCommand(
+    command,
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['//pw_status/...', '//pw_string/...']);
+  // Order of args from canonicalize-flags can vary. Sorting makes the test more robust.
+  const expectedArgs = [
+    '--config=rp2040',
+    '--platforms=@pigweed//targets/rp2040',
+  ].sort();
+  assert.deepEqual(
+    [...args].sort(),
+    expectedArgs,
+    `Expected sorted args ${expectedArgs} but got ${args}`,
+  );
+});
+
+test('parseBazelBuildCommand_target_thenConfigArg', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command = 'build //pw_status/ts:js_files --config rp2040';
+  const { targets, args } = await parseBazelBuildCommand(
+    command,
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['//pw_status/ts:js_files']);
+  assert.deepEqual(args, ['--config=rp2040']);
+});
+
+test('parseBazelBuildCommand_arg_target_arg_target', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command =
+    'build --config rp2040 //pw_status/... --platforms=@pigweed//targets/rp2040 //pw_string:pw_string';
+  const { targets, args } = await parseBazelBuildCommand(
+    command,
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['//pw_status/...', '//pw_string:pw_string']);
+  const expectedArgs = [
+    '--config=rp2040',
+    '--platforms=@pigweed//targets/rp2040',
+  ].sort();
+  assert.deepEqual(
+    [...args].sort(),
+    expectedArgs,
+    `Expected sorted args ${expectedArgs} but got ${args}`,
+  );
+});
+
+test('parseBazelBuildCommand_platformArg_in_quotes', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command =
+    'test --platforms=@pigweed//targets/rp2040 --define=VAR="some value with spaces" //pw_status/ts:js_files';
+  const { targets, args } = await parseBazelBuildCommand(
+    command,
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['//pw_status/ts:js_files']);
+  const expectedArgs = [
+    '--define=VAR="some value with spaces"',
+    '--platforms=@pigweed//targets/rp2040',
+  ].sort();
+  assert.deepEqual(
+    [...args].sort(),
+    expectedArgs,
+    `Expected sorted args ${expectedArgs} but got ${args}`,
+  );
+});
+
+test('parseBazelBuildCommand_platformArg_before_configArg', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command =
+    'test --platforms=@pigweed//targets/rp2040 --config rp2040 //pw_status/ts:js_files';
+  const { targets, args } = await parseBazelBuildCommand(
+    command,
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['//pw_status/ts:js_files']);
+  const expectedArgs = [
+    '--config=rp2040',
+    '--platforms=@pigweed//targets/rp2040',
+  ].sort();
+  assert.deepEqual(
+    [...args].sort(),
+    expectedArgs,
+    `Expected sorted args ${expectedArgs} but got ${args}`,
+  );
+});
+
+test('parseBazelBuildCommand_error_noTargets_withSpecifiedArgs', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command = 'build --config rp2040 --platforms=@pigweed//targets/rp2040';
+  await assert.rejects(
+    parseBazelBuildCommand(command, bazel!, workingDir.get()),
+    (err: Error) => {
+      assert.ok(err instanceof Error);
+      assert.match(
+        err.message,
+        /Could not find any bazel targets \(starting with \/\/ or :\) in command: build --config rp2040 --platforms=@pigweed\/\/targets\/rp2040/,
+      );
+      return true;
+    },
+  );
+});
+
+test('parseBazelBuildCommand_onlySubcommand_build', async () => {
+  const bazel = getReliableBazelExecutable();
+  const { targets, args } = await parseBazelBuildCommand(
+    'build',
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['//...']);
+  assert.deepEqual(args, []);
+});
+
+test('parseBazelBuildCommand_error_emptyCommand_string', async () => {
+  const bazel = getReliableBazelExecutable();
+  await assert.rejects(
+    parseBazelBuildCommand('', bazel!, workingDir.get()),
+    /Invalid bazel command \(empty\): /,
+  );
+});
+
+test('parseBazelBuildCommand_error_invalidSubcommand_withSpecifiedArgsAndTarget', async () => {
+  const bazel = getReliableBazelExecutable();
+  const command = 'shipit --config rp2040 //pw_status/...'; // "shipit" is not a standard bazel command
+  await assert.rejects(
+    parseBazelBuildCommand(command, bazel!, workingDir.get()),
+    (err: Error) => {
+      assert.ok(err instanceof Error, 'Error should be an instance of Error');
+      // This error comes from bazel canonicalize-flags failing due to invalid --for_command
+      assert.ok(
+        /Error during bazel canonicalize-flags: bazel canonicalize-flags failed with exit code/.test(
+          err.message,
+        ) || /No such command 'shipit'/.test(err.message), // Actual Bazel error might vary
+        `Unexpected error message: ${err.message}`,
+      );
+      return true;
+    },
   );
 });
