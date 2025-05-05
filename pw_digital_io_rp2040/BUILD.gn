@@ -15,7 +15,6 @@
 import("//build_overrides/pi_pico.gni")
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_includes") {
@@ -38,10 +37,6 @@ pw_test("digital_io_test") {
   enable_if = pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable"
   sources = [ "digital_io_test.cc" ]
   deps = [ ":pw_digital_io_rp2040" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

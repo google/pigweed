@@ -20,7 +20,6 @@ import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_thread_freertos/backend.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -373,8 +372,4 @@ pw_test("static_thread_backend_test") {
     ":static_test_threads",
     "$dir_pw_thread:thread_facade_test",
   ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

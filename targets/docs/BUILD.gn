@@ -84,7 +84,3 @@ generate_toolchain("docs") {
     pw_async_FAKE_DISPATCHER_BACKEND = "$dir_pw_async_basic:fake_dispatcher"
   }
 }
-
-pw_doc_group("target_docs") {
-  sources = [ "target_docs.rst" ]
-}

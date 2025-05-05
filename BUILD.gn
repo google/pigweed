@@ -21,7 +21,6 @@ import("$dir_pw_build/coverage_report.gni")
 import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_gn_args.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_rpc/config.gni")
 import("$dir_pw_rust/rust.gni")
@@ -363,9 +362,6 @@ if (pw_android_toolchain_NDK_PATH != "") {
 
 group("docs") {
   deps = [
-    # TODO: https://pwbug.dev/318892911 - Delete the GN build of pigweed.dev.
-    "$dir_pigweed/docs($dir_pigweed/targets/docs)",
-
     # Build a small Sphinx site that exercises the pw_docgen features that
     # Pigweed clients rely on.
     "$dir_pw_docgen/py/tests:docs($dir_pigweed/targets/docs)",

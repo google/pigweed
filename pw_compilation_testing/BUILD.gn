@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -35,10 +34,6 @@ pw_source_set("negative_compilation_testing") {
 # negative_compilation_test = true in a pw_test() template.
 group("internal_pigweed_use_only") {
   public_deps = [ ":negative_compilation_testing" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

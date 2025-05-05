@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_android_toolchain/android.gni")
-import("$dir_pw_docgen/docs.gni")
 
 if (pw_android_toolchain_NDK_PATH != "") {
   import("$dir_pw_android_toolchain/generate_toolchain.gni")
@@ -24,8 +23,4 @@ if (pw_android_toolchain_NDK_PATH != "") {
   pw_generate_android_toolchains("target_toolchains") {
     toolchains = pw_target_toolchain_android_list
   }
-}
-
-pw_doc_group("target_docs") {
-  sources = [ "target_docs.rst" ]
 }

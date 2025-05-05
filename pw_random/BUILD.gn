@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -69,12 +68,5 @@ pw_fuzzer("get_int_bounded_fuzzer") {
     ":fuzzer_generator",
     ":pw_random",
     dir_pw_assert,
-  ]
-}
-
-pw_doc_group("docs") {
-  sources = [
-    "backends.rst",
-    "docs.rst",
   ]
 }

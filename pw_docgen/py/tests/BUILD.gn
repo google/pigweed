@@ -53,6 +53,7 @@ if (current_toolchain == "//targets/docs:docs") {
       ":sources",
     ]
   }
+  python_deps = [ "$dir_pw_env_setup:core_pigweed_python_packages" ]
 }
 
 pw_python_action_test("tests") {

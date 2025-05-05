@@ -14,24 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
-
-pw_doc_group("docs") {
-  inputs = [
-    "py/pw_console/plugins/calc_pane.py",
-    "py/pw_console/plugins/clock_pane.py",
-    "py/pw_console/plugins/twenty48_pane.py",
-  ]
-  sources = [
-    "docs.rst",
-    "embedding.rst",
-    "internals.rst",
-    "plugins.rst",
-    "py/pw_console/docs/user_guide.rst",
-    "testing.rst",
-  ]
-}
 
 pw_test_group("tests") {
 }

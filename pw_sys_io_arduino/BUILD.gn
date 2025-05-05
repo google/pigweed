@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -36,10 +35,6 @@ if (pw_arduino_build_CORE_PATH != "") {
     ]
     sources = [ "sys_io_arduino.cc" ]
   }
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

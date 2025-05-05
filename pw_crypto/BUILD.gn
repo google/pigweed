@@ -18,7 +18,6 @@ import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_crypto/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -37,45 +36,6 @@ pw_facade("sha256") {
     "$dir_pw_stream",
   ]
   deps = [ "$dir_pw_assert" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  report_deps = [ ":size_report" ]
-}
-
-pw_size_diff("size_report") {
-  title = "pw::crypto Size Report"
-  base = "$dir_pw_bloat:bloat_base"
-
-  binaries = []
-
-  if (pw_crypto_SHA256_BACKEND != "") {
-    binaries += [
-      {
-        target = "size_report:sha256_simple"
-        label = "SHA256 ($pw_crypto_SHA256_BACKEND)"
-      },
-    ]
-  }
-
-  if (pw_crypto_ECDSA_BACKEND != "") {
-    binaries += [
-      {
-        target = "size_report:ecdsa_p256_verify"
-        label = "ECDSA P256 Verify ($pw_crypto_ECDSA_BACKEND)"
-      },
-    ]
-  }
-
-  if (binaries == []) {
-    binaries += [
-      {
-        target = "$dir_pw_bloat:bloat_base"
-        label = "No backend is selected."
-      },
-    ]
-  }
 }
 
 pw_test_group("tests") {

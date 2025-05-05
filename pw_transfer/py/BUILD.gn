@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_rpc/internal/integration_test_ports.gni")
 
 pw_python_package("py") {

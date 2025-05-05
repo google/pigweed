@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/facade.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/facade_test.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
@@ -121,13 +120,6 @@ pw_test("trace_null_test") {
     "trace_null_test_c.c",
   ]
   deps = [ ":null" ]
-}
-
-pw_doc_group("docs") {
-  sources = [
-    "backends.rst",
-    "docs.rst",
-  ]
 }
 
 config("trace_sample_app_config") {

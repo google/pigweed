@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -43,8 +42,4 @@ pw_test_group("tests") {
 pw_test("device_info_service_test") {
   sources = [ "device_info_service_test.cc" ]
   deps = [ ":device_info_service" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

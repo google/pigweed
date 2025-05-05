@@ -14,16 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
-
-pw_doc_group("docs") {
-  sources = [
-    "cli.rst",
-    "docs.rst",
-    "guide.rst",
-  ]
-}
 
 pw_test_group("tests") {
 }

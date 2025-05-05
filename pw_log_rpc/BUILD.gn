@@ -17,7 +17,6 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
@@ -246,11 +245,6 @@ pw_test("rpc_log_drain_test") {
   if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
     enable_if = false
   }
-}
-
-# TODO(cachinchilla): update docs.
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

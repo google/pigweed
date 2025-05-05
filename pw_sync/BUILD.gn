@@ -17,7 +17,6 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 
@@ -424,12 +423,5 @@ pw_source_set("condition_variable_test") {
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",
     "$dir_pw_unit_test",
-  ]
-}
-
-pw_doc_group("docs") {
-  sources = [
-    "backends.rst",
-    "docs.rst",
   ]
 }

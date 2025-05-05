@@ -13,8 +13,3 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
-import("$dir_pw_docgen/docs.gni")
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-}

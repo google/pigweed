@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -95,10 +94,6 @@ pw_source_set("recursive_mutex") {
     "$dir_pw_sync:recursive_mutex.facade",
   ]
   visibility = [ "$dir_pw_sync:*" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

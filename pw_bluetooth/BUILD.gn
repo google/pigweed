@@ -20,7 +20,6 @@ import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
@@ -39,17 +38,6 @@ pw_source_set("config") {
 config("public_include_path") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
-}
-
-pw_doc_group("docs") {
-  # Also, sources with doxygen comment blocks must be added to //docs/BUILD.gn
-  inputs = [ "emboss_test.cc" ]
-  sources = [ "docs.rst" ]
-
-  report_deps = [
-    ":emboss_size_report",
-    ":emboss_size_report_diff",
-  ]
 }
 
 pw_source_set("pw_bluetooth") {

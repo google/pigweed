@@ -14,7 +14,6 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -43,11 +42,6 @@ pw_source_set("flat_file_system") {
   public_configs = [ ":public_includes" ]
   public = [ "public/pw_file/flat_file_system.h" ]
   sources = [ "flat_file_system.cc" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  inputs = [ "file.proto" ]
 }
 
 pw_test_group("tests") {

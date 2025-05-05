@@ -18,14 +18,9 @@ import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-}
 
 # Since this module only contains Rust code, it is only built and tested under
 # Bazel at the moment.

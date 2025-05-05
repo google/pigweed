@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("tinyusb.gni")
 
 # List of targets defined by this module.
@@ -315,8 +314,4 @@ if (pw_third_party_tinyusb_SOURCE == "") {
         [ "$pw_third_party_tinyusb_SOURCE/src/class/vendor/vendor_host.c" ]
     public = [ "$pw_third_party_tinyusb_SOURCE/src/class/vendor/vendor_host.h" ]
   }
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

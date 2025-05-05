@@ -17,7 +17,6 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
@@ -220,63 +219,4 @@ pw_test("util_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
-}
-
-pw_doc_group("docs") {
-  inputs = [ "Kconfig" ]
-  sources = [
-    "api.rst",
-    "code_size.rst",
-    "design.rst",
-    "docs.rst",
-    "guide.rst",
-  ]
-  report_deps = [
-    ":format_size_report",
-    ":string_builder_size_report",
-  ]
-}
-
-pw_size_diff("format_size_report") {
-  title = "Using pw::string::Format instead of snprintf"
-
-  binaries = [
-    {
-      target = "size_report:single_write_format"
-      base = "size_report:single_write_snprintf"
-      label = "Format instead of snprintf once, return size"
-    },
-    {
-      target = "size_report:multiple_writes_format"
-      base = "size_report:multiple_writes_snprintf"
-      label = "Format instead of snprintf 10 times, handle errors"
-    },
-    {
-      target = "size_report:many_writes_format"
-      base = "size_report:many_writes_snprintf"
-      label = "Format instead of snprintf 50 times, no error handling"
-    },
-  ]
-}
-
-pw_size_diff("string_builder_size_report") {
-  title = "Using pw::StringBuilder instead of snprintf"
-
-  binaries = [
-    {
-      target = "size_report:build_string_with_string_builder"
-      base = "size_report:build_string_with_snprintf"
-      label = "Total StringBuilder cost when used alongside snprintf"
-    },
-    {
-      target = "size_report:build_string_with_string_builder_no_base_snprintf"
-      base = "size_report:build_string_with_snprintf_no_base_snprintf"
-      label = "StringBuilder cost when completely replacing snprintf"
-    },
-    {
-      target = "size_report:build_string_incremental_with_string_builder"
-      base = "size_report:build_string_incremental_with_snprintf"
-      label = "Incremental cost relative to snprintf for 10 strings"
-    },
-  ]
 }

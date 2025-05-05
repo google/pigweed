@@ -205,10 +205,6 @@ Assets within each field must be listed in alphabetical order.
      deps = [ ":sample_module" ]
    }
 
-   pw_doc_group("docs") {
-     sources = [ "docs.rst" ]
-   }
-
 ------------------
 Build files: Bazel
 ------------------

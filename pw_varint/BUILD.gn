@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzz_test.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -82,9 +81,4 @@ pw_test("stream_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
-}
-
-pw_doc_group("docs") {
-  inputs = [ "Kconfig" ]
-  sources = [ "docs.rst" ]
 }

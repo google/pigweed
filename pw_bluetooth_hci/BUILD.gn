@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -100,8 +99,4 @@ pw_fuzzer("uart_transport_fuzzer") {
     dir_pw_status,
     dir_pw_stream,
   ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

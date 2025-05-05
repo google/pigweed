@@ -1478,6 +1478,8 @@ SOURCE_FILES_FILTER_BAZEL_EXCLUDE = FileFilter(
 SOURCE_FILES_FILTER_GN_EXCLUDE = FileFilter(
     exclude=(
         # keep-sorted: start
+        r'.*\.rst$',
+        r'\bdocs',
         r'\bpw_bluetooth_sapphire/fuchsia',
         # keep-sorted: end
     ),

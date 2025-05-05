@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_system/system_target.gni")
 import("$dir_pw_toolchain/arm_clang/toolchains.gni")
@@ -122,8 +121,4 @@ pw_system_target("stm32f429i_disc1_stm32cube_clang") {
 
   link_deps = common_link_deps
   build_args = common_build_args
-}
-
-pw_doc_group("target_docs") {
-  sources = [ "target_docs.rst" ]
 }

@@ -14,7 +14,6 @@
 
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/cc_library.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 import("$pw_external_llvm_libcxx/llvm_libcxx.gni")
 
@@ -51,8 +50,4 @@ if (dir_pw_third_party_llvm_libcxx != "") {
 }
 
 pw_test_group("tests") {
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

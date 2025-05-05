@@ -14,7 +14,6 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 pw_source_set("atomic_cortex_m") {
@@ -24,8 +23,4 @@ pw_source_set("atomic_cortex_m") {
 
 pw_test_group("tests") {
   tests = []
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

@@ -17,7 +17,6 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_function/function.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -68,18 +67,6 @@ pw_source_set("scope_guard") {
   public = [ "public/pw_function/scope_guard.h" ]
 }
 
-pw_doc_group("docs") {
-  inputs = [
-    "Kconfig",
-    "function_test.cc",
-  ]
-  sources = [ "docs.rst" ]
-  report_deps = [
-    ":callable_size",
-    ":function_size",
-  ]
-}
-
 pw_test_group("tests") {
   tests = [
     ":function_test",
@@ -111,54 +98,5 @@ pw_test("scope_guard_test") {
   deps = [
     ":pw_function",
     ":scope_guard",
-  ]
-}
-
-pw_size_diff("function_size") {
-  title = "Pigweed function size report"
-
-  binaries = [
-    {
-      target = "size_report:basic_function"
-      base = "size_report:pointer_base"
-      label = "Simple pw::Function vs. function pointer"
-    },
-  ]
-}
-
-pw_size_diff("callable_size") {
-  title = "Size comparison of callable objects"
-
-  binaries = [
-    {
-      target = "size_report:callable_size_function_pointer"
-      base = "size_report:callable_size_base"
-      label = "Function pointer"
-    },
-    {
-      target = "size_report:callable_size_static_lambda"
-      base = "size_report:callable_size_base"
-      label = "Static lambda (operator+)"
-    },
-    {
-      target = "size_report:callable_size_simple_lambda"
-      base = "size_report:callable_size_base"
-      label = "Non-capturing lambda"
-    },
-    {
-      target = "size_report:callable_size_capturing_lambda"
-      base = "size_report:callable_size_base"
-      label = "Simple capturing lambda"
-    },
-    {
-      target = "size_report:callable_size_multi_capturing_lambda"
-      base = "size_report:callable_size_base"
-      label = "Multi-argument capturing lambda"
-    },
-    {
-      target = "size_report:callable_size_custom_class"
-      base = "size_report:callable_size_base"
-      label = "Custom class"
-    },
   ]
 }

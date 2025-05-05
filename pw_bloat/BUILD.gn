@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 import("bloat.gni")
 
@@ -43,14 +42,6 @@ pw_source_set("base_main") {
 # Standard minimal base binary for bloat reports.
 pw_executable("bloat_base") {
   forward_variables_from(pw_bloat_empty_base, "*")
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  report_deps = [
-    "examples:simple_bloat_function",
-    "examples:simple_bloat_loop",
-  ]
 }
 
 pw_test_group("tests") {

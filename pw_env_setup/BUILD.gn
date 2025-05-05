@@ -18,12 +18,7 @@ import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_dist.gni")
 import("$dir_pw_build/python_gn_args.gni")
 import("$dir_pw_build/python_venv.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-}
 
 pw_python_group("core_pigweed_python_packages") {
   python_deps = [

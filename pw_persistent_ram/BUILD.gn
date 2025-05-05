@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -80,26 +79,4 @@ pw_test("persistent_buffer_test") {
 pw_test("flat_file_system_entry_test") {
   deps = [ ":flat_file_system_entry" ]
   sources = [ "flat_file_system_entry_test.cc" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  report_deps = [ ":persistent_size" ]
-}
-
-pw_size_diff("persistent_size") {
-  title = "pw::persistent_ram::Persistent"
-
-  binaries = [
-    {
-      target = "size_report:persistent"
-      base = "size_report:persistent_base"
-      label = "Persistent including pw_checksum's CRC16"
-    },
-    {
-      target = "size_report:persistent"
-      base = "size_report:persistent_base_with_crc16"
-      label = "Persistent without pw_checksum's CRC16"
-    },
-  ]
 }

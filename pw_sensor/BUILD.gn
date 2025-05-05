@@ -14,7 +14,6 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sensor/sensor.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -59,9 +58,4 @@ pw_test("constants_test") {
 
 pw_test_group("tests") {
   tests = [ ":constants_test" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  group_deps = [ "py:docs" ]
 }

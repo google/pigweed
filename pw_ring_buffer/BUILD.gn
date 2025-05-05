@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -54,31 +53,4 @@ pw_test("prefixed_entry_ring_buffer_test") {
     "$dir_pw_varint",
   ]
   sources = [ "prefixed_entry_ring_buffer_test.cc" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  report_deps = [ ":ring_buffer_size" ]
-}
-
-pw_size_diff("ring_buffer_size") {
-  title = "pw::ring_buffer::PrefixedEntryRingBuffer"
-
-  binaries = [
-    {
-      target = "size_report:ring_buffer_simple"
-      base = "$dir_pw_bloat:bloat_base"
-      label = "Initialize single-reader ring buffer"
-    },
-    {
-      target = "size_report:ring_buffer_multi"
-      base = "$dir_pw_bloat:bloat_base"
-      label = "Initialize multi-reader ring buffer"
-    },
-    {
-      target = "size_report:ring_buffer_multi"
-      base = "size_report:ring_buffer_simple"
-      label = "Initialized multi-reader vs. single-reader"
-    },
-  ]
 }

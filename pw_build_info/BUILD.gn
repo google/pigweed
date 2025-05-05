@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("linker_script") {
@@ -97,14 +96,6 @@ if (current_os == "mac" || current_os == "win") {
   pw_source_set("build_id_or_noop") {
     public_deps = [ ":build_id" ]
   }
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  inputs = [
-    "add_build_id_to_default_linker_script.ld",
-    "build_id_linker_snippet.ld",
-  ]
 }
 
 pw_test_group("tests") {

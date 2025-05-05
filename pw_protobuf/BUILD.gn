@@ -17,7 +17,6 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/input_group.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzz_test.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_perf_test/perf_test.gni")
@@ -94,24 +93,6 @@ pw_source_set("bytes_utils") {
     dir_pw_bytes,
     dir_pw_result,
     dir_pw_status,
-  ]
-}
-
-pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-    "size_report.rst",
-  ]
-  inputs = [
-    "pw_protobuf_test_protos/size_report.pwpb_options",
-    "pw_protobuf_test_protos/size_report.proto",
-  ]
-  report_deps = [
-    "size_report:decoder_incremental",
-    "size_report:decoder_partial",
-    "size_report:oneof_codegen_size_comparison",
-    "size_report:protobuf_overview",
-    "size_report:simple_codegen_size_comparison",
   ]
 }
 

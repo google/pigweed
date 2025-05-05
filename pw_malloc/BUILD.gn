@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -201,15 +200,6 @@ pw_test("worst_fit_test") {
     "$dir_pw_allocator:worst_fit",
   ]
   sources = [ "worst_fit.cc" ]
-}
-
-# Docs
-
-pw_doc_group("docs") {
-  sources = [
-    "backends.rst",
-    "docs.rst",
-  ]
 }
 
 pw_test_group("tests") {

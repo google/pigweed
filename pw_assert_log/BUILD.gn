@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -86,10 +85,6 @@ group("check_backend.impl") {
 # pw_assert_log doesn't have deps with potential circular dependencies, so this
 # impl group can be empty.
 group("pw_assert_log.impl") {
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

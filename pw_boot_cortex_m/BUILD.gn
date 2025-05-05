@@ -18,7 +18,6 @@ import("$dir_pw_boot/backend.gni")
 import("$dir_pw_boot_cortex_m/toolchain.gni")
 import("$dir_pw_build/linker_script.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 _boot_backend = ""
@@ -65,10 +64,6 @@ if (_boot_backend != "$dir_pw_boot_cortex_m:pw_boot_cortex_m" &&
   group("armv8m") {
     public_deps = [ ":pw_boot_cortex_m" ]
   }
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

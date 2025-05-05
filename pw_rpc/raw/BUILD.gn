@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_compilation_testing/negative_compilation_test.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")

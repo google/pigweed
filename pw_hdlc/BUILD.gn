@@ -18,7 +18,6 @@ import("$dir_pw_async2/backend.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzz_test.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -244,39 +243,4 @@ pw_test("wire_packet_parser_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
-}
-
-pw_size_diff("pw_hdlc_size_table") {
-  title = "HDLC sizes"
-
-  binaries = [
-    {
-      target = "size_report:full"
-      base = "size_report:base"
-      label = "HDLC encode and decode"
-    },
-    {
-      target = "size_report:full_crc"
-      base = "size_report:base_crc"
-      label = "HDLC encode and decode, ignoring CRC and varint"
-    },
-  ]
-}
-
-pw_doc_group("docs") {
-  sources = [
-    "api.rst",
-    "design.rst",
-    "docs.rst",
-    "guide.rst",
-    "router.rst",
-    "rpc_example/docs.rst",
-    "size.rst",
-  ]
-  inputs = [
-    "Kconfig",
-    "py/pw_hdlc/decode.py",
-    "py/pw_hdlc/encode.py",
-  ]
-  report_deps = [ ":pw_hdlc_size_table" ]
 }

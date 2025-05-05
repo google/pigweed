@@ -14,25 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
-
-pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-    "format.rst",
-    "pigweed_config.rst",
-  ]
-  inputs = [
-    "py/pw_presubmit/cli.py",
-    "py/pw_presubmit/format/bazel.py",
-    "py/pw_presubmit/format/core.py",
-    "py/pw_presubmit/format/cpp.py",
-    "py/pw_presubmit/format/gn.py",
-    "py/pw_presubmit/format/python.py",
-    "py/pw_presubmit/presubmit.py",
-  ]
-}
 
 pw_test_group("tests") {
 }

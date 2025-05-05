@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -65,12 +64,6 @@ pw_source_set("egress_function") {
   ]
 }
 
-pw_doc_group("docs") {
-  inputs = [ "Kconfig" ]
-  sources = [ "docs.rst" ]
-  report_deps = [ ":static_router_size" ]
-}
-
 pw_test_group("tests") {
   tests = [ ":static_router_test" ]
 }
@@ -81,15 +74,4 @@ pw_test("static_router_test") {
     ":static_router",
   ]
   sources = [ "static_router_test.cc" ]
-}
-
-pw_size_diff("static_router_size") {
-  title = "pw::router::StaticRouter size report"
-  binaries = [
-    {
-      target = "size_report:static_router_with_one_route"
-      base = "size_report:base"
-      label = "Static router with a single route"
-    },
-  ]
 }

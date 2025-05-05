@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -62,13 +61,5 @@ pw_test("test") {
   sources = [
     "c_test.c",
     "test.cc",
-  ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  inputs = [
-    "Kconfig",
-    "c_test.c",
   ]
 }

@@ -13,7 +13,6 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 # pw_allocator:freelist has been replaced by pw_allocator:bucket_block_allocator
@@ -22,8 +21,4 @@ group("pw_malloc_freelist") {
 }
 
 pw_test_group("tests") {
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

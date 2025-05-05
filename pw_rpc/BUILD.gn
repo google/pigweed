@@ -21,7 +21,6 @@ import("$dir_pw_build/python_action_test.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_compilation_testing/negative_compilation_test.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
@@ -415,52 +414,6 @@ pw_proto_library("protos") {
   ]
   python_package = "py"
   prefix = "pw_rpc"
-}
-
-pw_doc_group("docs") {
-  sources = [
-    "cpp.rst",
-    "design.rst",
-    "docs.rst",
-    "guides.rst",
-    "libraries.rst",
-    "protocol.rst",
-  ]
-  inputs = [
-    "Kconfig",
-    "benchmark.proto",
-    "echo.proto",
-    "internal/packet.proto",
-  ]
-  group_deps = [
-    "nanopb:docs",
-    "pwpb:docs",
-    "py:docs",
-    "ts:docs",
-  ]
-  report_deps = [ ":server_size" ]
-}
-
-pw_size_diff("server_size") {
-  title = "Pigweed RPC server size report"
-
-  binaries = [
-    {
-      target = "size_report:server_only"
-      base = "size_report:base"
-      label = "Server by itself"
-    },
-  ]
-
-  if (dir_pw_third_party_nanopb != "") {
-    binaries += [
-      {
-        target = "size_report:server_with_echo_service"
-        base = "size_report:base_with_nanopb"
-        label = "Server with a registered nanopb EchoService"
-      },
-    ]
-  }
 }
 
 pw_test_group("tests") {

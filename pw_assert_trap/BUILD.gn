@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 config("disable_warnings") {
   cflags = [ "-Wno-thread-safety-analysis" ]
@@ -113,10 +112,6 @@ pw_source_set("trap_handler") {
   deps = [ "$dir_pw_string:builder" ]
   public_configs = [ ":disable_warnings" ]
   sources = [ "trap_handler.cc" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_async2/backend.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -240,8 +239,4 @@ pw_test_group("tests") {
     ":single_chunk_region_tracker_test",
     ":stream_test",
   ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

@@ -32,23 +32,3 @@ pw_executable("simple_function") {
   sources = [ "simple_function.cc" ]
   deps = [ "$dir_pw_bloat:bloat_this_binary" ]
 }
-
-pw_size_diff("simple_bloat_loop") {
-  binaries = [
-    {
-      target = ":simple_loop"
-      base = ":simple_base"
-      label = "Simple bloat loop"
-    },
-  ]
-}
-
-pw_size_diff("simple_bloat_function") {
-  binaries = [
-    {
-      target = ":simple_function"
-      base = ":simple_base"
-      label = "Simple bloat function"
-    },
-  ]
-}

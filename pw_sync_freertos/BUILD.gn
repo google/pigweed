@@ -18,7 +18,6 @@ import("$dir_pw_build/error.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -295,8 +294,4 @@ pw_test("timed_thread_notification_test_with_static_threads") {
     ":timed_thread_notification_test",
     "$dir_pw_thread_freertos:static_test_threads",
   ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

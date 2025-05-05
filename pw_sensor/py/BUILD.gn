@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
 import("$dir_pw_build/python_action_test.gni")
-import("$dir_pw_docgen/docs.gni")
 
 pw_python_package("py") {
   setup = [
@@ -40,9 +39,4 @@ pw_python_package("py") {
     "pw_sensor/resolved_schema.json",
     "pw_sensor/templates/cpp_constants.jinja",
   ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  other_deps = [ ":py" ]
 }

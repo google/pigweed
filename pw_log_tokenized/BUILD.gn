@@ -17,7 +17,6 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_log/backend.gni")
 import("$dir_pw_log_tokenized/backend.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -186,9 +185,4 @@ pw_test("tokenized_args_test") {
   ]
 
   sources = [ "tokenized_args_test.cc" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  other_deps = [ "py" ]
 }

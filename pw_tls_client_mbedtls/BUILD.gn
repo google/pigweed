@@ -14,7 +14,6 @@
 
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_tls_client/configs.gni")
 import("$dir_pw_unit_test/test.gni")
 import("$pw_external_mbedtls/mbedtls.gni")
@@ -55,8 +54,4 @@ pw_test("tls_client_mbedtls_test") {
 
 pw_test_group("tests") {
   tests = [ ":tls_client_mbedtls_test" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

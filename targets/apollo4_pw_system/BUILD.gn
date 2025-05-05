@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_system/system_target.gni")
 
 config("config_includes") {
@@ -81,8 +80,4 @@ pw_system_target("apollo4_pw_system") {
       "$dir_pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
     ]
   }
-}
-
-pw_doc_group("target_docs") {
-  sources = [ "target_docs.rst" ]
 }

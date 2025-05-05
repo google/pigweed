@@ -14,7 +14,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 import("$pw_external_mcuxpresso/mcuxpresso.gni")
 
@@ -72,10 +71,6 @@ pw_test("initiator_test") {
     ":pw_i2c_mcuxpresso",
     "//targets/mimxrt595_evk_freertos:sdk",
   ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -135,29 +134,4 @@ pw_test("flat_file_system_entry_test") {
     dir_pw_random,
   ]
   sources = [ "flat_file_system_entry_test.cc" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  report_deps = [ ":blob_size" ]
-}
-
-pw_size_diff("blob_size") {
-  title = "Pigweed BlobStore size report"
-
-  binaries = [
-    {
-      target = "size_report:basic_blob"
-      base = "size_report:base"
-      label = "BlobStore"
-    },
-  ]
-
-  binaries += [
-    {
-      target = "size_report:deferred_write_blob"
-      base = "size_report:base"
-      label = "BlobStore with deferred write"
-    },
-  ]
 }

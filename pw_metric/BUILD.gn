@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 import("$pw_external_nanopb/nanopb.gni")
@@ -170,31 +169,4 @@ pw_test("global_test") {
   if (pw_build_EXECUTABLE_TARGET_TYPE == "pico_executable") {
     enable_if = false
   }
-}
-
-pw_size_diff("metric_size_report") {
-  title = "Typical pw_metric use (no RPC service)"
-
-  binaries = [
-    {
-      target = "size_report:one_metric"
-      base = "size_report:base"
-      label = "1 metric and 1 group no dump or export"
-    },
-    {
-      target = "size_report:dump"
-      base = "size_report:base"
-      label = "(+) dump group and metrics to log"
-    },
-    {
-      target = "size_report:more_metrics"
-      base = "size_report:dump"
-      label = "(+) 1 group (+) 4 metrics"
-    },
-  ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  report_deps = [ ":metric_size_report" ]
 }

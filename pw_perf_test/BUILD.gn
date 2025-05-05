@@ -17,7 +17,6 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -208,9 +207,4 @@ pw_test_group("tests") {
     ":state_test",
     ":timer_facade_test",
   ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  inputs = [ "examples/example_perf_test.cc" ]
 }

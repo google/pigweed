@@ -17,7 +17,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -61,8 +60,4 @@ pw_test("clock_properties_test") {
   sources = [ "clock_properties_test.cc" ]
   enable_if =
       pw_chrono_SYSTEM_CLOCK_BACKEND == "$dir_pw_chrono_rp2040:system_clock"
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

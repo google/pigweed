@@ -19,7 +19,6 @@ import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_toolchain/traits.gni")
@@ -374,21 +373,4 @@ pw_test_group("tests") {
     ]
   }
   group_deps = [ "examples" ]
-}
-
-pw_doc_group("docs") {
-  inputs = [
-    "examples/BUILD.bazel",
-    "examples/BUILD.gn",
-    "examples/basic.cc",
-    "examples/once_send_recv.cc",
-  ]
-  report_deps = [ "size_report:full_size_report" ]
-  sources = [
-    "backends.rst",
-    "code_size.rst",
-    "docs.rst",
-    "guides.rst",
-    "reference.rst",
-  ]
 }

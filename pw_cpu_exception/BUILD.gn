@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/facade.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 
@@ -114,13 +113,6 @@ pw_source_set("basic_handler") {
     dir_pw_log,
   ]
   sources = [ "basic_handler.cc" ]
-}
-
-pw_doc_group("docs") {
-  sources = [
-    "backends.rst",
-    "docs.rst",
-  ]
 }
 
 pw_test_group("tests") {

@@ -18,7 +18,6 @@ import("$dir_pw_build/error.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 
@@ -110,10 +109,6 @@ pw_source_set("wrap_newlib_assert") {
     ":handler",
     dir_pw_log,
   ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

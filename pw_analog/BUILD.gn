@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -87,14 +86,5 @@ pw_test("microvolt_input_test") {
   deps = [
     ":pw_analog",
     "$dir_pw_chrono:system_clock",
-  ]
-}
-
-pw_doc_group("docs") {
-  sources = [
-    "docs.rst",
-    "public/pw_analog/analog_input_gmock.h",
-    "public/pw_analog/microvolt_input.h",
-    "public/pw_analog/microvolt_input_gmock.h",
   ]
 }

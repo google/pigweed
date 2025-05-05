@@ -170,14 +170,3 @@ pw_test_group("examples") {
     ":spin_lock",
   ]
 }
-
-pw_size_diff("custom_allocator_size_report") {
-  title = "Example size report"
-  binaries = [
-    {
-      target = ":size_report"
-      base = "$dir_pw_allocator/size_report:best_fit"
-      label = "CustomAllocator"
-    },
-  ]
-}

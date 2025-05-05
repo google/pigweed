@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 pw_source_set("pw_sys_io_stdio") {
@@ -24,10 +23,6 @@ pw_source_set("pw_sys_io_stdio") {
     "$dir_pw_sys_io:facade",
   ]
   sources = [ "sys_io.cc" ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }
 
 pw_test_group("tests") {

@@ -14,7 +14,6 @@
 
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_includes") {
@@ -107,13 +106,4 @@ pw_test_group("tests") {
     ":notifier_test",
   ]
   group_deps = [ "examples" ]
-}
-
-pw_doc_group("docs") {
-  inputs = [
-    "examples/input.cc",
-    "examples/output.cc",
-    "examples/interrupt.cc",
-  ]
-  sources = [ "docs.rst" ]
 }

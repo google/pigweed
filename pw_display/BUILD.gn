@@ -15,7 +15,6 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -39,11 +38,4 @@ pw_test("color_test") {
 
 pw_test_group("tests") {
   tests = [ ":color_test" ]
-}
-
-pw_doc_group("docs") {
-  sources = [
-    "api.rst",
-    "docs.rst",
-  ]
 }

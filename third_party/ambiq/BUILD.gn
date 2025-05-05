@@ -15,12 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("ambiq.gni")
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-}
 
 # This file defines a GN source_set for an external installation of Ambiq SDK.
 # To use, checkout the Ambiq Apollo4 SDK source into a directory, then set

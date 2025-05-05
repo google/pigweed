@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 
 declare_args() {
   # This should be set to the path of the llvm compiler-rt/builtins directory.
@@ -365,8 +364,4 @@ pw_static_library("llvm_builtins") {
   if (pw_third_party_llvm_builtins_TARGET_BUILTINS != "") {
     deps = [ pw_third_party_llvm_builtins_TARGET_BUILTINS ]
   }
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
 }

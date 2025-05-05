@@ -18,19 +18,11 @@ import("$dir_pigweed/third_party/emboss/emboss.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
-}
-
-pw_doc_group("docs") {
-  # Also, sources with doxygen comment blocks must be added to //docs/BUILD.gn
-  inputs = [ "proxy_host_test.cc" ]
-  sources = [ "docs.rst" ]
-  report_deps = [ ":use_passthrough_proxy_size_report" ]
 }
 
 pw_test_group("tests") {
@@ -176,29 +168,4 @@ pw_test("pw_bluetooth_proxy_test") {
   ]
 
   # LINT.ThenChange(BUILD.bazel, CMakeLists.txt)
-}
-
-# We depend on emboss, so we can only compute size when emboss is in the build.
-if (dir_pw_third_party_emboss != "") {
-  pw_size_diff("use_passthrough_proxy_size_report") {
-    title = "pw_bluetooth_proxy Passthrough Size Report"
-    base = "$dir_pw_bloat:bloat_base"
-    binaries = [
-      {
-        target = "size_report:use_passthrough_proxy"
-        label = "Create and use proxy as a simple passthrough"
-      },
-    ]
-  }
-} else {
-  pw_size_diff("use_passthrough_proxy_size_report") {
-    title = "pw_bluetooth_proxy Passthrough Size Report"
-    base = "$dir_pw_bloat:bloat_base"
-    binaries = [
-      {
-        target = "$dir_pw_bloat:bloat_base"
-        label = "Emboss not configured."
-      },
-    ]
-  }
 }

@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -128,22 +127,4 @@ pw_test("suffix_test") {
 pw_test("units_test") {
   deps = [ ":pw_bytes" ]
   sources = [ "units_test.cc" ]
-}
-
-pw_doc_group("docs") {
-  inputs = [ "Kconfig" ]
-  sources = [ "docs.rst" ]
-  report_deps = [ ":byte_builder_size_report" ]
-}
-
-pw_size_diff("byte_builder_size_report") {
-  title = "Using pw::ByteBuilder"
-
-  binaries = [
-    {
-      target = "size_report:with_byte_builder"
-      base = "size_report:without_byte_builder"
-      label = "Using ByteBuilder vs not using it"
-    },
-  ]
 }

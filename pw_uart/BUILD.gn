@@ -14,7 +14,6 @@
 
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -124,15 +123,4 @@ pw_test("stream_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "stream_test.cc" ]
   deps = [ ":stream" ]
-}
-
-pw_doc_group("docs") {
-  inputs = [
-    "public/pw_uart/uart.h",
-    "public/pw_uart/uart_non_blocking.h",
-  ]
-  sources = [
-    "backends.rst",
-    "docs.rst",
-  ]
 }

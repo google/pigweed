@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/linker_script.gni")
 import("$dir_pw_build/target_types.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_system/system_target.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
@@ -175,8 +174,4 @@ pw_system_target("emcraft_sf2_som_debug") {
         "$dir_pigweed/targets/emcraft_sf2_som:mddr_debug_linker_script"
     pw_third_party_smartfusion_mss_CONFIG = "debug"
   }
-}
-
-pw_doc_group("docs") {
-  sources = [ "target_docs.rst" ]
 }

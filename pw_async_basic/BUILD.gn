@@ -21,7 +21,6 @@ import("$dir_pw_async/heap_dispatcher.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
@@ -153,55 +152,4 @@ pw_test_group("tests") {
     ":fake_dispatcher_fixture_test",
     ":heap_dispatcher_test",
   ]
-}
-
-pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
-  report_deps = [ ":docs_size_report" ]
-}
-
-pw_size_diff("docs_size_report") {
-  title = "pw_async_basic Docs Size Report"
-  base = "$dir_pw_bloat:bloat_base"
-
-  binaries = []
-
-  if (pw_chrono_SYSTEM_CLOCK_BACKEND != "") {
-    binaries += [
-      {
-        target = "size_report:task"
-        label = "Construct a Task"
-      },
-    ]
-  }
-
-  if (binaries == []) {
-    binaries += [
-      {
-        target = "$dir_pw_bloat:bloat_base"
-        label = "No backend is selected."
-      },
-    ]
-  }
-}
-
-# This size report can't be included in docs because the docs build target uses
-# the target-stm32f429i-disc1 toolchain, which does not support timed thread
-# notifications (mutex & condition_variable headers are not available).
-pw_size_diff("size_report") {
-  title = "pw_async_basic Size Report"
-  base = "$dir_pw_bloat:bloat_base"
-
-  binaries = []
-
-  if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
-      pw_sync_THREAD_NOTIFICATION_BACKEND != "" &&
-      pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != "") {
-    binaries += [
-      {
-        target = "size_report:post_1_task"
-        label = "Post 1 Task to BasicDispatcher"
-      },
-    ]
-  }
 }

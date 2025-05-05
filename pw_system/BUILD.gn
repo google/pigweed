@@ -26,7 +26,6 @@ import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_cpu_exception/backend.gni")
-import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
@@ -562,17 +561,6 @@ group("system_examples") {
       ":system_example($dir_pigweed/targets/apollo4_pw_system:apollo4_pw_system.size_optimized)",
     ]
   }
-}
-
-pw_doc_group("docs") {
-  sources = [
-    "cli.rst",
-    "docs.rst",
-  ]
-  inputs = [
-    "Kconfig",
-    "system_async_test.cc",
-  ]
 }
 
 pw_test_group("tests") {

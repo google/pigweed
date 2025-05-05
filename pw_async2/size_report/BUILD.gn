@@ -99,35 +99,3 @@ pw_executable("async2_core_once_sender_incremental") {
   ]
   sources = [ "async2_core.cc" ]
 }
-
-pw_size_diff("full_size_report") {
-  title = "Size impact of core pw_async2 primitives"
-  binaries = [
-    {
-      target = ":async2_core"
-      base = ":empty_base"
-      label = "Full cost of including pw_async2"
-    },
-    {
-      target = ":async2_core_additional_task"
-      base = ":async2_core"
-      label =
-          "Base incremental cost of adding a task to an existing async system"
-    },
-    {
-      target = ":async2_core_once_sender"
-      base = ":async2_core"
-      label = "Size of OnceSender / OnceReceiver"
-    },
-    {
-      target = ":async2_core_once_sender_incremental"
-      base = ":async2_core_once_sender"
-      label =
-          "Cost of additional OnceSender / OnceReceiver template specialization"
-    },
-  ]
-  enable_if = pw_async2_DISPATCHER_BACKEND != "" &&
-              pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
-              pw_sync_INTERRUPT_SPIN_LOCK_BACKEND != "" &&
-              pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != ""
-}
