@@ -24,6 +24,7 @@
 #include <type_traits>
 
 #include "pw_assert/assert.h"
+#include "pw_containers/internal/traits.h"
 #include "pw_preprocessor/compiler.h"
 #include "pw_string/internal/string_impl.h"
 
@@ -116,9 +117,9 @@ class InlineBasicString final
     Copy(data(), array, string_impl::ArrayStringLength(array, max_size()));
   }
 
-  template <typename InputIterator,
-            typename = string_impl::EnableIfInputIterator<InputIterator>>
-  constexpr InlineBasicString(InputIterator start, InputIterator finish)
+  template <typename Iterator,
+            typename = containers::internal::EnableIfInputIterator<Iterator>>
+  constexpr InlineBasicString(Iterator start, Iterator finish)
       : InlineBasicString() {
     CopyIterator(data(), start, finish);
   }

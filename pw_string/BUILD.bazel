@@ -88,6 +88,7 @@ cc_library(
     tags = ["noclangtidy"],
     deps = [
         "//pw_assert:assert",
+        "//pw_containers:common",
         "//pw_preprocessor",
     ],
 )

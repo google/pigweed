@@ -72,6 +72,9 @@ struct Counter {
   Counter& operator=(const Counter& other);
   Counter& operator=(Counter&& other);
 
+  // Convert to int for easy comparisons.
+  operator int() const { return value; }
+
   ~Counter();
 
   int value;

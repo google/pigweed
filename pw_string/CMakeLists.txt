@@ -72,6 +72,7 @@ pw_add_library(pw_string.string INTERFACE
     public
   PUBLIC_DEPS
     pw_assert
+    pw_containers._common
 )
 
 pw_add_library(pw_string.to_string STATIC

@@ -11,18 +11,21 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#include "pw_containers_private/test_helpers.h"
+#include "pw_containers/internal/test_helpers.h"
 
 #include "pw_assert/check.h"
 
 namespace pw::containers::test {
 
 void Counter::ObjectCounter::Destructed() {
-  PW_CHECK_UINT_GT(count_, 0, "");
+  PW_CHECK_UINT_GT(
+      count_, 0, "Attempted to destroy more objects than were constructed");
   count_ -= 1;
 }
 
-Counter::ObjectCounter::~ObjectCounter() { PW_CHECK_UINT_EQ(count_, 0, ""); }
+Counter::ObjectCounter::~ObjectCounter() {
+  PW_CHECK_UINT_EQ(count_, 0, "Objects were constructed but not destroyed");
+}
 
 Counter& Counter::operator=(const Counter& other) {
   PW_CHECK_PTR_EQ(this, set_to_this_when_constructed_);
@@ -40,7 +43,9 @@ Counter& Counter::operator=(Counter&& other) {
 }
 
 Counter::~Counter() {
-  PW_CHECK_PTR_EQ(this, set_to_this_when_constructed_);
+  PW_CHECK_PTR_EQ(this,
+                  set_to_this_when_constructed_,
+                  "Destroying uninitialized or corrupted object");
   destroyed += 1;
   objects_.Destructed();
   set_to_this_when_constructed_ = nullptr;

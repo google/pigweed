@@ -66,6 +66,13 @@ pw_add_library(pw_containers.flat_map INTERFACE
     pw_assert.assert
 )
 
+pw_add_library(pw_containers._common INTERFACE
+  HEADERS
+    public/pw_containers/internal/traits.h
+  PUBLIC_INCLUDES
+    public
+)
+
 pw_add_library(pw_containers.inline_deque INTERFACE
   HEADERS
     public/pw_containers/inline_deque.h
@@ -73,6 +80,7 @@ pw_add_library(pw_containers.inline_deque INTERFACE
     public
   PUBLIC_DEPS
     pw_assert.assert
+    pw_containers._common
     pw_containers._raw_storage
     pw_preprocessor
     pw_span
@@ -104,11 +112,11 @@ pw_add_library(pw_containers._raw_storage INTERFACE
 
 pw_add_library(pw_containers._test_helpers STATIC
   HEADERS
-    pw_containers_private/test_helpers.h
+    public/pw_containers/internal/test_helpers.h
   SOURCES
     test_helpers.cc
   PUBLIC_INCLUDES
-    .
+    public
   PRIVATE_DEPS
     pw_assert
 )

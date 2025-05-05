@@ -17,7 +17,7 @@
 #include <array>
 #include <cstddef>
 
-#include "pw_containers_private/test_helpers.h"
+#include "pw_containers/internal/test_helpers.h"
 #include "pw_unit_test/framework.h"
 
 namespace pw::containers {

@@ -77,9 +77,16 @@ pw_source_set("flat_map") {
   public_deps = [ "$dir_pw_assert:assert" ]
 }
 
+pw_source_set("common") {
+  public = [ "public/pw_containers/internal/traits.h" ]
+  public_configs = [ ":public_include_path" ]
+  visibility = [ "$dir_pigweed/*" ]
+}
+
 pw_source_set("inline_deque") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":common",
     ":raw_storage",
     "$dir_pw_toolchain:constexpr_tag",
     dir_pw_assert,
@@ -108,7 +115,8 @@ pw_source_set("raw_storage") {
 }
 
 pw_source_set("test_helpers") {
-  public = [ "pw_containers_private/test_helpers.h" ]
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/internal/test_helpers.h" ]
   sources = [ "test_helpers.cc" ]
   deps = [ dir_pw_assert ]
   visibility = [ ":*" ]

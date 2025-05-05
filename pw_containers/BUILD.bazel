@@ -80,6 +80,7 @@ cc_library(
         "public/pw_containers/internal/intrusive_list_iterator.h",
     ],
     strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [":intrusive_item"],
 )
 
@@ -174,12 +175,20 @@ cc_library(
 )
 
 cc_library(
+    name = "common",
+    hdrs = ["public/pw_containers/internal/traits.h"],
+    strip_include_prefix = "public",
+    visibility = ["//:__subpackages__"],
+)
+
+cc_library(
     name = "inline_deque",
     hdrs = [
         "public/pw_containers/inline_deque.h",
     ],
     strip_include_prefix = "public",
     deps = [
+        ":common",
         ":raw_storage",
         "//pw_assert:assert",
         "//pw_preprocessor",
@@ -253,9 +262,11 @@ cc_library(
 
 cc_library(
     name = "test_helpers",
+    testonly = True,
     srcs = ["test_helpers.cc"],
-    hdrs = ["pw_containers_private/test_helpers.h"],
+    hdrs = ["public/pw_containers/internal/test_helpers.h"],
     implementation_deps = ["//pw_assert:check"],
+    strip_include_prefix = "public",
     visibility = [":__subpackages__"],
 )
 

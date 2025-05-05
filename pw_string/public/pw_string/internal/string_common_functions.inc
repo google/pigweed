@@ -78,9 +78,9 @@ constexpr InlineBasicString& assign(const T (&array)[kCharArraySize]) {
       Copy(data(), array, string_impl::ArrayStringLength(array, max_size())));
 }
 
-template <typename InputIterator,
-          typename = string_impl::EnableIfInputIterator<InputIterator>>
-constexpr InlineBasicString& assign(InputIterator start, InputIterator finish) {
+template <typename Iterator,
+          typename = containers::internal::EnableIfInputIterator<Iterator>>
+constexpr InlineBasicString& assign(Iterator start, Iterator finish) {
   return static_cast<InlineBasicString&>(CopyIterator(data(), start, finish));
 }
 
@@ -372,9 +372,9 @@ constexpr InlineBasicString& append(U c_string) {
                 string_impl::BoundedStringLength(c_string, max_size()));
 }
 
-template <typename InputIterator,
-          typename = string_impl::EnableIfInputIterator<InputIterator>>
-constexpr InlineBasicString& append(InputIterator first, InputIterator last) {
+template <typename Iterator,
+          typename = containers::internal::EnableIfInputIterator<Iterator>>
+constexpr InlineBasicString& append(Iterator first, Iterator last) {
   return static_cast<InlineBasicString&>(
       CopyIteratorExtend(data(), size(), first, last));
 }

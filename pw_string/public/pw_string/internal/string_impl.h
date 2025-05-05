@@ -115,11 +115,6 @@ using EnableIfNonArrayCharPointer = std::enable_if_t<
     std::is_pointer<T>::value && !std::is_array<T>::value &&
     std::is_same<CharType, std::remove_cv_t<std::remove_pointer_t<T>>>::value>;
 
-template <typename T>
-using EnableIfInputIterator = std::enable_if_t<
-    std::is_convertible<typename std::iterator_traits<T>::iterator_category,
-                        std::input_iterator_tag>::value>;
-
 template <typename CharType, typename T>
 using EnableIfStringViewLike =
     std::enable_if_t<std::is_convertible<const T&, View<CharType>>() &&
