@@ -183,6 +183,16 @@
             "--config=asan",
             "--config=fuzztest",
             "//..."
+          ],
+          [
+            "test",
+            "--//pw_rpc:config_override=//pw_rpc:completion_request_callback_config_enabled",
+            "//pw_rpc/..."
+          ],
+          [
+            "test",
+            "--//pw_rpc:config_override=//pw_grpc:pw_rpc_config",
+            "//pw_grpc/..."
           ]
         ],
         "docs": [
