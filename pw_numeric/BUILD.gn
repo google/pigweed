@@ -44,10 +44,22 @@ pw_test("integer_division_test") {
   deps = [ ":integer_division" ]
 }
 
+pw_source_set("saturating_arithmetic") {
+  public = [ "public/pw_numeric/saturating_arithmetic.h" ]
+  public_configs = [ ":public_include_path" ]
+  deps = [ dir_pw_preprocessor ]
+}
+
+pw_test("saturating_arithmetic_test") {
+  sources = [ "saturating_arithmetic_test.cc" ]
+  deps = [ ":saturating_arithmetic" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":checked_arithmetic_test",
     ":integer_division_test",
+    ":saturating_arithmetic_test",
   ]
 }
 

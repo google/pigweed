@@ -42,7 +42,10 @@ pw_numeric/checked_arithmetic.h
 
 .. doxygenfunction:: pw::CheckedMul
 
-
 pw_numeric/integer_division.h
 =============================
 .. doxygenfunction:: pw::IntegerDivisionRoundNearest
+
+pw_numeric/saturating_arithmetic.h
+==================================
+.. doxygenfunction:: pw::mul_sat

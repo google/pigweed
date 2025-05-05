@@ -48,3 +48,19 @@ pw_add_test(pw_numeric.integer_division_test
     modules
     pw_numeric
 )
+
+pw_add_library(pw_numeric.saturating_arithmetic INTERFACE
+  HEADERS
+    public/pw_numeric/saturating_arithmetic.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_preprocessor
+)
+
+pw_add_test(pw_numeric.saturating_arithmetic_test
+  SOURCES
+    saturating_arithmetic_test.cc
+  PRIVATE_DEPS
+    pw_numeric.saturating_arithmetic
+)
