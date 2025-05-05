@@ -13,6 +13,7 @@
 // the License.
 
 use core::cell::UnsafeCell;
+use core::mem::MaybeUninit;
 
 use list::*;
 use pw_log::info;
@@ -21,19 +22,46 @@ use crate::arch::ThreadState;
 
 use super::SCHEDULER_STATE;
 
+/// The memory backing a thread's stack before it has been started.
+///
+/// After a thread has been started, ownership of its stack's memory is (from
+/// the Rust Abstract Machine (AM) perspective) relinquished, and so the type we
+/// use to represent that memory is irrelevant.
+///
+/// However, while we are initializing a thread in preparation for starting it,
+/// we are operating on that memory as a normal Rust variable, and so its type
+/// is important.
+///
+/// Using `MaybeUninit<u8>` instead of `u8` is important for two reasons:
+/// - It ensures that it is sound to write values which are not entirely
+///   initialized (e.g., which contain padding bytes).
+/// - It ensures that pointers written to the stack [retain
+///   provenance][provenance].
+///
+/// [provenance]: https://github.com/rust-lang/unsafe-code-guidelines/issues/286#issuecomment-2837585644
+pub type StackStorage<const N: usize> = [MaybeUninit<u8>; N];
+
+pub trait StackStorageExt {
+    const ZEROED: Self;
+}
+
+impl<const N: usize> StackStorageExt for StackStorage<N> {
+    const ZEROED: StackStorage<N> = [MaybeUninit::new(0); N];
+}
+
 #[derive(Clone, Copy)]
 pub struct Stack {
     // Starting (lowest) address of the stack.  Inclusive.
-    start: *const u8,
+    start: *const MaybeUninit<u8>,
 
     // Ending (highest) address of the stack.  Exclusive.
-    end: *const u8,
+    end: *const MaybeUninit<u8>,
 }
 
 #[allow(dead_code)]
 impl Stack {
-    pub const fn from_slice(slice: &[u8]) -> Self {
-        let start: *const u8 = slice.as_ptr();
+    pub const fn from_slice(slice: &[MaybeUninit<u8>]) -> Self {
+        let start: *const MaybeUninit<u8> = slice.as_ptr();
         // Safety: offset based on known size of slice.
         let end = unsafe { start.add(slice.len()) };
         Self { start, end }
@@ -46,23 +74,27 @@ impl Stack {
         }
     }
 
-    pub fn start(&self) -> *const u8 {
+    pub fn start(&self) -> *const MaybeUninit<u8> {
         self.start
     }
-    pub fn end(&self) -> *const u8 {
+    pub fn end(&self) -> *const MaybeUninit<u8> {
         self.end
     }
 
-    pub fn initial_sp(&self, alignment: usize) -> *const u8 {
+    pub fn initial_sp(&self, alignment: usize) -> *const MaybeUninit<u8> {
         // Use a zero sized allocation to align the initial stack pointer.
         Self::aligned_stack_allocation(self.end, 0, alignment)
     }
 
-    pub fn contains(&self, ptr: *const u8) -> bool {
+    pub fn contains(&self, ptr: *const MaybeUninit<u8>) -> bool {
         ptr >= self.start && ptr < self.end
     }
 
-    pub fn aligned_stack_allocation(sp: *const u8, size: usize, alignment: usize) -> *const u8 {
+    pub fn aligned_stack_allocation(
+        sp: *const MaybeUninit<u8>,
+        size: usize,
+        alignment: usize,
+    ) -> *const MaybeUninit<u8> {
         let sp = sp.wrapping_byte_sub(size);
         let offset = sp.align_offset(alignment);
         if offset > 0 {
@@ -239,7 +271,7 @@ impl Thread {
                 // the RISC-V calling convention.   Ideally this would be
                 // architecture dependant.  However, this value will eventually
                 // be passed in from user space.
-                main_stack.initial_sp(16) as *mut u8,
+                main_stack.initial_sp(16) as *mut MaybeUninit<u8>,
                 Self::trampoline,
                 args,
             );

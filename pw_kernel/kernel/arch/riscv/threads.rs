@@ -16,7 +16,7 @@ use crate::arch::{Arch, ArchInterface};
 use crate::scheduler::{self, thread::Stack, SchedulerState};
 use crate::sync::spinlock::SpinLockGuard;
 use core::arch::naked_asm;
-use core::mem;
+use core::mem::{self, MaybeUninit};
 use log_if::debug_if;
 
 const LOG_CONTEXT_SWITCH: bool = false;
@@ -114,7 +114,7 @@ impl super::super::ThreadState for ArchThreadState {
     fn initialize_user_frame(
         &mut self,
         kernel_stack: Stack,
-        initial_sp: *mut u8,
+        initial_sp: *mut MaybeUninit<u8>,
         initial_function: extern "C" fn(usize, usize),
         args: (usize, usize),
     ) {

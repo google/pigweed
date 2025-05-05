@@ -37,6 +37,10 @@ pub use scheduler::{
 };
 pub use timer::{Clock, Duration};
 
+// Used by the `init_thread!` macro.
+#[doc(hidden)]
+pub use scheduler::thread::{StackStorage, StackStorageExt};
+
 #[no_mangle]
 #[allow(non_snake_case)]
 pub extern "C" fn pw_assert_HandleFailure() -> ! {
@@ -99,10 +103,11 @@ macro_rules! init_thread {
         info!("initializing thread: {}", $name as &'static str);
         thread.initialize_kernel_thread(
             {
-                static mut STACK: [u8; $stack_size] = [0; $stack_size];
+                static mut STACK_STORAGE: $crate::StackStorage<{ $stack_size }> =
+                    $crate::StackStorageExt::ZEROED;
                 #[allow(static_mut_refs)]
                 unsafe {
-                    Stack::from_slice(&STACK)
+                    Stack::from_slice(&STACK_STORAGE)
                 }
             },
             $entry,
@@ -136,17 +141,19 @@ macro_rules! init_non_priv_thread {
         );
         thread.initialize_non_priv_thread(
             {
-                static mut STACK: [u8; $stack_size] = [0; $stack_size];
+                static mut STACK_STORAGE: $crate::StackStorage<{ $stack_size }> =
+                    $crate::StackStorageExt::ZEROED;
                 #[allow(static_mut_refs)]
                 unsafe {
-                    Stack::from_slice(&STACK)
+                    Stack::from_slice(&STACK_STORAGE)
                 }
             },
             {
-                static mut STACK: [u8; $stack_size] = [0; $stack_size];
+                static mut STACK_STORAGE: $crate::StackStorage<{ $stack_size }> =
+                    $crate::StackStorageExt::ZEROED;
                 #[allow(static_mut_refs)]
                 unsafe {
-                    Stack::from_slice(&STACK)
+                    Stack::from_slice(&STACK_STORAGE)
                 }
             },
             $entry,

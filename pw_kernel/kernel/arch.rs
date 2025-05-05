@@ -27,6 +27,8 @@ mod host;
 #[cfg(feature = "arch_host")]
 pub use host::Arch;
 
+use core::mem::MaybeUninit;
+
 use crate::scheduler::{thread::Stack, SchedulerState};
 use crate::sync::spinlock::SpinLockGuard;
 
@@ -68,7 +70,7 @@ pub trait ThreadState {
     fn initialize_user_frame(
         &mut self,
         kernel_stack: Stack,
-        initial_sp: *mut u8,
+        initial_sp: *mut MaybeUninit<u8>,
         initial_function: extern "C" fn(usize, usize),
         args: (usize, usize),
     );
