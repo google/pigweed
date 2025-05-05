@@ -757,21 +757,23 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
 
     // If we aren't reassembling a message, read the next length prefix.
     if (!stream->assembly_buffer) {
-      size_t read = std::min(5 - static_cast<size_t>(stream->prefix_received),
-                             payload.size());
+      size_t read =
+          std::min(5 - static_cast<size_t>(stream->assembly.prefix.received),
+                   payload.size());
       std::copy(payload.begin(),
                 payload.begin() + read,
-                stream->prefix_buffer.data() + stream->prefix_received);
-      stream->prefix_received += read;
+                stream->assembly.prefix.buffer.data() +
+                    stream->assembly.prefix.received);
+      stream->assembly.prefix.received += read;
       payload = payload.subspan(read);
 
       // Read the length prefix.
-      if (stream->prefix_received < 5) {
+      if (stream->assembly.prefix.received < 5) {
         continue;
       }
-      stream->prefix_received = 0;
+      stream->assembly.prefix.received = 0;
 
-      ByteBuilder builder(stream->prefix_buffer);
+      ByteBuilder builder(stream->assembly.prefix.buffer);
       auto it = builder.begin();
       auto message_compressed = it.ReadUint8();
       message_length = it.ReadUint32(endian::big);
@@ -801,8 +803,8 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
               SendRstStreamAndClose(state, stream, Http2Error::INTERNAL_ERROR));
           return OkStatus();
         }
-        stream->message_length = message_length;
-        stream->message_received = 0;
+        stream->assembly.message.length = message_length;
+        stream->assembly.message.received = 0;
         continue;
       }
     }
@@ -811,19 +813,20 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
 
     // Reading message payload.
     if (stream->assembly_buffer != nullptr) {
-      uint32_t read =
-          std::min(stream->message_length - stream->message_received,
-                   static_cast<uint32_t>(payload.size()));
+      uint32_t read = std::min(
+          stream->assembly.message.length - stream->assembly.message.received,
+          static_cast<uint32_t>(payload.size()));
       std::copy(payload.begin(),
                 payload.begin() + read,
-                stream->assembly_buffer + stream->message_received);
+                stream->assembly_buffer + stream->assembly.message.received);
       payload = payload.subspan(read);
-      stream->message_received += read;
-      if (stream->message_received < stream->message_length) {
+      stream->assembly.message.received += read;
+      if (stream->assembly.message.received < stream->assembly.message.length) {
         continue;
       }
       // Fully received message.
-      message = pw::span(stream->assembly_buffer, stream->message_length);
+      message =
+          pw::span(stream->assembly_buffer, stream->assembly.message.length);
     } else {
       message = payload.subspan(0, message_length);
       payload = payload.subspan(message_length);
@@ -846,8 +849,7 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
     if (stream->assembly_buffer != nullptr) {
       state->message_assembly_allocator()->Deallocate(stream->assembly_buffer);
       stream->assembly_buffer = nullptr;
-      stream->message_length = 0;
-      stream->message_received = 0;
+      stream->assembly = {};
     }
   }
 

@@ -191,17 +191,17 @@ class Connection {
     union {
       struct {
         // Buffer for the length-prefix, if fragmented.
-        std::array<std::byte, 5> prefix_buffer;
+        std::array<std::byte, 5> buffer;
         // Bytes of the prefix received so far.
-        uint8_t prefix_received;
-      };
+        uint8_t received;
+      } prefix;
       struct {
         // Total length of the message.
-        uint32_t message_length;
+        uint32_t length;
         // Length of the message received so far (during assembly).
-        uint32_t message_received;
-      };
-    };
+        uint32_t received;
+      } message;
+    } assembly;
 
     void Reset() {
       id = 0;
@@ -211,9 +211,7 @@ class Connection {
       response_queue = {};
 
       assembly_buffer = nullptr;
-      message_length = 0;
-      message_received = 0;
-      prefix_received = 0;
+      assembly = {};
     }
   };
 
@@ -397,7 +395,7 @@ class ConnectionThread : public Connection, public thread::ThreadCore {
     if (connection_close_callback_) {
       connection_close_callback_();
     }
-  };
+  }
 
  private:
   SendQueue send_queue_;

@@ -73,6 +73,10 @@ class GrpcChannelOutput : public rpc::ChannelOutput {
           callbacks_->get().OnClose(packet.call_id());
         }
         break;
+      case PacketType::kClientError:
+      case PacketType::kClientRequestCompletion:
+      case PacketType::kClientStream:
+      case PacketType::kRequest:
       default:
         return Status::FailedPrecondition();
     }
