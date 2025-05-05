@@ -27,7 +27,7 @@ mod host;
 #[cfg(feature = "arch_host")]
 pub use host::Arch;
 
-use crate::scheduler::{SchedulerState, Stack};
+use crate::scheduler::{thread::Stack, SchedulerState};
 use crate::sync::spinlock::SpinLockGuard;
 
 pub type ArchThreadState = <Arch as ArchInterface>::ThreadState;

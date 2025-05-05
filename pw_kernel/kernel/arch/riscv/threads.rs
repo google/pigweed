@@ -13,7 +13,7 @@
 // the License.
 
 use crate::arch::{Arch, ArchInterface};
-use crate::scheduler::{self, SchedulerState, Stack};
+use crate::scheduler::{self, thread::Stack, SchedulerState};
 use crate::sync::spinlock::SpinLockGuard;
 use core::arch::naked_asm;
 use core::mem;

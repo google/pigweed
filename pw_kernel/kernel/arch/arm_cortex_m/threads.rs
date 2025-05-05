@@ -25,7 +25,7 @@ use crate::arch::arm_cortex_m::exceptions::{
 };
 use crate::arch::arm_cortex_m::{in_interrupt_handler, Arch};
 use crate::arch::ArchInterface;
-use crate::scheduler::{self, SchedulerState, Stack, SCHEDULER_STATE};
+use crate::scheduler::{self, thread::Stack, SchedulerState, SCHEDULER_STATE};
 use crate::sync::spinlock::SpinLockGuard;
 
 const STACK_ALIGNMENT: usize = 8;

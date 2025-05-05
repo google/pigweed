@@ -20,7 +20,7 @@ use core::{
 use pw_status::Result;
 
 use crate::{
-    scheduler::{Thread, WaitQueueLock},
+    scheduler::{thread::Thread, WaitQueueLock},
     timer::Instant,
 };
 

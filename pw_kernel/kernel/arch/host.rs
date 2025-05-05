@@ -15,7 +15,7 @@
 use pw_log::info;
 
 use crate::arch::ArchInterface;
-use crate::scheduler::{SchedulerState, Stack};
+use crate::scheduler::{thread::Stack, SchedulerState};
 use crate::sync::spinlock::SpinLockGuard;
 
 mod spinlock;

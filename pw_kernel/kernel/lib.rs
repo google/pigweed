@@ -30,7 +30,11 @@ mod timer;
 use arch::{Arch, ArchInterface};
 use kernel_config::{KernelConfig, KernelConfigInterface};
 use scheduler::SCHEDULER_STATE;
-pub use scheduler::{sleep_until, yield_timeslice, Stack, Thread};
+pub use scheduler::{
+    sleep_until, start_thread,
+    thread::{Stack, Thread},
+    yield_timeslice,
+};
 pub use timer::{Clock, Duration};
 
 #[no_mangle]
@@ -194,7 +198,7 @@ fn bootstrap_thread_entry(_arg: usize) {
 
     SCHEDULER_STATE.lock().dump_all_threads();
 
-    Thread::start(idle_thread);
+    scheduler::start_thread(idle_thread);
 
     target::main()
 }

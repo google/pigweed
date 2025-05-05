@@ -14,7 +14,7 @@
 #![no_std]
 
 use kernel::sync::mutex::Mutex;
-use kernel::{Clock, Duration, Thread};
+use kernel::{Clock, Duration};
 use kernel_config::{KernelConfig, KernelConfigInterface};
 use pw_log::info;
 use time::Clock as _;
@@ -28,21 +28,21 @@ pub fn main() -> ! {
         test_thread_entry_b,
         KernelConfig::KERNEL_STACK_SIZE_BYTES
     );
-    Thread::start(thread_b);
+    kernel::start_thread(thread_b);
 
     let thread_c = kernel::init_non_priv_thread!(
         "C",
         test_thread_entry_c,
         KernelConfig::KERNEL_STACK_SIZE_BYTES
     );
-    Thread::start(thread_c);
+    kernel::start_thread(thread_c);
 
     let thread_d = kernel::init_non_priv_thread!(
         "D",
         test_thread_entry_d,
         KernelConfig::KERNEL_STACK_SIZE_BYTES
     );
-    Thread::start(thread_d);
+    kernel::start_thread(thread_d);
 
     info!("Thread A re-using bootstrap thread");
     thread_a()
