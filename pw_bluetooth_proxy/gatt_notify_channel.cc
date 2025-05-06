@@ -62,6 +62,7 @@ pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
                 MakeEmbossWriter<emboss::BFrameWriter>(
                     acl.payload().BackingStorage().data(),
                     acl.payload().BackingStorage().SizeInBytes()));
+  PW_CHECK(att_size == l2cap.payload().BackingStorage().SizeInBytes());
   PW_TRY_ASSIGN(auto att_notify,
                 MakeEmbossWriter<emboss::AttHandleValueNtfWriter>(
                     attribute_value.size(),
