@@ -15,7 +15,7 @@ Working with the code
 ---------------------
 When working on the Visual Studio Code extension, it's more effective to open
 the extension's root directory instead of opening the repository root. That
-directory is: ``<repo root>/pw_ide/ts/pigweed-vscode``
+directory is: ``<repo root>/pw_ide/ts/pigweed_vscode``
 
 If you're using Visual Studio Code to write code for the Visual Studio Code
 extension, install any extensions that are recommended to you when you open

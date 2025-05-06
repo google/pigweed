@@ -27,7 +27,7 @@ def npm_test(ctx: PresubmitContext) -> None:
 
 def vscode_test(ctx: PresubmitContext) -> None:
     """Run npm install and npm run test:all to test the VS Code extension."""
-    vsc_dir = ctx.root / 'pw_ide' / 'ts' / 'pigweed-vscode'
+    vsc_dir = ctx.root / 'pw_ide' / 'ts' / 'pigweed_vscode'
     npm = shutil.which('npm.cmd' if os.name == 'nt' else 'npm')
     call(npm, 'install', cwd=vsc_dir)
     call(npm, 'run', 'test:all', cwd=vsc_dir)

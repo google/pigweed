@@ -28,7 +28,7 @@ async function prepostPackage() {
   const pwRoot = findPigweedJsonAbove(process.cwd());
   if (!pwRoot) throw new Error('Could not find Pigweed root!');
 
-  const extRoot = path.join(pwRoot, 'pw_ide', 'ts', 'pigweed-vscode');
+  const extRoot = path.join(pwRoot, 'pw_ide', 'ts', 'pigweed_vscode');
   if (!fsExists(extRoot)) throw new Error('Could not find extension root!');
 
   // A license file must be bundled with the extension.
