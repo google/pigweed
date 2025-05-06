@@ -42,6 +42,7 @@ impl RetPsrVal {
 ///
 /// Represents an Exception Return Payload (EXC_RETURN) as described in D1.2.26
 /// of the Armv8-M Architecture Reference Manual.
+#[repr(transparent)]
 pub struct ExcReturn(usize);
 
 impl ExcReturn {

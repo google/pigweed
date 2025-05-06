@@ -25,6 +25,7 @@ impl Scb {
     }
 }
 
+#[repr(transparent)]
 pub struct ShcsrVal(u32);
 impl ShcsrVal {
     rw_bool_field!(u32, mem_fault_act, 0);

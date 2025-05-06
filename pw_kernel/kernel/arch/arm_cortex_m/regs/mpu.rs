@@ -39,6 +39,7 @@ impl Mpu {
     }
 }
 
+#[repr(transparent)]
 pub struct TypeVal(u32);
 impl TypeVal {
     ro_bool_field!(u32, separate, 0);
@@ -46,6 +47,7 @@ impl TypeVal {
 }
 ro_reg!(Type, TypeVal, 0xE000ED90);
 
+#[repr(transparent)]
 pub struct CtrlVal(u32);
 impl CtrlVal {
     rw_bool_field!(u32, enable, 0);
@@ -55,6 +57,7 @@ impl CtrlVal {
 rw_reg!(Ctrl, CtrlVal, 0xE000ED94);
 
 #[derive(Default)]
+#[repr(transparent)]
 pub struct RnrVal(u32);
 impl RnrVal {
     rw_int_field!(u32, region, 0, 7, u8);
@@ -78,6 +81,7 @@ pub enum RbarSh {
 }
 
 #[derive(Copy, Clone, Default)]
+#[repr(transparent)]
 pub struct RbarVal(u32);
 impl RbarVal {
     rw_bool_field!(u32, xn, 0);
@@ -105,6 +109,7 @@ impl RbarVal {
 rw_reg!(Rbar, RbarVal, 0xE000ED9C);
 
 #[derive(Copy, Clone, Default)]
+#[repr(transparent)]
 pub struct RlarVal(u32);
 impl RlarVal {
     rw_bool_field!(u32, en, 0);
@@ -217,6 +222,7 @@ macro_rules! attr_field {
 }
 
 #[derive(Default)]
+#[repr(transparent)]
 pub struct Mair0Val(u32);
 impl Mair0Val {
     attr_field!(attr0, 0, 7);
@@ -226,6 +232,7 @@ impl Mair0Val {
 }
 rw_reg!(Mair0, Mair0Val, 0xE000EDC0);
 
+#[repr(transparent)]
 pub struct Mair1Val(u32);
 impl Mair1Val {
     attr_field!(attr4, 0, 7);

@@ -39,6 +39,7 @@ pub enum CsrClkSource {
     PE = 0b1,
 }
 
+#[repr(transparent)]
 pub struct CsrVal(u32);
 impl CsrVal {
     rw_bool_field!(u32, enable, 0);
@@ -57,18 +58,21 @@ impl CsrVal {
 }
 rw_reg!(Csr, CsrVal, 0xe000e010);
 
+#[repr(transparent)]
 pub struct RvrVal(u32);
 impl RvrVal {
     rw_int_field!(u32, reload, 0, 23, u32);
 }
 rw_reg!(Rvr, RvrVal, 0xe000e014);
 
+#[repr(transparent)]
 pub struct CvrVal(u32);
 impl CvrVal {
     rw_int_field!(u32, current, 0, 23, u32);
 }
 rw_reg!(Cvr, CvrVal, 0xe000e018);
 
+#[repr(transparent)]
 pub struct CalibVal(u32);
 impl CalibVal {
     rw_int_field!(u32, tenms, 0, 23, u32);
