@@ -14,9 +14,26 @@
 
 import * as vscode from 'vscode';
 import { checkExtensionsAndGetStatus } from './extensionManagement';
-import logging from './logging';
+import logging, { output } from './logging';
 import { getSettingsData } from './configParsing';
 import getCipdReport from './clangd/report';
+import { existsSync, mkdirSync } from 'fs';
+import {
+  deleteFilesInSubDir,
+  generateCompileCommands,
+  generateCompileCommandsWithStatus,
+  parseBazelBuildCommand,
+} from './clangd/compileCommandsGenerator';
+import { getReliableBazelExecutable } from './bazel';
+import { settings, workingDir } from './settings/vscode';
+import { CDB_FILE_DIR, CDB_FILE_NAME } from './clangd';
+import {
+  createBazelInterceptorFile,
+  deleteBazelInterceptorFile,
+  getBazelInterceptorPath,
+} from './clangd/compileCommandsUtils';
+import { LoggerUI } from './clangd/compileCommandsGeneratorUI';
+import path from 'path';
 
 export class WebviewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'pigweed.webview';
@@ -53,12 +70,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           break;
         }
         case 'getCipdReport': {
-          const report = await getCipdReport();
-          logging.info('getCipdReport reported: ' + JSON.stringify(report));
-          this._view?.webview.postMessage({
-            type: 'cipdReport',
-            data: report,
-          });
+          await this.sendCipdReport();
           break;
         }
         case 'refreshCompileCommands': {
@@ -104,7 +116,86 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           );
           break;
         }
+        case 'enableBazelBuildInterceptor': {
+          logging.info('Enabling bazel build interceptor');
+          await createBazelInterceptorFile();
+          settings.disableBazelInterceptor(false);
+          vscode.window.showInformationMessage(
+            'Bazel build interceptor enabled',
+          );
+          await this.sendCipdReport();
+          break;
+        }
+        case 'disableBazelBuildInterceptor': {
+          logging.info('Disabling bazel build interceptor');
+          await deleteBazelInterceptorFile();
+          settings.disableBazelInterceptor(true);
+          vscode.window.showInformationMessage(
+            'Bazel build interceptor disabled',
+          );
+          await this.sendCipdReport();
+          break;
+        }
+
+        case 'refreshCompileCommandsManually': {
+          const buildCmd = data.data;
+          const bazelBinary = getReliableBazelExecutable();
+          const cwd = workingDir.get();
+          logging.info(`Generating compile commands for ${buildCmd}`);
+          if (buildCmd.trim() === '' || !bazelBinary) break;
+          output.show();
+          const parsedCmd = await parseBazelBuildCommand(
+            `build ${buildCmd}`,
+            bazelBinary,
+            cwd,
+          ).catch((e) => {
+            logging.error(e.message);
+            vscode.window.showErrorMessage(e.message);
+          });
+
+          if (!parsedCmd) {
+            logging.info('Unable to parse build command.');
+            return;
+          }
+
+          await settings.bazelCompileCommandsManualBuildCommand(buildCmd);
+
+          logging.info(`Command was parsed to: ${JSON.stringify(parsedCmd)}`);
+
+          // Delete and recreate the compile_commands directory.
+          const fullCdbDirPath = path.join(workingDir.get(), CDB_FILE_DIR);
+          deleteFilesInSubDir(fullCdbDirPath, 'compile_commands.json');
+          mkdirSync(fullCdbDirPath, { recursive: true });
+
+          logging.info('Cleaned compile_commands directory.');
+
+          await generateCompileCommandsWithStatus(
+            bazelBinary,
+            workingDir.get(),
+            CDB_FILE_DIR,
+            CDB_FILE_NAME,
+            parsedCmd.targets,
+            parsedCmd.args,
+            new LoggerUI(logging),
+          );
+        }
       }
+    });
+  }
+
+  private async sendCipdReport() {
+    let report = await getCipdReport();
+    const pathForBazelBuildInterceptor = getBazelInterceptorPath();
+    if (!pathForBazelBuildInterceptor) return;
+    const bazelInterceptorExists = existsSync(pathForBazelBuildInterceptor);
+    report = {
+      ...report,
+      isBazelInterceptorEnabled: bazelInterceptorExists,
+    };
+    logging.info('getCipdReport reported: ' + JSON.stringify(report));
+    this._view?.webview.postMessage({
+      type: 'cipdReport',
+      data: report,
     });
   }
 

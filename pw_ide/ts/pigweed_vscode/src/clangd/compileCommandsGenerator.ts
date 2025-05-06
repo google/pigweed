@@ -21,6 +21,7 @@ import {
   CompilationDatabaseMap,
   CompileCommand,
 } from './parser';
+import { LoggerUI, UIManager } from './compileCommandsGeneratorUI';
 
 type CQueryItem = [string, string[]];
 
@@ -167,7 +168,7 @@ async function runCquery(
   cwd: string,
   bazelTargets: string[],
   bazelArgs: string[],
-  logger?: Logger,
+  tuiManager?: UIManager | LoggerUI,
 ): Promise<CQueryItem[]> {
   const bzlPath = path.join(__dirname, '..', 'scripts', 'cquery.bzl');
   const args = [
@@ -184,10 +185,24 @@ async function runCquery(
   const headersArray = await new Promise<CQueryItem[] | null>((resolve) => {
     let output = '';
 
-    spawnedProcess.stdout.on('data', (data) => (output += data.toString()));
-    spawnedProcess.stderr.on('data', (data) => logger?.info(data.toString()));
+    spawnedProcess.stdout.on('data', (data) => {
+      const dataStr = data.toString();
+      output += dataStr; // Accumulate for JSON parsing
+      tuiManager?.addStdout(dataStr); // Also send to TUI
+    });
+    spawnedProcess.stderr.on(
+      'data',
+      (data) => tuiManager?.addStderr(data.toString()),
+    );
 
     spawnedProcess.on('exit', (code) => {
+      if (code !== 0) {
+        // Log error through TUI Manager's stderr handler before rejecting/resolving null
+        const message = `cquery failed with exit code ${code}`;
+        tuiManager?.addStderr(message);
+        resolve(null); // Resolve null as before, error is visible in TUI
+        return;
+      }
       try {
         const parsedHeaders: CQueryItem[] = output
           .trim()
@@ -195,10 +210,21 @@ async function runCquery(
           .map((l) => JSON.parse(l));
         resolve(parsedHeaders);
       } catch (e) {
-        const message = 'Failed to run cquery ' + `(error code: ${code})`;
-        logger?.error(message);
+        const message =
+          'Failed to parse cquery output ' +
+          `(error code: ${code}): ${
+            e instanceof Error ? e.message : String(e)
+          }`;
+        tuiManager?.addStderr(message); // Log parse error via TUI
         resolve(null);
       }
+    });
+
+    spawnedProcess.on('error', (err) => {
+      // Handle spawn errors
+      const message = `Failed to start cquery process: ${err.message}`;
+      tuiManager?.addStderr(message);
+      resolve(null);
     });
   });
 
@@ -211,14 +237,14 @@ async function runAquery(
   cwd: string,
   bazelTarget: string,
   bazelArgs: string[],
-  logger?: Logger,
+  tuiManager?: UIManager | LoggerUI,
 ): Promise<Action[]> {
   const args = [
     'aquery',
     '--include_commandline',
     '--output=jsonproto',
     ...bazelArgs,
-    `mnemonic("CppCompile", "${bazelTarget}")`,
+    `mnemonic("CppCompile", deps("${bazelTarget}"))`,
     '--include_artifacts=false',
     '--ui_event_filters=-info',
     '--features=-compiler_param_file',
@@ -233,10 +259,23 @@ async function runAquery(
   const outputJson = await new Promise<Action[] | null>((resolve) => {
     let output = '';
 
-    spawnedProcess.stdout.on('data', (data) => (output += data.toString()));
-    spawnedProcess.stderr.on('data', (data) => logger?.info(data.toString()));
+    spawnedProcess.stdout.on('data', (data) => {
+      const dataStr = data.toString();
+      output += dataStr; // Accumulate for JSON parsing
+      tuiManager?.addStdout(dataStr);
+    });
+    spawnedProcess.stderr.on(
+      'data',
+      (data) => tuiManager?.addStderr(data.toString()),
+    );
 
     spawnedProcess.on('exit', (code) => {
+      if (code !== 0) {
+        const message = `aquery failed with exit code ${code}`;
+        tuiManager?.addStderr(message);
+        resolve(null);
+        return;
+      }
       try {
         const aqueryJson: AQueryOutput = JSON.parse(output);
         if (!aqueryJson.actions || aqueryJson.actions.length === 0) {
@@ -252,11 +291,20 @@ async function runAquery(
         });
         resolve(actions);
       } catch (e) {
-        const message = 'Failed to run aquery ' + `(error code: ${code}): ${e}`;
-
-        logger?.error(message);
+        const message =
+          'Failed to parse aquery output ' +
+          `(error code: ${code}): ${
+            e instanceof Error ? e.message : String(e)
+          }`;
+        tuiManager?.addStderr(message);
         resolve(null);
       }
+    });
+
+    spawnedProcess.on('error', (err) => {
+      const message = `Failed to start aquery process: ${err.message}`;
+      tuiManager?.addStderr(message);
+      resolve(null);
     });
   });
 
@@ -273,7 +321,7 @@ async function runAquery(
 function getCppCommandForFiles(
   headersByTarget: { [key: string]: string[] },
   action: Action,
-  logger?: Logger,
+  tuiManager?: UIManager | LoggerUI,
 ) {
   if (!action || !Array.isArray(action.arguments)) {
     throw new Error('Invalid compile action: missing arguments');
@@ -289,11 +337,11 @@ function getCppCommandForFiles(
   try {
     sourceFile = getSourceFile(args);
   } catch (err: any) {
-    logger?.warn('Warning: ' + err.message);
+    tuiManager?.addStderr('Warning: ' + err.message);
     sourceFile = '';
   }
   if (sourceFile && !fs.existsSync(sourceFile)) {
-    logger?.warn(
+    tuiManager?.addStderr(
       'Warning: Source file ' +
         sourceFile +
         ' does not exist. It may be generated.',
@@ -312,42 +360,76 @@ function getCppCommandForFiles(
  * real paths. */
 export function resolveVirtualIncludesToRealPaths(parsedHeaders: CQueryItem[]) {
   const virtualToRealMap: { [key: string]: string } = {};
+  const virtualIncludesMarker = path.sep + '_virtual_includes' + path.sep; // Results in "/_virtual_includes/"
+
   parsedHeaders.forEach(([_target, headers]) => {
-    const virtualIncludesMarker = path.sep + '_virtual_includes' + path.sep;
-    // First we check if headers[0] is a header with '/_virtual_includes/'
-    let markerPathFound = '';
-    for (let i = 0; i < headers.length; i++) {
-      if (headers[i].includes(virtualIncludesMarker)) {
-        markerPathFound = headers[i];
-        break;
-      }
-    }
-    if (!markerPathFound) return;
+    headers.forEach((currentHeader) => {
+      // Iterate through each header path in the current list
+      if (currentHeader.includes(virtualIncludesMarker)) {
+        const parts = currentHeader.split(virtualIncludesMarker);
+        // Expecting two parts: the path before the marker and the path after.
+        if (parts.length < 2 || !parts[1]) {
+          // Silently skip this potentially malformed virtual include path.
+          return; // Equivalent to 'continue' for this iteration of headers.forEach
+        }
 
-    // Now we split the marker path and get suffix
-    const [_markerPathPrefix, markerPathSuffix] = markerPathFound.split(
-      virtualIncludesMarker,
-    );
-    // We further need to remove first part of suffix
-    const markerPathSuffixParts = markerPathSuffix.split(path.sep);
-    markerPathSuffixParts.shift();
-    const realPathSuffix = path.sep + markerPathSuffixParts.join(path.sep);
-    const realPathPrefix = markerPathFound.slice(0, -realPathSuffix.length);
+        const pathBeforeVirtual = parts[0];
+        const pathAfterVirtual = parts[1]; // e.g., "config/pw_assert/config.h"
 
-    // Now we search for adjacent headers with this suffix
-    for (let i = 0; i < headers.length; i++) {
-      if (
-        !headers[i].includes(virtualIncludesMarker) &&
-        headers[i].endsWith(realPathSuffix)
-      ) {
-        // We save this real path minus the suffix
-        virtualToRealMap[realPathPrefix] = headers[i].slice(
-          0,
-          -realPathSuffix.length,
-        );
-        break;
+        // Split the pathAfterVirtual to isolate the virtual subdirectory and the common suffix.
+        const pathAfterVirtualParts = pathAfterVirtual.split(path.sep);
+        // e.g., ["config", "pw_assert", "config.h"]
+
+        if (pathAfterVirtualParts.length === 0 || !pathAfterVirtualParts[0]) {
+          // This case implies pathAfterVirtual was empty or started with a separator in an unexpected way.
+          return;
+        }
+
+        // The first segment after "/_virtual_includes/" is part of the virtual path key.
+        const virtualSubdirectoryComponent = pathAfterVirtualParts[0]; // e.g., "config"
+
+        // The remaining segments form the suffix that should match the end of a real path.
+        const actualFileSuffixParts = pathAfterVirtualParts.slice(1); // e.g., ["pw_assert", "config.h"]
+
+        // Construct the suffix string to match against real paths.
+        // This will be like "/pw_assert/config.h"
+        const realPathSuffixToMatch =
+          path.sep + actualFileSuffixParts.join(path.sep);
+
+        // If actualFileSuffixParts is empty (e.g., virtual path was ".../_virtual_includes/somefile.h"),
+        // realPathSuffixToMatch would become just "/". This logic is consistent with the original code's derivation,
+        // though the provided examples all have deeper structures (e.g., ".../_virtual_includes/dir/file.h").
+        // The problem's example data structure suggests `actualFileSuffixParts` will typically not be empty.
+
+        // Construct the key for our map. This represents the "virtual directory".
+        // e.g., "bazel-out/darwin_arm64-fastbuild/bin/pw_assert/_virtual_includes/config"
+        const mapKey =
+          pathBeforeVirtual +
+          virtualIncludesMarker +
+          virtualSubdirectoryComponent;
+
+        // Now, search for a corresponding real path within the same 'headers' list.
+        for (let i = 0; i < headers.length; i++) {
+          const potentialRealPath = headers[i];
+          // A real path must not contain the virtual includes marker itself,
+          // and it must end with the derived common suffix.
+          if (
+            !potentialRealPath.includes(virtualIncludesMarker) &&
+            potentialRealPath.endsWith(realPathSuffixToMatch)
+          ) {
+            // The value for our map is the prefix of this real path.
+            const mapValue = potentialRealPath.slice(
+              0,
+              -realPathSuffixToMatch.length,
+            );
+            virtualToRealMap[mapKey] = mapValue;
+            // Once the corresponding real path is found for the current virtual include,
+            // we break this inner loop and move to the next header in headers.forEach.
+            break;
+          }
+        }
       }
-    }
+    });
   });
   return virtualToRealMap;
 }
@@ -386,12 +468,13 @@ export async function generateCompileCommandsFromAqueryCquery(
   cwd: string,
   aqueryActions: Action[],
   cqueryJson: CQueryItem[],
-  logger?: Logger,
+  tuiManager?: UIManager | LoggerUI,
 ) {
   const virtualToRealMap = resolveVirtualIncludesToRealPaths(cqueryJson);
   const headersByTarget: { [key: string]: string[] } = {};
   cqueryJson.forEach(([target, headers]) => {
-    headersByTarget[target] = headers;
+    const cleanTarget = target.startsWith('@@') ? target.slice(2) : target;
+    headersByTarget[cleanTarget] = headers;
   });
 
   const possiblePlatforms = [
@@ -414,7 +497,7 @@ export async function generateCompileCommandsFromAqueryCquery(
         sourceFiles,
         headerFiles,
         arguments: cmdArgs,
-      } = getCppCommandForFiles(headersByTarget, action, logger);
+      } = getCppCommandForFiles(headersByTarget, action, tuiManager);
       const files = [...sourceFiles];
       // Include header entries if not already added.
       for (const hdr of headerFiles) {
@@ -429,7 +512,7 @@ export async function generateCompileCommandsFromAqueryCquery(
             new CompileCommand({
               file: file,
               directory: cwd,
-              arguments: cmdArgs,
+              arguments: [...cmdArgs],
             }),
             virtualToRealMap,
           ),
@@ -438,8 +521,8 @@ export async function generateCompileCommandsFromAqueryCquery(
     });
 
     compileCommandsPerPlatform.set(platform, compileCommands);
-    logger?.info(
-      'Finished generating compile_commands.json for platform ' +
+    tuiManager?.addStdout(
+      'Finished processing platform ' +
         platform +
         ' with ' +
         compileCommands.db.length +
@@ -457,16 +540,15 @@ export async function generateCompileCommands(
   cdbFilename: string,
   bazelTargets: string[] = ['//...'],
   bazelArgs: string[] = [],
-  logger?: Logger,
+  tuiManager?: UIManager | LoggerUI,
 ) {
   const startTime = Date.now();
-  logger?.info('Generating compile_commands.json.');
-  ensureExternalWorkspacesLink_exists(cwd, logger);
+  ensureExternalWorkspacesLink_exists(cwd);
 
   const aqueryActions = (
     await Promise.all(
       bazelTargets.map(async (target) =>
-        runAquery(bazelCmd, cwd, target, bazelArgs),
+        runAquery(bazelCmd, cwd, target, bazelArgs, tuiManager),
       ),
     )
   ).flat();
@@ -475,18 +557,18 @@ export async function generateCompileCommands(
     cwd,
     bazelTargets,
     bazelArgs,
-    logger,
+    tuiManager,
   );
   const compileCommandsPerPlatform =
     await generateCompileCommandsFromAqueryCquery(
       cwd,
       aqueryActions,
       cqueryJson,
-      logger,
+      tuiManager,
     );
   await compileCommandsPerPlatform.writeAll(cwd, cdbFileDir, cdbFilename);
 
-  logger?.info(
+  tuiManager?.addStdout(
     'Finished generating compile_commands.json for ' +
       compileCommandsPerPlatform.size +
       ' platforms in ' +
@@ -495,7 +577,10 @@ export async function generateCompileCommands(
   );
 }
 
-function deleteFilesInSubDir(parentDirPath: string, fileNameToDelete: string) {
+export function deleteFilesInSubDir(
+  parentDirPath: string,
+  fileNameToDelete: string,
+) {
   try {
     if (!fs.existsSync(parentDirPath)) {
       return;
@@ -515,7 +600,6 @@ function deleteFilesInSubDir(parentDirPath: string, fileNameToDelete: string) {
         try {
           if (fs.existsSync(potentialFilePath)) {
             fs.unlinkSync(potentialFilePath);
-            console.log(`  Deleted: ${potentialFilePath}`);
           }
         } catch (fileOpErr: any) {
           console.error(
@@ -529,6 +613,47 @@ function deleteFilesInSubDir(parentDirPath: string, fileNameToDelete: string) {
       `Error processing parent directory ${parentDirPath}: ${err.message}`,
     );
   }
+}
+
+export async function generateCompileCommandsWithStatus(
+  bazelCmd: string,
+  cwd: string,
+  cdbFileDir: string,
+  cdbFilename: string,
+  bazelTargets: string[] = ['//...'],
+  bazelArgs: string[] = [],
+  tuiManager?: UIManager | LoggerUI,
+) {
+  tuiManager?.updateStatus(
+    `⏳ Generating compile_commands.json for target${
+      bazelTargets.length > 1 ? 's' : ''
+    }: ${bazelTargets.join(', ')}`,
+  );
+  generateCompileCommands(
+    bazelCmd,
+    cwd,
+    cdbFileDir,
+    cdbFilename,
+    bazelTargets,
+    bazelArgs,
+    tuiManager,
+  )
+    .then(() => {
+      // Success: Use regular finish, which only shows the status.
+      tuiManager?.finish('✅ Generated compile_commands.json successfully.');
+    })
+    .catch((err) => {
+      // Error: Use finishWithError to show status and dump stdout/stderr.
+      const errorMessage = `❌ Error generating compile_commands.json: ${
+        err instanceof Error ? err.message : String(err)
+      }`;
+      tuiManager?.finishWithError(errorMessage);
+      console.error('Error generating compile_commands.json:', err);
+      process.exit(1);
+    })
+    .finally(() => {
+      tuiManager?.cleanup();
+    });
 }
 
 /**
@@ -578,7 +703,7 @@ export async function parseBazelBuildCommand(
   // Assumes the subcommand is the first part after 'bazel'
   const subCommand = parts[0];
   // Filter out the subcommand for further processing
-  const potentialTargetsAndArgs = parts.length > 1 ? parts.slice(1) : ['//...'];
+  const potentialTargetsAndArgs = parts.length > 1 ? parts.slice(1) : [];
 
   // 2. Identify targets and potential arguments
   const targets: string[] = [];
@@ -692,11 +817,7 @@ export async function parseBazelBuildCommand(
 }
 
 async function runAsCli() {
-  const consoleLogger: Logger = {
-    info: console.log,
-    warn: console.warn,
-    error: console.error,
-  };
+  const tuiManager = new UIManager();
   const args = process.argv.slice(2);
   const parsedArgs: { [key: string]: string } = {};
 
@@ -715,42 +836,31 @@ async function runAsCli() {
     process.exit(1);
   }
 
+  tuiManager?.updateStatus('⏳ Parsing Bazel command...');
+
   const { targets, args: bazelArgs } = await parseBazelBuildCommand(
     parsedArgs['target'],
     parsedArgs['bazelCmd'],
     parsedArgs['cwd'],
   );
 
-  console.log(
-    'Generating compile_commands.json...',
-    parsedArgs,
-    targets,
-    bazelArgs,
-  );
-
   const cdbFileDir = parsedArgs['cdbFileDir'] || '.compile_commands';
 
   // Delete and recreate the compile_commands directory.
+  tuiManager?.updateStatus(`⏳ Cleaning output directory: ${cdbFileDir}`);
   const fullCdbDirPath = path.join(parsedArgs['cwd'], cdbFileDir);
   deleteFilesInSubDir(fullCdbDirPath, 'compile_commands.json');
   fs.mkdirSync(fullCdbDirPath, { recursive: true });
 
-  generateCompileCommands(
+  generateCompileCommandsWithStatus(
     parsedArgs['bazelCmd'],
     parsedArgs['cwd'],
     cdbFileDir,
     parsedArgs['cdbFilename'] || 'compile_commands.json',
     targets,
     bazelArgs,
-    consoleLogger,
-  )
-    .then(() => {
-      console.log('Finished generating compile_commands.json.');
-    })
-    .catch((err) => {
-      console.error('Error generating compile_commands.json:', err);
-      process.exit(1);
-    });
+    tuiManager,
+  );
 }
 if (require.main === module) {
   runAsCli();

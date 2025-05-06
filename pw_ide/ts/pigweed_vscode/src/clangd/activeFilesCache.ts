@@ -108,9 +108,9 @@ export class ClangdActiveFilesCache extends Disposable {
       .map(([target, files]) => (files.has(fileName) ? target : undefined))
       .filter((it) => it !== undefined);
 
-  fileStatus = async (projectRoot: string, target: string, uri: Uri) => {
+  fileStatus = async (projectRoot: string, uri: Uri, target?: string) => {
     const fileName = path.relative(projectRoot, uri.fsPath);
-    const activeFiles = await this.getForTarget(target);
+    const activeFiles = target ? await this.getForTarget(target) : new Set();
     const targets = this.targetsForFile(fileName);
 
     const status: FileStatus =

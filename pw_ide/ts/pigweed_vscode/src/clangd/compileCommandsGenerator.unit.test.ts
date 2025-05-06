@@ -568,13 +568,10 @@ test('parseBazelBuildCommand_error_noTargets_withSpecifiedArgs', async () => {
 
 test('parseBazelBuildCommand_onlySubcommand_build', async () => {
   const bazel = getReliableBazelExecutable();
-  const { targets, args } = await parseBazelBuildCommand(
-    'build',
-    bazel!,
-    workingDir.get(),
+  await assert.rejects(
+    parseBazelBuildCommand('build', bazel!, workingDir.get()),
+    /Could not find any bazel targets \(starting with \/\/ or :\) in command: build/,
   );
-  assert.deepEqual(targets, ['//...']);
-  assert.deepEqual(args, []);
 });
 
 test('parseBazelBuildCommand_error_emptyCommand_string', async () => {

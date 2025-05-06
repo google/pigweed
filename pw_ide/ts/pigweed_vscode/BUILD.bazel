@@ -22,6 +22,7 @@ filegroup(
         "rollup.config.js",
         "scripts/cquery.bzl",
         "src/clangd/compileCommandsGenerator.ts",
+        "src/clangd/compileCommandsGeneratorUI.ts",
         "src/clangd/parser.ts",
         "tsconfig.json",
     ],

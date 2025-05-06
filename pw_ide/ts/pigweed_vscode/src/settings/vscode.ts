@@ -33,9 +33,11 @@ export interface Settings {
   clangdAlternatePath: Setting<string | undefined>;
   codeAnalysisTarget: Setting<string | undefined>;
   codeAnalysisTargetDir: Setting<string | undefined>;
+  bazelCompileCommandsManualBuildCommand: Setting<string | undefined>;
   compDbSearchPaths: Setting<CompDbSearchPath[]>;
   disableBazelSettingsRecommendations: Setting<boolean>;
   disableBazeliskCheck: Setting<boolean>;
+  disableBazelInterceptor: Setting<boolean>;
   disableCompileCommandsFileWatcher: Setting<boolean>;
   disableInactiveFileNotice: Setting<boolean>;
   disableInactiveFileCodeIntelligence: Setting<boolean>;
@@ -205,6 +207,20 @@ function codeAnalysisTargetDir(
   return update(value);
 }
 
+function bazelCompileCommandsManualBuildCommand(): string | undefined;
+function bazelCompileCommandsManualBuildCommand(
+  value: string | undefined,
+): Thenable<void>;
+function bazelCompileCommandsManualBuildCommand(
+  value?: string,
+): string | undefined | Thenable<void> {
+  const { get, update } = stringSettingFor(
+    'bazelCompileCommandsManualBuildCommand',
+  );
+  if (value === undefined) return get();
+  return update(value);
+}
+
 function compDbSearchPaths(): CompDbSearchPath[];
 function compDbSearchPaths(value: CompDbSearchPath[]): Thenable<void>;
 function compDbSearchPaths(
@@ -242,6 +258,16 @@ function disableBazeliskCheck(
   value?: boolean,
 ): boolean | undefined | Thenable<void> {
   const { get, update } = boolSettingFor('disableBazeliskCheck');
+  if (value === undefined) return get() ?? false;
+  return update(value);
+}
+
+function disableBazelInterceptor(): boolean;
+function disableBazelInterceptor(value: boolean | undefined): Thenable<void>;
+function disableBazelInterceptor(
+  value?: boolean,
+): boolean | undefined | Thenable<void> {
+  const { get, update } = boolSettingFor('disableBazelInterceptor');
   if (value === undefined) return get() ?? false;
   return update(value);
 }
@@ -386,9 +412,11 @@ export const settings: Settings = {
   clangdAlternatePath,
   codeAnalysisTarget,
   codeAnalysisTargetDir,
+  bazelCompileCommandsManualBuildCommand,
   compDbSearchPaths,
   disableBazelSettingsRecommendations,
   disableBazeliskCheck,
+  disableBazelInterceptor,
   disableCompileCommandsFileWatcher,
   disableInactiveFileNotice,
   disableInactiveFileCodeIntelligence,

@@ -24,11 +24,6 @@ import {
 } from './bazel';
 
 import {
-  BazelRefreshCompileCommandsWatcher,
-  showProgressDuringRefresh,
-} from './bazelWatcher';
-
-import {
   availableTargets,
   ClangdActiveFilesCache,
   disableInactiveFileCodeIntelligence,
@@ -76,6 +71,9 @@ import { WebviewProvider } from './webviewProvider';
 import { commandRegisterer, VscCommandCallback } from './utils';
 import { shouldSupportGn } from './gn';
 import { shouldSupportCmake } from './cmake';
+import { CompileCommandsWatcher } from './clangd/compileCommandsWatcher';
+import { existsSync, statSync } from 'node:fs';
+import { createBazelInterceptorFile } from './clangd/compileCommandsUtils';
 
 interface CommandEntry {
   name: string;
@@ -100,7 +98,6 @@ async function registerCommands(
   context: ExtensionContext,
   refreshManager: RefreshManager<any>,
   clangdActiveFilesCache: ClangdActiveFilesCache,
-  bazelCompileCommandsWatcher?: BazelRefreshCompileCommandsWatcher | undefined,
 ): Promise<void> {
   const useBazel = await shouldSupportBazel();
   const useCmake = await shouldSupportCmake();
@@ -212,37 +209,6 @@ async function registerCommands(
         ),
       projectType: ['bootstrap'],
     },
-    {
-      name: 'pigweed.refresh-compile-commands',
-      callback: async () => {
-        if (useGn || useCmake) {
-          await refreshNonBazelCompileCommands(refreshManager);
-        }
-
-        if (useBazel) {
-          bazelCompileCommandsWatcher!.refresh();
-          showProgressDuringRefresh(refreshManager);
-        }
-      },
-      projectType: ['any'],
-    },
-    {
-      name: 'pigweed.refresh-compile-commands-and-set-target',
-      callback: async () => {
-        if (useGn || useCmake) {
-          await refreshNonBazelCompileCommands(refreshManager);
-        }
-
-        if (useBazel) {
-          refreshCompileCommandsAndSetTarget(
-            bazelCompileCommandsWatcher!.refresh,
-            refreshManager,
-            clangdActiveFilesCache,
-          );
-        }
-      },
-      projectType: ['any'],
-    },
   ];
 
   const commandsToRegister = commands.filter((c) => {
@@ -254,10 +220,7 @@ async function registerCommands(
   commandsToRegister.forEach((c) => registerCommand(c.name, c.callback));
 }
 
-async function initAsBazelProject(
-  refreshManager: RefreshManager<any>,
-  compileCommandsWatcher: BazelRefreshCompileCommandsWatcher,
-) {
+async function initAsBazelProject(refreshManager: RefreshManager<any>) {
   // Do stuff that we want to do on load.
   await initBazelClangdPath();
   await configureBazelSettings();
@@ -269,10 +232,6 @@ async function initAsBazelProject(
       patchBazeliskIntoTerminalPath,
       disposer.disposables,
     );
-  }
-
-  if (!settings.disableCompileCommandsFileWatcher()) {
-    compileCommandsWatcher.refresh();
   }
 }
 
@@ -472,17 +431,31 @@ export async function activate(context: vscode.ExtensionContext) {
 
   refreshManager.on(async () => {
     const target = getTarget();
-    if (!target) {
-      const allTargets = await availableTargets();
-      if (allTargets.length > 0) {
-        await setTargetWithClangd(
-          allTargets[0],
-          clangdActiveFilesCache.writeToSettings,
-        );
-        // Due to an unknown clangd extension issue, the clangd refuses to work
-        // on first-ever run, restarting clangd does not work either.
-        await vscode.commands.executeCommand('workbench.action.reloadWindow');
-      }
+    const allTargets = await availableTargets();
+    if (
+      (!target && allTargets.length > 0) ||
+      (target && !allTargets.map((t) => t.name).includes(target.name))
+    ) {
+      // Decide which target to pick, pick the one with biggest file
+      const fileSizes = await Promise.all(
+        allTargets.map(async (t) => {
+          if (existsSync(t.path)) {
+            return statSync(t.path).size;
+          } else {
+            return 0;
+          }
+        }),
+      );
+      const biggestFileIndex = fileSizes.indexOf(Math.max(...fileSizes));
+      const biggestFileTarget = allTargets[biggestFileIndex];
+      logger.info('Auto-picked biggest target: ' + biggestFileTarget.name);
+      await setTargetWithClangd(
+        biggestFileTarget,
+        clangdActiveFilesCache.writeToSettings,
+      );
+      // Due to an unknown clangd extension issue, the clangd refuses to work
+      // on first-ever run, restarting clangd does not work either.
+      await vscode.commands.executeCommand('workbench.action.reloadWindow');
     }
     return OK;
   }, 'didRefresh');
@@ -521,14 +494,17 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   if (projectType === 'bazel' || projectType === 'both') {
-    const compileCommandsWatcher = new BazelRefreshCompileCommandsWatcher(
-      refreshManager,
-      settings.disableCompileCommandsFileWatcher(),
+    disposer.add(
+      new CompileCommandsWatcher(refreshManager, clangdActiveFilesCache),
     );
 
     // Don't do Bazel init if the user has explicitly disabled Bazel support.
     if (useBazel) {
-      await initAsBazelProject(refreshManager, compileCommandsWatcher);
+      await initAsBazelProject(refreshManager);
+    }
+
+    if (!settings.disableBazelInterceptor()) {
+      await createBazelInterceptorFile();
     }
 
     registerCommands(
@@ -536,7 +512,6 @@ export async function activate(context: vscode.ExtensionContext) {
       context,
       refreshManager,
       clangdActiveFilesCache,
-      compileCommandsWatcher,
     );
   } else {
     registerCommands(

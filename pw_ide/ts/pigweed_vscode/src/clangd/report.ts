@@ -16,6 +16,7 @@ import { existsSync } from 'fs';
 import { getReliableBazelExecutable } from '../bazel';
 import { getTarget } from './paths';
 import { clangdPath } from './bazel';
+import { settings } from '../settings/vscode';
 
 export default function getCipdReport(): Promise<any> {
   const report: any = {};
@@ -37,6 +38,9 @@ export default function getCipdReport(): Promise<any> {
     ? existsSync(target.path)
     : false;
   report['compileCommandsPath'] = target?.path;
+
+  report['bazelCompileCommandsManualBuildCommand'] =
+    settings.bazelCompileCommandsManualBuildCommand() || '';
 
   return report;
 }

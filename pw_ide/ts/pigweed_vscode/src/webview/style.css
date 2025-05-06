@@ -63,3 +63,132 @@
 }
 
 .codicon-chevron-right:before { content: "\eab6" }
+
+/* Add new styles for the toggle button group here or in the separate CSS file */
+.toggle-button-group {
+	display: block; /* Changed from flex to block for stacking */
+	width: 100%;
+	margin-top: 8px;
+	margin-bottom: 8px;
+  }
+
+  .toggle-button {
+	width: 100%; /* Make button full width */
+	padding: 10px;
+	text-align: left;
+	border: 2px solid var(--vscode-button-border, var(--vscode-contrastBorder, #6fc3df));
+	background-color: transparent;
+	color: var(--vscode-button-secondaryForeground, #cccccc);
+	cursor: pointer;
+	font-size: var(--vscode-font-size, 13px);
+	line-height: 1.5;
+	transition: background-color 0.1s ease-in-out, color 0.1s ease-in-out, border-color 0.1s ease-in-out;
+	box-sizing: border-box;
+	border-radius: var(--vscode-button-border-radius, 4px); /* Rounded corners on all sides */
+	margin-bottom: 8px; /* Space between stacked buttons */
+	opacity: 0.8;
+  }
+
+  .toggle-button:last-child {
+	margin-bottom: 0; /* No margin for the last button in the group */
+  }
+
+  .toggle-button:hover {
+	background-color: var(--vscode-button-secondaryHoverBackground, #4a4a4a);
+  }
+
+  .toggle-button.active {
+	border-color: var(--vscode-button-background, #0e639c);
+	opacity: 1;
+  }
+
+  /* Ensure buttons in rows still look good if needed for other buttons */
+  .vscode-button {
+	background-color: var(--vscode-button-background);
+	color: var(--vscode-button-foreground);
+	border: 1px solid var(--vscode-button-border, transparent);
+	padding: 4px 10px;
+	border-radius: var(--vscode-button-border-radius, 4px);
+	cursor: pointer;
+  }
+  .vscode-button:hover {
+	background-color: var(--vscode-button-hoverBackground);
+  }
+
+.input-button-row {
+	display: flex;
+	align-items: stretch;
+	margin-top: 8px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.input-button-row .prefix {
+	padding: 4px 0 4px 8px;
+	background-color: var(--vscode-input-background);
+	color: var(--vscode-descriptionForeground);
+	border: 1px solid var(--vscode-input-border);
+	border-right: none;
+	border-radius: 4px 0 0 4px;
+	white-space: nowrap;
+	user-select: none;
+	display: flex;
+	align-items: center;
+}
+
+.input-button-row input.vscode-input {
+	flex-grow: 1;
+	background-color: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border);
+	border-left: none;
+	border-radius: 0 4px 4px 0;
+	padding: 3px 8px 4px 8px;
+	outline: none;
+	min-width: 100px;
+
+	font-size: var(--vscode-font-size);
+	font-family: var(--vscode-font-family);
+	box-sizing: border-box;
+	height: auto;
+}
+
+.input-button-row button.vscode-button {
+
+	border-radius: var(--vscode-button-border-radius, 4px);
+	margin-left: 8px;
+	align-self: center;
+}
+
+.input-button-row:focus-within .prefix {
+	border-color: var(--vscode-focusBorder);
+	border-right: none;
+}
+
+.input-button-row input.vscode-input:focus {
+	border-color: var(--vscode-focusBorder);
+	border-left: none;
+}
+
+.input-button-row:has(input.vscode-input:disabled) .prefix {
+	opacity: 0.6;
+	cursor: not-allowed;
+
+
+}
+
+.input-button-row input.vscode-input:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.input-button-row button.vscode-button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.input-button-row .input-button {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	margin-left: -3px;
+}

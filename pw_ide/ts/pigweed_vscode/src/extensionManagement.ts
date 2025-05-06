@@ -256,16 +256,18 @@ export async function checkExtensionsAndGetStatus() {
   });
   const installedIds = vscode.extensions.all.map((ext) => ext.id);
 
-  const recommended = extensions?.recommendations?.map((id) => ({
-    id,
-    installed: installedIds.includes(id),
-    name: installed[id]?.packageJSON?.displayName,
-  }));
-  const unwanted = extensions?.unwantedRecommendations?.map((id) => ({
-    id,
-    installed: installedIds.includes(id),
-    name: installed[id]?.packageJSON?.displayName,
-  }));
+  const recommended =
+    extensions?.recommendations?.map((id) => ({
+      id,
+      installed: installedIds.includes(id),
+      name: installed[id]?.packageJSON?.displayName,
+    })) || [];
+  const unwanted =
+    extensions?.unwantedRecommendations?.map((id) => ({
+      id,
+      installed: installedIds.includes(id),
+      name: installed[id]?.packageJSON?.displayName,
+    })) || [];
 
   return {
     recommended,

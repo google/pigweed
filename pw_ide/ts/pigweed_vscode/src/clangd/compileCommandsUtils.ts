@@ -13,7 +13,7 @@
 // the License.
 
 import * as path from 'path';
-
+import * as vscode from 'vscode';
 import { loadLegacySettings, loadLegacySettingsFile } from '../settings/legacy';
 import { settings, workingDir } from '../settings/vscode';
 import { globStream } from 'glob';
@@ -24,6 +24,7 @@ import {
   CompilationDatabaseMap,
   inferTarget,
 } from './parser';
+import { chmodSync, existsSync, writeFileSync } from 'fs';
 
 interface CompDbProcessingSettings {
   compDbSearchPaths: string[][];
@@ -166,4 +167,55 @@ export async function processCompDbs() {
     processedCompDbs,
     unprocessedCompDbs,
   };
+}
+
+const bazelInterceptorScriptTemplate = `#!/bin/sh
+set -euo pipefail
+
+ if [[ $# -gt 0 && ( "$1" == "build" || "$1" == "run" ) ]]; then
+  echo "⏳ Generating compile commands..."
+  $BAZEL_REAL run @pigweed//pw_ide/ts/pigweed_vscode:compile_commands_generator_binary -- --target "$*" --cwd "$(pwd)" --bazelCmd "$BAZEL_REAL"
+  $BAZEL_REAL "$@"
+else
+  $BAZEL_REAL "$@"
+fi
+
+exit 0
+`;
+export function getBazelInterceptorPath() {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders) return false;
+  const workspaceFolder = workspaceFolders[0];
+  const pathForBazelBuildInterceptor = path.join(
+    workspaceFolder.uri.fsPath,
+    'tools',
+    'bazel',
+  );
+  return pathForBazelBuildInterceptor;
+}
+export async function createBazelInterceptorFile() {
+  const pathForBazelBuildInterceptor = getBazelInterceptorPath();
+  if (!pathForBazelBuildInterceptor) return;
+  // mkdirp if not exist
+  if (!existsSync(path.dirname(pathForBazelBuildInterceptor))) {
+    await vscode.workspace.fs.createDirectory(
+      vscode.Uri.file(path.dirname(pathForBazelBuildInterceptor)),
+    );
+  }
+  writeFileSync(pathForBazelBuildInterceptor, bazelInterceptorScriptTemplate);
+  chmodSync(pathForBazelBuildInterceptor, 0o755);
+}
+
+export async function deleteBazelInterceptorFile() {
+  const pathForBazelBuildInterceptor = getBazelInterceptorPath();
+  if (!pathForBazelBuildInterceptor) return;
+  if (existsSync(pathForBazelBuildInterceptor)) {
+    await vscode.workspace.fs.delete(
+      vscode.Uri.file(pathForBazelBuildInterceptor),
+      {
+        recursive: true,
+        useTrash: false,
+      },
+    );
+  }
 }

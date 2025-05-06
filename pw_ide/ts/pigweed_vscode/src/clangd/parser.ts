@@ -214,7 +214,7 @@ export class CompileCommand {
     // The spec says that `arguments` should be preferred over `command`.
     // In practice, you shouldn't encounter cases where both are present.
     this.commandParts = this.data.arguments
-      ? parseCommandParts(this.data.arguments)
+      ? parseCommandParts([...this.data.arguments])
       : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         parseCommandParts(this.data.command!.split(/\s+/));
   }

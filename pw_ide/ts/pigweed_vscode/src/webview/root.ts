@@ -31,6 +31,8 @@ type CipdReport = {
   targetSelected?: string;
   isCompileCommandsGenerated?: boolean;
   compileCommandsPath?: string;
+  isBazelInterceptorEnabled?: boolean;
+  bazelCompileCommandsManualBuildCommand?: string;
 };
 
 const vscode = acquireVsCodeApi();
@@ -48,18 +50,53 @@ export class Root extends LitElement {
 
   @state() extensionData: ExtensionData = { unwanted: [], recommended: [] };
   @state() cipdReport: CipdReport = {};
+  @state() manualBazelTarget = '';
 
   createRenderRoot() {
     return this;
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    // Initialize manualBazelTarget when component connects
+    this.manualBazelTarget =
+      this.cipdReport.bazelCompileCommandsManualBuildCommand || '';
+  }
+
+  private _toggleBazelInterceptor(enabled: boolean) {
+    vscode.postMessage({
+      type: enabled
+        ? 'enableBazelBuildInterceptor'
+        : 'disableBazelBuildInterceptor', // Send appropriate message
+    });
+  }
+
+  // Handles input changes for the manual bazel command
+  private _handleManualBazelInputChange(event: Event) {
+    const inputElement = event.target as HTMLInputElement;
+    this.manualBazelTarget = inputElement.value;
+  }
+
+  // Called when the Refresh button is clicked
+  private _refreshCompileCommandsManually(e?: MouseEvent) {
+    e?.stopPropagation();
+    vscode.postMessage({
+      type: 'refreshCompileCommandsManually',
+      data: this.manualBazelTarget.trim(),
+    });
+  }
+
   render() {
+    const currentManualTarget =
+      this.manualBazelTarget ??
+      (this.cipdReport.bazelCompileCommandsManualBuildCommand || '');
+
     return html`
       <div>
-        <details class="vscode-collapsible" open>
+        <details class="vscode-collapsible">
           <summary>
             <i class="codicon codicon-chevron-right icon-arrow"></i>
-            <b class="title"> Recommended Extensions </b>
+            <b class="title"> Recommended Extensions</b>
           </summary>
           <div>
             <b>Recommended Extensions</b><br/>
@@ -124,7 +161,7 @@ export class Root extends LitElement {
             </div>
           </div>
         </details>
-        <details class="vscode-collapsible" open>
+        <details class="vscode-collapsible">
           <summary>
             <i class="codicon codicon-chevron-right icon-arrow"></i>
             <b class="title"> Pigweed Extension Logs </b>
@@ -151,11 +188,99 @@ export class Root extends LitElement {
         <details class="vscode-collapsible">
           <summary>
             <i class="codicon codicon-chevron-right icon-arrow"></i>
-            <b class="title"> Clangd Dashboard </b>
+            <b class="title"> Code Intelligence </b>
           </summary>
         <div>
-          <span>Settings for code navigation.</span>
+          <span>Settings for code navigation and intelligence.</span>
           <div class="container">
+            <div class="toggle-button-group">
+                <button
+                  class="toggle-button ${
+                    this.cipdReport.isBazelInterceptorEnabled ? 'active' : ''
+                  }"
+                  @click="${() => {
+                    this._toggleBazelInterceptor(true); // Enable
+                  }}"
+                >
+                  <b>Last <code>bazel build</code> command</b>
+                  <br/>
+                  <span>Intercepts Bazel commands to update code intelligence automatically. Only files built by the command will have active intelligence.</span>
+                </button>
+                <div
+                  role="button" tabindex="0"
+                  @keydown=${(e: KeyboardEvent) => {
+                    if (e.key === 'Enter') this._toggleBazelInterceptor(true);
+                  }}
+                  class="toggle-button ${
+                    !this.cipdReport.isBazelInterceptorEnabled ? 'active' : ''
+                  }"
+                  @click="${() => {
+                    this._toggleBazelInterceptor(false); // Disable
+                  }}"
+                >
+                  <b>Manual with a fixed command</b>
+                  <br/>
+                  <span>In this mode, code intelligence is updated only for the below command, and must be done manually.</span>
+                  <br/>
+                  <div class="input-button-row">
+                    <span class="prefix">bazel build </span>
+                    <input
+                      type="text"
+                      class="vscode-input"
+                      @click=${(e: MouseEvent) => e.stopPropagation()}
+                      @keydown=${(e: KeyboardEvent) => {
+                        e.stopPropagation();
+                      }}
+                      .value=${currentManualTarget}
+                      @input=${this._handleManualBazelInputChange}
+                      placeholder="//..."
+                      aria-label="Manual bazel build target"
+                      ?disabled=${this.cipdReport.isBazelInterceptorEnabled}
+                    />
+                    <div
+                      class="vscode-button input-button"
+                      role="button"
+                      href="#"
+                      @click=${this._refreshCompileCommandsManually}
+                      ?disabled=${this.cipdReport.isBazelInterceptorEnabled}
+                      @keydown=${(e: KeyboardEvent) => {
+                        if (e.key === ' ' || e.key === 'Enter')
+                          this._refreshCompileCommandsManually();
+                      }}
+                      >
+                      Refresh
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <div class="row" style="${
+              this.cipdReport.isBazelInterceptorEnabled ? 'display: none;' : ''
+            }">
+              
+            </div>
+            <div class="row">
+              <div>
+                Restart clangd language server
+              </div>
+              <div>
+                <button
+                  class="vscode-button"
+                  @click="${() => {
+                    vscode.postMessage({
+                      type: 'restartClangd',
+                    });
+                  }}"
+                >
+                  Restart
+                </button>
+              </div>
+            </div>
+            <div class="row">
+            <div>
+            <b>Still not working?</b><br/>
+            <span>See below on what might be wrong.</span>
+            </div>
+            </div>
             <div class="row">
               <div>
                 <b>Clangd is available</b><br/>
@@ -186,43 +311,6 @@ export class Root extends LitElement {
                 ${this.cipdReport.isCompileCommandsGenerated ? '✅' : '❌'}
               </div>
             </div>
-            <div class="row">
-            <div><b>Still not working?</b><br/></div>
-            </div>
-            <div class="row">
-              <div>
-                Refresh the compile_commands.json
-              </div>
-              <div>
-                <button
-                  class="vscode-button"
-                  @click="${() => {
-                    vscode.postMessage({
-                      type: 'refreshCompileCommands',
-                    });
-                  }}"
-                >
-                  Refresh
-                </button>
-              </div>
-            </div>
-            <div class="row">
-              <div>
-                Restart clangd language server
-              </div>
-              <div>
-                <button
-                  class="vscode-button"
-                  @click="${() => {
-                    vscode.postMessage({
-                      type: 'restartClangd',
-                    });
-                  }}"
-                >
-                  Restart
-                </button>
-              </div>
-            </div>
           </div>
         </div>
         </detail>
@@ -240,6 +328,9 @@ export class Root extends LitElement {
           this.extensionData = message.data;
         } else if (type === 'cipdReport') {
           this.cipdReport = message.data;
+          this.manualBazelTarget =
+            this.cipdReport.bazelCompileCommandsManualBuildCommand || '';
+          this.requestUpdate();
         }
       },
       false,

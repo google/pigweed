@@ -13,21 +13,37 @@
 # the License.
 """Finds and returns header paths for given targets"""
 
+def _get_transitive_header_paths(target):
+    target_providers = providers(target)
+    if target_providers == None:
+        return []
+
+    if "CcInfo" not in target_providers:
+        return []  # Target doesn't provide CcInfo
+
+    cc_info = target_providers["CcInfo"]
+
+    # Check essential attributes exist before proceeding
+    if not hasattr(cc_info, "compilation_context") or \
+       not cc_info.compilation_context or \
+       not hasattr(cc_info.compilation_context, "headers") or \
+       not cc_info.compilation_context.headers:
+        return []  # Missing data needed to get headers
+
+    headers_depset = cc_info.compilation_context.headers
+
+    # Basic check if it's a depset - Bazel will error on to_list() if not
+    if type(headers_depset) != "depset":
+        return []
+
+    # Convert depset to list of paths.
+    header_paths = [f.path for f in headers_depset.to_list()]
+    return header_paths
+
 def format(target):
-    """Reads CcInfo from cquery command and returns header paths for a target
+    """Formats the output for cquery."""
+    label_str = str(target.label)
+    headers = _get_transitive_header_paths(target)
 
-    Args:
-        target: Target to get headers from
-    Returns:
-        List of targets and their header paths.
-    """
-
-    prov = providers(target)
-    label = "//" + target.label.package + ":" + target.label.name
-    if prov == None:
-        return [label, []]
-    if "CcInfo" in prov:
-        files = prov["CcInfo"].compilation_context.direct_public_headers
-        return [label, [f.path for f in files]]
-    else:
-        return [label, []]
+    # Ensure output is always a list [string, list]
+    return [label_str, headers if headers != None else []]
