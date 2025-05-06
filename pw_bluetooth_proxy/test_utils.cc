@@ -41,6 +41,7 @@ Result<AclFrameWithStorage> SetupAcl(uint16_t handle, uint16_t l2cap_length) {
   frame.storage.resize(l2cap_length + emboss::AclDataFrame::MinSizeInBytes() +
                        AclFrameWithStorage::kH4HeaderSize);
   std::fill(frame.storage.begin(), frame.storage.end(), 0);
+  frame.storage[0] = cpp23::to_underlying(emboss::H4PacketType::ACL_DATA);
   PW_TRY_ASSIGN(frame.writer,
                 MakeEmbossWriter<emboss::AclDataFrameWriter>(frame.hci_span()));
   frame.writer.header().handle().Write(handle);
