@@ -33,7 +33,9 @@ cc_library_static {
         "pw_assert",
     ],
     export_static_lib_headers: [
+        "pw_containers",
         "pw_polyfill",
+        "pw_preprocessor",
         "pw_result",
         "pw_span",
         "pw_status",
@@ -46,6 +48,7 @@ cc_library_static {
         "utf_codecs.cc",
     ],
     static_libs: [
+        "pw_containers",
         "pw_polyfill",
         "pw_preprocessor",
         "pw_result",
