@@ -315,6 +315,21 @@ constexpr bool IsPrintableAscii(std::string_view data) {
   return true;
 }
 
+void AddEntryIfUnique(std::vector<TokenizedStringEntry>& entries,
+                      std::string_view new_entry) {
+  // TODO(b/326365218): Construct FormatString with string_view to avoid
+  // creating a copy here.
+  FormatString format_string(std::string(new_entry).c_str());
+  for (const TokenizedStringEntry& entry : entries) {
+    if (format_string == entry.first) {
+      return;  // An identical string is already present
+    }
+  }
+
+  entries.emplace_back(std::move(format_string),
+                       TokenDatabase::kDateRemovedNever);
+}
+
 }  // namespace
 
 DetokenizedString::DetokenizedString(
@@ -378,14 +393,13 @@ Result<Detokenizer> Detokenizer::FromElfSection(
           reinterpret_cast<const char*>(elf_section.data() + index),
           header.domain_length - 1);
       index += header.domain_length;
-      // TODO(b/326365218): Construct FormatString with string_view to avoid
-      // creating a copy here.
-      std::string entry(
+
+      std::string_view entry(
           reinterpret_cast<const char*>(elf_section.data() + index),
           header.string_length - 1);
       index += header.string_length;
-      database[std::move(domain)][header.token].emplace_back(
-          entry.c_str(), TokenDatabase::kDateRemovedNever);
+
+      AddEntryIfUnique(database[std::move(domain)][header.token], entry);
     }
   }
   return Detokenizer(std::move(database));

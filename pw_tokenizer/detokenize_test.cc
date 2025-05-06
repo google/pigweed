@@ -97,55 +97,6 @@ TEST_F(Detokenize, NoFormatting) {
   EXPECT_EQ(detok_.Detokenize("\xff\xee\xee\xdd"sv).BestString(), "FOUR");
 }
 
-TEST_F(Detokenize, FromElfSection) {
-  // Create a detokenizer from an ELF file with only the pw_tokenizer sections.
-  // See py/detokenize_test.py.
-  // Offset and size of the .pw_tokenizer.entries section in bytes.
-  constexpr uint32_t database_offset_ = 0x00000174;
-  constexpr size_t database_size_ = 0x000004C2;
-
-  pw::span<const uint8_t> token_entries(
-      reinterpret_cast<const uint8_t*>(::test::ns::kElfSection.data() +
-                                       database_offset_),
-      database_size_);
-  pw::Result<Detokenizer> detok_from_elf_ =
-      Detokenizer::FromElfSection(token_entries);
-  ASSERT_TRUE(detok_from_elf_.ok());
-  EXPECT_EQ(detok_from_elf_->Detokenize("\xd6\x8c\x66\x2e").BestString(),
-            "Jello, world!");
-}
-
-TEST_F(Detokenize, FromElfSectionCountDomain) {
-  // Create a detokenizer from an ELF file with only the pw_tokenizer sections.
-  // See py/detokenize_test.py.
-  // Offset and size of the .pw_tokenizer.entries section in bytes.
-  constexpr uint32_t database_offset_ = 0x00000174;
-  constexpr size_t database_size_ = 0x000004C2;
-
-  pw::span<const uint8_t> token_entries(
-      reinterpret_cast<const uint8_t*>(::test::ns::kElfSection.data() +
-                                       database_offset_),
-      database_size_);
-  pw::Result<Detokenizer> detok_from_elf_ =
-      Detokenizer::FromElfSection(token_entries);
-  ASSERT_TRUE(detok_from_elf_.ok());
-
-  // Two domains exist in the ELF file.
-  // The token 881436a0="The answer is: %s" is in two domains.
-  EXPECT_EQ(detok_from_elf_->database().size(), 2u);
-}
-
-TEST_F(Detokenize, FromElfFile) {
-  // Create a detokenizer from an ELF file with only the pw_tokenizer sections.
-  // See py/detokenize_test.py.
-  stream::MemoryReader stream(::test::ns::kElfSection);
-
-  pw::Result<Detokenizer> detok = Detokenizer::FromElfFile(stream);
-  PW_TEST_ASSERT_OK(detok);
-  EXPECT_EQ(detok->Detokenize("\xd6\x8c\x66\x2e").BestString(),
-            "Jello, world!");
-}
-
 TEST_F(Detokenize, FromCsvFile_DefaultDomain) {
   pw::Result<Detokenizer> detok_csv = Detokenizer::FromCsv(kCsvDefaultDomain);
   PW_TEST_ASSERT_OK(detok_csv);
@@ -514,6 +465,81 @@ TEST_F(DetokenizeWithCollisions, Collision_PreferStillPresentString) {
 TEST_F(DetokenizeWithCollisions, Collision_TracksAllMatches) {
   auto result = detok_.Detokenize("\0\0\0\0"sv);
   EXPECT_EQ(result.matches().size(), 7u);
+}
+
+class DetokenizeFromElfSection : public ::testing::Test {
+ protected:
+  // Offset and size of the .pw_tokenizer.entries section in bytes.
+  static constexpr uint32_t kDatabaseOffset = 0x00000174;
+  static constexpr size_t kDatabaseSize = 0x000004C2;
+
+  // Parse the test ELF and crash if parsing fails.
+  DetokenizeFromElfSection()
+      : detok_(Detokenizer::FromElfSection(
+                   span(::test::ns::kElfSection)
+                       .subspan(kDatabaseOffset, kDatabaseSize))
+                   .value()) {}
+
+  Detokenizer detok_;
+};
+
+TEST_F(DetokenizeFromElfSection, ReadsContentsCorrectly) {
+  // Create a detokenizer from an ELF file with only the pw_tokenizer sections.
+  // See py/detokenize_test.py.
+
+  // Two domains exist in the ELF file.
+  // The token 881436a0="The answer is: %s" is in two domains.
+  EXPECT_EQ(detok_.database().size(), 2u);
+  EXPECT_EQ(detok_.database().count(""), 1u);
+  EXPECT_EQ(detok_.database().count(""), 1u);
+
+  EXPECT_EQ(detok_.database().at("").size(), 22u);
+  EXPECT_EQ(detok_.database().at("TEST_DOMAIN").size(), 5u);
+}
+
+TEST_F(DetokenizeFromElfSection, DetokenizesSuccessfully) {
+  EXPECT_EQ(detok_.Detokenize("\0").BestString(), "");
+  EXPECT_EQ(detok_.Detokenize("\x81\x17\x63\x31\x2").BestString(), "1");
+  EXPECT_EQ(detok_.Detokenize("\xd6\x8c\x66\x2e").BestString(),
+            "Jello, world!");
+}
+
+TEST_F(DetokenizeFromElfSection, DuplicateEntry) {
+  // This entry is present several times in the ELF, but should only appear once
+  // in the detokenizer's database.
+  static constexpr uint32_t kToken = 0x881436a0;
+  static constexpr uint8_t kTokenArray[] = {(kToken >> 0) & 0xFF,
+                                            (kToken >> 8) & 0x36,
+                                            (kToken >> 16) & 0xFF,
+                                            (kToken >> 24) & 0xFF,
+                                            0x03,
+                                            '?',
+                                            '?',
+                                            '?'};
+
+  EXPECT_EQ(detok_.database().at("").at(kToken).size(), 1u) << "Deduplicates";
+
+  auto result = detok_.Detokenize(kTokenArray);
+  EXPECT_TRUE(result.ok());
+  EXPECT_EQ(result.BestString(), "The answer is: ???");
+}
+
+TEST(DetokenizeFromElfFile, ReadsDatabaseAndDetokenizesSuccessfully) {
+  stream::MemoryReader stream(::test::ns::kElfSection);
+  pw::Result<Detokenizer> detok = Detokenizer::FromElfFile(stream);
+  PW_TEST_ASSERT_OK(detok);
+
+  EXPECT_EQ(detok->database().size(), 2u);
+  EXPECT_EQ(detok->database().count(""), 1u);
+  EXPECT_EQ(detok->database().count(""), 1u);
+
+  EXPECT_EQ(detok->database().at("").size(), 22u);
+  EXPECT_EQ(detok->database().at("TEST_DOMAIN").size(), 5u);
+
+  EXPECT_EQ(detok->Detokenize("\0").BestString(), "");
+  EXPECT_EQ(detok->Detokenize("\x81\x17\x63\x31\x2").BestString(), "1");
+  EXPECT_EQ(detok->Detokenize("\xd6\x8c\x66\x2e").BestString(),
+            "Jello, world!");
 }
 
 }  // namespace

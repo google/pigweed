@@ -142,6 +142,15 @@ class StringSegment {
 
   const std::string& text() const { return text_; }
 
+  friend bool operator==(const StringSegment& lhs, const StringSegment& rhs) {
+    return lhs.type_ == rhs.type_ && lhs.local_size_ == rhs.local_size_ &&
+           lhs.text_ == rhs.text_;
+  }
+
+  friend bool operator!=(const StringSegment& lhs, const StringSegment& rhs) {
+    return !(lhs == rhs);
+  }
+
  private:
   enum Type {
     kLiteral,
@@ -235,6 +244,14 @@ class FormatString {
   DecodedFormatString Format(std::string_view arguments) const {
     return Format(span(reinterpret_cast<const uint8_t*>(arguments.data()),
                        arguments.size()));
+  }
+
+  friend bool operator==(const FormatString& lhs, const FormatString& rhs) {
+    return lhs.segments_ == rhs.segments_;
+  }
+
+  friend bool operator!=(const FormatString& lhs, const FormatString& rhs) {
+    return !(lhs == rhs);
   }
 
  private:
