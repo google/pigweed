@@ -15,7 +15,11 @@
 
 use regs::*;
 
+/// System Control Block register bank.
+///
+/// Note: non-exhaustive list of registers.
 pub struct Scb {
+    /// System Handler Control and State Register
     pub shcsr: Shcsr,
 }
 
@@ -28,25 +32,55 @@ impl Scb {
 #[repr(transparent)]
 pub struct ShcsrVal(u32);
 impl ShcsrVal {
-    rw_bool_field!(u32, mem_fault_act, 0);
-    rw_bool_field!(u32, bus_fault_act, 1);
-    rw_bool_field!(u32, hard_fault_act, 2);
-    rw_bool_field!(u32, usg_fault_act, 3);
-    rw_bool_field!(u32, secure_fault_act, 4);
-    rw_bool_field!(u32, nmi_act, 5);
-    rw_bool_field!(u32, svcall_act, 7);
-    rw_bool_field!(u32, monitor_act, 8);
-    rw_bool_field!(u32, pendsv_act, 10);
-    rw_bool_field!(u32, systick_act, 11);
-    rw_bool_field!(u32, usg_fault_pended, 12);
-    rw_bool_field!(u32, mem_fault_pended, 13);
-    rw_bool_field!(u32, bus_fault_pended, 14);
-    rw_bool_field!(u32, svcall_pended, 15);
-    rw_bool_field!(u32, mem_fault_ena, 16);
-    rw_bool_field!(u32, bus_fault_ena, 17);
-    rw_bool_field!(u32, usg_fault_ena, 18);
-    rw_bool_field!(u32, secure_fault_ena, 19);
-    rw_bool_field!(u32, secure_fault_pended, 20);
-    rw_bool_field!(u32, hard_fault_pended, 21);
+    rw_bool_field!(u32, mem_fault_act, 0, "MemManage exception active state");
+    rw_bool_field!(u32, bus_fault_act, 1, "BusFault exception active state");
+    rw_bool_field!(u32, hard_fault_act, 2, "HardFault exception active state");
+    rw_bool_field!(u32, usg_fault_act, 3, "UsageFault exception active state");
+    rw_bool_field!(
+        u32,
+        secure_fault_act,
+        4,
+        "SecureFault exception active state"
+    );
+    rw_bool_field!(u32, nmi_act, 5, "NMI exception active state");
+    rw_bool_field!(u32, svcall_act, 7, "SVCall exception active state");
+    rw_bool_field!(u32, monitor_act, 8, "DebugMonitor exception active state");
+    rw_bool_field!(u32, pendsv_act, 10, "PendSV exception active state");
+    rw_bool_field!(u32, systick_act, 11, "SysTick exception active state");
+    rw_bool_field!(
+        u32,
+        usg_fault_pended,
+        12,
+        "UsageFault exception pended state"
+    );
+    rw_bool_field!(
+        u32,
+        mem_fault_pended,
+        13,
+        "MemManage exception pended state"
+    );
+    rw_bool_field!(u32, bus_fault_pended, 14, "BusFault exception pended state");
+    rw_bool_field!(u32, svcall_pended, 15, "SVCall exception pended state");
+    rw_bool_field!(u32, mem_fault_ena, 16, "MemManage exception enable");
+    rw_bool_field!(u32, bus_fault_ena, 17, "BusFault exception enable");
+    rw_bool_field!(u32, usg_fault_ena, 18, "UsageFault exception enable");
+    rw_bool_field!(u32, secure_fault_ena, 19, "SecureFault exception enable");
+    rw_bool_field!(
+        u32,
+        secure_fault_pended,
+        20,
+        "SecureFault exception pended state"
+    );
+    rw_bool_field!(
+        u32,
+        hard_fault_pended,
+        21,
+        "HardFault exception pended state"
+    );
 }
-rw_reg!(Shcsr, ShcsrVal, 0xe000ed24);
+rw_reg!(
+    Shcsr,
+    ShcsrVal,
+    0xe000ed24,
+    "SCB System Handler Control and State Register"
+);

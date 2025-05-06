@@ -51,7 +51,10 @@ pub trait RW<T> {
 
 #[macro_export]
 macro_rules! ro_bool_field {
-    ($val_type:ty, $name:ident, $offset:literal) => {
+    ($val_type:ty, $name:ident, $offset:literal, $desc:literal) => {
+        #[doc = "Extract "]
+        #[doc = $desc]
+        #[doc = "field"]
         #[inline]
         pub const fn $name(&self) -> bool {
             $crate::ops::get_bool(self.0 as usize, $offset)
@@ -61,9 +64,12 @@ macro_rules! ro_bool_field {
 
 #[macro_export]
 macro_rules! rw_bool_field {
-    ($val_type:ty, $name:ident, $offset:literal) => {
-        ro_bool_field!($val_type, $name, $offset);
+    ($val_type:ty, $name:ident, $offset:literal, $desc:literal) => {
+        ro_bool_field!($val_type, $name, $offset, $desc);
         paste::paste! {
+          #[doc = "Update "]
+          #[doc = $desc]
+          #[doc = "field"]
           #[inline]
           pub const fn [<with_ $name>](self, val: bool) -> Self {
               Self($crate::ops::set_bool(self.0 as usize, $offset, val) as $val_type)
@@ -74,7 +80,10 @@ macro_rules! rw_bool_field {
 
 #[macro_export]
 macro_rules! ro_int_field {
-    ($val_type:ty, $name:ident, $start:literal, $end:literal, $ty:ty) => {
+    ($val_type:ty, $name:ident, $start:literal, $end:literal, $ty:ty, $desc:literal) => {
+        #[doc = "Extract "]
+        #[doc = $desc]
+        #[doc = "field"]
         #[inline]
         pub const fn $name(&self) -> $ty {
             $crate::ops::get_usize(self.0 as usize, $start, $end) as $ty
@@ -84,9 +93,12 @@ macro_rules! ro_int_field {
 
 #[macro_export]
 macro_rules! rw_int_field {
-    ($val_type:ty, $name:ident, $start:literal, $end:literal, $ty:ty) => {
-        ro_int_field!($val_type, $name, $start, $end, $ty);
+    ($val_type:ty, $name:ident, $start:literal, $end:literal, $ty:ty, $desc:literal) => {
+        ro_int_field!($val_type, $name, $start, $end, $ty, $desc);
         paste::paste! {
+          #[doc = "Update "]
+          #[doc = $desc]
+          #[doc = "field"]
           #[inline]
           pub const fn [<with_ $name>](self, val: $ty) -> Self {
               Self($crate::ops::set_usize(self.0 as usize, $start, $end, val as usize) as $val_type)
@@ -97,7 +109,10 @@ macro_rules! rw_int_field {
 
 #[macro_export]
 macro_rules! ro_masked_field {
-    ($name:ident, $mask:expr, $ty:ty) => {
+    ($name:ident, $mask:expr, $ty:ty, $desc:literal) => {
+        #[doc = "Extract "]
+        #[doc = $desc]
+        #[doc = "field"]
         #[inline]
         pub const fn $name(&self) -> $ty {
             self.0 & $mask
@@ -107,10 +122,13 @@ macro_rules! ro_masked_field {
 
 #[macro_export]
 macro_rules! rw_masked_field {
-    ($name:ident, $mask:expr, $ty:ty) => {
-        ro_masked_field!($name, $mask, $ty);
+    ($name:ident, $mask:expr, $ty:ty, $desc:literal) => {
+        ro_masked_field!($name, $mask, $ty, $desc);
 
         paste::paste! {
+            #[doc = "Update "]
+            #[doc = $desc]
+            #[doc = "field"]
             #[inline]
             pub const fn [<with_ $name>](self, val: $ty) -> Self {
               Self(self.0 & !$mask | (val & $mask))
@@ -121,7 +139,8 @@ macro_rules! rw_masked_field {
 
 #[macro_export]
 macro_rules! ro_reg {
-    ($name:ident, $val_type:ident, $addr:literal) => {
+    ($name:ident, $val_type:ident, $addr:literal, $doc:literal) => {
+        #[doc = $doc]
         pub struct $name;
         impl RO<u32> for $name {
             const ADDR: usize = $addr;
@@ -137,7 +156,8 @@ macro_rules! ro_reg {
 
 #[macro_export]
 macro_rules! rw_reg {
-    ($name:ident, $val_type:ident, $addr:literal) => {
+    ($name:ident, $val_type:ident, $addr:literal, $doc:literal) => {
+        #[doc = $doc]
         pub struct $name;
         impl RW<u32> for $name {
             const ADDR: usize = $addr;

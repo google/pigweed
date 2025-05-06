@@ -15,13 +15,27 @@
 
 use regs::*;
 
+/// Memory Protection Unit register bank
 pub struct Mpu {
+    /// Type Register
     pub _type: Type,
+
+    /// Control Register
     pub ctrl: Ctrl,
+
+    /// Region Number Register
     pub rnr: Rnr,
+
+    /// Region Base Address Register
     pub rbar: Rbar,
+
+    /// Region Limit Address Register.
     pub rlar: Rlar,
+
+    /// Memory Attribute Indirection Register 0
     pub mair0: Mair0,
+
+    /// Memory Attribute Indirection Register 1
     pub mair1: Mair1,
 }
 
@@ -42,27 +56,27 @@ impl Mpu {
 #[repr(transparent)]
 pub struct TypeVal(u32);
 impl TypeVal {
-    ro_bool_field!(u32, separate, 0);
-    ro_int_field!(u32, dregion, 8, 15, u8);
+    ro_bool_field!(u32, separate, 0, "separate instruction and data regions");
+    ro_int_field!(u32, dregion, 8, 15, u8, "number of data regions");
 }
-ro_reg!(Type, TypeVal, 0xE000ED90);
+ro_reg!(Type, TypeVal, 0xE000ED90, "MPU Type Register");
 
 #[repr(transparent)]
 pub struct CtrlVal(u32);
 impl CtrlVal {
-    rw_bool_field!(u32, enable, 0);
-    rw_bool_field!(u32, hfnmiena, 1);
-    rw_bool_field!(u32, privdefena, 2);
+    rw_bool_field!(u32, enable, 0, "enable");
+    rw_bool_field!(u32, hfnmiena, 1, "HardFault, NMI enable");
+    rw_bool_field!(u32, privdefena, 2, "Privileged default enable");
 }
-rw_reg!(Ctrl, CtrlVal, 0xE000ED94);
+rw_reg!(Ctrl, CtrlVal, 0xE000ED94, "MPU Control Register");
 
 #[derive(Default)]
 #[repr(transparent)]
 pub struct RnrVal(u32);
 impl RnrVal {
-    rw_int_field!(u32, region, 0, 7, u8);
+    rw_int_field!(u32, region, 0, 7, u8, "region number");
 }
-rw_reg!(Rnr, RnrVal, 0xE000ED98);
+rw_reg!(Rnr, RnrVal, 0xE000ED98, "MPU Region Number Register");
 
 #[repr(u8)]
 pub enum RbarAp {
@@ -84,40 +98,54 @@ pub enum RbarSh {
 #[repr(transparent)]
 pub struct RbarVal(u32);
 impl RbarVal {
-    rw_bool_field!(u32, xn, 0);
+    rw_bool_field!(u32, xn, 0, "execute-never");
 
+    /// Extract access permissions field.
     pub const fn ap(&self) -> RbarAp {
         // Safety: Value is masked to only contain valid enum values.
         unsafe { core::mem::transmute(ops::get_u32(self.0, 1, 2) as u8) }
     }
 
+    /// Update access permissions field.
     pub const fn with_ap(self, val: RbarAp) -> Self {
         Self(ops::set_u32(self.0, 1, 2, val as u32))
     }
 
+    /// Extract shareability field.
     pub const fn sh(&self) -> RbarSh {
         // Safety: Value is masked to only contain valid enum values.
         unsafe { core::mem::transmute(ops::get_u32(self.0, 3, 4) as u8) }
     }
 
+    /// Update shareability field.
     pub const fn with_sh(self, val: RbarSh) -> Self {
         Self(ops::set_u32(self.0, 3, 4, val as u32))
     }
 
-    rw_masked_field!(base, 0xffff_ffe0, u32);
+    rw_masked_field!(base, 0xffff_ffe0, u32, "base address");
 }
-rw_reg!(Rbar, RbarVal, 0xE000ED9C);
+rw_reg!(
+    Rbar,
+    RbarVal,
+    0xE000ED9C,
+    "MPU Region Base Address Register"
+);
 
 #[derive(Copy, Clone, Default)]
 #[repr(transparent)]
 pub struct RlarVal(u32);
 impl RlarVal {
-    rw_bool_field!(u32, en, 0);
-    rw_int_field!(u32, attrindx, 1, 3, u8);
-    rw_bool_field!(u32, pxn, 4);
-    rw_masked_field!(limit, 0xffff_ffe0, u32);
+    rw_bool_field!(u32, en, 0, "region enable");
+    rw_int_field!(u32, attrindx, 1, 3, u8, "attribute index");
+    rw_bool_field!(u32, pxn, 4, "privileged execute-never");
+    rw_masked_field!(limit, 0xffff_ffe0, u32, "limit address");
 }
-rw_reg!(Rlar, RlarVal, 0xE000EDA0);
+rw_reg!(
+    Rlar,
+    RlarVal,
+    0xE000EDA0,
+    "MPU Region Limit Address Register"
+);
 
 #[repr(u8)]
 pub enum MairDeviceMemoryOrdering {
@@ -179,7 +207,9 @@ pub enum MairNormalMemoryCaching {
     WriteBackNonTransientRW = 0b1111,
 }
 
-/// There are notably no accessors for `MairAttr` because it's unclear
+/// Memory Attribute Indirection Value
+///
+///  There are notably no accessors for `MairAttr` because it's unclear
 /// how they would be used at this time and therefore difficult to build
 /// them for optimal code gen.
 pub struct MairAttr(u8);
@@ -209,11 +239,17 @@ impl MairAttr {
 }
 
 macro_rules! attr_field {
-    ($name:ident, $start:literal, $end:literal) => {
+    ($name:ident, $start:literal, $end:literal, $desc:literal) => {
+        #[doc = "Extract "]
+        #[doc = $desc]
+        #[doc = "field"]
         pub const fn $name(&self) -> u8 {
             ops::get_u32(self.0, $start, $end) as u8
         }
         paste::paste! {
+            #[doc = "Update "]
+            #[doc = $desc]
+            #[doc = "field"]
             pub const fn [<with_ $name>](&mut self, val: MairAttr) -> Self {
                 Self(ops::set_u32(self.0, $start, $end, val.0 as u32))
             }
@@ -225,19 +261,29 @@ macro_rules! attr_field {
 #[repr(transparent)]
 pub struct Mair0Val(u32);
 impl Mair0Val {
-    attr_field!(attr0, 0, 7);
-    attr_field!(attr1, 8, 15);
-    attr_field!(attr2, 16, 23);
-    attr_field!(attr3, 24, 31);
+    attr_field!(attr0, 0, 7, "Attribute 0");
+    attr_field!(attr1, 8, 15, "Attribute 1");
+    attr_field!(attr2, 16, 23, "Attribute 2");
+    attr_field!(attr3, 24, 31, "Attribute 3");
 }
-rw_reg!(Mair0, Mair0Val, 0xE000EDC0);
+rw_reg!(
+    Mair0,
+    Mair0Val,
+    0xE000EDC0,
+    "MPU Memory Attribute Indirection Register 0"
+);
 
 #[repr(transparent)]
 pub struct Mair1Val(u32);
 impl Mair1Val {
-    attr_field!(attr4, 0, 7);
-    attr_field!(attr5, 8, 15);
-    attr_field!(attr6, 16, 23);
-    attr_field!(attr7, 24, 31);
+    attr_field!(attr4, 0, 7, "Attribute 4");
+    attr_field!(attr5, 8, 15, "Attribute 5");
+    attr_field!(attr6, 16, 23, "Attribute 6");
+    attr_field!(attr7, 24, 31, "Attribute 7");
 }
-rw_reg!(Mair1, Mair1Val, 0xE000EDC4);
+rw_reg!(
+    Mair1,
+    Mair1Val,
+    0xE000EDC4,
+    "MPU Memory Attribute Indirection Register 1"
+);

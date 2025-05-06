@@ -97,8 +97,9 @@ pub enum Cause {
 #[repr(transparent)]
 pub struct MCauseVal(pub usize);
 impl MCauseVal {
-    rw_masked_field!(raw_cause, usize::MAX >> 1, usize);
+    rw_masked_field!(raw_cause, usize::MAX >> 1, usize, "raw cause");
 
+    /// Extract the trap cause field.
     #[inline]
     pub fn cause(&self) -> Cause {
         if self.is_interrupt() {
@@ -110,6 +111,7 @@ impl MCauseVal {
         }
     }
 
+    /// Returns `true` if the cause is an interrupt
     #[inline]
     pub fn is_interrupt(&self) -> bool {
         // is_negative() is used to test the high bit to be word size independent.

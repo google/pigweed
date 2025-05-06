@@ -22,20 +22,21 @@ use pw_log::info;
 use regs::*;
 
 /// Combined Exception Return Program Status Register Value
+#[repr(transparent)]
 pub struct RetPsrVal(pub u32);
 impl RetPsrVal {
-    rw_int_field!(u32, exception, 0, 8, u16);
-    rw_bool_field!(u32, sprealign, 9);
-    rw_int_field!(u32, branch_flags, 10, 19, u16);
-    rw_bool_field!(u32, sfpa, 20);
-    rw_bool_field!(u32, b, 21);
-    rw_bool_field!(u32, t, 24);
-    rw_int_field!(u32, it, 25, 26, u8);
-    rw_bool_field!(u32, q, 27);
-    rw_bool_field!(u32, v, 28);
-    rw_bool_field!(u32, c, 29);
-    rw_bool_field!(u32, z, 30);
-    rw_bool_field!(u32, n, 31);
+    rw_int_field!(u32, exception, 0, 8, u16, "exception number");
+    rw_bool_field!(u32, sprealign, 9, "stack pointer re-align");
+    rw_int_field!(u32, branch_flags, 10, 19, u16, "combined branch flags");
+    rw_bool_field!(u32, sfpa, 20, "secure floating point active");
+    rw_bool_field!(u32, b, 21, "branch target idetification active");
+    rw_bool_field!(u32, t, 24, "T32 state");
+    rw_int_field!(u32, it, 25, 26, u8, "if-then flags");
+    rw_bool_field!(u32, q, 27, "saturate flag");
+    rw_bool_field!(u32, v, 28, "overflow flag");
+    rw_bool_field!(u32, c, 29, "carry flag");
+    rw_bool_field!(u32, z, 30, "zero flag");
+    rw_bool_field!(u32, n, 31, "negative flag");
 }
 
 /// Exception Return Payload (EXC_RETURN)
