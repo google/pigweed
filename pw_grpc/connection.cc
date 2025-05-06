@@ -238,6 +238,7 @@ pw::Status Connection::SharedState::CreateStream(StreamId id,
     streams_[i].id = id;
     streams_[i].half_closed = false;
     streams_[i].started_response = false;
+    streams_[i].recv_window = kDefaultInitialWindowSize;
     streams_[i].send_window = initial_send_window;
     return OkStatus();
   }
@@ -405,21 +406,33 @@ Status Connection::SharedState::SendRstStream(StreamId stream_id,
 }
 
 // RFC 9113 §6.9
-Status Connection::SharedState::SendWindowUpdates(StreamId stream_id,
-                                                  uint32_t increment) {
-  // It is illegal to send updates with increment=0.
-  if (increment == 0) {
+Status Connection::SharedState::SendWindowUpdates(Stream* stream,
+                                                  uint32_t connection_increment,
+                                                  uint32_t stream_increment) {
+  // It is illegal to send updates with increment=0. We won't include
+  // stream_increment if it is 0 or stream is null.
+  if (connection_increment == 0) {
     return OkStatus();
   }
-  if (increment & 0x80000000) {
+
+  if (connection_increment & 0x80000000 || stream_increment & 0x80000000) {
     // Upper bit is reserved, error.
     return Status::InvalidArgument();
   }
 
   PW_LOG_DEBUG("Conn.Send WINDOW_UPDATE frames with id=%" PRIu32
-               " increment=%" PRIu32,
-               stream_id,
-               increment);
+               " connection_increment=%" PRIu32 " stream_increment=%" PRIu32,
+               stream ? stream->id : 0,
+               connection_increment,
+               stream_increment);
+
+  connection_recv_window_ += connection_increment;
+  if (stream) {
+    stream->recv_window += stream_increment;
+    if (stream_increment == 0) {
+      return OkStatus();
+    }
+  }
 
   PW_PACKED(struct) WindowUpdateFrame {
     WireFrameHeader header;
@@ -433,19 +446,20 @@ Status Connection::SharedState::SendWindowUpdates(StreamId stream_id,
               .flags = 0,
               .stream_id = 0,
           }),
-          .increment = ToNetworkOrder(increment),
+          .increment = ToNetworkOrder(connection_increment),
       },
+      // Will not be included if stream is null.
       {
           .header = WireFrameHeader(FrameHeader{
               .payload_length = 4,
               .type = FrameType::WINDOW_UPDATE,
               .flags = 0,
-              .stream_id = stream_id,
+              .stream_id = stream ? stream->id : 0,
           }),
-          .increment = ToNetworkOrder(increment),
+          .increment = ToNetworkOrder(stream_increment),
       },
   };
-  return SendBytes(as_bytes(span{frames}));
+  return SendBytes(as_bytes(span{frames, stream ? 2U : 1U}));
 }
 
 // RFC 9113 §6.5
@@ -678,20 +692,17 @@ Status Connection::Reader::ProcessDataFrame(const FrameHeader& frame) {
 
   {
     auto state = connection_.LockState();
+    auto stream = state->LookupStream(frame.stream_id);
 
     // From RFC 9113 §6.9: "A receiver that receives a flow-controlled frame
     // MUST always account for its contribution against the connection
     // flow-control window, unless the receiver treats this as a connection
-    // error. This is necessary even if the frame is in error. The sender counts
-    // the frame toward the flow-control window, but if the receiver does not,
-    // the flow-control window at the sender and receiver can become different."
-    //
-    // To simplify this, we send WINDOW_UPDATE frames eagerly.
-    //
-    // In the future we should do something less chatty.
-    PW_TRY(state->SendWindowUpdates(frame.stream_id, frame.payload_length));
+    // error. This is necessary even if the frame is in error. The sender
+    // counts the frame toward the flow-control window, but if the receiver
+    // does not, the flow-control window at the sender and receiver can become
+    // different."
+    PW_TRY(state->UpdateRecvWindow(stream, frame.payload_length));
 
-    auto stream = state->LookupStream(frame.stream_id);
     if (!stream) {
       PW_LOG_DEBUG("Ignoring DATA on closed stream id=%" PRIu32,
                    frame.stream_id);
@@ -1023,6 +1034,41 @@ Status Connection::SharedState::AddStreamSendWindow(StreamId id,
   }
 
   DrainResponseQueues().IgnoreError();
+
+  return OkStatus();
+}
+
+Status Connection::SharedState::UpdateRecvWindow(Stream* stream,
+                                                 uint32_t data_length) {
+  connection_recv_window_ -= data_length;
+
+  // Make sure window value won't underflow.
+  if (connection_recv_window_ > kTargetConnectionWindowSize) {
+    return Status::InvalidArgument();
+  }
+
+  uint32_t connection_increment = static_cast<uint32_t>(
+      kTargetConnectionWindowSize - connection_recv_window_);
+
+  uint32_t stream_increment = 0;
+  if (stream) {
+    stream->recv_window -= data_length;
+    if (stream->recv_window > kTargetStreamWindowSize) {
+      return Status::InvalidArgument();
+    }
+    stream_increment =
+        static_cast<uint32_t>(kTargetStreamWindowSize - stream->recv_window);
+  }
+
+  constexpr size_t kConnectionWindowUpdateThreshold =
+      kTargetConnectionWindowSize / 2;
+  constexpr size_t kStreamWindowUpdateThreshold = kTargetStreamWindowSize / 2;
+
+  // Suppress window updates till we reach target.
+  if (connection_increment > kConnectionWindowUpdateThreshold ||
+      stream_increment > kStreamWindowUpdateThreshold) {
+    PW_TRY(SendWindowUpdates(stream, connection_increment, stream_increment));
+  }
 
   return OkStatus();
 }

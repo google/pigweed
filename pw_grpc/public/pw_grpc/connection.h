@@ -166,7 +166,10 @@ class Connection {
   // windows with signed integers. "A change to SETTINGS_INITIAL_WINDOW_SIZE can
   // cause the available space in a flow-control window to become negative. A
   // sender MUST track the negative flow-control window ..."
-  static inline constexpr int32_t kDefaultInitialWindowSize = 65535;
+  static constexpr int32_t kDefaultInitialWindowSize = 65535;
+  static constexpr int32_t kTargetConnectionWindowSize =
+      kDefaultInitialWindowSize;
+  static constexpr int32_t kTargetStreamWindowSize = kDefaultInitialWindowSize;
 
   // From RFC 9113 §5.1, we use only the following states:
   // * idle, which have `id > last_stream_id_`
@@ -182,6 +185,7 @@ class Connection {
     bool half_closed;
     bool started_response;
     int32_t send_window;
+    int32_t recv_window;
 
     // Response messages that are waiting for window to send.
     multibuf::MultiBuf response_queue;
@@ -208,6 +212,7 @@ class Connection {
       half_closed = false;
       started_response = false;
       send_window = 0;
+      recv_window = kTargetStreamWindowSize;
       response_queue = {};
 
       assembly_buffer = nullptr;
@@ -236,6 +241,11 @@ class Connection {
     Status AddAllStreamsSendWindow(int32_t delta);
     // Update connection send window with new delta.
     Status AddConnectionSendWindow(int32_t delta);
+    // Increment connection recv window with length of received DATA frame and
+    // send window update once threshold is reached. If stream is non-null, the
+    // stream recv windows is also updated and could be included in window
+    // update.
+    Status UpdateRecvWindow(Stream* stream, uint32_t data_length);
 
     // Returns nullptr if stream not found. Note that a reference to locked
     // SharedState should be retained while using the returned Stream*.
@@ -258,7 +268,9 @@ class Connection {
 
     // Frame send functions.
     Status SendRstStream(StreamId stream_id, internal::Http2Error code);
-    Status SendWindowUpdates(StreamId stream_id, uint32_t increment);
+    Status SendWindowUpdates(Stream* stream,
+                             uint32_t connection_increment,
+                             uint32_t stream_increment);
     Status SendSettingsAck();
 
     allocator::Allocator* message_assembly_allocator() {
@@ -268,8 +280,6 @@ class Connection {
     multibuf::MultiBufAllocator& multibuf_allocator() {
       return multibuf_allocator_;
     }
-
-    int32_t connection_send_window() const { return connection_send_window_; }
 
    private:
     // Called whenever there is new data to send or a WINDOW_UPDATE message has
@@ -288,6 +298,7 @@ class Connection {
     // Stream state
     std::array<Stream, internal::kMaxConcurrentStreams> streams_{};
     int32_t connection_send_window_ = kDefaultInitialWindowSize;
+    int32_t connection_recv_window_ = kTargetConnectionWindowSize;
 
     // Allocator for fragmented grpc message reassembly
     allocator::Allocator* message_assembly_allocator_;
