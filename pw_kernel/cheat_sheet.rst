@@ -96,7 +96,7 @@ Build
 
 .. code-block:: shell
 
-   bazelisk build --config k_rp2350 //pw_kernel/entry:kernel
+   bazelisk build --config k_rp2350 //pw_kernel:console
 
 Console
 ---
@@ -112,7 +112,7 @@ Flash
 
 .. code-block:: shell
 
-   probe-rs download --chip rp2350 bazel-bin/pw_kernel/entry/kernel && probe-rs reset
+   probe-rs download --chip rp2350 bazel-bin/pw_kernel/target/rp/rp2350 && probe-rs reset
 
 Note that any logging messages between boot and connecting a console to the device will be missed,
 so it's best to start the console in one terminal first, before flashing the device.  This will also

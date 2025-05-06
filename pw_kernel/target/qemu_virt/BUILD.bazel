@@ -31,6 +31,7 @@ platform(
         "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
         "//pw_kernel/subsys/console:console_backend": ":console_riscv",
         "//pw_kernel/target:linker_script": ":linker_script_riscv",
+        "//pw_kernel/target:target": ":target_riscv",
     }),
 )
 
@@ -46,6 +47,7 @@ rust_library(
     name = "console_riscv",
     srcs = ["console_riscv.rs"],
     crate_name = "console_backend",
+    tags = ["kernel"],
     target_compatible_with = [
         "@platforms//cpu:riscv32",
     ],

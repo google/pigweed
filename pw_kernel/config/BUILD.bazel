@@ -29,6 +29,7 @@ rust_library(
 label_flag(
     name = "kernel_config",
     build_setting_default = ":no_config",
+    tags = ["kernel"],
     visibility = ["//visibility:public"],
 )
 

@@ -29,6 +29,7 @@ platform(
         "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
         "//pw_kernel/subsys/console:console_backend": ":console_rp2350",
         "//pw_kernel/target:linker_script": ":linker_script_rp2350",
+        "//pw_kernel/target:target": ":target_rp2350",
     }),
 )
 
@@ -44,6 +45,7 @@ rust_library(
     name = "console_rp2350",
     srcs = ["console_rp2350.rs"],
     crate_name = "console_backend",
+    tags = ["kernel"],
     target_compatible_with = [
         "//pw_build/constraints/arm:cortex-m33",
     ],
