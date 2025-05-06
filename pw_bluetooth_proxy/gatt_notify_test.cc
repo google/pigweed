@@ -25,14 +25,78 @@
 #include "pw_function/function.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
+#include "pw_status/try.h"
 #include "pw_unit_test/framework.h"
 #include "pw_unit_test/status_macros.h"
 
 namespace pw::bluetooth::proxy {
 
 namespace {
+struct AttNotifyWithStorage {
+  BFrameWithStorage bframe;
+  emboss::AttHandleValueNtfWriter writer;
+};
+
+Result<AttNotifyWithStorage> SetupAttNotify(
+    uint16_t connection_handle,
+    uint16_t attribute_handle,
+    const pw::span<const uint8_t> attribute_value) {
+  const uint16_t kAttChannelId = 0x0004;
+  const size_t att_size =
+      emboss::AttHandleValueNtf::MinSizeInBytes() + attribute_value.size();
+
+  AttNotifyWithStorage frame;
+  PW_TRY_ASSIGN(frame.bframe,
+                SetupBFrame(connection_handle, kAttChannelId, att_size));
+
+  EXPECT_EQ(att_size, frame.bframe.writer.payload().SizeInBytes());
+  PW_TRY_ASSIGN(frame.writer,
+                MakeEmbossWriter<emboss::AttHandleValueNtfWriter>(
+                    attribute_value.size(),
+                    frame.bframe.writer.payload().BackingStorage().data(),
+                    frame.bframe.writer.payload().SizeInBytes()));
+  EXPECT_TRUE(frame.writer.IsComplete());
+
+  frame.writer.attribute_opcode().Write(
+      emboss::AttOpcode::ATT_HANDLE_VALUE_NTF);
+  frame.writer.attribute_handle().Write(attribute_handle);
+
+  EXPECT_TRUE(
+      TryToCopyToEmbossStruct(frame.writer.attribute_value(), attribute_value));
+
+  return frame;
+}
 
 class GattNotifyTest : public ProxyHostTest {};
+
+TEST_F(GattNotifyTest, TestSetupAttNotify) {
+  std::array<uint8_t, 1> attribute_value = {0xFA};
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      AttNotifyWithStorage att,
+      SetupAttNotify(0x0ACB, 0x4321, pw::span(attribute_value)));
+
+  // Built from the preceding values in little endian order.
+  std::array<uint8_t, 13> expected_gatt_notify_packet = {0x02,
+                                                         0xCB,
+                                                         0x0A,
+                                                         0x08,
+                                                         0x00,
+                                                         0x04,
+                                                         0x00,
+                                                         0x04,
+                                                         0x00,
+                                                         0x1B,
+                                                         0x21,
+                                                         0x43,
+                                                         0xFA};
+
+  EXPECT_EQ(att.bframe.acl.h4_span().size(),
+            expected_gatt_notify_packet.size());
+  EXPECT_TRUE(std::equal(att.bframe.acl.h4_span().begin(),
+                         att.bframe.acl.h4_span().end(),
+                         expected_gatt_notify_packet.begin(),
+                         expected_gatt_notify_packet.end()));
+}
 
 // TODO: https://pwbug.dev/369709521 - Remove once SendGattNotify is removed.
 TEST_F(GattNotifyTest, Send1ByteAttributeUsingSendGattNotifyMultiBuf) {
@@ -50,11 +114,14 @@ TEST_F(GattNotifyTest, Send1ByteAttributeUsingSendGattNotifyMultiBuf) {
     uint8_t attribute_opcode = 0x1B;
     uint16_t attribute_handle = 0x4321;
     std::array<uint8_t, 1> attribute_value = {0xFA};
-
-    // Built from the preceding values in little endian order.
-    std::array<uint8_t, 12> expected_gatt_notify_packet = {
-        0xCB, 0x0A, 0x08, 0x00, 0x04, 0x00, 0x04, 0x00, 0x1B, 0x21, 0x43, 0xFA};
+    AttNotifyWithStorage att;
   } capture;
+
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      capture.att,
+      SetupAttNotify(/*connection_handle=*/capture.handle,
+                     /*attribute_handle=*/capture.attribute_handle,
+                     capture.attribute_value));
 
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
@@ -63,12 +130,12 @@ TEST_F(GattNotifyTest, Send1ByteAttributeUsingSendGattNotifyMultiBuf) {
       [&capture](H4PacketWithH4&& packet) {
         capture.sends_called++;
         EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::ACL_DATA);
-        EXPECT_EQ(packet.GetHciSpan().size(),
-                  capture.expected_gatt_notify_packet.size());
-        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
-                               packet.GetHciSpan().end(),
-                               capture.expected_gatt_notify_packet.begin(),
-                               capture.expected_gatt_notify_packet.end()));
+        EXPECT_EQ(packet.GetH4Span().size(),
+                  capture.att.bframe.acl.h4_span().size());
+        EXPECT_TRUE(std::equal(packet.GetH4Span().begin(),
+                               packet.GetH4Span().end(),
+                               capture.att.bframe.acl.h4_span().begin(),
+                               capture.att.bframe.acl.h4_span().end()));
         PW_TEST_ASSERT_OK_AND_ASSIGN(
             auto acl,
             MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
@@ -129,11 +196,14 @@ TEST_F(GattNotifyTest, Send1ByteAttributeUsingSendGattNotifySpan) {
     uint8_t attribute_opcode = 0x1B;
     uint16_t attribute_handle = 0x4321;
     std::array<uint8_t, 1> attribute_value = {0xFA};
-
-    // Built from the preceding values in little endian order.
-    std::array<uint8_t, 12> expected_gatt_notify_packet = {
-        0xCB, 0x0A, 0x08, 0x00, 0x04, 0x00, 0x04, 0x00, 0x1B, 0x21, 0x43, 0xFA};
+    AttNotifyWithStorage att;
   } capture;
+
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      capture.att,
+      SetupAttNotify(/*connection_handle=*/capture.handle,
+                     /*attribute_handle=*/capture.attribute_handle,
+                     capture.attribute_value));
 
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
@@ -142,12 +212,12 @@ TEST_F(GattNotifyTest, Send1ByteAttributeUsingSendGattNotifySpan) {
       [&capture](H4PacketWithH4&& packet) {
         capture.sends_called++;
         EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::ACL_DATA);
-        EXPECT_EQ(packet.GetHciSpan().size(),
-                  capture.expected_gatt_notify_packet.size());
-        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
-                               packet.GetHciSpan().end(),
-                               capture.expected_gatt_notify_packet.begin(),
-                               capture.expected_gatt_notify_packet.end()));
+        EXPECT_EQ(packet.GetH4Span().size(),
+                  capture.att.bframe.acl.h4_span().size());
+        EXPECT_TRUE(std::equal(packet.GetH4Span().begin(),
+                               packet.GetH4Span().end(),
+                               capture.att.bframe.acl.h4_span().begin(),
+                               capture.att.bframe.acl.h4_span().end()));
         PW_TEST_ASSERT_OK_AND_ASSIGN(
             auto acl,
             MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
@@ -221,11 +291,14 @@ TEST_F(GattNotifyTest, Send1ByteAttribute) {
     uint8_t attribute_opcode = 0x1B;
     uint16_t attribute_handle = 0x4321;
     std::array<uint8_t, 1> attribute_value = {0xFA};
-
-    // Built from the preceding values in little endian order.
-    std::array<uint8_t, 12> expected_gatt_notify_packet = {
-        0xCB, 0x0A, 0x08, 0x00, 0x04, 0x00, 0x04, 0x00, 0x1B, 0x21, 0x43, 0xFA};
+    AttNotifyWithStorage att;
   } capture;
+
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      capture.att,
+      SetupAttNotify(/*connection_handle=*/capture.handle,
+                     /*attribute_handle=*/capture.attribute_handle,
+                     capture.attribute_value));
 
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
@@ -234,12 +307,12 @@ TEST_F(GattNotifyTest, Send1ByteAttribute) {
       [&capture](H4PacketWithH4&& packet) {
         capture.sends_called++;
         EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::ACL_DATA);
-        EXPECT_EQ(packet.GetHciSpan().size(),
-                  capture.expected_gatt_notify_packet.size());
-        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
-                               packet.GetHciSpan().end(),
-                               capture.expected_gatt_notify_packet.begin(),
-                               capture.expected_gatt_notify_packet.end()));
+        EXPECT_EQ(packet.GetH4Span().size(),
+                  capture.att.bframe.acl.h4_span().size());
+        EXPECT_TRUE(std::equal(packet.GetH4Span().begin(),
+                               packet.GetH4Span().end(),
+                               capture.att.bframe.acl.h4_span().begin(),
+                               capture.att.bframe.acl.h4_span().end()));
         PW_TEST_ASSERT_OK_AND_ASSIGN(
             auto acl,
             MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
@@ -298,22 +371,14 @@ TEST_F(GattNotifyTest, Send2ByteAttribute) {
     const uint8_t attribute_opcode = 0x1B;
     const uint16_t attribute_handle = 0x1234;
     const std::array<uint8_t, 2> attribute_value = {0xAB, 0xCD};
-
-    // Built from the preceding values in little endian order.
-    const std::array<uint8_t, 13> expected_gatt_notify_packet = {0xFF,
-                                                                 0x0E,
-                                                                 0x09,
-                                                                 0x00,
-                                                                 0x05,
-                                                                 0x00,
-                                                                 0x04,
-                                                                 0x00,
-                                                                 0x1B,
-                                                                 0x34,
-                                                                 0x12,
-                                                                 0xAB,
-                                                                 0XCD};
+    AttNotifyWithStorage att;
   } capture;
+
+  PW_TEST_ASSERT_OK_AND_ASSIGN(
+      capture.att,
+      SetupAttNotify(/*connection_handle=*/capture.handle,
+                     /*attribute_handle=*/capture.attribute_handle,
+                     capture.attribute_value));
 
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
@@ -322,12 +387,12 @@ TEST_F(GattNotifyTest, Send2ByteAttribute) {
       [&capture](H4PacketWithH4&& packet) {
         ++capture.sends_called;
         EXPECT_EQ(packet.GetH4Type(), emboss::H4PacketType::ACL_DATA);
-        EXPECT_EQ(packet.GetHciSpan().size(),
-                  capture.expected_gatt_notify_packet.size());
-        EXPECT_TRUE(std::equal(packet.GetHciSpan().begin(),
-                               packet.GetHciSpan().end(),
-                               capture.expected_gatt_notify_packet.begin(),
-                               capture.expected_gatt_notify_packet.end()));
+        EXPECT_EQ(packet.GetH4Span().size(),
+                  capture.att.bframe.acl.h4_span().size());
+        EXPECT_TRUE(std::equal(packet.GetH4Span().begin(),
+                               packet.GetH4Span().end(),
+                               capture.att.bframe.acl.h4_span().begin(),
+                               capture.att.bframe.acl.h4_span().end()));
         PW_TEST_ASSERT_OK_AND_ASSIGN(
             auto acl,
             MakeEmbossView<emboss::AclDataFrameView>(packet.GetHciSpan()));
