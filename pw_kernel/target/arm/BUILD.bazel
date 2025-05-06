@@ -64,6 +64,7 @@ rust_binary(
     edition = "2021",
     tags = ["kernel"],
     target_compatible_with = TARGET_COMPATIBLE_WITH,
+    visibility = ["//visibility:public"],
     deps = COMMON_DEPS,
 )
 

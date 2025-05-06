@@ -1,0 +1,53 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
+
+package(default_visibility = ["//visibility:public"])
+
+CORTEX_M_DEPS = [
+    "@rust_crates//:cortex-m",
+    "@rust_crates//:cortex-m-rt",
+]
+
+rust_binary(
+    name = "two",
+    srcs = [
+        "main.rs",
+    ],
+    crate_features = select({
+        "//pw_build/constraints/arm:cortex-m33": ["arch_arm_cortex_m"],
+        "//conditions:default": [],
+    }),
+    edition = "2021",
+    tags = ["kernel"],
+    target_compatible_with = select({
+        "//pw_build/constraints/arm:cortex-m33": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        ":app_linker_script",
+        "//pw_tokenizer/rust:pw_tokenizer",
+    ] + select({
+        "@pigweed//pw_build/constraints/arm:cortex-m33": CORTEX_M_DEPS,
+        "//conditions:default": [],
+    }),
+)
+
+# TODO: generate linker scripts
+pw_linker_script(
+    name = "app_linker_script",
+    linker_script = "mps2-an505.ld",
+    tags = ["kernel"],
+)

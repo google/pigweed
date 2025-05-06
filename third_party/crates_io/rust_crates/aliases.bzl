@@ -168,6 +168,17 @@ def make_crate_aliases(name):
         visibility = ["//visibility:public"],
     )
     native.alias(
+        name = "object",
+        target_compatible_with = select({
+            ":std": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        actual = select({
+            ":std": "@crates_std//:object",
+        }),
+        visibility = ["//visibility:public"],
+    )
+    native.alias(
         name = "panic-halt",
         target_compatible_with = select({
             ":no_std": [],

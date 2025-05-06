@@ -18,6 +18,19 @@ load("@rules_rust//rust:defs.bzl", "rust_binary")
 load("//pw_build:python.bzl", "pw_py_binary")
 
 rust_binary(
+    name = "system_assembler",
+    srcs = ["system_assembler.rs"],
+    tags = ["kernel"],
+    target_compatible_with = incompatible_with_mcu(),
+    visibility = ["//visibility:public"],
+    deps = [
+        "@rust_crates//:anyhow",
+        "@rust_crates//:clap",
+        "@rust_crates//:object",
+    ],
+)
+
+rust_binary(
     name = "presubmit",
     srcs = ["presubmit.rs"],
     tags = ["kernel"],
