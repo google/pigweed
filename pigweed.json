@@ -191,7 +191,7 @@
           ],
           [
             "test",
-            "--//pw_rpc:config_override=//pw_grpc:pw_rpc_config",
+            "--platforms=//pw_grpc:test_platform",
             "//pw_grpc/..."
           ]
         ],

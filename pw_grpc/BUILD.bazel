@@ -18,6 +18,7 @@ load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "boolean_constraint_value", "incompatible_with_mcu")
+load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load(
     "//pw_protobuf_compiler:pw_proto_library.bzl",
     "pw_proto_filegroup",
@@ -67,10 +68,7 @@ cc_library(
     implementation_deps = ["//pw_assert:check"],
     local_defines = log_defines,
     strip_include_prefix = "public",
-    target_compatible_with = select({
-        ":pw_rpc_config_setting": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
+    target_compatible_with = [":enabled"],
     deps = [
         ":hpack",
         ":send_queue",
@@ -136,10 +134,7 @@ cc_library(
     hdrs = ["public/pw_grpc/pw_rpc_handler.h"],
     local_defines = log_defines,
     strip_include_prefix = "public",
-    target_compatible_with = select({
-        ":pw_rpc_config_setting": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
+    target_compatible_with = [":enabled"],
     deps = [
         ":connection",
         ":grpc_channel_output",
@@ -185,10 +180,6 @@ pw_cc_test(
 cc_binary(
     name = "test_pw_rpc_server",
     srcs = ["test_pw_rpc_server.cc"],
-    target_compatible_with = select({
-        ":pw_rpc_config_setting": [],
-        "//conditions:default": ["@platforms//:incompatible"],
-    }),
     deps = [
         ":connection",
         ":echo_pwpb_rpc",
@@ -237,17 +228,20 @@ pwpb_rpc_proto_library(
     deps = [":echo_proto"],
 )
 
-config_setting(
-    name = "pw_rpc_config_setting",
-    flag_values = {
-        "//pw_rpc:config_override": ":pw_rpc_config",
-    },
+platform(
+    name = "test_platform",
+    constraint_values = [":enabled"],
+    flags = flags_from_dict({
+        "@pigweed//pw_rpc:config_override": "@pigweed//pw_grpc:pw_rpc_config",
+    }),
+    parents = ["@local_config_platform//:host"],
+    visibility = ["//visibility:private"],
 )
 
 # This test requires a special configuration. It's run in CI, and can be
 # run manually via:
 #
-#   bazel test --//pw_rpc:config_override=//pw_grpc:pw_rpc_config //pw_grpc:integration_test
+#   bazel test --platforms=//pw_grpc:test_platform  //pw_grpc:integration_test
 #
 # deps.bzl contains the bazel repositories used in deps for this integration test.
 # It is generated from go.mod using gazelle:
