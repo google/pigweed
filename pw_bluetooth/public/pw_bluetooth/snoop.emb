@@ -14,10 +14,9 @@
 
 [$default byte_order: "BigEndian"]
 [(cpp) namespace: "pw::bluetooth::emboss::snoop_log"]
-
-
 # Struct descriptions taken from:
 # https://fte.com/webhelpii/bpa600/Content/Technical_Information/BT_Snoop_File_Format.htm
+
 
 enum DataLinkType:
   [maximum_bits: 32]

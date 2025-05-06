@@ -29,9 +29,9 @@ enum ObjectType:
   MPEG_4_AAC_LC        = 0b0100000
   MPEG_4_AAC_LTP       = 0b0010000
   MPEG_4_AAC_SCALABLE  = 0b0001000
-  MPEG_4_HE_AAC        = 0b0000100 # inclusive-language: ignore
-  MPEG_4_HE_AAC_V2     = 0b0000010 # inclusive-language: ignore
-  MPEG_4_HE_AAC_ELD_V2 = 0b0000001 # inclusive-language: ignore
+  MPEG_4_HE_AAC        = 0b0000100  # inclusive-language: ignore
+  MPEG_4_HE_AAC_V2     = 0b0000010  # inclusive-language: ignore
+  MPEG_4_HE_AAC_ELD_V2 = 0b0000001  # inclusive-language: ignore
 
 
 enum Drc:

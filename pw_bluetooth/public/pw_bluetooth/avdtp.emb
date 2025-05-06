@@ -430,7 +430,6 @@ struct StreamSuspendReject:
 
   $next [+1]         ErrorCode        error_code
 
-
 # Cf 8.16 Abort
 
 
