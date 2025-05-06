@@ -19,8 +19,6 @@ import("$dir_pw_build/exec.gni")
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
 
-# TODO(amontanez): This can go away if the GN build can be upstreamed to the
-# Pi Pico repo.
 _CWD = "${PICO_SRC_DIR}/src/rp2_common/boot_stage2"
 
 config("public_include_dirs") {
