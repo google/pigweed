@@ -54,7 +54,6 @@ from pw_ide.settings import (
 )
 
 from pw_ide.vscode import (
-    build_extension as build_vscode_extension,
     VscSettingsManager,
     VscSettingsType,
 )
@@ -152,7 +151,6 @@ def cmd_setup(
 def cmd_vscode(
     include: list[VscSettingsType] | None = None,
     exclude: list[VscSettingsType] | None = None,
-    build_extension: bool = False,
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
@@ -211,16 +209,6 @@ def cmd_vscode(
     Likewise, it can be enabled by setting that value to true. It is enabled by
     default.
     """
-    if build_extension:
-        reporter.info('Building the Visual Studio Code extension')
-
-        try:
-            build_vscode_extension(Path(env.PW_ROOT))
-        except subprocess.CalledProcessError:
-            reporter.err("Failed! See output for more info.")
-        else:
-            reporter.ok('Built successfully!')
-
     if not pw_ide_settings.editor_enabled('vscode'):
         reporter.wrn(
             'Visual Studio Code support is disabled in settings! If this is '

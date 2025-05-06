@@ -252,6 +252,7 @@
     "postPackage": "tsx scripts/prepostPackage.mts --post",
     "package": "npm run clean && npm run build && npm run bundle && npm run prePackage && npm run doPackage && npm run postPackage",
     "packagePrerelease": "npm run clean && npm run build && npm run bundle && npm run prePackage && npm run doPackagePrerelease && npm run postPackage",
+    "vsceLogin": "vsce login pigweed",
     "test:unit": "npm run clean && npm run build && vscode-test --label unitTests",
     "test:e2e": "npm run clean && npm run build && npm run build:e2e && vscode-test --label e2eTests",
     "test:all": "npm run clean && npm run build && vscode-test"

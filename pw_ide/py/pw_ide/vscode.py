@@ -64,8 +64,6 @@ from __future__ import annotations
 # support Python 3.8 anymore.
 from enum import Enum
 from pathlib import Path
-import shutil
-import subprocess
 from typing import Any, Callable, OrderedDict
 
 from pw_cli.env import pigweed_environment
@@ -423,31 +421,3 @@ class VscSettingsManagerNoSideEffects(EditorSettingsManager[VscSettingsType]):
         VscSettingsType.EXTENSIONS: _default_extensions,
         VscSettingsType.LAUNCH: _default_launch,
     }
-
-
-def build_extension(pw_root: Path):
-    """Build the VS Code extension."""
-
-    license_path = pw_root / 'LICENSE'
-    icon_path = pw_root.parent / 'icon.png'
-
-    vsc_ext_path = pw_root / 'pw_ide' / 'ts' / 'pigweed-vscode'
-    out_path = vsc_ext_path / 'out'
-    dist_path = vsc_ext_path / 'dist'
-    temp_license_path = vsc_ext_path / 'LICENSE'
-    temp_icon_path = vsc_ext_path / 'icon.png'
-
-    shutil.rmtree(out_path, ignore_errors=True)
-    shutil.rmtree(dist_path, ignore_errors=True)
-    shutil.copy(license_path, temp_license_path)
-    shutil.copy(icon_path, temp_icon_path)
-
-    try:
-        subprocess.run(['npm', 'install'], check=True, cwd=vsc_ext_path)
-        subprocess.run(['npm', 'run', 'compile'], check=True, cwd=vsc_ext_path)
-        subprocess.run(['vsce', 'package'], check=True, cwd=vsc_ext_path)
-    except subprocess.CalledProcessError as e:
-        raise e
-    finally:
-        temp_license_path.unlink()
-        temp_icon_path.unlink()
