@@ -458,10 +458,9 @@ class Detokenizer:
         token = int(token, int(base))
         entries = self.database.domains[domain][token]
 
+        # TODO: b/401878237 - report collisions in the decoded output
         if len(entries) == 1:
             return str(entries[0]).encode()
-
-        # TODO(gschen): improve token collision reporting
 
         return original
 
@@ -481,7 +480,8 @@ class Detokenizer:
                 base64.b64decode(encoded_token, validate=True), recursion=0
             )
 
-            if detokenized_string.matches():
+            # TODO: b/401878237 - report collisions in the decoded output
+            if detokenized_string.ok():
                 return str(detokenized_string).encode()
 
         except binascii.Error:
