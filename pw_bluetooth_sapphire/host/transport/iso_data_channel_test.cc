@@ -587,4 +587,128 @@ TEST_F(IsoDataChannelTests, SendDataBeforeRegistering) {
   iso_data_channel()->UnregisterConnection(kIsoHandle);
 }
 
+TEST_F(IsoDataChannelTests,
+       ClearControllerPacketCountIncreasesAvailableBuffersAndSendsPacket) {
+  constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x0001;
+  IsoMockConnectionInterface connection1(*iso_data_channel());
+  iso_data_channel()->RegisterConnection(kIsoHandle1, connection1.GetWeakPtr());
+  constexpr hci_spec::ConnectionHandle kIsoHandle2 = 0x0002;
+  IsoMockConnectionInterface connection2(*iso_data_channel());
+  iso_data_channel()->RegisterConnection(kIsoHandle2, connection2.GetWeakPtr());
+
+  // Fill controller buffer with connection1 packets.
+  for (size_t num_sent = 0; num_sent < kDefaultMaxNumPackets; ++num_sent) {
+    DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle1, /*seq=*/num_sent);
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    connection1.SendData(std::move(packet));
+  }
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Queue 1 packet in connection2.
+  DynamicByteBuffer packet =
+      MakeIsoPacket(kIsoHandle2, /*seq=*/kDefaultMaxNumPackets);
+  EXPECT_ISO_PACKET_OUT(test_device(), packet);
+  connection2.SendData(std::move(packet));
+  RunUntilIdle();
+  EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+
+  iso_data_channel()->UnregisterConnection(kIsoHandle1);
+  RunUntilIdle();
+  EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Clearing connection1 pending packet count should allow connection2 packet
+  // to be sent.
+  iso_data_channel()->ClearControllerPacketCount(kIsoHandle1);
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+}
+
+TEST_F(IsoDataChannelTests, ClearControllerPacketCountUnknownHandleIgnored) {
+  iso_data_channel()->ClearControllerPacketCount(0x0009);
+}
+
+TEST_F(IsoDataChannelTests,
+       NocpAfterUnregisterAndBeforeClearControllerPacketCount) {
+  constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x0001;
+  IsoMockConnectionInterface connection1(*iso_data_channel());
+  iso_data_channel()->RegisterConnection(kIsoHandle1, connection1.GetWeakPtr());
+  constexpr hci_spec::ConnectionHandle kIsoHandle2 = 0x0002;
+  IsoMockConnectionInterface connection2(*iso_data_channel());
+  iso_data_channel()->RegisterConnection(kIsoHandle2, connection2.GetWeakPtr());
+
+  // Fill controller buffer with connection1 packets.
+  for (size_t num_sent = 0; num_sent < kDefaultMaxNumPackets; ++num_sent) {
+    DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle1, /*seq=*/num_sent);
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    connection1.SendData(std::move(packet));
+  }
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Queue 1 packet in connection2.
+  DynamicByteBuffer packet =
+      MakeIsoPacket(kIsoHandle2, /*seq=*/kDefaultMaxNumPackets);
+  EXPECT_ISO_PACKET_OUT(test_device(), packet);
+  connection2.SendData(std::move(packet));
+  RunUntilIdle();
+  EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+
+  iso_data_channel()->UnregisterConnection(kIsoHandle1);
+  RunUntilIdle();
+  EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacket(kIsoHandle1, 1));
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  iso_data_channel()->ClearControllerPacketCount(kIsoHandle1);
+  RunUntilIdle();
+}
+
+TEST_F(IsoDataChannelTests, NocpExceedsPendingPacketCount) {
+  constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x0001;
+  IsoMockConnectionInterface connection1(*iso_data_channel());
+  iso_data_channel()->RegisterConnection(kIsoHandle1, connection1.GetWeakPtr());
+
+  // Fill controller buffer with connection1 packets.
+  size_t num_sent = 0;
+  for (; num_sent < kDefaultMaxNumPackets; ++num_sent) {
+    DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle1, /*seq=*/num_sent);
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    connection1.SendData(std::move(packet));
+  }
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Queue a full buffer's worth of packets.
+  for (; num_sent < kDefaultMaxNumPackets * 2; ++num_sent) {
+    DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle1, /*seq=*/num_sent);
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    connection1.SendData(std::move(packet));
+  }
+  RunUntilIdle();
+  EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Receive NOCP with invalid number of packets.
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacket(kIsoHandle1,
+                                              kDefaultMaxNumPackets + 1));
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Next frame should not be sent until an additional NOCP.
+  DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle1, /*seq=*/num_sent);
+  EXPECT_ISO_PACKET_OUT(test_device(), packet);
+  connection1.SendData(std::move(packet));
+  RunUntilIdle();
+  EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacket(kIsoHandle1, 1));
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+}
+
 }  // namespace bt::hci

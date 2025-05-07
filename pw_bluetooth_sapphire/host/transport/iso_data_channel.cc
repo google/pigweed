@@ -39,6 +39,7 @@ class IsoDataChannelImpl final : public IsoDataChannel {
                           WeakPtr<ConnectionInterface> connection) override;
   bool UnregisterConnection(hci_spec::ConnectionHandle handle) override;
   void TrySendPackets() override;
+  void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override;
   const DataBufferInfo& buffer_info() const override { return buffer_info_; }
 
  private:
@@ -64,6 +65,12 @@ class IsoDataChannelImpl final : public IsoDataChannel {
   // Stores connections registered by RegisterConnection()
   ConnectionMap connections_;
   ConnectionMap::iterator next_connection_iter_ = connections_.end();
+
+  // Stores per-connection information of unacknowledged packets sent to the
+  // controller. Entries are updated/removed on the HCI Number Of Completed
+  // Packets event and when ClearControllerPacketCount() is called (the
+  // controller does not acknowledge packets of disconnected links).
+  std::unordered_map<hci_spec::ConnectionHandle, size_t> pending_packets_;
 
   // Event handler ID for the NumberOfCompletedPackets event
   CommandChannel::EventHandlerId num_completed_packets_event_handler_id_ = 0;
@@ -151,6 +158,31 @@ bool IsoDataChannelImpl::UnregisterConnection(
   return true;
 }
 
+void IsoDataChannelImpl::ClearControllerPacketCount(
+    hci_spec::ConnectionHandle handle) {
+  PW_CHECK(connections_.find(handle) == connections_.end());
+
+  bt_log(INFO, "hci", "clearing pending packets (handle: %#.4x)", handle);
+
+  auto pending_packets_iter = pending_packets_.find(handle);
+  if (pending_packets_iter == pending_packets_.end()) {
+    bt_log(DEBUG,
+           "hci",
+           "no pending packets on connection (handle: %#.4x)",
+           handle);
+    return;
+  }
+
+  // Add pending packets to available buffers because controller does
+  // not send HCI Number of Completed Packets events for disconnected
+  // connections.
+  available_buffers_ += pending_packets_iter->second;
+  pending_packets_.erase(pending_packets_iter);
+
+  // Try sending the next batch of packets in case buffer space opened up.
+  TrySendPackets();
+}
+
 void IsoDataChannelImpl::TrySendPackets() {
   if (connections_.empty()) {
     return;
@@ -182,6 +214,9 @@ void IsoDataChannelImpl::TrySendPackets() {
     hci_->SendIsoData(packet->view().subspan());
 
     --available_buffers_;
+    auto [iter, _] =
+        pending_packets_.try_emplace(next_connection_iter_->first, 0);
+    iter->second++;
   }
 }
 
@@ -218,7 +253,8 @@ IsoDataChannelImpl::OnNumberOfCompletedPacketsEvent(const EventPacket& event) {
     uint16_t handle = view.nocp_data()[i].connection_handle().Read();
     uint16_t num_completed_packets =
         view.nocp_data()[i].num_completed_packets().Read();
-    if (connections_.count(handle) == 0) {
+    auto pending_packets_iter = pending_packets_.find(handle);
+    if (pending_packets_iter == pending_packets_.end()) {
       // This is expected if the completed packet is an ACL or SCO packet.
       bt_log(TRACE,
              "hci",
@@ -229,7 +265,32 @@ IsoDataChannelImpl::OnNumberOfCompletedPacketsEvent(const EventPacket& event) {
       continue;
     }
 
+    if (pending_packets_iter->second < num_completed_packets) {
+      // TODO(fxbug.dev/42102535): This can be caused by the controller
+      // reusing the connection handle of a connection that just disconnected.
+      // We should somehow avoid sending the controller packets for a connection
+      // that has disconnected. IsoDataChannel already dequeues such packets,
+      // but this is insufficient: packets can be queued in the channel to the
+      // transport driver, and possibly in the transport driver or USB/UART
+      // drivers.
+      bt_log(ERROR,
+             "hci",
+             "ISO NOCP count mismatch! (handle: %#.4x, expected: %zu, "
+             "actual : %u)",
+             handle,
+             pending_packets_iter->second,
+             num_completed_packets);
+      // This should eventually result in convergence with the correct pending
+      // packet count. If it undercounts the true number of pending packets,
+      // this branch will be reached again when the controller sends an updated
+      // Number of Completed Packets event. However, IsoDataChannel may overflow
+      // the controller's buffer in the meantime!
+      num_completed_packets =
+          static_cast<uint16_t>(pending_packets_iter->second);
+    }
+
     available_buffers_ += num_completed_packets;
+    pending_packets_iter->second -= num_completed_packets;
   }
 
   TrySendPackets();

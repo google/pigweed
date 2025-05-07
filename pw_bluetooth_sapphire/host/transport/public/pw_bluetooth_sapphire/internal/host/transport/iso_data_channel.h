@@ -65,6 +65,15 @@ class IsoDataChannel {
   // Called by IsoStream when a packet is available
   virtual void TrySendPackets() = 0;
 
+  // Resets controller packet count for |handle| so that controller buffer
+  // credits can be reused. This must be called on the
+  // HCI_Disconnection_Complete event to notify IsoDataChannel that packets in
+  // the controller's buffer for |handle| have been flushed. See Core Spec
+  // v6.0, Vol 4, Part E, Secion 4.3. This must be called after
+  // |UnregisterConnection|.
+  virtual void ClearControllerPacketCount(
+      hci_spec::ConnectionHandle handle) = 0;
+
   // Get the buffer info for the data channel.
   virtual const DataBufferInfo& buffer_info() const = 0;
 
