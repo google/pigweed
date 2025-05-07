@@ -34,17 +34,16 @@ const DataBufferInfo kDefaultIsoBufferInfo(kDefaultMaxDataLength,
 
 DynamicByteBuffer MakeIsoPacket(hci_spec::ConnectionHandle handle,
                                 uint16_t seq) {
-  std::unique_ptr<std::vector<uint8_t>> blob =
-      testing::GenDataBlob(kTestSduSize, seq);
+  std::vector<uint8_t> sdu = testing::GenDataBlob(kTestSduSize, seq);
   return testing::IsoDataPacket(
       /*connection_handle = */ handle,
       /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
       /*time_stamp = */ 0x00000000,
       /*packet_sequence_number = */ seq,
-      /*iso_sdu_length = */ blob->size(),
+      /*iso_sdu_length = */ sdu.size(),
       /*status_flag = */
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-      /*sdu_data = */ pw::span(*blob));
+      /*sdu_data = */ sdu);
 }
 
 using TestBase = testing::FakeDispatcherControllerTest<testing::MockController>;
@@ -175,7 +174,7 @@ TEST_F(IsoDataChannelTests, DataDemuxification) {
     size_t connection_num = test_vector[test_num].connection_num;
     ASSERT_TRUE(connection_num < kNumTotalInterfaces);
 
-    std::unique_ptr<std::vector<uint8_t>> sdu_data =
+    std::vector<uint8_t> sdu =
         testing::GenDataBlob(sdu_fragment_size, /*starting_value=*/test_num);
     DynamicByteBuffer frame = testing::IsoDataPacket(
         /*connection_handle=*/connection_handles[connection_num],
@@ -184,7 +183,7 @@ TEST_F(IsoDataChannelTests, DataDemuxification) {
         /*packet_sequence_number=*/123,
         /*iso_sdu_length=*/sdu_fragment_size,
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-        *sdu_data);
+        sdu);
     pw::span<const std::byte> frame_as_span = frame.subspan();
 
     if (connection_num < kNumRegisteredInterfaces) {
@@ -208,8 +207,7 @@ TEST_F(IsoDataChannelTests, SendData) {
   IsoMockConnectionInterface connection(*iso_data_channel());
   iso_data_channel()->RegisterConnection(kIsoHandle1, connection.GetWeakPtr());
 
-  std::unique_ptr<std::vector<uint8_t>> blob = testing::GenDataBlob(9, 0);
-  pw::span blob_span(blob->data(), blob->size());
+  std::vector<uint8_t> sdu = testing::GenDataBlob(9, 0);
 
   constexpr hci_spec::ConnectionHandle kIsoHandle = 0x123;
   DynamicByteBuffer packet = testing::IsoDataPacket(
@@ -217,10 +215,10 @@ TEST_F(IsoDataChannelTests, SendData) {
       /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
       /*timestamp = */ 0x00000000,
       /*sequence_number = */ 0x0000,
-      /*sdu_length = */ blob_span.size(),
+      /*iso_sdu_length = */ sdu.size(),
       /*status_flag = */
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-      /*sdu_data = */ blob_span);
+      sdu);
 
   EXPECT_ISO_PACKET_OUT(test_device(), packet);
   connection.SendData(std::move(packet));
@@ -236,16 +234,16 @@ TEST_F(IsoDataChannelTests, SendDataExhaustBuffers) {
   iso_data_channel()->RegisterConnection(kIsoHandle, connection.GetWeakPtr());
 
   for (size_t i = 0; i < kDefaultMaxNumPackets; ++i) {
-    std::unique_ptr<std::vector<uint8_t>> blob = testing::GenDataBlob(10, i);
+    std::vector<uint8_t> sdu = testing::GenDataBlob(10, i);
     DynamicByteBuffer packet = testing::IsoDataPacket(
         /*handle = */ kIsoHandle,
         /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
         /*timestamp = */ 0x00000000,
         /*sequence_number = */ i,
-        /*sdu_length = */ blob->size(),
+        /*iso_sdu_length = */ sdu.size(),
         /*status_flag = */
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+        sdu);
     EXPECT_ISO_PACKET_OUT(test_device(), packet);
     connection.SendData(std::move(packet));
   }
@@ -274,17 +272,16 @@ TEST_F(IsoDataChannelTests, SendDataExceedBuffers) {
   size_t num_expectations = 0;
 
   for (; num_sent < kNumPackets; ++num_sent) {
-    std::unique_ptr<std::vector<uint8_t>> blob =
-        testing::GenDataBlob(kSduSize, num_sent);
+    std::vector<uint8_t> sdu = testing::GenDataBlob(kSduSize, num_sent);
     DynamicByteBuffer packet = testing::IsoDataPacket(
         /*handle = */ kIsoHandle,
         /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
         /*timestamp = */ 0x00000000,
         /*sequence_number = */ num_sent,
-        /*sdu_length = */ blob->size(),
+        /*iso_sdu_length = */ sdu.size(),
         /*status_flag = */
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+        /*sdu_data = */ sdu);
     if (num_sent < kDefaultMaxNumPackets) {
       ++num_expectations;
       EXPECT_ISO_PACKET_OUT(test_device(), packet);
@@ -300,17 +297,16 @@ TEST_F(IsoDataChannelTests, SendDataExceedBuffers) {
   EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
 
   for (size_t i = 0; i < kNumExtraPacketsWithValidCompletedEvent; ++i) {
-    std::unique_ptr<std::vector<uint8_t>> blob =
-        testing::GenDataBlob(kSduSize, num_expectations);
+    std::vector<uint8_t> sdu = testing::GenDataBlob(kSduSize, num_expectations);
     DynamicByteBuffer packet = testing::IsoDataPacket(
         /*handle = */ kIsoHandle,
         /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
         /*timestamp = */ 0x00000000,
         /*sequence_number = */ num_expectations,
-        /*sdu_length = */ blob->size(),
+        /*iso_sdu_length = */ sdu.size(),
         /*status_flag = */
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+        sdu);
     EXPECT_ISO_PACKET_OUT(test_device(), packet);
     ++num_expectations;
   }
@@ -339,17 +335,16 @@ TEST_F(IsoDataChannelTests, SendDataExceedBuffers) {
   // Repeat the above with a Number_Of_Completed_Packets event that has a count
   // larger than expected, to ensure it isn't ignored.
   for (; num_expectations < kNumPackets; ++num_expectations) {
-    std::unique_ptr<std::vector<uint8_t>> blob =
-        testing::GenDataBlob(kSduSize, num_expectations);
+    std::vector<uint8_t> sdu = testing::GenDataBlob(kSduSize, num_expectations);
     DynamicByteBuffer packet = testing::IsoDataPacket(
         /*handle = */ kIsoHandle,
         /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
         /*timestamp = */ 0x00000000,
         /*sequence_number = */ num_expectations,
-        /*sdu_length = */ blob->size(),
+        /*iso_sdu_length = */ sdu.size(),
         /*status_flag = */
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+        sdu);
     EXPECT_ISO_PACKET_OUT(test_device(), packet);
   }
 
@@ -383,17 +378,16 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
   {
     // Create a packet that is as large as possible and ensure it can be sent.
     // With all possible optional fields.
-    std::unique_ptr<std::vector<uint8_t>> blob =
-        testing::GenDataBlob(kMaxSizeWithOptional, 100);
+    std::vector<uint8_t> sdu = testing::GenDataBlob(kMaxSizeWithOptional, 100);
     DynamicByteBuffer packet = testing::IsoDataPacket(
         /*handle = */ kIsoHandle,
         /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
         /*timestamp = */ 0x12345678,
         /*sequence_number = */ 0,
-        /*sdu_length = */ blob->size(),
+        /*iso_sdu_length = */ sdu.size(),
         /*status_flag = */
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+        sdu);
     EXPECT_ISO_PACKET_OUT(test_device(), packet);
     connection.SendData(std::move(packet));
   }
@@ -401,17 +395,16 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
   {
     // Create a packet that is as large as possible and ensure it can be sent.
     // Without timestamp.
-    std::unique_ptr<std::vector<uint8_t>> blob =
-        testing::GenDataBlob(kMaxSizeNoTimestamp, 107);
+    std::vector<uint8_t> sdu = testing::GenDataBlob(kMaxSizeNoTimestamp, 107);
     DynamicByteBuffer packet = testing::IsoDataPacket(
         /*handle = */ kIsoHandle,
         /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
         /*timestamp = */ std::nullopt,
         /*sequence_number = */ 0,
-        /*sdu_length = */ blob->size(),
+        /*iso_sdu_length = */ sdu.size(),
         /*status_flag = */
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+        sdu);
     EXPECT_ISO_PACKET_OUT(test_device(), packet);
     connection.SendData(std::move(packet));
   }
@@ -419,16 +412,15 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
   {
     // Create a packet that is as large as possible and ensure it can be sent.
     // Without any optional field (non-first/complete fragment).
-    std::unique_ptr<std::vector<uint8_t>> blob =
-        testing::GenDataBlob(kMaxSizeNoOptional, 106);
+    std::vector<uint8_t> sdu = testing::GenDataBlob(kMaxSizeNoOptional, 106);
     DynamicByteBuffer packet = testing::IsoDataPacket(
         /*handle = */ kIsoHandle,
         /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::LAST_FRAGMENT,
         /*timestamp = */ std::nullopt,
         /*sequence_number = */ std::nullopt,
-        /*sdu_length = */ std::nullopt,
+        /*iso_sdu_length = */ std::nullopt,
         /*status_flag = */ std::nullopt,
-        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+        sdu);
     EXPECT_ISO_PACKET_OUT(test_device(), packet);
     connection.SendData(std::move(packet));
   }
@@ -436,17 +428,17 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
   {
     // Create a packet that is one byte too large.
     // With all possible optional fields.
-    std::unique_ptr<std::vector<uint8_t>> blob =
+    std::vector<uint8_t> sdu =
         testing::GenDataBlob(kMaxSizeWithOptional + 1, 54);
     DynamicByteBuffer packet = testing::IsoDataPacket(
         /*handle = */ kIsoHandle,
         /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
         /*timestamp = */ 0x12345678,
         /*sequence_number = */ 0,
-        /*sdu_length = */ blob->size(),
+        /*iso_sdu_length = */ sdu.size(),
         /*status_flag = */
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+        sdu);
     EXPECT_DEATH_IF_SUPPORTED(connection.SendData(std::move(packet)),
                               "Unfragmented packet");
   }
@@ -454,17 +446,17 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
   {
     // Create a packet that is one byte too large.
     // Without timestamp.
-    std::unique_ptr<std::vector<uint8_t>> blob =
+    std::vector<uint8_t> sdu =
         testing::GenDataBlob(kMaxSizeNoTimestamp + 1, 55);
     DynamicByteBuffer packet = testing::IsoDataPacket(
         /*handle = */ kIsoHandle,
         /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
         /*timestamp = */ std::nullopt,
         /*sequence_number = */ 0,
-        /*sdu_length = */ blob->size(),
+        /*iso_sdu_length = */ sdu.size(),
         /*status_flag = */
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+        sdu);
     EXPECT_DEATH_IF_SUPPORTED(connection.SendData(std::move(packet)),
                               "Unfragmented packet");
   }
@@ -472,16 +464,15 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
   {
     // Create a packet that is one byte too large.
     // Without any optional field (non-first/complete fragment).
-    std::unique_ptr<std::vector<uint8_t>> blob =
-        testing::GenDataBlob(kMaxSizeNoOptional + 1, 56);
+    std::vector<uint8_t> sdu = testing::GenDataBlob(kMaxSizeNoOptional + 1, 56);
     DynamicByteBuffer packet = testing::IsoDataPacket(
         /*handle = */ kIsoHandle,
         /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::LAST_FRAGMENT,
         /*timestamp = */ std::nullopt,
         /*sequence_number = */ std::nullopt,
-        /*sdu_length = */ std::nullopt,
+        /*iso_sdu_length=*/std::nullopt,
         /*status_flag = */ std::nullopt,
-        /*sdu_data = */ pw::span(blob->data(), blob->size()));
+        sdu);
     EXPECT_DEATH_IF_SUPPORTED(connection.SendData(std::move(packet)),
                               "Unfragmented packet");
   }

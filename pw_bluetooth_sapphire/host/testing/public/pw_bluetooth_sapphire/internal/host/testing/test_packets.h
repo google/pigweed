@@ -31,8 +31,7 @@ namespace bt::testing {
 // given transactions such as connection establishment or discovery
 
 // Generates a blob of data that is unique to the size and starting value
-std::unique_ptr<std::vector<uint8_t>> GenDataBlob(size_t size,
-                                                  uint8_t starting_value);
+std::vector<uint8_t> GenDataBlob(size_t size, uint8_t starting_value);
 
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address);
 

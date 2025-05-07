@@ -323,7 +323,7 @@ TEST_F(IsoStreamServerDataTest, ReadBeforeDataReceived) {
   const size_t kSduFragmentSize = 255;
   const uint16_t kConnectionHandle = fake_iso_stream()->cis_handle();
   const uint16_t kSequenceNumber = 0x4321;
-  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+  std::vector<uint8_t> sdu_data =
       bt::testing::GenDataBlob(kSduFragmentSize, /*starting_value=*/111);
   bt::DynamicByteBuffer raw_buffer = bt::testing::IsoDataPacket(
       kConnectionHandle,
@@ -332,10 +332,8 @@ TEST_F(IsoStreamServerDataTest, ReadBeforeDataReceived) {
       kSequenceNumber,
       /*iso_sdu_length=*/kSduFragmentSize,
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-      *sdu_data);
-  pw::span<const std::byte> packet(
-      reinterpret_cast<const std::byte*>(raw_buffer.data()), raw_buffer.size());
-  fake_iso_stream()->NotifyClientOfPacketReceived(packet);
+      sdu_data);
+  fake_iso_stream()->NotifyClientOfPacketReceived(raw_buffer.subspan());
   RunLoopUntilIdle();
 
   // Validate callback response
@@ -368,7 +366,7 @@ TEST_F(IsoStreamServerDataTest, DataReceivedBeforeRead) {
   const size_t kSduFragmentSize = 255;
   const uint16_t kConnectionHandle = fake_iso_stream()->cis_handle();
   const uint16_t kSequenceNumber = 0x4321;
-  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+  std::vector<uint8_t> sdu_data =
       bt::testing::GenDataBlob(kSduFragmentSize, /*starting_value=*/200);
   bt::DynamicByteBuffer raw_buffer = bt::testing::IsoDataPacket(
       kConnectionHandle,
@@ -377,7 +375,7 @@ TEST_F(IsoStreamServerDataTest, DataReceivedBeforeRead) {
       kSequenceNumber,
       /*iso_sdu_length=*/kSduFragmentSize,
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-      *sdu_data);
+      sdu_data);
   std::unique_ptr<bt::iso::IsoDataPacket> frame =
       std::make_unique<bt::iso::IsoDataPacket>(raw_buffer.size());
   std::memcpy(frame->data(), raw_buffer.data(), raw_buffer.size());

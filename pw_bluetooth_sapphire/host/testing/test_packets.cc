@@ -16,6 +16,8 @@
 
 #include <pw_assert/check.h>
 
+#include <numeric>
+
 #include "pw_bluetooth/hci_common.emb.h"
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/common/byte_buffer.h"
@@ -32,16 +34,10 @@ namespace android_hci = bt::hci_spec::vendor::android;
 namespace android_emb = pw::bluetooth::vendor::android_hci;
 
 // Generates a blob of data that is unique to the size and starting value
-std::unique_ptr<std::vector<uint8_t>> GenDataBlob(size_t size,
-                                                  uint8_t starting_value) {
-  auto result = std::make_unique<std::vector<uint8_t>>(size);
-  result->resize(size);
-  uint8_t next_value = starting_value;
-  for (auto& elem : *result) {
-    elem = next_value;
-    next_value += 7;
-  }
-  return result;
+std::vector<uint8_t> GenDataBlob(size_t size, uint8_t starting_value) {
+  std::vector<uint8_t> buffer(size);
+  std::iota(buffer.begin(), buffer.end(), starting_value);
+  return buffer;
 }
 
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address) {

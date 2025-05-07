@@ -216,9 +216,7 @@ bool IsoStreamTest::HandleCompleteIncomingSDU(
   if (!accept_incoming_sdus_) {
     return false;
   }
-  std::vector<std::byte> new_sdu(sdu.size());
-  std::copy(sdu.begin(), sdu.end(), new_sdu.begin());
-  complete_incoming_sdus_.emplace(std::move(new_sdu));
+  complete_incoming_sdus_.emplace(sdu.begin(), sdu.end());
   return true;
 }
 
@@ -340,24 +338,24 @@ TEST_F(IsoStreamTest, PendingRead) {
       /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
       iso::IsoStream::SetupDataPathError::kSuccess);
   const size_t kIsoSduLength = 212;
-  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+  std::vector<uint8_t> sdu_data =
       testing::GenDataBlob(kIsoSduLength, /*starting_value=*/14);
   DynamicByteBuffer packet0 = testing::IsoDataPacket(
       /*connection_handle=*/iso_stream()->cis_handle(),
       pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
       /*time_stamp=*/std::nullopt,
       /*packet_sequence_number=*/0,
-      kIsoSduLength,
+      /*iso_sdu_length=*/kIsoSduLength,
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-      *sdu_data);
-  pw::span<const std::byte> packet0_as_span = packet0.subspan();
+      sdu_data);
+  pw::span<const std::byte> packet0_span = packet0.subspan();
   ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
-  iso_stream()->ReceiveInboundPacket(packet0_as_span);
+  iso_stream()->ReceiveInboundPacket(packet0_span);
   ASSERT_EQ(complete_incoming_sdus()->size(), 1u);
   std::vector<std::byte>& received_frame = complete_incoming_sdus()->front();
-  ASSERT_EQ(packet0_as_span.size(), received_frame.size());
+  ASSERT_EQ(packet0_span.size(), received_frame.size());
   EXPECT_TRUE(std::equal(
-      packet0_as_span.begin(), packet0_as_span.end(), received_frame.begin()));
+      packet0_span.begin(), packet0_span.end(), received_frame.begin()));
 }
 
 // If the client does not ask for frames it will not receive any notifications
@@ -370,21 +368,18 @@ TEST_F(IsoStreamTest, UnreadData) {
       /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
       iso::IsoStream::SetupDataPathError::kSuccess);
   const size_t kTotalFrameCount = 5;
-  DynamicByteBuffer packets[kTotalFrameCount];
-  pw::span<const std::byte> packets_as_span[kTotalFrameCount];
   for (size_t i = 0; i < kTotalFrameCount; i++) {
-    std::unique_ptr<std::vector<uint8_t>> sdu_data = testing::GenDataBlob(
+    std::vector<uint8_t> sdu_data = testing::GenDataBlob(
         /*size=*/kMaxControllerSDUFragmentSize - i, /*starting_value=*/i);
-    packets[i] = testing::IsoDataPacket(
+    DynamicByteBuffer packet = testing::IsoDataPacket(
         /*connection_handle=*/iso_stream()->cis_handle(),
         pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
         /*time_stamp=*/std::nullopt,
         /*packet_sequence_number=*/i,
         /*iso_sdu_length=*/kMaxControllerSDUFragmentSize - i,
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-        *sdu_data);
-    packets_as_span[i] = packets[i].subspan();
-    iso_stream()->ReceiveInboundPacket(packets_as_span[i]);
+        sdu_data);
+    iso_stream()->ReceiveInboundPacket(packet.subspan());
   }
   EXPECT_EQ(complete_incoming_sdus()->size(), 0u);
 }
@@ -399,56 +394,56 @@ TEST_F(IsoStreamTest, ReadRequestedAndThenRejected) {
       /*codec_configuration=*/std::nullopt,
       /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
       iso::IsoStream::SetupDataPathError::kSuccess);
-  size_t packet0_sdu_fragment_size = kMaxControllerSDUFragmentSize;
-  std::unique_ptr<std::vector<uint8_t>> packet0_sdu_data =
-      testing::GenDataBlob(packet0_sdu_fragment_size, /*starting_value=*/11);
+  size_t sdu_0_size = kMaxControllerSDUFragmentSize;
+  std::vector<uint8_t> sdu_0 =
+      testing::GenDataBlob(sdu_0_size, /*starting_value=*/11);
   DynamicByteBuffer packet0 = testing::IsoDataPacket(
       /*connection_handle=*/iso_stream()->cis_handle(),
       pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
       /*time_stamp=*/std::nullopt,
       /*packet_sequence_number=*/0,
-      /*iso_sdu_length=*/packet0_sdu_fragment_size,
+      /*iso_sdu_length=*/sdu_0_size,
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-      *packet0_sdu_data);
-  pw::span<const std::byte> packet0_as_span = packet0.subspan();
-  size_t packet1_sdu_fragment_size = packet0_sdu_fragment_size - 1;
-  std::unique_ptr<std::vector<uint8_t>> packet1_sdu_data =
-      testing::GenDataBlob(packet1_sdu_fragment_size, /*starting_value=*/13);
+      sdu_0);
+  pw::span<const std::byte> packet0_span = packet0.subspan();
+  size_t sdu_1_size = sdu_0_size - 1;
+  std::vector<uint8_t> sdu_1 =
+      testing::GenDataBlob(sdu_1_size, /*starting_value=*/13);
   DynamicByteBuffer packet1 = testing::IsoDataPacket(
       /*connection_handle=*/iso_stream()->cis_handle(),
       pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
       /*time_stamp=*/std::nullopt,
       /*packet_sequence_number=*/1,
-      /*iso_sdu_length=*/packet1_sdu_fragment_size,
+      /*iso_sdu_length=*/sdu_1_size,
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-      *packet1_sdu_data);
-  pw::span<const std::byte> packet1_as_span = packet1.subspan();
+      sdu_1);
+  pw::span<const std::byte> packet1_span = packet1.subspan();
 
   // Request a frame but then reject it when proffered by the stream
   ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
   accept_incoming_sdus_ = false;
-  iso_stream()->ReceiveInboundPacket(packet0_as_span);
+  iso_stream()->ReceiveInboundPacket(packet0_span);
   EXPECT_EQ(complete_incoming_sdus()->size(), 0u);
 
   // Accept future frames, but because no read request has been made that we
   // couldn't fulfill, the stream should just queue them up.
   accept_incoming_sdus_ = true;
-  iso_stream()->ReceiveInboundPacket(packet1_as_span);
+  iso_stream()->ReceiveInboundPacket(packet1_span);
   EXPECT_EQ(complete_incoming_sdus()->size(), 0u);
 
   // And finally, we should be able to read out the packets in the right order
   std::unique_ptr<IsoDataPacket> rx_packet_0 =
       iso_stream()->ReadNextQueuedIncomingPacket();
   ASSERT_NE(rx_packet_0, nullptr);
-  ASSERT_EQ(rx_packet_0->size(), packet0_as_span.size());
+  ASSERT_EQ(rx_packet_0->size(), packet0_span.size());
   ASSERT_TRUE(std::equal(
-      rx_packet_0->begin(), rx_packet_0->end(), packet0_as_span.begin()));
+      rx_packet_0->begin(), rx_packet_0->end(), packet0_span.begin()));
   std::unique_ptr<IsoDataPacket> rx_packet_1 =
       iso_stream()->ReadNextQueuedIncomingPacket();
   ASSERT_NE(rx_packet_1, nullptr);
-  ASSERT_EQ(rx_packet_1->size(), packet1_as_span.size());
+  ASSERT_EQ(rx_packet_1->size(), packet1_span.size());
   ASSERT_TRUE(std::equal(
-      rx_packet_1->begin(), rx_packet_1->end(), packet1_as_span.begin()));
+      rx_packet_1->begin(), rx_packet_1->end(), packet1_span.begin()));
 
   // Stream's packet queue should be empty now
   ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
@@ -463,7 +458,7 @@ TEST_F(IsoStreamTest, BadPacket) {
       /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
       iso::IsoStream::SetupDataPathError::kSuccess);
   const size_t kIsoSduLength = 212;
-  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+  std::vector<uint8_t> sdu =
       testing::GenDataBlob(kIsoSduLength, /*starting_value=*/91);
   DynamicByteBuffer packet0 = testing::IsoDataPacket(
       /*connection_handle=*/iso_stream()->cis_handle(),
@@ -472,7 +467,7 @@ TEST_F(IsoStreamTest, BadPacket) {
       /*packet_sequence_number=*/0,
       kIsoSduLength,
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-      *sdu_data);
+      sdu);
   // Improperly formatted packets are discarded. To test this, we'll remove the
   // last byte of SDU data before we send it.
   pw::span<const std::byte> packet0_as_span =
@@ -491,21 +486,20 @@ TEST_F(IsoStreamTest, ExcessDataIsTruncated) {
       /*cmd_complete_status=*/pw::bluetooth::emboss::StatusCode::SUCCESS,
       iso::IsoStream::SetupDataPathError::kSuccess);
   const size_t kIsoSduLength = 212;
-  std::unique_ptr<std::vector<uint8_t>> sdu_data =
+  std::vector<uint8_t> sdu =
       testing::GenDataBlob(kIsoSduLength, /*starting_value=*/91);
   DynamicByteBuffer packet0 = testing::IsoDataPacket(
       /*connection_handle=*/iso_stream()->cis_handle(),
       pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
       /*time_stamp=*/std::nullopt,
       /*packet_sequence_number=*/0,
-      kIsoSduLength,
+      /*iso_sdu_length=*/kIsoSduLength,
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
-      *sdu_data);
+      sdu);
   size_t original_packet0_size = packet0.size();
   packet0.expand(packet0.size() + 100);
-  pw::span<const std::byte> packet0_as_span = packet0.subspan();
   ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
-  iso_stream()->ReceiveInboundPacket(packet0_as_span);
+  iso_stream()->ReceiveInboundPacket(packet0.subspan());
   ASSERT_EQ(complete_incoming_sdus()->size(), 1u);
   EXPECT_EQ(complete_incoming_sdus()->front().size(), original_packet0_size);
 }
@@ -531,8 +525,8 @@ TEST_F(IsoStreamTest, SendPacket) {
   uint16_t expected_sequence_num = 0;
 
   {
-    std::vector<uint8_t> blob =
-        *testing::GenDataBlob(kMaxFirstPacketSize / 2, /*starting_value=*/111);
+    std::vector<uint8_t> sdu =
+        testing::GenDataBlob(kMaxFirstPacketSize / 2, /*starting_value=*/111);
     EXPECT_ISO_PACKET_OUT(
         test_device(),
         testing::IsoDataPacket(
@@ -540,12 +534,11 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
             /*sequence_number = */ expected_sequence_num,
-            /*sdu_length = */ blob.size(),
+            /*iso_sdu_length = */ sdu.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob.data(), blob.size())));
+            sdu));
 
-    iso_stream()->Send(
-        pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
+    iso_stream()->Send(pw::as_bytes(pw::span(sdu)));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
 
@@ -557,8 +550,8 @@ TEST_F(IsoStreamTest, SendPacket) {
 
   {
     // Send a packet that fits exactly within one ISO buffer easily.
-    std::vector<uint8_t> blob =
-        *testing::GenDataBlob(kMaxFirstPacketSize, /*starting_value=*/7);
+    std::vector<uint8_t> sdu =
+        testing::GenDataBlob(kMaxFirstPacketSize, /*starting_value=*/7);
     EXPECT_ISO_PACKET_OUT(
         test_device(),
         testing::IsoDataPacket(
@@ -566,12 +559,11 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
             /*sequence_number = */ expected_sequence_num,
-            /*sdu_length = */ blob.size(),
+            /*iso_sdu_length = */ sdu.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob.data(), blob.size())));
+            sdu));
 
-    iso_stream()->Send(
-        pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
+    iso_stream()->Send(pw::as_bytes(pw::span(sdu)));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
 
@@ -583,7 +575,7 @@ TEST_F(IsoStreamTest, SendPacket) {
 
   {
     // Send a packet that has to be split into three.
-    std::vector<uint8_t> blob = *testing::GenDataBlob(
+    std::vector<uint8_t> sdu = testing::GenDataBlob(
         kMaxFirstPacketSize + kMaxControllerSDUFragmentSize * 2,
         /*starting_value=*/42);
     EXPECT_ISO_PACKET_OUT(
@@ -593,9 +585,9 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*pb_flag = */ IsoDataPbFlag::FIRST_FRAGMENT,
             /*timestamp = */ std::nullopt,
             /*sequence_number = */ expected_sequence_num,
-            /*sdu_length = */ blob.size(),
+            /*sdu_length = */ sdu.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob.data(), kMaxFirstPacketSize)));
+            pw::span(sdu).subspan(0, kMaxFirstPacketSize)));
     EXPECT_ISO_PACKET_OUT(
         test_device(),
         testing::IsoDataPacket(
@@ -605,9 +597,8 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*sequence_number = */ std::nullopt,
             /*sdu_length = */ std::nullopt,
             /*status_flag = */ std::nullopt,
-            /*sdu_data = */
-            pw::span(blob.data(), blob.size())
-                .subspan(kMaxFirstPacketSize, kMaxControllerSDUFragmentSize)));
+            pw::span(sdu).subspan(kMaxFirstPacketSize,
+                                  kMaxControllerSDUFragmentSize)));
     EXPECT_ISO_PACKET_OUT(
         test_device(),
         testing::IsoDataPacket(
@@ -617,12 +608,10 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*sequence_number = */ std::nullopt,
             /*sdu_length = */ std::nullopt,
             /*status_flag = */ std::nullopt,
-            /*sdu_data = */
-            pw::span(blob.data(), blob.size())
-                .subspan(kMaxFirstPacketSize + kMaxControllerSDUFragmentSize)));
+            pw::span(sdu).subspan(kMaxFirstPacketSize +
+                                  kMaxControllerSDUFragmentSize)));
 
-    iso_stream()->Send(
-        pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
+    iso_stream()->Send(pw::as_bytes(pw::span(sdu)));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
 
@@ -634,7 +623,7 @@ TEST_F(IsoStreamTest, SendPacket) {
 
   {
     // Send a packet that just barely needs to be split into three fragments.
-    std::vector<uint8_t> blob = *testing::GenDataBlob(
+    std::vector<uint8_t> sdu = testing::GenDataBlob(
         kMaxFirstPacketSize + kMaxControllerSDUFragmentSize + 1,
         /*starting_value=*/77);
     EXPECT_ISO_PACKET_OUT(
@@ -644,9 +633,9 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*pb_flag = */ IsoDataPbFlag::FIRST_FRAGMENT,
             /*timestamp = */ std::nullopt,
             /*sequence_number = */ expected_sequence_num,
-            /*sdu_length = */ blob.size(),
+            /*sdu_length = */ sdu.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob.data(), kMaxFirstPacketSize)));
+            pw::span(sdu).subspan(0, kMaxFirstPacketSize)));
     EXPECT_ISO_PACKET_OUT(
         test_device(),
         testing::IsoDataPacket(
@@ -656,9 +645,8 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*sequence_number = */ std::nullopt,
             /*sdu_length = */ std::nullopt,
             /*status_flag = */ std::nullopt,
-            /*sdu_data = */
-            pw::span(blob.data(), blob.size())
-                .subspan(kMaxFirstPacketSize, kMaxControllerSDUFragmentSize)));
+            pw::span(sdu).subspan(kMaxFirstPacketSize,
+                                  kMaxControllerSDUFragmentSize)));
     EXPECT_ISO_PACKET_OUT(
         test_device(),
         testing::IsoDataPacket(
@@ -668,12 +656,10 @@ TEST_F(IsoStreamTest, SendPacket) {
             /*sequence_number = */ std::nullopt,
             /*sdu_length = */ std::nullopt,
             /*status_flag = */ std::nullopt,
-            /*sdu_data = */
-            pw::span(blob.data(), blob.size())
-                .subspan(kMaxFirstPacketSize + kMaxControllerSDUFragmentSize)));
+            pw::span(sdu).subspan(kMaxFirstPacketSize +
+                                  kMaxControllerSDUFragmentSize)));
 
-    iso_stream()->Send(
-        pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
+    iso_stream()->Send(pw::as_bytes(pw::span(sdu)));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
   }
@@ -699,8 +685,8 @@ TEST_F(IsoStreamTest, PacketReceivedBeforeNextInterval) {
 
   // Send the first packet
   {
-    std::vector<uint8_t> blob1 =
-        *testing::GenDataBlob(kMaxFirstPacketSize / 2, /*starting_value=*/111);
+    std::vector<uint8_t> sdu =
+        testing::GenDataBlob(kMaxFirstPacketSize / 2, /*starting_value=*/111);
 
     EXPECT_ISO_PACKET_OUT(
         test_device(),
@@ -709,12 +695,11 @@ TEST_F(IsoStreamTest, PacketReceivedBeforeNextInterval) {
             /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
             /*sequence_number = */ expected_sequence_num,
-            /*sdu_length = */ blob1.size(),
+            /*iso_sdu_length = */ sdu.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob1.data(), blob1.size())));
+            sdu));
 
-    iso_stream()->Send(pw::span(
-        reinterpret_cast<const std::byte*>(blob1.data()), blob1.size()));
+    iso_stream()->Send(pw::as_bytes(pw::span(sdu)));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
     ++expected_sequence_num;
@@ -722,8 +707,8 @@ TEST_F(IsoStreamTest, PacketReceivedBeforeNextInterval) {
 
   // Send a second packet immediately before the next interval is produced
   {
-    std::vector<uint8_t> blob2 =
-        *testing::GenDataBlob(kMaxFirstPacketSize / 3, /*starting_value=*/55);
+    std::vector<uint8_t> sdu =
+        testing::GenDataBlob(kMaxFirstPacketSize / 3, /*starting_value=*/55);
 
     EXPECT_ISO_PACKET_OUT(
         test_device(),
@@ -732,12 +717,11 @@ TEST_F(IsoStreamTest, PacketReceivedBeforeNextInterval) {
             /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
             /*sequence_number = */ expected_sequence_num,
-            /*sdu_length = */ blob2.size(),
+            /*iso_sdu_length = */ sdu.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob2.data(), blob2.size())));
+            sdu));
 
-    iso_stream()->Send(pw::span(
-        reinterpret_cast<const std::byte*>(blob2.data()), blob2.size()));
+    iso_stream()->Send(pw::as_bytes(pw::span(sdu)));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
     ++expected_sequence_num;
@@ -747,8 +731,8 @@ TEST_F(IsoStreamTest, PacketReceivedBeforeNextInterval) {
 
   // Send a third packet after the interval has passed
   {
-    std::vector<uint8_t> blob3 =
-        *testing::GenDataBlob(kMaxFirstPacketSize / 4, /*starting_value=*/99);
+    std::vector<uint8_t> sdu =
+        testing::GenDataBlob(kMaxFirstPacketSize / 4, /*starting_value=*/99);
 
     // Expect the sequence number to have advanced to the next interval
     EXPECT_ISO_PACKET_OUT(
@@ -758,12 +742,11 @@ TEST_F(IsoStreamTest, PacketReceivedBeforeNextInterval) {
             /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
             /*sequence_number = */ expected_sequence_num,
-            /*sdu_length = */ blob3.size(),
+            /*iso_sdu_length = */ sdu.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob3.data(), blob3.size())));
+            sdu));
 
-    iso_stream()->Send(pw::span(
-        reinterpret_cast<const std::byte*>(blob3.data()), blob3.size()));
+    iso_stream()->Send(pw::as_bytes(pw::span(sdu)));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
   }
@@ -788,8 +771,8 @@ TEST_F(IsoStreamTest, PacketReceivedAtIntervalBoundaries) {
   uint16_t expected_sequence_num = 0;
 
   {
-    std::vector<uint8_t> blob =
-        *testing::GenDataBlob(kMaxFirstPacketSize / 2, /*starting_value=*/111);
+    std::vector<uint8_t> sdu =
+        testing::GenDataBlob(kMaxFirstPacketSize / 2, /*starting_value=*/111);
     EXPECT_ISO_PACKET_OUT(
         test_device(),
         testing::IsoDataPacket(
@@ -797,12 +780,11 @@ TEST_F(IsoStreamTest, PacketReceivedAtIntervalBoundaries) {
             /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
             /*sequence_number = */ expected_sequence_num,
-            /*sdu_length = */ blob.size(),
+            /*iso_sdu_length = */ sdu.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob.data(), blob.size())));
+            sdu));
 
-    iso_stream()->Send(
-        pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
+    iso_stream()->Send(pw::as_bytes(pw::span(sdu)));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
 
@@ -814,8 +796,8 @@ TEST_F(IsoStreamTest, PacketReceivedAtIntervalBoundaries) {
 
   {
     // Send a packet one tick before the next interval
-    std::vector<uint8_t> blob =
-        *testing::GenDataBlob(kMaxFirstPacketSize, /*starting_value=*/7);
+    std::vector<uint8_t> sdu =
+        testing::GenDataBlob(kMaxFirstPacketSize, /*starting_value=*/7);
     EXPECT_ISO_PACKET_OUT(
         test_device(),
         testing::IsoDataPacket(
@@ -823,12 +805,11 @@ TEST_F(IsoStreamTest, PacketReceivedAtIntervalBoundaries) {
             /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
             /*sequence_number = */ expected_sequence_num,
-            /*sdu_length = */ blob.size(),
+            /*iso_sdu_length = */ sdu.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob.data(), blob.size())));
+            sdu));
 
-    iso_stream()->Send(
-        pw::span(reinterpret_cast<const std::byte*>(blob.data()), blob.size()));
+    iso_stream()->Send(pw::as_bytes(pw::span(sdu)));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
 
@@ -839,8 +820,8 @@ TEST_F(IsoStreamTest, PacketReceivedAtIntervalBoundaries) {
 
   // Send a third packet after the interval has passed
   {
-    std::vector<uint8_t> blob3 =
-        *testing::GenDataBlob(kMaxFirstPacketSize / 4, /*starting_value=*/99);
+    std::vector<uint8_t> sdu =
+        testing::GenDataBlob(kMaxFirstPacketSize / 4, /*starting_value=*/99);
 
     // Expect the sequence number to have advanced to the next interval
     EXPECT_ISO_PACKET_OUT(
@@ -850,12 +831,11 @@ TEST_F(IsoStreamTest, PacketReceivedAtIntervalBoundaries) {
             /*pb_flag = */ IsoDataPbFlag::COMPLETE_SDU,
             /*timestamp = */ std::nullopt,
             /*sequence_number = */ expected_sequence_num,
-            /*sdu_length = */ blob3.size(),
+            /*iso_sdu_length = */ sdu.size(),
             /*status_flag = */ IsoDataPacketStatus::VALID_DATA,
-            /*sdu_data = */ pw::span(blob3.data(), blob3.size())));
+            /*sdu_data = */ pw::span(sdu.data(), sdu.size())));
 
-    iso_stream()->Send(pw::span(
-        reinterpret_cast<const std::byte*>(blob3.data()), blob3.size()));
+    iso_stream()->Send(pw::as_bytes(pw::span(sdu)));
     RunUntilIdle();
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
   }
