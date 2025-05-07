@@ -70,7 +70,8 @@ Status TryReadByte(std::byte* dest) {
 
 Status WriteByte(std::byte b) {
   if (!IS_ENABLED(CONFIG_CONSOLE_GETCHAR)) {
-    return Status::Unimplemented();
+    printk("%c", static_cast<char>(b));
+    return OkStatus();
   }
   return console_putchar(static_cast<char>(b)) < 0
              ? Status::FailedPrecondition()
