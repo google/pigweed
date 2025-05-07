@@ -24,6 +24,13 @@ cc_library_static {
         "clock_public_overrides",
         "timer_public_overrides",
     ],
+    // Specify the module config flags found in pw_android_common_backends
+    // manually, since it depends on this target.
+    cflags: [
+        // Allow `pw::Function`s to exceed the inline size. This assumes all
+        // targets built with this backend can use dynamic allocation.
+        "-DPW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION=1",
+    ],
     vendor_available: true,
     host_supported: true,
     header_libs: [
@@ -37,5 +44,8 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "pw_function",
+    ],
+    srcs: [
+        "system_timer.cc",
     ],
 }
