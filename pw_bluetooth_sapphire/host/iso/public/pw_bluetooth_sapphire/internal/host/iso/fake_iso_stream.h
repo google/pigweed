@@ -51,12 +51,11 @@ class FakeIsoStream : public IsoStream {
 
   void Close() override {}
 
-  std::unique_ptr<IsoDataPacket> ReadNextQueuedIncomingPacket() override {
+  std::optional<IsoDataPacket> ReadNextQueuedIncomingPacket() override {
     if (incoming_packet_queue_.size() < 1) {
-      return nullptr;
+      return std::nullopt;
     }
-    std::unique_ptr<IsoDataPacket> next_frame =
-        std::move(incoming_packet_queue_.front());
+    IsoDataPacket next_frame = std::move(incoming_packet_queue_.front());
     incoming_packet_queue_.pop();
     return next_frame;
   }
@@ -76,7 +75,7 @@ class FakeIsoStream : public IsoStream {
     setup_data_path_status_ = status;
   }
 
-  void QueueIncomingFrame(std::unique_ptr<IsoDataPacket> frame) {
+  void QueueIncomingFrame(IsoDataPacket frame) {
     incoming_packet_queue_.push(std::move(frame));
   }
 
@@ -93,7 +92,7 @@ class FakeIsoStream : public IsoStream {
 
  private:
   std::optional<IncomingDataHandler> on_incoming_data_available_cb_;
-  std::queue<std::unique_ptr<IsoDataPacket>> incoming_packet_queue_;
+  std::queue<IsoDataPacket> incoming_packet_queue_;
   size_t incoming_packet_requests_ = 0;
   WeakSelf<FakeIsoStream> weak_self_;
   std::queue<std::vector<std::byte>> sent_data_queue_;

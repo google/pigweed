@@ -349,7 +349,7 @@ TEST_F(IsoStreamTest, PendingRead) {
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
       sdu_data);
   pw::span<const std::byte> packet0_span = packet0.subspan();
-  ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
+  ASSERT_FALSE(iso_stream()->ReadNextQueuedIncomingPacket());
   iso_stream()->ReceiveInboundPacket(packet0_span);
   ASSERT_EQ(complete_incoming_sdus()->size(), 1u);
   std::vector<std::byte>& received_frame = complete_incoming_sdus()->front();
@@ -420,7 +420,7 @@ TEST_F(IsoStreamTest, ReadRequestedAndThenRejected) {
   pw::span<const std::byte> packet1_span = packet1.subspan();
 
   // Request a frame but then reject it when proffered by the stream
-  ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
+  ASSERT_FALSE(iso_stream()->ReadNextQueuedIncomingPacket());
   accept_incoming_sdus_ = false;
   iso_stream()->ReceiveInboundPacket(packet0_span);
   EXPECT_EQ(complete_incoming_sdus()->size(), 0u);
@@ -432,21 +432,21 @@ TEST_F(IsoStreamTest, ReadRequestedAndThenRejected) {
   EXPECT_EQ(complete_incoming_sdus()->size(), 0u);
 
   // And finally, we should be able to read out the packets in the right order
-  std::unique_ptr<IsoDataPacket> rx_packet_0 =
+  std::optional<IsoDataPacket> rx_packet_0 =
       iso_stream()->ReadNextQueuedIncomingPacket();
-  ASSERT_NE(rx_packet_0, nullptr);
+  ASSERT_TRUE(rx_packet_0);
   ASSERT_EQ(rx_packet_0->size(), packet0_span.size());
   ASSERT_TRUE(std::equal(
       rx_packet_0->begin(), rx_packet_0->end(), packet0_span.begin()));
-  std::unique_ptr<IsoDataPacket> rx_packet_1 =
+  std::optional<IsoDataPacket> rx_packet_1 =
       iso_stream()->ReadNextQueuedIncomingPacket();
-  ASSERT_NE(rx_packet_1, nullptr);
+  ASSERT_TRUE(rx_packet_1);
   ASSERT_EQ(rx_packet_1->size(), packet1_span.size());
   ASSERT_TRUE(std::equal(
       rx_packet_1->begin(), rx_packet_1->end(), packet1_span.begin()));
 
   // Stream's packet queue should be empty now
-  ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
+  ASSERT_FALSE(iso_stream()->ReadNextQueuedIncomingPacket());
 }
 
 // Bad packets will not be passed on
@@ -472,7 +472,7 @@ TEST_F(IsoStreamTest, BadPacket) {
   // last byte of SDU data before we send it.
   pw::span<const std::byte> packet0_as_span =
       packet0.subspan(0, packet0.size() - 1);
-  ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
+  ASSERT_FALSE(iso_stream()->ReadNextQueuedIncomingPacket());
   iso_stream()->ReceiveInboundPacket(packet0_as_span);
   ASSERT_EQ(complete_incoming_sdus()->size(), 0u);
 }
@@ -498,7 +498,7 @@ TEST_F(IsoStreamTest, ExcessDataIsTruncated) {
       sdu);
   size_t original_packet0_size = packet0.size();
   packet0.expand(packet0.size() + 100);
-  ASSERT_EQ(iso_stream()->ReadNextQueuedIncomingPacket(), nullptr);
+  ASSERT_FALSE(iso_stream()->ReadNextQueuedIncomingPacket());
   iso_stream()->ReceiveInboundPacket(packet0.subspan());
   ASSERT_EQ(complete_incoming_sdus()->size(), 1u);
   EXPECT_EQ(complete_incoming_sdus()->front().size(), original_packet0_size);

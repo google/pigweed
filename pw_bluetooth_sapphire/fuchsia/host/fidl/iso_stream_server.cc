@@ -219,12 +219,10 @@ void IsoStreamServer::Read(ReadCallback callback) {
   hanging_read_cb_ = std::move(callback);
 
   if (iso_stream_.has_value() && iso_stream_->is_alive()) {
-    std::unique_ptr<bt::iso::IsoDataPacket> packet =
+    std::optional<bt::iso::IsoDataPacket> packet =
         (*iso_stream_)->ReadNextQueuedIncomingPacket();
     if (packet) {
-      pw::span<const std::byte> packet_as_span(
-          static_cast<std::byte*>(packet->data()), packet->size());
-      SendIncomingPacket(packet_as_span);
+      SendIncomingPacket(*packet);
       return;
     }
   }

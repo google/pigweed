@@ -376,9 +376,8 @@ TEST_F(IsoStreamServerDataTest, DataReceivedBeforeRead) {
       /*iso_sdu_length=*/kSduFragmentSize,
       pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
       sdu_data);
-  std::unique_ptr<bt::iso::IsoDataPacket> frame =
-      std::make_unique<bt::iso::IsoDataPacket>(raw_buffer.size());
-  std::memcpy(frame->data(), raw_buffer.data(), raw_buffer.size());
+  pw::span<const std::byte> buffer = raw_buffer.subspan();
+  bt::iso::IsoDataPacket frame(buffer.begin(), buffer.end());
   fake_iso_stream()->QueueIncomingFrame(std::move(frame));
 
   std::optional<fuchsia::bluetooth::le::IsochronousStream_Read_Result> result;

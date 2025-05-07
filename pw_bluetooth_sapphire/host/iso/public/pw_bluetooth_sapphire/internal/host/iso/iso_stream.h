@@ -75,12 +75,12 @@ class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
   // available. This allows for a 'hanging get' style interface (request a frame
   // whenever the client is ready to process one and then wait for a
   // notification) or a client-buffered interface (every time the client wants
-  // more frames request them until it receives a nullptr, and then wait for a
+  // more frames request them until it receives a nullopt, and then wait for a
   // callback to indicate that the next frame(s) are available). It is important
   // to note that the client cannot simply rely on notifications: until a read
   // attempt is unfulfilled the stream will buffer frames waiting for a read
   // from the client.
-  virtual std::unique_ptr<IsoDataPacket> ReadNextQueuedIncomingPacket() = 0;
+  virtual std::optional<IsoDataPacket> ReadNextQueuedIncomingPacket() = 0;
 
   // Send a packet over the stream. If the packet is too large then it will be
   // fragmented.
