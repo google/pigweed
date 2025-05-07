@@ -38,6 +38,11 @@ class IsoDataChannel {
 
     // This method will be called when a packet is received for this connection.
     virtual void ReceiveInboundPacket(pw::span<const std::byte> packet) = 0;
+
+    // Returns the next outbound PDU fragment, or null if none is available.
+    // The packet must be fragmented to be no larger than
+    // `buffer_info().max_data_length()`.
+    virtual std::optional<DynamicByteBuffer> GetNextOutboundPdu() = 0;
   };
 
   static std::unique_ptr<IsoDataChannel> Create(
@@ -57,9 +62,8 @@ class IsoDataChannel {
   // if the connection was recognized and successfully unregistered.
   virtual bool UnregisterConnection(hci_spec::ConnectionHandle handle) = 0;
 
-  // Send data over the data channel. The packet must be fragmented to be no
-  // larger than `buffer_info().max_data_length()`.
-  virtual void SendData(DynamicByteBuffer packet) = 0;
+  // Called by IsoStream when a packet is available
+  virtual void TrySendPackets() = 0;
 
   // Get the buffer info for the data channel.
   virtual const DataBufferInfo& buffer_info() const = 0;

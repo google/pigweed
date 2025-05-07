@@ -17,6 +17,8 @@
 #include <pw_assert/check.h>
 #include <pw_bluetooth/hci_data.emb.h>
 
+#include <map>
+
 namespace bt::hci {
 namespace {
 
@@ -30,25 +32,28 @@ class IsoDataChannelImpl final : public IsoDataChannel {
   IsoDataChannelImpl(const DataBufferInfo& buffer_info,
                      CommandChannel* command_channel,
                      pw::bluetooth::Controller* hci);
-  ~IsoDataChannelImpl();
+  ~IsoDataChannelImpl() override;
 
   // IsoDataChannel overrides:
-  virtual bool RegisterConnection(
-      hci_spec::ConnectionHandle handle,
-      WeakPtr<ConnectionInterface> connection) override;
-  virtual bool UnregisterConnection(hci_spec::ConnectionHandle handle) override;
-  virtual void SendData(DynamicByteBuffer packet) override;
-  virtual const DataBufferInfo& buffer_info() const override {
-    return buffer_info_;
-  }
+  bool RegisterConnection(hci_spec::ConnectionHandle handle,
+                          WeakPtr<ConnectionInterface> connection) override;
+  bool UnregisterConnection(hci_spec::ConnectionHandle handle) override;
+  void TrySendPackets() override;
+  const DataBufferInfo& buffer_info() const override { return buffer_info_; }
 
  private:
+  using ConnectionMap =
+      std::map<hci_spec::ConnectionHandle, WeakPtr<ConnectionInterface>>;
+
+  void SendData(DynamicByteBuffer packet);
   void OnRxPacket(pw::span<const std::byte> buffer);
-  void TrySendPackets();
 
   // Handle a NumberOfCompletedPackets event.
   CommandChannel::EventCallbackResult OnNumberOfCompletedPacketsEvent(
       const EventPacket& event);
+
+  // Increment next_connection_iter_, with wrapping.
+  void IncrementConnectionIter();
 
   CommandChannel* command_channel_ __attribute__((unused));
   pw::bluetooth::Controller* hci_;
@@ -57,11 +62,8 @@ class IsoDataChannelImpl final : public IsoDataChannel {
   size_t available_buffers_;
 
   // Stores connections registered by RegisterConnection()
-  std::unordered_map<hci_spec::ConnectionHandle, WeakPtr<ConnectionInterface>>
-      connections_;
-
-  // Stores queued packets ready for sending
-  std::deque<DynamicByteBuffer> outbound_queue_;
+  ConnectionMap connections_;
+  ConnectionMap::iterator next_connection_iter_ = connections_.end();
 
   // Event handler ID for the NumberOfCompletedPackets event
   CommandChannel::EventHandlerId num_completed_packets_event_handler_id_ = 0;
@@ -122,6 +124,12 @@ bool IsoDataChannelImpl::RegisterConnection(
     return false;
   }
   connections_[handle] = std::move(connection);
+
+  // Reset round robin iterator.
+  next_connection_iter_ = connections_.begin();
+
+  TrySendPackets();
+
   return true;
 }
 
@@ -136,20 +144,43 @@ bool IsoDataChannelImpl::UnregisterConnection(
     return false;
   }
   connections_.erase(handle);
+
+  // Reset round robin iterator.
+  next_connection_iter_ = connections_.begin();
+
   return true;
 }
 
-void IsoDataChannelImpl::SendData(DynamicByteBuffer packet) {
-  PW_CHECK((packet.size() - kFrameHeaderSize) <= buffer_info_.max_data_length(),
-           "Unfragmented packet received, cannot send.");
-  outbound_queue_.push_back(std::move(packet));
-  TrySendPackets();
-}
-
 void IsoDataChannelImpl::TrySendPackets() {
-  while (available_buffers_ && !outbound_queue_.empty()) {
-    hci_->SendIsoData(outbound_queue_.front().view().subspan());
-    outbound_queue_.pop_front();
+  if (connections_.empty()) {
+    return;
+  }
+  // Use Round Robin fairness algorithm to send packets from multiple streams.
+  ConnectionMap::iterator start_iter = next_connection_iter_;
+  // Initialize to true to ensure the connection map is looped over at least
+  // once.
+  bool packet_sent_this_iteration = true;
+  for (; available_buffers_ > 0; IncrementConnectionIter()) {
+    if (next_connection_iter_ == start_iter) {
+      if (!packet_sent_this_iteration) {
+        // All streams are empty.
+        break;
+      }
+      packet_sent_this_iteration = false;
+    }
+
+    std::optional<DynamicByteBuffer> packet =
+        next_connection_iter_->second->GetNextOutboundPdu();
+    if (!packet) {
+      continue;
+    }
+    packet_sent_this_iteration = true;
+
+    PW_CHECK(
+        (packet->size() - kFrameHeaderSize) <= buffer_info_.max_data_length(),
+        "Unfragmented packet received, cannot send.");
+    hci_->SendIsoData(packet->view().subspan());
+
     --available_buffers_;
   }
 }
@@ -212,6 +243,17 @@ std::unique_ptr<IsoDataChannel> IsoDataChannel::Create(
   bt_log(DEBUG, "hci", "Creating a new IsoDataChannel");
   return std::make_unique<IsoDataChannelImpl>(
       buffer_info, command_channel, hci);
+}
+
+void IsoDataChannelImpl::IncrementConnectionIter() {
+  if (connections_.empty()) {
+    next_connection_iter_ = connections_.end();
+    return;
+  }
+  ++next_connection_iter_;
+  if (next_connection_iter_ == connections_.end()) {
+    next_connection_iter_ = connections_.begin();
+  }
 }
 
 }  // namespace bt::hci

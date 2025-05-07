@@ -27,9 +27,25 @@ namespace bt::hci {
 
 constexpr size_t kDefaultMaxDataLength = 128;
 constexpr size_t kDefaultMaxNumPackets = 4;
+constexpr size_t kTestSduSize = 15;
 
 const DataBufferInfo kDefaultIsoBufferInfo(kDefaultMaxDataLength,
                                            kDefaultMaxNumPackets);
+
+DynamicByteBuffer MakeIsoPacket(hci_spec::ConnectionHandle handle,
+                                uint16_t seq) {
+  std::unique_ptr<std::vector<uint8_t>> blob =
+      testing::GenDataBlob(kTestSduSize, seq);
+  return testing::IsoDataPacket(
+      /*connection_handle = */ handle,
+      /*pb_flag = */ pw::bluetooth::emboss::IsoDataPbFlag::COMPLETE_SDU,
+      /*time_stamp = */ 0x00000000,
+      /*packet_sequence_number = */ seq,
+      /*iso_sdu_length = */ blob->size(),
+      /*status_flag = */
+      pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
+      /*sdu_data = */ pw::span(*blob));
+}
 
 using TestBase = testing::FakeDispatcherControllerTest<testing::MockController>;
 
@@ -46,11 +62,13 @@ class IsoDataChannelTests : public TestBase {
 // Placeholder (for now)
 class IsoMockConnectionInterface : public IsoDataChannel::ConnectionInterface {
  public:
-  IsoMockConnectionInterface() : weak_self_(this) {}
+  IsoMockConnectionInterface(IsoDataChannel& iso_data_channel)
+      : iso_data_channel_(iso_data_channel), weak_self_(this) {}
   ~IsoMockConnectionInterface() override = default;
 
-  void ReceiveInboundPacket(pw::span<const std::byte> packet) override {
-    received_packets_.emplace(packet);
+  void SendData(DynamicByteBuffer pdu) {
+    send_queue_.emplace(std::move(pdu));
+    iso_data_channel_.TrySendPackets();
   }
 
   std::queue<pw::span<const std::byte>>* received_packets() {
@@ -63,14 +81,29 @@ class IsoMockConnectionInterface : public IsoDataChannel::ConnectionInterface {
   }
 
  private:
-  WeakSelf<IsoMockConnectionInterface> weak_self_;
+  void ReceiveInboundPacket(pw::span<const std::byte> packet) override {
+    received_packets_.emplace(packet);
+  }
+
+  std::optional<DynamicByteBuffer> GetNextOutboundPdu() override {
+    if (send_queue_.empty()) {
+      return std::nullopt;
+    }
+    DynamicByteBuffer pdu = std::move(send_queue_.front());
+    send_queue_.pop();
+    return pdu;
+  }
+
+  IsoDataChannel& iso_data_channel_;
   std::queue<pw::span<const std::byte>> received_packets_;
+  std::queue<DynamicByteBuffer> send_queue_;
+  WeakSelf<IsoMockConnectionInterface> weak_self_;
 };
 
 // Verify that we can register and unregister connections
 TEST_F(IsoDataChannelTests, RegisterConnections) {
   ASSERT_NE(iso_data_channel(), nullptr);
-  IsoMockConnectionInterface mock_iface;
+  IsoMockConnectionInterface mock_iface(*iso_data_channel());
   constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x123;
   EXPECT_TRUE(iso_data_channel()->RegisterConnection(kIsoHandle1,
                                                      mock_iface.GetWeakPtr()));
@@ -105,7 +138,11 @@ TEST_F(IsoDataChannelTests, DataDemuxification) {
       kNumRegisteredInterfaces + kNumUnregisteredInterfaces;
   constexpr hci_spec::ConnectionHandle connection_handles[kNumTotalInterfaces] =
       {0x123, 0x456, 0x789};
-  IsoMockConnectionInterface interfaces[kNumTotalInterfaces];
+  std::vector<IsoMockConnectionInterface> interfaces;
+  interfaces.reserve(kNumTotalInterfaces);
+  for (uint32_t i = 0; i < kNumTotalInterfaces; i++) {
+    interfaces.emplace_back(*iso_data_channel());
+  }
   size_t expected_packet_count[kNumTotalInterfaces] = {0};
 
   // Register interfaces
@@ -167,6 +204,9 @@ TEST_F(IsoDataChannelTests, DataDemuxification) {
 
 TEST_F(IsoDataChannelTests, SendData) {
   ASSERT_NE(iso_data_channel(), nullptr);
+  constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x123;
+  IsoMockConnectionInterface connection(*iso_data_channel());
+  iso_data_channel()->RegisterConnection(kIsoHandle1, connection.GetWeakPtr());
 
   std::unique_ptr<std::vector<uint8_t>> blob = testing::GenDataBlob(9, 0);
   pw::span blob_span(blob->data(), blob->size());
@@ -183,15 +223,18 @@ TEST_F(IsoDataChannelTests, SendData) {
       /*sdu_data = */ blob_span);
 
   EXPECT_ISO_PACKET_OUT(test_device(), packet);
-  iso_data_channel()->SendData(std::move(packet));
+  connection.SendData(std::move(packet));
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+  iso_data_channel()->UnregisterConnection(kIsoHandle1);
 }
 
 TEST_F(IsoDataChannelTests, SendDataExhaustBuffers) {
   ASSERT_NE(iso_data_channel(), nullptr);
-
   constexpr hci_spec::ConnectionHandle kIsoHandle = 0x123;
+  IsoMockConnectionInterface connection(*iso_data_channel());
+  iso_data_channel()->RegisterConnection(kIsoHandle, connection.GetWeakPtr());
+
   for (size_t i = 0; i < kDefaultMaxNumPackets; ++i) {
     std::unique_ptr<std::vector<uint8_t>> blob = testing::GenDataBlob(10, i);
     DynamicByteBuffer packet = testing::IsoDataPacket(
@@ -204,7 +247,7 @@ TEST_F(IsoDataChannelTests, SendDataExhaustBuffers) {
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
         /*sdu_data = */ pw::span(blob->data(), blob->size()));
     EXPECT_ISO_PACKET_OUT(test_device(), packet);
-    iso_data_channel()->SendData(std::move(packet));
+    connection.SendData(std::move(packet));
   }
 
   RunUntilIdle();
@@ -224,7 +267,7 @@ TEST_F(IsoDataChannelTests, SendDataExceedBuffers) {
   constexpr hci_spec::ConnectionHandle kOtherHandle = 0x456;
   // Mock interface is not used, only registered to make sure the data channel
   // is aware that the connection is in fact an ISO connection.
-  IsoMockConnectionInterface mock_iface;
+  IsoMockConnectionInterface mock_iface(*iso_data_channel());
   EXPECT_TRUE(iso_data_channel()->RegisterConnection(kIsoHandle,
                                                      mock_iface.GetWeakPtr()));
   size_t num_sent = 0;
@@ -246,7 +289,7 @@ TEST_F(IsoDataChannelTests, SendDataExceedBuffers) {
       ++num_expectations;
       EXPECT_ISO_PACKET_OUT(test_device(), packet);
     }
-    iso_data_channel()->SendData(std::move(packet));
+    mock_iface.SendData(std::move(packet));
   }
 
   EXPECT_EQ(num_sent, kNumPackets);
@@ -325,6 +368,10 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
   ASSERT_NE(iso_data_channel(), nullptr);
 
   constexpr hci_spec::ConnectionHandle kIsoHandle = 0x42;
+  IsoMockConnectionInterface connection(*iso_data_channel());
+  EXPECT_TRUE(iso_data_channel()->RegisterConnection(kIsoHandle,
+                                                     connection.GetWeakPtr()));
+
   constexpr size_t kTimestampSize = 4;
   constexpr size_t kSduHeaderSize = 4;
 
@@ -348,7 +395,7 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
         /*sdu_data = */ pw::span(blob->data(), blob->size()));
     EXPECT_ISO_PACKET_OUT(test_device(), packet);
-    iso_data_channel()->SendData(std::move(packet));
+    connection.SendData(std::move(packet));
   }
 
   {
@@ -366,7 +413,7 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
         /*sdu_data = */ pw::span(blob->data(), blob->size()));
     EXPECT_ISO_PACKET_OUT(test_device(), packet);
-    iso_data_channel()->SendData(std::move(packet));
+    connection.SendData(std::move(packet));
   }
 
   {
@@ -383,7 +430,7 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
         /*status_flag = */ std::nullopt,
         /*sdu_data = */ pw::span(blob->data(), blob->size()));
     EXPECT_ISO_PACKET_OUT(test_device(), packet);
-    iso_data_channel()->SendData(std::move(packet));
+    connection.SendData(std::move(packet));
   }
 
   {
@@ -400,7 +447,7 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
         /*status_flag = */
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
         /*sdu_data = */ pw::span(blob->data(), blob->size()));
-    EXPECT_DEATH_IF_SUPPORTED(iso_data_channel()->SendData(std::move(packet)),
+    EXPECT_DEATH_IF_SUPPORTED(connection.SendData(std::move(packet)),
                               "Unfragmented packet");
   }
 
@@ -418,7 +465,7 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
         /*status_flag = */
         pw::bluetooth::emboss::IsoDataPacketStatus::VALID_DATA,
         /*sdu_data = */ pw::span(blob->data(), blob->size()));
-    EXPECT_DEATH_IF_SUPPORTED(iso_data_channel()->SendData(std::move(packet)),
+    EXPECT_DEATH_IF_SUPPORTED(connection.SendData(std::move(packet)),
                               "Unfragmented packet");
   }
 
@@ -435,12 +482,118 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
         /*sdu_length = */ std::nullopt,
         /*status_flag = */ std::nullopt,
         /*sdu_data = */ pw::span(blob->data(), blob->size()));
-    EXPECT_DEATH_IF_SUPPORTED(iso_data_channel()->SendData(std::move(packet)),
+    EXPECT_DEATH_IF_SUPPORTED(connection.SendData(std::move(packet)),
                               "Unfragmented packet");
   }
 
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+}
+
+TEST_F(IsoDataChannelTests, SendDataMultipleConnections) {
+  ASSERT_NE(iso_data_channel(), nullptr);
+  constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x0001;
+  IsoMockConnectionInterface connection1(*iso_data_channel());
+  iso_data_channel()->RegisterConnection(kIsoHandle1, connection1.GetWeakPtr());
+  constexpr hci_spec::ConnectionHandle kIsoHandle2 = 0x0002;
+  IsoMockConnectionInterface connection2(*iso_data_channel());
+  iso_data_channel()->RegisterConnection(kIsoHandle2, connection2.GetWeakPtr());
+
+  size_t num_sent = 0;
+  // First send a packet on connection2.
+  {
+    DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle2, /*seq=*/num_sent);
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    connection2.SendData(std::move(packet));
+    ++num_sent;
+  }
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Fill rest of controller buffer with connection1 packets.
+  for (; num_sent < kDefaultMaxNumPackets; ++num_sent) {
+    DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle1, /*seq=*/num_sent);
+    EXPECT_ISO_PACKET_OUT(test_device(), packet);
+    connection1.SendData(std::move(packet));
+  }
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Queue 2 packets in connection2.
+  for (; num_sent < kDefaultMaxNumPackets + 2; ++num_sent) {
+    DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle2, /*seq=*/num_sent);
+    connection2.SendData(std::move(packet));
+  }
+
+  // Queue 2 packets in connection1.
+  for (; num_sent < kDefaultMaxNumPackets + 4; ++num_sent) {
+    DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle1, /*seq=*/num_sent);
+    connection1.SendData(std::move(packet));
+  }
+  // No packets should be sent.
+  RunUntilIdle();
+
+  // The next queued connection2 packet should be sent after NOCP event.
+  {
+    DynamicByteBuffer expected_packet =
+        MakeIsoPacket(kIsoHandle2, /*seq=*/kDefaultMaxNumPackets);
+    EXPECT_ISO_PACKET_OUT(test_device(), expected_packet);
+  }
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacket(kIsoHandle2, 1));
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  // The next queued connection1 packet should be sent after NOCP event.
+  {
+    DynamicByteBuffer expected_packet =
+        MakeIsoPacket(kIsoHandle1, /*seq=*/kDefaultMaxNumPackets + 2);
+    EXPECT_ISO_PACKET_OUT(test_device(), expected_packet);
+  }
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacket(kIsoHandle1, 1));
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  // The next queued connection2 packet and connection 1 packet should be sent
+  // after NOCP event acknowledging 2 packets.
+  {
+    DynamicByteBuffer expected_packet =
+        MakeIsoPacket(kIsoHandle2, /*seq=*/kDefaultMaxNumPackets + 1);
+    EXPECT_ISO_PACKET_OUT(test_device(), expected_packet);
+  }
+  {
+    DynamicByteBuffer expected_packet =
+        MakeIsoPacket(kIsoHandle1, /*seq=*/kDefaultMaxNumPackets + 3);
+    EXPECT_ISO_PACKET_OUT(test_device(), expected_packet);
+  }
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacket(kIsoHandle1, 2));
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  // Nothing else should be sent.
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacket(kIsoHandle1, 1));
+  RunUntilIdle();
+}
+
+TEST_F(IsoDataChannelTests, SendDataBeforeRegistering) {
+  ASSERT_NE(iso_data_channel(), nullptr);
+  constexpr hci_spec::ConnectionHandle kIsoHandle = 0x123;
+  IsoMockConnectionInterface connection(*iso_data_channel());
+
+  DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle, /*seq=*/0);
+  EXPECT_ISO_PACKET_OUT(test_device(), packet);
+  connection.SendData(std::move(packet));
+  RunUntilIdle();
+  EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+
+  iso_data_channel()->RegisterConnection(kIsoHandle, connection.GetWeakPtr());
+  RunUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+
+  iso_data_channel()->UnregisterConnection(kIsoHandle);
 }
 
 }  // namespace bt::hci

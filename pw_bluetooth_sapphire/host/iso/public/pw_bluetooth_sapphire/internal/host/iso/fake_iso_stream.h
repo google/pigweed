@@ -43,6 +43,10 @@ class FakeIsoStream : public IsoStream {
 
   void ReceiveInboundPacket(const pw::span<const std::byte> packet) override {}
 
+  std::optional<DynamicByteBuffer> GetNextOutboundPdu() override {
+    return std::nullopt;
+  }
+
   hci_spec::ConnectionHandle cis_handle() const override { return 0; }
 
   void Close() override {}
