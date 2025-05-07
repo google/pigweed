@@ -56,6 +56,7 @@ from typing import (
     NamedTuple,
     Pattern,
 )
+import warnings
 
 try:
     from pw_tokenizer import database, decode, encode, tokens
@@ -327,6 +328,9 @@ class Detokenizer:
         recursion: int = DEFAULT_RECURSION,
     ) -> AnyStr:
         """Alias of detokenize_text for backwards compatibility."""
+        warnings.warn(
+            "Deprecated; call detokenize_text instead", DeprecationWarning
+        )
         return self.detokenize_text(data, recursion)
 
     def detokenize_text_to_file(
@@ -346,6 +350,10 @@ class Detokenizer:
         recursion: int = DEFAULT_RECURSION,
     ) -> None:
         """Alias of detokenize_text_to_file for backwards compatibility."""
+        warnings.warn(
+            "Deprecated; call detokenize_base64_to_file instead",
+            DeprecationWarning,
+        )
         self.detokenize_text_to_file(data, output, recursion)
 
     def detokenize_text_live(
@@ -376,6 +384,10 @@ class Detokenizer:
         recursion: int = DEFAULT_RECURSION,
     ) -> None:
         """Alias of detokenize_text_live for backwards compatibility."""
+        warnings.warn(
+            "Deprecated; call detokenize_base64_live instead",
+            DeprecationWarning,
+        )
         self.detokenize_text_live(input_file, output, recursion)
 
     def _detokenize_nested_callback(
@@ -692,11 +704,12 @@ def detokenize_base64(
     data: bytes,
     recursion: int = DEFAULT_RECURSION,
 ) -> bytes:
-    """Alias for detokenizer.detokenize_base64 for backwards compatibility.
+    """Alias for detokenizer.detokenize_text for backwards compatibility.
 
     This function is deprecated; do not call it.
     """
-    return detokenizer.detokenize_base64(data, recursion)
+    warnings.warn("Deprecated; call detokenize.detokenize_text() instead")
+    return detokenizer.detokenize_text(data, recursion)
 
 
 def _follow_and_detokenize_file(
