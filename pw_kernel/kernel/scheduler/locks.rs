@@ -199,8 +199,12 @@ impl<'lock, T> WaitQueueLockGuard<'lock, T> {
         self.operate_on_wait_queue(|guard| (guard.wait(), ())).0
     }
 
-    pub fn wake_one(self) -> Self {
-        self.operate_on_wait_queue(|guard| (guard.wake_one(), ())).0
+    pub fn wake_one(self) -> (Self, super::WakeResult) {
+        self.operate_on_wait_queue(|guard| guard.wake_one())
+    }
+
+    pub fn wake_all(self) -> Self {
+        self.operate_on_wait_queue(|guard| (guard.wake_all(), ())).0
     }
 }
 

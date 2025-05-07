@@ -392,6 +392,12 @@ impl WaitQueue {
     }
 }
 
+#[derive(Eq, PartialEq)]
+pub enum WakeResult {
+    Woken,
+    QueueEmpty,
+}
+
 impl SchedLockGuard<'_, WaitQueue> {
     fn add_to_queue_and_reschedule(mut self, mut thread: ForeignBox<Thread>) -> Self {
         let current_thread_id = thread.id();
@@ -424,14 +430,24 @@ impl SchedLockGuard<'_, WaitQueue> {
         Some(Error::DeadlineExceeded)
     }
 
-    pub fn wake_one(mut self) -> Self {
+    pub fn wake_one(mut self) -> (Self, WakeResult) {
         let Some(mut thread) = self.queue.pop_head() else {
-            return self;
+            return (self, WakeResult::QueueEmpty);
         };
         wait_queue_debug!("waking <{}>", thread.name as &str);
         thread.state = State::Ready;
         self.sched_mut().run_queue.push_back(thread);
-        self.try_reschedule()
+        (self.try_reschedule(), WakeResult::Woken)
+    }
+
+    pub fn wake_all(mut self) -> Self {
+        loop {
+            let result;
+            (self, result) = self.wake_one();
+            if result == WakeResult::QueueEmpty {
+                return self;
+            }
+        }
     }
 
     pub fn wait(mut self) -> Self {
