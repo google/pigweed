@@ -542,9 +542,7 @@ void TransferThread::HandleSetStreamEvent(TransferStream stream) {
                          Status::Aborted());
       client_read_stream_ = std::move(staged_client_stream_);
       client_read_stream_.set_on_next(std::move(staged_client_on_next_));
-      client_read_stream_.set_on_error([](Status status) {
-        PW_LOG_WARN("Client read stream closed unexpectedly: %s", status.str());
-      });
+      // on_error must be controlled by the client
       break;
     case TransferStream::kClientWrite:
       TerminateTransfers(client_transfers_,
@@ -553,10 +551,7 @@ void TransferThread::HandleSetStreamEvent(TransferStream stream) {
                          Status::Aborted());
       client_write_stream_ = std::move(staged_client_stream_);
       client_write_stream_.set_on_next(std::move(staged_client_on_next_));
-      client_write_stream_.set_on_error([](Status status) {
-        PW_LOG_WARN("Client write stream closed unexpectedly: %s",
-                    status.str());
-      });
+      // on_error must be controlled by the client
       break;
     case TransferStream::kServerRead:
       TerminateTransfers(server_transfers_,
