@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_async2/context.h"
+#include "pw_async2/internal/token.h"
 #include "pw_async2/lock.h"
 #include "pw_async2/poll.h"
 #include "pw_containers/intrusive_forward_list.h"
@@ -21,6 +22,9 @@
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::async2 {
+
+/// Generates a token for use as a task name.
+#define PW_ASYNC_TASK_NAME(name) PW_LOG_TOKEN_EXPR(name)
 
 class NativeDispatcherBase;
 
@@ -61,10 +65,22 @@ class Task : public IntrusiveList<Task>::Item {
 
  public:
   Task() = default;
+
+  /// Creates a task with the specified name. To generate a name token, use the
+  /// ``PW_ASYNC_TASK_NAME`` macro, e.g.
+  ///
+  /// ```
+  /// class MyTask : public pw::async2::Task {
+  ///   MyTask() : pw::async2::Task(PW_ASYNC_TASK_NAME("MyTask")) {}
+  /// };
+  /// ```
+  constexpr Task(internal::Token name) : name_(name) {}
+
   Task(const Task&) = delete;
   Task(Task&&) = delete;
   Task& operator=(const Task&) = delete;
   Task& operator=(Task&&) = delete;
+
   virtual ~Task() {
     // Note: the task must not be registered with a ``Dispatcher` upon
     // destruction. This happens automatically upon ``Task`` completion or upon
@@ -183,6 +199,7 @@ class Task : public IntrusiveList<Task>::Item {
     kWoken,
     kSleeping,
   };
+
   // The current state of the task.
   State state_ PW_GUARDED_BY(impl::dispatcher_lock()) = State::kUnposted;
 
@@ -197,6 +214,10 @@ class Task : public IntrusiveList<Task>::Item {
 
   // Linked list of ``Waker`` s that may awaken this ``Task``.
   IntrusiveForwardList<Waker> wakers_ PW_GUARDED_BY(impl::dispatcher_lock());
+
+  // Optional user-facing name for the task. If set, it will be included in
+  // debug logs.
+  internal::Token name_ = internal::kEmptyToken;
 };
 
 }  // namespace pw::async2

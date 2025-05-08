@@ -60,6 +60,7 @@ pw_facade(
         "public/pw_async2/dispatcher.h",
         "public/pw_async2/dispatcher_base.h",
         "public/pw_async2/internal/config.h",
+        "public/pw_async2/internal/token.h",
         "public/pw_async2/lock.h",
         "public/pw_async2/task.h",
         "public/pw_async2/waker.h",
@@ -87,13 +88,9 @@ pw_facade(
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
+        "//pw_tokenizer",
         "//pw_toolchain:no_destructor",
-    ] + select({
-        ":debug_wait_reason_disabled": [],
-        ":debug_wait_reason_enabled": [
-            "//pw_tokenizer",
-        ],
-    }),
+    ],
 )
 
 label_flag(

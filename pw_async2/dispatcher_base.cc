@@ -19,6 +19,7 @@
 
 #include "pw_assert/check.h"
 #include "pw_async2/internal/config.h"
+#include "pw_async2/internal/token.h"
 #include "pw_async2/waker.h"
 
 #define PW_LOG_MODULE_NAME PW_ASYNC2_CONFIG_LOG_MODULE_NAME
@@ -31,13 +32,11 @@ namespace internal {
 
 void CloneWaker(Waker& waker_in,
                 Waker& waker_out,
-                internal::WaitReasonType wait_reason) {
+                internal::Token wait_reason) {
   waker_in.InternalCloneInto(waker_out, wait_reason);
 }
 
-void StoreWaker(Context& cx,
-                Waker& waker_out,
-                internal::WaitReasonType wait_reason) {
+void StoreWaker(Context& cx, Waker& waker_out, internal::Token wait_reason) {
   CloneWaker(*cx.waker_, waker_out, wait_reason);
 }
 
@@ -68,7 +67,7 @@ void Task::RemoveWakerLocked(Waker& waker) {
   wakers_.remove(waker);
   waker.task_ = nullptr;
 #if PW_ASYNC2_DEBUG_WAIT_REASON
-  waker.wait_reason_ = internal::kWaitReasonDefaultValue;
+  waker.wait_reason_ = internal::kEmptyToken;
 #endif  // PW_ASYNC2_DEBUG_WAIT_REASON
 }
 
@@ -278,6 +277,7 @@ NativeDispatcherBase::RunOneTaskResult NativeDispatcherBase::RunOneTask(
     complete = task->Pend(context).IsReady();
     requires_waker = context.requires_waker_;
   }
+
   if (complete) {
     tasks_completed_.Increment();
     bool all_complete;
@@ -304,29 +304,36 @@ NativeDispatcherBase::RunOneTaskResult NativeDispatcherBase::RunOneTask(
         /*completed_all_tasks=*/all_complete,
         /*completed_main_task=*/task == task_to_look_for,
         /*ran_a_task=*/true);
-  } else {
-    std::lock_guard lock(impl::dispatcher_lock());
-    if (task->state_ == Task::State::kRunning) {
-      PW_LOG_DEBUG("Dispatcher adding task %p to sleep queue",
-                   static_cast<const void*>(task));
-
-      if (requires_waker) {
-        PW_CHECK(!task->wakers_.empty(),
-                 "Task %p returned Pending() without registering a waker",
-                 static_cast<const void*>(task));
-        task->state_ = Task::State::kSleeping;
-        sleeping_.push_front(*task);
-      } else {
-        // Require the task to be manually re-posted.
-        task->state_ = Task::State::kUnposted;
-        task->dispatcher_ = nullptr;
-      }
-    }
-    return RunOneTaskResult(
-        /*completed_all_tasks=*/false,
-        /*completed_main_task=*/false,
-        /*ran_a_task=*/true);
   }
+
+  std::lock_guard lock(impl::dispatcher_lock());
+  if (task->state_ == Task::State::kRunning) {
+    if (task->name_ != internal::kEmptyToken) {
+      PW_LOG_DEBUG(
+          "Dispatcher adding task " PW_LOG_TOKEN_FMT() ":%p to sleep queue",
+          task->name_,
+          static_cast<const void*>(task));
+    } else {
+      PW_LOG_DEBUG("Dispatcher adding task (anonymous):%p to sleep queue",
+                   static_cast<const void*>(task));
+    }
+
+    if (requires_waker) {
+      PW_CHECK(!task->wakers_.empty(),
+               "Task %p returned Pending() without registering a waker",
+               static_cast<const void*>(task));
+      task->state_ = Task::State::kSleeping;
+      sleeping_.push_front(*task);
+    } else {
+      // Require the task to be manually re-posted.
+      task->state_ = Task::State::kUnposted;
+      task->dispatcher_ = nullptr;
+    }
+  }
+  return RunOneTaskResult(
+      /*completed_all_tasks=*/false,
+      /*completed_main_task=*/false,
+      /*ran_a_task=*/true);
 }
 
 void NativeDispatcherBase::UnpostTaskList(IntrusiveList<Task>& list) {
@@ -348,7 +355,14 @@ void NativeDispatcherBase::RemoveSleepingTaskLocked(Task& task) {
 }
 
 void NativeDispatcherBase::WakeTask(Task& task) {
-  PW_LOG_DEBUG("Dispatcher waking task %p", static_cast<const void*>(&task));
+  if (task.name_ != internal::kEmptyToken) {
+    PW_LOG_DEBUG("Dispatcher waking task " PW_LOG_TOKEN_FMT() ":%p",
+                 task.name_,
+                 static_cast<const void*>(&task));
+  } else {
+    PW_LOG_DEBUG("Dispatcher waking task (anonymous):%p",
+                 static_cast<const void*>(&task));
+  }
 
   switch (task.state_) {
     case Task::State::kWoken:
@@ -394,15 +408,29 @@ void NativeDispatcherBase::LogRegisteredTasks() {
 
   PW_LOG_INFO("Woken tasks:");
   for (const Task& task : woken_) {
-    PW_LOG_INFO("  - Task %p", static_cast<const void*>(&task));
+    if (task.name_ != internal::kEmptyToken) {
+      PW_LOG_INFO("  - " PW_LOG_TOKEN_FMT() ":%p",
+                  task.name_,
+                  static_cast<const void*>(&task));
+    } else {
+      PW_LOG_INFO("  - (anonymous):%p", static_cast<const void*>(&task));
+    }
   }
   PW_LOG_INFO("Sleeping tasks:");
   for (const Task& task : sleeping_) {
     int waker_count = static_cast<int>(
         std::distance(task.wakers_.begin(), task.wakers_.end()));
-    PW_LOG_INFO("  - Task %p (%d wakers)",
-                static_cast<const void*>(&task),
-                waker_count);
+
+    if (task.name_ != internal::kEmptyToken) {
+      PW_LOG_INFO("  - " PW_LOG_TOKEN_FMT() ":%p (%d wakers)",
+                  task.name_,
+                  static_cast<const void*>(&task),
+                  waker_count);
+    } else {
+      PW_LOG_INFO("  - (anonymous):%p (%d wakers)",
+                  static_cast<const void*>(&task),
+                  waker_count);
+    }
 
 #if PW_ASYNC2_DEBUG_WAIT_REASON
     LogTaskWakers(task);
@@ -415,7 +443,7 @@ void NativeDispatcherBase::LogTaskWakers(const Task& task) {
   int i = 0;
   for (const Waker& waker : task.wakers_) {
     i++;
-    if (waker.wait_reason_ != internal::kWaitReasonDefaultValue) {
+    if (waker.wait_reason_ != internal::kEmptyToken) {
       PW_LOG_INFO("    * Waker %d: " PW_LOG_TOKEN_FMT("pw_async2"),
                   i,
                   waker.wait_reason_);

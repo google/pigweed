@@ -28,6 +28,8 @@ class MockTask : public Task {
   int destroyed = 0;
   Waker last_waker;
 
+  MockTask() : Task(PW_ASYNC_TASK_NAME("MockTask")) {}
+
  private:
   Poll<> DoPend(Context& cx) override {
     ++polled;
@@ -185,7 +187,7 @@ TEST(Dispatcher, RunPendableUntilStalledReturnsPending) {
   EXPECT_EQ(result, Pending());
 }
 
-TEST(Dispathcer, RunPendableToCompletionReturnsOutput) {
+TEST(Dispatcher, RunPendableToCompletionReturnsOutput) {
   MockPendable pollable(Ready(5));
   Dispatcher dispatcher;
   int result = dispatcher.RunPendableToCompletion(pollable);

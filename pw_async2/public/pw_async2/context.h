@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include "pw_async2/internal/config.h"
+#include "pw_async2/internal/token.h"
 #include "pw_async2/poll.h"
 #include "pw_async2/waker.h"
 #include "pw_log/tokenized_args.h"
@@ -30,7 +30,7 @@ namespace internal {
 ///
 /// Saves a ``Waker`` into ``waker_out`` which, when awoken, will cause the
 /// current task to be ``Pend``'d by its dispatcher.
-void StoreWaker(Context& cx, Waker& waker_out, WaitReasonType wait_reason);
+void StoreWaker(Context& cx, Waker& waker_out, Token wait_reason);
 
 }  // namespace internal
 
@@ -84,7 +84,7 @@ class Context {
   friend class NativeDispatcherBase;
   friend void internal::StoreWaker(Context& cx,
                                    Waker& waker_out,
-                                   internal::WaitReasonType wait_reason);
+                                   internal::Token wait_reason);
 
   Dispatcher* dispatcher_;
   Waker* waker_;
