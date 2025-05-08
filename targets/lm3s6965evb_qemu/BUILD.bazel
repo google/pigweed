@@ -15,6 +15,8 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
+load("//pw_build:merge_flags.bzl", "flags_from_dict")
+load("//pw_build:pigweed.bzl", "pw_linker_script")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,12 +29,67 @@ cc_library(
         "vector_table.c",
     ],
     deps = [
+        ":basic_linker_script",
         "//pw_boot",
         "//pw_boot_cortex_m",
+        "//pw_malloc",
         "//pw_preprocessor",
         "//pw_sys_io_baremetal_lm3s6965evb",
         "//pw_toolchain:infinite_loop",
+        "//pw_toolchain/arm_gcc:arm_none_eabi_gcc_support",
     ],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "pigweed_module_config",
+    defines = [
+        "PW_ASSERT_BASIC_ACTION=PW_ASSERT_BASIC_ACTION_EXIT",
+    ],
+)
+
+platform(
+    name = "lm3s6965evb_qemu",
+    constraint_values = [
+        "//pw_build/constraints/arm:cortex-m3",
+        "//pw_build/constraints/chipset:lm3s6965evb",
+        "@platforms//cpu:armv7-m",
+        "@platforms//os:none",
+        "@rust_crates//:no_std",
+    ],
+    flags = flags_from_dict({
+        "//pw_assert:check_backend": "//pw_assert_basic",
+        "//pw_assert:check_backend_impl": "//pw_assert_basic:impl",
+        "//pw_boot:backend": "//pw_boot_cortex_m",
+        "//pw_build:default_module_config": "//targets/lm3s6965evb_qemu:pigweed_module_config",
+        "//pw_log/rust:pw_log_backend": "//pw_rust/examples/tokenized_logging:pw_log_backend",
+        "//pw_log:backend": "//pw_log_basic",
+        "//pw_log:backend_impl": "//pw_log_basic:impl",
+        "//pw_sys_io:backend": "//pw_sys_io_baremetal_lm3s6965evb",
+        "//pw_unit_test:main": "//pw_unit_test:logging_main",
+        "@bazel_tools//tools/cpp:link_extra_libs": ":pre_init",
+        # TODO: b/415389061 - While this is being built with newlib nano, malloc
+        # needs to be wrapped.
+        "@pigweed//pw_malloc:backend": "//pw_malloc:bucket_block_allocator",
+    }),
+)
+
+pw_linker_script(
+    name = "basic_linker_script",
+    # These come from
+    # https://cs.opensource.google/pigweed/pigweed/+/main:targets/stm32f429i_disc1/target_toolchains.gni
+    # TODO(tpudlik): Figure out how to share them between bazel and GN.
+    defines = [
+        "PW_BOOT_FLASH_BEGIN=0x00000200",
+        "PW_BOOT_FLASH_SIZE=255K",
+        "PW_BOOT_HEAP_SIZE=0",
+        "PW_BOOT_MIN_STACK_SIZE=1K",
+        "PW_BOOT_RAM_BEGIN=0x20000000",
+        "PW_BOOT_RAM_SIZE=64K",
+        "PW_BOOT_VECTOR_TABLE_BEGIN=0x00000000",
+        "PW_BOOT_VECTOR_TABLE_SIZE=512",
+    ],
+    linker_script = "//pw_boot_cortex_m:basic_cortex_m.ld",
 )
 
 sphinx_docs_library(

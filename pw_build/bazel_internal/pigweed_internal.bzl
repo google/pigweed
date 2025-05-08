@@ -36,7 +36,7 @@ print_platform = aspect(
         Example usage:
 
         bazel build \
-          //targets/lm3s6965evb \
+          //targets/lm3s6965evb_qemu \
           --aspects \
           pw_build/bazel_internal/pigweed_internal.bzl%print_platform
     """,

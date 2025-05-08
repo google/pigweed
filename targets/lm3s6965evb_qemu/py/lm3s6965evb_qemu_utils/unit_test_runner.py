@@ -18,7 +18,18 @@ import argparse
 import subprocess
 import sys
 
-_TARGET_QEMU_COMMAND = 'qemu-system-arm'
+# If the script is being run through Bazel, our client is provided at a well
+# known location in its runfiles.
+try:
+    from python.runfiles import runfiles  # type: ignore
+
+    r = runfiles.Create()
+    _TARGET_QEMU_COMMAND = r.Rlocation(
+        'pigweed/targets/lm3s6965evb_qemu/py/qemu-system-arm'
+    )
+except ImportError:
+    _TARGET_QEMU_COMMAND = 'qemu-system-arm'
+
 _TESTS_STARTING_STRING = b'[==========] Running all tests.'
 _TESTS_DONE_STRING = b'[==========] Done running all tests.'
 _TEST_FAILURE_STRING = b'[  FAILED  ]'

@@ -289,7 +289,7 @@ cc_library(
     ],
 )
 
-pw_cc_binary(
+cc_library(
     name = "logging_main",
     testonly = True,
     srcs = [

@@ -151,6 +151,11 @@
             "//..."
           ],
           [
+            "test",
+            "--config=lm3s6965evb",
+            "//pw_status/..."
+          ],
+          [
             "build",
             "--@rules_rust//rust/toolchain/channel=nightly",
             "//..."
