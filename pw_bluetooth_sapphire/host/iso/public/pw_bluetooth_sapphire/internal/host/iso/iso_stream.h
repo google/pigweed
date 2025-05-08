@@ -63,10 +63,9 @@ class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
       uint8_t cig_id,
       uint8_t cis_id,
       hci_spec::ConnectionHandle cis_handle,
+      hci::Transport::WeakPtr hci,
       CisEstablishedCallback on_established_cb,
-      hci::CommandChannel::WeakPtr cmd,
       pw::Callback<void()> on_closed_cb,
-      hci::IsoDataChannel* data_channel,
       pw::chrono::VirtualSystemClock& clock =
           pw::chrono::VirtualSystemClock::RealClock());
 

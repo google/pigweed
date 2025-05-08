@@ -18,6 +18,7 @@
 
 #include "pw_bluetooth/hci_data.emb.h"
 #include "pw_bluetooth_sapphire/internal/host/hci-spec/util.h"
+#include "pw_bluetooth_sapphire/internal/host/hci/connection.h"
 #include "pw_bluetooth_sapphire/internal/host/hci/sequential_command_runner.h"
 #include "pw_bluetooth_sapphire/internal/host/iso/iso_inbound_packet_assembler.h"
 #include "pw_bytes/span.h"
@@ -87,10 +88,9 @@ class IsoStreamImpl final : public IsoStream {
   IsoStreamImpl(uint8_t cig_id,
                 uint8_t cis_id,
                 hci_spec::ConnectionHandle cis_handle,
+                hci::Transport::WeakPtr hci,
                 CisEstablishedCallback on_established_cb,
-                hci::CommandChannel::WeakPtr cmd,
                 pw::Callback<void()> on_closed_cb,
-                hci::IsoDataChannel* data_channel,
                 pw::chrono::VirtualSystemClock& clock);
 
   // IsoStream overrides
@@ -167,30 +167,26 @@ class IsoStreamImpl final : public IsoStream {
   DataPathState input_data_path_state_ = DataPathState::kNotSetUp;
   DataPathState output_data_path_state_ = DataPathState::kNotSetUp;
 
-  hci::CommandChannel::WeakPtr cmd_;
-
   hci::CommandChannel::EventHandlerId cis_established_handler_;
-
-  // The IsoDataChannel that this stream is registered to.
-  hci::IsoDataChannel* data_channel_;
-
-  WeakSelf<IsoStreamImpl> weak_self_;
 
   pw::chrono::VirtualSystemClock& clock_;
   pw::chrono::SystemClock::time_point reference_time_;
   uint16_t next_sdu_sequence_number_ = 0;
   uint32_t iso_interval_usec_ = 0;
+  // Created on HCI_LE_CIS_Established event with success status.
+  std::optional<hci::Connection> link_;
+  hci::Transport::WeakPtr hci_;
 
+  WeakSelf<IsoStreamImpl> weak_self_;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(IsoStreamImpl);
 };
 
 IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
                              uint8_t cis_id,
                              hci_spec::ConnectionHandle cis_handle,
+                             hci::Transport::WeakPtr hci,
                              CisEstablishedCallback on_established_cb,
-                             hci::CommandChannel::WeakPtr cmd,
                              pw::Callback<void()> on_closed_cb,
-                             hci::IsoDataChannel* data_channel,
                              pw::chrono::VirtualSystemClock& clock)
     : IsoStream(),
       state_(IsoStreamState::kNotEstablished),
@@ -201,15 +197,13 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
       inbound_assembler_(
           fit::bind_member<&IsoStreamImpl::HandleCompletePacket>(this)),
       on_closed_cb_(std::move(on_closed_cb)),
-      cmd_(std::move(cmd)),
-      data_channel_(data_channel),
-      weak_self_(this),
-      clock_(clock) {
-  PW_CHECK(cmd_.is_alive());
-  PW_CHECK(data_channel_);
+      clock_(clock),
+      hci_(std::move(hci)),
+      weak_self_(this) {
+  PW_CHECK(hci_.is_alive());
 
   auto weak_self = weak_self_.GetWeakPtr();
-  cis_established_handler_ = cmd_->AddLEMetaEventHandler(
+  cis_established_handler_ = hci_->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLECISEstablishedSubeventCode,
       [self = std::move(weak_self)](const hci::EventPacket& event) {
         if (!self.is_alive()) {
@@ -259,6 +253,15 @@ bool IsoStreamImpl::OnCisEstablished(const hci::EventPacket& event) {
   }
 
   state_ = IsoStreamState::kEstablished;
+
+  link_.emplace(cis_hci_handle_, hci_, /*on_disconnection_complete=*/nullptr);
+  link_->set_peer_disconnect_callback(
+      [this](const hci::Connection&, pw::bluetooth::emboss::StatusCode) {
+        bt_log(INFO, "iso", "CIS Disconnected at handle %#x", cis_hci_handle_);
+        if (on_closed_cb_) {
+          on_closed_cb_();
+        }
+      });
 
   // General stream attributes
   cis_params_.cig_sync_delay = view.cig_sync_delay().Read();
@@ -365,7 +368,7 @@ void IsoStreamImpl::SetupDataPath(
   WeakSelf<IsoStreamImpl>::WeakPtr self = weak_self_.GetWeakPtr();
 
   bt_log(INFO, "iso", "sending LE_Setup_ISO_Data_Path command");
-  cmd_->SendCommand(
+  hci_->command_channel()->SendCommand(
       std::move(cmd_packet),
       [on_complete_callback = std::move(on_complete_cb),
        self,
@@ -548,9 +551,9 @@ std::optional<IsoDataPacket> IsoStreamImpl::ReadNextQueuedIncomingPacket() {
 }
 
 void IsoStreamImpl::Send(pw::ConstByteSpan data) {
-  PW_CHECK(data_channel_, "Send called while not registered to a data stream.");
   PW_CHECK(data.size() <= std::numeric_limits<uint16_t>::max());
-  const size_t max_length = data_channel_->buffer_info().max_data_length();
+  const size_t max_length =
+      hci_->iso_data_channel()->buffer_info().max_data_length();
 
   // Calculate the current interval sequence number
   auto now = clock_.now();
@@ -613,7 +616,7 @@ void IsoStreamImpl::Send(pw::ConstByteSpan data) {
   }
   next_sdu_sequence_number_ = current_sequence_num + 1;
 
-  data_channel_->TrySendPackets();
+  hci_->iso_data_channel()->TrySendPackets();
 }
 
 void IsoStreamImpl::Close() { on_closed_cb_(); }
@@ -622,18 +625,16 @@ std::unique_ptr<IsoStream> IsoStream::Create(
     uint8_t cig_id,
     uint8_t cis_id,
     hci_spec::ConnectionHandle cis_handle,
+    hci::Transport::WeakPtr hci,
     CisEstablishedCallback on_established_cb,
-    hci::CommandChannel::WeakPtr cmd,
     pw::Callback<void()> on_closed_cb,
-    hci::IsoDataChannel* data_channel,
     pw::chrono::VirtualSystemClock& clock) {
   return std::make_unique<IsoStreamImpl>(cig_id,
                                          cis_id,
                                          cis_handle,
+                                         std::move(hci),
                                          std::move(on_established_cb),
-                                         std::move(cmd),
                                          std::move(on_closed_cb),
-                                         data_channel,
                                          clock);
 }
 

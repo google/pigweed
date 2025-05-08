@@ -54,6 +54,7 @@ class IsoStreamTest : public MockControllerTestBase {
         kCigId,
         kCisId,
         kCisHandleId,
+        transport()->GetWeakPtr(),
         /*on_established_cb=*/
         [this](pw::bluetooth::emboss::StatusCode status,
                std::optional<WeakSelf<IsoStream>::WeakPtr>,
@@ -62,14 +63,22 @@ class IsoStreamTest : public MockControllerTestBase {
           establishment_status_ = status;
           established_parameters_ = parameters;
         },
-        transport()->command_channel()->AsWeakPtr(),
         /*on_closed_cb=*/
         [this]() {
           ASSERT_FALSE(closed_);
           closed_ = true;
         },
-        transport()->iso_data_channel(),
         test_clock_);
+  }
+
+  void TearDown() override {
+    RunUntilIdle();
+    if (establishment_status_ == pw::bluetooth::emboss::StatusCode::SUCCESS) {
+      EXPECT_CMD_PACKET_OUT(test_device(),
+                            testing::DisconnectPacket(kCisHandleId));
+    }
+    iso_stream_.reset();
+    RunUntilIdle();
   }
 
  protected:

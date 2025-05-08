@@ -49,6 +49,11 @@ class IsoStreamManagerTest : public MockControllerTestBase {
         kAclConnectionHandleId1, transport()->GetWeakPtr());
   }
 
+  void TearDown() override {
+    RunUntilIdle();
+    iso_stream_manager_.reset();
+  }
+
   AcceptCisStatus CallAcceptCis(CigCisIdentifier id,
                                 bool* cb_invoked = nullptr) {
     AcceptCisStatus status;
@@ -197,6 +202,8 @@ TEST_F(IsoStreamManagerTest, MultipleCISAcceptRequests) {
   // If we close out the stream associated with kId1, we should now be able to
   // start waiting again
   ASSERT_EQ(iso_streams_.count(kId1), 1u);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        testing::DisconnectPacket(kAltCisHandleId));
   iso_streams_[kId1]->Close();
   EXPECT_EQ(CallAcceptCis(kId1), AcceptCisStatus::kSuccess);
   ASSERT_TRUE(iso_stream_manager()->HandlerRegistered(kId1));
