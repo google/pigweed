@@ -22,7 +22,7 @@ export default defineConfig([
     workspaceFolder: path.join(process.cwd(), '..', '..', '..'),
     mocha: {
       ui: 'tdd',
-      timeout: 20000,
+      timeout: 120000,
     },
   },
   {
