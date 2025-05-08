@@ -23,13 +23,13 @@ ScoConnection::ScoConnection(hci_spec::ConnectionHandle handle,
                              const DeviceAddress& peer_address,
                              const hci::Transport::WeakPtr& hci)
     : Connection(handle,
-                 local_address,
-                 peer_address,
                  hci,
                  [handle, hci] {
                    ScoConnection::OnDisconnectionComplete(handle, hci);
                  }),
-      WeakSelf(this) {
+      WeakSelf(this),
+      local_address_(local_address),
+      peer_address_(peer_address) {
   // The connection is registered & unregistered with ScoDataChannel by
   // sco::ScoConnection.
 }

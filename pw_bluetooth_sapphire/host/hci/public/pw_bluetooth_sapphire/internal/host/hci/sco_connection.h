@@ -23,11 +23,21 @@ class ScoConnection : public Connection, public WeakSelf<ScoConnection> {
                 const DeviceAddress& peer_address,
                 const hci::Transport::WeakPtr& hci);
 
+  // The local device address used while establishing the connection.
+  const DeviceAddress& local_address() const { return local_address_; }
+
+  // The peer address used while establishing the connection.
+  const DeviceAddress& peer_address() const { return peer_address_; }
+
  private:
   // This method must be static since it may be invoked after the connection
   // associated with it is destroyed.
   static void OnDisconnectionComplete(hci_spec::ConnectionHandle handle,
                                       const hci::Transport::WeakPtr& hci);
+
+  // Addresses used while creating the link.
+  DeviceAddress local_address_;
+  DeviceAddress peer_address_;
 };
 
 }  // namespace bt::hci

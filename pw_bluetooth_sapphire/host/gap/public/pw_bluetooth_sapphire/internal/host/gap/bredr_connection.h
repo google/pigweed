@@ -105,7 +105,7 @@ class BrEdrConnection final {
   // Attach connection inspect node as a child of |parent| named |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
-  const hci::Connection& link() const { return *link_; }
+  const hci::BrEdrConnection& link() const { return *link_; }
   hci::BrEdrConnection& link() { return *link_; }
   PeerId peer_id() const { return peer_id_; }
   PairingStateManager& pairing_state_manager() {

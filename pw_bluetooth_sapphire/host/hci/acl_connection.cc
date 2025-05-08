@@ -42,13 +42,13 @@ AclConnection::AclConnection(hci_spec::ConnectionHandle handle,
                              pw::bluetooth::emboss::ConnectionRole role,
                              const Transport::WeakPtr& hci)
     : Connection(handle,
-                 local_address,
-                 peer_address,
                  hci,
                  [handle, hci] {
                    AclConnection::OnDisconnectionComplete(handle, hci);
                  }),
       role_(role),
+      local_address_(local_address),
+      peer_address_(peer_address),
       weak_self_(this) {
   auto self = weak_self_.GetWeakPtr();
   enc_change_id_ = hci->command_channel()->AddEventHandler(

@@ -57,6 +57,13 @@ class Connection {
     kDisconnected
   };
 
+  // |on_disconnection_complete| will be called when the disconnection complete
+  // event is received, which may be after this object is destroyed (which is
+  // why this isn't a virtual method).
+  Connection(hci_spec::ConnectionHandle handle,
+             Transport::WeakPtr hci,
+             fit::callback<void()> on_disconnection_complete);
+
   // The destructor closes this connection.
   virtual ~Connection();
 
@@ -66,12 +73,6 @@ class Connection {
   // Returns the 12-bit connection handle of this connection. This handle is
   // used to identify an individual logical link maintained by the controller.
   hci_spec::ConnectionHandle handle() const { return handle_; }
-
-  // The local device address used while establishing the connection.
-  const DeviceAddress& local_address() const { return local_address_; }
-
-  // The peer address used while establishing the connection.
-  const DeviceAddress& peer_address() const { return peer_address_; }
 
   State state() const { return conn_state_; }
 
@@ -87,15 +88,6 @@ class Connection {
   virtual void Disconnect(pw::bluetooth::emboss::StatusCode reason);
 
  protected:
-  // |on_disconnection_complete| will be called when the disconnection complete
-  // event is received, which may be after this object is destroyed (which is
-  // why this isn't a virtual method).
-  Connection(hci_spec::ConnectionHandle handle,
-             const DeviceAddress& local_address,
-             const DeviceAddress& peer_address,
-             Transport::WeakPtr hci,
-             fit::callback<void()> on_disconnection_complete);
-
   const Transport::WeakPtr& hci() { return hci_; }
 
   PeerDisconnectCallback& peer_disconnect_callback() {
@@ -115,10 +107,6 @@ class Connection {
       fit::callback<void()> on_disconnection_complete);
 
   hci_spec::ConnectionHandle handle_;
-
-  // Addresses used while creating the link.
-  DeviceAddress local_address_;
-  DeviceAddress peer_address_;
 
   PeerDisconnectCallback peer_disconnect_callback_;
 

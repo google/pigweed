@@ -61,6 +61,12 @@ class AclConnection : public Connection {
     encryption_status_ = status;
   }
 
+  // The local device address used while establishing the connection.
+  const DeviceAddress& local_address() const { return local_address_; }
+
+  // The peer address used while establishing the connection.
+  const DeviceAddress& peer_address() const { return peer_address_; }
+
  protected:
   AclConnection(hci_spec::ConnectionHandle handle,
                 const DeviceAddress& local_address,
@@ -107,6 +113,10 @@ class AclConnection : public Connection {
   pw::bluetooth::emboss::ConnectionRole role_;
 
   ResultFunction<bool> encryption_change_callback_;
+
+  // Addresses used while creating the link.
+  DeviceAddress local_address_;
+  DeviceAddress peer_address_;
 
   WeakSelf<AclConnection> weak_self_;
 };
