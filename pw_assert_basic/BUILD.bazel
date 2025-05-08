@@ -80,6 +80,7 @@ cc_library(
         "//pw_assert:check.facade",
         "//pw_assert:config",
         "//pw_preprocessor",
+        "//pw_toolchain:infinite_loop",
     ],
     # Other libraries may not always depend on this library, even if it is
     # necessary at link time.
