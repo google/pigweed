@@ -44,3 +44,10 @@ Thread Sleep Backend
 A backend for ``pw::thread::sleep_for()`` and ``pw::thread::sleep_until()``.
 To enable this backend, add ``CONFIG_PIGWEED_THREAD_SLEEP=y``
 to the Zephyr project`s configuration.
+
+--------------------
+Thread Yield Backend
+--------------------
+A backend for ``pw::this_thread::yield()``.
+To enable this backend, add ``CONFIG_PIGWEED_THREAD_YIELD=y``
+to the Zephyr project`s configuration.

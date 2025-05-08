@@ -48,6 +48,8 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
       pw_thread.thread_iteration pw_thread_zephyr.thread_iteration pw_thread/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD_SLEEP
       pw_thread.sleep pw_thread_zephyr.sleep pw_thread/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD_YIELD
+      pw_thread.yield pw_thread_zephyr.yield pw_thread/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD
       pw_thread.id pw_thread_zephyr.id pw_thread/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD

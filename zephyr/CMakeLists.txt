@@ -49,6 +49,7 @@ pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_THREAD                  pw_thread.id
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_THREAD                  pw_thread.thread)
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_THREAD_ITERATION        pw_thread.thread_iteration)
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_THREAD_SLEEP            pw_thread.sleep)
+pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_THREAD_YIELD            pw_thread.yield)
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_TOKENIZER               pw_tokenizer)
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_TOKENIZER_BASE64        pw_tokenizer.base64)
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_DETOKENIZER             pw_tokenizer.decoder)

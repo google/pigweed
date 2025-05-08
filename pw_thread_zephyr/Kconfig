@@ -21,6 +21,13 @@ config PIGWEED_THREAD_SLEEP
     help
       See :ref:`module-pw_thread` for module details.
 
+config PIGWEED_THREAD_YIELD
+    bool "Link and set pw_thread.yield library backend"
+    select PIGWEED_ASSERT
+    help
+      See :ref:`module-pw_thread` for module details.
+
+
 config PIGWEED_THREAD
     bool "Link and set pw_thread.thread and pw_thread.id backends"
     select PIGWEED_ASSERT
