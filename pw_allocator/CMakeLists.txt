@@ -462,6 +462,7 @@ pw_add_library(pw_allocator.worst_fit_block_allocator INTERFACE
 
 pw_add_library(pw_allocator.testing INTERFACE
   HEADERS
+    public/pw_allocator/fault_injecting_allocator.h
     public/pw_allocator/testing.h
   PUBLIC_INCLUDES
     public
@@ -653,6 +654,16 @@ pw_add_test(pw_allocator.dl_allocator_test
   PRIVATE_DEPS
     pw_allocator.block_allocator_testing
     pw_allocator.dl_allocator
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.fault_injecting_allocator_test
+  PRIVATE_DEPS
+    pw_allocator.testing
+  SOURCES
+    fault_injecting_allocator_test.cc
   GROUPS
     modules
     pw_allocator

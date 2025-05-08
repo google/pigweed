@@ -260,6 +260,16 @@ TrackingAllocator
 
 .. _module-pw_allocator-api-block:
 
+--------------------------------
+Testing and Debugging Allocators
+--------------------------------
+This module provides a allocators for use in testing and debugging.
+
+FaultInjectingAllocator
+=======================
+.. doxygenclass:: pw::allocator::test::FaultInjectingAllocator
+   :members:
+
 -----
 Block
 -----

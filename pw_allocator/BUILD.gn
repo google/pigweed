@@ -430,7 +430,10 @@ pw_source_set("worst_fit_block_allocator") {
 
 pw_source_set("testing") {
   public_configs = [ ":test_config" ]
-  public = [ "public/pw_allocator/testing.h" ]
+  public = [
+    "public/pw_allocator/fault_injecting_allocator.h",
+    "public/pw_allocator/testing.h",
+  ]
   public_deps = [
     ":buffer",
     ":first_fit",
@@ -589,6 +592,11 @@ pw_test("dl_allocator_test") {
     ":dl_allocator",
   ]
   sources = [ "dl_allocator_test.cc" ]
+}
+
+pw_test("fault_injecting_allocator_test") {
+  deps = [ ":testing" ]
+  sources = [ "fault_injecting_allocator_test.cc" ]
 }
 
 pw_test("fallback_allocator_test") {
@@ -771,6 +779,7 @@ pw_test_group("tests") {
     ":bump_allocator_test",
     ":chunk_pool_test",
     ":dl_allocator_test",
+    ":fault_injecting_allocator_test",
     ":fallback_allocator_test",
     ":first_fit_test",
     ":fragmentation_test",

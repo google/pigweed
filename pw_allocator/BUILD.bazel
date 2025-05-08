@@ -467,7 +467,10 @@ cc_library(
 cc_library(
     name = "testing",
     testonly = True,
-    hdrs = ["public/pw_allocator/testing.h"],
+    hdrs = [
+        "public/pw_allocator/fault_injecting_allocator.h",
+        "public/pw_allocator/testing.h",
+    ],
     strip_include_prefix = "public",
     deps = [
         ":buffer",
@@ -645,6 +648,15 @@ pw_cc_test(
         ":block_allocator_testing",
         ":dl_allocator",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "fault_injecting_allocator_test",
+    srcs = ["fault_injecting_allocator_test.cc"],
+    deps = [
+        ":allocator",
+        ":testing",
     ],
 )
 
@@ -855,6 +867,7 @@ filegroup(
         "public/pw_allocator/deallocator.h",
         "public/pw_allocator/dl_allocator.h",
         "public/pw_allocator/fallback_allocator.h",
+        "public/pw_allocator/fault_injecting_allocator.h",
         "public/pw_allocator/first_fit.h",
         "public/pw_allocator/fragmentation.h",
         "public/pw_allocator/fuzzing.h",
