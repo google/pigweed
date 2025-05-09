@@ -42,6 +42,7 @@
 
 .row div sub{
 	word-wrap: break-word;
+	font-family: monospace;
 }
 
 @font-face {

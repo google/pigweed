@@ -816,6 +816,31 @@ export async function parseBazelBuildCommand(
   };
 }
 
+export function saveLastBazelCommandInUserSettings(
+  cwd: string,
+  bazelCmd: string,
+  tuiManager?: UIManager | LoggerUI,
+) {
+  try {
+    const settingsPath = path.join(cwd, '.vscode', 'settings.json');
+
+    // Try to save the last bazel command in user settings.
+    if (fs.existsSync(settingsPath)) {
+      let settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+      settings = {
+        ...settings,
+        'pigweed.bazelCompileCommandsLastBuildCommand': bazelCmd,
+      };
+      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+      tuiManager?.addStdout('Saved last bazel command to user settings.json.');
+    }
+  } catch (e: any) {
+    tuiManager?.addStderr(
+      'Failed to save last bazel command to user settings.json: ' + e,
+    );
+  }
+}
+
 async function runAsCli() {
   const tuiManager = new UIManager();
   const args = process.argv.slice(2);
@@ -852,13 +877,18 @@ async function runAsCli() {
   deleteFilesInSubDir(fullCdbDirPath, 'compile_commands.json');
   fs.mkdirSync(fullCdbDirPath, { recursive: true });
 
-  generateCompileCommandsWithStatus(
+  await generateCompileCommandsWithStatus(
     parsedArgs['bazelCmd'],
     parsedArgs['cwd'],
     cdbFileDir,
     parsedArgs['cdbFilename'] || 'compile_commands.json',
     targets,
     bazelArgs,
+    tuiManager,
+  );
+  saveLastBazelCommandInUserSettings(
+    parsedArgs['cwd'],
+    parsedArgs['target'],
     tuiManager,
   );
 }

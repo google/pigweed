@@ -34,6 +34,7 @@ export interface Settings {
   codeAnalysisTarget: Setting<string | undefined>;
   codeAnalysisTargetDir: Setting<string | undefined>;
   bazelCompileCommandsManualBuildCommand: Setting<string | undefined>;
+  bazelCompileCommandsLastBuildCommand: Setting<string | undefined>;
   compDbSearchPaths: Setting<CompDbSearchPath[]>;
   disableBazelSettingsRecommendations: Setting<boolean>;
   disableBazeliskCheck: Setting<boolean>;
@@ -216,6 +217,20 @@ function bazelCompileCommandsManualBuildCommand(
 ): string | undefined | Thenable<void> {
   const { get, update } = stringSettingFor(
     'bazelCompileCommandsManualBuildCommand',
+  );
+  if (value === undefined) return get();
+  return update(value);
+}
+
+function bazelCompileCommandsLastBuildCommand(): string | undefined;
+function bazelCompileCommandsLastBuildCommand(
+  value: string | undefined,
+): Thenable<void>;
+function bazelCompileCommandsLastBuildCommand(
+  value?: string,
+): string | undefined | Thenable<void> {
+  const { get, update } = stringSettingFor(
+    'bazelCompileCommandsLastBuildCommand',
   );
   if (value === undefined) return get();
   return update(value);
@@ -413,6 +428,7 @@ export const settings: Settings = {
   codeAnalysisTarget,
   codeAnalysisTargetDir,
   bazelCompileCommandsManualBuildCommand,
+  bazelCompileCommandsLastBuildCommand,
   compDbSearchPaths,
   disableBazelSettingsRecommendations,
   disableBazeliskCheck,

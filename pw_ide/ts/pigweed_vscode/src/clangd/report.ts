@@ -42,5 +42,8 @@ export default function getCipdReport(): Promise<any> {
   report['bazelCompileCommandsManualBuildCommand'] =
     settings.bazelCompileCommandsManualBuildCommand() || '';
 
+  report['bazelCompileCommandsLastBuildCommand'] =
+    settings.bazelCompileCommandsLastBuildCommand() || '';
+
   return report;
 }

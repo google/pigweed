@@ -33,6 +33,7 @@ type CipdReport = {
   compileCommandsPath?: string;
   isBazelInterceptorEnabled?: boolean;
   bazelCompileCommandsManualBuildCommand?: string;
+  bazelCompileCommandsLastBuildCommand?: string;
 };
 
 const vscode = acquireVsCodeApi();
@@ -253,10 +254,14 @@ export class Root extends LitElement {
                   </div>
                 </div>
             </div>
-            <div class="row" style="${
-              this.cipdReport.isBazelInterceptorEnabled ? 'display: none;' : ''
-            }">
-              
+            <div class="row">
+              <div>
+                <b>Compile commands generated using</b><br/>
+                <sub>bazel ${
+                  this.cipdReport.bazelCompileCommandsLastBuildCommand || 'N/A'
+                }</sub>
+              </div>
+              <div></div>
             </div>
             <div class="row">
               <div>

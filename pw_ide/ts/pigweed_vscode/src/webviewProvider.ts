@@ -23,6 +23,7 @@ import {
   generateCompileCommands,
   generateCompileCommandsWithStatus,
   parseBazelBuildCommand,
+  saveLastBazelCommandInUserSettings,
 } from './clangd/compileCommandsGenerator';
 import { getReliableBazelExecutable } from './bazel';
 import { settings, workingDir } from './settings/vscode';
@@ -144,8 +145,9 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           logging.info(`Generating compile commands for ${buildCmd}`);
           if (buildCmd.trim() === '' || !bazelBinary) break;
           output.show();
+          const inputCmd = `build ${buildCmd}`;
           const parsedCmd = await parseBazelBuildCommand(
-            `build ${buildCmd}`,
+            inputCmd,
             bazelBinary,
             cwd,
           ).catch((e) => {
@@ -168,7 +170,7 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
           mkdirSync(fullCdbDirPath, { recursive: true });
 
           logging.info('Cleaned compile_commands directory.');
-
+          const logger = new LoggerUI(logging);
           await generateCompileCommandsWithStatus(
             bazelBinary,
             workingDir.get(),
@@ -176,7 +178,12 @@ export class WebviewProvider implements vscode.WebviewViewProvider {
             CDB_FILE_NAME,
             parsedCmd.targets,
             parsedCmd.args,
-            new LoggerUI(logging),
+            logger,
+          );
+          saveLastBazelCommandInUserSettings(
+            workingDir.get(),
+            inputCmd,
+            logger,
           );
         }
       }

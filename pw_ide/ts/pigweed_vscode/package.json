@@ -127,6 +127,10 @@
           "type": "string",
           "description": "Used when the manual code intelligence mode is enabled for Bazel projects"
         },
+        "pigweed.bazelCompileCommandsLastBuildCommand": {
+          "type": "string",
+          "description": "Stores the last run bazel build command that generated the compile commands"
+        },
         "pigweed.compDbSearchPaths": {
           "type": "array",
           "items": {
