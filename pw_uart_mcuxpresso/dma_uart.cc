@@ -28,11 +28,17 @@ void DmaUartMcuxpresso::Deinit() {
     return;
   }
 
+  USART_TransferAbortReceiveDMA(config_.usart_base, &uart_dma_handle_);
+
   config_.tx_dma_ch.Disable();
   config_.rx_dma_ch.Disable();
 
   USART_Deinit(config_.usart_base);
   clock_tree_element_controller_.Release().IgnoreError();
+
+  tx_data_.notification.release();
+  rx_data_.notification.release();
+
   initialized_ = false;
 }
 
@@ -89,6 +95,9 @@ Status DmaUartMcuxpresso::Init() {
   config_.tx_dma_ch.Enable();
   config_.rx_dma_ch.Enable();
 
+  tx_data_.Init();
+  rx_data_.Init();
+
   // Initialized enough for Deinit code to handle any errors from here.
   initialized_ = true;
 
@@ -110,6 +119,16 @@ Status DmaUartMcuxpresso::Init() {
   interrupt_lock_.unlock();
 
   return OkStatus();
+}
+
+void DmaUartMcuxpresso::UsartDmaTxData::Init() { tx_idx = 0; }
+
+void DmaUartMcuxpresso::UsartDmaRxData::Init() {
+  ring_buffer_read_idx = 0;
+  ring_buffer_write_idx = 0;
+  data_received = 0;
+  data_copied = 0;
+  completion_size = 0;
 }
 
 // DMA usart data into ring buffer
@@ -367,6 +386,12 @@ Status DmaUartMcuxpresso::WaitForReceiveBytes(
   } else {
     rx_data_.notification.acquire();
   }
+
+  if (!initialized_) {
+    // Deinit signaled us.
+    status.Update(Status::Cancelled());
+  }
+
   // We have received bytes that can be copied out, we will restart
   // the loop in the caller's context.
   return status;
@@ -400,6 +425,11 @@ void DmaUartMcuxpresso::CopyReceiveData(ByteBuilder& bb, size_t copy_size) {
 Status DmaUartMcuxpresso::DoEnable(bool enable) {
   if (enable == initialized_) {
     return OkStatus();
+  }
+
+  // Can't init or deinit if we are active from previous calls.
+  if (rx_data_.busy || tx_data_.busy) {
+    return Status::FailedPrecondition();
   }
 
   if (enable) {
@@ -464,6 +494,10 @@ StatusWithSize DmaUartMcuxpresso::DoTryReadFor(
     ByteSpan rx_buffer,
     size_t min_bytes,
     std::optional<chrono::SystemClock::duration> timeout) {
+  if (!initialized_) {
+    return StatusWithSize(Status::FailedPrecondition(), 0);
+  }
+
   if (timeout.has_value() && *timeout < chrono::SystemClock::duration::zero()) {
     return StatusWithSize(Status::InvalidArgument(), 0);
   }
@@ -541,6 +575,10 @@ StatusWithSize DmaUartMcuxpresso::DoTryReadFor(
 StatusWithSize DmaUartMcuxpresso::DoTryWriteFor(
     ConstByteSpan tx_buffer,
     std::optional<chrono::SystemClock::duration> timeout) {
+  if (!initialized_) {
+    return StatusWithSize(Status::FailedPrecondition(), 0);
+  }
+
   if (tx_buffer.size() == 0) {
     return StatusWithSize(0);
   }
@@ -569,6 +607,11 @@ StatusWithSize DmaUartMcuxpresso::DoTryWriteFor(
     }
   } else {
     tx_data_.notification.acquire();
+  }
+
+  if (!initialized_) {
+    // Deinit signaled us.
+    status.Update(Status::Cancelled());
   }
 
   size_t bytes_written = tx_data_.tx_idx;

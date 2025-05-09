@@ -53,7 +53,8 @@ class DmaUartMcuxpresso final : public Uart {
       : rx_data_{.ring_buffer = config.buffer},
         config_(config),
         clock_tree_element_controller_(config.clock_tree,
-                                       config.clock_tree_element) {}
+                                       config.clock_tree_element),
+        initialized_(false) {}
 
   ~DmaUartMcuxpresso();
 
@@ -64,16 +65,21 @@ class DmaUartMcuxpresso final : public Uart {
  private:
   // Usart DMA TX data structure
   struct UsartDmaTxData {
-    ConstByteSpan buffer;       // TX transaction buffer
-    size_t tx_idx;              // Position within TX transaction
-    usart_transfer_t transfer;  // USART TX transfer structure
-    std::atomic_uint8_t busy;   // Flag to prevent concurrent access to TX queue
+    void Init();
+
+    ConstByteSpan buffer;         // TX transaction buffer
+    size_t tx_idx{};              // Position within TX transaction
+    usart_transfer_t transfer{};  // USART TX transfer structure
+    std::atomic_uint8_t
+        busy{};  // Flag to prevent concurrent access to TX queue
     pw::sync::TimedThreadNotification
         notification;  // TX completion notification
   };
 
   // Usart DMA RX data structure
   struct UsartDmaRxData {
+    void Init();
+
     ByteSpan ring_buffer;            // Receive ring buffer
     size_t ring_buffer_read_idx{};   // ring buffer reader index
     size_t ring_buffer_write_idx{};  // ring buffer writer index
@@ -99,9 +105,12 @@ class DmaUartMcuxpresso final : public Uart {
   // needs to be copied out to the caller.
   static constexpr size_t kUsartRxRingBufferSplitCount = 4;
 
+  // Should not be called while read/write is active.
   Status DoEnable(bool enable) override;
   Status DoSetBaudRate(uint32_t baud_rate) override;
   Status DoSetFlowControl(bool enable) override;
+
+  // Will return an error if the internal ring buffer is overflowed.
   StatusWithSize DoTryReadFor(
       ByteSpan rx_buffer,
       size_t min_bytes,
@@ -137,9 +146,9 @@ class DmaUartMcuxpresso final : public Uart {
   pw::sync::InterruptSpinLock
       interrupt_lock_;  // Lock to synchronize with interrupt handler and to
                         // guarantee exclusive access to DMA control registers
-  usart_dma_handle_t uart_dma_handle_;  // USART DMA Handle
-  struct UsartDmaTxData tx_data_;       // TX data
-  struct UsartDmaRxData rx_data_;       // RX data
+  usart_dma_handle_t uart_dma_handle_{};  // USART DMA Handle
+  UsartDmaTxData tx_data_;                // TX data
+  UsartDmaRxData rx_data_;                // RX data
 
   Config config_;  // USART DMA configuration
   pw::clock_tree::ElementController
