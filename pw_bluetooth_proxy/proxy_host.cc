@@ -413,30 +413,6 @@ pw::Result<GattNotifyChannel> ProxyHost::AcquireGattNotifyChannel(
                                            std::move(event_fn));
 }
 
-StatusWithMultiBuf ProxyHost::SendGattNotify(uint16_t connection_handle,
-                                             uint16_t attribute_handle,
-                                             pw::multibuf::MultiBuf&& payload) {
-  // TODO: https://pwbug.dev/369709521 - Migrate clients to channel API.
-  pw::Result<GattNotifyChannel> channel_result =
-      AcquireGattNotifyChannel(connection_handle, attribute_handle, nullptr);
-  if (!channel_result.ok()) {
-    return {channel_result.status(), std::move(payload)};
-  }
-  return channel_result->Write(std::move(payload));
-}
-
-pw::Status ProxyHost::SendGattNotify(uint16_t connection_handle,
-                                     uint16_t attribute_handle,
-                                     pw::span<const uint8_t> attribute_value) {
-  // TODO: https://pwbug.dev/369709521 - Migrate clients to channel API.
-  pw::Result<GattNotifyChannel> channel_result =
-      AcquireGattNotifyChannel(connection_handle, attribute_handle, nullptr);
-  if (!channel_result.ok()) {
-    return channel_result.status();
-  }
-  return channel_result->Write(attribute_value);
-}
-
 pw::Result<RfcommChannel> ProxyHost::AcquireRfcommChannel(
     multibuf::MultiBufAllocator& rx_multibuf_allocator,
     uint16_t connection_handle,
