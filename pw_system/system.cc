@@ -93,7 +93,8 @@ async2::Dispatcher& AsyncCore::dispatcher() {
 }
 
 Allocator& AsyncCore::allocator() {
-  alignas(uintptr_t) static std::byte buffer[8192];
+  alignas(
+      uintptr_t) static std::byte buffer[PW_SYSTEM_ALLOCATOR_HEAP_SIZE_BYTES];
   static BestFitAllocator<> block_allocator(buffer);
   static SynchronizedAllocator<::pw::sync::InterruptSpinLock> sync_allocator(
       block_allocator);

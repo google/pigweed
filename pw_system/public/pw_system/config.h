@@ -181,6 +181,14 @@
 #define PW_SYSTEM_ENABLE_RPC_BENCHMARK_SERVICE 0
 #endif
 
+// PW_SYSTEM_ALLOCATOR_HEAP_SIZE_BYTES specifies how much memory to reserve for
+// dynamic allocation via the system allocator.
+//
+// Defaults to 8192
+#ifndef PW_SYSTEM_ALLOCATOR_HEAP_SIZE_BYTES
+#define PW_SYSTEM_ALLOCATOR_HEAP_SIZE_BYTES 8192
+#endif
+
 namespace pw::system {
 
 // This is the default channel used by the pw_system RPC server. Some other
