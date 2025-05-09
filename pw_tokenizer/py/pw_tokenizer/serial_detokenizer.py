@@ -97,7 +97,7 @@ def _detokenize_serial(
     serial_device = serial.Serial(port=device, baudrate=baudrate)
 
     try:
-        detokenizer.detokenize_base64_live(serial_device, output)
+        detokenizer.detokenize_text_live(serial_device, output)
     except KeyboardInterrupt:
         output.flush()
 

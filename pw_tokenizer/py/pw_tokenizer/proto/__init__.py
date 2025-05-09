@@ -60,9 +60,9 @@ def decode_optionally_tokenized(
         # Not UTF-8. Assume the token is unknown or the data is corrupt.
         return encode.prefixed_base64(data, prefix)
 
-    # See if the string is prefixed Base64 or contains prefixed Base64.
+    # See if the string contains nested messages.
     if detokenizer:
-        detokenized = detokenize.detokenize_base64(detokenizer, data)
+        detokenized = detokenizer.detokenize_text(data)
         if detokenized != data:  # If detokenized successfully, use the result.
             return detokenized.decode()
 

@@ -724,7 +724,7 @@ def _follow_and_detokenize_file(
         while True:
             data = file.read()
             if data:
-                detokenizer.detokenize_base64_to_file(data, output)
+                detokenizer.detokenize_text_to_file(data, output)
                 output.flush()
             else:
                 time.sleep(poll_period_s)
@@ -758,10 +758,10 @@ def _handle_base64(
         _follow_and_detokenize_file(detokenizer, input_file, output)
     elif input_file.seekable():
         # Process seekable files all at once, which is MUCH faster.
-        detokenizer.detokenize_base64_to_file(input_file.read(), output)
+        detokenizer.detokenize_text_to_file(input_file.read(), output)
     else:
         # For non-seekable inputs (e.g. pipes), read one character at a time.
-        detokenizer.detokenize_base64_live(input_file, output)
+        detokenizer.detokenize_text_live(input_file, output)
 
 
 def _parse_args() -> argparse.Namespace:

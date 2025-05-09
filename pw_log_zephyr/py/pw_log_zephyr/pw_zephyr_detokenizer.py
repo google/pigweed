@@ -193,7 +193,7 @@ class ZephyrDetokenizer:
         for token in self.process(data):
             if token.ok():
                 print(f'token: {token.data}')
-                result = detokenize.detokenize_base64(
+                result = detokenize.detokenize_text(
                     self.detokenizer, token.data
                 )
                 print(f'result: {result.decode()}')

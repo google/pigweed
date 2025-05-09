@@ -97,7 +97,7 @@ def _detokenizer(
                 try:
                     line = f.readline()
                     if line:
-                        detokenizer.detokenize_base64_to_file(
+                        detokenizer.detokenize_text_to_file(
                             line, sys.stdout.buffer
                         )
                         sys.stdout.flush()
