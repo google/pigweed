@@ -17,14 +17,11 @@ the License.
 {{ build.get_license }}
 
 {% set bazel_imports = [] %}
-{% do bazel_imports.append('pw_cc_test') if build.cc_tests %}
+{% do bazel_imports.append(('//pw_unit_test:pw_cc_test.bzl', 'pw_cc_test')) if build.cc_tests %}
 {% if bazel_imports|length > 0 %}
-load(
-    "//pw_build:pigweed.bzl",
-    {% for i in bazel_imports|sort %}
-    "{{ i }}",
-    {% endfor %}
-)
+{% for i, j in bazel_imports|sort %}
+load("{{ i }}", "{{ j }}")
+{% endfor %}
 {% endif %}
 
 package(default_visibility = ["//visibility:public"])
