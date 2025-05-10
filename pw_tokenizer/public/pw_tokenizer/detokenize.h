@@ -59,8 +59,20 @@ class DetokenizedString {
 
   DetokenizedString() : has_token_(false) {}
 
-  /// True if there was only one valid match and it decoded successfully.
-  bool ok() const { return matches_.size() == 1 && matches_[0].ok(); }
+  /// True if there was only one match that decoded successfully.
+  bool ok() const {
+    bool successful_decode = false;
+    for (const auto& match : matches_) {
+      if (match.ok()) {
+        if (successful_decode) {
+          return false;
+        }
+        successful_decode = true;
+      }
+    }
+
+    return successful_decode;
+  }
 
   /// Returns the strings that matched the token, with the best matches first.
   const std::vector<DecodedFormatString>& matches() const { return matches_; }
@@ -112,7 +124,7 @@ class Detokenizer {
   /// ELF binary.
   static Result<Detokenizer> FromElfFile(stream::SeekableReader& stream);
 
-  /// Constructs a detokenizer from a parsed CSV database.
+  /// Constructs a detokenizer from a CSV database.
   static Result<Detokenizer> FromCsv(std::string_view csv);
 
   /// Decodes and detokenizes the binary encoded message. Returns a

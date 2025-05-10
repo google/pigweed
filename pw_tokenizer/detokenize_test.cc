@@ -424,6 +424,32 @@ TEST_F(DetokenizeWithCollisions, Collision_AlwaysPreferSuccessfulDecode) {
   }
 }
 
+TEST_F(DetokenizeWithCollisions, Collision_OkIfExactlyOneSuccess) {
+  auto result = detok_.Detokenize(
+      "\0\0\0\0\x07"
+      "1234567"sv);
+  ASSERT_EQ(result.matches().size(), 7u);
+  ASSERT_EQ(std::count_if(result.matches().begin(),
+                          result.matches().end(),
+                          [](const auto& item) { return item.ok(); }),
+            1);
+
+  EXPECT_TRUE(result.ok());
+  EXPECT_EQ(result.BestString(), "One arg 1234567");
+}
+
+TEST_F(DetokenizeWithCollisions, Collision_NotOkIfMultipleSuccessfulDecodes) {
+  auto result = detok_.Detokenize("\0\0\0\0"sv);
+  ASSERT_EQ(result.matches().size(), 7u);
+  ASSERT_EQ(std::count_if(result.matches().begin(),
+                          result.matches().end(),
+                          [](const auto& item) { return item.ok(); }),
+            2);
+
+  EXPECT_FALSE(result.ok());
+  EXPECT_EQ(result.BestString(), "This string is present");
+}
+
 TEST_F(DetokenizeWithCollisions, Collision_PreferDecodingAllBytes) {
   for (auto [data, expected] :
        TestCases(Case{"\0\0\0\0\x80\x80\x80\x80\x00"sv, "Two args [...] 0"},
