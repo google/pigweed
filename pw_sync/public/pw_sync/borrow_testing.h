@@ -207,16 +207,21 @@ class BorrowTest : public ::testing::Test {
   /// meet C++'s \em Lockable named requirement. This method is a no-op for lock
   /// types that only meet \em BasicLockable.
   ///
+  /// **Important Change:** Previously, this method attempted to use
+  /// `try_lock()` to check the state of lock types that satisfied \em Lockable
+  /// but not
+  /// \em has_locked. However, due to limitations in some underlying RTOS
+  /// implementations (such as those based on `kal_take_mutex_try`), calling
+  /// `try_lock()` from a thread that already holds the lock can lead to
+  /// fatal errors. To avoid this issue, the logic using `try_lock()` has been
+  /// removed. As a result, for lock types that only satisfy \em BasicLockable
+  /// but not \em has_locked, the `CheckLocked` method will no longer perform
+  /// any checks.
+  ///
   /// @param[in]  expected  Indicates if the lock is expected to be locked.
   void CheckLocked(bool expected) const {
     if constexpr (has_locked<LockType>::value) {
       EXPECT_EQ(lock_.locked(), expected);
-    } else if constexpr (is_lockable_v<LockType>) {
-      bool locked = !lock_.try_lock();
-      EXPECT_EQ(locked, expected);
-      if (!locked) {
-        lock_.unlock();
-      }
     }
   }
 
