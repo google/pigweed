@@ -95,7 +95,7 @@ Result<Client::Handle> Client::Write(
           OnRpcError(status, internal::TransferType::kTransmit);
         },
         [this](Status status) {
-          OnRpcError(status, internal::TransferType::kReceive);
+          OnRpcError(status, internal::TransferType::kTransmit);
         });
     transfer_thread_.SetClientWriteStream(
         write_stream, [this](ConstByteSpan chunk) {

@@ -3597,5 +3597,90 @@ TEST_F(ReadTransfer, Version2_CancelBeforeServerResponse) {
   EXPECT_EQ(chunk.status(), Status::Cancelled());
 }
 
+TEST_F(WriteTransfer, Version2_WriteRpcError) {
+  FakeNonSeekableReader reader(kData32);
+  Status transfer_status = Status::Unknown();
+
+  Result<Client::Handle> result = client_.Write(
+      3,
+      reader,
+      [&transfer_status](Status status) { transfer_status = status; },
+      cfg::kDefaultClientTimeout,
+      cfg::kDefaultClientTimeout);
+  ASSERT_EQ(OkStatus(), result.status());
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  Client::Handle handle = *result;
+
+  // The client begins by sending the ID of the resource to transfer.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Write>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk chunk = DecodeChunk(payloads.back());
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStart);
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.desired_session_id(), 1u);
+  EXPECT_EQ(chunk.resource_id(), 3u);
+
+  // RPC server sends back failed precondition because the stream is not open
+  // (simulated reboot)
+  context_.server().SendServerError<Transfer::Write>(
+      Status::FailedPrecondition());
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_EQ(client_.has_write_stream(), false);
+
+  // Ensure we don't leave a dangling reference to transfer_status.
+  handle.Cancel();
+  transfer_thread_.WaitUntilEventIsProcessed();
+}
+
+TEST_F(ReadTransfer, Version2_ReadRpcError) {
+  stream::MemoryWriterBuffer<64> writer;
+  Status transfer_status = Status::Unknown();
+
+  Result<Client::Handle> result = client_.Read(
+      3,
+      writer,
+      [&transfer_status](Status status) { transfer_status = status; },
+      cfg::kDefaultClientTimeout,
+      cfg::kDefaultClientTimeout);
+  ASSERT_EQ(OkStatus(), result.status());
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  Client::Handle handle = *result;
+
+  // Initial chunk of the transfer is sent. This chunk should contain all the
+  // fields from both legacy and version 2 protocols for backwards
+  // compatibility.
+  rpc::PayloadsView payloads =
+      context_.output().payloads<Transfer::Read>(context_.channel().id());
+  ASSERT_EQ(payloads.size(), 1u);
+  EXPECT_EQ(transfer_status, Status::Unknown());
+
+  Chunk chunk = DecodeChunk(payloads[0]);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStart);
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.desired_session_id(), 1u);
+  EXPECT_EQ(chunk.resource_id(), 3u);
+  EXPECT_EQ(chunk.offset(), 0u);
+  EXPECT_EQ(chunk.window_end_offset(), 37u);
+  EXPECT_EQ(chunk.max_chunk_size_bytes(), 37u);
+
+  // RPC server sends back failed precondition because the stream is not open
+  // (simulated reboot)
+  context_.server().SendServerError<Transfer::Read>(
+      Status::FailedPrecondition());
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_EQ(client_.has_read_stream(), false);
+
+  // Ensure we don't leave a dangling reference to transfer_status.
+  handle.Cancel();
+  transfer_thread_.WaitUntilEventIsProcessed();
+}
+
 }  // namespace
 }  // namespace pw::transfer::test

@@ -190,6 +190,10 @@ class Client {
     default_protocol_version = new_version;
   }
 
+  bool has_read_stream() const { return has_read_stream_; }
+
+  bool has_write_stream() const { return has_write_stream_; }
+
  private:
   // Terminates an ongoing transfer.
   void CancelTransfer(Handle handle) {
