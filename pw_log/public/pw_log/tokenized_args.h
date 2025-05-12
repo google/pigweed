@@ -32,7 +32,7 @@
 
 #define PW_LOG_TOKEN_TYPE pw_tokenizer_Token
 #define PW_LOG_TOKEN_DEFAULT_VALUE ((pw_tokenizer_Token)0)
-#define PW_LOG_TOKEN PW_TOKENIZE_STRING_OPTIONAL_DOMAIN
+#define PW_LOG_TOKEN PW_TOKENIZE_STRING
 #define PW_LOG_TOKEN_EXPR PW_TOKENIZE_STRING_EXPR
 #define PW_LOG_TOKEN_FMT PW_TOKEN_FMT
 #define PW_LOG_ENUM(enumerator) ::pw::tokenizer::EnumToToken(enumerator)
@@ -65,7 +65,8 @@
 
 /// If nested tokenization is supported by the logging backend, this is an
 /// alias for `PW_TOKENIZE_STRING_EXPR`. No-op otherwise.
-#define PW_LOG_TOKEN_EXPR(string_literal) string_literal
+#define PW_LOG_TOKEN_EXPR(...) \
+  PW_DELEGATE_BY_ARG_COUNT(_PW_STRING_OPTIONAL_DOMAIN_, __VA_ARGS__)
 
 /// If nested tokenization is supported by the logging backend, this is an
 /// alias for `PW_TOKEN_FORMAT`.

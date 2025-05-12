@@ -45,18 +45,6 @@ typedef uint32_t pw_tokenizer_Token;
 // The default domain is an empty string.
 #define PW_TOKENIZER_DEFAULT_DOMAIN ""
 
-/// Tokenizes a string literal along with an optional domain value. If the
-/// domain value is present, will tokenize the string using that domain,
-/// otherwise will tokenize the string using the default domain value.
-#define PW_TOKENIZE_STRING_OPTIONAL_DOMAIN(...) \
-  PW_DELEGATE_BY_ARG_COUNT(_PW_TOKENIZE_STRING_OPTIONAL_DOMAIN_, __VA_ARGS__)
-
-#define _PW_TOKENIZE_STRING_OPTIONAL_DOMAIN_1(string_literal) \
-  PW_TOKENIZE_STRING(string_literal)
-
-#define _PW_TOKENIZE_STRING_OPTIONAL_DOMAIN_2(domain, string_literal) \
-  PW_TOKENIZE_STRING_DOMAIN(domain, string_literal)
-
 /// Converts a string literal to a `pw_tokenizer_Token` (`uint32_t`) token in a
 /// standalone statement. C and C++ compatible. In C++, the string may be a
 /// literal or a constexpr char array, including function variables like
@@ -64,26 +52,47 @@ typedef uint32_t pw_tokenizer_Token;
 /// string must be null terminated, but may contain any characters (including
 /// '\0').
 ///
-/// @code
+/// @code{cpp}
 ///
-///   constexpr uint32_t token = PW_TOKENIZE_STRING("Any string literal!");
+///   // Tokenizes a string literal in the given domain.
+///   constexpr uint32_t token = PW_TOKENIZE_STRING("domain", "string literal");
+///
+///   // Tokenizes a string literal in the default domain ("").
+///   constexpr uint32_t other = PW_TOKENIZE_STRING("string literal");
 ///
 /// @endcode
-#define PW_TOKENIZE_STRING(string_literal) \
+#define PW_TOKENIZE_STRING(...) \
+  PW_DELEGATE_BY_ARG_COUNT(_PW_TOKENIZE_STRING_, __VA_ARGS__)
+
+#define _PW_TOKENIZE_STRING_1(string_literal) \
   PW_TOKENIZE_STRING_DOMAIN(PW_TOKENIZER_DEFAULT_DOMAIN, string_literal)
+
+#define _PW_TOKENIZE_STRING_2(domain, string_literal) \
+  PW_TOKENIZE_STRING_DOMAIN(domain, string_literal)
 
 /// Converts a string literal to a ``uint32_t`` token within an expression.
 /// Requires C++.
 ///
-/// @code
+/// @code{cpp}
 ///
-///   DoSomething(PW_TOKENIZE_STRING_EXPR("Succeed"));
+///   // Tokenizes a string literal in the given domain within an expression.
+///   DoSomethingWithToken(PW_TOKENIZE_STRING_EXPR("domain", "Succeed"));
+///
+///   // Tokenizes a string literal in the default domain within an expression.
+///   DoSomethingWithToken(PW_TOKENIZE_STRING_EXPR("Succeed"));
 ///
 /// @endcode
-#define PW_TOKENIZE_STRING_EXPR(string_literal)                               \
-  [&] {                                                                       \
-    constexpr uint32_t lambda_ret_token = PW_TOKENIZE_STRING(string_literal); \
-    return lambda_ret_token;                                                  \
+#define PW_TOKENIZE_STRING_EXPR(...) \
+  PW_DELEGATE_BY_ARG_COUNT(_PW_TOKENIZE_STRING_EXPR_, __VA_ARGS__)
+
+#define _PW_TOKENIZE_STRING_EXPR_1(string_literal) \
+  _PW_TOKENIZE_STRING_EXPR_2(PW_TOKENIZER_DEFAULT_DOMAIN, string_literal)
+
+#define _PW_TOKENIZE_STRING_EXPR_2(domain, string_literal) \
+  [&] {                                                    \
+    constexpr uint32_t lambda_ret_token =                  \
+        PW_TOKENIZE_STRING_DOMAIN(domain, string_literal); \
+    return lambda_ret_token;                               \
   }()
 
 /// Tokenizes a string literal in a standalone statement using the specified
