@@ -31,7 +31,9 @@ ChunkPool::ChunkPool(ByteSpan region, const Layout& layout)
       allocated_layout_(EnsurePointerLayout(layout)) {
   Result<ByteSpan> result =
       GetAlignedSubspan(region, allocated_layout_.alignment());
-  PW_CHECK_OK(result.status());
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_CHECK_OK(result.status());
+  }
   start_ = cpp20::bit_cast<uintptr_t>(region.data());
   end_ = start_ + region.size() - (region.size() % allocated_layout_.size());
   region = result.value();

@@ -264,7 +264,9 @@ void DlAllocator<BlockType>::ReleaseFastBins() {
   for (auto& fast_bin : fast_bins_) {
     while (!fast_bin.empty()) {
       BlockType* block = fast_bin.RemoveAny();
-      PW_ASSERT(block != nullptr);
+      if constexpr (Hardening::kIncludesDebugChecks) {
+        PW_ASSERT(block != nullptr);
+      }
       Base::DeallocateBlock(std::move(block));
     }
   }

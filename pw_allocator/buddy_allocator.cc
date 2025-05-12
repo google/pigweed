@@ -150,7 +150,9 @@ void GenericBuddyAllocator::Deallocate(void* ptr) {
 
   auto* block = BuddyBlock::FromUsableSpace(ptr);
   BucketType* bucket = nullptr;
-  PW_CHECK_INT_GT(buckets_.size(), 0);
+  if constexpr (Hardening::kIncludesDebugChecks) {
+    PW_CHECK_INT_GT(buckets_.size(), 0);
+  }
   for (auto& current : span(buckets_.data(), buckets_.size() - 1)) {
     size_t outer_size =
         BuddyBlock::OuterSizeFromInnerSize(current.max_inner_size());

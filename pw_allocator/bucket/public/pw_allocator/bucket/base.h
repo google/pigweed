@@ -74,7 +74,9 @@ class BucketBase {
   ///
   /// This can only be called when the bucket is empty.
   constexpr void set_max_inner_size(size_t max_inner_size) {
-    PW_ASSERT(empty());
+    if constexpr (Hardening::kIncludesDebugChecks) {
+      PW_ASSERT(empty());
+    }
     max_inner_size_ = max_inner_size;
   }
 

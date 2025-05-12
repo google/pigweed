@@ -23,7 +23,9 @@ FallbackAllocator::FallbackAllocator(Allocator& primary, Allocator& secondary)
     : Allocator(primary.capabilities() | secondary.capabilities()),
       primary_(primary),
       secondary_(secondary) {
-  PW_CHECK(primary.HasCapability(Capability::kImplementsRecognizes));
+  if constexpr (Hardening::kIncludesBasicChecks) {
+    PW_CHECK(primary.HasCapability(Capability::kImplementsRecognizes));
+  }
 }
 
 void* FallbackAllocator::DoAllocate(Layout layout) {

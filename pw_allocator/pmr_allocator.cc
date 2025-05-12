@@ -29,8 +29,10 @@ void* MemoryResource::do_allocate(size_t bytes, size_t alignment) {
   // obtained. As a result, the uses-allocator types are not required to check
   // for allocation failure. In lieu of using exceptions, this type asserts that
   // an allocation must succeed.
-  PW_CHECK_NOTNULL(
-      ptr, "failed to allocate %zu bytes for PMR container", bytes);
+  if constexpr (Hardening::kIncludesBasicChecks) {
+    PW_CHECK_NOTNULL(
+        ptr, "failed to allocate %zu bytes for PMR container", bytes);
+  }
   return ptr;
 }
 
