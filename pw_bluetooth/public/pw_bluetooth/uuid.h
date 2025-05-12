@@ -18,8 +18,8 @@
 #include <cstdint>
 
 #include "pw_assert/assert.h"
-#include "pw_bluetooth/internal/hex.h"
 #include "pw_span/span.h"
+#include "pw_string/hex.h"
 #include "pw_string/string.h"
 
 namespace pw::bluetooth {
@@ -69,7 +69,7 @@ class Uuid {
       }
       PW_ASSERT(str[i] != 0);
       out_hex_index--;
-      uint16_t value = internal::HexToNibble(str[i]);
+      uint16_t value = string::HexToNibble(str[i]);
       PW_ASSERT(value <= 0xf);
       if (out_hex_index % 2 == 0) {
         uuid_[out_hex_index / 2] |= value;
@@ -153,8 +153,8 @@ class Uuid {
   constexpr InlineString<kHexStringSize> ToString() const {
     InlineString<kHexStringSize> ret;
     for (size_t i = uuid_.size(); i-- != 0;) {
-      ret += internal::NibbleToHex(uuid_[i] >> 4);
-      ret += internal::NibbleToHex(uuid_[i] & 0xf);
+      ret += string::NibbleToHex(uuid_[i] >> 4);
+      ret += string::NibbleToHex(uuid_[i] & 0xf);
       if ((i == 12) || (i == 10) || (i == 8) || (i == 6)) {
         ret += '-';
       }

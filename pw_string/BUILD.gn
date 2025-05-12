@@ -148,6 +148,11 @@ pw_source_set("util") {
   ]
 }
 
+pw_source_set("hex") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_string/hex.h" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":string_test",
@@ -162,6 +167,11 @@ pw_test_group("tests") {
     "$dir_pw_preprocessor:tests",
     "$dir_pw_status:tests",
   ]
+}
+
+pw_test("hex_test") {
+  deps = [ ":hex" ]
+  sources = [ "hex_test.cc" ]
 }
 
 pw_test("format_test") {

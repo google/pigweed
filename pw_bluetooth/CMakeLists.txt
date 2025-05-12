@@ -34,7 +34,6 @@ pw_add_library(pw_bluetooth INTERFACE
     public/pw_bluetooth/gatt/error.h
     public/pw_bluetooth/gatt/server.h
     public/pw_bluetooth/gatt/types.h
-    public/pw_bluetooth/internal/hex.h
     public/pw_bluetooth/internal/raii_ptr.h
     public/pw_bluetooth/low_energy/advertising_data.h
     public/pw_bluetooth/low_energy/bond_data.h
@@ -58,6 +57,7 @@ pw_add_library(pw_bluetooth INTERFACE
     pw_function
     pw_multibuf
     pw_status
+    pw_string.hex
     pw_string.string
     pw_chrono.system_clock
 )
@@ -74,7 +74,6 @@ pw_add_library(pw_bluetooth.pw_bluetooth2 INTERFACE
     public/pw_bluetooth/gatt/error.h
     public/pw_bluetooth/gatt/server2.h
     public/pw_bluetooth/gatt/types.h
-    public/pw_bluetooth/internal/hex.h
     public/pw_bluetooth/internal/raii_ptr.h
     public/pw_bluetooth/low_energy/advertising_data.h
     public/pw_bluetooth/low_energy/bond_data2.h
@@ -102,6 +101,7 @@ pw_add_library(pw_bluetooth.pw_bluetooth2 INTERFACE
     pw_result
     pw_span
     pw_status
+    pw_string
 )
 
 

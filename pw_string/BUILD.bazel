@@ -141,6 +141,12 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "hex",
+    hdrs = ["public/pw_string/hex.h"],
+    strip_include_prefix = "public",
+)
+
 pw_cc_test(
     name = "format_test",
     srcs = ["format_test.cc"],
@@ -191,6 +197,12 @@ pw_cc_test(
     name = "util_test",
     srcs = ["util_test.cc"],
     deps = [":util"],
+)
+
+pw_cc_test(
+    name = "hex_test",
+    srcs = ["hex_test.cc"],
+    deps = [":hex"],
 )
 
 filegroup(

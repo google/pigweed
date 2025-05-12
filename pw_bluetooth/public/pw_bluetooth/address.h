@@ -17,8 +17,8 @@
 #include <cstdint>
 
 #include "pw_assert/assert.h"
-#include "pw_bluetooth/internal/hex.h"
 #include "pw_span/span.h"
+#include "pw_string/hex.h"
 #include "pw_string/string.h"
 
 namespace pw::bluetooth {
@@ -57,8 +57,8 @@ class Address {
               (str_addr[8] == ':') && (str_addr[11] == ':') &&
               (str_addr[14] == ':'));
     for (size_t i = 0; i < sizeof(addr_); i++) {
-      uint16_t value = (internal::HexToNibble(str_addr[3 * i]) << 4u) |
-                       internal::HexToNibble(str_addr[3 * i + 1]);
+      uint16_t value = (string::HexToNibble(str_addr[3 * i]) << 4u) |
+                       string::HexToNibble(str_addr[3 * i + 1]);
       addr_[sizeof(addr_) - 1 - i] = value;
       PW_ASSERT(value <= 0xff);
     }
@@ -74,8 +74,8 @@ class Address {
   constexpr InlineString<kHexStringSize> ToString() const {
     InlineString<kHexStringSize> ret;
     for (size_t i = addr_.size(); i-- != 0;) {
-      ret += internal::NibbleToHex(addr_[i] >> 4);
-      ret += internal::NibbleToHex(addr_[i] & 0xf);
+      ret += string::NibbleToHex(addr_[i] >> 4);
+      ret += string::NibbleToHex(addr_[i] & 0xf);
       if (i) {
         ret += ':';
       }

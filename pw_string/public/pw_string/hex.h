@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2025 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -15,21 +15,21 @@
 
 #include <cstdint>
 
-namespace pw::bluetooth::internal {
-
+namespace pw::string {
+constexpr inline uint16_t kInvalidHexChar = 0x100;
 // Parse a hexadecimal character to a 0-15 number. If the hex char is invalid
-// returns 0x100.
+// returns kInvalidHexChar.
 constexpr uint16_t HexToNibble(char hex) {
   if (hex >= '0' && hex <= '9') {
-    return hex - '0';
+    return static_cast<uint16_t>(hex - '0');
   }
   if (hex >= 'A' && hex <= 'F') {
-    return hex - 'A' + 10;
+    return static_cast<uint16_t>(hex - 'A' + 10);
   }
   if (hex >= 'a' && hex <= 'f') {
-    return hex - 'a' + 10;
+    return static_cast<uint16_t>(hex - 'a' + 10);
   }
-  return 0x100;
+  return kInvalidHexChar;
 }
 
 // Convert a nibble (0 to 15 value) to its lowercase hexadecimal representation.
@@ -43,4 +43,10 @@ constexpr char NibbleToHex(uint8_t value) {
   return '?';
 }
 
-}  // namespace pw::bluetooth::internal
+// Check if a character is a valid hex digit
+constexpr bool IsHexDigit(char value) {
+  return ('a' <= value && value <= 'f') || ('A' <= value && value <= 'F') ||
+         ('0' <= value && value <= '9');
+}
+
+}  // namespace pw::string
