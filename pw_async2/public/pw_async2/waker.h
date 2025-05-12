@@ -14,9 +14,9 @@
 #pragma once
 
 #include "pw_async2/internal/config.h"
-#include "pw_async2/internal/token.h"
 #include "pw_async2/lock.h"
 #include "pw_containers/intrusive_forward_list.h"
+#include "pw_log/tokenized_args.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::async2 {
@@ -28,7 +28,7 @@ namespace internal {
 
 void CloneWaker(Waker& waker_in,
                 Waker& waker_out,
-                Token wait_reason = kEmptyToken);
+                log::Token wait_reason = log::kDefaultToken);
 
 }  // namespace internal
 
@@ -45,7 +45,7 @@ void CloneWaker(Waker& waker_in,
   do {                                                               \
     [[maybe_unused]] constexpr const char*                           \
         pw_async2_wait_reason_must_be_string = wait_reason_string;   \
-    constexpr ::pw::async2::internal::Token pw_async2_wait_reason =  \
+    constexpr ::pw::log::Token pw_async2_wait_reason =               \
         PW_LOG_TOKEN("pw_async2", wait_reason_string);               \
     ::pw::async2::internal::StoreWaker(                              \
         context, waker_out, pw_async2_wait_reason);                  \
@@ -64,7 +64,7 @@ void CloneWaker(Waker& waker_in,
   do {                                                                \
     [[maybe_unused]] constexpr const char*                            \
         pw_async2_wait_reason_must_be_string = wait_reason_string;    \
-    constexpr ::pw::async2::internal::Token pw_async2_wait_reason =   \
+    constexpr ::pw::log::Token pw_async2_wait_reason =                \
         PW_LOG_TOKEN("pw_async2", wait_reason_string);                \
     ::pw::async2::internal::CloneWaker(                               \
         waker_in, waker_out, pw_async2_wait_reason);                  \
@@ -133,7 +133,7 @@ class Waker : public pw::IntrusiveForwardList<Waker>::Item {
  private:
   friend void internal::CloneWaker(Waker& waker_in,
                                    Waker& waker_out,
-                                   internal::Token wait_reason);
+                                   log::Token wait_reason);
 
   Waker(Task& task) PW_LOCKS_EXCLUDED(impl::dispatcher_lock()) : task_(&task) {
     InsertIntoTaskWakerList();
@@ -147,7 +147,7 @@ class Waker : public pw::IntrusiveForwardList<Waker>::Item {
   /// the different ``Waker``s that may wake up a ``Task``.
   ///
   /// This operation is guaranteed to be thread-safe.
-  void InternalCloneInto(Waker& waker_out, PW_LOG_TOKEN_TYPE wait_reason) &
+  void InternalCloneInto(Waker& waker_out, log::Token wait_reason) &
       PW_LOCKS_EXCLUDED(impl::dispatcher_lock());
 
   void InsertIntoTaskWakerList();
@@ -161,7 +161,7 @@ class Waker : public pw::IntrusiveForwardList<Waker>::Item {
   Task* task_ PW_GUARDED_BY(impl::dispatcher_lock()) = nullptr;
 
 #if PW_ASYNC2_DEBUG_WAIT_REASON
-  internal::Token wait_reason_ = internal::kEmptyToken;
+  log::Token wait_reason_ = log::kDefaultToken;
 #endif  // PW_ASYNC2_DEBUG_WAIT_REASON
 };
 

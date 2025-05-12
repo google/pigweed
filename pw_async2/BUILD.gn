@@ -64,7 +64,6 @@ pw_facade("dispatcher") {
     "public/pw_async2/context.h",
     "public/pw_async2/dispatcher.h",
     "public/pw_async2/dispatcher_base.h",
-    "public/pw_async2/internal/token.h",
     "public/pw_async2/lock.h",
     "public/pw_async2/task.h",
     "public/pw_async2/waker.h",

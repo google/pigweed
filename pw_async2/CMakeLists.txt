@@ -50,7 +50,6 @@ pw_add_facade(pw_async2.dispatcher STATIC
     pw_async2.dispatcher_BACKEND
   HEADERS
     public/pw_async2/context.h
-    public/pw_async2/internal/token.h
     public/pw_async2/dispatcher.h
     public/pw_async2/dispatcher_base.h
     public/pw_async2/lock.h

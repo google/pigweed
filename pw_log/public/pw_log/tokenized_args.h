@@ -88,3 +88,18 @@
 #define PW_LOG_NESTED_TOKEN_FMT(...) "%s::%s"
 
 #endif  //__has_include("log_backend/log_backend_uses_pw_tokenizer.h")
+
+#ifdef __cplusplus
+
+namespace pw::log {
+
+/// Type of a log token. Either a `const char*` or a `pw::tokenizer::Token`.
+/// Use in C++ instead of `PW_LOG_TOKEN_TYPE`.
+using Token = PW_LOG_TOKEN_TYPE;
+
+/// Default value of a log token. This token should not be logged.
+inline constexpr Token kDefaultToken = PW_LOG_TOKEN_DEFAULT_VALUE;
+
+}  // namespace pw::log
+
+#endif  // __cplusplus

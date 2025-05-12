@@ -30,6 +30,8 @@ affects how the arguments appear in final logs if they cannot be detokenized
 for any reason. Undetokenized tokens will appear inline as hex integers
 prefixed with ``$#``, e.g. ``$#34d16466``.
 
+.. doxygentypedef:: pw::log::Token
+.. doxygenvariable:: pw::log::kDefaultToken
 .. doxygendefine:: PW_LOG_TOKEN_TYPE
 .. doxygendefine:: PW_LOG_TOKEN
 .. doxygendefine:: PW_LOG_TOKEN_EXPR
@@ -58,7 +60,7 @@ Example usage with enums:
 
    enum class Color { kRed, kGreen, kBlue };
 
-   PW_LOG_TOKEN_TYPE ColorToToken(Color color) {
+   pw::log::Token ColorToToken(Color color) {
      switch (color) {
        case Color::kRed:
          return PW_LOG_TOKEN_EXPR("kRed");

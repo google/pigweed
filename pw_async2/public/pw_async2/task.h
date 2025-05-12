@@ -14,11 +14,11 @@
 #pragma once
 
 #include "pw_async2/context.h"
-#include "pw_async2/internal/token.h"
 #include "pw_async2/lock.h"
 #include "pw_async2/poll.h"
 #include "pw_containers/intrusive_forward_list.h"
 #include "pw_containers/intrusive_list.h"
+#include "pw_log/tokenized_args.h"
 #include "pw_sync/lock_annotations.h"
 
 namespace pw::async2 {
@@ -74,7 +74,7 @@ class Task : public IntrusiveList<Task>::Item {
   ///   MyTask() : pw::async2::Task(PW_ASYNC_TASK_NAME("MyTask")) {}
   /// };
   /// ```
-  constexpr Task(internal::Token name) : name_(name) {}
+  constexpr Task(log::Token name) : name_(name) {}
 
   Task(const Task&) = delete;
   Task(Task&&) = delete;
@@ -217,7 +217,7 @@ class Task : public IntrusiveList<Task>::Item {
 
   // Optional user-facing name for the task. If set, it will be included in
   // debug logs.
-  internal::Token name_ = internal::kEmptyToken;
+  log::Token name_ = log::kDefaultToken;
 };
 
 }  // namespace pw::async2
