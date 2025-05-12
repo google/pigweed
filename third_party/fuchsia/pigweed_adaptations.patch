@@ -1,4 +1,4 @@
-# Copyright 2024 The Pigweed Authors
+# Copyright 2025 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -42,17 +42,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/funct
 
    static const target_ops<void> ops;
 
-@@ -510,7 +512,8 @@ class function_base<inline_target_size, require_inline, Result(Args...), Allocat
-   // Note that fit::callback will release the target immediately after
-   // invoke() (also affecting any share()d copies).
-   // Aborts if the function's target is empty.
--  Result invoke(Args... args) const {
-+  // TODO: b/241567321 - Remove "no sanitize" after pw_protobuf is fixed.
-+  Result invoke(Args... args) const PW_NO_SANITIZE("function") {
-     // Down cast the ops to the derived type that this function was instantiated
-     // with, which includes the invoke function.
-     //
-@@ -540,7 +543,7 @@ class function_base<inline_target_size, require_inline, Result(Args...), Allocat
+@@ -540,7 +542,7 @@ class function_base<inline_target_size, require_inline, Result(Args...), Allocat
    template <typename SharedFunction>
    void copy_shared_target_to(SharedFunction& copy) {
      copy.destroy_target();
@@ -61,7 +51,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/funct
      shared_target_type<SharedFunction>::copy_shared_ptr(base::bits(), copy.bits());
      copy.set_ops(base::ops());
    }
-@@ -570,7 +573,7 @@ class function_base<inline_target_size, require_inline, Result(Args...), Allocat
+@@ -570,7 +572,7 @@ class function_base<inline_target_size, require_inline, Result(Args...), Allocat
    void check_target_type() const {
      if (target_type<Callable>::ops.target_type_id(nullptr, &target_type<Callable>::ops) !=
          base::target_type_id()) {
@@ -337,7 +327,17 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/test/function_tests.cc b/third
  namespace {
 
  using ::std::size_t;
-@@ -1029,8 +1030,8 @@ TEST(FunctionTests, callback_with_custom_allocator) {
+@@ -54,8 +55,7 @@ struct EmptyFunction<R(Args...)> {
+   R operator()(Args... args) const { return fptr(args...); }
+   bool operator==(decltype(nullptr)) const { return true; }
+
+-  R(*fptr)
+-  (Args...) = nullptr;
++  R (*fptr)(Args...) = nullptr;
+ };
+
+ struct alignas(4 * alignof(void*)) LargeAlignedCallable {
+@@ -1029,8 +1029,8 @@ TEST(FunctionTests, callback_with_custom_allocator) {
    EXPECT_EQ(1, cbheapdestroy);
  }
 

@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstdint>
+#include <type_traits>
 
 #include "pw_function/function.h"
 #include "pw_preprocessor/compiler.h"
@@ -187,6 +188,9 @@ constexpr std::false_type kInvalidMessageStruct{};
 
 }  // namespace internal
 
+class StreamEncoder;
+class StreamDecoder;
+
 // Callback for a structure member that cannot be represented by a data type.
 // Holds either a callback for encoding a field, or a callback for decoding
 // a field.
@@ -196,13 +200,27 @@ union Callback {
   ~Callback() { encode_ = nullptr; }
 
   // Set the encoder callback.
-  void SetEncoder(Function<Status(StreamEncoder& encoder)>&& encode) {
-    encode_ = std::move(encode);
+  template <typename F>
+  void SetEncoder(F&& encode) {
+    static_assert(
+        std::is_convertible_v<F, Function<Status(StreamEncoder&)>>,
+        "Encode function signature must be Status(Message::StreamEncoder&)");
+    encode_ = [enc = std::forward<F>(encode)](
+                  ::pw::protobuf::StreamEncoder& base_encoder) mutable {
+      return enc(static_cast<StreamEncoder&>(base_encoder));
+    };
   }
 
   // Set the decoder callback.
-  void SetDecoder(Function<Status(StreamDecoder& decoder)>&& decode) {
-    decode_ = std::move(decode);
+  template <typename F>
+  void SetDecoder(F&& decode) {
+    static_assert(
+        std::is_convertible_v<F, Function<Status(StreamDecoder&)>>,
+        "Decode function signature must be Status(Message::StreamDecoder&)");
+    decode_ = [dec = std::forward<F>(decode)](
+                  ::pw::protobuf::StreamDecoder& base_decoder) mutable {
+      return dec(static_cast<StreamDecoder&>(base_decoder));
+    };
   }
 
   // Allow moving of callbacks by moving the member.
@@ -243,8 +261,8 @@ union Callback {
     return OkStatus();
   }
 
-  Function<Status(StreamEncoder& encoder)> encode_;
-  Function<Status(StreamDecoder& decoder)> decode_;
+  Function<Status(::pw::protobuf::StreamEncoder& encoder)> encode_;
+  Function<Status(::pw::protobuf::StreamDecoder& decoder)> decode_;
 };
 
 enum class NullFields : uint32_t {};
@@ -260,14 +278,30 @@ struct OneOf {
   ~OneOf() { encode_ = nullptr; }
 
   // Set the encoder callback.
-  void SetEncoder(Function<Status(StreamEncoder& encoder)>&& encode) {
-    encode_ = std::move(encode);
+  template <typename F>
+  void SetEncoder(F&& encode) {
+    static_assert(
+        std::is_convertible_v<F, Function<Status(StreamEncoder&)>>,
+        "Encode function signature must be Status(Message::StreamEncoder&)");
+    encode_ = [enc = std::forward<F>(encode)](
+                  ::pw::protobuf::StreamEncoder& base_encoder) mutable {
+      return enc(static_cast<StreamEncoder&>(base_encoder));
+    };
   }
 
   // Set the decoder callback.
-  void SetDecoder(
-      Function<Status(Fields field, StreamDecoder& decoder)>&& decode) {
-    decode_ = std::move(decode);
+  template <typename F>
+  void SetDecoder(F&& decode) {
+    static_assert(
+        std::is_convertible_v<F, Function<Status(Fields, StreamDecoder&)>>,
+        "Decode function signature must be Status(Fields, "
+        "Message::StreamDecoder&)");
+    decode_ = [dec = std::forward<F>(decode)](
+                  uint32_t field,
+                  ::pw::protobuf::StreamDecoder& base_decoder) mutable {
+      return dec(static_cast<Fields>(field),
+                 static_cast<StreamDecoder&>(base_decoder));
+    };
   }
 
   // Allow moving of callbacks by moving the member.
@@ -311,15 +345,16 @@ struct OneOf {
       }
 
       invoked_ = true;
-      return decode_(field, decoder);
+      return decode_(static_cast<uint32_t>(field), decoder);
     }
     return OkStatus();
   }
 
   mutable bool invoked_;
   union {
-    Function<Status(StreamEncoder& encoder)> encode_;
-    Function<Status(Fields field, StreamDecoder& decoder)> decode_;
+    Function<Status(::pw::protobuf::StreamEncoder& encoder)> encode_;
+    Function<Status(uint32_t field, ::pw::protobuf::StreamDecoder& decoder)>
+        decode_;
   };
 };
 

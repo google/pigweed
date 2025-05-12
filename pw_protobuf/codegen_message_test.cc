@@ -350,6 +350,22 @@ TEST(CodegenMessage, SetEncoderAndDecoder) {
   EXPECT_TRUE(msg.id);
 }
 
+TEST(CodegenMessage, SetEncoderAndDecoderMutableLambda) {
+  Pigweed::Message msg{};
+
+  EXPECT_FALSE(msg.id);
+  int calls = 0;
+  msg.id.SetEncoder([&calls](Pigweed::StreamEncoder&) mutable {
+    calls += 1;
+    return OkStatus();
+  });
+  msg.id.SetDecoder([&calls](Pigweed::StreamDecoder&) mutable {
+    calls += 1;
+    return OkStatus();
+  });
+  EXPECT_TRUE(msg.id);
+}
+
 TEST(CodegenMessage, Read) {
   // clang-format off
   constexpr uint8_t proto_data[] = {

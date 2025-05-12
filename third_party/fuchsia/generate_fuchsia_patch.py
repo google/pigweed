@@ -124,22 +124,12 @@ def _patch_constinit(text: str) -> str:
     )
 
 
-_INVOKE_PATCH = (
-    '\n'
-    '  // TODO: b/241567321 - Remove "no sanitize" after pw_protobuf is fixed.\n'
-    '  Result invoke(Args... args) const PW_NO_SANITIZE("function") {'
-)
-
-
 def _patch_invoke(file: Path, text: str) -> str:
     # Update internal/function.h only.
     if file.name != 'function.h' or file.parent.name != 'internal':
         return text
 
-    text = _add_include_before_namespace(text, 'pw_preprocessor/compiler.h')
-    return text.replace(
-        '\n  Result invoke(Args... args) const {', _INVOKE_PATCH
-    )
+    return _add_include_before_namespace(text, 'pw_preprocessor/compiler.h')
 
 
 def _ignore_errors(file: Path, text: str) -> str:
