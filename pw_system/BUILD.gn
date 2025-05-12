@@ -118,6 +118,7 @@ pw_source_set("log_backend.impl") {
     "$dir_pw_log:proto_utils",
     "$dir_pw_log:pw_log.facade",
     "$dir_pw_log_string:handler.facade",
+    "$dir_pw_log_tokenized:handler.facade",
     "$dir_pw_metric:global",
     "$dir_pw_multisink",
     "$dir_pw_result",
