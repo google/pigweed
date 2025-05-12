@@ -112,11 +112,15 @@ pw_add_library(pw_containers._raw_storage INTERFACE
 
 pw_add_library(pw_containers._test_helpers STATIC
   HEADERS
+    public/pw_containers/internal/container_tests.h
     public/pw_containers/internal/test_helpers.h
   SOURCES
     test_helpers.cc
   PUBLIC_INCLUDES
     public
+  PUBLIC_DEPS
+    pw_containers.algorithm
+    pw_unit_test
   PRIVATE_DEPS
     pw_assert
 )
@@ -312,7 +316,6 @@ pw_add_test(pw_containers.inline_deque_test
     inline_deque_test.cc
   PRIVATE_DEPS
     pw_compilation_testing._pigweed_only_negative_compilation
-    pw_containers.algorithm
     pw_containers.inline_deque
     pw_containers._test_helpers
   GROUPS

@@ -264,10 +264,17 @@ cc_library(
     name = "test_helpers",
     testonly = True,
     srcs = ["test_helpers.cc"],
-    hdrs = ["public/pw_containers/internal/test_helpers.h"],
+    hdrs = [
+        "public/pw_containers/internal/container_tests.h",
+        "public/pw_containers/internal/test_helpers.h",
+    ],
     implementation_deps = ["//pw_assert:check"],
     strip_include_prefix = "public",
     visibility = [":__subpackages__"],
+    deps = [
+        ":algorithm",
+        "//pw_unit_test",
+    ],
 )
 
 cc_library(
@@ -352,7 +359,6 @@ pw_cc_test(
         "inline_deque_test.cc",
     ],
     deps = [
-        ":algorithm",
         ":inline_deque",
         ":test_helpers",
         "//pw_compilation_testing:negative_compilation_testing",
