@@ -498,6 +498,8 @@ node.toolchain(node_version = "20.12.1")
 npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm", dev_dependency = True)
 npm.npm_translate_lock(
     name = "npm",
+    # Uncomment the following when pnpm lock file needs to be updated.
+    # update_pnpm_lock = True,
     pnpm_lock = "//:pnpm-lock.yaml",
 )
 use_repo(npm, "npm")

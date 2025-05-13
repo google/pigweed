@@ -15,6 +15,7 @@
 import * as child_process from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import { modify, applyEdits, FormattingOptions } from 'jsonc-parser';
 import { Logger } from '../loggingTypes';
 import {
   CompilationDatabase,
@@ -824,19 +825,26 @@ export function saveLastBazelCommandInUserSettings(
   try {
     const settingsPath = path.join(cwd, '.vscode', 'settings.json');
 
-    // Try to save the last bazel command in user settings.
     if (fs.existsSync(settingsPath)) {
-      let settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
-      settings = {
-        ...settings,
-        'pigweed.bazelCompileCommandsLastBuildCommand': bazelCmd,
+      const originalContent = fs.readFileSync(settingsPath, 'utf-8');
+      const formattingOptions: FormattingOptions = {
+        keepLines: true,
+        insertSpaces: true,
+        tabSize: 2,
+        eol: '\n',
       };
-      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+      const jsonPath = ['pigweed.bazelCompileCommandsLastBuildCommand'];
+      const edits = modify(originalContent, jsonPath, bazelCmd, {
+        formattingOptions,
+      });
+      const updatedContent = applyEdits(originalContent, edits);
+      fs.writeFileSync(settingsPath, updatedContent, 'utf-8');
       tuiManager?.addStdout('Saved last bazel command to user settings.json.');
     }
   } catch (e: any) {
     tuiManager?.addStderr(
-      'Failed to save last bazel command to user settings.json: ' + e,
+      'Failed to save last bazel command to user settings.json: ' +
+        e.toString(),
     );
   }
 }

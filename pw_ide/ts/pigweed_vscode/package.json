@@ -298,6 +298,7 @@
     "@vscode/test-electron": "^2.3.9",
     "css-loader": "^7.1.2",
     "eslint": "^8.56.0",
+    "jsonc-parser": "^3.3.1",
     "mocha": "^10.2.0",
     "node-polyfill-webpack-plugin": "^4.0.0",
     "prettier": "^3.3.2",
