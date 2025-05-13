@@ -244,62 +244,6 @@ class ProxyHost {
       uint16_t attribute_handle,
       ChannelEventCallback&& event_fn);
 
-  /// Send a GATT Notify to the indicated connection.
-  ///
-  /// @param[in] connection_handle The connection handle of the peer to notify.
-  /// Maximum valid connection handle is 0x0EFF.
-  ///
-  /// @param[in] attribute_handle  The attribute handle the notify should be
-  /// sent on. Cannot be 0.
-  /// @param[in] attribute_value   The client payload to be sent. Payload will
-  /// be destroyed once its data has been used.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  OK: If notify was successfully queued for send.
-  ///  UNAVAILABLE: If CHRE doesn't have resources to queue the send at this
-  ///  time (transient error).
-  ///
-  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
-  /// @endrst
-  ///
-  /// @deprecated - Clients should use `ProxyHost::AcquireGattNotifyChannel` and
-  /// then call `GattNotifyChannel::Write` on that.
-  // TODO: https://pwbug.dev/369709521 - Delete this once all downstreams
-  // have transitioned.
-  StatusWithMultiBuf SendGattNotify(uint16_t connection_handle,
-                                    uint16_t attribute_handle,
-                                    pw::multibuf::MultiBuf&& payload);
-
-  /// Send a GATT Notify to the indicated connection.
-  ///
-  /// Deprecated, use MultiBuf version above instead.
-  ///
-  /// @param[in] connection_handle The connection handle of the peer to notify.
-  ///                              Maximum valid connection handle is 0x0EFF.
-  ///
-  /// @param[in] attribute_handle  The attribute handle the notify should be
-  ///                              sent on. Cannot be 0.
-  /// @param[in] attribute_value   The data to be sent. Data will be copied
-  ///                              before function completes.
-  ///
-  /// @returns @rst
-  ///
-  /// .. pw-status-codes::
-  ///  OK: If notify was successfully queued for send.
-  ///  UNAVAILABLE: If CHRE doesn't have resources to queue the send
-  ///               at this time (transient error).
-  ///  INVALID_ARGUMENT: If arguments are invalid (check logs).
-  /// @endrst
-  /// @deprecated - Clients should use `ProxyHost::AcquireGattNotifyChannel` and
-  /// then call `GattNotifyChannel::Write` on that.
-  // TODO: https://pwbug.dev/379337272 - Delete this once all downstreams
-  // have transitioned.
-  pw::Status SendGattNotify(uint16_t connection_handle,
-                            uint16_t attribute_handle,
-                            pw::span<const uint8_t> attribute_value);
-
   /// Returns an RFCOMM channel that supports writing to and reading from a
   /// remote peer.
   ///
