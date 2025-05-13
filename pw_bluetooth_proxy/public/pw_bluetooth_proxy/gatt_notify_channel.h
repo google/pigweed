@@ -34,14 +34,8 @@ class GattNotifyChannel : public L2capChannel {
   /// Return the attribute handle of this GattNotify channel.
   uint16_t attribute_handle() const { return attribute_handle_; }
 
-  // @deprecated
-  // TODO: https://pwbug.dev/379337272 - Delete this once all downstreams
-  // have transitioned to Write(MultiBuf) for this channel type.
-  Status Write(pw::span<const uint8_t> attribute_value) override;
-
-  // Also make visible Write(MultiBuf)
-  // TODO: https://pwbug.dev/379337272 - Can delete when Write(span) is deleted.
-  using L2capChannel::Write;
+  // Overridden here to do additional length checks.
+  StatusWithMultiBuf Write(multibuf::MultiBuf&& attribute_value) override;
 
  protected:
   static pw::Result<GattNotifyChannel> Create(
@@ -63,10 +57,12 @@ class GattNotifyChannel : public L2capChannel {
   void DoClose() override {}
 
  private:
-  // TODO: https://pwbug.dev/379337272 - Move to true once this channel uses
-  // payload queue. Delete once all downstreams have transitioned to
-  // Write(MultiBuf) for this channel type.
-  bool UsesPayloadQueue() override { return false; }
+  // TODO: https://pwbug.dev/379337272 - Delete once all downstreams have
+  // transitioned to Write(MultiBuf) for this channel type.
+  bool UsesPayloadQueue() override { return true; }
+
+  [[nodiscard]] std::optional<H4PacketWithH4> GenerateNextTxPacket()
+      PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex()) override;
 
   // TODO: https://pwbug.dev/349602172 - Define ATT CID in pw_bluetooth.
   static constexpr uint16_t kAttributeProtocolCID = 0x0004;

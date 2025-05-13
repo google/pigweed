@@ -15,6 +15,8 @@
 #include "pw_bluetooth_proxy/proxy_host.h"
 
 #include <cstdint>
+#include <list>
+#include <vector>
 
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/hci_commands.emb.h"
@@ -887,7 +889,7 @@ TEST_F(NumberOfCompletedPacketsTest, TwoOfThreeSentPacketsComplete) {
       SendLeReadBufferResponseFromController(proxy, kNumConnections));
   EXPECT_EQ(capture.sends_called, 1);
 
-  std::array<uint8_t, 1> attribute_value = {0};
+  std::array<uint8_t, 1> attribute_value = {7};
 
   EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), 3);
 
@@ -1863,10 +1865,18 @@ TEST_F(ResetTest, HandleHciReset) {
 class MultiSendTest : public ProxyHostTest {};
 
 TEST_F(MultiSendTest, CanOccupyAllThenReuseEachBuffer) {
-  constexpr size_t kMaxSends = ProxyHost::GetNumSimultaneousAclSendsSupported();
+  constexpr size_t kAclBuffersSize =
+      ProxyHost::GetNumSimultaneousAclSendsSupported();
+  // Total number of expected sends for this test.
+  constexpr size_t kExpectedSendCount = (2 * kAclBuffersSize) + 1;
+  // We allocate some extra slots in case there is a bug (which will be caught
+  // by the test EXPECTs).
+  constexpr size_t kMaxSendCount = kExpectedSendCount + 5;
   struct {
     size_t sends_called = 0;
-    pw::Vector<H4PacketWithH4, kMaxSends * 2> released_packets{};
+    // These are packets that have been sent towards controller, but not
+    // released yet by container.
+    pw::Vector<H4PacketWithH4, kMaxSendCount> in_flight_packets{};
   } capture;
 
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
@@ -1875,105 +1885,172 @@ TEST_F(MultiSendTest, CanOccupyAllThenReuseEachBuffer) {
       [&capture](H4PacketWithH4&& packet) {
         // Capture all packets to prevent their destruction.
         capture.sends_called++;
-        capture.released_packets.push_back(std::move(packet));
+        capture.in_flight_packets.push_back(std::move(packet));
       });
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/2 * kMaxSends,
+                              /*le_acl_credits_to_reserve=*/kMaxSendCount,
                               /*br_edr_acl_credits_to_reserve=*/0);
-  // Allow proxy to reserve enough credits to send twice the number of
-  // simultaneous sends supported by proxy.
   PW_TEST_EXPECT_OK(
-      SendLeReadBufferResponseFromController(proxy, 2 * kMaxSends));
+      SendLeReadBufferResponseFromController(proxy, kMaxSendCount));
 
   GattNotifyChannel channel = BuildGattNotifyChannel(proxy, {});
 
   std::array<uint8_t, 1> attribute_value = {0xF};
-  // Occupy all send buffers.
-  for (size_t i = 0; i < kMaxSends; ++i) {
-    EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
-              PW_STATUS_OK);
-  }
-  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), kMaxSends);
-  EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
-            PW_STATUS_UNAVAILABLE);
 
-  // Confirm we can release and reoccupy each buffer slot.
-  for (size_t i = 0; i < kMaxSends; ++i) {
-    capture.released_packets.pop_back();
+  // Occupy all H4 buffers.
+  for (size_t sent = 1; sent <= kAclBuffersSize; ++sent) {
     EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
               PW_STATUS_OK);
-    EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
-              PW_STATUS_UNAVAILABLE);
+    // Each write is sent towards controller
+    EXPECT_EQ(capture.sends_called, sent);
+    EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), kMaxSendCount - sent);
+    // Container holds on to each H4 buffer.
+    EXPECT_EQ(capture.in_flight_packets.size(), sent);
   }
-  EXPECT_EQ(capture.sends_called, 2 * kMaxSends);
+
+  // This was already verified in last iteration of loop above, but we EXPECT
+  // again to provide reader context for EXPECTs after the following Write.
+  EXPECT_EQ(capture.sends_called, kAclBuffersSize);
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), kMaxSendCount - kAclBuffersSize);
+  EXPECT_EQ(capture.in_flight_packets.size(), kAclBuffersSize);
+
+  // At this point all H4 buffers are in use. We can still write to channel, but
+  // those payloads will queue in the channel until H4 packets are freed.
+  PW_TEST_EXPECT_OK(channel.Write(MultiBufFromArray(attribute_value)).status);
+
+  // No send (since H4 buffers are all in use).
+  EXPECT_EQ(capture.sends_called, kAclBuffersSize);
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), kMaxSendCount - kAclBuffersSize);
+  // H4 buffers still all in use.
+  EXPECT_EQ(capture.in_flight_packets.size(), kAclBuffersSize);
+
+  // This simulates the container/controller releasing an H4 buffer. That
+  // should result in another send to controller.
+  {
+    // We move the H4 packet out of the container so we can dtor it separately
+    // from the container's pop_back. The dtor of the H4 packet will trigger a
+    // push_back on the same container in this test's send_to_controller_fn
+    // lambda. We don't want that to happen nested inside a container pop_back
+    // as some containers (including pw::Vector and std::vector) don't handle
+    // nested modifications well.
+    H4PacketWithH4 last_packet = std::move(capture.in_flight_packets.back());
+  }
+  // At this point the second to last in_flight_packets is the one we moved
+  // from. So erase that entry.
+  capture.in_flight_packets.erase(
+      std::prev(capture.in_flight_packets.end(), 2));
+
+  // Send of queued payload.
+  EXPECT_EQ(capture.sends_called, kAclBuffersSize + 1);
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(),
+            kMaxSendCount - kAclBuffersSize - 1);
+  // We freed a H4 buffer, but then sending the queued payload used it.
+  EXPECT_EQ(capture.in_flight_packets.size(), kAclBuffersSize);
+
+  // Free up remaining slots.
+  capture.in_flight_packets.clear();
+  // There should have been no more sends since there were no payloads queued.
+  EXPECT_EQ(capture.sends_called, kAclBuffersSize + 1);
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(),
+            kMaxSendCount - kAclBuffersSize - 1);
+  // And of course in flight packets are cleared (which indicates mean all H4
+  // buffers are free for use).
+  EXPECT_EQ(capture.in_flight_packets.size(), 0u);
+
+  // Confirm we can now reoccupy each H4 buffer slot.
+  for (size_t sent = 1; sent <= kAclBuffersSize; ++sent) {
+    EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
+              PW_STATUS_OK);
+    // Each write is sent towards controller
+    EXPECT_EQ(capture.sends_called, kAclBuffersSize + 1 + sent);
+    EXPECT_EQ(proxy.GetNumFreeLeAclPackets(),
+              kMaxSendCount - kAclBuffersSize - 1 - sent);
+    // Container holds on to each H4 buffer.
+    EXPECT_EQ(capture.in_flight_packets.size(), sent);
+  }
 
   // If captured packets are not reset here, they may destruct after the proxy
   // and lead to a crash when trying to lock the proxy's destructed mutex.
-  capture.released_packets.clear();
-  // for (auto& packet : capture.released_packets) {
-  //   packet.ResetAndReturnReleaseFn();
-  // }
+  capture.in_flight_packets.clear();
 }
 
 TEST_F(MultiSendTest, CanRepeatedlyReuseOneBuffer) {
-  constexpr size_t kMaxSends = ProxyHost::GetNumSimultaneousAclSendsSupported();
+  constexpr size_t kAclBuffersSize =
+      ProxyHost::GetNumSimultaneousAclSendsSupported();
   struct {
     size_t sends_called = 0;
-    std::array<H4PacketWithH4, kMaxSends> released_packets{};
+    // These are packets that have been sent towards controller, but not
+    // released yet by container.
+    pw::Vector<H4PacketWithH4, kAclBuffersSize> in_flight_packets{};
   } capture;
 
   pw::Function<void(H4PacketWithHci && packet)>&& send_to_host_fn(
       []([[maybe_unused]] H4PacketWithHci&& packet) {});
   pw::Function<void(H4PacketWithH4 && packet)> send_to_controller_fn(
       [&capture](H4PacketWithH4&& packet) {
-        // Capture first kMaxSends packets linearly.
-        if (capture.sends_called < capture.released_packets.size()) {
-          capture.released_packets[capture.sends_called] = std::move(packet);
-        } else {
-          // Reuse only first packet slot after kMaxSends.
-          // TODO: https://pwbug.dev/402543431 - Move to using vector rather
-          // than new/delete against array slot.
-          new (&(capture.released_packets[0])) H4PacketWithH4();
-          capture.released_packets[0] = std::move(packet);
-        }
         ++capture.sends_called;
+        capture.in_flight_packets.push_back(std::move(packet));
       });
+
+  // Allow proxy to reserve enough credits for all the sends we do below.
+  // simultaneous sends supported by proxy.
+  constexpr size_t kTotalAclCredits = 2 * kAclBuffersSize;
 
   ProxyHost proxy = ProxyHost(std::move(send_to_host_fn),
                               std::move(send_to_controller_fn),
-                              /*le_acl_credits_to_reserve=*/2 * kMaxSends,
+                              /*le_acl_credits_to_reserve=*/kTotalAclCredits,
                               /*br_edr_acl_credits_to_reserve=*/0);
   PW_TEST_EXPECT_OK(
-      SendLeReadBufferResponseFromController(proxy, 2 * kMaxSends));
+      SendLeReadBufferResponseFromController(proxy, kTotalAclCredits));
 
   GattNotifyChannel channel = BuildGattNotifyChannel(proxy, {});
 
   std::array<uint8_t, 1> attribute_value = {0xF};
-  // Occupy all send buffers.
-  for (size_t i = 0; i < kMaxSends; ++i) {
+
+  // Occupy all H4 buffers.
+  for (size_t sent = 1; sent <= kAclBuffersSize; ++sent) {
     EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
               PW_STATUS_OK);
+    // Each write is sent towards controller
+    EXPECT_EQ(capture.sends_called, sent);
+    EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), kTotalAclCredits - sent);
+    // Container holds on to each H4 buffer.
+    EXPECT_EQ(capture.in_flight_packets.size(), sent);
   }
 
-  // Repeatedly free and reoccupy first buffer.
-  for (size_t i = 0; i < kMaxSends; ++i) {
-    // TODO: https://pwbug.dev/402543431 - Move to using vector rather
-    // than new/delete against array slow.
-    capture.released_packets[0].~H4PacketWithH4();
+  // This was already verified in last iteration of loop above, but we EXPECT
+  // explicitly here to provide reader context for EXPECTs in the loop below.
+  EXPECT_EQ(capture.sends_called, kAclBuffersSize);
+  EXPECT_EQ(proxy.GetNumFreeLeAclPackets(), kTotalAclCredits - kAclBuffersSize);
+  EXPECT_EQ(capture.in_flight_packets.size(), kAclBuffersSize);
+
+  // Repeatedly free and reoccupy last buffer.
+  for (size_t sent = 1; sent <= kAclBuffersSize; ++sent) {
+    capture.in_flight_packets.pop_back();
+    // No send due to release of H4 buffer since no payloads were queued.
+    EXPECT_EQ(capture.sends_called, kAclBuffersSize + sent - 1);
+    EXPECT_EQ(proxy.GetNumFreeLeAclPackets(),
+              kTotalAclCredits - kAclBuffersSize - (sent - 1));
+    // In flight packets has one free slot (which should align with one free H4
+    // buffer slot).
+    EXPECT_EQ(capture.in_flight_packets.size(), kAclBuffersSize - 1);
+
     EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
               PW_STATUS_OK);
-    EXPECT_EQ(channel.Write(MultiBufFromArray(attribute_value)).status,
-              PW_STATUS_UNAVAILABLE);
+    // Send happened using that one free H4 buffer slot.
+    EXPECT_EQ(capture.sends_called, kAclBuffersSize + sent);
+    EXPECT_EQ(proxy.GetNumFreeLeAclPackets(),
+              kTotalAclCredits - kAclBuffersSize - sent);
+    // In flight packets full again, which should align with H4
+    // buffers being full.
+    EXPECT_EQ(capture.in_flight_packets.size(), kAclBuffersSize);
   }
-  EXPECT_EQ(capture.sends_called, 2 * kMaxSends);
 
   // If captured packets are not reset here, they may destruct after the proxy
   // and lead to a crash when trying to lock the proxy's destructed mutex.
-  for (auto& packet : capture.released_packets) {
-    packet.ResetAndReturnReleaseFn();
-  }
+  capture.in_flight_packets.clear();
 }
 
 TEST_F(MultiSendTest, CanSendOverManyDifferentConnections) {

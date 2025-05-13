@@ -19,18 +19,75 @@
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_log/log.h"
-#include "pw_status/try.h"
 
 namespace pw::bluetooth::proxy {
-pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
+
+std::optional<H4PacketWithH4> GattNotifyChannel::GenerateNextTxPacket() {
+  if (state() != State::kRunning || PayloadQueueEmpty()) {
+    return std::nullopt;
+  }
+
+  ConstByteSpan attribute_value = GetFrontPayloadSpan();
+
+  std::optional<uint16_t> max_l2cap_payload_size = MaxL2capPayloadSize();
+  // This should have been caught during Write.
+  PW_CHECK(max_l2cap_payload_size);
+  const uint16_t max_attribute_size =
+      *max_l2cap_payload_size - emboss::AttHandleValueNtf::MinSizeInBytes();
+  // This should have been caught during Write.
+  PW_CHECK(attribute_value.size() < max_attribute_size);
+
+  size_t att_frame_size =
+      emboss::AttHandleValueNtf::MinSizeInBytes() + attribute_value.size();
+
+  pw::Result<H4PacketWithH4> result = PopulateTxL2capPacket(att_frame_size);
+  if (!result.ok()) {
+    return std::nullopt;
+  }
+  H4PacketWithH4 h4_packet = std::move(result.value());
+
+  // At this point we assume we can return a PDU with the payload.
+  PopFrontPayload();
+
+  // Write ATT PDU.
+  Result<emboss::AclDataFrameWriter> acl =
+      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan());
+  PW_CHECK_OK(acl);
+  PW_CHECK(acl->Ok());
+
+  Result<emboss::BFrameWriter> l2cap = MakeEmbossWriter<emboss::BFrameWriter>(
+      acl->payload().BackingStorage().data(),
+      acl->payload().BackingStorage().SizeInBytes());
+  PW_CHECK_OK(l2cap);
+  PW_CHECK(l2cap->Ok());
+
+  PW_CHECK(att_frame_size == l2cap->payload().BackingStorage().SizeInBytes());
+  Result<emboss::AttHandleValueNtfWriter> att_notify =
+      MakeEmbossWriter<emboss::AttHandleValueNtfWriter>(
+          attribute_value.size(),
+          l2cap->payload().BackingStorage().data(),
+          att_frame_size);
+  PW_CHECK_OK(att_notify);
+
+  att_notify->attribute_opcode().Write(emboss::AttOpcode::ATT_HANDLE_VALUE_NTF);
+  att_notify->attribute_handle().Write(attribute_handle_);
+  PW_CHECK(
+      TryToCopyToEmbossStruct(att_notify->attribute_value(), attribute_value));
+  PW_CHECK(att_notify->Ok());
+
+  return h4_packet;
+}
+
+StatusWithMultiBuf GattNotifyChannel::Write(
+    multibuf::MultiBuf&& attribute_value) {
   std::optional<uint16_t> max_l2cap_payload_size = MaxL2capPayloadSize();
   if (!max_l2cap_payload_size) {
     PW_LOG_ERROR("Tried to write before LE_Read_Buffer_Size processed.");
-    return Status::FailedPrecondition();
+    return {Status::FailedPrecondition(), std::move(attribute_value)};
   }
   if (*max_l2cap_payload_size <= emboss::AttHandleValueNtf::MinSizeInBytes()) {
     PW_LOG_ERROR("LE ACL data packet size limit does not support writing.");
-    return Status::FailedPrecondition();
+    return {Status::FailedPrecondition(), std::move(attribute_value)};
   }
   const uint16_t max_attribute_size =
       *max_l2cap_payload_size - emboss::AttHandleValueNtf::MinSizeInBytes();
@@ -38,43 +95,10 @@ pw::Status GattNotifyChannel::Write(pw::span<const uint8_t> attribute_value) {
     PW_LOG_ERROR("Attribute too large (%zu > %d). So will not process.",
                  attribute_value.size(),
                  max_attribute_size);
-    return pw::Status::InvalidArgument();
+    return {pw::Status::InvalidArgument(), std::move(attribute_value)};
   }
 
-  size_t att_size =
-      emboss::AttHandleValueNtf::MinSizeInBytes() + attribute_value.size();
-  pw::Result<H4PacketWithH4> h4_result =
-      PopulateTxL2capPacketDuringWrite(att_size);
-  if (!h4_result.ok()) {
-    // This can fail as a result of the L2CAP PDU not fitting in an H4 buffer
-    // or if all buffers are occupied.
-    // TODO: https://pwbug.dev/379337260 - Once we support ACL fragmentation,
-    // this function will not fail due to the L2CAP PDU size not fitting.
-    return h4_result.status();
-  }
-  H4PacketWithH4 h4_packet = std::move(*h4_result);
-
-  // Write ATT PDU.
-  PW_TRY_ASSIGN(
-      auto acl,
-      MakeEmbossWriter<emboss::AclDataFrameWriter>(h4_packet.GetHciSpan()));
-  PW_TRY_ASSIGN(auto l2cap,
-                MakeEmbossWriter<emboss::BFrameWriter>(
-                    acl.payload().BackingStorage().data(),
-                    acl.payload().BackingStorage().SizeInBytes()));
-  PW_CHECK(att_size == l2cap.payload().BackingStorage().SizeInBytes());
-  PW_TRY_ASSIGN(auto att_notify,
-                MakeEmbossWriter<emboss::AttHandleValueNtfWriter>(
-                    attribute_value.size(),
-                    l2cap.payload().BackingStorage().data(),
-                    att_size));
-  att_notify.attribute_opcode().Write(emboss::AttOpcode::ATT_HANDLE_VALUE_NTF);
-  att_notify.attribute_handle().Write(attribute_handle_);
-
-  PW_CHECK(
-      TryToCopyToEmbossStruct(att_notify.attribute_value(), attribute_value));
-
-  return QueuePacket(std::move(h4_packet));
+  return L2capChannel::Write(std::move(attribute_value));
 }
 
 pw::Result<GattNotifyChannel> GattNotifyChannel::Create(
