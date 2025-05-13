@@ -172,7 +172,6 @@ class IsoStreamImpl final : public IsoStream {
 
   hci::CommandChannel::EventHandlerId cis_established_handler_;
 
-  pw::chrono::VirtualSystemClock& clock_;
   pw::chrono::SystemClock::time_point reference_time_;
   uint16_t next_sdu_sequence_number_ = 0;
   uint32_t iso_interval_usec_ = 0;
@@ -182,6 +181,8 @@ class IsoStreamImpl final : public IsoStream {
 
   std::optional<pw::bluetooth_sapphire::Lease> wake_lease_;
   pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
+
+  pw::chrono::VirtualSystemClock& clock_;
 
   WeakSelf<IsoStreamImpl> weak_self_;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(IsoStreamImpl);
@@ -205,9 +206,9 @@ IsoStreamImpl::IsoStreamImpl(
       inbound_assembler_(
           fit::bind_member<&IsoStreamImpl::HandleCompletePacket>(this)),
       on_closed_cb_(std::move(on_closed_cb)),
-      clock_(clock),
       hci_(std::move(hci)),
       wake_lease_provider_(wake_lease_provider),
+      clock_(clock),
       weak_self_(this) {
   PW_CHECK(hci_.is_alive());
 

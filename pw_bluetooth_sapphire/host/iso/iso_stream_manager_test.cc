@@ -45,8 +45,11 @@ class IsoStreamManagerTest : public MockControllerTestBase {
     hci::DataBufferInfo iso_buffer_info(/*max_data_length=*/100,
                                         /*max_num_packets=*/5);
     transport()->InitializeIsoDataChannel(iso_buffer_info);
-    iso_stream_manager_ = std::make_unique<IsoStreamManager>(
-        kAclConnectionHandleId1, transport()->GetWeakPtr(), lease_provider());
+    iso_stream_manager_ =
+        std::make_unique<IsoStreamManager>(kAclConnectionHandleId1,
+                                           transport()->GetWeakPtr(),
+                                           lease_provider(),
+                                           dispatcher());
   }
 
   void TearDown() override {

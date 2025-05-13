@@ -67,8 +67,7 @@ class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
       CisEstablishedCallback on_established_cb,
       pw::Callback<void()> on_closed_cb,
       pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
-      pw::chrono::VirtualSystemClock& clock =
-          pw::chrono::VirtualSystemClock::RealClock());
+      pw::chrono::VirtualSystemClock& clock);
 
   // Used by the client to check for queued frames. If none are present the
   // incoming data available callback will be called the next time a frame is

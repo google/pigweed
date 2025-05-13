@@ -96,7 +96,7 @@ class IsoStreamTest : public MockControllerTestBase {
           iso_stream_.reset();
         },
         stream_lease_provider_,
-        test_clock_);
+        dispatcher());
   }
 
   void TearDown() override {
@@ -156,7 +156,6 @@ class IsoStreamTest : public MockControllerTestBase {
 
  protected:
   bool accept_incoming_sdus_ = true;
-  pw::chrono::SimulatedSystemClock test_clock_;
 
  private:
   std::unique_ptr<IsoStream> iso_stream_;
@@ -597,7 +596,7 @@ TEST_F(IsoStreamTest, SendPacket) {
     ++expected_sequence_num;
 
     // Advance the clock by one ISO interval
-    test_clock_.AdvanceTime(std::chrono::microseconds(iso_interval_usec));
+    RunFor(std::chrono::microseconds(iso_interval_usec));
   }
 
   {
@@ -622,7 +621,7 @@ TEST_F(IsoStreamTest, SendPacket) {
     ++expected_sequence_num;
 
     // Advance the clock by one ISO interval
-    test_clock_.AdvanceTime(std::chrono::microseconds(iso_interval_usec));
+    RunFor(std::chrono::microseconds(iso_interval_usec));
   }
 
   {
@@ -670,7 +669,7 @@ TEST_F(IsoStreamTest, SendPacket) {
     expected_sequence_num += 2;
 
     // Advance the clock by two ISO intervals to simulate a skipped interval
-    test_clock_.AdvanceTime(std::chrono::microseconds(2 * iso_interval_usec));
+    RunFor(std::chrono::microseconds(2 * iso_interval_usec));
   }
 
   {
@@ -782,7 +781,7 @@ TEST_F(IsoStreamTest, PacketReceivedBeforeNextInterval) {
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
     ++expected_sequence_num;
 
-    test_clock_.AdvanceTime(std::chrono::microseconds(iso_interval_usec));
+    RunFor(std::chrono::microseconds(iso_interval_usec));
   }
 
   // Send a third packet after the interval has passed
@@ -847,7 +846,7 @@ TEST_F(IsoStreamTest, PacketReceivedAtIntervalBoundaries) {
     ++expected_sequence_num;
 
     // Advance the clock by almost one ISO interval
-    test_clock_.AdvanceTime(std::chrono::microseconds(iso_interval_usec - 1));
+    RunFor(std::chrono::microseconds(iso_interval_usec - 1));
   }
 
   {
@@ -870,7 +869,7 @@ TEST_F(IsoStreamTest, PacketReceivedAtIntervalBoundaries) {
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
 
     // Advance the clock by one more microsecond to reach the next interval
-    test_clock_.AdvanceTime(std::chrono::microseconds(1));
+    RunFor(std::chrono::microseconds(1));
     ++expected_sequence_num;
   }
 
@@ -933,7 +932,7 @@ TEST_F(IsoStreamTest, ClearControllerPacketCountOnDisconnectComplete) {
     EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
     ++expected_sequence_num;
     // Advance the clock by one ISO interval
-    test_clock_.AdvanceTime(std::chrono::microseconds(iso_interval_usec));
+    RunFor(std::chrono::microseconds(iso_interval_usec));
   }
 
   // Queue a packet on a different connection. IsoDataChannel should not send it

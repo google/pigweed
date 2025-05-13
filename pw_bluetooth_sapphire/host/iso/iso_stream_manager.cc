@@ -24,10 +24,12 @@ namespace bt::iso {
 IsoStreamManager::IsoStreamManager(
     hci_spec::ConnectionHandle handle,
     hci::Transport::WeakPtr hci,
-    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
+    pw::chrono::VirtualSystemClock& clock)
     : acl_handle_(handle),
       hci_(std::move(hci)),
       wake_lease_provider_(wake_lease_provider),
+      clock_(clock),
       weak_self_(this) {
   PW_CHECK(hci_.is_alive());
   cmd_ = hci_->command_channel()->AsWeakPtr();
@@ -168,7 +170,8 @@ void IsoStreamManager::AcceptCisRequest(
                                    hci_,
                                    std::move(cb),
                                    on_closed_cb,
-                                   wake_lease_provider_);
+                                   wake_lease_provider_,
+                                   clock_);
 
   auto command = hci::CommandPacket::New<
       pw::bluetooth::emboss::LEAcceptCISRequestCommandWriter>(

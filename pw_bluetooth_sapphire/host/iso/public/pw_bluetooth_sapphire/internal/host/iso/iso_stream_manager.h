@@ -32,7 +32,8 @@ class IsoStreamManager final {
   explicit IsoStreamManager(
       hci_spec::ConnectionHandle handle,
       hci::Transport::WeakPtr hci,
-      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
+      pw::chrono::VirtualSystemClock& clock);
   ~IsoStreamManager();
 
   // Start waiting on an incoming request to create an Isochronous channel for
@@ -83,6 +84,8 @@ class IsoStreamManager final {
 
   // All of the allocated streams.
   std::unordered_map<CigCisIdentifier, std::unique_ptr<IsoStream>> streams_;
+
+  pw::chrono::VirtualSystemClock& clock_;
 
   WeakSelf<IsoStreamManager> weak_self_;
 
