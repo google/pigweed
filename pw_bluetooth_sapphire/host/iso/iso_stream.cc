@@ -210,7 +210,7 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
           return hci::CommandChannel::EventCallbackResult::kRemove;
         }
         if (self->OnCisEstablished(event)) {
-          self->cis_established_handler_ = 0u;
+          // On failure, this object will have been destroyed.
           return hci::CommandChannel::EventCallbackResult::kRemove;
         }
         return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -248,13 +248,18 @@ bool IsoStreamImpl::OnCisEstablished(const hci::EventPacket& event) {
 
   if (status != pw::bluetooth::emboss::StatusCode::SUCCESS) {
     cis_established_cb_(status, std::nullopt, std::nullopt);
+    // Destroys this object.
     Close();
     return true;
   }
 
   state_ = IsoStreamState::kEstablished;
 
-  link_.emplace(cis_hci_handle_, hci_, /*on_disconnection_complete=*/nullptr);
+  auto on_disconnection_complete = [hci = hci_,
+                                    cis_handle = cis_hci_handle_]() {
+    hci->iso_data_channel()->ClearControllerPacketCount(cis_handle);
+  };
+  link_.emplace(cis_hci_handle_, hci_, std::move(on_disconnection_complete));
   link_->set_peer_disconnect_callback(
       [this](const hci::Connection&, pw::bluetooth::emboss::StatusCode) {
         bt_log(INFO, "iso", "CIS Disconnected at handle %#x", cis_hci_handle_);
