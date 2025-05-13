@@ -87,6 +87,15 @@ export class Root extends LitElement {
     });
   }
 
+  private get _isCodeIntelligenceHealthy(): boolean {
+    return !!(
+      this.cipdReport.clangdPath &&
+      this.cipdReport.bazelPath &&
+      this.cipdReport.targetSelected &&
+      this.cipdReport.isCompileCommandsGenerated
+    );
+  }
+
   render() {
     const currentManualTarget =
       this.manualBazelTarget ??
@@ -100,12 +109,10 @@ export class Root extends LitElement {
             <b class="title"> Recommended Extensions</b>
           </summary>
           <div>
-            <b>Recommended Extensions</b><br/>
+            <b>Recommended Extensions</b><br />
             <div class="container">
-              ${
-                this.extensionData.recommended.length === 0 &&
-                html` <p><i>No recommended extensions found.</i></p> `
-              }
+              ${this.extensionData.recommended.length === 0 &&
+              html` <p><i>No recommended extensions found.</i></p> `}
               ${this.extensionData.recommended.map(
                 (ext) =>
                   html`<div class="row">
@@ -130,12 +137,10 @@ export class Root extends LitElement {
                   </div>`,
               )}
             </div>
-            <b>Unwanted Extensions</b><br/>
+            <b>Unwanted Extensions</b><br />
             <div class="container">
-              ${
-                this.extensionData.unwanted.length === 0 &&
-                html` <p><i>No unwanted extensions found.</i></p> `
-              }
+              ${this.extensionData.unwanted.length === 0 &&
+              html` <p><i>No unwanted extensions found.</i></p> `}
               ${this.extensionData.unwanted.map(
                 (ext) =>
                   html`<div class="row">
@@ -179,7 +184,8 @@ export class Root extends LitElement {
                   class="vscode-button"
                   @click="${() => {
                     vscode.postMessage({ type: 'dumpLogs' });
-                  }}">
+                  }}"
+                >
                   Dump
                 </button>
               </div>
@@ -191,38 +197,48 @@ export class Root extends LitElement {
             <i class="codicon codicon-chevron-right icon-arrow"></i>
             <b class="title"> Code Intelligence </b>
           </summary>
-        <div>
-          <span>Settings for code navigation and intelligence.</span>
-          <div class="container">
-            <div class="toggle-button-group">
+          <div>
+            <span>Settings for code navigation and intelligence.</span>
+            <div class="container">
+              <div class="toggle-button-group">
                 <button
-                  class="toggle-button ${
-                    this.cipdReport.isBazelInterceptorEnabled ? 'active' : ''
-                  }"
+                  class="toggle-button ${this.cipdReport
+                    .isBazelInterceptorEnabled
+                    ? 'active'
+                    : ''}"
                   @click="${() => {
                     this._toggleBazelInterceptor(true); // Enable
                   }}"
                 >
                   <b>Last <code>bazel build</code> command</b>
-                  <br/>
-                  <span>Intercepts Bazel commands to update code intelligence automatically. Only files built by the command will have active intelligence.</span>
+                  <br />
+                  <span
+                    >Intercepts Bazel commands to update code intelligence
+                    automatically. Only files built by the command will have
+                    active intelligence.</span
+                  >
                 </button>
                 <div
-                  role="button" tabindex="0"
+                  role="button"
+                  tabindex="0"
                   @keydown=${(e: KeyboardEvent) => {
                     if (e.key === 'Enter') this._toggleBazelInterceptor(true);
                   }}
-                  class="toggle-button ${
-                    !this.cipdReport.isBazelInterceptorEnabled ? 'active' : ''
-                  }"
+                  class="toggle-button ${!this.cipdReport
+                    .isBazelInterceptorEnabled
+                    ? 'active'
+                    : ''}"
                   @click="${() => {
                     this._toggleBazelInterceptor(false); // Disable
                   }}"
                 >
                   <b>Manual with a fixed command</b>
-                  <br/>
-                  <span>In this mode, code intelligence is updated only for the below command, and must be done manually.</span>
-                  <br/>
+                  <br />
+                  <span
+                    >In this mode, code intelligence is updated only for the
+                    below command, and must be done manually.</span
+                  >
+                  <br />
                   <div class="input-button-row">
                     <span class="prefix">bazel build </span>
                     <input
@@ -248,77 +264,99 @@ export class Root extends LitElement {
                         if (e.key === ' ' || e.key === 'Enter')
                           this._refreshCompileCommandsManually();
                       }}
-                      >
+                    >
                       Refresh
                     </div>
                   </div>
                 </div>
-            </div>
-            <div class="row">
-              <div>
-                <b>Compile commands generated using</b><br/>
-                <sub>bazel ${
-                  this.cipdReport.bazelCompileCommandsLastBuildCommand || 'N/A'
-                }</sub>
               </div>
-              <div></div>
-            </div>
-            <div class="row">
-              <div>
-                Restart clangd language server
+              <div class="row">
+                <div>
+                  <b>Compile commands generated using</b><br />
+                  <sub
+                    >bazel
+                    ${this.cipdReport.bazelCompileCommandsLastBuildCommand ||
+                    'N/A'}</sub
+                  >
+                </div>
+                <div></div>
               </div>
-              <div>
-                <button
-                  class="vscode-button"
-                  @click="${() => {
-                    vscode.postMessage({
-                      type: 'restartClangd',
-                    });
-                  }}"
-                >
-                  Restart
-                </button>
-              </div>
-            </div>
-            <div class="row">
-            <div>
-            <b>Still not working?</b><br/>
-            <span>See below on what might be wrong.</span>
-            </div>
-            </div>
-            <div class="row">
-              <div>
-                <b>Clangd is available</b><br/>
-                <sub>${this.cipdReport.clangdPath || 'N/A'}</sub>
-              </div>
-              <div>${this.cipdReport.clangdPath ? '✅' : '❌'}</div>
-            </div>
-            <div class="row">
-              <div>
-                <b>Bazel is available</b><br/>
-                <sub>${this.cipdReport.bazelPath || 'N/A'}</sub>
-              </div>
-              <div>${this.cipdReport.bazelPath ? '✅' : '❌'}</div>
-            </div>
-            <div class="row">
-              <div>
-                <b>Target is selected</b><br/>
-                <sub>${this.cipdReport.targetSelected || 'None'}</sub>
-              </div>
-              <div>${this.cipdReport.targetSelected ? '✅' : '❌'}</div>
-            </div>
-            <div class="row">
-              <div>
-                <b>compile_commands.json exists</b><br/>
-                <sub>${this.cipdReport.compileCommandsPath || 'N/A'}</sub>
-              </div>
-              <div>
-                ${this.cipdReport.isCompileCommandsGenerated ? '✅' : '❌'}
-              </div>
+
+              ${this._isCodeIntelligenceHealthy
+                ? html`
+                    <div class="row">
+                      <div><b>Everything appears to be working</b><br /></div>
+                      <div>✅</div>
+                    </div>
+                  `
+                : html` <div class="row">
+                    <div>
+                      <b>Still not working?</b><br />
+                      <span>See below on what might be wrong.</span>
+                    </div>
+                  </div>`}
+
+              <details
+                class="vscode-collapsible"
+                ?open=${!this._isCodeIntelligenceHealthy}
+              >
+                <summary>
+                  <i class="codicon codicon-chevron-right icon-arrow"></i>
+                  <b class="title"> Debug Code Intelligence </b>
+                </summary>
+                <div>
+                  <div class="row">
+                    <div>Restart clangd language server</div>
+                    <div>
+                      <button
+                        class="vscode-button"
+                        @click="${() => {
+                          vscode.postMessage({
+                            type: 'restartClangd',
+                          });
+                        }}"
+                      >
+                        Restart
+                      </button>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div>
+                      <b>Clangd is available</b><br />
+                      <sub>${this.cipdReport.clangdPath || 'N/A'}</sub>
+                    </div>
+                    <div>${this.cipdReport.clangdPath ? '✅' : '❌'}</div>
+                  </div>
+                  <div class="row">
+                    <div>
+                      <b>Bazel is available</b><br />
+                      <sub>${this.cipdReport.bazelPath || 'N/A'}</sub>
+                    </div>
+                    <div>${this.cipdReport.bazelPath ? '✅' : '❌'}</div>
+                  </div>
+                  <div class="row">
+                    <div>
+                      <b>Target is selected</b><br />
+                      <sub>${this.cipdReport.targetSelected || 'None'}</sub>
+                    </div>
+                    <div>${this.cipdReport.targetSelected ? '✅' : '❌'}</div>
+                  </div>
+                  <div class="row">
+                    <div>
+                      <b>compile_commands.json exists</b><br />
+                      <sub>${this.cipdReport.compileCommandsPath || 'N/A'}</sub>
+                    </div>
+                    <div>
+                      ${this.cipdReport.isCompileCommandsGenerated
+                        ? '✅'
+                        : '❌'}
+                    </div>
+                  </div>
+                </div>
+              </details>
             </div>
           </div>
-        </div>
-        </detail>
+        </details>
       </div>
     `;
   }

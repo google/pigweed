@@ -77,9 +77,9 @@
 	width: 100%; /* Make button full width */
 	padding: 10px;
 	text-align: left;
-	border: 2px solid var(--vscode-button-border, var(--vscode-contrastBorder, #6fc3df));
+	border: 2px solid var(--vscode-button-border, var(--vscode-contrastBorder, transparent));
 	background-color: transparent;
-	color: var(--vscode-button-secondaryForeground, #cccccc);
+	color: var(--vscode-editor-foreground);
 	cursor: pointer;
 	font-size: var(--vscode-font-size, 13px);
 	line-height: 1.5;
