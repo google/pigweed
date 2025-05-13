@@ -19,6 +19,7 @@ For a given ``$CONFIG`` in:
 
 * k_host
 * k_qemu_mps2_an505
+* k_qemu_virt_riscv32
 * k_rp2350
 
 .. code-block:: shell
@@ -82,11 +83,11 @@ Run
 
 .. code-block:: shell
 
-   bazelisk run --config k_qemu_mps2_an505 //pw_kernel:console
+   bazelisk run --config k_qemu_mps2_an505 //pw_kernel/target/mps2_an505:kernel_demo
 
 .. code-block:: shell
 
-   bazelisk run --config k_qemu_virt_riscv32 //pw_kernel:console
+   bazelisk run --config k_qemu_virt_riscv32 //pw_kernel/target/qemu_virt_riscv32:kernel_demo
 
 RP2350 Target Board
 ===================
@@ -96,14 +97,14 @@ Build
 
 .. code-block:: shell
 
-   bazelisk build --config k_rp2350 //pw_kernel:console
+   bazelisk build --config k_rp2350 //pw_kernel/target/pw_rp2350:kernel_demo
 
 Console
 ---
 
 .. code-block:: shell
 
-   bazelisk run --config k_rp2350 //pw_kernel:console -- -d <SERIAL_DEVICE>
+   bazelisk run --config k_rp2350 //pw_kernel/target/pw_rp2350:kernel_demo -- -d <SERIAL_DEVICE>
 
 Running the console will trigger a build of the kernel if required.
 
@@ -112,7 +113,7 @@ Flash
 
 .. code-block:: shell
 
-   probe-rs download --chip rp2350 bazel-bin/pw_kernel/target/rp/rp2350 && probe-rs reset
+   probe-rs download --chip rp2350 bazel-bin/pw_kernel/target/pw_rp2350/kernel_demo && probe-rs reset
 
 Note that any logging messages between boot and connecting a console to the device will be missed,
 so it's best to start the console in one terminal first, before flashing the device.  This will also

@@ -15,6 +15,19 @@
 and any apps.
 """
 
+def _target_transition_impl(_, attr):
+    return {
+        "//command_line_option:platforms": str(attr.platform),
+    }
+
+_target_transition = transition(
+    implementation = _target_transition_impl,
+    inputs = [],
+    outputs = [
+        "//command_line_option:platforms",
+    ],
+)
+
 def _system_image_impl(ctx):
     output = ctx.actions.declare_file(ctx.attr.name)
 
@@ -42,14 +55,17 @@ system_image = rule(
     executable = True,
     attrs = {
         "apps": attr.label_list(
-            doc = "list of application images",
-            cfg = "target",
-            mandatory = True,
+            doc = "List of application images.",
+            cfg = _target_transition,
         ),
         "kernel": attr.label(
-            doc = "kernel image",
-            cfg = "target",
+            doc = "Kernel image.",
             allow_single_file = True,
+            mandatory = True,
+            cfg = _target_transition,
+        ),
+        "platform": attr.label(
+            doc = "Bazel platform to compile image for.",
             mandatory = True,
         ),
         "_system_assembler": attr.label(

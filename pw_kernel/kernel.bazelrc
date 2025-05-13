@@ -12,19 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-common:k_common --@rules_rust//rust/toolchain/channel=nightly
-common:k_common --@pigweed//pw_toolchain:cortex-m_toolchain_kind=clang
-# For now, enable debug assertions for all builds
-common:k_common --@rules_rust//rust/settings:extra_rustc_flag="-Cdebug-assertions"
-common:k_common --@pigweed//pw_log/rust:pw_log_backend=//pw_kernel/subsys/console:pw_log_backend_tokenized
-build:k_common --build_tag_filters=-do_not_build
 build:k_common -c opt
+build:k_common --build_tag_filters=-do_not_build
 test:k_common --test_tag_filters=-integration,-do_not_build,-do_not_run_test
 
 # Lint configuration
 # ==================
 common:k_lint --config=k_common
-common:k_lint --@pigweed//pw_kernel/config:kernel_config=//pw_kernel/target/host:config_host
+common:k_lint --platforms=//pw_kernel/target/host:host
 
 # Enable clippy lints
 build:k_lint --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect
@@ -37,14 +32,19 @@ build:k_lint --output_groups=+rustfmt_checks
 # Host target configuration
 # ===========================
 common:k_host --config=k_common
-common:k_host --@pigweed//pw_kernel/config:kernel_config=//pw_kernel/target/host:config_host
-# For simplicity have the host use basic logger rather than tokenized logger.
-common:k_host --@pigweed//pw_log/rust:pw_log_backend=//pw_kernel/subsys/console:pw_log_backend_basic
+common:k_host --platforms=//pw_kernel/target/host:host
+
+# TODO: davidroth - Each config also sets the platform.  This isn't strictly
+# necessary when building system images as it will transition to the correct
+# platform. This would however break the rust_analyzer gen_rust_project flow
+# as it currently assumes the platform is associated with the config.
+# In the future we should update the tooling to not require a platform and
+# potentially even a config to be set when building the system image.
 
 # QEMU mps2-an505 target configuration
 # =======================================
 common:k_qemu_mps2_an505 --config=k_common
-build:k_qemu_mps2_an505 --platforms=//pw_kernel/target/arm:mps2-an505
+common:k_qemu_mps2_an505 --platforms=//pw_kernel/target/mps2_an505:mps2_an505
 run:k_qemu_mps2_an505 --run_under="//pw_kernel/tooling:qemu \
   --cpu cortex-m33 \
   --machine mps2-an505 \
@@ -59,7 +59,7 @@ test:k_qemu_mps2_an505 --run_under="//pw_kernel/tooling:qemu \
 # QEMU virt riscv32 target configuration
 # =======================================
 common:k_qemu_virt_riscv32 --config=k_common
-build:k_qemu_virt_riscv32 --platforms=//pw_kernel/target/qemu_virt:riscv32imc
+common:k_qemu_virt_riscv32 --platforms=//pw_kernel/target/qemu_virt_riscv32:qemu_virt_riscv32
 run:k_qemu_virt_riscv32 --run_under="//pw_kernel/tooling:qemu \
   --cpu rv32 \
   --machine virt \
@@ -73,5 +73,5 @@ test:k_qemu_virt_riscv32 --run_under="//pw_kernel/tooling:qemu \
 # RP2350 target configuration
 # =======================================
 common:k_rp2350 --config=k_common
-build:k_rp2350 --platforms=//pw_kernel/target/rp:rp2350
+common:k_rp2350 --platforms=//pw_kernel/target/pw_rp2350
 run:k_rp2350 --run_under="//pw_kernel/tooling:serial_detokenizer "

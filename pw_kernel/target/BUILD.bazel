@@ -43,17 +43,6 @@ rust_library(
 )
 
 label_flag(
-    name = "target",
-    build_setting_default = ":no_target",
-    tags = ["kernel"],
-)
-
-cc_library(
-    name = "no_target",
-    tags = ["kernel"],
-)
-
-label_flag(
     name = "linker_script",
     build_setting_default = ":no_linker_script",
     tags = ["kernel"],

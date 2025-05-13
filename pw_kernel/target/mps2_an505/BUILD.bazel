@@ -15,40 +15,49 @@
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
+load("//pw_kernel:flags.bzl", "KERNEL_COMMON_FLAGS")
+load("//pw_kernel/tooling:system_image.bzl", "system_image")
 
 platform(
-    name = "mps2-an505",
+    name = "mps2_an505",
     constraint_values = [
         "//pw_build/constraints/arm:cortex-m33",
         "@platforms//cpu:armv8-m",
         "@platforms//os:none",
         "@rust_crates//:no_std",
     ],
-    flags = flags_from_dict({
-        "//pw_kernel/config:kernel_config": ":config_mps2_an505",
-        "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
-        "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
-        "//pw_kernel/target:linker_script": ":linker_script_mps2_an505",
-        "//pw_kernel/target:target": ":target_mps2_an505",
-    }),
+    flags = flags_from_dict(
+        KERNEL_COMMON_FLAGS | {
+            "//pw_kernel/config:kernel_config": ":config",
+            "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
+            "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",
+            "//pw_kernel/target:linker_script": ":linker_script",
+        },
+    ),
 )
 
-pw_linker_script(
-    name = "linker_script_mps2_an505",
-    linker_script = "mps2-an505.ld",
-    target_compatible_with = [
-        "//pw_build/constraints/arm:cortex-m33",
+system_image(
+    name = "userspace_demo",
+    apps = [
+        "//pw_kernel/target/example/apps/one",
+        "//pw_kernel/target/example/apps/two",
     ],
+    kernel = ":target",
+    platform = ":mps2_an505",
+    tags = ["kernel"],
 )
 
-SRCS = ["target_mps2_an505.rs"]
+system_image(
+    name = "kernel_demo",
+    kernel = ":target",
+    platform = ":mps2_an505",
+    tags = ["kernel"],
+)
 
-TARGET_COMPATIBLE_WITH = [
-    "//pw_build/constraints/arm:cortex-m33",
-]
+SRCS = ["target.rs"]
 
 COMMON_DEPS = [
-    ":linker_script_mps2_an505",
+    ":linker_script",
     "//pw_kernel/kernel",
     "//pw_kernel/subsys/console:console_backend_semihosting",
     "//pw_kernel/target:demo",
@@ -59,11 +68,13 @@ COMMON_DEPS = [
 ]
 
 rust_binary(
-    name = "target_mps2_an505",
+    name = "target",
     srcs = SRCS,
     edition = "2021",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
     visibility = ["//visibility:public"],
     deps = COMMON_DEPS,
 )
@@ -79,7 +90,9 @@ rust_library(
     crate_name = "unittest_runner",
     edition = "2021",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
     deps = COMMON_DEPS + [
         "@pigweed//pw_log/rust:pw_log",
         "@rust_crates//:cortex-m-semihosting",
@@ -87,11 +100,21 @@ rust_library(
 )
 
 rust_library(
-    name = "config_mps2_an505",
-    srcs = ["config_mps2_an505.rs"],
+    name = "config",
+    srcs = ["config.rs"],
     crate_name = "kernel_config",
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
     deps = [
         "//pw_kernel/config:kernel_config_interface",
+    ],
+)
+
+pw_linker_script(
+    name = "linker_script",
+    linker_script = "system.ld",
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
     ],
 )

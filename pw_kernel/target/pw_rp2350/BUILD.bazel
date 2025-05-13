@@ -15,72 +15,56 @@
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
+load("//pw_kernel:flags.bzl", "KERNEL_COMMON_FLAGS")
+load("//pw_kernel/tooling:system_image.bzl", "system_image")
 
 platform(
-    name = "riscv32imc",
+    name = "pw_rp2350",
     constraint_values = [
-        "//pw_build/constraints/riscv/extensions:I",
-        "//pw_build/constraints/riscv/extensions:M",
-        "//pw_build/constraints/riscv/extensions:C",
-        "@platforms//cpu:riscv32",
+        "//pw_build/constraints/arm:cortex-m33",
+        "@platforms//cpu:armv8-m",
         "@platforms//os:none",
         "@rust_crates//:no_std",
     ],
-    flags = flags_from_dict({
-        "//pw_kernel/config:kernel_config": ":config_riscv",
-        "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
-        "//pw_kernel/subsys/console:console_backend": ":console_riscv",
-        "//pw_kernel/target:linker_script": ":linker_script_riscv",
-        "//pw_kernel/target:target": ":target_riscv",
-    }),
+    flags = flags_from_dict(
+        KERNEL_COMMON_FLAGS | {
+            "//pw_kernel/config:kernel_config": ":config",
+            "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
+            "//pw_kernel/subsys/console:console_backend": ":console",
+            "//pw_kernel/target:linker_script": ":linker_script",
+        },
+    ),
 )
 
-pw_linker_script(
-    name = "linker_script_riscv",
-    linker_script = "riscv.ld",
-    target_compatible_with = [
-        "@platforms//cpu:riscv32",
-    ],
-)
-
-rust_library(
-    name = "console_riscv",
-    srcs = ["console_riscv.rs"],
-    crate_name = "console_backend",
+system_image(
+    name = "kernel_demo",
+    kernel = ":target",
+    platform = ":pw_rp2350",
     tags = ["kernel"],
-    target_compatible_with = [
-        "@platforms//cpu:riscv32",
-    ],
-    deps = [
-        "//pw_kernel/kernel",
-        "//pw_kernel/lib/pw_status",
-        "@rust_crates//:embedded-io",
-    ],
 )
 
-SRCS = ["target_riscv.rs"]
-
-TARGET_COMPATIBLE_WITH = [
-    "@platforms//cpu:riscv32",
-]
+SRCS = ["target.rs"]
 
 COMMON_DEPS = [
-    ":console_riscv",
-    ":linker_script_riscv",
+    ":console",
+    ":linker_script",
     "//pw_kernel/kernel",
     "//pw_kernel/target:demo",
     "//pw_kernel/target:target_common",
+    "@rust_crates//:cortex-m",
+    "@rust_crates//:cortex-m-rt",
     "@rust_crates//:panic-halt",
-    "@rust_crates//:riscv",
-    "@rust_crates//:riscv-rt",
+    "@rust_crates//:rp235x-hal",
 ]
 
 rust_binary(
-    name = "target_riscv",
+    name = "target",
     srcs = SRCS,
     edition = "2021",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
     deps = COMMON_DEPS,
 )
 
@@ -95,20 +79,50 @@ rust_library(
     crate_name = "unittest_runner",
     edition = "2021",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
     deps = COMMON_DEPS + [
         "//pw_kernel/lib/unittest:unittest_core",
         "@pigweed//pw_log/rust:pw_log",
-        "@rust_crates//:riscv-semihosting",
+        "@rust_crates//:cortex-m-semihosting",
     ],
 )
 
 rust_library(
-    name = "config_riscv",
-    srcs = ["config_riscv.rs"],
+    name = "config",
+    srcs = ["config.rs"],
     crate_name = "kernel_config",
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    tags = ["kernel"],
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
     deps = [
         "//pw_kernel/config:kernel_config_interface",
+    ],
+)
+
+rust_library(
+    name = "console",
+    srcs = ["console.rs"],
+    crate_name = "console_backend",
+    tags = ["kernel"],
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
+    deps = [
+        "//pw_kernel/kernel",
+        "//pw_kernel/lib/pw_status",
+        "@rust_crates//:embedded-io",
+        "@rust_crates//:rp235x-hal",
+    ],
+)
+
+pw_linker_script(
+    name = "linker_script",
+    linker_script = "system.ld",
+    tags = ["kernel"],
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
     ],
 )

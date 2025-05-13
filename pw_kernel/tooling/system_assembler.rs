@@ -26,7 +26,7 @@ use std::path::{Path, PathBuf};
 struct Args {
     #[arg(long, required(true))]
     kernel: PathBuf,
-    #[arg(long("app"), required(true))]
+    #[arg(long("app"))]
     apps: Vec<PathBuf>,
     #[arg(long, required(true))]
     output: PathBuf,

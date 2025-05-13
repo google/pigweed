@@ -30,11 +30,6 @@ alias(
     actual = "//pw_kernel/tooling:presubmit",
 )
 
-alias(
-    name = "console",
-    actual = "//pw_kernel/target",
-)
-
 sphinx_docs_library(
     name = "docs",
     srcs = [

@@ -15,72 +15,57 @@
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
+load("//pw_kernel:flags.bzl", "KERNEL_COMMON_FLAGS")
+load("//pw_kernel/tooling:system_image.bzl", "system_image")
 
 platform(
-    name = "rp2350",
+    name = "qemu_virt_riscv32",
     constraint_values = [
-        "//pw_build/constraints/arm:cortex-m33",
-        "@platforms//cpu:armv8-m",
+        "//pw_build/constraints/riscv/extensions:I",
+        "//pw_build/constraints/riscv/extensions:M",
+        "//pw_build/constraints/riscv/extensions:C",
+        "@platforms//cpu:riscv32",
         "@platforms//os:none",
         "@rust_crates//:no_std",
     ],
-    flags = flags_from_dict({
-        "//pw_kernel/config:kernel_config": ":config_rp2350",
-        "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
-        "//pw_kernel/subsys/console:console_backend": ":console_rp2350",
-        "//pw_kernel/target:linker_script": ":linker_script_rp2350",
-        "//pw_kernel/target:target": ":target_rp2350",
-    }),
+    flags = flags_from_dict(
+        KERNEL_COMMON_FLAGS | {
+            "//pw_kernel/config:kernel_config": ":config",
+            "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
+            "//pw_kernel/subsys/console:console_backend": ":console",
+            "//pw_kernel/target:linker_script": ":linker_script",
+        },
+    ),
 )
 
-pw_linker_script(
-    name = "linker_script_rp2350",
-    linker_script = "rp2350.ld",
-    target_compatible_with = [
-        "//pw_build/constraints/arm:cortex-m33",
-    ],
-)
-
-rust_library(
-    name = "console_rp2350",
-    srcs = ["console_rp2350.rs"],
-    crate_name = "console_backend",
+system_image(
+    name = "kernel_demo",
+    kernel = ":target",
+    platform = ":qemu_virt_riscv32",
     tags = ["kernel"],
-    target_compatible_with = [
-        "//pw_build/constraints/arm:cortex-m33",
-    ],
-    deps = [
-        "//pw_kernel/kernel",
-        "//pw_kernel/lib/pw_status",
-        "@rust_crates//:embedded-io",
-        "@rust_crates//:rp235x-hal",
-    ],
 )
 
-SRCS = ["target_rp2350.rs"]
-
-TARGET_COMPATIBLE_WITH = [
-    "//pw_build/constraints/arm:cortex-m33",
-]
+SRCS = ["target.rs"]
 
 COMMON_DEPS = [
-    ":console_rp2350",
-    ":linker_script_rp2350",
+    ":console",
+    ":linker_script",
     "//pw_kernel/kernel",
     "//pw_kernel/target:demo",
     "//pw_kernel/target:target_common",
-    "@rust_crates//:cortex-m",
-    "@rust_crates//:cortex-m-rt",
     "@rust_crates//:panic-halt",
-    "@rust_crates//:rp235x-hal",
+    "@rust_crates//:riscv",
+    "@rust_crates//:riscv-rt",
 ]
 
 rust_binary(
-    name = "target_rp2350",
+    name = "target",
     srcs = SRCS,
     edition = "2021",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    target_compatible_with = [
+        "@platforms//cpu:riscv32",
+    ],
     deps = COMMON_DEPS,
 )
 
@@ -95,20 +80,49 @@ rust_library(
     crate_name = "unittest_runner",
     edition = "2021",
     tags = ["kernel"],
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    target_compatible_with = [
+        "@platforms//cpu:riscv32",
+    ],
     deps = COMMON_DEPS + [
         "//pw_kernel/lib/unittest:unittest_core",
         "@pigweed//pw_log/rust:pw_log",
-        "@rust_crates//:cortex-m-semihosting",
+        "@rust_crates//:riscv-semihosting",
     ],
 )
 
 rust_library(
-    name = "config_rp2350",
-    srcs = ["config_rp2350.rs"],
+    name = "console",
+    srcs = ["console.rs"],
+    crate_name = "console_backend",
+    tags = ["kernel"],
+    target_compatible_with = [
+        "@platforms//cpu:riscv32",
+    ],
+    deps = [
+        "//pw_kernel/kernel",
+        "//pw_kernel/lib/pw_status",
+        "@rust_crates//:embedded-io",
+    ],
+)
+
+rust_library(
+    name = "config",
+    srcs = ["config.rs"],
     crate_name = "kernel_config",
-    target_compatible_with = TARGET_COMPATIBLE_WITH,
+    tags = ["kernel"],
+    target_compatible_with = [
+        "@platforms//cpu:riscv32",
+    ],
     deps = [
         "//pw_kernel/config:kernel_config_interface",
+    ],
+)
+
+pw_linker_script(
+    name = "linker_script",
+    linker_script = "system.ld",
+    tags = ["kernel"],
+    target_compatible_with = [
+        "@platforms//cpu:riscv32",
     ],
 )

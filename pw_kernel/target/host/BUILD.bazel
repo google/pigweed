@@ -14,6 +14,8 @@
 
 load("@pigweed//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
+load("//pw_build:merge_flags.bzl", "flags_from_dict")
+load("//pw_kernel:flags.bzl", "KERNEL_COMMON_FLAGS")
 
 COMMON_DEPS = [
     "//pw_kernel/kernel",
@@ -22,9 +24,24 @@ COMMON_DEPS = [
     "//pw_kernel/target:target_common",
 ]
 
+platform(
+    name = "host",
+    flags = flags_from_dict(
+        KERNEL_COMMON_FLAGS | {
+            "//pw_kernel/config:kernel_config": ":config",
+            "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
+            "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_stdio",
+            # For simplicity have the host use basic logger rather than tokenized logger.
+            "//pw_log/rust:pw_log_backend": "//pw_kernel/subsys/console:pw_log_backend_basic",
+        },
+    ),
+    parents = ["@local_config_platform//:host"],
+    visibility = ["//visibility:private"],
+)
+
 rust_binary(
-    name = "target_host",
-    srcs = ["target_host.rs"],
+    name = "target",
+    srcs = ["target.rs"],
     edition = "2021",
     tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
@@ -37,7 +54,7 @@ rust_binary(
 # not linked against the other libraries in the build graph.
 rust_library(
     name = "unittest_runner",
-    srcs = ["target_host.rs"],
+    srcs = ["target.rs"],
     crate_features = ["test"],
     crate_name = "unittest_runner",
     edition = "2021",
@@ -47,9 +64,10 @@ rust_library(
 )
 
 rust_library(
-    name = "config_host",
-    srcs = ["config_host.rs"],
+    name = "config",
+    srcs = ["config.rs"],
     crate_name = "kernel_config",
+    tags = ["kernel"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_kernel/config:kernel_config_interface",
