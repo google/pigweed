@@ -126,6 +126,7 @@ pw_source_set("test_helpers") {
   ]
   deps = [ dir_pw_assert ]
   visibility = [ ":*" ]
+  testonly = pw_unit_test_TESTONLY
 }
 
 pw_source_set("to_array") {
