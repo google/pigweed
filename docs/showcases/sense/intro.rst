@@ -1,8 +1,8 @@
 .. _showcase-sense-tutorial-intro:
 
-================================
-Sense tutorial (Tour of Pigweed)
-================================
+=================================
+0. Expectations and prerequisites
+=================================
 Welcome to the :ref:`Sense <showcase-sense>` tutorial! If you want a hands-on,
 guided tour of Pigweed's key features, you're in the right place.
 
@@ -86,24 +86,3 @@ rapidly.
 
 Next, head over to :ref:`showcase-sense-tutorial-setup` to get your
 development host ready to run Sense.
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-
-   setup
-   explore
-   build
-   code_intelligence
-   host_tests
-   host_sim
-   flash
-   device_tests
-   rpc
-   automate
-   web
-   factory
-   bazel_cloud
-   production
-   crash_handler
-   outro

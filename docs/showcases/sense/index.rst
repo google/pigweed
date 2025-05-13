@@ -285,5 +285,21 @@ or browse the `Sense source code`_.
    :hidden:
 
    Overview <self>
-   Tutorial (Tour of Pigweed) <tutorial/index>
+   intro
+   setup
+   explore
+   build
+   code_intelligence
+   host_tests
+   host_sim
+   flash
+   device_tests
+   rpc
+   automate
+   web
+   factory
+   bazel_cloud
+   production
+   crash_handler
+   outro
    Source code <https://pigweed.googlesource.com/pigweed/showcase/sense/>
