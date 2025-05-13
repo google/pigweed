@@ -28,13 +28,12 @@ class Context;
 //
 //   pw::Thread example_thread(
 //     pw::thread::zephyr::Options(static_example_thread_context)
-//         .set_priority(kFooPriority),
+//         .set_priority(kFooPriority)
+//         .set_name("example_thread"),
 //     example_thread_function, example_arg);
 //
 // TODO(aeremin): Add support for time slice configuration
 //     (k_thread_time_slice_set when CONFIG_TIMESLICE_PER_THREAD=y).
-// TODO(aeremin): Add support for thread name
-//     (k_thread_name_set when CONFIG_THREAD_MONITOR is enabled).
 class Options : public thread::Options {
  public:
   constexpr Options(StaticContext& context) : context_(&context) {}
@@ -50,6 +49,16 @@ class Options : public thread::Options {
     return *this;
   }
 
+  // Sets the name for the ThreadX thread, note that this will be deep copied
+  // into the context and may be truncated based on
+  // PW_THREAD_ZEPHYR_CONFIG_MAX_THREAD_NAME_LEN. This may be set natively
+  // in the zephyr thread if CONFIG_THREAD_NAME is set, where it may
+  // again be truncated based on the value of CONFIG_THREAD_MAX_NAME_LEN.
+  constexpr Options& set_name(const char* name) {
+    name_ = name;
+    return *this;
+  }
+
   // Sets the Zephyr RTOS native options
   // (https://docs.zephyrproject.org/latest/kernel/services/threads/index.html#thread-options)
   constexpr Options& set_native_options(uint32_t native_options) {
@@ -60,7 +69,11 @@ class Options : public thread::Options {
  private:
   friend Thread;
   friend Context;
+  // Note that the default name may end up truncated due to
+  // PW_THREAD_ZEPHYR_CONFIG_MAX_THREAD_NAME_LEN.
+  static constexpr char kDefaultName[] = "pw::Thread";
 
+  const char* name() const { return name_; }
   int priority() const { return priority_; }
   uint32_t native_options() const { return native_options_; }
   StaticContext* static_context() const { return context_; }
@@ -68,6 +81,7 @@ class Options : public thread::Options {
   int priority_ = config::kDefaultPriority;
   uint32_t native_options_ = 0;
   StaticContext* context_ = nullptr;
+  const char* name_ = kDefaultName;
 };
 
 }  // namespace pw::thread::zephyr

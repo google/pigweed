@@ -60,6 +60,8 @@ void Context::CreateThread(const zephyr::Options& options,
   // Reset the state of the static context in case it was re-used.
   native_type_out->set_detached(false);
   native_type_out->set_thread_done(false);
+  // Copy over the thread name
+  native_type_out->set_name(options.name());
 
   native_type_out->set_thread_routine(std::move(thread_fn));
   const k_tid_t task_handle =
@@ -75,6 +77,20 @@ void Context::CreateThread(const zephyr::Options& options,
                       K_NO_WAIT);
   PW_CHECK_NOTNULL(task_handle);  // Ensure it succeeded.
   native_type_out->set_task_handle(task_handle);
+
+  if constexpr (CONFIG_THREAD_NAME) {
+    // If we can set the name in the native thread, do so
+    const int thread_name_set_result =
+        k_thread_name_set(task_handle, native_type_out->name());
+    // Of possible return status, we should not fault reading this memory
+    // (EFAULT) and we should have this function available as we just checked
+    // the configuration in the preprocessor statement above (ENOSYS).
+    //
+    // Truncating the name (EINVAL) is fine as at the time of commit, the string
+    // gets set anyway, and of course, successful return is fine.
+    PW_DASSERT((thread_name_set_result != -EFAULT) &&
+               (thread_name_set_result != -ENOSYS));
+  }
 }
 
 Thread::Thread(const thread::Options& facade_options, Function<void()>&& entry)

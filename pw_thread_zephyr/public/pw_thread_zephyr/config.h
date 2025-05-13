@@ -18,6 +18,12 @@
 
 namespace pw::thread::zephyr::config {
 
+// The maximum length of a thread's name, not including null termination. This
+// results in an array of characters which is this length + 1 bytes in every
+// pw::Thread's context.
+inline constexpr size_t kMaximumNameLength =
+    CONFIG_PIGWEED_THREAD_MAX_THREAD_NAME_LEN;
+
 inline constexpr int kDefaultPriority = CONFIG_PIGWEED_THREAD_DEFAULT_PRIORITY;
 inline constexpr int kHighestSchedulerPriority =
     -CONFIG_PIGWEED_THREAD_NUM_COOP_PRIORITIES;

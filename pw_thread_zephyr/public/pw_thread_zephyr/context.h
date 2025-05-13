@@ -17,9 +17,11 @@
 #include <zephyr/kernel/thread_stack.h>
 
 #include <cstdint>
+#include <cstring>
 
 #include "pw_function/function.h"
 #include "pw_span/span.h"
+#include "pw_string/util.h"
 #include "pw_thread_zephyr/config.h"
 
 namespace pw::thread {
@@ -76,6 +78,9 @@ class Context {
   bool thread_done() const { return thread_done_; }
   void set_thread_done(bool value = true) { thread_done_ = value; }
 
+  const char* name() const { return name_.data(); }
+  void set_name(const char* name) { string::Assign(name_, name).IgnoreError(); }
+
   static void ThreadEntryPoint(void* void_context_ptr, void*, void*);
 
   k_tid_t task_handle_ = nullptr;
@@ -83,6 +88,16 @@ class Context {
   Function<void()> fn_;
   bool detached_ = false;
   bool thread_done_ = false;
+
+  // The TCB may have storage for the name, depending on the setting of
+  // CONFIG_THREAD_NAME, and if storage is present, the reserved
+  // space will depend on CONFIG_THREAD_MAX_NAME_LEN. In order to provide
+  // a consistent interface, we always store the string here, and use
+  // k_thread_name_set to set the name for the thread, if it is available.
+  // We will defer to our storage when queried for the name, but by setting
+  // the name with the RTOS call, raw RTOS access to the thread's name should
+  // work properly, though possibly with a truncated name.
+  pw::InlineString<config::kMaximumNameLength> name_;
 };
 
 // Intermediate class to type-erase kStackSizeBytes parameter of

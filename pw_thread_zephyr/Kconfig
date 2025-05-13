@@ -58,6 +58,13 @@ config PIGWEED_THREAD_NUM_PREEMPT_PRIORITIES
   default NUM_PREEMPT_PRIORITIES
   range 0 NUM_PREEMPT_PRIORITIES
 
+config PIGWEED_THREAD_MAX_THREAD_NAME_LEN
+  int "The maximum length of a Pigweed thread's name"
+  default 15
+  help
+    This name allows modifying the storate size of Pigweed created Zephyr
+    thread names. Set to 0 if you don't plan on naming your threads.
+
 endif # PIGWEED_THREAD
 
 endmenu
