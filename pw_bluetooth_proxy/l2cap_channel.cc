@@ -140,11 +140,6 @@ StatusWithMultiBuf L2capChannel::Write(pw::multibuf::MultiBuf&& payload) {
 }
 
 StatusWithMultiBuf L2capChannel::WriteLocked(pw::multibuf::MultiBuf&& payload) {
-  return WriteToPayloadQueue(std::move(payload));
-}
-
-StatusWithMultiBuf L2capChannel::WriteToPayloadQueue(
-    multibuf::MultiBuf&& payload) {
   if (!payload.IsContiguous()) {
     return {Status::InvalidArgument(), std::move(payload)};
   }

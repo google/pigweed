@@ -344,14 +344,6 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   StatusWithMultiBuf QueuePayload(multibuf::MultiBuf&& buf)
       PW_LOCKS_EXCLUDED(send_queue_mutex_);
 
-  // Writes the MultiBuf to the payload queue (payload_queue_).
-  //
-  // Called for subclasses that don't do payload queueing (as determined by
-  // UsesPayloadQueue) during the transition.
-  // TODO: https://pwbug.dev/379337272 - Delete when all channels are
-  // transitioned to using payload queues.
-  StatusWithMultiBuf WriteToPayloadQueue(multibuf::MultiBuf&& payload);
-
   // Return the next Tx H4 based on the client's queued payloads. If the
   // returned PDU will complete the transmission of a payload, that payload
   // should be popped from the queue. If no payloads are queued, return
