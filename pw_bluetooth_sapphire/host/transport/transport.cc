@@ -125,8 +125,10 @@ bool Transport::InitializeIsoDataChannel(const DataBufferInfo& buffer_info) {
     return false;
   }
 
-  iso_data_channel_ = IsoDataChannel::Create(
-      buffer_info, command_channel_.get(), controller_.get());
+  iso_data_channel_ = IsoDataChannel::Create(buffer_info,
+                                             command_channel_.get(),
+                                             controller_.get(),
+                                             wake_lease_provider_);
   return true;
 }
 

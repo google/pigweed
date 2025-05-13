@@ -48,7 +48,8 @@ class IsoDataChannel {
   static std::unique_ptr<IsoDataChannel> Create(
       const DataBufferInfo& buffer_info,
       CommandChannel* command_channel,
-      pw::bluetooth::Controller* hci);
+      pw::bluetooth::Controller* hci,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
 
   // Register a new connection to receive all traffic destined for |handle| and
   // returns a value indicating success. If a connection already exists with

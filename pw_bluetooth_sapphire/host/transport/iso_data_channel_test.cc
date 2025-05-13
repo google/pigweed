@@ -61,8 +61,12 @@ class IsoDataChannelTests : public TestBase {
 // Placeholder (for now)
 class IsoMockConnectionInterface : public IsoDataChannel::ConnectionInterface {
  public:
-  IsoMockConnectionInterface(IsoDataChannel& iso_data_channel)
-      : iso_data_channel_(iso_data_channel), weak_self_(this) {}
+  IsoMockConnectionInterface(
+      IsoDataChannel& iso_data_channel,
+      pw::bluetooth_sapphire::testing::FakeLeaseProvider& lease_provider)
+      : lease_provider_(lease_provider),
+        iso_data_channel_(iso_data_channel),
+        weak_self_(this) {}
   ~IsoMockConnectionInterface() override = default;
 
   void SendData(DynamicByteBuffer pdu) {
@@ -85,6 +89,7 @@ class IsoMockConnectionInterface : public IsoDataChannel::ConnectionInterface {
   }
 
   std::optional<DynamicByteBuffer> GetNextOutboundPdu() override {
+    EXPECT_NE(lease_provider_.lease_count(), 0u);
     if (send_queue_.empty()) {
       return std::nullopt;
     }
@@ -92,7 +97,7 @@ class IsoMockConnectionInterface : public IsoDataChannel::ConnectionInterface {
     send_queue_.pop();
     return pdu;
   }
-
+  pw::bluetooth_sapphire::testing::FakeLeaseProvider& lease_provider_;
   IsoDataChannel& iso_data_channel_;
   std::queue<pw::span<const std::byte>> received_packets_;
   std::queue<DynamicByteBuffer> send_queue_;
@@ -102,7 +107,7 @@ class IsoMockConnectionInterface : public IsoDataChannel::ConnectionInterface {
 // Verify that we can register and unregister connections
 TEST_F(IsoDataChannelTests, RegisterConnections) {
   ASSERT_NE(iso_data_channel(), nullptr);
-  IsoMockConnectionInterface mock_iface(*iso_data_channel());
+  IsoMockConnectionInterface mock_iface(*iso_data_channel(), lease_provider());
   constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x123;
   EXPECT_TRUE(iso_data_channel()->RegisterConnection(kIsoHandle1,
                                                      mock_iface.GetWeakPtr()));
@@ -140,7 +145,7 @@ TEST_F(IsoDataChannelTests, DataDemuxification) {
   std::vector<IsoMockConnectionInterface> interfaces;
   interfaces.reserve(kNumTotalInterfaces);
   for (uint32_t i = 0; i < kNumTotalInterfaces; i++) {
-    interfaces.emplace_back(*iso_data_channel());
+    interfaces.emplace_back(*iso_data_channel(), lease_provider());
   }
   size_t expected_packet_count[kNumTotalInterfaces] = {0};
 
@@ -204,7 +209,7 @@ TEST_F(IsoDataChannelTests, DataDemuxification) {
 TEST_F(IsoDataChannelTests, SendData) {
   ASSERT_NE(iso_data_channel(), nullptr);
   constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x123;
-  IsoMockConnectionInterface connection(*iso_data_channel());
+  IsoMockConnectionInterface connection(*iso_data_channel(), lease_provider());
   iso_data_channel()->RegisterConnection(kIsoHandle1, connection.GetWeakPtr());
 
   std::vector<uint8_t> sdu = testing::GenDataBlob(9, 0);
@@ -230,7 +235,7 @@ TEST_F(IsoDataChannelTests, SendData) {
 TEST_F(IsoDataChannelTests, SendDataExhaustBuffers) {
   ASSERT_NE(iso_data_channel(), nullptr);
   constexpr hci_spec::ConnectionHandle kIsoHandle = 0x123;
-  IsoMockConnectionInterface connection(*iso_data_channel());
+  IsoMockConnectionInterface connection(*iso_data_channel(), lease_provider());
   iso_data_channel()->RegisterConnection(kIsoHandle, connection.GetWeakPtr());
 
   for (size_t i = 0; i < kDefaultMaxNumPackets; ++i) {
@@ -265,7 +270,7 @@ TEST_F(IsoDataChannelTests, SendDataExceedBuffers) {
   constexpr hci_spec::ConnectionHandle kOtherHandle = 0x456;
   // Mock interface is not used, only registered to make sure the data channel
   // is aware that the connection is in fact an ISO connection.
-  IsoMockConnectionInterface mock_iface(*iso_data_channel());
+  IsoMockConnectionInterface mock_iface(*iso_data_channel(), lease_provider());
   EXPECT_TRUE(iso_data_channel()->RegisterConnection(kIsoHandle,
                                                      mock_iface.GetWeakPtr()));
   size_t num_sent = 0;
@@ -363,7 +368,7 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
   ASSERT_NE(iso_data_channel(), nullptr);
 
   constexpr hci_spec::ConnectionHandle kIsoHandle = 0x42;
-  IsoMockConnectionInterface connection(*iso_data_channel());
+  IsoMockConnectionInterface connection(*iso_data_channel(), lease_provider());
   EXPECT_TRUE(iso_data_channel()->RegisterConnection(kIsoHandle,
                                                      connection.GetWeakPtr()));
 
@@ -484,11 +489,12 @@ TEST_F(IsoDataChannelTests, OversizedPackets) {
 TEST_F(IsoDataChannelTests, SendDataMultipleConnections) {
   ASSERT_NE(iso_data_channel(), nullptr);
   constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x0001;
-  IsoMockConnectionInterface connection1(*iso_data_channel());
+  IsoMockConnectionInterface connection1(*iso_data_channel(), lease_provider());
   iso_data_channel()->RegisterConnection(kIsoHandle1, connection1.GetWeakPtr());
   constexpr hci_spec::ConnectionHandle kIsoHandle2 = 0x0002;
-  IsoMockConnectionInterface connection2(*iso_data_channel());
+  IsoMockConnectionInterface connection2(*iso_data_channel(), lease_provider());
   iso_data_channel()->RegisterConnection(kIsoHandle2, connection2.GetWeakPtr());
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 
   size_t num_sent = 0;
   // First send a packet on connection2.
@@ -500,6 +506,7 @@ TEST_F(IsoDataChannelTests, SendDataMultipleConnections) {
   }
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+  EXPECT_NE(lease_provider().lease_count(), 0u);
 
   // Fill rest of controller buffer with connection1 packets.
   for (; num_sent < kDefaultMaxNumPackets; ++num_sent) {
@@ -534,6 +541,7 @@ TEST_F(IsoDataChannelTests, SendDataMultipleConnections) {
       testing::NumberOfCompletedPacketsPacket(kIsoHandle2, 1));
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+  EXPECT_NE(lease_provider().lease_count(), 0u);
 
   // The next queued connection1 packet should be sent after NOCP event.
   {
@@ -562,17 +570,24 @@ TEST_F(IsoDataChannelTests, SendDataMultipleConnections) {
       testing::NumberOfCompletedPacketsPacket(kIsoHandle1, 2));
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+  EXPECT_NE(lease_provider().lease_count(), 0u);
 
   // Nothing else should be sent.
   test_device()->SendCommandChannelPacket(
-      testing::NumberOfCompletedPacketsPacket(kIsoHandle1, 1));
+      testing::NumberOfCompletedPacketsPacket(kIsoHandle1, 2));
   RunUntilIdle();
+  EXPECT_NE(lease_provider().lease_count(), 0u);
+
+  test_device()->SendCommandChannelPacket(
+      testing::NumberOfCompletedPacketsPacket(kIsoHandle2, 2));
+  RunUntilIdle();
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
 TEST_F(IsoDataChannelTests, SendDataBeforeRegistering) {
   ASSERT_NE(iso_data_channel(), nullptr);
   constexpr hci_spec::ConnectionHandle kIsoHandle = 0x123;
-  IsoMockConnectionInterface connection(*iso_data_channel());
+  IsoMockConnectionInterface connection(*iso_data_channel(), lease_provider());
 
   DynamicByteBuffer packet = MakeIsoPacket(kIsoHandle, /*seq=*/0);
   EXPECT_ISO_PACKET_OUT(test_device(), packet);
@@ -590,11 +605,12 @@ TEST_F(IsoDataChannelTests, SendDataBeforeRegistering) {
 TEST_F(IsoDataChannelTests,
        ClearControllerPacketCountIncreasesAvailableBuffersAndSendsPacket) {
   constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x0001;
-  IsoMockConnectionInterface connection1(*iso_data_channel());
+  IsoMockConnectionInterface connection1(*iso_data_channel(), lease_provider());
   iso_data_channel()->RegisterConnection(kIsoHandle1, connection1.GetWeakPtr());
   constexpr hci_spec::ConnectionHandle kIsoHandle2 = 0x0002;
-  IsoMockConnectionInterface connection2(*iso_data_channel());
+  IsoMockConnectionInterface connection2(*iso_data_channel(), lease_provider());
   iso_data_channel()->RegisterConnection(kIsoHandle2, connection2.GetWeakPtr());
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 
   // Fill controller buffer with connection1 packets.
   for (size_t num_sent = 0; num_sent < kDefaultMaxNumPackets; ++num_sent) {
@@ -604,6 +620,7 @@ TEST_F(IsoDataChannelTests,
   }
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+  EXPECT_NE(lease_provider().lease_count(), 0u);
 
   // Queue 1 packet in connection2.
   DynamicByteBuffer packet =
@@ -616,12 +633,20 @@ TEST_F(IsoDataChannelTests,
   iso_data_channel()->UnregisterConnection(kIsoHandle1);
   RunUntilIdle();
   EXPECT_FALSE(test_device()->AllExpectedIsoPacketsSent());
+  EXPECT_NE(lease_provider().lease_count(), 0u);
 
   // Clearing connection1 pending packet count should allow connection2 packet
   // to be sent.
   iso_data_channel()->ClearControllerPacketCount(kIsoHandle1);
   RunUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedIsoPacketsSent());
+  EXPECT_NE(lease_provider().lease_count(), 0u);
+
+  iso_data_channel()->UnregisterConnection(kIsoHandle2);
+  EXPECT_NE(lease_provider().lease_count(), 0u);
+  iso_data_channel()->ClearControllerPacketCount(kIsoHandle2);
+  RunUntilIdle();
+  EXPECT_EQ(lease_provider().lease_count(), 0u);
 }
 
 TEST_F(IsoDataChannelTests, ClearControllerPacketCountUnknownHandleIgnored) {
@@ -631,10 +656,10 @@ TEST_F(IsoDataChannelTests, ClearControllerPacketCountUnknownHandleIgnored) {
 TEST_F(IsoDataChannelTests,
        NocpAfterUnregisterAndBeforeClearControllerPacketCount) {
   constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x0001;
-  IsoMockConnectionInterface connection1(*iso_data_channel());
+  IsoMockConnectionInterface connection1(*iso_data_channel(), lease_provider());
   iso_data_channel()->RegisterConnection(kIsoHandle1, connection1.GetWeakPtr());
   constexpr hci_spec::ConnectionHandle kIsoHandle2 = 0x0002;
-  IsoMockConnectionInterface connection2(*iso_data_channel());
+  IsoMockConnectionInterface connection2(*iso_data_channel(), lease_provider());
   iso_data_channel()->RegisterConnection(kIsoHandle2, connection2.GetWeakPtr());
 
   // Fill controller buffer with connection1 packets.
@@ -669,7 +694,7 @@ TEST_F(IsoDataChannelTests,
 
 TEST_F(IsoDataChannelTests, NocpExceedsPendingPacketCount) {
   constexpr hci_spec::ConnectionHandle kIsoHandle1 = 0x0001;
-  IsoMockConnectionInterface connection1(*iso_data_channel());
+  IsoMockConnectionInterface connection1(*iso_data_channel(), lease_provider());
   iso_data_channel()->RegisterConnection(kIsoHandle1, connection1.GetWeakPtr());
 
   // Fill controller buffer with connection1 packets.

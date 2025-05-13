@@ -29,9 +29,11 @@ constexpr size_t kFrameHeaderSize =
 
 class IsoDataChannelImpl final : public IsoDataChannel {
  public:
-  IsoDataChannelImpl(const DataBufferInfo& buffer_info,
-                     CommandChannel* command_channel,
-                     pw::bluetooth::Controller* hci);
+  IsoDataChannelImpl(
+      const DataBufferInfo& buffer_info,
+      CommandChannel* command_channel,
+      pw::bluetooth::Controller* hci,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
   ~IsoDataChannelImpl() override;
 
   // IsoDataChannel overrides:
@@ -74,15 +76,23 @@ class IsoDataChannelImpl final : public IsoDataChannel {
 
   // Event handler ID for the NumberOfCompletedPackets event
   CommandChannel::EventHandlerId num_completed_packets_event_handler_id_ = 0;
+
+  // A wake lease is held while there are transmitted packets awaiting
+  // acknowledgement from a Number Of Completed Packets event.
+  std::optional<pw::bluetooth_sapphire::Lease> wake_lease_;
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
 };
 
-IsoDataChannelImpl::IsoDataChannelImpl(const DataBufferInfo& buffer_info,
-                                       CommandChannel* command_channel,
-                                       pw::bluetooth::Controller* hci)
+IsoDataChannelImpl::IsoDataChannelImpl(
+    const DataBufferInfo& buffer_info,
+    CommandChannel* command_channel,
+    pw::bluetooth::Controller* hci,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
     : command_channel_(command_channel),
       hci_(hci),
       buffer_info_(buffer_info),
-      available_buffers_(buffer_info.max_num_packets()) {
+      available_buffers_(buffer_info.max_num_packets()),
+      wake_lease_provider_(wake_lease_provider) {
   // IsoDataChannel shouldn't be used if the buffer is unavailable (implying the
   // controller doesn't support isochronous channels).
   PW_CHECK(buffer_info_.IsAvailable());
@@ -177,6 +187,9 @@ void IsoDataChannelImpl::ClearControllerPacketCount(
   // not send HCI Number of Completed Packets events for disconnected
   // connections.
   available_buffers_ += pending_packets_iter->second;
+  if (available_buffers_ == buffer_info_.max_num_packets()) {
+    wake_lease_.reset();
+  }
   pending_packets_.erase(pending_packets_iter);
 
   // Try sending the next batch of packets in case buffer space opened up.
@@ -187,6 +200,13 @@ void IsoDataChannelImpl::TrySendPackets() {
   if (connections_.empty()) {
     return;
   }
+
+  // Ensure a lease is held while calling GetNextOutboundPdu() below, in case
+  // connections drop their wake lease upon handing off their last packet.
+  pw::Result<pw::bluetooth_sapphire::Lease> temp_lease =
+      PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_,
+                                "IsoDataChannel::TrySendPackets");
+
   // Use Round Robin fairness algorithm to send packets from multiple streams.
   ConnectionMap::iterator start_iter = next_connection_iter_;
   // Initialize to true to ensure the connection map is looped over at least
@@ -217,6 +237,11 @@ void IsoDataChannelImpl::TrySendPackets() {
     auto [iter, _] =
         pending_packets_.try_emplace(next_connection_iter_->first, 0);
     iter->second++;
+    if (!wake_lease_) {
+      wake_lease_ =
+          PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_, "IsoDataChannel")
+              .value_or(pw::bluetooth_sapphire::Lease());
+    }
   }
 }
 
@@ -290,6 +315,9 @@ IsoDataChannelImpl::OnNumberOfCompletedPacketsEvent(const EventPacket& event) {
     }
 
     available_buffers_ += num_completed_packets;
+    if (available_buffers_ == buffer_info_.max_num_packets()) {
+      wake_lease_.reset();
+    }
     pending_packets_iter->second -= num_completed_packets;
   }
 
@@ -300,10 +328,11 @@ IsoDataChannelImpl::OnNumberOfCompletedPacketsEvent(const EventPacket& event) {
 std::unique_ptr<IsoDataChannel> IsoDataChannel::Create(
     const DataBufferInfo& buffer_info,
     CommandChannel* command_channel,
-    pw::bluetooth::Controller* hci) {
+    pw::bluetooth::Controller* hci,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider) {
   bt_log(DEBUG, "hci", "Creating a new IsoDataChannel");
   return std::make_unique<IsoDataChannelImpl>(
-      buffer_info, command_channel, hci);
+      buffer_info, command_channel, hci, wake_lease_provider);
 }
 
 void IsoDataChannelImpl::IncrementConnectionIter() {
