@@ -136,6 +136,79 @@ https://ci.chromium.org/p/pigweed (for public projects) and
 https://ci.chromium.org/p/pigweed-internal (for internal projects). Builders can
 also be viewed from Pigweed's :ref:`builder visualization <docs-builder-viz>`.
 
+.. _automatic-bisection:
+
+Automatic bisection
+-------------------
+Post-submit builds often aren't triggered for every commit, but instead trigger
+on the most recent commit, effectively grouping multiple commits together. If
+one of these builds fails, it can be hard to tell which commit caused the
+failure. Pigweed infrastructure implements a `bisection algorithm`_ to detect
+these failures and trigger builds to narrow down the possibilities for the
+responsible commit. See also Pigweed's `bisector view`_.
+
+.. _bisection algorithm: https://en.wikipedia.org/wiki/Bisection_(software_engineering)
+.. _bisector view: https://ci.chromium.org/ui/p/pigweed/g/bisector/builders
+
+Bisection results are clearest on views like the `Pigweed Console`_ or the
+`Pigweed Roll Console`_.
+
+.. _Pigweed Console: https://ci.chromium.org/p/pigweed/g/pigweed.pigweed/console
+.. _Pigweed Roll Console: https://ci.chromium.org/p/pigweed/g/pigweed.pigweed.roll/console
+
+In many cases automatic bisection will find the responsible commit before users
+notice the failure.
+
+The bisector mostly ignores infra failures. That is, it doesn't treat infra
+failures as either "good" or "bad"—instead it pretends they don't exist.
+However, if there are too many recent infra failures on a builder, it will
+refuse to launch new builds of that builder.
+
+The bisector always launches builds using buildbucket never luci-scheduler.
+For most builders, this means there may be multiple builds running at once—one
+triggered by luci-scheduler (perhaps from a new commit or a cron entry) and one
+triggered by the bisector. Rollers are limited to one build at a time.
+
+The bisector assumes there are no flakes, so even if there's a build running it
+will still launch a new build because it assumes the running build will
+eventually fail and it'll still be useful to know when that builder started
+failing.
+
+Once a build is passing at the top of the branch again, the bisector will stop
+triggering new builds, even if the commit that caused the (now short-term)
+breakage is not yet known.
+
+.. _automatic-rerunning:
+
+Automatic rerunning
+-------------------
+:ref:`automatic-bisection` can determine which commit caused a builder to start
+failing, but doesn't help much for flakes. `Pigweed's automatic rerunner`_
+finds failing builds and reruns them, without triggering builds on a specific
+commit. Builds triggered this way will always take the branch head and run. This
+is useful when a roller failed because of a flake—it ensures the downstream
+project is updated despite the flake.
+
+.. _Pigweed's automatic rerunner: https://ci.chromium.org/ui/p/pigweed/g/rerunner/builders
+
+If possible, the rerunner launches builds with luci-scheduler instead of
+buildbucket. This ensures the rules in luci-scheduler about the maximum number
+of concurrent builds are honored, and it allows luci-scheduler to combine
+rerunner triggers with triggers resulting from cron or new commits. In some
+cases this means the rerunner won't result in any additional builds.
+
+Interactions between bisection and rerunning
+--------------------------------------------
+The bisector ignores builds triggered solely by the rerunner since they won't be
+attributed to specific commits. Builds where a rerunner trigger and one or more
+commit triggers were combined will be treated exactly like they didn't have the
+rerunner trigger by the bisector.
+
+The rerunner only looks at builds triggered by luci-scheduler. Builds triggered
+by the bisector are ignored. This is important because in attributing a failure
+to a commit the last build might be a failure, but the builder can still be
+passing and does not need any rerunner-triggered builds.
+
 Non-``main`` branches
 =====================
 CQ is enabled for all branches. If you upload to an individual repository

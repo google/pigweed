@@ -8,3 +8,4 @@ Infra
    bazel_lockfile
    ci_cq_intro
    rollers
+   glossary
