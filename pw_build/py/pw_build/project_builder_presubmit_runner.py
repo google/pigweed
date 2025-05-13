@@ -811,6 +811,7 @@ def main(
     ):
         event_handler, exclude_list = watch_setup(
             project_builder,
+            banners=args.banners,
             parallel=args.parallel,
             parallel_workers=workers,
             fullscreen=args.fullscreen,
