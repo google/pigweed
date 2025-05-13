@@ -20,6 +20,7 @@
 #include "pw_polyfill/standard_library/namespace.h"
 
 #define __cpp_lib_string_view 201606L
+#define __cpp_lib_starts_ends_with 201711L
 
 _PW_POLYFILL_BEGIN_NAMESPACE_STD
 
@@ -118,12 +119,34 @@ class basic_string_view {
     return basic_string_view(string_ + pos, min(count, size() - pos));
   }
 
+  constexpr bool starts_with(basic_string_view view) const noexcept {
+    if (view.size() > size()) {
+      return false;
+    }
+    return substr(0, view.size()) == view;
+  }
+
+  constexpr size_type find(basic_string_view view,
+                           size_type pos = 0) const noexcept {
+    if (pos >= size()) {
+      return npos;
+    }
+    const size_t find_size = size() - pos;
+    if (view.size() > find_size) {
+      return npos;
+    }
+    const size_t limit = size() - view.size() + 1;
+    for (size_type i = pos; i < limit; ++i) {
+      if (substr(i).starts_with(view)) {
+        return i;
+      }
+    }
+    return npos;
+  }
+
   // NOT IMPLEMENTED: These functions and their overloads are not defined.
   constexpr int compare(basic_string_view view) const noexcept;
-  constexpr bool starts_with(basic_string_view view) const noexcept;
   constexpr bool ends_with(basic_string_view view) const noexcept;
-  constexpr size_type find(basic_string_view view,
-                           size_type pos = 0) const noexcept;
   constexpr size_type rfind(basic_string_view view,
                             size_type pos = npos) const noexcept;
   constexpr size_type find_first_of(basic_string_view view,

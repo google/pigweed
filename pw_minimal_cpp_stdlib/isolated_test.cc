@@ -312,6 +312,56 @@ TEST(StringView, Basic) {
   EXPECT_STREQ(buffer, "12345");
 }
 
+TEST(StringView, Substr) {
+  constexpr std::string_view haystack("abcdef");
+  static_assert(haystack.substr(0) == std::string_view("abcdef"));
+  static_assert(haystack.substr(0, 3) == std::string_view("abc"));
+  static_assert(haystack.substr(3, 1) == std::string_view("d"));
+  static_assert(haystack.substr(3) == std::string_view("def"));
+}
+
+#ifdef __cpp_lib_starts_ends_with
+TEST(StringView, StartsWith) {
+  constexpr std::string_view haystack("abcdef");
+  static_assert(haystack.starts_with(""));
+  static_assert(haystack.starts_with("a"));
+  static_assert(haystack.starts_with("abc"));
+  static_assert(!haystack.starts_with("d"));
+}
+#endif  // __cpp_lib_starts_ends_with
+
+TEST(StringView, Find) {
+  constexpr std::string_view haystack("abcdef");
+  // NOLINTBEGIN(performance-faster-string-find)
+  static_assert(haystack.find("") == 0);
+  static_assert(haystack.find("a") == 0);
+  static_assert(haystack.find("abc") == 0);
+  static_assert(haystack.find("d") == 3);
+  static_assert(haystack.find("de") == 3);
+  static_assert(haystack.find("def") == 3);
+  static_assert(haystack.find("nope") == haystack.npos);
+  // NOLINTEND(performance-faster-string-find)
+}
+
+TEST(StringView, FindWithOffset) {
+  constexpr std::string_view haystack("abcbc");
+  // NOLINTBEGIN(performance-faster-string-find)
+  static_assert(haystack.find("", 0) == 0);
+  static_assert(haystack.find("", 1) == 1);
+  static_assert(haystack.find("a", 0) == 0);
+  static_assert(haystack.find("a", 1) == haystack.npos);
+  static_assert(haystack.find("b", 0) == 1);
+  static_assert(haystack.find("b", 1) == 1);
+  static_assert(haystack.find("b", 2) == 3);
+  static_assert(haystack.find("b", 3) == 3);
+  static_assert(haystack.find("b", 4) == haystack.npos);
+  static_assert(haystack.find("bc", 0) == 1);
+  static_assert(haystack.find("bc", 1) == 1);
+  static_assert(haystack.find("bc", 2) == 3);
+  static_assert(haystack.find("abc", 999) == haystack.npos);
+  // NOLINTEND(performance-faster-string-find)
+}
+
 TEST(TypeTraits, Basic) {
   static_assert(std::is_integral_v<bool>);
   static_assert(!std::is_integral_v<float>);
