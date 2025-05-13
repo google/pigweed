@@ -320,6 +320,7 @@ pw_test("tokenize_test") {
     ":pw_tokenizer",
     "$dir_pw_varint",
   ]
+  negative_compilation_tests = true
 }
 
 pw_test("tokenize_c99_test") {

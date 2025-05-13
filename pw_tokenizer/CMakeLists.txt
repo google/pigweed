@@ -241,6 +241,7 @@ pw_add_test(pw_tokenizer.tokenize_test
     tokenize_test.cc
     pw_tokenizer_private/tokenize_test.h
   PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
     pw_varint
     pw_tokenizer
   GROUPS

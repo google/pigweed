@@ -20,6 +20,7 @@
 #include <iterator>
 #include <limits>
 
+#include "pw_compilation_testing/negative_compilation.h"
 #include "pw_tokenizer/hash.h"
 #include "pw_tokenizer_private/tokenize_test.h"
 #include "pw_unit_test/framework.h"
@@ -570,6 +571,15 @@ TEST_F(TokenizeToBuffer, C_Overflow) {
     EXPECT_EQ(std::memcmp(expected.data(), buffer_, expected.size()), 0);
     EXPECT_EQ(buffer_[8], '$');
   }
+}
+
+// TODO: b/408040194 - Remove this when supported.
+[[maybe_unused]] void TokenizeForbidPercentDotStarS() {
+#if PW_NC_TEST(TokenizeForbidPercentDotStarS)
+  PW_NC_EXPECT("The %.*s specifier is not supported.");
+
+  PW_TOKENIZE_FORMAT_STRING("mydomain", 0, "Hello %.*s", 6, "friend");
+#endif  // PW_NC_TEST
 }
 
 #define MACRO_THAT_CALLS_ANOTHER_MACRO(action) ANOTHER_MACRO(action)

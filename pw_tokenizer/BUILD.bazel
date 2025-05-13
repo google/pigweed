@@ -327,6 +327,7 @@ pw_cc_test(
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":pw_tokenizer",
+        "//pw_compilation_testing:negative_compilation_testing",
         "//pw_preprocessor",
         "//pw_varint",
     ],
