@@ -140,7 +140,8 @@ class LowEnergyConnectionManagerTest : public TestingBase {
         discovery_manager_->GetWeakPtr(),
         fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()),
         adapter_state_,
-        dispatcher());
+        dispatcher(),
+        lease_provider());
 
     test_device()->set_connection_state_callback(
         fit::bind_member<

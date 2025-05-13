@@ -55,7 +55,8 @@ LowEnergyConnector::LowEnergyConnector(
     gatt::GATT::WeakPtr gatt,
     const AdapterState& adapter_state,
     pw::async::Dispatcher& dispatcher,
-    hci::LocalAddressDelegate* local_address_delegate)
+    hci::LocalAddressDelegate* local_address_delegate,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
     : dispatcher_(dispatcher),
       peer_id_(peer_id),
       peer_cache_(peer_cache),
@@ -65,7 +66,8 @@ LowEnergyConnector::LowEnergyConnector(
       options_(options),
       hci_(std::move(hci)),
       le_connection_manager_(std::move(conn_mgr)),
-      local_address_delegate_(local_address_delegate) {
+      local_address_delegate_(local_address_delegate),
+      wake_lease_provider_(wake_lease_provider) {
   PW_CHECK(peer_cache_);
   PW_CHECK(l2cap_);
   PW_CHECK(gatt_.is_alive());
@@ -305,6 +307,7 @@ bool LowEnergyConnector::InitializeConnection(
                                                 l2cap_,
                                                 gatt_,
                                                 hci_,
+                                                wake_lease_provider_,
                                                 dispatcher_);
   if (!connection) {
     bt_log(WARN,

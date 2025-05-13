@@ -66,6 +66,7 @@ class IsoStream : public hci::IsoDataChannel::ConnectionInterface {
       hci::Transport::WeakPtr hci,
       CisEstablishedCallback on_established_cb,
       pw::Callback<void()> on_closed_cb,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
       pw::chrono::VirtualSystemClock& clock =
           pw::chrono::VirtualSystemClock::RealClock());
 

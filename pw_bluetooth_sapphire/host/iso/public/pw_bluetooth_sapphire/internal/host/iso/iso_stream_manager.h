@@ -29,8 +29,10 @@ namespace bt::iso {
 // as a Peripheral, processes incoming stream requests .
 class IsoStreamManager final {
  public:
-  explicit IsoStreamManager(hci_spec::ConnectionHandle handle,
-                            hci::Transport::WeakPtr hci);
+  explicit IsoStreamManager(
+      hci_spec::ConnectionHandle handle,
+      hci::Transport::WeakPtr hci,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
   ~IsoStreamManager();
 
   // Start waiting on an incoming request to create an Isochronous channel for
@@ -71,6 +73,8 @@ class IsoStreamManager final {
   hci::CommandChannel::WeakPtr cmd_;
 
   hci::Transport::WeakPtr hci_;
+
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
 
   // The streams that we are currently waiting on, and the associated callback
   // when the connection is resolved (either accepted and established, or failed

@@ -39,16 +39,18 @@ class LowEnergyConnector final {
 
   // Create a connector for connecting to |peer_id|. The connection will be
   // established with the parameters specified in |options|.
-  LowEnergyConnector(PeerId peer_id,
-                     LowEnergyConnectionOptions options,
-                     hci::Transport::WeakPtr hci,
-                     PeerCache* peer_cache,
-                     WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-                     l2cap::ChannelManager* l2cap,
-                     gatt::GATT::WeakPtr gatt,
-                     const AdapterState& adapter_state,
-                     pw::async::Dispatcher& dispatcher,
-                     hci::LocalAddressDelegate* local_address_delegate);
+  LowEnergyConnector(
+      PeerId peer_id,
+      LowEnergyConnectionOptions options,
+      hci::Transport::WeakPtr hci,
+      PeerCache* peer_cache,
+      WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
+      l2cap::ChannelManager* l2cap,
+      gatt::GATT::WeakPtr gatt,
+      const AdapterState& adapter_state,
+      pw::async::Dispatcher& dispatcher,
+      hci::LocalAddressDelegate* local_address_delegate,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
 
   // Instances should only be destroyed after the result callback is called
   // (except for stack tear down). Due to the asynchronous nature of cancelling
@@ -197,6 +199,8 @@ class LowEnergyConnector final {
   WeakSelf<LowEnergyConnectionManager>::WeakPtr le_connection_manager_;
 
   hci::LocalAddressDelegate* local_address_delegate_;
+
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
 
   struct InspectProperties {
     inspect::StringProperty peer_id;

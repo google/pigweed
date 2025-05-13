@@ -91,6 +91,7 @@ class IsoStreamImpl final : public IsoStream {
                 hci::Transport::WeakPtr hci,
                 CisEstablishedCallback on_established_cb,
                 pw::Callback<void()> on_closed_cb,
+                pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
                 pw::chrono::VirtualSystemClock& clock);
 
   // IsoStream overrides
@@ -126,6 +127,8 @@ class IsoStreamImpl final : public IsoStream {
       pw::bluetooth::emboss::IsoDataPbFlag pb_flag,
       std::optional<SduHeaderInfo> sdu_header = std::nullopt,
       std::optional<uint32_t> time_stamp = std::nullopt);
+
+  void UpdateWakeLease();
 
   enum class IsoStreamState {
     kNotEstablished,
@@ -177,17 +180,22 @@ class IsoStreamImpl final : public IsoStream {
   std::optional<hci::Connection> link_;
   hci::Transport::WeakPtr hci_;
 
+  std::optional<pw::bluetooth_sapphire::Lease> wake_lease_;
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
+
   WeakSelf<IsoStreamImpl> weak_self_;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(IsoStreamImpl);
 };
 
-IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
-                             uint8_t cis_id,
-                             hci_spec::ConnectionHandle cis_handle,
-                             hci::Transport::WeakPtr hci,
-                             CisEstablishedCallback on_established_cb,
-                             pw::Callback<void()> on_closed_cb,
-                             pw::chrono::VirtualSystemClock& clock)
+IsoStreamImpl::IsoStreamImpl(
+    uint8_t cig_id,
+    uint8_t cis_id,
+    hci_spec::ConnectionHandle cis_handle,
+    hci::Transport::WeakPtr hci,
+    CisEstablishedCallback on_established_cb,
+    pw::Callback<void()> on_closed_cb,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
+    pw::chrono::VirtualSystemClock& clock)
     : IsoStream(),
       state_(IsoStreamState::kNotEstablished),
       cig_id_(cig_id),
@@ -199,6 +207,7 @@ IsoStreamImpl::IsoStreamImpl(uint8_t cig_id,
       on_closed_cb_(std::move(on_closed_cb)),
       clock_(clock),
       hci_(std::move(hci)),
+      wake_lease_provider_(wake_lease_provider),
       weak_self_(this) {
   PW_CHECK(hci_.is_alive());
 
@@ -469,6 +478,7 @@ std::optional<DynamicByteBuffer> IsoStreamImpl::GetNextOutboundPdu() {
   }
   DynamicByteBuffer pdu = std::move(outbound_pdu_queue_.front());
   outbound_pdu_queue_.pop();
+  UpdateWakeLease();
   return pdu;
 }
 
@@ -498,6 +508,7 @@ void IsoStreamImpl::HandleCompletePacket(
 
   // Client not ready to handle packet, queue it up until they ask for it
   incoming_data_queue_.emplace(packet.begin(), packet.end());
+  UpdateWakeLease();
 }
 
 DynamicByteBuffer IsoStreamImpl::BuildPacketForSending(
@@ -552,6 +563,7 @@ std::optional<IsoDataPacket> IsoStreamImpl::ReadNextQueuedIncomingPacket() {
 
   IsoDataPacket packet = std::move(incoming_data_queue_.front());
   incoming_data_queue_.pop();
+  UpdateWakeLease();
   return packet;
 }
 
@@ -622,9 +634,20 @@ void IsoStreamImpl::Send(pw::ConstByteSpan data) {
   next_sdu_sequence_number_ = current_sequence_num + 1;
 
   hci_->iso_data_channel()->TrySendPackets();
+
+  UpdateWakeLease();
 }
 
 void IsoStreamImpl::Close() { on_closed_cb_(); }
+
+void IsoStreamImpl::UpdateWakeLease() {
+  if (outbound_pdu_queue_.empty() && incoming_data_queue_.empty()) {
+    wake_lease_.reset();
+  } else if (!wake_lease_) {
+    wake_lease_ = PW_SAPPHIRE_ACQUIRE_LEASE(wake_lease_provider_, "IsoStream")
+                      .value_or(pw::bluetooth_sapphire::Lease());
+  }
+}
 
 std::unique_ptr<IsoStream> IsoStream::Create(
     uint8_t cig_id,
@@ -633,6 +656,7 @@ std::unique_ptr<IsoStream> IsoStream::Create(
     hci::Transport::WeakPtr hci,
     CisEstablishedCallback on_established_cb,
     pw::Callback<void()> on_closed_cb,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
     pw::chrono::VirtualSystemClock& clock) {
   return std::make_unique<IsoStreamImpl>(cig_id,
                                          cis_id,
@@ -640,6 +664,7 @@ std::unique_ptr<IsoStream> IsoStream::Create(
                                          std::move(hci),
                                          std::move(on_established_cb),
                                          std::move(on_closed_cb),
+                                         wake_lease_provider,
                                          clock);
 }
 

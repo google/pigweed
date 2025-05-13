@@ -117,7 +117,8 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
     LowEnergyDiscoveryManager::WeakPtr discovery_manager,
     sm::SecurityManagerFactory sm_creator,
     const AdapterState& adapter_state,
-    pw::async::Dispatcher& dispatcher)
+    pw::async::Dispatcher& dispatcher,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
     : dispatcher_(dispatcher),
       hci_(std::move(hci)),
       security_mode_(LESecurityMode::Mode1),
@@ -130,6 +131,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
       discovery_manager_(discovery_manager),
       hci_connector_(connector),
       local_address_delegate_(addr_delegate),
+      wake_lease_provider_(wake_lease_provider),
       weak_self_(this) {
   PW_DCHECK(peer_cache_);
   PW_DCHECK(l2cap_);
@@ -437,7 +439,8 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
                                                      gatt_,
                                                      adapter_state_,
                                                      dispatcher_,
-                                                     local_address_delegate_);
+                                                     local_address_delegate_,
+                                                     wake_lease_provider_);
   auto [conn_iter, _] = remote_connectors_.emplace(
       peer_id, RequestAndConnector{std::move(request), std::move(connector)});
   // Wait until the connector is in the map to start in case the result callback
@@ -577,7 +580,8 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
               gatt_,
               adapter_state_,
               dispatcher_,
-              local_address_delegate_);
+              local_address_delegate_,
+              wake_lease_provider_);
       connector->AttachInspect(inspect_node_,
                                kInspectOutboundConnectorNodeName);
 

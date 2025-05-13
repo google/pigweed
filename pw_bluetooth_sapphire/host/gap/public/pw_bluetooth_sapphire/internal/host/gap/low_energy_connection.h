@@ -76,6 +76,7 @@ class LowEnergyConnection final : public sm::Delegate {
       l2cap::ChannelManager* l2cap,
       gatt::GATT::WeakPtr gatt,
       hci::Transport::WeakPtr hci,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
       pw::async::Dispatcher& dispatcher);
 
   // Notifies request callbacks and connection refs of the disconnection.

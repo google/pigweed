@@ -101,7 +101,8 @@ class LowEnergyConnectionManager final {
       LowEnergyDiscoveryManager::WeakPtr discovery_manager,
       sm::SecurityManagerFactory sm_creator,
       const AdapterState& adapter_state,
-      pw::async::Dispatcher& dispatcher);
+      pw::async::Dispatcher& dispatcher,
+      pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider);
   ~LowEnergyConnectionManager();
 
   // Allows a caller to claim shared ownership over a connection to the
@@ -385,6 +386,8 @@ class LowEnergyConnectionManager final {
   // Address manager is used to obtain local identity information during pairing
   // procedures. Expected to outlive this instance.
   hci::LocalAddressDelegate* local_address_delegate_;  // weak
+
+  pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider_;
 
   // True if the connection manager is performing a scan for a peer before
   // connecting.

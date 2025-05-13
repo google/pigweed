@@ -48,6 +48,7 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
     l2cap::ChannelManager* l2cap,
     gatt::GATT::WeakPtr gatt,
     hci::Transport::WeakPtr hci,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
     pw::async::Dispatcher& dispatcher) {
   // Catch any errors/disconnects during connection initialization so that they
   // are reported by returning a nullptr. This is less error-prone than calling
@@ -58,8 +59,8 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
   // TODO(fxbug.dev/325646523): Only create an IsoStreamManager
   // instance if our adapter supports Isochronous streams.
   std::unique_ptr<iso::IsoStreamManager> iso_mgr =
-      std::make_unique<iso::IsoStreamManager>(link->handle(),
-                                              hci->GetWeakPtr());
+      std::make_unique<iso::IsoStreamManager>(
+          link->handle(), hci->GetWeakPtr(), wake_lease_provider);
   std::unique_ptr<LowEnergyConnection> connection(
       new LowEnergyConnection(std::move(peer),
                               std::move(link),
