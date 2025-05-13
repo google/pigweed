@@ -57,10 +57,6 @@ class GattNotifyChannel : public L2capChannel {
   void DoClose() override {}
 
  private:
-  // TODO: https://pwbug.dev/379337272 - Delete once all downstreams have
-  // transitioned to Write(MultiBuf) for this channel type.
-  bool UsesPayloadQueue() override { return true; }
-
   [[nodiscard]] std::optional<H4PacketWithH4> GenerateNextTxPacket()
       PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex()) override;
 

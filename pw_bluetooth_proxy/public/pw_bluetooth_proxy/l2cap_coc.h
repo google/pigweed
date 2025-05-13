@@ -130,10 +130,6 @@ class L2capCoc : public L2capChannel {
       PW_LOCKS_EXCLUDED(tx_mutex_)
           PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex()) override;
 
-  // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
-  // transitioned to payload_queue_.
-  bool UsesPayloadQueue() override { return true; }
-
   // Replenish some of the remote's credits.
   pw::Status ReplenishRxCredits(uint16_t additional_rx_credits)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rx_mutex_);

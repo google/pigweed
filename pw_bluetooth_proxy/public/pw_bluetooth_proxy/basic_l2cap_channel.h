@@ -63,10 +63,6 @@ class BasicL2capChannel : public L2capChannel {
  private:
   bool DoHandlePduFromController(pw::span<uint8_t> bframe) override;
 
-  // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
-  // transitioned to payload_queue_.
-  bool UsesPayloadQueue() override { return true; }
-
   [[nodiscard]] std::optional<H4PacketWithH4> GenerateNextTxPacket()
       PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex()) override;
 };

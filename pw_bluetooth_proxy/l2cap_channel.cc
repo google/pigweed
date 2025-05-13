@@ -140,7 +140,6 @@ StatusWithMultiBuf L2capChannel::Write(pw::multibuf::MultiBuf&& payload) {
 }
 
 StatusWithMultiBuf L2capChannel::WriteLocked(pw::multibuf::MultiBuf&& payload) {
-  PW_CHECK(UsesPayloadQueue());
   return WriteToPayloadQueue(std::move(payload));
 }
 
@@ -153,8 +152,6 @@ StatusWithMultiBuf L2capChannel::WriteToPayloadQueue(
   if (state() != State::kRunning) {
     return {Status::FailedPrecondition(), std::move(payload)};
   }
-
-  PW_CHECK(UsesPayloadQueue());
 
   return QueuePayload(std::move(payload));
 }
@@ -195,8 +192,6 @@ std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
 }
 
 StatusWithMultiBuf L2capChannel::QueuePayload(multibuf::MultiBuf&& buf) {
-  PW_CHECK(UsesPayloadQueue());
-
   PW_CHECK(state() == State::kRunning);
   PW_CHECK(buf.IsContiguous());
 

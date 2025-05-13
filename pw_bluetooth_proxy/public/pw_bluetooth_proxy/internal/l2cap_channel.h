@@ -300,11 +300,6 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // TODO: https://pwbug.dev/349700888 - Make capacity configurable.
   static constexpr size_t kQueueCapacity = 5;
 
-  // Return true if the current object uses payload_queue_.
-  // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
-  // transitioned to payload_queue_.
-  virtual bool UsesPayloadQueue() = 0;
-
   // Returns false if payload should be forwarded to host instead.
   bool SendPayloadToClient(pw::span<uint8_t> payload,
                            OptionalPayloadReceiveCallback& callback);

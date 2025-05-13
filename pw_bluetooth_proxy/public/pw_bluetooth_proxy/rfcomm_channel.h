@@ -108,10 +108,6 @@ class RfcommChannel final : public L2capChannel {
       Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
       ChannelEventCallback&& event_fn);
 
-  // TODO: https://pwbug.dev/379337272 - Delete this once all channels have
-  // transitioned to payload_queue_.
-  bool UsesPayloadQueue() override { return true; }
-
   [[nodiscard]] std::optional<H4PacketWithH4> GenerateNextTxPacket()
       PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex()) override;
 
