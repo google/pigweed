@@ -8,9 +8,12 @@ pw_i2c_linux
 
 ``pw_i2c_linux`` implements the ``pw_i2c`` interface using the Linux userspace
 ``i2c-dev`` driver. Transfers are executed using blocking ``ioctl`` calls.
-Write+read transactions are implemented atomically using a single system call,
-and a retry mechanism is used to support bus arbitration between multiple
+Arbitrary-order read and write messages are supported by one underlying system
+call. A retry mechanism is used to support bus arbitration between multiple
 controllers.
+
+Support for ten-bit addresses and the no-start flag is enabled but depends
+on underlying support by the linux-managed device.
 
 -------------
 API reference

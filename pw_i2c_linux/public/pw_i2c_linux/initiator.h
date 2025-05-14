@@ -17,6 +17,7 @@
 #include "pw_chrono/system_clock.h"
 #include "pw_i2c/address.h"
 #include "pw_i2c/initiator.h"
+#include "pw_i2c/message.h"
 #include "pw_result/result.h"
 #include "pw_status/status.h"
 #include "pw_sync/lock_annotations.h"
@@ -65,7 +66,7 @@ class LinuxInitiator final : public Initiator {
  private:
   /// Implement pw::i2c::Initiator with the following additional requriements:
   ///  - Asserts that `device_address` is a 7-bit address.
-  ///  - At least one of `tx_buffer` or `rx_buffer` must be not empty.
+  ///  - `messages` must be not empty.
   ///    Otherwise, returns InvalidArgument.
   ///
   /// @note
@@ -74,17 +75,9 @@ class LinuxInitiator final : public Initiator {
   /// is zero or negative, the transaction will only execute if there is no
   /// contention at either level.
   ///
-  Status DoWriteReadFor(Address device_address,
-                        ConstByteSpan tx_buffer,
-                        ByteSpan rx_buffer,
-                        chrono::SystemClock::duration timeout) override
+  Status DoTransferFor(span<const Message> messages,
+                       chrono::SystemClock::duration timeout) override
       PW_LOCKS_EXCLUDED(mutex_);
-
-  Status DoWriteReadForLocked(uint8_t address,
-                              ConstByteSpan tx_buffer,
-                              ByteSpan rx_buffer,
-                              chrono::SystemClock::duration timeout)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   /// The file descriptor for the i2c-dev device representing this bus.
   const int fd_;

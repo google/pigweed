@@ -22,10 +22,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <array>
 #include <cerrno>
 #include <cinttypes>
 #include <mutex>
+#include <vector>
 
 #include "pw_assert/check.h"
 #include "pw_chrono/system_clock.h"
@@ -73,6 +73,41 @@ Status PwStatusAndLog(int i2c_errno, uint8_t device_address) {
   }
 }
 
+// Requests the feature set from linux driver and returns the feature set.
+Initiator::Feature GetFeaturesFromFd(int fd) {
+  Initiator::Feature features = Initiator::Feature::kStandard;
+  unsigned long functionality = 0;
+  int ioctl_ret = ioctl(fd, I2C_FUNCS, &functionality);
+  PW_DCHECK_INT_NE(ioctl_ret, 0);
+  if (ioctl_ret != 0) {
+    PW_LOG_WARN("Unable to check i2c features");
+    return features;
+  }
+
+  if ((functionality & I2C_FUNC_10BIT_ADDR) != 0) {
+    features = features | Initiator::Feature::kTenBit;
+  }
+  if ((functionality & I2C_FUNC_NOSTART) != 0) {
+    features = features | Initiator::Feature::kNoStart;
+  }
+  return features;
+}
+
+// Convert flags from internal `Message::Flags` to linux `i2c_msg` flags.
+uint16_t LinuxFlagsFromMessage(const Message& msg) {
+  uint16_t flags = 0;
+  if (msg.IsRead()) {
+    flags |= I2C_M_RD;
+  }
+  if (msg.IsTenBit()) {
+    flags |= I2C_M_TEN;
+  }
+  if (msg.IsWriteContinuation()) {
+    flags |= I2C_M_NOSTART;
+  }
+  return flags;
+}
+
 }  // namespace
 
 // Open the file at the given path and validate that it is a valid bus device.
@@ -104,7 +139,7 @@ Result<int> LinuxInitiator::OpenI2cBus(const char* bus_path) {
 }
 
 LinuxInitiator::LinuxInitiator(int fd)
-    : Initiator(Initiator::Feature::kStandard), fd_(fd) {
+    : Initiator(GetFeaturesFromFd(fd)), fd_(fd) {
   PW_DCHECK(fd_ >= 0);
 }
 
@@ -113,96 +148,46 @@ LinuxInitiator::~LinuxInitiator() {
   close(fd_);
 }
 
-Status LinuxInitiator::DoWriteReadFor(Address device_address,
-                                      ConstByteSpan tx_buffer,
-                                      ByteSpan rx_buffer,
-                                      SystemClock::duration timeout) {
-  auto start_time = SystemClock::now();
-
-  // Validate arguments.
-  const auto address = device_address.GetSevenBit();
-  if (tx_buffer.empty() && rx_buffer.empty()) {
-    PW_LOG_ERROR("At least one of tx_buffer or rx_buffer must be not empty");
-    return Status::InvalidArgument();
-  }
-
-  // Try to acquire access to the bus.
-  if (!mutex_.try_lock_for(timeout)) {
-    return Status::DeadlineExceeded();
-  }
-  std::lock_guard lock(mutex_, std::adopt_lock);
-  const auto elapsed = SystemClock::now() - start_time;
-  return DoWriteReadForLocked(address, tx_buffer, rx_buffer, timeout - elapsed);
-}
-
 // Perform an I2C write, read, or combined write+read transaction.
 //
 // Preconditions:
 //  - `this->mutex_` is acquired
 //  - `this->fd_` is open for read/write and supports full I2C functionality.
 //  - `address` is a 7-bit device address
-//  - At least one of `tx_buffer` or `rx_buffer` is not empty.
+//  - `messages` is not empty.
 //
 // The transaction will be retried if we can't get access to the bus, until
 // the timeout is reached. There will be no retries if `timeout` is zero or
 // negative.
-Status LinuxInitiator::DoWriteReadForLocked(
-    uint8_t address,
-    ConstByteSpan tx_buffer,
-    ByteSpan rx_buffer,
-    chrono::SystemClock::duration timeout) {
-  const auto start_time = SystemClock::now();
+Status LinuxInitiator::DoTransferFor(span<const Message> messages,
+                                     chrono::SystemClock::duration timeout) {
+  chrono::SystemClock::time_point deadline =
+      chrono::SystemClock::TimePointAfterAtLeast(timeout);
 
-  // Prepare messages for either a read, write, or combined transaction.
-  // Populate `ioctl_data` with either one or two `i2c_msg` operations.
-  // Use the `messages` buffer to store the operations.
-  i2c_rdwr_ioctl_data ioctl_data{};
-  std::array<i2c_msg, 2> messages{};
-  if (!tx_buffer.empty() && rx_buffer.empty()) {
-    messages[0] = i2c_msg{
-        .addr = address,
-        .flags = 0,  // Read transaction
-        .len = static_cast<uint16_t>(tx_buffer.size()),
-        .buf = reinterpret_cast<uint8_t*>(
-            const_cast<std::byte*>(tx_buffer.data())),  // NOLINT: read-only
-    };
-    ioctl_data = {
-        .msgs = messages.data(),
-        .nmsgs = 1,
-    };
-  } else if (!rx_buffer.empty() && tx_buffer.empty()) {
-    messages[0] = i2c_msg{
-        .addr = address,
-        .flags = I2C_M_RD,
-        .len = static_cast<uint16_t>(rx_buffer.size()),
-        .buf = reinterpret_cast<uint8_t*>(rx_buffer.data()),
-    };
-    ioctl_data = {
-        .msgs = messages.data(),
-        .nmsgs = 1,
-    };
-  } else {
-    // DoWriteReadFor already checks that at least one buffer has data.
-    // This is just an internal consistency check.
-    PW_DCHECK(!rx_buffer.empty() && !tx_buffer.empty());
-    messages[0] = i2c_msg{
-        .addr = address,
-        .flags = 0,  // Read transaction
-        .len = static_cast<uint16_t>(tx_buffer.size()),
-        .buf = reinterpret_cast<uint8_t*>(
-            const_cast<std::byte*>(tx_buffer.data())),  // NOLINT: read-only
-    };
-    messages[1] = i2c_msg{
-        .addr = address,
-        .flags = I2C_M_RD,
-        .len = static_cast<uint16_t>(rx_buffer.size()),
-        .buf = reinterpret_cast<uint8_t*>(rx_buffer.data()),
-    };
-    ioctl_data = {
-        .msgs = messages.data(),
-        .nmsgs = 2,
-    };
+  // Acquire lock for the bus.
+  if (!mutex_.try_lock_until(deadline)) {
+    return Status::DeadlineExceeded();
   }
+  std::lock_guard lock(mutex_, std::adopt_lock);
+
+  // Populate `ioctl_data` with one `i2c_msg` for each input message.
+  // Use the `i2c_messages` buffer to store the operations.
+  std::vector<i2c_msg> i2c_messages;
+  i2c_messages.reserve(messages.size());
+  for (const Message& msg : messages) {
+    if (msg.GetData().size() > std::numeric_limits<uint16_t>::max()) {
+      return Status::OutOfRange();
+    }
+    i2c_messages.push_back({.addr = msg.GetAddress().GetAddress(),
+                            .flags = LinuxFlagsFromMessage(msg),
+                            .len = static_cast<uint16_t>(msg.GetData().size()),
+                            .buf = reinterpret_cast<uint8_t*>(
+                                const_cast<std::byte*>(msg.GetData().data()))});
+  }
+  i2c_rdwr_ioctl_data ioctl_data = {
+      .msgs = i2c_messages.data(),
+      .nmsgs = static_cast<uint32_t>(i2c_messages.size()),
+  };
   PW_LOG_DEBUG("Attempting I2C transaction with %" PRIu32 " operations",
                ioctl_data.nmsgs);
 
@@ -210,7 +195,7 @@ Status LinuxInitiator::DoWriteReadForLocked(
   // then keep trying until we run out of time.
   do {
     if (ioctl(fd_, I2C_RDWR, &ioctl_data) < 0) {
-      Status status = PwStatusAndLog(errno, address);
+      Status status = PwStatusAndLog(errno, i2c_messages.front().addr);
       if (status == Status::Aborted()) {
         // Lost arbitration and need to try again.
         PW_LOG_DEBUG("Retrying I2C transaction");
@@ -219,13 +204,13 @@ Status LinuxInitiator::DoWriteReadForLocked(
       return status;
     }
     return OkStatus();
-  } while (SystemClock::now() - start_time < timeout);
+  } while (SystemClock::now() < deadline);
 
   // Attempt transaction one last time. This thread may have been suspended
   // after the last attempt, but before the timeout actually expired. The
   // timeout is meant to be a minimum time period.
   if (ioctl(fd_, I2C_RDWR, &ioctl_data) < 0) {
-    Status status = PwStatusAndLog(errno, address);
+    Status status = PwStatusAndLog(errno, i2c_messages.front().addr);
     if (status == Status::Aborted()) {
       PW_LOG_INFO("Timeout waiting for I2C bus access");
       return Status::DeadlineExceeded();
