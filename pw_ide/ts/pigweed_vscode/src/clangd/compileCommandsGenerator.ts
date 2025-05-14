@@ -567,6 +567,13 @@ export async function generateCompileCommands(
       cqueryJson,
       tuiManager,
     );
+
+  // Delete and recreate the compile_commands directory.
+  tuiManager?.updateStatus(`⏳ Cleaning output directory: ${cdbFileDir}`);
+  const fullCdbDirPath = path.join(cwd, cdbFileDir);
+  deleteFilesInSubDir(fullCdbDirPath, 'compile_commands.json');
+  fs.mkdirSync(fullCdbDirPath, { recursive: true });
+
   await compileCommandsPerPlatform.writeAll(cwd, cdbFileDir, cdbFilename);
 
   tuiManager?.addStdout(
@@ -878,12 +885,6 @@ async function runAsCli() {
   );
 
   const cdbFileDir = parsedArgs['cdbFileDir'] || '.compile_commands';
-
-  // Delete and recreate the compile_commands directory.
-  tuiManager?.updateStatus(`⏳ Cleaning output directory: ${cdbFileDir}`);
-  const fullCdbDirPath = path.join(parsedArgs['cwd'], cdbFileDir);
-  deleteFilesInSubDir(fullCdbDirPath, 'compile_commands.json');
-  fs.mkdirSync(fullCdbDirPath, { recursive: true });
 
   await generateCompileCommandsWithStatus(
     parsedArgs['bazelCmd'],
