@@ -22,10 +22,12 @@ outbazel/
 .presubmit/
 docs/_build
 twister-out*/
+external/
 
 # Editors
 .pw_ide/
 .compile_commands/
+tools/bazel
 .vscode/*
 !.vscode/OWNERS
 !.vscode/pw_project_*.json
