@@ -64,7 +64,6 @@ pw_python_package("py") {
     "pw_env_setup/cipd_setup/bazelisk.json",
     "pw_env_setup/cipd_setup/buildifier.json",
     "pw_env_setup/cipd_setup/clang.json",
-    "pw_env_setup/cipd_setup/clang_next.json",
     "pw_env_setup/cipd_setup/cmake.json",
     "pw_env_setup/cipd_setup/compatibility.json",
     "pw_env_setup/cipd_setup/coverage.json",
