@@ -16,6 +16,42 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
+cc_library_static {
+    name: "pw_i2c",
+    cpp_std: "c++20",
+    vendor_available: true,
+    defaults: [
+        "pw_android_common_backends",
+    ],
+    export_include_dirs: [
+        "public",
+    ],
+    header_libs: [
+        "pw_assert",
+        "pw_sync",
+    ],
+    export_header_lib_headers: [
+        "pw_assert",
+        "pw_sync",
+    ],
+    static_libs: [
+        "pw_bytes",
+        "pw_span",
+        "pw_status",
+        "pw_toolchain",
+    ],
+    export_static_lib_headers: [
+        "pw_bytes",
+        "pw_span",
+        "pw_status",
+        "pw_toolchain",
+    ],
+    srcs: [
+        "initiator.cc",
+        "address.cc",
+    ],
+}
+
 genrule {
     name: "pw_i2c_proto_with_prefix",
     defaults: ["pw_rpc_add_prefix_to_proto"],
