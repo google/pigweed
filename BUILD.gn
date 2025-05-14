@@ -637,6 +637,7 @@ if (current_toolchain != default_toolchain) {
     if (current_os == "linux") {
       deps += [
         "$dir_pw_digital_io_linux:pw_digital_io_linux_cli",
+        "$dir_pw_i2c_linux:pw_i2c_linux_cli",
         "$dir_pw_spi_linux:pw_spi_linux_cli",
       ]
     }
