@@ -43,8 +43,8 @@ void L2capChannel::MoveFields(L2capChannel& other) {
   payload_from_host_fn_ = std::move(other.payload_from_host_fn_);
   rx_multibuf_allocator_ = other.rx_multibuf_allocator_;
   {
-    std::lock_guard lock(send_queue_mutex_);
-    std::lock_guard other_lock(other.send_queue_mutex_);
+    std::lock_guard lock(tx_mutex_);
+    std::lock_guard other_lock(other.tx_mutex_);
     payload_queue_ = std::move(other.payload_queue_);
     notify_on_dequeue_ = other.notify_on_dequeue_;
     l2cap_channel_manager_.DeregisterChannel(other);
@@ -156,7 +156,7 @@ Status L2capChannel::IsWriteAvailable() {
     return Status::FailedPrecondition();
   }
 
-  std::lock_guard lock(send_queue_mutex_);
+  std::lock_guard lock(tx_mutex_);
 
   if (payload_queue_.full()) {
     notify_on_dequeue_ = true;
@@ -171,7 +171,7 @@ std::optional<H4PacketWithH4> L2capChannel::DequeuePacket() {
   std::optional<H4PacketWithH4> packet;
   bool should_notify = false;
   {
-    std::lock_guard lock(send_queue_mutex_);
+    std::lock_guard lock(tx_mutex_);
     packet = GenerateNextTxPacket();
     if (packet) {
       should_notify = notify_on_dequeue_;
@@ -191,7 +191,7 @@ StatusWithMultiBuf L2capChannel::QueuePayload(multibuf::MultiBuf&& buf) {
   PW_CHECK(buf.IsContiguous());
 
   {
-    std::lock_guard lock(send_queue_mutex_);
+    std::lock_guard lock(tx_mutex_);
     if (payload_queue_.full()) {
       notify_on_dequeue_ = true;
       return {Status::Unavailable(), std::move(buf)};
@@ -378,13 +378,12 @@ void L2capChannel::ReportNewTxPacketsOrCredits() {
   l2cap_channel_manager_.ReportNewTxPacketsOrCredits();
 }
 
-void L2capChannel::DrainChannelQueuesIfNewTx()
-    PW_LOCKS_EXCLUDED(send_queue_mutex_) {
+void L2capChannel::DrainChannelQueuesIfNewTx() PW_LOCKS_EXCLUDED(tx_mutex_) {
   l2cap_channel_manager_.DrainChannelQueuesIfNewTx();
 }
 
 void L2capChannel::ClearQueue() {
-  std::lock_guard lock(send_queue_mutex_);
+  std::lock_guard lock(tx_mutex_);
   payload_queue_.clear();
 }
 

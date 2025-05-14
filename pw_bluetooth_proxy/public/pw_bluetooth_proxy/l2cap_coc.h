@@ -128,7 +128,7 @@ class L2capCoc : public L2capChannel {
 
   std::optional<H4PacketWithH4> GenerateNextTxPacket()
       PW_LOCKS_EXCLUDED(tx_mutex_)
-          PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex()) override;
+          PW_EXCLUSIVE_LOCKS_REQUIRED(l2cap_tx_mutex()) override;
 
   // Replenish some of the remote's credits.
   pw::Status ReplenishRxCredits(uint16_t additional_rx_credits)

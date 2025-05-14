@@ -109,7 +109,7 @@ class RfcommChannel final : public L2capChannel {
       ChannelEventCallback&& event_fn);
 
   [[nodiscard]] std::optional<H4PacketWithH4> GenerateNextTxPacket()
-      PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex()) override;
+      PW_EXCLUSIVE_LOCKS_REQUIRED(l2cap_tx_mutex()) override;
 
   // Parses out RFCOMM payload from `l2cap_pdu` and calls
   // `SendPayloadFromControllerToClient`.

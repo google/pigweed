@@ -220,9 +220,8 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
       L2capChannelEvent event = L2capChannelEvent::kChannelClosedByOther);
 
   // For derived channels to use in lock annotations.
-  const sync::Mutex& send_queue_mutex() const
-      PW_LOCK_RETURNED(send_queue_mutex_) {
-    return send_queue_mutex_;
+  const sync::Mutex& l2cap_tx_mutex() const PW_LOCK_RETURNED(tx_mutex_) {
+    return tx_mutex_;
   }
 
   //----------------
@@ -241,13 +240,13 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   StatusWithMultiBuf WriteLocked(pw::multibuf::MultiBuf&& payload);
 
   // Pop front buffer. Queue must be nonempty.
-  void PopFrontPayload() PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
+  void PopFrontPayload() PW_EXCLUSIVE_LOCKS_REQUIRED(tx_mutex_);
 
   // Returns span over front buffer. Queue must be nonempty.
   ConstByteSpan GetFrontPayloadSpan() const
-      PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
+      PW_EXCLUSIVE_LOCKS_REQUIRED(tx_mutex_);
 
-  bool PayloadQueueEmpty() const PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_);
+  bool PayloadQueueEmpty() const PW_EXCLUSIVE_LOCKS_REQUIRED(tx_mutex_);
 
   // Reserve an L2CAP over ACL over H4 packet, with those three headers
   // populated for an L2CAP PDU payload of `data_length` bytes addressed to
@@ -275,7 +274,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // packets. When calling this method, ensure no locks are held that are
   // also acquired in `Dequeue()` overrides, and that the channels lock is
   // not held either.
-  void DrainChannelQueuesIfNewTx() PW_LOCKS_EXCLUDED(send_queue_mutex_);
+  void DrainChannelQueuesIfNewTx() PW_LOCKS_EXCLUDED(tx_mutex_);
 
   // Remove all packets from queue.
   void ClearQueue();
@@ -309,7 +308,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   void Undefine();
 
   // Helper for move constructor and move assignment.
-  void MoveFields(L2capChannel& other) PW_LOCKS_EXCLUDED(send_queue_mutex_);
+  void MoveFields(L2capChannel& other) PW_LOCKS_EXCLUDED(tx_mutex_);
 
   L2capChannelManager& l2cap_channel_manager_;
 
@@ -342,7 +341,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Returns PW_STATUS_UNAVAILABLE if queue is full (transient error).
   // Returns PW_STATUS_FAILED_PRECONDITION if channel is not `State::kRunning`.
   StatusWithMultiBuf QueuePayload(multibuf::MultiBuf&& buf)
-      PW_LOCKS_EXCLUDED(send_queue_mutex_);
+      PW_LOCKS_EXCLUDED(tx_mutex_);
 
   // Return the next Tx H4 based on the client's queued payloads. If the
   // returned PDU will complete the transmission of a payload, that payload
@@ -351,19 +350,18 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Subclasses should override to generate correct H4 packet from their
   // payload.
   virtual std::optional<H4PacketWithH4> GenerateNextTxPacket()
-      PW_EXCLUSIVE_LOCKS_REQUIRED(send_queue_mutex_) = 0;
+      PW_EXCLUSIVE_LOCKS_REQUIRED(tx_mutex_) = 0;
 
-  // `L2capChannelManager` and channel may concurrently call functions that
-  // access queue.
-  sync::Mutex send_queue_mutex_;
+  // Mutex for guarding tx state.
+  sync::Mutex tx_mutex_;
 
   // Stores client Tx payload buffers.
   InlineQueue<multibuf::MultiBuf, kQueueCapacity> payload_queue_
-      PW_GUARDED_BY(send_queue_mutex_);
+      PW_GUARDED_BY(tx_mutex_);
 
   // True if the last queue attempt didn't have space. Will be cleared on
   // successful dequeue.
-  bool notify_on_dequeue_ PW_GUARDED_BY(send_queue_mutex_) = false;
+  bool notify_on_dequeue_ PW_GUARDED_BY(tx_mutex_) = false;
 
   //--------------
   //  Rx (private)
