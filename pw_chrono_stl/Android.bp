@@ -31,6 +31,7 @@ cc_library_static {
         // targets built with this backend can use dynamic allocation.
         "-DPW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION=1",
     ],
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     header_libs: [

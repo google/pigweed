@@ -82,6 +82,7 @@ cc_library_headers {
     export_include_dirs: [
         "public",
     ],
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
 }
@@ -585,6 +586,7 @@ genrule {
 cc_library_static {
     name: "pw_rpc_echo_service_nanopb",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     export_include_dirs: ["public/pw_rpc"],
@@ -619,6 +621,7 @@ genrule {
 cc_library_static {
     name: "pw_rpc_echo_service_pwpb",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     export_include_dirs: ["public/pw_rpc"],

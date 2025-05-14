@@ -19,6 +19,7 @@ package {
 cc_library_headers {
     name: "pw_log",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     export_include_dirs: ["public"],
     host_supported: true,
@@ -27,6 +28,7 @@ cc_library_headers {
 cc_library_headers {
     name: "pw_log_pwpb",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     static_libs: [
         "pw_toolchain",

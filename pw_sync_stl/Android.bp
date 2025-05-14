@@ -23,6 +23,7 @@ cc_library_static {
         "public",
         "public_overrides",
     ],
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     srcs: [

@@ -28,6 +28,7 @@ cc_library {
         "crc16_ccitt.cc",
         "crc32.cc",
     ],
+    cmake_snapshot_supported: true,
     host_supported: true,
     vendor_available: true,
 }

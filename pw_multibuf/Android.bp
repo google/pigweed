@@ -44,6 +44,7 @@ cc_library_static {
         "pw_log",
         "pw_sync",
     ],
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     static_libs: [
@@ -91,6 +92,7 @@ cc_library_static {
         "pw_multibuf",
         "pw_result",
     ],
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
 }

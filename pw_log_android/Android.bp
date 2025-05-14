@@ -19,6 +19,7 @@ package {
 cc_library_static {
     name: "pw_log_android",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     export_include_dirs: [
@@ -47,6 +48,7 @@ cc_library_static {
 // library.
 cc_library_static {
     name: "pw_log_android_stderr",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     shared_libs: [

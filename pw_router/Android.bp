@@ -47,6 +47,7 @@ cc_library_static {
         "pw_router.packet_parser",
         "pw_status",
     ],
+    cmake_snapshot_supported: true,
     host_supported: true,
     vendor_available: true,
 }

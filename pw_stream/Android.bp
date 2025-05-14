@@ -19,6 +19,7 @@ package {
 cc_library_static {
     name: "pw_stream",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     export_include_dirs: ["public"],
     defaults: [
@@ -57,6 +58,7 @@ cc_library_static {
 cc_library_static {
     name: "pw_stream_std_file_stream",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     defaults: [

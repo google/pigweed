@@ -22,6 +22,7 @@ package {
 cc_library_static {
     name: "pw_sys_io_stdio",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     defaults: [

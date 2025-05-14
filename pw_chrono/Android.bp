@@ -22,6 +22,7 @@ cc_library_headers {
     export_include_dirs: [
         "public",
     ],
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     static_libs: [

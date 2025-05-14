@@ -27,6 +27,7 @@ cc_library_static {
         "thread_creation_public_overrides",
         "yield_public_overrides",
     ],
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     defaults: [

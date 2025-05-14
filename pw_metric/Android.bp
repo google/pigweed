@@ -50,6 +50,7 @@ cc_library {
     srcs: [
         "metric.cc",
     ],
+    cmake_snapshot_supported: true,
     host_supported: true,
     vendor_available: true,
 }
@@ -89,6 +90,7 @@ genrule {
 cc_library_headers {
     name: "pw_metric_service_pwpb",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     generated_headers: [
@@ -104,6 +106,7 @@ cc_library_headers {
 cc_library_headers {
     name: "pw_metric_service_raw",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     host_supported: true,
     generated_headers: [

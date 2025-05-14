@@ -186,6 +186,7 @@ genrule {
 cc_library_headers {
     name: "pw_bluetooth_emboss_group",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     export_generated_headers: [
         "pw_bluetooth_generate_emboss_att",
@@ -215,6 +216,7 @@ cc_library_headers {
 cc_library_headers {
     name: "pw_bluetooth_emboss_util_include_dirs",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     export_include_dirs: ["public"],
     host_supported: true,
@@ -223,6 +225,7 @@ cc_library_headers {
 cc_library_static {
     name: "pw_bluetooth_hci_util",
     cpp_std: "c++20",
+    cmake_snapshot_supported: true,
     vendor_available: true,
     export_include_dirs: ["public"],
     host_supported: true,
