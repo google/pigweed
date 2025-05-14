@@ -70,7 +70,8 @@ class L2capCoc : public L2capChannel {
   L2capCoc& operator=(L2capCoc&& other) = delete;
   ~L2capCoc() override;
 
-  StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload) override;
+  /// Check if the passed Write parameter is acceptable.
+  Status DoCheckWriteParameter(pw::multibuf::MultiBuf& payload) override;
 
   /// Send an L2CAP_FLOW_CONTROL_CREDIT_IND signaling packet to dispense the
   /// remote peer additional L2CAP connection-oriented channel credits for this

@@ -89,8 +89,8 @@ class RfcommChannel final : public L2capChannel {
       Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
       ChannelEventCallback&& event_fn);
 
-  // Overridden here to do additional length checks.
-  StatusWithMultiBuf Write(multibuf::MultiBuf&& payload) override;
+  /// Check if the passed Write parameter is acceptable.
+  Status DoCheckWriteParameter(pw::multibuf::MultiBuf& payload) override;
 
   Config rx_config() const { return rx_config_; }
   Config tx_config() const { return tx_config_; }

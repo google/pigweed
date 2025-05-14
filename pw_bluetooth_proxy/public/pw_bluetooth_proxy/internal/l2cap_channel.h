@@ -110,7 +110,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   /// @endrst
   // TODO: https://pwbug.dev/388082771 - Plan to eventually move this to
   // ClientChannel.
-  virtual StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload);
+  StatusWithMultiBuf Write(pw::multibuf::MultiBuf&& payload);
 
   /// Determine if channel is ready to accept one or more Write payloads.
   ///
@@ -227,6 +227,9 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //----------------
   //  Tx (protected)
   //----------------
+
+  /// Check if the passed Write parameter is acceptable.
+  virtual Status DoCheckWriteParameter(pw::multibuf::MultiBuf& payload) = 0;
 
   // Channels that need to send a payload during handling a received packet
   // directly (for instance to replenish credits) should use this function which

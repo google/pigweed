@@ -34,8 +34,8 @@ class GattNotifyChannel : public L2capChannel {
   /// Return the attribute handle of this GattNotify channel.
   uint16_t attribute_handle() const { return attribute_handle_; }
 
-  // Overridden here to do additional length checks.
-  StatusWithMultiBuf Write(multibuf::MultiBuf&& attribute_value) override;
+  /// Check if the passed Write parameter is acceptable.
+  Status DoCheckWriteParameter(pw::multibuf::MultiBuf& payload) override;
 
  protected:
   static pw::Result<GattNotifyChannel> Create(

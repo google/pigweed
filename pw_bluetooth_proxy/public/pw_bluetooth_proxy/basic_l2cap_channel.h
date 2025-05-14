@@ -41,8 +41,8 @@ class BasicL2capChannel : public L2capChannel {
   BasicL2capChannel& operator=(BasicL2capChannel&& other) = default;
   ~BasicL2capChannel() override;
 
-  // Overridden here to do additional length checks.
-  StatusWithMultiBuf Write(multibuf::MultiBuf&& payload) override;
+  /// Check if the passed Write parameter is acceptable.
+  Status DoCheckWriteParameter(pw::multibuf::MultiBuf& payload) override;
 
  protected:
   explicit BasicL2capChannel(

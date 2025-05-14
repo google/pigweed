@@ -54,14 +54,14 @@ constexpr size_t kCreditsFieldSize = 1;
 
 }  // namespace
 
-StatusWithMultiBuf RfcommChannel::Write(multibuf::MultiBuf&& payload) {
+Status RfcommChannel::DoCheckWriteParameter(pw::multibuf::MultiBuf& payload) {
   if (payload.size() > tx_config_.max_information_length - kCreditsFieldSize) {
     PW_LOG_WARN("Payload (%zu bytes) is too large. So will not process.",
                 payload.size());
-    return {Status::InvalidArgument(), std::move(payload)};
+    return Status::InvalidArgument();
   }
 
-  return L2capChannel::Write(std::move(payload));
+  return pw::OkStatus();
 }
 
 std::optional<H4PacketWithH4> RfcommChannel::GenerateNextTxPacket() {

@@ -134,6 +134,10 @@ void L2capChannel::InternalClose(L2capChannelEvent event) {
 void L2capChannel::Undefine() { state_ = State::kUndefined; }
 
 StatusWithMultiBuf L2capChannel::Write(pw::multibuf::MultiBuf&& payload) {
+  Status status = DoCheckWriteParameter(payload);
+  if (!status.ok()) {
+    return {status, std::move(payload)};
+  }
   StatusWithMultiBuf result = WriteLocked(std::move(payload));
   l2cap_channel_manager_.DrainChannelQueuesIfNewTx();
   return result;

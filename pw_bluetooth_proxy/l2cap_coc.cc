@@ -64,16 +64,15 @@ L2capCoc::L2capCoc(L2capCoc&& other)
   }
 }
 
-StatusWithMultiBuf L2capCoc::Write(multibuf::MultiBuf&& payload) {
+Status L2capCoc::DoCheckWriteParameter(pw::multibuf::MultiBuf& payload) {
   if (payload.size() > tx_mtu_) {
     PW_LOG_ERROR(
         "Payload (%zu bytes) exceeds MTU (%d bytes). So will not process.",
         payload.size(),
         tx_mtu_);
-    return {Status::InvalidArgument(), std::move(payload)};
+    return Status::InvalidArgument();
   }
-
-  return L2capChannel::Write(std::move(payload));
+  return pw::OkStatus();
 }
 
 pw::Result<L2capCoc> L2capCoc::Create(

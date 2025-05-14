@@ -19,6 +19,7 @@
 #include "pw_bluetooth/emboss_util.h"
 #include "pw_bluetooth/l2cap_frames.emb.h"
 #include "pw_log/log.h"
+#include "pw_status/status.h"
 
 namespace pw::bluetooth::proxy {
 
@@ -78,27 +79,27 @@ std::optional<H4PacketWithH4> GattNotifyChannel::GenerateNextTxPacket() {
   return h4_packet;
 }
 
-StatusWithMultiBuf GattNotifyChannel::Write(
-    multibuf::MultiBuf&& attribute_value) {
+Status GattNotifyChannel::DoCheckWriteParameter(
+    pw::multibuf::MultiBuf& payload) {
   std::optional<uint16_t> max_l2cap_payload_size = MaxL2capPayloadSize();
   if (!max_l2cap_payload_size) {
     PW_LOG_ERROR("Tried to write before LE_Read_Buffer_Size processed.");
-    return {Status::FailedPrecondition(), std::move(attribute_value)};
+    return Status::FailedPrecondition();
   }
   if (*max_l2cap_payload_size <= emboss::AttHandleValueNtf::MinSizeInBytes()) {
     PW_LOG_ERROR("LE ACL data packet size limit does not support writing.");
-    return {Status::FailedPrecondition(), std::move(attribute_value)};
+    return Status::FailedPrecondition();
   }
   const uint16_t max_attribute_size =
       *max_l2cap_payload_size - emboss::AttHandleValueNtf::MinSizeInBytes();
-  if (attribute_value.size() > max_attribute_size) {
+  if (payload.size() > max_attribute_size) {
     PW_LOG_ERROR("Attribute too large (%zu > %d). So will not process.",
-                 attribute_value.size(),
+                 payload.size(),
                  max_attribute_size);
-    return {pw::Status::InvalidArgument(), std::move(attribute_value)};
+    return pw::Status::InvalidArgument();
   }
 
-  return L2capChannel::Write(std::move(attribute_value));
+  return pw::OkStatus();
 }
 
 pw::Result<GattNotifyChannel> GattNotifyChannel::Create(

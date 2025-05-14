@@ -51,14 +51,14 @@ pw::Result<BasicL2capChannel> BasicL2capChannel::Create(
       /*event_fn=*/std::move(event_fn));
 }
 
-StatusWithMultiBuf BasicL2capChannel::Write(multibuf::MultiBuf&& payload) {
+Status BasicL2capChannel::DoCheckWriteParameter(
+    pw::multibuf::MultiBuf& payload) {
   if (!IsOkL2capDataLength(payload.size())) {
     PW_LOG_WARN("Payload (%zu bytes) is too large. So will not process.",
                 payload.size());
-    return {Status::InvalidArgument(), std::move(payload)};
+    return Status::InvalidArgument();
   }
-
-  return L2capChannel::Write(std::move(payload));
+  return OkStatus();
 }
 
 std::optional<H4PacketWithH4> BasicL2capChannel::GenerateNextTxPacket() {
