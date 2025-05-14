@@ -296,6 +296,7 @@ doxygen(
         # TODO: https://pwbug.dev/393634135 - Fix all Doxygen warnings.
         "WARN_LOGFILE = doxygen_build_logs.txt",
     ],
+    tags = ["manual"],
     # Don't use rules_doxygen's `aliases` attribute. Define aliases within
     # `configurations`. The `aliases` attribute doesn't render aliases with
     # args correctly: https://github.com/TendTo/rules_doxygen/issues/12
@@ -339,6 +340,7 @@ sphinx_docs_library(
 
 sphinx_build_binary(
     name = "sphinx_build",
+    tags = ["manual"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         "//pw_build/py:pigweed_upstream_build",
@@ -400,6 +402,7 @@ sphinx_docs(
     ],
     sphinx = ":sphinx_build",
     strip_prefix = "docs/",
+    tags = ["manual"],
     target_compatible_with = incompatible_with_mcu(),
     deps = [
         ":doxygen_html",
