@@ -630,9 +630,7 @@ class Peer final {
   //     it.
   const DeviceAddress& address() const { return *address_; }
 
-  // TODO: b/404642497 - Calculate whether the identity is known instead of
-  // using a bug-prone variable that can be out of sync.
-  bool identity_known() const { return identity_known_; }
+  bool identity_known() const { return address().IsPublic() || bonded(); }
 
   // The LMP version of this device obtained doing discovery.
   const std::optional<pw::bluetooth::emboss::CoreSpecificationVersion>&
@@ -739,11 +737,6 @@ class Peer final {
     lmp_subversion_ = subversion;
   }
 
-  // Marks this device's identity as known. Called by PeerCache when
-  // initializing a bonded device and by LowEnergyData when setting bond data
-  // with an identity address.
-  void set_identity_known(bool value) { identity_known_ = value; }
-
   // Update the connectable status of this peer. This is useful if the peer
   // sends both non-connectable and connectable advertisements (e.g. when it is
   // a beacon).
@@ -824,7 +817,6 @@ class Peer final {
   StringInspectable<TechnologyType> technology_;
 
   StringInspectable<DeviceAddress> address_;
-  bool identity_known_;
 
   StringInspectable<std::optional<PeerName>> name_;
   // TODO(fxbug.dev/42177971): Coordinate this field with the appearance read

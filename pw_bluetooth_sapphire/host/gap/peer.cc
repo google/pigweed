@@ -276,7 +276,6 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
   // Update to the new identity address if the current address is random.
   if (peer_->address().type() == DeviceAddress::Type::kLERandom &&
       bond_data.identity_address) {
-    peer_->set_identity_known(true);
     peer_->set_address(*bond_data.identity_address);
   }
 
@@ -286,10 +285,6 @@ void Peer::LowEnergyData::SetBondData(const sm::PairingData& bond_data) {
 
 void Peer::LowEnergyData::ClearBondData() {
   PW_CHECK(bond_data_->has_value());
-  if (bond_data_->value().irk &&
-      peer_->address().type() == DeviceAddress::Type::kLERandom) {
-    peer_->set_identity_known(false);
-  }
   bond_data_.Set(std::nullopt);
 }
 
@@ -619,7 +614,6 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback,
                       : TechnologyType::kLowEnergy,
                   [](TechnologyType t) { return TechnologyTypeToString(t); }),
       address_(address, MakeToStringInspectConvertFunction()),
-      identity_known_(false),
       name_(std::nullopt,
             [](const std::optional<PeerName>& v) {
               return v ? v->name +
@@ -648,11 +642,6 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback,
   PW_DCHECK(update_expiry_callback_);
   PW_DCHECK(dual_mode_callback_);
   PW_DCHECK(identifier.IsValid());
-
-  if (address.type() == DeviceAddress::Type::kBREDR ||
-      address.type() == DeviceAddress::Type::kLEPublic) {
-    identity_known_ = true;
-  }
 
   // Initialize transport-specific state.
   if (*technology_ == TechnologyType::kClassic) {

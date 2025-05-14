@@ -75,7 +75,6 @@ class PeerFuzzer final {
         &PeerFuzzer::SetFeaturePage,
         &PeerFuzzer::set_last_page_number,
         &PeerFuzzer::set_version,
-        &PeerFuzzer::set_identity_known,
         &PeerFuzzer::set_connectable,
     };
     std::invoke(fdp().PickValueInArray(kFuzzFunctions), this);
@@ -279,8 +278,6 @@ class PeerFuzzer final {
         fdp().ConsumeIntegral<uint16_t>(),
         fdp().ConsumeIntegral<uint16_t>());
   }
-
-  void set_identity_known() { peer_.set_identity_known(fdp().ConsumeBool()); }
 
   void set_connectable() {
     // It doesn't make sense to make a peer unconnectable and it fires lots of
