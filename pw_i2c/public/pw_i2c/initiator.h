@@ -133,7 +133,9 @@ class Initiator {
   Status WriteReadFor(Address device_address,
                       ConstByteSpan tx_buffer,
                       ByteSpan rx_buffer,
-                      chrono::SystemClock::duration timeout);
+                      chrono::SystemClock::duration timeout) {
+    return DoWriteReadFor(device_address, tx_buffer, rx_buffer, timeout);
+  }
 
   /// Performs multiple arbitrary reads and writes to an I2C device as one
   /// atomic transaction. Each part of the transaction is referred to as a
@@ -379,19 +381,22 @@ class Initiator {
   // this format.
   // Implement DoTransferFor(Messages) as a preferred course of action.
   //
+  // The default implementation of this function will forward calls to
+  // TransferFor().
+  //
   // Both the read and write parameters should be transmitted in one bus
   // operation using a repeated start condition.
   // If both parameters are present, the write operation is performed first.
   virtual Status DoWriteReadFor(Address,
                                 ConstByteSpan,
                                 ByteSpan,
-                                chrono::SystemClock::duration) {
-    return Status::Unimplemented();
-  }
+                                chrono::SystemClock::duration);
 
   // This method should be overridden by implementations of Initiator.
   // All messages in one call to DoTransferFor() should be executed
-  // as one transaction.
+  // as one bus transaction with repeated starts.
+  //
+  // The default implementation returns Status::Unimplemented().
   virtual Status DoTransferFor(span<const Message> messages,
                                chrono::SystemClock::duration timeout);
 
