@@ -55,13 +55,11 @@ fn test_thread_entry_b(_arg: usize) {
 
 #[allow(dead_code)]
 fn test_thread_entry_c(_arg: usize) {
-    info!("Thread C starting");
     thread_c();
 }
 
 #[allow(dead_code)]
 fn test_thread_entry_d(_arg: usize) {
-    info!("Thread D starting");
     thread_d();
 }
 
@@ -94,20 +92,12 @@ fn thread_b() {
 
 fn thread_c() {
     loop {
-        let val = SysCall::debug_add(0xdecaf000, 0xbad);
-        match val {
-            Ok(val) => info!("Thread C: retval: {:08x}", val as u32),
-            Err(e) => info!("error: {}", e as u32),
-        }
+        let _val = SysCall::debug_add(0xdecaf000, 0xbad);
     }
 }
 
 fn thread_d() {
     loop {
-        let val = SysCall::debug_add(0xcafe0000, 0xcafe);
-        match val {
-            Ok(val) => info!("Thread D: retval: {:08x}", val as u32),
-            Err(e) => info!("error: {}", e as u32),
-        }
+        let _val = SysCall::debug_add(0xcafe0000, 0xcafe);
     }
 }

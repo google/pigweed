@@ -185,10 +185,13 @@ fn save_exception_frame(asm: &mut String, kernel_mode: &KernelMode) {
     if kernel_mode.save_psp_needed() {
         asm.push_str(
             "
+            mrs     r1, control
             mrs     r0, psp
-            push    {{ r0, lr }}
+            push    {{ r0 - r1, lr }}
+
             push    {{ r4 - r11 }}
             mov     r0, sp
+            sub     sp, 4   // Align stack to 8 bytes
             ",
         );
     } else {
@@ -208,9 +211,12 @@ fn restore_exception_frame(asm: &mut String, kernel_mode: &KernelMode) {
             "
             mov     sp, r0
             pop     {{ r4 - r11 }}
-            pop     {{r0}}
+
+            pop     {{ r0 - r1 }}
             msr     psp, r0
-            pop     {{pc}}
+            msr     control, r1
+
+            pop     {{ pc }}
     ",
         );
     } else {

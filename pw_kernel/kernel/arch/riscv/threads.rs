@@ -12,12 +12,15 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+use core::arch::naked_asm;
+use core::mem::{self, MaybeUninit};
+
+use log_if::debug_if;
+
+use crate::arch::riscv::regs::{MStatusVal, PrivilegeLevel};
 use crate::arch::{Arch, ArchInterface};
 use crate::scheduler::{self, thread::Stack, SchedulerState};
 use crate::sync::spinlock::SpinLockGuard;
-use core::arch::naked_asm;
-use core::mem::{self, MaybeUninit};
-use log_if::debug_if;
 
 const LOG_CONTEXT_SWITCH: bool = false;
 const LOG_THREAD_CREATE: bool = false;
@@ -49,6 +52,7 @@ impl ArchThreadState {
         &mut self,
         kernel_stack: Stack,
         trampoline: extern "C" fn(),
+        initial_mstatus: MStatusVal,
         initial_sp: usize,
         initial_function: extern "C" fn(usize, usize),
         (arg0, arg1): (usize, usize),
@@ -70,6 +74,7 @@ impl ArchThreadState {
             (*frame).s1 = arg0;
             (*frame).s2 = arg1;
             (*frame).s5 = initial_sp;
+            (*frame).s6 = initial_mstatus.0;
         }
 
         self.frame = frame
@@ -107,7 +112,14 @@ impl super::super::ThreadState for ArchThreadState {
         initial_function: extern "C" fn(usize, usize),
         args: (usize, usize),
     ) {
-        self.initialize_frame(kernel_stack, asm_trampoline, 0x0, initial_function, args);
+        self.initialize_frame(
+            kernel_stack,
+            asm_trampoline,
+            MStatusVal::default(),
+            0x0,
+            initial_function,
+            args,
+        );
     }
 
     #[cfg(feature = "user_space")]
@@ -118,9 +130,14 @@ impl super::super::ThreadState for ArchThreadState {
         initial_function: extern "C" fn(usize, usize),
         args: (usize, usize),
     ) {
+        let mstatus = MStatusVal::default()
+            .with_mpie(true)
+            .with_spie(true)
+            .with_mpp(PrivilegeLevel::User);
         self.initialize_frame(
             kernel_stack,
             asm_user_trampoline,
+            mstatus,
             initial_sp as usize,
             initial_function,
             args,
@@ -188,16 +205,17 @@ extern "C" fn asm_user_trampoline() {
                 // Store the kernel stack pointer in mscratch.
                 csrw    mscratch, sp
 
-                // Set initial SP as pass in by `initialize_frame()`
+                // Set initial SP as passed in by `initialize_frame()`.
                 mv      sp, s5
 
-                // Set args for function call
-                mv      a0, s0
-                mv      a1, s1
-                mv      a2, s2
+                // Set args for function call.
+                mv      a0, s1
+                mv      a1, s2
 
-                // TODO: mret into non-privileged mode
-                tail    trampoline
+                // Mstatus and Mepc are set up for a return to U-Mode.
+                csrw    mstatus, s6
+                csrw    mepc, s0
+                mret
             "
         )
     }

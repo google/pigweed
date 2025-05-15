@@ -16,7 +16,8 @@ use regs::*;
 
 #[allow(unused_macros)]
 macro_rules! ro_csr_reg {
-    ($name:ident, $val_type:ident, $reg_ame:ident) => {
+    ($name:ident, $val_type:ident, $reg_ame:ident, $doc:literal) => {
+        #[doc=$doc]
         pub struct $name;
         impl $name {
             #[inline]
@@ -30,7 +31,8 @@ macro_rules! ro_csr_reg {
 }
 
 macro_rules! rw_csr_reg {
-    ($name:ident, $val_type:ident, $reg_name:ident) => {
+    ($name:ident, $val_type:ident, $reg_name:ident, $doc:literal) => {
+        #[doc=$doc]
         pub struct $name;
         impl $name {
             #[allow(dead_code)]
@@ -119,4 +121,58 @@ impl MCauseVal {
     }
 }
 
-rw_csr_reg!(MCause, MCauseVal, mcause);
+rw_csr_reg!(MCause, MCauseVal, mcause, "Machine Cause Register");
+
+/// Execution Privilege Level
+///
+/// Only Machine mode is guaranteed to be implemented.
+#[allow(dead_code)]
+#[repr(usize)]
+pub enum PrivilegeLevel {
+    User = 0b00,
+    Supervisor = 0b01,
+    Reserved = 0b10,
+    Machine = 0b11,
+}
+
+#[derive(Copy, Clone, Default)]
+#[repr(transparent)]
+pub struct MStatusVal(pub usize);
+
+impl MStatusVal {
+    rw_bool_field!(usize, sie, 1, "S-mode interrupt enable");
+    rw_bool_field!(usize, mie, 3, "M-mode interrupt enable");
+    rw_bool_field!(usize, spie, 5, "S-mode prior interrupt enable");
+    rw_bool_field!(usize, ube, 6, "U-mode big endian");
+    rw_bool_field!(usize, mpie, 7, "M-Mode prior interrupt enable");
+    rw_bool_field!(usize, spp, 8, "S-Mode previous privilege");
+    rw_int_field!(usize, vs, 9, 10, u8, "vector extension state");
+    rw_enum_field!(
+        usize,
+        mpp,
+        11,
+        12,
+        PrivilegeLevel,
+        "M-Mode previous privilege"
+    );
+    rw_int_field!(usize, fs, 13, 14, u8, "FPU state");
+    rw_int_field!(usize, xs, 15, 16, u8, "user mode extension state");
+    rw_bool_field!(usize, mprv, 17, "modify privilege");
+    rw_bool_field!(usize, sum, 18, "supervisor memory access");
+    rw_bool_field!(usize, mxr, 19, "make executable readable");
+    rw_bool_field!(usize, tvm, 20, "trap virtual memory");
+    rw_bool_field!(usize, tw, 21, "timeout wait");
+    rw_bool_field!(usize, tsr, 22, "trap sret");
+
+    // Only RV32 fields are enumerated.
+
+    /// Extract the state dirty field.
+    #[inline]
+    pub fn sd(&self) -> bool {
+        // is_negative() is used to as a word size independent way to test the
+        // high bit.
+        (self.0 as isize).is_negative()
+    }
+}
+
+rw_csr_reg!(MStatus, MStatusVal, mstatus, "Machine Status Register");

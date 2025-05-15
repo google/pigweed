@@ -23,6 +23,7 @@ use crate::arch::arm_cortex_m::exceptions::{
     exception, ExcReturn, ExcReturnFrameType, ExcReturnMode, ExcReturnRegisterStacking,
     ExcReturnStack, ExceptionFrame, KernelExceptionFrame, RetPsrVal,
 };
+use crate::arch::arm_cortex_m::regs::msr::{ControlVal, Spsel};
 use crate::arch::arm_cortex_m::{in_interrupt_handler, Arch};
 use crate::arch::ArchInterface;
 use crate::scheduler::{self, thread::Stack, SchedulerState, SCHEDULER_STATE};
@@ -53,23 +54,25 @@ impl ArchThreadState {
         &mut self,
         user_frame: *mut ExceptionFrame,
         kernel_frame: *mut KernelExceptionFrame,
+        control: ControlVal,
         psp: u32,
         return_address: ExcReturn,
-        initial_function: extern "C" fn(usize, usize),
-        (arg0, arg1): (usize, usize),
+        initial_pc: usize,
+        (r0, r1, r2): (usize, usize, usize),
     ) {
         // Clear the stack and set up the exception frame such that it would
         // return to the function passed in with arg0 and arg1 passed in the
         // first two argument slots.
         unsafe {
             (*user_frame) = mem::zeroed();
-            (*user_frame).r0 = initial_function as u32;
-            (*user_frame).r1 = arg0 as u32;
-            (*user_frame).r2 = arg1 as u32;
-            (*user_frame).pc = trampoline as u32;
+            (*user_frame).r0 = r0 as u32;
+            (*user_frame).r1 = r1 as u32;
+            (*user_frame).r2 = r2 as u32;
+            (*user_frame).pc = initial_pc as u32;
             (*user_frame).psr = RetPsrVal(0).with_t(true);
             (*kernel_frame) = mem::zeroed();
             (*kernel_frame).psp = psp;
+            (*kernel_frame).control = control;
             (*kernel_frame).return_address = return_address.bits() as u32;
         }
         self.frame = kernel_frame;
@@ -144,15 +147,22 @@ impl super::super::ThreadState for ArchThreadState {
             size_of::<ExceptionFrame>(),
             STACK_ALIGNMENT,
         );
+
         let kernel_frame = Stack::aligned_stack_allocation(
             user_frame,
             size_of::<KernelExceptionFrame>(),
-            STACK_ALIGNMENT,
+            // For kernel threads, kernel_frame needs to come immediately after
+            // the user stack regardless of alignment because that is what the
+            // exception wrapper assembly expects.
+            size_of::<usize>(),
         );
 
         self.initialize_frame(
             user_frame as *mut ExceptionFrame,
             kernel_frame as *mut KernelExceptionFrame,
+            ControlVal::default()
+                .with_npriv(false)
+                .with_spsel(Spsel::Main),
             0x0,
             ExcReturn::new(
                 ExcReturnStack::MainSecure,
@@ -160,8 +170,8 @@ impl super::super::ThreadState for ArchThreadState {
                 ExcReturnFrameType::Standard,
                 ExcReturnMode::ThreadSecure,
             ),
-            initial_function,
-            args,
+            trampoline as usize,
+            (initial_function as usize, args.0, args.1),
         );
     }
 
@@ -178,14 +188,19 @@ impl super::super::ThreadState for ArchThreadState {
             size_of::<ExceptionFrame>(),
             STACK_ALIGNMENT,
         );
+
         let kernel_frame = Stack::aligned_stack_allocation(
             kernel_stack.end(),
             size_of::<KernelExceptionFrame>(),
             STACK_ALIGNMENT,
         );
+
         self.initialize_frame(
             user_frame as *mut ExceptionFrame,
             kernel_frame as *mut KernelExceptionFrame,
+            ControlVal::default()
+                .with_npriv(true)
+                .with_spsel(Spsel::Process),
             user_frame as u32,
             ExcReturn::new(
                 ExcReturnStack::ThreadSecure,
@@ -193,8 +208,8 @@ impl super::super::ThreadState for ArchThreadState {
                 ExcReturnFrameType::Standard,
                 ExcReturnMode::ThreadSecure,
             ),
-            initial_function,
-            args,
+            initial_function as usize,
+            (args.0, args.1, 0x0),
         );
     }
 }

@@ -26,7 +26,7 @@ pub fn handle_syscall(
     _arg2: usize,
     _arg3: usize,
 ) -> Result<u64> {
-    log_if::debug_if!(SYSCALL_DEBUG, "syscall {:#06x}", id as usize);
+    log_if::debug_if!(SYSCALL_DEBUG, "syscall: {:#06x}", id as usize);
 
     // Instead of having a architecture independent match here, an array of
     // extern "C" function pointers could be kept and use the architecture's
@@ -38,11 +38,18 @@ pub fn handle_syscall(
     let res = match id {
         SysCallId::DebugNoOp => Ok(0),
         SysCallId::DebugAdd => {
+            log_if::debug_if!(
+                SYSCALL_DEBUG,
+                "syscall: DebugAdd({:#x}, {:#x}) sleeping",
+                arg0 as usize,
+                arg1 as usize,
+            );
             crate::sleep_until(crate::Clock::now() + crate::Duration::from_secs(1));
+            log_if::debug_if!(SYSCALL_DEBUG, "sycall: DebugAdd woken");
             Ok((arg0 + arg1) as u64)
         }
     };
-    log_if::debug_if!(SYSCALL_DEBUG, "syscall {:#06x} returning", id as usize);
+    log_if::debug_if!(SYSCALL_DEBUG, "syscall: {:#06x} returning", id as usize);
     res
 }
 

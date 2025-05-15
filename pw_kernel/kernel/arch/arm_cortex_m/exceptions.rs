@@ -21,6 +21,8 @@ pub(crate) use arm_cortex_m_macro::user_space_exception as exception;
 use pw_log::info;
 use regs::*;
 
+use crate::arch::arm_cortex_m::regs::msr::ControlVal;
+
 /// Combined Exception Return Program Status Register Value
 #[repr(transparent)]
 pub struct RetPsrVal(pub u32);
@@ -200,8 +202,14 @@ pub struct KernelExceptionFrame {
     pub r9: u32,
     pub r10: u32,
     pub r11: u32,
+
     #[cfg(feature = "user_space")]
     pub psp: u32,
+    #[cfg(feature = "user_space")]
+    pub control: ControlVal,
+
+    // return_address needs to be the last entry of the frame as it is popped
+    // off the stack directly into `pc` causing the exception to return.
     pub return_address: u32,
 }
 
@@ -218,8 +226,8 @@ impl KernelExceptionFrame {
             self.r8 as u32, self.r9 as u32, self.r10 as u32, self.r11 as u32
         );
         info!(
-            "psp {:#010x} return_address {:#010x}",
-            self.psp as u32, self.return_address as u32,
+            "psp {:#010x} control {:#010x} return_address {:#010x}",
+            self.psp as u32, self.control.0 as u32, self.return_address as u32,
         );
 
         let user_frame = if self.return_address & (ExcReturn::SP_SEL as u32) == 0 {

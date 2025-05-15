@@ -14,6 +14,7 @@
 #![allow(dead_code)]
 
 pub mod mpu;
+pub mod msr;
 pub mod nvic;
 pub mod scb;
 pub mod systick;

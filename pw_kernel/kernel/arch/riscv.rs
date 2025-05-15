@@ -34,6 +34,21 @@ impl ArchInterface for Arch {
         // Make sure interrupts are disabled
         Self::disable_interrupts();
 
+        // Hard code full access for U-Mode in the PMP.
+        //
+        // TODO: konkers - Replace with calls to PMP support code when written.
+        unsafe {
+            asm!(
+                "
+                    csrw    pmpaddr0, zero
+                    csrw    pmpaddr1, {pmpaddr1}
+                    csrw    pmpcfg0, {pmpcfg0}
+                ",
+                pmpaddr1 = in(reg) 0xffff_ffffu32,
+                pmpcfg0 = in(reg) 0x0000_0f17u32,
+            );
+        }
+
         timer::early_init();
     }
 

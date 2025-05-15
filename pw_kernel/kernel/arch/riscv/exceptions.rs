@@ -14,7 +14,7 @@
 use log_if::debug_if;
 use pw_log::info;
 
-use crate::arch::riscv::regs::{Cause, Exception, Interrupt, MCause, MCauseVal};
+use crate::arch::riscv::regs::{Cause, Exception, Interrupt, MCause, MCauseVal, MStatus};
 use crate::arch::riscv::timer;
 use crate::syscall::raw_handle_syscall;
 
@@ -85,13 +85,14 @@ fn exception_handler(exception: Exception, mepc: usize, frame: &mut TrapFrame) {
     // For now, always dump the exception we've received and halt.
     debug_if!(
         LOG_EXCEPTIONS,
-        "Exception exception {:x} mepc {:x}",
+        "Exception exception {:x} mepc {:x} current mstatus {:x}",
         exception as usize,
         mepc as usize,
+        MStatus::read().0 as usize,
     );
 
     match exception {
-        Exception::EnvironmentCallFromMMode => {
+        Exception::EnvironmentCallFromUMode | Exception::EnvironmentCallFromMMode => {
             handle_ecall(frame);
         }
         Exception::Breakpoint => {

@@ -35,6 +35,7 @@ rust_library(
         "arch/arm_cortex_m/features.rs",
         "arch/arm_cortex_m/regs.rs",
         "arch/arm_cortex_m/regs/mpu.rs",
+        "arch/arm_cortex_m/regs/msr.rs",
         "arch/arm_cortex_m/regs/nvic.rs",
         "arch/arm_cortex_m/regs/scb.rs",
         "arch/arm_cortex_m/regs/systick.rs",
