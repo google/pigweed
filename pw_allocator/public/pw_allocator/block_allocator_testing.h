@@ -400,4 +400,8 @@ class BlockAllocatorFuzzer : public TestHarness {
   BlockAllocatorType& allocator_;
 };
 
+template <typename BlockAllocatorType>
+BlockAllocatorFuzzer(BlockAllocatorType&)
+    -> BlockAllocatorFuzzer<BlockAllocatorType>;
+
 }  // namespace pw::allocator::test

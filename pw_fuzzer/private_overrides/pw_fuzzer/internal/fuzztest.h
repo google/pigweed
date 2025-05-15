@@ -136,6 +136,9 @@ struct TypeCheckFuzzTest {
   }
 };
 
+template <typename TargetFunction>
+TypeCheckFuzzTest(TargetFunction) -> TypeCheckFuzzTest<TargetFunction>;
+
 }  // namespace internal
 
 // The remaining functions match those defined by fuzztest/fuzztest.h.

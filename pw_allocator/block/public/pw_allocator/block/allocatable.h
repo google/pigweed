@@ -282,13 +282,13 @@ template <typename Derived>
 constexpr BlockResult<Derived> AllocatableBlock<Derived>::AllocFirst(
     Derived*&& block, Layout layout) {
   if (block == nullptr || layout.size() == 0) {
-    return BlockResult(block, Status::InvalidArgument());
+    return BlockResult<Derived>(block, Status::InvalidArgument());
   }
   if constexpr (Hardening::kIncludesRobustChecks) {
     block->CheckInvariants();
   }
   if (!block->IsFree()) {
-    return BlockResult(block, Status::FailedPrecondition());
+    return BlockResult<Derived>(block, Status::FailedPrecondition());
   }
   return Derived::DoAllocFirst(std::move(block), layout);
 }
@@ -300,14 +300,14 @@ constexpr BlockResult<Derived> AllocatableBlock<Derived>::DoAllocFirst(
   layout = Layout(size, layout.alignment());
   StatusWithSize can_alloc = block->DoCanAlloc(layout);
   if (!can_alloc.ok()) {
-    return BlockResult(block, can_alloc.status());
+    return BlockResult<Derived>(block, can_alloc.status());
   }
   size_t extra = can_alloc.size();
-  BlockResult result(block);
+  BlockResult<Derived> result(block);
   if (extra >= Derived::kMinOuterSize) {
     // Split the large padding off the back.
     block->DoSplitFirst(block->InnerSize() - extra);
-    result = BlockResult(block, BlockResultNext::kSplitNew);
+    result = BlockResult<Derived>(block, BlockResultNext::kSplitNew);
   }
   block->SetFree(false);
   return result;
@@ -317,13 +317,13 @@ template <typename Derived>
 constexpr BlockResult<Derived> AllocatableBlock<Derived>::AllocLast(
     Derived*&& block, Layout layout) {
   if (block == nullptr || layout.size() == 0) {
-    return BlockResult(block, Status::InvalidArgument());
+    return BlockResult<Derived>(block, Status::InvalidArgument());
   }
   if constexpr (Hardening::kIncludesRobustChecks) {
     block->CheckInvariants();
   }
   if (!block->IsFree()) {
-    return BlockResult(block, Status::FailedPrecondition());
+    return BlockResult<Derived>(block, Status::FailedPrecondition());
   }
   return Derived::DoAllocLast(std::move(block), layout);
 }
@@ -335,22 +335,23 @@ constexpr BlockResult<Derived> AllocatableBlock<Derived>::DoAllocLast(
   layout = Layout(size, layout.alignment());
   StatusWithSize can_alloc = block->DoCanAlloc(layout);
   if (!can_alloc.ok()) {
-    return BlockResult(block, can_alloc.status());
+    return BlockResult<Derived>(block, can_alloc.status());
   }
   size_t extra = can_alloc.size();
-  BlockResult result(block);
+  BlockResult<Derived> result(block);
   Derived* prev = block->Prev();
   if (extra >= Derived::kMinOuterSize) {
     // Split the large padding off the front.
     block = block->DoSplitLast(layout.size());
     prev = block->Prev();
-    result = BlockResult(block, BlockResultPrev::kSplitNew);
+    result = BlockResult<Derived>(block, BlockResultPrev::kSplitNew);
 
   } else if (extra != 0 && prev != nullptr) {
     // The small amount of padding can be appended to the previous block.
     prev->DoResize(prev->InnerSize() + extra, true).IgnoreUnlessStrict();
     block = prev->Next();
-    result = BlockResult(block, BlockResultPrev::kResizedLarger, extra);
+    result =
+        BlockResult<Derived>(block, BlockResultPrev::kResizedLarger, extra);
   }
   block->SetFree(false);
   return result;
@@ -363,7 +364,7 @@ constexpr BlockResult<Derived> AllocatableBlock<Derived>::Resize(
     derived()->CheckInvariants();
   }
   if (derived()->IsFree()) {
-    return BlockResult(derived(), Status::FailedPrecondition());
+    return BlockResult<Derived>(derived(), Status::FailedPrecondition());
   }
   return derived()->DoResize(new_inner_size, /* shifted: */ false);
 }
@@ -374,17 +375,17 @@ constexpr BlockResult<Derived> AllocatableBlock<Derived>::DoResize(
   size_t old_inner_size = derived()->InnerSize();
   new_inner_size = AlignUp(new_inner_size, Derived::kAlignment);
   if (old_inner_size == new_inner_size) {
-    return BlockResult(derived());
+    return BlockResult<Derived>(derived());
   }
 
   // Treat the block as free and try to combine it with the next block. At most
   // one free block is expected to follow this block.
   derived()->SetFree(true);
   Derived* next = derived()->Next();
-  BlockResult result(derived());
+  BlockResult<Derived> result(derived());
   if (next != nullptr && next->IsFree()) {
     derived()->DoMergeNext();
-    result = BlockResult(derived(), BlockResultNext::kMerged);
+    result = BlockResult<Derived>(derived(), BlockResultNext::kMerged);
   }
   size_t merged_inner_size = derived()->InnerSize();
   if (merged_inner_size < new_inner_size) {
@@ -394,14 +395,14 @@ constexpr BlockResult<Derived> AllocatableBlock<Derived>::DoResize(
       derived()->DoSplitFirst(old_inner_size);
     }
     derived()->SetFree(false);
-    return BlockResult(derived(), Status::ResourceExhausted());
+    return BlockResult<Derived>(derived(), Status::ResourceExhausted());
   }
   if (new_inner_size + Derived::kMinOuterSize <= merged_inner_size) {
     // There is enough room after the resized block for another trailing block.
     derived()->DoSplitFirst(new_inner_size);
     result = result.next() == BlockResultNext::kMerged
-                 ? BlockResult(derived(), BlockResultNext::kResized)
-                 : BlockResult(derived(), BlockResultNext::kSplitNew);
+                 ? BlockResult<Derived>(derived(), BlockResultNext::kResized)
+                 : BlockResult<Derived>(derived(), BlockResultNext::kSplitNew);
   }
   derived()->SetFree(false);
   return result;
@@ -411,7 +412,7 @@ template <typename Derived>
 constexpr BlockResult<Derived> AllocatableBlock<Derived>::Free(
     Derived*&& block) {
   if (block == nullptr) {
-    return BlockResult(block, Status::InvalidArgument());
+    return BlockResult<Derived>(block, Status::InvalidArgument());
   }
   if constexpr (Hardening::kIncludesRobustChecks) {
     block->CheckInvariants();
@@ -423,21 +424,21 @@ template <typename Derived>
 constexpr BlockResult<Derived> AllocatableBlock<Derived>::DoFree(
     Derived*&& block) {
   block->SetFree(true);
-  BlockResult result(block);
+  BlockResult<Derived> result(block);
 
   // Try to merge the previous block with this one.
   Derived* prev = block->Prev();
   if (prev != nullptr && prev->IsFree()) {
     prev->DoMergeNext();
     block = prev;
-    result = BlockResult(block, BlockResultNext::kMerged);
+    result = BlockResult<Derived>(block, BlockResultNext::kMerged);
   }
 
   // Try to merge this block with the next one.
   Derived* next = block->Next();
   if (next != nullptr && next->IsFree()) {
     block->DoMergeNext();
-    result = BlockResult(block, BlockResultNext::kMerged);
+    result = BlockResult<Derived>(block, BlockResultNext::kMerged);
   }
 
   if constexpr (Hardening::kIncludesDebugChecks) {

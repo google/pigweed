@@ -38,7 +38,7 @@ class FreeListHeapBufferTest : public ::testing::Test {
 // Unit tests.
 
 TEST_F(FreeListHeapBufferTest, CanAllocate) {
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   void* ptr = allocator.Allocate(kN / 4);
   ASSERT_NE(ptr, nullptr);
@@ -55,7 +55,7 @@ TEST_F(FreeListHeapBufferTest, CanAllocate) {
 }
 
 TEST_F(FreeListHeapBufferTest, AllocationsDontOverlap) {
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   void* ptr1 = allocator.Allocate(kN / 4);
   ASSERT_NE(ptr1, nullptr);
@@ -79,7 +79,7 @@ TEST_F(FreeListHeapBufferTest, AllocationsDontOverlap) {
 }
 
 TEST_F(FreeListHeapBufferTest, CanFreeAndRealloc) {
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   void* ptr1 = allocator.Allocate(kN / 4);
   allocator.Free(ptr1);
@@ -95,7 +95,7 @@ TEST_F(FreeListHeapBufferTest, CanFreeAndRealloc) {
 }
 
 TEST_F(FreeListHeapBufferTest, ReturnsNullWhenAllocationTooLarge) {
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   EXPECT_EQ(allocator.Allocate(kN), nullptr);
 }
@@ -106,7 +106,7 @@ TEST_F(FreeListHeapBufferTest, ReturnsNullWhenFull) {
   auto buffer = pw::ByteSpan(buffer_).subspan(offset);
   size_t inner_size = buffer.size() - BlockType::kBlockOverhead;
 
-  FreeListHeapBuffer allocator(buffer);
+  FreeListHeapBuffer<> allocator(buffer);
   void* ptr1 = allocator.Allocate(inner_size);
   ASSERT_NE(ptr1, nullptr);
 
@@ -118,7 +118,7 @@ TEST_F(FreeListHeapBufferTest, ReturnsNullWhenFull) {
 }
 
 TEST_F(FreeListHeapBufferTest, ReturnedPointersAreAligned) {
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   void* ptr1 = allocator.Allocate(1);
 
@@ -139,7 +139,7 @@ TEST_F(FreeListHeapBufferTest, ReturnedPointersAreAligned) {
 }
 
 TEST_F(FreeListHeapBufferTest, CanRealloc) {
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   void* ptr1 = allocator.Allocate(kN / 4);
   ASSERT_NE(ptr1, nullptr);
@@ -152,7 +152,7 @@ TEST_F(FreeListHeapBufferTest, CanRealloc) {
 }
 
 TEST_F(FreeListHeapBufferTest, ReallocHasSameContent) {
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   size_t val1 = 42;
   void* ptr1 = allocator.Allocate(sizeof(size_t));
@@ -172,7 +172,7 @@ TEST_F(FreeListHeapBufferTest, ReallocHasSameContent) {
 }
 
 TEST_F(FreeListHeapBufferTest, ReallocSmallerSize) {
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   void* ptr1 = allocator.Allocate(kN / 4);
   ASSERT_NE(ptr1, nullptr);
@@ -186,7 +186,7 @@ TEST_F(FreeListHeapBufferTest, ReallocSmallerSize) {
 }
 
 TEST_F(FreeListHeapBufferTest, ReallocTooLarge) {
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   void* ptr1 = allocator.Allocate(kN / 4);
   ASSERT_NE(ptr1, nullptr);
@@ -204,7 +204,7 @@ TEST_F(FreeListHeapBufferTest, CanCalloc) {
   constexpr size_t kSize = 128;
   constexpr std::array<std::byte, kNum * kSize> kZero = {std::byte(0)};
 
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   void* ptr1 = allocator.Calloc(kNum, kSize);
   ASSERT_NE(ptr1, nullptr);
@@ -221,7 +221,7 @@ TEST_F(FreeListHeapBufferTest, CanCallocWeirdSize) {
   constexpr size_t kSize = 128;
   constexpr std::array<std::byte, kNum * kSize> kZero = {std::byte(0)};
 
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   void* ptr1 = allocator.Calloc(kNum, kSize);
   ASSERT_NE(ptr1, nullptr);
@@ -234,7 +234,7 @@ TEST_F(FreeListHeapBufferTest, CanCallocWeirdSize) {
 }
 
 TEST_F(FreeListHeapBufferTest, CallocTooLarge) {
-  FreeListHeapBuffer allocator(buffer_);
+  FreeListHeapBuffer<> allocator(buffer_);
 
   void* ptr1 = allocator.Calloc(1, kN + 1);
   EXPECT_EQ(ptr1, nullptr);

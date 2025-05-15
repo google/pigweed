@@ -134,7 +134,7 @@ constexpr BlockResult<Derived> AlignableBlock<Derived>::DoAllocFirst(
   layout = Layout(size, layout.alignment());
   StatusWithSize can_alloc = block->DoCanAlloc(layout);
   if (!can_alloc.ok()) {
-    return BlockResult(block, can_alloc.status());
+    return BlockResult<Derived>(block, can_alloc.status());
   }
   size_t extra = can_alloc.size();
   size_t leading_outer_size = extra - AlignDown(extra, layout.alignment());
@@ -146,7 +146,7 @@ constexpr BlockResult<Derived> AlignableBlock<Derived>::DoAllocFirst(
                                   layout.alignment());
   }
   if (leading_outer_size > extra) {
-    return BlockResult(block, Status::ResourceExhausted());
+    return BlockResult<Derived>(block, Status::ResourceExhausted());
   }
 
   // Allocate the aligned block.
@@ -166,7 +166,7 @@ constexpr BlockResult<Derived> AlignableBlock<Derived>::DoAllocLast(
   layout = Layout(size, layout.alignment());
   StatusWithSize can_alloc = block->DoCanAlloc(layout);
   if (!can_alloc.ok()) {
-    return BlockResult(block, can_alloc.status());
+    return BlockResult<Derived>(block, can_alloc.status());
   }
   size_t leading_outer_size = can_alloc.size();
 
@@ -192,7 +192,7 @@ constexpr BlockResult<Derived> AlignableBlock<Derived>::DoAllocAligned(
     return resize_result;
   }
 
-  return BlockResult(
+  return BlockResult<Derived>(
       block, alloc_result.prev(), resize_result.next(), alloc_result.size());
 }
 

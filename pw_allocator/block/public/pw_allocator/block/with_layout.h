@@ -168,9 +168,9 @@ constexpr BlockResult<Derived> BlockWithLayout<Derived>::DoFree(
   // Reclaim bytes that were shifted to prev when the block allocated.
   size_t old_prev_size = prev->OuterSize();
   prev->DoResize(prev_size, true).IgnoreUnlessStrict();
-  return BlockResult(prev->Next(),
-                     BlockResultPrev::kResizedSmaller,
-                     old_prev_size - prev->OuterSize());
+  return BlockResult<Derived>(prev->Next(),
+                              BlockResultPrev::kResizedSmaller,
+                              old_prev_size - prev->OuterSize());
 }
 
 }  // namespace pw::allocator

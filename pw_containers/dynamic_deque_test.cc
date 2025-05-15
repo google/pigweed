@@ -419,7 +419,7 @@ void PerformRandomOperations(int iterations, uint_fast32_t seed) {
   static std::byte buffer[2048];
   std::memset(buffer, 0, sizeof(buffer));
 
-  pw::allocator::FirstFitAllocator allocator(buffer);
+  pw::allocator::FirstFitAllocator<> allocator(buffer);
   pw::DynamicDeque<Counter> deque(allocator);
 
   std::deque<int> oracle;
