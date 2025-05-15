@@ -15,6 +15,7 @@
 #![feature(const_trait_impl)]
 #![feature(naked_functions)]
 
+use core::cell::UnsafeCell;
 use foreign_box::ForeignBox;
 use pw_log::info;
 
@@ -32,7 +33,7 @@ use kernel_config::{KernelConfig, KernelConfigInterface};
 use scheduler::SCHEDULER_STATE;
 pub use scheduler::{
     sleep_until, start_thread,
-    thread::{Stack, Thread},
+    thread::{Process, Stack, Thread},
     yield_timeslice,
 };
 pub use timer::{Clock, Duration};
@@ -86,6 +87,43 @@ impl Default for ThreadBuffer {
 
 pub struct Kernel {}
 
+pub struct StaticProcess {
+    process_cell: UnsafeCell<Process>,
+}
+
+#[allow(dead_code)]
+impl StaticProcess {
+    pub const fn new(name: &'static str) -> Self {
+        Self {
+            process_cell: UnsafeCell::new(Process::new(name)),
+        }
+    }
+
+    pub fn get(&self) -> *mut Process {
+        self.process_cell.get()
+    }
+}
+
+unsafe impl Sync for StaticProcess {}
+unsafe impl Send for StaticProcess {}
+
+#[cfg(feature = "user_space")]
+#[macro_export]
+macro_rules! init_non_priv_process {
+    ($name:literal) => {{
+        use kernel::StaticProcess;
+        use pw_log::info;
+        info!(
+            "allocating non-privileged process: {}",
+            $name as &'static str
+        );
+
+        static process: StaticProcess = StaticProcess::new($name);
+        unsafe { (*process.get()).register() };
+        &process
+    }};
+}
+
 #[macro_export]
 macro_rules! init_thread {
     ($name:literal, $entry:expr, $stack_size:expr) => {{
@@ -118,12 +156,14 @@ macro_rules! init_thread {
     }};
 }
 
+#[cfg(feature = "user_space")]
 #[macro_export]
 macro_rules! init_non_priv_thread {
-    ($name:literal, $entry:expr, $stack_size:expr) => {{
+    ($name:literal, $process:expr, $entry:expr, $stack_size:expr) => {{
+        use pw_log::info;
         info!(
-            "allocating non-privileged thread: {}",
-            $name as &'static str
+            "allocating non-privileged thread: {}, entry {:#x}",
+            $name as &'static str, $entry as usize
         );
         use $crate::Stack;
         use $crate::ThreadBuffer;
@@ -139,26 +179,29 @@ macro_rules! init_non_priv_thread {
             "initializing non-privileged thread: {}",
             $name as &'static str
         );
-        thread.initialize_non_priv_thread(
-            {
-                static mut STACK_STORAGE: $crate::StackStorage<{ $stack_size }> =
-                    $crate::StackStorageExt::ZEROED;
-                #[allow(static_mut_refs)]
-                unsafe {
-                    Stack::from_slice(&STACK_STORAGE)
-                }
-            },
-            {
-                static mut STACK_STORAGE: $crate::StackStorage<{ $stack_size }> =
-                    $crate::StackStorageExt::ZEROED;
-                #[allow(static_mut_refs)]
-                unsafe {
-                    Stack::from_slice(&STACK_STORAGE)
-                }
-            },
-            $entry,
-            0,
-        );
+        unsafe {
+            thread.initialize_non_priv_thread(
+                {
+                    static mut STACK_STORAGE: $crate::StackStorage<{ $stack_size }> =
+                        $crate::StackStorageExt::ZEROED;
+                    #[allow(static_mut_refs)]
+                    unsafe {
+                        Stack::from_slice(&STACK_STORAGE)
+                    }
+                },
+                {
+                    static mut STACK_STORAGE: $crate::StackStorage<{ $stack_size }> =
+                        $crate::StackStorageExt::ZEROED;
+                    #[allow(static_mut_refs)]
+                    unsafe {
+                        Stack::from_slice(&STACK_STORAGE)
+                    }
+                },
+                $process.get(),
+                $entry,
+                0,
+            );
+        }
 
         thread
     }};

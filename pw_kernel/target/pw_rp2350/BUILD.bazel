@@ -37,7 +37,7 @@ platform(
 )
 
 system_image(
-    name = "kernel_demo",
+    name = "kernel_only_demo",
     kernel = ":target",
     platform = ":pw_rp2350",
     tags = ["kernel"],
@@ -49,7 +49,6 @@ COMMON_DEPS = [
     ":console",
     ":linker_script",
     "//pw_kernel/kernel",
-    "//pw_kernel/target:demo",
     "//pw_kernel/target:target_common",
     "@rust_crates//:cortex-m",
     "@rust_crates//:cortex-m-rt",
@@ -65,7 +64,9 @@ rust_binary(
     target_compatible_with = [
         "//pw_build/constraints/arm:cortex-m33",
     ],
-    deps = COMMON_DEPS,
+    deps = [
+        "//pw_kernel/apps/kernel_only_demo:demo",
+    ] + COMMON_DEPS,
 )
 
 # When building as a unit test runner, this target will be depended upon by

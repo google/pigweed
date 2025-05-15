@@ -23,7 +23,8 @@ impl TargetInterface for Target {
     const NAME: &'static str = "Host";
 
     fn main() -> ! {
-        demo::main()
+        #[allow(clippy::empty_loop)]
+        loop {}
     }
 
     // Use the default noop implementations.

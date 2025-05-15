@@ -11,3 +11,21 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+
+load("@rules_rust//rust:defs.bzl", "rust_library")
+
+package(default_visibility = ["//visibility:public"])
+
+rust_library(
+    name = "userspace_demo",
+    srcs = ["main.rs"],
+    tags = ["kernel"],
+    deps = [
+        "//pw_kernel/config:kernel_config",
+        "//pw_kernel/kernel",
+        "//pw_kernel/lib/pw_assert",
+        "//pw_kernel/lib/time",
+        "//pw_kernel/syscall:syscall_user",
+        "//pw_log/rust:pw_log",
+    ],
+)

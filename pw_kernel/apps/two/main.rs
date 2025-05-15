@@ -14,17 +14,10 @@
 #![no_main]
 #![no_std]
 
-use pw_tokenizer::tokenize_core_fmt_to_buffer;
-
-// Cortex-M runtime entry macro.
-#[cfg(feature = "arch_arm_cortex_m")]
-use cortex_m_rt::entry;
+use userspace::entry;
 
 #[entry]
 fn entry() -> ! {
-    // populate the tokenized database
-    let mut buffer = [0u8; 1024];
-    let _ = tokenize_core_fmt_to_buffer!(&mut buffer, "App two tokenized string {}", 2 as i32);
     loop {}
 }
 

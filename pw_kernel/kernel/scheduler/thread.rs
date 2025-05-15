@@ -254,10 +254,15 @@ impl Thread {
     }
 
     #[cfg(feature = "user_space")]
-    pub fn initialize_non_priv_thread(
+    /// # Safety
+    /// It is up to the caller to ensure that *process is valid.
+    /// Initialize the mutable parts of the non privileged thread, must be
+    /// called once per thread prior to starting it
+    pub unsafe fn initialize_non_priv_thread(
         &mut self,
         kernel_stack: Stack,
         main_stack: Stack,
+        process: *mut Process,
         entry_point: fn(usize),
         arg: usize,
     ) -> &mut Thread {
@@ -276,8 +281,6 @@ impl Thread {
                 args,
             );
         }
-        // TODO: konkers - pass process in as an argument once we support user processes.
-        let process = SCHEDULER_STATE.lock().kernel_process.get();
         unsafe { self.initialize(process, kernel_stack) }
     }
 

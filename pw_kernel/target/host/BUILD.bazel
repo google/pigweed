@@ -20,7 +20,6 @@ load("//pw_kernel:flags.bzl", "KERNEL_COMMON_FLAGS")
 COMMON_DEPS = [
     "//pw_kernel/kernel",
     "//pw_kernel/subsys/console:console_backend",
-    "//pw_kernel/target:demo",
     "//pw_kernel/target:target_common",
 ]
 

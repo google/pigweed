@@ -181,6 +181,13 @@ impl<'data> SystemImage<'data> {
                 .builder
                 .segments
                 .add_load_segment(segment.p_flags, segment.p_align);
+            // Make sure to preserve the addresses where the original
+            // segment is loaded, as add_load_segment() will change
+            // them.
+            // TODO: davidroth - investigate submitting an upstream
+            // path to make this more robust and not require fixup.
+            new_segment.p_paddr = segment.p_paddr;
+            new_segment.p_vaddr = segment.p_vaddr;
             for section_id in &segment.sections {
                 let mapped_section_id = Self::get_mapped_section_id(section_map, *section_id)?;
                 let section = self.builder.sections.get_mut(mapped_section_id.unwrap());
@@ -202,7 +209,7 @@ impl<'data> SystemImage<'data> {
             // println!("Adding app symbol: {:?}", symbol);
             let new_symbol = self.builder.symbols.add();
             if symbol.st_bind() == elf::STB_GLOBAL {
-                let new_name = format!("{}.{}", symbol.name, app_name);
+                let new_name = format!("{}_{}", symbol.name, app_name);
                 new_symbol.name = new_name.into_bytes().into();
             }
             if symbol.section.is_some() {

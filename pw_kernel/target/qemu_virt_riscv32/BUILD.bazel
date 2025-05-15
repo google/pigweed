@@ -39,7 +39,7 @@ platform(
 )
 
 system_image(
-    name = "kernel_demo",
+    name = "kernel_only_demo",
     kernel = ":target",
     platform = ":qemu_virt_riscv32",
     tags = ["kernel"],
@@ -51,7 +51,6 @@ COMMON_DEPS = [
     ":console",
     ":linker_script",
     "//pw_kernel/kernel",
-    "//pw_kernel/target:demo",
     "//pw_kernel/target:target_common",
     "@rust_crates//:panic-halt",
     "@rust_crates//:riscv",
@@ -66,7 +65,9 @@ rust_binary(
     target_compatible_with = [
         "@platforms//cpu:riscv32",
     ],
-    deps = COMMON_DEPS,
+    deps = [
+        "//pw_kernel/apps/kernel_only_demo:demo",
+    ] + COMMON_DEPS,
 )
 
 # When building as a unit test runner, this target will be depended upon by

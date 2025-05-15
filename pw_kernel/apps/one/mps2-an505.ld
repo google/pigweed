@@ -19,15 +19,9 @@
  * complex projects and devices, it's possible this linker script will not be
  * sufficient as-is.
  *
- * This linker script is likely not suitable for a project with a bootloader.
  */
 
-/* Note: This technically doesn't set the firmware's entry point. Setting the
- *       firmware entry point is done by setting vector_table[1]
- *       (Reset_Handler). However, this DOES tell the compiler how to optimize
- *       when --gc-sections is enabled.
- */
-ENTRY(Reset)
+ENTRY(_start)
 
 MEMORY
 {
@@ -35,10 +29,8 @@ MEMORY
    * memory regions.
    */
 
-  /* Vector Table (typically in flash) */
-  VECTOR_TABLE(rx) : ORIGIN = 0x10600000, LENGTH = 2048
   /* Internal Flash */
-  FLASH(rx) : ORIGIN = 0x10600800, LENGTH = 255K
+  FLASH(rx) : ORIGIN = 0x10600000, LENGTH = 255K
   /* Internal SRAM */
   RAM(rwx) : ORIGIN = 0x38020000, LENGTH = 64K
 
@@ -65,50 +57,12 @@ MEMORY
 
 SECTIONS
 {
-  /* This is the link-time vector table. If used, the VTOR (Vector Table Offset
-   * Register) MUST point to this memory location in order to be used. This can
-   * be done by ensuring this section exists at the default location of the VTOR
-   * so it's used on reset, or by explicitly setting the VTOR in a bootloader
-   * manually to point to &pw_boot_vector_table_addr before interrupts are
-   * enabled.
-   *
-   * The ARMv7-M architecture requires this is at least aligned to 128 bytes,
-   * and aligned to a power of two that is greater than 4 times the number of
-   * supported exceptions. 512 has been selected as it accommodates most
-   * devices' vector tables.
-   */
-  .vector_table : ALIGN(512)
-  {
-    LONG(pw_boot_stack_high_addr);
-    pw_boot_vector_table_addr = .;
-    KEEP(*(.vector_table))
-    KEEP(*(.vector_table.reset_vector))
-    KEEP(*(.vector_table.exceptions))
-    KEEP(*(.vector_table.interrupts))
-  } >VECTOR_TABLE
-
-  /* Represents unused space in the VECTOR_TABLE segment. This MUST be the last
-   * section assigned to the VECTOR_TABLE region.
-   */
-  .VECTOR_TABLE.unused_space (NOLOAD) : ALIGN(4)
-  {
-    . = ABSOLUTE(ORIGIN(VECTOR_TABLE) + LENGTH(VECTOR_TABLE));
-  } >VECTOR_TABLE
-
-
   /* Main executable code. */
   .code : ALIGN(4)
   {
     . = ALIGN(4);
-    /* cortex-m-rt expects these to be nearby each other because short branches
-     * are used.
-     */
-
-    *(.PreResetTrampoline);
-    *(.Reset);
-    *(.HardFaultTrampoline);
-    *(.HardFault.*);
-
+    /* Ensure the entry is at the beginning */
+    KEEP(*(.text.entrypoint))
     /* Application code. */
     *(.text)
     *(.text*)
@@ -172,7 +126,7 @@ SECTIONS
    * https://discourse.llvm.org/t/lld-vs-ld-section-type-progbits-vs-nobits/5999/3
    *
    * Zero initialized global/static data (.bss) is initialized in
-   * pw_boot_Entry() via memset(), so the section doesn't need to be loaded from
+   * _start, so the section doesn't need to be loaded from
    * flash. The .heap and .stack sections don't require any initialization,
    * as they only represent allocated memory regions, so they also do not need
    * to be loaded.
@@ -228,7 +182,7 @@ SECTIONS
   }
 }
 
-/* Symbols used by core_init.c: */
+/* Symbols used by _start: */
 /* Start of .static_init_ram in FLASH. */
 _pw_static_init_flash_start = LOADADDR(.static_init_ram);
 
@@ -240,34 +194,12 @@ _pw_static_init_ram_end = _pw_static_init_ram_start + SIZEOF(.static_init_ram);
 _pw_zero_init_ram_start = ADDR(.zero_init_ram);
 _pw_zero_init_ram_end = _pw_zero_init_ram_start + SIZEOF(.zero_init_ram);
 
-/* Symbols needed for the Rust cortex-m-rt crate. */
-__sbss = _pw_zero_init_ram_start;
-__ebss = _pw_zero_init_ram_end;
-__sdata = _pw_static_init_ram_start;
-__edata = _pw_static_init_ram_end;
-__sidata = LOADADDR(.static_init_ram);
-__pre_init = DefaultPreInit;
-PROVIDE(DefaultHandler = DefaultHandler_);
-PROVIDE(NonMaskableInt = DefaultHandler);
-PROVIDE(MemoryManagement = DefaultHandler);
-PROVIDE(BusFault = DefaultHandler);
-PROVIDE(UsageFault = DefaultHandler);
-PROVIDE(SecureFault = DefaultHandler);
-PROVIDE(SVCall = DefaultHandler);
-PROVIDE(DebugMonitor = DefaultHandler);
-PROVIDE(PendSV = DefaultHandler);
-PROVIDE(SysTick = DefaultHandler);
-PROVIDE(HardFault = HardFault_);
-
 /* arm-none-eabi expects `end` symbol to point to start of heap for sbrk. */
 PROVIDE(end = _pw_zero_init_ram_end);
 
 /* These symbols are used by pw_bloat.bloaty_config to create the memoryregions
  * data source for bloaty in this format (where the optional _N defaults to 0):
  * pw_bloat_config_memory_region_NAME_{start,end}{_N,} */
-pw_bloat_config_memory_region_VECTOR_TABLE_start = ORIGIN(VECTOR_TABLE);
-pw_bloat_config_memory_region_VECTOR_TABLE_end =
-    ORIGIN(VECTOR_TABLE) + LENGTH(VECTOR_TABLE);
 pw_bloat_config_memory_region_FLASH_start = ORIGIN(FLASH);
 pw_bloat_config_memory_region_FLASH_end = ORIGIN(FLASH) + LENGTH(FLASH);
 pw_bloat_config_memory_region_RAM_start = ORIGIN(RAM);

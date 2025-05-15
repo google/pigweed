@@ -11,24 +11,10 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#![no_main]
 #![no_std]
 
-use pw_tokenizer::tokenize_core_fmt_to_buffer;
-
-// Cortex-M runtime entry macro.
 #[cfg(feature = "arch_arm_cortex_m")]
-use cortex_m_rt::entry;
+pub use userspace_macro::arm_cortex_m_entry as entry;
 
-#[entry]
-fn entry() -> ! {
-    // populate the tokenized database
-    let mut buffer = [0u8; 1024];
-    let _ = tokenize_core_fmt_to_buffer!(&mut buffer, "App one tokenized string {}", 1 as i32);
-    loop {}
-}
-
-#[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
-    loop {}
-}
+#[cfg(feature = "arch_riscv")]
+pub use userspace_macro::riscv_entry as entry;

@@ -37,19 +37,19 @@ platform(
 )
 
 system_image(
-    name = "userspace_demo",
-    apps = [
-        "//pw_kernel/target/example/apps/one",
-        "//pw_kernel/target/example/apps/two",
-    ],
+    name = "kernel_only_demo",
     kernel = ":target",
     platform = ":mps2_an505",
     tags = ["kernel"],
 )
 
 system_image(
-    name = "kernel_demo",
-    kernel = ":target",
+    name = "userspace_demo",
+    apps = [
+        "//pw_kernel/apps/one",
+        "//pw_kernel/apps/two",
+    ],
+    kernel = ":userspace_target",
     platform = ":mps2_an505",
     tags = ["kernel"],
 )
@@ -60,7 +60,6 @@ COMMON_DEPS = [
     ":linker_script",
     "//pw_kernel/kernel",
     "//pw_kernel/subsys/console:console_backend_semihosting",
-    "//pw_kernel/target:demo",
     "//pw_kernel/target:target_common",
     "@rust_crates//:cortex-m",
     "@rust_crates//:cortex-m-rt",
@@ -76,7 +75,25 @@ rust_binary(
         "//pw_build/constraints/arm:cortex-m33",
     ],
     visibility = ["//visibility:public"],
-    deps = COMMON_DEPS,
+    deps = [
+        "//pw_kernel/apps/kernel_only_demo:demo",
+    ] + COMMON_DEPS,
+)
+
+rust_binary(
+    name = "userspace_target",
+    srcs = [
+        "userspace_target.rs",
+    ],
+    edition = "2021",
+    tags = ["kernel"],
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pw_kernel/apps/userspace_demo",
+    ] + COMMON_DEPS,
 )
 
 # When building as a unit test runner, this target will be depended upon by

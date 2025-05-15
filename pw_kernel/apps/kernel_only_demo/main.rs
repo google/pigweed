@@ -19,9 +19,6 @@ use kernel_config::{KernelConfig, KernelConfigInterface};
 use pw_log::info;
 use time::Clock as _;
 
-// TODO - konkers: move into "real" user space
-use syscall_user::*;
-
 pub fn main() -> ! {
     let thread_b = kernel::init_thread!(
         "B",
@@ -30,20 +27,6 @@ pub fn main() -> ! {
     );
     kernel::start_thread(thread_b);
 
-    let thread_c = kernel::init_non_priv_thread!(
-        "C",
-        test_thread_entry_c,
-        KernelConfig::KERNEL_STACK_SIZE_BYTES
-    );
-    kernel::start_thread(thread_c);
-
-    let thread_d = kernel::init_non_priv_thread!(
-        "D",
-        test_thread_entry_d,
-        KernelConfig::KERNEL_STACK_SIZE_BYTES
-    );
-    kernel::start_thread(thread_d);
-
     info!("Thread A re-using bootstrap thread");
     thread_a()
 }
@@ -51,16 +34,6 @@ pub fn main() -> ! {
 fn test_thread_entry_b(_arg: usize) {
     info!("Thread B starting");
     thread_b();
-}
-
-#[allow(dead_code)]
-fn test_thread_entry_c(_arg: usize) {
-    thread_c();
-}
-
-#[allow(dead_code)]
-fn test_thread_entry_d(_arg: usize) {
-    thread_d();
 }
 
 static TEST_COUNTER: Mutex<u64> = Mutex::new(0);
@@ -87,17 +60,5 @@ fn thread_b() {
         drop(counter);
         // Give Thread A a chance to acquire the mutex.
         kernel::yield_timeslice();
-    }
-}
-
-fn thread_c() {
-    loop {
-        let _val = SysCall::debug_add(0xdecaf000, 0xbad);
-    }
-}
-
-fn thread_d() {
-    loop {
-        let _val = SysCall::debug_add(0xcafe0000, 0xcafe);
     }
 }

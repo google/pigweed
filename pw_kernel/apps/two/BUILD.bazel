@@ -16,11 +16,6 @@ load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 
 package(default_visibility = ["//visibility:public"])
 
-CORTEX_M_DEPS = [
-    "@rust_crates//:cortex-m",
-    "@rust_crates//:cortex-m-rt",
-]
-
 rust_binary(
     name = "two",
     srcs = [
@@ -38,11 +33,8 @@ rust_binary(
     }),
     deps = [
         ":app_linker_script",
-        "//pw_tokenizer/rust:pw_tokenizer",
-    ] + select({
-        "@pigweed//pw_build/constraints/arm:cortex-m33": CORTEX_M_DEPS,
-        "//conditions:default": [],
-    }),
+        "//pw_kernel/userspace",
+    ],
 )
 
 # TODO: generate linker scripts

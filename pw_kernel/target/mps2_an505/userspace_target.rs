@@ -14,7 +14,6 @@
 #![no_std]
 #![no_main]
 
-use kernel as _;
 use console_backend as _;
 
 use target_common::{declare_target, TargetInterface};
@@ -22,37 +21,16 @@ use target_common::{declare_target, TargetInterface};
 pub struct Target {}
 
 impl TargetInterface for Target {
-    const NAME: &'static str = "QEMU-VIRT-RISCV";
+    const NAME: &'static str = "MPS2-AN505 Userspace Demo";
 
     fn main() -> ! {
-        #[cfg(not(feature = "test"))]
-        demo::main();
-
-        #[cfg(feature = "test")]
-        loop {}
+        userspace_demo::main()
     }
 }
 
 declare_target!(Target);
 
-#[riscv_rt::entry]
+#[cortex_m_rt::entry]
 fn main() -> ! {
-    // riscv does not run ctors, so we do it manually. Note that this is
-    // required in order to register tests, which is a prerequisite to calling
-    // `run_tests` below.
-    unsafe { target_common::run_ctors() };
-
-    #[cfg(not(feature = "test"))]
     kernel::Kernel::main();
-
-    #[cfg(feature = "test")]
-    {
-        use riscv_semihosting::debug::*;
-        Target::console_init();
-        exit(target_common::run_tests(EXIT_SUCCESS, EXIT_FAILURE));
-
-        // `exit` can return under rare circumstances.
-        #[allow(clippy::empty_loop)]
-        loop {}
-    }
 }

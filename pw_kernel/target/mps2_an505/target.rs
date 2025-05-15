@@ -14,6 +14,7 @@
 #![no_std]
 #![no_main]
 
+use kernel as _;
 use console_backend as _;
 
 use target_common::{declare_target, TargetInterface};
@@ -24,7 +25,11 @@ impl TargetInterface for Target {
     const NAME: &'static str = "MPS2-AN505";
 
     fn main() -> ! {
-        demo::main()
+        #[cfg(not(feature = "test"))]
+        demo::main();
+
+        #[cfg(feature = "test")]
+        loop {}
     }
 }
 

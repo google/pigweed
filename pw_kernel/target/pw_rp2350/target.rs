@@ -14,6 +14,7 @@
 #![no_std]
 #![no_main]
 
+use kernel as _;
 use console_backend as _;
 
 use rp235x_hal as hal;
@@ -81,7 +82,11 @@ impl TargetInterface for Target {
     }
 
     fn main() -> ! {
-        demo::main()
+        #[cfg(not(feature = "test"))]
+        demo::main();
+
+        #[cfg(feature = "test")]
+        loop {}
     }
 }
 
