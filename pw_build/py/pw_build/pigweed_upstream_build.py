@@ -78,7 +78,7 @@ def gn_recipe() -> BuildRecipe:
 
 def bazel_recipe() -> BuildRecipe:
     """Return the default_bazel recipe."""
-    default_bazel_targets = ['//...:all']
+    default_bazel_targets = ['//...']
 
     return BuildRecipe(
         build_dir=Path('out/bazel'),
