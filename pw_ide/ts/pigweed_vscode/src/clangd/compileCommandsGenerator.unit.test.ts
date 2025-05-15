@@ -440,6 +440,17 @@ test('parseBazelBuildCommand_singleTarget_noArgs', async () => {
   assert.deepEqual(args, []);
 });
 
+test.only('parseBazelBuildCommand_singleTargetWith@_noArgs', async () => {
+  const bazel = getReliableBazelExecutable();
+  const { targets, args } = await parseBazelBuildCommand(
+    'build @pigweed//pw_status/...',
+    bazel!,
+    workingDir.get(),
+  );
+  assert.deepEqual(targets, ['@pigweed//pw_status/...']);
+  assert.deepEqual(args, []);
+});
+
 test('parseBazelBuildCommand_multipleTargets_noArgs', async () => {
   const bazel = getReliableBazelExecutable();
   const command = 'build //pw_string:pw_string //pw_status/ts:js_files';

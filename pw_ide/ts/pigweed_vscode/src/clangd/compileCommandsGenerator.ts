@@ -716,7 +716,7 @@ export async function parseBazelBuildCommand(
   for (const part of potentialTargetsAndArgs) {
     // Basic target identification (starts with // or :)
     // More robust parsing might be needed for complex target patterns.
-    if (part.startsWith('//') || part.startsWith(':')) {
+    if (part.startsWith('//') || part.startsWith(':') || part.startsWith('@')) {
       targets.push(part);
     } else {
       // Anything else is considered a potential argument for canonicalization
