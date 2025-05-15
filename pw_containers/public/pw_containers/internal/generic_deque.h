@@ -50,6 +50,52 @@ class GenericDequeBase {
   /// Returns the maximum number of elements in the deque.
   constexpr size_type capacity() const noexcept { return capacity_; }
 
+ protected:
+  // Functions used by deque implementations
+
+  constexpr void MoveAssignIndices(GenericDequeBase& other) noexcept {
+    capacity_ = other.capacity_;
+    head_ = other.head_;
+    tail_ = other.tail_;
+    count_ = other.count_;
+
+    other.capacity_ = other.head_ = other.tail_ = other.count_ = 0;
+  }
+
+  void SwapIndices(GenericDequeBase& other) noexcept {
+    std::swap(capacity_, other.capacity_);
+    std::swap(head_, other.head_);
+    std::swap(tail_, other.tail_);
+    std::swap(count_, other.count_);
+  }
+
+  // Returns if buffer can be resized larger without moving any items. Can
+  // extend if not wrapped or if tail_ wrapped but no elements were added.
+  bool CanExtendBuffer() const { return tail_ > head_ || tail_ == 0; }
+
+  // Can only shrink if there are no empty slots at the start of the buffer.
+  bool CanShrinkBuffer() const { return head_ == 0; }
+
+  void HandleNewBuffer(size_type new_capacity) {
+    capacity_ = new_capacity;
+    head_ = 0;
+    tail_ = size() == new_capacity ? 0 : count_;  // handle full buffers
+  }
+
+  void HandleExtendedBuffer(size_type new_capacity) {
+    capacity_ = new_capacity;
+    if (tail_ == 0) {  // "unwrap" the tail if needed
+      tail_ = head_ + count_;
+    }
+  }
+
+  void HandleShrunkBuffer(size_type new_capacity) {
+    capacity_ = new_capacity;
+    if (tail_ == new_capacity) {  // wrap the tail if needed
+      tail_ = 0;
+    }
+  }
+
  private:
   // Functions needed by GenericDeque only
   template <typename Derived, typename ValueType, typename S>
@@ -367,6 +413,16 @@ class GenericDeque : public GenericDequeBase<SizeType> {
   constexpr pointer data() { return derived().data(); }
   constexpr const_pointer data() const { return derived().data(); }
 
+  // Called when an operation will increase the size beyond the capacity. Not
+  // called if the new size would have exceeded the maximum value of size_type.
+  constexpr bool GrowCapacityIfSupported(size_type new_size) {
+    if constexpr (Derived::kFixedCapacity) {
+      return false;
+    } else {
+      return derived().GrowCapacityToFit(new_size);
+    }
+  }
+
   // Make sure the container can hold one more item.
   constexpr bool CheckCapacityAddOne() {
     return size() != std::numeric_limits<size_type>::max() &&
@@ -375,7 +431,7 @@ class GenericDeque : public GenericDequeBase<SizeType> {
 
   // Make sure the container can hold at least this many elements.
   constexpr bool CheckCapacity(size_type new_size) {
-    return new_size <= capacity();
+    return new_size <= capacity() || GrowCapacityIfSupported(new_size);
   }
 
   // Appends items without checking the capacity. Capacity MUST be large enough.

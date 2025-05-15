@@ -85,6 +85,17 @@ pw_add_library(pw_containers._deque_common INTERFACE
     pw_span
 )
 
+pw_add_library(pw_containers.dynamic_deque INTERFACE
+  HEADERS
+    public/pw_containers/dynamic_deque.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers._deque_common
+    pw_allocator.allocator
+    pw_numeric.saturating_arithmetic
+)
+
 pw_add_library(pw_containers.inline_deque INTERFACE
   HEADERS
     public/pw_containers/inline_deque.h
@@ -318,6 +329,18 @@ pw_add_test(pw_containers.flat_map_test
   GROUPS
     modules
     pw_containers
+    pw_polyfill
+)
+
+pw_add_test(pw_containers.dynamic_deque_test
+  SOURCES
+    dynamic_deque_test.cc
+  PRIVATE_DEPS
+    pw_allocator.null_allocator
+    pw_allocator.testing
+    pw_containers.algorithm
+    pw_containers.dynamic_deque
+    pw_containers._test_helpers
     pw_polyfill
 )
 

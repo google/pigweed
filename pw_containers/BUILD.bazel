@@ -197,6 +197,17 @@ cc_library(
 )
 
 cc_library(
+    name = "dynamic_deque",
+    hdrs = ["public/pw_containers/dynamic_deque.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":deque_common",
+        "//pw_allocator:allocator",
+        "//pw_numeric:saturating_arithmetic",
+    ],
+)
+
+cc_library(
     name = "inline_deque",
     hdrs = ["public/pw_containers/inline_deque.h"],
     strip_include_prefix = "public",
@@ -366,6 +377,19 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "dynamic_deque_test",
+    srcs = ["dynamic_deque_test.cc"],
+    deps = [
+        ":dynamic_deque",
+        ":test_helpers",
+        "//pw_allocator:null_allocator",
+        "//pw_allocator:testing",
+        "//pw_containers:algorithm",
+        "//pw_polyfill",
+    ],
+)
+
+pw_cc_test(
     name = "inline_deque_test",
     srcs = [
         "inline_deque_test.cc",
@@ -502,6 +526,7 @@ filegroup(
     name = "doxygen",
     srcs = [
         "public/pw_containers/algorithm.h",
+        "public/pw_containers/dynamic_deque.h",
         "public/pw_containers/filtered_view.h",
         "public/pw_containers/inline_deque.h",
         "public/pw_containers/inline_queue.h",

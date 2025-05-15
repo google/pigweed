@@ -9,7 +9,14 @@ Queues
 A queue is an ordered collection designed to add items at one end and remove
 them from the other. This allows "first in, first out", or FIFO, behavior.
 Pigweed provides both single and double-ended queues that are backed by fixed
-storage.
+or dynamic storage.
+
+----------------
+pw::DynamicDeque
+----------------
+.. doxygenclass:: pw::DynamicDeque
+   :members:
+   :undoc-members:
 
 ---------------
 pw::InlineDeque
