@@ -87,7 +87,10 @@ pw_cc_test(
     srcs = [
         "flat_file_system_entry_test.cc",
     ],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":flat_file_system_entry",
     ],

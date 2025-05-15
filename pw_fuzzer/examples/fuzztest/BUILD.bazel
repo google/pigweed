@@ -47,7 +47,10 @@ pw_cc_test(
 pw_cc_test(
     name = "metrics_fuzztest",
     srcs = ["metrics_fuzztest.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":metrics_lib",
         "//pw_fuzzer:fuzztest",  # <- Added!

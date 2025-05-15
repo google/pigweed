@@ -51,6 +51,7 @@ pw_cc_test(
     srcs = [
         "intrusive_ptr_test.cc",
     ],
+    features = ["-ctad_warnings"],
     # TODO: b/260624583 - Fix this for rp2040
     target_compatible_with = select({
         "//pw_build/constraints/chipset:rp2040": ["@platforms//:incompatible"],
@@ -64,6 +65,7 @@ pw_cc_test(
     srcs = [
         "recyclable_test.cc",
     ],
+    features = ["-ctad_warnings"],
     # TODO: b/260624583 - Fix this for rp2040
     target_compatible_with = select({
         "//pw_build/constraints/chipset:rp2040": ["@platforms//:incompatible"],

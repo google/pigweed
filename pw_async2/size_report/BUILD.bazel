@@ -17,7 +17,10 @@ load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
 load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
 load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+    features = ["-ctad_warnings"],
+)
 
 licenses(["notice"])
 

@@ -24,6 +24,7 @@ repo(
     # repositories.
     features = [
         "conversion_warnings",
+        "ctad_warnings",
         "layering_check",
     ],
 )

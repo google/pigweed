@@ -131,7 +131,10 @@ pw_cc_test(
 pw_cc_test(
     name = "decoder_test",
     srcs = ["decoder_test.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":pw_hdlc",
         "//pw_bytes",
@@ -203,7 +206,10 @@ cc_library(
 pw_cc_test(
     name = "router_test",
     srcs = ["router_test.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":router",
         "//pw_allocator:testing",

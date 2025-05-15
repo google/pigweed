@@ -617,7 +617,10 @@ cc_library(
         "threads.cc",
     ],
     hdrs = ["public/pw_system/system.h"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     implementation_deps = [
         ":async_packet_io",
         ":device_service",
@@ -686,7 +689,10 @@ cc_library(
 pw_cc_test(
     name = "async_packet_io_test",
     srcs = ["async_packet_io_test.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":async_packet_io",
         "//pw_allocator:testing",
@@ -711,7 +717,10 @@ pw_cc_binary(
     name = "system_async_host_example",
     testonly = True,
     srcs = ["system_async_host_example.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":async",
         "//pw_assert:check",

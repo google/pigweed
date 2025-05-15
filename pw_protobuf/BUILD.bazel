@@ -105,7 +105,10 @@ cc_library(
 pw_cc_test(
     name = "decoder_test",
     srcs = ["decoder_test.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":pw_protobuf",
         "//pw_fuzzer:fuzztest",

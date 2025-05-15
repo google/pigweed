@@ -14,7 +14,10 @@
 
 load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    default_visibility = ["//visibility:public"],
+    features = ["-ctad_warnings"],
+)
 
 licenses(["notice"])
 

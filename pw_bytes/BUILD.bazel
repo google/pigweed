@@ -119,6 +119,7 @@ pw_cc_test(
 pw_cc_test(
     name = "packed_ptr_test",
     srcs = ["packed_ptr_test.cc"],
+    features = ["-ctad_warnings"],
     deps = [
         ":packed_ptr",
         "//pw_compilation_testing:negative_compilation_testing",

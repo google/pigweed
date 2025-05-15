@@ -166,6 +166,7 @@ cc_library(
 pw_cc_test(
     name = "linker_symbol_test",
     srcs = ["linker_symbol_test.cc"],
+    features = ["-ctad_warnings"],
     linkopts = [
         "-T$(execpath linker_symbol_test.ld)",
     ],

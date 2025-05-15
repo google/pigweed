@@ -49,7 +49,10 @@ cc_library(
 pw_cc_test(
     name = "channel_test",
     srcs = ["channel_test.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":pw_channel",
         "//pw_allocator:testing",
@@ -82,7 +85,10 @@ cc_library(
 pw_cc_test(
     name = "forwarding_channel_test",
     srcs = ["forwarding_channel_test.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":forwarding_channel",
         "//pw_allocator:testing",
@@ -111,7 +117,10 @@ cc_library(
 pw_cc_test(
     name = "loopback_channel_test",
     srcs = ["loopback_channel_test.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":loopback_channel",
         ":pw_channel",
@@ -147,7 +156,10 @@ cc_library(
 pw_cc_test(
     name = "epoll_channel_test",
     srcs = ["epoll_channel_test.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":epoll_channel",
@@ -206,7 +218,10 @@ cc_library(
 pw_cc_test(
     name = "stream_channel_test",
     srcs = ["stream_channel_test.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":stream_channel",
         "//pw_async2:pend_func_task",

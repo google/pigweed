@@ -19,7 +19,10 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-layering_check"],
+    features = [
+        "-layering_check",
+        "-ctad_warnings",
+    ],
 )
 
 # Basic target with protocol definitions and no logic, suitable for test

@@ -443,7 +443,10 @@ pw_cc_test(
     srcs = [
         "packet_test.cc",
     ],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":pw_rpc",
         "//pw_fuzzer:fuzztest",
@@ -455,7 +458,10 @@ pw_cc_test(
     srcs = [
         "packet_meta_test.cc",
     ],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":pw_rpc",
         "//pw_fuzzer:fuzztest",
@@ -508,7 +514,10 @@ pw_cc_test(
 pw_cc_test(
     name = "test_helpers_test",
     srcs = ["test_helpers_test.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         ":test_helpers",
         "//pw_containers:vector",

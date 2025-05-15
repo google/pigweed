@@ -318,6 +318,7 @@ pw_cc_test(
 pw_cc_test(
     name = "filtered_view_test",
     srcs = ["filtered_view_test.cc"],
+    features = ["-ctad_warnings"],
     deps = [
         ":algorithm",
         ":filtered_view",

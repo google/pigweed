@@ -65,6 +65,7 @@ pw_cc_test(
         "varint_test.cc",
         "varint_test_c.c",
     ],
+    features = ["-ctad_warnings"],
     deps = [
         ":pw_varint",
         "//pw_fuzzer:fuzztest",

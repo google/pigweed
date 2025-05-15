@@ -27,7 +27,10 @@ licenses(["notice"])
 pw_cc_test(
     name = "basic",
     srcs = ["basic.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         "//pw_allocator:testing",
         "//pw_async2:coro",
@@ -58,7 +61,10 @@ pw_cc_binary(
 pw_cc_test(
     name = "coro_blinky_loop",
     srcs = ["coro_blinky_loop.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         "//pw_allocator:testing",
         "//pw_async2:coro",
@@ -72,7 +78,10 @@ pw_cc_test(
 pw_cc_test(
     name = "once_send_recv",
     srcs = ["once_send_recv.cc"],
-    features = ["-conversion_warnings"],
+    features = [
+        "-conversion_warnings",
+        "-ctad_warnings",
+    ],
     deps = [
         "//pw_allocator:testing",
         "//pw_async2:coro",
