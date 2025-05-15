@@ -82,7 +82,6 @@ pw_facade("dispatcher") {
     dir_pw_metric,
     dir_pw_tokenizer,
   ]
-
   deps = [
     "$dir_pw_assert:check",
     dir_pw_log,
@@ -192,6 +191,26 @@ pw_test("once_sender_test") {
     "$dir_pw_containers:vector",
   ]
   sources = [ "once_sender_test.cc" ]
+}
+
+pw_source_set("waker_queue") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_async2/waker_queue.h" ]
+  deps = [ "$dir_pw_log:args" ]
+  public_deps = [
+    ":dispatcher",
+    "$dir_pw_containers:inline_queue",
+  ]
+  sources = [ "waker_queue.cc" ]
+}
+
+pw_test("waker_queue_test") {
+  enable_if = pw_async2_DISPATCHER_BACKEND != ""
+  deps = [
+    ":pend_func_task",
+    ":waker_queue",
+  ]
+  sources = [ "waker_queue_test.cc" ]
 }
 
 if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
@@ -364,6 +383,7 @@ pw_test_group("tests") {
     ":once_sender_test",
     ":simulated_time_provider_test",
     ":system_time_provider_test",
+    ":waker_queue_test",
   ]
   if (pw_toolchain_CXX_STANDARD >= pw_toolchain_STANDARD.CXX20) {
     tests += [

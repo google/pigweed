@@ -30,12 +30,17 @@
 namespace pw::async2 {
 namespace internal {
 
-void CloneWaker(Waker& waker_in, Waker& waker_out, log::Token wait_reason) {
-  waker_in.InternalCloneInto(waker_out, wait_reason);
+bool CloneWaker(Waker& waker_in, Waker& waker_out, log::Token wait_reason) {
+  std::lock_guard lock(impl::dispatcher_lock());
+  if (waker_out.task_ != nullptr && waker_out.task_ != waker_in.task_) {
+    return false;
+  }
+  waker_in.InternalCloneIntoLocked(waker_out, wait_reason);
+  return true;
 }
 
-void StoreWaker(Context& cx, Waker& waker_out, log::Token wait_reason) {
-  CloneWaker(*cx.waker_, waker_out, wait_reason);
+bool StoreWaker(Context& cx, Waker& waker_out, log::Token wait_reason) {
+  return CloneWaker(*cx.waker_, waker_out, wait_reason);
 }
 
 }  // namespace internal
@@ -152,9 +157,8 @@ void Waker::Wake() && {
   }
 }
 
-void Waker::InternalCloneInto(Waker& out,
-                              [[maybe_unused]] log::Token wait_reason) & {
-  std::lock_guard lock(impl::dispatcher_lock());
+void Waker::InternalCloneIntoLocked(Waker& out,
+                                    [[maybe_unused]] log::Token wait_reason) & {
   // The `out` waker already points to this task, so no work is necessary.
   if (out.task_ == task_) {
     return;

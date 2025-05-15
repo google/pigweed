@@ -110,6 +110,9 @@ Utilities
 .. doxygenclass:: pw::async2::OnceRefReceiver
   :members:
 
+.. doxygenclass:: pw::async2::WakerQueue
+  :members:
+
 Configuration options
 =====================
 The following options can be adjusted via compile-time configuration of

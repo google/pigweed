@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include "pw_assert/assert.h"
 #include "pw_async2/internal/config.h"
 #include "pw_async2/lock.h"
 #include "pw_containers/intrusive_forward_list.h"
@@ -26,63 +27,122 @@ class Waker;
 
 namespace internal {
 
-void CloneWaker(Waker& waker_in,
+bool CloneWaker(Waker& waker_in,
                 Waker& waker_out,
-                log::Token wait_reason = log::kDefaultToken);
+                log::Token wait_reason = log::kDefaultToken)
+    PW_LOCKS_EXCLUDED(impl::dispatcher_lock());
 
 }  // namespace internal
 
-/// Stores a waker associated with the current context in ``waker_out``.
-/// When ``waker_out`` is later awoken with :cpp:func:`pw::async2::Waker::Wake`,
-/// the :cpp:class:`pw::async2::Task` associated with ``cx`` will be awoken and
-/// its ``DoPend`` method will be invoked again.
+/// Attempts to store a waker associated with the current context into
+/// ``waker_or_queue_out``. If the waker cannot be stored into
+/// ``waker_or_queue_out`` due to the target waker already referencing a task or
+/// the queue being full, crashes.
+///
+/// When the stored waker is later awoken with
+/// :cpp:func:`pw::async2::Waker::Wake`, the :cpp:class:`pw::async2::Task`
+/// associated with ``cx`` will be awoken and its ``DoPend`` method will be
+/// invoked again.
 ///
 /// ``wait_reason_string`` is a human-readable description of why the task is
 /// blocked. If the module configuration option ``PW_ASYNC2_DEBUG_WAIT_REASON``
 /// is set, this string will be stored with the waker and reported by
 /// ``Dispatcher::LogRegisteredTasks`` when its associated task is blocked.
-#define PW_ASYNC_STORE_WAKER(context, waker_out, wait_reason_string) \
-  do {                                                               \
-    [[maybe_unused]] constexpr const char*                           \
-        pw_async2_wait_reason_must_be_string = wait_reason_string;   \
-    constexpr ::pw::log::Token pw_async2_wait_reason =               \
-        PW_LOG_TOKEN("pw_async2", wait_reason_string);               \
-    ::pw::async2::internal::StoreWaker(                              \
-        context, waker_out, pw_async2_wait_reason);                  \
+#define PW_ASYNC_STORE_WAKER(context, waker_or_queue_out, wait_reason_string) \
+  do {                                                                        \
+    bool waker_or_queue_had_space = PW_ASYNC_TRY_STORE_WAKER(                 \
+        context, waker_or_queue_out, wait_reason_string);                     \
+    PW_ASSERT(waker_or_queue_had_space);                                      \
   } while (0)
 
-/// Stores a waker associated with ``waker_in`` in ``waker_out``.
-/// When ``waker_out`` is later awoken with :cpp:func:`pw::async2::Waker::Wake`,
-/// the :cpp:class:`pw::async2::Task` associated with ``waker_in`` will be
-/// awoken and its ``DoPend`` method will be invoked again.
+/// Attempts to store a waker associated with the current context into
+/// ``waker_or_queue_out``. If the waker cannot be stored into
+/// ``waker_or_queue_out`` due to the target waker already referencing a task or
+/// the queue being full, returns ``false`` and does not modify it.
+///
+/// When the stored waker is later awoken with
+/// :cpp:func:`pw::async2::Waker::Wake`, the :cpp:class:`pw::async2::Task`
+/// associated with ``cx`` will be awoken and its ``DoPend`` method will be
+/// invoked again.
 ///
 /// ``wait_reason_string`` is a human-readable description of why the task is
 /// blocked. If the module configuration option ``PW_ASYNC2_DEBUG_WAIT_REASON``
 /// is set, this string will be stored with the waker and reported by
 /// ``Dispatcher::LogRegisteredTasks`` when its associated task is blocked.
-#define PW_ASYNC_CLONE_WAKER(waker_in, waker_out, wait_reason_string) \
-  do {                                                                \
-    [[maybe_unused]] constexpr const char*                            \
-        pw_async2_wait_reason_must_be_string = wait_reason_string;    \
-    constexpr ::pw::log::Token pw_async2_wait_reason =                \
-        PW_LOG_TOKEN("pw_async2", wait_reason_string);                \
-    ::pw::async2::internal::CloneWaker(                               \
-        waker_in, waker_out, pw_async2_wait_reason);                  \
+#define PW_ASYNC_TRY_STORE_WAKER(                             \
+    context, waker_or_queue_out, wait_reason_string)          \
+  _PW_ASYNC_TRY_GET_WAKER(::pw::async2::internal::StoreWaker, \
+                          context,                            \
+                          waker_or_queue_out,                 \
+                          wait_reason_string)
+
+/// Attempts to store a waker associated with ``waker_in`` into
+/// ``waker_or_queue_out``. If the waker cannot be stored into
+/// ``waker_or_queue_out`` due to the target waker already referencing a task or
+/// the queue being full, crashes.
+///
+/// When the stored waker is later awoken with
+/// :cpp:func:`pw::async2::Waker::Wake`, the :cpp:class:`pw::async2::Task`
+/// associated with ``cx`` will be awoken and its ``DoPend`` method will be
+/// invoked again.
+///
+/// ``wait_reason_string`` is a human-readable description of why the task is
+/// blocked. If the module configuration option ``PW_ASYNC2_DEBUG_WAIT_REASON``
+/// is set, this string will be stored with the waker and reported by
+/// ``Dispatcher::LogRegisteredTasks`` when its associated task is blocked.
+#define PW_ASYNC_CLONE_WAKER(waker_in, waker_or_queue_out, wait_reason_string) \
+  do {                                                                         \
+    bool waker_or_queue_had_space = PW_ASYNC_TRY_CLONE_WAKER(                  \
+        waker_in, waker_or_queue_out, wait_reason_string);                     \
+    PW_ASSERT(waker_or_queue_had_space);                                       \
   } while (0)
+
+/// Attempts to store a waker associated with ``waker_in`` into
+/// ``waker_or_queue_out``. If the waker cannot be stored into
+/// ``waker_or_queue_out`` due to the target waker already referencing a task or
+/// the queue being full, returns ``false`` and does not modify it.
+///
+/// When the stored waker is later awoken with
+/// :cpp:func:`pw::async2::Waker::Wake`, the :cpp:class:`pw::async2::Task`
+/// associated with ``cx`` will be awoken and its ``DoPend`` method will be
+/// invoked again.
+///
+/// ``wait_reason_string`` is a human-readable description of why the task is
+/// blocked. If the module configuration option ``PW_ASYNC2_DEBUG_WAIT_REASON``
+/// is set, this string will be stored with the waker and reported by
+/// ``Dispatcher::LogRegisteredTasks`` when its associated task is blocked.
+#define PW_ASYNC_TRY_CLONE_WAKER(                             \
+    waker_in, waker_or_queue_out, wait_reason_string)         \
+  _PW_ASYNC_TRY_GET_WAKER(::pw::async2::internal::CloneWaker, \
+                          waker_in,                           \
+                          waker_or_queue_out,                 \
+                          wait_reason_string)
+
+// Base implementation of the TRY_{STORE,CLONE}_WAKER macros.
+#define _PW_ASYNC_TRY_GET_WAKER(                                    \
+    func, source, waker_or_queue_out, wait_reason_string)           \
+  [&]() PW_NO_LOCK_SAFETY_ANALYSIS {                                \
+    [[maybe_unused]] constexpr const char*                          \
+        pw_async2_wait_reason_must_be_string = wait_reason_string;  \
+    constexpr ::pw::log::Token pw_async2_wait_reason =              \
+        PW_LOG_TOKEN("pw_async2", wait_reason_string);              \
+    return func(source, waker_or_queue_out, pw_async2_wait_reason); \
+  }()
 
 /// An object which can respond to asynchronous events by queueing work to
-/// be done in response, such as placing a ``Task`` on a ``Dispatcher`` loop.
+/// be done in response, such as placing a ``Task`` on a ``Dispatcher``
+/// loop.
 ///
-/// ``Waker`` s are often held by I/O objects, custom concurrency primitives,
-/// or interrupt handlers. Once the thing the ``Task`` was waiting for is
-/// available, ``Wake`` should be called so that the ``Task`` is alerted and
-/// may process the event.
+/// ``Waker`` s are often held by I/O objects, custom concurrency
+/// primitives, or interrupt handlers. Once the thing the ``Task`` was
+/// waiting for is available, ``Wake`` should be called so that the ``Task``
+/// is alerted and may process the event.
 ///
 /// ``Waker`` s may be held for any lifetime, and will be automatically
 /// nullified when the underlying ``Dispatcher`` or ``Task`` is deleted.
 ///
-/// ``Waker`` s are most commonly created by ``Dispatcher`` s, which pass them
-/// into ``Task::Pend`` via its ``Context`` argument.
+/// ``Waker`` s are most commonly created by ``Dispatcher`` s, which pass
+/// them into ``Task::Pend`` via its ``Context`` argument.
 class Waker : public pw::IntrusiveForwardList<Waker>::Item {
   friend class Task;
   friend class NativeDispatcherBase;
@@ -131,7 +191,7 @@ class Waker : public pw::IntrusiveForwardList<Waker>::Item {
   }
 
  private:
-  friend void internal::CloneWaker(Waker& waker_in,
+  friend bool internal::CloneWaker(Waker& waker_in,
                                    Waker& waker_out,
                                    log::Token wait_reason);
 
@@ -147,8 +207,8 @@ class Waker : public pw::IntrusiveForwardList<Waker>::Item {
   /// the different ``Waker``s that may wake up a ``Task``.
   ///
   /// This operation is guaranteed to be thread-safe.
-  void InternalCloneInto(Waker& waker_out, log::Token wait_reason) &
-      PW_LOCKS_EXCLUDED(impl::dispatcher_lock());
+  void InternalCloneIntoLocked(Waker& waker_out, log::Token wait_reason) &
+      PW_EXCLUSIVE_LOCKS_REQUIRED(impl::dispatcher_lock());
 
   void InsertIntoTaskWakerList();
   void InsertIntoTaskWakerListLocked()

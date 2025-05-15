@@ -78,6 +78,7 @@ pw_facade(
     deps = [
         ":config_override",
         ":poll",
+        "//pw_assert:assert",
         "//pw_chrono:system_clock",
         "//pw_containers:intrusive_forward_list",
         "//pw_containers:intrusive_list",
@@ -261,6 +262,34 @@ pw_cc_test(
         ":dispatcher",
         ":once_sender",
         "//pw_containers:vector",
+    ],
+)
+
+cc_library(
+    name = "waker_queue",
+    srcs = [
+        "waker_queue.cc",
+    ],
+    hdrs = [
+        "public/pw_async2/waker_queue.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":dispatcher",
+        "//pw_containers:inline_queue",
+        "//pw_log:args",
+    ],
+)
+
+pw_cc_test(
+    name = "waker_queue_test",
+    srcs = [
+        "waker_queue_test.cc",
+    ],
+    deps = [
+        ":dispatcher",
+        ":pend_func_task",
+        ":waker_queue",
     ],
 )
 
@@ -476,5 +505,6 @@ filegroup(
         "public/pw_async2/task.h",
         "public/pw_async2/time_provider.h",
         "public/pw_async2/waker.h",
+        "public/pw_async2/waker_queue.h",
     ],
 )
