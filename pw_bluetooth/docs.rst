@@ -226,18 +226,14 @@ HCI Utils
 -----------
 Size Report
 -----------
-Delta of +972 when constructing the first packet view and reading/writing a
+Delta when constructing the first packet view and reading/writing a
 field. This includes the runtime library and the 4-byte buffer.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: emboss_size_report
-.. include:: ../size_report_notice
+.. include:: emboss_size_report
 
-Delta of +96 when adding a second packet view and reading/writing a field.
+Delta when adding a second packet view and reading/writing a field.
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: emboss_size_report_diff
-.. include:: ../size_report_notice
+.. include:: emboss_size_report_diff
 
 -------
 Roadmap

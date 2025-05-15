@@ -15,6 +15,9 @@
 load("@com_google_emboss//:build_defs.bzl", "emboss_cc_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_python//sphinxdocs:sphinx_docs_library.bzl", "sphinx_docs_library")
+load("//pw_bloat:pw_cc_size_binary.bzl", "pw_cc_size_binary")
+load("//pw_bloat:pw_size_diff.bzl", "pw_size_diff")
+load("//pw_bloat:pw_size_table.bzl", "pw_size_table")
 load("//pw_build:compatibility.bzl", "incompatible_with_mcu")
 load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
@@ -521,11 +524,61 @@ filegroup(
     ],
 )
 
+pw_cc_size_binary(
+    name = "make_view_and_write",
+    srcs = ["size_report/make_view_and_write.cc"],
+    deps = [
+        ":emboss_hci",
+        ":emboss_hci_test",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_cc_size_binary(
+    name = "make_2_views_and_write",
+    srcs = ["size_report/make_2_views_and_write.cc"],
+    deps = [
+        ":emboss_hci",
+        ":emboss_hci_test",
+        "//pw_bloat:bloat_this_binary",
+    ],
+)
+
+pw_size_diff(
+    name = "make_view_and_write_size_diff",
+    base = "//pw_bloat:bloat_base",
+    label = "Make view and write field",
+    target = ":make_view_and_write",
+)
+
+pw_size_diff(
+    name = "make_2_views_and_write_size_diff",
+    base = ":make_view_and_write",
+    label = "Size difference when adding a second view",
+    target = ":make_2_views_and_write",
+)
+
+pw_size_table(
+    name = "emboss_size_report",
+    reports = [
+        ":make_view_and_write_size_diff",
+    ],
+)
+
+pw_size_table(
+    name = "emboss_size_report_diff",
+    reports = [
+        ":make_2_views_and_write_size_diff",
+    ],
+)
+
 sphinx_docs_library(
     name = "docs",
     srcs = [
         "docs.rst",
         "emboss_test.cc",
+        ":emboss_size_report",
+        ":emboss_size_report_diff",
     ],
     prefix = "pw_bluetooth/",
     target_compatible_with = incompatible_with_mcu(),
