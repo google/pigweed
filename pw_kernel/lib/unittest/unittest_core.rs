@@ -63,18 +63,14 @@ pub enum TestsResult {
 pub fn run_all_tests() -> TestsResult {
     let mut result = TestsResult::AllPassed;
     for_each_test(|test| {
-        pw_log::info!("[{}] running", test.name as &str);
+        pw_log::info!("🔄 [{}] RUNNING", test.name as &str);
         if let Err(e) = (test.test_fn)() {
-            pw_log::error!(
-                "[{}] FAILED: {}:{} - {}",
-                test.name as &str,
-                e.file as &str,
-                e.line as u32,
-                e.message as &str
-            );
+            pw_log::error!("❌ [{}] FAILED", test.name as &str);
+            pw_log::error!("❌ ├─ {}:{}:", e.file as &str, e.line as u32);
+            pw_log::error!("❌ └─ {}", e.message as &str);
             result = TestsResult::SomeFailed;
         } else {
-            pw_log::info!("[{}] PASSED", test.name as &str);
+            pw_log::info!("✅ [{}] PASSED", test.name as &str);
         }
     });
     result
