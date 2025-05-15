@@ -25,11 +25,9 @@ pub fn test(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ctor_ident = format_ident!("__mz_unittest_ctor_{}__", fn_name);
     let desc_ident = format_ident!("__MZ_UNITTEST_DESC_{}__", fn_name.to_uppercase());
     quote! {
-        static mut #desc_ident: unittest::TestDescAndFn = unittest::TestDescAndFn::new(
-            unittest::TestDesc{
-                name: #fn_name,
-            },
-            unittest::TestFn::StaticTestFn(#fn_ident),
+        static mut #desc_ident: unittest::Test = unittest::Test::new(
+            #fn_name,
+            #fn_ident,
         );
 
         extern "C" fn #ctor_fn_ident() -> usize {

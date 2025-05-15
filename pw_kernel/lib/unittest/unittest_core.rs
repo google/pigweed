@@ -20,16 +20,16 @@ use list::{ForeignList, Link};
 pub use foreign_box;
 pub use pw_bytes;
 
-list::define_adapter!(pub TestDescAndFnAdapter => TestDescAndFn.link);
+list::define_adapter!(pub TestAdapter => Test.link);
 
-static mut TEST_LIST: ForeignList<TestDescAndFn, TestDescAndFnAdapter> = ForeignList::new();
+static mut TEST_LIST: ForeignList<Test, TestAdapter> = ForeignList::new();
 
 // All accesses to test list go through this function.  This gives us a
 // single point of ownership of TEST_LIST and keeps us from leaking references
 // to it.
 fn access_test_list<F>(callback: F)
 where
-    F: FnOnce(&mut ForeignList<TestDescAndFn, TestDescAndFnAdapter>),
+    F: FnOnce(&mut ForeignList<Test, TestAdapter>),
 {
     // Safety: Tests are single threaded for now.  This assumption needs to be
     // revisited.
@@ -37,13 +37,13 @@ where
     callback(unsafe { &mut TEST_LIST })
 }
 
-pub fn add_test(test: ForeignBox<TestDescAndFn>) {
+pub fn add_test(test: ForeignBox<Test>) {
     access_test_list(|test_list| test_list.push_back(test))
 }
 
-pub fn for_each_test<F>(mut callback: F)
+fn for_each_test<F>(mut callback: F)
 where
-    F: FnMut(&TestDescAndFn),
+    F: FnMut(&Test),
 {
     access_test_list(|test_list| {
         test_list
@@ -63,22 +63,18 @@ pub enum TestsResult {
 pub fn run_all_tests() -> TestsResult {
     let mut result = TestsResult::AllPassed;
     for_each_test(|test| {
-        pw_log::info!("[{}] running", test.desc.name as &str);
-        match test.test_fn {
-            TestFn::StaticTestFn(f) => {
-                if let Err(e) = f() {
-                    pw_log::error!(
-                        "[{}] FAILED: {}:{} - {}",
-                        test.desc.name as &str,
-                        e.file as &str,
-                        e.line as u32,
-                        e.message as &str
-                    );
-                    result = TestsResult::SomeFailed;
-                } else {
-                    pw_log::info!("[{}] PASSED", test.desc.name as &str);
-                }
-            }
+        pw_log::info!("[{}] running", test.name as &str);
+        if let Err(e) = (test.test_fn)() {
+            pw_log::error!(
+                "[{}] FAILED: {}:{} - {}",
+                test.name as &str,
+                e.file as &str,
+                e.line as u32,
+                e.message as &str
+            );
+            result = TestsResult::SomeFailed;
+        } else {
+            pw_log::info!("[{}] PASSED", test.name as &str);
         }
     });
     result
@@ -92,24 +88,18 @@ pub struct TestError {
 
 pub type Result<T> = core::result::Result<T, TestError>;
 
-pub enum TestFn {
-    StaticTestFn(fn() -> Result<()>),
+pub type TestFn = fn() -> Result<()>;
+
+pub struct Test {
+    name: &'static str,
+    test_fn: TestFn,
+    link: Link,
 }
 
-pub struct TestDesc {
-    pub name: &'static str,
-}
-
-pub struct TestDescAndFn {
-    pub desc: TestDesc,
-    pub test_fn: TestFn,
-    pub link: Link,
-}
-
-impl TestDescAndFn {
-    pub const fn new(desc: TestDesc, test_fn: TestFn) -> Self {
+impl Test {
+    pub const fn new(name: &'static str, test_fn: TestFn) -> Self {
         Self {
-            desc,
+            name,
             test_fn,
             link: Link::new(),
         }
@@ -123,8 +113,8 @@ impl TestDescAndFn {
 //
 // A better pattern here must be worked out with intrusive lists of static data
 // (for statically declared threads for instance) so we'll revisit this later.
-unsafe impl Send for TestDescAndFn {}
-unsafe impl Sync for TestDescAndFn {}
+unsafe impl Send for Test {}
+unsafe impl Sync for Test {}
 
 #[macro_export]
 macro_rules! assert_eq {
