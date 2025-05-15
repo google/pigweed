@@ -107,6 +107,41 @@ macro_rules! rw_int_field {
     };
 }
 
+/// Safety: $enum must be fully specified for the value range of the field or
+/// marked as non-inclusive.
+#[macro_export]
+macro_rules! ro_enum_field {
+    ($val_type:ty, $name:ident, $start:literal, $end:literal, $enum:ty, $desc:literal) => {
+        #[doc = "Extract "]
+        #[doc = $desc]
+        #[doc = "field"]
+        #[inline]
+        pub const fn $name(&self) -> $enum {
+            let raw_val = $crate::ops::get_usize(self.0 as usize, $start, $end);
+            unsafe { core::mem::transmute::<$val_type, $enum>(raw_val as $val_type) }
+        }
+    };
+}
+
+/// Safety: $enum must be fully specified for the value range of the field or
+/// marked as non-inclusive.
+#[macro_export]
+macro_rules! rw_enum_field {
+    ($val_type:ty, $name:ident, $start:literal, $end:literal, $enum:ty, $desc:literal) => {
+        ro_enum_field!($val_type, $name, $start, $end, $enum, $desc);
+        paste::paste! {
+          #[doc = "Update "]
+          #[doc = $desc]
+          #[doc = "field"]
+          #[inline]
+          pub const fn [<with_ $name>](self, val: $enum) -> Self {
+            let raw_val = unsafe { core::mem::transmute::<$enum, $val_type>(val) };
+              Self($crate::ops::set_usize(self.0 as usize, $start, $end, raw_val as usize) as $val_type)
+          }
+        }
+    };
+}
+
 #[macro_export]
 macro_rules! ro_masked_field {
     ($name:ident, $mask:expr, $ty:ty, $desc:literal) => {
