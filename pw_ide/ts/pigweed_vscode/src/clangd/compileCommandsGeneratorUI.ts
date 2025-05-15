@@ -191,3 +191,28 @@ export class LoggerUI {
     // no-op
   }
 }
+
+export class MockLoggerUI {
+  private stdoutBuffer = '';
+  private stderrBuffer = '';
+
+  public updateStatus(status: string): void {
+    // no-op
+  }
+
+  public addStdout(data: string | Buffer): void {
+    this.stdoutBuffer += data.toString();
+  }
+
+  public addStderr(data: string | Buffer): void {
+    this.stderrBuffer += data.toString();
+  }
+
+  public getStdout(): string {
+    return this.stdoutBuffer;
+  }
+
+  public getStderr(): string {
+    return this.stderrBuffer;
+  }
+}

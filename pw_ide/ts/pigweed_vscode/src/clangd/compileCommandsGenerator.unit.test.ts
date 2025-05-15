@@ -16,6 +16,7 @@ import * as assert from 'assert';
 
 import {
   applyVirtualIncludeFix,
+  generateCompileCommands,
   generateCompileCommandsFromAqueryCquery,
   inferPlatformOfAction,
   parseBazelBuildCommand,
@@ -25,6 +26,8 @@ import { CompileCommand } from './parser';
 import path from 'path';
 import { getReliableBazelExecutable } from '../bazel';
 import { workingDir } from '../settings/vscode';
+import { CDB_FILE_DIR, CDB_FILE_NAME } from './paths';
+import { MockLoggerUI } from './compileCommandsGeneratorUI';
 
 function fixPathSeparator(p: string) {
   return p.replace(/\//g, path.sep);
@@ -399,6 +402,30 @@ test('generateCompileCommandsFromAqueryCquery', async () => {
   assert.equal(
     compileCommand.data.file,
     fixPathSeparator('pw_containers/intrusive_map_test.cc'),
+  );
+});
+
+test('parseBazelBuildCommand_singleTarget_noArgs', async () => {
+  const bazel = getReliableBazelExecutable();
+  const mockLogger = new MockLoggerUI();
+  await generateCompileCommands(
+    bazel!,
+    workingDir.get(),
+    CDB_FILE_DIR,
+    CDB_FILE_NAME,
+    ['//pw_i2c_rp2040:pw_i2c_rp2040', '//pw_status'],
+    [],
+    mockLogger as any,
+  );
+  assert.equal(
+    mockLogger
+      .getStdout()
+      .indexOf('Finished generating compile_commands.json') > 0,
+    true,
+  );
+  assert.equal(
+    mockLogger.getStderr().indexOf('aquery failed with exit code') > 0,
+    true,
   );
 });
 
