@@ -1,0 +1,524 @@
+// Copyright 2025 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+#pragma once
+
+#include <cstddef>
+#include <initializer_list>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <new>
+#include <type_traits>
+#include <utility>
+
+#include "pw_assert/assert.h"
+#include "pw_containers/internal/deque_iterator.h"
+#include "pw_containers/internal/traits.h"
+#include "pw_span/span.h"
+
+namespace pw::containers::internal {
+
+template <typename T>
+using EnableIfIterable =
+    std::enable_if_t<true, decltype(T().begin(), T().end())>;
+
+template <typename SizeType>
+class GenericDequeBase {
+ public:
+  using size_type = SizeType;
+
+  static_assert(std::is_unsigned_v<size_type>, "size_type must be unsigned");
+
+  // Size
+
+  [[nodiscard]] constexpr bool empty() const noexcept { return size() == 0; }
+
+  /// Returns the number of elements in the deque.
+  constexpr size_type size() const noexcept { return count_; }
+
+  /// Returns the maximum number of elements in the deque.
+  constexpr size_type capacity() const noexcept { return capacity_; }
+
+ private:
+  // Functions needed by GenericDeque only
+  template <typename Derived, typename ValueType, typename S>
+  friend class GenericDeque;
+
+  explicit constexpr GenericDequeBase(size_type initial_capacity) noexcept
+      : capacity_(initial_capacity), head_(0), tail_(0), count_(0) {}
+
+  constexpr void ClearIndices() { head_ = tail_ = count_ = 0; }
+
+  // Returns the absolute index based on the relative index beyond the
+  // head offset.
+  //
+  // Precondition: The relative index must be valid, i.e. < size().
+  constexpr size_type AbsoluteIndex(const size_type relative_index) const {
+    const size_type absolute_index = head_ + relative_index;
+    if (absolute_index < capacity()) {
+      return absolute_index;
+    }
+    // Offset wrapped across the end of the circular buffer.
+    return absolute_index - capacity();
+  }
+
+  constexpr size_type AbsoluteIndexChecked(
+      const size_type relative_index) const {
+    PW_ASSERT(relative_index < size());
+    return AbsoluteIndex(relative_index);
+  }
+
+  constexpr void PushBack() {
+    IncrementWithWrap(tail_);
+    count_ += 1;
+  }
+  constexpr void PushFront() {
+    DecrementWithWrap(head_);
+    count_ += 1;
+  }
+  constexpr void PopFront() {
+    IncrementWithWrap(head_);
+    count_ -= 1;
+  }
+  constexpr void PopBack() {
+    DecrementWithWrap(tail_);
+    count_ -= 1;
+  }
+
+  constexpr void IncrementWithWrap(size_type& index) const {
+    index++;
+    // Note: branch is faster than mod (%) on common embedded architectures.
+    if (index == capacity()) {
+      index = 0;
+    }
+  }
+
+  constexpr void DecrementWithWrap(size_type& index) const {
+    if (index == 0) {
+      index = capacity();
+    }
+    index--;
+  }
+
+  size_type capacity_;
+  size_type head_;  // Inclusive offset for the front.
+  size_type tail_;  // Non-inclusive offset for the back.
+  size_type count_;
+};
+
+// Generic array-based deque class. Uses CRTP to access the underlying array and
+// handle potentially resizing it.
+//
+// Extended by pw::InlineDeque and pw::DynamicDeque.
+template <typename Derived, typename ValueType, typename SizeType>
+class GenericDeque : public GenericDequeBase<SizeType> {
+ private:
+  using Base = GenericDequeBase<SizeType>;
+
+ public:
+  using value_type = ValueType;
+  using size_type = typename GenericDequeBase<SizeType>::size_type;
+  using difference_type = ptrdiff_t;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = value_type*;
+  using const_pointer = const value_type*;
+  using iterator = containers::internal::DequeIterator<Derived>;
+  using const_iterator = containers::internal::DequeIterator<const Derived>;
+
+  // Copy/assign are implemented in derived classes.
+  GenericDeque(const GenericDeque&) = delete;
+  GenericDeque(GenericDeque&&) = delete;
+
+  GenericDeque& operator=(const GenericDeque&) = delete;
+  GenericDeque&& operator=(GenericDeque&&) = delete;
+
+  // Size
+
+  using Base::capacity;
+  using Base::empty;
+  using Base::size;
+
+  // Infallible assign
+
+  /// Sets the contents to `count` copies of `value`. Crashes if cannot fit.
+  void assign(size_type count, const value_type& value) {
+    PW_ASSERT(try_assign(count, value));
+  }
+
+  /// Sets the contents to copies of the items from the iterator. Crashes if
+  /// cannot fit.
+  template <typename It,
+            int&...,
+            typename = containers::internal::EnableIfInputIterator<It>>
+  void assign(It start, It finish);
+
+  /// Sets contents to copies of the items from the list. Crashes if cannot fit.
+  void assign(const std::initializer_list<value_type>& list) {
+    assign(list.begin(), list.end());
+  }
+
+  // Access
+
+  constexpr reference at(size_type index) {
+    return data()[Base::AbsoluteIndexChecked(index)];
+  }
+  constexpr const_reference at(size_type index) const {
+    return data()[Base::AbsoluteIndexChecked(index)];
+  }
+
+  constexpr reference operator[](size_type index) {
+    PW_DASSERT(index < size());
+    return data()[Base::AbsoluteIndex(index)];
+  }
+  constexpr const_reference operator[](size_type index) const {
+    PW_DASSERT(index < size());
+    return data()[Base::AbsoluteIndex(index)];
+  }
+
+  constexpr reference front() {
+    PW_DASSERT(!empty());
+    return data()[head()];
+  }
+  constexpr const_reference front() const {
+    PW_DASSERT(!empty());
+    return data()[head()];
+  }
+
+  constexpr reference back() {
+    PW_DASSERT(!empty());
+    return data()[Base::AbsoluteIndex(size() - 1)];
+  }
+  constexpr const_reference back() const {
+    PW_DASSERT(!empty());
+    return data()[Base::AbsoluteIndex(size() - 1)];
+  }
+
+  /// Provides access to the valid data in a contiguous form.
+  constexpr std::pair<span<const value_type>, span<const value_type>>
+  contiguous_data() const;
+  constexpr std::pair<span<value_type>, span<value_type>> contiguous_data() {
+    auto [first, second] =
+        static_cast<const GenericDeque&>(*this).contiguous_data();
+    return {{const_cast<pointer>(first.data()), first.size()},
+            {const_cast<pointer>(second.data()), second.size()}};
+  }
+
+  // Iterate
+
+  constexpr iterator begin() noexcept {
+    if (empty()) {
+      return end();
+    }
+
+    return iterator(&derived(), 0);
+  }
+  constexpr const_iterator begin() const noexcept { return cbegin(); }
+  constexpr const_iterator cbegin() const noexcept {
+    if (empty()) {
+      return cend();
+    }
+    return const_iterator(&derived(), 0);
+  }
+
+  constexpr iterator end() noexcept {
+    return iterator(&derived(), std::numeric_limits<size_type>::max());
+  }
+  constexpr const_iterator end() const noexcept { return cend(); }
+  constexpr const_iterator cend() const noexcept {
+    return const_iterator(&derived(), std::numeric_limits<size_type>::max());
+  }
+
+  // Infallible modify
+
+  void clear() {
+    if constexpr (!std::is_trivially_destructible_v<value_type>) {
+      std::destroy(begin(), end());
+    }
+    Base::ClearIndices();
+  }
+
+  void push_back(const value_type& value) { PW_ASSERT(try_push_back(value)); }
+
+  void push_back(value_type&& value) {
+    PW_ASSERT(try_push_back(std::move(value)));
+  }
+
+  template <typename... Args>
+  void emplace_back(Args&&... args) {
+    PW_ASSERT(try_emplace_back(std::forward<Args>(args)...));
+  }
+
+  void pop_back();
+
+  void push_front(const value_type& value) { PW_ASSERT(try_push_front(value)); }
+
+  void push_front(value_type&& value) {
+    PW_ASSERT(try_push_front(std::move(value)));
+  }
+
+  template <typename... Args>
+  void emplace_front(Args&&... args) {
+    PW_ASSERT(try_emplace_front(std::forward<Args>(args)...));
+  }
+
+  void pop_front();
+
+  void resize(size_type new_size) { resize(new_size, value_type()); }
+
+  void resize(size_type new_size, const value_type& value) {
+    PW_ASSERT(try_resize(new_size, value));
+  }
+
+ protected:
+  explicit constexpr GenericDeque(size_type initial_capacity) noexcept
+      : GenericDequeBase<SizeType>(initial_capacity) {}
+
+  // Infallible assignment operators
+
+  // NOLINTBEGIN(misc-unconventional-assign-operator);
+  Derived& operator=(const std::initializer_list<value_type>& list) {
+    assign(list);
+    return derived();
+  }
+
+  template <typename T, typename = containers::internal::EnableIfIterable<T>>
+  Derived& operator=(const T& other) {
+    assign(other.begin(), other.end());
+    return derived();
+  }
+  // NOLINTEND(misc-unconventional-assign-operator);
+
+  // Fallible assign
+
+  /// Attempts to replace the contents with `count` copies of `value`. If `count
+  /// > capacity()` and allocation is supported, attempts to allocate to
+  /// increase capacity. Does nothing if unable to accommodate `count` items.
+  [[nodiscard]] bool try_assign(size_type count, const value_type& value);
+
+  /// Replaces the container with copies of items from an iterator. Does nothing
+  /// if unable to accommodate all items.
+  ///
+  /// `try_assign()` requires a forward iterator so that the capacity can be
+  /// checked upfront to avoid partial assignments. Input iterators are only
+  /// suitable for one pass, so could be exhausted by a `std::distance` check.
+  template <typename It,
+            int&...,
+            typename = containers::internal::EnableIfForwardIterator<It>>
+  [[nodiscard]] bool try_assign(It start, It finish);
+
+  /// Replaces the container with copies of items from an initializer list. Does
+  /// nothing if unable to accommodate all items.
+  [[nodiscard]] bool try_assign(const std::initializer_list<value_type>& list) {
+    return try_assign(list.begin(), list.end());
+  }
+
+  // Fallible modify
+
+  [[nodiscard]] bool try_push_back(const value_type& value) {
+    return try_emplace_back(value);
+  }
+
+  [[nodiscard]] bool try_push_back(value_type&& value) {
+    return try_emplace_back(std::move(value));
+  }
+
+  template <typename... Args>
+  [[nodiscard]] bool try_emplace_back(Args&&... args);
+
+  [[nodiscard]] bool try_push_front(const value_type& value) {
+    return try_emplace_front(value);
+  }
+
+  [[nodiscard]] bool try_push_front(value_type&& value) {
+    return try_emplace_front(std::move(value));
+  }
+
+  template <typename... Args>
+  [[nodiscard]] bool try_emplace_front(Args&&... args);
+
+  [[nodiscard]] bool try_resize(size_type new_size) {
+    return try_resize(new_size, value_type());
+  }
+
+  [[nodiscard]] bool try_resize(size_type new_size, const value_type& value);
+
+ private:
+  constexpr Derived& derived() { return static_cast<Derived&>(*this); }
+  constexpr const Derived& derived() const {
+    return static_cast<const Derived&>(*this);
+  }
+
+  constexpr size_type head() const { return Base::head_; }
+  constexpr size_type tail() const { return Base::tail_; }
+
+  // Accessed the underlying array in the derived class.
+  constexpr pointer data() { return derived().data(); }
+  constexpr const_pointer data() const { return derived().data(); }
+
+  // Make sure the container can hold one more item.
+  constexpr bool CheckCapacityAddOne() {
+    return size() != std::numeric_limits<size_type>::max() &&
+           CheckCapacity(size() + 1);
+  }
+
+  // Make sure the container can hold at least this many elements.
+  constexpr bool CheckCapacity(size_type new_size) {
+    return new_size <= capacity();
+  }
+
+  // Appends items without checking the capacity. Capacity MUST be large enough.
+  template <typename... Args>
+  void EmplaceBackUnchecked(Args&&... args) {
+    new (&data()[tail()]) value_type(std::forward<Args>(args)...);
+    Base::PushBack();
+  }
+};
+
+// Function implementations
+
+template <typename Derived, typename ValueType, typename SizeType>
+template <typename It, int&..., typename>
+void GenericDeque<Derived, ValueType, SizeType>::assign(It start, It finish) {
+  // Can't safely check std::distance for InputIterator, so use push_back().
+  if constexpr (Derived::kFixedCapacity ||
+                std::is_same_v<
+                    typename std::iterator_traits<It>::iterator_category,
+                    std::input_iterator_tag>) {
+    clear();
+    while (start != finish) {
+      push_back(*start++);
+    }
+  } else {
+    PW_ASSERT(try_assign(start, finish));
+  }
+}
+
+template <typename Derived, typename ValueType, typename SizeType>
+bool GenericDeque<Derived, ValueType, SizeType>::try_assign(
+    size_type count, const value_type& value) {
+  if (!CheckCapacity(count)) {
+    return false;
+  }
+  clear();
+  for (size_type i = 0; i < count; ++i) {
+    EmplaceBackUnchecked(value);
+  }
+  return true;
+}
+
+template <typename Derived, typename ValueType, typename SizeType>
+template <typename It, int&..., typename>
+bool GenericDeque<Derived, ValueType, SizeType>::try_assign(It start,
+                                                            It finish) {
+  // Requires at least a forward iterator to safely check std::distance.
+  static_assert(std::is_convertible_v<
+                typename std::iterator_traits<It>::iterator_category,
+                std::forward_iterator_tag>);
+  const auto items = std::distance(start, finish);
+  PW_DASSERT(items >= 0);
+  if (static_cast<std::make_unsigned_t<decltype(items)>>(items) >
+          std::numeric_limits<size_type>::max() ||
+      !CheckCapacity(static_cast<size_type>(items))) {
+    return false;
+  }
+
+  clear();
+  while (start != finish) {
+    EmplaceBackUnchecked(*start++);
+  }
+  return true;
+}
+
+template <typename Derived, typename ValueType, typename SizeType>
+constexpr std::pair<span<const ValueType>, span<const ValueType>>
+GenericDeque<Derived, ValueType, SizeType>::contiguous_data() const {
+  if (empty()) {
+    return {span<const value_type>(), span<const value_type>()};
+  }
+  if (tail() > head()) {
+    // If the newest entry is after the oldest entry, we have not wrapped:
+    //     [  |head()|...more_entries...|tail()|  ]
+    return {span<const value_type>(&data()[head()], size()),
+            span<const value_type>()};
+  } else {
+    // If the newest entry is before or at the oldest entry and we know we are
+    // not empty, ergo we have wrapped:
+    //     [..more_entries...|tail()|  |head()|...more_entries...]
+    return {span<const value_type>(&data()[head()], capacity() - head()),
+            span<const value_type>(&data()[0], tail())};
+  }
+}
+
+template <typename Derived, typename ValueType, typename SizeType>
+template <typename... Args>
+bool GenericDeque<Derived, ValueType, SizeType>::try_emplace_back(
+    Args&&... args) {
+  if (!CheckCapacityAddOne()) {
+    return false;
+  }
+  EmplaceBackUnchecked(std::forward<Args>(args)...);
+  return true;
+}
+
+template <typename Derived, typename ValueType, typename SizeType>
+void GenericDeque<Derived, ValueType, SizeType>::pop_back() {
+  PW_ASSERT(!empty());
+  if constexpr (!std::is_trivially_destructible_v<value_type>) {
+    std::destroy_at(&back());
+  }
+  Base::PopBack();
+}
+
+template <typename Derived, typename ValueType, typename SizeType>
+template <typename... Args>
+bool GenericDeque<Derived, ValueType, SizeType>::try_emplace_front(
+    Args&&... args) {
+  if (!CheckCapacityAddOne()) {
+    return false;
+  }
+  Base::PushFront();
+  new (&data()[head()]) value_type(std::forward<Args>(args)...);
+  return true;
+}
+
+template <typename Derived, typename ValueType, typename SizeType>
+void GenericDeque<Derived, ValueType, SizeType>::pop_front() {
+  PW_ASSERT(!empty());
+  if constexpr (!std::is_trivially_destructible_v<value_type>) {
+    std::destroy_at(&front());
+  }
+  Base::PopFront();
+}
+
+template <typename Derived, typename ValueType, typename SizeType>
+bool GenericDeque<Derived, ValueType, SizeType>::try_resize(
+    size_type new_size, const value_type& value) {
+  if (size() < new_size) {
+    if (!CheckCapacity(new_size)) {
+      return false;
+    }
+    const size_type new_items = new_size - size();
+    for (size_type i = 0; i < new_items; ++i) {
+      EmplaceBackUnchecked(value);
+    }
+  } else {
+    while (size() > new_size) {
+      pop_back();
+    }
+  }
+  return true;
+}
+
+}  // namespace pw::containers::internal

@@ -73,17 +73,27 @@ pw_add_library(pw_containers._common INTERFACE
     public
 )
 
+pw_add_library(pw_containers._deque_common INTERFACE
+  HEADERS
+    public/pw_containers/internal/deque_iterator.h
+    public/pw_containers/internal/generic_deque.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert
+    pw_containers._common
+    pw_span
+)
+
 pw_add_library(pw_containers.inline_deque INTERFACE
   HEADERS
     public/pw_containers/inline_deque.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
-    pw_assert.assert
-    pw_containers._common
+    pw_assert
+    pw_containers._deque_common
     pw_containers._raw_storage
-    pw_preprocessor
-    pw_span
     pw_toolchain.constexpr_tag
 )
 

@@ -82,15 +82,27 @@ pw_source_set("common") {
   visibility = [ "$dir_pigweed/*" ]
 }
 
+pw_source_set("deque_common") {
+  public = [
+    "public/pw_containers/internal/deque_iterator.h",
+    "public/pw_containers/internal/generic_deque.h",
+  ]
+  public_configs = [ ":public_include_path" ]
+  visibility = [ ":*" ]
+  public_deps = [
+    ":common",
+    dir_pw_assert,
+    dir_pw_span,
+  ]
+}
+
 pw_source_set("inline_deque") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    ":common",
+    ":deque_common",
     ":raw_storage",
     "$dir_pw_toolchain:constexpr_tag",
     dir_pw_assert,
-    dir_pw_preprocessor,
-    dir_pw_span,
   ]
   public = [ "public/pw_containers/inline_deque.h" ]
 }

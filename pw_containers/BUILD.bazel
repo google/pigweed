@@ -182,17 +182,28 @@ cc_library(
 )
 
 cc_library(
-    name = "inline_deque",
+    name = "deque_common",
     hdrs = [
-        "public/pw_containers/inline_deque.h",
+        "public/pw_containers/internal/deque_iterator.h",
+        "public/pw_containers/internal/generic_deque.h",
     ],
     strip_include_prefix = "public",
+    visibility = ["//visibility:private"],
     deps = [
         ":common",
+        "//pw_assert:assert",
+        "//pw_span",
+    ],
+)
+
+cc_library(
+    name = "inline_deque",
+    hdrs = ["public/pw_containers/inline_deque.h"],
+    strip_include_prefix = "public",
+    deps = [
+        ":deque_common",
         ":raw_storage",
         "//pw_assert:assert",
-        "//pw_preprocessor",
-        "//pw_span",
         "//pw_toolchain:constexpr_tag",
     ],
 )
@@ -495,6 +506,7 @@ filegroup(
         "public/pw_containers/inline_queue.h",
         "public/pw_containers/inline_var_len_entry_queue.h",
         "public/pw_containers/internal/aa_tree.h",
+        "public/pw_containers/internal/generic_deque.h",
         "public/pw_containers/internal/intrusive_list.h",
         "public/pw_containers/intrusive_forward_list.h",
         "public/pw_containers/intrusive_list.h",

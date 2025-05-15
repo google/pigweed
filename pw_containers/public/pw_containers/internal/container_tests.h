@@ -105,25 +105,55 @@ namespace pw::containers::test {
 // Checks iterator properties.
 template <template <typename> typename Container>
 struct IteratorProperties {
+  using iterator = typename Container<int>::iterator;
+  using const_iterator = typename Container<int>::const_iterator;
+
   // Test that Container<T> iterators are copy constructible
+  static_assert(std::is_copy_constructible_v<iterator>);
+  static_assert(std::is_copy_constructible_v<const_iterator>);
+
+  static_assert(std::is_copy_assignable_v<iterator>);
+  static_assert(std::is_copy_assignable_v<const_iterator>);
+
+  static_assert(std::is_convertible_v<iterator, const_iterator>,
+                "Conversions from non-const to const are supported");
+
+  static_assert(!std::is_convertible_v<const_iterator, iterator>,
+                "Cannot convert const to non-const iterator");
+
   static_assert(
-      std::is_copy_constructible_v<typename Container<int>::iterator>);
+      !std::is_convertible_v<iterator, typename Container<char>::iterator>,
+      "Cannot convert between iterator types");
 
-  // Test that Container<T> iterators are move constructible
-  static_assert(
-      std::is_move_constructible_v<typename Container<MoveOnly>::iterator>);
+  static_assert(const_iterator() == const_iterator());
+  static_assert(iterator() == const_iterator());
+  static_assert(const_iterator() == iterator());
+  static_assert(iterator() == iterator());
 
-  // Test that Container<T> iterators are copy assignable
-  static_assert(std::is_copy_assignable_v<typename Container<int>::iterator>);
+  static_assert(const_iterator() <= const_iterator());
+  static_assert(iterator() <= const_iterator());
+  static_assert(const_iterator() <= iterator());
+  static_assert(iterator() <= iterator());
 
-  // Test that Container<T>::iterator can be converted to a const_iterator
-  static_assert(
-      std::is_convertible<typename Container<int>::iterator,
-                          typename Container<int>::const_iterator>::value);
+  static_assert(const_iterator() >= const_iterator());
+  static_assert(iterator() >= const_iterator());
+  static_assert(const_iterator() >= iterator());
+  static_assert(iterator() >= iterator());
 
-  // Test that Container<T>::const_iterator can NOT be converted to an iterator
-  static_assert(!std::is_convertible<typename Container<int>::const_iterator,
-                                     typename Container<int>::iterator>::value);
+  static_assert(!(const_iterator() != const_iterator()));
+  static_assert(!(iterator() != const_iterator()));
+  static_assert(!(const_iterator() != iterator()));
+  static_assert(!(iterator() != iterator()));
+
+  static_assert(!(const_iterator() < const_iterator()));
+  static_assert(!(iterator() < const_iterator()));
+  static_assert(!(const_iterator() < iterator()));
+  static_assert(!(iterator() < iterator()));
+
+  static_assert(!(const_iterator() > const_iterator()));
+  static_assert(!(iterator() > const_iterator()));
+  static_assert(!(const_iterator() > iterator()));
+  static_assert(!(iterator() > iterator()));
 
   static constexpr bool kPasses = true;
 };
