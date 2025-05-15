@@ -55,8 +55,7 @@ struct EmptyFunction<R(Args...)> {
   R operator()(Args... args) const { return fptr(args...); }
   bool operator==(decltype(nullptr)) const { return true; }
 
-  R(*fptr)
-  (Args...) = nullptr;
+  R (*fptr)(Args...) = nullptr;
 };
 
 struct alignas(4 * alignof(void*)) LargeAlignedCallable {
