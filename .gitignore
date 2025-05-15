@@ -23,6 +23,7 @@ outbazel/
 docs/_build
 twister-out*/
 external/
+twister-template-build/
 
 # Editors
 .pw_ide/

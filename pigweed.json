@@ -82,6 +82,10 @@
           "module": "pw_env_setup_zephyr.zephyr",
           "function": "main"
         },
+        "twister-runner": {
+          "module": "pw_build.zephyr_twister_runner",
+          "function": "main"
+        },
         "sensor-desc": {
           "module": "pw_sensor.sensor_desc",
           "function": "main"

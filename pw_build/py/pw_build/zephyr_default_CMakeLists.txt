@@ -1,0 +1,51 @@
+# Copyright 2025 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+cmake_minimum_required(VERSION 3.20)
+
+set(pw_third_party_nanopb_ADD_SUBDIRECTORY ON CACHE BOOL "" FORCE)
+
+find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
+project(PigweedZephyrTest)
+enable_language(C CXX)
+
+# Zephyr adds the -Wno-volatile flag in cmake/compiler/gcc/compiler_flags.cmake
+# this is a gcc flag which is added in the clang builds too. Pigweed's clang
+# doesn't seem to support this flag so we'll remove it here.
+if("${COMPILER}" STREQUAL "clang")
+    get_property(cpp2a_flags TARGET compiler-cpp PROPERTY dialect_cpp2a)
+    string(REPLACE "-Wno-volatile" "" cpp2a_flags "${cpp2a_flags}")
+    set_property(TARGET compiler-cpp PROPERTY dialect_cpp2a "${cpp2a_flags}")
+
+    get_property(cpp20_flags TARGET compiler-cpp PROPERTY dialect_cpp20)
+    string(REPLACE "-Wno-volatile" "" cpp20_flags "${cpp20_flags}")
+    set_property(TARGET compiler-cpp PROPERTY dialect_cpp20 "${cpp20_flags}")
+
+    get_property(cpp2b_flags TARGET compiler-cpp PROPERTY dialect_cpp2b)
+    string(REPLACE "-Wno-volatile" "" cpp2b_flags "${cpp2b_flags}")
+    set_property(TARGET compiler-cpp PROPERTY dialect_cpp2b "${cpp2b_flags}")
+endif()
+
+target_sources(app PRIVATE ${ZEPHYR_BASE}/misc/empty_file.c)
+
+if("${TEST_LIB}" STREQUAL "")
+  message(FATAL_ERROR "TEST_LIB must be set")
+endif()
+target_link_libraries(app
+  PRIVATE
+    pw_unit_test.simple_printing_main
+    ${TEST_LIB}.lib
+)
+
+zephyr_append_cmake_library(pw_unit_test.simple_printing_main)

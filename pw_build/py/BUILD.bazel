@@ -57,7 +57,12 @@ py_library(
         "pw_build/python_runner.py",
         "pw_build/runfiles_manager.py",
         "pw_build/wrap_ninja.py",
+        "pw_build/zephyr_twister_runner.py",
         "pw_build/zip.py",
+    ],
+    data = [
+        "pw_build/zephyr_default_CMakeLists.txt",
+        "pw_build/zephyr_default_prj.conf",
     ],
     imports = ["."],
     deps = [

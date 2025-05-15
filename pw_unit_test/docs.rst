@@ -1328,3 +1328,66 @@ CMake build arguments
    Type: string (path to a ``.cmake`` file)
 
    Usage: toolchain-controlled only
+
+====================
+Zephyr backend tests
+====================
+Zephyr backend tests use Zephyr's test runner `twister`_. The test runner is
+installed into the Pigweed CLI and can be run by calling ``pw twister-runner``.
+The runner intercepts a few arguments in order to add features to the normal
+test runner; beyond that, the runner just calls twister directly.
+
+The runner will intercept the ``-T`` or ``--testsuite-root`` arguments and do
+the following:
+
+* For every ``testcase.yaml`` file under the testsuite root directory it appends
+  ``-T path/to/testcase.yaml``.
+* For every ``testtemplate.yaml`` it creates a new directory using the
+  ``{name}`` field in the YAML file and the ``--build-dir`` to create a new test
+  root at ``{build_dir}/{name}``. It will then take the ``testcase`` node in the
+  template and create a new ``{build_dir}/{name}/testcase.yaml``. This new YAML
+  file will be appended to the final twister command using ``-T
+  {build_dir}/{name}``.
+
+--------------
+Test templates
+--------------
+Twister normally uses a combination of ``testcase.yaml`` files along
+``CMakeLists.txt`` files which serve as the test's entry point. This doesn't
+work when trying to write tests side by side with the source. The twister runner
+introduces the concept of ``testtemplate.yaml`` which allows the test to live in
+the same directory as the source but is compatible with twister. The test
+template YAML file contains the following required keys:
+
+* ``name`` - The name of the test directory to create. This must be unique per
+  twister run.
+* ``testcase`` - The content of this entry will be copied into a new
+  ``{build_dir}/{name}/testcase.yaml`` file.
+
+Additional fields are available in the template and are optional:
+
+* ``file-map`` - This key/value dictionary contains a mapping of relative file
+  paths (reltive to the ``testtemplate.yaml`` file) to output relative file
+  paths (relative to the generated ``{build_dir}/{name)``). Each entry will
+  create a symlink.
+* ``use-default-cmake`` - By default ``true`` and allows the test to leverage a
+  common ``CMakeLists.txt`` that should fit the majority of test cases. It sets
+  up a simple Zephyr app which uses the ``simple_printing_main.cc`` to run the
+  tests. This ``CMake`` file also expects that the test will be a library
+  created by ``pw_add_test``. For example, if we wanted to test the
+  ``pw_base64.base64_test`` unit test we would just need to pass
+  ``TEST_LIB=pw_base64.base64_test`` as a ``CMake`` argument.
+* ``use-default-prj-conf`` - By default ``true`` and allows the test to leverage
+  a common ``prj.conf`` that should fit the majority of test cases. It sets up
+  C++20 and a few other common Kconfigs. Additional configs can be added as a
+  part of the ``testtemplate.yaml`` using the ``extra_configs`` key.
+
+-----------------
+Running the tests
+-----------------
+Automatically, tests will be picked up by ``pw presubmit --step zephyr_build``.
+This presubmit test will call the ``twister-runner`` script to run all the tests
+defined in either ``testcase.yaml`` or ``testtemplate.yaml``. Coverage reports
+can be found later in ``twister-out/coverage/``.
+
+.. _twister: https://docs.zephyrproject.org/latest/develop/test/twister.html
