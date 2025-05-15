@@ -6,67 +6,64 @@ Code intelligence
 .. pigweed-module-subpage::
    :name: pw_ide
 
-The Pigweed Visual Studio Code extension bridges Bazel and ``clangd`` to provide
-the smoothest possible C++ embedded development system. For background on the
-tools and approaches Pigweed uses, check out the :ref:`design docs<module-pw_ide-design-cpp>`.
-This doc is a user guide to the way those concepts are applied in Visual Studio
-Code.
+The Pigweed Visual Studio Code extension bridges the build system and ``clangd``
+to provide the smoothest possible C++ embedded development system. For
+background on the tools and approaches Pigweed uses, check out the
+:ref:`design docs<module-pw_ide-design-cpp>`. This doc is a user guide to the
+way those concepts are applied in Visual Studio Code.
 
--------------------------
-Configuring target groups
--------------------------
-In Bazel projects, :ref:`target groups<module-pw_ide-design-cpp-target-groups>`
-are defined in a top-level ``BUILD.bazel`` file with something like this:
+----------------
+Target discovery
+----------------
+Pigweed IDE will discover build targets for Bazel, GN and CMake builds
+automatically, as well as any other targets described by compilation databases
+produced by other means.
 
-.. code-block::
+In general, the process of discovering and processing build targets is triggered
+by running the :ref:`Refresh Compile Commands<module-pw_ide-guide-vscode-commands-refresh-compile-commands>`
+command. See below for build system-specific details.
 
-   refresh_compile_commands(
-     name = "refresh_compile_commands",
-     out_dir = ".compile_commands",
-     target_groups = {
-       "host_simulator": [
-         "//apps/blinky:simulator_blinky",
-         "//apps/production:simulator",
-         "//modules/blinky:blinky_test",
-         "//modules/buttons:manager_test",
-       ],
-       "test_only": "//tests/test:run_tests",
-       "dev_board": [
-          ["//apps/blinky:dev_board_blinky.elf", "--config=dev_board"],
-          ["//apps/factory:dev_board.elf", "--config=dev_board"],
-          ["//apps/production:dev_board.elf", "--config=dev_board"],
-       ],
-     },
-   )
+.. tab-set::
 
-Each target group should contain one or more targets that are "related", in the
-sense that they are pertinent to the way code is compiled for a particular
-platform. For example, as in the example above, it's common to have at least two
-target groups, one for code running on target, and one for code running on host.
+   .. tab-item:: Bazel
 
-As the example illustrates, each target group's value can be either:
+      Pigweed IDE uses Bazel queries to discover your project's build targets
+      and generate ``clangd``-compatible compilation databases for each of them.
+      By default, a file watcher monitors Bazel build files and automatically
+      updates compilation databases in the background. So in most cases, no
+      manual action needs to be taken.
 
-* A single string target name
-* A list/array of target names
-* A list/array of tuples, where the first value is the target name and the
-  second value contains build flags
+      .. note::
 
-.. tip::
+         Previous versions of the Pigweed extension required manually declaring
+         Bazel targets to use for code intelligence in a
+         ``refresh_compile_commands`` invocation in the top level
+         ``BUILD.bazel`` file. This is no longer necessary, and the
+         ``refresh_compile_commands`` Bazel function is no longer present.
 
-   The name of the Bazel target that refreshes compile commands can be set to
-   whatever you want via the ``name`` attribute. Just make sure to update the
-   :ref:`corresponding editor setting<module-pw_ide-guide-vscode-settings-refresh-compile-commands-target>`
-   so that the Pigweed extension knows which target to run.
+   .. tab-item:: GN
 
-.. warning::
+      GN :ref:`can be configured<module-pw_ide-design-cpp-gn>` to generate a
+      compilation database whenever ``gn gen`` is run. Pigweed IDE will find
+      that file when :ref:`Refresh Compile Commands<module-pw_ide-guide-vscode-commands-refresh-compile-commands>`
+      is run and make those targets available for code analysis.
 
-   The order of the targets in each target group matters, as it dictates the
-   ordering of the compile commands in the resulting compilation database.
-   ``clangd`` will use the *first* relevant compile command it encounters to
-   provide code intelligence for a particular file. So if a target group
-   contains two targets that build the same file in different ways, the way
-   the first listed target builds the file will dictate how ``clangd``
-   interprets the file.
+      Right now, this is a manual process; if the compilation databases need to
+      be updated, you have to run ``gn gen`` and then
+      :ref:`Refresh Compile Commands<module-pw_ide-guide-vscode-commands-refresh-compile-commands>`.
+
+   .. tab-item:: CMake
+
+      CMake :ref:`can be configured<module-pw_ide-design-cpp-cmake>` to generate
+      compilation databases during its build. Pigweed IDE will find those files
+      when :ref:`Refresh Compile Commands<module-pw_ide-guide-vscode-commands-refresh-compile-commands>`
+      is run and make those targets available for code analysis.
+
+      If you have a CMake build watcher running, then the compilation databases
+      will update automatically in response to your code changes without the
+      need to run :ref:`Refresh Compile Commands<module-pw_ide-guide-vscode-commands-refresh-compile-commands>`.
+      The only time you would need to manually run that command is if build
+      targets were added or removed from the build.
 
 ----------------------------------------------
 Selecting a target group for code intelligence
@@ -90,11 +87,12 @@ As you work on your project, the build graph will change, new compilation
 databases will need to be built, and ``clangd`` will need to be re-configured
 to provide accurate code intelligence.
 
-The Pigweed extension handles this for you automatically. Whenever you make a
-change that could alter the build graph, a background process is launched to
-regenerate fresh compile commands. You'll see the status bar icon change to
-look like this while the refresh process is running, and during that time, you
-can click on the status bar item to open the output window and monitor progress.
+The Pigweed extension handles this for you automatically for Bazel builds.
+Whenever you make a change that could alter the build graph, a background
+process is launched to regenerate fresh compile commands. You'll see the status
+bar icon change to look like this while the refresh process is running, and
+during that time, you can click on the status bar item to open the output window
+and monitor progress.
 
 .. figure:: https://storage.googleapis.com/pigweed-media/vsc-status-bar-refreshing.png
    :alt: Visual Studio Code screenshot showing the target status bar item

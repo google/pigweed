@@ -15,8 +15,8 @@ pw_ide
 
 Rich, modern IDE and code editor support for embedded systems Projects.
 
-Most modern software development takes advantage of language servers and
-advanced editor features to power experiences like:
+Modern software development takes advantage of language servers and advanced
+editor features to power experiences like:
 
 * Fast, accurate code navigation, including finding definitions,
   implementations, and references

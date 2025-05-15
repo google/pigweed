@@ -6,28 +6,29 @@ Projects
 .. pigweed-module-subpage::
    :name: pw_ide
 
-There are broadly two types of Pigweed projects that Pigweed's IDE tooling
-supports:
+Pigweed projects support :ref:`multiple build systems<docs-build-system>` and
+two methods of providing toolchains and a hermetic developer environment:
 
-* Bootstrap projects, in which a development environment is populated by
-  sourcing binary dependencies from CIPD, and is accessed by setting environment
-  variables via ``bootstrap`` and ``activate`` shell scripts. Usually, the build
-  system is GN or CMake.
-
-* Bazel projects, in which Bazel is the build system, Bazel manages development
+* **Bazel**, in which Bazel is the build system, Bazel manages development
   environment dependencies, and the ``bazel`` (or ``bazelisk``) command is the
   entry point into all tooling
 
-Other project configurations are possible, but these are the two that our IDE
-tooling recognizes and supports.
+* **Bootstrap**, in which a development environment is populated by sourcing
+  binary dependencies from CIPD, and is accessed by setting environment
+  variables via ``bootstrap`` and ``activate`` shell scripts. Usually, the build
+  system is GN or CMake.
+
+Pigweed IDE supports either or both of these in a project. For example, Pigweed
+itself has a GN build, supported by Bootstrap tooling, as well as a Bazel build,
+supported by Bazel tooling. Pigweed IDE will provide code intelligence for both.
 
 .. _module-pw_ide-design-projects-project-root:
 
 -----------------
 Project structure
 -----------------
-For both project types, we look for the presence of a ``pigweed.json`` file to
-indicate the root of the project directory.
+Pigweed IDE looks for the presence of a ``pigweed.json`` file to indicate the
+root of the project directory.
 
 .. _module-pw_ide-design-projects-bootstrap:
 

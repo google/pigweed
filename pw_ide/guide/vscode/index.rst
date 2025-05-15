@@ -25,14 +25,7 @@ including:
 * Bundled core Bazel tools, letting you get started immediately without the need
   to install global system dependencies
 
-* Interactive browsing, building, and running Bazel targets
-
-.. note::
-
-   Currently, this document only applies to :ref:`Bazel projects<module-pw_ide-design-projects-bazel>`.
-   We're working on adding support for :ref:`bootstrap projects<module-pw_ide-design-projects-bootstrap>`.
-   In the meantime, bootstrap projects can use the :ref:`command-line interface<module-pw_ide-guide-cli>`
-   with the :ref:`legacy support for Visual Studio Code<module-pw_ide-guide-vscode-legacy>`.
+* Interactive browsing, building, and running build targets
 
 ---------------
 Getting started
@@ -50,8 +43,7 @@ when you open :ref:`Pigweed projects<module-pw_ide-design-projects>`:
 * The Bazel extension will discover all of the targets in your project
 
 * The Pigweed extension will generate `compilation databases <https://clangd.llvm.org/design/compile-commands>`_
-  for the :ref:`target groups<module-pw_ide-design-cpp-target-groups>`
-  in your project.
+  for the build target & toolchain combinations in your project
 
 You can now select a target group from the status bar item at the bottom
 of your window or by running the ``Pigweed: Select Code Analysis Target``
@@ -174,11 +166,11 @@ Access commands by opening the command palette :kbd:`Ctrl+Shift+P`
 .. describe:: Pigweed: Refresh Compile Commands
 
    Manually trigger a refresh of the compilation databases used for C/C++ code
-   intelligence. Normally, the databases are refreshed automatically when build
-   files are changed, but if you have
-   :ref:`automatic refreshing disabled<module-pw_ide-guide-vscode-settings-disable-compile-commands-file-watcher>`
-   or need to refresh outside of the automatic cycle, this command will refresh
-   manually.
+   intelligence. Normally for Bazel builds, the databases are refreshed
+   automatically when build files are changed, but if you have
+   :ref:`automatic refreshing disabled<module-pw_ide-guide-vscode-settings-disable-compile-commands-file-watcher>`,
+   need to generate compile commands for GN or CMake targets, or need to refresh
+   outside of the automatic cycle, this command will refresh manually.
 
 .. describe:: Pigweed: Refresh Compile Commands and Set Code Analysis Target
 
@@ -231,6 +223,15 @@ Access commands by opening the command palette :kbd:`Ctrl+Shift+P`
    run Bazel actions via Visual Studio Code commands or via `bazelisk ...`
    invocations in the integrated terminal, while working in the same Bazel
    environment.
+
+.. describe:: Pigweed: Launch Activated Terminal
+
+   Launches a terminal and activates the Pigweed Bootstrap environment. Run this
+   if you have already bootstrapped.
+
+.. describe:: Pigweed: Bootstrap Activated Terminal
+
+   Launches a terminal and bootstraps the Pigweed Bootstrap environment.
 
 ---------------------
 Configuration options
