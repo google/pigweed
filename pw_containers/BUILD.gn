@@ -117,6 +117,12 @@ pw_source_set("inline_deque") {
   public = [ "public/pw_containers/inline_deque.h" ]
 }
 
+pw_source_set("dynamic_queue") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/dynamic_queue.h" ]
+  deps = [ ":dynamic_deque" ]
+}
+
 pw_source_set("inline_queue") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ ":inline_deque" ]
@@ -278,6 +284,7 @@ pw_test_group("tests") {
     ":filtered_view_test",
     ":flat_map_test",
     ":dynamic_deque_test",
+    ":dynamic_queue_test",
     ":inline_deque_test",
     ":inline_queue_test",
     ":intrusive_forward_list_test",
@@ -358,6 +365,15 @@ pw_test("inline_deque_test") {
 
   # TODO: b/259746255 - Remove this when everything compiles with -Wconversion.
   configs = [ "$dir_pw_build:conversion_warnings" ]
+}
+
+pw_test("dynamic_queue_test") {
+  sources = [ "dynamic_queue_test.cc" ]
+  deps = [
+    ":dynamic_queue",
+    ":test_helpers",
+    "$dir_pw_allocator:testing",
+  ]
 }
 
 pw_test("inline_queue_test") {

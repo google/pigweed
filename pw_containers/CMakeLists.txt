@@ -108,6 +108,15 @@ pw_add_library(pw_containers.inline_deque INTERFACE
     pw_toolchain.constexpr_tag
 )
 
+pw_add_library(pw_containers.dynamic_queue INTERFACE
+  HEADERS
+    public/pw_containers/dynamic_queue.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.dynamic_queue
+)
+
 pw_add_library(pw_containers.inline_queue INTERFACE
   HEADERS
     public/pw_containers/inline_queue.h
@@ -350,6 +359,18 @@ pw_add_test(pw_containers.inline_deque_test
   PRIVATE_DEPS
     pw_compilation_testing._pigweed_only_negative_compilation
     pw_containers.inline_deque
+    pw_containers._test_helpers
+  GROUPS
+    modules
+    pw_containers
+)
+
+pw_add_test(pw_containers.dynamic_queue_test
+  SOURCES
+    dynamic_queue_test.cc
+  PRIVATE_DEPS
+    pw_allocator.testing
+    pw_containers.dynamic_queue
     pw_containers._test_helpers
   GROUPS
     modules

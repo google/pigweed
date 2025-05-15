@@ -220,6 +220,13 @@ cc_library(
 )
 
 cc_library(
+    name = "dynamic_queue",
+    hdrs = ["public/pw_containers/dynamic_queue.h"],
+    strip_include_prefix = "public",
+    deps = [":dynamic_deque"],
+)
+
+cc_library(
     name = "inline_queue",
     hdrs = [
         "public/pw_containers/inline_queue.h",
@@ -402,6 +409,16 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "dynamic_queue_test",
+    srcs = ["dynamic_queue_test.cc"],
+    deps = [
+        ":dynamic_queue",
+        ":test_helpers",
+        "//pw_allocator:testing",
+    ],
+)
+
+pw_cc_test(
     name = "inline_queue_test",
     srcs = [
         "inline_queue_test.cc",
@@ -527,6 +544,7 @@ filegroup(
     srcs = [
         "public/pw_containers/algorithm.h",
         "public/pw_containers/dynamic_deque.h",
+        "public/pw_containers/dynamic_queue.h",
         "public/pw_containers/filtered_view.h",
         "public/pw_containers/inline_deque.h",
         "public/pw_containers/inline_queue.h",

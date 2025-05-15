@@ -37,6 +37,13 @@ API reference
 .. doxygenclass:: pw::BasicInlineDeque
    :members:
 
+----------------
+pw::DynamicQueue
+----------------
+.. doxygenclass:: pw::DynamicQueue
+   :members:
+   :undoc-members:
+
 ---------------
 pw::InlineQueue
 ---------------
