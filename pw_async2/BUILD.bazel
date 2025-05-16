@@ -24,7 +24,6 @@ load("//pw_unit_test:pw_cc_test.bzl", "pw_cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
-    features = ["-ctad_warnings"],
 )
 
 licenses(["notice"])

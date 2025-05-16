@@ -86,7 +86,7 @@ class Dispatcher {
   template <typename Pendable>
   Poll<PendOutputOf<Pendable>> RunPendableUntilStalled(Pendable& pendable)
       PW_LOCKS_EXCLUDED(impl::dispatcher_lock()) {
-    internal::PendableAsTaskWithOutput task(pendable);
+    internal::PendableAsTaskWithOutput<Pendable> task(pendable);
     Post(task);
     if (RunUntilStalled(task).IsReady()) {
       return task.TakeOutput();
@@ -114,7 +114,7 @@ class Dispatcher {
   template <typename Pendable>
   PendOutputOf<Pendable> RunPendableToCompletion(Pendable& pendable)
       PW_LOCKS_EXCLUDED(impl::dispatcher_lock()) {
-    internal::PendableAsTaskWithOutput task(pendable);
+    internal::PendableAsTaskWithOutput<Pendable> task(pendable);
     Post(task);
     native_.DoRunToCompletion(*this, &task);
     return task.TakeOutput();

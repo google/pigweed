@@ -39,4 +39,7 @@ class PendFuncTask : public Task {
   Func func_;
 };
 
+template <typename Func>
+PendFuncTask(Func&&) -> PendFuncTask<Func>;
+
 }  // namespace pw::async2

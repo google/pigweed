@@ -87,4 +87,7 @@ class Join {
   std::tuple<Poll<PendOutputOf<Pendables>>...> outputs_;
 };
 
+template <typename... Pendables>
+Join(Pendables&&...) -> Join<Pendables...>;
+
 }  // namespace pw::async2

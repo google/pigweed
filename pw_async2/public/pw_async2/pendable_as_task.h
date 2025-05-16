@@ -48,4 +48,7 @@ class PendableAsTask : public Task {
   Pendable pendable_;
 };
 
+template <typename T>
+PendableAsTask(T&&) -> PendableAsTask<T>;
+
 }  // namespace pw::async2
