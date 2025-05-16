@@ -56,7 +56,6 @@ from typing import (
     NamedTuple,
     Pattern,
 )
-import warnings
 
 try:
     from pw_tokenizer import database, decode, encode, tokens
@@ -321,18 +320,6 @@ class Detokenizer:
         """
         return self._detokenize_nested_callback(recursion)(data)
 
-    # TODO(gschen): remove unnecessary function
-    def detokenize_base64(
-        self,
-        data: AnyStr,
-        recursion: int = DEFAULT_RECURSION,
-    ) -> AnyStr:
-        """Alias of detokenize_text for backwards compatibility."""
-        warnings.warn(
-            "Deprecated; call detokenize_text instead", DeprecationWarning
-        )
-        return self.detokenize_text(data, recursion)
-
     def detokenize_text_to_file(
         self,
         data: AnyStr,
@@ -341,20 +328,6 @@ class Detokenizer:
     ) -> None:
         """Decodes prefixed Base64 messages in data; decodes to output file."""
         output.write(self._detokenize_nested(data, recursion))
-
-    # TODO(gschen): remove unnecessary function
-    def detokenize_base64_to_file(
-        self,
-        data: AnyStr,
-        output: BinaryIO,
-        recursion: int = DEFAULT_RECURSION,
-    ) -> None:
-        """Alias of detokenize_text_to_file for backwards compatibility."""
-        warnings.warn(
-            "Deprecated; call detokenize_base64_to_file instead",
-            DeprecationWarning,
-        )
-        self.detokenize_text_to_file(data, output, recursion)
 
     def detokenize_text_live(
         self,
@@ -375,20 +348,6 @@ class Detokenizer:
             # Flush each line to prevent delays when piping between processes.
             if b'\n' in message:
                 output.flush()
-
-    # TODO(gschen): remove unnecessary function
-    def detokenize_base64_live(
-        self,
-        input_file: io.RawIOBase | BinaryIO,
-        output: BinaryIO,
-        recursion: int = DEFAULT_RECURSION,
-    ) -> None:
-        """Alias of detokenize_text_live for backwards compatibility."""
-        warnings.warn(
-            "Deprecated; call detokenize_base64_live instead",
-            DeprecationWarning,
-        )
-        self.detokenize_text_live(input_file, output, recursion)
 
     def _detokenize_nested_callback(
         self,
@@ -696,20 +655,6 @@ class NestedMessageParser:
             transform(data) if is_message else data
             for is_message, data in self.read_messages(chunk, flush=flush)
         )
-
-
-# TODO(hepler): Remove this unnecessary function.
-def detokenize_base64(
-    detokenizer: Detokenizer,
-    data: bytes,
-    recursion: int = DEFAULT_RECURSION,
-) -> bytes:
-    """Alias for detokenizer.detokenize_text for backwards compatibility.
-
-    This function is deprecated; do not call it.
-    """
-    warnings.warn("Deprecated; call detokenize.detokenize_text() instead")
-    return detokenizer.detokenize_text(data, recursion)
 
 
 def _follow_and_detokenize_file(

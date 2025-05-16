@@ -169,13 +169,6 @@ class Detokenizer {
     return DetokenizeTextRecursive(text, kMaxDecodePasses);
   }
 
-  /// Deprecated version of `DetokenizeText` with no recursive detokenization.
-  /// @deprecated Call `DetokenizeText` instead.
-  [[deprecated("Use DetokenizeText() instead")]] std::string DetokenizeBase64(
-      std::string_view text) const {
-    return DetokenizeTextRecursive(text, 1);
-  }
-
   /// Decodes data that may or may not be tokenized, such as proto fields marked
   /// as optionally tokenized.
   ///
