@@ -937,6 +937,10 @@
   "pw_unit_test_zephyr": {
     "status": "stable"
   },
+  "pw_uuid": {
+    "tagline": "128-bit universally unique identifier (UUID)",
+    "status": "experimental"
+  },
   "pw_varint": {
     "tagline": "Functions for encoding and decoding variable length integers",
     "status": "stable",

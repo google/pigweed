@@ -121,6 +121,7 @@ Modules
    pw_uart/docs
    pw_unit_test/docs
    pw_unit_test_zephyr/docs
+   pw_uuid/docs
    pw_varint/docs
    pw_watch/docs
    pw_web/docs

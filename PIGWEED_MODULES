@@ -179,6 +179,7 @@ pw_uart
 pw_uart_mcuxpresso
 pw_unit_test
 pw_unit_test_zephyr
+pw_uuid
 pw_varint
 pw_watch
 pw_web
