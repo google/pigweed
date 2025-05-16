@@ -48,6 +48,7 @@ rust_library(
         "arch/riscv.rs",
         "arch/riscv/exceptions.rs",
         "arch/riscv/regs.rs",
+        "arch/riscv/regs/pmp.rs",
         "arch/riscv/spinlock.rs",
         "arch/riscv/threads.rs",
         "arch/riscv/timer.rs",

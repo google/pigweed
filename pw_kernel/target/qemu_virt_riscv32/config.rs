@@ -19,4 +19,7 @@ pub struct KernelConfig;
 
 impl KernelConfigInterface for KernelConfig {}
 
-impl RiscVKernelConfigInterface for KernelConfig {}
+impl RiscVKernelConfigInterface for KernelConfig {
+    const PMP_ENTRIES: usize = 16;
+    const PMP_CFG_REGISTERS: usize = 4;
+}

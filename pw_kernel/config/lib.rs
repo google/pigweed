@@ -30,4 +30,12 @@ pub trait CortexMKernelConfigInterface {
 
 /// RISC-V specific configuration.
 // TODO: davidroth - Once Arch is out of tree, move this configuration also.
-pub trait RiscVKernelConfigInterface {}
+pub trait RiscVKernelConfigInterface {
+    /// Number of PMP entries.  Per the architecture spec this may be 0, 16
+    /// or 64.
+    const PMP_ENTRIES: usize;
+
+    /// Number of pmpcfgN registers.  For rv32 this is `PMP_ENTRIES / 4`, for
+    /// rv64 it is `PMP_ENTRIES / 8`.
+    const PMP_CFG_REGISTERS: usize;
+}

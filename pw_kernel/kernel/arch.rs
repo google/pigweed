@@ -76,6 +76,41 @@ pub trait ThreadState {
     );
 }
 
+#[derive(Clone, Copy)]
+#[allow(dead_code)]
+pub enum MemoryRegionType {
+    /// Read Only, Non-Executable data.
+    ReadOnlyData,
+
+    /// Mode Read/Write, Non-Executable data.
+    ReadWriteData,
+
+    /// Mode Read Only, Executable data.
+    ReadOnlyExecutable,
+
+    /// Mode Read/Write, Executable data.
+    ReadWriteExecutable,
+
+    /// Device MMIO memory.
+    Device,
+}
+
+/// Architecture independent memory region description.
+///
+/// `MemoryRegion` provides an architecture independent way to describe a memory
+/// regions and its configuration.
+#[allow(dead_code)]
+pub struct MemoryRegion {
+    /// Type of the memory region
+    ty: MemoryRegionType,
+
+    /// Start address of the memory region (inclusive)
+    start: usize,
+
+    /// Start address of the memory region (exclusive)
+    end: usize,
+}
+
 pub trait BareSpinLock {
     type Guard<'a>
     where

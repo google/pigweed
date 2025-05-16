@@ -14,6 +14,8 @@
 
 use regs::*;
 
+pub mod pmp;
+
 #[allow(unused_macros)]
 macro_rules! ro_csr_reg {
     ($name:ident, $val_type:ident, $reg_ame:ident, $doc:literal) => {
