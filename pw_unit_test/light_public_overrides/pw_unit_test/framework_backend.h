@@ -705,8 +705,7 @@ class Test {
   // Runs the unit test.
   void PigweedTestRun() {
     SetUp();
-    // TODO(deymo): Skip the test body if there's a fatal error in SetUp().
-    if (!Framework::Get().IsSkipped()) {
+    if (!HasFailure() && !Framework::Get().IsSkipped()) {
       PigweedTestBody();
     }
     TearDown();
