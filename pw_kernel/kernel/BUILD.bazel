@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_doc", "rust_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -98,4 +98,25 @@ rust_library(
         "@platforms//cpu:riscv32": RISCV_DEPS,
         "//conditions:default": [],
     }),
+)
+
+rust_doc(
+    name = "kernel_doc",
+    crate = ":kernel",
+    rustdoc_flags = [
+        "--document-private-items",
+        "--cfg=feature=\"user_space\"",
+    ] + select({
+        # Arch feature selection will be removed when arch support moves out of
+        # the kernel crate.
+        "@pigweed//pw_build/constraints/arm:cortex-m0": ["--cfg=feature=\"arch_arm_cortex_m\""],
+        "@pigweed//pw_build/constraints/arm:cortex-m3": ["--cfg=feature=\"arch_arm_cortex_m\""],
+        "@pigweed//pw_build/constraints/arm:cortex-m33": ["--cfg=feature=\"arch_arm_cortex_m\""],
+        "@platforms//cpu:riscv32": ["--cfg=feature=\"arch_riscv\""],
+        "//conditions:default": [
+            "--cfg=feature=\"arch_host\"",
+            "--cfg=feature=\"std_panic_handler\"",
+        ],
+    }),
+    tags = ["kernel"],
 )

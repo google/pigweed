@@ -87,12 +87,12 @@ impl Event {
         }
     }
 
-    /// Waits until the `Event` is in the signaled state or the [`deadline`] is
+    /// Waits until the `Event` is in the signaled state or the `deadline` is
     /// reached, whichever happens first.
     ///
-    /// If the event's configuration is [`AutoReset`], the thread which is
-    /// un-blocked by a signal also clears that signal, resetting its value to
-    /// un-signaled.
+    /// If the event's configuration is [`EventConfig::AutoReset`], the thread
+    /// which is un-blocked by a signal also clears that signal, resetting its
+    /// value to un-signaled.
     ///
     /// # Interrupt context
     ///
