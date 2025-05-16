@@ -6,6 +6,15 @@
 What's new in Pigweed
 =====================
 
+.. _commit log: https://pigweed.googlesource.com/pigweed/pigweed/+log/refs/heads/main
+
+.. note::
+
+   (May 2025) The changelog is paused while we investigate how to further
+   automate the changelog authoring process to make the workload more
+   manageable. Pigweed in general is still a highly active project! In the
+   meantime, see the `commit log`_ for updates.
+
 --------------------------------
 Talk to the team at Pigweed Live
 --------------------------------
@@ -19,11 +28,6 @@ Feb 6, 2025
 -----------
 
 .. changelog_highlights_start
-
-.. note::
-
-   :ref:`docs-changelog` will be paused for 2 months.
-   It will resume in April 2025.
 
 Highlights (Jan 25, 2025 to Feb 6, 2025):
 
