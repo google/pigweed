@@ -33,6 +33,7 @@ rust_binary(
     }),
     deps = [
         ":app_linker_script",
+        "//pw_kernel/syscall:syscall_user",
         "//pw_kernel/userspace",
         "//pw_tokenizer/rust:pw_tokenizer",
     ],

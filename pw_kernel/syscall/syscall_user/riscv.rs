@@ -37,6 +37,7 @@ macro_rules! syscall_veneer {
 
 syscall_veneer!(DebugNoOp, noop());
 syscall_veneer!(DebugAdd, add(a: u32, b: u32));
+syscall_veneer!(DebugPutc, putc(a: u32));
 
 impl SysCallInterface for SysCall {
     #[inline(always)]
@@ -47,5 +48,10 @@ impl SysCallInterface for SysCall {
     #[inline(always)]
     fn debug_add(a: u32, b: u32) -> Result<u32> {
         SysCallReturnValue(unsafe { add(a, b) }).to_result_u32()
+    }
+
+    #[inline(always)]
+    fn debug_putc(a: u32) -> Result<u32> {
+        SysCallReturnValue(unsafe { putc(a) }).to_result_u32()
     }
 }

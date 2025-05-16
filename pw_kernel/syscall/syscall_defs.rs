@@ -195,6 +195,7 @@ pub enum SysCallId {
     // System calls prefixed with 0xF000 are reserved development/debugging use.
     DebugNoOp = 0xf000,
     DebugAdd = 0xf001,
+    DebugPutc = 0xf002,
 }
 
 impl TryFrom<u16> for SysCallId {
@@ -203,7 +204,7 @@ impl TryFrom<u16> for SysCallId {
     fn try_from(value: u16) -> core::result::Result<Self, Error> {
         match value {
             // Safety: match
-            0xf000..=0xf001 => Ok(unsafe { core::mem::transmute::<u16, SysCallId>(value) }),
+            0xf000..=0xf002 => Ok(unsafe { core::mem::transmute::<u16, SysCallId>(value) }),
             _ => Err(Error::InvalidArgument),
         }
     }
@@ -409,4 +410,5 @@ extern "C" {
 pub trait SysCallInterface {
     fn debug_noop() -> Result<()>;
     fn debug_add(a: u32, b: u32) -> Result<u32>;
+    fn debug_putc(a: u32) -> Result<u32>;
 }

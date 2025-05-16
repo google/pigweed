@@ -16,6 +16,7 @@
 
 use pw_tokenizer::tokenize_core_fmt_to_buffer;
 
+use syscall_user::*;
 use userspace::entry;
 
 #[entry]
@@ -23,7 +24,9 @@ fn entry() -> ! {
     // populate the tokenized database
     let mut buffer = [0u8; 1024];
     let _ = tokenize_core_fmt_to_buffer!(&mut buffer, "App one tokenized string {}", 1 as i32);
-    loop {}
+    loop {
+        let _ = SysCall::debug_putc('a' as u32);
+    }
 }
 
 #[panic_handler]

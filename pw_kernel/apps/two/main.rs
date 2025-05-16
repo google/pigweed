@@ -14,11 +14,14 @@
 #![no_main]
 #![no_std]
 
+use syscall_user::*;
 use userspace::entry;
 
 #[entry]
 fn entry() -> ! {
-    loop {}
+    loop {
+        let _ = SysCall::debug_putc('b' as u32);
+    }
 }
 
 #[panic_handler]

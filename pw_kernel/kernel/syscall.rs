@@ -14,6 +14,7 @@
 
 use pw_status::Result;
 
+use pw_log::info;
 use syscall_defs::{SysCallId, SysCallReturnValue};
 use time::Clock;
 
@@ -47,6 +48,12 @@ pub fn handle_syscall(
             crate::sleep_until(crate::Clock::now() + crate::Duration::from_secs(1));
             log_if::debug_if!(SYSCALL_DEBUG, "sycall: DebugAdd woken");
             Ok((arg0 + arg1) as u64)
+        }
+        SysCallId::DebugPutc => {
+            crate::sleep_until(crate::Clock::now() + crate::Duration::from_secs(1));
+            let c = unsafe { char::from_u32_unchecked(arg0 as u32) };
+            info!("{}", c as char);
+            Ok(c as u64)
         }
     };
     log_if::debug_if!(SYSCALL_DEBUG, "syscall: {:#06x} returning", id as usize);
