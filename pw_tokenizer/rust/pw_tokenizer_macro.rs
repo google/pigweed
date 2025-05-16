@@ -196,7 +196,7 @@ impl PrintfFormatMacroGenerator for TokenizeToBufferGenerator<'_> {
 
     fn char_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
         self.encoding_fragments.push(quote! {
-          Argument::Char(u8::from(#expression))
+          Argument::Varint(i64::from(#expression))
         });
         Ok(None)
     }
@@ -351,7 +351,7 @@ impl PrintfFormatMacroGenerator for TokenizeToWriterGenerator<'_> {
 
     fn char_conversion(&mut self, expression: Arg) -> Result<Option<String>> {
         self.encoding_fragments.push(quote! {
-          Argument::Char(u8::from(#expression))
+          Argument::Varint(i64::from(#expression))
         });
         Ok(None)
     }

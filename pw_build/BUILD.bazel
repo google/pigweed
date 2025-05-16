@@ -202,7 +202,10 @@ pw_string_list_comparison_test(
     name = "simple_glob",
     actual = glob_dirs(
         ["test_data/**"],
-        exclude = ["test_data/pw_copy_and_patch_file/**"],
+        exclude = [
+            "test_data/pw_copy_and_patch_file/**",
+            "test_data/pw_rust_crates_extension/**",
+        ],
     ),
     expected = [
         "test_data",

@@ -24,7 +24,6 @@ use crate::MessageWriter;
 // engine.
 pub enum Argument<'a> {
     String(&'a str),
-    Char(u8),
     Varint(i64),
 }
 
@@ -36,7 +35,7 @@ impl<'a> From<&'a str> for Argument<'a> {
 
 impl From<char> for Argument<'_> {
     fn from(val: char) -> Self {
-        Self::Char(val as u8)
+        Self::Varint(val as i64)
     }
 }
 
@@ -145,7 +144,6 @@ fn tokenize_engine<W: crate::MessageWriter>(
                 let len = i.varint_encode(&mut encode_buffer)?;
                 writer.write(&encode_buffer[..len])?;
             }
-            Argument::Char(c) => writer.write(&[*c])?,
         }
     }
 

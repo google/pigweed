@@ -643,10 +643,10 @@ mod tests {
     #[test]
     fn test_char_format() {
         tokenize_test!(
-            &[0x2e, 0x52, 0xac, 0xe4, 0x50], // expected buffer
-            64,                              // buffer size
-            "Hello: %cigweed",               // printf style
-            "",                              // no equivalent core::fmt style
+            &[0x2e, 0x52, 0xac, 0xe4, 0xa0, 0x1], // expected buffer
+            64,                                   // buffer size
+            "Hello: %cigweed",                    // printf style
+            "",                                   // no equivalent core::fmt style
             "P".as_bytes()[0]
         );
     }
@@ -717,7 +717,7 @@ mod tests {
         let len = tokenize_printf_to_buffer!(&mut buffer, "Hello: " PW_FMT_CONCAT "%cigweed",
           "P".as_bytes()[0])
         .unwrap();
-        assert_eq!(&buffer[..len], &[0x2e, 0x52, 0xac, 0xe4, 0x50]);
+        assert_eq!(&buffer[..len], &[0x2e, 0x52, 0xac, 0xe4, 0xa0, 0x1]);
     }
 
     #[test]
