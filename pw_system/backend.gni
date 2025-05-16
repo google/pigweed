@@ -33,7 +33,7 @@ declare_args() {
   #
   # There's no default backend as this is target specific. pw_system_target
   # can automatically configure this for your project.
-  pw_system_DEVICE_HANDLER = ""
+  pw_system_DEVICE_HANDLER = "$dir_pw_system:unknown_device_handler"
 
   # The pw_system backend that provides the system RPC server.
   #

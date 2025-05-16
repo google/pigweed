@@ -13,14 +13,49 @@
 // the License.
 #pragma once
 
+#include "pw_system/config.h"
+#include "pw_thread/attrs.h"
+
 namespace pw::system {
 
-[[noreturn]] void StartScheduler();
+// TODO(amontanez): These should ideally be at different priority levels, but
+// there's synchronization issues when they are.
+inline constexpr ThreadPriority kThreadPriorityLog = ThreadPriority();
+inline constexpr ThreadPriority kThreadPriorityRpc = ThreadPriority();
+inline constexpr ThreadPriority kThreadPriorityTransfer = ThreadPriority();
+inline constexpr ThreadPriority kThreadPriorityDispatcher = ThreadPriority();
+inline constexpr ThreadPriority kThreadPriorityWorkQueue = ThreadPriority();
 
-const thread::Options& LogThreadOptions();
-const thread::Options& RpcThreadOptions();
-const thread::Options& TransferThreadOptions();
-const thread::Options& DispatcherThreadOptions();
-const thread::Options& WorkQueueThreadOptions();
+inline constexpr pw::ThreadAttrs kLogThread =
+    pw::ThreadAttrs()
+        .set_stack_size_bytes(kLogThreadStackSizeBytes)
+        .set_name("LogThread")
+        .set_priority(kThreadPriorityLog);
+
+inline constexpr pw::ThreadAttrs kRpcThread =
+    pw::ThreadAttrs()
+        .set_stack_size_bytes(kRpcThreadStackSizeBytes)
+        .set_name("RpcThread")
+        .set_priority(kThreadPriorityRpc);
+
+inline constexpr pw::ThreadAttrs kTransferThread =
+    pw::ThreadAttrs()
+        .set_stack_size_bytes(kTransferThreadStackSizeBytes)
+        .set_name("TransferThread")
+        .set_priority(kThreadPriorityTransfer);
+
+inline constexpr pw::ThreadAttrs kDispatcherThread =
+    pw::ThreadAttrs()
+        .set_stack_size_bytes(kDispatcherThreadStackSizeBytes)
+        .set_name("DispatcherThread")
+        .set_priority(kThreadPriorityDispatcher);
+
+inline constexpr pw::ThreadAttrs kWorkQueueThread =
+    pw::ThreadAttrs()
+        .set_stack_size_bytes(kWorkQueueThreadStackSizeBytes)
+        .set_name("WorkQueueThread")
+        .set_priority(kThreadPriorityWorkQueue);
+
+[[noreturn]] void StartScheduler();
 
 }  // namespace pw::system

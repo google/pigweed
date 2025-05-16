@@ -392,6 +392,7 @@ pw_add_library(pw_system.async STATIC
     pw_rpc.server
   PRIVATE_DEPS
     pw_system.async_packet_io
+    pw_system.device_service
     pw_system.file_manager
     pw_system.file_service
     pw_system.log
@@ -468,7 +469,7 @@ if((NOT "${pw_async2.dispatcher_BACKEND}" STREQUAL "") AND
 endif()
 
 add_executable(pw_system.system_async_host_example EXCLUDE_FROM_ALL
-  example_user_app_init.cc
+  system_async_host_example.cc
 )
 target_link_libraries(pw_system.system_async_host_example
   PRIVATE
@@ -476,6 +477,4 @@ target_link_libraries(pw_system.system_async_host_example
     pw_channel.epoll_channel
     pw_multibuf.testing
     pw_rpc.pwpb.echo_service
-    pw_trace
-    targets.host_device_simulator.boot
 )

@@ -130,12 +130,17 @@ void AsyncCore::Init(channel::ByteReaderWriter& io_channel) {
 
   // Initialize the packet_io subsystem
   internal::PacketIO& packet_io = InitializePacketIoGlobal(io_channel);
-  packet_io.Start(System().dispatcher(), RpcThreadOptions());
 
-  thread::DetachedThread(DispatcherThreadOptions(),
-                         [] { System().dispatcher().RunToCompletion(); });
+  PW_CONSTINIT static ThreadContextFor<kRpcThread> rpc_thread;
+  packet_io.Start(System().dispatcher(), GetThreadOptions(rpc_thread));
 
-  thread::DetachedThread(WorkQueueThreadOptions(), GetWorkQueue());
+  PW_CONSTINIT static ThreadContextFor<kDispatcherThread> dispatcher_thread;
+  Thread(dispatcher_thread, [] {
+    System().dispatcher().RunToCompletion();
+  }).detach();
+
+  PW_CONSTINIT static ThreadContextFor<kWorkQueueThread> work_queue_thread;
+  Thread(work_queue_thread, GetWorkQueue()).detach();
 }
 
 async2::Poll<> AsyncCore::InitTask(async2::Context&) {
@@ -149,7 +154,9 @@ async2::Poll<> AsyncCore::InitTask(async2::Context&) {
   }
 
   System().rpc_server().RegisterService(GetLogService());
-  thread::DetachedThread(system::LogThreadOptions(), GetLogThread());
+
+  PW_CONSTINIT static ThreadContextFor<kLogThread> log_thread;
+  Thread(log_thread, GetLogThread()).detach();
 
   static rpc::EchoService echo_service;
   System().rpc_server().RegisterService(echo_service);
@@ -163,8 +170,9 @@ async2::Poll<> AsyncCore::InitTask(async2::Context&) {
   if (PW_SYSTEM_ENABLE_TRANSFER_SERVICE != 0) {
     RegisterTransferService(System().rpc_server());
     RegisterFileService(System().rpc_server());
-    thread::DetachedThread(system::TransferThreadOptions(),
-                           GetTransferThread());
+
+    PW_CONSTINIT static ThreadContextFor<kTransferThread> transfer_thread;
+    Thread(transfer_thread, GetTransferThread()).detach();
     InitTransferService();
   }
 
