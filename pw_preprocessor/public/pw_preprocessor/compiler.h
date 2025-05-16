@@ -87,13 +87,13 @@
   __attribute__((format(_PW_PRINTF_FORMAT_TYPE, format_index, parameter_index)))
 
 /// When compiling for host using MinGW, use gnu_printf() rather than printf()
-/// to support %z format specifiers.
+/// to support %z format specifiers only if available (non-clang compilers).
 /// @ingroup pw_preprocessor_internal
-#ifdef __USE_MINGW_ANSI_STDIO
+#if defined(__USE_MINGW_ANSI_STDIO) && !defined(__clang__)
 #define _PW_PRINTF_FORMAT_TYPE gnu_printf
 #else
 #define _PW_PRINTF_FORMAT_TYPE printf
-#endif  // __USE_MINGW_ANSI_STDIO
+#endif  // defined(__USE_MINGW_ANSI_STDIO) && !defined(__clang__)
 
 /// Places a variable in the specified linker section.
 #ifdef __APPLE__
