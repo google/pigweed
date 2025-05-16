@@ -405,18 +405,18 @@ group("link_deps") {
 group("empty") {
 }
 
-config("default_config") {
+config("public_include_path") {
   include_dirs = [ "public" ]
 }
 
 # Linker script utility PW_MUST_PLACE
 pw_source_set("must_place") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_build/must_place.ld.h" ]
 }
 
 pw_source_set("linker_symbol") {
-  public_configs = [ ":default_config" ]
+  public_configs = [ ":public_include_path" ]
   public = [ "public/pw_build/linker_symbol.h" ]
   public_deps = [ "$pw_external_fuchsia:stdcompat" ]
 }
@@ -515,11 +515,30 @@ if (current_toolchain != default_toolchain) {
     visibility = [ ":*" ]
   }
 
+  pw_source_set("sandbox_test_visible_header") {
+    public = [ "public/pw_build/internal/test_header_with_dep.h" ]
+    public_configs = [ ":public_include_path" ]
+  }
+
+  pw_source_set("sandbox_test_invisible_header") {
+    public = [ "public/pw_build/internal/test_header_without_dep.h" ]
+    public_configs = [ ":public_include_path" ]
+  }
+
+  pw_test("sandbox_test") {
+    sources = [ "sandbox_test.cc" ]
+
+    # The GN build does not support sandboxing.
+    defines = [ "SANDBOX_ENABLED=0" ]
+    deps = [ ":sandbox_test_visible_header" ]
+  }
+
   pw_test_group("tests") {
     tests = [
       ":cc_blob_library_test",
       ":file_prefix_map_test",
       ":linker_symbol_test",
+      ":sandbox_test",
     ]
   }
 }

@@ -179,6 +179,25 @@ pw_cc_test(
     ],
 )
 
+cc_library(
+    name = "sandbox_test_visible_header",
+    hdrs = ["public/pw_build/internal/test_header_with_dep.h"],
+    strip_include_prefix = "public",
+)
+
+cc_library(
+    name = "sandbox_test_invisible_header",
+    hdrs = ["public/pw_build/internal/test_header_without_dep.h"],
+    strip_include_prefix = "public",
+)
+
+pw_cc_test(
+    name = "sandbox_test",
+    srcs = ["sandbox_test.cc"],
+    defines = ["SANDBOX_ENABLED=1"],
+    deps = [":sandbox_test_visible_header"],
+)
+
 pw_string_list_comparison_test(
     name = "simple_glob",
     actual = glob_dirs(
@@ -317,6 +336,7 @@ filegroup(
 sphinx_docs_library(
     name = "docs",
     srcs = [
+        "CMakeLists.txt",
         "bazel.rst",
         "cmake.rst",
         "docs.rst",

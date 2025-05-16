@@ -202,6 +202,20 @@ macro(_pw_add_library_multi_value_args variable)
                     PUBLIC_LINK_OPTIONS PRIVATE_LINK_OPTIONS "${ARGN}")
 endmacro()
 
+function(_pw_sandbox_files sandbox_dir files_var)
+  set(result "")
+  foreach(file IN LISTS ${files_var})
+    set(destination "${sandbox_dir}/${file}")
+    message(DEBUG "Sandbox '${file}' as '${destination}'")
+    cmake_path(GET destination PARENT_PATH directory)
+    file(MAKE_DIRECTORY "${directory}")
+    cmake_path(ABSOLUTE_PATH file OUTPUT_VARIABLE absolute)
+    file(CREATE_LINK "${absolute}" "${destination}")
+    list(APPEND result "${destination}")
+  endforeach()
+  set("${files_var}" ${result} PARENT_SCOPE)
+endfunction()
+
 # pw_add_library_generic: Creates a CMake library target.
 #
 # Required Args:
@@ -228,6 +242,8 @@ endmacro()
 #     exposed by the non-generic API.
 #   PUBLIC_LINK_OPTIONS - public target_link_options arguments
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
+#   SANDBOX - whether to sandbox this library (ON/OFF); overrides
+#     pw_ENABLE_CC_SANDBOX
 function(pw_add_library_generic NAME TYPE)
   set(supported_library_types INTERFACE OBJECT STATIC SHARED)
   if(NOT "${TYPE}" IN_LIST supported_library_types)
@@ -239,6 +255,8 @@ function(pw_add_library_generic NAME TYPE)
   pw_parse_arguments(
     NUM_POSITIONAL_ARGS
       2
+    ONE_VALUE_ARGS
+      SANDBOX
     MULTI_VALUE_ARGS
       ${multi_value_args}
       PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE
@@ -269,10 +287,46 @@ function(pw_add_library_generic NAME TYPE)
     pw_target_link_targets(${NAME} ${TYPE} ${arg_${VISIBILITY}_DEPS})
   endmacro()
 
+  set(sandbox_dir "${CMAKE_BINARY_DIR}/PIGWEED_SANDBOX/${NAME}")
+
+  # Default sandboxing to the global pw_ENABLE_CC_SANDBOX option.
+  if("${arg_SANDBOX}" STREQUAL "")
+    set(arg_SANDBOX "${pw_ENABLE_CC_SANDBOX}")
+  endif()
+
+  if(arg_SANDBOX)
+    foreach(path IN LISTS arg_HEADERS arg_SOURCES)
+      # Skip sandboxing absolute paths for now.
+      cmake_path(IS_ABSOLUTE path is_absolute)
+      if(is_absolute)
+        message(DEBUG "Skipping sandboxing ${NAME} due to absolute path ${path}")
+        set(arg_SANDBOX OFF)
+        break()
+      endif()
+
+      # Don't sandbox files that don't exist yet.
+      cmake_path(ABSOLUTE_PATH path OUTPUT_VARIABLE absolute)
+      if(NOT EXISTS "${absolute}" OR "${path}" MATCHES ".*\\$<.+>.*")
+        message(DEBUG "Skipping sandboxing ${NAME} due to generated file ${path}")
+        set(arg_SANDBOX OFF)
+        break()
+      endif()
+    endforeach()
+
+    if(arg_SANDBOX)
+      file(REMOVE_RECURSE "${sandbox_dir}")
+      _pw_sandbox_files("${sandbox_dir}" arg_HEADERS)
+      _pw_sandbox_files("${sandbox_dir}" arg_SOURCES)
+      list(TRANSFORM arg_PRIVATE_INCLUDES PREPEND "${sandbox_dir}/")
+      list(TRANSFORM arg_PUBLIC_INCLUDES PREPEND "${sandbox_dir}/")
+    endif()
+  endif()
+
   if("${TYPE}" STREQUAL "INTERFACE")
     if(NOT "${arg_SOURCES}" STREQUAL "")
       message(
-        SEND_ERROR "${NAME} cannot have sources as it's an INTERFACE library")
+        SEND_ERROR "${NAME} cannot have sources as it's an INTERFACE library"
+        "(${arg_SOURCES})")
     endif(NOT "${arg_SOURCES}" STREQUAL "")
 
     add_library("${NAME}" INTERFACE EXCLUDE_FROM_ALL)

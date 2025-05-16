@@ -123,7 +123,6 @@ error message like the following:
      pw_build/pigweed.cmake:238:EVAL:1 (_pw_target_link_targets_deferred_check)
      CMakeLists.txt:DEFERRED
 
-
 Toolchain setup
 ---------------
 In CMake, the toolchain is configured by setting CMake variables, as described
@@ -199,3 +198,33 @@ If desired, modules can be included individually.
    - :bdg-ref-primary-line:`module-pw_fuzzer-guides-using_fuzztest-toolchain`
    - :bdg-ref-primary-line:`module-pw_protobuf_compiler-cmake`
    - :bdg-ref-primary-line:`module-pw_unit_test-cmake`
+
+Optional sandboxing for C++ and C
+---------------------------------
+Libraries declared with ``pw_add_library`` / ``pw_add_library_generic`` can
+optionally compile from a sandbox. This feature is enabled globally by setting
+the ``pw_ENABLE_CC_SANDBOX`` option:
+
+.. code-block:: cmake
+
+   set(pw_ENABLE_CC_SANDBOX ON CACHE BOOL "")
+
+Individual libraries may enable or disable sandboxing by setting the ``SANDBOX``
+option to ``ON`` or ``OFF``:
+
+.. literalinclude:: CMakeLists.txt
+   :language: cmake
+   :start-after: pw_build-cmake-sandbox-example
+   :end-before: pw_build-cmake-sandbox-example
+
+Sandboxed libraries can only see files they list as sources or headers during
+compilation. Files declared in sandboxed libraries cannot be seen by other
+libraries unless those libraries express that dependency.
+
+This feature helps ensure build correctness. It can avoid serious issues, like
+failing to add a config dependency and getting a default configuration instead
+of a customized one. Bugs like that can result in ODR violations and undefined
+behavior.
+
+Pigweed's CMake sandboxing feature is similar to Bazel's, but it is much simpler
+and less robust. It makes no guarantees of hermeticity.

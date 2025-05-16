@@ -18,6 +18,9 @@
 include("$ENV{PW_ROOT}/pw_build/cc_blob_library.cmake")
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
+option(pw_ENABLE_CC_SANDBOX
+    "Whether to sandbox C++ sources and headers, Bazel-style" OFF)
+
 # Target that specifies the standard Pigweed build options.
 pw_add_library_generic(pw_build INTERFACE
   PUBLIC_COMPILE_OPTIONS
@@ -176,4 +179,54 @@ pw_add_library(pw_build.must_place INTERFACE
     public/pw_build/must_place.ld.h
   PUBLIC_INCLUDES
     public
+)
+
+# DOCSTAG[pw_build-cmake-sandbox-example]
+pw_add_library(pw_build._sandbox_test_visible_header_sandbox_on INTERFACE
+  HEADERS
+    public/pw_build/internal/test_header_with_dep.h
+  PUBLIC_INCLUDES
+    public
+  SANDBOX ON
+)
+# DOCSTAG[pw_build-cmake-sandbox-example]
+
+pw_add_library(pw_build._sandbox_test_visible_header_sandbox_off INTERFACE
+  HEADERS
+    public/pw_build/internal/test_header_with_dep.h
+  PUBLIC_INCLUDES
+    public
+  SANDBOX OFF
+)
+
+pw_add_library(pw_build._sandbox_test_invisible_header INTERFACE
+  HEADERS
+    public/pw_build/internal/test_header_without_dep.h
+  PUBLIC_INCLUDES
+    public
+  SANDBOX OFF
+)
+
+pw_add_test(pw_build.sandbox_enabled_test
+  SOURCES
+    sandbox_test.cc
+  PRIVATE_DEFINES
+    SANDBOX_ENABLED=1
+  PRIVATE_DEPS
+    pw_build._sandbox_test_visible_header_sandbox_on
+  GROUPS
+    modules
+    pw_build
+)
+
+pw_add_test(pw_build.sandbox_disabled_test
+  SOURCES
+    sandbox_test.cc
+  PRIVATE_DEFINES
+    SANDBOX_ENABLED=0
+  PRIVATE_DEPS
+    pw_build._sandbox_test_visible_header_sandbox_off
+  GROUPS
+    modules
+    pw_build
 )
