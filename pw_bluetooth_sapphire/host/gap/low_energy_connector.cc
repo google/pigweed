@@ -298,17 +298,19 @@ bool LowEnergyConnector::InitializeConnection(
 
   Peer* peer = peer_cache_->FindById(peer_id_);
   PW_CHECK(peer);
-  auto connection = LowEnergyConnection::Create(peer->GetWeakPtr(),
-                                                std::move(link),
-                                                options_,
-                                                peer_disconnect_cb,
-                                                error_cb,
-                                                le_connection_manager_,
-                                                l2cap_,
-                                                gatt_,
-                                                hci_,
-                                                wake_lease_provider_,
-                                                dispatcher_);
+  auto connection =
+      LowEnergyConnection::Create(peer->GetWeakPtr(),
+                                  std::move(link),
+                                  options_,
+                                  peer_disconnect_cb,
+                                  error_cb,
+                                  le_connection_manager_,
+                                  l2cap_,
+                                  gatt_,
+                                  hci_,
+                                  wake_lease_provider_,
+                                  dispatcher_,
+                                  adapter_state_.low_energy_state);
   if (!connection) {
     bt_log(WARN,
            "gap-le",

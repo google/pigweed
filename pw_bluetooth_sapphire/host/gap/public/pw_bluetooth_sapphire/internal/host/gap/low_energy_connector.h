@@ -152,7 +152,7 @@ class LowEnergyConnector final {
   l2cap::ChannelManager* l2cap_;
   gatt::GATT::WeakPtr gatt_;
 
-  AdapterState adapter_state_;
+  const AdapterState& adapter_state_;
 
   // True if this connector is connecting an outbound connection, false if it is
   // connecting an inbound connection.

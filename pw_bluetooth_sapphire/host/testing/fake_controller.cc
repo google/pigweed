@@ -3659,6 +3659,20 @@ void FakeController::OnReadLocalSupportedControllerDelay(
       pwemb::OpCode::READ_LOCAL_SUPPORTED_CONTROLLER_DELAY, &packet);
 }
 
+void FakeController::OnLERejectCisRequestCommand(
+    const pw::bluetooth::emboss::LERejectCISRequestCommandView& params) {
+  if (le_cis_reject_cb_) {
+    le_cis_reject_cb_(params.connection_handle().Read());
+  }
+  auto packet = hci::EventPacket::New<
+      pwemb::LERejectCisRequestCommandCompleteEventWriter>(
+      hci_spec::kCommandCompleteEventCode);
+  auto response_view = packet.view_t();
+  response_view.status().Write(pwemb::StatusCode::SUCCESS);
+  response_view.connection_handle().Write(params.connection_handle().Read());
+  RespondWithCommandComplete(pwemb::OpCode::LE_REJECT_CIS_REQUEST, &packet);
+}
+
 void FakeController::OnCommandPacketReceived(
     const PacketView<hci_spec::CommandHeader>& command_packet) {
   hci_spec::OpCode opcode = pw::bytes::ConvertOrderFrom(
@@ -5948,6 +5962,7 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLESetScanParameters:
     case hci_spec::kLESetScanResponseData:
     case hci_spec::kLEStartEncryption:
+    case hci_spec::kLERejectCISRequest:
     case hci_spec::kLinkKeyRequestNegativeReply:
     case hci_spec::kReadEncryptionKeySize:
     case hci_spec::kReadLocalExtendedFeatures:
@@ -6349,6 +6364,12 @@ void FakeController::HandleReceivedCommandPacket(
           command_packet
               .view<pwemb::ReadLocalSupportedControllerDelayCommandView>();
       OnReadLocalSupportedControllerDelay(params);
+      break;
+    }
+    case hci_spec::kLERejectCISRequest: {
+      const auto& params =
+          command_packet.view<pwemb::LERejectCISRequestCommandView>();
+      OnLERejectCisRequestCommand(params);
       break;
     }
     default: {

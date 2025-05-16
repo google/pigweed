@@ -40,6 +40,15 @@ class LowEnergyConnectionServerTest
   LowEnergyConnectionServerTest() = default;
   ~LowEnergyConnectionServerTest() override = default;
 
+  void SetUp() override {
+    bt::testing::FakeController::Settings settings;
+    settings.ApplyDualModeDefaults();
+    settings.le_features |=
+        static_cast<uint64_t>(bt::hci_spec::LESupportedFeature::
+                                  kConnectedIsochronousStreamPeripheral);
+    bthost::testing::AdapterTestFixture::SetUp(settings);
+  }
+
   fble::Connection* client() { return client_.get(); }
 
   void UnbindClient() { client_.Unbind(); }

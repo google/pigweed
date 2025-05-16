@@ -2274,3 +2274,13 @@ struct LEReadNumberOfSupportedAdvertisingSetsCommandCompleteEvent:
   $next [+1]         hci.StatusCode            status
   $next [+1]         UInt                      num_supported_advertising_sets
     [requires: 1 <= this <= 0xF0]
+
+
+struct LERejectCisRequestCommandCompleteEvent:
+  -- 7.7.14 Command Complete event (7.8.102 LE Reject CIS Request command)
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]                   hci.CommandCompleteEvent  command_complete
+  $next [+1]                          hci.StatusCode            status
+  $next [+2]                          UInt                      connection_handle
+    -- Connection handle of the CIS connection. Only the lower 12-bits are meaningful.
+    [requires: 0x0000 <= this <= 0x0EFF]

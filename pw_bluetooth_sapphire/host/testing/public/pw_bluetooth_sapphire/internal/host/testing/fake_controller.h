@@ -385,6 +385,11 @@ class FakeController final : public ControllerTestDoubleBase,
     le_read_remote_features_cb_ = std::move(callback);
   }
 
+  void set_le_cis_reject_callback(
+      fit::function<void(hci_spec::ConnectionHandle)> callback) {
+    le_cis_reject_cb_ = std::move(callback);
+  }
+
   // Sends an HCI event, filling in the parameters in a provided event packet.
   void SendEvent(hci_spec::EventCode event_code, hci::EventPacket* packet);
 
@@ -996,6 +1001,9 @@ class FakeController final : public ControllerTestDoubleBase,
       const pw::bluetooth::emboss::ReadLocalSupportedControllerDelayCommandView&
           params);
 
+  void OnLERejectCisRequestCommand(
+      const pw::bluetooth::emboss::LERejectCISRequestCommandView& params);
+
   void OnAndroidLEGetVendorCapabilities();
 
   void OnAndroidA2dpOffloadCommand(
@@ -1290,6 +1298,7 @@ class FakeController final : public ControllerTestDoubleBase,
   ConnectionStateCallback conn_state_cb_;
   LEConnectionParametersCallback le_conn_params_cb_;
   fit::closure le_read_remote_features_cb_;
+  fit::function<void(hci_spec::ConnectionHandle)> le_cis_reject_cb_;
 
   // Associates opcodes with client-supplied pause listeners. Commands with
   // these opcodes will hang with no response until the client invokes the

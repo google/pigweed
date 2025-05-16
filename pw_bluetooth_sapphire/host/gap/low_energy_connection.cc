@@ -49,18 +49,15 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
     gatt::GATT::WeakPtr gatt,
     hci::Transport::WeakPtr hci,
     pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider,
-    pw::async::Dispatcher& dispatcher) {
+    pw::async::Dispatcher& dispatcher,
+    const LowEnergyState& low_energy_state) {
   // Catch any errors/disconnects during connection initialization so that they
   // are reported by returning a nullptr. This is less error-prone than calling
   // the user's callbacks during initialization.
   bool error = false;
   auto peer_disconnect_cb_temp = [&error](auto) { error = true; };
   auto error_cb_temp = [&error] { error = true; };
-  // TODO(fxbug.dev/325646523): Only create an IsoStreamManager
-  // instance if our adapter supports Isochronous streams.
-  std::unique_ptr<iso::IsoStreamManager> iso_mgr =
-      std::make_unique<iso::IsoStreamManager>(
-          link->handle(), hci->GetWeakPtr(), wake_lease_provider, dispatcher);
+
   std::unique_ptr<LowEnergyConnection> connection(
       new LowEnergyConnection(std::move(peer),
                               std::move(link),
@@ -68,11 +65,12 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
                               std::move(peer_disconnect_cb_temp),
                               std::move(error_cb_temp),
                               std::move(conn_mgr),
-                              std::move(iso_mgr),
                               l2cap,
                               std::move(gatt),
                               std::move(hci),
-                              dispatcher));
+                              dispatcher,
+                              low_energy_state,
+                              wake_lease_provider));
 
   // This looks strange, but it is possible for InitializeFixedChannels() to
   // trigger an error and still return true, so |error| can change between the
@@ -95,17 +93,17 @@ LowEnergyConnection::LowEnergyConnection(
     PeerDisconnectCallback peer_disconnect_cb,
     ErrorCallback error_cb,
     WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-    std::unique_ptr<iso::IsoStreamManager> iso_mgr,
     l2cap::ChannelManager* l2cap,
     gatt::GATT::WeakPtr gatt,
     hci::Transport::WeakPtr hci,
-    pw::async::Dispatcher& dispatcher)
+    pw::async::Dispatcher& dispatcher,
+    const LowEnergyState& low_energy_state,
+    pw::bluetooth_sapphire::LeaseProvider& wake_lease_provider)
     : dispatcher_(dispatcher),
       peer_(std::move(peer)),
       link_(std::move(link)),
       connection_options_(connection_options),
       conn_mgr_(std::move(conn_mgr)),
-      iso_mgr_(std::move(iso_mgr)),
       l2cap_(l2cap),
       gatt_(std::move(gatt)),
       hci_(std::move(hci)),
@@ -123,6 +121,13 @@ LowEnergyConnection::LowEnergyConnection(
   PW_CHECK(error_callback_);
   cmd_ = hci_->command_channel()->AsWeakPtr();
   PW_CHECK(cmd_.is_alive());
+
+  // Only create an IsoStreamManager if the controller supports Isochronous
+  // streams.
+  if (low_energy_state.IsConnectedIsochronousStreamSupported()) {
+    iso_mgr_.emplace(
+        link_->handle(), hci_->GetWeakPtr(), wake_lease_provider, dispatcher);
+  }
 
   link_->set_peer_disconnect_callback(
       [this](const auto&, auto reason) { peer_disconnect_callback_(reason); });

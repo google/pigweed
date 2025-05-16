@@ -50,6 +50,7 @@
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_controller.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/fake_peer.h"
 #include "pw_bluetooth_sapphire/internal/host/testing/inspect.h"
+#include "pw_bluetooth_sapphire/internal/host/testing/test_packets.h"
 #include "pw_bluetooth_sapphire/internal/host/transport/fake_acl_connection.h"
 
 namespace bt::gap {
@@ -189,6 +190,8 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   TestSm::WeakPtr TestSmByHandle(hci_spec::ConnectionHandle handle) {
     return sm_factory_->GetTestSm(handle);
   }
+
+  AdapterState& adapter_state() { return adapter_state_; }
 
  private:
   // Called by |connector_| when a new remote initiated connection is received.
@@ -4612,6 +4615,89 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectAndOpenL2capNonBondable) {
   EXPECT_TRUE(conn_handle->security().secure_connections());
   EXPECT_EQ(conn_handle->bondable_mode(), sm::BondableMode::NonBondable);
 }
+
+TEST_F(LowEnergyConnectionManagerTest,
+       IsoStreamManagerNotCreatedIfNotSupported) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
+
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  auto callback = [&conn_handle](auto result) {
+    ASSERT_EQ(fit::ok(), result);
+    conn_handle = std::move(result).value();
+  };
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  RunUntilIdle();
+  EXPECT_EQ(1u, connected_peers().size());
+  ASSERT_TRUE(conn_handle);
+
+  int reject_count = 0;
+  test_device()->set_le_cis_reject_callback(
+      [&](hci_spec::ConnectionHandle) { ++reject_count; });
+
+  // CIS request should not be rejected because there is no IsoStreamManager.
+  DynamicByteBuffer request_packet =
+      testing::LECisRequestEventPacket(conn_handle->handle(),
+                                       /*cis_connection_handle=*/5,
+                                       /*cig_id=*/6,
+                                       /*cis_id=*/7);
+  test_device()->SendCommandChannelPacket(request_packet);
+  RunUntilIdle();
+  EXPECT_EQ(reject_count, 0);
+}
+
+class LowEnergyConnectionManagerIsoSupportedTest
+    : public LowEnergyConnectionManagerTest,
+      public ::testing::WithParamInterface<hci_spec::LESupportedFeature> {
+ public:
+  void SetUp() override {
+    adapter_state().low_energy_state.set_supported_features(
+        static_cast<uint64_t>(GetParam()));
+    LowEnergyConnectionManagerTest::SetUp();
+  }
+};
+
+TEST_P(LowEnergyConnectionManagerIsoSupportedTest, IsoStreamManagerCreated) {
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  auto fake_peer = std::make_unique<FakePeer>(kAddress0, dispatcher());
+  test_device()->AddPeer(std::move(fake_peer));
+
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  auto callback = [&conn_handle](auto result) {
+    ASSERT_EQ(fit::ok(), result);
+    conn_handle = std::move(result).value();
+  };
+  conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
+  RunUntilIdle();
+  EXPECT_EQ(1u, connected_peers().size());
+  ASSERT_TRUE(conn_handle);
+
+  hci_spec::ConnectionHandle cis_handle = 5;
+  int reject_count = 0;
+  test_device()->set_le_cis_reject_callback(
+      [&](hci_spec::ConnectionHandle handle) {
+        ++reject_count;
+        EXPECT_EQ(handle, cis_handle);
+      });
+
+  // CIS request should be rejected.
+  DynamicByteBuffer request_packet =
+      testing::LECisRequestEventPacket(conn_handle->handle(),
+                                       /*cis_connection_handle=*/cis_handle,
+                                       /*cig_id=*/6,
+                                       /*cis_id=*/7);
+  test_device()->SendCommandChannelPacket(request_packet);
+  RunUntilIdle();
+  EXPECT_EQ(reject_count, 1);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    CisFeatureBits,
+    LowEnergyConnectionManagerIsoSupportedTest,
+    ::testing::Values(
+        hci_spec::LESupportedFeature::kConnectedIsochronousStreamPeripheral,
+        hci_spec::LESupportedFeature::kConnectedIsochronousStreamCentral));
 
 }  // namespace
 }  // namespace bt::gap

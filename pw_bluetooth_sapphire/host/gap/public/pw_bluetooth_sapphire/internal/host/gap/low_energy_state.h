@@ -46,6 +46,17 @@ class LowEnergyState final {
     return max_advertising_data_length_;
   }
 
+  void set_supported_features(uint64_t supported_features) {
+    supported_features_ = supported_features;
+  }
+
+  bool IsConnectedIsochronousStreamSupported() const {
+    return IsFeatureSupported(hci_spec::LESupportedFeature::
+                                  kConnectedIsochronousStreamPeripheral) ||
+           IsFeatureSupported(hci_spec::LESupportedFeature::
+                                  kConnectedIsochronousStreamCentral);
+  }
+
  private:
   friend class Adapter;
   friend class AdapterImpl;
