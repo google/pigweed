@@ -319,12 +319,6 @@ if (pw_BUILD_BROKEN_GROUPS) {
   }
   group("qemu_clang_size_optimized") {
     deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_size_optimized)" ]
-
-    if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
-      deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_debug)" ]
-      deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_size_optimized)" ]
-      deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_speed_optimized)" ]
-    }
   }
   group("qemu_clang") {
     deps = [ ":qemu_clang_size_optimized" ]
@@ -516,18 +510,6 @@ group("pigweed_pypi_distribution") {
   ]
 }
 
-# Build host-only tooling.
-group("host_tools") {
-  deps = []
-
-  if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
-    deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/host:host_clang_debug)" ]
-    deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/host:host_clang_speed_optimized)" ]
-    deps += [ "$dir_pw_rust/examples/basic_executable:basic_executable($dir_pigweed/targets/host:host_clang_size_optimized)" ]
-    deps += [ "$dir_pw_rust/examples/bindgen:test_add($dir_pigweed/targets/host:host_clang_debug)" ]
-  }
-}
-
 # By default, Pigweed will build this target when invoking ninja.
 group("pigweed_default") {
   deps = []
@@ -537,7 +519,10 @@ group("pigweed_default") {
     _is_host_toolchain = defined(pw_toolchain_SCOPE.is_host_toolchain) &&
                          pw_toolchain_SCOPE.is_host_toolchain
 
-    deps = [ ":apps" ]
+    deps = [
+      ":apps",
+      ":pw_rust_targets",
+    ]
 
     # Upstream GoogleTest assumes the presence of a POSIX filesystem. If an
     # external gtest backend has been provided, limit the tests to host-only.
@@ -703,5 +688,17 @@ if (current_toolchain != default_toolchain) {
       "protocol_buffer/gen",
     ]
     group_deps = [ ":pw_module_tests" ]
+  }
+
+  group("pw_rust_targets") {
+    deps = []
+
+    if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
+      deps += [ "$dir_pw_rust/examples/basic_executable" ]
+      # TODO: b/42159023 - Add bindgen tests once 'libclang.so' is available.
+      # if (pw_rust_USE_STD) {
+      #   deps += [ "$dir_pw_rust/examples/bindgen:test_add" ]
+      # }
+    }
   }
 }

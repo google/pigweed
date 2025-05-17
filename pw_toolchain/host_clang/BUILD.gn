@@ -132,6 +132,11 @@ config("xcode_sysroot") {
                                  "trim string")
     cflags = [ "--sysroot=$_xcode_sysroot" ]
     ldflags = cflags
+
+    rustflags = []
+    foreach(f, ldflags) {
+      rustflags += [ "-Clink-arg=$f" ]
+    }
   }
 }
 
@@ -141,6 +146,11 @@ config("linux_sysroot") {
                rebase_path(pw_env_setup_CIPD_PIGWEED, root_build_dir) +
                "/clang_sysroot/" ]
     ldflags = cflags
+
+    rustflags = []
+    foreach(f, ldflags) {
+      rustflags += [ "-Clink-arg=$f" ]
+    }
   }
 }
 
@@ -163,5 +173,10 @@ config("no_system_libcpp") {
       rebase_path(pw_toolchain_CLANG_PREFIX + "/../lib/libc++.a",
                   root_build_dir),
     ]
+
+    rustflags = []
+    foreach(f, ldflags) {
+      rustflags += [ "-Clink-arg=$f" ]
+    }
   }
 }

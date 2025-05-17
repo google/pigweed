@@ -785,12 +785,6 @@ def docs_build(ctx: PresubmitContext) -> None:
     assert_non_empty_directory(examples_html_output_dir)
 
 
-gn_host_tools = PigweedGnGenNinja(
-    name='gn_host_tools',
-    ninja_targets=('host_tools',),
-)
-
-
 def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
     build.install_package(ctx, 'emboss')
     build.install_package(ctx, 'flatbuffers')
@@ -1772,7 +1766,6 @@ QUICK = (
 FULL = (
     _LINTFORMAT,
     gn_combined_build_check,
-    gn_host_tools,
     bazel_build,
     python_checks.gn_python_check,
     python_checks.gn_python_test_coverage,

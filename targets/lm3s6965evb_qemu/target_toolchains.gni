@@ -70,10 +70,13 @@ _target_config = {
     "$dir_pw_log:impl",
   ]
 
-  pw_rust_USE_STD = false
-
   current_cpu = "arm"
   current_os = ""
+}
+
+_rust_target_configs = {
+  pw_rust_USE_STD = false
+  pw_rust_ENABLE_EXPERIMENTAL_BUILD = true
 }
 
 _gcc_target_default_configs = [
@@ -141,6 +144,7 @@ pw_target_toolchain_lm3s6965evb_qemu = {
     defaults = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_target_config, "*")
+      forward_variables_from(_rust_target_configs, "*")
       default_configs += _clang_target_default_configs
     }
   }
@@ -152,6 +156,7 @@ pw_target_toolchain_lm3s6965evb_qemu = {
     defaults = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_target_config, "*")
+      forward_variables_from(_rust_target_configs, "*")
       default_configs += _clang_target_default_configs
     }
   }
@@ -163,6 +168,7 @@ pw_target_toolchain_lm3s6965evb_qemu = {
     defaults = {
       forward_variables_from(_toolchain_base.defaults, "*")
       forward_variables_from(_target_config, "*")
+      forward_variables_from(_rust_target_configs, "*")
       default_configs += _clang_target_default_configs
     }
   }
