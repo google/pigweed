@@ -313,25 +313,26 @@ template("pw_static_analysis_toolchain") {
         _rustc_linker = ""
       }
 
-      _rustc_command = string_join(
-              " ",
-              [
-                # TODO: b/234872510 - Ensure this works with Windows.
-                "RUST_BACKTRACE=1",
-                "{{rustenv}}",
-                invoker.rustc,
-                "{{source}}",
-                "--crate-name {{crate_name}}",
-                "--crate-type {{crate_type}}",
-                _rustc_linker,
-                "{{externs}}",
-                "{{rustdeps}}",
-                "{{rustflags}}",
-                "-D warnings",
-                "--color always",
-                "--emit=dep-info={{output}}.d,link",
-                "-o {{output_dir}}/{{target_output_name}}{{output_extension}}",
-              ])
+      _rustc_common_flags = [
+        # TODO: b/234872510 - Ensure this works with Windows.
+        "RUST_BACKTRACE=1",
+        "{{rustenv}}",
+        invoker.rustc,
+        "{{source}}",
+        "--crate-name {{crate_name}}",
+        _rustc_linker,
+        "{{externs}}",
+        "{{rustdeps}}",
+        "{{rustflags}}",
+        "-D warnings",
+        "--color always",
+        "--emit=dep-info={{output}}.d,link",
+        "-o {{output_dir}}/{{target_output_name}}{{output_extension}}",
+      ]
+
+      _rustc_command =
+          string_join(" ",
+                      _rustc_common_flags + [ "--crate-type {{crate_type}}" ])
 
       _output = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
 
@@ -339,7 +340,18 @@ template("pw_static_analysis_toolchain") {
         description = "rustc {{output}}"
         default_output_dir = "{{target_out_dir}}/bin"
         depfile = "{{output}}.d"
-        command = _rustc_command
+        command = string_join(
+                " ",
+                _rustc_common_flags + [
+                      # Compile executable as rlib for static analysis, to skip
+                      # the link step. Because C/C++ static analysis targets are
+                      # not compiled, linking might fail if Rust depends on FFI
+                      # symbols.
+                      "--crate-type rlib",
+
+                      # Allow dead_code, because `main` would be unused.
+                      "-A dead_code",
+                    ])
         outputs = [ _output ]
       }
 
