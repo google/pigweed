@@ -33,6 +33,13 @@ void DmaUartMcuxpressoNonBlocking::Deinit() {
     return;
   }
 
+  DoCancelWrite();
+  DoCancelFlushOutput();
+
+  DoCancelRead();
+  // Cancel read into ring buffer as DoCancelRead starts it again.
+  USART_TransferAbortReceiveDMA(config_.usart_base, &uart_dma_handle_);
+
   config_.tx_dma_ch.Disable();
   config_.rx_dma_ch.Disable();
 
