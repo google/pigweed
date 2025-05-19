@@ -21,6 +21,7 @@ load("//pw_kernel/tooling:system_image.bzl", "system_image")
 platform(
     name = "pw_rp2350",
     constraint_values = [
+        ":target_pw_rp2350",
         "//pw_build/constraints/arm:cortex-m33",
         "@platforms//cpu:armv8-m",
         "@platforms//os:none",
@@ -36,9 +37,26 @@ platform(
     ),
 )
 
+constraint_value(
+    name = "target_pw_rp2350",
+    constraint_setting = "//pw_kernel/target:target",
+    visibility = ["//visibility:public"],
+)
+
 system_image(
     name = "kernel_only_demo",
     kernel = ":target",
+    platform = ":pw_rp2350",
+    tags = ["kernel"],
+)
+
+system_image(
+    name = "userspace_demo",
+    apps = [
+        "//pw_kernel/apps/one",
+        "//pw_kernel/apps/two",
+    ],
+    kernel = ":userspace_target",
     platform = ":pw_rp2350",
     tags = ["kernel"],
 )
@@ -66,6 +84,22 @@ rust_binary(
     ],
     deps = [
         "//pw_kernel/apps/kernel_only_demo:demo",
+    ] + COMMON_DEPS,
+)
+
+rust_binary(
+    name = "userspace_target",
+    srcs = [
+        "userspace_target.rs",
+    ],
+    edition = "2021",
+    tags = ["kernel"],
+    target_compatible_with = [
+        "//pw_build/constraints/arm:cortex-m33",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pw_log/rust:pw_log",
     ] + COMMON_DEPS,
 )
 

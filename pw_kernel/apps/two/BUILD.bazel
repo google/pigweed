@@ -28,19 +28,29 @@ rust_binary(
     edition = "2021",
     tags = ["kernel"],
     target_compatible_with = select({
-        "//pw_build/constraints/arm:cortex-m33": [],
+        "//pw_kernel/target/mps2_an505:target_mps2_an505": [],
+        "//pw_kernel/target/pw_rp2350:target_pw_rp2350": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
-        ":app_linker_script",
         "//pw_kernel/syscall:syscall_user",
         "//pw_kernel/userspace",
-    ],
+    ] + select({
+        "//pw_kernel/target/mps2_an505:target_mps2_an505": [":mps2_an505_linker_script"],
+        "//pw_kernel/target/pw_rp2350:target_pw_rp2350": [":pw_rp2350_linker_script"],
+        "//conditions:default": [],
+    }),
 )
 
 # TODO: generate linker scripts
 pw_linker_script(
-    name = "app_linker_script",
+    name = "mps2_an505_linker_script",
     linker_script = "mps2-an505.ld",
+    tags = ["kernel"],
+)
+
+pw_linker_script(
+    name = "pw_rp2350_linker_script",
+    linker_script = "pw-rp2350.ld",
     tags = ["kernel"],
 )

@@ -36,3 +36,13 @@ label_flag(
 cc_library(
     name = "no_linker_script",
 )
+
+constraint_setting(
+    name = "target",
+    default_constraint_value = "none",
+)
+
+constraint_value(
+    name = "none",
+    constraint_setting = ":target",
+)

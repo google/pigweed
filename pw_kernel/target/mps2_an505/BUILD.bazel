@@ -21,6 +21,7 @@ load("//pw_kernel/tooling:system_image.bzl", "system_image")
 platform(
     name = "mps2_an505",
     constraint_values = [
+        ":target_mps2_an505",
         "//pw_build/constraints/arm:cortex-m33",
         "@platforms//cpu:armv8-m",
         "@platforms//os:none",
@@ -34,6 +35,12 @@ platform(
             "//pw_kernel/target:linker_script": ":linker_script",
         },
     ),
+)
+
+constraint_value(
+    name = "target_mps2_an505",
+    constraint_setting = "//pw_kernel/target:target",
+    visibility = ["//visibility:public"],
 )
 
 system_image(
@@ -92,7 +99,7 @@ rust_binary(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//pw_kernel/apps/userspace_demo",
+        "//pw_log/rust:pw_log",
     ] + COMMON_DEPS,
 )
 
