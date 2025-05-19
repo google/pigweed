@@ -89,6 +89,7 @@ Run
 .. code-block:: shell
 
    bazelisk run --config k_qemu_virt_riscv32 //pw_kernel/target/qemu_virt_riscv32:kernel_only_demo
+   bazelisk run --config k_qemu_virt_riscv32 //pw_kernel/target/qemu_virt_riscv32:userspace_demo
 
 RP2350 Target Board
 ===================

@@ -30,6 +30,7 @@ rust_binary(
     target_compatible_with = select({
         "//pw_kernel/target/mps2_an505:target_mps2_an505": [],
         "//pw_kernel/target/pw_rp2350:target_pw_rp2350": [],
+        "//pw_kernel/target/qemu_virt_riscv32:target_qemu_virt_riscv32": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     deps = [
@@ -39,6 +40,7 @@ rust_binary(
     ] + select({
         "//pw_kernel/target/mps2_an505:target_mps2_an505": [":mps2_an505_linker_script"],
         "//pw_kernel/target/pw_rp2350:target_pw_rp2350": [":pw_rp2350_linker_script"],
+        "//pw_kernel/target/qemu_virt_riscv32:target_qemu_virt_riscv32": [":qemu_virt_riscv32_linker_script"],
         "//conditions:default": [],
     }),
 )
@@ -53,5 +55,11 @@ pw_linker_script(
 pw_linker_script(
     name = "pw_rp2350_linker_script",
     linker_script = "pw-rp2350.ld",
+    tags = ["kernel"],
+)
+
+pw_linker_script(
+    name = "qemu_virt_riscv32_linker_script",
+    linker_script = "qemu-virt-riscv32.ld",
     tags = ["kernel"],
 )
