@@ -93,7 +93,7 @@ class Options : public thread::Options {
   //
   // Precondition: preemption_threshold <= priority
   constexpr Options& set_preemption_threshold(UINT preemption_threshold) {
-    PW_DASSERT(preemption_threshold < PW_THREAD_THREADX_CONFIG_MIN_PRIORITY);
+    PW_DASSERT(preemption_threshold <= PW_THREAD_THREADX_CONFIG_MIN_PRIORITY);
     possible_preemption_threshold_ = preemption_threshold;
     return *this;
   }
