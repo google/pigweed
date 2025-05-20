@@ -309,6 +309,7 @@ filegroup(
     name = "_doxygen_html_1",
     srcs = [":doxygen_build"],
     output_group = "html",
+    tags = ["manual"],
     target_compatible_with = incompatible_with_mcu(),
 )
 
@@ -316,12 +317,14 @@ copy_directory(
     name = "_doxygen_html_2",
     src = ":_doxygen_html_1",
     out = "doxygen",
+    tags = ["manual"],
 )
 
 sphinx_docs_library(
     name = "doxygen_html",
     srcs = [":_doxygen_html_2"],
     prefix = "doxygen/",
+    tags = ["manual"],
     target_compatible_with = incompatible_with_mcu(),
 )
 
@@ -329,6 +332,7 @@ filegroup(
     name = "_doxygen_xml",
     srcs = [":doxygen_build"],
     output_group = "xml",
+    tags = ["manual"],
     target_compatible_with = incompatible_with_mcu(),
 )
 
@@ -336,6 +340,7 @@ sphinx_docs_library(
     name = "doxygen_xml",
     srcs = [":_doxygen_xml"],
     prefix = "_doxygen/",
+    tags = ["manual"],
     target_compatible_with = incompatible_with_mcu(),
 )
 
