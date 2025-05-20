@@ -251,6 +251,20 @@ pw_source_set("core") {
   visibility = [ ":*" ]
 }
 
+pw_source_set("transfer_handler") {
+  public_configs = [ ":public_include_path" ]
+  deps = [
+    ":tokenized_trace_buffer",
+    "$dir_pw_log",
+    "$dir_pw_ring_buffer",
+    "$dir_pw_tokenizer",
+    "$dir_pw_transfer",
+  ]
+  sources = [ "transfer_handler.cc" ]
+  public = [ "public/pw_trace_tokenized/transfer_handler.h" ]
+  visibility = [ ":*" ]
+}
+
 config("trace_example_config") {
   include_dirs = [ "example/public" ]
 }

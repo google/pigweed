@@ -280,3 +280,15 @@ format is a de-ringed raw tokenized trace buffer, which can be retrieved via
 
 ``pw_trace_tokenized`` does not yet have Python tooling integration for
 interpretation of serialized snapshots with a populated ``trace_data`` field.
+
+-------------
+API reference
+-------------
+
+pw::trace::TraceTransferHandler
+-------------------------------
+.. doxygenclass:: pw::trace::TraceTransferHandler
+
+pw::trace::TraceBufferReader
+----------------------------
+.. doxygenclass:: pw::trace::TraceBufferReader

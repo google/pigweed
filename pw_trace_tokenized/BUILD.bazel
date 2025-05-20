@@ -219,6 +219,13 @@ pw_proto_filegroup(
     ],
 )
 
+filegroup(
+    name = "doxygen",
+    srcs = [
+        "public/pw_trace_tokenized/transfer_handler.h",
+    ],
+)
+
 pwpb_proto_library(
     name = "protos_pwpb",
     deps = [":protos"],
@@ -244,6 +251,22 @@ nanopb_rpc_proto_library(
 py_proto_library(
     name = "proto_py",
     deps = [":protos"],
+)
+
+cc_library(
+    name = "transfer_handler",
+    srcs = [
+        "transfer_handler.cc",
+    ],
+    hdrs = [
+        "public/pw_trace_tokenized/transfer_handler.h",
+    ],
+    strip_include_prefix = "public",
+    deps = [
+        ":buffer",
+        ":pw_trace_tokenized",
+        "//pw_transfer",
+    ],
 )
 
 cc_library(
