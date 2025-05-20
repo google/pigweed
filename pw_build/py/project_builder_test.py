@@ -42,6 +42,14 @@ class TestCheckAnsiCodes(unittest.TestCase):
         result = check_ansi_codes('\x1b[30;47mHello\x1b[1;31mWorld\x1b[0m')
         self.assertEqual(result, None)
 
+    def test_reset_only(self):
+        result = check_ansi_codes('\x1b[30;47mHello World\x1b[9999m\x1b[m')
+        self.assertEqual(result, None)
+        result = check_ansi_codes('Hello World\x1b[0m')
+        self.assertEqual(result, None)
+        result = check_ansi_codes('Hello World\x1b[m')
+        self.assertEqual(result, None)
+
     def test_code_reset_code(self):
         result = check_ansi_codes('\x1b[30;47mHello\x1b[0m\x1b[1;31mWorld')
         self.assertEqual(result, ['\x1b[1;31m'])

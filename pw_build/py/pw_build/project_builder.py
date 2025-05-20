@@ -189,6 +189,8 @@ _BAZEL_ELAPSED_TIME = re.compile(
     r'Elapsed time:'
 )
 
+_ANSI_COLOR_CODE_REGEX = re.compile(r"\x1b\[[0-9;]*m")
+
 
 def check_ansi_codes(s: str) -> list[str] | None:
     """
@@ -209,12 +211,11 @@ def check_ansi_codes(s: str) -> list[str] | None:
     #         zero or more times.
     # m matches the literal 'm'
     # See https://en.wikipedia.org/wiki/ANSI_escape_code#Select_Graphic_Rendition_parameters #pylint: disable=line-too-long
-    ansi_escape_pattern = re.compile(r"\x1b\[[0-9;]*m")
 
-    # The specific ANSI sequence to reset all attributes
-    ansi_reset_code = "\x1b[0m"
+    # ANSI sequences that reset all attributes.
+    ansi_reset_codes = ['\x1b[0m', '\x1b[m']
 
-    codes = ansi_escape_pattern.findall(s)
+    codes = _ANSI_COLOR_CODE_REGEX.findall(s)
 
     if not codes:
         return None
@@ -222,7 +223,7 @@ def check_ansi_codes(s: str) -> list[str] | None:
     # multiple color codes can be set, but they are all cleared via a reset code
     active_codes = []
     for code in codes:
-        if code != ansi_reset_code:
+        if code not in ansi_reset_codes:
             active_codes.append(code)
         else:
             active_codes.clear()
