@@ -43,6 +43,8 @@ namespace pw::tokenizer {
 /// @defgroup pw_tokenizer_detokenize
 /// @{
 
+class Detokenizer;
+
 /// Token database entry.
 using TokenizedStringEntry = std::pair<FormatString, uint32_t /*date removed*/>;
 using DomainTokenEntriesMap = std::unordered_map<
@@ -53,7 +55,9 @@ using DomainTokenEntriesMap = std::unordered_map<
 /// if there are token collisions.
 class DetokenizedString {
  public:
-  DetokenizedString(uint32_t token,
+  DetokenizedString(const Detokenizer& detokenizer,
+                    bool recursion,
+                    uint32_t token,
                     const span<const TokenizedStringEntry>& entries,
                     const span<const std::byte>& arguments);
 
@@ -82,7 +86,7 @@ class DetokenizedString {
   /// Returns the detokenized string or an empty string if there were no
   /// matches. If there are multiple possible results, the `DetokenizedString`
   /// returns the first match.
-  std::string BestString() const;
+  const std::string& BestString() const { return best_string_; }
 
   /// Returns the best match, with error messages inserted for arguments that
   /// failed to parse.
@@ -90,6 +94,7 @@ class DetokenizedString {
 
  private:
   uint32_t token_;
+  std::string best_string_;
   bool has_token_;
   std::vector<DecodedFormatString> matches_;
 };
@@ -104,11 +109,7 @@ class Detokenizer {
   explicit Detokenizer(const TokenDatabase& database);
 
   /// Constructs a detokenizer by directly passing the parsed database.
-  explicit Detokenizer(
-      std::unordered_map<
-          std::string,
-          std::unordered_map<uint32_t, std::vector<TokenizedStringEntry>>>&&
-          database)
+  explicit Detokenizer(DomainTokenEntriesMap&& database)
       : database_(std::move(database)) {}
 
   /// Constructs a detokenizer from the `.pw_tokenizer.entries` section of an
@@ -130,7 +131,9 @@ class Detokenizer {
   /// Decodes and detokenizes the binary encoded message. Returns a
   /// `DetokenizedString` that stores all possible detokenized string results.
   DetokenizedString Detokenize(const span<const std::byte>& encoded,
-                               std::string_view domain = kDefaultDomain) const;
+                               std::string_view domain = kDefaultDomain) const {
+    return Detokenize(encoded, domain, false);
+  }
 
   /// Overload of `Detokenize` for `span<const uint8_t>`.
   DetokenizedString Detokenize(const span<const uint8_t>& encoded,
@@ -150,6 +153,37 @@ class Detokenizer {
                                std::string_view domain = kDefaultDomain) const {
     return Detokenize(span(static_cast<const std::byte*>(encoded), size_bytes),
                       domain);
+  }
+
+  /// Decodes and detokenizes the binary encoded message. Returns a
+  /// `DetokenizedString` that stores all possible detokenized string results.
+  DetokenizedString RecursiveDetokenize(
+      const span<const std::byte>& encoded,
+      std::string_view domain = kDefaultDomain) const {
+    return Detokenize(encoded, domain, true);
+  }
+
+  /// Overload of `Detokenize` for `span<const uint8_t>`.
+  DetokenizedString RecursiveDetokenize(
+      const span<const uint8_t>& encoded,
+      std::string_view domain = kDefaultDomain) const {
+    return RecursiveDetokenize(as_bytes(encoded), domain);
+  }
+
+  /// Overload of `Detokenize` for `std::string_view`.
+  DetokenizedString RecursiveDetokenize(
+      std::string_view encoded,
+      std::string_view domain = kDefaultDomain) const {
+    return RecursiveDetokenize(encoded.data(), encoded.size(), domain);
+  }
+
+  /// Overload of `Detokenize` for a pointer and length.
+  DetokenizedString RecursiveDetokenize(
+      const void* encoded,
+      size_t size_bytes,
+      std::string_view domain = kDefaultDomain) const {
+    return RecursiveDetokenize(
+        span(static_cast<const std::byte*>(encoded), size_bytes), domain);
   }
 
   /// Decodes and detokenizes a Base64-encoded message. Returns a
@@ -187,6 +221,9 @@ class Detokenizer {
 
   const DomainTokenEntriesMap& database() const { return database_; }
 
+  span<const TokenizedStringEntry> DatabaseLookup(
+      uint32_t token, std::string_view domain) const;
+
  private:
   // 4 passes supports detokenizing two layers of nested messages with tokenized
   // domains (e.g. ${${bar}#ab12cd34}#00000012), without allowing a hypothetical
@@ -195,6 +232,12 @@ class Detokenizer {
 
   std::string DetokenizeTextRecursive(std::string_view text,
                                       unsigned max_passes) const;
+
+  /// Decodes and detokenizes the binary encoded message. Returns a
+  /// `DetokenizedString` that stores all possible detokenized string results.
+  DetokenizedString Detokenize(const span<const std::byte>& encoded,
+                               std::string_view domain,
+                               bool recursion) const;
 
   DomainTokenEntriesMap database_;
 };
