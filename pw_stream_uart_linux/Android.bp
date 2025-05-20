@@ -15,13 +15,11 @@
 cc_library_static {
     name: "pw_stream_uart_linux",
     cpp_std: "c++20",
-    export_include_dirs: ["public"],
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
     defaults: [
         "pw_android_common_backends",
+        "pw_android_common_target_support_no_windows",
     ],
+    export_include_dirs: ["public"],
     header_libs: [
         "pw_assert",
         "pw_log",
@@ -35,8 +33,8 @@ cc_library_static {
     ],
     static_libs: [
         "pw_bytes",
-        "pw_preprocessor",
         "pw_polyfill",
+        "pw_preprocessor",
         "pw_result",
         "pw_span",
         "pw_status",

@@ -19,13 +19,13 @@ package {
 cc_library_static {
     name: "pw_sync_stl",
     cpp_std: "c++20",
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: [
         "public",
         "public_overrides",
     ],
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
     srcs: [
         "binary_semaphore.cc",
         "counting_semaphore.cc",
@@ -37,8 +37,8 @@ cc_library_static {
         "pw_sync",
     ],
     export_header_lib_headers: [
-        "pw_sync",
         "pw_chrono",
+        "pw_sync",
     ],
     // Explicitly depend on the pw_assert_log and pw_chrono_stl backends since
     // they are part of pw_android_common_backends.

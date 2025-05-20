@@ -20,9 +20,8 @@ Android platform projects.
 
    cc_binary {
        name: "my_app",
-       host_supported: true,
-       vendor: true,
        defaults: [
+           "pw_android_common",
            "pw_android_common_backends",
        ],
        srcs: [
@@ -110,12 +109,11 @@ common Android backends via the ``pw_android_common_backends`` defaults.
    cc_library_static {
        name: "pw_<MODULE_NAME>",
        cpp_std: "c++20",
-       export_include_dirs: ["public"],
-       vendor_available: true,
-       host_supported: true,
        defaults: [
+           "pw_android_common",
            "pw_android_common_backends",
        ],
+       export_include_dirs: ["public"],
        header_libs: [
            // List of cc_library_headers dependencies needed to support
            // #include directives in the module's header files.
@@ -169,18 +167,22 @@ common Android backend should still be provided, which uses the mentioned
        ],
    }
 
-    cc_library_headers {
-        name: "pw_<MODULE_NAME>_include_dirs",
-        export_include_dirs: [
-            "public",
-        ],
-        vendor_available: true,
-        host_supported: true,
-    }
+   cc_library_headers {
+       name: "pw_<MODULE_NAME>_include_dirs",
+       defaults: [
+           "pw_android_common",
+       ],
+       export_include_dirs: [
+           "public",
+       ],
+   }
 
    cc_defaults {
        name: "pw_<MODULE_NAME>_no_backends",
        cpp_std: "c++20",
+       defaults: [
+           "pw_android_common",
+       ],
 
        header_libs: [
            // Header library list for all the libraries in #include directives.
@@ -209,13 +211,12 @@ common Android backend should still be provided, which uses the mentioned
    cc_library_static {
        name: "pw_<MODULE_NAME>",
        cpp_std: "c++20",
-       export_include_dirs: ["public"],
        defaults: [
+           "pw_android_common",
            "pw_android_common_backends",
            "pw_<MODULE_NAME>_no_backends",
        ],
-       vendor_available: true,
-       host_supported: true,
+       export_include_dirs: ["public"],
    }
 
 Module libraries with configurable build flags
@@ -237,18 +238,22 @@ format.
        ],
    }
 
-    cc_library_headers {
-        name: "pw_<MODULE_NAME>_include_dirs",
-        export_include_dirs: [
-            "public",
-        ],
-        vendor_available: true,
-        host_supported: true,
-    }
+   cc_library_headers {
+       name: "pw_<MODULE_NAME>_include_dirs",
+       defaults: [
+           "pw_android_common",
+       ],
+       export_include_dirs: [
+           "public",
+       ],
+   }
 
    cc_defaults {
        name: "pw_<MODULE_NAME>_defaults",
        cpp_std: "c++20",
+       defaults: [
+           "pw_android_common",
+       ],
 
        header_libs: [
            // Header library list for all the libraries in #include directives.
@@ -291,6 +296,7 @@ follows.
            "-DPW_<MODULE_NAME>_<FLAG_NAME>=<FLAG_VALUE>",
        ],
        defaults: [
+           "pw_android_common",
            "pw_<MODULE_NAME>_defaults",
        ],
    }
@@ -311,8 +317,9 @@ the same as ``<FACADE_NAME>`` follow ``pw_<MODULE_NAME>``, e.g. ``pw_log``.
    cc_library_headers {
        name: "pw_<MODULE_NAME>.<FACADE_NAME>",
        cpp_std: "c++20",
-       vendor_available: true,
-       host_supported: true,
+       defaults: [
+           "pw_android_common",
+       ],
        export_include_dirs: ["public"],
    }
 
@@ -343,6 +350,9 @@ rule instead, with the source files listed in a ``filegroup`` following the
    cc_defaults {
        name: "pw_<MODULE_NAME>.<FACADE_NAME>",
        cpp_std: "c++20",
+       defaults: [
+           "pw_android_common",
+       ],
        export_include_dirs: ["public"],
        srcs: [
            "pw_<MODULE_NAME>.<FACADE_NAME>_files",
@@ -358,9 +368,8 @@ binary rule that lists the facade's backend as a dependency.
    cc_static_library {
        name: "user_of_pw_<MODULE_NAME>.<FACADE_NAME>",
        cpp_std: "c++20",
-       vendor_available: true,
-       host_supported: true,
        defaults: [
+           "pw_android_common",
            "pw_<MODULE_NAME>.<FACADE_NAME>",
        ],
        static_libs: [

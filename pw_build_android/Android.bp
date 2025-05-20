@@ -52,3 +52,31 @@ cc_defaults {
         "liblog",
     ],
 }
+
+cc_defaults {
+    name: "pw_android_common_target_support_no_windows",
+    cmake_snapshot_supported: true,
+    host_supported: true,
+    product_available: true,
+    recovery_available: true,
+    vendor_available: true,
+
+    apex_available: [
+        "//apex_available:anyapex",
+        "//apex_available:platform",
+    ],
+    min_sdk_version: "apex_inherit",
+}
+
+// List of common flags and support for Pigweed modules.
+cc_defaults {
+    name: "pw_android_common_target_support",
+    defaults: [
+        "pw_android_common_target_support_no_windows",
+    ],
+    target: {
+        windows: {
+            enabled: true,
+        },
+    },
+}

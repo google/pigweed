@@ -19,21 +19,19 @@ package {
 cc_library_static {
     name: "pw_containers",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    export_include_dirs: ["public"],
     defaults: [
         "pw_android_common_backends",
+        "pw_android_common_target_support",
     ],
+    export_include_dirs: ["public"],
     header_libs: [
         "pw_assert",
         "pw_log",
     ],
     static_libs: [
-        "pw_preprocessor",
         "pw_polyfill",
+        "pw_preprocessor",
     ],
-    host_supported: true,
     srcs: [
         "intrusive_item.cc",
     ],

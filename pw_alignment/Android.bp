@@ -19,8 +19,8 @@ package {
 cc_library_static {
     name: "pw_alignment",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    host_supported: true,
-    vendor_available: true,
     export_include_dirs: ["public"],
+    defaults: [
+        "pw_android_common_target_support",
+    ],
 }

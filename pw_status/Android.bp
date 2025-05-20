@@ -19,10 +19,10 @@ package {
 cc_library_static {
     name: "pw_status",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: ["public"],
-    host_supported: true,
     srcs: [
         "status.cc",
     ],

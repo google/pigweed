@@ -19,8 +19,9 @@ package {
 cc_library_headers {
     name: "fuchsia_sdk_lib_fit",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: [
         "fuchsia/repo/sdk/lib/fit/include",
     ],
@@ -42,16 +43,15 @@ cc_library_headers {
         "pw_assert_log",
         "pw_log_android",
     ],
-    host_supported: true,
 }
 
 cc_library_headers {
     name: "fuchsia_sdk_lib_stdcompat",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: [
         "fuchsia/repo/sdk/lib/stdcompat/include",
     ],
-    host_supported: true,
 }

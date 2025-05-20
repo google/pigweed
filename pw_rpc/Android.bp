@@ -192,8 +192,8 @@ genrule {
     ],
     tools: [
         "aprotoc",
-        "pw_protobuf_plugin_py",
         "pw_protobuf_compiler_py",
+        "pw_protobuf_plugin_py",
     ],
 }
 
@@ -436,8 +436,8 @@ genrule_defaults {
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
-        "pw_protobuf_plugin_py",
         "pw_protobuf_compiler_py",
+        "pw_protobuf_plugin_py",
     ],
 }
 
@@ -468,8 +468,8 @@ genrule_defaults {
         "--protoc=$(location aprotoc)",
     tools: [
         "aprotoc",
-        "pw_protobuf_plugin_py",
         "pw_protobuf_compiler_py",
+        "pw_protobuf_plugin_py",
     ],
 }
 
@@ -586,9 +586,9 @@ genrule {
 cc_library_static {
     name: "pw_rpc_echo_service_nanopb",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: ["public/pw_rpc"],
     generated_headers: [
         "pw_rpc_echo_proto_header",
@@ -621,9 +621,9 @@ genrule {
 cc_library_static {
     name: "pw_rpc_echo_service_pwpb",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: ["public/pw_rpc"],
     generated_headers: [
         "pw_rpc_echo_pwpb_proto_header",

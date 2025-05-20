@@ -19,9 +19,10 @@ package {
 cc_library_static {
     name: "pw_bluetooth_proxy",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
+    defaults: [
+        "pw_android_common_backends",
+        "pw_android_common_target_support",
+    ],
 
     // LINT.IfChange
     srcs: [
@@ -30,8 +31,8 @@ cc_library_static {
         "gatt_notify_channel.cc",
         "h4_storage.cc",
         "l2cap_aclu_signaling_channel.cc",
-        "l2cap_channel_manager.cc",
         "l2cap_channel.cc",
+        "l2cap_channel_manager.cc",
         "l2cap_coc.cc",
         "l2cap_leu_signaling_channel.cc",
         "l2cap_signaling_channel.cc",
@@ -44,17 +45,14 @@ cc_library_static {
     export_include_dirs: [
         "public",
     ],
-    defaults: [
-        "pw_android_common_backends",
-    ],
     static_libs: [
         "pw_allocator",
         "pw_containers",
         "pw_function",
         "pw_multibuf",
         "pw_result",
-        "pw_span_cast",
         "pw_span",
+        "pw_span_cast",
         "pw_status",
     ],
     export_static_lib_headers: [
@@ -92,5 +90,4 @@ cc_library_static {
         "pw_bluetooth_generate_emboss_rfcomm_frames",
     ],
     // LINT.ThenChange(BUILD.gn, BUILD.bazel, CMakeLists.txt)
-
 }

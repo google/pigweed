@@ -19,23 +19,22 @@ package {
 cc_library {
     name: "pw_allocator",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
     export_include_dirs: [
-        "public",
         "block/public",
         "bucket/public",
+        "public",
     ],
     defaults: [
         "pw_android_common_backends",
+        "pw_android_common_target_support",
     ],
     header_libs: [
-        "pw_assert",
         "fuchsia_sdk_lib_stdcompat",
+        "pw_assert",
     ],
     export_header_lib_headers: [
-        "pw_assert",
         "fuchsia_sdk_lib_stdcompat",
+        "pw_assert",
     ],
     export_static_lib_headers: [
         "pw_bytes",
@@ -48,13 +47,12 @@ cc_library {
         "pw_status",
         "pw_tokenizer",
     ],
-    host_supported: true,
     srcs: [
         "allocator.cc",
         "allocator_as_pool.cc",
-        "block_allocator.cc",
         "block/contiguous.cc",
         "block/poisonable.cc",
+        "block_allocator.cc",
         "chunk_pool.cc",
         "libc_allocator.cc",
         "managed_ptr.cc",

@@ -19,6 +19,9 @@ package {
 cc_library {
     name: "pw_checksum",
     cpp_std: "c++20",
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: ["public"],
     static_libs: [
         "pw_bytes",
@@ -28,7 +31,4 @@ cc_library {
         "crc16_ccitt.cc",
         "crc32.cc",
     ],
-    cmake_snapshot_supported: true,
-    host_supported: true,
-    vendor_available: true,
 }

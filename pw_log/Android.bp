@@ -19,37 +19,37 @@ package {
 cc_library_headers {
     name: "pw_log",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: ["public"],
-    host_supported: true,
 }
 
 cc_library_headers {
     name: "pw_log_pwpb",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     static_libs: [
         "pw_toolchain",
     ],
     export_static_lib_headers: [
         "pw_toolchain",
     ],
-    host_supported: true,
     generated_headers: [
         "google_protobuf_descriptor_pwpb_h",
         "pw_log_log_proto_pwpb_h",
-        "pw_log_log_rpc_pwpb_h",
         "pw_log_log_raw_rpc_h",
+        "pw_log_log_rpc_pwpb_h",
         "pw_protobuf_protos_common_pwpb_h",
         "pw_tokenizer_proto_options_pwpb_h",
     ],
     export_generated_headers: [
         "google_protobuf_descriptor_pwpb_h",
         "pw_log_log_proto_pwpb_h",
-        "pw_log_log_rpc_pwpb_h",
         "pw_log_log_raw_rpc_h",
+        "pw_log_log_rpc_pwpb_h",
         "pw_protobuf_protos_common_pwpb_h",
         "pw_tokenizer_proto_options_pwpb_h",
     ],
@@ -105,8 +105,8 @@ genrule {
     ],
     tools: [
         "aprotoc",
-        "pw_protobuf_plugin_py",
         "pw_protobuf_compiler_py",
+        "pw_protobuf_plugin_py",
     ],
 }
 

@@ -19,13 +19,11 @@ package {
 cc_library_static {
     name: "pw_detokenizer",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
-    export_include_dirs: ["public"],
     defaults: [
         "pw_android_common_backends",
+        "pw_android_common_target_support",
     ],
+    export_include_dirs: ["public"],
     header_libs: [
         "fuchsia_sdk_lib_stdcompat",
         "pw_assert",
@@ -39,8 +37,8 @@ cc_library_static {
     srcs: [
         "base64.cc",
         "csv.cc",
-        "detokenize.cc",
         "decode.cc",
+        "detokenize.cc",
     ],
     static_libs: [
         "pw_base64",
@@ -72,13 +70,11 @@ cc_library_static {
 cc_library_static {
     name: "pw_tokenizer",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    host_supported: true,
-    vendor_available: true,
-    export_include_dirs: ["public"],
     defaults: [
         "pw_android_common_backends",
+        "pw_android_common_target_support",
     ],
+    export_include_dirs: ["public"],
     srcs: [
         "encode_args.cc",
         "hash.cc",
@@ -113,13 +109,11 @@ cc_library_static {
 cc_library_static {
     name: "pw_tokenizer_base64",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    host_supported: true,
-    vendor_available: true,
-    export_include_dirs: ["public"],
     defaults: [
         "pw_android_common_backends",
+        "pw_android_common_target_support",
     ],
+    export_include_dirs: ["public"],
     srcs: [
         "base64.cc",
     ],
@@ -144,9 +138,9 @@ cc_library_static {
 cc_library_headers {
     name: "pw_tokenizer_pwpb",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     generated_headers: [
         "google_protobuf_descriptor_pwpb_h",
         "pw_tokenizer_proto_options_pwpb_h",
@@ -188,7 +182,7 @@ genrule {
     ],
     tools: [
         "aprotoc",
-        "pw_protobuf_plugin_py",
         "pw_protobuf_compiler_py",
+        "pw_protobuf_plugin_py",
     ],
 }

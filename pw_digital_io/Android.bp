@@ -19,11 +19,9 @@ package {
 cc_library_static {
     name: "pw_digital_io",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
     defaults: [
         "pw_android_common_backends",
+        "pw_android_common_target_support",
     ],
     header_libs: [
         "pw_assert",
@@ -75,8 +73,9 @@ genrule {
 cc_library_headers {
     name: "pw_digital_io_service_pwpb",
     cpp_std: "c++20",
-    vendor_available: true,
-    host_supported: true,
+    defaults: [
+        "pw_android_common_target_support_no_windows",
+    ],
     generated_headers: [
         "pw_digital_io_pwpb_proto_header",
         "pw_digital_io_pwpb_rpc_header",

@@ -23,6 +23,7 @@ cc_defaults {
     name: "pw_log_basic_no_backends",
     cpp_std: "c++20",
     defaults: [
+        "pw_android_common_target_support",
         "pw_sys_io_no_backends",
     ],
     header_libs: [
@@ -50,13 +51,13 @@ cc_defaults {
 cc_library_headers {
     name: "pw_log_basic_include_dirs",
     cpp_std: "c++20",
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: [
         "public",
         "public_overrides",
     ],
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
 }
 
 // Do not include these since they are for pw_log_basic_no_backends. Depend on

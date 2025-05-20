@@ -136,8 +136,8 @@ genrule {
         "pw_bluetooth_generate_emboss_header",
     ],
     srcs: [
-        "public/pw_bluetooth/hci_events.emb",
         "public/pw_bluetooth/hci_common.emb",
+        "public/pw_bluetooth/hci_events.emb",
     ],
     out: [
         "pw_bluetooth/hci_events.emb.h",
@@ -186,8 +186,9 @@ genrule {
 cc_library_headers {
     name: "pw_bluetooth_emboss_group",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_generated_headers: [
         "pw_bluetooth_generate_emboss_att",
         "pw_bluetooth_generate_emboss_hci_android",
@@ -210,28 +211,25 @@ cc_library_headers {
         "pw_bluetooth_generate_emboss_l2cap_frames",
         "pw_bluetooth_generate_emboss_rfcomm_frames",
     ],
-    host_supported: true,
 }
 
 cc_library_headers {
     name: "pw_bluetooth_emboss_util_include_dirs",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: ["public"],
-    host_supported: true,
 }
 
 cc_library_static {
     name: "pw_bluetooth_hci_util",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    export_include_dirs: ["public"],
-    host_supported: true,
     defaults: [
         "pw_android_common_backends",
+        "pw_android_common_target_support",
     ],
+    export_include_dirs: ["public"],
     header_libs: [
         "emboss_runtime_headers",
         "pw_bluetooth_emboss_group",

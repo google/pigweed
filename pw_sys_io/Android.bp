@@ -22,6 +22,9 @@ package {
 cc_defaults {
     name: "pw_sys_io_no_backends",
     cpp_std: "c++20",
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     header_libs: [
         "pw_sys_io_include_dirs",
     ],
@@ -46,12 +49,12 @@ cc_defaults {
 cc_library_headers {
     name: "pw_sys_io_include_dirs",
     cpp_std: "c++20",
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     export_include_dirs: [
         "public",
     ],
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
 }
 
 // Do not include these since they are for the pw_sys_io cc_defaults. Depend

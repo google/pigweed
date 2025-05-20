@@ -19,10 +19,11 @@ package {
 cc_library {
     name: "pw_hdlc",
     cpp_std: "c++20",
-    export_include_dirs: ["public"],
     defaults: [
         "pw_android_common_backends",
+        "pw_android_common_target_support",
     ],
+    export_include_dirs: ["public"],
     header_libs: [
         "pw_assert",
         "pw_log",
@@ -54,7 +55,4 @@ cc_library {
         "decoder.cc",
         "encoder.cc",
     ],
-    cmake_snapshot_supported: true,
-    host_supported: true,
-    vendor_available: true,
 }

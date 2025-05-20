@@ -19,9 +19,9 @@ package {
 cc_library_static {
     name: "pw_i2c",
     cpp_std: "c++20",
-    vendor_available: true,
     defaults: [
         "pw_android_common_backends",
+        "pw_android_common_target_support",
     ],
     export_include_dirs: [
         "public",
@@ -47,8 +47,8 @@ cc_library_static {
         "pw_toolchain",
     ],
     srcs: [
-        "initiator.cc",
         "address.cc",
+        "initiator.cc",
     ],
 }
 
@@ -56,12 +56,12 @@ genrule {
     name: "pw_i2c_proto_with_prefix",
     defaults: ["pw_rpc_add_prefix_to_proto"],
     srcs: [
-        "i2c.pwpb_options",
         "i2c.proto",
+        "i2c.pwpb_options",
     ],
     out: [
-        "pw_i2c/i2c.pwpb_options",
         "pw_i2c/i2c.proto",
+        "pw_i2c/i2c.pwpb_options",
     ],
 }
 
@@ -82,9 +82,9 @@ genrule {
 cc_library_headers {
     name: "pw_i2c_service_pwpb",
     cpp_std: "c++20",
-    cmake_snapshot_supported: true,
-    vendor_available: true,
-    host_supported: true,
+    defaults: [
+        "pw_android_common_target_support",
+    ],
     generated_headers: [
         "pw_i2c_pwpb_proto_header",
         "pw_i2c_pwpb_rpc_header",
