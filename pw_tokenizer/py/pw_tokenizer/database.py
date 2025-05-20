@@ -60,7 +60,9 @@ def _elf_reader(elf) -> elf_reader.Elf:
 # pw_tokenizer/public/pw_tokenizer/internal/tokenize_string.h.
 _TOKENIZED_ENTRY_MAGIC = 0xBAA98DEE
 _ENTRY = struct.Struct('<4I')
-_TOKENIZED_ENTRY_SECTIONS = re.compile(r'^\.pw_tokenizer.entries(?:\.[_\d]+)?$')
+_TOKENIZED_ENTRY_SECTIONS = re.compile(
+    r'[\w.]*\.pw_tokenizer.entries(?:\.[_\d]+)?$'
+)
 
 _ERROR_HANDLER = 'surrogateescape'  # How to deal with UTF-8 decoding errors
 

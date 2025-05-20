@@ -18,8 +18,8 @@ Concepts
 See :ref:`module-pw_tokenizer-get-started-overview` for a high-level
 explanation of how ``pw_tokenizer`` works.
 
-Token generation: fixed length hashing at compile time
-======================================================
+Token generation: compile time hashing
+======================================
 String tokens are generated using a modified version of the x65599 hash used by
 the SDBM project. All hashing is done at compile time.
 

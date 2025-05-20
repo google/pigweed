@@ -561,6 +561,26 @@ class DirectoryDatabaseCommandLineTest(unittest.TestCase):
             set(directory.pop().read_text().splitlines()),
         )
 
+    def test_elf_section_names(self) -> None:
+        sections = (
+            database._TOKENIZED_ENTRY_SECTIONS  # pylint: disable=protected-access
+        )
+        self.assertIsNotNone(sections.match(".pw_tokenizer.entries"))
+        self.assertIsNotNone(sections.match(".pw_tokenizer.entries._"))
+        self.assertIsNotNone(sections.match(".pw_tokenizer.entries.1_123"))
+        self.assertIsNotNone(sections.match(".pw_tokenizer.entries.1_1_23"))
+        self.assertIsNotNone(sections.match(".PREFIX.pw_tokenizer.entries"))
+        self.assertIsNotNone(sections.match("nothing.pw_tokenizer.entries._"))
+        self.assertIsNotNone(sections.match("1.2.3.pw_tokenizer.entries.77"))
+
+        self.assertIsNone(sections.match("pw_tokenizer.entries."))
+        self.assertIsNone(sections.match(".pw_tokenizer.entries."))
+        self.assertIsNone(sections.match("anything.pw_tokenizer.entries."))
+
+        self.assertIsNone(sections.match("pw_tokenizer.entriesA"))
+        self.assertIsNone(sections.match("pw_tokenizer.entries.A"))
+        self.assertIsNone(sections.match(" space.pw_tokenizer.entries.1_123"))
+
     def test_discarding_old_entries(self) -> None:
         """Tests discarding old entries for new entries when re-adding."""
         self._git('init')

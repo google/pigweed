@@ -109,9 +109,18 @@ debug logs) out of the database.
 
 ELF section database format
 ===========================
-During compilation, pw_tokenizer stores its entries in an ELF section. Entries
-are stored as a header followed by the domain and string. The format for these
-entries is described below.
+During compilation, pw_tokenizer stores each entry in an ELF section. The
+sections are named ``.pw_tokenizer.entries.#_#``, where the ``#`` are arbitrary
+numbers. Linker scripts typically merge these into a single
+``.pw_tokenizer.entries`` section.
+
+pw_tokenizer's Python database tooling searches for tokens in ELF sections that
+end with ``.pw_tokenizer.entries`` or ``.pw_tokenizer.entries.#_#``. This allows
+it find tokens in unliked artifacts or in sections with project-specific
+prefixes (e.g. added by ``objcopy --prefix-sections``).
+
+Entries are stored as a header followed by the domain and string. The format for
+these entries is described below.
 
 .. literalinclude:: public/pw_tokenizer/internal/tokenize_string.h
    :start-after: [pw_tokenizer-elf-entry]
