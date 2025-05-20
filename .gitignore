@@ -22,8 +22,11 @@ outbazel/
 .presubmit/
 docs/_build
 twister-out*/
-external/
 twister-template-build/
+
+# TODO: https://pwbug.dev/419060696 - Temporarily exclude /external until we
+# have a better solution for making these Bazel paths visible to clangd.
+/external
 
 # Editors
 .pw_ide/
