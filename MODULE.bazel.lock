@@ -217,8 +217,8 @@
     "https://bcr.bazel.build/modules/rules_pkg/1.0.1/source.json": "bd82e5d7b9ce2d31e380dd9f50c111d678c3bdaca190cb76b0e1c71b05e1ba8a",
     "https://bcr.bazel.build/modules/rules_platform/0.1.0/MODULE.bazel": "1fe546d3ced195ad1632ed3621446d3c0bb4757e5becc44b12303a4ac23d6058",
     "https://bcr.bazel.build/modules/rules_platform/0.1.0/source.json": "98becf9569572719b65f639133510633eb3527fb37d347d7ef08447f3ebcf1c9",
-    "https://bcr.bazel.build/modules/rules_probe_rs/0.0.2/MODULE.bazel": "179cdc37a7cd532fcbb8d3127572f7e238181c4897c58529797a36496691369c",
-    "https://bcr.bazel.build/modules/rules_probe_rs/0.0.2/source.json": "6d18e8365920c371f92a551de67abad262d45efd0f822bb3dc1522d0e34c0b38",
+    "https://bcr.bazel.build/modules/rules_probe_rs/0.0.6/MODULE.bazel": "f4ec93cffed7b5db1f2adc49b4b7e9cb232f18a731b0826e9aafa630e2f3d77d",
+    "https://bcr.bazel.build/modules/rules_probe_rs/0.0.6/source.json": "7964a5b72304d4927ee4b4139f024ab03103b5d98f37485faab4147fa5db8f9c",
     "https://bcr.bazel.build/modules/rules_proto/4.0.0/MODULE.bazel": "a7a7b6ce9bee418c1a760b3d84f83a299ad6952f9903c67f19e4edd964894e06",
     "https://bcr.bazel.build/modules/rules_proto/5.3.0-21.7/MODULE.bazel": "e8dff86b0971688790ae75528fe1813f71809b5afd57facb44dad9e8eca631b7",
     "https://bcr.bazel.build/modules/rules_proto/6.0.0-rc1/MODULE.bazel": "1e5b502e2e1a9e825eef74476a5a1ee524a92297085015a052510b09a1a09483",
@@ -1471,6 +1471,128 @@
           }
         },
         "recordedRepoMappingEntries": []
+      }
+    },
+    "@@rules_probe_rs+//probe_rs:extensions.bzl%probe_rs": {
+      "general": {
+        "bzlTransitiveDigest": "qACxDYMmZFnJ5z3DgFxaM5vcM6BluXK+tGm6QjKzbo0=",
+        "usagesDigest": "kecDrUzQ03wOfdR1LXDomLlTjEiT0UqYVX7fdeWic/4=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "probe_rs": {
+            "repoRuleId": "@@rules_probe_rs+//probe_rs/private:repositories.bzl%probe_rs_repo",
+            "attributes": {
+              "tools": [
+                "probe-rs"
+              ],
+              "platforms": {
+                "probe_rs_tools_x86_64_unknown_linux_gnu": [
+                  "@platforms//os:linux",
+                  "@platforms//cpu:x86_64"
+                ],
+                "probe_rs_tools_aarch64_unknown_linux_gnu": [
+                  "@platforms//os:linux",
+                  "@platforms//cpu:arm64"
+                ],
+                "probe_rs_tools_x86_64_apple_darwin": [
+                  "@platforms//os:macos",
+                  "@platforms//cpu:x86_64"
+                ],
+                "probe_rs_tools_aarch64_apple_darwin": [
+                  "@platforms//os:macos",
+                  "@platforms//cpu:arm64"
+                ],
+                "probe_rs_tools_x86_64_pc_windows_msvc": [
+                  "@platforms//os:windows",
+                  "@platforms//cpu:x86_64"
+                ]
+              }
+            }
+          },
+          "probe_rs_tools_x86_64_unknown_linux_gnu": {
+            "repoRuleId": "@@rules_probe_rs+//probe_rs/private:repositories.bzl%probe_rs_tools_archive_repo",
+            "attributes": {
+              "tools": [
+                "probe-rs"
+              ],
+              "url": "https://github.com/probe-rs/probe-rs/releases/download/v0.27.0/probe-rs-tools-x86_64-unknown-linux-gnu.tar.xz",
+              "sha256": "314c40db7ded9ae5622c6af8fe5149bcf5c507d7d6f5b7a415d6acf8d2005cb0",
+              "strip_prefix": "probe-rs-tools-x86_64-unknown-linux-gnu",
+              "exec_compatible_with": [
+                "@platforms//os:linux",
+                "@platforms//cpu:x86_64"
+              ]
+            }
+          },
+          "probe_rs_tools_aarch64_unknown_linux_gnu": {
+            "repoRuleId": "@@rules_probe_rs+//probe_rs/private:repositories.bzl%probe_rs_tools_archive_repo",
+            "attributes": {
+              "tools": [
+                "probe-rs"
+              ],
+              "url": "https://github.com/probe-rs/probe-rs/releases/download/v0.27.0/probe-rs-tools-aarch64-unknown-linux-gnu.tar.xz",
+              "sha256": "7aed7af58c9e267b7145490de61d0147033fadb0a70313fe7dbd363bfd98a728",
+              "strip_prefix": "probe-rs-tools-aarch64-unknown-linux-gnu",
+              "exec_compatible_with": [
+                "@platforms//os:linux",
+                "@platforms//cpu:arm64"
+              ]
+            }
+          },
+          "probe_rs_tools_x86_64_apple_darwin": {
+            "repoRuleId": "@@rules_probe_rs+//probe_rs/private:repositories.bzl%probe_rs_tools_archive_repo",
+            "attributes": {
+              "tools": [
+                "probe-rs"
+              ],
+              "url": "https://github.com/probe-rs/probe-rs/releases/download/v0.27.0/probe-rs-tools-x86_64-apple-darwin.tar.xz",
+              "sha256": "c00a87173008b8279c8d2669e90ce878629abb95ceaa003099adb68d62f3fafb",
+              "strip_prefix": "probe-rs-tools-x86_64-apple-darwin",
+              "exec_compatible_with": [
+                "@platforms//os:macos",
+                "@platforms//cpu:x86_64"
+              ]
+            }
+          },
+          "probe_rs_tools_aarch64_apple_darwin": {
+            "repoRuleId": "@@rules_probe_rs+//probe_rs/private:repositories.bzl%probe_rs_tools_archive_repo",
+            "attributes": {
+              "tools": [
+                "probe-rs"
+              ],
+              "url": "https://github.com/probe-rs/probe-rs/releases/download/v0.27.0/probe-rs-tools-aarch64-apple-darwin.tar.xz",
+              "sha256": "7b1ad0d61f6355a9f095e4d06a5e6149ad9824f4725d4976104486941d652d5c",
+              "strip_prefix": "probe-rs-tools-aarch64-apple-darwin",
+              "exec_compatible_with": [
+                "@platforms//os:macos",
+                "@platforms//cpu:arm64"
+              ]
+            }
+          },
+          "probe_rs_tools_x86_64_pc_windows_msvc": {
+            "repoRuleId": "@@rules_probe_rs+//probe_rs/private:repositories.bzl%probe_rs_tools_archive_repo",
+            "attributes": {
+              "tools": [
+                "probe-rs"
+              ],
+              "url": "https://github.com/probe-rs/probe-rs/releases/download/v0.27.0/probe-rs-tools-x86_64-pc-windows-msvc.zip",
+              "sha256": "88a80e304caf706235c5fd2c75e8c2f6280ff86472348fc3bef19eadb9e47b8c",
+              "exec_compatible_with": [
+                "@platforms//os:windows",
+                "@platforms//cpu:x86_64"
+              ]
+            }
+          }
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "rules_probe_rs+",
+            "rules_probe_rs",
+            "rules_probe_rs+"
+          ]
+        ]
       }
     },
     "@@rules_python+//python/private/pypi:pip.bzl%pip_internal": {
