@@ -57,8 +57,9 @@ These steps can be adapted as needed.
    * If your binary does not use a custom linker script, you can pass
      ``add_tokenizer_sections_to_default_script.ld`` to the linker which will
      augment the default linker script (rather than override it).
-   * Alternatively, add the contents of ``pw_tokenizer_linker_sections.ld`` to
-     your project's linker script.
+   * Alternatively, include ``pw_tokenizer/pw_tokenizer_linker_sections.ld``
+     from your project's linker script by depending on
+     ``"@pigweed//pw_tokenizer:pw_tokenizer_linker_sections_ld"``.
 
 #. Compile your code to produce an ELF file.
 #. Run ``database.py create`` on the ELF file to generate a CSV token
