@@ -47,7 +47,8 @@ bool SystemTimer::set(SystemTimerCallback* callback,
   mCallback = callback;
   mData = data;
   pw::chrono::SystemClock::duration interval =
-      std::chrono::nanoseconds(delay.toRawNanoseconds());
+      std::chrono::duration_cast<pw::chrono::SystemClock::duration>(
+          std::chrono::nanoseconds(delay.toRawNanoseconds()));
   const pw::chrono::SystemClock::time_point now =
       pw::chrono::SystemClock::now();
   timer_.InvokeAt(now + interval);
