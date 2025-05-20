@@ -207,20 +207,33 @@ class WorkQueue : public CustomWorkQueue<Closure> {
       : CustomWorkQueue(queue, [](Closure& fn) { fn(); }) {}
 };
 
+namespace internal {
+
+// Storage base class for the WorkQueueWithBuffer classes. The queue must be a
+// base class instead of a member so the queue is initialized before it is
+// passed to the CustomWorkQueue base.
+template <typename WorkItem, size_t kWorkQueueEntries>
+struct Storage {
+  InlineQueue<WorkItem, kWorkQueueEntries> queue;
+};
+
+}  // namespace internal
+
 /// Creates a WorkQueue and the backing queue.
 ///
 /// @param kWorkQueueEntries The number of entries in the work queue
 ///
 /// @param WorkItem The type that will enqueued.
 template <size_t kWorkQueueEntries, typename WorkItem>
-class CustomWorkQueueWithBuffer : public CustomWorkQueue<WorkItem> {
+class CustomWorkQueueWithBuffer
+    : private internal::Storage<WorkItem, kWorkQueueEntries>,
+      public CustomWorkQueue<WorkItem> {
  public:
   /// @param[in] fn The function to invoke on each enqueued WorkItem
   constexpr CustomWorkQueueWithBuffer(pw::Function<void(WorkItem&)>&& fn)
-      : CustomWorkQueue<WorkItem>(queue_, std::move(fn)) {}
-
- private:
-  InlineQueue<WorkItem, kWorkQueueEntries> queue_;
+      : CustomWorkQueue<WorkItem>(
+            internal::Storage<WorkItem, kWorkQueueEntries>::queue,
+            std::move(fn)) {}
 };
 
 /// Creates a WorkQueue and the backing queue.
@@ -231,12 +244,12 @@ class CustomWorkQueueWithBuffer : public CustomWorkQueue<WorkItem> {
 /// @param kWorkQueueEntries The number of entries in the work queue (e.g. the
 /// total number of work requests before the queue is full).
 template <size_t kWorkQueueEntries>
-class WorkQueueWithBuffer : public WorkQueue {
+class WorkQueueWithBuffer
+    : private internal::Storage<Closure, kWorkQueueEntries>,
+      public WorkQueue {
  public:
-  constexpr WorkQueueWithBuffer() : WorkQueue(queue_) {}
-
- private:
-  InlineQueue<Closure, kWorkQueueEntries> queue_;
+  constexpr WorkQueueWithBuffer()
+      : WorkQueue(internal::Storage<Closure, kWorkQueueEntries>::queue) {}
 };
 
 }  // namespace pw::work_queue
