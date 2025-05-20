@@ -35,6 +35,17 @@ def make_crate_aliases(name):
         visibility = ["//visibility:public"],
     )
     native.alias(
+        name = "bitfield-struct",
+        target_compatible_with = select({
+            ":std": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        actual = select({
+            ":std": "@crates_std//:bitfield-struct",
+        }),
+        visibility = ["//visibility:public"],
+    )
+    native.alias(
         name = "clap",
         target_compatible_with = select({
             ":std": [],
@@ -273,6 +284,17 @@ def make_crate_aliases(name):
         }),
         actual = select({
             ":no_std": "@crates_no_std//:rp235x-hal",
+        }),
+        visibility = ["//visibility:public"],
+    )
+    native.alias(
+        name = "rustc-demangle",
+        target_compatible_with = select({
+            ":std": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+        actual = select({
+            ":std": "@crates_std//:rustc-demangle",
         }),
         visibility = ["//visibility:public"],
     )
