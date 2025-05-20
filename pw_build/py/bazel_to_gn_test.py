@@ -248,7 +248,7 @@ class TestBazelToGnConverter(unittest.TestCase):
         self.assertEqual(gn_target.attrs['defines'], ['LOCAL_DEFINE'])
         self.assertEqual(
             gn_target.attrs['deps'],
-            ['$dir_pw_third_party/baz/baz/pkg:baz_target'],
+            ['$pw_external_baz/baz/pkg:baz_target'],
         )
         self.assertEqual(
             gn_target.attrs['include_dirs'], ['$dir_pw_third_party_foo/include']
@@ -264,8 +264,8 @@ class TestBazelToGnConverter(unittest.TestCase):
         self.assertEqual(
             gn_target.attrs['public_deps'],
             [
-                '$dir_pw_third_party/bar/bar/pkg:bar_target1',
-                '$dir_pw_third_party/bar/bar/pkg:bar_target2',
+                '$pw_external_bar/bar/pkg:bar_target1',
+                '$pw_external_bar/bar/pkg:bar_target2',
             ],
         )
         self.assertEqual(
@@ -350,7 +350,7 @@ http_archive(
         rule = list(b2g.load_rules(labels))[0]
         gn_target = b2g.convert_rule(rule)
         imports = set(b2g.get_imports(gn_target))
-        self.assertEqual(imports, {'$dir_pw_third_party/foo/foo.gni'})
+        self.assertEqual(imports, {'$pw_external_foo/foo.gni'})
 
         mock_calls.check()
 

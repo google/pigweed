@@ -50,8 +50,8 @@ class TestGnTarget(unittest.TestCase):
                 '$dir_pw_third_party_baz/include/',
             ],
             # build args in labels should not be included.
-            'configs': ['$dir_pw_third_party/qux:config'],
-            'deps': ['$dir_pw_third_party/quux:dep'],
+            'configs': ['$pw_external_qux:config'],
+            'deps': ['$pw_external_quux:dep'],
         }
         build_args = set(target.build_args())
         self.assertIn('$dir_pw_third_party_foo', build_args)

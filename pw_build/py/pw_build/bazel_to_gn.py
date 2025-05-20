@@ -73,6 +73,14 @@ def _parse_args() -> argparse.Namespace:
     return args
 
 
+def _normalize_repo_name(repo_name: str):
+    """Normalizes an external repository name to the variable-safe name.
+
+    E.g. abseil-cpp -> abseil_cpp
+    """
+    return repo_name.replace('-', '_')
+
+
 class BazelToGnConverter:
     """Manages the conversion of Bazel rules into GN targets."""
 
@@ -191,10 +199,11 @@ class BazelToGnConverter:
         label = rule.label()
         repo_name = label.repo_name()
         if rule.kind() == 'cc_library':
+            normalized_repo_name = _normalize_repo_name(repo_name)
             if rule.get_bool('linkstatic'):
-                target_type = f'{repo_name}_static_library'.replace('-', '_')
+                target_type = f'{normalized_repo_name}_static_library'
             else:
-                target_type = f'{repo_name}_source_set'.replace('-', '_')
+                target_type = f'{normalized_repo_name}_source_set'
         else:
             raise ParseError(f'unsupported Bazel kind: {rule.kind()}')
         gn_target = GnTarget(target_type, label.name())
@@ -242,7 +251,8 @@ class BazelToGnConverter:
         """Returns the GNI files needed by the given target."""
         for build_arg in gn_target.build_args():
             repo_name = self._repo_names_build_arg[build_arg]
-            yield f'$dir_pw_third_party/{repo_name}/{repo_name}.gni'
+            normalized_repo_name = _normalize_repo_name(repo_name)
+            yield f'$pw_external_{normalized_repo_name}/{repo_name}.gni'
 
     def _build_relative(self, rule: BazelRule, attr_name: str) -> Iterable[str]:
         """Provides GN labels relative to the directory under //third_party."""
@@ -261,7 +271,9 @@ class BazelToGnConverter:
 
             # Abbreviate the label only if it is part of the same repo.
             if repo_name1 != repo_name2:
-                path = PurePosixPath('$dir_pw_third_party', partial_path2)
+                path = PurePosixPath(
+                    f'$pw_external_{_normalize_repo_name(partial_path2)}'
+                )
             elif partial_path1 == partial_path2:
                 path = None
             else:
@@ -286,7 +298,7 @@ class BazelToGnConverter:
 
 def _build_arg(repo_name: str) -> str:
     """Returns the GN build argument for a third party module."""
-    return f'$dir_pw_third_party_{repo_name}'.replace('-', '_')
+    return f'$dir_pw_third_party_{_normalize_repo_name(repo_name)}'
 
 
 def _source_relative(rule: BazelRule, attr_name: str) -> Iterable[str]:
@@ -389,7 +401,7 @@ def _bazel_to_gn(args: argparse.Namespace) -> None:
             'py',
             'pw_package',
             'packages',
-            repo_name.replace('-', '_') + '.py',
+            _normalize_repo_name(repo_name) + '.py',
         )
         _overprint(f'Updating {update_path}...')
         with open(update_path, 'r') as pkg_file:

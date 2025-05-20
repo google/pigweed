@@ -76,10 +76,10 @@ class TestGnWriter(unittest.TestCase):
             'cflags': ['-frobinator'],
             'public_deps': [
                 ':foo',
-                '$dir_pw_third_party/repo/bar',
+                '$pw_external_repo/bar',
             ],
             'deps': [
-                '$dir_pw_third_party/repo:top-level',
+                '$pw_external_repo:top-level',
                 '../another-pkg/baz',
             ],
         }
@@ -104,11 +104,11 @@ custom_type("my-target") {
     "-frobinator",
   ]
   public_deps = [
-    "$dir_pw_third_party/repo/bar",
+    "$pw_external_repo/bar",
     ":foo",
   ]
   deps = [
-    "$dir_pw_third_party/repo:top-level",
+    "$pw_external_repo:top-level",
     "../another-pkg/baz",
   ]
 }
@@ -131,8 +131,8 @@ custom_type("my-target") {
     def test_write_file(self):
         """Writes a BUILD.gn file."""
         imports = {
-            '$dir_pw_third_party/foo/foo.gni',
-            '$dir_pw_third_party/bar/bar.gni',
+            '$pw_external_foo/foo.gni',
+            '$pw_external_bar/bar.gni',
         }
         gn_targets = [
             GnTarget('foo_source_set', 'foo'),
@@ -150,8 +150,8 @@ custom_type("my-target") {
         lines = [
             'import("//build_overrides/pigweed.gni")',
             '',
-            'import("$dir_pw_third_party/bar/bar.gni")',
-            'import("$dir_pw_third_party/foo/foo.gni")',
+            'import("$pw_external_bar/bar.gni")',
+            'import("$pw_external_foo/foo.gni")',
             '',
             'bar_source_set("bar") {',
             '  public = [',
