@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <limits>
+
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
 #include "pw_rpc_transport/rpc_transport.h"
@@ -47,7 +49,7 @@ void LogMalformedRpcFrameHeader();
 template <size_t kMaxPacketSize>
 class SimpleRpcPacketEncoder
     : public RpcPacketEncoder<SimpleRpcPacketEncoder<kMaxPacketSize>> {
-  static_assert(kMaxPacketSize <= 1 << 16);
+  static_assert(kMaxPacketSize <= std::numeric_limits<uint16_t>::max());
 
  public:
   static constexpr size_t kHeaderSize = 4;
