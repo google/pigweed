@@ -136,8 +136,11 @@ genrule {
         "pw_bluetooth_generate_emboss_header",
     ],
     srcs: [
-        "public/pw_bluetooth/hci_common.emb",
+        // Separate out here to ensure order - hci_events.emb needs to be
+        // generated first or the build will fail.
         "public/pw_bluetooth/hci_events.emb",
+
+        "public/pw_bluetooth/hci_common.emb",
     ],
     out: [
         "pw_bluetooth/hci_events.emb.h",
