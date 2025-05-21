@@ -67,6 +67,7 @@ class ActivityGovernorLeaseProvider final
       fidl::UnknownMethodCompleter::Sync& completer) override {}
 
   inspect::Node node_;
+  inspect::Node leases_node_;
   State state_ = State::kResumed;
   fidl::SyncClient<fuchsia_power_system::ActivityGovernor> governor_;
   bt::BoolInspectable<std::optional<::fuchsia_power_system::LeaseToken>> token_;

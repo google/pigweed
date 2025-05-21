@@ -227,7 +227,8 @@ adapter:
                 @time
 lease_provider:
     token
-    // Child node for each Lease, for example:
-    AclDataChannel:
+    leases:
+        // Child node for each Lease, for example:
+        AclDataChannel:
 name
 ```

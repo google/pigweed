@@ -256,13 +256,13 @@ TEST_F(ActivityGovernorLeaseProviderTest, Inspect) {
 
   inspect::Hierarchy hierarchy = ReadInspect(inspector());
   const inspect::Hierarchy* node =
-      hierarchy.GetByPath({"lease_provider", "test_lease"});
+      hierarchy.GetByPath({"lease_provider", "leases", "test_lease"});
   EXPECT_TRUE(node);
 
   lease = pw::Status::Cancelled();
 
   hierarchy = ReadInspect(inspector());
-  node = hierarchy.GetByPath({"lease_provider", "test_lease"});
+  node = hierarchy.GetByPath({"lease_provider", "leases", "test_lease"});
   EXPECT_FALSE(node);
 }
 

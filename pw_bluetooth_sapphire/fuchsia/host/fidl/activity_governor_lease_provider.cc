@@ -78,7 +78,7 @@ ActivityGovernorLeaseProvider::Acquire(const char* name) {
     AcquireWakeLease();
   }
 
-  inspect::Node lease_node = node_.CreateChild(name);
+  inspect::Node lease_node = leases_node_.CreateChild(name);
 
   auto lease_dropped_cb = [self = weak_ptr_factory_.GetWeakPtr(),
                            node = std::move(lease_node)]() {
@@ -93,6 +93,7 @@ ActivityGovernorLeaseProvider::Acquire(const char* name) {
 void ActivityGovernorLeaseProvider::AttachInspect(inspect::Node& parent,
                                                   const char* name) {
   node_ = parent.CreateChild(name);
+  leases_node_ = node_.CreateChild("leases");
   token_.AttachInspect(node_, "token");
 }
 
