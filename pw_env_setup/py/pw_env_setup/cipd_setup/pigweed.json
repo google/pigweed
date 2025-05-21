@@ -15,6 +15,18 @@
       "version_file": ".versions/gn.cipd_version"
     },
     {
+      "path": "fuchsia/third_party/make/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "linux-arm64",
+        "mac-amd64",
+        "mac-arm64"
+      ],
+      "tags": [
+        "version:4.3"
+      ]
+    },
+    {
       "path": "fuchsia/third_party/ninja/${platform}",
       "platforms": [
         "linux-amd64",
