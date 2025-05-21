@@ -485,6 +485,10 @@
       "C++17"
     ]
   },
+  "pw_i2c_zephyr": {
+    "status": "experimental",
+    "languages": []
+  },
   "pw_ide": {
     "tagline": "Code editor and IDE support for Pigweed projects",
     "status": "stable",

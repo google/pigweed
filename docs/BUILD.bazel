@@ -501,6 +501,7 @@ sphinx_docs(
         "//pw_i2c_linux:docs",
         "//pw_i2c_mcuxpresso:docs",
         "//pw_i2c_rp2040:docs",
+        "//pw_i2c_zephyr:docs",
         "//pw_ide:docs",
         "//pw_interrupt:docs",
         "//pw_interrupt_cortex_m:docs",

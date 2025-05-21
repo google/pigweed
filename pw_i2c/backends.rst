@@ -20,6 +20,7 @@ you can use in your projects:
 * :ref:`module-pw_i2c_linux` for Linux userspace.
 * :ref:`module-pw_i2c_mcuxpresso` for the NXP MCUXpresso SDK.
 * :ref:`module-pw_i2c_rp2040` for the Raspberry Pi Pico SDK.
+* :ref:`module-pw_i2c_zephyr` for the Zephyr RTOS.
 
 See :ref:`module-pw_i2c-quickstart` for build system configuration examples.
 
@@ -51,3 +52,4 @@ own:
    Linux <../pw_i2c_linux/docs>
    MCUXpresso <../pw_i2c_mcuxpresso/docs>
    Pico SDK <../pw_i2c_rp2040/docs>
+   Zephyr RTOS <../pw_i2c_zephyr/docs>
