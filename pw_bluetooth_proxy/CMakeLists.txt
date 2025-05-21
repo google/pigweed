@@ -134,6 +134,7 @@ pw_add_test(pw_bluetooth_proxy.pw_bluetooth_proxy_test
     pw_multibuf
     pw_third_party.fuchsia.stdcompat
   SOURCES
+    channel_proxy_test.cc
     gatt_notify_test.cc
     h4_packet_test.cc
     l2cap_coc_test.cc

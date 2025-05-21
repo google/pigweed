@@ -645,36 +645,4 @@ RfcommChannel ProxyHostTest::BuildRfcomm(
   return std::move((channel.value()));
 }
 
-OneOfEachChannel ProxyHostTest::BuildOneOfEachChannel(
-    ProxyHost& proxy, ChannelEventCallback& shared_event_fn) {
-  // Each channel its unique cids and its own rvalue lambda which calls the
-  // shared_event_fn.
-  return OneOfEachChannel(
-      BuildBasicL2capChannel(proxy,
-                             {.local_cid = 201,
-                              .remote_cid = 301,
-                              .event_fn =
-                                  [&shared_event_fn](L2capChannelEvent event) {
-                                    shared_event_fn(event);
-                                  }}),
-      BuildCoc(proxy,
-               {.local_cid = 202,
-                .remote_cid = 302,
-                .event_fn =
-                    [&shared_event_fn](L2capChannelEvent event) {
-                      shared_event_fn(event);
-                    }}),
-      BuildRfcomm(proxy,
-                  {.rx_config{.cid = 203}, .tx_config = {.cid = 303}},
-                  /*receive_fn=*/nullptr,
-                  /*event_fn=*/
-                  [&shared_event_fn](L2capChannelEvent event) {
-                    shared_event_fn(event);
-                  }),
-      BuildGattNotifyChannel(
-          proxy, {.event_fn = [&shared_event_fn](L2capChannelEvent event) {
-            shared_event_fn(event);
-          }}));
-}
-
 }  // namespace pw::bluetooth::proxy

@@ -157,6 +157,7 @@ pw_test("pw_bluetooth_proxy_test") {
     "$pw_external_fuchsia:stdcompat",
   ]
   sources = [
+    "channel_proxy_test.cc",
     "gatt_notify_test.cc",
     "h4_packet_test.cc",
     "l2cap_coc_test.cc",

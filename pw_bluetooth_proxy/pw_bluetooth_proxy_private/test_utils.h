@@ -28,7 +28,6 @@
 #include "pw_bluetooth_proxy/direction.h"
 #include "pw_bluetooth_proxy/gatt_notify_channel.h"
 #include "pw_bluetooth_proxy/h4_packet.h"
-#include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_bluetooth_proxy/l2cap_coc.h"
@@ -297,33 +296,6 @@ struct RfcommParameters {
   uint8_t rfcomm_channel = 3;
 };
 
-// See BuildOneOfEachChannel
-struct OneOfEachChannelParameters {
-  Function<void(multibuf::MultiBuf&& payload)>&& receive_fn = nullptr;
-  ChannelEventCallback&& event_fn = nullptr;
-};
-
-// See BuildOneOfEachChannel
-struct OneOfEachChannel {
-  OneOfEachChannel(BasicL2capChannel&& basic,
-                   L2capCoc&& coc,
-                   RfcommChannel&& rfcomm,
-                   GattNotifyChannel&& gatt)
-      : basic_{std::move(basic)},
-        coc_{std::move(coc)},
-        rfcomm_{std::move(rfcomm)},
-        gatt_{std::move(gatt)} {}
-
-  std::vector<L2capChannel*> AllChannels() {
-    return std::vector<L2capChannel*>{&basic_, &coc_, &rfcomm_, &gatt_};
-  }
-
-  BasicL2capChannel basic_;
-  L2capCoc coc_;
-  RfcommChannel rfcomm_;
-  GattNotifyChannel gatt_;
-};
-
 // ########## Test Suites
 
 class ProxyHostTest : public testing::Test {
@@ -361,14 +333,6 @@ class ProxyHostTest : public testing::Test {
     PW_TEST_EXPECT_OK(multibuf->CopyFrom(as_bytes(buf)));
     return std::move(*multibuf);
   }
-
-  // Builds a struct with one of each channel to support tests across all
-  // of them.
-  //
-  // Note, shared_event_fn is a reference (rather than a rvalue) so it can
-  // be shared across each channel.
-  OneOfEachChannel BuildOneOfEachChannel(ProxyHost& proxy,
-                                         ChannelEventCallback& shared_event_fn);
 
   template <typename T, size_t N>
   pw::multibuf::MultiBuf MultiBufFromArray(const std::array<T, N>& arr) {
