@@ -225,7 +225,6 @@ declare_args() {
   dir_pw_uart = get_path_info("../pw_uart", "abspath")
   dir_pw_uart_mcuxpresso = get_path_info("../pw_uart_mcuxpresso", "abspath")
   dir_pw_unit_test = get_path_info("../pw_unit_test", "abspath")
-  dir_pw_unit_test_zephyr = get_path_info("../pw_unit_test_zephyr", "abspath")
   dir_pw_uuid = get_path_info("../pw_uuid", "abspath")
   dir_pw_varint = get_path_info("../pw_varint", "abspath")
   dir_pw_watch = get_path_info("../pw_watch", "abspath")
@@ -419,7 +418,6 @@ declare_args() {
     dir_pw_uart,
     dir_pw_uart_mcuxpresso,
     dir_pw_unit_test,
-    dir_pw_unit_test_zephyr,
     dir_pw_uuid,
     dir_pw_varint,
     dir_pw_watch,
@@ -610,7 +608,6 @@ declare_args() {
     "$dir_pw_uart:tests",
     "$dir_pw_uart_mcuxpresso:tests",
     "$dir_pw_unit_test:tests",
-    "$dir_pw_unit_test_zephyr:tests",
     "$dir_pw_uuid:tests",
     "$dir_pw_varint:tests",
     "$dir_pw_watch:tests",
@@ -801,7 +798,6 @@ declare_args() {
     "$dir_pw_uart:docs",
     "$dir_pw_uart_mcuxpresso:docs",
     "$dir_pw_unit_test:docs",
-    "$dir_pw_unit_test_zephyr:docs",
     "$dir_pw_uuid:docs",
     "$dir_pw_varint:docs",
     "$dir_pw_watch:docs",

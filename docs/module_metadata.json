@@ -938,9 +938,6 @@
     "tagline": "GoogleTest for embedded",
     "status": "stable"
   },
-  "pw_unit_test_zephyr": {
-    "status": "stable"
-  },
   "pw_uuid": {
     "tagline": "128-bit universally unique identifier (UUID)",
     "status": "experimental"

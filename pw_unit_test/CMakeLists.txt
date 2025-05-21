@@ -172,7 +172,7 @@ if(${pw_unit_test_BACKEND} STREQUAL "pw_unit_test.googletest")
   )
 endif()
 
-pw_add_library(pw_unit_test.simple_printing_main STATIC
+pw_add_library(pw_unit_test.simple_printing_main OBJECT
   SOURCES
     simple_printing_main.cc
     simple_printing_event_handler.cc

@@ -600,7 +600,6 @@ sphinx_docs(
         "//pw_uart:docs",
         "//pw_uart_mcuxpresso:docs",
         "//pw_unit_test:docs",
-        "//pw_unit_test_zephyr:docs",
         "//pw_uuid:docs",
         "//pw_varint:docs",
         "//pw_watch:docs",
