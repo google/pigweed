@@ -25,7 +25,6 @@
 #include "pw_bluetooth_proxy/internal/l2cap_channel_manager.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
 #include "pw_log/log.h"
-#include "pw_span/cast.h"
 #include "pw_status/status.h"
 #include "pw_status/try.h"
 
