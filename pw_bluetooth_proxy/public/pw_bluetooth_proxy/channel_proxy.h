@@ -14,19 +14,36 @@
 
 #pragma once
 
+#include "pw_bluetooth_proxy/l2cap_channel_common.h"
+#include "pw_function/function.h"
+
 namespace pw::bluetooth::proxy {
 
 /// ChannelProxy allows a client to write, read, and receive events from an
 /// underlying Bluetooth channel.
 class ChannelProxy {
  public:
-  explicit ChannelProxy() {}
+  explicit ChannelProxy(ChannelEventCallback&& event_fn)
+      : event_fn_(std::move(event_fn)) {}
   virtual ~ChannelProxy() = default;
 
   ChannelProxy(const ChannelProxy& other) = delete;
   ChannelProxy& operator=(const ChannelProxy& other) = delete;
-  ChannelProxy(ChannelProxy&& other) = default;
-  ChannelProxy& operator=(ChannelProxy&& other) = default;
+  ChannelProxy(ChannelProxy&& other) : event_fn_(std::move(other.event_fn_)) {}
+  ChannelProxy& operator=(ChannelProxy&& other) {
+    if (this != &other) {
+      event_fn_ = std::move(other.event_fn_);
+      other.event_fn_ = nullptr;
+    }
+    return *this;
+  }
+
+ protected:
+  void SendEventToClient(L2capChannelEvent event);
+
+ private:
+  // Used to notify clients of events.
+  ChannelEventCallback event_fn_;
 };
 
 }  // namespace pw::bluetooth::proxy

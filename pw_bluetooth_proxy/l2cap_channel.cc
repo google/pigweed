@@ -45,7 +45,6 @@ void L2capChannel::MoveFields(L2capChannel& other) {
   transport_ = other.transport();
   local_cid_ = other.local_cid();
   remote_cid_ = other.remote_cid();
-  event_fn_ = std::move(other.event_fn_);
   payload_from_controller_fn_ = std::move(other.payload_from_controller_fn_);
   payload_from_host_fn_ = std::move(other.payload_from_host_fn_);
   rx_multibuf_allocator_ = other.rx_multibuf_allocator_;
@@ -251,15 +250,13 @@ L2capChannel::L2capChannel(
     uint16_t local_cid,
     uint16_t remote_cid,
     OptionalPayloadReceiveCallback&& payload_from_controller_fn,
-    OptionalPayloadReceiveCallback&& payload_from_host_fn,
-    ChannelEventCallback&& event_fn)
+    OptionalPayloadReceiveCallback&& payload_from_host_fn)
     : l2cap_channel_manager_(l2cap_channel_manager),
       state_(State::kRunning),
       connection_handle_(connection_handle),
       transport_(transport),
       local_cid_(local_cid),
       remote_cid_(remote_cid),
-      event_fn_(std::move(event_fn)),
       rx_multibuf_allocator_(rx_multibuf_allocator),
       payload_from_controller_fn_(std::move(payload_from_controller_fn)),
       payload_from_host_fn_(std::move(payload_from_host_fn)) {
@@ -272,28 +269,6 @@ L2capChannel::L2capChannel(
       remote_cid_);
 
   l2cap_channel_manager_.RegisterChannel(*this);
-}
-
-// Send `event` to client if an event callback was provided.
-void L2capChannel::SendEvent(L2capChannelEvent event) {
-  // We don't log kWriteAvailable since they happen often. Optimally we would
-  // just debug log them also, but one of our downstreams logs all levels.
-  if (event != L2capChannelEvent::kWriteAvailable) {
-    PW_LOG_INFO(
-        "btproxy: SendEvent - event: %u, transport_: %u, "
-        "connection_handle_: %#x, local_cid_ : %#x, remote_cid_: %#x, "
-        "state_: %u",
-        cpp23::to_underlying(event),
-        cpp23::to_underlying(transport_),
-        connection_handle_,
-        local_cid_,
-        remote_cid_,
-        cpp23::to_underlying(state_));
-  }
-
-  if (event_fn_) {
-    event_fn_(event);
-  }
 }
 
 bool L2capChannel::AreValidParameters(uint16_t connection_handle,

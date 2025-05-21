@@ -161,7 +161,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
         local_cid(),
         remote_cid(),
         cpp23::to_underlying(state()));
-    StopAndSendEvent(L2capChannelEvent::kRxWhileStopped);
+    StopUnderlyingChannelWithEvent(L2capChannelEvent::kRxWhileStopped);
     return true;
   }
 
@@ -205,7 +205,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
           "(CID %#x) Rx K-frame payload exceeds MPU. So stopping channel & "
           "reporting it needs to be closed.",
           local_cid());
-      StopAndSendEvent(L2capChannelEvent::kRxInvalid);
+      StopUnderlyingChannelWithEvent(L2capChannelEvent::kRxInvalid);
       return true;
     }
 
@@ -221,7 +221,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
           "(CID %#x) Buffer is too small for first K-frame. So stopping "
           "channel and reporting it needs to be closed.",
           local_cid());
-      StopAndSendEvent(L2capChannelEvent::kRxInvalid);
+      StopUnderlyingChannelWithEvent(L2capChannelEvent::kRxInvalid);
       return true;
     }
 
@@ -234,7 +234,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
           "(CID %#x) Rx K-frame SDU exceeds MTU. So stopping channel & "
           "reporting it needs to be closed.",
           local_cid());
-      StopAndSendEvent(L2capChannelEvent::kRxInvalid);
+      StopUnderlyingChannelWithEvent(L2capChannelEvent::kRxInvalid);
       return true;
     }
 
@@ -246,7 +246,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
           "(CID %#x) Rx K-frame payload exceeds MPU. So stopping channel & "
           "reporting it needs to be closed.",
           local_cid());
-      StopAndSendEvent(L2capChannelEvent::kRxInvalid);
+      StopUnderlyingChannelWithEvent(L2capChannelEvent::kRxInvalid);
       return true;
     }
 
@@ -257,7 +257,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
           "(CID %#x) Rx MultiBuf allocator out of memory. So stopping channel "
           "and reporting it needs to be closed.",
           local_cid());
-      StopAndSendEvent(L2capChannelEvent::kRxOutOfMemory);
+      StopUnderlyingChannelWithEvent(L2capChannelEvent::kRxOutOfMemory);
       return true;
     }
 
@@ -277,7 +277,7 @@ bool L2capCoc::DoHandlePduFromController(pw::span<uint8_t> kframe) {
         "(CID %#x) Sum of K-frame payload sizes exceeds the specified SDU "
         "length. So stopping channel and reporting it needs to be closed.",
         local_cid());
-    StopAndSendEvent(L2capChannelEvent::kRxInvalid);
+    StopUnderlyingChannelWithEvent(L2capChannelEvent::kRxInvalid);
     return true;
   }
   PW_CHECK_OK(status);
@@ -468,7 +468,7 @@ void L2capCoc::AddTxCredits(uint16_t credits) {
           long{emboss::L2capLeCreditBasedConnectionReq::max_credit_value()},
           local_cid(),
           remote_cid());
-      StopAndSendEvent(L2capChannelEvent::kRxInvalid);
+      StopUnderlyingChannelWithEvent(L2capChannelEvent::kRxInvalid);
       return;
     }
 

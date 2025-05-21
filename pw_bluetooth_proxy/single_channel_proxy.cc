@@ -38,10 +38,11 @@ SingleChannelProxy::SingleChannelProxy(
           /*local_cid=*/local_cid,
           /*remote_cid=*/remote_cid,
           /*payload_from_controller_fn=*/std::move(payload_from_controller_fn),
-          /*payload_from_host_fn=*/std::move(payload_from_host_fn),
-          /*event_fn=*/std::move(event_fn)),
-      L2capChannel::Holder(this),
-      ChannelProxy() {
+          /*payload_from_host_fn=*/std::move(payload_from_host_fn)),
+      L2capChannel::Holder(/*underlying_channel=*/this),
+      ChannelProxy(/*event_fn=*/std::move(event_fn)) {
+  // TODO: https://pwbug.dev/388082771 - Adjust log parameters once we are done
+  // with transition.
   PW_LOG_INFO("btproxy: SingleChannelProxy ctor - this: %p, this(Holder): %p",
               (void*)this,
               (void*)(L2capChannel::Holder*)this);
@@ -107,6 +108,10 @@ SingleChannelProxy::~SingleChannelProxy() {
   if (state() != State::kUndefined) {
     PW_LOG_INFO("btproxy: SingleChannelProxy dtor");
   }
+}
+
+void SingleChannelProxy::HandleUnderlyingChannelEvent(L2capChannelEvent event) {
+  SendEventToClient(event);
 }
 
 }  // namespace pw::bluetooth::proxy

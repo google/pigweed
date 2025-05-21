@@ -79,13 +79,18 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
     // ChannelProxy.
     friend L2capChannel;
 
+    L2capChannel* GetUnderlyingChannel() { return underlying_channel_; }
+
+    // Handle the passed event from the underlying channel. Typically by sending
+    // onwards towards the client.
+    virtual void HandleUnderlyingChannelEvent(L2capChannelEvent event) = 0;
+
     void SetUnderlyingChannel(L2capChannel* underlying_channel) {
       underlying_channel_ = underlying_channel;
       underlying_channel_->SetHolder(this);
     }
 
-    // TODO: https://pwbug.dev/388082771 - Being used for WIP testing. Delete
-    // when done.
+    // Verify current underlying channel matches `expected`.
     void CheckUnderlyingChannel(L2capChannel* expected) {
       PW_CHECK(underlying_channel_ == expected);
     }
@@ -109,6 +114,16 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   L2capChannel& operator=(L2capChannel&& other);
 
   virtual ~L2capChannel();
+
+  //-------------
+  //  Status (internal public)
+  //-------------
+
+  // Helper since these operations should typically be coupled.
+  void StopAndSendEvent(L2capChannelEvent event) {
+    Stop();
+    SendEvent(event);
+  }
 
   // Enter `State::kStopped`. This means
   //   - Queue is cleared so pending sends will not complete.
@@ -233,8 +248,7 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
       uint16_t local_cid,
       uint16_t remote_cid,
       OptionalPayloadReceiveCallback&& payload_from_controller_fn,
-      OptionalPayloadReceiveCallback&& payload_from_host_fn,
-      ChannelEventCallback&& event_fn);
+      OptionalPayloadReceiveCallback&& payload_from_host_fn);
 
   // Returns whether or not ACL connection handle & L2CAP channel identifiers
   // are valid parameters for a packet.
@@ -256,7 +270,6 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   void SwitchHolder(Holder* old_holder, Holder* new_holder) {
     PW_ASSERT(holder_ == old_holder);
     holder_ = new_holder;
-    //
     holder_->CheckUnderlyingChannel(this);
   }
 
@@ -268,12 +281,10 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //-------------------
 
   // Send `event` to client if an event callback was provided.
-  void SendEvent(L2capChannelEvent event);
-
-  // Helper since these operations should typically be coupled.
-  void StopAndSendEvent(L2capChannelEvent event) {
-    Stop();
-    SendEvent(event);
+  void SendEvent(L2capChannelEvent event) {
+    if (holder_) {
+      holder_->HandleUnderlyingChannelEvent(event);
+    }
   }
 
   // Called on channel closure, i.e. when the ACL connection or L2CAP connection

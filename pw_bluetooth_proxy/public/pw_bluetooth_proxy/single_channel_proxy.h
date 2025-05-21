@@ -54,6 +54,20 @@ class SingleChannelProxy : public L2capChannel,
   SingleChannelProxy(SingleChannelProxy&& other);
   SingleChannelProxy& operator=(SingleChannelProxy&& other);
   ~SingleChannelProxy() override;
+
+ protected:
+  // Handle event from underlying channel by sending event to client if an event
+  // callback was provided.
+  void HandleUnderlyingChannelEvent(L2capChannelEvent event) override;
+
+  // Stop the underlying channel with the provided event.
+  // TODO: https://pwbug.dev/388082771 - Look at if we can remove this reverse
+  // event flow to L2capChannel.
+  void StopUnderlyingChannelWithEvent(L2capChannelEvent event) {
+    if (GetUnderlyingChannel()) {
+      GetUnderlyingChannel()->StopAndSendEvent(event);
+    }
+  }
 };
 
 }  // namespace pw::bluetooth::proxy
