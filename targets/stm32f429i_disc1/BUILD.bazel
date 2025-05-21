@@ -26,7 +26,7 @@ package(
 licenses(["notice"])
 
 platform(
-    name = "platform",
+    name = "stm32f429i_baremetal",
     constraint_values = [
         "//pw_interrupt_cortex_m:backend",
         "//pw_malloc:bucket_block_allocator_backend",

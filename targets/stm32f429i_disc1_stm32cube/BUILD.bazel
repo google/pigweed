@@ -49,7 +49,7 @@ constraint_value(
 )
 
 platform(
-    name = "platform",
+    name = "stm32f429i_freertos",
     constraint_values = [
         ":freertos_config_cv",
         "//pw_build/constraints/rtos:freertos",
