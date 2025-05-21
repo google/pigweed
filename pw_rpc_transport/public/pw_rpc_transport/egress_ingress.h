@@ -37,11 +37,16 @@ void LogIngressSendFailure(uint32_t channel_id, Status status);
 }  // namespace internal
 
 // Ties RPC transport and RPC frame encoder together.
+class BaseRpcEgress : public RpcEgressHandler, public ChannelOutput {
+ protected:
+  BaseRpcEgress(const char* name) : ChannelOutput(name) {}
+};
+
 template <typename Encoder>
-class RpcEgress : public RpcEgressHandler, public ChannelOutput {
+class RpcEgress : public BaseRpcEgress {
  public:
   RpcEgress(std::string_view channel_name, RpcFrameSender& transport)
-      : ChannelOutput(channel_name.data()), transport_(transport) {}
+      : BaseRpcEgress(channel_name.data()), transport_(transport) {}
 
   // Implements both rpc::ChannelOutput and RpcEgressHandler. Encodes the
   // provided packet using the target transport's MTU as max frame size and

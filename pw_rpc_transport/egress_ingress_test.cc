@@ -105,6 +105,8 @@ TEST(RpcEgressIngressTest, SimpleFramingRoundtrip) {
   SimpleRpcEgress<kMaxPacketSize> egress_a_to_b("a->b", transport_a_to_b);
   SimpleRpcEgress<kMaxPacketSize> egress_b_to_a("b->a", transport_b_to_a);
 
+  [[maybe_unused]] BaseRpcEgress* egress = &egress_a_to_b;  // Compilation only
+
   std::array a_tx_channels = {
       rpc::Channel::Create<kChannelAtoB>(&egress_a_to_b)};
   std::array b_tx_channels = {
@@ -202,6 +204,8 @@ TEST(RpcEgressIngressTest, HdlcFramingRoundtrip) {
 
   HdlcRpcEgress<kMaxPacketSize> egress_a_to_b("a->b", transport_a_to_b);
   HdlcRpcEgress<kMaxPacketSize> egress_b_to_a("b->a", transport_b_to_a);
+
+  [[maybe_unused]] BaseRpcEgress* egress = &egress_a_to_b;  // Compilation only
 
   std::array a_tx_channels = {
       rpc::Channel::Create<kChannelAtoB>(&egress_a_to_b)};
