@@ -33,6 +33,13 @@ namespace pw::bluetooth::proxy {
 
 void L2capChannel::MoveFields(L2capChannel& other) {
   // TODO: https://pwbug.dev/380504851 - Add tests for move operators.
+
+  holder_ = other.holder_;
+  other.holder_ = nullptr;
+  if (holder_) {
+    holder_->SetUnderlyingChannel(this);
+  }
+
   state_ = other.state();
   connection_handle_ = other.connection_handle();
   transport_ = other.transport();

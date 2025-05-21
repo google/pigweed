@@ -17,17 +17,19 @@
 #include <cstdint>
 
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
+#include "pw_bluetooth_proxy/single_channel_proxy.h"
 
 namespace pw::bluetooth::proxy {
 
 /// `GattNotifyChannel` supports sending GATT characteristic notifications to a
 /// remote peer.
-class GattNotifyChannel : public L2capChannel {
+// TODO: https://pwbug.dev/388082771 - Switch to only inheriting from
+// SingleChannelProxy (which will hold on to underlying L2capChannel).
+class GattNotifyChannel : public SingleChannelProxy {
  public:
   GattNotifyChannel(const GattNotifyChannel& other) = delete;
   GattNotifyChannel& operator=(const GattNotifyChannel& other) = delete;
   GattNotifyChannel(GattNotifyChannel&&) = default;
-  // Move assignment operator allows channels to be erased from pw_containers.
   GattNotifyChannel& operator=(GattNotifyChannel&& other) = default;
   ~GattNotifyChannel() override;
 

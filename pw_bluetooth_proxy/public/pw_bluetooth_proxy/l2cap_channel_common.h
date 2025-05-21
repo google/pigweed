@@ -24,6 +24,8 @@ namespace pw::bluetooth::proxy {
 
 /// Events returned from all client-facing channel objects in their `event_fn`
 /// callback.
+// TODO: https://pwbug.dev/388082771 -  Rename to just ChannelEvent and move
+// to channel_common.h
 enum class L2capChannelEvent {
   /// The channel was closed by something other than `ProxyHost` or due to
   /// `ProxyHost` shutdown. The channel is now `State::kClosed` and should be

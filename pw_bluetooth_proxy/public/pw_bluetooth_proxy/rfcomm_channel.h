@@ -15,17 +15,18 @@
 #pragma once
 
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
+#include "pw_bluetooth_proxy/single_channel_proxy.h"
 #include "pw_sync/mutex.h"
 
 namespace pw::bluetooth::proxy {
 
 /// L2CAP RFCOMM channel that supports writing to and reading
 /// from a remote peer.
-/// TODO: https://pwbug.dev/378691959 - Switch to just containing a
-/// BasicL2capChannel instead of inheritance.
 ///
 /// This implementation requires use of RFCOMM credit based flow control.
-class RfcommChannel final : public L2capChannel {
+// TODO: https://pwbug.dev/418018114 - Switch from SingleChannelProxy to support
+// N:1 relationship with underlying L2capChannel.
+class RfcommChannel final : public SingleChannelProxy {
  public:
   /// Parameters for a direction of packet flow in an `RfcommChannel`.
   struct Config {

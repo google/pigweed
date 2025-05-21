@@ -24,12 +24,13 @@
 #include "pw_bluetooth_proxy/internal/logical_transport.h"
 #include "pw_bluetooth_proxy/internal/rfcomm_fcs.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
+#include "pw_bluetooth_proxy/single_channel_proxy.h"
 #include "pw_log/log.h"
 
 namespace pw::bluetooth::proxy {
 
 RfcommChannel::RfcommChannel(RfcommChannel&& other)
-    : L2capChannel(static_cast<RfcommChannel&&>(other)),
+    : SingleChannelProxy(std::move(static_cast<SingleChannelProxy&>(other))),
       rx_config_(other.rx_config_),
       tx_config_(other.tx_config_),
       channel_number_(other.channel_number_),
@@ -317,15 +318,15 @@ RfcommChannel::RfcommChannel(
     uint8_t channel_number,
     Function<void(multibuf::MultiBuf&& payload)>&& payload_from_controller_fn,
     ChannelEventCallback&& event_fn)
-    : L2capChannel(l2cap_channel_manager,
-                   &rx_multibuf_allocator,
-                   /*connection_handle=*/connection_handle,
-                   /*transport=*/AclTransportType::kBrEdr,
-                   /*local_cid=*/rx_config.cid,
-                   /*remote_cid=*/tx_config.cid,
-                   /*payload_from_controller_fn=*/nullptr,
-                   /*payload_from_host_fn=*/nullptr,
-                   /*event_fn=*/std::move(event_fn)),
+    : SingleChannelProxy(l2cap_channel_manager,
+                         &rx_multibuf_allocator,
+                         /*connection_handle=*/connection_handle,
+                         /*transport=*/AclTransportType::kBrEdr,
+                         /*local_cid=*/rx_config.cid,
+                         /*remote_cid=*/tx_config.cid,
+                         /*payload_from_controller_fn=*/nullptr,
+                         /*payload_from_host_fn=*/nullptr,
+                         /*event_fn=*/std::move(event_fn)),
       rx_config_(rx_config),
       tx_config_(tx_config),
       channel_number_(channel_number),

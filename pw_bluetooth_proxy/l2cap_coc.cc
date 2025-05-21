@@ -26,6 +26,7 @@
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_bluetooth_proxy/internal/l2cap_signaling_channel.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
+#include "pw_bluetooth_proxy/single_channel_proxy.h"
 #include "pw_log/log.h"
 #include "pw_multibuf/multibuf.h"
 #include "pw_status/status.h"
@@ -40,7 +41,7 @@ const float kRxCreditReplenishThreshold = 0.30;
 }  // namespace
 
 L2capCoc::L2capCoc(L2capCoc&& other)
-    : L2capChannel(static_cast<L2capCoc&&>(other)),
+    : SingleChannelProxy(std::move(static_cast<SingleChannelProxy&>(other))),
       signaling_channel_(other.signaling_channel_),
       rx_mtu_(other.rx_mtu_),
       rx_mps_(other.rx_mps_),
@@ -62,6 +63,13 @@ L2capCoc::L2capCoc(L2capCoc&& other)
     rx_remaining_credits_ = other.rx_remaining_credits_;
     rx_total_credits_ = other.rx_total_credits_;
   }
+
+  // Verify L2capChannel::holder_ and Holder::underlying_channel_ were properly
+  // set.
+  // TODO: https://pwbug.dev/388082771 - Being used for testing during
+  // transition. Delete when done.
+  CheckHolder(this);
+  CheckUnderlyingChannel(this);
 }
 
 Status L2capCoc::DoCheckWriteParameter(pw::multibuf::MultiBuf& payload) {
@@ -307,15 +315,15 @@ L2capCoc::L2capCoc(pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
                    CocConfig tx_config,
                    ChannelEventCallback&& event_fn,
                    Function<void(multibuf::MultiBuf&& payload)>&& receive_fn)
-    : L2capChannel(l2cap_channel_manager,
-                   &rx_multibuf_allocator,
-                   /*connection_handle=*/connection_handle,
-                   /*transport=*/AclTransportType::kLe,
-                   /*local_cid=*/rx_config.cid,
-                   /*remote_cid=*/tx_config.cid,
-                   /*payload_from_controller_fn=*/nullptr,
-                   /*payload_from_host_fn=*/nullptr,
-                   /*event_fn=*/std::move(event_fn)),
+    : SingleChannelProxy(l2cap_channel_manager,
+                         &rx_multibuf_allocator,
+                         /*connection_handle=*/connection_handle,
+                         /*transport=*/AclTransportType::kLe,
+                         /*local_cid=*/rx_config.cid,
+                         /*remote_cid=*/tx_config.cid,
+                         /*payload_from_controller_fn=*/nullptr,
+                         /*payload_from_host_fn=*/nullptr,
+                         /*event_fn=*/std::move(event_fn)),
 
       signaling_channel_(signaling_channel),
       rx_mtu_(rx_config.mtu),
@@ -332,6 +340,13 @@ L2capCoc::L2capCoc(pw::multibuf::MultiBufAllocator& rx_multibuf_allocator,
       rx_remaining_credits_,
       rx_total_credits_,
       tx_credits_);
+
+  // Verify L2capChannel::holder_ and Holder::underlying_channel_ were properly
+  // set.
+  // TODO: https://pwbug.dev/388082771 - Being used for testing during
+  // transition. Delete when done.
+  CheckHolder(this);
+  CheckUnderlyingChannel(this);
 }
 
 L2capCoc::~L2capCoc() {

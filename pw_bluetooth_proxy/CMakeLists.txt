@@ -28,6 +28,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
 # LINT.IfChange
   HEADERS
     public/pw_bluetooth_proxy/basic_l2cap_channel.h
+    public/pw_bluetooth_proxy/channel_proxy.h
     public/pw_bluetooth_proxy/direction.h
     public/pw_bluetooth_proxy/gatt_notify_channel.h
     public/pw_bluetooth_proxy/h4_packet.h
@@ -51,6 +52,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     public/pw_bluetooth_proxy/l2cap_status_delegate.h
     public/pw_bluetooth_proxy/proxy_host.h
     public/pw_bluetooth_proxy/rfcomm_channel.h
+    public/pw_bluetooth_proxy/single_channel_proxy.h
 # LINT.ThenChange(BUILD.bazel, BUILD.gn)
 
   PUBLIC_INCLUDES
@@ -83,6 +85,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
   SOURCES
     acl_data_channel.cc
     basic_l2cap_channel.cc
+    channel_proxy.cc
     gatt_notify_channel.cc
     h4_storage.cc
     l2cap_aclu_signaling_channel.cc
@@ -96,6 +99,7 @@ pw_add_library(pw_bluetooth_proxy STATIC
     recombiner.cc
     rfcomm_channel.cc
     rfcomm_fcs.cc
+    single_channel_proxy.cc
 # LINT.ThenChange(Android.bp, BUILD.bazel, BUILD.gn)
 
 )

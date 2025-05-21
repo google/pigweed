@@ -16,10 +16,13 @@
 
 #include "pw_bluetooth_proxy/internal/l2cap_channel.h"
 #include "pw_bluetooth_proxy/l2cap_channel_common.h"
+#include "pw_bluetooth_proxy/single_channel_proxy.h"
 
 namespace pw::bluetooth::proxy {
 
-class BasicL2capChannel : public L2capChannel {
+// TODO: https://pwbug.dev/388082771 - Switch to only inheriting from
+// SingleChannelProxy (while will hold on to underlying L2capChannel).
+class BasicL2capChannel : public SingleChannelProxy {
  public:
   // TODO: https://pwbug.dev/360929142 - Take the MTU. Signaling channels would
   // provide MTU_SIG.
@@ -37,7 +40,6 @@ class BasicL2capChannel : public L2capChannel {
   BasicL2capChannel(const BasicL2capChannel& other) = delete;
   BasicL2capChannel& operator=(const BasicL2capChannel& other) = delete;
   BasicL2capChannel(BasicL2capChannel&&) = default;
-  // Move assignment operator allows channels to be erased from pw_containers.
   BasicL2capChannel& operator=(BasicL2capChannel&& other) = default;
   ~BasicL2capChannel() override;
 

@@ -28,6 +28,7 @@ cc_library_static {
     srcs: [
         "acl_data_channel.cc",
         "basic_l2cap_channel.cc",
+        "channel_proxy.cc",
         "gatt_notify_channel.cc",
         "h4_storage.cc",
         "l2cap_aclu_signaling_channel.cc",
@@ -41,6 +42,7 @@ cc_library_static {
         "recombiner.cc",
         "rfcomm_channel.cc",
         "rfcomm_fcs.cc",
+        "single_channel_proxy.cc",
     ],
     export_include_dirs: [
         "public",
