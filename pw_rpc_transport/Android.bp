@@ -81,6 +81,7 @@ cc_library_static {
         "pw_log",
     ],
     static_libs: [
+        "pw_bytes",
         "pw_polyfill",
         "pw_preprocessor",
         "pw_result",

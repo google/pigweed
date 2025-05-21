@@ -16,6 +16,7 @@
 #include <limits>
 
 #include "pw_assert/assert.h"
+#include "pw_bytes/byte_builder.h"
 #include "pw_bytes/span.h"
 #include "pw_rpc_transport/rpc_transport.h"
 #include "pw_status/status.h"
@@ -74,14 +75,11 @@ class SimpleRpcPacketEncoder
     const auto first_frame_size =
         std::min(max_frame_size - kHeaderSize, rpc_packet.size());
 
-    std::array<std::byte, kHeaderSize> header{
-        std::byte{kFrameMarker & 0xff},
-        std::byte{(kFrameMarker >> 8) & 0xff},
-        static_cast<std::byte>(rpc_packet.size() & 0xff),
-        static_cast<std::byte>((rpc_packet.size() >> 8) & 0xff),
-    };
+    ByteBuffer<kHeaderSize> header;
+    header.PutUint16(kFrameMarker, endian::little);
+    header.PutUint16(static_cast<uint16_t>(rpc_packet.size()), endian::little);
 
-    RpcFrame frame{.header = span(header),
+    RpcFrame frame{.header = ConstByteSpan(header),
                    .payload = rpc_packet.first(first_frame_size)};
     PW_TRY(callback(frame));
     auto remaining = rpc_packet.subspan(first_frame_size);
@@ -182,10 +180,11 @@ size_t SimpleRpcPacketDecoder<kMaxPacketSize>::ReadHeader(
   header_available = bytes_remaining_ == 0;
 
   if (header_available) {
-    uint16_t marker = (static_cast<uint16_t>(header_[1]) << 8) |
-                      static_cast<uint16_t>(header_[0]);
-    uint16_t packet_size = (static_cast<uint16_t>(header_[3]) << 8) |
-                           static_cast<uint16_t>(header_[2]);
+    ByteBuilder header(header_);
+    auto header_iter = header.begin();
+
+    uint16_t marker = header_iter.ReadUint16(endian::little);
+    uint16_t packet_size = header_iter.ReadUint16(endian::little);
 
     if (marker != Encoder::kFrameMarker) {
       // We expected a header but received some data that is definitely not
