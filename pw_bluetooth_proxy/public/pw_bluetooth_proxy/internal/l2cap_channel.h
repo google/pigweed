@@ -313,24 +313,6 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   // Helper for move constructor and move assignment.
   void MoveFields(L2capChannel& other) PW_LOCKS_EXCLUDED(tx_mutex_);
 
-  L2capChannelManager& l2cap_channel_manager_;
-
-  State state_;
-
-  // ACL connection handle.
-  uint16_t connection_handle_;
-
-  AclTransportType transport_;
-
-  // L2CAP channel ID of local endpoint.
-  uint16_t local_cid_;
-
-  // L2CAP channel ID of remote endpoint.
-  uint16_t remote_cid_;
-
-  // Notify clients of asynchronous events encountered such as errors.
-  ChannelEventCallback event_fn_;
-
   // Reserve an L2CAP packet over ACL over H4 packet.
   pw::Result<H4PacketWithH4> PopulateL2capPacket(uint16_t data_length);
 
@@ -436,6 +418,24 @@ class L2capChannel : public IntrusiveForwardList<L2capChannel>::Item {
   //--------------
   //  Data members
   //--------------
+
+  L2capChannelManager& l2cap_channel_manager_;
+
+  State state_;
+
+  // ACL connection handle.
+  uint16_t connection_handle_;
+
+  AclTransportType transport_;
+
+  // L2CAP channel ID of local endpoint.
+  uint16_t local_cid_;
+
+  // L2CAP channel ID of remote endpoint.
+  uint16_t remote_cid_;
+
+  // Notify clients of asynchronous events encountered such as errors.
+  ChannelEventCallback event_fn_;
 
   // Optional client-provided multibuf allocator.
   multibuf::MultiBufAllocator* rx_multibuf_allocator_;
