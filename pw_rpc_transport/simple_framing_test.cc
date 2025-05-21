@@ -69,6 +69,12 @@ void CopyFrame(RpcFrame frame, std::vector<std::byte>& dst) {
       frame.payload.begin(), frame.payload.end(), std::back_inserter(dst));
 }
 
+TEST(SimpleRpcFrameEncodeDecodeTest, MaxEncodedPacketSize) {
+  using Encoder = SimpleRpcPacketEncoder<kMaxPacketSize>;
+  static_assert(Encoder::kMaxEncodedPacketSize ==
+                kMaxPacketSize + Encoder::kHeaderSize);
+}
+
 TEST(SimpleRpcFrameEncodeDecodeTest, EncodeThenDecode) {
   for (auto test_case : kTestCases) {
     const size_t packet_size = test_case.packet_size;

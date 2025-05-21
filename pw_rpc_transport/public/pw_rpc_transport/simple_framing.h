@@ -52,6 +52,7 @@ class SimpleRpcPacketEncoder
  public:
   static constexpr size_t kHeaderSize = 4;
   static constexpr uint16_t kFrameMarker = 0x27f1;
+  static constexpr size_t kMaxEncodedPacketSize = kMaxPacketSize + kHeaderSize;
 
   // Encodes `packet` with a simple framing protocol and split the resulting
   // frame into chunks of `RpcFrame`s where every `RpcFrame` is no longer than
