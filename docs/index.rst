@@ -17,7 +17,15 @@ Get started
         locally here. -->
    <br>
 
-.. grid:: 1
+.. grid:: 2
+
+   .. grid-item-card:: :octicon:`info` Overview
+      :link: overview
+      :link-type: ref
+      :class-item: sales-pitch-cta-primary
+
+      Understand the core components of Pigweed and determine whether Pigweed
+      is a good fit for your project.
 
    .. grid-item-card:: :octicon:`rocket` Tour of Pigweed
       :link: showcase-sense
@@ -72,7 +80,7 @@ What is Pigweed?
         locally here. -->
    <br>
 
-.. grid:: 2
+.. grid:: 1
 
    .. grid-item-card:: :octicon:`code-square` Libraries
       :link: docs-concepts-embedded-development-libraries
@@ -83,6 +91,8 @@ What is Pigweed?
       software development best practices without compromising performance,
       code size, or memory
 
+.. grid:: 1
+
    .. grid-item-card:: :octicon:`tools` Automation
       :link: docs-concepts-build-system
       :link-type: ref
@@ -91,7 +101,7 @@ What is Pigweed?
       Easier automated building, testing, and linting for Bazel, GN,
       and CMake projects
 
-.. grid:: 2
+.. grid:: 1
 
    .. grid-item-card:: :octicon:`container` Environments
       :link: docs-concepts-development-environment
@@ -100,14 +110,6 @@ What is Pigweed?
 
       Hermetic and replicable development environments for your entire team -
       no more struggling with toolchains and "it worked on my machine"
-
-   .. grid-item-card:: :octicon:`stack` Frameworks
-      :link: docs-concepts-full-framework
-      :link-type: ref
-      :class-item: sales-pitch-cta-secondary
-
-      Turnkey solutions for new projects that want to make full use of
-      everything that Pigweed offers
 
 --------------------
 Who's using Pigweed?
