@@ -316,3 +316,7 @@ def main():
     twister_command.extend([*unknown_args])
     _LOG.debug("Executing: [%s]", ", ".join(twister_command))
     subprocess.run(twister_command, check=True)
+
+
+if __name__ == "main":
+    main()

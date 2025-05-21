@@ -16,7 +16,7 @@ common:
   harness: gtest
   timeout: 10
   integration_platforms:
-    - native_posix
+    - native_sim
 tests:
   pw.base64:
     extra_configs:

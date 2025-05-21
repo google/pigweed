@@ -547,18 +547,6 @@ def zephyr_build(ctx: PresubmitContext) -> None:
     build.install_package(ctx, 'zephyr')
     # Configure the environment
     env = _env_with_zephyr_vars(ctx)
-    # Get the python twister runner
-    twister = ctx.package_root / 'zephyr' / 'scripts' / 'twister'
-    # Get a list of the test roots
-    testsuite_roots = [
-        ctx.pw_root / dir
-        for dir in os.listdir(ctx.pw_root)
-        if dir.startswith('pw_')
-        and (ctx.pw_root / dir / 'testcase.yaml').is_file()
-    ]
-    testsuite_roots_list = [
-        args for dir in testsuite_roots for args in ('--testsuite-root', dir)
-    ]
     sysroot_dir = (
         ctx.pw_root
         / 'environment'
@@ -568,14 +556,16 @@ def zephyr_build(ctx: PresubmitContext) -> None:
         / 'clang_sysroot'
     )
     platform_filters = (
-        ['-P', 'native_posix', '-P', 'native_sim']
+        ['-P', 'native_sim']
         if platform.system() in ['Windows', 'Darwin']
         else []
     )
     # Run twister
     call(
         sys.executable,
-        twister,
+        '-m',
+        'pw_build.zephyr_twister_runner',
+        '-vvv',
         '--ninja',
         '--integration',
         '--clobber-output',
@@ -585,12 +575,10 @@ def zephyr_build(ctx: PresubmitContext) -> None:
         '--coverage-basedir',
         str(ctx.pw_root),
         *platform_filters,
-        '-x=CONFIG_COVERAGE=y',
-        '-x=CONFIG_LLVM_USE_LLD=y',
-        '-x=CONFIG_COMPILER_RT_RTLIB=y',
         f'-x=TOOLCHAIN_C_FLAGS=--sysroot={sysroot_dir}',
         f'-x=TOOLCHAIN_LD_FLAGS=--sysroot={sysroot_dir}',
-        *testsuite_roots_list,
+        '--testsuite-root',
+        str(ctx.pw_root),
         env=env,
     )
     # Find all the raw profile files
