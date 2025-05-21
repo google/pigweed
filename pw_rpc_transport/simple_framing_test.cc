@@ -69,6 +69,11 @@ void CopyFrame(RpcFrame frame, std::vector<std::byte>& dst) {
       frame.payload.begin(), frame.payload.end(), std::back_inserter(dst));
 }
 
+template <typename Seq1, typename Seq2>
+inline bool SequenceEqual(Seq1 seq1, Seq2 seq2) {
+  return std::equal(seq1.begin(), seq1.end(), seq2.begin(), seq2.end());
+}
+
 TEST(SimpleRpcFrameEncodeDecodeTest, MaxEncodedPacketSize) {
   using Encoder = SimpleRpcPacketEncoder<kMaxPacketSize>;
   static_assert(Encoder::kMaxEncodedPacketSize ==
@@ -109,7 +114,7 @@ TEST(SimpleRpcFrameEncodeDecodeTest, EncodeThenDecode) {
                              }),
               OkStatus());
 
-    EXPECT_TRUE(std::equal(src.begin(), src.end(), decoded.begin()));
+    EXPECT_TRUE(SequenceEqual(src, decoded));
   }
 }
 
@@ -150,7 +155,7 @@ TEST(SimpleRpcFrameEncodeDecodeTest, OneByteAtTimeDecoding) {
                 OkStatus());
     }
 
-    EXPECT_TRUE(std::equal(src.begin(), src.end(), decoded.begin()));
+    EXPECT_TRUE(SequenceEqual(src, decoded));
   }
 }
 
@@ -170,7 +175,7 @@ TEST(SimpleRpcFrameTest, MissingFirstFrame) {
   std::vector<std::byte> decoded;
 
   SimpleRpcPacketEncoder<kMaxPacketSize> encoder;
-  struct EncodeState {
+  struct {
     size_t frame_counter = 0;
     std::vector<std::byte> encoded;
   } state;
@@ -205,7 +210,7 @@ TEST(SimpleRpcFrameTest, MissingFirstFrame) {
                            }),
             OkStatus());
 
-  EXPECT_TRUE(std::equal(src2.begin(), src2.end(), decoded.begin()));
+  EXPECT_TRUE(SequenceEqual(src2, decoded));
 }
 
 TEST(SimpleRpcFrameTest, MissingInternalFrame) {
@@ -228,7 +233,7 @@ TEST(SimpleRpcFrameTest, MissingInternalFrame) {
   std::vector<std::byte> decoded;
 
   SimpleRpcPacketEncoder<kMaxPacketSize> encoder;
-  struct EncodeState {
+  struct {
     size_t frame_counter = 0;
     std::vector<std::byte> encoded;
   } encode_state;
@@ -269,7 +274,7 @@ TEST(SimpleRpcFrameTest, MissingInternalFrame) {
   // knows that something is wrong and tries to recover as soon as it receives
   // bytes that look as the valid header. So we eventually receive the third
   // packet and it is correct.
-  struct DecodeState {
+  struct {
     std::vector<std::byte> decoded1;
     std::vector<std::byte> decoded2;
     size_t packet_counter = 0;
@@ -295,11 +300,9 @@ TEST(SimpleRpcFrameTest, MissingInternalFrame) {
   EXPECT_EQ(decode_state.packet_counter, 2ul);
 
   EXPECT_EQ(decode_state.decoded1.size(), src1.size());
-  EXPECT_FALSE(
-      std::equal(src1.begin(), src1.end(), decode_state.decoded1.begin()));
+  EXPECT_FALSE(SequenceEqual(src1, decode_state.decoded1));
 
-  EXPECT_TRUE(
-      std::equal(src3.begin(), src3.end(), decode_state.decoded2.begin()));
+  EXPECT_TRUE(SequenceEqual(src3, decode_state.decoded2));
 }
 
 TEST(SimpleRpcPacketEncoder, PacketTooBig) {
@@ -380,7 +383,7 @@ TEST(SimpleRpcFrameTest, EncoderBufferLargerThanDecoderBuffer) {
               OkStatus());
   }
 
-  EXPECT_TRUE(std::equal(src2.begin(), src2.end(), decoded.begin()));
+  EXPECT_TRUE(SequenceEqual(src2, decoded));
 }
 
 }  // namespace
