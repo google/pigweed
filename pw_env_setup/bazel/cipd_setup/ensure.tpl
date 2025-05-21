@@ -15,4 +15,4 @@ $VerifiedPlatform linux-amd64
 $VerifiedPlatform mac-amd64
 $ParanoidMode CheckPresence
 @Subdir
-%{path} %{tag}
+%{data}

@@ -124,11 +124,12 @@ def cipd_client_impl(rctx):
     )
     rctx.file("BUILD", "exports_files([\"cipd\"])")
 
-def cipd_repository_base(rctx):
+def cipd_repository_base(rctx, packages):
     """Populates the base contents of a CIPD repository.
 
     Args:
         rctx: Repository context.
+        packages: List of package paths.
     """
     cipd_path = rctx.path(rctx.attr._cipd_client)
     ensure_path = rctx.name + ".ensure"
@@ -145,8 +146,7 @@ def cipd_repository_base(rctx):
         ensure_path,
         Label(str(Label("//pw_env_setup/bazel/cipd_setup:ensure.tpl"))),
         {
-            "%{path}": rctx.attr.path,
-            "%{tag}": tag,
+            "%{data}": "\n".join(["%s\t%s" % (pkg, tag) for pkg in packages]),
         },
     )
     result = rctx.execute([cipd_path, "ensure", "-root", ".", "-ensure-file", ensure_path])
@@ -154,13 +154,14 @@ def cipd_repository_base(rctx):
     if result.return_code != 0:
         fail("Failed to fetch CIPD repository `{}`:\n{}".format(rctx.name, result.stderr))
 
-def cipd_repository_impl(rctx):
+def _cipd_repository_impl(rctx, packages):
     """Generates an external repository from a CIPD package.
 
     Args:
         rctx: Repository context.
+        packages: List of package paths.
     """
-    cipd_repository_base(rctx)
+    cipd_repository_base(rctx, packages)
     patch(rctx)
 
     # Allow the BUILD file to be overriden in the generated repository.
@@ -177,6 +178,22 @@ filegroup(
     visibility = ["//visibility:public"],
 )
   """)
+
+def cipd_repository_impl(rctx):
+    """Generates an external repository from a CIPD package.
+
+    Args:
+        rctx: Repository context.
+    """
+    _cipd_repository_impl(rctx, [rctx.attr.path])
+
+def cipd_composite_repository_impl(rctx):
+    """Generates an external repository from list of CIPD packages.
+
+    Args:
+        rctx: Repository context.
+    """
+    _cipd_repository_impl(rctx, rctx.attr.packages)
 
 def _cipd_path_to_repository_name(path, platform):
     """ Converts a cipd path to a repository name
