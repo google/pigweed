@@ -70,9 +70,13 @@ CommandChannel::TransactionData::TransactionData(
       callback_(std::move(callback)),
       timeout_task_(channel_->dispatcher_),
       wake_lease_(std::move(wake_lease)),
+      state_(State::kQueued,
+             [](State s) {
+               return std::string(TransactionData::StateToString(s));
+             }),
       handler_id_(0u) {
   PW_DCHECK(transaction_id != 0u);
-  exclusions_.insert(opcode_);
+  exclusions_.insert(*opcode_);
 }
 
 CommandChannel::TransactionData::~TransactionData() {
@@ -85,6 +89,7 @@ CommandChannel::TransactionData::~TransactionData() {
 }
 
 void CommandChannel::TransactionData::StartTimer() {
+  state_.Set(State::kPending);
   // Transactions should only ever be started once.
   PW_DCHECK(!timeout_task_.is_pending());
   timeout_task_.set_function(
@@ -98,6 +103,7 @@ void CommandChannel::TransactionData::StartTimer() {
 
 void CommandChannel::TransactionData::Complete(
     std::unique_ptr<EventPacket> event) {
+  state_.Set(State::kComplete);
   timeout_task_.Cancel();
 
   if (!callback_) {
@@ -127,6 +133,26 @@ CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
     cb(transaction_id, event);
     return EventCallbackResult::kContinue;
   };
+}
+
+void CommandChannel::TransactionData::AttachInspect(inspect::Node& parent) {
+  std::string node_name =
+      bt_lib_cpp_string::StringPrintf("transaction_%zu", transaction_id_);
+  node_ = parent.CreateChild(node_name);
+  opcode_.AttachInspect(node_, "opcode");
+  complete_event_code_.AttachInspect(node_, "complete_event_code");
+  state_.AttachInspect(node_, "state");
+}
+
+const char* CommandChannel::TransactionData::StateToString(State state) {
+  switch (state) {
+    case State::kQueued:
+      return "queued";
+    case State::kComplete:
+      return "complete";
+    case State::kPending:
+      return "pending";
+  }
 }
 
 CommandChannel::CommandChannel(
@@ -242,6 +268,7 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
                                         std::move(exclusions),
                                         std::move(callback),
                                         std::move(wake_lease));
+  data->AttachInspect(transactions_node_);
 
   QueuedCommand command(std::move(command_packet), std::move(data));
 
@@ -793,6 +820,7 @@ void CommandChannel::OnCommandTimeout(TransactionId transaction_id) {
 void CommandChannel::AttachInspect(inspect::Node& parent,
                                    const std::string& name) {
   command_channel_node_ = parent.CreateChild(name);
+  transactions_node_ = command_channel_node_.CreateChild("transactions");
   next_event_handler_id_.AttachInspect(command_channel_node_,
                                        "next_event_handler_id");
   allowed_command_packets_.AttachInspect(command_channel_node_,

@@ -2171,13 +2171,96 @@ TEST_F(
 TEST_F(CommandChannelTest, InspectHierarchy) {
   cmd_channel()->AttachInspect(inspector_.GetRoot(), "command_channel");
 
-  auto command_channel_matcher = AllOf(NodeMatches(AllOf(
-      NameMatches("command_channel"),
-      PropertyList(UnorderedElementsAre(UintIs("allowed_command_packets", 1),
-                                        UintIs("next_event_handler_id", 1))))));
+  auto transactions_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("transactions"))));
+
+  auto command_channel_matcher =
+      AllOf(NodeMatches(AllOf(NameMatches("command_channel"),
+                              PropertyList(UnorderedElementsAre(
+                                  UintIs("allowed_command_packets", 1),
+                                  UintIs("next_event_handler_id", 1))))),
+            ChildrenMatch(UnorderedElementsAre(transactions_matcher)));
 
   EXPECT_THAT(inspect::ReadFromVmo(inspector_.DuplicateVmo()).value(),
               ChildrenMatch(ElementsAre(command_channel_matcher)));
+
+  const auto req = testing::InquiryCommandPacket(0x01);
+  auto rsp0 =
+      testing::CommandStatusPacket(hci_spec::kInquiry,
+                                   pw::bluetooth::emboss::StatusCode::SUCCESS,
+                                   /*num_packets=*/1);
+  auto rsp1 = StaticByteBuffer(hci_spec::kInquiryCompleteEventCode,
+                               0x01,  // parameter_total_size (1 byte payload)
+                               pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp0, &rsp1);
+
+  int cb_count = 0;
+  auto cb = [&cb_count, this](CommandChannel::TransactionId callback_id,
+                              const EventPacket& event) {
+    cb_count++;
+    if (cb_count == 1) {
+      ASSERT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
+      auto inquiry_matcher_complete = AllOf(NodeMatches(AllOf(
+          NameMatches("transaction_1"),
+          PropertyList(UnorderedElementsAre(UintIs("opcode", 1025),
+                                            UintIs("complete_event_code", 1),
+                                            StringIs("state", "complete"))))));
+      auto transactions_matcher_complete =
+          AllOf(NodeMatches(AllOf(NameMatches("transactions"))),
+                ChildrenMatch(ElementsAre(inquiry_matcher_complete)));
+      auto command_channel_matcher_complete =
+          AllOf(NodeMatches(AllOf(NameMatches("command_channel"),
+                                  PropertyList(UnorderedElementsAre(
+                                      UintIs("allowed_command_packets", 1),
+                                      UintIs("next_event_handler_id", 2))))),
+                ChildrenMatch(ElementsAre(transactions_matcher_complete)));
+
+      EXPECT_THAT(inspect::ReadFromVmo(inspector_.DuplicateVmo()).value(),
+                  ChildrenMatch(ElementsAre(command_channel_matcher_complete)));
+    } else {
+      EXPECT_EQ(hci_spec::kInquiryCompleteEventCode, event.event_code());
+      auto transactions_matcher_empty =
+          AllOf(NodeMatches(AllOf(NameMatches("transactions"))),
+                ChildrenMatch(::testing::IsEmpty()));
+      auto command_channel_matcher_complete2 =
+          AllOf(NodeMatches(AllOf(NameMatches("command_channel"),
+                                  PropertyList(UnorderedElementsAre(
+                                      UintIs("allowed_command_packets", 1),
+                                      UintIs("next_event_handler_id", 2))))),
+                ChildrenMatch(ElementsAre(transactions_matcher_empty)));
+    }
+  };
+
+  auto packet =
+      hci::CommandPacket::New<pw::bluetooth::emboss::InquiryCommandWriter>(
+          hci_spec::kInquiry);
+  auto view = packet.view_t();
+  view.lap().Write(pw::bluetooth::emboss::InquiryAccessCode::GIAC);
+  view.inquiry_length().Write(1);
+  view.num_responses().Write(0);
+  cmd_channel()->SendCommand(
+      std::move(packet), cb, hci_spec::kInquiryCompleteEventCode);
+
+  auto inquiry_matcher = AllOf(NodeMatches(
+      AllOf(NameMatches("transaction_1"),
+            PropertyList(UnorderedElementsAre(UintIs("opcode", 1025),
+                                              UintIs("complete_event_code", 1),
+                                              StringIs("state", "pending"))))));
+  auto transactions_matcher_after_send =
+      AllOf(NodeMatches(AllOf(NameMatches("transactions"))),
+            ChildrenMatch(ElementsAre(inquiry_matcher)));
+  auto command_channel_matcher_after_send =
+      AllOf(NodeMatches(AllOf(NameMatches("command_channel"),
+                              PropertyList(UnorderedElementsAre(
+                                  UintIs("allowed_command_packets", 0),
+                                  UintIs("next_event_handler_id", 2))))),
+            ChildrenMatch(ElementsAre(transactions_matcher_after_send)));
+
+  EXPECT_THAT(inspect::ReadFromVmo(inspector_.DuplicateVmo()).value(),
+              ChildrenMatch(ElementsAre(command_channel_matcher_after_send)));
+
+  RunUntilIdle();
+  EXPECT_EQ(2, cb_count);
 }
 #endif  // NINSPECT
 

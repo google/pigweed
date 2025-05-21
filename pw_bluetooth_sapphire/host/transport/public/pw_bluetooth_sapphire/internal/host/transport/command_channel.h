@@ -283,13 +283,15 @@ class CommandChannel final {
     // Makes an EventCallback that calls |callback_| correctly.
     EventCallback MakeCallback();
 
+    void AttachInspect(inspect::Node& parent);
+
     hci_spec::EventCode complete_event_code() const {
-      return complete_event_code_;
+      return *complete_event_code_;
     }
     std::optional<hci_spec::EventCode> le_meta_subevent_code() const {
       return le_meta_subevent_code_;
     }
-    hci_spec::OpCode opcode() const { return opcode_; }
+    hci_spec::OpCode opcode() const { return *opcode_; }
     TransactionId id() const { return transaction_id_; }
 
     // The set of opcodes in progress that will hold this transaction in queue.
@@ -301,15 +303,21 @@ class CommandChannel final {
     void set_handler_id(EventHandlerId id) { handler_id_ = id; }
 
    private:
+    enum class State { kQueued, kPending, kComplete };
+
+    static const char* StateToString(State state);
+
     CommandChannel* channel_;
     TransactionId transaction_id_;
-    hci_spec::OpCode opcode_;
-    hci_spec::EventCode complete_event_code_;
+    UintInspectable<hci_spec::OpCode> opcode_;
+    UintInspectable<hci_spec::EventCode> complete_event_code_;
     std::optional<hci_spec::EventCode> le_meta_subevent_code_;
     std::unordered_set<hci_spec::OpCode> exclusions_;
     CommandCallback callback_;
     bt::SmartTask timeout_task_;
     pw::bluetooth_sapphire::Lease wake_lease_;
+    inspect::Node node_;
+    StringInspectable<State> state_;
 
     // If non-zero, the id of the handler registered for this transaction.
     // Always zero if this transaction is synchronous.
@@ -456,6 +464,7 @@ class CommandChannel final {
 
   // Command channel inspect node.
   inspect::Node command_channel_node_;
+  inspect::Node transactions_node_;
 
   pw::async::Dispatcher& dispatcher_;
 
