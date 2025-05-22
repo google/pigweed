@@ -112,7 +112,7 @@ pub fn encode_string<W: MessageWriter>(writer: &mut W, value: &str) -> Result<()
     let string_bytes = value.as_bytes();
 
     // Limit the encoding to the lesser of 127 or the available space in the buffer.
-    let max_len = min(MAX_STRING_LENGTH, writer.remaining() - 1);
+    let max_len = min(MAX_STRING_LENGTH, writer.remaining().saturating_sub(1));
     let overflow = max_len < string_bytes.len();
     let len = min(max_len, string_bytes.len());
 
@@ -142,7 +142,8 @@ fn tokenize_engine<W: crate::MessageWriter>(
             Argument::Varint(i) => {
                 let mut encode_buffer = [0u8; 10];
                 let len = i.varint_encode(&mut encode_buffer)?;
-                writer.write(&encode_buffer[..len])?;
+                let encoded_slice = encode_buffer.get(..len).ok_or(Error::OutOfRange)?;
+                writer.write(encoded_slice)?;
             }
         }
     }
