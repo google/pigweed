@@ -137,11 +137,13 @@ pub fn encode(input: &[u8], output: &mut [u8]) -> Result<usize> {
 pub fn encode_str<'a>(input: &[u8], output_buffer: &'a mut [u8]) -> Result<&'a str> {
     let encode_len = encode(input, output_buffer)?;
     // Safety: Since we are building the output buffer strictly from ASCII
-    // characters, it is guaranteed to be a valid string.
+    // characters, it is guaranteed to be valid UTF-8.
+    // encode_len has already been checked to be less than output_buffer
+    // in the encode() call.
     unsafe {
         Ok(core::str::from_utf8_unchecked(
-            &output_buffer[0..encode_len],
-        ))
+            output_buffer.get(0..encode_len).unwrap_unchecked())
+        )
     }
 }
 
