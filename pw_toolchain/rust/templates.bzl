@@ -24,8 +24,8 @@ rust_toolchain(
     exec_compatible_with = {exec_compatible_with},
     exec_triple = "{exec_triple}",
     opt_level = {{
-      "dbg": "0",
-      "fastbuild": "0",
+      "dbg": "s",
+      "fastbuild": "s",
       "opt": "s",
     }},
     rust_doc = "{toolchain_repo}//:bin/rustdoc",
@@ -80,8 +80,8 @@ rust_toolchain(
     exec_compatible_with = {exec_compatible_with},
     exec_triple = "{exec_triple}",
     opt_level = {{
-      "dbg": "0",
-      "fastbuild": "0",
+      "dbg": "s",
+      "fastbuild": "s",
       "opt": "s",
     }},
     rust_doc = "{toolchain_repo}//:bin/rustdoc",
