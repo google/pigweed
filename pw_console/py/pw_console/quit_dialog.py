@@ -127,7 +127,7 @@ class QuitDialog(ConditionalContainer):
 
     def _default_on_quit_function(self):
         if hasattr(self.application, 'application'):
-            self.application.application.exit()
+            self.application.exit_console()
         else:
             sys.exit()
 

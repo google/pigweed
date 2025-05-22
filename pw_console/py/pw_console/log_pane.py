@@ -80,6 +80,7 @@ from pw_console.widgets import (
 
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
+    from pw_console.background_command_runner import BackgroundTask
 
 _LOG_OUTPUT_SCROLL_AMOUNT = 5
 _LOG = logging.getLogger(__package__)
@@ -522,6 +523,7 @@ class LogPane(WindowPane):
         application: Any,
         pane_title: str = 'Logs',
         log_store: LogStore | None = None,
+        background_task: BackgroundTask | None = None,
     ):
         super().__init__(application, pane_title)
 
@@ -534,6 +536,8 @@ class LogPane(WindowPane):
         self.log_view: LogView = LogView(
             self, self.application, log_store=log_store
         )
+
+        self.background_task = background_task
 
         # Log pane size variables. These are updated just befor rendering the
         # pane by the LogLineHSplit class.
@@ -914,6 +918,20 @@ class LogPane(WindowPane):
                     ),
                 )
             )
+
+        if self.background_task:
+            options += [
+                # Menu separator
+                ('-', None),
+                (
+                    'Stop process',
+                    self.background_task.stop_process,
+                ),
+                (
+                    'Restart process',
+                    self.background_task.restart_process,
+                ),
+            ]
 
         return options
 

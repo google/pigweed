@@ -139,7 +139,8 @@ def error_unknown_window(
         f'{pane_title_text}\n'
         'If this window should be a duplicate of one of the above,\n'
         f'add "duplicate_of: {existing_pane_title_example}" to your config.\n'
-        'If this is a brand new window, include a "loggers:" section.\n'
+        'If this is a brand new window, include a "loggers:" or '
+        '"command:" section.\n'
         'See also: '
         'https://pigweed.dev/pw_console/docs/user_guide.html#example-config'
     )

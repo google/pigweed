@@ -940,21 +940,36 @@ class WindowManager:
                 mode = DisplayMode.TABBED
             self.window_lists[column_index].set_display_mode(mode)
 
-    def _create_new_log_pane_with_loggers(
+    def _create_new_log_pane_with_options(
         self, window_title, window_options, existing_pane_titles
     ) -> LogPane:
-        if 'loggers' not in window_options:
+        if 'loggers' not in window_options and 'command' not in window_options:
             error_unknown_window(window_title, existing_pane_titles)
+
+        if 'command' in window_options:
+            process_log_name = None
+            if 'command_log_parser' in window_options:
+                process_log_name = window_options['command_log_parser']
+            new_pane = (
+                self.application.background_command_runner.execute_new_command(
+                    command=window_options['command'],
+                    process_log_name=process_log_name,
+                    log_pane_title=window_title,
+                )
+            )
+            return new_pane
 
         new_pane = LogPane(
             application=self.application, pane_title=window_title
         )
+
         # Add logger handlers
         for logger_name, logger_options in window_options.get(
             'loggers', {}
         ).items():
             log_level_name = logger_options.get('level', None)
             new_pane.add_log_handler(logger_name, level_name=log_level_name)
+
         return new_pane
 
     # TODO(tonymd): Split this large function up.
@@ -1000,9 +1015,12 @@ class WindowManager:
                     and window_title not in collected_panes
                 ):
                     # New pane entirely
-                    new_pane = self._create_new_log_pane_with_loggers(
+                    new_pane = self._create_new_log_pane_with_options(
                         window_title, window_options, existing_pane_titles
                     )
+                    already_added_panes.append(window_title)
+                    # Add the new pane to the list of what can be duplicated.
+                    collected_panes[window_title] = new_pane
 
                 elif window_title not in already_added_panes:
                     # First time adding this pane

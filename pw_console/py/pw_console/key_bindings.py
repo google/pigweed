@@ -151,9 +151,9 @@ def create_key_bindings(console_app) -> KeyBindings:
         console_app.repl_pane.ctrl_c()
 
     @register('global.exit-no-confirmation', key_bindings)
-    def quit_no_confirm(event):
+    def quit_no_confirm(_event):
         """Quit without confirmation."""
-        event.app.exit()
+        console_app.exit_console()
 
     @register(
         'global.exit-with-confirmation',

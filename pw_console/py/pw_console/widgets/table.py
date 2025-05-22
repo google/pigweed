@@ -15,6 +15,7 @@
 
 import collections
 import copy
+import logging
 from typing import Iterable
 
 from prompt_toolkit.formatted_text import (
@@ -26,6 +27,8 @@ from prompt_toolkit.formatted_text import (
 from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_line import LogLine
 from pw_console.text_formatting import strip_ansi
+
+_LOG = logging.getLogger(__package__)
 
 
 class TableView:
@@ -168,7 +171,7 @@ class TableView:
         #         self.column_widths['level'])).__pt_formatted_text__())
 
         # Collect remaining columns to display after host time and level.
-        columns = {}
+        columns: dict[str, str | tuple[str, str]] = {}
         for name, width in self._ordered_column_widths().items():
             # Skip these modifying these fields
             if name in TableView.LAST_TABLE_COLUMN_NAMES:
@@ -204,7 +207,12 @@ class TableView:
                 )
                 continue
 
-            value = log.metadata.fields.get(name, ' ')
+            value = ' '
+            # If fields are populated, grab the metadata column.
+            if hasattr(log.metadata, 'fields'):
+                value = log.metadata.fields.get(name, ' ')
+            if value is None:
+                value = ' '
             left_justify = True
 
             # Right justify and format numbers
@@ -221,9 +229,12 @@ class TableView:
                 columns[name] = value.rjust(width)
 
         # Grab the message to appear after the justified columns.
-        message_text = log.metadata.fields.get(
-            'msg', log.record.message.rstrip()
-        )
+        # Default to the Python log message
+        message_text = log.record.message.rstrip()
+
+        # If fields are populated, grab the msg field.
+        if hasattr(log.metadata, 'fields'):
+            message_text = log.metadata.fields.get('msg', message_text)
         ansi_stripped_message_text = strip_ansi(message_text)
 
         # Add to columns for width calculations with ansi sequences removed.

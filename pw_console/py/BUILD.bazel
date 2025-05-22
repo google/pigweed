@@ -37,6 +37,8 @@ py_library(
     srcs = [
         "pw_console/__init__.py",
         "pw_console/__main__.py",
+        "pw_console/background_command_log_parsers.py",
+        "pw_console/background_command_runner.py",
         "pw_console/command_runner.py",
         "pw_console/console_app.py",
         "pw_console/console_log_server.py",

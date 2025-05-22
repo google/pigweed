@@ -65,6 +65,7 @@ from ptpython.key_bindings import (  # type: ignore
 )
 from pyperclip import PyperclipException  # type: ignore
 
+from pw_console.background_command_runner import BackgroundCommandRunner
 from pw_console.command_runner import CommandRunner, CommandRunnerItem
 from pw_console.console_log_server import (
     ConsoleLogHTTPRequestHandler,
@@ -220,6 +221,10 @@ class ConsoleApp:
         # Event loop for executing user repl code.
         self.user_code_loop = asyncio.new_event_loop()
         self.test_mode_log_loop = asyncio.new_event_loop()
+
+        self.background_command_runner = BackgroundCommandRunner(
+            application=self
+        )
 
         self.app_title = app_title if app_title else 'Pigweed Console'
 
@@ -750,6 +755,21 @@ class ConsoleApp:
                                     ),
                                 ),
                             ),
+                            MenuItem(
+                                '{check} Recolor log lines to match level'.format(
+                                    check=to_checkbox_text(
+                                        self.prefs.recolor_log_lines_to_match_level,
+                                        end='',
+                                    )
+                                ),
+                                handler=functools.partial(
+                                    self.run_pane_menu_option,
+                                    functools.partial(
+                                        self.toggle_pref_option,
+                                        'recolor_log_lines_to_match_level',
+                                    ),
+                                ),
+                            ),
                             # pylint: enable=line-too-long
                         ],
                     ),
@@ -1005,6 +1025,10 @@ class ConsoleApp:
     def toggle_pref_option(self, setting_name):
         self.prefs.toggle_bool_option(setting_name)
 
+        # Redraw all log windows.
+        for log_pane in self.all_log_panes():
+            log_pane.log_view.refresh_visible_table_columns()
+
     def load_theme(self, theme_name=None):
         """Regenerate styles for the current theme_name."""
         self._current_theme = generate_styles(theme_name)
@@ -1040,14 +1064,10 @@ class ConsoleApp:
         self.update_menu_items()
         self._update_help_window()
 
-    def all_log_stores(self) -> list[LogStore]:
-        log_stores: list[LogStore] = []
+    def all_log_panes(self) -> Iterable[LogPane]:
         for pane in self.window_manager.active_panes():
-            if not isinstance(pane, LogPane):
-                continue
-            if pane.log_view.log_store not in log_stores:
-                log_stores.append(pane.log_view.log_store)
-        return log_stores
+            if isinstance(pane, LogPane):
+                yield pane
 
     def add_log_handler(
         self,
@@ -1176,6 +1196,7 @@ class ConsoleApp:
     def exit_console(self):
         """Quit the console prompt_toolkit application UI."""
         self.application.exit()
+        self.background_command_runner.stop_all_background_commands()
 
     def logs_redraw(self):
         emit_time = time.time()

@@ -59,7 +59,10 @@ from pw_console.pigweed_code_style import (
     PigweedCodeLightStyle,
     Synthwave84CodeStyle,
 )
-from pw_console.text_formatting import remove_formatting
+from pw_console.text_formatting import (
+    remove_formatting,
+    strip_incompatible_ansi,
+)
 
 if TYPE_CHECKING:
     from pw_console.repl_pane import ReplPane
@@ -348,12 +351,7 @@ class PwPtPythonRepl(
         env['CLICOLOR_FORCE'] = '1'
 
         def _handle_output(output):
-            # Force tab characters to 8 spaces to prevent \t from showing in
-            # prompt_toolkit.
-            output = output.replace('\t', '        ')
-            # Strip some ANSI sequences that don't render.
-            output = output.replace('\x1b(B\x1b[m', '')
-            output = output.replace('\x1b[1m', '')
+            output = strip_incompatible_ansi(output)
             stdout_proxy.write(output)
             _SYSTEM_COMMAND_LOG.info(output.rstrip())
 
@@ -435,7 +433,7 @@ class PwPtPythonRepl(
         repl_input_text = buff.text
         # Exit if quit or exit
         if repl_input_text.strip() in ['quit', 'quit()', 'exit', 'exit()']:
-            self.repl_pane.application.application.exit()  # type: ignore
+            self.repl_pane.application.exit_console()  # type: ignore
 
         # Create stdout and stderr proxies
         temp_stdout = io.StringIO()

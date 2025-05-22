@@ -22,11 +22,73 @@ from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
 from prompt_toolkit.utils import get_cwidth
 
 _ANSI_SEQUENCE_REGEX = re.compile(r'\x1b[^m]*m')
+_ANSI_COLOR_CODE_REGEX = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def strip_ansi(text: str):
-    """Strip out ANSI escape sequences."""
+    """Strip out all ANSI escape sequences."""
     return _ANSI_SEQUENCE_REGEX.sub('', text)
+
+
+def strip_incompatible_ansi(text: str, tab_replacement: str = '    ') -> str:
+    """Remove ANSI sequences that cannot be rendered in prompt_toolkit."""
+    # Force tab characters to 8 spaces to prevent \t from showing in
+    # prompt_toolkit.
+    text = text.replace('\t', tab_replacement)
+
+    # Strip some ANSI sequences that don't render in prompt_toolkit.
+    # Mypy output mixes character encoding in color coded output
+    # and uses the 'sgr0' (or exit_attribute_mode) capability from the
+    # host machine's terminfo database.
+    #
+    # This can result in this sequence ending up in STDOUT as
+    # b'\x1b(B\x1b[m'. (B tells terminals to interpret text as
+    # USASCII encoding but will appear in prompt_toolkit as a B
+    # character.
+    #
+    # The following replace calls will strip out those
+    # sequences.
+    text = text.replace('\x1b(B\x1b[m', '')
+    return text
+
+
+def unterminated_ansi_color_codes(s: str) -> list[str] | None:
+    """Checks for ANSI color codes without closing reset codes.
+
+    Args:
+      s: The input string to check.
+
+    Returns:
+      None if all color codes end with a reset code
+      List of colors codes without matching reset codes
+    """
+    # Regular expression to find any ANSI escape code.
+    # \x1b is the escape character (ESC).
+    # \[ matches the literal '['.
+    # [0-9;]* matches any sequence of digits (0-9) and semicolons (;)
+    #         zero or more times.
+    # m matches the literal 'm'
+
+    # ANSI sequences that reset all attributes.
+    ansi_reset_codes = ['\x1b[0m', '\x1b[m']
+
+    codes = _ANSI_COLOR_CODE_REGEX.findall(s)
+
+    if not codes:
+        return None
+
+    # Multiple color codes can be set, but they are all cleared via a reset
+    # code.
+    active_codes = []
+    for code in codes:
+        if code not in ansi_reset_codes:
+            active_codes.append(code)
+        else:
+            active_codes.clear()
+
+    if not active_codes:
+        return None
+    return active_codes
 
 
 def split_lines(

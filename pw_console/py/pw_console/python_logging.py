@@ -99,6 +99,7 @@ def setup_python_logging(
         "blib2to3.pgen2.driver",  # spammy and unhelpful
         "pw_console",
         "pw_console.plugins",
+        "pw_console_system_command",
         # prompt_toolkit triggered debug log messages
         "prompt_toolkit",
         "prompt_toolkit.buffer",

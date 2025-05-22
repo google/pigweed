@@ -779,13 +779,18 @@ Example Config
          filters:
            all:
              regex: 'IBM Model M'
-       Keyboard Logs - Apple:
-         loggers:
-           my_cool_keyboard_device:
-             level: DEBUG
-         filters:
-           all:
-             regex: 'Apple.*USB'
+
+       # New log window that is populated by running a shell command.
+       Android Logs:
+         command: 'adb logcat'
+
+       # New log window that is populated by running a shell command.
+       Fuchsia Logs:
+         command: 'ffx --machine json log'
+         # Custom log parser name. These are located in the module:
+         #   'pw_console.background_command_log_parsers'
+         command_log_parser: 'fuchsia-json'
+
 
    # Command Runner dialog size and position
    command_runner:
