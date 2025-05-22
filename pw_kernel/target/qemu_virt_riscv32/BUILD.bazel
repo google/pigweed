@@ -17,6 +17,7 @@ load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
 load("//pw_kernel:flags.bzl", "KERNEL_COMMON_FLAGS")
 load("//pw_kernel/tooling:system_image.bzl", "system_image")
+load("//pw_kernel/tooling/panic_detector:rust_binary_no_panics_test.bzl", "rust_binary_no_panics_test")
 
 platform(
     name = "qemu_virt_riscv32",
@@ -52,6 +53,12 @@ system_image(
     tags = ["kernel"],
 )
 
+rust_binary_no_panics_test(
+    name = "kernel_only_demo_no_panics_test",
+    binary = ":kernel_only_demo",
+    tags = ["manual"],
+)
+
 system_image(
     name = "userspace_demo",
     apps = [
@@ -61,6 +68,12 @@ system_image(
     kernel = ":userspace_target",
     platform = ":qemu_virt_riscv32",
     tags = ["kernel"],
+)
+
+rust_binary_no_panics_test(
+    name = "userspace_demo_no_panics_test",
+    binary = ":userspace_demo",
+    tags = ["manual"],
 )
 
 SRCS = ["target.rs"]
