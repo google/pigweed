@@ -178,6 +178,11 @@ Once a build is passing at the top of the branch again, the bisector will stop
 triggering new builds, even if the commit that caused the (now short-term)
 breakage is not yet known.
 
+Rollers launched by the bisector create dry-run changes. Once the bisector has
+determined the commit that caused the current failure, the last passing dry-run
+change is submitted. This ensures no downstream repository gets a bunch of
+consecutive roll changes in its history.
+
 .. _automatic-rerunning:
 
 Automatic rerunning
