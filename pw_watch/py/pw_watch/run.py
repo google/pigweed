@@ -79,9 +79,11 @@ class Watcher(FileSystemEventHandler, DebouncedFunction):
     def __init__(
         self,
         commands: Iterable[Sequence[str]],
+        *,
         patterns: Iterable[str] = (),
         ignore_patterns: Iterable[str] = (),
         keep_going: bool = False,
+        clear_screen: bool = True,
     ) -> None:
         super().__init__()
 
@@ -89,6 +91,7 @@ class Watcher(FileSystemEventHandler, DebouncedFunction):
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns
         self.keep_going = keep_going
+        self.clear_screen = clear_screen
 
         self._debouncer = Debouncer(self)
         threading.Thread(None, self._wait_for_enter).start()
@@ -122,7 +125,8 @@ class Watcher(FileSystemEventHandler, DebouncedFunction):
     # than on the main thread that's watching file events. This enables the
     # watcher to continue receiving file change events during a build.
     def run(self) -> None:
-        print('\033c', end='', flush=True)  # clear the screen
+        if self.clear_screen:  # Conditionally clear the screen
+            print('\033c', end='', flush=True)
 
         for i, command in enumerate(self.commands, 1):
             count = f' {i}/{len(self.commands)}   '
@@ -181,6 +185,7 @@ def watch_setup(
     root: Path,
     keep_going: bool,
     commands: Sequence[tuple[str, ...]],
+    clear: bool,
     watch_patterns: Sequence[str] = common.WATCH_PATTERNS,
     ignore_patterns: Sequence[str] = (),
     exclude_dirs: Sequence[Path] | None = None,
@@ -198,6 +203,7 @@ def watch_setup(
         patterns=watch_patterns,
         ignore_patterns=ignore_patterns,
         keep_going=keep_going,
+        clear_screen=clear,
     )
     return event_handler, excludes
 
@@ -251,6 +257,12 @@ def _parse_args() -> argparse.Namespace:
         action=argparse.BooleanOptionalAction,
         default=False,
         help='Continue executing commands after errors',
+    )
+    parser.add_argument(
+        '--clear',
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help='Clear the screen before running commands',
     )
     parser.add_argument(
         _PREFIX_ARG,
