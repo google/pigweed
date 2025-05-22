@@ -189,6 +189,11 @@ BumpAllocator
 .. doxygenclass:: pw::allocator::BumpAllocator
    :members:
 
+AsyncPool
+=========
+.. doxygenclass:: pw::allocator::AsyncPool
+   :members:
+
 .. _module-pw_allocator-api-chunk_pool:
 
 ChunkPool

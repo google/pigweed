@@ -87,6 +87,20 @@ pw_add_library(pw_allocator.allocator_as_pool STATIC
     allocator_as_pool.cc
 )
 
+pw_add_library(pw_allocator.async_pool STATIC
+  HEADERS
+    public/pw_allocator/async_pool.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_allocator
+    pw_allocator.pool
+    pw_async2.dispatcher
+    pw_async2.poll
+  SOURCES
+    async_pool.cc
+)
+
 pw_add_library(pw_allocator.best_fit INTERFACE
   HEADERS
     public/pw_allocator/best_fit.h
@@ -568,6 +582,21 @@ pw_add_test(pw_allocator.allocator_test
   PRIVATE_DEPS
     pw_allocator
     pw_allocator.testing
+  GROUPS
+    modules
+    pw_allocator
+)
+
+pw_add_test(pw_allocator.async_pool_test
+  SOURCES
+    async_pool_test.cc
+  PRIVATE_DEPS
+    pw_allocator
+    pw_allocator.async_pool
+    pw_allocator.chunk_pool
+    pw_allocator.testing
+    pw_async2.dispatcher
+    pw_async2.pend_func_task
   GROUPS
     modules
     pw_allocator

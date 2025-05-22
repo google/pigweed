@@ -34,7 +34,7 @@ class Pool : public Deallocator {
   constexpr Pool(const Capabilities& capabilities, const Layout& layout)
       : Deallocator(capabilities), layout_(layout) {}
 
-  const Layout& layout() const { return layout_; }
+  constexpr const Layout& layout() const { return layout_; }
 
   /// Returns a chunk of memory with this object's fixed layout.
   ///

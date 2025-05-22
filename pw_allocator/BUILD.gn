@@ -115,6 +115,18 @@ pw_source_set("allocator_as_pool") {
   sources = [ "allocator_as_pool.cc" ]
 }
 
+pw_source_set("async_pool") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_allocator/async_pool.h" ]
+  public_deps = [
+    ":pool",
+    ":pw_allocator",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:poll",
+  ]
+  sources = [ "async_pool.cc" ]
+}
+
 pw_source_set("best_fit") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_allocator/best_fit.h" ]
@@ -527,6 +539,18 @@ pw_test("allocator_test") {
     ":testing",
   ]
   sources = [ "allocator_test.cc" ]
+}
+
+pw_test("async_pool_test") {
+  deps = [
+    ":async_pool",
+    ":chunk_pool",
+    ":pw_allocator",
+    ":testing",
+    "$dir_pw_async2:dispatcher",
+    "$dir_pw_async2:pend_func_task",
+  ]
+  sources = [ "async_pool_test.cc" ]
 }
 
 pw_test("best_fit_test") {
