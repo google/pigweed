@@ -84,7 +84,7 @@ pub trait Write {
                 break;
             }
 
-            buf = &buf[len..];
+            buf = buf.get(len..).ok_or(Error::OutOfRange)?;
         }
 
         if !buf.is_empty() {

@@ -13,6 +13,7 @@
 // the License.
 
 use core::cmp::min;
+use core::ptr;
 
 use paste::paste;
 use pw_status::{Error, Result};
@@ -48,7 +49,7 @@ impl<T: AsRef<[u8]>> Cursor<T> {
 
     /// Returns the number of remaining bytes in the Cursor.
     pub fn remaining(&self) -> usize {
-        self.len() - self.pos
+        self.len().saturating_sub(self.pos)
     }
 
     /// Returns the total length of the Cursor.
@@ -94,10 +95,18 @@ impl<T: AsRef<[u8]>> Read for Cursor<T> {
 // Implement `write()` as a concrete function to avoid extra monomorphization
 // overhead.
 fn write_impl(inner: &mut [u8], pos: &mut usize, buf: &[u8]) -> Result<usize> {
-    let remaining = inner.len() - *pos;
+    let remaining = inner.len().checked_sub(*pos).ok_or(Error::OutOfRange)?;
     let write_len = min(remaining, buf.len());
-    inner[*pos..(*pos + write_len)].copy_from_slice(&buf[0..write_len]);
-    *pos += write_len;
+    // Safety: write_len has been bounds checked on buf and inner.
+    // There can't be any overlap as inner is a &mut and buf is a &.
+    unsafe {
+        let src_ptr = buf.as_ptr();
+        let dst_ptr = inner.as_mut_ptr().add(*pos);
+        ptr::copy_nonoverlapping(src_ptr, dst_ptr, write_len);
+    }
+    // This will never saturate as pos is a private field which will
+    // never be larger than inner.len().
+    *pos = pos.saturating_add(write_len);
     Ok(write_len)
 }
 
