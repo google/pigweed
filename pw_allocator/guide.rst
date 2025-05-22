@@ -510,26 +510,17 @@ The resulting binary could be compared with the binary produced from
 pw_allocator/size_report/first_fit.cc to identify just the code added in this
 case by ``CustomAllocator``.
 
-For example, the GN build rule to generate a size report might look liek:
+For example, the Bazel build rules to generate a size report might look like:
 
-.. code-block::
-
-   pw_size_diff("size_report") {
-     title = "Example size report"
-     binaries = [
-       {
-         target = ":size_report"
-         base = "$dir_pw_allocator/size_report:first_fit"
-         label = "CustomAllocator"
-       },
-     ]
-   }
+.. literalinclude:: examples/BUILD.bazel
+   :language: cpp
+   :linenos:
+   :start-after: [pw_allocator-examples-size_report-bazel]
+   :end-before: [pw_allocator-examples-size_report-bazel]
 
 The size report produced by this rule would render as:
 
-.. TODO: b/388905812 - Re-enable the size report.
-.. .. include:: examples/custom_allocator_size_report
-.. include:: ../size_report_notice
+.. include:: examples/custom_allocator_size_report
 
 .. _AllocatorAwareContainers: https://en.cppreference.com/w/cpp/named_req/AllocatorAwareContainer
 .. _NVI: https://en.wikipedia.org/wiki/Non-virtual_interface_pattern
