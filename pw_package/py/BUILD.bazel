@@ -44,6 +44,7 @@ py_library(
         "pw_package/packages/picotool.py",
         "pw_package/packages/pigweed_examples_repo.py",
         "pw_package/packages/protobuf.py",
+        "pw_package/packages/rust_crates.py",
         "pw_package/packages/smartfusion_mss.py",
         "pw_package/packages/stm32cube.py",
         "pw_package/packages/zephyr.py",
