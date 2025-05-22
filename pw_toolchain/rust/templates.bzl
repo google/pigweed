@@ -26,7 +26,7 @@ rust_toolchain(
     opt_level = {{
       "dbg": "0",
       "fastbuild": "0",
-      "opt": "z",
+      "opt": "s",
     }},
     rust_doc = "{toolchain_repo}//:bin/rustdoc",
     rust_std = select({{
@@ -82,7 +82,7 @@ rust_toolchain(
     opt_level = {{
       "dbg": "0",
       "fastbuild": "0",
-      "opt": "z",
+      "opt": "s",
     }},
     rust_doc = "{toolchain_repo}//:bin/rustdoc",
     rust_std = "{target_repo}//:rust_std",

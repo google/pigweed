@@ -15,7 +15,7 @@
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 load("//pw_build:merge_flags.bzl", "flags_from_dict")
 load("//pw_build:pw_linker_script.bzl", "pw_linker_script")
-load("//pw_kernel:flags.bzl", "KERNEL_COMMON_FLAGS")
+load("//pw_kernel:flags.bzl", "KERNEL_DEVICE_COMMON_FLAGS")
 load("//pw_kernel/tooling:system_image.bzl", "system_image")
 
 platform(
@@ -28,7 +28,7 @@ platform(
         "@rust_crates//:no_std",
     ],
     flags = flags_from_dict(
-        KERNEL_COMMON_FLAGS | {
+        KERNEL_DEVICE_COMMON_FLAGS | {
             "//pw_kernel/config:kernel_config": ":config",
             "//pw_kernel/lib/unittest:unittest_runner": ":unittest_runner",
             "//pw_kernel/subsys/console:console_backend": "//pw_kernel/subsys/console:console_backend_semihosting",

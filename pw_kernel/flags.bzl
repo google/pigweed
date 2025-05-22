@@ -14,11 +14,22 @@
 """Standard kernel flags which can be used by the various platform definitions..
 """
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
+
 KERNEL_COMMON_FLAGS = {
     # Default to using the tokenized backend.  Platforms can overwrite this value
     "@pigweed//pw_log/rust:pw_log_backend": "//pw_kernel/subsys/console:pw_log_backend_tokenized",
     "@pigweed//pw_toolchain:cortex-m_toolchain_kind": "clang",
     # For now, enable debug assertions for all builds
-    "@rules_rust//rust/settings:extra_rustc_flag": "-Cdebug-assertions",
+    "@rules_rust//rust/settings:extra_rustc_flags": "-Cdebug-assertions",
     "@rules_rust//rust/toolchain/channel": "nightly",
 }
+
+KERNEL_DEVICE_COMMON_FLAGS = dicts.add(KERNEL_COMMON_FLAGS, {
+    # Don't use LTO on host builds, as it doesn't
+    # currently work on mac x86. There's also no real size
+    # constraints on host builds.  Once b/419358200 is
+    # fixed, we can re-consider whether it's useful
+    # for host builds.
+    "@rules_rust//rust/settings:lto": "fat",
+})
