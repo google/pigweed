@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING
 
 from pw_cli.color import colors as pw_cli_colors
 
-from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_line import LogLine
 from pw_console.text_formatting import strip_ansi
 from pw_console.widgets.table import TableView
@@ -78,16 +77,9 @@ class LogStore(logging.Handler):
         console.embed()
     """
 
-    def __init__(self, prefs: ConsolePrefs | None = None):
+    def __init__(self) -> None:
         """Initializes the LogStore instance."""
 
-        # ConsolePrefs may not be passed on init. For example, if the user is
-        # creating a LogStore to capture log messages before console startup.
-        if not prefs:
-            prefs = ConsolePrefs(
-                project_file=False, project_user_file=False, user_file=False
-            )
-        self.prefs = prefs
         # Log storage deque for fast addition and deletion from the beginning
         # and end of the iterable.
         self.logs: collections.deque = collections.deque()
@@ -103,23 +95,18 @@ class LogStore(logging.Handler):
         # Longest of the above prefix widths.
         self.longest_channel_prefix_width = 0
 
-        self.table: TableView = TableView(prefs=self.prefs)
-
         # Erase existing logs.
         self.clear_logs()
 
         # List of viewers that should be notified on new log line arrival.
         self.registered_viewers: list[LogView] = []
 
+        self.column_widths: collections.OrderedDict = collections.OrderedDict()
+
         super().__init__()
 
         # Set formatting after logging.Handler init.
         self.set_formatting()
-
-    def set_prefs(self, prefs: ConsolePrefs) -> None:
-        """Set the ConsolePrefs for this LogStore."""
-        self.prefs = prefs
-        self.table.set_prefs(prefs)
 
     def register_viewer(self, viewer: LogView) -> None:
         """Register this LogStore with a LogView."""
@@ -139,9 +126,9 @@ class LogStore(logging.Handler):
 
         # Update log time character width.
         example_time_string = datetime.now().strftime(timestamp_format)
-        self.table.column_widths['time'] = len(example_time_string)
+        self.column_widths['time'] = len(example_time_string)
 
-    def clear_logs(self):
+    def clear_logs(self) -> None:
         """Erase all stored pane lines."""
         self.logs = collections.deque()
         self.channel_counts = {}
@@ -151,23 +138,23 @@ class LogStore(logging.Handler):
     def get_channel_names(self) -> list[str]:
         return list(sorted(self.channel_counts.keys()))
 
-    def get_channel_counts(self):
+    def get_channel_counts(self) -> str:
         """Return the seen channel log counts for this conatiner."""
         return ', '.join(
             [f'{name}: {count}' for name, count in self.channel_counts.items()]
         )
 
-    def get_total_count(self):
+    def get_total_count(self) -> int:
         """Total size of the logs store."""
         return len(self.logs)
 
-    def get_last_log_index(self):
+    def get_last_log_index(self) -> int:
         """Last valid index of the logs."""
         # Subtract 1 since self.logs is zero indexed.
         total = self.get_total_count()
         return 0 if total < 0 else total - 1
 
-    def _update_log_prefix_width(self, record: logging.LogRecord):
+    def _update_log_prefix_width(self, record: logging.LogRecord) -> None:
         """Save the formatted prefix width if this is a new logger channel
         name."""
         if self.formatter and (
@@ -209,7 +196,7 @@ class LogStore(logging.Handler):
                 self.channel_formatted_prefix_widths.values()
             )
 
-    def _append_log(self, record: logging.LogRecord):
+    def _append_log(self, record: logging.LogRecord) -> None:
         """Add a new log event."""
         # Format incoming log line.
         formatted_log = self.format(record)
@@ -236,7 +223,7 @@ class LogStore(logging.Handler):
         self.logs[-1].update_metadata()
 
         # Check for bigger column widths.
-        self.table.update_metadata_column_widths(self.logs[-1])
+        self.update_metadata_column_widths(self.logs[-1])
 
     def emit(self, record) -> None:
         """Process a new log record.
@@ -250,6 +237,28 @@ class LogStore(logging.Handler):
         for viewer in self.registered_viewers:
             viewer.new_logs_arrived()
 
-    def render_table_header(self):
-        """Get pre-formatted table header."""
-        return self.table.formatted_header()
+    def update_metadata_column_widths(self, log: LogLine) -> None:
+        """Calculate the max widths for each metadata field."""
+        if log.metadata is None:
+            log.update_metadata()
+        # If extra fields still don't exist, no need to update column widths.
+        if log.metadata is None:
+            return
+
+        for field_name, value in log.metadata.fields.items():
+            value_string = str(value)
+
+            # Get width of formatted numbers
+            if isinstance(value, float):
+                value_string = TableView.FLOAT_FORMAT % value
+            elif isinstance(value, int):
+                value_string = TableView.INT_FORMAT % value
+
+            current_width = self.column_widths.get(field_name, 0)
+            if len(value_string) > current_width:
+                self.column_widths[field_name] = len(value_string)
+
+        # Update log level character width.
+        ansi_stripped_level = strip_ansi(log.record.levelname)
+        if len(ansi_stripped_level) > self.column_widths.get('level', 3):
+            self.column_widths['level'] = len(ansi_stripped_level)

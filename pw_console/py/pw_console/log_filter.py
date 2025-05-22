@@ -93,27 +93,33 @@ class LogFilter:
     def pattern(self):
         return self.regex.pattern  # pylint: disable=no-member
 
-    def matches(self, log: LogLine):
-        field = log.ansi_stripped_log
-        if self.field:
-            if hasattr(log, 'metadata') and hasattr(log.metadata, 'fields'):
-                field = log.metadata.fields.get(
-                    self.field, log.ansi_stripped_log
-                )
-            if hasattr(log.record, 'extra_metadata_fields'):  # type: ignore
-                field = log.record.extra_metadata_fields.get(  # type: ignore
-                    self.field, log.ansi_stripped_log
-                )
-            if self.field == 'lvl':
-                field = log.record.levelname
-            elif self.field == 'time':
-                field = log.record.asctime
+    def matches(self, log: LogLine) -> bool:
+        fields: dict[str, str] = {}
 
-        match = self.regex.search(field)  # pylint: disable=no-member
+        if hasattr(log, 'metadata') and hasattr(log.metadata, 'fields'):
+            fields.update(log.metadata.fields)
+
+        fields['time'] = log.created_time
+        fields['level'] = log.record.levelname
+        fields['message'] = log.ansi_stripped_log
+
+        if self.field in ['msg', 'message']:
+            # Search the message only.
+            content = fields['message']
+
+        elif self.field is None:
+            # Gather all fields to search
+            content = ' '.join(str(field) for field in fields.values())
+
+        else:
+            # Search a single field
+            content = fields.get(self.field, log.ansi_stripped_log)
+
+        match = self.regex.search(content)  # pylint: disable=no-member
 
         if self.invert:
             return not match
-        return match
+        return bool(match)
 
     def highlight_search_matches(
         self, line_fragments, selected=False

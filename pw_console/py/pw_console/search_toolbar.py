@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 import functools
+import logging
 from typing import TYPE_CHECKING
 
 from prompt_toolkit.buffer import Buffer
@@ -46,6 +47,8 @@ from pw_console.widgets import (
 if TYPE_CHECKING:
     from pw_console.log_pane import LogPane
 
+_LOG = logging.getLogger(__package__)
+
 
 class SearchToolbar(ConditionalContainer):
     """Toolbar for entering search text and viewing match counts."""
@@ -58,7 +61,7 @@ class SearchToolbar(ConditionalContainer):
         self.search_validator = RegexValidator()
         self._search_successful = False
         self._search_invert = False
-        self._search_field = None
+        self._search_field: str | None = None
 
         self.input_field = TextArea(
             prompt=[
@@ -241,9 +244,12 @@ class SearchToolbar(ConditionalContainer):
             self.log_view.follow = False
 
     def _next_field(self) -> None:
-        fields = self.log_pane.log_view.log_store.table.all_column_names()
-        fields.append(None)
-        current_index = fields.index(self._search_field)
+        fields = list(self.log_pane.log_view.table.all_column_names())
+        # Append None to represent no selected search field.
+        fields.append(None)  # type: ignore
+        # self._search_field will be None if no field is selected. The next
+        # index from here will be the first field.
+        current_index = fields.index(self._search_field)  # type: ignore
         next_index = (current_index + 1) % len(fields)
         self._search_field = fields[next_index]
 

@@ -13,9 +13,10 @@
 # the License.
 """LogLine storage class."""
 
-import logging
 from dataclasses import dataclass
 from datetime import datetime
+from functools import cached_property
+import logging
 
 from prompt_toolkit.formatted_text import ANSI, StyleAndTextTuples
 
@@ -34,11 +35,15 @@ class LogLine:
         self.metadata = None
         self.fragment_cache = None
 
-    def time(self):
-        """Return a datetime object for the log record."""
-        return datetime.fromtimestamp(self.record.created)
+    @cached_property
+    def created_time(self) -> str:
+        """Return formatted time for the log record."""
+        if hasattr(self.record, 'asctime'):
+            return self.record.asctime
 
-    def update_metadata(self, extra_fields: dict | None = None):
+        return datetime.fromtimestamp(self.record.created).isoformat(sep=' ')
+
+    def update_metadata(self, extra_fields: dict | None = None) -> None:
         """Parse log metadata fields from various sources."""
 
         # 1. Parse any metadata from the message itself.
@@ -81,8 +86,6 @@ class LogLine:
         file_name = str(self.record.filename)
         self.metadata.fields['py_file'] = f'{file_name}:{lineno}'
         self.metadata.fields['py_logger'] = str(self.record.name)
-
-        return self.metadata
 
     def get_fragments(self) -> StyleAndTextTuples:
         """Return this log line as a list of FormattedText tuples."""

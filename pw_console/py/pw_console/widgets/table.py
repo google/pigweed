@@ -15,6 +15,7 @@
 
 import collections
 import copy
+from typing import Iterable
 
 from prompt_toolkit.formatted_text import (
     ANSI,
@@ -37,9 +38,8 @@ class TableView:
     LAST_TABLE_COLUMN_NAMES = ['msg', 'message']
 
     def __init__(self, prefs: ConsolePrefs):
-        self.set_prefs(prefs)
         self.column_widths: collections.OrderedDict = collections.OrderedDict()
-        self._header_fragment_cache = None
+        self._header_fragment_cache: list[StyleAndTextTuples] = []
 
         # Assume common defaults here before recalculating in set_formatting().
         self._default_time_width: int = 17
@@ -47,31 +47,41 @@ class TableView:
         self.column_widths['level'] = 3
         self._year_month_day_width: int = 9
 
-        # Width of all columns except the final message
-        self.column_width_prefix_total = 0
+        self.column_names: list[str] = []
+        self.hidden_columns: dict[str, bool] = {}
+        self.apply_max_column_width: bool = True
+
+        # Set prefs last to override defaults.
+        self.set_prefs(prefs)
 
     def set_prefs(self, prefs: ConsolePrefs) -> None:
         self.prefs = prefs
-        # Max column widths of each log field
         self.column_padding = ' ' * self.prefs.spaces_between_columns
 
-    def all_column_names(self):
-        columns_names = [name for name, _width in self._ordered_column_widths()]
-        return columns_names + ['message']
+        # Set columns hidden based on legacy hide column prefs.
+        if not self.prefs.show_python_file:
+            self.hidden_columns['py_file'] = True
+        if not self.prefs.show_python_logger:
+            self.hidden_columns['py_logger'] = True
+        if not self.prefs.show_source_file:
+            self.hidden_columns['file'] = True
 
-    def _width_of_justified_fields(self):
-        """Calculate the width of all columns except LAST_TABLE_COLUMN_NAMES."""
-        padding_width = len(self.column_padding)
-        used_width = sum(
-            [
-                width + padding_width
-                for key, width in self.column_widths.items()
-                if key not in TableView.LAST_TABLE_COLUMN_NAMES
-            ]
-        )
-        return used_width
+        # Apply default visibility for any settings in the prefs.
+        for column_name, is_visible in self.prefs.column_visibility.items():
+            is_hidden = not is_visible
+            self.hidden_columns[column_name] = is_hidden
 
-    def _ordered_column_widths(self):
+    def is_column_hidden(self, name: str) -> bool:
+        return self.hidden_columns.get(name, False)
+
+    def set_column_hidden(self, name: str, hidden: bool = True) -> None:
+        self.hidden_columns[name] = hidden
+        self._update_table_header()
+
+    def all_column_names(self) -> Iterable[str]:
+        yield from self.column_names
+
+    def _ordered_column_widths(self) -> dict[str, int]:
         """Return each column and width in the preferred order."""
         if self.prefs.column_order:
             # Get ordered_columns
@@ -90,45 +100,32 @@ class TableView:
         else:
             ordered_columns = copy.copy(self.column_widths)
 
-        if not self.prefs.show_python_file and 'py_file' in ordered_columns:
-            del ordered_columns['py_file']
-        if not self.prefs.show_python_logger and 'py_logger' in ordered_columns:
-            del ordered_columns['py_logger']
-        if not self.prefs.show_source_file and 'file' in ordered_columns:
-            del ordered_columns['file']
+        for column_name, is_hidden in self.hidden_columns.items():
+            if is_hidden and column_name in ordered_columns:
+                del ordered_columns[column_name]
 
-        return ordered_columns.items()
+        return ordered_columns
 
-    def update_metadata_column_widths(self, log: LogLine) -> None:
+    def update_column_widths(
+        self, new_column_widths: collections.OrderedDict
+    ) -> None:
         """Calculate the max widths for each metadata field."""
-        if log.metadata is None:
-            log.update_metadata()
-        # If extra fields still don't exist, no need to update column widths.
-        if log.metadata is None:
-            return
+        self.column_widths.update(new_column_widths)
 
-        for field_name, value in log.metadata.fields.items():
-            value_string = str(value)
+        # If max column width is enabled.
+        if self.apply_max_column_width:
+            for name, width in self.prefs.column_width.items():
+                # If column is present, set the width from preferences
+                if name in self.column_widths:
+                    self.column_widths[name] = width
 
-            # Get width of formatted numbers
-            if isinstance(value, float):
-                value_string = TableView.FLOAT_FORMAT % value
-            elif isinstance(value, int):
-                value_string = TableView.INT_FORMAT % value
-
-            current_width = self.column_widths.get(field_name, 0)
-            if len(value_string) > current_width:
-                self.column_widths[field_name] = len(value_string)
-
-        # Update log level character width.
-        ansi_stripped_level = strip_ansi(log.record.levelname)
-        if len(ansi_stripped_level) > self.column_widths['level']:
-            self.column_widths['level'] = len(ansi_stripped_level)
-
-        self.column_width_prefix_total = self._width_of_justified_fields()
         self._update_table_header()
 
-    def _update_table_header(self):
+    def _update_table_header(self) -> None:
+        self.column_names = [
+            name for name, _width in self.column_widths.items() if name != 'msg'
+        ] + ['message']
+
         default_style = 'bold'
         fragments: collections.deque = collections.deque()
 
@@ -139,10 +136,11 @@ class TableView:
                 self._default_time_width - self._year_month_day_width
             )
 
-        for name, width in self._ordered_column_widths():
+        for name, width in self._ordered_column_widths().items():
             # These fields will be shown at the end
             if name in TableView.LAST_TABLE_COLUMN_NAMES:
                 continue
+
             fragments.append((default_style, name.title()[:width].ljust(width)))
             fragments.append(('', self.column_padding))
 
@@ -150,7 +148,7 @@ class TableView:
 
         self._header_fragment_cache = list(fragments)
 
-    def formatted_header(self):
+    def formatted_header(self) -> list[StyleAndTextTuples]:
         """Get pre-formatted table header."""
         return self._header_fragment_cache
 
@@ -171,7 +169,7 @@ class TableView:
 
         # Collect remaining columns to display after host time and level.
         columns = {}
-        for name, width in self._ordered_column_widths():
+        for name, width in self._ordered_column_widths().items():
             # Skip these modifying these fields
             if name in TableView.LAST_TABLE_COLUMN_NAMES:
                 continue
@@ -235,8 +233,16 @@ class TableView:
         # Go through columns and convert to FormattedText where needed.
         for i, column in enumerate(columns.items()):
             column_name, column_value = column
+
+            # If max column width is enabled.
+            if self.apply_max_column_width:
+                # Truncate the column width if set in prefs.
+                if column_name in self.prefs.column_width:
+                    max_width = self.prefs.column_width[column_name]
+                    column_value = column_value[:max_width]  # type: ignore
+
+            # Skip the message column in this loop.
             if column_name == 'message':
-                # Skip the message column in this loop.
                 continue
 
             if i in [0, 1] and column_name in ['time', 'level']:

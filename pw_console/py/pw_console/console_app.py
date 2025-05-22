@@ -566,6 +566,7 @@ class ConsoleApp:
         self.root_container.menu_items = self.menu_items
 
     def open_command_runner_main_menu(self) -> None:
+        self.update_menu_items()
         self.command_runner.set_completions()
         if not self.command_runner_is_open():
             self.command_runner.open_dialog()
@@ -735,7 +736,7 @@ class ConsoleApp:
                         children=[
                             # pylint: disable=line-too-long
                             MenuItem(
-                                '{check} Hide Date'.format(
+                                '{check} Hide Date from Time'.format(
                                     check=to_checkbox_text(
                                         self.prefs.hide_date_from_log_time,
                                         end='',
@@ -746,48 +747,6 @@ class ConsoleApp:
                                     functools.partial(
                                         self.toggle_pref_option,
                                         'hide_date_from_log_time',
-                                    ),
-                                ),
-                            ),
-                            MenuItem(
-                                '{check} Show Source File'.format(
-                                    check=to_checkbox_text(
-                                        self.prefs.show_source_file, end=''
-                                    )
-                                ),
-                                handler=functools.partial(
-                                    self.run_pane_menu_option,
-                                    functools.partial(
-                                        self.toggle_pref_option,
-                                        'show_source_file',
-                                    ),
-                                ),
-                            ),
-                            MenuItem(
-                                '{check} Show Python File'.format(
-                                    check=to_checkbox_text(
-                                        self.prefs.show_python_file, end=''
-                                    )
-                                ),
-                                handler=functools.partial(
-                                    self.run_pane_menu_option,
-                                    functools.partial(
-                                        self.toggle_pref_option,
-                                        'show_python_file',
-                                    ),
-                                ),
-                            ),
-                            MenuItem(
-                                '{check} Show Python Logger'.format(
-                                    check=to_checkbox_text(
-                                        self.prefs.show_python_logger, end=''
-                                    )
-                                ),
-                                handler=functools.partial(
-                                    self.run_pane_menu_option,
-                                    functools.partial(
-                                        self.toggle_pref_option,
-                                        'show_python_logger',
                                     ),
                                 ),
                             ),

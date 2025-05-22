@@ -18,17 +18,11 @@ import unittest
 from unittest.mock import MagicMock
 
 from pw_console.log_store import LogStore
-from pw_console.console_prefs import ConsolePrefs
 
 
 def _create_log_store():
-    log_store = LogStore(
-        prefs=ConsolePrefs(
-            project_file=False, project_user_file=False, user_file=False
-        )
-    )
+    log_store = LogStore()
 
-    assert not log_store.table.prefs.show_python_file
     viewer = MagicMock()
     viewer.new_logs_arrived = MagicMock()
     log_store.register_viewer(viewer)
@@ -105,38 +99,6 @@ class TestLogStore(unittest.TestCase):
                 'log_store.production': 0,
             },
             log_store.channel_formatted_prefix_widths,
-        )
-
-    def test_render_table_header_with_metadata(self) -> None:
-        log_store, _viewer = _create_log_store()
-        test_log = logging.getLogger('log_store.test')
-
-        # Log table with extra columns
-        with self.assertLogs(test_log, level='DEBUG') as _log_context:
-            test_log.addHandler(log_store)
-            test_log.debug(
-                'Test log %s',
-                extra=dict(
-                    extra_metadata_fields={
-                        'planet': 'Jupiter',
-                        'galaxy': 'Milky Way',
-                    }
-                ),
-            )
-
-        self.assertEqual(
-            [
-                ('bold', 'Time             '),
-                ('', '  '),
-                ('bold', 'Level'),
-                ('', '  '),
-                ('bold', 'Planet '),
-                ('', '  '),
-                ('bold', 'Galaxy   '),
-                ('', '  '),
-                ('bold', 'Message'),
-            ],
-            log_store.render_table_header(),
         )
 
 

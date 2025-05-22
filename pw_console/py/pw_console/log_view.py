@@ -25,7 +25,7 @@ import operator
 from pathlib import Path
 import re
 from threading import Thread
-from typing import Callable, TYPE_CHECKING
+from typing import Callable, Iterable, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -42,6 +42,7 @@ from pw_console.log_screen import ScreenLine, LogScreen
 from pw_console.log_store import LogStore
 from pw_console.python_logging import log_record_to_json
 from pw_console.text_formatting import remove_formatting
+from pw_console.widgets.table import TableView
 
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
@@ -71,10 +72,8 @@ class LogView:
     ):
         # Parent LogPane reference. Updated by calling `set_log_pane()`.
         self.log_pane = log_pane
-        self.log_store = (
-            log_store if log_store else LogStore(prefs=application.prefs)
-        )
-        self.log_store.set_prefs(application.prefs)
+        self.log_store = log_store if log_store else LogStore()
+        self.table: TableView = TableView(prefs=application.prefs)
         self.log_store.register_viewer(self)
 
         self.marked_logs_start: int | None = None
@@ -447,8 +446,34 @@ class LogView:
     def _get_table_formatter(self) -> Callable | None:
         table_formatter = None
         if self.log_pane.table_view:
-            table_formatter = self.log_store.table.formatted_row
+            table_formatter = self.table.formatted_row
         return table_formatter
+
+    def get_visible_table_columns(self) -> Iterable[str]:
+        yield from self.table.all_column_names()
+
+    def is_table_column_hidden(self, name: str) -> bool:
+        return self.table.is_column_hidden(name)
+
+    def refresh_visible_table_columns(self) -> None:
+        """Trigger a redraw of the table header and log lines."""
+        self.table.update_column_widths(self.log_store.column_widths)
+        self.view_mode_changed()
+        # Trigger a main menu update to set log window menu titles.
+        self.log_pane.application.update_menu_items()
+        # Redraw the UI
+        self.log_pane.application.redraw_ui()
+
+    def set_table_column_hidden(self, name: str, hidden: bool) -> None:
+        """Hide or show a table column, then refresh the view."""
+        self.table.set_column_hidden(name, hidden)
+        self.refresh_visible_table_columns()
+
+    def toggle_table_column_truncation(self) -> None:
+        self.table.apply_max_column_width = (
+            not self.table.apply_max_column_width
+        )
+        self.refresh_visible_table_columns()
 
     def delete_filter(self, filter_text):
         if filter_text not in self.filters:
@@ -592,6 +617,7 @@ class LogView:
         or scroll.
         """
         latest_total = self.log_store.get_total_count()
+        self.table.update_column_widths(self.log_store.column_widths)
 
         if self.filtering_on:
             # Scan newly arived log lines
@@ -812,7 +838,7 @@ class LogView:
 
     def render_table_header(self):
         """Get pre-formatted table header."""
-        return self.log_store.render_table_header()
+        return self.table.formatted_header()
 
     def get_web_socket_url(self):
         return f'http://127.0.0.1:3000/#ws={self.websocket_port}'
@@ -906,7 +932,7 @@ class LogView:
         """Convert all or selected log messages to plaintext."""
 
         def get_table_string(log: LogLine) -> str:
-            return remove_formatting(self.log_store.table.formatted_row(log))
+            return remove_formatting(self.table.formatted_row(log))
 
         formatter: Callable[[LogLine], str] = operator.attrgetter(
             'ansi_stripped_log'

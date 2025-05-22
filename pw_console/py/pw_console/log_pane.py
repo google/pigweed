@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import copy
 import functools
 import logging
 import re
@@ -465,16 +466,20 @@ class LogPaneWebsocketDialog(ConditionalContainer):
     def get_action_fragments(self):
         """Return FormattedText with the action buttons."""
         # Mouse handlers
-        focus = functools.partial(mouse_handlers.on_click, self.focus_self)
-        cancel = functools.partial(mouse_handlers.on_click, self.close_dialog)
-        copy = functools.partial(
+        focus_handler = functools.partial(
+            mouse_handlers.on_click, self.focus_self
+        )
+        cancel_handler = functools.partial(
+            mouse_handlers.on_click, self.close_dialog
+        )
+        copy_handler = functools.partial(
             mouse_handlers.on_click,
             self.copy_url_to_clipboard,
         )
 
         # Separator should have the focus mouse handler so clicking on any
         # whitespace focuses the input field.
-        separator_text = ('', '  ', focus)
+        separator_text = ('', '  ', focus_handler)
 
         # Default button style
         button_style = 'class:toolbar-button-inactive'
@@ -486,7 +491,7 @@ class LogPaneWebsocketDialog(ConditionalContainer):
             to_keybind_indicator(
                 key=None,
                 description='Stop',
-                mouse_handler=cancel,
+                mouse_handler=cancel_handler,
                 base_style=button_style,
             )
         )
@@ -496,13 +501,13 @@ class LogPaneWebsocketDialog(ConditionalContainer):
             to_keybind_indicator(
                 key=None,
                 description='Copy to Clipboard',
-                mouse_handler=copy,
+                mouse_handler=copy_handler,
                 base_style=button_style,
             )
         )
 
         # One space separator
-        fragments.append(('', ' ', focus))
+        fragments.append(('', ' ', focus_handler))
 
         return fragments
 
@@ -834,6 +839,21 @@ class LogPane(WindowPane):
                 ),
                 self.toggle_websocket_server,
             ),
+        ]
+
+        if self.application.prefs.column_width:
+            options += [
+                (
+                    '{check} Apply max column widths'.format(
+                        check=to_checkbox_text(
+                            self.log_view.table.apply_max_column_width, end=''
+                        )
+                    ),
+                    self.log_view.toggle_table_column_truncation,
+                ),
+            ]
+
+        options += [
             # Menu separator
             ('-', None),
             (
@@ -873,6 +893,28 @@ class LogPane(WindowPane):
             ),
         ]
 
+        # Table column visibility toggles
+        options += [
+            # Menu separator
+            ('-', None),
+        ]
+        for column_name in self.log_view.get_visible_table_columns():
+            if column_name == 'message':
+                continue
+
+            is_hidden = self.log_view.is_table_column_hidden(column_name)
+            checkbox = to_checkbox_text(not is_hidden, end='')
+            options.append(
+                (
+                    f'Log table show: {checkbox} {column_name}',
+                    functools.partial(
+                        self.log_view.set_table_column_hidden,
+                        column_name,
+                        not is_hidden,
+                    ),
+                )
+            )
+
         return options
 
     def apply_filters_from_config(self, window_options) -> None:
@@ -905,6 +947,12 @@ class LogPane(WindowPane):
         new_pane.log_view.log_store = log_store
         # Register the duplicate pane as a viewer
         log_store.register_viewer(new_pane.log_view)
+
+        # Copy the current column visibility to the new pane.
+        new_pane.log_view.table.hidden_columns = copy.copy(
+            self.log_view.table.hidden_columns
+        )
+        new_pane.log_view.refresh_visible_table_columns()
 
         # Set any existing search state.
         new_pane.log_view.search_text = self.log_view.search_text

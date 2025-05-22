@@ -646,31 +646,57 @@ Example Config
 
    # Do not re-style log messages. This will preserve any ansi escape sequences
    # for color.
+   # Default: True
    recolor_log_lines_to_match_level: False
 
-   # Show the Python file and line number responsible for creating log messages.
-   show_python_file: False
-   # Show the Python logger responsible for creating log messages.
-   show_python_logger: False
+   # Show the Python file and line number responsible for creating log
+   # messages. This appears as a 'py_file' metadata column.
+   # Default: False
+   show_python_file: True
+
+   # Show the Python logger responsible for creating log messages. This appears
+   # as a 'py_logger' metadata column.
+   # Default: False
+   show_python_logger: True
+
    # Show the 'file' metadata column.
-   show_source_file: False
+   # Default: False
+   show_source_file: True
 
    # Custom Column Ordering
    # By default columns are ordered as:
    #   time, level, metadata1, metadata2, ..., message
-   # The log message is always the last value and not required in this list.
+   # The log 'message' is always the last value and not required in this list.
    column_order:
-     # Column name
+     # Column name lowercase
      - time
      - level
      - metadata1
      - metadata2
+     - file
 
-   # If True, any metadata field not listed above in 'column_order'
-   # will be hidden in table view.
+   # Set maximum character widths for columns.
+   column_width:
+     metadata1: 20
+     metadata2: 15
+
+   # Set the default column visibility.
+   # Column name: Visible?
+   column_visibility:
+     metadata1: True
+     metadata2: false
+     py_file: False
+     py_logger: False
+     file: False
+
+   # Deprecated option, please use 'column_visibility' instead.
+   #
+   # If True, any field not listed above in 'column_order'
+   # will be hidden in table view. Note it is better to use
+   # Default: False
    column_order_omit_unspecified_columns: False
 
-   # Unique Colors for Column Values
+   # Apply custom colors for column values
    #   Color format: 'bg:#BG-HEX #FG-HEX STYLE'
    # All parts are optional.
    # Empty strings will leave styling unchanged.

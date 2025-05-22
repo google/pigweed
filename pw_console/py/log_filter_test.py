@@ -107,10 +107,10 @@ class TestLogFilter(unittest.TestCase):
                 RegexValidator().validate(document)
 
     def _create_logs(self, log_messages):
-        test_log = logging.getLogger('log_filter.test')
-        with self.assertLogs(test_log, level='DEBUG') as log_context:
+        test_logger = logging.getLogger('log_filter.test')
+        with self.assertLogs(test_logger, level='DEBUG') as log_context:
             for log, extra_arg in log_messages:
-                test_log.debug('%s', log, extra=extra_arg)
+                test_logger.debug('%s', log, extra=extra_arg)
 
         return log_context
 
@@ -119,15 +119,15 @@ class TestLogFilter(unittest.TestCase):
             (
                 'simple fuzzy',
                 SearchMatcher.FUZZY,
-                'log item',
-                [
-                    ('Log some item', {'planet': 'Jupiter'}),
-                    ('Log another item', {'planet': 'Earth'}),
-                    ('Some exception', {'planet': 'Earth'}),
+                'log item',  # input_text
+                [  # input_lines
+                    ('1 Log some item', {'planet': 'Jupiter'}),
+                    ('1 Log another item', {'planet': 'Earth'}),
+                    ('1 Some exception', {'planet': 'Earth'}),
                 ],
-                [
-                    'Log some item',
-                    'Log another item',
+                [  # expected_matched_lines
+                    '1 Log some item',
+                    '1 Log another item',
                 ],
                 None,  # field
                 False,  # invert
@@ -135,14 +135,14 @@ class TestLogFilter(unittest.TestCase):
             (
                 'simple fuzzy inverted',
                 SearchMatcher.FUZZY,
-                'log item',
-                [
-                    ('Log some item', dict()),
-                    ('Log another item', dict()),
-                    ('Some exception', dict()),
+                'log item',  # input_text
+                [  # input_lines
+                    ('2 Log some item', dict()),
+                    ('2 Log another item', dict()),
+                    ('2 Some exception', dict()),
                 ],
-                [
-                    'Some exception',
+                [  # expected_matched_lines
+                    '2 Some exception',
                 ],
                 None,  # field
                 True,  # invert
@@ -150,24 +150,25 @@ class TestLogFilter(unittest.TestCase):
             (
                 'regex with field',
                 SearchMatcher.REGEX,
-                'earth',
-                [
+                # lowercase input text should use re.IGNORECASE
+                'earth',  # input_text
+                [  # input_lines
                     (
-                        'Log some item',
+                        '3 Log some item',
                         dict(extra_metadata_fields={'planet': 'Jupiter'}),
                     ),
                     (
-                        'Log another item',
+                        '3 Log another item',
                         dict(extra_metadata_fields={'planet': 'Earth'}),
                     ),
                     (
-                        'Some exception',
+                        '3 Some exception',
                         dict(extra_metadata_fields={'planet': 'Earth'}),
                     ),
                 ],
-                [
-                    'Log another item',
-                    'Some exception',
+                [  # expected_matched_lines
+                    '3 Log another item',
+                    '3 Some exception',
                 ],
                 'planet',  # field
                 False,  # invert
@@ -175,23 +176,23 @@ class TestLogFilter(unittest.TestCase):
             (
                 'regex with field inverted',
                 SearchMatcher.REGEX,
-                'earth',
-                [
+                'earth',  # input_text
+                [  # input_lines
                     (
-                        'Log some item',
+                        '4 Log some item',
                         dict(extra_metadata_fields={'planet': 'Jupiter'}),
                     ),
                     (
-                        'Log another item',
+                        '4 Log another item',
                         dict(extra_metadata_fields={'planet': 'Earth'}),
                     ),
                     (
-                        'Some exception',
+                        '4 Some exception',
                         dict(extra_metadata_fields={'planet': 'Earth'}),
                     ),
                 ],
-                [
-                    'Log some item',
+                [  # expected_matched_lines
+                    '4 Log some item',
                 ],
                 'planet',  # field
                 True,  # invert
@@ -223,9 +224,14 @@ class TestLogFilter(unittest.TestCase):
         logs = self._create_logs(input_lines)
 
         for record in logs.records:
-            if log_filter.matches(
-                LogLine(record, record.message, record.message)
-            ):
+            log_line = LogLine(
+                record=record,
+                formatted_log=record.message,
+                ansi_stripped_log=record.message,
+            )
+            # Populate the extra metadata
+            log_line.update_metadata()
+            if log_filter.matches(log_line):
                 matched_lines.append(record.message)
 
         self.assertEqual(expected_matched_lines, matched_lines)

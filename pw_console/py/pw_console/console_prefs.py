@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import dataclasses
+from functools import cached_property
 import os
 from pathlib import Path
 from typing import Callable
@@ -42,6 +43,8 @@ _DEFAULT_CONFIG = {
     'spaces_between_columns': 2,
     'column_order_omit_unspecified_columns': False,
     'column_order': [],
+    'column_visibility': {},
+    'column_width': {},
     'column_colors': {},
     'show_python_file': False,
     'show_python_logger': False,
@@ -251,6 +254,24 @@ class ConsolePrefs(YamlConfigLoaderMixin):
     @property
     def column_order(self) -> list:
         return self._config.get('column_order', [])
+
+    @cached_property
+    def column_width(self) -> dict[str, int]:
+        return {
+            name: int(width)
+            for name, width in self._config.get('column_width', {}).items()
+            if name.lower() != 'message'
+        }
+
+    @cached_property
+    def column_visibility(self) -> dict[str, bool]:
+        return {
+            name: is_visible
+            for name, is_visible in self._config.get(
+                'column_visibility', {}
+            ).items()
+            if name.lower() != 'message'
+        }
 
     def column_style(
         self, column_name: str, column_value: str, default=''

@@ -355,6 +355,7 @@ class ReplPane(WindowPane):
         self,
     ) -> list[tuple[str, Callable | None]]:
         return [
+            ('-', None),
             (
                 'Python Input > Paste',
                 self.paste_system_clipboard_to_input_buffer,

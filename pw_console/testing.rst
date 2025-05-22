@@ -336,6 +336,41 @@ Log Pane: Search and Filtering
        | Only logs with Modules other than ``BAT`` appear.
      - |checkbox|
 
+Log Pane: Column Visibility
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - ``Ctrl-p``
+     - The :guilabel:`Menu Items` command runner dialog appears.
+     - |checkbox|
+
+   * - 2
+     - Type :kbd:`fake device duplicate ` and press :kbd:`enter`.
+     - The ``Fake Device`` is duplicated.
+       hidden.
+     - |checkbox|
+
+   * - 3
+     - Type :kbd:`fake device log show time` and press :kbd:`enter`.
+     - The ``Time`` column on the top left window titled ``Fake Device`` is
+       hidden. ``Time`` should still be visible in the second ``Fake Device``
+       window.
+     - |checkbox|
+
+   * - 4
+     - Type :kbd:`fake device log show time` and press :kbd:`enter`.
+     - The ``Time`` column in the first ``Fake Device`` is visible again.
+     - |checkbox|
+
 Help Windows
 ^^^^^^^^^^^^
 
